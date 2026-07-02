@@ -1,0 +1,46 @@
+{
+  "categories": [
+    {
+      "id": "public-issues",
+      "label": "公共議題",
+      "readAccess": "reviewed-school",
+      "authorVisible": false,
+      "support": {
+        "enabled": true,
+        "goal": 50,
+        "deadlineDays": 14
+      },
+      "responseDeadlineDays": 7
+    },
+    {
+      "id": "rights-maintenance",
+      "label": "學生權益",
+      "readAccess": "owner-admin",
+      "authorVisible": true,
+      "support": {
+        "enabled": false
+      },
+      "responseDeadlineDays": 7
+    },
+    {
+      "id": "facilities",
+      "label": "設備",
+      "readAccess": "school",
+      "authorVisible": true,
+      "support": {
+        "enabled": false
+      },
+      "responseDeadlineDays": 7
+    },
+    {
+      "id": "test",
+      "label": "測試",
+      "readAccess": "school",
+      "authorVisible": true,
+      "support": {
+        "enabled": false
+      },
+      "responseDeadlineDays": 7
+    }
+  ]
+}

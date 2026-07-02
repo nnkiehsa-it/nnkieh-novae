@@ -1,0 +1,173 @@
+import {
+  DEFAULT_ISSUE_CATEGORY,
+  getIssueResponseDeadlineDays,
+  getIssueResponseDeadlineStart,
+  getIssueSupportGoal,
+  isIssueCategory,
+  issueAllowsSupport,
+  issueStoresAuthorPrivately,
+} from '@/constants/categories';
+import type {
+  IssueCursor,
+  IssuePageResult,
+  IssueRecord,
+  IssueSortOption,
+  IssueStatus,
+  IssueStatusBucket,
+} from '@/types';
+import { STATUS_BUCKETS } from './issues-constants';
+import { addDays } from './issues-utils';
+
+export function normalizeDate(value: unknown): Date | null {
+  if (value instanceof Date) {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return new Date(value);
+  }
+
+  if (typeof value === 'string') {
+    const time = Date.parse(value);
+    return Number.isFinite(time) ? new Date(time) : null;
+  }
+
+  if (value && typeof value === 'object' && 'toDate' in value && typeof value.toDate === 'function') {
+    const date = value.toDate();
+    return date instanceof Date ? date : null;
+  }
+
+  return null;
+}
+
+function normalizeCategory(value: unknown): IssueRecord['category'] {
+  return isIssueCategory(value) ? value : DEFAULT_ISSUE_CATEGORY;
+}
+
+export function normalizeStatus(value: unknown): IssueStatus {
+  if (
+    value === 'under-review' ||
+    value === 'pending' ||
+    value === 'processing' ||
+    value === 'auto-rejected' ||
+    value === 'review-rejected' ||
+    value === 'infeasible' ||
+    value === 'completed'
+  ) {
+    return value;
+  }
+  return 'pending';
+}
+
+function getCategoryDefaults(category: IssueRecord['category'], createdAt = new Date()) {
+  if (issueAllowsSupport(category)) {
+    return {
+      support_enabled: true,
+      support_goal: getIssueSupportGoal(category),
+      support_deadline_at: null,
+      response_deadline_at: null,
+      support_met_at: null,
+    };
+  }
+
+  const responseDeadlineDays = getIssueResponseDeadlineDays(category);
+  const responseDeadlineAt = getIssueResponseDeadlineStart(category) === 'created' && responseDeadlineDays !== null
+    ? addDays(createdAt, responseDeadlineDays)
+    : null;
+
+  return {
+    support_enabled: false,
+    support_goal: null,
+    support_deadline_at: null,
+    response_deadline_at: responseDeadlineAt,
+    support_met_at: null,
+  };
+}
+
+export function normalizeIssueRecord(id: string, data: Record<string, unknown>): IssueRecord {
+  const category = normalizeCategory(data.category);
+  const defaults = getCategoryDefaults(category);
+
+  const record: IssueRecord = {
+    id,
+    title: String(data.title ?? ''),
+    content: String(data.content ?? ''),
+    created_at: normalizeDate(data.created_at),
+    updated_at: normalizeDate(data.updated_at),
+    support_count: typeof data.support_count === 'number' ? data.support_count : 0,
+    status: normalizeStatus(data.status),
+    category,
+    support_enabled: Boolean(data.support_enabled ?? defaults.support_enabled),
+    support_goal: typeof data.support_goal === 'number' ? data.support_goal : defaults.support_goal,
+    support_deadline_at: normalizeDate(
+      data.support_deadline_at
+    ) ?? defaults.support_deadline_at,
+    response_deadline_at: normalizeDate(
+      data.response_deadline_at
+    ) ?? defaults.response_deadline_at,
+    support_met_at: normalizeDate(
+      data.support_met_at
+    ) ?? defaults.support_met_at,
+    review_rejection_reason: typeof data.review_rejection_reason === 'string'
+      ? data.review_rejection_reason
+      : undefined,
+    currentUserSupported: false,
+    deleting: data.deleting === true,
+  };
+
+  if (!issueStoresAuthorPrivately(category)) {
+    record.author_uid = typeof data.author_uid === 'string' ? data.author_uid : undefined;
+    record.author_name = typeof data.author_name === 'string' ? data.author_name : undefined;
+    record.author_photo_url = typeof data.author_photo_url === 'string' ? data.author_photo_url : null;
+  }
+
+  return record;
+}
+
+export function issueBelongsToBucket(issue: IssueRecord, statusBucket: IssueStatusBucket) {
+  return issue.deleting !== true && STATUS_BUCKETS[statusBucket].includes(issue.status);
+}
+
+function toIssueCursor(issue: IssueRecord, sort: IssueSortOption = 'latest'): IssueCursor | null {
+  if (!issue.created_at) {
+    return null;
+  }
+  const cursor: IssueCursor = {
+    id: issue.id,
+    created_at: issue.created_at,
+  };
+  if (sort === 'most-supported') {
+    cursor.sort_number = issue.support_count;
+  } else if (sort === 'ending-soon') {
+    cursor.sort_date = issue.support_deadline_at;
+  }
+  return cursor;
+}
+
+export function withSupportState(issues: IssueRecord[], supportedIssueIds?: Set<string>) {
+  if (!supportedIssueIds) {
+    return issues;
+  }
+  return issues.map((issue) => ({
+    ...issue,
+    currentUserSupported: supportedIssueIds.has(issue.id),
+  }));
+}
+
+export function normalizeIssuePage(
+  issues: IssueRecord[],
+  pageSize: number,
+  cursorSource?: IssueRecord | null,
+  fetchedCount?: number,
+  sort: IssueSortOption = 'latest',
+): IssuePageResult {
+  const visibleIssues = issues.slice(0, pageSize);
+  const lastVisibleIssue = issues.length > 0 ? issues[Math.min(pageSize - 1, issues.length - 1)] : null;
+  const lastIssue = cursorSource ?? lastVisibleIssue ?? null;
+
+  return {
+    issues: visibleIssues,
+    cursor: lastIssue ? toIssueCursor(lastIssue, sort) : null,
+    hasMore: (fetchedCount ?? issues.length) > pageSize,
+  };
+}

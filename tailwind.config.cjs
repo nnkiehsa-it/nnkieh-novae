@@ -1,0 +1,56 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  darkMode: 'media',
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
+  content: ['./index.html', './src/**/*.{vue,ts,tsx}'],
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['"Inter"', '"HarmonyOS Sans TC"', '"HarmonyOS Sans SC"', 'system-ui', 'sans-serif'],
+        display: ['"Inter"', '"HarmonyOS Sans TC"', '"HarmonyOS Sans SC"', 'system-ui', 'sans-serif'],
+        body: ['"Inter"', '"HarmonyOS Sans TC"', '"HarmonyOS Sans SC"', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
+      },
+      colors: {
+        ink: {
+          50: '#f7f7f5',
+          100: '#efefea',
+          200: '#ddddd3',
+          300: '#c6c6b8',
+          400: '#9e9e91',
+          500: '#77776c',
+          600: '#5d5d54',
+          700: '#43433d',
+          800: '#292925',
+          900: '#171715',
+          950: '#0c0c0a',
+        },
+        surface: 'rgb(var(--color-surface) / <alpha-value>)',
+        'on-surface': 'rgb(var(--color-on-surface) / <alpha-value>)',
+        outline: 'rgb(var(--color-outline) / <alpha-value>)',
+        primary: 'rgb(var(--color-primary) / <alpha-value>)',
+        'on-primary': 'rgb(var(--color-on-primary) / <alpha-value>)',
+        'primary-container': 'rgb(var(--color-primary-container) / <alpha-value>)',
+        'on-primary-container': 'rgb(var(--color-on-primary-container) / <alpha-value>)',
+        secondary: 'rgb(var(--color-secondary) / <alpha-value>)',
+        'on-secondary': 'rgb(var(--color-on-secondary) / <alpha-value>)',
+        'secondary-container': 'rgb(var(--color-secondary-container) / <alpha-value>)',
+        'on-secondary-container': 'rgb(var(--color-on-secondary-container) / <alpha-value>)',
+        error: 'rgb(var(--color-error) / <alpha-value>)',
+        'on-error': 'rgb(var(--color-on-error) / <alpha-value>)',
+        'error-container': 'rgb(var(--color-error-container) / <alpha-value>)',
+        'on-error-container': 'rgb(var(--color-on-error-container) / <alpha-value>)',
+        warning: 'rgb(var(--color-warning) / <alpha-value>)',
+        'warning-container': 'rgb(var(--color-warning-container) / <alpha-value>)',
+        'on-warning-container': 'rgb(var(--color-on-warning-container) / <alpha-value>)',
+      },
+      boxShadow: {
+        note: '0 18px 40px -24px rgba(17, 17, 17, 0.4)',
+        elevated: '0 18px 40px -22px rgb(var(--color-shadow) / 0.34)',
+      },
+    },
+  },
+  plugins: [require('@tailwindcss/typography')],
+};

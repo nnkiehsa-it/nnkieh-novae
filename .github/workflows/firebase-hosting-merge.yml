@@ -1,0 +1,182 @@
+name: Deploy to Firebase Hosting on merge
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - 'src/**'
+      - 'config/issue-categories.config.json'
+      - 'config/rate-limits.config.json'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'postcss.config.cjs'
+      - 'tailwind.config.cjs'
+      - 'tsconfig*.json'
+      - 'vite.config.ts'
+      - 'firebase.json'
+      - 'scripts/generate-issue-categories.mjs'
+      - 'scripts/generate-rate-limits.mjs'
+      - 'scripts/issue-category-config.mjs'
+      - '.github/workflows/firebase-hosting-merge.yml'
+
+concurrency:
+  group: hosting-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Cache node_modules
+        uses: actions/cache@v6
+        id: cache-node-modules
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-node24-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: npm ci --prefer-offline
+
+      - name: Validate deployment secrets
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID || fromJSON(secrets.FIREBASE_SERVICE_ACCOUNT).project_id }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_VAPID_KEY: ${{ secrets.VITE_FIREBASE_VAPID_KEY }}
+          VITE_RECAPTCHA_ENTERPRISE_SITE_KEY: ${{ secrets.VITE_RECAPTCHA_ENTERPRISE_SITE_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          missing=()
+          for name in \
+            VITE_FIREBASE_API_KEY \
+            VITE_FIREBASE_AUTH_DOMAIN \
+            VITE_FIREBASE_PROJECT_ID \
+            VITE_FIREBASE_APP_ID \
+            VITE_FIREBASE_MESSAGING_SENDER_ID \
+            VITE_FIREBASE_VAPID_KEY \
+            VITE_RECAPTCHA_ENTERPRISE_SITE_KEY \
+            VITE_SUPABASE_URL \
+            VITE_SUPABASE_PUBLISHABLE_KEY; do
+            if [ -z "${!name}" ]; then
+              missing+=("$name")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            printf 'Missing deployment secrets: %s\n' "${missing[*]}" >&2
+            exit 1
+          fi
+
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Verify Firebase ADC
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID || fromJSON(secrets.FIREBASE_SERVICE_ACCOUNT).project_id }}
+        run: |
+          if [ -z "${GOOGLE_APPLICATION_CREDENTIALS:-}" ]; then
+            echo "::error::Firebase ADC 未建立。請確認 google-github-actions/auth 已成功執行，並檢查目前 GitHub Environment 是否有 FIREBASE_SERVICE_ACCOUNT。" >&2
+            exit 1
+          fi
+
+          if [ ! -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+            echo "::error::Firebase ADC 憑證檔不存在：$GOOGLE_APPLICATION_CREDENTIALS" >&2
+            exit 1
+          fi
+
+          echo "ADC credential file detected at: $GOOGLE_APPLICATION_CREDENTIALS"
+          echo "Checking Firebase CLI authentication for project: $FIREBASE_PROJECT_ID"
+          npx -y firebase-tools@15 projects:list --json > /tmp/firebase-projects.json || {
+            echo "::error::Firebase CLI 無法使用目前 ADC 驗證。請確認 FIREBASE_SERVICE_ACCOUNT 內容有效，且具有專案 $FIREBASE_PROJECT_ID 的權限。" >&2
+            exit 1
+          }
+          echo "Firebase CLI authentication check passed."
+
+      - name: Build
+        run: npm run build:deploy
+        env:
+          VITE_APP_TITLE: ${{ secrets.VITE_APP_TITLE }}
+          VITE_APP_SHORT_NAME: ${{ secrets.VITE_APP_SHORT_NAME }}
+          VITE_ALLOWED_DOMAIN: ${{ secrets.VITE_ALLOWED_DOMAIN }}
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID || fromJSON(secrets.FIREBASE_SERVICE_ACCOUNT).project_id }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_VAPID_KEY: ${{ secrets.VITE_FIREBASE_VAPID_KEY }}
+          VITE_RECAPTCHA_ENTERPRISE_SITE_KEY: ${{ secrets.VITE_RECAPTCHA_ENTERPRISE_SITE_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+
+      - name: Deploy Hosting
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID || fromJSON(secrets.FIREBASE_SERVICE_ACCOUNT).project_id }}
+        run: |
+          attempt=0
+          max_attempts=12
+          success=false
+          
+          while [ $attempt -lt $max_attempts ]; do
+            attempt=$((attempt + 1))
+            echo "Attempt $attempt of $max_attempts to deploy Hosting..."
+            
+            set +e
+            deploy_output="$(npx -y firebase-tools@15 deploy \
+              --only hosting \
+              --project "$FIREBASE_PROJECT_ID" \
+              --non-interactive 2>&1)"
+            deploy_exit=$?
+            set -e
+            
+            printf '%s\n' "$deploy_output"
+            
+            if [ $deploy_exit -eq 0 ]; then
+              success=true
+              break
+            fi
+            
+            if grep -Fq "is the current active version" <<< "$deploy_output"; then
+              echo "Firebase Hosting live channel is already serving this version. Treating deploy as successful."
+              success=true
+              break
+            fi
+            
+            if [ $attempt -eq $max_attempts ]; then
+              break
+            fi
+            
+            sleep_time=$((attempt * 10))
+            echo "Hosting deployment attempt $attempt failed. Waiting $sleep_time seconds before retrying..."
+            sleep $sleep_time
+          done
+          
+          if [ "$success" = false ]; then
+            if grep -Fq "Failed to authenticate" <<< "$deploy_output"; then
+              echo "::error::Firebase Hosting deploy 認證失敗。請檢查目前 branch 對應的 GitHub Environment secrets 是否存在有效的 FIREBASE_SERVICE_ACCOUNT，並確認此 service account 對專案 $FIREBASE_PROJECT_ID 具有 Firebase Hosting deploy 權限。" >&2
+              exit 1
+            fi
+            
+            echo "::error::Firebase Hosting deploy 失敗。請查看上方 Firebase CLI 原始輸出；若錯誤是 current active version，workflow 會自動視為成功，若仍失敗則代表是其他部署問題。" >&2
+            exit 1
+          fi

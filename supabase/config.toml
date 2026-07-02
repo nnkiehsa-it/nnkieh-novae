@@ -1,0 +1,19 @@
+project_id = "srp"
+
+[api]
+schemas = ["app_api"]
+
+[functions.syncUser]
+verify_jwt = false
+
+[functions.backendAction]
+verify_jwt = true
+
+[functions.cloudinaryWebhook]
+verify_jwt = false
+
+[functions.outboxWorker]
+verify_jwt = false
+
+[functions.processDeletionJobs]
+verify_jwt = false

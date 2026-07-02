@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta id="theme-color-default" name="theme-color" content="#ffffff" />
+    <meta name="background-color" content="#f7f7f3" />
+    <meta id="theme-color-light" name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta id="theme-color-dark" name="theme-color" content="#0c0c0a" media="(prefers-color-scheme: dark)" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="%APP_SHORT_NAME%" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="manifest" href="/manifest.webmanifest?v=%APP_VERSION%" />
+    <link rel="icon" href="/favicon.ico?v=%APP_VERSION%" sizes="any" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png?v=%APP_VERSION%" />
+    <style>
+      :root {
+        --startup-bg: #f7f7f3;
+        --startup-fg: #171715;
+        --startup-muted: #5d5d54;
+        --startup-surface: rgb(255 255 255 / 0.76);
+        --startup-shadow: rgb(17 17 17 / 0.12);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --startup-bg: #0c0c0a;
+          --startup-fg: #f7f7f5;
+          --startup-muted: #c6c6b8;
+          --startup-surface: rgb(23 23 21 / 0.76);
+          --startup-shadow: rgb(0 0 0 / 0.32);
+        }
+      }
+
+      .preload-startup {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        min-height: 100vh;
+        min-height: 100dvh;
+        place-items: center;
+        padding:
+          max(1.5rem, env(safe-area-inset-top))
+          max(1.25rem, env(safe-area-inset-right))
+          max(1.5rem, env(safe-area-inset-bottom))
+          max(1.25rem, env(safe-area-inset-left));
+        background: var(--startup-bg);
+        color: var(--startup-fg);
+        font-family: Inter, system-ui, sans-serif;
+        text-align: center;
+      }
+
+      .preload-startup__mark {
+        display: grid;
+        height: 6.25rem;
+        width: 6.25rem;
+        place-items: center;
+        border-radius: 1.5rem;
+        background: var(--startup-surface);
+        box-shadow: 0 1.25rem 3rem var(--startup-shadow);
+      }
+
+      .preload-startup__brand {
+        margin-top: 1.35rem;
+        color: var(--startup-muted);
+        font-size: 0.875rem;
+        font-weight: 700;
+        line-height: 1.5;
+      }
+    </style>
+    <title>%APP_TITLE%</title>
+  </head>
+  <body class="text-ink-900 antialiased dark:text-ink-50">
+    <div id="app">
+      <div class="preload-startup" role="status" aria-label="正在啟動 App">
+        <div>
+          <div class="preload-startup__mark">
+            <img src="/logo.svg?v=%APP_VERSION%" width="92" height="76" alt="" />
+          </div>
+          <div class="preload-startup__brand">%APP_TITLE%</div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

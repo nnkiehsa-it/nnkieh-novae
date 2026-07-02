@@ -1,0 +1,201 @@
+import type {
+  CommentRecord,
+  CommentInput,
+  ComposerInput,
+  IssueRecord,
+  IssueStatus,
+} from '@/types';
+import { invokeBackendAction } from '@/services/backend-action';
+import { createRequestId } from '@/lib/request-id';
+import {
+  normalizeIssueRecord,
+  toReadableBackendError,
+} from './issues-core';
+import type { CommentResponseRecord } from './issues-read-shared';
+
+interface IssueResponseRecord {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  status: string;
+  support_count: number;
+  support_enabled: boolean;
+  support_goal: number | null;
+  created_at_ms: number | null;
+  updated_at_ms: number | null;
+  support_deadline_at_ms: number | null;
+  response_deadline_at_ms: number | null;
+  support_met_at_ms: number | null;
+  review_rejection_reason?: string;
+  author_uid?: string;
+  author_name?: string;
+  author_photo_url?: string | null;
+}
+
+interface SupportResponse {
+  success: boolean;
+  supported: boolean;
+  support_count: number;
+}
+
+function dateFromMs(value: number | null | undefined) {
+  return typeof value === 'number' ? new Date(value) : null;
+}
+
+function normalizeIssueResponse(issue: IssueResponseRecord): IssueRecord {
+  const record = normalizeIssueRecord(issue.id, {
+    title: issue.title,
+    content: issue.content,
+    category: issue.category,
+    status: issue.status,
+    support_count: issue.support_count,
+    support_enabled: issue.support_enabled,
+    support_goal: issue.support_goal,
+    created_at: dateFromMs(issue.created_at_ms),
+    updated_at: dateFromMs(issue.updated_at_ms),
+    support_deadline_at: dateFromMs(issue.support_deadline_at_ms),
+    response_deadline_at: dateFromMs(issue.response_deadline_at_ms),
+    support_met_at: dateFromMs(issue.support_met_at_ms),
+    review_rejection_reason: issue.review_rejection_reason,
+    author_uid: issue.author_uid,
+    author_name: issue.author_name,
+    author_photo_url: issue.author_photo_url,
+  });
+  if (issue.author_uid) {
+    record.author_uid = issue.author_uid;
+    record.author_name = issue.author_name;
+    record.author_photo_url = issue.author_photo_url ?? null;
+  }
+  return record;
+}
+
+function normalizeCommentResponse(comment: CommentResponseRecord): CommentRecord {
+  return {
+    id: comment.id,
+    issue_id: comment.issue_id,
+    content: comment.content,
+    author_uid: comment.author_uid,
+    author_name: comment.author_name,
+    author_photo_url: comment.author_photo_url,
+    is_admin_comment: comment.is_admin_comment,
+    created_at: dateFromMs(comment.created_at_ms),
+    updated_at: dateFromMs(comment.updated_at_ms),
+  };
+}
+
+export async function createIssue(
+  input: ComposerInput,
+  _author: {
+    uid: string;
+    displayName: string;
+    photoURL: string | null;
+    email: string;
+  },
+) {
+  try {
+    const fn = invokeBackendAction<
+      { title: string; content: string; category: string; requestId: string },
+      { issue: IssueResponseRecord }
+    >('createIssue');
+    const result = await fn({
+      title: input.title,
+      content: input.content,
+      category: input.category,
+      requestId: createRequestId(),
+    });
+    return normalizeIssueResponse(result.data.issue);
+  } catch (error) {
+    throw toReadableBackendError(error);
+  }
+}
+
+export async function moderateIssueStatus(issueId: string, status: IssueStatus, reason?: string) {
+  try {
+    const fn = invokeBackendAction<
+      { issueId: string; status: IssueStatus; reason?: string; requestId: string },
+      { issue: IssueResponseRecord }
+    >('moderateIssueStatus');
+    const result = await fn({ issueId, status, reason, requestId: createRequestId() });
+    return normalizeIssueResponse(result.data.issue);
+  } catch (error) {
+    throw toReadableBackendError(error);
+  }
+}
+
+export async function toggleSupport(
+  issueId: string,
+  _voter: {
+    uid: string;
+  },
+) {
+  try {
+    const fn = invokeBackendAction<{ issueId: string; requestId: string }, SupportResponse>('toggleSupport');
+    const result = await fn({ issueId, requestId: createRequestId() });
+    return result.data;
+  } catch (error) {
+    throw toReadableBackendError(error);
+  }
+}
+
+export async function removeSupport(issueId: string, _uid: string) {
+  try {
+    const fn = invokeBackendAction<{ issueId: string }, SupportResponse>('removeSupport');
+    const result = await fn({ issueId });
+    return result.data;
+  } catch (error) {
+    throw toReadableBackendError(error);
+  }
+}
+
+export async function deleteIssue(
+  issueId: string,
+  _options?: {
+    purgeNestedCollections?: boolean;
+  },
+) {
+  try {
+    const fn = invokeBackendAction<{ issueId: string; requestId: string }, { success: boolean; issueId: string }>('deleteIssue');
+    const result = await fn({ issueId, requestId: createRequestId() });
+    return result.data;
+  } catch (error) {
+    throw toReadableBackendError(error);
+  }
+}
+
+export async function createComment(
+  issueId: string,
+  input: CommentInput,
+  _author: {
+    uid: string;
+    displayName: string;
+    photoURL: string | null;
+    email: string;
+  },
+  isAdminComment = false,
+) {
+  try {
+    const fn = invokeBackendAction<
+      { issueId: string; content: string; isAdminComment: boolean; requestId: string },
+      { comment: CommentResponseRecord }
+    >('createComment');
+    const result = await fn({
+      issueId,
+      content: input.content,
+      isAdminComment,
+      requestId: createRequestId(),
+    });
+    return normalizeCommentResponse(result.data.comment);
+  } catch (error) {
+    throw toReadableBackendError(error);
+  }
+}
+
+export async function deleteComment(_issueId: string, commentId: string) {
+  try {
+    const fn = invokeBackendAction('deleteComment');
+    await fn({ commentId, requestId: createRequestId() });
+  } catch (error) {
+    throw toReadableBackendError(error);
+  }
+}
