@@ -2,6 +2,7 @@ create schema if not exists app_private;
 create schema if not exists app_api;
 
 create extension if not exists pg_net with schema extensions;
+create extension if not exists pg_trgm with schema extensions;
 
 grant usage on schema app_api to anon, authenticated;
 grant usage on schema app_private to service_role;
@@ -113,6 +114,80 @@ create table if not exists app_private.outbox_events (
   updated_at timestamptz not null default now(),
   expires_at timestamptz not null default now() + interval '30 days'
 );
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'issues_status_check'
+      and conrelid = 'app_private.issues'::regclass
+  ) then
+    alter table app_private.issues
+      add constraint issues_status_check
+      check (status in ('pending', 'under-review', 'processing', 'completed', 'infeasible', 'auto-rejected', 'review-rejected'))
+      not valid;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'issues_title_not_blank'
+      and conrelid = 'app_private.issues'::regclass
+  ) then
+    alter table app_private.issues
+      add constraint issues_title_not_blank
+      check (length(btrim(title)) > 0)
+      not valid;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'issues_content_not_blank'
+      and conrelid = 'app_private.issues'::regclass
+  ) then
+    alter table app_private.issues
+      add constraint issues_content_not_blank
+      check (length(btrim(content)) > 0)
+      not valid;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'comments_content_not_blank'
+      and conrelid = 'app_private.comments'::regclass
+  ) then
+    alter table app_private.comments
+      add constraint comments_content_not_blank
+      check (length(btrim(content)) > 0)
+      not valid;
+  end if;
+end $$;
+
+create index if not exists issues_category_status_created_idx
+  on app_private.issues (category, status, created_at desc, id desc);
+
+create index if not exists issues_author_created_idx
+  on app_private.issues (author_uid, created_at desc, id desc);
+
+create index if not exists comments_issue_created_idx
+  on app_private.comments (issue_id, created_at asc, id asc);
+
+create index if not exists supports_uid_issue_idx
+  on app_private.supports (uid, issue_id);
+
+create index if not exists uploads_owner_status_idx
+  on app_private.uploads (owner_uid, status, created_at desc);
+
+create index if not exists deletion_jobs_claim_idx
+  on app_private.deletion_jobs (status, next_attempt_at, created_at)
+  where status in ('pending', 'failed');
+
+create index if not exists outbox_events_claim_idx
+  on app_private.outbox_events (status, next_attempt_at, occurred_at)
+  where status in ('pending', 'failed');
 
 alter table app_private.user_roles enable row level security;
 alter table app_private.issues enable row level security;

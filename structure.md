@@ -21,7 +21,7 @@
 - vercel.json：Vercel 前端部署設定，包含靜態資源快取規則（assets 長快取、sw.js 不快取）與 SPA fallback rewrite。
 - supabase/config.toml：Supabase 本機與部署設定，限制 Data API 暴露 `app_api`，並設定登入同步、Cloudinary webhook、outbox worker 與刪除工作 Edge Functions 的 JWT 驗證模式。
 - .firebaserc：Firebase 專案綁定設定，請填入自己的 Firebase 專案 ID。
-- .env.example：本機與部署環境變數範本，包含 App 名稱、短名稱、Firebase Auth / FCM public config、Supabase public config 與 App Check site key。
+- .env.example：本機與部署環境變數範本，包含 App 名稱、短名稱、Firebase Auth / FCM public config、Supabase public config 與選配 App Check 開關 / site key。
 - .gitignore：Git 忽略規則。
 - postcss.config.cjs：PostCSS 設定，啟用 Tailwind 與 Autoprefixer。
 - tailwind.config.cjs：Tailwind 主題、色彩與字型設定。
@@ -38,8 +38,8 @@
 ## Supabase 後端服務 (supabase/)
 
 - supabase/config.toml：Supabase 本機與部署設定，限制 Data API 暴露 `app_api`，並設定登入同步、受控 action、Cloudinary webhook、outbox worker 與刪除工作 Edge Functions 的 JWT 驗證模式。
-- supabase/migrations/202607020001_supabase_foundation.sql：Supabase 初始 migration，建立 `app_private` / `app_api` schema、Firebase JWT helper、RLS 基礎、hard delete RPC、outbox batch claim 與 statement-level worker wake-up。
-- supabase/migrations/202607020002_app_backend_actions.sql：補齊提案、公告、留言、通知、推播 token、使用者頭像、圖片 metadata、Notion page mapping 與維護紀錄等 Supabase app tables。
+- supabase/migrations/202607020001_supabase_foundation.sql：Supabase 初始 migration，建立 `app_private` / `app_api` schema、Firebase JWT helper、RLS 基礎、核心資料檢查、查詢索引、hard delete RPC、outbox batch claim 與 statement-level worker wake-up。
+- supabase/migrations/202607020002_app_backend_actions.sql：補齊提案、公告、留言、通知、推播 token、使用者頭像、圖片 metadata、Notion page mapping 與維護紀錄等 Supabase app tables，並維護搜尋欄位、計數同步、updated_at 與常用查詢索引。
 - supabase/functions/backendAction/index.ts：前端受控 action 入口，依 action 處理提案、公告、留言、附議、通知、推播偏好、Dashboard、使用者角色與 Cloudinary 上傳 session。
 - supabase/functions/syncUser/index.ts：Firebase 登入後同步使用者 custom claim 的 Edge Function。
 - supabase/functions/cloudinaryWebhook/index.ts：Cloudinary 上傳完成 webhook，驗證簽章後將 pending upload 轉為 ready。
@@ -209,7 +209,7 @@
 - src/constants/categories.ts：提案分類 generated config 的前端薄包裝，提供路由分類選項、標籤與分類驗證。
 - src/constants/statuses.ts：提案狀態選項、標籤與管理員可調整狀態。
 - src/constants/changelog.ts：手動維護的更新紀錄靜態資料，使用含 version/date/time/items 的 ChangelogEntry / ChangelogBullet 格式，不接 Git history 或後端。
-- src/lib/firebase.ts：Firebase 初始化、環境變數檢查與 Auth / FCM 匯出，選配 reCAPTCHA Enterprise App Check。
+- src/lib/firebase.ts：Firebase 初始化、環境變數檢查與 Auth / FCM 匯出，並在明確啟用時初始化 reCAPTCHA Enterprise App Check。
 - src/lib/supabase.ts：Supabase client 初始化，使用 Firebase ID token 作為 access token，Data API 預設指向 `app_api` schema。
 - src/lib/request-id.ts：產生 operation request id，供建立與異動 action 在重試時維持冪等。
 - src/lib/request.ts：統一 safeFetch、任意 Promise timeout、AbortController 串接、五秒讀取期限、長任務期限與錯誤格式化。

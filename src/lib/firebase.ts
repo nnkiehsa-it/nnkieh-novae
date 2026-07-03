@@ -11,6 +11,7 @@ import { withRequestTimeout } from '@/lib/request';
 
 const allowedDomain = String(import.meta.env.VITE_ALLOWED_DOMAIN ?? '').trim().toLowerCase();
 const firebaseVapidKey = readEnv('VITE_FIREBASE_VAPID_KEY');
+const appCheckEnabled = readEnv('VITE_FIREBASE_APP_CHECK_ENABLED') === 'true';
 
 function readEnv(name: string) {
   return String(import.meta.env[name as keyof ImportMetaEnv] ?? '').trim();
@@ -45,7 +46,7 @@ let appCheckInitError = '';
 if (!firebaseInitError) {
   app = initializeApp(firebaseConfig);
   const appCheckSiteKey = readEnv('VITE_RECAPTCHA_ENTERPRISE_SITE_KEY');
-  if (appCheckSiteKey) {
+  if (appCheckEnabled && appCheckSiteKey) {
     try {
       appCheck = initializeAppCheck(app, {
         provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey),

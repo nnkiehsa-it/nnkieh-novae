@@ -2,6 +2,37 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "提升登入流程穩定性",
+    version: "v1.8.33",
+    date: "2026-07-04",
+    time: "00:09",
+    items: [
+      {
+        title: "修正部分環境登入初始化可能失敗的問題。",
+      },
+      {
+        title: "調整登入安全檢查啟用方式，避免設定異常影響基本登入流程。",
+      },
+    ],
+  },
+  {
+    title: "提升資料同步可靠性",
+    version: "v1.8.32",
+    date: "2026-07-04",
+    time: "00:05",
+    items: [
+      {
+        title: "提升附議、公告互動與留言數量更新的穩定性。",
+      },
+      {
+        title: "優化提案搜尋與列表載入時的資料處理效率。",
+      },
+      {
+        title: "強化內容儲存時的基本資料檢查。",
+      },
+    ],
+  },
+  {
     title: "支援 Notion 提案同步",
     version: "v1.8.31",
     date: "2026-07-03",

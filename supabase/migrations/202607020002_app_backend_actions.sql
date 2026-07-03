@@ -188,12 +188,260 @@ begin
 end;
 $$;
 
+create or replace function app_private.set_issue_derived_fields()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.title_search = lower(btrim(new.title));
+
+  if new.support_goal is not null
+    and new.support_count >= new.support_goal
+    and new.support_met_at is null
+  then
+    new.support_met_at = now();
+  end if;
+
+  return new;
+end;
+$$;
+
+create or replace function app_private.refresh_issue_support_count()
+returns trigger
+language plpgsql
+as $$
+declare
+  changed_issue_id uuid := coalesce(new.issue_id, old.issue_id);
+begin
+  update app_private.issues
+  set support_count = (
+    select count(*)::integer
+    from app_private.supports
+    where supports.issue_id = changed_issue_id
+  )
+  where id = changed_issue_id;
+
+  return null;
+end;
+$$;
+
+create or replace function app_private.refresh_announcement_like_count()
+returns trigger
+language plpgsql
+as $$
+declare
+  changed_announcement_id uuid := coalesce(new.announcement_id, old.announcement_id);
+begin
+  update app_private.announcements
+  set like_count = (
+    select count(*)::integer
+    from app_private.announcement_likes
+    where announcement_likes.announcement_id = changed_announcement_id
+  )
+  where id = changed_announcement_id;
+
+  return null;
+end;
+$$;
+
+create or replace function app_private.refresh_announcement_comment_count()
+returns trigger
+language plpgsql
+as $$
+declare
+  changed_announcement_id uuid := coalesce(new.announcement_id, old.announcement_id);
+begin
+  update app_private.announcements
+  set comment_count = (
+    select count(*)::integer
+    from app_private.announcement_comments
+    where announcement_comments.announcement_id = changed_announcement_id
+  )
+  where id = changed_announcement_id;
+
+  return null;
+end;
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'issues_support_count_non_negative'
+      and conrelid = 'app_private.issues'::regclass
+  ) then
+    alter table app_private.issues
+      add constraint issues_support_count_non_negative
+      check (support_count >= 0)
+      not valid;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'issues_support_goal_positive'
+      and conrelid = 'app_private.issues'::regclass
+  ) then
+    alter table app_private.issues
+      add constraint issues_support_goal_positive
+      check (support_goal is null or support_goal > 0)
+      not valid;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'uploads_dimensions_non_negative'
+      and conrelid = 'app_private.uploads'::regclass
+  ) then
+    alter table app_private.uploads
+      add constraint uploads_dimensions_non_negative
+      check (
+        (width is null or width >= 0)
+        and (height is null or height >= 0)
+        and (size_bytes is null or size_bytes >= 0)
+      )
+      not valid;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'announcements_title_not_blank'
+      and conrelid = 'app_private.announcements'::regclass
+  ) then
+    alter table app_private.announcements
+      add constraint announcements_title_not_blank
+      check (length(btrim(title)) > 0)
+      not valid;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'announcements_content_not_blank'
+      and conrelid = 'app_private.announcements'::regclass
+  ) then
+    alter table app_private.announcements
+      add constraint announcements_content_not_blank
+      check (length(btrim(content)) > 0)
+      not valid;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'announcement_comments_content_not_blank'
+      and conrelid = 'app_private.announcement_comments'::regclass
+  ) then
+    alter table app_private.announcement_comments
+      add constraint announcement_comments_content_not_blank
+      check (length(btrim(content)) > 0)
+      not valid;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'announcements_counts_non_negative'
+      and conrelid = 'app_private.announcements'::regclass
+  ) then
+    alter table app_private.announcements
+      add constraint announcements_counts_non_negative
+      check (like_count >= 0 and comment_count >= 0)
+      not valid;
+  end if;
+end $$;
+
+create index if not exists issues_title_search_trgm_idx
+  on app_private.issues using gin (title_search extensions.gin_trgm_ops);
+
+create index if not exists issues_category_status_support_idx
+  on app_private.issues (category, status, support_count desc, created_at desc, id desc);
+
+create index if not exists private_issue_authors_author_idx
+  on app_private.private_issue_authors (author_uid, created_at desc);
+
+create index if not exists announcements_published_idx
+  on app_private.announcements (published_at desc, id desc);
+
+create index if not exists announcements_like_idx
+  on app_private.announcements (like_count desc, published_at desc, id desc);
+
+create index if not exists announcements_comment_idx
+  on app_private.announcements (comment_count desc, published_at desc, id desc);
+
+create index if not exists announcement_comments_announcement_created_idx
+  on app_private.announcement_comments (announcement_id, created_at asc, id asc);
+
+create index if not exists announcement_likes_uid_announcement_idx
+  on app_private.announcement_likes (uid, announcement_id);
+
+create index if not exists notifications_source_created_idx
+  on app_private.notifications (source, created_at desc, id desc);
+
+create index if not exists notifications_recipient_source_created_idx
+  on app_private.notifications (recipient_uid, source, created_at desc, id desc)
+  where recipient_uid is not null;
+
+create index if not exists push_tokens_token_idx
+  on app_private.push_tokens (token);
+
+create index if not exists maintenance_runs_task_started_idx
+  on app_private.maintenance_runs (task_name, started_at desc);
+
 drop trigger if exists touch_issues_updated_at on app_private.issues;
 create trigger touch_issues_updated_at
 before update on app_private.issues
 for each row execute function app_private.touch_updated_at();
 
+drop trigger if exists set_issue_derived_fields_on_write on app_private.issues;
+create trigger set_issue_derived_fields_on_write
+before insert or update of title, support_count, support_goal on app_private.issues
+for each row execute function app_private.set_issue_derived_fields();
+
 drop trigger if exists touch_announcements_updated_at on app_private.announcements;
 create trigger touch_announcements_updated_at
 before update on app_private.announcements
 for each row execute function app_private.touch_updated_at();
+
+drop trigger if exists touch_comments_updated_at on app_private.comments;
+create trigger touch_comments_updated_at
+before update on app_private.comments
+for each row execute function app_private.touch_updated_at();
+
+drop trigger if exists touch_announcement_comments_updated_at on app_private.announcement_comments;
+create trigger touch_announcement_comments_updated_at
+before update on app_private.announcement_comments
+for each row execute function app_private.touch_updated_at();
+
+drop trigger if exists refresh_issue_support_count_on_insert on app_private.supports;
+create trigger refresh_issue_support_count_on_insert
+after insert on app_private.supports
+for each row execute function app_private.refresh_issue_support_count();
+
+drop trigger if exists refresh_issue_support_count_on_delete on app_private.supports;
+create trigger refresh_issue_support_count_on_delete
+after delete on app_private.supports
+for each row execute function app_private.refresh_issue_support_count();
+
+drop trigger if exists refresh_announcement_like_count_on_insert on app_private.announcement_likes;
+create trigger refresh_announcement_like_count_on_insert
+after insert on app_private.announcement_likes
+for each row execute function app_private.refresh_announcement_like_count();
+
+drop trigger if exists refresh_announcement_like_count_on_delete on app_private.announcement_likes;
+create trigger refresh_announcement_like_count_on_delete
+after delete on app_private.announcement_likes
+for each row execute function app_private.refresh_announcement_like_count();
+
+drop trigger if exists refresh_announcement_comment_count_on_insert on app_private.announcement_comments;
+create trigger refresh_announcement_comment_count_on_insert
+after insert on app_private.announcement_comments
+for each row execute function app_private.refresh_announcement_comment_count();
+
+drop trigger if exists refresh_announcement_comment_count_on_delete on app_private.announcement_comments;
+create trigger refresh_announcement_comment_count_on_delete
+after delete on app_private.announcement_comments
+for each row execute function app_private.refresh_announcement_comment_count();

@@ -372,10 +372,9 @@ async function handleAction(
     } else {
       await supabase.schema("app_private").from("supports").insert({ issue_id: issueId, uid: auth.uid });
     }
-    const { count, error: countError } = await supabase.schema("app_private").from("supports").select("*", { count: "exact", head: true }).eq("issue_id", issueId);
-    if (countError) throw countError;
-    await supabase.schema("app_private").from("issues").update({ support_count: count ?? 0 }).eq("id", issueId);
-    return { success: true, supported: !shouldRemove, support_count: count ?? 0 };
+    const { data: updatedIssue, error: updatedIssueError } = await supabase.schema("app_private").from("issues").select("support_count").eq("id", issueId).single();
+    if (updatedIssueError) throw updatedIssueError;
+    return { success: true, supported: !shouldRemove, support_count: updatedIssue.support_count ?? 0 };
   }
 
   if (action === "deleteIssue") {
@@ -504,9 +503,9 @@ async function handleAction(
     } else {
       await supabase.schema("app_private").from("announcement_likes").delete().eq("announcement_id", announcementId).eq("uid", auth.uid);
     }
-    const { count } = await supabase.schema("app_private").from("announcement_likes").select("*", { count: "exact", head: true }).eq("announcement_id", announcementId);
-    await supabase.schema("app_private").from("announcements").update({ like_count: count ?? 0 }).eq("id", announcementId);
-    return { liked, like_count: count ?? 0 };
+    const { data: announcement, error } = await supabase.schema("app_private").from("announcements").select("like_count").eq("id", announcementId).single();
+    if (error) throw error;
+    return { liked, like_count: announcement.like_count ?? 0 };
   }
 
   if (action === "listAnnouncementComments") {
@@ -527,9 +526,9 @@ async function handleAction(
       is_admin_comment: asBoolean(payload.isAdminComment) && auth.isAdmin,
     }).select("*").single();
     if (error) throw error;
-    const { count } = await supabase.schema("app_private").from("announcement_comments").select("*", { count: "exact", head: true }).eq("announcement_id", announcementId);
-    await supabase.schema("app_private").from("announcements").update({ comment_count: count ?? 0 }).eq("id", announcementId);
-    return { comment: commentToResponse(data as JsonRecord), comment_count: count ?? 0 };
+    const { data: announcement, error: announcementError } = await supabase.schema("app_private").from("announcements").select("comment_count").eq("id", announcementId).single();
+    if (announcementError) throw announcementError;
+    return { comment: commentToResponse(data as JsonRecord), comment_count: announcement.comment_count ?? 0 };
   }
 
   if (action === "deleteAnnouncementComment") {
@@ -538,11 +537,10 @@ async function handleAction(
     if (data && data.author_uid !== auth.uid && !auth.isAdmin) throw new Error("permission-denied");
     const announcementId = data?.announcement_id ?? "";
     await supabase.schema("app_private").from("announcement_comments").delete().eq("id", commentId);
-    const { count } = announcementId
-      ? await supabase.schema("app_private").from("announcement_comments").select("*", { count: "exact", head: true }).eq("announcement_id", announcementId)
-      : { count: 0 };
-    if (announcementId) await supabase.schema("app_private").from("announcements").update({ comment_count: count ?? 0 }).eq("id", announcementId);
-    return { success: true, announcement_id: announcementId, comment_count: count ?? 0 };
+    const { data: announcement } = announcementId
+      ? await supabase.schema("app_private").from("announcements").select("comment_count").eq("id", announcementId).single()
+      : { data: null };
+    return { success: true, announcement_id: announcementId, comment_count: announcement?.comment_count ?? 0 };
   }
 
   if (action === "listNotifications") {
