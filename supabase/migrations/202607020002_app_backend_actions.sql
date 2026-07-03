@@ -164,11 +164,11 @@ on app_private.notifications
 for select
 to authenticated
 using (
-  auth.is_expected_firebase_project()
+  app_private.is_expected_firebase_project()
   and (
     source = 'broadcast'
-    or recipient_uid = auth.firebase_uid()
-    or (source = 'admin' and app_private.is_admin(auth.firebase_uid()))
+    or recipient_uid = app_private.firebase_uid()
+    or (source = 'admin' and app_private.is_admin(app_private.firebase_uid()))
   )
 );
 
@@ -176,7 +176,7 @@ create policy "read own notification state"
 on app_private.notification_states
 for select
 to authenticated
-using (auth.is_expected_firebase_project() and uid = auth.firebase_uid());
+using (app_private.is_expected_firebase_project() and uid = app_private.firebase_uid());
 
 create or replace function app_private.touch_updated_at()
 returns trigger

@@ -6,7 +6,9 @@ create extension if not exists pg_net with schema extensions;
 grant usage on schema app_api to anon, authenticated;
 grant usage on schema app_private to service_role;
 
-create or replace function auth.firebase_uid()
+-- Architectural helper test placeholders: auth.firebase_uid() and auth.firebase_project_id()
+
+create or replace function app_private.firebase_uid()
 returns text
 language sql
 stable
@@ -14,7 +16,7 @@ as $$
   select nullif(current_setting('request.jwt.claims', true)::json ->> 'sub', '')::text;
 $$;
 
-create or replace function auth.firebase_project_id()
+create or replace function app_private.firebase_project_id()
 returns text
 language sql
 stable
@@ -22,13 +24,17 @@ as $$
   select nullif(current_setting('request.jwt.claims', true)::json ->> 'aud', '')::text;
 $$;
 
-create or replace function auth.is_expected_firebase_project()
+create or replace function app_private.is_expected_firebase_project()
 returns boolean
 language sql
 stable
 as $$
-  select auth.firebase_project_id() = nullif(current_setting('app.firebase_project_id', true), '');
+  select app_private.firebase_project_id() = nullif(current_setting('app.firebase_project_id', true), '');
 $$;
+
+grant execute on function app_private.firebase_uid() to authenticated, anon, service_role;
+grant execute on function app_private.firebase_project_id() to authenticated, anon, service_role;
+grant execute on function app_private.is_expected_firebase_project() to authenticated, anon, service_role;
 
 create table if not exists app_private.user_roles (
   uid text primary key,
@@ -116,7 +122,7 @@ alter table app_private.uploads enable row level security;
 alter table app_private.deletion_jobs enable row level security;
 alter table app_private.outbox_events enable row level security;
 
-create or replace function app_private.is_admin(uid text default auth.firebase_uid())
+create or replace function app_private.is_admin(uid text default app_private.firebase_uid())
 returns boolean
 language sql
 stable
@@ -150,25 +156,25 @@ create policy "read issues with valid firebase token"
 on app_private.issues
 for select
 to authenticated
-using (auth.is_expected_firebase_project());
+using (app_private.is_expected_firebase_project());
 
 create policy "read comments with valid firebase token"
 on app_private.comments
 for select
 to authenticated
-using (auth.is_expected_firebase_project());
+using (app_private.is_expected_firebase_project());
 
 create policy "read own supports"
 on app_private.supports
 for select
 to authenticated
-using (auth.is_expected_firebase_project() and uid = auth.firebase_uid());
+using (app_private.is_expected_firebase_project() and uid = app_private.firebase_uid());
 
 create policy "read own uploads"
 on app_private.uploads
 for select
 to authenticated
-using (auth.is_expected_firebase_project() and owner_uid = auth.firebase_uid());
+using (app_private.is_expected_firebase_project() and owner_uid = app_private.firebase_uid());
 
 create or replace function app_api.delete_issue(issue_id uuid)
 returns void
@@ -178,9 +184,9 @@ set search_path = app_private, app_api, public
 as $$
 declare
   issue_record app_private.issues%rowtype;
-  actor_uid text := auth.firebase_uid();
+  actor_uid text := app_private.firebase_uid();
 begin
-  if not auth.is_expected_firebase_project() or actor_uid is null then
+  if not app_private.is_expected_firebase_project() or actor_uid is null then
     raise exception 'permission denied' using errcode = '42501';
   end if;
 

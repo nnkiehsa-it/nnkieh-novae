@@ -34,14 +34,14 @@ test('frontend keeps Firebase limited to Auth, App Check, and FCM', async () => 
   assert.doesNotMatch(firebaseRuntime, /VITE_ADMIN_EMAILS|VITE_FIREBASE_STORAGE_BUCKET|VITE_FIREBASE_FUNCTIONS_REGION/u);
 });
 
-test('Firebase deployment config is hosting-only', async () => {
-  const firebaseJson = await read('firebase.json');
-  const hostingWorkflow = await read('.github/workflows/firebase-hosting-merge.yml');
-  const prWorkflow = await read('.github/workflows/firebase-hosting-pull-request.yml');
+test('Vercel deployment config is hosting-only', async () => {
+  const vercelJson = await read('vercel.json');
+  const hostingWorkflow = await read('.github/workflows/deploy-frontend.yml');
+  const prWorkflow = await read('.github/workflows/verify-pr.yml');
 
-  assert.match(firebaseJson, /"hosting"/u);
-  assert.doesNotMatch(firebaseJson, /"firestore"|"storage"|"functions"/u);
-  assert.match(hostingWorkflow, /--only hosting/u);
+  assert.match(vercelJson, /"headers"/u);
+  assert.match(vercelJson, /"rewrites"/u);
+  assert.match(hostingWorkflow, /npx -y vercel/u);
   assert.match(hostingWorkflow, /VITE_SUPABASE_URL/u);
   assert.match(hostingWorkflow, /VITE_SUPABASE_PUBLISHABLE_KEY/u);
   assert.doesNotMatch(hostingWorkflow, /VITE_ADMIN_EMAILS|VITE_FIREBASE_STORAGE_BUCKET|bootstrap-firebase/u);

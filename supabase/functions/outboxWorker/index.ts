@@ -101,6 +101,24 @@ function notificationForEvent(event: OutboxEvent) {
   return null;
 }
 
+async function markMappedNotionPageDeleted(
+  supabase: ReturnType<typeof createClient>,
+  targetType: string,
+  targetId: string,
+) {
+  const { data, error } = await supabase
+    .schema("app_private")
+    .from("notion_pages")
+    .select("notion_page_id")
+    .eq("target_type", targetType)
+    .eq("target_id", targetId)
+    .maybeSingle();
+  if (error) throw error;
+  if (data?.notion_page_id) {
+    await markNotionPageDeleted(String(data.notion_page_id));
+  }
+}
+
 async function syncNotionForEvent(
   supabase: ReturnType<typeof createClient>,
   event: OutboxEvent,
@@ -117,17 +135,7 @@ async function syncNotionForEvent(
       break;
     case "issue.deleted":
     case "announcement.deleted": {
-      const { data, error } = await supabase
-        .schema("app_private")
-        .from("notion_pages")
-        .select("notion_page_id")
-        .eq("target_type", event.target_type)
-        .eq("target_id", event.target_id)
-        .maybeSingle();
-      if (error) throw error;
-      if (data?.notion_page_id) {
-        await markNotionPageDeleted(String(data.notion_page_id));
-      }
+      await markMappedNotionPageDeleted(supabase, event.target_type, event.target_id);
       break;
     }
     case "announcement.created":
