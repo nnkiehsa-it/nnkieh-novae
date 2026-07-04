@@ -275,6 +275,6 @@
 - tests/architecture.test.mjs：防止舊 Firebase 資料路徑、舊部署目標、未受控後端 action、webhook 驗證與圖片解析流程回歸的靜態測試。
 - .github/workflows/deploy-frontend.yml：前端相關檔案 merge 後，使用 GitHub Environment secrets 執行 Vite build 並以 Vercel CLI 部署（main → production，dev → preview）。
 - .github/workflows/verify-pr.yml：PR 型別、lint、build、架構測試與 audit 驗證工作流。
-- .github/workflows/deploy-backend.yml：Supabase 後端部署工作流，使用 npm / node_modules 快取並先跑架構檢查，再推送 migrations、設定 Edge Function secrets 並部署 Supabase Edge Functions。
+- .github/workflows/deploy-backend.yml：Supabase 後端部署工作流，使用 npm / node_modules 快取並先跑架構檢查，再推送 migrations、以非保留名稱設定 Edge Function secrets 並部署 Supabase Edge Functions。
 
 ---

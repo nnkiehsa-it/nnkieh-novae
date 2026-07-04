@@ -663,7 +663,7 @@ Deno.serve(async (request) => {
 
     const supabase = createClient(
       requireEnv("SUPABASE_URL"),
-      requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
+      requireEnv("APP_SUPABASE_SERVICE_ROLE_KEY"),
       { auth: { persistSession: false } },
     );
     const auth = await requireAuth(supabase, request);

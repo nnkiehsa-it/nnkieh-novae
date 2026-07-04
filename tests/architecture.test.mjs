@@ -62,6 +62,8 @@ test('Supabase backend deployment owns database and Edge Functions', async () =>
   assert.match(workflow, /supabase functions deploy outboxWorker/u);
   assert.match(workflow, /SUPABASE_ACCESS_TOKEN/u);
   assert.match(workflow, /CLOUDINARY_API_SECRET/u);
+  assert.match(workflow, /APP_SUPABASE_SERVICE_ROLE_KEY/u);
+  assert.doesNotMatch(workflow, /^\s+SUPABASE_SERVICE_ROLE_KEY=/mu);
   assert.doesNotMatch(workflow, /firebase-tools|firestore:rules|storage|Cloud Functions/u);
   assert.match(config, /\[functions\.backendAction\]/u);
   assert.match(config, /\[functions\.backendAction\]\s*verify_jwt = false/u);
@@ -121,6 +123,7 @@ test('backendAction covers frontend actions and Cloudinary direct upload', async
   assert.doesNotMatch(uploads, /firebase\/storage|uploadBytes/u);
   assert.match(session, /fetchCurrentUserRole/u);
   assert.match(backendAction, /requireEligibleFirebaseUser/u);
+  assert.match(backendAction, /APP_SUPABASE_SERVICE_ROLE_KEY/u);
   assert.match(backendAction, /requireMethod\(request, "POST"\)/u);
   assert.match(backendAction, /readJsonRecord/u);
   assert.match(backendActionService, /auth\?\.currentUser\?\.getIdToken/u);
