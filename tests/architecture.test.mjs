@@ -59,6 +59,8 @@ test('Supabase backend deployment owns database and Edge Functions', async () =>
   assert.match(workflow, /npm run test:architecture/u);
   assert.match(workflow, /supabase db push/u);
   assert.match(workflow, /supabase functions deploy backendAction/u);
+  assert.match(workflow, /Smoke test backendAction deployment/u);
+  assert.match(workflow, /x-healthcheck-secret/u);
   assert.match(workflow, /supabase functions deploy outboxWorker/u);
   assert.match(workflow, /SUPABASE_ACCESS_TOKEN/u);
   assert.match(workflow, /CLOUDINARY_API_SECRET/u);
@@ -123,7 +125,11 @@ test('backendAction covers frontend actions and Cloudinary direct upload', async
   assert.doesNotMatch(uploads, /firebase\/storage|uploadBytes/u);
   assert.match(session, /fetchCurrentUserRole/u);
   assert.match(backendAction, /requireEligibleFirebaseUser/u);
+  assert.match(backendAction, /healthcheck/u);
+  assert.match(backendAction, /x-healthcheck-secret/u);
   assert.match(backendAction, /APP_SUPABASE_SERVICE_ROLE_KEY/u);
+  assert.match(backendAction, /requestId/u);
+  assert.match(backendAction, /console\.error\(JSON\.stringify/u);
   assert.match(backendAction, /requireMethod\(request, "POST"\)/u);
   assert.match(backendAction, /readJsonRecord/u);
   assert.match(backendActionService, /auth\?\.currentUser\?\.getIdToken/u);

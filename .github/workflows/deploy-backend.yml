@@ -156,3 +156,21 @@ jobs:
           supabase functions deploy cloudinaryWebhook
           supabase functions deploy outboxWorker
           supabase functions deploy processDeletionJobs
+
+      - name: Smoke test backendAction deployment
+        env:
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+        run: |
+          response="$(curl -sS -w '\n%{http_code}' \
+            -X POST "https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/backendAction" \
+            -H "content-type: application/json" \
+            -H "x-healthcheck-secret: ${WEBHOOK_SECRET}" \
+            --data '{"action":"healthcheck","payload":{}}')"
+          status="$(printf '%s' "$response" | tail -n 1)"
+          body="$(printf '%s' "$response" | sed '$d')"
+          printf 'backendAction healthcheck response: %s\n' "$body"
+          if [ "$status" != "200" ] || ! printf '%s' "$body" | grep -q '"ok":true'; then
+            printf 'backendAction healthcheck failed with HTTP %s\n' "$status" >&2
+            exit 1
+          fi

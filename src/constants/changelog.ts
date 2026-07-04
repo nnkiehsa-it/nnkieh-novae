@@ -2,6 +2,31 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "強化後端異常追蹤",
+    version: "v1.8.39",
+    date: "2026-07-04",
+    time: "09:43",
+    items: [
+      {
+        title: "改善後端服務異常時的追蹤資訊，協助更快定位資料讀取問題。",
+      },
+    ],
+  },
+  {
+    title: "強化後端部署檢查",
+    version: "v1.8.38",
+    date: "2026-07-04",
+    time: "09:39",
+    items: [
+      {
+        title: "新增部署後服務檢查，降低設定未套用造成的資料讀取失敗。",
+      },
+      {
+        title: "提升登入後資料初始化流程的部署可靠性。",
+      },
+    ],
+  },
+  {
     title: "修正後端服務設定問題",
     version: "v1.8.37",
     date: "2026-07-04",

@@ -89,6 +89,26 @@ function requireAdmin(auth: AuthContext) {
   if (!auth.isAdmin) throw new Error("permission-denied");
 }
 
+async function handleHealthcheck(request: Request, supabase: ReturnType<typeof createClient>) {
+  const expected = requireEnv("WEBHOOK_SECRET");
+  if (request.headers.get("x-healthcheck-secret") !== expected) {
+    throw new Error("permission-denied");
+  }
+
+  requireEnv("APP_SUPABASE_SERVICE_ROLE_KEY");
+  requireEnv("FIREBASE_WEB_API_KEY");
+  requireEnv("ALLOWED_DOMAIN");
+
+  const { error } = await supabase
+    .schema("app_private")
+    .from("user_roles")
+    .select("uid")
+    .limit(1);
+  if (error) throw error;
+
+  return { ok: true };
+}
+
 async function selectIssue(supabase: ReturnType<typeof createClient>, issueId: string) {
   const { data, error } = await supabase
     .schema("app_private")
@@ -655,9 +675,12 @@ Deno.serve(async (request) => {
   const methodFailure = requireMethod(request, "POST");
   if (methodFailure) return methodFailure;
 
+  const requestId = crypto.randomUUID();
+  let action = "";
+
   try {
     const body = await readJsonRecord(request);
-    const action = asString(body.action);
+    action = asString(body.action);
     const payload = asRecord(body.payload);
     if (!action) throw new Error("missing action");
 
@@ -666,10 +689,22 @@ Deno.serve(async (request) => {
       requireEnv("APP_SUPABASE_SERVICE_ROLE_KEY"),
       { auth: { persistSession: false } },
     );
+    if (action === "healthcheck") {
+      return jsonResponse(await handleHealthcheck(request, supabase));
+    }
+
     const auth = await requireAuth(supabase, request);
     const data = await handleAction(action, payload, auth, supabase);
     return jsonResponse(data);
   } catch (error) {
-    return jsonResponse({ error: errorMessage(error) }, { status: errorStatus(error) });
+    const status = errorStatus(error);
+    console.error(JSON.stringify({
+      action: action || "unknown",
+      error: errorMessage(error),
+      requestId,
+      stack: error instanceof Error ? error.stack : undefined,
+      status,
+    }));
+    return jsonResponse({ error: errorMessage(error), requestId }, { status });
   }
 });
