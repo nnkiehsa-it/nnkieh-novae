@@ -40,7 +40,29 @@ export function textResponse(body: string, init: ResponseInit = {}) {
 }
 
 export function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object") {
+    const record = error as Record<string, unknown>;
+    const code = asString(record.code);
+    const message = asString(record.message);
+    const details = asString(record.details);
+    const hint = asString(record.hint);
+    const parts = [
+      code,
+      message,
+      details ? `details: ${details}` : "",
+      hint ? `hint: ${hint}` : "",
+    ].filter(Boolean);
+    if (parts.length > 0) return parts.join(" | ");
+
+    try {
+      return JSON.stringify(record);
+    } catch {
+      return String(error);
+    }
+  }
+  return String(error);
 }
 
 export function errorStatus(error: unknown) {
