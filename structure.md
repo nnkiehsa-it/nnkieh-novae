@@ -285,5 +285,7 @@
 - .github/workflows/deploy-frontend.yml：前端相關檔案 merge 後，使用 GitHub Environment secrets 執行 Vite build 並以 Vercel CLI 部署（main → production，dev → preview）。
 - .github/workflows/verify-pr.yml：PR 型別、lint、build、架構測試與 audit 驗證工作流。
 - .github/workflows/deploy-backend.yml：Supabase 後端部署工作流，使用 npm / node_modules 快取並先跑架構檢查，再推送 migrations、以非保留名稱設定 Edge Function secrets、部署 Supabase Edge Functions 並打正式 endpoint 做健康檢查。
+- .github/workflows/reset-db.yml：手動觸發的 Supabase 資料庫重置工作流，重置資料庫架構並自動寫入對應環境的 outbox 與 Firebase 參數設定。
+
 
 ---
