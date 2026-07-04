@@ -158,7 +158,7 @@ export function useAnnouncements(options: UseAnnouncementsOptions = {}) {
   }
 
   function refreshAnnouncements() {
-    void loadFirstPage({ silent: currentState.value.announcements.length > 0 });
+    return loadFirstPage({ silent: currentState.value.announcements.length > 0 });
   }
 
   function resetAnnouncements() {
@@ -204,12 +204,12 @@ export function useAnnouncements(options: UseAnnouncementsOptions = {}) {
   }
 
   if (options.immediate) {
-    refreshAnnouncements();
+    void refreshAnnouncements();
   }
 
   watch(sortOption, () => {
     const state = currentState.value;
-    if (state.announcements.length === 0 && !state.loading) refreshAnnouncements();
+    if (state.announcements.length === 0 && !state.loading) void refreshAnnouncements();
   });
 
   onScopeDispose(() => {

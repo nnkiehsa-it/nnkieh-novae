@@ -72,8 +72,11 @@ export function errorStatus(error: unknown) {
   if (message === "not-found") return 404;
   if (message === "missing action" || message.startsWith("Unsupported action:")) return 400;
   if (message === "invalid-json") return 400;
+  if (message === "invalid-issue-category" || message === "support-not-available") return 400;
   if (message === "request-in-progress") return 409;
+  if (message.includes("達到上限") || message.includes("上傳額度已用完")) return 429;
   if (message.endsWith(" is not configured.")) return 503;
+  if (message === "rate-limit-provider-unavailable") return 503;
   return 500;
 }
 

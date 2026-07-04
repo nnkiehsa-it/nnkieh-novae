@@ -8,6 +8,7 @@ import { useIssueSearch } from '@/composables/useIssueSearch';
 import { useSession } from '@/composables/useSession';
 import { useTimedMessage } from '@/composables/useTimedMessage';
 import { useUserIssuesData } from '@/composables/useUserIssuesData';
+import { useIssueListUpdatePrompt } from '@/composables/useContentUpdatePrompt';
 import { resolveViewportPageSize } from '@/lib/page-size';
 import type { IssueRecord, IssueSortOption } from '@/types';
 
@@ -103,6 +104,10 @@ export function useIssueBoardData() {
     pageSize: currentPageSize,
     filterIssues,
   });
+  const {
+    acknowledgeIssueListUpdate,
+    showIssueUpdatePrompt,
+  } = useIssueListUpdatePrompt(activeFilter, statusTab);
 
   const filteredActiveIssues = computed(() => {
     if (isGlobalMode.value && statusTab.value === 'active') {
@@ -228,17 +233,18 @@ export function useIssueBoardData() {
     searchQuery.value = '';
   });
 
-  function refreshCurrentData() {
+  async function refreshCurrentData() {
     document.documentElement.classList.add('no-transitions');
     resetSearchResults();
     stopUserIssuesRequest();
 
     if (activeFilter.value === 'my-proposals') {
       bumpUserIssuesRequestToken();
-      void loadCurrentUserIssues({ silent: true });
+      await loadCurrentUserIssues({ silent: true });
     } else {
-      refreshBucket(statusTab.value);
+      await refreshBucket(statusTab.value);
     }
+    acknowledgeIssueListUpdate();
 
     setTimeout(() => {
       document.documentElement.classList.remove('no-transitions');
@@ -286,9 +292,11 @@ export function useIssueBoardData() {
     currentRefreshing,
     currentError,
     hasMoreCurrentData,
+    showIssueUpdatePrompt,
     loadMoreCurrentData,
     showEmptySearchResult,
     handleSupportChanged,
+    acknowledgeIssueListUpdate,
     handleIssueSubmitted,
     handleIssueUpdated,
     handleIssueDeleted,

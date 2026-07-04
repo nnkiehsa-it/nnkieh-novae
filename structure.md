@@ -44,8 +44,8 @@
 - supabase/migrations/202607041437_grant_service_role_app_private.sql：授權 service role 存取 `app_private` tables 與 sequences，供 Edge Functions 以後端身份執行受控資料操作。
 - supabase/migrations/202607041517_enable_notification_realtime.sql：授權登入使用者依 RLS 讀取通知 realtime 所需資料，並將通知與通知狀態表加入 Supabase Realtime publication。
 - supabase/migrations/202607041750_add_backend_action_idempotency.sql：建立受控 action 冪等鍵資料表與 claim / complete / release RPC，避免同一請求重送造成重複寫入。
-- supabase/functions/backendAction/index.ts：前端受控 action 入口，經共用 Firebase 驗證與 HTTP 邊界確認後查詢使用者角色，依 action 處理提案、公告、留言、附議、通知、推播偏好、Dashboard、使用者角色與 Cloudinary 上傳 session；列表型讀取使用穩定 cursor 分頁，寫入型 action 以 request id 保護重送不重複執行，並提供部署流程使用的受密鑰保護健康檢查。
-- supabase/functions/syncUser/index.ts：Firebase 登入後同步使用者 custom claim 的 Edge Function，與受控 action 共用登入資格驗證。
+- supabase/functions/backendAction/index.ts：前端受控 action 入口，經共用 Firebase 驗證與 HTTP 邊界確認後查詢使用者角色，依 action 處理提案、公告、留言、附議、通知、推播偏好、Dashboard、使用者角色與 Cloudinary 上傳 session；列表型讀取使用穩定 cursor 分頁並套用分類讀取權限與作者欄位清洗，寫入型 action 以 request id 保護重送不重複執行，建立提案依分類決定審核狀態，並在建立提案、留言與圖片上傳 session 前透過 Upstash 套用限流，提供部署流程使用的受密鑰保護健康檢查。
+- supabase/functions/syncUser/index.ts：Firebase 登入後同步使用者 custom claim 與 Supabase app role 的 Edge Function，依 ADMIN_EMAILS 將使用者角色寫入 user_roles，與受控 action 共用登入資格驗證。
 - supabase/functions/cloudinaryWebhook/index.ts：Cloudinary 上傳完成 webhook，限制 POST、驗證簽章並安全解析 payload 後將 pending upload 轉為 ready。
 - supabase/functions/outboxWorker/index.ts：Outbox worker wake-up endpoint，限制 POST 並驗證 secret 後批次 claim pending events，依事件建立廣播或個人通知、將個人推播限制在收件人裝置，並將刪除事件對應的 Notion page 標記為「已刪除」。
 - supabase/functions/processDeletionJobs/index.ts：外部資源刪除工作入口，限制 POST 並驗證 secret 後處理 Cloudinary / Notion 清理，保留失敗的可重試 metadata。
@@ -54,8 +54,11 @@
 - supabase/functions/_shared/firebase-auth.ts：Edge Functions 共用 Firebase ID token lookup、校內網域、email verified 與使用者身份正規化 helper。
 - supabase/functions/_shared/cloudinary.ts：Cloudinary 簽名、直傳參數與 asset 刪除 helper。
 - supabase/functions/_shared/google-oauth.ts：Edge Functions 使用 `npm:google-auth-library` 取得並快取 Google OAuth access token，供 Firebase custom claims 與 FCM HTTP v1 使用。
+- supabase/functions/_shared/issue-categories.ts：由提案分類 config 產生的 Edge Functions 分類權限與行為常數，供受控 action 套用審核、私密讀取、作者隱藏與留言規則。
 - supabase/functions/_shared/fcm.ts：FCM HTTP v1 發送 helper，不依賴 Node Firebase Admin SDK。
 - supabase/functions/_shared/notion.ts：Notion 頁面刪除標記 helper，將外部頁面狀態更新為「已刪除」並保留頁面可查。
+- supabase/functions/_shared/rate-limits.ts：由 rate limit config 產生的 Edge Functions 限流常數，供受控 action 套用提案、留言與圖片上傳頻率限制。
+- supabase/functions/_shared/upstash-rate-limit.ts：Upstash Redis REST 固定時間窗限流 helper，集中計數 key、TTL 與服務不可用錯誤處理。
 - supabase/functions/_shared/webhook.ts：Supabase / Cloudinary webhook shared secret 與簽章驗證 helper。
 
 ---
@@ -109,7 +112,7 @@
 
 ### 應用元件 (src/components/)
 
-- src/components/AppShell.vue：全站外框與 edge-to-edge 頁首，使用 top safe-area inset 延伸到 PWA 狀態列；桌機放置品牌圖示、固定主導航（提案／公告／我的提案／管理員統計）與通知/設定，手機頁首改顯示目前主區塊標題，底部導覽固定為提案、公告、我的提案、通知與設定。
+- src/components/AppShell.vue：全站外框與 edge-to-edge 頁首，使用 top safe-area inset 延伸到 PWA 狀態列；桌機放置品牌圖示、固定主導航（提案／公告／我的提案，管理員另顯示管理員統計）與通知/設定，手機頁首改顯示目前主區塊標題，底部導覽固定為提案、公告、我的提案、通知與設定。
 - src/components/AppStartupScreen.vue：App 啟動時的全螢幕 Loading Gate，使用品牌標誌、App 名稱、安全區 padding 與柔和載入動畫，覆蓋 auth 恢復與必要 session 初始化。
 - src/components/AuthorAvatar.vue：作者頭像 wrapper，依 author uid 查詢最新快取頭像，並以內容上的舊頭像 URL 作為 fallback。
 - src/components/LoginPanel.vue：校內 Google 帳號登入面板，供登入頁使用並維持原本未登入視覺。
@@ -121,6 +124,7 @@
 - src/components/ConfirmDialog.vue：通用確認對話框，沿用共用 DialogOverlay、提示型文字層級、焦點管理與捲動鎖定，固定顯示於一般詳情對話框之上。
 - src/components/ToastViewport.vue：全域 toast 顯示容器，統一呈現成功、資訊與錯誤提示，層級高於 modal dialog。
 - src/components/SegmentedControl.vue：共用分段選項元件，用於分類、狀態與留言模式切換。
+- src/components/ListUpdatePrompt.vue：列表更新提示列，供提案與公告頁在偵測到新內容時提示使用者手動刷新並沿用既有分頁讀取流程。
 - src/components/VoteButtons.vue：附議 / 取消附議按鈕展示層，實際 optimistic UI 與附議流程委派給 `useVoteSupport`。
 - src/components/MarkdownRenderer.vue：將 Markdown 渲染為經 DOMPurify 過濾的安全 HTML，圖片支援尺寸屬性、lazy loading 與預留顯示空間以降低 layout shift。
 - src/components/NotificationBell.vue：頁首右上角 App 內通知中心，使用手機全螢幕面板／桌機右側 popover 呈現未讀數、通知類型圖示、載入與空狀態、分段載入及打開即已讀行為，並依通知目標路由至提案或公告詳情；推播設定統一由頭像設定面板管理。
@@ -197,6 +201,7 @@
 - src/composables/useMarkdown.ts：Markdown 解析與 DOMPurify 消毒，支援 `![alt|寬x高](url)` 圖片尺寸語法、清單續行顯示修正，並輸出 lazy/decode 屬性。
 - src/composables/useResolvedMarkdown.ts：解析 Markdown 中的 `srp-upload://` 圖片，透過 Cloud Function 換取 preview/full signed URL 後供渲染元件使用。
 - src/composables/useNotifications.ts：以共享通知資料源合併 broadcast/admin/user 三來源通知、分來源 cursor 載入更多、閱讀游標與紅點狀態；集中管理 realtime 訂閱與版本，避免多個通知入口建立重複連線或回寫舊帳號快照。
+- src/composables/useContentUpdatePrompt.ts：監聽通知 realtime 中的新增提案與公告事件，只維護列表有新內容提示狀態，資料本體仍交由既有 backendAction 分頁刷新。
 - src/composables/usePushNotifications.ts：Web Push 推播偏好管理，負責瀏覽器支援與權限狀態、目前裝置 service worker token 註冊 / 關閉、通知分類偏好、跨裝置狀態校正與前景訊息 toast。
 - src/composables/useAnnouncements.ts：公告列表依排序快取分段讀取、依螢幕高度決定讀取批量、手動重新整理、底部自動載入更多與載入 / 錯誤狀態管理。
 - src/composables/useAnnouncementManagement.ts：公告頁管理流程，整合公告列表讀取、id 路由選取、單筆讀取、分享、編輯、新增、背景刪除與明確讚狀態。
@@ -273,8 +278,8 @@
 - public/pwa-64x64.png、public/pwa-192x192.png、public/pwa-512x512.png：PWA manifest 一般圖示。
 - public/maskable-icon-512x512.png：PWA maskable 圖示。
 - public/apple-touch-icon-180x180.png：iOS 加入主畫面圖示。
-- scripts/generate-issue-categories.mjs：從 `config/issue-categories.config.json` 產生前端 typed 分類設定。
-- scripts/generate-rate-limits.mjs：從 `config/rate-limits.config.json` 產生前端限流與圖片壓縮常數設定。
+- scripts/generate-issue-categories.mjs：從 `config/issue-categories.config.json` 產生前端、Functions 與 Supabase Edge Functions 共用的 typed 分類設定。
+- scripts/generate-rate-limits.mjs：從 `config/rate-limits.config.json` 產生前端、Functions 與 Supabase Edge Functions 共用的限流與圖片壓縮常數設定。
 - scripts/issue-category-config.mjs：提案分類 config 讀取、驗證與 TypeScript 產生 helper。
 - tests/architecture.test.mjs：防止舊 Firebase 資料路徑、舊部署目標、未受控後端 action、webhook 驗證與圖片解析流程回歸的靜態測試。
 - .github/workflows/deploy-frontend.yml：前端相關檔案 merge 後，使用 GitHub Environment secrets 執行 Vite build 並以 Vercel CLI 部署（main → production，dev → preview）。

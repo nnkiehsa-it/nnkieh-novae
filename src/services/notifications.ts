@@ -1,6 +1,7 @@
 import { getSupabaseClient } from '@/lib/supabase';
 import { isIssueCategory } from '@/constants/categories';
 import type {
+  IssueCategory,
   IssueStatus,
   NotificationRecord,
   NotificationSource,
@@ -19,6 +20,15 @@ const NOTIFICATION_SOURCE_PAGE_SIZE = 10;
 let realtimeChannelSerial = 0;
 
 type NotificationCursor = { createdAtMs: number; id: string } | null;
+export type ContentUpdateKind = 'announcement' | 'issue';
+
+export interface ContentUpdateNotification {
+  actorUid: string | null;
+  category: IssueCategory | null;
+  createdAt: Date | null;
+  kind: ContentUpdateKind;
+  targetId: string;
+}
 
 interface NotificationSourcePage {
   cursor: NotificationCursor;
@@ -132,6 +142,50 @@ function normalizeNotificationRecord(
     new_status: normalizeOptionalStatus(data.new_status),
     is_read: Boolean(data.is_read),
     created_at: normalizeDate(data.created_at_ms ?? data.created_at),
+  };
+}
+
+function normalizeContentUpdateNotification(data: Record<string, unknown>): ContentUpdateNotification | null {
+  const type = normalizeNotificationType(data.type);
+  if (type !== 'issue_created' && type !== 'announcement_created') return null;
+
+  const targetType = normalizeTargetType(data.target_type);
+  if (type === 'issue_created' && targetType !== 'issue') return null;
+  if (type === 'announcement_created' && targetType !== 'announcement') return null;
+
+  const targetId = String(data.target_id ?? '');
+  if (!targetId) return null;
+
+  return {
+    actorUid: normalizeNullableString(data.actor_uid),
+    category: isIssueCategory(data.issue_category) ? data.issue_category : null,
+    createdAt: normalizeDate(data.created_at),
+    kind: targetType,
+    targetId,
+  };
+}
+
+export function subscribeContentUpdateNotifications(
+  uid: string,
+  callback: (notification: ContentUpdateNotification) => void,
+) {
+  const client = getSupabaseClient();
+  const channelName = `content-updates:${uid}:${realtimeChannelSerial += 1}`;
+  const channel = client
+    .channel(channelName)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      filter: 'source=eq.broadcast',
+      schema: 'app_private',
+      table: 'notifications',
+    }, (payload) => {
+      const notification = normalizeContentUpdateNotification(payload.new as Record<string, unknown>);
+      if (notification) callback(notification);
+    })
+    .subscribe();
+
+  return () => {
+    void client.removeChannel(channel);
   };
 }
 

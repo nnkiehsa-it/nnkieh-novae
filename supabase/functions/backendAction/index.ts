@@ -3,6 +3,16 @@ import { requireEnv } from "../_shared/env.ts";
 import { createCloudinaryUploadSignature } from "../_shared/cloudinary.ts";
 import { requireEligibleFirebaseUser } from "../_shared/firebase-auth.ts";
 import {
+  getIssueCategoryConfigOrDefault,
+  isIssueCategory,
+  issueAllowsCommentsForStatus,
+  issueIsPrivateToOwner,
+  issueRequiresReview,
+  issueStoresAuthorPrivately,
+} from "../_shared/issue-categories.ts";
+import { RATE_LIMITS } from "../_shared/rate-limits.ts";
+import { claimFixedWindowRateLimit } from "../_shared/upstash-rate-limit.ts";
+import {
   asRecord,
   asString,
   errorMessage,
@@ -14,6 +24,11 @@ import {
 } from "../_shared/http.ts";
 
 type JsonRecord = Record<string, unknown>;
+const TAIPEI_UTC_OFFSET_MS = 8 * 60 * 60 * 1000;
+const ACTIVE_PUBLIC_STATUSES = ["pending", "processing"];
+const ACTIVE_PRIVATE_STATUSES = ["under-review", "pending", "processing"];
+const CLOSED_PUBLIC_STATUSES = ["auto-rejected", "infeasible", "completed"];
+const CLOSED_PRIVATE_STATUSES = ["auto-rejected", "review-rejected", "infeasible", "completed"];
 
 interface AuthContext {
   email: string;
@@ -44,11 +59,38 @@ function asUuid(value: unknown) {
     : "";
 }
 
+function isAdminEmail(email: string) {
+  const adminEmails = (Deno.env.get("ADMIN_EMAILS") ?? "")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+  return adminEmails.includes(email.toLowerCase());
+}
+
 function toMs(value: unknown) {
   if (!value) return null;
   const date = new Date(String(value));
   const time = date.getTime();
   return Number.isFinite(time) ? time : null;
+}
+
+function taipeiDayWindow(date = new Date()) {
+  const shifted = new Date(date.getTime() + TAIPEI_UTC_OFFSET_MS);
+  const startMs = Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate())
+    - TAIPEI_UTC_OFFSET_MS;
+  return {
+    expiresAt: new Date(startMs + 24 * 60 * 60 * 1000),
+    startsAt: new Date(startMs),
+  };
+}
+
+function utcHourWindow(date = new Date()) {
+  const startsAt = new Date(date);
+  startsAt.setUTCMinutes(0, 0, 0);
+  return {
+    expiresAt: new Date(startsAt.getTime() + 60 * 60 * 1000),
+    startsAt,
+  };
 }
 
 function issueToResponse(issue: JsonRecord) {
@@ -60,6 +102,39 @@ function issueToResponse(issue: JsonRecord) {
     response_deadline_at_ms: toMs(issue.response_deadline_at),
     support_met_at_ms: toMs(issue.support_met_at),
   };
+}
+
+function canReadIssue(issue: JsonRecord, auth: AuthContext) {
+  const category = asString(issue.category);
+  const authorUid = asString(issue.author_uid);
+  const status = asString(issue.status);
+  if (auth.isAdmin || authorUid === auth.uid) return true;
+  if (issueIsPrivateToOwner(category)) return false;
+  if (issueRequiresReview(category) && (status === "under-review" || status === "review-rejected")) return false;
+  return true;
+}
+
+function issueToReadableResponse(issue: JsonRecord, auth: AuthContext) {
+  const response = issueToResponse(issue);
+  const authorUid = asString(issue.author_uid);
+  const shouldHideAuthor = issueStoresAuthorPrivately(asString(issue.category))
+    && !auth.isAdmin
+    && authorUid !== auth.uid;
+  if (!shouldHideAuthor) return response;
+
+  const { author_uid, author_name, author_photo_url, ...publicIssue } = response;
+  void author_uid;
+  void author_name;
+  void author_photo_url;
+  return publicIssue;
+}
+
+function getReadableStatusValues(category: string, statusBucket: string, auth: AuthContext) {
+  const isPrivateRead = auth.isAdmin || issueIsPrivateToOwner(category);
+  if (statusBucket === "closed") {
+    return isPrivateRead ? CLOSED_PRIVATE_STATUSES : CLOSED_PUBLIC_STATUSES;
+  }
+  return isPrivateRead ? ACTIVE_PRIVATE_STATUSES : ACTIVE_PUBLIC_STATUSES;
 }
 
 function commentToResponse(comment: JsonRecord) {
@@ -91,7 +166,7 @@ async function requireAuth(supabase: ReturnType<typeof createClient>, request: R
 
   return {
     email: firebaseUser.email,
-    isAdmin: role?.role === "admin",
+    isAdmin: role?.role === "admin" || isAdminEmail(firebaseUser.email),
     name: firebaseUser.name,
     photoUrl: firebaseUser.photoUrl,
     uid: firebaseUser.uid,
@@ -111,6 +186,9 @@ async function handleHealthcheck(request: Request, supabase: ReturnType<typeof c
   requireEnv("APP_SUPABASE_SERVICE_ROLE_KEY");
   requireEnv("FIREBASE_WEB_API_KEY");
   requireEnv("ALLOWED_DOMAIN");
+  requireEnv("ADMIN_EMAILS");
+  requireEnv("UPSTASH_REDIS_REST_URL");
+  requireEnv("UPSTASH_REDIS_REST_TOKEN");
 
   const { error } = await supabase
     .schema("app_private")
@@ -315,6 +393,12 @@ async function handleAction(
   }
 
   if (action === "createImageUploadSession") {
+    await claimFixedWindowRateLimit(
+      auth.uid,
+      "image_upload.create",
+      taipeiDayWindow(),
+      RATE_LIMITS.imageUploadDaily,
+    );
     const uploadId = crypto.randomUUID();
     const timestamp = Math.floor(Date.now() / 1000);
     const folder = `srp/${auth.uid}`;
@@ -400,16 +484,35 @@ async function handleAction(
   }
 
   if (action === "createIssue") {
+    await claimFixedWindowRateLimit(
+      auth.uid,
+      "issue.create",
+      taipeiDayWindow(),
+      RATE_LIMITS.issueCreateDaily,
+    );
     const title = asString(payload.title);
     const content = asString(payload.content);
     const category = asString(payload.category, "general");
+    if (!isIssueCategory(category)) throw new Error("invalid-issue-category");
+    const categoryConfig = getIssueCategoryConfigOrDefault(category);
+    const now = new Date();
+    const supportDeadlineAt = categoryConfig.support.enabled && categoryConfig.support.deadlineDays
+      ? new Date(now.getTime() + categoryConfig.support.deadlineDays * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+    const responseDeadlineAt = categoryConfig.responseDeadline.start === "created" && categoryConfig.responseDeadline.days !== null
+      ? new Date(now.getTime() + categoryConfig.responseDeadline.days * 24 * 60 * 60 * 1000).toISOString()
+      : null;
     const { data, error } = await supabase.schema("app_private").from("issues").insert({
       author_uid: auth.uid,
       author_name: auth.name,
       author_photo_url: auth.photoUrl,
       category,
       content,
-      status: "pending",
+      response_deadline_at: responseDeadlineAt,
+      status: issueRequiresReview(category) ? "under-review" : "pending",
+      support_deadline_at: supportDeadlineAt,
+      support_enabled: categoryConfig.support.enabled,
+      support_goal: categoryConfig.support.goal,
       title,
       title_search: title.toLowerCase(),
     }).select("*").single();
@@ -421,11 +524,22 @@ async function handleAction(
       actor_uid: auth.uid,
       payload: { category, content, issue_id: data.id, title },
     });
-    return { issue: issueToResponse(data as JsonRecord) };
+    if (issueStoresAuthorPrivately(category)) {
+      const { error: privateAuthorError } = await supabase.schema("app_private").from("private_issue_authors").upsert({
+        author_name: auth.name,
+        author_photo_url: auth.photoUrl,
+        author_uid: auth.uid,
+        issue_id: data.id,
+      }, { onConflict: "issue_id" });
+      if (privateAuthorError) throw privateAuthorError;
+    }
+    return { issue: issueToReadableResponse(data as JsonRecord, auth) };
   }
 
   if (action === "getIssue") {
-    return { issue: issueToResponse(await selectIssue(supabase, asString(payload.issueId))) };
+    const issue = await selectIssue(supabase, asString(payload.issueId));
+    if (!canReadIssue(issue, auth)) throw new Error("not-found");
+    return { issue: issueToReadableResponse(issue, auth) };
   }
 
   if (action === "listIssues" || action === "searchIssues") {
@@ -436,8 +550,13 @@ async function handleAction(
       : asString(payload.sort) === "ending-soon"
         ? "ending-soon"
         : "latest";
+    const category = asString(payload.activeFilter);
+    if (!isIssueCategory(category)) throw new Error("invalid-issue-category");
     let query = supabase.schema("app_private").from("issues").select("*")
-      .eq("category", asString(payload.activeFilter));
+      .eq("category", category);
+    if (issueIsPrivateToOwner(category) && !auth.isAdmin) {
+      query = query.eq("author_uid", auth.uid);
+    }
     if (sort === "most-supported") {
       query = query
         .order("support_count", { ascending: false })
@@ -454,9 +573,7 @@ async function handleAction(
         .order("id", { ascending: false });
     }
     const statusBucket = asString(payload.statusBucket, "active");
-    query = statusBucket === "closed"
-      ? query.in("status", ["auto-rejected", "review-rejected", "infeasible", "completed"])
-      : query.in("status", ["under-review", "pending", "processing"]);
+    query = query.in("status", getReadableStatusValues(category, statusBucket, auth));
     if (action === "searchIssues") {
       query = query.ilike("title_search", `%${asString(payload.titleQuery).toLowerCase()}%`);
     }
@@ -484,7 +601,9 @@ async function handleAction(
     query = query.range(range.from, range.to);
     const { data, error } = await query;
     if (error) throw error;
-    const rows = (data ?? []).map((issue) => issueToResponse(issue as JsonRecord));
+    const rows = (data ?? [])
+      .filter((issue) => canReadIssue(issue as JsonRecord, auth))
+      .map((issue) => issueToReadableResponse(issue as JsonRecord, auth));
     const lastIssue = rows[Math.min(pageSize - 1, rows.length - 1)];
     return {
       cursor: rows.length > pageSize && lastIssue
@@ -504,7 +623,7 @@ async function handleAction(
   if (action === "listUserIssues") {
     const { data, error } = await supabase.schema("app_private").from("issues").select("*").eq("author_uid", auth.uid).order("created_at", { ascending: false }).limit(100);
     if (error) throw error;
-    return { issues: (data ?? []).map((issue) => issueToResponse(issue as JsonRecord)) };
+    return { issues: (data ?? []).map((issue) => issueToReadableResponse(issue as JsonRecord, auth)) };
   }
 
   if (action === "listMySupportedIssueIds") {
@@ -519,7 +638,9 @@ async function handleAction(
       : (Array.isArray(payload.issueIds) ? payload.issueIds.map((id) => asString(id)).filter(Boolean) : []);
     const { data, error } = await supabase.schema("app_private").from("private_issue_authors").select("*").in("issue_id", ids);
     if (error) throw error;
-    const authors = Object.fromEntries((data ?? []).map((author) => [author.issue_id, author]));
+    const authors = Object.fromEntries((data ?? [])
+      .filter((author) => auth.isAdmin || author.author_uid === auth.uid)
+      .map((author) => [author.issue_id, author]));
     return action === "getPrivateIssueAuthor" ? { author: authors[ids[0]] ?? {} } : { authors };
   }
 
@@ -527,8 +648,24 @@ async function handleAction(
     requireAdmin(auth);
     const issueId = asString(payload.issueId);
     const oldIssue = await selectIssue(supabase, issueId);
+    const nextStatus = asString(payload.status, "pending");
+    const updateFields: JsonRecord = {
+      review_rejection_reason: asString(payload.reason) || null,
+      status: nextStatus,
+    };
+    const responseDeadlineDays = getIssueCategoryConfigOrDefault(asString(oldIssue.category)).responseDeadline.days;
+    const responseDeadlineStart = getIssueCategoryConfigOrDefault(asString(oldIssue.category)).responseDeadline.start;
+    if (nextStatus === "pending" && responseDeadlineStart === "support-met") {
+      const supportDeadlineDays = getIssueCategoryConfigOrDefault(asString(oldIssue.category)).support.deadlineDays;
+      updateFields.support_deadline_at = supportDeadlineDays !== null
+        ? new Date(Date.now() + supportDeadlineDays * 24 * 60 * 60 * 1000).toISOString()
+        : null;
+    }
+    if (nextStatus === "processing" && responseDeadlineDays !== null) {
+      updateFields.response_deadline_at = new Date(Date.now() + responseDeadlineDays * 24 * 60 * 60 * 1000).toISOString();
+    }
     const { data, error } = await supabase.schema("app_private").from("issues")
-      .update({ status: asString(payload.status, "pending"), review_rejection_reason: asString(payload.reason) || null })
+      .update(updateFields)
       .eq("id", issueId)
       .select("*")
       .single();
@@ -540,11 +677,14 @@ async function handleAction(
       actor_uid: auth.uid,
       payload: { old_status: oldIssue.status, new_status: data.status, title: data.title, issue_category: data.category },
     });
-    return { issue: issueToResponse(data as JsonRecord) };
+    return { issue: issueToReadableResponse(data as JsonRecord, auth) };
   }
 
   if (action === "toggleSupport" || action === "removeSupport") {
     const issueId = asString(payload.issueId);
+    const issue = await selectIssue(supabase, issueId);
+    if (!canReadIssue(issue, auth)) throw new Error("not-found");
+    if (asString(issue.status) !== "pending") throw new Error("support-not-available");
     const { data: existing, error: existingError } = await supabase.schema("app_private").from("supports").select("issue_id").eq("issue_id", issueId).eq("uid", auth.uid).maybeSingle();
     if (existingError) throw existingError;
     const shouldRemove = action === "removeSupport" || existing;
@@ -576,6 +716,10 @@ async function handleAction(
 
   if (action === "listComments") {
     const pageSize = 20;
+    const issue = await selectIssue(supabase, asString(payload.issueId));
+    if (!canReadIssue(issue, auth) || !issueAllowsCommentsForStatus(asString(issue.category), asString(issue.status))) {
+      throw new Error("not-found");
+    }
     let query = supabase.schema("app_private").from("comments").select("*").eq("issue_id", asString(payload.issueId));
     query = applyAscendingDateCursor(query, readCursor(payload), "created_at");
     const { data, error } = await query.order("created_at", { ascending: true }).order("id", { ascending: true }).limit(pageSize + 1);
@@ -590,7 +734,17 @@ async function handleAction(
   }
 
   if (action === "createComment") {
+    await claimFixedWindowRateLimit(
+      auth.uid,
+      "comment.create",
+      utcHourWindow(),
+      RATE_LIMITS.commentCreateHourly,
+    );
     const issueId = asString(payload.issueId);
+    const issue = await selectIssue(supabase, issueId);
+    if (!canReadIssue(issue, auth) || !issueAllowsCommentsForStatus(asString(issue.category), asString(issue.status))) {
+      throw new Error("permission-denied");
+    }
     const { data, error } = await supabase.schema("app_private").from("comments").insert({
       issue_id: issueId,
       author_uid: auth.uid,
@@ -732,6 +886,12 @@ async function handleAction(
   }
 
   if (action === "createAnnouncementComment") {
+    await claimFixedWindowRateLimit(
+      auth.uid,
+      "comment.create",
+      utcHourWindow(),
+      RATE_LIMITS.commentCreateHourly,
+    );
     const announcementId = asString(payload.announcementId);
     const { data, error } = await supabase.schema("app_private").from("announcement_comments").insert({
       announcement_id: announcementId,

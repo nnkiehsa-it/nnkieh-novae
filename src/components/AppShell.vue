@@ -116,7 +116,7 @@ import { useIssueRouteFilter } from '@/composables/useIssueRouteFilter';
 import { useSession } from '@/composables/useSession';
 import { useNotifications } from '@/composables/useNotifications';
 
-const { isAllowedUser } = useSession();
+const { isAdmin, isAllowedUser } = useSession();
 const { activeFilter } = useIssueRouteFilter();
 const { hasUnread } = useNotifications();
 const route = useRoute();
@@ -126,26 +126,37 @@ const isAnnouncementRouteActive = computed(() =>
   route.name === 'announcements' || route.name === 'announcement-detail'
 );
 const isMyProposalsRouteActive = computed(() => isIssueRouteActive.value && activeFilter.value === 'my-proposals');
-const navItems = computed(() => [
-  {
-    isActive: isIssueRouteActive.value && activeFilter.value !== 'my-proposals',
-    key: 'issues',
-    label: '提案',
-    to: { name: 'issues', params: { filter: DEFAULT_ISSUE_ROUTE_FILTER } },
-  },
-  {
-    isActive: isAnnouncementRouteActive.value,
-    key: 'announcements',
-    label: '公告',
-    to: { name: 'announcements' },
-  },
-  {
-    isActive: isMyProposalsRouteActive.value,
-    key: 'my-proposals',
-    label: '我的提案',
-    to: { name: 'issues', params: { filter: 'my-proposals' } },
-  },
-]);
+const navItems = computed(() => {
+  const items = [
+    {
+      isActive: isIssueRouteActive.value && activeFilter.value !== 'my-proposals',
+      key: 'issues',
+      label: '提案',
+      to: { name: 'issues', params: { filter: DEFAULT_ISSUE_ROUTE_FILTER } },
+    },
+    {
+      isActive: isAnnouncementRouteActive.value,
+      key: 'announcements',
+      label: '公告',
+      to: { name: 'announcements' },
+    },
+    {
+      isActive: isMyProposalsRouteActive.value,
+      key: 'my-proposals',
+      label: '我的提案',
+      to: { name: 'issues', params: { filter: 'my-proposals' } },
+    },
+  ];
+  if (isAdmin.value) {
+    items.push({
+      isActive: route.name === 'dashboard',
+      key: 'dashboard',
+      label: '管理員統計',
+      to: { name: 'dashboard' },
+    });
+  }
+  return items;
+});
 const mobileRouteNavItems = computed(() => [
   {
     icon: 'comment' as const,
@@ -200,6 +211,7 @@ function setNavElement(key: string, element: Element | { $el?: Element } | null)
 function activeNavKey() {
   if (isAnnouncementRouteActive.value) return 'announcements';
   if (isMyProposalsRouteActive.value) return 'my-proposals';
+  if (route.name === 'dashboard') return 'dashboard';
   if (isIssueRouteActive.value) return 'issues';
   return '';
 }
@@ -225,7 +237,7 @@ function updateUnderline() {
 }
 
 watch(
-  [activeFilter, isAllowedUser, () => route.name],
+  [activeFilter, isAllowedUser, isAdmin, () => route.name],
   () => {
     updateUnderline();
   },

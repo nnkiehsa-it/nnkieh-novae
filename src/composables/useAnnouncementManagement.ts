@@ -1,6 +1,7 @@
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAnnouncements } from '@/composables/useAnnouncements';
+import { useAnnouncementListUpdatePrompt } from '@/composables/useContentUpdatePrompt';
 import { useSession } from '@/composables/useSession';
 import { useShareUrl } from '@/composables/useShareUrl';
 import { useToast } from '@/composables/useToast';
@@ -25,6 +26,10 @@ export function useAnnouncementManagement() {
   const { showToast } = useToast();
   const { copyShareUrl } = useShareUrl();
   const sortOption = ref<AnnouncementSortOption>('latest');
+  const {
+    acknowledgeAnnouncementListUpdate,
+    showAnnouncementUpdatePrompt,
+  } = useAnnouncementListUpdatePrompt();
   const {
     announcements,
     loading,
@@ -230,15 +235,21 @@ export function useAnnouncementManagement() {
     }));
   }
 
+  async function refreshAnnouncementList() {
+    await refreshAnnouncements();
+    acknowledgeAnnouncementListUpdate();
+  }
+
   watch(
     [initialized, isAllowedUser],
     ([ready, allowed]) => {
       if (!ready) return;
       if (allowed) {
-        refreshAnnouncements();
+        void refreshAnnouncementList();
         return;
       }
       resetAnnouncements();
+      acknowledgeAnnouncementListUpdate();
     },
     { immediate: true },
   );
@@ -290,7 +301,8 @@ export function useAnnouncementManagement() {
     error,
     hasMore,
     loadMoreAnnouncements,
-    refreshAnnouncements,
+    showAnnouncementUpdatePrompt,
+    refreshAnnouncements: refreshAnnouncementList,
     selectedAnnouncementId,
     selectedAnnouncement,
     selectedAnnouncementInitialTab,

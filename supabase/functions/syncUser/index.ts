@@ -1,3 +1,4 @@
+import { createClient } from "npm:@supabase/supabase-js@2";
 import { requireEnv } from "../_shared/env.ts";
 import { requireEligibleFirebaseUser } from "../_shared/firebase-auth.ts";
 import { getGoogleAccessToken } from "../_shared/google-oauth.ts";
@@ -12,6 +13,14 @@ function parseCustomAttributes(value: string) {
   }
 }
 
+function isAdminEmail(email: string) {
+  return requireEnv("ADMIN_EMAILS")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean)
+    .includes(email.toLowerCase());
+}
+
 Deno.serve(async (request) => {
   const preflight = handleCorsPreflight(request);
   if (preflight) return preflight;
@@ -22,6 +31,7 @@ Deno.serve(async (request) => {
   try {
     const projectId = requireEnv("FIREBASE_PROJECT_ID");
     const user = await requireEligibleFirebaseUser(request);
+    const appRole = isAdminEmail(user.email) ? "admin" : "user";
 
     const accessToken = await getGoogleAccessToken([
       "https://www.googleapis.com/auth/identitytoolkit",
@@ -48,7 +58,18 @@ Deno.serve(async (request) => {
       throw new Error(`Firebase custom claim update failed: ${await updateResponse.text()}`);
     }
 
-    return jsonResponse({ ok: true, role: "authenticated" });
+    const supabase = createClient(
+      requireEnv("SUPABASE_URL"),
+      requireEnv("APP_SUPABASE_SERVICE_ROLE_KEY"),
+      { auth: { persistSession: false } },
+    );
+    const { error } = await supabase
+      .schema("app_private")
+      .from("user_roles")
+      .upsert({ role: appRole, uid: user.uid, updated_at: new Date().toISOString() }, { onConflict: "uid" });
+    if (error) throw error;
+
+    return jsonResponse({ ok: true, role: "authenticated", userRole: appRole });
   } catch (error) {
     return jsonResponse({ ok: false, error: errorMessage(error) }, { status: errorStatus(error) });
   }

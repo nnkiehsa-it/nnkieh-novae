@@ -2,6 +2,37 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "修正提案權限與管理員入口",
+    version: "v1.8.48",
+    date: "2026-07-04",
+    time: "21:52",
+    items: [
+      {
+        title: "修正需審核提案在核准前的顯示範圍。",
+      },
+      {
+        title: "修正私密提案僅限本人與管理員查看。",
+      },
+      {
+        title: "恢復管理員統計與管理操作入口顯示。",
+      },
+    ],
+  },
+  {
+    title: "改善列表更新與操作防護",
+    version: "v1.8.47",
+    date: "2026-07-04",
+    time: "21:43",
+    items: [
+      {
+        title: "新增提案與公告列表更新提示，方便查看最新內容。",
+      },
+      {
+        title: "強化提案、留言與圖片上傳的操作頻率防護。",
+      },
+    ],
+  },
+  {
     title: "提升操作送出穩定性",
     version: "v1.8.46",
     date: "2026-07-04",

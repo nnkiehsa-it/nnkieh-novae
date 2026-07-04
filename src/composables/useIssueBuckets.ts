@@ -164,7 +164,7 @@ export function useIssueBuckets(deps: BucketDeps) {
     bumpBucketVersion(bucket);
     bucket.cursor = null;
     bucket.hasMore = true;
-    void loadBucket(statusBucket, { silent: true });
+    return loadBucket(statusBucket, { silent: true });
   }
 
   function loadMoreBucket(statusBucket: IssueStatusBucket) {
