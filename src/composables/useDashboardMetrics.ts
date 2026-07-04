@@ -74,9 +74,9 @@ export function useDashboardMetrics(
         toneClass: operations.value.failed_notion_sync_count > 0 ? 'text-error' : operations.value.pending_notion_sync_count > 0 ? 'text-warning' : 'text-emerald-600 dark:text-emerald-300',
       },
       {
-        label: 'Outbox 事件',
+        label: '通知與同步',
         value: `${formatCappedCount(operations.value.failed_outbox_count, operations.value.failed_outbox_capped)} 失敗`,
-        detail: '通知與同步事件的 durable queue',
+        detail: '通知、同步與清理工作的處理結果',
         statusLabel: operations.value.failed_outbox_count > 0 ? '需處理' : '正常',
         toneClass: operations.value.failed_outbox_count > 0 ? 'text-error' : 'text-emerald-600 dark:text-emerald-300',
       },
@@ -90,14 +90,14 @@ export function useDashboardMetrics(
       {
         label: '圖片上傳',
         value: `${formatCappedCount(operations.value.stuck_upload_count, operations.value.stuck_upload_capped)} 卡住`,
-        detail: '超過 20 分鐘仍在 uploading / processing / pending / deleting',
+        detail: '超過 20 分鐘仍未完成的圖片處理',
         statusLabel: operations.value.stuck_upload_count > 0 ? '需清理' : '正常',
         toneClass: operations.value.stuck_upload_count > 0 ? 'text-warning' : 'text-emerald-600 dark:text-emerald-300',
       },
       {
         label: '刪除清理',
         value: `${formatCappedCount(operations.value.cleanup_backlog_count, operations.value.cleanup_backlog_capped)} 待清`,
-        detail: '提案、公告與留言的軟刪除 backlog',
+        detail: '外部圖片與同步頁面的清理工作',
         statusLabel: operations.value.cleanup_backlog_count > 0 ? '待維護' : '正常',
         toneClass: operations.value.cleanup_backlog_count > 0 ? 'text-warning' : 'text-emerald-600 dark:text-emerald-300',
       },

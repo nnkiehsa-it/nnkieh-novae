@@ -7,6 +7,7 @@ import {
   syncAnnouncementCreatedToNotion,
   syncIssueCommentToNotion,
   syncIssueCreatedToNotion,
+  syncIssueSupportToNotion,
   syncIssueStatusChangedToNotion,
 } from "../_shared/notion.ts";
 import { requireBearerSecret } from "../_shared/webhook.ts";
@@ -32,6 +33,18 @@ function preview(value: unknown) {
 function notificationForEvent(event: OutboxEvent) {
   const title = asString(event.payload.title, event.event_type);
   if (event.event_type === "issue.created") {
+    if (asString(event.payload.status) === "under-review") {
+      return {
+        source: "admin",
+        type: "issue_created",
+        target_type: "issue",
+        target_id: event.target_id,
+        title: `新提案待審核：${title}`,
+        actor_uid: event.actor_uid,
+        body_preview: preview(event.payload.content),
+        issue_category: asString(event.payload.category),
+      };
+    }
     return {
       source: "broadcast",
       type: "issue_created",
@@ -51,7 +64,22 @@ function notificationForEvent(event: OutboxEvent) {
       target_id: event.target_id,
       title: "提案有新的留言",
       actor_uid: event.actor_uid,
+      actor_name: asString(event.payload.author_name),
+      actor_photo_url: asString(event.payload.author_photo_url),
       body_preview: preview(event.payload.content),
+      issue_category: asString(event.payload.issue_category),
+    };
+  }
+  if (event.event_type === "support.goal_met") {
+    return {
+      source: "user",
+      type: "support_goal_met",
+      target_type: "issue",
+      target_id: event.target_id,
+      title: `提案已達附議門檻：${title}`,
+      actor_uid: event.actor_uid,
+      body_preview: `${asString(event.payload.new_support_count)}/${asString(event.payload.support_goal)}`,
+      issue_category: asString(event.payload.issue_category),
     };
   }
   if (event.event_type === "issue.status_changed") {
@@ -62,6 +90,7 @@ function notificationForEvent(event: OutboxEvent) {
       target_id: event.target_id,
       title: `提案狀態已更新：${title}`,
       actor_uid: event.actor_uid,
+      body_preview: preview(event.payload.reason),
       old_status: asString(event.payload.old_status),
       new_status: asString(event.payload.new_status),
       issue_category: asString(event.payload.issue_category),
@@ -90,16 +119,38 @@ function notificationForEvent(event: OutboxEvent) {
   }
   if (event.event_type === "announcement.comment_created") {
     return {
-      source: "broadcast",
+      source: "admin",
       type: "announcement_comment_created",
       target_type: "announcement",
       target_id: event.target_id,
       title: "公告有新的留言",
       actor_uid: event.actor_uid,
+      actor_name: asString(event.payload.author_name),
+      actor_photo_url: asString(event.payload.author_photo_url),
       body_preview: preview(event.payload.content),
     };
   }
   return null;
+}
+
+function notificationForReviewApproval(event: OutboxEvent) {
+  if (
+    event.event_type !== "issue.status_changed"
+    || asString(event.payload.old_status) !== "under-review"
+    || asString(event.payload.new_status) !== "pending"
+  ) {
+    return null;
+  }
+  const title = asString(event.payload.title, event.event_type);
+  return {
+    source: "broadcast",
+    type: "issue_created",
+    target_type: "issue",
+    target_id: event.target_id,
+    title: `新增提案：${title}`,
+    actor_uid: event.actor_uid,
+    issue_category: asString(event.payload.issue_category),
+  };
 }
 
 async function findIssueAuthorUid(
@@ -130,6 +181,7 @@ async function resolveNotification(
     event.event_type === "issue.comment_created"
     || event.event_type === "issue.status_changed"
     || event.event_type === "issue.deleted"
+    || event.event_type === "support.goal_met"
   ) {
     const recipientUid = await findIssueAuthorUid(supabase, event);
     if (!recipientUid || recipientUid === event.actor_uid) return null;
@@ -171,6 +223,11 @@ async function syncNotionForEvent(
     case "issue.comment_created":
       await syncIssueCommentToNotion(supabase, event.target_id);
       break;
+    case "support.created":
+    case "support.deleted":
+    case "support.goal_met":
+      await syncIssueSupportToNotion(supabase, event.target_id);
+      break;
     case "issue.deleted":
     case "announcement.deleted": {
       await markMappedNotionPageDeleted(supabase, event.target_type, event.target_id);
@@ -191,27 +248,83 @@ async function sendPushes(
   let query = supabase
     .schema("app_private")
     .from("push_tokens")
-    .select("token")
+    .select("uid,token")
     .limit(200);
+  const source = asString(notification.source);
   const recipientUid = asString(notification.recipient_uid);
   if (recipientUid) {
     query = query.eq("uid", recipientUid);
+  } else if (source === "admin") {
+    const { data: roles, error: roleError } = await supabase
+      .schema("app_private")
+      .from("user_roles")
+      .select("uid")
+      .eq("role", "admin")
+      .limit(200);
+    if (roleError) throw roleError;
+    const adminUids = (roles ?? []).map((role) => asString(role.uid)).filter(Boolean);
+    if (adminUids.length === 0) return;
+    query = query.in("uid", adminUids);
   }
   const { data, error } = await query;
   if (error) throw error;
 
-  await Promise.allSettled((data ?? []).map((row) => sendFcmMessage({
-    token: row.token,
-    notification: {
-      title: asString(notification.title),
-      body: asString(notification.body_preview),
-    },
-    data: {
-      target_id: asString(notification.target_id),
-      target_type: asString(notification.target_type),
-      type: asString(notification.type),
-    },
-  })));
+  const notificationType = asString(notification.type);
+  const recipientUids = [...new Set((data ?? []).map((row) => asString(row.uid)).filter(Boolean))];
+  const preferences = new Map<string, { comments: boolean; issueUpdates: boolean }>();
+  if (recipientUids.length > 0) {
+    const { data: states, error: stateError } = await supabase
+      .schema("app_private")
+      .from("notification_states")
+      .select("uid,push_comments_enabled,push_issue_updates_enabled")
+      .in("uid", recipientUids);
+    if (stateError) throw stateError;
+    for (const state of states ?? []) {
+      preferences.set(String(state.uid), {
+        comments: state.push_comments_enabled !== false,
+        issueUpdates: state.push_issue_updates_enabled !== false,
+      });
+    }
+  }
+
+  await Promise.all((data ?? []).map(async (row) => {
+    const uid = asString(row.uid);
+    const preference = preferences.get(uid) ?? { comments: true, issueUpdates: true };
+    const isComment = notificationType === "issue_comment_created" || notificationType === "announcement_comment_created";
+    const isIssueUpdate = notificationType === "issue_status_changed" || notificationType === "issue_deleted" || notificationType === "support_goal_met";
+    if ((isComment && !preference.comments) || (isIssueUpdate && !preference.issueUpdates)) return;
+
+    try {
+      await sendFcmMessage({
+        token: row.token,
+        notification: {
+          title: asString(notification.title),
+          body: asString(notification.body_preview),
+        },
+        data: {
+          target_id: asString(notification.target_id),
+          target_type: asString(notification.target_type),
+          type: notificationType,
+        },
+      });
+      await supabase.schema("app_private").from("push_delivery_logs").insert({
+        notification_type: notificationType,
+        status: "sent",
+        target_id: asString(notification.target_id),
+        target_type: asString(notification.target_type),
+        token_uid: uid,
+      });
+    } catch (error) {
+      await supabase.schema("app_private").from("push_delivery_logs").insert({
+        error_message: errorMessage(error),
+        notification_type: notificationType,
+        status: "failed",
+        target_id: asString(notification.target_id),
+        target_type: asString(notification.target_type),
+        token_uid: uid,
+      });
+    }
+  }));
 }
 
 async function processEvent(supabase: ReturnType<typeof createClient>, event: OutboxEvent) {
@@ -225,14 +338,26 @@ async function processEvent(supabase: ReturnType<typeof createClient>, event: Ou
       .insert(notification);
     if (error) throw error;
     await sendPushes(supabase, notification);
-    return;
   }
+
+  const approvalNotification = notificationForReviewApproval(event);
+  if (approvalNotification) {
+    const { error } = await supabase
+      .schema("app_private")
+      .from("notifications")
+      .insert(approvalNotification);
+    if (error) throw error;
+    await sendPushes(supabase, approvalNotification);
+  }
+
+  if (notification || approvalNotification) return;
 
   if (
     event.event_type === "announcement.updated"
     || event.event_type === "announcement.deleted"
     || event.event_type === "support.created"
     || event.event_type === "support.deleted"
+    || event.event_type === "support.goal_met"
   ) {
     return;
   }

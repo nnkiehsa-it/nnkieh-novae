@@ -80,6 +80,7 @@ test('Supabase schema includes RLS helpers, app tables, and hard-delete support'
     await read('supabase/migrations/202607041437_grant_service_role_app_private.sql'),
     await read('supabase/migrations/202607041517_enable_notification_realtime.sql'),
     await read('supabase/migrations/202607041750_add_backend_action_idempotency.sql'),
+    await read('supabase/migrations/202607050004_add_push_delivery_logs.sql'),
   ].join('\n');
 
   assert.match(migrations, /create schema if not exists app_private/u);
@@ -109,10 +110,28 @@ test('Supabase schema includes RLS helpers, app tables, and hard-delete support'
   assert.match(migrations, /create or replace function app_api\.claim_idempotency_key/u);
   assert.match(migrations, /create or replace function app_api\.complete_idempotency_key/u);
   assert.match(migrations, /create or replace function app_api\.release_idempotency_key/u);
+  assert.match(migrations, /create table if not exists app_private\.push_delivery_logs/u);
 });
 
 test('backendAction covers frontend actions and Cloudinary direct upload', async () => {
-  const backendAction = await read('supabase/functions/backendAction/index.ts');
+  const backendAction = [
+    await read('supabase/functions/backendAction/index.ts'),
+    await read('supabase/functions/backendAction/auth.ts'),
+    await read('supabase/functions/backendAction/users.ts'),
+    await read('supabase/functions/backendAction/uploads.ts'),
+    await read('supabase/functions/backendAction/issues.ts'),
+    await read('supabase/functions/backendAction/issue-create.ts'),
+    await read('supabase/functions/backendAction/issue-delete.ts'),
+    await read('supabase/functions/backendAction/issue-comments.ts'),
+    await read('supabase/functions/backendAction/issue-moderation.ts'),
+    await read('supabase/functions/backendAction/issue-support.ts'),
+    await read('supabase/functions/backendAction/announcements.ts'),
+    await read('supabase/functions/backendAction/announcement-comments.ts'),
+    await read('supabase/functions/backendAction/announcement-read.ts'),
+    await read('supabase/functions/backendAction/announcement-write.ts'),
+    await read('supabase/functions/backendAction/notifications.ts'),
+    await read('supabase/functions/backendAction/dashboard.ts'),
+  ].join('\n');
   const firebaseAuth = await read('supabase/functions/_shared/firebase-auth.ts');
   const http = await read('supabase/functions/_shared/http.ts');
   const uploads = await read('src/services/uploads.ts');
@@ -188,6 +207,8 @@ test('outbox, webhooks, FCM, and Notion deletion marks are guarded', async () =>
   assert.match(outboxWorker, /claim_outbox_events/u);
   assert.match(outboxWorker, /batch_size: 100/u);
   assert.match(outboxWorker, /sendFcmMessage/u);
+  assert.match(outboxWorker, /push_delivery_logs/u);
+  assert.match(outboxWorker, /push_comments_enabled/u);
   assert.match(outboxWorker, /markMappedNotionPageDeleted/u);
   assert.doesNotMatch(outboxWorker, /event_id.*request\.json/u);
   assert.match(cloudinary, /image\/destroy/u);
@@ -204,11 +225,20 @@ test('outbox, webhooks, FCM, and Notion deletion marks are guarded', async () =>
   assert.match(deletionJobs, /errorMessage/u);
   assert.match(deletionJobs, /markNotionPageDeleted/u);
   assert.match(notion, /name: "已刪除"/u);
+  assert.match(notion, /ensureSelectOption/u);
+  assert.match(notion, /"分類": \{ select: \{ name: categoryLabel \} \}/u);
+  assert.match(notion, /"狀態": \{ select: \{ name: statusLabel \} \}/u);
   assert.doesNotMatch(notion, /archived: true/u);
 });
 
 test('backend list actions use stable cursor pagination at the service boundary', async () => {
-  const backendAction = await read('supabase/functions/backendAction/index.ts');
+  const backendAction = [
+    await read('supabase/functions/backendAction/utils.ts'),
+    await read('supabase/functions/backendAction/issue-read.ts'),
+    await read('supabase/functions/backendAction/issue-comments.ts'),
+    await read('supabase/functions/backendAction/announcement-comments.ts'),
+    await read('supabase/functions/backendAction/notifications.ts'),
+  ].join('\n');
   const issuePages = await read('src/services/issues-read-pages.ts');
   const issueComments = await read('src/services/issues-read-comments.ts');
   const announcements = await read('src/services/announcements.ts');
@@ -232,11 +262,17 @@ test('backend list actions use stable cursor pagination at the service boundary'
 });
 
 test('personal notification writes and pushes are scoped to the recipient', async () => {
-  const backendAction = await read('supabase/functions/backendAction/index.ts');
+  const backendAction = [
+    await read('supabase/functions/backendAction/issue-comments.ts'),
+    await read('supabase/functions/backendAction/issue-delete.ts'),
+    await read('supabase/functions/backendAction/issue-moderation.ts'),
+    await read('supabase/functions/backendAction/announcement-comments.ts'),
+  ].join('\n');
   const outboxWorker = await read('supabase/functions/outboxWorker/index.ts');
 
   assert.match(backendAction, /event_type: "issue\.comment_created"/u);
-  assert.match(backendAction, /payload: \{ content: data\.content, issue_id: issueId \}/u);
+  assert.match(backendAction, /content: data\.content/u);
+  assert.match(backendAction, /issue_id: issueId/u);
   assert.match(backendAction, /event_type: "issue\.status_changed"/u);
   assert.match(backendAction, /issue_category: data\.category/u);
   assert.match(backendAction, /event_type: "issue\.deleted"/u);
@@ -247,6 +283,8 @@ test('personal notification writes and pushes are scoped to the recipient', asyn
   assert.match(outboxWorker, /recipientUid === event\.actor_uid/u);
   assert.match(outboxWorker, /recipient_uid: recipientUid/u);
   assert.match(outboxWorker, /query = query\.eq\("uid", recipientUid\)/u);
+  assert.match(outboxWorker, /source === "admin"/u);
+  assert.match(outboxWorker, /\.from\("user_roles"\)/u);
 });
 
 test('Markdown upload images support batch cache bypass for expired URLs', async () => {

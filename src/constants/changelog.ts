@@ -2,6 +2,26 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "提升通知與同步可靠性",
+    version: "v1.8.49",
+    date: "2026-07-05",
+    time: "01:00",
+    items: [
+      {
+        title: "修正審核未通過提案在本人可見範圍中的顯示狀態。",
+      },
+      {
+        title: "改善提案狀態、留言與附議達標通知的送達流程。",
+      },
+      {
+        title: "完善公告與提案同步資訊，統一使用中文分類與狀態名稱。",
+      },
+      {
+        title: "提升管理員統計頁面對通知與同步異常的呈現。",
+      },
+    ],
+  },
+  {
     title: "修正提案權限與管理員入口",
     version: "v1.8.48",
     date: "2026-07-04",

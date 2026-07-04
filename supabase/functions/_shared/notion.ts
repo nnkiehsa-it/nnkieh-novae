@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { optionalEnv, requireEnv } from "./env.ts";
+import { getIssueCategoryLabel } from "./issue-categories.ts";
 
 // ---------------------------------------------------------------------------
 // Status label translation (matches ISSUE_STATUS_LABELS in src/constants/statuses.ts)
@@ -19,6 +20,23 @@ const STATUS_LABELS: Record<string, string> = {
 
 function translateStatus(status: string): string {
   return STATUS_LABELS[status] ?? status;
+}
+
+function translateCategory(category: string): string {
+  if (category === "公告") return "公告";
+  return getIssueCategoryLabel(category);
+}
+
+function supportLabel(supportCount: unknown, supportGoal: unknown): string {
+  const count = typeof supportCount === "number" ? supportCount : Number(supportCount ?? 0);
+  const goal = typeof supportGoal === "number" ? supportGoal : Number(supportGoal ?? 0);
+  if (!Number.isFinite(count)) return "0";
+  if (!Number.isFinite(goal) || goal <= 0) return String(count);
+  return `${count}/${goal}`;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 // ---------------------------------------------------------------------------
@@ -45,6 +63,35 @@ async function callNotionAPI(path: string, method: string, body?: unknown): Prom
   return response.json();
 }
 
+async function ensureSelectOption(propertyName: "分類" | "狀態", label: string): Promise<void> {
+  if (!label) return;
+  const database = await callNotionAPI(`/databases/${requireEnv("NOTION_DATABASE_ID")}`, "GET");
+  if (!isRecord(database) || !isRecord(database.properties)) return;
+  const property = database.properties[propertyName];
+  if (!isRecord(property) || property.type !== "select" || !isRecord(property.select)) return;
+  const options = Array.isArray(property.select.options) ? property.select.options : [];
+  if (options.some((option) => isRecord(option) && option.name === label)) return;
+
+  await callNotionAPI(`/databases/${requireEnv("NOTION_DATABASE_ID")}`, "PATCH", {
+    properties: {
+      [propertyName]: {
+        select: {
+          options: [
+            ...options
+              .filter(isRecord)
+              .map((option) => ({
+                name: String(option.name ?? ""),
+                color: typeof option.color === "string" ? option.color : "default",
+              }))
+              .filter((option) => option.name),
+            { name: label, color: "default" },
+          ],
+        },
+      },
+    },
+  });
+}
+
 /** Append a single paragraph block to a Notion page. */
 function appendBlock(pageId: string, content: string): Promise<unknown> {
   return callNotionAPI(`/blocks/${pageId}/children`, "PATCH", {
@@ -68,6 +115,8 @@ async function getOrCreateNotionPage(
   category: string,
   status: string,
   authorName: string,
+  supportCount?: unknown,
+  supportGoal?: unknown,
 ): Promise<string | null> {
   const { data, error } = await supabase
     .schema("app_private")
@@ -79,13 +128,21 @@ async function getOrCreateNotionPage(
   if (error) throw error;
   if (data?.notion_page_id) return String(data.notion_page_id);
 
+  const categoryLabel = translateCategory(category);
+  const statusLabel = translateStatus(status);
+  await Promise.all([
+    ensureSelectOption("分類", categoryLabel),
+    ensureSelectOption("狀態", statusLabel),
+  ]);
+
   const result = await callNotionAPI("/pages", "POST", {
     parent: { database_id: requireEnv("NOTION_DATABASE_ID") },
     properties: {
       "名稱": { title: [{ text: { content: title } }] },
-      "分類": { select: { name: category } },
-      "狀態": { select: { name: translateStatus(status) } },
+      "分類": { select: { name: categoryLabel } },
+      "狀態": { select: { name: statusLabel } },
       "作者": { rich_text: [{ text: { content: authorName } }] },
+      "附議數": { rich_text: [{ text: { content: supportLabel(supportCount, supportGoal) } }] },
     },
   }) as { id?: string };
 
@@ -111,6 +168,7 @@ async function getOrCreateNotionPage(
  */
 export async function markNotionPageDeleted(pageId: string): Promise<void> {
   if (!optionalEnv("NOTION_TOKEN")) return;
+  await ensureSelectOption("狀態", "已刪除");
 
   const response = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
     method: "PATCH",
@@ -119,9 +177,7 @@ export async function markNotionPageDeleted(pageId: string): Promise<void> {
       "Content-Type": "application/json",
       "Notion-Version": optionalEnv("NOTION_VERSION") || "2022-06-28",
     },
-    body: JSON.stringify({
-      properties: { "狀態": { select: { name: "已刪除" } } },
-    }),
+    body: JSON.stringify({ properties: { "狀態": { select: { name: "已刪除" } } } }),
   });
 
   if (!response.ok) {
@@ -143,7 +199,7 @@ export async function syncIssueCreatedToNotion(
   const { data: issue } = await supabase
     .schema("app_private")
     .from("issues")
-    .select("title, category, status, author_name")
+    .select("title, category, status, author_name, support_count, support_goal")
     .eq("id", targetId)
     .maybeSingle();
 
@@ -153,8 +209,10 @@ export async function syncIssueCreatedToNotion(
     targetId,
     String(issue?.title ?? payload.title ?? "未命名提案"),
     String(issue?.category ?? payload.category ?? "公共議題"),
-    translateStatus(String(issue?.status ?? "pending")),
+    String(issue?.status ?? "pending"),
     String(issue?.author_name ?? "匿名使用者"),
+    issue?.support_count ?? payload.support_count,
+    issue?.support_goal ?? payload.support_goal,
   );
 }
 
@@ -172,11 +230,12 @@ export async function syncIssueStatusChangedToNotion(
   const oldStatus = String(payload.old_status ?? "");
   const newStatus = String(payload.new_status ?? "");
   if (!newStatus) return;
+  const newStatusLabel = translateStatus(newStatus);
 
   const { data: issue } = await supabase
     .schema("app_private")
     .from("issues")
-    .select("title, category, author_name")
+    .select("title, category, author_name, support_count, support_goal")
     .eq("id", targetId)
     .maybeSingle();
 
@@ -186,16 +245,55 @@ export async function syncIssueStatusChangedToNotion(
     targetId,
     String(issue?.title ?? payload.title ?? "提案"),
     String(issue?.category ?? "公共議題"),
-    translateStatus(newStatus),
+    newStatus,
     String(issue?.author_name ?? "匿名使用者"),
+    issue?.support_count ?? payload.support_count,
+    issue?.support_goal ?? payload.support_goal,
   );
   if (!pageId) return;
 
+  await ensureSelectOption("狀態", newStatusLabel);
   await callNotionAPI(`/pages/${pageId}`, "PATCH", {
-    properties: { "狀態": { select: { name: translateStatus(newStatus) } } },
+    properties: {
+      "狀態": { select: { name: newStatusLabel } },
+      "附議數": { rich_text: [{ text: { content: supportLabel(issue?.support_count ?? payload.support_count, issue?.support_goal ?? payload.support_goal) } }] },
+    },
   });
   const oldLabel = oldStatus ? `${translateStatus(oldStatus)} → ` : "";
-  await appendBlock(pageId, `【狀態更新】${oldLabel}${translateStatus(newStatus)}`);
+  await appendBlock(pageId, `【狀態更新】${oldLabel}${newStatusLabel}`);
+}
+
+export async function syncIssueSupportToNotion(
+  supabase: ReturnType<typeof createClient>,
+  targetId: string,
+): Promise<void> {
+  if (!notionEnabled()) return;
+
+  const { data: issue } = await supabase
+    .schema("app_private")
+    .from("issues")
+    .select("title, category, status, author_name, support_count, support_goal")
+    .eq("id", targetId)
+    .maybeSingle();
+
+  const pageId = await getOrCreateNotionPage(
+    supabase,
+    "issue",
+    targetId,
+    String(issue?.title ?? "提案"),
+    String(issue?.category ?? "公共議題"),
+    String(issue?.status ?? "pending"),
+    String(issue?.author_name ?? "匿名使用者"),
+    issue?.support_count,
+    issue?.support_goal,
+  );
+  if (!pageId) return;
+
+  const label = supportLabel(issue?.support_count, issue?.support_goal);
+  await callNotionAPI(`/pages/${pageId}`, "PATCH", {
+    properties: { "附議數": { rich_text: [{ text: { content: label } }] } },
+  });
+  await appendBlock(pageId, `【附議更新】目前附議數：${label}`);
 }
 
 /**
@@ -261,5 +359,7 @@ export async function syncAnnouncementCreatedToNotion(
     "公告",
     "發布",
     String(announcement?.author_name ?? "管理員"),
+    0,
+    null,
   );
 }

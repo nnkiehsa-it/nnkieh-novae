@@ -44,10 +44,31 @@
 - supabase/migrations/202607041437_grant_service_role_app_private.sql：授權 service role 存取 `app_private` tables 與 sequences，供 Edge Functions 以後端身份執行受控資料操作。
 - supabase/migrations/202607041517_enable_notification_realtime.sql：授權登入使用者依 RLS 讀取通知 realtime 所需資料，並將通知與通知狀態表加入 Supabase Realtime publication。
 - supabase/migrations/202607041750_add_backend_action_idempotency.sql：建立受控 action 冪等鍵資料表與 claim / complete / release RPC，避免同一請求重送造成重複寫入。
-- supabase/functions/backendAction/index.ts：前端受控 action 入口，經共用 Firebase 驗證與 HTTP 邊界確認後查詢使用者角色，依 action 處理提案、公告、留言、附議、通知、推播偏好、Dashboard、使用者角色與 Cloudinary 上傳 session；列表型讀取使用穩定 cursor 分頁並套用分類讀取權限與作者欄位清洗，寫入型 action 以 request id 保護重送不重複執行，建立提案依分類決定審核狀態，並在建立提案、留言與圖片上傳 session 前透過 Upstash 套用限流，提供部署流程使用的受密鑰保護健康檢查。
+- supabase/migrations/202607050004_add_push_delivery_logs.sql：建立推播送達紀錄表與查詢索引，供管理員統計頁彙整推播異常。
+- supabase/functions/backendAction/index.ts：前端受控 action HTTP 入口，集中 CORS、Firebase 驗證、使用者角色查詢、healthcheck、action 分派與冪等保護，不直接承載各領域資料流程。
+- supabase/functions/backendAction/types.ts：受控 action 共用 Supabase client、身份與 JSON record 型別。
+- supabase/functions/backendAction/utils.ts：受控 action 共用 cursor、時間、數值、布林與台北日界限工具。
+- supabase/functions/backendAction/auth.ts：管理員權限檢查與目前使用者角色回應。
+- supabase/functions/backendAction/users.ts：使用者頭像快取與批次讀取 action。
+- supabase/functions/backendAction/uploads.ts：Cloudinary 上傳 session、上傳完成確認、圖片 URL 解析與外部圖片清理 action。
+- supabase/functions/backendAction/issue-shared.ts：提案讀取權限、作者欄位清洗、提案/留言回應正規化與單筆提案查詢 helper。
+- supabase/functions/backendAction/issues.ts：提案 action 分派器，依 read / write / comments 子模組處理。
+- supabase/functions/backendAction/issue-read.ts：提案列表、搜尋、我的提案、已附議 id 與私密作者資料讀取；審核類別會先納入本人可看的私密狀態再由權限過濾。
+- supabase/functions/backendAction/issue-create.ts：新增提案、分類審核狀態、作者私密保存、限流與建立通知/同步事件。
+- supabase/functions/backendAction/issue-moderation.ts：管理員提案狀態調整、審核退回原因、期限更新與狀態通知事件。
+- supabase/functions/backendAction/issue-support.ts：提案附議/取消附議、附議數同步事件與達標通知事件。
+- supabase/functions/backendAction/issue-delete.ts：提案硬刪除與刪除通知/同步事件。
+- supabase/functions/backendAction/issue-comments.ts：提案留言分頁、新增、刪除、留言權限與留言通知事件。
+- supabase/functions/backendAction/announcements.ts：公告 action 分派器，依 read / write / comments 子模組處理。
+- supabase/functions/backendAction/announcement-shared.ts：公告回應正規化與 cursor helper。
+- supabase/functions/backendAction/announcement-read.ts：公告列表、排序 cursor 與單筆公告讀取。
+- supabase/functions/backendAction/announcement-write.ts：管理員公告新增、編輯、硬刪除與公告按讚 action。
+- supabase/functions/backendAction/announcement-comments.ts：公告留言分頁、新增、刪除與管理員通知事件。
+- supabase/functions/backendAction/notifications.ts：App 內通知分頁、閱讀游標、Web Push token 與分類推播偏好 action。
+- supabase/functions/backendAction/dashboard.ts：管理員統計資料、同步/通知/推播/清理異常彙整與分類使用概況。
 - supabase/functions/syncUser/index.ts：Firebase 登入後同步使用者 custom claim 與 Supabase app role 的 Edge Function，依 ADMIN_EMAILS 將使用者角色寫入 user_roles，與受控 action 共用登入資格驗證。
 - supabase/functions/cloudinaryWebhook/index.ts：Cloudinary 上傳完成 webhook，限制 POST、驗證簽章並安全解析 payload 後將 pending upload 轉為 ready。
-- supabase/functions/outboxWorker/index.ts：Outbox worker wake-up endpoint，限制 POST 並驗證 secret 後批次 claim pending events，依事件建立廣播或個人通知、將個人推播限制在收件人裝置，並將刪除事件對應的 Notion page 標記為「已刪除」。
+- supabase/functions/outboxWorker/index.ts：Outbox worker wake-up endpoint，限制 POST 並驗證 secret 後批次 claim pending events，依事件建立廣播、管理員或個人通知，依收件人與推播偏好送出 FCM 並記錄送達結果，同步 Notion 狀態、留言、附議數與刪除標記。
 - supabase/functions/processDeletionJobs/index.ts：外部資源刪除工作入口，限制 POST 並驗證 secret 後處理 Cloudinary / Notion 清理，保留失敗的可重試 metadata。
 - supabase/functions/_shared/env.ts：Edge Functions 環境變數讀取 helper。
 - supabase/functions/_shared/http.ts：Edge Functions 共用 CORS、POST method guard、JSON / text response、JSON body 解析與錯誤狀態對應 helper。
@@ -56,7 +77,7 @@
 - supabase/functions/_shared/google-oauth.ts：Edge Functions 使用 `npm:google-auth-library` 取得並快取 Google OAuth access token，供 Firebase custom claims 與 FCM HTTP v1 使用。
 - supabase/functions/_shared/issue-categories.ts：由提案分類 config 產生的 Edge Functions 分類權限與行為常數，供受控 action 套用審核、私密讀取、作者隱藏與留言規則。
 - supabase/functions/_shared/fcm.ts：FCM HTTP v1 發送 helper，不依賴 Node Firebase Admin SDK。
-- supabase/functions/_shared/notion.ts：Notion 頁面刪除標記 helper，將外部頁面狀態更新為「已刪除」並保留頁面可查。
+- supabase/functions/_shared/notion.ts：Notion 同步 helper，以中文欄位與中文 select label 寫入名稱、分類、狀態、作者與附議數，缺少 select 選項時自動補齊，並將外部頁面狀態更新為「已刪除」保留可查。
 - supabase/functions/_shared/rate-limits.ts：由 rate limit config 產生的 Edge Functions 限流常數，供受控 action 套用提案、留言與圖片上傳頻率限制。
 - supabase/functions/_shared/upstash-rate-limit.ts：Upstash Redis REST 固定時間窗限流 helper，集中計數 key、TTL 與服務不可用錯誤處理。
 - supabase/functions/_shared/webhook.ts：Supabase / Cloudinary webhook shared secret 與簽章驗證 helper。
