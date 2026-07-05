@@ -21,6 +21,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 type AppSupabase = SupabaseClient<Database>;
+const knownSelectOptions = new Set<string>();
 
 function translateStatus(status: string): string {
   return STATUS_LABELS[status] ?? status;
@@ -70,12 +71,17 @@ async function callNotionAPI(path: string, method: string, body?: unknown, versi
 
 async function ensureSelectOption(propertyName: "分類" | "狀態", label: string): Promise<void> {
   if (!label) return;
+  const cacheKey = `${propertyName}:${label}`;
+  if (knownSelectOptions.has(cacheKey)) return;
   const database = await callNotionAPI(`/databases/${requireEnv("NOTION_DATABASE_ID")}`, "GET");
   if (!isRecord(database) || !isRecord(database.properties)) return;
   const property = database.properties[propertyName];
   if (!isRecord(property) || property.type !== "select" || !isRecord(property.select)) return;
   const options = Array.isArray(property.select.options) ? property.select.options : [];
-  if (options.some((option) => isRecord(option) && option.name === label)) return;
+  if (options.some((option) => isRecord(option) && option.name === label)) {
+    knownSelectOptions.add(cacheKey);
+    return;
+  }
 
   await callNotionAPI(`/databases/${requireEnv("NOTION_DATABASE_ID")}`, "PATCH", {
     properties: {
@@ -95,6 +101,7 @@ async function ensureSelectOption(propertyName: "分類" | "狀態", label: stri
       },
     },
   });
+  knownSelectOptions.add(cacheKey);
 }
 
 /** Append a single paragraph block to a Notion page. */

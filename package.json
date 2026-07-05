@@ -16,6 +16,8 @@
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint . --ext .ts,.vue",
     "check:edge": "deno check supabase/functions/outboxWorker/index.ts supabase/functions/backendAction/index.ts supabase/functions/syncUser/index.ts supabase/functions/cloudinaryWebhook/index.ts supabase/functions/processDeletionJobs/index.ts supabase/functions/maintenanceCleanup/index.ts",
+    "check:unused": "vue-tsc --noEmit --noUnusedLocals --noUnusedParameters",
+    "verify:local": "npm run typecheck && npm run check:unused && npm run lint && npm run build && npm run check:edge && npm run test:architecture && npm audit --offline --omit=dev",
     "test:architecture": "node --test tests/architecture.test.mjs",
     "test": "npm run test:architecture",
     "db:start": "supabase start",
