@@ -138,12 +138,6 @@ export function useIssueComments(issueId: Ref<string>, onContentUnavailable?: (i
       const comment = await createComment(
         issueId.value,
         { content },
-        {
-          uid: user.value.uid,
-          displayName: user.value.displayName,
-          photoURL: user.value.photoURL,
-          email: user.value.email,
-        },
         isAdmin.value && isAdminComment,
       );
       const commentMap = new Map(comments.value.map((entry) => [entry.id, entry]));
@@ -171,7 +165,7 @@ export function useIssueComments(issueId: Ref<string>, onContentUnavailable?: (i
     submitError.value = '';
 
     try {
-      await deleteComment(issueId.value, commentId);
+      await deleteComment(commentId);
       comments.value = comments.value.filter((comment) => comment.id !== commentId);
     } catch {
       submitError.value = '刪除失敗，請稍後再試。';

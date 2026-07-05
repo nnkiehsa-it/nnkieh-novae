@@ -31,7 +31,7 @@ export async function moderateIssueStatus(payload: JsonRecord, auth: AuthContext
   }
   const { data, error } = await supabase.schema("app_private").from("issues").update(updateFields).eq("id", issueId).select("*").single();
   if (error) throw error;
-  await supabase.schema("app_private").from("outbox_events").insert({
+  const { error: outboxError } = await supabase.schema("app_private").from("outbox_events").insert({
     event_type: "issue.status_changed",
     target_type: "issue",
     target_id: issueId,
@@ -47,5 +47,6 @@ export async function moderateIssueStatus(payload: JsonRecord, auth: AuthContext
       issue_category: data.category,
     },
   });
+  if (outboxError) throw outboxError;
   return { issue: issueToReadableResponse(data as JsonRecord, auth) };
 }

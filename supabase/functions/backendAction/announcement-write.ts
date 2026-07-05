@@ -20,13 +20,14 @@ async function createAnnouncement(payload: JsonRecord, auth: AuthContext, supaba
   }).select("*").single();
   if (error) throw error;
   await markMarkdownUploadsAttached(supabase, auth.uid, content, "announcement", data.id);
-  await supabase.schema("app_private").from("outbox_events").insert({
+  const { error: outboxError } = await supabase.schema("app_private").from("outbox_events").insert({
     event_type: "announcement.created",
     target_type: "announcement",
     target_id: data.id,
     actor_uid: auth.uid,
     payload: { author_name: data.author_name, content: data.content, title: data.title },
   });
+  if (outboxError) throw outboxError;
   return { announcement: announcementToResponse(data as JsonRecord) };
 }
 
@@ -50,13 +51,14 @@ async function updateAnnouncement(payload: JsonRecord, auth: AuthContext, supaba
   if (removedUploads.length > 0) {
     await queueUploadIdsForDeletion(supabase, removedUploads.map((upload) => upload.id));
   }
-  await supabase.schema("app_private").from("outbox_events").insert({
+  const { error: outboxError } = await supabase.schema("app_private").from("outbox_events").insert({
     event_type: "announcement.updated",
     target_type: "announcement",
     target_id: data.id,
     actor_uid: auth.uid,
     payload: { author_name: data.author_name, content: data.content, title: data.title },
   });
+  if (outboxError) throw outboxError;
   return { announcement: announcementToResponse(data as JsonRecord) };
 }
 
@@ -70,13 +72,14 @@ async function deleteAnnouncement(payload: JsonRecord, auth: AuthContext, supaba
     { id: announcementId, type: "announcement" },
     ...(comments ?? []).map((comment) => ({ id: comment.id, type: "announcement_comment" as const })),
   ]);
-  await supabase.schema("app_private").from("outbox_events").insert({
+  const { error: outboxError } = await supabase.schema("app_private").from("outbox_events").insert({
     event_type: "announcement.deleted",
     target_type: "announcement",
     target_id: announcementId,
     actor_uid: auth.uid,
     payload: { announcement_id: announcementId },
   });
+  if (outboxError) throw outboxError;
   const { error } = await supabase.schema("app_private").from("announcements").delete().eq("id", announcementId);
   if (error) throw error;
   return { success: true };
@@ -87,9 +90,11 @@ async function setAnnouncementLike(payload: JsonRecord, auth: AuthContext, supab
   const announcementId = asString(payload.announcementId);
   const liked = asBoolean(payload.liked);
   if (liked) {
-    await supabase.schema("app_private").from("announcement_likes").upsert({ announcement_id: announcementId, uid: auth.uid });
+    const { error } = await supabase.schema("app_private").from("announcement_likes").upsert({ announcement_id: announcementId, uid: auth.uid });
+    if (error) throw error;
   } else {
-    await supabase.schema("app_private").from("announcement_likes").delete().eq("announcement_id", announcementId).eq("uid", auth.uid);
+    const { error } = await supabase.schema("app_private").from("announcement_likes").delete().eq("announcement_id", announcementId).eq("uid", auth.uid);
+    if (error) throw error;
   }
   const { data: announcement, error } = await supabase.schema("app_private").from("announcements").select("like_count").eq("id", announcementId).single();
   if (error) throw error;

@@ -44,14 +44,20 @@ export async function claimFixedWindowRateLimit(
 
   const response = await fetch(`${restUrl}/pipeline`, {
     body: JSON.stringify([
-      ["INCR", key],
-      ["EXPIRE", key, ttlSeconds],
+      [
+        "EVAL",
+        "local count=redis.call('INCR',KEYS[1]); if count==1 then redis.call('EXPIRE',KEYS[1],ARGV[1]) end; return count",
+        "1",
+        key,
+        String(ttlSeconds),
+      ],
     ]),
     headers: {
       authorization: `Bearer ${token}`,
       "content-type": "application/json",
     },
     method: "POST",
+    signal: AbortSignal.timeout(5_000),
   });
   if (!response.ok) {
     throw new Error("rate-limit-provider-unavailable");

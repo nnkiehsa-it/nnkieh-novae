@@ -48,13 +48,15 @@ operation_counts as (
     (select count(*) from app_private.deletion_jobs where status in ('pending','failed','processing'))::bigint deletion_pending
 ),
 maintenance as (
-  select coalesce(to_jsonb(row), '{}'::jsonb) value
-  from (
-    select status, started_at, completed_at, error, details
-    from app_private.maintenance_runs
-    where task_name = 'maintenance.cleanup'
-    order by started_at desc limit 1
-  ) row
+  select coalesce((
+    select to_jsonb(row)
+    from (
+      select status, started_at, completed_at, error, details
+      from app_private.maintenance_runs
+      where task_name = 'maintenance.cleanup'
+      order by started_at desc limit 1
+    ) row
+  ), '{}'::jsonb) value
 ),
 recent_failures as (
   select coalesce(jsonb_agg(item order by updated_at desc), '[]'::jsonb) value

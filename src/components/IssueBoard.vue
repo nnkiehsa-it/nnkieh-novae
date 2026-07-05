@@ -297,7 +297,7 @@ function confirmRouteIssueDelete() {
 }
 
 async function performRouteIssueDelete() {
-  const deletedIssueId = await deleteRouteIssue(true);
+  const deletedIssueId = await deleteRouteIssue();
   if (routeIssueDeleteError.value) {
     showToast(routeIssueDeleteError.value, 'error');
     return;

@@ -71,7 +71,7 @@ export function useIssueItemController(
   }
 
   async function performDelete() {
-    const deletedIssueId = await deleteSelectedIssue(isAdmin.value);
+    const deletedIssueId = await deleteSelectedIssue();
     if (deleteError.value) {
       showToast(deleteError.value, 'error');
       return;

@@ -12,6 +12,7 @@ let activeSessionToken = 0;
 export function clearActiveSessionData() {
   activeSessionToken += 1;
   mySupportedIssueIds.value = new Set();
+  customPhotoUrl.value = null;
   clearResolvedUploadCache();
 }
 

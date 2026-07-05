@@ -96,15 +96,11 @@ export function useIssueComposerForm(open: Ref<boolean>, options: IssueComposerF
       const uploadResult = await uploadImagesAndBuildContent();
       uploadedImages = uploadResult.uploadedImages;
 
-      const issue = await createIssue(
-        { title: form.title, content: uploadResult.content, category: options.category.value },
-        {
-          uid: user.value.uid,
-          displayName: user.value.displayName,
-          photoURL: user.value.photoURL,
-          email: user.value.email,
-        },
-      );
+      const issue = await createIssue({
+        title: form.title,
+        content: uploadResult.content,
+        category: options.category.value,
+      });
 
       resetForm();
       options.onSubmitted(issue);

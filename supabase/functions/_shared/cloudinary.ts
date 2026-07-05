@@ -103,7 +103,7 @@ export async function createCloudinaryExpiringImageUrl(publicId: string, expires
   return `https://api.cloudinary.com/v1_1/${cloudName}/image/download?${query.toString()}`;
 }
 
-export async function uploadCloudinaryAuthenticatedImageFromUrl(publicId: string, sourceUrl: string) {
+export async function uploadCloudinaryAuthenticatedImage(publicId: string, source: string | Blob) {
   const cloudName = requireEnv("CLOUDINARY_CLOUD_NAME");
   const apiKey = requireEnv("CLOUDINARY_API_KEY");
   const timestamp = Math.floor(Date.now() / 1000).toString();
@@ -116,7 +116,7 @@ export async function uploadCloudinaryAuthenticatedImageFromUrl(publicId: string
     type: "authenticated",
   };
   const body = new FormData();
-  body.set("file", sourceUrl);
+  body.set("file", source);
   body.set("api_key", apiKey);
   for (const [key, value] of Object.entries(params)) {
     body.set(key, value);
@@ -125,7 +125,7 @@ export async function uploadCloudinaryAuthenticatedImageFromUrl(publicId: string
 
   const response = await fetch(
     `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-    { method: "POST", body },
+    { method: "POST", body, signal: AbortSignal.timeout(20_000) },
   );
   if (!response.ok) {
     throw new Error(`Cloudinary avatar upload failed: ${response.status} ${await response.text()}`);

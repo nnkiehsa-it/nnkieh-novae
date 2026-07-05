@@ -9,13 +9,9 @@ import {
 } from '@/constants/categories';
 import type {
   IssueCursor,
-  IssuePageResult,
   IssueRecord,
-  IssueSortOption,
   IssueStatus,
-  IssueStatusBucket,
 } from '@/types';
-import { STATUS_BUCKETS } from './issues-constants';
 import { addDays } from './issues-utils';
 
 export function normalizeDate(value: unknown): Date | null {
@@ -124,26 +120,6 @@ export function normalizeIssueRecord(id: string, data: Record<string, unknown>):
   return record;
 }
 
-export function issueBelongsToBucket(issue: IssueRecord, statusBucket: IssueStatusBucket) {
-  return issue.deleting !== true && STATUS_BUCKETS[statusBucket].includes(issue.status);
-}
-
-function toIssueCursor(issue: IssueRecord, sort: IssueSortOption = 'latest'): IssueCursor | null {
-  if (!issue.created_at) {
-    return null;
-  }
-  const cursor: IssueCursor = {
-    id: issue.id,
-    created_at: issue.created_at,
-  };
-  if (sort === 'most-supported') {
-    cursor.sort_number = issue.support_count;
-  } else if (sort === 'ending-soon') {
-    cursor.sort_date = issue.support_deadline_at;
-  }
-  return cursor;
-}
-
 export function normalizeIssueCursor(data: unknown): IssueCursor | null {
   if (!data || typeof data !== 'object') return null;
   const record = data as Record<string, unknown>;
@@ -167,22 +143,4 @@ export function withSupportState(issues: IssueRecord[], supportedIssueIds?: Set<
     ...issue,
     currentUserSupported: supportedIssueIds.has(issue.id),
   }));
-}
-
-export function normalizeIssuePage(
-  issues: IssueRecord[],
-  pageSize: number,
-  cursorSource?: IssueRecord | null,
-  fetchedCount?: number,
-  sort: IssueSortOption = 'latest',
-): IssuePageResult {
-  const visibleIssues = issues.slice(0, pageSize);
-  const lastVisibleIssue = issues.length > 0 ? issues[Math.min(pageSize - 1, issues.length - 1)] : null;
-  const lastIssue = cursorSource ?? lastVisibleIssue ?? null;
-
-  return {
-    issues: visibleIssues,
-    cursor: lastIssue ? toIssueCursor(lastIssue, sort) : null,
-    hasMore: (fetchedCount ?? issues.length) > pageSize,
-  };
 }
