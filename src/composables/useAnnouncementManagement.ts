@@ -280,10 +280,7 @@ export function useAnnouncementManagement() {
 
       const currentRequestId = ++announcementRequestId;
       try {
-        fetchedAnnouncement.value = await fetchAnnouncementRecordById(
-          announcementId,
-          user.value?.uid ?? null,
-        );
+        fetchedAnnouncement.value = await fetchAnnouncementRecordById(announcementId);
       } catch (caught) {
         if (isAbortFailure(caught)) return;
         await handleAnnouncementRouteError(currentRequestId);

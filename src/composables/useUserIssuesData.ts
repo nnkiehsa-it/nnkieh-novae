@@ -31,7 +31,7 @@ export function useUserIssuesData(
     const issueMap = new Map(userIssuesState.allIssues.map((entry) => [entry.id, entry]));
     issueMap.set(issue.id, {
       ...issue,
-      currentUserSupported: supportedIssueIds.value.has(issue.id),
+      currentUserSupported: issue.currentUserSupported || supportedIssueIds.value.has(issue.id),
     });
     userIssuesState.allIssues = Array.from(issueMap.values());
   }
@@ -122,7 +122,7 @@ export function useUserIssuesData(
   watch(supportedIssueIds, (newIds) => {
     userIssuesState.allIssues = userIssuesState.allIssues.map((issue) => ({
       ...issue,
-      currentUserSupported: newIds.has(issue.id),
+      currentUserSupported: issue.currentUserSupported || newIds.has(issue.id),
     }));
   });
 
