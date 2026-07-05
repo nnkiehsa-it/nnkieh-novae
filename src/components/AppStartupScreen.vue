@@ -114,11 +114,13 @@ const appTitle = import.meta.env.VITE_APP_TITLE ?? 'SRP';
   color: rgb(var(--color-on-surface));
 }
 
-:global(html.dark) .startup-screen {
-  --startup-accent: 250 214 140;
-  --startup-accent-bright: 255 232 179;
-  --startup-accent-soft: 94 70 30;
-  --startup-wash: 30 29 25;
+@media (prefers-color-scheme: dark) {
+  .startup-screen {
+    background: rgb(var(--color-page-background));
+  }
+  .startup-screen::before {
+    background: none;
+  }
 }
 
 @keyframes startup-enter {

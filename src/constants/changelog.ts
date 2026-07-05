@@ -2,6 +2,17 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "最佳化深色模式啟動畫面",
+    version: "v2.0.43",
+    date: "2026-07-06",
+    time: "01:09",
+    items: [
+      {
+        title: "調整深色模式下的啟動畫面背景，移除多餘的發光效果以提供更純淨的視覺體驗。",
+      },
+    ],
+  },
+  {
     title: "最佳化載入元件動畫效果",
     version: "v2.0.42",
     date: "2026-07-06",
