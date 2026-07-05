@@ -3,7 +3,6 @@ export {
   fetchComments,
   fetchIssuesForTitleSearch,
   fetchIssuesPageByStatus,
-  fetchMySupportedIssueIds,
   fetchPrivateAuthorInfo,
   fetchUserIssues,
 } from './issues-read';

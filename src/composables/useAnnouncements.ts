@@ -1,7 +1,6 @@
 import { computed, onScopeDispose, reactive, ref, watch, type Ref } from 'vue';
 import type { AnnouncementRecord, AnnouncementSortOption } from '@/types';
 import { fetchAnnouncementsPage, type AnnouncementCursor } from '@/services/announcements';
-import { useSession } from '@/composables/useSession';
 import { useNetworkStatus } from '@/composables/useNetworkStatus';
 import { resolveViewportPageSize, waitForMinimumDuration } from '@/lib/page-size';
 
@@ -53,7 +52,6 @@ function sortAnnouncements(announcements: AnnouncementRecord[], sortOption: Anno
 }
 
 export function useAnnouncements(options: UseAnnouncementsOptions = {}) {
-  const { user } = useSession();
   const { isOnline } = useNetworkStatus();
   const sortOption = options.sortOption ?? ref<AnnouncementSortOption>('latest');
   const stateCache = new Map<AnnouncementSortOption, AnnouncementListState>();
@@ -109,7 +107,7 @@ export function useAnnouncements(options: UseAnnouncementsOptions = {}) {
     }
 
     try {
-      const page = await fetchAnnouncementsPage(null, user.value?.uid ?? null, sortOption.value, pageSize.value);
+      const page = await fetchAnnouncementsPage(null, sortOption.value, pageSize.value);
       if (currentVersion !== getVersion(state)) return;
       state.announcements = page.announcements;
       state.cursor = page.cursor;
@@ -138,7 +136,7 @@ export function useAnnouncements(options: UseAnnouncementsOptions = {}) {
     state.error = '';
 
     try {
-      const page = await fetchAnnouncementsPage(state.cursor, user.value?.uid ?? null, sortOption.value, pageSize.value);
+      const page = await fetchAnnouncementsPage(state.cursor, sortOption.value, pageSize.value);
       if (currentVersion !== getVersion(state)) return;
       state.announcements = mergeAnnouncements(state.announcements, page.announcements);
       state.cursor = page.cursor;

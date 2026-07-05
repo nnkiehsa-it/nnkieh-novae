@@ -297,7 +297,8 @@ export async function handleUploadAction(
         cloudinary_public_id: data.cloudinary_public_id,
       });
       if (jobError) throw jobError;
-      await supabase.schema("app_private").from("uploads").delete().eq("id", data.id);
+      const { error: deleteError } = await supabase.schema("app_private").from("uploads").delete().eq("id", data.id);
+      if (deleteError) throw deleteError;
     }
     return { success: true };
   }

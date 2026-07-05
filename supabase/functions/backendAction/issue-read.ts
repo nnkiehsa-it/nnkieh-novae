@@ -182,17 +182,6 @@ async function listUserIssues(payload: JsonRecord, auth: AuthContext, supabase: 
   };
 }
 
-async function listSupportedIssueIds(auth: AuthContext, supabase: BackendSupabase) {
-  const { data, error } = await supabase
-    .schema("app_private")
-    .from("supports")
-    .select("issue_id")
-    .eq("uid", auth.uid)
-    .limit(500);
-  if (error) throw error;
-  return { issueIds: (data ?? []).map((support) => support.issue_id) };
-}
-
 async function getPrivateIssueAuthors(
   action: string,
   payload: JsonRecord,
@@ -215,7 +204,6 @@ export function isIssueReadAction(action: string) {
     || action === "listIssues"
     || action === "searchIssues"
     || action === "listUserIssues"
-    || action === "listMySupportedIssueIds"
     || action === "getPrivateIssueAuthor"
     || action === "batchGetPrivateIssueAuthors";
 }
@@ -234,7 +222,6 @@ export async function handleIssueReadAction(
   }
   if (action === "listIssues" || action === "searchIssues") return listIssues(action, payload, auth, supabase);
   if (action === "listUserIssues") return listUserIssues(payload, auth, supabase);
-  if (action === "listMySupportedIssueIds") return listSupportedIssueIds(auth, supabase);
   if (action === "getPrivateIssueAuthor" || action === "batchGetPrivateIssueAuthors") {
     return getPrivateIssueAuthors(action, payload, auth, supabase);
   }

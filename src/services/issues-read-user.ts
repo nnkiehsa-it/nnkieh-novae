@@ -30,15 +30,3 @@ export async function fetchUserIssues(
     throw toReadableBackendError(error);
   }
 }
-
-export async function fetchMySupportedIssueIds(uid: string) {
-  try {
-    const fn = invokeBackendAction<{ uid: string }, { issueIds: string[] }>('listMySupportedIssueIds', {
-      timeoutMs: READ_REQUEST_TIMEOUT_MS,
-    });
-    const result = await fn({ uid });
-    return new Set(result.data.issueIds);
-  } catch (error) {
-    throw toReadableBackendError(error);
-  }
-}

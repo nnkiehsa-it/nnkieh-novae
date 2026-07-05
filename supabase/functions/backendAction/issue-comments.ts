@@ -53,7 +53,8 @@ async function deleteComment(payload: JsonRecord, auth: AuthContext, supabase: B
   const { data } = await supabase.schema("app_private").from("comments").select("*").eq("id", commentId).maybeSingle();
   if (data && data.author_uid !== auth.uid && !auth.isAdmin) throw new Error("permission-denied");
   if (data) await queueAttachedUploadsForDeletion(supabase, [{ id: commentId, type: "comment" }]);
-  await supabase.schema("app_private").from("comments").delete().eq("id", commentId);
+  const { error } = await supabase.schema("app_private").from("comments").delete().eq("id", commentId);
+  if (error) throw error;
   return { success: true };
 }
 

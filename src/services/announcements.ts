@@ -78,16 +78,15 @@ function normalizeAnnouncementComment(data: Record<string, unknown>): Announceme
 
 export async function fetchAnnouncementsPage(
   cursor: AnnouncementCursor = null,
-  currentUid?: string | null,
   sort: AnnouncementSortOption = 'latest',
   pageSize = ANNOUNCEMENT_LIMIT,
 ) {
   try {
     const fn = invokeBackendAction<
-      { cursor: AnnouncementCursor; currentUid?: string | null; pageSize: number; sort: AnnouncementSortOption },
+      { cursor: AnnouncementCursor; pageSize: number; sort: AnnouncementSortOption },
       { announcements: Record<string, unknown>[]; cursor: AnnouncementCursor; hasMore: boolean }
     >('listAnnouncements', { timeoutMs: READ_REQUEST_TIMEOUT_MS });
-    const result = await fn({ cursor, currentUid, pageSize, sort });
+    const result = await fn({ cursor, pageSize, sort });
     return {
       announcements: result.data.announcements.map(normalizeAnnouncementRecord),
       cursor: normalizeAnnouncementCursor(result.data.cursor),
@@ -100,14 +99,13 @@ export async function fetchAnnouncementsPage(
 
 export async function fetchAnnouncementRecordById(
   announcementId: string,
-  currentUid?: string | null,
 ): Promise<AnnouncementRecord> {
   try {
     const fn = invokeBackendAction<
-      { announcementId: string; currentUid?: string | null },
+      { announcementId: string },
       { announcement: Record<string, unknown> }
     >('getAnnouncement', { timeoutMs: READ_REQUEST_TIMEOUT_MS });
-    const result = await fn({ announcementId, currentUid });
+    const result = await fn({ announcementId });
     return normalizeAnnouncementRecord(result.data.announcement);
   } catch (error) {
     if (error instanceof RequestFailure) throw error;
