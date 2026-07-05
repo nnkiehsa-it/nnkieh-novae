@@ -11,13 +11,36 @@
         <p class="startup-screen__tagline">正在準備</p>
       </div>
 
-      <div class="startup-screen__loader" aria-hidden="true">
-        <span class="startup-screen__loader-glow"></span>
-        <span class="startup-screen__loader-line"></span>
-        <span class="startup-screen__loader-trace"></span>
-        <span class="startup-screen__loader-node startup-screen__loader-node--start"></span>
-        <span class="startup-screen__loader-node startup-screen__loader-node--end"></span>
-      </div>
+      <svg class="startup-screen__loader" viewBox="0 0 60 60" aria-hidden="true" focusable="false">
+        <circle>
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            values="-90;810"
+            keyTimes="0;1"
+            dur="2s"
+            repeatCount="indefinite"
+          />
+          <animate
+            attributeName="stroke-dashoffset"
+            values="0%;0%;-157.080%"
+            calcMode="spline"
+            keySplines="0.61, 1, 0.88, 1; 0.12, 0, 0.39, 0"
+            keyTimes="0;0.5;1"
+            dur="2s"
+            repeatCount="indefinite"
+          />
+          <animate
+            attributeName="stroke-dasharray"
+            values="0% 314.159%;157.080% 157.080%;0% 314.159%"
+            calcMode="spline"
+            keySplines="0.61, 1, 0.88, 1; 0.12, 0, 0.39, 0"
+            keyTimes="0;0.5;1"
+            dur="2s"
+            repeatCount="indefinite"
+          />
+        </circle>
+      </svg>
     </div>
   </section>
 </template>
@@ -122,72 +145,24 @@ const appTitle = import.meta.env.VITE_APP_TITLE ?? 'SRP';
 }
 
 .startup-screen__loader {
-  position: relative;
+  box-sizing: border-box;
   display: block;
-  height: 1.35rem;
-  width: min(12rem, 62vw);
-  overflow: hidden;
-  border-radius: 999px;
-  isolation: isolate;
+  height: 3.75rem;
+  width: 3.75rem;
+  overflow: visible;
+  padding: 0.1875rem;
+  color: rgb(var(--color-on-surface));
 }
 
-.startup-screen__loader-line,
-.startup-screen__loader-trace,
-.startup-screen__loader-glow {
-  position: absolute;
-  inset-inline: 0;
-  top: 50%;
-  height: 0.2rem;
-  border-radius: 999px;
-  transform: translateY(-50%);
-}
-
-.startup-screen__loader-line {
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgb(var(--color-outline) / 0.22) 18%,
-    rgb(var(--startup-accent) / 0.28) 50%,
-    rgb(var(--color-outline) / 0.22) 82%,
-    transparent
-  );
-}
-
-.startup-screen__loader-trace {
-  width: 42%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgb(var(--startup-accent) / 0.34),
-    rgb(var(--startup-accent-bright) / 0.92),
-    rgb(var(--startup-accent) / 0.72),
-    transparent
-  );
-  box-shadow: 0 0 1rem rgb(var(--startup-accent) / 0.2);
-  animation: startup-trace 1450ms cubic-bezier(0.55, 0, 0.2, 1) infinite;
-}
-
-.startup-screen__loader-glow {
-  inset-inline: 12%;
-  height: 0.68rem;
-  background: rgb(var(--startup-accent-soft) / 0.34);
-  filter: blur(0.55rem);
-  opacity: 0.8;
-  animation: startup-glow 1800ms ease-in-out infinite;
-}
-
-.startup-screen__loader-node {
-  position: absolute;
-  top: 50%;
-  height: 0.46rem;
-  width: 0.46rem;
-  border: 1px solid rgb(var(--color-surface) / 0.85);
-  border-radius: 999px;
-  background: rgb(var(--startup-accent-bright));
-  box-shadow:
-    0 0 0 0.32rem rgb(var(--startup-accent) / 0.1),
-    0 0 1rem rgb(var(--startup-accent) / 0.2);
-  transform: translateY(-50%);
+.startup-screen__loader > circle {
+  cx: 50%;
+  cy: 50%;
+  r: 50%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 0.375rem;
+  transform-origin: center;
 }
 
 :global(html.dark) .startup-screen {
@@ -195,16 +170,6 @@ const appTitle = import.meta.env.VITE_APP_TITLE ?? 'SRP';
   --startup-accent-bright: 255 232 179;
   --startup-accent-soft: 94 70 30;
   --startup-wash: 30 29 25;
-}
-
-.startup-screen__loader-node--start {
-  left: 0.2rem;
-  opacity: 0.52;
-}
-
-.startup-screen__loader-node--end {
-  right: 0.2rem;
-  animation: startup-node 1450ms ease-in-out infinite;
 }
 
 @keyframes startup-enter {
@@ -218,55 +183,19 @@ const appTitle = import.meta.env.VITE_APP_TITLE ?? 'SRP';
   }
 }
 
-@keyframes startup-trace {
-  0%,
-  100% {
-    opacity: 0;
-    transform: translate(-58%, -50%) scaleX(0.72);
-  }
-  16% {
-    opacity: 0.92;
-  }
-  54% {
-    opacity: 1;
-    transform: translate(82%, -50%) scaleX(1);
-  }
-  78% {
-    opacity: 0;
-    transform: translate(138%, -50%) scaleX(0.7);
-  }
-}
-
-@keyframes startup-glow {
-  0%,
-  100% {
-    opacity: 0.34;
-    transform: translateY(-50%) scaleX(0.72);
-  }
-  50% {
-    opacity: 0.82;
-    transform: translateY(-50%) scaleX(1);
-  }
-}
-
-@keyframes startup-node {
-  0%,
-  100% {
-    opacity: 0.46;
-    transform: translateY(-50%) scale(0.86);
-  }
-  52% {
-    opacity: 1;
-    transform: translateY(-50%) scale(1.08);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .startup-screen__surface,
-  .startup-screen__loader-trace,
-  .startup-screen__loader-glow,
-  .startup-screen__loader-node--end {
+  .startup-screen__surface {
     animation: none;
+  }
+
+  .startup-screen__loader animate,
+  .startup-screen__loader animateTransform {
+    display: none;
+  }
+
+  .startup-screen__loader > circle {
+    stroke-dasharray: 78.54% 235.619%;
+    stroke-dashoffset: 0;
   }
 }
 </style>

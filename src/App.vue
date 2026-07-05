@@ -3,10 +3,6 @@
   <AppShell v-else>
     <RouterView />
     <ToastViewport />
-    <AppUpdatePromptDialog
-      :open="updateAvailable"
-      @reload="reloadApp"
-    />
     <PushPermissionPromptDialog
       :open="isPushPromptOpen"
       :busy="pushLoading"
@@ -27,6 +23,10 @@
       @install="promptInstall"
     />
   </AppShell>
+  <AppUpdatePromptDialog
+    :open="updateAvailable"
+    @reload="reloadApp"
+  />
 </template>
 
 <script setup lang="ts">
@@ -123,6 +123,14 @@ async function enablePushFromPrompt() {
   await enablePushNotifications();
   isPushPromptOpen.value = false;
 }
+
+watch(
+  [updateAvailable, startupGateOpen],
+  ([hasUpdate, isStarting]) => {
+    if (hasUpdate && isStarting) void reloadApp();
+  },
+  { immediate: true },
+);
 
 watch(
   () => user.value?.uid ?? '',

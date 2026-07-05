@@ -2,6 +2,28 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "優化啟動畫面",
+    version: "v1.8.65",
+    date: "2026-07-06",
+    time: "00:19",
+    items: [
+      {
+        title: "調整啟動畫面載入動畫，提升等待狀態辨識度。",
+      },
+    ],
+  },
+  {
+    title: "提升版本更新體驗",
+    version: "v1.8.64",
+    date: "2026-07-06",
+    time: "00:15",
+    items: [
+      {
+        title: "偵測到新版時優先處理更新，減少停留在載入畫面的情況。",
+      },
+    ],
+  },
+  {
     title: "提升通知可靠性",
     version: "v1.8.63",
     date: "2026-07-06",
