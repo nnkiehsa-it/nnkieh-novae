@@ -140,8 +140,8 @@ export async function toggleSupport(
 
 export async function removeSupport(issueId: string, _uid: string) {
   try {
-    const fn = invokeBackendAction<{ issueId: string }, SupportResponse>('removeSupport');
-    const result = await fn({ issueId });
+    const fn = invokeBackendAction<{ issueId: string; requestId: string }, SupportResponse>('removeSupport');
+    const result = await fn({ issueId, requestId: createRequestId() });
     return result.data;
   } catch (error) {
     throw toReadableBackendError(error);

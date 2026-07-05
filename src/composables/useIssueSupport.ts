@@ -11,7 +11,11 @@ export function useIssueSupport(
   issueId: string,
   emit: (event: 'support-changed', payload: { issueId: string; supported: boolean; supportCount: number }) => void,
 ) {
-  const supportClosed = computed(() => derivedStatus.value !== 'pending');
+  const supportClosed = computed(() =>
+    derivedStatus.value !== 'pending'
+    || issue.value.support_met_at !== null
+    || (issue.value.support_goal !== null && supportCount.value >= issue.value.support_goal),
+  );
 
   const supportProgressStyle = computed(() => {
     const i = issue.value;

@@ -4,7 +4,7 @@ import { claimFixedWindowRateLimit } from "../_shared/upstash-rate-limit.ts";
 import { requireAdmin } from "./auth.ts";
 import { announcementToResponse } from "./announcement-shared.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
-import { markMarkdownUploadsAttached, queueAttachedUploadsForDeletion } from "./uploads.ts";
+import { markMarkdownUploadsAttached, queueAttachedUploadsForDeletion, queueUploadIdsForDeletion } from "./uploads.ts";
 import { asBoolean, utcHourWindow } from "./utils.ts";
 import { INPUT_LIMITS, requiredText } from "./validation.ts";
 
@@ -32,13 +32,24 @@ async function createAnnouncement(payload: JsonRecord, auth: AuthContext, supaba
 
 async function updateAnnouncement(payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {
   requireAdmin(auth);
+  const announcementId = asString(payload.announcementId);
+  const { data: previouslyAttached, error: previousUploadsError } = await supabase.schema("app_private")
+    .from("uploads").select("id").eq("attached_target_type", "announcement").eq("attached_target_id", announcementId);
+  if (previousUploadsError) throw previousUploadsError;
   const content = requiredText(payload.content, "content", INPUT_LIMITS.content);
   const { data, error } = await supabase.schema("app_private").from("announcements").update({
     title: requiredText(payload.title, "title", INPUT_LIMITS.title),
     content,
-  }).eq("id", asString(payload.announcementId)).select("*").single();
+  }).eq("id", announcementId).select("*").single();
   if (error) throw error;
   await markMarkdownUploadsAttached(supabase, auth.uid, content, "announcement", data.id);
+  const retainedUploadIds = new Set(
+    [...content.matchAll(/srp-upload:\/\/([0-9a-fA-F-]{36})/gu)].map((match) => match[1]),
+  );
+  const removedUploads = (previouslyAttached ?? []).filter((upload) => !retainedUploadIds.has(upload.id));
+  if (removedUploads.length > 0) {
+    await queueUploadIdsForDeletion(supabase, removedUploads.map((upload) => upload.id));
+  }
   await supabase.schema("app_private").from("outbox_events").insert({
     event_type: "announcement.updated",
     target_type: "announcement",

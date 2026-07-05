@@ -270,7 +270,9 @@ test('personal notification writes and pushes are scoped to the recipient', asyn
 
   assert.match(backendAction, /event_type: "issue\.comment_created"/u);
   assert.match(backendAction, /content: data\.content/u);
+  assert.match(backendAction, /issue_author_uid: issue\.author_uid/u);
   assert.match(backendAction, /issue_id: issueId/u);
+  assert.match(backendAction, /if \(outboxError\) throw outboxError/u);
   assert.match(backendAction, /event_type: "issue\.status_changed"/u);
   assert.match(backendAction, /issue_category: data\.category/u);
   assert.match(backendAction, /rpc\("backend_delete_issue"/u);
@@ -287,7 +289,8 @@ test('personal notification writes and pushes are scoped to the recipient', asyn
   assert.match(outboxWorker, /title: "新提案待審核"/u);
   assert.match(outboxWorker, /title: "新提案待處理"/u);
   assert.match(outboxWorker, /title: isReviewApproved \? "提案審核已通過" : "提案狀態已變更"/u);
-  assert.match(outboxWorker, /`\$\{title\}已通過審核並開放附議。`/u);
+  assert.match(outboxWorker, /`\$\{title\} 已通過審核並開放附議。`/u);
+  assert.match(outboxWorker, /`\$\{title\} 現在狀態為 \$\{issueStatusLabel\(newStatus\)\}`/u);
   assert.match(outboxWorker, /title: "提案有新的留言"/u);
   assert.match(outboxWorker, /title: "提案已達附議門檻"/u);
   assert.match(outboxWorker, /title: "提案已被刪除"/u);

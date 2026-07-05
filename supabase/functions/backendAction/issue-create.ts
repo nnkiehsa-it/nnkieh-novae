@@ -22,9 +22,7 @@ export async function createIssue(payload: JsonRecord, auth: AuthContext, supaba
 
   const categoryConfig = getIssueCategoryConfigOrDefault(category);
   const now = new Date();
-  const supportDeadlineAt = categoryConfig.support.enabled && categoryConfig.support.deadlineDays
-    ? new Date(now.getTime() + categoryConfig.support.deadlineDays * 24 * 60 * 60 * 1000).toISOString()
-    : null;
+  const supportDeadlineAt = null;
   const responseDeadlineAt = categoryConfig.responseDeadline.start === "created" && categoryConfig.responseDeadline.days !== null
     ? new Date(now.getTime() + categoryConfig.responseDeadline.days * 24 * 60 * 60 * 1000).toISOString()
     : null;

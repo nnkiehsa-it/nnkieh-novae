@@ -36,6 +36,7 @@
 - supabase/config.toml：Supabase 本機與部署設定，暴露 Supabase 預設 schema、`app_api` 與供 service role Edge Functions 使用的 `app_private` schema，並設定登入同步、受控 action、Cloudinary webhook、outbox worker、刪除工作與維護清理 Edge Functions 的 JWT 驗證模式。
 - supabase/migrations/202607050001_supabase_baseline.sql：單一 Supabase 基線 migration，完整建立 schema、RLS、資料表、RPC、trigger、Realtime publication、索引、冪等、清理排程、圖片時效網址與維護重試設定。
 - supabase/migrations/202607050002_fix_notification_realtime_rls.sql：讓通知 Realtime 的 RLS 依部署 healthcheck 保存的 Firebase project ID 驗證 token audience，確保重置後仍可正常訂閱。
+- supabase/migrations/202607050003_complete_platform_workflows.sql：完善附議達標與到期狀態、工作租約回收、永久統計計數及圖片刪除即時喚醒機制。
 - supabase/functions/backendAction/index.ts：前端受控 action HTTP 入口，集中 CORS、Firebase 驗證、使用者角色查詢、healthcheck、action 分派與冪等保護，不直接承載各領域資料流程。
 - supabase/functions/backendAction/types.ts：受控 action 共用 Supabase client、身份與 JSON record 型別。
 - supabase/functions/backendAction/utils.ts：受控 action 共用 cursor、時間、數值、布林與台北日界限工具。

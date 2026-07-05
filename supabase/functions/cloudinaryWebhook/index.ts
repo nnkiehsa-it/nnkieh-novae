@@ -3,6 +3,7 @@ import type { Database } from "../_shared/database.ts";
 import { requireEnv } from "../_shared/env.ts";
 import { errorMessage, errorStatus, jsonResponse, publicError, requireMethod, textResponse } from "../_shared/http.ts";
 import { verifyCloudinarySignature } from "../_shared/webhook.ts";
+import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 
 Deno.serve(async (request) => {
   const methodFailure = requireMethod(request, "POST");
@@ -33,11 +34,11 @@ Deno.serve(async (request) => {
       && resourceType === "image"
       && deliveryType === "authenticated"
       && bytes > 0
-      && bytes <= 800 * 1024
+      && bytes <= RATE_LIMITS.imageCompression.maxUploadBytes
       && width > 0
       && height > 0
-      && width <= 2000
-      && height <= 2000;
+      && width <= RATE_LIMITS.imageCompression.maxDimension
+      && height <= RATE_LIMITS.imageCompression.maxDimension;
 
     const supabase = createClient<Database>(
       requireEnv("SUPABASE_URL"),
@@ -61,11 +62,12 @@ Deno.serve(async (request) => {
       throw error;
     }
     if (!validAsset) {
-      await supabase.schema("app_private").from("deletion_jobs").insert({
+      const { error: deletionError } = await supabase.schema("app_private").from("deletion_jobs").insert({
         target_type: "upload",
         target_id: publicId,
         cloudinary_public_id: publicId,
       });
+      if (deletionError) throw deletionError;
     }
 
     return jsonResponse({ ok: true });

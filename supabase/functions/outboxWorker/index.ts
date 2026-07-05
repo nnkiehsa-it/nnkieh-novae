@@ -111,8 +111,8 @@ function notificationForEvent(event: OutboxEvent): Record<string, unknown> | nul
       title: isReviewApproved ? "提案審核已通過" : "提案狀態已變更",
       actor_uid: event.actor_uid,
       body_preview: isReviewApproved
-        ? `${title}已通過審核並開放附議。`
-        : `${title}現在狀態為${issueStatusLabel(newStatus)}`,
+        ? `${title} 已通過審核並開放附議。`
+        : `${title} 現在狀態為 ${issueStatusLabel(newStatus)}`,
       old_status: oldStatus,
       new_status: newStatus,
       issue_category: asString(event.payload.issue_category),
@@ -182,7 +182,8 @@ async function findIssueAuthorUid(
   supabase: AppSupabase,
   event: OutboxEvent,
 ) {
-  const payloadAuthorUid = asString(event.payload.author_uid);
+  const payloadAuthorUid = asString(event.payload.author_uid)
+    || asString(event.payload.issue_author_uid);
   if (payloadAuthorUid) return payloadAuthorUid;
 
   const { data, error } = await supabase
@@ -263,7 +264,7 @@ async function syncNotionForEvent(
       await syncIssueStatusChangedToNotion(supabase, event.target_id, event.payload);
       break;
     case "issue.comment_created":
-      await syncIssueCommentToNotion(supabase, event.target_id);
+      await syncIssueCommentToNotion(supabase, event.target_id, event.payload);
       break;
     case "support.created":
     case "support.deleted":
@@ -313,6 +314,12 @@ async function sendPushes(
   if (error) throw error;
 
   const notificationType = asString(notification.type);
+  const targetType = asString(notification.target_type);
+  const targetId = asString(notification.target_id);
+  const category = asString(notification.issue_category);
+  const link = targetType === "announcement"
+    ? `/announcements/${encodeURIComponent(targetId)}`
+    : `/issues/${encodeURIComponent(category || "public-issues")}/${encodeURIComponent(targetId)}`;
   const recipientUids = [...new Set((data ?? []).map((row) => asString(row.uid)).filter(Boolean))];
   const preferences = new Map<string, { comments: boolean; issueUpdates: boolean }>();
   if (recipientUids.length > 0) {
@@ -345,8 +352,12 @@ async function sendPushes(
           body: asString(notification.body_preview),
         },
         data: {
-          target_id: asString(notification.target_id),
-          target_type: asString(notification.target_type),
+          body: asString(notification.body_preview),
+          issue_category: category,
+          link,
+          target_id: targetId,
+          target_type: targetType,
+          title: asString(notification.title),
           type: notificationType,
         },
       });

@@ -38,7 +38,7 @@ async function createAnnouncementComment(payload: JsonRecord, auth: AuthContext,
   await markMarkdownUploadsAttached(supabase, auth.uid, content, "announcement_comment", data.id);
   const { data: announcement, error: announcementError } = await supabase.schema("app_private").from("announcements").select("comment_count,title").eq("id", announcementId).single();
   if (announcementError) throw announcementError;
-  await supabase.schema("app_private").from("outbox_events").insert({
+  const { error: outboxError } = await supabase.schema("app_private").from("outbox_events").insert({
     event_type: "announcement.comment_created",
     target_type: "announcement",
     target_id: announcementId,
@@ -52,6 +52,7 @@ async function createAnnouncementComment(payload: JsonRecord, auth: AuthContext,
       title: announcement.title,
     },
   });
+  if (outboxError) throw outboxError;
   return { comment: commentToResponse(data as JsonRecord), comment_count: announcement.comment_count ?? 0 };
 }
 

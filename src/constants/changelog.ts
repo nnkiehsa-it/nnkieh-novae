@@ -2,6 +2,23 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "提升提案與通知可靠性",
+    version: "v1.8.56",
+    date: "2026-07-05",
+    time: "21:22",
+    items: [
+      {
+        title: "修正留言通知可能遺失的情況，並改善提案狀態通知文字間距。",
+      },
+      {
+        title: "完善附議達標、期限計算與到期未達門檻的狀態更新。",
+      },
+      {
+        title: "改善圖片移除與背景維護工作，提升資料處理穩定性。",
+      },
+    ],
+  },
+  {
     title: "改善通知瀏覽與更新體驗",
     version: "v1.8.55",
     date: "2026-07-05",

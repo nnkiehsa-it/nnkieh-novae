@@ -258,6 +258,12 @@ interface AppPrivateTables {
 }
 
 interface AppApiFunctions {
+  backend_toggle_support: AppFunction<{
+    actor_uid: string;
+    issue_id: string;
+    remove_support: boolean;
+    response_deadline_days: number | null;
+  }, Array<{ goal_met: boolean; support_count: number; supported: boolean }>>;
   claim_deletion_jobs: AppFunction<{ batch_size?: number }, DeletionJobRow[]>;
   claim_idempotency_key: AppFunction<{ action_name: string; actor_uid: string; request_id: string }, Array<{
     claimed: boolean;

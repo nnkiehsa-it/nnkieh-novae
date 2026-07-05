@@ -60,6 +60,7 @@ async function callNotionAPI(path: string, method: string, body?: unknown, versi
       "Notion-Version": version || optionalEnv("NOTION_VERSION") || "2022-06-28",
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,
+    signal: AbortSignal.timeout(15_000),
   });
   if (!response.ok) {
     throw new Error(`Notion API error (${response.status}): ${await response.text()}`);
@@ -126,6 +127,7 @@ async function uploadImageToNotion(publicId: string, filename: string) {
       "Notion-Version": NOTION_FILE_VERSION,
     },
     body: JSON.stringify({ mode: "single_part", filename, content_type: "image/webp" }),
+    signal: AbortSignal.timeout(15_000),
   });
   if (!created.ok) throw new Error(`notion-file-create:${created.status}`);
   const upload = await created.json() as { id?: string };
@@ -139,6 +141,7 @@ async function uploadImageToNotion(publicId: string, filename: string) {
       "Notion-Version": NOTION_FILE_VERSION,
     },
     body: form,
+    signal: AbortSignal.timeout(30_000),
   });
   if (!sent.ok) throw new Error(`notion-file-send:${sent.status}`);
   return upload.id;
@@ -281,6 +284,7 @@ export async function markNotionPageDeleted(pageId: string): Promise<void> {
       "Notion-Version": optionalEnv("NOTION_VERSION") || "2022-06-28",
     },
     body: JSON.stringify({ properties: { "狀態": { select: { name: "已刪除" } } } }),
+    signal: AbortSignal.timeout(15_000),
   });
 
   if (!response.ok) {
@@ -414,6 +418,7 @@ export async function syncIssueSupportToNotion(
 export async function syncIssueCommentToNotion(
   supabase: AppSupabase,
   targetId: string,
+  payload: Record<string, unknown>,
 ): Promise<void> {
   if (!notionEnabled()) return;
 
@@ -426,17 +431,8 @@ export async function syncIssueCommentToNotion(
     .maybeSingle();
   if (!pageRow?.notion_page_id) return;
 
-  const { data: comment } = await supabase
-    .schema("app_private")
-    .from("comments")
-    .select("author_name, content")
-    .eq("issue_id", targetId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const authorName = String(comment?.author_name ?? "使用者");
-  const contentPreview = String(comment?.content ?? "").slice(0, 150);
+  const authorName = String(payload.author_name ?? "使用者");
+  const contentPreview = String(payload.content ?? "").slice(0, 150);
 
   await appendBlock(
     String(pageRow.notion_page_id),

@@ -83,6 +83,21 @@ export async function markMarkdownUploadsAttached(
       : RATE_LIMITS.imageUploads.commentMaxImages;
   if (uploadIds.length > maxImages) throw new Error("too-many-images");
 
+  const { data: attachable, error: attachableError } = await supabase.schema("app_private")
+    .from("uploads")
+    .select("id,owner_uid,status,attached_target_type,attached_target_id")
+    .in("id", uploadIds);
+  if (attachableError) throw attachableError;
+  const validIds = new Set((attachable ?? []).filter((upload) =>
+    upload.owner_uid === ownerUid
+    && (upload.status === "ready" || upload.status === "attached")
+    && (
+      !upload.attached_target_id
+      || (upload.attached_target_type === targetType && upload.attached_target_id === targetId)
+    )
+  ).map((upload) => upload.id));
+  if (validIds.size !== uploadIds.length) throw new Error("upload-attachment-invalid");
+
   const { error } = await supabase.schema("app_private").from("uploads").update({
     attached_target_id: targetId,
     attached_target_type: targetType,
@@ -118,6 +133,28 @@ export async function queueAttachedUploadsForDeletion(
       .delete().in("id", data.map((upload) => upload.id));
     if (deleteError) throw deleteError;
   }
+}
+
+export async function queueUploadIdsForDeletion(
+  supabase: BackendSupabase,
+  uploadIds: string[],
+) {
+  if (uploadIds.length === 0) return;
+  const { data, error } = await supabase.schema("app_private").from("uploads")
+    .select("id,cloudinary_public_id").in("id", uploadIds);
+  if (error) throw error;
+  if (!data?.length) return;
+  const { error: jobError } = await supabase.schema("app_private").from("deletion_jobs").insert(
+    data.map((upload) => ({
+      target_type: "upload",
+      target_id: upload.id,
+      cloudinary_public_id: upload.cloudinary_public_id,
+    })),
+  );
+  if (jobError) throw jobError;
+  const { error: deleteError } = await supabase.schema("app_private").from("uploads")
+    .delete().in("id", data.map((upload) => upload.id));
+  if (deleteError) throw deleteError;
 }
 
 export async function handleUploadAction(
