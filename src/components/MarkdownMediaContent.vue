@@ -19,7 +19,7 @@
         </div>
         <div
           v-else-if="image.uploadId && !image.isUploadResolved"
-          class="flex aspect-[4/3] w-full animate-pulse items-center justify-center bg-ink-200/60 text-ink-400 dark:bg-ink-700/50 dark:text-ink-500"
+          class="flex aspect-[4/3] w-full animate-skeleton items-center justify-center bg-ink-200/60 text-ink-400 dark:bg-ink-700/50 dark:text-ink-500"
         >
           <LoadingSpinner :size="5" />
         </div>

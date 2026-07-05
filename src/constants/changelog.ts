@@ -2,6 +2,17 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "優化載入動畫視覺效果",
+    version: "v2.0.39",
+    date: "2026-07-06",
+    time: "00:48",
+    items: [
+      {
+        title: "優化各處骨架的載入動畫，改用動態光影掃掠效果，提升等待期間的視覺流暢度。",
+      },
+    ],
+  },
+  {
     title: "統一載入動畫",
     version: "v2.0.38",
     date: "2026-07-06",

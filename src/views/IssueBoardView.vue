@@ -10,10 +10,10 @@
 
     <div v-else-if="sessionLoading" class="space-y-6" aria-label="正在載入提案" aria-busy="true">
       <div class="flex items-center justify-between border-b border-ink-200/80 pb-4 dark:border-ink-800/80">
-        <span class="h-7 w-16 rounded bg-ink-200/60 animate-pulse dark:bg-ink-700/50"></span>
-        <div class="flex gap-2 animate-pulse">
-          <span class="h-9 w-24 rounded-full bg-ink-200/60 dark:bg-ink-700/50"></span>
-          <span class="h-9 w-20 rounded-full bg-ink-200/60 dark:bg-ink-700/50"></span>
+        <span class="h-7 w-16 rounded bg-ink-200/60 animate-skeleton dark:bg-ink-700/50"></span>
+        <div class="flex gap-2">
+          <span class="h-9 w-24 rounded-full bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
+          <span class="h-9 w-20 rounded-full bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
         </div>
       </div>
       <IssueBoardTable
