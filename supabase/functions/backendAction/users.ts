@@ -1,7 +1,7 @@
 import {
   createCloudinaryAuthenticatedImageUrl,
   sha256Hex,
-  uploadCloudinaryAuthenticatedImageFromUrl,
+  uploadCloudinaryAuthenticatedImage,
 } from "../_shared/cloudinary.ts";
 import { asString } from "../_shared/http.ts";
 import { RATE_LIMITS } from "../_shared/rate-limits.ts";
@@ -54,6 +54,9 @@ export async function handleUserAction(
       .eq("uid", auth.uid)
       .maybeSingle();
     if (existingError) throw existingError;
+    if (existing?.avatar_source_url === sourceUrl && existing.cached_photo_url) {
+      return { photoUrl: existing.cached_photo_url };
+    }
 
     const imageResponse = await fetch(sourceUrl, {
       redirect: "error",
@@ -84,7 +87,10 @@ export async function handleUserAction(
 
     const nextVersion = Number(existing?.avatar_version ?? 0) + 1;
     const nextPublicId = `srp/avatars/${auth.uid}_${nextVersion}`;
-    await uploadCloudinaryAuthenticatedImageFromUrl(nextPublicId, sourceUrl);
+    await uploadCloudinaryAuthenticatedImage(
+      nextPublicId,
+      new Blob([imageBuffer], { type: contentType }),
+    );
     const cachedPhotoUrl = await createCloudinaryAuthenticatedImageUrl(nextPublicId);
     const previousPublicId = asString(existing?.avatar_public_id);
 
@@ -101,11 +107,12 @@ export async function handleUserAction(
     }, { onConflict: "uid" });
     if (error) throw error;
     if (previousPublicId && previousPublicId !== nextPublicId) {
-      await supabase.schema("app_private").from("deletion_jobs").insert({
+      const { error: deletionError } = await supabase.schema("app_private").from("deletion_jobs").insert({
         cloudinary_public_id: previousPublicId,
         target_id: auth.uid,
         target_type: "avatar",
       });
+      if (deletionError) throw deletionError;
     }
     return { photoUrl: cachedPhotoUrl };
   }

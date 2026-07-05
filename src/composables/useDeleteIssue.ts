@@ -20,12 +20,12 @@ export function useDeleteIssue(issueId: MaybeRef<string>) {
     isDeleteDialogOpen.value = false;
   }
 
-  async function performDelete(purgeNestedCollections = true) {
+  async function performDelete() {
     isDeleting.value = true;
     const targetIssueId = unref(issueId);
 
     try {
-      const result = await deleteIssue(targetIssueId, { purgeNestedCollections });
+      const result = await deleteIssue(targetIssueId);
       isDeleteDialogOpen.value = false;
       return result.issueId;
     } catch {

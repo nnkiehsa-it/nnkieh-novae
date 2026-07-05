@@ -86,12 +86,6 @@ function normalizeCommentResponse(comment: CommentResponseRecord): CommentRecord
 
 export async function createIssue(
   input: ComposerInput,
-  _author: {
-    uid: string;
-    displayName: string;
-    photoURL: string | null;
-    email: string;
-  },
 ) {
   try {
     const fn = invokeBackendAction<
@@ -125,9 +119,6 @@ export async function moderateIssueStatus(issueId: string, status: IssueStatus, 
 
 export async function toggleSupport(
   issueId: string,
-  _voter: {
-    uid: string;
-  },
 ) {
   try {
     const fn = invokeBackendAction<{ issueId: string; requestId: string }, SupportResponse>('toggleSupport');
@@ -138,7 +129,7 @@ export async function toggleSupport(
   }
 }
 
-export async function removeSupport(issueId: string, _uid: string) {
+export async function removeSupport(issueId: string) {
   try {
     const fn = invokeBackendAction<{ issueId: string; requestId: string }, SupportResponse>('removeSupport');
     const result = await fn({ issueId, requestId: createRequestId() });
@@ -150,9 +141,6 @@ export async function removeSupport(issueId: string, _uid: string) {
 
 export async function deleteIssue(
   issueId: string,
-  _options?: {
-    purgeNestedCollections?: boolean;
-  },
 ) {
   try {
     const fn = invokeBackendAction<{ issueId: string; requestId: string }, { success: boolean; issueId: string }>('deleteIssue');
@@ -166,12 +154,6 @@ export async function deleteIssue(
 export async function createComment(
   issueId: string,
   input: CommentInput,
-  _author: {
-    uid: string;
-    displayName: string;
-    photoURL: string | null;
-    email: string;
-  },
   isAdminComment = false,
 ) {
   try {
@@ -191,7 +173,7 @@ export async function createComment(
   }
 }
 
-export async function deleteComment(_issueId: string, commentId: string) {
+export async function deleteComment(commentId: string) {
   try {
     const fn = invokeBackendAction('deleteComment');
     await fn({ commentId, requestId: createRequestId() });

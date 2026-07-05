@@ -1,5 +1,6 @@
 import { requireEnv } from "./env.ts";
 import { asRecord, asString } from "./http.ts";
+import { createRemoteJWKSet, jwtVerify } from "npm:jose@6.1.3";
 
 export interface FirebaseAuthContext {
   customAttributes: string;
@@ -64,6 +65,38 @@ export async function requireEligibleFirebaseUser(request: Request): Promise<Fir
     email,
     name: asString(firebaseUser.displayName, asString(claims.name, email || "匿名使用者")),
     photoUrl: asString(firebaseUser.photoUrl, asString(claims.picture)) || null,
+    uid,
+  };
+}
+
+const firebaseKeys = createRemoteJWKSet(
+  new URL("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"),
+);
+
+export async function requireVerifiedFirebaseUser(request: Request): Promise<FirebaseAuthContext> {
+  const idToken = requireAuthHeader(request);
+  const projectId = requireEnv("FIREBASE_PROJECT_ID");
+  let payload: Record<string, unknown>;
+  try {
+    const verified = await jwtVerify(idToken, firebaseKeys, {
+      audience: projectId,
+      issuer: `https://securetoken.google.com/${projectId}`,
+    });
+    payload = verified.payload as Record<string, unknown>;
+  } catch {
+    throw new Error("unauthenticated");
+  }
+  const uid = asString(payload.sub);
+  const email = asString(payload.email).toLowerCase();
+  const allowedDomain = requireEnv("ALLOWED_DOMAIN").toLowerCase();
+  if (!uid || payload.email_verified !== true || !email.endsWith(`@${allowedDomain}`)) {
+    throw new Error("permission-denied");
+  }
+  return {
+    customAttributes: "{}",
+    email,
+    name: asString(payload.name, email || "匿名使用者"),
+    photoUrl: asString(payload.picture) || null,
     uid,
   };
 }

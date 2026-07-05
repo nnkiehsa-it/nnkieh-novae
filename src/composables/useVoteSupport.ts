@@ -62,10 +62,8 @@ export function useVoteSupport(options: VoteSupportOptions) {
 
     try {
       const result = nextSupported
-        ? await toggleSupport(options.issueId.value, {
-          uid: user.value.uid,
-        })
-        : await removeSupport(options.issueId.value, user.value.uid);
+        ? await toggleSupport(options.issueId.value)
+        : await removeSupport(options.issueId.value);
 
       optimisticSupported.value = result.supported;
       options.onSupported({

@@ -1,5 +1,5 @@
 import { requireEnv } from "../_shared/env.ts";
-import { requireEligibleFirebaseUser } from "../_shared/firebase-auth.ts";
+import { requireVerifiedFirebaseUser } from "../_shared/firebase-auth.ts";
 import type { AuthContext, BackendSupabase } from "./types.ts";
 
 function isAdminEmail(email: string) {
@@ -11,7 +11,7 @@ function isAdminEmail(email: string) {
 }
 
 export async function requireAuth(supabase: BackendSupabase, request: Request): Promise<AuthContext> {
-  const firebaseUser = await requireEligibleFirebaseUser(request);
+  const firebaseUser = await requireVerifiedFirebaseUser(request);
 
   const { data: role, error } = await supabase
     .schema("app_private")

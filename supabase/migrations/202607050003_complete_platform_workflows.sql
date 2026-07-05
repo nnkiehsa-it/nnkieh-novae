@@ -52,7 +52,7 @@ begin
   elsif tg_table_name = 'supports' then
     perform app_private.increment_platform_counter(case when tg_op = 'INSERT' then 'supports_added' else 'supports_removed' end);
   end if;
-  return coalesce(new, old);
+  return null;
 end;
 $$;
 

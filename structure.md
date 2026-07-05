@@ -38,6 +38,7 @@
 - supabase/migrations/202607050002_fix_notification_realtime_rls.sql：讓通知 Realtime 的 RLS 依部署 healthcheck 保存的 Firebase project ID 驗證 token audience，確保重置後仍可正常訂閱。
 - supabase/migrations/202607050003_complete_platform_workflows.sql：完善附議達標與到期狀態、工作租約回收、永久統計計數及圖片刪除即時喚醒機制。
 - supabase/migrations/202607050004_dashboard_and_read_efficiency.sql：以資料庫聚合快照提供管理統計、維護狀態與分類成果，避免大量資料傳輸。
+- supabase/migrations/202607050005_remove_legacy_interfaces.sql：移除已由受控後端流程取代的舊資料讀取 view 與刪除入口。
 - supabase/functions/backendAction/index.ts：前端受控 action HTTP 入口，集中 CORS、Firebase 驗證、使用者角色查詢、healthcheck、action 分派與冪等保護，不直接承載各領域資料流程。
 - supabase/functions/backendAction/types.ts：受控 action 共用 Supabase client、身份與 JSON record 型別。
 - supabase/functions/backendAction/utils.ts：受控 action 共用 cursor、時間、數值、布林與台北日界限工具。
@@ -262,18 +263,16 @@
 ---
 
 ## src/services (受控資料服務層)
-## src/services (受控資料服務層)
 
 - src/services/issues.ts：API Gateway 入口，統一 re-export 提案讀寫子服務。
 - src/services/backend-action.ts：Supabase Edge Function `backendAction` 呼叫工具，統一 action/payload 格式、timeout 與 abort signal。
 - src/services/supabase-function-error.ts：Supabase Edge Function 非 2xx 回應解析 helper，優先讀取後端 JSON / text 錯誤內容。
 - src/services/session-role.ts：登入後向後端查詢目前使用者角色，避免前端保存管理員 email 清單。
-- src/services/issues-core.ts：提案 read service 相容匯出入口與單筆提案讀取 helper，實際常數、錯誤、工具、正規化與查詢 builder 拆到子檔。
+- src/services/issues-core.ts：提案 read service 共用匯出入口與單筆提案讀取 helper，集中正式使用的常數、錯誤與正規化工具。
 - src/services/issues-constants.ts：提案服務常數，包含分頁大小、期限天數與 bucket 狀態。
 - src/services/issues-errors.ts：後端錯誤轉使用者可讀訊息 helper。
-- src/services/issues-utils.ts：提案服務純工具，包含排序、分塊與日期運算 helper。
+- src/services/issues-utils.ts：提案服務日期運算工具。
 - src/services/issues-normalize.ts：提案資料正規化、預設值、bucket 判定、cursor、支援狀態與 page result helper。
-- src/services/issues-query.ts：提案 bucket 查詢參數相容 helper。
 - src/services/issues-read.ts：提案唯讀 service 匯出入口，只 re-export 分頁搜尋、使用者提案、私有作者與留言讀取子服務。
 - src/services/issues-read-pages.ts：提案排序分頁讀取、載入更多與標題搜尋讀取，並在服務邊界正規化後端 cursor。
 - src/services/issues-read-user.ts：使用者提案游標分頁與已附議提案 id 讀取。

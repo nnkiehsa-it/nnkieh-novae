@@ -90,7 +90,7 @@ export async function handleNotificationAction(
   const state = await upsertNotificationState(supabase, auth.uid);
   if (action === "registerPushToken") {
     await claimFixedWindowRateLimit(auth.uid, "push-token.write", utcHourWindow(), RATE_LIMITS.pushTokenWriteHourly);
-    await supabase.schema("app_private").from("push_tokens").upsert({
+    const { error } = await supabase.schema("app_private").from("push_tokens").upsert({
       uid: auth.uid,
       device_id: asString(payload.deviceId),
       token: asString(payload.token),
@@ -99,25 +99,31 @@ export async function handleNotificationAction(
       user_agent: asString(payload.userAgent),
       updated_at: new Date().toISOString(),
     }, { onConflict: "uid,device_id" });
+    if (error) throw error;
   }
   if (action === "unregisterPushToken") {
     await claimFixedWindowRateLimit(auth.uid, "push-token.write", utcHourWindow(), RATE_LIMITS.pushTokenWriteHourly);
     const deviceId = asString(payload.deviceId);
-    if (deviceId) await supabase.schema("app_private").from("push_tokens").delete().eq("uid", auth.uid).eq("device_id", deviceId);
+    if (deviceId) {
+      const { error } = await supabase.schema("app_private").from("push_tokens").delete().eq("uid", auth.uid).eq("device_id", deviceId);
+      if (error) throw error;
+    }
   }
   if (action === "updatePushNotificationPreferences") {
     const preferences = asRecord(payload.preferences);
     const comments = preferences.comments !== false;
     const issueUpdates = preferences.issueUpdates !== false;
-    await supabase.schema("app_private").from("notification_states").update({
+    const { error } = await supabase.schema("app_private").from("notification_states").update({
       push_comments_enabled: comments,
       push_issue_updates_enabled: issueUpdates,
       updated_at: new Date().toISOString(),
     }).eq("uid", auth.uid);
+    if (error) throw error;
     state.push_comments_enabled = comments;
     state.push_issue_updates_enabled = issueUpdates;
   }
-  const { count } = await supabase.schema("app_private").from("push_tokens").select("*", { count: "exact", head: true }).eq("uid", auth.uid);
+  const { count, error: countError } = await supabase.schema("app_private").from("push_tokens").select("*", { count: "exact", head: true }).eq("uid", auth.uid);
+  if (countError) throw countError;
   return {
     deviceEnabled: Boolean(asString(payload.deviceId)),
     enabled: (count ?? 0) > 0,
