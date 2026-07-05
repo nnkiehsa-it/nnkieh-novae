@@ -3,6 +3,7 @@ import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 import { claimFixedWindowRateLimit } from "../_shared/upstash-rate-limit.ts";
 import { commentCursor, commentToResponse } from "./issue-shared.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
+import { markMarkdownUploadsAttached } from "./uploads.ts";
 import { applyAscendingDateCursor, asBoolean, readCursor, utcHourWindow } from "./utils.ts";
 
 async function listAnnouncementComments(payload: JsonRecord, supabase: BackendSupabase) {
@@ -23,15 +24,17 @@ async function listAnnouncementComments(payload: JsonRecord, supabase: BackendSu
 async function createAnnouncementComment(payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {
   await claimFixedWindowRateLimit(auth.uid, "comment.create", utcHourWindow(), RATE_LIMITS.commentCreateHourly);
   const announcementId = asString(payload.announcementId);
+  const content = asString(payload.content);
   const { data, error } = await supabase.schema("app_private").from("announcement_comments").insert({
     announcement_id: announcementId,
     author_uid: auth.uid,
     author_name: auth.name,
     author_photo_url: auth.photoUrl,
-    content: asString(payload.content),
+    content,
     is_admin_comment: asBoolean(payload.isAdminComment) && auth.isAdmin,
   }).select("*").single();
   if (error) throw error;
+  await markMarkdownUploadsAttached(supabase, auth.uid, content, "announcement_comment", data.id);
   const { data: announcement, error: announcementError } = await supabase.schema("app_private").from("announcements").select("comment_count,title").eq("id", announcementId).single();
   if (announcementError) throw announcementError;
   await supabase.schema("app_private").from("outbox_events").insert({

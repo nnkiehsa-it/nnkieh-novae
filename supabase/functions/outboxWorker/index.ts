@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import type { Database } from "../_shared/database.ts";
 import { requireEnv } from "../_shared/env.ts";
-import { sendFcmMessage } from "../_shared/fcm.ts";
+import { isInvalidFcmTokenError, sendFcmMessage } from "../_shared/fcm.ts";
 import { errorMessage, jsonResponse, requireMethod } from "../_shared/http.ts";
 import {
   markNotionPageDeleted,
@@ -47,7 +47,7 @@ function issueStatusLabel(status: string) {
   return ISSUE_STATUS_LABELS[status] ?? status;
 }
 
-function notificationForEvent(event: OutboxEvent) {
+function notificationForEvent(event: OutboxEvent): Record<string, unknown> | null {
   const title = asString(event.payload.title, event.event_type);
   if (event.event_type === "issue.created") {
     if (asString(event.payload.status) === "under-review") {
@@ -56,7 +56,7 @@ function notificationForEvent(event: OutboxEvent) {
       type: "issue_created",
       target_type: "issue",
       target_id: event.target_id,
-      title: `新提案待審核：${title}`,
+      title: "新提案待審核",
       actor_uid: event.actor_uid,
       body_preview: title,
       issue_category: asString(event.payload.category),
@@ -193,12 +193,28 @@ async function findIssueAuthorUid(
   return asString(data?.author_uid);
 }
 
+async function findCachedAvatarUrl(supabase: AppSupabase, uid: string) {
+  if (!uid) return "";
+  const { data, error } = await supabase
+    .schema("app_private")
+    .from("user_profiles")
+    .select("cached_photo_url")
+    .eq("uid", uid)
+    .maybeSingle();
+  if (error) throw error;
+  return asString(data?.cached_photo_url);
+}
+
 async function resolveNotification(
   supabase: AppSupabase,
   event: OutboxEvent,
 ) {
-  const notification = notificationForEvent(event);
+  let notification = notificationForEvent(event);
   if (!notification) return null;
+  const actorPhotoUrl = await findCachedAvatarUrl(supabase, event.actor_uid);
+  if (actorPhotoUrl) {
+    notification = { ...notification, actor_photo_url: actorPhotoUrl };
+  }
 
   if (
     event.event_type === "issue.comment_created"
@@ -339,6 +355,9 @@ async function sendPushes(
         token_uid: uid,
       });
     } catch (error) {
+      if (isInvalidFcmTokenError(error)) {
+        await supabase.schema("app_private").from("push_tokens").delete().eq("token", row.token);
+      }
       await supabase.schema("app_private").from("push_delivery_logs").insert({
         error_message: errorMessage(error),
         notification_type: notificationType,

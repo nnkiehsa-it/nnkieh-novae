@@ -4,6 +4,8 @@ import { requireEnv } from "../_shared/env.ts";
 import { requireEligibleFirebaseUser } from "../_shared/firebase-auth.ts";
 import { getGoogleAccessToken } from "../_shared/google-oauth.ts";
 import { errorMessage, errorStatus, handleCorsPreflight, jsonResponse, requireMethod } from "../_shared/http.ts";
+import { RATE_LIMITS } from "../_shared/rate-limits.ts";
+import { claimFixedWindowRateLimit } from "../_shared/upstash-rate-limit.ts";
 
 function parseCustomAttributes(value: string) {
   try {
@@ -22,6 +24,17 @@ function isAdminEmail(email: string) {
     .includes(email.toLowerCase());
 }
 
+function utcHourWindow() {
+  const now = new Date();
+  const startsAt = new Date(Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+    now.getUTCHours(),
+  ));
+  return { startsAt, expiresAt: new Date(startsAt.getTime() + 60 * 60 * 1000) };
+}
+
 Deno.serve(async (request) => {
   const preflight = handleCorsPreflight(request);
   if (preflight) return preflight;
@@ -32,6 +45,7 @@ Deno.serve(async (request) => {
   try {
     const projectId = requireEnv("FIREBASE_PROJECT_ID");
     const user = await requireEligibleFirebaseUser(request);
+    await claimFixedWindowRateLimit(user.uid, "auth.sync", utcHourWindow(), RATE_LIMITS.loginSyncHourly);
     const appRole = isAdminEmail(user.email) ? "admin" : "user";
 
     const accessToken = await getGoogleAccessToken([

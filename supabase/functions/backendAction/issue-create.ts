@@ -9,6 +9,7 @@ import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 import { claimFixedWindowRateLimit } from "../_shared/upstash-rate-limit.ts";
 import { issueToReadableResponse } from "./issue-shared.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
+import { markMarkdownUploadsAttached } from "./uploads.ts";
 import { taipeiDayWindow } from "./utils.ts";
 
 export async function createIssue(payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {
@@ -41,6 +42,7 @@ export async function createIssue(payload: JsonRecord, auth: AuthContext, supaba
     title_search: title.toLowerCase(),
   }).select("*").single();
   if (error) throw error;
+  await markMarkdownUploadsAttached(supabase, auth.uid, content, "issue", data.id);
 
   await supabase.schema("app_private").from("outbox_events").insert({
     event_type: "issue.created",

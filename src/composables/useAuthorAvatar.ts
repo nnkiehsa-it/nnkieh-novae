@@ -3,7 +3,14 @@ import { fetchUserAvatarUrls } from '@/services/users-read';
 
 const AUTHOR_AVATAR_CACHE_KEY = 'srp:author-avatar-cache';
 const MAX_LOCAL_AVATAR_ENTRIES = 300;
-const authorAvatarCache = ref<Record<string, string | null>>(readLocalAuthorAvatarCache());
+const AUTHOR_AVATAR_CACHE_TTL_MS = 365 * 24 * 60 * 60 * 1000;
+
+interface AuthorAvatarCacheEntry {
+  expiresAt: number;
+  url: string | null;
+}
+
+const authorAvatarCache = ref<Record<string, AuthorAvatarCacheEntry>>(readLocalAuthorAvatarCache());
 const refreshedUids = new Set<string>();
 const pendingUids = new Set<string>();
 let flushTimer: number | null = null;
@@ -13,10 +20,25 @@ function readLocalAuthorAvatarCache() {
     const raw = localStorage.getItem(AUTHOR_AVATAR_CACHE_KEY);
     const parsed = raw ? JSON.parse(raw) : {};
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const now = Date.now();
     return Object.fromEntries(Object.entries(parsed)
-      .filter((entry): entry is [string, string | null] =>
-        typeof entry[0] === 'string' && (typeof entry[1] === 'string' || entry[1] === null)
-      )
+      .flatMap(([uid, value]) => {
+        if (typeof uid !== 'string') return [];
+        if (typeof value === 'string' || value === null) {
+          return [[uid, { expiresAt: now + AUTHOR_AVATAR_CACHE_TTL_MS, url: value }] as const];
+        }
+        if (
+          value
+          && typeof value === 'object'
+          && !Array.isArray(value)
+          && typeof (value as AuthorAvatarCacheEntry).expiresAt === 'number'
+          && ((value as AuthorAvatarCacheEntry).url === null || typeof (value as AuthorAvatarCacheEntry).url === 'string')
+          && (value as AuthorAvatarCacheEntry).expiresAt > now
+        ) {
+          return [[uid, value as AuthorAvatarCacheEntry] as const];
+        }
+        return [];
+      })
       .slice(0, MAX_LOCAL_AVATAR_ENTRIES));
   } catch {
     return {};
@@ -47,9 +69,10 @@ function queueAuthorAvatarRefresh(uid: string) {
 
     try {
       const avatars = await fetchUserAvatarUrls(uids);
+      const expiresAt = Date.now() + AUTHOR_AVATAR_CACHE_TTL_MS;
       authorAvatarCache.value = {
         ...authorAvatarCache.value,
-        ...avatars,
+        ...Object.fromEntries(Object.entries(avatars).map(([uid, url]) => [uid, { expiresAt, url }])),
       };
       writeLocalAuthorAvatarCache();
     } catch {
@@ -76,6 +99,8 @@ export function useAuthorAvatarUrl(
     const currentUid = toValue(uid) ?? '';
     const fallback = toValue(fallbackUrl) ?? null;
     if (!currentUid) return fallback;
-    return authorAvatarCache.value[currentUid] || fallback;
+    const entry = authorAvatarCache.value[currentUid];
+    if (!entry || entry.expiresAt <= Date.now()) return fallback;
+    return entry.url || fallback;
   });
 }

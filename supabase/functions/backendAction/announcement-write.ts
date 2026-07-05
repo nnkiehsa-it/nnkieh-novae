@@ -1,19 +1,24 @@
 import { asString } from "../_shared/http.ts";
+import { RATE_LIMITS } from "../_shared/rate-limits.ts";
+import { claimFixedWindowRateLimit } from "../_shared/upstash-rate-limit.ts";
 import { requireAdmin } from "./auth.ts";
 import { announcementToResponse } from "./announcement-shared.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
-import { asBoolean } from "./utils.ts";
+import { markMarkdownUploadsAttached } from "./uploads.ts";
+import { asBoolean, utcHourWindow } from "./utils.ts";
 
 async function createAnnouncement(payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {
   requireAdmin(auth);
+  const content = asString(payload.content);
   const { data, error } = await supabase.schema("app_private").from("announcements").insert({
     author_uid: auth.uid,
     author_name: auth.name || "管理員",
     author_photo_url: auth.photoUrl,
     title: asString(payload.title),
-    content: asString(payload.content),
+    content,
   }).select("*").single();
   if (error) throw error;
+  await markMarkdownUploadsAttached(supabase, auth.uid, content, "announcement", data.id);
   await supabase.schema("app_private").from("outbox_events").insert({
     event_type: "announcement.created",
     target_type: "announcement",
@@ -26,11 +31,13 @@ async function createAnnouncement(payload: JsonRecord, auth: AuthContext, supaba
 
 async function updateAnnouncement(payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {
   requireAdmin(auth);
+  const content = asString(payload.content);
   const { data, error } = await supabase.schema("app_private").from("announcements").update({
     title: asString(payload.title),
-    content: asString(payload.content),
+    content,
   }).eq("id", asString(payload.announcementId)).select("*").single();
   if (error) throw error;
+  await markMarkdownUploadsAttached(supabase, auth.uid, content, "announcement", data.id);
   await supabase.schema("app_private").from("outbox_events").insert({
     event_type: "announcement.updated",
     target_type: "announcement",
@@ -57,6 +64,7 @@ async function deleteAnnouncement(payload: JsonRecord, auth: AuthContext, supaba
 }
 
 async function setAnnouncementLike(payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {
+  await claimFixedWindowRateLimit(auth.uid, "announcement.like", utcHourWindow(), RATE_LIMITS.announcementLikeHourly);
   const announcementId = asString(payload.announcementId);
   const liked = asBoolean(payload.liked);
   if (liked) {

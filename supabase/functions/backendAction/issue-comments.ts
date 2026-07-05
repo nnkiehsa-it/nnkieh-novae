@@ -4,6 +4,7 @@ import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 import { claimFixedWindowRateLimit } from "../_shared/upstash-rate-limit.ts";
 import { canReadIssue, commentCursor, commentToResponse, selectIssue } from "./issue-shared.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
+import { markMarkdownUploadsAttached } from "./uploads.ts";
 import { applyAscendingDateCursor, asBoolean, readCursor, utcHourWindow } from "./utils.ts";
 
 async function listComments(payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {
@@ -32,15 +33,17 @@ async function createComment(payload: JsonRecord, auth: AuthContext, supabase: B
   if (!canReadIssue(issue, auth) || !issueAllowsCommentsForStatus(asString(issue.category), asString(issue.status))) {
     throw new Error("permission-denied");
   }
+  const content = asString(payload.content);
   const { data, error } = await supabase.schema("app_private").from("comments").insert({
     issue_id: issueId,
     author_uid: auth.uid,
     author_name: auth.name,
     author_photo_url: auth.photoUrl,
-    content: asString(payload.content),
+    content,
     is_admin_comment: asBoolean(payload.isAdminComment) && auth.isAdmin,
   }).select("*").single();
   if (error) throw error;
+  await markMarkdownUploadsAttached(supabase, auth.uid, content, "comment", data.id);
   await supabase.schema("app_private").from("outbox_events").insert({
     event_type: "issue.comment_created",
     target_type: "issue",

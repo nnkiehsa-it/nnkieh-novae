@@ -24,11 +24,14 @@ interface ImageUploadPolicy {
 
 interface ImageUploadSession {
   apiKey: string;
+  allowedFormats?: string;
   cloudName: string;
   folder?: string;
+  overwrite?: string;
   publicId: string;
   signature: string;
   timestamp: number;
+  type?: string;
   uploadId: string;
 }
 
@@ -66,8 +69,17 @@ export async function createImageUploadPolicy(file: File, width: number, height:
     body.set('timestamp', String(session.data.timestamp));
     body.set('public_id', session.data.publicId);
     body.set('signature', session.data.signature);
+    if (session.data.allowedFormats) {
+      body.set('allowed_formats', session.data.allowedFormats);
+    }
     if (session.data.folder) {
       body.set('folder', session.data.folder);
+    }
+    if (session.data.overwrite) {
+      body.set('overwrite', session.data.overwrite);
+    }
+    if (session.data.type) {
+      body.set('type', session.data.type);
     }
 
     await withRequestTimeout(async () => {

@@ -14,6 +14,26 @@ export const RATE_LIMITS = {
     "limit": 200,
     "message": "今天的圖片上傳額度已用完。"
   },
+  "loginSyncHourly": {
+    "limit": 300,
+    "message": "登入同步太頻繁，請稍後再試。"
+  },
+  "avatarCacheDaily": {
+    "limit": 60,
+    "message": "頭像更新太頻繁，請稍後再試。"
+  },
+  "supportToggleHourly": {
+    "limit": 600,
+    "message": "附議操作太頻繁，請稍後再試。"
+  },
+  "announcementLikeHourly": {
+    "limit": 600,
+    "message": "公告互動太頻繁，請稍後再試。"
+  },
+  "pushTokenWriteHourly": {
+    "limit": 120,
+    "message": "通知裝置設定太頻繁，請稍後再試。"
+  },
   "imageCompression": {
     "maxUploadKilobytes": 800,
     "maxUploadBytes": 819200,

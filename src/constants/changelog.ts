@@ -2,6 +2,26 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "提升系統維護穩定性",
+    version: "v1.8.51",
+    date: "2026-07-05",
+    time: "13:49",
+    items: [
+      {
+        title: "新增定期維護機制，降低過期通知、圖片與推播紀錄累積造成的影響。",
+      },
+      {
+        title: "改善圖片內容保存流程，降低已使用圖片被清理的風險。",
+      },
+      {
+        title: "強化推播通知維護，減少失效裝置資訊持續累積。",
+      },
+      {
+        title: "調整提案通知文字，統一狀態變更與待審核提醒格式。",
+      },
+    ],
+  },
+  {
     title: "提升提案瀏覽與通知可靠性",
     version: "v1.8.50",
     date: "2026-07-05",
@@ -24,6 +44,15 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
       },
       {
         title: "簡化主導覽項目，統一管理員統計入口位置。",
+      },
+      {
+        title: "強化圖片顯示與維護安全性。",
+      },
+      {
+        title: "改善使用者頭像顯示穩定性與快取可靠性。",
+      },
+      {
+        title: "完善操作頻率保護，降低異常重複操作影響。",
       },
       {
         title: "提升維護穩定性。",

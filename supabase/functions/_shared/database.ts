@@ -124,8 +124,17 @@ interface UploadRow {
   owner_uid: string;
   status: string;
   cloudinary_public_id: string | null;
+  attached_target_id: string | null;
+  attached_target_type: string | null;
+  content_type: string | null;
+  delivery_type: string;
+  expires_at: string;
+  resource_type: string;
+  secure_url: string | null;
+  size_bytes: number | null;
   original_url: string | null;
   preview_url: string | null;
+  visibility: string | null;
   width: number | null;
   height: number | null;
   created_at: string;
@@ -168,6 +177,10 @@ interface PushTokenRow {
 
 interface UserProfileRow {
   uid: string;
+  avatar_hash: string | null;
+  avatar_public_id: string | null;
+  avatar_source_url: string | null;
+  avatar_version: number;
   cached_photo_url: string | null;
   photo_url: string | null;
   display_name: string | null;
@@ -180,23 +193,36 @@ interface UserRoleRow {
   updated_at: string;
 }
 
-interface BackendActionIdempotencyRow {
-  idempotency_key: string;
-  status: string;
-  response: Json | null;
-  locked_until: string | null;
+interface IdempotencyKeyRow {
+  action: string;
   created_at: string;
+  expires_at: string;
+  request_id: string;
+  response: Json | null;
+  status: string;
+  uid: string;
   updated_at: string;
+}
+
+interface MaintenanceRunRow {
+  id: string;
+  completed_at: string | null;
+  details: Json;
+  error: string | null;
+  started_at: string;
+  status: string;
+  task_name: string;
 }
 
 interface AppPrivateTables {
   announcement_comments: Table<AnnouncementCommentRow>;
   announcement_likes: Table<{ announcement_id: string; uid: string; created_at: string }>;
   announcements: Table<AnnouncementRow>;
-  backend_action_idempotency: Table<BackendActionIdempotencyRow>;
   comments: Table<CommentRow>;
   deletion_jobs: Table<DeletionJobRow>;
+  idempotency_keys: Table<IdempotencyKeyRow>;
   issues: Table<IssueRow>;
+  maintenance_runs: Table<MaintenanceRunRow>;
   notion_pages: Table<NotionPageRow>;
   notification_states: Table<NotificationStateRow>;
   notifications: Table<NotificationRow>;
@@ -218,6 +244,7 @@ interface AppPrivateTables {
     target_type: string;
     token_uid: string;
     created_at: string;
+    updated_at: string;
   }>;
   push_tokens: Table<PushTokenRow>;
   supports: Table<{ issue_id: string; uid: string; created_at: string }>;
@@ -227,12 +254,20 @@ interface AppPrivateTables {
 }
 
 interface AppApiFunctions {
-  claim_backend_action: AppFunction<{ idempotency_key: string }, Json>;
+  claim_deletion_jobs: AppFunction<{ batch_size?: number }, DeletionJobRow[]>;
+  claim_idempotency_key: AppFunction<{ action_name: string; actor_uid: string; request_id: string }, Array<{
+    claimed: boolean;
+    completed: boolean;
+    response: Json | null;
+  }>>;
   claim_outbox_events: AppFunction<{ batch_size?: number }, OutboxEventRow[]>;
-  complete_backend_action: AppFunction<{ idempotency_key: string; response: Json }, void>;
+  complete_deletion_job: AppFunction<{ job_id: string }, void>;
+  complete_idempotency_key: AppFunction<{ action_name: string; action_response: Json; actor_uid: string; request_id: string }, void>;
   complete_outbox_event: AppFunction<{ event_id: string }, void>;
+  fail_deletion_job: AppFunction<{ error_message: string; job_id: string }, void>;
   fail_outbox_event: AppFunction<{ error_message: string; event_id: string }, void>;
-  release_backend_action: AppFunction<{ error_message: string; idempotency_key: string }, void>;
+  release_idempotency_key: AppFunction<{ action_name: string; actor_uid: string; request_id: string }, void>;
+  run_maintenance_cleanup: AppFunction<Record<string, never>, Json>;
 }
 
 interface EmptySchema {

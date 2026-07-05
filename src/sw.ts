@@ -90,6 +90,7 @@ const fontStyleCacheName = `font-styles-${__APP_VERSION__}`;
 const fontFileCacheName = `font-files-${__APP_VERSION__}`;
 const cloudinaryMediaCacheName = 'cloudinary-media-cache';
 const versionedCachePrefixes = ['navigation-', 'static-assets-', 'font-styles-', 'font-files-'];
+const oneYearSeconds = 365 * 24 * 60 * 60;
 
 registerRoute(
   ({ url }) => (
@@ -110,6 +111,14 @@ registerRoute(
     ),
   new CacheFirst({
     cacheName: staticAssetCacheName,
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new ExpirationPlugin({
+        maxAgeSeconds: oneYearSeconds,
+        maxEntries: 200,
+        purgeOnQuotaError: true,
+      }),
+    ],
   }),
 );
 
@@ -122,6 +131,14 @@ registerRoute(
     ),
   new StaleWhileRevalidate({
     cacheName: fontStyleCacheName,
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new ExpirationPlugin({
+        maxAgeSeconds: 30 * 24 * 60 * 60,
+        maxEntries: 30,
+        purgeOnQuotaError: true,
+      }),
+    ],
   }),
 );
 
@@ -134,6 +151,14 @@ registerRoute(
     ),
   new CacheFirst({
     cacheName: fontFileCacheName,
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new ExpirationPlugin({
+        maxAgeSeconds: oneYearSeconds,
+        maxEntries: 60,
+        purgeOnQuotaError: true,
+      }),
+    ],
   }),
 );
 
@@ -147,8 +172,8 @@ registerRoute(
     plugins: [
       new CacheableResponsePlugin({ statuses: [0, 200] }),
       new ExpirationPlugin({
-        maxAgeSeconds: 30 * 24 * 60 * 60,
-        maxEntries: 300,
+        maxAgeSeconds: oneYearSeconds,
+        maxEntries: 1000,
         purgeOnQuotaError: true,
       }),
     ],

@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.processDeletionJobs]
 verify_jwt = false
+
+[functions.maintenanceCleanup]
+verify_jwt = false

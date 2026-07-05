@@ -6,8 +6,25 @@ function toHex(buffer: ArrayBuffer) {
     .join("");
 }
 
+function toUrlSafeBase64(buffer: ArrayBuffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let index = 0; index < bytes.length; index += 1) {
+    binary += String.fromCharCode(bytes[index]);
+  }
+  return btoa(binary).replace(/\+/gu, "-").replace(/\//gu, "_").replace(/=+$/u, "");
+}
+
 async function sha1Hex(value: string) {
   return toHex(await crypto.subtle.digest("SHA-1", new TextEncoder().encode(value)));
+}
+
+async function sha1UrlSafeBase64(value: string) {
+  return toUrlSafeBase64(await crypto.subtle.digest("SHA-1", new TextEncoder().encode(value)));
+}
+
+export async function sha256Hex(buffer: ArrayBuffer) {
+  return toHex(await crypto.subtle.digest("SHA-256", buffer));
 }
 
 async function signCloudinaryParams(params: Record<string, string>) {
@@ -23,13 +40,51 @@ export async function createCloudinaryUploadSignature(params: Record<string, str
   return signCloudinaryParams(params);
 }
 
+export async function createCloudinaryAuthenticatedImageUrl(publicId: string) {
+  const cloudName = requireEnv("CLOUDINARY_CLOUD_NAME");
+  const apiSecret = requireEnv("CLOUDINARY_API_SECRET");
+  const signature = (await sha1UrlSafeBase64(`${publicId}${apiSecret}`)).slice(0, 8);
+  const encodedPublicId = publicId.split("/").map((part) => encodeURIComponent(part)).join("/");
+  return `https://res.cloudinary.com/${cloudName}/image/authenticated/s--${signature}--/${encodedPublicId}`;
+}
+
+export async function uploadCloudinaryAuthenticatedImageFromUrl(publicId: string, sourceUrl: string) {
+  const cloudName = requireEnv("CLOUDINARY_CLOUD_NAME");
+  const apiKey = requireEnv("CLOUDINARY_API_KEY");
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const params = {
+    allowed_formats: "jpg,jpeg,png,webp",
+    overwrite: "false",
+    public_id: publicId,
+    timestamp,
+    type: "authenticated",
+  };
+  const body = new FormData();
+  body.set("file", sourceUrl);
+  body.set("api_key", apiKey);
+  for (const [key, value] of Object.entries(params)) {
+    body.set(key, value);
+  }
+  body.set("signature", await signCloudinaryParams(params));
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+    { method: "POST", body },
+  );
+  if (!response.ok) {
+    throw new Error(`Cloudinary avatar upload failed: ${response.status} ${await response.text()}`);
+  }
+}
+
 export async function deleteCloudinaryAsset(publicId: string) {
   const cloudName = requireEnv("CLOUDINARY_CLOUD_NAME");
   const apiKey = requireEnv("CLOUDINARY_API_KEY");
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const params = {
+    invalidate: "true",
     public_id: publicId,
     timestamp,
+    type: "authenticated",
   };
   const body = new URLSearchParams({
     ...params,

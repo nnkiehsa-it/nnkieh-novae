@@ -110,7 +110,11 @@ export function useDashboardMetrics(
             ? `上次更新：${formatDate(maintenance.updated_at)}`
             : '尚無排程紀錄',
         statusLabel: maintenance.failed_tasks.length > 0 ? maintenance.failed_tasks.join('、') : maintenanceStatusLabel(maintenance.status),
-        toneClass: maintenance.status === 'failed' ? 'text-error' : maintenance.status === 'running' ? 'text-warning' : 'text-emerald-600 dark:text-emerald-300',
+        toneClass: maintenance.status === 'failed'
+          ? 'text-error'
+          : maintenance.status === 'running' || maintenance.status === 'attention'
+            ? 'text-warning'
+            : 'text-emerald-600 dark:text-emerald-300',
       },
     ];
   });
@@ -172,6 +176,7 @@ function statusView(status: PlatformDashboardOperations['overall_status']) {
 function maintenanceStatusLabel(status: string) {
   if (status === 'success') return '正常';
   if (status === 'running') return '執行中';
+  if (status === 'attention') return '注意';
   if (status === 'failed') return '失敗';
   return '尚無紀錄';
 }

@@ -20,7 +20,7 @@
 - `types/`：跨模組核心型別；共通欄位先抽 base interface，再由領域型別擴充。
 - `supabase/functions/_shared/`：Edge Functions 共用環境變數、HTTP、Firebase 驗證、FCM、Notion、Cloudinary、設定常數與 Supabase schema 型別。
 - `supabase/functions/backendAction/`：前端受控 action 入口與各領域後端流程；entrypoint 只做 CORS、驗證、冪等與分派。
-- `supabase/functions/<function>/`：獨立 Edge Function 入口，例如登入同步、上傳 webhook、outbox worker 與刪除工作；不要把跨領域業務流程塞回 entrypoint。
+- `supabase/functions/<function>/`：獨立 Edge Function 入口，例如登入同步、上傳 webhook、outbox worker、刪除工作與維護清理；不要把跨領域業務流程塞回 entrypoint。
 - `supabase/migrations/`：Postgres schema、RLS、RPC、trigger、publication 與索引；修改 schema 行為時同步檢查 Edge Function 型別。
 
 ## 拆分與共用標準
@@ -69,7 +69,7 @@
 
 - 不因重構改變路由名稱、Supabase table/column/RPC、RLS、Edge Function action、Storage / Cloudinary path、Vercel 或 Supabase 部署設定。
 - 權限與身份驗證必須留在 Supabase RLS / Edge Functions；前端條件只負責顯示，不視為安全邊界。
-- 涉及 migrations、RLS 行為、通知語意、Notion 同步、outbox worker 或刪除工作時保持保守；高風險改善列入報告，不順手改動。
+- 涉及 migrations、RLS 行為、通知語意、Notion 同步、outbox worker、刪除工作或維護排程時保持保守；高風險改善列入報告，不順手改動。
 
 ## 驗證流程
 

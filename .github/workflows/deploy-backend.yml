@@ -160,6 +160,7 @@ jobs:
           supabase functions deploy cloudinaryWebhook
           supabase functions deploy outboxWorker
           supabase functions deploy processDeletionJobs
+          supabase functions deploy maintenanceCleanup
 
       - name: Smoke test backendAction deployment
         env:

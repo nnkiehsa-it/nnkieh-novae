@@ -1,8 +1,12 @@
 import { asString } from "../_shared/http.ts";
+import { RATE_LIMITS } from "../_shared/rate-limits.ts";
+import { claimFixedWindowRateLimit } from "../_shared/upstash-rate-limit.ts";
 import { canReadIssue, selectIssue } from "./issue-shared.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
+import { utcHourWindow } from "./utils.ts";
 
 export async function updateSupport(action: string, payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {
+  await claimFixedWindowRateLimit(auth.uid, "support.toggle", utcHourWindow(), RATE_LIMITS.supportToggleHourly);
   const issueId = asString(payload.issueId);
   const issue = await selectIssue(supabase, issueId);
   if (!canReadIssue(issue, auth)) throw new Error("not-found");

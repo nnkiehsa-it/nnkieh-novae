@@ -1,6 +1,8 @@
 import { asRecord, asString } from "../_shared/http.ts";
+import { RATE_LIMITS } from "../_shared/rate-limits.ts";
+import { claimFixedWindowRateLimit } from "../_shared/upstash-rate-limit.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
-import { applyDescendingDateCursor, asNumber, readCursor, toMs } from "./utils.ts";
+import { applyDescendingDateCursor, asNumber, readCursor, toMs, utcHourWindow } from "./utils.ts";
 
 function notificationToResponse(notification: JsonRecord, openedAt: string | null) {
   return {
@@ -87,6 +89,7 @@ export async function handleNotificationAction(
 
   const state = await upsertNotificationState(supabase, auth.uid);
   if (action === "registerPushToken") {
+    await claimFixedWindowRateLimit(auth.uid, "push-token.write", utcHourWindow(), RATE_LIMITS.pushTokenWriteHourly);
     await supabase.schema("app_private").from("push_tokens").upsert({
       uid: auth.uid,
       device_id: asString(payload.deviceId),
@@ -98,6 +101,7 @@ export async function handleNotificationAction(
     }, { onConflict: "uid,device_id" });
   }
   if (action === "unregisterPushToken") {
+    await claimFixedWindowRateLimit(auth.uid, "push-token.write", utcHourWindow(), RATE_LIMITS.pushTokenWriteHourly);
     const deviceId = asString(payload.deviceId);
     if (deviceId) await supabase.schema("app_private").from("push_tokens").delete().eq("uid", auth.uid).eq("device_id", deviceId);
   }

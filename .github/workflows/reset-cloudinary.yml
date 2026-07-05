@@ -1,0 +1,63 @@
+name: Reset Cloudinary Assets
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: reset-cloudinary-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  reset_cloudinary:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+    steps:
+      - name: Delete all Cloudinary resources
+        env:
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+        run: |
+          python - <<'PY'
+          import base64
+          import json
+          import os
+          import urllib.parse
+          import urllib.request
+
+          cloud_name = os.environ["CLOUDINARY_CLOUD_NAME"]
+          api_key = os.environ["CLOUDINARY_API_KEY"]
+          api_secret = os.environ["CLOUDINARY_API_SECRET"]
+          auth = base64.b64encode(f"{api_key}:{api_secret}".encode()).decode()
+          resource_types = ("image", "video", "raw")
+          delivery_types = ("upload", "authenticated", "private")
+          total_deleted = 0
+
+          for resource_type in resource_types:
+            for delivery_type in delivery_types:
+              next_cursor = None
+              while True:
+                query = {"all": "true", "invalidate": "true"}
+                if next_cursor:
+                  query["next_cursor"] = next_cursor
+                url = (
+                  f"https://api.cloudinary.com/v1_1/{cloud_name}"
+                  f"/resources/{resource_type}/{delivery_type}"
+                  f"?{urllib.parse.urlencode(query)}"
+                )
+                request = urllib.request.Request(url, method="DELETE")
+                request.add_header("Authorization", f"Basic {auth}")
+                with urllib.request.urlopen(request) as response:
+                  payload = json.loads(response.read().decode())
+                deleted = payload.get("deleted", {})
+                total_deleted += len(deleted)
+                print(f"{resource_type}/{delivery_type}: deleted {len(deleted)} resource(s)")
+                next_cursor = payload.get("next_cursor")
+                if not next_cursor:
+                  break
+
+          print(f"Deleted {total_deleted} Cloudinary resource(s).")
+          PY

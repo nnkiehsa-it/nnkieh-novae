@@ -16,7 +16,7 @@
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint . --ext .ts,.vue",
-    "check:edge": "deno check supabase/functions/outboxWorker/index.ts supabase/functions/backendAction/index.ts supabase/functions/syncUser/index.ts supabase/functions/cloudinaryWebhook/index.ts supabase/functions/processDeletionJobs/index.ts",
+    "check:edge": "deno check supabase/functions/outboxWorker/index.ts supabase/functions/backendAction/index.ts supabase/functions/syncUser/index.ts supabase/functions/cloudinaryWebhook/index.ts supabase/functions/processDeletionJobs/index.ts supabase/functions/maintenanceCleanup/index.ts",
     "test:architecture": "node --test tests/architecture.test.mjs",
     "test": "npm run test:architecture"
   },

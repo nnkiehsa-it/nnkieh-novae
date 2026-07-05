@@ -30,6 +30,7 @@ export async function getPlatformDashboard(supabase: BackendSupabase) {
     { count: uploadPending },
     { count: deletionPending },
     { data: oldestPendingSync },
+    { data: latestMaintenanceRun },
     { data: recentOutboxFailures },
     { data: recentPushFailures },
     { data: issueCategories },
@@ -47,6 +48,7 @@ export async function getPlatformDashboard(supabase: BackendSupabase) {
     supabase.schema("app_private").from("uploads").select("*", { count: "exact", head: true }).eq("status", "pending"),
     supabase.schema("app_private").from("deletion_jobs").select("*", { count: "exact", head: true }).in("status", ["pending", "failed"]),
     supabase.schema("app_private").from("outbox_events").select("created_at").in("status", ["pending", "processing"]).in("event_type", NOTION_EVENT_TYPES).order("created_at", { ascending: true }).limit(1).maybeSingle(),
+    supabase.schema("app_private").from("maintenance_runs").select("status,started_at,completed_at,error,details").eq("task_name", "maintenance.cleanup").order("started_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.schema("app_private").from("outbox_events").select("id,event_type,status,last_error,updated_at").eq("status", "failed").order("updated_at", { ascending: false }).limit(5),
     supabase.schema("app_private").from("push_delivery_logs").select("id,status,error_message,updated_at").eq("status", "failed").order("updated_at", { ascending: false }).limit(5),
     supabase.schema("app_private").from("issues").select("category,created_at,updated_at").limit(10000),
@@ -89,6 +91,11 @@ export async function getPlatformDashboard(supabase: BackendSupabase) {
       updated_at_ms: toMs(failure.updated_at),
     })),
   ].sort((left, right) => (right.updated_at_ms ?? 0) - (left.updated_at_ms ?? 0)).slice(0, 8);
+  const maintenanceDetails = asRecord(latestMaintenanceRun?.details);
+  const failedMaintenanceTasks = [];
+  if (Number(maintenanceDetails.failed_deletion_jobs_too_old ?? 0) > 0) {
+    failedMaintenanceTasks.push("刪除工作失敗過久");
+  }
   const overallStatus = (outboxFailed ?? 0) > 0 || (pushFailed ?? 0) > 0
     ? "critical"
     : (outboxPending ?? 0) > 0 || (deletionPending ?? 0) > 0 || (uploadPending ?? 0) > 0
@@ -124,7 +131,14 @@ export async function getPlatformDashboard(supabase: BackendSupabase) {
       pending_notion_sync_capped: false,
       pending_notion_sync_count: notionPending ?? 0,
       recent_failures: recentFailures,
-      scheduled_maintenance: { completed_at_ms: null, error: "", failed_tasks: [], started_at_ms: null, status: "idle", updated_at_ms: null },
+      scheduled_maintenance: {
+        completed_at_ms: toMs(latestMaintenanceRun?.completed_at),
+        error: latestMaintenanceRun?.error ?? "",
+        failed_tasks: failedMaintenanceTasks,
+        started_at_ms: toMs(latestMaintenanceRun?.started_at),
+        status: latestMaintenanceRun?.status ?? "idle",
+        updated_at_ms: toMs(latestMaintenanceRun?.completed_at ?? latestMaintenanceRun?.started_at),
+      },
       stuck_upload_capped: false,
       stuck_upload_count: uploadPending ?? 0,
     },

@@ -18,7 +18,7 @@
 - index.html：Vite 入口 HTML，掛載 Vue App，載入 favicon / PWA meta，並由 Vite env 注入標題。
 - eslint.config.js：ESLint 規則與 Vue / TypeScript 的 lint 設定。
 - vercel.json：Vercel 前端部署設定，包含靜態資源快取規則（assets 長快取、sw.js 不快取）與 SPA fallback rewrite。
-- supabase/config.toml：Supabase 本機與部署設定，暴露 Supabase 預設 schema、`app_api` 與供 service role Edge Functions 使用的 `app_private` schema，並設定登入同步、Cloudinary webhook、outbox worker 與刪除工作 Edge Functions 的 JWT 驗證模式。
+- supabase/config.toml：Supabase 本機與部署設定，暴露 Supabase 預設 schema、`app_api` 與供 service role Edge Functions 使用的 `app_private` schema，並設定登入同步、Cloudinary webhook、outbox worker、刪除工作與維護清理 Edge Functions 的 JWT 驗證模式。
 - .env.example：本機與部署環境變數範本，包含 App 名稱、短名稱、Firebase Auth / FCM public config、Supabase public config 與選配 App Check 開關 / site key。
 - .gitignore：Git 忽略規則。
 - postcss.config.cjs：PostCSS 設定，啟用 Tailwind 與 Autoprefixer。
@@ -33,7 +33,7 @@
 
 ## Supabase 後端服務 (supabase/)
 
-- supabase/config.toml：Supabase 本機與部署設定，暴露 Supabase 預設 schema、`app_api` 與供 service role Edge Functions 使用的 `app_private` schema，並設定登入同步、受控 action、Cloudinary webhook、outbox worker 與刪除工作 Edge Functions 的 JWT 驗證模式。
+- supabase/config.toml：Supabase 本機與部署設定，暴露 Supabase 預設 schema、`app_api` 與供 service role Edge Functions 使用的 `app_private` schema，並設定登入同步、受控 action、Cloudinary webhook、outbox worker、刪除工作與維護清理 Edge Functions 的 JWT 驗證模式。
 - supabase/migrations/202607020001_supabase_foundation.sql：Supabase 初始 migration，建立 `app_private` / `app_api` schema、Firebase JWT helper、RLS 基礎、核心資料檢查、查詢索引、hard delete RPC、outbox batch claim 與 statement-level worker wake-up。
 - supabase/migrations/202607020002_app_backend_actions.sql：補齊提案、公告、留言、通知、推播 token、使用者頭像、圖片 metadata、Notion page mapping 與維護紀錄等 Supabase app tables，並維護搜尋欄位、計數同步、updated_at 與常用查詢索引。
 - supabase/migrations/202607041434_expose_app_schemas.sql：設定 hosted PostgREST exposed schemas，讓部署後的 Edge Functions 可透過 service role 存取 `app_private`，並 reload PostgREST 設定與 schema cache。
@@ -41,12 +41,14 @@
 - supabase/migrations/202607041517_enable_notification_realtime.sql：授權登入使用者依 RLS 讀取通知 realtime 所需資料，並將通知與通知狀態表加入 Supabase Realtime publication。
 - supabase/migrations/202607041750_add_backend_action_idempotency.sql：建立受控 action 冪等鍵資料表與 claim / complete / release RPC，避免同一請求重送造成重複寫入。
 - supabase/migrations/202607050004_add_push_delivery_logs.sql：建立推播送達紀錄表與查詢索引，供管理員統計頁彙整推播異常。
+- supabase/migrations/202607050005_avatar_cloudinary_cache.sql：擴充使用者頭像快取欄位，記錄 Cloudinary 頭像 public id、來源 URL、雜湊與版本，供登入同步更新頭像並排程刪除舊版本。
+- supabase/migrations/202607050006_maintenance_cleanup_schedule.sql：建立維護清理 RPC、相關清理索引與 Supabase cron 排程，定期清理過期通知、同步紀錄、未附加圖片、推播紀錄、冪等鍵與失效裝置 token，並保留最近維護結果供 Dashboard 顯示。
 - supabase/functions/backendAction/index.ts：前端受控 action HTTP 入口，集中 CORS、Firebase 驗證、使用者角色查詢、healthcheck、action 分派與冪等保護，不直接承載各領域資料流程。
 - supabase/functions/backendAction/types.ts：受控 action 共用 Supabase client、身份與 JSON record 型別。
 - supabase/functions/backendAction/utils.ts：受控 action 共用 cursor、時間、數值、布林與台北日界限工具。
 - supabase/functions/backendAction/auth.ts：管理員權限檢查與目前使用者角色回應。
-- supabase/functions/backendAction/users.ts：使用者頭像快取與批次讀取 action。
-- supabase/functions/backendAction/uploads.ts：Cloudinary 上傳 session、上傳完成確認、圖片 URL 解析與外部圖片清理 action。
+- supabase/functions/backendAction/users.ts：使用者登入紀錄、Cloudinary 頭像快取、舊版頭像清理排程與批次讀取 action。
+- supabase/functions/backendAction/uploads.ts：Cloudinary 上傳 session、上傳完成確認、Markdown 圖片附加標記、圖片 URL 解析與外部圖片清理 action。
 - supabase/functions/backendAction/issue-shared.ts：提案讀取權限、作者欄位清洗、提案/留言回應正規化與單筆提案查詢 helper。
 - supabase/functions/backendAction/issues.ts：提案 action 分派器，依 read / write / comments 子模組處理。
 - supabase/functions/backendAction/issue-read.ts：提案列表、搜尋、我的提案、已附議 id 與私密作者資料讀取；審核類別會先納入本人可看的私密狀態再由權限過濾。
@@ -61,15 +63,16 @@
 - supabase/functions/backendAction/announcement-write.ts：管理員公告新增、編輯、硬刪除與公告按讚 action。
 - supabase/functions/backendAction/announcement-comments.ts：公告留言分頁、新增、刪除與管理員通知事件。
 - supabase/functions/backendAction/notifications.ts：App 內通知分頁、閱讀游標、Web Push token 與分類推播偏好 action。
-- supabase/functions/backendAction/dashboard.ts：管理員統計資料、同步/通知/推播/清理異常彙整與分類使用概況。
+- supabase/functions/backendAction/dashboard.ts：管理員統計資料、同步/通知/推播/清理異常、最近維護排程結果彙整與分類使用概況。
 - supabase/functions/syncUser/index.ts：Firebase 登入後同步使用者 custom claim 與 Supabase app role 的 Edge Function，依 ADMIN_EMAILS 將使用者角色寫入 user_roles，與受控 action 共用登入資格驗證。
 - supabase/functions/cloudinaryWebhook/index.ts：Cloudinary 上傳完成 webhook，限制 POST、驗證簽章並安全解析 payload 後將 pending upload 轉為 ready。
 - supabase/functions/outboxWorker/index.ts：Outbox worker wake-up endpoint，限制 POST 並驗證 secret 後批次 claim pending events，依事件建立廣播、管理員或個人通知，依收件人與推播偏好送出 FCM 並記錄送達結果，同步 Notion 狀態、留言、附議數與刪除標記。
 - supabase/functions/processDeletionJobs/index.ts：外部資源刪除工作入口，限制 POST 並驗證 secret 後處理 Cloudinary / Notion 清理，保留失敗的可重試 metadata。
+- supabase/functions/maintenanceCleanup/index.ts：維護清理手動入口，限制 POST 並驗證 secret 後呼叫資料庫清理 RPC；日常清理由 Supabase cron 直接執行同一 RPC。
 - supabase/functions/_shared/env.ts：Edge Functions 環境變數讀取 helper。
 - supabase/functions/_shared/http.ts：Edge Functions 共用 CORS、POST method guard、JSON / text response、JSON body 解析與錯誤狀態對應 helper。
 - supabase/functions/_shared/firebase-auth.ts：Edge Functions 共用 Firebase ID token lookup、校內網域、email verified 與使用者身份正規化 helper。
-- supabase/functions/_shared/cloudinary.ts：Cloudinary 簽名、直傳參數與 asset 刪除 helper。
+- supabase/functions/_shared/cloudinary.ts：Cloudinary signed authenticated upload、signed delivery URL、遠端圖片匯入、雜湊與 asset 刪除 helper。
 - supabase/functions/_shared/database.ts：Edge Functions 共用的 Supabase schema 型別，明確列出目前使用的 app_api / app_private table、row 與 RPC 欄位供 Deno 檢查。
 - supabase/functions/_shared/google-oauth.ts：Edge Functions 使用 `npm:google-auth-library` 取得並快取 Google OAuth access token，供 Firebase custom claims 與 FCM HTTP v1 使用。
 - supabase/functions/_shared/issue-categories.ts：由提案分類 config 產生的 Edge Functions 分類權限與行為常數，供受控 action 套用審核、私密讀取、作者隱藏與留言規則。
@@ -84,7 +87,7 @@
 
 - src/main.ts：Vue App 入口，初始化全域 resume、PWA 更新與 session 後掛載 router。
 - src/App.vue：最上層殼，啟動期間先顯示 AppStartupScreen，準備完成後將頁面內容包進 AppShell，並掛載 App 安裝 / 瀏覽器引導對話框。
-- src/sw.ts：PWA service worker，navigation 使用五秒 NetworkFirst 並在離線時 fallback precached index.html；Auth、版本檢查使用 NetworkOnly，哈希 JS/CSS、WebP encoder WASM、圖示與 Cloudinary 圖片使用 CacheFirst，外部字型 CSS 使用 StaleWhileRevalidate、字型檔使用 CacheFirst，並保留 FCM Web Push 背景通知與通知點擊導回頁面。
+- src/sw.ts：PWA service worker，navigation 使用五秒 NetworkFirst 並在離線時 fallback precached index.html；Auth、版本檢查使用 NetworkOnly，哈希 JS/CSS、WebP encoder WASM、圖示與 Cloudinary 圖片使用一年期 CacheFirst，外部字型 CSS 使用 StaleWhileRevalidate、字型檔使用一年期 CacheFirst，並保留 FCM Web Push 背景通知與通知點擊導回頁面。
 - src/router/index.ts：Vue Router 組合入口，掛載登入、提案、公告與管理員 route modules，切換路由前 abort 上一頁 request scope，並等待 session ready 後處理登入 / 管理員 redirect。
 - src/router/authRoutes.ts：登入頁路由設定，支援 `/login` 與受保護頁面 redirect 回跳。
 - src/router/issueRoutes.ts：提案看板路由設定，將 `/` 與 `/issues` 導向預設提案分類，並驗證 `/issues/:filter` 與 `/issues/:filter/:issueId`；頁面元件以 lazy import 載入以降低初始 bundle。
@@ -130,7 +133,7 @@
 
 ### 應用元件 (src/components/)
 
-- src/components/AppShell.vue：全站外框與 edge-to-edge 頁首，使用 top safe-area inset 延伸到 PWA 狀態列；桌機放置品牌圖示、固定主導航（提案／公告／我的提案，管理員另顯示管理員統計）與通知/設定，手機頁首改顯示目前主區塊標題，底部導覽固定為提案、公告、我的提案、通知與設定。
+- src/components/AppShell.vue：全站外框與 edge-to-edge 頁首，使用 top safe-area inset 延伸到 PWA 狀態列；桌機放置品牌圖示、固定主導航（提案／公告／我的提案）與通知/設定，手機頁首改顯示目前主區塊標題，底部導覽固定為提案、公告、我的提案、通知與設定。
 - src/components/AppStartupScreen.vue：App 啟動時的全螢幕 Loading Gate，使用品牌標誌、App 名稱、安全區 padding 與柔和載入動畫，覆蓋 auth 恢復與必要 session 初始化。
 - src/components/AuthorAvatar.vue：作者頭像 wrapper，依 author uid 查詢最新快取頭像，並以內容上的舊頭像 URL 作為 fallback。
 - src/components/LoginPanel.vue：校內 Google 帳號登入面板，供登入頁使用並維持原本未登入視覺。
@@ -213,7 +216,7 @@
 - src/composables/sessionValidation.ts：校內網域、email verified、Google provider 與 token claims 驗證 helper；優先使用 Firebase 有效快取 token，避免每次開啟都強制刷新。
 - src/composables/sessionAuthActions.ts：Google popup/redirect 登入與登出流程，登入時優先在點擊當下開啟 popup，遇到 PWA 或瀏覽器不支援時改用 redirect。
 - src/composables/sessionEffects.ts：登入後副作用，包含 `user_supported_issues` 附議索引一次性讀取、平台拜訪紀錄與 Google 頭像快取。
-- src/composables/useAuthorAvatar.ts：作者頭像解析與本機快取 composable，批次將畫面上拿得到的 author uid 轉為最新快取頭像 URL。
+- src/composables/useAuthorAvatar.ts：作者頭像解析與一年期本機快取 composable，批次將畫面上拿得到的 author uid 轉為 Cloudinary 快取頭像 URL。
 - src/composables/useToast.ts：全域 toast 狀態與顯示/關閉控制。
 - src/composables/useShareUrl.ts：分享 URL 複製 helper，優先使用 Clipboard API 並在失敗時 fallback 到 textarea copy。
 - src/composables/useMarkdown.ts：Markdown 解析與 DOMPurify 消毒，支援 `![alt|寬x高](url)` 圖片尺寸語法、清單續行顯示修正，並輸出 lazy/decode 屬性。
@@ -284,7 +287,7 @@
 - src/services/notifications.ts：App 內通知來源訂閱、閱讀狀態、單裝置 Web Push token 與通知分類偏好服務；realtime channel 使用唯一 topic，並正規化通知分頁 cursor，避免重新連線時與尚未移除的舊訂閱衝突。
 - src/services/announcements.ts：公告排序分頁、單筆讀取、讚與留言異動服務，並在服務邊界正規化公告與留言分頁 cursor。
 - src/services/dashboard.ts：平台 Dashboard 與登入使用紀錄服務，將後端 stats / operations response 正規化為前端 Date 型別。
-- src/services/uploads.ts：Cloudinary 圖片直傳服務，向後端取得簽名 session 後直傳 Cloudinary，並提供圖片 URL 解析、快取與刪除 action。
+- src/services/uploads.ts：Cloudinary authenticated 圖片直傳服務，向後端取得簽名 session 後直傳 Cloudinary，並提供 signed delivery URL 解析、快取與刪除 action。
 - src/services/users-read.ts：作者頭像讀取服務，透過後端批次取得 uid 對應的最新快取頭像。
 - src/services/users-write.ts：使用者相關寫入服務，目前負責登入後頭像快取。
 - src/services/supabase-auth.ts：Supabase 登入初始化服務，登入後明確帶入 Firebase token 呼叫 `syncUser` Edge Function 補齊 custom claim 並強制刷新 token，避免半完成登入狀態。
@@ -302,8 +305,9 @@
 - tests/architecture.test.mjs：防止舊 Firebase 資料路徑、舊部署目標、未受控後端 action、webhook 驗證與圖片解析流程回歸的靜態測試。
 - .github/workflows/deploy-frontend.yml：前端相關檔案 merge 後，使用 GitHub Environment secrets 執行 Vite build 並以 Vercel CLI 部署（main → production，dev → preview）。
 - .github/workflows/verify-pr.yml：PR 型別、lint、build、架構測試與 audit 驗證工作流；Edge Functions Deno 檢查保留為本機手動指令，不放入 PR workflow 以維持速度。
-- .github/workflows/deploy-backend.yml：Supabase 後端部署工作流，使用 npm / node_modules 快取並先跑架構檢查，再推送 migrations、以非保留名稱設定 Edge Function secrets、部署 Supabase Edge Functions 並打正式 endpoint 做健康檢查。
+- .github/workflows/deploy-backend.yml：Supabase 後端部署工作流，使用 npm / node_modules 快取並先跑架構檢查，再推送 migrations、以非保留名稱設定 Edge Function secrets、部署 Supabase Edge Functions（含維護清理入口）並打正式 endpoint 做健康檢查。
 - .github/workflows/reset-db.yml：手動觸發的 Supabase 資料庫重置工作流，重置資料庫架構並自動寫入對應環境的 outbox 與 Firebase 參數設定。
+- .github/workflows/reset-cloudinary.yml：手動觸發的 Cloudinary 資源重置工作流，使用 Admin API 分批刪除目前 cloud 內 image / video / raw 的 upload、authenticated 與 private 資源。
 
 
 ---

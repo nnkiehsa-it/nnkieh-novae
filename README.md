@@ -11,7 +11,7 @@
 - **作者隱私保護**：支援匿名保護分類，作者資訊與公開內容分離，一般使用者顯示為「匿名使用者」。
 - **提案與公告互動**：提案支援留言、附議、狀態審核與刪除；公告支援發布、編輯、刪除、按讚與留言。
 - **通知系統**：站內通知與 FCM Web Push 由 Supabase outbox worker 背景處理。
-- **圖片上傳**：前端壓縮為 WebP 後直傳 Cloudinary，內容使用 `srp-upload://<id>`，顯示時由後端批次解析。
+- **圖片上傳**：前端壓縮為 WebP 後以 signed authenticated upload 直傳 Cloudinary，內容使用 `srp-upload://<id>`，顯示時由後端批次解析為 signed delivery URL。
 - **Notion 備份**：刪除同步保留 Notion page，並把狀態標記為「已刪除」。
 
 ## 架構
@@ -93,4 +93,4 @@ Supabase 後端 workflow 需要：
 - `NOTION_TOKEN`
 - `NOTION_VERSION`
 
-後端部署 workflow 會執行 Supabase migrations、設定 Edge Function secrets，並部署 `syncUser`、`backendAction`、`cloudinaryWebhook`、`outboxWorker`、`processDeletionJobs`。
+後端部署 workflow 會執行 Supabase migrations、設定 Edge Function secrets，並部署 `syncUser`、`backendAction`、`cloudinaryWebhook`、`outboxWorker`、`processDeletionJobs`、`maintenanceCleanup`。資料維護主要由 Supabase cron 執行，`maintenanceCleanup` 保留為手動觸發入口；另有手動 Cloudinary reset workflow，可清除目前 Cloudinary cloud 內的 image / video / raw 資源。

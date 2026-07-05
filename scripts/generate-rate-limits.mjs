@@ -34,21 +34,29 @@ async function readRateLimitsConfig(projectRoot) {
   const issueCreateDaily = raw.issueCreateDaily || {};
   const commentCreateHourly = raw.commentCreateHourly || {};
   const imageUploadDaily = raw.imageUploadDaily || {};
+  const loginSyncHourly = raw.loginSyncHourly || {};
+  const avatarCacheDaily = raw.avatarCacheDaily || {};
+  const supportToggleHourly = raw.supportToggleHourly || {};
+  const announcementLikeHourly = raw.announcementLikeHourly || {};
+  const pushTokenWriteHourly = raw.pushTokenWriteHourly || {};
   const imageCompression = raw.imageCompression || {};
 
+  function readLimitConfig(name, value) {
+    return {
+      limit: assertPositiveInteger(value.limit, `${name}.limit 必須是正整數。`),
+      message: assertNonEmptyString(value.message, `${name}.message 必須是非空字串。`),
+    };
+  }
+
   const limits = {
-    issueCreateDaily: {
-      limit: assertPositiveInteger(issueCreateDaily.limit, 'issueCreateDaily.limit 必須是正整數。'),
-      message: assertNonEmptyString(issueCreateDaily.message, 'issueCreateDaily.message 必須是非空字串。'),
-    },
-    commentCreateHourly: {
-      limit: assertPositiveInteger(commentCreateHourly.limit, 'commentCreateHourly.limit 必須是正整數。'),
-      message: assertNonEmptyString(commentCreateHourly.message, 'commentCreateHourly.message 必須是非空字串。'),
-    },
-    imageUploadDaily: {
-      limit: assertPositiveInteger(imageUploadDaily.limit, 'imageUploadDaily.limit 必須是正整數。'),
-      message: assertNonEmptyString(imageUploadDaily.message, 'imageUploadDaily.message 必須是非空字串。'),
-    },
+    issueCreateDaily: readLimitConfig('issueCreateDaily', issueCreateDaily),
+    commentCreateHourly: readLimitConfig('commentCreateHourly', commentCreateHourly),
+    imageUploadDaily: readLimitConfig('imageUploadDaily', imageUploadDaily),
+    loginSyncHourly: readLimitConfig('loginSyncHourly', loginSyncHourly),
+    avatarCacheDaily: readLimitConfig('avatarCacheDaily', avatarCacheDaily),
+    supportToggleHourly: readLimitConfig('supportToggleHourly', supportToggleHourly),
+    announcementLikeHourly: readLimitConfig('announcementLikeHourly', announcementLikeHourly),
+    pushTokenWriteHourly: readLimitConfig('pushTokenWriteHourly', pushTokenWriteHourly),
     imageCompression: {
       maxUploadKilobytes: assertPositiveInteger(imageCompression.maxUploadKilobytes, 'imageCompression.maxUploadKilobytes 必須是正整數。'),
       maxUploadBytes: assertPositiveInteger(imageCompression.maxUploadKilobytes, '') * 1024,

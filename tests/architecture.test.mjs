@@ -62,6 +62,7 @@ test('Supabase backend deployment owns database and Edge Functions', async () =>
   assert.match(workflow, /Smoke test backendAction deployment/u);
   assert.match(workflow, /x-healthcheck-secret/u);
   assert.match(workflow, /supabase functions deploy outboxWorker/u);
+  assert.match(workflow, /supabase functions deploy maintenanceCleanup/u);
   assert.match(workflow, /SUPABASE_ACCESS_TOKEN/u);
   assert.match(workflow, /CLOUDINARY_API_SECRET/u);
   assert.match(workflow, /APP_SUPABASE_SERVICE_ROLE_KEY/u);
@@ -197,6 +198,7 @@ test('outbox, webhooks, FCM, and Notion deletion marks are guarded', async () =>
   const webhook = await read('supabase/functions/_shared/webhook.ts');
   const cloudinaryWebhook = await read('supabase/functions/cloudinaryWebhook/index.ts');
   const deletionJobs = await read('supabase/functions/processDeletionJobs/index.ts');
+  const maintenanceCleanup = await read('supabase/functions/maintenanceCleanup/index.ts');
   const notion = await read('supabase/functions/_shared/notion.ts');
 
   assert.match(syncUser, /requireEligibleFirebaseUser/u);
@@ -224,6 +226,9 @@ test('outbox, webhooks, FCM, and Notion deletion marks are guarded', async () =>
   assert.match(deletionJobs, /requireMethod\(request, "POST"\)/u);
   assert.match(deletionJobs, /errorMessage/u);
   assert.match(deletionJobs, /markNotionPageDeleted/u);
+  assert.match(maintenanceCleanup, /requireBearerSecret/u);
+  assert.match(maintenanceCleanup, /requireMethod\(request, "POST"\)/u);
+  assert.match(maintenanceCleanup, /run_maintenance_cleanup/u);
   assert.match(notion, /name: "已刪除"/u);
   assert.match(notion, /ensureSelectOption/u);
   assert.match(notion, /"分類": \{ select: \{ name: categoryLabel \} \}/u);
