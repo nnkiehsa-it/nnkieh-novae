@@ -870,18 +870,6 @@
   }
 }
 
-/* Premium Global GPU Animations */
-@keyframes spinner {
-  from { transform: rotate(0deg) scale(1); }
-  50% { transform: rotate(180deg) scale(1.08); }
-  to { transform: rotate(360deg) scale(1); }
-}
-
-.animate-spinner {
-  animation: spinner 0.9s cubic-bezier(0.45, 0.05, 0.25, 1) infinite;
-  will-change: transform;
-}
-
 .board-content-enter-active {
   transition:
     opacity var(--motion-duration-panel) var(--motion-ease-enter),

@@ -2,6 +2,17 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "統一載入動畫",
+    version: "v2.0.38",
+    date: "2026-07-06",
+    time: "00:40",
+    items: [
+      {
+        title: "統一各處載入狀態的動畫呈現，提升操作回饋一致性。",
+      },
+    ],
+  },
+  {
     title: "提升版本更新穩定性",
     version: "v2.0.37",
     date: "2026-07-06",

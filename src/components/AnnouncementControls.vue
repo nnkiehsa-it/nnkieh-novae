@@ -53,7 +53,8 @@
           aria-label="重新整理公告"
           @click="emit('refresh')"
         >
-          <AppIcon name="refresh" class="h-4 w-4" :class="{ 'animate-spinner': refreshing }" />
+          <LoadingSpinner v-if="refreshing" :size="4" />
+          <AppIcon v-else name="refresh" class="h-4 w-4" />
         </button>
 
         <button
@@ -87,6 +88,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import AppIcon from '@/components/ui/AppIcon.vue';
+import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import type { AnnouncementSortOption } from '@/types';
 
 const props = defineProps<{

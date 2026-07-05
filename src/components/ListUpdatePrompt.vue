@@ -13,7 +13,8 @@
         :disabled="loading"
         @click="emit('action')"
       >
-        <AppIcon name="refresh" class="h-3.5 w-3.5" :class="{ 'animate-spinner': loading }" />
+        <LoadingSpinner v-if="loading" :size="3.5" />
+        <AppIcon v-else name="refresh" class="h-3.5 w-3.5" />
         <span>{{ loading ? loadingLabel : actionLabel }}</span>
       </button>
     </div>
@@ -22,6 +23,7 @@
 
 <script setup lang="ts">
 import AppIcon from '@/components/ui/AppIcon.vue';
+import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 
 withDefaults(defineProps<{
   actionLabel: string;

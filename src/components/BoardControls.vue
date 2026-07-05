@@ -177,7 +177,8 @@
           aria-label="重新整理提案"
           @click="emit('refresh')"
         >
-          <AppIcon name="refresh" class="h-4 w-4" :class="{ 'animate-spinner': refreshing }" />
+          <LoadingSpinner v-if="refreshing" :size="4" />
+          <AppIcon v-else name="refresh" class="h-4 w-4" />
         </button>
 
         <!-- 新增提案按鈕 -->
@@ -213,6 +214,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import AppIcon from '@/components/ui/AppIcon.vue';
+import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { ISSUE_FILTER_OPTIONS } from '@/constants/categories';
 import type { IssueSortOption } from '@/types';
 

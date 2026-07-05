@@ -10,42 +10,14 @@
         <p class="startup-screen__tagline">正在準備</p>
       </div>
 
-      <svg class="startup-screen__loader" viewBox="0 0 60 60" aria-hidden="true" focusable="false">
-        <circle>
-          <animateTransform
-            attributeName="transform"
-            type="rotate"
-            values="-90;810"
-            keyTimes="0;1"
-            dur="2s"
-            repeatCount="indefinite"
-          />
-          <animate
-            attributeName="stroke-dashoffset"
-            values="0%;0%;-157.080%"
-            calcMode="spline"
-            keySplines="0.61, 1, 0.88, 1; 0.12, 0, 0.39, 0"
-            keyTimes="0;0.5;1"
-            dur="2s"
-            repeatCount="indefinite"
-          />
-          <animate
-            attributeName="stroke-dasharray"
-            values="0% 314.159%;157.080% 157.080%;0% 314.159%"
-            calcMode="spline"
-            keySplines="0.61, 1, 0.88, 1; 0.12, 0, 0.39, 0"
-            keyTimes="0;0.5;1"
-            dur="2s"
-            repeatCount="indefinite"
-          />
-        </circle>
-      </svg>
+      <LoadingSpinner :size="6" class="startup-screen__loader" />
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import BrandMark from '@/components/ui/BrandMark.vue';
+import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 
 const appTitle = import.meta.env.VITE_APP_TITLE ?? 'SRP';
 </script>
@@ -139,24 +111,7 @@ const appTitle = import.meta.env.VITE_APP_TITLE ?? 'SRP';
 }
 
 .startup-screen__loader {
-  box-sizing: border-box;
-  display: block;
-  height: 1.625rem;
-  width: 1.625rem;
-  overflow: visible;
-  padding: 0.125rem;
   color: rgb(var(--color-on-surface));
-}
-
-.startup-screen__loader > circle {
-  cx: 50%;
-  cy: 50%;
-  r: 50%;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-width: 0.3125rem;
-  transform-origin: center;
 }
 
 :global(html.dark) .startup-screen {
@@ -180,16 +135,6 @@ const appTitle = import.meta.env.VITE_APP_TITLE ?? 'SRP';
 @media (prefers-reduced-motion: reduce) {
   .startup-screen__surface {
     animation: none;
-  }
-
-  .startup-screen__loader animate,
-  .startup-screen__loader animateTransform {
-    display: none;
-  }
-
-  .startup-screen__loader > circle {
-    stroke-dasharray: 78.54% 235.619%;
-    stroke-dashoffset: 0;
   }
 }
 </style>

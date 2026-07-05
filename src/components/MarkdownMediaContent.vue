@@ -21,7 +21,7 @@
           v-else-if="image.uploadId && !image.isUploadResolved"
           class="flex aspect-[4/3] w-full animate-pulse items-center justify-center bg-ink-200/60 text-ink-400 dark:bg-ink-700/50 dark:text-ink-500"
         >
-          <span class="material-symbols-outlined text-[20px] animate-spin">sync</span>
+          <LoadingSpinner :size="5" />
         </div>
         <img
           v-else
@@ -66,6 +66,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue';
+import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { stripMarkdownImages } from '@/lib/markdown-images';
 import { useResolvedMarkdown } from '@/composables/useResolvedMarkdown';
 import type { MarkdownImageRecord } from '@/types';

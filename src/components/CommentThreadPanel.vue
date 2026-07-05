@@ -22,7 +22,8 @@
           title="重新整理留言"
           @click="onRefresh"
         >
-          <AppIcon name="refresh" :class="{ 'animate-spinner': loading }" />
+          <LoadingSpinner v-if="loading" :size="4" />
+          <AppIcon v-else name="refresh" />
         </button>
       </div>
     </div>
@@ -42,7 +43,8 @@
         title="重新整理留言"
         @click="onRefresh"
       >
-        <AppIcon name="refresh" :class="{ 'animate-spinner': loading }" />
+        <LoadingSpinner v-if="loading" :size="4" />
+        <AppIcon v-else name="refresh" />
       </button>
     </div>
 
@@ -122,6 +124,7 @@ import CommentItem from '@/components/CommentItem.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import AppIcon from '@/components/ui/AppIcon.vue';
 import EmptyStatePanel from '@/components/ui/EmptyStatePanel.vue';
+import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import SkeletonCommentList from '@/components/ui/SkeletonCommentList.vue';
 import { useMinimumLoading } from '@/composables/useMinimumLoading';
 import { useInfiniteScroll } from '@/composables/useInfiniteScroll';
