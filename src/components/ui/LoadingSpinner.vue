@@ -15,6 +15,8 @@
       stroke="currentColor"
       stroke-linecap="round"
       stroke-width="5"
+      stroke-dasharray="0% 314.159%"
+      stroke-dashoffset="0%"
     >
       <animateTransform
         attributeName="transform"

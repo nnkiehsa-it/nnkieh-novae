@@ -2,18 +2,29 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
-    title: "優化系統效能與載入體驗",
+    title: "最佳化載入元件動畫效果",
+    version: "v2.0.42",
+    date: "2026-07-06",
+    time: "01:06",
+    items: [
+      {
+        title: "修正載入元件啟動時的初始狀態跳動問題，使其一開始就進行旋轉動畫。",
+      },
+    ],
+  },
+  {
+    title: "最佳化系統效能與載入體驗",
     version: "v2.0.41",
     date: "2026-07-06",
     time: "01:04",
     items: [
       {
-        title: "優化內部資料載入流程，提升啟動時的連線穩定性與效能表現。",
+        title: "最佳化內部資料載入流程，提升啟動時的連線穩定性與效能表現。",
       },
     ],
   },
   {
-    title: "優化版本更新提示",
+    title: "最佳化版本更新提示",
     version: "v2.0.40",
     date: "2026-07-06",
     time: "01:03",
@@ -24,13 +35,13 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化載入動畫視覺效果",
+    title: "最佳化載入動畫視覺效果",
     version: "v2.0.39",
     date: "2026-07-06",
     time: "00:48",
     items: [
       {
-        title: "優化各處骨架的載入動畫，改用動態光影掃掠效果，提升等待期間的視覺流暢度。",
+        title: "最佳化各處骨架的載入動畫，改用動態光影掃掠效果，提升等待期間的視覺流暢度。",
       },
     ],
   },
@@ -66,12 +77,12 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
         title: "修正推播通知可能重複出現的情況。",
       },
       {
-        title: "優化啟動畫面呈現，讓載入狀態更簡潔。",
+        title: "最佳化啟動畫面呈現，讓載入狀態更簡潔。",
       },
     ],
   },
   {
-    title: "優化啟動畫面",
+    title: "最佳化啟動畫面",
     version: "v2.0.35",
     date: "2026-07-06",
     time: "00:19",
@@ -581,7 +592,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
         title: "提升附議、公告互動與留言數量更新的穩定性。",
       },
       {
-        title: "優化提案搜尋與列表載入時的資料處理效率。",
+        title: "最佳化提案搜尋與列表載入時的資料處理效率。",
       },
       {
         title: "強化內容儲存時的基本資料檢查。",
@@ -655,7 +666,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
         title: "支援設定驅動之限流防禦，將提案頻率、留言限制與圖片上傳限制調整至獨立設定檔",
       },
       {
-        title: "優化圖片處理設定彈性，支援自訂前端 WebP 壓縮畫質與解析度限制比例",
+        title: "最佳化圖片處理設定彈性，支援自訂前端 WebP 壓縮畫質與解析度限制比例",
       },
       {
         title: "完善校內規劃書套件，新增完整的功能規格、技術架構、運維預算與行政疑慮答辯指引",
@@ -672,7 +683,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
         title: "廢除權限模板機制，調整為各個提案分類直接進行獨立屬性配置，提升管理彈性",
       },
       {
-        title: "優化需要審核之提案的回覆期限計算方式，統一自審核通過後開始起算",
+        title: "最佳化需要審核之提案的回覆期限計算方式，統一自審核通過後開始起算",
       },
       {
         title: "修正開放附議之提案的回覆期限起算點，確保未回覆時段計算正確",
@@ -681,7 +692,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
         title: "強化系統設定檔案與本地安全防護規則之同步檢查機制，防範部署漏洞",
       },
       {
-        title: "重構與簡化前後端代碼以完全移除歷史模板邏輯，並大幅擴充與優化開源專案引導文件",
+        title: "重構與簡化前後端代碼以完全移除歷史模板邏輯，並大幅擴充與最佳化開源專案引導文件",
       },
     ],
   },
@@ -703,12 +714,12 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     time: "21:03",
     items: [
       {
-        title: "優化審核未通過原因的輸入框呈現",
+        title: "最佳化審核未通過原因的輸入框呈現",
       },
     ],
   },
   {
-    title: "優化審核通知內容",
+    title: "最佳化審核通知內容",
     version: "v1.8.24",
     date: "2026-06-30",
     time: "21:01",
@@ -853,7 +864,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化文字編輯器操作穩定性",
+    title: "最佳化文字編輯器操作穩定性",
     version: "v1.8.13",
     date: "2026-06-29",
     time: "20:44",
@@ -1032,7 +1043,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
         title: "修正指令選單的定位位置，使其精確對齊游標旁",
       },
       {
-        title: "優化表格游標限制機制，防止在非表格模式下編輯表格原始碼",
+        title: "最佳化表格游標限制機制，防止在非表格模式下編輯表格原始碼",
       },
       {
         title: "確保表格下方永遠保留空白列，方便使用者定位與輸入",
@@ -1043,7 +1054,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ]
   },
   {
-    title: "優化 Markdown 表格編輯與刪除體驗",
+    title: "最佳化 Markdown 表格編輯與刪除體驗",
     version: "v1.8.2",
     date: "2026-06-29",
     time: "00:20",
@@ -1063,13 +1074,13 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化平台載入效能",
+    title: "最佳化平台載入效能",
     version: "v1.8.1",
     date: "2026-06-28",
     time: "23:46",
     items: [
       {
-        title: "優化核心模組資源打包方式，提升首頁載入速度",
+        title: "最佳化核心模組資源打包方式，提升首頁載入速度",
       },
     ],
   },
@@ -1186,13 +1197,13 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化行動裝置設定與通知頁面體驗",
+    title: "最佳化行動裝置設定與通知頁面體驗",
     version: "v1.1.83",
     date: "2026-06-28",
     time: "21:20",
     items: [
       {
-        title: "將通知中心與設定調整為獨立頁面路由，優化底欄 active 狀態的切換邏輯",
+        title: "將通知中心與設定調整為獨立頁面路由，最佳化底欄 active 狀態的切換邏輯",
       },
       {
         title: "改善設定頁面在手機端的排版配置，使其不再覆蓋底部導覽列，提升操作流暢度",
@@ -1226,7 +1237,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
         title: "改善系統啟動載入機制，採用並行非阻塞式讀取，提升登入與看板呈現速度",
       },
       {
-        title: "優化提案詳情彈窗資料載入，點開列表已有提案時直接複用快取，免除重複讀取",
+        title: "最佳化提案詳情彈窗資料載入，點開列表已有提案時直接複用快取，免除重複讀取",
       },
     ],
   },
@@ -1240,12 +1251,12 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
         title: "調整載入失敗後的重新整理流程，先中斷既有連線再重新建立",
       },
       {
-        title: "優化提案、公告與通知的重試行為，提升 Safari 下的恢復穩定性",
+        title: "最佳化提案、公告與通知的重試行為，提升 Safari 下的恢復穩定性",
       },
     ],
   },
   {
-    title: "優化編輯器行動端排版與表格產生器",
+    title: "最佳化編輯器行動端排版與表格產生器",
     version: "v1.1.79",
     date: "2026-06-27",
     time: "17:21",
@@ -1282,7 +1293,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化公告瀏覽與管理介面",
+    title: "最佳化公告瀏覽與管理介面",
     version: "v1.1.77",
     date: "2026-06-27",
     time: "16:50",
@@ -1294,7 +1305,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
         title: "改善公告詳細內容的視覺排版，新增作者頭像與發布日期區塊",
       },
       {
-        title: "優化公告編輯與發布視窗的欄位配置，提供更一致的操作體驗",
+        title: "最佳化公告編輯與發布視窗的欄位配置，提供更一致的操作體驗",
       },
     ],
   },
@@ -1308,7 +1319,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
         title: "清除已完成歷史資料清理的定時任務，減少伺服器虛耗",
       },
       {
-        title: "優化與簡化內容發布與解析的背景排程邏輯",
+        title: "最佳化與簡化內容發布與解析的背景排程邏輯",
       },
     ],
   },
@@ -1327,13 +1338,13 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化使用者頭像載入體驗",
+    title: "最佳化使用者頭像載入體驗",
     version: "v1.1.74",
     date: "2026-06-27",
     time: "16:08",
     items: [
       {
-        title: "優化頭像更新與同步機制，大幅減少重複的網路請求",
+        title: "最佳化頭像更新與同步機制，大幅減少重複的網路請求",
       },
       {
         title: "支援頭像長期快取，提升個人資訊載入流暢度與穩定性",
@@ -1410,7 +1421,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化備份內容呈現",
+    title: "最佳化備份內容呈現",
     version: "v1.1.67",
     date: "2026-06-25",
     time: "18:38",
@@ -1457,7 +1468,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化行動裝置安裝與通知引導",
+    title: "最佳化行動裝置安裝與通知引導",
     version: "v1.1.63",
     date: "2026-06-23",
     time: "23:06",
@@ -1471,7 +1482,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化手機底部導覽",
+    title: "最佳化手機底部導覽",
     version: "v1.1.62",
     date: "2026-06-23",
     time: "22:52",
@@ -1504,7 +1515,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化輸入體驗",
+    title: "最佳化輸入體驗",
     version: "v1.1.59",
     date: "2026-06-23",
     time: "22:46",
@@ -1515,7 +1526,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化手機觸控體驗",
+    title: "最佳化手機觸控體驗",
     version: "v1.1.58",
     date: "2026-06-23",
     time: "22:45",
@@ -1559,7 +1570,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化手機狀態列顯示",
+    title: "最佳化手機狀態列顯示",
     version: "v1.1.54",
     date: "2026-06-23",
     time: "22:23",
@@ -1570,7 +1581,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化手機版內容顯示",
+    title: "最佳化手機版內容顯示",
     version: "v1.1.53",
     date: "2026-06-23",
     time: "22:17",
@@ -1581,7 +1592,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化手機提案分類導覽",
+    title: "最佳化手機提案分類導覽",
     version: "v1.1.52",
     date: "2026-06-23",
     time: "21:49",
@@ -1612,7 +1623,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     time: "10:59",
     items: [
       {
-        title: "優化多張圖片載入與送出時的等待體驗",
+        title: "最佳化多張圖片載入與送出時的等待體驗",
       },
       {
         title: "提升圖片刪除與內容更新時的處理可靠性",
@@ -1626,7 +1637,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     time: "10:55",
     items: [
       {
-        title: "優化作者頭像更新流程，減少頭像讀取等待時間",
+        title: "最佳化作者頭像更新流程，減少頭像讀取等待時間",
       },
       {
         title: "新增舊頭像檔案自動清理，提升長期維護穩定性",
@@ -1659,7 +1670,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化 App 啟動畫面視覺",
+    title: "最佳化 App 啟動畫面視覺",
     version: "v1.1.46",
     date: "2026-06-23",
     time: "10:29",
@@ -1687,7 +1698,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     time: "10:24",
     items: [
       {
-        title: "優化啟動畫面的載入動畫呈現，提升 App 開啟時的視覺銜接體驗",
+        title: "最佳化啟動畫面的載入動畫呈現，提升 App 開啟時的視覺銜接體驗",
       },
     ],
   },
@@ -1701,7 +1712,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
         title: "新增啟動畫面，改善 App 開啟時的載入與畫面銜接體驗",
       },
       {
-        title: "優化登入狀態恢復流程，重新開啟受保護頁面時可回到原本位置",
+        title: "最佳化登入狀態恢復流程，重新開啟受保護頁面時可回到原本位置",
       },
       {
         title: "改善未登入使用者的導向流程，登入完成後可回到原先要查看的頁面",
@@ -1709,7 +1720,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化應用程式圖示更新",
+    title: "最佳化應用程式圖示更新",
     version: "v1.1.42",
     date: "2026-06-22",
     time: "23:48",
@@ -1720,13 +1731,13 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化平台品牌標誌視覺呈現",
+    title: "最佳化平台品牌標誌視覺呈現",
     version: "v1.1.41",
     date: "2026-06-22",
     time: "23:41",
     items: [
       {
-        title: "調整品牌標誌繪製路徑以優化視覺效果，並同步更新動態繪製動畫長度",
+        title: "調整品牌標誌繪製路徑以最佳化視覺效果，並同步更新動態繪製動畫長度",
       },
       {
         title: "同步更新網站圖示、PWA 應用程式圖示與行動裝置圖示",
@@ -1740,7 +1751,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     time: "23:07",
     items: [
       {
-        title: "新增全新品牌標誌與動畫呈現，優化頂部導航列視覺設計",
+        title: "新增全新品牌標誌與動畫呈現，最佳化頂部導航列視覺設計",
       },
       {
         title: "全面更新網站圖示與行動裝置應用程式圖示",
@@ -1748,33 +1759,33 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化通知與佈局可靠性",
+    title: "最佳化通知與佈局可靠性",
     version: "v1.1.39",
     date: "2026-06-22",
     time: "22:22",
     items: [
       {
-        title: "修正與優化提案、公告及留言的通知主旨與內容呈現",
+        title: "修正與最佳化提案、公告及留言的通知主旨與內容呈現",
       },
       {
         title: "調整刪除通知觸發機制，避免本人刪除操作發送重複通知",
       },
       {
-        title: "改善選單排版，優化捲動與調整大小時的定位呈現",
+        title: "改善選單排版，最佳化捲動與調整大小時的定位呈現",
       },
       {
-        title: "優化內容不存在或已被刪除時的錯誤提示處理",
+        title: "最佳化內容不存在或已被刪除時的錯誤提示處理",
       },
       {
         title: "新增登出與切換帳號時的推播通知安全清除機制",
       },
       {
-        title: "優化提案與公告詳情中的圖片載入機制，新增載入骨架與防閃爍處理",
+        title: "最佳化提案與公告詳情中的圖片載入機制，新增載入骨架與防閃爍處理",
       },
     ],
   },
   {
-    title: "優化通知顯示",
+    title: "最佳化通知顯示",
     version: "v1.1.38",
     date: "2026-06-22",
     time: "22:07",
@@ -1799,7 +1810,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化推播通知顯示",
+    title: "最佳化推播通知顯示",
     version: "v1.1.36",
     date: "2026-06-22",
     time: "21:54",
@@ -1824,7 +1835,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化提案互動回饋",
+    title: "最佳化提案互動回饋",
     version: "v1.1.34",
     date: "2026-06-22",
     time: "21:28",
@@ -1833,7 +1844,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
         title: "改善提案送出後的列表顯示回饋",
       },
       {
-        title: "優化留言送出後的即時顯示",
+        title: "最佳化留言送出後的即時顯示",
       },
       {
         title: "提升附議數量顯示的一致性",
@@ -1842,7 +1853,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
         title: "改善公告儲存後的列表顯示回饋",
       },
       {
-        title: "優化公告留言與留言數的即時顯示",
+        title: "最佳化公告留言與留言數的即時顯示",
       },
       {
         title: "改善內容狀態調整與刪除後的畫面同步",
@@ -1856,7 +1867,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     time: "21:19",
     items: [
       {
-        title: "優化提案作者資訊載入，提升管理員瀏覽列表的穩定性",
+        title: "最佳化提案作者資訊載入，提升管理員瀏覽列表的穩定性",
       },
       {
         title: "修正附議狀態與數量在載入後的同步顯示",
@@ -1884,7 +1895,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     time: "17:52",
     items: [
       {
-        title: "優化提案標題搜尋，提升相關結果命中範圍",
+        title: "最佳化提案標題搜尋，提升相關結果命中範圍",
       },
       {
         title: "調整搜尋結果排序，優先呈現更相關的提案",
@@ -1892,7 +1903,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化列表載入與重新整理體驗",
+    title: "最佳化列表載入與重新整理體驗",
     version: "v1.1.30",
     date: "2026-06-21",
     time: "17:43",
@@ -1934,7 +1945,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化手機提案列表操作與排版",
+    title: "最佳化手機提案列表操作與排版",
     version: "v1.1.28",
     date: "2026-06-21",
     time: "13:35",
@@ -1996,7 +2007,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化列表瀏覽與載入體驗",
+    title: "最佳化列表瀏覽與載入體驗",
     version: "v1.1.24",
     date: "2026-06-21",
     time: "12:16",
@@ -2150,7 +2161,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
         title: "改善手機加入主畫面後的頂部安全區域顯示",
       },
       {
-        title: "優化對話框與浮層開啟時的背景模糊與捲動鎖定體驗",
+        title: "最佳化對話框與浮層開啟時的背景模糊與捲動鎖定體驗",
       },
     ],
   },
@@ -2166,7 +2177,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    title: "優化按鈕顯示大小",
+    title: "最佳化按鈕顯示大小",
     version: "v1.1.8",
     date: "2026-06-21",
     time: "01:22",
@@ -2241,7 +2252,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     time: "23:46",
     items: [
       {
-        title: "優化手機版設定面板顯示",
+        title: "最佳化手機版設定面板顯示",
       },
       {
         title: "調整通知開關說明，區分推播通知與通知類型",
@@ -2393,7 +2404,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
         title: "改善 Google 登入等待較久時的穩定性",
       },
       {
-        title: "優化登入安全驗證失敗時的提示內容",
+        title: "最佳化登入安全驗證失敗時的提示內容",
       },
     ],
   },
@@ -2421,7 +2432,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
         title: "新增離線狀態提示，協助使用者辨識連線問題",
       },
       {
-        title: "優化通知中心載入失敗後的重新整理操作",
+        title: "最佳化通知中心載入失敗後的重新整理操作",
       },
     ],
   },
