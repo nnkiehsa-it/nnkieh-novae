@@ -2,6 +2,20 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "改善附議與推播處理",
+    version: "v1.8.59",
+    date: "2026-07-05",
+    time: "22:07",
+    items: [
+      {
+        title: "改善附議狀態顯示與大量裝置推播處理，提升通知完整性。",
+      },
+      {
+        title: "最佳化資料同步設定讀取，降低重複連線。",
+      },
+    ],
+  },
+  {
     title: "提升系統效能與維護穩定性",
     version: "v1.8.58",
     date: "2026-07-05",

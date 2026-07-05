@@ -154,6 +154,7 @@ test('backendAction covers frontend actions and Cloudinary direct upload', async
   assert.doesNotMatch(uploads, /firebase\/storage|uploadBytes/u);
   assert.match(session, /fetchCurrentUserRole/u);
   assert.match(backendAction, /requireVerifiedFirebaseUser/u);
+  assert.doesNotMatch(backendAction, /requireEligibleFirebaseUser/u);
   assert.match(backendAction, /healthcheck/u);
   assert.match(backendAction, /x-healthcheck-secret/u);
   assert.match(backendAction, /APP_SUPABASE_SERVICE_ROLE_KEY/u);

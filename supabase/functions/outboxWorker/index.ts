@@ -291,16 +291,10 @@ async function sendPushes(
   supabase: AppSupabase,
   notification: Record<string, unknown>,
 ) {
-  let query = supabase
-    .schema("app_private")
-    .from("push_tokens")
-    .select("uid,token")
-    .limit(200);
   const source = asString(notification.source);
   const recipientUid = asString(notification.recipient_uid);
-  if (recipientUid) {
-    query = query.eq("uid", recipientUid);
-  } else if (source === "admin") {
+  let adminUids: string[] = [];
+  if (!recipientUid && source === "admin") {
     const { data: roles, error: roleError } = await supabase
       .schema("app_private")
       .from("user_roles")
@@ -308,12 +302,21 @@ async function sendPushes(
       .eq("role", "admin")
       .limit(200);
     if (roleError) throw roleError;
-    const adminUids = (roles ?? []).map((role) => asString(role.uid)).filter(Boolean);
+    adminUids = (roles ?? []).map((role) => asString(role.uid)).filter(Boolean);
     if (adminUids.length === 0) return;
-    query = query.in("uid", adminUids);
   }
-  const { data, error } = await query;
-  if (error) throw error;
+  const tokens: Array<{ token: string; uid: string }> = [];
+  for (let offset = 0; ; offset += 200) {
+    let query = supabase.schema("app_private").from("push_tokens")
+      .select("uid,token").order("uid", { ascending: true }).order("device_id", { ascending: true })
+      .range(offset, offset + 199);
+    if (recipientUid) query = query.eq("uid", recipientUid);
+    else if (adminUids.length > 0) query = query.in("uid", adminUids);
+    const { data, error } = await query;
+    if (error) throw error;
+    tokens.push(...(data ?? []));
+    if ((data ?? []).length < 200) break;
+  }
 
   const notificationType = asString(notification.type);
   const targetType = asString(notification.target_type);
@@ -322,7 +325,7 @@ async function sendPushes(
   const link = targetType === "announcement"
     ? `/announcements/${encodeURIComponent(targetId)}`
     : `/issues/${encodeURIComponent(category || "public-issues")}/${encodeURIComponent(targetId)}`;
-  const recipientUids = [...new Set((data ?? []).map((row) => asString(row.uid)).filter(Boolean))];
+  const recipientUids = [...new Set(tokens.map((row) => asString(row.uid)).filter(Boolean))];
   const preferences = new Map<string, { comments: boolean; issueUpdates: boolean }>();
   if (recipientUids.length > 0) {
     const { data: states, error: stateError } = await supabase
@@ -339,7 +342,7 @@ async function sendPushes(
     }
   }
 
-  await Promise.all((data ?? []).map(async (row) => {
+  const sendToken = async (row: { token: string; uid: string }) => {
     const uid = asString(row.uid);
     const preference = preferences.get(uid) ?? { comments: true, issueUpdates: true };
     const isComment = notificationType === "issue_comment_created" || notificationType === "announcement_comment_created";
@@ -383,7 +386,10 @@ async function sendPushes(
         token_uid: uid,
       });
     }
-  }));
+  };
+  for (let offset = 0; offset < tokens.length; offset += 20) {
+    await Promise.all(tokens.slice(offset, offset + 20).map(sendToken));
+  }
 }
 
 async function insertNotification(

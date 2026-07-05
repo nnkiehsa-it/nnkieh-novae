@@ -107,7 +107,7 @@ export function normalizeIssueRecord(id: string, data: Record<string, unknown>):
     review_rejection_reason: typeof data.review_rejection_reason === 'string'
       ? data.review_rejection_reason
       : undefined,
-    currentUserSupported: false,
+    currentUserSupported: data.currentUserSupported === true,
     deleting: data.deleting === true,
   };
 
@@ -141,6 +141,6 @@ export function withSupportState(issues: IssueRecord[], supportedIssueIds?: Set<
   }
   return issues.map((issue) => ({
     ...issue,
-    currentUserSupported: supportedIssueIds.has(issue.id),
+    currentUserSupported: issue.currentUserSupported || supportedIssueIds.has(issue.id),
   }));
 }

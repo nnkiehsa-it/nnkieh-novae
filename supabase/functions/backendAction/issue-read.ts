@@ -21,6 +21,23 @@ const ACTIVE_PRIVATE_STATUSES = ["under-review", "pending", "processing"];
 const CLOSED_PUBLIC_STATUSES = ["auto-rejected", "infeasible", "completed"];
 const CLOSED_PRIVATE_STATUSES = ["auto-rejected", "review-rejected", "infeasible", "completed"];
 
+async function withCurrentSupport(
+  rows: JsonRecord[],
+  auth: AuthContext,
+  supabase: BackendSupabase,
+): Promise<JsonRecord[]> {
+  const ids = rows.map((row) => asString(row.id)).filter(Boolean);
+  if (ids.length === 0) return rows;
+  const { data, error } = await supabase.schema("app_private").from("supports")
+    .select("issue_id").eq("uid", auth.uid).in("issue_id", ids);
+  if (error) throw error;
+  const supported = new Set((data ?? []).map((row) => row.issue_id));
+  return rows.map((row): JsonRecord => ({
+    ...row,
+    currentUserSupported: supported.has(asString(row.id)),
+  }));
+}
+
 function getStatusValues(statusBucket: string, includePrivate: boolean) {
   if (statusBucket === "closed") {
     return includePrivate ? CLOSED_PRIVATE_STATUSES : CLOSED_PUBLIC_STATUSES;
@@ -99,9 +116,10 @@ async function listIssues(
 
   const { data, error } = await query.range(range.from, range.to);
   if (error) throw error;
-  const rows = (data ?? [])
+  const readableRows = (data ?? [])
     .filter((issue) => canReadIssue(issue as JsonRecord, auth))
     .map((issue) => issueToReadableResponse(issue as JsonRecord, auth));
+  const rows = await withCurrentSupport(readableRows, auth, supabase);
   const lastIssue = rows[Math.min(pageSize - 1, rows.length - 1)];
   return {
     cursor: rows.length > pageSize && lastIssue
@@ -146,7 +164,11 @@ async function listUserIssues(payload: JsonRecord, auth: AuthContext, supabase: 
   }
   const { data, error } = await query.limit(pageSize + 1);
   if (error) throw error;
-  const rows = (data ?? []).map((issue) => issueToReadableResponse(issue as JsonRecord, auth));
+  const rows = await withCurrentSupport(
+    (data ?? []).map((issue) => issueToReadableResponse(issue as JsonRecord, auth)),
+    auth,
+    supabase,
+  );
   const last = rows[Math.min(pageSize - 1, rows.length - 1)];
   return {
     issues: rows.slice(0, pageSize),
@@ -207,7 +229,8 @@ export async function handleIssueReadAction(
   if (action === "getIssue") {
     const issue = await selectIssue(supabase, asString(payload.issueId));
     if (!canReadIssue(issue, auth)) throw new Error("not-found");
-    return { issue: issueToReadableResponse(issue, auth) };
+    const [readable] = await withCurrentSupport([issueToReadableResponse(issue, auth)], auth, supabase);
+    return { issue: readable };
   }
   if (action === "listIssues" || action === "searchIssues") return listIssues(action, payload, auth, supabase);
   if (action === "listUserIssues") return listUserIssues(payload, auth, supabase);
