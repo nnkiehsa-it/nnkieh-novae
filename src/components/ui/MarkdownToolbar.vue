@@ -12,6 +12,7 @@
     >
       <AppIcon :name="command.iconName" />
     </button>
+    <slot />
   </div>
 </template>
 

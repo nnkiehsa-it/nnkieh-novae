@@ -4,16 +4,6 @@
     <div class="flex items-center justify-between gap-3 shrink-0">
       <label :for="textareaId" class="field-label">{{ label }}</label>
       <div class="flex flex-wrap items-center justify-end gap-2">
-        <button
-          type="button"
-          class="button-toolbar"
-          :disabled="disabled || uploading || images.length >= maxImages"
-          :title="uploading ? '圖片處理中...' : images.length >= maxImages ? `${maxImagesLabel}最多 ${maxImages} 張圖片` : '加入圖片'"
-          aria-label="插入圖片"
-          @click="fileInputRef?.click()"
-        >
-          <AppIcon name="image" />
-        </button>
         <input
           ref="fileInputRef"
           type="file"
@@ -26,7 +16,6 @@
         
         <!-- Tab switchers (hidden on desktop if split screen is active) -->
         <template v-if="!split">
-          <div class="h-4 w-px bg-ink-200 dark:bg-ink-700"></div>
           <button
             type="button"
             :class="['button-toolbar', { 'button-toolbar--active': !showPreview }]"
@@ -44,7 +33,6 @@
         </template>
         <!-- On mobile, show switcher tabs even if split is true -->
         <template v-else>
-          <div class="h-4 w-px bg-ink-200 dark:bg-ink-700 md:hidden"></div>
           <button
             type="button"
             :class="['button-toolbar md:hidden', { 'button-toolbar--active': !showPreview }]"
@@ -60,9 +48,6 @@
             預覽
           </button>
         </template>
-
-        <span v-if="uploading" class="text-xs text-ink-400">{{ busyLabel }}</span>
-        <span v-else class="text-xs text-ink-400">{{ images.length }} / {{ maxImages }}</span>
       </div>
     </div>
 
@@ -73,7 +58,21 @@
         <!-- Formatting Toolbar -->
         <MarkdownToolbar
           @command="executeToolbarCommand"
-        />
+        >
+          <div class="h-4 w-px bg-ink-200 dark:bg-ink-700 mx-1 shrink-0"></div>
+          <button
+            type="button"
+            class="button-toolbar shrink-0"
+            :disabled="disabled || uploading || images.length >= maxImages"
+            :title="uploading ? '圖片處理中...' : images.length >= maxImages ? `${maxImagesLabel}最多 ${maxImages} 張圖片` : '加入圖片'"
+            aria-label="插入圖片"
+            @click="fileInputRef?.click()"
+          >
+            <AppIcon name="image" />
+          </button>
+          <span v-if="uploading" class="text-xs text-ink-400 select-none shrink-0 ml-1">{{ busyLabel }}</span>
+          <span v-else class="text-xs text-ink-400 select-none shrink-0 ml-1">{{ images.length }} / {{ maxImages }}</span>
+        </MarkdownToolbar>
 
         <!-- Textarea input wrapper (relative so popover escapes toolbar overflow-x-auto) -->
         <div class="flex-1 min-h-0 relative flex flex-col">
@@ -189,7 +188,21 @@
       <!-- Formatting Toolbar -->
       <MarkdownToolbar
         @command="executeToolbarCommand"
-      />
+      >
+        <div class="h-4 w-px bg-ink-200 dark:bg-ink-700 mx-1 shrink-0"></div>
+        <button
+          type="button"
+          class="button-toolbar shrink-0"
+          :disabled="disabled || uploading || images.length >= maxImages"
+          :title="uploading ? '圖片處理中...' : images.length >= maxImages ? `${maxImagesLabel}最多 ${maxImages} 張圖片` : '加入圖片'"
+          aria-label="插入圖片"
+          @click="fileInputRef?.click()"
+        >
+          <AppIcon name="image" />
+        </button>
+        <span v-if="uploading" class="text-xs text-ink-400 select-none shrink-0 ml-1">{{ busyLabel }}</span>
+        <span v-else class="text-xs text-ink-400 select-none shrink-0 ml-1">{{ images.length }} / {{ maxImages }}</span>
+      </MarkdownToolbar>
 
       <!-- Image previews & Textarea Container -->
       <div class="flex-1 min-h-0 relative flex flex-col">
@@ -310,7 +323,21 @@
         <!-- Formatting Toolbar -->
         <MarkdownToolbar
           @command="executeToolbarCommand"
-        />
+        >
+          <div class="h-4 w-px bg-ink-200 dark:bg-ink-700 mx-1 shrink-0"></div>
+          <button
+            type="button"
+            class="button-toolbar shrink-0"
+            :disabled="disabled || uploading || images.length >= maxImages"
+            :title="uploading ? '圖片處理中...' : images.length >= maxImages ? `${maxImagesLabel}最多 ${maxImages} 張圖片` : '加入圖片'"
+            aria-label="插入圖片"
+            @click="fileInputRef?.click()"
+          >
+            <AppIcon name="image" />
+          </button>
+          <span v-if="uploading" class="text-xs text-ink-400 select-none shrink-0 ml-1">{{ busyLabel }}</span>
+          <span v-else class="text-xs text-ink-400 select-none shrink-0 ml-1">{{ images.length }} / {{ maxImages }}</span>
+        </MarkdownToolbar>
 
         <!-- Textarea input container -->
         <div class="flex-1 min-h-0 relative flex flex-col">

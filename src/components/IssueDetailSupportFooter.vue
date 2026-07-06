@@ -40,6 +40,16 @@
           <ShareIcon :size="4" />
         </DetailActionButton>
         <DetailActionButton
+          v-if="isAdmin"
+          :label="issue.result_content ? '編輯提案結果' : '新增提案結果'"
+          :class="compact ? '!h-8 !gap-1 !px-2.5 text-xs' : ''"
+          title="編輯提案結果"
+          aria-label="編輯提案結果"
+          @click="emit('edit-result')"
+        >
+          <AppIcon name="edit" />
+        </DetailActionButton>
+        <DetailActionButton
           v-if="canManage"
           danger
           label="刪除"
@@ -61,6 +71,16 @@
         @click="emit('share')"
       >
         <ShareIcon :size="4" />
+      </DetailActionButton>
+      <DetailActionButton
+        v-if="isAdmin"
+        :label="issue.result_content ? '編輯提案結果' : '新增提案結果'"
+        :class="compact ? '!h-8 !gap-1 !px-2.5 text-xs' : ''"
+        title="編輯提案結果"
+        aria-label="編輯提案結果"
+        @click="emit('edit-result')"
+      >
+        <AppIcon name="edit" />
       </DetailActionButton>
       <DetailActionButton
         v-if="canManage"
@@ -107,11 +127,13 @@ import type { CSSProperties } from 'vue';
 import DetailActionButton from '@/components/ui/DetailActionButton.vue';
 import ShareIcon from '@/components/ui/ShareIcon.vue';
 import TrashIcon from '@/components/ui/TrashIcon.vue';
+import AppIcon from '@/components/ui/AppIcon.vue';
 import VoteButtons from '@/components/VoteButtons.vue';
 import type { IssueRecord } from '@/types';
 
 defineProps<{
   canManage?: boolean;
+  isAdmin?: boolean;
   compact?: boolean;
   createdLabel: string;
   currentUserSupported: boolean;
@@ -131,5 +153,6 @@ const emit = defineEmits<{
   delete: [];
   share: [];
   supported: [payload: { supported: boolean; supportCount: number }];
+  'edit-result': [];
 }>();
 </script>

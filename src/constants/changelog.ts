@@ -2,6 +2,20 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "最佳化管理與編輯操作體驗",
+    version: "v2.0.64",
+    date: "2026-07-07",
+    time: "05:30",
+    items: [
+      {
+        title: "將提案結果編輯與新增按鈕移至下方動作列，提升介面一致性。",
+      },
+      {
+        title: "將編輯器圖片上傳按鈕與計數整合至 Markdown 工具列中，簡化版面配置。",
+      },
+    ],
+  },
+  {
     title: "改善手機操作回饋",
     version: "v2.0.63",
     date: "2026-07-07",

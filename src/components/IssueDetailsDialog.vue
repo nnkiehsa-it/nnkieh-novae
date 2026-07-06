@@ -34,14 +34,9 @@
     </template>
 
     <template #actions>
-      <div v-if="isAdmin" class="mb-3">
-        <button type="button" class="button-secondary w-full gap-2" @click="openResultDialog">
-          <AppIcon name="edit" class="shrink-0" />
-          {{ issue.result_content ? '編輯提案結果' : '新增提案結果' }}
-        </button>
-      </div>
       <IssueDetailSupportFooter
         :can-manage="isAdmin || isOwnIssue"
+        :is-admin="isAdmin"
         :compact="false"
         :created-label="createdLabel"
         :current-user-supported="currentUserSupported"
@@ -58,6 +53,7 @@
         @delete="emit('delete')"
         @share="emit('share')"
         @supported="emit('supported', $event)"
+        @edit-result="openResultDialog"
       />
     </template>
 
