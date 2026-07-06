@@ -2,6 +2,17 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "最佳化載入指示器動畫",
+    version: "v2.0.52",
+    date: "2026-07-06",
+    time: "15:28",
+    items: [
+      {
+        title: "將載入指示器的旋轉與收縮動畫改以 CSS 實作，改善啟動動畫與載入圖示同步執行的流暢度，避免瀏覽器效能調節造成的卡頓。",
+      },
+    ],
+  },
+  {
     title: "調整安裝提示對話框樣式",
     version: "v2.0.51",
     date: "2026-07-06",
