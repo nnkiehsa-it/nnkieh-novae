@@ -2,6 +2,20 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "最佳化安裝引導與更新提示流程",
+    version: "v2.0.50",
+    date: "2026-07-06",
+    time: "15:12",
+    items: [
+      {
+        title: "改善安裝提示與瀏覽器引導對話框的版面配置，修正行動裝置底部間距與平板電腦高度顯示異常。",
+      },
+      {
+        title: "新增應用程式內建瀏覽器的切換指引步驟，並調整版本更新成功提示的顯示邏輯與層級順序。",
+      },
+    ],
+  },
+  {
     title: "改善錯誤回報資訊",
     version: "v2.0.49",
     date: "2026-07-06",

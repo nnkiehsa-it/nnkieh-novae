@@ -192,7 +192,9 @@ watch(
       );
 
       if (completedPendingUpdate || (isNewVersion && !pendingUpdateVersion)) {
-        showToast('版本已成功更新', 'success');
+        if (!installPromptMode.value) {
+          showToast('版本已成功更新', 'success');
+        }
       }
       localStorage.removeItem(LEGACY_PENDING_UPDATE_TOAST_STORAGE_KEY);
       if (completedPendingUpdate) {

@@ -1,8 +1,8 @@
 <template>
-  <DialogOverlay :open="open">
+  <DialogOverlay :open="open" z-index-class="z-[80]">
     <section
       ref="dialogRef"
-      class="panel dialog-card flex flex-col overflow-hidden max-md:h-full max-md:w-full max-md:max-w-none max-md:rounded-none max-md:border-0 md:max-w-2xl md:panel-pad"
+      class="panel dialog-card flex flex-col !overflow-hidden max-md:h-full max-md:w-full max-md:max-w-none max-md:rounded-none max-md:border-0 max-md:!p-0 md:max-w-2xl md:max-h-[min(85dvh,780px)]"
       data-dialog-root
       role="dialog"
       aria-modal="true"
@@ -10,7 +10,7 @@
       aria-describedby="app-install-prompt-description"
       tabindex="-1"
     >
-      <div class="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))] md:px-0 md:pb-0 md:pt-0">
+      <div class="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))] md:px-8 md:pt-8 md:pb-6">
         <div class="flex items-start justify-between gap-4 pb-2">
           <div class="flex min-w-0 items-start gap-4">
             <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/60 bg-white/90 shadow-sm dark:border-ink-700/80 dark:bg-ink-900/80" aria-hidden="true">
@@ -93,7 +93,7 @@
         </div>
       </div>
 
-      <div class="dialog-actions border-t border-ink-100 bg-white/95 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur dark:border-ink-800 dark:bg-ink-950/95 md:px-0 md:pb-0">
+      <div class="dialog-actions border-t border-ink-100 bg-white/95 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur dark:border-ink-800 dark:bg-ink-950/95 md:px-8 md:pb-8 md:pt-4">
         <button
           type="button"
           class="button-secondary"
@@ -195,7 +195,11 @@ const content = computed<InstallContent>(() => {
       primaryLabel: null,
       secondaryBadge: props.browserName ? `${props.browserName} 內建瀏覽器` : '',
       secondaryLabel: '稍後再說',
-      steps: [],
+      steps: [
+        { title: '點擊選單按鈕', description: '點選右上角或右下角的選單圖示（通常是三個點「•••」、分享或羅盤圖示）。' },
+        { title: '選擇「以瀏覽器開啟」', description: '在選單中點選「在 Safari 中開啟」、「在預設瀏覽器中開啟」或「以其他應用程式開啟」。' },
+        { title: '依步驟加入主畫面', description: '切換到系統瀏覽器後，即可依引導步驟將此平台加入主畫面。' },
+      ],
       title: isNotificationInstall ? '改用系統瀏覽器安裝 App' : '建議改用系統瀏覽器',
     };
   }
