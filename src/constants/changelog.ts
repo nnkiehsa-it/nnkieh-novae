@@ -2,6 +2,17 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "改善錯誤回報資訊",
+    version: "v2.0.49",
+    date: "2026-07-06",
+    time: "15:01",
+    items: [
+      {
+        title: "新增操作失敗時的錯誤追蹤碼，方便使用者提供給管理員協助排查。",
+      },
+    ],
+  },
+  {
     title: "完善管理員異常檢視",
     version: "v2.0.48",
     date: "2026-07-06",

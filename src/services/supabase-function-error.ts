@@ -7,6 +7,18 @@ function errorFallback(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
 
+function formatFunctionError(message: unknown, requestId: unknown, fallback: string) {
+  const readableMessage = typeof message === 'string' && message.trim()
+    ? message.trim()
+    : fallback;
+  const readableRequestId = typeof requestId === 'string' && requestId.trim()
+    ? requestId.trim()
+    : '';
+  return readableRequestId
+    ? `${readableMessage} 錯誤追蹤碼：${readableRequestId}`
+    : readableMessage;
+}
+
 export async function readSupabaseFunctionError(result: FunctionErrorResult) {
   const response = result.response;
   if (!response) {
@@ -18,9 +30,7 @@ export async function readSupabaseFunctionError(result: FunctionErrorResult) {
     if (contentType.includes('application/json')) {
       const body = await response.clone().json() as Record<string, unknown>;
       const message = body.error ?? body.message;
-      return typeof message === 'string' && message.trim()
-        ? message.trim()
-        : errorFallback(result.error);
+      return formatFunctionError(message, body.requestId, errorFallback(result.error));
     }
 
     const text = await response.clone().text();
