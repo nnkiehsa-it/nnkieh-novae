@@ -1,7 +1,45 @@
 <template>
   <section class="page-bottom-safe min-h-0 flex-1">
+    <div v-if="loading" class="space-y-6 py-4" :class="{ 'px-1': true }">
+      <!-- Account Skeleton -->
+      <div class="flex items-center gap-3 pb-4 border-b border-ink-100 dark:border-ink-800/60">
+        <span class="h-10 w-10 shrink-0 rounded-full bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
+        <div class="min-w-0 flex-1 space-y-2">
+          <span class="block h-4 w-32 rounded bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
+          <span class="block h-3 w-48 rounded bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
+        </div>
+        <span class="h-10 w-16 rounded-xl bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
+      </div>
+
+      <!-- Push Notifications Skeleton -->
+      <div class="pb-4 border-b border-ink-100 dark:border-ink-800/60 space-y-2">
+        <span class="block h-4 w-24 rounded bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
+        <span class="block h-3 w-3/4 rounded bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
+      </div>
+
+      <!-- Notification Types Skeleton -->
+      <div class="space-y-3 pb-4 border-b border-ink-100 dark:border-ink-800/60">
+        <span class="block h-4 w-20 rounded bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
+        <div class="space-y-2">
+          <div class="flex items-center justify-between p-3 border border-ink-100 dark:border-ink-800 rounded-xl">
+            <div class="space-y-2 flex-1">
+              <span class="block h-4 w-24 rounded bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
+              <span class="block h-3 w-2/3 rounded bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
+            </div>
+            <span class="h-6 w-11 rounded-full bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
+          </div>
+          <div class="flex items-center justify-between p-3 border border-ink-100 dark:border-ink-800 rounded-xl">
+            <div class="space-y-2 flex-1">
+              <span class="block h-4 w-24 rounded bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
+              <span class="block h-3 w-2/3 rounded bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
+            </div>
+            <span class="h-6 w-11 rounded-full bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
+          </div>
+        </div>
+      </div>
+    </div>
     <SettingsPanelContent
-      v-if="user"
+      v-else-if="user"
       :display-name="user.displayName || '校內使用者'"
       :display-photo-url="displayPhotoUrl"
       :email="user.email || ''"

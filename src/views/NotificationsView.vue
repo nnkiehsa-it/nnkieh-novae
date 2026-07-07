@@ -3,7 +3,7 @@
     <div class="min-h-0 flex-1">
       <div v-if="loading" class="space-y-4 py-2" aria-label="通知載入中">
         <div
-          v-for="index in 5"
+          v-for="index in 4"
           :key="index"
           class="flex items-start gap-3 border-b border-ink-100/60 dark:border-ink-800/40 last:border-0 pb-4"
         >

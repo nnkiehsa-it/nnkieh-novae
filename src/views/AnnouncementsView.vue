@@ -26,7 +26,7 @@
         @retry="retryAnnouncements"
       />
 
-      <SkeletonAnnouncementList v-else-if="visibleAnnouncementLoading" />
+      <SkeletonAnnouncementList v-else-if="visibleAnnouncementLoading" :can-manage="isAdmin" />
 
       <EmptyStatePanel
         v-else-if="!isAllowedUser"
@@ -68,7 +68,7 @@
         <div v-if="error" class="mt-3 rounded-xl border border-error/20 bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">
           {{ error }}
         </div>
-        <SkeletonAnnouncementList v-if="loadingMore" class="mt-2" :count="2" />
+        <SkeletonAnnouncementList v-if="loadingMore" class="mt-2" :count="2" :can-manage="isAdmin" />
         <div ref="loadMoreSentinel" class="h-1" aria-hidden="true"></div>
       </template>
     </div>
