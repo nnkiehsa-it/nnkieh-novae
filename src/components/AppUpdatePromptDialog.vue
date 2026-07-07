@@ -18,13 +18,13 @@
         <div class="min-w-0 flex-1">
           <p class="dialog-eyebrow">應用程式更新</p>
           <h2 id="app-update-title" class="dialog-title">有新版本可用</h2>
-          <p class="dialog-description">目前版本已停止使用，請重新載入以取得最新內容並繼續操作。</p>
+          <p class="dialog-description">目前版本已停止使用，請更新以取得最新內容並繼續操作。</p>
         </div>
       </div>
       <div class="dialog-actions">
         <button type="button" class="button-primary" :disabled="busy" data-autofocus @click="emit('reload')">
           <LoadingSpinner v-if="busy" :size="4" />
-          <span>{{ busy ? '重新載入中' : '重新載入' }}</span>
+          <span>{{ busy ? '更新中' : '更新' }}</span>
         </button>
       </div>
     </section>

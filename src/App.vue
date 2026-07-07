@@ -33,7 +33,7 @@
     />
   </AppShell>
   <AppUpdatePromptDialog
-    :open="updateAvailable"
+    :open="shouldShowUpdateDialog"
     :busy="reloading"
     @reload="reloadApp"
   />
@@ -44,11 +44,11 @@
         class="fixed inset-0 z-[70] flex items-center justify-center bg-ink-900/50 text-white backdrop-blur-sm"
         role="status"
         aria-live="assertive"
-        aria-label="正在重新載入應用程式"
+        aria-label="正在更新應用程式"
       >
         <div class="flex flex-col items-center gap-3">
           <LoadingSpinner :size="8" />
-          <p class="text-sm font-semibold">正在重新載入</p>
+          <p class="text-sm font-semibold">正在更新</p>
         </div>
       </div>
     </Transition>
@@ -71,7 +71,7 @@ import { usePushNotifications } from '@/composables/usePushNotifications';
 import { useSession } from '@/composables/useSession';
 import { useToast } from '@/composables/useToast';
 import { requestAppInstallPrompt } from '@/lib/pwa-install';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { DEFAULT_ISSUE_ROUTE_FILTER } from '@/constants/categories';
 
 const APP_RELEASE_MARKER = '2026-06-27-1516';
@@ -88,6 +88,11 @@ const { open: startupGateOpen } = useAppStartupGate();
 const route = useRoute();
 const router = useRouter();
 const { appReady, user } = useSession();
+const shouldShowUpdateDialog = computed(() => {
+  if (!updateAvailable.value) return false;
+  if (startupGateOpen.value && canAutoReloadCurrentVersion()) return false;
+  return true;
+});
 const {
   enablePushNotifications,
   loading: pushLoading,

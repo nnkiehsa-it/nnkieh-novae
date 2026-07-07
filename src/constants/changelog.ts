@@ -2,10 +2,10 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
-    title: "最佳化提案與公告列表介面排版",
+    title: "最佳化介面排版與版本更新提示",
     version: "v2.0.100",
     date: "2026-07-08",
-    time: "05:04",
+    time: "05:06",
     items: [
       {
         title: "調整進行中與已結案的狀態切換介面，以動態分段切換器呈現，提升狀態識別度。"
@@ -15,6 +15,9 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
       },
       {
         title: "調整桌機版提案分類選單位置至左側標題旁，並將下拉選單寬度最佳化為自適應內容寬度，避免空間冗餘。"
+      },
+      {
+        title: "精簡版本更新流程，在觸發自動更新時不顯示對話框（僅在自動更新失敗後顯示手動更新按鈕），並將提示文字統一調整為「正在更新」，使載入等待體驗更自然。"
       }
     ]
   },
