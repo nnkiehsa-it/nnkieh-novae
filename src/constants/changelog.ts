@@ -2,6 +2,23 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "最佳化行動版詳情操作與編輯器工具列",
+    version: "v2.0.92",
+    date: "2026-07-07",
+    time: "20:06",
+    items: [
+      {
+        title: "調整行動版詳情頁動作按鈕尺寸，在維持文字可讀性的同時縮小版面佔用。"
+      },
+      {
+        title: "手機版詳情與留言切換功能改為右上角獨立按鈕，並擴充捲動區域的顯示空間。"
+      },
+      {
+        title: "精簡 Markdown 編輯器工具列，移除程式碼區塊、項目清單與水平分割線。"
+      }
+    ]
+  },
+  {
     title: "調整列表載入體驗與啟動畫面",
     version: "v2.0.91",
     date: "2026-07-07",

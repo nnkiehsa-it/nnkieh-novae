@@ -520,7 +520,6 @@ const emit = defineEmits<{
 
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const editorRootRef = ref<HTMLDivElement | null>(null);
-const slashMenuRef = ref<HTMLDivElement | null>(null);
 const tablePickerRef = ref<any>(null);
 const localContent = ref(props.content);
 const textareaRefs = ref<Record<string, HTMLTextAreaElement | null>>({});
@@ -530,9 +529,7 @@ const selectedTableId = ref<string | null>(null);
 
 const activeMode = ref<'text' | 'table'>('text');
 const TEXTAREA_MAX_HEIGHT = 220;
-const SLASH_MENU_WIDTH = 256;
 const VIEWPORT_PADDING = 12;
-const SLASH_MENU_CARET_GAP = 20;
 
 const hasTables = computed(() => hasMarkdownTables(localContent.value));
 const textModeBlocks = computed(() => splitMarkdownTextTableBlocks(localContent.value));
@@ -579,7 +576,7 @@ watch(textModeBlocks, (blocks) => {
   });
 }, { deep: true });
 
-// Slash command states
+// IME Composition states
 const isComposingText = ref(false);
 
 // Table Grid Picker states

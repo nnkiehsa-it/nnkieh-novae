@@ -53,22 +53,6 @@ export const MARKDOWN_EDITOR_COMMANDS: MarkdownEditorCommand[] = [
     toolbarTitle: '編號清單',
   },
   {
-    id: 'quote',
-    title: '引用區塊',
-    subtitle: '標註重點引言',
-    iconName: 'quote',
-    keywords: ['quote', 'blockquote', 'yinyong', 'qukuai'],
-    toolbarTitle: '引言區塊',
-  },
-  {
-    id: 'code',
-    title: '程式碼區塊',
-    subtitle: '插入一段程式碼',
-    iconName: 'code',
-    keywords: ['code', 'codeblock', 'pre', 'programmer', 'chengshuma', 'qukuai'],
-    toolbarTitle: '程式碼區塊',
-  },
-  {
     id: 'table',
     title: '插入表格',
     subtitle: '建立一個新的資料表格',
@@ -76,24 +60,4 @@ export const MARKDOWN_EDITOR_COMMANDS: MarkdownEditorCommand[] = [
     keywords: ['table', 'grid', 'excel', 'charu', 'biaoge'],
     toolbarTitle: '插入表格',
   },
-  {
-    id: 'divider',
-    title: '水平線 (Divider)',
-    subtitle: '插入水平分割線',
-    iconName: 'divider',
-    keywords: ['divider', 'hr', 'line', 'split', 'shuipingxian', 'fengexian'],
-    toolbarTitle: '水平線',
-  },
 ];
-
-export function filterMarkdownEditorCommands(query: string) {
-  const normalizedQuery = query.toLowerCase().trim();
-  if (!normalizedQuery) return MARKDOWN_EDITOR_COMMANDS;
-
-  return MARKDOWN_EDITOR_COMMANDS.filter((command) => (
-    command.title.toLowerCase().includes(normalizedQuery)
-    || command.subtitle.toLowerCase().includes(normalizedQuery)
-    || command.id.toLowerCase().includes(normalizedQuery)
-    || command.keywords.some((keyword) => keyword.toLowerCase().includes(normalizedQuery))
-  ));
-}
