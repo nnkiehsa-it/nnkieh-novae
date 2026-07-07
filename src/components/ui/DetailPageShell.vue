@@ -31,7 +31,7 @@
             <slot name="header" />
           </div>
         </header>
-        <div class="min-h-0">
+        <div class="min-h-0 flex-1 overflow-y-auto pr-1">
           <slot name="details" :compact="false" :scroll-content="false" />
         </div>
         <slot name="actions" :compact="false" />
