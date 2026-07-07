@@ -2,6 +2,17 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "優化桌面版詳情頁留言區排版",
+    version: "v2.0.81",
+    date: "2026-07-07",
+    time: "16:53",
+    items: [
+      {
+        title: "將桌面版提案與公告詳情頁的留言區調整為 Sticky 固定高度，支援內部獨立滾動並使留言按鈕固定於底部。"
+      }
+    ]
+  },
+  {
     title: "最佳化提案列表對齊與修正新留言排序",
     version: "v2.0.80",
     date: "2026-07-07",
