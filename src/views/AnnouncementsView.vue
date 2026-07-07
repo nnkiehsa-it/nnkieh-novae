@@ -81,6 +81,31 @@
       @cancel="closeDeleteDialog"
       @confirm="confirmDelete"
     />
+
+    <!-- 手機版浮動新增公告按鈕 (FAB) -->
+    <button
+      v-if="isAdmin"
+      type="button"
+      class="fixed bottom-[calc(var(--app-bottom-nav-height)+1.5rem)] right-6 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-ink-950 text-ink-50 shadow-elevated transition-transform hover:scale-105 active:scale-95 md:hidden dark:bg-ink-50 dark:text-ink-950 dark:hover:bg-ink-100"
+      title="新增公告"
+      aria-label="新增公告"
+      @click="openEditor(null)"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-6 w-6 shrink-0"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+        <path d="M12 5l0 14" />
+        <path d="M5 12l14 0" />
+      </svg>
+    </button>
   </section>
 </template>
 

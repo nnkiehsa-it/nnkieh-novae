@@ -23,9 +23,9 @@
           <transition name="popover">
             <div
               v-if="isSortOpen"
-              class="absolute z-[100] mt-2 max-md:left-4 max-md:right-4 max-md:w-auto md:right-0 md:left-auto md:w-64 rounded-2xl border border-ink-200/80 bg-white p-3 shadow-lg dark:border-ink-700/80 dark:bg-ink-900"
+              class="absolute z-[100] mt-2 max-md:left-4 max-md:right-4 max-md:w-auto md:right-0 md:left-auto md:w-max md:min-w-[10rem] rounded-2xl border border-ink-200/80 bg-white p-3 shadow-lg dark:border-ink-700/80 dark:bg-ink-900"
             >
-              <div class="mb-1.5 px-2 text-xs font-semibold text-ink-400 dark:text-ink-50 tracking-wider uppercase">
+              <div class="mb-1.5 px-2 text-xs font-semibold text-ink-400 dark:text-ink-50 tracking-wider uppercase whitespace-nowrap">
                 排序方式
               </div>
               <div class="space-y-0.5">
@@ -33,7 +33,7 @@
                   v-for="option in announcementSortOptions"
                   :key="option.value"
                   type="button"
-                  class="menu-item justify-between"
+                  class="menu-item justify-between gap-4 whitespace-nowrap"
                   :class="{ 'button-toolbar--active': option.value === sortOption }"
                   @click="selectSort(option.value)"
                 >
@@ -48,7 +48,7 @@
         <button
           v-if="canCreate"
           type="button"
-          class="button-icon-filled !h-10 !w-10 md:!h-9 md:!w-9 flex items-center justify-center shrink-0"
+          class="button-icon-filled hidden md:flex !h-9 !w-9 items-center justify-center shrink-0"
           title="新增公告"
           aria-label="新增公告"
           @click="emit('create')"

@@ -5,8 +5,10 @@
       v-model:search-query="searchQuery"
       v-model:sort-option="sortOption"
       :active-filter="activeFilter"
+      :show-toggle="showToggle"
       :active-category-label="activeCategoryLabel"
       :search-hint="searchHint"
+      @toggle-form="emit('toggle-form')"
     />
 
     <div class="scrollbar-none min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pb-4">
@@ -77,7 +79,7 @@
     <button
       v-if="showToggle && activeFilter !== 'my-proposals'"
       type="button"
-      class="fixed bottom-[calc(var(--app-bottom-nav-height)+1.5rem)] right-6 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-on-primary shadow-elevated transition-transform hover:scale-105 active:scale-95 md:bottom-8 md:right-8"
+      class="fixed bottom-[calc(var(--app-bottom-nav-height)+1.5rem)] right-6 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-ink-950 text-ink-50 shadow-elevated transition-transform hover:scale-105 active:scale-95 md:hidden dark:bg-ink-50 dark:text-ink-950 dark:hover:bg-ink-100"
       :title="`新增到${activeCategoryLabel}`"
       :aria-label="`新增到${activeCategoryLabel}`"
       @click="emit('toggle-form')"

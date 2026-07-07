@@ -3,14 +3,12 @@
     <div class="flex flex-row items-center justify-between gap-3 md:mt-0">
       <div class="hidden min-w-0 flex-row items-center gap-3 sm:gap-4 md:flex md:gap-6">
         <h2 class="shrink-0 text-xl font-bold tracking-tight text-ink-950 dark:text-ink-50 md:text-2xl">提案</h2>
-      </div>
 
-      <div class="flex shrink-0 flex-row items-center justify-end gap-1.5 sm:gap-2 w-full md:w-auto">
-        <!-- 最左側：分類 Dropdown -->
-        <div v-if="activeFilter !== 'my-proposals'" class="static md:relative mr-auto md:mr-0" @click.stop @pointerdown.stop>
+        <!-- 桌機版分類 Dropdown -->
+        <div v-if="activeFilter !== 'my-proposals'" class="relative" @click.stop @pointerdown.stop>
           <button
             type="button"
-            class="button-toolbar flex items-center gap-1.5 h-10 px-3 rounded-full md:h-9 shrink-0 text-sm font-semibold"
+            class="button-toolbar flex items-center gap-1.5 h-9 px-3 rounded-full shrink-0 text-sm font-semibold"
             :class="{ 'button-toolbar--active': isCategoryOpen }"
             title="選擇分類"
             aria-label="選擇分類"
@@ -24,7 +22,49 @@
           <transition name="popover">
             <div
               v-if="isCategoryOpen"
-              class="absolute z-[100] mt-2 max-md:left-4 max-md:right-4 max-md:w-auto md:left-0 md:right-auto md:w-56 rounded-2xl border border-ink-200/80 bg-white p-3 shadow-lg dark:border-ink-700/80 dark:bg-ink-900"
+              class="absolute z-[100] mt-2 left-0 right-auto w-max min-w-[10rem] rounded-2xl border border-ink-200/80 bg-white p-3 shadow-lg dark:border-ink-700/80 dark:bg-ink-900"
+            >
+              <div class="px-2 pb-1.5 text-xs font-semibold text-ink-400 dark:text-ink-50 tracking-wider uppercase whitespace-nowrap">
+                提案分類
+              </div>
+              <div class="space-y-0.5">
+                <button
+                  v-for="option in categoryOptions"
+                  :key="option.value"
+                  type="button"
+                  class="menu-item justify-between gap-4 whitespace-nowrap"
+                  :class="{ 'button-toolbar--active': option.value === activeFilter }"
+                  @click="handleCategoryChangeInPopover(option.value)"
+                >
+                  <span>{{ option.label }}</span>
+                  <span v-if="option.value === activeFilter" class="text-xs">✓</span>
+                </button>
+              </div>
+            </div>
+          </transition>
+        </div>
+      </div>
+
+      <div class="flex shrink-0 flex-row items-center justify-end gap-1.5 sm:gap-2 w-full md:w-auto">
+        <!-- 行動版分類 Dropdown -->
+        <div v-if="activeFilter !== 'my-proposals'" class="static mr-auto md:hidden" @click.stop @pointerdown.stop>
+          <button
+            type="button"
+            class="button-toolbar flex items-center gap-1.5 h-10 px-3 rounded-full shrink-0 text-sm font-semibold"
+            :class="{ 'button-toolbar--active': isCategoryOpen }"
+            title="選擇分類"
+            aria-label="選擇分類"
+            :aria-expanded="isCategoryOpen"
+            @click="toggleCategory"
+          >
+            <span class="text-sm font-semibold leading-none">{{ activeCategoryLabel }}</span>
+            <span class="material-symbols-outlined text-[18px] leading-none" aria-hidden="true">keyboard_arrow_down</span>
+          </button>
+
+          <transition name="popover">
+            <div
+              v-if="isCategoryOpen"
+              class="absolute z-[100] mt-2 left-4 right-4 w-auto rounded-2xl border border-ink-200/80 bg-white p-3 shadow-lg dark:border-ink-700/80 dark:bg-ink-900"
             >
               <div class="px-2 pb-1.5 text-xs font-semibold text-ink-400 dark:text-ink-50 tracking-wider uppercase">
                 提案分類
@@ -96,10 +136,10 @@
           <transition name="popover">
             <div
               v-if="isSortOpen"
-              class="absolute z-[100] mt-2 max-md:left-4 max-md:right-4 max-md:w-auto md:right-0 md:left-auto md:w-56 rounded-2xl border border-ink-200/80 bg-white p-3 shadow-lg dark:border-ink-700/80 dark:bg-ink-900"
+              class="absolute z-[100] mt-2 max-md:left-4 max-md:right-4 max-md:w-auto md:right-0 md:left-auto md:w-max md:min-w-[10rem] rounded-2xl border border-ink-200/80 bg-white p-3 shadow-lg dark:border-ink-700/80 dark:bg-ink-900"
             >
               <div>
-                <div class="mb-1.5 px-2 text-xs font-semibold text-ink-400 dark:text-ink-50 tracking-wider uppercase">
+                <div class="mb-1.5 px-2 text-xs font-semibold text-ink-400 dark:text-ink-50 tracking-wider uppercase whitespace-nowrap">
                   排序方式
                 </div>
                 <div class="space-y-0.5">
@@ -107,7 +147,7 @@
                     v-for="option in visibleSortOptions"
                     :key="option.value"
                     type="button"
-                    class="menu-item justify-between"
+                    class="menu-item justify-between gap-4 whitespace-nowrap"
                     :class="{ 'button-toolbar--active': option.value === sortOption }"
                     @click="selectSort(option.value)"
                   >
@@ -171,6 +211,31 @@
             </div>
           </transition>
         </div>
+
+        <!-- 桌機版新增提案按鈕 (黑色) -->
+        <button
+          v-if="showToggle && activeFilter !== 'my-proposals'"
+          type="button"
+          class="button-icon-filled hidden md:flex !h-9 !w-9 items-center justify-center shrink-0 bg-ink-950 text-ink-50 hover:bg-ink-900 dark:bg-ink-50 dark:text-ink-950 dark:hover:bg-ink-100"
+          :title="`新增到${activeCategoryLabel}`"
+          :aria-label="`新增到${activeCategoryLabel}`"
+          @click="emit('toggle-form')"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 shrink-0"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <path d="M12 5l0 14" />
+            <path d="M5 12l14 0" />
+          </svg>
+        </button>
       </div>
     </div>
   </div>
@@ -188,6 +253,7 @@ const props = defineProps<{
   searchQuery: string;
   searchHint: string;
   activeFilter: string;
+  showToggle: boolean;
   activeCategoryLabel: string;
   sortOption: IssueSortOption;
 }>();
