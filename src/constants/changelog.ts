@@ -2,6 +2,17 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "優化桌面版詳情頁操作列排版",
+    version: "v2.0.87",
+    date: "2026-07-07",
+    time: "17:11",
+    items: [
+      {
+        title: "優化桌面版詳情頁的左側佈局，實現短內容時操作列自動置底，長內容時操作列緊跟正文下方且不與文字重疊的雙重排版支援。"
+      }
+    ]
+  },
+  {
     title: "修正桌面版詳情頁文字重疊問題",
     version: "v2.0.86",
     date: "2026-07-07",
