@@ -5,10 +5,8 @@
       v-model:search-query="searchQuery"
       v-model:sort-option="sortOption"
       :active-filter="activeFilter"
-      :show-toggle="showToggle"
       :active-category-label="activeCategoryLabel"
       :search-hint="searchHint"
-      @toggle-form="emit('toggle-form')"
     />
 
     <div class="scrollbar-none min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pb-4">
@@ -74,6 +72,31 @@
         <div ref="loadMoreSentinel" class="h-1" aria-hidden="true"></div>
       </template>
     </div>
+
+    <!-- 浮動新增提案按鈕 (FAB) -->
+    <button
+      v-if="showToggle && activeFilter !== 'my-proposals'"
+      type="button"
+      class="fixed bottom-[calc(var(--app-bottom-nav-height)+1.5rem)] right-6 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-on-primary shadow-elevated transition-transform hover:scale-105 active:scale-95 md:bottom-8 md:right-8"
+      :title="`新增到${activeCategoryLabel}`"
+      :aria-label="`新增到${activeCategoryLabel}`"
+      @click="emit('toggle-form')"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-6 w-6 shrink-0"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+        <path d="M12 5l0 14" />
+        <path d="M5 12l14 0" />
+      </svg>
+    </button>
   </section>
 
   <IssueComposer
