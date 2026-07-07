@@ -2,6 +2,42 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "調整手機導覽列視覺",
+    version: "v2.0.68",
+    date: "2026-07-07",
+    time: "16:00",
+    items: [
+      {
+        title: "移除手機底部導覽列上方陰影，讓頁面底部呈現更簡潔。",
+      },
+    ],
+  },
+  {
+    title: "改善編輯器輸入空間",
+    version: "v2.0.67",
+    date: "2026-07-07",
+    time: "15:58",
+    items: [
+      {
+        title: "修正提案與公告編輯器文字輸入區高度，讓可輸入空間完整填滿編輯框。",
+      },
+    ],
+  },
+  {
+    title: "調整詳情頁閱讀版面",
+    version: "v2.0.66",
+    date: "2026-07-07",
+    time: "15:56",
+    items: [
+      {
+        title: "擴大提案與公告詳情頁可用寬度，提升長內容閱讀空間。",
+      },
+      {
+        title: "調整留言區為區塊內捲動，避免大量留言影響詳情內容頁面長度。",
+      },
+    ],
+  },
+  {
     title: "改善詳情頁瀏覽體驗",
     version: "v2.0.65",
     date: "2026-07-07",

@@ -139,7 +139,7 @@
 - DecorativeGlow.vue：背景裝飾性雙色模糊光暈（emerald + indigo）。
 - GoogleLoginButton.vue：Google 登入按鈕（含 loading spinner 狀態）。
 - DialogOverlay.vue：Modal 共用背景遮罩（含 backdrop-blur、點擊關閉、Teleport），以動態 viewport 扣除 edge-to-edge safe-area 後提供正確可用高度，並支援一般響應式、四周留白、無留白與自訂 z-index 層級。
-- DetailPageShell.vue：提案與公告詳情子頁共用骨架，提供左上返回鍵、桌機雙欄、手機內容/留言分頁與欄位間隔。
+- DetailPageShell.vue：提案與公告詳情子頁共用骨架，提供左上返回鍵、滿寬詳情版面、桌機內容自然高度與留言欄內捲、手機內容/留言分頁與欄位間隔。
 - SearchHighlight.vue：搜尋結果文字高亮元件，依關鍵字標示標題命中片段。
 
 ### 應用元件 (src/components/)

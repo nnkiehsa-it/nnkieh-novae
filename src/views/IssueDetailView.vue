@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full min-h-0 flex-col">
+  <div class="relative left-1/2 min-h-0 w-[100dvw] max-w-none -translate-x-1/2 px-4 sm:px-6 lg:px-8">
     <PageLoadFailure
       v-if="sessionLoadingHasProblem"
       :title="sessionProblemTitle"
@@ -8,7 +8,7 @@
       @retry="reloadPage"
     />
 
-    <div v-else-if="sessionLoading || routeIssueLoading" class="flex min-h-0 flex-1 items-center justify-center" aria-label="正在載入提案" aria-busy="true">
+    <div v-else-if="sessionLoading || routeIssueLoading" class="flex min-h-[50dvh] items-center justify-center" aria-label="正在載入提案" aria-busy="true">
       <LoadingSpinner :size="8" />
     </div>
 

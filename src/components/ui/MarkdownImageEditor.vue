@@ -648,8 +648,14 @@ function focusTextBlock(id: string, cursorPosition?: number) {
 }
 
 function resizeTextarea(textarea: HTMLTextAreaElement) {
+  if (!hasTables.value) {
+    textarea.style.height = '100%';
+    textarea.style.overflowY = 'auto';
+    return;
+  }
+
   textarea.style.height = 'auto';
-  const minHeight = hasTables.value ? 28 : 44;
+  const minHeight = 28;
   const nextHeight = Math.min(Math.max(textarea.scrollHeight, minHeight), TEXTAREA_MAX_HEIGHT);
   textarea.style.height = `${nextHeight}px`;
   textarea.style.overflowY = textarea.scrollHeight > TEXTAREA_MAX_HEIGHT ? 'auto' : 'hidden';

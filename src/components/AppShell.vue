@@ -58,7 +58,7 @@
 
     <nav
       v-if="isAllowedUser"
-      class="app-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-ink-200/80 bg-white/95 px-3 pt-2 shadow-[0_-12px_32px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-ink-800/80 dark:bg-ink-950/95 md:hidden"
+      class="app-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-ink-200/80 bg-white/95 px-3 pt-2 backdrop-blur-xl dark:border-ink-800/80 dark:bg-ink-950/95 md:hidden"
       aria-label="手機主要導覽"
     >
       <div class="app-bottom-nav__inner mx-auto grid max-w-md grid-cols-5 gap-1">

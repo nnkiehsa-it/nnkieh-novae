@@ -1,5 +1,5 @@
 <template>
-  <section class="flex h-full min-h-0 flex-col">
+  <section class="min-h-0">
     <header class="flex shrink-0 items-start gap-3 pb-3">
       <button
         type="button"
@@ -15,17 +15,17 @@
       </div>
     </header>
 
-    <div v-if="isDesktopViewport" class="hidden min-h-0 flex-1 md:flex">
-      <div class="flex h-full min-h-0 w-[62%] flex-col pr-6">
-        <slot name="details" :compact="false" :scroll-content="true" />
+    <div v-if="isDesktopViewport" class="hidden min-h-0 items-start gap-6 md:grid md:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)] xl:grid-cols-[minmax(0,1fr)_32rem]">
+      <div class="min-w-0">
+        <slot name="details" :compact="false" :scroll-content="false" />
         <slot name="actions" :compact="false" />
       </div>
-      <div class="flex h-full min-h-0 w-[38%] flex-col border-l border-ink-100 pl-6 pr-1 dark:border-ink-800">
+      <div class="sticky top-0 flex max-h-[calc(100dvh-var(--app-header-height)-env(safe-area-inset-top)-2rem)] min-h-[28rem] min-w-0 flex-col border-l border-ink-100 pl-6 pr-1 dark:border-ink-800">
         <slot name="comments" :compact-header="false" />
       </div>
     </div>
 
-    <div v-else class="flex min-h-0 flex-1 flex-col overflow-hidden md:hidden">
+    <div v-else class="min-h-0 md:hidden">
       <div class="mb-2 flex shrink-0 justify-center">
         <SegmentedControl
           :model-value="activeTab"
@@ -34,15 +34,15 @@
         />
       </div>
 
-      <div class="flex min-h-0 flex-1 flex-col px-1">
-        <div v-show="activeTab === 'details'" class="flex h-full min-h-0 flex-1 flex-col">
-          <div class="min-h-0 flex-1 overflow-y-auto px-1 pb-3 pr-2">
+      <div class="min-h-0 px-1">
+        <div v-show="activeTab === 'details'" class="min-h-0">
+          <div class="min-h-0 px-1 pb-3 pr-2">
             <slot name="details" :compact="true" :scroll-content="false" />
           </div>
           <slot name="actions" :compact="true" />
         </div>
 
-        <div v-show="activeTab === 'comments'" class="min-h-0 flex-1">
+        <div v-show="activeTab === 'comments'" class="h-[calc(100dvh-var(--app-header-height)-var(--app-bottom-nav-height)-env(safe-area-inset-top)-5rem)] min-h-[24rem]">
           <slot name="comments" :compact-header="true" />
         </div>
       </div>
