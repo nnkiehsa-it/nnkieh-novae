@@ -138,7 +138,7 @@ export function useAnnouncementComments(
         const commentMap = new Map(comments.value.map((comment) => [comment.id, comment]));
         commentMap.set(result.comment.id, result.comment);
         comments.value = Array.from(commentMap.values()).sort((left, right) =>
-          (left.created_at?.getTime() ?? 0) - (right.created_at?.getTime() ?? 0)
+          (left.created_at?.getTime() ?? Date.now()) - (right.created_at?.getTime() ?? Date.now())
         );
       }
       loaded.value = true;

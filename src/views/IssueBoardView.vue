@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full min-h-0 flex-col md:px-4 lg:px-6 xl:px-8">
+  <div class="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col">
     <PageLoadFailure
       v-if="sessionLoadingHasProblem"
       :title="sessionProblemTitle"

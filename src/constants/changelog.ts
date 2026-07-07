@@ -2,6 +2,20 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "最佳化提案列表對齊與修正新留言排序",
+    version: "v2.0.80",
+    date: "2026-07-07",
+    time: "16:50",
+    items: [
+      {
+        title: "最佳化桌面版提案看板列表的最大寬度限制與邊距，實現列表與頂部導覽列的完美對齊。"
+      },
+      {
+        title: "修正發布新留言後，新留言可能在前端畫面上暫時跳至頂端的排序異常問題。"
+      }
+    ]
+  },
+  {
     title: "改善行動裝置頂部與桌面版面配置",
     version: "v2.0.79",
     date: "2026-07-07",

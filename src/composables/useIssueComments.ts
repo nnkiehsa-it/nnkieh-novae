@@ -152,7 +152,7 @@ export function useIssueComments(issueId: Ref<string>, onContentUnavailable?: (i
         const commentMap = new Map(comments.value.map((entry) => [entry.id, entry]));
         commentMap.set(comment.id, comment);
         comments.value = Array.from(commentMap.values()).sort((left, right) =>
-          (left.created_at?.getTime() ?? 0) - (right.created_at?.getTime() ?? 0)
+          (left.created_at?.getTime() ?? Date.now()) - (right.created_at?.getTime() ?? Date.now())
         );
       }
       loaded.value = true;

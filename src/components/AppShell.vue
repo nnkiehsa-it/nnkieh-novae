@@ -52,7 +52,7 @@
     <!-- Main Content Container -->
     <div
       ref="mainContentRef"
-      class="app-main-content relative mx-auto flex w-full max-w-7xl flex-1 flex-col overflow-y-auto overscroll-contain px-4 sm:px-6 lg:px-8"
+      class="app-main-content relative mx-auto flex w-full flex-1 flex-col overflow-y-auto overscroll-contain px-4 sm:px-6 lg:px-8"
     >
       <main class="min-h-0 flex-1">
         <slot />
