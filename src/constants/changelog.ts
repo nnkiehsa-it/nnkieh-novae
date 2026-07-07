@@ -2,13 +2,16 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
-    title: "改善提案列表狀態切換體驗",
+    title: "最佳化提案列表介面排版",
     version: "v2.0.100",
     date: "2026-07-08",
-    time: "04:52",
+    time: "04:58",
     items: [
       {
         title: "調整進行中與已結案的狀態切換介面，以動態分段切換器呈現，提升狀態識別度。"
+      },
+      {
+        title: "將新增提案按鈕改為頁面右下角之浮動動作按鈕，釋放控制列空間並提升點擊便利性。"
       }
     ]
   },

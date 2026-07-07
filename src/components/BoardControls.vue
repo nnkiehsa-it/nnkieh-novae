@@ -171,31 +171,6 @@
             </div>
           </transition>
         </div>
-
-        <!-- 新增提案按鈕 -->
-        <button
-          v-if="showToggle && activeFilter !== 'my-proposals'"
-          type="button"
-          class="button-icon-filled !h-10 !w-10 md:!h-9 md:!w-9 flex items-center justify-center shrink-0"
-          :title="`新增到${activeCategoryLabel}`"
-          :aria-label="`新增到${activeCategoryLabel}`"
-          @click="emit('toggle-form')"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-4 w-4 shrink-0"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-            <path d="M12 5l0 14" />
-            <path d="M5 12l14 0" />
-          </svg>
-        </button>
       </div>
     </div>
   </div>
@@ -213,7 +188,6 @@ const props = defineProps<{
   searchQuery: string;
   searchHint: string;
   activeFilter: string;
-  showToggle: boolean;
   activeCategoryLabel: string;
   sortOption: IssueSortOption;
 }>();
