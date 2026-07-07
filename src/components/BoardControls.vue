@@ -7,7 +7,7 @@
 
       <div class="flex shrink-0 flex-row items-center justify-end gap-1.5 sm:gap-2 w-full md:w-auto">
         <!-- 最左側：分類 Dropdown -->
-        <div class="static md:relative mr-auto md:mr-0" @click.stop @pointerdown.stop>
+        <div v-if="activeFilter !== 'my-proposals'" class="static md:relative mr-auto md:mr-0" @click.stop @pointerdown.stop>
           <button
             type="button"
             class="button-toolbar flex items-center gap-1.5 h-10 px-3 rounded-full md:h-9 shrink-0 text-sm font-semibold"

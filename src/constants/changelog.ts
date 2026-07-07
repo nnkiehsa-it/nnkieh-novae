@@ -2,6 +2,28 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "調整詳情頁底部區塊位置",
+    version: "v2.0.76",
+    date: "2026-07-07",
+    time: "16:30",
+    items: [
+      {
+        title: "調整詳情頁底部操作區與留言區位置，讓短內容時維持靠近底部、長內容時跟隨內容延伸。",
+      },
+    ],
+  },
+  {
+    title: "簡化我的提案頁面操作",
+    version: "v2.0.75",
+    date: "2026-07-07",
+    time: "16:28",
+    items: [
+      {
+        title: "移除我的提案頁面上不必要的分類切換入口，讓操作列更聚焦。",
+      },
+    ],
+  },
+  {
     title: "調整列表與留言間距",
     version: "v2.0.74",
     date: "2026-07-07",

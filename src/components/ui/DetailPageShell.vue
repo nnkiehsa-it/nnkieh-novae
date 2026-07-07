@@ -15,12 +15,12 @@
       </div>
     </header>
 
-    <div v-if="isDesktopViewport" class="hidden min-h-0 items-start gap-6 md:grid md:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)] xl:grid-cols-[minmax(0,1fr)_32rem]">
-      <div class="min-w-0">
+    <div v-if="isDesktopViewport" class="hidden min-h-0 items-stretch gap-6 md:grid md:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)] xl:grid-cols-[minmax(0,1fr)_32rem]">
+      <div class="flex min-h-[calc(100dvh-var(--app-header-height)-env(safe-area-inset-top)-2rem)] min-w-0 flex-col pb-[3px]">
         <slot name="details" :compact="false" :scroll-content="false" />
         <slot name="actions" :compact="false" />
       </div>
-      <div class="sticky top-0 flex max-h-[calc(100dvh-var(--app-header-height)-env(safe-area-inset-top)-2rem)] min-h-[28rem] min-w-0 flex-col border-l border-ink-100 pl-6 pr-1 dark:border-ink-800">
+      <div class="flex h-full min-h-[calc(100dvh-var(--app-header-height)-env(safe-area-inset-top)-2rem)] min-w-0 flex-col border-l border-ink-100 pb-[3px] pl-6 pr-1 dark:border-ink-800">
         <slot name="comments" :compact-header="false" />
       </div>
     </div>
