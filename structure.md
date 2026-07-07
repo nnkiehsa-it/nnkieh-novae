@@ -182,7 +182,7 @@
 ### 看板與列表元件
 
 - src/components/IssueBoard.vue：提案看板主體。調用 `useIssueBoardData`，以固定控制列與隱藏捲軸的獨立捲動列表組合看板狀態，支援排序、Realtime 更新與底部自動載入更多，並在開啟提案時導向提案詳情子頁。
-- src/components/BoardControls.vue：提案看板頂部控制列，包含頁內提案分類 segmented control、搜尋工具面板、整合狀態與排序之篩選工具選單與新增提案按鈕。
+- src/components/BoardControls.vue：提案看板頂部控制列，包含頁內提案分類選單、進行中 / 已結案切換按鈕、搜尋工具面板、排序選單與新增提案按鈕。
 - src/components/IssueAdminMenu.vue：管理員狀態調整下拉選單展示層，用於列表視圖與動作選單。
 - src/components/IssueTableRow.vue：列表視圖單筆提案列展示層，桌面動態 grid、手機收折為單行精簡列；共用 `useIssueItemController` 處理提案互動狀態與開啟詳情事件。
 - src/components/IssueBoardTable.vue：列表視圖容器，含欄位標題列與提案列渲染；載入與分頁切換期間顯示 SkeletonTable。

@@ -46,14 +46,26 @@
           </transition>
         </div>
 
-        <!-- 篩選與排序（圓形 sort 圖示按鈕） -->
+        <button
+          v-if="activeFilter !== 'my-proposals'"
+          type="button"
+          class="button-secondary flex h-10 !min-h-0 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-ink-700 dark:text-ink-200 md:h-9"
+          :title="`切換到${nextStatusLabel}`"
+          :aria-label="`切換到${nextStatusLabel}`"
+          @click="toggleStatusTab"
+        >
+          <AppIcon :name="statusTab === 'active' ? 'inbox' : 'list'" :size="3.5" />
+          <span>{{ nextStatusLabel }}</span>
+        </button>
+
+        <!-- 排序（圓形 sort 圖示按鈕） -->
         <div class="static md:relative" @click.stop @pointerdown.stop>
           <button
             type="button"
             class="button-toolbar h-10 w-10 rounded-full p-0 md:h-9 md:w-9 flex items-center justify-center shrink-0"
-            :class="{ 'button-toolbar--active': isSortOpen || (activeFilter !== 'my-proposals' && statusTab !== 'active') || sortOption !== 'latest' }"
-            title="篩選與排序"
-            aria-label="篩選與排序"
+            :class="{ 'button-toolbar--active': isSortOpen || sortOption !== 'latest' }"
+            title="排序提案"
+            aria-label="排序提案"
             :aria-expanded="isSortOpen"
             @click="toggleSort"
           >
@@ -65,35 +77,6 @@
               v-if="isSortOpen"
               class="absolute z-[100] mt-2 max-md:left-4 max-md:right-4 max-md:w-auto md:right-0 md:left-auto md:w-56 rounded-2xl border border-ink-200/80 bg-white p-3 shadow-lg dark:border-ink-700/80 dark:bg-ink-900"
             >
-              <!-- 提案狀態（當不是我的提案時才顯示，不使用 SegmentedControl，改用選項按鈕） -->
-              <div v-if="activeFilter !== 'my-proposals'" class="mb-3">
-                <div class="mb-1.5 px-2 text-xs font-semibold text-ink-400 dark:text-ink-50 tracking-wider uppercase">
-                  提案狀態
-                </div>
-                <div class="space-y-0.5">
-                  <button
-                    type="button"
-                    class="menu-item justify-between"
-                    :class="{ 'button-toolbar--active': statusTab === 'active' }"
-                    @click="selectStatus('active')"
-                  >
-                    <span>進行中</span>
-                    <span v-if="statusTab === 'active'" class="text-xs">✓</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="menu-item justify-between"
-                    :class="{ 'button-toolbar--active': statusTab === 'closed' }"
-                    @click="selectStatus('closed')"
-                  >
-                    <span>已結案</span>
-                    <span v-if="statusTab === 'closed'" class="text-xs">✓</span>
-                  </button>
-                </div>
-                <div class="my-2 border-t border-ink-100 dark:border-ink-800"></div>
-              </div>
-
-              <!-- 排序方式（一律顯示） -->
               <div>
                 <div class="mb-1.5 px-2 text-xs font-semibold text-ink-400 dark:text-ink-50 tracking-wider uppercase">
                   排序方式
@@ -233,6 +216,7 @@ const visibleSortOptions = computed(() =>
     ? issueSortOptions.filter((option) => option.value !== 'ending-soon')
     : issueSortOptions
 );
+const nextStatusLabel = computed(() => props.statusTab === 'active' ? '已結案' : '進行中');
 const categoryOptions = ISSUE_FILTER_OPTIONS;
 const isSearchOpen = ref(false);
 const isSortOpen = ref(false);
@@ -270,8 +254,8 @@ function selectSort(value: IssueSortOption) {
   emit('update:sortOption', value);
 }
 
-function selectStatus(value: 'active' | 'closed') {
-  emit('update:statusTab', value);
+function toggleStatusTab() {
+  emit('update:statusTab', props.statusTab === 'active' ? 'closed' : 'active');
 }
 
 async function handleCategoryChange(value: string) {
