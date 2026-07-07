@@ -467,6 +467,7 @@ async function processEvent(supabase: AppSupabase, event: OutboxEvent) {
   if (
     event.event_type === "announcement.updated"
     || event.event_type === "announcement.deleted"
+    || event.event_type === "issue.status_changed"
     || event.event_type === "support.created"
     || event.event_type === "support.deleted"
     || event.event_type === "support.goal_met"
@@ -506,6 +507,15 @@ Deno.serve(async (request) => {
           .rpc("complete_outbox_event", { event_id: event.id });
         if (completeError) throw completeError;
       } catch (error) {
+        console.error("outbox event failed", {
+          event_id: event.id,
+          event_type: event.event_type,
+          notification_completed_at: event.notification_completed_at ?? null,
+          notion_completed_at: event.notion_completed_at ?? null,
+          target_id: event.target_id,
+          target_type: event.target_type,
+          error: errorMessage(error),
+        });
         const { error: failError } = await supabase
           .schema("app_api")
           .rpc("fail_outbox_event", {
