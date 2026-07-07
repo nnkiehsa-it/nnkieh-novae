@@ -356,6 +356,10 @@ async function sendPushes(
     try {
       await sendFcmMessage({
         token: row.token,
+        notification: {
+          title: asString(notification.title),
+          body: asString(notification.body_preview),
+        },
         data: {
           body: asString(notification.body_preview),
           issue_category: category,
@@ -364,6 +368,12 @@ async function sendPushes(
           target_type: targetType,
           title: asString(notification.title),
           type: notificationType,
+        },
+        webpush: {
+          notification: {
+            icon: "/pwa-192x192.png",
+            badge: "/pwa-64x64.png",
+          },
         },
       });
       await supabase.schema("app_private").from("push_delivery_logs").insert({
@@ -471,6 +481,11 @@ async function processEvent(supabase: AppSupabase, event: OutboxEvent) {
     || event.event_type === "support.created"
     || event.event_type === "support.deleted"
     || event.event_type === "support.goal_met"
+    || event.event_type === "issue.created"
+    || event.event_type === "issue.comment_created"
+    || event.event_type === "issue.deleted"
+    || event.event_type === "announcement.created"
+    || event.event_type === "announcement.comment_created"
   ) {
     return;
   }

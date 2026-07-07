@@ -2,6 +2,20 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "提升推播通知可靠性與背景處理穩定性",
+    version: "v2.0.93",
+    date: "2026-07-07",
+    time: "21:42",
+    items: [
+      {
+        title: "最佳化推播通知的送達可靠性，改善行動裝置與背景模式下的通知接收體驗。"
+      },
+      {
+        title: "提升背景資料同步與事件處理的系統穩定性。"
+      }
+    ]
+  },
+  {
     title: "最佳化行動版詳情操作與編輯器工具列",
     version: "v2.0.92",
     date: "2026-07-07",
