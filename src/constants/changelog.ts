@@ -2,6 +2,20 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "改善行動裝置頂部與桌面版面配置",
+    version: "v2.0.79",
+    date: "2026-07-07",
+    time: "16:43",
+    items: [
+      {
+        title: "調整手機版頂部導覽列的高度，並適度放大標題文字使其垂直置中對齊。"
+      },
+      {
+        title: "限制桌面版主要內容區域的最大寬度，確保列表與內容排版能與頂部導覽列對齊。"
+      }
+    ]
+  },
+  {
     title: "修正手機版留言按鈕顯示問題",
     version: "v2.0.78",
     date: "2026-07-07",

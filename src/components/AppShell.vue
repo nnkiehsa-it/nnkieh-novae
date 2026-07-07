@@ -12,7 +12,7 @@
         <div class="flex items-center min-w-0">
           <h1 class="app-header__title text-ink-950 dark:text-ink-50 flex items-center shrink-0" :aria-label="mobileHeaderTitle">
             <span class="hidden md:inline-flex"><BrandMark /></span>
-            <span class="text-2xl font-bold tracking-tight md:hidden">{{ mobileHeaderTitle }}</span>
+            <span class="text-[26px] font-bold tracking-tight md:hidden leading-none">{{ mobileHeaderTitle }}</span>
           </h1>
 
           <!-- Desktop Navigation -->
@@ -52,7 +52,7 @@
     <!-- Main Content Container -->
     <div
       ref="mainContentRef"
-      class="app-main-content relative mx-auto flex w-full flex-1 flex-col overflow-y-auto overscroll-contain px-4 sm:px-6 lg:px-8"
+      class="app-main-content relative mx-auto flex w-full max-w-7xl flex-1 flex-col overflow-y-auto overscroll-contain px-4 sm:px-6 lg:px-8"
     >
       <main class="min-h-0 flex-1">
         <slot />

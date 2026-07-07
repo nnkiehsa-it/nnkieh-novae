@@ -272,6 +272,10 @@
   }
 
   @media (max-width: 767px) {
+    :root {
+      --app-header-height: 3.5rem;
+    }
+
     .app-header {
       background-color: rgb(var(--color-page-background) / 0.88);
       box-shadow: none;
