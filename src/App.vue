@@ -90,6 +90,7 @@ const router = useRouter();
 const { appReady, user } = useSession();
 const shouldShowUpdateDialog = computed(() => {
   if (!updateAvailable.value) return false;
+  if (reloading.value) return false;
   if (startupGateOpen.value && canAutoReloadCurrentVersion()) return false;
   return true;
 });
