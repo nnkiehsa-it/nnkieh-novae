@@ -2,6 +2,23 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "調整列表載入體驗與啟動畫面",
+    version: "v2.0.91",
+    date: "2026-07-07",
+    time: "19:39",
+    items: [
+      {
+        title: "調整各列表載入骨架的預設列數，並最佳化公告列表骨架版面結構以對齊欄位排版。"
+      },
+      {
+        title: "行動版設定與通知頁面導入載入骨架，桌機版設定與通知面板載入狀態改用 Spinner 動畫以提升視覺一致性。"
+      },
+      {
+        title: "簡化 App 啟動畫面，移除重複的載入狀態文字。"
+      }
+    ]
+  },
+  {
     title: "改善提案時間顯示",
     version: "v2.0.90",
     date: "2026-07-07",

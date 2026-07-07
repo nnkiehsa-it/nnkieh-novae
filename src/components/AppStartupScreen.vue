@@ -7,7 +7,6 @@
 
       <div class="startup-screen__copy">
         <h1 class="startup-screen__title">{{ appTitle }}</h1>
-        <p class="startup-screen__tagline">正在準備</p>
       </div>
 
       <LoadingSpinner :size="6" class="startup-screen__loader" />
@@ -91,14 +90,6 @@ const appTitle = import.meta.env.VITE_APP_TITLE ?? 'SRP';
 .startup-screen__copy {
   display: grid;
   gap: 0.35rem;
-}
-
-.startup-screen__tagline {
-  margin: 0;
-  color: rgb(var(--color-outline));
-  font-size: 0.875rem;
-  font-weight: 700;
-  line-height: 1.5;
 }
 
 .startup-screen__title {

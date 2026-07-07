@@ -61,19 +61,8 @@
             </button>
           </header>
 
-          <div v-if="loading" class="flex-1 space-y-4 px-5 py-5" aria-label="通知載入中">
-            <div
-              v-for="index in 5"
-              :key="index"
-              class="flex items-start gap-3"
-            >
-              <div class="h-10 w-10 shrink-0 rounded-2xl bg-ink-100 dark:bg-ink-800 animate-skeleton"></div>
-              <div class="min-w-0 flex-1 space-y-2 pt-1">
-                <div class="h-3 w-2/3 rounded-full bg-ink-100 dark:bg-ink-800 animate-skeleton"></div>
-                <div class="h-3 w-full rounded-full bg-ink-100 dark:bg-ink-800 animate-skeleton"></div>
-                <div class="h-2.5 w-1/3 rounded-full bg-ink-100 dark:bg-ink-800 animate-skeleton"></div>
-              </div>
-            </div>
+          <div v-if="loading" class="flex flex-1 items-center justify-center py-10" aria-label="通知載入中" aria-busy="true">
+            <LoadingSpinner :size="6" />
           </div>
 
           <div v-else-if="error" class="flex flex-1 flex-col items-center justify-center px-6 py-10 text-center">
@@ -158,6 +147,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, type CSSProperties } from 'vue';
 import AuthorAvatar from '@/components/AuthorAvatar.vue';
+import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useNotificationNavigation } from '@/composables/useNotificationNavigation';
 import { useNotifications } from '@/composables/useNotifications';
 import { formatDate } from '@/lib/format';

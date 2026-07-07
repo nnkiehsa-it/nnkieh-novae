@@ -63,7 +63,7 @@ const props = withDefaults(defineProps<{
   showAuthor?: boolean;
   isAdmin?: boolean;
 }>(), {
-  rows: 8,
+  rows: 4,
   showAuthor: true,
   isAdmin: false,
 });
