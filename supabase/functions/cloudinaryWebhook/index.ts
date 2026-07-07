@@ -4,6 +4,7 @@ import { requireEnv } from "../_shared/env.ts";
 import { errorMessage, errorStatus, jsonResponse, publicError, requireMethod, textResponse } from "../_shared/http.ts";
 import { verifyCloudinarySignature } from "../_shared/webhook.ts";
 import { RATE_LIMITS } from "../_shared/rate-limits.ts";
+import { claimFixedWindowRateLimit, utcMinuteWindow, utcSecondWindow } from "../_shared/upstash-rate-limit.ts";
 
 Deno.serve(async (request) => {
   const methodFailure = requireMethod(request, "POST");
@@ -24,6 +25,18 @@ Deno.serve(async (request) => {
     if (!publicId) {
       return textResponse("Missing public_id", { status: 400 });
     }
+    await claimFixedWindowRateLimit(
+      "global",
+      "cloudinary.webhook.second",
+      utcSecondWindow(),
+      RATE_LIMITS.cloudinaryWebhookSecond,
+    );
+    await claimFixedWindowRateLimit(
+      "global",
+      "cloudinary.webhook",
+      utcMinuteWindow(),
+      RATE_LIMITS.cloudinaryWebhookMinute,
+    );
     const format = String(payload.format ?? "").toLowerCase();
     const resourceType = String(payload.resource_type ?? "");
     const deliveryType = String(payload.type ?? "");

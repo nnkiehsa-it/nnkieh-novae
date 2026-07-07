@@ -2,8 +2,10 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import type { Database } from "../_shared/database.ts";
 import { deleteCloudinaryAsset } from "../_shared/cloudinary.ts";
 import { requireEnv } from "../_shared/env.ts";
-import { errorMessage, jsonResponse, operationalErrorSummary, requireMethod } from "../_shared/http.ts";
+import { errorMessage, errorStatus, jsonResponse, operationalErrorSummary, publicError, requireMethod } from "../_shared/http.ts";
 import { markNotionPageDeleted } from "../_shared/notion.ts";
+import { RATE_LIMITS } from "../_shared/rate-limits.ts";
+import { claimFixedWindowRateLimit, utcMinuteWindow, utcSecondWindow } from "../_shared/upstash-rate-limit.ts";
 import { requireBearerSecret } from "../_shared/webhook.ts";
 
 interface DeletionJob {
@@ -22,6 +24,18 @@ Deno.serve(async (request) => {
   if (authFailure) return authFailure;
 
   try {
+    await claimFixedWindowRateLimit(
+      "global",
+      "worker.deletion.second",
+      utcSecondWindow(),
+      RATE_LIMITS.workerRunSecond,
+    );
+    await claimFixedWindowRateLimit(
+      "global",
+      "worker.deletion",
+      utcMinuteWindow(),
+      RATE_LIMITS.workerRunMinute,
+    );
     const supabase = createClient<Database>(
       requireEnv("SUPABASE_URL"),
       requireEnv("APP_SUPABASE_SERVICE_ROLE_KEY"),
@@ -60,6 +74,6 @@ Deno.serve(async (request) => {
     return jsonResponse({ ok: true, processedCount: jobs.length });
   } catch (error) {
     console.error(errorMessage(error));
-    return jsonResponse({ ok: false, error: "worker-failed" }, { status: 500 });
+    return jsonResponse({ ok: false, error: publicError(error) }, { status: errorStatus(error) });
   }
 });

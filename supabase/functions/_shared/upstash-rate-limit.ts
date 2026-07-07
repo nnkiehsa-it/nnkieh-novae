@@ -10,8 +10,12 @@ interface RateLimitConfig {
   message: string;
 }
 
-function rateLimitKey(uid: string, actionName: string, startsAt: Date) {
-  return `srp:rate:${actionName}:${uid}:${startsAt.toISOString()}`;
+function sanitizeKeyPart(value: string) {
+  return value.replace(/[^a-zA-Z0-9_.:-]/gu, "_").slice(0, 160);
+}
+
+function rateLimitKey(identifier: string, actionName: string, startsAt: Date) {
+  return `srp:rate:${sanitizeKeyPart(actionName)}:${sanitizeKeyPart(identifier)}:${startsAt.toISOString()}`;
 }
 
 function readPipelineResult(data: unknown) {
@@ -32,7 +36,7 @@ function readPipelineResult(data: unknown) {
 }
 
 export async function claimFixedWindowRateLimit(
-  uid: string,
+  identifier: string,
   actionName: string,
   window: RateLimitWindow,
   config: RateLimitConfig,
@@ -40,7 +44,7 @@ export async function claimFixedWindowRateLimit(
   const restUrl = requireEnv("UPSTASH_REDIS_REST_URL").replace(/\/+$/u, "");
   const token = requireEnv("UPSTASH_REDIS_REST_TOKEN");
   const ttlSeconds = Math.max(1, Math.ceil((window.expiresAt.getTime() - Date.now()) / 1000));
-  const key = rateLimitKey(uid, actionName, window.startsAt);
+  const key = rateLimitKey(identifier, actionName, window.startsAt);
 
   const response = await fetch(`${restUrl}/pipeline`, {
     body: JSON.stringify([
@@ -67,4 +71,25 @@ export async function claimFixedWindowRateLimit(
   if (count > config.limit) {
     throw new Error(config.message);
   }
+}
+
+export function utcFixedWindow(milliseconds: number, date = new Date()) {
+  const size = Math.max(1, Math.round(milliseconds));
+  const startsAt = new Date(Math.floor(date.getTime() / size) * size);
+  return {
+    expiresAt: new Date(startsAt.getTime() + size),
+    startsAt,
+  };
+}
+
+export function utcMinuteWindow(date = new Date()) {
+  return utcFixedWindow(60 * 1000, date);
+}
+
+export function utcHourWindow(date = new Date()) {
+  return utcFixedWindow(60 * 60 * 1000, date);
+}
+
+export function utcSecondWindow(date = new Date()) {
+  return utcFixedWindow(1000, date);
 }

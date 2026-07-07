@@ -1,8 +1,10 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import type { Database } from "../_shared/database.ts";
 import { requireEnv } from "../_shared/env.ts";
-import { errorMessage, jsonResponse, requireMethod } from "../_shared/http.ts";
+import { errorMessage, errorStatus, jsonResponse, publicError, requireMethod } from "../_shared/http.ts";
 import { ISSUE_CATEGORY_IDS } from "../_shared/issue-categories.ts";
+import { RATE_LIMITS } from "../_shared/rate-limits.ts";
+import { claimFixedWindowRateLimit, utcMinuteWindow, utcSecondWindow } from "../_shared/upstash-rate-limit.ts";
 import { requireBearerSecret } from "../_shared/webhook.ts";
 
 Deno.serve(async (request) => {
@@ -13,6 +15,18 @@ Deno.serve(async (request) => {
   if (authFailure) return authFailure;
 
   try {
+    await claimFixedWindowRateLimit(
+      "global",
+      "worker.maintenance.second",
+      utcSecondWindow(),
+      RATE_LIMITS.workerRunSecond,
+    );
+    await claimFixedWindowRateLimit(
+      "global",
+      "worker.maintenance",
+      utcMinuteWindow(),
+      RATE_LIMITS.workerRunMinute,
+    );
     const supabase = createClient<Database>(
       requireEnv("SUPABASE_URL"),
       requireEnv("APP_SUPABASE_SERVICE_ROLE_KEY"),
@@ -38,6 +52,6 @@ Deno.serve(async (request) => {
     return jsonResponse({ ok: true, result: data, workers: workerResults });
   } catch (error) {
     console.error(errorMessage(error));
-    return jsonResponse({ ok: false, error: "maintenance-failed" }, { status: 500 });
+    return jsonResponse({ ok: false, error: publicError(error) }, { status: errorStatus(error) });
   }
 });

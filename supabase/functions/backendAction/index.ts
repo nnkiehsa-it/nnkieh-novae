@@ -19,6 +19,7 @@ import { handleUploadAction, isUploadAction } from "./uploads.ts";
 import { handleIssueAction, isIssueAction } from "./issues.ts";
 import { handleAnnouncementAction, isAnnouncementAction } from "./announcements.ts";
 import { handleNotificationAction, isNotificationAction } from "./notifications.ts";
+import { claimBackendActionRateLimit, claimBackendHealthcheckRateLimit } from "./rate-limit.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
 
 const idempotentActions = new Set([
@@ -131,10 +132,12 @@ Deno.serve(async (request) => {
       { auth: { persistSession: false } },
     );
     if (action === "healthcheck") {
+      await claimBackendHealthcheckRateLimit();
       return jsonResponse(await handleHealthcheck(request, supabase));
     }
 
     const auth = await requireAuth(supabase, request);
+    await claimBackendActionRateLimit(auth.uid, action);
     const data = await runWithIdempotency(
       action,
       payload,

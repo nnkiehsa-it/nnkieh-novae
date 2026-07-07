@@ -31,6 +31,70 @@
     "limit": 120,
     "message": "通知裝置設定太頻繁，請稍後再試。"
   },
+  "backendActionReadHourly": {
+    "limit": 900,
+    "message": "讀取太頻繁，請稍後再試。"
+  },
+  "backendActionReadSecond": {
+    "limit": 8,
+    "message": "讀取太頻繁，請稍後再試。"
+  },
+  "backendActionWriteHourly": {
+    "limit": 300,
+    "message": "操作太頻繁，請稍後再試。"
+  },
+  "backendActionWriteSecond": {
+    "limit": 3,
+    "message": "操作太頻繁，請稍後再試。"
+  },
+  "backendActionSensitiveWriteHourly": {
+    "limit": 120,
+    "message": "操作太頻繁，請稍後再試。"
+  },
+  "backendActionSensitiveWriteSecond": {
+    "limit": 2,
+    "message": "操作太頻繁，請稍後再試。"
+  },
+  "backendActionAdminWriteHourly": {
+    "limit": 180,
+    "message": "管理操作太頻繁，請稍後再試。"
+  },
+  "backendActionAdminWriteSecond": {
+    "limit": 2,
+    "message": "管理操作太頻繁，請稍後再試。"
+  },
+  "backendActionUploadResolveHourly": {
+    "limit": 300,
+    "message": "圖片讀取太頻繁，請稍後再試。"
+  },
+  "backendActionUploadResolveSecond": {
+    "limit": 4,
+    "message": "圖片讀取太頻繁，請稍後再試。"
+  },
+  "backendHealthcheckMinute": {
+    "limit": 120,
+    "message": "服務檢查太頻繁，請稍後再試。"
+  },
+  "backendHealthcheckSecond": {
+    "limit": 5,
+    "message": "服務檢查太頻繁，請稍後再試。"
+  },
+  "cloudinaryWebhookMinute": {
+    "limit": 300,
+    "message": "圖片同步太頻繁，請稍後再試。"
+  },
+  "cloudinaryWebhookSecond": {
+    "limit": 10,
+    "message": "圖片同步太頻繁，請稍後再試。"
+  },
+  "workerRunMinute": {
+    "limit": 30,
+    "message": "背景處理太頻繁，請稍後再試。"
+  },
+  "workerRunSecond": {
+    "limit": 2,
+    "message": "背景處理太頻繁，請稍後再試。"
+  },
   "imageUploads": {
     "issueMaxImages": 5,
     "announcementMaxImages": 5,

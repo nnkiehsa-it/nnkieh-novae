@@ -39,6 +39,22 @@ async function readRateLimitsConfig(projectRoot) {
   const supportToggleHourly = raw.supportToggleHourly || {};
   const announcementLikeHourly = raw.announcementLikeHourly || {};
   const pushTokenWriteHourly = raw.pushTokenWriteHourly || {};
+  const backendActionReadHourly = raw.backendActionReadHourly || {};
+  const backendActionReadSecond = raw.backendActionReadSecond || {};
+  const backendActionWriteHourly = raw.backendActionWriteHourly || {};
+  const backendActionWriteSecond = raw.backendActionWriteSecond || {};
+  const backendActionSensitiveWriteHourly = raw.backendActionSensitiveWriteHourly || {};
+  const backendActionSensitiveWriteSecond = raw.backendActionSensitiveWriteSecond || {};
+  const backendActionAdminWriteHourly = raw.backendActionAdminWriteHourly || {};
+  const backendActionAdminWriteSecond = raw.backendActionAdminWriteSecond || {};
+  const backendActionUploadResolveHourly = raw.backendActionUploadResolveHourly || {};
+  const backendActionUploadResolveSecond = raw.backendActionUploadResolveSecond || {};
+  const backendHealthcheckMinute = raw.backendHealthcheckMinute || {};
+  const backendHealthcheckSecond = raw.backendHealthcheckSecond || {};
+  const cloudinaryWebhookMinute = raw.cloudinaryWebhookMinute || {};
+  const cloudinaryWebhookSecond = raw.cloudinaryWebhookSecond || {};
+  const workerRunMinute = raw.workerRunMinute || {};
+  const workerRunSecond = raw.workerRunSecond || {};
   const imageUploads = raw.imageUploads || {};
   const imageCompression = raw.imageCompression || {};
 
@@ -58,6 +74,22 @@ async function readRateLimitsConfig(projectRoot) {
     supportToggleHourly: readLimitConfig('supportToggleHourly', supportToggleHourly),
     announcementLikeHourly: readLimitConfig('announcementLikeHourly', announcementLikeHourly),
     pushTokenWriteHourly: readLimitConfig('pushTokenWriteHourly', pushTokenWriteHourly),
+    backendActionReadHourly: readLimitConfig('backendActionReadHourly', backendActionReadHourly),
+    backendActionReadSecond: readLimitConfig('backendActionReadSecond', backendActionReadSecond),
+    backendActionWriteHourly: readLimitConfig('backendActionWriteHourly', backendActionWriteHourly),
+    backendActionWriteSecond: readLimitConfig('backendActionWriteSecond', backendActionWriteSecond),
+    backendActionSensitiveWriteHourly: readLimitConfig('backendActionSensitiveWriteHourly', backendActionSensitiveWriteHourly),
+    backendActionSensitiveWriteSecond: readLimitConfig('backendActionSensitiveWriteSecond', backendActionSensitiveWriteSecond),
+    backendActionAdminWriteHourly: readLimitConfig('backendActionAdminWriteHourly', backendActionAdminWriteHourly),
+    backendActionAdminWriteSecond: readLimitConfig('backendActionAdminWriteSecond', backendActionAdminWriteSecond),
+    backendActionUploadResolveHourly: readLimitConfig('backendActionUploadResolveHourly', backendActionUploadResolveHourly),
+    backendActionUploadResolveSecond: readLimitConfig('backendActionUploadResolveSecond', backendActionUploadResolveSecond),
+    backendHealthcheckMinute: readLimitConfig('backendHealthcheckMinute', backendHealthcheckMinute),
+    backendHealthcheckSecond: readLimitConfig('backendHealthcheckSecond', backendHealthcheckSecond),
+    cloudinaryWebhookMinute: readLimitConfig('cloudinaryWebhookMinute', cloudinaryWebhookMinute),
+    cloudinaryWebhookSecond: readLimitConfig('cloudinaryWebhookSecond', cloudinaryWebhookSecond),
+    workerRunMinute: readLimitConfig('workerRunMinute', workerRunMinute),
+    workerRunSecond: readLimitConfig('workerRunSecond', workerRunSecond),
     imageUploads: {
       issueMaxImages: assertPositiveInteger(imageUploads.issueMaxImages, 'imageUploads.issueMaxImages 必須是正整數。'),
       announcementMaxImages: assertPositiveInteger(imageUploads.announcementMaxImages, 'imageUploads.announcementMaxImages 必須是正整數。'),

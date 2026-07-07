@@ -77,7 +77,7 @@ export function errorStatus(error: unknown) {
   if (message === "invalid-issue-category" || message === "support-not-available") return 400;
   if (message.endsWith("-required") || message.endsWith("-too-long") || message === "invalid-status") return 400;
   if (message === "request-in-progress") return 409;
-  if (message.includes("達到上限") || message.includes("上傳額度已用完")) return 429;
+  if (message.includes("達到上限") || message.includes("太頻繁") || message.includes("上傳額度已用完")) return 429;
   if (message.endsWith(" is not configured.")) return 503;
   if (message === "rate-limit-provider-unavailable") return 503;
   return 500;
@@ -101,7 +101,7 @@ export async function readJsonRecord(request: Request) {
 
 export function publicError(error: unknown) {
   const message = errorMessage(error);
-  if (message.includes("達到上限") || message.includes("上傳額度已用完")) return message;
+  if (message.includes("達到上限") || message.includes("太頻繁") || message.includes("上傳額度已用完")) return message;
   const safeMessages: Record<string, string> = {
     "invalid-json": "請求格式不正確。",
     "invalid-issue-category": "提案分類不正確。",

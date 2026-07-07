@@ -2,7 +2,9 @@ import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import type { Database } from "../_shared/database.ts";
 import { requireEnv } from "../_shared/env.ts";
 import { isInvalidFcmTokenError, sendFcmMessage } from "../_shared/fcm.ts";
-import { errorMessage, jsonResponse, operationalErrorSummary, requireMethod } from "../_shared/http.ts";
+import { errorMessage, errorStatus, jsonResponse, operationalErrorSummary, publicError, requireMethod } from "../_shared/http.ts";
+import { RATE_LIMITS } from "../_shared/rate-limits.ts";
+import { claimFixedWindowRateLimit, utcMinuteWindow, utcSecondWindow } from "../_shared/upstash-rate-limit.ts";
 import {
   markNotionPageDeleted,
   syncAnnouncementCreatedToNotion,
@@ -491,6 +493,18 @@ Deno.serve(async (request) => {
   if (authFailure) return authFailure;
 
   try {
+    await claimFixedWindowRateLimit(
+      "global",
+      "worker.outbox.second",
+      utcSecondWindow(),
+      RATE_LIMITS.workerRunSecond,
+    );
+    await claimFixedWindowRateLimit(
+      "global",
+      "worker.outbox",
+      utcMinuteWindow(),
+      RATE_LIMITS.workerRunMinute,
+    );
     const supabase = createClient<Database>(
       requireEnv("SUPABASE_URL"),
       requireEnv("APP_SUPABASE_SERVICE_ROLE_KEY"),
@@ -534,6 +548,6 @@ Deno.serve(async (request) => {
     return jsonResponse({ ok: true, processedCount: events.length });
   } catch (error) {
     console.error(errorMessage(error));
-    return jsonResponse({ ok: false, error: "worker-failed" }, { status: 500 });
+    return jsonResponse({ ok: false, error: publicError(error) }, { status: errorStatus(error) });
   }
 });

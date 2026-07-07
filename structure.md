@@ -18,7 +18,7 @@
 - docs/operations.md：上線後檢查、Dashboard 判讀、錯誤處理、資料保留、背景工作、部署與日常維護指南。
 - docs/deployment-guide.md：正式環境部署教學，提供 fork 專案、建立 GitHub production Environment、各項 secrets 取得位置、GitHub Actions 部署順序與前端公開設定邊界說明。
 - config/issue-categories.config.json：提案分類與細部權限設定唯一編輯入口，定義分類 id、顯示名稱、讀取權限、附議限制與回覆期限等詳細配置。
-- config/rate-limits.config.json：限流閾值、各內容圖片數量與圖片壓縮設定編輯入口，定義提案／公告／留言上傳張數，以及圖片寬高與 WebP 品質等參數。
+- config/rate-limits.config.json：限流閾值、各內容圖片數量與圖片壓縮設定編輯入口，定義提案／公告／留言上傳張數、後端 action / webhook / worker 入口秒級與長視窗限流，以及圖片寬高與 WebP 品質等參數。
 - structure.md：本檔案，維護全站模組結構地圖。
 - AGENTS.md：給 AI 代理人的開發規範與維護要求。
 - package.json：專案名稱、依賴與 npm scripts 入口，包含前端型別 / lint / build、Edge Functions Deno check、架構測試、Supabase 本機啟動／重置／lint 與僅供部署使用的快速 Vite build。
@@ -53,7 +53,8 @@
 - supabase/migrations/202607070001_nested_comments_and_issue_results.sql：新增提案結果欄位、提案與公告一層留言回覆關聯、父留言驗證與回覆查詢索引，並將既有管理員留言遷移為提案結果。
 - supabase/migrations/202607070002_issue_review_approved_at.sql：新增需審核提案的審核通過時間欄位，供附議期限與前端時間顯示使用。
 - supabase/migrations/202607080001_content_realtime_events.sql：新增提案、公告、留言、附議與讚數的安全 Realtime 事件表、觸發器與 publication，前端只收到目標 id 後再走受控讀取。
-- supabase/functions/backendAction/index.ts：前端受控 action HTTP 入口，集中 CORS、Firebase 驗證、使用者角色查詢、healthcheck、action 分派與冪等保護，不直接承載各領域資料流程。
+- supabase/functions/backendAction/index.ts：前端受控 action HTTP 入口，集中 CORS、Firebase 驗證、使用者角色查詢、healthcheck、入口限流、action 分派與冪等保護，不直接承載各領域資料流程。
+- supabase/functions/backendAction/rate-limit.ts：受控 action 入口限流分級，依讀取、一般寫入、高風險寫入、管理寫入、圖片 URL 解析與 healthcheck 套用 Upstash 秒級與長視窗固定限制。
 - supabase/functions/backendAction/types.ts：受控 action 共用 Supabase client、身份與 JSON record 型別。
 - supabase/functions/backendAction/utils.ts：受控 action 共用 cursor、時間、數值、布林與台北日界限工具。
 - supabase/functions/backendAction/validation.ts：受控 action 共用標題、正文、留言、搜尋與審核原因長度驗證。
@@ -76,10 +77,10 @@
 - supabase/functions/backendAction/notifications.ts：App 內通知分頁、閱讀游標、Web Push token 與分類推播偏好 action。
 - supabase/functions/backendAction/dashboard.ts：管理員統計資料、同步/通知/推播/清理異常、最近維護排程結果彙整與分類使用概況。
 - supabase/functions/syncUser/index.ts：Firebase 登入後同步使用者 custom claim 與 Supabase app role 的 Edge Function，依 ADMIN_EMAILS 將使用者角色寫入 user_roles，與受控 action 共用登入資格驗證。
-- supabase/functions/cloudinaryWebhook/index.ts：Cloudinary 上傳完成 webhook，限制 POST、驗證簽章並安全解析 payload 後將 pending upload 轉為 ready。
-- supabase/functions/outboxWorker/index.ts：Outbox worker wake-up endpoint，限制 POST 並驗證 secret 後批次 claim pending events，依固定事件規格建立廣播、管理員或作者通知，依收件人與推播偏好送出 FCM 並記錄送達結果，同步 Notion 狀態、留言、附議數與刪除標記。
-- supabase/functions/processDeletionJobs/index.ts：外部資源刪除工作入口，限制 POST 並驗證 secret 後處理 Cloudinary / Notion 清理，保留失敗的可重試 metadata。
-- supabase/functions/maintenanceCleanup/index.ts：維護清理手動入口，限制 POST 並驗證 secret 後呼叫資料庫清理 RPC；日常清理由 Supabase cron 直接執行同一 RPC。
+- supabase/functions/cloudinaryWebhook/index.ts：Cloudinary 上傳完成 webhook，限制 POST、驗證簽章、套用入口限流並安全解析 payload 後將 pending upload 轉為 ready。
+- supabase/functions/outboxWorker/index.ts：Outbox worker wake-up endpoint，限制 POST、驗證 secret 並套用入口限流後批次 claim pending events，依固定事件規格建立廣播、管理員或作者通知，依收件人與推播偏好送出 FCM 並記錄送達結果，同步 Notion 狀態、留言、附議數與刪除標記。
+- supabase/functions/processDeletionJobs/index.ts：外部資源刪除工作入口，限制 POST、驗證 secret 並套用入口限流後處理 Cloudinary / Notion 清理，保留失敗的可重試 metadata。
+- supabase/functions/maintenanceCleanup/index.ts：維護清理手動入口，限制 POST、驗證 secret 並套用入口限流後呼叫資料庫清理 RPC；日常清理由 Supabase cron 直接執行同一 RPC。
 - supabase/functions/_shared/env.ts：Edge Functions 環境變數讀取 helper。
 - supabase/functions/_shared/http.ts：Edge Functions 共用 CORS、POST method guard、JSON / text response、JSON body 解析與錯誤狀態對應 helper。
 - supabase/functions/_shared/firebase-auth.ts：Edge Functions 共用 Firebase ID token lookup、校內網域、email verified 與使用者身份正規化 helper。
@@ -90,7 +91,7 @@
 - supabase/functions/_shared/fcm.ts：FCM HTTP v1 發送 helper，不依賴 Node Firebase Admin SDK。
 - supabase/functions/_shared/notion.ts：Notion 同步 helper，以中文欄位寫入提案與公告資料、管理受控正文區塊、將 Cloudinary 圖片上傳為 Notion 檔案，並在刪除時只標記頁面狀態。
 - supabase/functions/_shared/rate-limits.ts：由 rate limit config 產生的 Edge Functions 限流常數，供受控 action 套用提案、留言與圖片上傳頻率限制。
-- supabase/functions/_shared/upstash-rate-limit.ts：Upstash Redis REST 固定時間窗限流 helper，集中計數 key、TTL 與服務不可用錯誤處理。
+- supabase/functions/_shared/upstash-rate-limit.ts：Upstash Redis REST 固定時間窗限流 helper，集中計數 key、TTL、UTC 秒 / 分鐘 / 小時視窗與服務不可用錯誤處理。
 - supabase/functions/_shared/webhook.ts：Supabase / Cloudinary webhook shared secret 與簽章驗證 helper。
 
 ---
