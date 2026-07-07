@@ -11,7 +11,6 @@ let lastCheckedAt = 0;
 
 const APP_RELOAD_TIMEOUT_MS = 5_000;
 const AUTO_RELOAD_STORAGE_KEY = 'srp:auto-update-reloaded-version';
-const AUTO_RELOAD_COUNT_KEY = 'srp:auto-update-reloaded-count';
 const PENDING_UPDATE_VERSION_STORAGE_KEY = 'srp:pending-update-version';
 
 interface VersionResponse {
@@ -84,13 +83,7 @@ export async function initializeAppUpdate() {
 export function useAppUpdate() {
   function canAutoReloadCurrentVersion() {
     if (!remoteVersion.value) return false;
-    const savedVersion = sessionStorage.getItem(AUTO_RELOAD_STORAGE_KEY);
-    if (savedVersion !== remoteVersion.value) {
-      return true;
-    }
-    const savedCountStr = sessionStorage.getItem(AUTO_RELOAD_COUNT_KEY) || '0';
-    const savedCount = parseInt(savedCountStr, 10);
-    return savedCount < 2;
+    return sessionStorage.getItem(AUTO_RELOAD_STORAGE_KEY) !== remoteVersion.value;
   }
 
   async function reloadApp(options: { automatic?: boolean } = {}) {
@@ -105,15 +98,7 @@ export function useAppUpdate() {
     reloading.value = true;
 
     if (options.automatic && remoteVersion.value) {
-      const savedVersion = sessionStorage.getItem(AUTO_RELOAD_STORAGE_KEY);
-      if (savedVersion === remoteVersion.value) {
-        const savedCountStr = sessionStorage.getItem(AUTO_RELOAD_COUNT_KEY) || '0';
-        const savedCount = parseInt(savedCountStr, 10);
-        sessionStorage.setItem(AUTO_RELOAD_COUNT_KEY, (savedCount + 1).toString());
-      } else {
-        sessionStorage.setItem(AUTO_RELOAD_STORAGE_KEY, remoteVersion.value);
-        sessionStorage.setItem(AUTO_RELOAD_COUNT_KEY, '1');
-      }
+      sessionStorage.setItem(AUTO_RELOAD_STORAGE_KEY, remoteVersion.value);
     }
 
     if (remoteVersion.value) {
