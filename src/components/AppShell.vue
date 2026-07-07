@@ -210,8 +210,8 @@ const navBarHeight = 60; // 48px + 12px padding
 const rootStyle = computed(() => {
   if (!isAllowedUser.value) return {};
   // 導覽列頂部距離螢幕底部的距離是 bottomGap + navBarHeight
-  // 我們讓主要內容的 padding-bottom (即 --app-bottom-nav-height) 等於這個高度再多加 12px 的安全舒適邊距
-  const height = bottomGap.value + navBarHeight + 12;
+  // 我們讓主要內容的 padding-bottom (即 --app-bottom-nav-height) 等於這個高度再多加 6px 的安全舒適邊距
+  const height = bottomGap.value + navBarHeight + 6;
   return {
     '--app-bottom-nav-height': `${height}px`,
   };

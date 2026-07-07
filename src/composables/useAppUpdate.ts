@@ -11,6 +11,7 @@ let lastCheckedAt = 0;
 
 const APP_RELOAD_TIMEOUT_MS = 5_000;
 const AUTO_RELOAD_STORAGE_KEY = 'srp:auto-update-reloaded-version';
+const AUTO_RELOAD_COUNT_KEY = 'srp:auto-update-reloaded-count';
 const PENDING_UPDATE_VERSION_STORAGE_KEY = 'srp:pending-update-version';
 
 interface VersionResponse {
@@ -83,7 +84,13 @@ export async function initializeAppUpdate() {
 export function useAppUpdate() {
   function canAutoReloadCurrentVersion() {
     if (!remoteVersion.value) return false;
-    return sessionStorage.getItem(AUTO_RELOAD_STORAGE_KEY) !== remoteVersion.value;
+    const savedVersion = sessionStorage.getItem(AUTO_RELOAD_STORAGE_KEY);
+    if (savedVersion !== remoteVersion.value) {
+      return true;
+    }
+    const savedCountStr = sessionStorage.getItem(AUTO_RELOAD_COUNT_KEY) || '0';
+    const savedCount = parseInt(savedCountStr, 10);
+    return savedCount < 2;
   }
 
   async function reloadApp(options: { automatic?: boolean } = {}) {
@@ -98,7 +105,15 @@ export function useAppUpdate() {
     reloading.value = true;
 
     if (options.automatic && remoteVersion.value) {
-      sessionStorage.setItem(AUTO_RELOAD_STORAGE_KEY, remoteVersion.value);
+      const savedVersion = sessionStorage.getItem(AUTO_RELOAD_STORAGE_KEY);
+      if (savedVersion === remoteVersion.value) {
+        const savedCountStr = sessionStorage.getItem(AUTO_RELOAD_COUNT_KEY) || '0';
+        const savedCount = parseInt(savedCountStr, 10);
+        sessionStorage.setItem(AUTO_RELOAD_COUNT_KEY, (savedCount + 1).toString());
+      } else {
+        sessionStorage.setItem(AUTO_RELOAD_STORAGE_KEY, remoteVersion.value);
+        sessionStorage.setItem(AUTO_RELOAD_COUNT_KEY, '1');
+      }
     }
 
     if (remoteVersion.value) {
@@ -107,15 +122,23 @@ export function useAppUpdate() {
     let reloadTimeout = 0;
     await Promise.race([
       (async () => {
-        await updateServiceWorker();
+        // 不再 await updateServiceWorker()，這在安卓 WebView 下很容易因 ready 屬性 pending 而卡死
+        // 重載網頁後 main.ts 啟動時本來就會背景進行 SW 註冊更新
         await resetAppConnection();
       })(),
       new Promise<void>((resolve) => {
-        reloadTimeout = window.setTimeout(resolve, APP_RELOAD_TIMEOUT_MS);
+        // 設定 3 秒作為本機 reset 連線的超時安全保險絲，提供充足的弱網環境與 CPU 繁忙容錯空間
+        reloadTimeout = window.setTimeout(resolve, 3000);
       }),
     ]);
     window.clearTimeout(reloadTimeout);
-    window.location.reload();
+
+    // 使用相容性極佳的 replace() 重載網頁，防止 location.reload() 被 Android WebView / LINE 等環境掛起或吞掉
+    try {
+      window.location.replace(window.location.href);
+    } catch {
+      window.location.reload();
+    }
   }
 
   return {
