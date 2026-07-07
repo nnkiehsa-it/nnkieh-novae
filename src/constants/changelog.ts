@@ -2,6 +2,17 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "優化桌面版詳情頁面配置",
+    version: "v2.0.83",
+    date: "2026-07-07",
+    time: "16:59",
+    items: [
+      {
+        title: "將桌面版返回按鈕與標籤列移動至左側詳情列中，消除右側留言區上方多餘的空白，使兩側內容獨立且起點對齊。"
+      }
+    ]
+  },
+  {
     title: "修正桌面版詳情頁留言按鈕顯示問題",
     version: "v2.0.82",
     date: "2026-07-07",

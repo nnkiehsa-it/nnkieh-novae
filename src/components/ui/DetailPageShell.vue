@@ -1,6 +1,6 @@
 <template>
   <section class="min-h-0">
-    <header class="flex shrink-0 items-start gap-3 pb-3">
+    <header class="flex shrink-0 items-start gap-3 pb-3 md:hidden">
       <button
         type="button"
         class="button-icon shrink-0"
@@ -17,6 +17,20 @@
 
     <div v-if="isDesktopViewport" class="hidden min-h-0 items-stretch gap-6 md:grid md:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)] xl:grid-cols-[minmax(0,1fr)_32rem]">
       <div class="flex min-h-[calc(100dvh-var(--app-header-height)-env(safe-area-inset-top)-1rem)] min-w-0 flex-col pb-[3px]">
+        <header class="hidden md:flex shrink-0 items-start gap-3 pb-3">
+          <button
+            type="button"
+            class="button-icon shrink-0"
+            :aria-label="backLabel"
+            :title="backLabel"
+            @click="emit('back')"
+          >
+            <AppIcon name="chevron-left" :size="5" />
+          </button>
+          <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2 pt-1.5">
+            <slot name="header" />
+          </div>
+        </header>
         <slot name="details" :compact="false" :scroll-content="false" />
         <slot name="actions" :compact="false" />
       </div>
