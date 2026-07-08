@@ -88,7 +88,7 @@
               class="menu-item justify-between"
               @click.stop="openStatusDialog"
             >
-              <span class="font-semibold text-secondary">
+              <span class="font-semibold text-ink-900 dark:text-ink-100">
                 變更提案狀態/結果
               </span>
             </button>

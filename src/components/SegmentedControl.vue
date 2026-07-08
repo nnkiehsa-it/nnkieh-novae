@@ -2,8 +2,8 @@
   <div ref="containerRef" class="relative segmented-control flex items-center">
     <!-- Active sliding indicator pill -->
     <div
-      class="absolute rounded-full bg-white dark:bg-ink-800 border border-ink-200/10 dark:border-ink-700/30 shadow-elevated pointer-events-none"
-      :style="[indicatorStyle, { transition: 'all 240ms cubic-bezier(0.16, 1, 0.3, 1)' }]"
+      class="absolute left-0 top-0 rounded-full bg-white dark:bg-ink-800 border border-ink-200/10 dark:border-ink-700/30 shadow-elevated pointer-events-none"
+      :style="[indicatorStyle, { transition: 'transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1), width 250ms cubic-bezier(0.25, 1, 0.5, 1)' }]"
     ></div>
 
     <button
@@ -40,9 +40,8 @@ const activeClass = 'text-ink-950 dark:text-ink-50 font-bold';
 const inactiveClass = 'text-ink-500 hover:text-ink-900 dark:text-ink-400 dark:hover:text-ink-200 font-medium';
 
 const indicatorStyle = ref({
-  left: '0px',
+  transform: 'translate3d(0px, 0px, 0)',
   width: '0px',
-  top: '0px',
   height: '0px',
 });
 
@@ -55,9 +54,8 @@ function updateIndicator() {
       const containerRect = containerRef.value.getBoundingClientRect();
       const btnRect = activeBtn.getBoundingClientRect();
       indicatorStyle.value = {
-        left: `${btnRect.left - containerRect.left}px`,
+        transform: `translate3d(${btnRect.left - containerRect.left}px, ${btnRect.top - containerRect.top}px, 0)`,
         width: `${btnRect.width}px`,
-        top: `${btnRect.top - containerRect.top}px`,
         height: `${btnRect.height}px`,
       };
 

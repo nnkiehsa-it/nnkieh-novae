@@ -2,6 +2,26 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "改善新增與管理介面體驗",
+    version: "v2.0.114",
+    date: "2026-07-09",
+    time: "00:44",
+    items: [
+      {
+        title: "統一新增內容與公告編輯的對話框呈現方式，改善行動裝置版的位置與背景模糊效果。"
+      },
+      {
+        title: "調整管理功能選單文字色彩，提升與其他項目的一致性。"
+      },
+      {
+        title: "修正行動裝置版底部導覽列「我的」圖示與字型對齊，統一整體導覽體驗。"
+      },
+      {
+        title: "最佳化分段選項切換器的滑動動畫，提供更具彈性吸附與拉伸感的流暢轉場效果。"
+      }
+    ]
+  },
+  {
     title: "改善新增內容入口",
     version: "v2.0.113",
     date: "2026-07-09",

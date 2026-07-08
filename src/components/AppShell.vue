@@ -129,7 +129,7 @@
           class="app-bottom-nav__item overflow-visible"
           :class="{ 'app-bottom-nav__item--active': isMyProposalsRouteActive || ['settings', 'changelog', 'dashboard'].includes(route.name as string) }"
         >
-          <span class="app-bottom-nav__icon h-5 w-5 overflow-hidden rounded-full" aria-hidden="true">
+          <span class="app-bottom-nav__icon overflow-hidden rounded-full" aria-hidden="true">
             <UserAvatar :photo-url="displayPhotoUrl" :name="user?.displayName || 'U'" size="sm" alt-text="使用者頭像" class="!h-5 !w-5 rounded-full" />
           </span>
           <span class="app-bottom-nav__label">我的</span>
