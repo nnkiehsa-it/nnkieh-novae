@@ -11,6 +11,9 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
         title: "新增手機底部中央新增入口，提案與公告可從同一流程選擇發布分類。"
       },
       {
+        title: "修正新提案管理通知的推播送達。"
+      },
+      {
         title: "改善桌機新增提案與新增公告入口的一致性，維持原本控制列操作位置。"
       },
       {
@@ -21,6 +24,9 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
       },
       {
         title: "統一通知與設定選項呈現，改以清楚分隔線區分項目。"
+      },
+      {
+        title: "改善表單欄位輔助標示，降低瀏覽器檢查提示。"
       }
     ]
   },

@@ -15,7 +15,7 @@
       <div class="mt-5 space-y-4">
         <!-- Moderation choice -->
         <div>
-          <label class="field-label mb-2">審核結果</label>
+          <p class="field-label mb-2">審核結果</p>
           <div class="grid grid-cols-2 gap-2">
             <button
               type="button"

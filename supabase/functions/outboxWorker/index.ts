@@ -52,6 +52,17 @@ function issueStatusLabel(status: string) {
   return ISSUE_STATUS_LABELS[status] ?? status;
 }
 
+function isCommentNotificationType(type: string) {
+  return type === "issue_comment_created" || type === "announcement_comment_created";
+}
+
+function isIssueUpdateNotificationType(type: string) {
+  return type === "issue_created"
+    || type === "issue_status_changed"
+    || type === "issue_deleted"
+    || type === "support_goal_met";
+}
+
 function notificationForEvent(event: OutboxEvent): Record<string, unknown> | null {
   const title = asString(event.payload.title, event.event_type);
   if (event.event_type === "issue.created") {
@@ -364,20 +375,22 @@ async function sendPushes(
   const sendToken = async (row: { token: string; uid: string }) => {
     const uid = asString(row.uid);
     const preference = preferences.get(uid) ?? { comments: true, issueUpdates: true };
-    const isComment = notificationType === "issue_comment_created" || notificationType === "announcement_comment_created";
-    const isIssueUpdate = notificationType === "issue_status_changed" || notificationType === "issue_deleted" || notificationType === "support_goal_met";
+    const isComment = isCommentNotificationType(notificationType);
+    const isIssueUpdate = isIssueUpdateNotificationType(notificationType);
     if ((isComment && !preference.comments) || (isIssueUpdate && !preference.issueUpdates)) return;
 
+    const title = asString(notification.title);
+    const body = asString(notification.body_preview);
     try {
       await sendFcmMessage({
         token: row.token,
         data: {
-          body: asString(notification.body_preview),
+          body,
           issue_category: category,
           link,
           target_id: targetId,
           target_type: targetType,
-          title: asString(notification.title),
+          title,
           type: notificationType,
         },
       });

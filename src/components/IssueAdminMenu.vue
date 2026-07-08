@@ -3,7 +3,7 @@
     v-if="isAdmin"
     :class="compact ? 'relative inline-block text-left z-30' : 'space-y-3 relative z-30'"
   >
-    <label v-if="!compact" class="field-label">管理員狀態調整</label>
+    <p v-if="!compact" class="field-label">管理員狀態調整</p>
     <div :class="compact ? '' : 'relative inline-block w-full sm:w-60 text-left'">
       <!-- Toggle Button (Normal) -->
       <button
