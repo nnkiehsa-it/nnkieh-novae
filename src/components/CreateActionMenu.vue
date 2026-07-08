@@ -14,7 +14,7 @@
   <DialogOverlay :open="menuOpen" padded z-index-class="z-[110]" @close="closeMenu">
     <section
       ref="dialogRef"
-      class="panel panel-pad mx-auto flex w-full max-w-md flex-col gap-4 rounded-2xl"
+      class="panel panel-pad mx-auto flex w-full max-w-md flex-col gap-4"
       data-dialog-root
       tabindex="-1"
       aria-labelledby="create-action-menu-title"

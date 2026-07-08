@@ -1,9 +1,9 @@
 <template>
-  <DialogOverlay :open="open" padded z-index-class="z-[110]" @close="handleClose">
+  <DialogOverlay :open="open" @close="handleClose">
     <section
       id="issue-composer"
       ref="dialogRef"
-      class="panel panel-pad flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl"
+      class="panel panel-pad flex h-full w-full flex-col overflow-hidden rounded-none border-none md:fixed md:inset-0 md:h-screen md:max-h-screen md:rounded-none md:border-none"
       data-dialog-root
       tabindex="-1"
     >
