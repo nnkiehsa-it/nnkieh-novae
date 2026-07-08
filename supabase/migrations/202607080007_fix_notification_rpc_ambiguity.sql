@@ -1,24 +1,3 @@
-create or replace function app_api.backend_notification_state_to_json(state_record app_private.notification_states)
-returns jsonb
-language sql
-stable
-security definer
-set search_path = app_private, app_api, public
-as $$
-  select jsonb_build_object(
-    'uid', state_record.uid,
-    'broadcast_opened_at', state_record.broadcast_opened_at,
-    'broadcast_opened_at_ms', case when state_record.broadcast_opened_at is null then null else floor(extract(epoch from state_record.broadcast_opened_at) * 1000) end,
-    'admin_opened_at', state_record.admin_opened_at,
-    'admin_opened_at_ms', case when state_record.admin_opened_at is null then null else floor(extract(epoch from state_record.admin_opened_at) * 1000) end,
-    'user_opened_at', state_record.user_opened_at,
-    'user_opened_at_ms', case when state_record.user_opened_at is null then null else floor(extract(epoch from state_record.user_opened_at) * 1000) end,
-    'push_comments_enabled', state_record.push_comments_enabled,
-    'push_issue_updates_enabled', state_record.push_issue_updates_enabled,
-    'updated_at', state_record.updated_at
-  );
-$$;
-
 create or replace function app_api.backend_upsert_notification_state(actor_uid text)
 returns app_private.notification_states
 language plpgsql
@@ -35,20 +14,6 @@ begin
 
   return state_record;
 end;
-$$;
-
-create or replace function app_api.backend_notification_to_json(notification_record app_private.notifications, opened_at timestamptz)
-returns jsonb
-language sql
-stable
-security definer
-set search_path = app_private, app_api, public
-as $$
-  select to_jsonb(notification_record)
-    || jsonb_build_object(
-      'created_at_ms', floor(extract(epoch from notification_record.created_at) * 1000),
-      'is_read', case when opened_at is null then false else notification_record.created_at <= opened_at end
-    );
 $$;
 
 create or replace function app_api.backend_list_notifications(
@@ -163,7 +128,10 @@ begin
       user_opened_at = excluded.user_opened_at,
       updated_at = excluded.updated_at;
 
-  return jsonb_build_object('success', true, 'openedAtMs', floor(extract(epoch from backend_mark_notifications_opened.opened_at) * 1000));
+  return jsonb_build_object(
+    'success', true,
+    'openedAtMs', floor(extract(epoch from backend_mark_notifications_opened.opened_at) * 1000)
+  );
 end;
 $$;
 
@@ -307,20 +275,7 @@ begin
 end;
 $$;
 
-revoke all on function app_api.backend_notification_state_to_json(app_private.notification_states) from public, anon, authenticated;
-revoke all on function app_api.backend_upsert_notification_state(text) from public, anon, authenticated;
-revoke all on function app_api.backend_notification_to_json(app_private.notifications,timestamptz) from public, anon, authenticated;
-revoke all on function app_api.backend_list_notifications(text,boolean,text,integer,uuid,timestamptz) from public, anon, authenticated;
-revoke all on function app_api.backend_get_notification_read_state(text) from public, anon, authenticated;
-revoke all on function app_api.backend_mark_notifications_opened(text,timestamptz) from public, anon, authenticated;
-revoke all on function app_api.backend_push_notification_preference(text,text,text) from public, anon, authenticated;
-revoke all on function app_api.backend_register_push_token(text,text,text,text,text,text) from public, anon, authenticated;
-revoke all on function app_api.backend_unregister_push_token(text,text,text) from public, anon, authenticated;
-revoke all on function app_api.backend_update_push_notification_preferences(text,boolean,boolean,text,text) from public, anon, authenticated;
-
-grant execute on function app_api.backend_notification_state_to_json(app_private.notification_states) to service_role;
 grant execute on function app_api.backend_upsert_notification_state(text) to service_role;
-grant execute on function app_api.backend_notification_to_json(app_private.notifications,timestamptz) to service_role;
 grant execute on function app_api.backend_list_notifications(text,boolean,text,integer,uuid,timestamptz) to service_role;
 grant execute on function app_api.backend_get_notification_read_state(text) to service_role;
 grant execute on function app_api.backend_mark_notifications_opened(text,timestamptz) to service_role;

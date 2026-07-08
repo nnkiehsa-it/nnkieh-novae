@@ -2,6 +2,20 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "提升讀取與登入穩定性",
+    version: "v2.0.108",
+    date: "2026-07-08",
+    time: "17:46",
+    items: [
+      {
+        title: "修正提案列表與通知列表在特定情況下無法載入的問題。"
+      },
+      {
+        title: "改善頭像更新流程，已完成快取時不再重複觸發更新限制。"
+      }
+    ]
+  },
+  {
     title: "改善提案瀏覽體驗",
     version: "v2.0.107",
     date: "2026-07-08",

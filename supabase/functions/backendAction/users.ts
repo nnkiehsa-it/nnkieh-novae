@@ -38,7 +38,6 @@ export async function handleUserAction(
   }
 
   if (action === "cacheUserAvatar") {
-    await claimFixedWindowRateLimit(auth.uid, "avatar.cache", taipeiDayWindow(), RATE_LIMITS.avatarCacheDaily);
     const sourceUrl = auth.photoUrl;
     if (!sourceUrl) return { photoUrl: null };
     const parsedSourceUrl = new URL(sourceUrl);
@@ -57,6 +56,8 @@ export async function handleUserAction(
     if (existing?.avatar_source_url === sourceUrl && existing.cached_photo_url) {
       return { photoUrl: existing.cached_photo_url };
     }
+
+    await claimFixedWindowRateLimit(auth.uid, "avatar.cache", taipeiDayWindow(), RATE_LIMITS.avatarCacheDaily);
 
     const imageResponse = await fetch(sourceUrl, {
       redirect: "error",

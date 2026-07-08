@@ -20,7 +20,6 @@ interface IssueRow {
   category: string;
   content: string;
   created_at: string;
-  deleting: boolean;
   response_deadline_at: string | null;
   result_content: string | null;
   result_updated_at: string | null;

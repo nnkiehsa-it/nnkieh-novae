@@ -67,7 +67,7 @@ begin
     'support_met_at', issue_record.support_met_at,
     'support_met_at_ms', case when issue_record.support_met_at is null then null else floor(extract(epoch from issue_record.support_met_at) * 1000) end,
     'review_rejection_reason', issue_record.review_rejection_reason,
-    'deleting', issue_record.deleting,
+    'deleting', false,
     'currentUserSupported', current_user_supported,
     'isOwnIssue', is_own_issue,
     'canManageIssue', can_manage_issue,
