@@ -201,7 +201,6 @@
 - src/components/IssueBoardTable.vue：列表視圖容器，含欄位標題列與提案列渲染；載入與分頁切換期間顯示 SkeletonTable。
 - src/components/IssueDetailPagePanel.vue：提案詳情子頁內容面板。採用 `useIssueDisplay` 呈現附議進度與期限，公共議題對一般人隱藏作者，自己提案則顯示作者，管理員可編輯提案結果，作者或管理員可從詳情 footer 刪除提案。
 - src/components/IssueComments.vue：提案留言區資料 wrapper，串接提案留言 composable 與共用 CommentThreadPanel。
-- src/components/IssueCreateFab.vue：提案看板底部置中新增入口，提供手機與桌機共用的 icon-only FAB，點擊後先選擇提案分類再開啟新增表單。
 - src/components/IssueComposer.vue：新增提案表單對話框展示層，表單驗證、圖片上傳與送出流程委派給 `useIssueComposerForm`，內容輸入與圖片預覽使用共用 MarkdownImageEditor。
 
 ---
@@ -209,6 +208,7 @@
 ## src/composables (狀態與控制邏輯層)
 
 - src/composables/useIssueBoardData.ts：看板 orchestrator，組合目前狀態 bucket、搜尋、使用者提案、全域分頁、文件標題與 Realtime 事件刷新，依目前螢幕高度決定列表讀取批量。
+- src/composables/useCreateEntryActions.ts：共用新增入口協調 helper，讓手機底部中央新增與桌機控制列新增選單可跨頁開啟提案或公告建立流程。
 - src/composables/useIssueBoardPagination.ts：看板全域模式分頁 helper，處理搜尋與我的提案在前端分頁時的目前頁、總頁數與顯示清單。
 - src/composables/useUserIssuesData.ts：我的提案讀取 helper，以一次性讀取封裝私有公共提案與一般提案合併、依螢幕高度分段顯示、載入狀態與支援狀態更新。
 - src/composables/useIssueRouteFilter.ts：提案路由分類同步 helper，將 `/issues/:filter` 與 `/issues/:filter/:issueId` 轉成全域 activeFilter。

@@ -21,9 +21,18 @@ export async function requireAuth(supabase: BackendSupabase, request: Request): 
     .maybeSingle();
   if (error) throw error;
 
+  const isAdminFromEmail = isAdminEmail(firebaseUser.email);
+  if (isAdminFromEmail && role?.role !== "admin") {
+    const { error: upsertError } = await supabase
+      .schema("app_private")
+      .from("user_roles")
+      .upsert({ role: "admin", uid: firebaseUser.uid, updated_at: new Date().toISOString() }, { onConflict: "uid" });
+    if (upsertError) throw upsertError;
+  }
+
   return {
     email: firebaseUser.email,
-    isAdmin: role?.role === "admin" || isAdminEmail(firebaseUser.email),
+    isAdmin: role?.role === "admin" || isAdminFromEmail,
     name: firebaseUser.name,
     photoUrl: firebaseUser.photoUrl,
     uid: firebaseUser.uid,

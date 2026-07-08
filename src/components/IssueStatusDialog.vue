@@ -14,7 +14,7 @@
 
       <div class="mt-5 space-y-4">
         <div>
-          <label class="field-label mb-2">下一個狀態</label>
+          <p class="field-label mb-2">下一個狀態</p>
           <div class="grid gap-2">
             <button
               v-for="option in availableStatusOptions"

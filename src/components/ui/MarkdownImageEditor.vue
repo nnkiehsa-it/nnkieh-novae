@@ -2,7 +2,7 @@
   <div ref="editorRootRef" class="relative flex flex-col min-h-0 h-full space-y-2">
     <!-- Header row with label and tabs/image action -->
     <div class="flex items-center justify-between gap-3 shrink-0">
-      <label :for="textareaId" class="field-label">{{ label }}</label>
+      <span :id="labelId" class="field-label">{{ label }}</span>
       <div class="flex flex-wrap items-center justify-end gap-2">
         <input
           ref="fileInputRef"
@@ -11,6 +11,7 @@
           autocomplete="off"
           class="hidden"
           multiple
+          aria-label="選擇圖片"
           @change="emit('image-picked', $event)"
         >
         
@@ -102,8 +103,9 @@
             <template v-for="(block, index) in textModeBlocks" :key="block.id">
               <textarea
                 v-if="block.type === 'text'"
-                :id="index === 0 ? textareaId : undefined"
+                :id="textareaDomId('desktop', index)"
                 :ref="(el) => setTextareaRef(block.id, el as HTMLTextAreaElement | null)"
+                :aria-labelledby="labelId"
                 :value="block.content"
                 :class="textBlockTextareaClass"
                 class="w-full resize-none bg-transparent text-base text-ink-800 outline-none focus:ring-0 dark:text-ink-100 md:text-sm"
@@ -233,8 +235,9 @@
           <template v-for="(block, index) in textModeBlocks" :key="block.id">
             <textarea
               v-if="block.type === 'text'"
-              :id="index === 0 ? textareaId : undefined"
+              :id="textareaDomId('single', index)"
               :ref="(el) => setTextareaRef(block.id, el as HTMLTextAreaElement | null)"
+              :aria-labelledby="labelId"
               :value="block.content"
               :class="textBlockTextareaClass"
               class="w-full resize-none border-none bg-transparent text-base text-ink-800 outline-none focus:ring-0 dark:text-ink-100 md:text-sm"
@@ -367,8 +370,9 @@
             <template v-for="(block, index) in textModeBlocks" :key="block.id">
               <textarea
                 v-if="block.type === 'text'"
-                :id="index === 0 ? textareaId : undefined"
+                :id="textareaDomId('mobile', index)"
                 :ref="(el) => setTextareaRef(block.id, el as HTMLTextAreaElement | null)"
+                :aria-labelledby="labelId"
                 :value="block.content"
                 :class="textBlockTextareaClass"
                 class="w-full resize-none bg-transparent text-base text-ink-800 outline-none focus:ring-0 dark:text-ink-100 md:text-sm"
@@ -526,6 +530,7 @@ const textareaRefs = ref<Record<string, HTMLTextAreaElement | null>>({});
 const textSelections = ref<Record<string, { start: number; end: number }>>({});
 const activeTextBlockId = ref<string | null>(null);
 const selectedTableId = ref<string | null>(null);
+const labelId = computed(() => `${props.textareaId}-label`);
 
 const activeMode = ref<'text' | 'table'>('text');
 const TEXTAREA_MAX_HEIGHT = 220;
@@ -595,6 +600,11 @@ const activeTextarea = computed(() => {
 const effectiveHelperText = computed(() => props.helperText);
 
 const textBlockTextareaClass = computed(() => (hasTables.value ? 'min-h-[1.75rem]' : props.textareaClass));
+
+function textareaDomId(area: 'desktop' | 'mobile' | 'single', index: number) {
+  if (index !== 0) return undefined;
+  return `${props.textareaId}-${area}`;
+}
 
 function setTextareaRef(id: string, el: HTMLTextAreaElement | null) {
   textareaRefs.value[id] = el;
