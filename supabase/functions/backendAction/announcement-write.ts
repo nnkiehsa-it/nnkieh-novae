@@ -3,13 +3,20 @@ import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 import { claimFixedWindowRateLimit } from "../_shared/upstash-rate-limit.ts";
 import { requireAdmin } from "./auth.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
-import { markMarkdownUploadsAttached, queueAttachedUploadsForDeletion, queueUploadIdsForDeletion } from "./uploads.ts";
+import {
+  markMarkdownUploadsAttached,
+  queueAttachedUploadsForDeletion,
+  queueUploadIdsForDeletion,
+  validateMarkdownUploadsBeforeCreate,
+  validateMarkdownUploadsBeforeUpdate,
+} from "./uploads.ts";
 import { asBoolean, asUuid, utcHourWindow } from "./utils.ts";
 import { INPUT_LIMITS, requiredText } from "./validation.ts";
 
 async function createAnnouncement(payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {
   requireAdmin(auth);
   const content = requiredText(payload.content, "content", INPUT_LIMITS.content);
+  await validateMarkdownUploadsBeforeCreate(supabase, auth.uid, content, "announcement");
   const { data, error } = await supabase.schema("app_api").rpc("backend_create_announcement", {
     actor_uid: auth.uid,
     actor_name: auth.name || "管理員",
@@ -28,6 +35,7 @@ async function updateAnnouncement(payload: JsonRecord, auth: AuthContext, supaba
   const announcementId = asUuid(payload.announcementId);
   if (!announcementId) throw new Error("not-found");
   const content = requiredText(payload.content, "content", INPUT_LIMITS.content);
+  await validateMarkdownUploadsBeforeUpdate(supabase, auth.uid, content, "announcement", announcementId);
   const { data, error } = await supabase.schema("app_api").rpc("backend_update_announcement", {
     announcement_id: announcementId,
     actor_uid: auth.uid,

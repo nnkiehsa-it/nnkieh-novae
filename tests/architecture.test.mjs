@@ -77,6 +77,7 @@ test('Supabase backend deployment owns database and Edge Functions', async () =>
 
 test('Supabase schema includes RLS helpers, app tables, and hard-delete support', async () => {
   const migrations = await read('supabase/migrations/202607050001_supabase_baseline.sql');
+  const runtimeConstraintMigration = await read('supabase/migrations/202607090003_harden_runtime_data_constraints.sql');
 
   assert.match(migrations, /create schema if not exists app_private/u);
   assert.match(migrations, /create schema if not exists app_api/u);
@@ -106,6 +107,12 @@ test('Supabase schema includes RLS helpers, app tables, and hard-delete support'
   assert.match(migrations, /create or replace function app_api\.complete_idempotency_key/u);
   assert.match(migrations, /create or replace function app_api\.release_idempotency_key/u);
   assert.match(migrations, /create table if not exists app_private\.push_delivery_logs/u);
+  assert.match(runtimeConstraintMigration, /push_tokens_permission_check/u);
+  assert.match(runtimeConstraintMigration, /permission in \('default', 'denied', 'granted'\)/u);
+  assert.match(runtimeConstraintMigration, /push_tokens_length_check/u);
+  assert.match(runtimeConstraintMigration, /validate constraint issues_status_check/u);
+  assert.match(runtimeConstraintMigration, /validate constraint uploads_dimensions_non_negative/u);
+  assert.match(runtimeConstraintMigration, /validate constraint announcements_counts_non_negative/u);
 });
 
 test('backendAction covers frontend actions and Cloudinary direct upload', async () => {
@@ -321,6 +328,7 @@ test('backend list actions use stable cursor pagination at the service boundary'
   const issueComments = await read('src/services/issues-read-comments.ts');
   const announcements = await read('src/services/announcements.ts');
   const notifications = await read('src/services/notifications.ts');
+  const mostSupportedCursorMigration = await read('supabase/migrations/202607090002_fix_most_supported_cursor.sql');
 
   assert.match(backendAction, /function applyDescendingDateCursor/u);
   assert.match(backendAction, /function applyAscendingDateCursor/u);
@@ -342,6 +350,43 @@ test('backend list actions use stable cursor pagination at the service boundary'
   assert.match(announcements, /normalizeAnnouncementCursor\(result\.cursor\)/u);
   assert.match(announcements, /normalizeCommentCursor\(result\.cursor\)/u);
   assert.match(notifications, /normalizeNotificationCursor\(result\.cursor\)/u);
+  assert.match(mostSupportedCursorMigration, /effective_sort_name = 'most-supported'/u);
+  assert.match(mostSupportedCursorMigration, /coalesce\(cursor_sort_date, cursor_created_at\)/u);
+  assert.match(mostSupportedCursorMigration, /when effective_sort_name = 'most-supported' then last_issue -> 'created_at_ms'/u);
+});
+
+test('content writes validate markdown uploads before database writes', async () => {
+  const uploads = await read('supabase/functions/backendAction/uploads.ts');
+  const issueCreate = await read('supabase/functions/backendAction/issue-create.ts');
+  const issueComments = await read('supabase/functions/backendAction/issue-comments.ts');
+  const announcementWrite = await read('supabase/functions/backendAction/announcement-write.ts');
+  const announcementComments = await read('supabase/functions/backendAction/announcement-comments.ts');
+
+  assert.match(uploads, /function extractMarkdownUploadIds/u);
+  assert.match(uploads, /export async function validateMarkdownUploadsBeforeCreate/u);
+  assert.match(uploads, /export async function validateMarkdownUploadsBeforeUpdate/u);
+  assert.match(uploads, /targetId\s+\?\s+\(!upload\.attached_target_id/u);
+  assert.match(uploads, /:\s*!upload\.attached_target_id/u);
+  assert.ok(
+    issueCreate.indexOf('validateMarkdownUploadsBeforeCreate') < issueCreate.indexOf('rpc("backend_create_issue"'),
+    'issue creation must validate upload attachments before creating the issue',
+  );
+  assert.ok(
+    issueComments.indexOf('validateMarkdownUploadsBeforeCreate') < issueComments.indexOf('rpc("backend_create_issue_comment"'),
+    'issue comment creation must validate upload attachments before creating the comment',
+  );
+  assert.ok(
+    announcementWrite.indexOf('validateMarkdownUploadsBeforeCreate') < announcementWrite.indexOf('rpc("backend_create_announcement"'),
+    'announcement creation must validate upload attachments before creating the announcement',
+  );
+  assert.ok(
+    announcementWrite.indexOf('validateMarkdownUploadsBeforeUpdate') < announcementWrite.indexOf('rpc("backend_update_announcement"'),
+    'announcement updates must validate upload attachments before updating the announcement',
+  );
+  assert.ok(
+    announcementComments.indexOf('validateMarkdownUploadsBeforeCreate') < announcementComments.indexOf('rpc("backend_create_announcement_comment"'),
+    'announcement comment creation must validate upload attachments before creating the comment',
+  );
 });
 
 test('personal notification writes and pushes are scoped to the recipient', async () => {

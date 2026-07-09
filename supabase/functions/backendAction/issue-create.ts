@@ -9,7 +9,7 @@ import {
 import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 import { claimFixedWindowRateLimit } from "../_shared/upstash-rate-limit.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
-import { markMarkdownUploadsAttached } from "./uploads.ts";
+import { markMarkdownUploadsAttached, validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
 import { taipeiDayWindow } from "./utils.ts";
 import { INPUT_LIMITS, requiredText } from "./validation.ts";
 
@@ -29,6 +29,7 @@ export async function createIssue(payload: JsonRecord, auth: AuthContext, supaba
   const content = requiredText(payload.content, "content", INPUT_LIMITS.content);
   const category = asString(payload.category, "general");
   if (!isIssueCategory(category)) throw new Error("invalid-issue-category");
+  await validateMarkdownUploadsBeforeCreate(supabase, auth.uid, content, "issue");
 
   const categoryConfig = getIssueCategoryConfigOrDefault(category);
   const now = new Date();

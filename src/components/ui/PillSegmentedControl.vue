@@ -1,11 +1,11 @@
 <template>
   <div
     ref="containerRef"
-    class="segmented-control relative flex items-center"
+    class="segmented-control relative isolate flex items-center"
     :class="containerClass"
   >
     <div
-      class="pointer-events-none absolute left-0 top-0 rounded-full border border-ink-200/10 bg-white shadow-elevated dark:border-ink-700/30 dark:bg-ink-800"
+      class="pointer-events-none absolute rounded-full border border-ink-200/10 bg-white shadow-elevated dark:border-ink-700/30 dark:bg-ink-800"
       :style="indicatorStyle"
     ></div>
 
@@ -80,13 +80,11 @@ function updateIndicator() {
     const container = containerRef.value;
     if (!activeButton || !container) return;
 
-    const containerRect = container.getBoundingClientRect();
-    const buttonRect = activeButton.getBoundingClientRect();
     indicatorStyle.value = {
-      height: `${buttonRect.height}px`,
-      transform: `translate3d(${buttonRect.left - containerRect.left}px, ${buttonRect.top - containerRect.top}px, 0)`,
+      height: `${activeButton.offsetHeight}px`,
+      transform: `translate3d(${activeButton.offsetLeft}px, ${activeButton.offsetTop}px, 0)`,
       transition: 'transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1), width 250ms cubic-bezier(0.25, 1, 0.5, 1)',
-      width: `${buttonRect.width}px`,
+      width: `${activeButton.offsetWidth}px`,
     };
 
     const targetScrollLeft = activeButton.offsetLeft - container.clientWidth / 2 + activeButton.clientWidth / 2;

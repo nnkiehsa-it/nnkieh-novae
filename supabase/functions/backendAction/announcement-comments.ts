@@ -2,7 +2,7 @@ import { asRecord, asString } from "../_shared/http.ts";
 import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 import { claimFixedWindowRateLimit } from "../_shared/upstash-rate-limit.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
-import { markMarkdownUploadsAttached, queueAttachedUploadsForDeletion } from "./uploads.ts";
+import { markMarkdownUploadsAttached, queueAttachedUploadsForDeletion, validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
 import { asUuid, readCursor, readCursorDate, utcHourWindow } from "./utils.ts";
 import { INPUT_LIMITS, requiredText } from "./validation.ts";
 
@@ -41,6 +41,7 @@ async function createAnnouncementComment(payload: JsonRecord, auth: AuthContext,
   if (!announcementId) throw new Error("not-found");
   const content = requiredText(payload.content, "comment", INPUT_LIMITS.comment);
   const parentCommentId = asUuid(payload.parentCommentId) || null;
+  await validateMarkdownUploadsBeforeCreate(supabase, auth.uid, content, "announcement_comment");
   const { data, error } = await supabase.schema("app_api").rpc("backend_create_announcement_comment", {
     announcement_id: announcementId,
     parent_comment_id: parentCommentId,

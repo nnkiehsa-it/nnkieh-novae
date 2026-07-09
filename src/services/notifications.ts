@@ -74,13 +74,13 @@ interface RegisterPushTokenPayload {
 }
 
 interface UnregisterPushTokenPayload {
-  deviceId?: string;
+  deviceId: string;
   permission?: PushNotificationPermission;
   token?: string;
 }
 
 interface UpdatePushNotificationPreferencesPayload {
-  deviceId?: string;
+  deviceId: string;
   permission?: PushNotificationPermission;
   preferences: Partial<PersonalPushPreferences>;
   token?: string;
@@ -329,7 +329,7 @@ export async function registerPushToken(payload: RegisterPushTokenPayload) {
   }
 }
 
-export async function unregisterPushToken(payload: UnregisterPushTokenPayload = {}) {
+export async function unregisterPushToken(payload: UnregisterPushTokenPayload) {
   try {
     const fn = invokeBackendAction<UnregisterPushTokenPayload, PushNotificationPreference>('unregisterPushToken');
     const result = await fn(payload);
