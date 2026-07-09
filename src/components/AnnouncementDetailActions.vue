@@ -3,13 +3,13 @@
     <DetailActionButton
       :active="announcement.currentUserLiked"
       :disabled="liking"
-      :label="announcement.currentUserLiked ? `已讚 ${announcement.like_count}` : `讚 ${announcement.like_count}`"
+      :label="String(announcement.like_count)"
       :compact="compact"
       :title="announcement.currentUserLiked ? '取消讚' : '讚'"
       :aria-label="announcement.currentUserLiked ? '取消讚' : '讚'"
       @click="emit('toggleLike')"
     >
-      <AppIcon name="heart" :filled="announcement.currentUserLiked" />
+      <AppIcon name="heart" :filled="announcement.currentUserLiked" class="text-red-600 dark:text-red-300" />
     </DetailActionButton>
 
     <DetailActionButton

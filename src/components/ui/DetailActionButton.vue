@@ -3,7 +3,7 @@
     type="button"
     class="button-secondary button-action"
     :class="[
-      active ? 'text-red-600 dark:text-red-300' : '',
+      active ? 'button-action--active' : '',
       danger ? 'text-error dark:text-error' : '',
       compact ? '!h-8 !min-h-0 !gap-1 !px-2.5 text-xs' : '',
     ]"

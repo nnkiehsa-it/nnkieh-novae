@@ -160,7 +160,7 @@ function notificationForEvent(event: OutboxEvent): Record<string, unknown> | nul
   if (event.event_type === "announcement.comment_created") {
     const authorName = asString(event.payload.author_name).trim() || "匿名使用者";
     return {
-      source: asString(event.payload.parent_author_uid) ? "user" : "admin",
+      source: "user",
       type: "announcement_comment_created",
       target_type: "announcement",
       target_id: event.target_id,
@@ -217,6 +217,26 @@ async function findIssueAuthorUid(
   return asString(data?.author_uid);
 }
 
+async function findAnnouncementCommentRecipientUid(
+  supabase: AppSupabase,
+  event: OutboxEvent,
+) {
+  const replyRecipientUid = asString(event.payload.parent_author_uid);
+  if (replyRecipientUid) return replyRecipientUid;
+
+  const payloadAuthorUid = asString(event.payload.announcement_author_uid);
+  if (payloadAuthorUid) return payloadAuthorUid;
+
+  const { data, error } = await supabase
+    .schema("app_private")
+    .from("announcements")
+    .select("author_uid")
+    .eq("id", event.target_id)
+    .maybeSingle();
+  if (error) throw error;
+  return asString(data?.author_uid);
+}
+
 async function findCachedAvatarUrl(supabase: AppSupabase, uid: string) {
   if (!uid) return "";
   const { data, error } = await supabase
@@ -253,7 +273,7 @@ async function resolveNotification(
   }
 
   if (event.event_type === "announcement.comment_created") {
-    const recipientUid = asString(event.payload.parent_author_uid);
+    const recipientUid = await findAnnouncementCommentRecipientUid(supabase, event);
     if (!recipientUid || recipientUid === event.actor_uid) return null;
     return { ...notification, recipient_uid: recipientUid };
   }

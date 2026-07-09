@@ -405,16 +405,20 @@ test('personal notification writes and pushes are scoped to the recipient', asyn
   const outboxWorker = await read('supabase/functions/outboxWorker/index.ts');
   const securityMigration = await read('supabase/migrations/202607050001_supabase_baseline.sql');
   const atomicOutboxMigration = await read('supabase/migrations/202607050006_atomic_content_outbox.sql');
+  const announcementCommentNotificationMigration = await read('supabase/migrations/202607090005_announcement_comment_author_notifications.sql');
 
   assert.match(atomicOutboxMigration, /'issue\.comment_created'/u);
   assert.match(atomicOutboxMigration, /'issue_author_uid', issue_record\.author_uid/u);
   assert.match(atomicOutboxMigration, /'issue\.status_changed'/u);
   assert.match(atomicOutboxMigration, /queue_announcement_comment_created/u);
+  assert.match(announcementCommentNotificationMigration, /'announcement_author_uid', announcement_record\.author_uid/u);
   assert.match(backendAction, /rpc\("backend_delete_issue_with_upload_targets"/u);
   assert.match(securityMigration, /'issue\.deleted'/u);
   assert.match(securityMigration, /'author_uid', issue_record\.author_uid/u);
   assert.match(outboxWorker, /async function findIssueAuthorUid/u);
+  assert.match(outboxWorker, /async function findAnnouncementCommentRecipientUid/u);
   assert.match(outboxWorker, /asString\(event\.payload\.issue_author_uid\)\s*\|\|\s*asString\(event\.payload\.author_uid\)/u);
+  assert.match(outboxWorker, /asString\(event\.payload\.announcement_author_uid\)/u);
   assert.match(outboxWorker, /async function resolveNotification/u);
   assert.match(outboxWorker, /recipientUid === event\.actor_uid/u);
   assert.match(outboxWorker, /recipient_uid: recipientUid/u);
@@ -430,6 +434,7 @@ test('personal notification writes and pushes are scoped to the recipient', asyn
   assert.match(outboxWorker, /title: "提案已達附議門檻"/u);
   assert.match(outboxWorker, /title: "提案已被刪除"/u);
   assert.match(outboxWorker, /title: "有新的公告"/u);
+  assert.match(outboxWorker, /source: "broadcast"[\s\S]*type: "announcement_created"/u);
   assert.match(outboxWorker, /title: `來自 \$\{authorName\} 的留言`/u);
   assert.match(outboxWorker, /return text\.slice\(0, 80\)/u);
 });

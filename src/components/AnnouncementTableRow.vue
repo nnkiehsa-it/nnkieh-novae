@@ -42,7 +42,7 @@
             :aria-label="announcement.currentUserLiked ? '取消讚' : '按讚'"
             @click.stop="emit('toggleLike', announcement)"
           >
-            <AppIcon name="heart" :filled="announcement.currentUserLiked" />
+            <AppIcon name="heart" :filled="announcement.currentUserLiked" class="text-red-600 dark:text-red-300" />
             <span class="text-sm font-semibold leading-none tabular-nums">{{ announcement.like_count }}</span>
           </button>
 
@@ -108,7 +108,7 @@
           :aria-label="announcement.currentUserLiked ? '取消讚' : '按讚'"
           @click.stop="emit('toggleLike', announcement)"
         >
-          <AppIcon name="heart" :filled="announcement.currentUserLiked" />
+          <AppIcon name="heart" :filled="announcement.currentUserLiked" class="text-red-600 dark:text-red-300" />
           <span class="text-sm font-semibold leading-none tabular-nums">{{ announcement.like_count }}</span>
         </button>
 

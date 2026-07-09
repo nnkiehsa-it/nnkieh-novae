@@ -2,6 +2,23 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "改善公告互動與通知體驗",
+    version: "v2.0.126",
+    date: "2026-07-09",
+    time: "15:20",
+    items: [
+      {
+        title: "修正公告互動按鈕顯示，讓愛心狀態與操作樣式更一致。"
+      },
+      {
+        title: "改善公告留言通知規則，主留言會通知公告作者，回覆則通知被回覆者。"
+      },
+      {
+        title: "提升公告按讚操作穩定性。"
+      }
+    ]
+  },
+  {
     title: "調整提案審核與狀態變更流程",
     version: "v2.0.125",
     date: "2026-07-09",
