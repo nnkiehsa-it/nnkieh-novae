@@ -7,7 +7,9 @@ import { requiredText } from "./validation.ts";
 
 const PUSH_TOKEN_LIMITS = {
   deviceId: 160,
+  platform: 120,
   token: 4096,
+  userAgent: 512,
 } as const;
 
 export function isNotificationAction(action: string) {
@@ -30,7 +32,16 @@ function readDeviceId(payload: JsonRecord) {
 }
 
 function readPermission(payload: JsonRecord) {
-  return asString(payload.permission, "default");
+  const permission = asString(payload.permission, "default");
+  return permission === "default" || permission === "denied" || permission === "granted"
+    ? permission
+    : "default";
+}
+
+function optionalLimitedText(value: unknown, field: string, maxLength: number) {
+  const text = asString(value);
+  if (text.length > maxLength) throw new Error(`${field}-too-long`);
+  return text;
 }
 
 export async function handleNotificationAction(
@@ -78,8 +89,8 @@ export async function handleNotificationAction(
       device_id: requiredText(payload.deviceId, "deviceId", PUSH_TOKEN_LIMITS.deviceId),
       token: requiredText(payload.token, "token", PUSH_TOKEN_LIMITS.token),
       permission: readPermission(payload),
-      platform: asString(payload.platform),
-      user_agent: asString(payload.userAgent),
+      platform: optionalLimitedText(payload.platform, "platform", PUSH_TOKEN_LIMITS.platform),
+      user_agent: optionalLimitedText(payload.userAgent, "userAgent", PUSH_TOKEN_LIMITS.userAgent),
     });
     if (error) throw error;
     return data;
@@ -89,7 +100,7 @@ export async function handleNotificationAction(
     await claimFixedWindowRateLimit(auth.uid, "push-token.write", utcHourWindow(), RATE_LIMITS.pushTokenWriteHourly);
     const { data, error } = await supabase.schema("app_api").rpc("backend_unregister_push_token", {
       actor_uid: auth.uid,
-      device_id: readDeviceId(payload),
+      device_id: requiredText(payload.deviceId, "deviceId", PUSH_TOKEN_LIMITS.deviceId),
       permission: readPermission(payload),
     });
     if (error) throw error;

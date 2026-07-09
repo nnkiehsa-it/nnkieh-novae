@@ -184,7 +184,7 @@ export function usePushNotifications() {
       if (nextPermission !== 'granted') {
         deviceEnabled.value = false;
         if (currentToken) {
-          await unregisterPushToken({ permission: nextPermission, token: currentToken });
+          await unregisterPushToken({ deviceId, permission: nextPermission, token: currentToken });
         }
         return;
       }

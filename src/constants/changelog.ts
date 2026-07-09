@@ -2,6 +2,26 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "提升資料讀取與寫入穩定性",
+    version: "v2.0.123",
+    date: "2026-07-09",
+    time: "13:09",
+    items: [
+      {
+        title: "修正提案依附議數排序時載入更多可能遺漏同附議數內容的情況。"
+      },
+      {
+        title: "強化圖片內容送出檢查，避免圖片狀態異常時產生不一致的送出結果。"
+      },
+      {
+        title: "提升通知設定資料保存的格式穩定性。"
+      },
+      {
+        title: "修正分段切換器的選取填充顯示，讓狀態切換外觀更一致。"
+      }
+    ]
+  },
+  {
     title: "更新設定與操作圖示",
     version: "v2.0.122",
     date: "2026-07-09",

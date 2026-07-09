@@ -19,6 +19,47 @@ const PRIVATE_URL_LIFETIME_MS = 60 * 60 * 1000;
 const PRIVATE_URL_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 const PUBLIC_URL_CACHE_MS = 365 * 24 * 60 * 60 * 1000;
 
+function extractMarkdownUploadIds(content: string) {
+  return [...new Set(
+    [...content.matchAll(MARKDOWN_UPLOAD_ID_PATTERN)]
+      .map((match) => match[1])
+      .filter(Boolean),
+  )];
+}
+
+async function assertMarkdownUploadsAttachable(
+  supabase: BackendSupabase,
+  ownerUid: string,
+  uploadIds: string[],
+  targetType: "announcement" | "announcement_comment" | "comment" | "issue",
+  targetId: string | null,
+) {
+  if (uploadIds.length === 0) return;
+  const maxImages = targetType === "issue"
+    ? RATE_LIMITS.imageUploads.issueMaxImages
+    : targetType === "announcement"
+      ? RATE_LIMITS.imageUploads.announcementMaxImages
+      : RATE_LIMITS.imageUploads.commentMaxImages;
+  if (uploadIds.length > maxImages) throw new Error("too-many-images");
+
+  const { data: attachable, error: attachableError } = await supabase.schema("app_private")
+    .from("uploads")
+    .select("id,owner_uid,status,attached_target_type,attached_target_id")
+    .in("id", uploadIds);
+  if (attachableError) throw attachableError;
+  const validIds = new Set((attachable ?? []).filter((upload) =>
+    upload.owner_uid === ownerUid
+    && (upload.status === "ready" || upload.status === "attached")
+    && (
+      targetId
+        ? (!upload.attached_target_id
+          || (upload.attached_target_type === targetType && upload.attached_target_id === targetId))
+        : !upload.attached_target_id
+    )
+  ).map((upload) => upload.id));
+  if (validIds.size !== uploadIds.length) throw new Error("upload-attachment-invalid");
+}
+
 async function uploadAccess(
   upload: JsonRecord,
   auth: AuthContext,
@@ -70,33 +111,8 @@ export async function markMarkdownUploadsAttached(
   targetType: "announcement" | "announcement_comment" | "comment" | "issue",
   targetId: string,
 ) {
-  const uploadIds = [...new Set(
-    [...content.matchAll(MARKDOWN_UPLOAD_ID_PATTERN)]
-      .map((match) => match[1])
-      .filter(Boolean),
-  )];
-  if (uploadIds.length === 0) return;
-  const maxImages = targetType === "issue"
-    ? RATE_LIMITS.imageUploads.issueMaxImages
-    : targetType === "announcement"
-      ? RATE_LIMITS.imageUploads.announcementMaxImages
-      : RATE_LIMITS.imageUploads.commentMaxImages;
-  if (uploadIds.length > maxImages) throw new Error("too-many-images");
-
-  const { data: attachable, error: attachableError } = await supabase.schema("app_private")
-    .from("uploads")
-    .select("id,owner_uid,status,attached_target_type,attached_target_id")
-    .in("id", uploadIds);
-  if (attachableError) throw attachableError;
-  const validIds = new Set((attachable ?? []).filter((upload) =>
-    upload.owner_uid === ownerUid
-    && (upload.status === "ready" || upload.status === "attached")
-    && (
-      !upload.attached_target_id
-      || (upload.attached_target_type === targetType && upload.attached_target_id === targetId)
-    )
-  ).map((upload) => upload.id));
-  if (validIds.size !== uploadIds.length) throw new Error("upload-attachment-invalid");
+  const uploadIds = extractMarkdownUploadIds(content);
+  await assertMarkdownUploadsAttachable(supabase, ownerUid, uploadIds, targetType, targetId);
 
   const { error } = await supabase.schema("app_private").from("uploads").update({
     attached_target_id: targetId,
@@ -108,6 +124,37 @@ export async function markMarkdownUploadsAttached(
     .in("id", uploadIds)
     .in("status", ["ready", "attached"]);
   if (error) throw error;
+}
+
+export async function validateMarkdownUploadsBeforeCreate(
+  supabase: BackendSupabase,
+  ownerUid: string,
+  content: string,
+  targetType: "announcement" | "announcement_comment" | "comment" | "issue",
+) {
+  await assertMarkdownUploadsAttachable(
+    supabase,
+    ownerUid,
+    extractMarkdownUploadIds(content),
+    targetType,
+    null,
+  );
+}
+
+export async function validateMarkdownUploadsBeforeUpdate(
+  supabase: BackendSupabase,
+  ownerUid: string,
+  content: string,
+  targetType: "announcement" | "announcement_comment" | "comment" | "issue",
+  targetId: string,
+) {
+  await assertMarkdownUploadsAttachable(
+    supabase,
+    ownerUid,
+    extractMarkdownUploadIds(content),
+    targetType,
+    targetId,
+  );
 }
 
 export async function queueAttachedUploadsForDeletion(
