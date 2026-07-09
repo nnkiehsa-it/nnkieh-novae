@@ -2,6 +2,17 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "修正介面元件顯示問題",
+    version: "v2.0.124",
+    date: "2026-07-09",
+    time: "13:17",
+    items: [
+      {
+        title: "修正分段切換器選取狀態的背景填充偏移問題。"
+      }
+    ]
+  },
+  {
     title: "提升資料讀取與寫入穩定性",
     version: "v2.0.123",
     date: "2026-07-09",

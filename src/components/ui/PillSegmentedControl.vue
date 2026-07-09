@@ -5,7 +5,7 @@
     :class="containerClass"
   >
     <div
-      class="pointer-events-none absolute rounded-full border border-ink-200/10 bg-white shadow-elevated dark:border-ink-700/30 dark:bg-ink-800"
+      class="pointer-events-none absolute top-0 left-0 rounded-full border border-ink-200/10 bg-white shadow-elevated dark:border-ink-700/30 dark:bg-ink-800"
       :style="indicatorStyle"
     ></div>
 
