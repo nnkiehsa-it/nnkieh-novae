@@ -32,67 +32,70 @@
     </BoardControls>
 
     <div ref="boardScrollRef" class="scrollbar-none min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pb-4">
-      <PageLoadFailure
-        v-if="contentLoadingHasProblem"
-        :title="contentProblemTitle"
-        :description="contentProblemDescription"
-        :retry-disabled="!contentOnline"
-        @retry="retryCurrentData"
-      />
+      <Transition name="panel-switch" mode="out-in">
+        <div :key="boardPanelKey" class="space-y-4">
+          <PageLoadFailure
+            v-if="contentLoadingHasProblem"
+            :title="contentProblemTitle"
+            :description="contentProblemDescription"
+            :retry-disabled="!contentOnline"
+            @retry="retryCurrentData"
+          />
 
-      <template v-else-if="visibleContentLoading">
-        <IssueBoardTable
-          :issues="[]"
-          :loading="true"
-          error=""
-          :show-author="showAuthorCol"
-        />
-      </template>
+          <template v-else-if="visibleContentLoading">
+            <IssueBoardTable
+              :issues="[]"
+              :loading="true"
+              error=""
+              :show-author="showAuthorCol"
+            />
+          </template>
 
-      <EmptyStatePanel
-        v-else-if="currentError && currentIssues.length === 0"
-        title="提案讀取失敗"
-        :description="currentError"
-        icon="warning"
-        tone="danger"
-        action-label="重新整理"
-        @action="retryCurrentData"
-      />
+          <EmptyStatePanel
+            v-else-if="currentError && currentIssues.length === 0"
+            title="提案讀取失敗"
+            :description="currentError"
+            icon="warning"
+            tone="danger"
+            action-label="重新整理"
+            @action="retryCurrentData"
+          />
 
-      <Transition v-else-if="currentIssues.length === 0" name="board-content" appear>
-        <EmptyStatePanel
-          title="沒有符合條件的提案"
-          :description="emptyStateDescription"
-          icon="inbox"
-        />
-      </Transition>
+          <EmptyStatePanel
+            v-else-if="currentIssues.length === 0"
+            title="沒有符合條件的提案"
+            :description="emptyStateDescription"
+            icon="inbox"
+          />
 
-      <template v-else>
-        <IssueBoardTable
-          :issues="currentIssues"
-          :loading="false"
-          error=""
-          :show-author="showAuthorCol"
-          :highlight-query="searchQuery"
-          @open-details="openIssueDetails"
-          @support-changed="handleSupportChanged"
-          @issue-updated="handleIssueUpdatedFromList"
-          @issue-deleted="handleIssueDeleted"
-        />
+          <template v-else>
+            <IssueBoardTable
+              :issues="currentIssues"
+              :loading="false"
+              error=""
+              :show-author="showAuthorCol"
+              :highlight-query="searchQuery"
+              @open-details="openIssueDetails"
+              @support-changed="handleSupportChanged"
+              @issue-updated="handleIssueUpdatedFromList"
+              @issue-deleted="handleIssueDeleted"
+            />
 
-        <div v-if="currentError" class="rounded-xl border border-error/20 bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">
-          {{ currentError }}
+            <div v-if="currentError" class="rounded-xl border border-error/20 bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">
+              {{ currentError }}
+            </div>
+
+            <SkeletonTable
+              v-if="currentLoadingMore"
+              :rows="3"
+              :show-author="showAuthorCol"
+              :is-admin="isAdmin"
+            />
+
+            <div ref="loadMoreSentinel" class="h-1" aria-hidden="true"></div>
+          </template>
         </div>
-
-        <SkeletonTable
-          v-if="currentLoadingMore"
-          :rows="3"
-          :show-author="showAuthorCol"
-          :is-admin="isAdmin"
-        />
-
-        <div ref="loadMoreSentinel" class="h-1" aria-hidden="true"></div>
-      </template>
+      </Transition>
     </div>
   </section>
 
@@ -189,6 +192,12 @@ const contentContextKey = computed(() => [
   activeFilter.value,
   statusTab.value,
   isSearching.value ? 'search' : 'browse',
+].join(':'));
+const boardPanelKey = computed(() => [
+  activeFilter.value,
+  statusTab.value,
+  sortOption.value,
+  isSearching.value ? searchQuery.value.trim() : '',
 ].join(':'));
 const rawContentLoading = computed(() => currentLoading.value);
 const { visibleLoading: visibleContentLoading } = useMinimumLoading(rawContentLoading, {

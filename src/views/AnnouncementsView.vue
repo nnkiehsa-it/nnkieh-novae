@@ -28,59 +28,62 @@
     </AnnouncementControls>
 
     <div>
-      <PageLoadFailure
-        v-if="announcementLoadingHasProblem"
-        :title="announcementProblemTitle"
-        :description="announcementProblemDescription"
-        :retry-disabled="!announcementOnline"
-        @retry="retryAnnouncements"
-      />
+      <Transition name="panel-switch" mode="out-in">
+        <div :key="announcementPanelKey" class="space-y-3">
+          <PageLoadFailure
+            v-if="announcementLoadingHasProblem"
+            :title="announcementProblemTitle"
+            :description="announcementProblemDescription"
+            :retry-disabled="!announcementOnline"
+            @retry="retryAnnouncements"
+          />
 
-      <SkeletonAnnouncementList v-else-if="visibleAnnouncementLoading" :can-manage="isAdmin" />
+          <SkeletonAnnouncementList v-else-if="visibleAnnouncementLoading" :can-manage="isAdmin" />
 
-      <EmptyStatePanel
-        v-else-if="!isAllowedUser"
-        title="無法查看公告"
-        description="請先使用校內帳號登入。"
-        icon="lock"
-      />
+          <EmptyStatePanel
+            v-else-if="!isAllowedUser"
+            title="無法查看公告"
+            description="請先使用校內帳號登入。"
+            icon="lock"
+          />
 
-      <EmptyStatePanel
-        v-else-if="error && announcements.length === 0"
-        title="公告讀取失敗"
-        :description="error"
-        icon="warning"
-        tone="danger"
-        action-label="重新整理"
-        @action="retryAnnouncements"
-      />
+          <EmptyStatePanel
+            v-else-if="error && announcements.length === 0"
+            title="公告讀取失敗"
+            :description="error"
+            icon="warning"
+            tone="danger"
+            action-label="重新整理"
+            @action="retryAnnouncements"
+          />
 
-      <Transition v-else-if="announcements.length === 0" name="board-content" appear>
-        <EmptyStatePanel
-          title="目前沒有公告"
-          description="公告發布後會顯示在這裡。"
-          icon="chart"
-        />
-      </Transition>
+          <EmptyStatePanel
+            v-else-if="announcements.length === 0"
+            title="目前沒有公告"
+            description="公告發布後會顯示在這裡。"
+            icon="chart"
+          />
 
-      <template v-else>
-        <AnnouncementTable
-          :announcements="announcements"
-          :can-manage="isAdmin"
-          :liking-announcement-id="likingAnnouncementId"
-          @delete="handleListDelete"
-          @edit="openEditor"
-          @open="openAnnouncementDetails"
-          @open-comments="(announcement) => openAnnouncementDetails(announcement, 'comments')"
-          @toggle-like="handleToggleLike"
-        />
+          <template v-else>
+            <AnnouncementTable
+              :announcements="announcements"
+              :can-manage="isAdmin"
+              :liking-announcement-id="likingAnnouncementId"
+              @delete="handleListDelete"
+              @edit="openEditor"
+              @open="openAnnouncementDetails"
+              @open-comments="(announcement) => openAnnouncementDetails(announcement, 'comments')"
+              @toggle-like="handleToggleLike"
+            />
 
-        <div v-if="error" class="mt-3 rounded-xl border border-error/20 bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">
-          {{ error }}
+            <div v-if="error" class="mt-3 rounded-xl border border-error/20 bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">
+              {{ error }}
+            </div>
+            <SkeletonAnnouncementList v-if="loadingMore" class="mt-2" :count="2" :can-manage="isAdmin" />
+            <div ref="loadMoreSentinel" class="h-1" aria-hidden="true"></div>
+          </template>
         </div>
-        <SkeletonAnnouncementList v-if="loadingMore" class="mt-2" :count="2" :can-manage="isAdmin" />
-        <div ref="loadMoreSentinel" class="h-1" aria-hidden="true"></div>
-      </template>
+      </Transition>
     </div>
 
     <AnnouncementEditorDialog
@@ -163,6 +166,7 @@ const {
 const route = useRoute();
 const router = useRouter();
 const rawAnnouncementLoading = computed(() => sessionLoading.value || loading.value);
+const announcementPanelKey = computed(() => sortOption.value);
 const { visibleLoading: visibleAnnouncementLoading } = useMinimumLoading(rawAnnouncementLoading);
 const {
   hasProblem: announcementLoadingHasProblem,
