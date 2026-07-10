@@ -1,5 +1,6 @@
 import { requireEnv } from "../_shared/env.ts";
 import { requireVerifiedFirebaseUser } from "../_shared/firebase-auth.ts";
+import { getIssueCategoryIdsByReadAccess } from "../_shared/issue-categories.ts";
 import type { AuthContext, BackendSupabase } from "./types.ts";
 
 function isAdminEmail(email: string) {
@@ -22,17 +23,18 @@ export async function requireAuth(supabase: BackendSupabase, request: Request): 
   if (error) throw error;
 
   const isAdminFromEmail = isAdminEmail(firebaseUser.email);
-  if (isAdminFromEmail && role?.role !== "admin") {
+  const authoritativeRole = isAdminFromEmail ? "admin" : "user";
+  if (role?.role !== authoritativeRole) {
     const { error: upsertError } = await supabase
       .schema("app_private")
       .from("user_roles")
-      .upsert({ role: "admin", uid: firebaseUser.uid, updated_at: new Date().toISOString() }, { onConflict: "uid" });
+      .upsert({ role: authoritativeRole, uid: firebaseUser.uid, updated_at: new Date().toISOString() }, { onConflict: "uid" });
     if (upsertError) throw upsertError;
   }
 
   return {
     email: firebaseUser.email,
-    isAdmin: role?.role === "admin" || isAdminFromEmail,
+    isAdmin: isAdminFromEmail,
     name: firebaseUser.name,
     photoUrl: firebaseUser.photoUrl,
     uid: firebaseUser.uid,
@@ -76,6 +78,16 @@ export async function handleHealthcheck(request: Request, supabase: BackendSupab
       {
         key: "firebase_project_id",
         value: requireEnv("FIREBASE_PROJECT_ID"),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        key: "owner_admin_issue_categories",
+        value: getIssueCategoryIdsByReadAccess("owner-admin").join(","),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        key: "reviewed_school_issue_categories",
+        value: getIssueCategoryIdsByReadAccess("reviewed-school").join(","),
         updated_at: new Date().toISOString(),
       },
       {

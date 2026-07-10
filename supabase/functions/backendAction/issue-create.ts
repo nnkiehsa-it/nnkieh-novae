@@ -1,4 +1,4 @@
-import { asRecord, asString } from "../_shared/http.ts";
+import { asString } from "../_shared/http.ts";
 import {
   getIssueCategoryConfigOrDefault,
   isIssueCategory,
@@ -9,7 +9,7 @@ import {
 import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 import { claimFixedWindowRateLimit } from "../_shared/upstash-rate-limit.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
-import { markMarkdownUploadsAttached, validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
+import { validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
 import { taipeiDayWindow } from "./utils.ts";
 import { INPUT_LIMITS, requiredText } from "./validation.ts";
 
@@ -59,7 +59,5 @@ export async function createIssue(payload: JsonRecord, auth: AuthContext, supaba
     author_private_categories: AUTHOR_PRIVATE_CATEGORIES,
   });
   if (error) throw error;
-  const issue = asRecord(data);
-  await markMarkdownUploadsAttached(supabase, auth.uid, content, "issue", asString(issue.id));
   return { issue: data };
 }

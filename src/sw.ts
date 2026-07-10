@@ -2,7 +2,7 @@
 
 import { cleanupOutdatedCaches, matchPrecache, precacheAndRoute } from 'workbox-precaching';
 import { NavigationRoute, registerRoute, setCatchHandler } from 'workbox-routing';
-import { CacheFirst, NetworkFirst, NetworkOnly, StaleWhileRevalidate } from 'workbox-strategies';
+import { CacheFirst, NetworkFirst, NetworkOnly } from 'workbox-strategies';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 import { ExpirationPlugin } from 'workbox-expiration';
 
@@ -90,10 +90,8 @@ cleanupOutdatedCaches();
 const networkOnly = new NetworkOnly();
 const navigationCacheName = `navigation-${__APP_VERSION__}`;
 const staticAssetCacheName = `static-assets-${__APP_VERSION__}`;
-const fontStyleCacheName = `font-styles-${__APP_VERSION__}`;
-const fontFileCacheName = `font-files-${__APP_VERSION__}`;
 const cloudinaryMediaCacheName = 'cloudinary-media-cache';
-const versionedCachePrefixes = ['navigation-', 'static-assets-', 'font-styles-', 'font-files-'];
+const versionedCachePrefixes = ['navigation-', 'static-assets-'];
 const oneYearSeconds = 365 * 24 * 60 * 60;
 
 registerRoute(
@@ -120,46 +118,6 @@ registerRoute(
       new ExpirationPlugin({
         maxAgeSeconds: oneYearSeconds,
         maxEntries: 200,
-        purgeOnQuotaError: true,
-      }),
-    ],
-  }),
-);
-
-registerRoute(
-  ({ request, url }) =>
-    request.method === 'GET'
-    && (
-      url.origin === 'https://fonts.googleapis.com'
-      || (url.origin === 'https://cdn.jsdelivr.net' && url.pathname.includes('/harmonyos-sans-webfont'))
-    ),
-  new StaleWhileRevalidate({
-    cacheName: fontStyleCacheName,
-    plugins: [
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-      new ExpirationPlugin({
-        maxAgeSeconds: 30 * 24 * 60 * 60,
-        maxEntries: 30,
-        purgeOnQuotaError: true,
-      }),
-    ],
-  }),
-);
-
-registerRoute(
-  ({ request, url }) =>
-    request.method === 'GET'
-    && (
-      url.origin === 'https://fonts.gstatic.com'
-      || (url.origin === 'https://cdn.jsdelivr.net' && /\.(?:woff2?|ttf|otf)$/u.test(url.pathname))
-    ),
-  new CacheFirst({
-    cacheName: fontFileCacheName,
-    plugins: [
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-      new ExpirationPlugin({
-        maxAgeSeconds: oneYearSeconds,
-        maxEntries: 60,
         purgeOnQuotaError: true,
       }),
     ],
@@ -205,6 +163,12 @@ self.addEventListener('install', () => {
   void self.skipWaiting();
 });
 
+self.addEventListener('message', (event) => {
+  if ((event.data as { type?: unknown } | null)?.type === 'SKIP_WAITING') {
+    void self.skipWaiting();
+  }
+});
+
 self.addEventListener('activate', (event) => {
   event.waitUntil(Promise.all([
     self.clients.claim(),
@@ -215,8 +179,6 @@ self.addEventListener('activate', (event) => {
           && ![
             navigationCacheName,
             staticAssetCacheName,
-            fontStyleCacheName,
-            fontFileCacheName,
           ].includes(cacheName)
         )
         .map((cacheName) => caches.delete(cacheName)),

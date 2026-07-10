@@ -177,6 +177,12 @@ export function useIssueRouteDetail(
       if (!isEnabled || waitingForRole || routeName !== 'issue-detail' || !issueId) return;
 
       realtimeUnsubscribe = subscribeContentRealtimeEvents(`issue-detail:${issueId}`, (event) => {
+        if (event.eventType === 'issue_support_changed' && event.targetId === issueId && event.supportCount !== null) {
+          if (routeIssue.value) {
+            routeIssue.value = { ...routeIssue.value, support_count: event.supportCount };
+          }
+          return;
+        }
         if (event.eventType !== 'issue_changed') return;
         if (event.targetId !== issueId) return;
         scheduleRealtimeRefresh();

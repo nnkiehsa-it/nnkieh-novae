@@ -2,25 +2,9 @@ import { asRecord, asString } from "../_shared/http.ts";
 import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 import { claimFixedWindowRateLimit } from "../_shared/upstash-rate-limit.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
-import { markMarkdownUploadsAttached, queueAttachedUploadsForDeletion, validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
+import { validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
 import { asUuid, readCursor, readCursorDate, utcHourWindow } from "./utils.ts";
 import { INPUT_LIMITS, requiredText } from "./validation.ts";
-
-function uploadTargetsFromResult(
-  data: unknown,
-  fallback: { id: string; type: "announcement_comment" },
-) {
-  const result = asRecord(data);
-  return Array.isArray(result.upload_targets)
-    ? result.upload_targets.map((target) => {
-      const record = asRecord(target);
-      return {
-        id: asString(record.id),
-        type: asString(record.type) as "announcement_comment",
-      };
-    }).filter((target) => target.id && target.type === "announcement_comment")
-    : [fallback];
-}
 
 async function listAnnouncementComments(payload: JsonRecord, supabase: BackendSupabase) {
   const announcementId = asUuid(payload.announcementId);
@@ -53,7 +37,6 @@ async function createAnnouncementComment(payload: JsonRecord, auth: AuthContext,
   if (error) throw error;
   const result = asRecord(data);
   const comment = asRecord(result.comment);
-  await markMarkdownUploadsAttached(supabase, auth.uid, content, "announcement_comment", asString(comment.id));
   return { comment, comment_count: result.comment_count };
 }
 
@@ -66,7 +49,6 @@ async function deleteAnnouncementComment(payload: JsonRecord, auth: AuthContext,
     actor_is_admin: auth.isAdmin,
   });
   if (error) throw error;
-  await queueAttachedUploadsForDeletion(supabase, uploadTargetsFromResult(data, { id: commentId, type: "announcement_comment" }));
   const result = asRecord(data);
   return {
     success: true,

@@ -41,6 +41,19 @@ function renderImage(hrefOrToken: unknown, titleValue?: string | null, textValue
   const safeWidth = Math.max(1, width);
   const safeHeight = Math.max(1, height);
 
+  let imageUrl: URL;
+  try {
+    imageUrl = new URL(href, window.location.origin);
+  } catch {
+    return escapeAttribute(altText);
+  }
+  if (
+    imageUrl.protocol !== 'https:'
+    || !['api.cloudinary.com', 'res.cloudinary.com'].includes(imageUrl.hostname.toLowerCase())
+  ) {
+    return escapeAttribute(altText);
+  }
+
   return `<img src="${escapeAttribute(href)}" alt="${escapeAttribute(altText)}"${title} width="${safeWidth}" height="${safeHeight}" loading="lazy" decoding="async">`;
 }
 

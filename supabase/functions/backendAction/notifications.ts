@@ -14,6 +14,7 @@ const PUSH_TOKEN_LIMITS = {
 
 export function isNotificationAction(action: string) {
   return action === "listNotifications"
+    || action === "getNotificationSnapshot"
     || action === "getNotificationReadState"
     || action === "markNotificationsOpened"
     || action === "getPushNotificationPreference"
@@ -50,6 +51,36 @@ export async function handleNotificationAction(
   auth: AuthContext,
   supabase: BackendSupabase,
 ) {
+  if (action === "getNotificationSnapshot") {
+    const requestedSources = Array.isArray(payload.sources)
+      ? payload.sources.map((source) => readNotificationSource({ source }))
+        .filter((source, index, items) => items.indexOf(source) === index)
+      : ["broadcast", "user"];
+    const sources = requestedSources.filter((source) => source !== "admin" || auth.isAdmin);
+    const [pageEntries, stateResult] = await Promise.all([
+      Promise.all(sources.map(async (source) => {
+        const { data, error } = await supabase.schema("app_api").rpc("backend_list_notifications", {
+          actor_uid: auth.uid,
+          actor_is_admin: auth.isAdmin,
+          notification_source: source,
+          page_size: 10,
+          cursor_id: null,
+          cursor_created_at: null,
+        });
+        if (error) throw error;
+        return [source, data] as const;
+      })),
+      supabase.schema("app_api").rpc("backend_get_notification_read_state", {
+        actor_uid: auth.uid,
+      }),
+    ]);
+    if (stateResult.error) throw stateResult.error;
+    return {
+      pages: Object.fromEntries(pageEntries),
+      state: stateResult.data,
+    };
+  }
+
   if (action === "listNotifications") {
     const cursor = readCursor(payload);
     const { data, error } = await supabase.schema("app_api").rpc("backend_list_notifications", {

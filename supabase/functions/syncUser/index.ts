@@ -67,6 +67,7 @@ Deno.serve(async (request) => {
             role: "authenticated",
           }),
         }),
+        signal: AbortSignal.timeout(10_000),
       },
     );
     if (!updateResponse.ok) {

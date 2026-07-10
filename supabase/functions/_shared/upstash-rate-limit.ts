@@ -10,6 +10,13 @@ interface RateLimitConfig {
   message: string;
 }
 
+interface RateLimitClaim {
+  actionName: string;
+  config: RateLimitConfig;
+  identifier: string;
+  window: RateLimitWindow;
+}
+
 function sanitizeKeyPart(value: string) {
   return value.replace(/[^a-zA-Z0-9_.:-]/gu, "_").slice(0, 160);
 }
@@ -18,15 +25,11 @@ function rateLimitKey(identifier: string, actionName: string, startsAt: Date) {
   return `srp:rate:${sanitizeKeyPart(actionName)}:${sanitizeKeyPart(identifier)}:${startsAt.toISOString()}`;
 }
 
-function readPipelineResult(data: unknown) {
-  if (!Array.isArray(data)) return 0;
-  const error = data.find((item) =>
-    item && typeof item === "object" && typeof (item as Record<string, unknown>).error === "string"
-  );
-  if (error) throw new Error("rate-limit-provider-unavailable");
-  const first = data[0];
-  if (!first || typeof first !== "object") return 0;
-  const result = (first as Record<string, unknown>).result;
+function readPipelineCount(item: unknown) {
+  if (!item || typeof item !== "object") throw new Error("rate-limit-provider-unavailable");
+  const record = item as Record<string, unknown>;
+  if (typeof record.error === "string") throw new Error("rate-limit-provider-unavailable");
+  const result = record.result;
   if (typeof result === "number") return result;
   if (typeof result === "string") {
     const parsed = Number.parseInt(result, 10);
@@ -41,21 +44,25 @@ export async function claimFixedWindowRateLimit(
   window: RateLimitWindow,
   config: RateLimitConfig,
 ) {
+  await claimFixedWindowRateLimits([{ identifier, actionName, window, config }]);
+}
+
+export async function claimFixedWindowRateLimits(claims: RateLimitClaim[]) {
+  if (claims.length === 0) return;
   const restUrl = requireEnv("UPSTASH_REDIS_REST_URL").replace(/\/+$/u, "");
   const token = requireEnv("UPSTASH_REDIS_REST_TOKEN");
-  const ttlSeconds = Math.max(1, Math.ceil((window.expiresAt.getTime() - Date.now()) / 1000));
-  const key = rateLimitKey(identifier, actionName, window.startsAt);
 
   const response = await fetch(`${restUrl}/pipeline`, {
-    body: JSON.stringify([
-      [
+    body: JSON.stringify(claims.map((claim) => {
+      const ttlSeconds = Math.max(1, Math.ceil((claim.window.expiresAt.getTime() - Date.now()) / 1000));
+      return [
         "EVAL",
         "local count=redis.call('INCR',KEYS[1]); if count==1 then redis.call('EXPIRE',KEYS[1],ARGV[1]) end; return count",
         "1",
-        key,
+        rateLimitKey(claim.identifier, claim.actionName, claim.window.startsAt),
         String(ttlSeconds),
-      ],
-    ]),
+      ];
+    })),
     headers: {
       authorization: `Bearer ${token}`,
       "content-type": "application/json",
@@ -67,9 +74,15 @@ export async function claimFixedWindowRateLimit(
     throw new Error("rate-limit-provider-unavailable");
   }
 
-  const count = readPipelineResult(await response.json());
-  if (count > config.limit) {
-    throw new Error(config.message);
+  const data = await response.json();
+  if (!Array.isArray(data) || data.length !== claims.length) {
+    throw new Error("rate-limit-provider-unavailable");
+  }
+  for (let index = 0; index < claims.length; index += 1) {
+    const count = readPipelineCount(data[index]);
+    if (count > claims[index].config.limit) {
+      throw new Error(claims[index].config.message);
+    }
   }
 }
 

@@ -122,16 +122,6 @@ export function publicError(error: unknown) {
   return "服務暫時無法處理請求，請稍後再試。";
 }
 
-export function operationalErrorSummary(error: unknown) {
-  const message = errorMessage(error).toLowerCase();
-  if (message.includes("notion")) return "notion-request-failed";
-  if (message.includes("cloudinary") || message.includes("upload")) return "media-operation-failed";
-  if (message.includes("fcm") || message.includes("firebase")) return "notification-provider-failed";
-  if (message.includes("rate-limit")) return "rate-limit-provider-failed";
-  if (message.includes("permission")) return "permission-check-failed";
-  return "internal-operation-failed";
-}
-
 export function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
     ? value as Record<string, unknown>

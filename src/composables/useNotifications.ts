@@ -4,6 +4,7 @@ import { useSession } from '@/composables/useSession';
 import { registerAppResumeHandler } from '@/composables/useAppResume';
 import {
   fetchNotificationSourcePage,
+  fetchNotificationSnapshot,
   markNotificationsOpened,
   subscribeNotificationReadState,
   subscribeNotificationSource,
@@ -14,7 +15,7 @@ import { resetAppConnection } from '@/lib/reconnect';
 type Unsubscribe = () => void;
 
 const notificationSources: NotificationSource[] = ['broadcast', 'admin', 'user'];
-const NOTIFICATION_FOREGROUND_REFRESH_MS = 30_000;
+const NOTIFICATION_RESUME_RECONNECT_MS = 10 * 60_000;
 const defaultPersonalPreferences = {
   comments: true,
   issueUpdates: true,
@@ -54,9 +55,8 @@ const loading = ref(false);
 const loadingMore = ref(false);
 const error = ref('');
 let initialized = false;
-let firstPageRefreshPromise: Promise<void> | null = null;
-let foregroundRefreshTimer: number | null = null;
 let loadingTimer: number | null = null;
+let lastSubscriptionStartedAt = 0;
 let subscriptionVersion = 0;
 let unsubscribes: Unsubscribe[] = [];
 
@@ -94,14 +94,8 @@ function clearLoadingTimer() {
   loadingTimer = null;
 }
 
-function clearForegroundRefreshTimer() {
-  if (foregroundRefreshTimer !== null) window.clearInterval(foregroundRefreshTimer);
-  foregroundRefreshTimer = null;
-}
-
 function clearSubscriptions() {
   clearLoadingTimer();
-  clearForegroundRefreshTimer();
   subscriptionVersion += 1;
   unsubscribes.forEach((unsubscribe) => unsubscribe());
   unsubscribes = [];
@@ -128,6 +122,7 @@ function startSubscriptions() {
   const uid = user.value?.uid ?? '';
   clearSubscriptions();
   if (!uid || roleLoading.value) return;
+  lastSubscriptionStartedAt = Date.now();
 
   loading.value = true;
   error.value = '';
@@ -155,27 +150,30 @@ function startSubscriptions() {
       : '目前已離線，請恢復網路連線後重新整理。';
   }, 5_000);
 
+  void fetchNotificationSnapshot(activeSources.value, uid)
+    .then((snapshot) => {
+      if (currentVersion !== subscriptionVersion) return;
+      activeSources.value.forEach((source) => {
+        const page = snapshot.pages[source];
+        firstPages.value[source] = page.notifications;
+        cursors.value[source] = page.cursor;
+        sourceHasMore.value[source] = page.hasMore;
+        finishSourceLoad(source, false);
+      });
+      readState.value = snapshot.state;
+    })
+    .catch(() => {
+      if (currentVersion !== subscriptionVersion) return;
+      activeSources.value.forEach((source) => finishSourceLoad(source, true));
+    });
+
   activeSources.value.forEach((source) => {
     unsubscribes.push(subscribeNotificationSource(
       source,
       uid,
-      (page) => {
-        if (currentVersion !== subscriptionVersion) return;
-        const merged = new Map([
-          ...firstPages.value[source],
-          ...page.notifications,
-        ].map((notification) => [notification.id, notification]));
-        firstPages.value[source] = [...merged.values()].sort((left, right) =>
-          (right.created_at?.getTime() ?? 0) - (left.created_at?.getTime() ?? 0)
-        );
-        cursors.value[source] = page.cursor;
-        sourceHasMore.value[source] = page.hasMore;
-        finishSourceLoad(source, false);
-      },
       (notification) => {
         if (currentVersion !== subscriptionVersion) return;
         insertRealtimeNotification(source, notification);
-        void refreshSourceFirstPage(source).catch(() => void 0);
       },
       () => {
         if (currentVersion !== subscriptionVersion) return;
@@ -196,13 +194,15 @@ function startSubscriptions() {
       ) {
         error.value = '通知狀態載入失敗，請稍後再試。';
       }
-    },
+    }, false,
   ));
 
-  foregroundRefreshTimer = window.setInterval(() => {
-    if (document.visibilityState !== 'visible') return;
-    void refreshFirstPages().catch(() => void 0);
-  }, NOTIFICATION_FOREGROUND_REFRESH_MS);
+}
+
+function reconnectNotificationsAfterResume() {
+  if (!user.value?.uid || roleLoading.value) return;
+  if (!error.value && Date.now() - lastSubscriptionStartedAt < NOTIFICATION_RESUME_RECONNECT_MS) return;
+  startSubscriptions();
 }
 
 function ensureNotificationsInitialized() {
@@ -214,7 +214,7 @@ function ensureNotificationsInitialized() {
     startSubscriptions,
     { immediate: true },
   );
-  registerAppResumeHandler(startSubscriptions);
+  registerAppResumeHandler(reconnectNotificationsAfterResume);
 
   if (typeof window !== 'undefined') {
     window.addEventListener('online', () => {
@@ -227,7 +227,6 @@ async function openNotifications() {
   if (!user.value) return;
 
   try {
-    await refreshFirstPages();
     const result = await markNotificationsOpened();
     const openedAt = new Date(result.openedAtMs);
     readState.value = {
@@ -239,40 +238,6 @@ async function openNotifications() {
   } catch {
     void 0;
   }
-}
-
-async function refreshFirstPages() {
-  const uid = user.value?.uid;
-  if (!uid) return;
-  if (firstPageRefreshPromise) return firstPageRefreshPromise;
-
-  firstPageRefreshPromise = Promise.all(activeSources.value.map(async (source) => ({
-    page: await fetchNotificationSourcePage(source, uid, null),
-    source,
-  })))
-    .then((pages) => {
-      pages.forEach(({ page, source }) => {
-        firstPages.value[source] = page.notifications;
-        cursors.value[source] = page.cursor;
-        sourceHasMore.value[source] = page.hasMore;
-      });
-    })
-    .finally(() => {
-      firstPageRefreshPromise = null;
-    });
-
-  return firstPageRefreshPromise;
-}
-
-async function refreshSourceFirstPage(source: NotificationSource) {
-  const uid = user.value?.uid;
-  if (!uid) return;
-
-  const page = await fetchNotificationSourcePage(source, uid, null);
-  if (!activeSources.value.includes(source)) return;
-  firstPages.value[source] = page.notifications;
-  cursors.value[source] = page.cursor;
-  sourceHasMore.value[source] = page.hasMore;
 }
 
 async function retryNotifications() {

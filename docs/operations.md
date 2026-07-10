@@ -1,6 +1,6 @@
 # 維運指南
 
-這份文件說明平台上線後如何檢查、監控、排錯與維護。目標是讓管理員不必每次都翻 Supabase、Cloudinary 或 GitHub Actions 才知道平台狀態。
+這份文件說明平台上線後如何檢查、監控、排錯與維護。Dashboard 用來快速判斷健康狀態與取得追蹤碼；完整錯誤內容仍以 Supabase、Cloudinary 或 GitHub Actions logs 為準。
 
 ## 上線後檢查清單
 
@@ -41,15 +41,15 @@ Dashboard 應優先用於回答：
 - 各分類提案與留言量是否異常？
 - 是否有累積的待處理工作？
 
-使用者遇到錯誤時，應提供畫面上的追蹤碼、發生時間與操作情境。管理員可用追蹤碼在 Dashboard 近期異常中定位，不一定要直接進 Supabase 查詢。
+使用者遇到錯誤時，應提供畫面上的追蹤碼、發生時間與操作情境。Dashboard 近期異常只保留追蹤碼、來源與時間；管理員再以追蹤碼到對應的 Edge Function logs 找完整錯誤。
 
 ## 錯誤處理流程
 
 1. 收到使用者回報，先記錄追蹤碼、時間、帳號網域、操作頁面與動作。
 2. 到 Dashboard 查看近期異常。
 3. 判斷來源：前端讀取、後端 action、圖片、通知、Notion、推播、維護清理。
-4. 若 Dashboard 有足夠資訊，先處理設定或外部服務問題。
-5. 若 Dashboard 資訊不足，再查 GitHub Actions、Supabase Function logs、Cloudinary、Notion 或 Upstash。
+4. 以追蹤碼搜尋 Supabase Function logs，確認完整錯誤與失敗階段。
+5. 視來源再查 GitHub Actions、Cloudinary、Notion 或 Upstash。
 6. 修復後重試原操作，確認 Dashboard 不再新增同類錯誤。
 
 ## 資料保留
@@ -64,8 +64,8 @@ Dashboard 應優先用於回答：
 | Realtime 內容事件 | 保留 1 天。 |
 | Outbox 成功事件 | 完成後保留 1 天。 |
 | Outbox 失敗事件 | 失敗後保留 3 天。 |
-| Web Push 發送成功紀錄 | 保留 1 天。 |
-| Web Push 發送失敗紀錄 | 保留 3 天。 |
+| Web Push 發送成功紀錄 | 不寫入資料庫。 |
+| Web Push 發送失敗紀錄 | 同一通知聚合為一筆，只保存追蹤碼並保留 3 天。 |
 | 冪等操作紀錄 | 保留 24 小時。 |
 | 未附加圖片暫存 | pending 保留 24 小時；ready 未附加保留 48 小時；failed 保留 24 小時。 |
 | 私密圖片簽名網址快取 | 最長重用 7 天；過期後由維護清理移除快取網址。 |
@@ -90,6 +90,7 @@ Dashboard 應優先用於回答：
 | Cloudinary webhook | 接收圖片上傳完成通知 |
 
 如果背景工作失敗，通常不代表使用者主操作一定失敗；但通知、同步或清理可能延遲，需要 Dashboard 追蹤。
+背景工作採有上限重試；資料庫只在有工作到期或滿批次仍有待處理項目時再次喚醒對應 worker，空閒檢查不會呼叫 Edge Function。
 
 ## 分類移除清理
 
@@ -118,7 +119,7 @@ Dashboard 應優先用於回答：
 
 ## 版本更新提示
 
-前端會檢查 `version.json`。當遠端版本較新時，使用者會看到更新提示並重新整理。這避免舊前端繼續呼叫新版後端時出現不一致。
+前端會檢查 `version.json`。當遠端版本較新時會自動更新，並在導頁前以有上限的等待讓新版 service worker 接手；若自動重載多次仍未完成，會改為不可略過的手動更新提示，避免無限重載。
 
 維運建議：
 

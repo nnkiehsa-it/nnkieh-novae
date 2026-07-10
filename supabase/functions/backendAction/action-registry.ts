@@ -108,6 +108,7 @@ export const backendActionDefinitions = [
   idempotentWrite("deleteAnnouncementComment", "announcement", "sensitive-write", announcementHandler),
 
   action("listNotifications", "notification", "read", notificationHandler),
+  action("getNotificationSnapshot", "notification", "read", notificationHandler),
   action("getNotificationReadState", "notification", "read", notificationHandler),
   action("markNotificationsOpened", "notification", "general-write", notificationHandler),
   action("getPushNotificationPreference", "notification", "read", notificationHandler),

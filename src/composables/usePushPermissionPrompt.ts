@@ -8,6 +8,8 @@ export type PushPermissionPromptMode = 'permission' | 'repair';
 type PushPromptReason = PushPermissionPromptMode | 'install';
 
 const PUSH_PROMPT_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1_000;
+const PUSH_REPAIR_PROMPT_COOLDOWN_MS = 24 * 60 * 60 * 1_000;
+const PUSH_PREFERENCE_REFRESH_MS = 15 * 60 * 1_000;
 const PUSH_PROMPT_STORAGE_PREFIXES: Record<PushPromptReason, string> = {
   install: 'srp:push-install-prompted-at:',
   permission: 'srp:push-permission-prompted:',
@@ -20,7 +22,8 @@ function pushPromptStorageKey(uid: string, reason: PushPromptReason) {
 
 function wasPushPromptedRecently(uid: string, reason: PushPromptReason) {
   const promptedAt = Number.parseInt(localStorage.getItem(pushPromptStorageKey(uid, reason)) || '0', 10);
-  return Number.isFinite(promptedAt) && Date.now() - promptedAt < PUSH_PROMPT_COOLDOWN_MS;
+  const cooldown = reason === 'repair' ? PUSH_REPAIR_PROMPT_COOLDOWN_MS : PUSH_PROMPT_COOLDOWN_MS;
+  return Number.isFinite(promptedAt) && Date.now() - promptedAt < cooldown;
 }
 
 function markPushPromptSeen(uid: string, reason: PushPromptReason) {
@@ -42,6 +45,7 @@ export function usePushPermissionPrompt() {
   const open = ref(false);
   const mode = ref<PushPermissionPromptMode>('permission');
   let checkSerial = 0;
+  let lastCheckedAt = 0;
 
   function dismiss() {
     const uid = user.value?.uid;
@@ -61,6 +65,7 @@ export function usePushPermissionPrompt() {
   async function check(uid: string) {
     const currentCheck = ++checkSerial;
     await refreshPushPreference();
+    lastCheckedAt = Date.now();
     if (currentCheck !== checkSerial || user.value?.uid !== uid || !supported.value) return;
     if (
       requiresPwaInstall.value
@@ -104,6 +109,7 @@ export function usePushPermissionPrompt() {
   useAppResume(() => {
     const uid = user.value?.uid ?? '';
     if (!uid || open.value) return;
+    if (Date.now() - lastCheckedAt < PUSH_PREFERENCE_REFRESH_MS) return;
     return check(uid);
   });
 

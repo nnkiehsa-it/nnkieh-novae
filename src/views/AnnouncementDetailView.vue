@@ -308,6 +308,16 @@ watch(
     if (!announcementId) return;
 
     realtimeUnsubscribe = subscribeContentRealtimeEvents(`announcement-detail:${announcementId}`, (event) => {
+      if (event.eventType === 'announcement_metrics_changed' && event.targetId === announcementId) {
+        if (announcement.value) {
+          announcement.value = {
+            ...announcement.value,
+            comment_count: event.commentCount ?? announcement.value.comment_count,
+            like_count: event.likeCount ?? announcement.value.like_count,
+          };
+        }
+        return;
+      }
       if (event.eventType !== 'announcement_changed') return;
       if (event.targetId !== announcementId) return;
       scheduleRealtimeRefresh();

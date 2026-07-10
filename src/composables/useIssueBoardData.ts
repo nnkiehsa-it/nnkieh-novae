@@ -252,6 +252,18 @@ export function useIssueBoardData() {
       realtimeUnsubscribe = subscribeContentRealtimeEvents(
         `issues:${uid}:${activeFilter.value}:${statusTab.value}`,
         (event) => {
+          if (event.eventType === 'issue_support_changed') {
+            if (activeFilter.value === 'my-proposals') {
+              scheduleRealtimeRefresh();
+              return;
+            }
+            if (event.category !== activeFilter.value || event.supportCount === null) return;
+            patchCachedIssues(event.targetId, (issue) => ({
+              ...issue,
+              support_count: event.supportCount ?? issue.support_count,
+            }));
+            return;
+          }
           if (event.eventType !== 'issue_changed') return;
           if (activeFilter.value !== 'my-proposals' && event.category !== activeFilter.value) return;
           scheduleRealtimeRefresh();

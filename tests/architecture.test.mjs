@@ -34,13 +34,27 @@ test('frontend keeps Firebase limited to Auth, App Check, and FCM', async () => 
   assert.doesNotMatch(firebaseRuntime, /VITE_ADMIN_EMAILS|VITE_FIREBASE_STORAGE_BUCKET|VITE_FIREBASE_FUNCTIONS_REGION/u);
 });
 
+test('runtime fonts are local compressed subsets', async () => {
+  const style = await read('src/style.css');
+
+  assert.match(style, /inter-latin-400-700\.woff2/u);
+  assert.match(style, /jetbrains-mono-latin-400-600\.woff2/u);
+  assert.match(style, /material-symbols-outlined-500\.woff2/u);
+  assert.doesNotMatch(style, /fonts\.googleapis|fonts\.gstatic|\.ttf/u);
+});
+
 test('Vercel deployment config is hosting-only', async () => {
   const vercelJson = await read('vercel.json');
+  const vercelConfig = JSON.parse(vercelJson);
   const hostingWorkflow = await read('.github/workflows/deploy-frontend.yml');
   const prWorkflow = await read('.github/workflows/verify-pr.yml');
 
   assert.match(vercelJson, /"headers"/u);
   assert.match(vercelJson, /"rewrites"/u);
+  assert.match(vercelJson, /script-src 'self' https:\/\/www\.google\.com\/recaptcha\/ https:\/\/www\.gstatic\.com\/recaptcha\//u);
+  const globalHeaders = vercelConfig.headers.find((entry) => entry.source === '/(.*)')?.headers ?? [];
+  assert.equal(globalHeaders.some((header) => header.key.toLowerCase() === 'cache-control'), false);
+  assert.match(vercelJson, /\/assets\/\(\.\*\)[\s\S]*max-age=31536000, immutable/u);
   assert.match(hostingWorkflow, /npx -y vercel/u);
   assert.match(hostingWorkflow, /VITE_SUPABASE_URL/u);
   assert.match(hostingWorkflow, /VITE_SUPABASE_PUBLISHABLE_KEY/u);
@@ -235,7 +249,7 @@ test('backendAction registry owns action metadata and frontend action names', as
     );
     assert.match(
       rateLimit,
-      new RegExp(`definition\\.rateLimitGroup === "${rateLimitGroup}"`, 'u'),
+      new RegExp(`case "${rateLimitGroup}":`, 'u'),
       `${actionName} uses an unknown rate limit group`,
     );
   }
@@ -270,7 +284,17 @@ test('outbox, webhooks, FCM, and Notion deletion marks are guarded', async () =>
   assert.match(outboxWorker, /requireMethod\(request, "POST"\)/u);
   assert.match(outboxWorker, /errorMessage/u);
   assert.match(outboxWorker, /claim_outbox_events/u);
-  assert.match(outboxWorker, /batch_size: 100/u);
+  assert.match(outboxWorker, /batch_size: 10/u);
+  assert.match(deletionJobs, /batch_size: 10/u);
+  const usageHardening = await read('supabase/migrations/202607100004_security_usage_hardening.sql');
+  assert.match(usageHardening, /current_setting\('app\.outbox_worker_signaled', true\)/u);
+  assert.match(usageHardening, /current_setting\('app\.deletion_worker_signaled', true\)/u);
+  assert.match(usageHardening, /set_config\('app\.deletion_worker_signaled', '1', true\)/u);
+  assert.match(usageHardening, /create or replace function app_api\.resignal_background_worker/u);
+  assert.match(usageHardening, /jobname = 'srp_retry_background_workers'/u);
+  assert.match(usageHardening, /'\* \* \* \* \*'/u);
+  assert.match(outboxWorker, /rpc\("resignal_background_worker", \{ worker_name: "outbox" \}\)/u);
+  assert.match(deletionJobs, /rpc\("resignal_background_worker", \{ worker_name: "deletion" \}\)/u);
   assert.match(outboxWorker, /sendFcmMessage/u);
   assert.match(outboxWorker, /push_delivery_logs/u);
   assert.match(outboxWorker, /push_comments_enabled/u);
@@ -406,12 +430,16 @@ test('content writes validate markdown uploads before database writes', async ()
   const issueComments = await read('supabase/functions/backendAction/issue-comments.ts');
   const announcementWrite = await read('supabase/functions/backendAction/announcement-write.ts');
   const announcementComments = await read('supabase/functions/backendAction/announcement-comments.ts');
+  const hardeningMigration = await read('supabase/migrations/202607100004_security_usage_hardening.sql');
 
   assert.match(uploads, /function extractMarkdownUploadIds/u);
   assert.match(uploads, /export async function validateMarkdownUploadsBeforeCreate/u);
   assert.match(uploads, /export async function validateMarkdownUploadsBeforeUpdate/u);
-  assert.match(uploads, /targetId\s+\?\s+\(!upload\.attached_target_id/u);
-  assert.match(uploads, /:\s*!upload\.attached_target_id/u);
+  assert.match(uploads, /upload\.attached_target_type === targetType && upload\.attached_target_id === targetId/u);
+  assert.match(uploads, /upload\.owner_uid === ownerUid && !upload\.attached_target_id/u);
+  assert.match(hardeningMigration, /create trigger attach_issue_markdown_uploads/u);
+  assert.match(hardeningMigration, /target_type_name = 'announcement' or owner_uid = new\.author_uid/u);
+  assert.match(hardeningMigration, /revoke all on function app_private\.emit_content_realtime_event[\s\S]*from public, anon, authenticated/u);
   assert.ok(
     issueCreate.indexOf('validateMarkdownUploadsBeforeCreate') < issueCreate.indexOf('rpc("backend_create_issue"'),
     'issue creation must validate upload attachments before creating the issue',
@@ -514,7 +542,10 @@ test('notification realtime subscriptions are shared and collision-resistant', a
 
   assert.match(notificationsComposable, /let initialized = false/u);
   assert.match(notificationsComposable, /ensureNotificationsInitialized/u);
-  assert.match(notificationsComposable, /registerAppResumeHandler\(startSubscriptions\)/u);
+  assert.match(notificationsComposable, /registerAppResumeHandler\(reconnectNotificationsAfterResume\)/u);
+  assert.match(notificationsComposable, /NOTIFICATION_RESUME_RECONNECT_MS = 10 \* 60_000/u);
+  assert.match(notificationsComposable, /fetchNotificationSnapshot\(activeSources\.value, uid\)/u);
+  assert.doesNotMatch(notificationsComposable, /setInterval/u);
   assert.doesNotMatch(notificationsComposable, /onScopeDispose\(clearSubscriptions\)/u);
   assert.match(notificationsService, /let realtimeChannelSerial = 0/u);
   assert.match(notificationsService, /channelName = `notifications:\$\{source\}:\$\{uid\}:\$\{realtimeChannelSerial \+= 1\}`/u);
@@ -528,6 +559,19 @@ test('notification realtime subscriptions are shared and collision-resistant', a
   assert.match(realtimeMigration, /where key = 'firebase_project_id'/u);
   assert.match(backendAuth, /key: "firebase_project_id"/u);
   assert.match(appResume, /export function registerAppResumeHandler/u);
+});
+
+test('app updates hand over the service worker with bounded reload recovery', async () => {
+  const appUpdate = await read('src/composables/useAppUpdate.ts');
+  const serviceWorker = await read('src/sw.ts');
+  const realtimeEvents = await read('src/services/realtime-events.ts');
+
+  assert.match(appUpdate, /SERVICE_WORKER_PREPARE_TIMEOUT_MS = 4_000/u);
+  assert.match(appUpdate, /waitForServiceWorkerTakeover/u);
+  assert.match(appUpdate, /registration\.waiting\?\.postMessage\(\{ type: 'SKIP_WAITING' \}\)/u);
+  assert.match(appUpdate, /RELOAD_RECOVERY_TIMEOUT_MS = 10_000/u);
+  assert.match(serviceWorker, /event\.data[\s\S]*SKIP_WAITING/u);
+  assert.match(realtimeEvents, /content-realtime:shared:\$\{realtimeChannelSerial \+= 1\}/u);
 });
 
 test('push notification registration recovers without overriding an explicit opt-out', async () => {

@@ -20,17 +20,7 @@ const NOTIFICATION_SOURCE_PAGE_SIZE = 10;
 let realtimeChannelSerial = 0;
 
 type NotificationCursor = { createdAtMs: number; id: string } | null;
-export type ContentUpdateKind = 'announcement' | 'issue';
-
-export interface ContentUpdateNotification {
-  actorUid: string | null;
-  category: IssueCategory | null;
-  createdAt: Date | null;
-  kind: ContentUpdateKind;
-  targetId: string;
-}
-
-interface NotificationSourcePage {
+export interface NotificationSourcePage {
   cursor: NotificationCursor;
   hasMore: boolean;
   notifications: NotificationRecord[];
@@ -146,64 +136,14 @@ function normalizeNotificationRecord(
   };
 }
 
-function normalizeContentUpdateNotification(data: Record<string, unknown>): ContentUpdateNotification | null {
-  const type = normalizeNotificationType(data.type);
-  if (type !== 'issue_created' && type !== 'announcement_created') return null;
-
-  const targetType = normalizeTargetType(data.target_type);
-  if (type === 'issue_created' && targetType !== 'issue') return null;
-  if (type === 'announcement_created' && targetType !== 'announcement') return null;
-
-  const targetId = String(data.target_id ?? '');
-  if (!targetId) return null;
-
-  return {
-    actorUid: normalizeNullableString(data.actor_uid),
-    category: isIssueCategory(data.issue_category) ? data.issue_category : null,
-    createdAt: normalizeDate(data.created_at),
-    kind: targetType,
-    targetId,
-  };
-}
-
-export function subscribeContentUpdateNotifications(
-  uid: string,
-  callback: (notification: ContentUpdateNotification) => void,
-) {
-  const client = getSupabaseClient();
-  const channelName = `content-updates:${uid}:${realtimeChannelSerial += 1}`;
-  const channel = client
-    .channel(channelName)
-    .on('postgres_changes', {
-      event: 'INSERT',
-      filter: 'source=eq.broadcast',
-      schema: 'app_private',
-      table: 'notifications',
-    }, (payload) => {
-      const notification = normalizeContentUpdateNotification(payload.new as Record<string, unknown>);
-      if (notification) callback(notification);
-    })
-    .subscribe();
-
-  return () => {
-    void client.removeChannel(channel);
-  };
-}
-
 export function subscribeNotificationSource(
   source: NotificationSource,
   uid: string,
-  callback: (page: NotificationSourcePage) => void,
   onInsert: (notification: NotificationRecord) => void,
   onError?: (error: Error) => void,
 ) {
   const client = getSupabaseClient();
   const channelName = `notifications:${source}:${uid}:${realtimeChannelSerial += 1}`;
-  const loadFirstPage = () => {
-    void fetchNotificationSourcePage(source, uid, null)
-      .then(callback)
-      .catch((error) => onError?.(toReadableBackendError(error)));
-  };
   const filter = source === "user" ? `recipient_uid=eq.${uid}` : `source=eq.${source}`;
   const channel = client
     .channel(channelName)
@@ -223,8 +163,6 @@ export function subscribeNotificationSource(
         onError?.(new Error('notification-realtime-unavailable'));
       }
     });
-  loadFirstPage();
-
   return () => {
     void client.removeChannel(channel);
   };
@@ -255,10 +193,11 @@ export function subscribeNotificationReadState(
   uid: string,
   callback: (state: NotificationReadState) => void,
   onError?: (error: Error) => void,
+  loadInitial = true,
 ) {
   const client = getSupabaseClient();
   const channelName = `notification-state:${uid}:${realtimeChannelSerial += 1}`;
-  const refresh = () => {
+  const loadInitialState = () => {
     void getNotificationReadState(uid)
       .then(callback)
       .catch((error) => onError?.(toReadableBackendError(error)));
@@ -270,13 +209,15 @@ export function subscribeNotificationReadState(
       filter: `uid=eq.${uid}`,
       schema: 'app_private',
       table: 'notification_states',
-    }, refresh)
+    }, (payload) => {
+      callback(normalizeNotificationReadState(payload.new as Record<string, unknown>));
+    })
     .subscribe((status) => {
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         onError?.(new Error('notification-state-realtime-unavailable'));
       }
     });
-  refresh();
+  if (loadInitial) loadInitialState();
 
   return () => {
     void client.removeChannel(channel);
@@ -288,7 +229,36 @@ async function getNotificationReadState(uid: string): Promise<NotificationReadSt
     timeoutMs: READ_REQUEST_TIMEOUT_MS,
   });
   const result = await fn({ uid });
-  const data = result.state;
+  return normalizeNotificationReadState(result.state);
+}
+
+export async function fetchNotificationSnapshot(
+  sources: NotificationSource[],
+  uid: string,
+) {
+  const fn = invokeBackendAction<
+    { sources: NotificationSource[]; uid: string },
+    { pages: Partial<Record<NotificationSource, Record<string, unknown>>>; state: Record<string, unknown> }
+  >('getNotificationSnapshot', { timeoutMs: READ_REQUEST_TIMEOUT_MS });
+  const result = await fn({ sources, uid });
+  return {
+    pages: Object.fromEntries(sources.map((source) => {
+      const page = result.pages[source] ?? {};
+      const notifications = Array.isArray(page.notifications) ? page.notifications : [];
+      return [source, {
+        cursor: normalizeNotificationCursor(page.cursor),
+        hasMore: page.hasMore === true,
+        notifications: notifications.map((notification) => normalizeNotificationRecord(
+          source,
+          notification as Record<string, unknown>,
+        )),
+      } satisfies NotificationSourcePage];
+    })) as Record<NotificationSource, NotificationSourcePage>,
+    state: normalizeNotificationReadState(result.state),
+  };
+}
+
+function normalizeNotificationReadState(data: Record<string, unknown>): NotificationReadState {
   return {
     admin: normalizeDate(data.admin_opened_at_ms ?? data.admin_opened_at),
     broadcast: normalizeDate(data.broadcast_opened_at_ms ?? data.broadcast_opened_at),

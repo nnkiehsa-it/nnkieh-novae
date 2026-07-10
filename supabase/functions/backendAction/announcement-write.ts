@@ -1,12 +1,9 @@
-import { asRecord, asString } from "../_shared/http.ts";
+import { asRecord } from "../_shared/http.ts";
 import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 import { claimFixedWindowRateLimit } from "../_shared/upstash-rate-limit.ts";
 import { requireAdmin } from "./auth.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
 import {
-  markMarkdownUploadsAttached,
-  queueAttachedUploadsForDeletion,
-  queueUploadIdsForDeletion,
   validateMarkdownUploadsBeforeCreate,
   validateMarkdownUploadsBeforeUpdate,
 } from "./uploads.ts";
@@ -26,7 +23,6 @@ async function createAnnouncement(payload: JsonRecord, auth: AuthContext, supaba
   });
   if (error) throw error;
   const announcement = asRecord(data);
-  await markMarkdownUploadsAttached(supabase, auth.uid, content, "announcement", asString(announcement.id));
   return { announcement };
 }
 
@@ -45,17 +41,6 @@ async function updateAnnouncement(payload: JsonRecord, auth: AuthContext, supaba
   if (error) throw error;
   const result = asRecord(data);
   const announcement = asRecord(result.announcement);
-  await markMarkdownUploadsAttached(supabase, auth.uid, content, "announcement", asString(announcement.id));
-  const retainedUploadIds = new Set(
-    [...content.matchAll(/srp-upload:\/\/([0-9a-fA-F-]{36})/gu)].map((match) => match[1]),
-  );
-  const previousUploadIds = Array.isArray(result.previous_upload_ids)
-    ? result.previous_upload_ids.map((id) => asString(id)).filter(Boolean)
-    : [];
-  const removedUploadIds = previousUploadIds.filter((id) => !retainedUploadIds.has(id));
-  if (removedUploadIds.length > 0) {
-    await queueUploadIdsForDeletion(supabase, removedUploadIds);
-  }
   return { announcement };
 }
 
@@ -63,21 +48,10 @@ async function deleteAnnouncement(payload: JsonRecord, auth: AuthContext, supaba
   requireAdmin(auth);
   const announcementId = asUuid(payload.announcementId);
   if (!announcementId) throw new Error("not-found");
-  const { data, error } = await supabase.schema("app_api").rpc("backend_delete_announcement", {
+  const { error } = await supabase.schema("app_api").rpc("backend_delete_announcement", {
     announcement_id: announcementId,
   });
   if (error) throw error;
-  const result = asRecord(data);
-  const uploadTargets = Array.isArray(result.upload_targets)
-    ? result.upload_targets.map((target) => {
-      const record = asRecord(target);
-      return {
-        id: asString(record.id),
-        type: asString(record.type) as "announcement" | "announcement_comment",
-      };
-    }).filter((target) => target.id && (target.type === "announcement" || target.type === "announcement_comment"))
-    : [{ id: announcementId, type: "announcement" as const }];
-  await queueAttachedUploadsForDeletion(supabase, uploadTargets);
   return { success: true };
 }
 

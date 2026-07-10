@@ -70,7 +70,7 @@ flowchart LR
 - RLS：保護提案、留言、通知、角色與私密作者資料。
 - Trigger / outbox：內容異動與副作用事件在同一交易中建立，降低同步漏失。
 - RPC：提供清理、維護、聚合統計與受控資料操作。
-- Realtime：通知使用共享訂閱與 recipient 過濾，避免跨使用者洩漏。
+- Realtime：通知使用共享訂閱與 recipient 過濾；內容事件依公開、作者或管理員受眾授權，並以計數增量更新避免重讀整頁。
 
 ## 圖片流程
 
@@ -86,12 +86,12 @@ flowchart LR
 
 ## 通知流程
 
-1. 提案、公告、留言、附議或狀態變更建立 outbox event。
+1. 提案、公告、留言、附議達標或狀態變更建立 outbox event；一般附議計數只走 Realtime，不逐次啟動背景同步。
 2. `outboxWorker` claim pending events。
 3. 依事件類型建立 App 內通知。
 4. 依使用者推播偏好送出 FCM Web Push。
 5. 同步 Notion 或建立外部清理工作。
-6. 成功、失敗與重試資訊回寫，供 Dashboard 觀察。
+6. 成功事件採短期保留或不落地；失敗只回寫追蹤碼，完整錯誤留在 Function logs 供 Dashboard 追查。
 
 ## 部署流程
 

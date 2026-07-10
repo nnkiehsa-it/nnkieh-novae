@@ -1,9 +1,9 @@
-import { asRecord, asString } from "../_shared/http.ts";
+import { asRecord } from "../_shared/http.ts";
 import { ISSUE_CATEGORIES } from "../_shared/issue-categories.ts";
 import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 import { claimFixedWindowRateLimit } from "../_shared/upstash-rate-limit.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
-import { markMarkdownUploadsAttached, queueAttachedUploadsForDeletion, validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
+import { validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
 import { asUuid, readCursor, readCursorDate, utcHourWindow } from "./utils.ts";
 import { INPUT_LIMITS, requiredText } from "./validation.ts";
 
@@ -25,22 +25,6 @@ function issueCommentPolicyParams(auth: AuthContext) {
     review_required_categories: REVIEW_REQUIRED_CATEGORIES,
     public_comment_categories: PUBLIC_COMMENT_CATEGORIES,
   };
-}
-
-function uploadTargetsFromResult(
-  data: unknown,
-  fallback: { id: string; type: "comment" },
-) {
-  const result = asRecord(data);
-  return Array.isArray(result.upload_targets)
-    ? result.upload_targets.map((target) => {
-      const record = asRecord(target);
-      return {
-        id: asString(record.id),
-        type: asString(record.type) as "comment",
-      };
-    }).filter((target) => target.id && target.type === "comment")
-    : [fallback];
 }
 
 async function listComments(payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {
@@ -73,21 +57,18 @@ async function createComment(payload: JsonRecord, auth: AuthContext, supabase: B
     ...issueCommentPolicyParams(auth),
   });
   if (error) throw error;
-  const comment = asRecord(data);
-  await markMarkdownUploadsAttached(supabase, auth.uid, content, "comment", asString(comment.id));
-  return { comment };
+  return { comment: asRecord(data) };
 }
 
 async function deleteComment(payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {
   const commentId = asUuid(payload.commentId);
   if (!commentId) return { success: true };
-  const { data, error } = await supabase.schema("app_api").rpc("backend_delete_issue_comment", {
+  const { error } = await supabase.schema("app_api").rpc("backend_delete_issue_comment", {
     comment_id: commentId,
     actor_uid: auth.uid,
     actor_is_admin: auth.isAdmin,
   });
   if (error) throw error;
-  await queueAttachedUploadsForDeletion(supabase, uploadTargetsFromResult(data, { id: commentId, type: "comment" }));
   return { success: true };
 }
 

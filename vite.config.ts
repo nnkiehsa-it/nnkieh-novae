@@ -41,7 +41,11 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const appTitle = env.VITE_APP_TITLE || '學生權益提案平台';
   const appShortName = env.VITE_APP_SHORT_NAME || 'SRP';
-  const appVersion = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const appVersion = env.VITE_APP_VERSION
+    || process.env.VERCEL_GIT_COMMIT_SHA
+    || process.env.GITHUB_SHA
+    || process.env.npm_package_version
+    || 'development';
 
   return {
     define: {

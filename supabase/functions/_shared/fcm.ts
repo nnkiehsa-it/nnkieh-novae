@@ -26,10 +26,8 @@ export class FcmSendError extends Error {
 export function isInvalidFcmTokenError(error: unknown) {
   if (!(error instanceof FcmSendError)) return false;
   const body = error.responseBody.toUpperCase();
-  return error.status === 404
-    || body.includes("UNREGISTERED")
-    || body.includes("NOT_FOUND")
-    || body.includes("INVALID_ARGUMENT");
+  return body.includes("UNREGISTERED")
+    || body.includes('"ERRORCODE":"UNREGISTERED"');
 }
 
 export async function sendFcmMessage(message: FcmMessage) {
@@ -47,6 +45,7 @@ export async function sendFcmMessage(message: FcmMessage) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ message }),
+      signal: AbortSignal.timeout(10_000),
     },
   );
 

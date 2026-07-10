@@ -498,6 +498,7 @@ interface AppApiFunctions {
   get_platform_dashboard_snapshot: AppFunction<Record<string, never>, Json>;
   backend_delete_issue: AppFunction<{ actor_is_admin: boolean; actor_uid: string; issue_id: string }, void>;
   release_idempotency_key: AppFunction<{ action_name: string; actor_uid: string; request_id: string }, void>;
+  resignal_background_worker: AppFunction<{ worker_name: string }, void>;
   run_maintenance_cleanup: AppFunction<{ valid_issue_categories?: string[] | null }, Json>;
 }
 

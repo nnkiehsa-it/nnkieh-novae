@@ -2,9 +2,9 @@ import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import type { Database } from "../_shared/database.ts";
 import { requireEnv } from "../_shared/env.ts";
 import { isInvalidFcmTokenError, sendFcmMessage } from "../_shared/fcm.ts";
-import { errorMessage, errorStatus, jsonResponse, operationalErrorSummary, publicError, requireMethod } from "../_shared/http.ts";
+import { errorMessage, errorStatus, jsonResponse, publicError, requireMethod } from "../_shared/http.ts";
 import { RATE_LIMITS } from "../_shared/rate-limits.ts";
-import { claimFixedWindowRateLimit, utcMinuteWindow, utcSecondWindow } from "../_shared/upstash-rate-limit.ts";
+import { claimFixedWindowRateLimits, utcMinuteWindow, utcSecondWindow } from "../_shared/upstash-rate-limit.ts";
 import {
   markNotionPageDeleted,
   syncAnnouncementCreatedToNotion,
@@ -363,6 +363,7 @@ async function sendPushes(
     if (adminUids.length === 0) return;
   }
   const tokens: Array<{ token: string; uid: string }> = [];
+  const seenTokens = new Set<string>();
   for (let offset = 0; ; offset += 200) {
     let query = supabase.schema("app_private").from("push_tokens")
       .select("uid,token").order("uid", { ascending: true }).order("device_id", { ascending: true })
@@ -373,7 +374,8 @@ async function sendPushes(
     if (error) throw error;
     for (const row of data ?? []) {
       const token = asString(row.token);
-      if (!token || tokens.some((existing) => existing.token === token)) continue;
+      if (!token || seenTokens.has(token)) continue;
+      seenTokens.add(token);
       tokens.push({ token, uid: asString(row.uid) });
     }
     if ((data ?? []).length < 200) break;
@@ -391,6 +393,7 @@ async function sendPushes(
     : `/issues/${encodeURIComponent(category || "public-issues")}/${encodeURIComponent(targetId)}${isComment ? `?tab=comments${commentQuery}` : ""}`;
   const recipientUids = [...new Set(tokens.map((row) => asString(row.uid)).filter(Boolean))];
   const preferences = new Map<string, { comments: boolean; issueUpdates: boolean }>();
+  let pushFailureTraceCode = "";
   if (recipientUids.length > 0) {
     const { data: states, error: stateError } = await supabase
       .schema("app_private")
@@ -433,29 +436,33 @@ async function sendPushes(
           tab,
         },
       });
-      await supabase.schema("app_private").from("push_delivery_logs").insert({
-        notification_type: notificationType,
-        status: "sent",
-        target_id: asString(notification.target_id),
-        target_type: asString(notification.target_type),
-        token_uid: uid,
-      });
     } catch (error) {
+      pushFailureTraceCode ||= crypto.randomUUID();
+      console.error(JSON.stringify({
+        error: errorMessage(error),
+        notificationType,
+        targetId,
+        targetType,
+        traceCode: pushFailureTraceCode,
+        uid,
+      }));
       if (isInvalidFcmTokenError(error)) {
         await supabase.schema("app_private").from("push_tokens").delete().eq("token", row.token);
       }
-      await supabase.schema("app_private").from("push_delivery_logs").insert({
-        error_message: operationalErrorSummary(error),
-        notification_type: notificationType,
-        status: "failed",
-        target_id: asString(notification.target_id),
-        target_type: asString(notification.target_type),
-        token_uid: uid,
-      });
     }
   };
   for (let offset = 0; offset < tokens.length; offset += 20) {
     await Promise.all(tokens.slice(offset, offset + 20).map(sendToken));
+  }
+  if (pushFailureTraceCode) {
+    await supabase.schema("app_private").from("push_delivery_logs").insert({
+      error_message: pushFailureTraceCode,
+      notification_type: notificationType,
+      status: "failed",
+      target_id: targetId,
+      target_type: targetType,
+      token_uid: "",
+    });
   }
 }
 
@@ -479,8 +486,14 @@ async function sendPushesWithoutBlockingOutbox(
   try {
     await sendPushes(supabase, notification);
   } catch (error) {
+    const traceCode = crypto.randomUUID();
+    console.error(JSON.stringify({
+      error: errorMessage(error),
+      notificationType: asString(notification.type),
+      traceCode,
+    }));
     await supabase.schema("app_private").from("push_delivery_logs").insert({
-      error_message: operationalErrorSummary(error),
+      error_message: traceCode,
       notification_type: asString(notification.type),
       status: "failed",
       target_id: asString(notification.target_id),
@@ -559,18 +572,10 @@ Deno.serve(async (request) => {
   if (authFailure) return authFailure;
 
   try {
-    await claimFixedWindowRateLimit(
-      "global",
-      "worker.outbox.second",
-      utcSecondWindow(),
-      RATE_LIMITS.workerRunSecond,
-    );
-    await claimFixedWindowRateLimit(
-      "global",
-      "worker.outbox",
-      utcMinuteWindow(),
-      RATE_LIMITS.workerRunMinute,
-    );
+    await claimFixedWindowRateLimits([
+      { identifier: "global", actionName: "worker.outbox.second", window: utcSecondWindow(), config: RATE_LIMITS.workerRunSecond },
+      { identifier: "global", actionName: "worker.outbox", window: utcMinuteWindow(), config: RATE_LIMITS.workerRunMinute },
+    ]);
     const supabase = createClient<Database>(
       requireEnv("SUPABASE_URL"),
       requireEnv("APP_SUPABASE_SERVICE_ROLE_KEY"),
@@ -578,7 +583,7 @@ Deno.serve(async (request) => {
     );
     const { data, error } = await supabase
       .schema("app_api")
-      .rpc("claim_outbox_events", { batch_size: 100 });
+      .rpc("claim_outbox_events", { batch_size: 10 });
     if (error) {
       throw error;
     }
@@ -592,6 +597,7 @@ Deno.serve(async (request) => {
           .rpc("complete_outbox_event", { event_id: event.id });
         if (completeError) throw completeError;
       } catch (error) {
+        const traceCode = crypto.randomUUID();
         console.error("outbox event failed", {
           event_id: event.id,
           event_type: event.event_type,
@@ -600,14 +606,22 @@ Deno.serve(async (request) => {
           target_id: event.target_id,
           target_type: event.target_type,
           error: errorMessage(error),
+          traceCode,
         });
         const { error: failError } = await supabase
           .schema("app_api")
           .rpc("fail_outbox_event", {
             event_id: event.id,
-            error_message: operationalErrorSummary(error),
+            error_message: traceCode,
           });
         if (failError) throw failError;
+      }
+    }
+    if (events.length === 10) {
+      const { error: resignalError } = await supabase.schema("app_api")
+        .rpc("resignal_background_worker", { worker_name: "outbox" });
+      if (resignalError) {
+        console.error("outbox backlog resignal failed", errorMessage(resignalError));
       }
     }
 

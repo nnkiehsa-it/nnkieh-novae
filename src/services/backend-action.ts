@@ -23,6 +23,35 @@ type BackendActionEnvelope<TResponse> =
   | BackendActionSuccessEnvelope<TResponse>
   | BackendActionErrorEnvelope;
 
+function operationStorageKey(name: BackendActionName, payload: Record<string, unknown>) {
+  const operationPayload = { ...payload };
+  delete operationPayload.requestId;
+  const source = `${name}:${JSON.stringify(operationPayload)}`;
+  let hash = 2166136261;
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `srp:pending-action:${name}:${(hash >>> 0).toString(36)}`;
+}
+
+function withStableRequestId<TRequest>(name: BackendActionName, payload: TRequest) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return { payload, storageKey: '' };
+  }
+  const record = payload as Record<string, unknown>;
+  if (typeof record.requestId !== 'string' || !record.requestId) {
+    return { payload, storageKey: '' };
+  }
+  const storageKey = operationStorageKey(name, record);
+  const requestId = sessionStorage.getItem(storageKey) || record.requestId;
+  sessionStorage.setItem(storageKey, requestId);
+  return {
+    payload: { ...record, requestId } as TRequest,
+    storageKey,
+  };
+}
+
 function formatEnvelopeError(envelope: BackendActionErrorEnvelope) {
   const message = envelope.error?.message?.trim() || '服務暫時無法處理請求，請稍後再試。';
   const requestId = envelope.requestId?.trim();
@@ -35,18 +64,20 @@ export function invokeBackendAction<TRequest = Record<string, unknown>, TRespons
 ) {
   const client = getSupabaseClient();
 
-  return (payload: TRequest): Promise<TResponse> => withRequestTimeout(
-    async () => {
+  return (initialPayload: TRequest): Promise<TResponse> => {
+    const stableOperation = withStableRequestId(name, initialPayload);
+    return withRequestTimeout(async (signal) => {
       const token = await auth?.currentUser?.getIdToken();
       if (!token) {
         throw new Error('請先登入後再操作。');
       }
 
       const result = await client.functions.invoke<BackendActionEnvelope<TResponse>>('backendAction', {
-        body: { action: name, payload },
+        body: { action: name, payload: stableOperation.payload },
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        signal,
       });
       if (result.error) {
         throw new Error(await readSupabaseFunctionError(result));
@@ -57,8 +88,10 @@ export function invokeBackendAction<TRequest = Record<string, unknown>, TRespons
       if (result.data.success !== true) {
         throw new Error(formatEnvelopeError(result.data));
       }
+      if (stableOperation.storageKey) sessionStorage.removeItem(stableOperation.storageKey);
       return result.data.data;
     },
     { label: name, signal: options.signal, timeoutMs: options.timeoutMs },
   );
+  };
 }

@@ -15,6 +15,7 @@ import { canReadIssue, selectIssue } from "./issue-shared.ts";
 import { issueIsPrivateToOwner, issueRequiresReview } from "../_shared/issue-categories.ts";
 
 const MARKDOWN_UPLOAD_ID_PATTERN = /srp-upload:\/\/([0-9a-fA-F-]{36})/gu;
+const MARKDOWN_IMAGE_SOURCE_PATTERN = /!\[[^\]]*\]\((\S+?)(?:\s+["'][^"']*["'])?\)/gu;
 const PRIVATE_URL_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
 const PRIVATE_URL_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 const PUBLIC_URL_CACHE_MS = 365 * 24 * 60 * 60 * 1000;
@@ -25,6 +26,13 @@ function extractMarkdownUploadIds(content: string) {
       .map((match) => match[1])
       .filter(Boolean),
   )];
+}
+
+function assertOnlyManagedMarkdownImages(content: string) {
+  const sources = [...content.matchAll(MARKDOWN_IMAGE_SOURCE_PATTERN)].map((match) => match[1]);
+  if (sources.some((source) => !source?.startsWith("srp-upload://"))) {
+    throw new Error("external-images-not-allowed");
+  }
 }
 
 async function assertMarkdownUploadsAttachable(
@@ -48,14 +56,13 @@ async function assertMarkdownUploadsAttachable(
     .in("id", uploadIds);
   if (attachableError) throw attachableError;
   const validIds = new Set((attachable ?? []).filter((upload) =>
-    upload.owner_uid === ownerUid
-    && (upload.status === "ready" || upload.status === "attached")
-    && (
-      targetId
-        ? (!upload.attached_target_id
-          || (upload.attached_target_type === targetType && upload.attached_target_id === targetId))
-        : !upload.attached_target_id
-    )
+    (upload.status === "ready" || upload.status === "attached")
+    && (targetId
+      ? (
+        (upload.attached_target_type === targetType && upload.attached_target_id === targetId)
+        || (upload.owner_uid === ownerUid && !upload.attached_target_id)
+      )
+      : upload.owner_uid === ownerUid && !upload.attached_target_id)
   ).map((upload) => upload.id));
   if (validIds.size !== uploadIds.length) throw new Error("upload-attachment-invalid");
 }
@@ -104,34 +111,13 @@ export function isUploadAction(action: string) {
     || action === "resolveUploadImageUrls";
 }
 
-export async function markMarkdownUploadsAttached(
-  supabase: BackendSupabase,
-  ownerUid: string,
-  content: string,
-  targetType: "announcement" | "announcement_comment" | "comment" | "issue",
-  targetId: string,
-) {
-  const uploadIds = extractMarkdownUploadIds(content);
-  await assertMarkdownUploadsAttachable(supabase, ownerUid, uploadIds, targetType, targetId);
-
-  const { error } = await supabase.schema("app_private").from("uploads").update({
-    attached_target_id: targetId,
-    attached_target_type: targetType,
-    status: "attached",
-    updated_at: new Date().toISOString(),
-  })
-    .eq("owner_uid", ownerUid)
-    .in("id", uploadIds)
-    .in("status", ["ready", "attached"]);
-  if (error) throw error;
-}
-
 export async function validateMarkdownUploadsBeforeCreate(
   supabase: BackendSupabase,
   ownerUid: string,
   content: string,
   targetType: "announcement" | "announcement_comment" | "comment" | "issue",
 ) {
+  assertOnlyManagedMarkdownImages(content);
   await assertMarkdownUploadsAttachable(
     supabase,
     ownerUid,
@@ -148,6 +134,7 @@ export async function validateMarkdownUploadsBeforeUpdate(
   targetType: "announcement" | "announcement_comment" | "comment" | "issue",
   targetId: string,
 ) {
+  assertOnlyManagedMarkdownImages(content);
   await assertMarkdownUploadsAttachable(
     supabase,
     ownerUid,
@@ -155,53 +142,6 @@ export async function validateMarkdownUploadsBeforeUpdate(
     targetType,
     targetId,
   );
-}
-
-export async function queueAttachedUploadsForDeletion(
-  supabase: BackendSupabase,
-  targets: Array<{ id: string; type: "announcement" | "announcement_comment" | "comment" | "issue" }>,
-) {
-  for (const target of targets) {
-    const { data, error } = await supabase.schema("app_private").from("uploads")
-      .select("id,cloudinary_public_id")
-      .eq("attached_target_type", target.type)
-      .eq("attached_target_id", target.id);
-    if (error) throw error;
-    if (!data?.length) continue;
-    const { error: jobError } = await supabase.schema("app_private").from("deletion_jobs").insert(
-      data.map((upload) => ({
-        target_type: "upload",
-        target_id: upload.id,
-        cloudinary_public_id: upload.cloudinary_public_id,
-      })),
-    );
-    if (jobError) throw jobError;
-    const { error: deleteError } = await supabase.schema("app_private").from("uploads")
-      .delete().in("id", data.map((upload) => upload.id));
-    if (deleteError) throw deleteError;
-  }
-}
-
-export async function queueUploadIdsForDeletion(
-  supabase: BackendSupabase,
-  uploadIds: string[],
-) {
-  if (uploadIds.length === 0) return;
-  const { data, error } = await supabase.schema("app_private").from("uploads")
-    .select("id,cloudinary_public_id").in("id", uploadIds);
-  if (error) throw error;
-  if (!data?.length) return;
-  const { error: jobError } = await supabase.schema("app_private").from("deletion_jobs").insert(
-    data.map((upload) => ({
-      target_type: "upload",
-      target_id: upload.id,
-      cloudinary_public_id: upload.cloudinary_public_id,
-    })),
-  );
-  if (jobError) throw jobError;
-  const { error: deleteError } = await supabase.schema("app_private").from("uploads")
-    .delete().in("id", data.map((upload) => upload.id));
-  if (deleteError) throw deleteError;
 }
 
 export async function handleUploadAction(

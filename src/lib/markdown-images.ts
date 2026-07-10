@@ -18,11 +18,13 @@ function parseAlt(rawAlt: string) {
 }
 
 export function extractMarkdownImages(content: string): MarkdownImageRecord[] {
-  return Array.from(content.matchAll(markdownImagePattern)).map((match) => ({
-    src: match[2],
-    uploadId: getUploadIdFromUri(match[2] ?? '') ?? undefined,
-    ...parseAlt(match[1] ?? ''),
-  }));
+  return Array.from(content.matchAll(markdownImagePattern))
+    .filter((match) => Boolean(getUploadIdFromUri(match[2] ?? '')))
+    .map((match) => ({
+      src: match[2],
+      uploadId: getUploadIdFromUri(match[2] ?? '') ?? undefined,
+      ...parseAlt(match[1] ?? ''),
+    }));
 }
 
 export function stripMarkdownImages(content: string): string {

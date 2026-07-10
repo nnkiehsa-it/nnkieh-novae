@@ -11,6 +11,7 @@ let lastCheckedAt = 0;
 let listenersRegistered = false;
 
 const APP_RELOAD_TIMEOUT_MS = 5_000;
+const SERVICE_WORKER_PREPARE_TIMEOUT_MS = 4_000;
 const RELOAD_NAVIGATION_RETRY_MS = 4_000;
 const RELOAD_RECOVERY_TIMEOUT_MS = 10_000;
 const MAX_AUTO_RELOAD_ATTEMPTS = 3;
@@ -54,9 +55,9 @@ function shouldCheckAfterResume() {
   return Date.now() - lastCheckedAt >= 5 * 60_000;
 }
 
-async function updateServiceWorker() {
+async function updateServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (!('serviceWorker' in navigator)) {
-    return;
+    return null;
   }
 
   try {
@@ -75,8 +76,50 @@ async function updateServiceWorker() {
       label: 'Service Worker 更新',
       timeoutMs: APP_RELOAD_TIMEOUT_MS,
     });
+    return registration;
   } catch {
-    return;
+    return null;
+  }
+}
+
+async function waitForServiceWorkerTakeover(registration: ServiceWorkerRegistration, signal: AbortSignal) {
+  const candidate = registration.waiting ?? registration.installing;
+  if (!candidate) return;
+
+  await new Promise<void>((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      candidate.removeEventListener('statechange', handleStateChange);
+      navigator.serviceWorker.removeEventListener('controllerchange', finish);
+      signal.removeEventListener('abort', finish);
+      resolve();
+    };
+    const handleStateChange = () => {
+      if (candidate.state === 'activated' || candidate.state === 'redundant') finish();
+    };
+
+    candidate.addEventListener('statechange', handleStateChange);
+    navigator.serviceWorker.addEventListener('controllerchange', finish, { once: true });
+    signal.addEventListener('abort', finish, { once: true });
+    registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
+    handleStateChange();
+  });
+}
+
+async function prepareServiceWorkerForReload() {
+  try {
+    await withRequestTimeout(async (signal) => {
+      const registration = await updateServiceWorker();
+      if (!registration || signal.aborted) return;
+      await waitForServiceWorkerTakeover(registration, signal);
+    }, {
+      label: '新版 App 準備',
+      timeoutMs: SERVICE_WORKER_PREPARE_TIMEOUT_MS,
+    });
+  } catch {
+    // Navigation still proceeds. The reload watchdog keeps this path bounded.
   }
 }
 
@@ -163,6 +206,9 @@ export function useAppUpdate() {
 
     if (remoteVersion.value) {
       localStorage.setItem(PENDING_UPDATE_VERSION_STORAGE_KEY, remoteVersion.value);
+    }
+    if ((options.reason ?? 'update') === 'update') {
+      await prepareServiceWorkerForReload();
     }
     let reloadTimeout = 0;
     await Promise.race([

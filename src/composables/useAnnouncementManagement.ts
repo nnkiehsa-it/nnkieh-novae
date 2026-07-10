@@ -189,6 +189,14 @@ export function useAnnouncementManagement() {
       if (!ready || !allowed || waitingForRole) return;
 
       realtimeUnsubscribe = subscribeContentRealtimeEvents(`announcements:${sortOption.value}`, (event) => {
+        if (event.eventType === 'announcement_metrics_changed') {
+          patchAnnouncement(event.targetId, (announcement) => ({
+            ...announcement,
+            comment_count: event.commentCount ?? announcement.comment_count,
+            like_count: event.likeCount ?? announcement.like_count,
+          }));
+          return;
+        }
         if (event.eventType !== 'announcement_changed') return;
         scheduleRealtimeRefresh();
       });

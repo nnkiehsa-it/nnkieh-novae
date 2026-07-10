@@ -43,11 +43,15 @@ jobs:
         run: npm ci --prefer-offline
 
       - name: Verify backend architecture
-        run: npm run test:architecture
+        run: |
+          npm run generate:all
+          git diff --exit-code
+          npm run check:edge
+          npm run test:architecture
 
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.109.0
 
       - name: Validate Supabase deployment secrets
         env:

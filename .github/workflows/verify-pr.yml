@@ -49,6 +49,12 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
+      - name: Check unused declarations
+        run: npm run check:unused
+
+      - name: Verify generated configuration is committed
+        run: git diff --exit-code
+
       - name: Lint
         run: npm run lint
 
@@ -57,6 +63,9 @@ jobs:
 
       - name: Architecture regression tests
         run: npm run test:architecture
+
+      - name: Check Edge Functions
+        run: npm run check:edge
 
       - name: Audit frontend dependencies
         run: npm audit --audit-level=moderate

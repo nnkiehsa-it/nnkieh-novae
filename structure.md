@@ -25,7 +25,7 @@
 - package-lock.json：套件版本鎖定檔。
 - index.html：Vite 入口 HTML，掛載 Vue App，載入 favicon / PWA meta，並由 Vite env 注入標題。
 - eslint.config.js：ESLint 規則與 Vue / TypeScript 的 lint 設定。
-- vercel.json：Vercel 前端部署設定，包含靜態資源快取規則（assets 長快取、sw.js 不快取）與 SPA fallback rewrite。
+- vercel.json：Vercel 前端部署設定，包含靜態資源快取、安全回應標頭與 SPA fallback rewrite。
 - supabase/config.toml：Supabase 本機與部署設定，暴露 Supabase 預設 schema、`app_api` 與供 service role Edge Functions 使用的 `app_private` schema，並設定登入同步、Cloudinary webhook、outbox worker、刪除工作與維護清理 Edge Functions 的 JWT 驗證模式。
 - .env.example：本機與部署環境變數範本，包含 App 名稱、短名稱、Firebase Auth / FCM public config、Supabase public config 與選配 App Check 開關 / site key。
 - .gitignore：Git 忽略規則。
@@ -52,7 +52,7 @@
 - supabase/migrations/202607060002_cleanup_removed_issue_categories.sql：讓維護清理可依目前有效提案分類刪除已移除分類的資料庫提案與留言，排程清理相關 Cloudinary 圖片，並保留 Notion 備份頁面且標記為已刪除。
 - supabase/migrations/202607070001_nested_comments_and_issue_results.sql：新增提案結果欄位、提案與公告一層留言回覆關聯、父留言驗證與回覆查詢索引，並將既有管理員留言遷移為提案結果。
 - supabase/migrations/202607070002_issue_review_approved_at.sql：新增需審核提案的審核通過時間欄位，供附議期限與前端時間顯示使用。
-- supabase/migrations/202607080001_content_realtime_events.sql：新增提案、公告、留言、附議與讚數的安全 Realtime 事件表、觸發器與 publication，前端只收到目標 id 後再走受控讀取。
+- supabase/migrations/202607080001_content_realtime_events.sql：新增提案、公告、留言、附議與讚數的 Realtime 事件表、觸發器與 publication；後續 migration 再補上依內容可見範圍的事件授權。
 - supabase/migrations/202607080002_backend_issue_read_rpc.sql：新增 service role 專用提案讀取 RPC，依目前登入者、管理員狀態與分類政策回傳列表、搜尋、我的提案與詳情 view model，集中處理作者可見性、本人/管理權限與附議狀態。
 - supabase/migrations/202607080003_backend_announcement_rpc.sql：新增 service role 專用公告 RPC，集中處理公告列表、詳情、建立、更新、刪除與按讚狀態回傳。
 - supabase/migrations/202607080004_backend_comments_rpc.sql：新增 service role 專用留言 RPC，集中處理提案留言與公告留言的分頁、回覆驗證、建立、刪除與圖片清理目標回傳。
@@ -76,6 +76,7 @@
 - supabase/migrations/202607100001_notification_comment_targets.sql：補齊通知對應留言目標欄位，讓提案與公告留言通知可導向指定留言與回覆。
 - supabase/migrations/202607100002_drop_overloaded_issue_comment_rpc.sql：移除舊參數順序的提案留言建立資料庫函式，避免後端建立留言時因同名函式多載產生解析歧義。
 - supabase/migrations/202607100003_fix_delete_announcement_ambiguity.sql：修正刪除公告的資料庫 RPC 函數中的欄位名稱歧義，確保公告刪除流程運作正常。
+- supabase/migrations/202607100004_security_usage_hardening.sql：讓 Markdown 圖片綁定與內容寫入保持同一交易，依內容可見範圍限制 Realtime 事件，合併同交易的 worker 喚醒並只在有到期工作時續跑、限制背景工作重試次數，並只保留失敗追蹤碼以降低維運資料量。
 - supabase/functions/backendAction/index.ts：前端受控 action HTTP 入口，集中 CORS、Firebase 驗證、使用者角色查詢、healthcheck、統一 API envelope、入口限流、action 分派與冪等保護，不直接承載各領域資料流程。
 - supabase/functions/backendAction/action-registry.ts：受控 action metadata 來源，集中 action 名稱、domain、handler、限流分級、冪等與 requestId 要求，供 gateway 與架構測試防止清單分散。
 - supabase/functions/backendAction/response.ts：受控 action 統一成功 / 錯誤 envelope helper，保留 requestId、錯誤代碼、公開錯誤訊息與 HTTP 狀態。
@@ -85,7 +86,7 @@
 - supabase/functions/backendAction/validation.ts：受控 action 共用標題、正文、留言、搜尋與審核原因長度驗證。
 - supabase/functions/backendAction/auth.ts：管理員權限檢查與目前使用者角色回應。
 - supabase/functions/backendAction/users.ts：使用者登入紀錄、Cloudinary 頭像快取、舊版頭像清理排程與批次讀取 action。
-- supabase/functions/backendAction/uploads.ts：Cloudinary 上傳 session、上傳完成確認、Markdown 圖片附加標記、圖片 URL 解析與外部圖片清理 action。
+- supabase/functions/backendAction/uploads.ts：Cloudinary 上傳 session、上傳完成確認、Markdown 圖片來源與歸屬預檢、圖片 URL 解析及手動圖片清理 action；內容圖片的交易綁定與刪除排程由資料庫 trigger 負責。
 - supabase/functions/backendAction/issue-shared.ts：提案讀取權限、作者欄位清洗、提案/留言回應正規化與單筆提案查詢 helper。
 - supabase/functions/backendAction/issues.ts：提案 action 分派器，依 read / write / comments 子模組處理。
 - supabase/functions/backendAction/issue-read.ts：提案讀取 action 的 RPC 呼叫邊界，負責驗證分類、分頁 cursor、搜尋文字與傳入分類政策參數；提案列表、搜尋、我的提案與詳情資料由資料庫 view model 回傳。
@@ -99,11 +100,11 @@
 - supabase/functions/backendAction/announcement-read.ts：公告讀取 action 的 RPC 呼叫邊界，負責排序 cursor 與單筆公告讀取參數正規化。
 - supabase/functions/backendAction/announcement-write.ts：公告寫入 action 的 RPC 呼叫邊界，保留管理員檢查、按讚限流與圖片附加/清理流程，公告資料建立、更新、刪除與按讚由資料庫 RPC 處理。
 - supabase/functions/backendAction/announcement-comments.ts：公告留言 action 的 RPC 呼叫邊界，保留留言新增限流與圖片附加/清理流程，留言分頁、回覆驗證、建立與刪除由資料庫 RPC 處理。
-- supabase/functions/backendAction/notifications.ts：通知 action 的 RPC 呼叫邊界，保留推播 token 寫入限流與 payload 長度驗證，通知分頁、閱讀狀態、Web Push token 與分類推播偏好由資料庫 RPC 處理。
+- supabase/functions/backendAction/notifications.ts：通知 action 的 RPC 呼叫邊界，將通知首頁與閱讀狀態合併為單次 snapshot，並處理分頁、推播 token 限流及分類偏好。
 - supabase/functions/backendAction/dashboard.ts：管理員統計資料、同步/通知/推播/清理異常、最近維護排程結果彙整與分類使用概況。
 - supabase/functions/syncUser/index.ts：Firebase 登入後同步使用者 custom claim 與 Supabase app role 的 Edge Function，依 ADMIN_EMAILS 將使用者角色寫入 user_roles，與受控 action 共用登入資格驗證。
 - supabase/functions/cloudinaryWebhook/index.ts：Cloudinary 上傳完成 webhook，限制 POST、驗證簽章、套用入口限流並安全解析 payload 後將 pending upload 轉為 ready。
-- supabase/functions/outboxWorker/index.ts：Outbox worker wake-up endpoint，限制 POST、驗證 secret 並套用入口限流後批次 claim pending events，依固定事件規格建立廣播、管理員或作者通知，依收件人與推播偏好送出 FCM 並記錄送達結果，同步 Notion 狀態、留言、附議數、提案結果、時間欄位與刪除標記。
+- supabase/functions/outboxWorker/index.ts：Outbox worker wake-up endpoint，使用有界批次與重試處理通知及 Notion 同步；推播只聚合記錄失敗追蹤碼，不保存逐裝置成功紀錄。
 - supabase/functions/processDeletionJobs/index.ts：外部資源刪除工作入口，限制 POST、驗證 secret 並套用入口限流後處理 Cloudinary / Notion 清理，保留失敗的可重試 metadata。
 - supabase/functions/maintenanceCleanup/index.ts：維護清理手動入口，限制 POST、驗證 secret 並套用入口限流後呼叫資料庫清理 RPC；日常清理由 Supabase cron 直接執行同一 RPC。
 - supabase/functions/_shared/env.ts：Edge Functions 環境變數讀取 helper。
@@ -116,7 +117,7 @@
 - supabase/functions/_shared/fcm.ts：FCM HTTP v1 發送 helper，不依賴 Node Firebase Admin SDK。
 - supabase/functions/_shared/notion.ts：Notion 同步 helper，以中文欄位寫入提案與公告資料、管理受控正文區塊、提案狀態 / 附議 / 結果與時間欄位同步、將 Cloudinary 圖片上傳為 Notion 檔案，並在刪除時只標記頁面狀態。
 - supabase/functions/_shared/rate-limits.ts：由 rate limit config 產生的 Edge Functions 限流常數，供受控 action 套用提案、留言與圖片上傳頻率限制。
-- supabase/functions/_shared/upstash-rate-limit.ts：Upstash Redis REST 固定時間窗限流 helper，集中計數 key、TTL、UTC 秒 / 分鐘 / 小時視窗與服務不可用錯誤處理。
+- supabase/functions/_shared/upstash-rate-limit.ts：Upstash Redis REST 固定時間窗限流 helper，以單次 pipeline 合併同一入口的秒級與長時間窗計數。
 - supabase/functions/_shared/webhook.ts：Supabase / Cloudinary webhook shared secret 與簽章驗證 helper。
 
 ---
@@ -124,7 +125,7 @@
 
 - src/main.ts：Vue App 入口，初始化全域 resume、PWA 更新與 session 後掛載 router。
 - src/App.vue：最上層殼，啟動期間先顯示 AppStartupScreen，準備完成後將頁面內容包進 AppShell，並掛載 App 安裝 / 瀏覽器引導對話框。
-- src/sw.ts：PWA service worker，navigation 使用五秒 NetworkFirst 並在離線時 fallback precached index.html；Auth、版本檢查使用 NetworkOnly，哈希 JS/CSS、WebP encoder WASM、圖示與 Cloudinary 圖片使用一年期 CacheFirst，外部字型 CSS 使用 StaleWhileRevalidate、字型檔使用一年期 CacheFirst，並保留 FCM Web Push 背景通知與通知點擊導回頁面。
+- src/sw.ts：PWA service worker，navigation 使用五秒 NetworkFirst 並在離線時 fallback precached index.html；Auth、版本檢查使用 NetworkOnly，哈希 JS/CSS、WebP encoder WASM、圖示與 Cloudinary 圖片使用一年期 CacheFirst，並支援受控 skip-waiting、FCM Web Push 背景通知與通知點擊導回頁面。
 - src/router/index.ts：Vue Router 組合入口，掛載登入、提案、公告與管理員 route modules，切換路由前 abort 上一頁 request scope，並等待 session ready 後處理登入 / 管理員 redirect。
 - src/router/authRoutes.ts：登入頁路由設定，支援 `/login` 與受保護頁面 redirect 回跳。
 - src/router/issueRoutes.ts：提案看板路由設定，將 `/` 與 `/issues` 導向預設提案分類，並驗證 `/issues/:filter` 與 `/issues/:filter/:issueId`；頁面元件以 lazy import 載入以降低初始 bundle。
@@ -133,12 +134,13 @@
 - src/router/adminRoutes.ts：管理員統計頁路由設定，Dashboard 頁面 lazy import。
 - src/views/LoginView.vue：登入頁視圖，沿用平台登入面板並交由 router redirect 在登入後回到原目標頁。
 - src/views/IssueBoardView.vue：提案看板路由視圖；session 恢復期間先顯示提案骨架，已登入則以滿高容器掛載看板，讓列表區獨立捲動。
-- src/views/IssueDetailView.vue：提案詳情子頁視圖，依路由讀取單筆提案，提供左上返回提案列表、分享、附議、刪除、提案結果編輯與留言區；提案與附議數變動由 Realtime 事件觸發重讀。
+- src/views/IssueDetailView.vue：提案詳情子頁視圖，依路由讀取單筆提案，提供左上返回提案列表、分享、附議、刪除、提案結果編輯與留言區；附議數由 Realtime 增量更新，其他提案異動再重讀。
 - src/views/DashboardView.vue：管理員維運工作台，使用 `usePlatformDashboard` 與 `useDashboardMetrics` 呈現系統狀態、Notion 待同步、同步異常、維護排程、平台成果與分類使用概況；成功畫面不提供手動重新整理，空狀態與錯誤狀態使用共用 EmptyStatePanel。
 - src/views/AnnouncementsView.vue：公告頁視圖，使用 `useAnnouncementManagement` 與 AnnouncementControls 組合公告列表排序、Realtime 更新、底部自動載入更多、空狀態、公告骨架載入、管理員編輯對話框與刪除確認；列表列點擊導向公告詳情子頁。
-- src/views/AnnouncementDetailView.vue：公告詳情子頁視圖，依路由讀取單則公告，提供左上返回公告列表、分享、按讚、管理員編輯刪除與留言區；公告、讚數與留言數變動由 Realtime 事件觸發重讀。
+- src/views/AnnouncementDetailView.vue：公告詳情子頁視圖，依路由讀取單則公告，提供左上返回公告列表、分享、按讚、管理員編輯刪除與留言區；讚與留言數由 Realtime 增量更新，其他公告異動再重讀。
 - src/views/ChangelogView.vue：更新紀錄時間軸視圖，讀取靜態 changelog entries，於頁首顯示累計更新次數，並呈現左側串接圓點與垂直線、右側標題、版本號、日期時間與純文字 bullet；未登入與無資料使用共用 EmptyStatePanel。
 - src/style.css：全域樣式與目前實際使用的共用 UI class 定義，包含避免低於 12px 的輔助文字、14–16px 正文排版層級、所有 button / link 與共用 pressable / content-trigger / nav-item 的手機按壓回饋、focus-ring、按鈕/欄位/選單/分段控制樣式、行動裝置 tap highlight 禁用，以及依 micro / panel 節奏統一的 popover、notification 與 dialog 轉場。
+- src/assets/fonts/：本地託管的 Inter、JetBrains Mono 可變 WOFF2 與應用程式使用的 Material Symbols 圖示子集及授權說明，避免首次載入依賴第三方字型服務並控制資產大小。
 
 ---
 
@@ -226,10 +228,10 @@
 - src/composables/useIssueBoardPagination.ts：看板全域模式分頁 helper，處理搜尋與我的提案在前端分頁時的目前頁、總頁數與顯示清單。
 - src/composables/useUserIssuesData.ts：我的提案讀取 helper，以一次性讀取封裝私有公共提案與一般提案合併、依螢幕高度分段顯示、載入狀態與支援狀態更新。
 - src/composables/useIssueRouteFilter.ts：提案路由分類同步 helper，將 `/issues/:filter` 與 `/issues/:filter/:issueId` 轉成全域 activeFilter。
-- src/composables/useIssueRouteDetail.ts：提案 id 路由詳情 helper，支援列表資料預填後讀取單筆提案、Realtime 事件重讀，並處理無權限/不存在 toast、載入狀態與返回列表。
+- src/composables/useIssueRouteDetail.ts：提案 id 路由詳情 helper，支援列表資料預填後讀取單筆提案、Realtime 附議數增量與內容異動重讀，並處理無權限/不存在 toast、載入狀態與返回列表。
 - src/composables/useDocumentTitle.ts：文件標題同步 helper，依目前看板分類更新並在卸載時還原。
 - src/composables/useAppInstallPrompt.ts：PWA 安裝提示狀態管理，處理 standalone 判斷、beforeinstallprompt、iOS Safari 手動引導、in-app browser 優先權與 sessionStorage 關閉記錄。
-- src/composables/useAppUpdate.ts：手動註冊無快取 service worker，啟動時檢查一次 `version.json`，管理自動與強制更新提示，並在重新載入未完成時重試及恢復提示狀態。
+- src/composables/useAppUpdate.ts：手動註冊無快取 service worker，啟動時檢查一次 `version.json`，管理自動與強制更新提示；更新導頁前以有上限的等待讓新版 worker 接手，並在重新載入未完成時重試及恢復提示狀態。
 - src/composables/useTimedMessage.ts：短效訊息 helper，負責 toast 觸發訊息的逾時清空。
 - src/composables/useMinimumLoading.ts：讓提案分頁、公告與留言 skeleton 直接跟隨真實載入狀態，避免快取命中時保留額外等待。
 - src/composables/useLoadingTimeout.ts：監看頁面 loading，超過指定時間後切換到可重試的網路異常 fallback。
@@ -262,10 +264,10 @@
 - src/composables/useShareUrl.ts：分享 URL 複製 helper，優先使用 Clipboard API 並在失敗時 fallback 到 textarea copy。
 - src/composables/useMarkdown.ts：Markdown 解析與 DOMPurify 消毒，支援 `![alt|寬x高](url)` 圖片尺寸語法、清單續行顯示修正，並輸出 lazy/decode 屬性。
 - src/composables/useResolvedMarkdown.ts：解析 Markdown 中的 `srp-upload://` 圖片，透過 Cloud Function 換取 preview/full signed URL 後供渲染元件使用。
-- src/composables/useNotifications.ts：以共享通知資料源合併 broadcast/admin/user 三來源通知、分來源 cursor 載入更多、閱讀游標與紅點狀態；集中管理 realtime 訂閱並將新通知增量合併到本地分頁，避免覆蓋已載入內容。
+- src/composables/useNotifications.ts：以共享通知資料源合併 broadcast/admin/user 三來源通知，使用單次 snapshot 初始化、Realtime 增量更新、分來源 cursor 與閱讀游標；只在長時間背景恢復或異常時重新連線。
 - src/composables/useNotificationNavigation.ts：通知目標導航流程，先經受控讀取確認公告或提案仍存在且目前使用者可讀，再使用後端回傳的真實分類開啟詳情。
 - src/composables/usePushNotifications.ts：Web Push 推播偏好管理，負責瀏覽器支援與權限狀態、目前裝置 service worker token 註冊 / 關閉、token 更新同步、遺失註冊修復判斷、使用者主動關閉意圖、通知分類偏好、跨裝置狀態校正與前景訊息 toast。
-- src/composables/usePushPermissionPrompt.ts：推播權限、PWA 安裝與裝置通知連結修復的 App 層提示流程，依帳號與提示情境套用七天冷卻，並在 App 回到前景時重新檢查。
+- src/composables/usePushPermissionPrompt.ts：推播權限、PWA 安裝與裝置通知連結修復提示；一般邀請維持七天冷卻，註冊修復縮短為一天，前景檢查套用十五分鐘節流。
 - src/composables/useAnnouncements.ts：公告列表依排序快取分段讀取、依螢幕高度決定讀取批量、Realtime 刷新、底部自動載入更多與載入 / 錯誤狀態管理。
 - src/composables/useAnnouncementManagement.ts：公告頁管理流程，整合公告列表讀取、Realtime 事件訂閱、id 路由選取、單筆讀取、分享、編輯、新增、背景刪除與明確讚狀態。
 - src/composables/useAnnouncementComments.ts：公告留言分頁讀取、載入更多、Realtime 事件刷新、新增主留言 / 回覆、局部刪除與權限判斷狀態管理，使用留言區自己的請求 scope 避免路由切換誤判空狀態。
@@ -310,7 +312,7 @@
 ## src/services (受控資料服務層)
 
 - src/services/issues.ts：API Gateway 入口，統一 re-export 提案讀寫子服務。
-- src/services/backend-action.ts：Supabase Edge Function `backendAction` 呼叫工具，統一 action/payload envelope、timeout、abort signal 與錯誤追蹤碼解析。
+- src/services/backend-action.ts：Supabase Edge Function `backendAction` 呼叫工具，統一 envelope、實際 AbortSignal、跨 reload 的待確認 request id 與錯誤追蹤碼解析。
 - src/services/backend-action-contract.ts：前端允許呼叫的 backendAction 名稱 contract，供 TypeScript 與架構測試確認前端 service 呼叫與後端 registry 對齊。
 - src/services/supabase-function-error.ts：Supabase Edge Function 非 2xx 回應解析 helper，優先讀取後端 JSON / text 錯誤內容。
 - src/services/session-role.ts：登入後向後端查詢目前使用者角色，避免前端保存管理員 email 清單。
@@ -327,7 +329,7 @@
 - src/services/comment-cursor.ts：提案與公告留言共用 cursor 型別與正規化 helper，集中處理 createdAtMs / created_at 格式差異。
 - src/services/issues-write.ts：所有寫入、附議、主留言 / 回覆、提案結果與審核異動，統一呼叫 Supabase 後端安全端點。
 - src/services/notifications.ts：App 內通知來源訂閱、閱讀狀態、單裝置 Web Push token 與通知分類偏好服務；realtime channel 依 broadcast/admin/user 來源或 recipient 過濾 INSERT，並正規化通知與分頁 cursor。
-- src/services/realtime-events.ts：內容 Realtime 事件訂閱服務，集中訂閱 `realtime_events` 並正規化提案、公告、留言、附議與讚數變動事件。
+- src/services/realtime-events.ts：內容 Realtime 事件訂閱服務，以具唯一序號的共享 channel 分派授權後的內容事件；附議、讚與留言數變動可直接 patch 本地資料，避免重讀整頁。
 - src/services/announcements.ts：公告排序分頁、單筆讀取、讚與留言異動服務，並在服務邊界正規化公告與留言分頁 cursor。
 - src/services/dashboard.ts：平台 Dashboard 與登入使用紀錄服務，將後端 stats / operations response 正規化為前端 Date 型別。
 - src/services/uploads.ts：Cloudinary authenticated 圖片直傳服務，向後端取得簽名 session 後直傳 Cloudinary，並提供 signed delivery URL 解析、快取與刪除 action。
@@ -346,9 +348,9 @@
 - scripts/generate-rate-limits.mjs：從 `config/rate-limits.config.json` 產生前端與 Edge Functions 共用的限流、圖片數量與圖片壓縮常數設定。
 - scripts/issue-category-config.mjs：提案分類 config 讀取、驗證與 TypeScript 產生 helper。
 - tests/architecture.test.mjs：防止舊 Firebase 資料路徑、舊部署目標、未受控後端 action、webhook 驗證與圖片解析流程回歸的靜態測試。
-- .github/workflows/deploy-frontend.yml：前端相關檔案 merge 後，使用 GitHub Environment secrets 執行 Vite build 並以 Vercel CLI 部署（main → production，dev → preview）。
-- .github/workflows/verify-pr.yml：PR 型別、lint、build、架構測試與 audit 驗證工作流；Edge Functions Deno 檢查保留為本機手動指令，不放入 PR workflow 以維持速度。
-- .github/workflows/deploy-backend.yml：Supabase 後端部署工作流，使用 npm / node_modules 快取並先跑架構檢查，再推送 migrations、以非保留名稱設定 Edge Function secrets、部署 Supabase Edge Functions（含維護清理入口）並打正式 endpoint 做健康檢查。
+- .github/workflows/deploy-frontend.yml：前端相關檔案 merge 後，若同一 commit 也修改後端則等待後端部署成功，再使用固定版本 Vercel CLI 部署。
+- .github/workflows/verify-pr.yml：PR 型別、未使用宣告、產生設定一致性、lint、build、Edge Functions、架構測試與 audit 驗證工作流。
+- .github/workflows/deploy-backend.yml：Supabase 後端部署工作流，先驗證產生設定、Edge Functions 與架構，再以固定版本 CLI 推送 migrations、設定 secrets、部署 Functions 並執行健康檢查。
 - .github/workflows/reset-db.yml：手動觸發的 Supabase 資料庫重置工作流，重置資料庫架構並重新建立每日維護入口設定。
 - .github/workflows/reset-cloudinary.yml：手動觸發的 Cloudinary 資源重置工作流，使用 Admin API 分批刪除目前 cloud 內 image / video / raw 的 upload、authenticated 與 private 資源。
 
