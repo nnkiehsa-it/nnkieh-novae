@@ -75,6 +75,7 @@
 - supabase/migrations/202607090009_fix_push_token_conflict_target.sql：修正推播 token 註冊 RPC 的唯一鍵衝突目標，避免欄位與參數名稱歧義造成通知設定失敗。
 - supabase/migrations/202607100001_notification_comment_targets.sql：補齊通知對應留言目標欄位，讓提案與公告留言通知可導向指定留言與回覆。
 - supabase/migrations/202607100002_drop_overloaded_issue_comment_rpc.sql：移除舊參數順序的提案留言建立資料庫函式，避免後端建立留言時因同名函式多載產生解析歧義。
+- supabase/migrations/202607100003_fix_delete_announcement_ambiguity.sql：修正刪除公告的資料庫 RPC 函數中的欄位名稱歧義，確保公告刪除流程運作正常。
 - supabase/functions/backendAction/index.ts：前端受控 action HTTP 入口，集中 CORS、Firebase 驗證、使用者角色查詢、healthcheck、統一 API envelope、入口限流、action 分派與冪等保護，不直接承載各領域資料流程。
 - supabase/functions/backendAction/action-registry.ts：受控 action metadata 來源，集中 action 名稱、domain、handler、限流分級、冪等與 requestId 要求，供 gateway 與架構測試防止清單分散。
 - supabase/functions/backendAction/response.ts：受控 action 統一成功 / 錯誤 envelope helper，保留 requestId、錯誤代碼、公開錯誤訊息與 HTTP 狀態。
