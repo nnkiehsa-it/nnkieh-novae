@@ -8,7 +8,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     time: "00:15",
     items: [
       {
-        title: "調整 Google 登入方式為重新導向，並修正安全設定以確保登入流程正常運作。"
+        title: "修正 Google 登入安全設定，解決登入流程遭安全政策阻擋的問題。"
       }
     ]
   },
