@@ -2,6 +2,31 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "改善我的頁面導覽",
+    version: "v2.0.139",
+    date: "2026-07-10",
+    time: "14:01",
+    items: [
+      {
+        title: "調整手機版更新紀錄與統計頁返回方式，讓導覽層級更一致。"
+      }
+    ]
+  },
+  {
+    title: "改善手機版頁面導覽",
+    version: "v2.0.138",
+    date: "2026-07-10",
+    time: "13:57",
+    items: [
+      {
+        title: "調整手機版詳情頁返回位置，讓提案與公告內容瀏覽更一致。"
+      },
+      {
+        title: "改善手機版更新紀錄與統計頁標題顯示，減少重複資訊。"
+      }
+    ]
+  },
+  {
     title: "改善提案詳情顯示",
     version: "v2.0.137",
     date: "2026-07-10",

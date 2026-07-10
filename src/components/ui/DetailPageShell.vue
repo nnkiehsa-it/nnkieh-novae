@@ -2,6 +2,7 @@
   <section class="min-h-0">
     <header class="flex shrink-0 items-start gap-3 pb-3 md:hidden">
       <button
+        v-if="showMobileBackButton"
         type="button"
         class="button-icon shrink-0"
         :aria-label="backLabel"
@@ -75,10 +76,12 @@ const props = withDefaults(defineProps<{
   commentsLabel?: string;
   detailsLabel: string;
   initialTab?: DetailPageTab;
+  showMobileBackButton?: boolean;
 }>(), {
   backLabel: '返回',
   commentsLabel: '討論留言',
   initialTab: 'details',
+  showMobileBackButton: true,
 });
 
 const emit = defineEmits<{

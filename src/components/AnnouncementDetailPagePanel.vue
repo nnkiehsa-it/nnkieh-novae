@@ -4,6 +4,7 @@
     back-label="返回公告列表"
     :initial-tab="initialTab"
     details-label="公告內容"
+    :show-mobile-back-button="false"
     @back="emit('back')"
   >
     <template #header>

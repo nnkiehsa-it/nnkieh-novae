@@ -30,8 +30,8 @@
     <div v-else-if="stats && operations" class="space-y-5">
       <header class="border-b border-ink-200/80 pb-4 dark:border-ink-800/80">
         <div class="min-w-0">
-          <h2 class="text-2xl font-bold tracking-tight text-ink-950 dark:text-ink-50 sm:text-3xl">平台狀態</h2>
-          <p class="mt-2 max-w-2xl text-sm leading-6 text-ink-500 dark:text-ink-400">
+          <h2 class="hidden text-2xl font-bold tracking-tight text-ink-950 dark:text-ink-50 md:block sm:text-3xl">統計</h2>
+          <p class="max-w-2xl text-sm leading-6 text-ink-500 dark:text-ink-400 md:mt-2">
             快速掃描同步、排程與清理狀態，成果數字保留為維護時的背景脈絡。
           </p>
         </div>

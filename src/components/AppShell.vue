@@ -10,10 +10,20 @@
     <!-- Full-bleed Fixed Header -->
     <header class="app-header fixed inset-x-0 top-0 z-40 w-full backdrop-blur-md transition-colors duration-300 md:border-b md:border-ink-200/80 md:dark:border-ink-700/80">
       <div class="app-header__inner mx-auto max-w-7xl px-4 flex items-center justify-between sm:px-6 lg:px-8">
-        <div class="flex items-center min-w-0">
-          <h1 class="app-header__title text-ink-950 dark:text-ink-50 flex items-center shrink-0" :aria-label="mobileHeaderTitle">
+        <div class="flex min-w-0 items-center gap-3">
+          <button
+            v-if="showMobileBackButton"
+            type="button"
+            class="button-icon shrink-0 md:hidden"
+            :aria-label="mobileBackLabel"
+            :title="mobileBackLabel"
+            @click="handleMobileBack"
+          >
+            <AppIcon name="chevron-left" :size="5" />
+          </button>
+          <h1 class="app-header__title text-ink-950 dark:text-ink-50 flex min-w-0 items-center shrink-0" :aria-label="mobileHeaderTitle">
             <span class="hidden md:inline-flex"><BrandMark /></span>
-            <span class="text-[26px] font-bold tracking-tight md:hidden leading-none">{{ mobileHeaderTitle }}</span>
+            <span class="truncate text-[26px] font-bold tracking-tight md:hidden leading-none">{{ mobileHeaderTitle }}</span>
           </h1>
 
           <!-- Desktop Navigation -->
@@ -212,6 +222,8 @@ const mobileRouteNavItems = computed(() => [
   },
 ]);
 const mobileHeaderTitle = computed(() => {
+  if (route.name === 'issue-detail') return isMyProposalsRouteActive.value ? '我的提案' : '提案內容';
+  if (route.name === 'announcement-detail') return '公告內容';
   if (route.name === 'dashboard') return '統計';
   if (route.name === 'changelog') return '更新紀錄';
   if (route.name === 'notifications') return '通知';
@@ -219,6 +231,20 @@ const mobileHeaderTitle = computed(() => {
   if (isAnnouncementRouteActive.value) return '公告';
   if (isMyProposalsRouteActive.value) return '我的提案';
   return '提案';
+});
+const showMobileBackButton = computed(() =>
+  route.name === 'issue-detail'
+  || route.name === 'announcement-detail'
+  || route.name === 'changelog'
+  || route.name === 'dashboard'
+  || isMyProposalsRouteActive.value
+);
+const mobileBackLabel = computed(() => {
+  if (route.name === 'changelog' || route.name === 'dashboard') return '返回我的';
+  if (route.name === 'issue-detail' && isMyProposalsRouteActive.value) return '返回我的提案';
+  if (isMyProposalsRouteActive.value) return '返回我的';
+  if (route.name === 'announcement-detail') return '返回公告列表';
+  return '返回提案列表';
 });
 
 const navRef = ref<HTMLDivElement | null>(null);
@@ -291,6 +317,31 @@ async function handleCreateIssue(category: IssueCategory) {
 
 async function handleCreateAnnouncement() {
   await requestCreateAnnouncement(router);
+}
+
+async function handleMobileBack() {
+  if (route.name === 'announcement-detail') {
+    await router.push({ name: 'announcements' });
+    return;
+  }
+  if (route.name === 'issue-detail') {
+    const query = { ...route.query };
+    delete query.tab;
+    delete query.comment;
+    await router.push({
+      name: 'issues',
+      params: { filter: activeFilter.value },
+      query,
+    });
+    return;
+  }
+  if (isMyProposalsRouteActive.value) {
+    await router.push({ name: 'settings' });
+    return;
+  }
+  if (route.name === 'changelog' || route.name === 'dashboard') {
+    await router.push({ name: 'settings' });
+  }
 }
 
 function updateUnderline() {

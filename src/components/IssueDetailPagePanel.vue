@@ -3,10 +3,11 @@
     :initial-tab="initialTab"
     back-label="返回提案列表"
     details-label="提案內容"
+    :show-mobile-back-button="false"
     @back="emit('back')"
   >
     <template #header>
-      <span class="tag hidden border-ink-200 bg-ink-100/50 dark:border-ink-800 dark:bg-ink-950/50 md:inline-flex">
+      <span class="tag border-ink-200 bg-ink-100/50 dark:border-ink-800 dark:bg-ink-950/50">
         {{ categoryLabel }}
       </span>
       <span class="tag font-semibold shadow-sm" :class="statusClass">
@@ -24,7 +25,6 @@
     <template #details="{ compact, scrollContent }">
       <IssueDetailContent
         :compact="compact"
-        :category-label="categoryLabel"
         :display-author-name="displayAuthorName"
         :display-photo-url="displayPhotoUrl"
         :issue="issue"

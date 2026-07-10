@@ -1,7 +1,7 @@
 <template>
   <section class="page-bottom-safe space-y-5">
     <header class="flex flex-col gap-3 border-b border-ink-200/80 pb-4 dark:border-ink-800/80 sm:flex-row sm:items-center sm:justify-between">
-      <h2 class="text-2xl font-bold tracking-tight text-ink-950 dark:text-ink-50 sm:text-3xl">更新紀錄</h2>
+      <h2 class="hidden text-2xl font-bold tracking-tight text-ink-950 dark:text-ink-50 md:block sm:text-3xl">更新紀錄</h2>
       <p class="text-sm font-semibold text-ink-500 dark:text-ink-400">
         累計更新：{{ totalUpdates }} 次
       </p>

@@ -5,12 +5,6 @@
         class="break-words font-bold tracking-tight text-ink-900 dark:text-ink-50"
         :class="compact ? 'text-xl leading-snug' : 'text-xl leading-snug sm:text-2xl'"
       >
-        <span
-          v-if="compact"
-          class="tag mr-2 inline-flex align-[0.15em] px-2.5 py-1 text-xs font-semibold"
-        >
-          {{ categoryLabel }}
-        </span>
         {{ issue.title }}
       </h2>
 
@@ -79,7 +73,6 @@ import UserAvatar from '@/components/ui/UserAvatar.vue';
 import type { IssueRecord } from '@/types';
 
 const props = defineProps<{
-  categoryLabel: string;
   compact?: boolean;
   displayAuthorName: string;
   displayPhotoUrl: string | null;
