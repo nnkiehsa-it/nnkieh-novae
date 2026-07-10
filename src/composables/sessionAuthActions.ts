@@ -1,6 +1,5 @@
 import {
   GoogleAuthProvider,
-  signInWithPopup,
   signInWithRedirect,
   signOut,
 } from 'firebase/auth';
@@ -33,13 +32,6 @@ function claimLoginAttempt() {
   return true;
 }
 
-function shouldFallbackToRedirect(error: unknown) {
-  return error instanceof FirebaseError && [
-    'auth/popup-blocked',
-    'auth/cancelled-popup-request',
-    'auth/operation-not-supported-in-this-environment',
-  ].includes(error.code);
-}
 
 function googleProvider(selectAccount = false) {
   const provider = new GoogleAuthProvider();
@@ -74,31 +66,13 @@ export async function loginWithGoogle(state: SessionState, options: { selectAcco
   const firebaseAuth = auth;
 
   try {
-    debugLog('starting popup login', {
+    debugLog('starting redirect login', {
       customParameters: allowedDomain ? { hd: allowedDomain } : {},
     });
-    await signInWithPopup(firebaseAuth, googleProvider(Boolean(options.selectAccount)));
-    debugLog('popup login resolved', firebaseAuth.currentUser
-      ? {
-          uid: firebaseAuth.currentUser.uid,
-          email: firebaseAuth.currentUser.email ?? '',
-        }
-      : null);
+    await signInWithRedirect(firebaseAuth, googleProvider(Boolean(options.selectAccount)));
   } catch (error) {
-    if (shouldFallbackToRedirect(error)) {
-      debugLog('popup unavailable, falling back to redirect', error);
-      try {
-        await signInWithRedirect(firebaseAuth, googleProvider(Boolean(options.selectAccount)));
-      } catch (redirectError) {
-        debugLog('redirect login failed', redirectError);
-        state.error = getLoginErrorMessage(redirectError);
-      }
-      return;
-    }
-
-    debugLog('login failed before completion', error);
+    debugLog('redirect login failed', error);
     state.error = getLoginErrorMessage(error);
-  } finally {
     state.loading = false;
   }
 }

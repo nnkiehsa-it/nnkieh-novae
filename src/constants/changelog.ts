@@ -2,6 +2,17 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "改善登入流程體驗",
+    version: "v2.0.148",
+    date: "2026-07-11",
+    time: "00:15",
+    items: [
+      {
+        title: "調整 Google 登入方式為重新導向，並修正安全設定以確保登入流程正常運作。"
+      }
+    ]
+  },
+  {
     title: "改善內容瀏覽體驗",
     version: "v2.0.147",
     date: "2026-07-10",
