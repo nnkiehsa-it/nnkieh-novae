@@ -388,7 +388,9 @@ async function sendPushes(
   const category = asString(notification.issue_category);
   const isComment = isCommentNotificationType(notificationType);
   const commentQuery = isComment && commentId ? `&comment=${encodeURIComponent(commentId)}` : "";
-  const link = targetType === "announcement"
+  const link = notificationType === "issue_deleted"
+    ? "/notifications"
+    : targetType === "announcement"
     ? `/announcements/${encodeURIComponent(targetId)}${isComment ? `?tab=comments${commentQuery}` : ""}`
     : `/issues/${encodeURIComponent(category || "public-issues")}/${encodeURIComponent(targetId)}${isComment ? `?tab=comments${commentQuery}` : ""}`;
   const recipientUids = [...new Set(tokens.map((row) => asString(row.uid)).filter(Boolean))];

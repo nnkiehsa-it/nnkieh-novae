@@ -7,15 +7,19 @@
     @retry="reloadApp({ reason: 'restart' })"
   />
   <AppShell v-else>
-    <RouterView v-slot="{ Component }">
-      <Suspense>
-        <component :is="Component" />
-        <template #fallback>
-          <div class="flex min-h-[40dvh] items-center justify-center" aria-label="正在載入頁面" aria-busy="true">
-            <LoadingSpinner :size="8" />
-          </div>
-        </template>
-      </Suspense>
+    <RouterView v-slot="{ Component, route: viewRoute }">
+      <Transition name="page-content" mode="out-in">
+        <div :key="String(viewRoute.name ?? viewRoute.path)" class="min-h-0 flex-1">
+          <Suspense>
+            <component :is="Component" />
+            <template #fallback>
+              <div class="flex min-h-[40dvh] items-center justify-center" aria-label="正在載入頁面" aria-busy="true">
+                <LoadingSpinner :size="8" />
+              </div>
+            </template>
+          </Suspense>
+        </div>
+      </Transition>
     </RouterView>
     <ToastViewport />
     <PushPermissionPromptDialog

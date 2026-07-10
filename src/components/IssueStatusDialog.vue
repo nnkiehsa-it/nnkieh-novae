@@ -1,10 +1,13 @@
 <template>
   <DialogOverlay :open="open" padded z-index-class="z-[110]" @close="handleClose">
     <section
+      ref="dialogRef"
       class="panel panel-pad w-full max-w-lg"
+      data-dialog-root
       role="dialog"
       aria-modal="true"
       aria-labelledby="status-dialog-title"
+      :aria-busy="saving ? 'true' : undefined"
       tabindex="-1"
     >
       <h3 id="status-dialog-title" class="dialog-title">
@@ -81,7 +84,11 @@
           {{ step === 1 ? '取消' : '返回' }}
         </button>
         <button type="button" class="button-primary" :disabled="saving" @click="handlePrimaryClick">
-          {{ primaryButtonLabel }}
+          <BusyButtonContent
+            :busy="saving"
+            :label="idlePrimaryLabel"
+            busy-label="儲存中..."
+          />
         </button>
       </div>
     </section>
@@ -89,8 +96,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, toRef, watch } from 'vue';
+import BusyButtonContent from '@/components/ui/BusyButtonContent.vue';
 import DialogOverlay from '@/components/ui/DialogOverlay.vue';
+import { useBodyScrollLock } from '@/composables/useBodyScrollLock';
+import { useDialogFocus } from '@/composables/useDialogFocus';
 import { useToast } from '@/composables/useToast';
 import { moderateIssueStatus, updateIssueResult } from '@/services/issues';
 import type { IssueRecord, IssueStatus } from '@/types';
@@ -110,6 +120,8 @@ const emit = defineEmits<{
   close: [];
   success: [issue: IssueRecord];
 }>();
+
+useBodyScrollLock(toRef(props, 'open'));
 
 type EditableStatus = Extract<IssueStatus, 'processing' | 'completed' | 'infeasible'>;
 
@@ -161,8 +173,7 @@ const errorMsg = ref('');
 const { showToast } = useToast();
 const requiresResult = computed(() => nextStatus.value === 'completed' || nextStatus.value === 'infeasible');
 
-const primaryButtonLabel = computed(() => {
-  if (saving.value) return '儲存中...';
+const idlePrimaryLabel = computed(() => {
   if (step.value === 1) {
     return nextStatus.value === 'processing' ? '確認' : '下一步';
   }
@@ -173,6 +184,10 @@ function handleClose() {
   if (saving.value) return;
   emit('close');
 }
+
+const { dialogRef } = useDialogFocus(toRef(props, 'open'), {
+  onClose: handleClose,
+});
 
 function handlePrimaryClick() {
   if (step.value === 1) {

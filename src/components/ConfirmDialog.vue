@@ -6,6 +6,7 @@
       data-dialog-root
       role="dialog"
       aria-modal="true"
+      :aria-busy="busy ? 'true' : undefined"
       :aria-labelledby="title || eyebrow ? 'confirm-dialog-title' : undefined"
       aria-describedby="confirm-dialog-message"
       tabindex="-1"
@@ -40,7 +41,7 @@
           :disabled="busy"
           @click="emit('confirm')"
         >
-          {{ busy ? busyLabel : confirmLabel }}
+          <BusyButtonContent :busy="busy" :label="confirmLabel" :busy-label="busyLabel" />
         </button>
       </div>
     </section>
@@ -49,6 +50,7 @@
 
 <script setup lang="ts">
 import { toRef } from 'vue';
+import BusyButtonContent from '@/components/ui/BusyButtonContent.vue';
 import DialogOverlay from '@/components/ui/DialogOverlay.vue';
 import { useBodyScrollLock } from '@/composables/useBodyScrollLock';
 import { useDialogFocus } from '@/composables/useDialogFocus';

@@ -48,9 +48,9 @@
     --motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
     --motion-ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
     --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
-    --motion-duration-fast: 0.18s;
+    --motion-duration-fast: 0.16s;
     --motion-duration: 0.24s;
-    --motion-duration-panel: 0.32s;
+    --motion-duration-panel: 0.3s;
     --surface-gap: 0.5rem;
     --radius-inner: 1.25rem;
     --radius-outer: calc(var(--radius-inner) + var(--surface-gap));
@@ -985,11 +985,33 @@
   transform: translateY(-4px) scale(0.996);
 }
 
-.toast-enter-active,
-.toast-leave-active {
+.page-content-enter-active {
   transition:
     opacity var(--motion-duration-panel) var(--motion-ease-enter),
     transform var(--motion-duration-panel) var(--motion-ease-enter);
+}
+
+.page-content-leave-active {
+  transition:
+    opacity var(--motion-duration-fast) var(--motion-ease-exit),
+    transform var(--motion-duration-fast) var(--motion-ease-exit);
+}
+
+.page-content-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.page-content-leave-to {
+  opacity: 0;
+  transform: translateY(-3px);
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition:
+    opacity var(--motion-duration) var(--motion-ease-enter),
+    transform var(--motion-duration) var(--motion-ease-enter);
 }
 
 .toast-leave-active {
@@ -999,12 +1021,12 @@
 
 .toast-enter-from {
   opacity: 0;
-  transform: translateY(-8px) scale(0.985);
+  transform: translateY(-6px) scale(0.98);
 }
 
 .toast-leave-to {
   opacity: 0;
-  transform: translateY(-4px) scale(0.99);
+  transform: translateY(-3px) scale(0.99);
 }
 
 .dialog-enter-active {

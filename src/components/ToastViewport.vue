@@ -11,19 +11,18 @@
       <div
         v-for="toast in toasts"
         :key="toast.id"
-        class="pointer-events-auto flex cursor-default select-none items-start gap-3 rounded-xl border px-4 py-3 font-sans text-xs font-bold shadow-elevated transition-all"
+        class="pointer-events-auto flex cursor-default select-none items-center gap-2.5 rounded-full border px-3.5 py-2.5 font-sans text-sm font-semibold shadow-elevated"
         :class="toastClass(toast.kind)"
         role="status"
       >
         <span
-          class="material-symbols-outlined mt-0.5 text-[18px] leading-none"
+          class="material-symbols-outlined shrink-0 text-[18px] leading-none"
           aria-hidden="true"
         >
           {{ toastIcon(toast.kind) }}
         </span>
-        <p class="min-w-0 flex-1">
-          <span class="block text-sm font-bold leading-5">{{ toastTitle(toast.kind) }}</span>
-          <span class="block font-semibold leading-5">{{ toast.message }}</span>
+        <p class="min-w-0 flex-1 truncate leading-5">
+          {{ toast.message }}
         </p>
       </div>
     </TransitionGroup>
@@ -53,15 +52,5 @@ function toastIcon(kind: ToastKind) {
     return 'error';
   }
   return 'info';
-}
-
-function toastTitle(kind: ToastKind) {
-  if (kind === 'success') {
-    return '完成';
-  }
-  if (kind === 'error') {
-    return '發生錯誤';
-  }
-  return '提示';
 }
 </script>

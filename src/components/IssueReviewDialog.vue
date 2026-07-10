@@ -1,10 +1,13 @@
 <template>
   <DialogOverlay :open="open" padded z-index-class="z-[110]" @close="handleClose">
     <section
+      ref="dialogRef"
       class="panel panel-pad w-full max-w-lg"
+      data-dialog-root
       role="dialog"
       aria-modal="true"
       aria-labelledby="review-dialog-title"
+      :aria-busy="saving ? 'true' : undefined"
       tabindex="-1"
     >
       <h3 id="review-dialog-title" class="dialog-title">
@@ -79,7 +82,11 @@
           :disabled="saving"
           @click="handlePrimaryClick"
         >
-          {{ primaryButtonLabel }}
+          <BusyButtonContent
+            :busy="saving"
+            :label="idlePrimaryLabel"
+            busy-label="儲存中..."
+          />
         </button>
       </div>
     </section>
@@ -87,8 +94,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, toRef, watch } from 'vue';
+import BusyButtonContent from '@/components/ui/BusyButtonContent.vue';
 import DialogOverlay from '@/components/ui/DialogOverlay.vue';
+import { useBodyScrollLock } from '@/composables/useBodyScrollLock';
+import { useDialogFocus } from '@/composables/useDialogFocus';
 import { useToast } from '@/composables/useToast';
 import { moderateIssueStatus } from '@/services/issues';
 import type { IssueRecord } from '@/types';
@@ -102,6 +112,8 @@ const emit = defineEmits<{
   close: [];
   success: [issue: IssueRecord];
 }>();
+
+useBodyScrollLock(toRef(props, 'open'));
 
 const reviewOptions = [
   {
@@ -123,8 +135,7 @@ const saving = ref(false);
 const errorMsg = ref('');
 const { showToast } = useToast();
 
-const primaryButtonLabel = computed(() => {
-  if (saving.value) return '儲存中...';
+const idlePrimaryLabel = computed(() => {
   if (step.value === 1) {
     return reviewDecision.value === 'approved' ? '確認' : '下一步';
   }
@@ -135,6 +146,10 @@ function handleClose() {
   if (saving.value) return;
   emit('close');
 }
+
+const { dialogRef } = useDialogFocus(toRef(props, 'open'), {
+  onClose: handleClose,
+});
 
 function handlePrimaryClick() {
   if (step.value === 1) {

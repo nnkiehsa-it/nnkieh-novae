@@ -2,6 +2,26 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "改善操作回饋與動畫體驗",
+    version: "v2.0.149",
+    date: "2026-07-11",
+    time: "02:27",
+    items: [
+      {
+        title: "調整操作提示為單行樣式，讓成功、錯誤與一般提示更精簡。"
+      },
+      {
+        title: "統一送出、儲存、確認與登入等處理中狀態的載入回饋。"
+      },
+      {
+        title: "改善頁面切換與介面轉場動畫，讓操作節奏更流暢。"
+      },
+      {
+        title: "修正提案刪除推播通知的開啟位置，改為導向通知頁面。"
+      }
+    ]
+  },
+  {
     title: "改善登入流程體驗",
     version: "v2.0.148",
     date: "2026-07-11",

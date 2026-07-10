@@ -69,7 +69,7 @@ const inactiveClass = 'text-ink-500 hover:text-ink-700 dark:text-ink-400 dark:ho
 const indicatorStyle = ref({
   height: '0px',
   transform: 'translate3d(0px, 0px, 0)',
-  transition: 'transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1), width 250ms cubic-bezier(0.25, 1, 0.5, 1)',
+  transition: 'transform var(--motion-duration-panel) var(--motion-ease-enter), width var(--motion-duration) var(--motion-ease-enter)',
   width: '0px',
 });
 
@@ -83,7 +83,7 @@ function updateIndicator() {
     indicatorStyle.value = {
       height: `${activeButton.offsetHeight}px`,
       transform: `translate3d(${activeButton.offsetLeft}px, ${activeButton.offsetTop}px, 0)`,
-      transition: 'transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1), width 250ms cubic-bezier(0.25, 1, 0.5, 1)',
+      transition: 'transform var(--motion-duration-panel) var(--motion-ease-enter), width var(--motion-duration) var(--motion-ease-enter)',
       width: `${activeButton.offsetWidth}px`,
     };
 

@@ -45,7 +45,11 @@
           data-autofocus
           @click="emit('enable')"
         >
-          {{ busy ? '處理中...' : mode === 'repair' ? '重新啟用' : '開啟通知' }}
+          <BusyButtonContent
+            :busy="busy"
+            :label="mode === 'repair' ? '重新啟用' : '開啟通知'"
+            busy-label="處理中..."
+          />
         </button>
       </div>
     </section>
@@ -55,6 +59,7 @@
 <script setup lang="ts">
 import { toRef } from 'vue';
 import DialogOverlay from '@/components/ui/DialogOverlay.vue';
+import BusyButtonContent from '@/components/ui/BusyButtonContent.vue';
 import { useBodyScrollLock } from '@/composables/useBodyScrollLock';
 import { useDialogFocus } from '@/composables/useDialogFocus';
 

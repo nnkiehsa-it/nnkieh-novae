@@ -1,10 +1,11 @@
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { fetchAnnouncementRecordById } from '@/services/announcements';
 import { fetchIssueRecordById } from '@/services/issues';
 import { useToast } from '@/composables/useToast';
 import type { NotificationRecord } from '@/types';
 
 export function useNotificationNavigation() {
+  const route = useRoute();
   const router = useRouter();
   const { showToast } = useToast();
   let navigationVersion = 0;
@@ -22,6 +23,9 @@ export function useNotificationNavigation() {
     const currentVersion = ++navigationVersion;
     if (notification.type === 'issue_deleted') {
       showToast('這筆提案已被刪除。', 'info');
+      if (route.name !== 'notifications') {
+        await router.push({ name: 'notifications' });
+      }
       return false;
     }
 

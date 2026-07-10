@@ -104,7 +104,7 @@
 - supabase/functions/backendAction/dashboard.ts：管理員統計資料、同步/通知/推播/清理異常、最近維護排程結果彙整與分類使用概況。
 - supabase/functions/syncUser/index.ts：Firebase 登入後同步使用者 custom claim 與 Supabase app role 的 Edge Function，依 ADMIN_EMAILS 將使用者角色寫入 user_roles，與受控 action 共用登入資格驗證。
 - supabase/functions/cloudinaryWebhook/index.ts：Cloudinary 上傳完成 webhook，限制 POST、驗證簽章、套用入口限流並安全解析 payload 後將 pending upload 轉為 ready。
-- supabase/functions/outboxWorker/index.ts：Outbox worker wake-up endpoint，使用有界批次與重試處理通知及 Notion 同步；推播只聚合記錄失敗追蹤碼，不保存逐裝置成功紀錄。
+- supabase/functions/outboxWorker/index.ts：Outbox worker wake-up endpoint，使用有界批次與重試處理通知及 Notion 同步；推播只聚合記錄失敗追蹤碼，不保存逐裝置成功紀錄。提案刪除推播的開啟連結導向通知頁，避免開啟已刪除提案詳情。
 - supabase/functions/processDeletionJobs/index.ts：外部資源刪除工作入口，限制 POST、驗證 secret 並套用入口限流後處理 Cloudinary / Notion 清理，保留失敗的可重試 metadata。
 - supabase/functions/maintenanceCleanup/index.ts：維護清理手動入口，限制 POST、驗證 secret 並套用入口限流後呼叫資料庫清理 RPC；日常清理由 Supabase cron 直接執行同一 RPC。
 - supabase/functions/_shared/env.ts：Edge Functions 環境變數讀取 helper。
@@ -124,7 +124,7 @@
 ## src 入口與路由
 
 - src/main.ts：Vue App 入口，初始化全域 resume、PWA 更新與 session 後掛載 router。
-- src/App.vue：最上層殼，啟動期間先顯示 AppStartupScreen，準備完成後將頁面內容包進 AppShell，並掛載 App 安裝 / 瀏覽器引導對話框。
+- src/App.vue：最上層殼，啟動期間先顯示 AppStartupScreen，準備完成後將頁面內容包進 AppShell，並以輕量 page-content 轉場切換路由，同時掛載 App 安裝 / 瀏覽器引導對話框。
 - src/sw.ts：PWA service worker，navigation 使用五秒 NetworkFirst 並在離線時 fallback precached index.html；Auth、版本檢查使用 NetworkOnly，哈希 JS/CSS、WebP encoder WASM、圖示與 Cloudinary 圖片使用一年期 CacheFirst，並支援受控 skip-waiting、FCM Web Push 背景通知與通知點擊導回頁面。
 - src/router/index.ts：Vue Router 組合入口，掛載登入、提案、公告與管理員 route modules，切換路由前 abort 上一頁 request scope，並等待 session ready 後處理登入 / 管理員 redirect。
 - src/router/authRoutes.ts：登入頁路由設定，支援 `/login` 與受保護頁面 redirect 回跳。
@@ -150,6 +150,7 @@
 共用、無業務邏輯、純展示元件，可被任何場景複用：
 
 - LoadingSpinner.vue：可設定尺寸的 loading spinner SVG 元件（雙層環 + 自訂縮放脈動動畫）。
+- BusyButtonContent.vue：按鈕處理中狀態共用內容，統一顯示 spinner 與 busy 文案，供確認、送出與登入等操作使用。
 - AppIcon.vue：共用線性圖示元件，集中 chart、comment、share、trash、changelog、restart、reply、close、edit、image、lock、send、warning、inbox 等常用 UI icon，降低元件內嵌 SVG 重複。
 - EmptyStatePanel.vue：通用空狀態 / 錯誤狀態面板，統一 icon（支援 chart、comment、lock、warning、inbox）、標題、描述與可選重試按鈕，用於看板分頁、公告、留言與 Dashboard。
 - PillSegmentedControl.vue：共用膠囊分段切換元件，提供滑動 active 背板、可選圖示與 active 文字，供提案狀態與手機詳情內容 / 留言切換使用。
@@ -168,7 +169,7 @@
 - DetailActionButton.vue：詳情頁底部共用文字動作按鈕，統一分享、讚、編輯與刪除等 action 的 icon + label 呈現。
 - UserAvatar.vue：大頭貼顯示（圖片 / 匿名首字 fallback，支援 sm / md / lg 三種尺寸）。
 - DecorativeGlow.vue：背景裝飾性雙色模糊光暈（emerald + indigo）。
-- GoogleLoginButton.vue：Google 登入按鈕（含 loading spinner 狀態）。
+- GoogleLoginButton.vue：Google 登入按鈕，透過 BusyButtonContent 顯示登入中狀態。
 - DialogOverlay.vue：Modal 共用背景遮罩（含 backdrop-blur、點擊關閉、Teleport），以動態 viewport 扣除 edge-to-edge safe-area 後提供正確可用高度，並支援一般響應式、四周留白、無留白與自訂 z-index 層級。
 - DetailPageShell.vue：提案與公告詳情子頁共用骨架，提供左上返回鍵、滿寬詳情版面、桌機內容自然高度與留言欄內捲、手機內容/留言分頁與欄位間隔。
 - SearchHighlight.vue：搜尋結果文字高亮元件，依關鍵字標示標題命中片段。
@@ -184,8 +185,8 @@
 - src/components/SettingsPanel.vue：登入 / 設定面板 UI；session 恢復或登入進行中時在頭像位置顯示小型進度，完成後以頭像開啟「設定」面板，集中顯示目前帳號、切換帳號入口、單裝置推播通知狀態、通知類型開關、重啟 App 與登出操作。
 - src/components/SettingsPanelContent.vue：設定面板共用內容區，供桌機頭像 popover 與手機設定頁共用，以分隔線清單統一帳號切換、推播通知、通知類型開關、更新紀錄、重啟 App 與管理員統計入口呈現。
 - src/components/PushPermissionPromptDialog.vue：登入後詢問推播權限或修復裝置通知連結的提示對話框；依提示情境顯示開啟或重新啟用說明，允許使用者稍後再到設定處理。
-- src/components/ConfirmDialog.vue：通用確認對話框，沿用共用 DialogOverlay、提示型文字層級、焦點管理與捲動鎖定。
-- src/components/ToastViewport.vue：全域 toast 顯示容器，統一呈現成功、資訊與錯誤提示，層級高於 modal dialog。
+- src/components/ConfirmDialog.vue：通用確認對話框，沿用共用 DialogOverlay、BusyButtonContent 處理中狀態、提示型文字層級、焦點管理與捲動鎖定。
+- src/components/ToastViewport.vue：全域 toast 顯示容器，以單行 icon + 訊息呈現成功、資訊與錯誤提示，層級高於 modal dialog。
 - src/components/CreateActionMenu.vue：提案與公告共用新增選單，提供提案分類與管理員公告選項，讓桌機控制列與手機底部新增入口共用同一套選擇流程。
 - src/components/VoteButtons.vue：附議 / 取消附議按鈕展示層，實際 optimistic UI 與附議流程委派給 `useVoteSupport`。
 - src/components/MarkdownRenderer.vue：將 Markdown 渲染為經 DOMPurify 過濾的安全 HTML，圖片支援尺寸屬性、lazy loading 與預留顯示空間以降低 layout shift。
@@ -233,7 +234,7 @@
 - src/composables/useAppInstallPrompt.ts：PWA 安裝提示狀態管理，處理 standalone 判斷、beforeinstallprompt、iOS Safari 手動引導、in-app browser 優先權與 sessionStorage 關閉記錄。
 - src/composables/useAppUpdate.ts：手動註冊無快取 service worker，啟動時檢查一次 `version.json`，管理自動與強制更新提示；更新導頁前以有上限的等待讓新版 worker 接手，並在重新載入未完成時重試及恢復提示狀態。
 - src/composables/useTimedMessage.ts：短效訊息 helper，負責 toast 觸發訊息的逾時清空。
-- src/composables/useMinimumLoading.ts：讓提案分頁、公告與留言 skeleton 直接跟隨真實載入狀態，避免快取命中時保留額外等待。
+- src/composables/useMinimumLoading.ts：為列表 skeleton 提供最短顯示時間，避免快取命中時載入狀態閃爍。
 - src/composables/useLoadingTimeout.ts：監看頁面 loading，超過指定時間後切換到可重試的網路異常 fallback。
 - src/composables/useNetworkStatus.ts：共用瀏覽器線上 / 離線狀態監聽，供載入逾時與讀取錯誤提示判斷目前連線狀態。
 - src/composables/useAppResume.ts：集中監聽 pageshow 與 visibilitychange；iOS PWA 從背景或 bfcache 恢復時 abort 舊 request scope，供通知等即時狀態重新連線使用。
@@ -265,7 +266,7 @@
 - src/composables/useMarkdown.ts：Markdown 解析與 DOMPurify 消毒，支援 `![alt|寬x高](url)` 圖片尺寸語法、清單續行顯示修正，並輸出 lazy/decode 屬性。
 - src/composables/useResolvedMarkdown.ts：解析 Markdown 中的 `srp-upload://` 圖片，透過 Cloud Function 換取 preview/full signed URL 後供渲染元件使用。
 - src/composables/useNotifications.ts：以共享通知資料源合併 broadcast/admin/user 三來源通知，使用單次 snapshot 初始化、Realtime 增量更新、分來源 cursor 與閱讀游標；只在長時間背景恢復或異常時重新連線。
-- src/composables/useNotificationNavigation.ts：通知目標導航流程，先經受控讀取確認公告或提案仍存在且目前使用者可讀，再使用後端回傳的真實分類開啟詳情。
+- src/composables/useNotificationNavigation.ts：通知目標導航流程，先經受控讀取確認公告或提案仍存在且目前使用者可讀，再使用後端回傳的真實分類開啟詳情；提案已刪除時提示並導向通知頁。
 - src/composables/usePushNotifications.ts：Web Push 推播偏好管理，負責瀏覽器支援與權限狀態、目前裝置 service worker token 註冊 / 關閉、token 更新同步、遺失註冊修復判斷、使用者主動關閉意圖、通知分類偏好、跨裝置狀態校正與前景訊息 toast。
 - src/composables/usePushPermissionPrompt.ts：推播權限、PWA 安裝與裝置通知連結修復提示；一般邀請維持七天冷卻，註冊修復縮短為一天，前景檢查套用十五分鐘節流。
 - src/composables/useAnnouncements.ts：公告列表依排序快取分段讀取、依螢幕高度決定讀取批量、Realtime 刷新、底部自動載入更多與載入 / 錯誤狀態管理。

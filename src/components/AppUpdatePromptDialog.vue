@@ -23,8 +23,7 @@
       </div>
       <div class="dialog-actions">
         <button type="button" class="button-primary" :disabled="busy" data-autofocus @click="emit('reload')">
-          <LoadingSpinner v-if="busy" :size="4" />
-          <span>{{ busy ? '更新中' : '更新' }}</span>
+          <BusyButtonContent :busy="Boolean(busy)" label="更新" busy-label="更新中" />
         </button>
       </div>
     </section>
@@ -34,7 +33,7 @@
 <script setup lang="ts">
 import { toRef } from 'vue';
 import DialogOverlay from '@/components/ui/DialogOverlay.vue';
-import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
+import BusyButtonContent from '@/components/ui/BusyButtonContent.vue';
 import { useBodyScrollLock } from '@/composables/useBodyScrollLock';
 import { useDialogFocus } from '@/composables/useDialogFocus';
 
