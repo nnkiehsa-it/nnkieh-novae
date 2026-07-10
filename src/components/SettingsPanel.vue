@@ -28,7 +28,7 @@
           ref="menuRef"
           role="dialog"
           aria-label="我的"
-          class="absolute right-0 top-full z-50 mt-2 max-h-[min(82dvh,42rem)] w-[min(calc(100vw-2rem),24rem)] origin-top-right rounded-[1.25rem] border border-ink-200 bg-white shadow-xl dark:border-ink-700 dark:bg-ink-900"
+          class="absolute right-0 top-full z-50 mt-2 max-h-[min(82dvh,42rem)] w-[min(calc(100vw-2rem),24rem)] origin-top-right rounded-[1.25rem] border border-ink-200/70 bg-white/94 shadow-elevated backdrop-blur-xl dark:border-ink-700/70 dark:bg-ink-900/94"
           :content-class="'max-h-[min(82dvh,42rem)]'"
           :display-name="user.displayName || '校內使用者'"
           :display-photo-url="displayPhotoUrl"

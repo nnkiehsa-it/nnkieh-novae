@@ -22,7 +22,7 @@
           <transition name="popover">
             <div
               v-if="isCategoryOpen"
-              class="absolute z-[100] mt-2 left-0 right-auto w-max min-w-[10rem] rounded-2xl border border-ink-200/80 bg-white p-3 shadow-lg dark:border-ink-700/80 dark:bg-ink-900"
+              class="absolute z-[100] mt-2 left-0 right-auto w-max min-w-[10rem] rounded-2xl border border-ink-200/70 bg-white/92 p-2 shadow-elevated backdrop-blur-xl dark:border-ink-700/70 dark:bg-ink-900/92"
             >
               <div class="px-2 pb-1.5 text-xs font-semibold text-ink-400 dark:text-ink-50 tracking-wider uppercase whitespace-nowrap">
                 提案分類
@@ -64,7 +64,7 @@
           <transition name="popover">
             <div
               v-if="isCategoryOpen"
-              class="absolute z-[100] mt-2 left-4 right-4 w-auto rounded-2xl border border-ink-200/80 bg-white p-3 shadow-lg dark:border-ink-700/80 dark:bg-ink-900"
+              class="absolute z-[100] mt-2 left-4 right-4 w-auto rounded-2xl border border-ink-200/70 bg-white/92 p-2 shadow-elevated backdrop-blur-xl dark:border-ink-700/70 dark:bg-ink-900/92"
             >
               <div class="px-2 pb-1.5 text-xs font-semibold text-ink-400 dark:text-ink-50 tracking-wider uppercase">
                 提案分類
@@ -110,7 +110,7 @@
           <transition name="popover">
             <div
               v-if="isSortOpen"
-              class="absolute z-[100] mt-2 max-md:left-4 max-md:right-4 max-md:w-auto md:right-0 md:left-auto md:w-max md:min-w-[10rem] rounded-2xl border border-ink-200/80 bg-white p-3 shadow-lg dark:border-ink-700/80 dark:bg-ink-900"
+              class="absolute z-[100] mt-2 max-md:left-4 max-md:right-4 max-md:w-auto md:right-0 md:left-auto md:w-max md:min-w-[10rem] rounded-2xl border border-ink-200/70 bg-white/92 p-2 shadow-elevated backdrop-blur-xl dark:border-ink-700/70 dark:bg-ink-900/92"
             >
               <div>
                 <div class="mb-1.5 px-2 text-xs font-semibold text-ink-400 dark:text-ink-50 tracking-wider uppercase whitespace-nowrap">
@@ -151,7 +151,7 @@
           <transition name="popover">
             <div
               v-if="isSearchOpen"
-              class="absolute z-[100] mt-2 max-md:left-4 max-md:right-4 max-md:w-auto md:right-0 md:left-auto md:w-80 rounded-2xl border border-ink-200/80 bg-white p-3 shadow-lg dark:border-ink-700/80 dark:bg-ink-900"
+              class="absolute z-[100] mt-2 max-md:left-4 max-md:right-4 max-md:w-auto md:right-0 md:left-auto md:w-80 rounded-2xl border border-ink-200/70 bg-white/92 p-3 shadow-elevated backdrop-blur-xl dark:border-ink-700/70 dark:bg-ink-900/92"
             >
               <div class="relative">
                 <AppIcon name="search" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-400 dark:text-ink-500" />

@@ -21,7 +21,7 @@
         <div
           v-if="isOpen"
           ref="dropdownRef"
-          class="fixed z-[100] w-44 origin-top-right rounded-2xl border border-ink-200/80 bg-white p-1.5 shadow-lg dark:border-ink-700/80 dark:bg-ink-900"
+          class="fixed z-[100] w-44 origin-top-right rounded-2xl border border-ink-200/70 bg-white/92 p-1.5 shadow-elevated backdrop-blur-xl dark:border-ink-700/70 dark:bg-ink-900/92"
           :style="dropdownStyle"
         >
           <button

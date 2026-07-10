@@ -11,7 +11,7 @@
       <div
         v-for="toast in toasts"
         :key="toast.id"
-        class="pointer-events-auto flex cursor-default select-none items-center gap-2.5 rounded-full border px-3.5 py-2.5 font-sans text-sm font-semibold shadow-elevated"
+        class="pointer-events-auto flex cursor-default select-none items-center gap-2.5 rounded-full border px-3.5 py-2.5 font-sans text-sm font-semibold shadow-elevated backdrop-blur-md"
         :class="toastClass(toast.kind)"
         role="status"
       >
@@ -36,12 +36,12 @@ const { toasts } = useToast();
 
 function toastClass(kind: ToastKind) {
   if (kind === 'success') {
-    return 'bg-primary-container text-on-primary-container border-primary/20';
+    return 'border-primary/25 bg-white/88 text-on-primary-container dark:bg-ink-900/88 dark:text-primary';
   }
   if (kind === 'error') {
-    return 'bg-error-container text-on-error-container border-error/20';
+    return 'border-error/25 bg-white/88 text-error dark:bg-ink-900/88 dark:text-error';
   }
-  return 'bg-secondary-container text-on-secondary-container border-outline/20';
+  return 'border-secondary/25 bg-white/88 text-on-secondary-container dark:bg-ink-900/88 dark:text-secondary';
 }
 
 function toastIcon(kind: ToastKind) {
