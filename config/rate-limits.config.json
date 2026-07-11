@@ -11,6 +11,14 @@
     "limit": 200,
     "message": "今天的圖片上傳額度已用完。"
   },
+  "imageUploadWriteSecond": {
+    "limit": 6,
+    "message": "圖片操作太頻繁，請稍後再試。"
+  },
+  "imageUploadWriteHourly": {
+    "limit": 120,
+    "message": "圖片操作太頻繁，請稍後再試。"
+  },
   "loginSyncHourly": {
     "limit": 300,
     "message": "登入同步太頻繁，請稍後再試。"

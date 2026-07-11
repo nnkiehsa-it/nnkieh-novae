@@ -19,7 +19,7 @@ import {
 const NOTIFICATION_SOURCE_PAGE_SIZE = 10;
 let realtimeChannelSerial = 0;
 
-type NotificationCursor = { createdAtMs: number; id: string } | null;
+export type NotificationCursor = { createdAtMs: number; id: string } | null;
 export interface NotificationSourcePage {
   cursor: NotificationCursor;
   hasMore: boolean;
@@ -168,22 +168,32 @@ export function subscribeNotificationSource(
   };
 }
 
-export async function fetchNotificationSourcePage(
-  source: NotificationSource,
+export async function fetchNotificationSourcePages(
+  requests: Array<{ cursor: NotificationCursor; source: NotificationSource }>,
   uid: string,
-  cursor: NotificationCursor,
-): Promise<NotificationSourcePage> {
+): Promise<Partial<Record<NotificationSource, NotificationSourcePage>>> {
   try {
     const fn = invokeBackendAction<
-      { cursor: NotificationCursor; pageSize: number; source: NotificationSource; uid: string },
-      { cursor: NotificationCursor; hasMore: boolean; notifications: Record<string, unknown>[] }
-    >('listNotifications', { timeoutMs: READ_REQUEST_TIMEOUT_MS });
-    const result = await fn({ cursor, pageSize: NOTIFICATION_SOURCE_PAGE_SIZE, source, uid });
-    return {
-      cursor: normalizeNotificationCursor(result.cursor),
-      hasMore: result.hasMore,
-      notifications: result.notifications.map((notification) => normalizeNotificationRecord(source, notification)),
-    };
+      { requests: Array<{ cursor: NotificationCursor; pageSize: number; source: NotificationSource }>; uid: string },
+      { pages: Partial<Record<NotificationSource, Record<string, unknown>>> }
+    >('listNotificationPages', { timeoutMs: READ_REQUEST_TIMEOUT_MS });
+    const result = await fn({
+      requests: requests.map((request) => ({ ...request, pageSize: NOTIFICATION_SOURCE_PAGE_SIZE })),
+      uid,
+    });
+    return Object.fromEntries(requests.flatMap(({ source }) => {
+      const page = result.pages[source];
+      if (!page) return [];
+      const notifications = Array.isArray(page.notifications) ? page.notifications : [];
+      return [[source, {
+        cursor: normalizeNotificationCursor(page.cursor),
+        hasMore: page.hasMore === true,
+        notifications: notifications.map((notification) => normalizeNotificationRecord(
+          source,
+          notification as Record<string, unknown>,
+        )),
+      } satisfies NotificationSourcePage]];
+    })) as Partial<Record<NotificationSource, NotificationSourcePage>>;
   } catch (error) {
     throw toReadableBackendError(error);
   }

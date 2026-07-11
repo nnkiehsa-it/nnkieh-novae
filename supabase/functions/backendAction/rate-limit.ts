@@ -20,6 +20,9 @@ export async function claimBackendActionRateLimit(uid: string, definition: Backe
     case "upload-resolve":
       limits = { prefix: "backend.upload-resolve", second: RATE_LIMITS.backendActionUploadResolveSecond, hourly: RATE_LIMITS.backendActionUploadResolveHourly };
       break;
+    case "upload-write":
+      limits = { prefix: "backend.upload-write", second: RATE_LIMITS.imageUploadWriteSecond, hourly: RATE_LIMITS.imageUploadWriteHourly };
+      break;
     case "admin-write":
       limits = { prefix: "backend.admin-write", second: RATE_LIMITS.backendActionAdminWriteSecond, hourly: RATE_LIMITS.backendActionAdminWriteHourly };
       break;

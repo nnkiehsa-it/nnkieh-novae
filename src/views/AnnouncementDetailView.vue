@@ -76,7 +76,7 @@ import {
   updateAnnouncement,
 } from '@/services/announcements';
 import { subscribeContentRealtimeEvents } from '@/services/realtime-events';
-import { deleteUploadedImage } from '@/services/uploads';
+import { deleteUploadedImages } from '@/services/uploads';
 import type { AnnouncementRecord } from '@/types';
 import {
   createContentCacheKey,
@@ -176,7 +176,7 @@ async function handleSave(payload: { title: string; content: string; uploadedIma
     editorOpen.value = false;
     progressToast.succeed('公告已更新。');
   } catch (caught) {
-    await Promise.allSettled(payload.uploadedImages.map((image) => deleteUploadedImage(image.storagePath)));
+    await deleteUploadedImages(payload.uploadedImages.map((image) => image.storagePath)).catch(() => undefined);
     editorError.value = caught instanceof Error ? caught.message : '公告更新失敗。';
     progressToast.fail(editorError.value);
   } finally {

@@ -13,7 +13,7 @@ import {
   updateAnnouncement,
 } from '@/services/announcements';
 import { subscribeContentRealtimeEvents } from '@/services/realtime-events';
-import { deleteUploadedImage } from '@/services/uploads';
+import { deleteUploadedImages } from '@/services/uploads';
 import type { UploadedImage } from '@/composables/useImageUpload';
 import type { AnnouncementRecord, AnnouncementSortOption } from '@/types';
 import { isContentUnavailableError } from '@/services/issues-core';
@@ -100,7 +100,7 @@ export function useAnnouncementManagement() {
       editorOpen.value = false;
       progressToast.succeed(isEditing ? '公告已更新。' : '公告已發布。');
     } catch (caught) {
-      await Promise.allSettled(payload.uploadedImages.map((image) => deleteUploadedImage(image.storagePath)));
+      await deleteUploadedImages(payload.uploadedImages.map((image) => image.storagePath)).catch(() => undefined);
       editorError.value = caught instanceof Error ? caught.message : isEditing ? '公告更新失敗。' : '公告發布失敗。';
       progressToast.fail(editorError.value);
     } finally {

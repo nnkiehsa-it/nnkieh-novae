@@ -34,6 +34,8 @@ async function readRateLimitsConfig(projectRoot) {
   const issueCreateDaily = raw.issueCreateDaily || {};
   const commentCreateHourly = raw.commentCreateHourly || {};
   const imageUploadDaily = raw.imageUploadDaily || {};
+  const imageUploadWriteSecond = raw.imageUploadWriteSecond || {};
+  const imageUploadWriteHourly = raw.imageUploadWriteHourly || {};
   const loginSyncHourly = raw.loginSyncHourly || {};
   const avatarCacheDaily = raw.avatarCacheDaily || {};
   const supportToggleHourly = raw.supportToggleHourly || {};
@@ -69,6 +71,8 @@ async function readRateLimitsConfig(projectRoot) {
     issueCreateDaily: readLimitConfig('issueCreateDaily', issueCreateDaily),
     commentCreateHourly: readLimitConfig('commentCreateHourly', commentCreateHourly),
     imageUploadDaily: readLimitConfig('imageUploadDaily', imageUploadDaily),
+    imageUploadWriteSecond: readLimitConfig('imageUploadWriteSecond', imageUploadWriteSecond),
+    imageUploadWriteHourly: readLimitConfig('imageUploadWriteHourly', imageUploadWriteHourly),
     loginSyncHourly: readLimitConfig('loginSyncHourly', loginSyncHourly),
     avatarCacheDaily: readLimitConfig('avatarCacheDaily', avatarCacheDaily),
     supportToggleHourly: readLimitConfig('supportToggleHourly', supportToggleHourly),

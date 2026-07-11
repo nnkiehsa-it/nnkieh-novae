@@ -130,9 +130,9 @@ async function resolveUploadAccessBatch(
 }
 
 export function isUploadAction(action: string) {
-  return action === "createImageUploadSession"
-    || action === "finalizeImageUpload"
-    || action === "deleteUploadedImage"
+  return action === "createImageUploadSessions"
+    || action === "finalizeImageUploads"
+    || action === "deleteUploadedImages"
     || action === "resolveUploadImageUrls";
 }
 
@@ -174,8 +174,42 @@ export async function handleUploadAction(
   payload: JsonRecord,
   auth: AuthContext,
   supabase: BackendSupabase,
-) {
-  if (action === "createImageUploadSession") {
+): Promise<JsonRecord> {
+  if (action === "createImageUploadSessions") {
+    const images = Array.isArray(payload.images)
+      ? payload.images.slice(0, RATE_LIMITS.imageUploads.issueMaxImages).map((image) => image as JsonRecord)
+      : [];
+    if (images.length === 0) throw new Error("missing-images");
+    const sessions = [];
+    for (const image of images) {
+      sessions.push(await handleUploadAction("internal:create-upload-session", image, auth, supabase));
+    }
+    return { sessions };
+  }
+
+  if (action === "finalizeImageUploads") {
+    const uploads = Array.isArray(payload.uploads)
+      ? payload.uploads.slice(0, RATE_LIMITS.imageUploads.issueMaxImages).map((upload) => upload as JsonRecord)
+      : [];
+    if (uploads.length === 0) throw new Error("missing-uploads");
+    const finalized = [];
+    for (const upload of uploads) {
+      finalized.push(await handleUploadAction("internal:finalize-upload", upload, auth, supabase));
+    }
+    return { uploads: finalized };
+  }
+
+  if (action === "deleteUploadedImages") {
+    const storagePaths = Array.isArray(payload.storagePaths)
+      ? [...new Set(payload.storagePaths.map((path) => asString(path)).filter(Boolean))].slice(0, 50)
+      : [];
+    for (const storagePath of storagePaths) {
+      await handleUploadAction("internal:delete-upload", { storagePath }, auth, supabase);
+    }
+    return { deleted: storagePaths.length, success: true };
+  }
+
+  if (action === "internal:create-upload-session") {
     await claimFixedWindowRateLimit(
       auth.uid,
       "image_upload.create",
@@ -223,7 +257,7 @@ export async function handleUploadAction(
     };
   }
 
-  if (action === "finalizeImageUpload") {
+  if (action === "internal:finalize-upload") {
     const uploadId = asString(payload.uploadId);
     const { data: upload, error: uploadError } = await supabase.schema("app_private").from("uploads")
       .select("id,owner_uid,cloudinary_public_id,status,width,height,size_bytes")
@@ -295,7 +329,7 @@ export async function handleUploadAction(
     };
   }
 
-  if (action === "deleteUploadedImage") {
+  if (action === "internal:delete-upload") {
     const storagePath = asString(payload.storagePath);
     const uploadId = asString(payload.uploadId);
     let query = supabase.schema("app_private").from("uploads")

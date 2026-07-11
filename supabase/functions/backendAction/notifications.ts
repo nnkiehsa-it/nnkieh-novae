@@ -14,7 +14,7 @@ const PUSH_TOKEN_LIMITS = {
 } as const;
 
 export function isNotificationAction(action: string) {
-  return action === "listNotifications"
+  return action === "listNotificationPages"
     || action === "getNotificationSnapshot"
     || action === "getNotificationReadState"
     || action === "getNotificationUnreadHint"
@@ -83,18 +83,25 @@ export async function handleNotificationAction(
     };
   }
 
-  if (action === "listNotifications") {
-    const cursor = readCursor(payload);
-    const { data, error } = await supabase.schema("app_api").rpc("backend_list_notifications", {
-      actor_uid: auth.uid,
-      actor_is_admin: auth.isAdmin,
-      notification_source: readNotificationSource(payload),
-      page_size: Math.min(Math.max(Math.round(asNumber(payload.pageSize, 10)), 1), 30),
-      cursor_id: asUuid(cursor.id) || null,
-      cursor_created_at: readCursorDate(cursor, "createdAtMs", "created_at") || null,
-    });
-    if (error) throw error;
-    return data;
+  if (action === "listNotificationPages") {
+    const requests = Array.isArray(payload.requests) ? payload.requests.slice(0, 3) : [];
+    const pages = await Promise.all(requests.map(async (value) => {
+      const request = asRecord(value);
+      const source = readNotificationSource(request);
+      if (source === "admin" && !auth.isAdmin) throw new Error("permission-denied");
+      const cursor = readCursor(request);
+      const { data, error } = await supabase.schema("app_api").rpc("backend_list_notifications", {
+        actor_uid: auth.uid,
+        actor_is_admin: auth.isAdmin,
+        notification_source: source,
+        page_size: Math.min(Math.max(Math.round(asNumber(request.pageSize, 10)), 1), 30),
+        cursor_id: asUuid(cursor.id) || null,
+        cursor_created_at: readCursorDate(cursor, "createdAtMs", "created_at") || null,
+      });
+      if (error) throw error;
+      return [source, data] as const;
+    }));
+    return { pages: Object.fromEntries(pages) };
   }
 
   if (action === "getNotificationReadState") {

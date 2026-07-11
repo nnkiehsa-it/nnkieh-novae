@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue';
 import { useToast } from '@/composables/useToast';
 import { processImageForUpload } from '@/lib/image-processing';
-import { createImageUploadPolicy } from '@/services/uploads';
+import { createImageUploadPolicies } from '@/services/uploads';
 
 export interface UploadedImage {
   storagePath: string;
@@ -58,30 +58,23 @@ export function useImageUpload() {
     }
   }
 
-  async function uploadPreparedImage(image: PreparedImage): Promise<UploadedImage | null> {
+  async function uploadPreparedImages(images: PreparedImage[]): Promise<UploadedImage[]> {
+    if (images.length === 0) return [];
     startOperation();
 
     try {
-      const { uploadId, storagePath, width, height } = await createImageUploadPolicy(
-        image.file,
-        image.width,
-        image.height,
-      );
-
-      if (!uploadId || !storagePath) {
-        throw new Error('上傳成功但未取得圖片網址');
-      }
-
-      return {
+      const policies = await createImageUploadPolicies(images.map(({ file, height, width }) => ({ file, height, width })));
+      if (policies.length !== images.length) throw new Error('圖片上傳工作未完整完成。');
+      return policies.map(({ uploadId, storagePath, width, height }) => ({
         storagePath,
         uploadId,
         url: `srp-upload://${uploadId}`,
         width,
         height,
-      };
+      }));
     } catch (error) {
       reportError(error, '圖片上傳失敗，請稍後再試。');
-      return null;
+      return [];
     } finally {
       finishOperation();
     }
@@ -92,6 +85,6 @@ export function useImageUpload() {
     revokePreparedImage,
     uploadError,
     uploading,
-    uploadPreparedImage,
+    uploadPreparedImages,
   };
 }

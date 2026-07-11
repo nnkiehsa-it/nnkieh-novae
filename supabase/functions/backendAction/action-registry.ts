@@ -10,6 +10,7 @@ export type BackendActionRateLimitGroup =
   | "read"
   | "general-write"
   | "upload-resolve"
+  | "upload-write"
   | "admin-write"
   | "sensitive-write";
 
@@ -78,9 +79,9 @@ export const backendActionDefinitions = [
   action("cacheUserAvatar", "user", "sensitive-write", userHandler),
   action("getUserAvatarUrls", "user", "read", userHandler),
 
-  idempotentWrite("createImageUploadSession", "upload", "sensitive-write", uploadHandler),
-  idempotentWrite("finalizeImageUpload", "upload", "sensitive-write", uploadHandler),
-  idempotentWrite("deleteUploadedImage", "upload", "sensitive-write", uploadHandler),
+  idempotentWrite("createImageUploadSessions", "upload", "upload-write", uploadHandler),
+  idempotentWrite("finalizeImageUploads", "upload", "upload-write", uploadHandler),
+  idempotentWrite("deleteUploadedImages", "upload", "upload-write", uploadHandler),
   action("resolveUploadImageUrls", "upload", "upload-resolve", uploadHandler),
 
   action("getIssue", "issue", "read", issueHandler),
@@ -107,7 +108,7 @@ export const backendActionDefinitions = [
   idempotentWrite("createAnnouncementComment", "announcement", "sensitive-write", announcementHandler),
   idempotentWrite("deleteAnnouncementComment", "announcement", "sensitive-write", announcementHandler),
 
-  action("listNotifications", "notification", "read", notificationHandler),
+  action("listNotificationPages", "notification", "read", notificationHandler),
   action("getNotificationSnapshot", "notification", "read", notificationHandler),
   action("getNotificationReadState", "notification", "read", notificationHandler),
   action("getNotificationUnreadHint", "notification", "read", notificationHandler),

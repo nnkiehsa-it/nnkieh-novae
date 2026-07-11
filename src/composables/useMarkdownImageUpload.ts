@@ -1,7 +1,7 @@
 import { computed, onBeforeUnmount, ref, type Ref } from 'vue';
 import { useImageUpload, type PreparedImage, type UploadedImage } from '@/composables/useImageUpload';
 import { useToast } from '@/composables/useToast';
-import { deleteUploadedImage } from '@/services/uploads';
+import { deleteUploadedImages as deleteUploadedImageBatch } from '@/services/uploads';
 
 interface MarkdownImageUploadOptions {
   getRemainingSlots?: () => number;
@@ -12,7 +12,7 @@ export function useMarkdownImageUpload(content: Ref<string>, options: MarkdownIm
   const fileInputRef = ref<HTMLInputElement | null>(null);
   const textareaRef = ref<HTMLTextAreaElement | null>(null);
   const imageAttachments = ref<PreparedImage[]>([]);
-  const { prepareImage, revokePreparedImage, uploading, uploadError, uploadPreparedImage } = useImageUpload();
+  const { prepareImage, revokePreparedImage, uploading, uploadError, uploadPreparedImages } = useImageUpload();
   const { showToast } = useToast();
   const imageUrls = computed(() => imageAttachments.value.map((image) => image.previewUrl));
 
@@ -96,14 +96,11 @@ export function useMarkdownImageUpload(content: Ref<string>, options: MarkdownIm
   }
 
   async function deleteUploadedImages(images: UploadedImage[]) {
-    await Promise.allSettled(images.map((image) => deleteUploadedImage(image.storagePath)));
+    await deleteUploadedImageBatch(images.map((image) => image.storagePath));
   }
 
   async function uploadImagesAndBuildContent() {
-    const uploadResults = await Promise.all(
-      imageAttachments.value.map((image) => uploadPreparedImage(image)),
-    );
-    const uploadedImages = uploadResults.filter((image): image is UploadedImage => image !== null);
+    const uploadedImages = await uploadPreparedImages(imageAttachments.value);
 
     if (uploadedImages.length !== imageAttachments.value.length) {
       await deleteUploadedImages(uploadedImages);

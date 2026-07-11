@@ -2,6 +2,17 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "修正多圖上傳流程",
+    version: "v2.0.158",
+    date: "2026-07-11",
+    time: "15:41",
+    items: [
+      { title: "修正圖片完成上傳後可能無法確認的問題。" },
+      { title: "改善多張圖片同時上傳時的操作穩定性。" },
+      { title: "最佳化載入較早通知時的處理效率。" }
+    ]
+  },
+  {
     title: "修正圖片壓縮相容性",
     version: "v2.0.157",
     date: "2026-07-11",

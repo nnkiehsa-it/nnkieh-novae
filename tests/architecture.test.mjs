@@ -163,14 +163,15 @@ test('backendAction covers frontend actions and Cloudinary direct upload', async
 
   for (const action of [
     'getCurrentUserRole',
-    'createImageUploadSession',
-    'finalizeImageUpload',
+    'createImageUploadSessions',
+    'finalizeImageUploads',
+    'deleteUploadedImages',
     'resolveUploadImageUrls',
     'createIssue',
     'deleteIssue',
     'listAnnouncements',
     'setAnnouncementLike',
-    'listNotifications',
+    'listNotificationPages',
     'registerPushToken',
     'getPlatformDashboard',
   ]) {
@@ -179,6 +180,10 @@ test('backendAction covers frontend actions and Cloudinary direct upload', async
 
   assert.match(uploads, /res\.cloudinary\.com|api\.cloudinary\.com/u);
   assert.match(uploads, /FormData/u);
+  assert.match(uploads, /createImageUploadSessions/u);
+  assert.match(uploads, /finalizeImageUploads/u);
+  assert.match(uploads, /deleteUploadedImages/u);
+  assert.doesNotMatch(uploads, /'createImageUploadSession'|'finalizeImageUpload'|'deleteUploadedImage'/u);
   assert.doesNotMatch(uploads, /firebase\/storage|uploadBytes/u);
   assert.match(session, /fetchCurrentUserRole/u);
   assert.match(backendAction, /requireVerifiedFirebaseUser/u);
@@ -412,14 +417,14 @@ test('backend list actions use stable cursor pagination at the service boundary'
   assert.match(issueReadMigration, /cursor_id is null/u);
   assert.match(backendAction, /if \(action === "listComments"\)/u);
   assert.match(backendAction, /if \(action === "listAnnouncementComments"\)/u);
-  assert.match(backendAction, /if \(action === "listNotifications"\)/u);
+  assert.match(backendAction, /if \(action === "listNotificationPages"\)/u);
   assert.match(backendAction, /rpc\("backend_list_notifications"/u);
   assert.match(backendAction, /cursor_created_at: readCursorDate\(cursor, "createdAtMs", "created_at"\) \|\| null/u);
   assert.match(issuePages, /normalizeIssueCursor\(result\.cursor\)/u);
   assert.match(issueComments, /normalizeCommentCursor\(result\.cursor\)/u);
   assert.match(announcements, /normalizeAnnouncementCursor\(result\.cursor\)/u);
   assert.match(announcements, /normalizeCommentCursor\(result\.cursor\)/u);
-  assert.match(notifications, /normalizeNotificationCursor\(result\.cursor\)/u);
+  assert.match(notifications, /normalizeNotificationCursor\(page\.cursor\)/u);
   assert.match(mostSupportedCursorMigration, /effective_sort_name = 'most-supported'/u);
   assert.match(mostSupportedCursorMigration, /coalesce\(cursor_sort_date, cursor_created_at\)/u);
   assert.match(mostSupportedCursorMigration, /when effective_sort_name = 'most-supported' then last_issue -> 'created_at_ms'/u);

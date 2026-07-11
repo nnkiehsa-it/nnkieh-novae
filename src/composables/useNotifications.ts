@@ -3,11 +3,12 @@ import type { NotificationRecord, NotificationSource } from '@/types';
 import { useSession } from '@/composables/useSession';
 import { registerAppResumeHandler } from '@/composables/useAppResume';
 import {
-  fetchNotificationSourcePage,
+  fetchNotificationSourcePages,
   fetchNotificationSnapshot,
   markNotificationsOpened,
   subscribeNotificationReadState,
   subscribeNotificationSource,
+  type NotificationCursor,
   type NotificationReadState,
 } from '@/services/notifications';
 import { resetAppConnection } from '@/lib/reconnect';
@@ -21,8 +22,6 @@ const defaultPersonalPreferences = {
   comments: true,
   issueUpdates: true,
 };
-type NotificationCursor = Awaited<ReturnType<typeof fetchNotificationSourcePage>>['cursor'];
-
 function emptySourceRecord<T>(createValue: () => T): Record<NotificationSource, T> {
   return {
     broadcast: createValue(),
@@ -254,11 +253,14 @@ async function loadMoreNotifications() {
   loadingMore.value = true;
   error.value = '';
   try {
-    const results = await Promise.allSettled(activeSources.value.map(async (source) => {
+    const requests = activeSources.value.flatMap((source) => {
       const cursor = cursors.value[source];
-      if (!cursor || !sourceHasMore.value[source]) return;
-
-      const page = await fetchNotificationSourcePage(source, uid, cursor);
+      return cursor && sourceHasMore.value[source] ? [{ cursor, source }] : [];
+    });
+    const pages = await fetchNotificationSourcePages(requests, uid);
+    requests.forEach(({ source }) => {
+      const page = pages[source];
+      if (!page) return;
       const existingIds = new Set([
         ...firstPages.value[source],
         ...extraPages.value[source],
@@ -269,12 +271,7 @@ async function loadMoreNotifications() {
       ];
       cursors.value[source] = page.cursor;
       sourceHasMore.value[source] = page.hasMore;
-    }));
-    if (results.some((result) => result.status === 'rejected')) {
-      error.value = results.every((result) => result.status === 'rejected')
-        ? notificationLoadFailureMessage()
-        : '部分通知暫時無法載入。';
-    }
+    });
   } catch {
     error.value = notificationLoadFailureMessage();
   } finally {

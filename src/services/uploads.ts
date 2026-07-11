@@ -42,6 +42,12 @@ interface CloudinaryUploadResponse {
   version?: number;
 }
 
+export interface ImageUploadInput {
+  file: File;
+  height: number;
+  width: number;
+}
+
 function toReadableUploadError(error: unknown) {
   const message = error instanceof Error ? error.message : '';
   const uploadMessage = message.replace(/^FirebaseError:\s*/u, '').trim();
@@ -53,79 +59,84 @@ function toReadableUploadError(error: unknown) {
   return toReadableBackendError(error);
 }
 
-export async function createImageUploadPolicy(file: File, width: number, height: number): Promise<ImageUploadPolicy> {
-  if (file.type !== 'image/webp') {
+async function uploadToCloudinary(file: File, session: ImageUploadSession) {
+  const body = new FormData();
+  body.set('file', file);
+  body.set('api_key', session.apiKey);
+  body.set('timestamp', String(session.timestamp));
+  body.set('public_id', session.publicId);
+  body.set('signature', session.signature);
+  if (session.allowedFormats) body.set('allowed_formats', session.allowedFormats);
+  if (session.folder) body.set('folder', session.folder);
+  if (session.overwrite) body.set('overwrite', session.overwrite);
+  if (session.notificationUrl) body.set('notification_url', session.notificationUrl);
+  if (session.type) body.set('type', session.type);
+
+  return await withRequestTimeout(async () => {
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${session.cloudName}/image/upload`,
+      { method: 'POST', body },
+    );
+    if (!response.ok) throw new Error(`圖片上傳失敗：${response.status}`);
+    return await response.json() as CloudinaryUploadResponse;
+  }, { label: '圖片上傳', timeoutMs: LONG_REQUEST_TIMEOUT_MS });
+}
+
+export async function createImageUploadPolicies(inputs: ImageUploadInput[]): Promise<ImageUploadPolicy[]> {
+  if (inputs.length === 0) return [];
+  if (inputs.some(({ file }) => file.type !== 'image/webp')) {
     throw new Error('圖片必須轉換為 WebP 後才能上傳。');
   }
 
   try {
     const createSession = invokeBackendAction<
-      { contentType: string; height: number; requestId: string; size: number; width: number },
-      ImageUploadSession
-    >('createImageUploadSession');
-    const session = await createSession({
-      contentType: file.type,
-      height,
+      { images: Array<{ contentType: string; height: number; size: number; width: number }>; requestId: string },
+      { sessions: ImageUploadSession[] }
+    >('createImageUploadSessions');
+    const { sessions } = await createSession({
+      images: inputs.map(({ file, height, width }) => ({
+        contentType: file.type,
+        height,
+        size: file.size,
+        width,
+      })),
       requestId: createRequestId(),
-      size: file.size,
-      width,
     });
-    const body = new FormData();
-    body.set('file', file);
-    body.set('api_key', session.apiKey);
-    body.set('timestamp', String(session.timestamp));
-    body.set('public_id', session.publicId);
-    body.set('signature', session.signature);
-    if (session.allowedFormats) {
-      body.set('allowed_formats', session.allowedFormats);
-    }
-    if (session.folder) {
-      body.set('folder', session.folder);
-    }
-    if (session.overwrite) {
-      body.set('overwrite', session.overwrite);
-    }
-    if (session.notificationUrl) {
-      body.set('notification_url', session.notificationUrl);
-    }
-    if (session.type) {
-      body.set('type', session.type);
-    }
-
-    const uploadResponse = await withRequestTimeout(async () => {
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${session.cloudName}/image/upload`,
-        { method: 'POST', body },
-      );
-      if (!response.ok) {
-        throw new Error(`圖片上傳失敗：${response.status}`);
-      }
-      return await response.json() as CloudinaryUploadResponse;
-    }, { label: '圖片上傳', timeoutMs: LONG_REQUEST_TIMEOUT_MS });
+    if (sessions.length !== inputs.length) throw new Error('圖片上傳工作建立不完整。');
+    const uploadResponses = await Promise.all(
+      inputs.map(({ file }, index) => uploadToCloudinary(file, sessions[index]!)),
+    );
 
     const finalize = invokeBackendAction<{
-      publicId: string;
-      signature: string;
-      uploadId: string;
-      version: number;
-    }, ImageUploadPolicy>('finalizeImageUpload', {
+      requestId: string;
+      uploads: Array<{ publicId: string; signature: string; uploadId: string; version: number }>;
+    }, { uploads: ImageUploadPolicy[] }>('finalizeImageUploads', {
       timeoutMs: LONG_REQUEST_TIMEOUT_MS,
     });
-    return await finalize({
-      publicId: uploadResponse.public_id ?? '',
-      signature: uploadResponse.signature ?? '',
-      uploadId: session.uploadId,
-      version: uploadResponse.version ?? 0,
+    const result = await finalize({
+      requestId: createRequestId(),
+      uploads: uploadResponses.map((response, index) => ({
+        publicId: response.public_id ?? '',
+        signature: response.signature ?? '',
+        uploadId: sessions[index]!.uploadId,
+        version: response.version ?? 0,
+      })),
     });
+    return result.uploads;
   } catch (error) {
     throw toReadableUploadError(error);
   }
 }
 
-export async function deleteUploadedImage(storagePath: string) {
+export async function deleteUploadedImages(storagePaths: string[]) {
+  const uniquePaths = [...new Set(storagePaths.filter(Boolean))];
+  if (uniquePaths.length === 0) return;
   try {
-    const fn = invokeBackendAction<{ storagePath?: string; uploadId?: string }, { success: boolean }>('deleteUploadedImage');
-    await fn({ storagePath });
+    const fn = invokeBackendAction<
+      { requestId: string; storagePaths: string[] },
+      { deleted: number; success: boolean }
+    >('deleteUploadedImages');
+    await fn({ requestId: createRequestId(), storagePaths: uniquePaths });
   } catch (error) {
     throw toReadableBackendError(error);
   }
