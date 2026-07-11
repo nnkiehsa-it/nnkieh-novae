@@ -1,5 +1,5 @@
 /**
- * Build static docs HTML pages from content/docs markdown sources.
+ * Build static docs HTML pages from the repository's docs markdown sources.
  * Output: docs-site/ (consumed as Vite multi-page inputs)
  */
 import fs from 'node:fs';
@@ -10,7 +10,7 @@ import markdownItAnchor from 'markdown-it-anchor';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
-const contentDir = path.join(root, 'content', 'docs');
+const contentDir = path.resolve(root, '..', 'docs');
 const outDir = path.join(root, 'docs-site');
 
 const DOC_ORDER = [
