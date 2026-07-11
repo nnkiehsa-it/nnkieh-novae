@@ -30,31 +30,31 @@ const DOC_ORDER = [
 
 const NAV_ZH = [
   { id: 'README', title: '文件首頁', file: 'index.html' },
-  { id: 'project-overview', title: '專案總覽', file: 'project-overview.html' },
   { id: 'quick-start', title: '快速開始', file: 'quick-start.html' },
   { id: 'user-guide', title: '使用手冊', file: 'user-guide.html' },
-  { id: 'architecture', title: '系統架構', file: 'architecture.html' },
   { id: 'configuration', title: '設定參考', file: 'configuration.html' },
+  { id: 'project-overview', title: '產品亮點', file: 'project-overview.html' },
   { id: 'deployment-guide', title: '部署指南', file: 'deployment-guide.html' },
-  { id: 'operations', title: '維運手冊', file: 'operations.html' },
   { id: 'troubleshooting', title: '故障排除', file: 'troubleshooting.html' },
+  { id: 'operations', title: '維運手冊', file: 'operations.html' },
   { id: 'security', title: '安全模型', file: 'security.html' },
   { id: 'costs', title: '成本指南', file: 'costs.html' },
+  { id: 'architecture', title: '系統架構', file: 'architecture.html' },
   { id: 'contributing', title: '貢獻指南', file: 'contributing.html' }
 ];
 
 const NAV_EN = [
   { id: 'README', title: 'Docs home', file: 'index.html' },
-  { id: 'project-overview', title: 'Project overview', file: 'project-overview.html' },
   { id: 'quick-start', title: 'Quick start', file: 'quick-start.html' },
   { id: 'user-guide', title: 'User guide', file: 'user-guide.html' },
-  { id: 'architecture', title: 'Architecture', file: 'architecture.html' },
   { id: 'configuration', title: 'Configuration', file: 'configuration.html' },
+  { id: 'project-overview', title: 'Product highlights', file: 'project-overview.html' },
   { id: 'deployment-guide', title: 'Deployment', file: 'deployment-guide.html' },
-  { id: 'operations', title: 'Operations', file: 'operations.html' },
   { id: 'troubleshooting', title: 'Troubleshooting', file: 'troubleshooting.html' },
+  { id: 'operations', title: 'Operations', file: 'operations.html' },
   { id: 'security', title: 'Security', file: 'security.html' },
   { id: 'costs', title: 'Costs', file: 'costs.html' },
+  { id: 'architecture', title: 'Architecture', file: 'architecture.html' },
   { id: 'contributing', title: 'Contributing', file: 'contributing.html' }
 ];
 

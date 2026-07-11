@@ -137,6 +137,45 @@
             </span>
             <AppIcon name="chevron-right" :size="4" class="shrink-0 text-ink-400" :stroke-width="2.2" />
           </RouterLink>
+          <a
+            :href="PROJECT_WEBSITE_URL"
+            target="_blank"
+            rel="noreferrer"
+            class="flex w-full items-center justify-between gap-3 py-4 text-left transition-colors hover:bg-ink-50 focus-visible:bg-ink-50 dark:hover:bg-ink-800/50 dark:focus-visible:bg-ink-800/50"
+            @click="emit('close')"
+          >
+            <span class="flex min-w-0 items-center gap-3">
+              <span class="flex h-9 w-9 shrink-0 items-center justify-center text-ink-500 dark:text-ink-300"><AppIcon name="link" :size="4" :stroke-width="2" /></span>
+              <span><span class="block text-sm font-semibold text-ink-900 dark:text-ink-100">Novae 官網</span><span class="mt-0.5 block text-xs text-ink-500 dark:text-ink-400">探索產品特色與校園導入方式</span></span>
+            </span>
+            <AppIcon name="chevron-right" :size="4" class="shrink-0 text-ink-400" :stroke-width="2.2" />
+          </a>
+          <a
+            :href="PROJECT_DOCS_URL"
+            target="_blank"
+            rel="noreferrer"
+            class="flex w-full items-center justify-between gap-3 py-4 text-left transition-colors hover:bg-ink-50 focus-visible:bg-ink-50 dark:hover:bg-ink-800/50 dark:focus-visible:bg-ink-800/50"
+            @click="emit('close')"
+          >
+            <span class="flex min-w-0 items-center gap-3">
+              <span class="flex h-9 w-9 shrink-0 items-center justify-center text-ink-500 dark:text-ink-300"><AppIcon name="changelog" :size="4" :stroke-width="2" /></span>
+              <span><span class="block text-sm font-semibold text-ink-900 dark:text-ink-100">使用文件</span><span class="mt-0.5 block text-xs text-ink-500 dark:text-ink-400">查看功能、設定與操作說明</span></span>
+            </span>
+            <AppIcon name="chevron-right" :size="4" class="shrink-0 text-ink-400" :stroke-width="2.2" />
+          </a>
+          <a
+            :href="PROJECT_GITHUB_URL"
+            target="_blank"
+            rel="noreferrer"
+            class="flex w-full items-center justify-between gap-3 py-4 text-left transition-colors hover:bg-ink-50 focus-visible:bg-ink-50 dark:hover:bg-ink-800/50 dark:focus-visible:bg-ink-800/50"
+            @click="emit('close')"
+          >
+            <span class="flex min-w-0 items-center gap-3">
+              <span class="flex h-9 w-9 shrink-0 items-center justify-center text-ink-500 dark:text-ink-300"><AppIcon name="code" :size="4" :stroke-width="2" /></span>
+              <span><span class="block text-sm font-semibold text-ink-900 dark:text-ink-100">GitHub 專案</span><span class="mt-0.5 block text-xs text-ink-500 dark:text-ink-400">查看原始碼與最新進展</span></span>
+            </span>
+            <AppIcon name="chevron-right" :size="4" class="shrink-0 text-ink-400" :stroke-width="2.2" />
+          </a>
           <RouterLink
             v-if="isAdmin"
             to="/dashboard"
@@ -190,7 +229,12 @@
 import { RouterLink } from 'vue-router';
 import AppIcon from '@/components/ui/AppIcon.vue';
 import UserAvatar from '@/components/ui/UserAvatar.vue';
-import { SCHOOL_NAME } from '@/constants/app';
+import {
+  PROJECT_DOCS_URL,
+  PROJECT_GITHUB_URL,
+  PROJECT_WEBSITE_URL,
+  SCHOOL_NAME,
+} from '@/constants/app';
 import type { PersonalPushPreferenceKey, PersonalPushPreferences } from '@/services/notifications';
 
 withDefaults(defineProps<{

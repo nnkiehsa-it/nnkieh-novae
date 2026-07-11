@@ -43,7 +43,7 @@
           :push-status-description="pushStatusDescription"
           @logout="handleLogout"
           @restart-app="handleRestartApp"
-          @set-preference="setPersonalPushPreference"
+          @set-preference="handleSetPersonalPushPreference"
           @switch-account="switchAccount"
           @toggle-push="handlePushAction"
         />
@@ -95,7 +95,7 @@ const {
   refreshPushPreference,
   setPersonalPushPreference,
 } = usePushNotifications();
-const { showToast } = useToast();
+const { showProgressToast, showToast } = useToast();
 const displayPhotoUrl = computed(() => customPhotoUrl.value || user.value?.photoURL || null);
 const isOpen = ref(false);
 const rootRef = ref<HTMLElement | null>(null);
@@ -183,11 +183,25 @@ async function switchAccount() {
 
 async function handlePushAction() {
   if (!pushActionLabel.value) return;
-  if (pushEnabled.value) {
-    await disablePushNotifications();
-    return;
+  const progressToast = showProgressToast('正在更新推播設定…');
+  const succeeded = pushEnabled.value
+    ? await disablePushNotifications()
+    : await enablePushNotifications();
+  if (succeeded) {
+    progressToast.succeed('推播設定已更新。');
+  } else {
+    progressToast.fail(pushError.value || '推播設定更新失敗，請稍後再試。');
   }
-  await enablePushNotifications();
+}
+
+async function handleSetPersonalPushPreference(key: PersonalPushPreferenceKey, value: boolean) {
+  const progressToast = showProgressToast('正在儲存通知設定…');
+  const succeeded = await setPersonalPushPreference(key, value);
+  if (succeeded) {
+    progressToast.succeed('通知設定已儲存。');
+  } else {
+    progressToast.fail(pushError.value || '通知設定儲存失敗，請稍後再試。');
+  }
 }
 
 async function handleRestartApp() {

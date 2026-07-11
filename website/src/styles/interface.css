@@ -28,9 +28,9 @@
   --novae-cols:6rem 8rem minmax(0,1fr) 8rem 9rem 7rem 2.5rem;
   background:#fff;color:var(--novae-ink);
   font-family:'Inter','PingFang TC','Microsoft JhengHei',system-ui,sans-serif;
-  letter-spacing:0;-webkit-font-smoothing:antialiased
+  letter-spacing:0;-webkit-font-smoothing:antialiased;pointer-events:none;user-select:none
 }
-.novae-demo button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;padding:0}
+.novae-demo button{font:inherit;color:inherit;cursor:default;background:none;border:0;padding:0}
 .novae-demo *{box-sizing:border-box}
 
 /* Header — app-header 4rem, max-w-7xl, px-4/6/8 */
@@ -83,16 +83,17 @@
 }
 .novae-controls .novae-add{background:var(--novae-ink);color:#fff;width:2.25rem;height:2.25rem}
 .novae-segmented{
-  display:inline-flex;align-items:center;gap:2px;padding:.25rem;border:1px solid #e5e5dc;
-  border-radius:999px;background:rgba(247,247,245,.7);min-height:2.5rem;box-sizing:border-box
+  display:inline-flex;align-items:center;gap:2px;padding:.25rem;
+  border-radius:999px;background:rgba(247,247,245,.85);min-height:2.5rem;box-sizing:border-box
 }
 .novae-segmented button{
   display:flex;align-items:center;justify-content:center;gap:.375rem;border:0;border-radius:999px;
-  background:transparent;padding:.35rem .85rem;min-height:2rem;color:var(--novae-muted);
+  background:transparent;padding:.35rem;width:2rem;min-height:2rem;color:var(--novae-muted);
   font-size:.75rem;font-weight:600;white-space:nowrap
 }
 .novae-segmented button.is-active{
-  background:#fff;color:var(--novae-ink);box-shadow:0 4px 12px rgba(17,17,17,.08);border:1px solid rgba(221,221,211,.35)
+  width:auto;padding:.35rem .75rem;background:#fff;color:var(--novae-ink);
+  box-shadow:0 3px 10px rgba(17,17,17,.08);border:1px solid rgba(221,221,211,.6)
 }
 .novae-segmented .ti{font-size:.875rem}
 
@@ -184,7 +185,7 @@
 /* Mobile: page title lives in app header (26px bold); board only shows category + tools */
 .novae-demo--mobile .novae-mobile-main>h3{display:none}
 .novae-mobile-header{
-  display:flex;align-items:center;height:3.5rem;padding:0 1rem;flex:none
+  display:flex;align-items:flex-end;height:4.25rem;padding:.75rem 1rem .35rem;flex:none
 }
 .novae-mobile-header strong{
   font-size:1.625rem;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--novae-ink)
@@ -197,7 +198,6 @@
 .novae-mobile-tools .novae-controls>button{width:2.5rem;height:2.5rem}
 .novae-mobile-tools .novae-segmented{order:0}
 .novae-mobile-tools .novae-segmented button{padding:.35rem .7rem}
-.novae-mobile-tools .novae-segmented button:nth-child(2){display:none}
 .novae-mobile-tools .novae-add{display:none}
 
 .novae-mobile-list{border-top:0}
@@ -283,10 +283,10 @@
 @media(max-width:820px){
   .reference-stage{
     display:grid;grid-template-columns:1fr;justify-items:center;overflow:hidden;
-    margin:0;padding:28px 0 34px
+    gap:24px;margin:0;padding:28px 0 34px
   }
   .reference-stage:before{inset:8% 0 0;border-radius:30px}
-  .reference-desktop{display:none}
+  .reference-desktop{display:block;width:100%;justify-self:stretch}
   .reference-mobile{min-width:0;width:min(100%,270px);height:520px;justify-self:center}
   .hero-interface{justify-self:center;margin-top:28px;width:min(100%,100%)}
 }

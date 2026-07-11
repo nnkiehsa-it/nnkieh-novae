@@ -18,7 +18,7 @@ function status(issue) {
 
 /** Mirrors VoteButtons compact: thumbs-up + total support count (not 0/1). */
 function supportButton(issue) {
-  return `<button class="demo-support${issue.supported ? ' is-supported' : ''}" type="button" aria-label="support" data-support-count="${issue.count}" data-supported="${issue.supported ? '1' : '0'}">${icon('thumb-up')}<b>${issue.count}</b></button>`;
+  return `<button class="demo-support${issue.supported ? ' is-supported' : ''}" type="button" aria-label="support">${icon('thumb-up')}<b>${issue.count}</b></button>`;
 }
 
 function remainingLabel(issue) {
@@ -53,7 +53,7 @@ function controls(includeAdd = true) {
     ? `<button class="novae-add" type="button" aria-label="add">${icon('plus')}</button>`
     : '';
   return `<div class="novae-controls">
-    <div class="novae-segmented"><button class="is-active" type="button">${icon('list-details')}<span>${ui('active')}</span></button><button type="button">${icon('archive')}<span>${ui('closed')}</span></button></div>
+    <div class="novae-segmented"><button class="is-active" type="button">${icon('list-details')}<span>${ui('active')}</span></button><button type="button" aria-label="${ui('closed')}">${icon('archive')}</button></div>
     <button type="button" aria-label="sort">${icon('sort-descending')}</button>
     <button type="button" aria-label="search">${icon('search')}</button>
     ${add}
@@ -61,7 +61,7 @@ function controls(includeAdd = true) {
 }
 
 function desktopDemo() {
-  return `<section class="novae-demo novae-demo--desktop" aria-label="Novae desktop">
+  return `<section class="novae-demo novae-demo--desktop" aria-label="Novae desktop" inert>
     <header class="novae-demo-header"><img src="./logo.svg" alt="Novae"/><nav><a class="is-active">${ui('proposals')}</a><a>${ui('announcements')}</a><a>${ui('myProposals')}</a></nav><div><button type="button" aria-label="notifications">${icon('bell')}</button><span class="novae-avatar novae-user-avatar">N</span></div></header>
     <main class="novae-demo-main">
       <div class="novae-demo-toolbar"><div><h3>${ui('proposals')}</h3><button class="novae-category" type="button">${ui('publicIssues')}${icon('chevron-down')}</button></div>${controls(true)}</div>
@@ -82,7 +82,7 @@ function desktopDemo() {
 }
 
 function mobileDemo() {
-  return `<section class="novae-demo novae-demo--mobile" aria-label="Novae mobile">
+  return `<section class="novae-demo novae-demo--mobile" aria-label="Novae mobile" inert>
     <div class="novae-mobile-header"><strong>${ui('proposals')}</strong></div>
     <main class="novae-mobile-main">
       <div class="novae-mobile-tools"><button class="novae-category" type="button">${ui('publicIssues')}${icon('chevron-down')}</button>${controls(false)}</div>
@@ -96,34 +96,6 @@ function mobileDemo() {
       <button type="button"><span class="novae-avatar">N</span><small>${ui('mine')}</small></button>
     </nav>
   </section>`;
-}
-
-function bindInteractions(root) {
-  root.querySelectorAll('.novae-segmented button').forEach((button) => {
-    button.addEventListener('click', () => {
-      button.parentElement.querySelectorAll('button').forEach((item) => {
-        item.classList.toggle('is-active', item === button);
-      });
-    });
-  });
-
-  root.querySelectorAll('.demo-support').forEach((button) => {
-    button.addEventListener('click', () => {
-      const wasSupported = button.classList.contains('is-supported');
-      let count = Number(button.dataset.supportCount || '0');
-      if (wasSupported) {
-        count = Math.max(0, count - 1);
-        button.classList.remove('is-supported');
-        button.dataset.supported = '0';
-      } else {
-        count += 1;
-        button.classList.add('is-supported');
-        button.dataset.supported = '1';
-      }
-      button.dataset.supportCount = String(count);
-      button.querySelector('b').textContent = String(count);
-    });
-  });
 }
 
 /**
@@ -182,7 +154,6 @@ function paintDemos(roots) {
   roots.forEach((root) => {
     const variant = root.dataset.novaeDemo;
     root.innerHTML = variant === 'mobile' ? mobileDemo() : desktopDemo();
-    bindInteractions(root);
     scheduleFit(root);
   });
 }

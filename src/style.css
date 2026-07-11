@@ -98,16 +98,6 @@
     }
   }
 
-  :root.full-screen-dialog-open {
-    --color-page-background: var(--dialog-page-background);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root.full-screen-dialog-open {
-      --color-page-background: 23 23 21;
-    }
-  }
-
   html,
   body,
   #app {
@@ -320,10 +310,6 @@
 
   .toast-viewport {
     top: calc(var(--app-header-height) + env(safe-area-inset-top) + 0.75rem);
-  }
-
-  :root.full-screen-dialog-open .toast-viewport {
-    top: calc(env(safe-area-inset-top) + 1rem);
   }
 
   @media (min-width: 640px) {

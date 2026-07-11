@@ -6,6 +6,8 @@
   "skip": "Skip to content",
   "nav": {
     "home": "Home",
+    "features": "Features",
+    "schools": "For schools",
     "docs": "Docs"
   },
   "brand": {
@@ -32,13 +34,13 @@
   },
   "features": {
     "number": "01 / CAPABILITIES",
-    "title": "More than<br><em>another form.</em>",
-    "lede": "Privacy rules, support thresholds, review status, announcements, and notifications live in one configurable system—so students and staff share the same record.",
+    "title": "Give every idea<br><em>a visible next step.</em>",
+    "lede": "Public or private, reviewed or open, with support or without—each path can be shaped around your campus while everyone follows the same clear progress.",
     "cards": [
       {
         "icon": "shield-lock",
-        "title": "Privacy by context",
-        "body": "Each category decides who can read and whether authors appear. Shared links never bypass login or server-side access rules."
+        "title": "A place for public and private voices",
+        "body": "Campus campaigns invite participation while sensitive cases stay with the author and responsible team."
       },
       {
         "icon": "trending-up",
@@ -47,8 +49,8 @@
       },
       {
         "icon": "login-2",
-        "title": "School-domain Google login",
-        "body": "Sign in with a verified Google account on the allowed domain. Admin roles sync server-side—the browser is never the authority."
+        "title": "Join with a school account",
+        "body": "Students use the Google account they already know, while teams keep participation within their school community."
       },
       {
         "icon": "git-branch",
@@ -62,8 +64,8 @@
       },
       {
         "icon": "bell",
-        "title": "Notifications re-check access",
-        "body": "In-app and Web Push cover comments, reviews, and announcements. Opening a notification re-checks access so private content stays closed."
+        "title": "Keep every update in view",
+        "body": "Comments, reviews, announcements, and status changes reach the people who care, right when progress happens."
       },
       {
         "icon": "speakerphone",
@@ -98,14 +100,14 @@
   },
   "config": {
     "number": "03 / CATEGORY RULES",
-    "title": "One platform.<br><em>Different rules per topic.</em>",
-    "lede": "You do not need a second system for private cases. Configure visibility, authorship, and support—then retune as your school evolves.",
+    "title": "Different topics.<br><em>The right participation path for each.</em>",
+    "lede": "Visibility, review, author display, support goals, and timelines can all be customized around your campus culture and rhythm.",
     "points": [
       "Public campaigns: school-visible with optional support goals",
       "Reviewed then public: internal gate before campus participation",
       "Private cases: author and admin only, support off"
     ],
-    "cta": "Read category configuration",
+    "cta": "Explore customizable experiences",
     "access": [
       {
         "code": "school",
@@ -148,15 +150,15 @@
   },
   "architecture": {
     "number": "05 / TRUST BOUNDARY",
-    "title": "Access is not in the browser.<br><em>It is in server rules.</em>",
-    "lede": "The UI is the experience layer. Who can read and who can manage is decided by server-side rules and category config—shared links cannot bypass them.",
+    "title": "Every kind of voice.<br><em>Handled with care.</em>",
+    "lede": "From school-wide ideas to sensitive cases, participants understand who can see their content and response teams can act with confidence.",
     "nodes": [
       { "small": "01", "title": "School identity", "em": "Verified Google domain" },
       { "small": "02", "title": "Category rules", "em": "Visibility · support · author" },
       { "small": "03", "title": "Server authorization", "em": "Rechecked on every access" },
       { "small": "04", "title": "Notifications", "em": "Access revalidated on open" }
     ],
-    "note": "Novae is self-hosted open source, not a managed SaaS. Adopters own secrets, privacy notices, and incident response.",
+    "note": "Category choices, trusted school identity, and protected content work together throughout the experience.",
     "cta": "Read the security model"
   },
   "pwa": {
@@ -189,7 +191,7 @@
   "roles": {
     "number": "07 / WHO USES IT",
     "title": "Students speak.<br><em>Teams can respond.</em>",
-    "lede": "Roles shape the experience and the permission boundary. Hiding a button is UX only—authorization always lives on the server.",
+    "lede": "Students focus on proposing and participating, while response teams focus on reviewing and moving work forward.",
     "cards": [
       {
         "title": "School users",
@@ -213,10 +215,10 @@
   },
   "fit": {
     "number": "08 / FIT",
-    "title": "Know whether<br><em>it fits your campus.</em>",
-    "lede": "Novae is a self-hosted application, not a managed service. Adopters own cloud resources, secrets, privacy notices, admin appointment, and incident response.",
-    "yesTitle": "A good fit",
-    "noTitle": "Not a fit",
+    "title": "Made for teams that want<br><em>campus change to stay visible.</em>",
+    "lede": "Student organizations, school teams, and developers can use Novae to create a clear and trusted path from voice to response.",
+    "yesTitle": "Especially useful for",
+    "noTitle": "What your campus gains",
     "yes": [
       "Student governments needing public proposals and support",
       "Mixing public issues with private rights cases",
@@ -224,12 +226,24 @@
       "Small teams running one school on managed cloud"
     ],
     "no": [
-      "No external cloud or fully air-gapped hosting",
-      "E-signatures, statutory appeals, or formal document exchange",
-      "Multi-tenant billing or cross-school SaaS isolation",
-      "No one to own secrets, billing, and security events"
+      "One home for public campaigns and private cases",
+      "A shared record from proposal and support to response",
+      "A complete mobile and desktop participation experience",
+      "An open-source foundation that grows with your campus"
     ],
-    "footnote": "The repo includes build, test, and delivery workflows—not an SLA or compliance certification—and does not promise a stable public API. Prepare a response team, clear privacy notices, and ongoing maintenance before adopting."
+    "footnote": "Start with one campus, then shape categories, workflows, and branding around the community you serve."
+  },
+  "explore": {
+    "number": "03 / EXPLORE",
+    "title": "Want to see more?<br><em>Start with what matters to you.</em>",
+    "lede": "The home page stays focused on value. Product details, campus adoption, and technical documentation each have room to breathe.",
+    "featuresTitle": "Explore product features",
+    "featuresBody": "See how customizable categories, every-device access, notifications, announcements, and team tools work together.",
+    "schoolsTitle": "Plan for your campus",
+    "schoolsBody": "See how Novae supports student organizations and school response teams in everyday work.",
+    "docsTitle": "Read the documentation",
+    "docsBody": "When you need setup, deployment, and operations details, move into the complete bilingual docs.",
+    "cta": "Explore"
   },
   "cta": {
     "eyebrow": "MIT LICENSE · SELF-HOST · MAKE IT YOURS",
@@ -247,6 +261,8 @@
   },
   "links": {
     "github": "https://github.com/tavricccc/novae",
+    "features": "./product.html",
+    "schools": "./schools.html",
     "docsHome": "./docs/en/",
     "docsDeploy": "./docs/en/deployment-guide.html",
     "docsConfig": "./docs/en/configuration.html",

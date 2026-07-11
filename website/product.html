@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="description" content="探索 Novae 可自訂的校園參與體驗、跨裝置介面、公告通知與管理工具。" />
+    <title>Novae｜產品特色</title>
+    <script>
+      (function(){try{var s=localStorage.getItem('novae-site-language');var l=s==='zh'||s==='en'?s:navigator.language.toLowerCase().indexOf('zh')===0?'zh':'en';document.documentElement.lang=l==='zh'?'zh-Hant':'en';document.documentElement.dataset.lang=l;if(l==='en')document.documentElement.classList.add('lang-boot-hide')}catch(e){}})();
+    </script>
+    <style>html{background:#fff;color:#171715}body{margin:0;min-height:100vh}html.lang-boot-hide body{opacity:0}html.is-ready body{opacity:1;transition:opacity .14s ease}@media(prefers-reduced-motion:reduce){html.is-ready body{transition:none}}</style>
+    <script type="module" src="/src/main.js"></script>
+  </head>
+  <body class="marketing-subpage">
+    <a class="skip-link" href="#main" data-i18n="skip">跳到主要內容</a>
+    <header class="site-header">
+      <a class="brand" href="./"><span class="brand-mark" aria-hidden="true"><img src="./logo.svg" alt="" /></span><span><strong>Novae</strong><small data-i18n="brand.tagline"></small></span></a>
+      <nav aria-label="primary">
+        <a href="./" data-i18n="nav.home">首頁</a>
+        <a href="./product.html" class="is-active" data-i18n="nav.features">產品特色</a>
+        <a href="./schools.html" data-i18n="nav.schools">校園導入</a>
+        <a href="./docs/" data-i18n="nav.docs" data-i18n-href="links.docsHome">文件</a>
+      </nav>
+      <div class="header-actions"><button class="language-toggle" type="button" aria-label="Switch to English">EN</button><a class="button button-small button-dark" data-i18n-href="links.github" href="https://github.com/tavricccc/novae" target="_blank" rel="noreferrer">GitHub <i class="ti ti-external-link" aria-hidden="true"></i></a></div>
+    </header>
+    <main id="main">
+      <section class="subpage-hero">
+        <div><p class="section-number" data-i18n="features.number"></p><h1 data-i18n="features.title"></h1><p data-i18n="features.lede"></p><a class="button button-primary" href="#custom"><span data-i18n="config.cta"></span><i class="ti ti-arrow-down" aria-hidden="true"></i></a></div>
+        <div class="hero-interface" data-novae-demo="desktop" data-compact="true"></div>
+      </section>
+      <section class="section config-section product-config" id="custom">
+        <div class="config-copy"><p class="section-number" data-i18n="config.number"></p><h2 data-i18n="config.title"></h2><p data-i18n="config.lede"></p><ul class="config-points" data-render="config-points"></ul></div>
+        <div class="config-panel"><div class="access-grid" data-render="config-access"></div></div>
+      </section>
+      <section class="section experience-section" id="experience">
+        <div class="section-heading horizontal"><div><p class="section-number" data-i18n="experience.number"></p><h2 data-i18n="experience.title"></h2></div><p data-i18n="experience.lede"></p></div>
+        <div class="reference-stage"><div class="reference-desktop" data-novae-demo="desktop"></div><div class="reference-mobile" data-novae-demo="mobile"></div></div>
+      </section>
+      <section class="section pwa-section" id="pwa"><div class="pwa-copy"><p class="section-number" data-i18n="pwa.number"></p><h2 data-i18n="pwa.title"></h2><p data-i18n="pwa.lede"></p></div><div class="pwa-grid" data-render="pwa-cards"></div></section>
+      <section class="section roles-section" id="roles"><div class="section-heading horizontal"><div><p class="section-number" data-i18n="roles.number"></p><h2 data-i18n="roles.title"></h2></div><p data-i18n="roles.lede"></p></div><div class="roles-grid" data-render="roles"></div><div class="more-features" data-render="more-features"></div></section>
+      <section class="cta-section"><p class="section-number" data-i18n="cta.eyebrow"></p><h2 data-i18n="cta.title"></h2><p data-i18n="cta.body"></p><div><a class="button button-light" data-i18n-href="links.github" href="https://github.com/tavricccc/novae" target="_blank" rel="noreferrer"><span data-i18n="cta.github"></span><i class="ti ti-arrow-right" aria-hidden="true"></i></a><a class="button button-outline" data-i18n-href="links.schools" href="./schools.html"><span data-i18n="nav.schools"></span></a></div></section>
+    </main>
+    <footer class="site-footer"><a class="brand" href="./"><span class="brand-mark"><img src="./logo.svg" alt="" /></span></a><p data-i18n="footer.tagline"></p><div><a data-i18n="footer.github" data-i18n-href="links.github" href="https://github.com/tavricccc/novae" target="_blank" rel="noreferrer">GitHub</a><a data-i18n="footer.docs" data-i18n-href="links.docsHome" href="./docs/">Docs</a></div></footer>
+  </body>
+</html>

@@ -30,7 +30,7 @@ monthly cost = fixed plan fees
 
 - **Pilot:** a single school with low image volume may fit free tiers, but verify backup, log retention, suspension, and production-use terms. Keep an upgrade and export plan.
 - **Sustained school service:** budget explicitly for database/backup, media delivery, frontend bandwidth, and monitoring. Use a separate development stack and alerts at 50%, 75%, and 90%.
-- **High activity or multiple organizations:** load-test and revisit data governance first. Multi-tenancy, enterprise SSO, and a formal SLA require engineering and operations beyond plan upgrades.
+- **High activity:** load-test peak traffic, then size database, image, notification, and rate-limit services from observed usage.
 
 ## Monthly review
 

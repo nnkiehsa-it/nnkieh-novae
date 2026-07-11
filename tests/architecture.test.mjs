@@ -220,6 +220,11 @@ test('backendAction covers frontend actions and Cloudinary direct upload', async
   assert.match(supabaseAuthService, /Authorization: `Bearer \$\{token\.token\}`/u);
   assert.match(functionErrorService, /response\.clone\(\)\.json/u);
   assert.match(firebaseAuth, /accounts:lookup/u);
+  assert.match(firebaseAuth, /firebaseUser\.disabled === true/u);
+  assert.match(firebaseAuth, /tokenAuthTime < tokensValidAfter/u);
+  assert.match(firebaseAuth, /FIREBASE_USER_CACHE_SECONDS = 15 \* 60/u);
+  assert.match(firebaseAuth, /UPSTASH_REDIS_REST_URL/u);
+  assert.match(firebaseAuth, /firebaseUser = await lookupFirebaseUser[\s\S]*await cacheFirebaseUser/u);
   assert.match(firebaseAuth, /ALLOWED_DOMAIN/u);
   assert.match(http, /errorStatus/u);
   assert.match(http, /is not configured/u);
@@ -227,6 +232,8 @@ test('backendAction covers frontend actions and Cloudinary direct upload', async
   assert.match(http, /record\.details/u);
   assert.match(http, /request-in-progress/u);
   assert.doesNotMatch(session, /adminEmails/u);
+  assert.match(backendAction, /max_file_size/u);
+  assert.match(uploads, /body\.set\('max_file_size'/u);
 });
 
 test('backendAction registry owns action metadata and frontend action names', async () => {
@@ -249,6 +256,9 @@ test('backendAction registry owns action metadata and frontend action names', as
   }
 
   const registeredActions = [...registry.matchAll(/(?:action|idempotentWrite)\("([^"]+)",\s*"([^"]+)",\s*"([^"]+)"/gu)];
+  assert.doesNotMatch(rateLimit, /definition\.name/u);
+  assert.match(rateLimit, /actionName: limits\.prefix/u);
+  assert.match(rateLimit, /actionName: `\$\{limits\.prefix\}\.second`/u);
   assert.ok(registeredActions.length > 20);
   for (const [, actionName, domain, rateLimitGroup] of registeredActions) {
     assert.match(frontendContract, new RegExp(`'${actionName}'`, 'u'));

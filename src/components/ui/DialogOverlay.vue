@@ -3,8 +3,8 @@
     <Transition :name="transitionName" appear>
       <div
         v-if="open"
-        class="dialog-overlay fixed inset-0 flex items-center justify-center bg-ink-900/50 backdrop-blur-sm"
-        :class="zIndexClass"
+        class="dialog-overlay fixed inset-0 flex items-center justify-center bg-ink-900/50"
+        :class="[zIndexClass, { 'backdrop-blur-sm': !isFullScreen }]"
         :data-padding="paddingMode"
         @click.self="handleOverlayClick"
       >

@@ -2,13 +2,13 @@
 
 [繁體中文](../security.md) · [Documentation home](../README.md)
 
-This document describes current trust boundaries, controls, and adopter responsibilities. It is not an independent audit or compliance certification.
+This document explains the security controls used by Novae and the settings operators should review before launch.
 
 ## Reporting a vulnerability
 
 Do not open a public issue, discussion, or pull request. Contact the repository owner privately using a method listed on their GitHub profile. Include the affected version/commit, prerequisites, impact, proof of concept, and suggested mitigation. Do not access data you do not own, disrupt production, or include real personal data or active credentials.
 
-The project currently promises neither a response SLA nor a bounty. Maintainers will make a reasonable effort to acknowledge, remediate, and coordinate disclosure. Keep the report private until a fix is available.
+Maintainers will acknowledge reports, coordinate remediation, and keep disclosure private until a fix is available.
 
 ## Security objectives
 

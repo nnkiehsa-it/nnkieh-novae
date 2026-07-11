@@ -8,7 +8,6 @@ import {
 import type { BackendActionDefinition } from "./action-registry.ts";
 
 export async function claimBackendActionRateLimit(uid: string, definition: BackendActionDefinition) {
-  const action = definition.name;
   let limits;
   switch (definition.rateLimitGroup) {
     case "read":
@@ -36,16 +35,14 @@ export async function claimBackendActionRateLimit(uid: string, definition: Backe
     window: ReturnType<typeof utcHourWindow>;
     config: { limit: number; message: string };
   }> = [
-    { identifier: uid, actionName: `${limits.prefix}.${action}`, window: utcHourWindow(), config: limits.hourly },
+    { identifier: uid, actionName: limits.prefix, window: utcHourWindow(), config: limits.hourly },
   ];
-  if (definition.rateLimitGroup !== "read" && definition.rateLimitGroup !== "upload-resolve") {
-    windows.unshift({
-      identifier: uid,
-      actionName: `${limits.prefix}.${action}.second`,
-      window: utcSecondWindow(),
-      config: limits.second,
-    });
-  }
+  windows.unshift({
+    identifier: uid,
+    actionName: `${limits.prefix}.second`,
+    window: utcSecondWindow(),
+    config: limits.second,
+  });
   await claimFixedWindowRateLimits(windows);
 }
 

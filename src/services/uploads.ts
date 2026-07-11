@@ -27,6 +27,7 @@ interface ImageUploadSession {
   allowedFormats?: string;
   cloudName: string;
   folder?: string;
+  maxFileSize?: string;
   overwrite?: string;
   notificationUrl?: string;
   publicId: string;
@@ -68,6 +69,7 @@ async function uploadToCloudinary(file: File, session: ImageUploadSession) {
   body.set('signature', session.signature);
   if (session.allowedFormats) body.set('allowed_formats', session.allowedFormats);
   if (session.folder) body.set('folder', session.folder);
+  if (session.maxFileSize) body.set('max_file_size', session.maxFileSize);
   if (session.overwrite) body.set('overwrite', session.overwrite);
   if (session.notificationUrl) body.set('notification_url', session.notificationUrl);
   if (session.type) body.set('type', session.type);

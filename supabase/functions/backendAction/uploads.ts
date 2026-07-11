@@ -224,6 +224,7 @@ export async function handleUploadAction(
     const params = {
       allowed_formats: "webp",
       folder,
+      max_file_size: String(RATE_LIMITS.imageCompression.maxUploadBytes),
       notification_url: notificationUrl,
       overwrite: "false",
       public_id: publicId,
@@ -247,6 +248,7 @@ export async function handleUploadAction(
       allowedFormats: params.allowed_formats,
       cloudName: requireEnv("CLOUDINARY_CLOUD_NAME"),
       folder,
+      maxFileSize: params.max_file_size,
       notificationUrl,
       overwrite: params.overwrite,
       publicId,

@@ -10,7 +10,7 @@
 - `LICENSE` / `CONTRIBUTING.md` / `SECURITY.md` / `CODE_OF_CONDUCT.md` — MIT 授權與社群政策入口
 - `docs/*.md` — 繁中開源文件（總覽、快速開始、使用、架構、設定、部署、維運、故障排除、安全、成本、貢獻）
 - `docs/en/*.md` — 與繁中對照的英文文件
-- `website/` — 雙語專案介紹頁與文件網站；建置時直接使用根目錄 `docs/`，由 GitHub Pages 部署
+- `website/` — 雙語專案介紹頁與文件網站；`index.html`、`product.html`、`schools.html` 分別承載首頁、產品特色與校園導入，建置時直接使用根目錄 `docs/`，由 GitHub Pages 部署
 - `config/issue-categories.config.json` — 提案分類設定入口
 - `config/rate-limits.config.json` — 限流與圖片壓縮設定入口
 - `structure.md` / `AGENTS.md` — 結構地圖 / 代理人規則

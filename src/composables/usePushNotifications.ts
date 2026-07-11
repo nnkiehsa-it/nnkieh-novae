@@ -211,13 +211,13 @@ export function usePushNotifications() {
   async function enablePushNotifications() {
     if (!user.value) {
       error.value = '請先登入後再開啟推播通知。';
-      return;
+      return false;
     }
 
     if (requiresPwaInstall.value) {
       error.value = '請先將平台加入主畫面，再從主畫面開啟通知功能。';
       requestAppInstallPrompt('notifications');
-      return;
+      return false;
     }
 
     loading.value = true;
@@ -226,7 +226,7 @@ export function usePushNotifications() {
       const messaging = await resolveMessaging();
       if (!messaging) {
         deviceEnabled.value = false;
-        return;
+        return false;
       }
 
       const nextPermission = await Notification.requestPermission();
@@ -236,7 +236,7 @@ export function usePushNotifications() {
         if (currentToken) {
           await unregisterPushToken({ deviceId, permission: nextPermission, token: currentToken });
         }
-        return;
+        return false;
       }
 
       currentToken = await getPushToken(messaging);
@@ -257,9 +257,11 @@ export function usePushNotifications() {
           showToast(body ? `${title}：${body}` : title, 'info');
         });
       }
+      return true;
     } catch (caught) {
       error.value = readableError(caught);
       deviceEnabled.value = false;
+      return false;
     } finally {
       loading.value = false;
       initialized.value = true;
@@ -289,8 +291,10 @@ export function usePushNotifications() {
       synchronizedRegistrationKey = '';
       setExplicitlyDisabled(true);
       applyPreference(preference);
+      return true;
     } catch (caught) {
       error.value = readableError(caught);
+      return false;
     } finally {
       loading.value = false;
       initialized.value = true;
@@ -328,9 +332,11 @@ export function usePushNotifications() {
         token: currentToken || undefined,
       });
       applyPreference(preference);
+      return true;
     } catch (caught) {
       personalPreferences.value = previous;
       error.value = readableError(caught);
+      return false;
     } finally {
       loading.value = false;
       initialized.value = true;

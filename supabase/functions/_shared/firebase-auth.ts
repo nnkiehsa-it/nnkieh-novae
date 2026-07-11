@@ -10,6 +10,67 @@ export interface FirebaseAuthContext {
   uid: string;
 }
 
+const FIREBASE_USER_CACHE_SECONDS = 15 * 60;
+
+function firebaseUserCacheKey(uid: string) {
+  return `srp:firebase-user:${uid}`;
+}
+
+function cacheableFirebaseUser(firebaseUser: Record<string, unknown>) {
+  return {
+    customAttributes: firebaseUser.customAttributes,
+    disabled: firebaseUser.disabled,
+    displayName: firebaseUser.displayName,
+    email: firebaseUser.email,
+    emailVerified: firebaseUser.emailVerified,
+    localId: firebaseUser.localId,
+    photoUrl: firebaseUser.photoUrl,
+    validSince: firebaseUser.validSince,
+  };
+}
+
+async function runRedisCommand(command: string[]) {
+  const restUrl = requireEnv("UPSTASH_REDIS_REST_URL").replace(/\/+$/u, "");
+  const token = requireEnv("UPSTASH_REDIS_REST_TOKEN");
+  const response = await fetch(restUrl, {
+    body: JSON.stringify(command),
+    headers: {
+      authorization: `Bearer ${token}`,
+      "content-type": "application/json",
+    },
+    method: "POST",
+    signal: AbortSignal.timeout(2_000),
+  });
+  if (!response.ok) throw new Error("firebase-user-cache-unavailable");
+  const result = asRecord(await response.json());
+  if (typeof result.error === "string") throw new Error("firebase-user-cache-unavailable");
+  return result.result;
+}
+
+async function readCachedFirebaseUser(uid: string) {
+  try {
+    const cached = await runRedisCommand(["GET", firebaseUserCacheKey(uid)]);
+    if (typeof cached !== "string") return null;
+    return asRecord(JSON.parse(cached));
+  } catch {
+    return null;
+  }
+}
+
+async function cacheFirebaseUser(uid: string, firebaseUser: Record<string, unknown>) {
+  try {
+    await runRedisCommand([
+      "SET",
+      firebaseUserCacheKey(uid),
+      JSON.stringify(cacheableFirebaseUser(firebaseUser)),
+      "EX",
+      String(FIREBASE_USER_CACHE_SECONDS),
+    ]);
+  } catch {
+    // Cache failures must not prevent authentication.
+  }
+}
+
 function decodeJwtPayload(token: string) {
   try {
     const payload = token.split(".")[1] ?? "";
@@ -88,16 +149,34 @@ export async function requireVerifiedFirebaseUser(request: Request): Promise<Fir
     throw new Error("unauthenticated");
   }
   const uid = asString(payload.sub);
-  const email = asString(payload.email).toLowerCase();
+  if (!uid) throw new Error("unauthenticated");
+  let firebaseUser = await readCachedFirebaseUser(uid);
+  if (!firebaseUser) {
+    firebaseUser = await lookupFirebaseUser(idToken);
+    await cacheFirebaseUser(uid, firebaseUser);
+  }
+  const lookupUid = asString(firebaseUser.localId);
+  const tokenAuthTime = typeof payload.auth_time === "number" ? payload.auth_time : 0;
+  const tokensValidAfter = Number.parseInt(asString(firebaseUser.validSince, "0"), 10);
+  if (
+    lookupUid !== uid
+    || firebaseUser.disabled === true
+    || !Number.isSafeInteger(tokenAuthTime)
+    || tokenAuthTime <= 0
+    || (Number.isFinite(tokensValidAfter) && tokenAuthTime < tokensValidAfter)
+  ) {
+    throw new Error("unauthenticated");
+  }
+  const email = asString(firebaseUser.email, asString(payload.email)).toLowerCase();
   const allowedDomain = requireEnv("ALLOWED_DOMAIN").toLowerCase();
-  if (!uid || payload.email_verified !== true || !email.endsWith(`@${allowedDomain}`)) {
+  if (firebaseUser.emailVerified !== true || !email.endsWith(`@${allowedDomain}`)) {
     throw new Error("permission-denied");
   }
   return {
-    customAttributes: "{}",
+    customAttributes: asString(firebaseUser.customAttributes, "{}"),
     email,
-    name: asString(payload.name, email || "使用者"),
-    photoUrl: asString(payload.picture) || null,
+    name: asString(firebaseUser.displayName, asString(payload.name, email || "使用者")),
+    photoUrl: asString(firebaseUser.photoUrl, asString(payload.picture)) || null,
     uid,
   };
 }

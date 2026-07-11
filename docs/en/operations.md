@@ -6,7 +6,7 @@ This runbook covers routine checks, incidents, and recovery. Provider logs may c
 
 ## Service objectives
 
-The project does not define an SLA. Operators should set targets for sign-in success, action error rate and p95 latency, outbox depth and oldest age, push/image/Notion failure rate, database capacity, and vendor usage.
+Track sign-in success, action errors and response time, pending notifications, push and image outcomes, synchronization delay, database capacity, and vendor usage to understand platform health.
 
 ## After every deployment
 

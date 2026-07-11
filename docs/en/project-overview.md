@@ -28,21 +28,15 @@ Forms and social posts are easy to publish but hard to track. Novae adds configu
 - Small teams willing to operate a managed-cloud deployment.
 - Developers studying a production-oriented Vue, Supabase, and Firebase Auth integration.
 
-## Not a good fit
+## Shape it for your campus
 
-- Environments that prohibit third-party cloud services or require fully offline hosting.
-- Statutory complaints, digital signatures, official document exchange, or non-repudiation audits.
-- Multi-tenant billing, cross-school isolation, or enterprise identity governance.
-- Deployments with no owner for vendors, credentials, billing, backups, and incidents.
+- Choose school-wide, reviewed, or owner-and-admin visibility per category.
+- Configure author display, support targets, support windows, and response deadlines.
+- Apply your school name, allowed domain, administrator list, and notification preferences.
+- Keep students and response teams on the same status from submission through resolution.
 
-## Ownership and boundaries
+## One complete participation experience
 
-Novae is deployable software, not a hosted service. Adopters create and operate their own Firebase, Supabase, Vercel, Cloudinary, Notion, and Upstash resources. They remain responsible for applicable law, consent and notice, retention, administrator appointments, billing, and incident response.
+Novae provides a complete deployable application. Students can submit, support, discuss, and follow progress. Administrators can review proposals, post updates, publish announcements, and understand recent activity. The same content and status work across desktop and mobile, with installable PWA and notification support.
 
-The current design assumes one school, one allowed email domain, and one administrator group. Firebase is limited to sign-in, App Check, and messaging. Supabase owns primary data and domain behavior, Cloudinary stores images, and Notion is an operational copy rather than the source of truth.
-
-## Maturity and non-goals
-
-The repository includes type checking, linting, production builds, Edge Function checks, architecture regression tests, and separate frontend/backend delivery workflows. These controls reduce deployment risk; they are not an SLA, security certification, or compliance certification. The project does not currently promise a stable public API.
-
-Next: [Quick start](quick-start.md) · [Architecture](architecture.md) · [Deployment guide](deployment-guide.md)
+Next: [User guide](user-guide.md) · [Configuration](configuration.md) · [Quick start](quick-start.md)

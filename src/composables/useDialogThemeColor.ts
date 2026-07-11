@@ -5,28 +5,16 @@ const PAGE_THEME_COLORS = {
   light: '#ffffff',
 };
 
-const DIALOG_THEME_COLORS = {
-  dark: '#171715',
-  light: '#f5f5f3',
-};
-
-const SURFACE_THEME_COLORS = {
-  dark: '#0c0c0a',
-  light: '#ffffff',
-};
-
 const SCRIM_THEME_COLORS = {
   dark: '#060605',
   light: '#898984',
 };
 
-type ThemeColorMode = 'dialog' | 'page' | 'scrim' | 'surface';
+type ThemeColorMode = 'page' | 'scrim';
 
 const THEME_COLORS_BY_MODE = {
-  dialog: DIALOG_THEME_COLORS,
   page: PAGE_THEME_COLORS,
   scrim: SCRIM_THEME_COLORS,
-  surface: SURFACE_THEME_COLORS,
 } satisfies Record<ThemeColorMode, typeof PAGE_THEME_COLORS>;
 
 const activeThemeModes: ThemeColorMode[] = [];
@@ -43,8 +31,6 @@ function setThemeColors(colors: typeof PAGE_THEME_COLORS) {
 function syncThemeColors() {
   if (typeof document === 'undefined') return;
   const activeMode = activeThemeModes.at(-1) ?? 'page';
-  const hasFullScreenDialog = activeThemeModes.some((mode) => mode === 'dialog' || mode === 'surface');
-  document.documentElement.classList.toggle('full-screen-dialog-open', hasFullScreenDialog);
   document.documentElement.classList.toggle('status-bar-scrim-open', activeMode === 'scrim');
   setThemeColors(THEME_COLORS_BY_MODE[activeMode]);
 }
@@ -83,6 +69,7 @@ function useStatusBarTheme(open: Ref<boolean>, mode: Ref<ThemeColorMode>) {
 }
 
 export function useDialogThemeColor(open: Ref<boolean>, fullScreen: Ref<boolean>) {
-  const mode = computed<ThemeColorMode>(() => fullScreen.value ? 'dialog' : 'scrim');
-  useStatusBarTheme(open, mode);
+  const shouldApplyScrimTheme = computed(() => open.value && !fullScreen.value);
+  const mode = computed<ThemeColorMode>(() => 'scrim');
+  useStatusBarTheme(shouldApplyScrimTheme, mode);
 }

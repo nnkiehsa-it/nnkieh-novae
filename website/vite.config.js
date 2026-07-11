@@ -7,7 +7,9 @@ const root = path.dirname(fileURLToPath(import.meta.url));
 
 function collectHtmlInputs() {
   const inputs = {
-    main: path.resolve(root, 'index.html')
+    main: path.resolve(root, 'index.html'),
+    product: path.resolve(root, 'product.html'),
+    schools: path.resolve(root, 'schools.html')
   };
 
   const docsRoot = path.resolve(root, 'docs-site');
