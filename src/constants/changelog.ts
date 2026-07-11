@@ -2,6 +2,16 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "新增平台搬遷提示與導航引導",
+    version: "v2.0.156",
+    date: "2026-07-11",
+    time: "14:45",
+    items: [
+      { title: "支援在首頁顯示服務搬遷通知，引導使用者前往全新網址。" },
+      { title: "新增一鍵複製新網址功能，提升使用者轉移的便利性。" }
+    ]
+  },
+  {
     title: "修正字型顯示與提升載入穩定性",
     version: "v2.0.155",
     date: "2026-07-11",
