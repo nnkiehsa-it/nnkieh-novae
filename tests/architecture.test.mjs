@@ -51,7 +51,8 @@ test('Vercel deployment config is hosting-only', async () => {
 
   assert.match(vercelJson, /"headers"/u);
   assert.match(vercelJson, /"rewrites"/u);
-  assert.match(vercelJson, /script-src 'self' https:\/\/apis\.google\.com https:\/\/www\.google\.com\/recaptcha\/ https:\/\/www\.gstatic\.com\/recaptcha\//u);
+  assert.match(vercelJson, /script-src 'self' 'wasm-unsafe-eval' https:\/\/apis\.google\.com https:\/\/www\.google\.com\/recaptcha\/ https:\/\/www\.gstatic\.com\/recaptcha\//u);
+  assert.doesNotMatch(vercelJson, /script-src[^;]*'unsafe-eval'/u);
   const globalHeaders = vercelConfig.headers.find((entry) => entry.source === '/(.*)')?.headers ?? [];
   assert.equal(globalHeaders.some((header) => header.key.toLowerCase() === 'cache-control'), false);
   assert.match(vercelJson, /\/assets\/\(\.\*\)[\s\S]*max-age=31536000, immutable/u);

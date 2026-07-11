@@ -2,6 +2,16 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "修正圖片壓縮相容性",
+    version: "v2.0.157",
+    date: "2026-07-11",
+    time: "15:32",
+    items: [
+      { title: "修正特定瀏覽器無法處理圖片上傳的問題。" },
+      { title: "強化圖片壓縮與網站安全設定的相容性。" }
+    ]
+  },
+  {
     title: "改善操作進度提示",
     version: "v2.0.156",
     date: "2026-07-11",
