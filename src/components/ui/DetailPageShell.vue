@@ -21,8 +21,8 @@
       />
     </header>
 
-    <div v-if="isDesktopViewport" class="hidden min-h-0 items-stretch gap-6 md:grid md:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)] xl:grid-cols-[minmax(0,1fr)_32rem]">
-      <div class="flex h-[calc(100dvh-var(--app-header-height)-env(safe-area-inset-top)-2.5rem)] min-w-0 flex-col overflow-y-auto pb-[3px] pr-2">
+    <div v-if="isDesktopViewport" class="page-workspace hidden min-h-0 items-stretch gap-0 overflow-hidden md:grid md:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)] xl:grid-cols-[minmax(0,1fr)_32rem]">
+      <div class="flex h-[calc(100dvh-var(--app-header-height)-env(safe-area-inset-top)-2.5rem)] min-w-0 flex-col overflow-y-auto p-5 pr-4">
         <header class="hidden md:flex shrink-0 items-start gap-3 pb-3">
           <button
             type="button"
@@ -42,7 +42,7 @@
         </div>
         <slot name="actions" :compact="false" />
       </div>
-      <div class="flex h-[calc(100dvh-var(--app-header-height)-env(safe-area-inset-top)-2.5rem)] min-w-0 flex-col border-l border-ink-100 pb-[3px] pl-6 pr-1 dark:border-ink-800">
+      <div class="flex h-[calc(100dvh-var(--app-header-height)-env(safe-area-inset-top)-2.5rem)] min-w-0 flex-col border-l border-ink-100 p-5 dark:border-ink-800">
         <slot name="comments" :compact-header="false" />
       </div>
     </div>

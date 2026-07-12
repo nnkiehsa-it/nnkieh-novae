@@ -30,7 +30,7 @@
     <div v-else-if="stats && operations" class="space-y-5">
       <header class="border-b border-ink-200/80 pb-4 dark:border-ink-800/80">
         <div class="min-w-0">
-          <h2 class="hidden text-2xl font-bold tracking-tight text-ink-950 dark:text-ink-50 md:block sm:text-3xl">統計</h2>
+          <h2 class="page-title hidden md:block">統計</h2>
           <p class="max-w-2xl text-sm leading-6 text-ink-500 dark:text-ink-400 md:mt-2">
             快速掃描同步、排程與清理狀態，成果數字保留為維護時的背景脈絡。
           </p>
@@ -41,7 +41,7 @@
         <article
           v-for="item in operationSummaryCards"
           :key="item.label"
-          class="rounded-[1.25rem] border p-5 shadow-note"
+          class="rounded-[1.8rem] border p-5 shadow-note"
           :class="item.toneClass"
         >
           <p class="text-xs font-semibold text-current/65">{{ item.label }}</p>

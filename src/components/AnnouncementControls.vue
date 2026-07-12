@@ -1,15 +1,16 @@
 <template>
   <div class="relative z-20 space-y-3">
     <div class="flex flex-row items-center justify-between gap-3 md:mt-0">
-      <div class="hidden min-w-0 flex-row items-center gap-3 sm:gap-4 md:flex md:gap-6">
-        <h2 class="shrink-0 text-xl font-bold tracking-tight text-ink-950 dark:text-ink-50 md:text-2xl">公告</h2>
+      <div class="hidden min-w-0 md:block">
+        <h2 class="page-title">公告</h2>
+        <p class="page-description mt-1">查看校園最新公告與重要資訊</p>
       </div>
 
       <div class="flex w-full shrink-0 flex-row items-center justify-end gap-1.5 sm:gap-2 md:w-auto">
         <div class="static md:relative" @click.stop @pointerdown.stop>
           <button
             type="button"
-            class="button-toolbar flex h-10 w-10 shrink-0 items-center justify-center rounded-full p-0 md:h-9 md:w-9"
+            class="board-control board-control--icon flex shrink-0 items-center justify-center p-0"
             :class="{ 'button-toolbar--active': isSortOpen || sortOption !== 'latest' }"
             :title="`排序公告：${selectedSortLabel}`"
             :aria-label="`排序公告：${selectedSortLabel}`"

@@ -1,5 +1,9 @@
 <template>
   <section class="page-bottom-safe min-h-0 flex-1">
+    <header class="mb-5 hidden md:block">
+      <h2 class="page-title">我的</h2>
+      <p class="page-description">管理帳號、通知偏好與平台設定</p>
+    </header>
     <div v-if="loading" class="space-y-6 py-4" :class="{ 'px-1': true }">
       <!-- Account Skeleton -->
       <div class="flex items-center gap-3 pb-4 border-b border-ink-100 dark:border-ink-800/60">
