@@ -1,139 +1,120 @@
-# 部署指南
+# 從零部署 Novae
 
 [English](en/deployment-guide.md) · [文件首頁](README.md)
 
-本指南建立一套正式環境：Vercel 前端、Supabase 資料與 Functions、Firebase 登入與推播、Cloudinary 圖片、Notion 副本及 Upstash 限流。請先完成[設定參考](configuration.md)與[安全模型](security.md)的檢查。
+這份指南不預設你熟悉 GitHub、環境變數或任何雲端服務。完成後，`main` 會自動部署正式環境：Vercel 顯示網頁，Supabase 保存資料與執行後端，Firebase 負責 Google 登入及推播，Cloudinary 處理圖片，Notion保存營運副本，Upstash 執行限流。
 
-## 0. 決定環境策略
+## 先理解三個放置位置
 
-- `main` branch 使用 GitHub `production` Environment。
-- `dev` branch 使用 GitHub `development` Environment。
-- 兩者應使用不同的 Firebase、Supabase、Cloudinary、Notion、Upstash 與 Vercel 資源。
-- 至少指定一位服務擁有者與一位備援管理員。
+| 位置 | 放什麼 | 是否進入瀏覽器 |
+| --- | --- | --- |
+| 本機 `.env` | 本機測試用的 `VITE_*` 公開設定 | 是 |
+| GitHub Environment secrets | Actions 部署時需要的全部值 | 只有 `VITE_*` 會被打包 |
+| Supabase Edge secrets | 後端執行時使用；workflow 會由 GitHub 自動寫入 | 否 |
 
-## 1. Fork 與保護 repository
+不要把真實值填回 `.env.example`、commit 到 Git，或貼在 issue、聊天與截圖中。名稱含 `VITE_` 只表示它會公開給瀏覽器，並不表示 GitHub 畫面要填在 **Variables**；本專案 workflow 全部從 **Environment secrets** 讀取。
 
-1. Fork `tavricccc/novae`。
-2. 啟用 branch protection，要求 `Verify PR` 成功再合併。
-3. 在 **Settings → Environments** 建立 `production` 與 `development`。
-4. 正式環境建議啟用 required reviewers。
+## 你要完成的教材
 
-## 2. 建立 Firebase
+依序開啟，每一頁都有註冊、點擊路徑、要複製的值與自我檢查：
 
-1. 建立 project 與 Web App。
-2. 在 Authentication 啟用 Google provider，設定授權網域。
-3. 建立 Cloud Messaging Web Push certificate，取得 VAPID public key。
-4. 如需 App Check，建立 reCAPTCHA Enterprise site key 並註冊 Web App。
-5. 建立供 Edge Functions 驗證 token 與傳送 FCM 的 service account JSON。
+1. [GitHub 帳號、Fork、Actions 與 Environment](deployment/github.md)
+2. [Firebase：登入、Web App、推播、Service Account、App Check](deployment/firebase.md)
+3. [Supabase：資料庫、前後端金鑰與 CLI 部署憑證](deployment/supabase.md)
+4. [Cloudinary：圖片憑證與 callback 簽章](deployment/cloudinary.md)
+5. [Notion：營運副本資料庫與 integration](deployment/notion.md)
+6. [Upstash：限流資料庫與 REST token](deployment/upstash.md)
+7. [Vercel、GitHub secrets、第一次部署與驗收](deployment/vercel-github.md)
 
-記錄 Web config、project ID、Web API key、VAPID key 與 service account JSON。Web config 可公開，service account JSON 絕不可進入 Git 或前端。
+建議先建立一份只存在自己電腦的暫存表，逐項取得後立刻填入 GitHub，再刪除暫存表。不要使用線上試算表保存私密金鑰。
 
-## 3. 建立 Supabase
+## production 與 development 是什麼
 
-1. 建立 project 並保存 project ref、database password、publishable key 與 service role key。
-2. 確認專案區域與資料治理需求相符。
-3. 暫時不要手動建立 app tables；workflow 會依 migrations 建立。
-4. 準備 personal access token 給 Supabase CLI。
+工作流程依 branch 自動選擇 GitHub Environment：
 
-## 4. 建立 Cloudinary、Notion 與 Upstash
+| Git branch | GitHub Environment | Vercel 類型 | 用途 |
+| --- | --- | --- | --- |
+| `main` | `production` | Production | 真正給全校使用 |
+| `dev` | `development` | Preview | 測試更新 |
 
-### Cloudinary
+第一次只想完成正式站，可以先只建立 `production`。要使用 `dev` 時，再建立 `development`，並為它準備另一組 Supabase、Firebase、Cloudinary、Notion、Upstash 資源。不要讓測試資料、限流計數或圖片混進正式環境。
 
-建立專用 cloud，取得 cloud name、API key 與 API secret。產生高熵 webhook secret；部署後再將 notification URL 指向：
+## 完整變數總表
 
-```text
-https://<SUPABASE_PROJECT_REF>.supabase.co/functions/v1/cloudinaryWebhook
+### 前端與 Vercel
+
+| GitHub secret | 從哪裡取得 |
+| --- | --- |
+| `VITE_SCHOOL_NAME` | 自己輸入，例如 `範例高中` |
+| `VITE_ALLOWED_DOMAIN` | 學校信箱 `@` 後面的網域，例如 `school.edu.tw` |
+| `VITE_FIREBASE_API_KEY` | Firebase Web App 的 `apiKey` |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Firebase Web App 的 `authDomain` |
+| `VITE_FIREBASE_PROJECT_ID` | Firebase Web App 的 `projectId` |
+| `VITE_FIREBASE_APP_ID` | Firebase Web App 的 `appId` |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Firebase Web App 的 `messagingSenderId` |
+| `VITE_FIREBASE_VAPID_KEY` | Firebase Cloud Messaging 的 Web Push public key |
+| `VITE_FIREBASE_APP_CHECK_ENABLED` | 初次部署填 `false`；完成 App Check 後才改 `true` |
+| `VITE_RECAPTCHA_ENTERPRISE_SITE_KEY` | 啟用 App Check 時的 reCAPTCHA Enterprise site key；否則可留空不建 |
+| `VITE_SUPABASE_URL` | Supabase Connect 顯示的 Project URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key，不是 secret/service role key |
+| `VERCEL_TOKEN` | Vercel Account Settings → Tokens |
+| `VERCEL_ORG_ID` | Vercel Team/Account Settings 的 ID |
+| `VERCEL_PROJECT_ID` | Vercel Project Settings → General 的 Project ID |
+
+### 後端與部署
+
+| GitHub secret | 從哪裡取得或怎麼填 |
+| --- | --- |
+| `SUPABASE_ACCESS_TOKEN` | Supabase Account → Access Tokens |
+| `SUPABASE_PROJECT_REF` | Supabase Project Settings → General → Reference ID |
+| `SUPABASE_DB_PASSWORD` | 建立 Supabase project 時設定的 database password |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase Settings → API Keys → Legacy → `service_role` |
+| `FIREBASE_PROJECT_ID` | 與 `VITE_FIREBASE_PROJECT_ID` 相同 |
+| `FIREBASE_WEB_API_KEY` | 與 `VITE_FIREBASE_API_KEY` 相同 |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | Firebase Service accounts 下載檔案的完整 JSON 內容，不是檔案路徑 |
+| `ALLOWED_DOMAIN` | 與 `VITE_ALLOWED_DOMAIN` 完全相同 |
+| `ADMIN_EMAILS` | 完整管理員信箱；多人用半形逗號分隔 |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary Product Environment 的 cloud name |
+| `CLOUDINARY_API_KEY` | 同一 Product Environment 的 API key |
+| `CLOUDINARY_API_SECRET` | 同一 Product Environment 的 API secret |
+| `CLOUDINARY_WEBHOOK_SECRET` | 標準 Cloudinary HMAC 驗證填同一個 API secret |
+| `WEBHOOK_SECRET` | 自行產生的 32-byte 隨機值 |
+| `NOTION_TOKEN` | Notion internal integration secret |
+| `NOTION_DATABASE_ID` | 已分享給 integration 的 database ID |
+| `NOTION_VERSION` | 選填；不建立時 workflow 使用 `2022-06-28` |
+| `UPSTASH_REDIS_REST_URL` | Upstash database 的 HTTPS REST URL |
+| `UPSTASH_REDIS_REST_TOKEN` | 同一 database 的 Standard REST token |
+
+`SUPABASE_URL` 不在表內：Supabase 託管的 Edge Functions 會自動提供它。不要建立名為 `SUPABASE_URL` 的 GitHub secret。workflow 會把 GitHub 的 `SUPABASE_SERVICE_ROLE_KEY` 以應用程式實際使用的 `APP_SUPABASE_SERVICE_ROLE_KEY` 名稱寫入 Edge secrets。
+
+## 產生 WEBHOOK_SECRET
+
+在 PowerShell 執行下列指令，複製輸出的 64 個十六進位字元。它只用於 Novae 內部 healthcheck 與 worker，不要與任何供應商密碼共用。
+
+```powershell
+node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
 ```
 
-### Notion
+## 第一次發布的正確順序
 
-建立 internal integration 與專用 database，把 database 分享給 integration，保存 token 與 database ID。Notion 是營運副本，不應當成災難復原備份。
+1. 完成七份教材，建立 GitHub `production` Environment 的全部必填 secrets。
+2. GitHub repository → **Actions** → **Deploy Supabase Backend** → **Run workflow** → branch 選 `main`。
+3. 等 migrations、Edge Functions、healthcheck、maintenance 全部綠色。
+4. **Actions** → **Deploy Frontend to Vercel** → **Run workflow** → `main`。
+5. 從 Vercel 開啟正式網址，再把該 hostname 加入 Firebase Authentication authorized domains 與 reCAPTCHA/App Check allowed domains。
+6. 依[Vercel 與第一次部署](deployment/vercel-github.md#上線驗收)逐項驗收。
 
-### Upstash
+Cloudinary 不需要另外建立全域 webhook trigger：Novae 每次上傳會自動傳入該次的 `notification_url`。額外建立全域 upload trigger 可能造成重複 callback。
 
-建立 Redis database，保存 REST URL 與 REST token。正式與開發環境不要共用同一個限流資料庫。
+## 常見第一次失敗
 
-## 5. 連結 Vercel
+| 畫面訊息 | 最先檢查 |
+| --- | --- |
+| `Missing deployment secrets` | secret 是否建在 `production` 的 **Environment secrets**，名稱是否完全相同 |
+| `Missing Supabase backend secrets` | `ADMIN_EMAILS`、Notion、Upstash 與 `GOOGLE_SERVICE_ACCOUNT_JSON` 是否漏填 |
+| Supabase link/database password failed | project ref 與 database password 是否屬於同一專案；必要時重設密碼 |
+| Firebase 401/登入失敗 | Web config 是否來自同一 Web App、Google provider 與 authorized domain 是否啟用 |
+| Cloudinary 401 | 四個 Cloudinary 值是否取自同一 Product Environment；webhook secret 是否等於 API secret |
+| 網頁成功但資料操作失敗 | 先確認 backend workflow 已成功，再確認前端 Supabase URL/key 指向同一 production 專案 |
 
-1. 建立 Vercel project 並連結 fork。
-2. 取得 project ID 與 team/user org ID。
-3. 建立 deployment token；權限只給需要的 scope。
-4. 發布由 GitHub Actions 執行，避免與 Vercel Git auto-deploy 重複。
-
-## 6. 填入 GitHub Environment secrets
-
-完整名稱與公開／私密邊界見[設定參考](configuration.md#前端環境變數)。兩個 Environment 都要填自己的值。
-
-前端與 Vercel：
-
-```text
-VITE_SCHOOL_NAME
-VITE_ALLOWED_DOMAIN
-VITE_FIREBASE_API_KEY
-VITE_FIREBASE_AUTH_DOMAIN
-VITE_FIREBASE_PROJECT_ID
-VITE_FIREBASE_APP_ID
-VITE_FIREBASE_MESSAGING_SENDER_ID
-VITE_FIREBASE_VAPID_KEY
-VITE_FIREBASE_APP_CHECK_ENABLED
-VITE_RECAPTCHA_ENTERPRISE_SITE_KEY
-VITE_SUPABASE_URL
-VITE_SUPABASE_PUBLISHABLE_KEY
-VERCEL_TOKEN
-VERCEL_ORG_ID
-VERCEL_PROJECT_ID
-```
-
-後端：
-
-```text
-SUPABASE_ACCESS_TOKEN
-SUPABASE_PROJECT_REF
-SUPABASE_DB_PASSWORD
-SUPABASE_SERVICE_ROLE_KEY
-FIREBASE_PROJECT_ID
-FIREBASE_WEB_API_KEY
-GOOGLE_SERVICE_ACCOUNT_JSON
-ALLOWED_DOMAIN
-ADMIN_EMAILS
-CLOUDINARY_CLOUD_NAME
-CLOUDINARY_API_KEY
-CLOUDINARY_API_SECRET
-CLOUDINARY_WEBHOOK_SECRET
-WEBHOOK_SECRET
-NOTION_TOKEN
-NOTION_DATABASE_ID
-NOTION_VERSION
-UPSTASH_REDIS_REST_URL
-UPSTASH_REDIS_REST_TOKEN
-```
-
-Cloudinary 的 `CLOUDINARY_CLOUD_NAME`、`CLOUDINARY_API_KEY` 與
-`CLOUDINARY_API_SECRET` 必須取自同一個 Product Environment。若瀏覽器直接上傳圖片時收到
-`401 Unauthorized`，請重新複製這三項設定並重新部署 `backendAction`；只更新其中一項會使簽章驗證失敗。
-
-## 7. 第一次發布
-
-1. 從 Actions 手動執行 **Deploy Supabase Backend**，選擇 `main`。
-2. 確認 migrations、Function deploy、`backendAction` healthcheck 與 maintenance cleanup 全部成功。
-3. 設定 Cloudinary webhook URL，並確認 secret 與 GitHub 中相同。
-4. 手動執行 **Deploy Frontend to Vercel**。
-5. 將正式網域加入 Firebase authorized domains、reCAPTCHA/App Check 與 Vercel domain 設定。
-
-後續 push 到 `main` 或 `dev` 會依路徑觸發相應 workflow。
-
-## 8. 上線驗收
-
-- 未登入使用者無法讀取校內內容。
-- 非允許網域與未驗證 email 無法完成同步。
-- 一般使用者、作者與管理員看到的私密分類範圍正確。
-- 可新增、審核、留言、附議與變更狀態。
-- 圖片可上傳、重新整理後仍可顯示，原始 secret 不在網路回應中。
-- 站內通知、Web Push、Notion 同步與 Dashboard 有結果。
-- Edge logs 沒有持續失敗，Vercel response headers 包含 CSP 與其他安全標頭。
-
-## 9. 回復與危險操作
-
-前端可重新部署上一個已知良好的 commit。後端 migration 採向前修正：不要修改或回滾已部署 migration，應新增相容 migration。Functions 可部署上一個相容版本，但必須確認它支援目前資料庫 schema。
-
-`Reset Supabase Database` 與 `Reset Cloudinary` workflows 會破壞資料。正式環境只在已驗證備份、明確核准與維護時段下執行。日常事故處理請先依[維運手冊](operations.md)隔離問題。
+仍無法排除時，前往[故障排除](troubleshooting.md)。資料庫 reset 與 Cloudinary reset 會刪除資料，不能當成一般修復步驟。

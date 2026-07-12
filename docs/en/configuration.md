@@ -86,7 +86,7 @@ Lower limits reduce abuse and cost but reject legitimate peaks more often. Messa
 
 ## Frontend environment variables
 
-Every value below is visible to browser users.
+Every value below is visible to browser users. Put local-development values in the untracked `.env`; for deployment, use GitHub `production` / `development` **Environment secrets**, not Environment variables. See the [from-scratch deployment guide](deployment-guide.md) for exact acquisition steps.
 
 | Name | Required | Purpose |
 | --- | --- | --- |
@@ -116,7 +116,11 @@ Every value below is visible to browser users.
 | Upstash | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` |
 | Vercel | `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` |
 
-Production and development must use separate resources and credentials. Keep `VITE_ALLOWED_DOMAIN` and backend `ALLOWED_DOMAIN` identical. Administrators must also belong to that domain.
+`ADMIN_EMAILS` is required and contains full addresses separated by ASCII commas, such as `admin@school.edu.tw,backup@school.edu.tw`. Keep `VITE_ALLOWED_DOMAIN` and `ALLOWED_DOMAIN` identical and enter only the text after `@`; administrators must also belong to that domain.
+
+`FIREBASE_PROJECT_ID` and `FIREBASE_WEB_API_KEY` normally reuse the frontend project ID and API key. With the current standard HMAC verification, `CLOUDINARY_WEBHOOK_SECRET` reuses `CLOUDINARY_API_SECRET`, while `WEBHOOK_SECRET` must be independently random. `GOOGLE_SERVICE_ACCOUNT_JSON` contains the entire JSON, not a path.
+
+Hosted Supabase Edge Functions inject `SUPABASE_URL`, so no GitHub secret is needed. The workflow writes `SUPABASE_SERVICE_ROLE_KEY` to Edge as `APP_SUPABASE_SERVICE_ROLE_KEY`. Production and development must use separate resources and credentials.
 
 ## Change checklist
 

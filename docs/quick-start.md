@@ -34,7 +34,7 @@ Windows PowerShell 可使用：
 Copy-Item .env.example .env
 ```
 
-至少填入 Firebase、Supabase 與允許網域欄位。所有 `VITE_*` 值都會進入瀏覽器 bundle，不可放入 service role key、資料庫密碼或第三方 API secret。欄位說明見[設定參考](configuration.md#前端環境變數)。
+本機 `.env` 只需要填前端 `VITE_*` 區塊。至少填入 Firebase、Supabase 與允許網域欄位；檔案後半的部署／後端值留空即可。所有 `VITE_*` 值都會進入瀏覽器 bundle，不可放入 service role key、資料庫密碼或第三方 API secret。欄位說明見[設定參考](configuration.md#前端環境變數)。
 
 ## 3. 啟動開發伺服器
 
@@ -79,4 +79,4 @@ npm run db:lint:local
 - `npm run verify:local` 成功。
 - 沒有把 `.env` 或任何私密值加入 Git。
 
-若遇到問題，先查看[故障排除](troubleshooting.md)；準備建立完整環境時，前往[部署指南](deployment-guide.md)。
+若還沒有任何雲端帳號，可先閱讀[從零部署指南](deployment-guide.md)，裡面逐一說明註冊與取得每個值。遇到問題則查看[故障排除](troubleshooting.md)。

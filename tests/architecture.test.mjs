@@ -35,10 +35,16 @@ test('frontend keeps Firebase limited to Auth, App Check, and FCM', async () => 
 });
 
 test('runtime fonts are local compressed subsets', async () => {
+  const main = await read('src/main.ts');
   const style = await read('src/style.css');
+  const tailwindConfig = await read('tailwind.config.cjs');
+  const viteConfig = await read('vite.config.ts');
 
-  assert.match(style, /inter-latin-400-700\.woff2/u);
+  assert.match(main, /harmonyos-sans-webfont-splitted/u);
   assert.match(style, /jetbrains-mono-latin-400-600\.woff2/u);
+  assert.match(tailwindConfig, /sans: \['HarmonyOS Sans TC', 'HarmonyOS Sans SC'/u);
+  assert.doesNotMatch(tailwindConfig, /Inter/u);
+  assert.doesNotMatch(viteConfig, /globPatterns:[\s\S]*woff2/u);
   assert.doesNotMatch(style, /material-symbols|Material Symbols/u);
   assert.doesNotMatch(style, /fonts\.googleapis|fonts\.gstatic|\.ttf/u);
 });
@@ -690,6 +696,7 @@ test('app updates hand over the service worker with bounded reload recovery', as
   assert.match(appUpdate, /SERVICE_WORKER_PREPARE_TIMEOUT_MS = 4_000/u);
   assert.match(appUpdate, /waitForServiceWorkerTakeover/u);
   assert.match(appUpdate, /registration\.waiting\?\.postMessage\(\{ type: 'SKIP_WAITING' \}\)/u);
+  assert.match(appUpdate, /serviceWorker\.register\('\/sw\.js',[\s\S]*type: 'module'/u);
   assert.match(appUpdate, /RELOAD_RECOVERY_TIMEOUT_MS = 10_000/u);
   assert.match(serviceWorker, /event\.data[\s\S]*SKIP_WAITING/u);
   assert.match(realtimeEvents, /content-realtime:shared:\$\{realtimeChannelSerial \+= 1\}/u);

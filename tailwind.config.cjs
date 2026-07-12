@@ -8,9 +8,9 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'PingFang TC', 'Microsoft JhengHei', 'system-ui', 'sans-serif'],
-        display: ['Inter', 'PingFang TC', 'Microsoft JhengHei', 'system-ui', 'sans-serif'],
-        body: ['Inter', 'PingFang TC', 'Microsoft JhengHei', 'system-ui', 'sans-serif'],
+        sans: ['HarmonyOS Sans TC', 'HarmonyOS Sans SC', 'PingFang TC', 'Microsoft JhengHei', 'system-ui', 'sans-serif'],
+        display: ['HarmonyOS Sans TC', 'HarmonyOS Sans SC', 'PingFang TC', 'Microsoft JhengHei', 'system-ui', 'sans-serif'],
+        body: ['HarmonyOS Sans TC', 'HarmonyOS Sans SC', 'PingFang TC', 'Microsoft JhengHei', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
       colors: {

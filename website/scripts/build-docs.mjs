@@ -58,6 +58,26 @@ const NAV_EN = [
   { id: 'contributing', title: 'Contributing', file: 'contributing.html' }
 ];
 
+const DEPLOYMENT_NAV_ZH = [
+  { id: 'deployment/github', title: '1. GitHub 與 Environment', file: 'deployment/github.html' },
+  { id: 'deployment/firebase', title: '2. Firebase', file: 'deployment/firebase.html' },
+  { id: 'deployment/supabase', title: '3. Supabase', file: 'deployment/supabase.html' },
+  { id: 'deployment/cloudinary', title: '4. Cloudinary', file: 'deployment/cloudinary.html' },
+  { id: 'deployment/notion', title: '5. Notion', file: 'deployment/notion.html' },
+  { id: 'deployment/upstash', title: '6. Upstash', file: 'deployment/upstash.html' },
+  { id: 'deployment/vercel-github', title: '7. Vercel 與首次部署', file: 'deployment/vercel-github.html' }
+];
+
+const DEPLOYMENT_NAV_EN = [
+  { id: 'deployment/github', title: '1. GitHub and Environments', file: 'deployment/github.html' },
+  { id: 'deployment/firebase', title: '2. Firebase', file: 'deployment/firebase.html' },
+  { id: 'deployment/supabase', title: '3. Supabase', file: 'deployment/supabase.html' },
+  { id: 'deployment/cloudinary', title: '4. Cloudinary', file: 'deployment/cloudinary.html' },
+  { id: 'deployment/notion', title: '5. Notion', file: 'deployment/notion.html' },
+  { id: 'deployment/upstash', title: '6. Upstash', file: 'deployment/upstash.html' },
+  { id: 'deployment/vercel-github', title: '7. Vercel and first release', file: 'deployment/vercel-github.html' }
+];
+
 const md = new MarkdownIt({
   html: true,
   linkify: true,
@@ -118,7 +138,7 @@ function rewriteMarkdownLinks(html, { lang }) {
       }
       if (next.startsWith('../') && lang === 'en') {
         // e.g. ../project-overview.md or ../README.md from en/
-        next = next.replace(/^\.\.\//, '');
+        next = next.replace(/^(?:\.\.\/)+/, '');
         next = next.replace(/\.md$/, '.html');
         if (next === 'README.html') next = 'index.html';
         // structure.md lives only in main repo — link to GitHub
@@ -168,6 +188,18 @@ function pageNameFromRel(rel) {
 
 function sibling(lang, id) {
   const nav = lang === 'en' ? NAV_EN : NAV_ZH;
+  const deploymentNav = lang === 'en' ? DEPLOYMENT_NAV_EN : DEPLOYMENT_NAV_ZH;
+  const deploymentIndex = deploymentNav.findIndex((item) => item.id === id);
+  if (deploymentIndex >= 0) {
+    return {
+      prev: deploymentIndex > 0
+        ? deploymentNav[deploymentIndex - 1]
+        : nav.find((item) => item.id === 'deployment-guide'),
+      next: deploymentIndex < deploymentNav.length - 1
+        ? deploymentNav[deploymentIndex + 1]
+        : null
+    };
+  }
   const idx = nav.findIndex((item) => item.id === id);
   if (idx < 0) return { prev: null, next: null };
   return {
@@ -176,28 +208,48 @@ function sibling(lang, id) {
   };
 }
 
-function languageAlternate(lang, id) {
+function languageAlternate(lang, id, outRel) {
   if (id === 'README') {
     return lang === 'zh' ? './en/' : '../';
   }
-  return lang === 'zh' ? `./en/${id}.html` : `../${id}.html`;
+  const directoryDepth = outRel.split('/').length - 1;
+  if (lang === 'zh') {
+    return `${'../'.repeat(directoryDepth)}en/${id}.html`;
+  }
+  return `${'../'.repeat(directoryDepth)}${id}.html`;
 }
 
 function renderShell({ lang, id, title, bodyHtml, outRel }) {
   const nav = lang === 'en' ? NAV_EN : NAV_ZH;
   const { prev, next } = sibling(lang, id);
-  const homeHref = lang === 'en' ? '../..' : '..';
-  // docs-site is served as /docs/ so assets go up one more for en
-  const depth = outRel.includes('/') ? 2 : 1;
+  const outputDepth = outRel.split('/').length;
+  const homeHref = '../'.repeat(outputDepth);
+  // docs-site is served as /docs/, so assets go one level above docs-site.
+  const depth = outputDepth;
   const assetPrefix = '../'.repeat(depth);
-  const altLangHref = languageAlternate(lang, id);
+  const altLangHref = languageAlternate(lang, id, outRel);
   const isEn = lang === 'en';
+  const docsRootPrefix = '../'.repeat(Math.max(0, outputDepth - (isEn ? 2 : 1)));
+  const docsHomeHref = `${docsRootPrefix}index.html`;
+  const deploymentNav = isEn ? DEPLOYMENT_NAV_EN : DEPLOYMENT_NAV_ZH;
+  const showDeploymentLessons = id === 'deployment-guide' || id.startsWith('deployment/');
+  const contextLink = id.startsWith('deployment/')
+    ? `<a class="docs-context-link" href="${docsRootPrefix}deployment-guide.html">${isEn ? '← Deployment overview' : '← 返回部署指南總覽'}</a>`
+    : '';
 
   const sidebar = nav
     .map((item) => {
-      const href = item.file;
-      const active = item.id === id ? ' is-active' : '';
-      return `<a class="docs-nav-link${active}" href="${href}">${item.title}</a>`;
+      const href = `${docsRootPrefix}${item.file}`;
+      const active = item.id === id || (item.id === 'deployment-guide' && id.startsWith('deployment/'))
+        ? ' is-active'
+        : '';
+      const lessons = item.id === 'deployment-guide' && showDeploymentLessons
+        ? `<div class="docs-subnav">${deploymentNav.map((lesson) => {
+            const lessonActive = lesson.id === id ? ' is-active' : '';
+            return `<a class="docs-subnav-link${lessonActive}" href="${docsRootPrefix}${lesson.file}">${lesson.title}</a>`;
+          }).join('')}</div>`
+        : '';
+      return `<a class="docs-nav-link${active}" href="${href}">${item.title}</a>${lessons}`;
     })
     .join('');
 
@@ -205,12 +257,12 @@ function renderShell({ lang, id, title, bodyHtml, outRel }) {
     <nav class="docs-pager">
       ${
         prev
-          ? `<a class="docs-pager-link" href="${prev.file}"><span>${isEn ? 'Previous' : '上一篇'}</span><strong>${prev.title}</strong></a>`
+          ? `<a class="docs-pager-link" href="${docsRootPrefix}${prev.file}"><span>${isEn ? 'Previous' : '上一篇'}</span><strong>${prev.title}</strong></a>`
           : '<span></span>'
       }
       ${
         next
-          ? `<a class="docs-pager-link docs-pager-link--next" href="${next.file}"><span>${isEn ? 'Next' : '下一篇'}</span><strong>${next.title}</strong></a>`
+          ? `<a class="docs-pager-link docs-pager-link--next" href="${docsRootPrefix}${next.file}"><span>${isEn ? 'Next' : '下一篇'}</span><strong>${next.title}</strong></a>`
           : '<span></span>'
       }
     </nav>`;
@@ -248,7 +300,7 @@ function renderShell({ lang, id, title, bodyHtml, outRel }) {
       </a>
       <nav aria-label="primary">
         <a href="${assetPrefix}">${isEn ? 'Home' : '首頁'}</a>
-        <a class="is-active" href="${isEn ? './' : './'}">${isEn ? 'Docs' : '文件'}</a>
+        <a class="is-active" href="${docsHomeHref}">${isEn ? 'Docs' : '文件'}</a>
       </nav>
       <div class="header-actions">
         <a class="language-toggle" href="${altLangHref}" aria-label="${isEn ? 'Switch to Chinese' : 'Switch to English'}">${isEn ? '中' : 'EN'}</a>
@@ -261,6 +313,7 @@ function renderShell({ lang, id, title, bodyHtml, outRel }) {
         ${sidebar}
       </aside>
       <main id="docs-main" class="docs-main">
+        ${contextLink}
         <article class="docs-prose">
           ${bodyHtml}
         </article>

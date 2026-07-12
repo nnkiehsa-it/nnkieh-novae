@@ -64,6 +64,7 @@ async function updateServiceWorker(): Promise<ServiceWorkerRegistration | null> 
     const registration = await withRequestTimeout(
       () => navigator.serviceWorker.register('/sw.js', {
         scope: '/',
+        type: 'module',
         updateViaCache: 'none',
       }),
       { label: 'Service Worker 註冊', timeoutMs: APP_RELOAD_TIMEOUT_MS },

@@ -116,7 +116,7 @@ git diff
 
 ## 前端環境變數
 
-所有欄位均可被瀏覽器使用者看到。
+所有欄位均可被瀏覽器使用者看到。本機開發填在未追蹤的 `.env`；部署時填在 GitHub `production`／`development` 的 **Environment secrets**，不是 Environment variables。逐項取得方式見[從零部署指南](deployment-guide.md)。
 
 | 名稱 | 必要 | 用途 |
 | --- | --- | --- |
@@ -146,7 +146,11 @@ git diff
 | Upstash | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` |
 | Vercel 部署 | `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` |
 
-正式與開發環境必須使用不同資源與 secrets。`VITE_ALLOWED_DOMAIN` 應與後端 `ALLOWED_DOMAIN` 相同；管理員 email 使用部署流程所接受的清單格式，且帳號本身仍須符合允許網域。
+`ADMIN_EMAILS` 是必填的完整信箱清單，以半形逗號分隔，例如 `admin@school.edu.tw,backup@school.edu.tw`。`VITE_ALLOWED_DOMAIN` 與 `ALLOWED_DOMAIN` 必須完全相同，只填 `@` 後面的網域；管理員帳號本身也必須屬於該網域。
+
+`FIREBASE_PROJECT_ID` 與 `FIREBASE_WEB_API_KEY` 通常分別重用前端的 project ID 與 API key。`CLOUDINARY_WEBHOOK_SECRET` 在目前標準 HMAC 驗證中重用 `CLOUDINARY_API_SECRET`；`WEBHOOK_SECRET` 則必須另外產生隨機值。`GOOGLE_SERVICE_ACCOUNT_JSON` 填完整 JSON，不是檔案路徑。
+
+Supabase 託管的 Edge Functions 自動提供 `SUPABASE_URL`，不需建立 GitHub secret。workflow 會把 `SUPABASE_SERVICE_ROLE_KEY` 以 `APP_SUPABASE_SERVICE_ROLE_KEY` 名稱寫入 Edge secrets。正式與開發環境必須使用不同資源與 secrets。
 
 ## 變更檢查清單
 

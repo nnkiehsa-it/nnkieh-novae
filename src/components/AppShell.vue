@@ -23,7 +23,7 @@
           </button>
           <h1 class="app-header__title flex h-10 min-w-0 shrink-0 items-center text-ink-950 dark:text-ink-50 md:h-auto" :aria-label="mobileHeaderTitle">
             <span class="hidden md:inline-flex"><BrandMark /></span>
-            <span class="truncate text-[26px] font-bold tracking-tight md:hidden leading-none">{{ mobileHeaderTitle }}</span>
+            <span class="truncate text-2xl font-bold tracking-tight md:hidden leading-none">{{ mobileHeaderTitle }}</span>
           </h1>
 
           <!-- Desktop Navigation -->
@@ -94,7 +94,7 @@
           @click="handleNavigationClick(item.isActive)"
         >
           <span class="app-bottom-nav__icon" aria-hidden="true">
-            <AppIcon :name="item.icon" :size="5" :stroke-width="1.9" />
+            <AppIcon :name="item.icon" :size="4.5" :stroke-width="1.9" />
           </span>
           <span class="app-bottom-nav__label">{{ item.label }}</span>
         </RouterLink>
@@ -115,7 +115,7 @@
               @click="open"
             >
               <span class="app-bottom-nav__icon" aria-hidden="true">
-                <AppIcon name="plus" :size="6" :stroke-width="2.4" />
+                <AppIcon name="plus" :size="5" :stroke-width="2.4" />
               </span>
             </button>
           </template>
@@ -127,7 +127,7 @@
           :class="{ 'app-bottom-nav__item--active': route.name === 'notifications' }"
         >
           <span class="app-bottom-nav__icon relative inline-flex" aria-hidden="true">
-            <AppIcon name="bell" :size="5" :stroke-width="1.9" />
+            <AppIcon name="bell" :size="4.5" :stroke-width="1.9" />
             <span
               v-if="hasUnread"
               class="absolute right-0.5 top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-error dark:border-ink-900 app-bottom-nav__badge"

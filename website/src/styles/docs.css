@@ -11,9 +11,9 @@
 
 .docs-layout {
   display: grid;
-  grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
+  grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
   gap: 0;
-  width: min(1200px, 100%);
+  width: min(1680px, 100%);
   margin: 0 auto;
   flex: 1;
   min-height: calc(100svh - 64px - 120px);
@@ -57,13 +57,52 @@
   font-weight: 600;
 }
 
+.docs-subnav {
+  display: grid;
+  gap: 2px;
+  margin: 2px 0 8px 14px;
+  padding-left: 10px;
+  border-left: 1px solid #d8e7df;
+}
+
+.docs-subnav-link {
+  padding: 6px 8px;
+  border-radius: 9px;
+  color: #77776c;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.docs-subnav-link:hover,
+.docs-subnav-link.is-active {
+  background: #f2faf6;
+  color: #087052;
+}
+
 .docs-main {
-  padding: 36px 28px 80px;
+  padding: 44px clamp(32px, 4.5vw, 76px) 88px;
   min-width: 0;
 }
 
 .docs-prose {
-  max-width: 720px;
+  max-width: 1080px;
+}
+
+.docs-context-link {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0 24px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #f7f7f5;
+  color: #5d5d54;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.docs-context-link:hover {
+  background: #ecfdf5;
+  color: #065f46;
 }
 
 .docs-prose h1 {
@@ -76,8 +115,8 @@
 .docs-prose h2 {
   font-size: 1.35rem;
   letter-spacing: -0.03em;
-  margin: 2.4rem 0 0.9rem;
-  padding-top: 0.4rem;
+  margin: 3rem 0 1rem;
+  padding-top: 1.75rem;
   border-top: 1px solid #efefea;
 }
 
@@ -193,7 +232,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  max-width: 720px;
+  max-width: 1080px;
   margin: 48px 0 0;
   padding-top: 28px;
   border-top: 1px solid #efefea;
@@ -258,8 +297,20 @@
     font-size: 12.5px;
   }
 
+  .docs-subnav {
+    width: 100%;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    margin: 0;
+    padding: 6px 0 0;
+    border-left: 0;
+  }
+
   .docs-main {
     padding: 24px 18px 64px;
+  }
+
+  .docs-context-link {
+    margin-bottom: 20px;
   }
 
   .docs-pager {
@@ -292,6 +343,30 @@
   }
 
   .docs-nav-link.is-active {
+    background: #063e2d;
+    color: #6ee7b7;
+  }
+
+  .docs-subnav {
+    border-color: #315044;
+  }
+
+  .docs-subnav-link {
+    color: #9e9e91;
+  }
+
+  .docs-subnav-link:hover,
+  .docs-subnav-link.is-active {
+    background: #14251f;
+    color: #6ee7b7;
+  }
+
+  .docs-context-link {
+    background: #171715;
+    color: #b8b8ae;
+  }
+
+  .docs-context-link:hover {
     background: #063e2d;
     color: #6ee7b7;
   }

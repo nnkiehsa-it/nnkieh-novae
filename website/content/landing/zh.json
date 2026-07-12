@@ -32,7 +32,6 @@
       { "label": "守護", "text": "尊重敏感聲音" }
     ]
   },
-  "trust": ["學生發聲", "共同參與", "透明進度", "隱私尊重"],
   "story": {
     "number": "00 / 名字的故事",
     "title": "一顆新星是開始，<br><em>一片星系是改變。</em>",
@@ -105,28 +104,29 @@
     ]
   },
   "config": {
-    "number": "03 / 分類規則",
-    "title": "不同議題，<br><em>都有剛剛好的參與方式。</em>",
-    "lede": "公開範圍、審核方式、作者顯示、附議門檻與期限都能自訂，讓平台貼合每所學校的文化與節奏。",
+    "number": "03 / 參與方式",
+    "title": "不同的校園需求，<br><em>用不同方式安心參與。</em>",
+    "lede": "公開倡議可以凝聚支持，敏感案件只讓當事人與管理員看見，設備問題則直接回報。學校只要選擇適合的方式，不需要理解程式設定。",
     "points": [
-      "公開倡議：校內可見，可開附議門檻",
-      "審核後公開：先內部把關，再給全校參與",
-      "私密案件：僅作者與管理員，可關閉附議"
+      "公開倡議：讓全校看見、附議並追蹤進度",
+      "敏感案件：只有本人與管理員能查看",
+      "設備回報：不需連署，直接進入處理流程",
+      "使用頻率：依校園規模避免洗版與濫用"
     ],
     "cta": "深入了解自訂體驗",
     "access": [
       {
-        "code": "school",
+        "label": "全校登入者可見",
         "title": "校內公開",
         "body": "已登入的校內使用者可依列表與狀態瀏覽。"
       },
       {
-        "code": "reviewed-school",
+        "label": "審核通過後公開",
         "title": "審核後公開",
         "body": "核准前僅作者與管理員；通過後進入校內視野。"
       },
       {
-        "code": "owner-admin",
+        "label": "僅本人與管理員",
         "title": "僅當事人",
         "body": "敏感權益與個人處境，不進全校列表。"
       }
@@ -135,17 +135,36 @@
       "tabs": [
         { "key": "public", "label": "公開倡議" },
         { "key": "private", "label": "私密案件" },
-        { "key": "facility", "label": "設備回報" }
+        { "key": "facility", "label": "設備回報" },
+        { "key": "limits", "label": "流量防護" }
       ],
-      "snippets": {
-        "public": "readAccess: school\nauthorVisible: true\nsupport:\n  enabled: true\n  goal: 50\n  deadlineDays: 14",
-        "private": "readAccess: owner-admin\nauthorVisible: false\nsupport:\n  enabled: false",
-        "facility": "readAccess: school\nauthorVisible: true\nsupport:\n  enabled: false"
+      "details": {
+        "public": [
+          { "label": "誰看得到", "value": "全校登入者" },
+          { "label": "附議方式", "value": "14 天內達到 50 人" },
+          { "label": "校方回覆", "value": "7 天內回應" }
+        ],
+        "private": [
+          { "label": "誰看得到", "value": "提案本人與管理員" },
+          { "label": "是否附議", "value": "不開放" },
+          { "label": "校方回覆", "value": "7 天內回應" }
+        ],
+        "facility": [
+          { "label": "誰看得到", "value": "全校登入者" },
+          { "label": "處理方式", "value": "直接回報，不需附議" },
+          { "label": "追蹤內容", "value": "狀態、照片與處理結果" }
+        ],
+        "limits": [
+          { "label": "發文", "value": "每人每日最多 30 次" },
+          { "label": "留言", "value": "每人每小時最多 200 次" },
+          { "label": "附議操作", "value": "每人每小時最多 600 次" }
+        ]
       },
       "results": {
         "public": { "title": "全校可附議", "body": "達標後進入處理流程，進度即時可見。" },
         "private": { "title": "不進公開列表", "body": "僅作者與管理員可讀；管理端仍保留作者關聯。" },
-        "facility": { "title": "快速回報、不需連署", "body": "關閉附議，專心狀態與現場圖片。" }
+        "facility": { "title": "快速回報、不需連署", "body": "關閉附議，專心狀態與現場圖片。" },
+        "limits": { "title": "防止濫用，也保留校園彈性", "body": "依使用規模調整發文、留言與附議頻率，兼顧參與體驗、服務穩定與成本。" }
       }
     }
   },

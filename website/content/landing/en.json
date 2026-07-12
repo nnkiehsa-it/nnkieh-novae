@@ -32,7 +32,6 @@
       { "label": "Protect", "text": "Respect sensitive voices" }
     ]
   },
-  "trust": ["Student voice", "Shared participation", "Visible progress", "Privacy by care"],
   "story": {
     "number": "00 / OUR NAME",
     "title": "One new star begins.<br><em>A constellation creates change.</em>",
@@ -105,28 +104,29 @@
     ]
   },
   "config": {
-    "number": "03 / CATEGORY RULES",
-    "title": "Different topics.<br><em>The right participation path for each.</em>",
-    "lede": "Visibility, review, author display, support goals, and timelines can all be customized around your campus culture and rhythm.",
+    "number": "03 / WAYS TO PARTICIPATE",
+    "title": "Different campus needs,<br><em>different ways to participate safely.</em>",
+    "lede": "Public campaigns can gather support, sensitive cases stay between the student and administrators, and facility problems go straight to handling. Schools choose the experience without reading configuration code.",
     "points": [
-      "Public campaigns: school-visible with optional support goals",
-      "Reviewed then public: internal gate before campus participation",
-      "Private cases: author and admin only, support off"
+      "Public campaigns: visible, supportable, and trackable campus-wide",
+      "Sensitive cases: visible only to the student and administrators",
+      "Facility reports: handled directly without a petition",
+      "Usage frequency: prevent flooding and abuse at each school's scale"
     ],
     "cta": "Explore customizable experiences",
     "access": [
       {
-        "code": "school",
+        "label": "All signed-in students",
         "title": "School-wide",
         "body": "Signed-in school users can browse by list and status rules."
       },
       {
-        "code": "reviewed-school",
+        "label": "Public after review",
         "title": "Reviewed, then public",
         "body": "Author and admins until approved; then campus visibility."
       },
       {
-        "code": "owner-admin",
+        "label": "Owner and admins only",
         "title": "Owner & admin",
         "body": "Sensitive rights cases stay off the public board."
       }
@@ -135,17 +135,36 @@
       "tabs": [
         { "key": "public", "label": "Public campaign" },
         { "key": "private", "label": "Private case" },
-        { "key": "facility", "label": "Facility report" }
+        { "key": "facility", "label": "Facility report" },
+        { "key": "limits", "label": "Rate limits" }
       ],
-      "snippets": {
-        "public": "readAccess: school\nauthorVisible: true\nsupport:\n  enabled: true\n  goal: 50\n  deadlineDays: 14",
-        "private": "readAccess: owner-admin\nauthorVisible: false\nsupport:\n  enabled: false",
-        "facility": "readAccess: school\nauthorVisible: true\nsupport:\n  enabled: false"
+      "details": {
+        "public": [
+          { "label": "Visible to", "value": "All signed-in school users" },
+          { "label": "Support", "value": "50 people within 14 days" },
+          { "label": "School response", "value": "Within 7 days" }
+        ],
+        "private": [
+          { "label": "Visible to", "value": "The student and administrators" },
+          { "label": "Support", "value": "Not enabled" },
+          { "label": "School response", "value": "Within 7 days" }
+        ],
+        "facility": [
+          { "label": "Visible to", "value": "All signed-in school users" },
+          { "label": "Handling", "value": "Direct report, no petition" },
+          { "label": "Tracks", "value": "Status, photos, and outcome" }
+        ],
+        "limits": [
+          { "label": "Posting", "value": "Up to 30 per person each day" },
+          { "label": "Comments", "value": "Up to 200 per person each hour" },
+          { "label": "Support actions", "value": "Up to 600 per person each hour" }
+        ]
       },
       "results": {
         "public": { "title": "Campus can support", "body": "Hitting the goal starts the configured process with live progress." },
         "private": { "title": "Off the public list", "body": "Only author and admins can read; admins still retain the author link." },
-        "facility": { "title": "Fast reports, no petition", "body": "Support off—focus on status and site photos." }
+        "facility": { "title": "Fast reports, no petition", "body": "Support off—focus on status and site photos." },
+        "limits": { "title": "Prevent abuse without losing campus flexibility", "body": "Tune posting, comments, and support frequency around participation, reliability, and operating cost." }
       }
     }
   },

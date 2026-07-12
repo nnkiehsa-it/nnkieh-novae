@@ -87,8 +87,6 @@
         <div class="hero-interface" data-novae-demo="desktop" data-compact="true"></div>
       </section>
 
-      <section class="trust-strip" data-render="trust" aria-label="values"></section>
-
       <section class="section" id="story">
         <div class="story-sky" aria-hidden="true">
           <span class="story-orbit story-orbit--one"></span>
@@ -117,7 +115,14 @@
 
       <section class="section config-section product-config" id="custom">
         <div class="config-copy"><p class="section-number" data-i18n="config.number"></p><h2 data-i18n="config.title"></h2><p data-i18n="config.lede"></p><ul class="config-points" data-render="config-points"></ul></div>
-        <div class="config-panel"><div class="access-grid" data-render="config-access"></div></div>
+        <div class="config-panel">
+          <div class="access-grid" data-render="config-access"></div>
+          <div class="config-console" data-config-console>
+            <div class="console-tabs" data-render="config-tabs" role="tablist"></div>
+            <div data-render="config-codes"></div>
+            <div data-render="config-results" aria-live="polite"></div>
+          </div>
+        </div>
       </section>
 
       <section class="section experience-section" id="experience">

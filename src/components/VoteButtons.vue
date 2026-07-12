@@ -10,7 +10,10 @@
     >
       <AppIcon name="thumbs-up" :size="compact ? 4 : 5" />
       <!-- Support count display -->
-      <span class="text-sm font-semibold select-none leading-none">{{ displaySupportCount }}</span>
+      <span
+        class="font-semibold select-none leading-none"
+        :class="compact ? 'text-[11px]' : 'text-sm'"
+      >{{ displaySupportCount }}</span>
     </button>
   </div>
 </template>

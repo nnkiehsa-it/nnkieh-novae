@@ -33,7 +33,7 @@ PowerShell:
 Copy-Item .env.example .env
 ```
 
-Fill in the Firebase, Supabase, and allowed-domain values. Every `VITE_*` value is bundled for browsers; never put service-role keys, database passwords, or third-party secrets there. See the [configuration reference](configuration.md#frontend-environment-variables).
+For local development, fill only the frontend `VITE_*` section and leave backend/deployment entries blank. At minimum, provide Firebase, Supabase, and the allowed domain. Every `VITE_*` value is bundled for browsers; never put service-role keys, database passwords, or third-party secrets there. See the [configuration reference](configuration.md#frontend-environment-variables).
 
 ## 3. Start development
 
@@ -78,4 +78,4 @@ The local stack does not replace Firebase, Cloudinary, Notion, Upstash, or FCM. 
 - `npm run verify:local` passes.
 - `.env` and all private credentials remain untracked.
 
-See [troubleshooting](troubleshooting.md) for failures, or continue to the [deployment guide](deployment-guide.md).
+If you do not have cloud accounts yet, follow the [from-scratch deployment guide](deployment-guide.md), which explains registration and every value. See [troubleshooting](troubleshooting.md) for failures.
