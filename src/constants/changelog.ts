@@ -2,6 +2,17 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "統一全站視覺層次",
+    version: "v2.0.171",
+    date: "2026-07-12",
+    time: "18:23",
+    items: [
+      { title: "統一各頁面的圓角、邊框、陰影與操作按鈕顯示。" },
+      { title: "強化標題、正文與次要資訊的文字對比，提升內容辨識度。" },
+      { title: "改善提案、公告、通知、設定、統計、詳情與更新紀錄的版面層次。" }
+    ]
+  },
+  {
     title: "改善提案列表層次",
     version: "v2.0.170",
     date: "2026-07-12",

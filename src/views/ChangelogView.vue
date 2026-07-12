@@ -1,8 +1,11 @@
 <template>
-  <section class="page-bottom-safe space-y-5">
-    <header class="flex flex-col gap-3 border-b border-ink-200/80 pb-4 dark:border-ink-800/80 sm:flex-row sm:items-center sm:justify-between">
-      <h2 class="hidden text-2xl font-bold tracking-tight text-ink-950 dark:text-ink-50 md:block sm:text-3xl">更新紀錄</h2>
-      <p class="text-sm font-semibold text-ink-500 dark:text-ink-400">
+  <section class="page-workspace page-workspace--tall page-bottom-safe space-y-5 p-4 sm:p-5 md:p-6">
+    <header class="flex flex-col gap-3 border-b border-ink-100 pb-5 dark:border-ink-800/80 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h2 class="page-title hidden md:block">更新紀錄</h2>
+        <p class="page-description mt-1 hidden md:block">查看近期功能與體驗改善</p>
+      </div>
+      <p class="text-sm font-semibold text-ink-600 dark:text-ink-300">
         累計更新：{{ totalUpdates }} 次
       </p>
     </header>

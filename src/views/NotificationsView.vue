@@ -1,6 +1,10 @@
 <template>
-  <section class="page-bottom-safe min-h-0 flex-1">
-    <div class="min-h-0 flex-1">
+  <section class="page-workspace page-workspace--tall page-bottom-safe flex min-h-0 flex-1 flex-col">
+    <header class="page-workspace__header hidden md:block">
+      <h2 class="page-title">通知</h2>
+      <p class="page-description mt-1">查看提案、公告與留言的最新動態</p>
+    </header>
+    <div class="page-workspace__body min-h-0 flex-1 overflow-y-auto pb-4">
       <Transition name="panel-switch" mode="out-in">
         <div :key="notificationPanelKey">
           <div v-if="loading" class="space-y-4 py-2" aria-label="通知載入中">

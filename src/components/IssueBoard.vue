@@ -1,5 +1,5 @@
 <template>
-  <section class="board-surface relative flex min-h-0 flex-col">
+  <section class="board-surface relative flex h-full min-h-0 flex-col">
     <div class="board-surface__header">
       <BoardControls
         v-model:status-tab="statusTab"

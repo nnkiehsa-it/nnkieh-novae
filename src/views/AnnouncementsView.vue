@@ -1,7 +1,8 @@
 <template>
-  <section class="mx-auto w-full max-w-7xl space-y-5">
+  <section class="board-surface mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col">
     <AnnouncementControls
       v-model:sort-option="sortOption"
+      class="board-surface__header"
     >
       <template #actions>
         <CreateActionMenu
@@ -15,7 +16,7 @@
           <template #trigger="{ open }">
             <button
               type="button"
-              class="button-icon-filled flex !h-10 !w-10 items-center justify-center shrink-0 md:!h-9 md:!w-9"
+              class="board-primary-control board-control--icon flex h-10 w-10 shrink-0 items-center justify-center md:h-9 md:w-9"
               title="新增"
               aria-label="新增"
               @click="open"
@@ -27,7 +28,7 @@
       </template>
     </AnnouncementControls>
 
-    <div>
+    <div class="board-surface__body min-h-0 flex-1 overflow-y-auto pb-4">
       <Transition name="panel-switch" mode="out-in">
         <div :key="announcementPanelKey" class="space-y-3">
           <PageLoadFailure
