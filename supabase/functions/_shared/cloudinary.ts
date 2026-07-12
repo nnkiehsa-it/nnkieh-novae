@@ -79,9 +79,10 @@ export async function getCloudinaryAuthenticatedImageMetadata(publicId: string) 
 export async function createCloudinaryAuthenticatedImageUrl(publicId: string) {
   const cloudName = requireEnv("CLOUDINARY_CLOUD_NAME");
   const apiSecret = requireEnv("CLOUDINARY_API_SECRET");
-  const signature = (await sha1UrlSafeBase64(`${publicId}${apiSecret}`)).slice(0, 8);
+  const deliveryPath = `${publicId}.webp`;
+  const signature = (await sha1UrlSafeBase64(`${deliveryPath}${apiSecret}`)).slice(0, 8);
   const encodedPublicId = publicId.split("/").map((part) => encodeURIComponent(part)).join("/");
-  return `https://res.cloudinary.com/${cloudName}/image/authenticated/s--${signature}--/${encodedPublicId}`;
+  return `https://res.cloudinary.com/${cloudName}/image/authenticated/s--${signature}--/${encodedPublicId}.webp`;
 }
 
 export async function createCloudinaryExpiringImageUrl(publicId: string, expiresAt: Date) {

@@ -607,12 +607,16 @@ test('personal notification writes and pushes are scoped to the recipient', asyn
 test('private issue data and upload URLs stay behind backend authorization', async () => {
   const migration = await read('supabase/migrations/202607050001_supabase_baseline.sql');
   const uploads = await read('supabase/functions/backendAction/uploads.ts');
+  const cloudinary = await read('supabase/functions/_shared/cloudinary.ts');
   const support = await read('supabase/functions/backendAction/issue-support.ts');
 
   assert.match(migration, /revoke all on app_api\.issues from anon, authenticated/u);
   assert.match(uploads, /async function resolveUploadAccessBatch/u);
   assert.match(uploads, /canReadIssue\(issue, auth\)/u);
   assert.match(uploads, /issueIsPrivateToOwner/u);
+  assert.match(uploads, /PUBLIC_DELIVERY_SCOPE = "public-v2"/u);
+  assert.match(cloudinary, /deliveryPath = `\$\{publicId\}\.webp`/u);
+  assert.match(cloudinary, /s--\$\{signature\}--\/\$\{encodedPublicId\}\.webp/u);
   assert.match(support, /issueAllowsSupport/u);
   assert.match(support, /issue\.support_enabled !== true/u);
 });

@@ -8,6 +8,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     time: "11:05",
     items: [
       { title: "修正圖片上傳可能因驗證參數不相符而失敗的問題。" },
+      { title: "修正公共內容圖片上傳後可能無法顯示的問題。" },
       { title: "改善圖片上傳驗證失敗、逾時、大小與格式錯誤的提示。" }
     ]
   },

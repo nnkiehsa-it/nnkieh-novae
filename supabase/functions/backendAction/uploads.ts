@@ -19,6 +19,7 @@ const MARKDOWN_IMAGE_SOURCE_PATTERN = /!\[[^\]]*\]\((\S+?)(?:\s+["'][^"']*["'])?
 const PRIVATE_URL_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
 const PRIVATE_URL_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 const PUBLIC_URL_CACHE_MS = 365 * 24 * 60 * 60 * 1000;
+const PUBLIC_DELIVERY_SCOPE = "public-v2";
 
 function extractMarkdownUploadIds(content: string) {
   return [...new Set(
@@ -362,7 +363,7 @@ export async function handleUploadAction(
     if (!access.allowed || !upload.cloudinary_public_id) return null;
     if (!access.privateDelivery) {
       const cachedExpiresAtMs = Date.parse(upload.delivery_url_expires_at ?? "");
-      if (upload.delivery_url_scope === "public" && upload.delivery_url && cachedExpiresAtMs > Date.now() + PRIVATE_URL_REFRESH_BUFFER_MS) {
+      if (upload.delivery_url_scope === PUBLIC_DELIVERY_SCOPE && upload.delivery_url && cachedExpiresAtMs > Date.now() + PRIVATE_URL_REFRESH_BUFFER_MS) {
         return { expiresAtMs: cachedExpiresAtMs, id: upload.id, url: upload.delivery_url };
       }
       const expiresAt = new Date(Date.now() + PUBLIC_URL_CACHE_MS);
@@ -370,7 +371,7 @@ export async function handleUploadAction(
       const { error: cacheError } = await supabase.schema("app_private").from("uploads").update({
         delivery_url: url,
         delivery_url_expires_at: expiresAt.toISOString(),
-        delivery_url_scope: "public",
+        delivery_url_scope: PUBLIC_DELIVERY_SCOPE,
       }).eq("id", upload.id);
       if (cacheError) throw cacheError;
       return {
