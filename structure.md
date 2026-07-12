@@ -40,7 +40,7 @@
 - `App.vue` — startup gate + AppShell + page-content 轉場
 - `sw.ts` — PWA SW、快取策略、FCM 背景通知
 - `style.css` — 全域 design tokens、button/panel/menu/popover/dialog 轉場
-- `assets/fonts/` — 本地字型與 Material Symbols 子集
+- `assets/fonts/` — 本地 JetBrains Mono、HarmonyOS Sans 繁簡中字型定義與 Material Symbols 子集
 - `router/index.ts` — 組合 modules、abort 上一頁、session guard
 - `router/authRoutes.ts` / `issueRoutes.ts` / `announcementRoutes.ts` / `changelogRoutes.ts` / `adminRoutes.ts` / `notificationRoutes.ts` / `settingsRoutes.ts`
 - `views/LoginView.vue` — 登入
@@ -114,7 +114,7 @@
 
 ## public / scripts / tests / CI
 
-- `public/` — favicon、PWA icons
+- `public/` — favicon、PWA icons、HarmonyOS Sans 繁簡中字型切片
 - `scripts/generate-issue-categories.mjs` / `generate-rate-limits.mjs` / `issue-category-config.mjs`
 - `tests/architecture.test.mjs` — 靜態架構回歸
 - `.github/workflows/` — `verify-pr`、`deploy-frontend`、`deploy-backend`、`deploy-pages`、`reset-db`、`reset-cloudinary`

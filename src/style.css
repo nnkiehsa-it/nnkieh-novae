@@ -1,12 +1,13 @@
+@import "./assets/fonts/harmonyos/HarmonyOS_Sans_TC/index.css";
+@import "./assets/fonts/harmonyos/HarmonyOS_Sans_SC/index.css";
 @import "tailwindcss";
 @config "../tailwind.config.cjs";
 
-@font-face { font-family: 'Inter'; src: url('./assets/fonts/inter-latin-400-700.woff2') format('woff2'); font-style: normal; font-weight: 400 700; font-display: swap; }
 @font-face { font-family: 'JetBrains Mono'; src: url('./assets/fonts/jetbrains-mono-latin-400-600.woff2') format('woff2'); font-style: normal; font-weight: 400 600; font-display: swap; }
 @layer base {
   :root {
     color-scheme: light;
-    --vp-font-family-base: 'Inter', 'PingFang TC', 'Microsoft JhengHei', system-ui, sans-serif;
+    --vp-font-family-base: 'HarmonyOS Sans TC', 'HarmonyOS Sans SC', 'PingFang TC', 'Microsoft JhengHei', system-ui, sans-serif;
     --vp-font-family-mono: 'JetBrains Mono', monospace;
     --color-surface: 255 255 255;
     --color-on-surface: 23 23 21;

@@ -2,6 +2,15 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "統一全站中英文字體",
+    version: "v2.0.170",
+    date: "2026-07-12",
+    time: "20:23",
+    items: [
+      { title: "統一全站繁體中文、簡體中文與英數字體顯示。" }
+    ]
+  },
+  {
     title: "統一更新操作與圖示風格",
     version: "v2.0.169",
     date: "2026-07-12",
