@@ -9,7 +9,7 @@
         <div class="static md:relative" @click.stop @pointerdown.stop>
           <button
             type="button"
-            class="button-toolbar flex h-10 w-10 shrink-0 items-center justify-center rounded-full p-0 md:h-9 md:w-9"
+            class="button-toolbar flex h-8 w-8 shrink-0 items-center justify-center rounded-full p-0 md:h-9 md:w-9"
             :class="{ 'button-toolbar--active': isSortOpen || sortOption !== 'latest' }"
             :title="`排序公告：${selectedSortLabel}`"
             :aria-label="`排序公告：${selectedSortLabel}`"

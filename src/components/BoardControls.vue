@@ -56,14 +56,14 @@
         >
           <button
             type="button"
-            class="button-toolbar flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-semibold"
+            class="button-toolbar flex h-8 shrink-0 items-center gap-1 rounded-full px-2.5 text-xs font-semibold"
             :class="{ 'button-toolbar--active': isCategoryOpen }"
             title="選擇分類"
             aria-label="選擇分類"
             :aria-expanded="isCategoryOpen"
             @click="toggleCategory"
           >
-            <span class="text-sm font-semibold leading-none">{{ activeCategoryLabel }}</span>
+            <span class="text-xs font-semibold leading-none">{{ activeCategoryLabel }}</span>
             <AppIcon name="chevron-down" :size="4" />
           </button>
 
@@ -100,7 +100,7 @@
         <div class="static md:relative" @click.stop @pointerdown.stop>
           <button
             type="button"
-            class="button-toolbar flex h-10 w-10 shrink-0 items-center justify-center rounded-full p-0 md:h-9 md:w-9"
+            class="button-toolbar flex h-8 w-8 shrink-0 items-center justify-center rounded-full p-0 md:h-9 md:w-9"
             :class="{ 'button-toolbar--active': isSortOpen || sortOption !== 'latest' }"
             title="排序提案"
             aria-label="排序提案"
@@ -136,7 +136,7 @@
         <div class="static md:relative" @click.stop @pointerdown.stop>
           <button
             type="button"
-            class="button-toolbar flex h-10 w-10 shrink-0 items-center justify-center rounded-full p-0 md:h-9 md:w-9"
+            class="button-toolbar flex h-8 w-8 shrink-0 items-center justify-center rounded-full p-0 md:h-9 md:w-9"
             :class="{ 'button-toolbar--active': isSearchOpen || searchQuery }"
             title="搜尋提案"
             aria-label="搜尋提案"
@@ -159,7 +159,7 @@
                   type="search"
                   autocomplete="off"
                   aria-label="搜尋提案標題"
-                  class="field appearance-none !h-10 !py-1.5 !pl-9 !pr-9 text-sm placeholder:text-ink-400 dark:placeholder:text-ink-500"
+                  class="field appearance-none !h-8 !py-1 !pl-8 !pr-8 text-xs placeholder:text-ink-400 dark:placeholder:text-ink-500"
                   placeholder="搜尋全站標題..."
                   @input="(e) => emit('update:searchQuery', (e.target as HTMLInputElement).value)"
                 />

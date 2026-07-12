@@ -2,6 +2,17 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "最佳化手機版版面密度",
+    version: "v2.0.181",
+    date: "2026-07-13",
+    time: "00:55",
+    items: [
+      { title: "最佳化手機版標題字型大小與排版比例，提升視覺精緻度。" },
+      { title: "調整手機版列表的資訊間距與操作按鈕尺寸，增加資訊顯示密度。" },
+      { title: "簡化手機版狀態標籤與分段控制項的視覺尺寸，使介面更加緊湊。" }
+    ]
+  },
+  {
     title: "改善介紹與文件版面",
     version: "v2.0.180",
     date: "2026-07-12",

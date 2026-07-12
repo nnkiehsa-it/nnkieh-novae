@@ -6,24 +6,24 @@
     <!-- Mobile view (condensed card/row format, hidden on md) -->
     <div class="issue-row-mobile list-row-trigger md:hidden relative overflow-hidden" @click="emit('open', announcement)">
       <div class="flex min-w-0 items-center gap-2 w-full">
-        <span class="tag shrink-0 px-2 py-0.5 text-xs border-ink-200 bg-ink-100/50 text-ink-700 dark:border-ink-800 dark:bg-ink-950/50">
+        <span class="tag-sm shrink-0 border-ink-200 bg-ink-100/50 text-ink-700 dark:border-ink-800 dark:bg-ink-950/50">
           公告
         </span>
         <AuthorAvatar :author-uid="announcement.author_uid" :photo-url="announcement.author_photo_url" :name="announcement.author_name" size="sm" :alt-text="`${announcement.author_name} 的頭像`" class="shrink-0" />
         <div class="flex-1 py-1 text-left">
-          <span class="line-clamp-1 font-semibold text-sm tracking-normal text-ink-950 dark:text-ink-50 hover:underline">
+          <span class="line-clamp-1 font-semibold text-sm tracking-normal text-ink-955 dark:text-ink-50 hover:underline">
             {{ announcement.title }}
           </span>
         </div>
       </div>
-      <div class="mt-1.5 flex w-full items-center gap-2">
+      <div class="mt-1 flex w-full items-center gap-2">
         <div class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-xs text-ink-500 dark:text-ink-400">
           <span class="min-w-0 truncate font-normal text-ink-400 dark:text-ink-500">{{ dateLabel }}</span>
         </div>
         <div class="flex shrink-0 items-center justify-end gap-1.5" @click.stop="stopRowActionClick">
           <button
             type="button"
-            class="button-toolbar h-10 w-10 rounded-full p-0"
+            class="button-toolbar h-8 w-8 rounded-full p-0"
             title="查看留言"
             aria-label="查看留言"
             @click.stop="emit('openComments', announcement)"

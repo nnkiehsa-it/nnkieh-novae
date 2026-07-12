@@ -10,15 +10,15 @@
         <span v-if="showAuthor" class="h-7 w-7 shrink-0 rounded-full bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
         <span class="h-4 min-w-0 flex-1 rounded bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
       </div>
-      <div class="mt-1.5 flex items-center gap-2">
+      <div class="mt-1 flex items-center gap-2">
         <div class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
           <span class="h-3 min-w-0 flex-1 rounded bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
           <span class="h-5 w-16 shrink-0 rounded bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
         </div>
         <div class="flex shrink-0 items-center justify-end gap-1.5">
-          <span class="h-10 w-10 rounded-full bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
-          <span class="h-10 w-10 rounded-full bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
-          <span v-if="isAdmin" class="h-10 w-10 rounded-full bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
+          <span class="h-8 w-8 rounded-full bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
+          <span class="h-8 w-8 rounded-full bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
+          <span v-if="isAdmin" class="h-8 w-8 rounded-full bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
         </div>
       </div>
     </div>

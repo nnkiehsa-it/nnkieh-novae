@@ -728,8 +728,8 @@
     @apply inline-flex w-fit overflow-x-auto whitespace-nowrap flex-nowrap items-center gap-0.5 border border-ink-200 bg-ink-100/50 text-xs dark:border-ink-800/60 dark:bg-ink-950/50 backdrop-blur-md;
     box-sizing: border-box;
     border-radius: 9999px;
-    min-height: 2.5rem;
-    padding: 0.25rem;
+    min-height: 2rem;
+    padding: 0.125rem;
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
   }
@@ -748,22 +748,26 @@
   }
 
   .segmented-control__button {
-    @apply whitespace-nowrap flex-shrink-0 text-xs font-medium;
+    @apply whitespace-nowrap flex-shrink-0 text-xs font-semibold;
     box-sizing: border-box;
     transition:
       transform var(--motion-duration-fast) var(--motion-ease),
       background-color var(--motion-duration) var(--motion-ease),
       color var(--motion-duration) var(--motion-ease),
       box-shadow var(--motion-duration) var(--motion-ease);
-    min-height: 2rem;
+    min-height: 1.75rem;
     border-radius: 9999px;
-    padding: 0.35rem 0.85rem;
+    padding: 0.25rem 0.75rem;
   }
 
   .tag {
-    @apply inline-flex items-center border border-ink-200 bg-ink-50/50 text-xs font-medium tracking-normal text-ink-600 dark:border-ink-800 dark:bg-ink-900/40 dark:text-ink-300;
-    border-radius: 9999px;
-    padding: 0.375rem 0.875rem;
+    @apply inline-flex items-center border border-ink-200 bg-ink-50/50 text-xs font-semibold tracking-normal text-ink-600 dark:border-ink-800 dark:bg-ink-900/40 dark:text-ink-300 rounded-full;
+    padding: 0.25rem 0.625rem;
+  }
+
+  .tag-sm {
+    @apply inline-flex items-center border border-ink-200 bg-ink-50/50 text-[10.5px] font-bold tracking-normal text-ink-600 dark:border-ink-800 dark:bg-ink-900/40 dark:text-ink-300 rounded-md leading-none;
+    padding: 0.125rem 0.375rem;
   }
 
   @media (hover: hover) and (pointer: fine) {
@@ -815,7 +819,7 @@
 
   /* Condensed mobile row (shown only below md) */
   .issue-row-mobile {
-    @apply flex flex-col gap-0 px-3 py-2.5
+    @apply flex flex-col gap-0 px-3 py-2
            text-sm text-ink-700 dark:text-ink-200
            border-b border-ink-100/80 dark:border-ink-800/50
            hover:bg-ink-50/80 dark:hover:bg-ink-800/40

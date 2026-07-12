@@ -6,7 +6,7 @@
     <!-- Mobile Row -->
     <div class="issue-row-mobile list-row-trigger md:hidden relative overflow-hidden" @click="openDetails()">
       <div class="flex min-w-0 items-center gap-2 w-full">
-        <span class="tag shrink-0 px-2 py-0.5 text-xs" :class="statusClass">
+        <span class="tag-sm shrink-0" :class="statusClass">
           {{ statusLabel }}
         </span>
         <UserAvatar v-if="issue.canViewAuthor" :photo-url="displayPhotoUrl" :name="displayAuthorName" size="sm" :alt-text="`${displayAuthorName} 的頭像`" class="shrink-0" />
@@ -16,13 +16,13 @@
           </span>
         </div>
       </div>
-      <div class="mt-1.5 flex w-full items-center gap-2">
+      <div class="mt-1 flex w-full items-center gap-2">
         <div class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-xs text-ink-500 dark:text-ink-400">
           <span class="min-w-0 truncate font-normal text-ink-400 dark:text-ink-500">
             {{ primaryTimeValueLabel }}
           </span>
           <template v-if="issue.support_enabled">
-            <span class="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-ink-100/70 text-ink-700 font-medium dark:bg-ink-900/60 dark:text-ink-300">
+            <span class="shrink-0 inline-flex items-center gap-1 px-1 py-0.5 rounded bg-ink-100/70 text-ink-700 font-medium dark:bg-ink-900/60 dark:text-ink-300">
               {{ supportCount }}/{{ issue.support_goal ?? 0 }} 附議
             </span>
           </template>
@@ -31,7 +31,7 @@
           <!-- comment button -->
           <button
             type="button"
-            class="button-toolbar h-10 w-10 rounded-full p-0 md:h-7 md:w-7"
+            class="button-toolbar h-8 w-8 rounded-full p-0 md:h-7 md:w-7"
             title="查看詳情"
             aria-label="查看詳情"
             @click.stop="openDetails('comments')"

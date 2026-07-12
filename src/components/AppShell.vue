@@ -23,7 +23,7 @@
           </button>
           <h1 class="app-header__title flex h-10 min-w-0 shrink-0 items-center text-ink-950 dark:text-ink-50 md:h-auto" :aria-label="mobileHeaderTitle">
             <span class="hidden md:inline-flex"><BrandMark /></span>
-            <span class="truncate text-[26px] font-bold tracking-tight md:hidden leading-none">{{ mobileHeaderTitle }}</span>
+            <span class="truncate text-xl font-bold tracking-tight md:hidden leading-none">{{ mobileHeaderTitle }}</span>
           </h1>
 
           <!-- Desktop Navigation -->
