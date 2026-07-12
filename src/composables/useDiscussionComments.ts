@@ -91,6 +91,7 @@ export function useDiscussionComments<TComment extends DiscussionCommentRecord>(
   let requestController: AbortController | null = null;
   let realtimeUnsubscribe: (() => void) | null = null;
   let realtimeRefreshTimer = 0;
+  const COMMENTS_REVALIDATE_INTERVAL_MS = 60_000;
   const ignoredRealtimeCommentIds = new Set<string>();
   const namespaceCache = getNamespaceCache(adapters.cacheNamespace);
 
@@ -209,7 +210,7 @@ export function useDiscussionComments<TComment extends DiscussionCommentRecord>(
     return removed;
   }
 
-  async function loadComments(options: { force?: boolean; id?: string } = {}) {
+  async function loadComments(options: { force?: boolean; id?: string; silent?: boolean } = {}) {
     const id = options.id || targetId();
     if (!id) {
       requestVersion += 1;
@@ -220,7 +221,7 @@ export function useDiscussionComments<TComment extends DiscussionCommentRecord>(
       return;
     }
 
-    const hydrated = !options.force && hydrateSnapshot(id);
+    const hydrated = (!options.force || options.silent) && hydrateSnapshot(id);
     if (hydrated && !isOnline.value) return;
 
     const currentVersion = ++requestVersion;
@@ -428,7 +429,7 @@ export function useDiscussionComments<TComment extends DiscussionCommentRecord>(
     if (!id) return;
     const cached = namespaceCache.get(cacheKey(id));
     if (shouldRefreshContentAfterResume(cached?.updatedAt ?? 0)) {
-      void loadComments({ force: true, id });
+      void loadComments({ force: true, id, silent: true });
     }
   });
 
@@ -441,9 +442,15 @@ export function useDiscussionComments<TComment extends DiscussionCommentRecord>(
     if (!id) return;
     const cached = namespaceCache.get(cacheKey(id));
     if (shouldRefreshContentAfterResume(cached?.updatedAt ?? 0)) {
-      void loadComments({ force: true, id });
+      void loadComments({ force: true, id, silent: true });
     }
   });
+
+  const revalidateTimer = window.setInterval(() => {
+    const id = targetId();
+    if (document.visibilityState !== 'visible' || !id || !loaded.value || loading.value || roleLoading.value) return;
+    void loadComments({ force: true, id, silent: true });
+  }, COMMENTS_REVALIDATE_INTERVAL_MS);
 
   if (autoTarget !== undefined) {
     watch(() => toValue(autoTarget), (id) => {
@@ -474,6 +481,7 @@ export function useDiscussionComments<TComment extends DiscussionCommentRecord>(
     realtimeUnsubscribe?.();
     unregisterResumeHandler();
     window.clearTimeout(realtimeRefreshTimer);
+    window.clearInterval(revalidateTimer);
     requestVersion += 1;
     requestController?.abort(new RequestFailure(adapters.abortMessage, 'aborted'));
   });

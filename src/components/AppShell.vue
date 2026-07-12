@@ -45,6 +45,7 @@
                   ? 'text-ink-950 dark:text-ink-50 font-semibold'
                   : 'text-ink-500 hover:text-ink-900 dark:text-ink-400 dark:hover:text-ink-100'
               ]"
+              @click="handleNavigationClick(item.isActive)"
             >
               {{ item.label }}
             </RouterLink>
@@ -90,6 +91,7 @@
           :to="item.to"
           class="app-bottom-nav__item"
           :class="{ 'app-bottom-nav__item--active': item.isActive }"
+          @click="handleNavigationClick(item.isActive)"
         >
           <span class="app-bottom-nav__icon" aria-hidden="true">
             <AppIcon :name="item.icon" :size="5" :stroke-width="1.9" />
@@ -161,6 +163,7 @@ import AppIcon from '@/components/ui/AppIcon.vue';
 import UserAvatar from '@/components/ui/UserAvatar.vue';
 import { DEFAULT_ISSUE_CATEGORY, DEFAULT_ISSUE_ROUTE_FILTER, isIssueCategory } from '@/constants/categories';
 import { requestCreateAnnouncement, requestCreateIssue } from '@/composables/useCreateEntryActions';
+import { refreshFromActiveNavigation } from '@/composables/useActiveNavigationRefresh';
 import { useIssueRouteFilter } from '@/composables/useIssueRouteFilter';
 import { useSession } from '@/composables/useSession';
 import { useNotificationBadge } from '@/composables/useNotificationBadge';
@@ -317,6 +320,10 @@ async function handleCreateIssue(category: IssueCategory) {
 
 async function handleCreateAnnouncement() {
   await requestCreateAnnouncement(router);
+}
+
+function handleNavigationClick(isActive: boolean) {
+  if (isActive) void refreshFromActiveNavigation();
 }
 
 async function handleMobileBack() {

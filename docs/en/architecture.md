@@ -61,7 +61,7 @@ Supabase's built-in JWT check is disabled for these functions because they valid
 - `app_private` stores backend-only data and helpers.
 - Public proposal records are separated from private author data.
 - Transactions create outbox events alongside content changes.
-- Realtime audiences are authorized for public, author, recipient, or admin access. Lists reconnect and re-fetch after channel failures, periodically reconcile while visible, and expose a persistent manual refresh action.
+- Realtime audiences are authorized for public, author, recipient, or admin access. Lists and comments reconnect and re-fetch after channel failures and periodically reconcile while visible. Selecting the active desktop top navigation or mobile bottom navigation refreshes proposal and announcement lists manually.
 - Dashboard counters and aggregates avoid scanning primary content on each visit.
 
 ## Key flows

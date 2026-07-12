@@ -11,9 +11,7 @@
     >
       <div class="flex items-start gap-4">
         <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-container text-primary dark:bg-primary-container/40" aria-hidden="true">
-          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M20 12a8 8 0 1 1-2.34-5.66M20 4v6h-6" />
-          </svg>
+          <AppIcon name="refresh" :size="6" :stroke-width="1.8" />
         </div>
         <div class="min-w-0 flex-1">
           <p class="dialog-eyebrow">應用程式更新</p>
@@ -34,6 +32,7 @@
 import { toRef } from 'vue';
 import DialogOverlay from '@/components/ui/DialogOverlay.vue';
 import BusyButtonContent from '@/components/ui/BusyButtonContent.vue';
+import AppIcon from '@/components/ui/AppIcon.vue';
 import { useBodyScrollLock } from '@/composables/useBodyScrollLock';
 import { useDialogFocus } from '@/composables/useDialogFocus';
 

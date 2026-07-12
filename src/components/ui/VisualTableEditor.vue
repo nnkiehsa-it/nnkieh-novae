@@ -25,9 +25,7 @@
         class="button-primary text-xs px-4 py-2 mt-4 flex items-center gap-1.5 rounded-lg cursor-pointer animate-none"
         @click="createDefaultTable"
       >
-        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-        </svg>
+        <AppIcon name="plus" :size="4" :stroke-width="2.5" />
         <span>建立預設表格 (3x3)</span>
       </button>
     </div>
@@ -92,6 +90,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, nextTick } from 'vue';
+import AppIcon from '@/components/ui/AppIcon.vue';
 import { parseMarkdownTables } from '@/lib/markdown-tables';
 
 interface ParsedTable {

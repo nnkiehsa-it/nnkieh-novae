@@ -16,7 +16,7 @@
         data-autofocus
         @click="emit('close')"
       >
-        <span class="material-symbols-outlined text-[18px]">close</span>
+        <AppIcon name="close" :size="4" />
       </button>
     </div>
 

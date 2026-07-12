@@ -1,231 +1,71 @@
 <template>
-  <svg
+  <component
+    :is="iconComponent"
     class="text-current"
     :class="sizeClass"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
     :stroke-width="strokeWidth"
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    :fill="filled ? 'currentColor' : 'none'"
     aria-hidden="true"
-  >
-    <template v-if="name === 'chart'">
-      <path d="M3.75 19.5h16.5" />
-      <path d="M6 16.5V9" />
-      <path d="M12 16.5v-12" />
-      <path d="M18 16.5v-6" />
-    </template>
-    <template v-else-if="name === 'comment'">
-      <path d="M12 20l-3-3H7a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3h-2l-3 3" />
-      <path v-if="detail" d="M8 9h8" />
-      <path v-if="detail" d="M8 13h6" />
-    </template>
-    <template v-else-if="name === 'heart'">
-      <path
-        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"
-        :fill="filled ? 'currentColor' : 'none'"
-      />
-    </template>
-    <template v-else-if="name === 'thumbs-up'">
-      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-      <path d="M7 11v8a2 2 0 0 1 -2 2h-2a1 1 0 0 1 -1 -1v-7a1 1 0 0 1 1 -1h3a4 4 0 0 0 4 -4v-1a2 2 0 0 1 4 0v5h3a2 2 0 0 1 2 2l-1 5a2 3 0 0 1 -2 2h-7a3 3 0 0 1 -3 -3" />
-    </template>
-    <template v-else-if="name === 'close'">
-      <path d="M6 18 18 6" />
-      <path d="m6 6 12 12" />
-    </template>
-    <template v-else-if="name === 'edit'">
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
-    </template>
-    <template v-else-if="name === 'image'">
-      <path d="m4 16 4.6-4.6a2 2 0 0 1 2.8 0L16 16" />
-      <path d="m14 14 1.6-1.6a2 2 0 0 1 2.8 0L20 14" />
-      <path d="M14 8h.01" />
-      <path d="M6 20h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z" />
-    </template>
-    <template v-else-if="name === 'lock'">
-      <path d="M16.5 10.5V6.75a4.5 4.5 0 0 0-9 0v3.75" />
-      <path d="M6.75 21.75h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-    </template>
-    <template v-else-if="name === 'send'">
-      <path d="M10 14 21 3" />
-      <path d="m21 3-6.5 18a.55.55 0 0 1-1 0L10 14l-7-3.5a.55.55 0 0 1 0-1L21 3Z" />
-    </template>
-    <template v-else-if="name === 'warning'">
-      <path d="M12 9v4" />
-      <path d="M12 17h.01" />
-      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
-    </template>
-    <template v-else-if="name === 'inbox'">
-      <path d="M2.25 13.5h3.86a2.25 2.25 0 0 1 2.008 1.24l.885 1.77a2.25 2.25 0 0 0 2.007 1.24h1.98a2.25 2.25 0 0 0 2.007-1.24l.885-1.77a2.25 2.25 0 0 1 2.007-1.24h3.86m-18 0h18M2.25 13.5l.697-3.486A2.25 2.25 0 0 1 5.162 8h13.676a2.25 2.25 0 0 1 2.215 2.014l.697 3.486M2.25 13.5V19.5a2.25 2.25 0 0 0 2.25 2.25h15a2.25 2.25 0 0 0 2.25-2.25V13.5m-10.5-6h3m-3 3h3" />
-    </template>
-    <template v-else-if="name === 'refresh'">
-      <path d="M4.5 12a7.5 7.5 0 1 1 3.75 6.5" />
-      <path d="M11.5 20.5 L8.25 18.5 L11.5 15.5" />
-    </template>
-    <template v-else-if="name === 'restart'">
-      <path d="M7.25 7.5A7 7 0 1 1 5 12.65" />
-      <path d="M7.25 3.75v3.75H3.5" />
-      <path d="M12 8.25v4.25l3 1.75" />
-    </template>
-    <template v-else-if="name === 'changelog'">
-      <path d="M7 4.5h8.5L19 8v11.5H7z" />
-      <path d="M15.5 4.5V8H19" />
-      <path d="M4.5 7.5v12h11" />
-      <path d="M9.5 12h6" />
-      <path d="M9.5 15.5h4" />
-      <path d="M9.5 8.5h2.5" />
-    </template>
-    <template v-else-if="name === 'share'">
-      <circle cx="18" cy="5" r="3" />
-      <circle cx="6" cy="12" r="3" />
-      <circle cx="18" cy="19" r="3" />
-      <path d="M8.6 10.5 15.4 6.5" />
-      <path d="M8.6 13.5 15.4 17.5" />
-    </template>
-    <template v-else-if="name === 'trash'">
-      <path d="M4 7h16" />
-      <path d="M9 7V4.75A1.75 1.75 0 0 1 10.75 3h2.5A1.75 1.75 0 0 1 15 4.75V7" />
-      <path d="m6 7 1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" />
-      <path d="M10 11v6" />
-      <path d="M14 11v6" />
-    </template>
-    <template v-else-if="name === 'reply'">
-      <path d="M9 7 4 12l5 5" />
-      <path d="M5 12h8.5a5.5 5.5 0 0 1 5.5 5.5V18" />
-    </template>
-    <template v-else-if="name === 'search'">
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-3.5-3.5" />
-    </template>
-    <template v-else-if="name === 'sort'">
-      <path d="M4 7h11" />
-      <path d="M4 12h8" />
-      <path d="M4 17h5" />
-      <path d="m17 14 3 3 3-3" />
-      <path d="M20 7v10" />
-    </template>
-    <template v-else-if="name === 'megaphone'">
-      <path d="M4.5 14.25v-4.5" />
-      <path d="M4.5 10.75 15.75 6.5v11L4.5 13.25" />
-      <path d="M15.75 9.5h2.5a1.25 1.25 0 0 1 1.25 1.25v2.5a1.25 1.25 0 0 1-1.25 1.25h-2.5" />
-      <path d="m7.25 14.1 1.35 3.4a.75.75 0 0 0 .7.5h1.95" />
-    </template>
-    <template v-else-if="name === 'plus'">
-      <path d="M12 5v14" />
-      <path d="M5 12h14" />
-    </template>
-    <template v-else-if="name === 'user'">
-      <path d="M12 12a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5Z" />
-      <path d="M4.5 19.5a7.5 7.5 0 0 1 15 0" />
-    </template>
-    <template v-else-if="name === 'bell'">
-      <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5" />
-      <path d="M9 17a3 3 0 0 0 6 0" />
-    </template>
-    <template v-else-if="name === 'settings'">
-      <path d="M12 3.75v2.1" />
-      <path d="m18.54 6.46-1.48 1.48" />
-      <path d="M20.25 12h-2.1" />
-      <path d="m18.54 17.54-1.48-1.48" />
-      <path d="M12 20.25v-2.1" />
-      <path d="m6.94 16.06-1.48 1.48" />
-      <path d="M5.85 12h-2.1" />
-      <path d="m6.94 7.94-1.48-1.48" />
-      <circle cx="12" cy="12" r="3.25" />
-    </template>
-    <template v-else-if="name === 'chevron-right'">
-      <path d="m9 6 6 6-6 6" />
-    </template>
-    <template v-else-if="name === 'chevron-left'">
-      <path d="m15 6-6 6 6 6" />
-    </template>
-    <template v-else-if="name === 'switch-horizontal'">
-      <path d="M20 17H4" />
-      <path d="m17 14 3 3-3 3" />
-      <path d="M4 7h16" />
-      <path d="m7 10-3-3 3-3" />
-    </template>
-    <template v-else-if="name === 'download'">
-      <path d="M12 4.5v10" />
-      <path d="m8.5 11 3.5 3.5 3.5-3.5" />
-      <path d="M5 18.5h14" />
-    </template>
-    <template v-else-if="name === 'link'">
-      <path d="M10 13.5 14 9.5" />
-      <path d="M7.5 15.5 6 17a3 3 0 1 0 4.24 4.24l1.5-1.5" />
-      <path d="M16.5 8.5 18 7a3 3 0 1 0-4.24-4.24l-1.5 1.5" />
-    </template>
-    <template v-else-if="name === 'h1'">
-      <path d="M4 5v14M12 5v14M4 12h8M17 7v12M15 9l2-2" />
-    </template>
-    <template v-else-if="name === 'h2'">
-      <path d="M4 5v14M12 5v14M4 12h8M15 8a2.5 2.5 0 0 1 5 0c0 1.5-2 3.5-5 5.5h5" />
-    </template>
-    <template v-else-if="name === 'list'">
-      <path d="M3.5 6a1 1 0 1 0 2 0 1 1 0 1 0-2 0 M3.5 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0 M3.5 18a1 1 0 1 0 2 0 1 1 0 1 0-2 0 M9 6h11M9 12h11M9 18h11" />
-    </template>
-    <template v-else-if="name === 'numlist'">
-      <path d="M4 5.5v3.5M3 6.5l1-1M9 7h11M3 12.5a1 1 0 0 1 2 0c0 .7-.8 1.3-2 2h2 M9 13h11M3 17.5h2l-2 2h2 M9 19h11" />
-    </template>
-    <template v-else-if="name === 'quote'">
-      <path d="M4 5v14M5 5v14M9 7h11M9 12h11M9 17h11" />
-    </template>
-    <template v-else-if="name === 'code'">
-      <path d="M8 7l-5 5 5 5 M16 7l5 5-5 5 M14 5l-4 14" />
-    </template>
-    <template v-else-if="name === 'divider'">
-      <path d="M5 8h14M3 12h18M5 16h14" />
-    </template>
-    <template v-else-if="name === 'table'">
-      <path d="M3 5h18v14H3z M9 5v14M15 5v14 M3 10h18M3 15h18" />
-    </template>
-  </svg>
+  />
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, type Component } from 'vue';
+import {
+  ArrowLeftRight,
+  BarChart3,
+  Bell,
+  CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  CircleAlert,
+  CircleHelp,
+  Code2,
+  Download,
+  FileClock,
+  Heading1,
+  Heading2,
+  Heart,
+  Image,
+  Inbox,
+  Info,
+  Link,
+  List,
+  ListOrdered,
+  Lock,
+  Megaphone,
+  MessageCircle,
+  Minus,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Quote,
+  RefreshCw,
+  Reply,
+  RotateCcw,
+  Search,
+  Send,
+  Settings,
+  Share2,
+  ShieldCheck,
+  SlidersHorizontal,
+  Table,
+  ThumbsUp,
+  Trash2,
+  User,
+  X,
+} from '@lucide/vue';
 
 export type AppIconName =
-  | 'bell'
-  | 'chart'
-  | 'changelog'
-  | 'chevron-left'
-  | 'chevron-right'
-  | 'close'
-  | 'comment'
-  | 'edit'
-  | 'heart'
-  | 'image'
-  | 'inbox'
-  | 'download'
-  | 'link'
-  | 'lock'
-  | 'megaphone'
-  | 'refresh'
-  | 'restart'
-  | 'reply'
-  | 'search'
-  | 'send'
-  | 'settings'
-  | 'share'
-  | 'sort'
-  | 'switch-horizontal'
-  | 'thumbs-up'
-  | 'trash'
-  | 'user'
-  | 'warning'
-  | 'h1'
-  | 'h2'
-  | 'list'
-  | 'numlist'
-  | 'plus'
-  | 'quote'
-  | 'code'
-  | 'divider'
-  | 'table';
+  | 'bell' | 'chart' | 'changelog' | 'check-circle' | 'chevron-down'
+  | 'chevron-left' | 'chevron-right' | 'circle-alert' | 'circle-help' | 'close'
+  | 'comment' | 'edit' | 'heart' | 'image' | 'inbox' | 'info' | 'download'
+  | 'link' | 'lock' | 'megaphone' | 'more-horizontal' | 'refresh' | 'restart'
+  | 'reply' | 'search' | 'send' | 'settings' | 'share' | 'shield-check' | 'sort'
+  | 'switch-horizontal' | 'thumbs-up' | 'trash' | 'user' | 'warning'
+  | 'h1' | 'h2' | 'list' | 'numlist' | 'plus' | 'quote' | 'code'
+  | 'divider' | 'table';
 
 const props = withDefaults(defineProps<{
   detail?: boolean;
@@ -240,14 +80,64 @@ const props = withDefaults(defineProps<{
   strokeWidth: 2,
 });
 
+const iconComponents: Record<AppIconName, Component> = {
+  bell: Bell,
+  chart: BarChart3,
+  changelog: FileClock,
+  'check-circle': CheckCircle2,
+  'chevron-down': ChevronDown,
+  'chevron-left': ChevronLeft,
+  'chevron-right': ChevronRight,
+  'circle-alert': CircleAlert,
+  'circle-help': CircleHelp,
+  close: X,
+  comment: MessageCircle,
+  edit: Pencil,
+  heart: Heart,
+  image: Image,
+  inbox: Inbox,
+  info: Info,
+  download: Download,
+  link: Link,
+  lock: Lock,
+  megaphone: Megaphone,
+  'more-horizontal': MoreHorizontal,
+  refresh: RefreshCw,
+  restart: RotateCcw,
+  reply: Reply,
+  search: Search,
+  send: Send,
+  settings: Settings,
+  share: Share2,
+  'shield-check': ShieldCheck,
+  sort: SlidersHorizontal,
+  'switch-horizontal': ArrowLeftRight,
+  'thumbs-up': ThumbsUp,
+  trash: Trash2,
+  user: User,
+  warning: CircleAlert,
+  h1: Heading1,
+  h2: Heading2,
+  list: List,
+  numlist: ListOrdered,
+  plus: Plus,
+  quote: Quote,
+  code: Code2,
+  divider: Minus,
+  table: Table,
+};
+
 const sizeMap: Record<number, string> = {
   3: 'h-3 w-3',
+  3.5: 'h-3.5 w-3.5',
   4: 'h-4 w-4',
+  4.5: 'h-4.5 w-4.5',
   5: 'h-5 w-5',
   6: 'h-6 w-6',
   8: 'h-8 w-8',
   10: 'h-10 w-10',
 };
 
+const iconComponent = computed(() => iconComponents[props.name]);
 const sizeClass = computed(() => sizeMap[props.size] ?? 'h-4 w-4');
 </script>

@@ -19,7 +19,7 @@
           </div>
 
           <div v-else-if="error" class="flex flex-col items-center justify-center py-10 text-center">
-            <span class="material-symbols-outlined text-3xl text-error" aria-hidden="true">error</span>
+            <AppIcon name="circle-alert" :size="8" class="text-error" />
             <p class="mt-3 text-sm font-semibold text-ink-900 dark:text-ink-100">通知暫時無法載入</p>
             <p class="mt-1 text-xs leading-5 text-ink-500 dark:text-ink-400">{{ error }}</p>
             <button type="button" class="button-secondary mt-4 h-9 px-4 text-xs font-semibold" @click.stop="retryNotifications">
@@ -29,7 +29,7 @@
 
           <div v-else-if="notifications.length === 0" class="flex flex-col items-center justify-center py-12 text-center">
             <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-ink-100 text-ink-400 dark:bg-ink-800 dark:text-ink-500" aria-hidden="true">
-              <span class="material-symbols-outlined text-2xl">notifications</span>
+              <AppIcon name="bell" :size="6" />
             </span>
             <p class="mt-4 text-sm font-semibold text-ink-900 dark:text-ink-100">目前沒有通知</p>
             <p class="mt-1 text-xs leading-5 text-ink-500 dark:text-ink-400">新的提案進度與互動會顯示在這裡</p>
@@ -58,7 +58,7 @@
                 :class="notificationIconClass(notification)"
                 aria-hidden="true"
               >
-                <span class="material-symbols-outlined text-[19px]">{{ notificationIcon(notification) }}</span>
+                <AppIcon :name="notificationIcon(notification)" :size="5" />
               </span>
 
               <span class="min-w-0 flex-1">
@@ -76,7 +76,7 @@
                 </span>
               </span>
 
-              <span class="material-symbols-outlined mt-7 shrink-0 text-[17px] text-ink-300 dark:text-ink-600" aria-hidden="true">chevron_right</span>
+              <AppIcon name="chevron-right" :size="4" class="mt-7 shrink-0 text-ink-300 dark:text-ink-600" />
             </button>
 
             <div v-if="hasMore" class="pt-4 pb-2">
@@ -99,6 +99,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
 import AuthorAvatar from '@/components/AuthorAvatar.vue';
+import AppIcon, { type AppIconName } from '@/components/ui/AppIcon.vue';
 import { useNotificationNavigation } from '@/composables/useNotificationNavigation';
 import { useNotifications } from '@/composables/useNotifications';
 import { formatDate } from '@/lib/format';
@@ -137,12 +138,12 @@ function notificationBody(notification: NotificationRecord) {
   return notification.body_preview || '';
 }
 
-function notificationIcon(notification: NotificationRecord) {
-  if (notification.type === 'announcement_created') return 'campaign';
-  if (notification.type === 'issue_created') return 'post_add';
-  if (notification.type === 'support_goal_met') return 'task_alt';
-  if (notification.type === 'issue_deleted') return 'delete';
-  return 'sync_alt';
+function notificationIcon(notification: NotificationRecord): AppIconName {
+  if (notification.type === 'announcement_created') return 'megaphone';
+  if (notification.type === 'issue_created') return 'plus';
+  if (notification.type === 'support_goal_met') return 'check-circle';
+  if (notification.type === 'issue_deleted') return 'trash';
+  return 'switch-horizontal';
 }
 
 function notificationIconClass(notification: NotificationRecord) {

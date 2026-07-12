@@ -10,9 +10,7 @@
       @click="togglePanel"
     >
       <span class="relative inline-flex">
-        <svg xmlns="http://www.w3.org/2000/svg" :class="iconClass" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0a3 3 0 0 1-6 0m6 0H9" />
-        </svg>
+        <AppIcon name="bell" :class="iconClass" :stroke-width="1.8" />
         <span
           v-if="badgeHasUnread"
           class="absolute right-0.5 top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-error dark:border-ink-900"
@@ -55,9 +53,7 @@
               data-autofocus
               @click="closePanel"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <path d="M6 6l12 12M18 6 6 18" />
-              </svg>
+              <AppIcon name="close" :size="4.5" />
             </button>
           </header>
 
@@ -66,7 +62,7 @@
           </div>
 
           <div v-else-if="error" class="flex flex-1 flex-col items-center justify-center px-6 py-10 text-center">
-            <span class="material-symbols-outlined text-3xl text-error" aria-hidden="true">error</span>
+            <AppIcon name="circle-alert" :size="8" class="text-error" />
             <p class="mt-3 text-sm font-semibold text-ink-900 dark:text-ink-100">通知暫時無法載入</p>
             <p class="mt-1 text-xs leading-5 text-ink-500 dark:text-ink-400">{{ error }}</p>
             <button type="button" class="button-secondary mt-4 h-9 px-4 text-xs font-semibold" @click.stop="retryNotifications">
@@ -76,7 +72,7 @@
 
           <div v-else-if="notifications.length === 0" class="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
             <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-ink-100 text-ink-400 dark:bg-ink-800 dark:text-ink-500" aria-hidden="true">
-              <span class="material-symbols-outlined text-2xl">notifications</span>
+              <AppIcon name="bell" :size="6" />
             </span>
             <p class="mt-4 text-sm font-semibold text-ink-900 dark:text-ink-100">目前沒有通知</p>
             <p class="mt-1 text-xs leading-5 text-ink-500 dark:text-ink-400">新的提案進度與互動會顯示在這裡</p>
@@ -105,7 +101,7 @@
                 :class="notificationIconClass(notification)"
                 aria-hidden="true"
               >
-                <span class="material-symbols-outlined text-[19px]">{{ notificationIcon(notification) }}</span>
+                <AppIcon :name="notificationIcon(notification)" :size="5" />
               </span>
 
               <span class="min-w-0 flex-1">
@@ -123,7 +119,7 @@
                 </span>
               </span>
 
-              <span class="material-symbols-outlined mt-7 shrink-0 text-[17px] text-ink-300 dark:text-ink-600" aria-hidden="true">chevron_right</span>
+              <AppIcon name="chevron-right" :size="4" class="mt-7 shrink-0 text-ink-300 dark:text-ink-600" />
             </button>
 
             <div v-if="hasMore" class="px-5 pb-4 pt-3">
@@ -147,6 +143,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, type CSSProperties } from 'vue';
 import AuthorAvatar from '@/components/AuthorAvatar.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
+import AppIcon, { type AppIconName } from '@/components/ui/AppIcon.vue';
 import { useClickOutside } from '@/composables/useClickOutside';
 import { useNotificationNavigation } from '@/composables/useNotificationNavigation';
 import { useNotifications } from '@/composables/useNotifications';
@@ -223,12 +220,12 @@ function notificationBody(notification: NotificationRecord) {
   return notification.body_preview || '';
 }
 
-function notificationIcon(notification: NotificationRecord) {
-  if (notification.type === 'announcement_created') return 'campaign';
-  if (notification.type === 'issue_created') return 'post_add';
-  if (notification.type === 'support_goal_met') return 'task_alt';
-  if (notification.type === 'issue_deleted') return 'delete';
-  return 'sync_alt';
+function notificationIcon(notification: NotificationRecord): AppIconName {
+  if (notification.type === 'announcement_created') return 'megaphone';
+  if (notification.type === 'issue_created') return 'plus';
+  if (notification.type === 'support_goal_met') return 'check-circle';
+  if (notification.type === 'issue_deleted') return 'trash';
+  return 'switch-horizontal';
 }
 
 function notificationIconClass(notification: NotificationRecord) {
