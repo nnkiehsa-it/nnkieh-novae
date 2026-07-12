@@ -10,9 +10,15 @@ const SCRIM_THEME_COLORS = {
   light: '#898984',
 };
 
-type ThemeColorMode = 'page' | 'scrim';
+const DIALOG_THEME_COLORS = {
+  dark: '#171715',
+  light: '#f5f5f3',
+};
+
+type ThemeColorMode = 'dialog' | 'page' | 'scrim';
 
 const THEME_COLORS_BY_MODE = {
+  dialog: DIALOG_THEME_COLORS,
   page: PAGE_THEME_COLORS,
   scrim: SCRIM_THEME_COLORS,
 } satisfies Record<ThemeColorMode, typeof PAGE_THEME_COLORS>;
@@ -69,7 +75,11 @@ function useStatusBarTheme(open: Ref<boolean>, mode: Ref<ThemeColorMode>) {
 }
 
 export function useDialogThemeColor(open: Ref<boolean>, fullScreen: Ref<boolean>) {
-  const shouldApplyScrimTheme = computed(() => open.value && !fullScreen.value);
+  const mode = computed<ThemeColorMode>(() => fullScreen.value ? 'dialog' : 'scrim');
+  useStatusBarTheme(open, mode);
+}
+
+export function useFullscreenScrimTheme(open: Ref<boolean>) {
   const mode = computed<ThemeColorMode>(() => 'scrim');
-  useStatusBarTheme(shouldApplyScrimTheme, mode);
+  useStatusBarTheme(open, mode);
 }
