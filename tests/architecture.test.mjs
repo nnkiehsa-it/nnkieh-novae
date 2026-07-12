@@ -531,6 +531,35 @@ test('announcement editing is removed across frontend, backend, and database', a
   assert.match(removalMigration, /drop function if exists app_api\.backend_update_announcement/u);
 });
 
+test('announcement writes update visible lists and invalidate list-page caches', async () => {
+  const management = await read('src/composables/useAnnouncementManagement.ts');
+  const announcements = await read('src/services/announcements.ts');
+
+  assert.match(management, /const announcement = await createAnnouncement\(payload\);\s*upsertAnnouncement\(announcement\);/u);
+  assert.match(announcements, /const ANNOUNCEMENT_LIST_CACHE_PREFIX = 'announcement-list-page\|'/u);
+  assert.match(
+    announcements,
+    /createAnnouncement[\s\S]*markContentCachePrefixStale\(ANNOUNCEMENT_LIST_CACHE_PREFIX\)/u,
+  );
+  assert.match(
+    announcements,
+    /deleteAnnouncement[\s\S]*markContentCachePrefixStale\(ANNOUNCEMENT_LIST_CACHE_PREFIX\)/u,
+  );
+});
+
+test('realtime-backed lists revalidate cached content after inactive periods', async () => {
+  const discussionComments = await read('src/composables/useDiscussionComments.ts');
+  const announcementManagement = await read('src/composables/useAnnouncementManagement.ts');
+  const announcements = await read('src/services/announcements.ts');
+  const issueWrites = await read('src/services/issues-write.ts');
+
+  assert.match(discussionComments, /const hydrated = !options\.force && hydrateSnapshot\(id\)/u);
+  assert.match(discussionComments, /forceRefresh: options\.force === true \|\| hydrated/u);
+  assert.match(announcementManagement, /refreshAnnouncementList\(\{ force: true \}\)/u);
+  assert.match(announcements, /ANNOUNCEMENT_COMMENTS_CACHE_PREFIX/u);
+  assert.match(issueWrites, /markContentCachePrefixStale\('issue-comments-page\|'\)/u);
+});
+
 test('personal notification writes and pushes are scoped to the recipient', async () => {
   const backendAction = [
     await read('supabase/functions/backendAction/issue-comments.ts'),

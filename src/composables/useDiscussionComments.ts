@@ -220,16 +220,17 @@ export function useDiscussionComments<TComment extends DiscussionCommentRecord>(
       return;
     }
 
-    if (!options.force && hydrateSnapshot(id)) return;
+    const hydrated = !options.force && hydrateSnapshot(id);
+    if (hydrated && !isOnline.value) return;
 
     const currentVersion = ++requestVersion;
-    loading.value = true;
+    loading.value = !hydrated;
     error.value = '';
 
     try {
       const page = await adapters.fetchPage(id, null, {
         cacheScope: serviceCacheScope(),
-        forceRefresh: options.force === true,
+        forceRefresh: options.force === true || hydrated,
         signal: createRequestSignal(),
       });
       if (currentVersion !== requestVersion) return;

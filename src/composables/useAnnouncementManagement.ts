@@ -88,8 +88,8 @@ export function useAnnouncementManagement() {
     composerError.value = '';
     const progressToast = showProgressToast('正在發布公告...');
     try {
-      await createAnnouncement(payload);
-      await refreshAnnouncementList();
+      const announcement = await createAnnouncement(payload);
+      upsertAnnouncement(announcement);
       composerOpen.value = false;
       progressToast.succeed('公告已發布。');
     } catch (caught) {
@@ -188,7 +188,7 @@ export function useAnnouncementManagement() {
     ([ready, allowed]) => {
       if (!ready) return;
       if (allowed) {
-        void refreshAnnouncementList();
+        void refreshAnnouncementList({ force: true });
         return;
       }
       resetAnnouncements();

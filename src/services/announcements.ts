@@ -7,12 +7,19 @@ import type {
 import { invokeBackendAction } from '@/services/backend-action';
 import { createRequestId } from '@/lib/request-id';
 import { READ_REQUEST_TIMEOUT_MS, RequestFailure } from '@/lib/request';
-import { createContentCacheKey, getCachedContent, setCachedContent } from '@/services/content-read-cache';
+import {
+  createContentCacheKey,
+  getCachedContent,
+  markContentCachePrefixStale,
+  setCachedContent,
+} from '@/services/content-read-cache';
 import { normalizeDate, toReadableBackendError } from '@/services/issues-core';
 import type { CommentCursor } from './comment-cursor';
 import { normalizeCommentCursor } from './comment-cursor';
 
 const ANNOUNCEMENT_LIMIT = 10;
+const ANNOUNCEMENT_LIST_CACHE_PREFIX = 'announcement-list-page|';
+const ANNOUNCEMENT_COMMENTS_CACHE_PREFIX = 'announcement-comments-page|';
 export type AnnouncementCursor = { id: string; publishedAtMs: number; sortNumber?: number | null } | null;
 
 function dateFromMs(value: unknown) {
@@ -139,12 +146,15 @@ export async function fetchAnnouncementRecordById(
 export async function createAnnouncement(input: AnnouncementInput): Promise<AnnouncementRecord> {
   const fn = invokeBackendAction<AnnouncementInput & { requestId: string }, { announcement: Record<string, unknown> }>('createAnnouncement');
   const result = await fn({ ...input, requestId: createRequestId() });
-  return normalizeAnnouncementRecord(result.announcement);
+  const announcement = normalizeAnnouncementRecord(result.announcement);
+  markContentCachePrefixStale(ANNOUNCEMENT_LIST_CACHE_PREFIX);
+  return announcement;
 }
 
 export async function deleteAnnouncement(announcementId: string) {
   const fn = invokeBackendAction<{ announcementId: string; requestId: string }, { success: boolean }>('deleteAnnouncement');
   const result = await fn({ announcementId, requestId: createRequestId() });
+  markContentCachePrefixStale(ANNOUNCEMENT_LIST_CACHE_PREFIX);
   return result;
 }
 
@@ -201,6 +211,7 @@ export async function createAnnouncementComment(announcementId: string, content:
     { comment: Record<string, unknown>; comment_count: number }
   >('createAnnouncementComment');
   const result = await fn({ announcementId, content, parentCommentId, requestId: createRequestId() });
+  markContentCachePrefixStale(ANNOUNCEMENT_COMMENTS_CACHE_PREFIX);
   return {
     comment: normalizeAnnouncementComment(result.comment),
     comment_count: result.comment_count,
@@ -213,5 +224,6 @@ export async function deleteAnnouncementComment(commentId: string) {
     { success: boolean; announcement_id: string; comment_count: number }
   >('deleteAnnouncementComment');
   const result = await fn({ commentId, requestId: createRequestId() });
+  markContentCachePrefixStale(ANNOUNCEMENT_COMMENTS_CACHE_PREFIX);
   return result;
 }

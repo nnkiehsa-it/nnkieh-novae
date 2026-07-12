@@ -8,6 +8,7 @@ import type {
 } from '@/types';
 import { invokeBackendAction } from '@/services/backend-action';
 import { createRequestId } from '@/lib/request-id';
+import { markContentCachePrefixStale } from '@/services/content-read-cache';
 import {
   normalizeIssueRecord,
   toReadableBackendError,
@@ -192,7 +193,9 @@ export async function createComment(
       parentCommentId,
       requestId: createRequestId(),
     });
-    return normalizeCommentResponse(result.comment);
+    const comment = normalizeCommentResponse(result.comment);
+    markContentCachePrefixStale('issue-comments-page|');
+    return comment;
   } catch (error) {
     throw toReadableBackendError(error);
   }
@@ -202,6 +205,7 @@ export async function deleteComment(commentId: string) {
   try {
     const fn = invokeBackendAction('deleteComment');
     await fn({ commentId, requestId: createRequestId() });
+    markContentCachePrefixStale('issue-comments-page|');
   } catch (error) {
     throw toReadableBackendError(error);
   }
