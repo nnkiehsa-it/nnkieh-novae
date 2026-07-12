@@ -81,7 +81,21 @@ drop function if exists app_private.emit_content_realtime_event(
   integer
 );
 
-create or replace function app_private.emit_content_realtime_event(
+drop function if exists app_private.emit_content_realtime_event(
+  text,
+  text,
+  text,
+  text,
+  text,
+  text,
+  text,
+  integer,
+  integer,
+  integer,
+  text
+);
+
+create function app_private.emit_content_realtime_event(
   event_type text,
   target_type text,
   target_id text,

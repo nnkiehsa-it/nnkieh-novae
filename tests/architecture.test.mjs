@@ -499,6 +499,11 @@ test('comment realtime triggers pass an explicit operation to the emitter', asyn
     migration,
     /drop function if exists app_private\.emit_content_realtime_event\([\s\S]*integer\s*\);/u,
   );
+  assert.match(
+    migration,
+    /drop function if exists app_private\.emit_content_realtime_event\([\s\S]*integer,\s*text\s*\);/u,
+  );
+  assert.match(migration, /create function app_private\.emit_content_realtime_event/u);
   assert.match(migration, /comment_count integer,\s*op text\s*\)/u);
   assert.doesNotMatch(migration, /op text default/u);
 });
