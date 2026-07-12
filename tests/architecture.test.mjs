@@ -39,7 +39,7 @@ test('runtime fonts are local compressed subsets', async () => {
 
   assert.match(style, /inter-latin-400-700\.woff2/u);
   assert.match(style, /jetbrains-mono-latin-400-600\.woff2/u);
-  assert.match(style, /material-symbols-outlined-500\.woff2/u);
+  assert.doesNotMatch(style, /material-symbols|Material Symbols/u);
   assert.doesNotMatch(style, /fonts\.googleapis|fonts\.gstatic|\.ttf/u);
 });
 
@@ -554,10 +554,13 @@ test('realtime-backed lists revalidate cached content after inactive periods', a
   const realtimeEvents = await read('src/services/realtime-events.ts');
   const boardControls = await read('src/components/BoardControls.vue');
   const announcementControls = await read('src/components/AnnouncementControls.vue');
+  const appShell = await read('src/components/AppShell.vue');
+  const activeNavigationRefresh = await read('src/composables/useActiveNavigationRefresh.ts');
   const announcements = await read('src/services/announcements.ts');
   const issueWrites = await read('src/services/issues-write.ts');
 
-  assert.match(discussionComments, /const hydrated = !options\.force && hydrateSnapshot\(id\)/u);
+  assert.match(discussionComments, /COMMENTS_REVALIDATE_INTERVAL_MS = 60_000/u);
+  assert.match(discussionComments, /document\.visibilityState !== 'visible'/u);
   assert.match(discussionComments, /forceRefresh: options\.force === true \|\| hydrated/u);
   assert.match(announcementManagement, /refreshAnnouncementList\(\{ force: true \}\)/u);
   assert.match(announcementManagement, /LIST_REVALIDATE_INTERVAL_MS = 60_000/u);
@@ -565,8 +568,10 @@ test('realtime-backed lists revalidate cached content after inactive periods', a
   assert.match(issueBoard, /invalidateIssueBuckets\(\)/u);
   assert.match(realtimeEvents, /scheduleReconnect/u);
   assert.match(realtimeEvents, /status !== 'CHANNEL_ERROR'.*status !== 'TIMED_OUT'.*status !== 'CLOSED'/u);
-  assert.match(boardControls, /aria-label="重新整理提案"/u);
-  assert.match(announcementControls, /aria-label="重新整理公告"/u);
+  assert.doesNotMatch(boardControls, /aria-label="重新整理提案"/u);
+  assert.doesNotMatch(announcementControls, /aria-label="重新整理公告"/u);
+  assert.match(appShell, /handleNavigationClick\(item\.isActive\)/u);
+  assert.match(activeNavigationRefresh, /refreshFromActiveNavigation/u);
   assert.match(announcements, /ANNOUNCEMENT_COMMENTS_CACHE_PREFIX/u);
   assert.match(issueWrites, /markContentCachePrefixStale\('issue-comments-page\|'\)/u);
 });

@@ -14,7 +14,7 @@
           v-if="image.uploadId && image.resolveError"
           class="flex aspect-[4/3] w-full flex-col items-center justify-center bg-error-container/40 p-2 text-center text-error"
         >
-          <span class="material-symbols-outlined text-[20px]">warning</span>
+          <AppIcon name="warning" :size="5" />
           <span class="mt-1 text-[10px] font-medium">載入失敗</span>
         </div>
         <div
@@ -50,7 +50,7 @@
             aria-label="關閉圖片"
             @click="selectedImage = null"
           >
-            ×
+            <AppIcon name="close" :size="5" />
           </button>
           <img
             :src="selectedImage.fullSrc || selectedImage.src"
@@ -67,6 +67,7 @@
 import { computed, ref } from 'vue';
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
+import AppIcon from '@/components/ui/AppIcon.vue';
 import { stripMarkdownImages } from '@/lib/markdown-images';
 import { useResolvedMarkdown } from '@/composables/useResolvedMarkdown';
 import type { MarkdownImageRecord } from '@/types';

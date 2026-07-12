@@ -50,10 +50,8 @@ export function useToast() {
     if (!trimmed) return 0;
 
     const id = nextToastId++;
-    toasts.value = [
-      { id, kind, message: trimmed },
-      ...toasts.value.filter((toast) => toast.message !== trimmed),
-    ].slice(0, 3);
+    toastTimers.forEach((_timer, toastId) => clearToastTimer(toastId));
+    toasts.value = [{ id, kind, message: trimmed }];
 
     if (kind !== 'loading') scheduleDismiss(id, kind === 'error' ? 5000 : 3500);
     return id;

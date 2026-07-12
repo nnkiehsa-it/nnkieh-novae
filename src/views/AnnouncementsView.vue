@@ -2,8 +2,6 @@
   <section class="mx-auto w-full max-w-7xl space-y-5">
     <AnnouncementControls
       v-model:sort-option="sortOption"
-      :refreshing="manualRefreshing"
-      @refresh="handleManualRefresh"
     >
       <template #actions>
         <CreateActionMenu
@@ -133,6 +131,7 @@ import { DEFAULT_ISSUE_CATEGORY } from '@/constants/categories';
 import { resetAppConnection } from '@/lib/reconnect';
 import type { IssueCategory } from '@/types';
 import { useToast } from '@/composables/useToast';
+import { registerActiveNavigationRefreshHandler } from '@/composables/useActiveNavigationRefresh';
 
 const {
   announcements,
@@ -195,6 +194,7 @@ async function handleManualRefresh() {
     manualRefreshing.value = false;
   }
 }
+registerActiveNavigationRefreshHandler(handleManualRefresh);
 async function handleCreateIssue(category: IssueCategory) {
   await requestCreateIssue(router, category);
 }

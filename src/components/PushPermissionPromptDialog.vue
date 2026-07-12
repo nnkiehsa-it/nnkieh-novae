@@ -15,7 +15,7 @@
           class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-secondary-container text-secondary dark:bg-secondary-container/40"
           aria-hidden="true"
         >
-          <span class="material-symbols-outlined text-2xl">notifications</span>
+          <AppIcon name="bell" :size="6" />
         </div>
         <div class="min-w-0 flex-1">
           <h2 id="push-permission-title" class="dialog-title !mt-0">
@@ -60,6 +60,7 @@
 import { toRef } from 'vue';
 import DialogOverlay from '@/components/ui/DialogOverlay.vue';
 import BusyButtonContent from '@/components/ui/BusyButtonContent.vue';
+import AppIcon from '@/components/ui/AppIcon.vue';
 import { useBodyScrollLock } from '@/composables/useBodyScrollLock';
 import { useDialogFocus } from '@/composables/useDialogFocus';
 

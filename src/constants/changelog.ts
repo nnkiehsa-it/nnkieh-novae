@@ -2,6 +2,18 @@ import type { ChangelogEntry } from '@/types';
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    title: "統一更新操作與圖示風格",
+    version: "v2.0.169",
+    date: "2026-07-12",
+    time: "15:05",
+    items: [
+      { title: "調整提案與公告更新操作，可再次點擊目前的頂部或底部導覽立即更新。" },
+      { title: "強化留言的自動更新與定期資料校正。" },
+      { title: "統一全站操作圖示風格。" },
+      { title: "調整提示訊息只顯示最新一則，並改善陰影層次。" }
+    ]
+  },
+  {
     title: "改善圖片上傳驗證提示",
     version: "v2.0.168",
     date: "2026-07-12",

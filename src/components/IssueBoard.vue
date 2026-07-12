@@ -7,8 +7,6 @@
       :active-filter="activeFilter"
       :active-category-label="activeCategoryLabel"
       :search-hint="searchHint"
-      :refreshing="manualRefreshing"
-      @refresh="handleManualRefresh"
     >
       <template #actions>
         <CreateActionMenu
@@ -134,6 +132,7 @@ import {
 } from '@/composables/useCreateEntryActions';
 import { useSession } from '@/composables/useSession';
 import { useToast } from '@/composables/useToast';
+import { registerActiveNavigationRefreshHandler } from '@/composables/useActiveNavigationRefresh';
 import { DEFAULT_ISSUE_CATEGORY, ISSUE_CATEGORY_LABELS, isIssueCategory, issueIsPrivateToOwner, issueStoresAuthorPrivately } from '@/constants/categories';
 import { resetAppConnection } from '@/lib/reconnect';
 import type { IssueCategory, IssueRecord } from '@/types';
@@ -235,6 +234,7 @@ async function handleManualRefresh() {
     manualRefreshing.value = false;
   }
 }
+registerActiveNavigationRefreshHandler(handleManualRefresh);
 const { sentinel: loadMoreSentinel } = useInfiniteScroll({
   disabled: infiniteScrollDisabled,
   onLoadMore: loadMoreCurrentData,
