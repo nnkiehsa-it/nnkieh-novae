@@ -11,7 +11,6 @@
       role="row"
     >
       <span role="columnheader">狀態</span>
-      <span role="columnheader">作者</span>
       <span role="columnheader">標題</span>
       <span role="columnheader">發布日期</span>
       <span role="columnheader">操作</span>
@@ -64,7 +63,7 @@ const emit = defineEmits<{
 }>();
 
 const tableCols = computed(() => {
-  const cols = ['6rem', '8rem', '1fr', '8rem', '7rem'];
+  const cols = ['6rem', '1fr', '8rem', '7rem'];
   if (props.canManage) cols.push('2.5rem');
   return cols.join(' ');
 });

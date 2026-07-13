@@ -20,8 +20,8 @@
       </button>
     </div>
 
-    <div class="min-h-0 overflow-y-auto px-4" :class="flat ? '!px-1' : ''">
-      <section aria-label="目前帳號" class="border-b border-ink-100 py-4 dark:border-ink-800/60">
+    <div class="settings-scroll min-h-0 overflow-y-auto" :class="{ 'settings-scroll--flat': flat }">
+      <section aria-label="目前帳號" class="settings-group py-4">
         <p v-if="SCHOOL_NAME" class="mb-3 text-xs font-semibold text-ink-500 dark:text-ink-400">
           {{ SCHOOL_NAME }}
         </p>
@@ -37,7 +37,7 @@
           </div>
           <button
             type="button"
-            class="flex h-8 items-center gap-1.5 rounded-full border border-ink-200 bg-white px-2.5 py-1 text-xs font-bold text-ink-700 shadow-sm transition-all hover:bg-ink-50 hover:text-ink-900 active:scale-95 dark:border-ink-700/80 dark:bg-ink-900 dark:text-ink-300 dark:hover:bg-ink-800 dark:hover:text-ink-100 shrink-0"
+            class="button-secondary h-8 min-h-8 shrink-0 gap-1.5 px-2.5 py-1 text-xs font-semibold"
             @click="emit('switchAccount')"
           >
             <AppIcon name="switch-horizontal" :size="3" :stroke-width="2" />
@@ -46,10 +46,10 @@
         </div>
       </section>
 
-      <section class="border-b border-ink-100 dark:border-ink-800/60" aria-label="推播通知">
+      <section class="settings-group" aria-label="推播通知">
         <button
           type="button"
-          class="flex w-full items-center justify-between gap-4 py-4 text-left transition-colors hover:bg-ink-50 focus-visible:bg-ink-50 dark:hover:bg-ink-800/50 dark:focus-visible:bg-ink-800/50"
+          class="settings-row"
           :class="(pushLoading || !pushActionLabel) ? 'opacity-60 cursor-not-allowed' : ''"
           :disabled="pushLoading || !pushActionLabel"
           @click="emit('togglePush')"
@@ -72,16 +72,14 @@
         </button>
       </section>
 
-      <section class="border-b border-ink-100 py-4 dark:border-ink-800/60" aria-label="通知類型">
-        <div class="mb-1">
-          <p class="text-sm font-semibold text-ink-950 dark:text-ink-50">通知類型</p>
-        </div>
-        <div class="divide-y divide-ink-100 dark:divide-ink-800/60">
+      <section aria-label="通知類型">
+        <p class="settings-group-title">通知類型</p>
+        <div class="settings-group">
           <button
             v-for="option in personalNotificationOptions"
             :key="option.key"
             type="button"
-            class="flex w-full items-center justify-between gap-4 py-3.5 text-left transition-colors hover:bg-ink-50 focus-visible:bg-ink-50 dark:hover:bg-ink-800/50 dark:focus-visible:bg-ink-800/50"
+            class="settings-row"
             :disabled="pushLoading"
             @click="emit('setPreference', option.key, !personalPreferences[option.key])"
           >
@@ -102,12 +100,12 @@
         </div>
       </section>
 
-      <section class="border-b border-ink-100 dark:border-ink-800/60" aria-label="其他頁面">
-        <p v-if="!flat" class="pt-4 text-xs font-semibold text-ink-600 dark:text-ink-300">其他</p>
-        <div class="divide-y divide-ink-100 dark:divide-ink-800/60">
+      <section aria-label="其他頁面">
+        <p class="settings-group-title">其他</p>
+        <div class="settings-group">
           <RouterLink
             to="/issues/my-proposals"
-            class="flex w-full items-center justify-between gap-3 py-4 text-left transition-colors hover:bg-ink-50 focus-visible:bg-ink-50 dark:hover:bg-ink-800/50 dark:focus-visible:bg-ink-800/50"
+            class="settings-row gap-3"
             @click="emit('close')"
           >
             <span class="flex min-w-0 items-center gap-3">
@@ -125,7 +123,7 @@
             :href="PROJECT_CHANGELOG_URL"
             target="_blank"
             rel="noreferrer"
-            class="flex w-full items-center justify-between gap-3 py-4 text-left transition-colors hover:bg-ink-50 focus-visible:bg-ink-50 dark:hover:bg-ink-800/50 dark:focus-visible:bg-ink-800/50"
+            class="settings-row gap-3"
             @click="emit('close')"
           >
             <span class="flex min-w-0 items-center gap-3">
@@ -143,7 +141,7 @@
             :href="PROJECT_WEBSITE_URL"
             target="_blank"
             rel="noreferrer"
-            class="flex w-full items-center justify-between gap-3 py-4 text-left transition-colors hover:bg-ink-50 focus-visible:bg-ink-50 dark:hover:bg-ink-800/50 dark:focus-visible:bg-ink-800/50"
+            class="settings-row gap-3"
             @click="emit('close')"
           >
             <span class="flex min-w-0 items-center gap-3">
@@ -156,7 +154,7 @@
             :href="PROJECT_DOCS_URL"
             target="_blank"
             rel="noreferrer"
-            class="flex w-full items-center justify-between gap-3 py-4 text-left transition-colors hover:bg-ink-50 focus-visible:bg-ink-50 dark:hover:bg-ink-800/50 dark:focus-visible:bg-ink-800/50"
+            class="settings-row gap-3"
             @click="emit('close')"
           >
             <span class="flex min-w-0 items-center gap-3">
@@ -169,7 +167,7 @@
             :href="PROJECT_GITHUB_URL"
             target="_blank"
             rel="noreferrer"
-            class="flex w-full items-center justify-between gap-3 py-4 text-left transition-colors hover:bg-ink-50 focus-visible:bg-ink-50 dark:hover:bg-ink-800/50 dark:focus-visible:bg-ink-800/50"
+            class="settings-row gap-3"
             @click="emit('close')"
           >
             <span class="flex min-w-0 items-center gap-3">
@@ -181,7 +179,7 @@
           <RouterLink
             v-if="isAdmin"
             to="/dashboard"
-            class="flex w-full items-center justify-between gap-3 py-4 text-left transition-colors hover:bg-ink-50 focus-visible:bg-ink-50 dark:hover:bg-ink-800/50 dark:focus-visible:bg-ink-800/50"
+            class="settings-row gap-3"
             @click="emit('close')"
           >
             <span class="flex min-w-0 items-center gap-3">
@@ -197,7 +195,7 @@
           </RouterLink>
           <button
             type="button"
-            class="flex w-full items-center justify-between gap-3 py-4 text-left transition-colors hover:bg-ink-50 focus-visible:bg-ink-50 dark:hover:bg-ink-800/50 dark:focus-visible:bg-ink-800/50"
+            class="settings-row gap-3"
             @click="emit('restartApp')"
           >
             <span class="flex min-w-0 items-center gap-3">
@@ -214,7 +212,7 @@
         </div>
       </section>
 
-      <div class="py-4">
+      <div class="settings-group p-2">
         <button
           type="button"
           class="button-secondary w-full border-error/20 text-error hover:bg-error-container/50"

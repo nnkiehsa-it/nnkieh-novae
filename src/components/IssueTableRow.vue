@@ -11,7 +11,7 @@
         </span>
         <UserAvatar v-if="issue.canViewAuthor" :photo-url="displayPhotoUrl" :name="displayAuthorName" size="sm" :alt-text="`${displayAuthorName} 的頭像`" class="shrink-0" />
         <div class="flex-1 py-1 text-left">
-          <span class="line-clamp-1 font-semibold text-sm tracking-normal text-ink-900 dark:text-ink-50 hover:underline">
+          <span class="line-clamp-1 text-sm font-semibold tracking-normal text-ink-900 dark:text-ink-50">
             <SearchHighlight :text="issue.title" :query="highlightQuery" />
           </span>
         </div>
@@ -80,23 +80,15 @@
         </span>
       </div>
 
-      <div v-if="showAuthorCol" class="flex items-center gap-2 w-32 shrink-0 pr-2">
-        <UserAvatar
-          :photo-url="displayPhotoUrl"
-          :name="displayAuthorName"
-          size="sm"
-          :alt-text="`${displayAuthorName} 的頭像`"
-          class="author-avatar"
-        />
-        <span class="truncate text-xs font-normal text-ink-500 dark:text-ink-400" :title="displayAuthorName">
-          {{ displayAuthorName }}
-        </span>
-      </div>
-
-      <div class="flex items-center gap-2 flex-1 min-w-0 pr-3">
-        <UserAvatar v-if="issue.canViewAuthor && !showAuthorCol" :photo-url="displayPhotoUrl" :name="displayAuthorName" size="sm" :alt-text="`${displayAuthorName} 的頭像`" class="shrink-0" />
-        <div class="w-full py-1 text-left text-sm font-semibold tracking-tight text-ink-900 hover:text-ink-950 hover:underline dark:text-ink-100 dark:hover:text-white sm:text-base truncate" :title="issue.title">
-          <SearchHighlight :text="issue.title" :query="highlightQuery" />
+      <div class="flex min-w-0 items-center gap-2.5 pr-4">
+        <UserAvatar v-if="issue.canViewAuthor" :photo-url="displayPhotoUrl" :name="displayAuthorName" size="sm" :alt-text="`${displayAuthorName} 的頭像`" class="shrink-0" />
+        <div class="min-w-0 flex-1 py-0.5 text-left">
+          <div class="truncate text-sm font-semibold tracking-tight text-ink-900 dark:text-ink-100 sm:text-base" :title="issue.title">
+            <SearchHighlight :text="issue.title" :query="highlightQuery" />
+          </div>
+          <div v-if="issue.canViewAuthor" class="mt-0.5 truncate text-xs text-ink-400 dark:text-ink-500" :title="displayAuthorName">
+            {{ displayAuthorName }}
+          </div>
         </div>
       </div>
 
@@ -183,10 +175,8 @@ import type { IssueRecord } from '@/types';
 const props = withDefaults(defineProps<{
   issue: IssueRecord;
   highlightQuery?: string;
-  showAuthorColumn?: boolean;
 }>(), {
   highlightQuery: '',
-  showAuthorColumn: true,
 });
 
 const emit = defineEmits<{
@@ -225,11 +215,9 @@ const {
   (issueId) => emit('issue-deleted', issueId),
 );
 
-const showAuthorCol = computed(() => props.showAuthorColumn && props.issue.canViewAuthor);
 const stopRowActionClick = () => undefined;
 const tableCols = computed(() => {
   const cols = ['6rem'];
-  if (props.showAuthorColumn) cols.push('8rem');
   cols.push('1fr', '8rem', '9rem', '7rem');
   if (isAdmin.value) cols.push('2.5rem');
   return cols.join(' ');

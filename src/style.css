@@ -25,7 +25,7 @@
     --color-warning-container: 254 243 199;
     --color-on-warning-container: 120 53 15;
     --color-shadow: 17 17 17;
-    --color-page-background: 255 255 255;
+    --color-page-background: 246 246 248;
     --motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
     --motion-ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
     --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
@@ -33,7 +33,7 @@
     --motion-duration: 0.24s;
     --motion-duration-panel: 0.3s;
     --surface-gap: 0.5rem;
-    --radius-inner: 1.25rem;
+    --radius-inner: 0.875rem;
     --radius-outer: calc(var(--radius-inner) + var(--surface-gap));
     --panel-padding: 1.5rem;
     --control-height: 2.75rem;
@@ -74,7 +74,7 @@
       --color-warning-container: 120 53 15;
       --color-on-warning-container: 254 243 199;
       --color-shadow: 0 0 0;
-      --color-page-background: 12 12 10;
+      --color-page-background: 12 12 13;
       --dialog-page-background: 23 23 21;
     }
   }
@@ -353,7 +353,7 @@
 
 @layer components {
   .panel {
-    @apply border border-ink-200/90 bg-white shadow-note dark:border-ink-700/80 dark:bg-ink-900;
+    @apply border border-ink-200/80 bg-white shadow-none dark:border-ink-800/80 dark:bg-ink-900;
     border-radius: var(--radius-outer);
     transition:
       opacity var(--motion-duration-panel) var(--motion-ease),
@@ -370,7 +370,7 @@
   }
 
   .popover-panel {
-    @apply rounded-2xl border border-ink-200/70 bg-white/92 shadow-elevated backdrop-blur-xl dark:border-ink-700/70 dark:bg-ink-900/92;
+    @apply rounded-xl border border-ink-200/80 bg-white shadow-elevated dark:border-ink-700/80 dark:bg-ink-900;
   }
 
   .popover-panel--compact {
@@ -616,14 +616,14 @@
   .button-primary {
     @apply inline-flex items-center justify-center whitespace-nowrap border border-ink-900 bg-ink-900 text-sm font-semibold tracking-normal text-white shadow-sm hover:bg-ink-800 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none dark:border-ink-100 dark:bg-ink-100 dark:text-ink-900 dark:hover:bg-ink-200;
     min-height: var(--control-height);
-    border-radius: 9999px;
+    border-radius: var(--radius-inner);
     padding: 0.625rem 1rem;
   }
 
   .button-secondary {
     @apply inline-flex items-center justify-center whitespace-nowrap border border-ink-300 bg-white/70 text-sm font-medium tracking-normal text-ink-700 shadow-sm hover:bg-white hover:text-ink-900 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none dark:border-ink-700 dark:bg-ink-900/70 dark:text-ink-200 dark:hover:bg-ink-900 dark:hover:text-ink-50;
     min-height: var(--control-height);
-    border-radius: 9999px;
+    border-radius: var(--radius-inner);
     padding: 0.625rem 1rem;
   }
 
@@ -671,7 +671,7 @@
   }
 
   .menu-item {
-    @apply flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50 dark:text-ink-300 dark:hover:bg-ink-800;
+    @apply flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50 dark:text-ink-300 dark:hover:bg-ink-800;
     min-height: 2.5rem;
   }
 
@@ -774,7 +774,7 @@
     .button-primary:hover:not(:disabled),
     .button-icon-filled:hover:not(:disabled),
     .button-icon-pill-filled:hover:not(:disabled) {
-      box-shadow: 0 10px 22px rgb(var(--color-shadow) / 0.16);
+      box-shadow: 0 4px 12px rgb(var(--color-shadow) / 0.1);
       filter: brightness(1.02);
     }
 
@@ -785,7 +785,7 @@
     .menu-item:hover:not(:disabled),
     .content-trigger:hover:not(:disabled),
     .interactive-surface:hover:not(:disabled) {
-      box-shadow: 0 8px 18px rgb(var(--color-shadow) / 0.08);
+      box-shadow: none;
     }
 
   }
@@ -800,38 +800,62 @@
 
   /* ─── Issue Table Layout ─────────────────────────────── */
   .issue-table {
-    @apply divide-y divide-ink-100/80 dark:divide-ink-800/50;
+    @apply overflow-hidden rounded-[var(--radius-outer)] border border-ink-200/80 bg-white dark:border-ink-800/80 dark:bg-ink-900;
   }
 
   .issue-table-header {
-    @apply grid px-2.5 py-2
-           text-xs font-semibold uppercase tracking-wide
+    @apply grid px-4 py-2.5
+           text-xs font-semibold tracking-normal
            text-ink-400 dark:text-ink-500
-           border-b border-ink-200/80 dark:border-ink-700/60;
+           border-b border-ink-200/70 bg-ink-50/70 dark:border-ink-800 dark:bg-ink-950/30;
   }
 
   .issue-table-row {
-    @apply grid items-center px-2.5 py-1.5
+    @apply grid items-center border-b border-ink-100/80 px-4 py-3
            text-sm text-ink-700 dark:text-ink-200
-           hover:bg-ink-50/80 dark:hover:bg-ink-800/40
-           transition-colors duration-300;
+           hover:bg-ink-50/70 dark:border-ink-800/70 dark:hover:bg-ink-800/35
+           transition-colors duration-150;
   }
 
   /* Condensed mobile row (shown only below md) */
   .issue-row-mobile {
-    @apply flex flex-col gap-0 px-3 py-2
+    @apply flex flex-col gap-1 border-b border-ink-100/80 px-4 py-3.5
            text-sm text-ink-700 dark:text-ink-200
-           border-b border-ink-100/80 dark:border-ink-800/50
-           hover:bg-ink-50/80 dark:hover:bg-ink-800/40
-           transition-colors duration-300;
+           hover:bg-ink-50/70 dark:border-ink-800/70 dark:hover:bg-ink-800/35
+           transition-colors duration-150;
+  }
+
+  .issue-table [role='rowgroup'] > div > :last-child .issue-table-row,
+  .issue-table [role='rowgroup'] > div > :last-child .issue-row-mobile {
+    border-bottom: 0;
+  }
+
+  .settings-scroll {
+    @apply space-y-4 bg-ink-50/80 p-4 dark:bg-ink-950/35;
+  }
+
+  .settings-scroll--flat {
+    @apply px-1;
+  }
+
+  .settings-group {
+    @apply overflow-hidden rounded-[var(--radius-outer)] border border-ink-200/80 bg-white px-4 dark:border-ink-800/80 dark:bg-ink-900;
+  }
+
+  .settings-group-title {
+    @apply mb-2 px-1 text-xs font-semibold text-ink-500 dark:text-ink-400;
+  }
+
+  .settings-row {
+    @apply flex w-full items-center justify-between gap-4 border-b border-ink-100/80 py-3.5 text-left last:border-b-0 hover:bg-ink-50/70 focus-visible:bg-ink-50/70 dark:border-ink-800/70 dark:hover:bg-ink-800/35 dark:focus-visible:bg-ink-800/35;
   }
 
   .dashboard-surface {
-    @apply rounded-[1.25rem] border border-ink-200/90 bg-white p-5 shadow-note dark:border-ink-800/80 dark:bg-ink-900;
+    @apply rounded-[var(--radius-outer)] border border-ink-200/80 bg-white p-5 shadow-none dark:border-ink-800/80 dark:bg-ink-900;
   }
 
   .dashboard-metric {
-    @apply rounded-[1.25rem] border border-ink-200/90 bg-white p-5 shadow-note dark:border-ink-800/80 dark:bg-ink-900;
+    @apply rounded-[var(--radius-outer)] border border-ink-200/80 bg-white p-5 shadow-none dark:border-ink-800/80 dark:bg-ink-900;
   }
 
   .dashboard-section-head {

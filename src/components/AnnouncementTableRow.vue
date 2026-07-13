@@ -11,7 +11,7 @@
         </span>
         <AuthorAvatar :author-uid="announcement.author_uid" :photo-url="announcement.author_photo_url" :name="announcement.author_name" size="sm" :alt-text="`${announcement.author_name} 的頭像`" class="shrink-0" />
         <div class="flex-1 py-1 text-left">
-          <span class="line-clamp-1 font-semibold text-sm tracking-normal text-ink-955 dark:text-ink-50 hover:underline">
+          <span class="line-clamp-1 text-sm font-semibold tracking-normal text-ink-955 dark:text-ink-50">
             {{ announcement.title }}
           </span>
         </div>
@@ -71,23 +71,22 @@
         </span>
       </div>
 
-      <div class="flex items-center gap-2 w-32 shrink-0 pr-2">
+      <div class="flex min-w-0 items-center gap-2.5 pr-4">
         <AuthorAvatar
           :author-uid="announcement.author_uid"
           :photo-url="announcement.author_photo_url"
           :name="announcement.author_name"
           size="sm"
           :alt-text="`${announcement.author_name} 的頭像`"
-          class="author-avatar"
+          class="shrink-0"
         />
-        <span class="truncate text-xs font-normal text-ink-500 dark:text-ink-400" :title="announcement.author_name">
-          {{ announcement.author_name }}
-        </span>
-      </div>
-
-      <div class="flex items-center gap-2 flex-1 min-w-0 pr-3">
-        <div class="w-full py-1 text-left text-sm font-semibold tracking-tight text-ink-900 hover:text-ink-950 hover:underline dark:text-ink-100 dark:hover:text-white sm:text-base truncate" :title="announcement.title">
-          {{ announcement.title }}
+        <div class="min-w-0 flex-1 py-0.5 text-left">
+          <div class="truncate text-sm font-semibold tracking-tight text-ink-900 dark:text-ink-100 sm:text-base" :title="announcement.title">
+            {{ announcement.title }}
+          </div>
+          <div class="mt-0.5 truncate text-xs text-ink-400 dark:text-ink-500" :title="announcement.author_name">
+            {{ announcement.author_name }}
+          </div>
         </div>
       </div>
 
@@ -160,7 +159,7 @@ const dateLabel = computed(() => formatDateOnly(props.announcement.published_at)
 const stopRowActionClick = () => undefined;
 
 const tableCols = computed(() => {
-  const cols = ['6rem', '8rem', '1fr', '8rem', '7rem'];
+  const cols = ['6rem', '1fr', '8rem', '7rem'];
   if (props.canManage) cols.push('2.5rem');
   return cols.join(' ');
 });

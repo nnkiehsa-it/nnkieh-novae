@@ -11,7 +11,6 @@
       role="row"
     >
       <span role="columnheader">狀態</span>
-      <span v-if="showAuthor" role="columnheader">作者</span>
       <span role="columnheader">標題</span>
       <span role="columnheader">時間</span>
       <span role="columnheader">進度</span>
@@ -50,7 +49,6 @@
           :key="issue.id"
           :issue="issue"
           :highlight-query="highlightQuery"
-          :show-author-column="showAuthor"
           @open-details="emit('open-details', $event)"
           @support-changed="emit('support-changed', $event)"
           @issue-updated="emit('issue-updated', $event)"
@@ -90,7 +88,6 @@ const { isAdmin } = useSession();
 
 const tableCols = computed(() => {
   const cols = ['6rem'];
-  if (props.showAuthor) cols.push('8rem');
   cols.push('1fr', '8rem', '9rem', '7rem');
   if (isAdmin.value) cols.push('2.5rem');
   return cols.join(' ');
