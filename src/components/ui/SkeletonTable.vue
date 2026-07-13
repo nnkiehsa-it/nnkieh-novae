@@ -3,7 +3,7 @@
     <div
       v-for="i in rows"
       :key="`mobile-${i}`"
-      class="issue-row-mobile md:hidden"
+      class="issue-row-mobile issue-table-mobile-row"
     >
       <div class="flex min-w-0 items-center gap-2 py-1">
         <span class="h-5 w-14 shrink-0 rounded bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
@@ -26,7 +26,7 @@
     <div
       v-for="i in rows"
       :key="i"
-      class="issue-table-row hidden md:grid"
+      class="issue-table-row issue-table-desktop-row"
       :style="{ 'grid-template-columns': gridCols }"
     >
       <div class="flex items-center w-24 shrink-0">

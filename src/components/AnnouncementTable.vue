@@ -6,7 +6,7 @@
   >
     <!-- Sticky column header row (hidden on mobile) -->
     <div
-      class="issue-table-header hidden md:grid"
+      class="issue-table-header issue-table-desktop-row"
       :style="{ 'grid-template-columns': tableCols }"
       role="row"
     >

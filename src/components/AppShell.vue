@@ -2,6 +2,7 @@
   <div
     class="app-root relative flex flex-col bg-[rgb(var(--color-page-background))]"
     :data-bottom-nav="isAllowedUser ? 'true' : 'false'"
+    :data-sidebar-expanded="isSidebarExpanded ? 'true' : 'false'"
     :style="rootStyle"
   >
     <div class="app-background-fill pointer-events-none absolute inset-0"></div>
@@ -29,18 +30,32 @@
 
     <aside
       v-if="isAllowedUser"
-      class="app-sidebar fixed inset-y-0 left-0 z-40 hidden w-20 flex-col items-center border-r border-ink-200/80 bg-white/95 py-4 backdrop-blur-xl dark:border-ink-800/80 dark:bg-ink-950/95 md:flex"
+      class="app-sidebar fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-ink-200/80 bg-white/95 py-4 backdrop-blur-xl dark:border-ink-800/80 dark:bg-ink-950/95 md:flex"
       aria-label="桌面主要導覽"
+      @click="handleSidebarClick"
     >
-      <RouterLink
-        :to="{ name: 'issues', params: { filter: DEFAULT_ISSUE_ROUTE_FILTER } }"
-        class="app-sidebar__brand"
-        aria-label="Novae 提案首頁"
-      >
-        <BrandMark />
-      </RouterLink>
+      <div class="app-sidebar__header">
+        <RouterLink
+          :to="{ name: 'issues', params: { filter: DEFAULT_ISSUE_ROUTE_FILTER } }"
+          class="app-sidebar__brand"
+          aria-label="Novae 提案首頁"
+        >
+          <BrandMark />
+          <span class="app-sidebar__brand-label">Novae</span>
+        </RouterLink>
+        <button
+          type="button"
+          class="app-sidebar__toggle"
+          :aria-label="isSidebarExpanded ? '收合側邊導覽' : '展開側邊導覽'"
+          :title="isSidebarExpanded ? '收合側邊導覽' : '展開側邊導覽'"
+          :aria-expanded="isSidebarExpanded"
+          @click="toggleSidebar"
+        >
+          <AppIcon :name="isSidebarExpanded ? 'chevron-left' : 'chevron-right'" :size="3.5" />
+        </button>
+      </div>
 
-      <nav class="mt-7 flex w-full flex-1 flex-col items-center gap-2 px-3" aria-label="主要功能">
+      <nav class="mt-7 flex w-full flex-1 flex-col gap-2 px-3" aria-label="主要功能">
         <RouterLink
           v-for="item in primaryRouteNavItems"
           :key="item.key"
@@ -52,6 +67,7 @@
           @click="handleNavigationClick(item.isActive)"
         >
           <AppIcon :name="item.icon" :size="5" :stroke-width="1.9" />
+          <span class="app-sidebar__label">{{ item.label }}</span>
         </RouterLink>
 
         <CreateActionMenu
@@ -70,6 +86,7 @@
               @click="open"
             >
               <AppIcon name="plus" :size="5.5" :stroke-width="2.4" />
+              <span class="app-sidebar__label">新增</span>
             </button>
           </template>
         </CreateActionMenu>
@@ -85,19 +102,32 @@
             <AppIcon name="bell" :size="5" :stroke-width="1.9" />
             <span v-if="hasUnread" class="app-sidebar__badge"></span>
           </span>
-        </RouterLink>
-
-        <RouterLink
-          to="/settings"
-          class="app-sidebar__item overflow-visible"
-          :class="{ 'app-sidebar__item--active': isMyProposalsRouteActive || ['settings', 'dashboard'].includes(route.name as string) }"
-          aria-label="我的"
-          data-label="我的"
-        >
-          <UserAvatar :photo-url="displayPhotoUrl" :name="user?.displayName || 'U'" size="sm" alt-text="使用者頭像" class="!h-6 !w-6 rounded-full" />
+          <span class="app-sidebar__label">通知</span>
         </RouterLink>
       </nav>
+
+      <RouterLink
+        to="/settings"
+        class="app-sidebar__profile"
+        :class="{ 'app-sidebar__item--active': isMyProposalsRouteActive || ['settings', 'dashboard'].includes(route.name as string) }"
+        aria-label="我的"
+        data-label="我的"
+      >
+        <UserAvatar :photo-url="displayPhotoUrl" :name="user?.displayName || 'U'" size="sm" alt-text="使用者頭像" class="!h-8 !w-8 rounded-full" />
+        <span class="app-sidebar__profile-copy">
+          <strong>{{ user?.displayName || '使用者' }}</strong>
+          <span>{{ schoolLabel }}</span>
+        </span>
+      </RouterLink>
     </aside>
+
+    <button
+      v-if="isAllowedUser"
+      type="button"
+      class="app-sidebar__scrim"
+      aria-label="收合側邊導覽"
+      @click="closeSidebar"
+    ></button>
 
     <div
       ref="mainContentRef"
@@ -196,6 +226,7 @@ import CreateActionMenu from '@/components/CreateActionMenu.vue';
 import BrandMark from '@/components/ui/BrandMark.vue';
 import AppIcon from '@/components/ui/AppIcon.vue';
 import UserAvatar from '@/components/ui/UserAvatar.vue';
+import { SCHOOL_NAME } from '@/constants/app';
 import { DEFAULT_ISSUE_CATEGORY, DEFAULT_ISSUE_ROUTE_FILTER, isIssueCategory } from '@/constants/categories';
 import { requestCreateAnnouncement, requestCreateIssue } from '@/composables/useCreateEntryActions';
 import { refreshFromActiveNavigation } from '@/composables/useActiveNavigationRefresh';
@@ -209,6 +240,7 @@ const { activeFilter } = useIssueRouteFilter();
 const { hasUnread } = useNotificationBadge();
 const route = useRoute();
 const router = useRouter();
+const SIDEBAR_EXPANDED_STORAGE_KEY = 'novae:desktop-sidebar-expanded';
 
 const isIssueRouteActive = computed(() => route.name === 'issues' || route.name === 'issue-detail');
 const isAnnouncementRouteActive = computed(() =>
@@ -232,6 +264,7 @@ const primaryRouteNavItems = computed(() => [
   },
 ]);
 const displayPhotoUrl = computed(() => customPhotoUrl.value || user.value?.photoURL || null);
+const schoolLabel = computed(() => SCHOOL_NAME || '學校未設定');
 const defaultCreateCategory = computed<IssueCategory>(() =>
   isIssueCategory(activeFilter.value) ? activeFilter.value : DEFAULT_ISSUE_CATEGORY
 );
@@ -265,6 +298,7 @@ const mobileNavElementRefs = ref<Record<string, HTMLElement | null>>({});
 const mainContentRef = ref<HTMLDivElement | null>(null);
 
 const hasSafeIndicator = ref(false);
+const isSidebarExpanded = ref(false);
 
 const bottomGap = computed(() => (hasSafeIndicator.value ? 22 : 12));
 const navBarHeight = 60; // 48px + 12px padding
@@ -315,6 +349,34 @@ async function handleCreateAnnouncement() {
 
 function handleNavigationClick(isActive: boolean) {
   if (isActive) void refreshFromActiveNavigation();
+}
+
+function toggleSidebar() {
+  setSidebarExpanded(!isSidebarExpanded.value);
+}
+
+function setSidebarExpanded(expanded: boolean) {
+  isSidebarExpanded.value = expanded;
+  window.localStorage.setItem(SIDEBAR_EXPANDED_STORAGE_KEY, expanded ? 'true' : 'false');
+}
+
+function closeSidebar() {
+  setSidebarExpanded(false);
+}
+
+function closeSidebarDrawerIfNeeded() {
+  if (!window.matchMedia('(min-width: 768px) and (max-width: 1399px)').matches) return;
+  closeSidebar();
+}
+
+function handleSidebarClick(event: MouseEvent) {
+  if (!(event.target instanceof Element) || !event.target.closest('a[href]')) return;
+  closeSidebarDrawerIfNeeded();
+}
+
+function handleSidebarKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Escape' || !isSidebarExpanded.value) return;
+  closeSidebarDrawerIfNeeded();
 }
 
 async function handleMobileBack() {
@@ -395,6 +457,8 @@ watch(
 );
 
 onMounted(() => {
+  isSidebarExpanded.value = window.localStorage.getItem(SIDEBAR_EXPANDED_STORAGE_KEY) === 'true';
+
   // 偵測全面屏 safe area
   const div = document.createElement('div');
   div.style.paddingBottom = 'env(safe-area-inset-bottom)';
@@ -408,11 +472,13 @@ onMounted(() => {
   }
 
   window.addEventListener('resize', updateMobileIndicator);
+  window.addEventListener('keydown', handleSidebarKeydown);
   setTimeout(updateMobileIndicator, 100);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateMobileIndicator);
+  window.removeEventListener('keydown', handleSidebarKeydown);
 });
 
 </script>

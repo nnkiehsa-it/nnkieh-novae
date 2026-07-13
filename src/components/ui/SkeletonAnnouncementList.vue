@@ -2,7 +2,7 @@
   <div class="issue-table overflow-visible" aria-label="公告載入中" aria-busy="true">
     <!-- Sticky column header row (hidden on mobile) -->
     <div
-      class="issue-table-header hidden md:grid"
+      class="issue-table-header issue-table-desktop-row"
       :style="{ 'grid-template-columns': tableCols }"
       role="row"
     >
@@ -18,7 +18,7 @@
     <div
       v-for="i in count"
       :key="`mobile-${i}`"
-      class="issue-row-mobile md:hidden"
+      class="issue-row-mobile issue-table-mobile-row"
     >
       <div class="flex min-w-0 items-center gap-2 w-full">
         <span class="tag-sm shrink-0 border-ink-200 bg-ink-100/50 text-ink-700 dark:border-ink-800 dark:bg-ink-950/50">
@@ -45,7 +45,7 @@
     <div
       v-for="i in count"
       :key="`desktop-${i}`"
-      class="issue-table-row hidden md:grid"
+      class="issue-table-row issue-table-desktop-row"
       :style="{ 'grid-template-columns': tableCols }"
     >
       <div class="flex items-center w-24 shrink-0">

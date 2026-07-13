@@ -4,7 +4,7 @@
     :class="{ 'z-50': isDropdownOpen }"
   >
     <!-- Mobile Row -->
-    <div class="issue-row-mobile list-row-trigger md:hidden relative overflow-hidden" @click="openDetails()">
+    <div class="issue-row-mobile issue-table-mobile-row list-row-trigger relative overflow-hidden" @click="openDetails()">
       <div class="flex min-w-0 items-center gap-2 w-full">
         <span class="tag-sm shrink-0" :class="statusClass">
           {{ statusLabel }}
@@ -68,7 +68,7 @@
 
     <!-- Desktop full row (hidden below md) -->
     <div
-      class="issue-table-row hidden md:grid relative overflow-hidden"
+      class="issue-table-row issue-table-desktop-row relative overflow-hidden"
       data-list-row-trigger
       :style="{ 'grid-template-columns': tableCols }"
       role="row"

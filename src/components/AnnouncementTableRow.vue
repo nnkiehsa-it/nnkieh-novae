@@ -4,7 +4,7 @@
     :class="{ 'z-50': isDropdownOpen }"
   >
     <!-- Mobile view (condensed card/row format, hidden on md) -->
-    <div class="issue-row-mobile list-row-trigger md:hidden relative overflow-hidden" @click="emit('open', announcement)">
+    <div class="issue-row-mobile issue-table-mobile-row list-row-trigger relative overflow-hidden" @click="emit('open', announcement)">
       <div class="flex min-w-0 items-center gap-2 w-full">
         <span class="tag-sm shrink-0 border-ink-200 bg-ink-100/50 text-ink-700 dark:border-ink-800 dark:bg-ink-950/50">
           公告
@@ -59,7 +59,7 @@
 
     <!-- Desktop view (md:grid, hidden on mobile) -->
     <div
-      class="issue-table-row hidden md:grid relative overflow-hidden"
+      class="issue-table-row issue-table-desktop-row relative overflow-hidden"
       data-list-row-trigger
       :style="{ 'grid-template-columns': tableCols }"
       role="row"

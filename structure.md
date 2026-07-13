@@ -41,7 +41,11 @@
 - `main.ts` — 掛載 app、resume、PWA、session
 - `App.vue` — startup gate + AppShell + page-content 轉場
 - `sw.ts` — PWA SW、快取策略、FCM 背景通知
-- `style.css` — 全域 design tokens、button/panel/menu/popover/dialog 轉場
+- `style.css` — 全域樣式載入入口
+- `styles/base.css` — design tokens、全域基礎與頁面骨架
+- `styles/components.css` / `controls.css` — 共用表面、互動狀態、按鈕與欄位
+- `styles/navigation.css` — 桌面側欄與手機底部導覽
+- `styles/content.css` / `responsive.css` — 列表、設定、統計、Dialog 與跨裝置覆寫
 - `assets/fonts/` — JetBrains Mono 與 Material Symbols 子集
 - `router/index.ts` — 組合 modules、abort 上一頁、session guard
 - `router/authRoutes.ts` / `issueRoutes.ts` / `announcementRoutes.ts` / `adminRoutes.ts` / `notificationRoutes.ts` / `settingsRoutes.ts`
@@ -70,7 +74,7 @@
 
 ## components（應用）
 
-- Shell：`AppShell.vue`（桌面 icon sidebar／手機底部導覽）、`AppStartupScreen.vue`、`LoginPanel.vue`、`ToastViewport.vue`
+- Shell：`AppShell.vue`（桌面可展開圖示側欄／手機底部導覽）、`AppStartupScreen.vue`、`LoginPanel.vue`、`ToastViewport.vue`
 - 設定／通知：`SettingsPanelContent.vue`；通知與設定使用獨立路由頁
 - Dialog：`ConfirmDialog`、`CreateActionMenu`、`AppInstallPromptDialog`、`AppUpdatePromptDialog`、`PushPermissionPromptDialog`、`IssueComposer`、`AnnouncementComposerDialog`、`IssueReviewDialog`、`IssueStatusDialog`
 - 留言：`CommentThreadPanel`、`CommentItem`、`CommentComposer`、`IssueComments`、`AnnouncementComments`
