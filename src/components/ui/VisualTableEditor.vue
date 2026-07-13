@@ -22,7 +22,7 @@
       </p>
       <button
         type="button"
-        class="button-primary text-xs px-4 py-2 mt-4 flex items-center gap-1.5 rounded-lg cursor-pointer animate-none"
+        class="button-primary mt-4 flex cursor-pointer items-center gap-1.5 px-4 py-2 text-xs animate-none"
         @click="createDefaultTable"
       >
         <AppIcon name="plus" :size="4" :stroke-width="2.5" />
