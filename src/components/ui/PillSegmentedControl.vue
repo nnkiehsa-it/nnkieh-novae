@@ -64,6 +64,7 @@ const emit = defineEmits<{
 
 const containerRef = ref<HTMLDivElement | null>(null);
 const buttonRefs = ref<HTMLButtonElement[]>([]);
+let resizeObserver: ResizeObserver | null = null;
 
 const activeClass = 'text-ink-950 dark:text-ink-50';
 const inactiveClass = 'text-ink-500 hover:text-ink-700 dark:text-ink-400 dark:hover:text-ink-200';
@@ -75,19 +76,35 @@ const indicatorStyle = ref({
   width: '0px',
 });
 
+function measureIndicator() {
+  const activeIndex = props.options.findIndex((option) => option.value === props.modelValue);
+  const activeButton = buttonRefs.value[activeIndex];
+  if (!activeButton) return;
+
+  indicatorStyle.value = {
+    height: `${activeButton.offsetHeight}px`,
+    transform: `translate3d(${activeButton.offsetLeft}px, ${activeButton.offsetTop}px, 0)`,
+    transition: 'transform var(--motion-duration-panel) var(--motion-ease-enter), width var(--motion-duration) var(--motion-ease-enter)',
+    width: `${activeButton.offsetWidth}px`,
+  };
+}
+
+function observeControlSize() {
+  resizeObserver?.disconnect();
+  if (!resizeObserver) return;
+  if (containerRef.value) resizeObserver.observe(containerRef.value);
+  buttonRefs.value.forEach((button) => resizeObserver?.observe(button));
+}
+
 function updateIndicator() {
   void nextTick(() => {
+    measureIndicator();
+    observeControlSize();
+
     const activeIndex = props.options.findIndex((option) => option.value === props.modelValue);
     const activeButton = buttonRefs.value[activeIndex];
     const container = containerRef.value;
     if (!activeButton || !container) return;
-
-    indicatorStyle.value = {
-      height: `${activeButton.offsetHeight}px`,
-      transform: `translate3d(${activeButton.offsetLeft}px, ${activeButton.offsetTop}px, 0)`,
-      transition: 'transform var(--motion-duration-panel) var(--motion-ease-enter), width var(--motion-duration) var(--motion-ease-enter)',
-      width: `${activeButton.offsetWidth}px`,
-    };
 
     const targetScrollLeft = activeButton.offsetLeft - container.clientWidth / 2 + activeButton.clientWidth / 2;
     container.scrollTo({
@@ -104,11 +121,13 @@ watch(
 );
 
 onMounted(() => {
+  resizeObserver = new ResizeObserver(measureIndicator);
   window.addEventListener('resize', updateIndicator);
-  window.setTimeout(updateIndicator, 100);
+  updateIndicator();
 });
 
 onBeforeUnmount(() => {
+  resizeObserver?.disconnect();
   window.removeEventListener('resize', updateIndicator);
 });
 </script>
