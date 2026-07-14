@@ -6,9 +6,14 @@
   "skip": "Skip to content",
   "nav": {
     "home": "Home",
-    "docs": "Docs"
+    "docs": "Docs",
+    "builder": "Config builder"
   },
   "sectionNav": {
+    "label": "Page chapters",
+    "open": "Open chapter navigation",
+    "previous": "Previous chapter",
+    "next": "Next chapter",
     "overview": "Overview",
     "features": "Highlights",
     "custom": "Customization",
@@ -29,7 +34,7 @@
       { "label": "Propose", "text": "Make ideas visible" },
       { "label": "Gather", "text": "Find people who care" },
       { "label": "Respond", "text": "Follow the response" },
-      { "label": "Protect", "text": "Respect sensitive voices" }
+      { "label": "Protect", "text": "Protect student privacy" }
     ]
   },
   "story": {
@@ -40,7 +45,6 @@
   "features": {
     "number": "01 / CAPABILITIES",
     "title": "Give every idea<br><em>a visible next step.</em>",
-    "lede": "Public or private, reviewed or open, with support or without—each path can be shaped around your campus while everyone follows the same clear progress.",
     "cards": [
       {
         "icon": "shield-lock",
@@ -107,7 +111,7 @@
     "studio": {
       "number": "03 / ADJUSTABLE RULES",
       "title": "Do not pick a preset.<br><em>Compose the right rules.</em>",
-      "lede": "Select a module to see the settings the current application actually supports. Attachment and comment access are derived from the reading scope so they stay aligned.",
+      "lede": "Open the visual category configuration tool",
       "builderCta": "Open the category config builder",
       "stepLabel": "Rule module",
       "dimensions": [
@@ -174,8 +178,7 @@
   },
   "experience": {
     "number": "04 / REAL INTERFACE",
-    "title": "One workflow.<br><em>Clear on every screen.</em>",
-    "lede": "Desktop collects navigation and creation in an expandable sidebar, while lists switch between full and compact layouts as space changes. Mobile reprioritizes information around bottom navigation."
+    "title": "One workflow.<br><em>Clear on every screen.</em>"
   },
   "architecture": {
     "number": "05 / TRUST BOUNDARY",
@@ -220,7 +223,6 @@
   "roles": {
     "number": "07 / WHO USES IT",
     "title": "Students speak.<br><em>Teams can respond.</em>",
-    "lede": "Students focus on proposing and participating, while response teams focus on reviewing and moving work forward.",
     "cards": [
       {
         "title": "School users",
@@ -231,8 +233,8 @@
         "items": ["Review and update status", "Publish announcements and moderate content", "Use the admin dashboard to prioritize work"]
       },
       {
-        "title": "Operators",
-        "items": ["Configure categories, domain, and limits", "Own secrets and cloud resources", "Handle ops, backups, and incidents"]
+        "title": "Admin responses",
+        "items": ["Explain review approval or rejection", "Post progress updates and formal responses", "Close with the outcome or why it cannot proceed"]
       }
     ],
     "more": [
@@ -244,23 +246,21 @@
   },
   "fit": {
     "number": "08 / FIT",
-    "title": "Made for teams that want<br><em>campus change to stay visible.</em>",
-    "lede": "Student organizations, school teams, and developers can use Novae to create a clear and trusted path from voice to response.",
-    "yesTitle": "Especially useful for",
+    "title": "Made for anyone who wants<br><em>to change their campus.</em>",
+    "yesTitle": "If you want to…",
     "noTitle": "What your campus gains",
     "yes": [
-      "Student governments needing public proposals and support",
-      "Mixing public issues with private rights cases",
-      "Tuning category rules through configuration",
-      "Small teams running one school on managed cloud"
+      "Keep student proposals from disappearing into forms and chats",
+      "Make review, support, and response progress visible to everyone",
+      "Adjust visibility, review, and support rules for each type of issue",
+      "Keep the school’s outcome beside the original proposal as a clear record"
     ],
     "no": [
       "One home for public campaigns and private cases",
       "A shared record from proposal and support to response",
       "A complete mobile and desktop participation experience",
       "An open-source foundation that grows with your campus"
-    ],
-    "footnote": "Start with one campus, then shape categories, workflows, and branding around the community you serve."
+    ]
   },
   "cta": {
     "eyebrow": "MIT LICENSE · SELF-HOST · MAKE IT YOURS",

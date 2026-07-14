@@ -53,6 +53,7 @@
       <nav aria-label="primary">
         <a href="#top" class="is-active" data-i18n="nav.home">首頁</a>
         <a href="./docs/" data-i18n="nav.docs" data-i18n-href="links.docsHome">文件</a>
+        <a href="./category-builder.html" data-i18n="nav.builder">設定產生器</a>
       </nav>
       <div class="header-actions">
         <button class="language-toggle" type="button" aria-label="Switch to English">EN</button>
@@ -60,9 +61,14 @@
       </div>
     </header>
 
-    <nav class="section-float-nav" aria-label="page sections" data-section-nav>
-      <button class="section-float-nav__toggle" type="button" aria-expanded="false" aria-label="開啟頁面導覽" data-section-nav-toggle><i class="ti ti-menu-2" aria-hidden="true"></i></button>
-      <div class="section-float-nav__links">
+    <nav class="chapter-nav" aria-label="頁面章節" data-i18n-aria="sectionNav.label" data-section-nav>
+      <button class="chapter-nav__step" type="button" data-section-nav-prev data-i18n-aria="sectionNav.previous" aria-label="上一個章節"><i class="ti ti-arrow-left" aria-hidden="true"></i></button>
+      <button class="chapter-nav__current" type="button" aria-expanded="false" data-section-nav-toggle data-i18n-aria="sectionNav.open" aria-label="開啟章節導覽">
+        <span data-section-nav-index>01 / 06</span>
+        <strong data-section-nav-current>總覽</strong>
+        <i class="ti ti-chevron-up" aria-hidden="true"></i>
+      </button>
+      <div class="chapter-nav__menu">
         <a href="#top" class="is-active"><i class="ti ti-home" aria-hidden="true"></i><span data-i18n="sectionNav.overview">總覽</span></a>
         <a href="#features"><i class="ti ti-sparkles" aria-hidden="true"></i><span data-i18n="sectionNav.features">產品亮點</span></a>
         <a href="#custom"><i class="ti ti-adjustments-horizontal" aria-hidden="true"></i><span data-i18n="sectionNav.custom">彈性自訂</span></a>
@@ -70,6 +76,7 @@
         <a href="#workflow"><i class="ti ti-school" aria-hidden="true"></i><span data-i18n="sectionNav.schools">校園導入</span></a>
         <a href="#roles"><i class="ti ti-users" aria-hidden="true"></i><span data-i18n="sectionNav.roles">使用情境</span></a>
       </div>
+      <button class="chapter-nav__step" type="button" data-section-nav-next data-i18n-aria="sectionNav.next" aria-label="下一個章節"><i class="ti ti-arrow-right" aria-hidden="true"></i></button>
     </nav>
 
     <main id="main">
@@ -108,7 +115,6 @@
         <div class="section-heading">
           <p class="section-number" data-i18n="features.number"></p>
           <h2 data-i18n="features.title"></h2>
-          <p data-i18n="features.lede"></p>
         </div>
         <div class="capability-grid" data-render="features"></div>
       </section>
@@ -145,7 +151,6 @@
             <p class="section-number" data-i18n="experience.number"></p>
             <h2 data-i18n="experience.title"></h2>
           </div>
-          <p data-i18n="experience.lede"></p>
         </div>
         <div class="reference-stage">
           <div class="reference-desktop" data-novae-demo="desktop"></div>
@@ -161,13 +166,13 @@
       <section class="section pwa-section" id="pwa"><div class="pwa-copy"><p class="section-number" data-i18n="pwa.number"></p><h2 data-i18n="pwa.title"></h2><p data-i18n="pwa.lede"></p></div><div class="pwa-grid" data-render="pwa-cards"></div></section>
 
       <section class="section roles-section" id="roles">
-        <div class="section-heading horizontal"><div><p class="section-number" data-i18n="roles.number"></p><h2 data-i18n="roles.title"></h2></div><p data-i18n="roles.lede"></p></div>
+        <div class="section-heading horizontal"><div><p class="section-number" data-i18n="roles.number"></p><h2 data-i18n="roles.title"></h2></div></div>
         <div class="roles-grid" data-render="roles"></div><div class="more-features" data-render="more-features"></div>
       </section>
 
       <section class="section fit-section" id="fit">
-        <div class="section-heading horizontal"><div><p class="section-number" data-i18n="fit.number"></p><h2 data-i18n="fit.title"></h2></div><p data-i18n="fit.lede"></p></div>
-        <div class="fit-grid"><article class="fit-yes"><h3 data-i18n="fit.yesTitle"></h3><ul data-render="fit-yes"></ul></article><article class="fit-no fit-benefits"><h3 data-i18n="fit.noTitle"></h3><ul data-render="fit-no"></ul></article></div><p class="fit-footnote" data-i18n="fit.footnote"></p>
+        <div class="section-heading horizontal"><div><p class="section-number" data-i18n="fit.number"></p><h2 data-i18n="fit.title"></h2></div></div>
+        <div class="fit-grid"><article class="fit-yes"><h3 data-i18n="fit.yesTitle"></h3><ul data-render="fit-yes"></ul></article><article class="fit-no fit-benefits"><h3 data-i18n="fit.noTitle"></h3><ul data-render="fit-no"></ul></article></div>
       </section>
 
       <section class="cta-section">

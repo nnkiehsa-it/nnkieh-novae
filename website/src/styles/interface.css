@@ -18,6 +18,14 @@
 .reference-desktop{min-width:0;border-radius:18px}
 .reference-mobile{width:100%;max-width:248px;justify-self:end;border:7px solid #292925;border-radius:36px;height:520px}
 
+@media(min-width:821px){
+  .experience-section{padding-top:82px;padding-bottom:54px}
+  .experience-section .section-heading{grid-template-columns:1fr;margin-bottom:32px}
+  .reference-stage{align-items:start;max-height:480px;padding:12px 0 8px}
+  .reference-desktop{height:460px!important}
+  .reference-mobile{height:460px}
+}
+
 /* ─── Novae product surface (aligned to novae style.css + components) ─── */
 .novae-demo{
   --novae-ink:#171715;--novae-muted:#77776c;--novae-soft:#9e9e91;--novae-line:#ddddd3;
