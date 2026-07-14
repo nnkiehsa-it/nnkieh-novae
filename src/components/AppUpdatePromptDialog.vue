@@ -10,7 +10,7 @@
       tabindex="-1"
     >
       <div class="flex items-start gap-4">
-        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-container text-primary dark:bg-primary-container/40" aria-hidden="true">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-info-container text-info shadow-note" aria-hidden="true">
           <AppIcon name="refresh" :size="6" :stroke-width="1.8" />
         </div>
         <div class="min-w-0 flex-1">

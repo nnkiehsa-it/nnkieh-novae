@@ -106,7 +106,7 @@ import {
   registerCreateIssueHandler,
 } from '@/composables/useCreateEntryActions';
 import { useSession } from '@/composables/useSession';
-import { useToast } from '@/composables/useToast';
+import { useActionFeedback } from '@/composables/useActionFeedback';
 import { registerActiveNavigationRefreshHandler } from '@/composables/useActiveNavigationRefresh';
 import { DEFAULT_ISSUE_CATEGORY, ISSUE_CATEGORY_LABELS, isIssueCategory, issueIsPrivateToOwner, issueStoresAuthorPrivately } from '@/constants/categories';
 import { resetAppConnection } from '@/lib/reconnect';
@@ -129,7 +129,7 @@ const emit = defineEmits<{
 }>();
 
 const { isAdmin } = useSession();
-const { showProgressToast, showToast } = useToast();
+const { show, start } = useActionFeedback();
 const router = useRouter();
 const route = useRoute();
 const composerCategory = ref<IssueCategory>(DEFAULT_ISSUE_CATEGORY);
@@ -198,12 +198,12 @@ async function retryCurrentData() {
 async function handleManualRefresh() {
   if (manualRefreshing.value) return;
   manualRefreshing.value = true;
-  const progressToast = showProgressToast('正在更新提案...');
+  const feedbackHandle = start('正在更新提案');
   try {
     await refreshCurrentData();
-    progressToast.succeed('提案已更新。');
+    feedbackHandle.succeed('提案已更新');
   } catch {
-    progressToast.fail('提案更新失敗，請稍後再試。');
+    feedbackHandle.fail('提案更新失敗，請稍後再試');
   } finally {
     manualRefreshing.value = false;
   }
@@ -328,7 +328,7 @@ watch(statusTab, (tab) => {
 
 watch(composerMessage, (message) => {
   if (message) {
-    showToast(message, 'success');
+    show(message, 'success');
   }
 });
 </script>

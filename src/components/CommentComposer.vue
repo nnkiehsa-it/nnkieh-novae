@@ -28,7 +28,7 @@
     </div>
 
     <div
-      class="overflow-hidden rounded-2xl border transition-all duration-300 focus-within:border-secondary focus-within:ring-2 focus-within:ring-secondary/20"
+      class="overflow-hidden rounded-2xl border-0 bg-surface shadow-note transition-all duration-300 focus-within:ring-2 focus-within:ring-outline/25 dark:bg-surface"
       :class="'border-ink-200 bg-white dark:border-ink-800 dark:bg-ink-950/40'"
     >
       <div v-if="!showPreview">
@@ -139,7 +139,7 @@ import MarkdownRenderer from '@/components/MarkdownRenderer.vue';
 import AppIcon from '@/components/ui/AppIcon.vue';
 import { useMarkdownImageUpload } from '@/composables/useMarkdownImageUpload';
 import { useSession } from '@/composables/useSession';
-import { useToast } from '@/composables/useToast';
+import { useActionFeedback } from '@/composables/useActionFeedback';
 import { RATE_LIMITS } from '@/generated/rate-limits';
 
 const props = defineProps<{
@@ -156,7 +156,7 @@ const emit = defineEmits<{
 }>();
 
 const { user, customPhotoUrl } = useSession();
-const { showToast } = useToast();
+const { show } = useActionFeedback();
 const myPhotoUrl = computed(() => customPhotoUrl.value || user.value?.photoURL || null);
 const composerId = computed(() => props.issueId ?? props.targetId ?? 'default');
 
@@ -195,7 +195,7 @@ async function submit() {
     });
   } catch {
     uploadError.value = '圖片上傳失敗，請稍後再試。';
-    showToast(uploadError.value, 'error');
+    show(uploadError.value, 'error');
   }
 }
 
@@ -209,7 +209,7 @@ async function handleClose() {
     emit('close');
   } catch {
     uploadError.value = '圖片刪除失敗，請稍後再試。';
-    showToast(uploadError.value, 'error');
+    show(uploadError.value, 'error');
   }
 }
 

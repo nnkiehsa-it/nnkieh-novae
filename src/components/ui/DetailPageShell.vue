@@ -22,7 +22,7 @@
     </header>
 
     <div v-if="isDesktopViewport" class="hidden min-h-0 items-stretch gap-6 md:grid md:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)] xl:grid-cols-[minmax(0,1fr)_32rem]">
-      <div class="flex h-[calc(100dvh-var(--app-header-height)-env(safe-area-inset-top)-2.5rem)] min-w-0 flex-col overflow-y-auto pb-[3px] pr-2">
+      <div class="panel panel-pad flex h-[calc(100dvh-var(--app-header-height)-env(safe-area-inset-top)-2.5rem)] min-w-0 flex-col overflow-y-auto">
         <header class="hidden md:flex shrink-0 items-start gap-3 pb-3">
           <button
             type="button"
@@ -42,7 +42,7 @@
         </div>
         <slot name="actions" :compact="false" />
       </div>
-      <div class="flex h-[calc(100dvh-var(--app-header-height)-env(safe-area-inset-top)-2.5rem)] min-w-0 flex-col border-l border-ink-100 pb-[3px] pl-6 pr-1 dark:border-ink-800">
+      <div class="panel panel-pad flex h-[calc(100dvh-var(--app-header-height)-env(safe-area-inset-top)-2.5rem)] min-w-0 flex-col">
         <slot name="comments" :compact-header="false" />
       </div>
     </div>
@@ -55,7 +55,7 @@
             key="details"
             class="flex h-[calc(100dvh-var(--app-header-height)-var(--app-bottom-nav-height)-env(safe-area-inset-top)-3.5rem)] flex-col pb-3"
           >
-            <div class="min-h-0 flex-1 overflow-y-auto px-1 pb-3 pr-2">
+            <div class="panel panel-pad min-h-0 flex-1 overflow-y-auto">
               <slot name="details" :compact="true" :scroll-content="false" />
             </div>
             <slot name="actions" :compact="true" />
@@ -63,7 +63,7 @@
           <div
             v-else
             key="comments"
-            class="h-[calc(100dvh-var(--app-header-height)-var(--app-bottom-nav-height)-env(safe-area-inset-top)-3.5rem)] min-h-[24rem] pb-3"
+            class="panel panel-pad h-[calc(100dvh-var(--app-header-height)-var(--app-bottom-nav-height)-env(safe-area-inset-top)-3.5rem)] min-h-[24rem]"
           >
             <slot name="comments" :compact-header="true" />
           </div>

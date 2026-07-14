@@ -41,7 +41,7 @@
           :disabled="busy"
           @click="emit('confirm')"
         >
-          {{ confirmLabel }}
+          <BusyButtonContent :busy="busy" :label="confirmLabel" busy-label="處理中" />
         </button>
       </div>
     </section>
@@ -51,6 +51,7 @@
 <script setup lang="ts">
 import { toRef } from 'vue';
 import DialogOverlay from '@/components/ui/DialogOverlay.vue';
+import BusyButtonContent from '@/components/ui/BusyButtonContent.vue';
 import { useBodyScrollLock } from '@/composables/useBodyScrollLock';
 import { useDialogFocus } from '@/composables/useDialogFocus';
 

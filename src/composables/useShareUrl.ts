@@ -1,4 +1,4 @@
-import { useToast } from '@/composables/useToast';
+import { useActionFeedback } from '@/composables/useActionFeedback';
 
 function copyWithTextarea(text: string) {
   const textarea = document.createElement('textarea');
@@ -27,15 +27,15 @@ async function copyText(text: string) {
 }
 
 export function useShareUrl() {
-  const { showToast } = useToast();
+  const { show } = useActionFeedback();
 
   async function copyShareUrl(url: string) {
     try {
       await copyText(url);
-      showToast('分享連結已複製。', 'success');
+      show('分享連結已複製', 'success');
       return true;
     } catch {
-      showToast('無法複製分享連結，請稍後再試。', 'error');
+      show('無法複製連結，請稍後再試', 'error');
       return false;
     }
   }

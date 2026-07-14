@@ -73,7 +73,7 @@ function handleImageClick(event: MouseEvent) {
   max-height: 70vh;
   width: 100%;
   object-fit: contain;
-  background: rgb(241 245 249 / 0.7);
+  background: rgb(var(--color-secondary-container) / 0.7);
 }
 
 :deep(p:has(> img:only-child)) {

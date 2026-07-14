@@ -4,7 +4,7 @@ import { useAnnouncements } from '@/composables/useAnnouncements';
 import { registerAppResumeHandler } from '@/composables/useAppResume';
 import { useNetworkStatus } from '@/composables/useNetworkStatus';
 import { useSession } from '@/composables/useSession';
-import { useToast } from '@/composables/useToast';
+import { useActionFeedback } from '@/composables/useActionFeedback';
 import {
   createAnnouncement,
   deleteAnnouncement,
@@ -26,7 +26,7 @@ import {
 export function useAnnouncementManagement() {
   const router = useRouter();
   const { initialized, isAdmin, isAllowedUser, loading: authLoading, roleLoading, user } = useSession();
-  const { showProgressToast, showToast } = useToast();
+  const { show, start } = useActionFeedback();
   const { isOnline } = useNetworkStatus();
   const announcementCacheScope = computed(() => [
     initialized.value ? 'ready' : 'booting',
@@ -86,16 +86,16 @@ export function useAnnouncementManagement() {
   async function publishAnnouncement(payload: { title: string; content: string; uploadedImages: UploadedImage[] }) {
     saving.value = true;
     composerError.value = '';
-    const progressToast = showProgressToast('正在發布公告...');
+    const feedbackHandle = start('正在發布公告');
     try {
       const announcement = await createAnnouncement(payload);
       upsertAnnouncement(announcement);
       composerOpen.value = false;
-      progressToast.succeed('公告已發布。');
+      feedbackHandle.succeed('公告已發布');
     } catch (caught) {
       await deleteUploadedImages(payload.uploadedImages.map((image) => image.storagePath)).catch(() => undefined);
       composerError.value = caught instanceof Error ? caught.message : '公告發布失敗。';
-      progressToast.fail(composerError.value);
+      feedbackHandle.fail(composerError.value);
     } finally {
       saving.value = false;
     }
@@ -115,14 +115,14 @@ export function useAnnouncementManagement() {
     if (!announcement) return;
 
     deleting.value = true;
-    const progressToast = showProgressToast('正在刪除公告...');
+    const feedbackHandle = start('正在刪除公告');
     try {
       await deleteAnnouncement(announcement.id);
       removeAnnouncement(announcement.id);
       deletePendingAnnouncement.value = null;
-      progressToast.succeed('公告已刪除。');
+      feedbackHandle.succeed('公告已刪除');
     } catch (caught) {
-      progressToast.fail(caught instanceof Error ? caught.message : '公告刪除失敗。');
+      feedbackHandle.fail(caught instanceof Error ? caught.message : '公告刪除失敗');
     } finally {
       deleting.value = false;
     }
@@ -131,7 +131,7 @@ export function useAnnouncementManagement() {
   async function handleToggleLike(announcement: AnnouncementRecord | null) {
     if (!announcement) return;
     if (!isAllowedUser.value) {
-      showToast('請先使用校內帳號登入後再按讚。', 'error');
+      show('請先登入再按讚', 'error');
       return;
     }
     if (liking.value) return;
@@ -163,7 +163,7 @@ export function useAnnouncementManagement() {
       if (isContentUnavailableError(caught)) {
         handleAnnouncementUnavailable(announcement.id);
       }
-      showToast(caught instanceof Error ? caught.message : '操作失敗，請稍後再試。', 'error');
+      show(caught instanceof Error ? caught.message : '操作失敗，請稍後再試', 'error');
     } finally {
       liking.value = false;
       likingAnnouncementId.value = '';

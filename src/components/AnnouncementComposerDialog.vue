@@ -10,7 +10,7 @@
       <div class="flex items-center justify-between border-b border-ink-200 dark:border-ink-800 pb-4 shrink-0">
         <div class="min-w-0">
           <span class="text-xs font-semibold tracking-wide text-ink-500 dark:text-ink-400">發布新的校內公告</span>
-          <h2 class="mt-1 text-xl font-bold tracking-tight text-ink-950 dark:text-ink-50">公告內容</h2>
+          <h2 class="mt-1 text-xl font-semibold tracking-[0.015em] text-ink-950 dark:text-ink-50">公告內容</h2>
         </div>
         <button
           type="button"
@@ -95,8 +95,9 @@
               type="submit"
               class="button-primary flex-1 px-5 text-sm font-semibold sm:flex-none"
               :disabled="submitting || uploading || !title.trim() || (!content.trim() && editorImages.length === 0)"
+              :aria-busy="submitting || undefined"
             >
-              發布公告
+              <BusyButtonContent :busy="submitting" label="發布公告" busy-label="發布中" />
             </button>
           </div>
         </div>
@@ -110,6 +111,7 @@ import { computed, ref, watch } from 'vue';
 import DialogOverlay from '@/components/ui/DialogOverlay.vue';
 import MarkdownImageEditor from '@/components/ui/MarkdownImageEditor.vue';
 import AppIcon from '@/components/ui/AppIcon.vue';
+import BusyButtonContent from '@/components/ui/BusyButtonContent.vue';
 import { useBodyScrollLock } from '@/composables/useBodyScrollLock';
 import { useDialogFocus } from '@/composables/useDialogFocus';
 import { useMarkdownImageUpload } from '@/composables/useMarkdownImageUpload';

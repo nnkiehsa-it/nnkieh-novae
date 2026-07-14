@@ -53,7 +53,7 @@ import { registerAppResumeHandler } from '@/composables/useAppResume';
 import { useNetworkStatus } from '@/composables/useNetworkStatus';
 import { useSession } from '@/composables/useSession';
 import { useShareUrl } from '@/composables/useShareUrl';
-import { useToast } from '@/composables/useToast';
+import { useActionFeedback } from '@/composables/useActionFeedback';
 import { normalizeRouteParam } from '@/lib/route';
 import { resetAppConnection } from '@/lib/reconnect';
 import {
@@ -77,7 +77,7 @@ const route = useRoute();
 const router = useRouter();
 const { initialized, isAdmin, isAllowedUser, loading, roleLoading, user } = useSession();
 const { copyShareUrl } = useShareUrl();
-const { showProgressToast, showToast } = useToast();
+const { show, start } = useActionFeedback();
 const { isOnline } = useNetworkStatus();
 
 const announcement = ref<AnnouncementRecord | null>(null);
@@ -144,14 +144,14 @@ async function confirmDelete() {
   if (!announcement.value) return;
 
   deleting.value = true;
-  const progressToast = showProgressToast('正在刪除公告...');
+  const feedbackHandle = start('正在刪除公告');
   try {
     await deleteAnnouncement(announcement.value.id);
     deleteDialogOpen.value = false;
-    progressToast.succeed('公告已刪除。');
+    feedbackHandle.succeed('公告已刪除');
     goBackToAnnouncements();
   } catch (caught) {
-    progressToast.fail(caught instanceof Error ? caught.message : '公告刪除失敗。');
+    feedbackHandle.fail(caught instanceof Error ? caught.message : '公告刪除失敗');
   } finally {
     deleting.value = false;
   }
@@ -160,7 +160,7 @@ async function confirmDelete() {
 async function handleToggleLike() {
   if (!announcement.value) return;
   if (!isAllowedUser.value) {
-    showToast('請先使用校內帳號登入後再按讚。', 'error');
+    show('請先登入再按讚', 'error');
     return;
   }
   if (liking.value) return;
@@ -201,7 +201,7 @@ async function handleToggleLike() {
         like_count: previousLikeCount,
       };
     }
-    showToast(caught instanceof Error ? caught.message : '操作失敗，請稍後再試。', 'error');
+    show(caught instanceof Error ? caught.message : '操作失敗，請稍後再試', 'error');
   } finally {
     liking.value = false;
   }
@@ -225,7 +225,7 @@ async function refreshAnnouncementSilently(options: { force?: boolean } = {}) {
     markContentRealtimeReliable();
   } catch (caught) {
     if (currentRequestId !== requestId) return;
-    showToast(caught instanceof Error ? caught.message : '找不到這則公告。', 'error');
+    show(caught instanceof Error ? caught.message : '找不到這則公告', 'error');
     goBackToAnnouncements();
   }
 }
@@ -278,7 +278,7 @@ watch(
       announcement.value = fetchedAnnouncement;
     } catch (caught) {
       if (currentRequestId !== requestId) return;
-      showToast(caught instanceof Error ? caught.message : '找不到這則公告。', 'error');
+      show(caught instanceof Error ? caught.message : '找不到這則公告', 'error');
       goBackToAnnouncements();
     } finally {
       if (currentRequestId === requestId) {

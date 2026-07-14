@@ -1,6 +1,6 @@
 import { computed, onBeforeUnmount, ref, type Ref } from 'vue';
 import { useImageUpload, type PreparedImage, type UploadedImage } from '@/composables/useImageUpload';
-import { useToast } from '@/composables/useToast';
+import { useActionFeedback } from '@/composables/useActionFeedback';
 import { deleteUploadedImages as deleteUploadedImageBatch } from '@/services/uploads';
 
 interface MarkdownImageUploadOptions {
@@ -13,7 +13,7 @@ export function useMarkdownImageUpload(content: Ref<string>, options: MarkdownIm
   const textareaRef = ref<HTMLTextAreaElement | null>(null);
   const imageAttachments = ref<PreparedImage[]>([]);
   const { prepareImage, revokePreparedImage, uploading, uploadError, uploadPreparedImages } = useImageUpload();
-  const { showToast } = useToast();
+  const { show } = useActionFeedback();
   const imageUrls = computed(() => imageAttachments.value.map((image) => image.previewUrl));
 
   function buildContentWithImages(images: Array<Pick<UploadedImage, 'url' | 'width' | 'height'>>) {
@@ -47,7 +47,7 @@ export function useMarkdownImageUpload(content: Ref<string>, options: MarkdownIm
     const remainingSlots = options.getRemainingSlots?.() ?? options.maxImages - imageAttachments.value.length;
     if (remainingSlots <= 0) {
       uploadError.value = `最多只能上傳 ${options.maxImages} 張圖片。`;
-      showToast(uploadError.value, 'error');
+      show(uploadError.value, 'error');
       target.value = '';
       return;
     }
@@ -55,7 +55,7 @@ export function useMarkdownImageUpload(content: Ref<string>, options: MarkdownIm
     const pickedFiles = files.slice(0, remainingSlots);
     if (files.length > remainingSlots) {
       uploadError.value = `最多只能上傳 ${options.maxImages} 張圖片。`;
-      showToast(uploadError.value, 'error');
+      show(uploadError.value, 'error');
     }
 
     const preparedImages: PreparedImage[] = [];

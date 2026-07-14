@@ -30,7 +30,7 @@
               type="button"
               class="content-trigger flex w-full items-center justify-between gap-3 border px-3 py-3 text-left"
               :class="nextStatus === option.value
-                ? 'button-toolbar--active border-secondary/50'
+                ? 'button-toolbar--active shadow-note'
                 : 'border-ink-100 dark:border-ink-800'"
               @click="nextStatus = option.value"
             >
@@ -39,13 +39,13 @@
                 <span class="mt-0.5 block text-xs leading-5 text-ink-500 dark:text-ink-400">{{ option.description }}</span>
               </span>
               <span
-                class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs font-bold"
+                class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-inner"
                 :class="nextStatus === option.value
-                  ? 'border-ink-900 bg-ink-900 text-white dark:border-ink-50 dark:bg-ink-50 dark:text-ink-950'
-                  : 'border-ink-300 text-transparent dark:border-ink-700'"
+                  ? 'bg-ink-800 text-white dark:bg-ink-100 dark:text-ink-950'
+                  : 'bg-ink-100 text-transparent dark:bg-ink-800'"
                 aria-hidden="true"
               >
-                ✓
+                <AppIcon name="check-circle" :size="3" />
               </span>
             </button>
           </div>
@@ -61,7 +61,7 @@
         <!-- Step 2: Fill Result -->
         <div v-else-if="step === 2" class="space-y-2">
           <label class="field-label" for="closed-result-content">提案結果說明</label>
-          <div class="overflow-hidden rounded-xl border border-ink-200 bg-white shadow-sm transition-colors focus-within:border-secondary focus-within:ring-2 focus-within:ring-secondary/20 dark:border-ink-800 dark:bg-ink-900">
+          <div class="overflow-hidden rounded-[var(--radius-inner)] border-0 bg-surface shadow-note transition-colors focus-within:ring-2 focus-within:ring-outline/25 dark:bg-surface">
             <textarea
               id="closed-result-content"
               v-model="resultContent"
@@ -84,7 +84,7 @@
           {{ step === 1 ? '取消' : '返回' }}
         </button>
         <button type="button" class="button-primary" :disabled="saving" @click="handlePrimaryClick">
-          {{ idlePrimaryLabel }}
+          <BusyButtonContent :busy="saving" :label="idlePrimaryLabel" busy-label="更新中" />
         </button>
       </div>
     </section>
@@ -94,9 +94,11 @@
 <script setup lang="ts">
 import { computed, ref, toRef, watch } from 'vue';
 import DialogOverlay from '@/components/ui/DialogOverlay.vue';
+import BusyButtonContent from '@/components/ui/BusyButtonContent.vue';
+import AppIcon from '@/components/ui/AppIcon.vue';
 import { useBodyScrollLock } from '@/composables/useBodyScrollLock';
 import { useDialogFocus } from '@/composables/useDialogFocus';
-import { useToast } from '@/composables/useToast';
+import { useActionFeedback } from '@/composables/useActionFeedback';
 import { moderateIssueStatus, updateIssueResult } from '@/services/issues';
 import type { IssueRecord, IssueStatus } from '@/types';
 
@@ -165,7 +167,7 @@ const nextStatus = ref<EditableStatus>(initialStatus());
 const resultContent = ref(props.issue.result_content ?? '');
 const saving = ref(false);
 const errorMsg = ref('');
-const { showProgressToast } = useToast();
+const { start } = useActionFeedback();
 const requiresResult = computed(() => nextStatus.value === 'completed' || nextStatus.value === 'infeasible');
 
 const idlePrimaryLabel = computed(() => {
@@ -208,7 +210,7 @@ function handleSecondaryClick() {
 async function save() {
   saving.value = true;
   errorMsg.value = '';
-  const progressToast = showProgressToast('正在更新提案狀態...');
+  const feedbackHandle = start('正在更新提案狀態');
   try {
     if (!requiresResult.value) {
       const updated = await moderateIssueStatus(props.issue.id, 'processing');
@@ -217,24 +219,24 @@ async function save() {
         finalIssue = await updateIssueResult(props.issue.id, '');
       }
       emit('success', finalIssue);
-      progressToast.succeed('提案狀態已更新。');
+      feedbackHandle.succeed('提案狀態已更新');
     } else {
       const content = resultContent.value.trim();
       if (!content) {
         errorMsg.value = '請輸入提案結果說明。';
-        progressToast.fail(errorMsg.value);
+        feedbackHandle.fail(errorMsg.value);
         saving.value = false;
         return;
       }
       const updated = await moderateIssueStatus(props.issue.id, nextStatus.value);
       const finalIssue = await updateIssueResult(props.issue.id, content);
       emit('success', finalIssue);
-      progressToast.succeed('提案狀態與結果已更新。');
+      feedbackHandle.succeed('提案狀態與結果已更新');
     }
     emit('close');
   } catch (caught) {
     errorMsg.value = caught instanceof Error ? caught.message : '更新失敗，請稍後再試。';
-    progressToast.fail(errorMsg.value);
+    feedbackHandle.fail(errorMsg.value);
   } finally {
     saving.value = false;
   }

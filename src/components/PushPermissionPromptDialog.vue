@@ -12,7 +12,7 @@
     >
       <div class="flex items-start gap-4">
         <div
-          class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-secondary-container text-secondary dark:bg-secondary-container/40"
+          class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-info-container text-info shadow-note"
           aria-hidden="true"
         >
           <AppIcon name="bell" :size="6" />

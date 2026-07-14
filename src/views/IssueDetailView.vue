@@ -54,7 +54,7 @@ import { useIssueRouteDetail } from '@/composables/useIssueRouteDetail';
 import { useLoadingTimeout } from '@/composables/useLoadingTimeout';
 import { useSession } from '@/composables/useSession';
 import { useShareUrl } from '@/composables/useShareUrl';
-import { useToast } from '@/composables/useToast';
+import { useActionFeedback } from '@/composables/useActionFeedback';
 import { normalizeIssueRouteFilterParam } from '@/constants/categories';
 import { resetAppConnection } from '@/lib/reconnect';
 
@@ -62,7 +62,7 @@ const route = useRoute();
 const router = useRouter();
 const { initialized, isAllowedUser, loading, mySupportedIssueIds } = useSession();
 const { copyShareUrl } = useShareUrl();
-const { showToast } = useToast();
+const { show } = useActionFeedback();
 
 const sessionLoading = computed(() => loading.value || !initialized.value);
 const canLoadIssue = computed(() => initialized.value && isAllowedUser.value);

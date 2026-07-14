@@ -11,11 +11,12 @@
         {{ categoryLabel }}
       </span>
       <span class="tag font-semibold shadow-sm" :class="statusClass">
+        <AppIcon :name="statusIcon" :size="3.5" :stroke-width="2" />
         {{ statusLabel }}
       </span>
       <span
         v-if="issue.support_enabled && issue.support_met_at"
-        class="tag border-primary/30 bg-primary-container/50 font-semibold text-on-primary-container shadow-sm"
+        class="tag bg-success-container font-semibold text-on-success-container shadow-sm"
       >
         <span class="hidden md:inline">已達附議門檻</span>
         <span class="md:hidden">已達門檻</span>
@@ -165,6 +166,7 @@ const {
   derivedStatus,
   categoryLabel,
   statusLabel,
+  statusIcon,
   primaryTimeLabel,
   primaryTimeValueLabel,
   operationTimeItems,

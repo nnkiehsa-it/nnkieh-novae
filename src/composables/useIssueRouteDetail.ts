@@ -4,7 +4,7 @@ import { normalizeIssueRouteFilterParam } from '@/constants/categories';
 import { getDerivedIssueStatus } from '@/lib/issue-status';
 import { getIssueStatusBucket } from '@/lib/issue-timeline';
 import { normalizeRouteParam } from '@/lib/route';
-import { useToast } from '@/composables/useToast';
+import { useActionFeedback } from '@/composables/useActionFeedback';
 import { useSession } from '@/composables/useSession';
 import { registerAppResumeHandler } from '@/composables/useAppResume';
 import { useNetworkStatus } from '@/composables/useNetworkStatus';
@@ -29,7 +29,7 @@ export function useIssueRouteDetail(
 ) {
   const route = useRoute();
   const router = useRouter();
-  const { showToast } = useToast();
+  const { show } = useActionFeedback();
   const { isAdmin, roleLoading, user } = useSession();
   const { isOnline } = useNetworkStatus();
   const routeIssue = ref<IssueRecord | null>(null);
@@ -137,7 +137,7 @@ export function useIssueRouteDetail(
     if (currentRequestId !== requestId) return;
     routeIssue.value = null;
     routeIssueLoading.value = false;
-    showToast('此頁面已不存在或你沒有權限查看此頁面。', 'error');
+    show('此頁面不存在或無法查看', 'error');
     await router.replace(issueListRoute());
   }
 

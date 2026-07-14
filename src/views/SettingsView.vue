@@ -74,7 +74,7 @@ import SettingsPanelContent from '@/components/SettingsPanelContent.vue';
 import { usePushNotifications } from '@/composables/usePushNotifications';
 import { useAppUpdate } from '@/composables/useAppUpdate';
 import { useSession } from '@/composables/useSession';
-import { useToast } from '@/composables/useToast';
+import { useActionFeedback } from '@/composables/useActionFeedback';
 import type { PersonalPushPreferenceKey } from '@/services/notifications';
 
 const router = useRouter();
@@ -94,7 +94,7 @@ const {
   refreshPushPreference,
   setPersonalPushPreference,
 } = usePushNotifications();
-const { showProgressToast } = useToast();
+const { start } = useActionFeedback();
 
 const displayPhotoUrl = computed(() => customPhotoUrl.value || user.value?.photoURL || null);
 
@@ -159,24 +159,24 @@ async function switchAccount() {
 
 async function handlePushAction() {
   if (!pushActionLabel.value) return;
-  const progressToast = showProgressToast('正在更新推播設定…');
+  const feedbackHandle = start('正在更新推播設定');
   const succeeded = pushEnabled.value
     ? await disablePushNotifications()
     : await enablePushNotifications();
   if (succeeded) {
-    progressToast.succeed('推播設定已更新。');
+    feedbackHandle.succeed('推播設定已更新');
   } else {
-    progressToast.fail(pushError.value || '推播設定更新失敗，請稍後再試。');
+    feedbackHandle.fail(pushError.value || '推播設定更新失敗，請稍後再試');
   }
 }
 
 async function handleSetPersonalPushPreference(key: PersonalPushPreferenceKey, value: boolean) {
-  const progressToast = showProgressToast('正在儲存通知設定…');
+  const feedbackHandle = start('正在儲存通知設定');
   const succeeded = await setPersonalPushPreference(key, value);
   if (succeeded) {
-    progressToast.succeed('通知設定已儲存。');
+    feedbackHandle.succeed('通知設定已儲存');
   } else {
-    progressToast.fail(pushError.value || '通知設定儲存失敗，請稍後再試。');
+    feedbackHandle.fail(pushError.value || '通知設定儲存失敗，請稍後再試');
   }
 }
 

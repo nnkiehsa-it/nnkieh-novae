@@ -13,9 +13,11 @@
     <!-- Empty state -->
     <div
       v-if="visibleTables.length === 0"
-      class="flex flex-col items-center justify-center py-10 px-4 text-center border border-dashed border-ink-200 dark:border-ink-800 rounded-xl bg-white dark:bg-ink-900"
+      class="flex flex-col items-center justify-center rounded-[var(--radius-outer)] bg-surface px-4 py-10 text-center shadow-elevated dark:bg-surface"
     >
-      <span class="text-2xl mb-2">📊</span>
+      <span class="mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-ink-100 text-ink-500 shadow-note dark:bg-ink-800 dark:text-ink-300">
+        <AppIcon name="table" :size="6" :stroke-width="1.7" />
+      </span>
       <p class="text-sm text-ink-600 dark:text-ink-400 font-medium">尚未在內容中偵測到任何表格</p>
       <p class="text-xs text-ink-400 dark:text-ink-500 mt-1 max-w-xs">
         您可以切換回「文字」編輯模式，點擊工具列上的表格按鈕插入表格，或點擊下方按鈕快速新增表格。

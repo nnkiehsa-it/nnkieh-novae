@@ -47,9 +47,9 @@ const schoolName = SCHOOL_NAME;
 
 <style scoped>
 .startup-screen {
-  --startup-accent: 180 126 36;
-  --startup-accent-bright: 226 190 110;
-  --startup-accent-soft: 246 228 185;
+  --startup-accent: 139 128 114;
+  --startup-accent-bright: 190 180 168;
+  --startup-accent-soft: 233 226 215;
   --startup-wash: 255 252 246;
   position: fixed;
   inset: 0;
@@ -99,10 +99,10 @@ const schoolName = SCHOOL_NAME;
   height: 6.25rem;
   width: 6.25rem;
   place-items: center;
-  border: 1px solid rgb(var(--color-on-surface) / 0.08);
+  border: 0;
   border-radius: 1.5rem;
   background: rgb(var(--color-surface) / 0.76);
-  box-shadow: 0 1.25rem 3rem rgb(var(--color-shadow) / 0.12);
+  box-shadow: var(--shadow-floating);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
 }
@@ -120,9 +120,9 @@ const schoolName = SCHOOL_NAME;
   margin: 0;
   color: rgb(var(--color-on-surface));
   font-size: clamp(2rem, 8vw, 3rem);
-  font-weight: 800;
-  letter-spacing: 0;
-  line-height: 1.05;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
 }
 
 .startup-screen__message {

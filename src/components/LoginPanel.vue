@@ -8,10 +8,10 @@
       </span>
 
       <div class="space-y-3">
-        <h2 class="text-2xl font-bold tracking-tight text-ink-950 dark:text-ink-50 sm:text-3xl">歡迎使用 Novae</h2>
+        <h2 class="text-2xl font-semibold tracking-[0.015em] text-ink-950 dark:text-ink-50 sm:text-3xl">歡迎使用 Novae</h2>
         <p class="text-sm leading-relaxed text-ink-500 dark:text-ink-400">
           請先使用您的
-          <span class="font-semibold text-primary">校內 Google 帳號 (@{{ allowedDomain || '未設定環境變數' }})</span>
+          <span class="font-semibold text-ink-800 dark:text-ink-100">校內 Google 帳號 (@{{ allowedDomain || '未設定環境變數' }})</span>
           進行登入以瀏覽並參與提案。
         </p>
       </div>

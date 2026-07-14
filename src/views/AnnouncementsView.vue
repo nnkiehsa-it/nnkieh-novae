@@ -1,7 +1,7 @@
 <template>
   <section class="mx-auto w-full max-w-7xl space-y-5">
     <div class="hidden items-center justify-between gap-3 md:flex">
-      <h2 class="shrink-0 text-2xl font-bold tracking-tight text-ink-950 dark:text-ink-50">公告</h2>
+      <h2 class="shrink-0 text-2xl font-semibold tracking-[0.015em] text-ink-950 dark:text-ink-50">公告</h2>
     </div>
 
     <div>
@@ -101,7 +101,7 @@ import { useAnnouncementManagement } from '@/composables/useAnnouncementManageme
 import { useMinimumLoading } from '@/composables/useMinimumLoading';
 import { useLoadingTimeout } from '@/composables/useLoadingTimeout';
 import { resetAppConnection } from '@/lib/reconnect';
-import { useToast } from '@/composables/useToast';
+import { useActionFeedback } from '@/composables/useActionFeedback';
 import { registerActiveNavigationRefreshHandler } from '@/composables/useActiveNavigationRefresh';
 
 const {
@@ -133,7 +133,7 @@ const {
 
 const route = useRoute();
 const router = useRouter();
-const { showProgressToast } = useToast();
+const { start } = useActionFeedback();
 const manualRefreshing = ref(false);
 const rawAnnouncementLoading = computed(() => sessionLoading.value || loading.value);
 const announcementPanelKey = 'announcements';
@@ -154,12 +154,12 @@ async function retryAnnouncements() {
 async function handleManualRefresh() {
   if (manualRefreshing.value) return;
   manualRefreshing.value = true;
-  const progressToast = showProgressToast('正在更新公告...');
+  const feedbackHandle = start('正在更新公告');
   try {
     await refreshAnnouncements();
-    progressToast.succeed('公告已更新。');
+    feedbackHandle.succeed('公告已更新');
   } catch {
-    progressToast.fail('公告更新失敗，請稍後再試。');
+    feedbackHandle.fail('公告更新失敗，請稍後再試');
   } finally {
     manualRefreshing.value = false;
   }

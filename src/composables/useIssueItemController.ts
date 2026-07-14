@@ -3,7 +3,7 @@ import { useSession } from '@/composables/useSession';
 import { useIssueDisplay } from '@/composables/useIssueDisplay';
 import { useIssueSupport } from '@/composables/useIssueSupport';
 import { useStatusStyling } from '@/composables/useStatusStyling';
-import { useToast, type ToastKind } from '@/composables/useToast';
+import { useActionFeedback, type FeedbackTone } from '@/composables/useActionFeedback';
 import { useDeleteIssue } from '@/composables/useDeleteIssue';
 import type { IssueRecord } from '@/types';
 
@@ -16,7 +16,7 @@ export function useIssueItemController(
   onIssueDeleted: (issueId: string) => void,
 ) {
   const { isAdmin } = useSession();
-  const { showToast } = useToast();
+  const { show } = useActionFeedback();
   const display = useIssueDisplay(issue);
   const currentUserSupported = ref(Boolean(issue.value.currentUserSupported));
   const supportCount = ref(issue.value.support_count);
@@ -58,15 +58,15 @@ export function useIssueItemController(
 
   function confirmDelete() {
     if (!isAdmin.value) {
-      showToast('你目前沒有刪除此提案的權限。', 'error');
+      show('你沒有刪除此提案的權限', 'error');
       return;
     }
     openDeleteDialog();
   }
 
-  function showActionToast(message: string, kind: ToastKind) {
+  function showActionFeedback(message: string, tone: FeedbackTone) {
     if (message) {
-      showToast(message, kind);
+      show(message, tone);
     }
   }
 
@@ -98,6 +98,6 @@ export function useIssueItemController(
     confirmDelete,
     performDelete,
     onIssueUpdated,
-    showActionToast,
+    showActionFeedback,
   };
 }

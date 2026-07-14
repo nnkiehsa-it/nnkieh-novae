@@ -1,13 +1,13 @@
 import { useRoute, useRouter } from 'vue-router';
 import { fetchAnnouncementRecordById } from '@/services/announcements';
 import { fetchIssueRecordById } from '@/services/issues';
-import { useToast } from '@/composables/useToast';
+import { useActionFeedback } from '@/composables/useActionFeedback';
 import type { NotificationRecord } from '@/types';
 
 export function useNotificationNavigation() {
   const route = useRoute();
   const router = useRouter();
-  const { showToast } = useToast();
+  const { show } = useActionFeedback();
   let navigationVersion = 0;
 
   function commentQuery(notification: NotificationRecord) {
@@ -22,7 +22,7 @@ export function useNotificationNavigation() {
   async function openNotificationTarget(notification: NotificationRecord) {
     const currentVersion = ++navigationVersion;
     if (notification.type === 'issue_deleted') {
-      showToast('這筆提案已被刪除。', 'info');
+      show('這筆提案已被刪除', 'info');
       if (route.name !== 'notifications') {
         await router.push({ name: 'notifications' });
       }
@@ -54,7 +54,7 @@ export function useNotificationNavigation() {
       return true;
     } catch {
       if (currentVersion === navigationVersion) {
-        showToast('此內容已不存在或你沒有權限查看。', 'error');
+        show('此內容不存在或無法查看', 'error');
       }
       return false;
     }

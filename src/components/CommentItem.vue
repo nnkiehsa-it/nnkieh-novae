@@ -61,7 +61,7 @@
           <button
             v-if="hasReplies"
             type="button"
-            class="reply-toggle relative inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-bold text-brand-700 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 dark:text-brand-300 dark:hover:bg-brand-900/30"
+            class="reply-toggle relative inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-semibold text-ink-600 transition hover:bg-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline/30 dark:text-ink-300 dark:hover:bg-ink-800/70"
             :aria-expanded="isRepliesExpanded"
             @click="setRepliesExpanded(!isRepliesExpanded)"
           >
@@ -191,8 +191,8 @@ watch(
   bottom: 1.25rem;
   left: 0.875rem;
   width: 1.25rem;
-  border-bottom: 1px solid rgb(226 232 240);
-  border-left: 1px solid rgb(226 232 240);
+  border-bottom: 1px solid rgb(var(--color-outline) / 0.2);
+  border-left: 1px solid rgb(var(--color-outline) / 0.2);
   border-bottom-left-radius: 1rem;
   content: '';
   pointer-events: none;
@@ -207,7 +207,7 @@ watch(
 }
 
 :global(.dark) .comment-with-replies::before {
-  border-color: rgb(30 41 59);
+  border-color: rgb(var(--color-outline) / 0.28);
 }
 
 .comment-focus-ring {

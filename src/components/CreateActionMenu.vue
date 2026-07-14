@@ -42,7 +42,7 @@
           v-for="option in issueCategoryOptions"
           :key="option.value"
           type="button"
-          class="content-trigger flex w-full items-center justify-between gap-3 border border-ink-100 px-3 py-3 text-left dark:border-ink-800"
+          class="content-trigger flex w-full items-center justify-between gap-3 border-0 bg-ink-50/60 px-3 py-3 text-left shadow-sm dark:bg-ink-800/40"
           :class="{ 'button-toolbar--active': selectedAction.kind === 'issue' && option.value === selectedAction.category }"
           @click="selectIssueCategory(option.value)"
         >
@@ -50,20 +50,20 @@
             <span class="block text-sm font-semibold text-ink-900 dark:text-ink-100">{{ option.label }}</span>
           </span>
           <span
-            class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs font-bold"
+            class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-inner"
             :class="selectedAction.kind === 'issue' && option.value === selectedAction.category
-              ? 'border-ink-900 bg-ink-900 text-white dark:border-ink-50 dark:bg-ink-50 dark:text-ink-950'
-              : 'border-ink-300 text-transparent dark:border-ink-700'"
+              ? 'bg-ink-800 text-white dark:bg-ink-100 dark:text-ink-950'
+              : 'bg-ink-100 text-transparent dark:bg-ink-800'"
             aria-hidden="true"
           >
-            ✓
+            <AppIcon name="check-circle" :size="3" />
           </span>
         </button>
 
         <button
           v-if="canCreateAnnouncement"
           type="button"
-          class="content-trigger flex w-full items-center justify-between gap-3 border border-ink-100 px-3 py-3 text-left dark:border-ink-800"
+          class="content-trigger flex w-full items-center justify-between gap-3 border-0 bg-ink-50/60 px-3 py-3 text-left shadow-sm dark:bg-ink-800/40"
           :class="{ 'button-toolbar--active': selectedAction.kind === 'announcement' }"
           @click="selectAnnouncement"
         >
@@ -71,13 +71,13 @@
             <span class="block text-sm font-semibold text-ink-900 dark:text-ink-100">公告</span>
           </span>
           <span
-            class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs font-bold"
+            class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-inner"
             :class="selectedAction.kind === 'announcement'
-              ? 'border-ink-900 bg-ink-900 text-white dark:border-ink-50 dark:bg-ink-50 dark:text-ink-950'
-              : 'border-ink-300 text-transparent dark:border-ink-700'"
+              ? 'bg-ink-800 text-white dark:bg-ink-100 dark:text-ink-950'
+              : 'bg-ink-100 text-transparent dark:bg-ink-800'"
             aria-hidden="true"
           >
-            ✓
+            <AppIcon name="check-circle" :size="3" />
           </span>
         </button>
       </div>

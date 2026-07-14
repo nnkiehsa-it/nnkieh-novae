@@ -5,7 +5,7 @@ import { ensureFirebaseAppCheck } from '@/lib/firebase-app-check';
 import { requestAppInstallPrompt, shouldInstallPwaBeforePush } from '@/lib/pwa-install';
 import { withRequestTimeout } from '@/lib/request';
 import { useSession } from '@/composables/useSession';
-import { useToast } from '@/composables/useToast';
+import { useActionFeedback } from '@/composables/useActionFeedback';
 import {
   getPushNotificationPreference,
   registerPushToken,
@@ -119,7 +119,7 @@ function applyPreference(preference: Awaited<ReturnType<typeof getPushNotificati
 
 export function usePushNotifications() {
   const { user } = useSession();
-  const { showToast } = useToast();
+  const { show } = useActionFeedback();
   const deviceId = readOrCreatePushDeviceId();
   const requiresPwaInstall = computed(() =>
     shouldInstallPwaBeforePush(navigator.userAgent, navigator.platform, navigator.maxTouchPoints),
@@ -254,7 +254,7 @@ export function usePushNotifications() {
         foregroundUnsubscribe = messaging.sdk.onMessage(messaging.messaging, (payload) => {
           const title = payload.data?.title ?? '收到新通知';
           const body = payload.data?.body ?? '';
-          showToast(body ? `${title}：${body}` : title, 'info');
+          show(body ? `${title}：${body}` : title, 'info');
         });
       }
       return true;

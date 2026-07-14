@@ -1,13 +1,13 @@
 <template>
   <div class="space-y-5" aria-label="平台統計載入中" aria-busy="true">
-    <header class="space-y-3 border-b border-ink-200/80 pb-5 dark:border-ink-800/80">
+    <header class="space-y-3 pb-2">
       <span class="block h-6 w-24 rounded-full bg-ink-200/60 animate-skeleton dark:bg-ink-700/50"></span>
       <span class="block h-9 w-44 rounded bg-ink-200/60 animate-skeleton dark:bg-ink-700/50"></span>
       <span class="block h-4 w-full max-w-md rounded bg-ink-200/60 animate-skeleton dark:bg-ink-700/50"></span>
     </header>
 
     <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <article v-for="index in 4" :key="index" class="min-h-32 space-y-4 rounded-[1.25rem] border border-ink-200/90 bg-white p-5 shadow-note dark:border-ink-800/80 dark:bg-ink-900">
+      <article v-for="index in 4" :key="index" class="min-h-32 space-y-4 rounded-[var(--radius-outer)] border-0 bg-surface p-5 shadow-elevated dark:bg-surface">
         <span class="block h-3 w-20 rounded bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
         <span class="block h-8 w-24 rounded bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
         <span class="block h-4 w-32 rounded bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
@@ -24,7 +24,7 @@
             </div>
             <span class="h-7 w-16 rounded-full bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
           </div>
-          <div class="mt-4 space-y-px overflow-hidden rounded-2xl border border-ink-200/80 dark:border-ink-800/80">
+          <div class="mt-4 space-y-px overflow-hidden rounded-2xl bg-ink-50/60 shadow-inner dark:bg-ink-800/35">
             <div v-for="row in 4" :key="row" class="flex items-center gap-4 px-4 py-3">
               <span class="h-4 w-24 rounded bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
               <span class="h-2.5 flex-1 rounded-full bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
@@ -41,7 +41,7 @@
             </div>
             <span class="h-7 w-20 rounded-full bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
           </div>
-          <div class="mt-4 space-y-px overflow-hidden rounded-2xl border border-ink-200/80 dark:border-ink-800/80">
+          <div class="mt-4 space-y-px overflow-hidden rounded-2xl bg-ink-50/60 shadow-inner dark:bg-ink-800/35">
             <div v-for="row in 3" :key="row" class="grid grid-cols-[1fr_5rem_5rem_4rem] items-center gap-3 px-4 py-3">
               <span class="h-4 rounded bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>
               <span class="h-4 rounded bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>

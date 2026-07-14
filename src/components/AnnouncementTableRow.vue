@@ -7,6 +7,7 @@
     <div v-if="compactLayout" class="issue-row-mobile list-row-trigger relative overflow-hidden" @click="emit('open', announcement)">
       <div class="flex min-w-0 items-center gap-2 w-full">
         <span class="tag-sm shrink-0 border-ink-200 bg-ink-100/50 text-ink-700 dark:border-ink-800 dark:bg-ink-950/50">
+          <AppIcon name="megaphone" :size="3" :stroke-width="2" />
           公告
         </span>
         <AuthorAvatar :author-uid="announcement.author_uid" :photo-url="announcement.author_photo_url" :name="announcement.author_name" size="sm" :alt-text="`${announcement.author_name} 的頭像`" class="shrink-0" />
@@ -68,6 +69,7 @@
     >
       <div class="flex items-center w-24 shrink-0">
         <span class="tag border-ink-200 bg-ink-100/50 dark:border-ink-800 dark:bg-ink-950/50">
+          <AppIcon name="megaphone" :size="3" :stroke-width="2" />
           公告
         </span>
       </div>
@@ -82,7 +84,7 @@
           class="shrink-0"
         />
         <div class="min-w-0 flex-1 py-0.5 text-left">
-          <div class="truncate text-sm font-semibold tracking-tight text-ink-900 dark:text-ink-100 sm:text-base" :title="announcement.title">
+          <div class="truncate text-sm font-semibold tracking-[0.01em] text-ink-900 dark:text-ink-100 sm:text-base" :title="announcement.title">
             {{ announcement.title }}
           </div>
           <div class="mt-0.5 truncate text-xs text-ink-400 dark:text-ink-500" :title="announcement.author_name">

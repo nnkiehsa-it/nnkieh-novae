@@ -7,7 +7,7 @@
             <div
               v-for="index in 4"
               :key="index"
-              class="flex items-start gap-3 border-b border-ink-100/60 dark:border-ink-800/40 last:border-0 pb-4"
+              class="flex items-start gap-3 rounded-[var(--radius-outer)] bg-surface p-4 shadow-elevated dark:bg-surface"
             >
               <div class="h-10 w-10 shrink-0 rounded-2xl bg-ink-100 dark:bg-ink-800 animate-skeleton"></div>
               <div class="min-w-0 flex-1 space-y-2 pt-1">
@@ -35,12 +35,12 @@
             <p class="mt-1 text-xs leading-5 text-ink-500 dark:text-ink-400">新的提案進度與互動會顯示在這裡</p>
           </div>
 
-          <div v-else class="divide-y divide-ink-100 dark:divide-ink-800/60">
+          <div v-else class="space-y-3">
             <button
               v-for="notification in notifications"
               :key="notification.id"
               type="button"
-              class="relative flex min-h-[92px] w-full items-start gap-3 px-1 py-4 text-left transition-colors hover:bg-ink-50 focus-visible:bg-ink-50 dark:hover:bg-ink-800/50 dark:focus-visible:bg-ink-800/50"
+              class="relative flex min-h-[92px] w-full items-start gap-3 rounded-[var(--radius-outer)] bg-surface p-4 text-left shadow-elevated transition duration-300 hover:-translate-y-0.5 hover:shadow-floating focus-visible:bg-ink-50 dark:bg-surface dark:focus-visible:bg-ink-800/50"
               @click.stop="openNotification(notification)"
             >
               <AuthorAvatar
@@ -66,7 +66,7 @@
                   <span class="line-clamp-2 text-sm font-semibold leading-5 text-ink-950 dark:text-ink-50">
                     {{ notificationTitle(notification) }}
                   </span>
-                  <span v-if="!notification.is_read" class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-secondary" aria-label="未讀"></span>
+                  <span v-if="!notification.is_read" class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-info shadow-sm" aria-label="未讀"></span>
                 </span>
                 <span class="mt-0.5 line-clamp-2 text-xs leading-5 text-ink-600 dark:text-ink-300">
                   {{ notificationBody(notification) }}
@@ -147,11 +147,13 @@ function notificationIcon(notification: NotificationRecord): AppIconName {
 }
 
 function notificationIconClass(notification: NotificationRecord) {
-  if (notification.type === 'announcement_created') return 'bg-secondary-container text-on-secondary-container';
-  if (notification.type === 'support_goal_met') return 'bg-primary-container text-on-primary-container';
+  if (notification.type === 'announcement_created') return 'bg-info-container text-on-info-container';
+  if (notification.type === 'support_goal_met') return 'bg-success-container text-on-success-container';
   if (notification.type === 'issue_deleted') return 'bg-error-container text-on-error-container';
   if (notification.type === 'issue_status_changed' && (notification.new_status === 'infeasible' || notification.new_status === 'auto-rejected' || notification.new_status === 'review-rejected')) {
-    return 'bg-warning-container text-on-warning-container';
+    return notification.new_status === 'infeasible'
+      ? 'bg-infeasible-container text-on-infeasible-container'
+      : 'bg-error-container text-on-error-container';
   }
   return 'bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-300';
 }

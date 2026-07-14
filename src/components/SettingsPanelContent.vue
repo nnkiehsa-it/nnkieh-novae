@@ -5,7 +5,7 @@
       class="flex items-start justify-between gap-3 border-b border-ink-100 px-4 py-3 dark:border-ink-700"
     >
       <div>
-        <p class="text-base font-bold tracking-tight text-ink-950 dark:text-ink-50">我的</p>
+        <p class="text-base font-semibold tracking-[0.015em] text-ink-950 dark:text-ink-50">我的</p>
         <p class="mt-0.5 text-xs text-ink-500 dark:text-ink-400">帳號與通知偏好</p>
       </div>
       <button

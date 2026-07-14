@@ -11,7 +11,7 @@
       <div class="flex items-center justify-between border-b border-ink-200 dark:border-ink-800 pb-4 shrink-0">
         <div class="min-w-0">
           <span class="text-xs font-semibold tracking-wide text-ink-500 dark:text-ink-400">發起新提案</span>
-          <h2 class="mt-1 text-xl font-bold tracking-tight text-ink-950 dark:text-ink-50">發布分類至「{{ categoryLabel }}」</h2>
+          <h2 class="mt-1 text-xl font-semibold tracking-[0.015em] text-ink-950 dark:text-ink-50">發布至「{{ categoryLabel }}」</h2>
         </div>
         <button
           type="button"
@@ -91,8 +91,8 @@
             >
               取消
             </button>
-            <button type="submit" class="button-primary flex-1 px-5 text-sm font-semibold sm:flex-none" :disabled="submitting || uploading">
-              確認發布
+            <button type="submit" class="button-primary flex-1 px-5 text-sm font-semibold sm:flex-none" :disabled="submitting || uploading" :aria-busy="submitting || undefined">
+              <BusyButtonContent :busy="submitting" label="確認發布" busy-label="發布中" />
             </button>
           </div>
         </div>
@@ -109,6 +109,7 @@ import { useIssueComposerForm } from '@/composables/useIssueComposerForm';
 import DialogOverlay from '@/components/ui/DialogOverlay.vue';
 import MarkdownImageEditor from '@/components/ui/MarkdownImageEditor.vue';
 import AppIcon from '@/components/ui/AppIcon.vue';
+import BusyButtonContent from '@/components/ui/BusyButtonContent.vue';
 import type { IssueRecord, WritableIssueCategory } from '@/types';
 import { RATE_LIMITS } from '@/generated/rate-limits';
 

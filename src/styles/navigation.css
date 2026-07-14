@@ -9,9 +9,9 @@
 
   .app-bottom-nav__item:active:not([aria-disabled='true']) {
     border-radius: 9999px;
-    background-color: rgb(226 232 240 / 0.72);
+    background-color: rgb(var(--color-secondary-container) / 0.82);
     box-shadow: inset 0 1px 3px rgb(var(--color-shadow) / 0.08);
-    color: rgb(15 23 42);
+    color: rgb(var(--color-on-secondary-container));
     opacity: 0.96;
     transform: translateY(0.5px) scale(0.985);
   }
@@ -95,19 +95,19 @@
   }
 
   .app-sidebar__brand {
-    @apply flex h-12 min-w-0 items-center gap-3 rounded-2xl text-ink-900 hover:bg-ink-100 dark:text-ink-100 dark:hover:bg-ink-800;
+    @apply flex h-12 min-w-0 items-center gap-3 rounded-2xl text-ink-900 hover:bg-ink-100/80 dark:text-ink-100 dark:hover:bg-ink-800;
     width: 100%;
     padding-inline: 0.75rem;
   }
 
   .app-sidebar__brand-label {
-    @apply min-w-0 truncate text-sm font-bold tracking-tight;
+    @apply min-w-0 truncate text-sm font-semibold tracking-[0.015em];
     opacity: 0;
     transition: opacity var(--motion-duration-fast) ease;
   }
 
   .app-sidebar__toggle {
-    @apply absolute right-0 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full border border-ink-200 bg-white text-ink-500 shadow-sm hover:text-ink-900 dark:border-ink-700 dark:bg-ink-900 dark:text-ink-400 dark:hover:text-ink-100;
+    @apply absolute right-0 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full border-0 bg-surface text-ink-500 shadow-note hover:text-ink-900 dark:bg-surface dark:text-ink-400 dark:hover:text-ink-100;
   }
 
   .app-sidebar__item {
@@ -115,7 +115,7 @@
   }
 
   .app-sidebar__item--active {
-    @apply bg-ink-100 text-ink-900 dark:bg-ink-800/70 dark:text-ink-100;
+    @apply bg-ink-100/90 text-ink-900 shadow-note dark:bg-ink-800/80 dark:text-ink-100;
   }
 
   .app-sidebar__item::after {

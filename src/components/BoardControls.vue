@@ -2,7 +2,7 @@
   <div class="relative z-20 space-y-3">
     <div class="flex flex-row items-center justify-between gap-3 md:mt-0">
       <div class="hidden min-w-0 flex-row items-center gap-3 sm:gap-4 md:flex md:gap-6">
-        <h2 class="shrink-0 text-xl font-bold tracking-tight text-ink-950 dark:text-ink-50 md:text-2xl">提案</h2>
+        <h2 class="shrink-0 text-xl font-semibold tracking-[0.015em] text-ink-950 dark:text-ink-50 md:text-2xl">提案</h2>
 
         <div
           v-if="activeFilter !== 'my-proposals'"
@@ -39,7 +39,7 @@
                   @click="handleCategoryChangeInPopover(option.value)"
                 >
                   <span>{{ option.label }}</span>
-                  <span v-if="option.value === activeFilter" class="text-xs">✓</span>
+                  <AppIcon v-if="option.value === activeFilter" name="check-circle" :size="3.5" />
                 </button>
               </div>
             </div>
@@ -83,7 +83,7 @@
                   @click="handleCategoryChangeInPopover(option.value)"
                 >
                   <span>{{ option.label }}</span>
-                  <span v-if="option.value === activeFilter" class="text-xs">✓</span>
+                  <AppIcon v-if="option.value === activeFilter" name="check-circle" :size="3.5" />
                 </button>
               </div>
             </div>
@@ -126,7 +126,7 @@
                   @click="selectSort(option.value)"
                 >
                   <span>{{ option.label }}</span>
-                  <span v-if="option.value === sortOption" class="text-xs">✓</span>
+                  <AppIcon v-if="option.value === sortOption" name="check-circle" :size="3.5" />
                 </button>
               </div>
             </div>

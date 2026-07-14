@@ -1,6 +1,6 @@
 <template>
   <aside
-    class="app-sidebar fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-ink-200/80 bg-white/95 py-4 backdrop-blur-xl dark:border-ink-800/80 dark:bg-ink-950/95 md:flex"
+    class="app-sidebar fixed inset-y-0 left-0 z-40 hidden flex-col border-0 bg-surface/94 py-4 shadow-elevated backdrop-blur-xl dark:bg-surface/94 md:flex"
     aria-label="桌面主要導覽"
     @click="handleSidebarClick"
   >

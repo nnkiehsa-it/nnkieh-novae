@@ -28,9 +28,9 @@
     />
 
     <div v-else-if="stats && operations" class="space-y-5">
-      <header class="border-b border-ink-200/80 pb-4 dark:border-ink-800/80">
+      <header class="pb-2">
         <div class="min-w-0">
-          <h2 class="hidden text-2xl font-bold tracking-tight text-ink-950 dark:text-ink-50 md:block sm:text-3xl">統計</h2>
+          <h2 class="hidden text-2xl font-semibold tracking-[0.015em] text-ink-950 dark:text-ink-50 md:block sm:text-3xl">統計</h2>
           <p class="max-w-2xl text-sm leading-6 text-ink-500 dark:text-ink-400 md:mt-2">
             快速掃描同步、排程與清理狀態，成果數字保留為維護時的背景脈絡。
           </p>
@@ -41,11 +41,11 @@
         <article
           v-for="item in operationSummaryCards"
           :key="item.label"
-          class="rounded-[1.25rem] border p-5 shadow-note"
+          class="rounded-[var(--radius-outer)] border-0 p-5 shadow-elevated"
           :class="item.toneClass"
         >
           <p class="text-xs font-semibold text-current/65">{{ item.label }}</p>
-          <p class="mt-3 text-2xl font-bold tabular-nums tracking-tight text-current">{{ item.value }}</p>
+          <p class="mt-3 text-2xl font-semibold tabular-nums tracking-[0.01em] text-current">{{ item.value }}</p>
           <p class="mt-2 text-xs font-medium leading-5 text-current/70">{{ item.caption }}</p>
         </article>
       </section>
@@ -60,7 +60,7 @@
               </div>
               <span class="dashboard-total">{{ operationsStatus.label }}</span>
             </div>
-            <div class="mt-4 divide-y divide-ink-200/80 overflow-hidden rounded-xl border border-ink-200/80 dark:divide-ink-800/80 dark:border-ink-800/80">
+            <div class="mt-4 divide-y divide-ink-200/35 overflow-hidden rounded-[var(--radius-inner)] bg-ink-50/60 shadow-inner dark:divide-ink-700/30 dark:bg-ink-800/35">
               <div
                 v-for="row in operationRows"
                 :key="row.label"
@@ -84,8 +84,8 @@
               </div>
               <span class="dashboard-total">{{ stats.total_issues_created + stats.total_comments_created }} 筆內容</span>
             </div>
-            <div class="mt-4 overflow-hidden rounded-xl border border-ink-200/80 dark:border-ink-800/80">
-              <div class="grid grid-cols-[1fr_5rem_5rem_4rem] gap-3 border-b border-ink-200/80 bg-ink-50/70 px-4 py-2 text-xs font-bold text-ink-500 dark:border-ink-800/80 dark:bg-ink-950/40 dark:text-ink-400">
+            <div class="mt-4 overflow-hidden rounded-[var(--radius-inner)] bg-ink-50/60 shadow-inner dark:bg-ink-800/35">
+              <div class="grid grid-cols-[1fr_5rem_5rem_4rem] gap-3 border-b border-ink-200/35 px-4 py-2.5 text-xs font-semibold tracking-[0.02em] text-ink-500 dark:border-ink-700/30 dark:text-ink-400">
                 <span>分類</span>
                 <span class="text-right">提案</span>
                 <span class="text-right">留言</span>
@@ -94,7 +94,7 @@
               <div
                 v-for="row in categoryComparisonRows"
                 :key="row.label"
-                class="grid grid-cols-[1fr_5rem_5rem_4rem] items-center gap-3 border-b border-ink-200/70 px-4 py-3 last:border-b-0 dark:border-ink-800/70"
+                class="grid grid-cols-[1fr_5rem_5rem_4rem] items-center gap-3 border-b border-ink-200/30 px-4 py-3.5 last:border-b-0 dark:border-ink-700/25"
               >
                 <div class="min-w-0">
                   <p class="truncate text-sm font-bold text-ink-900 dark:text-ink-100">{{ row.label }}</p>
@@ -122,7 +122,7 @@
               <div
                 v-for="item in heroStats"
                 :key="item.label"
-                class="rounded-xl border border-ink-200/80 px-4 py-3 dark:border-ink-800/80"
+                class="rounded-[var(--radius-inner)] bg-ink-50/70 px-4 py-3 shadow-note dark:bg-ink-800/40"
               >
                 <div class="flex items-center justify-between gap-3">
                   <p class="text-sm font-semibold text-ink-600 dark:text-ink-300">{{ item.label }}</p>

@@ -30,7 +30,7 @@
               type="button"
               class="content-trigger flex w-full items-center justify-between gap-3 border px-3 py-3 text-left"
               :class="reviewDecision === option.value
-                ? 'button-toolbar--active border-secondary/50'
+                ? 'button-toolbar--active shadow-note'
                 : 'border-ink-100 dark:border-ink-800'"
               @click="reviewDecision = option.value"
             >
@@ -39,13 +39,13 @@
                 <span class="mt-0.5 block text-xs leading-5 text-ink-500 dark:text-ink-400">{{ option.description }}</span>
               </span>
               <span
-                class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs font-bold"
+                class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-inner"
                 :class="reviewDecision === option.value
-                  ? 'border-ink-900 bg-ink-900 text-white dark:border-ink-50 dark:bg-ink-50 dark:text-ink-950'
-                  : 'border-ink-300 text-transparent dark:border-ink-700'"
+                  ? 'bg-ink-800 text-white dark:bg-ink-100 dark:text-ink-950'
+                  : 'bg-ink-100 text-transparent dark:bg-ink-800'"
                 aria-hidden="true"
               >
-                ✓
+                <AppIcon name="check-circle" :size="3" />
               </span>
             </button>
           </div>
@@ -54,7 +54,7 @@
         <!-- Rejection reason input (Step 2) -->
         <div v-else-if="step === 2" class="space-y-2">
           <label class="field-label" for="review-rejection-reason">不通過原因</label>
-          <div class="overflow-hidden rounded-xl border border-ink-200 bg-white shadow-sm transition-colors focus-within:border-secondary focus-within:ring-2 focus-within:ring-secondary/20 dark:border-ink-800 dark:bg-ink-900">
+          <div class="overflow-hidden rounded-[var(--radius-inner)] border-0 bg-surface shadow-note transition-colors focus-within:ring-2 focus-within:ring-outline/25 dark:bg-surface">
             <textarea
               id="review-rejection-reason"
               v-model="rejectionReason"
@@ -82,7 +82,7 @@
           :disabled="saving"
           @click="handlePrimaryClick"
         >
-          {{ idlePrimaryLabel }}
+          <BusyButtonContent :busy="saving" :label="idlePrimaryLabel" busy-label="更新中" />
         </button>
       </div>
     </section>
@@ -92,9 +92,11 @@
 <script setup lang="ts">
 import { computed, ref, toRef, watch } from 'vue';
 import DialogOverlay from '@/components/ui/DialogOverlay.vue';
+import BusyButtonContent from '@/components/ui/BusyButtonContent.vue';
+import AppIcon from '@/components/ui/AppIcon.vue';
 import { useBodyScrollLock } from '@/composables/useBodyScrollLock';
 import { useDialogFocus } from '@/composables/useDialogFocus';
-import { useToast } from '@/composables/useToast';
+import { useActionFeedback } from '@/composables/useActionFeedback';
 import { moderateIssueStatus } from '@/services/issues';
 import type { IssueRecord } from '@/types';
 
@@ -128,7 +130,7 @@ const reviewDecision = ref<'approved' | 'rejected'>('approved');
 const rejectionReason = ref(props.issue.review_rejection_reason ?? '');
 const saving = ref(false);
 const errorMsg = ref('');
-const { showProgressToast } = useToast();
+const { start } = useActionFeedback();
 
 const idlePrimaryLabel = computed(() => {
   if (step.value === 1) {
@@ -170,29 +172,29 @@ function handleSecondaryClick() {
 async function submitReview() {
   saving.value = true;
   errorMsg.value = '';
-  const progressToast = showProgressToast('正在更新提案審核...');
+  const feedbackHandle = start('正在更新提案審核');
   try {
     if (reviewDecision.value === 'approved') {
       const updated = await moderateIssueStatus(props.issue.id, 'pending');
       emit('success', updated);
-      progressToast.succeed('提案審核已通過。');
+      feedbackHandle.succeed('提案審核已通過');
       emit('close');
     } else {
       const reason = rejectionReason.value.replace(/\s+/g, ' ').trim();
       if (!reason) {
         errorMsg.value = '請輸入審核未通過原因。';
-        progressToast.fail(errorMsg.value);
+        feedbackHandle.fail(errorMsg.value);
         saving.value = false;
         return;
       }
       const updated = await moderateIssueStatus(props.issue.id, 'review-rejected', reason);
       emit('success', updated);
-      progressToast.succeed('提案審核已更新。');
+      feedbackHandle.succeed('提案審核已更新');
       emit('close');
     }
   } catch (caught) {
     errorMsg.value = caught instanceof Error ? caught.message : '審核處理失敗，請稍後再試。';
-    progressToast.fail(errorMsg.value);
+    feedbackHandle.fail(errorMsg.value);
   } finally {
     saving.value = false;
   }

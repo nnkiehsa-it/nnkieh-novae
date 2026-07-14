@@ -9,7 +9,7 @@
     >
       <AppIcon :name="icon" :size="8" :stroke-width="1.5" />
     </div>
-    <h2 class="mt-5 text-xl font-bold tracking-tight text-ink-950 dark:text-ink-50">
+    <h2 class="mt-5 text-xl font-semibold tracking-[0.015em] text-ink-950 dark:text-ink-50">
       {{ title }}
     </h2>
     <p v-if="description" class="mt-2 text-sm leading-6 text-ink-500 dark:text-ink-400">
@@ -51,7 +51,7 @@ const emit = defineEmits<{
 
 const toneClass = computed(() =>
   props.tone === 'danger'
-    ? 'text-red-500 ring-red-200/80 dark:text-red-300 dark:ring-red-900/60'
+    ? 'bg-error-container text-error ring-error/15'
     : 'text-ink-400 ring-ink-200/80 dark:text-ink-500 dark:ring-ink-800'
 );
 </script>

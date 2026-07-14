@@ -13,7 +13,7 @@
           <AppIcon name="chevron-left" :size="5" />
         </button>
         <h1 class="app-header__title flex h-10 min-w-0 shrink-0 items-center text-ink-950 dark:text-ink-50" :aria-label="title">
-          <span class="truncate text-2xl font-bold leading-none tracking-tight">{{ title }}</span>
+          <span class="truncate text-2xl font-semibold leading-tight tracking-[0.015em]">{{ title }}</span>
         </h1>
       </div>
     </div>

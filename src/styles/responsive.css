@@ -8,7 +8,7 @@
   position: fixed;
   inset: 0 0 auto;
   height: env(safe-area-inset-top);
-  background: rgb(15 23 42 / 0.5);
+  background: rgb(33 31 29 / 0.52);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   content: '';
@@ -149,52 +149,24 @@
   transform: translateY(-3px) scale(0.996);
 }
 
-.toast-enter-active,
-.toast-leave-active,
-.toast-move {
+.action-feedback-enter-active,
+.action-feedback-leave-active {
   transition:
-    opacity 0.26s var(--motion-ease-enter),
-    transform 0.32s var(--motion-ease-enter);
+    opacity var(--motion-duration) var(--motion-ease-enter),
+    transform var(--motion-duration-panel) var(--motion-ease-enter),
+    filter var(--motion-duration) var(--motion-ease-enter);
 }
 
-.toast-enter-active {
-  animation: toast-drop-in 0.48s var(--motion-ease-enter);
-}
-
-.toast-leave-active {
+.action-feedback-leave-active {
   transition-duration: var(--motion-duration-fast);
   transition-timing-function: var(--motion-ease-exit);
 }
 
-.toast-enter-from {
+.action-feedback-enter-from,
+.action-feedback-leave-to {
   opacity: 0;
-  translate: 0 -24px;
-}
-
-.toast-leave-to {
-  opacity: 0;
-  translate: 0 -10px;
-}
-
-@keyframes toast-drop-in {
-  0% {
-    opacity: 0;
-    transform: translateY(-28px) scale(0.92) rotateX(-12deg);
-    filter: blur(5px);
-  }
-  58% {
-    opacity: 1;
-    transform: translateY(4px) scale(1.018) rotateX(2deg);
-    filter: blur(0);
-  }
-  78% {
-    transform: translateY(-2px) scale(0.995) rotateX(0);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1) rotateX(0);
-    filter: blur(0);
-  }
+  transform: translateY(14px) scale(0.97);
+  filter: blur(3px);
 }
 
 .dialog-enter-active {
@@ -305,5 +277,3 @@
     );
   }
 }
-
-

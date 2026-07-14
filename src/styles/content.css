@@ -1,7 +1,7 @@
 @layer components {
   /* ─── Issue Table Layout ─────────────────────────────── */
   .issue-table {
-    @apply overflow-hidden rounded-[var(--radius-outer)] border border-ink-200/80 bg-white dark:border-ink-800/80 dark:bg-ink-900;
+    @apply overflow-visible border-0 bg-transparent;
   }
 
   @media (min-width: 768px) {
@@ -12,34 +12,38 @@
   }
 
   .issue-table-header {
-    @apply grid px-4 py-2.5
-           text-xs font-semibold tracking-normal
-           text-ink-400 dark:text-ink-500
-           border-b border-ink-200/70 bg-ink-50/70 dark:border-ink-800 dark:bg-ink-950/30;
+    @apply grid px-5 pb-2 pt-1
+           text-xs font-semibold tracking-[0.02em]
+           text-ink-500 dark:text-ink-400;
   }
 
   .issue-table-row {
-    @apply grid items-center border-b border-ink-100/80 px-4 py-3
+    @apply mb-3 grid items-center border-0 bg-surface px-5 py-4 shadow-elevated
            text-sm text-ink-700 dark:text-ink-200
-           hover:bg-ink-50/70 dark:border-ink-800/70 dark:hover:bg-ink-800/35
-           transition-colors duration-150;
+           dark:bg-surface
+           transition duration-300;
+    border-radius: var(--radius-outer);
   }
 
   /* Condensed mobile row (shown only below md) */
   .issue-row-mobile {
-    @apply flex flex-col gap-1 border-b border-ink-100/80 px-4 py-3.5
+    @apply mb-3 flex flex-col gap-2 border-0 bg-surface px-4 py-4 shadow-elevated
            text-sm text-ink-700 dark:text-ink-200
-           hover:bg-ink-50/70 dark:border-ink-800/70 dark:hover:bg-ink-800/35
-           transition-colors duration-150;
+           dark:bg-surface
+           transition duration-300;
+    border-radius: var(--radius-outer);
   }
 
-  .issue-table [role='rowgroup'] > div > :last-child .issue-table-row,
-  .issue-table [role='rowgroup'] > div > :last-child .issue-row-mobile {
-    border-bottom: 0;
+  @media (hover: hover) and (pointer: fine) {
+    .issue-table-row:hover,
+    .issue-row-mobile:hover {
+      box-shadow: var(--shadow-floating);
+      transform: translateY(-2px);
+    }
   }
 
   .settings-scroll {
-    @apply space-y-4 bg-ink-50/80 p-4 dark:bg-ink-950/35;
+    @apply space-y-5 bg-transparent p-4;
   }
 
   .settings-scroll--flat {
@@ -47,7 +51,7 @@
   }
 
   .settings-group {
-    @apply overflow-hidden rounded-[var(--radius-outer)] border border-ink-200/80 bg-white px-4 dark:border-ink-800/80 dark:bg-ink-900;
+    @apply overflow-hidden rounded-[var(--radius-outer)] border-0 bg-surface px-4 shadow-elevated dark:bg-surface;
   }
 
   .settings-group-title {
@@ -55,15 +59,15 @@
   }
 
   .settings-row {
-    @apply flex w-full items-center justify-between gap-4 border-b border-ink-100/80 py-3.5 text-left last:border-b-0 hover:bg-ink-50/70 focus-visible:bg-ink-50/70 dark:border-ink-800/70 dark:hover:bg-ink-800/35 dark:focus-visible:bg-ink-800/35;
+    @apply flex w-full items-center justify-between gap-4 border-b border-ink-200/35 py-4 text-left last:border-b-0 hover:bg-ink-50/70 focus-visible:bg-ink-50/70 dark:border-ink-700/30 dark:hover:bg-ink-800/35 dark:focus-visible:bg-ink-800/35;
   }
 
   .dashboard-surface {
-    @apply rounded-[var(--radius-outer)] border border-ink-200/80 bg-white p-5 shadow-none dark:border-ink-800/80 dark:bg-ink-900;
+    @apply rounded-[var(--radius-outer)] border-0 bg-surface p-5 shadow-elevated dark:bg-surface;
   }
 
   .dashboard-metric {
-    @apply rounded-[var(--radius-outer)] border border-ink-200/80 bg-white p-5 shadow-none dark:border-ink-800/80 dark:bg-ink-900;
+    @apply rounded-[var(--radius-outer)] border-0 bg-surface p-5 shadow-elevated dark:bg-surface;
   }
 
   .dashboard-section-head {
@@ -71,7 +75,7 @@
   }
 
   .dashboard-section-title {
-    @apply text-base font-bold tracking-tight text-ink-950 dark:text-ink-50;
+    @apply text-base font-semibold tracking-[0.015em] text-ink-950 dark:text-ink-50;
   }
 
   .dashboard-section-subtitle {
@@ -91,7 +95,7 @@
   }
 
   .dialog-title {
-    @apply mt-1 text-xl font-bold tracking-tight text-ink-950 dark:text-ink-50;
+    @apply mt-1 text-xl font-semibold tracking-[0.015em] text-ink-950 dark:text-ink-50;
   }
 
   .dialog-description {

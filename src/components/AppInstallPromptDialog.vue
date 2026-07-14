@@ -18,7 +18,7 @@
             </div>
 
             <div class="min-w-0 flex-1">
-              <h2 id="app-install-prompt-title" class="text-[1.75rem] font-bold tracking-tight text-ink-950 dark:text-ink-50 md:text-3xl">
+              <h2 id="app-install-prompt-title" class="text-[1.75rem] font-semibold tracking-[0.015em] text-ink-950 dark:text-ink-50 md:text-3xl">
                 {{ content.title }}
               </h2>
               <p v-if="content.description" id="app-install-prompt-description" class="mt-2 max-w-2xl text-sm leading-6 text-ink-600 dark:text-ink-300 md:text-base">
@@ -41,7 +41,7 @@
 
         <div class="mt-6">
           <div class="flex items-center justify-between gap-3">
-            <h3 class="text-base font-bold tracking-tight text-ink-950 dark:text-ink-50">安裝步驟</h3>
+            <h3 class="text-base font-semibold tracking-[0.015em] text-ink-950 dark:text-ink-50">安裝步驟</h3>
             <span class="tag">{{ content.steps.length }} 個步驟</span>
           </div>
 

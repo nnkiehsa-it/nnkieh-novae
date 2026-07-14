@@ -1,5 +1,5 @@
 <template>
-  <div ref="tableRef" class="divide-y divide-ink-100 dark:divide-ink-800/60">
+  <div ref="tableRef">
     <template v-if="resolvedCompactLayout">
       <div
         v-for="i in rows"

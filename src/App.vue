@@ -21,7 +21,7 @@
         </div>
       </Transition>
     </RouterView>
-    <ToastViewport />
+    <ActionFeedbackBar />
     <PushPermissionPromptDialog
       :open="isPushPromptOpen"
       :busy="pushPromptBusy"
@@ -73,20 +73,19 @@ import AppStartupScreen from '@/components/AppStartupScreen.vue';
 import AppInstallPromptDialog from '@/components/AppInstallPromptDialog.vue';
 import AppUpdatePromptDialog from '@/components/AppUpdatePromptDialog.vue';
 import PushPermissionPromptDialog from '@/components/PushPermissionPromptDialog.vue';
-import ToastViewport from '@/components/ToastViewport.vue';
+import ActionFeedbackBar from '@/components/ActionFeedbackBar.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useAppInstallPrompt } from '@/composables/useAppInstallPrompt';
 import { useAppStartupGate } from '@/composables/useAppStartupGate';
 import { useAppUpdate } from '@/composables/useAppUpdate';
 import { usePushPermissionPrompt } from '@/composables/usePushPermissionPrompt';
 import { useSession } from '@/composables/useSession';
-import { useToast } from '@/composables/useToast';
+import { useActionFeedback } from '@/composables/useActionFeedback';
 import { computed, watch } from 'vue';
 import { DEFAULT_ISSUE_ROUTE_FILTER } from '@/constants/categories';
 
 const APP_RELEASE_MARKER = '2026-06-27-1516';
 const LAST_APP_VERSION_STORAGE_KEY = 'novae:last-app-version';
-const LEGACY_PENDING_UPDATE_TOAST_STORAGE_KEY = 'novae:pending-update-toast';
 const PENDING_UPDATE_VERSION_STORAGE_KEY = 'novae:pending-update-version';
 
 if (typeof document !== 'undefined') {
@@ -196,7 +195,7 @@ watch(
   { immediate: true },
 );
 
-const { showToast } = useToast();
+const { show } = useActionFeedback();
 
 watch(
   startupGateOpen,
@@ -213,10 +212,9 @@ watch(
 
       if (completedPendingUpdate || (isNewVersion && !pendingUpdateVersion)) {
         if (!installPromptMode.value) {
-          showToast('版本已成功更新', 'success');
+          show('版本已更新', 'success');
         }
       }
-      localStorage.removeItem(LEGACY_PENDING_UPDATE_TOAST_STORAGE_KEY);
       if (completedPendingUpdate) {
         localStorage.removeItem(PENDING_UPDATE_VERSION_STORAGE_KEY);
       }

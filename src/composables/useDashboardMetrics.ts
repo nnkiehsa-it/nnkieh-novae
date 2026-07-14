@@ -40,22 +40,22 @@ export function useDashboardMetrics(
           ? `最早 ${formatDate(operations.value.oldest_pending_sync_at)}`
           : '目前沒有等待項目',
         toneClass: operations.value.pending_notion_sync_count > 0
-          ? 'border-warning/35 bg-warning-container/30 text-on-warning-container'
-          : 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-100',
+          ? 'bg-warning-container text-on-warning-container'
+          : 'bg-success-container text-on-success-container',
       },
       {
         label: '同步異常',
         value: formatCappedCount(operations.value.failed_notion_sync_count, operations.value.failed_notion_sync_capped),
         caption: operations.value.next_sync_count > 0 ? `下一輪 ${operations.value.next_sync_count} 筆` : '沒有下一輪聚合項目',
         toneClass: operations.value.failed_notion_sync_count > 0
-          ? 'border-error/35 bg-error-container/40 text-on-error-container'
-          : 'border-ink-200 bg-white text-ink-900 dark:border-ink-800 dark:bg-ink-900 dark:text-ink-100',
+          ? 'bg-error-container text-on-error-container'
+          : 'bg-surface text-ink-900 dark:bg-surface dark:text-ink-100',
       },
       {
         label: '最近活動',
         value: updatedLabel.value,
         caption: '最新活動時間',
-        toneClass: 'border-ink-200 bg-white text-ink-900 dark:border-ink-800 dark:bg-ink-900 dark:text-ink-100',
+        toneClass: 'bg-surface text-ink-900 dark:bg-surface dark:text-ink-100',
       },
     ];
   });
@@ -71,35 +71,35 @@ export function useDashboardMetrics(
           ? `最早等待：${formatDate(operations.value.oldest_pending_sync_at)}`
           : '目前沒有等待同步的工作',
         statusLabel: operations.value.failed_notion_sync_count > 0 ? '異常' : operations.value.pending_notion_sync_count > 0 ? '排隊中' : '正常',
-        toneClass: operations.value.failed_notion_sync_count > 0 ? 'text-error' : operations.value.pending_notion_sync_count > 0 ? 'text-warning' : 'text-emerald-600 dark:text-emerald-300',
+        toneClass: operations.value.failed_notion_sync_count > 0 ? 'text-error' : operations.value.pending_notion_sync_count > 0 ? 'text-warning' : 'text-success',
       },
       {
         label: '通知與同步',
         value: `${formatCappedCount(operations.value.failed_outbox_count, operations.value.failed_outbox_capped)} 失敗`,
         detail: '通知、同步與清理工作的處理結果',
         statusLabel: operations.value.failed_outbox_count > 0 ? '需處理' : '正常',
-        toneClass: operations.value.failed_outbox_count > 0 ? 'text-error' : 'text-emerald-600 dark:text-emerald-300',
+        toneClass: operations.value.failed_outbox_count > 0 ? 'text-error' : 'text-success',
       },
       {
         label: '推播通知',
         value: `${formatCappedCount(operations.value.failed_push_delivery_count, operations.value.failed_push_delivery_capped)} 異常`,
         detail: '背景推播配送結果彙總',
         statusLabel: operations.value.failed_push_delivery_count > 0 ? '需查看' : '正常',
-        toneClass: operations.value.failed_push_delivery_count > 0 ? 'text-error' : 'text-emerald-600 dark:text-emerald-300',
+        toneClass: operations.value.failed_push_delivery_count > 0 ? 'text-error' : 'text-success',
       },
       {
         label: '圖片上傳',
         value: `${formatCappedCount(operations.value.stuck_upload_count, operations.value.stuck_upload_capped)} 卡住`,
         detail: '超過 20 分鐘仍未完成的圖片處理',
         statusLabel: operations.value.stuck_upload_count > 0 ? '需清理' : '正常',
-        toneClass: operations.value.stuck_upload_count > 0 ? 'text-warning' : 'text-emerald-600 dark:text-emerald-300',
+        toneClass: operations.value.stuck_upload_count > 0 ? 'text-warning' : 'text-success',
       },
       {
         label: '刪除清理',
         value: `${formatCappedCount(operations.value.cleanup_backlog_count, operations.value.cleanup_backlog_capped)} 待清`,
         detail: '外部圖片與同步頁面的清理工作',
         statusLabel: operations.value.cleanup_backlog_count > 0 ? '待維護' : '正常',
-        toneClass: operations.value.cleanup_backlog_count > 0 ? 'text-warning' : 'text-emerald-600 dark:text-emerald-300',
+        toneClass: operations.value.cleanup_backlog_count > 0 ? 'text-warning' : 'text-success',
       },
       {
         label: '維護排程',
@@ -114,7 +114,7 @@ export function useDashboardMetrics(
           ? 'text-error'
           : maintenance.status === 'running' || maintenance.status === 'attention'
             ? 'text-warning'
-            : 'text-emerald-600 dark:text-emerald-300',
+            : 'text-success',
       },
     ];
   });
@@ -158,19 +158,19 @@ function statusView(status: PlatformDashboardOperations['overall_status']) {
       return {
         label: '需處理',
         caption: '有失敗事件需要管理員查看',
-        toneClass: 'border-error/35 bg-error-container/40 text-on-error-container',
+        toneClass: 'bg-error-container text-on-error-container',
       };
     case 'attention':
       return {
         label: '注意',
         caption: '有排隊或待清理項目',
-        toneClass: 'border-warning/35 bg-warning-container/30 text-on-warning-container',
+        toneClass: 'bg-warning-container text-on-warning-container',
       };
     case 'healthy':
       return {
         label: '正常',
         caption: '目前沒有快速掃描到異常',
-        toneClass: 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-100',
+        toneClass: 'bg-success-container text-on-success-container',
       };
   }
 }
@@ -188,8 +188,8 @@ function buildCategoryComparisonRows(stats: PlatformDashboardStats | null) {
 
   const total = Math.max(1, stats.total_issues_created + stats.total_comments_created);
   const barClasses = [
-    'bg-emerald-500 dark:bg-emerald-300',
-    'bg-indigo-500 dark:bg-indigo-300',
+    'bg-success',
+    'bg-processing',
     'bg-ink-700 dark:bg-ink-100',
   ];
 

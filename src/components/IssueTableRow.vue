@@ -7,6 +7,7 @@
     <div v-if="compactLayout" class="issue-row-mobile list-row-trigger relative overflow-hidden" @click="openDetails()">
       <div class="flex min-w-0 items-center gap-2 w-full">
         <span class="tag-sm shrink-0" :class="statusClass">
+          <AppIcon :name="statusIcon" :size="3" :stroke-width="2" />
           {{ statusLabel }}
         </span>
         <UserAvatar v-if="issue.canViewAuthor" :photo-url="displayPhotoUrl" :name="displayAuthorName" size="sm" :alt-text="`${displayAuthorName} 的頭像`" class="shrink-0" />
@@ -57,8 +58,8 @@
             :compact="true"
             class="!space-y-0"
             @dropdown-open="(open) => isDropdownOpen = open"
-            @message="(msg) => showActionToast(msg, 'success')"
-            @error="(err) => showActionToast(err, 'error')"
+            @message="(msg) => showActionFeedback(msg, 'success')"
+            @error="(err) => showActionFeedback(err, 'error')"
             @status-changed="emit('issue-updated', $event)"
             @delete="confirmDelete"
           />
@@ -77,6 +78,7 @@
     >
       <div class="flex items-center w-24 shrink-0">
         <span class="tag" :class="statusClass">
+          <AppIcon :name="statusIcon" :size="3" :stroke-width="2" />
           {{ statusLabel }}
         </span>
       </div>
@@ -84,7 +86,7 @@
       <div class="flex min-w-0 items-center gap-2.5 pr-4">
         <UserAvatar v-if="issue.canViewAuthor" :photo-url="displayPhotoUrl" :name="displayAuthorName" size="sm" :alt-text="`${displayAuthorName} 的頭像`" class="shrink-0" />
         <div class="min-w-0 flex-1 py-0.5 text-left">
-          <div class="truncate text-sm font-semibold tracking-tight text-ink-900 dark:text-ink-100 sm:text-base" :title="issue.title">
+          <div class="truncate text-sm font-semibold tracking-[0.01em] text-ink-900 dark:text-ink-100 sm:text-base" :title="issue.title">
             <SearchHighlight :text="issue.title" :query="highlightQuery" />
           </div>
           <div v-if="issue.canViewAuthor" class="mt-0.5 truncate text-xs text-ink-400 dark:text-ink-500" :title="displayAuthorName">
@@ -142,8 +144,8 @@
           :compact="true"
           class="!space-y-0"
           @dropdown-open="(open) => isDropdownOpen = open"
-          @message="(msg) => showActionToast(msg, 'success')"
-          @error="(err) => showActionToast(err, 'error')"
+          @message="(msg) => showActionFeedback(msg, 'success')"
+          @error="(err) => showActionFeedback(err, 'error')"
           @status-changed="emit('issue-updated', $event)"
           @delete="confirmDelete"
         />
@@ -192,6 +194,7 @@ const {
   displayAuthorName,
   displayPhotoUrl,
   statusLabel,
+  statusIcon,
   primaryTimeValueLabel,
   isAdmin,
   currentUserSupported,
@@ -207,7 +210,7 @@ const {
   openDetails,
   confirmDelete,
   performDelete,
-  showActionToast,
+  showActionFeedback,
 } = useIssueItemController(
   toRef(props, 'issue'),
   'table-row',

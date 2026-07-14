@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue';
-import { useToast } from '@/composables/useToast';
+import { useActionFeedback } from '@/composables/useActionFeedback';
 import { processImageForUpload } from '@/lib/image-processing';
 import { createImageUploadPolicies } from '@/services/uploads';
 
@@ -22,7 +22,7 @@ export function useImageUpload() {
   const activeOperations = ref(0);
   const uploading = computed(() => activeOperations.value > 0);
   const uploadError = ref('');
-  const { showToast } = useToast();
+  const { show } = useActionFeedback();
 
   function startOperation() {
     activeOperations.value += 1;
@@ -35,7 +35,7 @@ export function useImageUpload() {
 
   function reportError(error: unknown, fallback: string) {
     uploadError.value = error instanceof Error && error.message ? error.message : fallback;
-    showToast(uploadError.value, 'error');
+    show(uploadError.value, 'error');
   }
 
   function revokePreparedImage(image: PreparedImage) {

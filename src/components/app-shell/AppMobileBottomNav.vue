@@ -1,12 +1,12 @@
 <template>
   <nav
-    class="app-bottom-nav fixed left-4 right-4 z-40 mx-auto max-w-md rounded-full border border-ink-200/80 bg-white/95 px-3 py-1.5 shadow-lg backdrop-blur-xl dark:border-ink-800/80 dark:bg-ink-950/95 md:hidden"
+    class="app-bottom-nav fixed left-4 right-4 z-40 mx-auto max-w-md rounded-full border-0 bg-surface/94 px-3 py-1.5 shadow-floating backdrop-blur-xl dark:bg-surface/94 md:hidden"
     :style="{ bottom: `${bottomGap}px` }"
     aria-label="手機主要導覽"
   >
     <div ref="navRef" class="app-bottom-nav__inner relative mx-auto grid grid-cols-5 gap-1">
       <div
-        class="pointer-events-none absolute rounded-full bg-ink-100 dark:bg-ink-800/70"
+        class="pointer-events-none absolute rounded-full bg-ink-100/90 shadow-note dark:bg-ink-800/80"
         :style="[indicatorStyle, { transition: 'all 280ms cubic-bezier(0.16, 1, 0.3, 1)' }]"
       ></div>
 
