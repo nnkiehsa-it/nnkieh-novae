@@ -6,24 +6,10 @@
     xmlns="http://www.w3.org/2000/svg"
     aria-hidden="true"
   >
-    <defs>
-      <!-- 亮色模式漸層色 -->
-      <linearGradient id="brand-mark-gold" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#b47e24"></stop>
-        <stop offset="0.55" stop-color="#e2be6e"></stop>
-        <stop offset="1" stop-color="#966616"></stop>
-      </linearGradient>
-      <!-- 深色模式漸層色 -->
-      <linearGradient id="brand-mark-gold-dark" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#fad68c"></stop>
-        <stop offset="0.55" stop-color="#cda048"></stop>
-        <stop offset="1" stop-color="#ffe8b3"></stop>
-      </linearGradient>
-    </defs>
     <path
       class="brand-mark-path"
       d="M 10 79 C 18 65, 23 43, 26 23 C 29 14, 37 14, 41 23 C 50 44, 60 63, 72 80 C 77 87, 85 85, 86 75 C 88 55, 91 34, 98 21 C 102 14, 109 16, 110 26"
-      stroke="url(#brand-mark-gold)"
+      stroke="currentColor"
     ></path>
   </svg>
 </template>
@@ -46,6 +32,7 @@ withDefaults(
   width: auto;
   overflow: visible;
   flex: none;
+  color: #282623;
 }
 
 .brand-mark-path {
@@ -58,9 +45,9 @@ withDefaults(
   animation: brand-draw 1300ms cubic-bezier(0.45, 0, 0.2, 1) 150ms both;
 }
 
-/* 深色模式處理 (使用 :global 穿透 scoped 限制，對應 html.dark) */
-:global(html.dark) .brand-mark-path {
-  stroke: url(#brand-mark-gold-dark);
+/* 深色模式維持中性高對比，不再使用金色。 */
+:global(html.dark) .brand-mark {
+  color: #f5f4f2;
 }
 
 /* 懸停時重播動畫：

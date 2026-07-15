@@ -374,15 +374,15 @@ async function sendPushes(
       .range(offset, offset + 199);
     if (recipientUid) query = query.eq("uid", recipientUid);
     else if (adminUids.length > 0) query = query.in("uid", adminUids);
+    if (topic === "srp-admin") query = query.eq("topic_admin", false);
+    if (topic === "srp-broadcast") query = query.eq("topic_broadcast", false);
     const { data, error } = await query;
     if (error) throw error;
     for (const row of data ?? []) {
       const token = asString(row.token);
       if (!token || seenTokens.has(token)) continue;
       seenTokens.add(token);
-      if (!topic || (topic === "srp-admin" ? row.topic_admin !== true : row.topic_broadcast !== true)) {
-        tokens.push({ token, uid: asString(row.uid) });
-      }
+      tokens.push({ token, uid: asString(row.uid) });
     }
     if ((data ?? []).length < 200) break;
   }

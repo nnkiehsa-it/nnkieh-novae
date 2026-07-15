@@ -1,17 +1,36 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import type { Database } from "../_shared/database.ts";
 import { requireEnv } from "../_shared/env.ts";
-import { errorMessage, errorStatus, jsonResponse, publicError, requireMethod, textResponse } from "../_shared/http.ts";
+import {
+  errorMessage,
+  errorStatus,
+  jsonResponse,
+  MAX_WEBHOOK_BODY_BYTES,
+  publicError,
+  readRequestText,
+  requireMethod,
+  textResponse,
+} from "../_shared/http.ts";
 import { verifyCloudinarySignature } from "../_shared/webhook.ts";
 import { RATE_LIMITS } from "../_shared/rate-limits.ts";
-import { claimFixedWindowRateLimits, utcMinuteWindow, utcSecondWindow } from "../_shared/upstash-rate-limit.ts";
+import {
+  claimFixedWindowRateLimits,
+  requestRateLimitIdentifier,
+  utcMinuteWindow,
+  utcSecondWindow,
+} from "../_shared/upstash-rate-limit.ts";
 
 Deno.serve(async (request) => {
   const methodFailure = requireMethod(request, "POST");
   if (methodFailure) return methodFailure;
 
   try {
-    const rawBody = await request.text();
+    const ingressIdentifier = requestRateLimitIdentifier(request);
+    await claimFixedWindowRateLimits([
+      { identifier: ingressIdentifier, actionName: "cloudinary.webhook.ingress.second", window: utcSecondWindow(), config: RATE_LIMITS.cloudinaryWebhookSecond },
+      { identifier: ingressIdentifier, actionName: "cloudinary.webhook.ingress", window: utcMinuteWindow(), config: RATE_LIMITS.cloudinaryWebhookMinute },
+    ]);
+    const rawBody = await readRequestText(request, MAX_WEBHOOK_BODY_BYTES);
     const signatureFailure = await verifyCloudinarySignature(request, rawBody);
     if (signatureFailure) return signatureFailure;
 

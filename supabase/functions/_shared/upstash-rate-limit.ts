@@ -14,6 +14,7 @@ interface RateLimitClaim {
   actionName: string;
   config: RateLimitConfig;
   identifier: string;
+  units?: number;
   window: RateLimitWindow;
 }
 
@@ -47,6 +48,16 @@ export async function claimFixedWindowRateLimit(
   await claimFixedWindowRateLimits([{ identifier, actionName, window, config }]);
 }
 
+export async function claimFixedWindowRateLimitUnits(
+  identifier: string,
+  actionName: string,
+  window: RateLimitWindow,
+  config: RateLimitConfig,
+  units: number,
+) {
+  await claimFixedWindowRateLimits([{ identifier, actionName, window, config, units }]);
+}
+
 export async function claimFixedWindowRateLimits(claims: RateLimitClaim[]) {
   if (claims.length === 0) return;
   const restUrl = requireEnv("UPSTASH_REDIS_REST_URL").replace(/\/+$/u, "");
@@ -55,12 +66,14 @@ export async function claimFixedWindowRateLimits(claims: RateLimitClaim[]) {
   const response = await fetch(`${restUrl}/pipeline`, {
     body: JSON.stringify(claims.map((claim) => {
       const ttlSeconds = Math.max(1, Math.ceil((claim.window.expiresAt.getTime() - Date.now()) / 1000));
+      const units = Math.max(1, Math.round(claim.units ?? 1));
       return [
         "EVAL",
-        "local count=redis.call('INCR',KEYS[1]); if count==1 then redis.call('EXPIRE',KEYS[1],ARGV[1]) end; return count",
+        "local count=redis.call('INCRBY',KEYS[1],ARGV[2]); if count==tonumber(ARGV[2]) then redis.call('EXPIRE',KEYS[1],ARGV[1]) end; return count",
         "1",
         rateLimitKey(claim.identifier, claim.actionName, claim.window.startsAt),
         String(ttlSeconds),
+        String(units),
       ];
     })),
     headers: {
@@ -84,6 +97,15 @@ export async function claimFixedWindowRateLimits(claims: RateLimitClaim[]) {
       throw new Error(claims[index].config.message);
     }
   }
+}
+
+export function requestRateLimitIdentifier(request: Request) {
+  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",", 1)[0]?.trim();
+  const address = request.headers.get("cf-connecting-ip")?.trim()
+    || request.headers.get("x-real-ip")?.trim()
+    || forwardedFor
+    || "unknown";
+  return `ip:${address}`;
 }
 
 export function utcFixedWindow(milliseconds: number, date = new Date()) {

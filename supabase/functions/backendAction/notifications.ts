@@ -141,9 +141,13 @@ export async function handleNotificationAction(
   if (action === "registerPushToken") {
     await claimFixedWindowRateLimit(auth.uid, "push-token.write", utcHourWindow(), RATE_LIMITS.pushTokenWriteHourly);
     const token = requiredText(payload.token, "token", PUSH_TOKEN_LIMITS.token);
+    const deviceId = requiredText(payload.deviceId, "deviceId", PUSH_TOKEN_LIMITS.deviceId);
+    const { data: previousDevice, error: previousDeviceError } = await supabase.schema("app_private")
+      .from("push_tokens").select("token").eq("uid", auth.uid).eq("device_id", deviceId).maybeSingle();
+    if (previousDeviceError) throw previousDeviceError;
     const { data, error } = await supabase.schema("app_api").rpc("backend_register_push_token", {
       actor_uid: auth.uid,
-      device_id: requiredText(payload.deviceId, "deviceId", PUSH_TOKEN_LIMITS.deviceId),
+      device_id: deviceId,
       token,
       permission: readPermission(payload),
       platform: optionalLimitedText(payload.platform, "platform", PUSH_TOKEN_LIMITS.platform),
@@ -151,13 +155,23 @@ export async function handleNotificationAction(
     });
     if (error) throw error;
     try {
-      await subscribeTokensToTopic([token], "srp-broadcast");
-      if (auth.isAdmin) await subscribeTokensToTopic([token], "srp-admin");
-      else await unsubscribeTokensFromTopic([token], "srp-admin");
+      const topicUpdates: Array<Promise<unknown>> = [
+        subscribeTokensToTopic([token], "srp-broadcast"),
+        auth.isAdmin
+          ? subscribeTokensToTopic([token], "srp-admin")
+          : unsubscribeTokensFromTopic([token], "srp-admin"),
+      ];
+      if (previousDevice?.token && previousDevice.token !== token) {
+        topicUpdates.push(
+          unsubscribeTokensFromTopic([previousDevice.token], "srp-broadcast"),
+          unsubscribeTokensFromTopic([previousDevice.token], "srp-admin"),
+        );
+      }
+      await Promise.all(topicUpdates);
       const { error: topicStateError } = await supabase.schema("app_private").from("push_tokens").update({
         topic_admin: auth.isAdmin,
         topic_broadcast: true,
-      }).eq("uid", auth.uid).eq("device_id", requiredText(payload.deviceId, "deviceId", PUSH_TOKEN_LIMITS.deviceId));
+      }).eq("uid", auth.uid).eq("device_id", deviceId);
       if (topicStateError) throw topicStateError;
     } catch (topicError) {
       console.error(JSON.stringify({ error: String(topicError), operation: "push-topic-subscribe", uid: auth.uid }));

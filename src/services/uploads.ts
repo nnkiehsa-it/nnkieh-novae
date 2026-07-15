@@ -33,6 +33,7 @@ interface ImageUploadSession {
   signature: string;
   timestamp: number;
   type?: string;
+  uploadPreset?: string;
   uploadId: string;
 }
 
@@ -101,6 +102,7 @@ async function uploadToCloudinary(file: File, session: ImageUploadSession) {
   if (session.overwrite) body.set('overwrite', session.overwrite);
   if (session.notificationUrl) body.set('notification_url', session.notificationUrl);
   if (session.type) body.set('type', session.type);
+  if (session.uploadPreset) body.set('upload_preset', session.uploadPreset);
 
   return await withRequestTimeout(async () => {
     const response = await fetch(

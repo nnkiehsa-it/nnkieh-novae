@@ -304,6 +304,7 @@ test('outbox, webhooks, FCM, and Notion deletion marks are guarded', async () =>
   const deletionJobs = await read('supabase/functions/processDeletionJobs/index.ts');
   const maintenanceCleanup = await read('supabase/functions/maintenanceCleanup/index.ts');
   const notion = await read('supabase/functions/_shared/notion.ts');
+  const deployBackend = await read('.github/workflows/deploy-backend.yml');
 
   assert.match(syncUser, /requireEligibleFirebaseUser/u);
   assert.match(syncUser, /requireMethod\(request, "POST"\)/u);
@@ -349,7 +350,51 @@ test('outbox, webhooks, FCM, and Notion deletion marks are guarded', async () =>
   assert.match(notion, /ensureSelectOption/u);
   assert.match(notion, /"分類": \{ select: \{ name: categoryLabel \} \}/u);
   assert.match(notion, /"狀態": \{ select: \{ name: statusLabel \} \}/u);
+  assert.match(notion, /optionalEnv\("NOTION_ENABLED"\) === "false"/u);
+  assert.match(deployBackend, /NOTION_TOKEN and NOTION_DATABASE_ID must either both be set or both be omitted/u);
+  assert.match(deployBackend, /NOTION_ENABLED="\$notion_enabled"/u);
+  const requiredSecretBlock = deployBackend.slice(
+    deployBackend.indexOf('missing=()'),
+    deployBackend.indexOf('if [ "${#missing[@]}"'),
+  );
+  assert.doesNotMatch(requiredSecretBlock, /NOTION_TOKEN|NOTION_DATABASE_ID/u);
   assert.doesNotMatch(notion, /archived: true/u);
+});
+
+test('cost-sensitive ingress and provider operations are bounded before work', async () => {
+  const backendAction = await read('supabase/functions/backendAction/index.ts');
+  const cloudinary = await read('supabase/functions/_shared/cloudinary.ts');
+  const cloudinaryWebhook = await read('supabase/functions/cloudinaryWebhook/index.ts');
+  const hardening = await read('supabase/migrations/202607150001_rate_limit_cost_hardening.sql');
+  const http = await read('supabase/functions/_shared/http.ts');
+  const syncUser = await read('supabase/functions/syncUser/index.ts');
+  const uploads = await read('supabase/functions/backendAction/uploads.ts');
+
+  assert.match(cloudinary, /max_file_size/u);
+  assert.match(cloudinary, /transformation: `c_limit,w_\$\{maxDimension\},h_\$\{maxDimension\}`/u);
+  assert.match(uploads, /upload_preset: CLOUDINARY_IMAGE_UPLOAD_PRESET/u);
+  assert.match(uploads, /claimFixedWindowRateLimitUnits/u);
+  assert.doesNotMatch(uploads, /internal:delete-upload/u);
+  assert.match(http, /readRequestText\(request: Request, maxBytes: number\)/u);
+  assert.ok(
+    cloudinaryWebhook.indexOf('requestRateLimitIdentifier(request)')
+      < cloudinaryWebhook.indexOf('readRequestText(request, MAX_WEBHOOK_BODY_BYTES)'),
+  );
+  assert.ok(
+    syncUser.indexOf('requestRateLimitIdentifier(request)')
+      < syncUser.indexOf('requireEligibleFirebaseUser(request)'),
+  );
+  assert.ok(
+    backendAction.indexOf('getBackendActionDefinition(action)')
+      < backendAction.indexOf('requireAuth(supabase, request)'),
+  );
+  assert.ok(
+    backendAction.indexOf('claimBackendActionRateLimit(auth.uid, definition)')
+      < backendAction.indexOf('definition.requiresAdmin && !auth.isAdmin'),
+  );
+  assert.match(hardening, /pg_advisory_xact_lock/u);
+  assert.match(hardening, /max_devices constant integer := 10/u);
+  assert.match(hardening, /revoke select on app_private\.realtime_events from authenticated/u);
 });
 
 test('removed issue categories are cleaned and Notion backups are marked deleted', async () => {
@@ -694,11 +739,11 @@ test('Markdown upload images support batch cache bypass for expired URLs', async
   assert.match(markdownRenderer, /@click\.capture/u);
 });
 
-test('notification realtime subscriptions are shared and collision-resistant', async () => {
+test('notification realtime subscriptions use authorized private broadcasts', async () => {
   const notificationsComposable = await read('src/composables/useNotifications.ts');
   const notificationsService = await read('src/services/notifications.ts');
   const appResume = await read('src/composables/useAppResume.ts');
-  const realtimeMigration = await read('supabase/migrations/202607050002_fix_notification_realtime_rls.sql');
+  const realtimeMigration = await read('supabase/migrations/202607150001_rate_limit_cost_hardening.sql');
   const backendAuth = await read('supabase/functions/backendAction/auth.ts');
 
   assert.match(notificationsComposable, /let initialized = false/u);
@@ -708,16 +753,14 @@ test('notification realtime subscriptions are shared and collision-resistant', a
   assert.match(notificationsComposable, /fetchNotificationSnapshot\(activeSources\.value, uid, controller\.signal\)/u);
   assert.doesNotMatch(notificationsComposable, /setInterval/u);
   assert.doesNotMatch(notificationsComposable, /onScopeDispose\(clearSubscriptions\)/u);
-  assert.match(notificationsService, /let realtimeChannelSerial = 0/u);
-  assert.match(notificationsService, /channelName = `notifications:\$\{source\}:\$\{uid\}:\$\{realtimeChannelSerial \+= 1\}`/u);
-  assert.match(notificationsService, /channelName = `notification-state:\$\{uid\}:\$\{realtimeChannelSerial \+= 1\}`/u);
-  assert.match(notificationsService, /event: 'INSERT'/u);
-  assert.match(notificationsService, /recipient_uid=eq\.\$\{uid\}/u);
-  assert.match(notificationsService, /source=eq\.\$\{source\}/u);
-  assert.match(notificationsService, /filter: `uid=eq\.\$\{uid\}`/u);
+  assert.match(notificationsService, /config: \{ private: true \}/u);
+  assert.match(notificationsService, /'notification_insert' \| 'notification_state_changed'/u);
+  assert.doesNotMatch(notificationsService, /postgres_changes/u);
+  assert.match(realtimeMigration, /revoke select on app_private\.notifications from authenticated/u);
+  assert.match(realtimeMigration, /realtime\.topic\(\) = 'notifications:user:' \|\| app_private\.firebase_uid\(\)/u);
   assert.match(notificationsComposable, /insertRealtimeNotification/u);
   assert.doesNotMatch(notificationsComposable, /isPersonalNotificationVisible/u);
-  assert.match(realtimeMigration, /where key = 'firebase_project_id'/u);
+  assert.match(realtimeMigration, /app_private\.is_expected_firebase_project\(\)/u);
   assert.match(backendAuth, /key: "firebase_project_id"/u);
   assert.match(appResume, /export function registerAppResumeHandler/u);
 });
@@ -733,7 +776,8 @@ test('app updates hand over the service worker with bounded reload recovery', as
   assert.match(appUpdate, /serviceWorker\.register\('\/sw\.js',[\s\S]*type: 'module'/u);
   assert.match(appUpdate, /RELOAD_RECOVERY_TIMEOUT_MS = 10_000/u);
   assert.match(serviceWorker, /event\.data[\s\S]*SKIP_WAITING/u);
-  assert.match(realtimeEvents, /content-realtime:shared:\$\{realtimeChannelSerial \+= 1\}/u);
+  assert.match(realtimeEvents, /config: \{ private: true \}/u);
+  assert.match(realtimeEvents, /event: 'content_changed'/u);
 });
 
 test('push notification registration recovers without overriding an explicit opt-out', async () => {

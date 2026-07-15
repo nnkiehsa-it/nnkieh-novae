@@ -24,6 +24,7 @@ import {
   CircleHelp,
   Code2,
   Download,
+  Eye,
   FileClock,
   Heading1,
   Heading2,
@@ -61,7 +62,7 @@ import {
 export type AppIconName =
   | 'bell' | 'chart' | 'changelog' | 'check' | 'check-circle' | 'chevron-down'
   | 'chevron-left' | 'chevron-right' | 'circle-alert' | 'circle-help' | 'close'
-  | 'comment' | 'edit' | 'heart' | 'image' | 'inbox' | 'info' | 'download'
+  | 'comment' | 'edit' | 'heart' | 'image' | 'inbox' | 'info' | 'download' | 'preview'
   | 'link' | 'lock' | 'megaphone' | 'more-horizontal' | 'refresh' | 'restart'
   | 'reply' | 'search' | 'send' | 'settings' | 'share' | 'shield-check' | 'sort'
   | 'switch-horizontal' | 'thumbs-up' | 'trash' | 'user' | 'warning'
@@ -100,6 +101,7 @@ const iconComponents: Record<AppIconName, Component> = {
   inbox: Inbox,
   info: Info,
   download: Download,
+  preview: Eye,
   link: Link,
   lock: Lock,
   megaphone: Megaphone,

@@ -26,6 +26,14 @@ export const RATE_LIMITS = {
     "limit": 300,
     "message": "登入同步太頻繁，請稍後再試。"
   },
+  "loginSyncIngressSecond": {
+    "limit": 3,
+    "message": "登入同步太頻繁，請稍後再試。"
+  },
+  "loginSyncIngressHourly": {
+    "limit": 60,
+    "message": "登入同步太頻繁，請稍後再試。"
+  },
   "avatarCacheDaily": {
     "limit": 60,
     "message": "頭像更新太頻繁，請稍後再試。"

@@ -1,5 +1,8 @@
 import { requireEnv } from "./env.ts";
 
+export const CLOUDINARY_IMAGE_UPLOAD_PRESET = "srp-secure-images";
+let uploadPresetVerifiedUntil = 0;
+
 function toHex(buffer: ArrayBuffer) {
   return Array.from(new Uint8Array(buffer))
     .map((value) => value.toString(16).padStart(2, "0"))
@@ -83,6 +86,55 @@ export async function createCloudinaryAuthenticatedImageUrl(publicId: string) {
   const signature = (await sha1UrlSafeBase64(`${deliveryPath}${apiSecret}`)).slice(0, 8);
   const encodedPublicId = publicId.split("/").map((part) => encodeURIComponent(part)).join("/");
   return `https://res.cloudinary.com/${cloudName}/image/authenticated/s--${signature}--/${encodedPublicId}.webp`;
+}
+
+function cloudinaryAdminAuthorization() {
+  return `Basic ${btoa(`${requireEnv("CLOUDINARY_API_KEY")}:${requireEnv("CLOUDINARY_API_SECRET")}`)}`;
+}
+
+export async function ensureCloudinaryImageUploadPreset(maxFileSize: number, maxDimension: number) {
+  if (uploadPresetVerifiedUntil > Date.now()) return;
+  const cloudName = requireEnv("CLOUDINARY_CLOUD_NAME");
+  const preset = new URLSearchParams({
+    allowed_formats: "webp",
+    max_file_size: String(maxFileSize),
+    overwrite: "false",
+    transformation: `c_limit,w_${maxDimension},h_${maxDimension}`,
+    type: "authenticated",
+    unsigned: "false",
+  });
+  const headers = {
+    authorization: cloudinaryAdminAuthorization(),
+    "content-type": "application/x-www-form-urlencoded",
+  };
+  const update = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/upload_presets/${CLOUDINARY_IMAGE_UPLOAD_PRESET}`,
+    {
+      body: preset,
+      headers,
+      method: "PUT",
+      signal: AbortSignal.timeout(10_000),
+    },
+  );
+  if (update.ok) {
+    uploadPresetVerifiedUntil = Date.now() + 60 * 60 * 1000;
+    return;
+  }
+  if (update.status !== 404) {
+    throw new Error(`cloudinary-upload-preset-update:${update.status}:${await update.text()}`);
+  }
+
+  preset.set("name", CLOUDINARY_IMAGE_UPLOAD_PRESET);
+  const create = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload_presets`, {
+    body: preset,
+    headers,
+    method: "POST",
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!create.ok && create.status !== 409) {
+    throw new Error(`cloudinary-upload-preset-create:${create.status}:${await create.text()}`);
+  }
+  uploadPresetVerifiedUntil = Date.now() + 60 * 60 * 1000;
 }
 
 export async function createCloudinaryExpiringImageUrl(publicId: string, expiresAt: Date) {

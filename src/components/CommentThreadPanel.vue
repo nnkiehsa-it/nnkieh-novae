@@ -78,20 +78,9 @@
       </div>
     </div>
 
-    <div class="shrink-0 border-t border-ink-200 bg-transparent pt-2 dark:border-ink-800/80">
-      <button
-        v-if="!isComposerOpen"
-        type="button"
-        class="button-primary w-full gap-2"
-        :disabled="!canCompose"
-        @click="isComposerOpen = true"
-      >
-        <AppIcon name="edit" class="shrink-0" />
-        {{ canCompose ? '留言' : disabledComposerLabel }}
-      </button>
-
+    <div class="shrink-0 bg-transparent pt-2">
       <CommentComposer
-        v-else
+        v-if="canCompose"
         :target-id="targetId"
         :parent-comment-id="replyingToCommentId || null"
         :submitting="submitting"
@@ -99,6 +88,12 @@
         @close="closeComposer"
         @submit="handleSubmitComment"
       />
+      <div
+        v-else
+        class="rounded-[var(--radius-inner)] bg-ink-50 px-4 py-3 text-center text-sm font-semibold text-ink-400 shadow-note dark:bg-ink-900/60 dark:text-ink-500"
+      >
+        {{ disabledComposerLabel }}
+      </div>
     </div>
 
     <ConfirmDialog
@@ -158,7 +153,6 @@ const props = withDefaults(defineProps<{
   onLoadMore: async () => undefined,
 });
 
-const isComposerOpen = ref(false);
 const replyingToCommentId = ref('');
 const commentPendingDelete = ref('');
 const expandedReplyCommentIds = ref<Set<string>>(new Set());
@@ -201,7 +195,6 @@ function closeComposer() {
     return;
   }
 
-  isComposerOpen.value = false;
   replyingToCommentId.value = '';
 }
 
@@ -209,7 +202,6 @@ function openReplyComposer(commentId: string) {
   if (!props.canCompose) return;
   updateRepliesExpanded({ commentId, expanded: true });
   replyingToCommentId.value = commentId;
-  isComposerOpen.value = true;
 }
 
 function updateRepliesExpanded(payload: { commentId: string; expanded: boolean }) {
@@ -226,7 +218,6 @@ async function handleSubmitComment(payload: { content: string; parentCommentId: 
   if (!props.canCompose) return false;
   const success = await props.onSubmitComment(payload);
   if (success) {
-    isComposerOpen.value = false;
     replyingToCommentId.value = '';
   }
 }

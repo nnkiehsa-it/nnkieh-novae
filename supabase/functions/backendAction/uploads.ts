@@ -2,13 +2,14 @@ import {
   createCloudinaryAuthenticatedImageUrl,
   createCloudinaryExpiringImageUrl,
   createCloudinaryUploadSignature,
+  CLOUDINARY_IMAGE_UPLOAD_PRESET,
   getCloudinaryAuthenticatedImageMetadata,
   verifyCloudinaryUploadResponseSignature,
 } from "../_shared/cloudinary.ts";
 import { requireEnv } from "../_shared/env.ts";
 import { asString } from "../_shared/http.ts";
 import { RATE_LIMITS } from "../_shared/rate-limits.ts";
-import { claimFixedWindowRateLimit } from "../_shared/upstash-rate-limit.ts";
+import { claimFixedWindowRateLimitUnits } from "../_shared/upstash-rate-limit.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
 import { asNumber, taipeiDayWindow } from "./utils.ts";
 import { canReadIssue } from "./issue-shared.ts";
@@ -182,10 +183,29 @@ export async function handleUploadAction(
       ? payload.images.slice(0, RATE_LIMITS.imageUploads.issueMaxImages).map((image) => image as JsonRecord)
       : [];
     if (images.length === 0) throw new Error("missing-images");
-    const sessions = [];
     for (const image of images) {
-      sessions.push(await handleUploadAction("internal:create-upload-session", image, auth, supabase));
+      if (
+        asString(image.contentType) !== "image/webp"
+        || asNumber(image.size, 0) <= 0
+        || asNumber(image.size, 0) > RATE_LIMITS.imageCompression.maxUploadBytes
+        || asNumber(image.width, 0) <= 0
+        || asNumber(image.width, 0) > RATE_LIMITS.imageCompression.maxDimension
+        || asNumber(image.height, 0) <= 0
+        || asNumber(image.height, 0) > RATE_LIMITS.imageCompression.maxDimension
+      ) {
+        throw new Error("upload-validation-failed");
+      }
     }
+    await claimFixedWindowRateLimitUnits(
+      auth.uid,
+      "image_upload.create",
+      taipeiDayWindow(),
+      RATE_LIMITS.imageUploadDaily,
+      images.length,
+    );
+    const sessions = await Promise.all(images.map((image) =>
+      handleUploadAction("internal:create-upload-session", image, auth, supabase)
+    ));
     return { sessions };
   }
 
@@ -194,10 +214,9 @@ export async function handleUploadAction(
       ? payload.uploads.slice(0, RATE_LIMITS.imageUploads.issueMaxImages).map((upload) => upload as JsonRecord)
       : [];
     if (uploads.length === 0) throw new Error("missing-uploads");
-    const finalized = [];
-    for (const upload of uploads) {
-      finalized.push(await handleUploadAction("internal:finalize-upload", upload, auth, supabase));
-    }
+    const finalized = await Promise.all(uploads.map((upload) =>
+      handleUploadAction("internal:finalize-upload", upload, auth, supabase)
+    ));
     return { uploads: finalized };
   }
 
@@ -205,19 +224,30 @@ export async function handleUploadAction(
     const storagePaths = Array.isArray(payload.storagePaths)
       ? [...new Set(payload.storagePaths.map((path) => asString(path)).filter(Boolean))].slice(0, 50)
       : [];
-    for (const storagePath of storagePaths) {
-      await handleUploadAction("internal:delete-upload", { storagePath }, auth, supabase);
+    if (storagePaths.length === 0) return { deleted: 0, success: true };
+    const { data, error } = await supabase.schema("app_private").from("uploads")
+      .select("id,cloudinary_public_id")
+      .eq("owner_uid", auth.uid)
+      .in("cloudinary_public_id", storagePaths);
+    if (error) throw error;
+    const uploads = data ?? [];
+    if (uploads.length > 0) {
+      const { error: jobError } = await supabase.schema("app_private").from("deletion_jobs").insert(
+        uploads.map((upload) => ({
+          target_type: "upload",
+          target_id: upload.id,
+          cloudinary_public_id: upload.cloudinary_public_id,
+        })),
+      );
+      if (jobError) throw jobError;
+      const { error: deleteError } = await supabase.schema("app_private").from("uploads")
+        .delete().in("id", uploads.map((upload) => upload.id));
+      if (deleteError) throw deleteError;
     }
-    return { deleted: storagePaths.length, success: true };
+    return { deleted: uploads.length, success: true };
   }
 
   if (action === "internal:create-upload-session") {
-    await claimFixedWindowRateLimit(
-      auth.uid,
-      "image_upload.create",
-      taipeiDayWindow(),
-      RATE_LIMITS.imageUploadDaily,
-    );
     const uploadId = crypto.randomUUID();
     const timestamp = Math.floor(Date.now() / 1000);
     const folder = `srp/${auth.uid}`;
@@ -231,6 +261,7 @@ export async function handleUploadAction(
       public_id: publicId,
       timestamp: String(timestamp),
       type: "authenticated",
+      upload_preset: CLOUDINARY_IMAGE_UPLOAD_PRESET,
     };
     const { error } = await supabase.schema("app_private").from("uploads").insert({
       id: uploadId,
@@ -255,6 +286,7 @@ export async function handleUploadAction(
       signature: await createCloudinaryUploadSignature(params),
       timestamp,
       type: params.type,
+      uploadPreset: params.upload_preset,
       uploadId,
     };
   }
@@ -329,27 +361,6 @@ export async function handleUploadAction(
       uploadId: data.id,
       width: Number(data.width ?? 0),
     };
-  }
-
-  if (action === "internal:delete-upload") {
-    const storagePath = asString(payload.storagePath);
-    const uploadId = asString(payload.uploadId);
-    let query = supabase.schema("app_private").from("uploads")
-      .select("id,cloudinary_public_id").eq("owner_uid", auth.uid);
-    query = uploadId ? query.eq("id", uploadId) : query.eq("cloudinary_public_id", storagePath);
-    const { data, error } = await query.maybeSingle();
-    if (error) throw error;
-    if (data) {
-      const { error: jobError } = await supabase.schema("app_private").from("deletion_jobs").insert({
-        target_type: "upload",
-        target_id: data.id,
-        cloudinary_public_id: data.cloudinary_public_id,
-      });
-      if (jobError) throw jobError;
-      const { error: deleteError } = await supabase.schema("app_private").from("uploads").delete().eq("id", data.id);
-      if (deleteError) throw deleteError;
-    }
-    return { success: true };
   }
 
   const uploadIds = Array.isArray(payload.uploadIds) ? payload.uploadIds.map((id) => asString(id)).filter(Boolean).slice(0, 50) : [];

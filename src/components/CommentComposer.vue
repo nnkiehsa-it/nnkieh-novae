@@ -1,129 +1,98 @@
 <template>
-  <form
-    class="absolute inset-x-0 bottom-0 z-20 space-y-3 rounded-[1.25rem] border border-ink-200 bg-white/95 p-3 shadow-floating backdrop-blur-md dark:border-ink-700/80 dark:bg-ink-900/95"
-    autocomplete="off"
-    @submit.prevent="submit"
-  >
-    <button
-      type="button"
-      class="button-icon-filled absolute right-2 top-2 !h-8 !w-8"
-      :disabled="submitting || uploading"
-      title="關閉"
-      aria-label="關閉留言輸入"
-      @click="handleClose"
+  <form class="space-y-2" autocomplete="off" @submit.prevent="submit">
+    <div
+      v-if="parentCommentId"
+      class="flex items-center justify-between gap-3 px-1 text-xs font-semibold text-ink-500 dark:text-ink-400"
     >
-      <AppIcon name="close" :stroke-width="2.5" />
-    </button>
+      <span>正在回覆留言</span>
+      <button
+        type="button"
+        class="button-toolbar h-8 min-h-8 w-8 rounded-full p-0"
+        :disabled="submitting || uploading"
+        title="取消回覆"
+        aria-label="取消回覆"
+        @click="handleClose"
+      >
+        <AppIcon name="close" :stroke-width="2.5" />
+      </button>
+    </div>
 
-    <div class="min-h-8 pr-10">
-      <div class="flex items-center gap-2">
+    <div class="overflow-hidden rounded-[var(--radius-inner)] bg-surface shadow-note transition-all duration-300 focus-within:ring-2 focus-within:ring-outline/25 dark:bg-surface">
+      <div v-if="imageUrls.length" class="flex gap-2 px-3 pt-3">
+        <div
+          v-for="(url, index) in imageUrls"
+          :key="url"
+          class="relative h-20 w-20 overflow-hidden rounded-xl bg-ink-50 shadow-note dark:bg-ink-900"
+        >
+          <img :src="url" alt="留言附加圖片預覽" class="h-full w-full object-cover" />
+          <button type="button" class="button-remove-image" aria-label="移除圖片" @click="removeImage(index)">
+            <AppIcon name="close" :size="3" :stroke-width="2.5" />
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-end gap-1.5 p-2 pl-3">
         <img
           v-if="myPhotoUrl"
           :src="myPhotoUrl"
           alt="當前頭像"
-          class="h-7 w-7 rounded-full border border-ink-200 object-cover shadow-note dark:border-ink-800"
+          class="mb-1.5 h-7 w-7 shrink-0 rounded-full object-cover shadow-note"
         />
-        <span class="text-sm font-semibold text-ink-600 dark:text-ink-300">{{ parentCommentId ? '新增回覆' : '新增留言' }}</span>
-      </div>
-    </div>
 
-    <div
-      class="overflow-hidden rounded-2xl border-0 bg-surface shadow-note transition-all duration-300 focus-within:ring-2 focus-within:ring-outline/25 dark:bg-surface"
-      :class="'border-ink-200 bg-white dark:border-ink-800 dark:bg-ink-950/40'"
-    >
-      <div v-if="!showPreview">
-        <div v-if="imageUrls.length" class="flex gap-3 px-5 pt-4">
-          <div
-            v-for="(url, index) in imageUrls"
-            :key="url"
-            class="relative h-24 w-24 overflow-hidden rounded-xl border border-ink-200 bg-ink-50 dark:border-ink-800 dark:bg-ink-900"
-          >
-            <img :src="url" alt="留言附加圖片預覽" class="h-full w-full object-cover" />
-            <button
-              type="button"
-              class="button-remove-image"
-              aria-label="移除圖片"
-              @click="removeImage(index)"
-            >
-              <AppIcon name="close" :size="3" :stroke-width="2.5" />
-            </button>
-          </div>
-        </div>
         <textarea
+          v-if="!showPreview"
           :id="`comment-content-${composerId}`"
           ref="commentTextareaRef"
           v-model="commentContent"
-          class="min-h-[96px] w-full resize-none border-none bg-transparent px-5 py-4 font-sans text-base text-ink-800 outline-none placeholder:text-ink-400 focus:ring-0 dark:text-ink-100 dark:placeholder:text-ink-500 md:text-sm"
+          rows="1"
+          class="max-h-32 min-h-11 min-w-0 flex-1 resize-none border-none bg-transparent px-1 py-3 font-sans text-base leading-5 text-ink-800 outline-none placeholder:text-ink-400 focus:ring-0 dark:text-ink-100 dark:placeholder:text-ink-500 md:text-sm"
           autocomplete="off"
           maxlength="2000"
-          :placeholder="parentCommentId ? '留下你的回覆...' : '留下你的留言討論...'"
+          :placeholder="parentCommentId ? '留下你的回覆...' : '分享你的想法…'"
           :disabled="submitting"
         ></textarea>
-      </div>
-      <div
-        v-else
-        class="max-h-[400px] min-h-[96px] w-full overflow-y-auto px-5 py-4 font-sans text-base text-ink-800 dark:text-ink-100 md:text-sm"
-      >
-        <MarkdownRenderer v-if="contentWithImages.trim()" :content="contentWithImages" />
-        <span v-else class="italic text-ink-400">沒有可預覽的內容</span>
-      </div>
-
-      <div class="flex items-center justify-between gap-2 border-t border-ink-200 bg-ink-50/50 px-3 py-3 dark:border-ink-800/80 dark:bg-ink-950 sm:px-5">
-        <div class="flex min-w-0 items-center gap-2">
-          <img
-            v-if="myPhotoUrl"
-            :src="myPhotoUrl"
-            alt="當前頭像"
-            class="h-6 w-6 rounded-full border border-ink-200 object-cover shadow-note dark:border-ink-800"
-          />
-          <span class="min-w-0 truncate text-xs font-medium text-ink-500 dark:text-ink-400">
-            {{ parentCommentId ? '回覆' : '留言' }}
-          </span>
+        <div v-else class="max-h-32 min-h-11 min-w-0 flex-1 overflow-y-auto px-1 py-2.5 text-sm text-ink-800 dark:text-ink-100">
+          <MarkdownRenderer v-if="contentWithImages.trim()" :content="contentWithImages" />
+          <span v-else class="italic text-ink-400">沒有可預覽的內容</span>
         </div>
 
-        <div class="flex shrink-0 items-center justify-end gap-1.5 sm:gap-2">
-          <button
-            type="button"
-            class="button-toolbar h-10 min-h-10 w-10 rounded-full p-0 sm:h-8 sm:min-h-8 sm:w-8"
-            :disabled="uploading || imageUrls.length >= RATE_LIMITS.imageUploads.commentMaxImages"
-            :title="uploading ? '圖片處理中...' : imageUrls.length >= RATE_LIMITS.imageUploads.commentMaxImages ? `留言最多 ${RATE_LIMITS.imageUploads.commentMaxImages} 張圖片` : '加入圖片'"
-            aria-label="插入圖片"
-            @click="commentFileInputRef?.click()"
-          >
-            <AppIcon name="image" />
-          </button>
-          <input
-            ref="commentFileInputRef"
-            type="file"
-            accept="image/*"
-            autocomplete="off"
-            class="hidden"
-            multiple
-            @change="handleImagePicked"
-          />
-          <span v-if="uploading" class="hidden text-xs text-ink-400 sm:inline">{{ props.submitting ? '圖片上傳中…' : '圖片壓縮中…' }}</span>
-          <span v-else class="hidden text-xs text-ink-400 sm:inline">
-            {{ imageUrls.length }} / {{ RATE_LIMITS.imageUploads.commentMaxImages }}
-          </span>
-          <button
-            type="button"
-            class="button-secondary h-10 min-h-10 px-3 text-xs font-semibold sm:h-9 sm:min-h-9"
-            title="切換預覽模式"
-            @click="showPreview = !showPreview"
-          >
-            {{ showPreview ? '繼續編輯' : '預覽' }}
-          </button>
-          <button
-            type="submit"
-            class="button-icon-filled h-10 min-h-10 w-10 sm:h-8 sm:min-h-8 sm:w-8"
-            :class="'bg-ink-900 hover:bg-ink-800 dark:bg-ink-100 dark:text-ink-900 dark:hover:bg-ink-200'"
-            :disabled="submitting || uploading || (!commentContent.trim() && imageUrls.length === 0)"
-            :title="submitting ? '傳送中...' : '送出留言'"
-            aria-label="送出留言"
-          >
-            <AppIcon name="send" />
-          </button>
-        </div>
+        <button
+          type="button"
+          class="button-toolbar h-10 min-h-10 w-10 shrink-0 rounded-full p-0"
+          :disabled="uploading || imageUrls.length >= RATE_LIMITS.imageUploads.commentMaxImages"
+          :title="uploading ? '圖片處理中...' : imageUrls.length >= RATE_LIMITS.imageUploads.commentMaxImages ? `留言最多 ${RATE_LIMITS.imageUploads.commentMaxImages} 張圖片` : '加入圖片'"
+          aria-label="插入圖片"
+          @click="commentFileInputRef?.click()"
+        >
+          <AppIcon name="image" />
+        </button>
+        <input
+          ref="commentFileInputRef"
+          type="file"
+          accept="image/*"
+          autocomplete="off"
+          class="hidden"
+          multiple
+          @change="handleImagePicked"
+        />
+        <button
+          type="button"
+          class="button-toolbar h-10 min-h-10 w-10 shrink-0 rounded-full p-0"
+          :title="showPreview ? '繼續編輯' : '預覽留言'"
+          :aria-label="showPreview ? '繼續編輯' : '預覽留言'"
+          @click="showPreview = !showPreview"
+        >
+          <AppIcon :name="showPreview ? 'edit' : 'preview'" />
+        </button>
+        <button
+          type="submit"
+          class="button-icon-filled h-10 min-h-10 w-10 shrink-0 bg-ink-900 text-white hover:bg-ink-800 dark:bg-ink-100 dark:text-ink-900 dark:hover:bg-ink-200"
+          :disabled="submitting || uploading || (!commentContent.trim() && imageUrls.length === 0)"
+          :title="submitting ? '傳送中...' : '送出留言'"
+          aria-label="送出留言"
+        >
+          <AppIcon name="send" />
+        </button>
       </div>
     </div>
 

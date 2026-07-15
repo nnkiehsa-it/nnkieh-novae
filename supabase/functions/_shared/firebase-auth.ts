@@ -11,6 +11,9 @@ export interface FirebaseAuthContext {
 }
 
 const FIREBASE_USER_CACHE_SECONDS = 15 * 60;
+const FIREBASE_USER_MEMORY_CACHE_MS = 60 * 1000;
+const FIREBASE_USER_MEMORY_CACHE_MAX = 200;
+const firebaseUserMemoryCache = new Map<string, { expiresAt: number; user: Record<string, unknown> }>();
 
 function firebaseUserCacheKey(uid: string) {
   return `srp:firebase-user:${uid}`;
@@ -27,6 +30,14 @@ function cacheableFirebaseUser(firebaseUser: Record<string, unknown>) {
     photoUrl: firebaseUser.photoUrl,
     validSince: firebaseUser.validSince,
   };
+}
+
+function cacheFirebaseUserInMemory(uid: string, user: Record<string, unknown>) {
+  if (!firebaseUserMemoryCache.has(uid) && firebaseUserMemoryCache.size >= FIREBASE_USER_MEMORY_CACHE_MAX) {
+    const oldestKey = firebaseUserMemoryCache.keys().next().value;
+    if (typeof oldestKey === "string") firebaseUserMemoryCache.delete(oldestKey);
+  }
+  firebaseUserMemoryCache.set(uid, { expiresAt: Date.now() + FIREBASE_USER_MEMORY_CACHE_MS, user });
 }
 
 async function runRedisCommand(command: string[]) {
@@ -48,16 +59,22 @@ async function runRedisCommand(command: string[]) {
 }
 
 async function readCachedFirebaseUser(uid: string) {
+  const memoryCached = firebaseUserMemoryCache.get(uid);
+  if (memoryCached && memoryCached.expiresAt > Date.now()) return memoryCached.user;
+  firebaseUserMemoryCache.delete(uid);
   try {
     const cached = await runRedisCommand(["GET", firebaseUserCacheKey(uid)]);
     if (typeof cached !== "string") return null;
-    return asRecord(JSON.parse(cached));
+    const user = asRecord(JSON.parse(cached));
+    cacheFirebaseUserInMemory(uid, user);
+    return user;
   } catch {
     return null;
   }
 }
 
 async function cacheFirebaseUser(uid: string, firebaseUser: Record<string, unknown>) {
+  cacheFirebaseUserInMemory(uid, cacheableFirebaseUser(firebaseUser));
   try {
     await runRedisCommand([
       "SET",

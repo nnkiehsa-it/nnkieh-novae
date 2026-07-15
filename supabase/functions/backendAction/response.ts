@@ -28,6 +28,7 @@ function errorCode(error: unknown) {
   if (message === "invalid-json") return "invalid-json";
   if (message === "request-too-large") return "request-too-large";
   if (message === "request-in-progress") return "request-in-progress";
+  if (message.includes("push-token-limit-reached")) return "push-token-limit-reached";
   if (message.includes("達到上限") || message.includes("太頻繁") || message.includes("上傳額度已用完")) {
     return "rate-limited";
   }

@@ -35,9 +35,9 @@ Deno.serve(async (request) => {
       .rpc("claim_notion_support_dirty", { batch_size: 100 });
     if (claimError) throw claimError;
     let syncedSupportCount = 0;
-    for (const row of dirtyIssues ?? []) {
+    const syncDirtyIssue = async (row: { issue_id?: string; updated_at?: string }) => {
       const issueId = String(row.issue_id ?? "");
-      if (!issueId) continue;
+      if (!issueId) return;
       try {
         await syncIssueSupportToNotion(supabase, issueId, { appendTimeline: false });
         const { error: completeError } = await supabase
@@ -55,6 +55,10 @@ Deno.serve(async (request) => {
         if (releaseError) console.error(errorMessage(releaseError));
         console.error(errorMessage(syncError));
       }
+    };
+    const rows = dirtyIssues ?? [];
+    for (let offset = 0; offset < rows.length; offset += 5) {
+      await Promise.all(rows.slice(offset, offset + 5).map(syncDirtyIssue));
     }
 
     const baseUrl = requireEnv("SUPABASE_URL").replace(/\/+$/u, "");

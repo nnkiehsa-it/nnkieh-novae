@@ -100,12 +100,11 @@ Deno.serve(async (request) => {
       return successResponse(await handleHealthcheck(request, supabase), requestId);
     }
 
-    const auth = await requireAuth(supabase, request);
     const definition = getBackendActionDefinition(action);
     if (!definition) throw new Error(`Unsupported action: ${action}`);
-    if (definition.requiresAdmin && !auth.isAdmin) throw new Error("permission-denied");
-
+    const auth = await requireAuth(supabase, request);
     await claimBackendActionRateLimit(auth.uid, definition);
+    if (definition.requiresAdmin && !auth.isAdmin) throw new Error("permission-denied");
     const data = await runWithIdempotency(
       definition,
       payload,

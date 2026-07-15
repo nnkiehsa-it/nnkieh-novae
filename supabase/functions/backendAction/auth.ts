@@ -1,6 +1,8 @@
 import { requireEnv } from "../_shared/env.ts";
+import { ensureCloudinaryImageUploadPreset } from "../_shared/cloudinary.ts";
 import { requireVerifiedFirebaseUser } from "../_shared/firebase-auth.ts";
 import { getIssueCategoryIdsByReadAccess } from "../_shared/issue-categories.ts";
+import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 import type { AuthContext, BackendSupabase } from "./types.ts";
 
 function isAdminEmail(email: string) {
@@ -41,6 +43,11 @@ export async function handleHealthcheck(request: Request, supabase: BackendSupab
   requireEnv("ADMIN_EMAILS");
   requireEnv("UPSTASH_REDIS_REST_URL");
   requireEnv("UPSTASH_REDIS_REST_TOKEN");
+
+  await ensureCloudinaryImageUploadPreset(
+    RATE_LIMITS.imageCompression.maxUploadBytes,
+    RATE_LIMITS.imageCompression.maxDimension,
+  );
 
   const { error } = await supabase
     .schema("app_private")

@@ -1,5 +1,7 @@
 import { getSupabaseClient } from '@/lib/supabase';
+import { auth } from '@/lib/firebase';
 import { isIssueCategory } from '@/constants/categories';
+import { getCachedSessionRole } from '@/services/session-role';
 import type { IssueCategory } from '@/types';
 
 type SupabaseAppClient = ReturnType<typeof getSupabaseClient>;
@@ -12,7 +14,7 @@ interface RealtimeSubscriber {
 const realtimeSubscribers = new Map<number, RealtimeSubscriber>();
 let realtimeSubscriberSerial = 0;
 let realtimeChannelSerial = 0;
-let sharedRealtimeChannel: RealtimeChannel | null = null;
+let sharedRealtimeChannels: RealtimeChannel[] = [];
 let reconnectAttempt = 0;
 let reconnectTimer = 0;
 
@@ -105,34 +107,41 @@ function normalizeRealtimeEvent(data: Record<string, unknown>): ContentRealtimeE
 }
 
 function ensureSharedRealtimeChannel() {
-  if (sharedRealtimeChannel || realtimeSubscribers.size === 0) return;
+  if (sharedRealtimeChannels.length > 0 || realtimeSubscribers.size === 0) return;
   clearReconnectTimer();
   const client = getSupabaseClient();
-  const channel = client
-    .channel(`content-realtime:shared:${realtimeChannelSerial += 1}`)
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'app_private',
-      table: 'realtime_events',
-    }, (payload) => {
-      const event = normalizeRealtimeEvent(payload.new as Record<string, unknown>);
-      if (!event) return;
-      realtimeSubscribers.forEach((subscriber) => subscriber.callback(event));
-    })
-    .subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        reconnectAttempt = 0;
-        return;
-      }
-      if (status !== 'CHANNEL_ERROR' && status !== 'TIMED_OUT' && status !== 'CLOSED') return;
-      if (sharedRealtimeChannel !== channel) return;
-      sharedRealtimeChannel = null;
-      const error = new Error('content-realtime-unavailable');
-      realtimeSubscribers.forEach((subscriber) => subscriber.onError?.(error));
-      void client.removeChannel(channel);
-      scheduleReconnect();
-    });
-  sharedRealtimeChannel = channel;
+  const uid = auth?.currentUser?.uid;
+  if (!uid) return;
+  const topics = ['content:school'];
+  topics.push(getCachedSessionRole() === 'admin' ? 'content:admin' : `content:user:${uid}`);
+  const generation = realtimeChannelSerial += 1;
+  let subscribedCount = 0;
+  const channels = topics.map((topic) => {
+    const channel = client
+      .channel(topic, { config: { private: true } })
+      .on('broadcast', { event: 'content_changed' }, (message) => {
+        const event = normalizeRealtimeEvent(message.payload as Record<string, unknown>);
+        if (!event) return;
+        realtimeSubscribers.forEach((subscriber) => subscriber.callback(event));
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          subscribedCount += 1;
+          if (subscribedCount === topics.length) reconnectAttempt = 0;
+          return;
+        }
+        if (status !== 'CHANNEL_ERROR' && status !== 'TIMED_OUT' && status !== 'CLOSED') return;
+        if (generation !== realtimeChannelSerial || sharedRealtimeChannels.length === 0) return;
+        const failedChannels = sharedRealtimeChannels;
+        sharedRealtimeChannels = [];
+        const error = new Error('content-realtime-unavailable');
+        realtimeSubscribers.forEach((subscriber) => subscriber.onError?.(error));
+        failedChannels.forEach((failedChannel) => void client.removeChannel(failedChannel));
+        scheduleReconnect();
+      });
+    return channel;
+  });
+  sharedRealtimeChannels = channels;
 }
 
 export function subscribeContentRealtimeEvents(
@@ -150,10 +159,11 @@ export function subscribeContentRealtimeEvents(
     if (realtimeSubscribers.size > 0) return;
     clearReconnectTimer();
     reconnectAttempt = 0;
-    if (!sharedRealtimeChannel) return;
+    if (sharedRealtimeChannels.length === 0) return;
     const client = getSupabaseClient();
-    const channel = sharedRealtimeChannel;
-    sharedRealtimeChannel = null;
-    void client.removeChannel(channel);
+    const channels = sharedRealtimeChannels;
+    sharedRealtimeChannels = [];
+    realtimeChannelSerial += 1;
+    channels.forEach((channel) => void client.removeChannel(channel));
   };
 }

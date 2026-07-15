@@ -90,8 +90,6 @@ jobs:
             CLOUDINARY_API_SECRET \
             CLOUDINARY_WEBHOOK_SECRET \
             WEBHOOK_SECRET \
-            NOTION_TOKEN \
-            NOTION_DATABASE_ID \
             UPSTASH_REDIS_REST_URL \
             UPSTASH_REDIS_REST_TOKEN; do
             if [ -z "${!name}" ]; then
@@ -101,6 +99,12 @@ jobs:
 
           if [ "${#missing[@]}" -gt 0 ]; then
             printf 'Missing Supabase backend secrets: %s\n' "${missing[*]}" >&2
+            exit 1
+          fi
+
+          if { [ -n "$NOTION_TOKEN" ] && [ -z "$NOTION_DATABASE_ID" ]; } || \
+             { [ -z "$NOTION_TOKEN" ] && [ -n "$NOTION_DATABASE_ID" ]; }; then
+            echo 'NOTION_TOKEN and NOTION_DATABASE_ID must either both be set or both be omitted.' >&2
             exit 1
           fi
 
@@ -132,11 +136,22 @@ jobs:
           CLOUDINARY_WEBHOOK_SECRET: ${{ secrets.CLOUDINARY_WEBHOOK_SECRET }}
           WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-          NOTION_VERSION: ${{ secrets.NOTION_VERSION || '2022-06-28' }}
+          NOTION_VERSION: ${{ secrets.NOTION_VERSION }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
           UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
           UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
         run: |
+          notion_enabled=false
+          notion_secrets=()
+          if [ -n "$NOTION_TOKEN" ] && [ -n "$NOTION_DATABASE_ID" ]; then
+            notion_enabled=true
+            notion_secrets+=(
+              "NOTION_TOKEN=$NOTION_TOKEN"
+              "NOTION_DATABASE_ID=$NOTION_DATABASE_ID"
+              "NOTION_VERSION=${NOTION_VERSION:-2022-06-28}"
+            )
+          fi
+
           supabase secrets set \
             APP_SUPABASE_SERVICE_ROLE_KEY="$APP_SUPABASE_SERVICE_ROLE_KEY" \
             FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID" \
@@ -149,11 +164,10 @@ jobs:
             CLOUDINARY_API_SECRET="$CLOUDINARY_API_SECRET" \
             CLOUDINARY_WEBHOOK_SECRET="$CLOUDINARY_WEBHOOK_SECRET" \
             WEBHOOK_SECRET="$WEBHOOK_SECRET" \
-            NOTION_TOKEN="$NOTION_TOKEN" \
-            NOTION_VERSION="$NOTION_VERSION" \
-            NOTION_DATABASE_ID="$NOTION_DATABASE_ID" \
+            NOTION_ENABLED="$notion_enabled" \
             UPSTASH_REDIS_REST_URL="$UPSTASH_REDIS_REST_URL" \
-            UPSTASH_REDIS_REST_TOKEN="$UPSTASH_REDIS_REST_TOKEN"
+            UPSTASH_REDIS_REST_TOKEN="$UPSTASH_REDIS_REST_TOKEN" \
+            "${notion_secrets[@]}"
 
       - name: Deploy Edge Functions
         env:

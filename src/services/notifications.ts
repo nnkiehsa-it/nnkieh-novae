@@ -17,7 +17,53 @@ import {
 } from './issues-core';
 import { NOTIFICATION_FEED_PAGE_SIZE } from '@/lib/page-size';
 
-let realtimeChannelSerial = 0;
+type NotificationBroadcastMessage = { payload: Record<string, unknown> };
+interface NotificationBroadcastListener {
+  callback: (message: NotificationBroadcastMessage) => void;
+  onError?: (error: Error) => void;
+}
+interface NotificationBroadcastTopic {
+  channel: ReturnType<ReturnType<typeof getSupabaseClient>['channel']>;
+  listeners: Map<number, NotificationBroadcastListener>;
+}
+
+const notificationBroadcastTopics = new Map<string, NotificationBroadcastTopic>();
+let notificationBroadcastListenerId = 0;
+
+function subscribeNotificationBroadcast(
+  topic: string,
+  event: 'notification_insert' | 'notification_state_changed',
+  callback: NotificationBroadcastListener['callback'],
+  onError?: (error: Error) => void,
+) {
+  const listenerId = notificationBroadcastListenerId += 1;
+  let subscription = notificationBroadcastTopics.get(topic);
+  if (!subscription) {
+    const listeners = new Map<number, NotificationBroadcastListener>();
+    const client = getSupabaseClient();
+    const channel = client.channel(topic, { config: { private: true } })
+      .on<Record<string, unknown>>('broadcast', { event }, (message) => {
+        listeners.forEach((listener) => listener.callback({ payload: message.payload }));
+      })
+      .subscribe((status) => {
+        if (status !== 'CHANNEL_ERROR' && status !== 'TIMED_OUT') return;
+        const error = new Error('notification-realtime-unavailable');
+        listeners.forEach((listener) => listener.onError?.(error));
+      });
+    subscription = { channel, listeners };
+    notificationBroadcastTopics.set(topic, subscription);
+  }
+  subscription.listeners.set(listenerId, { callback, onError });
+
+  return () => {
+    const current = notificationBroadcastTopics.get(topic);
+    if (!current) return;
+    current.listeners.delete(listenerId);
+    if (current.listeners.size > 0) return;
+    notificationBroadcastTopics.delete(topic);
+    void getSupabaseClient().removeChannel(current.channel);
+  };
+}
 
 export type NotificationCursor = { createdAtMs: number; id: string } | null;
 export interface NotificationSourcePage {
@@ -142,30 +188,18 @@ export function subscribeNotificationSource(
   onInsert: (notification: NotificationRecord) => void,
   onError?: (error: Error) => void,
 ) {
-  const client = getSupabaseClient();
-  const channelName = `notifications:${source}:${uid}:${realtimeChannelSerial += 1}`;
-  const filter = source === "user" ? `recipient_uid=eq.${uid}` : `source=eq.${source}`;
-  const channel = client
-    .channel(channelName)
-    .on('postgres_changes', {
-      event: 'INSERT',
-      filter,
-      schema: 'app_private',
-      table: 'notifications',
-    }, (payload) => {
-      const data = payload.new as Record<string, unknown>;
+  const channelName = source === 'user' ? `notifications:user:${uid}` : `notifications:${source}`;
+  return subscribeNotificationBroadcast(
+    channelName,
+    'notification_insert',
+    (message) => {
+      const data = message.payload as Record<string, unknown>;
       if (data.source !== source) return;
       if (source === 'user' && data.recipient_uid !== uid) return;
       onInsert(normalizeNotificationRecord(source, data));
-    })
-    .subscribe((status) => {
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        onError?.(new Error('notification-realtime-unavailable'));
-      }
-    });
-  return () => {
-    void client.removeChannel(channel);
-  };
+    },
+    onError,
+  );
 }
 
 export async function fetchNotificationSourcePages(
@@ -206,33 +240,22 @@ export function subscribeNotificationReadState(
   onError?: (error: Error) => void,
   loadInitial = true,
 ) {
-  const client = getSupabaseClient();
-  const channelName = `notification-state:${uid}:${realtimeChannelSerial += 1}`;
+  const channelName = `notification-state:${uid}`;
   const loadInitialState = () => {
     void getNotificationReadState(uid)
       .then(callback)
       .catch((error) => onError?.(toReadableBackendError(error)));
   };
-  const channel = client
-    .channel(channelName)
-    .on('postgres_changes', {
-      event: '*',
-      filter: `uid=eq.${uid}`,
-      schema: 'app_private',
-      table: 'notification_states',
-    }, (payload) => {
-      callback(normalizeNotificationReadState(payload.new as Record<string, unknown>));
-    })
-    .subscribe((status) => {
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        onError?.(new Error('notification-state-realtime-unavailable'));
-      }
-    });
+  const unsubscribe = subscribeNotificationBroadcast(
+    channelName,
+    'notification_state_changed',
+    (message) => {
+      callback(normalizeNotificationReadState(message.payload as Record<string, unknown>));
+    },
+    onError,
+  );
   if (loadInitial) loadInitialState();
-
-  return () => {
-    void client.removeChannel(channel);
-  };
+  return unsubscribe;
 }
 
 async function getNotificationReadState(uid: string): Promise<NotificationReadState> {
@@ -285,29 +308,15 @@ export function subscribeNotificationBadge(
   onStateChanged: () => void,
   onError?: (error: Error) => void,
 ) {
-  const client = getSupabaseClient();
-  const channel = client.channel(`notification-badge:${uid}`)
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'app_private',
-      table: 'notifications',
-    }, (payload) => {
-      const row = payload.new as Record<string, unknown>;
-      const source = row.source;
-      if (source === 'broadcast' || source === 'user' || (source === 'admin' && isAdmin)) onNotification();
-    })
-    .on('postgres_changes', {
-      event: '*',
-      filter: `uid=eq.${uid}`,
-      schema: 'app_private',
-      table: 'notification_states',
-    }, onStateChanged)
-    .subscribe((status) => {
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        onError?.(new Error('notification-badge-realtime-unavailable'));
-      }
-    });
-  return () => { void client.removeChannel(channel); };
+  const topics = ['notifications:broadcast', `notifications:user:${uid}`, `notification-state:${uid}`];
+  if (isAdmin) topics.push('notifications:admin');
+  const unsubscribers = topics.map((topic) => subscribeNotificationBroadcast(
+    topic,
+    topic.startsWith('notification-state:') ? 'notification_state_changed' : 'notification_insert',
+    topic.startsWith('notification-state:') ? onStateChanged : onNotification,
+    onError,
+  ));
+  return () => { unsubscribers.forEach((unsubscribe) => unsubscribe()); };
 }
 
 function normalizeNotificationReadState(data: Record<string, unknown>): NotificationReadState {

@@ -50,6 +50,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 // ---------------------------------------------------------------------------
 
 function notionEnabled(): boolean {
+  if (optionalEnv("NOTION_ENABLED") === "false") return false;
   return Boolean(optionalEnv("NOTION_TOKEN") && optionalEnv("NOTION_DATABASE_ID"));
 }
 
@@ -330,7 +331,7 @@ async function getOrCreateNotionPage(
  * Called when the target content is deleted from the platform.
  */
 export async function markNotionPageDeleted(pageId: string): Promise<void> {
-  if (!optionalEnv("NOTION_TOKEN")) return;
+  if (!notionEnabled()) return;
   await ensureSelectOption("狀態", "已刪除");
 
   const response = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {

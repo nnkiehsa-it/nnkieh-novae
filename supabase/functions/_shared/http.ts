@@ -4,6 +4,7 @@ export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
 };
 const MAX_JSON_BODY_BYTES = 64 * 1024;
+export const MAX_WEBHOOK_BODY_BYTES = 64 * 1024;
 
 export function handleCorsPreflight(request: Request) {
   return request.method === "OPTIONS" ? new Response("ok", { headers: corsHeaders }) : null;
@@ -79,21 +80,49 @@ export function errorStatus(error: unknown) {
   if (message === "invalid-issue-category" || message === "support-not-available") return 400;
   if (message.endsWith("-required") || message.endsWith("-too-long") || message === "invalid-status") return 400;
   if (message === "request-in-progress") return 409;
+  if (message.includes("push-token-limit-reached")) return 409;
   if (message.includes("達到上限") || message.includes("太頻繁") || message.includes("上傳額度已用完")) return 429;
   if (message.endsWith(" is not configured.")) return 503;
   if (message === "rate-limit-provider-unavailable") return 503;
   return 500;
 }
 
-export async function readJsonRecord(request: Request) {
+export async function readRequestText(request: Request, maxBytes: number) {
   const declaredLength = Number(request.headers.get("content-length") ?? 0);
-  if (Number.isFinite(declaredLength) && declaredLength > MAX_JSON_BODY_BYTES) {
+  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
     throw new Error("request-too-large");
   }
-  const body = await request.text();
-  if (new TextEncoder().encode(body).byteLength > MAX_JSON_BODY_BYTES) {
-    throw new Error("request-too-large");
+
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > maxBytes) {
+        await reader.cancel("request-too-large");
+        throw new Error("request-too-large");
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
   }
+
+  const body = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(body);
+}
+
+export async function readJsonRecord(request: Request) {
+  const body = await readRequestText(request, MAX_JSON_BODY_BYTES);
   try {
     return asRecord(JSON.parse(body) as unknown);
   } catch {
@@ -104,6 +133,7 @@ export async function readJsonRecord(request: Request) {
 export function publicError(error: unknown) {
   const message = errorMessage(error);
   if (message.includes("達到上限") || message.includes("太頻繁") || message.includes("上傳額度已用完")) return message;
+  if (message.includes("push-token-limit-reached")) return "通知裝置數量已達上限，請先移除舊裝置。";
   const safeMessages: Record<string, string> = {
     "invalid-json": "請求格式不正確。",
     "invalid-issue-category": "提案分類不正確。",
@@ -113,6 +143,7 @@ export function publicError(error: unknown) {
     "permission-denied": "沒有執行此操作的權限。",
     "request-in-progress": "操作處理中，請稍後再試。",
     "request-too-large": "送出的內容超過限制。",
+    "push-token-limit-reached": "通知裝置數量已達上限，請先移除舊裝置。",
     "support-not-available": "此提案目前無法附議。",
     "unauthenticated": "請先登入後再操作。",
   };

@@ -37,6 +37,8 @@ async function readRateLimitsConfig(projectRoot) {
   const imageUploadWriteSecond = raw.imageUploadWriteSecond || {};
   const imageUploadWriteHourly = raw.imageUploadWriteHourly || {};
   const loginSyncHourly = raw.loginSyncHourly || {};
+  const loginSyncIngressSecond = raw.loginSyncIngressSecond || {};
+  const loginSyncIngressHourly = raw.loginSyncIngressHourly || {};
   const avatarCacheDaily = raw.avatarCacheDaily || {};
   const supportToggleHourly = raw.supportToggleHourly || {};
   const announcementLikeHourly = raw.announcementLikeHourly || {};
@@ -74,6 +76,8 @@ async function readRateLimitsConfig(projectRoot) {
     imageUploadWriteSecond: readLimitConfig('imageUploadWriteSecond', imageUploadWriteSecond),
     imageUploadWriteHourly: readLimitConfig('imageUploadWriteHourly', imageUploadWriteHourly),
     loginSyncHourly: readLimitConfig('loginSyncHourly', loginSyncHourly),
+    loginSyncIngressSecond: readLimitConfig('loginSyncIngressSecond', loginSyncIngressSecond),
+    loginSyncIngressHourly: readLimitConfig('loginSyncIngressHourly', loginSyncIngressHourly),
     avatarCacheDaily: readLimitConfig('avatarCacheDaily', avatarCacheDaily),
     supportToggleHourly: readLimitConfig('supportToggleHourly', supportToggleHourly),
     announcementLikeHourly: readLimitConfig('announcementLikeHourly', announcementLikeHourly),
