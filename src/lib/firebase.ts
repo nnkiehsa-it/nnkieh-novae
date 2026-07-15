@@ -2,28 +2,27 @@ import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import { browserLocalPersistence, getAuth, initializeAuth, type Auth } from 'firebase/auth';
 
 const allowedDomain = String(import.meta.env.VITE_ALLOWED_DOMAIN ?? '').trim().toLowerCase();
-const firebaseVapidKey = readEnv('VITE_FIREBASE_VAPID_KEY');
+const firebaseVapidKey = String(import.meta.env.VITE_FIREBASE_VAPID_KEY ?? '').trim();
 
-function readEnv(name: string) {
-  return String(import.meta.env[name as keyof ImportMetaEnv] ?? '').trim();
-}
+const apiKey = String(import.meta.env.VITE_FIREBASE_API_KEY ?? '').trim();
+const authDomain = String(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ?? '').trim();
+const projectId = String(import.meta.env.VITE_FIREBASE_PROJECT_ID ?? '').trim();
+const appId = String(import.meta.env.VITE_FIREBASE_APP_ID ?? '').trim();
+const messagingSenderId = String(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? '').trim();
 
 const firebaseConfig = {
-  apiKey: readEnv('VITE_FIREBASE_API_KEY'),
-  authDomain: readEnv('VITE_FIREBASE_AUTH_DOMAIN'),
-  projectId: readEnv('VITE_FIREBASE_PROJECT_ID'),
-  appId: readEnv('VITE_FIREBASE_APP_ID'),
-  messagingSenderId: readEnv('VITE_FIREBASE_MESSAGING_SENDER_ID'),
+  apiKey,
+  authDomain,
+  projectId,
+  appId,
+  messagingSenderId,
 };
 
-const requiredConfig = [
-  'VITE_FIREBASE_API_KEY',
-  'VITE_FIREBASE_AUTH_DOMAIN',
-  'VITE_FIREBASE_PROJECT_ID',
-  'VITE_FIREBASE_APP_ID',
-] as const;
-
-const missingConfig = requiredConfig.filter((key) => !readEnv(key));
+const missingConfig: string[] = [];
+if (!apiKey) missingConfig.push('VITE_FIREBASE_API_KEY');
+if (!authDomain) missingConfig.push('VITE_FIREBASE_AUTH_DOMAIN');
+if (!projectId) missingConfig.push('VITE_FIREBASE_PROJECT_ID');
+if (!appId) missingConfig.push('VITE_FIREBASE_APP_ID');
 
 const firebaseInitError = missingConfig.length
   ? `Firebase 設定缺少：${missingConfig.join(', ')}。請在本機 .env 或部署環境變數中補齊。`

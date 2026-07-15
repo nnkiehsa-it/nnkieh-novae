@@ -53,10 +53,19 @@ export async function ensureSupabaseAuthenticatedRole(user: User) {
   rememberSync(user.uid);
 
   if (token.claims.role !== 'authenticated') {
-    const refreshedToken = await withRequestTimeout(
+    let refreshedToken = await withRequestTimeout(
       () => user.getIdTokenResult(true),
       { label: 'Supabase 登入更新' },
     );
+    let attempts = 0;
+    while (refreshedToken.claims.role !== 'authenticated' && attempts < 3) {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      refreshedToken = await withRequestTimeout(
+        () => user.getIdTokenResult(true),
+        { label: 'Supabase 登入更新重試' },
+      );
+      attempts++;
+    }
     if (refreshedToken.claims.role !== 'authenticated') {
       throw new Error('Supabase 登入初始化尚未完成。');
     }

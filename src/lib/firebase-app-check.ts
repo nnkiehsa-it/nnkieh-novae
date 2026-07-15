@@ -2,15 +2,12 @@ import { app } from '@/lib/firebase';
 
 let initialization: Promise<void> | null = null;
 
-function readEnv(name: string) {
-  return String(import.meta.env[name as keyof ImportMetaEnv] ?? '').trim();
-}
-
 export function ensureFirebaseAppCheck() {
   if (initialization) return initialization;
   initialization = (async () => {
-    if (!app || readEnv('VITE_FIREBASE_APP_CHECK_ENABLED') !== 'true') return;
-    const siteKey = readEnv('VITE_RECAPTCHA_ENTERPRISE_SITE_KEY');
+    const isAppCheckEnabled = String(import.meta.env.VITE_FIREBASE_APP_CHECK_ENABLED ?? '').trim() === 'true';
+    if (!app || !isAppCheckEnabled) return;
+    const siteKey = String(import.meta.env.VITE_RECAPTCHA_ENTERPRISE_SITE_KEY ?? '').trim();
     if (!siteKey) return;
     const { initializeAppCheck, ReCaptchaEnterpriseProvider } = await import('firebase/app-check');
     initializeAppCheck(app, {

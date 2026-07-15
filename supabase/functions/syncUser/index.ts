@@ -88,6 +88,15 @@ Deno.serve(async (request) => {
       requireEnv("APP_SUPABASE_SERVICE_ROLE_KEY"),
       { auth: { persistSession: false } },
     );
+
+    // Resolve email conflicts by setting email to null for any other user profile
+    const { error: conflictError } = await supabase.schema("app_private")
+      .from("user_profiles")
+      .update({ email: null })
+      .eq("email", user.email.toLowerCase())
+      .neq("uid", user.uid);
+    if (conflictError) throw conflictError;
+
     const { error: profileError } = await supabase.schema("app_private").from("user_profiles").upsert({
       uid: user.uid,
       email: user.email.toLowerCase(),

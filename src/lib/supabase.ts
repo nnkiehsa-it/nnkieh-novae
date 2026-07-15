@@ -1,12 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { getFirebaseIdToken } from '@/lib/auth-token';
 
-const supabaseUrl = readEnv('VITE_SUPABASE_URL');
-const supabasePublishableKey = readEnv('VITE_SUPABASE_PUBLISHABLE_KEY');
-
-function readEnv(name: string) {
-  return String(import.meta.env[name as keyof ImportMetaEnv] ?? '').trim();
-}
+const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL ?? '').trim();
+const supabasePublishableKey = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '').trim();
 
 type SupabaseAppClient = ReturnType<typeof createClient<any, 'app_api'>>;
 
