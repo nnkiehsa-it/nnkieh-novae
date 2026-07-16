@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { backendActionDefinitions } from "../../supabase/functions/backendAction/action-registry.ts";
+import { integrationTest } from "./helpers.ts";
 
-Deno.test("every registered backend action is exercised by local integration tests", async () => {
+integrationTest("every registered backend action is exercised by local integration tests", async () => {
   const testFiles = [
     "access-uploads.test.ts",
     "issues.test.ts",

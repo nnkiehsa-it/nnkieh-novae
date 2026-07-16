@@ -3,6 +3,7 @@ import {
   asRecord,
   callAction,
   expectActionError,
+  integrationTest,
   requestId,
   seedActor,
 } from "./helpers.ts";
@@ -20,7 +21,7 @@ async function createFacility(
   return asRecord(result.facility);
 }
 
-Deno.test("facility ownership and facility.manage permissions", async () => {
+integrationTest("facility ownership and facility.manage permissions", async () => {
   const owner = await seedActor("facility-owner");
   const user = await seedActor("facility-user");
   const manager = await seedActor("facility-manager", { roles: ["general-affairs"] });
@@ -92,7 +93,7 @@ Deno.test("facility ownership and facility.manage permissions", async () => {
   }, owner.auth);
 });
 
-Deno.test("announcement.manage, likes, comments, and ownership", async () => {
+integrationTest("announcement.manage, likes, comments, and ownership", async () => {
   const manager = await seedActor("announcement-manager", {
     roles: ["announcement-manager"],
   });

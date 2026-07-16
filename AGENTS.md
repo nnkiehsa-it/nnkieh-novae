@@ -2,6 +2,7 @@
 
 ## 工作前提
 
+0. Node.js 統一使用 24 LTS；不得為繞過依賴警告降到 Node 20 或降級主要 runtime 套件。
 1. 修改前先讀 `structure.md`，依既有模組擴充，不另起平行實作。
 2. 搜尋避開 `node_modules`、`dist`、`.vercel`、`.supabase` 等產物。
 3. 不做 in-app browser preview；以 typecheck / lint / build 驗證。

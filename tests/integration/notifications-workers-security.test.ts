@@ -7,6 +7,7 @@ import {
   asRecord,
   callAction,
   expectActionError,
+  integrationTest,
   requestId,
   seedActor,
   supabase,
@@ -51,7 +52,7 @@ async function authenticatedJwt(uid: string) {
   return `${signingInput}.${base64Url(new Uint8Array(signature))}`;
 }
 
-Deno.test("notification state, push preferences, and dashboard permissions", async () => {
+integrationTest("notification state, push preferences, and dashboard permissions", async () => {
   const admin = await seedActor("notification-admin", { roles: ["platform-admin"] });
   const user = await seedActor("notification-user");
 
@@ -123,7 +124,7 @@ Deno.test("notification state, push preferences, and dashboard permissions", asy
   assert.ok("operations" in dashboard);
 });
 
-Deno.test("worker database lifecycles and maintenance RPC", async () => {
+integrationTest("worker database lifecycles and maintenance RPC", async () => {
   const expiredOwner = await seedActor("expired-support-owner");
   const expiredIssueResult = asRecord(await callAction("createIssue", {
     category: ISSUE_CATEGORY_IDS[0],
@@ -211,7 +212,7 @@ Deno.test("worker database lifecycles and maintenance RPC", async () => {
   assert.ok(maintenance && typeof maintenance === "object");
 });
 
-Deno.test("raw PostgREST access fails closed while service role remains available", async () => {
+integrationTest("raw PostgREST access fails closed while service role remains available", async () => {
   const url = requiredEnv("SUPABASE_URL");
   const anonKey = requiredEnv("SUPABASE_ANON_KEY");
   const anon = createClient<Database>(url, anonKey, {
@@ -242,7 +243,7 @@ Deno.test("raw PostgREST access fails closed while service role remains availabl
   assert.equal(serviceResult.error, null);
 });
 
-Deno.test("real Edge Function HTTP boundaries reject missing trust signals", async () => {
+integrationTest("real Edge Function HTTP boundaries reject missing trust signals", async () => {
   const functionsUrl = requiredEnv("SUPABASE_FUNCTIONS_URL").replace(/\/+$/u, "");
   const originSecret = requiredEnv("EDGE_ORIGIN_SECRET");
   const post = async (functionName: string, body: unknown, headers: HeadersInit = {}) => {

@@ -74,8 +74,8 @@ test('Supabase backend deployment owns database and Edge Functions', async () =>
   const workflow = await read('.github/workflows/deploy-backend.yml');
   const config = await read('supabase/config.toml');
 
-  assert.match(workflow, /supabase\/setup-cli/u);
-  assert.match(workflow, /actions\/setup-node/u);
+  assert.match(workflow, /supabase\/setup-cli@v3[\s\S]*version: latest/u);
+  assert.match(workflow, /actions\/setup-node@v7/u);
   assert.match(workflow, /cache-node-modules/u);
   assert.match(workflow, /npm ci --prefer-offline/u);
   assert.match(workflow, /npm run test:architecture/u);
@@ -1248,9 +1248,32 @@ test('pull requests and backend deployments retain the local integration gate', 
   );
   assert.match(verifyPr, /Full local backend integration[\s\S]*npm run verify:integration/u);
   assert.match(verifyPr, /Check Cloudflare Worker[\s\S]*npm run check:worker/u);
+  assert.match(verifyPr, /denoland\/setup-deno@v2[\s\S]*NOVAE_DENO_BIN/u);
   assert.match(
     deployBackend,
     /Verify local database, permissions, and Edge workflows[\s\S]*npm run verify:integration/u,
   );
+  assert.match(deployBackend, /denoland\/setup-deno@v2[\s\S]*NOVAE_DENO_BIN/u);
   assert.match(agents, /新增 backend action 必須在 `tests\/integration\/`/u);
+});
+
+test('GitHub workflows use the current Node 24 action generations', async () => {
+  const workflowPaths = [
+    '.github/workflows/deploy-backend.yml',
+    '.github/workflows/deploy-frontend.yml',
+    '.github/workflows/reset-db.yml',
+    '.github/workflows/verify-pr.yml',
+  ];
+  const workflows = await Promise.all(workflowPaths.map((path) => read(path)));
+  const combined = workflows.join('\n');
+
+  assert.doesNotMatch(
+    combined,
+    /actions\/checkout@v[1-6]\b|actions\/setup-node@v[1-6]\b|supabase\/setup-cli@v[1-2]\b/u,
+  );
+  assert.match(combined, /actions\/checkout@v7/u);
+  assert.match(combined, /actions\/setup-node@v7[\s\S]*node-version: 24/u);
+  assert.match(combined, /actions\/cache@v6/u);
+  assert.match(combined, /supabase\/setup-cli@v3/u);
+  assert.match(combined, /denoland\/setup-deno@v2/u);
 });

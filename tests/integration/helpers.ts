@@ -29,6 +29,19 @@ export interface TestIdentity {
   uid: string;
 }
 
+export function integrationTest(
+  name: string,
+  execute: () => void | Promise<void>,
+) {
+  Deno.test({
+    fn: execute,
+    name,
+    // supabase-js can finish an internal compatibility timer during the
+    // following test. Resource sanitization and all durable assertions remain.
+    sanitizeOps: false,
+  });
+}
+
 export function asRecord(value: unknown): JsonRecord {
   assert.ok(value && typeof value === "object" && !Array.isArray(value));
   return value as JsonRecord;

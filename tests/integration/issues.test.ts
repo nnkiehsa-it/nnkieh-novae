@@ -3,6 +3,7 @@ import {
   asRecord,
   callAction,
   expectActionError,
+  integrationTest,
   requestId,
   seedActor,
 } from "./helpers.ts";
@@ -21,7 +22,7 @@ async function createIssue(
   return asRecord(result.issue);
 }
 
-Deno.test("issue reads, scoped moderation, support, comments, and deletion", async () => {
+integrationTest("issue reads, scoped moderation, support, comments, and deletion", async () => {
   const admin = await seedActor("issue-admin", { roles: ["platform-admin"] });
   const owner = await seedActor("issue-owner");
   const user = await seedActor("issue-user");

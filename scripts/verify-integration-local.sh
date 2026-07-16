@@ -25,12 +25,17 @@ if [[ -n "$ENV_FILE" && ! -f "$ENV_FILE" ]]; then
   exit 2
 fi
 
-for command_name in docker supabase deno curl; do
+for command_name in docker supabase curl; do
   if ! command -v "$command_name" >/dev/null 2>&1; then
     echo "Missing local integration dependency: $command_name" >&2
     exit 2
   fi
 done
+DENO_COMMAND="${NOVAE_DENO_BIN:-deno}"
+if ! command -v "$DENO_COMMAND" >/dev/null 2>&1; then
+  echo "Missing local integration dependency: $DENO_COMMAND" >&2
+  exit 2
+fi
 if ! docker info >/dev/null 2>&1; then
   echo "Docker is not running or the current WSL user cannot access it." >&2
   exit 2
@@ -56,9 +61,14 @@ cleanup() {
 trap cleanup EXIT
 
 echo "[integration] Starting local Supabase"
-supabase start --exclude imgproxy,logflare,mailpit,postgres-meta,realtime,storage-api,studio,supavisor,vector
+START_EXCLUDES="edge-runtime,imgproxy,realtime,studio,vector"
+supabase stop >/dev/null 2>&1 || true
+supabase db start
 echo "[integration] Resetting the local database"
 supabase db reset --local
+echo "[integration] Starting local API services after migrations"
+supabase stop >/dev/null 2>&1 || true
+supabase start --exclude "$START_EXCLUDES"
 
 STATUS_ENV="$(supabase status -o env)"
 eval "$(printf '%s\n' "$STATUS_ENV" | grep -E '^(ANON_KEY|API_URL|JWT_SECRET|PUBLISHABLE_KEY|SECRET_KEY|SERVICE_ROLE_KEY)=')"
@@ -101,9 +111,6 @@ supabase db lint --local --level error --fail-on error
   printf 'FIREBASE_PROJECT_ID=integration-project\n'
   printf 'FIREBASE_WEB_API_KEY=integration-web-api-key\n'
   printf 'WEBHOOK_SECRET=integration-worker-secret\n'
-  if [[ -n "$ENV_FILE" ]]; then
-    grep -E '^(ALLOWED_DOMAIN|CLOUDFLARE_WORKER_URL|CLOUDINARY_API_KEY|CLOUDINARY_API_SECRET|CLOUDINARY_CLOUD_NAME|CLOUDINARY_WEBHOOK_SECRET|EDGE_ORIGIN_SECRET|FIREBASE_PROJECT_ID|FIREBASE_WEB_API_KEY|WEBHOOK_SECRET)=' "$ENV_FILE" || true
-  fi
   printf '\nAPP_SUPABASE_SERVICE_ROLE_KEY=%s\n' "$SERVICE_ROLE_KEY"
   printf 'SUPABASE_URL=%s\n' "$API_URL"
   printf 'SUPABASE_ANON_KEY=%s\n' "$ANON_KEY"
@@ -114,6 +121,7 @@ supabase db lint --local --level error --fail-on error
 chmod 600 "$TEMP_ENV"
 grep -v '^SUPABASE_' "$TEMP_ENV" >"$FUNCTION_ENV"
 chmod 600 "$FUNCTION_ENV"
+ORIGIN_SECRET="$(grep '^EDGE_ORIGIN_SECRET=' "$TEMP_ENV" | head -n 1 | cut -d= -f2-)"
 
 echo "[integration] Serving Edge Functions with local database credentials"
 supabase functions serve --env-file "$FUNCTION_ENV" --no-verify-jwt >"$FUNCTION_LOG" 2>&1 &
@@ -122,8 +130,9 @@ for _ in $(seq 1 60); do
   status="$(curl -sS -o /dev/null -w '%{http_code}' \
     -X POST "$API_URL/functions/v1/backendAction" \
     -H 'content-type: application/json' \
-    --data '{"action":"getContentRevisions","payload":{}}' || true)"
-  if [[ "$status" == "401" ]]; then
+    -H "x-novae-origin-secret: $ORIGIN_SECRET" \
+    --data '{"action":"integrationReadinessProbe","payload":{}}' || true)"
+  if [[ "$status" == "400" ]]; then
     break
   fi
   if ! kill -0 "$FUNCTION_PID" >/dev/null 2>&1; then
@@ -132,16 +141,17 @@ for _ in $(seq 1 60); do
   fi
   sleep 1
 done
-if [[ "${status:-}" != "401" ]]; then
+if [[ "${status:-}" != "400" ]]; then
   cat "$FUNCTION_LOG" >&2
   echo "Edge Functions did not become ready." >&2
   exit 1
 fi
 
 echo "[integration] Running every backend action, permission matrix, RLS, and worker lifecycle"
-if ! deno test \
+if ! "$DENO_COMMAND" test \
   --node-modules-dir=none \
   --no-lock \
+  --minimum-dependency-age=0 \
   --env-file="$TEMP_ENV" \
   --allow-env \
   --allow-net \

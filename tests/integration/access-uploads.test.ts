@@ -3,6 +3,7 @@ import {
   asRecord,
   callAction,
   expectActionError,
+  integrationTest,
   refreshActor,
   requestId,
   seedActor,
@@ -10,7 +11,7 @@ import {
   tableRow,
 } from "./helpers.ts";
 
-Deno.test("access, role, idempotency, avatar, and upload actions", async () => {
+integrationTest("access, role, idempotency, avatar, and upload actions", async () => {
   const admin = await seedActor("access-admin", { roles: ["platform-admin"] });
   const user = await seedActor("access-user");
   let target = await seedActor("access-target");

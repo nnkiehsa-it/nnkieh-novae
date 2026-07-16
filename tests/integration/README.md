@@ -23,9 +23,12 @@ Debian:
 $env:NOVAE_WSL_DISTRO = 'Ubuntu'
 ```
 
-`.env.local` is optional and gitignored. The suite has safe local defaults and
-always replaces Supabase credentials with the local stack. Use `--keep-running`
-to retain containers after a run.
+`.env.local` is optional and gitignored. The suite uses fixed safe local values
+and never injects deployment/provider credentials into Edge tests. Use
+`--keep-running` to retain containers after a run.
+
+GitHub Actions installs the current official Deno runtime explicitly instead of
+using the compatibility runtime bundled for Windows Edge type checks.
 
 New actions must include asserted positive and denial cases. The coverage guard
 fails when a registered action is not referenced. Full maintenance rules:
