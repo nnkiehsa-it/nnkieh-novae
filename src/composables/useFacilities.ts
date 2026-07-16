@@ -19,6 +19,7 @@ export function useFacilities() {
   const browseHasMore = ref(false);
   const loading = ref(false);
   const loadingMore = ref(false);
+  const affectingFacilityId = ref('');
   const error = ref('');
   let requestVersion = 0;
   let requestController: AbortController | null = null;
@@ -67,10 +68,19 @@ export function useFacilities() {
   }
 
   async function toggleAffected(facility: FacilitySummary) {
-    if (facility.isOwnFacility || ['completed', 'unable-to-handle'].includes(facility.status)) return;
-    const result = await toggleFacilityAffected(facility.id);
-    facility.currentUserAffected = result.affected;
-    facility.affected_count = result.affected_count;
+    if (
+      affectingFacilityId.value
+      || facility.isOwnFacility
+      || ['completed', 'unable-to-handle'].includes(facility.status)
+    ) return;
+    affectingFacilityId.value = facility.id;
+    try {
+      const result = await toggleFacilityAffected(facility.id);
+      facility.currentUserAffected = result.affected;
+      facility.affected_count = result.affected_count;
+    } finally {
+      affectingFacilityId.value = '';
+    }
   }
 
   async function changeStatus(facility: FacilitySummary, nextStatus: FacilityStatus, result?: string) {
@@ -137,5 +147,24 @@ export function useFacilities() {
     requestController?.abort();
   });
 
-  return { bucket, changeStatus, clearSearch, committedQuery, error, facilities: visibleFacilities, hasMore, load, loading, loadingMore, query, remove, sort, status, statusOptions, submitSearch, toggleAffected };
+  return {
+    affectingFacilityId,
+    bucket,
+    changeStatus,
+    clearSearch,
+    committedQuery,
+    error,
+    facilities: visibleFacilities,
+    hasMore,
+    load,
+    loading,
+    loadingMore,
+    query,
+    remove,
+    sort,
+    status,
+    statusOptions,
+    submitSearch,
+    toggleAffected,
+  };
 }

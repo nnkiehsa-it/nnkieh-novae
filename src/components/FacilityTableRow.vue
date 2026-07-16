@@ -39,9 +39,11 @@
       <footer class="mt-3 flex items-center justify-end gap-1.5" @click.stop>
         <button
           type="button"
-          class="button-toolbar flex h-8 items-center gap-1 rounded-full px-2.5 text-xs font-semibold"
-          :class="{ 'button-toolbar--active': facility.currentUserAffected }"
-          :disabled="facility.isOwnFacility || isClosed"
+          :class="[
+            facility.currentUserAffected ? 'button-icon-pill-filled' : 'button-icon-pill',
+            '!h-8 !gap-1 !px-2.5 text-xs',
+          ]"
+          :disabled="affecting || facility.isOwnFacility || isClosed"
           :title="facility.isOwnFacility ? '作者已自動計入' : '我也遇到'"
           @click="emit('toggle-affected', facility)"
         >
@@ -63,7 +65,14 @@ import { useStatusStyling } from '@/composables/useStatusStyling';
 import { formatDate } from '@/lib/format';
 import type { FacilityStatus, FacilitySummary } from '@/types';
 
-const props = withDefaults(defineProps<{ facility: FacilitySummary; highlightQuery?: string }>(), { highlightQuery: '' });
+const props = withDefaults(defineProps<{
+  affecting?: boolean;
+  facility: FacilitySummary;
+  highlightQuery?: string;
+}>(), {
+  affecting: false,
+  highlightQuery: '',
+});
 const emit = defineEmits<{
   'open-details': [facility: FacilitySummary];
   'toggle-affected': [facility: FacilitySummary];

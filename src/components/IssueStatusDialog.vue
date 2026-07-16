@@ -1,143 +1,64 @@
 <template>
-  <DialogOverlay :open="open" padded z-index-class="z-[110]" @close="handleClose">
-    <section
-      ref="dialogRef"
-      class="panel panel-pad w-full max-w-lg"
-      data-dialog-root
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="status-dialog-title"
-      :aria-busy="saving ? 'true' : undefined"
-      tabindex="-1"
-    >
-      <h3 id="status-dialog-title" class="dialog-title">
-        {{ step === 1 ? '更新提案狀態' : '填寫提案結果' }}
-      </h3>
-      <p class="dialog-description">
-        {{ step === 1
-          ? '請選擇下一個狀態。'
-          : '結案時請填寫使用者看得到的處理結果。' }}
-      </p>
-
-      <div class="mt-5 space-y-4">
-        <!-- Step 1: Select Status -->
-        <div v-if="step === 1">
-          <p class="field-label mb-2">下一個狀態</p>
-          <div class="grid gap-2">
-            <SelectionOptionButton
-              v-for="option in availableStatusOptions"
-              :key="option.value"
-              :label="option.label"
-              :description="option.description"
-              :selected="nextStatus === option.value"
-              :disabled="saving"
-              @select="nextStatus = option.value"
-            />
-          </div>
-
-          <p
-            v-if="!requiresResult && issue.result_content"
-            class="mt-4 rounded-xl border border-warning/20 bg-warning-container/40 px-3 py-2 text-xs font-semibold leading-5 text-on-warning-container"
-          >
-            改為處理中會清除目前的提案結果說明。
-          </p>
-        </div>
-
-        <!-- Step 2: Fill Result -->
-        <div v-else-if="step === 2" class="space-y-2">
-          <label class="field-label" for="closed-result-content">提案結果說明</label>
-          <div class="overflow-hidden rounded-[var(--radius-inner)] border-0 bg-surface shadow-note transition-colors focus-within:ring-2 focus-within:ring-outline/25 dark:bg-surface">
-            <textarea
-              id="closed-result-content"
-              v-model="resultContent"
-              class="block min-h-36 w-full resize-none bg-transparent px-4 py-3 text-base leading-6 text-ink-800 outline-none placeholder:text-ink-400 disabled:cursor-not-allowed disabled:text-ink-500 dark:text-ink-100 dark:placeholder:text-ink-500 md:text-sm"
-              maxlength="2000"
-              placeholder="請輸入提案結果說明（例如實行方式、預計時程或無法辦理的原因）"
-              :disabled="saving"
-            ></textarea>
-            <div class="flex items-center justify-end border-t border-ink-100 bg-ink-50/50 px-4 py-2 text-xs font-medium text-ink-500 dark:border-ink-800 dark:bg-ink-950/30 dark:text-ink-400">
-              <span :class="{ 'text-error': resultContent.length > 1800 }">{{ resultContent.length }} / 2000</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <p v-if="errorMsg" class="mt-3 text-xs font-semibold text-error">{{ errorMsg }}</p>
-
-      <div class="dialog-actions">
-        <button type="button" class="button-secondary" :disabled="saving" @click="handleSecondaryClick">
-          {{ step === 1 ? '取消' : '返回' }}
-        </button>
-        <button type="button" class="button-primary" :disabled="saving" @click="handlePrimaryClick">
-          <BusyButtonContent :busy="saving" :label="idlePrimaryLabel" busy-label="更新中" />
-        </button>
-      </div>
-    </section>
-  </DialogOverlay>
+  <StatusTransitionDialog
+    dialog-title-id="status-dialog-title"
+    :open="open"
+    :saving="saving"
+    :error="errorMsg"
+    :options="availableStatusOptions"
+    :initial-status="initialStatus"
+    :initial-result="issue.result_content ?? ''"
+    select-title="更新提案狀態"
+    result-title="填寫提案結果"
+    result-description="結案時請填寫使用者看得到的處理結果。"
+    result-input-id="closed-result-content"
+    result-label="提案結果說明"
+    :result-max-length="INPUT_LIMITS.resultContent"
+    :result-warning-length="1800"
+    result-placeholder="請輸入提案結果說明（例如實行方式、預計時程或無法辦理的原因）"
+    result-required-error="請輸入提案結果說明。"
+    :result-statuses="['completed', 'infeasible']"
+    :status-warnings="statusWarnings"
+    @close="emit('close')"
+    @submit="save"
+  />
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toRef, watch } from 'vue';
-import DialogOverlay from '@/components/ui/DialogOverlay.vue';
-import BusyButtonContent from '@/components/ui/BusyButtonContent.vue';
-import SelectionOptionButton from '@/components/ui/SelectionOptionButton.vue';
-import { useBodyScrollLock } from '@/composables/useBodyScrollLock';
-import { useDialogFocus } from '@/composables/useDialogFocus';
+import { computed, ref } from 'vue';
+import StatusTransitionDialog from '@/components/ui/StatusTransitionDialog.vue';
+import { INPUT_LIMITS } from '@/constants/input-limits';
 import { useActionFeedback } from '@/composables/useActionFeedback';
 import { moderateIssueStatus, updateIssueResult } from '@/services/issues';
 import type { IssueRecord, IssueStatus } from '@/types';
 
-const props = withDefaults(
-  defineProps<{
-    open: boolean;
-    issue: IssueRecord;
-    initialAction?: 'processing' | 'closed';
-  }>(),
-  {
-    initialAction: 'processing',
-  }
-);
+type EditableStatus = Extract<IssueStatus, 'processing' | 'completed' | 'infeasible'>;
+
+const props = withDefaults(defineProps<{
+  open: boolean;
+  issue: IssueRecord;
+  initialAction?: 'processing' | 'closed';
+}>(), {
+  initialAction: 'processing',
+});
 
 const emit = defineEmits<{
   close: [];
   success: [issue: IssueRecord];
 }>();
 
-useBodyScrollLock(toRef(props, 'open'));
+const statusOptions = [
+  { value: 'processing', label: '處理中', description: '提案已開始處理，尚未有最終結果。' },
+  { value: 'completed', label: '已完成', description: '提案已實行或已有明確完成結果。' },
+  { value: 'infeasible', label: '無法實行', description: '提案經評估後無法辦理，需說明原因。' },
+] satisfies Array<{ value: EditableStatus; label: string; description: string }>;
 
-type EditableStatus = Extract<IssueStatus, 'processing' | 'completed' | 'infeasible'>;
-
-const statusOptions: Array<{
-  description: string;
-  label: string;
-  value: EditableStatus;
-}> = [
-  {
-    value: 'processing',
-    label: '處理中',
-    description: '提案已開始處理，尚未有最終結果。',
-  },
-  {
-    value: 'completed',
-    label: '已完成',
-    description: '提案已實行或已有明確完成結果。',
-  },
-  {
-    value: 'infeasible',
-    label: '無法實行',
-    description: '提案經評估後無法辦理，需說明原因。',
-  },
-];
 const availableStatusOptions = computed(() =>
   props.issue.status === 'processing'
     ? statusOptions.filter((option) => option.value !== 'processing')
-    : statusOptions
+    : statusOptions,
 );
-
-function initialStatus(): EditableStatus {
-  if (props.issue.status === 'processing') {
-    return 'completed';
-  }
+const initialStatus = computed<EditableStatus>(() => {
+  if (props.issue.status === 'processing') return 'completed';
   if (props.initialAction === 'closed') {
     return props.issue.status === 'infeasible' ? 'infeasible' : 'completed';
   }
@@ -145,99 +66,43 @@ function initialStatus(): EditableStatus {
     return props.issue.status;
   }
   return 'processing';
-}
-
-const step = ref(1);
-const nextStatus = ref<EditableStatus>(initialStatus());
-const resultContent = ref(props.issue.result_content ?? '');
+});
+const statusWarnings = computed<Record<string, string>>(() => {
+  const warnings: Record<string, string> = {};
+  if (props.issue.result_content) {
+    warnings.processing = '改為處理中會清除目前的提案結果說明。';
+  }
+  return warnings;
+});
 const saving = ref(false);
 const errorMsg = ref('');
 const { start } = useActionFeedback();
-const requiresResult = computed(() => nextStatus.value === 'completed' || nextStatus.value === 'infeasible');
 
-const idlePrimaryLabel = computed(() => {
-  if (step.value === 1) {
-    return nextStatus.value === 'processing' ? '確認' : '下一步';
-  }
-  return '確認狀態與結果';
-});
-
-function handleClose() {
-  if (saving.value) return;
-  emit('close');
-}
-
-const { dialogRef } = useDialogFocus(toRef(props, 'open'), {
-  onClose: handleClose,
-});
-
-function handlePrimaryClick() {
-  if (step.value === 1) {
-    if (nextStatus.value === 'processing') {
-      save();
-    } else {
-      step.value = 2;
-    }
-  } else if (step.value === 2) {
-    save();
-  }
-}
-
-function handleSecondaryClick() {
-  if (step.value === 1) {
-    handleClose();
-  } else {
-    step.value = 1;
-    errorMsg.value = '';
-  }
-}
-
-async function save() {
+async function save(rawStatus: string, resultContent: string) {
+  const nextStatus = rawStatus as EditableStatus;
   saving.value = true;
   errorMsg.value = '';
-  const feedbackHandle = start('正在更新提案狀態');
+  const feedback = start('正在更新提案狀態');
   try {
-    if (!requiresResult.value) {
-      const updated = await moderateIssueStatus(props.issue.id, 'processing');
-      let finalIssue = updated;
+    if (nextStatus === 'processing') {
+      let finalIssue = await moderateIssueStatus(props.issue.id, nextStatus);
       if (props.issue.result_content) {
         finalIssue = await updateIssueResult(props.issue.id, '');
       }
       emit('success', finalIssue);
-      feedbackHandle.succeed('提案狀態已更新');
+      feedback.succeed('提案狀態已更新');
     } else {
-      const content = resultContent.value.trim();
-      if (!content) {
-        errorMsg.value = '請輸入提案結果說明。';
-        feedbackHandle.fail(errorMsg.value);
-        saving.value = false;
-        return;
-      }
-      const updated = await moderateIssueStatus(props.issue.id, nextStatus.value);
-      const finalIssue = await updateIssueResult(props.issue.id, content);
+      const updated = await moderateIssueStatus(props.issue.id, nextStatus);
+      const finalIssue = await updateIssueResult(props.issue.id, resultContent);
       emit('success', finalIssue);
-      feedbackHandle.succeed('提案狀態與結果已更新');
+      feedback.succeed('提案狀態與結果已更新');
     }
     emit('close');
   } catch (caught) {
     errorMsg.value = caught instanceof Error ? caught.message : '更新失敗，請稍後再試。';
-    feedbackHandle.fail(errorMsg.value);
+    feedback.fail(errorMsg.value);
   } finally {
     saving.value = false;
   }
 }
-
-watch(
-  () => [props.open, props.issue.id, props.issue.status, props.initialAction] as const,
-  () => {
-    if (!props.open) return;
-    step.value = 1;
-    nextStatus.value = initialStatus();
-    if (!availableStatusOptions.value.some((option) => option.value === nextStatus.value)) {
-      nextStatus.value = availableStatusOptions.value[0]?.value ?? 'completed';
-    }
-    resultContent.value = props.issue.result_content ?? '';
-    errorMsg.value = '';
-  },
-);
 </script>

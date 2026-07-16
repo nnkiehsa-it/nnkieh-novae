@@ -711,6 +711,7 @@ test('proposal manager access is config-driven and category-scoped', async () =>
   const lookupMigration = await read('supabase/migrations/202607150007_access_lookup_and_facility_status.sql');
   const selectionControl = await read('src/components/ui/SelectionOptionButton.vue');
   const facilityDialog = await read('src/components/FacilityStatusDialog.vue');
+  const statusTransitionDialog = await read('src/components/ui/StatusTransitionDialog.vue');
 
   assert.match(accessView, /import \{ ISSUE_CATEGORIES \} from '@\/generated\/issue-categories'/u);
   assert.match(accessView, /v-for="category in ISSUE_CATEGORIES"/u);
@@ -725,24 +726,38 @@ test('proposal manager access is config-driven and category-scoped', async () =>
   assert.match(lookupMigration, /user_profiles_email_unique_idx/u);
   assert.match(lookupMigration, /backend_update_facility_status\.result_content/u);
   assert.match(accessView, /SelectionOptionButton/u);
-  assert.match(facilityDialog, /SelectionOptionButton/u);
+  assert.match(facilityDialog, /StatusTransitionDialog/u);
+  assert.match(statusTransitionDialog, /SelectionOptionButton/u);
   assert.match(selectionControl, /button-toolbar--active[\s\S]*SelectionMark/u);
 });
 
 test('facility next actions and account UID use existing detail controls', async () => {
   const facilityDetail = await read('src/views/FacilityDetailView.vue');
+  const facilityPanel = await read('src/components/FacilityDetailPagePanel.vue');
+  const facilityActions = await read('src/components/FacilityDetailActions.vue');
+  const contentDetailBody = await read('src/components/ContentDetailBody.vue');
   const settingsView = await read('src/views/SettingsView.vue');
   const settingsPanel = await read('src/components/SettingsPanelContent.vue');
   const shareUrl = await read('src/composables/useShareUrl.ts');
   const proposalFooter = await read('src/components/IssueDetailSupportFooter.vue');
   const operationTimes = await read('src/components/ui/OperationTimeList.vue');
+  const detailRouteState = await read('src/components/ui/DetailRouteState.vue');
 
-  assert.match(facilityDetail, /DetailActionButton/u);
-  assert.match(facilityDetail, /#actions="\{ compact \}"/u);
-  assert.match(facilityDetail, /:compact="compact"/u);
+  assert.match(facilityDetail, /FacilityDetailPagePanel/u);
+  assert.match(facilityDetail, /DetailRouteState/u);
+  assert.match(detailRouteState, /LoadingSpinner/u);
+  assert.match(facilityDetail, /ConfirmDialog/u);
+  assert.match(facilityDetail, /useShareUrl/u);
+  assert.match(facilityPanel, /#actions="\{ compact \}"/u);
+  assert.match(facilityPanel, /:compact="compact"/u);
+  assert.match(facilityActions, /DetailActionButton/u);
+  assert.match(facilityActions, /label="分享"/u);
+  assert.match(facilityPanel, /ContentDetailBody/u);
+  assert.match(contentDetailBody, /noticeContent/u);
+  assert.equal((contentDetailBody.match(/<MarkdownMediaContent/gu) ?? []).length, 2);
   assert.match(facilityDetail, /'開始處理'\s*:\s*'完成／無法處理'/u);
   assert.match(facilityDetail, /待受理時間[\s\S]*開始處理時間[\s\S]*無法處理時間/u);
-  assert.match(facilityDetail, /OperationTimeList/u);
+  assert.match(facilityActions, /OperationTimeList/u);
   assert.match(proposalFooter, /OperationTimeList/u);
   assert.match(operationTimes, /compact \? `\$\{item\.shortLabel\}：` : `\$\{item\.label\}：`/u);
   assert.doesNotMatch(facilityDetail, />更新狀態</u);
@@ -1115,6 +1130,8 @@ test('entry and comment limits are enforced across UI, Edge, and a new migration
   const issueComposer = await read('src/components/IssueComposer.vue');
   const announcementComposer = await read('src/components/AnnouncementComposerDialog.vue');
   const facilityComposer = await read('src/components/FacilityComposer.vue');
+  const composerShell = await read('src/components/ui/EntryComposerShell.vue');
+  const countedField = await read('src/components/ui/CountedTextField.vue');
   const feedbackBar = await read('src/components/ActionFeedbackBar.vue');
   const responsiveStyles = await read('src/styles/responsive.css');
   const baseStyles = await read('src/styles/base.css');
@@ -1134,18 +1151,24 @@ test('entry and comment limits are enforced across UI, Edge, and a new migration
   assert.match(baseStyles, /padding-bottom: calc\(var\(--app-bottom-nav-height\) \+ 1rem\)/u);
   assert.match(responsiveStyles, /padding-left: max\(var\(--dialog-safe-padding, 1rem\), env\(safe-area-inset-left\)\)/u);
   assert.match(responsiveStyles, /padding-right: max\(var\(--dialog-safe-padding, 1rem\), env\(safe-area-inset-right\)\)/u);
-  assert.match(issueComposer, /entry-composer__scroll/u);
-  assert.match(announcementComposer, /entry-composer__scroll/u);
+  assert.match(composerShell, /entry-composer__scroll/u);
   assert.match(responsiveStyles, /\.entry-composer__scroll \{[\s\S]*margin-inline: -0\.5rem;[\s\S]*padding-inline: 0\.5rem;/u);
   assert.match(responsiveStyles, /\.entry-composer__footer \{/u);
   assert.match(responsiveStyles, /\.entry-composer__actions \{/u);
   assert.match(responsiveStyles, /\.entry-composer__action \{[\s\S]*height: var\(--control-height\);[\s\S]*font-weight: 600;/u);
   [issueComposer, announcementComposer, facilityComposer].forEach((composer) => {
-    assert.match(composer, /class="entry-composer__footer"/u);
-    assert.match(composer, /class="entry-composer__actions"/u);
+    assert.match(composer, /EntryComposerShell/u);
     assert.doesNotMatch(composer, /entry-composer__action button-contextual/u);
-    assert.equal((composer.match(/entry-composer__action button-secondary/gu) ?? []).length, 2);
   });
+  assert.match(composerShell, /CountedTextField/u);
+  assert.match(composerShell, /MarkdownImageEditor/u);
+  assert.match(composerShell, /class="entry-composer__footer"/u);
+  assert.match(composerShell, /class="entry-composer__actions"/u);
+  assert.match(composerShell, /md:max-h-screen/u);
+  assert.equal((composerShell.match(/entry-composer__action button-secondary/gu) ?? []).length, 2);
+  assert.match(countedField, /v-model="value"/u);
+  assert.match(composerShell, /min-h-\[220px\]/u);
+  assert.match(composerShell, /editor-class="flex-1 min-h-\[180px\]"/u);
   assert.match(feedbackBar, /action-feedback-card[\s\S]*min-h-14 w-full/u);
   assert.match(baseStyles, /\.action-feedback-viewport \{[\s\S]*padding-left: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-left\)\);[\s\S]*padding-right: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-right\)\)/u);
   assert.match(baseStyles, /body\.dialog-open \.action-feedback-viewport \{[\s\S]*top: calc\(env\(safe-area-inset-top\) \+ 6\.75rem\)/u);
@@ -1185,6 +1208,7 @@ test('navigation and contextual creation share the same responsive information a
   const announcementsView = await read('src/views/AnnouncementsView.vue');
   const settingsPanel = await read('src/components/SettingsPanelContent.vue');
   const issueComposer = await read('src/components/IssueComposer.vue');
+  const composerShell = await read('src/components/ui/EntryComposerShell.vue');
   const controls = await read('src/styles/controls.css');
 
   assert.match(appShell, /label: '提案'/u);
@@ -1204,8 +1228,9 @@ test('navigation and contextual creation share the same responsive information a
   assert.match(issueBoard, /`新增到\$\{activeCategoryLabel\.value\}`/u);
   assert.match(facilitiesView, /create-label="新增設備"[\s\S]*@create="composerOpen = true"/u);
   assert.match(announcementsView, /v-if="isAdmin"[\s\S]*aria-label="新增公告"/u);
-  assert.match(issueComposer, /class="button-dialog-close/u);
-  assert.match(issueComposer, /type="submit" class="entry-composer__action button-secondary"/u);
+  assert.match(issueComposer, /EntryComposerShell/u);
+  assert.match(composerShell, /class="button-dialog-close/u);
+  assert.match(composerShell, /type="submit"[\s\S]*class="entry-composer__action button-secondary"/u);
   assert.doesNotMatch(issueComposer, /entry-composer__action button-contextual/u);
   assert.match(controls, /\.button-contextual \{[\s\S]*bg-surface[\s\S]*box-shadow: var\(--shadow-card\)/u);
   assert.match(controls, /\.button-dialog-close \{[\s\S]*bg-surface[\s\S]*box-shadow: var\(--shadow-card\)/u);

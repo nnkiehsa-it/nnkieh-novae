@@ -1,4 +1,4 @@
-import { computed, reactive, ref, toRef, watch, type Ref } from 'vue';
+import { reactive, ref, toRef, watch, type Ref } from 'vue';
 import { useMarkdownImageUpload } from '@/composables/useMarkdownImageUpload';
 import { useSession } from '@/composables/useSession';
 import { useActionFeedback } from '@/composables/useActionFeedback';
@@ -20,7 +20,6 @@ export function useIssueComposerForm(open: Ref<boolean>, options: IssueComposerF
     content: '',
   });
   const {
-    fileInputRef,
     handleImagePicked,
     contentWithImages,
     deleteUploadedImages,
@@ -28,7 +27,6 @@ export function useIssueComposerForm(open: Ref<boolean>, options: IssueComposerF
     imageUrls,
     removeImage,
     resetImages,
-    textareaRef: contentTextareaRef,
     uploadError,
     uploadImagesAndBuildContent,
     uploading,
@@ -39,8 +37,6 @@ export function useIssueComposerForm(open: Ref<boolean>, options: IssueComposerF
   const submitting = ref(false);
   const showPreview = ref(false);
   const error = ref('');
-  const titleCount = computed(() => form.title.length);
-  const contentCount = computed(() => form.content.length);
 
   watch(open, (isOpen) => {
     if (!isOpen) {
@@ -122,19 +118,15 @@ export function useIssueComposerForm(open: Ref<boolean>, options: IssueComposerF
 
   return {
     form,
-    fileInputRef,
     handleImagePicked,
     contentWithImages,
     imageUrls,
     removeImage,
-    contentTextareaRef,
     uploadError,
     uploading,
     submitting,
     showPreview,
     error,
-    titleCount,
-    contentCount,
     handleClose,
     submit,
   };

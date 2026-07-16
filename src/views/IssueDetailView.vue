@@ -1,34 +1,31 @@
 <template>
   <div class="min-h-0">
-    <PageLoadFailure
-      v-if="sessionLoadingHasProblem"
-      :title="sessionProblemTitle"
-      :description="sessionProblemDescription"
-      :retry-disabled="!sessionOnline"
-      @retry="reloadPage"
-    />
-
-    <div v-else-if="sessionLoading || routeIssueLoading" class="flex min-h-[50dvh] items-center justify-center" aria-label="正在載入提案" aria-busy="true">
-      <LoadingSpinner :size="8" />
-    </div>
-
-    <div v-else-if="!isAllowedUser" class="sr-only" role="status">正在前往登入頁</div>
-
-    <IssueDetailPagePanel
-      v-else-if="routeIssue"
-      :issue="routeIssue"
-      :current-user-supported="Boolean(routeIssue.currentUserSupported)"
-      :support-count="routeIssue.support_count"
-      :support-closed="routeIssueSupportClosed"
-      :initial-tab="initialTab"
-      :focus-comment-id="focusCommentId"
-      @back="goBackToIssueList"
-      @content-unavailable="handleRouteIssueUnavailable"
-      @delete="openDeleteDialog"
-      @issue-updated="patchRouteIssue"
-      @share="copyRouteIssueUrl"
-      @supported="handleRouteIssueSupport"
-    />
+    <DetailRouteState
+      :allowed="isAllowedUser"
+      :loading="sessionLoading || routeIssueLoading"
+      loading-label="正在載入提案"
+      :problem="sessionLoadingHasProblem"
+      :problem-title="sessionProblemTitle"
+      :problem-description="sessionProblemDescription"
+      :problem-retry-disabled="!sessionOnline"
+      @retry-problem="reloadPage"
+    >
+      <IssueDetailPagePanel
+        v-if="routeIssue"
+        :issue="routeIssue"
+        :current-user-supported="Boolean(routeIssue.currentUserSupported)"
+        :support-count="routeIssue.support_count"
+        :support-closed="routeIssueSupportClosed"
+        :initial-tab="initialTab"
+        :focus-comment-id="focusCommentId"
+        @back="goBackToIssueList"
+        @content-unavailable="handleRouteIssueUnavailable"
+        @delete="openDeleteDialog"
+        @issue-updated="patchRouteIssue"
+        @share="copyRouteIssueUrl"
+        @supported="handleRouteIssueSupport"
+      />
+    </DetailRouteState>
 
     <ConfirmDialog
       :open="isDeleteDialogOpen"
@@ -47,11 +44,10 @@ import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import IssueDetailPagePanel from '@/components/IssueDetailPagePanel.vue';
-import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
-import PageLoadFailure from '@/components/ui/PageLoadFailure.vue';
+import DetailRouteState from '@/components/ui/DetailRouteState.vue';
 import { useDeleteIssue } from '@/composables/useDeleteIssue';
+import { useAuthenticatedDetailState } from '@/composables/useAuthenticatedDetailState';
 import { useIssueRouteDetail } from '@/composables/useIssueRouteDetail';
-import { useLoadingTimeout } from '@/composables/useLoadingTimeout';
 import { useSession } from '@/composables/useSession';
 import { useShareUrl } from '@/composables/useShareUrl';
 import { useActionFeedback } from '@/composables/useActionFeedback';
@@ -60,18 +56,18 @@ import { resetAppConnection } from '@/lib/reconnect';
 
 const route = useRoute();
 const router = useRouter();
-const { initialized, isAllowedUser, loading, mySupportedIssueIds } = useSession();
+const {
+  canLoad,
+  isAllowedUser,
+  sessionLoading,
+  sessionLoadingHasProblem,
+  sessionOnline,
+  sessionProblemDescription,
+  sessionProblemTitle,
+} = useAuthenticatedDetailState();
+const { mySupportedIssueIds } = useSession();
 const { copyShareUrl } = useShareUrl();
 const { show } = useActionFeedback();
-
-const sessionLoading = computed(() => loading.value || !initialized.value);
-const canLoadIssue = computed(() => initialized.value && isAllowedUser.value);
-const {
-  hasProblem: sessionLoadingHasProblem,
-  isOnline: sessionOnline,
-  problemDescription: sessionProblemDescription,
-  problemTitle: sessionProblemTitle,
-} = useLoadingTimeout(sessionLoading, 5_000);
 
 const {
   routeIssue,
@@ -80,7 +76,7 @@ const {
   closeRouteIssue,
   patchRouteIssue,
   updateRouteIssueSupport,
-} = useIssueRouteDetail(mySupportedIssueIds, undefined, canLoadIssue);
+} = useIssueRouteDetail(mySupportedIssueIds, undefined, canLoad);
 
 const routeIssueId = computed(() => routeIssue.value?.id ?? '');
 const {

@@ -15,31 +15,56 @@
     />
 
     <div class="scroll-shadow-bleed scrollbar-none min-h-0 flex-1 space-y-4 overflow-y-auto overflow-x-hidden overscroll-contain pb-4">
-      <PageLoadFailure
-        v-if="error && facilities.length === 0"
-        title="設備讀取失敗"
-        :description="error"
-        @retry="load()"
-      />
-      <EmptyStatePanel
-        v-else-if="!loading && facilities.length === 0"
-        title="沒有符合條件的設備"
-        :description="emptyDescription"
-        icon="inbox"
-      />
-      <template v-else>
-        <FacilityTable
-          :facilities="facilities"
-          :loading="loading"
-          :highlight-query="committedQuery"
-          @open-details="openDetails"
-          @toggle-affected="toggleAffected"
-          @manage-status="openStatusDialog"
-          @delete="openDeleteDialog"
-        />
-        <div v-if="error" class="rounded-xl border border-error/20 bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">{{ error }}</div>
-        <FeedLoadMoreControl :has-more="hasMore" :loading="loadingMore" :error="Boolean(error)" @load-more="load(true)" />
-      </template>
+      <Transition name="panel-switch" mode="out-in">
+        <div :key="facilityPanelKey" class="space-y-4">
+          <PageLoadFailure
+            v-if="facilityLoadingHasProblem"
+            :title="facilityProblemTitle"
+            :description="facilityProblemDescription"
+            :retry-disabled="!facilityOnline"
+            @retry="retryFacilities"
+          />
+
+          <FacilityTable
+            v-else-if="visibleFacilityLoading"
+            :facilities="[]"
+            :loading="true"
+          />
+
+          <EmptyStatePanel
+            v-else-if="error && facilities.length === 0"
+            title="設備讀取失敗"
+            :description="error"
+            icon="warning"
+            tone="danger"
+            action-label="重新整理"
+            @action="retryFacilities"
+          />
+
+          <EmptyStatePanel
+            v-else-if="facilities.length === 0"
+            title="沒有符合條件的設備"
+            :description="emptyDescription"
+            icon="inbox"
+          />
+
+          <template v-else>
+            <FacilityTable
+              :affecting-facility-id="affectingFacilityId"
+              :facilities="facilities"
+              :loading="false"
+              :highlight-query="committedQuery"
+              @open-details="openDetails"
+              @toggle-affected="handleToggleAffected"
+              @manage-status="openStatusDialog"
+              @delete="openDeleteDialog"
+            />
+            <div v-if="error" class="rounded-xl border border-error/20 bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container">{{ error }}</div>
+            <FeedLoadMoreControl :has-more="hasMore" :loading="loadingMore" :error="Boolean(error)" @load-more="load(true)" />
+            <div ref="loadMoreSentinel" class="h-1" aria-hidden="true"></div>
+          </template>
+        </div>
+      </Transition>
     </div>
 
     <FacilityComposer :open="composerOpen" @close="composerOpen = false" @submitted="handleSubmitted" />
@@ -77,12 +102,33 @@ import FeedLoadMoreControl from '@/components/ui/FeedLoadMoreControl.vue';
 import PageLoadFailure from '@/components/ui/PageLoadFailure.vue';
 import { useFacilities } from '@/composables/useFacilities';
 import { useActionFeedback } from '@/composables/useActionFeedback';
+import { useInfiniteScroll } from '@/composables/useInfiniteScroll';
+import { useLoadingTimeout } from '@/composables/useLoadingTimeout';
+import { useMinimumLoading } from '@/composables/useMinimumLoading';
+import { resetAppConnection } from '@/lib/reconnect';
 import { normalizeSearchText } from '@/lib/search';
 import type { FacilityRecord, FacilityStatus, FacilitySummary } from '@/types';
 
 const router = useRouter();
 const composerOpen = ref(false);
-const { bucket, changeStatus, clearSearch, committedQuery, error, facilities, hasMore, load, loading, loadingMore, query, remove, sort, submitSearch, toggleAffected } = useFacilities();
+const {
+  affectingFacilityId,
+  bucket,
+  changeStatus,
+  clearSearch,
+  committedQuery,
+  error,
+  facilities,
+  hasMore,
+  load,
+  loading,
+  loadingMore,
+  query,
+  remove,
+  sort,
+  submitSearch,
+  toggleAffected,
+} = useFacilities();
 const selectedFacility = ref<FacilitySummary | null>(null);
 const statusDialogOpen = ref(false);
 const statusSaving = ref(false);
@@ -90,6 +136,25 @@ const statusError = ref('');
 const deleteDialogOpen = ref(false);
 const deleting = ref(false);
 const { show } = useActionFeedback();
+const facilityPanelKey = computed(() => [
+  bucket.value,
+  sort.value,
+  committedQuery.value.trim(),
+].join(':'));
+const { visibleLoading: visibleFacilityLoading } = useMinimumLoading(loading);
+const {
+  hasProblem: facilityLoadingHasProblem,
+  isOnline: facilityOnline,
+  problemDescription: facilityProblemDescription,
+  problemTitle: facilityProblemTitle,
+} = useLoadingTimeout(loading, 5_000);
+const infiniteScrollDisabled = computed(() =>
+  !hasMore.value || loading.value || loadingMore.value || Boolean(error.value),
+);
+const { sentinel: loadMoreSentinel } = useInfiniteScroll({
+  disabled: infiniteScrollDisabled,
+  onLoadMore: () => load(true),
+});
 const searchHint = computed(() => {
   const draft = normalizeSearchText(query.value);
   const committed = normalizeSearchText(committedQuery.value);
@@ -108,6 +173,19 @@ function openDetails(facility: FacilitySummary) {
 
 function handleSubmitted(facility: FacilityRecord) {
   facilities.value.unshift(facility);
+}
+
+async function retryFacilities() {
+  await resetAppConnection();
+  await load();
+}
+
+async function handleToggleAffected(facility: FacilitySummary) {
+  try {
+    await toggleAffected(facility);
+  } catch (caught) {
+    show(caught instanceof Error ? caught.message : '操作失敗，請稍後再試。', 'error');
+  }
 }
 
 function openStatusDialog(facility: FacilitySummary) {

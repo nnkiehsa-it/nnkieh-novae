@@ -3,5 +3,5 @@ export const INPUT_LIMITS = {
   content: 1_000,
   comment: 70,
   facilityLocation: 120,
-  facilityResult: 2_000,
+  resultContent: 2_000,
 } as const;

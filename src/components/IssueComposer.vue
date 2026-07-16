@@ -1,126 +1,47 @@
 <template>
-  <DialogOverlay :open="open" @close="handleClose">
-    <section
-      id="issue-composer"
-      ref="dialogRef"
-      class="entry-composer panel panel-pad flex h-full w-full flex-col overflow-hidden rounded-none border-none md:fixed md:inset-0 md:h-screen md:max-h-screen md:rounded-none md:border-none"
-      data-dialog-root
-      tabindex="-1"
-    >
-      <!-- Header -->
-      <div class="flex items-center justify-between border-b border-ink-200 dark:border-ink-800 pb-4 shrink-0">
-        <div class="min-w-0">
-          <span class="text-xs font-semibold tracking-wide text-ink-500 dark:text-ink-400">發起新提案</span>
-          <h2 class="mt-1 text-xl font-semibold tracking-[0.015em] text-ink-950 dark:text-ink-50">發布至「{{ categoryLabel }}」</h2>
-        </div>
-        <button
-          type="button"
-          class="button-dialog-close shrink-0"
-          :disabled="submitting || uploading"
-          title="關閉"
-          aria-label="關閉"
-          @click="handleClose"
-        >
-          <AppIcon name="close" :size="5" :stroke-width="2.5" />
-        </button>
-      </div>
-
-      <!-- Unified Form Layout (Responsive Single Column) -->
-      <form class="entry-composer__scroll flex-1 flex flex-col min-h-0 mt-5 space-y-5 overflow-y-auto md:overflow-hidden" autocomplete="off" @submit.prevent="submit">
-        <!-- Title Field -->
-        <div class="space-y-1.5 shrink-0">
-          <label for="issue-title" class="field-label">提案標題</label>
-          <input
-            id="issue-title"
-            v-model="form.title"
-            autocomplete="off"
-            class="field text-base py-3"
-            :maxlength="INPUT_LIMITS.title"
-            placeholder="為您的提案取個明確的標題..."
-            data-autofocus
-            :disabled="submitting"
-          />
-          <div class="flex justify-between items-center text-xs text-ink-500 dark:text-ink-400">
-            <span>必填</span>
-            <span class="font-medium" :class="{ 'text-error': form.title.length > 27 }">
-              {{ titleCount }} / {{ INPUT_LIMITS.title }}
-            </span>
-          </div>
-        </div>
-
-        <MarkdownImageEditor
-          v-model:content="form.content"
-          v-model:show-preview="showPreview"
-          class="flex min-h-[220px] flex-1 flex-col min-h-0"
-          textarea-id="issue-content"
-          label="詳細說明"
-          placeholder="在此輸入詳細說明..."
-          :images="editorImages"
-          :max-images="RATE_LIMITS.imageUploads.issueMaxImages"
-          max-images-label="提案"
-          :max-length="INPUT_LIMITS.content"
-          :warning-length="900"
-          :preview-content="form.content"
-          :uploading="uploading"
-          :disabled="submitting"
-          :busy-label="submitting ? '圖片上傳中...' : '圖片壓縮中...'"
-          editor-class="flex-1 min-h-[180px]"
-          textarea-class="h-full min-h-[180px]"
-          preview-class="flex-1 min-h-[180px]"
-          :split="true"
-          @image-picked="handleImagePicked"
-          @remove-image="removeEditorImage"
-        />
-
-        <!-- Error message display -->
-        <p v-if="error || uploadError" class="mt-2 shrink-0 text-xs font-semibold text-error">
-          錯誤：{{ error || uploadError }}
-        </p>
-
-        <!-- Footer Actions -->
-        <div class="entry-composer__footer">
-          <p class="entry-composer__hint">
-            建議提出精確的提案。
-          </p>
-          <div class="entry-composer__actions">
-            <button
-              type="button"
-              class="entry-composer__action button-secondary"
-              :disabled="submitting || uploading"
-              @click="handleClose"
-            >
-              取消
-            </button>
-            <button type="submit" class="entry-composer__action button-secondary" :disabled="submitting || uploading" :aria-busy="submitting || undefined">
-              <BusyButtonContent :busy="submitting" label="確認發布" busy-label="發布中" />
-            </button>
-          </div>
-        </div>
-      </form>
-    </section>
-  </DialogOverlay>
+  <EntryComposerShell
+    v-model:entry-title="form.title"
+    v-model:content="form.content"
+    v-model:show-preview="showPreview"
+    :open="open"
+    eyebrow="發起新提案"
+    :title="`發布至「${categoryLabel}」`"
+    title-input-id="issue-title"
+    title-label="提案標題"
+    :title-max-length="INPUT_LIMITS.title"
+    :title-warning-length="27"
+    title-placeholder="為您的提案取個明確的標題..."
+    editor-textarea-id="issue-content"
+    editor-label="詳細說明"
+    editor-placeholder="在此輸入詳細說明..."
+    :images="editorImages"
+    :max-images="RATE_LIMITS.imageUploads.issueMaxImages"
+    max-images-label="提案"
+    hint="建議提出精確的提案。"
+    submit-label="確認發布"
+    :busy="submitting"
+    :uploading="uploading"
+    :error="error || uploadError"
+    @close="handleClose"
+    @image-picked="handleImagePicked"
+    @remove-image="removeEditorImage"
+    @submit="submit"
+  />
 </template>
 
 <script setup lang="ts">
 import { computed, toRef } from 'vue';
-import { useBodyScrollLock } from '@/composables/useBodyScrollLock';
-import { useDialogFocus } from '@/composables/useDialogFocus';
-import { useIssueComposerForm } from '@/composables/useIssueComposerForm';
-import DialogOverlay from '@/components/ui/DialogOverlay.vue';
-import MarkdownImageEditor from '@/components/ui/MarkdownImageEditor.vue';
-import AppIcon from '@/components/ui/AppIcon.vue';
-import BusyButtonContent from '@/components/ui/BusyButtonContent.vue';
-import type { IssueRecord, WritableIssueCategory } from '@/types';
-import { RATE_LIMITS } from '@/generated/rate-limits';
+import EntryComposerShell from '@/components/ui/EntryComposerShell.vue';
 import { INPUT_LIMITS } from '@/constants/input-limits';
+import { RATE_LIMITS } from '@/generated/rate-limits';
+import { useIssueComposerForm } from '@/composables/useIssueComposerForm';
+import type { IssueRecord, WritableIssueCategory } from '@/types';
 
 const props = defineProps<{
   open: boolean;
   category: WritableIssueCategory;
   categoryLabel: string;
 }>();
-
-useBodyScrollLock(toRef(props, 'open'));
 
 const emit = defineEmits<{
   close: [];
@@ -130,7 +51,6 @@ const emit = defineEmits<{
 const {
   form,
   handleImagePicked,
-  contentWithImages,
   imageUrls,
   removeImage,
   uploadError,
@@ -138,17 +58,12 @@ const {
   submitting,
   showPreview,
   error,
-  titleCount,
   handleClose,
   submit,
 } = useIssueComposerForm(toRef(props, 'open'), {
   category: toRef(props, 'category'),
   onClose: () => emit('close'),
   onSubmitted: (issue) => emit('submitted', issue),
-});
-
-const { dialogRef } = useDialogFocus(toRef(props, 'open'), {
-  onClose: handleClose,
 });
 
 const editorImages = computed(() =>
@@ -161,8 +76,6 @@ const editorImages = computed(() =>
 
 function removeEditorImage(key: string) {
   const index = editorImages.value.findIndex((image) => image.key === key);
-  if (index >= 0) {
-    void removeImage(index);
-  }
+  if (index >= 0) void removeImage(index);
 }
 </script>

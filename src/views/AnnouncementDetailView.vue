@@ -1,33 +1,30 @@
 <template>
   <div class="min-h-0">
-    <PageLoadFailure
-      v-if="sessionLoadingHasProblem"
-      :title="sessionProblemTitle"
-      :description="sessionProblemDescription"
-      :retry-disabled="!sessionOnline"
-      @retry="reloadPage"
-    />
-
-    <div v-else-if="sessionLoading || loadingAnnouncement" class="flex min-h-[50dvh] items-center justify-center" aria-label="正在載入公告" aria-busy="true">
-      <LoadingSpinner :size="8" />
-    </div>
-
-    <div v-else-if="!isAllowedUser" class="sr-only" role="status">正在前往登入頁</div>
-
-    <AnnouncementDetailPagePanel
-      v-else-if="announcement"
-      :announcement="announcement"
-      :can-manage="isAdmin"
-      :initial-tab="initialTab"
-      :focus-comment-id="focusCommentId"
-      :liking="liking"
-      @back="goBackToAnnouncements"
-      @content-unavailable="handleAnnouncementUnavailable"
-      @delete="openDeleteDialog"
-      @share="copyAnnouncementUrl"
-      @toggle-like="handleToggleLike"
-      @comment-count-changed="handleCommentCountChanged"
-    />
+    <DetailRouteState
+      :allowed="isAllowedUser"
+      :loading="sessionLoading || loadingAnnouncement"
+      loading-label="正在載入公告"
+      :problem="sessionLoadingHasProblem"
+      :problem-title="sessionProblemTitle"
+      :problem-description="sessionProblemDescription"
+      :problem-retry-disabled="!sessionOnline"
+      @retry-problem="reloadPage"
+    >
+      <AnnouncementDetailPagePanel
+        v-if="announcement"
+        :announcement="announcement"
+        :can-manage="isAdmin"
+        :initial-tab="initialTab"
+        :focus-comment-id="focusCommentId"
+        :liking="liking"
+        @back="goBackToAnnouncements"
+        @content-unavailable="handleAnnouncementUnavailable"
+        @delete="openDeleteDialog"
+        @share="copyAnnouncementUrl"
+        @toggle-like="handleToggleLike"
+        @comment-count-changed="handleCommentCountChanged"
+      />
+    </DetailRouteState>
 
     <ConfirmDialog
       :open="deleteDialogOpen"
@@ -46,9 +43,8 @@ import { computed, onScopeDispose, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AnnouncementDetailPagePanel from '@/components/AnnouncementDetailPagePanel.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
-import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
-import PageLoadFailure from '@/components/ui/PageLoadFailure.vue';
-import { useLoadingTimeout } from '@/composables/useLoadingTimeout';
+import DetailRouteState from '@/components/ui/DetailRouteState.vue';
+import { useAuthenticatedDetailState } from '@/composables/useAuthenticatedDetailState';
 import { registerAppResumeHandler } from '@/composables/useAppResume';
 import { useNetworkStatus } from '@/composables/useNetworkStatus';
 import { useSession } from '@/composables/useSession';
@@ -76,7 +72,16 @@ import { subscribeContentRevisionChanges } from '@/services/content-revisions';
 
 const route = useRoute();
 const router = useRouter();
-const { can, initialized, isAllowedUser, loading, roleLoading, user } = useSession();
+const { can, roleLoading, user } = useSession();
+const {
+  canLoad: canLoadAnnouncement,
+  isAllowedUser,
+  sessionLoading,
+  sessionLoadingHasProblem,
+  sessionOnline,
+  sessionProblemDescription,
+  sessionProblemTitle,
+} = useAuthenticatedDetailState();
 const isAdmin = computed(() => can('announcement.manage'));
 const { copyShareUrl } = useShareUrl();
 const { show, start } = useActionFeedback();
@@ -108,20 +113,11 @@ const unsubscribeRevision = subscribeContentRevisionChanges('announcements', () 
   if (canLoadAnnouncement.value && announcement.value) return refreshAnnouncementSilently({ force: true });
 });
 
-const sessionLoading = computed(() => loading.value || !initialized.value);
-const canLoadAnnouncement = computed(() => initialized.value && isAllowedUser.value);
 const initialTab = computed(() => route.query.tab === 'comments' ? 'comments' : 'details');
 const focusCommentId = computed(() => {
   const value = route.query.comment;
   return typeof value === 'string' ? value : '';
 });
-const {
-  hasProblem: sessionLoadingHasProblem,
-  isOnline: sessionOnline,
-  problemDescription: sessionProblemDescription,
-  problemTitle: sessionProblemTitle,
-} = useLoadingTimeout(sessionLoading, 5_000);
-
 function goBackToAnnouncements() {
   requestId += 1;
   router.replace({ name: 'announcements' });

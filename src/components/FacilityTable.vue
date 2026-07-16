@@ -8,6 +8,7 @@
         :key="facility.id"
         :facility="facility"
         :highlight-query="highlightQuery"
+        :affecting="affectingFacilityId === facility.id"
         @open-details="emit('open-details', $event)"
         @toggle-affected="emit('toggle-affected', $event)"
         @manage-status="emit('manage-status', $event)"
@@ -22,7 +23,15 @@ import FacilityTableRow from '@/components/FacilityTableRow.vue';
 import SkeletonTable from '@/components/ui/SkeletonTable.vue';
 import type { FacilitySummary } from '@/types';
 
-withDefaults(defineProps<{ facilities: FacilitySummary[]; loading: boolean; highlightQuery?: string }>(), { highlightQuery: '' });
+withDefaults(defineProps<{
+  affectingFacilityId?: string;
+  facilities: FacilitySummary[];
+  loading: boolean;
+  highlightQuery?: string;
+}>(), {
+  affectingFacilityId: '',
+  highlightQuery: '',
+});
 const emit = defineEmits<{
   'open-details': [facility: FacilitySummary];
   'toggle-affected': [facility: FacilitySummary];

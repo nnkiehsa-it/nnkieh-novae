@@ -13,10 +13,14 @@
     </template>
 
     <template #details="{ compact, scrollContent }">
-      <AnnouncementDetailContent
-        :announcement="announcement"
+      <ContentDetailBody
+        :author-name="announcement.author_name"
+        :author-photo-url="announcement.author_photo_url"
+        :author-uid="announcement.author_uid"
         :compact="compact"
+        :content="announcement.content"
         :scroll-content="scrollContent"
+        :title="announcement.title"
       />
     </template>
 
@@ -49,7 +53,7 @@
 import type { AnnouncementRecord } from '@/types';
 import AnnouncementComments from '@/components/AnnouncementComments.vue';
 import AnnouncementDetailActions from '@/components/AnnouncementDetailActions.vue';
-import AnnouncementDetailContent from '@/components/AnnouncementDetailContent.vue';
+import ContentDetailBody from '@/components/ContentDetailBody.vue';
 import DetailPageShell from '@/components/ui/DetailPageShell.vue';
 
 const props = withDefaults(defineProps<{

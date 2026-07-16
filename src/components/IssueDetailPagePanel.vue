@@ -24,13 +24,19 @@
     </template>
 
     <template #details="{ compact, scrollContent }">
-      <IssueDetailContent
+      <ContentDetailBody
+        :author-name="displayAuthorName"
+        :author-photo-url="displayPhotoUrl"
         :compact="compact"
-        :display-author-name="displayAuthorName"
-        :display-photo-url="displayPhotoUrl"
-        :issue="issue"
+        :content="issue.content"
+        :notice-content="issue.status === 'review-rejected' ? issue.review_rejection_reason : issue.result_content"
+        :notice-fallback-alt="`${issue.title} 的提案結果圖片`"
+        :notice-markdown="issue.status !== 'review-rejected'"
+        :notice-title="issue.status === 'review-rejected' ? '審核未通過原因' : '提案結果'"
+        :notice-tone="issue.status === 'review-rejected' ? 'error' : 'success'"
         :scroll-content="scrollContent"
         :show-author="showAuthor"
+        :title="issue.title"
       />
     </template>
 
@@ -121,7 +127,7 @@ import type { IssueRecord } from '@/types';
 import DetailPageShell from '@/components/ui/DetailPageShell.vue';
 import AppIcon from '@/components/ui/AppIcon.vue';
 import EmptyStatePanel from '@/components/ui/EmptyStatePanel.vue';
-import IssueDetailContent from '@/components/IssueDetailContent.vue';
+import ContentDetailBody from '@/components/ContentDetailBody.vue';
 import IssueDetailSupportFooter from '@/components/IssueDetailSupportFooter.vue';
 import IssueComments from '@/components/IssueComments.vue';
 import { useSession } from '@/composables/useSession';
