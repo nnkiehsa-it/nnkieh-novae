@@ -80,7 +80,7 @@
   .dialog-overlay[data-padding='padded'] {
     align-items: flex-end;
     justify-content: center;
-    padding: 12px 16px 25px;
+    padding: 12px 12px 25px;
   }
 
   .dialog-overlay[data-padding='padded'] > [data-dialog-root],
