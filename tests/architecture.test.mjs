@@ -86,6 +86,7 @@ test('Supabase backend deployment owns database and Edge Functions', async () =>
   assert.match(workflow, /Deploy Cloudflare API Gateway/u);
   assert.match(workflow, /wrangler@4\.111\.0 secret bulk/u);
   assert.match(workflow, /wrangler@4\.111\.0 deploy/u);
+  assert.match(workflow, /for attempt in \$\(seq 1 12\)/u);
   assert.match(workflow, /Smoke test API origin deployment/u);
   assert.match(workflow, /x-healthcheck-secret/u);
   assert.match(workflow, /x-novae-origin-secret/u);

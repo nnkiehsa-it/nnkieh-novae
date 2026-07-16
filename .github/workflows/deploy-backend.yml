@@ -229,6 +229,7 @@ jobs:
           node -e "const fs=require('node:fs'); const keys=['ALLOWED_ORIGINS','CLOUDINARY_WEBHOOK_SECRET','EDGE_FUNCTION_NAMESPACE','EDGE_ORIGIN_SECRET','FIREBASE_PROJECT_ID','SUPABASE_FUNCTIONS_BASE_URL','UPSTASH_REDIS_REST_TOKEN','UPSTASH_REDIS_REST_URL']; fs.writeFileSync('/tmp/novae-worker-secrets.json', JSON.stringify(Object.fromEntries(keys.map((key) => [key, process.env[key]]))))"
           npx -y wrangler@4.111.0 deploy --config cloudflare/wrangler.toml --env "$environment"
           npx -y wrangler@4.111.0 secret bulk /tmp/novae-worker-secrets.json --config cloudflare/wrangler.toml --env "$environment"
+          npx -y wrangler@4.111.0 deploy --config cloudflare/wrangler.toml --env "$environment"
           rm -f /tmp/novae-worker-secrets.json
 
       - name: Smoke test Cloudflare API Gateway
@@ -237,15 +238,22 @@ jobs:
           CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
         run: |
           origin="${ALLOWED_ORIGINS%%,*}"
-          status="$(curl -sS -o /tmp/worker-smoke.json -w '%{http_code}' \
-            -X POST "${CLOUDFLARE_WORKER_URL%/}/v1/actions" \
-            -H "content-type: application/json" \
-            -H "origin: ${origin}" \
-            --data '{"action":"getCurrentUserRole","payload":{}}')"
-          if [ "$status" != "401" ]; then
-            printf 'Cloudflare API Gateway smoke test failed with HTTP %s: %s\n' "$status" "$(cat /tmp/worker-smoke.json)" >&2
-            exit 1
-          fi
+          for attempt in $(seq 1 12); do
+            status="$(curl -sS -o /tmp/worker-smoke.json -w '%{http_code}' \
+              -X POST "${CLOUDFLARE_WORKER_URL%/}/v1/actions" \
+              -H "content-type: application/json" \
+              -H "origin: ${origin}" \
+              --data '{"action":"getCurrentUserRole","payload":{}}')"
+            if [ "$status" = "401" ]; then
+              exit 0
+            fi
+            if [ "$status" -lt 500 ]; then
+              break
+            fi
+            sleep 5
+          done
+          printf 'Cloudflare API Gateway smoke test failed with HTTP %s: %s\n' "$status" "$(cat /tmp/worker-smoke.json)" >&2
+          exit 1
 
       - name: Smoke test API origin deployment
         env:
