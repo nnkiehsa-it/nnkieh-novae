@@ -103,11 +103,11 @@ export const RATE_LIMITS = {
     "message": "圖片讀取太頻繁，請稍後再試。"
   },
   "backendHealthcheckMinute": {
-    "limit": 120,
+    "limit": 12,
     "message": "服務檢查太頻繁，請稍後再試。"
   },
   "backendHealthcheckSecond": {
-    "limit": 5,
+    "limit": 2,
     "message": "服務檢查太頻繁，請稍後再試。"
   },
   "cloudinaryWebhookMinute": {

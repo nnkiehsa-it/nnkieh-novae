@@ -1,5 +1,5 @@
 <template>
-  <section class="mx-auto w-full max-w-7xl space-y-5">
+  <section class="route-page space-y-5">
     <div class="flex items-center justify-end gap-3 md:justify-between">
       <h2 class="hidden shrink-0 text-2xl font-semibold tracking-[0.015em] text-ink-950 dark:text-ink-50 md:block">公告</h2>
       <button

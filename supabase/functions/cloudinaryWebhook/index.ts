@@ -79,7 +79,7 @@ Deno.serve(async (request) => {
         target_id: publicId,
         cloudinary_public_id: publicId,
       });
-      if (deletionError) throw deletionError;
+      if (deletionError && deletionError.code !== "23505") throw deletionError;
     }
 
     return jsonResponse({ ok: true });

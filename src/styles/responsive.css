@@ -47,6 +47,10 @@
 }
 
 @media (max-width: 767px) {
+  .board-controls {
+    padding-top: 0.5rem;
+  }
+
   .entry-composer__scroll {
     padding-bottom: 0.5rem;
   }

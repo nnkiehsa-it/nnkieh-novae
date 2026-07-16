@@ -9,24 +9,27 @@ import { edgeFunctionUrl } from "../_shared/origin.ts";
 
 export async function requireAuth(supabase: BackendSupabase, request: Request): Promise<AuthContext> {
   const firebaseUser = await requireVerifiedFirebaseUser(request);
-  const { data: assignments, error: assignmentError } = await supabase.schema("app_private")
-    .from("user_role_assignments").select("role_code").eq("uid", firebaseUser.uid);
-  if (assignmentError) throw assignmentError;
-  const roles = (assignments ?? []).map((row) => row.role_code);
+  const { data, error } = await supabase.schema("app_api")
+    .rpc("backend_get_access_context", { actor_uid: firebaseUser.uid });
+  if (error) throw error;
+  const access = data && typeof data === "object" && !Array.isArray(data)
+    ? data as Record<string, unknown>
+    : {};
+  const roles = Array.isArray(access.roles)
+    ? access.roles.filter((role): role is string => typeof role === "string")
+    : [];
   const isPlatformAdmin = roles.includes("platform-admin");
-  const { data: categoryAssignments, error: categoryAssignmentError } = await supabase.schema("app_private")
-    .from("user_issue_category_assignments").select("category_id").eq("uid", firebaseUser.uid);
-  if (categoryAssignmentError) throw categoryAssignmentError;
   const managedIssueCategoryIds = isPlatformAdmin
     ? [...ISSUE_CATEGORY_IDS]
-    : [...new Set((categoryAssignments ?? []).map((row) => row.category_id))];
-  let permissions: PermissionCode[] = [];
-  if (roles.length > 0) {
-    const { data: grants, error: grantError } = await supabase.schema("app_private")
-      .from("role_permissions").select("permission_code").in("role_code", roles);
-    if (grantError) throw grantError;
-    permissions = [...new Set((grants ?? []).map((row) => row.permission_code as PermissionCode))];
-  }
+    : Array.isArray(access.managedIssueCategoryIds)
+    ? [...new Set(access.managedIssueCategoryIds.filter((id): id is string => typeof id === "string"))]
+    : [];
+  const permissions = Array.isArray(access.permissions)
+    ? [...new Set(access.permissions.filter((permission): permission is PermissionCode =>
+      typeof permission === "string"
+      && ["announcement.manage", "dashboard.view", "facility.manage", "proposal.manage", "role.manage"].includes(permission)
+    ))]
+    : [];
   if (managedIssueCategoryIds.length > 0 && !permissions.includes("proposal.manage")) {
     permissions.push("proposal.manage");
   }
@@ -73,10 +76,12 @@ export async function handleHealthcheck(request: Request, supabase: BackendSupab
   requireEnv("UPSTASH_REDIS_REST_TOKEN");
   requireEnv("CLOUDFLARE_WORKER_URL");
 
-  await ensureCloudinaryImageUploadPreset(
-    RATE_LIMITS.imageCompression.maxUploadBytes,
-    RATE_LIMITS.imageCompression.maxDimension,
-  );
+  if (request.headers.get("x-reconcile-config") === "true") {
+    await ensureCloudinaryImageUploadPreset(
+      RATE_LIMITS.imageCompression.maxUploadBytes,
+      RATE_LIMITS.imageCompression.maxDimension,
+    );
+  }
 
   const { error } = await supabase
     .schema("app_private")
@@ -85,43 +90,18 @@ export async function handleHealthcheck(request: Request, supabase: BackendSupab
     .limit(1);
   if (error) throw error;
 
-  const { error: settingsError } = await supabase
-    .schema("app_private")
-    .from("runtime_settings")
-    .upsert([
-      {
-        key: "deletion_worker_url",
-        value: edgeFunctionUrl("delete"),
-        updated_at: new Date().toISOString(),
-      },
-      {
-        key: "firebase_project_id",
-        value: requireEnv("FIREBASE_PROJECT_ID"),
-        updated_at: new Date().toISOString(),
-      },
-      {
-        key: "owner_admin_issue_categories",
-        value: getIssueCategoryIdsByReadAccess("owner-admin").join(","),
-        updated_at: new Date().toISOString(),
-      },
-      {
-        key: "reviewed_school_issue_categories",
-        value: getIssueCategoryIdsByReadAccess("reviewed-school").join(","),
-        updated_at: new Date().toISOString(),
-      },
-      {
-        key: "maintenance_worker_url",
-        value: edgeFunctionUrl("maintenance"),
-        updated_at: new Date().toISOString(),
-      },
-      {
-        key: "outbox_worker_url",
-        value: edgeFunctionUrl("outbox"),
-        updated_at: new Date().toISOString(),
-      },
-      { key: "webhook_secret", value: expected, updated_at: new Date().toISOString() },
-      { key: "edge_origin_secret", value: requireEnv("EDGE_ORIGIN_SECRET"), updated_at: new Date().toISOString() },
-    ], { onConflict: "key" });
+  const { error: settingsError } = await supabase.schema("app_api").rpc("sync_runtime_settings", {
+    settings: {
+      deletion_worker_url: edgeFunctionUrl("delete"),
+      firebase_project_id: requireEnv("FIREBASE_PROJECT_ID"),
+      owner_admin_issue_categories: getIssueCategoryIdsByReadAccess("owner-admin").join(","),
+      reviewed_school_issue_categories: getIssueCategoryIdsByReadAccess("reviewed-school").join(","),
+      maintenance_worker_url: edgeFunctionUrl("maintenance"),
+      outbox_worker_url: edgeFunctionUrl("outbox"),
+      webhook_secret: expected,
+      edge_origin_secret: requireEnv("EDGE_ORIGIN_SECRET"),
+    },
+  });
   if (settingsError) throw settingsError;
 
   return { ok: true };

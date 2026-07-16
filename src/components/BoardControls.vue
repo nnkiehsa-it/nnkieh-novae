@@ -1,5 +1,5 @@
 <template>
-  <div class="relative z-20 space-y-3">
+  <div class="board-controls relative z-20 space-y-3">
     <div class="flex flex-row items-center justify-between gap-3 md:mt-0">
       <div class="hidden min-w-0 flex-row items-center gap-3 sm:gap-4 md:flex md:gap-6">
         <IssueCategorySelector

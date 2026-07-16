@@ -1,6 +1,6 @@
 <template>
-  <section class="page-bottom-safe min-h-0 min-w-0 w-full max-w-full flex-1 overflow-x-hidden">
-    <div v-if="loading" class="space-y-6 py-4" :class="{ 'px-1': true }">
+  <section class="route-page page-bottom-safe min-h-0 min-w-0 flex-1 overflow-x-hidden">
+    <div v-if="loading" class="space-y-6 py-4">
       <!-- Account Skeleton -->
       <div class="flex items-center gap-3 pb-4 border-b border-ink-100 dark:border-ink-800/60">
         <span class="h-10 w-10 shrink-0 rounded-full bg-ink-200/60 dark:bg-ink-700/50 animate-skeleton"></span>

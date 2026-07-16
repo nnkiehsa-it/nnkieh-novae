@@ -6,10 +6,16 @@ interface CachedToken {
   value: string;
 }
 
-let cachedToken: CachedToken | null = null;
+const cachedTokens = new Map<string, CachedToken>();
+
+function scopeCacheKey(scopes: string[]) {
+  return [...new Set(scopes)].sort().join(" ");
+}
 
 export async function getGoogleAccessToken(scopes: string[]) {
   const now = Date.now();
+  const cacheKey = scopeCacheKey(scopes);
+  const cachedToken = cachedTokens.get(cacheKey);
   if (cachedToken && cachedToken.expiresAtMs > now + 60_000) {
     return cachedToken.value;
   }
@@ -26,9 +32,9 @@ export async function getGoogleAccessToken(scopes: string[]) {
     throw new Error("Google access token is empty.");
   }
 
-  cachedToken = {
+  cachedTokens.set(cacheKey, {
     value: token,
     expiresAtMs: now + 55 * 60 * 1000,
-  };
+  });
   return token;
 }

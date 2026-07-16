@@ -33,6 +33,7 @@ const knownSelectOptions = new Set<string>();
 const knownDateProperties = new Set<string>();
 const knownRichTextProperties = new Set<string>();
 let discoveredDataSourceId: Promise<string> | undefined;
+let cachedDataSource: Promise<Record<string, unknown>> | undefined;
 
 function translateStatus(status: string): string {
   return STATUS_LABELS[status] ?? status;
@@ -61,6 +62,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function normalizeNotionId(value: string): string {
   return value.replaceAll("-", "").toLowerCase();
+}
+
+async function contentHash(content: string) {
+  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(content));
+  return Array.from(new Uint8Array(bytes))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 // ---------------------------------------------------------------------------
@@ -116,21 +124,28 @@ function getDataSourceId(): Promise<string> {
 }
 
 async function retrieveDataSource(): Promise<Record<string, unknown>> {
-  const dataSource = await callNotionAPI(`/data_sources/${await getDataSourceId()}`, "GET");
-  if (!isRecord(dataSource)) throw new Error("Notion data source response is invalid");
-  const parent = dataSource.parent;
-  if (
-    !isRecord(parent) ||
-    typeof parent.database_id !== "string" ||
-    normalizeNotionId(parent.database_id) !== normalizeNotionId(requireEnv("NOTION_DATABASE_ID"))
-  ) {
-    throw new Error("NOTION_DATA_SOURCE_ID does not belong to NOTION_DATABASE_ID");
-  }
-  return dataSource;
+  cachedDataSource ??= (async () => {
+    const dataSource = await callNotionAPI(`/data_sources/${await getDataSourceId()}`, "GET");
+    if (!isRecord(dataSource)) throw new Error("Notion data source response is invalid");
+    const parent = dataSource.parent;
+    if (
+      !isRecord(parent) ||
+      typeof parent.database_id !== "string" ||
+      normalizeNotionId(parent.database_id) !== normalizeNotionId(requireEnv("NOTION_DATABASE_ID"))
+    ) {
+      throw new Error("NOTION_DATA_SOURCE_ID does not belong to NOTION_DATABASE_ID");
+    }
+    return dataSource;
+  })().catch((error) => {
+    cachedDataSource = undefined;
+    throw error;
+  });
+  return await cachedDataSource;
 }
 
 async function updateDataSourceProperties(properties: Record<string, unknown>): Promise<void> {
   await callNotionAPI(`/data_sources/${await getDataSourceId()}`, "PATCH", { properties });
+  cachedDataSource = undefined;
 }
 
 async function ensureSelectOption(propertyName: "分類" | "狀態", label: string): Promise<void> {
@@ -289,13 +304,17 @@ async function replaceManagedContent(
   pageId: string,
   content: string,
 ) {
+  const nextContentHash = await contentHash(content);
   const { data: mapping, error } = await supabase.schema("app_private").from("notion_pages")
-    .select("managed_block_ids").eq("target_type", targetType).eq("target_id", targetId).single();
+    .select("managed_block_ids,content_hash").eq("target_type", targetType).eq("target_id", targetId).single();
   if (error) throw error;
+  if (mapping.content_hash === nextContentHash) return;
   const oldIds = Array.isArray(mapping.managed_block_ids)
     ? mapping.managed_block_ids.filter((id): id is string => typeof id === "string")
     : [];
-  await Promise.all(oldIds.map((id) => callNotionAPI(`/blocks/${id}`, "DELETE")));
+  for (let offset = 0; offset < oldIds.length; offset += 10) {
+    await Promise.all(oldIds.slice(offset, offset + 10).map((id) => callNotionAPI(`/blocks/${id}`, "DELETE")));
+  }
 
   const uploadMatches = [...content.matchAll(UPLOAD_PATTERN)];
   const uploadIds = uploadMatches.map((match) => match[2]).filter(Boolean);
@@ -329,7 +348,11 @@ async function replaceManagedContent(
     createdIds.push(...(response.results ?? []).map((block) => block.id ?? "").filter(Boolean));
   }
   const { error: updateError } = await supabase.schema("app_private").from("notion_pages")
-    .update({ managed_block_ids: createdIds, updated_at: new Date().toISOString() })
+    .update({
+      content_hash: nextContentHash,
+      managed_block_ids: createdIds,
+      updated_at: new Date().toISOString(),
+    })
     .eq("target_type", targetType).eq("target_id", targetId);
   if (updateError) throw updateError;
 }

@@ -12,7 +12,7 @@ import {
 } from "./utils.ts";
 import { INPUT_LIMITS, optionalText } from "./validation.ts";
 import { canManageIssueCategory } from "./auth.ts";
-import { selectIssue } from "./issue-shared.ts";
+import { selectIssueCategory } from "./issue-shared.ts";
 
 const PRIVATE_TO_OWNER_CATEGORIES = ISSUE_CATEGORIES
   .filter((category) => category.readAccess === "owner-admin")
@@ -65,8 +65,8 @@ async function getIssue(
 ) {
   const issueId = asUuid(payload.issueId);
   if (!issueId) throw new Error("not-found");
-  const storedIssue = await selectIssue(supabase, issueId);
-  const actorCanManage = canManageIssueCategory(auth, asString(storedIssue.category));
+  const category = await selectIssueCategory(supabase, issueId);
+  const actorCanManage = canManageIssueCategory(auth, category);
 
   const { data, error } = await supabase.schema("app_api").rpc("backend_get_issue", {
     issue_id: issueId,

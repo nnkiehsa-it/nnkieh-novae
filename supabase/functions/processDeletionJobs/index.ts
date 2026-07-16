@@ -50,6 +50,13 @@ Deno.serve(async (request) => {
         }
         if (job.notion_page_id) {
           await markNotionPageDeleted(job.notion_page_id);
+          const { error: mappingError } = await supabase
+            .schema("app_private")
+            .from("notion_pages")
+            .delete()
+            .eq("target_type", job.target_type)
+            .eq("target_id", job.target_id);
+          if (mappingError) throw mappingError;
         }
         const { error: completeError } = await supabase
           .schema("app_api")

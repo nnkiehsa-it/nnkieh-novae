@@ -1,5 +1,5 @@
 <template>
-  <section class="page-bottom-safe space-y-5 px-2 py-2">
+  <section class="route-page page-bottom-safe space-y-5 py-2">
     <PageLoadFailure
       v-if="dashboardLoadingHasProblem"
       :title="dashboardProblemTitle"

@@ -43,7 +43,7 @@
   }
 
   .settings-scroll--flat {
-    @apply p-3;
+    @apply px-0 py-3;
   }
 
   .settings-group {

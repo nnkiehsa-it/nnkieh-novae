@@ -150,6 +150,7 @@ interface DeletionJobRow {
   attempt_count: number;
   next_attempt_at: string;
   last_error: string | null;
+  locked_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -162,6 +163,7 @@ interface NotionPageRow {
   created_at: string;
   updated_at: string;
   managed_block_ids: Json;
+  content_hash: string | null;
 }
 
 interface PushTokenRow {
@@ -291,6 +293,7 @@ interface AppPrivateTables {
 }
 
 interface AppApiFunctions {
+  backend_get_access_context: AppFunction<{ actor_uid: string }, Json>;
   backend_get_notification_unread_hint: AppFunction<{ actor_is_admin: boolean; actor_uid: string }, Json>;
   backend_create_facility: AppFunction<{
     actor_uid: string; actor_name: string; actor_photo_url: string | null;
@@ -549,6 +552,7 @@ interface AppApiFunctions {
     retention_config?: Json;
     valid_issue_categories?: string[] | null;
   }, Json>;
+  sync_runtime_settings: AppFunction<{ settings: Json }, void>;
 }
 
 interface EmptySchema {

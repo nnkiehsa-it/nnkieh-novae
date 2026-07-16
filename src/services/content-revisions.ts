@@ -10,7 +10,7 @@ interface StoredContentRevisions {
   revisions: ContentRevisions;
 }
 
-const REVISION_CHECK_INTERVAL_MS = 10 * 60_000;
+const REVISION_CHECK_INTERVAL_MS = 30 * 60_000;
 const STORAGE_KEY_PREFIX = 'novae:content-revisions:';
 const DOMAIN_PREFIXES: Record<ContentRevisionDomain, readonly string[]> = {
   announcements: ['announcement-list-page|', 'announcement-detail|', 'announcement-comments-page|'],

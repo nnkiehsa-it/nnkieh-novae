@@ -1,5 +1,5 @@
 <template>
-  <section class="relative mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col gap-5">
+  <section class="route-page relative flex h-full min-h-0 flex-col gap-5">
     <BoardControls
       v-model:status-tab="bucket"
       v-model:search-query="query"

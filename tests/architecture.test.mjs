@@ -396,6 +396,10 @@ test('cost-sensitive ingress and provider operations are bounded before work', a
   const cloudinary = await read('supabase/functions/_shared/cloudinary.ts');
   const cloudinaryWebhook = await read('supabase/functions/cloudinaryWebhook/index.ts');
   const hardening = await read('supabase/migrations/202607150001_rate_limit_cost_hardening.sql');
+  const resourceHardening = await read('supabase/migrations/202607160006_resource_efficiency_hardening.sql');
+  const googleOauth = await read('supabase/functions/_shared/google-oauth.ts');
+  const notion = await read('supabase/functions/_shared/notion.ts');
+  const outboxWorker = await read('supabase/functions/outboxWorker/index.ts');
   const http = await read('supabase/functions/_shared/http.ts');
   const syncUser = await read('supabase/functions/syncUser/index.ts');
   const uploads = await read('supabase/functions/backendAction/uploads.ts');
@@ -405,6 +409,18 @@ test('cost-sensitive ingress and provider operations are bounded before work', a
   assert.match(uploads, /upload_preset: CLOUDINARY_IMAGE_UPLOAD_PRESET/u);
   assert.doesNotMatch(uploads, /claimFixedWindowRateLimitUnits/u);
   assert.match(workerRateLimit, /unitsPath.*payload\.images/u);
+  assert.match(workerRateLimit, /claims\.push\(/u);
+  assert.match(workerRateLimit, /await claimRateLimits\(env, claims\)/u);
+  assert.match(googleOauth, /cachedTokens = new Map/u);
+  assert.match(googleOauth, /scopeCacheKey/u);
+  assert.match(resourceHardening, /backend_get_access_context/u);
+  assert.match(resourceHardening, /facility_reports_title_search_trgm_idx/u);
+  assert.match(resourceHardening, /outbox_events_stale_processing_idx/u);
+  assert.match(resourceHardening, /deletion_jobs_active_cloudinary_unique_idx/u);
+  assert.match(resourceHardening, /truncate table app_private\.realtime_events/u);
+  assert.match(resourceHardening, /add column if not exists content_hash text/u);
+  assert.match(notion, /mapping\.content_hash === nextContentHash/u);
+  assert.match(outboxWorker, /upsert\(notifications, \{ ignoreDuplicates: true, onConflict: "id" \}\)/u);
   assert.doesNotMatch(uploads, /internal:delete-upload/u);
   assert.match(http, /readRequestText\(request: Request, maxBytes: number\)/u);
   assert.doesNotMatch(cloudinaryWebhook, /requestRateLimitIdentifier/u);
@@ -833,7 +849,9 @@ test('personal notification writes and pushes are scoped to the recipient', asyn
   assert.match(outboxWorker, /asStringArray\(event\.payload\.supporter_uids\)/u);
   assert.match(outboxWorker, /new Set\(\[authorUid, \.\.\.supporterUids\]/u);
   assert.match(outboxWorker, /event\.event_type === "support\.goal_met" \|\| uid !== event\.actor_uid/u);
-  assert.match(outboxWorker, /query = query\.eq\("uid", recipientUid\)/u);
+  assert.match(outboxWorker, /query = query\.in\("uid", recipientUids\)/u);
+  assert.match(outboxWorker, /upsert\(notifications, \{ ignoreDuplicates: true, onConflict: "id" \}\)/u);
+  assert.match(outboxWorker, /sendPushesWithoutBlockingOutbox\(supabase, base, insertedRecipientUids\)/u);
   assert.doesNotMatch(outboxWorker, /srp-admin|topic_admin/u);
   assert.doesNotMatch(outboxWorker, /title: "新提案待審核"|title: "新提案待處理"/u);
   assert.match(outboxWorker, /title: "設備狀態已變更"/u);
@@ -907,7 +925,7 @@ test('notification realtime subscriptions use authorized private broadcasts', as
   assert.match(notificationsComposable, /insertRealtimeNotification/u);
   assert.doesNotMatch(notificationsComposable, /isPersonalNotificationVisible/u);
   assert.match(realtimeMigration, /app_private\.is_expected_firebase_project\(\)/u);
-  assert.match(backendAuth, /key: "firebase_project_id"/u);
+  assert.match(backendAuth, /firebase_project_id: requireEnv\("FIREBASE_PROJECT_ID"\)/u);
   assert.match(appResume, /export function registerAppResumeHandler/u);
 });
 
@@ -960,8 +978,9 @@ test('push notification registration recovers without overriding an explicit opt
   assert.match(pushPrompt, /useAppResume\(\(\) =>/u);
   assert.match(pushPrompt, /mode\.value = 'repair'/u);
   assert.match(pushNotifications, /needsRegistrationRepair/u);
-  assert.match(pushNotifications, /preference\.deviceEnabled && currentToken/u);
+  assert.match(pushNotifications, /preference\.deviceEnabled[\s\S]*!registrationIsFresh\(uid\)/u);
   assert.match(pushNotifications, /registerCurrentPushToken\(currentToken\)/u);
+  assert.match(pushNotifications, /PUSH_REGISTRATION_SYNC_TTL_MS = 7 \* 24 \* 60 \* 60_000/u);
   assert.match(pushNotifications, /setExplicitlyDisabled\(true\)/u);
   assert.match(pushNotifications, /setExplicitlyDisabled\(false\)/u);
   assert.match(promptDialog, /重新啟用推播通知/u);
@@ -1067,7 +1086,7 @@ test('content revisions batch cache validation and searches only submit explicit
   const facilities = await read('src/composables/useFacilities.ts');
   const controls = await read('src/components/BoardControls.vue');
 
-  assert.match(revisions, /REVISION_CHECK_INTERVAL_MS = 10 \* 60_000/u);
+  assert.match(revisions, /REVISION_CHECK_INTERVAL_MS = 30 \* 60_000/u);
   assert.match(revisions, /getContentRevisions/u);
   assert.match(revisions, /pendingChecks/u);
   assert.match(revisions, /DOMAIN_PREFIXES/u);
@@ -1121,12 +1140,16 @@ test('entry and comment limits are enforced across UI, Edge, and a new migration
 test('primary navigation preloads route chunks and page transitions do not overlap', async () => {
   const app = await read('src/App.vue');
   const appShell = await read('src/components/AppShell.vue');
+  const issueBoard = await read('src/components/IssueBoard.vue');
+  const facilitiesView = await read('src/views/FacilitiesView.vue');
   const routeComponents = await read('src/router/route-components.ts');
   const responsiveStyles = await read('src/styles/responsive.css');
 
   assert.match(app, /<Transition name="page-content" mode="out-in">/u);
-  assert.match(app, /relative flex min-h-0 min-w-0 w-full max-w-full flex-1 overflow-x-hidden/u);
-  assert.match(app, /class="min-h-0 min-w-0 w-full max-w-full flex-1 overflow-x-hidden"/u);
+  assert.doesNotMatch(app, /flex-1 overflow-x-hidden/u);
+  assert.match(appShell, /app-main-content relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden/u);
+  assert.match(issueBoard, /overflow-y-auto overflow-x-hidden overscroll-contain/u);
+  assert.match(facilitiesView, /overflow-y-auto overflow-x-hidden overscroll-contain/u);
   assert.match(app, /requestIdleCallback/u);
   assert.match(app, /preloadPrimaryRouteComponents/u);
   assert.match(appShell, /@pointerover\.capture="handleNavigationIntent"/u);
@@ -1134,6 +1157,7 @@ test('primary navigation preloads route chunks and page transitions do not overl
   assert.match(routeComponents, /preloadRequests/u);
   assert.match(routeComponents, /for \(const routeName of routeNames\)/u);
   assert.match(responsiveStyles, /\.page-content-leave-active \{[\s\S]*position: absolute/u);
+  assert.match(responsiveStyles, /\.board-controls \{[\s\S]*padding-top: 0\.5rem/u);
 });
 
 test('navigation and contextual creation share the same responsive information architecture', async () => {
@@ -1176,4 +1200,27 @@ test('navigation and contextual creation share the same responsive information a
   assert.ok(settingsPanel.indexOf('重啟 App') < settingsPanel.indexOf('更多資源'));
   await assert.rejects(read('src/components/CreateActionMenu.vue'));
   await assert.rejects(read('src/composables/useCreateEntryActions.ts'));
+});
+
+test('authenticated route pages share one content width and AppShell owns horizontal gutters', async () => {
+  const baseStyles = await read('src/styles/base.css');
+  const contentStyles = await read('src/styles/content.css');
+  const routePages = await Promise.all([
+    'src/views/IssueBoardView.vue',
+    'src/views/FacilitiesView.vue',
+    'src/views/AnnouncementsView.vue',
+    'src/views/NotificationsView.vue',
+    'src/views/SettingsView.vue',
+    'src/views/DashboardView.vue',
+    'src/views/AccessManagementView.vue',
+    'src/components/ui/DetailPageShell.vue',
+  ].map(read));
+
+  assert.match(baseStyles, /\.route-page \{[\s\S]*max-width: 80rem;[\s\S]*width: 100%;/u);
+  routePages.forEach((page) => assert.match(page, /class="[^"]*route-page/u));
+  assert.match(contentStyles, /\.settings-scroll--flat \{[\s\S]*@apply px-0 py-3/u);
+  assert.doesNotMatch(routePages[3], /px-0\.5|sm:px-1/u);
+  assert.doesNotMatch(routePages[4], /:class="\{ 'px-1': true \}"/u);
+  assert.doesNotMatch(routePages[5], /space-y-5 px-2/u);
+  assert.doesNotMatch(routePages[7], /px-1|sm:px-2/u);
 });

@@ -77,3 +77,15 @@ export async function selectIssue(supabase: BackendSupabase, issueId: string) {
   if (!data) throw new Error("not-found");
   return data as JsonRecord;
 }
+
+export async function selectIssueCategory(supabase: BackendSupabase, issueId: string) {
+  const { data, error } = await supabase
+    .schema("app_private")
+    .from("issues")
+    .select("category")
+    .eq("id", issueId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("not-found");
+  return data.category;
+}

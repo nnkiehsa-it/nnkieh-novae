@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col">
+  <div class="route-page flex h-full min-h-0 flex-col">
     <PageLoadFailure
       v-if="sessionLoadingHasProblem"
       :title="sessionProblemTitle"

@@ -121,7 +121,7 @@ const extraConfig = {
 export async function claimActionRateLimits(env: Env, uid: string, action: string, body: JsonRecord) {
   const policy = BACKEND_ACTION_POLICIES[action as keyof typeof BACKEND_ACTION_POLICIES];
   if (!policy) throw new Error('unsupported-action');
-  await claimRateLimits(env, groupClaims(uid, policy.group));
+  const claims: Claim[] = groupClaims(uid, policy.group);
   if ('extraLimit' in policy) {
     const extra = extraConfig[policy.extraLimit];
     const payload = body.payload && typeof body.payload === 'object' && !Array.isArray(body.payload)
@@ -130,10 +130,9 @@ export async function claimActionRateLimits(env: Env, uid: string, action: strin
     const units = 'unitsPath' in policy && policy.unitsPath === 'payload.images' && Array.isArray(payload.images)
       ? Math.max(1, payload.images.length)
       : 1;
-    await claimRateLimits(env, [
-      { identifier: uid, actionName: extra.actionName, window: extra.window(), units, ...extra.config },
-    ]);
+    claims.push({ identifier: uid, actionName: extra.actionName, window: extra.window(), units, ...extra.config });
   }
+  await claimRateLimits(env, claims);
 }
 
 export async function claimSyncIngress(env: Env, ip: string) {

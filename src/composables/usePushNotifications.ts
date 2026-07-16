@@ -20,6 +20,8 @@ const PUSH_SERVICE_TIMEOUT_MS = 10_000;
 const PUSH_TOKEN_TIMEOUT_MS = 15_000;
 const PUSH_DEVICE_ID_STORAGE_KEY = 'novae:push-device-id';
 const PUSH_EXPLICITLY_DISABLED_STORAGE_PREFIX = 'novae:push-explicitly-disabled:';
+const PUSH_REGISTRATION_SYNC_STORAGE_PREFIX = 'novae:push-registration-sync:';
+const PUSH_REGISTRATION_SYNC_TTL_MS = 7 * 24 * 60 * 60_000;
 const supported = ref(false);
 const permission = ref<PushNotificationPermission>('default');
 const deviceEnabled = ref(false);
@@ -136,6 +138,23 @@ export function usePushNotifications() {
     return `${PUSH_EXPLICITLY_DISABLED_STORAGE_PREFIX}${uid}:${deviceId}`;
   }
 
+  function registrationSyncStorageKey(uid: string) {
+    return `${PUSH_REGISTRATION_SYNC_STORAGE_PREFIX}${uid}:${deviceId}`;
+  }
+
+  function registrationIsFresh(uid: string) {
+    const synchronizedAt = Number(localStorage.getItem(registrationSyncStorageKey(uid)) ?? 0);
+    return Number.isFinite(synchronizedAt) && Date.now() - synchronizedAt < PUSH_REGISTRATION_SYNC_TTL_MS;
+  }
+
+  function markRegistrationSynchronized(uid: string) {
+    if (uid) localStorage.setItem(registrationSyncStorageKey(uid), String(Date.now()));
+  }
+
+  function clearRegistrationSynchronization(uid: string) {
+    if (uid) localStorage.removeItem(registrationSyncStorageKey(uid));
+  }
+
   function readExplicitlyDisabled(uid: string) {
     return Boolean(uid && localStorage.getItem(explicitlyDisabledStorageKey(uid)) === '1');
   }
@@ -171,22 +190,29 @@ export function usePushNotifications() {
     loading.value = true;
     error.value = '';
     try {
-      const messaging = await resolveMessaging();
-      if (messaging && permission.value === 'granted') {
-        currentToken = await getPushToken(messaging);
-      }
+      supported.value = Boolean(firebaseVapidKey && 'Notification' in window && 'serviceWorker' in navigator);
+      permission.value = supported.value ? browserPermission() : 'unsupported';
       const preference = await getPushNotificationPreference({
         deviceId,
         permission: permission.value,
-        token: currentToken || undefined,
       });
       applyPreference(preference);
 
-      if (permission.value === 'granted' && preference.deviceEnabled && currentToken) {
+      const uid = user.value.uid;
+      if (
+        permission.value === 'granted'
+        && preference.deviceEnabled
+        && !explicitlyDisabled.value
+        && !registrationIsFresh(uid)
+      ) {
+        const messaging = await resolveMessaging();
+        currentToken = messaging ? await getPushToken(messaging) : '';
+        if (!currentToken) throw new Error('無法取得此裝置的推播識別，請稍後再試。');
         const registrationKey = `${user.value.uid}:${currentToken}`;
         if (synchronizedRegistrationKey !== registrationKey) {
           const synchronizedPreference = await registerCurrentPushToken(currentToken);
           synchronizedRegistrationKey = registrationKey;
+          markRegistrationSynchronized(uid);
           setExplicitlyDisabled(false);
           applyPreference(synchronizedPreference);
         }
@@ -248,6 +274,7 @@ export function usePushNotifications() {
 
       const preference = await registerCurrentPushToken(currentToken);
       synchronizedRegistrationKey = `${user.value.uid}:${currentToken}`;
+      markRegistrationSynchronized(user.value.uid);
       setExplicitlyDisabled(false);
       applyPreference(preference);
 
@@ -290,6 +317,7 @@ export function usePushNotifications() {
       });
       currentToken = '';
       synchronizedRegistrationKey = '';
+      clearRegistrationSynchronization(user.value?.uid ?? '');
       setExplicitlyDisabled(true);
       applyPreference(preference);
       return true;

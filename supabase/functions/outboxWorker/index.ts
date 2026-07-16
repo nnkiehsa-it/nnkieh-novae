@@ -295,6 +295,13 @@ async function markMappedNotionPageDeleted(
   if (error) throw error;
   if (data?.notion_page_id) {
     await markNotionPageDeleted(String(data.notion_page_id));
+    const { error: deleteError } = await supabase
+      .schema("app_private")
+      .from("notion_pages")
+      .delete()
+      .eq("target_type", targetType)
+      .eq("target_id", targetId);
+    if (deleteError) throw deleteError;
   }
 }
 
@@ -342,11 +349,15 @@ async function syncNotionForEvent(
 async function sendPushes(
   supabase: AppSupabase,
   notification: Record<string, unknown>,
+  explicitRecipientUids: string[] = [],
 ) {
   const source = asString(notification.source);
   const recipientUid = asString(notification.recipient_uid);
+  const recipientUids = [...new Set(
+    (explicitRecipientUids.length > 0 ? explicitRecipientUids : [recipientUid]).filter(Boolean),
+  )];
   const notificationType = asString(notification.type);
-  const topic = !recipientUid && source === "broadcast" && notificationType === "announcement_created"
+  const topic = recipientUids.length === 0 && source === "broadcast" && notificationType === "announcement_created"
     ? "srp-broadcast"
     : "";
   const tokens: Array<{ token: string; uid: string }> = [];
@@ -355,7 +366,8 @@ async function sendPushes(
     let query = supabase.schema("app_private").from("push_tokens")
       .select("uid,token,topic_broadcast").order("uid", { ascending: true }).order("device_id", { ascending: true })
       .range(offset, offset + 199);
-    if (recipientUid) query = query.eq("uid", recipientUid);
+    if (recipientUids.length === 1) query = query.eq("uid", recipientUids[0]);
+    else if (recipientUids.length > 1) query = query.in("uid", recipientUids);
     if (topic === "srp-broadcast") query = query.eq("topic_broadcast", false);
     const { data, error } = await query;
     if (error) throw error;
@@ -393,22 +405,35 @@ async function sendPushes(
       console.error(JSON.stringify({ error: errorMessage(error), notificationType, operation: "fcm-topic-send", topic }));
       // Topic subscribers must be included in the token fallback when fanout fails.
       tokens.length = 0;
-      let fallbackQuery = supabase.schema("app_private").from("push_tokens").select("uid,token").limit(1000);
-      if (recipientUid) fallbackQuery = fallbackQuery.eq("uid", recipientUid);
-      const { data: fallbackTokens, error: fallbackError } = await fallbackQuery;
-      if (fallbackError) throw fallbackError;
-      for (const row of fallbackTokens ?? []) tokens.push({ token: row.token, uid: row.uid });
+      for (let offset = 0; ; offset += 200) {
+        let fallbackQuery = supabase.schema("app_private").from("push_tokens")
+          .select("uid,token")
+          .order("uid", { ascending: true })
+          .order("device_id", { ascending: true })
+          .range(offset, offset + 199);
+        if (recipientUids.length === 1) fallbackQuery = fallbackQuery.eq("uid", recipientUids[0]);
+        else if (recipientUids.length > 1) fallbackQuery = fallbackQuery.in("uid", recipientUids);
+        const { data: fallbackTokens, error: fallbackError } = await fallbackQuery;
+        if (fallbackError) throw fallbackError;
+        for (const row of fallbackTokens ?? []) {
+          if (!seenTokens.has(row.token)) {
+            seenTokens.add(row.token);
+            tokens.push({ token: row.token, uid: row.uid });
+          }
+        }
+        if ((fallbackTokens ?? []).length < 200) break;
+      }
     }
   }
-  const recipientUids = [...new Set(tokens.map((row) => asString(row.uid)).filter(Boolean))];
+  const tokenRecipientUids = [...new Set(tokens.map((row) => asString(row.uid)).filter(Boolean))];
   const preferences = new Map<string, { comments: boolean; facilityUpdates: boolean; issueUpdates: boolean }>();
   let pushFailureTraceCode = "";
-  if (recipientUids.length > 0) {
+  if (tokenRecipientUids.length > 0) {
     const { data: states, error: stateError } = await supabase
       .schema("app_private")
       .from("notification_states")
       .select("uid,push_comments_enabled,push_facility_updates_enabled,push_issue_updates_enabled")
-      .in("uid", recipientUids);
+      .in("uid", tokenRecipientUids);
     if (stateError) throw stateError;
     for (const state of states ?? []) {
       preferences.set(String(state.uid), {
@@ -493,9 +518,10 @@ async function insertNotification(
 async function sendPushesWithoutBlockingOutbox(
   supabase: AppSupabase,
   notification: Record<string, unknown>,
+  recipientUids: string[] = [],
 ) {
   try {
-    await sendPushes(supabase, notification);
+    await sendPushes(supabase, notification, recipientUids);
   } catch (error) {
     const traceCode = crypto.randomUUID();
     console.error(JSON.stringify({
@@ -514,6 +540,20 @@ async function sendPushesWithoutBlockingOutbox(
   }
 }
 
+async function insertNotifications(
+  supabase: AppSupabase,
+  notifications: Record<string, unknown>[],
+) {
+  if (notifications.length === 0) return [];
+  const { data, error } = await supabase
+    .schema("app_private")
+    .from("notifications")
+    .upsert(notifications, { ignoreDuplicates: true, onConflict: "id" })
+    .select("recipient_uid");
+  if (error) throw error;
+  return (data ?? []).map((row) => asString(row.recipient_uid)).filter(Boolean);
+}
+
 async function createNotificationsForEvent(
   supabase: AppSupabase,
   event: OutboxEvent,
@@ -526,10 +566,14 @@ async function createNotificationsForEvent(
       .select("uid").eq("facility_id", event.target_id);
     if (error) throw error;
     const recipients = [...new Set([authorUid, ...(data ?? []).map((row) => asString(row.uid))].filter(Boolean))];
-    for (const recipientUid of recipients) {
-      const notification = { ...base, recipient_uid: recipientUid, id: await deterministicNotificationId(event.id, recipientUid) };
-      const inserted = await insertNotification(supabase, notification);
-      if (inserted) await sendPushesWithoutBlockingOutbox(supabase, notification);
+    const notifications = await Promise.all(recipients.map(async (recipientUid) => ({
+      ...base,
+      recipient_uid: recipientUid,
+      id: await deterministicNotificationId(event.id, recipientUid),
+    })));
+    const insertedRecipientUids = await insertNotifications(supabase, notifications);
+    if (insertedRecipientUids.length > 0) {
+      await sendPushesWithoutBlockingOutbox(supabase, base, insertedRecipientUids);
     }
     return { hasNotification: recipients.length > 0 };
   }
@@ -554,14 +598,14 @@ async function createNotificationsForEvent(
 
     const recipients = [...new Set([authorUid, ...supporterUids].filter(Boolean))]
       .filter((uid) => event.event_type === "support.goal_met" || uid !== event.actor_uid);
-    for (const recipientUid of recipients) {
-      const notification = {
+    const notifications = await Promise.all(recipients.map(async (recipientUid) => ({
         ...base,
         recipient_uid: recipientUid,
         id: await deterministicNotificationId(event.id, recipientUid),
-      };
-      const inserted = await insertNotification(supabase, notification);
-      if (inserted) await sendPushesWithoutBlockingOutbox(supabase, notification);
+      })));
+    const insertedRecipientUids = await insertNotifications(supabase, notifications);
+    if (insertedRecipientUids.length > 0) {
+      await sendPushesWithoutBlockingOutbox(supabase, base, insertedRecipientUids);
     }
     return { hasNotification: recipients.length > 0 };
   }
