@@ -7,14 +7,10 @@
     @retry="emit('retryProblem')"
   />
 
-  <div
+  <SkeletonDetail
     v-else-if="loading"
-    class="flex min-h-[50dvh] items-center justify-center"
-    :aria-label="t(loadingLabel)"
-    aria-busy="true"
-  >
-    <LoadingSpinner :size="8" />
-  </div>
+    :label="loadingLabel"
+  />
 
   <div v-else-if="!allowed" class="sr-only" role="status">{{ t('auth.redirectingToSignIn') }}</div>
 
@@ -29,8 +25,8 @@
 </template>
 
 <script setup lang="ts">
-import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import PageLoadFailure from '@/components/ui/PageLoadFailure.vue';
+import SkeletonDetail from '@/components/ui/SkeletonDetail.vue';
 import { useI18n } from '@/i18n';
 
 const { t } = useI18n();

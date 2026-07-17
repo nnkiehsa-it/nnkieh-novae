@@ -86,7 +86,7 @@
 - `PillSegmentedControl.vue` / `SelectionMark.vue` / `DetailActionButton.vue` / `DetailActionGroup.vue` / `DetailPageShell.vue` / `OperationTimeList.vue`（詳情頁共用操作列、分享／刪除動作與狀態時間列）
 - `DialogOverlay.vue` / `GoogleLoginButton.vue`
 - Markdown：`MarkdownImageEditor.vue`、`MarkdownToolbar.vue`、`MarkdownImagePreviews.vue`、`MarkdownImageToolbarStatus.vue`、`MarkdownTableBlockCard.vue`、`TableGridPicker.vue`、`VisualTableEditor.vue`
-- Skeleton：`SkeletonTable`、`SkeletonAnnouncementList`、`SkeletonCommentList`、`SkeletonDashboard`
+- Skeleton：`SkeletonTable`、`SkeletonAnnouncementList`、`SkeletonCommentList`、`SkeletonDashboard`、`SkeletonDetail`
 
 ---
 

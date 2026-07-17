@@ -58,7 +58,13 @@
           @reply="openReplyComposer(comment.id)"
           @update-replies-expanded="updateRepliesExpanded"
         />
+        <SkeletonCommentList
+          v-if="loadingMore"
+          :count="1"
+          class="border-t border-ink-100/40 dark:border-ink-800/40 pt-2"
+        />
         <FeedLoadMoreControl
+          v-show="!loadingMore"
           :has-more="hasMore"
           :loading="loadingMore"
           :error="Boolean(loadMoreError)"

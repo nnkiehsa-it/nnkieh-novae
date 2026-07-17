@@ -6,7 +6,7 @@
     :loading="loading"
   >
     <template #loading>
-      <SkeletonTable :show-author="true" :is-admin="false" />
+      <SkeletonTable :show-author="true" :is-admin="false" :rows="rows" />
     </template>
 
     <FacilityTableRow
@@ -34,9 +34,11 @@ withDefaults(defineProps<{
   facilities: FacilitySummary[];
   loading: boolean;
   highlightQuery?: string;
+  rows?: number;
 }>(), {
   affectingFacilityId: '',
   highlightQuery: '',
+  rows: 4,
 });
 const emit = defineEmits<{
   'open-details': [facility: FacilitySummary];

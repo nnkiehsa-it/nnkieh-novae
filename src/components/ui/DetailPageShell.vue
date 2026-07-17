@@ -70,29 +70,27 @@
         />
       </header>
 
-      <Transition name="panel-switch" mode="out-in">
-        <div
-          v-if="!showComments || activeTab === 'details'"
-          key="details"
-          class="flex min-h-0 flex-1 flex-col border-t border-ink-100/70 dark:border-ink-800/70"
-        >
-          <div class="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 overscroll-contain">
-            <slot name="details" :compact="true" :scroll-content="false" />
-          </div>
-          <div class="shrink-0 bg-surface px-4 pb-4 dark:bg-surface">
-            <slot name="actions" :compact="true" />
-          </div>
+      <div
+        v-if="!showComments || activeTab === 'details'"
+        key="details"
+        class="flex min-h-0 flex-1 flex-col border-t border-ink-100/70 dark:border-ink-800/70"
+      >
+        <div class="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 overscroll-contain">
+          <slot name="details" :compact="true" :scroll-content="false" />
         </div>
+        <div class="shrink-0 bg-surface px-4 pb-4 dark:bg-surface">
+          <slot name="actions" :compact="true" />
+        </div>
+      </div>
 
-        <div
-          v-else
-          key="comments"
-          class="min-h-0 flex-1 border-t border-ink-100/70 px-4 py-4 dark:border-ink-800/70"
-          :aria-label="t(commentsLabel)"
-        >
-          <slot name="comments" :compact-header="true" />
-        </div>
-      </Transition>
+      <div
+        v-else
+        key="comments"
+        class="min-h-0 flex-1 border-t border-ink-100/70 px-4 py-4 dark:border-ink-800/70"
+        :aria-label="t(commentsLabel)"
+      >
+        <slot name="comments" :compact-header="true" />
+      </div>
     </article>
   </section>
 </template>

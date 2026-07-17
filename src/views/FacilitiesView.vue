@@ -36,6 +36,10 @@
           <FacilityTable :facilities="[]" :loading="true" />
         </template>
 
+        <template #loading-more>
+          <FacilityTable :facilities="[]" :loading="true" :rows="1" />
+        </template>
+
         <FacilityTable
           :affecting-facility-id="affectingFacilityId"
           :facilities="facilities"

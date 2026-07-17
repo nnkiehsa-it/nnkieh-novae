@@ -770,7 +770,7 @@ test('facility next actions and account UID use existing detail controls', async
 
   assert.match(facilityDetail, /FacilityDetailPagePanel/u);
   assert.match(facilityDetail, /DetailRouteState/u);
-  assert.match(detailRouteState, /LoadingSpinner/u);
+  assert.match(detailRouteState, /SkeletonDetail/u);
   assert.match(facilityDetail, /ConfirmDialog/u);
   assert.match(facilityDetail, /useShareUrl/u);
   assert.match(facilityPanel, /#actions="\{ compact \}"/u);

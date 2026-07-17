@@ -40,6 +40,16 @@
           />
         </template>
 
+        <template #loading-more>
+          <IssueBoardTable
+            :issues="[]"
+            :loading="true"
+            :rows="1"
+            error=""
+            :show-author="showAuthorCol"
+          />
+        </template>
+
         <IssueBoardTable
           :issues="currentIssues"
           :loading="false"

@@ -40,6 +40,10 @@
         <SkeletonAnnouncementList :can-manage="isAdmin" />
       </template>
 
+      <template #loading-more>
+        <SkeletonAnnouncementList :can-manage="isAdmin" :count="1" />
+      </template>
+
       <AnnouncementTable
         :announcements="announcements"
         :can-manage="isAdmin"

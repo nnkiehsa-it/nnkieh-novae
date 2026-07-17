@@ -181,28 +181,6 @@
   transform: translateY(-4px) scale(0.996);
 }
 
-.panel-switch-enter-active {
-  transition:
-    opacity var(--motion-duration-panel) var(--motion-ease-enter),
-    transform var(--motion-duration-panel) var(--motion-ease-enter);
-}
-
-.panel-switch-leave-active {
-  transition:
-    opacity var(--motion-duration-fast) var(--motion-ease-exit),
-    transform var(--motion-duration-fast) var(--motion-ease-exit);
-}
-
-.panel-switch-enter-from {
-  opacity: 0;
-  transform: translateY(6px) scale(0.992);
-}
-
-.panel-switch-leave-to {
-  opacity: 0;
-  transform: translateY(-3px) scale(0.996);
-}
-
 .action-feedback-enter-active,
 .action-feedback-leave-active {
   transition:

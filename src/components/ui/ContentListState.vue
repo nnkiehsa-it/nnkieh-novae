@@ -1,59 +1,59 @@
 <template>
-  <Transition name="panel-switch" mode="out-in">
-    <div :key="panelKey" :class="spacingClass">
-      <PageLoadFailure
-        v-if="loadingHasProblem"
-        :title="problemTitle"
-        :description="problemDescription"
-        :retry-disabled="retryDisabled"
-        @retry="emit('retry')"
+  <div :key="panelKey" :class="spacingClass">
+    <PageLoadFailure
+      v-if="loadingHasProblem"
+      :title="problemTitle"
+      :description="problemDescription"
+      :retry-disabled="retryDisabled"
+      @retry="emit('retry')"
+    />
+
+    <slot v-else-if="loading" name="loading" />
+
+    <EmptyStatePanel
+      v-else-if="unavailable"
+      :title="unavailableTitle"
+      :description="unavailableDescription"
+      :icon="unavailableIcon"
+    />
+
+    <EmptyStatePanel
+      v-else-if="error && empty"
+      :title="errorTitle"
+      :description="error"
+      icon="warning"
+      tone="danger"
+      action-label="dashboard.refresh"
+      @action="emit('retry')"
+    />
+
+    <EmptyStatePanel
+      v-else-if="empty"
+      :title="emptyTitle"
+      :description="emptyDescription"
+      :icon="emptyIcon"
+    />
+
+    <template v-else>
+      <slot />
+
+      <div
+        v-if="error"
+        class="rounded-xl border border-error/20 bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container"
+      >
+        {{ error }}
+      </div>
+      <slot v-if="loadingMore" name="loading-more" />
+      <FeedLoadMoreControl
+        v-show="!loadingMore"
+        :has-more="hasMore"
+        :loading="loadingMore"
+        :error="Boolean(error)"
+        @load-more="emit('loadMore')"
       />
-
-      <slot v-else-if="loading" name="loading" />
-
-      <EmptyStatePanel
-        v-else-if="unavailable"
-        :title="unavailableTitle"
-        :description="unavailableDescription"
-        :icon="unavailableIcon"
-      />
-
-      <EmptyStatePanel
-        v-else-if="error && empty"
-        :title="errorTitle"
-        :description="error"
-        icon="warning"
-        tone="danger"
-        action-label="dashboard.refresh"
-        @action="emit('retry')"
-      />
-
-      <EmptyStatePanel
-        v-else-if="empty"
-        :title="emptyTitle"
-        :description="emptyDescription"
-        :icon="emptyIcon"
-      />
-
-      <template v-else>
-        <slot />
-
-        <div
-          v-if="error"
-          class="rounded-xl border border-error/20 bg-error-container px-4 py-3 text-sm font-semibold text-on-error-container"
-        >
-          {{ error }}
-        </div>
-        <FeedLoadMoreControl
-          :has-more="hasMore"
-          :loading="loadingMore"
-          :error="Boolean(error)"
-          @load-more="emit('loadMore')"
-        />
-        <slot name="sentinel" />
-      </template>
-    </div>
-  </Transition>
+      <slot name="sentinel" />
+    </template>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -105,6 +105,7 @@ const emit = defineEmits<{
 defineSlots<{
   default(): unknown;
   loading(): unknown;
+  'loading-more'(): unknown;
   sentinel(): unknown;
 }>();
 </script>
