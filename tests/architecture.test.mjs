@@ -1260,8 +1260,11 @@ test('primary navigation keeps desktop chrome while mobile routes use a source-a
   assert.match(appShell, /:data-sidebar="isAllowedUser/u);
   assert.match(appShell, /<Transition name="mobile-nav">[\s\S]*v-if="showMobileBottomNavigation"/u);
   assert.match(appShell, /getRouteNavigationDepth/u);
-  assert.match(baseStyles, /\.route-push-enter-from,[\s\S]*translateX\(100%\)/u);
-  assert.match(baseStyles, /\.route-pop-enter-from[\s\S]*translateX\(-5%\) scale\(0\.985\)/u);
+  assert.match(baseStyles, /\.route-content-frame \{[\s\S]*background-color: rgb\(var\(--color-page-background\)\)/u);
+  assert.match(baseStyles, /\.route-push-enter-active,[\s\S]*border-radius 380ms cubic-bezier\(0\.32, 0\.72, 0, 1\),[\s\S]*transform 380ms cubic-bezier\(0\.32, 0\.72, 0, 1\)/u);
+  assert.match(baseStyles, /\.route-push-enter-from,[\s\S]*translate3d\(100%, 0, 0\)/u);
+  assert.match(baseStyles, /\.route-push-enter-from,[\s\S]*border-radius: 1\.5rem 0 0 1\.5rem/u);
+  assert.match(baseStyles, /\.route-pop-enter-from[\s\S]*translate3d\(-20%, 0, 0\)/u);
   assert.match(baseStyles, /\.app-root\[data-sidebar='false'\] \.app-main-content/u);
   assert.match(navigationStyles, /\.mobile-nav-enter-from,[\s\S]*translateY\(18px\) scale\(0\.96\)/u);
   assert.match(hierarchy, /name === 'issue-detail' && isMyProposals[\s\S]*NESTED_DETAIL_NAVIGATION_DEPTH/u);
@@ -1269,6 +1272,8 @@ test('primary navigation keeps desktop chrome while mobile routes use a source-a
   assert.match(notificationNavigation, /state: NOTIFICATION_NAVIGATION_STATE/u);
   assert.match(detailShell, /v-if="isDesktopViewport"[\s\S]*class="panel hidden/u);
   assert.match(detailShell, /v-else[\s\S]*class="flex h-\[calc\(100dvh-var\(--app-header-height\)/u);
+  assert.match(detailShell, /v-else[\s\S]{0,240}pb-\[5px\]/u);
+  assert.match(detailSkeleton, /v-else[\s\S]{0,240}pb-\[5px\]/u);
   assert.doesNotMatch(detailShell, /v-else[\s\S]{0,120}class="panel/u);
   assert.doesNotMatch(detailSkeleton, /h-7 w-1\/2|h-6 w-1\/2/u);
   assert.match(responsiveStyles, /\.board-controls \{[\s\S]*padding-top: 0\.5rem/u);

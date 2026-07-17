@@ -336,6 +336,8 @@
   }
 
   .route-content-frame {
+    background-color: rgb(var(--color-page-background));
+    min-height: 100%;
     transform-origin: 50% 0;
   }
 
@@ -368,7 +370,18 @@
 
   @media (max-width: 767px) {
     .route-push-enter-active,
+    .route-push-leave-active,
+    .route-pop-enter-active,
     .route-pop-leave-active {
+      transition:
+        border-radius 380ms cubic-bezier(0.32, 0.72, 0, 1),
+        transform 380ms cubic-bezier(0.32, 0.72, 0, 1);
+      will-change: transform;
+    }
+
+    .route-push-enter-active,
+    .route-pop-leave-active {
+      overflow: hidden;
       z-index: 2;
     }
 
@@ -379,15 +392,13 @@
 
     .route-push-enter-from,
     .route-pop-leave-to {
-      opacity: 0.96;
-      transform: translateX(100%);
+      border-radius: 1.5rem 0 0 1.5rem;
+      transform: translate3d(100%, 0, 0);
     }
 
     .route-push-leave-to,
     .route-pop-enter-from {
-      filter: brightness(0.96);
-      opacity: 0.72;
-      transform: translateX(-5%) scale(0.985);
+      transform: translate3d(-20%, 0, 0);
     }
   }
 

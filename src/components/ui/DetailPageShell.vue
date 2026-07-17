@@ -45,7 +45,7 @@
 
     <article
       v-else
-      class="flex h-[calc(100dvh-var(--app-header-height)-env(safe-area-inset-top)-0.5rem)] min-h-0 flex-col overflow-hidden md:hidden"
+      class="flex h-[calc(100dvh-var(--app-header-height)-env(safe-area-inset-top)-0.5rem)] min-h-0 flex-col overflow-hidden pb-[5px] md:hidden"
       :aria-label="t(detailsLabel)"
     >
       <header class="flex shrink-0 items-start gap-3 px-0 py-3">
