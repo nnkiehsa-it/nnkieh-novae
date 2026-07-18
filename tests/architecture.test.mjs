@@ -1382,7 +1382,7 @@ test('frontend localization follows the first-visit system language and remains 
   assert.match(i18n, /document\.documentElement\.lang = locale/u);
   assert.doesNotMatch(i18n, /sourceKeyLookup|getSourceKeyLookup/u);
   assert.match(i18n, /Object\.hasOwn\(messages, source\)/u);
-  assert.match(settings, /@click="setLocale\(option\.value\)"/u);
+  assert.match(settings, /function selectLanguage\(value: AppLocale, close: \(\) => void\) \{[\s\S]*setLocale\(value\);[\s\S]*close\(\);/u);
   assert.match(settings, /value: 'zh-TW'/u);
   assert.match(settings, /value: 'en'/u);
   assert.match(documentTitle, /watch\(\[title, locale\]/u);
@@ -1594,6 +1594,7 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   const contentCardSkeleton = await read('src/components/ui/organisms/ContentCardSkeleton.vue');
   const segmentedControl = await read('src/components/ui/molecules/PillSegmentedControl.vue');
   const controls = await read('src/styles/controls.css');
+  const contentStyles = await read('src/styles/content.css');
   const notifications = await read('src/views/NotificationsView.vue');
   const settingsView = await read('src/views/SettingsView.vue');
   const dashboardView = await read('src/views/DashboardView.vue');
@@ -1669,6 +1670,9 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   [compactMenu, facilityMenu].forEach((menu) => assert.match(menu, /<DropdownMenu/u));
   assert.match(boardControls, /<DropdownPanel/u);
   assert.match(settingsPanel, /<LabeledListSection[\s\S]*<IconListRow/u);
+  assert.match(settingsPanel, /<LabeledListSection :label="t\('settings\.language'\)">[\s\S]*<DropdownMenu/u);
+  assert.match(settingsPanel, /role="listbox"[\s\S]*v-for="option in languageOptions"/u);
+  assert.doesNotMatch(contentStyles, /\.settings-row \{[\s\S]{0,100}\bpx-0\b/u);
   assert.match(settingsPanel, /<SwitchIndicator[\s\S]*:checked=/u);
   assert.match(settingsPanel, /<ListSurfaceRow[\s\S]*interactive/u);
   assert.match(commentComposer, /control-frame/u);

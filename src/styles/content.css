@@ -65,7 +65,7 @@
   }
 
   .settings-row {
-    @apply min-w-0 max-w-full justify-between px-0;
+    @apply min-w-0 max-w-full justify-between;
   }
 
   .settings-row > :first-child {
