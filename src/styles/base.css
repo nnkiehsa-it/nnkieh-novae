@@ -338,9 +338,7 @@
   }
 
   .route-stage {
-    contain: paint;
     isolation: isolate;
-    overflow: hidden;
   }
 
   .route-content-frame {

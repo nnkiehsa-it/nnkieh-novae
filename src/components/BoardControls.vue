@@ -38,7 +38,7 @@
           <transition name="popover">
             <DropdownPanel
               v-if="isSortOpen"
-              class="absolute z-[100] mt-2 max-md:left-[var(--app-viewport-gutter)] max-md:right-[var(--app-viewport-gutter)] max-md:w-auto md:right-0 md:left-auto md:w-max md:min-w-[10rem]"
+              class="absolute z-[100] mt-2 max-md:left-0 max-md:right-0 max-md:w-auto md:right-0 md:left-auto md:w-max md:min-w-[10rem]"
               size="default"
             >
               <div class="dropdown-label mb-1.5 whitespace-nowrap">{{ t('common.sortBy') }}</div>
@@ -75,7 +75,7 @@
           <transition name="popover">
             <DropdownPanel
               v-if="isSearchOpen"
-              class="absolute z-[100] mt-2 max-md:left-[var(--app-viewport-gutter)] max-md:right-[var(--app-viewport-gutter)] max-md:w-auto md:right-0 md:left-auto md:w-80"
+              class="absolute z-[100] mt-2 max-md:left-0 max-md:right-0 max-md:w-auto md:right-0 md:left-auto md:w-80"
               size="search"
             >
               <form class="relative" role="search" @submit.prevent="emit('submitSearch')">

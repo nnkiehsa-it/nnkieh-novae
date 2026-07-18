@@ -1262,7 +1262,8 @@ test('primary navigation keeps desktop chrome while mobile routes use a source-a
   assert.match(appShell, /<Transition name="mobile-nav">[\s\S]*v-if="showMobileBottomNavigation"/u);
   assert.match(appShell, /getRouteNavigationDepth/u);
   assert.match(baseStyles, /\.route-content-frame \{[\s\S]*background-color: rgb\(var\(--color-page-background\)\)/u);
-  assert.match(baseStyles, /\.route-stage \{[\s\S]*contain: paint;[\s\S]*overflow: hidden/u);
+  assert.match(baseStyles, /\.route-stage \{[\s\S]*isolation: isolate/u);
+  assert.doesNotMatch(baseStyles, /\.route-stage \{[\s\S]{0,120}(?:contain: paint|overflow: hidden)/u);
   assert.match(baseStyles, /\.route-content-frame \{[\s\S]*-webkit-backface-visibility: hidden;[\s\S]*backface-visibility: hidden/u);
   assert.match(baseStyles, /\.app-root\[data-bottom-nav='true'\] \.route-content-frame \{[\s\S]*padding-bottom: var\(--app-bottom-nav-height\)/u);
   assert.doesNotMatch(baseStyles, /\.app-root\[data-bottom-nav='true'\] \.app-main-content \{[\s\S]{0,160}calc\(var\(--app-bottom-nav-height\) \+ 1rem\)/u);
@@ -1507,17 +1508,21 @@ test('authenticated route pages share one content width and AppShell owns horizo
 
   assert.match(baseStyles, /--app-content-max-width: 80rem;/u);
   assert.match(baseStyles, /--app-viewport-gutter: 1\.5rem;/u);
-  assert.match(primitives, /\.viewport-frame \{[\s\S]*padding-left: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-left\)\);[\s\S]*padding-right: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-right\)\);/u);
+  assert.match(primitives, /\.viewport-frame \{[\s\S]*margin-left: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-left\)\);[\s\S]*margin-right: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-right\)\);[\s\S]*width: calc\(/u);
+  assert.doesNotMatch(primitives, /\.viewport-frame \{[\s\S]{0,280}padding-(?:left|right):/u);
   assert.match(primitives, /\.viewport-floating-inline \{[\s\S]*left: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-left\)\);[\s\S]*right: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-right\)\);/u);
   assert.match(baseStyles, /\.route-page \{[\s\S]*max-width: var\(--app-content-max-width\);[\s\S]*min-width: 0;[\s\S]*width: 100%;/u);
   assert.doesNotMatch(baseStyles, /\.app-viewport-frame/u);
   assert.match(viewportFrame, /class="viewport-frame"[\s\S]*'viewport-content': content/u);
   assert.match(appShell, /<ViewportFrame as="main" class="min-h-0 flex-1">/u);
   assert.match(mobileHeader, /<ViewportFrame/u);
+  assert.doesNotMatch(mobileHeader, /mx-auto|max-w-/u);
   assert.match(mobileNav, /viewport-floating-inline/u);
   assert.doesNotMatch(mobileNav, /\bleft-4\b|\bright-4\b/u);
   routePages.forEach((page) => assert.match(page, /class="[^"]*route-page/u));
   routePages.forEach((page) => assert.doesNotMatch(page, /route-page-surface-inset/u));
+  routePages.forEach((page) => assert.doesNotMatch(page, /route-page[^"\n]*(?:px-|pl-|pr-|mx-|ml-|mr-|left-|right-|max-w-)/u));
+  assert.doesNotMatch(issueBoard, /app-viewport-gutter/u);
   assert.doesNotMatch(contentStyles, /\.issue-card-grid \{[^}]*padding:/u);
   assert.match(contentStyles, /\.scroll-shadow-bleed \{[\s\S]*margin-left: calc\(var\(--scroll-shadow-bleed\) \* -1\);[\s\S]*margin-top: calc\(var\(--scroll-shadow-bleed\) \* -1\);[\s\S]*padding-left: var\(--scroll-shadow-bleed\);[\s\S]*padding-top: var\(--scroll-shadow-bleed\);/u);
   [issueBoard, routePages[1]]

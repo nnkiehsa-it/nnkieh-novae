@@ -6,14 +6,16 @@
    */
   .viewport-frame {
     box-sizing: border-box;
-    padding-left: max(var(--app-viewport-gutter), env(safe-area-inset-left));
-    padding-right: max(var(--app-viewport-gutter), env(safe-area-inset-right));
-    width: 100%;
+    margin-left: max(var(--app-viewport-gutter), env(safe-area-inset-left));
+    margin-right: max(var(--app-viewport-gutter), env(safe-area-inset-right));
+    width: calc(
+      100% - max(var(--app-viewport-gutter), env(safe-area-inset-left))
+      - max(var(--app-viewport-gutter), env(safe-area-inset-right))
+    );
   }
 
   .viewport-content {
     box-sizing: border-box;
-    margin-inline: auto;
     max-width: var(--app-content-max-width);
     min-width: 0;
     width: 100%;
