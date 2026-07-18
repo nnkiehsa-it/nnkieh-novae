@@ -1262,11 +1262,13 @@ test('primary navigation keeps desktop chrome while mobile routes use a source-a
   assert.match(appShell, /<Transition name="mobile-nav">[\s\S]*v-if="showMobileBottomNavigation"/u);
   assert.match(appShell, /getRouteNavigationDepth/u);
   assert.match(baseStyles, /\.route-content-frame \{[\s\S]*background-color: rgb\(var\(--color-page-background\)\)/u);
+  assert.match(baseStyles, /\.route-stage \{[\s\S]*contain: paint;[\s\S]*overflow: hidden/u);
+  assert.match(baseStyles, /\.route-content-frame \{[\s\S]*-webkit-backface-visibility: hidden;[\s\S]*backface-visibility: hidden/u);
   assert.match(baseStyles, /\.app-root\[data-bottom-nav='true'\] \.route-content-frame \{[\s\S]*padding-bottom: var\(--app-bottom-nav-height\)/u);
   assert.doesNotMatch(baseStyles, /\.app-root\[data-bottom-nav='true'\] \.app-main-content \{[\s\S]{0,160}calc\(var\(--app-bottom-nav-height\) \+ 1rem\)/u);
-  assert.match(baseStyles, /\.route-push-enter-active,[\s\S]*border-radius 380ms cubic-bezier\(0\.32, 0\.72, 0, 1\),[\s\S]*transform 380ms cubic-bezier\(0\.32, 0\.72, 0, 1\)/u);
+  assert.match(baseStyles, /\.route-push-enter-active,[\s\S]*contain: layout paint;[\s\S]*transition: transform 380ms cubic-bezier\(0\.32, 0\.72, 0, 1\)/u);
   assert.match(baseStyles, /\.route-push-enter-from,[\s\S]*translate3d\(100%, 0, 0\)/u);
-  assert.match(baseStyles, /\.route-push-enter-from,[\s\S]*border-radius: 1\.5rem 0 0 1\.5rem/u);
+  assert.match(baseStyles, /\.route-push-enter-active,[\s\S]*border-radius: 1\.5rem 0 0 1\.5rem;[\s\S]*box-shadow: var\(--shadow-floating\)/u);
   assert.match(baseStyles, /\.route-pop-enter-from[\s\S]*translate3d\(-20%, 0, 0\)/u);
   assert.match(baseStyles, /\.app-root\[data-sidebar='false'\] \.app-main-content/u);
   assert.match(navigationStyles, /\.mobile-nav-enter-from,[\s\S]*translateY\(18px\) scale\(0\.96\)/u);

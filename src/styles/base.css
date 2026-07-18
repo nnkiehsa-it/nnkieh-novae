@@ -338,10 +338,14 @@
   }
 
   .route-stage {
+    contain: paint;
     isolation: isolate;
+    overflow: hidden;
   }
 
   .route-content-frame {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
     background-color: rgb(var(--color-page-background));
     min-height: 100%;
     transform-origin: 50% 0;
@@ -379,15 +383,17 @@
     .route-push-leave-active,
     .route-pop-enter-active,
     .route-pop-leave-active {
-      transition:
-        border-radius 380ms cubic-bezier(0.32, 0.72, 0, 1),
-        transform 380ms cubic-bezier(0.32, 0.72, 0, 1);
+      contain: layout paint;
+      overflow: hidden;
+      transform-style: flat;
+      transition: transform 380ms cubic-bezier(0.32, 0.72, 0, 1);
       will-change: transform;
     }
 
     .route-push-enter-active,
     .route-pop-leave-active {
-      overflow: hidden;
+      border-radius: 1.5rem 0 0 1.5rem;
+      box-shadow: var(--shadow-floating);
       z-index: 2;
     }
 
@@ -398,7 +404,6 @@
 
     .route-push-enter-from,
     .route-pop-leave-to {
-      border-radius: 1.5rem 0 0 1.5rem;
       transform: translate3d(100%, 0, 0);
     }
 
