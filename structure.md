@@ -49,7 +49,7 @@
 
 - `main.ts` — 掛載 app、resume、PWA、session
 - `i18n/` — `messages/<locale>/<domain>.ts` 依語系與領域拆分的 catalog（含 API error code 對應文案）、系統語言首次偵測、localStorage 語言偏好、日期 locale 與共用 `t()`；所有前端可見字串只放語系目錄，key 使用短而穩定的語意命名
-- `App.vue` — startup gate + AppShell；route stage 的主分頁使用即時短 crossfade，進入／返回子頁依 navigation depth 使用重疊 push／pop
+- `App.vue` — startup gate + AppShell；route stage 使用不中斷內容流的輕量重疊 crossfade
 - `sw.ts` — PWA SW、快取策略、FCM 背景通知
 - `style.css` — 全域樣式載入入口；依序載入 base、primitives 與領域樣式
 - `styles/base.css` — design tokens、全域基礎與頁面骨架
@@ -58,7 +58,7 @@
 - `styles/navigation.css` — 桌面側欄與手機底部導覽
 - `styles/content.css` / `responsive.css` — 列表、設定、統計、Dialog 與跨裝置覆寫
 - `assets/fonts/` — JetBrains Mono 與 Material Symbols 子集
-- `router/index.ts` / `router/route-components.ts` / `router/navigation-hierarchy.ts` — 組合 modules、abort 上一頁、session guard、登入後立即並行預載主要與詳情頁面 chunk，以及 root／子頁／巢狀詳情深度、轉場方向與通知來源返回
+- `router/index.ts` / `router/route-components.ts` / `router/navigation-hierarchy.ts` — 組合 modules、abort 上一頁、session guard、主要頁面 chunk 預載，以及 root／子頁／巢狀詳情深度、轉場方向與通知來源返回
 - `router/authRoutes.ts` / `issueRoutes.ts` / `facilityRoutes.ts` / `announcementRoutes.ts` / `adminRoutes.ts` / `notificationRoutes.ts` / `settingsRoutes.ts`
 - `views/LoginView.vue` — 登入
 - `views/IssueBoardView.vue` — 提案看板

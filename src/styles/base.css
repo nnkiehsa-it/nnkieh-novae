@@ -345,55 +345,30 @@
     transform-origin: 50% 0;
   }
 
-  .route-root-enter-active,
-  .route-root-leave-active {
-    transition: opacity 90ms var(--motion-ease-enter);
-    will-change: opacity;
-  }
-
-  .route-push-enter-active,
-  .route-push-leave-active,
-  .route-pop-enter-active,
-  .route-pop-leave-active {
+  .route-swap-enter-active,
+  .route-swap-leave-active {
     transition:
-      opacity 140ms var(--motion-ease-enter),
-      transform 140ms var(--motion-ease-enter);
+      opacity 160ms var(--motion-ease-enter),
+      transform 160ms var(--motion-ease-enter);
     will-change: opacity, transform;
   }
 
-  .route-root-leave-active,
-  .route-push-leave-active,
-  .route-pop-leave-active {
+  .route-swap-leave-active {
     inset: 0;
     pointer-events: none;
     position: absolute;
-    transition-duration: 80ms;
+    transition-duration: 100ms;
     z-index: 0;
   }
 
-  .route-root-enter-from,
-  .route-root-leave-to {
+  .route-swap-enter-from {
     opacity: 0;
+    transform: translate3d(0, 3px, 0) scale(0.998);
   }
 
-  .route-push-enter-from {
+  .route-swap-leave-to {
     opacity: 0;
-    transform: translate3d(10px, 0, 0);
-  }
-
-  .route-push-leave-to {
-    opacity: 0;
-    transform: translate3d(-4px, 0, 0);
-  }
-
-  .route-pop-enter-from {
-    opacity: 0;
-    transform: translate3d(-6px, 0, 0);
-  }
-
-  .route-pop-leave-to {
-    opacity: 0;
-    transform: translate3d(8px, 0, 0);
+    transform: translate3d(0, -2px, 0) scale(0.999);
   }
 
   @media (max-width: 767px) {

@@ -265,12 +265,8 @@
     scroll-behavior: auto !important;
   }
 
-  .route-root-enter-active,
-  .route-root-leave-active,
-  .route-push-enter-active,
-  .route-push-leave-active,
-  .route-pop-enter-active,
-  .route-pop-leave-active,
+  .route-swap-enter-active,
+  .route-swap-leave-active,
   .dialog-enter-active,
   .dialog-leave-active,
   .dialog-enter-active [data-dialog-root],
@@ -285,12 +281,8 @@
     transition-property: opacity !important;
   }
 
-  .route-root-enter-from,
-  .route-root-leave-to,
-  .route-push-enter-from,
-  .route-push-leave-to,
-  .route-pop-enter-from,
-  .route-pop-leave-to,
+  .route-swap-enter-from,
+  .route-swap-leave-to,
   .dialog-enter-from [data-dialog-root],
   .dialog-leave-to [data-dialog-root],
   .popover-enter-from,
@@ -331,4 +323,13 @@
   .segmented-control {
     border: 1px solid rgb(var(--color-outline) / 0.72) !important;
   }
+}
+
+.no-transitions *,
+.no-transitions *::before,
+.no-transitions *::after {
+  transition-delay: 0s !important;
+  transition-duration: 0s !important;
+  animation-delay: 0s !important;
+  animation-duration: 0s !important;
 }

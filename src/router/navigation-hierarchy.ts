@@ -1,5 +1,4 @@
 export type NavigationOrigin = 'notifications';
-export type RouteTransitionName = 'route-pop' | 'route-push' | 'route-root';
 
 type HierarchyRoute = {
   meta: {
@@ -30,15 +29,6 @@ export function getRouteNavigationDepth(route: HierarchyRoute) {
   if (name === 'issue-detail' && isMyProposals) return NESTED_DETAIL_NAVIGATION_DEPTH;
   if (name === 'issues' && isMyProposals) return CHILD_NAVIGATION_DEPTH;
   return route.meta.navigationDepth ?? ROOT_NAVIGATION_DEPTH;
-}
-
-export function getRouteTransitionName(from: HierarchyRoute, to: HierarchyRoute): RouteTransitionName {
-  const fromDepth = getRouteNavigationDepth(from);
-  const toDepth = getRouteNavigationDepth(to);
-
-  if (toDepth > fromDepth) return 'route-push';
-  if (toDepth < fromDepth) return 'route-pop';
-  return 'route-root';
 }
 
 export function returnToNavigationOrigin(router: { back(): void }) {

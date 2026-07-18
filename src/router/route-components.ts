@@ -54,15 +54,16 @@ export function preloadRoutePath(pathname: string) {
 
 export async function preloadPrimaryRouteComponents(includeAdmin: boolean) {
   const routeNames = [
-    'issues',
-    'facilities',
     'announcements',
     'notifications',
     'settings',
     'issue-detail',
-    'facility-detail',
     'announcement-detail',
-    ...(includeAdmin ? ['dashboard', 'access-management'] : []),
+    'issues',
+    'facilities',
+    ...(includeAdmin ? ['dashboard'] : []),
   ];
-  await Promise.all(routeNames.map(preloadRouteComponent));
+  for (const routeName of routeNames) {
+    await preloadRouteComponent(routeName);
+  }
 }

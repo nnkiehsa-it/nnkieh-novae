@@ -9,9 +9,9 @@
   <AppShell v-else>
     <div class="route-stage relative flex h-full min-h-0 min-w-0 w-full max-w-full flex-1 flex-col">
       <RouterView v-slot="{ Component, route: viewRoute }">
-        <Transition :name="routeTransitionName">
+        <Transition name="route-swap">
           <div
-            :key="viewRoute.path"
+            :key="String(viewRoute.name ?? viewRoute.path)"
             class="route-content-frame flex h-full min-h-0 min-w-0 w-full max-w-full flex-1 flex-col"
           >
             <Suspense>
@@ -86,9 +86,8 @@ import { useAppUpdate } from '@/composables/useAppUpdate';
 import { usePushPermissionPrompt } from '@/composables/usePushPermissionPrompt';
 import { useSession } from '@/composables/useSession';
 import { useActionFeedback } from '@/composables/useActionFeedback';
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, watch } from 'vue';
 import { DEFAULT_ISSUE_ROUTE_FILTER } from '@/constants/categories';
-import { getRouteTransitionName } from '@/router/navigation-hierarchy';
 import { preloadPrimaryRouteComponents } from '@/router/route-components';
 import { useI18n } from '@/i18n';
 
@@ -106,14 +105,36 @@ const route = useRoute();
 const router = useRouter();
 const { appReady, isAdmin, user } = useSession();
 const { t } = useI18n();
-const routeTransitionName = ref('route-root');
-const removeRouteTransitionGuard = router.beforeEach((to, from) => {
-  routeTransitionName.value = getRouteTransitionName(from, to);
-});
+let routePreloadIdleId: number | null = null;
+let routePreloadTimer = 0;
+const idleWindow = window as unknown as {
+  cancelIdleCallback?: (handle: number) => void;
+  requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+};
 
-function preloadAuthenticatedRoutes() {
+function cancelRoutePreload() {
+  if (routePreloadIdleId !== null) {
+    idleWindow.cancelIdleCallback?.(routePreloadIdleId);
+  }
+  window.clearTimeout(routePreloadTimer);
+  routePreloadIdleId = null;
+  routePreloadTimer = 0;
+}
+
+function scheduleRoutePreload() {
+  cancelRoutePreload();
   if (startupGateOpen.value || !user.value?.uid) return;
-  void preloadPrimaryRouteComponents(isAdmin.value);
+
+  const preload = () => {
+    routePreloadIdleId = null;
+    routePreloadTimer = 0;
+    void preloadPrimaryRouteComponents(isAdmin.value);
+  };
+  if (idleWindow.requestIdleCallback) {
+    routePreloadIdleId = idleWindow.requestIdleCallback(preload, { timeout: 1_200 });
+    return;
+  }
+  routePreloadTimer = window.setTimeout(preload, 250);
 }
 
 const reloadingText = computed(() => {
@@ -244,9 +265,9 @@ watch(
 
 watch(
   [startupGateOpen, () => user.value?.uid ?? '', isAdmin],
-  preloadAuthenticatedRoutes,
+  scheduleRoutePreload,
   { immediate: true },
 );
 
-onBeforeUnmount(removeRouteTransitionGuard);
+onBeforeUnmount(cancelRoutePreload);
 </script>
