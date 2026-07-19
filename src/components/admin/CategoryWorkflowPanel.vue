@@ -1,32 +1,13 @@
 <template>
   <section class="space-y-5" aria-labelledby="category-workflow-title">
-    <SectionHeader
-      id="category-workflow-title"
-      :title="t('adminCenter.categorySectionTitle')"
-      :description="t('adminCenter.categorySectionDescription')"
-    />
+    <h2 id="category-workflow-title" class="sr-only">{{ t('adminCenter.categorySectionTitle') }}</h2>
 
-    <SurfacePanel variant="inset" padding="md" class="grid gap-3 md:grid-cols-3">
-      <div>
-        <p class="text-xs font-semibold text-ink-500">{{ t('adminCenter.proposalCategoryCount') }}</p>
-        <p class="mt-1 text-xl font-bold text-ink-950 dark:text-ink-50">{{ issueCategories.length }}</p>
-      </div>
-      <div>
-        <p class="text-xs font-semibold text-ink-500">{{ t('adminCenter.facilityCategoryCount') }}</p>
-        <p class="mt-1 text-xl font-bold text-ink-950 dark:text-ink-50">{{ facilityCategories.length }}</p>
-      </div>
-      <div>
-        <p class="text-xs font-semibold text-ink-500">{{ t('adminCenter.privacyRule') }}</p>
-        <p class="mt-1 text-sm font-semibold leading-5 text-ink-900 dark:text-ink-100">
-          {{ t('categoryAdmin.permanentlyLocked') }}
-        </p>
-      </div>
-    </SurfacePanel>
-
-    <SurfacePanel variant="inset" padding="md">
-      <p class="text-sm font-semibold text-ink-900 dark:text-ink-100">{{ t('categoryAdmin.policyNoticeTitle') }}</p>
-      <p class="mt-1 text-xs leading-5 text-ink-500">{{ t('categoryAdmin.policyNoticeDescription') }}</p>
-    </SurfacePanel>
+    <div class="flex pb-1">
+      <PillSegmentedControl
+        v-model="activeCategoryKind"
+        :options="kindOptions"
+      />
+    </div>
 
     <EmptyStatePanel v-if="error" title="categoryAdmin.loadFailed" :description="error" icon="warning" />
     <div v-if="loading" class="space-y-3">
@@ -37,6 +18,7 @@
 
     <template v-else>
       <CategoryManagementSection
+        v-if="activeCategoryKind === 'issue'"
         v-model="issueCategories"
         kind="issue"
         :title="t('categoryAdmin.proposalCategories')"
@@ -45,6 +27,7 @@
         @add="addIssue"
       />
       <CategoryManagementSection
+        v-else-if="activeCategoryKind === 'facility'"
         v-model="facilityCategories"
         kind="facility"
         :title="t('categoryAdmin.facilityCategories')"
@@ -57,12 +40,13 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import CategoryManagementSection from '@/components/categories/CategoryManagementSection.vue';
 import SkeletonBlock from '@/components/ui/atoms/SkeletonBlock.vue';
 import EmptyStatePanel from '@/components/ui/molecules/EmptyStatePanel.vue';
-import SectionHeader from '@/components/ui/molecules/SectionHeader.vue';
 import SurfacePanel from '@/components/ui/molecules/SurfacePanel.vue';
+import PillSegmentedControl from '@/components/ui/molecules/PillSegmentedControl.vue';
+import type { PillSegmentedControlOption } from '@/components/ui/molecules/PillSegmentedControl.vue';
 import { useCategories } from '@/composables/useCategories';
 import { useI18n } from '@/i18n';
 import { getCategoryManagement, saveFacilityCategory, saveIssueCategory } from '@/services/categories';
@@ -74,6 +58,12 @@ const loading = ref(true);
 const error = ref('');
 const issueCategories = ref<IssueCategoryConfig[]>([]);
 const facilityCategories = ref<FacilityCategoryConfig[]>([]);
+const activeCategoryKind = ref<'issue' | 'facility'>('issue');
+
+const kindOptions = computed<readonly PillSegmentedControlOption<'issue' | 'facility'>[]>(() => [
+  { value: 'issue', label: t('categoryAdmin.proposalCategories'), icon: 'comment' },
+  { value: 'facility', label: t('categoryAdmin.facilityCategories'), icon: 'wrench' },
+]);
 
 function newIssue(index: number): IssueCategoryConfig {
   return {
