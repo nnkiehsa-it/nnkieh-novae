@@ -35,6 +35,8 @@ const state = reactive<SessionState>({
   roles: [],
   permissions: [],
   managedIssueCategoryIds: [],
+  managedFacilityCategoryIds: [],
+  setupCompleted: false,
   error: '',
 });
 
@@ -153,6 +155,8 @@ async function rejectCurrentUser(reason: string) {
   state.roles = [];
   state.permissions = [];
   state.managedIssueCategoryIds = [];
+  state.managedFacilityCategoryIds = [];
+  state.setupCompleted = false;
   state.roleLoading = false;
   state.error = reason;
   try {
@@ -176,6 +180,8 @@ function acceptCurrentUser(user: NonNullable<SessionState['user']>) {
   state.roles = [];
   state.permissions = [];
   state.managedIssueCategoryIds = [];
+  state.managedFacilityCategoryIds = [];
+  state.setupCompleted = false;
   state.roleLoading = true;
   void refreshVerifiedSession(user, verificationId);
 
@@ -216,6 +222,8 @@ async function refreshVerifiedSession(user: NonNullable<SessionState['user']>, v
     state.roles = access.roles;
     state.permissions = access.permissions;
     state.managedIssueCategoryIds = access.managedIssueCategoryIds;
+    state.managedFacilityCategoryIds = access.managedFacilityCategoryIds;
+    state.setupCompleted = access.setupCompleted;
   } catch (error) {
     if (!isCurrentVerification(user, verificationId)) return;
     debugLog('background session verification failed', error);
@@ -223,6 +231,8 @@ async function refreshVerifiedSession(user: NonNullable<SessionState['user']>, v
     state.roles = [];
     state.permissions = [];
     state.managedIssueCategoryIds = [];
+    state.managedFacilityCategoryIds = [];
+    state.setupCompleted = false;
   } finally {
     if (isCurrentVerification(user, verificationId)) {
       state.roleLoading = false;
@@ -250,6 +260,17 @@ export function initializeSession() {
     SESSION_STARTUP_TIMEOUT_MS,
   );
   observeAuthState(firebaseAuth);
+}
+
+async function refreshSessionAccess() {
+  if (!state.user) return;
+  const access = await fetchCurrentUserRole(true);
+  state.userRole = access.role;
+  state.roles = access.roles;
+  state.permissions = access.permissions;
+  state.managedIssueCategoryIds = access.managedIssueCategoryIds;
+  state.managedFacilityCategoryIds = access.managedFacilityCategoryIds;
+  state.setupCompleted = access.setupCompleted;
 }
 
 export function waitForSessionReady() {
@@ -298,7 +319,10 @@ export function useSession() {
     roles: computed(() => state.roles),
     permissions,
     managedIssueCategoryIds: computed(() => state.managedIssueCategoryIds),
+    managedFacilityCategoryIds: computed(() => state.managedFacilityCategoryIds),
+    setupCompleted: computed(() => state.setupCompleted),
     canManageIssueCategory: (categoryId: string) => state.roles.includes('platform-admin') || state.managedIssueCategoryIds.includes(categoryId),
+    canManageFacilityCategory: (categoryId: string) => state.roles.includes('platform-admin') || state.permissions.includes('facility.manage') || state.managedFacilityCategoryIds.includes(categoryId),
     can: (permission: import('@/services/session-role').PermissionCode) => permissions.value.includes(permission),
     isAdmin: computed(() => state.roles.includes('platform-admin')),
     loading: computed(() => state.loading),
@@ -315,5 +339,6 @@ export function useSession() {
     allowedDomain,
     login: (options?: { selectAccount?: boolean }) => loginWithGoogle(state, options),
     logout: () => logoutFromFirebase(state),
+    refreshSessionAccess,
   };
 }

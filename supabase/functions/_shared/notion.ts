@@ -1,7 +1,6 @@
 import type { AppDatabaseClient } from "./database-client.ts";
 import type { Database } from "./database.ts";
 import { optionalEnv, requireEnv } from "./env.ts";
-import { getIssueCategoryLabel } from "./issue-categories.ts";
 import { createCloudinaryExpiringImageUrl } from "./cloudinary.ts";
 
 // ---------------------------------------------------------------------------
@@ -43,9 +42,13 @@ function translateFacilityStatus(status: string): string {
   return FACILITY_STATUS_LABELS[status] ?? status;
 }
 
-function translateCategory(category: string): string {
+async function translateCategory(supabase: AppSupabase, targetType: string, category: string): Promise<string> {
   if (category === "公告") return "公告";
-  return getIssueCategoryLabel(category);
+  const table = targetType === "facility" ? "facility_categories" : "issue_categories";
+  const { data, error } = await supabase.schema("app_private").from(table)
+    .select("label").eq("id", category).maybeSingle();
+  if (error) throw error;
+  return String(data?.label ?? category);
 }
 
 function supportLabel(supportCount: unknown, supportGoal: unknown): string {
@@ -383,7 +386,7 @@ async function getOrCreateNotionPage(
   if (error) throw error;
   if (data?.notion_page_id) return String(data.notion_page_id);
 
-  const categoryLabel = translateCategory(category);
+  const categoryLabel = await translateCategory(supabase, targetType, category);
   const statusLabel = translateStatus(status);
   await Promise.all([
     ensureSelectOption("分類", categoryLabel),
@@ -478,13 +481,13 @@ export async function syncFacilityCreatedToNotion(
 ): Promise<void> {
   if (!notionEnabled()) return;
   const { data: facility, error } = await supabase.schema("app_private").from("facility_reports")
-    .select("title,content,location,status,author_name,affected_count,created_at,started_at,closed_at,result_content")
+    .select("title,content,location,status,author_name,affected_count,category_id,created_at,started_at,closed_at,result_content")
     .eq("id", targetId).maybeSingle();
   if (error) throw error;
   if (!facility) return;
   const pageId = await getOrCreateNotionPage(
     supabase, "facility", targetId, String(facility.title ?? payload.title ?? "設備"),
-    "設備", translateFacilityStatus(String(facility.status)), String(facility.author_name), facility.affected_count, null, "遇到人數",
+    String(facility.category_id), translateFacilityStatus(String(facility.status)), String(facility.author_name), facility.affected_count, null, "遇到人數",
   );
   if (!pageId) return;
   await Promise.all([ensureRichTextProperty("地點"), ...["建立時間", "開始處理時間", "結案時間"].map(ensureDateProperty)]);
@@ -504,13 +507,13 @@ export async function syncFacilityStatusToNotion(
 ): Promise<void> {
   if (!notionEnabled()) return;
   const { data: facility, error } = await supabase.schema("app_private").from("facility_reports")
-    .select("title,status,author_name,affected_count,created_at,started_at,closed_at,result_content")
+    .select("title,status,author_name,affected_count,category_id,created_at,started_at,closed_at,result_content")
     .eq("id", targetId).maybeSingle();
   if (error) throw error;
   if (!facility) return;
   const terminal = ["completed", "unable-to-handle"].includes(String(facility.status));
   if (!terminal) return;
-  const pageId = await getOrCreateNotionPage(supabase, "facility", targetId, String(facility.title), "設備",
+  const pageId = await getOrCreateNotionPage(supabase, "facility", targetId, String(facility.title), String(facility.category_id),
     translateFacilityStatus(String(facility.status)), String(facility.author_name), 1, null, "遇到人數");
   if (!pageId) return;
   const statusLabel = translateFacilityStatus(String(facility.status));

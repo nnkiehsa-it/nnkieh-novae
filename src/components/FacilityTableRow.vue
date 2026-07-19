@@ -21,7 +21,7 @@
     <template #supplement>
       <SurfacePanel variant="inset" class="mt-4 px-3 py-2.5">
         <div class="flex items-center justify-between gap-3 text-xs">
-          <span class="truncate text-ink-500 dark:text-ink-400">{{ facility.location }}</span>
+          <span class="truncate text-ink-500 dark:text-ink-400">{{ categoryLabel }} · {{ facility.location }}</span>
           <span class="shrink-0 font-semibold tabular-nums text-ink-700 dark:text-ink-300">{{ t('facility.affectedCount', { count: facility.affected_count }) }}</span>
         </div>
       </SurfacePanel>
@@ -54,6 +54,7 @@ import { FACILITY_STATUS_LABELS, isFacilityClosed } from '@/constants/statuses';
 import { formatDate } from '@/lib/format';
 import type { FacilitySummary } from '@/types';
 import { useI18n } from '@/i18n';
+import { findFacilityCategory } from '@/composables/useCategories';
 
 const props = withDefaults(defineProps<{
   affecting?: boolean;
@@ -73,5 +74,6 @@ const { t } = useI18n();
 const status = computed(() => props.facility.status);
 const statusLabel = computed(() => t(FACILITY_STATUS_LABELS[status.value]));
 const isClosed = computed(() => isFacilityClosed(status.value));
+const categoryLabel = computed(() => findFacilityCategory(props.facility.category_id)?.label ?? props.facility.category_id);
 const { statusClass } = useStatusStyling(toRef(props.facility, 'status'), 'table-row');
 </script>

@@ -12,7 +12,12 @@ async function createFacility(
   actor: Awaited<ReturnType<typeof seedActor>>,
   label: string,
 ) {
+  const catalog = asRecord(await callAction("getCategoryCatalog", {}, actor.auth));
+  const categories = catalog.facilityCategories as Array<Record<string, unknown>>;
+  const category = categories.find((value) => value.isDefault === true) ?? categories[0];
+  assert.ok(category, "facility category catalog must not be empty");
   const result = asRecord(await callAction("createFacility", {
+    categoryId: String(category.id),
     content: `Integration facility content ${label}`,
     location: `Room ${label}`,
     requestId: requestId(`create-facility-${label}`),

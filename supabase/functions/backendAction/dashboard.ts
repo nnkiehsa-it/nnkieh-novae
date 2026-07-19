@@ -1,5 +1,4 @@
 import { asRecord, asString } from "../_shared/http.ts";
-import { ISSUE_CATEGORIES } from "../_shared/issue-categories.ts";
 import type { BackendSupabase } from "./types.ts";
 import { toMs } from "./utils.ts";
 
@@ -10,10 +9,7 @@ function asCount(value: unknown) {
 
 function categoryCounts(value: unknown) {
   const source = asRecord(value);
-  return Object.fromEntries(ISSUE_CATEGORIES.map((category) => [
-    category.id,
-    asCount(source[category.id]),
-  ]));
+  return Object.fromEntries(Object.entries(source).map(([categoryId, count]) => [categoryId, asCount(count)]));
 }
 
 export async function getPlatformDashboard(supabase: BackendSupabase) {

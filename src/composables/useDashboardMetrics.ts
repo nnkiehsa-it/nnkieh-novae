@@ -1,5 +1,5 @@
 import { computed, type Ref } from 'vue';
-import { ISSUE_CATEGORY_LABELS } from '@/constants/categories';
+import { getIssueCategorySnapshot } from '@/composables/useCategories';
 import { formatDate } from '@/lib/format';
 import type { PlatformDashboardOperations, PlatformDashboardStats } from '@/types';
 import { useI18n } from '@/i18n';
@@ -206,15 +206,14 @@ function buildCategoryComparisonRows(stats: PlatformDashboardStats | null, t: Tr
     'bg-ink-700 dark:bg-ink-100',
   ];
 
-  return Object.entries(ISSUE_CATEGORY_LABELS).map(([key, label], index) => {
-    const category = key as keyof typeof ISSUE_CATEGORY_LABELS;
+  return getIssueCategorySnapshot().map(({ id: category, label }, index) => {
     const issues = stats.issues_by_category[category] ?? 0;
     const comments = stats.comments_by_category[category] ?? 0;
     const value = issues + comments;
     const exactPercent = Math.round((value / total) * 100);
 
     return {
-      label: t(label),
+      label,
       issues,
       comments,
       percent: value === 0 ? 0 : Math.max(8, exactPercent),

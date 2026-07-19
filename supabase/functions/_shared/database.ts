@@ -18,6 +18,9 @@ interface IssueRow {
   author_name: string;
   author_photo_url: string | null;
   category: string;
+  comments_enabled: boolean;
+  read_access: string;
+  author_visible: boolean;
   content: string;
   closed_at: string | null;
   created_at: string;
@@ -28,8 +31,10 @@ interface IssueRow {
   status: string;
   support_count: number;
   support_deadline_at: string | null;
+  support_deadline_days: number | null;
   support_enabled: boolean;
   support_goal: number | null;
+  response_deadline_days: number | null;
   support_met_at: string | null;
   title: string;
   title_search: string;
@@ -206,6 +211,7 @@ interface FacilityRow {
   title_search: string;
   location: string;
   content: string;
+  category_id: string;
   status: string;
   affected_count: number;
   result_content: string | null;
@@ -248,6 +254,16 @@ interface AppPrivateTables {
   announcement_likes: Table<{ announcement_id: string; uid: string; created_at: string }>;
   announcements: Table<AnnouncementRow>;
   comments: Table<CommentRow>;
+  issue_categories: Table<{
+    id: string; label: string; description: string; read_access: string; author_visible: boolean;
+    support_enabled: boolean; support_goal: number | null; support_deadline_days: number | null;
+    response_deadline_days: number | null; comments_enabled: boolean; is_active: boolean;
+    is_default: boolean; sort_order: number; created_by: string; created_at: string; updated_at: string;
+  }>;
+  facility_categories: Table<{
+    id: string; label: string; description: string; is_active: boolean; is_default: boolean;
+    sort_order: number; created_by: string; created_at: string; updated_at: string;
+  }>;
   content_revisions: Table<ContentRevisionRow>;
   deletion_jobs: Table<DeletionJobRow>;
   facility_reports: Table<FacilityRow>;
@@ -289,15 +305,28 @@ interface AppPrivateTables {
   role_permissions: Table<{ role_code: string; permission_code: string }>;
   user_role_assignments: Table<{ uid: string; role_code: string; granted_by: string; granted_at: string }>;
   user_issue_category_assignments: Table<{ uid: string; category_id: string; granted_by: string; granted_at: string }>;
+  user_facility_category_assignments: Table<{
+    uid: string; category_id: string; notify_on_created: boolean; granted_by: string; granted_at: string;
+  }>;
+  category_configuration_audit: Table<{
+    id: number; domain: string; category_id: string | null; operation: string; actor_uid: string;
+    before_value: Json | null; after_value: Json | null; created_at: string;
+  }>;
+  system_setup: Table<{
+    singleton: boolean; completed_at: string | null; completed_by: string | null; updated_at: string;
+  }>;
   role_assignment_audit: Table<{ id: number; uid: string; role_code: string; operation: string; actor_uid: string; created_at: string }>;
 }
 
 interface AppApiFunctions {
+  backend_complete_initial_setup: AppFunction<{
+    actor_uid: string; issue_categories: Json; facility_categories: Json;
+  }, Json>;
   backend_get_access_context: AppFunction<{ actor_uid: string }, Json>;
   backend_get_notification_unread_hint: AppFunction<{ actor_is_admin: boolean; actor_uid: string }, Json>;
   backend_create_facility: AppFunction<{
     actor_uid: string; actor_name: string; actor_photo_url: string | null;
-    facility_title: string; facility_location: string; facility_content: string;
+    facility_title: string; facility_location: string; facility_content: string; facility_category: string;
   }, Json>;
   backend_get_facility: AppFunction<{ facility_id: string; actor_uid: string; actor_can_manage: boolean }, Json>;
   backend_list_facilities: AppFunction<{

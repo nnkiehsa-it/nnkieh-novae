@@ -311,7 +311,8 @@ test('backendAction registry owns action metadata and frontend action names', as
   assert.match(index, /executeBackendAction\(definition, payload, auth, supabase\)/u);
   assert.match(execution, /definition\.requiredPermission && !hasPermission\(auth, definition\.requiredPermission\)/u);
   assert.match(execution, /definition\.requiresRequestId && !requestId/u);
-  assert.match(registry, /requiredPermission: "facility\.manage"/u);
+  assert.match(registry, /updateFacilityStatus[\s\S]*requiresRequestId: true/u);
+  assert.match(await read('supabase/functions/backendAction/facilities.ts'), /requireFacilityCategoryPermission/u);
   assert.match(registry, /requiredPermission: "role\.manage"/u);
   assert.doesNotMatch(registry, /requiresAdmin/u);
   assert.doesNotMatch(`${index}\n${execution}`, /const idempotentActions = new Set/u);
@@ -374,7 +375,7 @@ test('outbox, webhooks, FCM, and Notion deletion marks are guarded', async () =>
   assert.match(maintenanceCleanup, /requireBearerSecret/u);
   assert.match(maintenanceCleanup, /requireMethod\(request, "POST"\)/u);
   assert.match(maintenanceCleanup, /run_maintenance_cleanup/u);
-  assert.match(maintenanceCleanup, /ISSUE_CATEGORY_IDS/u);
+  assert.match(maintenanceCleanup, /issue_categories/u);
   assert.match(maintenanceCleanup, /valid_issue_categories/u);
   assert.match(origin, /timingSafeEqual/u);
   assert.match(origin, /EDGE_FUNCTION_NAMESPACE/u);
@@ -486,8 +487,7 @@ test('removed issue categories are cleaned and Notion backups are marked deleted
   assert.match(cleanupMigration, /delete from app_private\.uploads/u);
   assert.match(cleanupMigration, /delete from app_private\.issues/u);
   assert.doesNotMatch(cleanupMigration, /notion_pages|notion_page_id/u);
-  assert.match(maintenanceCleanup, /ISSUE_CATEGORY_IDS/u);
-  assert.match(maintenanceCleanup, /valid_issue_categories: \[\.\.\.ISSUE_CATEGORY_IDS\]/u);
+  assert.match(maintenanceCleanup, /valid_issue_categories: \(issueCategories \?\? \[\]\)\.map/u);
   assert.match(workflow, /Run maintenance cleanup/u);
 });
 
@@ -553,7 +553,7 @@ test('backend list actions use stable cursor pagination at the service boundary'
   assert.match(backendAction, /rpc\("backend_list_issues"/u);
   assert.match(backendAction, /rpc\("backend_list_user_issues"/u);
   assert.match(backendAction, /cursor_created_at: readCursorDate\(cursor, "created_at"\) \|\| null/u);
-  assert.match(backendAction, /private_to_owner_categories: PRIVATE_TO_OWNER_CATEGORIES/u);
+  assert.match(backendAction, /private_to_owner_categories: policy\.privateToOwnerCategoryIds/u);
   assert.match(issueReadMigration, /sort_name = 'most-supported'/u);
   assert.match(issueReadMigration, /sort_name = 'ending-soon'/u);
   assert.match(issueReadMigration, /cursor_id is null/u);
@@ -730,9 +730,9 @@ test('facilities and author-fixed support use independent atomic storage', async
   assert.doesNotMatch(supabaseAuth, /if \(token\.claims\.role === 'authenticated'\) \{\s*return;/u);
 });
 
-test('proposal manager access is config-driven and category-scoped', async () => {
-  const categoryConfig = JSON.parse(await read('config/issue-categories.config.json'));
+test('proposal and facility manager access is runtime-configured and category-scoped', async () => {
   const accessView = await read('src/views/AccessManagementView.vue');
+  const categoryAction = await read('supabase/functions/backendAction/categories.ts');
   const auth = await read('supabase/functions/backendAction/auth.ts');
   const users = await read('supabase/functions/backendAction/users.ts');
   const issueRead = await read('supabase/functions/backendAction/issue-read.ts');
@@ -742,11 +742,13 @@ test('proposal manager access is config-driven and category-scoped', async () =>
   const facilityDialog = await read('src/components/FacilityStatusDialog.vue');
   const statusTransitionDialog = await read('src/components/ui/organisms/StatusTransitionDialog.vue');
 
-  assert.ok(categoryConfig.categories.every((category) => typeof category.labelKey === 'string'));
-  assert.match(accessView, /import \{ ISSUE_CATEGORIES \} from '@\/generated\/issue-categories'/u);
-  assert.match(accessView, /v-for="category in ISSUE_CATEGORIES"/u);
+  assert.match(accessView, /activeIssueCategories/u);
+  assert.match(accessView, /activeFacilityCategories/u);
+  assert.match(categoryAction, /getIssueCategories/u);
+  assert.match(categoryAction, /saveIssueCategory/u);
   assert.match(migration, /primary key \(uid, category_id\)/u);
-  assert.match(users, /managedIssueCategoryIds[\s\S]*filter\(isIssueCategory\)/u);
+  assert.match(users, /managedIssueCategoryIds[\s\S]*validIssueCategoryIds/u);
+  assert.match(users, /managedFacilityCategoryIds[\s\S]*validFacilityCategoryIds/u);
   assert.match(auth, /canManageIssueCategory/u);
   assert.match(issueRead, /canManageIssueCategory\(auth, category\)/u);
   assert.match(users, /if \(!rawQuery\) return \{ users: \[\] \}/u);
@@ -953,13 +955,13 @@ test('private issue data and upload URLs stay behind backend authorization', asy
   assert.doesNotMatch(deliveryScopeMigration, /'private', 'public'/u);
   assert.match(uploads, /async function resolveUploadAccessBatch/u);
   assert.match(uploads, /canReadIssue\(issue, auth\)/u);
-  assert.match(uploads, /issueIsPrivateToOwner/u);
+  assert.match(uploads, /issue\.read_access === "owner-admin"/u);
   assert.match(uploads, /PRIVATE_DELIVERY_SCOPE = "private-v2"/u);
   assert.match(uploads, /PUBLIC_DELIVERY_SCOPE = "public-v2"/u);
   assert.match(cloudinary, /deliveryPath = `\$\{publicId\}\.webp`/u);
   assert.match(cloudinary, /s--\$\{signature\}--\/\$\{encodedPublicId\}\.webp/u);
   assert.doesNotMatch(cloudinary, /resource_type: "image",[\s\S]*timestamp:[\s\S]*type: "authenticated"/u);
-  assert.match(support, /issueAllowsSupport/u);
+  assert.match(support, /storedIssue\.response_deadline_days/u);
   assert.match(support, /issue\.support_enabled !== true/u);
 });
 
@@ -1074,7 +1076,7 @@ test('notification navigation verifies target access before routing', async () =
   assert.match(notificationsView, /useNotificationDisplay/u);
   assert.match(notificationDisplay, /notification\.commentTitle/u);
   assert.match(notificationDisplay, /notification\.statusChangedBody/u);
-  assert.match(issueRead, /review_required_categories: REVIEW_REQUIRED_CATEGORIES/u);
+  assert.match(issueRead, /review_required_categories: policy\.reviewRequiredCategoryIds/u);
   assert.match(issueRead, /rpc\("backend_get_issue"/u);
   assert.match(issueReadMigration, /author_uid = actor_uid/u);
   assert.match(issueReadMigration, /status in \('under-review', 'review-rejected'\)/u);
@@ -1108,7 +1110,7 @@ test('cost-sensitive hot paths use aggregation, patching, and lazy startup', asy
   assert.match(fcm, /iid\/v1/u);
   assert.match(topicMigration, /topic_broadcast/u);
   assert.match(uploads, /resolveUploadAccessBatch/u);
-  assert.match(uploads, /select\("id,category,status,author_uid"\)/u);
+  assert.match(uploads, /select\("id,category,status,author_uid,read_access,author_visible"\)/u);
   assert.match(dashboardMigration, /platform_category_counters/u);
   assert.doesNotMatch(dashboardMigration, /from app_private\.issues group by category\) grouped/u);
   assert.match(cleanupMigration, /support\.created/u);

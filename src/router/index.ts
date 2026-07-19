@@ -6,7 +6,8 @@ import { issueRoutes } from '@/router/issueRoutes';
 import { facilityRoutes } from '@/router/facilityRoutes';
 import { notificationRoutes } from '@/router/notificationRoutes';
 import { settingsRoutes } from '@/router/settingsRoutes';
-import { DEFAULT_ISSUE_ROUTE_FILTER } from '@/constants/categories';
+import { getDefaultIssueRouteFilter } from '@/constants/categories';
+import { ensureCategoryCatalog } from '@/composables/useCategories';
 import { resetRouteRequestScope } from '@/lib/route-request';
 import { useSession, waitForRoleReady, waitForSessionReady } from '@/composables/useSession';
 import type { PermissionCode } from '@/services/session-role';
@@ -18,6 +19,7 @@ declare module 'vue-router' {
     requiresAdmin?: boolean;
     requiresAuth?: boolean;
     requiredPermission?: PermissionCode;
+    setupAllowed?: boolean;
   }
 }
 
@@ -40,7 +42,7 @@ const router = createRouter({
 function defaultAuthenticatedRoute() {
   return {
     name: 'issues',
-    params: { filter: DEFAULT_ISSUE_ROUTE_FILTER },
+    params: { filter: getDefaultIssueRouteFilter() },
   };
 }
 
@@ -59,7 +61,7 @@ router.beforeEach(async (to) => {
   resetRouteRequestScope();
   await waitForSessionReady();
 
-  const { can, isAdmin, user } = useSession();
+  const { can, isAdmin, setupCompleted, user } = useSession();
 
   if (to.meta.publicOnly && user.value) {
     return normalizeRedirectPath(to.query.redirect) || defaultAuthenticatedRoute();
@@ -77,6 +79,17 @@ router.beforeEach(async (to) => {
     if (!roleReady || !isAdmin.value) {
       return defaultAuthenticatedRoute();
     }
+  }
+
+  if (user.value) {
+    const roleReady = await waitForRoleReady();
+    if (!roleReady) return false;
+    if (!setupCompleted.value && !to.meta.setupAllowed) return { name: 'setup' };
+    if (setupCompleted.value && to.name === 'setup') {
+      await ensureCategoryCatalog();
+      return defaultAuthenticatedRoute();
+    }
+    if (setupCompleted.value) await ensureCategoryCatalog();
   }
   if (to.meta.requiredPermission) {
     const roleReady = await waitForRoleReady();

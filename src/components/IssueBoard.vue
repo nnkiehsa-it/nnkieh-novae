@@ -88,7 +88,7 @@ import { useIssueBoardData } from '@/composables/useIssueBoardData';
 import { useContentListRuntime } from '@/composables/useContentListRuntime';
 import { useSession } from '@/composables/useSession';
 import { useActionFeedback } from '@/composables/useActionFeedback';
-import { DEFAULT_ISSUE_CATEGORY, ISSUE_CATEGORY_LABELS, isIssueCategory, issueIsPrivateToOwner, issueStoresAuthorPrivately } from '@/constants/categories';
+import { getDefaultIssueRouteFilter, getIssueCategoryLabel, isIssueCategory, issueIsPrivateToOwner, issueStoresAuthorPrivately } from '@/constants/categories';
 import type { IssueCategory, IssueRecord } from '@/types';
 import { useI18n } from '@/i18n';
 
@@ -113,10 +113,10 @@ const { show } = useActionFeedback();
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
-const composerCategory = ref<IssueCategory>(DEFAULT_ISSUE_CATEGORY);
+const composerCategory = ref<IssueCategory>(getDefaultIssueRouteFilter());
 const boardScrollRef = ref<HTMLElement | null>(null);
 const restoreBoardScrollPending = ref(false);
-const composerCategoryLabel = computed(() => t(ISSUE_CATEGORY_LABELS[composerCategory.value]));
+const composerCategoryLabel = computed(() => getIssueCategoryLabel(composerCategory.value));
 
 const {
   activeFilter,

@@ -1,63 +1,90 @@
-import {
-  DEFAULT_ISSUE_CATEGORY,
-  ISSUE_CATEGORIES,
-  ISSUE_CATEGORY_LABEL_KEYS,
-  getIssueResponseDeadlineDays,
-  getIssueResponseDeadlineStart,
-  getIssueSupportGoal,
-  getIssueCategoryLabel,
-  isIssueCategory,
-  issueAllowsCommentsForStatus,
-  issueAllowsSupport,
-  issueAutoRejectsUnmetSupport,
-  issueIsPrivateToOwner,
-  issueRequiresReview,
-  issueStoresAuthorPrivately,
-} from '@/generated/issue-categories';
-import type { IssueCategory, IssueFilter, IssueRouteFilter, WritableIssueCategory } from '@/types';
+import { findIssueCategory, getDefaultIssueCategoryId, getIssueCategorySnapshot } from '@/composables/useCategories';
+import type { IssueCategory, IssueFilter, IssueRouteFilter, IssueStatus } from '@/types';
+import type { IssueReadAccess } from '@/types/categories';
 
-interface CategoryOption<TValue extends string> {
+export interface CategoryOption<TValue extends string> {
   value: TValue;
   label: string;
 }
 
-const ISSUE_CATEGORY_OPTIONS: CategoryOption<WritableIssueCategory>[] = ISSUE_CATEGORIES.map((category) => ({
-  value: category.id,
-  label: category.labelKey,
-}));
+export function getIssueFilterOptions(): CategoryOption<IssueFilter>[] {
+  const defaultCategoryId = getDefaultIssueCategoryId();
+  const defaultCategory = findIssueCategory(defaultCategoryId);
+  const categories = defaultCategory ? [defaultCategory] : [];
+  const seen = new Set(categories.map((category) => category.id));
+  for (const category of getIssueCategorySnapshot()) {
+    if (category && !seen.has(category.id)) categories.push(category);
+  }
+  return categories.filter((category) => category.isActive).map((category) => ({
+    value: category.id,
+    label: category.label,
+  }));
+}
 
-export const ISSUE_FILTER_OPTIONS: CategoryOption<IssueFilter>[] = [...ISSUE_CATEGORY_OPTIONS];
+export function getDefaultIssueRouteFilter(): IssueRouteFilter {
+  return getDefaultIssueCategoryId() || 'my-proposals';
+}
 
-const ISSUE_ROUTE_FILTER_OPTIONS: CategoryOption<IssueRouteFilter>[] = [
-  ...ISSUE_FILTER_OPTIONS,
-  { value: 'my-proposals', label: 'issue.myProposal' },
-];
+export function isIssueCategory(value: unknown): value is IssueCategory {
+  return typeof value === 'string' && findIssueCategory(value)?.isActive === true;
+}
 
-const ISSUE_ROUTE_FILTER_VALUES = ISSUE_ROUTE_FILTER_OPTIONS.map((option) => option.value);
-
-export const DEFAULT_ISSUE_ROUTE_FILTER: IssueRouteFilter = DEFAULT_ISSUE_CATEGORY;
+export function isKnownIssueCategory(value: unknown): value is IssueCategory {
+  return typeof value === 'string' && findIssueCategory(value) !== null;
+}
 
 export function isIssueRouteFilter(value: unknown): value is IssueRouteFilter {
-  return typeof value === 'string' && ISSUE_ROUTE_FILTER_VALUES.includes(value as IssueRouteFilter);
+  const normalized = Array.isArray(value) ? value[0] : value;
+  return normalized === 'my-proposals' || isIssueCategory(normalized);
 }
 
 export function normalizeIssueRouteFilterParam(param: unknown): IssueRouteFilter {
   const value = Array.isArray(param) ? param[0] : param;
-  return isIssueRouteFilter(value) ? value : DEFAULT_ISSUE_ROUTE_FILTER;
+  return isIssueRouteFilter(value) ? value : getDefaultIssueRouteFilter();
 }
 
-export {
-  DEFAULT_ISSUE_CATEGORY,
-  ISSUE_CATEGORY_LABEL_KEYS as ISSUE_CATEGORY_LABELS,
-  getIssueResponseDeadlineDays,
-  getIssueResponseDeadlineStart,
-  getIssueSupportGoal,
-  getIssueCategoryLabel,
-  isIssueCategory,
-  issueAllowsCommentsForStatus,
-  issueAllowsSupport,
-  issueAutoRejectsUnmetSupport,
-  issueIsPrivateToOwner,
-  issueRequiresReview,
-  issueStoresAuthorPrivately,
-};
+export function getIssueCategoryLabel(category: string | null | undefined) {
+  return findIssueCategory(category)?.label ?? String(category ?? '');
+}
+
+export function issueAllowsSupport(category: string | null | undefined) {
+  return findIssueCategory(category)?.supportEnabled === true;
+}
+
+export function issueRequiresReview(category: string | null | undefined) {
+  return findIssueCategory(category)?.readAccess === 'reviewed-school';
+}
+
+export function issueStoresAuthorPrivately(category: string | null | undefined) {
+  return findIssueCategory(category)?.authorVisible === false;
+}
+
+export function issueIsPrivateToOwner(category: string | null | undefined) {
+  return findIssueCategory(category)?.readAccess === 'owner-admin';
+}
+
+export function getIssueSupportGoal(category: string | null | undefined) {
+  return findIssueCategory(category)?.supportGoal ?? null;
+}
+
+export function issueAutoRejectsUnmetSupport(category: string | null | undefined) {
+  return findIssueCategory(category)?.supportEnabled === true;
+}
+
+export function getIssueResponseDeadlineDays(category: string | null | undefined) {
+  return findIssueCategory(category)?.responseDeadlineDays ?? null;
+}
+
+export function getIssueResponseDeadlineStart(category: string | null | undefined) {
+  const config = findIssueCategory(category);
+  if (!config?.responseDeadlineDays) return 'none' as const;
+  return config.supportEnabled ? 'support-met' as const : 'created' as const;
+}
+
+export function issueAllowsCommentsForStatus(
+  readAccess: IssueReadAccess,
+  status: IssueStatus,
+) {
+  if (readAccess === 'reviewed-school') return status === 'pending' || status === 'processing';
+  return status !== 'under-review' && status !== 'review-rejected';
+}

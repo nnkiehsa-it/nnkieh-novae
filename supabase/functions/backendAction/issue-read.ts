@@ -1,9 +1,6 @@
 import { asString } from "../_shared/http.ts";
-import {
-  isIssueCategory,
-  ISSUE_CATEGORIES,
-} from "../_shared/issue-categories.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
+import { getIssueCategory, issueCategoryPolicyLists } from "./categories.ts";
 import {
   asNumber,
   asUuid,
@@ -14,16 +11,6 @@ import { INPUT_LIMITS, optionalText } from "./validation.ts";
 import { canManageIssueCategory } from "./auth.ts";
 import { selectIssueCategory } from "./issue-shared.ts";
 
-const PRIVATE_TO_OWNER_CATEGORIES = ISSUE_CATEGORIES
-  .filter((category) => category.readAccess === "owner-admin")
-  .map((category) => category.id);
-const REVIEW_REQUIRED_CATEGORIES = ISSUE_CATEGORIES
-  .filter((category) => category.readAccess === "reviewed-school")
-  .map((category) => category.id);
-const AUTHOR_PRIVATE_CATEGORIES = ISSUE_CATEGORIES
-  .filter((category) => category.authorStorage === "private")
-  .map((category) => category.id);
-
 function readSort(payload: JsonRecord) {
   const sort = asString(payload.sort);
   return sort === "most-supported" || sort === "ending-soon" ? sort : "latest";
@@ -33,13 +20,14 @@ function readPageSize(payload: JsonRecord) {
   return Math.min(Math.max(Math.round(asNumber(payload.pageSize, 20)), 1), 50);
 }
 
-function issueReadPolicyParams(auth: AuthContext, actorCanManage = false) {
+async function issueReadPolicyParams(supabase: BackendSupabase, auth: AuthContext, actorCanManage = false) {
+  const policy = await issueCategoryPolicyLists(supabase);
   return {
     actor_uid: auth.uid,
     actor_is_admin: actorCanManage,
-    private_to_owner_categories: PRIVATE_TO_OWNER_CATEGORIES,
-    review_required_categories: REVIEW_REQUIRED_CATEGORIES,
-    author_private_categories: AUTHOR_PRIVATE_CATEGORIES,
+    private_to_owner_categories: policy.privateToOwnerCategoryIds,
+    review_required_categories: policy.reviewRequiredCategoryIds,
+    author_private_categories: policy.authorPrivateCategoryIds,
   };
 }
 
@@ -70,7 +58,7 @@ async function getIssue(
 
   const { data, error } = await supabase.schema("app_api").rpc("backend_get_issue", {
     issue_id: issueId,
-    ...issueReadPolicyParams(auth, actorCanManage),
+    ...await issueReadPolicyParams(supabase, auth, actorCanManage),
   });
   if (error) throw error;
   return { issue: data };
@@ -83,7 +71,7 @@ async function listIssues(
   supabase: BackendSupabase,
 ) {
   const category = asString(payload.activeFilter);
-  if (!isIssueCategory(category)) throw new Error("invalid-issue-category");
+  await getIssueCategory(supabase, category);
 
   const cursor = readCursor(payload);
   const titleQuery = action === "searchIssues"
@@ -102,7 +90,7 @@ async function listIssues(
     cursor_sort_number: Number.isFinite(asNumber(cursor.sort_number, Number.NaN))
       ? asNumber(cursor.sort_number, Number.NaN)
       : null,
-    ...issueReadPolicyParams(auth, canManageIssueCategory(auth, category)),
+    ...await issueReadPolicyParams(supabase, auth, canManageIssueCategory(auth, category)),
   });
   if (error) throw error;
   return compactIssueListResult(data);
@@ -124,7 +112,7 @@ async function listUserIssues(
     cursor_sort_number: Number.isFinite(asNumber(cursor.sort_number, Number.NaN))
       ? asNumber(cursor.sort_number, Number.NaN)
       : null,
-    ...issueReadPolicyParams(auth),
+    ...await issueReadPolicyParams(supabase, auth),
   });
   if (error) throw error;
   return compactIssueListResult(data);

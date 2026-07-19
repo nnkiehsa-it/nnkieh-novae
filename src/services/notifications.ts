@@ -61,7 +61,7 @@ function subscribeNotificationBroadcast(
         if (event === 'notification_insert') {
           markContentCachePrefixStale(NOTIFICATION_PAGES_CACHE_PREFIX);
           markContentCachePrefixStale(NOTIFICATION_UNREAD_CACHE_KEY);
-          if (message.payload.type === 'facility_status_changed') {
+          if (message.payload.type === 'facility_status_changed' || message.payload.type === 'facility_report_created') {
             markContentCachePrefixStale('facility-list-page|');
             markContentCachePrefixStale('facility-detail|');
           }
@@ -154,6 +154,7 @@ function normalizeNotificationType(value: unknown): NotificationType {
     value === 'announcement_created'
     || value === 'announcement_comment_created'
     || value === 'facility_status_changed'
+    || value === 'facility_report_created'
     || value === 'issue_comment_created'
     || value === 'issue_status_changed'
     || value === 'support_goal_met'

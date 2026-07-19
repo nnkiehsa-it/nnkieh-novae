@@ -1,17 +1,13 @@
 import {
-  DEFAULT_ISSUE_CATEGORY,
-  getIssueResponseDeadlineDays,
-  getIssueResponseDeadlineStart,
-  getIssueSupportGoal,
-  isIssueCategory,
-  issueAllowsSupport,
+  getDefaultIssueRouteFilter,
+  isKnownIssueCategory,
 } from '@/constants/categories';
+import type { IssueReadAccess } from '@/types/categories';
 import type {
   IssueCursor,
   IssueRecord,
   IssueStatus,
 } from '@/types';
-import { addDays } from './issues-utils';
 
 export function normalizeDate(value: unknown): Date | null {
   if (value instanceof Date) {
@@ -36,7 +32,14 @@ export function normalizeDate(value: unknown): Date | null {
 }
 
 function normalizeCategory(value: unknown): IssueRecord['category'] {
-  return isIssueCategory(value) ? value : DEFAULT_ISSUE_CATEGORY;
+  const fallback = getDefaultIssueRouteFilter();
+  return isKnownIssueCategory(value) ? value : fallback === 'my-proposals' ? '' : fallback;
+}
+
+function normalizeReadAccess(value: unknown): IssueReadAccess {
+  return value === 'school' || value === 'reviewed-school' || value === 'owner-admin'
+    ? value
+    : 'owner-admin';
 }
 
 export function normalizeStatus(value: unknown): IssueStatus {
@@ -54,36 +57,10 @@ export function normalizeStatus(value: unknown): IssueStatus {
   return 'pending';
 }
 
-function getCategoryDefaults(category: IssueRecord['category'], createdAt = new Date()) {
-  if (issueAllowsSupport(category)) {
-    return {
-      support_enabled: true,
-      support_goal: getIssueSupportGoal(category),
-      support_deadline_at: null,
-      response_deadline_at: null,
-      support_met_at: null,
-    };
-  }
-
-  const responseDeadlineDays = getIssueResponseDeadlineDays(category);
-  const responseDeadlineAt = getIssueResponseDeadlineStart(category) === 'created' && responseDeadlineDays !== null
-    ? addDays(createdAt, responseDeadlineDays)
-    : null;
-
-  return {
-    support_enabled: false,
-    support_goal: null,
-    support_deadline_at: null,
-    response_deadline_at: responseDeadlineAt,
-    support_met_at: null,
-  };
-}
-
 export function normalizeIssueRecord(id: string, data: Record<string, unknown>): IssueRecord {
   const category = normalizeCategory(data.category);
-  const defaults = getCategoryDefaults(category);
   const isOwnIssue = data.isOwnIssue === true;
-  const supportEnabled = Boolean(data.support_enabled ?? defaults.support_enabled);
+  const supportEnabled = data.support_enabled === true;
 
   const record: IssueRecord = {
     id,
@@ -94,21 +71,23 @@ export function normalizeIssueRecord(id: string, data: Record<string, unknown>):
     support_count: typeof data.support_count === 'number' ? data.support_count : 0,
     status: normalizeStatus(data.status),
     category,
+    read_access: normalizeReadAccess(data.read_access),
+    comments_enabled: data.comments_enabled !== false,
     support_enabled: supportEnabled,
-    support_goal: typeof data.support_goal === 'number' ? data.support_goal : defaults.support_goal,
+    support_goal: typeof data.support_goal === 'number' ? data.support_goal : null,
     support_deadline_at: normalizeDate(
       data.support_deadline_at
-    ) ?? defaults.support_deadline_at,
+    ),
     response_deadline_at: normalizeDate(
       data.response_deadline_at
-    ) ?? defaults.response_deadline_at,
+    ),
     review_approved_at: normalizeDate(data.review_approved_at),
     result_content: typeof data.result_content === 'string'
       ? data.result_content
       : undefined,
     support_met_at: normalizeDate(
       data.support_met_at
-    ) ?? defaults.support_met_at,
+    ),
     review_rejection_reason: typeof data.review_rejection_reason === 'string'
       ? data.review_rejection_reason
       : undefined,

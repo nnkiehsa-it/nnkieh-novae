@@ -50,6 +50,7 @@
       :uid="user.uid"
       :is-admin="isAdmin"
       :can-manage-roles="can('role.manage')"
+      :can-manage-categories="can('category.manage')"
       :personal-notification-options="personalNotificationOptions"
       :personal-preferences="personalPreferences"
       :push-action-label="pushActionLabel"

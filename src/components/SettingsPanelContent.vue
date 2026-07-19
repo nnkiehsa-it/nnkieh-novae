@@ -137,6 +137,15 @@
           @click="emit('close')"
         />
         <IconListRow
+          v-if="canManageCategories"
+          :as="RouterLink"
+          to="/admin/categories"
+          icon="settings"
+          :label="t('categoryAdmin.openManagement')"
+          :description="t('categoryAdmin.openManagementHelp')"
+          @click="emit('close')"
+        />
+        <IconListRow
           icon="restart"
           :label="t('settings.restartApp')"
           :description="t('settings.reloadTheAppAndItsConnections')"
@@ -295,6 +304,7 @@ const props = withDefaults(defineProps<{
   uid: string;
   isAdmin: boolean;
   canManageRoles: boolean;
+  canManageCategories: boolean;
   personalNotificationOptions: Array<{
     description: string;
     key: PersonalPushPreferenceKey;

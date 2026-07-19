@@ -134,7 +134,7 @@ import AppIcon from '@/components/ui/atoms/AppIcon.vue';
 import AppButton from '@/components/ui/atoms/AppButton.vue';
 import DropdownPanel from '@/components/ui/molecules/DropdownPanel.vue';
 import PillSegmentedControl from '@/components/ui/molecules/PillSegmentedControl.vue';
-import { DEFAULT_ISSUE_CATEGORY, isIssueCategory } from '@/constants/categories';
+import { getDefaultIssueRouteFilter, isIssueCategory } from '@/constants/categories';
 import { useClickOutside } from '@/composables/useClickOutside';
 import type { FacilitySortOption, IssueFilter, IssueSortOption } from '@/types';
 import { useI18n } from '@/i18n';
@@ -183,7 +183,7 @@ const visibleSortOptions = computed(() => props.mode === 'facility'
 const boardTitle = computed(() => t(props.mode === 'facility' ? 'facility.facility' : 'issue.proposal'));
 const searchPlaceholder = computed(() => t(props.mode === 'facility' ? 'common.searchForATitleOrLocation' : 'common.searchSiteWideTitles'));
 const issueCategoryFilter = computed<IssueFilter>(() =>
-  isIssueCategory(props.activeFilter) ? props.activeFilter : DEFAULT_ISSUE_CATEGORY
+  isIssueCategory(props.activeFilter) ? props.activeFilter : getDefaultIssueRouteFilter()
 );
 const statusOptions = computed(() => [
   { value: 'active' as const, label: t(props.mode === 'facility' ? 'facility.processing' : 'issue.inProgress'), icon: 'list' as const, title: t('common.showStatusInBoard', { status: t(props.mode === 'facility' ? 'facility.processing' : 'issue.inProgress'), board: boardTitle.value }) },

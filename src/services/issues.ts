@@ -13,5 +13,6 @@ export {
   moderateIssueStatus,
   updateIssueResult,
   removeSupport,
+  setIssueCommentsEnabled,
   toggleSupport,
 } from './issues-write';

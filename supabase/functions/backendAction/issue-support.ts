@@ -1,48 +1,37 @@
 import { asRecord, asString } from "../_shared/http.ts";
-import { getIssueCategoryConfigOrDefault, ISSUE_CATEGORIES, issueAllowsSupport } from "../_shared/issue-categories.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
+import { issueCategoryPolicyLists } from "./categories.ts";
 import { asUuid } from "./utils.ts";
 import { canManageIssueCategory } from "./auth.ts";
 import { selectIssue } from "./issue-shared.ts";
-
-const PRIVATE_TO_OWNER_CATEGORIES = ISSUE_CATEGORIES
-  .filter((category) => category.readAccess === "owner-admin")
-  .map((category) => category.id);
-const REVIEW_REQUIRED_CATEGORIES = ISSUE_CATEGORIES
-  .filter((category) => category.readAccess === "reviewed-school")
-  .map((category) => category.id);
-const AUTHOR_PRIVATE_CATEGORIES = ISSUE_CATEGORIES
-  .filter((category) => category.authorStorage === "private")
-  .map((category) => category.id);
 
 export async function updateSupport(action: string, payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {
   const issueId = asUuid(payload.issueId);
   if (!issueId) throw new Error("not-found");
   const storedIssue = await selectIssue(supabase, issueId);
+  const policy = await issueCategoryPolicyLists(supabase);
   const { data: issueData, error: issueError } = await supabase.schema("app_api").rpc("backend_get_issue", {
     issue_id: issueId,
     actor_uid: auth.uid,
     actor_is_admin: canManageIssueCategory(auth, asString(storedIssue.category)),
-    private_to_owner_categories: PRIVATE_TO_OWNER_CATEGORIES,
-    review_required_categories: REVIEW_REQUIRED_CATEGORIES,
-    author_private_categories: AUTHOR_PRIVATE_CATEGORIES,
+    private_to_owner_categories: policy.privateToOwnerCategoryIds,
+    review_required_categories: policy.reviewRequiredCategoryIds,
+    author_private_categories: policy.authorPrivateCategoryIds,
   });
   if (issueError) throw issueError;
   const issue = asRecord(issueData);
   if (
     asString(issue.status) !== "pending"
     || issue.support_enabled !== true
-    || !issueAllowsSupport(asString(issue.category))
     || (typeof issue.support_deadline_at === "string" && Date.parse(issue.support_deadline_at) <= Date.now())
   ) throw new Error("support-not-available");
 
-  const categoryConfig = getIssueCategoryConfigOrDefault(asString(issue.category));
   const { data: result, error: toggleError } = await supabase.schema("app_api")
     .rpc("backend_toggle_support", {
       issue_id: issueId,
       actor_uid: auth.uid,
       remove_support: action === "removeSupport",
-      response_deadline_days: categoryConfig.responseDeadline.days,
+      response_deadline_days: storedIssue.response_deadline_days,
     })
     .single();
   if (toggleError) throw toggleError;

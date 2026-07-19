@@ -1,12 +1,14 @@
 import type { RouteLocationGeneric, RouteLocationNormalized, RouteRecordRaw } from 'vue-router';
-import { DEFAULT_ISSUE_ROUTE_FILTER, isIssueRouteFilter, normalizeIssueRouteFilterParam } from '@/constants/categories';
+import { getDefaultIssueRouteFilter, isIssueRouteFilter, isKnownIssueCategory, normalizeIssueRouteFilterParam } from '@/constants/categories';
+import { ensureCategoryCatalog } from '@/composables/useCategories';
 import { normalizeRouteParam } from '@/lib/route';
 import { loadIssueBoardView, loadIssueDetailView } from '@/router/route-components';
 
-function issueRouteRedirect(to: RouteLocationGeneric) {
+async function issueRouteRedirect(to: RouteLocationGeneric) {
+  await ensureCategoryCatalog();
   return {
     name: 'issues',
-    params: { filter: DEFAULT_ISSUE_ROUTE_FILTER },
+    params: { filter: getDefaultIssueRouteFilter() },
     query: to.query,
     hash: to.hash,
   };
@@ -14,9 +16,9 @@ function issueRouteRedirect(to: RouteLocationGeneric) {
 
 function validateIssueRoute(to: RouteLocationNormalized) {
   const filter = normalizeIssueRouteFilterParam(to.params.filter);
-  if (isIssueRouteFilter(to.params.filter)) return true;
-
   const issueId = normalizeRouteParam(to.params.issueId);
+  const rawFilter = normalizeRouteParam(to.params.filter);
+  if (isIssueRouteFilter(to.params.filter) || (issueId && isKnownIssueCategory(rawFilter))) return true;
 
   return {
     name: issueId ? 'issue-detail' : 'issues',
@@ -29,11 +31,17 @@ function validateIssueRoute(to: RouteLocationNormalized) {
 export const issueRoutes: RouteRecordRaw[] = [
   {
     path: '/',
-    redirect: issueRouteRedirect,
+    name: 'issue-entry-root',
+    component: loadIssueBoardView,
+    meta: { navigationDepth: 0, requiresAuth: true },
+    beforeEnter: issueRouteRedirect,
   },
   {
     path: '/issues',
-    redirect: issueRouteRedirect,
+    name: 'issue-entry',
+    component: loadIssueBoardView,
+    meta: { navigationDepth: 0, requiresAuth: true },
+    beforeEnter: issueRouteRedirect,
   },
   {
     path: '/issues/:filter',

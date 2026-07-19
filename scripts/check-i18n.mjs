@@ -87,17 +87,15 @@ function stripNonRuntimeText(source) {
     .replace(/(^|[^:])\/\/.*$/gmu, '$1');
 }
 
-const [zh, en, sourceFiles, issueCategoryConfigSource, rateLimitConfigSource, apiErrorConfigSource] = await Promise.all([
+const [zh, en, sourceFiles, rateLimitConfigSource, apiErrorConfigSource] = await Promise.all([
   readCatalogDirectory(catalogPaths.zhTW),
   readCatalogDirectory(catalogPaths.en),
   listSourceFiles(sourceRoot),
-  readFile(path.join(root, 'config/issue-categories.config.json'), 'utf8'),
   readFile(path.join(root, 'config/rate-limits.config.json'), 'utf8'),
   readFile(path.join(root, 'config/api-errors.config.json'), 'utf8'),
 ]);
 sourceFiles.push(path.join(root, 'index.html'), path.join(root, 'vite.config.ts'));
 const errors = [];
-const issueCategoryConfig = JSON.parse(issueCategoryConfigSource);
 const rateLimitConfig = JSON.parse(rateLimitConfigSource);
 const apiErrorConfig = JSON.parse(apiErrorConfigSource);
 const allowedStaticTemplateText = new Set([
@@ -210,12 +208,6 @@ for (const [key, value] of en.messages) {
     errors.push(`English message must start with a capital letter: ${key}`);
   }
 }
-for (const category of issueCategoryConfig.categories ?? []) {
-  if (typeof category.labelKey !== 'string' || !zh.messages.has(category.labelKey)) {
-    errors.push(`Issue category is missing a valid locale labelKey: ${String(category.id ?? '')}`);
-  }
-}
-
 for (const [code, definition] of Object.entries(apiErrorConfig)) {
   if (!definition || typeof definition !== 'object' || typeof definition.messageKey !== 'string') {
     errors.push(`API error ${code} has no locale messageKey`);

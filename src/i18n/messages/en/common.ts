@@ -1,4 +1,8 @@
 const messages = {
+  'common.save': 'Save',
+  'common.saving': 'Saving',
+  'common.saveFailed': 'Save failed. Try again later.',
+  'common.loadFailed': 'Load failed. Try again later.',
   'common.later': 'Later',
   'common.retry': 'Retry',
   'common.loadMore': 'Load more',

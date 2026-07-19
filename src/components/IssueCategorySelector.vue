@@ -7,11 +7,11 @@
         ? 'h-10 gap-1 text-2xl font-semibold leading-tight tracking-[0.015em]'
         : 'gap-1.5 text-2xl font-semibold tracking-[0.015em]'"
       :title="t('issue.chooseProposalCategory')"
-      :aria-label="t('issue.currentCategoryLabel', { label: t(label) })"
+      :aria-label="t('issue.currentCategoryLabel', { label })"
       :aria-expanded="open"
       @click="open = !open"
     >
-      <span class="truncate">{{ t(label) }}</span>
+      <span class="truncate">{{ label }}</span>
       <AppIcon
         name="chevron-down"
         :size="variant === 'mobile-header' ? 4.5 : 5"
@@ -36,7 +36,7 @@
             :class="{ 'button-toolbar--active': option.value === activeFilter }"
             @click="select(option.value)"
           >
-            <span>{{ t(option.label) }}</span>
+            <span>{{ option.label }}</span>
             <SelectionMark :selected="option.value === activeFilter" />
           </button>
         </div>
@@ -46,11 +46,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import AppIcon from '@/components/ui/atoms/AppIcon.vue';
 import DropdownPanel from '@/components/ui/molecules/DropdownPanel.vue';
 import SelectionMark from '@/components/ui/atoms/SelectionMark.vue';
-import { ISSUE_FILTER_OPTIONS } from '@/constants/categories';
+import { getIssueFilterOptions } from '@/constants/categories';
 import { useClickOutside } from '@/composables/useClickOutside';
 import type { IssueFilter } from '@/types';
 import { useI18n } from '@/i18n';
@@ -68,7 +68,7 @@ const emit = defineEmits<{
 const rootRef = ref<HTMLElement | null>(null);
 const open = ref(false);
 const { t } = useI18n();
-const options = ISSUE_FILTER_OPTIONS;
+const options = computed(getIssueFilterOptions);
 
 useClickOutside(open, [rootRef], () => { open.value = false; }, { escape: true });
 

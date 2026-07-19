@@ -1,4 +1,8 @@
 const messages = {
+  'apiError.invalidFacilityCategory': 'This facility-report category does not exist or has been archived.',
+  'apiError.commentsDisabled': 'New comments are disabled for this proposal; existing comments are preserved.',
+  'apiError.immutableCategoryPolicy': 'Read access and author visibility cannot be changed after a category is created.',
+  'apiError.setupAlreadyCompleted': 'Initial setup is complete. Use category management to make changes.',
   'apiError.internal': 'The service is temporarily unable to process the request. Try again later.',
   'apiError.upstreamUnavailable': 'An upstream service is temporarily unavailable. Try again later.',
   'apiError.unauthenticated': 'Sign in before continuing.',

@@ -12,7 +12,6 @@ import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
 import { asNumber } from "./utils.ts";
 import { canReadIssue } from "./issue-shared.ts";
-import { issueIsPrivateToOwner, issueRequiresReview } from "../_shared/issue-categories.ts";
 
 const MARKDOWN_UPLOAD_ID_PATTERN = /srp-upload:\/\/([0-9a-fA-F-]{36})/gu;
 const MARKDOWN_IMAGE_SOURCE_PATTERN = /!\[[^\]]*\]\((\S+?)(?:\s+["'][^"']*["'])?\)/gu;
@@ -78,8 +77,8 @@ function issueDeliveryAccess(
   if (!issue) return { allowed: false, privateDelivery: true };
   return {
     allowed: canReadIssue(issue, auth),
-    privateDelivery: issueIsPrivateToOwner(asString(issue.category))
-      || (issueRequiresReview(asString(issue.category))
+    privateDelivery: issue.read_access === "owner-admin"
+      || (issue.read_access === "reviewed-school"
         && ["under-review", "review-rejected"].includes(asString(issue.status))),
   };
 }
@@ -118,7 +117,7 @@ async function resolveUploadAccessBatch(
   }
   if (issueIds.size > 0) {
     const { data, error } = await supabase.schema("app_private").from("issues")
-      .select("id,category,status,author_uid").in("id", [...issueIds]);
+      .select("id,category,status,author_uid,read_access,author_visible").in("id", [...issueIds]);
     if (error) throw error;
     for (const issue of data ?? []) issues.set(String(issue.id), issue as JsonRecord);
   }

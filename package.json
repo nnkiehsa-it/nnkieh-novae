@@ -8,12 +8,11 @@
   },
   "scripts": {
     "dev": "vite",
-    "generate:issue-categories": "node scripts/generate-issue-categories.mjs",
     "generate:api-errors": "node scripts/generate-api-errors.mjs",
     "generate:rate-limits": "node scripts/generate-rate-limits.mjs",
     "generate:data-retention": "node scripts/generate-data-retention.mjs",
     "generate:backend-actions": "node scripts/generate-backend-actions.mjs",
-    "generate:all": "npm run generate:issue-categories && npm run generate:api-errors && npm run generate:rate-limits && npm run generate:data-retention && npm run generate:backend-actions",
+    "generate:all": "npm run generate:api-errors && npm run generate:rate-limits && npm run generate:data-retention && npm run generate:backend-actions",
     "pretypecheck": "npm run generate:all",
     "prelint": "npm run generate:all",
     "prebuild": "npm run generate:all",

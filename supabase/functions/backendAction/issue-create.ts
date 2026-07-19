@@ -1,24 +1,8 @@
 import { asString } from "../_shared/http.ts";
-import {
-  getIssueCategoryConfigOrDefault,
-  isIssueCategory,
-  ISSUE_CATEGORIES,
-  issueRequiresReview,
-  issueStoresAuthorPrivately,
-} from "../_shared/issue-categories.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
+import { getIssueCategory, issueCategoryPolicyLists } from "./categories.ts";
 import { validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
 import { INPUT_LIMITS, requiredMediaContent, requiredText } from "./validation.ts";
-
-const PRIVATE_TO_OWNER_CATEGORIES = ISSUE_CATEGORIES
-  .filter((categoryConfig) => categoryConfig.readAccess === "owner-admin")
-  .map((categoryConfig) => categoryConfig.id);
-const REVIEW_REQUIRED_CATEGORIES = ISSUE_CATEGORIES
-  .filter((categoryConfig) => categoryConfig.readAccess === "reviewed-school")
-  .map((categoryConfig) => categoryConfig.id);
-const AUTHOR_PRIVATE_CATEGORIES = ISSUE_CATEGORIES
-  .filter((categoryConfig) => categoryConfig.authorStorage === "private")
-  .map((categoryConfig) => categoryConfig.id);
 
 export async function createIssue(payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {
   const title = requiredText(payload.title, "title", INPUT_LIMITS.title);
@@ -28,18 +12,20 @@ export async function createIssue(payload: JsonRecord, auth: AuthContext, supaba
     INPUT_LIMITS.content,
     INPUT_LIMITS.contentStorage,
   );
-  const category = asString(payload.category, "general");
-  if (!isIssueCategory(category)) throw new Error("invalid-issue-category");
+  const category = asString(payload.category);
   await validateMarkdownUploadsBeforeCreate(supabase, auth.uid, content, "issue");
 
-  const categoryConfig = getIssueCategoryConfigOrDefault(category);
+  const [categoryConfig, policyLists] = await Promise.all([
+    getIssueCategory(supabase, category),
+    issueCategoryPolicyLists(supabase),
+  ]);
   const now = new Date();
-  const requiresReview = issueRequiresReview(category);
-  const supportDeadlineAt = !requiresReview && categoryConfig.support.deadlineDays !== null
-    ? new Date(now.getTime() + categoryConfig.support.deadlineDays * 24 * 60 * 60 * 1000).toISOString()
+  const requiresReview = categoryConfig.readAccess === "reviewed-school";
+  const supportDeadlineAt = !requiresReview && categoryConfig.supportEnabled && categoryConfig.supportDeadlineDays !== null
+    ? new Date(now.getTime() + categoryConfig.supportDeadlineDays * 24 * 60 * 60 * 1000).toISOString()
     : null;
-  const responseDeadlineAt = categoryConfig.responseDeadline.start === "created" && categoryConfig.responseDeadline.days !== null
-    ? new Date(now.getTime() + categoryConfig.responseDeadline.days * 24 * 60 * 60 * 1000).toISOString()
+  const responseDeadlineAt = !categoryConfig.supportEnabled && categoryConfig.responseDeadlineDays !== null
+    ? new Date(now.getTime() + categoryConfig.responseDeadlineDays * 24 * 60 * 60 * 1000).toISOString()
     : null;
   const { data, error } = await supabase.schema("app_api").rpc("backend_create_issue", {
     actor_uid: auth.uid,
@@ -49,15 +35,15 @@ export async function createIssue(payload: JsonRecord, auth: AuthContext, supaba
     issue_content: content,
     issue_category: category,
     issue_status: requiresReview ? "under-review" : "pending",
-    support_enabled: categoryConfig.support.enabled,
-    support_goal: categoryConfig.support.goal,
+    support_enabled: categoryConfig.supportEnabled,
+    support_goal: categoryConfig.supportGoal,
     support_deadline_at: supportDeadlineAt,
     response_deadline_at: responseDeadlineAt,
-    author_is_private: issueStoresAuthorPrivately(category),
+    author_is_private: !categoryConfig.authorVisible,
     actor_is_admin: false,
-    private_to_owner_categories: PRIVATE_TO_OWNER_CATEGORIES,
-    review_required_categories: REVIEW_REQUIRED_CATEGORIES,
-    author_private_categories: AUTHOR_PRIVATE_CATEGORIES,
+    private_to_owner_categories: policyLists.privateToOwnerCategoryIds,
+    review_required_categories: policyLists.reviewRequiredCategoryIds,
+    author_private_categories: policyLists.authorPrivateCategoryIds,
   });
   if (error) throw error;
   return { issue: data };

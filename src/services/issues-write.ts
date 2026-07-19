@@ -14,6 +14,7 @@ import {
   toReadableBackendError,
 } from './issues-core';
 import type { CommentResponseRecord } from './issues-read-shared';
+import type { IssueReadAccess } from '@/types/categories';
 
 interface IssueResponseRecord {
   id: string;
@@ -22,9 +23,12 @@ interface IssueResponseRecord {
   category: string;
   status: string;
   support_count: number;
+  comments_enabled: boolean;
+  read_access: IssueReadAccess;
   support_enabled: boolean;
   support_goal: number | null;
   created_at_ms: number | null;
+  closed_at_ms: number | null;
   support_deadline_at_ms: number | null;
   response_deadline_at_ms: number | null;
   review_approved_at_ms: number | null;
@@ -57,9 +61,12 @@ function normalizeIssueResponse(issue: IssueResponseRecord): IssueRecord {
     category: issue.category,
     status: issue.status,
     support_count: issue.support_count,
+    comments_enabled: issue.comments_enabled,
+    read_access: issue.read_access,
     support_enabled: issue.support_enabled,
     support_goal: issue.support_goal,
     created_at: dateFromMs(issue.created_at_ms),
+    closed_at: dateFromMs(issue.closed_at_ms),
     support_deadline_at: dateFromMs(issue.support_deadline_at_ms),
     response_deadline_at: dateFromMs(issue.response_deadline_at_ms),
     review_approved_at: dateFromMs(issue.review_approved_at_ms),
@@ -146,6 +153,20 @@ export async function updateIssueResult(issueId: string, resultContent: string) 
       { issue: IssueResponseRecord }
     >('updateIssueResult');
     const result = await fn({ issueId, resultContent, requestId: createRequestId() });
+    invalidateIssueCache();
+    return normalizeIssueResponse(result.issue);
+  } catch (error) {
+    throw toReadableBackendError(error);
+  }
+}
+
+export async function setIssueCommentsEnabled(issueId: string, enabled: boolean) {
+  try {
+    const fn = invokeBackendAction<
+      { issueId: string; enabled: boolean; requestId: string },
+      { issue: IssueResponseRecord }
+    >('setIssueCommentsEnabled');
+    const result = await fn({ issueId, enabled, requestId: createRequestId() });
     invalidateIssueCache();
     return normalizeIssueResponse(result.issue);
   } catch (error) {

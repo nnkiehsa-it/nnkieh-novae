@@ -11,6 +11,8 @@ export const loadAnnouncementDetailView = () => import('@/views/AnnouncementDeta
 export const loadNotificationsView = () => import('@/views/NotificationsView.vue');
 export const loadSettingsView = () => import('@/views/SettingsView.vue');
 export const loadDashboardView = () => import('@/views/DashboardView.vue');
+export const loadSetupView = () => import('@/views/SetupView.vue');
+export const loadCategoryManagementView = () => import('@/views/CategoryManagementView.vue');
 
 const loaders = new Map<string, RouteComponentLoader>([
   ['login', loadLoginView],
@@ -24,6 +26,8 @@ const loaders = new Map<string, RouteComponentLoader>([
   ['notifications', loadNotificationsView],
   ['settings', loadSettingsView],
   ['dashboard', loadDashboardView],
+  ['setup', loadSetupView],
+  ['category-management', loadCategoryManagementView],
 ]);
 const preloadRequests = new Map<string, Promise<unknown>>();
 
@@ -43,6 +47,8 @@ export function preloadRoutePath(pathname: string) {
   if (pathname === '/settings') return preloadRouteComponent('settings');
   if (pathname === '/dashboard') return preloadRouteComponent('dashboard');
   if (pathname === '/admin/access') return preloadRouteComponent('access-management');
+  if (pathname === '/admin/categories') return preloadRouteComponent('category-management');
+  if (pathname === '/setup') return preloadRouteComponent('setup');
   if (pathname.startsWith('/facilities/')) return preloadRouteComponent('facility-detail');
   if (pathname === '/facilities') return preloadRouteComponent('facilities');
   if (pathname.startsWith('/announcements/')) return preloadRouteComponent('announcement-detail');

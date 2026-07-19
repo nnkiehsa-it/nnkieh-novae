@@ -14,6 +14,8 @@ export interface SessionState {
   roles: RoleCode[];
   permissions: PermissionCode[];
   managedIssueCategoryIds: string[];
+  managedFacilityCategoryIds: string[];
+  setupCompleted: boolean;
   error: string;
 }
 

@@ -1,7 +1,6 @@
 import { createDatabaseClient } from "../_shared/database-client.ts";
 import { requireEnv } from "../_shared/env.ts";
 import { errorMessage, errorStatus, jsonResponse, publicErrorBody, requireMethod } from "../_shared/http.ts";
-import { ISSUE_CATEGORY_IDS } from "../_shared/issue-categories.ts";
 import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 import { DATA_RETENTION } from "../_shared/data-retention.ts";
 import { claimFixedWindowRateLimits, utcMinuteWindow, utcSecondWindow } from "../_shared/upstash-rate-limit.ts";
@@ -23,11 +22,14 @@ Deno.serve(async (request) => {
       { identifier: "global", actionName: "worker.maintenance", window: utcMinuteWindow(), config: RATE_LIMITS.workerRunMinute },
     ]);
     const supabase = createDatabaseClient();
+    const { data: issueCategories, error: categoryError } = await supabase.schema("app_private")
+      .from("issue_categories").select("id");
+    if (categoryError) throw categoryError;
     const { data, error } = await supabase
       .schema("app_api")
       .rpc("run_maintenance_cleanup", {
         retention_config: DATA_RETENTION,
-        valid_issue_categories: [...ISSUE_CATEGORY_IDS],
+        valid_issue_categories: (issueCategories ?? []).map((category) => category.id),
       });
     if (error) throw error;
 

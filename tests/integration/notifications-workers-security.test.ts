@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { DATA_RETENTION } from "../../supabase/functions/_shared/data-retention.ts";
 import type { Database } from "../../supabase/functions/_shared/database.ts";
-import { ISSUE_CATEGORY_IDS } from "../../supabase/functions/_shared/issue-categories.ts";
 import {
   asRecord,
   callAction,
@@ -125,9 +124,14 @@ integrationTest("notification state, push preferences, and dashboard permissions
 });
 
 integrationTest("worker database lifecycles and maintenance RPC", async () => {
+  const { data: categoryRows, error: categoryError } = await supabase.schema("app_private")
+    .from("issue_categories").select("id").eq("is_active", true).order("sort_order");
+  if (categoryError) throw categoryError;
+  const issueCategoryIds = (categoryRows ?? []).map((row) => String(row.id));
+  assert.ok(issueCategoryIds.length > 0);
   const expiredOwner = await seedActor("expired-support-owner");
   const expiredIssueResult = asRecord(await callAction("createIssue", {
-    category: ISSUE_CATEGORY_IDS[0],
+    category: issueCategoryIds[0],
     content: "Integration expired support content",
     requestId: requestId("expired-support"),
     title: "Expired support",
@@ -188,12 +192,15 @@ integrationTest("worker database lifecycles and maintenance RPC", async () => {
       target_type: "integration-test",
     });
   if (outboxInsertError) throw outboxInsertError;
-  const { data: outboxEvents, error: outboxClaimError } = await supabase
-    .schema("app_api")
-    .rpc("claim_outbox_events", { batch_size: 100 });
-  if (outboxClaimError) throw outboxClaimError;
-  const outboxEvent = ((outboxEvents ?? []) as Array<{ id: string; target_id: string }>)
-    .find((event) => event.target_id === outboxTarget);
+  let outboxEvent: { id: string; target_id: string } | undefined;
+  for (let batch = 0; batch < 10 && !outboxEvent; batch += 1) {
+    const { data: outboxEvents, error: outboxClaimError } = await supabase
+      .schema("app_api")
+      .rpc("claim_outbox_events", { batch_size: 100 });
+    if (outboxClaimError) throw outboxClaimError;
+    outboxEvent = ((outboxEvents ?? []) as Array<{ id: string; target_id: string }>)
+      .find((event) => event.target_id === outboxTarget);
+  }
   assert.ok(outboxEvent);
   const errorTraceId = crypto.randomUUID();
   const { error: outboxFailError } = await supabase.schema("app_api")
@@ -220,7 +227,7 @@ integrationTest("worker database lifecycles and maintenance RPC", async () => {
     .schema("app_api")
     .rpc("run_maintenance_cleanup", {
       retention_config: DATA_RETENTION,
-      valid_issue_categories: [...ISSUE_CATEGORY_IDS],
+      valid_issue_categories: issueCategoryIds,
     });
   if (maintenanceError) throw maintenanceError;
   assert.ok(maintenance && typeof maintenance === "object");

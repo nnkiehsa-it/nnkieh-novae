@@ -47,10 +47,10 @@
           <p class="field-label mb-2">{{ t('access.proposalCategoryAccess') }}</p>
           <div class="grid gap-2">
             <SelectionOptionButton
-              v-for="category in ISSUE_CATEGORIES"
+              v-for="category in activeIssueCategories"
               :key="category.id"
-              :label="t('access.manageCategory', { category: t(category.label) })"
-              :description="t('access.reviewAndManageProposalsInCategory', { category: t(category.label) })"
+              :label="t('access.manageCategory', { category: category.label })"
+              :description="t('access.reviewAndManageProposalsInCategory', { category: category.label })"
               :selected="isPlatformAdmin || user.managedIssueCategoryIds.includes(category.id)"
               :disabled="Boolean(savingUid) || isPlatformAdmin"
               @select="toggleCategory(category.id)"
@@ -59,15 +59,23 @@
         </div>
 
         <div>
-          <p class="field-label mb-2">{{ t('access.featureAccess') }}</p>
+          <p class="field-label mb-2">{{ t('access.facilityCategoryAccess') }}</p>
           <div class="grid gap-2">
             <SelectionOptionButton
-              label="access.facilityAdministrator"
-              description="access.handleAndManageFacilityReportsOnly"
-              :selected="isPlatformAdmin || user.roles.includes('general-affairs')"
+              v-for="category in activeFacilityCategories"
+              :key="category.id"
+              :label="t('access.manageCategory', { category: category.label })"
+              :description="t('access.handleFacilityReportsInCategory', { category: category.label })"
+              :selected="isPlatformAdmin || user.managedFacilityCategoryIds.includes(category.id)"
               :disabled="Boolean(savingUid) || isPlatformAdmin"
-              @select="toggleScopedRole('general-affairs')"
+              @select="toggleFacilityCategory(category.id)"
             />
+          </div>
+        </div>
+
+        <div>
+          <p class="field-label mb-2">{{ t('access.featureAccess') }}</p>
+          <div class="grid gap-2">
             <SelectionOptionButton
               label="access.announcementManagement"
               description="access.publishAndDeleteAnnouncements"
@@ -84,20 +92,21 @@
 
 <script setup lang="ts">
 import RoutePageFrame from '@/components/ui/organisms/RoutePageFrame.vue';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import SelectionOptionButton from '@/components/ui/molecules/SelectionOptionButton.vue';
 import EmptyStatePanel from '@/components/ui/molecules/EmptyStatePanel.vue';
 import SurfacePanel from '@/components/ui/molecules/SurfacePanel.vue';
 import BusyButtonContent from '@/components/ui/atoms/BusyButtonContent.vue';
 import AppButton from '@/components/ui/atoms/AppButton.vue';
 import UserAvatar from '@/components/ui/atoms/UserAvatar.vue';
-import { ISSUE_CATEGORIES } from '@/generated/issue-categories';
+import { useCategories } from '@/composables/useCategories';
 import { listRoleAssignments, setUserRoles, type AccessUser } from '@/services/access';
 import type { RoleCode } from '@/services/session-role';
 import { useI18n } from '@/i18n';
 
 const lookup = ref('');
 const { t } = useI18n();
+const { activeFacilityCategories, activeIssueCategories, refresh } = useCategories();
 const user = ref<AccessUser | null>(null);
 const loading = ref(false);
 const error = ref('');
@@ -121,14 +130,15 @@ async function findUser() {
   }
 }
 
-async function saveAccess(roles: RoleCode[], categories: string[]) {
+async function saveAccess(roles: RoleCode[], categories: string[], facilityCategories: string[]) {
   if (!user.value) return;
   savingUid.value = user.value.uid;
   error.value = '';
   try {
-    const result = await setUserRoles(user.value.uid, roles, categories);
+    const result = await setUserRoles(user.value.uid, roles, categories, facilityCategories);
     user.value.roles = result.roles;
     user.value.managedIssueCategoryIds = result.managedIssueCategoryIds;
+    user.value.managedFacilityCategoryIds = result.managedFacilityCategoryIds;
   } catch (caught) {
     error.value = caught instanceof Error ? t(caught.message) : t('access.saveFailed');
   } finally {
@@ -138,7 +148,7 @@ async function saveAccess(roles: RoleCode[], categories: string[]) {
 
 async function togglePlatformAdmin() {
   if (!user.value) return;
-  await saveAccess(isPlatformAdmin.value ? [] : ['platform-admin'], []);
+  await saveAccess(isPlatformAdmin.value ? [] : ['platform-admin'], [], []);
 }
 
 async function toggleCategory(categoryId: string) {
@@ -146,7 +156,15 @@ async function toggleCategory(categoryId: string) {
   const categories = user.value.managedIssueCategoryIds.includes(categoryId)
     ? user.value.managedIssueCategoryIds.filter((value) => value !== categoryId)
     : [...user.value.managedIssueCategoryIds, categoryId];
-  await saveAccess(user.value.roles.filter((role) => role !== 'proposal-manager'), categories);
+  await saveAccess(user.value.roles.filter((role) => role !== 'proposal-manager'), categories, user.value.managedFacilityCategoryIds);
+}
+
+async function toggleFacilityCategory(categoryId: string) {
+  if (!user.value || isPlatformAdmin.value) return;
+  const categories = user.value.managedFacilityCategoryIds.includes(categoryId)
+    ? user.value.managedFacilityCategoryIds.filter((value) => value !== categoryId)
+    : [...user.value.managedFacilityCategoryIds, categoryId];
+  await saveAccess(user.value.roles.filter((role) => role !== 'general-affairs'), user.value.managedIssueCategoryIds, categories);
 }
 
 async function toggleScopedRole(role: Extract<RoleCode, 'announcement-manager' | 'general-affairs'>) {
@@ -154,6 +172,8 @@ async function toggleScopedRole(role: Extract<RoleCode, 'announcement-manager' |
   const roles = user.value.roles.includes(role)
     ? user.value.roles.filter((value) => value !== role)
     : [...user.value.roles.filter((value) => value !== 'proposal-manager'), role];
-  await saveAccess(roles, user.value.managedIssueCategoryIds);
+  await saveAccess(roles, user.value.managedIssueCategoryIds, user.value.managedFacilityCategoryIds);
 }
+
+onMounted(() => { void refresh(); });
 </script>

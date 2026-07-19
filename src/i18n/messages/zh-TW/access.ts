@@ -28,6 +28,8 @@ const messages = {
   'access.findAUser': '查找使用者',
   'access.googleLoginOriginInvalid': '目前網址尚未允許使用 Google 登入，請聯絡管理員確認設定。',
   'access.facilityAdministrator': '設備管理員',
+  'access.facilityCategoryAccess': '設備報修分類管理權限',
+  'access.handleFacilityReportsInCategory': '接收通知並處理「{category}」分類的設備報修。',
 } as const;
 
 export default messages;

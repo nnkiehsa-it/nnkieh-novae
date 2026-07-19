@@ -1,4 +1,8 @@
 const messages = {
+  'apiError.invalidFacilityCategory': '這個設備報修分類不存在或已封存。',
+  'apiError.commentsDisabled': '這筆提案已關閉新留言；既有留言仍會保留。',
+  'apiError.immutableCategoryPolicy': '分類建立後不能修改閱讀範圍或作者顯示規則。',
+  'apiError.setupAlreadyCompleted': '初始設定已完成，請改用分類管理頁調整。',
   'apiError.internal': '服務暫時無法處理請求，請稍後再試。',
   'apiError.upstreamUnavailable': '上游服務暫時無法使用，請稍後再試。',
   'apiError.unauthenticated': '請先登入後再操作。',

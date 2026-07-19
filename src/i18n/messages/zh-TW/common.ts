@@ -1,4 +1,8 @@
 const messages = {
+  'common.save': '儲存',
+  'common.saving': '儲存中',
+  'common.saveFailed': '儲存失敗，請稍後再試。',
+  'common.loadFailed': '載入失敗，請稍後再試。',
   'common.later': '稍後',
   'common.retry': '重試',
   'common.loadMore': '載入更多',

@@ -1,29 +1,20 @@
 import { asRecord, asString } from "../_shared/http.ts";
-import { ISSUE_CATEGORIES } from "../_shared/issue-categories.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
+import { issueCategoryPolicyLists } from "./categories.ts";
 import { validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
 import { asNumber, asUuid, readCursor, readCursorDate } from "./utils.ts";
 import { INPUT_LIMITS, requiredMediaContent } from "./validation.ts";
 import { canManageIssueCategory } from "./auth.ts";
 import { selectIssue } from "./issue-shared.ts";
 
-const PRIVATE_TO_OWNER_CATEGORIES = ISSUE_CATEGORIES
-  .filter((category) => category.readAccess === "owner-admin")
-  .map((category) => category.id);
-const REVIEW_REQUIRED_CATEGORIES = ISSUE_CATEGORIES
-  .filter((category) => category.readAccess === "reviewed-school")
-  .map((category) => category.id);
-const PUBLIC_COMMENT_CATEGORIES = ISSUE_CATEGORIES
-  .filter((category) => category.comments.enabledWhen === "public")
-  .map((category) => category.id);
-
-function issueCommentPolicyParams(auth: AuthContext, actorCanManage: boolean) {
+async function issueCommentPolicyParams(supabase: BackendSupabase, auth: AuthContext, actorCanManage: boolean) {
+  const policy = await issueCategoryPolicyLists(supabase);
   return {
     actor_uid: auth.uid,
     actor_is_admin: actorCanManage,
-    private_to_owner_categories: PRIVATE_TO_OWNER_CATEGORIES,
-    review_required_categories: REVIEW_REQUIRED_CATEGORIES,
-    public_comment_categories: PUBLIC_COMMENT_CATEGORIES,
+    private_to_owner_categories: policy.privateToOwnerCategoryIds,
+    review_required_categories: policy.reviewRequiredCategoryIds,
+    public_comment_categories: policy.publicCommentCategoryIds,
   };
 }
 
@@ -37,7 +28,7 @@ async function listComments(payload: JsonRecord, auth: AuthContext, supabase: Ba
     cursor_id: asUuid(cursor.id) || null,
     cursor_created_at: readCursorDate(cursor, "createdAtMs", "created_at") || null,
     page_size: Math.min(Math.max(Math.round(asNumber(payload.pageSize, 30)), 1), 30),
-    ...issueCommentPolicyParams(auth, canManageIssueCategory(auth, asString(issue.category))),
+    ...await issueCommentPolicyParams(supabase, auth, canManageIssueCategory(auth, asString(issue.category))),
   });
   if (error) throw error;
   return data;
@@ -47,6 +38,7 @@ async function createComment(payload: JsonRecord, auth: AuthContext, supabase: B
   const issueId = asUuid(payload.issueId);
   if (!issueId) throw new Error("not-found");
   const issue = await selectIssue(supabase, issueId);
+  if (issue.comments_enabled === false) throw new Error("comments-disabled");
   const content = requiredMediaContent(
     payload.content,
     "comment",
@@ -61,7 +53,7 @@ async function createComment(payload: JsonRecord, auth: AuthContext, supabase: B
     actor_name: auth.name,
     actor_photo_url: auth.photoUrl,
     comment_content: content,
-    ...issueCommentPolicyParams(auth, canManageIssueCategory(auth, asString(issue.category))),
+    ...await issueCommentPolicyParams(supabase, auth, canManageIssueCategory(auth, asString(issue.category))),
   });
   if (error) throw error;
   return { comment: asRecord(data) };

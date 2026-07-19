@@ -2,7 +2,7 @@
   <ContentDetailPagePanel
     :author-name="facility.author_name"
     :author-photo-url="facility.author_photo_url"
-    :author-secondary="facility.location"
+    :author-secondary="authorSecondary"
     :author-uid="facility.author_uid"
     back-label="facility.backToFacilityList"
     :content="facility.content"
@@ -16,7 +16,7 @@
     @back="emit('back')"
   >
     <template #header>
-      <TagBadge class="border-ink-200 bg-ink-100/50 dark:border-ink-800 dark:bg-ink-950/50">{{ t('facility.facility') }}</TagBadge>
+      <TagBadge class="border-ink-200 bg-ink-100/50 dark:border-ink-800 dark:bg-ink-950/50">{{ categoryLabel }}</TagBadge>
       <TagBadge elevated class="font-semibold" :class="statusClass">{{ statusLabel }}</TagBadge>
     </template>
 
@@ -38,15 +38,17 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import FacilityDetailActions from '@/components/FacilityDetailActions.vue';
 import ContentDetailPagePanel from '@/components/ContentDetailPagePanel.vue';
 import TagBadge from '@/components/ui/atoms/TagBadge.vue';
 import type { FacilityRecord, OperationTimeListItem } from '@/types';
 import { useI18n } from '@/i18n';
+import { findFacilityCategory } from '@/composables/useCategories';
 
 const { t } = useI18n();
 
-defineProps<{
+const props = defineProps<{
   affecting: boolean;
   closed: boolean;
   facility: FacilityRecord;
@@ -55,6 +57,9 @@ defineProps<{
   statusClass: string;
   statusLabel: string;
 }>();
+
+const categoryLabel = computed(() => findFacilityCategory(props.facility.category_id)?.label ?? props.facility.category_id);
+const authorSecondary = computed(() => `${categoryLabel.value} · ${props.facility.location}`);
 
 const emit = defineEmits<{
   back: [];

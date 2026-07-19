@@ -1,4 +1,4 @@
-import type { IssueCategory as ConfigIssueCategory } from '@/generated/issue-categories';
+import type { IssueReadAccess } from './categories';
 
 export type IssueStatus =
   | 'under-review'
@@ -9,7 +9,7 @@ export type IssueStatus =
   | 'infeasible'
   | 'completed';
 export type IssueStatusBucket = 'active' | 'closed';
-export type IssueCategory = ConfigIssueCategory;
+export type IssueCategory = string;
 export type WritableIssueCategory = IssueCategory;
 export type IssueFilter = IssueCategory;
 export type IssueRouteFilter = IssueFilter | 'my-proposals';
@@ -18,6 +18,7 @@ export type NotificationType =
   | 'announcement_created'
   | 'announcement_comment_created'
   | 'facility_status_changed'
+  | 'facility_report_created'
   | 'issue_comment_created'
   | 'issue_status_changed'
   | 'support_goal_met'
@@ -35,6 +36,8 @@ export interface IssueRecord {
   support_count: number;
   status: IssueStatus;
   category: IssueCategory;
+  read_access: IssueReadAccess;
+  comments_enabled: boolean;
   support_enabled: boolean;
   support_goal: number | null;
   support_deadline_at: Date | null;
@@ -102,6 +105,7 @@ export type FacilitySortOption = 'latest' | 'most-affected';
 
 export interface FacilitySummary {
   id: string;
+  category_id: string;
   title: string;
   location: string;
   status: FacilityStatus;
@@ -124,6 +128,7 @@ export interface FacilityRecord extends FacilitySummary {
 }
 
 export interface FacilityInput {
+  categoryId: string;
   title: string;
   location: string;
   content: string;

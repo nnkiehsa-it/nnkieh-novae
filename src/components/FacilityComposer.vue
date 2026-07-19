@@ -32,7 +32,18 @@
     @image-picked="images.handleImagePicked"
     @remove-image="removeImage"
     @submit="submit"
-  />
+  >
+    <template #fields>
+      <div>
+        <label for="facility-category" class="field-label">{{ t('facility.category') }}</label>
+        <select id="facility-category" v-model="form.categoryId" class="field mt-1.5" required>
+          <option v-for="category in activeFacilityCategories" :key="category.id" :value="category.id">
+            {{ category.label }}
+          </option>
+        </select>
+      </div>
+    </template>
+  </EntryComposerShell>
 </template>
 
 <script setup lang="ts">
@@ -42,9 +53,13 @@ import { INPUT_LIMITS } from '@/constants/input-limits';
 import { RATE_LIMITS } from '@/generated/rate-limits';
 import { useFacilityComposerForm } from '@/composables/useFacilityComposerForm';
 import type { FacilityRecord } from '@/types';
+import { useCategories } from '@/composables/useCategories';
+import { useI18n } from '@/i18n';
 
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: []; submitted: [facility: FacilityRecord] }>();
+const { activeFacilityCategories } = useCategories();
+const { t } = useI18n();
 const { editorImages, error, form, images, showPreview, submitting, close, submit } = useFacilityComposerForm(
   toRef(props, 'open'),
   () => emit('close'),

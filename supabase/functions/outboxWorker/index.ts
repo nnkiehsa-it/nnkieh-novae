@@ -83,6 +83,13 @@ function notificationForEvent(event: OutboxEvent): Record<string, unknown> | nul
   if (event.payload.retention_cleanup === true) return null;
   const title = asString(event.payload.title, event.event_type);
   if (event.event_type === "issue.created") return null;
+  if (event.event_type === "facility.created") {
+    return {
+      source: "admin", type: "facility_report_created", target_type: "facility", target_id: event.target_id,
+      title: "新的設備報修", actor_uid: event.actor_uid,
+      body_preview: title,
+    };
+  }
   if (event.event_type === "facility.status_changed") {
     const newStatus = asString(event.payload.new_status);
     return {
@@ -393,7 +400,9 @@ async function sendPushes(
     ? `/announcements/${encodeURIComponent(targetId)}${isComment ? `?tab=comments${commentQuery}` : ""}`
     : targetType === "facility"
     ? `/facilities/${encodeURIComponent(targetId)}`
-    : `/issues/${encodeURIComponent(category || "public-issues")}/${encodeURIComponent(targetId)}${isComment ? `?tab=comments${commentQuery}` : ""}`;
+    : category
+    ? `/issues/${encodeURIComponent(category)}/${encodeURIComponent(targetId)}${isComment ? `?tab=comments${commentQuery}` : ""}`
+    : "/notifications";
   const topicData = {
     body: asString(notification.body_preview), comment_id: commentId, issue_category: category, link,
     target_id: targetId, target_type: targetType, title: asString(notification.title),
@@ -450,7 +459,7 @@ async function sendPushes(
     const preference = preferences.get(uid) ?? { comments: true, facilityUpdates: true, issueUpdates: true };
     const isComment = isCommentNotificationType(notificationType);
     const isIssueUpdate = isIssueUpdateNotificationType(notificationType);
-    const isFacilityUpdate = notificationType === "facility_status_changed";
+    const isFacilityUpdate = notificationType === "facility_status_changed" || notificationType === "facility_report_created";
     if ((isComment && !preference.comments) || (isFacilityUpdate && !preference.facilityUpdates) || (isIssueUpdate && !isFacilityUpdate && !preference.issueUpdates)) return;
 
     const title = asString(notification.title);
@@ -559,6 +568,21 @@ async function createNotificationsForEvent(
   supabase: AppSupabase,
   event: OutboxEvent,
 ) {
+  if (event.event_type === "facility.created") {
+    const base = notificationForEvent(event);
+    if (!base) return { hasNotification: false };
+    const categoryId = asString(event.payload.category_id);
+    const { data, error } = await supabase.schema("app_private").from("user_facility_category_assignments")
+      .select("uid").eq("category_id", categoryId).eq("notify_on_created", true);
+    if (error) throw error;
+    const recipients = [...new Set((data ?? []).map((row) => asString(row.uid)).filter((uid) => uid && uid !== event.actor_uid))];
+    const notifications = await Promise.all(recipients.map(async (recipientUid) => ({
+      ...base, recipient_uid: recipientUid, id: await deterministicNotificationId(event.id, recipientUid),
+    })));
+    const insertedRecipientUids = await insertNotifications(supabase, notifications);
+    if (insertedRecipientUids.length > 0) await sendPushesWithoutBlockingOutbox(supabase, base, insertedRecipientUids);
+    return { hasNotification: recipients.length > 0 };
+  }
   if (event.event_type === "facility.status_changed") {
     const base = notificationForEvent(event);
     if (!base) return { hasNotification: false };

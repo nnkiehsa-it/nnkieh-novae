@@ -4,6 +4,10 @@ export const BACKEND_ACTION_POLICIES = {
     "group": "sensitive-write",
     "extraLimit": "avatarCacheDaily"
   },
+  "completeInitialSetup": {
+    "group": "admin-write",
+    "extraLimit": "roleWriteHourly"
+  },
   "createAnnouncement": {
     "group": "admin-write",
     "extraLimit": "announcementCreateDaily"
@@ -57,6 +61,12 @@ export const BACKEND_ACTION_POLICIES = {
     "group": "upload-write"
   },
   "getAnnouncement": {
+    "group": "read"
+  },
+  "getCategoryCatalog": {
+    "group": "read"
+  },
+  "getCategoryManagement": {
     "group": "read"
   },
   "getContentRevisions": {
@@ -136,6 +146,18 @@ export const BACKEND_ACTION_POLICIES = {
   },
   "searchIssues": {
     "group": "read"
+  },
+  "saveFacilityCategory": {
+    "group": "admin-write",
+    "extraLimit": "roleWriteHourly"
+  },
+  "saveIssueCategory": {
+    "group": "admin-write",
+    "extraLimit": "roleWriteHourly"
+  },
+  "setIssueCommentsEnabled": {
+    "group": "admin-write",
+    "extraLimit": "moderationWriteHourly"
   },
   "setAnnouncementLike": {
     "group": "sensitive-write",

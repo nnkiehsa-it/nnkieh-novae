@@ -87,7 +87,7 @@ import { usePushPermissionPrompt } from '@/composables/usePushPermissionPrompt';
 import { useSession } from '@/composables/useSession';
 import { useActionFeedback } from '@/composables/useActionFeedback';
 import { computed, onBeforeUnmount, watch } from 'vue';
-import { DEFAULT_ISSUE_ROUTE_FILTER } from '@/constants/categories';
+import { getDefaultIssueRouteFilter } from '@/constants/categories';
 import { preloadPrimaryRouteComponents } from '@/router/route-components';
 import { useI18n } from '@/i18n';
 
@@ -189,7 +189,7 @@ const {
 function defaultAuthenticatedRoute() {
   return {
     name: 'issues',
-    params: { filter: DEFAULT_ISSUE_ROUTE_FILTER },
+    params: { filter: getDefaultIssueRouteFilter() },
   };
 }
 

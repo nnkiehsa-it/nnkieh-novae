@@ -1,9 +1,4 @@
 import { asString } from "../_shared/http.ts";
-import {
-  issueIsPrivateToOwner,
-  issueRequiresReview,
-  issueStoresAuthorPrivately,
-} from "../_shared/issue-categories.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
 import { toMs } from "./utils.ts";
 import { canManageIssueCategory } from "./auth.ts";
@@ -12,6 +7,7 @@ export function issueToResponse(issue: JsonRecord): JsonRecord {
   return {
     ...issue,
     created_at_ms: toMs(issue.created_at),
+    closed_at_ms: toMs(issue.closed_at),
     support_deadline_at_ms: toMs(issue.support_deadline_at),
     response_deadline_at_ms: toMs(issue.response_deadline_at),
     review_approved_at_ms: toMs(issue.review_approved_at),
@@ -24,8 +20,8 @@ export function canReadIssue(issue: JsonRecord, auth: AuthContext) {
   const authorUid = asString(issue.author_uid);
   const status = asString(issue.status);
   if (canManageIssueCategory(auth, category) || authorUid === auth.uid) return true;
-  if (issueIsPrivateToOwner(category)) return false;
-  if (issueRequiresReview(category) && (status === "under-review" || status === "review-rejected")) return false;
+  if (issue.read_access === "owner-admin") return false;
+  if (issue.read_access === "reviewed-school" && (status === "under-review" || status === "review-rejected")) return false;
   return true;
 }
 
@@ -35,11 +31,7 @@ export function issueToReadableResponse(issue: JsonRecord, auth: AuthContext): J
   const isOwnIssue = authorUid === auth.uid;
   const actorCanManageCategory = canManageIssueCategory(auth, asString(issue.category));
   const canManageIssue = actorCanManageCategory || isOwnIssue;
-  const canViewAuthor = !issueStoresAuthorPrivately(asString(issue.category))
-    && !actorCanManageCategory
-    && !isOwnIssue
-    ? false
-    : true;
+  const canViewAuthor = actorCanManageCategory || isOwnIssue || issue.author_visible === true;
 
   return {
     ...response,

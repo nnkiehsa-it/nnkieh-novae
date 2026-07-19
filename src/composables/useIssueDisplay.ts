@@ -2,7 +2,7 @@ import { computed, type Ref } from 'vue';
 import { getDerivedIssueStatus, getRemainingCalendarDays } from '@/lib/issue-status';
 import { formatDate } from '@/lib/format';
 import { getIssueOperationTimeItems, isClosedIssueStatus } from '@/lib/issue-timeline';
-import { ISSUE_CATEGORY_LABELS, issueRequiresReview } from '@/constants/categories';
+import { getIssueCategoryLabel, issueRequiresReview } from '@/constants/categories';
 import { ISSUE_STATUS_LABELS } from '@/constants/statuses';
 import { useAuthorAvatarUrl } from '@/composables/useAuthorAvatar';
 import type { IssueOperationTimeItem, IssueRecord } from '@/types';
@@ -36,7 +36,7 @@ export function useIssueDisplay(issue: Ref<IssueRecord> | (() => IssueRecord)) {
   );
 
   const derivedStatus = computed(() => getDerivedIssueStatus(resolvedIssue.value));
-  const categoryLabel = computed(() => t(ISSUE_CATEGORY_LABELS[resolvedIssue.value.category]));
+  const categoryLabel = computed(() => getIssueCategoryLabel(resolvedIssue.value.category));
   const statusLabel = computed(() => t(ISSUE_STATUS_LABELS[derivedStatus.value]));
   const isClosed = computed(() => isClosedIssueStatus(derivedStatus.value));
 

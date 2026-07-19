@@ -32,6 +32,7 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   assert.equal(adminRole.role, "admin");
   assert.deepEqual(new Set(admin.auth.permissions), new Set([
     "announcement.manage",
+    "category.manage",
     "dashboard.view",
     "facility.manage",
     "proposal.manage",
@@ -134,4 +135,58 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   }, user.auth));
   assert.equal(deleted.deleted, 1);
   assert.equal(await tableRow("uploads", "id", uploadId), null);
+});
+
+integrationTest("runtime category setup and management enforce platform permissions and immutable privacy", async () => {
+  const admin = await seedActor("category-admin", { roles: ["platform-admin"] });
+  const user = await seedActor("category-user");
+
+  const catalog = asRecord(await callAction("getCategoryCatalog", {}, user.auth));
+  assert.ok((catalog.issueCategories as unknown[]).length >= 2);
+  assert.ok((catalog.facilityCategories as unknown[]).length >= 1);
+  await expectActionError("permission-denied", () => callAction("getCategoryManagement", {}, user.auth));
+  await expectActionError("permission-denied", () => callAction("completeInitialSetup", {
+    facilityCategories: [], issueCategories: [], requestId: requestId("setup-denied"),
+  }, user.auth));
+
+  const setup = asRecord(await callAction("completeInitialSetup", {
+    issueCategories: [
+      {
+        id: "public-issues", label: "公共議題", description: "", readAccess: "reviewed-school",
+        authorVisible: false, supportEnabled: true, supportGoal: 50, supportDeadlineDays: 14,
+        responseDeadlineDays: 7, commentsEnabled: true,
+      },
+      {
+        id: "rights-maintenance", label: "學生權益", description: "", readAccess: "owner-admin",
+        authorVisible: true, supportEnabled: false, supportGoal: null, supportDeadlineDays: null,
+        responseDeadlineDays: 7, commentsEnabled: true,
+      },
+    ],
+    facilityCategories: [{ id: "general", label: "一般設備", description: "" }],
+    requestId: requestId("complete-setup"),
+  }, admin.auth));
+  assert.equal(setup.success, true);
+
+  const management = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
+  const publicCategory = asRecord((management.issueCategories as unknown[])
+    .find((value) => asRecord(value).id === "public-issues"));
+  const savedIssue = asRecord(await callAction("saveIssueCategory", {
+    category: { ...publicCategory, description: "Runtime-managed integration category" },
+    requestId: requestId("save-issue-category"),
+  }, admin.auth));
+  assert.equal(asRecord(savedIssue.category).description, "Runtime-managed integration category");
+  await expectActionError("immutable-category-policy", () => callAction("saveIssueCategory", {
+    category: { ...publicCategory, readAccess: "school" },
+    requestId: requestId("immutable-category"),
+  }, admin.auth));
+  await expectActionError("permission-denied", () => callAction("saveIssueCategory", {
+    category: publicCategory, requestId: requestId("save-issue-denied"),
+  }, user.auth));
+
+  const facilityCategory = asRecord((management.facilityCategories as unknown[])[0]);
+  const savedFacility = asRecord(await callAction("saveFacilityCategory", {
+    category: { ...facilityCategory, description: "Runtime-managed facility category" },
+    requestId: requestId("save-facility-category"),
+  }, admin.auth));
+  assert.equal(asRecord(savedFacility.category).description, "Runtime-managed facility category");
 });

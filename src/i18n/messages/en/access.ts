@@ -28,6 +28,8 @@ const messages = {
   'access.findAUser': 'Find a user',
   'access.googleLoginOriginInvalid': 'The current URL does not allow Google login. Please contact the administrator to confirm the settings.',
   'access.facilityAdministrator': 'Facility administrator',
+  'access.facilityCategoryAccess': 'Facility-report category access',
+  'access.handleFacilityReportsInCategory': 'Receive notifications and manage facility reports in {category}.',
 } as const;
 
 export default messages;

@@ -1,8 +1,6 @@
 import { requireEnv } from "../_shared/env.ts";
 import { ensureCloudinaryImageUploadPreset } from "../_shared/cloudinary.ts";
 import { requireVerifiedFirebaseUser } from "../_shared/firebase-auth.ts";
-import { getIssueCategoryIdsByReadAccess } from "../_shared/issue-categories.ts";
-import { ISSUE_CATEGORY_IDS } from "../_shared/issue-categories.ts";
 import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 import type { AuthContext, BackendSupabase, PermissionCode } from "./types.ts";
 import { edgeFunctionUrl } from "../_shared/origin.ts";
@@ -29,14 +27,19 @@ export async function resolveAuthContext(
     : [];
   const isPlatformAdmin = roles.includes("platform-admin");
   const managedIssueCategoryIds = isPlatformAdmin
-    ? [...ISSUE_CATEGORY_IDS]
+    ? []
     : Array.isArray(access.managedIssueCategoryIds)
     ? [...new Set(access.managedIssueCategoryIds.filter((id): id is string => typeof id === "string"))]
+    : [];
+  const managedFacilityCategoryIds = isPlatformAdmin
+    ? []
+    : Array.isArray(access.managedFacilityCategoryIds)
+    ? [...new Set(access.managedFacilityCategoryIds.filter((id): id is string => typeof id === "string"))]
     : [];
   const permissions = Array.isArray(access.permissions)
     ? [...new Set(access.permissions.filter((permission): permission is PermissionCode =>
       typeof permission === "string"
-      && ["announcement.manage", "dashboard.view", "facility.manage", "proposal.manage", "role.manage"].includes(permission)
+      && ["announcement.manage", "category.manage", "dashboard.view", "facility.manage", "proposal.manage", "role.manage"].includes(permission)
     ))]
     : [];
   if (managedIssueCategoryIds.length > 0 && !permissions.includes("proposal.manage")) {
@@ -46,11 +49,13 @@ export async function resolveAuthContext(
   return {
     email: firebaseUser.email,
     isAdmin: isPlatformAdmin,
+    managedFacilityCategoryIds,
     managedIssueCategoryIds,
     name: firebaseUser.name,
     photoUrl: firebaseUser.photoUrl,
     permissions,
     roles,
+    setupCompleted: access.setupCompleted === true,
     uid: firebaseUser.uid,
   };
 }
@@ -65,6 +70,14 @@ export function canManageIssueCategory(auth: AuthContext, categoryId: string) {
 
 export function requireIssueCategoryPermission(auth: AuthContext, categoryId: string) {
   if (!canManageIssueCategory(auth, categoryId)) throw new Error("permission-denied");
+}
+
+export function canManageFacilityCategory(auth: AuthContext, categoryId: string) {
+  return auth.isAdmin || hasPermission(auth, "facility.manage") || auth.managedFacilityCategoryIds.includes(categoryId);
+}
+
+export function requireFacilityCategoryPermission(auth: AuthContext, categoryId: string) {
+  if (!canManageFacilityCategory(auth, categoryId)) throw new Error("permission-denied");
 }
 
 export function hasPermission(auth: AuthContext, permission: PermissionCode) {
@@ -102,13 +115,18 @@ export async function handleHealthcheck(request: Request, supabase: BackendSupab
     .select("code")
     .limit(1);
   if (error) throw error;
+  const { data: issueCategories, error: categoryError } = await supabase.schema("app_private")
+    .from("issue_categories").select("id,read_access").eq("is_active", true);
+  if (categoryError) throw categoryError;
+  const ownerAdminCategoryIds = (issueCategories ?? []).filter((category) => category.read_access === "owner-admin").map((category) => category.id);
+  const reviewedSchoolCategoryIds = (issueCategories ?? []).filter((category) => category.read_access === "reviewed-school").map((category) => category.id);
 
   const { error: settingsError } = await supabase.schema("app_api").rpc("sync_runtime_settings", {
     settings: {
       deletion_worker_url: edgeFunctionUrl("delete"),
       firebase_project_id: requireEnv("FIREBASE_PROJECT_ID"),
-      owner_admin_issue_categories: getIssueCategoryIdsByReadAccess("owner-admin").join(","),
-      reviewed_school_issue_categories: getIssueCategoryIdsByReadAccess("reviewed-school").join(","),
+      owner_admin_issue_categories: ownerAdminCategoryIds.join(","),
+      reviewed_school_issue_categories: reviewedSchoolCategoryIds.join(","),
       maintenance_worker_url: edgeFunctionUrl("maintenance"),
       outbox_worker_url: edgeFunctionUrl("outbox"),
       webhook_secret: expected,

@@ -52,6 +52,8 @@
         :disabled="busy"
       />
 
+      <slot name="fields" />
+
       <MarkdownImageEditor
         v-model:content="content"
         v-model:show-preview="showPreview"

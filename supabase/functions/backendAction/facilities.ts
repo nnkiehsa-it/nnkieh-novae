@@ -1,5 +1,6 @@
 import { asRecord, asString } from "../_shared/http.ts";
-import { hasPermission, requirePermission } from "./auth.ts";
+import { canManageFacilityCategory, hasPermission, requireFacilityCategoryPermission } from "./auth.ts";
+import { getFacilityCategories } from "./categories.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
 import { validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
 import { asNumber, asUuid } from "./utils.ts";
@@ -7,11 +8,19 @@ import { INPUT_LIMITS, optionalText, requiredMediaContent, requiredText } from "
 
 const VALID_STATUSES = new Set(["processing", "completed", "unable-to-handle"]);
 
-function policy(auth: AuthContext) {
+function policy(auth: AuthContext, categoryId: string) {
   return {
     actor_uid: auth.uid,
-    actor_can_manage: hasPermission(auth, "facility.manage"),
+    actor_can_manage: canManageFacilityCategory(auth, categoryId),
   };
+}
+
+async function selectFacilityCategory(supabase: BackendSupabase, facilityId: string) {
+  const { data, error } = await supabase.schema("app_private").from("facility_reports")
+    .select("category_id").eq("id", facilityId).maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("not-found");
+  return data.category_id;
 }
 
 export async function handleFacilityAction(
@@ -24,6 +33,9 @@ export async function handleFacilityAction(
     const title = requiredText(payload.title, "title", INPUT_LIMITS.title).trim();
     const location = requiredText(payload.location, "location", INPUT_LIMITS.facilityLocation).trim();
     const content = requiredMediaContent(payload.content, "content", INPUT_LIMITS.content, INPUT_LIMITS.contentStorage);
+    const categoryId = asString(payload.categoryId);
+    const categories = await getFacilityCategories(supabase);
+    if (!categories.some((category) => category.id === categoryId)) throw new Error("invalid-facility-category");
     await validateMarkdownUploadsBeforeCreate(supabase, auth.uid, content, "facility");
     const { data, error } = await supabase.schema("app_api").rpc("backend_create_facility", {
       actor_uid: auth.uid,
@@ -32,6 +44,7 @@ export async function handleFacilityAction(
       facility_title: title,
       facility_location: location,
       facility_content: content,
+      facility_category: categoryId,
     });
     if (error) throw error;
     return { facility: data };
@@ -40,10 +53,12 @@ export async function handleFacilityAction(
   const facilityId = asUuid(payload.facilityId);
   if (!facilityId) throw new Error("not-found");
 
+  const categoryId = await selectFacilityCategory(supabase, facilityId);
+
   if (action === "getFacility") {
     const { data, error } = await supabase.schema("app_api").rpc("backend_get_facility", {
       facility_id: facilityId,
-      ...policy(auth),
+      ...policy(auth, categoryId),
     });
     if (error) throw error;
     return { facility: data };
@@ -59,7 +74,7 @@ export async function handleFacilityAction(
   }
 
   if (action === "updateFacilityStatus") {
-    requirePermission(auth, "facility.manage");
+    requireFacilityCategoryPermission(auth, categoryId);
     const status = asString(payload.status);
     if (!VALID_STATUSES.has(status)) throw new Error("invalid-status");
     const resultContent = optionalText(payload.resultContent, "facility-result", INPUT_LIMITS.facilityResult).trim() || null;
@@ -67,7 +82,7 @@ export async function handleFacilityAction(
       facility_id: facilityId,
       next_status: status,
       result_content: resultContent,
-      ...policy(auth),
+      ...policy(auth, categoryId),
     });
     if (error) throw error;
     return { facility: data };
@@ -76,7 +91,7 @@ export async function handleFacilityAction(
   if (action === "deleteFacility") {
     const { data, error } = await supabase.schema("app_api").rpc("backend_delete_facility", {
       facility_id: facilityId,
-      ...policy(auth),
+      ...policy(auth, categoryId),
     });
     if (error) throw error;
     return asRecord(data);
@@ -101,7 +116,10 @@ export async function listFacilities(payload: JsonRecord, auth: AuthContext, sup
   });
   if (error) throw error;
   const result = asRecord(data);
-  const facilities = Array.isArray(result.facilities) ? result.facilities.map(asRecord) : [];
+  const facilities = Array.isArray(result.facilities) ? result.facilities.map((value) => {
+    const facility = asRecord(value);
+    return { ...facility, canManageFacility: canManageFacilityCategory(auth, asString(facility.category_id)) } as JsonRecord;
+  }) : [];
   const last = facilities.at(-1);
   return {
     facilities,

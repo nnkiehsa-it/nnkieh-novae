@@ -36,6 +36,8 @@
     <template #actions="{ compact }">
       <IssueDetailSupportFooter
         :can-manage="issue.canManageIssue"
+        :can-toggle-comments="commentsAllowedForStatus"
+        :comments-toggle-busy="commentsToggleBusy"
         :is-admin="isAdmin"
         :compact="compact"
         :current-user-supported="currentUserSupported"
@@ -52,12 +54,12 @@
         @supported="emit('supported', $event)"
         @moderate="handleModerate"
         @edit-result="handleEditResult"
+        @toggle-comments="handleToggleComments"
       />
     </template>
 
     <template #comments="{ compactHeader }">
       <IssueComments
-        v-if="commentsEnabled"
         :can-compose="commentsEnabled"
         :category="issue.category"
         :compact-header="compactHeader"
@@ -67,27 +69,6 @@
         @comment-count-changed="mobileCommentCount = $event"
         @content-unavailable="emit('contentUnavailable', $event)"
       />
-      <section v-else class="flex h-full min-h-0 flex-col">
-        <div
-          class="flex shrink-0 items-center justify-between gap-3 border-b border-ink-100 pb-2 dark:border-ink-800"
-          :class="{ 'max-md:hidden': compactHeader }"
-        >
-          <div class="flex min-w-0 items-center gap-2">
-            <AppIcon name="comment" class="shrink-0 text-ink-500" />
-            <h4 class="truncate whitespace-nowrap text-base font-semibold text-ink-900 dark:text-ink-100">
-              {{ t('comments.title') }}
-            </h4>
-          </div>
-        </div>
-        <div class="flex min-h-0 flex-1 items-center py-2 pr-1">
-          <EmptyStatePanel
-            class="!px-3 !py-7"
-            :title="t('comments.commentsAreCurrentlyDisabled')"
-            :description="t('access.privateIssueVisibility')"
-            icon="comment"
-          />
-        </div>
-      </section>
     </template>
   </ContentDetailPagePanel>
 
@@ -117,15 +98,15 @@ import { useStatusStyling } from '@/composables/useStatusStyling';
 import { getSupportProgressPercent, getSupportRemainingLabel } from '@/lib/issue-status';
 import type { IssueRecord } from '@/types';
 
-import AppIcon from '@/components/ui/atoms/AppIcon.vue';
 import TagBadge from '@/components/ui/atoms/TagBadge.vue';
-import EmptyStatePanel from '@/components/ui/molecules/EmptyStatePanel.vue';
 import ContentDetailPagePanel from '@/components/ContentDetailPagePanel.vue';
 import IssueDetailSupportFooter from '@/components/IssueDetailSupportFooter.vue';
 import IssueComments from '@/components/IssueComments.vue';
 import { useSession } from '@/composables/useSession';
 import { issueAllowsCommentsForStatus } from '@/constants/categories';
 import { useI18n } from '@/i18n';
+import { useActionFeedback } from '@/composables/useActionFeedback';
+import { setIssueCommentsEnabled } from '@/services/issues';
 
 // Shared Moderation Dialogs
 import IssueReviewDialog from '@/components/IssueReviewDialog.vue';
@@ -162,7 +143,9 @@ const isReviewDialogOpen = ref(false);
 const isStatusDialogOpen = ref(false);
 const statusDialogInitialAction = ref<'processing' | 'closed'>('processing');
 const mobileCommentCount = ref(0);
+const commentsToggleBusy = ref(false);
 const { t } = useI18n();
+const { run } = useActionFeedback();
 
 const {
   displayAuthorName,
@@ -186,7 +169,11 @@ const supportProgressStyle = computed(() => {
 const showAuthor = computed(() => props.issue.canViewAuthor);
 
 const supportRemainingLabel = computed(() => getSupportRemainingLabel(remainingDays.value));
-const commentsEnabled = computed(() => issueAllowsCommentsForStatus(props.issue.category, props.issue.status));
+const commentsAllowedForStatus = computed(() => issueAllowsCommentsForStatus(
+  props.issue.read_access,
+  props.issue.status,
+));
+const commentsEnabled = computed(() => props.issue.comments_enabled && commentsAllowedForStatus.value);
 
 function handleModerate() {
   isReviewDialogOpen.value = true;
@@ -199,5 +186,26 @@ function handleEditResult() {
 
 function handleStatusChanged(updatedIssue: IssueRecord) {
   emit('issue-updated', updatedIssue);
+}
+
+async function handleToggleComments() {
+  if (commentsToggleBusy.value) return;
+  commentsToggleBusy.value = true;
+  const enabled = !props.issue.comments_enabled;
+  try {
+    const updatedIssue = await run(
+      () => setIssueCommentsEnabled(props.issue.id, enabled),
+      {
+        pending: t('comments.updatingAvailability'),
+        success: t(enabled ? 'comments.newCommentsReopened' : 'comments.newCommentsClosed'),
+        error: t('comments.updateAvailabilityFailed'),
+      },
+    );
+    emit('issue-updated', updatedIssue);
+  } catch {
+    // The shared feedback bar already reports the translated failure.
+  } finally {
+    commentsToggleBusy.value = false;
+  }
 }
 </script>

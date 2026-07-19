@@ -54,6 +54,10 @@ export const API_ERRORS = {
     "status": 400,
     "messageKey": "apiError.invalidIssueCategory"
   },
+  "invalid-facility-category": {
+    "status": 400,
+    "messageKey": "apiError.invalidFacilityCategory"
+  },
   "invalid-status": {
     "status": 400,
     "messageKey": "apiError.invalidStatus"
@@ -81,6 +85,18 @@ export const API_ERRORS = {
   "last-platform-admin": {
     "status": 409,
     "messageKey": "apiError.lastPlatformAdmin"
+  },
+  "comments-disabled": {
+    "status": 409,
+    "messageKey": "apiError.commentsDisabled"
+  },
+  "immutable-category-policy": {
+    "status": 409,
+    "messageKey": "apiError.immutableCategoryPolicy"
+  },
+  "setup-already-completed": {
+    "status": 409,
+    "messageKey": "apiError.setupAlreadyCompleted"
   },
   "service-not-configured": {
     "status": 503,

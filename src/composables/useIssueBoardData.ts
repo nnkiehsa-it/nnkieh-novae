@@ -1,6 +1,6 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { registerAppResumeHandler } from '@/composables/useAppResume';
-import { ISSUE_FILTER_OPTIONS } from '@/constants/categories';
+import { getIssueFilterOptions } from '@/constants/categories';
 import { APP_NAME } from '@/constants/app';
 import { useDocumentTitle } from '@/composables/useDocumentTitle';
 import { useFilter } from '@/composables/useFilter';
@@ -36,7 +36,7 @@ export function useIssueBoardData() {
   const { message: composerMessage, showMessage: showComposerMessage } = useTimedMessage();
 
   const filterOptions = computed(() => [
-    ...ISSUE_FILTER_OPTIONS,
+    ...getIssueFilterOptions(),
     { value: 'my-proposals' as const, label: 'issue.myProposal' },
   ]);
 

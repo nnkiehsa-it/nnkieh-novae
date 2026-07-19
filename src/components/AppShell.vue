@@ -74,7 +74,7 @@ import AppMobileBottomNav from '@/components/app-shell/AppMobileBottomNav.vue';
 import AppMobileHeader from '@/components/app-shell/AppMobileHeader.vue';
 import ViewportFrame from '@/components/ui/organisms/ViewportFrame.vue';
 import { SCHOOL_NAME } from '@/constants/app';
-import { DEFAULT_ISSUE_ROUTE_FILTER, ISSUE_CATEGORY_LABELS, isIssueCategory } from '@/constants/categories';
+import { getDefaultIssueRouteFilter, getIssueCategoryLabel, isIssueCategory } from '@/constants/categories';
 import { refreshFromActiveNavigation } from '@/composables/useActiveNavigationRefresh';
 import { useIssueRouteFilter } from '@/composables/useIssueRouteFilter';
 import { useNotificationBadge } from '@/composables/useNotificationBadge';
@@ -104,14 +104,14 @@ const isAnnouncementRouteActive = computed(() => route.name === 'announcements' 
 const isFacilityRouteActive = computed(() => route.name === 'facilities' || route.name === 'facility-detail');
 const isMyProposalsRouteActive = computed(() => isIssueRouteActive.value && activeFilter.value === 'my-proposals');
 const isProfileRouteActive = computed(() => isMyProposalsRouteActive.value || ['settings', 'dashboard', 'access-management'].includes(route.name as string));
-const homeRoute = { name: 'issues', params: { filter: DEFAULT_ISSUE_ROUTE_FILTER } } as const;
+const homeRoute = computed(() => ({ name: 'issues', params: { filter: getDefaultIssueRouteFilter() } } as const));
 const primaryRouteNavItems = computed(() => [
   {
     icon: 'comment' as const,
     isActive: isIssueRouteActive.value && activeFilter.value !== 'my-proposals',
     key: 'issues',
     label: t('issue.proposal'),
-    to: homeRoute,
+    to: homeRoute.value,
   },
   {
     icon: 'wrench' as const,
@@ -135,7 +135,7 @@ const mobileCategoryFilter = computed<IssueFilter | undefined>(() =>
   route.name === 'issues' && isIssueCategory(activeFilter.value) ? activeFilter.value : undefined
 );
 const mobileCategoryLabel = computed(() => mobileCategoryFilter.value
-  ? t(ISSUE_CATEGORY_LABELS[mobileCategoryFilter.value])
+  ? getIssueCategoryLabel(mobileCategoryFilter.value)
   : undefined);
 const bottomGap = computed(() => hasSafeIndicator.value ? 25 : 15);
 const showMobileBottomNavigation = computed(() => isAllowedUser.value);

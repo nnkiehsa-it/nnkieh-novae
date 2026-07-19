@@ -4,7 +4,7 @@ import announcement from './announcement';
 import apiError from './apiError';
 import app from './app';
 import auth from './auth';
-import category from './category';
+import categoryAdmin from './categoryAdmin';
 import comments from './comments';
 import common from './common';
 import config from './config';
@@ -29,7 +29,7 @@ const messages = {
   ...apiError,
   ...app,
   ...auth,
-  ...category,
+  ...categoryAdmin,
   ...comments,
   ...common,
   ...config,

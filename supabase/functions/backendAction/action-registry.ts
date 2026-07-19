@@ -5,6 +5,7 @@ import { handleIssueAction } from "./issues.ts";
 import { handleAnnouncementAction } from "./announcements.ts";
 import { handleNotificationAction } from "./notifications.ts";
 import { handleFacilityAction, listFacilities } from "./facilities.ts";
+import { handleCategoryAction } from "./categories.ts";
 import type { AuthContext, BackendSupabase, JsonRecord, PermissionCode } from "./types.ts";
 
 export type BackendActionRateLimitGroup =
@@ -17,6 +18,7 @@ export type BackendActionRateLimitGroup =
 
 export type BackendActionDomain =
   | "announcement"
+  | "category"
   | "content"
   | "dashboard"
   | "facility"
@@ -77,6 +79,18 @@ function idempotentWrite(
 }
 
 export const backendActionDefinitions = [
+  action("getCategoryCatalog", "category", "read", handleCategoryAction),
+  action("getCategoryManagement", "category", "read", handleCategoryAction, { requiredPermission: "category.manage" }),
+  action("saveIssueCategory", "category", "admin-write", handleCategoryAction, {
+    idempotent: true, requiredPermission: "category.manage", requiresRequestId: true,
+  }),
+  action("saveFacilityCategory", "category", "admin-write", handleCategoryAction, {
+    idempotent: true, requiredPermission: "category.manage", requiresRequestId: true,
+  }),
+  action("completeInitialSetup", "category", "admin-write", handleCategoryAction, {
+    idempotent: true, requiresRequestId: true,
+  }),
+
   action("getContentRevisions", "content", "read", async (_action, _payload, _auth, supabase) => {
     const { data, error } = await supabase
       .schema("app_private")
@@ -118,6 +132,9 @@ export const backendActionDefinitions = [
   action("moderateIssueStatus", "issue", "admin-write", issueHandler, {
     idempotent: true, requiredPermission: "proposal.manage", requiresRequestId: true,
   }),
+  action("setIssueCommentsEnabled", "issue", "admin-write", issueHandler, {
+    idempotent: true, requiredPermission: "proposal.manage", requiresRequestId: true,
+  }),
   action("updateIssueResult", "issue", "admin-write", issueHandler, {
     idempotent: true, requiredPermission: "proposal.manage", requiresRequestId: true,
   }),
@@ -133,7 +150,7 @@ export const backendActionDefinitions = [
   idempotentWrite("createFacility", "facility", "sensitive-write", handleFacilityAction),
   idempotentWrite("toggleFacilityAffected", "facility", "sensitive-write", handleFacilityAction),
   action("updateFacilityStatus", "facility", "admin-write", handleFacilityAction, {
-    idempotent: true, requiredPermission: "facility.manage", requiresRequestId: true,
+    idempotent: true, requiresRequestId: true,
   }),
   idempotentWrite("deleteFacility", "facility", "admin-write", handleFacilityAction),
 

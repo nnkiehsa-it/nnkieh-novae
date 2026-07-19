@@ -26,8 +26,7 @@
 import { toRef, watch } from 'vue';
 import CommentThreadPanel from '@/components/CommentThreadPanel.vue';
 import { useIssueComments } from '@/composables/useIssueComments';
-import type { DiscussionCommentRecord } from '@/types';
-import type { IssueCategory } from '@/generated/issue-categories';
+import type { DiscussionCommentRecord, IssueCategory } from '@/types';
 
 const props = withDefaults(
   defineProps<{
