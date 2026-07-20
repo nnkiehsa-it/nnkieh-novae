@@ -62,6 +62,10 @@ const messages = {
   'categoryAdmin.supportGoalCount': '{count} people',
   'categoryAdmin.daysCount': '{count} days',
   'categoryAdmin.noCategoriesAvailable': 'No categories available',
+  'categoryAdmin.deleteCategory': 'Delete Category',
+  'categoryAdmin.deleteConfirmTitle': 'Delete category "{name}"?',
+  'categoryAdmin.deleteConfirmMessage': 'This action cannot be undone. All proposals/reports, comments, and uploaded images under this category will be permanently deleted.',
+  'categoryAdmin.cannotDeleteDefaultCategoryHelp': 'Default category cannot be deleted. Please set another category as default first.',
 } as const;
 
 export default messages;

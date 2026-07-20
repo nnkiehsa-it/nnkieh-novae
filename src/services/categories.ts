@@ -39,3 +39,11 @@ export async function saveFacilityCategory(category: FacilityCategoryConfig | Fa
   >('saveFacilityCategory');
   return (await action({ category, requestId: createRequestId() })).category;
 }
+
+export async function deleteCategory(input: { kind: 'issue' | 'facility'; id: string }) {
+  const action = invokeBackendAction<
+    { kind: 'issue' | 'facility'; id: string; requestId: string },
+    { success: boolean }
+  >('deleteCategory');
+  return await action({ ...input, requestId: createRequestId() });
+}

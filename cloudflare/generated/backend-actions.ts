@@ -45,6 +45,10 @@ export const BACKEND_ACTION_POLICIES = {
     "group": "sensitive-write",
     "extraLimit": "destructiveWriteHourly"
   },
+  "deleteCategory": {
+    "group": "admin-write",
+    "extraLimit": "destructiveWriteHourly"
+  },
   "deleteFacility": {
     "group": "admin-write",
     "extraLimit": "destructiveWriteHourly"

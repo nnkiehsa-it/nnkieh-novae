@@ -27,7 +27,7 @@ const messages = {
   'adminCenter.noMemberSelected': 'No member selected',
   'adminCenter.noMemberSelectedHelp': 'Find a member above, then assign proposals, facility reports, or announcements.',
   'adminCenter.assignResponsibilityStep': 'Choose what they are responsible for',
-  'adminCenter.assignResponsibilityHelp': 'Selecting a category grants the matching management access and notifications. Every change saves immediately.',
+  'adminCenter.assignResponsibilityHelp': 'Selecting a category grants the matching management access and notifications. Click the save button below to apply changes.',
   'adminCenter.fullPlatformAccess': 'Full platform access',
   'adminCenter.platformAdminWarning': 'Manage every category, person, announcement, and metric. Reserve this for people who operate the whole platform.',
   'adminCenter.proposalResponsibility': 'Proposal responsibilities',

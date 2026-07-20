@@ -49,6 +49,7 @@ const messages = {
   'common.endingSoon': '即將截止',
   'common.unableToCopyLinkPleaseTryAgainLater': '無法複製連結，請稍後再試',
   'common.delete': '刪除',
+  'common.deleting': '刪除中',
   'common.serviceUnavailable': '服務暫時無法處理請求，請稍後再試。',
   'common.theNetworkResponseTimeIsTooLongPleaseReload': '網路回應時間過長，請重新載入。',
   'common.columnTitle': '欄位標題',

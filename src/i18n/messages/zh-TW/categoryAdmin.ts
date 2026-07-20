@@ -62,6 +62,10 @@ const messages = {
   'categoryAdmin.supportGoalCount': '{count} 人',
   'categoryAdmin.daysCount': '{count} 天',
   'categoryAdmin.noCategoriesAvailable': '目前無可用分類',
+  'categoryAdmin.deleteCategory': '刪除此分類',
+  'categoryAdmin.deleteConfirmTitle': '確定要刪除分類「{name}」？',
+  'categoryAdmin.deleteConfirmMessage': '此操作不可逆。該分類下的所有提案/報修、相關留言及上傳的圖片將會被永久刪除。',
+  'categoryAdmin.cannotDeleteDefaultCategoryHelp': '預設分類無法刪除，請先將其他分類設為預設。',
 } as const;
 
 export default messages;

@@ -49,6 +49,7 @@ const messages = {
   'common.endingSoon': 'Ending soon',
   'common.unableToCopyLinkPleaseTryAgainLater': 'Unable to copy link, please try again later',
   'common.delete': 'Delete',
+  'common.deleting': 'Deleting',
   'common.serviceUnavailable': 'The service is temporarily unable to process the request, please try again later.',
   'common.theNetworkResponseTimeIsTooLongPleaseReload': 'The network response time is too long, please reload.',
   'common.columnTitle': 'Column title',

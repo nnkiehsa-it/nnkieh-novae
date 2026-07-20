@@ -190,3 +190,84 @@ integrationTest("runtime category setup and management enforce platform permissi
   }, admin.auth));
   assert.equal(asRecord(savedFacility.category).label, "一般設備-修改");
 });
+
+integrationTest("category deletion removes category and all associated resources, queueing cloudinary deletion and outbox events", async () => {
+  const admin = await seedActor("delete-cat-admin", { roles: ["platform-admin"] });
+  const user = await seedActor("delete-cat-user");
+
+  const managementBefore = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
+  const issueCats = managementBefore.issueCategories as unknown[];
+
+  const defaultIssueCat = asRecord(issueCats.find(c => asRecord(c).isDefault));
+  assert.ok(defaultIssueCat, "Should find a default issue category");
+
+  // 1. Try to delete default category - expect error
+  await expectActionError("cannot-delete-default-category", () => callAction("deleteCategory", {
+    kind: "issue", id: String(defaultIssueCat.id), requestId: requestId("del-def-issue")
+  }, admin.auth));
+
+  // 2. Create a temporary category to delete
+  const tempCategoryPayload = {
+    category: {
+      id: "temp-cat-to-delete",
+      label: "臨時分類",
+      readAccess: "school",
+      authorVisible: true,
+      supportEnabled: false,
+      supportGoal: null,
+      supportDeadlineDays: null,
+      responseDeadlineDays: null,
+      commentsEnabled: true,
+      isActive: true,
+      isDefault: false,
+      sortOrder: 99,
+    },
+    requestId: requestId("create-temp-category"),
+  };
+  await callAction("saveIssueCategory", tempCategoryPayload, admin.auth);
+
+  // 3. User tries to delete temporary category - expect permission-denied
+  await expectActionError("permission-denied", () => callAction("deleteCategory", {
+    kind: "issue", id: "temp-cat-to-delete", requestId: requestId("del-issue-user")
+  }, user.auth));
+
+  // 4. Create an issue in temporary category to verify cascade deletion
+  const issuePayload = {
+    title: "測試提案案件",
+    content: "這是一個測試提案",
+    category: "temp-cat-to-delete",
+    authorName: "測試者",
+    requestId: requestId("create-issue-to-delete"),
+  };
+  const createdIssue = asRecord(await callAction("createIssue", issuePayload, user.auth));
+  const issueId = asRecord(createdIssue.issue).id;
+  assert.ok(issueId);
+
+  // 5. Admin deletes temporary category
+  const res = asRecord(await callAction("deleteCategory", {
+    kind: "issue", id: "temp-cat-to-delete", requestId: requestId("del-issue-success")
+  }, admin.auth));
+  assert.equal(res.success, true);
+
+  // 6. Verify temporary category is gone
+  const managementAfter = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
+  const issueCatsAfter = managementAfter.issueCategories as unknown[];
+  assert.equal(issueCatsAfter.some(c => asRecord(c).id === "temp-cat-to-delete"), false);
+
+  // 7. Verify issue is cascade deleted
+  assert.equal(await tableRow("issues", "id", String(issueId)), null);
+
+  // 8. Verify outbox event is queued
+  const { data: outboxRows, error: outboxError } = await supabase
+    .schema("app_private")
+    .from("outbox_events")
+    .select("*")
+    .eq("target_id", String(issueId))
+    .eq("event_type", "issue.deleted");
+  if (outboxError) throw outboxError;
+
+  assert.equal(outboxRows.length, 1);
+  const outboxRow = outboxRows[0];
+  assert.ok(outboxRow);
+  assert.equal(asRecord(outboxRow).event_type, "issue.deleted");
+});

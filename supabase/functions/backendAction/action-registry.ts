@@ -87,6 +87,9 @@ export const backendActionDefinitions = [
   action("saveFacilityCategory", "category", "admin-write", handleCategoryAction, {
     idempotent: true, requiredPermission: "category.manage", requiresRequestId: true,
   }),
+  action("deleteCategory", "category", "admin-write", handleCategoryAction, {
+    idempotent: true, requiredPermission: "category.manage", requiresRequestId: true,
+  }),
   action("completeInitialSetup", "category", "admin-write", handleCategoryAction, {
     idempotent: true, requiresRequestId: true,
   }),

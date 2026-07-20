@@ -10,6 +10,7 @@ export const BACKEND_ACTION_NAMES = [
   'deleteAnnouncement',
   'deleteAnnouncementComment',
   'deleteComment',
+  'deleteCategory',
   'deleteFacility',
   'deleteIssue',
   'deleteUploadedImages',

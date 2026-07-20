@@ -27,7 +27,7 @@ const messages = {
   'adminCenter.noMemberSelected': '尚未選擇成員',
   'adminCenter.noMemberSelectedHelp': '先在上方查找一位成員，再設定他負責的提案、設備報修或公告。',
   'adminCenter.assignResponsibilityStep': '選擇他要負責的工作',
-  'adminCenter.assignResponsibilityHelp': '勾選分類後，該成員會取得相應管理權限與通知。每次變更都會立即儲存。',
+  'adminCenter.assignResponsibilityHelp': '勾選分類後，該成員會取得相應管理權限與通知。修改後請點擊下方儲存變更生效。',
   'adminCenter.fullPlatformAccess': '全部平台權限',
   'adminCenter.platformAdminWarning': '可管理所有分類、人員、公告與統計。只應授予共同維運平台的人。',
   'adminCenter.proposalResponsibility': '負責哪些提案',

@@ -10,6 +10,7 @@
   "deleteAnnouncement": { "group": "admin-write", "extraLimit": "destructiveWriteHourly" },
   "deleteAnnouncementComment": { "group": "sensitive-write", "extraLimit": "destructiveWriteHourly" },
   "deleteComment": { "group": "sensitive-write", "extraLimit": "destructiveWriteHourly" },
+  "deleteCategory": { "group": "admin-write", "extraLimit": "destructiveWriteHourly" },
   "deleteFacility": { "group": "admin-write", "extraLimit": "destructiveWriteHourly" },
   "deleteIssue": { "group": "admin-write", "extraLimit": "destructiveWriteHourly" },
   "deleteUploadedImages": { "group": "upload-write", "extraLimit": "destructiveWriteHourly" },

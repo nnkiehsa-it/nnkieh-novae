@@ -24,6 +24,7 @@
         :title="t('categoryAdmin.proposalCategories')"
         :description="t('categoryAdmin.proposalManagementHelp')"
         :on-save="saveIssue"
+        :on-delete="deleteIssue"
         @add="addIssue"
       />
       <CategoryManagementSection
@@ -33,6 +34,7 @@
         :title="t('categoryAdmin.facilityCategories')"
         :description="t('categoryAdmin.facilityManagementHelp')"
         :on-save="saveFacility"
+        :on-delete="deleteFacility"
         @add="addFacility"
       />
     </template>
@@ -49,7 +51,7 @@ import PillSegmentedControl from '@/components/ui/molecules/PillSegmentedControl
 import type { PillSegmentedControlOption } from '@/components/ui/molecules/PillSegmentedControl.vue';
 import { useCategories } from '@/composables/useCategories';
 import { useI18n } from '@/i18n';
-import { getCategoryManagement, saveFacilityCategory, saveIssueCategory } from '@/services/categories';
+import { getCategoryManagement, saveFacilityCategory, saveIssueCategory, deleteCategory } from '@/services/categories';
 import type { FacilityCategoryConfig, IssueCategoryConfig } from '@/types/categories';
 
 const { t } = useI18n();
@@ -105,6 +107,24 @@ async function saveIssue(index: number) {
 
 async function saveFacility(index: number) {
   facilityCategories.value[index] = await saveFacilityCategory({ ...facilityCategories.value[index], sortOrder: index });
+  await refresh();
+}
+
+async function deleteIssue(index: number) {
+  const category = issueCategories.value[index];
+  if (category.id) {
+    await deleteCategory({ kind: 'issue', id: category.id });
+  }
+  issueCategories.value.splice(index, 1);
+  await refresh();
+}
+
+async function deleteFacility(index: number) {
+  const category = facilityCategories.value[index];
+  if (category.id) {
+    await deleteCategory({ kind: 'facility', id: category.id });
+  }
+  facilityCategories.value.splice(index, 1);
   await refresh();
 }
 

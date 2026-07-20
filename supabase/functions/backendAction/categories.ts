@@ -247,6 +247,26 @@ export async function handleCategoryAction(
   }
   if (action === "saveIssueCategory") return await saveIssueCategory(payload, auth, supabase);
   if (action === "saveFacilityCategory") return await saveFacilityCategory(payload, auth, supabase);
+  if (action === "deleteCategory") {
+    requirePermission(auth, "category.manage");
+    const kind = asString(payload.kind);
+    const id = asString(payload.id).trim();
+    if (kind !== "issue" && kind !== "facility") throw new Error("validation-required");
+    if (!id) throw new Error("validation-required");
+
+    const rpcName = kind === "issue" ? "backend_delete_issue_category" : "backend_delete_facility_category";
+    const { data, error } = await supabase.schema("app_api").rpc(rpcName, {
+      category_id: id,
+      actor_uid: auth.uid,
+    });
+    if (error) {
+      if (error.message.includes("cannot-delete-default-category")) {
+        throw new Error("cannot-delete-default-category");
+      }
+      throw error;
+    }
+    return asRecord(data);
+  }
   if (action === "completeInitialSetup") {
     if (!auth.isAdmin) throw new Error("permission-denied");
     if (auth.setupCompleted) throw new Error("setup-already-completed");

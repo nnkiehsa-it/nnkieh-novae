@@ -29,9 +29,14 @@
               {{ category.id || t('adminCenter.notSavedYet') }}
             </span>
           </span>
-          <span class="shrink-0 text-[11px] font-semibold" :class="category.isActive ? 'text-success' : 'text-ink-400'">
-            {{ t(category.isActive ? 'categoryAdmin.active' : 'categoryAdmin.archived') }}
-          </span>
+          <div class="shrink-0 flex flex-col items-end gap-1">
+            <span class="text-[11px] font-semibold" :class="category.isActive ? 'text-success' : 'text-ink-400'">
+              {{ t(category.isActive ? 'categoryAdmin.active' : 'categoryAdmin.archived') }}
+            </span>
+            <span v-if="category.isDefault" class="rounded bg-primary-50 px-1 py-0.5 text-[9px] font-bold text-primary-700 dark:bg-primary-950/30 dark:text-primary-400">
+              {{ t('categoryAdmin.defaultCategory') }}
+            </span>
+          </div>
         </ListSurfaceRow>
       </SurfacePanel>
 
@@ -59,11 +64,30 @@
             :selected="selectedCategory.isDefault"
             @select="makeDefault(selectedIndex)"
           />
-          <div class="flex items-center justify-between gap-3 border-t border-ink-100 pt-3 dark:border-ink-800">
-            <p class="text-xs leading-5 text-ink-500">{{ t('adminCenter.saveCategoryHelp') }}</p>
-            <AppButton variant="primary" class="shrink-0" :disabled="savingIndex === selectedIndex" @click="save(selectedIndex)">
-              <BusyButtonContent :busy="savingIndex === selectedIndex" :label="t('common.save')" :busy-label="t('common.saving')" />
-            </AppButton>
+          <div class="flex flex-col gap-2 border-t border-ink-100 pt-3 dark:border-ink-800">
+            <div class="flex items-center justify-between gap-3">
+              <p class="text-xs leading-5 text-ink-500">
+                <span v-if="selectedCategory.isDefault" class="text-error font-semibold">
+                  {{ t('categoryAdmin.cannotDeleteDefaultCategoryHelp') }}
+                </span>
+                <span v-else>
+                  {{ t('adminCenter.saveCategoryHelp') }}
+                </span>
+              </p>
+              <div class="flex items-center gap-2 shrink-0">
+                <AppButton
+                  v-if="onDelete"
+                  variant="danger"
+                  :disabled="selectedCategory.isDefault || deletingIndex === selectedIndex"
+                  @click="confirmDelete(selectedIndex)"
+                >
+                  <BusyButtonContent :busy="deletingIndex === selectedIndex" :label="t('categoryAdmin.deleteCategory')" :busy-label="t('common.deleting')" />
+                </AppButton>
+                <AppButton variant="primary" :disabled="savingIndex === selectedIndex" @click="save(selectedIndex)">
+                  <BusyButtonContent :busy="savingIndex === selectedIndex" :label="t('common.save')" :busy-label="t('common.saving')" />
+                </AppButton>
+              </div>
+            </div>
           </div>
         </SurfacePanel>
         <InlineMessage v-if="errors[selectedIndex]">{{ errors[selectedIndex] }}</InlineMessage>
@@ -78,6 +102,18 @@
       @close="isWizardOpen = false"
       @created="handleCategoryCreated"
     />
+
+    <!-- Category deletion confirmation dialog -->
+    <ConfirmDialog
+      v-if="onDelete"
+      :open="isDeleteConfirmOpen"
+      :title="t('categoryAdmin.deleteConfirmTitle', { name: selectedCategory?.label })"
+      :message="t('categoryAdmin.deleteConfirmMessage')"
+      confirm-label="common.delete"
+      :busy="deletingIndex === selectedIndex"
+      @confirm="handleDelete(selectedIndex)"
+      @cancel="isDeleteConfirmOpen = false"
+    />
   </section>
 </template>
 
@@ -85,6 +121,7 @@
 import { computed, ref, watch } from 'vue';
 import CategoryEditorCard from '@/components/categories/CategoryEditorCard.vue';
 import CategoryWizardDialog from '@/components/admin/CategoryWizardDialog.vue';
+import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import AppButton from '@/components/ui/atoms/AppButton.vue';
 import BusyButtonContent from '@/components/ui/atoms/BusyButtonContent.vue';
 import InlineMessage from '@/components/ui/atoms/InlineMessage.vue';
@@ -100,6 +137,7 @@ const props = defineProps<{
   description: string;
   kind: 'facility' | 'issue';
   onSave: (index: number) => Promise<void>;
+  onDelete?: (index: number) => Promise<void>;
   title: string;
 }>();
 const model = defineModel<T[]>({ required: true });
@@ -126,8 +164,30 @@ function handleCategoryCreated(newCategory: any) {
   selectedIndex.value = model.value.length - 1;
 }
 
+const deletingIndex = ref<number | null>(null);
+const isDeleteConfirmOpen = ref(false);
+
 function makeDefault(index: number) {
   model.value.forEach((category, categoryIndex) => { category.isDefault = categoryIndex === index; });
+}
+
+async function confirmDelete(index: number) {
+  isDeleteConfirmOpen.value = true;
+}
+
+async function handleDelete(index: number) {
+  isDeleteConfirmOpen.value = false;
+  deletingIndex.value = index;
+  errors.value[index] = '';
+  try {
+    if (props.onDelete) {
+      await props.onDelete(index);
+    }
+  } catch (caught) {
+    errors.value[index] = t(caught instanceof Error ? caught.message : 'common.saveFailed');
+  } finally {
+    deletingIndex.value = null;
+  }
 }
 
 async function save(index: number) {
