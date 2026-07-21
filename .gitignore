@@ -13,8 +13,6 @@ temp.jsonl
 .env*
 supabase/.branches/
 supabase/.temp/
-# Added by code-review-graph
-.code-review-graph/
 
 # Local-only database capacity benchmarks
 scripts/benchmark-db-*.mjs

@@ -76,7 +76,21 @@ function mapClientError(type?: string): GoogleIdentityErrorCode {
   return 'unknown';
 }
 
-export async function requestGoogleAccessToken(options: {
+/** iOS Safari often blocks the first GIS popup; retry once for transient open failures. */
+function shouldRetryGoogleAccessToken(error: unknown) {
+  if (!(error instanceof GoogleIdentityError)) return false;
+  return error.code === 'popup_blocked'
+    || error.code === 'popup_closed'
+    || error.code === 'unknown';
+}
+
+function wait(ms: number) {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+async function requestGoogleAccessTokenOnce(options: {
   clientId: string;
   hd?: string;
 }): Promise<string> {
@@ -110,4 +124,18 @@ export async function requestGoogleAccessToken(options: {
     });
     client.requestAccessToken();
   });
+}
+
+export async function requestGoogleAccessToken(options: {
+  clientId: string;
+  hd?: string;
+}): Promise<string> {
+  try {
+    return await requestGoogleAccessTokenOnce(options);
+  } catch (error) {
+    if (!shouldRetryGoogleAccessToken(error)) throw error;
+    // Brief pause so the blocked first popup can settle before the second open.
+    await wait(150);
+    return requestGoogleAccessTokenOnce(options);
+  }
 }

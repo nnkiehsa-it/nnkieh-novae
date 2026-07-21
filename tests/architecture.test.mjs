@@ -1086,6 +1086,8 @@ test('Google login uses GIS Token Client with Firebase credential in production'
   assert.match(googleIdentity, /initTokenClient/u);
   assert.match(googleIdentity, /requestAccessToken/u);
   assert.match(googleIdentity, /prompt: 'select_account'/u);
+  assert.match(googleIdentity, /shouldRetryGoogleAccessToken/u);
+  assert.match(googleIdentity, /return requestGoogleAccessTokenOnce\(options\)/u);
   assert.match(authActions, /requestGoogleAccessToken/u);
   assert.match(authActions, /GoogleAuthProvider\.credential\(null, accessToken\)/u);
   assert.match(authActions, /signInWithCredential\(firebaseAuth, credential\)/u);
