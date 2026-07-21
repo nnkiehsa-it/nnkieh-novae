@@ -1,6 +1,7 @@
 const messages = {
   'navigation.user': '使用者',
   'navigation.notify': '通知',
+  'navigation.home': 'Novae 首頁',
   'navigation.expandSidebar': '展開側邊欄',
   'navigation.primaryNavigation': '主要導覽',
   'navigation.collapseSidebar': '收合側邊欄',

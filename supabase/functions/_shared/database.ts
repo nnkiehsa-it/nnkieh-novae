@@ -316,7 +316,8 @@ interface AppPrivateTables {
     id: number; actor_uid: string; target_uid: string; before_value: Json; after_value: Json; created_at: string;
   }>;
   system_setup: Table<{
-    singleton: boolean; completed_at: string | null; completed_by: string | null; updated_at: string;
+    singleton: boolean; completed_at: string | null; completed_by: string | null;
+    issues_enabled: boolean; facilities_enabled: boolean; updated_at: string;
   }>;
   role_assignment_audit: Table<{ id: number; uid: string; role_code: string; operation: string; actor_uid: string; created_at: string }>;
 }
@@ -324,6 +325,10 @@ interface AppPrivateTables {
 interface AppApiFunctions {
   backend_complete_initial_setup: AppFunction<{
     actor_uid: string; issue_categories: Json; facility_categories: Json;
+    issues_enabled: boolean; facilities_enabled: boolean;
+  }, Json>;
+  backend_update_platform_features: AppFunction<{
+    actor_uid: string; issues_enabled: boolean; facilities_enabled: boolean;
   }, Json>;
   backend_get_access_context: AppFunction<{ actor_uid: string }, Json>;
   backend_get_notification_unread_hint: AppFunction<{ actor_is_admin: boolean; actor_uid: string }, Json>;

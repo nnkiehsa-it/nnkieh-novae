@@ -5,13 +5,11 @@
    * vertical composition; feature components must not add page-side padding.
    */
   .viewport-frame {
+    align-self: stretch;
     box-sizing: border-box;
     margin-left: max(var(--app-viewport-gutter), env(safe-area-inset-left));
     margin-right: max(var(--app-viewport-gutter), env(safe-area-inset-right));
-    width: calc(
-      100% - max(var(--app-viewport-gutter), env(safe-area-inset-left)) -
-        max(var(--app-viewport-gutter), env(safe-area-inset-right))
-    );
+    width: auto;
   }
 
   .viewport-content {

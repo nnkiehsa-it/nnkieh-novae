@@ -32,7 +32,10 @@ export async function fetchCurrentUserRole(force = false): Promise<SessionAccess
     SESSION_ACCESS_CACHE_KEY,
     CONTENT_SHORT_CACHE_TTL_MS,
   );
-  if (cached) {
+  // An incomplete setup is a transient global state. Never let one user's
+  // persistent session cache keep the platform locked after another user
+  // completes setup.
+  if (cached?.setupCompleted) {
     cachedSessionRole = cached.role;
     return cached;
   }

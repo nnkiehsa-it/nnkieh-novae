@@ -23,7 +23,7 @@
 ## Supabase
 
 - `supabase/config.toml` — schema 暴露與 Functions JWT 模式
-- `supabase/migrations/` — 基線 + 增量 SQL（schema／RLS／RPC／Realtime Broadcast／清理／成本限流硬化／設備與 RBAC／輸入長度、附件型別、圖片網址快取、統一 feed 分頁與集合式留言回覆讀取）；`202607190001_dynamic_category_management.sql` 建立動態分類，`202607200002_atomic_user_access.sql` 將角色與分類指派改為單一交易並完整稽核，`202607200003_harden_category_deletion.sql` 統一分類刪除、內容清理與稽核，`202607200004_facility_category_parity_and_personal_notifications.sql` 補齊設備分類篩選／分類管理範圍並將既有設備建立通知改回個人通知，較早 migration 細節見 git
+- `supabase/migrations/` — 基線 + 增量 SQL（schema／RLS／RPC／Realtime Broadcast／清理／成本限流硬化／設備與 RBAC／輸入長度、附件型別、圖片網址快取、統一 feed 分頁與集合式留言回覆讀取）；`202607190001_dynamic_category_management.sql` 建立動態分類，`202607200002_atomic_user_access.sql` 將角色與分類指派改為單一交易並完整稽核，`202607200003_harden_category_deletion.sql` 統一分類刪除、內容清理與稽核，`202607200004_facility_category_parity_and_personal_notifications.sql` 補齊設備分類篩選／分類管理範圍並將既有設備建立通知改回個人通知，`202607200005_platform_feature_switches.sql` 建立提案／設備功能開關與原子更新 RPC，較早 migration 細節見 git
 - `supabase/functions/backendAction/` — 受控 action 閘道
   - `index.ts` — origin 驗證、CORS、Firebase 驗證與分派；公開限流由 Cloudflare Worker 先處理
   - `execution.ts` — 正式入口與本地整合驗證共用的權限、request ID、冪等執行核心
@@ -57,7 +57,7 @@
 - `styles/navigation.css` — 桌面側欄與手機底部導覽
 - `styles/content.css` / `responsive.css` — 列表、設定、統計、Dialog 與跨裝置覆寫
 - `assets/fonts/` — JetBrains Mono 與 Material Symbols 子集
-- `router/index.ts` / `router/route-components.ts` / `router/navigation-hierarchy.ts` — 組合 modules、abort 上一頁、session guard、主要頁面 chunk 預載，以及 root／子頁／巢狀詳情深度、轉場方向與通知來源返回
+- `router/index.ts` / `router/default-route.ts` / `router/route-components.ts` / `router/navigation-hierarchy.ts` — 組合 modules、依啟用功能選擇登入預設頁並阻擋已關閉入口、abort 上一頁、session guard、主要頁面 chunk 預載，以及 root／子頁／巢狀詳情深度、轉場方向與通知來源返回
 - `router/authRoutes.ts` / `issueRoutes.ts` / `facilityRoutes.ts` / `announcementRoutes.ts` / `adminRoutes.ts` / `notificationRoutes.ts` / `settingsRoutes.ts`
 - `views/LoginView.vue` — 登入
 - `views/IssueBoardView.vue` — 提案看板
@@ -68,10 +68,10 @@
 - `views/NotificationsView.vue` — 通知頁
 - `views/SettingsView.vue` — 設定頁（手機）
 - `views/DashboardView.vue` — 管理員統計
-- `views/AdministrationView.vue` — 單一系統設定中心，整合分類／流程與人員／權限兩個操作階段；舊 `/admin/access`、`/admin/categories` 會導向對應區段
-- `components/admin/CategoryWorkflowPanel.vue` / `MemberAccessPanel.vue` / `CategoryWizardDialog.vue` — 動態分類規則編輯、引導式新增分類精靈，以及「先分類／功能、顯示現有負責人、再搜尋成員」的責任指派；平台總管理員只由 `ADMIN_EMAILS` 同步，不提供 UI 或一般權限 API 修改入口
-- `components/categories/CategoryManagementSection.vue` / `CategoryEditorCard.vue` — 一次選取並編輯一個分類的清單與規則表單
-- `views/SetupView.vue` / `components/LanguageSelector.vue` / `components/categories/SetupCategorySection.vue` — ADMIN_EMAILS 首次設定先依系統語言預選並確認語言，再以和登入後設定一致的分類清單／單一平面編輯區建立分類；相同語言選擇器亦供設定頁覆用
+- `views/AdministrationView.vue` — 單一系統設定中心，以大型選項卡切換分類／流程與人員／權限兩個操作階段；舊 `/admin/access`、`/admin/categories` 會導向對應區段
+- `components/admin/CategoryWorkflowPanel.vue` / `MemberAccessPanel.vue` / `CategoryWizardDialog.vue` — 動態分類規則編輯、引導式新增分類精靈，以及「先分類／功能、只顯示明確指派的現有負責人、再搜尋成員」的責任指派；平台總管理員只由 `ADMIN_EMAILS` 同步，不混入分類負責人名單，也不提供 UI 或一般權限 API 修改入口
+- `components/categories/CategoryManagementSection.vue` / `CategoryEditorCard.vue` / `PlatformFeatureToggle.vue` — 一次選取並編輯一個分類的清單與規則表單，以及由初始設定／後續設定共用的提案與設備功能開關
+- `views/SetupView.vue` / `components/LanguageSelector.vue` / `components/categories/SetupCategorySection.vue` — ADMIN_EMAILS 首次設定依序確認系統語言、啟用功能與其分類；只驗證啟用功能的必填資料，未完成時停用送出，相同語言選擇器亦供設定頁覆用
 
 ---
 
@@ -100,14 +100,14 @@
 - 看板：`IssueBoard`、`BoardControls`、`BoardCategorySelector`、`IssueBoardTable`、`IssueTableRow`、`IssueAdminMenu`、`IssueDetailPagePanel`、`IssueDetailSupportFooter`；提案與設備共用分類選擇器
 - 公告：`AnnouncementTable`、`AnnouncementTableRow`、`AnnouncementDetailPagePanel`、`AnnouncementDetailActions`、`CompactActionMenu`
 - 設備：`FacilityComposer`、`FacilityStatusDialog`、`FacilityAdminMenu`、`FacilityTable`、`FacilityTableRow`、`FacilityDetailPagePanel`、`FacilityDetailActions`；三領域共用 Composer、詳情內容、loading／錯誤、Skeleton、操作列與確認 Dialog，僅保留地點及設備狀態等領域差異
-- 分類：`categories/CategoryEditorCard.vue` / `CategoryManagementSection.vue` — 初始設定與後續管理共用的分類表單與狀態控制
+- 分類：`categories/CategoryEditorCard.vue` / `CategoryManagementSection.vue` / `PlatformFeatureToggle.vue` — 初始設定與後續管理共用的分類表單、功能開關與狀態控制
 
 ---
 
 ## composables
 
 - Session：`useSession` + `sessionTypes` / `sessionDebug` / `sessionValidation` / `sessionAuthActions` / `sessionEffects`
-- 分類：`useCategories` — 動態 catalog、預設分類與標籤查找的前端單一狀態來源
+- 分類：`useCategories` — 動態 catalog、平台功能開關、預設分類與標籤查找的前端單一狀態來源
 - 看板：`useIssueBoardData`、`useIssueBuckets`、`useIssueBoardPagination`、`useIssueSearch`、`useUserIssuesData`、`useIssueRouteFilter`、`useDocumentTitle`、`useFilter`
 - 詳情／列：`useIssueRouteDetail`、`useIssueDisplay`、`useIssueSupport`、`useIssueItemController`、`useIssueComposerForm`、`useVoteSupport`、`useDeleteIssue`、`useStatusStyling`
 - 留言：`useIssueComments`、`useAnnouncementComments`、`useDiscussionComments`（共用 core，依提案／公告領域權限判斷管理操作）

@@ -1,6 +1,7 @@
 const messages = {
   'navigation.user': 'User',
   'navigation.notify': 'Notify',
+  'navigation.home': 'Novae home',
   'navigation.expandSidebar': 'Expand sidebar',
   'navigation.primaryNavigation': 'Primary navigation',
   'navigation.collapseSidebar': 'Collapse sidebar',

@@ -42,7 +42,7 @@ fi
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-for command_name in docker supabase curl; do
+for command_name in docker supabase curl script; do
   if ! command -v "$command_name" >/dev/null 2>&1; then
     echo "Missing local integration dependency: $command_name" >&2
     exit 2
@@ -138,7 +138,7 @@ cleanup() {
 trap cleanup EXIT
 
 echo "[integration] Starting local Supabase"
-START_EXCLUDES="edge-runtime,imgproxy,realtime,studio,vector"
+START_EXCLUDES="edge-runtime,imgproxy,logflare,realtime,studio,vector"
 supabase stop >/dev/null 2>&1 || true
 supabase db start
 echo "[integration] Resetting the local database"
@@ -239,7 +239,11 @@ if [[ "${status:-}" != "200" ]]; then
 fi
 
 echo "[integration] Serving Edge Functions with local database credentials"
-supabase functions serve --env-file "$FUNCTION_ENV" --no-verify-jwt >"$FUNCTION_LOG" 2>&1 &
+# Supabase CLI currently fails with ENODATA when Windows launches WSL without a
+# terminal. `script` gives the long-lived function server its own pseudo-TTY in
+# both interactive and automated runs.
+printf -v FUNCTION_SERVE_COMMAND 'exec supabase functions serve --env-file %q --no-verify-jwt' "$FUNCTION_ENV"
+script --quiet --return --command "$FUNCTION_SERVE_COMMAND" /dev/null >"$FUNCTION_LOG" 2>&1 &
 FUNCTION_PID="$!"
 for _ in $(seq 1 60); do
   status="$(curl -sS -o /dev/null -w '%{http_code}' \

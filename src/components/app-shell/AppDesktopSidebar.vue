@@ -8,7 +8,7 @@
       <RouterLink
         :to="homeRoute"
         class="app-sidebar__brand"
-        :aria-label="t('issue.novaeProposalHomePage')"
+        :aria-label="t('navigation.home')"
       >
         <BrandMark />
         <span class="app-sidebar__brand-label">Novae</span>

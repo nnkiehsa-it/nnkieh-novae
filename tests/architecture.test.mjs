@@ -736,6 +736,8 @@ test('facilities and author-fixed support use independent atomic storage', async
 
 test('proposal and facility manager access is runtime-configured and category-scoped', async () => {
   const accessView = await read('src/components/admin/MemberAccessPanel.vue');
+  const administrationView = await read('src/views/AdministrationView.vue');
+  const categoryWorkflow = await read('src/components/admin/CategoryWorkflowPanel.vue');
   const categoryAction = await read('supabase/functions/backendAction/categories.ts');
   const auth = await read('supabase/functions/backendAction/auth.ts');
   const users = await read('supabase/functions/backendAction/users.ts');
@@ -771,9 +773,17 @@ test('proposal and facility manager access is runtime-configured and category-sc
   assert.match(users, /const rawQuery = asString\(payload\.query\)\.trim\(\)/u);
   assert.match(users, /rawQuery\.includes\("@"\) \? rawQuery\.toLowerCase\(\) : rawQuery/u);
   assert.match(users, /profileQuery = query\.includes\("@"\) \? profileQuery\.eq\("email", query\) : profileQuery\.eq\("uid", query\)/u);
+  assert.match(users, /scopeKind === "announcement"[\s\S]*\.eq\("role_code", "announcement-manager"\)/u);
+  assert.doesNotMatch(users, /const roleCodes = \["platform-admin"/u);
   assert.match(lookupMigration, /user_profiles_email_unique_idx/u);
   assert.match(lookupMigration, /backend_update_facility_status\.result_content/u);
   assert.match(accessView, /SelectionOptionButton/u);
+  assert.match(administrationView, /SelectionOptionButton/u);
+  assert.match(categoryWorkflow, /SelectionOptionButton/u);
+  for (const managementView of [accessView, administrationView, categoryWorkflow]) {
+    assert.doesNotMatch(managementView, /PillSegmentedControl/u);
+  }
+  assert.doesNotMatch(accessView, /accessInheritedFromPlatformAdmin|fullAccessSummary|hasInheritedAccess/u);
   assert.doesNotMatch(accessView, /value: 'platform'|platformAdminTitle/u);
   assert.ok(accessView.indexOf('chooseResponsibilityStep') < accessView.indexOf('access-user-lookup'));
   assert.match(facilityDialog, /StatusTransitionDialog/u);
@@ -1264,6 +1274,10 @@ test('primary navigation keeps desktop chrome and persistent mobile navigation',
   const app = await read('src/App.vue');
   const appShell = await read('src/components/AppShell.vue');
   const mobileHeader = await read('src/components/app-shell/AppMobileHeader.vue');
+  const mobileBottomNav = await read('src/components/app-shell/AppMobileBottomNav.vue');
+  const settingsPanel = await read('src/components/SettingsPanelContent.vue');
+  const router = await read('src/router/index.ts');
+  const defaultRoute = await read('src/router/default-route.ts');
   const detailShell = await read('src/components/ui/organisms/DetailPageShell.vue');
   const detailSkeleton = await read('src/components/ui/organisms/SkeletonDetail.vue');
   const issueBoard = await read('src/components/IssueBoard.vue');
@@ -1294,6 +1308,11 @@ test('primary navigation keeps desktop chrome and persistent mobile navigation',
   assert.match(appShell, /:data-bottom-nav="showMobileBottomNavigation/u);
   assert.match(appShell, /:data-sidebar="isAllowedUser/u);
   assert.match(appShell, /<Transition name="mobile-nav">[\s\S]*v-if="showMobileBottomNavigation"/u);
+  assert.match(appShell, /issuesEnabled\.value \? \{[\s\S]*facilitiesEnabled\.value \? \{/u);
+  assert.match(mobileBottomNav, /gridTemplateColumns: `repeat\(\$\{items\.length \+ 2\}/u);
+  assert.match(settingsPanel, /v-if="issuesEnabled"[\s\S]*to="\/issues\/my-proposals"/u);
+  assert.match(defaultRoute, /features\.issuesEnabled[\s\S]*features\.facilitiesEnabled[\s\S]*name: 'announcements'/u);
+  assert.match(router, /isFeatureRouteEnabled\(to\.name\)[\s\S]*getDefaultAuthenticatedRoute/u);
   assert.doesNotMatch(appShell, /getRouteNavigationDepth|data-navigation-depth/u);
   assert.match(appShell, /showMobileBottomNavigation = computed\(\(\) => isAllowedUser\.value\)/u);
   assert.match(baseStyles, /\.route-content-frame \{[\s\S]*background-color: rgb\(var\(--color-page-background\)\)/u);
@@ -1448,22 +1467,54 @@ test('frontend localization follows the first-visit system language and remains 
   assert.match(i18nCheck, /references an unknown API error code/u);
 });
 
+test('integration runner gives the Supabase function server a pseudo-terminal', async () => {
+  const integrationRunner = await read('scripts/verify-integration-local.sh');
+
+  assert.match(integrationRunner, /START_EXCLUDES="edge-runtime,imgproxy,logflare,realtime,studio,vector"/u);
+  assert.match(integrationRunner, /for command_name in docker supabase curl script/u);
+  assert.match(integrationRunner, /script --quiet --return --command "\$FUNCTION_SERVE_COMMAND" \/dev\/null/u);
+});
+
 test('initial setup reuses the settings-style selected category editor', async () => {
   const setup = await read('src/views/SetupView.vue');
+  const sessionRole = await read('src/services/session-role.ts');
   const setupCategorySection = await read('src/components/categories/SetupCategorySection.vue');
   const categoryEditor = await read('src/components/categories/CategoryEditorCard.vue');
 
-  assert.match(setup, /<PillSegmentedControl[\s\S]*<SetupCategorySection/u);
+  assert.match(setup, /<PlatformFeatureToggle[\s\S]*<SelectionOptionButton[\s\S]*<SetupCategorySection/u);
+  assert.doesNotMatch(setup, /PillSegmentedControl/u);
+  assert.match(setup, /:disabled="saving \|\| !isSetupValid"/u);
+  assert.match(setup, /!issuesEnabled\.value \|\| issueSetupValid\.value/u);
+  assert.match(setup, /!facilitiesEnabled\.value \|\| facilitySetupValid\.value/u);
+  assert.match(setup, /issueCategories: issuesEnabled\.value \? issueCategories\.value : \[\]/u);
   assert.doesNotMatch(setup, /categoryAdmin\.(?:managerAssignment|skippedForNow|managerSkipHelp)/u);
   assert.doesNotMatch(setup, /v-for="\(category, index\) in (?:issue|facility)Categories"/u);
   assert.match(setupCategorySection, /lg:grid-cols-\[15rem_minmax\(0,1fr\)\]/u);
   assert.match(setupCategorySection, /<SurfacePanel variant="list"/u);
   assert.match(setupCategorySection, /<CategoryEditorCard[\s\S]*flat/u);
   assert.match(categoryEditor, /:is="flat \? 'article' : SurfacePanel"/u);
-  assert.doesNotMatch(setup, /router\.replace\(\{ name: 'issues' \}\)/u);
-  assert.match(setup, /router\.replace\(\{ name: 'issues', params: \{ filter: getDefaultIssueRouteFilter\(\) \} \}\)/u);
-  assert.match(setup, /if \(setupCompleted\.value\)[\s\S]*router\.replace/u);
+  assert.match(setup, /continueToPlatform[\s\S]*router\.replace\(getDefaultAuthenticatedRoute\(\)\)/u);
+  assert.match(setup, /if \(setupCompleted\.value\) await continueToPlatform\(\)/u);
+  assert.match(setup, /SETUP_STATUS_REFRESH_INTERVAL_MS[\s\S]*refreshWaitingSetupStatus[\s\S]*setInterval/u);
+  assert.match(setup, /visibilitychange/u);
+  assert.match(sessionRole, /if \(cached\?\.setupCompleted\)/u);
   assert.match(await read('supabase/functions/backendAction/categories.ts'), /setupState\?\.completed_at[\s\S]*alreadyCompleted: true/u);
+});
+
+test('platform feature switches persist atomically and remain configurable after setup', async () => {
+  const migration = await read('supabase/migrations/202607200005_platform_feature_switches.sql');
+  const categoryAction = await read('supabase/functions/backendAction/categories.ts');
+  const categoryManagement = await read('src/components/admin/CategoryWorkflowPanel.vue');
+  const categoryState = await read('src/composables/useCategories.ts');
+
+  assert.match(migration, /issues_enabled boolean not null default true/u);
+  assert.match(migration, /facilities_enabled boolean not null default true/u);
+  assert.match(migration, /backend_update_platform_features/u);
+  assert.match(migration, /if issues_enabled then[\s\S]*if facilities_enabled then/u);
+  assert.match(categoryAction, /action === "savePlatformFeatures"[\s\S]*requirePermission\(auth, "category\.manage"\)/u);
+  assert.match(categoryAction, /features:[\s\S]*facilitiesEnabled:[\s\S]*issuesEnabled:/u);
+  assert.match(categoryManagement, /<PlatformFeatureToggle[\s\S]*savePlatformFeatures/u);
+  assert.match(categoryState, /const loaded = ref\(false\)[\s\S]*if \(!force && loaded\.value\) return/u);
 });
 
 test('public API errors use a generated code-only contract', async () => {
@@ -1582,7 +1633,7 @@ test('authenticated route pages share one content width and AppShell owns horizo
   const baseStyles = await read('src/styles/base.css');
   assert.match(baseStyles, /--app-content-max-width: 80rem;/u);
   assert.match(baseStyles, /--app-viewport-gutter: 1\.5rem;/u);
-  assert.match(primitives, /\.viewport-frame \{[\s\S]*margin-left: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-left\)\);[\s\S]*margin-right: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-right\)\);[\s\S]*width: calc\(/u);
+  assert.match(primitives, /\.viewport-frame \{[\s\S]*align-self: stretch;[\s\S]*margin-left: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-left\)\);[\s\S]*margin-right: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-right\)\);[\s\S]*width: auto;/u);
   assert.doesNotMatch(primitives, /\.viewport-frame \{[\s\S]{0,280}padding-(?:left|right):/u);
   assert.match(primitives, /\.viewport-floating-inline \{[\s\S]*left: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-left\)\);[\s\S]*right: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-right\)\);/u);
   assert.match(primitives, /\.route-page-frame \{[\s\S]*max-width: var\(--app-content-max-width\);[\s\S]*min-width: 0;[\s\S]*width: 100%;/u);

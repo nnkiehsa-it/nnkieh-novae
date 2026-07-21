@@ -45,6 +45,7 @@ export const BACKEND_ACTION_NAMES = [
   'searchIssues',
   'saveFacilityCategory',
   'saveIssueCategory',
+  'savePlatformFeatures',
   'setIssueCommentsEnabled',
   'setAnnouncementLike',
   'setUserRoles',

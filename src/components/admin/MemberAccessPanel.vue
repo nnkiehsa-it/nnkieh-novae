@@ -15,7 +15,16 @@
         </div>
       </div>
 
-      <PillSegmentedControl v-model="scopeKind" :options="scopeOptions" />
+      <div class="grid gap-3 md:grid-cols-3" role="group" :aria-label="t('adminCenter.chooseResponsibilityStep')">
+        <SelectionOptionButton
+          v-for="option in scopeOptions"
+          :key="option.value"
+          :label="option.label"
+          :description="option.description"
+          :selected="scopeKind === option.value"
+          @select="scopeKind = option.value"
+        />
+      </div>
 
       <div v-if="scopeKind === 'issue' || scopeKind === 'facility'" class="grid gap-2 sm:grid-cols-2">
         <SelectionOptionButton
@@ -71,7 +80,7 @@
             <AppButton
               size="sm"
               variant="danger"
-              :disabled="Boolean(savingUid) || hasInheritedAccess(assignee)"
+              :disabled="Boolean(savingUid)"
               @click="revokeAssignee(assignee)"
             >
               <BusyButtonContent
@@ -141,7 +150,7 @@
         </AppButton>
         <AppButton
           :variant="hasSelectedAccess ? 'danger' : 'primary'"
-          :disabled="Boolean(savingUid) || hasInheritedPlatformAccess"
+          :disabled="Boolean(savingUid)"
           @click="saveSelectedAccess(!hasSelectedAccess)"
         >
           <BusyButtonContent
@@ -163,7 +172,6 @@ import InlineMessage from '@/components/ui/atoms/InlineMessage.vue';
 import UserAvatar from '@/components/ui/atoms/UserAvatar.vue';
 import EmptyStatePanel from '@/components/ui/molecules/EmptyStatePanel.vue';
 import ListSurfaceRow from '@/components/ui/molecules/ListSurfaceRow.vue';
-import PillSegmentedControl, { type PillSegmentedControlOption } from '@/components/ui/molecules/PillSegmentedControl.vue';
 import SectionHeader from '@/components/ui/molecules/SectionHeader.vue';
 import SelectionOptionButton from '@/components/ui/molecules/SelectionOptionButton.vue';
 import SurfacePanel from '@/components/ui/molecules/SurfacePanel.vue';
@@ -197,10 +205,10 @@ const assigneesTruncated = ref(false);
 const assigneeError = ref('');
 let assigneeRequestSequence = 0;
 
-const scopeOptions = computed<readonly PillSegmentedControlOption<AccessScopeKind>[]>(() => [
-  { value: 'issue', label: t('adminCenter.proposalResponsibility'), icon: 'comment' },
-  { value: 'facility', label: t('adminCenter.facilityResponsibility'), icon: 'wrench' },
-  { value: 'announcement', label: t('access.announcementManagement'), icon: 'megaphone' },
+const scopeOptions = computed(() => [
+  { value: 'issue' as const, label: t('adminCenter.proposalResponsibility'), description: t('adminCenter.proposalResponsibilityHelp') },
+  { value: 'facility' as const, label: t('adminCenter.facilityResponsibility'), description: t('adminCenter.facilityResponsibilityHelp') },
+  { value: 'announcement' as const, label: t('access.announcementManagement'), description: t('access.publishAndDeleteAnnouncements') },
 ]);
 
 const selectableCategories = computed(() => scopeKind.value === 'issue'
@@ -220,14 +228,7 @@ const selectedCategory = computed(() => selectableCategories.value.find((categor
 const selectedScopeLabel = computed(() => selectedCategory.value?.label
   ?? t('access.announcementManagement'));
 
-function hasInheritedAccess(accessUser: AccessUser) {
-  return accessUser.roles.includes('platform-admin');
-}
-
-const hasInheritedPlatformAccess = computed(() => Boolean(user.value && hasInheritedAccess(user.value)));
-
 function userHasSelectedAccess(accessUser: AccessUser) {
-  if (hasInheritedAccess(accessUser)) return true;
   if (scopeKind.value === 'issue') return accessUser.managedIssueCategoryIds.includes(selectedCategoryId.value);
   if (scopeKind.value === 'facility') return accessUser.managedFacilityCategoryIds.includes(selectedCategoryId.value);
   return accessUser.roles.includes('announcement-manager');
@@ -235,9 +236,9 @@ function userHasSelectedAccess(accessUser: AccessUser) {
 
 const hasSelectedAccess = computed(() => Boolean(user.value && userHasSelectedAccess(user.value)));
 
-const accessStateLabel = computed(() => hasInheritedPlatformAccess.value
-  ? t('adminCenter.accessInheritedFromPlatformAdmin')
-  : hasSelectedAccess.value ? t('adminCenter.accessAlreadyGranted') : t('adminCenter.accessNotGranted'));
+const accessStateLabel = computed(() => hasSelectedAccess.value
+  ? t('adminCenter.accessAlreadyGranted')
+  : t('adminCenter.accessNotGranted'));
 
 function categoryDescription(label: string) {
   return scopeKind.value === 'issue'
@@ -251,8 +252,7 @@ function clearUser() {
 }
 
 function accessSummary(accessUser: AccessUser) {
-  if (accessUser.roles.includes('platform-admin')) return t('adminCenter.fullAccessSummary');
-  const count = accessUser.roles.length
+  const count = accessUser.roles.filter((role) => role !== 'platform-admin').length
     + accessUser.managedIssueCategoryIds.length
     + accessUser.managedFacilityCategoryIds.length;
   return t('adminCenter.scopedAccessSummary', { count });

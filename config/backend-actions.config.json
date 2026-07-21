@@ -45,6 +45,7 @@
   "searchIssues": { "group": "read" },
   "saveFacilityCategory": { "group": "admin-write", "extraLimit": "roleWriteHourly" },
   "saveIssueCategory": { "group": "admin-write", "extraLimit": "roleWriteHourly" },
+  "savePlatformFeatures": { "group": "admin-write", "extraLimit": "roleWriteHourly" },
   "setIssueCommentsEnabled": { "group": "admin-write", "extraLimit": "moderationWriteHourly" },
   "setAnnouncementLike": { "group": "sensitive-write", "extraLimit": "announcementLikeHourly" },
   "setUserRoles": { "group": "admin-write", "extraLimit": "roleWriteHourly" },

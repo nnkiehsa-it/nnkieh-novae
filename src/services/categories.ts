@@ -6,6 +6,7 @@ import type {
   FacilityCategoryDraft,
   IssueCategoryConfig,
   IssueCategoryDraft,
+  PlatformFeatures,
 } from '@/types/categories';
 
 export async function getCategoryCatalog() {
@@ -17,11 +18,21 @@ export async function getCategoryManagement() {
 }
 
 export async function completeInitialSetup(input: {
+  facilitiesEnabled: boolean;
   issueCategories: IssueCategoryDraft[];
   facilityCategories: FacilityCategoryDraft[];
+  issuesEnabled: boolean;
 }) {
   const action = invokeBackendAction<typeof input & { requestId: string }, { success: boolean; setupCompleted: boolean }>('completeInitialSetup');
   return await action({ ...input, requestId: createRequestId() });
+}
+
+export async function savePlatformFeatures(features: PlatformFeatures) {
+  const action = invokeBackendAction<
+    PlatformFeatures & { requestId: string },
+    PlatformFeatures & { success: boolean }
+  >('savePlatformFeatures');
+  return await action({ ...features, requestId: createRequestId() });
 }
 
 export async function saveIssueCategory(category: IssueCategoryConfig | IssueCategoryDraft) {

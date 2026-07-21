@@ -24,9 +24,15 @@ export interface FacilityCategoryConfig {
 }
 
 export interface CategoryCatalog {
+  features: PlatformFeatures;
   issueCategories: IssueCategoryConfig[];
   facilityCategories: FacilityCategoryConfig[];
   setupCompleted: boolean;
+}
+
+export interface PlatformFeatures {
+  facilitiesEnabled: boolean;
+  issuesEnabled: boolean;
 }
 
 export interface IssueCategoryDraft {

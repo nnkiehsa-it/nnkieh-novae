@@ -309,6 +309,20 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
     }, scoped.auth));
   }
 
+  for (const issuesEnabled of [true, false]) {
+    for (const facilitiesEnabled of [true, false]) {
+      const saved = asRecord(await callAction("savePlatformFeatures", {
+        facilitiesEnabled,
+        issuesEnabled,
+        requestId: requestId("stress-platform-features"),
+      }, admins[0].auth));
+      assert.equal(saved.issuesEnabled, issuesEnabled);
+      assert.equal(saved.facilitiesEnabled, facilitiesEnabled);
+      const featureCatalog = asRecord(await callAction("getCategoryCatalog", {}, ordinaryUsers[0].auth));
+      assert.deepEqual(asRecord(featureCatalog.features), { facilitiesEnabled, issuesEnabled });
+    }
+  }
+
   await callAction("deleteCategory", {
     id: issueCategoryId, kind: "issue", requestId: requestId("stress-delete-issue-category"),
   }, admins[0].auth);

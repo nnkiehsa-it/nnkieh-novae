@@ -6,12 +6,16 @@
         <p class="mt-2 max-w-3xl text-sm leading-6 text-ink-500">{{ t('adminCenter.description') }}</p>
       </header>
 
-      <PillSegmentedControl
-        :model-value="activeTab"
-        :options="tabOptions"
-        :aria-label="t('adminCenter.sections')"
-        @update:model-value="setTab"
-      />
+      <div class="grid gap-3 sm:grid-cols-2" role="group" :aria-label="t('adminCenter.sections')">
+        <SelectionOptionButton
+          v-for="option in tabOptions"
+          :key="option.value"
+          :label="option.label"
+          :description="option.description"
+          :selected="activeTab === option.value"
+          @select="setTab(option.value)"
+        />
+      </div>
 
       <CategoryWorkflowPanel
         v-if="visitedTabs.has('categories')"
@@ -30,7 +34,7 @@ import { computed, reactive, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import CategoryWorkflowPanel from '@/components/admin/CategoryWorkflowPanel.vue';
 import MemberAccessPanel from '@/components/admin/MemberAccessPanel.vue';
-import PillSegmentedControl, { type PillSegmentedControlOption } from '@/components/ui/molecules/PillSegmentedControl.vue';
+import SelectionOptionButton from '@/components/ui/molecules/SelectionOptionButton.vue';
 import RoutePageFrame from '@/components/ui/organisms/RoutePageFrame.vue';
 import { useI18n } from '@/i18n';
 
@@ -41,9 +45,9 @@ const router = useRouter();
 const { t } = useI18n();
 const activeTab = computed<AdministrationTab>(() => route.query.tab === 'members' ? 'members' : 'categories');
 const visitedTabs = reactive(new Set<AdministrationTab>([activeTab.value]));
-const tabOptions = computed<readonly PillSegmentedControlOption<AdministrationTab>[]>(() => [
-  { value: 'categories', label: t('adminCenter.categoriesTabLabel'), title: t('adminCenter.categoriesTabHelp'), icon: 'comment' },
-  { value: 'members', label: t('adminCenter.membersTabLabel'), title: t('adminCenter.membersTabHelp'), icon: 'user' },
+const tabOptions = computed(() => [
+  { value: 'categories' as const, label: t('adminCenter.categoriesTabLabel'), description: t('adminCenter.categoriesTabHelp') },
+  { value: 'members' as const, label: t('adminCenter.membersTabLabel'), description: t('adminCenter.membersTabHelp') },
 ]);
 
 watch(activeTab, (tab) => { visitedTabs.add(tab); });

@@ -4,7 +4,11 @@
     :style="{ bottom: `${bottomGap}px` }"
     :aria-label="t('navigation.primaryNavigation')"
   >
-    <div ref="navRef" class="app-bottom-nav__inner relative mx-auto grid grid-cols-5 gap-1">
+    <div
+      ref="navRef"
+      class="app-bottom-nav__inner relative mx-auto grid gap-1"
+      :style="{ gridTemplateColumns: `repeat(${items.length + 2}, minmax(0, 1fr))` }"
+    >
       <div
         class="pointer-events-none absolute rounded-full bg-ink-100/90 shadow-control dark:bg-ink-800/80"
         :style="[indicatorStyle, { transition: 'all 280ms cubic-bezier(0.16, 1, 0.3, 1)' }]"
@@ -110,7 +114,11 @@ async function updateIndicator() {
   };
 }
 
-watch(() => props.activeKey, updateIndicator, { immediate: true });
+watch(
+  [() => props.activeKey, () => props.items.map((item) => item.key).join('|')],
+  updateIndicator,
+  { immediate: true },
+);
 
 onMounted(() => {
   window.addEventListener('resize', updateIndicator);

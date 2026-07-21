@@ -89,11 +89,17 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
     categoryId: "public-issues", query: "", scopeKind: "issue",
   }, admin.auth));
   assert.ok((proposalAssignees.users as Array<{ uid: string }>).some((row) => row.uid === target.auth.uid));
-  assert.ok((proposalAssignees.users as Array<{ uid: string }>).some((row) => row.uid === admin.auth.uid));
+  assert.ok(!(proposalAssignees.users as Array<{ uid: string }>).some((row) => row.uid === admin.auth.uid));
+  const facilityAssignees = asRecord(await callAction("listRoleAssignments", {
+    categoryId: "general", query: "", scopeKind: "facility",
+  }, admin.auth));
+  assert.ok((facilityAssignees.users as Array<{ uid: string }>).some((row) => row.uid === target.auth.uid));
+  assert.ok(!(facilityAssignees.users as Array<{ uid: string }>).some((row) => row.uid === admin.auth.uid));
   const announcementAssignees = asRecord(await callAction("listRoleAssignments", {
     query: "", scopeKind: "announcement",
   }, admin.auth));
   assert.ok((announcementAssignees.users as Array<{ uid: string }>).some((row) => row.uid === target.auth.uid));
+  assert.ok(!(announcementAssignees.users as Array<{ uid: string }>).some((row) => row.uid === admin.auth.uid));
   await expectActionError("validation-required", () => callAction("listRoleAssignments", {
     query: "", scopeKind: "platform",
   }, admin.auth));
@@ -207,9 +213,14 @@ integrationTest("runtime category setup and management enforce platform permissi
   const catalog = asRecord(await callAction("getCategoryCatalog", {}, user.auth));
   assert.ok((catalog.issueCategories as unknown[]).length >= 2);
   assert.ok((catalog.facilityCategories as unknown[]).length >= 1);
+  assert.deepEqual(asRecord(catalog.features), { facilitiesEnabled: true, issuesEnabled: true });
   await expectActionError("permission-denied", () => callAction("getCategoryManagement", {}, user.auth));
   await expectActionError("permission-denied", () => callAction("completeInitialSetup", {
-    facilityCategories: [], issueCategories: [], requestId: requestId("setup-denied"),
+    facilitiesEnabled: false, facilityCategories: [], issuesEnabled: false,
+    issueCategories: [], requestId: requestId("setup-denied"),
+  }, user.auth));
+  await expectActionError("permission-denied", () => callAction("savePlatformFeatures", {
+    facilitiesEnabled: false, issuesEnabled: false, requestId: requestId("features-denied"),
   }, user.auth));
 
   const setup = asRecord(await callAction("completeInitialSetup", {
@@ -225,10 +236,13 @@ integrationTest("runtime category setup and management enforce platform permissi
         responseDeadlineDays: 7, commentsEnabled: true,
       },
     ],
-    facilityCategories: [{ id: "general", label: "一般設備" }],
+    facilitiesEnabled: false,
+    facilityCategories: [],
+    issuesEnabled: true,
     requestId: requestId("complete-setup"),
   }, admin.auth));
   assert.equal(setup.success, true);
+  assert.equal(setup.facilitiesEnabled, false);
   const repeatedSetup = asRecord(await callAction("completeInitialSetup", {
     issueCategories: [],
     facilityCategories: [],
@@ -238,6 +252,7 @@ integrationTest("runtime category setup and management enforce platform permissi
   assert.equal(repeatedSetup.setupCompleted, true);
 
   const management = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
+  assert.deepEqual(asRecord(management.features), { facilitiesEnabled: false, issuesEnabled: true });
   const publicCategory = asRecord((management.issueCategories as unknown[])
     .find((value) => asRecord(value).id === "public-issues"));
   const savedIssue = asRecord(await callAction("saveIssueCategory", {
@@ -253,12 +268,19 @@ integrationTest("runtime category setup and management enforce platform permissi
     category: publicCategory, requestId: requestId("save-issue-denied"),
   }, user.auth));
 
-  const facilityCategory = asRecord((management.facilityCategories as unknown[])[0]);
   const savedFacility = asRecord(await callAction("saveFacilityCategory", {
-    category: { ...facilityCategory, label: "一般設備-修改" },
+    category: {
+      id: "general", isActive: true, isDefault: true, label: "一般設備-修改", sortOrder: 0,
+    },
     requestId: requestId("save-facility-category"),
   }, admin.auth));
   assert.equal(asRecord(savedFacility.category).label, "一般設備-修改");
+  const enabledFeatures = asRecord(await callAction("savePlatformFeatures", {
+    facilitiesEnabled: true, issuesEnabled: true, requestId: requestId("enable-features"),
+  }, admin.auth));
+  assert.deepEqual(enabledFeatures, { facilitiesEnabled: true, issuesEnabled: true, success: true });
+  const updatedCatalog = asRecord(await callAction("getCategoryCatalog", {}, user.auth));
+  assert.deepEqual(asRecord(updatedCatalog.features), { facilitiesEnabled: true, issuesEnabled: true });
 });
 
 integrationTest("category deletion removes category and all associated resources, queueing cloudinary deletion and outbox events", async () => {

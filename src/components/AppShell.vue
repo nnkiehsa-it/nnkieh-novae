@@ -76,12 +76,14 @@ import ViewportFrame from '@/components/ui/organisms/ViewportFrame.vue';
 import { SCHOOL_NAME } from '@/constants/app';
 import { getDefaultIssueRouteFilter, getIssueCategoryLabel, isIssueCategory } from '@/constants/categories';
 import { refreshFromActiveNavigation } from '@/composables/useActiveNavigationRefresh';
+import { useCategories } from '@/composables/useCategories';
 import { useIssueRouteFilter } from '@/composables/useIssueRouteFilter';
 import { useNotificationBadge } from '@/composables/useNotificationBadge';
 import { useSession } from '@/composables/useSession';
 import type { IssueFilter } from '@/types';
 import { preloadRoutePath } from '@/router/route-components';
 import { returnToNavigationOrigin } from '@/router/navigation-hierarchy';
+import { getDefaultAuthenticatedRoute } from '@/router/default-route';
 import { useI18n } from '@/i18n';
 
 const SIDEBAR_EXPANDED_STORAGE_KEY = 'novae:desktop-sidebar-expanded';
@@ -89,6 +91,7 @@ const MOBILE_NAV_HEIGHT = 60;
 const SCROLL_POSITION_LIMIT = 30;
 
 const { customPhotoUrl, isAllowedUser, user } = useSession();
+const { facilitiesEnabled, issuesEnabled } = useCategories();
 const { activeFilter } = useIssueRouteFilter();
 const { hasUnread } = useNotificationBadge();
 const route = useRoute();
@@ -104,22 +107,22 @@ const isAnnouncementRouteActive = computed(() => route.name === 'announcements' 
 const isFacilityRouteActive = computed(() => route.name === 'facilities' || route.name === 'facility-detail');
 const isMyProposalsRouteActive = computed(() => isIssueRouteActive.value && activeFilter.value === 'my-proposals');
 const isProfileRouteActive = computed(() => isMyProposalsRouteActive.value || ['settings', 'dashboard', 'administration'].includes(route.name as string));
-const homeRoute = computed(() => ({ name: 'issues', params: { filter: getDefaultIssueRouteFilter() } } as const));
+const homeRoute = computed(() => getDefaultAuthenticatedRoute());
 const primaryRouteNavItems = computed(() => [
-  {
+  issuesEnabled.value ? {
     icon: 'comment' as const,
     isActive: isIssueRouteActive.value && activeFilter.value !== 'my-proposals',
     key: 'issues',
     label: t('issue.proposal'),
     to: homeRoute.value,
-  },
-  {
+  } : null,
+  facilitiesEnabled.value ? {
     icon: 'wrench' as const,
     isActive: isFacilityRouteActive.value,
     key: 'facilities',
     label: t('facility.facility'),
     to: { name: 'facilities' },
-  },
+  } : null,
   {
     icon: 'megaphone' as const,
     isActive: isAnnouncementRouteActive.value,
@@ -127,7 +130,7 @@ const primaryRouteNavItems = computed(() => [
     label: t('announcement.announcement'),
     to: { name: 'announcements' },
   },
-]);
+].filter((item): item is NonNullable<typeof item> => item !== null));
 const displayPhotoUrl = computed(() => customPhotoUrl.value || user.value?.photoURL || null);
 const userName = computed(() => user.value?.displayName || t('navigation.user'));
 const schoolLabel = computed(() => SCHOOL_NAME || t('navigation.theSchoolHasNotBeenSet'));

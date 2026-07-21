@@ -111,6 +111,7 @@
 
       <LabeledListSection :label="t('settings.features')">
         <IconListRow
+          v-if="issuesEnabled"
           :as="RouterLink"
           to="/issues/my-proposals"
           icon="user"
@@ -235,6 +236,7 @@ import {
 import type { PersonalPushPreferenceKey, PersonalPushPreferences } from '@/services/notifications';
 import { copyText } from '@/composables/useShareUrl';
 import { useActionFeedback } from '@/composables/useActionFeedback';
+import { useCategories } from '@/composables/useCategories';
 import { useI18n } from '@/i18n';
 
 const props = withDefaults(defineProps<{
@@ -275,6 +277,7 @@ const emit = defineEmits<{
 }>();
 
 const logoutDialogOpen = ref(false);
+const { issuesEnabled } = useCategories();
 const { show } = useActionFeedback();
 const { t } = useI18n();
 

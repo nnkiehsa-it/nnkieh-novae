@@ -138,11 +138,21 @@ export async function issueCategoryPolicyLists(supabase: BackendSupabase) {
 }
 
 async function catalog(supabase: BackendSupabase, includeInactive: boolean) {
-  const [issueCategories, facilityCategories] = await Promise.all([
+  const [issueCategories, facilityCategories, setupResult] = await Promise.all([
     getIssueCategories(supabase, includeInactive),
     getFacilityCategories(supabase, includeInactive),
+    supabase.schema("app_private").from("system_setup")
+      .select("issues_enabled,facilities_enabled").eq("singleton", true).single(),
   ]);
-  return { issueCategories, facilityCategories };
+  if (setupResult.error) throw setupResult.error;
+  return {
+    issueCategories,
+    facilityCategories,
+    features: {
+      facilitiesEnabled: setupResult.data.facilities_enabled !== false,
+      issuesEnabled: setupResult.data.issues_enabled !== false,
+    },
+  };
 }
 
 async function recordCategoryAudit(
@@ -247,6 +257,16 @@ export async function handleCategoryAction(
   }
   if (action === "saveIssueCategory") return await saveIssueCategory(payload, auth, supabase);
   if (action === "saveFacilityCategory") return await saveFacilityCategory(payload, auth, supabase);
+  if (action === "savePlatformFeatures") {
+    requirePermission(auth, "category.manage");
+    const { data, error } = await supabase.schema("app_api").rpc("backend_update_platform_features", {
+      actor_uid: auth.uid,
+      facilities_enabled: asBoolean(payload.facilitiesEnabled, true),
+      issues_enabled: asBoolean(payload.issuesEnabled, true),
+    });
+    if (error) throw error;
+    return asRecord(data);
+  }
   if (action === "deleteCategory") {
     requirePermission(auth, "category.manage");
     const kind = asString(payload.kind);
@@ -276,13 +296,23 @@ export async function handleCategoryAction(
     if (setupState?.completed_at) return { success: true, setupCompleted: true, alreadyCompleted: true };
     const rawIssueCategories = Array.isArray(payload.issueCategories) ? payload.issueCategories : [];
     const rawFacilityCategories = Array.isArray(payload.facilityCategories) ? payload.facilityCategories : [];
-    const issueCategories = rawIssueCategories.map((value, index) => issueCategoryInput(value, index));
-    const facilityCategories = rawFacilityCategories.map((value, index) => facilityCategoryInput(value, index));
-    if (issueCategories.length < 1 || facilityCategories.length < 1) throw new Error("validation-required");
+    const issuesEnabled = asBoolean(payload.issuesEnabled, true);
+    const facilitiesEnabled = asBoolean(payload.facilitiesEnabled, true);
+    const issueCategories = issuesEnabled
+      ? rawIssueCategories.map((value, index) => issueCategoryInput(value, index))
+      : [];
+    const facilityCategories = facilitiesEnabled
+      ? rawFacilityCategories.map((value, index) => facilityCategoryInput(value, index))
+      : [];
+    if ((issuesEnabled && issueCategories.length < 1) || (facilitiesEnabled && facilityCategories.length < 1)) {
+      throw new Error("validation-required");
+    }
     const { data, error } = await supabase.schema("app_api").rpc("backend_complete_initial_setup", {
       actor_uid: auth.uid,
+      facilities_enabled: facilitiesEnabled,
       issue_categories: issueCategories,
       facility_categories: facilityCategories,
+      issues_enabled: issuesEnabled,
     });
     if (error) throw error;
     return asRecord(data);

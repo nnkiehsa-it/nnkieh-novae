@@ -19,9 +19,10 @@ async function scopedAccessUids(payload: JsonRecord, supabase: BackendSupabase) 
     throw new Error("validation-required");
   }
 
-  const roleCodes = ["platform-admin", ...(scopeKind === "announcement" ? ["announcement-manager"] : [])];
-  const roleQuery = supabase.schema("app_private").from("user_role_assignments")
-    .select("uid").in("role_code", roleCodes).limit(ACCESS_LIST_LIMIT + 1);
+  const roleQuery = scopeKind === "announcement"
+    ? supabase.schema("app_private").from("user_role_assignments")
+      .select("uid").eq("role_code", "announcement-manager").limit(ACCESS_LIST_LIMIT + 1)
+    : Promise.resolve({ data: [], error: null });
   const categoryQuery = scopeKind === "issue"
     ? supabase.schema("app_private").from("user_issue_category_assignments")
       .select("uid").eq("category_id", categoryId).limit(ACCESS_LIST_LIMIT + 1)
