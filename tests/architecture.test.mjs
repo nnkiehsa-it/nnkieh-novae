@@ -1329,6 +1329,9 @@ test('primary navigation keeps desktop chrome and persistent mobile navigation',
   assert.match(issueBoard, /overflow-y-auto overflow-x-hidden overscroll-contain/u);
   assert.match(issueBoard, /<section class="relative flex min-h-0 flex-1 flex-col gap-5">/u);
   assert.match(issueBoardView, /v-else-if="sessionLoading"[\s\S]*flex min-h-0 flex-1 flex-col gap-5[\s\S]*route-scroll-through[\s\S]*overflow-y-auto overflow-x-hidden/u);
+  // Session skeleton and IssueBoard must be exclusive; concurrent mount leaves residual card shadows.
+  assert.match(issueBoardView, /<IssueBoard[\s\S]*v-else-if="isAllowedUser"/u);
+  assert.doesNotMatch(issueBoardView, /<IssueBoard[\s\S]*v-if="isAllowedUser"/u);
   assert.match(facilitiesView, /overflow-y-auto overflow-x-hidden overscroll-contain/u);
   assert.match(app, /requestIdleCallback/u);
   assert.match(app, /preloadPrimaryRouteComponents/u);
@@ -1703,6 +1706,8 @@ test('authenticated route pages share one content width and AppShell owns horizo
   [issueBoard, routePages[1]]
     .forEach((page) => assert.match(page, /scroll-shadow-bleed[\s\S]*overflow-y-auto overflow-x-hidden/u));
   assert.match(emptyState, /class="flex w-full min-w-0/u);
+  // Empty boards must not paint a card-elevation icon tile that looks like a residual skeleton card.
+  assert.match(emptyState, /<IconTile[\s\S]*elevation="none"/u);
   assert.match(pageLoadFailure, /<SurfacePanel padding="lg" class="flex w-full min-w-0/u);
   assert.match(feedbackBar, /action-feedback-card[\s\S]*min-h-14 w-full/u);
   assert.match(contentStyles, /\.settings-scroll--flat \{[\s\S]*@apply overflow-visible px-0 py-3/u);
@@ -1866,6 +1871,8 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   assert.match(commentComposer, /control-frame/u);
   assert.match(commentComposer, /<EditorSurface[\s\S]*tone="muted"[\s\S]*<ImageRemoveButton/u);
   assert.match(contentCardSkeleton, /<SurfacePanel[\s\S]*class="issue-card skeleton-card"/u);
+  assert.match(primitives, /@keyframes skeleton-card-enter \{[\s\S]*from \{[\s\S]*opacity: 0;[\s\S]*\}/u);
+  assert.doesNotMatch(primitives, /@keyframes skeleton-card-enter \{[\s\S]*transform:/u);
   assert.match(segmentedControl, /ACTIVE_SEGMENT_WIDTH_REM = 7/u);
   assert.match(segmentedControl, /:style="containerStyle"/u);
   assert.match(controls, /\.segmented-control__button--active \{[\s\S]*width: 7rem/u);

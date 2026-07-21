@@ -493,6 +493,8 @@
   }
 
   .skeleton-card {
+    /* Opacity-only enter: transform + box-shadow compositing leaves residual
+       card shadows after unmount on some mobile browsers. */
     animation: skeleton-card-enter 320ms var(--motion-ease-enter) both;
     animation-delay: calc(var(--skeleton-card-index, 0) * 45ms);
   }
@@ -525,6 +527,5 @@
 @keyframes skeleton-card-enter {
   from {
     opacity: 0;
-    transform: translateY(6px);
   }
 }

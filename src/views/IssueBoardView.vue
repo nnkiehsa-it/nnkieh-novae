@@ -34,15 +34,15 @@
       </div>
     </div>
 
-    <div v-else-if="!isAllowedUser" class="sr-only" role="status">
-      {{ t("auth.redirectingToSignIn") }}
-    </div>
-
     <IssueBoard
-      v-if="isAllowedUser"
+      v-else-if="isAllowedUser"
       :is-form-open="isFormOpen"
       @toggle-form="toggleForm"
     />
+
+    <div v-else class="sr-only" role="status">
+      {{ t("auth.redirectingToSignIn") }}
+    </div>
   </RoutePageFrame>
 </template>
 

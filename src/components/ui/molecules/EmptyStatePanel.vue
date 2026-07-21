@@ -3,7 +3,11 @@
     class="flex w-full min-w-0 flex-col items-center justify-center px-6 py-12 text-center"
     :class="framed ? 'surface-card surface-pad-lg' : ''"
   >
-    <IconTile size="lg" :tone="tone === 'danger' ? 'danger' : 'surface'">
+    <IconTile
+      size="lg"
+      elevation="none"
+      :tone="tone === 'danger' ? 'danger' : 'surface'"
+    >
       <AppIcon :name="icon" :size="8" :stroke-width="1.5" />
     </IconTile>
     <h2 class="mt-5 text-xl font-semibold tracking-[0.015em] text-ink-950 dark:text-ink-50">
