@@ -304,6 +304,12 @@
       box-shadow var(--motion-duration) var(--motion-ease);
   }
 
+  body,
+  #app,
+  .app-root {
+    touch-action: manipulation;
+  }
+
   .app-header::before {
     position: absolute;
     inset: 0 0 auto;

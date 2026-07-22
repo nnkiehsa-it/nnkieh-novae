@@ -6,7 +6,7 @@ function isEditableTarget(target: EventTarget | null) {
 }
 
 export function preventDoubleTapZoom() {
-  let previousTouch: { at: number; target: EventTarget | null; x: number; y: number } | null = null;
+  let previousTouch: { at: number; x: number; y: number } | null = null;
   document.addEventListener('touchend', (event) => {
     if (event.changedTouches.length !== 1 || isEditableTarget(event.target)) {
       previousTouch = null;
@@ -16,10 +16,17 @@ export function preventDoubleTapZoom() {
     if (!touch) return;
     const now = performance.now();
     const isDoubleTap = previousTouch
-      && previousTouch.target === event.target
       && now - previousTouch.at <= DOUBLE_TAP_WINDOW_MS
       && Math.hypot(touch.clientX - previousTouch.x, touch.clientY - previousTouch.y) <= DOUBLE_TAP_DISTANCE_PX;
-    if (isDoubleTap) event.preventDefault();
-    previousTouch = { at: now, target: event.target, x: touch.clientX, y: touch.clientY };
-  }, { passive: false });
+    if (isDoubleTap) {
+      event.preventDefault();
+      previousTouch = null;
+      return;
+    }
+    previousTouch = { at: now, x: touch.clientX, y: touch.clientY };
+  }, { capture: true, passive: false });
+
+  document.addEventListener('dblclick', (event) => {
+    if (!isEditableTarget(event.target)) event.preventDefault();
+  }, { capture: true, passive: false });
 }

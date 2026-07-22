@@ -128,7 +128,7 @@
 
 - `constants/app.ts` / `constants/input-limits.ts` — Novae 品牌名稱、學校顯示設定與前端輸入長度
 - `constants/categories.ts` / `statuses.ts` — 動態分類衍生規則與提案／設備狀態判斷
-- `lib/` — `firebase`、`google-identity`（lazy GIS Token Client）、`firebase-messaging`、`firebase-app-check`、`auth-token`、`supabase`、`request`、`request-id`、`route-request`、`reconnect`、`route`、`page-size`、`format`、`search`、`issue-status`、`issue-timeline`、`issue-sort`、`persistent-cache`（IndexedDB 跨 reload 快取）、`touch-zoom`（保留 pinch zoom、阻止雙擊放大）、`in-app-browser`、`pwa-install`、`caret`、`markdown-*`、`image-processing`
+- `lib/` — `firebase`、`google-identity`（lazy GIS Token Client）、`firebase-messaging`、`firebase-app-check`、`auth-token`、`supabase`、`request`、`request-id`、`route-request`、`reconnect`、`route`、`page-size`、`format`、`search`、`issue-status`、`issue-timeline`、`issue-sort`、`persistent-cache`（IndexedDB 跨 reload 快取）、`touch-zoom`（以 capture touchend 座標與 dblclick 雙層攔截雙擊放大，仍保留 pinch zoom）、`in-app-browser`、`pwa-install`、`caret`、`markdown-*`、`image-processing`
 - `types/index.ts` / `types/categories.ts` / `types/pwa.d.ts` / `types/google-identity.d.ts` — 共通型別、動態分類契約、設備領域型別與 GIS Token Client 型別
 
 ---

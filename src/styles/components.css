@@ -1,6 +1,7 @@
 @layer components {
   .decoded-image {
-    @apply relative inline-flex items-center justify-center overflow-hidden bg-ink-100/70 text-ink-500 dark:bg-ink-900/70 dark:text-ink-400;
+    @apply relative flex items-center justify-center overflow-hidden bg-ink-100/70 text-ink-500 dark:bg-ink-900/70 dark:text-ink-400;
+    line-height: 0;
   }
 
   .decoded-image__loading,

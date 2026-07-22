@@ -1641,6 +1641,18 @@ test('platform feature switches persist atomically and remain configurable after
   assert.match(categoryAction, /saveFacilityCategory[\s\S]*is_active: true/u);
 });
 
+test('touch handling blocks double-tap zoom without disabling pinch zoom', async () => {
+  const baseStyles = await read('src/styles/base.css');
+  const touchZoom = await read('src/lib/touch-zoom.ts');
+
+  assert.match(baseStyles, /body,[\s\S]*#app,[\s\S]*\.app-root \{\s*touch-action: manipulation;/u);
+  assert.match(touchZoom, /document\.addEventListener\('touchend'[\s\S]*capture: true, passive: false/u);
+  assert.match(touchZoom, /Math\.hypot\(touch\.clientX - previousTouch\.x[\s\S]*event\.preventDefault\(\)/u);
+  assert.doesNotMatch(touchZoom, /previousTouch\.target === event\.target/u);
+  assert.match(touchZoom, /document\.addEventListener\('dblclick'[\s\S]*event\.preventDefault\(\)[\s\S]*capture: true/u);
+  assert.doesNotMatch(touchZoom, /gesturestart|maximum-scale|user-scalable/u);
+});
+
 test('public API errors use a generated code-only contract', async () => {
   const apiErrorConfig = JSON.parse(await read('config/api-errors.config.json'));
   const backendResponse = await read('supabase/functions/backendAction/response.ts');
