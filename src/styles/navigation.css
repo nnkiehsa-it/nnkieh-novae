@@ -205,16 +205,17 @@
   }
 
   .desktop-utility-content {
-    --desktop-utility-padding: clamp(2.5rem, 3vw, 3rem);
+    --desktop-utility-padding: clamp(1rem, 1.5vw, 1.25rem);
     padding: var(--desktop-utility-padding);
   }
 
   .desktop-utility-content .settings-panel__header {
-    padding: 0 0 1.5rem;
+    padding: 0 0 0.75rem;
   }
 
+  .desktop-utility-scroll,
   .desktop-utility-content .settings-scroll {
-    padding: 1.5rem 0 0;
+    padding: 0.375rem;
   }
 
 

@@ -43,6 +43,15 @@
     min-height: 0;
   }
 
+  .route-page-frame--bleed {
+    --route-page-bleed-left: max(var(--app-viewport-gutter), env(safe-area-inset-left));
+    --route-page-bleed-right: max(var(--app-viewport-gutter), env(safe-area-inset-right));
+    margin-left: calc(var(--route-page-bleed-left) * -1);
+    margin-right: calc(var(--route-page-bleed-right) * -1);
+    max-width: none;
+    width: calc(100% + var(--route-page-bleed-left) + var(--route-page-bleed-right));
+  }
+
   .route-page-frame--padding-compact {
     padding-block: 0.5rem;
   }

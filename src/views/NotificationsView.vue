@@ -1,9 +1,9 @@
 <template>
   <RoutePageFrame
     :padding="embedded ? undefined : 'compact'"
-    :class="embedded ? 'scrollbar-subtle flex min-h-0 flex-1 flex-col overflow-y-auto' : ''"
+    :class="embedded ? 'desktop-utility-scroll scrollbar-subtle flex min-h-0 flex-1 flex-col overflow-y-auto' : ''"
   >
-    <div v-if="embedded" class="mb-5 flex items-start justify-between gap-3">
+    <div v-if="embedded" class="mb-4 flex items-start justify-between gap-3">
       <div>
         <h2 id="desktop-utility-title" class="text-xl font-semibold tracking-[0.015em] text-ink-950 dark:text-ink-50">{{ t('navigation.notify') }}</h2>
         <p class="mt-1 text-xs text-ink-500 dark:text-ink-400">{{ t('notification.newActivityWillAppearHere') }}</p>

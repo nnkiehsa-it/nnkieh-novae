@@ -1,5 +1,5 @@
 <template>
-  <RoutePageFrame as="section" layout="fill" class="entry-composer-page">
+  <RoutePageFrame as="section" bleed layout="fill" class="entry-composer-page">
     <IssueComposer
       :category="category"
       :category-label="categoryLabel"

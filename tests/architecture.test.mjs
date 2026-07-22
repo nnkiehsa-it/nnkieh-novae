@@ -1683,6 +1683,9 @@ test('navigation and contextual creation share the same responsive information a
   const notificationsView = await read('src/views/NotificationsView.vue');
   const navigationStyles = await read('src/styles/navigation.css');
   const responsiveStyles = await read('src/styles/responsive.css');
+  const issueComposerView = await read('src/views/IssueComposerView.vue');
+  const facilityComposerView = await read('src/views/FacilityComposerView.vue');
+  const announcementComposerView = await read('src/views/AnnouncementComposerView.vue');
 
   assert.match(appShell, /label: t\('issue\.proposal'\)/u);
   assert.match(appShell, /:category-filter="mobileCategoryFilter"/u);
@@ -1713,8 +1716,13 @@ test('navigation and contextual creation share the same responsive information a
   assert.match(controls, /\.button-contextual \{[\s\S]*bg-surface[\s\S]*box-shadow: var\(--shadow-card\)/u);
   assert.doesNotMatch(controls, /\.button-dialog-close\b/u);
   assert.match(desktopUtility, /class="desktop-utility-content/u);
-  assert.doesNotMatch(notificationsView, /embedded \? '[^']*\bpx-(?:5|8)\b/u);
-  assert.match(navigationStyles, /\.desktop-utility-content \{[\s\S]*clamp\(2\.5rem, 3vw, 3rem\)[\s\S]*padding: var\(--desktop-utility-padding\)/u);
+  assert.match(notificationsView, /desktop-utility-scroll/u);
+  assert.match(navigationStyles, /\.desktop-utility-content \{[\s\S]*clamp\(1rem, 1\.5vw, 1\.25rem\)[\s\S]*padding: var\(--desktop-utility-padding\)/u);
+  assert.match(navigationStyles, /\.desktop-utility-scroll,[\s\S]*\.settings-scroll \{[\s\S]*padding: 0\.375rem/u);
+  [issueComposerView, facilityComposerView, announcementComposerView]
+    .forEach((view) => assert.match(view, /<RoutePageFrame[^>]*bleed[^>]*layout="fill"[^>]*entry-composer-page/u));
+  assert.match(responsiveStyles, /\.entry-composer-page \{[\s\S]*max-width: none/u);
+  assert.match(responsiveStyles, /\.entry-composer-page__surface \{[\s\S]*border-radius: 0;[\s\S]*box-shadow: none/u);
   assert.match(responsiveStyles, /\.dialog-surface\.surface-pad-lg \{[\s\S]*padding-top: calc\(var\(--panel-padding\) \+ 0\.375rem\)/u);
   assert.ok(settingsPanel.indexOf('issue.myProposal') < settingsPanel.indexOf('dashboard.statistics'));
   assert.ok(settingsPanel.indexOf('dashboard.statistics') < settingsPanel.indexOf('adminCenter.openManagement'));
@@ -1761,10 +1769,11 @@ test('authenticated route pages share one content width and AppShell owns horizo
   assert.match(primitives, /\.viewport-floating-inline \{[\s\S]*left: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-left\)\);[\s\S]*right: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-right\)\);/u);
   assert.match(primitives, /\.route-page-frame \{[\s\S]*max-width: var\(--app-content-max-width\);[\s\S]*min-width: 0;[\s\S]*width: 100%;/u);
   assert.match(primitives, /\.route-page-frame--fill \{[\s\S]*flex: 1 1 0%;[\s\S]*height: 100%;[\s\S]*min-height: 0;/u);
+  assert.match(primitives, /\.route-page-frame--bleed \{[\s\S]*margin-left:[\s\S]*margin-right:[\s\S]*max-width: none;[\s\S]*width: calc/u);
   assert.match(primitives, /\.route-page-frame--bottom-safe \{[\s\S]*padding-bottom: 1rem/u);
   assert.doesNotMatch(baseStyles, /\.app-viewport-frame/u);
   assert.match(viewportFrame, /class="viewport-frame"[\s\S]*'viewport-content': content/u);
-  assert.match(routePageFrame, /class="route-page-frame"[\s\S]*route-page-frame--\$\{layout\}[\s\S]*route-page-frame--padding-\$\{padding\}/u);
+  assert.match(routePageFrame, /class="route-page-frame"[\s\S]*route-page-frame--\$\{layout\}[\s\S]*route-page-frame--padding-\$\{padding\}[\s\S]*route-page-frame--bleed/u);
   assert.match(appShell, /<ViewportFrame as="main" class="flex min-h-0 flex-1 flex-col">/u);
   assert.match(mobileHeader, /<ViewportFrame/u);
   assert.doesNotMatch(mobileHeader, /mx-auto|max-w-/u);

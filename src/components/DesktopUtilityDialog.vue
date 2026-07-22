@@ -9,7 +9,7 @@
       : 'desktop-utility-popup flex h-[min(78dvh,720px)] w-[min(88vw,720px)] max-w-none overflow-hidden'"
     @close="emit('close')"
   >
-    <div class="desktop-utility-content flex min-h-0 min-w-0 flex-1 bg-[rgb(var(--color-page-background))]">
+    <div class="desktop-utility-content flex min-h-0 min-w-0 flex-1 overflow-hidden bg-[rgb(var(--color-page-background))]">
       <SettingsView v-if="activePanel === 'settings'" embedded @close="emit('close')" />
       <NotificationsView v-else embedded @close="emit('close')" />
     </div>
