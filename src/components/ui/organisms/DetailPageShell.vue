@@ -72,7 +72,7 @@
       </header>
 
       <div class="detail-tab-stage relative flex min-h-0 flex-1 flex-col overflow-hidden">
-        <Transition :name="detailTabTransitionName">
+        <Transition name="detail-tab">
           <div
             v-if="!showComments || activeTab === 'details'"
             key="details"
@@ -154,9 +154,6 @@ const tabOptions = computed(() => [
     title: t('comments.viewLabelCountComments', { label: t(props.commentsLabel), count: props.commentCount }),
   },
 ]);
-const detailTabTransitionName = computed(() => activeTab.value === 'comments'
-  ? 'detail-tab-forward'
-  : 'detail-tab-back');
 
 watch(
   () => props.initialTab,

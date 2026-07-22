@@ -49,7 +49,7 @@
 
 - `main.ts` — 掛載 app、resume、PWA、session
 - `i18n/` — `messages/<locale>/<domain>.ts` 依語系與領域拆分的 catalog（含 API error code 對應文案）、系統語言首次偵測、localStorage 語言偏好、日期 locale 與共用 `t()`；所有前端可見字串只放語系目錄，key 使用短而穩定的語意命名
-- `App.vue` — startup gate + AppShell；route stage 依導覽深度套用新舊頁重疊的 push／pop 與同層 crossfade，避免 `out-in` 卸載空檔；iOS 保留無 transform 的 opacity 轉場以防陰影殘影
+- `App.vue` — startup gate + AppShell；route stage 使用新舊頁重疊的純 opacity crossfade，避免 `out-in` 卸載空檔與左右滑動，也不建立 transform 陰影合成層
 - `sw.ts` — PWA SW、快取策略、FCM 背景通知
 - `style.css` — 全域樣式載入入口；依序載入 base、primitives 與領域樣式
 - `styles/base.css` — design tokens、全域基礎與頁面骨架
@@ -58,7 +58,7 @@
 - `styles/navigation.css` — 桌面側欄與手機底部導覽
 - `styles/content.css` / `responsive.css` — 列表、設定、統計、Dialog 與跨裝置覆寫
 - `assets/fonts/` — JetBrains Mono 與 Material Symbols 子集
-- `router/index.ts` / `router/default-route.ts` / `router/route-components.ts` / `router/navigation-hierarchy.ts` — 組合 modules、依啟用功能選擇登入預設頁並阻擋已關閉入口、abort 上一頁、session guard、主要頁面與三領域新增頁 chunk 預載，以及 root／新增／子頁／巢狀詳情深度、轉場方向與通知來源返回
+- `router/index.ts` / `router/default-route.ts` / `router/route-components.ts` / `router/navigation-hierarchy.ts` — 組合 modules、依啟用功能選擇登入預設頁並阻擋已關閉入口、abort 上一頁、session guard、主要頁面與三領域新增頁 chunk 預載，以及 root／新增／子頁／巢狀詳情深度與通知來源返回
 - `router/authRoutes.ts` / `issueRoutes.ts` / `facilityRoutes.ts` / `announcementRoutes.ts` / `adminRoutes.ts` / `notificationRoutes.ts` / `settingsRoutes.ts`
 - `views/LoginView.vue` — 登入
 - `views/IssueBoardView.vue` — 提案看板
@@ -84,7 +84,7 @@
 - 依賴方向固定為 `atoms → molecules → organisms`；同層可組合，低層不得反向 import 高層，`check:ui` 會阻止 flat path 與逆向依賴
 - `organisms/ViewportFrame.vue` / `organisms/RoutePageFrame.vue` — AppShell 的 viewport gutter／safe-area 寬度與 route page 的 max-width、全高 flex、垂直 padding、底部導覽安全距離入口；手機 `bottom-safe` 共用 Bottom Tab 實際螢幕底距，使 Detail 的時間／操作列到 Tab 與 Tab 到螢幕底部保持相同留白；需要沉浸式輸入的共用新增頁使用 `bleed` 明確延伸到可用內容區邊緣，route view 不自行計算 viewport 或拼裝頁面骨架
 - `organisms/ContentCardCollection.vue` / `ContentCardShell.vue` / `ContentCardSkeleton.vue` — 提案、公告、設備共用的列表狀態、卡片表面、作者／標題／時間／狀態與操作區；支援不取代可見入口的長按／右鍵快捷操作；列表與 load-more 骨架共用無陰影內層的 opacity 進場（`skeleton-card`／`skeleton-enter`），保留卡片陰影並避免 iOS WebKit 卸載殘影，領域元件只填資料及差異 slots
-- `organisms/DetailRouteState.vue` / `DetailPageShell.vue` / `SkeletonDetail.vue` — 三領域詳情共用的完整高度鏈、狀態、操作與 responsive panel；手機內容／留言切換共用具方向感的轉場，iOS 降為 opacity 以避免陰影殘影
+- `organisms/DetailRouteState.vue` / `DetailPageShell.vue` / `SkeletonDetail.vue` — 三領域詳情共用的完整高度鏈、狀態、操作與 responsive panel；手機內容／留言切換只使用短 opacity crossfade，不做左右位移
 - `organisms/EntryComposerShell.vue` / `MarkdownImageEditor.vue` / `VisualTableEditor.vue` — 三領域共用的路由新增頁、鍵盤可視高度、未儲存離頁攔截與 Markdown／表格編輯流程；較小控制留在 molecules
 - `organisms/DialogShell.vue` / `AdaptiveActionMenu.vue` — Dialog overlay、card surface、scroll lock、focus trap、ARIA、返回鍵堆疊與 dismiss/persistent 行為的唯一完整外殼；一般浮層在手機自適應為可向下拖曳的 Bottom Sheet，選單共用同一份 slots 並在桌面使用 Dropdown、手機使用 Sheet；領域元件只填內容與 actions
 
@@ -92,7 +92,7 @@
 
 ## components（應用）
 
-- Shell：`AppShell.vue`（共用導覽狀態、返回、捲動記憶與桌面 utility popup）、`app-shell/AppDesktopSidebar.vue`、`app-shell/AppMobileHeader.vue`（返回鍵以寬度／opacity 收合並帶動標題平滑位移，標題內容 crossfade）、`app-shell/AppMobileBottomNav.vue`、`app-shell/types.ts`、`AppStartupScreen.vue`、`LoginPanel.vue`、`ActionFeedbackBar.vue`
+- Shell：`AppShell.vue`（共用導覽狀態、返回、捲動記憶與桌面 utility popup）、`app-shell/AppDesktopSidebar.vue`、`app-shell/AppMobileHeader.vue`（返回鍵保留單一 DOM，以寬度／opacity 收合；標題維持單一內容實例，避免 keyed 雙層文字跳位）、`app-shell/AppMobileBottomNav.vue`、`app-shell/types.ts`、`AppStartupScreen.vue`、`LoginPanel.vue`、`ActionFeedbackBar.vue`
 - 設定／通知：`SettingsPanelContent.vue`、`DesktopUtilityDialog.vue`；手機與深層連結保留獨立路由頁，桌面側欄的通知與頭像分別開啟各自尺寸與內容的獨立大型 popup
 - 新增頁：`IssueComposer`、`FacilityComposer`、`AnnouncementComposer` 搭配 `views/IssueComposerView.vue`、`FacilityComposerView.vue`、`AnnouncementComposerView.vue`；手機隱藏 Bottom Nav，手機與桌面皆以 full-bleed 頁面填滿可用內容區；共用 Composer 在桌面為按鈕陰影預留底部繪製空間，手機採 1rem iOS 式側距並只保留扣除多餘安全區後的緊湊底距，送出後 replace 至新內容詳情
 - Dialog：`ConfirmDialog`、`AppInstallPromptDialog`、`AppUpdatePromptDialog`、`PushPermissionPromptDialog`、`FacilityStatusDialog`、`IssueReviewDialog`、`IssueStatusDialog`

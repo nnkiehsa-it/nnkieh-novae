@@ -341,96 +341,29 @@
   }
 
   .route-content-frame {
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
     background-color: rgb(var(--color-page-background));
     min-height: 100%;
-    transform-origin: 50% 0;
   }
 
-  .route-swap-enter-active,
-  .route-forward-enter-active,
-  .route-back-enter-active {
+  .route-fade-enter-active {
     position: relative;
     z-index: 2;
-    transition:
-      opacity 260ms var(--motion-ease-enter),
-      transform 280ms var(--motion-ease-enter);
-    will-change: opacity, transform;
+    transition: opacity 220ms var(--motion-ease-enter);
+    will-change: opacity;
   }
 
-  .route-swap-leave-active,
-  .route-forward-leave-active,
-  .route-back-leave-active {
+  .route-fade-leave-active {
     position: absolute;
     inset: 0;
     z-index: 1;
     pointer-events: none;
-    transition:
-      opacity 180ms var(--motion-ease-exit),
-      transform 240ms var(--motion-ease-exit);
-    will-change: opacity, transform;
+    transition: opacity 160ms var(--motion-ease-exit);
+    will-change: opacity;
   }
 
-  .route-swap-enter-from {
+  .route-fade-enter-from,
+  .route-fade-leave-to {
     opacity: 0;
-    transform: translate3d(0, 6px, 0);
-  }
-
-  .route-swap-leave-to {
-    opacity: 0;
-  }
-
-  .route-forward-enter-from {
-    opacity: 0;
-    transform: translate3d(1rem, 0, 0);
-  }
-
-  .route-forward-leave-to {
-    opacity: 0.72;
-    transform: translate3d(-0.35rem, 0, 0);
-  }
-
-  .route-back-enter-from {
-    opacity: 0;
-    transform: translate3d(-0.65rem, 0, 0);
-  }
-
-  .route-back-leave-to {
-    opacity: 0.72;
-    transform: translate3d(0.75rem, 0, 0);
-  }
-
-  /*
-   * iOS WebKit can retain a rasterized descendant box-shadow when a
-   * transformed route layer is removed. Keep native route fades on iOS while
-   * leaving shadow-bearing cards in the normal paint layer.
-   */
-  @supports (-webkit-touch-callout: none) {
-    @media (max-width: 767px) {
-      .route-content-frame {
-        -webkit-backface-visibility: visible;
-        backface-visibility: visible;
-      }
-
-      .route-swap-enter-active,
-      .route-swap-leave-active,
-      .route-forward-enter-active,
-      .route-forward-leave-active,
-      .route-back-enter-active,
-      .route-back-leave-active {
-        transition-property: opacity;
-        will-change: opacity;
-      }
-
-      .route-swap-enter-from,
-      .route-forward-enter-from,
-      .route-forward-leave-to,
-      .route-back-enter-from,
-      .route-back-leave-to {
-        transform: none;
-      }
-    }
   }
 
   @media (max-width: 767px) {

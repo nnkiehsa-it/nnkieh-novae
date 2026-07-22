@@ -9,7 +9,7 @@
   <AppShell v-else>
     <div class="route-stage relative flex h-full min-h-0 min-w-0 w-full max-w-full flex-1 flex-col">
       <RouterView v-slot="{ Component, route: viewRoute }">
-        <Transition :name="routeTransitionName">
+        <Transition name="route-fade">
           <div
             :key="String(viewRoute.name ?? viewRoute.path)"
             class="route-content-frame flex h-full min-h-0 min-w-0 w-full max-w-full flex-1 flex-col"
@@ -91,7 +91,6 @@ import { ensureCategoryCatalog } from '@/composables/useCategories';
 import { getDefaultAuthenticatedRoute } from '@/router/default-route';
 import { preloadPrimaryRouteComponents } from '@/router/route-components';
 import { useI18n } from '@/i18n';
-import { getRouteNavigationDepth } from '@/router/navigation-hierarchy';
 
 const APP_RELEASE_MARKER = '2026-06-27-1516';
 const LAST_APP_VERSION_STORAGE_KEY = 'novae:last-app-version';
@@ -107,16 +106,6 @@ const route = useRoute();
 const router = useRouter();
 const { appReady, isAdmin, roleLoading, user } = useSession();
 const { t } = useI18n();
-const routeTransitionName = ref('route-swap');
-let previousNavigationDepth = getRouteNavigationDepth(route);
-
-watch(() => route.fullPath, () => {
-  const nextDepth = getRouteNavigationDepth(route);
-  routeTransitionName.value = nextDepth > previousNavigationDepth
-    ? 'route-forward'
-    : nextDepth < previousNavigationDepth ? 'route-back' : 'route-swap';
-  previousNavigationDepth = nextDepth;
-});
 let routePreloadIdleId: number | null = null;
 let routePreloadTimer = 0;
 const idleWindow = window as unknown as {

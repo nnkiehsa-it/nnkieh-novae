@@ -341,49 +341,21 @@
   transform: translateY(-4px) scale(0.985);
 }
 
-.detail-tab-forward-enter-active,
-.detail-tab-forward-leave-active,
-.detail-tab-back-enter-active,
-.detail-tab-back-leave-active {
-  transition:
-    opacity 200ms var(--motion-ease-enter),
-    transform 240ms var(--motion-ease-enter);
+.detail-tab-enter-active,
+.detail-tab-leave-active {
+  transition: opacity 180ms var(--motion-ease-enter);
 }
 
-.detail-tab-forward-leave-active,
-.detail-tab-back-leave-active {
+.detail-tab-leave-active {
   position: absolute;
   inset: 0;
   width: 100%;
   pointer-events: none;
 }
 
-.detail-tab-forward-enter-from,
-.detail-tab-back-leave-to {
+.detail-tab-enter-from,
+.detail-tab-leave-to {
   opacity: 0;
-  transform: translateX(0.75rem);
-}
-
-.detail-tab-forward-leave-to,
-.detail-tab-back-enter-from {
-  opacity: 0;
-  transform: translateX(-0.5rem);
-}
-
-@supports (-webkit-touch-callout: none) {
-  .detail-tab-forward-enter-active,
-  .detail-tab-forward-leave-active,
-  .detail-tab-back-enter-active,
-  .detail-tab-back-leave-active {
-    transition-property: opacity;
-  }
-
-  .detail-tab-forward-enter-from,
-  .detail-tab-forward-leave-to,
-  .detail-tab-back-enter-from,
-  .detail-tab-back-leave-to {
-    transform: none;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

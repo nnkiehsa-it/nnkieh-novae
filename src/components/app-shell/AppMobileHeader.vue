@@ -20,19 +20,16 @@
           </AppButton>
         </div>
         <h1 class="app-header__title flex min-w-0 items-center text-ink-950 dark:text-ink-50" :aria-label="title">
-          <Transition name="header-title">
-            <BoardCategorySelector
-              v-if="categoryFilter && categoryLabel"
-              :key="`category:${categoryFilter}`"
-              :model-value="categoryFilter"
-              :label="categoryLabel"
-              :options="categoryOptions"
-              :selector-label="t('issue.chooseProposalCategory')"
-              variant="mobile-header"
-              @update:model-value="filter => $emit('select-category', filter)"
-            />
-            <span v-else :key="`title:${title}`" class="truncate text-2xl font-semibold leading-tight tracking-[0.015em]">{{ title }}</span>
-          </Transition>
+          <BoardCategorySelector
+            v-if="categoryFilter && categoryLabel"
+            :model-value="categoryFilter"
+            :label="categoryLabel"
+            :options="categoryOptions"
+            :selector-label="t('issue.chooseProposalCategory')"
+            variant="mobile-header"
+            @update:model-value="filter => $emit('select-category', filter)"
+          />
+          <span v-else class="truncate text-2xl font-semibold leading-tight tracking-[0.015em]">{{ title }}</span>
         </h1>
       </div>
     </ViewportFrame>
