@@ -86,7 +86,7 @@
     <!-- Mobile Viewport Skeleton -->
     <article
       v-else
-      class="flex h-full min-h-0 flex-col overflow-hidden pb-[5px]"
+      class="flex h-full min-h-0 flex-col overflow-hidden"
     >
       <header class="flex shrink-0 items-start gap-3 px-0 py-3">
         <!-- Tags -->

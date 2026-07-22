@@ -323,8 +323,10 @@
   }
 
   .app-header__back {
-    height: 1.875rem;
-    width: 1.875rem;
+    height: var(--tap-target);
+    min-height: var(--tap-target);
+    min-width: var(--tap-target);
+    width: var(--tap-target);
   }
 
   .app-main-content {
@@ -383,6 +385,10 @@
 
     .app-main-content {
       padding-top: calc(var(--app-header-height) + env(safe-area-inset-top) + 0.25rem);
+    }
+
+    .app-root[data-bottom-nav='true'] .app-main-content {
+      padding-bottom: 0;
     }
 
   }

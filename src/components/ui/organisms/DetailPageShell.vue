@@ -46,7 +46,7 @@
 
     <article
       v-else
-      class="flex h-full min-h-0 flex-col overflow-hidden pb-[5px] md:hidden"
+      class="flex h-full min-h-0 flex-col overflow-hidden md:hidden"
       :aria-label="t(detailsLabel)"
     >
       <header class="flex shrink-0 items-start gap-3 px-0 py-3">
@@ -81,7 +81,7 @@
             <div class="scroll-shadow-bleed--compact min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-3 overscroll-contain">
               <slot name="details" :compact="true" :scroll-content="false" />
             </div>
-            <div class="shrink-0 px-0 pb-2">
+            <div class="shrink-0 px-0">
               <slot name="actions" :compact="true" />
             </div>
           </div>

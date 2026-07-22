@@ -77,7 +77,7 @@
   }
 
   .app-header__back-slot--visible {
-    width: 1.875rem;
+    width: var(--tap-target);
     margin-right: 0.5rem;
     opacity: 1;
     pointer-events: auto;
