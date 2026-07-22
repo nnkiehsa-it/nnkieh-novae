@@ -48,15 +48,20 @@ export async function lookupAccessMember(query: string) {
   return withoutPlatformAdmins(await fn({ query: query.trim() }));
 }
 
-export async function setUserRoles(
+export async function setUserAccessScope(
   uid: string,
-  roles: RoleCode[],
-  managedIssueCategoryIds: string[],
-  managedFacilityCategoryIds: string[],
+  scope: AccessScope,
+  grant: boolean,
 ) {
   const fn = invokeBackendAction<
-    { uid: string; roles: RoleCode[]; managedIssueCategoryIds: string[]; managedFacilityCategoryIds: string[]; requestId: string },
+    { categoryId?: string; grant: boolean; requestId: string; scopeKind: AccessScope['kind']; uid: string },
     { success: boolean; roles: RoleCode[]; managedIssueCategoryIds: string[]; managedFacilityCategoryIds: string[] }
-  >('setUserRoles');
-  return await fn({ uid, roles, managedIssueCategoryIds, managedFacilityCategoryIds, requestId: createRequestId() });
+  >('setUserAccessScope');
+  return await fn({
+    categoryId: 'categoryId' in scope ? scope.categoryId : undefined,
+    grant,
+    requestId: createRequestId(),
+    scopeKind: scope.kind,
+    uid,
+  });
 }

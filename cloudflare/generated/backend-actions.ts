@@ -178,7 +178,7 @@ export const BACKEND_ACTION_POLICIES = {
     "group": "sensitive-write",
     "extraLimit": "announcementLikeHourly"
   },
-  "setUserRoles": {
+  "setUserAccessScope": {
     "group": "admin-write",
     "extraLimit": "roleWriteHourly"
   },

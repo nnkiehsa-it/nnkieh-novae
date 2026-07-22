@@ -50,7 +50,7 @@ export const BACKEND_ACTION_NAMES = [
   'savePlatformFeatures',
   'setIssueCommentsEnabled',
   'setAnnouncementLike',
-  'setUserRoles',
+  'setUserAccessScope',
   'toggleSupport',
   'toggleFacilityAffected',
   'unregisterPushToken',

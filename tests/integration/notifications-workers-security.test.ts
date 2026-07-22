@@ -215,6 +215,20 @@ integrationTest("new proposal and facility notifications are personal to categor
     .eq("uid", managers.at(-1)!.auth.uid)
     .eq("category_id", facilityCategoryId);
   if (disableFacilityNotificationError) throw disableFacilityNotificationError;
+  await callAction("setUserAccessScope", {
+    grant: true,
+    requestId: requestId("notification-preserve-facility-opt-out"),
+    scopeKind: "announcement",
+    uid: managers.at(-1)!.auth.uid,
+  }, admin.auth);
+  const { data: preservedOptOut, error: preservedOptOutError } = await supabase.schema("app_private")
+    .from("user_facility_category_assignments")
+    .select("notify_on_created")
+    .eq("uid", managers.at(-1)!.auth.uid)
+    .eq("category_id", facilityCategoryId)
+    .single();
+  if (preservedOptOutError) throw preservedOptOutError;
+  assert.equal(preservedOptOut.notify_on_created, false);
   await resetFcmRequests();
   const issueAuthor = await seedActor(`category-notification-issue-author-${crypto.randomUUID()}`);
   const facilityAuthor = await seedActor(`category-notification-facility-author-${crypto.randomUUID()}`);

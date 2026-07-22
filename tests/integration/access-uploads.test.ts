@@ -77,33 +77,46 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
 
   await expectActionError(
     "validation-required",
-    () => callAction("setUserRoles", {
-      managedIssueCategoryIds: [],
-      roles: ["announcement-manager"],
+    () => callAction("setUserAccessScope", {
+      grant: true,
+      scopeKind: "announcement",
       uid: target.auth.uid,
     }, admin.auth),
   );
   await expectActionError(
     "permission-denied",
-    () => callAction("setUserRoles", {
-      managedIssueCategoryIds: [],
+    () => callAction("setUserAccessScope", {
+      grant: true,
       requestId: requestId("denied-role"),
-      roles: ["announcement-manager"],
+      scopeKind: "announcement",
       uid: target.auth.uid,
     }, user.auth),
   );
 
   const roleRequestId = requestId("set-role");
   const rolePayload = {
-    managedFacilityCategoryIds: ["general"],
-    managedIssueCategoryIds: ["public-issues"],
+    grant: true,
     requestId: roleRequestId,
-    roles: ["announcement-manager"],
+    scopeKind: "announcement",
     uid: target.auth.uid,
   };
-  const firstRoleWrite = await callAction("setUserRoles", rolePayload, admin.auth);
-  const replayedRoleWrite = await callAction("setUserRoles", rolePayload, admin.auth);
+  const firstRoleWrite = await callAction("setUserAccessScope", rolePayload, admin.auth);
+  const replayedRoleWrite = await callAction("setUserAccessScope", rolePayload, admin.auth);
   assert.deepEqual(replayedRoleWrite, firstRoleWrite);
+  await callAction("setUserAccessScope", {
+    categoryId: "public-issues",
+    grant: true,
+    requestId: requestId("set-issue-scope"),
+    scopeKind: "issue",
+    uid: target.auth.uid,
+  }, admin.auth);
+  await callAction("setUserAccessScope", {
+    categoryId: "general",
+    grant: true,
+    requestId: requestId("set-facility-scope"),
+    scopeKind: "facility",
+    uid: target.auth.uid,
+  }, admin.auth);
   target = await refreshActor(target);
   assert.ok(target.auth.permissions.includes("announcement.manage"));
   assert.ok(!target.auth.permissions.includes("facility.manage"));
@@ -128,37 +141,78 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   await expectActionError("validation-required", () => callAction("listRoleAssignments", {
     query: "", scopeKind: "platform",
   }, admin.auth));
-  await expectActionError("validation-invalid", () => callAction("setUserRoles", {
-    managedFacilityCategoryIds: [],
-    managedIssueCategoryIds: [],
+  await expectActionError("validation-required", () => callAction("setUserAccessScope", {
+    grant: true,
     requestId: requestId("platform-role-api-denied"),
-    roles: ["platform-admin"],
+    scopeKind: "platform",
     uid: target.auth.uid,
   }, admin.auth));
-  await expectActionError("permission-denied", () => callAction("setUserRoles", {
-    managedFacilityCategoryIds: [],
-    managedIssueCategoryIds: [],
+  await expectActionError("permission-denied", () => callAction("setUserAccessScope", {
+    grant: false,
     requestId: requestId("platform-role-revoke-denied"),
-    roles: [],
+    scopeKind: "announcement",
     uid: admin.auth.uid,
   }, admin.auth));
 
-  await expectActionError("validation-invalid", () => callAction("setUserRoles", {
-    managedFacilityCategoryIds: [],
-    managedIssueCategoryIds: ["missing-category"],
+  await expectActionError("validation-invalid", () => callAction("setUserAccessScope", {
+    categoryId: "missing-category",
+    grant: true,
     requestId: requestId("invalid-category-assignment"),
-    roles: [],
+    scopeKind: "issue",
     uid: target.auth.uid,
   }, admin.auth));
   target = await refreshActor(target);
   assert.ok(target.auth.permissions.includes("announcement.manage"), "invalid writes must roll back without changing roles");
 
+  const { error: optOutError } = await supabase.schema("app_private")
+    .from("user_facility_category_assignments")
+    .update({ notify_on_created: false })
+    .eq("uid", target.auth.uid)
+    .eq("category_id", "general");
+  if (optOutError) throw optOutError;
+  await callAction("setUserAccessScope", {
+    categoryId: "general",
+    grant: true,
+    requestId: requestId("preserve-facility-opt-out"),
+    scopeKind: "facility",
+    uid: target.auth.uid,
+  }, admin.auth);
+  const { data: facilityOptOut, error: facilityOptOutReadError } = await supabase.schema("app_private")
+    .from("user_facility_category_assignments")
+    .select("notify_on_created")
+    .eq("uid", target.auth.uid)
+    .eq("category_id", "general")
+    .single();
+  if (facilityOptOutReadError) throw facilityOptOutReadError;
+  assert.equal(facilityOptOut.notify_on_created, false, "an existing notification opt-out must survive access updates");
+
+  const concurrentTarget = await seedActor("access-concurrent-target");
+  await Promise.all([
+    callAction("setUserAccessScope", {
+      categoryId: "public-issues",
+      grant: true,
+      requestId: requestId("concurrent-issue-scope"),
+      scopeKind: "issue",
+      uid: concurrentTarget.auth.uid,
+    }, admin.auth),
+    callAction("setUserAccessScope", {
+      categoryId: "general",
+      grant: true,
+      requestId: requestId("concurrent-facility-scope"),
+      scopeKind: "facility",
+      uid: concurrentTarget.auth.uid,
+    }, admin.auth),
+  ]);
+  const refreshedConcurrentTarget = await refreshActor(concurrentTarget);
+  assert.deepEqual(refreshedConcurrentTarget.auth.managedIssueCategoryIds, ["public-issues"]);
+  assert.deepEqual(refreshedConcurrentTarget.auth.managedFacilityCategoryIds, ["general"]);
+
   const { data: accessAudit, error: accessAuditError } = await supabase.schema("app_private")
     .from("access_assignment_audit").select("actor_uid,target_uid,before_value,after_value")
     .eq("target_uid", target.auth.uid);
   if (accessAuditError) throw accessAuditError;
-  assert.equal(accessAudit.length, 1);
-  assert.equal(accessAudit[0]?.actor_uid, admin.auth.uid);
+  assert.equal(accessAudit.length, 3);
+  assert.ok(accessAudit.every((entry) => entry.actor_uid === admin.auth.uid));
 
   const configuredAdmin = await seedActor("configured-admin");
   const staleAdmin = await seedActor("stale-admin", { roles: ["platform-admin"] });

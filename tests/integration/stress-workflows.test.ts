@@ -33,14 +33,38 @@ async function configureAccess(
   facilityCategoryIds: string[],
   roles: string[] = [],
 ) {
-  const result = asRecord(await callAction("setUserRoles", {
-    managedFacilityCategoryIds: facilityCategoryIds,
-    managedIssueCategoryIds: issueCategoryIds,
-    requestId: requestId("stress-access"),
-    roles,
+  const desiredIssueIds = new Set(issueCategoryIds);
+  const desiredFacilityIds = new Set(facilityCategoryIds);
+  const currentIssueIds = new Set(actor.auth.managedIssueCategoryIds);
+  const currentFacilityIds = new Set(actor.auth.managedFacilityCategoryIds);
+  const operations = [
+    {
+      categoryId: undefined,
+      grant: roles.includes("announcement-manager"),
+      scopeKind: "announcement",
+      shouldRun: roles.includes("announcement-manager") !== actor.auth.roles.includes("announcement-manager"),
+    },
+    ...Array.from(new Set([...currentIssueIds, ...desiredIssueIds]), (categoryId) => ({
+      categoryId,
+      grant: desiredIssueIds.has(categoryId),
+      scopeKind: "issue",
+      shouldRun: desiredIssueIds.has(categoryId) !== currentIssueIds.has(categoryId),
+    })),
+    ...Array.from(new Set([...currentFacilityIds, ...desiredFacilityIds]), (categoryId) => ({
+      categoryId,
+      grant: desiredFacilityIds.has(categoryId),
+      scopeKind: "facility",
+      shouldRun: desiredFacilityIds.has(categoryId) !== currentFacilityIds.has(categoryId),
+    })),
+  ].filter((operation) => operation.shouldRun);
+  const results = await Promise.all(operations.map((operation) => callAction("setUserAccessScope", {
+    categoryId: operation.categoryId,
+    grant: operation.grant,
+    requestId: requestId(`stress-access-${operation.scopeKind}`),
+    scopeKind: operation.scopeKind,
     uid: actor.auth.uid,
-  }, admin.auth));
-  assert.equal(result.success, true);
+  }, admin.auth)));
+  for (const result of results) assert.equal(asRecord(result).success, true);
   return await refreshActor(actor);
 }
 

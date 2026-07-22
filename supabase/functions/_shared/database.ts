@@ -487,12 +487,12 @@ interface AppApiFunctions {
     sort_name: string;
     status_bucket: string;
   }, Json>;
-  backend_set_user_access: AppFunction<{
+  backend_update_user_access_scope: AppFunction<{
     actor_uid: string;
     target_uid: string;
-    requested_roles: string[];
-    issue_category_ids: string[];
-    facility_category_ids: string[];
+    scope_kind: string;
+    category_id: string | null;
+    grant_access: boolean;
   }, Json>;
   backend_reconcile_platform_admins: AppFunction<{
     actor_uid: string;

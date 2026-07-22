@@ -125,7 +125,7 @@ export const backendActionDefinitions = [
   }),
   action("getCurrentUserRole", "user", "read", userHandler),
   action("listRoleAssignments", "user", "read", userHandler, { requiredPermission: "role.manage" }),
-  action("setUserRoles", "user", "admin-write", userHandler, {
+  action("setUserAccessScope", "user", "admin-write", userHandler, {
     idempotent: true, requiredPermission: "role.manage", requiresRequestId: true,
   }),
   action("recordPlatformVisit", "user", "general-write", userHandler),

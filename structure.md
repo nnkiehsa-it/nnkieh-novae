@@ -23,12 +23,12 @@
 ## Supabase
 
 - `supabase/config.toml` — schema 暴露與 Functions JWT 模式
-- `supabase/migrations/` — 基線 + 增量 SQL（schema／RLS／RPC／Realtime Broadcast／清理／成本限流硬化／設備與 RBAC／輸入長度、附件型別、圖片網址快取、統一 feed 分頁與集合式留言回覆讀取）；`202607190001_dynamic_category_management.sql` 建立動態分類，`202607200002_atomic_user_access.sql` 將角色與分類指派改為單一交易並完整稽核，`202607200003_harden_category_deletion.sql` 統一分類刪除、內容清理與稽核，`202607200004_facility_category_parity_and_personal_notifications.sql` 補齊設備分類篩選／分類管理範圍並將既有設備建立通知改回個人通知，`202607200005_platform_feature_switches.sql` 建立提案／設備功能開關與原子更新 RPC，較早 migration 細節見 git
+- `supabase/migrations/` — 基線 + 增量 SQL（schema／RLS／RPC／Realtime Broadcast／清理／成本限流硬化／設備與 RBAC／輸入長度、附件型別、圖片網址快取、統一 feed 分頁與集合式留言回覆讀取）；`202607190001_dynamic_category_management.sql` 建立動態分類，`202607200002_atomic_user_access.sql` 將角色與分類指派改為單一交易並完整稽核，`202607200003_harden_category_deletion.sql` 統一分類刪除、內容清理與稽核，`202607200004_facility_category_parity_and_personal_notifications.sql` 補齊設備分類篩選／分類管理範圍並將既有設備建立通知改回個人通知，`202607200005_platform_feature_switches.sql` 建立提案／設備功能開關與原子更新 RPC，`202607220001_scoped_user_access.sql` 改為鎖定目標帳號的單一權限範圍更新並保留既有設備通知退訂，較早 migration 細節見 git
 - `supabase/functions/backendAction/` — 受控 action 閘道
   - `index.ts` — origin 驗證、CORS、Firebase 驗證與分派；公開限流由 Cloudflare Worker 先處理
   - `execution.ts` — 正式入口與本地整合驗證共用的權限、request ID、冪等執行核心
   - `action-registry.ts` / `response.ts` / `rate-limit.ts`（Upstash 精確業務配額）/ `types.ts` / `utils.ts` / `validation.ts` / `auth.ts`
-  - domains：`users`（session access／角色與分類指派）、`session-bootstrap`（冷啟動合併 role／catalog／revisions／unread／optional visit，降低 Edge invocation）、`categories`（動態 catalog／初始設定／管理）、`uploads`、`issues`（read/create/moderation/support/delete/comments）、`facilities`（分類式 read/create/affected/status/delete）、`announcements`（read/write/comments）、`notifications`、`dashboard`
+  - domains：`users`（公開使用者資料）、`user-access`（負責人精確查找、scope 列表與單一範圍原子授權）、`session-bootstrap`（冷啟動合併 role／catalog／revisions／unread／optional visit，降低 Edge invocation）、`categories`（動態 catalog／初始設定／管理）、`uploads`、`issues`（read/create/moderation/support/delete/comments）、`facilities`（分類式 read/create/affected/status/delete）、`announcements`（read/write/comments）、`notifications`、`dashboard`
   - shared helpers：`issue-shared.ts`、`announcement-shared.ts`
   - 省 Edge Function 次數靠合併讀取與前端快取，不把 domain 業務搬進 Cloudflare Worker
 - 獨立 Functions：`syncUser`、`cloudinaryWebhook`、`outboxWorker`、`processDeletionJobs`、`maintenanceCleanup`
@@ -70,7 +70,7 @@
 - `views/SettingsView.vue` — 設定頁（手機）
 - `views/DashboardView.vue` — 管理員統計
 - `views/AdministrationView.vue` — 單一系統設定中心，以大型選項卡切換分類／流程與人員／權限兩個操作階段；舊 `/admin/access`、`/admin/categories` 會導向對應區段
-- `components/admin/CategoryWorkflowPanel.vue` / `MemberAccessPanel.vue` / `CategoryWizardDialog.vue` — 先選提案／設備分類類型，再顯示對應功能開關與分類草稿並由單一按鈕原子儲存；人員權限先選分類／功能、只列出現有負責人，再以完整 Email／UID 查找並指派；平台總管理員只由 `ADMIN_EMAILS` 同步，不混入分類負責人名單，也不提供 UI 或一般權限 API 修改入口
+- `components/admin/CategoryWorkflowPanel.vue` / `MemberAccessPanel.vue` / `MemberAccessRow.vue` / `MemberAccessListSkeleton.vue` / `CategoryWizardDialog.vue` — 先選提案／設備分類類型，再顯示對應功能開關與分類草稿並由單一按鈕原子儲存；人員權限先選分類／功能、只列出現有負責人，再以完整 Email／UID 查找並以共用成員列與載入骨架呈現／指派；平台總管理員只由 `ADMIN_EMAILS` 同步，不混入分類負責人名單，也不提供 UI 或一般權限 API 修改入口
 - `components/categories/CategoryManagementSection.vue` / `SetupCategorySection.vue` / `CategorySelectorList.vue` / `CategoryEditorCard.vue` / `PlatformFeatureToggle.vue` — 初始設定與後續管理共用圓角分類選擇清單，一次選取並編輯一個分類的規則表單，以及共用的提案與設備功能開關
 - `views/SetupView.vue` / `components/LanguageSelector.vue` / `components/categories/SetupCategorySection.vue` — ADMIN_EMAILS 首次設定依序確認系統語言、啟用功能與其分類；只驗證啟用功能的必填資料，未完成時停用送出，相同語言選擇器亦供設定頁覆用
 
@@ -79,7 +79,7 @@
 ## components/ui（Atomic Design，無業務）
 
 - `atoms/` — 不依賴其他 UI 組裝層的最小視覺與互動單位：`AppButton.vue`、`AppIcon.vue`、`ImageRemoveButton.vue`、`IconTile.vue`、`TagBadge.vue`、`SwitchIndicator.vue`、`CharacterCount.vue`、`InlineAlert.vue`、`InlineMessage.vue`、`SkeletonBlock.vue`、`BrandMark.vue`、`BusyButtonContent.vue`、`DecorativeGlow.vue`、`LoadingSpinner.vue`、`SelectionMark.vue`、`UserAvatar.vue`；新頁面不得自行複製按鈕、圖片移除鍵、圖示容器、徽章、switch、字數顯示、alert／inline message、skeleton、品牌、avatar 或 loading 樣式
-- `molecules/` — 由 atoms 組成、可獨立重用的局部控制與狀態：`SurfacePanel`／`EditorSurface`／dropdown、`EditorModeBar`、`ListSurfaceRow`、`IconListRow`、`LabeledListSection`、`SectionHeader`、`CountedTextField`、`CountedTextareaField`、`NumberField`、`DialogHeading`、`DialogActionRow`、選取控制、詳情操作、空狀態／錯誤、Markdown 工具列與圖片預覽；molecule 不得依賴 organism
+- `molecules/` — 由 atoms 組成、可獨立重用的局部控制與狀態：`SurfacePanel`／`EditorSurface`／dropdown、`EditorModeBar`、`ListSurfaceRow`、`IconListRow`、`LabeledListSection`、`SectionHeader`、`WorkflowStepHeader`、`CountedTextField`、`CountedTextareaField`、`NumberField`、`DialogHeading`、`DialogActionRow`、選取控制、詳情操作、空狀態／錯誤、Markdown 工具列與圖片預覽；molecule 不得依賴 organism
 - `organisms/` — 可直接供 route view 或領域元件填入資料／slots 的完整區塊：內容卡集合與 skeleton、列表狀態、詳情殼與 route 狀態、`DialogShell`、Composer、Markdown／表格編輯器、狀態 Dialog、`ViewportFrame` 與 `RoutePageFrame`
 - 依賴方向固定為 `atoms → molecules → organisms`；同層可組合，低層不得反向 import 高層，`check:ui` 會阻止 flat path 與逆向依賴
 - `organisms/ViewportFrame.vue` / `organisms/RoutePageFrame.vue` — AppShell 的 viewport gutter／safe-area 寬度與 route page 的 max-width、全高 flex、垂直 padding、底部導覽安全距離入口；route view 不自行計算 viewport 或拼裝頁面骨架
@@ -109,6 +109,7 @@
 
 - Session：`useSession` + `sessionTypes` / `sessionDebug` / `sessionValidation` / `sessionAuthActions`（production：GIS Token Client → `signInWithCredential`；emulator：`signInWithPopup`）/ `sessionEffects`
 - 分類：`useCategories` — 動態 catalog、平台功能開關、預設分類與標籤查找的前端單一狀態來源
+- 權限：`useMemberAccessManagement` — 分類／公告 scope 的負責人載入、精確查找、競態防護與單一範圍授權流程
 - 看板：`useIssueBoardData`、`useIssueBuckets`、`useIssueBoardPagination`、`useIssueSearch`、`useUserIssuesData`、`useIssueRouteFilter`、`useDocumentTitle`、`useFilter`
 - 詳情／列：`useIssueRouteDetail`、`useIssueDisplay`、`useIssueSupport`、`useIssueItemController`、`useIssueComposerForm`、`useVoteSupport`、`useDeleteIssue`、`useStatusStyling`
 - 留言：`useIssueComments`、`useAnnouncementComments`、`useDiscussionComments`（共用 core，依提案／公告領域權限判斷管理操作）
@@ -133,7 +134,7 @@
 
 ## services
 
-- `backend-action.ts` / `backend-action-contract.ts` / `supabase-auth.ts` / `session-role.ts`（roles／permissions）/ `session-bootstrap.ts`（冷啟動合併 session 讀取）/ `access.ts`（角色與分類指派）/ `categories.ts`（動態 catalog／setup／整體原子管理）/ `content-read-cache.ts` / `content-revisions.ts`（三領域批次版本檢查與精準失效）/ `realtime-events.ts`（依 UID／角色重建、斷線重連與成功後 resync）
+- `backend-action.ts` / `backend-action-contract.ts` / `supabase-auth.ts` / `session-role.ts`（roles／permissions）/ `session-bootstrap.ts`（冷啟動合併 session 讀取）/ `access.ts`（負責人查找與單一 scope 授權）/ `categories.ts`（動態 catalog／setup／整體原子管理）/ `content-read-cache.ts` / `content-revisions.ts`（三領域批次版本檢查與精準失效）/ `realtime-events.ts`（依 UID／角色重建、斷線重連與成功後 resync）
 - 提案：`issues.ts` barrel + `issues-core` / `constants` / `errors` / `utils` / `normalize` / `read*` / `write` / `comment-cursor`
 - 其他：`facilities.ts`（設備分類摘要分頁／詳情／寫入）、`announcements.ts`、`notifications.ts`（公告廣播與提案／設備分類負責人的個人通知讀取）、`dashboard.ts`、`uploads.ts`、`users-read.ts`、`users-write.ts`
 

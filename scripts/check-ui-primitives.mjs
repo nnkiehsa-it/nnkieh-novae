@@ -79,6 +79,13 @@ for (const file of files) {
     if (relativePath !== labeledListSectionPath && /\blist-section-label\b/u.test(source)) {
       errors.push(`${relativePath} assembles a labeled list section directly; compose LabeledListSection instead`);
     }
+    const workflowStepHeaderPath = `src${path.sep}components${path.sep}ui${path.sep}molecules${path.sep}WorkflowStepHeader.vue`;
+    if (
+      relativePath !== workflowStepHeaderPath
+      && /class="[^"]*h-7 w-7[^"]*rounded-full[^"]*text-xs font-bold[^"]*"/u.test(source)
+    ) {
+      errors.push(`${relativePath} assembles a workflow step heading directly; compose WorkflowStepHeader instead`);
+    }
     const dialogShellPath = `src${path.sep}components${path.sep}ui${path.sep}organisms${path.sep}DialogShell.vue`;
     if (relativePath !== dialogShellPath && /<DialogOverlay\b/u.test(source)) {
       errors.push(`${relativePath} assembles dialog behavior directly; compose DialogShell instead`);

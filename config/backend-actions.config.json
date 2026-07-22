@@ -50,7 +50,7 @@
   "savePlatformFeatures": { "group": "admin-write", "extraLimit": "roleWriteHourly" },
   "setIssueCommentsEnabled": { "group": "admin-write", "extraLimit": "moderationWriteHourly" },
   "setAnnouncementLike": { "group": "sensitive-write", "extraLimit": "announcementLikeHourly" },
-  "setUserRoles": { "group": "admin-write", "extraLimit": "roleWriteHourly" },
+  "setUserAccessScope": { "group": "admin-write", "extraLimit": "roleWriteHourly" },
   "toggleFacilityAffected": { "group": "sensitive-write", "extraLimit": "facilityAffectedToggleHourly" },
   "toggleSupport": { "group": "sensitive-write", "extraLimit": "supportToggleHourly" },
   "unregisterPushToken": { "group": "sensitive-write", "extraLimit": "pushTokenWriteHourly" },
