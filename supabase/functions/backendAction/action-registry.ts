@@ -128,7 +128,6 @@ export const backendActionDefinitions = [
   action("setUserAccessScope", "user", "admin-write", userHandler, {
     idempotent: true, requiredPermission: "role.manage", requiresRequestId: true,
   }),
-  action("recordPlatformVisit", "user", "general-write", userHandler),
   action("cacheUserAvatar", "user", "sensitive-write", userHandler),
   action("getUserPublicProfiles", "user", "read", userHandler),
 

@@ -39,7 +39,6 @@ export const BACKEND_ACTION_NAMES = [
   'listUserIssues',
   'markNotificationsOpened',
   'moderateIssueStatus',
-  'recordPlatformVisit',
   'registerPushToken',
   'removeSupport',
   'resolveUploadImageUrls',

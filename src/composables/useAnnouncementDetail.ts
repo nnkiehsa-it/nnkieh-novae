@@ -50,7 +50,7 @@ export function useAnnouncementDetail(canLoad: Ref<boolean>) {
   let realtimeRefreshTimer = 0;
 
   function detailCacheKey(announcementId: string) {
-    return createContentCacheKey(['announcement-detail', detailCacheScope.value, announcementId]);
+    return createContentCacheKey(['announcement-detail', announcementId, detailCacheScope.value]);
   }
 
   function goBack() {

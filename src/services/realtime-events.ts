@@ -169,19 +169,25 @@ function ensureSharedRealtimeChannel() {
 
 function invalidateRealtimeContent(event: ContentRealtimeEvent) {
   if (event.eventType.startsWith('issue_')) {
+    const issueId = event.eventType === 'issue_comment_changed'
+      ? event.parentId
+      : event.targetId;
     markContentCachePrefixStale('issue-list-page|');
     markContentCachePrefixStale('issue-search|');
     markContentCachePrefixStale('user-issue-list-page|');
-    markContentCachePrefixStale('issue-detail|');
+    if (issueId) markContentCachePrefixStale(`issue-detail|${issueId}|`);
     if (event.eventType === 'issue_comment_changed') {
-      markContentCachePrefixStale('issue-comments-page|');
+      if (issueId) markContentCachePrefixStale(`issue-comments-page|${issueId}|`);
     }
     return;
   }
+  const announcementId = event.eventType === 'announcement_comment_changed'
+    ? event.parentId
+    : event.targetId;
   markContentCachePrefixStale('announcement-list-page|');
-  markContentCachePrefixStale('announcement-detail|');
+  if (announcementId) markContentCachePrefixStale(`announcement-detail|${announcementId}|`);
   if (event.eventType === 'announcement_comment_changed') {
-    markContentCachePrefixStale('announcement-comments-page|');
+    if (announcementId) markContentCachePrefixStale(`announcement-comments-page|${announcementId}|`);
   }
 }
 

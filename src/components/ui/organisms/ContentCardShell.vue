@@ -6,7 +6,8 @@
       @click="handleCardClick"
       @contextmenu="handleContextMenu"
       @focusin="emit('intent')"
-      @pointerenter="emit('intent')"
+      @pointerenter="schedulePointerIntent"
+      @pointerleave="cancelPointerIntent"
       @pointerdown="handlePointerDown"
       @pointermove="onPointerMove"
       @pointerup="cancel"
@@ -67,7 +68,7 @@ import TagBadge from '@/components/ui/atoms/TagBadge.vue';
 import SearchHighlight from '@/components/ui/molecules/SearchHighlight.vue';
 import SkeletonBlock from '@/components/ui/atoms/SkeletonBlock.vue';
 import { useI18n } from '@/i18n';
-import { computed, toRef } from 'vue';
+import { computed, onBeforeUnmount, toRef } from 'vue';
 import { useAuthorProfile } from '@/composables/useAuthorProfile';
 import { useLongPress } from '@/composables/useLongPress';
 
@@ -102,6 +103,32 @@ const emit = defineEmits<{
   longPress: [];
   open: [];
 }>();
+const POINTER_INTENT_DELAY_MS = 180;
+let pointerIntentTimer = 0;
+
+function canPrefetchForPointer(event: PointerEvent) {
+  if (event.pointerType !== 'mouse' || document.visibilityState !== 'visible') return false;
+  const connection = (navigator as Navigator & {
+    connection?: { effectiveType?: string; saveData?: boolean };
+  }).connection;
+  return !connection?.saveData && connection?.effectiveType !== 'slow-2g' && connection?.effectiveType !== '2g';
+}
+
+function cancelPointerIntent() {
+  window.clearTimeout(pointerIntentTimer);
+  pointerIntentTimer = 0;
+}
+
+function schedulePointerIntent(event: PointerEvent) {
+  cancelPointerIntent();
+  if (!canPrefetchForPointer(event)) return;
+  pointerIntentTimer = window.setTimeout(() => {
+    pointerIntentTimer = 0;
+    emit('intent');
+  }, POINTER_INTENT_DELAY_MS);
+}
+
+onBeforeUnmount(cancelPointerIntent);
 const { cancel, consumeClick, onPointerDown, onPointerMove } = useLongPress({
   enabled: toRef(props, 'longPressEnabled'),
   onLongPress: () => emit('longPress'),

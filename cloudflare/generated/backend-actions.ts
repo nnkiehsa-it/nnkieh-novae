@@ -137,9 +137,6 @@ export const BACKEND_ACTION_POLICIES = {
     "group": "admin-write",
     "extraLimit": "moderationWriteHourly"
   },
-  "recordPlatformVisit": {
-    "group": "general-write"
-  },
   "registerPushToken": {
     "group": "sensitive-write",
     "extraLimit": "pushTokenWriteHourly"

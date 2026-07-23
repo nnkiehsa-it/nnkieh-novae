@@ -50,15 +50,6 @@ function toDate(value: number | null) {
   return typeof value === 'number' ? new Date(value) : null;
 }
 
-export async function recordPlatformVisit() {
-  try {
-    const fn = invokeBackendAction<Record<string, never>, { success: boolean }>('recordPlatformVisit');
-    await fn({});
-  } catch (error) {
-    throw toReadableBackendError(error);
-  }
-}
-
 export async function fetchPlatformDashboard(options: { forceRefresh?: boolean } = {}): Promise<PlatformDashboardData> {
   if (!options.forceRefresh) {
     const cached = await getCachedContentPersistent<PlatformDashboardData>(

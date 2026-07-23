@@ -10,7 +10,7 @@ export const mySupportedIssueIds = ref<Set<string>>(new Set());
 export const customPhotoUrl = ref<string | null>(null);
 
 let activeSessionToken = 0;
-export const VISIT_RECORD_INTERVAL_MS = 6 * 60 * 60 * 1_000;
+export const VISIT_RECORD_INTERVAL_MS = 24 * 60 * 60 * 1_000;
 export const VISIT_RECORDED_AT_KEY = 'novae:platform-visit-recorded-at';
 const CONTENT_REVISION_RESUME_MS = 10 * 60_000;
 let revisionResumeInitialized = false;
@@ -67,10 +67,4 @@ export async function cacheUserAvatarOnLogin(photoURL: string) {
   } catch {
     void 0;
   }
-}
-
-export async function recordPlatformVisitOnLogin() {
-  // Visit recording is folded into getSessionBootstrap during cold start.
-  // Keep this helper as a no-op fallback for older call sites.
-  if (!shouldRecordPlatformVisit()) return;
 }

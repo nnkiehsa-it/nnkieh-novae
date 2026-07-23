@@ -29,8 +29,8 @@ export async function fetchComments(
   if (!options?.forceRefresh) await prepareContentRevisionRead();
   const cacheKey = createContentCacheKey([
     'issue-comments-page',
-    options?.cacheScope ?? 'default',
     issueId,
+    options?.cacheScope ?? 'default',
     cursor?.id ?? 'first',
     cursor?.createdAtMs ?? '',
   ]);

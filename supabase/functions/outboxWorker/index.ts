@@ -80,6 +80,20 @@ function commentIdForEvent(event: OutboxEvent) {
   return asString(event.payload.comment_id) || asString(event.payload.id) || null;
 }
 
+async function hydrateCommentContent(supabase: AppSupabase, event: OutboxEvent) {
+  if (
+    event.payload.content
+    || (event.event_type !== "issue.comment_created" && event.event_type !== "announcement.comment_created")
+  ) return;
+  const commentId = commentIdForEvent(event);
+  if (!commentId) return;
+  const table = event.event_type === "issue.comment_created" ? "comments" : "announcement_comments";
+  const { data, error } = await supabase.schema("app_private").from(table)
+    .select("content").eq("id", commentId).maybeSingle();
+  if (error) throw error;
+  if (data?.content) event.payload.content = String(data.content);
+}
+
 function notificationForEvent(event: OutboxEvent): Record<string, unknown> | null {
   if (event.payload.retention_cleanup === true) return null;
   const title = asString(event.payload.title, event.event_type);
@@ -310,6 +324,20 @@ async function markMappedNotionPageDeleted(
   }
 }
 
+async function forgetMappedNotionPage(
+  supabase: AppSupabase,
+  targetType: string,
+  targetId: string,
+) {
+  const { error } = await supabase
+    .schema("app_private")
+    .from("notion_pages")
+    .delete()
+    .eq("target_type", targetType)
+    .eq("target_id", targetId);
+  if (error) throw error;
+}
+
 async function syncNotionForEvent(
   supabase: AppSupabase,
   event: OutboxEvent,
@@ -339,7 +367,11 @@ async function syncNotionForEvent(
     case "issue.deleted":
     case "announcement.deleted":
     case "facility.deleted": {
-      await markMappedNotionPageDeleted(supabase, event.target_type, event.target_id);
+      if (event.payload.retention_cleanup === true) {
+        await forgetMappedNotionPage(supabase, event.target_type, event.target_id);
+      } else {
+        await markMappedNotionPageDeleted(supabase, event.target_type, event.target_id);
+      }
       break;
     }
     case "announcement.created":
@@ -659,6 +691,7 @@ async function createNotificationsForEvent(
 }
 
 async function processEvent(supabase: AppSupabase, event: OutboxEvent) {
+  await hydrateCommentContent(supabase, event);
   let hasNotification: boolean;
   if (!event.notification_completed_at) {
     ({ hasNotification } = await createNotificationsForEvent(supabase, event));

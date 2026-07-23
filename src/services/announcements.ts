@@ -21,8 +21,6 @@ import { prepareContentRevisionRead } from '@/services/content-revisions';
 
 const ANNOUNCEMENT_LIMIT = 10;
 const ANNOUNCEMENT_LIST_CACHE_PREFIX = 'announcement-list-page|';
-const ANNOUNCEMENT_COMMENTS_CACHE_PREFIX = 'announcement-comments-page|';
-const ANNOUNCEMENT_DETAIL_CACHE_PREFIX = 'announcement-detail|';
 export type AnnouncementCursor = { id: string; publishedAtMs: number } | null;
 
 function dateFromMs(value: unknown) {
@@ -120,7 +118,7 @@ export async function fetchAnnouncementRecordById(
   options: { cacheScope?: string; forceRefresh?: boolean } = {},
 ): Promise<AnnouncementRecord> {
   if (!options.forceRefresh) await prepareContentRevisionRead();
-  const cacheKey = createContentCacheKey(['announcement-detail', options.cacheScope ?? 'default', announcementId]);
+  const cacheKey = createContentCacheKey(['announcement-detail', announcementId, options.cacheScope ?? 'default']);
   if (!options.forceRefresh) {
     const cached = await getCachedContentPersistent<AnnouncementRecord>(cacheKey);
     if (cached) return cached;
@@ -147,7 +145,6 @@ export async function createAnnouncement(input: AnnouncementInput): Promise<Anno
   const result = await fn({ ...input, requestId: createRequestId() });
   const announcement = normalizeAnnouncementRecord(result.announcement);
   markContentCachePrefixStale(ANNOUNCEMENT_LIST_CACHE_PREFIX);
-  markContentCachePrefixStale(ANNOUNCEMENT_DETAIL_CACHE_PREFIX);
   return announcement;
 }
 
@@ -155,7 +152,7 @@ export async function deleteAnnouncement(announcementId: string) {
   const fn = invokeBackendAction<{ announcementId: string; requestId: string }, { success: boolean }>('deleteAnnouncement');
   const result = await fn({ announcementId, requestId: createRequestId() });
   markContentCachePrefixStale(ANNOUNCEMENT_LIST_CACHE_PREFIX);
-  markContentCachePrefixStale(ANNOUNCEMENT_DETAIL_CACHE_PREFIX);
+  markContentCachePrefixStale(`announcement-detail|${announcementId}|`);
   return result;
 }
 
@@ -166,7 +163,7 @@ export async function setAnnouncementLike(announcementId: string, liked: boolean
   >('setAnnouncementLike');
   const result = await fn({ announcementId, liked, requestId: createRequestId() });
   markContentCachePrefixStale(ANNOUNCEMENT_LIST_CACHE_PREFIX);
-  markContentCachePrefixStale(ANNOUNCEMENT_DETAIL_CACHE_PREFIX);
+  markContentCachePrefixStale(`announcement-detail|${announcementId}|`);
   return result;
 }
 
@@ -178,8 +175,8 @@ export async function fetchAnnouncementComments(
   if (!options.forceRefresh) await prepareContentRevisionRead();
   const cacheKey = createContentCacheKey([
     'announcement-comments-page',
-    options.cacheScope ?? 'default',
     announcementId,
+    options.cacheScope ?? 'default',
     cursor?.id ?? 'first',
     cursor?.createdAtMs ?? '',
   ]);
@@ -216,9 +213,9 @@ export async function createAnnouncementComment(announcementId: string, content:
     { comment: Record<string, unknown>; comment_count: number }
   >('createAnnouncementComment');
   const result = await fn({ announcementId, content, parentCommentId, requestId: createRequestId() });
-  markContentCachePrefixStale(ANNOUNCEMENT_COMMENTS_CACHE_PREFIX);
+  markContentCachePrefixStale(`announcement-comments-page|${announcementId}|`);
   markContentCachePrefixStale(ANNOUNCEMENT_LIST_CACHE_PREFIX);
-  markContentCachePrefixStale(ANNOUNCEMENT_DETAIL_CACHE_PREFIX);
+  markContentCachePrefixStale(`announcement-detail|${announcementId}|`);
   return {
     comment: normalizeAnnouncementComment(result.comment),
     comment_count: result.comment_count,
@@ -231,8 +228,8 @@ export async function deleteAnnouncementComment(commentId: string) {
     { success: boolean; announcement_id: string; comment_count: number }
   >('deleteAnnouncementComment');
   const result = await fn({ commentId, requestId: createRequestId() });
-  markContentCachePrefixStale(ANNOUNCEMENT_COMMENTS_CACHE_PREFIX);
+  markContentCachePrefixStale(`announcement-comments-page|${result.announcement_id}|`);
   markContentCachePrefixStale(ANNOUNCEMENT_LIST_CACHE_PREFIX);
-  markContentCachePrefixStale(ANNOUNCEMENT_DETAIL_CACHE_PREFIX);
+  markContentCachePrefixStale(`announcement-detail|${result.announcement_id}|`);
   return result;
 }

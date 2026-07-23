@@ -39,7 +39,6 @@
   "listUserIssues": { "group": "read" },
   "markNotificationsOpened": { "group": "general-write" },
   "moderateIssueStatus": { "group": "admin-write", "extraLimit": "moderationWriteHourly" },
-  "recordPlatformVisit": { "group": "general-write" },
   "registerPushToken": { "group": "sensitive-write", "extraLimit": "pushTokenWriteHourly" },
   "removeSupport": { "group": "sensitive-write", "extraLimit": "supportToggleHourly" },
   "resolveUploadImageUrls": { "group": "upload-resolve" },

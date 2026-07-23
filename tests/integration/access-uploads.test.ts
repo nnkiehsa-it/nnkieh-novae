@@ -36,9 +36,6 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   assert.equal(bootstrap.visitRecorded, true);
   assert.ok((await tableRow("user_profiles", "uid", user.auth.uid))?.last_seen_at);
 
-  await callAction("recordPlatformVisit", {}, user.auth);
-  assert.ok((await tableRow("user_profiles", "uid", user.auth.uid))?.last_seen_at);
-
   const userRole = asRecord(await callAction("getCurrentUserRole", {}, user.auth));
   assert.equal(userRole.role, "user");
   const adminRole = asRecord(await callAction("getCurrentUserRole", {}, admin.auth));

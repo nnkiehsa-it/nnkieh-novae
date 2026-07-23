@@ -44,7 +44,7 @@ export function useIssueRouteDetail(
   let realtimeRefreshTimer = 0;
   const detailCacheScope = useIssueDetailCacheScope();
   function detailCacheKey(issueId: string) {
-    return createContentCacheKey(['issue-detail', detailCacheScope.value, issueId]);
+    return createContentCacheKey(['issue-detail', issueId, detailCacheScope.value]);
   }
   const unregisterResumeHandler = registerAppResumeHandler(() => {
     const issueId = normalizeRouteParam(route.params.issueId);

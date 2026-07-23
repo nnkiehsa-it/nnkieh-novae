@@ -193,7 +193,7 @@ period = 60
 
 [env.production.observability]
 enabled = true
-head_sampling_rate = 1
+head_sampling_rate = 0.1
 
 [env.development.observability]
 enabled = true

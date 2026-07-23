@@ -425,6 +425,7 @@ test('cost-sensitive ingress and provider operations are bounded before work', a
   const cloudinaryWebhook = await read('supabase/functions/cloudinaryWebhook/index.ts');
   const hardening = await read('supabase/migrations/202607150001_rate_limit_cost_hardening.sql');
   const resourceHardening = await read('supabase/migrations/202607160006_resource_efficiency_hardening.sql');
+  const firebaseAuth = await read('supabase/functions/_shared/firebase-auth.ts');
   const googleOauth = await read('supabase/functions/_shared/google-oauth.ts');
   const notion = await read('supabase/functions/_shared/notion.ts');
   const outboxWorker = await read('supabase/functions/outboxWorker/index.ts');
@@ -461,6 +462,10 @@ test('cost-sensitive ingress and provider operations are bounded before work', a
   assert.doesNotMatch(`${workerRateLimit}\n${workerTypes}`, /UPSTASH_REDIS/u);
   assert.match(wrangler, /\[\[env\.production\.ratelimits\]\]/u);
   assert.match(wrangler, /\[\[env\.development\.ratelimits\]\]/u);
+  assert.match(wrangler, /\[env\.production\.observability\][\s\S]*?head_sampling_rate = 0\.1/u);
+  assert.match(firebaseAuth, /FIREBASE_USER_MEMORY_CACHE_MS = 5 \* 60 \* 1000/u);
+  assert.match(firebaseAuth, /cachedAtMs \+ FIREBASE_USER_CACHE_MS - Date\.now\(\)/u);
+  assert.match(firebaseAuth, /JSON\.stringify\(\{ cachedAtMs, user \}\)/u);
   const gatewayDeploy = deployBackend.slice(
     deployBackend.indexOf('- name: Deploy Cloudflare API Gateway'),
     deployBackend.indexOf('- name: Smoke test Cloudflare API Gateway'),
@@ -681,10 +686,13 @@ test('configured retention covers closed content and operational records', async
   const migration = await read('supabase/migrations/202607160001_configurable_retention_cleanup.sql');
   const hardeningMigration = await read('supabase/migrations/202607160003_harden_retention_deletion_flow.sql');
   const outboxWorker = await read('supabase/functions/outboxWorker/index.ts');
+  const minimizedOutbox = await read('supabase/migrations/202607230001_minimize_outbox_payloads.sql');
 
-  assert.match(config, /"closedIssuesDays"/u);
-  assert.match(config, /"closedFacilitiesDays"/u);
+  assert.match(config, /"closedIssuesDays": 180/u);
+  assert.match(config, /"closedFacilitiesDays": 180/u);
   assert.match(config, /"notificationsDays"/u);
+  assert.match(config, /"realtimeEventsHours": 3/u);
+  assert.match(config, /"inactivePushTokensDays": 60/u);
   assert.match(config, /"pushDeliverySentDays"/u);
   assert.match(generator, /data-retention\.config\.json/u);
   assert.match(maintenanceCleanup, /retention_config: DATA_RETENTION/u);
@@ -701,6 +709,20 @@ test('configured retention covers closed content and operational records', async
   assert.match(hardeningMigration, /expired_closed_issue_notion_deletions_queued/u);
   assert.match(hardeningMigration, /expired_closed_facility_notion_deletions_queued/u);
   assert.match(outboxWorker, /event\.payload\.retention_cleanup === true\) return null/u);
+  assert.match(outboxWorker, /event\.payload\.retention_cleanup === true[\s\S]*forgetMappedNotionPage/u);
+  assert.match(outboxWorker, /hydrateCommentContent/u);
+  assert.doesNotMatch(minimizedOutbox, /'content',new\.content|'content',row_record\.content/u);
+  assert.match(minimizedOutbox, /payload = payload - 'content'/u);
+});
+
+test('authenticated list caching is identity scoped and browser private', async () => {
+  const worker = await read('cloudflare/src/index.ts');
+  assert.match(worker, /AUTH_SCOPED_LIST_CACHE_TTL_SECONDS = 30/u);
+  assert.match(worker, /CACHEABLE_LIST_ACTIONS/u);
+  assert.match(worker, /requireFirebaseUid\(request, env\)[\s\S]*forwardCachedListAction/u);
+  assert.match(worker, /`\$\{uid\}\\u0000\$\{origin\}\\u0000\$\{bodyText\}`/u);
+  assert.match(worker, /headers\.set\('cache-control', 'no-store'\)/u);
+  assert.match(worker, /workerCache\.put/u);
 });
 
 test('facilities and author-fixed support use independent atomic storage', async () => {
@@ -932,8 +954,8 @@ test('realtime-backed lists revalidate after stale resumes without fixed polling
   assert.match(appShell, /@navigate="handleNavigationClick"/u);
   assert.match(appShellNavigation, /\$emit\('navigate', item\.isActive\)/u);
   assert.match(activeNavigationRefresh, /refreshFromActiveNavigation/u);
-  assert.match(announcements, /ANNOUNCEMENT_COMMENTS_CACHE_PREFIX/u);
-  assert.match(issueWrites, /markContentCachePrefixStale\('issue-comments-page\|'\)/u);
+  assert.match(announcements, /`announcement-comments-page\|\$\{announcementId\}\|`/u);
+  assert.match(issueWrites, /`issue-comments-page\|\$\{issueId\}\|`/u);
 });
 
 test('personal notification writes and pushes are scoped to the recipient', async () => {
@@ -1722,7 +1744,8 @@ test('proposal detail intent prefetches data and renders an immediate summary pr
   const preview = await read('src/lib/issue-detail-preview.ts');
   const backendRead = await read('supabase/functions/backendAction/issue-read.ts');
 
-  assert.match(card, /@focusin="emit\('intent'\)"[\s\S]*@pointerenter="emit\('intent'\)"/u);
+  assert.match(card, /@focusin="emit\('intent'\)"[\s\S]*@pointerenter="schedulePointerIntent"[\s\S]*@pointerleave="cancelPointerIntent"/u);
+  assert.match(card, /POINTER_INTENT_DELAY_MS = 180[\s\S]*connection\?\.saveData[\s\S]*effectiveType !== '2g'/u);
   assert.match(row, /@intent="emit\('detail-intent', issue\)"/u);
   assert.match(boardTable, /@detail-intent="emit\('detail-intent', \$event\)"/u);
   assert.match(board, /@detail-intent="prefetchIssueDetail"[\s\S]*rememberIssueDetailPreview\(payload\.issue\)[\s\S]*fetchIssueRecordById\(issue\.id/u);

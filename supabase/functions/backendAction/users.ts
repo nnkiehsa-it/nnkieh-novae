@@ -10,8 +10,7 @@ import { handleUserAccessAction } from "./user-access.ts";
 const AVATAR_REVALIDATE_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 export function isUserAction(action: string) {
-  return action === "recordPlatformVisit"
-    || action === "getCurrentUserRole"
+  return action === "getCurrentUserRole"
     || action === "listRoleAssignments"
     || action === "setUserAccessScope"
     || action === "cacheUserAvatar"
@@ -24,18 +23,6 @@ export async function handleUserAction(
   auth: AuthContext,
   supabase: BackendSupabase,
 ) {
-  if (action === "recordPlatformVisit") {
-    const { error } = await supabase.schema("app_private").from("user_profiles").upsert({
-      uid: auth.uid,
-      email: auth.email.toLowerCase(),
-      display_name: auth.name,
-      photo_url: auth.photoUrl,
-      last_seen_at: new Date().toISOString(),
-    }, { onConflict: "uid" });
-    if (error) throw error;
-    return { success: true };
-  }
-
   if (action === "getCurrentUserRole") {
     return {
       role: auth.roles.includes("platform-admin") ? "admin" : "user",

@@ -33,7 +33,7 @@ export async function fetchIssueRecordById(
   options: { cacheScope?: string; forceRefresh?: boolean } = {},
 ): Promise<IssueRecord> {
   if (!options.forceRefresh) await prepareContentRevisionRead();
-  const cacheKey = createContentCacheKey(['issue-detail', options.cacheScope ?? 'default', issueId]);
+  const cacheKey = createContentCacheKey(['issue-detail', issueId, options.cacheScope ?? 'default']);
   if (!options.forceRefresh) {
     const cached = await getCachedContentPersistent<IssueRecord>(cacheKey);
     if (cached) return cached;

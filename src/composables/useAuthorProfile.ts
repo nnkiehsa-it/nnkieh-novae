@@ -1,6 +1,7 @@
 import { computed, shallowRef, toValue, watch, type MaybeRefOrGetter } from 'vue';
 import { fetchUserPublicProfiles } from '@/services/users-read';
 import type { UserPublicProfile } from '@/types';
+import { markContentCachePrefixStale } from '@/services/content-read-cache';
 
 const PROFILE_REFRESH_INTERVAL_MS = 5 * 60_000;
 const PROFILE_BATCH_SIZE = 50;
@@ -96,6 +97,7 @@ export function clearAuthorProfileCache() {
   profileCache.value = {};
   pendingUids.clear();
   inFlightUids.clear();
+  markContentCachePrefixStale('user-profile|');
   try {
     localStorage.removeItem('novae:author-avatar-cache');
     for (let index = localStorage.length - 1; index >= 0; index -= 1) {

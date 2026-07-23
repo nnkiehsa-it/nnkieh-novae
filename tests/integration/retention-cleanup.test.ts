@@ -388,4 +388,23 @@ integrationTest("configured retention cleanup removes every expired data class a
     .eq("type", "issue_deleted");
   if (postWorkerNotificationError) throw postWorkerNotificationError;
   assert.equal(postWorkerDeletionNotificationCount, 0, "retention deletion must stay silent after outbox processing");
+  const { count: retainedNotionMappings, error: retainedNotionMappingError } = await supabase
+    .schema("app_private").from("notion_pages").select("target_id", { count: "exact", head: true })
+    .in("target_id", [expiredIssueId, expiredFacilityId]);
+  if (retainedNotionMappingError) throw retainedNotionMappingError;
+  assert.equal(retainedNotionMappings, 0, "retention cleanup should forget local Notion mappings");
+
+  const postMaintenanceProviderResponse = await fetch(`${providerUrl}/__requests`);
+  assert.equal(postMaintenanceProviderResponse.status, 200);
+  const postMaintenanceProviderRequests = (await postMaintenanceProviderResponse.json()) as {
+    requests: Array<{ body: Record<string, unknown>; path: string }>;
+  };
+  const retainedNotionPageIds = [`notion-issue-${runId}`, `notion-facility-${runId}`];
+  assert.equal(
+    postMaintenanceProviderRequests.requests.some((request) =>
+      retainedNotionPageIds.some((pageId) => request.path.includes(`/pages/${pageId}`))
+    ),
+    false,
+    "retention cleanup must leave the Notion archive pages untouched",
+  );
 });
