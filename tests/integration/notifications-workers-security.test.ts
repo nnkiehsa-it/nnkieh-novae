@@ -8,6 +8,7 @@ import {
   expectActionError,
   integrationTest,
   requestId,
+  saveCategoryDraft,
   seedActor,
   supabase,
 } from "./helpers.ts";
@@ -48,6 +49,15 @@ async function readFcmRequests() {
   assert.equal(response.status, 200);
   const result = await response.json() as { requests: FcmRequest[] };
   return result.requests;
+}
+
+async function failNextFcmRequests(count: number) {
+  const response = await fetch(`${fcmReceiverUrl()}/__fail-next`, {
+    body: JSON.stringify({ count }),
+    headers: { "content-type": "application/json" },
+    method: "POST",
+  });
+  assert.equal(response.status, 200);
 }
 
 function base64Url(value: string | Uint8Array) {
@@ -155,12 +165,93 @@ integrationTest("notification state, push preferences, and dashboard permissions
   assert.ok("operations" in dashboard);
 });
 
+integrationTest("transient FCM failures persist and retry without losing the push", async () => {
+  const recipient = await seedActor(`push-retry-recipient-${crypto.randomUUID()}`);
+  const token = `push-retry-token-${crypto.randomUUID()}`;
+  const deviceId = `push-retry-device-${crypto.randomUUID()}`;
+  await callAction("registerPushToken", {
+    deviceId,
+    permission: "granted",
+    platform: "integration",
+    token,
+    userAgent: "Push retry integration test",
+  }, recipient.auth);
+  await resetFcmRequests();
+  await failNextFcmRequests(1);
+
+  const deliveryId = crypto.randomUUID();
+  const deliveryKey = `integration-push-retry-${crypto.randomUUID()}`;
+  const targetId = crypto.randomUUID();
+  const notification = {
+    body_preview: "Temporary delivery failure",
+    issue_category: "public-issues",
+    source: "user",
+    target_id: targetId,
+    target_type: "issue",
+    title: "Retry delivery",
+    type: "issue_status_changed",
+  };
+  const { error: insertError } = await supabase.schema("app_private").from("push_delivery_logs").insert({
+    attempt_count: 0,
+    delivery_key: deliveryKey,
+    id: deliveryId,
+    next_attempt_at: new Date().toISOString(),
+    notification,
+    notification_type: notification.type,
+    recipient_uids: [recipient.auth.uid],
+    status: "failed",
+    target_id: targetId,
+    target_type: "issue",
+    token_uid: recipient.auth.uid,
+  });
+  if (insertError) throw insertError;
+
+  const workerUrl = `${requiredEnv("SUPABASE_FUNCTIONS_URL").replace(/\/+$/u, "")}/outboxWorker`;
+  const workerHeaders = {
+    authorization: `Bearer ${requiredEnv("WEBHOOK_SECRET")}`,
+    "x-novae-origin-secret": requiredEnv("EDGE_ORIGIN_SECRET"),
+  };
+  const firstAttempt = await fetch(workerUrl, { headers: workerHeaders, method: "POST" });
+  assert.equal(firstAttempt.status, 200);
+  const { data: failedDelivery, error: failedError } = await supabase.schema("app_private")
+    .from("push_delivery_logs")
+    .select("attempt_count,notification,status")
+    .eq("id", deliveryId)
+    .single();
+  if (failedError) throw failedError;
+  assert.equal(failedDelivery.status, "failed");
+  assert.equal(failedDelivery.attempt_count, 1);
+  assert.ok(failedDelivery.notification);
+
+  const { error: dueError } = await supabase.schema("app_private").from("push_delivery_logs")
+    .update({ next_attempt_at: new Date().toISOString() })
+    .eq("id", deliveryId);
+  if (dueError) throw dueError;
+  const secondAttempt = await fetch(workerUrl, { headers: workerHeaders, method: "POST" });
+  assert.equal(secondAttempt.status, 200);
+  const { data: completedDelivery, error: completedError } = await supabase.schema("app_private")
+    .from("push_delivery_logs")
+    .select("attempt_count,notification,recipient_uids,status")
+    .eq("id", deliveryId)
+    .single();
+  if (completedError) throw completedError;
+  assert.equal(completedDelivery.status, "sent");
+  assert.equal(completedDelivery.attempt_count, 2);
+  assert.equal(completedDelivery.notification, null);
+  assert.deepEqual(completedDelivery.recipient_uids, []);
+
+  const attempts = (await readFcmRequests())
+    .map((request) => request.body.message)
+    .filter((message) => message?.token === token && message.data?.target_id === targetId);
+  assert.equal(attempts.length, 2);
+});
+
 integrationTest("new proposal and facility notifications are personal to category managers", async () => {
   const admin = await seedActor(`category-notification-admin-${crypto.randomUUID()}`, { roles: ["platform-admin"] });
   const issueCategoryId = `notify-issue-${crypto.randomUUID().slice(0, 8)}`;
   const facilityCategoryId = `notify-facility-${crypto.randomUUID().slice(0, 8)}`;
-  await callAction("saveIssueCategory", {
-    category: {
+  await saveCategoryDraft(admin.auth, {
+    upsertIssueCategories: [{
       authorVisible: true,
       commentsEnabled: true,
       id: issueCategoryId,
@@ -172,18 +263,14 @@ integrationTest("new proposal and facility notifications are personal to categor
       supportDeadlineDays: null,
       supportEnabled: false,
       supportGoal: null,
-    },
-    requestId: requestId("notification-issue-category"),
-  }, admin.auth);
-  await callAction("saveFacilityCategory", {
-    category: {
+    }],
+    upsertFacilityCategories: [{
       id: facilityCategoryId,
       isDefault: false,
       label: "通知測試設備",
       sortOrder: 20_000,
-    },
-    requestId: requestId("notification-facility-category"),
-  }, admin.auth);
+    }],
+  });
 
   const managers = await Promise.all(Array.from({ length: notificationStressScale }, (_, index) => seedActor(
     `category-notification-manager-${index}-${crypto.randomUUID()}`,

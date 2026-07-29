@@ -5,33 +5,33 @@
 
 const propertiesToCopy = [
   'direction',
-  'boxSizing',
+  'box-sizing',
   'width',
   'height',
-  'overflowX',
-  'overflowY',
-  'borderWidth',
-  'borderStyle',
-  'paddingTop',
-  'paddingRight',
-  'paddingBottom',
-  'paddingLeft',
-  'fontStyle',
-  'fontVariant',
-  'fontWeight',
-  'fontStretch',
-  'fontSize',
-  'fontSizeAdjust',
-  'lineHeight',
-  'fontFamily',
-  'textAlign',
-  'textTransform',
-  'textIndent',
-  'textDecoration',
-  'letterSpacing',
-  'wordSpacing',
-  'tabSize',
-  'MozTabSize'
+  'overflow-x',
+  'overflow-y',
+  'border-width',
+  'border-style',
+  'padding-top',
+  'padding-right',
+  'padding-bottom',
+  'padding-left',
+  'font-style',
+  'font-variant',
+  'font-weight',
+  'font-stretch',
+  'font-size',
+  'font-size-adjust',
+  'line-height',
+  'font-family',
+  'text-align',
+  'text-transform',
+  'text-indent',
+  'text-decoration',
+  'letter-spacing',
+  'word-spacing',
+  'tab-size',
+  '-moz-tab-size',
 ] as const;
 
 interface CaretCoordinates {
@@ -60,7 +60,7 @@ export function getCaretCoordinates(element: HTMLTextAreaElement, position: numb
 
   // Copy properties
   propertiesToCopy.forEach((prop) => {
-    (style as any)[prop] = (computed as any)[prop];
+    style.setProperty(prop, computed.getPropertyValue(prop));
   });
 
   // Specifically for scrollbars

@@ -34,6 +34,18 @@ function nullablePositiveInteger(value: unknown) {
   return number;
 }
 
+function deletedCategoryIds(value: unknown) {
+  if (!Array.isArray(value)) throw new Error("validation-required");
+  const ids = value.map((id) => asString(id).trim());
+  if (
+    ids.some((id) => !CATEGORY_ID_PATTERN.test(id))
+    || new Set(ids).size !== ids.length
+  ) {
+    throw new Error("validation-required");
+  }
+  return ids;
+}
+
 function categoryIdentity(value: JsonRecord) {
   const id = asString(value.id).trim();
   const label = asString(value.label).trim();
@@ -160,93 +172,6 @@ export async function loadCategoryCatalog(supabase: BackendSupabase, includeInac
   };
 }
 
-async function recordCategoryAudit(
-  supabase: BackendSupabase,
-  auth: AuthContext,
-  categoryType: "facility" | "issue",
-  categoryId: string,
-  operation: string,
-  before: unknown,
-  after: unknown,
-) {
-  const { error } = await supabase.schema("app_private").from("category_configuration_audit").insert({
-    actor_uid: auth.uid,
-    category_id: categoryId,
-    domain: categoryType,
-    operation,
-    before_value: before,
-    after_value: after,
-  });
-  if (error) throw error;
-}
-
-async function saveIssueCategory(payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {
-  requirePermission(auth, "category.manage");
-  const requested = asRecord(payload.category);
-  const input = issueCategoryInput(requested, asNumber(requested.sortOrder, 0));
-  const { data: existing, error: readError } = await supabase.schema("app_private").from("issue_categories")
-    .select("*").eq("id", input.id).maybeSingle();
-  if (readError) throw readError;
-  if (existing && (
-    asString(existing.read_access) !== input.readAccess
-    || existing.author_visible !== input.authorVisible
-  )) throw new Error("immutable-category-policy");
-  if (asBoolean(requested.isDefault, existing?.is_default === true)) {
-    const { error } = await supabase.schema("app_private").from("issue_categories")
-      .update({ is_default: false }).neq("id", input.id);
-    if (error) throw error;
-  }
-  const row = {
-    author_visible: input.authorVisible,
-    comments_enabled: input.commentsEnabled,
-    created_by: existing ? existing.created_by : auth.uid,
-    id: input.id,
-    is_active: true,
-    is_default: asBoolean(requested.isDefault, existing?.is_default === true),
-    label: input.label,
-    read_access: input.readAccess,
-    response_deadline_days: input.responseDeadlineDays,
-    sort_order: input.sortOrder,
-    support_deadline_days: input.supportDeadlineDays,
-    support_enabled: input.supportEnabled,
-    support_goal: input.supportGoal,
-    updated_at: new Date().toISOString(),
-  };
-  const { data, error } = await supabase.schema("app_private").from("issue_categories")
-    .upsert(row, { onConflict: "id" }).select("*").single();
-  if (error) throw error;
-  await recordCategoryAudit(supabase, auth, "issue", input.id, existing ? "update" : "create", existing, data);
-  return { category: issueCategoryResponse(data) };
-}
-
-async function saveFacilityCategory(payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {
-  requirePermission(auth, "category.manage");
-  const requested = asRecord(payload.category);
-  const input = facilityCategoryInput(requested, asNumber(requested.sortOrder, 0));
-  const { data: existing, error: readError } = await supabase.schema("app_private").from("facility_categories")
-    .select("*").eq("id", input.id).maybeSingle();
-  if (readError) throw readError;
-  if (asBoolean(requested.isDefault, existing?.is_default === true)) {
-    const { error } = await supabase.schema("app_private").from("facility_categories")
-      .update({ is_default: false }).neq("id", input.id);
-    if (error) throw error;
-  }
-  const row = {
-    created_by: existing ? existing.created_by : auth.uid,
-    id: input.id,
-    is_active: true,
-    is_default: asBoolean(requested.isDefault, existing?.is_default === true),
-    label: input.label,
-    sort_order: input.sortOrder,
-    updated_at: new Date().toISOString(),
-  };
-  const { data, error } = await supabase.schema("app_private").from("facility_categories")
-    .upsert(row, { onConflict: "id" }).select("*").single();
-  if (error) throw error;
-  await recordCategoryAudit(supabase, auth, "facility", input.id, existing ? "update" : "create", existing, data);
-  return { category: facilityCategoryResponse(data) };
-}
-
 export async function handleCategoryAction(
   action: string,
   payload: JsonRecord,
@@ -260,12 +185,12 @@ export async function handleCategoryAction(
     requirePermission(auth, "category.manage");
     return { ...await loadCategoryCatalog(supabase, true), setupCompleted: auth.setupCompleted };
   }
-  if (action === "saveIssueCategory") return await saveIssueCategory(payload, auth, supabase);
-  if (action === "saveFacilityCategory") return await saveFacilityCategory(payload, auth, supabase);
   if (action === "saveCategoryManagement") {
     requirePermission(auth, "category.manage");
     const rawIssueCategories = Array.isArray(payload.issueCategories) ? payload.issueCategories : [];
     const rawFacilityCategories = Array.isArray(payload.facilityCategories) ? payload.facilityCategories : [];
+    const deletedIssueIds = deletedCategoryIds(payload.deletedIssueCategoryIds);
+    const deletedFacilityIds = deletedCategoryIds(payload.deletedFacilityCategoryIds);
     const issuesEnabled = asBoolean(payload.issuesEnabled, true);
     const facilitiesEnabled = asBoolean(payload.facilitiesEnabled, true);
     const issueCategories = rawIssueCategories.map((value, index) => {
@@ -287,8 +212,16 @@ export async function handleCategoryAction(
     }
     assertCategoryCollection(issueCategories);
     assertCategoryCollection(facilityCategories);
+    if (
+      issueCategories.some((category) => deletedIssueIds.includes(category.id))
+      || facilityCategories.some((category) => deletedFacilityIds.includes(category.id))
+    ) {
+      throw new Error("validation-required");
+    }
     const { error: saveError } = await supabase.schema("app_api").rpc("backend_save_category_management", {
       actor_uid: auth.uid,
+      deleted_facility_category_ids: deletedFacilityIds,
+      deleted_issue_category_ids: deletedIssueIds,
       facilities_enabled: facilitiesEnabled,
       facility_categories: facilityCategories,
       issue_categories: issueCategories,
@@ -305,26 +238,6 @@ export async function handleCategoryAction(
       issues_enabled: asBoolean(payload.issuesEnabled, true),
     });
     if (error) throw error;
-    return asRecord(data);
-  }
-  if (action === "deleteCategory") {
-    requirePermission(auth, "category.manage");
-    const kind = asString(payload.kind);
-    const id = asString(payload.id).trim();
-    if (kind !== "issue" && kind !== "facility") throw new Error("validation-required");
-    if (!id) throw new Error("validation-required");
-
-    const rpcName = kind === "issue" ? "backend_delete_issue_category" : "backend_delete_facility_category";
-    const { data, error } = await supabase.schema("app_api").rpc(rpcName, {
-      category_id: id,
-      actor_uid: auth.uid,
-    });
-    if (error) {
-      if (error.message.includes("cannot-delete-default-category")) {
-        throw new Error("cannot-delete-default-category");
-      }
-      throw error;
-    }
     return asRecord(data);
   }
   if (action === "completeInitialSetup") {

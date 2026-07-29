@@ -43,6 +43,8 @@ export interface MarkdownImageEditorEmit {
   (e: 'update:showPreview', showPreview: boolean): void;
 }
 
+type TablePickerElement = HTMLElement | { $el?: HTMLElement };
+
 const DEFAULT_HELPER_TEXT = 'markdown.editorHelp';
 
 export function useMarkdownImageEditor(
@@ -52,7 +54,7 @@ export function useMarkdownImageEditor(
   const { t } = useI18n();
   const fileInputRef = ref<HTMLInputElement | null>(null);
   const editorRootRef = ref<HTMLDivElement | null>(null);
-  const tablePickerRef = ref<any>(null);
+  const tablePickerRef = ref<TablePickerElement | null>(null);
   const localContent = ref(props.content);
   const textareaRefs = ref<Record<string, HTMLTextAreaElement | null>>({});
   const textSelections = ref<Record<string, { start: number; end: number }>>({});
@@ -488,7 +490,8 @@ export function useMarkdownImageEditor(
 
   function handleDocumentClick(e: MouseEvent) {
     if (showTablePicker.value) {
-      const tablePicker = tablePickerRef.value?.$el || tablePickerRef.value;
+      const pickerRef = tablePickerRef.value;
+      const tablePicker = pickerRef instanceof HTMLElement ? pickerRef : pickerRef?.$el;
       const triggerButtons = document.querySelectorAll('.table-btn-trigger');
       let clickedTrigger = false;
       triggerButtons.forEach((btn) => {

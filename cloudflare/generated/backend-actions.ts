@@ -45,10 +45,6 @@ export const BACKEND_ACTION_POLICIES = {
     "group": "sensitive-write",
     "extraLimit": "destructiveWriteHourly"
   },
-  "deleteCategory": {
-    "group": "admin-write",
-    "extraLimit": "destructiveWriteHourly"
-  },
   "deleteFacility": {
     "group": "admin-write",
     "extraLimit": "destructiveWriteHourly"
@@ -150,14 +146,6 @@ export const BACKEND_ACTION_POLICIES = {
   },
   "searchIssues": {
     "group": "read"
-  },
-  "saveFacilityCategory": {
-    "group": "admin-write",
-    "extraLimit": "roleWriteHourly"
-  },
-  "saveIssueCategory": {
-    "group": "admin-write",
-    "extraLimit": "roleWriteHourly"
   },
   "saveCategoryManagement": {
     "group": "admin-write",

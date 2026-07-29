@@ -78,6 +78,7 @@ const messages = {
   'categoryAdmin.deleteCategory': '刪除此分類',
   'categoryAdmin.deleteConfirmTitle': '確定刪除分類「{name}」？',
   'categoryAdmin.deleteConfirmMessage': '此操作無法復原。該分類下的所有提案或報修、留言、附議／受影響者、通知與上傳圖片都會永久刪除。',
+  'categoryAdmin.deleteDraftConfirmMessage': '儲存所有變更後，才會永久刪除此分類及其所有關聯內容。',
   'categoryAdmin.cannotDeleteDefaultCategoryHelp': '預設分類無法刪除，請先將其他分類設為預設。',
 } as const;
 

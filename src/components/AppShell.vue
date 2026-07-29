@@ -100,6 +100,7 @@ import { returnToNavigationOrigin } from '@/router/navigation-hierarchy';
 import { getDefaultAuthenticatedRoute } from '@/router/default-route';
 import { useI18n } from '@/i18n';
 import { useVisualViewport } from '@/composables/useVisualViewport';
+import { readLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
 
 const SIDEBAR_EXPANDED_STORAGE_KEY = 'novae:desktop-sidebar-expanded';
 const MOBILE_NAV_HEIGHT = 60;
@@ -263,7 +264,7 @@ function handleCapturedScroll(event: Event) {
 
 function setSidebarExpanded(expanded: boolean) {
   isSidebarExpanded.value = expanded;
-  window.localStorage.setItem(SIDEBAR_EXPANDED_STORAGE_KEY, expanded ? 'true' : 'false');
+  writeLocalStorage(SIDEBAR_EXPANDED_STORAGE_KEY, expanded ? 'true' : 'false');
 }
 
 function toggleSidebar() {
@@ -337,7 +338,7 @@ watch(() => route.fullPath, (newPath, oldPath) => {
 });
 
 onMounted(() => {
-  isSidebarExpanded.value = window.localStorage.getItem(SIDEBAR_EXPANDED_STORAGE_KEY) === 'true';
+  isSidebarExpanded.value = readLocalStorage(SIDEBAR_EXPANDED_STORAGE_KEY) === 'true';
   const probe = document.createElement('div');
   probe.style.cssText = 'padding-bottom:env(safe-area-inset-bottom);position:fixed;visibility:hidden';
   document.body.appendChild(probe);

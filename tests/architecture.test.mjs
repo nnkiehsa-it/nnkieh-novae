@@ -60,6 +60,9 @@ test('Vercel deployment config is hosting-only', async () => {
   assert.match(vercelJson, /"rewrites"/u);
   assert.match(vercelJson, /script-src 'self' 'wasm-unsafe-eval' https:\/\/accounts\.google\.com https:\/\/apis\.google\.com https:\/\/www\.google\.com\/recaptcha\/ https:\/\/www\.gstatic\.com\/recaptcha\//u);
   assert.doesNotMatch(vercelJson, /script-src[^;]*'unsafe-eval'/u);
+  const viteConfig = await read('vite.config.ts');
+  assert.match(viteConfig, /`connect-src \$\{connectSources\}`/u);
+  assert.match(viteConfig, /Content-Security-Policy/u);
   const globalHeaders = vercelConfig.headers.find((entry) => entry.source === '/(.*)')?.headers ?? [];
   assert.equal(globalHeaders.some((header) => header.key.toLowerCase() === 'cache-control'), false);
   assert.match(vercelJson, /\/assets\/\(\.\*\)[\s\S]*max-age=31536000, immutable/u);
@@ -74,7 +77,7 @@ test('Supabase backend deployment owns database and Edge Functions', async () =>
   const workflow = await read('.github/workflows/deploy-backend.yml');
   const config = await read('supabase/config.toml');
 
-  assert.match(workflow, /supabase\/setup-cli@v3[\s\S]*version: 2\.109\.1/u);
+  assert.match(workflow, /supabase\/setup-cli@v3[\s\S]*version: 2\.110\.0/u);
   assert.match(workflow, /actions\/setup-node@v7/u);
   assert.match(workflow, /cache-node-modules/u);
   assert.match(workflow, /npm ci --prefer-offline/u);
@@ -395,7 +398,9 @@ test('outbox, webhooks, FCM, and Notion deletion marks are guarded', async () =>
   assert.match(notion, /const NOTION_API_VERSION = "2026-03-11"/u);
   assert.match(notion, /\/databases\/\$\{requireEnv\("NOTION_DATABASE_ID"\)\}/u);
   assert.match(notion, /\/data_sources\/\$\{await getDataSourceId\(\)\}/u);
-  assert.match(notion, /parent: \{ type: "data_source_id", data_source_id: await getDataSourceId\(\) \}/u);
+  assert.match(notion, /parent: \{ type: "data_source_id", data_source_id: dataSourceId \}/u);
+  assert.match(notion, /"Novae ID": \{ rich_text:/u);
+  assert.match(notion, /filter: \{ property: "Novae ID", rich_text: \{ equals: externalId \} \}/u);
   assert.match(notion, /NOTION_DATA_SOURCE_ID/u);
   assert.match(notion, /NOTION_DATA_SOURCE_ID does not belong to NOTION_DATABASE_ID/u);
   assert.match(notion, /async function buildIssueManagedContent/u);
@@ -806,7 +811,7 @@ test('proposal and facility manager access is runtime-configured and category-sc
   assert.match(accessView, /activeIssueCategories/u);
   assert.match(accessView, /activeFacilityCategories/u);
   assert.match(categoryAction, /getIssueCategories/u);
-  assert.match(categoryAction, /saveIssueCategory/u);
+  assert.match(categoryAction, /action === "saveCategoryManagement"/u);
   assert.match(migration, /primary key \(uid, category_id\)/u);
   assert.match(users, /handleUserAccessAction/u);
   assert.match(userAccess, /backend_update_user_access_scope[\s\S]*scope_kind: scope\.kind[\s\S]*grant_access: payload\.grant/u);
@@ -995,6 +1000,7 @@ test('personal notification writes and pushes are scoped to the recipient', asyn
   const notificationView = await read('src/views/NotificationsView.vue');
   const notificationDisplay = await read('src/composables/useNotificationDisplay.ts');
   const uidOnlyMigration = await read('supabase/migrations/202607210001_uid_only_author_profiles.sql');
+  const pushRetryMigration = await read('supabase/migrations/202607290002_retryable_push_deliveries.sql');
 
   assert.match(atomicOutboxMigration, /'issue\.comment_created'/u);
   assert.match(atomicOutboxMigration, /'issue_author_uid', issue_record\.author_uid/u);
@@ -1023,7 +1029,10 @@ test('personal notification writes and pushes are scoped to the recipient', asyn
   assert.match(outboxWorker, /event\.event_type === "support\.goal_met" \|\| uid !== event\.actor_uid/u);
   assert.match(outboxWorker, /query = query\.in\("uid", recipientUids\)/u);
   assert.match(outboxWorker, /upsert\(notifications, \{ ignoreDuplicates: true, onConflict: "id" \}\)/u);
-  assert.match(outboxWorker, /sendPushesWithoutBlockingOutbox\(supabase, base, insertedRecipientUids\)/u);
+  assert.match(outboxWorker, /deliverPushes\(supabase, event\.id, base, recipients\)/u);
+  assert.match(outboxWorker, /retryPushDeliveries\(supabase\)/u);
+  assert.match(pushRetryMigration, /claim_push_delivery_jobs[\s\S]*for update skip locked/u);
+  assert.match(pushRetryMigration, /fail_push_delivery_job[\s\S]*power\(2/u);
   assert.doesNotMatch(outboxWorker, /srp-admin|topic_admin/u);
   assert.doesNotMatch(outboxWorker, /title: "新提案待審核"|title: "新提案待處理"/u);
   assert.match(outboxWorker, /title: "設備狀態已變更"/u);
@@ -1709,6 +1718,7 @@ test('platform feature switches persist atomically and remain configurable after
   const categoryManagement = await read('src/components/admin/CategoryWorkflowPanel.vue');
   const categoryState = await read('src/composables/useCategories.ts');
   const noArchivingMigration = await read('supabase/migrations/202607220002_remove_category_archiving.sql');
+  const draftDeletionMigration = await read('supabase/migrations/202607290001_atomic_category_draft_deletions.sql');
 
   assert.match(migration, /issues_enabled boolean not null default true/u);
   assert.match(migration, /facilities_enabled boolean not null default true/u);
@@ -1726,8 +1736,9 @@ test('platform feature switches persist atomically and remain configurable after
   assert.match(noArchivingMigration, /facility_categories_always_active_check check \(is_active\)/u);
   assert.match(noArchivingMigration, /backend_save_category_management[\s\S]*comments_enabled=excluded\.comments_enabled,is_active=true/u);
   assert.doesNotMatch(noArchivingMigration, /category->>'isActive'/u);
-  assert.match(categoryAction, /saveIssueCategory[\s\S]*is_active: true/u);
-  assert.match(categoryAction, /saveFacilityCategory[\s\S]*is_active: true/u);
+  assert.doesNotMatch(categoryAction, /saveIssueCategory|saveFacilityCategory|deleteCategory/u);
+  assert.match(draftDeletionMigration, /deleted_issue_category_ids[\s\S]*for update[\s\S]*backend_delete_issue_category/u);
+  assert.match(draftDeletionMigration, /deleted_facility_category_ids[\s\S]*backend_delete_facility_category/u);
 });
 
 test('touch handling blocks double-tap zoom without disabling pinch zoom', async () => {
@@ -2204,7 +2215,7 @@ test('backend deployment synchronizes only Firebase third-party auth configurati
     /Synchronize Firebase third-party authentication[\s\S]*node scripts\/sync-supabase-firebase-auth\.mjs/u,
   );
   assert.match(deployBackend, /'scripts\/sync-supabase-firebase-auth\.mjs'/u);
-  assert.match(deployBackend, /version: 2\.109\.1/u);
+  assert.match(deployBackend, /version: 2\.110\.0/u);
   assert.doesNotMatch(deployBackend, /supabase config push/u);
   assert.match(syncScript, /\/config\/auth\/third-party-auth/u);
   assert.match(syncScript, /oidc_issuer_url: desiredIssuer/u);

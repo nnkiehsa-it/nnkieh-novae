@@ -5,6 +5,7 @@ import { clearContentReadCache, clearContentReadMemoryCache, setContentCacheScop
 import { ensureContentRevisionsFresh, resetContentRevisionState } from '@/services/content-revisions';
 import { registerAppResumeHandler } from '@/composables/useAppResume';
 import { clearAuthorProfileCache } from '@/composables/useAuthorProfile';
+import { readLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
 
 export const mySupportedIssueIds = ref<Set<string>>(new Set());
 export const customPhotoUrl = ref<string | null>(null);
@@ -16,16 +17,12 @@ const CONTENT_REVISION_RESUME_MS = 10 * 60_000;
 let revisionResumeInitialized = false;
 
 export function shouldRecordPlatformVisit() {
-  const lastRecordedAt = Number.parseInt(localStorage.getItem(VISIT_RECORDED_AT_KEY) || '0', 10);
+  const lastRecordedAt = Number.parseInt(readLocalStorage(VISIT_RECORDED_AT_KEY) || '0', 10);
   return !(Number.isFinite(lastRecordedAt) && Date.now() - lastRecordedAt < VISIT_RECORD_INTERVAL_MS);
 }
 
 export function markPlatformVisitRecorded() {
-  try {
-    localStorage.setItem(VISIT_RECORDED_AT_KEY, String(Date.now()));
-  } catch {
-    // Storage failures must not block sign-in.
-  }
+  writeLocalStorage(VISIT_RECORDED_AT_KEY, String(Date.now()));
 }
 
 function initializeContentRevisionResume() {

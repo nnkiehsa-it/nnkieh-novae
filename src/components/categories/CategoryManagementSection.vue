@@ -29,8 +29,8 @@
             v-model="model[selectedIndex]"
             :field-id="`manage-${kind}-${selectedIndex}`"
             :kind="kind"
-            :id-locked="Boolean(selectedCategory.id && originalIds.has(selectedCategory.id))"
-            :privacy-locked="kind === 'issue' && Boolean(selectedCategory.id && originalIds.has(selectedCategory.id))"
+            :id-locked="Boolean(selectedCategory.id && persistedIds.has(selectedCategory.id))"
+            :privacy-locked="kind === 'issue' && Boolean(selectedCategory.id && persistedIds.has(selectedCategory.id))"
             :removable="false"
             default-control
             :deletable="Boolean(onDelete)"
@@ -57,7 +57,7 @@
       v-if="onDelete"
       :open="isDeleteConfirmOpen"
       :title="t('categoryAdmin.deleteConfirmTitle', { name: selectedCategory?.label })"
-      :message="t('categoryAdmin.deleteConfirmMessage')"
+      :message="t('categoryAdmin.deleteDraftConfirmMessage')"
       confirm-label="common.delete"
       :busy="deletingIndex === selectedIndex"
       @confirm="handleDelete(selectedIndex)"
@@ -76,19 +76,22 @@ import AppButton from '@/components/ui/atoms/AppButton.vue';
 import InlineMessage from '@/components/ui/atoms/InlineMessage.vue';
 import SectionHeader from '@/components/ui/molecules/SectionHeader.vue';
 import { useI18n } from '@/i18n';
-import type { FacilityCategoryConfig, IssueCategoryConfig } from '@/types/categories';
+import type {
+  CategoryConfig,
+  FacilityCategoryConfig,
+  IssueCategoryConfig,
+} from '@/types/categories';
 
 const props = defineProps<{
   description: string;
   disabled?: boolean;
   kind: 'facility' | 'issue';
   onDelete?: (index: number) => Promise<void>;
+  persistedIds: ReadonlySet<string>;
   title: string;
 }>();
 const model = defineModel<T[]>({ required: true });
-const emit = defineEmits<{ add: [] }>();
 const { t } = useI18n();
-const originalIds = new Set(model.value.map((category) => category.id).filter(Boolean));
 const selectedIndex = ref(0);
 const errors = ref<Record<number, string>>({});
 const selectedCategory = computed(() => model.value[selectedIndex.value] ?? null);
@@ -102,9 +105,8 @@ function addCategory() {
   isWizardOpen.value = true;
 }
 
-function handleCategoryCreated(newCategory: any) {
+function handleCategoryCreated(newCategory: CategoryConfig) {
   model.value.push(newCategory as T);
-  originalIds.add(newCategory.id);
   selectedIndex.value = model.value.length - 1;
 }
 
@@ -115,7 +117,7 @@ function makeDefault(index: number) {
   model.value.forEach((category, categoryIndex) => { category.isDefault = categoryIndex === index; });
 }
 
-async function confirmDelete(index: number) {
+function confirmDelete(index: number) {
   isDeleteConfirmOpen.value = true;
 }
 

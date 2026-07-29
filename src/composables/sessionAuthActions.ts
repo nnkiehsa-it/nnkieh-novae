@@ -10,6 +10,7 @@ import { GoogleIdentityError, requestGoogleAccessToken } from '@/lib/google-iden
 import type { SessionState } from '@/composables/sessionTypes';
 import { withRequestTimeout } from '@/lib/request';
 import { debugLog } from '@/composables/sessionDebug';
+import { readLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
 
 const LOGIN_ATTEMPT_KEY = 'novae-login-attempts';
 const LOGIN_ATTEMPT_WINDOW_MS = 10 * 60 * 1000;
@@ -24,12 +25,12 @@ function claimLoginAttempt() {
   if (now - lastLoginAttemptAt < LOGIN_CLICK_COOLDOWN_MS) return false;
   lastLoginAttemptAt = now;
   try {
-    const parsed = JSON.parse(localStorage.getItem(LOGIN_ATTEMPT_KEY) ?? '[]') as unknown;
+    const parsed = JSON.parse(readLocalStorage(LOGIN_ATTEMPT_KEY) ?? '[]') as unknown;
     const attempts = Array.isArray(parsed)
       ? parsed.filter((value): value is number => typeof value === 'number' && value > now - LOGIN_ATTEMPT_WINDOW_MS)
       : [];
     if (attempts.length >= LOGIN_ATTEMPT_LIMIT) return false;
-    localStorage.setItem(LOGIN_ATTEMPT_KEY, JSON.stringify([...attempts, now]));
+    writeLocalStorage(LOGIN_ATTEMPT_KEY, JSON.stringify([...attempts, now]));
   } catch {
     // Storage may be unavailable; the in-memory click cooldown still applies.
   }

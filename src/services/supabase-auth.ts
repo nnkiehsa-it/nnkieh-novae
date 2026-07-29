@@ -4,6 +4,7 @@ import { clearFirebaseIdTokenCache } from '@/lib/auth-token';
 import { withRequestTimeout } from '@/lib/request';
 import { apiGatewayUrl, hasApiGatewayConfig } from '@/lib/api-gateway';
 import { ApiRequestError, type ApiErrorResponse } from '@/lib/api-error';
+import { readLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
 
 interface SyncUserResponse extends ApiErrorResponse {
   ok?: boolean;
@@ -14,20 +15,12 @@ const PROFILE_SYNC_INTERVAL_MS = 24 * 60 * 60 * 1_000;
 const PROFILE_SYNC_KEY_PREFIX = 'novae:profile-synced-at:';
 
 function wasRecentlySynced(uid: string) {
-  try {
-    const syncedAt = Number.parseInt(localStorage.getItem(`${PROFILE_SYNC_KEY_PREFIX}${uid}`) ?? '0', 10);
-    return Number.isFinite(syncedAt) && Date.now() - syncedAt < PROFILE_SYNC_INTERVAL_MS;
-  } catch {
-    return false;
-  }
+  const syncedAt = Number.parseInt(readLocalStorage(`${PROFILE_SYNC_KEY_PREFIX}${uid}`) ?? '0', 10);
+  return Number.isFinite(syncedAt) && Date.now() - syncedAt < PROFILE_SYNC_INTERVAL_MS;
 }
 
 function rememberSync(uid: string) {
-  try {
-    localStorage.setItem(`${PROFILE_SYNC_KEY_PREFIX}${uid}`, String(Date.now()));
-  } catch {
-    // A blocked storage API should not prevent authentication.
-  }
+  writeLocalStorage(`${PROFILE_SYNC_KEY_PREFIX}${uid}`, String(Date.now()));
 }
 
 export async function ensureSupabaseAuthenticatedRole(user: User) {

@@ -1,6 +1,7 @@
 import { auth } from '@/lib/firebase';
 import { invokeBackendAction } from '@/services/backend-action';
 import { markContentCachePrefixStale } from '@/services/content-read-cache';
+import { readLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
 
 export type ContentRevisionDomain = 'announcements' | 'facilities' | 'issues';
 type ContentRevisions = Record<ContentRevisionDomain, number>;
@@ -28,7 +29,7 @@ function storageKey(uid: string) {
 
 function readStoredRevisions(uid: string): StoredContentRevisions | null {
   try {
-    const raw = localStorage.getItem(storageKey(uid));
+    const raw = readLocalStorage(storageKey(uid));
     if (!raw) return null;
     const value = JSON.parse(raw) as Partial<StoredContentRevisions>;
     const revisions = value.revisions;
@@ -46,11 +47,7 @@ function readStoredRevisions(uid: string): StoredContentRevisions | null {
 }
 
 function writeStoredRevisions(uid: string, value: StoredContentRevisions) {
-  try {
-    localStorage.setItem(storageKey(uid), JSON.stringify(value));
-  } catch {
-    // Revision persistence is an optimization; the content cache remains usable.
-  }
+  writeLocalStorage(storageKey(uid), JSON.stringify(value));
 }
 
 function invalidateDomain(domain: ContentRevisionDomain) {

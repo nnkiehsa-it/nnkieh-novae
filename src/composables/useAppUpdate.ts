@@ -1,6 +1,11 @@
 import { readonly, ref } from 'vue';
 import { safeFetch, withRequestTimeout } from '@/lib/request';
 import { resetAppConnection } from '@/lib/reconnect';
+import {
+  readSessionStorage,
+  writeLocalStorage,
+  writeSessionStorage,
+} from '@/lib/browser-storage';
 
 const updateAvailable = ref(false);
 const checking = ref(false);
@@ -148,13 +153,13 @@ export async function initializeAppUpdate() {
 
 export function useAppUpdate() {
   function getAutoReloadCount() {
-    const savedCount = Number.parseInt(sessionStorage.getItem(AUTO_RELOAD_COUNT_KEY) || '0', 10);
+    const savedCount = Number.parseInt(readSessionStorage(AUTO_RELOAD_COUNT_KEY) || '0', 10);
     return Number.isFinite(savedCount) && savedCount > 0 ? savedCount : 0;
   }
 
   function canAutoReloadCurrentVersion() {
     if (!remoteVersion.value) return false;
-    const savedVersion = sessionStorage.getItem(AUTO_RELOAD_STORAGE_KEY);
+    const savedVersion = readSessionStorage(AUTO_RELOAD_STORAGE_KEY);
     if (savedVersion !== remoteVersion.value) {
       return true;
     }
@@ -163,8 +168,8 @@ export function useAppUpdate() {
 
   function markAutomaticReloadExhausted() {
     if (!remoteVersion.value) return;
-    sessionStorage.setItem(AUTO_RELOAD_STORAGE_KEY, remoteVersion.value);
-    sessionStorage.setItem(AUTO_RELOAD_COUNT_KEY, String(MAX_AUTO_RELOAD_ATTEMPTS));
+    writeSessionStorage(AUTO_RELOAD_STORAGE_KEY, remoteVersion.value);
+    writeSessionStorage(AUTO_RELOAD_COUNT_KEY, String(MAX_AUTO_RELOAD_ATTEMPTS));
   }
 
   function startReloadRecoveryWatchdog() {
@@ -196,17 +201,17 @@ export function useAppUpdate() {
     reloading.value = options.reason || 'update';
 
     if (options.automatic && remoteVersion.value) {
-      const savedVersion = sessionStorage.getItem(AUTO_RELOAD_STORAGE_KEY);
+      const savedVersion = readSessionStorage(AUTO_RELOAD_STORAGE_KEY);
       if (savedVersion === remoteVersion.value) {
-        sessionStorage.setItem(AUTO_RELOAD_COUNT_KEY, String(getAutoReloadCount() + 1));
+        writeSessionStorage(AUTO_RELOAD_COUNT_KEY, String(getAutoReloadCount() + 1));
       } else {
-        sessionStorage.setItem(AUTO_RELOAD_STORAGE_KEY, remoteVersion.value);
-        sessionStorage.setItem(AUTO_RELOAD_COUNT_KEY, '1');
+        writeSessionStorage(AUTO_RELOAD_STORAGE_KEY, remoteVersion.value);
+        writeSessionStorage(AUTO_RELOAD_COUNT_KEY, '1');
       }
     }
 
     if (remoteVersion.value) {
-      localStorage.setItem(PENDING_UPDATE_VERSION_STORAGE_KEY, remoteVersion.value);
+      writeLocalStorage(PENDING_UPDATE_VERSION_STORAGE_KEY, remoteVersion.value);
     }
     if ((options.reason ?? 'update') === 'update') {
       await prepareServiceWorkerForReload();

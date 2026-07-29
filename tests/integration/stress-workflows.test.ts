@@ -7,6 +7,7 @@ import {
   integrationTest,
   refreshActor,
   requestId,
+  saveCategoryDraft,
   seedActor,
   supabase,
 } from "./helpers.ts";
@@ -110,8 +111,8 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
 
   const issueCategoryId = `stress-issue-${runId}`;
   const facilityCategoryId = `stress-facility-${runId}`;
-  await callAction("saveIssueCategory", {
-    category: {
+  await saveCategoryDraft(admins[0].auth, {
+    upsertIssueCategories: [{
       authorVisible: true,
       commentsEnabled: true,
       id: issueCategoryId,
@@ -123,18 +124,14 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
       supportDeadlineDays: 14,
       supportEnabled: true,
       supportGoal: stressScale,
-    },
-    requestId: requestId("stress-create-issue-category"),
-  }, admins[0].auth);
-  await callAction("saveFacilityCategory", {
-    category: {
+    }],
+    upsertFacilityCategories: [{
       id: facilityCategoryId,
       isDefault: false,
       label: `壓測設備 ${runId}`,
       sortOrder: 10_000,
-    },
-    requestId: requestId("stress-create-facility-category"),
-  }, admins[1].auth);
+    }],
+  });
 
   const management = asRecord(await callAction("getCategoryManagement", {}, admins[0].auth));
   const issueCategories = records(management.issueCategories);
@@ -351,12 +348,10 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
     }
   }
 
-  await callAction("deleteCategory", {
-    id: issueCategoryId, kind: "issue", requestId: requestId("stress-delete-issue-category"),
-  }, admins[0].auth);
-  await callAction("deleteCategory", {
-    id: facilityCategoryId, kind: "facility", requestId: requestId("stress-delete-facility-category"),
-  }, admins[1].auth);
+  await saveCategoryDraft(admins[0].auth, {
+    deletedFacilityCategoryIds: [facilityCategoryId],
+    deletedIssueCategoryIds: [issueCategoryId],
+  });
   const [issueCategoryRow, facilityCategoryRow] = await Promise.all([
     supabase.schema("app_private").from("issue_categories").select("id").eq("id", issueCategoryId).maybeSingle(),
     supabase.schema("app_private").from("facility_categories").select("id").eq("id", facilityCategoryId).maybeSingle(),

@@ -92,6 +92,7 @@ import { getDefaultAuthenticatedRoute } from '@/router/default-route';
 import { preloadPrimaryRouteComponents } from '@/router/route-components';
 import { getRouteNavigationDepth } from '@/router/navigation-hierarchy';
 import { useI18n } from '@/i18n';
+import { readLocalStorage, removeLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
 
 const APP_RELEASE_MARKER = '2026-06-27-1516';
 const LAST_APP_VERSION_STORAGE_KEY = 'novae:last-app-version';
@@ -256,8 +257,8 @@ watch(
   startupGateOpen,
   (open) => {
     if (!open) {
-      const lastVersion = localStorage.getItem(LAST_APP_VERSION_STORAGE_KEY);
-      const pendingUpdateVersion = localStorage.getItem(PENDING_UPDATE_VERSION_STORAGE_KEY);
+      const lastVersion = readLocalStorage(LAST_APP_VERSION_STORAGE_KEY);
+      const pendingUpdateVersion = readLocalStorage(PENDING_UPDATE_VERSION_STORAGE_KEY);
       const isNewVersion = Boolean(lastVersion && lastVersion !== __APP_VERSION__);
       const completedPendingUpdate = Boolean(
         pendingUpdateVersion
@@ -271,9 +272,9 @@ watch(
         }
       }
       if (completedPendingUpdate) {
-        localStorage.removeItem(PENDING_UPDATE_VERSION_STORAGE_KEY);
+        removeLocalStorage(PENDING_UPDATE_VERSION_STORAGE_KEY);
       }
-      localStorage.setItem(LAST_APP_VERSION_STORAGE_KEY, __APP_VERSION__);
+      writeLocalStorage(LAST_APP_VERSION_STORAGE_KEY, __APP_VERSION__);
     }
   },
   { immediate: true }

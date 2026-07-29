@@ -82,19 +82,10 @@ function idempotentWrite(
 export const backendActionDefinitions = [
   action("getCategoryCatalog", "category", "read", handleCategoryAction),
   action("getCategoryManagement", "category", "read", handleCategoryAction, { requiredPermission: "category.manage" }),
-  action("saveIssueCategory", "category", "admin-write", handleCategoryAction, {
-    idempotent: true, requiredPermission: "category.manage", requiresRequestId: true,
-  }),
   action("saveCategoryManagement", "category", "admin-write", handleCategoryAction, {
     idempotent: true, requiredPermission: "category.manage", requiresRequestId: true,
   }),
-  action("saveFacilityCategory", "category", "admin-write", handleCategoryAction, {
-    idempotent: true, requiredPermission: "category.manage", requiresRequestId: true,
-  }),
   action("savePlatformFeatures", "category", "admin-write", handleCategoryAction, {
-    idempotent: true, requiredPermission: "category.manage", requiresRequestId: true,
-  }),
-  action("deleteCategory", "category", "admin-write", handleCategoryAction, {
     idempotent: true, requiredPermission: "category.manage", requiresRequestId: true,
   }),
   action("completeInitialSetup", "category", "admin-write", handleCategoryAction, {

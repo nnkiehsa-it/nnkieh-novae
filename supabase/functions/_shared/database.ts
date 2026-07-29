@@ -275,9 +275,15 @@ interface AppPrivateTables {
   notifications: Table<NotificationRow>;
   outbox_events: Table<OutboxEventRow>;
   push_delivery_logs: Table<{
+    attempt_count: number;
     id: string;
+    delivery_key: string | null;
     error_trace_id: string | null;
+    locked_at: string | null;
+    next_attempt_at: string;
+    notification: Json | null;
     notification_type: string;
+    recipient_uids: string[];
     status: string;
     target_id: string;
     target_type: string;
@@ -330,6 +336,15 @@ interface AppApiFunctions {
   }, Json>;
   backend_update_platform_features: AppFunction<{
     actor_uid: string; issues_enabled: boolean; facilities_enabled: boolean;
+  }, Json>;
+  backend_save_category_management: AppFunction<{
+    actor_uid: string;
+    deleted_facility_category_ids: string[];
+    deleted_issue_category_ids: string[];
+    facilities_enabled: boolean;
+    facility_categories: Json;
+    issue_categories: Json;
+    issues_enabled: boolean;
   }, Json>;
   backend_get_access_context: AppFunction<{ actor_uid: string }, Json>;
   backend_get_notification_unread_hint: AppFunction<{ actor_is_admin: boolean; actor_uid: string }, Json>;
@@ -580,11 +595,16 @@ interface AppApiFunctions {
     response: Json | null;
   }>>;
   claim_outbox_events: AppFunction<{ batch_size?: number }, OutboxEventRow[]>;
+  claim_push_delivery_jobs: AppFunction<{ batch_size?: number }, Array<
+    AppPrivateTables["push_delivery_logs"]["Row"]
+  >>;
   complete_deletion_job: AppFunction<{ job_id: string }, void>;
   complete_idempotency_key: AppFunction<{ action_name: string; action_response: Json; actor_uid: string; request_id: string }, void>;
   complete_outbox_event: AppFunction<{ event_id: string }, void>;
+  complete_push_delivery_job: AppFunction<{ job_id: string }, void>;
   fail_deletion_job: AppFunction<{ error_trace_id: string; job_id: string }, void>;
   fail_outbox_event: AppFunction<{ error_trace_id: string; event_id: string }, void>;
+  fail_push_delivery_job: AppFunction<{ job_id: string; trace_id: string }, void>;
   get_platform_dashboard_snapshot: AppFunction<Record<string, never>, Json>;
   backend_delete_issue: AppFunction<{ actor_is_admin: boolean; actor_uid: string; issue_id: string }, void>;
   release_idempotency_key: AppFunction<{ action_name: string; actor_uid: string; request_id: string }, void>;

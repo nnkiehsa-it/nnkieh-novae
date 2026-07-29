@@ -47,6 +47,9 @@
           :spinner-size="3"
         />
 
+        <label :for="`comment-content-${composerId}`" class="sr-only">
+          {{ t(parentCommentId ? 'comments.leaveYourReply' : 'comments.shareYourThoughts') }}
+        </label>
         <textarea
           :id="`comment-content-${composerId}`"
           ref="commentTextareaRef"

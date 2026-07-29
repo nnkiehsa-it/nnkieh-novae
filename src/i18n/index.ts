@@ -1,6 +1,7 @@
 import { readonly, ref } from 'vue';
 import en from '@/i18n/messages/en';
 import zhTW from '@/i18n/messages/zh-TW';
+import { readLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
 
 export type AppLocale = 'zh-TW' | 'en';
 export type TranslationParams = Record<string, string | number>;
@@ -41,34 +42,21 @@ export function initializeI18n() {
   if (initialized) return;
   initialized = true;
 
-  let storedLocale: AppLocale | null = null;
-  try {
-    storedLocale = normalizeLocale(window.localStorage.getItem(LOCALE_STORAGE_KEY));
-  } catch {
-    // Storage can be unavailable in restricted browser contexts.
-  }
+  const storedLocale = normalizeLocale(readLocalStorage(LOCALE_STORAGE_KEY));
 
   const initialLocale = storedLocale ?? detectSystemLocale();
   localeState.value = initialLocale;
   applyDocumentLocale(initialLocale);
 
   if (!storedLocale) {
-    try {
-      window.localStorage.setItem(LOCALE_STORAGE_KEY, initialLocale);
-    } catch {
-      // Storage can be unavailable in restricted browser contexts.
-    }
+    writeLocalStorage(LOCALE_STORAGE_KEY, initialLocale);
   }
 }
 
 export function setLocale(locale: AppLocale) {
   localeState.value = locale;
   applyDocumentLocale(locale);
-  try {
-    window.localStorage.setItem(LOCALE_STORAGE_KEY, locale);
-  } catch {
-    // The in-memory selection remains usable when persistence is unavailable.
-  }
+  writeLocalStorage(LOCALE_STORAGE_KEY, locale);
 }
 
 export function t(source: string, params: TranslationParams = {}) {

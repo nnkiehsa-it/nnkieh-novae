@@ -3,7 +3,7 @@ import {
   type AppDatabaseClient,
 } from "../_shared/database-client.ts";
 import { isInvalidFcmTokenError, sendFcmMessage, sendFcmTopicMessage } from "../_shared/fcm.ts";
-import { errorMessage, errorStatus, jsonResponse, publicErrorBody, requireMethod } from "../_shared/http.ts";
+import { asRecord, errorMessage, errorStatus, jsonResponse, publicErrorBody, requireMethod } from "../_shared/http.ts";
 import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 import { claimFixedWindowRateLimits, utcMinuteWindow, utcSecondWindow } from "../_shared/upstash-rate-limit.ts";
 import {
@@ -312,7 +312,9 @@ async function markMappedNotionPageDeleted(
     .maybeSingle();
   if (error) throw error;
   if (data?.notion_page_id) {
-    await markNotionPageDeleted(String(data.notion_page_id));
+    const pageId = String(data.notion_page_id);
+    if (pageId.startsWith("pending:")) throw new Error("notion-sync-in-progress");
+    await markNotionPageDeleted(pageId);
     const { error: deleteError } = await supabase
       .schema("app_private")
       .from("notion_pages")
@@ -469,7 +471,7 @@ async function sendPushes(
   }
   const tokenRecipientUids = [...new Set(tokens.map((row) => asString(row.uid)).filter(Boolean))];
   const preferences = new Map<string, { comments: boolean; facilityUpdates: boolean; issueUpdates: boolean }>();
-  let pushFailureTraceCode = "";
+  let transientPushFailure: unknown = null;
   if (tokenRecipientUids.length > 0) {
     const { data: states, error: stateError } = await supabase
       .schema("app_private")
@@ -515,33 +517,17 @@ async function sendPushes(
         },
       });
     } catch (error) {
-      pushFailureTraceCode ||= crypto.randomUUID();
-      console.error(JSON.stringify({
-        error: errorMessage(error),
-        notificationType,
-        targetId,
-        targetType,
-        traceCode: pushFailureTraceCode,
-        uid,
-      }));
       if (isInvalidFcmTokenError(error)) {
         await supabase.schema("app_private").from("push_tokens").delete().eq("token", row.token);
+      } else {
+        transientPushFailure ??= error;
       }
     }
   };
   for (let offset = 0; offset < tokens.length; offset += 20) {
     await Promise.all(tokens.slice(offset, offset + 20).map(sendToken));
   }
-  if (pushFailureTraceCode) {
-    await supabase.schema("app_private").from("push_delivery_logs").insert({
-      error_trace_id: pushFailureTraceCode,
-      notification_type: notificationType,
-      status: "failed",
-      target_id: targetId,
-      target_type: targetType,
-      token_uid: "",
-    });
-  }
+  if (transientPushFailure) throw transientPushFailure;
 }
 
 async function insertNotification(
@@ -557,13 +543,46 @@ async function insertNotification(
   throw error;
 }
 
-async function sendPushesWithoutBlockingOutbox(
+async function deliverPushes(
   supabase: AppSupabase,
+  deliveryKey: string,
   notification: Record<string, unknown>,
   recipientUids: string[] = [],
 ) {
+  const { data: delivery, error: insertError } = await supabase
+    .schema("app_private")
+    .from("push_delivery_logs")
+    .insert({
+      attempt_count: 1,
+      delivery_key: deliveryKey,
+      locked_at: new Date().toISOString(),
+      next_attempt_at: new Date().toISOString(),
+      notification,
+      notification_type: asString(notification.type),
+      recipient_uids: recipientUids,
+      status: "processing",
+      target_id: asString(notification.target_id),
+      target_type: asString(notification.target_type),
+      token_uid: "",
+    })
+    .select("id")
+    .maybeSingle();
+  if (insertError?.code === "23505") return;
+  if (insertError) throw insertError;
+  if (!delivery) throw new Error("push-delivery-job-not-created");
+
   try {
     await sendPushes(supabase, notification, recipientUids);
+    const { error: completeError } = await supabase.schema("app_private").from("push_delivery_logs")
+      .update({
+        locked_at: null,
+        notification: null,
+        recipient_uids: [],
+        status: "sent",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", delivery.id);
+    if (completeError) throw completeError;
   } catch (error) {
     const traceCode = crypto.randomUUID();
     console.error(JSON.stringify({
@@ -571,29 +590,60 @@ async function sendPushesWithoutBlockingOutbox(
       notificationType: asString(notification.type),
       traceCode,
     }));
-    await supabase.schema("app_private").from("push_delivery_logs").insert({
+    const { error: failError } = await supabase.schema("app_private").from("push_delivery_logs").update({
       error_trace_id: traceCode,
-      notification_type: asString(notification.type),
+      locked_at: null,
+      next_attempt_at: new Date(Date.now() + 15_000).toISOString(),
       status: "failed",
-      target_id: asString(notification.target_id),
-      target_type: asString(notification.target_type),
-      token_uid: "",
-    });
+      updated_at: new Date().toISOString(),
+    }).eq("id", delivery.id);
+    if (failError) throw failError;
+    // Keep the owning outbox event retryable so the existing minute scheduler
+    // wakes this worker again after the push delivery backoff becomes due.
+    throw error;
   }
+}
+
+async function retryPushDeliveries(supabase: AppSupabase) {
+  const { data, error } = await supabase.schema("app_api")
+    .rpc("claim_push_delivery_jobs", { batch_size: 10 });
+  if (error) throw error;
+  for (const job of data ?? []) {
+    try {
+      await sendPushes(
+        supabase,
+        asRecord(job.notification),
+        Array.isArray(job.recipient_uids) ? job.recipient_uids.map(asString).filter(Boolean) : [],
+      );
+      const { error: completeError } = await supabase.schema("app_api")
+        .rpc("complete_push_delivery_job", { job_id: job.id });
+      if (completeError) throw completeError;
+    } catch (retryError) {
+      const traceCode = crypto.randomUUID();
+      console.error(JSON.stringify({
+        deliveryKey: asString(job.delivery_key),
+        error: errorMessage(retryError),
+        operation: "push-delivery-retry",
+        traceCode,
+      }));
+      const { error: failError } = await supabase.schema("app_api")
+        .rpc("fail_push_delivery_job", { job_id: job.id, trace_id: traceCode });
+      if (failError) throw failError;
+    }
+  }
+  return (data ?? []).length;
 }
 
 async function insertNotifications(
   supabase: AppSupabase,
   notifications: Record<string, unknown>[],
 ) {
-  if (notifications.length === 0) return [];
-  const { data, error } = await supabase
+  if (notifications.length === 0) return;
+  const { error } = await supabase
     .schema("app_private")
     .from("notifications")
-    .upsert(notifications, { ignoreDuplicates: true, onConflict: "id" })
-    .select("recipient_uid");
+    .upsert(notifications, { ignoreDuplicates: true, onConflict: "id" });
   if (error) throw error;
-  return (data ?? []).map((row) => asString(row.recipient_uid)).filter(Boolean);
 }
 
 async function createNotificationsForEvent(
@@ -616,8 +666,8 @@ async function createNotificationsForEvent(
     const notifications = await Promise.all(recipients.map(async (recipientUid) => ({
       ...base, recipient_uid: recipientUid, id: await deterministicNotificationId(event.id, recipientUid),
     })));
-    const insertedRecipientUids = await insertNotifications(supabase, notifications);
-    if (insertedRecipientUids.length > 0) await sendPushesWithoutBlockingOutbox(supabase, base, insertedRecipientUids);
+    await insertNotifications(supabase, notifications);
+    if (recipients.length > 0) await deliverPushes(supabase, event.id, base, recipients);
     return { hasNotification: recipients.length > 0 };
   }
   if (event.event_type === "facility.status_changed") {
@@ -633,10 +683,8 @@ async function createNotificationsForEvent(
       recipient_uid: recipientUid,
       id: await deterministicNotificationId(event.id, recipientUid),
     })));
-    const insertedRecipientUids = await insertNotifications(supabase, notifications);
-    if (insertedRecipientUids.length > 0) {
-      await sendPushesWithoutBlockingOutbox(supabase, base, insertedRecipientUids);
-    }
+    await insertNotifications(supabase, notifications);
+    if (recipients.length > 0) await deliverPushes(supabase, event.id, base, recipients);
     return { hasNotification: recipients.length > 0 };
   }
   if (
@@ -663,10 +711,8 @@ async function createNotificationsForEvent(
         recipient_uid: recipientUid,
         id: await deterministicNotificationId(event.id, recipientUid),
       })));
-    const insertedRecipientUids = await insertNotifications(supabase, notifications);
-    if (insertedRecipientUids.length > 0) {
-      await sendPushesWithoutBlockingOutbox(supabase, base, insertedRecipientUids);
-    }
+    await insertNotifications(supabase, notifications);
+    if (recipients.length > 0) await deliverPushes(supabase, event.id, base, recipients);
     return { hasNotification: recipients.length > 0 };
   }
   const notification = await resolveNotification(supabase, event);
@@ -675,10 +721,8 @@ async function createNotificationsForEvent(
       ...notification,
       id: await deterministicNotificationId(event.id, "primary"),
     };
-    const inserted = await insertNotification(supabase, notificationWithId);
-    if (inserted) {
-      await sendPushesWithoutBlockingOutbox(supabase, notificationWithId);
-    }
+    await insertNotification(supabase, notificationWithId);
+    await deliverPushes(supabase, event.id, notificationWithId);
   }
 
   return {
@@ -743,6 +787,7 @@ Deno.serve(async (request) => {
       { identifier: "global", actionName: "worker.outbox", window: utcMinuteWindow(), config: RATE_LIMITS.workerRunMinute },
     ]);
     const supabase = createDatabaseClient();
+    const retriedPushCount = await retryPushDeliveries(supabase);
     const { data, error } = await supabase
       .schema("app_api")
       .rpc("claim_outbox_events", { batch_size: 10 });
@@ -779,7 +824,7 @@ Deno.serve(async (request) => {
         if (failError) throw failError;
       }
     }
-    if (events.length === 10) {
+    if (events.length === 10 || retriedPushCount === 10) {
       const { error: resignalError } = await supabase.schema("app_api")
         .rpc("resignal_background_worker", { worker_name: "outbox" });
       if (resignalError) {
@@ -787,7 +832,7 @@ Deno.serve(async (request) => {
       }
     }
 
-    return jsonResponse({ ok: true, processedCount: events.length });
+    return jsonResponse({ ok: true, processedCount: events.length, retriedPushCount });
   } catch (error) {
     console.error(errorMessage(error));
     return jsonResponse({ ok: false, error: publicErrorBody(error) }, { status: errorStatus(error) });

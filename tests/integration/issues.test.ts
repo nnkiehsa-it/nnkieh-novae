@@ -5,6 +5,7 @@ import {
   expectActionError,
   integrationTest,
   requestId,
+  saveCategoryDraft,
   seedActor,
   supabase,
 } from "./helpers.ts";
@@ -47,10 +48,13 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
   const originalPublicCategory = asRecord((categoryManagement.issueCategories as unknown[])
     .find((category) => asRecord(category).id === "public-issues"));
   const nextSupportGoal = Number(originalPublicCategory.supportGoal) + 1;
-  await callAction("saveIssueCategory", {
-    category: { ...originalPublicCategory, commentsEnabled: false, supportGoal: nextSupportGoal },
-    requestId: requestId("future-category-defaults"),
-  }, admin.auth);
+  await saveCategoryDraft(admin.auth, {
+    upsertIssueCategories: [{
+      ...originalPublicCategory,
+      commentsEnabled: false,
+      supportGoal: nextSupportGoal,
+    }],
+  });
   const futureDefaultsIssue = await createIssue(owner, "public-issues", "future-defaults");
   assert.equal(futureDefaultsIssue.comments_enabled, false);
   assert.equal(futureDefaultsIssue.support_goal, nextSupportGoal);
@@ -61,10 +65,9 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
   )).issue);
   assert.equal(unchangedExistingIssue.comments_enabled, true);
   assert.equal(unchangedExistingIssue.support_goal, publicIssue.support_goal);
-  await callAction("saveIssueCategory", {
-    category: originalPublicCategory,
-    requestId: requestId("restore-category-defaults"),
-  }, admin.auth);
+  await saveCategoryDraft(admin.auth, {
+    upsertIssueCategories: [originalPublicCategory],
+  });
 
   const immutableSnapshotWrite = await supabase.schema("app_private").from("issues")
     .update({ read_access: "school" }).eq("id", publicIssueId);

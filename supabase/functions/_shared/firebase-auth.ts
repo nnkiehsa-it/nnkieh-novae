@@ -1,6 +1,6 @@
 import { requireEnv } from "./env.ts";
 import { asRecord, asString } from "./http.ts";
-import { createRemoteJWKSet, jwtVerify } from "npm:jose@6.1.3";
+import { createRemoteJWKSet, jwtVerify } from "npm:jose@6.2.3";
 
 export interface FirebaseAuthContext {
   customAttributes: string;

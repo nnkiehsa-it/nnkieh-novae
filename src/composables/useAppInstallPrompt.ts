@@ -10,25 +10,18 @@ import {
   type AppInstallPromptReason,
   type IosBrowserGuide,
 } from '@/lib/pwa-install';
+import { readSessionStorage, writeSessionStorage } from '@/lib/browser-storage';
 
 export type AppInstallPromptMode = 'in-app-browser' | 'native-install' | 'ios-install' | 'ios-open-safari';
 
 const DISMISSED_KEY = 'novae-app-install-prompt-dismissed';
 
 function hasDismissedPrompt() {
-  try {
-    return sessionStorage.getItem(DISMISSED_KEY) === '1';
-  } catch {
-    return false;
-  }
+  return readSessionStorage(DISMISSED_KEY) === '1';
 }
 
 function rememberDismissedPrompt() {
-  try {
-    sessionStorage.setItem(DISMISSED_KEY, '1');
-  } catch {
-    return;
-  }
+  writeSessionStorage(DISMISSED_KEY, '1');
 }
 
 export function useAppInstallPrompt() {

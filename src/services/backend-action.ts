@@ -4,6 +4,7 @@ import type { BackendActionName } from '@/services/backend-action-contract';
 import { auth } from '@/lib/firebase';
 import { apiGatewayUrl } from '@/lib/api-gateway';
 import { ApiRequestError, type ApiErrorResponse } from '@/lib/api-error';
+import { readSessionStorage, removeSessionStorage, writeSessionStorage } from '@/lib/browser-storage';
 
 interface BackendActionSuccessEnvelope<TResponse> {
   data: TResponse;
@@ -40,8 +41,8 @@ function withStableRequestId<TRequest>(name: BackendActionName, payload: TReques
     return { payload, storageKey: '' };
   }
   const storageKey = operationStorageKey(name, record);
-  const requestId = sessionStorage.getItem(storageKey) || record.requestId;
-  sessionStorage.setItem(storageKey, requestId);
+  const requestId = readSessionStorage(storageKey) || record.requestId;
+  writeSessionStorage(storageKey, requestId);
   return {
     payload: { ...record, requestId } as TRequest,
     storageKey,
@@ -87,7 +88,7 @@ export function invokeBackendAction<TRequest = Record<string, unknown>, TRespons
           ? new ApiRequestError(envelope)
           : new ApiRequestError({ error: { code: 'upstream-invalid-response' } });
       }
-      if (stableOperation.storageKey) sessionStorage.removeItem(stableOperation.storageKey);
+      if (stableOperation.storageKey) removeSessionStorage(stableOperation.storageKey);
       return envelope.data;
     },
     { label: name, signal: options.signal, timeoutMs: options.timeoutMs },

@@ -7,6 +7,7 @@ import {
   integrationTest,
   refreshActor,
   requestId,
+  saveCategoryDraft,
   seedActor,
   supabase,
   tableRow,
@@ -386,30 +387,38 @@ integrationTest("runtime category setup and management enforce platform permissi
   assert.deepEqual(asRecord(management.features), { facilitiesEnabled: false, issuesEnabled: true });
   const publicCategory = asRecord((management.issueCategories as unknown[])
     .find((value) => asRecord(value).id === "public-issues"));
-  const savedIssue = asRecord(await callAction("saveIssueCategory", {
-    category: { ...publicCategory, label: "公共議題-修改" },
-    requestId: requestId("save-issue-category"),
-  }, admin.auth));
-  assert.equal(asRecord(savedIssue.category).label, "公共議題-修改");
-  await expectActionError("immutable-category-policy", () => callAction("saveIssueCategory", {
-    category: { ...publicCategory, readAccess: "school" },
-    requestId: requestId("immutable-category"),
-  }, admin.auth));
-  await expectActionError("permission-denied", () => callAction("saveIssueCategory", {
-    category: publicCategory, requestId: requestId("save-issue-denied"),
+  const savedIssue = asRecord(await saveCategoryDraft(admin.auth, {
+    upsertIssueCategories: [{ ...publicCategory, label: "公共議題-修改" }],
+  }));
+  assert.equal(
+    asRecord((savedIssue.issueCategories as unknown[])
+      .find((value) => asRecord(value).id === "public-issues")).label,
+    "公共議題-修改",
+  );
+  await expectActionError("immutable-category-policy", () => saveCategoryDraft(admin.auth, {
+    upsertIssueCategories: [{ ...publicCategory, readAccess: "school" }],
+  }));
+  await expectActionError("permission-denied", () => callAction("saveCategoryManagement", {
+    deletedFacilityCategoryIds: [],
+    deletedIssueCategoryIds: [],
+    facilitiesEnabled: false,
+    facilityCategories: [],
+    issueCategories: [publicCategory],
+    issuesEnabled: true,
+    requestId: requestId("save-category-denied"),
   }, user.auth));
 
-  const savedFacility = asRecord(await callAction("saveFacilityCategory", {
-    category: {
+  const savedFacility = asRecord(await saveCategoryDraft(admin.auth, {
+    facilitiesEnabled: true,
+    upsertFacilityCategories: [{
       id: "general", isDefault: true, label: "一般設備-修改", sortOrder: 0,
-    },
-    requestId: requestId("save-facility-category"),
-  }, admin.auth));
-  assert.equal(asRecord(savedFacility.category).label, "一般設備-修改");
-  const enabledFeatures = asRecord(await callAction("savePlatformFeatures", {
-    facilitiesEnabled: true, issuesEnabled: true, requestId: requestId("enable-features"),
-  }, admin.auth));
-  assert.deepEqual(enabledFeatures, { facilitiesEnabled: true, issuesEnabled: true, success: true });
+    }],
+  }));
+  assert.equal(
+    asRecord((savedFacility.facilityCategories as unknown[])
+      .find((value) => asRecord(value).id === "general")).label,
+    "一般設備-修改",
+  );
   const updatedCatalog = asRecord(await callAction("getCategoryCatalog", {}, user.auth));
   assert.deepEqual(asRecord(updatedCatalog.features), { facilitiesEnabled: true, issuesEnabled: true });
 
@@ -431,6 +440,8 @@ integrationTest("runtime category setup and management enforce platform permissi
     };
   });
   await expectActionError("permission-denied", () => callAction("saveCategoryManagement", {
+    deletedFacilityCategoryIds: [],
+    deletedIssueCategoryIds: [],
     facilitiesEnabled: true,
     facilityCategories: managedFacilities,
     issueCategories: managedIssues,
@@ -438,6 +449,8 @@ integrationTest("runtime category setup and management enforce platform permissi
     requestId: requestId("save-management-denied"),
   }, user.auth));
   await expectActionError("validation-required", () => callAction("saveCategoryManagement", {
+    deletedFacilityCategoryIds: [],
+    deletedIssueCategoryIds: [],
     facilitiesEnabled: true,
     facilityCategories: [],
     issueCategories: managedIssues,
@@ -445,6 +458,8 @@ integrationTest("runtime category setup and management enforce platform permissi
     requestId: requestId("save-management-empty"),
   }, admin.auth));
   const atomicSave = asRecord(await callAction("saveCategoryManagement", {
+    deletedFacilityCategoryIds: [],
+    deletedIssueCategoryIds: [],
     facilitiesEnabled: true,
     facilityCategories: managedFacilities,
     issueCategories: managedIssues,
@@ -482,13 +497,24 @@ integrationTest("category deletion removes category and all associated resources
   assert.ok(defaultIssueCat, "Should find a default issue category");
 
   // 1. Try to delete default category - expect error
-  await expectActionError("cannot-delete-default-category", () => callAction("deleteCategory", {
-    kind: "issue", id: String(defaultIssueCat.id), requestId: requestId("del-def-issue")
-  }, admin.auth));
+  const remainingIssueCategories = issueCats
+    .filter((category) => asRecord(category).id !== defaultIssueCat.id)
+    .map((category, index) => ({ ...asRecord(category), isDefault: index === 0, sortOrder: index }));
+  const { error: defaultDeleteError } = await supabase.schema("app_api")
+    .rpc("backend_save_category_management", {
+      actor_uid: admin.auth.uid,
+      deleted_facility_category_ids: [],
+      deleted_issue_category_ids: [String(defaultIssueCat.id)],
+      facilities_enabled: Boolean(asRecord(managementBefore.features).facilitiesEnabled),
+      facility_categories: managementBefore.facilityCategories,
+      issue_categories: remainingIssueCategories,
+      issues_enabled: true,
+    });
+  assert.match(defaultDeleteError?.message ?? "", /cannot-delete-default-category/u);
 
   // 2. Create a temporary category to delete
-  const tempCategoryPayload = {
-    category: {
+  await saveCategoryDraft(admin.auth, {
+    upsertIssueCategories: [{
       id: "temp-cat-to-delete",
       label: "臨時分類",
       readAccess: "school",
@@ -500,19 +526,17 @@ integrationTest("category deletion removes category and all associated resources
       commentsEnabled: true,
       isDefault: false,
       sortOrder: 99,
-    },
-    requestId: requestId("create-temp-category"),
-  };
-  await callAction("saveIssueCategory", tempCategoryPayload, admin.auth);
+    }],
+  });
   const { error: archiveAttemptError } = await supabase.schema("app_private").from("issue_categories")
     .update({ is_active: false }).eq("id", "temp-cat-to-delete");
   assert.ok(archiveAttemptError, "database must reject attempts to archive a retained category");
   assert.equal((await tableRow("issue_categories", "id", "temp-cat-to-delete"))?.is_active, true);
 
   // 3. User tries to delete temporary category - expect permission-denied
-  await expectActionError("permission-denied", () => callAction("deleteCategory", {
-    kind: "issue", id: "temp-cat-to-delete", requestId: requestId("del-issue-user")
-  }, user.auth));
+  await expectActionError("permission-denied", () => saveCategoryDraft(user.auth, {
+    deletedIssueCategoryIds: ["temp-cat-to-delete"],
+  }));
 
   // 4. Create an issue in temporary category to verify cascade deletion
   const upload = await insertReadyUpload(user.auth.uid, "category-hard-delete");
@@ -556,9 +580,9 @@ integrationTest("category deletion removes category and all associated resources
   assert.ok(await tableRow("notifications", "id", notificationId));
 
   // 5. Admin deletes temporary category
-  const res = asRecord(await callAction("deleteCategory", {
-    kind: "issue", id: "temp-cat-to-delete", requestId: requestId("del-issue-success")
-  }, admin.auth));
+  const res = asRecord(await saveCategoryDraft(admin.auth, {
+    deletedIssueCategoryIds: ["temp-cat-to-delete"],
+  }));
   assert.equal(res.success, true);
 
   // 6. Verify temporary category is gone
@@ -588,9 +612,9 @@ integrationTest("category deletion removes category and all associated resources
   assert.ok(outboxRow);
   assert.equal(asRecord(outboxRow).event_type, "issue.deleted");
 
-  await expectActionError("not-found", () => callAction("deleteCategory", {
-    kind: "issue", id: "temp-cat-to-delete", requestId: requestId("del-missing-issue"),
-  }, admin.auth));
+  await expectActionError("not-found", () => saveCategoryDraft(admin.auth, {
+    deletedIssueCategoryIds: ["temp-cat-to-delete"],
+  }));
 
   const { data: deletionAudit, error: deletionAuditError } = await supabase.schema("app_private")
     .from("category_configuration_audit").select("domain,category_id,operation,actor_uid")
@@ -599,15 +623,14 @@ integrationTest("category deletion removes category and all associated resources
   assert.equal(deletionAudit.length, 1);
   assert.equal(deletionAudit[0]?.actor_uid, admin.auth.uid);
 
-  await callAction("saveFacilityCategory", {
-    category: {
+  await saveCategoryDraft(admin.auth, {
+    upsertFacilityCategories: [{
       id: "temp-facility-to-delete",
       isDefault: false,
       label: "臨時設備分類",
       sortOrder: 99,
-    },
-    requestId: requestId("create-temp-facility-category"),
-  }, admin.auth);
+    }],
+  });
   const facilityUpload = await insertReadyUpload(user.auth.uid, "facility-category-hard-delete");
   const facilityResult = asRecord(await callAction("createFacility", {
     categoryId: "temp-facility-to-delete",
@@ -634,11 +657,9 @@ integrationTest("category deletion removes category and all associated resources
   if (facilityNotificationError) throw facilityNotificationError;
   assert.ok(await tableRow("facility_report_affected_users", "facility_id", facilityId));
 
-  const facilityDelete = asRecord(await callAction("deleteCategory", {
-    kind: "facility",
-    id: "temp-facility-to-delete",
-    requestId: requestId("del-facility-success"),
-  }, admin.auth));
+  const facilityDelete = asRecord(await saveCategoryDraft(admin.auth, {
+    deletedFacilityCategoryIds: ["temp-facility-to-delete"],
+  }));
   assert.equal(facilityDelete.success, true);
   assert.equal(await tableRow("facility_reports", "id", facilityId), null);
   assert.equal(await tableRow("facility_report_affected_users", "facility_id", facilityId), null);

@@ -1,13 +1,11 @@
 <template>
   <DialogShell
     :open="open"
-    :persistent="saving"
-    :busy="saving"
     :labelled-by="titleId"
     surface-class="w-full max-w-lg"
     @close="handleClose"
   >
-    <div class="flex flex-col h-full min-h-[420px] justify-between p-1">
+    <form class="flex h-full min-h-[420px] flex-col justify-between p-1" @submit.prevent="handleSubmit">
       <!-- Header -->
       <div class="border-b border-ink-100 pb-4 dark:border-ink-800 flex justify-between items-start">
         <DialogHeading
@@ -47,9 +45,15 @@
               maxlength="48"
               required
               :placeholder="t('categoryAdmin.idPlaceholder')"
-              :disabled="saving"
+              :aria-invalid="form.id ? !isIdValid : undefined"
+              aria-describedby="wizard-id-help"
             />
-            <p class="mt-1 text-xs leading-5" :class="isIdValid ? 'text-ink-500' : 'text-error font-semibold'">
+            <p
+              id="wizard-id-help"
+              class="mt-1 text-xs leading-5"
+              :class="isIdValid ? 'text-ink-500' : 'text-error font-semibold'"
+              :role="isIdValid ? undefined : 'alert'"
+            >
               {{ t(isIdValid ? 'categoryAdmin.idHelp' : 'categoryAdmin.idFormatError') }}
             </p>
           </div>
@@ -201,20 +205,19 @@
       <!-- Footer Actions -->
       <div class="border-t border-ink-100 pt-4 dark:border-ink-800">
         <DialogActionRow>
-          <InlineMessage v-if="error" class="mr-auto self-center mb-2 sm:mb-0">{{ error }}</InlineMessage>
           <div class="flex gap-2 w-full sm:w-auto justify-end">
             <AppButton
               v-if="currentStep > 1"
+              type="button"
               variant="secondary"
-              :disabled="saving"
               @click="prevStep"
             >
               {{ t('common.previous') }}
             </AppButton>
             <AppButton
               v-else
+              type="button"
               variant="secondary"
-              :disabled="saving"
               @click="handleClose"
             >
               {{ t('common.cancel') }}
@@ -222,24 +225,23 @@
 
             <AppButton
               v-if="currentStep < totalSteps"
+              type="submit"
               variant="primary"
               :disabled="!isStepValid"
-              @click="nextStep"
             >
               {{ t('common.next') }}
             </AppButton>
             <AppButton
               v-else
+              type="submit"
               variant="primary"
-              :disabled="saving"
-              @click="submit"
             >
-              <BusyButtonContent :busy="saving" :label="t('common.create')" :busy-label="t('common.creating')" />
+              {{ t('common.create') }}
             </AppButton>
           </div>
         </DialogActionRow>
       </div>
-    </div>
+    </form>
   </DialogShell>
 </template>
 
@@ -254,11 +256,13 @@ import ListSurfaceRow from '@/components/ui/molecules/ListSurfaceRow.vue';
 import NumberField from '@/components/ui/molecules/NumberField.vue';
 import SelectionOptionButton from '@/components/ui/molecules/SelectionOptionButton.vue';
 import SurfacePanel from '@/components/ui/molecules/SurfacePanel.vue';
-import BusyButtonContent from '@/components/ui/atoms/BusyButtonContent.vue';
-import InlineMessage from '@/components/ui/atoms/InlineMessage.vue';
 import { useI18n } from '@/i18n';
-import { saveFacilityCategory, saveIssueCategory } from '@/services/categories';
-import type { IssueReadAccess } from '@/types/categories';
+import type {
+  CategoryConfig,
+  FacilityCategoryConfig,
+  IssueCategoryConfig,
+  IssueReadAccess,
+} from '@/types/categories';
 
 const titleId = 'category-wizard-title';
 
@@ -270,14 +274,12 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: [];
-  created: [category: any];
+  created: [category: CategoryConfig];
 }>();
 
 const { t } = useI18n();
 
 const currentStep = ref(1);
-const saving = ref(false);
-const error = ref('');
 const userEditedId = ref(false);
 
 const totalSteps = computed(() => props.kind === 'issue' ? 4 : 2);
@@ -349,8 +351,6 @@ watch(() => props.open, (newVal) => {
   if (newVal) {
     // Reset state on open
     currentStep.value = 1;
-    saving.value = false;
-    error.value = '';
     userEditedId.value = false;
     form.id = '';
     form.label = '';
@@ -410,17 +410,22 @@ function nextStep() {
   if (isStepValid.value && currentStep.value < totalSteps.value) currentStep.value++;
 }
 
-function handleClose() {
-  if (!saving.value) emit('close');
+function handleSubmit() {
+  if (!isStepValid.value) return;
+  if (currentStep.value < totalSteps.value) {
+    nextStep();
+    return;
+  }
+  submit();
 }
 
-async function submit() {
-  saving.value = true;
-  error.value = '';
-  try {
-    let result: any;
-    if (props.kind === 'issue') {
-      result = await saveIssueCategory({
+function handleClose() {
+  emit('close');
+}
+
+function submit() {
+  const category: CategoryConfig = props.kind === 'issue'
+    ? ({
         id: form.id,
         label: form.label,
         readAccess: form.readAccess,
@@ -432,21 +437,14 @@ async function submit() {
         commentsEnabled: form.commentsEnabled,
         isDefault: form.isDefault,
         sortOrder: props.sortOrder,
-      });
-    } else {
-      result = await saveFacilityCategory({
+      } satisfies IssueCategoryConfig)
+    : ({
         id: form.id,
         label: form.label,
         isDefault: form.isDefault,
         sortOrder: props.sortOrder,
-      });
-    }
-    emit('created', result);
-    emit('close');
-  } catch (caught) {
-    error.value = caught instanceof Error ? t(caught.message) : t('common.saveFailed');
-  } finally {
-    saving.value = false;
-  }
+      } satisfies FacilityCategoryConfig);
+  emit('created', category);
+  emit('close');
 }
 </script>

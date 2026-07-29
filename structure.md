@@ -14,7 +14,7 @@
 - `config/backend-actions.config.json` — Cloudflare 原生防刷群組與 Supabase 細部業務配額映射
 - `config/data-retention.config.json` — 已結案內容、通知、事件、log、暫存與維護紀錄保留期的單一設定入口
 - `structure.md` / `AGENTS.md` / `ui-design-system.md` / `design-qa.md` — 結構地圖 / 代理人規則 / 前端 UI 復用與新增設計規範 / 最近一次視覺比對紀錄
-- `package.json` — scripts（typecheck、lint、build、check:edge、test:architecture、verify:local…）
+- `package.json` — scripts（typecheck、lint、build、check:edge、Vitest 單元測試、架構測試、build budget、verify:local…）；`vitest.config.ts` 提供 Vue／jsdom 測試環境
 - `index.html` / `vite.config.ts` / `vercel.json` / `firebase.json`（僅本機 Auth emulator）/ `eslint.config.js` / `tsconfig*.json` / `tailwind.config.cjs`
 - `.env.example` / `.gitignore` / `skills-lock.json`
 
@@ -23,7 +23,7 @@
 ## Supabase
 
 - `supabase/config.toml` — schema 暴露、Functions JWT 模式與本地 Firebase Third-Party Auth；Hosted 專案由專用同步腳本只更新 Firebase issuer，讓 private Realtime channel 可驗證 Firebase JWT／JWKS，不以全量 `config push` 連帶修改 Storage／Vector 等無關設定
-- `supabase/migrations/` — 基線 + 增量 SQL（schema／RLS／RPC／Realtime Broadcast／清理／成本限流硬化／設備與 RBAC／輸入長度、附件型別、統一 feed 分頁與集合式留言回覆讀取）；`202607190001_dynamic_category_management.sql` 建立動態分類，`202607200002_atomic_user_access.sql` 將角色與分類指派改為單一交易並完整稽核，`202607200003_harden_category_deletion.sql` 統一分類永久刪除、內容／通知／圖片清理與稽核，`202607200004_facility_category_parity_and_personal_notifications.sql` 補齊設備分類篩選／分類管理範圍並將既有設備建立通知改回個人通知，`202607200005_platform_feature_switches.sql` 建立提案／設備功能開關與原子更新 RPC，`202607220001_scoped_user_access.sql` 改為鎖定目標帳號的單一權限範圍更新並保留既有設備通知退訂，`202607220002_remove_category_archiving.sql` 將舊分類全部恢復可用並以資料庫約束移除封存狀態，`202607230001_minimize_outbox_payloads.sql` 移除 outbox 的重複正文並由 Worker 依留言 ID 精準補讀，`202607230002_security_advisor_function_paths.sql` 固定剩餘 private function 的 `search_path` 並重申 private table 的 deny-by-default 授權邊界，`202607230003_unified_media_gateway.sql` 移除舊圖片 delivery URL 快取欄位與維護工作，較早 migration 細節見 git
+- `supabase/migrations/` — 基線 + 增量 SQL（schema／RLS／RPC／Realtime Broadcast／清理／成本限流硬化／設備與 RBAC／輸入長度、附件型別、統一 feed 分頁與集合式留言回覆讀取）；`202607190001_dynamic_category_management.sql` 建立動態分類，`202607200002_atomic_user_access.sql` 將角色與分類指派改為單一交易並完整稽核，`202607200003_harden_category_deletion.sql` 統一分類永久刪除、內容／通知／圖片清理與稽核，`202607200004_facility_category_parity_and_personal_notifications.sql` 補齊設備分類篩選／分類管理範圍並將既有設備建立通知改回個人通知，`202607200005_platform_feature_switches.sql` 建立提案／設備功能開關與原子更新 RPC，`202607220001_scoped_user_access.sql` 改為鎖定目標帳號的單一權限範圍更新並保留既有設備通知退訂，`202607220002_remove_category_archiving.sql` 將舊分類全部恢復可用並以資料庫約束移除封存狀態，`202607230001_minimize_outbox_payloads.sql` 移除 outbox 的重複正文並由 Worker 依留言 ID 精準補讀，`202607230002_security_advisor_function_paths.sql` 固定剩餘 private function 的 `search_path` 並重申 private table 的 deny-by-default 授權邊界，`202607230003_unified_media_gateway.sql` 移除舊圖片 delivery URL 快取欄位與維護工作，`202607290001_atomic_category_draft_deletions.sql` 將分類新增／修改／刪除與功能開關合併為單一交易，`202607290002_retryable_push_deliveries.sql` 建立具 lease、退避與次數上限的推播 delivery ledger，較早 migration 細節見 git
 - `supabase/functions/backendAction/` — 受控 action 閘道
   - `index.ts` — origin 驗證、CORS、Firebase 驗證與分派；公開限流由 Cloudflare Worker 先處理
   - `execution.ts` — 正式入口與本地整合驗證共用的權限、request ID、冪等執行核心
@@ -128,7 +128,7 @@
 
 - `constants/app.ts` / `constants/input-limits.ts` — Novae 品牌名稱、學校顯示設定與前端輸入長度
 - `constants/categories.ts` / `statuses.ts` — 動態分類衍生規則與提案／設備狀態判斷
-- `lib/` — `firebase`、`google-identity`（lazy GIS Token Client）、`firebase-messaging`、`firebase-app-check`、`auth-token`、`supabase`（REST client 與 private Realtime 共用的 Firebase token 授權閘門）、`request`、`request-id`、`route-request`、`reconnect`、`route`、`page-size`、`format`、`search`、`issue-status`、`issue-timeline`、`issue-notice`（列表與詳情共用的結案內容／標題／tone 正規化）、`issue-sort`、`issue-detail-preview`（列表到詳情的一次性同步摘要 seed）、`persistent-cache`（IndexedDB 跨 reload 快取）、`press-feedback`（共用 pointer 按壓狀態、12px 捲動取消與放開後固定 160ms 可見時間）、`touch-zoom`（以 capture touchend 座標與 dblclick 雙層攔截雙擊放大，仍保留 pinch zoom）、`in-app-browser`、`pwa-install`、`caret`、`markdown-*`、`image-processing`
+- `lib/` — `firebase`、`google-identity`（lazy GIS Token Client）、`firebase-messaging`、`firebase-app-check`、`auth-token`、`supabase`（REST client 與 private Realtime 共用的 Firebase token 授權閘門）、`browser-storage`（local/session storage 的受限瀏覽器與 quota-safe 單一邊界）、`request`、`request-id`、`route-request`、`reconnect`、`route`、`page-size`、`format`、`search`、`issue-status`、`issue-timeline`、`issue-notice`（列表與詳情共用的結案內容／標題／tone 正規化）、`issue-sort`、`issue-detail-preview`（列表到詳情的一次性同步摘要 seed）、`persistent-cache`（IndexedDB 跨 reload 快取）、`press-feedback`（共用 pointer 按壓狀態、12px 捲動取消與放開後固定 160ms 可見時間）、`touch-zoom`（以 capture touchend 座標與 dblclick 雙層攔截雙擊放大，仍保留 pinch zoom）、`in-app-browser`、`pwa-install`、`caret`、`markdown-*`、`image-processing`
 - `types/index.ts` / `types/categories.ts` / `types/pwa.d.ts` / `types/google-identity.d.ts` — 共通型別、動態分類契約、設備領域型別與 GIS Token Client 型別
 
 ---
@@ -147,11 +147,13 @@
 - `public/` — favicon、PWA icons
 - `scripts/generate-rate-limits.mjs` / `generate-data-retention.mjs` / `generate-backend-actions.mjs`
 - `scripts/sync-supabase-firebase-auth.mjs` — 後端部署透過 Management API 冪等同步唯一 Firebase Third-Party Auth issuer，建立後再移除同專案的過期 Firebase issuer 並重新讀取驗證；不觸碰一般 Auth、Storage 或付費 Vector Bucket 設定
-- `scripts/upstash-test-server.ts` / `external-provider-test-server.ts` — 整合驗證專用的隔離式 Upstash REST／pipeline 相容計數器與外部服務收件器；後者記錄 FCM topic／token／payload／深層連結及 Cloudinary 刪除請求，避免測試連到正式服務
+- `scripts/upstash-test-server.ts` / `external-provider-test-server.ts` — 整合驗證專用的隔離式 Upstash REST／pipeline 相容計數器與外部服務收件器；後者記錄 FCM topic／token／payload／深層連結及 Cloudinary 刪除請求，並可注入暫時性 FCM 失敗以驗證持久重試，避免測試連到正式服務
+- `scripts/check-build-budget.mjs` — build 後限制字型檔數／總容量與 JS／CSS 總量，防止未使用字重或 bundle 膨脹回歸
 - `scripts/check-i18n.mjs` — 驗證中英文 key 完整對齊、英文無中文殘留、Vue 模板無任何語言的靜態可見文案／屬性、前端無硬編碼中文字串、無缺漏或直接顯示的 `text.*` key；納入 `verify:local`
 - `scripts/check-ui-primitives.mjs` — 阻止舊 dropdown 類別、任意陰影、手組卡片與各頁自行設定 viewport gutter，並確認共用 primitive 與三階陰影 token 完整；納入 `verify:local`
 - `scripts/verify-integration-local.mjs` / `verify-integration-local.sh` — Windows 自動轉入 WSL、Linux/CI 直接執行的本地 Supabase 全自動重設、database lint、Edge 啟動與整合驗證入口；`npm run test:env` 會以相同基礎再啟動 Firebase Auth emulator、Cloudflare gateway 與 Vite，並以 `scripts/check-local-auth-emulator.mjs` 驗證登入、custom claim、僅由 `ADMIN_EMAILS` 決定的平台總管理員與 Setup 路由前置狀態後才回報 Ready；Google 登入模擬器可快速建立任意 `@integration.invalid` 新使用者，一律使用隔離測試值，不載入正式 provider credentials；自動驗證模式另啟動 FCM 收件器，實際驗證站外 topic／個人推播與通知偏好；本機 Firebase debug log 由 `.gitignore` 排除
 - 動態壓測：`npm run verify:stress` 以目前資料庫分類展開 `tests/integration/stress-workflows.test.ts`；規模可用 `--stress-scale 2..20` 調整，涵蓋多人多權限、各分類內容、巢狀留言、通知、圖片與分類刪除
 - `tests/architecture.test.mjs` — 靜態架構回歸
+- `tests/unit/` — Vitest + Vue Test Utils 行為測試；涵蓋受限 browser storage、安裝提示 i18n 與分類建立只更新本地 draft 的流程
 - `tests/integration/` — 全 backend action、管理員／一般／領域與分類權限、冪等、RLS、站內通知、FCM topic／個人站外通知、分類收件人、worker lifecycle 與 Edge HTTP trust boundary；session bootstrap 直接 assertion 合併後的每日 visit，不保留舊獨立 visit action；`retention-cleanup.test.ts` 逐表驗證過期刪除、未過期保留、Cloudinary 清理、Notion 營運副本保留與無聲保留期刪除，`action-coverage.test.ts` 防止新增 action 未被領域測試引用，精簡 `README.md` 只保留入口，完整維護規則位於官方網站貢獻指南
 - `.github/workflows/` — `verify-pr` 同時執行靜態／build、Cloudflare Worker 與完整本地 Supabase 整合測試；`deploy-backend` 在推送 migration／Edge 前再次執行相同整合驗證；所有 JavaScript Action 使用目前 Node.js 24 世代（Checkout／Setup Node v7、Cache v6、Supabase Setup CLI v3）；另有 `deploy-frontend`、`reset-db`、`reset-cloudinary`

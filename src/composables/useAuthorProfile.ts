@@ -2,6 +2,7 @@ import { computed, shallowRef, toValue, watch, type MaybeRefOrGetter } from 'vue
 import { fetchUserPublicProfiles } from '@/services/users-read';
 import type { UserPublicProfile } from '@/types';
 import { markContentCachePrefixStale } from '@/services/content-read-cache';
+import { localStorageKeys, removeLocalStorage } from '@/lib/browser-storage';
 
 const PROFILE_REFRESH_INTERVAL_MS = 5 * 60_000;
 const PROFILE_BATCH_SIZE = 50;
@@ -99,11 +100,10 @@ export function clearAuthorProfileCache() {
   inFlightUids.clear();
   markContentCachePrefixStale('user-profile|');
   try {
-    localStorage.removeItem('novae:author-avatar-cache');
-    for (let index = localStorage.length - 1; index >= 0; index -= 1) {
-      const key = localStorage.key(index);
-      if (key?.startsWith('novae:avatar-cached-source:')) localStorage.removeItem(key);
-    }
+    removeLocalStorage('novae:author-avatar-cache');
+    localStorageKeys()
+      .filter((key) => key.startsWith('novae:avatar-cached-source:'))
+      .forEach(removeLocalStorage);
   } catch {
     // Browser storage cleanup is best-effort.
   }

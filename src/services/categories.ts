@@ -36,6 +36,8 @@ export async function savePlatformFeatures(features: PlatformFeatures) {
 }
 
 export async function saveCategoryManagement(input: {
+  deletedFacilityCategoryIds: string[];
+  deletedIssueCategoryIds: string[];
   facilitiesEnabled: boolean;
   facilityCategories: FacilityCategoryConfig[];
   issueCategories: IssueCategoryConfig[];
@@ -45,29 +47,5 @@ export async function saveCategoryManagement(input: {
     typeof input & { requestId: string },
     CategoryCatalog & { success: boolean }
   >('saveCategoryManagement');
-  return await action({ ...input, requestId: createRequestId() });
-}
-
-export async function saveIssueCategory(category: IssueCategoryConfig | IssueCategoryDraft) {
-  const action = invokeBackendAction<
-    { category: IssueCategoryConfig | IssueCategoryDraft; requestId: string },
-    { category: IssueCategoryConfig }
-  >('saveIssueCategory');
-  return (await action({ category, requestId: createRequestId() })).category;
-}
-
-export async function saveFacilityCategory(category: FacilityCategoryConfig | FacilityCategoryDraft) {
-  const action = invokeBackendAction<
-    { category: FacilityCategoryConfig | FacilityCategoryDraft; requestId: string },
-    { category: FacilityCategoryConfig }
-  >('saveFacilityCategory');
-  return (await action({ category, requestId: createRequestId() })).category;
-}
-
-export async function deleteCategory(input: { kind: 'issue' | 'facility'; id: string }) {
-  const action = invokeBackendAction<
-    { kind: 'issue' | 'facility'; id: string; requestId: string },
-    { success: boolean }
-  >('deleteCategory');
   return await action({ ...input, requestId: createRequestId() });
 }

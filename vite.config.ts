@@ -28,11 +28,47 @@ function versionFilePlugin(version: string): Plugin {
 
 const APP_NAME = 'Novae';
 
-function htmlEnvPlugin(appVersion: string): Plugin {
+function urlOrigin(value: string) {
+  try {
+    return new URL(value).origin;
+  } catch {
+    return '';
+  }
+}
+
+function htmlEnvPlugin(appVersion: string, env: Record<string, string>): Plugin {
+  const apiOrigin = urlOrigin(env.VITE_API_BASE_URL ?? '');
+  const supabaseOrigin = urlOrigin(env.VITE_SUPABASE_URL ?? '');
+  const supabaseRealtimeOrigin = supabaseOrigin.replace(/^http/u, 'ws');
+  const connectSources = [
+    "'self'",
+    apiOrigin,
+    supabaseOrigin,
+    supabaseRealtimeOrigin,
+    'https://*.googleapis.com',
+    'https://accounts.google.com',
+    'https://www.google.com',
+  ].filter(Boolean).join(' ');
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com https://apis.google.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/",
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self' data:",
+    `img-src 'self' data: blob: ${apiOrigin} https://*.googleusercontent.com`.trim(),
+    `connect-src ${connectSources}`,
+    'frame-src https://accounts.google.com https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/',
+    "worker-src 'self' blob:",
+    "manifest-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join('; ');
+
   return {
     name: 'app-html-env',
     transformIndexHtml(html) {
       return html
+        .replace('<meta charset="UTF-8" />', `<meta charset="UTF-8" />\n    <meta http-equiv="Content-Security-Policy" content="${csp}" />`)
         .replaceAll('%APP_NAME%', APP_NAME)
         .replaceAll('%APP_VERSION%', appVersion);
     },
@@ -52,7 +88,7 @@ export default defineConfig(({ mode }) => {
       __APP_VERSION__: JSON.stringify(appVersion),
     },
     plugins: [
-      htmlEnvPlugin(appVersion),
+      htmlEnvPlugin(appVersion, env),
       versionFilePlugin(appVersion),
       vue(),
       tailwindcss(),

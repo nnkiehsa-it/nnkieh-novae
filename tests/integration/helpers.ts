@@ -152,6 +152,51 @@ export async function expectActionError(
   });
 }
 
+export async function saveCategoryDraft(
+  auth: AuthContext,
+  options: {
+    deletedFacilityCategoryIds?: string[];
+    deletedIssueCategoryIds?: string[];
+    facilitiesEnabled?: boolean;
+    issuesEnabled?: boolean;
+    upsertFacilityCategories?: JsonRecord[];
+    upsertIssueCategories?: JsonRecord[];
+  },
+) {
+  const current = asRecord(await callAction("getCategoryManagement", {}, auth));
+  const deletedIssueIds = new Set(options.deletedIssueCategoryIds ?? []);
+  const deletedFacilityIds = new Set(options.deletedFacilityCategoryIds ?? []);
+  const merge = (existing: unknown, additions: JsonRecord[], deletedIds: Set<string>) => {
+    const byId = new Map(
+      (Array.isArray(existing) ? existing : []).map((value) => {
+        const category = asRecord(value);
+        return [String(category.id), category] as const;
+      }),
+    );
+    for (const id of deletedIds) byId.delete(id);
+    for (const category of additions) byId.set(String(category.id), category);
+    return [...byId.values()].map((category, sortOrder) => ({ ...category, sortOrder }));
+  };
+  const features = asRecord(current.features);
+  return await callAction("saveCategoryManagement", {
+    deletedFacilityCategoryIds: [...deletedFacilityIds],
+    deletedIssueCategoryIds: [...deletedIssueIds],
+    facilitiesEnabled: options.facilitiesEnabled ?? Boolean(features.facilitiesEnabled),
+    facilityCategories: merge(
+      current.facilityCategories,
+      options.upsertFacilityCategories ?? [],
+      deletedFacilityIds,
+    ),
+    issueCategories: merge(
+      current.issueCategories,
+      options.upsertIssueCategories ?? [],
+      deletedIssueIds,
+    ),
+    issuesEnabled: options.issuesEnabled ?? Boolean(features.issuesEnabled),
+    requestId: requestId("save-category-draft"),
+  }, auth);
+}
+
 export async function insertReadyUpload(ownerUid: string, label: string) {
   const id = crypto.randomUUID();
   const cloudinaryPublicId = `srp/${ownerUid}/${label}-${id}`;

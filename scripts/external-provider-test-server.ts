@@ -4,12 +4,14 @@ interface RecordedRequest {
 }
 
 const requests: RecordedRequest[] = [];
+let failNextMessages = 0;
 const port = Number(Deno.env.get("NOVAE_EXTERNAL_PROVIDER_TEST_PORT") ?? "54330");
 
 Deno.serve({ hostname: "0.0.0.0", port }, async (request) => {
   const url = new URL(request.url);
   if (url.pathname === "/__requests" && request.method === "DELETE") {
     requests.length = 0;
+    failNextMessages = 0;
     return Response.json({ ok: true });
   }
   if (url.pathname === "/__requests" && request.method === "GET") {
@@ -32,12 +34,20 @@ Deno.serve({ hostname: "0.0.0.0", port }, async (request) => {
   const body = contentType.includes("application/json")
     ? await request.json() as Record<string, unknown>
     : Object.fromEntries((await request.formData()).entries());
+  if (url.pathname === "/__fail-next") {
+    failNextMessages = Math.max(0, Number(body.count) || 0);
+    return Response.json({ count: failNextMessages });
+  }
   requests.push({ body, path: url.pathname });
   if (url.pathname.startsWith("/iid/")) {
     const tokens = Array.isArray(body.registration_tokens) ? body.registration_tokens : [];
     return Response.json({ results: tokens.map(() => ({})) });
   }
   if (url.pathname.endsWith("/messages:send")) {
+    if (failNextMessages > 0) {
+      failNextMessages -= 1;
+      return Response.json({ error: "temporary-unavailable" }, { status: 503 });
+    }
     return Response.json({ name: `local/${requests.length}` });
   }
   if (url.pathname.endsWith("/image/destroy")) {

@@ -53,7 +53,7 @@
         :title="t('categoryAdmin.proposalCategories')"
         :description="t('categoryAdmin.proposalManagementHelp')"
         :on-delete="deleteIssue"
-        @add="addIssue"
+        :persisted-ids="persistedIssueIds"
       >
         <template #header-actions>
           <PlatformFeatureToggle
@@ -74,7 +74,7 @@
         :title="t('categoryAdmin.facilityCategories')"
         :description="t('categoryAdmin.facilityManagementHelp')"
         :on-delete="deleteFacility"
-        @add="addFacility"
+        :persisted-ids="persistedFacilityIds"
       >
         <template #header-actions>
           <PlatformFeatureToggle
@@ -113,7 +113,6 @@ import SurfacePanel from '@/components/ui/molecules/SurfacePanel.vue';
 import { useCategories } from '@/composables/useCategories';
 import { useI18n } from '@/i18n';
 import {
-  deleteCategory,
   getCategoryManagement,
   saveCategoryManagement,
 } from '@/services/categories';
@@ -125,6 +124,10 @@ const loading = ref(true);
 const error = ref('');
 const issueCategories = ref<IssueCategoryConfig[]>([]);
 const facilityCategories = ref<FacilityCategoryConfig[]>([]);
+const persistedIssueIds = ref<ReadonlySet<string>>(new Set());
+const persistedFacilityIds = ref<ReadonlySet<string>>(new Set());
+const deletedIssueCategoryIds = ref<string[]>([]);
+const deletedFacilityCategoryIds = ref<string[]>([]);
 const activeCategoryKind = ref<'issue' | 'facility'>('issue');
 const issuesEnabled = ref(true);
 const facilitiesEnabled = ref(true);
@@ -149,25 +152,6 @@ const activeFeatureToggle = computed(() => activeCategoryKind.value === 'issue'
     label: 'categoryAdmin.facilityFeature',
   });
 
-function newIssue(index: number): IssueCategoryConfig {
-  return {
-    id: '', label: '', readAccess: 'school', authorVisible: true,
-    supportEnabled: false, supportGoal: null, supportDeadlineDays: null,
-    responseDeadlineDays: null, commentsEnabled: true,
-    isDefault: issueCategories.value.length === 0, sortOrder: index,
-  };
-}
-
-function newFacility(index: number): FacilityCategoryConfig {
-  return {
-    id: '', label: '',
-    isDefault: facilityCategories.value.length === 0, sortOrder: index,
-  };
-}
-
-function addIssue() { issueCategories.value.push(newIssue(issueCategories.value.length)); }
-function addFacility() { facilityCategories.value.push(newFacility(facilityCategories.value.length)); }
-
 async function load() {
   loading.value = true;
   error.value = '';
@@ -175,6 +159,10 @@ async function load() {
     const result = await getCategoryManagement();
     issueCategories.value = result.issueCategories;
     facilityCategories.value = result.facilityCategories;
+    persistedIssueIds.value = new Set(result.issueCategories.map((category) => category.id));
+    persistedFacilityIds.value = new Set(result.facilityCategories.map((category) => category.id));
+    deletedIssueCategoryIds.value = [];
+    deletedFacilityCategoryIds.value = [];
     issuesEnabled.value = result.features.issuesEnabled;
     facilitiesEnabled.value = result.features.facilitiesEnabled;
   } catch (caught) {
@@ -197,6 +185,8 @@ async function saveAll() {
   saveError.value = '';
   try {
     const result = await saveCategoryManagement({
+      deletedFacilityCategoryIds: deletedFacilityCategoryIds.value,
+      deletedIssueCategoryIds: deletedIssueCategoryIds.value,
       facilitiesEnabled: facilitiesEnabled.value,
       facilityCategories: facilityCategories.value.map((category, sortOrder) => ({ ...category, sortOrder })),
       issueCategories: issueCategories.value.map((category, sortOrder) => ({ ...category, sortOrder })),
@@ -206,6 +196,10 @@ async function saveAll() {
     issueCategories.value = result.issueCategories;
     facilitiesEnabled.value = result.features.facilitiesEnabled;
     issuesEnabled.value = result.features.issuesEnabled;
+    persistedIssueIds.value = new Set(result.issueCategories.map((category) => category.id));
+    persistedFacilityIds.value = new Set(result.facilityCategories.map((category) => category.id));
+    deletedIssueCategoryIds.value = [];
+    deletedFacilityCategoryIds.value = [];
     await refresh();
   } catch (caught) {
     saveError.value = t(caught instanceof Error ? caught.message : 'common.saveFailed');
@@ -216,20 +210,18 @@ async function saveAll() {
 
 async function deleteIssue(index: number) {
   const category = issueCategories.value[index];
-  if (category.id) {
-    await deleteCategory({ kind: 'issue', id: category.id });
+  if (category.id && persistedIssueIds.value.has(category.id)) {
+    deletedIssueCategoryIds.value.push(category.id);
   }
   issueCategories.value.splice(index, 1);
-  await refresh();
 }
 
 async function deleteFacility(index: number) {
   const category = facilityCategories.value[index];
-  if (category.id) {
-    await deleteCategory({ kind: 'facility', id: category.id });
+  if (category.id && persistedFacilityIds.value.has(category.id)) {
+    deletedFacilityCategoryIds.value.push(category.id);
   }
   facilityCategories.value.splice(index, 1);
-  await refresh();
 }
 
 onMounted(() => { void load(); });

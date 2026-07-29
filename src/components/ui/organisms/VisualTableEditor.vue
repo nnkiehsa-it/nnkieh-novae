@@ -70,6 +70,7 @@
                 >
                   <input
                     v-model="table.headers[colIdx]"
+                    :aria-label="t('common.columnTitleNumber', { column: colIdx + 1 })"
                     class="w-full text-sm font-bold text-ink-900 dark:text-ink-100 bg-transparent border-0 focus:ring-0 outline-none p-1 text-center"
                     :placeholder="t('common.columnTitle')"
                     @input="onCellInput"
@@ -87,6 +88,7 @@
                 >
                   <input
                     v-model="row[colIdx]"
+                    :aria-label="t('common.cellPosition', { row: rowIdx + 1, column: colIdx + 1 })"
                     class="w-full text-sm text-ink-850 dark:text-ink-200 bg-transparent border-0 focus:ring-0 outline-none p-1"
                     :placeholder="t('common.cellContents')"
                     @input="onCellInput"

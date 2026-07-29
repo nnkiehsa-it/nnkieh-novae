@@ -434,45 +434,101 @@ async function getOrCreateNotionPage(
   supportGoal?: unknown,
   countProperty = "附議數",
 ): Promise<string | null> {
+  const reservationId = `pending:${crypto.randomUUID()}`;
+  const reservationExpiredBefore = new Date(Date.now() - 10 * 60_000).toISOString();
+  const externalId = `${targetType}:${targetId}`;
   const { data, error } = await supabase
     .schema("app_private")
     .from("notion_pages")
-    .select("notion_page_id")
+    .select("notion_page_id,updated_at")
     .eq("target_type", targetType)
     .eq("target_id", targetId)
     .maybeSingle();
   if (error) throw error;
-  if (data?.notion_page_id) return String(data.notion_page_id);
+  if (data?.notion_page_id) {
+    const existingPageId = String(data.notion_page_id);
+    if (!existingPageId.startsWith("pending:")) return existingPageId;
+    if (String(data.updated_at) >= reservationExpiredBefore) throw new Error("notion-sync-in-progress");
+    const { data: reclaimed, error: reclaimError } = await supabase
+      .schema("app_private")
+      .from("notion_pages")
+      .update({ notion_page_id: reservationId, updated_at: new Date().toISOString() })
+      .eq("target_type", targetType)
+      .eq("target_id", targetId)
+      .eq("notion_page_id", existingPageId)
+      .lt("updated_at", reservationExpiredBefore)
+      .select("notion_page_id")
+      .maybeSingle();
+    if (reclaimError) throw reclaimError;
+    if (!reclaimed) throw new Error("notion-sync-in-progress");
+  } else {
+    const { error: reservationError } = await supabase
+      .schema("app_private")
+      .from("notion_pages")
+      .insert({ target_type: targetType, target_id: targetId, notion_page_id: reservationId });
+    if (reservationError) {
+      if (reservationError.code === "23505") throw new Error("notion-sync-in-progress");
+      throw reservationError;
+    }
+  }
 
-  const categoryLabel = await translateCategory(supabase, targetType, category);
-  const statusLabel = translateStatus(status);
-  await Promise.all([
-    ensureSelectOption("分類", categoryLabel),
-    ensureSelectOption("狀態", statusLabel),
-    ensureRichTextProperty(countProperty),
-  ]);
+  let remotePageCreated = false;
+  try {
+    const categoryLabel = await translateCategory(supabase, targetType, category);
+    const statusLabel = translateStatus(status);
+    await Promise.all([
+      ensureSelectOption("分類", categoryLabel),
+      ensureSelectOption("狀態", statusLabel),
+      ensureRichTextProperty(countProperty),
+      ensureRichTextProperty("Novae ID"),
+    ]);
 
-  const result = await callNotionAPI("/pages", "POST", {
-    parent: { type: "data_source_id", data_source_id: await getDataSourceId() },
-    properties: {
-      "名稱": { title: [{ text: { content: title } }] },
-      "分類": { select: { name: categoryLabel } },
-      "狀態": { select: { name: statusLabel } },
-      "作者": { rich_text: [{ text: { content: authorName } }] },
-      [countProperty]: { rich_text: [{ text: { content: supportLabel(supportCount, supportGoal) } }] },
-    },
-  }) as { id?: string };
+    const dataSourceId = await getDataSourceId();
+    const existingRemote = await callNotionAPI(`/data_sources/${dataSourceId}/query`, "POST", {
+      filter: { property: "Novae ID", rich_text: { equals: externalId } },
+      page_size: 1,
+    }) as { results?: Array<{ id?: string }> };
+    let pageId = existingRemote.results?.[0]?.id;
+    if (!pageId) {
+      const result = await callNotionAPI("/pages", "POST", {
+        parent: { type: "data_source_id", data_source_id: dataSourceId },
+        properties: {
+          "名稱": { title: [{ text: { content: title } }] },
+          "分類": { select: { name: categoryLabel } },
+          "狀態": { select: { name: statusLabel } },
+          "作者": { rich_text: [{ text: { content: authorName } }] },
+          "Novae ID": { rich_text: [{ text: { content: externalId } }] },
+          [countProperty]: { rich_text: [{ text: { content: supportLabel(supportCount, supportGoal) } }] },
+        },
+      }) as { id?: string };
+      pageId = result?.id;
+      remotePageCreated = Boolean(pageId);
+    }
 
-  const pageId = result?.id;
-  if (!pageId) throw new Error("Notion page creation did not return an ID");
+    if (!pageId) throw new Error("Notion page creation did not return an ID");
 
-  const { error: insertError } = await supabase
-    .schema("app_private")
-    .from("notion_pages")
-    .insert({ target_type: targetType, target_id: targetId, notion_page_id: pageId });
-  if (insertError) throw insertError;
-
-  return pageId;
+    const { data: mapped, error: mappingError } = await supabase
+      .schema("app_private")
+      .from("notion_pages")
+      .update({ notion_page_id: pageId, updated_at: new Date().toISOString() })
+      .eq("target_type", targetType)
+      .eq("target_id", targetId)
+      .eq("notion_page_id", reservationId)
+      .select("notion_page_id")
+      .maybeSingle();
+    if (mappingError) throw mappingError;
+    if (!mapped) throw new Error("notion-reservation-lost");
+    return pageId;
+  } catch (creationError) {
+    if (!remotePageCreated) {
+      await supabase.schema("app_private").from("notion_pages")
+        .delete()
+        .eq("target_type", targetType)
+        .eq("target_id", targetId)
+        .eq("notion_page_id", reservationId);
+    }
+    throw creationError;
+  }
 }
 
 // ---------------------------------------------------------------------------

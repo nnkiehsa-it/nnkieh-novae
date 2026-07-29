@@ -6,6 +6,7 @@ import { requestAppInstallPrompt, shouldInstallPwaBeforePush } from '@/lib/pwa-i
 import { withRequestTimeout } from '@/lib/request';
 import { useSession } from '@/composables/useSession';
 import { useActionFeedback } from '@/composables/useActionFeedback';
+import { readLocalStorage, removeLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
 import {
   getPushNotificationPreference,
   registerPushToken,
@@ -35,17 +36,19 @@ const personalPreferences = ref<PersonalPushPreferences>({
   facilityUpdates: true,
 });
 let currentToken = '';
+let volatileDeviceId = '';
 let foregroundUnsubscribe: (() => void) | null = null;
 let synchronizedRegistrationKey = '';
 
 function readOrCreatePushDeviceId() {
   if (typeof window === 'undefined') return '';
-  const existing = localStorage.getItem(PUSH_DEVICE_ID_STORAGE_KEY)?.trim() ?? '';
+  const existing = readLocalStorage(PUSH_DEVICE_ID_STORAGE_KEY)?.trim() || volatileDeviceId;
   if (existing) return existing;
   const nextId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
     ? crypto.randomUUID()
     : `push-device-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-  localStorage.setItem(PUSH_DEVICE_ID_STORAGE_KEY, nextId);
+  volatileDeviceId = nextId;
+  writeLocalStorage(PUSH_DEVICE_ID_STORAGE_KEY, nextId);
   return nextId;
 }
 
@@ -143,20 +146,20 @@ export function usePushNotifications() {
   }
 
   function registrationIsFresh(uid: string) {
-    const synchronizedAt = Number(localStorage.getItem(registrationSyncStorageKey(uid)) ?? 0);
+    const synchronizedAt = Number(readLocalStorage(registrationSyncStorageKey(uid)) ?? 0);
     return Number.isFinite(synchronizedAt) && Date.now() - synchronizedAt < PUSH_REGISTRATION_SYNC_TTL_MS;
   }
 
   function markRegistrationSynchronized(uid: string) {
-    if (uid) localStorage.setItem(registrationSyncStorageKey(uid), String(Date.now()));
+    if (uid) writeLocalStorage(registrationSyncStorageKey(uid), String(Date.now()));
   }
 
   function clearRegistrationSynchronization(uid: string) {
-    if (uid) localStorage.removeItem(registrationSyncStorageKey(uid));
+    if (uid) removeLocalStorage(registrationSyncStorageKey(uid));
   }
 
   function readExplicitlyDisabled(uid: string) {
-    return Boolean(uid && localStorage.getItem(explicitlyDisabledStorageKey(uid)) === '1');
+    return Boolean(uid && readLocalStorage(explicitlyDisabledStorageKey(uid)) === '1');
   }
 
   function setExplicitlyDisabled(disabled: boolean) {
@@ -164,8 +167,8 @@ export function usePushNotifications() {
     explicitlyDisabled.value = disabled;
     if (!uid) return;
     const storageKey = explicitlyDisabledStorageKey(uid);
-    if (disabled) localStorage.setItem(storageKey, '1');
-    else localStorage.removeItem(storageKey);
+    if (disabled) writeLocalStorage(storageKey, '1');
+    else removeLocalStorage(storageKey);
   }
 
   async function registerCurrentPushToken(token: string) {

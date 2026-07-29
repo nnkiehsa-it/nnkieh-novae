@@ -78,6 +78,7 @@ const messages = {
   'categoryAdmin.deleteCategory': 'Delete category',
   'categoryAdmin.deleteConfirmTitle': 'Delete category “{name}”?',
   'categoryAdmin.deleteConfirmMessage': 'This cannot be undone. Every proposal or report, comment, support/affected-user relation, notification, and uploaded image in this category will be permanently deleted.',
+  'categoryAdmin.deleteDraftConfirmMessage': 'This category and all related content will be permanently deleted only after you save all changes.',
   'categoryAdmin.cannotDeleteDefaultCategoryHelp': 'The default category cannot be deleted. Set another category as the default first.',
 } as const;
 

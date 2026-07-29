@@ -132,7 +132,7 @@ import DialogActionRow from '@/components/ui/molecules/DialogActionRow.vue';
 import type { AppInstallPromptMode } from '@/composables/useAppInstallPrompt';
 import type { InAppBrowserName } from '@/lib/in-app-browser';
 import type { AppInstallPromptReason, IosBrowserGuide } from '@/lib/pwa-install';
-import { useI18n } from '@/i18n';
+import { useI18n, type TranslationParams } from '@/i18n';
 
 type InstallStep = {
   description?: string;
@@ -154,6 +154,10 @@ type InstallContent = {
   title: string;
 };
 
+type InstallContentKeys = InstallContent & {
+  descriptionParams?: TranslationParams;
+};
+
 const props = defineProps<{
   canInstallNatively: boolean;
   iosBrowserGuide: IosBrowserGuide | null;
@@ -171,7 +175,7 @@ const emit = defineEmits<{
 }>();
 const { t } = useI18n();
 
-const contentKeys = computed<InstallContent>(() => {
+const contentKeys = computed<InstallContentKeys>(() => {
   const isNotificationInstall = props.reason === 'notifications';
   const installDescription = isNotificationInstall
     ? 'app.install.reliableNotificationsHint'
@@ -182,12 +186,10 @@ const contentKeys = computed<InstallContent>(() => {
       actionDescription: 'app.install.systemBrowserInstallHelp',
       actionTitle: 'app.install.switchTheOpeningMethodFirst',
       badge: isNotificationInstall ? 'app.install.notificationsRequireHomeScreenMode' : 'app.install.itIsRecommendedToSwitchBrowsers',
-      description: t(
-        isNotificationInstall
-          ? 'app.install.inAppBrowser.notifications'
-          : 'app.install.inAppBrowser.description',
-        { browser: props.browserName ?? 'App' },
-      ),
+      description: isNotificationInstall
+        ? 'app.install.inAppBrowser.notifications'
+        : 'app.install.inAppBrowser.description',
+      descriptionParams: { browser: props.browserName ?? 'App' },
       icon: 'warning',
       iconToneClass: 'text-warning',
       notes: ['app.install.notificationsRequireInstalledApp'],
@@ -211,12 +213,10 @@ const contentKeys = computed<InstallContent>(() => {
       actionDescription: 'app.install.openCurrentUrlInSafari',
       actionTitle: 'app.install.firstMoveTheUrlToSafari',
       badge: 'app.install.needToUseSafariInstead',
-      description: t(
-        isNotificationInstall
-          ? 'app.install.safari.notifications'
-          : 'app.install.safari.description',
-        { browser: browserName },
-      ),
+      description: isNotificationInstall
+        ? 'app.install.safari.notifications'
+        : 'app.install.safari.description',
+      descriptionParams: { browser: browserName },
       icon: 'share',
       iconToneClass: 'text-secondary',
       notes: ['app.install.safariNotificationLaunchReminder'],
@@ -279,21 +279,25 @@ const contentKeys = computed<InstallContent>(() => {
   };
 });
 
-const content = computed<InstallContent>(() => ({
-  ...contentKeys.value,
-  actionDescription: t(contentKeys.value.actionDescription),
-  actionTitle: t(contentKeys.value.actionTitle),
-  badge: t(contentKeys.value.badge),
-  description: t(contentKeys.value.description),
-  notes: contentKeys.value.notes.map((note) => t(note)),
-  primaryLabel: contentKeys.value.primaryLabel ? t(contentKeys.value.primaryLabel) : null,
-  secondaryLabel: t(contentKeys.value.secondaryLabel),
-  steps: contentKeys.value.steps.map((step) => ({
+const content = computed<InstallContent>(() => {
+  const keys = contentKeys.value;
+  return {
+  ...keys,
+  actionDescription: t(keys.actionDescription),
+  actionTitle: t(keys.actionTitle),
+  badge: t(keys.badge),
+  description: t(keys.description, keys.descriptionParams),
+  notes: keys.notes.map((note) => t(note)),
+  primaryLabel: keys.primaryLabel ? t(keys.primaryLabel) : null,
+  secondaryBadge: t(keys.secondaryBadge),
+  secondaryLabel: t(keys.secondaryLabel),
+  steps: keys.steps.map((step) => ({
     description: step.description ? t(step.description) : undefined,
     title: t(step.title),
   })),
-  title: t(contentKeys.value.title),
-}));
+  title: t(keys.title),
+  };
+});
 
 const primaryIconProps = computed(() => {
   if (props.mode === 'ios-open-safari' || props.mode === 'ios-install') return { name: 'share' as const, size: 4 };

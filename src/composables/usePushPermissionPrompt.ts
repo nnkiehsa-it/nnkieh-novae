@@ -3,6 +3,7 @@ import { useAppResume } from '@/composables/useAppResume';
 import { usePushNotifications } from '@/composables/usePushNotifications';
 import { useSession } from '@/composables/useSession';
 import { requestAppInstallPrompt } from '@/lib/pwa-install';
+import { readLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
 
 export type PushPermissionPromptMode = 'permission' | 'repair';
 type PushPromptReason = PushPermissionPromptMode | 'install';
@@ -21,13 +22,13 @@ function pushPromptStorageKey(uid: string, reason: PushPromptReason) {
 }
 
 function wasPushPromptedRecently(uid: string, reason: PushPromptReason) {
-  const promptedAt = Number.parseInt(localStorage.getItem(pushPromptStorageKey(uid, reason)) || '0', 10);
+  const promptedAt = Number.parseInt(readLocalStorage(pushPromptStorageKey(uid, reason)) || '0', 10);
   const cooldown = reason === 'repair' ? PUSH_REPAIR_PROMPT_COOLDOWN_MS : PUSH_PROMPT_COOLDOWN_MS;
   return Number.isFinite(promptedAt) && Date.now() - promptedAt < cooldown;
 }
 
 function markPushPromptSeen(uid: string, reason: PushPromptReason) {
-  localStorage.setItem(pushPromptStorageKey(uid, reason), String(Date.now()));
+  writeLocalStorage(pushPromptStorageKey(uid, reason), String(Date.now()));
 }
 
 export function usePushPermissionPrompt() {
