@@ -297,8 +297,6 @@ export function useIssueBoardData() {
             removeIssueFromBuckets(event.targetId);
             return;
           }
-          // Optimistic removal while the latest record is fetched prevents dual-tab ghosts.
-          removeIssueFromBuckets(event.targetId);
           void fetchIssueRecordById(event.targetId, {
             cacheScope: `realtime:${userUid.value}`,
             forceRefresh: true,

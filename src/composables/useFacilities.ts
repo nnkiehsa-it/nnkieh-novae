@@ -1,10 +1,12 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
-import { deleteFacility, listFacilities, toggleFacilityAffected, updateFacilityStatus } from '@/services/facilities';
+import { deleteFacility, getFacility, listFacilities, toggleFacilityAffected, updateFacilityStatus } from '@/services/facilities';
 import { isAbortFailure } from '@/lib/request';
 import { normalizeSearchText } from '@/lib/search';
 import { FACILITY_STATUS_LABELS, isFacilityClosed } from '@/constants/statuses';
 import type { FacilityCursor, FacilitySortOption, FacilityStatus, FacilitySummary } from '@/types';
 import { subscribeContentRevisionChanges } from '@/services/content-revisions';
+import { subscribeContentRealtimeEvents } from '@/services/realtime-events';
+import { isContentUnavailableError } from '@/services/issues-core';
 
 export function useFacilities(categoryId: Ref<string>) {
   const bucket = ref<'active' | 'closed'>('active');
@@ -33,12 +35,13 @@ export function useFacilities(categoryId: Ref<string>) {
       normalizeSearchText(`${facility.title} ${facility.location}`).includes(normalized));
   });
 
-  async function load(append = false) {
+  async function load(append = false, options: { silent?: boolean } = {}) {
     const version = ++requestVersion;
     requestController?.abort();
     const controller = new AbortController();
     requestController = controller;
-    (append ? loadingMore : loading).value = true;
+    if (append) loadingMore.value = true;
+    else if (!options.silent) loading.value = true;
     error.value = '';
     try {
       const normalizedQuery = normalizeSearchText(committedQuery.value);
@@ -61,7 +64,9 @@ export function useFacilities(categoryId: Ref<string>) {
       }
     } catch (caught) {
       if (isAbortFailure(caught)) return;
-      if (version === requestVersion) error.value = caught instanceof Error ? caught.message : 'facility.failedToLoadFacility';
+      if (version === requestVersion && (!options.silent || facilities.value.length === 0)) {
+        error.value = caught instanceof Error ? caught.message : 'facility.failedToLoadFacility';
+      }
     } finally {
       if (version === requestVersion) (append ? loadingMore : loading).value = false;
       if (requestController === controller) requestController = null;
@@ -147,12 +152,63 @@ export function useFacilities(categoryId: Ref<string>) {
     restoreBrowseResults();
   }
 
-  const unsubscribeRevision = subscribeContentRevisionChanges('facilities', () => load());
+  function sortFacilityCollection(collection: FacilitySummary[]) {
+    return [...collection].sort((left, right) => {
+      if (sort.value === 'most-affected' && left.affected_count !== right.affected_count) {
+        return right.affected_count - left.affected_count;
+      }
+      return (right.created_at?.getTime() ?? 0) - (left.created_at?.getTime() ?? 0);
+    });
+  }
+
+  function matchesCurrentList(facility: FacilitySummary, includeRemoteQuery = true) {
+    if (facility.category_id !== categoryId.value) return false;
+    if (isFacilityClosed(facility.status) !== (bucket.value === 'closed')) return false;
+    if (status.value && facility.status !== status.value) return false;
+    const normalizedQuery = normalizeSearchText(committedQuery.value);
+    if (!includeRemoteQuery || normalizedQuery.length < MIN_REMOTE_SEARCH_LENGTH) return true;
+    return normalizeSearchText(`${facility.title} ${facility.location}`).includes(normalizedQuery);
+  }
+
+  function upsertRealtimeFacility(collection: FacilitySummary[], facility: FacilitySummary, includeRemoteQuery: boolean) {
+    const withoutCurrent = collection.filter((entry) => entry.id !== facility.id);
+    if (!matchesCurrentList(facility, includeRemoteQuery)) return withoutCurrent;
+    return sortFacilityCollection([facility, ...withoutCurrent]);
+  }
+
+  function removeRealtimeFacility(facilityId: string) {
+    facilities.value = facilities.value.filter((entry) => entry.id !== facilityId);
+    browseFacilities.value = browseFacilities.value.filter((entry) => entry.id !== facilityId);
+  }
+
+  const unsubscribeRevision = subscribeContentRevisionChanges(
+    'facilities',
+    () => load(false, { silent: facilities.value.length > 0 }),
+  );
+  const unsubscribeRealtime = subscribeContentRealtimeEvents(
+    `facilities:${categoryId.value}`,
+    (event) => {
+      if (event.eventType !== 'facility_changed') return;
+      if (event.op === 'delete' || event.category !== categoryId.value) {
+        removeRealtimeFacility(event.targetId);
+        return;
+      }
+      void getFacility(event.targetId, { forceRefresh: true }).then((facility) => {
+        facilities.value = upsertRealtimeFacility(facilities.value, facility, true);
+        browseFacilities.value = upsertRealtimeFacility(browseFacilities.value, facility, false);
+      }).catch((caught) => {
+        if (isContentUnavailableError(caught)) removeRealtimeFacility(event.targetId);
+      });
+    },
+    () => { void load(false, { silent: facilities.value.length > 0 }); },
+    () => { void load(false, { silent: facilities.value.length > 0 }); },
+  );
   watch([categoryId, status, sort], () => { cursor.value = null; void load(); });
   watch(bucket, () => { status.value = ''; cursor.value = null; void load(); });
   onMounted(() => void load());
   onBeforeUnmount(() => {
     unsubscribeRevision();
+    unsubscribeRealtime();
     requestController?.abort();
   });
 

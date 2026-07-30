@@ -1,15 +1,15 @@
 <template>
   <DrawerRoot
     v-if="isSheet"
-    :open="open"
+    :open="rootOpen"
     :modal="true"
     swipe-direction="down"
     @update:open="handleDrawerOpenChange"
   >
     <DrawerPortal>
-      <Transition :name="transitionName" appear>
+      <Transition :name="transitionName" appear @after-leave="handleAfterLeave">
         <div
-          v-if="open"
+          v-if="visible"
           class="dialog-overlay fixed inset-0 flex items-center justify-center"
           :class="[zIndexClass, overlayClass]"
           :data-backdrop="isFullScreen ? 'none' : 'dimmed'"
@@ -45,14 +45,14 @@
 
   <DialogRoot
     v-else
-    :open="open"
+    :open="rootOpen"
     :modal="true"
     @update:open="handleDialogOpenChange"
   >
     <DialogPortal>
-      <Transition :name="transitionName" appear>
+      <Transition :name="transitionName" appear @after-leave="handleAfterLeave">
         <div
-          v-if="open"
+          v-if="visible"
           class="dialog-overlay fixed inset-0 flex items-center justify-center"
           :class="[zIndexClass, overlayClass]"
           :data-backdrop="isFullScreen ? 'none' : 'dimmed'"
@@ -101,7 +101,7 @@ import {
   DrawerTitle,
 } from 'reka-ui';
 import { useMediaQuery } from '@vueuse/core';
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useDialogThemeColor } from '@/composables/useDialogThemeColor';
 import { useOverlayBack } from '@/composables/useOverlayBack';
 
@@ -146,6 +146,20 @@ type CloseReason = 'back' | 'drag' | 'escape' | 'overlay';
 type DrawerOpenChangeDetails = { reason?: string };
 
 let pendingCloseReason: CloseReason = 'overlay';
+const rootOpen = ref(props.open);
+const visible = ref(props.open);
+
+watch(
+  () => props.open,
+  (nextOpen) => {
+    if (nextOpen) rootOpen.value = true;
+    visible.value = nextOpen;
+  },
+);
+
+function handleAfterLeave() {
+  if (!visible.value) rootOpen.value = false;
+}
 
 function handleClose(reason: CloseReason = 'overlay') {
   if (props.closeable && !props.busy && !props.persistent) emit('close', reason);
@@ -166,7 +180,7 @@ const paddingMode = computed(() => {
 });
 const canDismiss = computed(() => props.closeable && !props.busy && !props.persistent);
 
-useDialogThemeColor(computed(() => props.open), isFullScreen);
+useDialogThemeColor(visible, isFullScreen);
 
 function handleDismissEvent(event: Event, reason: Extract<CloseReason, 'escape' | 'overlay'>) {
   pendingCloseReason = reason;
@@ -190,5 +204,5 @@ function handleDrawerOpenChange(nextOpen: boolean, details?: DrawerOpenChangeDet
   pendingCloseReason = 'overlay';
 }
 
-useOverlayBack(computed(() => props.open && isSheet.value), () => handleClose('back'));
+useOverlayBack(computed(() => visible.value && isSheet.value), () => handleClose('back'));
 </script>

@@ -1,8 +1,6 @@
 import { authorizeSupabaseRealtime, getSupabaseClient } from '@/lib/supabase';
 import { auth } from '@/lib/firebase';
-import { isIssueCategory } from '@/constants/categories';
 import { getCachedSessionRole } from '@/services/session-role';
-import type { IssueCategory } from '@/types';
 import { markContentCachePrefixStale } from '@/services/content-read-cache';
 
 type SupabaseAppClient = ReturnType<typeof getSupabaseClient>;
@@ -44,10 +42,11 @@ export type ContentRealtimeEventType =
   | 'issue_comment_changed'
   | 'announcement_changed'
   | 'announcement_metrics_changed'
-  | 'announcement_comment_changed';
+  | 'announcement_comment_changed'
+  | 'facility_changed';
 
 export interface ContentRealtimeEvent {
-  category: IssueCategory | null;
+  category: string | null;
   commentCount: number | null;
   createdAt: Date | null;
   eventType: ContentRealtimeEventType;
@@ -81,6 +80,7 @@ function normalizeEventType(value: unknown): ContentRealtimeEventType | null {
     || value === 'announcement_changed'
     || value === 'announcement_metrics_changed'
     || value === 'announcement_comment_changed'
+    || value === 'facility_changed'
   ) {
     return value;
   }
@@ -93,7 +93,7 @@ function normalizeRealtimeEvent(data: Record<string, unknown>): ContentRealtimeE
   if (!eventType || !targetId) return null;
 
   return {
-    category: isIssueCategory(data.category) ? data.category : null,
+    category: normalizeNullableString(data.category),
     commentCount: typeof data.comment_count === 'number' && Number.isFinite(data.comment_count)
       ? data.comment_count
       : null,
@@ -198,6 +198,11 @@ function invalidateRealtimeContent(event: ContentRealtimeEvent) {
     if (event.eventType === 'issue_comment_changed') {
       if (issueId) markContentCachePrefixStale(`issue-comments-page|${issueId}|`);
     }
+    return;
+  }
+  if (event.eventType === 'facility_changed') {
+    markContentCachePrefixStale('facility-list-page|');
+    markContentCachePrefixStale(`facility-detail|${event.targetId}`);
     return;
   }
   const announcementId = event.eventType === 'announcement_comment_changed'

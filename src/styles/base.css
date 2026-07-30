@@ -173,8 +173,10 @@
   }
 
   body {
-    @apply font-sans font-normal text-ink-900 antialiased transition-colors duration-300 dark:text-ink-50;
+    @apply font-sans font-normal text-ink-900 transition-colors duration-300 dark:text-ink-50;
     font-size: 0.9375rem;
+    -webkit-font-smoothing: auto;
+    text-rendering: optimizeLegibility;
     letter-spacing: 0.012em;
     line-height: 1.65;
     overflow: hidden;

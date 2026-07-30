@@ -1,5 +1,5 @@
 <template>
-  <PopoverRoot :open="open" @update:open="handleOpenChange">
+  <PopoverRoot :open="rootOpen" @update:open="handleOpenChange">
     <PopoverAnchor as-child>
       <div ref="rootRef" class="relative inline-block text-left">
         <slot name="trigger" :open="open" :toggle="toggle" />
@@ -7,9 +7,9 @@
     </PopoverAnchor>
 
     <PopoverPortal>
-      <Transition name="popover">
+      <Transition name="popover" @after-leave="handleAfterLeave">
         <PopoverContent
-          v-if="open"
+          v-if="visible"
           as-child
           align="end"
           :collision-padding="12"
@@ -49,7 +49,8 @@ const props = withDefaults(defineProps<{
   width: 176,
 });
 
-const open = ref(false);
+const rootOpen = ref(false);
+const visible = ref(false);
 const rootRef = useTemplateRef<HTMLElement>('rootRef');
 let triggerElement: HTMLElement | null = null;
 let restoreFocusOnClose = true;
@@ -71,29 +72,36 @@ function resolveTriggerElement() {
 }
 
 function close(restoreFocus = true) {
-  if (!open.value) return;
+  if (!visible.value) return;
   restoreFocusOnClose = restoreFocus;
-  open.value = false;
+  visible.value = false;
 }
 
 function toggle() {
-  if (open.value) {
+  if (visible.value) {
     close();
     return;
   }
   triggerElement = resolveTriggerElement();
-  open.value = true;
+  rootOpen.value = true;
+  visible.value = true;
 }
 
 function openMenu() {
-  if (open.value) return;
+  if (visible.value) return;
   triggerElement = resolveTriggerElement();
-  open.value = true;
+  rootOpen.value = true;
+  visible.value = true;
 }
 
 function handleOpenChange(nextOpen: boolean) {
   if (nextOpen && !triggerElement) triggerElement = resolveTriggerElement();
-  open.value = nextOpen;
+  if (nextOpen) rootOpen.value = true;
+  visible.value = nextOpen;
+}
+
+function handleAfterLeave() {
+  if (!visible.value) rootOpen.value = false;
 }
 
 function handleCloseAutoFocus(event: Event) {
@@ -105,6 +113,8 @@ function handleCloseAutoFocus(event: Event) {
     if (focusTarget?.isConnected) focusTarget.focus({ preventScroll: true });
   });
 }
+
+const open = computed(() => visible.value);
 
 defineExpose({ close, open: openMenu, toggle });
 

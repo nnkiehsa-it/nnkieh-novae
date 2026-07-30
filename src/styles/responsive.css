@@ -5,6 +5,8 @@
   min-height: 0;
   overflow: hidden;
   width: 100dvw;
+  contain: paint;
+  isolation: isolate;
 }
 
 .dialog-backdrop {
@@ -16,6 +18,7 @@
   opacity: var(--sheet-backdrop-opacity, 1);
   pointer-events: none;
   z-index: 0;
+  transform: translateZ(0);
 }
 
 .dialog-overlay[data-backdrop='none'] > .dialog-backdrop {
@@ -39,6 +42,7 @@
   transform: translate3d(0, var(--dialog-motion-y), 0) scale(var(--dialog-motion-scale));
   transform-origin: 50% 50%;
   z-index: 1;
+  -webkit-font-smoothing: auto;
 }
 
 .dialog-surface.surface-pad-lg {
@@ -269,42 +273,42 @@
 .dialog-enter-active {
   /* Vue measures the transition root, not its descendants. This non-visual
      transition keeps the child backdrop and surface classes alive. */
-  transition: visibility 640ms linear;
+  transition: visibility 300ms linear;
 }
 
 .dialog-overlay[data-backdrop='none'].dialog-enter-active {
-  transition: background-color 480ms var(--motion-ease-enter) 80ms;
+  transition: background-color 220ms var(--motion-ease-enter);
 }
 
 .dialog-overlay[data-backdrop='none'].dialog-leave-active {
-  transition: background-color 240ms var(--motion-ease-exit);
+  transition: background-color 170ms var(--motion-ease-exit);
 }
 
 .dialog-leave-active {
-  transition: visibility 280ms linear;
+  transition: visibility 190ms linear;
 }
 
 .dialog-enter-active .dialog-backdrop {
-  transition: opacity 400ms var(--motion-ease-enter) 160ms;
+  transition: opacity 220ms var(--motion-ease-enter);
   will-change: opacity;
 }
 
 .dialog-leave-active .dialog-backdrop {
-  transition: opacity 240ms var(--motion-ease-exit);
+  transition: opacity 170ms var(--motion-ease-exit);
   will-change: opacity;
 }
 
 .dialog-enter-active [data-dialog-root] {
   transition:
-    opacity 360ms var(--motion-ease-enter) 120ms,
-    transform 500ms var(--motion-ease-spring) 120ms;
+    opacity 220ms var(--motion-ease-enter),
+    transform 300ms var(--motion-ease-enter);
   will-change: transform, opacity;
 }
 
 .dialog-leave-active [data-dialog-root] {
   transition:
-    opacity 220ms var(--motion-ease-exit),
-    transform 260ms var(--motion-ease-exit);
+    opacity 150ms var(--motion-ease-exit),
+    transform 190ms var(--motion-ease-exit);
   will-change: transform, opacity;
 }
 
@@ -324,49 +328,49 @@
 }
 
 .dialog-enter-from [data-dialog-root] {
-  --dialog-motion-scale: 0.94;
-  --dialog-motion-y: 16px;
+  --dialog-motion-scale: 0.97;
+  --dialog-motion-y: 10px;
   opacity: 0;
 }
 
 .dialog-leave-to [data-dialog-root] {
-  --dialog-motion-scale: 0.975;
-  --dialog-motion-y: -4px;
+  --dialog-motion-scale: 0.985;
+  --dialog-motion-y: 4px;
   opacity: 0;
 }
 
 .dialog-enter-from[data-presentation='sheet'] [data-dialog-root] {
-  --dialog-motion-scale: 0.985;
-  --dialog-motion-y: 24px;
+  --dialog-motion-scale: 0.99;
+  --dialog-motion-y: 16px;
 }
 
 .dialog-leave-to[data-presentation='sheet'] [data-dialog-root] {
-  --dialog-motion-scale: 0.99;
-  --dialog-motion-y: 20px;
+  --dialog-motion-scale: 0.995;
+  --dialog-motion-y: 14px;
 }
 
 .popover-enter-active {
   transition:
-    opacity var(--motion-duration-panel) var(--motion-ease-enter),
-    transform var(--motion-duration-panel) var(--motion-ease-spring);
+    opacity 150ms var(--motion-ease-enter),
+    transform 190ms var(--motion-ease-enter);
   will-change: transform, opacity;
 }
 
 .popover-leave-active {
   transition:
-    opacity 220ms var(--motion-ease-exit),
-    transform 240ms var(--motion-ease-exit);
+    opacity 110ms var(--motion-ease-exit),
+    transform 140ms var(--motion-ease-exit);
   will-change: transform, opacity;
 }
 
 .popover-enter-from {
   opacity: 0;
-  transform: translate3d(0, 8px, 0) scale(0.96);
+  transform: translate3d(0, 4px, 0) scale(0.985);
 }
 
 .popover-leave-to {
   opacity: 0;
-  transform: translate3d(0, -3px, 0) scale(0.985);
+  transform: translate3d(0, 2px, 0) scale(0.99);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -160,8 +160,8 @@ export function useAnnouncementDetail(canLoad: Ref<boolean>) {
       markContentRealtimeReliable();
     } catch (caught) {
       if (currentRequestId !== requestId) return;
+      markContentRealtimeUnreliable();
       show(caught instanceof Error ? caught.message : 'announcement.thisAnnouncementCannotBeFoundMessage', 'error');
-      goBack();
     }
   }
 
@@ -237,6 +237,10 @@ export function useAnnouncementDetail(canLoad: Ref<boolean>) {
           return;
         }
         if (event.eventType === 'announcement_changed' && event.targetId === announcementId) {
+          if (event.op === 'delete') {
+            goBack();
+            return;
+          }
           scheduleRealtimeRefresh();
         }
       }, markContentRealtimeUnreliable, scheduleRealtimeRefresh);

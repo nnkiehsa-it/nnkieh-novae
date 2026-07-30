@@ -227,6 +227,7 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   assert.doesNotMatch(dropdownMenu, /useDropdownPosition|useClickOutside|handlePanelKeydown/u);
   assert.match(dropdownMenu, /focusTarget\.focus\(\{ preventScroll: true \}\)/u);
   assert.match(dropdownMenu, /@close-auto-focus="handleCloseAutoFocus"/u);
+  assert.match(dropdownMenu, /:open="rootOpen"[\s\S]*@after-leave="handleAfterLeave"[\s\S]*v-if="visible"/u);
   assert.match(contentCard, /surface-card surface-card--interactive/u);
   assert.match(contentCard, /<button[\s\S]*pointer-events-none absolute inset-0[\s\S]*:aria-label="title"[\s\S]*@click\.stop="emit\('open'\)"/u);
   assert.match(contentCard, /NESTED_INTERACTIVE_SELECTOR[\s\S]*event\.target\.closest[\s\S]*emit\('open'\)/u);
@@ -240,12 +241,15 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   assert.match(dialogShell, /<DrawerRoot[\s\S]*<DrawerContent[\s\S]*<DialogRoot[\s\S]*<DialogContent/u);
   assert.match(dialogShell, /DrawerOverlay force-mount[\s\S]*DialogOverlay force-mount/u);
   assert.match(dialogShell, /handleDismissEvent[\s\S]*event\.preventDefault\(\)/u);
+  assert.match(dialogShell, /:open="rootOpen"[\s\S]*@after-leave="handleAfterLeave"[\s\S]*v-if="visible"/u);
   assert.doesNotMatch(dialogShell, /useBodyScrollLock|useDialogFocus|useBottomSheetDrag/u);
   assert.match(responsiveStyles, /\.dialog-backdrop \{[\s\S]*blur\(12px\) saturate\(0\.88\)[\s\S]*position: fixed;[\s\S]*inset: 0;/u);
-  assert.match(responsiveStyles, /\.dialog-enter-active \{[\s\S]*visibility 640ms/u);
-  assert.match(responsiveStyles, /\.dialog-enter-active \.dialog-backdrop \{[\s\S]*opacity 400ms[\s\S]*160ms/u);
+  assert.match(responsiveStyles, /\.dialog-enter-active \{[\s\S]*visibility 300ms/u);
+  assert.match(responsiveStyles, /\.dialog-leave-active \{[\s\S]*visibility 190ms/u);
+  assert.match(responsiveStyles, /\.dialog-enter-active \.dialog-backdrop \{[\s\S]*opacity 220ms/u);
   assert.doesNotMatch(responsiveStyles, /\.dialog-enter-active \.dialog-backdrop \{[\s\S]{0,240}backdrop-filter/u);
-  assert.match(responsiveStyles, /\.dialog-enter-active \[data-dialog-root\] \{[\s\S]*transform 500ms var\(--motion-ease-spring\)/u);
+  assert.match(responsiveStyles, /\.dialog-enter-active \[data-dialog-root\] \{[\s\S]*transform 300ms var\(--motion-ease-enter\)/u);
+  assert.match(responsiveStyles, /\.dialog-leave-active \[data-dialog-root\] \{[\s\S]*transform 190ms var\(--motion-ease-exit\)/u);
   assert.match(responsiveStyles, /--drawer-swipe-movement-y/u);
   assert.match(responsiveStyles, /\.bottom-sheet-surface\[data-swiping\]/u);
   assert.match(primitives, /\.progress-fill \{[\s\S]*transform-origin: 0 50%;[\s\S]*transform 560ms/u);

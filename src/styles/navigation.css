@@ -1,6 +1,10 @@
 @layer components {
   .app-bottom-nav {
     -webkit-backdrop-filter: blur(24px);
+    backface-visibility: hidden;
+    contain: paint;
+    isolation: isolate;
+    transform: translateZ(0);
   }
 
   .mobile-nav-enter-active,
@@ -23,8 +27,15 @@
   }
 
   .app-bottom-nav__item {
-    @apply relative flex h-12 w-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-full px-1 text-center text-ink-500 dark:text-ink-400;
+    @apply relative z-10 flex h-12 w-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-full px-1 text-center text-ink-500 dark:text-ink-400;
     --press-scale: 1.055;
+  }
+
+  .app-bottom-nav__active-indicator {
+    @apply pointer-events-none absolute inset-y-0 left-0 rounded-full bg-ink-100/90 shadow-control dark:bg-ink-800/80;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+    will-change: transform;
   }
 
   .app-bottom-nav__item:is(:active, .is-pressing):not([aria-disabled='true']) {
@@ -36,7 +47,7 @@
   }
 
   .app-bottom-nav__item--active {
-    @apply bg-ink-100/90 text-ink-900 shadow-control dark:bg-ink-800/80 dark:text-ink-100;
+    @apply text-ink-900 dark:text-ink-100;
   }
 
   .app-bottom-nav__item--active:is(:active, .is-pressing):not([aria-disabled='true']) {

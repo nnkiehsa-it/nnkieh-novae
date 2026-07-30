@@ -192,7 +192,9 @@ export function useAnnouncementManagement() {
           forceRefresh: true,
         }).then((announcement) => {
           upsertAnnouncement(announcement);
-        }).catch(() => removeAnnouncement(event.targetId));
+        }).catch((caught) => {
+          if (isContentUnavailableError(caught)) removeAnnouncement(event.targetId);
+        });
       }, () => {
         markContentRealtimeUnreliable();
         void refreshAnnouncementList({ force: true });

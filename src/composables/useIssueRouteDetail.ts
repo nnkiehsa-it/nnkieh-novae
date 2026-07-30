@@ -217,7 +217,7 @@ export function useIssueRouteDetail(
       markContentRealtimeReliable();
     } catch (error) {
       if (isAbortFailure(error)) return;
-      await handleRouteIssueError(currentRequestId);
+      if (currentRequestId === requestId) markContentRealtimeUnreliable();
     }
   }
 
@@ -250,6 +250,10 @@ export function useIssueRouteDetail(
         }
         if (event.eventType !== 'issue_changed') return;
         if (event.targetId !== issueId) return;
+        if (event.op === 'delete') {
+          closeRouteIssue();
+          return;
+        }
         scheduleRealtimeRefresh();
       }, () => {
         markContentRealtimeUnreliable();

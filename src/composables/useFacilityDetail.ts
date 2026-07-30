@@ -4,6 +4,7 @@ import { deleteFacility, getFacility, toggleFacilityAffected, updateFacilityStat
 import type { FacilityStatus } from '@/types';
 import { subscribeContentRevisionChanges } from '@/services/content-revisions';
 import { normalizeRouteParam } from '@/lib/route';
+import { subscribeContentRealtimeEvents } from '@/services/realtime-events';
 
 export function useFacilityDetail(canLoad: Ref<boolean>) {
   const route = useRoute();
@@ -13,6 +14,7 @@ export function useFacilityDetail(canLoad: Ref<boolean>) {
   const error = ref('');
   const facilityId = computed(() => normalizeRouteParam(route.params.facilityId));
   let requestVersion = 0;
+  let realtimeUnsubscribe: (() => void) | null = null;
 
   async function load(options: { silent?: boolean } = {}) {
     const id = facilityId.value;
@@ -71,6 +73,37 @@ export function useFacilityDetail(canLoad: Ref<boolean>) {
   );
 
   const unsubscribeRevision = subscribeContentRevisionChanges('facilities', () => load({ silent: true }));
-  onScopeDispose(unsubscribeRevision);
+  watch(
+    [canLoad, facilityId],
+    ([allowed, id]) => {
+      realtimeUnsubscribe?.();
+      realtimeUnsubscribe = null;
+      if (!allowed || !id) return;
+      realtimeUnsubscribe = subscribeContentRealtimeEvents(
+        `facility-detail:${id}`,
+        (event) => {
+          if (event.eventType !== 'facility_changed' || event.targetId !== id) return;
+          if (event.op === 'delete') {
+            facility.value = null;
+            error.value = 'facility.failedToLoadFacility';
+            return;
+          }
+          const version = ++requestVersion;
+          void getFacility(id, { forceRefresh: true }).then((updated) => {
+            if (version === requestVersion) facility.value = updated;
+          }).catch(() => {
+            // Keep the current detail visible across transient realtime fetch failures.
+          });
+        },
+        undefined,
+        () => { void load({ silent: true }); },
+      );
+    },
+    { immediate: true },
+  );
+  onScopeDispose(() => {
+    realtimeUnsubscribe?.();
+    unsubscribeRevision();
+  });
   return { affecting, changeStatus, error, facility, load, loading, remove, toggleAffected };
 }

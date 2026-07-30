@@ -65,11 +65,13 @@ export async function listFacilities(input: {
   } catch (error) { throw toReadableBackendError(error); }
 }
 
-export async function getFacility(facilityId: string) {
-  await prepareContentRevisionRead();
+export async function getFacility(facilityId: string, options: { forceRefresh?: boolean } = {}) {
+  if (!options.forceRefresh) await prepareContentRevisionRead();
   const cacheKey = createContentCacheKey(['facility-detail', facilityId]);
-  const cached = await getCachedContentPersistent<FacilityRecord>(cacheKey);
-  if (cached) return cached;
+  if (!options.forceRefresh) {
+    const cached = await getCachedContentPersistent<FacilityRecord>(cacheKey);
+    if (cached) return cached;
+  }
   return runCoalescedContentRequest(cacheKey, async (cacheGuard) => { try {
     const fn = invokeBackendAction<{ facilityId: string }, { facility: RawFacility }>('getFacility');
     const facility = normalizeFacility((await fn({ facilityId })).facility);

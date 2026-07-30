@@ -142,7 +142,8 @@ test('primary navigation keeps desktop chrome and persistent mobile navigation',
   assert.match(app, /<MotionConfig reduced-motion="user"[\s\S]*MOTION_ROUTE_TRANSITION/u);
   assert.doesNotMatch(baseStyles, /\.route-(?:fade|forward|back)-(?:enter|leave)/u);
   assert.doesNotMatch(mobileBottomNav, /indicatorStyle|translate3d|getBoundingClientRect|setNavElement/u);
-  assert.match(navigationStyles, /\.app-bottom-nav__item--active \{[\s\S]*bg-ink-100\/90[\s\S]*shadow-control/u);
+  assert.match(mobileBottomNav, /<m\.div[\s\S]*app-bottom-nav__active-indicator[\s\S]*activeIndex \* 100/u);
+  assert.match(navigationStyles, /\.app-bottom-nav__active-indicator \{[\s\S]*bg-ink-100\/90[\s\S]*shadow-control/u);
   assert.match(baseStyles, /\.app-root\[data-sidebar='false'\] \.app-main-content/u);
   assert.match(appShell, /<ViewportFrame as="main" class="flex min-h-0 flex-1 flex-col">/u);
   assert.match(navigationStyles, /\.mobile-nav-enter-from,[\s\S]*translate3d\(0, 18px, 0\) scale\(0\.96\)/u);
