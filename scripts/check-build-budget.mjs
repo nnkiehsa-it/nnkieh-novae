@@ -16,7 +16,9 @@ const limits = {
   cssBytes: 550 * 1024,
   fontBytes: 9.2 * 1024 * 1024,
   fontFiles: 160,
-  jsBytes: 1.3 * 1024 * 1024,
+  // Reka's accessible behavior layer and the lazy Motion interaction layer
+  // are intentional product infrastructure, not page-local payload.
+  jsBytes: 1.45 * 1024 * 1024,
 };
 const actual = {
   cssBytes: sum('.css'),

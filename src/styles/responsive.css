@@ -186,7 +186,7 @@
 }
 
 .dialog-overlay[data-presentation='sheet'] {
-  --sheet-backdrop-opacity: calc(1 - var(--sheet-drag-progress, 0) * 0.68);
+  --sheet-backdrop-opacity: 1;
   align-items: flex-end;
   justify-content: center;
   padding: 0 max(0.5rem, env(safe-area-inset-right)) max(0.5rem, env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-left));
@@ -197,19 +197,22 @@
   height: auto;
   max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top) - 1rem));
   overflow: hidden;
-  transform: translate3d(0, calc(var(--sheet-drag-offset, 0px) + var(--dialog-motion-y)), 0) scale(var(--dialog-motion-scale));
+  transform: translate3d(
+    0,
+    calc(var(--drawer-swipe-movement-y, 0px) + var(--dialog-motion-y)),
+    0
+  ) scale(var(--dialog-motion-scale));
   transform-origin: 50% 100%;
   width: 100%;
 }
 
 .bottom-sheet-surface {
   position: relative;
-  touch-action: pan-x;
   transition: transform var(--motion-duration-panel) var(--motion-ease-spring);
 }
 
-.bottom-sheet-surface--dragging {
-  transition: none;
+.bottom-sheet-surface[data-swiping] {
+  transition-duration: 0ms;
   user-select: none;
   will-change: transform;
 }
@@ -260,32 +263,6 @@
     padding-left: 1rem;
     padding-right: 1rem;
     padding-top: max(1.5rem, env(safe-area-inset-top));
-  }
-}
-
-.action-feedback-enter-active,
-.action-feedback-leave-active {
-  transition:
-    opacity var(--motion-duration) var(--motion-ease-enter),
-    transform var(--motion-duration-panel) var(--motion-ease-spring);
-  will-change: transform, opacity;
-}
-
-.action-feedback-leave-active {
-  transition-duration: var(--motion-duration-fast);
-  transition-timing-function: var(--motion-ease-exit);
-}
-
-.action-feedback-enter-from,
-.action-feedback-leave-to {
-  opacity: 0;
-  transform: translate3d(0, 14px, 0) scale(0.97);
-}
-
-@media (max-width: 767px) {
-  .action-feedback-enter-from,
-  .action-feedback-leave-to {
-    transform: translate3d(0, -12px, 0) scale(0.97);
   }
 }
 
@@ -390,23 +367,6 @@
 .popover-leave-to {
   opacity: 0;
   transform: translate3d(0, -3px, 0) scale(0.985);
-}
-
-.detail-tab-enter-active,
-.detail-tab-leave-active {
-  transition: opacity var(--motion-duration) var(--motion-ease-enter);
-}
-
-.detail-tab-leave-active {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  pointer-events: none;
-}
-
-.detail-tab-enter-from,
-.detail-tab-leave-to {
-  opacity: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

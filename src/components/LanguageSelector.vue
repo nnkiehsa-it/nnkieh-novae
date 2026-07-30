@@ -1,7 +1,6 @@
 <template>
   <DropdownMenu
     class="!block w-full"
-    :fallback-height="languageOptions.length * 48 + 48"
     panel-class="max-w-[calc(100vw-2rem)]"
     :width="240"
   >

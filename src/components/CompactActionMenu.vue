@@ -1,5 +1,5 @@
 <template>
-  <AdaptiveActionMenu ref="menuRef" :title="t(title)" :fallback-height="96">
+  <AdaptiveActionMenu ref="menuRef" :title="t(title)">
     <template #trigger="{ open, toggle }">
       <AppButton
         variant="toolbar"

@@ -38,17 +38,19 @@
       </header>
 
       <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <SurfacePanel
-          v-for="item in operationSummaryCards"
+        <m.div
+          v-for="(item, index) in operationSummaryCards"
           :key="item.label"
-          as="article"
-          padding="lg"
-          :class="item.toneClass"
+          :initial="{ opacity: 0, y: 18 }"
+          :animate="{ opacity: 1, y: 0 }"
+          :transition="getStaggerTransition(index)"
         >
-          <p class="text-xs font-semibold text-current/65">{{ t(item.label) }}</p>
-          <p class="mt-3 text-2xl font-semibold tabular-nums tracking-[0.01em] text-current">{{ item.value }}</p>
-          <p class="mt-2 text-xs font-medium leading-5 text-current/70">{{ t(item.caption) }}</p>
-        </SurfacePanel>
+          <SurfacePanel as="article" padding="lg" class="h-full" :class="item.toneClass">
+            <p class="text-xs font-semibold text-current/65">{{ t(item.label) }}</p>
+            <p class="mt-3 text-2xl font-semibold tabular-nums tracking-[0.01em] text-current">{{ item.value }}</p>
+            <p class="mt-2 text-xs font-medium leading-5 text-current/70">{{ t(item.caption) }}</p>
+          </SurfacePanel>
+        </m.div>
       </section>
 
       <section class="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(22rem,0.75fr)]">
@@ -64,10 +66,14 @@
               </template>
             </SectionHeader>
             <SurfacePanel variant="inset" class="mt-4 divide-y divide-ink-200/35 overflow-hidden dark:divide-ink-700/30">
-              <div
-                v-for="row in operationRows"
+              <m.div
+                v-for="(row, index) in operationRows"
                 :key="row.label"
                 class="grid gap-3 px-4 py-3 sm:grid-cols-[minmax(9rem,0.9fr)_minmax(0,1.2fr)_auto]"
+                :initial="{ opacity: 0, y: 10 }"
+                :while-in-view="{ opacity: 1, y: 0 }"
+                :viewport="{ once: true, amount: 0.35 }"
+                :transition="getStaggerTransition(index)"
               >
                 <div class="min-w-0">
                   <p class="truncate text-sm font-bold text-ink-900 dark:text-ink-100">{{ t(row.label) }}</p>
@@ -75,7 +81,7 @@
                 </div>
                 <p class="text-sm font-semibold tabular-nums text-ink-700 dark:text-ink-200">{{ row.value }}</p>
                 <p class="text-left text-xs font-bold sm:text-right" :class="row.toneClass">{{ t(row.statusLabel) }}</p>
-              </div>
+              </m.div>
             </SurfacePanel>
           </SurfacePanel>
 
@@ -96,15 +102,27 @@
                 <span class="text-right">{{ t('dashboard.comment') }}</span>
                 <span class="text-right">{{ t('dashboard.proportion') }}</span>
               </div>
-              <div
-                v-for="row in categoryComparisonRows"
+              <m.div
+                v-for="(row, index) in categoryComparisonRows"
                 :key="row.label"
                 class="grid grid-cols-3 items-end gap-x-3 gap-y-2 border-b border-ink-200/30 px-4 py-3.5 last:border-b-0 dark:border-ink-700/25 sm:grid-cols-[minmax(0,1fr)_5rem_5rem_4rem] sm:items-center"
+                :initial="{ opacity: 0, y: 12 }"
+                :while-in-view="{ opacity: 1, y: 0 }"
+                :viewport="{ once: true, amount: 0.3 }"
+                :transition="getStaggerTransition(index)"
               >
                 <div class="col-span-3 min-w-0 sm:col-span-1">
                   <p class="truncate text-sm font-bold text-ink-900 dark:text-ink-100">{{ t(row.label) }}</p>
                   <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800">
-                    <div class="h-full rounded-full" :class="row.barClass" :style="{ width: `${row.percent}%` }"></div>
+                    <m.div
+                      class="h-full rounded-full"
+                      :class="row.barClass"
+                      :initial="{ scaleX: 0 }"
+                      :while-in-view="{ scaleX: row.percent / 100 }"
+                      :viewport="{ once: true, amount: 0.5 }"
+                      :transition="{ ...MOTION_SOFT_SPRING, delay: 0.12 + index * 0.05 }"
+                      style="width: 100%; transform-origin: left center"
+                    />
                   </div>
                 </div>
                 <div>
@@ -119,7 +137,7 @@
                   <span class="block text-[0.6875rem] font-medium text-ink-500 dark:text-ink-400 sm:hidden">{{ t('dashboard.proportion') }}</span>
                   <p class="mt-0.5 text-xs font-semibold tabular-nums text-ink-500 dark:text-ink-400 sm:mt-0 sm:text-right">{{ row.percentLabel }}</p>
                 </div>
-              </div>
+              </m.div>
             </SurfacePanel>
           </SurfacePanel>
         </div>
@@ -132,18 +150,22 @@
               :description="t('dashboard.anOverallSummaryOfPlatformUsage')"
             />
             <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-              <SurfacePanel
-                v-for="item in heroStats"
+              <m.div
+                v-for="(item, index) in heroStats"
                 :key="item.label"
-                variant="inset"
-                padding="md"
+                :initial="{ opacity: 0, y: 14 }"
+                :while-in-view="{ opacity: 1, y: 0 }"
+                :viewport="{ once: true, amount: 0.35 }"
+                :transition="getStaggerTransition(index)"
               >
-                <div class="flex items-center justify-between gap-3">
-                  <p class="text-sm font-semibold text-ink-600 dark:text-ink-300">{{ t(item.label) }}</p>
-                  <span class="text-xs font-bold text-ink-500 dark:text-ink-400">{{ t(item.caption) }}</span>
-                </div>
-                <p class="mt-2 text-2xl font-bold tabular-nums text-ink-950 dark:text-ink-50">{{ item.value }}</p>
-              </SurfacePanel>
+                <SurfacePanel variant="inset" padding="md">
+                  <div class="flex items-center justify-between gap-3">
+                    <p class="text-sm font-semibold text-ink-600 dark:text-ink-300">{{ t(item.label) }}</p>
+                    <span class="text-xs font-bold text-ink-500 dark:text-ink-400">{{ t(item.caption) }}</span>
+                  </div>
+                  <p class="mt-2 text-2xl font-bold tabular-nums text-ink-950 dark:text-ink-50">{{ item.value }}</p>
+                </SurfacePanel>
+              </m.div>
             </div>
           </SurfacePanel>
 
@@ -154,20 +176,24 @@
               :description="t('dashboard.failureTrackingCodeHelp')"
             />
             <div v-if="recentFailureRows.length > 0" class="mt-4 space-y-3">
-              <SurfacePanel
-                v-for="failure in recentFailureRows"
+              <m.div
+                v-for="(failure, index) in recentFailureRows"
                 :key="`${failure.source}-${failure.id}`"
-                variant="inset"
-                padding="md"
+                :initial="{ opacity: 0, y: 12 }"
+                :while-in-view="{ opacity: 1, y: 0 }"
+                :viewport="{ once: true, amount: 0.4 }"
+                :transition="getStaggerTransition(index)"
               >
-                <div class="flex items-start justify-between gap-3">
-                  <p class="text-sm font-bold text-ink-900 dark:text-ink-100">{{ failure.sourceLabel }}</p>
-                  <p class="text-xs font-semibold text-ink-500 dark:text-ink-400">{{ failure.updatedLabel }}</p>
-                </div>
-                <InlineMessage class="mt-2 break-all">
-                  {{ t('dashboard.trackingCodeCode', { code: failure.trackingCode }) }}
-                </InlineMessage>
-              </SurfacePanel>
+                <SurfacePanel variant="inset" padding="md">
+                  <div class="flex items-start justify-between gap-3">
+                    <p class="text-sm font-bold text-ink-900 dark:text-ink-100">{{ failure.sourceLabel }}</p>
+                    <p class="text-xs font-semibold text-ink-500 dark:text-ink-400">{{ failure.updatedLabel }}</p>
+                  </div>
+                  <InlineMessage class="mt-2 break-all">
+                    {{ t('dashboard.trackingCodeCode', { code: failure.trackingCode }) }}
+                  </InlineMessage>
+                </SurfacePanel>
+              </m.div>
             </div>
             <SurfacePanel v-else as="p" variant="inset" padding="md" class="mt-4 text-sm font-semibold text-ink-500 dark:text-ink-400">
               {{ t('dashboard.noRecentFailures') }}
@@ -189,6 +215,7 @@
 <script setup lang="ts">
 import RoutePageFrame from '@/components/ui/organisms/RoutePageFrame.vue';
 import { computed, watch } from 'vue';
+import { m } from 'motion-v';
 import EmptyStatePanel from '@/components/ui/molecules/EmptyStatePanel.vue';
 import SkeletonDashboard from '@/components/ui/organisms/SkeletonDashboard.vue';
 import PageLoadFailure from '@/components/ui/molecules/PageLoadFailure.vue';
@@ -201,6 +228,7 @@ import { useSession } from '@/composables/useSession';
 import { useLoadingTimeout } from '@/composables/useLoadingTimeout';
 import { resetAppConnection } from '@/lib/reconnect';
 import { useI18n } from '@/i18n';
+import { getStaggerTransition, MOTION_SOFT_SPRING } from '@/lib/ui-motion';
 
 const { t } = useI18n();
 

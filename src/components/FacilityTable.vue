@@ -14,17 +14,27 @@
       />
     </template>
 
-    <FacilityTableRow
-      v-for="facility in facilities"
-      :key="facility.id"
-      :facility="facility"
-      :highlight-query="highlightQuery"
-      :affecting="affectingFacilityId === facility.id"
-      @open-details="emit('open-details', $event)"
-      @toggle-affected="emit('toggle-affected', $event)"
-      @manage-status="emit('manage-status', $event)"
-      @delete="emit('delete', $event)"
-    />
+    <AnimatePresence :initial="false">
+      <m.div
+        v-for="facility in facilities"
+        :key="facility.id"
+        layout
+        :initial="{ opacity: 0, y: 16, scale: 0.985 }"
+        :animate="{ opacity: 1, y: 0, scale: 1 }"
+        :exit="{ opacity: 0, y: -10, scale: 0.985 }"
+        :transition="listMotionTransition"
+      >
+        <FacilityTableRow
+          :facility="facility"
+          :highlight-query="highlightQuery"
+          :affecting="affectingFacilityId === facility.id"
+          @open-details="emit('open-details', $event)"
+          @toggle-affected="emit('toggle-affected', $event)"
+          @manage-status="emit('manage-status', $event)"
+          @delete="emit('delete', $event)"
+        />
+      </m.div>
+    </AnimatePresence>
   </ContentCardCollection>
 </template>
 
@@ -32,7 +42,9 @@
 import FacilityTableRow from '@/components/FacilityTableRow.vue';
 import ContentCardCollection from '@/components/ui/organisms/ContentCardCollection.vue';
 import ContentCardSkeleton from '@/components/ui/organisms/ContentCardSkeleton.vue';
+import { AnimatePresence, m } from 'motion-v';
 import type { FacilitySummary } from '@/types';
+import { MOTION_SMOOTH_SPRING, MOTION_SMOOTH_TWEEN } from '@/lib/ui-motion';
 
 withDefaults(defineProps<{
   affectingFacilityId?: string;
@@ -51,4 +63,11 @@ const emit = defineEmits<{
   'manage-status': [facility: FacilitySummary];
   delete: [facility: FacilitySummary];
 }>();
+
+const listMotionTransition = {
+  layout: MOTION_SMOOTH_SPRING,
+  opacity: MOTION_SMOOTH_TWEEN,
+  scale: MOTION_SMOOTH_TWEEN,
+  y: MOTION_SMOOTH_TWEEN,
+};
 </script>

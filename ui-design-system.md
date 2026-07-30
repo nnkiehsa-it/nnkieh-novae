@@ -82,8 +82,9 @@ Atoms 可以接受語意、狀態與外觀 props，但不應知道「提案」�
 | 情境 | 優先使用 |
 | --- | --- |
 | 路由頁骨架 | `RoutePageFrame`、`ViewportFrame` |
-| Dialog／Bottom Sheet 行為外殼 | `DialogShell`；預設在粗指標手機自適應為可下拉 Sheet |
-| 跨平台操作選單 | `AdaptiveActionMenu`；桌面 Dropdown、手機 Bottom Sheet，共用同一份 slots |
+| Dialog／Bottom Sheet 行為外殼 | `DialogShell`；以 Reka Dialog／Drawer 提供可存取行為，預設在粗指標手機自適應為可下拉 Sheet |
+| 跨平台操作選單 | `AdaptiveActionMenu`；桌面 Reka Popover、手機 Reka Drawer，共用同一份 slots |
+| 動效參數 | `src/lib/ui-motion.ts`；頁面、狀態、列表與選擇器共用 smooth spring／tween，不在領域元件散落自訂 easing |
 | 卡片列表 | `ContentCardCollection`、`ContentCardShell`、`ContentListState` |
 | 詳情頁 | `DetailRouteState`、`DetailPageShell` |
 | 共用 skeleton | `ContentCardSkeleton`、`SkeletonDetail`、`SkeletonDashboard`、`SkeletonCommentList` |
@@ -92,7 +93,9 @@ Atoms 可以接受語意、狀態與外觀 props，但不應知道「提案」�
 
 Organism 可以管理完整 UI 流程，但資料存取仍放在 composable 或 service。領域差異優先透過 props、slots 與 callbacks 注入。
 
-浮層關閉一律經 `DialogShell`：Escape、遮罩、系統返回與手機下拉關閉共用相同 close 事件。含未儲存輸入的流程必須在 close 事件上加髒狀態確認；長按只能作為既有可見操作的快捷入口，不得成為唯一入口，也不得加入震動。
+浮層關閉一律經 `DialogShell`：Escape、遮罩、系統返回與手機下拉關閉共用相同 close 事件。focus trap、scroll lock、鍵盤與手勢由 Reka primitives 負責，不另寫平行 composable。含未儲存輸入的流程必須在 close 事件上加髒狀態確認；長按只能作為既有可見操作的快捷入口，不得成為唯一入口，也不得加入震動。
+
+Motion 只用於能表達層級、操作回饋或狀態變化的 transform／opacity／layout 動畫。全域由 `MotionConfig reduced-motion="user"` 尊重系統偏好，功能經 `LazyMotion` 載入；頁面導航、操作回饋、分段控制、詳情 Tabs 與動態列表必須使用 `ui-motion.ts` 的共用參數，不以「越快越現代」為目標。
 
 ## Surface 與陰影規範
 
@@ -229,7 +232,7 @@ Route view 不得自行加入另一套頁面級 `px-*`、`left-*`、`right-*`、
 </DialogShell>
 ```
 
-不要直接組 `DialogOverlay`、手動鎖 body scroll、另寫 focus trap，或在領域 Dialog 使用 `dialog-title`、`dialog-description`、`dialog-actions` class。
+不要直接組 Reka `DialogRoot`／`DrawerRoot`／`DialogOverlay`、手動鎖 body scroll、另寫 focus trap，或在領域 Dialog 使用 `dialog-title`、`dialog-description`、`dialog-actions` class；這些能力只在 `DialogShell` 內組裝。
 
 ## 表單與回饋
 

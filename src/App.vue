@@ -1,77 +1,96 @@
 <template>
-  <AppStartupScreen
-    v-if="startupGateOpen"
-    :aria-label="startupAriaLabel"
-    :message="startupMessage"
-    :stalled="startupGateStalled"
-    @retry="reloadApp({ reason: 'restart' })"
-  />
-  <AppShell v-else>
-    <div class="route-stage relative h-full min-h-0 min-w-0 w-full max-w-full flex-1">
-      <RouterView v-slot="{ Component, route: viewRoute }">
-        <Transition :name="routeTransitionName">
-          <div
-            :key="String(viewRoute.name ?? viewRoute.path)"
-            class="route-content-frame flex h-full min-h-0 min-w-0 w-full max-w-full flex-1 flex-col"
-          >
-            <Suspense>
-              <component :is="Component" />
-              <template #fallback>
-                <div class="flex min-h-[40dvh] items-center justify-center" :aria-label="t('common.switchingPages')" aria-busy="true">
-                  <LoadingSpinner :size="8" />
-                </div>
-              </template>
-            </Suspense>
-          </div>
-        </Transition>
-      </RouterView>
-    </div>
-    <ActionFeedbackBar />
-    <PushPermissionPromptDialog
-      :open="isPushPromptOpen"
-      :busy="pushPromptBusy"
-      :mode="pushPromptMode"
-      @dismiss="dismissPushPrompt"
-      @enable="enablePushFromPrompt"
-    />
-    <AppInstallPromptDialog
-      v-if="installPromptMode"
-      :can-install-natively="canInstallPromptNatively"
-      :open="isInstallPromptOpen"
-      :mode="installPromptMode"
-      :browser-name="installPromptBrowserName"
-      :ios-browser-guide="installPromptIosBrowserGuide"
-      :installing="isInstallPrompting"
-      :reason="installPromptReason"
-      @close="dismissInstallPrompt"
-      @copy-url="copyInstallUrl"
-      @install="promptInstall"
-    />
-  </AppShell>
-  <AppUpdatePromptDialog
-    :open="shouldShowUpdateDialog"
-    :busy="Boolean(reloading)"
-    @reload="reloadApp({ reason: 'update' })"
-  />
-  <Teleport to="body">
-    <Transition name="dialog" appear>
-      <div
-        v-if="reloading"
-        class="fixed inset-0 z-[90] flex items-center justify-center bg-ink-950/65 text-white backdrop-blur-md"
-        role="status"
-        aria-live="assertive"
-        :aria-label="reloadingAriaLabel"
-      >
-        <div class="flex flex-col items-center gap-3">
-          <LoadingSpinner :size="8" />
-          <p class="text-sm font-semibold">{{ reloadingText }}</p>
+  <MotionConfig reduced-motion="user" :transition="MOTION_SMOOTH_TWEEN">
+    <LazyMotion strict :features="loadMotionFeatures">
+      <AppStartupScreen
+        v-if="startupGateOpen"
+        :aria-label="startupAriaLabel"
+        :message="startupMessage"
+        :stalled="startupGateStalled"
+        @retry="reloadApp({ reason: 'restart' })"
+      />
+      <AppShell v-else>
+        <div class="route-stage relative h-full min-h-0 min-w-0 w-full max-w-full flex-1">
+          <RouterView v-slot="{ Component, route: viewRoute }">
+            <AnimatePresence mode="popLayout" :initial="false">
+              <m.div
+                :key="String(viewRoute.name ?? viewRoute.path)"
+                class="route-content-frame flex h-full min-h-0 min-w-0 w-full max-w-full flex-1 flex-col"
+                :initial="routeMotionInitial"
+                :animate="{ opacity: 1, x: 0, scale: 1 }"
+                :exit="routeMotionExit"
+                :transition="MOTION_ROUTE_TRANSITION"
+              >
+                <Suspense>
+                  <component :is="Component" />
+                  <template #fallback>
+                    <div class="flex min-h-[40dvh] items-center justify-center" :aria-label="t('common.switchingPages')" aria-busy="true">
+                      <LoadingSpinner :size="8" />
+                    </div>
+                  </template>
+                </Suspense>
+              </m.div>
+            </AnimatePresence>
+          </RouterView>
         </div>
-      </div>
-    </Transition>
-  </Teleport>
+        <ActionFeedbackBar />
+        <PushPermissionPromptDialog
+          :open="isPushPromptOpen"
+          :busy="pushPromptBusy"
+          :mode="pushPromptMode"
+          @dismiss="dismissPushPrompt"
+          @enable="enablePushFromPrompt"
+        />
+        <AppInstallPromptDialog
+          v-if="installPromptMode"
+          :can-install-natively="canInstallPromptNatively"
+          :open="isInstallPromptOpen"
+          :mode="installPromptMode"
+          :browser-name="installPromptBrowserName"
+          :ios-browser-guide="installPromptIosBrowserGuide"
+          :installing="isInstallPrompting"
+          :reason="installPromptReason"
+          @close="dismissInstallPrompt"
+          @copy-url="copyInstallUrl"
+          @install="promptInstall"
+        />
+      </AppShell>
+      <AppUpdatePromptDialog
+        :open="shouldShowUpdateDialog"
+        :busy="Boolean(reloading)"
+        @reload="reloadApp({ reason: 'update' })"
+      />
+      <Teleport to="body">
+        <AnimatePresence>
+          <m.div
+            v-if="reloading"
+            class="fixed inset-0 z-[90] flex items-center justify-center bg-ink-950/65 text-white backdrop-blur-md"
+            :initial="{ opacity: 0 }"
+            :animate="{ opacity: 1 }"
+            :exit="{ opacity: 0 }"
+            :transition="MOTION_SMOOTH_TWEEN"
+            role="status"
+            aria-live="assertive"
+            :aria-label="reloadingAriaLabel"
+          >
+            <m.div
+              class="flex flex-col items-center gap-3"
+              :initial="{ opacity: 0, scale: 0.94, y: 10 }"
+              :animate="{ opacity: 1, scale: 1, y: 0 }"
+              :exit="{ opacity: 0, scale: 0.97, y: -6 }"
+              :transition="MOTION_SOFT_SPRING"
+            >
+              <LoadingSpinner :size="8" />
+              <p class="text-sm font-semibold">{{ reloadingText }}</p>
+            </m.div>
+          </m.div>
+        </AnimatePresence>
+      </Teleport>
+    </LazyMotion>
+  </MotionConfig>
 </template>
 
 <script setup lang="ts">
+import { AnimatePresence, LazyMotion, m, MotionConfig } from 'motion-v';
 import { RouterView, useRoute, useRouter } from 'vue-router';
 import AppShell from '@/components/AppShell.vue';
 import AppStartupScreen from '@/components/AppStartupScreen.vue';
@@ -93,6 +112,13 @@ import { preloadPrimaryRouteComponents } from '@/router/route-components';
 import { getRouteNavigationDepth } from '@/router/navigation-hierarchy';
 import { useI18n } from '@/i18n';
 import { readLocalStorage, removeLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
+import {
+  MOTION_ROUTE_TRANSITION,
+  MOTION_SMOOTH_TWEEN,
+  MOTION_SOFT_SPRING,
+} from '@/lib/ui-motion';
+
+const loadMotionFeatures = () => import('@/lib/motion-features').then((module) => module.default);
 
 const APP_RELEASE_MARKER = '2026-06-27-1516';
 const LAST_APP_VERSION_STORAGE_KEY = 'novae:last-app-version';
@@ -109,6 +135,20 @@ const router = useRouter();
 const { appReady, isAdmin, roleLoading, user } = useSession();
 const { t } = useI18n();
 const routeTransitionName = ref('route-fade');
+const routeMotionInitial = computed(() => ({
+  opacity: 0,
+  scale: routeTransitionName.value === 'route-fade' ? 0.995 : 1,
+  x: routeTransitionName.value === 'route-forward'
+    ? 22
+    : routeTransitionName.value === 'route-back' ? -22 : 0,
+}));
+const routeMotionExit = computed(() => ({
+  opacity: 0,
+  scale: routeTransitionName.value === 'route-fade' ? 0.995 : 1,
+  x: routeTransitionName.value === 'route-forward'
+    ? -14
+    : routeTransitionName.value === 'route-back' ? 14 : 0,
+}));
 let previousNavigationDepth = getRouteNavigationDepth(route);
 
 watch(() => route.fullPath, () => {

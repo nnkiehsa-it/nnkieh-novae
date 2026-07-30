@@ -24,94 +24,96 @@
           class="shrink-0"
         />
 
-        <div class="static md:relative" @click.stop @pointerdown.stop>
-          <AppButton
-            variant="toolbar"
-            class="tap-target flex shrink-0 items-center justify-center rounded-full p-0"
-            :active="isSortOpen || sortOption !== 'latest'"
-            :title="t('common.filterBoard', { board: boardTitle })"
-            :aria-label="t('common.filterBoard', { board: boardTitle })"
-            :aria-expanded="isSortOpen"
-            @click="toggleSort"
-          >
-            <AppIcon name="sort" class="h-4 w-4" />
-          </AppButton>
-
-          <transition name="popover">
-            <DropdownPanel
-              v-if="isSortOpen"
-              class="absolute z-[100] mt-2 max-md:left-0 max-md:right-0 max-md:w-auto md:right-0 md:left-auto md:w-max md:min-w-[10rem]"
-              size="default"
+        <DropdownMenu
+          ref="sortMenuRef"
+          panel-class="min-w-[10rem]"
+          size="default"
+          width="content"
+        >
+          <template #trigger="{ open, toggle }">
+            <AppButton
+              variant="toolbar"
+              class="tap-target flex shrink-0 items-center justify-center rounded-full p-0"
+              :active="open || sortOption !== 'latest'"
+              :title="t('common.filterBoard', { board: boardTitle })"
+              :aria-label="t('common.filterBoard', { board: boardTitle })"
+              :aria-expanded="open"
+              @click="toggleSort(toggle)"
             >
-              <div class="dropdown-label mb-1.5 whitespace-nowrap">{{ t('common.sortBy') }}</div>
-              <div class="space-y-0.5">
-                <button
-                  v-for="option in visibleSortOptions"
-                  :key="option.value"
-                  type="button"
-                  class="dropdown-item justify-between gap-4 whitespace-nowrap"
-                  :class="{ 'button-toolbar--active': option.value === sortOption }"
-                  @click="selectSort(option.value)"
-                >
-                  <span>{{ t(option.label) }}</span>
-                  <SelectionMark :selected="option.value === sortOption" />
-                </button>
-              </div>
-            </DropdownPanel>
-          </transition>
-        </div>
+              <AppIcon name="sort" class="h-4 w-4" />
+            </AppButton>
+          </template>
 
-        <div class="static md:relative" @click.stop @pointerdown.stop>
-          <AppButton
-            variant="toolbar"
-            class="tap-target flex shrink-0 items-center justify-center rounded-full p-0"
-            :active="Boolean(isSearchOpen || searchQuery)"
-            :title="t('common.searchBoard', { board: boardTitle })"
-            :aria-label="t('common.searchBoard', { board: boardTitle })"
-            :aria-expanded="isSearchOpen"
-            @click="toggleSearch"
-          >
-            <AppIcon name="search" class="h-4 w-4" />
-          </AppButton>
-
-          <transition name="popover">
-            <DropdownPanel
-              v-if="isSearchOpen"
-              class="absolute z-[100] mt-2 max-md:left-0 max-md:right-0 max-md:w-auto md:right-0 md:left-auto md:w-80"
-              size="search"
-            >
-              <form class="relative" role="search" @submit.prevent="emit('submitSearch')">
-                <AppIcon name="search" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-500 dark:text-ink-400" />
-                <input
-                  ref="searchInputRef"
-                  :value="searchQuery"
-                  type="search"
-                  autocomplete="off"
-                  :aria-label="t('common.searchBoard', { board: boardTitle })"
-                  class="field appearance-none !h-11 !py-1 !pl-9 !pr-12 text-xs placeholder:text-ink-400 dark:placeholder:text-ink-500"
-                  :placeholder="searchPlaceholder"
-                  @input="(e) => emit('update:searchQuery', (e.target as HTMLInputElement).value)"
-                />
-                <AppButton
-                  v-if="searchQuery"
-                  variant="toolbar"
-                  class="tap-target absolute right-0 top-1/2 -translate-y-1/2 rounded-full p-0"
-                  :aria-label="t('common.clearSearch')"
-                  @click="emit('clearSearch')"
-                >
-                  <AppIcon name="close" :size="3" />
-                </AppButton>
-              </form>
-              <p
-                v-if="searchHint"
-                class="mt-2 text-xs font-normal leading-5 text-ink-500 dark:text-ink-400"
-                aria-live="polite"
+          <template #default="{ close }">
+            <div class="dropdown-label mb-1.5 whitespace-nowrap">{{ t('common.sortBy') }}</div>
+            <div class="space-y-0.5">
+              <button
+                v-for="option in visibleSortOptions"
+                :key="option.value"
+                type="button"
+                class="dropdown-item justify-between gap-4 whitespace-nowrap"
+                :class="{ 'button-toolbar--active': option.value === sortOption }"
+                @click="selectSort(option.value, close)"
               >
-                {{ searchHint }}
-              </p>
-            </DropdownPanel>
-          </transition>
-        </div>
+                <span>{{ t(option.label) }}</span>
+                <SelectionMark :selected="option.value === sortOption" />
+              </button>
+            </div>
+          </template>
+        </DropdownMenu>
+
+        <DropdownMenu
+          ref="searchMenuRef"
+          panel-class="w-80"
+          size="search"
+          :width="320"
+        >
+          <template #trigger="{ open, toggle }">
+            <AppButton
+              variant="toolbar"
+              class="tap-target flex shrink-0 items-center justify-center rounded-full p-0"
+              :active="Boolean(open || searchQuery)"
+              :title="t('common.searchBoard', { board: boardTitle })"
+              :aria-label="t('common.searchBoard', { board: boardTitle })"
+              :aria-expanded="open"
+              @click="toggleSearch(toggle)"
+            >
+              <AppIcon name="search" class="h-4 w-4" />
+            </AppButton>
+          </template>
+
+          <template #default>
+            <form class="relative" role="search" @submit.prevent="emit('submitSearch')">
+              <AppIcon name="search" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-500 dark:text-ink-400" />
+              <input
+                :value="searchQuery"
+                data-autofocus
+                type="search"
+                autocomplete="off"
+                :aria-label="t('common.searchBoard', { board: boardTitle })"
+                class="field appearance-none !h-11 !py-1 !pl-9 !pr-12 text-xs placeholder:text-ink-400 dark:placeholder:text-ink-500"
+                :placeholder="searchPlaceholder"
+                @input="(e) => emit('update:searchQuery', (e.target as HTMLInputElement).value)"
+              />
+              <AppButton
+                v-if="searchQuery"
+                variant="toolbar"
+                class="tap-target absolute right-0 top-1/2 -translate-y-1/2 rounded-full p-0"
+                :aria-label="t('common.clearSearch')"
+                @click="emit('clearSearch')"
+              >
+                <AppIcon name="close" :size="3" />
+              </AppButton>
+            </form>
+            <p
+              v-if="searchHint"
+              class="mt-2 text-xs font-normal leading-5 text-ink-500 dark:text-ink-400"
+              aria-live="polite"
+            >
+              {{ searchHint }}
+            </p>
+          </template>
+        </DropdownMenu>
 
         <AppButton
           v-if="createLabel"
@@ -129,16 +131,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import BoardCategorySelector from '@/components/BoardCategorySelector.vue';
 import AppIcon from '@/components/ui/atoms/AppIcon.vue';
 import AppButton from '@/components/ui/atoms/AppButton.vue';
 import SelectionMark from '@/components/ui/atoms/SelectionMark.vue';
-import DropdownPanel from '@/components/ui/molecules/DropdownPanel.vue';
+import DropdownMenu from '@/components/ui/molecules/DropdownMenu.vue';
 import PillSegmentedControl from '@/components/ui/molecules/PillSegmentedControl.vue';
 import { getDefaultIssueRouteFilter, getIssueFilterOptions, isIssueCategory } from '@/constants/categories';
-import { useClickOutside } from '@/composables/useClickOutside';
 import type { FacilitySortOption, IssueFilter, IssueSortOption } from '@/types';
 import { useI18n } from '@/i18n';
 
@@ -198,32 +199,21 @@ const statusOptions = computed(() => [
   { value: 'active' as const, label: t(props.mode === 'facility' ? 'facility.processing' : 'issue.inProgress'), icon: 'list' as const, title: t('common.showStatusInBoard', { status: t(props.mode === 'facility' ? 'facility.processing' : 'issue.inProgress'), board: boardTitle.value }) },
   { value: 'closed' as const, label: t('facility.caseClosed'), icon: 'inbox' as const, title: t('common.showStatusInBoard', { status: t('facility.caseClosed'), board: boardTitle.value }) },
 ]);
-const isSearchOpen = ref(false);
-const isSortOpen = ref(false);
-const searchInputRef = ref<HTMLInputElement | null>(null);
-const anyPanelOpen = computed(() => isSearchOpen.value || isSortOpen.value);
+const searchMenuRef = ref<InstanceType<typeof DropdownMenu> | null>(null);
+const sortMenuRef = ref<InstanceType<typeof DropdownMenu> | null>(null);
 
-function closeFloatingPanels() {
-  isSearchOpen.value = false;
-  isSortOpen.value = false;
+function toggleSearch(toggle: () => void) {
+  sortMenuRef.value?.close(false);
+  toggle();
 }
 
-useClickOutside(anyPanelOpen, [], closeFloatingPanels);
-
-function toggleSearch() {
-  isSearchOpen.value = !isSearchOpen.value;
-  isSortOpen.value = false;
-  if (isSearchOpen.value) {
-    nextTick(() => searchInputRef.value?.focus());
-  }
+function toggleSort(toggle: () => void) {
+  searchMenuRef.value?.close(false);
+  toggle();
 }
 
-function toggleSort() {
-  isSortOpen.value = !isSortOpen.value;
-  isSearchOpen.value = false;
-}
-
-function selectSort(value: BoardSortOption) {
+function selectSort(value: BoardSortOption, close: () => void) {
+  close();
   emit('update:sortOption', value);
 }
 

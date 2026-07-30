@@ -184,6 +184,22 @@
     width: 2rem;
   }
 
+    .segmented-control__indicator {
+      height: calc(100% - 0.25rem);
+      left: 0.125rem;
+      top: 0.125rem;
+      transition: width var(--motion-duration-panel) var(--motion-ease-enter);
+      will-change: transform;
+      width: 7rem;
+    }
+
+    .segmented-control__indicator--equal {
+      width: calc(
+      (100% - 0.25rem - (var(--segment-count) - 1) * 0.125rem)
+      / var(--segment-count)
+    );
+  }
+
   .segmented-control__button--equal {
     flex: 1 1 0;
     padding-inline: 0.75rem;

@@ -110,9 +110,7 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   const contentCard = await read('src/components/ui/organisms/ContentCardShell.vue');
   const contentCardCollection = await read('src/components/ui/organisms/ContentCardCollection.vue');
   const tableGridPicker = await read('src/components/ui/molecules/TableGridPicker.vue');
-  const dialogOverlay = await read('src/components/ui/molecules/DialogOverlay.vue');
   const dialogShell = await read('src/components/ui/organisms/DialogShell.vue');
-  const bottomSheetDrag = await read('src/composables/useBottomSheetDrag.ts');
   const responsiveStyles = await read('src/styles/responsive.css');
   const confirmDialog = await read('src/components/ConfirmDialog.vue');
   const entryComposer = await read('src/components/ui/organisms/EntryComposerShell.vue');
@@ -138,6 +136,10 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   const dashboardView = await read('src/views/DashboardView.vue');
   const checker = await read('scripts/check-ui-primitives.mjs');
   const pressFeedback = await read('src/lib/press-feedback.ts');
+  const uiMotion = await read('src/lib/ui-motion.ts');
+  const app = await read('src/App.vue');
+  const issueBoardTable = await read('src/components/IssueBoardTable.vue');
+  const facilityTable = await read('src/components/FacilityTable.vue');
   const mainEntry = await read('src/main.ts');
 
   assert.match(styleEntry, /@import "\.\/styles\/primitives\.css";/u);
@@ -220,13 +222,11 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   assert.match(surfacePanel, /type SurfaceVariant = 'card' \| 'control' \| 'floating' \| 'inset' \| 'list'/u);
   assert.match(listSurfaceRow, /class="list-surface-row"[\s\S]*list-surface-row--interactive/u);
   assert.match(dropdownPanel, /class="dropdown-panel"/u);
-  assert.match(dropdownMenu, /<DropdownPanel[\s\S]*useDropdownPosition[\s\S]*useClickOutside/u);
-  assert.match(dropdownMenu, /tabindex="-1"[\s\S]*@keydown="handlePanelKeydown"/u);
-  assert.match(dropdownMenu, /nextTick\(\(\) => focusItem\(menuItems\(\)\[0\]/u);
-  assert.match(dropdownMenu, /\['ArrowDown', 'ArrowUp', 'Home', 'End'\]/u);
-  assert.match(dropdownMenu, /item\?\.focus\(\{ preventScroll: true \}\)/u);
+  assert.match(dropdownMenu, /<PopoverRoot[\s\S]*<PopoverAnchor[\s\S]*<PopoverContent[\s\S]*<DropdownPanel/u);
+  assert.match(dropdownMenu, /:collision-padding="12"[\s\S]*:side-offset="8"/u);
+  assert.doesNotMatch(dropdownMenu, /useDropdownPosition|useClickOutside|handlePanelKeydown/u);
   assert.match(dropdownMenu, /focusTarget\.focus\(\{ preventScroll: true \}\)/u);
-  assert.match(dropdownMenu, /useClickOutside\([\s\S]*\(\) => close\(focusIsWithinMenu\(\)\)[\s\S]*\{ escape: true \}/u);
+  assert.match(dropdownMenu, /@close-auto-focus="handleCloseAutoFocus"/u);
   assert.match(contentCard, /surface-card surface-card--interactive/u);
   assert.match(contentCard, /<button[\s\S]*pointer-events-none absolute inset-0[\s\S]*:aria-label="title"[\s\S]*@click\.stop="emit\('open'\)"/u);
   assert.match(contentCard, /NESTED_INTERACTIVE_SELECTOR[\s\S]*event\.target\.closest[\s\S]*emit\('open'\)/u);
@@ -237,15 +237,17 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
     assert.match(tableGridPicker, new RegExp(`event\\.key === '${key}'`, 'u'));
   }
   assert.match(tableGridPicker, /event\.key === ' '/u);
-  assert.match(dialogShell, /<DialogOverlay[\s\S]*ref="dialogRef"[\s\S]*useBodyScrollLock[\s\S]*useDialogFocus/u);
-  assert.match(dialogOverlay, /:data-backdrop="isFullScreen \? 'none' : 'dimmed'"[\s\S]*class="dialog-backdrop"/u);
+  assert.match(dialogShell, /<DrawerRoot[\s\S]*<DrawerContent[\s\S]*<DialogRoot[\s\S]*<DialogContent/u);
+  assert.match(dialogShell, /DrawerOverlay force-mount[\s\S]*DialogOverlay force-mount/u);
+  assert.match(dialogShell, /handleDismissEvent[\s\S]*event\.preventDefault\(\)/u);
+  assert.doesNotMatch(dialogShell, /useBodyScrollLock|useDialogFocus|useBottomSheetDrag/u);
   assert.match(responsiveStyles, /\.dialog-backdrop \{[\s\S]*blur\(12px\) saturate\(0\.88\)[\s\S]*position: fixed;[\s\S]*inset: 0;/u);
   assert.match(responsiveStyles, /\.dialog-enter-active \{[\s\S]*visibility 640ms/u);
   assert.match(responsiveStyles, /\.dialog-enter-active \.dialog-backdrop \{[\s\S]*opacity 400ms[\s\S]*160ms/u);
   assert.doesNotMatch(responsiveStyles, /\.dialog-enter-active \.dialog-backdrop \{[\s\S]{0,240}backdrop-filter/u);
   assert.match(responsiveStyles, /\.dialog-enter-active \[data-dialog-root\] \{[\s\S]*transform 500ms var\(--motion-ease-spring\)/u);
-  assert.match(bottomSheetDrag, /cancelAnimationFrame[\s\S]*requestAnimationFrame/u);
-  assert.match(bottomSheetDrag, /function flushPendingOffset[\s\S]*scheduleOffset\(nextOffset\)/u);
+  assert.match(responsiveStyles, /--drawer-swipe-movement-y/u);
+  assert.match(responsiveStyles, /\.bottom-sheet-surface\[data-swiping\]/u);
   assert.match(primitives, /\.progress-fill \{[\s\S]*transform-origin: 0 50%;[\s\S]*transform 560ms/u);
   assert.match(confirmDialog, /<DialogShell[\s\S]*described-by="confirm-dialog-message"/u);
   assert.match(confirmDialog, /<DialogActionRow>[\s\S]*<AppButton/u);
@@ -254,7 +256,7 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   [compactMenu, issueMenu, facilityMenu].forEach((menu) => assert.match(menu, /<AdaptiveActionMenu/u));
   assert.match(issueMenu, /@click\.stop="toggle"/u);
   assert.doesNotMatch(issueMenu, /useDropdownPosition|useClickOutside/u);
-  assert.match(boardControls, /<DropdownPanel/u);
+  assert.equal([...boardControls.matchAll(/<DropdownMenu\b/gu)].length, 2);
   assert.match(settingsPanel, /<LabeledListSection[\s\S]*<IconListRow/u);
   assert.match(settingsPanel, /<LabeledListSection :label="t\('settings\.language'\)">[\s\S]*<LanguageSelector/u);
   assert.match(languageSelector, /<DropdownMenu[\s\S]*role="listbox"[\s\S]*v-for="option in languageOptions"/u);
@@ -269,8 +271,18 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   assert.doesNotMatch(primitives, /@keyframes skeleton-card-enter \{[\s\S]*transform:/u);
   assert.match(segmentedControl, /ACTIVE_SEGMENT_WIDTH_REM = 7/u);
   assert.match(segmentedControl, /:style="containerStyle"/u);
+  assert.match(segmentedControl, /segmented-control__indicator[\s\S]*--segment-active-index[\s\S]*--segment-count/u);
+  assert.doesNotMatch(segmentedControl, /ResizeObserver|offsetWidth|offsetLeft/u);
+  assert.match(segmentedControl, /<m\.div[\s\S]*:animate="indicatorMotion"[\s\S]*MOTION_SMOOTH_SPRING/u);
+  assert.match(controls, /\.segmented-control__indicator \{[\s\S]*will-change: transform/u);
   assert.match(controls, /\.segmented-control__button--active \{[\s\S]*width: 7rem/u);
   assert.match(controls, /\.segmented-control__button--compact \{[\s\S]*width: 2rem/u);
+  assert.match(app, /<MotionConfig reduced-motion="user"[\s\S]*<LazyMotion strict/u);
+  assert.match(app, /<AnimatePresence mode="popLayout"[\s\S]*MOTION_ROUTE_TRANSITION/u);
+  assert.match(uiMotion, /MOTION_SMOOTH_SPRING[\s\S]*MOTION_ROUTE_TRANSITION[\s\S]*getStaggerTransition/u);
+  [issueBoardTable, facilityTable].forEach((table) => {
+    assert.match(table, /<AnimatePresence :initial="false">[\s\S]*<m\.div[\s\S]*\blayout\b/u);
+  });
   assert.match(notifications, /<ListSurfaceRow[\s\S]*interactive[\s\S]*class="notification-group-row"/u);
   assert.match(notifications, /<ListSurfaceRow[\s\S]*as="div"[\s\S]*class="notification-group-row"/u);
   assert.match(settingsView, /v-if="loading"[\s\S]*<SurfacePanel variant="list"/u);

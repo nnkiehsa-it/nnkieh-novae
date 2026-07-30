@@ -166,7 +166,7 @@ export default defineConfig(({ mode }) => {
     ],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, './src'),
+        '@': path.resolve(import.meta.dirname, './src'),
       },
     },
     build: {
@@ -189,8 +189,23 @@ export default defineConfig(({ mode }) => {
               if (id.includes('node_modules/@firebase/app-check/') || id.includes('node_modules/firebase/app-check/')) {
                 return;
               }
-              if (id.includes('firebase')) {
-                return 'vendor-firebase';
+                if (id.includes('firebase')) {
+                  return 'vendor-firebase';
+                }
+                if (
+                  id.includes('node_modules/motion-v/')
+                  || id.includes('node_modules/motion-dom/')
+                  || id.includes('node_modules/motion-utils/')
+                ) {
+                  return 'vendor-motion';
+                }
+                if (
+                id.includes('node_modules/reka-ui/')
+                || id.includes('node_modules/@floating-ui/')
+                || id.includes('node_modules/@vueuse/')
+                || id.includes('node_modules/aria-hidden/')
+              ) {
+                return 'vendor-ui';
               }
               return 'vendor';
             }

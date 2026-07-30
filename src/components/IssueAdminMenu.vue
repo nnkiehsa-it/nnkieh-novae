@@ -4,7 +4,7 @@
     :class="compact ? 'relative inline-block text-left' : 'space-y-3 relative'"
   >
     <p v-if="!compact" class="field-label">{{ t('issue.admin.title') }}</p>
-    <AdaptiveActionMenu ref="menuRef" :title="t('issue.manageProposals')" :fallback-height="compact ? 280 : 240" :width="compact ? 176 : 240" :size="compact ? 'compact' : 'default'">
+    <AdaptiveActionMenu ref="menuRef" :title="t('issue.manageProposals')" :width="compact ? 176 : 240" :size="compact ? 'compact' : 'default'">
       <template #trigger="{ open, toggle }">
         <AppButton
           v-if="compact"

@@ -87,7 +87,10 @@ for (const file of files) {
       errors.push(`${relativePath} assembles a workflow step heading directly; compose WorkflowStepHeader instead`);
     }
     const dialogShellPath = `src${path.sep}components${path.sep}ui${path.sep}organisms${path.sep}DialogShell.vue`;
-    if (relativePath !== dialogShellPath && /<DialogOverlay\b/u.test(source)) {
+    if (
+      relativePath !== dialogShellPath
+      && /<(?:DialogContent|DialogOverlay|DialogRoot|DrawerContent|DrawerOverlay|DrawerRoot)\b/u.test(source)
+    ) {
       errors.push(`${relativePath} assembles dialog behavior directly; compose DialogShell instead`);
     }
     const dialogActionRowPath = `src${path.sep}components${path.sep}ui${path.sep}molecules${path.sep}DialogActionRow.vue`;

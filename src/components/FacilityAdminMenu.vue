@@ -1,5 +1,5 @@
 <template>
-  <AdaptiveActionMenu v-if="facility.canManageFacility" ref="menuRef" :title="t('facility.manageFacilities')" :fallback-height="120">
+  <AdaptiveActionMenu v-if="facility.canManageFacility" ref="menuRef" :title="t('facility.manageFacilities')">
     <template #trigger="{ open, toggle }">
       <AppButton
         variant="toolbar"

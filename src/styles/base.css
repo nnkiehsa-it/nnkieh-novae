@@ -358,45 +358,6 @@
     min-height: 100%;
   }
 
-  .route-fade-enter-active,
-  .route-forward-enter-active,
-  .route-back-enter-active {
-    position: relative;
-    z-index: 2;
-    transition: opacity 380ms var(--motion-ease-enter);
-    will-change: opacity;
-  }
-
-  .route-fade-leave-active,
-  .route-forward-leave-active,
-  .route-back-leave-active {
-    position: relative;
-    z-index: 1;
-    pointer-events: none;
-    transition: opacity 280ms var(--motion-ease-exit);
-    will-change: opacity;
-  }
-
-  .route-fade-enter-from,
-  .route-fade-leave-to,
-  .route-forward-enter-from,
-  .route-forward-leave-to,
-  .route-back-enter-from,
-  .route-back-leave-to {
-    opacity: 0;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .route-fade-enter-active,
-    .route-fade-leave-active,
-    .route-forward-enter-active,
-    .route-forward-leave-active,
-    .route-back-enter-active,
-    .route-back-leave-active {
-      transition-duration: 1ms;
-    }
-  }
-
   @media (max-width: 767px) {
     :root {
       --app-header-height: 3rem;

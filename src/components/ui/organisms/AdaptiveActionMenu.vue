@@ -19,7 +19,6 @@
   <DropdownMenu
     v-else
     ref="dropdownRef"
-    :fallback-height="fallbackHeight"
     :panel-class="panelClass"
     :size="size"
     :width="width"
@@ -30,33 +29,27 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, useId } from 'vue';
+import { useMediaQuery } from '@vueuse/core';
+import { ref, useId, watch } from 'vue';
 import DropdownMenu from '@/components/ui/molecules/DropdownMenu.vue';
 import DialogShell from '@/components/ui/organisms/DialogShell.vue';
 
 const props = withDefaults(defineProps<{
-  fallbackHeight?: number;
   panelClass?: string;
   size?: 'compact' | 'default' | 'search';
   title: string;
   width?: number;
 }>(), {
-  fallbackHeight: 160,
   panelClass: '',
   size: 'compact',
   width: 176,
 });
 
 const titleId = `adaptive-action-${useId()}`;
-const mobile = ref(false);
+const mobile = useMediaQuery('(max-width: 767px) and (pointer: coarse)');
 const sheetOpen = ref(false);
 const dropdownRef = ref<InstanceType<typeof DropdownMenu> | null>(null);
-let mediaQuery: MediaQueryList | null = null;
 
-function syncViewport() {
-  mobile.value = mediaQuery?.matches ?? false;
-  if (!mobile.value) sheetOpen.value = false;
-}
 function closeSheet() { sheetOpen.value = false; }
 function toggleSheet() { sheetOpen.value = !sheetOpen.value; }
 function open() {
@@ -64,12 +57,9 @@ function open() {
   else dropdownRef.value?.open();
 }
 
-onMounted(() => {
-  mediaQuery = window.matchMedia('(max-width: 767px) and (pointer: coarse)');
-  syncViewport();
-  mediaQuery.addEventListener('change', syncViewport);
+watch(mobile, (isMobile) => {
+  if (!isMobile) sheetOpen.value = false;
 });
-onBeforeUnmount(() => mediaQuery?.removeEventListener('change', syncViewport));
 
 defineExpose({ close: closeSheet, open });
 defineSlots<{

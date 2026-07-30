@@ -72,11 +72,15 @@
       </header>
 
       <div class="detail-tab-stage relative flex min-h-0 flex-1 flex-col overflow-visible">
-        <Transition name="detail-tab">
-          <div
+        <AnimatePresence mode="popLayout" :initial="false">
+          <m.div
             v-if="!showComments || activeTab === 'details'"
             key="details"
             class="flex min-h-0 flex-1 flex-col border-t border-ink-100/70 dark:border-ink-800/70"
+            :initial="{ opacity: 0, x: -18 }"
+            :animate="{ opacity: 1, x: 0 }"
+            :exit="{ opacity: 0, x: -12 }"
+            :transition="MOTION_SMOOTH_TWEEN"
           >
             <div class="scroll-shadow-space--compact min-h-0 flex-1 overflow-auto py-3 overscroll-contain">
               <slot name="details" :compact="true" :scroll-content="false" />
@@ -84,17 +88,21 @@
             <div class="shrink-0 px-0">
               <slot name="actions" :compact="true" />
             </div>
-          </div>
+          </m.div>
 
-          <div
+          <m.div
             v-else
             key="comments"
             class="min-h-0 flex-1 border-t border-ink-100/70 px-0 py-3 dark:border-ink-800/70"
             :aria-label="t(commentsLabel)"
+            :initial="{ opacity: 0, x: 18 }"
+            :animate="{ opacity: 1, x: 0 }"
+            :exit="{ opacity: 0, x: 12 }"
+            :transition="MOTION_SMOOTH_TWEEN"
           >
             <slot name="comments" :compact-header="true" />
-          </div>
-        </Transition>
+          </m.div>
+        </AnimatePresence>
       </div>
     </article>
   </section>
@@ -102,11 +110,13 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { AnimatePresence, m } from 'motion-v';
 import AppButton from '@/components/ui/atoms/AppButton.vue';
 import AppIcon from '@/components/ui/atoms/AppIcon.vue';
 import PillSegmentedControl from '@/components/ui/molecules/PillSegmentedControl.vue';
 import SurfacePanel from '@/components/ui/molecules/SurfacePanel.vue';
 import { useI18n } from '@/i18n';
+import { MOTION_SMOOTH_TWEEN } from '@/lib/ui-motion';
 
 type DetailPageTab = 'details' | 'comments';
 

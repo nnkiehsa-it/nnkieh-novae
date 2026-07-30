@@ -1,41 +1,49 @@
 <template>
-  <div ref="rootRef" class="relative inline-block text-left">
-    <slot name="trigger" :open="open" :toggle="toggle" />
+  <PopoverRoot :open="open" @update:open="handleOpenChange">
+    <PopoverAnchor as-child>
+      <div ref="rootRef" class="relative inline-block text-left">
+        <slot name="trigger" :open="open" :toggle="toggle" />
+      </div>
+    </PopoverAnchor>
 
-    <Teleport to="body">
-      <transition name="popover">
-        <DropdownPanel
+    <PopoverPortal>
+      <Transition name="popover">
+        <PopoverContent
           v-if="open"
-          ref="panelComponentRef"
-          class="fixed z-[120] origin-top-right"
-          :class="panelClass"
-          :size="size"
-          :style="dropdownStyle"
-          tabindex="-1"
-          @click.stop
-          @keydown="handlePanelKeydown"
-          @pointerdown.stop
+          as-child
+          align="end"
+          :collision-padding="12"
+          :side-offset="8"
+          position-strategy="fixed"
+          @close-auto-focus="handleCloseAutoFocus"
         >
-          <slot :close="close" />
-        </DropdownPanel>
-      </transition>
-    </Teleport>
-  </div>
+          <DropdownPanel
+            class="z-[120]"
+            :class="panelClass"
+            :size="size"
+            :style="panelStyle"
+            tabindex="-1"
+            @click.stop
+            @pointerdown.stop
+          >
+            <slot :close="close" />
+          </DropdownPanel>
+        </PopoverContent>
+      </Transition>
+    </PopoverPortal>
+  </PopoverRoot>
 </template>
 
 <script setup lang="ts">
+import { PopoverAnchor, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui';
 import { computed, nextTick, ref, useTemplateRef } from 'vue';
 import DropdownPanel from '@/components/ui/molecules/DropdownPanel.vue';
-import { useClickOutside } from '@/composables/useClickOutside';
-import { useDropdownPosition } from '@/composables/useDropdownPosition';
 
 const props = withDefaults(defineProps<{
-  fallbackHeight?: number;
   panelClass?: string;
   size?: 'compact' | 'default' | 'search';
-  width?: number;
+  width?: number | 'content';
 }>(), {
-  fallbackHeight: 160,
   panelClass: '',
   size: 'compact',
   width: 176,
@@ -43,24 +51,13 @@ const props = withDefaults(defineProps<{
 
 const open = ref(false);
 const rootRef = useTemplateRef<HTMLElement>('rootRef');
-const panelComponentRef = useTemplateRef<InstanceType<typeof DropdownPanel>>('panelComponentRef');
-const panelRef = computed(() => panelComponentRef.value?.$el as HTMLElement | null);
 let triggerElement: HTMLElement | null = null;
-
-const menuItemSelector = [
-  '.dropdown-item:not(:disabled):not([aria-disabled="true"])',
-  '[role="menuitem"]:not([aria-disabled="true"])',
-  '[role="option"]:not([aria-disabled="true"])',
-  'a[href]:not([aria-disabled="true"])',
-  'button:not(:disabled)',
-  '[tabindex]:not([tabindex="-1"]):not([aria-disabled="true"])',
-].join(',');
-const { dropdownStyle } = useDropdownPosition(
-  rootRef,
-  open,
-  { fallbackHeight: props.fallbackHeight, width: props.width },
-  panelRef,
-);
+let restoreFocusOnClose = true;
+const panelStyle = computed(() => ({
+  maxWidth: 'calc(100vw - 1.5rem)',
+  transformOrigin: 'var(--reka-popover-content-transform-origin)',
+  width: props.width === 'content' ? 'max-content' : `${props.width}px`,
+}));
 
 function resolveTriggerElement() {
   const root = rootRef.value;
@@ -73,30 +70,10 @@ function resolveTriggerElement() {
   );
 }
 
-function menuItems() {
-  return Array.from(panelRef.value?.querySelectorAll<HTMLElement>(menuItemSelector) ?? [])
-    .filter((item) => item.getClientRects().length > 0);
-}
-
-function focusItem(item: HTMLElement | undefined) {
-  item?.focus({ preventScroll: true });
-}
-
-function focusIsWithinMenu() {
-  const activeElement = document.activeElement;
-  return activeElement instanceof Node && Boolean(
-    rootRef.value?.contains(activeElement) || panelRef.value?.contains(activeElement),
-  );
-}
-
 function close(restoreFocus = true) {
   if (!open.value) return;
-  const focusTarget = restoreFocus ? triggerElement : null;
-  triggerElement = null;
+  restoreFocusOnClose = restoreFocus;
   open.value = false;
-  void nextTick(() => {
-    if (focusTarget?.isConnected) focusTarget.focus({ preventScroll: true });
-  });
 }
 
 function toggle() {
@@ -106,41 +83,28 @@ function toggle() {
   }
   triggerElement = resolveTriggerElement();
   open.value = true;
-  void nextTick(() => focusItem(menuItems()[0] ?? panelRef.value ?? undefined));
 }
 
 function openMenu() {
   if (open.value) return;
   triggerElement = resolveTriggerElement();
   open.value = true;
-  void nextTick(() => focusItem(menuItems()[0] ?? panelRef.value ?? undefined));
 }
 
-function handlePanelKeydown(event: KeyboardEvent) {
-  if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
-  const items = menuItems();
-  if (items.length === 0) return;
+function handleOpenChange(nextOpen: boolean) {
+  if (nextOpen && !triggerElement) triggerElement = resolveTriggerElement();
+  open.value = nextOpen;
+}
 
+function handleCloseAutoFocus(event: Event) {
   event.preventDefault();
-  const currentIndex = document.activeElement instanceof HTMLElement
-    ? items.indexOf(document.activeElement)
-    : -1;
-  if (event.key === 'Home') return focusItem(items[0]);
-  if (event.key === 'End') return focusItem(items.at(-1));
-
-  const offset = event.key === 'ArrowDown' ? 1 : -1;
-  const startingIndex = currentIndex === -1
-    ? (offset > 0 ? -1 : 0)
-    : currentIndex;
-  focusItem(items[(startingIndex + offset + items.length) % items.length]);
+  const focusTarget = restoreFocusOnClose ? triggerElement : null;
+  triggerElement = null;
+  restoreFocusOnClose = true;
+  void nextTick(() => {
+    if (focusTarget?.isConnected) focusTarget.focus({ preventScroll: true });
+  });
 }
-
-useClickOutside(
-  open,
-  [rootRef, panelRef],
-  () => close(focusIsWithinMenu()),
-  { escape: true },
-);
 
 defineExpose({ close, open: openMenu, toggle });
 

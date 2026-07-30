@@ -1,9 +1,14 @@
 <template>
   <Teleport to="body">
-    <Transition name="action-feedback">
-      <div
+    <AnimatePresence>
+      <m.div
         v-if="feedback"
+        :key="feedback.id"
         class="action-feedback-viewport pointer-events-none fixed z-[9999] flex justify-center md:justify-end"
+        :initial="{ opacity: 0, y: 20, scale: 0.96 }"
+        :animate="{ opacity: 1, y: 0, scale: 1 }"
+        :exit="{ opacity: 0, y: 12, scale: 0.98 }"
+        :transition="MOTION_SOFT_SPRING"
         aria-live="polite"
         aria-atomic="true"
       >
@@ -29,19 +34,21 @@
             {{ t(feedback.action.label) }}
           </AppButton>
         </SurfacePanel>
-      </div>
-    </Transition>
+      </m.div>
+    </AnimatePresence>
   </Teleport>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { AnimatePresence, m } from 'motion-v';
 import AppIcon, { type AppIconName } from '@/components/ui/atoms/AppIcon.vue';
 import AppButton from '@/components/ui/atoms/AppButton.vue';
 import LoadingSpinner from '@/components/ui/atoms/LoadingSpinner.vue';
 import SurfacePanel from '@/components/ui/molecules/SurfacePanel.vue';
 import { useActionFeedback } from '@/composables/useActionFeedback';
 import { useI18n } from '@/i18n';
+import { MOTION_SOFT_SPRING } from '@/lib/ui-motion';
 
 const { dismiss, feedback } = useActionFeedback();
 const { t } = useI18n();
