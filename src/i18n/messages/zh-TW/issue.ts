@@ -33,7 +33,7 @@ const messages = {
   'issue.proposalReadingFailed': '提案讀取失敗',
   'issue.search.loadMoreFailed': '載入更多搜尋結果失敗，請稍後再試。',
   'issue.proposalReviewPassed': '提案審核已通過',
-  'issue.noCategoryProposalsInStatus': '目前沒有{status}中的「{category}」提案。',
+  'issue.noCategoryProposalsInStatus': '目前沒有{status}的「{category}」提案。',
   'issue.review.rejectionVisibilityWarning': '提案將維持不公開；請填寫原因，以便通知提案者。',
   'issue.proposalUpdated': '提案已更新',
   'issue.serviceSetupIncomplete': '服務設定尚未完成，請稍後再試。',

@@ -27,7 +27,7 @@ const messages = {
   'facility.place': '地點',
   'facility.facilityReportDeleted': '設備案件已刪除',
   'facility.facilityReportSubmitted': '設備案件已送出',
-  'facility.noFacilityReportsInStatus': '目前沒有{status}中的設備案件',
+  'facility.noFacilityReportsInStatus': '目前沒有{status}的設備案件',
   'facility.addFacilityResult': '填寫設備處理結果',
   'facility.failedToLoadFacility': '設備案件載入失敗。',
   'facility.describeHowTheFacilityReportWasHandled': '說明設備的處理結果',
