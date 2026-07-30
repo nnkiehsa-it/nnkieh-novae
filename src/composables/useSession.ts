@@ -24,6 +24,12 @@ import { applyContentRevisionsSnapshot, ensureContentRevisionsFresh } from '@/se
 import { fetchSessionBootstrap } from '@/services/session-bootstrap';
 import { ensureCategoryCatalog, seedCategoryCatalog } from '@/composables/useCategories';
 import { seedNotificationUnreadHint } from '@/services/notifications';
+import {
+  canManageFacilityCategory,
+  canManageIssueCategory,
+  hasPermission,
+  hasRole,
+} from '@/lib/session-access';
 
 const state = reactive<SessionState>({
   initialized: false,
@@ -216,6 +222,7 @@ async function refreshVerifiedSession(user: NonNullable<SessionState['user']>, v
 
     try {
       const bootstrap = await fetchSessionBootstrap({
+        force: true,
         recordVisit: shouldRecordPlatformVisit(),
       });
       if (!isCurrentVerification(user, verificationId)) return;
@@ -234,7 +241,7 @@ async function refreshVerifiedSession(user: NonNullable<SessionState['user']>, v
       debugLog('session bootstrap failed; falling back to granular reads', bootstrapError);
       await ensureContentRevisionsFresh().catch(() => undefined);
       if (!isCurrentVerification(user, verificationId)) return;
-      const access = await fetchCurrentUserRole(false, { useBootstrap: false });
+      const access = await fetchCurrentUserRole(true, { useBootstrap: false });
       if (!isCurrentVerification(user, verificationId)) return;
       state.userRole = access.role;
       state.roles = access.roles;
@@ -337,6 +344,12 @@ export function useSession() {
   const userEmail = computed(() => String(state.user?.email ?? '').toLowerCase());
   const userRole = computed(() => state.userRole);
   const permissions = computed(() => state.permissions);
+  const accessPolicy = computed(() => ({
+    managedFacilityCategoryIds: state.managedFacilityCategoryIds,
+    managedIssueCategoryIds: state.managedIssueCategoryIds,
+    permissions: state.permissions,
+    roles: state.roles,
+  }));
 
   return {
     user: computed(() => state.user),
@@ -347,10 +360,10 @@ export function useSession() {
     managedIssueCategoryIds: computed(() => state.managedIssueCategoryIds),
     managedFacilityCategoryIds: computed(() => state.managedFacilityCategoryIds),
     setupCompleted: computed(() => state.setupCompleted),
-    canManageIssueCategory: (categoryId: string) => state.roles.includes('platform-admin') || state.managedIssueCategoryIds.includes(categoryId),
-    canManageFacilityCategory: (categoryId: string) => state.roles.includes('platform-admin') || state.managedFacilityCategoryIds.includes(categoryId),
-    can: (permission: import('@/services/session-role').PermissionCode) => permissions.value.includes(permission),
-    isAdmin: computed(() => state.roles.includes('platform-admin')),
+    canManageIssueCategory: (categoryId: string) => canManageIssueCategory(accessPolicy.value, categoryId),
+    canManageFacilityCategory: (categoryId: string) => canManageFacilityCategory(accessPolicy.value, categoryId),
+    can: (permission: import('@/services/session-role').PermissionCode) => hasPermission(accessPolicy.value, permission),
+    isAdmin: computed(() => hasRole(accessPolicy.value, 'platform-admin')),
     loading: computed(() => state.loading),
     roleLoading: computed(() => state.roleLoading),
     authChecking: computed(() => state.authChecking),

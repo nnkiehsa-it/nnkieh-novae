@@ -36,16 +36,28 @@ function urlOrigin(value: string) {
   }
 }
 
-function htmlEnvPlugin(appVersion: string, env: Record<string, string>): Plugin {
+function htmlEnvPlugin(
+  appVersion: string,
+  env: Record<string, string>,
+): Plugin {
   const apiOrigin = urlOrigin(env.VITE_API_BASE_URL ?? '');
+  const localEnvironment = /^http:\/\/(?:127\.0\.0\.1|localhost)(?::|$)/u.test(apiOrigin);
+  const authEmulatorOrigin = urlOrigin(
+    env.VITE_FIREBASE_AUTH_EMULATOR_URL
+      || process.env.VITE_FIREBASE_AUTH_EMULATOR_URL
+      || (localEnvironment ? 'http://127.0.0.1:9099' : '')
+      || '',
+  );
   const supabaseOrigin = urlOrigin(env.VITE_SUPABASE_URL ?? '');
   const supabaseRealtimeOrigin = supabaseOrigin.replace(/^http/u, 'ws');
   const connectSources = [
     "'self'",
     apiOrigin,
+    authEmulatorOrigin,
     supabaseOrigin,
     supabaseRealtimeOrigin,
     'https://*.googleapis.com',
+    'https://apis.google.com',
     'https://accounts.google.com',
     'https://www.google.com',
   ].filter(Boolean).join(' ');
@@ -56,7 +68,12 @@ function htmlEnvPlugin(appVersion: string, env: Record<string, string>): Plugin 
     "font-src 'self' data:",
     `img-src 'self' data: blob: ${apiOrigin} https://*.googleusercontent.com`.trim(),
     `connect-src ${connectSources}`,
-    'frame-src https://accounts.google.com https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/',
+    `frame-src ${[
+      authEmulatorOrigin,
+      'https://accounts.google.com',
+      'https://www.google.com/recaptcha/',
+      'https://recaptcha.google.com/recaptcha/',
+    ].filter(Boolean).join(' ')}`,
     "worker-src 'self' blob:",
     "manifest-src 'self'",
     "object-src 'none'",

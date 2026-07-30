@@ -62,6 +62,7 @@ if (hasEnvFile) {
 const scriptPath = fileURLToPath(new URL('./verify-integration-local.sh', import.meta.url));
 const keepRunning = process.argv.includes('--keep-running');
 const serve = process.argv.includes('--serve');
+const e2e = process.argv.includes('--e2e');
 const stressScale = readOption('--stress-scale');
 if (process.platform === 'win32') {
   const distro = process.env.NOVAE_WSL_DISTRO ?? 'Debian';
@@ -78,7 +79,8 @@ if (process.platform === 'win32') {
     convertPath(scriptPath),
     ...(hasEnvFile ? ['--env-file', convertPath(envFile)] : []),
     ...(keepRunning ? ['--keep-running'] : []),
-    ...(serve ? ['--serve'] : []),
+    ...(serve || e2e ? ['--serve'] : []),
+    ...(e2e ? ['--e2e'] : []),
     ...(stressScale ? ['--stress-scale', stressScale] : []),
   ]);
 } else {
@@ -86,7 +88,8 @@ if (process.platform === 'win32') {
     scriptPath,
     ...(hasEnvFile ? ['--env-file', envFile] : []),
     ...(keepRunning ? ['--keep-running'] : []),
-    ...(serve ? ['--serve'] : []),
+    ...(serve || e2e ? ['--serve'] : []),
+    ...(e2e ? ['--e2e'] : []),
     ...(stressScale ? ['--stress-scale', stressScale] : []),
   ]);
 }

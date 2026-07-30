@@ -134,6 +134,7 @@ import { useRoute, useRouter } from 'vue-router';
 import BoardCategorySelector from '@/components/BoardCategorySelector.vue';
 import AppIcon from '@/components/ui/atoms/AppIcon.vue';
 import AppButton from '@/components/ui/atoms/AppButton.vue';
+import SelectionMark from '@/components/ui/atoms/SelectionMark.vue';
 import DropdownPanel from '@/components/ui/molecules/DropdownPanel.vue';
 import PillSegmentedControl from '@/components/ui/molecules/PillSegmentedControl.vue';
 import { getDefaultIssueRouteFilter, getIssueFilterOptions, isIssueCategory } from '@/constants/categories';

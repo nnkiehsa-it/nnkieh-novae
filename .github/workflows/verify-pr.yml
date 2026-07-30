@@ -79,3 +79,9 @@ jobs:
 
       - name: Full local backend integration
         run: npm run verify:integration
+
+      - name: Install Chromium for browser E2E
+        run: npx playwright install --with-deps chromium
+
+      - name: Real browser permission and workflow E2E
+        run: npm run test:e2e

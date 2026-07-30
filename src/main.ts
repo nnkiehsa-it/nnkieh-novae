@@ -27,6 +27,10 @@ async function bootstrap() {
   initializeI18n();
   void initializeAppUpdate();
   initializeSession();
+  if (import.meta.env.DEV && import.meta.env.VITE_FIREBASE_AUTH_EMULATOR_URL) {
+    const { signInForE2e } = await import('./testing/e2e-auth');
+    window.__NOVAE_E2E__ = { signIn: signInForE2e };
+  }
 
   createApp(App).use(router).mount('#app');
 }

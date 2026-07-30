@@ -6,7 +6,6 @@
     :padded="padded"
     :persistent="persistent"
     :presentation="resolvedPresentation"
-    :style="sheetStyle"
     :transition-name="transitionName"
     :z-index-class="zIndexClass"
     @close="handleClose"
@@ -15,6 +14,7 @@
       ref="dialogRef"
       class="dialog-surface surface-card"
       :class="[paddedSurface ? 'surface-pad-lg' : '', surfaceClass, { 'bottom-sheet-surface': isSheet, 'bottom-sheet-surface--dragging': dragging }]"
+      :style="sheetStyle"
       data-dialog-root
       :role="role"
       aria-modal="true"

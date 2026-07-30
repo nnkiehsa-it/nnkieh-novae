@@ -4,6 +4,7 @@ set -euo pipefail
 ENV_FILE=""
 KEEP_RUNNING="false"
 SERVE="false"
+E2E="false"
 STRESS_SCALE="${NOVAE_STRESS_SCALE:-4}"
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -16,6 +17,11 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --serve)
+      SERVE="true"
+      shift
+      ;;
+    --e2e)
+      E2E="true"
       SERVE="true"
       shift
       ;;
@@ -396,4 +402,9 @@ echo "  API gateway:   http://localhost:8787"
 echo "  Admin login:   use Google sign-in, enter admin@integration.invalid in the emulator"
 echo "  New users:     sign out and use Google sign-in with any *@integration.invalid address"
 echo "  Stop:          press Ctrl+C"
+if [[ "$E2E" == "true" ]]; then
+  echo "[e2e] Running Playwright browser journeys"
+  "${VITE_NPM[@]}" run test:e2e:runner
+  exit 0
+fi
 wait "$VITE_PID"

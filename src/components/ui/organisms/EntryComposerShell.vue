@@ -115,7 +115,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { onBeforeRouteLeave, type NavigationGuardNext } from 'vue-router';
+import { onBeforeRouteLeave } from 'vue-router';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import AppButton from '@/components/ui/atoms/AppButton.vue';
 import AppIcon from '@/components/ui/atoms/AppIcon.vue';
@@ -184,8 +184,7 @@ const emit = defineEmits<{
 
 const blocked = computed(() => props.busy || props.uploading);
 const discardDialogOpen = ref(false);
-let pendingNavigation: NavigationGuardNext | null = null;
-let allowNextLeave = false;
+let resolvePendingNavigation: ((allow: boolean) => void) | null = null;
 const dirty = computed(() => Boolean(
   entryTitle.value.trim()
   || content.value.trim()
@@ -204,34 +203,28 @@ function requestClose() {
 
 function cancelDiscard() {
   discardDialogOpen.value = false;
-  pendingNavigation?.(false);
-  pendingNavigation = null;
+  resolvePendingNavigation?.(false);
+  resolvePendingNavigation = null;
 }
 
 function confirmClose() {
   discardDialogOpen.value = false;
-  allowNextLeave = true;
-  if (pendingNavigation) {
-    const next = pendingNavigation;
-    pendingNavigation = null;
-    next();
+  if (resolvePendingNavigation) {
+    const resolve = resolvePendingNavigation;
+    resolvePendingNavigation = null;
+    resolve(true);
     return;
   }
   emit('close');
 }
 
-onBeforeRouteLeave((_to, _from, next) => {
-  if (blocked.value) {
-    next(false);
-    return;
-  }
-  if (allowNextLeave || !dirty.value) {
-    allowNextLeave = false;
-    next();
-    return;
-  }
-  pendingNavigation = next;
+onBeforeRouteLeave(() => {
+  if (blocked.value) return false;
+  if (!dirty.value) return true;
   discardDialogOpen.value = true;
+  return new Promise<boolean>((resolve) => {
+    resolvePendingNavigation = resolve;
+  });
 });
 
 </script>

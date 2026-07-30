@@ -22,3 +22,8 @@ scripts/benchmark-db-*.sql
 # Local emulator and test logs
 firebase-debug.log
 firebase-debug.*.log
+.e2e-env*.log
+.e2e-env.pid
+playwright-report/
+test-results/
+tests/e2e/.auth/
