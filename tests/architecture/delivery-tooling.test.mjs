@@ -298,7 +298,8 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   assert.doesNotMatch(dashboardView, /dashboard-section-(?:head|title|subtitle)/u);
 
   assert.equal(packageJson.scripts['check:ui'], 'node scripts/check-ui-primitives.mjs');
-  assert.match(packageJson.scripts['verify:local'], /npm run check:ui/u);
+  assert.equal(packageJson.scripts['verify:local'], 'node scripts/run-local-verification.mjs');
+  assert.match(await read('scripts/run-local-verification.mjs'), /check-ui-primitives\.mjs/u);
   assert.match(checker, /legacy popover-panel/u);
   assert.match(checker, /hard-codes floating viewport gutters/u);
   assert.match(checker, /defines an arbitrary shadow/u);
@@ -315,8 +316,9 @@ test('pull requests and backend deployments retain the local integration gate', 
 
   assert.equal(
     packageJson.scripts['verify:all'],
-    'npm run verify:local && npm run verify:integration && npm run test:e2e',
+    'node scripts/run-local-verification.mjs --all',
   );
+  assert.match(await read('scripts/run-local-verification.mjs'), /verify-integration-local\.mjs[\s\S]*--e2e/u);
   assert.match(verifyPr, /Full local backend integration[\s\S]*npm run verify:integration/u);
   assert.match(verifyPr, /Check Cloudflare Worker[\s\S]*npm run check:worker/u);
   assert.match(verifyPr, /denoland\/setup-deno@v2[\s\S]*npm run verify:integration/u);
@@ -592,11 +594,11 @@ test('real browser E2E is isolated, complete, and enforced by CI', async () => {
   ]);
 
   assert.match(packageJson, /"test:e2e": "node scripts\/verify-integration-local\.mjs --e2e"/u);
-  assert.match(packageJson, /"verify:all": "npm run verify:local && npm run verify:integration && npm run test:e2e"/u);
+  assert.match(packageJson, /"verify:all": "node scripts\/run-local-verification\.mjs --all"/u);
   assert.match(playwrightConfig, /chromium-desktop/u);
   assert.match(playwrightConfig, /chromium-mobile/u);
   assert.match(integrationRunner, /E2E="true"/u);
-  assert.match(integrationRunner, /VITE_NPM\[@\].*run test:e2e:runner/u);
+  assert.match(integrationRunner, /VITE_NPM\[@\].*run --silent test:e2e:runner/u);
   assert.match(testBridge, /import\.meta\.env\.DEV/u);
   assert.match(testBridge, /integration\.invalid/u);
   assert.match(testBridge, /localEmulator/u);

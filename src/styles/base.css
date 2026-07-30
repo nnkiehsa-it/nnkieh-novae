@@ -2,7 +2,7 @@
 @layer base {
   :root {
     color-scheme: light;
-    --vp-font-family-base: 'HarmonyOS Sans TC', 'PingFang TC', 'Microsoft JhengHei', system-ui, sans-serif;
+    --vp-font-family-base: 'Noto Sans TC Variable', 'PingFang TC', 'Microsoft JhengHei', system-ui, sans-serif;
     --vp-font-family-mono: 'JetBrains Mono', monospace;
     --color-surface: 255 255 255;
     --color-on-surface: 38 38 38;
@@ -175,6 +175,7 @@
   body {
     @apply font-sans font-normal text-ink-900 transition-colors duration-300 dark:text-ink-50;
     font-size: 0.9375rem;
+    font-synthesis: style;
     -webkit-font-smoothing: auto;
     text-rendering: optimizeLegibility;
     letter-spacing: 0.012em;

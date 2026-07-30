@@ -14,7 +14,7 @@
 - `config/backend-actions.config.json` — Cloudflare 原生防刷群組與 Supabase 細部業務配額映射
 - `config/data-retention.config.json` — 已結案內容、通知、事件、log、暫存與維護紀錄保留期的單一設定入口
 - `structure.md` / `AGENTS.md` / `ui-design-system.md` / `design-qa.md` — 結構地圖 / 代理人規則 / 前端 UI 復用與新增設計規範 / 最近一次視覺比對紀錄
-- `package.json` — scripts（typecheck、lint、build、check:edge、Vitest 單元測試、架構測試、Playwright 真實瀏覽器 E2E、build budget、verify:local／integration／all）；`vitest.config.ts` 提供 Vue／jsdom 測試環境，`playwright.config.ts` 定義 bootstrap、桌面 Chromium 與手機 Chromium 專案
+- `package.json` — scripts（typecheck、lint、build、check:edge、Vitest 單元測試、架構測試、Playwright 真實瀏覽器 E2E、build budget、verify:local／integration／all）；本地 `test`／`verify:local`／`verify:all` 由 `scripts/run-local-verification.mjs` 統一顯示精簡進度，成功時只保留 warning，失敗時才展開診斷；`vitest.config.ts` 提供 Vue／jsdom 測試環境，`playwright.config.ts` 定義 bootstrap、桌面 Chromium 與手機 Chromium 專案
 - `index.html` / `vite.config.ts` / `vercel.json` / `firebase.json`（僅本機 Auth emulator）/ `eslint.config.js` / `tsconfig*.json` / `tailwind.config.cjs`
 - `.env.example` / `.gitignore` / `skills-lock.json`
 
@@ -151,7 +151,7 @@
 - `scripts/check-build-budget.mjs` — build 後限制字型檔數／總容量與 JS／CSS 總量，防止未使用字重或 bundle 膨脹回歸
 - `scripts/check-i18n.mjs` — 驗證中英文 key 完整對齊、英文無中文殘留、Vue 模板無任何語言的靜態可見文案／屬性、前端無硬編碼中文字串、無缺漏或直接顯示的 `text.*` key；納入 `verify:local`
 - `scripts/check-ui-primitives.mjs` — 阻止舊 dropdown 類別、任意陰影、手組卡片與各頁自行設定 viewport gutter，並確認共用 primitive 與三階陰影 token 完整；納入 `verify:local`
-- `scripts/verify-integration-local.mjs` / `verify-integration-local.sh` — Windows 自動轉入 WSL、Linux/CI 直接執行的本地 Supabase 全自動重設、database lint、Edge 啟動與整合驗證入口；`npm run test:env` 會以相同基礎再啟動 Firebase Auth emulator、Cloudflare gateway 與 Vite，並以 `scripts/check-local-auth-emulator.mjs` 驗證登入、custom claim、僅由 `ADMIN_EMAILS` 決定的平台總管理員與 Setup 路由前置狀態後才回報 Ready；`npm run test:e2e` 以同一隔離環境執行 Playwright，結束後統一清理服務；Google 登入模擬器可快速建立任意 `@integration.invalid` 新使用者，一律使用隔離測試值，不載入正式 provider credentials；自動驗證模式另啟動 FCM 收件器，實際驗證站外 topic／個人推播與通知偏好；本機 Firebase debug log、E2E auth state、trace、影片與報告由 `.gitignore` 排除
+- `scripts/verify-integration-local.mjs` / `verify-integration-local.sh` — Windows 自動轉入 WSL、Linux/CI 直接執行的本地 Supabase 全自動重設、database lint、Edge 啟動與整合驗證入口；各階段將完整輸出留在暫存 log，終端只顯示進度與 warning，失敗時才輸出相關尾端診斷；`npm run test:env` 會以相同基礎再啟動 Firebase Auth emulator、Cloudflare gateway 與 Vite，並以 `scripts/check-local-auth-emulator.mjs` 驗證登入、custom claim、僅由 `ADMIN_EMAILS` 決定的平台總管理員與 Setup 路由前置狀態後才回報 Ready；`npm run test:e2e` 以同一隔離環境執行 Playwright，結束後統一清理服務；Google 登入模擬器可快速建立任意 `@integration.invalid` 新使用者，一律使用隔離測試值，不載入正式 provider credentials；自動驗證模式另啟動 FCM 收件器，實際驗證站外 topic／個人推播與通知偏好；本機 Firebase debug log、E2E auth state、trace、影片與報告由 `.gitignore` 排除
 - 動態壓測：`npm run verify:stress` 以目前資料庫分類展開 `tests/integration/stress-workflows.test.ts`；規模可用 `--stress-scale 2..20` 調整，涵蓋多人多權限、各分類內容、巢狀留言、通知、圖片與分類刪除
 - `tests/architecture.test.mjs` / `tests/architecture/` — 薄入口加依 backend contract、data access、runtime、frontend UI、delivery tooling 分組的靜態架構回歸；共用檔案列舉／讀取集中在 `helpers.mjs`
 - `tests/unit/` — Vitest + Vue Test Utils 行為測試；除受限 browser storage、安裝提示 i18n 與分類 draft 外，`access-control-matrix.test.ts` 完整跑 role／category scope 與四種功能開關路由矩陣，`permission-actions-matrix.test.ts` 驗證提案／設備詳情與 compact menu、設定入口的顯示／隱藏／點擊，`category-access-workflows.test.ts` 驗證分類單次原子儲存失敗重試及提案／設備／公告權限 grant/revoke 按鈕

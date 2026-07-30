@@ -1,10 +1,7 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
-import '../node_modules/harmonyos-sans-webfont-splitted/dist/HarmonyOS_Sans_TC/Regular.css';
-import '../node_modules/harmonyos-sans-webfont-splitted/dist/HarmonyOS_Sans_TC/Medium.css';
-import '../node_modules/harmonyos-sans-webfont-splitted/dist/HarmonyOS_Sans_TC/Semibold.css';
-import '../node_modules/harmonyos-sans-webfont-splitted/dist/HarmonyOS_Sans_TC/Bold.css';
+import '@fontsource-variable/noto-sans-tc';
 import './style.css';
 import { initializeAppUpdate } from './composables/useAppUpdate';
 import { initializeSession } from './composables/useSession';

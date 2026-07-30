@@ -295,7 +295,8 @@ test('frontend localization follows the first-visit system language and remains 
   assert.match(issueSearch, /return t\('issue\.search\.enterTheKeywordAndPressEnterToSearch'\)/u);
   assert.match(pushPermissionPrompt, /t\([\s\S]*'app\.install\.turnOnNotifications'/u);
   assert.equal(packageJson.scripts['check:i18n'], 'node scripts/check-i18n.mjs');
-  assert.match(packageJson.scripts['verify:local'], /npm run check:i18n/u);
+  assert.equal(packageJson.scripts['verify:local'], 'node scripts/run-local-verification.mjs');
+  assert.match(await read('scripts/run-local-verification.mjs'), /check-i18n\.mjs/u);
   assert.match(i18nCheck, /English catalog is missing/u);
   assert.match(i18nCheck, /hard-coded Han string/u);
   assert.match(i18nCheck, /parseVueSfc/u);
@@ -315,6 +316,10 @@ test('integration runner gives the Supabase function server a pseudo-terminal', 
   assert.match(integrationRunner, /START_EXCLUDES="edge-runtime,imgproxy,logflare,realtime,studio,vector"/u);
   assert.match(integrationRunner, /for command_name in docker supabase curl script/u);
   assert.match(integrationRunner, /script --quiet --return --command "\$FUNCTION_SERVE_COMMAND" \/dev\/null/u);
+  assert.match(integrationRunner, /render_progress\(\)/u);
+  assert.match(integrationRunner, /run_quiet\(\)/u);
+  assert.match(integrationRunner, /COMMAND_LOG_DIR/u);
+  assert.match(integrationRunner, /tail -n 160/u);
 });
 
 test('initial setup reuses the settings-style selected category editor', async () => {

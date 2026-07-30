@@ -18,14 +18,18 @@ test('frontend keeps Firebase limited to Auth, App Check, and FCM', async () => 
 
 test('runtime fonts are local compressed subsets', async () => {
   const main = await read('src/main.ts');
+  const packageJson = JSON.parse(await read('package.json'));
   const style = await read('src/style.css');
   const baseStyle = await read('src/styles/base.css');
   const tailwindConfig = await read('tailwind.config.cjs');
   const viteConfig = await read('vite.config.ts');
 
-  assert.match(main, /harmonyos-sans-webfont-splitted/u);
+  assert.match(main, /@fontsource-variable\/noto-sans-tc/u);
+  assert.equal(packageJson.dependencies['@fontsource-variable/noto-sans-tc'], '5.3.0');
+  assert.equal(packageJson.dependencies['harmonyos-sans-webfont-splitted'], undefined);
   assert.match(baseStyle, /jetbrains-mono-latin-400-600\.woff2/u);
-  assert.match(tailwindConfig, /sans: \['HarmonyOS Sans TC', 'HarmonyOS Sans SC'/u);
+  assert.match(baseStyle, /font-synthesis: style/u);
+  assert.match(tailwindConfig, /sans: \['Noto Sans TC Variable', 'PingFang TC'/u);
   assert.doesNotMatch(tailwindConfig, /Inter/u);
   assert.doesNotMatch(viteConfig, /globPatterns:[\s\S]*woff2/u);
   assert.doesNotMatch(style, /material-symbols|Material Symbols/u);
