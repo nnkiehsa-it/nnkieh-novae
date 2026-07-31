@@ -13,7 +13,6 @@
         <header class="flex min-w-0 items-center gap-2">
           <SkeletonBlock class="h-5 w-14 shrink-0 rounded-full" />
           <SkeletonBlock class="ml-auto h-3 w-20 rounded" />
-          <SkeletonBlock v-if="showAdmin" class="h-8 w-8 shrink-0 rounded-full" />
         </header>
 
         <div class="mt-3 flex min-w-0 items-center gap-2.5">
@@ -74,14 +73,12 @@ withDefaults(
     actionShapes?: readonly SkeletonActionShape[];
     count?: number;
     loadingLabel: string;
-    showAdmin?: boolean;
     showAuthor?: boolean;
     supplement?: SkeletonSupplement;
   }>(),
   {
     actionShapes: () => [],
     count: 2,
-    showAdmin: false,
     showAuthor: true,
     supplement: 'none',
   },

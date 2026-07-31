@@ -1,10 +1,7 @@
-import { computed, ref, watch, type Ref } from 'vue';
-import { useSession } from '@/composables/useSession';
+import { ref, watch, type Ref } from 'vue';
 import { useIssueDisplay } from '@/composables/useIssueDisplay';
 import { useIssueSupport } from '@/composables/useIssueSupport';
 import { useStatusStyling } from '@/composables/useStatusStyling';
-import { useActionFeedback, type FeedbackTone } from '@/composables/useActionFeedback';
-import { useDeleteIssue } from '@/composables/useDeleteIssue';
 import type { IssueRecord } from '@/types';
 
 export function useIssueItemController(
@@ -12,23 +9,10 @@ export function useIssueItemController(
   statusVariant: 'table-row',
   onSupportChanged: (payload: { issueId: string; supported: boolean; supportCount: number }) => void,
   onOpenDetails: (payload: { issue: IssueRecord; initialTab: 'details' | 'comments' }) => void,
-  onIssueUpdated: (issue: IssueRecord) => void,
-  onIssueDeleted: (issueId: string) => void,
 ) {
-  const { canManageIssueCategory } = useSession();
-  const isAdmin = computed(() => canManageIssueCategory(issue.value.category));
-  const { show } = useActionFeedback();
   const display = useIssueDisplay(issue);
   const currentUserSupported = ref(Boolean(issue.value.currentUserSupported));
   const supportCount = ref(issue.value.support_count);
-  const {
-    isDeleteDialogOpen,
-    isDeleting,
-    actionError: deleteError,
-    confirmDelete: openDeleteDialog,
-    closeDeleteDialog,
-    performDelete: deleteSelectedIssue,
-  } = useDeleteIssue(issue.value.id);
 
   watch(
     () => [
@@ -56,47 +40,15 @@ export function useIssueItemController(
     onOpenDetails({ issue: issue.value, initialTab });
   }
 
-  function confirmDelete() {
-    if (!isAdmin.value) {
-      show('access.youDoNotHavePermissionToDeleteThisProposal', 'error');
-      return;
-    }
-    openDeleteDialog();
-  }
-
-  function showActionFeedback(message: string, tone: FeedbackTone) {
-    if (message) {
-      show(message, tone);
-    }
-  }
-
-  async function performDelete() {
-    const deletedIssueId = await deleteSelectedIssue();
-    if (deleteError.value) {
-      return;
-    }
-    if (deletedIssueId) {
-      onIssueDeleted(deletedIssueId);
-    }
-  }
-
   return {
     ...display,
-    isAdmin,
     currentUserSupported,
     supportCount,
     statusClass,
     supportClosed,
     supportProgressStyle,
     supportRemainingLabel,
-    isDeleteDialogOpen,
-    isDeleting,
-    closeDeleteDialog,
     handleSupport,
     openDetails,
-    confirmDelete,
-    performDelete,
-    onIssueUpdated,
-    showActionFeedback,
   };
 }

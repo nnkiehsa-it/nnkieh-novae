@@ -7,24 +7,9 @@
     :status-label="statusLabel"
     :time-label="primaryTimeValueLabel"
     :title="issue.title"
-    :long-press-enabled="isAdmin"
     @intent="emit('detail-intent', issue)"
-    @long-press="adminMenuRef?.open()"
     @open="openDetails()"
   >
-    <template v-if="isAdmin" #admin>
-      <IssueAdminMenu
-        ref="adminMenuRef"
-        :issue="issue"
-        :compact="true"
-        class="!space-y-0"
-        @message="(msg) => showActionFeedback(msg, 'success')"
-        @error="(err) => showActionFeedback(err, 'error')"
-        @status-changed="emit('issue-updated', $event)"
-        @delete="confirmDelete"
-      />
-    </template>
-
     <template #supplement>
       <ContentNoticePanel
         v-if="issueNoticeSummary"
@@ -76,25 +61,11 @@
         @supported="handleSupport"
       />
     </template>
-
-    <template #dialogs>
-      <ConfirmDialog
-        :open="isDeleteDialogOpen"
-        title="issue.areYouSureYouWantToDeleteThisProposal"
-        message="issue.onceDeletedThisProposalCannotBeRestored"
-        confirm-label="comments.confirmDeletion"
-        :busy="isDeleting"
-        @cancel="isDeleteDialogOpen = false"
-        @confirm="performDelete"
-      />
-    </template>
   </ContentCardShell>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toRef } from 'vue';
-import ConfirmDialog from '@/components/ConfirmDialog.vue';
-import IssueAdminMenu from '@/components/IssueAdminMenu.vue';
+import { computed, toRef } from 'vue';
 import VoteButtons from '@/components/VoteButtons.vue';
 import AppIcon from '@/components/ui/atoms/AppIcon.vue';
 import AppButton from '@/components/ui/atoms/AppButton.vue';
@@ -118,36 +89,25 @@ const emit = defineEmits<{
   'detail-intent': [issue: IssueRecord];
   'support-changed': [payload: { issueId: string; supported: boolean; supportCount: number }];
   'open-details': [payload: { issue: IssueRecord; initialTab: 'details' | 'comments' }];
-  'issue-updated': [issue: IssueRecord];
-  'issue-deleted': [issueId: string];
 }>();
 const { t } = useI18n();
-const adminMenuRef = ref<InstanceType<typeof IssueAdminMenu> | null>(null);
 
 const {
   statusLabel,
   primaryTimeValueLabel,
-  isAdmin,
   currentUserSupported,
   supportCount,
   statusClass,
   supportClosed,
   supportProgressStyle,
   supportRemainingLabel,
-  isDeleteDialogOpen,
-  isDeleting,
   handleSupport,
   openDetails,
-  confirmDelete,
-  performDelete,
-  showActionFeedback,
 } = useIssueItemController(
   toRef(props, 'issue'),
   'table-row',
   (payload) => emit('support-changed', payload),
   (payload) => emit('open-details', payload),
-  (issue) => emit('issue-updated', issue),
-  (issueId) => emit('issue-deleted', issueId),
 );
 const issueNoticeSummary = computed(() => {
   const notice = getIssueNotice(props.issue, statusLabel.value);

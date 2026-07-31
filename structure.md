@@ -83,7 +83,7 @@
 - `organisms/` — 可直接供 route view 或領域元件填入資料／slots 的完整區塊：內容卡集合與 skeleton、列表狀態、詳情殼與 route 狀態、`DialogShell`、Composer、Markdown／表格編輯器、狀態 Dialog、`ViewportFrame` 與 `RoutePageFrame`
 - 依賴方向固定為 `atoms → molecules → organisms`；同層可組合，低層不得反向 import 高層，`check:ui` 會阻止 flat path 與逆向依賴
 - `organisms/ViewportFrame.vue` / `organisms/RoutePageFrame.vue` — AppShell 只用 safe-area-aware padding 提供唯一 viewport gutter，route page 只負責 max-width、全高 flex、垂直 padding與底部導覽安全距離；不以負 margin、bleed 或頁面級 `overflow-x-hidden` 推出／裁切內容。手機 `bottom-safe` 共用 Bottom Tab 實際螢幕底距，使 Detail 的時間／操作列到 Tab 與 Tab 到螢幕底部保持相同留白
-- `organisms/ContentCardCollection.vue` / `ContentCardShell.vue` / `ContentCardSkeleton.vue` — 提案、公告、設備共用的列表狀態、卡片表面、作者／標題／時間／狀態與操作區；支援不取代可見入口的長按／右鍵快捷操作；鍵盤 focus 可立即預抓，mouse 停留 180ms 且非省流／2G／背景頁才轉發 intent，手機 pointer 不做 hover 預抓；列表與 load-more 骨架共用無陰影內層的 opacity 進場（`skeleton-card`／`skeleton-enter`），保留卡片陰影並避免 iOS WebKit 卸載殘影，領域元件只填資料及差異 slots
+- `organisms/ContentCardCollection.vue` / `ContentCardShell.vue` / `ContentCardSkeleton.vue` — 提案、公告、設備共用的列表狀態、卡片表面、作者／標題／時間／狀態與一般互動操作；列表卡片只負責開啟 detail 與內容互動，不再承載管理員長按／右鍵入口；鍵盤 focus 可立即預抓，mouse 停留 180ms 且非省流／2G／背景頁才轉發 intent，手機 pointer 不做 hover 預抓；列表與 load-more 骨架共用無陰影內層的 opacity 進場（`skeleton-card`／`skeleton-enter`），保留卡片陰影並避免 iOS WebKit 卸載殘影，領域元件只填資料及差異 slots
 - `organisms/DetailRouteState.vue` / `DetailPageShell.vue` / `SkeletonDetail.vue` — 三領域詳情共用的完整高度鏈、狀態、操作與 responsive panel；手機內容／留言使用 Motion smooth opacity 與短距方向位移；Detail 本體不再疊加 article/actions 底距，底部時間與操作列只由 RoutePageFrame 的 Bottom Tab safe gap 定位
 - `organisms/EntryComposerShell.vue` / `MarkdownImageEditor.vue` / `VisualTableEditor.vue` — 三領域共用的路由新增頁、鍵盤可視高度、未儲存離頁攔截與 Markdown／表格編輯流程；較小控制留在 molecules
 - `organisms/DialogShell.vue` / `AdaptiveActionMenu.vue` — Dialog overlay、獨立全螢幕 backdrop、ARIA、返回鍵堆疊與 dismiss/persistent 行為的唯一完整外殼；底層以 Reka Dialog／Drawer 提供 focus trap、scroll lock、鍵盤與下拉手勢，外層以共用 `dialog-surface--panel` 維持新擬態高光／內陰影與進退場 token；一般浮層在手機自適應為含標題與分組 action 的 iOS 式 Sheet，桌面使用 Reka Popover 定位；管理員與內容操作入口共用 `action-menu-trigger`、`dropdown-panel` 與圓角 action row，領域元件只填內容與 actions
@@ -99,9 +99,9 @@
 - 留言：`CommentThreadPanel`、`CommentItem`、`CommentComposer`、`IssueComments`、`AnnouncementComments`
 - 內容：`MarkdownRenderer`、`MarkdownMediaContent`、`AuthorAvatar`、`VoteButtons`；附議在卡片維持緊湊 icon-pill，在詳情頁則組合共用 `DetailActionButton`，與設備「我也遇到」共用尺寸、表面及選中狀態
 - 詳情內容：`ContentDetailPagePanel` / `ContentDetailBody` — 提案、公告、設備共用完整 DetailPageShell、標題、作者、補充訊息與 Markdown 內容排版；可組合 context notice（設備地點）及 result notice（處理結果），留言、操作與領域標籤以 slots 注入
-- 看板：`IssueBoard`、`BoardControls`、`BoardCategorySelector`、`IssueBoardTable`、`IssueTableRow`、`IssueAdminMenu`、`IssueDetailPagePanel`、`IssueDetailSupportFooter`；提案與設備共用分類選擇器，提案／設備／公告的列表操作列與卡片皆位於同一內容捲動層
-- 公告：`AnnouncementTable`、`AnnouncementTableRow`、`AnnouncementDetailPagePanel`、`AnnouncementDetailActions`、`CompactActionMenu`
-- 設備：`FacilityComposer`、`FacilityStatusDialog`、`FacilityAdminMenu`、`FacilityTable`、`FacilityTableRow`、`FacilityDetailPagePanel`、`FacilityDetailActions`；列表補充列只顯示地點與遇到人數，分類由 AppShell／BoardControls 顯示；詳情以共用 notice 表面呈現地點，並保留分類徽章。新增時標題與地點必填，詳細說明與圖片為選填；三領域共用 Composer、詳情內容、loading／錯誤、Skeleton、操作列與確認 Dialog
+- 看板：`IssueBoard`、`BoardControls`、`BoardCategorySelector`、`IssueBoardTable`、`IssueTableRow`、`IssueDetailPagePanel`、`IssueDetailSupportFooter`；提案與設備共用分類選擇器，管理員審核、狀態與刪除操作集中在 detail
+- 公告：`AnnouncementTable`、`AnnouncementTableRow`、`AnnouncementDetailPagePanel`、`AnnouncementDetailActions`、`CompactActionMenu`；`CompactActionMenu` 僅供 detail 內留言操作使用，公告列表不再顯示管理入口
+- 設備：`FacilityComposer`、`FacilityStatusDialog`、`FacilityTable`、`FacilityTableRow`、`FacilityDetailPagePanel`、`FacilityDetailActions`；列表補充列只顯示地點與遇到人數，分類由 AppShell／BoardControls 顯示；詳情以共用 notice 表面呈現地點，並保留分類徽章。新增時標題與地點必填，詳細說明與圖片為選填；管理員狀態與刪除操作集中在 detail，三領域共用 Composer、詳情內容、loading／錯誤、Skeleton、操作列與確認 Dialog
 - 分類：`categories/CategorySelectorList.vue` / `CategoryEditorCard.vue` / `CategoryManagementSection.vue` / `SetupCategorySection.vue` / `PlatformFeatureToggle.vue` — 初始設定與後續管理共用的分類選擇、表單、功能開關、唯一預設控制與永久刪除入口
 
 ---

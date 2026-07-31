@@ -48,8 +48,6 @@
           :highlight-query="committedQuery"
           @open-details="openDetails"
           @toggle-affected="handleToggleAffected"
-          @manage-status="openStatusDialog"
-          @delete="openDeleteDialog"
         />
 
         <template #sentinel>
@@ -57,25 +55,6 @@
         </template>
       </ContentListState>
     </div>
-
-    <FacilityStatusDialog
-      v-if="selectedFacility"
-      :open="statusDialogOpen"
-      :current-status="selectedFacility.status"
-      :saving="statusSaving"
-      :error="statusError"
-      @close="closeStatusDialog"
-      @submit="submitStatus"
-    />
-    <ConfirmDialog
-      :open="deleteDialogOpen"
-      title="facility.areYouSureYouWantToDeleteThisFacilityReport"
-      message="facility.deleteWarning"
-      confirm-label="comments.confirmDeletion"
-      :busy="deleting"
-      @cancel="closeDeleteDialog"
-      @confirm="confirmDelete"
-    />
   </RoutePageFrame>
 </template>
 
@@ -84,15 +63,13 @@ import RoutePageFrame from '@/components/ui/organisms/RoutePageFrame.vue';
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import BoardControls from '@/components/BoardControls.vue';
-import FacilityStatusDialog from '@/components/FacilityStatusDialog.vue';
 import FacilityTable from '@/components/FacilityTable.vue';
-import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import ContentListState from '@/components/ui/organisms/ContentListState.vue';
 import { useFacilities } from '@/composables/useFacilities';
 import { useActionFeedback } from '@/composables/useActionFeedback';
 import { useContentListRuntime } from '@/composables/useContentListRuntime';
 import { normalizeSearchText } from '@/lib/search';
-import type { FacilityStatus, FacilitySummary } from '@/types';
+import type { FacilitySummary } from '@/types';
 import { useI18n } from '@/i18n';
 import { findFacilityCategory, getDefaultFacilityCategoryId, useCategories } from '@/composables/useCategories';
 
@@ -110,7 +87,6 @@ const categoryOptions = computed(() => activeFacilityCategories.value.map((entry
 const {
   affectingFacilityId,
   bucket,
-  changeStatus,
   clearSearch,
   committedQuery,
   error,
@@ -120,17 +96,10 @@ const {
   loading,
   loadingMore,
   query,
-  remove,
   sort,
   submitSearch,
   toggleAffected,
 } = useFacilities(category);
-const selectedFacility = ref<FacilitySummary | null>(null);
-const statusDialogOpen = ref(false);
-const statusSaving = ref(false);
-const statusError = ref('');
-const deleteDialogOpen = ref(false);
-const deleting = ref(false);
 const { show } = useActionFeedback();
 const facilityPanelKey = computed(() => [
   bucket.value,
@@ -201,44 +170,4 @@ async function handleToggleAffected(facility: FacilitySummary) {
   }
 }
 
-function openStatusDialog(facility: FacilitySummary) {
-  selectedFacility.value = facility;
-  statusError.value = '';
-  statusDialogOpen.value = true;
-}
-function closeStatusDialog() {
-  if (!statusSaving.value) statusDialogOpen.value = false;
-}
-async function submitStatus(status: FacilityStatus, result: string) {
-  if (!selectedFacility.value || statusSaving.value) return;
-  statusSaving.value = true;
-  statusError.value = '';
-  try {
-    await changeStatus(selectedFacility.value, status, result);
-    statusDialogOpen.value = false;
-  } catch (caught) {
-    statusError.value = caught instanceof Error ? t(caught.message) : t('facility.updateFailedPleaseTryAgainLater');
-  } finally {
-    statusSaving.value = false;
-  }
-}
-function openDeleteDialog(facility: FacilitySummary) {
-  selectedFacility.value = facility;
-  deleteDialogOpen.value = true;
-}
-function closeDeleteDialog() {
-  if (!deleting.value) deleteDialogOpen.value = false;
-}
-async function confirmDelete() {
-  if (!selectedFacility.value || deleting.value) return;
-  deleting.value = true;
-  try {
-    await remove(selectedFacility.value);
-    deleteDialogOpen.value = false;
-  } catch (caught) {
-    show(caught instanceof Error ? t(caught.message) : t('facility.deletionFailedPleaseTryAgainLater'), 'error');
-  } finally {
-    deleting.value = false;
-  }
-}
 </script>

@@ -30,8 +30,6 @@
           :affecting="affectingFacilityId === facility.id"
           @open-details="emit('open-details', $event)"
           @toggle-affected="emit('toggle-affected', $event)"
-          @manage-status="emit('manage-status', $event)"
-          @delete="emit('delete', $event)"
         />
       </m.div>
     </AnimatePresence>
@@ -60,8 +58,6 @@ withDefaults(defineProps<{
 const emit = defineEmits<{
   'open-details': [facility: FacilitySummary];
   'toggle-affected': [facility: FacilitySummary];
-  'manage-status': [facility: FacilitySummary];
-  delete: [facility: FacilitySummary];
 }>();
 
 const listMotionTransition = {

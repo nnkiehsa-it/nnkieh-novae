@@ -10,7 +10,6 @@
         :action-shapes="['icon', 'pill']"
         :count="loadingCount"
         loading-label="announcement.announcementLoading"
-        :show-admin="canManage"
       />
     </template>
 
@@ -18,9 +17,7 @@
       v-for="announcement in announcements"
       :key="announcement.id"
       :announcement="announcement"
-      :can-manage="canManage"
       :liking="likingAnnouncementId === announcement.id"
-      @delete="emit('delete', $event)"
       @open="emit('open', $event)"
       @open-comments="emit('openComments', $event)"
       @toggle-like="emit('toggleLike', $event)"
@@ -36,22 +33,18 @@ import type { AnnouncementRecord } from '@/types';
 
 withDefaults(defineProps<{
   announcements: AnnouncementRecord[];
-  canManage?: boolean;
   likingAnnouncementId?: string;
   loading?: boolean;
   loadingCount?: number;
 }>(), {
-  canManage: false,
   likingAnnouncementId: '',
   loading: false,
   loadingCount: 2,
 });
 
 const emit = defineEmits<{
-  delete: [announcement: AnnouncementRecord];
   open: [announcement: AnnouncementRecord];
   openComments: [announcement: AnnouncementRecord];
   toggleLike: [announcement: AnnouncementRecord];
 }>();
-
 </script>

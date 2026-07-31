@@ -40,7 +40,6 @@
         <template #loading>
           <AnnouncementTable
             :announcements="[]"
-            :can-manage="isAdmin"
             :loading="true"
           />
         </template>
@@ -48,7 +47,6 @@
         <template #loading-more>
           <AnnouncementTable
             :announcements="[]"
-            :can-manage="isAdmin"
             :loading="true"
             :loading-count="1"
           />
@@ -56,9 +54,7 @@
 
         <AnnouncementTable
           :announcements="announcements"
-          :can-manage="isAdmin"
           :liking-announcement-id="likingAnnouncementId"
-          @delete="handleListDelete"
           @open="openAnnouncementDetails"
           @open-comments="(announcement) => openAnnouncementDetails(announcement, 'comments')"
           @toggle-like="handleToggleLike"
@@ -69,16 +65,6 @@
         </template>
       </ContentListState>
     </div>
-
-    <ConfirmDialog
-      :open="Boolean(deletePendingAnnouncement)"
-      title="announcement.areYouSureYouWantToDeleteThisAnnouncement"
-      message="announcement.deleteWarning"
-      confirm-label="comments.confirmDeletion"
-      :busy="deleting"
-      @cancel="closeDeleteDialog"
-      @confirm="confirmDelete"
-    />
   </RoutePageFrame>
 </template>
 
@@ -87,7 +73,6 @@ import RoutePageFrame from '@/components/ui/organisms/RoutePageFrame.vue';
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AnnouncementTable from '@/components/AnnouncementTable.vue';
-import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import AppIcon from '@/components/ui/atoms/AppIcon.vue';
 import AppButton from '@/components/ui/atoms/AppButton.vue';
 import ContentListState from '@/components/ui/organisms/ContentListState.vue';
@@ -104,15 +89,10 @@ const {
   loadMoreAnnouncements,
   refreshAnnouncements,
   likingAnnouncementId,
-  deleting,
-  deletePendingAnnouncement,
   sessionLoading,
   isAdmin,
   isAllowedUser,
   openAnnouncementDetails,
-  handleListDelete,
-  closeDeleteDialog,
-  confirmDelete,
   handleToggleLike,
 } = useAnnouncementManagement();
 

@@ -59,8 +59,6 @@
           @detail-intent="prefetchIssueDetail"
           @open-details="openIssueDetails"
           @support-changed="handleSupportChanged"
-          @issue-updated="handleIssueUpdatedFromList"
-          @issue-deleted="handleIssueDeleted"
         />
 
         <template #sentinel>
@@ -125,8 +123,6 @@ const {
   hasMoreCurrentData,
   loadMoreCurrentData,
   handleSupportChanged,
-  handleIssueUpdated,
-  handleIssueDeleted,
   refreshCurrentData,
 } = useIssueBoardData();
 const isAdmin = computed(() => activeFilter.value !== 'my-proposals' && canManageIssueCategory(activeFilter.value));
@@ -223,10 +219,6 @@ function restoreIssueBoardScroll() {
   void nextTick(() => {
     scrollElement.scrollTo({ top: savedIssueBoardScrollTop, left: 0, behavior: 'auto' });
   });
-}
-
-function handleIssueUpdatedFromList(issue: IssueRecord) {
-  void handleIssueUpdated(issue);
 }
 
 function openComposerForActiveCategory() {

@@ -3,19 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import DetailActionButton from '@/components/ui/molecules/DetailActionButton.vue';
 import DetailActionGroup from '@/components/ui/molecules/DetailActionGroup.vue';
 import FacilityDetailActions from '@/components/FacilityDetailActions.vue';
-import FacilityAdminMenu from '@/components/FacilityAdminMenu.vue';
 import IconListRow from '@/components/ui/molecules/IconListRow.vue';
-import IssueAdminMenu from '@/components/IssueAdminMenu.vue';
 import IssueDetailSupportFooter from '@/components/IssueDetailSupportFooter.vue';
 import SettingsPanelContent from '@/components/SettingsPanelContent.vue';
 import { setLocale } from '@/i18n';
 import type { FacilityRecord, IssueRecord } from '@/types';
 
 const categoryState = vi.hoisted(() => ({ issuesEnabled: true }));
-const sessionState = vi.hoisted(() => ({
-  managedIssueCategoryIds: [] as string[],
-  platformAdmin: false,
-}));
 vi.mock('@/composables/useCategories', async () => {
   const { computed } = await import('vue');
   return {
@@ -24,12 +18,6 @@ vi.mock('@/composables/useCategories', async () => {
     }),
   };
 });
-vi.mock('@/composables/useSession', () => ({
-  useSession: () => ({
-    canManageIssueCategory: (categoryId: string) =>
-      sessionState.platformAdmin || sessionState.managedIssueCategoryIds.includes(categoryId),
-  }),
-}));
 const detailActionGroupStub = {
   name: 'DetailActionGroup',
   props: {
@@ -43,13 +31,6 @@ const detailActionGroupStub = {
 };
 const passthroughStub = {
   template: '<div><slot /></div>',
-};
-const adaptiveActionMenuStub = {
-  name: 'AdaptiveActionMenu',
-  methods: {
-    close: vi.fn(),
-  },
-  template: '<div><slot :close="close" /></div>',
 };
 
 function issueFixture(overrides: Partial<IssueRecord> = {}): IssueRecord {
@@ -324,129 +305,6 @@ describe('facility detail permission actions', () => {
     expect(wrapper.emitted('manageStatus')).toHaveLength(1);
     expect(wrapper.emitted('delete')).toHaveLength(1);
     expect(wrapper.emitted('share')).toHaveLength(1);
-  });
-});
-
-describe('compact management menus', () => {
-  beforeEach(() => {
-    setLocale('en');
-    sessionState.managedIssueCategoryIds = [];
-    sessionState.platformAdmin = false;
-  });
-
-  it.each([
-    {
-      name: 'wrong-category proposal manager',
-      managed: [],
-      status: 'pending' as const,
-      labels: [],
-    },
-    {
-      name: 'reviewing proposal manager',
-      managed: ['issue-a'],
-      status: 'under-review' as const,
-      labels: ['Review proposal', 'Delete proposal'],
-    },
-    {
-      name: 'active proposal manager',
-      managed: ['issue-a'],
-      status: 'processing' as const,
-      labels: ['Change proposal status or result', 'Delete proposal'],
-    },
-    {
-      name: 'closed proposal manager',
-      managed: ['issue-a'],
-      status: 'completed' as const,
-      labels: ['Delete proposal'],
-    },
-  ])('$name sees the expected proposal menu actions', ({ labels, managed, status }) => {
-    sessionState.managedIssueCategoryIds = managed;
-    const wrapper = shallowMount(IssueAdminMenu, {
-      props: {
-        compact: true,
-        issue: issueFixture({ canManageIssue: managed.length > 0, status }),
-      },
-      global: {
-        stubs: {
-          AdaptiveActionMenu: adaptiveActionMenuStub,
-        },
-      },
-    });
-    const actualLabels = wrapper.findAll('button.dropdown-item')
-      .map((button) => button.text().trim());
-
-    expect(actualLabels).toEqual(labels);
-  });
-
-  it('opens the proposal status flow and forwards deletion', async () => {
-    sessionState.managedIssueCategoryIds = ['issue-a'];
-    const wrapper = shallowMount(IssueAdminMenu, {
-      props: {
-        compact: true,
-        issue: issueFixture({ canManageIssue: true, status: 'processing' }),
-      },
-      global: {
-        stubs: {
-          AdaptiveActionMenu: adaptiveActionMenuStub,
-        },
-      },
-    });
-    const buttons = wrapper.findAll('button.dropdown-item');
-
-    await buttons[0]?.trigger('click');
-    await wrapper.vm.$nextTick();
-    expect(wrapper.findComponent({ name: 'IssueStatusDialog' }).exists()).toBe(true);
-    await buttons[1]?.trigger('click');
-    expect(wrapper.emitted('delete')).toHaveLength(1);
-  });
-
-  it.each([
-    {
-      name: 'ordinary facility reader',
-      facility: facilityFixture(),
-      labels: [],
-    },
-    {
-      name: 'facility manager on active report',
-      facility: facilityFixture({ canManageFacility: true }),
-      labels: ['Change facility status', 'Delete facility report'],
-    },
-    {
-      name: 'facility manager on closed report',
-      facility: facilityFixture({ canManageFacility: true, status: 'completed' }),
-      labels: ['Delete facility report'],
-    },
-  ])('$name sees the expected facility menu actions', ({ facility, labels }) => {
-    const wrapper = shallowMount(FacilityAdminMenu, {
-      props: { facility },
-      global: {
-        stubs: {
-          AdaptiveActionMenu: adaptiveActionMenuStub,
-        },
-      },
-    });
-    const actualLabels = wrapper.findAll('button.dropdown-item')
-      .map((button) => button.text().trim());
-
-    expect(actualLabels).toEqual(labels);
-  });
-
-  it('forwards every visible facility menu action', async () => {
-    const wrapper = shallowMount(FacilityAdminMenu, {
-      props: { facility: facilityFixture({ canManageFacility: true }) },
-      global: {
-        stubs: {
-          AdaptiveActionMenu: adaptiveActionMenuStub,
-        },
-      },
-    });
-    const buttons = wrapper.findAll('button.dropdown-item');
-
-    await buttons[0]?.trigger('click');
-    await buttons[1]?.trigger('click');
-
-    expect(wrapper.emitted('status')).toHaveLength(1);
-    expect(wrapper.emitted('delete')).toHaveLength(1);
   });
 });
 

@@ -11,7 +11,6 @@
         :action-shapes="['icon', 'pill']"
         :count="loadingCount"
         loading-label="issue.proposalLoading"
-        :show-admin="isAdmin"
         :show-author="showAuthor"
         supplement="progress"
       />
@@ -33,8 +32,6 @@
           @detail-intent="emit('detail-intent', $event)"
           @open-details="emit('open-details', $event)"
           @support-changed="emit('support-changed', $event)"
-          @issue-updated="emit('issue-updated', $event)"
-          @issue-deleted="emit('issue-deleted', $event)"
         />
       </m.div>
     </AnimatePresence>
@@ -46,7 +43,6 @@ import IssueTableRow from './IssueTableRow.vue';
 import ContentCardCollection from '@/components/ui/organisms/ContentCardCollection.vue';
 import ContentCardSkeleton from '@/components/ui/organisms/ContentCardSkeleton.vue';
 import { AnimatePresence, m } from 'motion-v';
-import { useSession } from '@/composables/useSession';
 import type { IssueRecord } from '@/types';
 import { MOTION_SMOOTH_SPRING, MOTION_SMOOTH_TWEEN } from '@/lib/ui-motion';
 
@@ -67,11 +63,7 @@ const emit = defineEmits<{
   'detail-intent': [issue: IssueRecord];
   'support-changed': [payload: { issueId: string; supported: boolean; supportCount: number }];
   'open-details': [payload: { issue: IssueRecord; initialTab: 'details' | 'comments' }];
-  'issue-updated': [issue: IssueRecord];
-  'issue-deleted': [issueId: string];
 }>();
-
-const { isAdmin } = useSession();
 const listMotionTransition = {
   layout: MOTION_SMOOTH_SPRING,
   opacity: MOTION_SMOOTH_TWEEN,

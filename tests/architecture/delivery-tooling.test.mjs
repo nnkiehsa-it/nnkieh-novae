@@ -116,8 +116,6 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   const entryComposer = await read('src/components/ui/organisms/EntryComposerShell.vue');
   const markdownImageEditor = await read('src/components/ui/organisms/MarkdownImageEditor.vue');
   const compactMenu = await read('src/components/CompactActionMenu.vue');
-  const issueMenu = await read('src/components/IssueAdminMenu.vue');
-  const facilityMenu = await read('src/components/FacilityAdminMenu.vue');
   const boardControls = await read('src/components/BoardControls.vue');
   const loginPanel = await read('src/components/LoginPanel.vue');
   const loginView = await read('src/views/LoginView.vue');
@@ -257,9 +255,8 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   assert.match(confirmDialog, /<DialogActionRow>[\s\S]*<AppButton/u);
   assert.match(confirmDialog, /<DialogHeading[\s\S]*description-id="confirm-dialog-message"/u);
   assert.match(entryComposer, /<SurfacePanel[\s\S]*aria-labelledby="entry-composer-title"/u);
-  [compactMenu, issueMenu, facilityMenu].forEach((menu) => assert.match(menu, /<AdaptiveActionMenu/u));
-  assert.match(issueMenu, /@click\.stop="toggle"/u);
-  assert.doesNotMatch(issueMenu, /useDropdownPosition|useClickOutside/u);
+  assert.match(compactMenu, /<AdaptiveActionMenu/u);
+  assert.doesNotMatch(contentCard, /longPressEnabled|<slot name="admin"|<slot name="dialogs"/u);
   assert.equal([...boardControls.matchAll(/<DropdownMenu\b/gu)].length, 2);
   assert.match(settingsPanel, /<LabeledListSection[\s\S]*<IconListRow/u);
   assert.match(settingsPanel, /<LabeledListSection :label="t\('settings\.language'\)">[\s\S]*<LanguageSelector/u);
@@ -558,7 +555,6 @@ test('permission scopes and feature routes use the tested pure policy boundaries
   assert.match(accessMatrix, /feature-switch routing matrix/u);
   assert.match(actionMatrix, /proposal detail permission actions/u);
   assert.match(actionMatrix, /facility detail permission actions/u);
-  assert.match(actionMatrix, /compact management menus/u);
   assert.match(workflowMatrix, /category workflow controls/u);
   assert.match(workflowMatrix, /member access controls/u);
   assert.match(accessIntegration, /revoking each access scope immediately removes its reads, writes, and assignment listing/u);

@@ -6,7 +6,6 @@ import { useNetworkStatus } from '@/composables/useNetworkStatus';
 import { useSession } from '@/composables/useSession';
 import { useActionFeedback } from '@/composables/useActionFeedback';
 import {
-  deleteAnnouncement,
   fetchAnnouncementRecordById,
   setAnnouncementLike,
 } from '@/services/announcements';
@@ -25,7 +24,7 @@ export function useAnnouncementManagement() {
   const router = useRouter();
   const { can, initialized, isAllowedUser, loading: authLoading, roleLoading, user } = useSession();
   const isAdmin = computed(() => can('announcement.manage'));
-  const { show, start } = useActionFeedback();
+  const { show } = useActionFeedback();
   const { isOnline } = useNetworkStatus();
   const announcementCacheScope = computed(() => [
     initialized.value ? 'ready' : 'booting',
@@ -50,8 +49,6 @@ export function useAnnouncementManagement() {
   } = useAnnouncements({ cacheScope: announcementCacheScope });
   const liking = ref(false);
   const likingAnnouncementId = ref('');
-  const deleting = ref(false);
-  const deletePendingAnnouncement = ref<AnnouncementRecord | null>(null);
   const sessionLoading = computed(() => authLoading.value || !initialized.value);
   let realtimeUnsubscribe: (() => void) | null = null;
   const unregisterResumeHandler = registerAppResumeHandler(() => {
@@ -69,33 +66,6 @@ export function useAnnouncementManagement() {
       params: { announcementId: announcement.id },
       query: initialTab === 'comments' ? { tab: 'comments' } : undefined,
     });
-  }
-
-  function handleListDelete(announcement: AnnouncementRecord) {
-    deletePendingAnnouncement.value = announcement;
-  }
-
-  function closeDeleteDialog() {
-    if (deleting.value) return;
-    deletePendingAnnouncement.value = null;
-  }
-
-  async function confirmDelete() {
-    const announcement = deletePendingAnnouncement.value;
-    if (!announcement) return;
-
-    deleting.value = true;
-    const feedbackHandle = start('announcement.announcementBeingDeleted');
-    try {
-      await deleteAnnouncement(announcement.id);
-      removeAnnouncement(announcement.id);
-      deletePendingAnnouncement.value = null;
-      feedbackHandle.succeed('announcement.announcementHasBeenDeleted');
-    } catch (caught) {
-      feedbackHandle.fail(caught instanceof Error ? caught.message : 'announcement.announcementDeletionFailed');
-    } finally {
-      deleting.value = false;
-    }
   }
 
   async function handleToggleLike(announcement: AnnouncementRecord | null) {
@@ -228,15 +198,10 @@ export function useAnnouncementManagement() {
     refreshAnnouncements: () => refreshAnnouncementList({ force: true }),
     liking,
     likingAnnouncementId,
-    deleting,
-    deletePendingAnnouncement,
     sessionLoading,
     isAdmin,
     isAllowedUser,
     openAnnouncementDetails,
-    handleListDelete,
-    closeDeleteDialog,
-    confirmDelete,
     handleToggleLike,
   };
 }

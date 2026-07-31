@@ -374,25 +374,25 @@
 .popover-enter-active {
   transition:
     opacity 150ms var(--motion-ease-enter),
-    transform 190ms var(--motion-ease-enter);
-  will-change: transform, opacity;
+    scale 190ms var(--motion-ease-enter);
+  will-change: scale, opacity;
 }
 
 .popover-leave-active {
   transition:
     opacity 110ms var(--motion-ease-exit),
-    transform 140ms var(--motion-ease-exit);
-  will-change: transform, opacity;
+    scale 140ms var(--motion-ease-exit);
+  will-change: scale, opacity;
 }
 
 .popover-enter-from {
   opacity: 0;
-  transform: translate3d(0, 4px, 0) scale(0.985);
+  scale: 0.985;
 }
 
 .popover-leave-to {
   opacity: 0;
-  transform: translate3d(0, 2px, 0) scale(0.99);
+  scale: 0.99;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -5,14 +5,8 @@
     status-label="announcement.announcement"
     :time-label="dateLabel"
     :title="announcement.title"
-    :long-press-enabled="canManage"
-    @long-press="adminMenuRef?.open()"
     @open="emit('open', announcement)"
   >
-    <template v-if="canManage" #admin>
-      <CompactActionMenu ref="adminMenuRef" title="announcement.manageAnnouncement" @delete="emit('delete', announcement)" />
-    </template>
-
     <template #actions>
       <AppButton
         variant="toolbar"
@@ -39,9 +33,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import type { AnnouncementRecord } from '@/types';
-import CompactActionMenu from '@/components/CompactActionMenu.vue';
 import AppIcon from '@/components/ui/atoms/AppIcon.vue';
 import AppButton from '@/components/ui/atoms/AppButton.vue';
 import ContentCardShell from '@/components/ui/organisms/ContentCardShell.vue';
@@ -50,14 +43,11 @@ import { useI18n } from '@/i18n';
 
 const props = defineProps<{
   announcement: AnnouncementRecord;
-  canManage?: boolean;
   liking?: boolean;
 }>();
 const { t } = useI18n();
-const adminMenuRef = ref<InstanceType<typeof CompactActionMenu> | null>(null);
 
 const emit = defineEmits<{
-  delete: [announcement: AnnouncementRecord];
   open: [announcement: AnnouncementRecord];
   openComments: [announcement: AnnouncementRecord];
   toggleLike: [announcement: AnnouncementRecord];
