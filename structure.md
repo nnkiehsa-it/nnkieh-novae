@@ -86,7 +86,7 @@
 - `organisms/ContentCardCollection.vue` / `ContentCardShell.vue` / `ContentCardSkeleton.vue` — 提案、公告、設備共用的列表狀態、卡片表面、作者／標題／時間／狀態與操作區；支援不取代可見入口的長按／右鍵快捷操作；鍵盤 focus 可立即預抓，mouse 停留 180ms 且非省流／2G／背景頁才轉發 intent，手機 pointer 不做 hover 預抓；列表與 load-more 骨架共用無陰影內層的 opacity 進場（`skeleton-card`／`skeleton-enter`），保留卡片陰影並避免 iOS WebKit 卸載殘影，領域元件只填資料及差異 slots
 - `organisms/DetailRouteState.vue` / `DetailPageShell.vue` / `SkeletonDetail.vue` — 三領域詳情共用的完整高度鏈、狀態、操作與 responsive panel；手機內容／留言使用 Motion smooth opacity 與短距方向位移；Detail 本體不再疊加 article/actions 底距，底部時間與操作列只由 RoutePageFrame 的 Bottom Tab safe gap 定位
 - `organisms/EntryComposerShell.vue` / `MarkdownImageEditor.vue` / `VisualTableEditor.vue` — 三領域共用的路由新增頁、鍵盤可視高度、未儲存離頁攔截與 Markdown／表格編輯流程；較小控制留在 molecules
-- `organisms/DialogShell.vue` / `AdaptiveActionMenu.vue` — Dialog overlay、獨立全螢幕 backdrop、card surface、ARIA、返回鍵堆疊與 dismiss/persistent 行為的唯一完整外殼；底層以 Reka Dialog／Drawer 提供 focus trap、scroll lock、鍵盤與下拉手勢，外層保留 Novae surface 與進退場 token；一般浮層在手機自適應為可下拉 Sheet，選單共用同一份 slots 並在桌面使用 Reka Popover 定位、手機使用 Drawer；領域元件只填內容與 actions
+- `organisms/DialogShell.vue` / `AdaptiveActionMenu.vue` — Dialog overlay、獨立全螢幕 backdrop、ARIA、返回鍵堆疊與 dismiss/persistent 行為的唯一完整外殼；底層以 Reka Dialog／Drawer 提供 focus trap、scroll lock、鍵盤與下拉手勢，外層以共用 `dialog-surface--panel` 維持新擬態高光／內陰影與進退場 token；一般浮層在手機自適應為含標題與分組 action 的 iOS 式 Sheet，桌面使用 Reka Popover 定位；管理員與內容操作入口共用 `action-menu-trigger`、`dropdown-panel` 與圓角 action row，領域元件只填內容與 actions
 
 ---
 

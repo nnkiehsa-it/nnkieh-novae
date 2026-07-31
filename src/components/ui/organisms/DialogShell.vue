@@ -20,7 +20,7 @@
           <DrawerContent
             force-mount
             as="section"
-            class="dialog-surface surface-card bottom-sheet-surface"
+            class="dialog-surface dialog-surface--panel surface-card bottom-sheet-surface"
             :class="[paddedSurface ? 'surface-pad-lg' : '', surfaceClass]"
             data-dialog-root
             :role="role"
@@ -63,7 +63,7 @@
           <DialogContent
             force-mount
             as="section"
-            class="dialog-surface surface-card"
+            class="dialog-surface dialog-surface--panel surface-card"
             :class="[paddedSurface ? 'surface-pad-lg' : '', surfaceClass]"
             data-dialog-root
             :role="role"

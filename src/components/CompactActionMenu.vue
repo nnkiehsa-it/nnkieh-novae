@@ -4,7 +4,7 @@
       <AppButton
         variant="toolbar"
         size="sm"
-        class="w-8 rounded-full p-0"
+        class="action-menu-trigger w-8 rounded-full p-0"
         :class="{ 'text-ink-800 dark:text-ink-100': open }"
         :title="t(title)"
         :aria-label="t(title)"

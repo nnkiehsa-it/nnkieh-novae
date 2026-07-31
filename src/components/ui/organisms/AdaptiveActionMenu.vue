@@ -7,11 +7,13 @@
       padded
       :padded-surface="false"
       :labelled-by="titleId"
-      surface-class="adaptive-action-sheet overflow-hidden bg-surface p-4"
+      surface-class="adaptive-action-sheet"
       @close="closeSheet"
     >
-      <h2 :id="titleId" class="sr-only">{{ title }}</h2>
-      <div class="scrollbar-subtle max-h-[min(60dvh,28rem)] overflow-y-auto">
+      <header class="action-sheet-header">
+        <h2 :id="titleId" class="action-sheet-title">{{ title }}</h2>
+      </header>
+      <div class="action-sheet-actions scrollbar-subtle max-h-[min(60dvh,28rem)] overflow-y-auto">
         <slot :close="closeSheet" />
       </div>
     </DialogShell>
