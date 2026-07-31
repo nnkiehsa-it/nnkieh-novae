@@ -32,12 +32,12 @@
   padding-top: max(1.5rem, env(safe-area-inset-top));
 }
 
-.dialog-overlay:is([data-padding='none'], [data-padding='responsive']) > [data-dialog-root].dialog-surface--panel {
+.dialog-overlay[data-padding='none'] > [data-dialog-root].dialog-surface--panel {
   border-radius: 0;
   box-shadow: none;
 }
 
-.dialog-overlay:is([data-padding='none'], [data-padding='responsive']) > [data-dialog-root].dialog-surface--panel::before {
+.dialog-overlay[data-padding='none'] > [data-dialog-root].dialog-surface--panel::before {
   display: none;
 }
 
@@ -175,6 +175,14 @@
     padding-right: max(var(--dialog-safe-padding, 1rem), env(safe-area-inset-right));
     padding-top: max(var(--dialog-safe-padding, 1rem), env(safe-area-inset-top));
     width: 100%;
+  }
+
+  .dialog-overlay[data-padding='responsive'] > [data-dialog-root].dialog-surface--panel {
+    border-radius: 0;
+  }
+
+  .dialog-overlay[data-padding='responsive'] > [data-dialog-root].dialog-surface--panel::before {
+    display: none;
   }
 
   .dialog-overlay[data-padding='padded'] {
