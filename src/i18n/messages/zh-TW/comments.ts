@@ -32,6 +32,7 @@ const messages = {
   'comments.newCommentsClosed': '已關閉新留言；既有留言仍可查看。',
   'comments.newCommentsReopened': '已重新開放留言。',
   'comments.updateAvailabilityFailed': '留言設定更新失敗，請稍後再試。',
+  'comments.closedByGlobalSetting': '公告留言總開關已關閉',
   'comments.insertImage': '插入圖片',
   'comments.failedToLoadCommentsTryAgainLater': '留言載入失敗，請稍後再試。',
   'comments.viewComments': '查看留言',

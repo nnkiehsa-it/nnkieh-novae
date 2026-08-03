@@ -31,6 +31,7 @@ export interface CategoryCatalog {
 }
 
 export interface PlatformFeatures {
+  announcementCommentsEnabled: boolean;
   facilitiesEnabled: boolean;
   issuesEnabled: boolean;
 }

@@ -32,6 +32,7 @@ const messages = {
   'comments.newCommentsClosed': 'New comments are closed. Existing comments remain available.',
   'comments.newCommentsReopened': 'Comments are open again.',
   'comments.updateAvailabilityFailed': 'Unable to update comment settings. Please try again later.',
+  'comments.closedByGlobalSetting': 'Announcement comments are disabled globally',
   'comments.insertImage': 'Insert image',
   'comments.failedToLoadCommentsTryAgainLater': 'Unable to load comments. Please try again later.',
   'comments.viewComments': 'View comments',

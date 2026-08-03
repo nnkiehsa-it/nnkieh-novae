@@ -56,6 +56,7 @@ interface AnnouncementRow {
   like_count: number;
   comment_count: number;
   comments_enabled: boolean;
+  comments_override: boolean | null;
   published_at: string;
 }
 
@@ -317,6 +318,7 @@ interface AppPrivateTables {
   }>;
   system_setup: Table<{
     singleton: boolean; completed_at: string | null; completed_by: string | null;
+    announcement_comments_enabled: boolean;
     issues_enabled: boolean; facilities_enabled: boolean; updated_at: string;
   }>;
   role_assignment_audit: Table<{ id: number; uid: string; role_code: string; operation: string; actor_uid: string; created_at: string }>;
@@ -337,10 +339,12 @@ interface AppApiFunctions {
     issues_enabled: boolean; facilities_enabled: boolean;
   }, Json>;
   backend_update_platform_features: AppFunction<{
-    actor_uid: string; issues_enabled: boolean; facilities_enabled: boolean;
+    actor_uid: string; announcement_comments_enabled: boolean;
+    issues_enabled: boolean; facilities_enabled: boolean;
   }, Json>;
   backend_save_category_management: AppFunction<{
     actor_uid: string;
+    announcement_comments_enabled: boolean;
     deleted_facility_category_ids: string[];
     deleted_issue_category_ids: string[];
     facilities_enabled: boolean;

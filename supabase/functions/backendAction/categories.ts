@@ -118,6 +118,16 @@ function facilityCategoryResponse(row: Record<string, unknown>): RuntimeFacility
   };
 }
 
+async function announcementCommentsSetting(payload: JsonRecord, supabase: BackendSupabase) {
+  if (typeof payload.announcementCommentsEnabled === "boolean") {
+    return payload.announcementCommentsEnabled;
+  }
+  const { data, error } = await supabase.schema("app_private").from("system_setup")
+    .select("announcement_comments_enabled").eq("singleton", true).single();
+  if (error) throw error;
+  return data.announcement_comments_enabled !== false;
+}
+
 export async function getIssueCategories(supabase: BackendSupabase, includeInactive = false) {
   let query = supabase.schema("app_private").from("issue_categories").select("*")
     .order("sort_order", { ascending: true }).order("created_at", { ascending: true });
@@ -159,13 +169,15 @@ export async function loadCategoryCatalog(supabase: BackendSupabase, includeInac
     getIssueCategories(supabase, includeInactive),
     getFacilityCategories(supabase, includeInactive),
     supabase.schema("app_private").from("system_setup")
-      .select("issues_enabled,facilities_enabled").eq("singleton", true).single(),
+      .select("issues_enabled,facilities_enabled,announcement_comments_enabled")
+      .eq("singleton", true).single(),
   ]);
   if (setupResult.error) throw setupResult.error;
   return {
     issueCategories,
     facilityCategories,
     features: {
+      announcementCommentsEnabled: setupResult.data.announcement_comments_enabled !== false,
       facilitiesEnabled: setupResult.data.facilities_enabled !== false,
       issuesEnabled: setupResult.data.issues_enabled !== false,
     },
@@ -193,6 +205,7 @@ export async function handleCategoryAction(
     const deletedFacilityIds = deletedCategoryIds(payload.deletedFacilityCategoryIds);
     const issuesEnabled = asBoolean(payload.issuesEnabled, true);
     const facilitiesEnabled = asBoolean(payload.facilitiesEnabled, true);
+    const announcementCommentsEnabled = await announcementCommentsSetting(payload, supabase);
     const issueCategories = rawIssueCategories.map((value, index) => {
       const requested = asRecord(value);
       return {
@@ -220,6 +233,7 @@ export async function handleCategoryAction(
     }
     const { error: saveError } = await supabase.schema("app_api").rpc("backend_save_category_management", {
       actor_uid: auth.uid,
+      announcement_comments_enabled: announcementCommentsEnabled,
       deleted_facility_category_ids: deletedFacilityIds,
       deleted_issue_category_ids: deletedIssueIds,
       facilities_enabled: facilitiesEnabled,
@@ -232,8 +246,10 @@ export async function handleCategoryAction(
   }
   if (action === "savePlatformFeatures") {
     requirePermission(auth, "category.manage");
+    const announcementCommentsEnabled = await announcementCommentsSetting(payload, supabase);
     const { data, error } = await supabase.schema("app_api").rpc("backend_update_platform_features", {
       actor_uid: auth.uid,
+      announcement_comments_enabled: announcementCommentsEnabled,
       facilities_enabled: asBoolean(payload.facilitiesEnabled, true),
       issues_enabled: asBoolean(payload.issuesEnabled, true),
     });

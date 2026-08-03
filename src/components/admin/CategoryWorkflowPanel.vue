@@ -67,7 +67,7 @@
         </template>
       </CategoryManagementSection>
       <CategoryManagementSection
-        v-else
+        v-else-if="activeCategoryKind === 'facility'"
         v-model="facilityCategories"
         kind="facility"
         :disabled="!facilitiesEnabled"
@@ -87,6 +87,21 @@
           />
         </template>
       </CategoryManagementSection>
+      <section v-else class="space-y-4" aria-labelledby="announcement-comments-setting-title">
+        <div class="space-y-1">
+          <h3 id="announcement-comments-setting-title" class="text-base font-bold text-ink-950 dark:text-ink-50">
+            {{ t('adminCenter.announcementComments') }}
+          </h3>
+          <p class="text-sm leading-6 text-ink-500">{{ t('adminCenter.announcementCommentsHelp') }}</p>
+        </div>
+        <PlatformFeatureToggle
+          :label="activeFeatureToggle.label"
+          :description="activeFeatureToggle.description"
+          :enabled="activeFeatureToggle.enabled"
+          :disabled="saving"
+          @toggle="toggleFeature('announcement')"
+        />
+      </section>
       <InlineMessage v-if="featureError">{{ featureError }}</InlineMessage>
     </template>
 
@@ -128,29 +143,37 @@ const persistedIssueIds = ref<ReadonlySet<string>>(new Set());
 const persistedFacilityIds = ref<ReadonlySet<string>>(new Set());
 const deletedIssueCategoryIds = ref<string[]>([]);
 const deletedFacilityCategoryIds = ref<string[]>([]);
-const activeCategoryKind = ref<'issue' | 'facility'>('issue');
+const activeCategoryKind = ref<'announcement' | 'issue' | 'facility'>('issue');
+const announcementCommentsEnabled = ref(true);
 const issuesEnabled = ref(true);
 const facilitiesEnabled = ref(true);
 const featureError = ref('');
 const saving = ref(false);
 const saveError = ref('');
 
-const kindOptions = computed<readonly PillSegmentedControlOption<'issue' | 'facility'>[]>(() => [
-  { value: 'issue', label: t('categoryAdmin.proposalCategories'), icon: 'comment' },
-  { value: 'facility', label: t('categoryAdmin.facilityCategories'), icon: 'wrench' },
+const kindOptions = computed<readonly PillSegmentedControlOption<'announcement' | 'issue' | 'facility'>[]>(() => [
+  { value: 'issue', label: t('adminCenter.proposalTab'), icon: 'comment' },
+  { value: 'facility', label: t('adminCenter.facilityTab'), icon: 'wrench' },
+  { value: 'announcement', label: t('adminCenter.announcementTab'), icon: 'megaphone' },
 ]);
 
-const activeFeatureToggle = computed(() => activeCategoryKind.value === 'issue'
-  ? {
+const activeFeatureToggle = computed(() => {
+  if (activeCategoryKind.value === 'issue') return {
     description: 'categoryAdmin.proposalFeatureHelp',
     enabled: issuesEnabled.value,
     label: 'categoryAdmin.proposalFeature',
-  }
-  : {
+  };
+  if (activeCategoryKind.value === 'facility') return {
     description: 'categoryAdmin.facilityFeatureHelp',
     enabled: facilitiesEnabled.value,
     label: 'categoryAdmin.facilityFeature',
-  });
+  };
+  return {
+    description: 'adminCenter.announcementCommentsFeatureHelp',
+    enabled: announcementCommentsEnabled.value,
+    label: 'adminCenter.announcementCommentsFeature',
+  };
+});
 
 async function load() {
   loading.value = true;
@@ -165,6 +188,7 @@ async function load() {
     deletedFacilityCategoryIds.value = [];
     issuesEnabled.value = result.features.issuesEnabled;
     facilitiesEnabled.value = result.features.facilitiesEnabled;
+    announcementCommentsEnabled.value = result.features.announcementCommentsEnabled;
   } catch (caught) {
     error.value = t(caught instanceof Error ? caught.message : 'common.loadFailed');
   } finally {
@@ -172,10 +196,11 @@ async function load() {
   }
 }
 
-function toggleFeature(kind: 'facility' | 'issue') {
+function toggleFeature(kind: 'announcement' | 'facility' | 'issue') {
   if (loading.value || saving.value) return;
   featureError.value = '';
-  if (kind === 'facility') facilitiesEnabled.value = !facilitiesEnabled.value;
+  if (kind === 'announcement') announcementCommentsEnabled.value = !announcementCommentsEnabled.value;
+  else if (kind === 'facility') facilitiesEnabled.value = !facilitiesEnabled.value;
   else issuesEnabled.value = !issuesEnabled.value;
 }
 
@@ -185,6 +210,7 @@ async function saveAll() {
   saveError.value = '';
   try {
     const result = await saveCategoryManagement({
+      announcementCommentsEnabled: announcementCommentsEnabled.value,
       deletedFacilityCategoryIds: deletedFacilityCategoryIds.value,
       deletedIssueCategoryIds: deletedIssueCategoryIds.value,
       facilitiesEnabled: facilitiesEnabled.value,
@@ -196,6 +222,7 @@ async function saveAll() {
     issueCategories.value = result.issueCategories;
     facilitiesEnabled.value = result.features.facilitiesEnabled;
     issuesEnabled.value = result.features.issuesEnabled;
+    announcementCommentsEnabled.value = result.features.announcementCommentsEnabled;
     persistedIssueIds.value = new Set(result.issueCategories.map((category) => category.id));
     persistedFacilityIds.value = new Set(result.facilityCategories.map((category) => category.id));
     deletedIssueCategoryIds.value = [];

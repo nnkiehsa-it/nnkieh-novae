@@ -366,14 +366,17 @@ test('platform feature switches persist atomically and remain configurable after
   const categoryState = await read('src/composables/useCategories.ts');
   const noArchivingMigration = await read('supabase/migrations/202607220002_remove_category_archiving.sql');
   const draftDeletionMigration = await read('supabase/migrations/202607290001_atomic_category_draft_deletions.sql');
+  const announcementCommentSetting = await read('supabase/migrations/202608040001_announcement_comment_global_setting.sql');
 
   assert.match(migration, /issues_enabled boolean not null default true/u);
   assert.match(migration, /facilities_enabled boolean not null default true/u);
   assert.match(migration, /backend_update_platform_features/u);
   assert.match(migration, /if issues_enabled then[\s\S]*if facilities_enabled then/u);
   assert.match(categoryAction, /action === "savePlatformFeatures"[\s\S]*requirePermission\(auth, "category\.manage"\)/u);
-  assert.match(categoryAction, /features:[\s\S]*facilitiesEnabled:[\s\S]*issuesEnabled:/u);
+  assert.match(categoryAction, /features:[\s\S]*announcementCommentsEnabled:[\s\S]*facilitiesEnabled:[\s\S]*issuesEnabled:/u);
   assert.match(categoryManagement, /activeCategoryKind[\s\S]*PlatformFeatureToggle[\s\S]*saveCategoryManagement[\s\S]*saveAll/u);
+  assert.match(categoryManagement, /value: 'announcement'/u);
+  assert.match(categoryManagement, /toggleFeature\('announcement'\)/u);
   assert.match(categoryManagement, /:disabled="!issuesEnabled"[\s\S]*:disabled="!facilitiesEnabled"/u);
   assert.match(categoryManagement, /SkeletonBlock[\s\S]*skeleton-enter|SkeletonBlock[\s\S]*aria-busy/u);
   assert.match(atomicManagementMigration, /backend_save_category_management[\s\S]*for update[\s\S]*backend_update_platform_features/u);
@@ -386,6 +389,10 @@ test('platform feature switches persist atomically and remain configurable after
   assert.doesNotMatch(categoryAction, /saveIssueCategory|saveFacilityCategory|deleteCategory/u);
   assert.match(draftDeletionMigration, /deleted_issue_category_ids[\s\S]*for update[\s\S]*backend_delete_issue_category/u);
   assert.match(draftDeletionMigration, /deleted_facility_category_ids[\s\S]*backend_delete_facility_category/u);
+  assert.match(announcementCommentSetting, /announcement_comments_enabled boolean not null default true/u);
+  assert.match(announcementCommentSetting, /comments_override boolean/u);
+  assert.match(announcementCommentSetting, /apply_announcement_comment_setting[\s\S]*update app_private\.announcements/u);
+  assert.match(announcementCommentSetting, /backend_save_category_management\([\s\S]*announcement_comments_enabled boolean/u);
 });
 
 test('touch handling blocks double-tap zoom without disabling pinch zoom', async () => {

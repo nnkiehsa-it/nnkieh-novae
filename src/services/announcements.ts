@@ -55,6 +55,7 @@ function normalizeAnnouncementRecord(data: Record<string, unknown>): Announcemen
     like_count: Number(data.like_count ?? 0),
     comment_count: Number(data.comment_count ?? 0),
     comments_enabled: data.comments_enabled !== false,
+    comments_globally_enabled: data.comments_globally_enabled !== false,
     currentUserLiked: Boolean(data.currentUserLiked),
     deleting: data.deleting === true,
   };

@@ -20,13 +20,18 @@ integrationTest("runtime category setup and management enforce platform permissi
   const catalog = asRecord(await callAction("getCategoryCatalog", {}, user.auth));
   assert.ok((catalog.issueCategories as unknown[]).length >= 2);
   assert.ok((catalog.facilityCategories as unknown[]).length >= 1);
-  assert.deepEqual(asRecord(catalog.features), { facilitiesEnabled: true, issuesEnabled: true });
+  assert.deepEqual(asRecord(catalog.features), {
+    announcementCommentsEnabled: true,
+    facilitiesEnabled: true,
+    issuesEnabled: true,
+  });
   await expectActionError("permission-denied", () => callAction("getCategoryManagement", {}, user.auth));
   await expectActionError("permission-denied", () => callAction("completeInitialSetup", {
     facilitiesEnabled: false, facilityCategories: [], issuesEnabled: false,
     issueCategories: [], requestId: requestId("setup-denied"),
   }, user.auth));
   await expectActionError("permission-denied", () => callAction("savePlatformFeatures", {
+    announcementCommentsEnabled: true,
     facilitiesEnabled: false, issuesEnabled: false, requestId: requestId("features-denied"),
   }, user.auth));
 
@@ -59,7 +64,11 @@ integrationTest("runtime category setup and management enforce platform permissi
   assert.equal(repeatedSetup.setupCompleted, true);
 
   const management = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
-  assert.deepEqual(asRecord(management.features), { facilitiesEnabled: false, issuesEnabled: true });
+  assert.deepEqual(asRecord(management.features), {
+    announcementCommentsEnabled: true,
+    facilitiesEnabled: false,
+    issuesEnabled: true,
+  });
   const publicCategory = asRecord((management.issueCategories as unknown[])
     .find((value) => asRecord(value).id === "public-issues"));
   const savedIssue = asRecord(await saveCategoryDraft(admin.auth, {
@@ -74,6 +83,7 @@ integrationTest("runtime category setup and management enforce platform permissi
     upsertIssueCategories: [{ ...publicCategory, readAccess: "school" }],
   }));
   await expectActionError("permission-denied", () => callAction("saveCategoryManagement", {
+    announcementCommentsEnabled: true,
     deletedFacilityCategoryIds: [],
     deletedIssueCategoryIds: [],
     facilitiesEnabled: false,
@@ -95,7 +105,11 @@ integrationTest("runtime category setup and management enforce platform permissi
     "一般設備-修改",
   );
   const updatedCatalog = asRecord(await callAction("getCategoryCatalog", {}, user.auth));
-  assert.deepEqual(asRecord(updatedCatalog.features), { facilitiesEnabled: true, issuesEnabled: true });
+  assert.deepEqual(asRecord(updatedCatalog.features), {
+    announcementCommentsEnabled: true,
+    facilitiesEnabled: true,
+    issuesEnabled: true,
+  });
 
   const managed = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
   const managedIssues = (managed.issueCategories as unknown[]).map((value, index) => {
@@ -115,6 +129,7 @@ integrationTest("runtime category setup and management enforce platform permissi
     };
   });
   await expectActionError("permission-denied", () => callAction("saveCategoryManagement", {
+    announcementCommentsEnabled: true,
     deletedFacilityCategoryIds: [],
     deletedIssueCategoryIds: [],
     facilitiesEnabled: true,
@@ -124,6 +139,7 @@ integrationTest("runtime category setup and management enforce platform permissi
     requestId: requestId("save-management-denied"),
   }, user.auth));
   await expectActionError("validation-required", () => callAction("saveCategoryManagement", {
+    announcementCommentsEnabled: true,
     deletedFacilityCategoryIds: [],
     deletedIssueCategoryIds: [],
     facilitiesEnabled: true,
@@ -133,6 +149,7 @@ integrationTest("runtime category setup and management enforce platform permissi
     requestId: requestId("save-management-empty"),
   }, admin.auth));
   const atomicSave = asRecord(await callAction("saveCategoryManagement", {
+    announcementCommentsEnabled: false,
     deletedFacilityCategoryIds: [],
     deletedIssueCategoryIds: [],
     facilitiesEnabled: true,
@@ -142,7 +159,11 @@ integrationTest("runtime category setup and management enforce platform permissi
     requestId: requestId("save-management-ok"),
   }, admin.auth));
   assert.equal(atomicSave.success, true);
-  assert.deepEqual(asRecord(atomicSave.features), { facilitiesEnabled: true, issuesEnabled: true });
+  assert.deepEqual(asRecord(atomicSave.features), {
+    announcementCommentsEnabled: false,
+    facilitiesEnabled: true,
+    issuesEnabled: true,
+  });
   assert.equal(
     asRecord((atomicSave.issueCategories as unknown[])
       .find((value) => asRecord(value).id === "public-issues")).label,
@@ -159,4 +180,5 @@ integrationTest("runtime category setup and management enforce platform permissi
       .find((value) => asRecord(value).id === "public-issues")).label,
     "公共議題-原子",
   );
+  await saveCategoryDraft(admin.auth, { announcementCommentsEnabled: true });
 });

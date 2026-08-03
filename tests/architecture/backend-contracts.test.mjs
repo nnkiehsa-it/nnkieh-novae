@@ -596,3 +596,16 @@ test('backend list actions use stable cursor pagination at the service boundary'
   assert.match(issueSort, /issue\.closed_at \?\? issue\.created_at/u);
   assert.doesNotMatch(announcements, /sortNumber|most-liked|most-commented/u);
 });
+
+test('announcement comment availability is enforced by global and record-level database rules', async () => {
+  const migration = await read('supabase/migrations/202608040001_announcement_comment_global_setting.sql');
+  const commentAction = await read('supabase/functions/backendAction/announcement-comments.ts');
+  const detailActions = await read('src/components/AnnouncementDetailActions.vue');
+
+  assert.match(migration, /enforce_announcement_comment_availability/u);
+  assert.match(migration, /new\.comments_override is true[\s\S]*raise exception 'comments-disabled'/u);
+  assert.match(migration, /prevent_announcement_comment_when_disabled[\s\S]*setup\.announcement_comments_enabled/u);
+  assert.match(migration, /when new\.announcement_comments_enabled then coalesce\(announcement\.comments_override,\s*true\)/u);
+  assert.match(commentAction, /announcement_comments_enabled[\s\S]*throw new Error\("comments-disabled"\)/u);
+  assert.match(detailActions, /comments_globally_enabled[\s\S]*comments\.closedByGlobalSetting/u);
+});

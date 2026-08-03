@@ -71,6 +71,7 @@ export async function fetchSessionBootstrap(options: {
       },
       catalog: {
         features: {
+          announcementCommentsEnabled: result.catalog?.features?.announcementCommentsEnabled !== false,
           facilitiesEnabled: result.catalog?.features?.facilitiesEnabled !== false,
           issuesEnabled: result.catalog?.features?.issuesEnabled !== false,
         },

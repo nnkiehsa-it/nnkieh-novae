@@ -139,6 +139,7 @@ export function useAnnouncementDetail(canLoad: Ref<boolean>) {
   async function toggleComments() {
     if (!announcement.value || commentsToggleBusy.value) return;
     const current = announcement.value;
+    if (!current.comments_enabled && !current.comments_globally_enabled) return;
     const enabled = !current.comments_enabled;
     commentsToggleBusy.value = true;
     const feedback = start('comments.updatingAvailability');

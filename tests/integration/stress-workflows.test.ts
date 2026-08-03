@@ -337,6 +337,7 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
   for (const issuesEnabled of [true, false]) {
     for (const facilitiesEnabled of [true, false]) {
       const saved = asRecord(await callAction("savePlatformFeatures", {
+        announcementCommentsEnabled: true,
         facilitiesEnabled,
         issuesEnabled,
         requestId: requestId("stress-platform-features"),
@@ -344,7 +345,11 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
       assert.equal(saved.issuesEnabled, issuesEnabled);
       assert.equal(saved.facilitiesEnabled, facilitiesEnabled);
       const featureCatalog = asRecord(await callAction("getCategoryCatalog", {}, ordinaryUsers[0].auth));
-      assert.deepEqual(asRecord(featureCatalog.features), { facilitiesEnabled, issuesEnabled });
+      assert.deepEqual(asRecord(featureCatalog.features), {
+        announcementCommentsEnabled: true,
+        facilitiesEnabled,
+        issuesEnabled,
+      });
     }
   }
 

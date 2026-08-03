@@ -36,6 +36,7 @@ export async function savePlatformFeatures(features: PlatformFeatures) {
 }
 
 export async function saveCategoryManagement(input: {
+  announcementCommentsEnabled: boolean;
   deletedFacilityCategoryIds: string[];
   deletedIssueCategoryIds: string[];
   facilitiesEnabled: boolean;

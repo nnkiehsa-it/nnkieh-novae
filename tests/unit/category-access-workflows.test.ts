@@ -134,12 +134,17 @@ describe('category workflow controls', () => {
     setLocale('en');
     vi.clearAllMocks();
     categoryService.getCategoryManagement.mockResolvedValue({
-      features: { facilitiesEnabled: true, issuesEnabled: true },
+      features: {
+        announcementCommentsEnabled: true,
+        facilitiesEnabled: true,
+        issuesEnabled: true,
+      },
       facilityCategories: [facilityCategory],
       issueCategories: [issueCategory],
     });
     categoryService.saveCategoryManagement.mockImplementation(async (draft) => ({
       features: {
+        announcementCommentsEnabled: draft.announcementCommentsEnabled,
         facilitiesEnabled: draft.facilitiesEnabled,
         issuesEnabled: draft.issuesEnabled,
       },
@@ -183,11 +188,15 @@ describe('category workflow controls', () => {
       { ...facilityCategory, label: 'Renamed facility category' },
     ]);
     wrapper.getComponent(PlatformFeatureToggle).vm.$emit('toggle');
+    wrapper.getComponent(PillSegmentedControl).vm.$emit('update:modelValue', 'announcement');
+    await wrapper.vm.$nextTick();
+    wrapper.getComponent(PlatformFeatureToggle).vm.$emit('toggle');
     await wrapper.getComponent(AppButton).trigger('click');
     await flushPromises();
 
     expect(categoryService.saveCategoryManagement).toHaveBeenCalledTimes(1);
     expect(categoryService.saveCategoryManagement).toHaveBeenCalledWith({
+      announcementCommentsEnabled: false,
       deletedFacilityCategoryIds: [],
       deletedIssueCategoryIds: ['issue-a'],
       facilitiesEnabled: false,
@@ -219,6 +228,7 @@ describe('category workflow controls', () => {
     expect(categoryService.saveCategoryManagement).toHaveBeenCalledTimes(2);
     expect(categoryService.saveCategoryManagement.mock.calls[0]?.[0].issuesEnabled).toBe(false);
     expect(categoryService.saveCategoryManagement.mock.calls[1]?.[0].issuesEnabled).toBe(false);
+    expect(categoryService.saveCategoryManagement.mock.calls[0]?.[0].announcementCommentsEnabled).toBe(true);
     expect(catalog.refresh).toHaveBeenCalledTimes(1);
   });
 });

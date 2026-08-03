@@ -7,7 +7,11 @@ const issueCategories = ref<IssueCategoryConfig[]>([]);
 const facilityCategories = ref<FacilityCategoryConfig[]>([]);
 const loading = ref(false);
 const error = ref('');
-const features = ref<PlatformFeatures>({ facilitiesEnabled: true, issuesEnabled: true });
+const features = ref<PlatformFeatures>({
+  announcementCommentsEnabled: true,
+  facilitiesEnabled: true,
+  issuesEnabled: true,
+});
 const loaded = ref(false);
 let loadPromise: Promise<void> | null = null;
 
@@ -61,7 +65,11 @@ export async function ensureCategoryCatalog(force = false) {
 export function clearCategoryCatalog() {
   issueCategories.value = [];
   facilityCategories.value = [];
-  features.value = { facilitiesEnabled: true, issuesEnabled: true };
+  features.value = {
+    announcementCommentsEnabled: true,
+    facilitiesEnabled: true,
+    issuesEnabled: true,
+  };
   loaded.value = false;
   error.value = '';
   loadPromise = null;
@@ -95,6 +103,7 @@ export function getPlatformFeaturesSnapshot() {
 
 export function useCategories() {
   return {
+    announcementCommentsEnabled: computed(() => features.value.announcementCommentsEnabled),
     error: readonly(error),
     facilitiesEnabled: computed(() => features.value.facilitiesEnabled),
     facilityCategories: readonly(facilityCategories),

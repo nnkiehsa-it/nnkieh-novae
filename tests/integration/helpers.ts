@@ -155,6 +155,7 @@ export async function expectActionError(
 export async function saveCategoryDraft(
   auth: AuthContext,
   options: {
+    announcementCommentsEnabled?: boolean;
     deletedFacilityCategoryIds?: string[];
     deletedIssueCategoryIds?: string[];
     facilitiesEnabled?: boolean;
@@ -179,6 +180,8 @@ export async function saveCategoryDraft(
   };
   const features = asRecord(current.features);
   return await callAction("saveCategoryManagement", {
+    announcementCommentsEnabled: options.announcementCommentsEnabled
+      ?? Boolean(features.announcementCommentsEnabled),
     deletedFacilityCategoryIds: [...deletedFacilityIds],
     deletedIssueCategoryIds: [...deletedIssueIds],
     facilitiesEnabled: options.facilitiesEnabled ?? Boolean(features.facilitiesEnabled),
