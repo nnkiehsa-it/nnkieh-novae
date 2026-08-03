@@ -260,6 +260,7 @@
   .app-sidebar__profile-copy {
     @apply min-w-0 flex-1;
     display: none;
+    text-align: left;
   }
 
   .app-sidebar__profile-copy strong,
