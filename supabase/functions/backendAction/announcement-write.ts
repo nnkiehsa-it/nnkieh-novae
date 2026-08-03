@@ -50,10 +50,24 @@ async function setAnnouncementLike(payload: JsonRecord, auth: AuthContext, supab
   return data;
 }
 
+async function setAnnouncementCommentsEnabled(payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {
+  requirePermission(auth, "announcement.manage");
+  const announcementId = asUuid(payload.announcementId);
+  if (!announcementId || typeof payload.enabled !== "boolean") throw new Error("validation-required");
+  const { data, error } = await supabase.schema("app_api").rpc("backend_set_announcement_comments_enabled", {
+    actor_uid: auth.uid,
+    announcement_id: announcementId,
+    enabled: payload.enabled,
+  });
+  if (error) throw error;
+  return { announcement: asRecord(data) };
+}
+
 export function isAnnouncementWriteAction(action: string) {
   return action === "createAnnouncement"
     || action === "deleteAnnouncement"
-    || action === "setAnnouncementLike";
+    || action === "setAnnouncementLike"
+    || action === "setAnnouncementCommentsEnabled";
 }
 
 export async function handleAnnouncementWriteAction(
@@ -65,5 +79,6 @@ export async function handleAnnouncementWriteAction(
   if (action === "createAnnouncement") return createAnnouncement(payload, auth, supabase);
   if (action === "deleteAnnouncement") return deleteAnnouncement(payload, auth, supabase);
   if (action === "setAnnouncementLike") return setAnnouncementLike(payload, auth, supabase);
+  if (action === "setAnnouncementCommentsEnabled") return setAnnouncementCommentsEnabled(payload, auth, supabase);
   throw new Error("invalid-action");
 }

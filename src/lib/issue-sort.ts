@@ -1,4 +1,5 @@
 import type { IssueRecord, IssueSortOption, IssueStatusBucket } from '@/types';
+import { getIssueStatusBucket } from '@/lib/issue-timeline';
 
 function dateValue(value: Date | null | undefined) {
   return value?.getTime() ?? 0;
@@ -19,7 +20,7 @@ export function sortIssues(
   statusBucket: IssueStatusBucket,
   sortOption: IssueSortOption,
 ) {
-  return [...issues].sort((left, right) => {
+  return issues.filter((issue) => getIssueStatusBucket(issue) === statusBucket).sort((left, right) => {
     if (sortOption === 'most-supported') {
       const supportDifference = right.support_count - left.support_count;
       if (supportDifference !== 0) return supportDifference;

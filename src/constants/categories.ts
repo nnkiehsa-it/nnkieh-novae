@@ -71,6 +71,10 @@ export function issueAutoRejectsUnmetSupport(category: string | null | undefined
   return findIssueCategory(category)?.supportEnabled === true;
 }
 
+export function issueCategoryAllowsComments(category: string | null | undefined) {
+  return findIssueCategory(category)?.commentsEnabled === true;
+}
+
 export function getIssueResponseDeadlineDays(category: string | null | undefined) {
   return findIssueCategory(category)?.responseDeadlineDays ?? null;
 }
@@ -85,6 +89,9 @@ export function issueAllowsCommentsForStatus(
   readAccess: IssueReadAccess,
   status: IssueStatus,
 ) {
+  if (status === 'completed' || status === 'infeasible' || status === 'review-rejected' || status === 'auto-rejected') {
+    return false;
+  }
   if (readAccess === 'reviewed-school') return status === 'pending' || status === 'processing';
-  return status !== 'under-review' && status !== 'review-rejected';
+  return status !== 'under-review';
 }

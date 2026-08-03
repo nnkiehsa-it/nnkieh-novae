@@ -227,8 +227,8 @@ test('proposals, announcements, and facilities share list cards and detail panel
   rowComponents.forEach((component) => assert.match(component, /ContentCardShell/u));
   detailPanels.forEach((component) => assert.match(component, /ContentDetailPagePanel/u));
   assert.match(issueDetailPanel, /:accessible="commentsReadable"/u);
-  assert.match(issueDetailPanel, /const commentsReadable = commentsAllowedForStatus/u);
-  assert.doesNotMatch(issueDetailPanel, /const commentsReadable = computed/u);
+  assert.match(issueDetailPanel, /const commentsReadable = computed[\s\S]*status !== 'under-review'[\s\S]*status !== 'review-rejected'/u);
+  assert.match(issueDetailPanel, /const commentsEnabled = computed[\s\S]*comments_enabled[\s\S]*commentsAllowedForCategory[\s\S]*commentsAllowedForStatus/u);
   detailActionComponents.forEach((component) => assert.match(component, /DetailActionGroup/u));
   contentListConsumers.forEach((component) => {
     assert.match(component, /ContentListState/u);

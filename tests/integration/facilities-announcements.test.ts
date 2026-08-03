@@ -172,11 +172,39 @@ integrationTest("announcement.manage, likes, comments, and ownership", async () 
     requestId: requestId("announcement-comment"),
   }, user.auth));
   const commentId = String(asRecord(commentWrite.comment).id);
+  await expectActionError(
+    "permission-denied",
+    () => callAction("setAnnouncementCommentsEnabled", {
+      announcementId,
+      enabled: false,
+      requestId: requestId("announcement-comments-close-denied"),
+    }, user.auth),
+  );
+  const closedComments = asRecord(await callAction("setAnnouncementCommentsEnabled", {
+    announcementId,
+    enabled: false,
+    requestId: requestId("announcement-comments-close"),
+  }, manager.auth));
+  assert.equal(asRecord(closedComments.announcement).comments_enabled, false);
+  await expectActionError(
+    "comments-disabled",
+    () => callAction("createAnnouncementComment", {
+      announcementId,
+      content: "Must be rejected while announcement comments are closed",
+      requestId: requestId("announcement-comment-while-closed"),
+    }, stranger.auth),
+  );
   const comments = asRecord(await callAction("listAnnouncementComments", {
     announcementId,
     pageSize: 30,
   }, stranger.auth));
   assert.ok(JSON.stringify(comments).includes(commentId));
+  const reopenedComments = asRecord(await callAction("setAnnouncementCommentsEnabled", {
+    announcementId,
+    enabled: true,
+    requestId: requestId("announcement-comments-reopen"),
+  }, manager.auth));
+  assert.equal(asRecord(reopenedComments.announcement).comments_enabled, true);
   await expectActionError(
     "permission-denied",
     () => callAction("deleteAnnouncementComment", {

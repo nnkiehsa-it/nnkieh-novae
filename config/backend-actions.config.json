@@ -46,6 +46,7 @@
   "savePlatformFeatures": { "group": "admin-write", "extraLimit": "roleWriteHourly" },
   "setIssueCommentsEnabled": { "group": "admin-write", "extraLimit": "moderationWriteHourly" },
   "setAnnouncementLike": { "group": "sensitive-write", "extraLimit": "announcementLikeHourly" },
+  "setAnnouncementCommentsEnabled": { "group": "admin-write", "extraLimit": "moderationWriteHourly" },
   "setUserAccessScope": { "group": "admin-write", "extraLimit": "roleWriteHourly" },
   "toggleFacilityAffected": { "group": "sensitive-write", "extraLimit": "facilityAffectedToggleHourly" },
   "toggleSupport": { "group": "sensitive-write", "extraLimit": "supportToggleHourly" },

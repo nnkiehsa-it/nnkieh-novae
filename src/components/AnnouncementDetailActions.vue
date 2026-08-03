@@ -19,6 +19,18 @@
         <AppIcon name="thumbs-up" />
       </DetailActionButton>
     </template>
+
+    <DetailActionButton
+      v-if="canManage"
+      :disabled="commentsToggleBusy"
+      :label="announcement.comments_enabled ? 'comments.closeNewComments' : 'comments.reopenNewComments'"
+      :compact="compact"
+      :title="announcement.comments_enabled ? 'comments.closeNewComments' : 'comments.reopenNewComments'"
+      :aria-label="announcement.comments_enabled ? 'comments.closeNewComments' : 'comments.reopenNewComments'"
+      @click="emit('toggleComments')"
+    >
+      <AppIcon name="comment" />
+    </DetailActionButton>
   </DetailActionGroup>
 </template>
 
@@ -31,6 +43,7 @@ import type { AnnouncementRecord } from '@/types';
 defineProps<{
   announcement: AnnouncementRecord;
   canManage: boolean;
+  commentsToggleBusy: boolean;
   compact?: boolean;
   liking: boolean;
 }>();
@@ -39,5 +52,6 @@ const emit = defineEmits<{
   delete: [];
   share: [];
   toggleLike: [];
+  toggleComments: [];
 }>();
 </script>

@@ -36,7 +36,7 @@
     <template #actions="{ compact }">
       <IssueDetailSupportFooter
         :can-manage="issue.canManageIssue"
-        :can-toggle-comments="commentsAllowedForStatus"
+        :can-toggle-comments="commentsAllowedForStatus && commentsAllowedForCategory"
         :comments-toggle-busy="commentsToggleBusy"
         :is-admin="isAdmin"
         :compact="compact"
@@ -112,7 +112,7 @@ import ContentDetailPagePanel from '@/components/ContentDetailPagePanel.vue';
 import IssueDetailSupportFooter from '@/components/IssueDetailSupportFooter.vue';
 import IssueComments from '@/components/IssueComments.vue';
 import { useSession } from '@/composables/useSession';
-import { issueAllowsCommentsForStatus } from '@/constants/categories';
+import { issueAllowsCommentsForStatus, issueCategoryAllowsComments } from '@/constants/categories';
 import { useI18n } from '@/i18n';
 import { useActionFeedback } from '@/composables/useActionFeedback';
 import { setIssueCommentsEnabled } from '@/services/issues';
@@ -183,10 +183,15 @@ const commentsAllowedForStatus = computed(() => issueAllowsCommentsForStatus(
   props.issue.read_access,
   props.issue.status,
 ));
+const commentsAllowedForCategory = computed(() => issueCategoryAllowsComments(props.issue.category));
 // Do not load or subscribe to comments before the proposal reaches a commentable status.
 // Management access affects proposal visibility, not whether the comments panel should issue reads.
-const commentsReadable = commentsAllowedForStatus;
-const commentsEnabled = computed(() => props.issue.comments_enabled && commentsAllowedForStatus.value);
+const commentsReadable = computed(() =>
+  props.issue.status !== 'under-review' && props.issue.status !== 'review-rejected'
+);
+const commentsEnabled = computed(() =>
+  props.issue.comments_enabled && commentsAllowedForCategory.value && commentsAllowedForStatus.value
+);
 
 function handleModerate() {
   isReviewDialogOpen.value = true;

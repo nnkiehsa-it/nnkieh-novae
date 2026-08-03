@@ -22,6 +22,11 @@ async function listAnnouncementComments(payload: JsonRecord, supabase: BackendSu
 async function createAnnouncementComment(payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {
   const announcementId = asUuid(payload.announcementId);
   if (!announcementId) throw new Error("not-found");
+  const { data: announcement, error: announcementError } = await supabase.schema("app_private")
+    .from("announcements").select("comments_enabled").eq("id", announcementId).maybeSingle();
+  if (announcementError) throw announcementError;
+  if (!announcement) throw new Error("not-found");
+  if (announcement.comments_enabled === false) throw new Error("comments-disabled");
   const content = requiredMediaContent(
     payload.content,
     "comment",

@@ -16,6 +16,13 @@ interface UserIssuesSnapshot {
 
 const userIssuesCache = new Map<string, UserIssuesSnapshot>();
 
+export function invalidateUserIssueMemory(issueId: string) {
+  userIssuesCache.forEach((snapshot) => {
+    snapshot.allIssues = snapshot.allIssues.filter((issue) => issue.id !== issueId);
+    snapshot.updatedAt = 0;
+  });
+}
+
 export function useUserIssuesData(
   activeFilter: Ref<IssueBoardFilter>,
   userUid: Ref<string>,

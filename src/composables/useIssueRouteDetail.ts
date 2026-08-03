@@ -16,6 +16,8 @@ import type { IssueRecord } from '@/types';
 import { isAbortFailure } from '@/lib/request';
 import { takeIssueDetailPreview } from '@/lib/issue-detail-preview';
 import { subscribeContentRevisionChanges } from '@/services/content-revisions';
+import { invalidateIssueBucketMemory } from '@/composables/useIssueBuckets';
+import { invalidateUserIssueMemory } from '@/composables/useUserIssuesData';
 import {
   createContentCacheKey,
   getCachedContentEntry,
@@ -137,6 +139,10 @@ export function useIssueRouteDetail(
 
   function patchRouteIssue(issue: IssueRecord) {
     if (routeIssue.value?.id !== issue.id) return;
+    if (getIssueStatusBucket(routeIssue.value) !== getIssueStatusBucket(issue)) {
+      invalidateIssueBucketMemory(issue.id);
+      invalidateUserIssueMemory(issue.id);
+    }
     routeIssue.value = issueWithSupportState(issue);
     routeIssuePreview.value = false;
   }

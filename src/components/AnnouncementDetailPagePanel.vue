@@ -18,17 +18,20 @@
       <AnnouncementDetailActions
         :announcement="announcement"
         :can-manage="canManage"
+        :comments-toggle-busy="commentsToggleBusy"
         :compact="compact"
         :liking="liking"
         @delete="emit('delete')"
         @share="emit('share')"
         @toggle-like="emit('toggleLike')"
+        @toggle-comments="emit('toggleComments')"
       />
     </template>
 
     <template #comments="{ compactHeader }">
       <AnnouncementComments
         :announcement-id="announcement.id"
+        :can-compose="announcement.comments_enabled"
         :compact-header="compactHeader"
         :focus-comment-id="focusCommentId"
         class="h-full"
@@ -52,6 +55,7 @@ const { t } = useI18n();
 const props = withDefaults(defineProps<{
   announcement: AnnouncementRecord | null;
   canManage: boolean;
+  commentsToggleBusy: boolean;
   focusCommentId?: string;
   initialTab?: 'details' | 'comments';
   liking: boolean;
@@ -66,6 +70,7 @@ const emit = defineEmits<{
   share: [];
   delete: [];
   toggleLike: [];
+  toggleComments: [];
   commentCountChanged: [payload: { announcementId: string; commentCount: number }];
 }>();
 </script>

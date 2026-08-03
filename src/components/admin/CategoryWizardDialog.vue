@@ -106,7 +106,7 @@
             >
               <span class="min-w-0 flex-1">
                 <span class="block text-sm font-semibold text-ink-900 dark:text-ink-100">{{ t('categoryAdmin.allowComments') }}</span>
-                <span class="mt-0.5 block text-xs leading-5 text-ink-500">{{ t('categoryAdmin.futureProposalsOnly') }}</span>
+                <span class="mt-0.5 block text-xs leading-5 text-ink-500">{{ t('categoryAdmin.commentsAvailabilityScope') }}</span>
               </span>
               <SwitchIndicator :checked="form.commentsEnabled" />
             </ListSurfaceRow>

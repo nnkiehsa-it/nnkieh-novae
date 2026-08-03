@@ -128,14 +128,11 @@ test('configured retention covers closed content and operational records', async
   assert.match(minimizedOutbox, /payload = payload - 'content'/u);
 });
 
-test('authenticated list caching is identity scoped and browser private', async () => {
+test('mutable content lists are never stored in Cloudflare POP cache', async () => {
   const worker = await read('cloudflare/src/index.ts');
-  assert.match(worker, /AUTH_SCOPED_LIST_CACHE_TTL_SECONDS = 30/u);
-  assert.match(worker, /CACHEABLE_LIST_ACTIONS/u);
-  assert.match(worker, /requireFirebaseUid\(request, env\)[\s\S]*forwardCachedListAction/u);
-  assert.match(worker, /`\$\{uid\}\\u0000\$\{origin\}\\u0000\$\{bodyText\}`/u);
+  assert.match(worker, /requireFirebaseUid\(request, env\)[\s\S]*forward\(request, env, 'api'/u);
   assert.match(worker, /headers\.set\('cache-control', 'no-store'\)/u);
-  assert.match(worker, /workerCache\.put/u);
+  assert.doesNotMatch(worker, /CACHEABLE_LIST_ACTIONS|forwardCachedListAction|novae-action-cache|workerCache\.put/u);
 });
 
 test('facilities and author-fixed support use independent atomic storage', async () => {

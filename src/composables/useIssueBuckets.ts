@@ -33,6 +33,17 @@ interface BucketDeps {
 const globalBucketCache = new Map<string, BucketState>();
 const globalBucketVersions = new WeakMap<BucketState, number>();
 
+export function invalidateIssueBucketMemory(issueId?: string) {
+  globalBucketCache.forEach((bucket) => {
+    if (issueId) bucket.issues = bucket.issues.filter((issue) => issue.id !== issueId);
+    globalBucketVersions.set(bucket, (globalBucketVersions.get(bucket) ?? 0) + 1);
+    bucket.loading = false;
+    bucket.loadingMore = false;
+    bucket.refreshing = false;
+    bucket.updatedAt = 0;
+  });
+}
+
 function createBucketState(statusBucket: IssueStatusBucket, sortOption: IssueSortOption): BucketState {
   return reactive({
     cursor: null,
@@ -209,13 +220,7 @@ export function useIssueBuckets(deps: BucketDeps) {
   }
 
   function invalidateIssueBuckets() {
-    globalBucketCache.forEach((bucket) => {
-      bumpBucketVersion(bucket);
-      bucket.loading = false;
-      bucket.loadingMore = false;
-      bucket.refreshing = false;
-      bucket.updatedAt = 0;
-    });
+    invalidateIssueBucketMemory();
     bucketControllers.forEach((controller) => controller.abort());
     bucketControllers.clear();
   }

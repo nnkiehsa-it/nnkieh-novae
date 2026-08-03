@@ -1,6 +1,6 @@
 const messages = {
   'apiError.invalidFacilityCategory': 'This facility-report category does not exist.',
-  'apiError.commentsDisabled': 'New comments are closed for this proposal. Existing comments remain available.',
+  'apiError.commentsDisabled': 'New comments are closed for this content. Existing comments remain available.',
   'apiError.immutableCategoryPolicy': 'Read access and author visibility cannot be changed after a category is created.',
   'apiError.setupAlreadyCompleted': 'Initial setup is complete. Use category management to make changes.',
   'apiError.internal': 'The service is temporarily unable to process the request. Please try again later.',

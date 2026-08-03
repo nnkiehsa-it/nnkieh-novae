@@ -1,6 +1,7 @@
 <template>
   <CommentThreadPanel
     :can-delete-comment="canDeleteThreadComment"
+    :can-compose="canCompose"
     :comments="comments"
     :compact-header="compactHeader"
     :deleting-id="deletingId"
@@ -29,10 +30,12 @@ import type { DiscussionCommentRecord } from '@/types';
 
 const props = withDefaults(defineProps<{
   announcementId: string;
+  canCompose?: boolean;
   compactHeader?: boolean;
   focusCommentId?: string;
 }>(), {
   compactHeader: false,
+  canCompose: true,
   focusCommentId: '',
 });
 

@@ -166,6 +166,9 @@ export const backendActionDefinitions = [
     idempotent: true, requiredPermission: "announcement.manage", requiresRequestId: true,
   }),
   idempotentWrite("setAnnouncementLike", "announcement", "sensitive-write", announcementHandler),
+  action("setAnnouncementCommentsEnabled", "announcement", "admin-write", announcementHandler, {
+    idempotent: true, requiredPermission: "announcement.manage", requiresRequestId: true,
+  }),
   action("listAnnouncementComments", "announcement", "read", announcementHandler),
   idempotentWrite("createAnnouncementComment", "announcement", "sensitive-write", announcementHandler),
   idempotentWrite("deleteAnnouncementComment", "announcement", "sensitive-write", announcementHandler),

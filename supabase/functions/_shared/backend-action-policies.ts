@@ -163,6 +163,10 @@ export const BACKEND_ACTION_POLICIES = {
     "group": "sensitive-write",
     "extraLimit": "announcementLikeHourly"
   },
+  "setAnnouncementCommentsEnabled": {
+    "group": "admin-write",
+    "extraLimit": "moderationWriteHourly"
+  },
   "setUserAccessScope": {
     "group": "admin-write",
     "extraLimit": "roleWriteHourly"

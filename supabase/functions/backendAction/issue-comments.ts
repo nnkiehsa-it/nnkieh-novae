@@ -38,7 +38,10 @@ async function createComment(payload: JsonRecord, auth: AuthContext, supabase: B
   const issueId = asUuid(payload.issueId);
   if (!issueId) throw new Error("not-found");
   const issue = await selectIssue(supabase, issueId);
-  if (issue.comments_enabled === false) throw new Error("comments-disabled");
+  if (
+    issue.comments_enabled === false
+    || ["completed", "infeasible", "review-rejected", "auto-rejected"].includes(asString(issue.status))
+  ) throw new Error("comments-disabled");
   const content = requiredMediaContent(
     payload.content,
     "comment",

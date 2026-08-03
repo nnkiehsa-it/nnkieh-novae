@@ -236,6 +236,7 @@ export interface AnnouncementRecord {
   published_at: Date | null;
   like_count: number;
   comment_count: number;
+  comments_enabled: boolean;
   currentUserLiked: boolean;
   deleting?: boolean;
 }

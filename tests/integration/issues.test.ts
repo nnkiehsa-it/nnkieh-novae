@@ -63,11 +63,43 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     { issueId: publicIssueId },
     owner.auth,
   )).issue);
-  assert.equal(unchangedExistingIssue.comments_enabled, true);
+  assert.equal(unchangedExistingIssue.comments_enabled, false);
+  await expectActionError(
+    "comments-disabled",
+    () => callAction("setIssueCommentsEnabled", {
+      enabled: true,
+      issueId: publicIssueId,
+      requestId: requestId("category-disabled-reopen-comments"),
+    }, publicManager.auth),
+  );
   assert.equal(unchangedExistingIssue.support_goal, publicIssue.support_goal);
   await saveCategoryDraft(admin.auth, {
     upsertIssueCategories: [originalPublicCategory],
   });
+  const stillClosedAfterCategoryReopen = asRecord(asRecord(await callAction(
+    "getIssue",
+    { issueId: publicIssueId },
+    owner.auth,
+  )).issue);
+  assert.equal(stillClosedAfterCategoryReopen.comments_enabled, true);
+
+  await callAction("setIssueCommentsEnabled", {
+    enabled: false,
+    issueId: publicIssueId,
+    requestId: requestId("manual-close-before-category-cycle"),
+  }, publicManager.auth);
+  await saveCategoryDraft(admin.auth, {
+    upsertIssueCategories: [{ ...originalPublicCategory, commentsEnabled: false }],
+  });
+  await saveCategoryDraft(admin.auth, {
+    upsertIssueCategories: [originalPublicCategory],
+  });
+  const manuallyClosedAfterCategoryReopen = asRecord(asRecord(await callAction(
+    "getIssue",
+    { issueId: publicIssueId },
+    owner.auth,
+  )).issue);
+  assert.equal(manuallyClosedAfterCategoryReopen.comments_enabled, false);
 
   const immutableSnapshotWrite = await supabase.schema("app_private").from("issues")
     .update({ read_access: "school" }).eq("id", publicIssueId);
@@ -143,6 +175,12 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     status: "pending",
   }, publicManager.auth));
   assert.equal(asRecord(approved.issue).status, "pending");
+  const reopenedAfterCategoryEnabled = asRecord(await callAction("setIssueCommentsEnabled", {
+    enabled: true,
+    issueId: publicIssueId,
+    requestId: requestId("reopen-after-category-enabled"),
+  }, publicManager.auth));
+  assert.equal(asRecord(reopenedAfterCategoryEnabled.issue).comments_enabled, true);
 
   await expectActionError(
     "permission-denied",
@@ -237,6 +275,21 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     commentId: String(asRecord(managedCommentWrite.comment).id),
     requestId: requestId("manager-delete-comment"),
   }, publicManager.auth);
+
+  const completedIssue = asRecord(await callAction("moderateIssueStatus", {
+    issueId: publicIssueId,
+    requestId: requestId("complete-before-comment-reopen-check"),
+    status: "completed",
+  }, publicManager.auth));
+  assert.equal(asRecord(completedIssue.issue).comments_enabled, false);
+  await expectActionError(
+    "comments-disabled",
+    () => callAction("setIssueCommentsEnabled", {
+      enabled: true,
+      issueId: publicIssueId,
+      requestId: requestId("closed-issue-reopen-comments"),
+    }, publicManager.auth),
+  );
 
   const privateIssue = await createIssue(owner, "rights-maintenance", "private");
   const privateIssueId = String(privateIssue.id);

@@ -21,6 +21,7 @@ import { subscribeContentRevisionChanges } from '@/services/content-revisions';
 import {
   deleteAnnouncement,
   fetchAnnouncementRecordById,
+  setAnnouncementCommentsEnabled,
   setAnnouncementLike,
 } from '@/services/announcements';
 import { subscribeContentRealtimeEvents } from '@/services/realtime-events';
@@ -38,6 +39,7 @@ export function useAnnouncementDetail(canLoad: Ref<boolean>) {
   const loading = ref(false);
   const liking = ref(false);
   const deleting = ref(false);
+  const commentsToggleBusy = ref(false);
   const deleteDialogOpen = ref(false);
   const isAdmin = computed(() => can('announcement.manage'));
   const { focusCommentId, initialTab } = useDetailRouteQuery();
@@ -131,6 +133,25 @@ export function useAnnouncementDetail(canLoad: Ref<boolean>) {
       show(caught instanceof Error ? caught.message : 'facility.operationFailedPleaseTryAgainLater', 'error');
     } finally {
       liking.value = false;
+    }
+  }
+
+  async function toggleComments() {
+    if (!announcement.value || commentsToggleBusy.value) return;
+    const current = announcement.value;
+    const enabled = !current.comments_enabled;
+    commentsToggleBusy.value = true;
+    const feedback = start('comments.updatingAvailability');
+    try {
+      const updated = await setAnnouncementCommentsEnabled(current.id, enabled);
+      if (announcement.value?.id !== current.id) return;
+      announcement.value = updated;
+      patchCachedContent<AnnouncementRecord>(detailCacheKey(current.id), () => updated);
+      feedback.succeed(enabled ? 'comments.newCommentsReopened' : 'comments.newCommentsClosed');
+    } catch {
+      feedback.fail('comments.updateAvailabilityFailed');
+    } finally {
+      commentsToggleBusy.value = false;
     }
   }
 
@@ -269,6 +290,7 @@ export function useAnnouncementDetail(canLoad: Ref<boolean>) {
   return {
     announcement,
     closeDeleteDialog,
+    commentsToggleBusy,
     confirmDelete,
     copyUrl,
     deleteDialogOpen,
@@ -281,6 +303,7 @@ export function useAnnouncementDetail(canLoad: Ref<boolean>) {
     loading,
     openDeleteDialog,
     toggleLike,
+    toggleComments,
     updateCommentCount,
   };
 }
