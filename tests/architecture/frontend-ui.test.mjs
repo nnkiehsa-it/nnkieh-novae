@@ -88,6 +88,14 @@ test('primary navigation keeps desktop chrome and persistent mobile navigation',
   assert.doesNotMatch(app, /flex-1 overflow-x-hidden/u);
   assert.match(appShell, /app-main-content relative flex flex-1 flex-col overflow-auto/u);
   assert.match(appShell, /<AppMobileHeader[\s\S]*<ViewportFrame as="main"[\s\S]*<slot \/>/u);
+  assert.match(appShell, /:data-detail-route="isDetailRoute \? 'true' : 'false'"/u);
+  assert.match(appShell, /DETAIL_ROUTE_NAMES = new Set\(\['announcement-detail', 'facility-detail', 'issue-detail'\]\)/u);
+  assert.match(appShell, /contentScrolled\.value = false;[\s\S]*restoredScrollTop[\s\S]*contentScrolled\.value = restoredScrollTop > 8/u);
+  assert.match(baseStyles, /--app-header-height: var\(--tap-target\)/u);
+  assert.match(baseStyles, /\.app-header \{[\s\S]*backdrop-filter: blur\(12px\);/u);
+  assert.match(baseStyles, /\.app-root\[data-detail-route='true'\] \.app-header \{[\s\S]*backdrop-filter: none;[\s\S]*border-bottom: 0;[\s\S]*box-shadow: none;/u);
+  assert.match(mobileHeader, /AppIcon name="chevron-left" :size="6"/u);
+  assert.doesNotMatch(mobileHeader, /backdrop-blur/u);
   assert.match(issueBoard, /overflow-auto overscroll-contain/u);
   assert.match(issueBoard, /route-scroll-through[^"]*overflow-auto[\s\S]*<BoardControls[\s\S]*<ContentListState/u);
   assert.match(issueBoardView, /v-else-if="sessionLoading"[\s\S]*route-scroll-through[^"]*overflow-auto[\s\S]*board-controls[\s\S]*<IssueBoardTable/u);
@@ -169,7 +177,7 @@ test('primary navigation keeps desktop chrome and persistent mobile navigation',
   assert.doesNotMatch(detailShell, /detailTabTransitionName/u);
   assert.match(detailShell, /:initial="\{ opacity: 0, x: -18 \}"[\s\S]*:transition="MOTION_SMOOTH_TWEEN"/u);
   assert.doesNotMatch(responsiveStyles, /\.detail-tab-enter-active/u);
-  assert.match(baseStyles, /@media \(max-width: 767px\) \{[\s\S]*--app-header-height: 3rem/u);
+  assert.match(baseStyles, /@media \(max-width: 767px\) \{[\s\S]*--app-header-height: var\(--tap-target\)/u);
   assert.doesNotMatch(detailShell, /v-else[\s\S]{0,120}class="panel/u);
   assert.doesNotMatch(detailSkeleton, /h-7 w-1\/2|h-6 w-1\/2/u);
   assert.match(responsiveStyles, /\.board-controls \{[\s\S]*padding-top: 0\.5rem/u);
@@ -463,6 +471,37 @@ test('proposal detail intent prefetches data and renders an immediate summary pr
   assert.match(detail, /takeIssueDetailPreview\(issueId\)[\s\S]*routeIssuePreview\.value = true[\s\S]*fetchIssueRecordById/u);
   assert.match(detailView, /routeIssueLoading && !routeIssue[\s\S]*:content-loading="routeIssuePreview"/u);
   assert.match(backendRead, /Promise\.all\(\[[\s\S]*selectIssueCategory[\s\S]*issueReadPolicyParams[\s\S]*actor_is_admin: actorCanManage/u);
+});
+
+test('all infinite feeds use three placeholders and a forward-only loading boundary', async () => {
+  const feedLoading = await read('src/lib/feed-loading.ts');
+  const infiniteScroll = await read('src/composables/useInfiniteScroll.ts');
+  const contentRuntime = await read('src/composables/useContentListRuntime.ts');
+  const contentState = await read('src/components/ui/organisms/ContentListState.vue');
+  const issueBoard = await read('src/components/IssueBoard.vue');
+  const facilitiesView = await read('src/views/FacilitiesView.vue');
+  const announcementsView = await read('src/views/AnnouncementsView.vue');
+  const announcementTable = await read('src/components/AnnouncementTable.vue');
+  const comments = await read('src/components/CommentThreadPanel.vue');
+  const notifications = await read('src/views/NotificationsView.vue');
+  const contentStyles = await read('src/styles/content.css');
+
+  assert.match(feedLoading, /LOAD_MORE_PLACEHOLDER_COUNT = 3/u);
+  assert.match(contentState, /name="loading-more"[\s\S]*:count="LOAD_MORE_PLACEHOLDER_COUNT"/u);
+  [issueBoard, facilitiesView, announcementsView].forEach((feed) => {
+    assert.match(feed, /#loading-more="\{ count \}"[\s\S]*:loading-count="count"/u);
+  });
+  assert.match(comments, /:count="LOAD_MORE_PLACEHOLDER_COUNT"/u);
+  assert.match(notifications, /v-for="index in loadingMore \? LOAD_MORE_PLACEHOLDER_COUNT : 0"/u);
+  assert.match(contentRuntime, /loading: options\.loadingMore/u);
+  assert.match(comments, /loading: toRef\(props, 'loadingMore'\)/u);
+  assert.match(notifications, /loading: loadingMore/u);
+  assert.match(infiniteScroll, /findScrollRoot/u);
+  assert.match(infiniteScroll, /load-more-scroll-gate/u);
+  assert.match(infiniteScroll, /preventForwardWheel[\s\S]*preventForwardTouch/u);
+  assert.match(contentStyles, /\.load-more-scroll-gate \{\s*overscroll-behavior-y: none;/u);
+  assert.match(contentStyles, /\.feed-enter \{[\s\S]*animation: feed-enter 280ms/u);
+  assert.match(announcementTable, /<AnimatePresence :initial="false">[\s\S]*v-for="announcement in announcements"[\s\S]*listMotionTransition/u);
 });
 
 test('navigation and contextual creation share the same responsive information architecture', async () => {

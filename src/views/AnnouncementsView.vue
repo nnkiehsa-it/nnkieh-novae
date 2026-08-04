@@ -44,11 +44,11 @@
           />
         </template>
 
-        <template #loading-more>
+        <template #loading-more="{ count }">
           <AnnouncementTable
             :announcements="[]"
             :loading="true"
-            :loading-count="1"
+            :loading-count="count"
           />
         </template>
 

@@ -50,6 +50,7 @@ export function useContentListRuntime(options: ContentListRuntimeOptions) {
   );
   const { sentinel: loadMoreSentinel } = useInfiniteScroll({
     disabled: infiniteScrollDisabled,
+    loading: options.loadingMore,
     onLoadMore: options.loadMore,
     root: options.scrollRoot,
   });

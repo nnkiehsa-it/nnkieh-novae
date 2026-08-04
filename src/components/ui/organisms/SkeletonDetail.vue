@@ -8,7 +8,7 @@
     <SurfacePanel
       v-if="isDesktopViewport"
       as="article"
-      class="flex min-h-[calc(100dvh-2.5rem)] flex-col overflow-visible"
+      class="flex h-full min-h-0 flex-col overflow-visible"
     >
       <header class="flex shrink-0 items-center gap-3 px-5 py-4">
         <!-- Back Button -->
@@ -21,7 +21,7 @@
       </header>
 
       <div
-        class="grid min-w-0 flex-1 border-t border-ink-100/70 dark:border-ink-800/70"
+        class="grid min-h-0 min-w-0 flex-1 border-t border-ink-100/70 dark:border-ink-800/70"
         :class="{
           'md:grid-cols-[minmax(0,3fr)_minmax(20rem,2fr)]': showComments,
         }"

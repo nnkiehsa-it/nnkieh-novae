@@ -1,6 +1,6 @@
 <template>
   <RoutePageFrame layout="fill" class="relative">
-    <div class="route-scroll-through scroll-shadow-space scrollbar-subtle min-h-0 flex-1 space-y-5 overflow-auto overscroll-contain">
+    <div ref="facilityScrollRef" class="route-scroll-through scroll-shadow-space scrollbar-subtle min-h-0 flex-1 space-y-5 overflow-auto overscroll-contain">
       <BoardControls
         v-model:active-filter="category"
         v-model:status-tab="bucket"
@@ -37,8 +37,8 @@
           <FacilityTable :facilities="[]" :loading="true" />
         </template>
 
-        <template #loading-more>
-          <FacilityTable :facilities="[]" :loading="true" :loading-count="1" />
+        <template #loading-more="{ count }">
+          <FacilityTable :facilities="[]" :loading="true" :loading-count="count" />
         </template>
 
         <FacilityTable
@@ -101,6 +101,7 @@ const {
   toggleAffected,
 } = useFacilities(category);
 const { show } = useActionFeedback();
+const facilityScrollRef = ref<HTMLElement | null>(null);
 const facilityPanelKey = computed(() => [
   bucket.value,
   sort.value,
@@ -121,6 +122,7 @@ const {
   loading,
   loadingMore,
   refresh: () => load(),
+  scrollRoot: facilityScrollRef,
 });
 const searchHint = computed(() => {
   const draft = normalizeSearchText(query.value);

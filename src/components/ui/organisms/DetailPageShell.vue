@@ -3,7 +3,7 @@
     <SurfacePanel
       v-if="isDesktopViewport"
       as="article"
-      class="hidden min-h-[calc(100dvh-2.5rem)] flex-col overflow-visible md:flex"
+      class="hidden h-full min-h-0 flex-col overflow-visible md:flex"
       :aria-label="t(detailsLabel)"
     >
       <header class="flex items-start gap-3 px-5 py-4">
@@ -22,7 +22,7 @@
       </header>
 
       <div
-        class="grid min-w-0 flex-1 border-t border-ink-100/70 dark:border-ink-800/70"
+        class="grid min-h-0 min-w-0 flex-1 border-t border-ink-100/70 dark:border-ink-800/70"
         :class="{ 'md:grid-cols-[minmax(0,3fr)_minmax(20rem,2fr)]': showComments }"
       >
         <div class="flex min-h-0 min-w-0 flex-col px-5 py-5 pr-6">

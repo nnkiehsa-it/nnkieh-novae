@@ -5,6 +5,7 @@
     :data-sidebar="showAuthenticatedChrome ? 'true' : 'false'"
     :data-sidebar-expanded="isSidebarExpanded ? 'true' : 'false'"
     :data-content-scrolled="contentScrolled ? 'true' : 'false'"
+    :data-detail-route="isDetailRoute ? 'true' : 'false'"
     :style="rootStyle"
     @focusin.capture="handleNavigationIntent"
     @pointerdown.capture="handleNavigationIntent"
@@ -105,6 +106,7 @@ import { readLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
 const SIDEBAR_EXPANDED_STORAGE_KEY = 'novae:desktop-sidebar-expanded';
 const MOBILE_NAV_HEIGHT = 60;
 const SCROLL_POSITION_LIMIT = 30;
+const DETAIL_ROUTE_NAMES = new Set(['announcement-detail', 'facility-detail', 'issue-detail']);
 
 const { customPhotoUrl, isAllowedUser, roleLoading, user } = useSession();
 const { activeFacilityCategories, facilitiesEnabled, issuesEnabled } = useCategories();
@@ -130,6 +132,7 @@ const isIssueRouteActive = computed(() => ['issue-create', 'issue-detail', 'issu
 const isAnnouncementRouteActive = computed(() => ['announcement-create', 'announcement-detail', 'announcements'].includes(route.name as string));
 const isFacilityRouteActive = computed(() => ['facilities', 'facility-create', 'facility-detail'].includes(route.name as string));
 const isComposerRoute = computed(() => ['announcement-create', 'facility-create', 'issue-create'].includes(route.name as string));
+const isDetailRoute = computed(() => DETAIL_ROUTE_NAMES.has(route.name as string));
 const isMyProposalsRouteActive = computed(() => isIssueRouteActive.value && activeFilter.value === 'my-proposals');
 const isProfileRouteActive = computed(() => isMyProposalsRouteActive.value || ['settings', 'dashboard', 'administration'].includes(route.name as string));
 const homeRoute = computed(() => getDefaultAuthenticatedRoute());
@@ -331,8 +334,11 @@ watch(() => route.fullPath, (newPath, oldPath) => {
       if (oldestPath) mainScrollPositions.delete(oldestPath);
     }
   }
+  contentScrolled.value = false;
   nextTick(() => {
-    mainContentRef.value?.scrollTo({ behavior: 'auto', left: 0, top: mainScrollPositions.get(newPath) ?? 0 });
+    const restoredScrollTop = mainScrollPositions.get(newPath) ?? 0;
+    mainContentRef.value?.scrollTo({ behavior: 'auto', left: 0, top: restoredScrollTop });
+    contentScrolled.value = restoredScrollTop > 8;
     routeAnnouncement.value = mobileHeaderTitle.value;
   });
 });

@@ -18,6 +18,22 @@
     padding-inline: var(--scroll-shadow-space);
   }
 
+  .load-more-scroll-gate {
+    overscroll-behavior-y: none;
+  }
+
+  .feed-enter {
+    animation: feed-enter 280ms var(--motion-ease-enter) both;
+    animation-delay: calc(var(--feed-enter-index, 0) * 45ms);
+  }
+
+  @media (min-width: 768px) {
+    .scroll-shadow-space,
+    .scroll-shadow-space--compact {
+      padding-bottom: var(--scroll-shadow-space);
+    }
+  }
+
   .issue-card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 17.5rem), 1fr));
@@ -85,4 +101,11 @@
     @apply rounded-full border border-ink-200 bg-white/70 px-3 py-1 text-xs font-semibold tabular-nums text-ink-600 dark:border-ink-800 dark:bg-ink-950/40 dark:text-ink-300;
   }
 
+}
+
+@keyframes feed-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
 }

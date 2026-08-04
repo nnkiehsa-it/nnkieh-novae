@@ -43,8 +43,10 @@
 
       <div v-else class="space-y-0.5">
         <CommentItem
-          v-for="comment in comments"
+          v-for="(comment, index) in comments"
           :key="comment.id"
+          class="feed-enter"
+          :style="{ '--feed-enter-index': Math.min(index, LOAD_MORE_PLACEHOLDER_COUNT - 1) }"
           :comment="comment"
           :can-delete="canDeleteComment(comment)"
           :can-delete-reply="canDeleteComment"
@@ -60,7 +62,7 @@
         />
         <SkeletonCommentList
           v-if="loadingMore"
-          :count="1"
+          :count="LOAD_MORE_PLACEHOLDER_COUNT"
           class="border-t border-ink-100/40 dark:border-ink-800/40 pt-2"
         />
         <FeedLoadMoreControl
@@ -118,6 +120,7 @@ import { useMinimumLoading } from '@/composables/useMinimumLoading';
 import { useInfiniteScroll } from '@/composables/useInfiniteScroll';
 import type { DiscussionCommentRecord } from '@/types';
 import { useI18n, type MessageKey } from '@/i18n';
+import { LOAD_MORE_PLACEHOLDER_COUNT } from '@/lib/feed-loading';
 
 const props = withDefaults(defineProps<{
   canDeleteComment: (comment: DiscussionCommentRecord) => boolean;
@@ -163,6 +166,7 @@ const infiniteScrollDisabled = computed(() =>
 );
 const { sentinel: loadMoreSentinel } = useInfiniteScroll({
   disabled: infiniteScrollDisabled,
+  loading: toRef(props, 'loadingMore'),
   onLoadMore: props.onLoadMore,
   root: scrollContainerRef,
   rootMargin: '240px 0px',

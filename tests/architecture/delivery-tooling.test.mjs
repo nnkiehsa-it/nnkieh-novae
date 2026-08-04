@@ -10,6 +10,8 @@ test('authenticated route pages share one content width and AppShell owns horizo
   const appShell = await read('src/components/AppShell.vue');
   const viewportFrame = await read('src/components/ui/organisms/ViewportFrame.vue');
   const routePageFrame = await read('src/components/ui/organisms/RoutePageFrame.vue');
+  const detailShell = await read('src/components/ui/organisms/DetailPageShell.vue');
+  const detailSkeleton = await read('src/components/ui/organisms/SkeletonDetail.vue');
   const mobileHeader = await read('src/components/app-shell/AppMobileHeader.vue');
   const mobileNav = await read('src/components/app-shell/AppMobileBottomNav.vue');
   const feedbackBar = await read('src/components/ActionFeedbackBar.vue');
@@ -36,6 +38,7 @@ test('authenticated route pages share one content width and AppShell owns horizo
   assert.match(primitives, /\.viewport-frame \{[\s\S]*margin-inline: 0;[\s\S]*padding-left: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-left\)\);[\s\S]*padding-right: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-right\)\);[\s\S]*width: 100%;/u);
   assert.doesNotMatch(primitives, /viewport-shadow-bleed|\.viewport-frame \{[\s\S]{0,300}margin-(?:left|right): calc/u);
   assert.match(contentStyles, /\.scroll-shadow-space--compact \{[\s\S]*margin-inline: 0;[\s\S]*padding-inline:/u);
+  assert.match(contentStyles, /@media \(min-width: 768px\) \{[\s\S]*\.scroll-shadow-space,[\s\S]*\.scroll-shadow-space--compact \{[\s\S]*padding-bottom: var\(--scroll-shadow-space\);/u);
   assert.match(primitives, /\.viewport-floating-inline \{[\s\S]*left: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-left\)\);[\s\S]*right: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-right\)\);/u);
   assert.match(primitives, /\.route-page-frame \{[\s\S]*max-width: var\(--app-content-max-width\);[\s\S]*min-width: 0;[\s\S]*width: 100%;/u);
   assert.match(primitives, /\.route-page-frame--fill \{[\s\S]*flex: 1 1 0%;[\s\S]*height: 100%;[\s\S]*min-height: 0;/u);
@@ -55,6 +58,11 @@ test('authenticated route pages share one content width and AppShell owns horizo
   routePages.forEach((page) => assert.doesNotMatch(page, /\broute-page\b|page-bottom-safe/u));
   routePages.forEach((page) => assert.doesNotMatch(page, /app-viewport-gutter|safe-area-inset-(?:left|right)/u));
   routePages.slice(7).forEach((page) => assert.match(page, /<RoutePageFrame as="div" bottom-safe layout="fill">/u));
+  [detailShell, detailSkeleton].forEach((detail) => {
+    assert.match(detail, /class="[^"]*h-full min-h-0 flex-col overflow-visible/u);
+    assert.match(detail, /class="grid min-h-0 min-w-0 flex-1/u);
+    assert.doesNotMatch(detail, /min-h-\[calc\(100dvh/u);
+  });
   assert.doesNotMatch(issueBoard, /app-viewport-gutter/u);
   assert.match(appShell, /app-main-content[^"\n]*overflow-auto/u);
   assert.doesNotMatch(contentStyles, /\.issue-card-grid \{[^}]*padding:/u);
@@ -284,8 +292,8 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   [issueBoardTable, facilityTable].forEach((table) => {
     assert.match(table, /<AnimatePresence :initial="false">[\s\S]*<m\.div[\s\S]*\blayout\b/u);
   });
-  assert.match(notifications, /<ListSurfaceRow[\s\S]*interactive[\s\S]*class="notification-group-row"/u);
-  assert.match(notifications, /<ListSurfaceRow[\s\S]*as="div"[\s\S]*class="notification-group-row"/u);
+  assert.match(notifications, /<ListSurfaceRow[\s\S]*interactive[\s\S]*class="notification-group-row feed-enter"/u);
+  assert.match(notifications, /<ListSurfaceRow[\s\S]*as="div"[\s\S]*class="notification-group-row skeleton-enter/u);
   assert.match(settingsView, /v-if="loading"[\s\S]*<SurfacePanel variant="list"/u);
   assert.match(loginPanel, /<InlineAlert[\s\S]*tone="error"[\s\S]*compact/u);
   assert.match(loginView, /items-start justify-center[\s\S]*md:pt-\[clamp\(5rem,16dvh,10rem\)\]/u);

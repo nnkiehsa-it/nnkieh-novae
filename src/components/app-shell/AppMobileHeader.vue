@@ -1,5 +1,5 @@
 <template>
-  <header class="app-header fixed inset-x-0 top-0 z-40 w-full backdrop-blur-md transition-colors duration-300 md:hidden">
+  <header class="app-header fixed inset-x-0 top-0 z-40 w-full transition-colors duration-300 md:hidden">
     <ViewportFrame class="app-header__inner flex items-center justify-between">
       <div class="app-header__leading flex min-w-0 items-center">
         <div
@@ -16,7 +16,7 @@
             :title="showBackButton ? backLabel : undefined"
             @click="$emit('back')"
           >
-            <AppIcon name="chevron-left" :size="4.5" />
+            <AppIcon name="chevron-left" :size="6" />
           </AppButton>
         </div>
         <h1 class="app-header__title flex min-w-0 items-center text-ink-950 dark:text-ink-50" :aria-label="title">

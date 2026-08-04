@@ -80,10 +80,11 @@
 
         <SurfacePanel v-else variant="list">
           <ListSurfaceRow
-            v-for="notification in notifications"
+            v-for="(notification, index) in notifications"
             :key="notification.id"
             interactive
-            class="notification-group-row"
+            class="notification-group-row feed-enter"
+            :style="{ '--feed-enter-index': Math.min(index, LOAD_MORE_PLACEHOLDER_COUNT - 1) }"
             @click.stop="openNotification(notification)"
           >
             <AuthorAvatar
@@ -139,10 +140,11 @@
           </ListSurfaceRow>
 
           <ListSurfaceRow
-            v-if="loadingMore"
+            v-for="index in loadingMore ? LOAD_MORE_PLACEHOLDER_COUNT : 0"
+            :key="`loading-more-${index}`"
             as="div"
             class="notification-group-row skeleton-enter border-t border-ink-100/70 dark:border-ink-800/70"
-            :style="{ '--skeleton-enter-index': 0 }"
+            :style="{ '--skeleton-enter-index': index - 1 }"
           >
             <SkeletonBlock as="div" class="h-10 w-10 shrink-0 rounded-2xl" />
             <div class="min-w-0 flex-1 space-y-2 pt-1">
@@ -190,6 +192,7 @@ import { useNotifications } from "@/composables/useNotifications";
 import { formatDate } from "@/lib/format";
 import type { NotificationRecord } from "@/types";
 import { useI18n } from "@/i18n";
+import { LOAD_MORE_PLACEHOLDER_COUNT } from '@/lib/feed-loading';
 
 withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false });
 const emit = defineEmits<{ close: [] }>();
@@ -219,6 +222,7 @@ const infiniteScrollDisabled = computed(
 );
 const { sentinel: loadMoreSentinel } = useInfiniteScroll({
   disabled: infiniteScrollDisabled,
+  loading: loadingMore,
   onLoadMore: loadMoreNotifications,
 });
 

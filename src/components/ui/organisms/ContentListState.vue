@@ -40,7 +40,11 @@
       <InlineAlert v-if="error" tone="error">
         {{ error }}
       </InlineAlert>
-      <slot v-if="loadingMore" name="loading-more" />
+      <slot
+        v-if="loadingMore"
+        name="loading-more"
+        :count="LOAD_MORE_PLACEHOLDER_COUNT"
+      />
       <FeedLoadMoreControl
         v-show="!loadingMore"
         :has-more="hasMore"
@@ -58,6 +62,7 @@ import EmptyStatePanel from '@/components/ui/molecules/EmptyStatePanel.vue';
 import InlineAlert from '@/components/ui/atoms/InlineAlert.vue';
 import FeedLoadMoreControl from '@/components/ui/molecules/FeedLoadMoreControl.vue';
 import PageLoadFailure from '@/components/ui/molecules/PageLoadFailure.vue';
+import { LOAD_MORE_PLACEHOLDER_COUNT } from '@/lib/feed-loading';
 
 type EmptyStateIcon = 'chart' | 'comment' | 'lock' | 'warning' | 'inbox';
 
@@ -103,7 +108,7 @@ const emit = defineEmits<{
 defineSlots<{
   default(): unknown;
   loading(): unknown;
-  'loading-more'(): unknown;
+  'loading-more'(props: { count: number }): unknown;
   sentinel(): unknown;
 }>();
 </script>

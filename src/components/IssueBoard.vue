@@ -40,11 +40,11 @@
           />
         </template>
 
-        <template #loading-more>
+        <template #loading-more="{ count }">
           <IssueBoardTable
             :issues="[]"
             :loading="true"
-            :loading-count="1"
+            :loading-count="count"
             error=""
             :show-author="showAuthorCol"
           />

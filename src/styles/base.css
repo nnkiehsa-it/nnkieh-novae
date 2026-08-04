@@ -362,10 +362,12 @@
 
   @media (max-width: 767px) {
     :root {
-      --app-header-height: 3rem;
+      --app-header-height: var(--tap-target);
     }
 
     .app-header {
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
       background-color: rgb(var(--color-page-background) / 0.88);
       box-shadow: none;
     }
@@ -373,6 +375,14 @@
     .app-root[data-content-scrolled='true'] .app-header {
       border-bottom: 1px solid rgb(var(--color-outline) / 0.08);
       box-shadow: var(--shadow-control);
+    }
+
+    .app-root[data-detail-route='true'] .app-header {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      background-color: rgb(var(--color-page-background));
+      border-bottom: 0;
+      box-shadow: none;
     }
 
     .app-main-content {

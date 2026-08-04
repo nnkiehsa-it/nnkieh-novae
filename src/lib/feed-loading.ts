@@ -1,0 +1,1 @@
+export const LOAD_MORE_PLACEHOLDER_COUNT = 3;
