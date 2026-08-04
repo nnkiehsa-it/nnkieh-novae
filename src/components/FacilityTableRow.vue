@@ -4,7 +4,7 @@
     :highlight-query="highlightQuery"
     :status-class="statusClass"
     :status-label="statusLabel"
-    :time-label="formatDate(facility.created_at)"
+    :time-label="formatRelativeTime(facility.created_at)"
     :title="facility.title"
     @open="emit('open-details', facility)"
   >
@@ -40,7 +40,7 @@ import ContentCardShell from '@/components/ui/organisms/ContentCardShell.vue';
 import ContentNoticePanel from '@/components/ui/molecules/ContentNoticePanel.vue';
 import { useStatusStyling } from '@/composables/useStatusStyling';
 import { FACILITY_STATUS_LABELS, isFacilityClosed } from '@/constants/statuses';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatRelativeTime } from '@/lib/format';
 import type { FacilitySummary } from '@/types';
 import { useI18n } from '@/i18n';
 

@@ -2,8 +2,8 @@
   <div class="flex min-h-0 flex-col">
     <div class="shrink-0 pb-1" :class="compact ? 'space-y-2' : 'space-y-4'">
       <h2
-        class="break-words font-semibold tracking-[0.015em] text-ink-900 dark:text-ink-50"
-        :class="compact ? 'text-xl leading-snug' : 'text-xl leading-snug sm:text-2xl'"
+        class="break-words font-bold tracking-[0.01em] text-ink-950 dark:text-ink-50"
+        :class="compact ? 'text-2xl leading-snug' : 'text-2xl leading-snug sm:text-3xl'"
       >
         {{ title }}
       </h2>
@@ -20,7 +20,7 @@
         />
         <div class="min-w-0">
           <SkeletonBlock v-if="authorProfile.loading" class="block h-4 w-24 rounded" />
-          <p v-else class="truncate text-sm font-semibold text-ink-900 dark:text-ink-100">{{ authorName }}</p>
+          <p v-else class="truncate text-sm font-normal text-ink-700 dark:text-ink-300">{{ authorName }}</p>
           <p v-if="authorSecondary" class="mt-0.5 truncate text-xs text-ink-500 dark:text-ink-400">
             {{ authorSecondary }}
           </p>

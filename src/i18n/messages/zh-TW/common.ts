@@ -83,6 +83,11 @@ const messages = {
   'common.discard': '放棄',
   'common.discardChanges': '放棄變更？',
   'common.unsavedChangesWillBeLost': '尚未儲存的內容將會遺失。',
+  'common.timeJustNow': '剛剛',
+  'common.timeMinutesAgo': '{count}分鐘前',
+  'common.timeHoursAgo': '{count}小時前',
+  'common.timeDaysAgo': '{count}天前',
+  'common.timeWeeksAgo': '{count}週前',
 } as const;
 
 export default messages;

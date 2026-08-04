@@ -83,6 +83,11 @@ const messages = {
   'common.discard': 'Discard',
   'common.discardChanges': 'Discard changes?',
   'common.unsavedChangesWillBeLost': 'Your unsaved changes will be lost.',
+  'common.timeJustNow': 'Just now',
+  'common.timeMinutesAgo': '{count}m ago',
+  'common.timeHoursAgo': '{count}h ago',
+  'common.timeDaysAgo': '{count}d ago',
+  'common.timeWeeksAgo': '{count}w ago',
 } as const;
 
 export default messages;

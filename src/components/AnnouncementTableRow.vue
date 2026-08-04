@@ -38,7 +38,7 @@ import type { AnnouncementRecord } from '@/types';
 import AppIcon from '@/components/ui/atoms/AppIcon.vue';
 import AppButton from '@/components/ui/atoms/AppButton.vue';
 import ContentCardShell from '@/components/ui/organisms/ContentCardShell.vue';
-import { formatDateOnly } from '@/lib/format';
+import { formatDateOnly, formatRelativeTime } from '@/lib/format';
 import { useI18n } from '@/i18n';
 
 const props = defineProps<{
@@ -53,5 +53,5 @@ const emit = defineEmits<{
   toggleLike: [announcement: AnnouncementRecord];
 }>();
 
-const dateLabel = computed(() => formatDateOnly(props.announcement.published_at));
+const dateLabel = computed(() => formatRelativeTime(props.announcement.published_at));
 </script>

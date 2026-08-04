@@ -1,6 +1,6 @@
 import { computed, type Ref } from 'vue';
 import { getDerivedIssueStatus, getRemainingCalendarDays } from '@/lib/issue-status';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatRelativeTime } from '@/lib/format';
 import { getIssueOperationTimeItems, isClosedIssueStatus } from '@/lib/issue-timeline';
 import { getIssueCategoryLabel, issueRequiresReview } from '@/constants/categories';
 import { ISSUE_STATUS_LABELS } from '@/constants/statuses';
@@ -31,6 +31,7 @@ export function useIssueDisplay(issue: Ref<IssueRecord> | (() => IssueRecord)) {
     return issueRequiresReview(i.category) && i.review_approved_at ? i.review_approved_at : i.created_at;
   });
   const primaryTimeValueLabel = computed(() => formatDate(primaryTimeValue.value));
+  const primaryTimeRelativeLabel = computed(() => formatRelativeTime(primaryTimeValue.value));
   const operationTimeItems = computed<IssueOperationTimeItem[]>(() =>
     getIssueOperationTimeItems(resolvedIssue.value).map((item) => ({
       ...item,
@@ -46,6 +47,7 @@ export function useIssueDisplay(issue: Ref<IssueRecord> | (() => IssueRecord)) {
     statusLabel,
     primaryTimeLabel,
     primaryTimeValueLabel,
+    primaryTimeRelativeLabel,
     operationTimeItems,
     remainingDays,
     isOwnIssue,

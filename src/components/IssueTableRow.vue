@@ -5,7 +5,7 @@
     :show-author="issue.canViewAuthor"
     :status-class="statusClass"
     :status-label="statusLabel"
-    :time-label="primaryTimeValueLabel"
+    :time-label="primaryTimeRelativeLabel"
     :title="issue.title"
     @intent="emit('detail-intent', issue)"
     @open="openDetails()"
@@ -94,6 +94,7 @@ const { t } = useI18n();
 const {
   statusLabel,
   primaryTimeValueLabel,
+  primaryTimeRelativeLabel,
   currentUserSupported,
   supportCount,
   statusClass,

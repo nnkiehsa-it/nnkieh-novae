@@ -15,37 +15,39 @@
         @click.stop="emit('open')"
       ></button>
 
-      <header class="flex min-w-0 items-center gap-2">
-        <TagBadge size="sm" class="shrink-0 font-semibold" :class="statusClass">
-          {{ t(statusLabel) }}
-        </TagBadge>
-        <span class="ml-auto truncate text-xs text-ink-500 dark:text-ink-400">
-          {{ timeLabel }}
-        </span>
-      </header>
-
-      <div class="mt-3 flex min-w-0 items-center gap-2.5">
+      <div class="relative z-10 flex items-start gap-3">
         <AuthorAvatar
           v-if="showAuthor && authorUid"
           :author-uid="authorUid"
-          size="sm"
+          size="md"
           :alt-text="t('notification.nameAvatar', { name: authorName })"
-          class="shrink-0"
+          class="shrink-0 rounded-full"
         />
         <div class="min-w-0 flex-1">
-          <h3 class="line-clamp-2 text-[15px] font-semibold leading-6 tracking-[0.01em] text-ink-950 dark:text-ink-50 sm:text-base">
+          <div class="flex items-center gap-2">
+            <SkeletonBlock v-if="showAuthor && authorUid && authorProfile.loading" class="block h-3.5 w-20 rounded" />
+            <span v-else-if="showAuthor && authorUid" class="truncate text-xs font-normal text-ink-600 dark:text-ink-300 sm:text-sm">
+              {{ authorName }}
+            </span>
+            <span v-if="timeLabel" class="shrink-0 text-xs font-normal text-ink-400 dark:text-ink-500">
+              {{ timeLabel }}
+            </span>
+            <TagBadge size="sm" class="ml-auto shrink-0 font-semibold" :class="statusClass">
+              {{ t(statusLabel) }}
+            </TagBadge>
+          </div>
+
+          <h3 class="mt-1 line-clamp-2 text-base font-bold leading-snug tracking-tight text-ink-950 dark:text-ink-50 sm:text-lg">
             <SearchHighlight :text="title" :query="highlightQuery" />
           </h3>
-          <SkeletonBlock v-if="showAuthor && authorUid && authorProfile.loading" class="mt-1 block h-3 w-20 rounded" />
-          <p v-else-if="showAuthor && authorUid" class="mt-0.5 truncate text-xs text-ink-500 dark:text-ink-400">
-            {{ authorName }}
-          </p>
         </div>
       </div>
 
-      <slot name="supplement" />
+      <div class="relative z-10">
+        <slot name="supplement" />
+      </div>
 
-      <footer v-if="$slots.actions" class="mt-3 flex items-center justify-end gap-1.5" @click.stop>
+      <footer v-if="$slots.actions" class="relative z-10 mt-3 flex items-center justify-end gap-1.5" @click.stop>
         <slot name="actions" />
       </footer>
     </article>
