@@ -37,7 +37,7 @@
             </TagBadge>
           </div>
 
-          <h3 class="mt-1 line-clamp-2 text-base font-bold leading-snug tracking-tight text-ink-950 dark:text-ink-50 sm:text-lg">
+          <h3 class="mt-1 line-clamp-2 text-base font-bold leading-snug tracking-tight text-ink-950 dark:text-ink-50 sm:font-semibold">
             <SearchHighlight :text="title" :query="highlightQuery" />
           </h3>
         </div>

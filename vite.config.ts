@@ -56,6 +56,8 @@ function htmlEnvPlugin(
     authEmulatorOrigin,
     supabaseOrigin,
     supabaseRealtimeOrigin,
+    'https://api.cloudinary.com',
+    'https://res.cloudinary.com',
     'https://*.googleapis.com',
     'https://apis.google.com',
     'https://accounts.google.com',
@@ -66,7 +68,7 @@ function htmlEnvPlugin(
     "script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com https://apis.google.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/",
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self' data:",
-    `img-src 'self' data: blob: ${apiOrigin} https://*.googleusercontent.com`.trim(),
+    `img-src 'self' data: blob: ${apiOrigin} https://*.googleusercontent.com https://res.cloudinary.com`.trim(),
     `connect-src ${connectSources}`,
     `frame-src ${[
       authEmulatorOrigin,

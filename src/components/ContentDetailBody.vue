@@ -3,7 +3,7 @@
     <div class="shrink-0 pb-1" :class="compact ? 'space-y-2' : 'space-y-4'">
       <h2
         class="break-words font-bold tracking-[0.01em] text-ink-950 dark:text-ink-50"
-        :class="compact ? 'text-2xl leading-snug' : 'text-2xl leading-snug sm:text-3xl'"
+        :class="compact ? 'text-xl leading-snug' : 'text-2xl leading-snug sm:text-2xl'"
       >
         {{ title }}
       </h2>
