@@ -20,7 +20,7 @@
         <span class="font-semibold">{{ t(issueNoticeSummary.title) }}：</span>
         <span>{{ issueNoticeSummary.content }}</span>
       </ContentNoticePanel>
-      <SurfacePanel v-else-if="issue.support_enabled" variant="inset" class="mt-4 px-3 py-2.5">
+      <div v-else-if="issue.support_enabled" class="mt-3 rounded-xl bg-ink-100/60 px-3 py-2.5 dark:bg-ink-900/40">
         <div class="flex items-center justify-between gap-3 text-xs">
           <span class="font-semibold tabular-nums text-ink-700 dark:text-ink-300">
             {{ t('issue.countGoalSupports', { count: supportCount, goal: issue.support_goal ?? 0 }) }}
@@ -29,13 +29,13 @@
             {{ supportRemainingLabel }}
           </span>
         </div>
-        <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-ink-200/80 dark:bg-ink-700" aria-hidden="true">
+        <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-ink-200/60 dark:bg-ink-800/80" aria-hidden="true">
           <div
             class="progress-fill h-full rounded-full bg-ink-900 dark:bg-ink-100"
             :style="supportProgressStyle"
           ></div>
         </div>
-      </SurfacePanel>
+      </div>
       <p v-else class="mt-4 text-xs text-ink-500 dark:text-ink-400">{{ t('issue.thisProposalDoesNotRequireSupport') }}</p>
     </template>
 
@@ -51,7 +51,6 @@
       </AppButton>
       <VoteButtons
         v-if="issue.support_enabled && !issueNoticeSummary"
-        :author-fixed="issue.isOwnIssue"
         :issue-id="issue.id"
         :current-user-supported="currentUserSupported"
         :support-count="supportCount"

@@ -26,7 +26,6 @@
         </div>
       </div>
     </template>
-
     <template v-if="issue.support_enabled" #primary>
       <VoteButtons
         class="shrink-0"

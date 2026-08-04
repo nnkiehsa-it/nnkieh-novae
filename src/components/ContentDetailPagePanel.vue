@@ -88,6 +88,11 @@ withDefaults(defineProps<{
   showAuthor: true,
   showComments: true,
   showMobileBackButton: false,
+  supportCount: 0,
+  supportEnabled: false,
+  supportGoal: 0,
+  supportProgressStyle: () => ({}),
+  supportRemainingLabel: '',
 });
 
 const emit = defineEmits<{

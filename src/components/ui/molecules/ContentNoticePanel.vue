@@ -1,6 +1,7 @@
 <template>
   <SurfacePanel
     :variant="compact ? 'inset' : 'control'"
+    class="!shadow-none !border-0 rounded-xl"
     :class="[
       compact ? 'px-3 py-2.5 text-xs' : 'px-4 py-3 text-sm',
       toneClass,
@@ -42,7 +43,7 @@ defineSlots<{
 const { t } = useI18n();
 const toneClass = computed(() => ({
   error: 'bg-error-container/80 text-on-error-container',
-  neutral: 'text-ink-700 dark:text-ink-200',
+  neutral: 'bg-ink-100/60 text-ink-700 dark:bg-ink-900/40 dark:text-ink-200',
   success: 'bg-success-container/80 text-on-success-container',
 })[props.tone]);
 </script>

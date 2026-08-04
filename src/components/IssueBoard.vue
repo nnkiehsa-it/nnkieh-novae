@@ -1,6 +1,6 @@
 <template>
   <section class="relative flex min-h-0 flex-1 flex-col">
-    <div ref="boardScrollRef" class="route-scroll-through scroll-shadow-space scrollbar-subtle min-h-0 flex-1 space-y-5 overflow-auto overscroll-contain">
+    <div ref="boardScrollRef" class="route-scroll-through scroll-shadow-space scrollbar-subtle min-h-0 flex-1 space-y-3.5 overflow-auto overscroll-contain">
       <BoardControls
         v-model:status-tab="statusTab"
         v-model:search-query="searchQuery"

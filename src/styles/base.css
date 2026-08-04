@@ -357,7 +357,7 @@
     margin-right: 0;
     min-height: 0;
     padding-bottom: 1rem;
-    padding-top: calc(var(--app-header-height) + env(safe-area-inset-top) + 0.25rem);
+    padding-top: var(--app-header-height);
     width: 100%;
   }
 
@@ -398,7 +398,7 @@
     }
 
     .app-main-content {
-      padding-top: calc(var(--app-header-height) + env(safe-area-inset-top) + 0.25rem);
+      padding-top: var(--app-header-height);
     }
 
     .app-root[data-bottom-nav='true'] .app-main-content {
