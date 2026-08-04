@@ -115,7 +115,7 @@ test('primary navigation keeps desktop chrome and persistent mobile navigation',
   assert.match(routeComponents, /\/facilities\/new[\s\S]*facility-create[\s\S]*\/announcements\/new[\s\S]*announcement-create/u);
   assert.match(defaultRoute, /isRouteEnabledByFeatures/u);
   assert.match(featureAccess, /issue-create[\s\S]*facility-create/u);
-  assert.match(appShell, /isComposerRoute[\s\S]*showAuthenticatedChrome\.value && !isComposerRoute\.value/u);
+  assert.match(appShell, /isSecondaryRoute[\s\S]*showAuthenticatedChrome\.value && !isSecondaryRoute\.value/u);
   assert.doesNotMatch(responsiveStyles, /\.page-content-(?:enter|leave)/u);
   assert.match(app, /class="route-stage[^"\n]*h-full[\s\S]*<AnimatePresence mode="popLayout"[\s\S]*<m\.div/u);
   assert.match(app, /getRouteNavigationDepth[\s\S]*route-forward[\s\S]*route-back/u);
@@ -131,7 +131,7 @@ test('primary navigation keeps desktop chrome and persistent mobile navigation',
   assert.match(router, /isFeatureRouteEnabled\(to\.name\)[\s\S]*getDefaultAuthenticatedRoute/u);
   assert.doesNotMatch(appShell, /getRouteNavigationDepth|data-navigation-depth/u);
   assert.match(appShell, /showAuthenticatedChrome = computed\(\(\) => isAllowedUser\.value && !roleLoading\.value\)/u);
-  assert.match(appShell, /showMobileBottomNavigation = computed\(\(\) => showAuthenticatedChrome\.value && !isComposerRoute\.value\)/u);
+  assert.match(appShell, /showMobileBottomNavigation = computed\(\(\) => showAuthenticatedChrome\.value && !isSecondaryRoute\.value\)/u);
   assert.match(app, /roleLoading[\s\S]*publicOnly[\s\S]*ensureCategoryCatalog|publicOnly[\s\S]*roleLoading[\s\S]*ensureCategoryCatalog/u);
   assert.match(router, /publicOnly && user\.value[\s\S]*waitForRoleReady[\s\S]*setupCompleted/u);
   assert.match(baseStyles, /\.route-content-frame \{[\s\S]*background-color: rgb\(var\(--color-page-background\)\)/u);

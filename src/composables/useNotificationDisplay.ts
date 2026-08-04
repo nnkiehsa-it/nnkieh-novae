@@ -87,6 +87,8 @@ export function useNotificationDisplay() {
     ) {
       return notification.new_status === 'infeasible'
         ? 'bg-infeasible-container text-on-infeasible-container'
+        : notification.new_status === 'auto-rejected'
+        ? 'bg-auto-rejected-container text-on-auto-rejected-container'
         : 'bg-error-container text-on-error-container';
     }
     return 'bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-300';

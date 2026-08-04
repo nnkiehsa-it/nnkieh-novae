@@ -189,7 +189,8 @@ const mobileCategorySelectorLabel = computed(() => t(
   route.name === 'facilities' ? 'facility.chooseCategory' : 'issue.chooseProposalCategory',
 ));
 const bottomGap = computed(() => hasSafeIndicator.value ? 25 : 15);
-const showMobileBottomNavigation = computed(() => showAuthenticatedChrome.value && !isComposerRoute.value);
+const isSecondaryRoute = computed(() => showMobileBackButton.value);
+const showMobileBottomNavigation = computed(() => showAuthenticatedChrome.value && !isSecondaryRoute.value);
 const rootStyle = computed(() => ({
   '--app-bottom-nav-gap': showMobileBottomNavigation.value
     ? `${bottomGap.value}px`
