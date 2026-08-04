@@ -5,15 +5,15 @@
         <AuthorAvatar
           v-if="showAuthor && authorUid"
           :author-uid="authorUid"
-          :size="compact ? 'md' : 'lg'"
+          :size="compact ? 'sm' : 'md'"
           :alt-text="t('notification.nameAvatar', { name: authorName })"
           class="shrink-0 rounded-full"
         />
         <div class="min-w-0 flex-1">
           <div v-if="showAuthor && authorUid" class="flex items-center gap-2">
-            <SkeletonBlock v-if="authorProfile.loading" class="block h-4 w-24 rounded" />
+            <SkeletonBlock v-if="authorProfile.loading" class="block h-3.5 w-20 rounded" />
             <template v-else>
-              <span class="truncate text-xs font-normal text-ink-600 dark:text-ink-300 sm:text-sm">
+              <span class="truncate text-xs font-normal text-ink-600 dark:text-ink-300">
                 {{ authorName }}
               </span>
               <span v-if="authorSecondary" class="shrink-0 text-xs font-normal text-ink-400 dark:text-ink-500">
@@ -23,8 +23,8 @@
           </div>
 
           <h2
-            class="mt-1.5 break-words font-semibold tracking-[0.01em] text-ink-950 dark:text-ink-50"
-            :class="compact ? 'text-xl leading-snug' : 'text-2xl leading-snug sm:text-2xl'"
+            class="mt-1 break-words font-semibold tracking-tight text-ink-950 dark:text-ink-50"
+            :class="compact ? 'text-base leading-snug' : 'text-lg leading-snug sm:text-xl'"
           >
             {{ title }}
           </h2>
