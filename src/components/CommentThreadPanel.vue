@@ -1,7 +1,7 @@
 <template>
   <section class="relative flex h-full min-h-0 flex-col">
     <div
-      class="flex shrink-0 items-center justify-between gap-3 border-b border-ink-100 pb-2 dark:border-ink-800"
+      class="flex shrink-0 items-center justify-between gap-3 pb-2"
       :class="{ 'max-md:hidden': compactHeader }"
     >
       <div class="flex min-w-0 items-center gap-2">
@@ -63,7 +63,7 @@
         <SkeletonCommentList
           v-if="loadingMore"
           :count="LOAD_MORE_PLACEHOLDER_COUNT"
-          class="border-t border-ink-100/40 dark:border-ink-800/40 pt-2"
+          class="pt-2"
         />
         <FeedLoadMoreControl
           v-show="!loadingMore"

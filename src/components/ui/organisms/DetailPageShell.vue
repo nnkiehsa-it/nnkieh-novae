@@ -22,7 +22,7 @@
       </header>
 
       <div
-        class="grid min-h-0 min-w-0 flex-1 border-t border-ink-100/70 dark:border-ink-800/70"
+        class="grid min-h-0 min-w-0 flex-1"
         :class="{ 'md:grid-cols-[minmax(0,3fr)_minmax(20rem,2fr)]': showComments }"
       >
         <div class="flex min-h-0 min-w-0 flex-col px-5 py-5 pr-6">
@@ -36,7 +36,7 @@
 
         <aside
           v-if="showComments"
-          class="flex min-h-0 min-w-0 flex-col border-l border-ink-100/70 px-5 py-5 dark:border-ink-800/70"
+          class="flex min-h-0 min-w-0 flex-col px-5 py-5"
           :aria-label="t(commentsLabel)"
         >
           <slot name="comments" :compact-header="false" />
@@ -76,7 +76,7 @@
           <m.div
             v-if="!showComments || activeTab === 'details'"
             key="details"
-            class="flex min-h-0 flex-1 flex-col border-t border-ink-100/70 dark:border-ink-800/70"
+            class="flex min-h-0 flex-1 flex-col"
             :initial="{ opacity: 0, x: -18 }"
             :animate="{ opacity: 1, x: 0 }"
             :exit="{ opacity: 0, x: -12 }"
@@ -84,16 +84,16 @@
           >
             <div class="scroll-shadow-space--compact min-h-0 flex-1 overflow-auto py-3 overscroll-contain">
               <slot name="details" :compact="true" :scroll-content="false" />
-            </div>
-            <div class="shrink-0 px-0">
-              <slot name="actions" :compact="true" />
+              <div class="mt-4 px-0">
+                <slot name="actions" :compact="true" />
+              </div>
             </div>
           </m.div>
 
           <m.div
             v-else
             key="comments"
-            class="min-h-0 flex-1 border-t border-ink-100/70 px-0 py-3 dark:border-ink-800/70"
+            class="min-h-0 flex-1 px-0 py-3"
             :aria-label="t(commentsLabel)"
             :initial="{ opacity: 0, x: 18 }"
             :animate="{ opacity: 1, x: 0 }"

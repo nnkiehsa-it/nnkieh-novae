@@ -339,10 +339,17 @@
   }
 
   .app-header__back {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
     height: var(--tap-target);
     min-height: var(--tap-target);
     min-width: var(--tap-target);
     width: var(--tap-target);
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
   }
 
   .app-main-content {
@@ -350,7 +357,7 @@
     margin-right: 0;
     min-height: 0;
     padding-bottom: 1rem;
-    padding-top: calc(var(--app-header-height) + env(safe-area-inset-top) + 0.75rem);
+    padding-top: calc(var(--app-header-height) + env(safe-area-inset-top) + 0.25rem);
     width: 100%;
   }
 

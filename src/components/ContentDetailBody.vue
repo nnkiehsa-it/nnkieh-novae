@@ -10,7 +10,7 @@
 
       <div
         v-if="showAuthor && authorUid"
-        class="flex items-center border-b border-ink-100 text-sm dark:border-ink-800"
+        class="flex items-center text-sm"
         :class="compact ? 'flex-wrap gap-2 pb-2' : 'gap-3 pb-3'"
       >
         <AuthorAvatar

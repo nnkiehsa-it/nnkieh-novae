@@ -8,7 +8,7 @@
           :aria-hidden="!showBackButton || undefined"
         >
           <AppButton
-            variant="icon"
+            variant="secondary"
             class="app-header__back md:hidden"
             :disabled="!showBackButton"
             :tabindex="showBackButton ? undefined : -1"
@@ -16,7 +16,7 @@
             :title="showBackButton ? backLabel : undefined"
             @click="$emit('back')"
           >
-            <AppIcon name="chevron-left" :size="6" />
+            <AppIcon name="arrow-left" :size="4.5" :stroke-width="2.2" />
           </AppButton>
         </div>
         <h1 class="app-header__title flex min-w-0 items-center text-ink-950 dark:text-ink-50" :aria-label="title">

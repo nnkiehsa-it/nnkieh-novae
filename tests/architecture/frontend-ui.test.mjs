@@ -94,7 +94,7 @@ test('primary navigation keeps desktop chrome and persistent mobile navigation',
   assert.match(baseStyles, /--app-header-height: var\(--tap-target\)/u);
   assert.match(baseStyles, /\.app-header \{[\s\S]*backdrop-filter: blur\(12px\);/u);
   assert.match(baseStyles, /\.app-root\[data-detail-route='true'\] \.app-header \{[\s\S]*backdrop-filter: none;[\s\S]*border-bottom: 0;[\s\S]*box-shadow: none;/u);
-  assert.match(mobileHeader, /AppIcon name="chevron-left" :size="6"/u);
+  assert.match(mobileHeader, /AppIcon name="arrow-left" :size="4\.5"/u);
   assert.doesNotMatch(mobileHeader, /backdrop-blur/u);
   assert.match(issueBoard, /overflow-auto overscroll-contain/u);
   assert.match(issueBoard, /route-scroll-through[^"]*overflow-auto[\s\S]*<BoardControls[\s\S]*<ContentListState/u);
@@ -165,7 +165,7 @@ test('primary navigation keeps desktop chrome and persistent mobile navigation',
   assert.doesNotMatch(detailSkeleton, /100dvh-var\(--app-header-height\)/u);
   assert.doesNotMatch(detailShell, /v-else[\s\S]{0,240}pb-\[5px\]|shrink-0 px-0 pb-2/u);
   assert.doesNotMatch(detailSkeleton, /v-else[\s\S]{0,240}pb-\[5px\]/u);
-  assert.match(mobileHeader, /<AppButton[\s\S]{0,120}variant="icon"[\s\S]{0,120}class="app-header__back/u);
+  assert.match(mobileHeader, /<AppButton[\s\S]{0,120}variant="secondary"[\s\S]{0,120}class="app-header__back/u);
   assert.match(mobileHeader, /app-header__back-slot[\s\S]*app-header__back-slot--visible/u);
   assert.doesNotMatch(mobileHeader, /<AppButton\s+v-if="showBackButton"/u);
   assert.doesNotMatch(mobileHeader, /header-title|`title:|`category:/u);

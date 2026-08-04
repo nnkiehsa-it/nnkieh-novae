@@ -1,6 +1,6 @@
 <template>
   <div
-    class="mt-4 shrink-0 border-t border-ink-100 pb-1 dark:border-ink-800"
+    class="mt-4 shrink-0 pb-1"
     :class="compact ? 'space-y-3 px-1 pt-3' : 'space-y-3 pt-3'"
   >
     <slot name="header" />
@@ -38,7 +38,7 @@
       v-if="operationTimeItems.length > 0"
       :items="operationTimeItems"
       :compact="compact"
-      :class="{ 'border-t border-ink-100 pt-3 dark:border-ink-800': separateOperationTimes }"
+      :class="{ 'pt-3': separateOperationTimes }"
     />
   </div>
 </template>

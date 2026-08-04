@@ -12,6 +12,7 @@
 <script setup lang="ts">
 import { computed, type Component } from 'vue';
 import {
+  ArrowLeft,
   ArrowLeftRight,
   BarChart3,
   Bell,
@@ -64,7 +65,7 @@ import {
 } from '@lucide/vue';
 
 export type AppIconName =
-  | 'bell' | 'chart' | 'changelog' | 'check' | 'check-circle' | 'chevron-down'
+  | 'arrow-left' | 'bell' | 'chart' | 'changelog' | 'check' | 'check-circle' | 'chevron-down'
   | 'chevron-left' | 'chevron-right' | 'circle-alert' | 'circle-help' | 'close'
   | 'comment' | 'edit' | 'heart' | 'image' | 'inbox' | 'info' | 'download' | 'preview'
   | 'globe' | 'hand' | 'wrench'
@@ -88,6 +89,7 @@ const props = withDefaults(defineProps<{
 });
 
 const iconComponents: Record<AppIconName, Component> = {
+  'arrow-left': ArrowLeft,
   bell: Bell,
   chart: BarChart3,
   changelog: FileClock,
