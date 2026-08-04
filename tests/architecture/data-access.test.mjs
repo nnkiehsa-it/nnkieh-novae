@@ -293,7 +293,9 @@ test('facility next actions and account UID use existing detail controls', async
   assert.match(facilityActions, /:operation-time-items="operationTimeItems"/u);
   assert.match(proposalFooter, /:operation-time-items="operationTimeItems"/u);
   assert.match(detailActionGroup, /OperationTimeList/u);
-  assert.match(operationTimes, /compact \? `\$\{t\(item\.shortLabel\)\}:` : `\$\{t\(item\.label\)\}:`/u);
+  assert.match(operationTimes, /<ol[\s\S]*md:flex[\s\S]*v-for="\(item, index\) in items"/u);
+  assert.match(operationTimes, /compact \? item\.shortLabel : item\.label/u);
+  assert.match(operationTimes, /index < items\.length - 1/u);
   assert.doesNotMatch(facilityDetail, />更新狀態</u);
   assert.match(settingsView, /:uid="user\.uid"/u);
   assert.match(settingsPanel, /t\('account\.uidLabel'\)[\s\S]*\{\{ uid \}\}[\s\S]*name="copy"/u);

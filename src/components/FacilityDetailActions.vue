@@ -4,6 +4,7 @@
     delete-title="facility.deleteFacilityReport"
     :operation-time-items="operationTimeItems"
     :show-delete="facility.canManageFacility || (facility.isOwnFacility && facility.status === 'pending')"
+    summary
     @delete="emit('delete')"
     @share="emit('share')"
   >

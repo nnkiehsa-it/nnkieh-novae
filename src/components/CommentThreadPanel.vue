@@ -37,7 +37,7 @@
       <EmptyStatePanel
         v-else-if="loaded && comments.length === 0"
         class="!px-3 !py-7"
-        :title="canCompose ? 'comments.noCommentsYet' : disabledComposerLabelKey"
+        title="comments.noCommentsYet"
         icon="comment"
       />
 
@@ -78,20 +78,15 @@
 
     <div class="shrink-0 bg-transparent pt-2">
       <CommentComposer
-        v-if="canCompose"
         :target-id="targetId"
         :parent-comment-id="replyingToCommentId || null"
         :submitting="submitting"
         :error="submitError"
+        :disabled="!canCompose"
+        :disabled-placeholder="disabledComposerLabelKey"
         @close="closeComposer"
         @submit="handleSubmitComment"
       />
-      <div
-        v-else
-        class="rounded-[var(--radius-inner)] bg-ink-50 px-4 py-3 text-center text-sm font-semibold text-ink-400 shadow-control dark:bg-ink-900/60 dark:text-ink-500"
-      >
-        {{ t(disabledComposerLabelKey) }}
-      </div>
     </div>
 
     <ConfirmDialog

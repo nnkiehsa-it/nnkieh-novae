@@ -1,7 +1,13 @@
 <template>
-  <div
-    class="mt-4 shrink-0 pb-1"
-    :class="compact ? 'space-y-3 px-1 pt-3' : 'space-y-3 pt-3'"
+  <component
+    :is="summary ? SurfacePanel : 'div'"
+    :variant="summary ? 'inset' : undefined"
+    class="mt-4 shrink-0"
+    :class="summary
+      ? 'space-y-4 p-4'
+      : compact
+        ? 'space-y-3 px-1 pb-1 pt-3'
+        : 'space-y-3 pb-1 pt-3'"
   >
     <slot name="header" />
 
@@ -34,19 +40,20 @@
       </DetailActionButton>
     </div>
 
-    <OperationTimeList
+    <div
       v-if="operationTimeItems.length > 0"
-      :items="operationTimeItems"
-      :compact="compact"
-      :class="{ 'pt-3': separateOperationTimes }"
-    />
-  </div>
+      :class="summary ? 'border-t border-ink-200/70 pt-3 dark:border-ink-700/70' : ''"
+    >
+      <OperationTimeList :items="operationTimeItems" :compact="compact" />
+    </div>
+  </component>
 </template>
 
 <script setup lang="ts">
 import AppIcon from '@/components/ui/atoms/AppIcon.vue';
 import DetailActionButton from '@/components/ui/molecules/DetailActionButton.vue';
 import OperationTimeList from '@/components/ui/molecules/OperationTimeList.vue';
+import SurfacePanel from '@/components/ui/molecules/SurfacePanel.vue';
 import type { OperationTimeListItem } from '@/types';
 
 withDefaults(defineProps<{
@@ -54,17 +61,17 @@ withDefaults(defineProps<{
   deleteLabel?: string;
   deleteTitle?: string;
   operationTimeItems?: OperationTimeListItem[];
-  separateOperationTimes?: boolean;
   showDelete?: boolean;
   showShare?: boolean;
+  summary?: boolean;
 }>(), {
   compact: false,
   deleteLabel: 'common.delete',
   deleteTitle: 'common.delete',
   operationTimeItems: () => [],
-  separateOperationTimes: false,
   showDelete: false,
   showShare: true,
+  summary: false,
 });
 
 const emit = defineEmits<{

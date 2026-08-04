@@ -30,6 +30,10 @@ test('entry and comment limits are enforced across UI, Edge, and a new migration
   assert.match(databaseLimits, /> 1000/u);
   assert.match(databaseLimits, /> 70/u);
   assert.doesNotMatch(commentComposer, /MarkdownRenderer|showPreview|預覽留言/u);
+  assert.match(commentComposer, /disabledPlaceholder[\s\S]*comments\.commentsAreCurrentlyDisabled/u);
+  assert.match(commentComposer, /if \(props\.disabled\) return/u);
+  assert.match(commentThread, /<CommentComposer[\s\S]*:disabled="!canCompose"/u);
+  assert.doesNotMatch(commentThread, /v-else[\s\S]{0,180}disabledComposerLabelKey/u);
   assert.match(commentItem, /plain-text/u);
   assert.doesNotMatch(commentThread, /第一則留言會出現在這裡/u);
   assert.match(detailShell, /label: t\('comments\.countComments'/u);
@@ -158,7 +162,8 @@ test('primary navigation keeps desktop chrome and persistent mobile navigation',
   assert.match(hierarchy, /name === 'issue-detail' && isMyProposals[\s\S]*NESTED_DETAIL_NAVIGATION_DEPTH/u);
   assert.match(hierarchy, /state\?\.navigationOrigin !== 'notifications'[\s\S]*router\.back\(\)/u);
   assert.match(notificationNavigation, /state: NOTIFICATION_NAVIGATION_STATE/u);
-  assert.match(detailShell, /<SurfacePanel[\s\S]{0,120}v-if="isDesktopViewport"[\s\S]{0,120}as="article"[\s\S]{0,120}class="hidden/u);
+  assert.match(detailShell, /<article[\s\S]{0,120}v-if="isDesktopViewport"[\s\S]{0,120}class="hidden/u);
+  assert.doesNotMatch(detailShell, /import SurfacePanel|<SurfacePanel/u);
   assert.match(detailShell, /<section class="h-full min-h-0[\s\S]*v-else[\s\S]*class="flex h-full min-h-0/u);
   assert.match(detailSkeleton, /<div\s+class="h-full min-h-0[\s\S]*v-else[\s\S]*class="flex h-full min-h-0/u);
   assert.doesNotMatch(detailShell, /100dvh-var\(--app-header-height\)/u);
@@ -262,6 +267,10 @@ test('proposals, announcements, and facilities share list cards and detail panel
   assert.match(detailPagePanel, /ContentDetailBody/u);
   assert.match(detailActionGroup, /DetailActionButton/u);
   assert.match(detailActionGroup, /OperationTimeList/u);
+  assert.match(detailActionGroup, /summary \? SurfacePanel/u);
+  assert.match(detailActionComponents[0], /summary/u);
+  assert.doesNotMatch(detailActionComponents[1], /summary/u);
+  assert.match(detailActionComponents[2], /summary/u);
   assert.match(announcementDetailView, /useAnnouncementDetail/u);
   assert.doesNotMatch(announcementDetailView, /fetchAnnouncementRecordById|subscribeContentRealtimeEvents/u);
   assert.match(announcementDetailFlow, /fetchAnnouncementRecordById/u);

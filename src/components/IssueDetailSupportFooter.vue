@@ -3,13 +3,13 @@
     :compact="compact"
     delete-title="issue.admin.delete"
     :operation-time-items="operationTimeItems"
-    :separate-operation-times="issue.support_enabled"
     :show-delete="canManage"
+    summary
     @delete="emit('delete')"
     @share="emit('share')"
   >
     <template v-if="issue.support_enabled" #header>
-      <div class="space-y-2">
+      <div class="w-full max-w-md space-y-2">
         <div class="flex min-w-0 flex-wrap items-center gap-2 text-sm text-ink-600 dark:text-ink-300">
           <span class="text-sm font-bold text-ink-900 dark:text-ink-50">
             {{ t('issue.support.progress', { count: supportCount, goal: issue.support_goal ?? 0 }) }}
@@ -18,7 +18,14 @@
             ({{ supportRemainingLabel }})
           </span>
         </div>
-        <div class="relative h-2 w-full overflow-hidden rounded-full bg-ink-200/50 dark:bg-ink-800/80">
+        <div
+          class="relative h-2 w-full overflow-hidden rounded-full bg-ink-200/50 dark:bg-ink-800/80"
+          role="progressbar"
+          :aria-label="t('issue.support.progress', { count: supportCount, goal: issue.support_goal ?? 0 })"
+          :aria-valuemax="issue.support_goal ?? 0"
+          :aria-valuenow="supportCount"
+          aria-valuemin="0"
+        >
           <div
             class="progress-fill h-full rounded-full bg-ink-900 dark:bg-ink-100"
             :style="supportProgressStyle"

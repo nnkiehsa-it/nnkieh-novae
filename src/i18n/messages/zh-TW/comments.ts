@@ -25,7 +25,7 @@ const messages = {
   'comments.deletingComment': '正在刪除留言',
   'comments.nameSAvatar': '{name} 的頭像',
   'comments.noReply': '未回覆',
-  'comments.commentsAreCurrentlyDisabled': '目前尚未開放留言',
+  'comments.commentsAreCurrentlyDisabled': '留言目前不開放',
   'comments.closeNewComments': '關閉新留言',
   'comments.reopenNewComments': '重新開放留言',
   'comments.updatingAvailability': '正在更新留言設定',

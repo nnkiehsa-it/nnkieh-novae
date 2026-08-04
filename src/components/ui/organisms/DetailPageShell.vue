@@ -1,12 +1,11 @@
 <template>
   <section class="h-full min-h-0 pb-0 md:pb-5">
-    <SurfacePanel
+    <article
       v-if="isDesktopViewport"
-      as="article"
       class="hidden h-full min-h-0 flex-col overflow-visible md:flex"
       :aria-label="t(detailsLabel)"
     >
-      <header class="flex items-start gap-3 px-5 py-4">
+      <header class="flex items-start gap-3 px-1 py-2">
         <AppButton
           variant="icon"
           class="shrink-0"
@@ -25,24 +24,24 @@
         class="grid min-h-0 min-w-0 flex-1"
         :class="{ 'md:grid-cols-[minmax(0,3fr)_minmax(20rem,2fr)]': showComments }"
       >
-        <div class="flex min-h-0 min-w-0 flex-col px-5 py-5 pr-6">
+        <div class="flex min-h-0 min-w-0 flex-col py-3 pr-5">
           <div class="scroll-shadow-space--compact min-h-0 flex-1 overflow-auto overscroll-contain">
             <slot name="details" :compact="false" :scroll-content="false" />
           </div>
-          <div class="shrink-0 bg-surface dark:bg-surface">
+          <div class="shrink-0">
             <slot name="actions" :compact="false" />
           </div>
         </div>
 
         <aside
           v-if="showComments"
-          class="flex min-h-0 min-w-0 flex-col px-5 py-5"
+          class="flex min-h-0 min-w-0 flex-col border-l border-ink-200/70 py-3 pl-5 dark:border-ink-800/70"
           :aria-label="t(commentsLabel)"
         >
           <slot name="comments" :compact-header="false" />
         </aside>
       </div>
-    </SurfacePanel>
+    </article>
 
     <article
       v-else
@@ -114,7 +113,6 @@ import { AnimatePresence, m } from 'motion-v';
 import AppButton from '@/components/ui/atoms/AppButton.vue';
 import AppIcon from '@/components/ui/atoms/AppIcon.vue';
 import PillSegmentedControl from '@/components/ui/molecules/PillSegmentedControl.vue';
-import SurfacePanel from '@/components/ui/molecules/SurfacePanel.vue';
 import { useI18n } from '@/i18n';
 import { MOTION_SMOOTH_TWEEN } from '@/lib/ui-motion';
 

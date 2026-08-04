@@ -25,7 +25,7 @@ const messages = {
   'comments.deletingComment': 'Deleting comment',
   'comments.nameSAvatar': '{name}\'s avatar',
   'comments.noReply': 'No reply',
-  'comments.commentsAreCurrentlyDisabled': 'Comments are not open yet',
+  'comments.commentsAreCurrentlyDisabled': 'Comments are currently unavailable',
   'comments.closeNewComments': 'Close new comments',
   'comments.reopenNewComments': 'Reopen comments',
   'comments.updatingAvailability': 'Updating comment settings',

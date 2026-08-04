@@ -1,5 +1,10 @@
 <template>
-  <form class="space-y-2" autocomplete="off" @submit.prevent="submit">
+  <form
+    class="space-y-2"
+    autocomplete="off"
+    :aria-disabled="disabled ? 'true' : undefined"
+    @submit.prevent="submit"
+  >
     <div
       v-if="parentCommentId"
       class="flex items-center justify-between gap-3 px-1 text-xs font-semibold text-ink-500 dark:text-ink-400"
@@ -8,7 +13,7 @@
       <AppButton
         variant="toolbar"
         class="h-8 min-h-8 w-8 rounded-full p-0"
-        :disabled="submitting || uploading"
+        :disabled="disabled || submitting || uploading"
         :title="t('comments.cancelReply')"
         :aria-label="t('comments.cancelReply')"
         @click="handleClose"
@@ -58,20 +63,22 @@
           class="max-h-32 min-h-11 min-w-0 flex-1 resize-none border-none bg-transparent px-1 py-3 font-sans text-base leading-5 text-ink-800 outline-none placeholder:text-ink-400 focus:ring-0 dark:text-ink-100 dark:placeholder:text-ink-500 md:text-sm"
           autocomplete="off"
           :maxlength="INPUT_LIMITS.comment"
-          :placeholder="t(parentCommentId ? 'comments.leaveYourReply' : 'comments.shareYourThoughts')"
-          :disabled="submitting"
+          :placeholder="t(composerPlaceholder)"
+          :disabled="disabled || submitting"
         ></textarea>
 
         <AppButton
           variant="toolbar"
           class="h-10 min-h-10 w-10 shrink-0 rounded-full p-0"
-          :disabled="uploading || imageUrls.length >= RATE_LIMITS.imageUploads.commentMaxImages"
-          :title="uploading
-            ? t('comments.imageProcessing')
-            : imageUrls.length >= RATE_LIMITS.imageUploads.commentMaxImages
-              ? t('comments.imageLimit', { count: RATE_LIMITS.imageUploads.commentMaxImages })
-              : t('comments.addImage')"
-          :aria-label="t('comments.insertImage')"
+          :disabled="disabled || uploading || imageUrls.length >= RATE_LIMITS.imageUploads.commentMaxImages"
+          :title="disabled
+            ? t(disabledPlaceholder)
+            : uploading
+              ? t('comments.imageProcessing')
+              : imageUrls.length >= RATE_LIMITS.imageUploads.commentMaxImages
+                ? t('comments.imageLimit', { count: RATE_LIMITS.imageUploads.commentMaxImages })
+                : t('comments.addImage')"
+          :aria-label="t(disabled ? disabledPlaceholder : 'comments.insertImage')"
           @click="commentFileInputRef?.click()"
         >
           <AppIcon name="image" />
@@ -83,15 +90,16 @@
           autocomplete="off"
           class="hidden"
           multiple
+          :disabled="disabled"
           @change="handleImagePicked"
         />
         <AppButton
           type="submit"
           variant="icon-filled"
           class="h-10 min-h-10 w-10 shrink-0 bg-ink-900 text-white hover:bg-ink-800 dark:bg-ink-100 dark:text-ink-900 dark:hover:bg-ink-200"
-          :disabled="submitting || uploading || (!commentContent.trim() && imageUrls.length === 0)"
-          :title="t(submitting ? 'comments.sending' : 'comments.postComment')"
-          :aria-label="t('comments.postComment')"
+          :disabled="disabled || submitting || uploading || (!commentContent.trim() && imageUrls.length === 0)"
+          :title="t(disabled ? disabledPlaceholder : submitting ? 'comments.sending' : 'comments.postComment')"
+          :aria-label="t(disabled ? disabledPlaceholder : 'comments.postComment')"
         >
           <AppIcon name="send" />
         </AppButton>
@@ -117,15 +125,23 @@ import { useSession } from '@/composables/useSession';
 import { useActionFeedback } from '@/composables/useActionFeedback';
 import { RATE_LIMITS } from '@/generated/rate-limits';
 import { INPUT_LIMITS } from '@/constants/input-limits';
-import { useI18n } from '@/i18n';
+import { useI18n, type MessageKey } from '@/i18n';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
+  disabled?: boolean;
+  disabledPlaceholder?: MessageKey;
   error: string;
   issueId?: string;
   parentCommentId?: string | null;
   submitting: boolean;
   targetId?: string;
-}>();
+}>(), {
+  disabled: false,
+  disabledPlaceholder: 'comments.commentsAreCurrentlyDisabled',
+  issueId: '',
+  parentCommentId: null,
+  targetId: '',
+});
 
 const emit = defineEmits<{
   close: [];
@@ -136,7 +152,14 @@ const { user, customPhotoUrl } = useSession();
 const { t } = useI18n();
 const { show } = useActionFeedback();
 const myPhotoUrl = computed(() => customPhotoUrl.value || user.value?.photoURL || null);
-const composerId = computed(() => props.issueId ?? props.targetId ?? 'default');
+const composerId = computed(() => props.issueId || props.targetId || 'default');
+const composerPlaceholder = computed<MessageKey>(() =>
+  props.disabled
+    ? props.disabledPlaceholder
+    : props.parentCommentId
+      ? 'comments.leaveYourReply'
+      : 'comments.shareYourThoughts'
+);
 
 const commentContent = ref('');
 const {
@@ -157,10 +180,11 @@ const {
 const submittedImages = ref<Awaited<ReturnType<typeof uploadImagesAndBuildContent>>['uploadedImages']>([]);
 
 nextTick(() => {
-  commentTextareaRef.value?.focus();
+  if (!props.disabled) commentTextareaRef.value?.focus();
 });
 
 async function submit() {
+  if (props.disabled) return;
   try {
     const uploadResult = await uploadImagesAndBuildContent();
     submittedImages.value = uploadResult.uploadedImages;
@@ -176,7 +200,7 @@ async function submit() {
 }
 
 async function handleClose() {
-  if (props.submitting || uploading.value) {
+  if (props.disabled || props.submitting || uploading.value) {
     return;
   }
 
@@ -201,6 +225,13 @@ watch(
       deleteUploadedImages(submittedImages.value);
       submittedImages.value = [];
     }
+  },
+);
+
+watch(
+  () => props.disabled,
+  (disabled) => {
+    if (disabled) commentTextareaRef.value?.blur();
   },
 );
 </script>
