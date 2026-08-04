@@ -26,7 +26,7 @@
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2">
             <SkeletonBlock v-if="showAuthor && authorUid && authorProfile.loading" class="block h-3.5 w-20 rounded" />
-            <span v-else-if="showAuthor && authorUid" class="truncate text-xs font-normal text-ink-600 dark:text-ink-300 sm:text-sm">
+            <span v-else-if="showAuthor && authorUid" class="truncate text-xs font-normal text-ink-600 dark:text-ink-300">
               {{ authorName }}
             </span>
             <span v-if="timeLabel" class="shrink-0 text-xs font-normal text-ink-400 dark:text-ink-500">
@@ -37,7 +37,7 @@
             </TagBadge>
           </div>
 
-          <h3 class="mt-1 line-clamp-2 text-base font-bold leading-snug tracking-tight text-ink-950 dark:text-ink-50 sm:font-semibold">
+          <h3 class="mt-1 line-clamp-2 text-base font-semibold leading-snug tracking-tight text-ink-950 dark:text-ink-50">
             <SearchHighlight :text="title" :query="highlightQuery" />
           </h3>
         </div>
