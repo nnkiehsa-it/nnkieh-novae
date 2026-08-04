@@ -93,6 +93,7 @@
   }
 
   .surface-card--interactive {
+    cursor: pointer;
     transition:
       background-color var(--motion-duration) var(--motion-ease),
       box-shadow var(--motion-duration) var(--motion-ease),
@@ -589,7 +590,6 @@
   @media (hover: hover) and (pointer: fine) {
     .surface-card--interactive:hover {
       box-shadow: var(--shadow-floating);
-      transform: translateY(-2px);
     }
   }
 }
