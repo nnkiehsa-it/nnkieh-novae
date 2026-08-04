@@ -1,29 +1,33 @@
 <template>
   <div class="flex min-h-0 flex-col">
-    <div class="shrink-0 pb-1" :class="compact ? 'space-y-2' : 'space-y-4'">
-      <h2
-        class="break-words font-semibold tracking-[0.01em] text-ink-950 dark:text-ink-50"
-        :class="compact ? 'text-xl leading-snug' : 'text-2xl leading-snug sm:text-2xl'"
-      >
-        {{ title }}
-      </h2>
-
-      <div
-        v-if="showAuthor && authorUid"
-        class="flex items-center text-sm"
-        :class="compact ? 'flex-wrap gap-2 pb-2' : 'gap-3 pb-3'"
-      >
+    <div class="shrink-0 pb-3">
+      <div class="flex items-start gap-3.5">
         <AuthorAvatar
+          v-if="showAuthor && authorUid"
           :author-uid="authorUid"
-          :size="compact ? 'sm' : 'md'"
+          :size="compact ? 'md' : 'lg'"
           :alt-text="t('notification.nameAvatar', { name: authorName })"
+          class="shrink-0 rounded-full"
         />
-        <div class="min-w-0">
-          <SkeletonBlock v-if="authorProfile.loading" class="block h-4 w-24 rounded" />
-          <p v-else class="truncate text-xs font-normal text-ink-700 dark:text-ink-300">{{ authorName }}</p>
-          <p v-if="authorSecondary" class="mt-0.5 truncate text-xs text-ink-500 dark:text-ink-400">
-            {{ authorSecondary }}
-          </p>
+        <div class="min-w-0 flex-1">
+          <div v-if="showAuthor && authorUid" class="flex items-center gap-2">
+            <SkeletonBlock v-if="authorProfile.loading" class="block h-4 w-24 rounded" />
+            <template v-else>
+              <span class="truncate text-xs font-normal text-ink-600 dark:text-ink-300 sm:text-sm">
+                {{ authorName }}
+              </span>
+              <span v-if="authorSecondary" class="shrink-0 text-xs font-normal text-ink-400 dark:text-ink-500">
+                · {{ authorSecondary }}
+              </span>
+            </template>
+          </div>
+
+          <h2
+            class="mt-1.5 break-words font-semibold tracking-[0.01em] text-ink-950 dark:text-ink-50"
+            :class="compact ? 'text-xl leading-snug' : 'text-2xl leading-snug sm:text-2xl'"
+          >
+            {{ title }}
+          </h2>
         </div>
       </div>
     </div>
