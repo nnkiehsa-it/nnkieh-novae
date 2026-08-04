@@ -52,7 +52,7 @@
 - `App.vue` — startup gate + AppShell；全域以 MotionConfig 尊重 reduced motion，LazyMotion 延後載入 DOM layout 功能；route stage 使用固定 Grid 疊放新舊頁，依 navigation depth 以 smooth opacity／短距位移表達前進、返回與同層切換
 - `sw.ts` — PWA SW、快取策略、FCM 背景通知
 - `style.css` — 全域樣式載入入口；依序載入 base、primitives 與領域樣式
-- `styles/base.css` — design tokens、全域基礎與頁面骨架；route frame 維持同一 Grid 疊放，實際轉場由 App 的 Motion 層負責
+- `styles/base.css` — design tokens、全域基礎與頁面骨架；所有捲動容器全域隱藏原生捲動條但保留滾輪／觸控／鍵盤操作，route frame 維持同一 Grid 疊放，實際轉場由 App 的 Motion 層負責
 - `styles/primitives.css` — viewport、control／card／floating 表面與陰影、list、dropdown、control frame、GPU progress fill 的單一可復用視覺契約；Tailwind 陰影名稱同樣只使用 `shadow-control`、`shadow-card`、`shadow-floating`
 - `styles/components.css` / `controls.css` — 共用表面、互動狀態、按鈕與欄位；全域點擊回饋使用無位移的輕微放大與 spring-like 回彈，大型表面降低幅度；Pill 指示器的連續位移交給 Motion spring
 - `styles/navigation.css` — 桌面側欄與手機底部導覽；浮入與 scrim 使用 opacity／局部 transform，窄桌面側欄展開不再推動整個內容 viewport

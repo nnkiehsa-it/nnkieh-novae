@@ -161,7 +161,6 @@
 
   html {
     overflow-x: clip;
-    scrollbar-gutter: stable;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent !important;
   }
@@ -170,6 +169,17 @@
   *::before,
   *::after {
     -webkit-tap-highlight-color: transparent !important;
+  }
+
+  * {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+    height: 0;
+    width: 0;
   }
 
   body {
@@ -393,34 +403,6 @@
       padding-bottom: 0;
     }
 
-  }
-
-  @media (min-width: 768px) {
-    .app-main-content,
-    .scrollbar-subtle {
-      scrollbar-color: rgb(var(--color-outline) / 0.38) transparent;
-      scrollbar-gutter: stable;
-      scrollbar-width: thin;
-    }
-
-    .app-main-content::-webkit-scrollbar,
-    .scrollbar-subtle::-webkit-scrollbar {
-      height: 0.55rem;
-      width: 0.55rem;
-    }
-
-    .app-main-content::-webkit-scrollbar-thumb,
-    .scrollbar-subtle::-webkit-scrollbar-thumb {
-      border: 2px solid transparent;
-      border-radius: 9999px;
-      background: rgb(var(--color-outline) / 0.32);
-      background-clip: padding-box;
-    }
-
-    .app-main-content::-webkit-scrollbar-track,
-    .scrollbar-subtle::-webkit-scrollbar-track {
-      background: transparent;
-    }
   }
 
   body.dialog-open .app-main-content {
