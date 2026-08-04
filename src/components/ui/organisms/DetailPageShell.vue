@@ -49,7 +49,7 @@
       class="flex h-full min-h-0 flex-col overflow-visible md:hidden"
       :aria-label="t(detailsLabel)"
     >
-      <header class="flex shrink-0 items-start gap-3 px-0 py-3">
+      <header class="flex shrink-0 items-center justify-between gap-3 px-0 py-2.5">
         <AppButton
           v-if="showMobileBackButton"
           variant="icon"
@@ -60,14 +60,14 @@
         >
           <AppIcon name="chevron-left" :size="5" />
         </AppButton>
-        <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2 pt-1.5">
+        <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
           <slot name="header" />
         </div>
         <PillSegmentedControl
           v-if="showComments"
           v-model="activeTab"
           :options="tabOptions"
-          class="shrink-0 self-center"
+          class="shrink-0"
         />
       </header>
 

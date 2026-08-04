@@ -29,7 +29,7 @@
             variant="mobile-header"
             @update:model-value="filter => $emit('select-category', filter)"
           />
-          <span v-else class="truncate text-2xl font-semibold leading-tight tracking-[0.015em]">{{ title }}</span>
+          <span v-else class="truncate text-2xl font-semibold leading-none tracking-[0.015em]">{{ title }}</span>
         </h1>
       </div>
     </ViewportFrame>
