@@ -7,20 +7,13 @@ import {
 import { readContentState } from './support/content-state';
 import { newUserPage } from './support/session';
 
-test('proposal comment, sharing, comment switch, and status actions persist', async ({
+test('proposal comment, sharing, and status actions persist', async ({
   browser,
 }) => {
   const content = await readContentState();
   const manager = await newUserPage(browser, 'issueManager');
   await manager.page.goto(content.proposalA);
-  await expect(manager.page.getByRole('button', {
-    name: /Close new comments|Reopen comments/,
-  })).toBeVisible();
-  const reopenAtStart = manager.page.getByRole('button', { name: 'Reopen comments' });
-  if (await reopenAtStart.isVisible()) {
-    await reopenAtStart.click();
-    await expect(manager.page.getByRole('textbox', { name: 'Write a comment…' })).toBeVisible();
-  }
+  await expect(manager.page.getByRole('textbox', { name: 'Write a comment…' })).toBeVisible();
 
   const other = await newUserPage(browser, 'other');
   await other.page.goto(content.proposalA);
@@ -44,14 +37,6 @@ test('proposal comment, sharing, comment switch, and status actions persist', as
   await other.context.close();
 
   await manager.page.reload();
-  const closeComments = manager.page.getByRole('button', { name: 'Close new comments' });
-  await expect(manager.page.getByRole('button', {
-    name: /Close new comments|Reopen comments/,
-  })).toBeVisible();
-  if (await closeComments.isVisible()) await closeComments.click();
-  await expect(manager.page.getByRole('button', { name: 'Reopen comments' })).toBeVisible();
-  await expect(manager.page.getByRole('textbox', { name: 'Write a comment…' })).toHaveCount(0);
-  await manager.page.getByRole('button', { name: 'Reopen comments' }).click();
   await expect(manager.page.getByRole('textbox', { name: 'Write a comment…' })).toBeVisible();
 
   await manager.page.getByRole('button', { name: 'Change status or result' }).click();

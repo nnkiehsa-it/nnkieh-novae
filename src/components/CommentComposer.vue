@@ -121,7 +121,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import AppIcon from '@/components/ui/atoms/AppIcon.vue';
 import AppButton from '@/components/ui/atoms/AppButton.vue';
 import InlineMessage from '@/components/ui/atoms/InlineMessage.vue';
@@ -195,6 +195,10 @@ const {
   maxImages: RATE_LIMITS.imageUploads.commentMaxImages,
 });
 const submittedImages = ref<Awaited<ReturnType<typeof uploadImagesAndBuildContent>>['uploadedImages']>([]);
+
+void nextTick(() => {
+  if (!props.disabled) commentTextareaRef.value?.focus();
+});
 
 async function submit() {
   if (props.disabled) return;

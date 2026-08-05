@@ -218,6 +218,8 @@ test('Google login uses GIS Token Client with Firebase credential in production'
   assert.match(loginButton, /@click="emit\('login'\)"/u);
   assert.match(loginButton, /:busy="Boolean\(loading\)"[\s\S]*busy-label="[^"]*auth\.signingIn/u);
   assert.match(session, /loginBusy: computed\(\(\) =>[\s\S]*roleLoading/u);
+  assert.match(session, /background supabase auth initialization failed[\s\S]*state\.error = 'auth\.initializationFailed'/u);
+  assert.doesNotMatch(session, /background supabase auth initialization failed[\s\S]{0,180}rejectCurrentUser/u);
   assert.doesNotMatch(session, /redirectRecovering/u);
   assert.doesNotMatch(sessionTypes, /redirectRecovering/u);
   assert.doesNotMatch(authActions, /signInWithRedirect/u);
@@ -357,7 +359,7 @@ test('content reads persist by account and invalidate after writes or realtime e
 
 test('content versions batch validation and searches only submit explicitly', async () => {
   const versions = await read('src/services/content-versions.ts');
-  const versionMigration = await read('supabase/migrations/202608050001_content_versions.sql');
+  const versionMigration = await read('supabase/migrations/202608050002_content_versions.sql');
   const actionRegistry = await read('supabase/functions/backendAction/action-registry.ts');
   const issueSearch = await read('src/composables/useIssueSearch.ts');
   const facilities = await read('src/composables/useFacilities.ts');

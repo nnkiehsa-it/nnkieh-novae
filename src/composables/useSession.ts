@@ -216,7 +216,9 @@ async function refreshVerifiedSession(user: NonNullable<SessionState['user']>, v
       if (!isCurrentVerification(user, verificationId)) return;
     } catch (error) {
       debugLog('background supabase auth initialization failed', error);
-      await rejectCurrentUser('auth.initializationFailed');
+      // Backend availability must not destroy Firebase's persistent session.
+      // Access remains empty until a later reload or explicit retry succeeds.
+      state.error = 'auth.initializationFailed';
       return;
     }
 

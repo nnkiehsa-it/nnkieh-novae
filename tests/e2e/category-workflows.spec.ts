@@ -70,7 +70,7 @@ test('proposal and facility categories create, rename, surface, and delete atomi
   await deleteSelectedCategory(admin.page);
   await saveCategories(admin.page);
 
-  await admin.page.getByRole('button', { name: 'Facility-report categories' }).click();
+  await admin.page.getByRole('button', { name: 'Facilities', exact: true }).click();
   await createCategory(
     admin.page,
     'facility',
@@ -86,7 +86,7 @@ test('proposal and facility categories create, rename, surface, and delete atomi
   await ordinary.context.close();
 
   await admin.page.goto('/admin/management?tab=categories');
-  await admin.page.getByRole('button', { name: 'Facility-report categories' }).click();
+  await admin.page.getByRole('button', { name: 'Facilities', exact: true }).click();
   await admin.page.getByRole('listitem').filter({ hasText: 'E2E Temporary Facility' }).click();
   await deleteSelectedCategory(admin.page);
   await saveCategories(admin.page);

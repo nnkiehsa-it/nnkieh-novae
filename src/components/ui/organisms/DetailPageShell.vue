@@ -84,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, useId } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId } from 'vue';
 import AppButton from '@/components/ui/atoms/AppButton.vue';
 import AppIcon from '@/components/ui/atoms/AppIcon.vue';
 import { useI18n } from '@/i18n';
@@ -132,10 +132,17 @@ function syncDesktopViewport(event?: MediaQueryListEvent) {
   isDesktopViewport.value = event?.matches ?? desktopMediaQuery?.matches ?? window.innerWidth >= 768;
 }
 
+function scrollToMobileComments(behavior: ScrollBehavior) {
+  mobileCommentsRef.value?.scrollIntoView({ behavior, block: 'start' });
+}
+
 onMounted(() => {
   desktopMediaQuery = window.matchMedia('(min-width: 768px)');
   syncDesktopViewport();
   desktopMediaQuery.addEventListener('change', syncDesktopViewport);
+  if (props.initialTab === 'comments' && !isDesktopViewport.value && mobileCommentsVisible.value) {
+    void nextTick(() => scrollToMobileComments('auto'));
+  }
 });
 
 onBeforeUnmount(() => {

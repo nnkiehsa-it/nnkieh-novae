@@ -11,7 +11,7 @@ async function setFeatureSwitches(
   await expect(issues).toBeVisible();
   if (await issues.isChecked() !== issuesEnabled) await issues.click();
 
-  await page.getByRole('button', { name: 'Facility-report categories' }).click();
+  await page.getByRole('button', { name: 'Facilities', exact: true }).click();
   const facilities = page.getByRole('switch', { name: 'Facility reports' });
   await expect(facilities).toBeVisible();
   if (await facilities.isChecked() !== facilitiesEnabled) await facilities.click();

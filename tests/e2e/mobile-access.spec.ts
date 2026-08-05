@@ -15,7 +15,8 @@ test.describe('proposal manager on mobile', () => {
     await suppressInstallPrompt(page);
     const content = await readContentState();
     await page.goto(content.proposalA);
-    await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible();
+    await expect(page.getByRole('banner').getByRole('button', { name: 'Back to proposals' })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Change status or result' })).toBeVisible();
     await page.goto(content.proposalB);
     await expect(page.getByRole('button', { name: 'Change status or result' })).toHaveCount(0);

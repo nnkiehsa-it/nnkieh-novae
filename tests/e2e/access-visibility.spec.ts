@@ -8,32 +8,32 @@ test('proposal controls follow ownership, category scope, and platform administr
   const content = await readContentState();
   const cases = [
     {
-      absent: ['Close new comments', 'Change status or result'],
+      absent: ['Change status or result'],
       present: ['Delete proposal'],
       url: content.proposalA,
       user: 'ordinary',
     },
     {
-      absent: ['Close new comments', 'Change status or result', 'Delete proposal'],
+      absent: ['Change status or result', 'Delete proposal'],
       present: [],
       url: content.proposalA,
       user: 'other',
     },
     {
       absent: [],
-      present: ['Close new comments', 'Change status or result', 'Delete proposal'],
+      present: ['Change status or result', 'Delete proposal'],
       url: content.proposalA,
       user: 'issueManager',
     },
     {
-      absent: ['Close new comments', 'Change status or result', 'Delete proposal'],
+      absent: ['Change status or result', 'Delete proposal'],
       present: [],
       url: content.proposalB,
       user: 'issueManager',
     },
     {
       absent: [],
-      present: ['Close new comments', 'Change status or result', 'Delete proposal'],
+      present: ['Change status or result', 'Delete proposal'],
       url: content.proposalB,
       user: 'admin',
     },

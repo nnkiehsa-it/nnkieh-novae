@@ -42,5 +42,5 @@ export async function setMemberAccess(
   });
   if (!await action.isVisible()) return;
   await action.click();
-  await expect(page.getByText('Management access updated')).toBeVisible();
+  await expect(page.getByText('Management access updated').last()).toBeVisible();
 }

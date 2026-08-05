@@ -36,7 +36,9 @@ test('entry and comment limits are enforced across UI, Edge, and a new migration
   assert.match(commentComposer, /:disabled="disabled"[\s\S]*@change="handleImagePicked"/u);
   assert.match(commentComposer, /if \(!props\.disabled\) commentTextareaRef\.value\?\.focus\(\)/u);
   assert.match(commentComposer, /comment-composer-dock viewport-floating-inline[\s\S]*mobileDocked/u);
-  assert.match(await read('src/styles/content.css'), /comment-composer-dock \.control-frame[\s\S]*border-radius: 9999px[\s\S]*box-shadow: none/u);
+  assert.match(await read('src/styles/content.css'), /comment-composer \.control-frame[\s\S]*border-radius: 9999px[\s\S]*box-shadow: none/u);
+  assert.match(commentComposer, /parentCommentPreview[\s\S]*class="truncate text-sm/u);
+  assert.match(commentThread, /slice\(0, 24\)/u);
   assert.match(commentThread, /<CommentComposer[\s\S]*:disabled="!canCompose"/u);
   assert.doesNotMatch(commentThread, /comments\.count|comments\.noCommentsYet|<TagBadge|<AppIcon/u);
   assert.match(commentThread, /v-else-if="comments\.length"/u);
