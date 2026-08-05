@@ -2,7 +2,7 @@ const messages = {
   'comments.error': '錯誤：{message}',
   'comments.imageLimit': '每則留言最多 {count} 張圖片',
   'comments.replies': '{count} 則回覆',
-  'comments.replying': '正在回覆留言',
+  'comments.replying': '正在回覆 {name}',
   'comments.title': '討論留言',
   'comments.loadingComments': '留言載入中',
   'comments.addImage': '加入圖片',

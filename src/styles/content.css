@@ -38,7 +38,7 @@
   }
 
   .comment-composer-dock .control-frame {
-    background-color: rgb(var(--color-secondary-container) / 0.72);
+  background-color: rgb(var(--color-secondary-container));
     border-radius: 9999px;
     box-shadow: none;
   }

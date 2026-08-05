@@ -65,6 +65,7 @@
         :disabled="!canCompose"
         :disabled-placeholder="disabledComposerLabelKey"
         :mobile-docked="mobileDocked"
+        :parent-author-uid="replyingToAuthorUid"
         @close="closeComposer"
         @submit="handleSubmitComment"
       />
@@ -131,6 +132,10 @@ const props = withDefaults(defineProps<{
 });
 
 const replyingToCommentId = ref('');
+const replyingToAuthorUid = computed(() => {
+  if (!replyingToCommentId.value) return '';
+  return props.comments.find((comment) => comment.id === replyingToCommentId.value)?.author_uid ?? '';
+});
 const { t } = useI18n();
 const commentPendingDelete = ref('');
 const expandedReplyCommentIds = ref<Set<string>>(new Set());

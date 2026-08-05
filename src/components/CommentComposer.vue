@@ -10,7 +10,7 @@
       v-if="parentCommentId"
       class="flex items-center justify-between gap-3 px-1 text-xs font-semibold text-ink-500 dark:text-ink-400"
     >
-      <span>{{ t('comments.replying') }}</span>
+      <span>{{ t('comments.replying', { name: parentAuthorName }) }}</span>
       <AppButton
         variant="toolbar"
         class="h-8 min-h-8 w-8 rounded-full p-0"
@@ -114,7 +114,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import AppIcon from '@/components/ui/atoms/AppIcon.vue';
 import AppButton from '@/components/ui/atoms/AppButton.vue';
 import InlineMessage from '@/components/ui/atoms/InlineMessage.vue';
@@ -124,6 +124,7 @@ import EditorSurface from '@/components/ui/molecules/EditorSurface.vue';
 import { useMarkdownImageUpload } from '@/composables/useMarkdownImageUpload';
 import { useSession } from '@/composables/useSession';
 import { useActionFeedback } from '@/composables/useActionFeedback';
+import { useAuthorProfile } from '@/composables/useAuthorProfile';
 import { RATE_LIMITS } from '@/generated/rate-limits';
 import { INPUT_LIMITS } from '@/constants/input-limits';
 import { useI18n, type MessageKey } from '@/i18n';
@@ -134,6 +135,7 @@ const props = withDefaults(defineProps<{
   error: string;
   issueId?: string;
   mobileDocked?: boolean;
+  parentAuthorUid?: string;
   parentCommentId?: string | null;
   submitting: boolean;
   targetId?: string;
@@ -142,6 +144,7 @@ const props = withDefaults(defineProps<{
   disabledPlaceholder: 'comments.commentsAreCurrentlyDisabled',
   issueId: '',
   mobileDocked: false,
+  parentAuthorUid: '',
   parentCommentId: null,
   targetId: '',
 });
@@ -155,6 +158,8 @@ const { user, customPhotoUrl } = useSession();
 const { t } = useI18n();
 const { show } = useActionFeedback();
 const myPhotoUrl = computed(() => customPhotoUrl.value || user.value?.photoURL || null);
+const parentAuthorProfile = useAuthorProfile(() => props.parentAuthorUid);
+const parentAuthorName = computed(() => parentAuthorProfile.value.profile?.displayName || t('navigation.user'));
 const composerId = computed(() => props.issueId || props.targetId || 'default');
 const composerPlaceholder = computed<MessageKey>(() =>
   props.disabled
@@ -181,10 +186,6 @@ const {
   maxImages: RATE_LIMITS.imageUploads.commentMaxImages,
 });
 const submittedImages = ref<Awaited<ReturnType<typeof uploadImagesAndBuildContent>>['uploadedImages']>([]);
-
-nextTick(() => {
-  if (!props.disabled) commentTextareaRef.value?.focus();
-});
 
 async function submit() {
   if (props.disabled) return;

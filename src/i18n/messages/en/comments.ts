@@ -2,7 +2,7 @@ const messages = {
   'comments.error': 'Error: {message}',
   'comments.imageLimit': 'Up to {count} images per comment',
   'comments.replies': '{count} replies',
-  'comments.replying': 'Replying to comment',
+  'comments.replying': 'Replying to {name}',
   'comments.title': 'Discussion',
   'comments.loadingComments': 'Loading comments',
   'comments.addImage': 'Add image',
