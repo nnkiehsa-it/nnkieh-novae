@@ -6,6 +6,7 @@ import { asNumber, asUuid, readCursor, readCursorDate } from "./utils.ts";
 import { INPUT_LIMITS, requiredMediaContent } from "./validation.ts";
 import { canManageIssueCategory } from "./auth.ts";
 import { selectIssue } from "./issue-shared.ts";
+import { attachContentVersion, loadContentVersion } from "./content-versions.ts";
 
 async function issueCommentPolicyParams(supabase: BackendSupabase, auth: AuthContext, actorCanManage: boolean) {
   const policy = await issueCategoryPolicyLists(supabase);
@@ -23,6 +24,7 @@ async function listComments(payload: JsonRecord, auth: AuthContext, supabase: Ba
   if (!issueId) throw new Error("not-found");
   const issue = await selectIssue(supabase, issueId);
   const cursor = readCursor(payload);
+  const version = await loadContentVersion(supabase, "issues");
   const { data, error } = await supabase.schema("app_api").rpc("backend_list_issue_comments", {
     issue_id: issueId,
     cursor_id: asUuid(cursor.id) || null,
@@ -31,7 +33,7 @@ async function listComments(payload: JsonRecord, auth: AuthContext, supabase: Ba
     ...await issueCommentPolicyParams(supabase, auth, canManageIssueCategory(auth, asString(issue.category))),
   });
   if (error) throw error;
-  return data;
+  return attachContentVersion(data, version);
 }
 
 async function createComment(payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {

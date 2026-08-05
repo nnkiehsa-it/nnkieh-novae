@@ -20,7 +20,7 @@ import { validateBasicUser, validateUserAgainstToken } from '@/composables/sessi
 import { withRequestTimeout } from '@/lib/request';
 import { ensureSupabaseAuthenticatedRole } from '@/services/supabase-auth';
 import { fetchCurrentUserRole, seedSessionAccess } from '@/services/session-role';
-import { applyContentRevisionsSnapshot, ensureContentRevisionsFresh } from '@/services/content-revisions';
+import { applyContentVersionsSnapshot, ensureContentVersionsFresh } from '@/services/content-versions';
 import { fetchSessionBootstrap } from '@/services/session-bootstrap';
 import { ensureCategoryCatalog, seedCategoryCatalog } from '@/composables/useCategories';
 import { seedNotificationUnreadHint } from '@/services/notifications';
@@ -234,12 +234,12 @@ async function refreshVerifiedSession(user: NonNullable<SessionState['user']>, v
       state.managedFacilityCategoryIds = access.managedFacilityCategoryIds;
       state.setupCompleted = access.setupCompleted;
       seedCategoryCatalog(bootstrap.catalog);
-      applyContentRevisionsSnapshot(bootstrap.revisions);
+      applyContentVersionsSnapshot(bootstrap.versions);
       seedNotificationUnreadHint(bootstrap.notificationUnread.hasUnread);
       if (bootstrap.visitRecorded) markPlatformVisitRecorded();
     } catch (bootstrapError) {
       debugLog('session bootstrap failed; falling back to granular reads', bootstrapError);
-      await ensureContentRevisionsFresh().catch(() => undefined);
+      await ensureContentVersionsFresh().catch(() => undefined);
       if (!isCurrentVerification(user, verificationId)) return;
       const access = await fetchCurrentUserRole(true, { useBootstrap: false });
       if (!isCurrentVerification(user, verificationId)) return;

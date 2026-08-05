@@ -1,8 +1,6 @@
 import { computed, onScopeDispose, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAnnouncements } from '@/composables/useAnnouncements';
-import { registerAppResumeHandler } from '@/composables/useAppResume';
-import { useNetworkStatus } from '@/composables/useNetworkStatus';
 import { useSession } from '@/composables/useSession';
 import { useActionFeedback } from '@/composables/useActionFeedback';
 import {
@@ -12,20 +10,15 @@ import {
 import { subscribeContentRealtimeEvents } from '@/services/realtime-events';
 import type { AnnouncementRecord } from '@/types';
 import { isContentUnavailableError } from '@/services/issues-core';
-import {
-  markContentRealtimeReliable,
-  markContentRealtimeUnreliable,
-  markContentWentOffline,
-  shouldRefreshContentAfterResume,
-} from '@/services/content-read-cache';
-import { subscribeContentRevisionChanges } from '@/services/content-revisions';
+import { hasContentVersionGap, registerContentVersion } from '@/services/content-versions';
+import { subscribeContentVersionChanges } from '@/services/content-versions';
+import { preserveContentListScroll } from '@/lib/content-list-scroll';
 
 export function useAnnouncementManagement() {
   const router = useRouter();
   const { can, initialized, isAllowedUser, loading: authLoading, roleLoading, user } = useSession();
   const isAdmin = computed(() => can('announcement.manage'));
   const { show } = useActionFeedback();
-  const { isOnline } = useNetworkStatus();
   const announcementCacheScope = computed(() => [
     initialized.value ? 'ready' : 'booting',
     isAllowedUser.value ? 'allowed' : 'blocked',
@@ -36,7 +29,6 @@ export function useAnnouncementManagement() {
     announcements,
     loading,
     loadingMore,
-    updatedAt,
     error,
     hasMore,
     loadMoreAnnouncements,
@@ -51,13 +43,8 @@ export function useAnnouncementManagement() {
   const likingAnnouncementId = ref('');
   const sessionLoading = computed(() => authLoading.value || !initialized.value);
   let realtimeUnsubscribe: (() => void) | null = null;
-  const unregisterResumeHandler = registerAppResumeHandler(() => {
-    if (!initialized.value || !isAllowedUser.value) return;
-    if (!shouldRefreshContentAfterResume(updatedAt.value)) return;
-    void refreshAnnouncementList({ force: true });
-  });
-  const unsubscribeRevision = subscribeContentRevisionChanges('announcements', () =>
-    refreshAnnouncementList({ force: true })
+  const unsubscribeVersion = subscribeContentVersionChanges('announcements', () =>
+    preserveContentListScroll(() => refreshAnnouncementList({ force: true }))
   );
 
   function openAnnouncementDetails(announcement: AnnouncementRecord, initialTab: 'details' | 'comments' = 'details') {
@@ -117,7 +104,6 @@ export function useAnnouncementManagement() {
   async function refreshAnnouncementList(options: { force?: boolean } = {}) {
     if (options.force) {
       await forceRefreshAnnouncements();
-      markContentRealtimeReliable();
       return;
     }
     await refreshAnnouncements();
@@ -144,17 +130,27 @@ export function useAnnouncementManagement() {
       if (!ready || !allowed || waitingForRole) return;
 
       realtimeUnsubscribe = subscribeContentRealtimeEvents('announcements', (event) => {
+        if (event.eventType === 'announcement_comment_changed') {
+          registerContentVersion('announcements', event.version);
+          return;
+        }
+        if (event.version > 0 && hasContentVersionGap('announcements', event.version)) {
+          void refreshAnnouncementList({ force: true });
+          return;
+        }
         if (event.eventType === 'announcement_metrics_changed') {
           patchAnnouncement(event.targetId, (announcement) => ({
             ...announcement,
             comment_count: event.commentCount ?? announcement.comment_count,
             like_count: event.likeCount ?? announcement.like_count,
           }));
+          registerContentVersion('announcements', event.version);
           return;
         }
         if (event.eventType !== 'announcement_changed') return;
         if (event.op === 'delete') {
           removeAnnouncement(event.targetId);
+          registerContentVersion('announcements', event.version);
           return;
         }
         void fetchAnnouncementRecordById(event.targetId, {
@@ -162,30 +158,19 @@ export function useAnnouncementManagement() {
           forceRefresh: true,
         }).then((announcement) => {
           upsertAnnouncement(announcement);
+          registerContentVersion('announcements', event.version);
         }).catch((caught) => {
           if (isContentUnavailableError(caught)) removeAnnouncement(event.targetId);
+          else void refreshAnnouncementList({ force: true });
         });
-      }, () => {
-        markContentRealtimeUnreliable();
-        void refreshAnnouncementList({ force: true });
-      }, () => { void refreshAnnouncementList({ force: true }); });
+      });
     },
     { immediate: true },
   );
 
   onScopeDispose(() => {
     realtimeUnsubscribe?.();
-    unregisterResumeHandler();
-    unsubscribeRevision();
-  });
-
-  watch(isOnline, (online) => {
-    if (!online) {
-      markContentWentOffline();
-      return;
-    }
-    if (!initialized.value || !isAllowedUser.value) return;
-    if (shouldRefreshContentAfterResume(updatedAt.value)) void refreshAnnouncementList({ force: true });
+    unsubscribeVersion();
   });
 
   return {

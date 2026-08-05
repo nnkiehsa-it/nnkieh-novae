@@ -10,14 +10,14 @@ import {
   setCachedContentFromRead,
 } from '@/services/content-read-cache';
 
-export type ContentRevisionDomain = 'announcements' | 'facilities' | 'issues';
-export type ContentRevisions = Record<ContentRevisionDomain, number>;
+export type ContentVersionDomain = 'announcements' | 'facilities' | 'issues';
+export type ContentVersions = Record<ContentVersionDomain, number>;
 
 export interface SessionBootstrapResult {
   access: SessionAccess;
   catalog: CategoryCatalog;
   notificationUnread: { hasUnread: boolean };
-  revisions: ContentRevisions;
+  versions: ContentVersions;
   visitRecorded: boolean;
 }
 
@@ -87,10 +87,10 @@ export async function fetchSessionBootstrap(options: {
       notificationUnread: {
         hasUnread: result.notificationUnread?.hasUnread === true,
       },
-      revisions: {
-        announcements: Number(result.revisions?.announcements ?? 0),
-        facilities: Number(result.revisions?.facilities ?? 0),
-        issues: Number(result.revisions?.issues ?? 0),
+      versions: {
+        announcements: Number(result.versions?.announcements ?? 1),
+        facilities: Number(result.versions?.facilities ?? 1),
+        issues: Number(result.versions?.issues ?? 1),
       },
       visitRecorded: result.visitRecorded === true,
     };

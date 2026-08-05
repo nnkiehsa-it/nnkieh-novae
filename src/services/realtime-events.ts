@@ -2,13 +2,12 @@ import { authorizeSupabaseRealtime, getSupabaseClient } from '@/lib/supabase';
 import { auth } from '@/lib/firebase';
 import { getCachedSessionRole } from '@/services/session-role';
 import { markContentCachePrefixStale } from '@/services/content-read-cache';
+import { ensureContentVersionsFresh } from '@/services/content-versions';
 
 type SupabaseAppClient = ReturnType<typeof getSupabaseClient>;
 type RealtimeChannel = ReturnType<SupabaseAppClient['channel']>;
 interface RealtimeSubscriber {
   callback: (event: ContentRealtimeEvent) => void;
-  onError?: (error: Error) => void;
-  onResync?: () => void;
 }
 
 const realtimeSubscribers = new Map<number, RealtimeSubscriber>();
@@ -55,6 +54,7 @@ export interface ContentRealtimeEvent {
   op: 'insert' | 'update' | 'delete' | null;
   supportCount: number | null;
   targetId: string;
+  version: number;
 }
 
 function normalizeNullableString(value: unknown) {
@@ -108,6 +108,7 @@ function normalizeRealtimeEvent(data: Record<string, unknown>): ContentRealtimeE
       ? data.support_count
       : null,
     targetId,
+    version: typeof data.version === 'number' && Number.isFinite(data.version) ? data.version : 0,
   };
 }
 
@@ -148,7 +149,7 @@ async function connectSharedRealtimeChannels() {
             reconnectAttempt = 0;
             if (resyncAfterReconnect) {
               resyncAfterReconnect = false;
-              realtimeSubscribers.forEach((subscriber) => subscriber.onResync?.());
+              void ensureContentVersionsFresh({ notify: true });
             }
           }
           return;
@@ -159,8 +160,7 @@ async function connectSharedRealtimeChannels() {
         sharedRealtimeChannels = [];
         sharedRealtimeKey = '';
         resyncAfterReconnect = true;
-        const error = new Error('content-realtime-unavailable');
-        realtimeSubscribers.forEach((subscriber) => subscriber.onError?.(error));
+        // Version validation on reconnect is the single resync path.
         failedChannels.forEach((failedChannel) => void client.removeChannel(failedChannel));
         scheduleReconnect();
       });
@@ -174,10 +174,9 @@ function ensureSharedRealtimeChannel() {
   if (realtimeConnectPending) return;
   realtimeConnectPending = true;
   void connectSharedRealtimeChannels()
-    .catch((cause) => {
+    .catch(() => {
       resyncAfterReconnect = true;
-      const error = cause instanceof Error ? cause : new Error('content-realtime-unavailable');
-      realtimeSubscribers.forEach((subscriber) => subscriber.onError?.(error));
+      // A failed connection is recovered by the shared reconnect/version check.
       scheduleReconnect();
     })
     .finally(() => {
@@ -218,12 +217,10 @@ function invalidateRealtimeContent(event: ContentRealtimeEvent) {
 export function subscribeContentRealtimeEvents(
   channelScope: string,
   callback: (event: ContentRealtimeEvent) => void,
-  onError?: (error: Error) => void,
-  onResync?: () => void,
 ) {
   void channelScope;
   const subscriberId = realtimeSubscriberSerial += 1;
-  realtimeSubscribers.set(subscriberId, { callback, onError, onResync });
+  realtimeSubscribers.set(subscriberId, { callback });
   ensureSharedRealtimeChannel();
 
   return () => {

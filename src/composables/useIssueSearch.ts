@@ -161,7 +161,7 @@ export function useIssueSearch(options: {
       options.sortOption.value,
       searchRefreshToken.value,
     ] as const,
-    async ([ready, titleQuery, filter, statusBucket, uid, nextIsAdmin, sort]) => {
+    async ([ready, titleQuery, filter, statusBucket, uid, nextIsAdmin, sort, refreshToken]) => {
       resetSearchResults();
 
       if (!ready || filter === 'my-proposals' || !uid || !titleQuery) {
@@ -178,6 +178,7 @@ export function useIssueSearch(options: {
         const result = await fetchIssuesForTitleSearch(uid, filter, statusBucket, titleQuery, {
           isAdmin: nextIsAdmin,
           cursor: null,
+          forceRefresh: refreshToken > 0,
           signal: controller.signal,
           sort,
           supportedIssueIds: options.supportedIssueIds.value,

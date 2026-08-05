@@ -19,7 +19,7 @@ integrationTest("real Edge Function HTTP boundaries reject missing trust signals
     return response;
   };
 
-  const missingOrigin = await post("backendAction", { action: "getContentRevisions", payload: {} });
+  const missingOrigin = await post("backendAction", { action: "getContentVersions", payload: {} });
   assert.equal(missingOrigin.status, 401);
 
   const unsupported = await post("backendAction", { action: "integrationUnknown", payload: {} }, {
@@ -28,7 +28,7 @@ integrationTest("real Edge Function HTTP boundaries reject missing trust signals
   assert.equal(unsupported.status, 400);
 
   const unauthenticated = await post("backendAction", {
-    action: "getContentRevisions",
+    action: "getContentVersions",
     payload: {},
   }, {
     "x-novae-origin-secret": originSecret,

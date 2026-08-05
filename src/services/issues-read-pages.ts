@@ -5,7 +5,7 @@ import { invokeBackendAction } from '@/services/backend-action';
 import { captureContentCacheWriteGuard, createContentCacheKey, getCachedContentPersistent, setCachedContentFromRead } from '@/services/content-read-cache';
 import { TABLE_PAGE_SIZE, normalizeIssueCursor, normalizeIssueRecord, toReadableBackendError, withSupportState } from './issues-core';
 import { CONTENT_FEED_PAGE_SIZE } from '@/lib/page-size';
-import { prepareContentRevisionRead } from '@/services/content-revisions';
+import { registerContentVersion } from '@/services/content-versions';
 
 function normalizeIssueList(records: Record<string, unknown>[]) {
   return records.map((record) => normalizeIssueRecord(String(record.id ?? ''), record));
@@ -25,7 +25,6 @@ export async function fetchIssuesPageByStatus(
     supportedIssueIds?: Set<string>;
   },
 ) {
-  if (!options?.forceRefresh) await prepareContentRevisionRead();
   const pageSize = options?.pageSize ?? TABLE_PAGE_SIZE;
   const cacheKey = createContentCacheKey([
     'issue-list-page',
@@ -41,8 +40,9 @@ export async function fetchIssuesPageByStatus(
     cursor?.created_at?.getTime() ?? '',
   ]);
   if (!options?.forceRefresh) {
-    const cached = await getCachedContentPersistent<{ cursor: IssueCursor | null; hasMore: boolean; issues: IssueRecord[] }>(cacheKey);
+    const cached = await getCachedContentPersistent<{ cursor: IssueCursor | null; hasMore: boolean; issues: IssueRecord[]; version: number }>(cacheKey);
     if (cached) {
+      registerContentVersion('issues', cached.version ?? 1);
       return {
         ...cached,
         issues: withSupportState(cached.issues, options?.supportedIssueIds),
@@ -62,7 +62,7 @@ export async function fetchIssuesPageByStatus(
         statusBucket: IssueStatusBucket;
         uid: string;
       },
-      { cursor: IssueCursor | null; hasMore: boolean; issues: Record<string, unknown>[] }
+      { cursor: IssueCursor | null; hasMore: boolean; issues: Record<string, unknown>[]; version: number }
     >('listIssues', { signal: options?.signal, timeoutMs: READ_REQUEST_TIMEOUT_MS });
     const result = await fn({
       activeFilter,
@@ -77,8 +77,10 @@ export async function fetchIssuesPageByStatus(
       cursor: normalizeIssueCursor(result.cursor),
       hasMore: result.hasMore,
       issues: withSupportState(normalizeIssueList(result.issues), options?.supportedIssueIds),
+      version: result.version,
     };
     setCachedContentFromRead(cacheGuard, page);
+    registerContentVersion('issues', result.version);
     return page;
   } catch (error) {
     throw toReadableBackendError(error);
@@ -103,12 +105,12 @@ export async function fetchIssuesForTitleSearch(
   hasMore: boolean;
   issues: IssueRecord[];
   limited: boolean;
+  version: number;
 }> {
-  if (!options?.forceRefresh) await prepareContentRevisionRead();
   const normalizedQuery = normalizeSearchText(titleQuery);
   const searchTokens = buildTitleSearchTokens(normalizedQuery);
   if (searchTokens.length === 0) {
-    return { cursor: null, hasMore: false, issues: [], limited: false };
+    return { cursor: null, hasMore: false, issues: [], limited: false, version: 0 };
   }
   const cacheKey = createContentCacheKey([
     'issue-search',
@@ -129,13 +131,16 @@ export async function fetchIssuesForTitleSearch(
       hasMore: boolean;
       issues: IssueRecord[];
       limited: boolean;
+      version: number;
     }>(cacheKey);
     if (cached) {
+      registerContentVersion('issues', cached.version ?? 1);
       return {
         cursor: cached.cursor,
         hasMore: cached.hasMore,
         issues: withSupportState(cached.issues, options?.supportedIssueIds),
         limited: cached.limited,
+        version: cached.version,
       };
     }
   }
@@ -153,7 +158,7 @@ export async function fetchIssuesForTitleSearch(
         titleQuery: string;
         uid: string;
       },
-      { cursor: IssueCursor | null; hasMore: boolean; issues: Record<string, unknown>[]; limited: boolean }
+      { cursor: IssueCursor | null; hasMore: boolean; issues: Record<string, unknown>[]; limited: boolean; version: number }
     >('searchIssues', { signal: options?.signal, timeoutMs: READ_REQUEST_TIMEOUT_MS });
     const result = await fn({
       activeFilter,
@@ -170,8 +175,10 @@ export async function fetchIssuesForTitleSearch(
       hasMore: result.hasMore,
       issues: withSupportState(normalizeIssueList(result.issues), options?.supportedIssueIds),
       limited: result.limited,
+      version: result.version,
     };
     setCachedContentFromRead(cacheGuard, page);
+    registerContentVersion('issues', result.version);
     return page;
   } catch (error) {
     throw toReadableBackendError(error);

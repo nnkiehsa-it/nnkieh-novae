@@ -18,7 +18,7 @@ export const BACKEND_ACTION_NAMES = [
   'getAnnouncement',
   'getCategoryCatalog',
   'getCategoryManagement',
-  'getContentRevisions',
+  'getContentVersions',
   'getCurrentUserRole',
   'getSessionBootstrap',
   'getFacility',

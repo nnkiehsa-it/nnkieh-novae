@@ -17,7 +17,7 @@
   "getAnnouncement": { "group": "read" },
   "getCategoryCatalog": { "group": "read" },
   "getCategoryManagement": { "group": "read" },
-  "getContentRevisions": { "group": "read" },
+  "getContentVersions": { "group": "read" },
   "getCurrentUserRole": { "group": "read" },
   "getSessionBootstrap": { "group": "read" },
   "getFacility": { "group": "read" },

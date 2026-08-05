@@ -18,8 +18,8 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   const user = await seedActor("access-user");
   let target = await seedActor("access-target");
 
-  const revisions = asRecord(await callAction("getContentRevisions", {}, user.auth));
-  assert.deepEqual(Object.keys(asRecord(revisions.revisions)).sort(), [
+  const versions = asRecord(await callAction("getContentVersions", {}, user.auth));
+  assert.deepEqual(Object.keys(asRecord(versions.versions)).sort(), [
     "announcements",
     "facilities",
     "issues",
@@ -27,7 +27,7 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
 
   const bootstrap = asRecord(await callAction("getSessionBootstrap", { recordVisit: true }, user.auth));
   assert.equal(asRecord(bootstrap.access).role, "user");
-  assert.deepEqual(Object.keys(asRecord(bootstrap.revisions)).sort(), [
+  assert.deepEqual(Object.keys(asRecord(bootstrap.versions)).sort(), [
     "announcements",
     "facilities",
     "issues",

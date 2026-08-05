@@ -17,6 +17,7 @@
       <m.div
         v-for="announcement in announcements"
         :key="announcement.id"
+        :data-content-id="announcement.id"
         layout
         :initial="{ opacity: 0, y: 16, scale: 0.985 }"
         :animate="{ opacity: 1, y: 0, scale: 1 }"

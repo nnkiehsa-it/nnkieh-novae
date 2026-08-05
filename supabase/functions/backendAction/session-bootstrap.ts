@@ -1,25 +1,7 @@
 import { asBoolean } from "./utils.ts";
 import { loadCategoryCatalog } from "./categories.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
-
-async function loadContentRevisions(supabase: BackendSupabase) {
-  const { data, error } = await supabase
-    .schema("app_private")
-    .from("content_revisions")
-    .select("domain,revision");
-  if (error) throw error;
-  const revisions = { announcements: 0, facilities: 0, issues: 0 };
-  for (const row of data ?? []) {
-    const domain = String(row.domain);
-    if (domain === "announcements" || domain === "facilities" || domain === "issues") {
-      revisions[domain] = Number(row.revision);
-    }
-  }
-  if (Object.values(revisions).some((revision) => revision < 1)) {
-    throw new Error("upstream-unavailable");
-  }
-  return revisions;
-}
+import { loadContentVersions } from "./content-versions.ts";
 
 async function recordVisitIfRequested(
   payload: JsonRecord,
@@ -43,9 +25,9 @@ export async function getSessionBootstrap(
   auth: AuthContext,
   supabase: BackendSupabase,
 ) {
-  const [catalog, revisions, unreadHint, visitRecorded] = await Promise.all([
+  const [catalog, versions, unreadHint, visitRecorded] = await Promise.all([
     loadCategoryCatalog(supabase, true),
-    loadContentRevisions(supabase),
+    loadContentVersions(supabase),
     supabase.schema("app_api").rpc("backend_get_notification_unread_hint", {
       actor_is_admin: auth.isAdmin,
       actor_uid: auth.uid,
@@ -73,7 +55,7 @@ export async function getSessionBootstrap(
       setupCompleted: auth.setupCompleted,
     },
     notificationUnread: unreadHint,
-    revisions,
+    versions,
     visitRecorded,
   };
 }

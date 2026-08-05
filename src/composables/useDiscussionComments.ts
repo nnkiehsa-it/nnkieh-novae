@@ -1,5 +1,4 @@
 import { onScopeDispose, ref, toValue, watch, type MaybeRefOrGetter, type Ref } from 'vue';
-import { registerAppResumeHandler } from '@/composables/useAppResume';
 import { useNetworkStatus } from '@/composables/useNetworkStatus';
 import { useSession } from '@/composables/useSession';
 import { useActionFeedback } from '@/composables/useActionFeedback';
@@ -7,15 +6,11 @@ import { formatRequestError, isAbortFailure, RequestFailure } from '@/lib/reques
 import {
   createContentCacheKey,
   isContentCacheFresh,
-  markContentRealtimeReliable,
-  markContentRealtimeUnreliable,
-  markContentWentOffline,
-  shouldRefreshContentAfterResume,
 } from '@/services/content-read-cache';
 import { isContentUnavailableError } from '@/services/issues-core';
 import { subscribeContentRealtimeEvents } from '@/services/realtime-events';
 import type { DiscussionCommentRecord } from '@/types';
-import { subscribeContentRevisionChanges, type ContentRevisionDomain } from '@/services/content-revisions';
+import { subscribeContentVersionChanges, type ContentVersionDomain } from '@/services/content-versions';
 
 export interface DiscussionCommentsPage<TComment extends DiscussionCommentRecord> {
   comments: TComment[];
@@ -25,7 +20,7 @@ export interface DiscussionCommentsPage<TComment extends DiscussionCommentRecord
 
 export interface DiscussionCommentsAdapters<TComment extends DiscussionCommentRecord> {
   cacheNamespace: string;
-  revisionDomain: Extract<ContentRevisionDomain, 'announcements' | 'issues'>;
+  versionDomain: Extract<ContentVersionDomain, 'announcements' | 'issues'>;
   channelPrefix: string;
   realtimeEventType: string;
   abortMessage: string;
@@ -261,7 +256,6 @@ export function useDiscussionComments<TComment extends DiscussionCommentRecord>(
       hasMore.value = page.hasMore;
       loaded.value = true;
       saveSnapshot(id);
-      markContentRealtimeReliable();
     } catch (caught) {
       if (currentVersion === requestVersion && !isAbortFailure(caught)) {
         error.value = isOnline.value
@@ -327,9 +321,7 @@ export function useDiscussionComments<TComment extends DiscussionCommentRecord>(
       if (event.parentId !== id) return;
       if (ignoredRealtimeCommentIds.delete(event.targetId)) return;
       scheduleRealtimeRefresh();
-    }, () => {
-      markContentRealtimeUnreliable();
-    }, () => { void loadComments({ force: true }); });
+    });
   }
 
   async function loadMoreComments() {
@@ -462,30 +454,9 @@ export function useDiscussionComments<TComment extends DiscussionCommentRecord>(
     }
   }
 
-  const unregisterResumeHandler = registerAppResumeHandler(() => {
-    const id = targetId();
-    if (!id) return;
-    const cached = namespaceCache.get(cacheKey(id));
-    if (shouldRefreshContentAfterResume(cached?.updatedAt ?? 0)) {
-      void loadComments({ force: true, id, silent: true });
-    }
-  });
-  const unsubscribeRevision = subscribeContentRevisionChanges(adapters.revisionDomain, () => {
+  const unsubscribeVersion = subscribeContentVersionChanges(adapters.versionDomain, () => {
     const id = targetId();
     if (id) return loadComments({ force: true, id, silent: true });
-  });
-
-  watch(isOnline, (online) => {
-    if (!online) {
-      markContentWentOffline();
-      return;
-    }
-    const id = targetId();
-    if (!id) return;
-    const cached = namespaceCache.get(cacheKey(id));
-    if (shouldRefreshContentAfterResume(cached?.updatedAt ?? 0)) {
-      void loadComments({ force: true, id, silent: true });
-    }
   });
 
   if (autoTarget !== undefined) {
@@ -527,8 +498,7 @@ export function useDiscussionComments<TComment extends DiscussionCommentRecord>(
 
   onScopeDispose(() => {
     realtimeUnsubscribe?.();
-    unregisterResumeHandler();
-    unsubscribeRevision();
+    unsubscribeVersion();
     window.clearTimeout(realtimeRefreshTimer);
     requestVersion += 1;
     requestController?.abort(new RequestFailure(adapters.abortMessage, 'aborted'));

@@ -1,5 +1,4 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
-import { registerAppResumeHandler } from '@/composables/useAppResume';
 import { getIssueFilterOptions } from '@/constants/categories';
 import { APP_NAME } from '@/constants/app';
 import { useDocumentTitle } from '@/composables/useDocumentTitle';
@@ -7,25 +6,19 @@ import { useFilter } from '@/composables/useFilter';
 import { useIssueBoardPagination } from '@/composables/useIssueBoardPagination';
 import { useIssueBuckets } from '@/composables/useIssueBuckets';
 import { useIssueSearch } from '@/composables/useIssueSearch';
-import { useNetworkStatus } from '@/composables/useNetworkStatus';
 import { useSession } from '@/composables/useSession';
 import { useTimedMessage } from '@/composables/useTimedMessage';
 import { useUserIssuesData } from '@/composables/useUserIssuesData';
-import {
-  markContentRealtimeReliable,
-  markContentRealtimeUnreliable,
-  markContentWentOffline,
-  shouldRefreshContentAfterResume,
-} from '@/services/content-read-cache';
+import { registerContentVersion, hasContentVersionGap } from '@/services/content-versions';
 import { subscribeContentRealtimeEvents } from '@/services/realtime-events';
 import { fetchIssueRecordById } from '@/services/issues';
 import type { IssueRecord, IssueSortOption } from '@/types';
 import { CONTENT_FEED_PAGE_SIZE } from '@/lib/page-size';
-import { subscribeContentRevisionChanges } from '@/services/content-revisions';
+import { subscribeContentVersionChanges } from '@/services/content-versions';
+import { preserveContentListScroll } from '@/lib/content-list-scroll';
 
 export function useIssueBoardData() {
   const { user, canManageIssueCategory, isAllowedUser, mySupportedIssueIds, roleLoading } = useSession();
-  const { isOnline } = useNetworkStatus();
   const { activeFilter } = useFilter();
   const isAdmin = computed(() => activeFilter.value !== 'my-proposals' && canManageIssueCategory(activeFilter.value));
 
@@ -128,15 +121,9 @@ export function useIssueBoardData() {
     filterIssues,
   });
   let realtimeUnsubscribe: (() => void) | null = null;
-  const unsubscribeRevision = subscribeContentRevisionChanges('issues', () => refreshCurrentData());
-  const unregisterResumeHandler = registerAppResumeHandler(() => {
-    if (!isAllowedUser.value) return;
-    const updatedAt = activeFilter.value === 'my-proposals'
-      ? userIssuesState.updatedAt
-      : currentState.value.updatedAt;
-    if (!shouldRefreshContentAfterResume(updatedAt)) return;
-    void refreshCurrentData();
-  });
+  const unsubscribeVersion = subscribeContentVersionChanges('issues', () =>
+    preserveContentListScroll(refreshCurrentData)
+  );
 
   const filteredActiveIssues = computed(() => {
     if (isGlobalMode.value && statusTab.value === 'active') {
@@ -275,6 +262,14 @@ export function useIssueBoardData() {
       realtimeUnsubscribe = subscribeContentRealtimeEvents(
         `issues:${uid}:${activeFilter.value}:${statusTab.value}`,
         (event) => {
+          if (event.eventType === 'issue_comment_changed') {
+            registerContentVersion('issues', event.version);
+            return;
+          }
+          if (event.version > 0 && hasContentVersionGap('issues', event.version)) {
+            void refreshCurrentData();
+            return;
+          }
           if (event.eventType === 'issue_support_changed') {
             if (event.supportCount === null) return;
             if (activeFilter.value !== 'my-proposals' && event.category !== activeFilter.value) return;
@@ -283,6 +278,7 @@ export function useIssueBoardData() {
               support_count: event.supportCount ?? issue.support_count,
             }));
             if (sortOption.value === 'most-supported') void refreshCurrentData();
+            registerContentVersion('issues', event.version);
             return;
           }
           if (event.eventType !== 'issue_changed') return;
@@ -291,6 +287,7 @@ export function useIssueBoardData() {
           invalidateIssueBuckets();
           if (event.op === 'delete') {
             handleIssueDeleted(event.targetId);
+            registerContentVersion('issues', event.version);
             return;
           }
           if (activeFilter.value !== 'my-proposals' && event.category !== activeFilter.value) {
@@ -300,15 +297,14 @@ export function useIssueBoardData() {
           void fetchIssueRecordById(event.targetId, {
             cacheScope: `realtime:${userUid.value}`,
             forceRefresh: true,
-          }).then(handleIssueUpdated).catch(() => {
+          }).then((issue) => {
+            handleIssueUpdated(issue);
+            registerContentVersion('issues', event.version);
+          }).catch(() => {
             handleIssueDeleted(event.targetId);
+            void refreshCurrentData();
           });
         },
-        () => {
-          markContentRealtimeUnreliable();
-          void refreshCurrentData();
-        },
-        () => { void refreshCurrentData(); },
       );
     },
     { immediate: true },
@@ -327,8 +323,6 @@ export function useIssueBoardData() {
       resetSearchResults();
       await refreshBucket(statusTab.value);
     }
-    markContentRealtimeReliable();
-
     setTimeout(() => {
       document.documentElement.classList.remove('no-transitions');
     }, 500);
@@ -356,23 +350,11 @@ export function useIssueBoardData() {
 
   onBeforeUnmount(() => {
     realtimeUnsubscribe?.();
-    unregisterResumeHandler();
-    unsubscribeRevision();
+    unsubscribeVersion();
     restoreDocumentTitle();
     bumpUserIssuesRequestToken();
     resetSearchResults();
     stopUserIssuesRequest();
-  });
-
-  watch(isOnline, (online) => {
-    if (!online) {
-      markContentWentOffline();
-      return;
-    }
-    const updatedAt = activeFilter.value === 'my-proposals'
-      ? userIssuesState.updatedAt
-      : currentState.value.updatedAt;
-    if (shouldRefreshContentAfterResume(updatedAt)) void refreshCurrentData();
   });
 
   return {

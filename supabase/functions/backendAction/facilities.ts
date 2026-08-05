@@ -5,6 +5,7 @@ import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
 import { validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
 import { asNumber, asUuid } from "./utils.ts";
 import { INPUT_LIMITS, optionalMediaContent, optionalText, requiredText } from "./validation.ts";
+import { attachContentVersion, loadContentVersion } from "./content-versions.ts";
 
 const VALID_STATUSES = new Set(["processing", "completed", "unable-to-handle"]);
 
@@ -103,6 +104,7 @@ export async function listFacilities(payload: JsonRecord, auth: AuthContext, sup
   const categoryId = asString(payload.categoryId).trim();
   const categories = await getFacilityCategories(supabase);
   if (!categories.some((category) => category.id === categoryId)) throw new Error("invalid-facility-category");
+  const version = await loadContentVersion(supabase, "facilities");
   const { data, error } = await supabase.schema("app_api").rpc("backend_list_facilities", {
     actor_uid: auth.uid,
     actor_is_admin: auth.isAdmin,
@@ -124,7 +126,7 @@ export async function listFacilities(payload: JsonRecord, auth: AuthContext, sup
     return { ...facility, canManageFacility: canManageFacilityCategory(auth, asString(facility.category_id)) } as JsonRecord;
   }) : [];
   const last = facilities.at(-1);
-  return {
+  return attachContentVersion({
     facilities,
     hasMore: result.hasMore === true,
     cursor: result.hasMore === true && last ? {
@@ -132,5 +134,5 @@ export async function listFacilities(payload: JsonRecord, auth: AuthContext, sup
       createdAt: asString(last.created_at),
       affectedCount: asNumber(last.affected_count, 0),
     } : null,
-  };
+  }, version);
 }

@@ -2,7 +2,7 @@ import { computed, onScopeDispose, ref, watch, type Ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { deleteFacility, getFacility, toggleFacilityAffected, updateFacilityStatus } from '@/services/facilities';
 import type { FacilityStatus } from '@/types';
-import { subscribeContentRevisionChanges } from '@/services/content-revisions';
+import { subscribeContentVersionChanges } from '@/services/content-versions';
 import { normalizeRouteParam } from '@/lib/route';
 import { subscribeContentRealtimeEvents } from '@/services/realtime-events';
 
@@ -72,7 +72,7 @@ export function useFacilityDetail(canLoad: Ref<boolean>) {
     { immediate: true },
   );
 
-  const unsubscribeRevision = subscribeContentRevisionChanges('facilities', () => load({ silent: true }));
+  const unsubscribeVersion = subscribeContentVersionChanges('facilities', () => load({ silent: true }));
   watch(
     [canLoad, facilityId],
     ([allowed, id]) => {
@@ -95,15 +95,13 @@ export function useFacilityDetail(canLoad: Ref<boolean>) {
             // Keep the current detail visible across transient realtime fetch failures.
           });
         },
-        undefined,
-        () => { void load({ silent: true }); },
       );
     },
     { immediate: true },
   );
   onScopeDispose(() => {
     realtimeUnsubscribe?.();
-    unsubscribeRevision();
+    unsubscribeVersion();
   });
   return { affecting, changeStatus, error, facility, load, loading, remove, toggleAffected };
 }

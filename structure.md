@@ -28,7 +28,7 @@
   - `index.ts` — origin 驗證、CORS、Firebase 驗證與分派；公開限流由 Cloudflare Worker 先處理
   - `execution.ts` — 正式入口與本地整合驗證共用的權限、request ID、冪等執行核心
   - `action-registry.ts` / `response.ts` / `rate-limit.ts`（Upstash 精確業務配額）/ `types.ts` / `utils.ts` / `validation.ts` / `auth.ts`
-  - domains：`users`（公開使用者資料）、`user-access`（負責人精確查找、scope 列表與單一範圍原子授權）、`session-bootstrap`（冷啟動合併 role／catalog／revisions／unread／每日一次 visit，取代獨立 visit action 並降低 Edge invocation）、`categories`（動態 catalog／初始設定／管理）、`uploads`、`issues`（read/create/moderation/support/delete/comments）、`facilities`（分類式 read/create/affected/status/delete）、`announcements`（read/write/comments）、`notifications`、`dashboard`
+  - domains：`users`（公開使用者資料）、`user-access`（負責人精確查找、scope 列表與單一範圍原子授權）、`session-bootstrap`（冷啟動合併 role／catalog／content versions／unread／每日一次 visit，取代獨立 visit action並降低 Edge invocation）、`content-versions`（三領域批次版本讀取與列表 response version）、`categories`（動態 catalog／初始設定／管理）、`uploads`、`issues`（read/create/moderation/support/delete/comments）、`facilities`（分類式 read/create/affected/status/delete）、`announcements`（read/write/comments）、`notifications`、`dashboard`
   - shared helpers：`issue-shared.ts`、`announcement-shared.ts`
   - 省 Edge Function 次數靠合併讀取與前端快取，不把 domain 業務搬進 Cloudflare Worker
 - 獨立 Functions：`syncUser`、`cloudinaryWebhook`、`outboxWorker`、`processDeletionJobs`、`maintenanceCleanup`
@@ -128,14 +128,15 @@
 
 - `constants/app.ts` / `constants/input-limits.ts` — Novae 品牌名稱、學校顯示設定與前端輸入長度
 - `constants/categories.ts` / `statuses.ts` — 動態分類衍生規則與提案／設備狀態判斷
-- `lib/` — `firebase`、`google-identity`（lazy GIS Token Client）、`firebase-messaging`、`firebase-app-check`、`auth-token`、`supabase`（REST client 與 private Realtime 共用的 Firebase token 授權閘門）、`browser-storage`（local/session storage 的受限瀏覽器與 quota-safe 單一邊界）、`session-access`（role／permission／提案與設備分類 scope 的純權限判斷）、`feature-access`（提案／設備開關對預設頁與路由可用性的純矩陣）、`request`、`request-id`、`route-request`、`reconnect`、`route`、`page-size`、`feed-loading`（所有 infinite feed 共用三筆載入更多 placeholder 數量）、`format`、`search`、`issue-status`、`issue-timeline`、`issue-notice`（列表與詳情共用的結案內容／標題／tone 正規化）、`issue-sort`、`issue-detail-preview`（列表到詳情的一次性同步摘要 seed）、`persistent-cache`（IndexedDB 跨 reload 快取）、`press-feedback`（共用 pointer 按壓狀態、12px 捲動取消與放開後固定 160ms 可見時間）、`ui-motion`（smooth spring／tween／stagger 單一參數來源）、`motion-features`（LazyMotion 的 DOM layout feature 邊界）、`touch-zoom`（以 capture touchend 座標與 dblclick 雙層攔截雙擊放大，仍保留 pinch zoom）、`in-app-browser`、`pwa-install`、`caret`、`markdown-*`、`image-processing`
+- `lib/` — `firebase`、`google-identity`（lazy GIS Token Client）、`firebase-messaging`、`firebase-app-check`、`auth-token`、`supabase`（REST client 與 private Realtime 共用的 Firebase token 授權閘門）、`browser-storage`（local/session storage 的受限瀏覽器與 quota-safe 單一邊界）、`session-access`（role／permission／提案與設備分類 scope 的純權限判斷）、`feature-access`（提案／設備開關對預設頁與路由可用性的純矩陣）、`request`、`request-id`、`route-request`、`reconnect`、`route`、`page-size`、`content-list-scroll`（silent refresh 的可見項目 anchor 與相對位移恢復）、`feed-loading`（所有 infinite feed 共用三筆載入更多 placeholder 數量）、`format`、`search`、`issue-status`、`issue-timeline`、`issue-notice`（列表與詳情共用的結案內容／標題／tone 正規化）、`issue-sort`、`issue-detail-preview`（列表到詳情的一次性同步摘要 seed）、`persistent-cache`（IndexedDB 跨 reload 快取）、`press-feedback`（共用 pointer 按壓狀態、12px 捲動取消與放開後固定 160ms 可見時間）、`ui-motion`（smooth spring／tween／stagger 單一參數來源）、`motion-features`（LazyMotion 的 DOM layout feature 邊界）、`touch-zoom`（以 capture touchend 座標與 dblclick 雙層攔截雙擊放大，仍保留 pinch zoom）、`in-app-browser`、`pwa-install`、`caret`、`markdown-*`、`image-processing`
 - `types/index.ts` / `types/categories.ts` / `types/pwa.d.ts` / `types/google-identity.d.ts` — 共通型別、動態分類契約、設備領域型別與 GIS Token Client 型別
 
 ---
 
 ## services
 
-- `backend-action.ts` / `backend-action-contract.ts` / `supabase-auth.ts` / `session-role.ts`（roles／permissions）/ `session-bootstrap.ts`（冷啟動合併 session 讀取）/ `access.ts`（負責人查找與單一 scope 授權）/ `categories.ts`（動態 catalog／setup／整體原子管理）/ `content-read-cache.ts` / `content-revisions.ts`（三領域批次版本檢查與精準失效）/ `realtime-events.ts`（提案／公告／設備依 UID／角色共用 Broadcast 連線、單筆 patch 事件、斷線重連與成功後 resync）
+- `backend-action.ts` / `backend-action-contract.ts` / `supabase-auth.ts` / `session-role.ts`（roles／permissions）/ `session-bootstrap.ts`（冷啟動合併 session 讀取）/ `access.ts`（負責人查找與單一 scope 授權）/ `categories.ts`（動態 catalog／setup／整體原子管理）/ `content-read-cache.ts` / `content-versions.ts`（提案／公告／設備的資料庫單調版本、批次 resume／online／reconnect 驗證、精準失效與 domain listener）/ `realtime-events.ts`（依 UID／角色共用 private Broadcast 長連線，事件攜帶同 transaction version；連續事件本地 patch，version gap 或重連才批次驗證）
+- 列表讀取：初次與 infinite scroll 直接從 list response 取得 version，不額外呼叫版本 action；resume／online／Realtime reconnect 只呼叫一次 `getContentVersions`，只有落後 domain 做 silent first-page refresh。背景 refresh 保留現有內容，`lib/content-list-scroll.ts` 以第一個可見 content id 與相對位移恢復捲動位置；使用者主動切分類／狀態／排序／搜尋則沿用各領域既有換頁流程
 - 提案：`issues.ts` barrel + `issues-core` / `constants` / `errors` / `utils` / `normalize` / `read*` / `write` / `comment-cursor`
 - 其他：`facilities.ts`（設備分類摘要分頁／詳情／寫入）、`announcements.ts`、`notifications.ts`（公告廣播與提案／設備分類負責人的個人通知讀取）、`dashboard.ts`、`uploads.ts`、`users-read.ts`（50 筆批次、request coalescing 與 24 小時 IndexedDB 個別 profile cache）、`users-write.ts`
 

@@ -1,9 +1,11 @@
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
 import { asNumber, asUuid, readCursor, readCursorDate } from "./utils.ts";
+import { attachContentVersion, loadContentVersion } from "./content-versions.ts";
 
 async function listAnnouncements(payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {
   const pageSize = Math.min(Math.max(Math.round(asNumber(payload.pageSize, 30)), 1), 50);
   const cursor = readCursor(payload);
+  const version = await loadContentVersion(supabase, "announcements");
   const { data, error } = await supabase.schema("app_api").rpc("backend_list_announcements", {
     actor_uid: auth.uid,
     page_size: pageSize,
@@ -11,7 +13,7 @@ async function listAnnouncements(payload: JsonRecord, auth: AuthContext, supabas
     cursor_published_at: readCursorDate(cursor, "publishedAtMs", "published_at") || null,
   });
   if (error) throw error;
-  return data;
+  return attachContentVersion(data, version);
 }
 
 async function getAnnouncement(payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {

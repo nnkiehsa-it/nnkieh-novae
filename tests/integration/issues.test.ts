@@ -110,6 +110,7 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     statusBucket: "active",
   }, user.auth));
   assert.equal((hiddenList.issues as unknown[]).length, 0);
+  assert.equal(typeof hiddenList.version, "number");
   const managerList = asRecord(await callAction("listIssues", {
     activeFilter: "public-issues",
     pageSize: 20,
@@ -125,12 +126,14 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     titleQuery: "public",
   }, publicManager.auth));
   assert.ok((searched.issues as JsonRecord[]).some((issue) => issue.id === publicIssueId));
+  assert.equal(typeof searched.version, "number");
   const ownIssues = asRecord(await callAction("listUserIssues", {
     pageSize: 20,
     sort: "latest",
     statusBucket: "active",
   }, owner.auth));
   assert.ok((ownIssues.issues as JsonRecord[]).some((issue) => issue.id === publicIssueId));
+  assert.equal(typeof ownIssues.version, "number");
 
   await expectActionError(
     "not-found",
@@ -211,6 +214,7 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     pageSize: 30,
   }, stranger.auth));
   assert.ok(JSON.stringify(comments).includes(commentId));
+  assert.equal(typeof comments.version, "number");
   await expectActionError(
     "permission-denied",
     () => callAction("deleteComment", {

@@ -12,7 +12,7 @@ import type {
 import { toReadableBackendError } from '@/services/issues-core';
 import { captureContentCacheWriteGuard, createContentCacheKey, getCachedContentPersistent, markContentCachePrefixStale, runCoalescedContentRequest, setCachedContentFromRead } from '@/services/content-read-cache';
 import { READ_REQUEST_TIMEOUT_MS } from '@/lib/request';
-import { prepareContentRevisionRead } from '@/services/content-revisions';
+import { registerContentVersion } from '@/services/content-versions';
 
 interface RawFacility extends Omit<FacilityRecord, 'closed_at' | 'created_at' | 'started_at' | 'updated_at'> {
   closed_at?: string | null;
@@ -45,28 +45,30 @@ function normalizeSummary(value: RawFacility): FacilitySummary {
 
 export async function listFacilities(input: {
   bucket: 'active' | 'closed'; categoryId: string; query?: string; sort?: FacilitySortOption; status?: FacilityStatus | ''; cursor?: FacilityCursor | null;
-}, options: { signal?: AbortSignal } = {}): Promise<FacilityPageResult> {
-  await prepareContentRevisionRead();
+}, options: { forceRefresh?: boolean; signal?: AbortSignal } = {}): Promise<FacilityPageResult> {
   const cacheKey = createContentCacheKey([
     'facility-list-page', input.categoryId, input.bucket, input.status ?? '', input.sort ?? 'latest', input.query ?? '',
     input.cursor?.id ?? 'first', input.cursor?.createdAt ?? '', input.cursor?.affectedCount ?? '',
   ]);
-  const cached = await getCachedContentPersistent<FacilityPageResult>(cacheKey);
-  if (cached) return cached;
+  const cached = options.forceRefresh ? null : await getCachedContentPersistent<FacilityPageResult>(cacheKey);
+  if (cached) {
+    registerContentVersion('facilities', cached.version);
+    return cached;
+  }
   const cacheGuard = captureContentCacheWriteGuard(cacheKey);
   try {
-    const fn = invokeBackendAction<typeof input & { pageSize: number }, { facilities: RawFacility[]; cursor: FacilityCursor | null; hasMore: boolean }>(
+    const fn = invokeBackendAction<typeof input & { pageSize: number }, { facilities: RawFacility[]; cursor: FacilityCursor | null; hasMore: boolean; version: number }>(
       'listFacilities', { signal: options.signal, timeoutMs: READ_REQUEST_TIMEOUT_MS },
     );
     const result = await fn({ ...input, pageSize: 20 });
     const page = { ...result, facilities: result.facilities.map(normalizeSummary) };
     setCachedContentFromRead(cacheGuard, page);
+    registerContentVersion('facilities', result.version);
     return page;
   } catch (error) { throw toReadableBackendError(error); }
 }
 
 export async function getFacility(facilityId: string, options: { forceRefresh?: boolean } = {}) {
-  if (!options.forceRefresh) await prepareContentRevisionRead();
   const cacheKey = createContentCacheKey(['facility-detail', facilityId]);
   if (!options.forceRefresh) {
     const cached = await getCachedContentPersistent<FacilityRecord>(cacheKey);

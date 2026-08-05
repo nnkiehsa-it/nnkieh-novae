@@ -139,6 +139,7 @@ export interface FacilityPageResult {
   facilities: FacilitySummary[];
   cursor: FacilityCursor | null;
   hasMore: boolean;
+  version: number;
 }
 
 export interface CommentInput {

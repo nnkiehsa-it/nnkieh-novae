@@ -7,6 +7,7 @@ import { handleNotificationAction } from "./notifications.ts";
 import { handleFacilityAction, listFacilities } from "./facilities.ts";
 import { handleCategoryAction } from "./categories.ts";
 import { getSessionBootstrap } from "./session-bootstrap.ts";
+import { loadContentVersions } from "./content-versions.ts";
 import type { AuthContext, BackendSupabase, JsonRecord, PermissionCode } from "./types.ts";
 
 export type BackendActionRateLimitGroup =
@@ -92,24 +93,9 @@ export const backendActionDefinitions = [
     idempotent: true, requiresRequestId: true,
   }),
 
-  action("getContentRevisions", "content", "read", async (_action, _payload, _auth, supabase) => {
-    const { data, error } = await supabase
-      .schema("app_private")
-      .from("content_revisions")
-      .select("domain,revision");
-    if (error) throw error;
-    const revisions = { announcements: 0, facilities: 0, issues: 0 };
-    for (const row of data ?? []) {
-      const domain = String(row.domain);
-      if (domain === "announcements" || domain === "facilities" || domain === "issues") {
-        revisions[domain] = Number(row.revision);
-      }
-    }
-    if (Object.values(revisions).some((revision) => revision < 1)) {
-      throw new Error("upstream-unavailable");
-    }
-    return { revisions };
-  }),
+  action("getContentVersions", "content", "read", async (_action, _payload, _auth, supabase) => ({
+    versions: await loadContentVersions(supabase),
+  })),
 
   action("getSessionBootstrap", "user", "read", async (_action, payload, auth, supabase) => {
     return await getSessionBootstrap(payload, auth, supabase);

@@ -14,7 +14,7 @@ export function useIssueComments(
   const core = useDiscussionComments<CommentRecord>(
     {
       cacheNamespace: 'issue-comments-state',
-      revisionDomain: 'issues',
+      versionDomain: 'issues',
       channelPrefix: 'issue-comments',
       realtimeEventType: 'issue_comment_changed',
       abortMessage: 'comments.commentLoadingWasCanceled',

@@ -70,7 +70,7 @@ export async function fetchCurrentUserRole(
   }
 
   // Prefer the combined bootstrap so cold starts share one Edge invocation with
-  // catalog / revisions / unread (see session-bootstrap).
+  // catalog / versions / unread (see session-bootstrap).
   if (!force && useBootstrap) {
     try {
       const bootstrap = await fetchSessionBootstrap();

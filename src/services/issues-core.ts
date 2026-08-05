@@ -14,7 +14,6 @@ import {
   withSupportState,
 } from './issues-normalize';
 import { isContentUnavailableError, toReadableBackendError } from './issues-errors';
-import { prepareContentRevisionRead } from '@/services/content-revisions';
 
 export {
   STATUS_BUCKETS,
@@ -32,7 +31,6 @@ export async function fetchIssueRecordById(
   issueId: string,
   options: { cacheScope?: string; forceRefresh?: boolean } = {},
 ): Promise<IssueRecord> {
-  if (!options.forceRefresh) await prepareContentRevisionRead();
   const cacheKey = createContentCacheKey(['issue-detail', issueId, options.cacheScope ?? 'default']);
   if (!options.forceRefresh) {
     const cached = await getCachedContentPersistent<IssueRecord>(cacheKey);

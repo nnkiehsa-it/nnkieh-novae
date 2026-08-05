@@ -2,7 +2,7 @@ import { ref } from 'vue';
 import { cacheUserAvatar } from '@/services/users-write';
 import { clearResolvedUploadCache } from '@/services/uploads';
 import { clearContentReadCache, clearContentReadMemoryCache, setContentCacheScope } from '@/services/content-read-cache';
-import { ensureContentRevisionsFresh, resetContentRevisionState } from '@/services/content-revisions';
+import { ensureContentVersionsFresh, resetContentVersionState } from '@/services/content-versions';
 import { registerAppResumeHandler } from '@/composables/useAppResume';
 import { clearAuthorProfileCache } from '@/composables/useAuthorProfile';
 import { readLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
@@ -13,8 +13,7 @@ export const customPhotoUrl = ref<string | null>(null);
 let activeSessionToken = 0;
 export const VISIT_RECORD_INTERVAL_MS = 24 * 60 * 60 * 1_000;
 export const VISIT_RECORDED_AT_KEY = 'novae:platform-visit-recorded-at';
-const CONTENT_REVISION_RESUME_MS = 10 * 60_000;
-let revisionResumeInitialized = false;
+let versionResumeInitialized = false;
 
 export function shouldRecordPlatformVisit() {
   const lastRecordedAt = Number.parseInt(readLocalStorage(VISIT_RECORDED_AT_KEY) || '0', 10);
@@ -25,12 +24,14 @@ export function markPlatformVisitRecorded() {
   writeLocalStorage(VISIT_RECORDED_AT_KEY, String(Date.now()));
 }
 
-function initializeContentRevisionResume() {
-  if (revisionResumeInitialized) return;
-  revisionResumeInitialized = true;
-  registerAppResumeHandler((reason, hiddenDurationMs) => {
-    if (reason !== 'pageshow' && hiddenDurationMs < CONTENT_REVISION_RESUME_MS) return;
-    void ensureContentRevisionsFresh({ notify: true }).catch(() => undefined);
+function initializeContentVersionResume() {
+  if (versionResumeInitialized) return;
+  versionResumeInitialized = true;
+  registerAppResumeHandler(() => {
+    void ensureContentVersionsFresh({ notify: true }).catch(() => undefined);
+  });
+  window.addEventListener('online', () => {
+    void ensureContentVersionsFresh({ notify: true }).catch(() => undefined);
   });
 }
 
@@ -40,7 +41,7 @@ export function clearActiveSessionData() {
   customPhotoUrl.value = null;
   clearResolvedUploadCache();
   clearContentReadCache();
-  resetContentRevisionState();
+  resetContentVersionState();
 }
 
 export async function initActiveSessionData(uid: string) {
@@ -51,7 +52,7 @@ export async function initActiveSessionData(uid: string) {
   clearAuthorProfileCache();
   setContentCacheScope(uid);
   clearContentReadMemoryCache();
-  initializeContentRevisionResume();
+  initializeContentVersionResume();
 }
 
 export async function cacheUserAvatarOnLogin(photoURL: string) {

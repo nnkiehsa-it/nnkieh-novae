@@ -4,11 +4,13 @@ import { hasPermission } from "./auth.ts";
 import { validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
 import { asNumber, asUuid, readCursor, readCursorDate } from "./utils.ts";
 import { INPUT_LIMITS, requiredMediaContent } from "./validation.ts";
+import { attachContentVersion, loadContentVersion } from "./content-versions.ts";
 
 async function listAnnouncementComments(payload: JsonRecord, supabase: BackendSupabase) {
   const announcementId = asUuid(payload.announcementId);
   if (!announcementId) throw new Error("not-found");
   const cursor = readCursor(payload);
+  const version = await loadContentVersion(supabase, "announcements");
   const { data, error } = await supabase.schema("app_api").rpc("backend_list_announcement_comments", {
     announcement_id: announcementId,
     cursor_id: asUuid(cursor.id) || null,
@@ -16,7 +18,7 @@ async function listAnnouncementComments(payload: JsonRecord, supabase: BackendSu
     page_size: Math.min(Math.max(Math.round(asNumber(payload.pageSize, 30)), 1), 30),
   });
   if (error) throw error;
-  return data;
+  return attachContentVersion(data, version);
 }
 
 async function createAnnouncementComment(payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {

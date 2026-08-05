@@ -355,22 +355,22 @@ test('content reads persist by account and invalidate after writes or realtime e
   assert.match(backendAction, /auth\?\.currentUser\?\.uid !== requestUid/u);
 });
 
-test('content revisions batch cache validation and searches only submit explicitly', async () => {
-  const revisions = await read('src/services/content-revisions.ts');
-  const revisionMigration = await read('supabase/migrations/202607160002_content_revisions.sql');
+test('content versions batch validation and searches only submit explicitly', async () => {
+  const versions = await read('src/services/content-versions.ts');
+  const versionMigration = await read('supabase/migrations/202608050001_content_versions.sql');
   const actionRegistry = await read('supabase/functions/backendAction/action-registry.ts');
   const issueSearch = await read('src/composables/useIssueSearch.ts');
   const facilities = await read('src/composables/useFacilities.ts');
   const controls = await read('src/components/BoardControls.vue');
 
-  assert.match(revisions, /REVISION_CHECK_INTERVAL_MS = 30 \* 60_000/u);
-  assert.match(revisions, /getContentRevisions/u);
-  assert.match(revisions, /pendingChecks/u);
-  assert.match(revisions, /DOMAIN_PREFIXES/u);
-  assert.match(actionRegistry, /action\("getContentRevisions", "content", "read"/u);
-  assert.match(revisionMigration, /create table if not exists app_private\.content_revisions/u);
-  assert.match(revisionMigration, /for each statement execute function app_private\.bump_content_revision/u);
-  assert.doesNotMatch(revisionMigration, /realtime_events/u);
+  assert.match(versions, /getContentVersions/u);
+  assert.match(versions, /pendingChecks/u);
+  assert.match(versions, /DOMAIN_PREFIXES/u);
+  assert.match(actionRegistry, /action\("getContentVersions", "content", "read"/u);
+  assert.match(versionMigration, /rename to content_versions/u);
+  assert.match(versionMigration, /for each statement execute function app_private\.bump_content_version/u);
+  assert.match(versionMigration, /'version'/u);
+  assert.doesNotMatch(versionMigration, /realtime_events/u);
   assert.match(controls, /@submit\.prevent="emit\('submitSearch'\)"/u);
   assert.match(issueSearch, /committedSearchQuery/u);
   assert.match(facilities, /committedQuery/u);

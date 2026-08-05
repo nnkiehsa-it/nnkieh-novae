@@ -1,6 +1,6 @@
 <template>
   <form
-    class="space-y-2"
+    class="comment-composer space-y-2"
     :class="{ 'comment-composer-dock viewport-floating-inline': mobileDocked }"
     autocomplete="off"
     :aria-disabled="disabled ? 'true' : undefined"
@@ -8,9 +8,16 @@
   >
     <div
       v-if="parentCommentId"
-      class="flex items-center justify-between gap-3 px-1 text-xs font-semibold text-ink-500 dark:text-ink-400"
+      class="comment-composer__reply flex items-start justify-between gap-3 px-3 text-ink-500 dark:text-ink-400"
     >
-      <span>{{ t('comments.replying', { name: parentAuthorName }) }}</span>
+      <div class="min-w-0 flex-1">
+        <p class="truncate text-xs font-semibold leading-5">
+          {{ t('comments.replying', { name: parentAuthorName }) }}
+        </p>
+        <p v-if="parentCommentPreview" class="truncate text-sm leading-5 text-ink-800 dark:text-ink-200">
+          {{ parentCommentPreview }}
+        </p>
+      </div>
       <AppButton
         variant="toolbar"
         class="h-8 min-h-8 w-8 rounded-full p-0"
@@ -136,6 +143,7 @@ const props = withDefaults(defineProps<{
   issueId?: string;
   mobileDocked?: boolean;
   parentAuthorUid?: string;
+  parentCommentPreview?: string;
   parentCommentId?: string | null;
   submitting: boolean;
   targetId?: string;
@@ -145,6 +153,7 @@ const props = withDefaults(defineProps<{
   issueId: '',
   mobileDocked: false,
   parentAuthorUid: '',
+  parentCommentPreview: '',
   parentCommentId: null,
   targetId: '',
 });

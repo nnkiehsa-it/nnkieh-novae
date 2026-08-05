@@ -351,14 +351,15 @@ test('realtime-backed lists revalidate after stale resumes without fixed polling
   const issueWrites = await read('src/services/issues-write.ts');
 
   assert.doesNotMatch(discussionComments, /setInterval/u);
-  assert.match(discussionComments, /registerAppResumeHandler/u);
-  assert.match(discussionComments, /shouldRefreshContentAfterResume/u);
+  assert.doesNotMatch(discussionComments, /registerAppResumeHandler/u);
+  assert.doesNotMatch(discussionComments, /shouldRefreshContentAfterResume/u);
   assert.match(discussionComments, /forceRefresh: options\.force === true \|\| hydrated/u);
   assert.match(announcementManagement, /refreshAnnouncementList\(\{ force: true \}\)/u);
   assert.doesNotMatch(announcementManagement, /setInterval/u);
   assert.doesNotMatch(issueBoard, /setInterval/u);
-  assert.match(announcementManagement, /shouldRefreshContentAfterResume/u);
-  assert.match(issueBoard, /shouldRefreshContentAfterResume/u);
+  assert.match(announcementManagement, /subscribeContentVersionChanges/u);
+  assert.match(issueBoard, /subscribeContentVersionChanges/u);
+  assert.match(realtimeEvents, /ensureContentVersionsFresh\(\{ notify: true \}\)/u);
   assert.match(issueBoard, /invalidateIssueBuckets\(\)/u);
   assert.match(realtimeEvents, /scheduleReconnect/u);
   assert.match(realtimeEvents, /status !== 'CHANNEL_ERROR'.*status !== 'TIMED_OUT'.*status !== 'CLOSED'/u);

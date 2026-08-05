@@ -8,24 +8,17 @@ import { normalizeRouteParam } from '@/lib/route';
 import { useActionFeedback } from '@/composables/useActionFeedback';
 import { useIssueDetailCacheScope } from '@/composables/useIssueDetailCacheScope';
 import { useSession } from '@/composables/useSession';
-import { registerAppResumeHandler } from '@/composables/useAppResume';
-import { useNetworkStatus } from '@/composables/useNetworkStatus';
 import { fetchIssueRecordById } from '@/services/issues';
 import { subscribeContentRealtimeEvents } from '@/services/realtime-events';
 import type { IssueRecord } from '@/types';
 import { isAbortFailure } from '@/lib/request';
 import { takeIssueDetailPreview } from '@/lib/issue-detail-preview';
-import { subscribeContentRevisionChanges } from '@/services/content-revisions';
+import { subscribeContentVersionChanges } from '@/services/content-versions';
 import { invalidateIssueBucketMemory } from '@/composables/useIssueBuckets';
 import { invalidateUserIssueMemory } from '@/composables/useUserIssuesData';
 import {
   createContentCacheKey,
-  getCachedContentEntry,
-  markContentRealtimeReliable,
-  markContentRealtimeUnreliable,
-  markContentWentOffline,
   patchCachedContent,
-  shouldRefreshContentAfterResume,
 } from '@/services/content-read-cache';
 
 export function useIssueRouteDetail(
@@ -37,7 +30,6 @@ export function useIssueRouteDetail(
   const router = useRouter();
   const { show } = useActionFeedback();
   const { roleLoading } = useSession();
-  const { isOnline } = useNetworkStatus();
   const routeIssue = ref<IssueRecord | null>(null);
   const routeIssueLoading = ref(false);
   const routeIssuePreview = ref(false);
@@ -48,14 +40,7 @@ export function useIssueRouteDetail(
   function detailCacheKey(issueId: string) {
     return createContentCacheKey(['issue-detail', issueId, detailCacheScope.value]);
   }
-  const unregisterResumeHandler = registerAppResumeHandler(() => {
-    const issueId = normalizeRouteParam(route.params.issueId);
-    if (route.name !== 'issue-detail' || !issueId) return;
-    const cached = getCachedContentEntry<IssueRecord>(detailCacheKey(issueId));
-    if (!shouldRefreshContentAfterResume(cached?.updatedAt ?? 0)) return;
-    void refreshRouteIssueSilently({ force: true });
-  });
-  const unsubscribeRevision = subscribeContentRevisionChanges('issues', () => {
+  const unsubscribeVersion = subscribeContentVersionChanges('issues', () => {
     if (route.name === 'issue-detail') return refreshRouteIssueSilently({ force: true });
   });
 
@@ -220,10 +205,8 @@ export function useIssueRouteDetail(
       if (currentRequestId !== requestId) return;
       routeIssue.value = issueWithSupportState(issue);
       routeIssuePreview.value = false;
-      markContentRealtimeReliable();
     } catch (error) {
       if (isAbortFailure(error)) return;
-      if (currentRequestId === requestId) markContentRealtimeUnreliable();
     }
   }
 
@@ -261,9 +244,7 @@ export function useIssueRouteDetail(
           return;
         }
         scheduleRealtimeRefresh();
-      }, () => {
-        markContentRealtimeUnreliable();
-      }, scheduleRealtimeRefresh);
+      });
     },
     { immediate: true },
   );
@@ -278,22 +259,8 @@ export function useIssueRouteDetail(
 
   onScopeDispose(() => {
     realtimeUnsubscribe?.();
-    unregisterResumeHandler();
-    unsubscribeRevision();
+    unsubscribeVersion();
     window.clearTimeout(realtimeRefreshTimer);
-  });
-
-  watch(isOnline, (online) => {
-    if (!online) {
-      markContentWentOffline();
-      return;
-    }
-    const issueId = normalizeRouteParam(route.params.issueId);
-    if (route.name !== 'issue-detail' || !issueId) return;
-    const cached = getCachedContentEntry<IssueRecord>(detailCacheKey(issueId));
-    if (shouldRefreshContentAfterResume(cached?.updatedAt ?? 0)) {
-      void refreshRouteIssueSilently({ force: true });
-    }
   });
 
   return {

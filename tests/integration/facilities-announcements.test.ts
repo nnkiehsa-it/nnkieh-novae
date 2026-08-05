@@ -57,6 +57,7 @@ integrationTest("facility ownership and category-scoped management permissions",
   }, user.auth));
   assert.ok((list.facilities as Array<Record<string, unknown>>).some((row) => row.id === facilityId));
   assert.ok((list.facilities as Array<Record<string, unknown>>).every((row) => row.category_id === facilityCategoryId));
+  assert.equal(typeof list.version, "number");
 
   const affected = asRecord(await callAction("toggleFacilityAffected", {
     facilityId,
@@ -150,6 +151,7 @@ integrationTest("announcement.manage, likes, comments, and ownership", async () 
   }, user.auth));
   assert.ok((list.announcements as Array<Record<string, unknown>>)
     .some((announcement) => announcement.id === announcementId));
+  assert.equal(typeof list.version, "number");
   const read = asRecord(await callAction("getAnnouncement", {
     announcementId,
   }, user.auth));
@@ -179,6 +181,7 @@ integrationTest("announcement.manage, likes, comments, and ownership", async () 
     pageSize: 30,
   }, stranger.auth));
   assert.ok(JSON.stringify(comments).includes(commentId));
+  assert.equal(typeof comments.version, "number");
   await expectActionError(
     "permission-denied",
     () => callAction("deleteAnnouncementComment", {

@@ -1,23 +1,16 @@
 import { computed, onScopeDispose, ref, watch, type Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { returnToNavigationOrigin } from '@/router/navigation-hierarchy';
-import { registerAppResumeHandler } from '@/composables/useAppResume';
 import { useActionFeedback } from '@/composables/useActionFeedback';
 import { useDetailRouteQuery } from '@/composables/useDetailRouteQuery';
-import { useNetworkStatus } from '@/composables/useNetworkStatus';
 import { useSession } from '@/composables/useSession';
 import { useShareUrl } from '@/composables/useShareUrl';
 import { normalizeRouteParam } from '@/lib/route';
 import {
   createContentCacheKey,
-  getCachedContentEntry,
-  markContentRealtimeReliable,
-  markContentRealtimeUnreliable,
-  markContentWentOffline,
   patchCachedContent,
-  shouldRefreshContentAfterResume,
 } from '@/services/content-read-cache';
-import { subscribeContentRevisionChanges } from '@/services/content-revisions';
+import { subscribeContentVersionChanges } from '@/services/content-versions';
 import {
   deleteAnnouncement,
   fetchAnnouncementRecordById,
@@ -31,7 +24,6 @@ export function useAnnouncementDetail(canLoad: Ref<boolean>) {
   const router = useRouter();
   const { can, roleLoading, user } = useSession();
   const { show, start } = useActionFeedback();
-  const { isOnline } = useNetworkStatus();
   const { copyRouteUrl } = useShareUrl();
 
   const announcement = ref<AnnouncementRecord | null>(null);
@@ -148,10 +140,8 @@ export function useAnnouncementDetail(canLoad: Ref<boolean>) {
         ...fetched,
         currentUserLiked: announcement.value?.currentUserLiked ?? fetched.currentUserLiked,
       };
-      markContentRealtimeReliable();
     } catch (caught) {
       if (currentRequestId !== requestId) return;
-      markContentRealtimeUnreliable();
       show(caught instanceof Error ? caught.message : 'announcement.thisAnnouncementCannotBeFoundMessage', 'error');
     }
   }
@@ -161,13 +151,7 @@ export function useAnnouncementDetail(canLoad: Ref<boolean>) {
     realtimeRefreshTimer = window.setTimeout(() => void refresh({ force: true }), 300);
   }
 
-  const unregisterResumeHandler = registerAppResumeHandler(() => {
-    const announcementId = normalizeRouteParam(route.params.announcementId);
-    if (!canLoad.value || !announcementId) return;
-    const cached = getCachedContentEntry<AnnouncementRecord>(detailCacheKey(announcementId));
-    if (shouldRefreshContentAfterResume(cached?.updatedAt ?? 0)) void refresh({ force: true });
-  });
-  const unsubscribeRevision = subscribeContentRevisionChanges('announcements', () => {
+  const unsubscribeVersion = subscribeContentVersionChanges('announcements', () => {
     if (canLoad.value && announcement.value) return refresh({ force: true });
   });
 
@@ -234,26 +218,14 @@ export function useAnnouncementDetail(canLoad: Ref<boolean>) {
           }
           scheduleRealtimeRefresh();
         }
-      }, markContentRealtimeUnreliable, scheduleRealtimeRefresh);
+      });
     },
     { immediate: true },
   );
 
-  watch(isOnline, (online) => {
-    if (!online) {
-      markContentWentOffline();
-      return;
-    }
-    const announcementId = normalizeRouteParam(route.params.announcementId);
-    if (!canLoad.value || !announcementId) return;
-    const cached = getCachedContentEntry<AnnouncementRecord>(detailCacheKey(announcementId));
-    if (shouldRefreshContentAfterResume(cached?.updatedAt ?? 0)) void refresh({ force: true });
-  });
-
   onScopeDispose(() => {
     realtimeUnsubscribe?.();
-    unregisterResumeHandler();
-    unsubscribeRevision();
+    unsubscribeVersion();
     window.clearTimeout(realtimeRefreshTimer);
   });
 

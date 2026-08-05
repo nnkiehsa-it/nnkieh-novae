@@ -18,6 +18,7 @@
       <m.div
         v-for="facility in facilities"
         :key="facility.id"
+        :data-content-id="facility.id"
         layout
         :initial="{ opacity: 0, y: 16, scale: 0.985 }"
         :animate="{ opacity: 1, y: 0, scale: 1 }"

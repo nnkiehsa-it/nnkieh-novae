@@ -10,6 +10,7 @@ import {
 import { INPUT_LIMITS, optionalText } from "./validation.ts";
 import { canManageIssueCategory } from "./auth.ts";
 import { selectIssueCategory } from "./issue-shared.ts";
+import { attachContentVersion, loadContentVersion } from "./content-versions.ts";
 
 function readSort(payload: JsonRecord) {
   const sort = asString(payload.sort);
@@ -81,6 +82,7 @@ async function listIssues(
   const titleQuery = action === "searchIssues"
     ? optionalText(payload.titleQuery, "search", INPUT_LIMITS.search).toLowerCase()
     : null;
+  const version = await loadContentVersion(supabase, "issues");
   const { data, error } = await supabase.schema("app_api").rpc("backend_list_issues", {
     action_name: action,
     active_filter: category,
@@ -97,7 +99,7 @@ async function listIssues(
     ...await issueReadPolicyParams(supabase, auth, canManageIssueCategory(auth, category)),
   });
   if (error) throw error;
-  return compactIssueListResult(data);
+  return attachContentVersion(compactIssueListResult(data), version);
 }
 
 async function listUserIssues(
@@ -106,6 +108,7 @@ async function listUserIssues(
   supabase: BackendSupabase,
 ) {
   const cursor = readCursor(payload);
+  const version = await loadContentVersion(supabase, "issues");
   const { data, error } = await supabase.schema("app_api").rpc("backend_list_user_issues", {
     status_bucket: asString(payload.statusBucket, "active"),
     sort_name: readSort(payload),
@@ -119,7 +122,7 @@ async function listUserIssues(
     ...await issueReadPolicyParams(supabase, auth),
   });
   if (error) throw error;
-  return compactIssueListResult(data);
+  return attachContentVersion(compactIssueListResult(data), version);
 }
 
 export function isIssueReadAction(action: string) {

@@ -3,114 +3,99 @@ import { invokeBackendAction } from '@/services/backend-action';
 import { markContentCachePrefixStale } from '@/services/content-read-cache';
 import { readLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
 
-export type ContentRevisionDomain = 'announcements' | 'facilities' | 'issues';
-type ContentRevisions = Record<ContentRevisionDomain, number>;
+export type ContentVersionDomain = 'announcements' | 'facilities' | 'issues';
+export type ContentVersions = Record<ContentVersionDomain, number>;
 
-interface StoredContentRevisions {
-  checkedAt: number;
-  revisions: ContentRevisions;
+interface StoredContentVersions {
+  versions: ContentVersions;
 }
 
-const REVISION_CHECK_INTERVAL_MS = 30 * 60_000;
-const STORAGE_KEY_PREFIX = 'novae:content-revisions:';
-const DOMAIN_PREFIXES: Record<ContentRevisionDomain, readonly string[]> = {
+const STORAGE_KEY_PREFIX = 'novae:content-versions:';
+const DOMAIN_PREFIXES: Record<ContentVersionDomain, readonly string[]> = {
   announcements: ['announcement-list-page|', 'announcement-detail|', 'announcement-comments-page|'],
   facilities: ['facility-list-page|', 'facility-detail|'],
   issues: ['issue-list-page|', 'issue-search|', 'user-issue-list-page|', 'issue-detail|', 'issue-comments-page|'],
 };
 
-const listeners = new Map<ContentRevisionDomain, Set<() => void | Promise<void>>>();
-const pendingChecks = new Map<string, Promise<ContentRevisionDomain[]>>();
-const pendingNotifications = new Set<string>();
+const listeners = new Map<ContentVersionDomain, Set<() => void | Promise<void>>>();
+const pendingChecks = new Map<string, Promise<ContentVersionDomain[]>>();
 
 function storageKey(uid: string) {
   return `${STORAGE_KEY_PREFIX}${uid}`;
 }
 
-function readStoredRevisions(uid: string): StoredContentRevisions | null {
+function readStoredVersions(uid: string): StoredContentVersions | null {
   try {
     const raw = readLocalStorage(storageKey(uid));
     if (!raw) return null;
-    const value = JSON.parse(raw) as Partial<StoredContentRevisions>;
-    const revisions = value.revisions;
+    const value = JSON.parse(raw) as Partial<StoredContentVersions>;
+    const versions = value.versions;
     if (
-      typeof value.checkedAt !== 'number'
-      || !revisions
-      || typeof revisions.announcements !== 'number'
-      || typeof revisions.facilities !== 'number'
-      || typeof revisions.issues !== 'number'
+      !versions
+      || typeof versions.announcements !== 'number'
+      || typeof versions.facilities !== 'number'
+      || typeof versions.issues !== 'number'
     ) return null;
-    return { checkedAt: value.checkedAt, revisions };
+    return { versions };
   } catch {
     return null;
   }
 }
 
-function writeStoredRevisions(uid: string, value: StoredContentRevisions) {
+function writeStoredVersions(uid: string, value: StoredContentVersions) {
   writeLocalStorage(storageKey(uid), JSON.stringify(value));
 }
 
-function invalidateDomain(domain: ContentRevisionDomain) {
+function invalidateDomain(domain: ContentVersionDomain) {
   DOMAIN_PREFIXES[domain].forEach(markContentCachePrefixStale);
 }
 
-function notifyChangedDomains(domains: ContentRevisionDomain[]) {
+function notifyChangedDomains(domains: ContentVersionDomain[]) {
   domains.forEach((domain) => {
     listeners.get(domain)?.forEach((listener) => void listener());
   });
 }
 
-export function applyContentRevisionsSnapshot(
-  revisions: ContentRevisions,
+export function applyContentVersionsSnapshot(
+  versions: ContentVersions,
   options: { notify?: boolean } = {},
 ) {
   const uid = auth?.currentUser?.uid ?? '';
-  if (!uid) return [] as ContentRevisionDomain[];
-  const previous = readStoredRevisions(uid);
-  const domains = (Object.keys(revisions) as ContentRevisionDomain[]).filter((domain) =>
-    !previous || previous.revisions[domain] !== revisions[domain]
-  );
+  if (!uid) return [] as ContentVersionDomain[];
+  const previous = readStoredVersions(uid);
+  const nextVersions = { ...(previous?.versions ?? { announcements: 1, facilities: 1, issues: 1 }) };
+  const domains = (Object.keys(versions) as ContentVersionDomain[]).filter((domain) => {
+    const next = Math.max(nextVersions[domain], versions[domain]);
+    const changed = next > nextVersions[domain];
+    nextVersions[domain] = next;
+    return changed;
+  });
   domains.forEach(invalidateDomain);
-  writeStoredRevisions(uid, { checkedAt: Date.now(), revisions });
+  writeStoredVersions(uid, { versions: nextVersions });
   if (options.notify) notifyChangedDomains(domains);
   return domains;
 }
 
-export async function ensureContentRevisionsFresh(options: { notify?: boolean } = {}) {
+export async function ensureContentVersionsFresh(options: { notify?: boolean } = {}) {
   const uid = auth?.currentUser?.uid ?? '';
   if (!uid || (typeof navigator !== 'undefined' && !navigator.onLine)) return [];
-
-  const stored = readStoredRevisions(uid);
-  if (stored && Date.now() - stored.checkedAt < REVISION_CHECK_INTERVAL_MS) return [];
-  if (options.notify) pendingNotifications.add(uid);
 
   const existing = pendingChecks.get(uid);
   if (existing) return await existing;
 
   const pending = (async () => {
-    const fn = invokeBackendAction<Record<string, never>, { revisions: ContentRevisions }>('getContentRevisions');
+    const fn = invokeBackendAction<Record<string, never>, { versions: ContentVersions }>('getContentVersions');
     const result = await fn({});
     if (auth?.currentUser?.uid !== uid) return [];
-    return applyContentRevisionsSnapshot(result.revisions, {
-      notify: pendingNotifications.has(uid),
-    });
+    return applyContentVersionsSnapshot(result.versions, options);
   })().finally(() => {
     pendingChecks.delete(uid);
-    pendingNotifications.delete(uid);
   });
   pendingChecks.set(uid, pending);
   return await pending;
 }
 
-export async function prepareContentRevisionRead() {
-  try {
-    await ensureContentRevisionsFresh();
-  } catch {
-    // Cached content remains available when the lightweight revision check fails.
-  }
-}
-
-export function subscribeContentRevisionChanges(domain: ContentRevisionDomain, listener: () => void | Promise<void>) {
+export function subscribeContentVersionChanges(domain: ContentVersionDomain, listener: () => void | Promise<void>) {
   const domainListeners = listeners.get(domain) ?? new Set();
   domainListeners.add(listener);
   listeners.set(domain, domainListeners);
@@ -120,6 +105,25 @@ export function subscribeContentRevisionChanges(domain: ContentRevisionDomain, l
   };
 }
 
-export function resetContentRevisionState() {
-  pendingNotifications.clear();
+export function registerContentVersion(domain: ContentVersionDomain, version: number) {
+  const uid = auth?.currentUser?.uid ?? '';
+  if (!uid || !Number.isFinite(version)) return;
+  const previous = readStoredVersions(uid)?.versions ?? { announcements: 1, facilities: 1, issues: 1 };
+  if (version <= previous[domain]) return;
+  previous[domain] = version;
+  writeStoredVersions(uid, { versions: previous });
+}
+
+export function getContentVersion(domain: ContentVersionDomain) {
+  const uid = auth?.currentUser?.uid ?? '';
+  return readStoredVersions(uid)?.versions[domain] ?? 1;
+}
+
+export function hasContentVersionGap(domain: ContentVersionDomain, version: number) {
+  if (!Number.isFinite(version) || version <= 0) return false;
+  return version > getContentVersion(domain) + 1;
+}
+
+export function resetContentVersionState() {
+  // Pending requests are scoped by uid and are discarded by session changes.
 }

@@ -243,9 +243,9 @@ interface RealtimeEventRow {
   target_type: string;
 }
 
-interface ContentRevisionRow {
+interface ContentVersionRow {
   domain: string;
-  revision: number;
+  version: number;
   updated_at: string;
 }
 
@@ -264,7 +264,7 @@ interface AppPrivateTables {
     id: string; label: string; is_active: boolean; is_default: boolean;
     sort_order: number; created_by: string; created_at: string; updated_at: string;
   }>;
-  content_revisions: Table<ContentRevisionRow>;
+  content_versions: Table<ContentVersionRow>;
   deletion_jobs: Table<DeletionJobRow>;
   facility_reports: Table<FacilityRow>;
   facility_report_affected_users: Table<{ facility_id: string; uid: string; created_at: string }>;

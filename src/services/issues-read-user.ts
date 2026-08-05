@@ -3,7 +3,7 @@ import { invokeBackendAction } from '@/services/backend-action';
 import { captureContentCacheWriteGuard, createContentCacheKey, getCachedContentPersistent, setCachedContentFromRead } from '@/services/content-read-cache';
 import type { IssueCursor, IssueSortOption, IssueStatusBucket } from '@/types';
 import { normalizeIssueCursor, normalizeIssueRecord, toReadableBackendError, withSupportState } from './issues-core';
-import { prepareContentRevisionRead } from '@/services/content-revisions';
+import { registerContentVersion } from '@/services/content-versions';
 
 export async function fetchUserIssues(
   uid: string,
@@ -17,7 +17,6 @@ export async function fetchUserIssues(
     signal?: AbortSignal;
   },
 ) {
-  if (!options?.forceRefresh) await prepareContentRevisionRead();
   const pageSize = options?.pageSize ?? 30;
   const sort = options?.sort ?? 'latest';
   const statusBucket = options?.statusBucket ?? 'active';
@@ -33,8 +32,9 @@ export async function fetchUserIssues(
     cursor?.created_at?.getTime() ?? '',
   ]);
   if (!options?.forceRefresh) {
-    const cached = await getCachedContentPersistent<{ cursor: IssueCursor | null; hasMore: boolean; issues: ReturnType<typeof normalizeIssueRecord>[] }>(cacheKey);
+    const cached = await getCachedContentPersistent<{ cursor: IssueCursor | null; hasMore: boolean; issues: ReturnType<typeof normalizeIssueRecord>[]; version: number }>(cacheKey);
     if (cached) {
+      registerContentVersion('issues', cached.version ?? 1);
       return {
         ...cached,
         issues: withSupportState(cached.issues, options?.supportedIssueIds),
@@ -46,7 +46,7 @@ export async function fetchUserIssues(
   try {
     const fn = invokeBackendAction<
       { cursor: IssueCursor | null; pageSize: number; sort: IssueSortOption; statusBucket: IssueStatusBucket; uid: string },
-      { cursor: IssueCursor | null; hasMore: boolean; issues: Record<string, unknown>[] }
+      { cursor: IssueCursor | null; hasMore: boolean; issues: Record<string, unknown>[]; version: number }
     >('listUserIssues', {
       signal: options?.signal,
       timeoutMs: READ_REQUEST_TIMEOUT_MS,
@@ -57,8 +57,10 @@ export async function fetchUserIssues(
       cursor: normalizeIssueCursor(result.cursor),
       hasMore: result.hasMore,
       issues: withSupportState(issues, options?.supportedIssueIds),
+      version: result.version,
     };
     setCachedContentFromRead(cacheGuard, page);
+    registerContentVersion('issues', result.version);
     return page;
   } catch (error) {
     throw toReadableBackendError(error);

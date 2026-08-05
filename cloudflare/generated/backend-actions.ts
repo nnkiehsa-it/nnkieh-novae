@@ -69,7 +69,7 @@ export const BACKEND_ACTION_POLICIES = {
   "getCategoryManagement": {
     "group": "read"
   },
-  "getContentRevisions": {
+  "getContentVersions": {
     "group": "read"
   },
   "getCurrentUserRole": {

@@ -17,7 +17,7 @@ import { normalizeDate, toReadableBackendError } from '@/services/issues-core';
 import type { CommentCursor } from './comment-cursor';
 import { normalizeCommentCursor } from './comment-cursor';
 import { COMMENT_FEED_PAGE_SIZE } from '@/lib/page-size';
-import { prepareContentRevisionRead } from '@/services/content-revisions';
+import { registerContentVersion } from '@/services/content-versions';
 
 const ANNOUNCEMENT_LIMIT = 10;
 const ANNOUNCEMENT_LIST_CACHE_PREFIX = 'announcement-list-page|';
@@ -82,7 +82,6 @@ export async function fetchAnnouncementsPage(
   pageSize = ANNOUNCEMENT_LIMIT,
   options: { cacheScope?: string; forceRefresh?: boolean; signal?: AbortSignal } = {},
 ) {
-  if (!options.forceRefresh) await prepareContentRevisionRead();
   const cacheKey = createContentCacheKey([
     'announcement-list-page',
     options.cacheScope ?? 'default',
@@ -91,23 +90,28 @@ export async function fetchAnnouncementsPage(
     cursor?.publishedAtMs ?? '',
   ]);
   if (!options.forceRefresh) {
-    const cached = await getCachedContentPersistent<{ announcements: AnnouncementRecord[]; cursor: AnnouncementCursor; hasMore: boolean }>(cacheKey);
-    if (cached) return cached;
+    const cached = await getCachedContentPersistent<{ announcements: AnnouncementRecord[]; cursor: AnnouncementCursor; hasMore: boolean; version: number }>(cacheKey);
+    if (cached) {
+      registerContentVersion('announcements', cached.version);
+      return cached;
+    }
   }
   const cacheGuard = captureContentCacheWriteGuard(cacheKey);
 
   try {
     const fn = invokeBackendAction<
       { cursor: AnnouncementCursor; pageSize: number },
-      { announcements: Record<string, unknown>[]; cursor: AnnouncementCursor; hasMore: boolean }
+      { announcements: Record<string, unknown>[]; cursor: AnnouncementCursor; hasMore: boolean; version: number }
     >('listAnnouncements', { signal: options.signal, timeoutMs: READ_REQUEST_TIMEOUT_MS });
     const result = await fn({ cursor, pageSize });
     const page = {
       announcements: result.announcements.map(normalizeAnnouncementRecord),
       cursor: normalizeAnnouncementCursor(result.cursor),
       hasMore: result.hasMore,
+      version: result.version,
     };
     setCachedContentFromRead(cacheGuard, page);
+    registerContentVersion('announcements', result.version);
     return page;
   } catch (error) {
     throw toReadableBackendError(error);
@@ -118,7 +122,6 @@ export async function fetchAnnouncementRecordById(
   announcementId: string,
   options: { cacheScope?: string; forceRefresh?: boolean } = {},
 ): Promise<AnnouncementRecord> {
-  if (!options.forceRefresh) await prepareContentRevisionRead();
   const cacheKey = createContentCacheKey(['announcement-detail', announcementId, options.cacheScope ?? 'default']);
   if (!options.forceRefresh) {
     const cached = await getCachedContentPersistent<AnnouncementRecord>(cacheKey);
@@ -173,7 +176,6 @@ export async function fetchAnnouncementComments(
   cursor?: CommentCursor,
   options: { cacheScope?: string; forceRefresh?: boolean; signal?: AbortSignal | null } = {},
 ) {
-  if (!options.forceRefresh) await prepareContentRevisionRead();
   const cacheKey = createContentCacheKey([
     'announcement-comments-page',
     announcementId,
@@ -182,14 +184,17 @@ export async function fetchAnnouncementComments(
     cursor?.createdAtMs ?? '',
   ]);
   if (!options.forceRefresh) {
-    const cached = await getCachedContentPersistent<{ comments: AnnouncementCommentRecord[]; cursor: CommentCursor; hasMore: boolean }>(cacheKey);
-    if (cached) return cached;
+    const cached = await getCachedContentPersistent<{ comments: AnnouncementCommentRecord[]; cursor: CommentCursor; hasMore: boolean; version: number }>(cacheKey);
+    if (cached) {
+      registerContentVersion('announcements', cached.version);
+      return cached;
+    }
   }
   const cacheGuard = captureContentCacheWriteGuard(cacheKey);
 
   const fn = invokeBackendAction<
     { announcementId: string; cursor?: CommentCursor; pageSize: number },
-    { comments: Array<Record<string, unknown>>; cursor: CommentCursor; hasMore: boolean }
+    { comments: Array<Record<string, unknown>>; cursor: CommentCursor; hasMore: boolean; version: number }
   >('listAnnouncementComments', {
     signal: 'signal' in options ? options.signal ?? undefined : undefined,
     timeoutMs: READ_REQUEST_TIMEOUT_MS,
@@ -199,12 +204,15 @@ export async function fetchAnnouncementComments(
     comments: result.comments.map(normalizeAnnouncementComment),
     cursor: normalizeCommentCursor(result.cursor),
     hasMore: result.hasMore,
+    version: result.version,
   } satisfies {
     comments: AnnouncementCommentRecord[];
     cursor: CommentCursor;
     hasMore: boolean;
+    version: number;
   };
   setCachedContentFromRead(cacheGuard, page);
+  registerContentVersion('announcements', result.version);
   return page;
 }
 

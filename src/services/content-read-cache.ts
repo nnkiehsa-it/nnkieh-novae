@@ -25,8 +25,6 @@ let activeScope = 'anonymous';
 let cacheVersion = 0;
 let persistentWriteVersion = 0;
 let scopeVersion = 0;
-let realtimeReliable = true;
-let wasOffline = false;
 
 export interface ContentCacheWriteGuard {
   cacheVersion: number;
@@ -193,14 +191,6 @@ export function clearContentReadCache() {
   const scope = activeScope;
   clearContentReadMemoryCache();
   void clearPersistentCacheScope(scope);
-}
-
-export function markContentRealtimeUnreliable() { realtimeReliable = false; }
-export function markContentRealtimeReliable() { realtimeReliable = true; wasOffline = false; }
-export function markContentWentOffline() { wasOffline = true; }
-
-export function shouldRefreshContentAfterResume(updatedAt: number) {
-  return wasOffline || !realtimeReliable || !isContentCacheFresh(updatedAt);
 }
 
 function isContentCacheWriteGuardCurrent(guard: ContentCacheWriteGuard) {

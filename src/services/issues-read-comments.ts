@@ -8,7 +8,7 @@ import { READ_REQUEST_TIMEOUT_MS } from '@/lib/request';
 import { getRouteRequestSignal } from '@/lib/route-request';
 import { captureContentCacheWriteGuard, createContentCacheKey, getCachedContentPersistent, setCachedContentFromRead } from '@/services/content-read-cache';
 import { COMMENT_FEED_PAGE_SIZE } from '@/lib/page-size';
-import { prepareContentRevisionRead } from '@/services/content-revisions';
+import { registerContentVersion } from '@/services/content-versions';
 
 interface FetchCommentsOptions {
   cacheScope?: string;
@@ -26,7 +26,6 @@ export async function fetchComments(
   cursor?: CommentCursor | null,
   options?: FetchCommentsOptions,
 ) {
-  if (!options?.forceRefresh) await prepareContentRevisionRead();
   const cacheKey = createContentCacheKey([
     'issue-comments-page',
     issueId,
@@ -35,15 +34,18 @@ export async function fetchComments(
     cursor?.createdAtMs ?? '',
   ]);
   if (!options?.forceRefresh) {
-    const cached = await getCachedContentPersistent<{ comments: CommentRecord[]; cursor: CommentCursor | null; hasMore: boolean }>(cacheKey);
-    if (cached) return cached;
+    const cached = await getCachedContentPersistent<{ comments: CommentRecord[]; cursor: CommentCursor | null; hasMore: boolean; version: number }>(cacheKey);
+    if (cached) {
+      registerContentVersion('issues', cached.version);
+      return cached;
+    }
   }
   const cacheGuard = captureContentCacheWriteGuard(cacheKey);
 
   try {
     const fn = invokeBackendAction<
       { issueId: string; cursor?: CommentCursor | null; pageSize: number },
-      { comments: CommentResponseRecord[]; cursor: CommentCursor | null; hasMore: boolean }
+      { comments: CommentResponseRecord[]; cursor: CommentCursor | null; hasMore: boolean; version: number }
     >('listComments', {
       signal: getCommentRequestSignal(options),
       timeoutMs: READ_REQUEST_TIMEOUT_MS,
@@ -70,8 +72,10 @@ export async function fetchComments(
       })),
       cursor: normalizeCommentCursor(result.cursor),
       hasMore: result.hasMore,
-    } satisfies { comments: CommentRecord[]; cursor: CommentCursor | null; hasMore: boolean };
+      version: result.version,
+    } satisfies { comments: CommentRecord[]; cursor: CommentCursor | null; hasMore: boolean; version: number };
     setCachedContentFromRead(cacheGuard, page);
+    registerContentVersion('issues', result.version);
     return page;
   } catch (error) {
     throw toReadableBackendError(error);

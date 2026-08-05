@@ -56,7 +56,7 @@
       </div>
     </div>
 
-    <div class="shrink-0 bg-transparent pt-2">
+    <div class="comment-composer-boundary shrink-0">
       <CommentComposer
         :target-id="targetId"
         :parent-comment-id="replyingToCommentId || null"
@@ -66,6 +66,7 @@
         :disabled-placeholder="disabledComposerLabelKey"
         :mobile-docked="mobileDocked"
         :parent-author-uid="replyingToAuthorUid"
+        :parent-comment-preview="replyingToCommentPreview"
         @close="closeComposer"
         @submit="handleSubmitComment"
       />
@@ -96,6 +97,7 @@ import { useInfiniteScroll } from '@/composables/useInfiniteScroll';
 import type { DiscussionCommentRecord } from '@/types';
 import { useI18n, type MessageKey } from '@/i18n';
 import { LOAD_MORE_PLACEHOLDER_COUNT } from '@/lib/feed-loading';
+import { stripMarkdownImages } from '@/lib/markdown-images';
 
 const props = withDefaults(defineProps<{
   canDeleteComment: (comment: DiscussionCommentRecord) => boolean;
@@ -132,10 +134,19 @@ const props = withDefaults(defineProps<{
 });
 
 const replyingToCommentId = ref('');
-const replyingToAuthorUid = computed(() => {
-  if (!replyingToCommentId.value) return '';
-  return props.comments.find((comment) => comment.id === replyingToCommentId.value)?.author_uid ?? '';
+const replyingToComment = computed(() => {
+  if (!replyingToCommentId.value) return null;
+  return props.comments.find((comment) => comment.id === replyingToCommentId.value) ?? null;
 });
+const replyingToAuthorUid = computed(() => {
+  return replyingToComment.value?.author_uid ?? '';
+});
+const replyingToCommentPreview = computed(() => (
+  stripMarkdownImages(replyingToComment.value?.content ?? '')
+    .replace(/\s+/gu, ' ')
+    .trim()
+    .slice(0, 24)
+));
 const { t } = useI18n();
 const commentPendingDelete = ref('');
 const expandedReplyCommentIds = ref<Set<string>>(new Set());
