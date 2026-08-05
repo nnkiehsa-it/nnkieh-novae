@@ -290,7 +290,7 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   assert.match(app, /<AnimatePresence mode="popLayout"[\s\S]*MOTION_ROUTE_TRANSITION/u);
   assert.match(uiMotion, /MOTION_SMOOTH_SPRING[\s\S]*MOTION_ROUTE_TRANSITION[\s\S]*getStaggerTransition/u);
   [issueBoardTable, facilityTable].forEach((table) => {
-    assert.match(table, /<AnimatePresence :initial="false">[\s\S]*<m\.div[\s\S]*\blayout\b/u);
+    assert.match(table, /<AnimatePresence mode="popLayout" :initial="false">[\s\S]*<m\.div[\s\S]*\blayout\b/u);
   });
   assert.match(notifications, /<ListSurfaceRow[\s\S]*interactive[\s\S]*class="notification-group-row feed-enter"/u);
   assert.match(notifications, /<ListSurfaceRow[\s\S]*as="div"[\s\S]*class="notification-group-row skeleton-enter/u);

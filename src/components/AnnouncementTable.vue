@@ -13,7 +13,7 @@
       />
     </template>
 
-    <AnimatePresence :initial="false">
+    <AnimatePresence mode="popLayout" :initial="false">
       <m.div
         v-for="announcement in announcements"
         :key="announcement.id"

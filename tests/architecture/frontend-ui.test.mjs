@@ -510,7 +510,7 @@ test('all infinite feeds use three placeholders and a forward-only loading bound
   assert.match(infiniteScroll, /preventForwardWheel[\s\S]*preventForwardTouch/u);
   assert.match(contentStyles, /\.load-more-scroll-gate \{\s*overscroll-behavior-y: none;/u);
   assert.match(contentStyles, /\.feed-enter \{[\s\S]*animation: feed-enter 280ms/u);
-  assert.match(announcementTable, /<AnimatePresence :initial="false">[\s\S]*v-for="announcement in announcements"[\s\S]*listMotionTransition/u);
+  assert.match(announcementTable, /<AnimatePresence mode="popLayout" :initial="false">[\s\S]*v-for="announcement in announcements"[\s\S]*listMotionTransition/u);
 });
 
 test('navigation and contextual creation share the same responsive information architecture', async () => {

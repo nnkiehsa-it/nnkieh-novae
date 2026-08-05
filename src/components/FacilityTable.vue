@@ -14,7 +14,7 @@
       />
     </template>
 
-    <AnimatePresence :initial="false">
+    <AnimatePresence mode="popLayout" :initial="false">
       <m.div
         v-for="facility in facilities"
         :key="facility.id"

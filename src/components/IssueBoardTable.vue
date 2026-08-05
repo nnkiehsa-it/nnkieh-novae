@@ -16,7 +16,7 @@
       />
     </template>
 
-    <AnimatePresence :initial="false">
+    <AnimatePresence mode="popLayout" :initial="false">
       <m.div
         v-for="issue in issues"
         :key="issue.id"
