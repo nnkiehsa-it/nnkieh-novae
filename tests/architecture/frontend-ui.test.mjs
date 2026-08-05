@@ -36,7 +36,10 @@ test('entry and comment limits are enforced across UI, Edge, and a new migration
   assert.match(commentComposer, /:disabled="disabled"[\s\S]*@change="handleImagePicked"/u);
   assert.match(commentComposer, /if \(!props\.disabled\) commentTextareaRef\.value\?\.focus\(\)/u);
   assert.match(commentComposer, /comment-composer-dock viewport-floating-inline[\s\S]*mobileDocked/u);
+  assert.match(await read('src/styles/content.css'), /comment-composer-dock \.control-frame[\s\S]*border-radius: 9999px[\s\S]*box-shadow: none/u);
   assert.match(commentThread, /<CommentComposer[\s\S]*:disabled="!canCompose"/u);
+  assert.doesNotMatch(commentThread, /comments\.count|comments\.noCommentsYet|<TagBadge|<AppIcon/u);
+  assert.match(commentThread, /v-else-if="comments\.length"/u);
   assert.doesNotMatch(commentThread, /v-else[\s\S]{0,180}disabledComposerLabelKey/u);
   assert.match(commentItem, /plain-text/u);
   assert.doesNotMatch(commentThread, /第一則留言會出現在這裡/u);
@@ -272,7 +275,7 @@ test('proposals, announcements, and facilities share list cards and detail panel
   assert.match(contentListRuntime, /useInfiniteScroll/u);
   assert.match(contentListRuntime, /registerActiveNavigationRefreshHandler/u);
   assert.match(detailPagePanel, /DetailPageShell/u);
-  assert.match(detailPagePanel, /#comments="\{ compactHeader, embedded \}"[\s\S]*:embedded="embedded"/u);
+  assert.match(detailPagePanel, /#comments="\{ embedded \}"[\s\S]*:embedded="embedded"/u);
   assert.match(detailPagePanel, /ContentDetailBody/u);
   assert.match(commentThread, /embedded \? 'overflow-visible' : 'min-h-0 flex-1 overflow-auto'/u);
   assert.match(commentThread, /root: props\.embedded \? undefined : scrollContainerRef/u);
@@ -423,7 +426,7 @@ test('platform feature switches persist atomically and remain configurable after
   assert.match(draftDeletionMigration, /deleted_issue_category_ids[\s\S]*for update[\s\S]*backend_delete_issue_category/u);
   assert.match(draftDeletionMigration, /deleted_facility_category_ids[\s\S]*backend_delete_facility_category/u);
   assert.match(announcementCommentSetting, /announcement_comments_enabled boolean not null default true/u);
-  assert.match(announcementCommentSetting, /comments_override boolean/u);
+  assert.match(await read('supabase/migrations/202608050001_remove_per_content_comment_controls.sql'), /drop column if exists comments_override/u);
   assert.match(announcementCommentSetting, /apply_announcement_comment_setting[\s\S]*update app_private\.announcements/u);
   assert.match(announcementCommentSetting, /backend_save_category_management\([\s\S]*announcement_comments_enabled boolean/u);
 });

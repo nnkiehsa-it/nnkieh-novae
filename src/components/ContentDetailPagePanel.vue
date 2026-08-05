@@ -1,7 +1,6 @@
 <template>
   <DetailPageShell
     :back-label="backLabel"
-    :comment-count="commentCount"
     :comments-label="commentsLabel"
     :details-label="detailsLabel"
     :initial-tab="initialTab"
@@ -39,8 +38,8 @@
       <slot name="actions" :compact="compact" />
     </template>
 
-    <template #comments="{ compactHeader, embedded }">
-      <slot name="comments" :compact-header="compactHeader" :embedded="embedded" />
+    <template #comments="{ embedded }">
+      <slot name="comments" :embedded="embedded" />
     </template>
   </DetailPageShell>
 </template>
@@ -53,7 +52,6 @@ withDefaults(defineProps<{
   authorSecondary?: string;
   authorUid?: string | null;
   backLabel: string;
-  commentCount?: number;
   commentsLabel?: string;
   content: string;
   contentLoading?: boolean;
@@ -75,7 +73,6 @@ withDefaults(defineProps<{
 }>(), {
   authorSecondary: '',
   authorUid: null,
-  commentCount: 0,
   commentsLabel: 'comments.title',
   contentLoading: false,
   contextContent: '',
@@ -104,7 +101,7 @@ const emit = defineEmits<{
 
 defineSlots<{
   actions(props: { compact: boolean }): unknown;
-  comments(props: { compactHeader: boolean; embedded: boolean }): unknown;
+  comments(props: { embedded: boolean }): unknown;
   header(): unknown;
 }>();
 </script>

@@ -217,13 +217,6 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
       }, managerA.auth));
       assert.equal(asRecord(approved.issue).status, "pending");
     }
-    if (issue.comments_enabled === false) {
-      await callAction("setIssueCommentsEnabled", {
-        enabled: true,
-        issueId,
-        requestId: requestId("stress-enable-comments"),
-      }, managerA.auth);
-    }
     const root = asRecord(await callAction("createComment", {
       content: `Stress root ${index}`,
       issueId,

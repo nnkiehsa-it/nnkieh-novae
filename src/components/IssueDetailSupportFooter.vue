@@ -49,18 +49,6 @@
     </template>
 
     <DetailActionButton
-      v-if="isAdmin && canToggleComments"
-      :label="issue.comments_enabled ? 'comments.closeNewComments' : 'comments.reopenNewComments'"
-      :compact="compact"
-      :disabled="commentsToggleBusy"
-      :title="issue.comments_enabled ? 'comments.closeNewComments' : 'comments.reopenNewComments'"
-      :aria-label="issue.comments_enabled ? 'comments.closeNewComments' : 'comments.reopenNewComments'"
-      @click="emit('toggle-comments')"
-    >
-      <AppIcon name="comment" />
-    </DetailActionButton>
-
-    <DetailActionButton
       v-if="isAdmin && !isClosed"
       :label="isUnderReview ? 'issue.review' : 'issue.changeStatusResult'"
       :compact="compact"
@@ -84,8 +72,6 @@ import { useI18n } from '@/i18n';
 
 const props = defineProps<{
   canManage?: boolean;
-  canToggleComments?: boolean;
-  commentsToggleBusy?: boolean;
   isAdmin?: boolean;
   compact?: boolean;
   currentUserSupported: boolean;
@@ -106,7 +92,6 @@ const emit = defineEmits<{
   supported: [payload: { supported: boolean; supportCount: number }];
   'edit-result': [];
   moderate: [];
-  'toggle-comments': [];
 }>();
 
 const isUnderReview = computed(() => props.issue.status === 'under-review');

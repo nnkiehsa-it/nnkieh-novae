@@ -43,7 +43,7 @@
         </EditorSurface>
       </div>
 
-      <div class="flex items-end gap-1.5 p-2 pl-3">
+      <div class="comment-composer__row flex items-end gap-1.5 p-2 pl-3">
         <DecodedImage
           v-if="myPhotoUrl"
           :src="myPhotoUrl"

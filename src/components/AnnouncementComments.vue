@@ -3,7 +3,6 @@
     :can-delete-comment="canDeleteThreadComment"
     :can-compose="canCompose"
     :comments="comments"
-    :compact-header="compactHeader"
     :embedded="embedded"
     :mobile-docked="embedded"
     :deleting-id="deletingId"
@@ -33,18 +32,15 @@ import type { DiscussionCommentRecord } from '@/types';
 const props = withDefaults(defineProps<{
   announcementId: string;
   canCompose?: boolean;
-  compactHeader?: boolean;
   embedded?: boolean;
   focusCommentId?: string;
 }>(), {
-  compactHeader: false,
   embedded: false,
   canCompose: true,
   focusCommentId: '',
 });
 
 const emit = defineEmits<{
-  commentCountChanged: [payload: { announcementId: string; commentCount: number }];
   contentUnavailable: [announcementId: string];
 }>();
 
@@ -66,7 +62,6 @@ const {
   subscribeCurrentAnnouncementComments,
 } = useAnnouncementComments(
   () => props.announcementId,
-  (payload) => emit('commentCountChanged', payload),
   (announcementId) => emit('contentUnavailable', announcementId),
 );
 

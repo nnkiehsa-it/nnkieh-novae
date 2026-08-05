@@ -127,12 +127,8 @@
             <SkeletonBlock as="div" class="h-2 w-3/4 rounded" />
             <SkeletonBlock as="div" class="h-10 w-40 rounded-full" />
           </div>
-          <div class="mt-8 space-y-3">
-            <div class="flex items-center justify-between">
-              <SkeletonBlock as="div" class="h-5 w-24 rounded" />
-              <SkeletonBlock as="div" class="h-5 w-10 rounded-full" />
-            </div>
-            <SkeletonBlock as="div" class="h-16 w-full rounded-xl" />
+          <div class="mt-6 border-t border-ink-200/70 pt-5 dark:border-ink-800/70">
+            <SkeletonBlock as="div" class="h-14 w-full rounded-full" />
           </div>
         </div>
       </div>

@@ -154,20 +154,6 @@ export async function updateIssueResult(issueId: string, resultContent: string) 
   }
 }
 
-export async function setIssueCommentsEnabled(issueId: string, enabled: boolean) {
-  try {
-    const fn = invokeBackendAction<
-      { issueId: string; enabled: boolean; requestId: string },
-      { issue: IssueResponseRecord }
-    >('setIssueCommentsEnabled');
-    const result = await fn({ issueId, enabled, requestId: createRequestId() });
-    invalidateIssueCache(issueId);
-    return normalizeIssueResponse(result.issue);
-  } catch (error) {
-    throw toReadableBackendError(error);
-  }
-}
-
 export async function toggleSupport(
   issueId: string,
 ) {

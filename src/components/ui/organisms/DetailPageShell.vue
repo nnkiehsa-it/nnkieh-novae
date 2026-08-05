@@ -38,7 +38,7 @@
           class="flex min-h-0 min-w-0 flex-col border-l border-ink-200/70 py-3 pl-5 dark:border-ink-800/70"
           :aria-label="t(commentsLabel)"
         >
-          <slot name="comments" :compact-header="false" />
+          <slot name="comments" :embedded="false" />
         </aside>
       </div>
     </article>
@@ -72,11 +72,11 @@
         <section
           v-if="mobileCommentsVisible"
           ref="mobileCommentsRef"
-          class="mt-8"
+          class="mt-6 border-t border-ink-200/70 pt-5 dark:border-ink-800/70"
           :aria-labelledby="mobileCommentsHeadingId"
         >
           <h3 :id="mobileCommentsHeadingId" class="sr-only">{{ t(commentsLabel) }}</h3>
-          <slot name="comments" :compact-header="false" :embedded="true" />
+          <slot name="comments" :embedded="true" />
         </section>
       </div>
     </article>
@@ -94,7 +94,6 @@ type DetailPageTab = 'details' | 'comments';
 const props = withDefaults(defineProps<{
   backLabel?: string;
   commentsLabel?: string;
-  commentCount?: number;
   detailsLabel: string;
   initialTab?: DetailPageTab;
   showMobileBackButton?: boolean;
@@ -103,7 +102,6 @@ const props = withDefaults(defineProps<{
 }>(), {
   backLabel: 'issue.return',
   commentsLabel: 'comments.title',
-  commentCount: 0,
   initialTab: 'details',
   showMobileBackButton: true,
   showComments: true,
@@ -117,7 +115,7 @@ const { t } = useI18n();
 
 defineSlots<{
   actions(props: { compact: boolean }): unknown;
-  comments(props: { compactHeader: boolean; embedded: boolean }): unknown;
+  comments(props: { embedded: boolean }): unknown;
   details(props: { compact: boolean; scrollContent: boolean }): unknown;
   header(): unknown;
 }>();

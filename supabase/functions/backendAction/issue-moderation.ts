@@ -86,17 +86,3 @@ export async function updateIssueResult(payload: JsonRecord, auth: AuthContext, 
   if (error) throw error;
   return { issue: data };
 }
-
-export async function setIssueCommentsEnabled(payload: JsonRecord, auth: AuthContext, supabase: BackendSupabase) {
-  const issueId = asUuid(payload.issueId);
-  if (!issueId) throw new Error("not-found");
-  if (typeof payload.enabled !== "boolean") throw new Error("validation-required");
-  await readIssueForAdmin(supabase, issueId, auth);
-  const { data, error } = await supabase.schema("app_api").rpc("backend_set_issue_comments_enabled", {
-    actor_uid: auth.uid,
-    enabled: payload.enabled,
-    issue_id: issueId,
-  });
-  if (error) throw error;
-  return { issue: issueToReadableResponse(asRecord(data), auth) };
-}

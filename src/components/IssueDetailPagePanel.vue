@@ -3,7 +3,6 @@
     :author-uid="issue.canViewAuthor ? issue.author_uid : null"
     :initial-tab="initialTab"
     back-label="issue.returnToProposalList"
-    :comment-count="mobileCommentCount"
     :content="issue.content"
     :content-loading="contentLoading"
     details-label="issue.proposalContent"
@@ -36,8 +35,6 @@
     <template #actions="{ compact }">
       <IssueDetailSupportFooter
         :can-manage="issue.canManageIssue"
-        :can-toggle-comments="commentsAllowedForStatus && commentsAllowedForCategory"
-        :comments-toggle-busy="commentsToggleBusy"
         :is-admin="isAdmin"
         :compact="compact"
         :current-user-supported="currentUserSupported"
@@ -54,11 +51,10 @@
         @supported="emit('supported', $event)"
         @moderate="handleModerate"
         @edit-result="handleEditResult"
-        @toggle-comments="handleToggleComments"
       />
     </template>
 
-    <template #comments="{ compactHeader, embedded }">
+    <template #comments="{ embedded }">
       <div v-if="contentLoading" class="space-y-3 py-2" role="status" :aria-label="t('comments.loadingComments')">
         <SkeletonBlock class="block h-4 w-2/3 rounded" />
         <SkeletonBlock class="block h-16 w-full rounded-2xl" />
@@ -69,12 +65,10 @@
         :accessible="commentsReadable"
         :can-compose="commentsEnabled"
         :category="issue.category"
-        :compact-header="compactHeader"
         :embedded="embedded"
         :focus-comment-id="focusCommentId"
         :issue-id="issue.id"
         class="h-full"
-        @comment-count-changed="mobileCommentCount = $event"
         @content-unavailable="emit('contentUnavailable', $event)"
       />
     </template>
@@ -115,8 +109,6 @@ import IssueComments from '@/components/IssueComments.vue';
 import { useSession } from '@/composables/useSession';
 import { issueAllowsCommentsForStatus, issueCategoryAllowsComments } from '@/constants/categories';
 import { useI18n } from '@/i18n';
-import { useActionFeedback } from '@/composables/useActionFeedback';
-import { setIssueCommentsEnabled } from '@/services/issues';
 
 // Shared Moderation Dialogs
 import IssueReviewDialog from '@/components/IssueReviewDialog.vue';
@@ -154,10 +146,7 @@ const isAdmin = computed(() => canManageIssueCategory(props.issue.category));
 const isReviewDialogOpen = ref(false);
 const isStatusDialogOpen = ref(false);
 const statusDialogInitialAction = ref<'processing' | 'closed'>('processing');
-const mobileCommentCount = ref(0);
-const commentsToggleBusy = ref(false);
 const { t } = useI18n();
-const { run } = useActionFeedback();
 
 const {
   derivedStatus,
@@ -207,24 +196,4 @@ function handleStatusChanged(updatedIssue: IssueRecord) {
   emit('issue-updated', updatedIssue);
 }
 
-async function handleToggleComments() {
-  if (commentsToggleBusy.value) return;
-  commentsToggleBusy.value = true;
-  const enabled = !props.issue.comments_enabled;
-  try {
-    const updatedIssue = await run(
-      () => setIssueCommentsEnabled(props.issue.id, enabled),
-      {
-        pending: t('comments.updatingAvailability'),
-        success: t(enabled ? 'comments.newCommentsReopened' : 'comments.newCommentsClosed'),
-        error: t('comments.updateAvailabilityFailed'),
-      },
-    );
-    emit('issue-updated', updatedIssue);
-  } catch {
-    // The shared feedback bar already reports the translated failure.
-  } finally {
-    commentsToggleBusy.value = false;
-  }
-}
 </script>

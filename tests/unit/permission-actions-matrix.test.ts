@@ -96,7 +96,6 @@ describe('proposal detail permission actions', () => {
       canManage: false,
       isAdmin: false,
       status: 'pending' as const,
-      canToggleComments: true,
       deleteVisible: false,
       labels: [],
     },
@@ -105,7 +104,6 @@ describe('proposal detail permission actions', () => {
       canManage: true,
       isAdmin: false,
       status: 'pending' as const,
-      canToggleComments: true,
       deleteVisible: true,
       labels: [],
     },
@@ -114,31 +112,27 @@ describe('proposal detail permission actions', () => {
       canManage: true,
       isAdmin: true,
       status: 'under-review' as const,
-      canToggleComments: true,
       deleteVisible: true,
-      labels: ['comments.closeNewComments', 'issue.review'],
+      labels: ['issue.review'],
     },
     {
       name: 'category manager processing',
       canManage: true,
       isAdmin: true,
       status: 'processing' as const,
-      canToggleComments: true,
       deleteVisible: true,
-      labels: ['comments.closeNewComments', 'issue.changeStatusResult'],
+      labels: ['issue.changeStatusResult'],
     },
     {
       name: 'category manager on closed proposal',
       canManage: true,
       isAdmin: true,
       status: 'completed' as const,
-      canToggleComments: false,
       deleteVisible: true,
       labels: [],
     },
   ])('$name sees only the permitted controls', ({
     canManage,
-    canToggleComments,
     deleteVisible,
     isAdmin,
     labels,
@@ -147,8 +141,6 @@ describe('proposal detail permission actions', () => {
     const wrapper = shallowMount(IssueDetailSupportFooter, {
       props: {
         canManage,
-        canToggleComments,
-        commentsToggleBusy: false,
         currentUserSupported: false,
         isAdmin,
         issue: issueFixture({ canManageIssue: canManage, status }),
@@ -174,8 +166,6 @@ describe('proposal detail permission actions', () => {
     const wrapper = shallowMount(IssueDetailSupportFooter, {
       props: {
         canManage: true,
-        canToggleComments: true,
-        commentsToggleBusy: false,
         currentUserSupported: false,
         isAdmin: true,
         issue: issueFixture({ canManageIssue: true, status: 'under-review' }),
@@ -194,12 +184,10 @@ describe('proposal detail permission actions', () => {
     });
     const buttons = wrapper.findAllComponents(DetailActionButton);
 
-    await buttons.find((button) => button.props('label') === 'comments.closeNewComments')?.trigger('click');
     await buttons.find((button) => button.props('label') === 'issue.review')?.trigger('click');
     wrapper.getComponent(DetailActionGroup).vm.$emit('delete');
     wrapper.getComponent(DetailActionGroup).vm.$emit('share');
 
-    expect(wrapper.emitted('toggle-comments')).toHaveLength(1);
     expect(wrapper.emitted('moderate')).toHaveLength(1);
     expect(wrapper.emitted('edit-result')).toBeUndefined();
     expect(wrapper.emitted('delete')).toHaveLength(1);

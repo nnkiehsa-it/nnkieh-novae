@@ -174,39 +174,11 @@ integrationTest("announcement.manage, likes, comments, and ownership", async () 
     requestId: requestId("announcement-comment"),
   }, user.auth));
   const commentId = String(asRecord(commentWrite.comment).id);
-  await expectActionError(
-    "permission-denied",
-    () => callAction("setAnnouncementCommentsEnabled", {
-      announcementId,
-      enabled: false,
-      requestId: requestId("announcement-comments-close-denied"),
-    }, user.auth),
-  );
-  const closedComments = asRecord(await callAction("setAnnouncementCommentsEnabled", {
-    announcementId,
-    enabled: false,
-    requestId: requestId("announcement-comments-close"),
-  }, manager.auth));
-  assert.equal(asRecord(closedComments.announcement).comments_enabled, false);
-  await expectActionError(
-    "comments-disabled",
-    () => callAction("createAnnouncementComment", {
-      announcementId,
-      content: "Must be rejected while announcement comments are closed",
-      requestId: requestId("announcement-comment-while-closed"),
-    }, stranger.auth),
-  );
   const comments = asRecord(await callAction("listAnnouncementComments", {
     announcementId,
     pageSize: 30,
   }, stranger.auth));
   assert.ok(JSON.stringify(comments).includes(commentId));
-  const reopenedComments = asRecord(await callAction("setAnnouncementCommentsEnabled", {
-    announcementId,
-    enabled: true,
-    requestId: requestId("announcement-comments-reopen"),
-  }, manager.auth));
-  assert.equal(asRecord(reopenedComments.announcement).comments_enabled, true);
   await expectActionError(
     "permission-denied",
     () => callAction("deleteAnnouncementComment", {
@@ -229,11 +201,6 @@ integrationTest("announcement.manage, likes, comments, and ownership", async () 
     requestId: requestId("announcement-manager-comment-delete"),
   }, manager.auth);
 
-  await callAction("setAnnouncementCommentsEnabled", {
-    announcementId,
-    enabled: false,
-    requestId: requestId("announcement-manual-close-before-global"),
-  }, manager.auth);
   const following = asRecord(await callAction("createAnnouncement", {
     content: "Follows the global announcement comment setting",
     requestId: requestId("announcement-global-following-create"),
@@ -247,16 +214,7 @@ integrationTest("announcement.manage, likes, comments, and ownership", async () 
       announcementId: id,
     }, user.auth));
     assert.equal(asRecord(globallyClosed.announcement).comments_enabled, false);
-    assert.equal(asRecord(globallyClosed.announcement).comments_globally_enabled, false);
   }
-  await expectActionError(
-    "comments-disabled",
-    () => callAction("setAnnouncementCommentsEnabled", {
-      announcementId: followingId,
-      enabled: true,
-      requestId: requestId("announcement-global-single-reopen-denied"),
-    }, manager.auth),
-  );
   await expectActionError(
     "comments-disabled",
     () => callAction("createAnnouncementComment", {
@@ -274,14 +232,13 @@ integrationTest("announcement.manage, likes, comments, and ownership", async () 
   assert.equal(asRecord(createdWhileClosed.announcement).comments_enabled, false);
 
   await saveCategoryDraft(admin.auth, { announcementCommentsEnabled: true });
-  const manuallyClosedAfterReopen = asRecord(await callAction("getAnnouncement", {
+  const reopenedAfterGlobalSetting = asRecord(await callAction("getAnnouncement", {
     announcementId,
   }, user.auth));
-  assert.equal(asRecord(manuallyClosedAfterReopen.announcement).comments_enabled, false);
+  assert.equal(asRecord(reopenedAfterGlobalSetting.announcement).comments_enabled, true);
   for (const id of [followingId, createdWhileClosedId]) {
     const reopened = asRecord(await callAction("getAnnouncement", { announcementId: id }, user.auth));
     assert.equal(asRecord(reopened.announcement).comments_enabled, true);
-    assert.equal(asRecord(reopened.announcement).comments_globally_enabled, true);
   }
 
   await expectActionError(

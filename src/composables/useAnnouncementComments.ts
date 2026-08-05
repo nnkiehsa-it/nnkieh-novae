@@ -8,7 +8,6 @@ import type { AnnouncementCommentRecord } from '@/types';
 
 export function useAnnouncementComments(
   announcementId: () => string | null,
-  onCommentCountChanged?: (payload: { announcementId: string; commentCount: number }) => void,
   onContentUnavailable?: (announcementId: string) => void,
 ) {
   const core = useDiscussionComments<AnnouncementCommentRecord>({
@@ -32,9 +31,6 @@ export function useAnnouncementComments(
         commentCount: result.comment_count,
       };
     },
-    onCommentCountChanged: onCommentCountChanged
-      ? ({ targetId, commentCount }) => onCommentCountChanged({ announcementId: targetId, commentCount })
-      : undefined,
     onContentUnavailable,
   });
 

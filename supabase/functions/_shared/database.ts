@@ -17,7 +17,6 @@ interface IssueRow {
   author_uid: string;
   category: string;
   comments_enabled: boolean;
-  comments_override: boolean | null;
   read_access: string;
   author_visible: boolean;
   content: string;
@@ -56,7 +55,6 @@ interface AnnouncementRow {
   like_count: number;
   comment_count: number;
   comments_enabled: boolean;
-  comments_override: boolean | null;
   published_at: string;
 }
 
@@ -618,16 +616,6 @@ interface AppApiFunctions {
   run_maintenance_cleanup: AppFunction<{
     retention_config?: Json;
     valid_issue_categories?: string[] | null;
-  }, Json>;
-  backend_set_announcement_comments_enabled: AppFunction<{
-    actor_uid: string;
-    announcement_id: string;
-    enabled: boolean;
-  }, Json>;
-  backend_set_issue_comments_enabled: AppFunction<{
-    actor_uid: string;
-    enabled: boolean;
-    issue_id: string;
   }, Json>;
   sync_runtime_settings: AppFunction<{ settings: Json }, void>;
 }

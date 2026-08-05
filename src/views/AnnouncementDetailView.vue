@@ -14,7 +14,6 @@
         v-if="announcement"
         :announcement="announcement"
         :can-manage="isAdmin"
-        :comments-toggle-busy="commentsToggleBusy"
         :initial-tab="initialTab"
         :focus-comment-id="focusCommentId"
         :liking="liking"
@@ -23,8 +22,6 @@
         @delete="openDeleteDialog"
         @share="copyUrl"
         @toggle-like="toggleLike"
-        @toggle-comments="toggleComments"
-        @comment-count-changed="updateCommentCount"
       />
     </DetailRouteState>
 
@@ -64,7 +61,6 @@ const {
   copyUrl,
   deleteDialogOpen,
   deleting,
-  commentsToggleBusy,
   focusCommentId,
   goBack,
   initialTab,
@@ -73,8 +69,6 @@ const {
   loading,
   openDeleteDialog,
   toggleLike,
-  toggleComments,
-  updateCommentCount,
 } = useAnnouncementDetail(canLoadAnnouncement);
 
 async function reloadPage() {

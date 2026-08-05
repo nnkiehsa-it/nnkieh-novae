@@ -38,10 +38,8 @@
       />
     </template>
 
-    <template #comments="{ compactHeader, embedded }">
+    <template #comments="{ embedded }">
       <UnavailableCommentDiscussion
-        :compact-header="compactHeader"
-        :embedded="embedded"
         :mobile-docked="embedded"
       />
     </template>

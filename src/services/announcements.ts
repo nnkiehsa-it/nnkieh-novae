@@ -55,7 +55,6 @@ function normalizeAnnouncementRecord(data: Record<string, unknown>): Announcemen
     like_count: Number(data.like_count ?? 0),
     comment_count: Number(data.comment_count ?? 0),
     comments_enabled: data.comments_enabled !== false,
-    comments_globally_enabled: data.comments_globally_enabled !== false,
     currentUserLiked: Boolean(data.currentUserLiked),
     deleting: data.deleting === true,
   };
@@ -167,17 +166,6 @@ export async function setAnnouncementLike(announcementId: string, liked: boolean
   markContentCachePrefixStale(ANNOUNCEMENT_LIST_CACHE_PREFIX);
   markContentCachePrefixStale(`announcement-detail|${announcementId}|`);
   return result;
-}
-
-export async function setAnnouncementCommentsEnabled(announcementId: string, enabled: boolean) {
-  const fn = invokeBackendAction<
-    { announcementId: string; enabled: boolean; requestId: string },
-    { announcement: Record<string, unknown> }
-  >('setAnnouncementCommentsEnabled');
-  const result = await fn({ announcementId, enabled, requestId: createRequestId() });
-  markContentCachePrefixStale(ANNOUNCEMENT_LIST_CACHE_PREFIX);
-  markContentCachePrefixStale(`announcement-detail|${announcementId}|`);
-  return normalizeAnnouncementRecord(result.announcement);
 }
 
 export async function fetchAnnouncementComments(

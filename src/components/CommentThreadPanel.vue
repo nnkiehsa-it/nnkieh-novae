@@ -4,25 +4,8 @@
     :class="embedded ? '' : 'h-full min-h-0'"
   >
     <div
-      class="flex shrink-0 items-center justify-between gap-3 pb-2"
-      :class="{ 'max-md:hidden': compactHeader && !embedded }"
-    >
-      <div class="flex min-w-0 items-center gap-2">
-        <AppIcon name="comment" class="shrink-0 text-ink-500" />
-        <h4 class="truncate whitespace-nowrap text-base font-semibold text-ink-900 dark:text-ink-100">
-          {{ t('comments.title') }}
-        </h4>
-      </div>
-      <div class="flex shrink-0 items-center gap-2">
-        <TagBadge class="rounded-full border-none bg-ink-100 px-2.5 py-0.5 text-xs font-semibold dark:bg-ink-800/80">
-          {{ t('comments.count', { count: comments.length }) }}
-        </TagBadge>
-      </div>
-    </div>
-
-    <div
       ref="scrollContainerRef"
-      class="scroll-shadow-space--compact py-2 overscroll-contain"
+      class="scroll-shadow-space--compact overscroll-contain"
       :class="embedded ? 'overflow-visible' : 'min-h-0 flex-1 overflow-auto'"
     >
       <SkeletonCommentList v-if="visibleLoading" />
@@ -38,14 +21,7 @@
         @action="onRetry"
       />
 
-      <EmptyStatePanel
-        v-else-if="loaded && comments.length === 0"
-        class="!px-3 !py-7"
-        title="comments.noCommentsYet"
-        icon="comment"
-      />
-
-      <div v-else class="space-y-0.5">
+      <div v-else-if="comments.length" class="space-y-0.5">
         <CommentItem
           v-for="(comment, index) in comments"
           :key="comment.id"
@@ -111,8 +87,6 @@ import { computed, nextTick, ref, toRef, watch } from 'vue';
 import CommentComposer from '@/components/CommentComposer.vue';
 import CommentItem from '@/components/CommentItem.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
-import AppIcon from '@/components/ui/atoms/AppIcon.vue';
-import TagBadge from '@/components/ui/atoms/TagBadge.vue';
 import EmptyStatePanel from '@/components/ui/molecules/EmptyStatePanel.vue';
 import FeedLoadMoreControl from '@/components/ui/molecules/FeedLoadMoreControl.vue';
 import SkeletonCommentList from '@/components/ui/organisms/SkeletonCommentList.vue';
@@ -127,7 +101,6 @@ const props = withDefaults(defineProps<{
   canCompose?: boolean;
   embedded?: boolean;
   comments: DiscussionCommentRecord[];
-  compactHeader?: boolean;
   mobileDocked?: boolean;
   deletingId: string;
   error: string;
@@ -147,7 +120,6 @@ const props = withDefaults(defineProps<{
   disabledComposerLabelKey?: MessageKey;
 }>(), {
   canCompose: true,
-  compactHeader: false,
   disabledComposerLabelKey: 'comments.commentsAreCurrentlyDisabled',
   embedded: false,
   focusCommentId: '',

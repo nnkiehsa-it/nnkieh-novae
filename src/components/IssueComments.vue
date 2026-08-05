@@ -3,7 +3,6 @@
     :can-delete-comment="canDeleteThreadComment"
     :can-compose="canCompose"
     :comments="accessible ? comments : []"
-    :compact-header="compactHeader"
     :embedded="embedded"
     :mobile-docked="embedded"
     :deleting-id="deletingId"
@@ -25,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-import { toRef, watch } from 'vue';
+import { toRef } from 'vue';
 import CommentThreadPanel from '@/components/CommentThreadPanel.vue';
 import { useIssueComments } from '@/composables/useIssueComments';
 import type { DiscussionCommentRecord, IssueCategory } from '@/types';
@@ -37,20 +36,17 @@ const props = withDefaults(
     focusCommentId?: string;
     issueId: string;
     category: IssueCategory;
-    compactHeader?: boolean;
     embedded?: boolean;
   }>(),
   {
     accessible: true,
     canCompose: true,
-    compactHeader: false,
     embedded: false,
     focusCommentId: '',
   },
 );
 
 const emit = defineEmits<{
-  commentCountChanged: [commentCount: number];
   contentUnavailable: [issueId: string];
 }>();
 
@@ -75,12 +71,6 @@ const {
   toRef(props, 'category'),
   (issueId) => emit('contentUnavailable', issueId),
   toRef(props, 'accessible'),
-);
-
-watch(
-  () => props.accessible ? comments.value.length : 0,
-  (commentCount) => emit('commentCountChanged', commentCount),
-  { immediate: true },
 );
 
 async function handleSubmitComment(payload: { content: string; parentCommentId: string | null }) {

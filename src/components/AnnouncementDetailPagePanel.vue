@@ -3,7 +3,6 @@
     v-if="announcement"
     back-label="announcement.returnToAnnouncementList"
     :author-uid="announcement.author_uid"
-    :comment-count="announcement.comment_count"
     :content="announcement.content"
     details-label="announcement.announcementContent"
     :initial-tab="initialTab"
@@ -18,25 +17,21 @@
       <AnnouncementDetailActions
         :announcement="announcement"
         :can-manage="canManage"
-        :comments-toggle-busy="commentsToggleBusy"
         :compact="compact"
         :liking="liking"
         @delete="emit('delete')"
         @share="emit('share')"
         @toggle-like="emit('toggleLike')"
-        @toggle-comments="emit('toggleComments')"
       />
     </template>
 
-    <template #comments="{ compactHeader, embedded }">
+    <template #comments="{ embedded }">
       <AnnouncementComments
         :announcement-id="announcement.id"
         :can-compose="announcement.comments_enabled"
-        :compact-header="compactHeader"
         :embedded="embedded"
         :focus-comment-id="focusCommentId"
         class="h-full"
-        @comment-count-changed="emit('commentCountChanged', $event)"
         @content-unavailable="emit('contentUnavailable', $event)"
       />
     </template>
@@ -56,7 +51,6 @@ const { t } = useI18n();
 const props = withDefaults(defineProps<{
   announcement: AnnouncementRecord | null;
   canManage: boolean;
-  commentsToggleBusy: boolean;
   focusCommentId?: string;
   initialTab?: 'details' | 'comments';
   liking: boolean;
@@ -71,7 +65,5 @@ const emit = defineEmits<{
   share: [];
   delete: [];
   toggleLike: [];
-  toggleComments: [];
-  commentCountChanged: [payload: { announcementId: string; commentCount: number }];
 }>();
 </script>
