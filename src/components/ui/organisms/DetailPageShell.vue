@@ -48,7 +48,7 @@
       class="flex h-full min-h-0 flex-col overflow-visible md:hidden"
       :aria-label="t(detailsLabel)"
     >
-      <header class="flex shrink-0 items-center justify-between gap-3 px-0 py-2.5">
+      <header class="flex shrink-0 items-center gap-3 px-0 py-2.5">
         <AppButton
           v-if="showMobileBackButton"
           variant="icon"
@@ -62,59 +62,32 @@
         <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
           <slot name="header" />
         </div>
-        <PillSegmentedControl
-          v-if="showComments"
-          v-model="activeTab"
-          :options="tabOptions"
-          class="shrink-0"
-        />
       </header>
 
-      <div class="detail-tab-stage relative flex min-h-0 flex-1 flex-col overflow-visible">
-        <AnimatePresence mode="popLayout" :initial="false">
-          <m.div
-            v-if="!showComments || activeTab === 'details'"
-            key="details"
-            class="flex min-h-0 flex-1 flex-col"
-            :initial="{ opacity: 0, x: -18 }"
-            :animate="{ opacity: 1, x: 0 }"
-            :exit="{ opacity: 0, x: -12 }"
-            :transition="MOTION_SMOOTH_TWEEN"
-          >
-            <div class="scroll-shadow-space--compact min-h-0 flex-1 overflow-auto py-3 overscroll-contain">
-              <slot name="details" :compact="true" :scroll-content="false" />
-              <div class="mt-4 px-0">
-                <slot name="actions" :compact="true" />
-              </div>
-            </div>
-          </m.div>
-
-          <m.div
-            v-else
-            key="comments"
-            class="min-h-0 flex-1 px-0 py-3"
-            :aria-label="t(commentsLabel)"
-            :initial="{ opacity: 0, x: 18 }"
-            :animate="{ opacity: 1, x: 0 }"
-            :exit="{ opacity: 0, x: 12 }"
-            :transition="MOTION_SMOOTH_TWEEN"
-          >
-            <slot name="comments" :compact-header="true" />
-          </m.div>
-        </AnimatePresence>
+      <div class="comment-feed-scroll min-h-0 flex-1 overflow-auto py-3 overscroll-contain">
+        <slot name="details" :compact="true" :scroll-content="false" />
+        <div class="mt-4 px-0">
+          <slot name="actions" :compact="true" />
+        </div>
+        <section
+          v-if="mobileCommentsVisible"
+          ref="mobileCommentsRef"
+          class="mt-8"
+          :aria-labelledby="mobileCommentsHeadingId"
+        >
+          <h3 :id="mobileCommentsHeadingId" class="sr-only">{{ t(commentsLabel) }}</h3>
+          <slot name="comments" :compact-header="false" :embedded="true" />
+        </section>
       </div>
     </article>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { AnimatePresence, m } from 'motion-v';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue';
 import AppButton from '@/components/ui/atoms/AppButton.vue';
 import AppIcon from '@/components/ui/atoms/AppIcon.vue';
-import PillSegmentedControl from '@/components/ui/molecules/PillSegmentedControl.vue';
 import { useI18n } from '@/i18n';
-import { MOTION_SMOOTH_TWEEN } from '@/lib/ui-motion';
 
 type DetailPageTab = 'details' | 'comments';
 
@@ -126,6 +99,7 @@ const props = withDefaults(defineProps<{
   initialTab?: DetailPageTab;
   showMobileBackButton?: boolean;
   showComments?: boolean;
+  showMobileComments?: boolean;
 }>(), {
   backLabel: 'issue.return',
   commentsLabel: 'comments.title',
@@ -133,6 +107,7 @@ const props = withDefaults(defineProps<{
   initialTab: 'details',
   showMobileBackButton: true,
   showComments: true,
+  showMobileComments: true,
 });
 
 const emit = defineEmits<{
@@ -142,33 +117,32 @@ const { t } = useI18n();
 
 defineSlots<{
   actions(props: { compact: boolean }): unknown;
-  comments(props: { compactHeader: boolean }): unknown;
+  comments(props: { compactHeader: boolean; embedded: boolean }): unknown;
   details(props: { compact: boolean; scrollContent: boolean }): unknown;
   header(): unknown;
 }>();
 
-const activeTab = ref<DetailPageTab>(props.initialTab);
+const mobileCommentsRef = ref<HTMLElement | null>(null);
+const mobileCommentsHeadingId = `detail-comments-${useId()}`;
+const mobileCommentsVisible = computed(() => props.showMobileComments);
 const isDesktopViewport = ref(
   typeof window === 'undefined' ? false : window.matchMedia('(min-width: 768px)').matches,
 );
 let desktopMediaQuery: MediaQueryList | null = null;
 
-const tabOptions = computed(() => [
-  { value: 'details' as const, label: t(props.detailsLabel), icon: 'list' as const, title: t('common.viewLabel', { label: t(props.detailsLabel) }) },
-  {
-    value: 'comments' as const,
-    label: t('comments.countComments', { count: props.commentCount }),
-    icon: 'comment' as const,
-    title: t('comments.viewLabelCountComments', { label: t(props.commentsLabel), count: props.commentCount }),
-  },
-]);
-
 watch(
   () => props.initialTab,
   (tab) => {
-    activeTab.value = tab;
+    if (tab === 'comments') {
+      void nextTick(() => scrollToMobileComments('smooth'));
+    }
   },
 );
+
+function scrollToMobileComments(behavior: ScrollBehavior = 'smooth') {
+  if (!mobileCommentsVisible.value) return;
+  mobileCommentsRef.value?.scrollIntoView({ behavior, block: 'start' });
+}
 
 function syncDesktopViewport(event?: MediaQueryListEvent) {
   isDesktopViewport.value = event?.matches ?? desktopMediaQuery?.matches ?? window.innerWidth >= 768;
@@ -178,6 +152,9 @@ onMounted(() => {
   desktopMediaQuery = window.matchMedia('(min-width: 768px)');
   syncDesktopViewport();
   desktopMediaQuery.addEventListener('change', syncDesktopViewport);
+  if (props.initialTab === 'comments') {
+    void nextTick(() => scrollToMobileComments('auto'));
+  }
 });
 
 onBeforeUnmount(() => {

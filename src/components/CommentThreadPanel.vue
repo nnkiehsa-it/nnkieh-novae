@@ -1,8 +1,11 @@
 <template>
-  <section class="relative flex h-full min-h-0 flex-col">
+  <section
+    class="relative flex min-w-0 flex-col"
+    :class="embedded ? '' : 'h-full min-h-0'"
+  >
     <div
       class="flex shrink-0 items-center justify-between gap-3 pb-2"
-      :class="{ 'max-md:hidden': compactHeader }"
+      :class="{ 'max-md:hidden': compactHeader && !embedded }"
     >
       <div class="flex min-w-0 items-center gap-2">
         <AppIcon name="comment" class="shrink-0 text-ink-500" />
@@ -19,7 +22,8 @@
 
     <div
       ref="scrollContainerRef"
-      class="scroll-shadow-space--compact min-h-0 flex-1 overflow-auto py-2 overscroll-contain"
+      class="scroll-shadow-space--compact py-2 overscroll-contain"
+      :class="embedded ? 'overflow-visible' : 'min-h-0 flex-1 overflow-auto'"
     >
       <SkeletonCommentList v-if="visibleLoading" />
 
@@ -84,6 +88,7 @@
         :error="submitError"
         :disabled="!canCompose"
         :disabled-placeholder="disabledComposerLabelKey"
+        :mobile-docked="mobileDocked"
         @close="closeComposer"
         @submit="handleSubmitComment"
       />
@@ -120,8 +125,10 @@ import { LOAD_MORE_PLACEHOLDER_COUNT } from '@/lib/feed-loading';
 const props = withDefaults(defineProps<{
   canDeleteComment: (comment: DiscussionCommentRecord) => boolean;
   canCompose?: boolean;
+  embedded?: boolean;
   comments: DiscussionCommentRecord[];
   compactHeader?: boolean;
+  mobileDocked?: boolean;
   deletingId: string;
   error: string;
   loaded: boolean;
@@ -142,9 +149,11 @@ const props = withDefaults(defineProps<{
   canCompose: true,
   compactHeader: false,
   disabledComposerLabelKey: 'comments.commentsAreCurrentlyDisabled',
+  embedded: false,
   focusCommentId: '',
   hasMore: false,
   loadingMore: false,
+  mobileDocked: false,
   loadMoreError: '',
   onLoadMore: async () => undefined,
 });
@@ -163,7 +172,7 @@ const { sentinel: loadMoreSentinel } = useInfiniteScroll({
   disabled: infiniteScrollDisabled,
   loading: toRef(props, 'loadingMore'),
   onLoadMore: props.onLoadMore,
-  root: scrollContainerRef,
+  root: props.embedded ? undefined : scrollContainerRef,
   rootMargin: '240px 0px',
 });
 

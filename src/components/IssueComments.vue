@@ -4,6 +4,8 @@
     :can-compose="canCompose"
     :comments="accessible ? comments : []"
     :compact-header="compactHeader"
+    :embedded="embedded"
+    :mobile-docked="embedded"
     :deleting-id="deletingId"
     :error="accessible ? error : ''"
     :loaded="accessible ? loaded : true"
@@ -36,11 +38,13 @@ const props = withDefaults(
     issueId: string;
     category: IssueCategory;
     compactHeader?: boolean;
+    embedded?: boolean;
   }>(),
   {
     accessible: true,
     canCompose: true,
     compactHeader: false,
+    embedded: false,
     focusCommentId: '',
   },
 );

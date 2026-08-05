@@ -38,6 +38,8 @@ test('authenticated route pages share one content width and AppShell owns horizo
   assert.match(primitives, /\.viewport-frame \{[\s\S]*margin-inline: 0;[\s\S]*padding-left: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-left\)\);[\s\S]*padding-right: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-right\)\);[\s\S]*width: 100%;/u);
   assert.doesNotMatch(primitives, /viewport-shadow-bleed|\.viewport-frame \{[\s\S]{0,300}margin-(?:left|right): calc/u);
   assert.match(contentStyles, /\.scroll-shadow-space--compact \{[\s\S]*margin-inline: 0;[\s\S]*padding-inline:/u);
+  assert.match(contentStyles, /\.comment-feed-scroll \{[\s\S]*padding-bottom: max\(0\.75rem, calc\(var\(--app-bottom-nav-height\) \+ var\(--app-bottom-nav-gap\) \+ 7rem\)\);[\s\S]*scroll-padding-bottom:/u);
+  assert.match(contentStyles, /\.comment-composer-dock \{[\s\S]*bottom: calc\(var\(--app-bottom-nav-height\) \+ var\(--app-bottom-nav-gap\) \+ 0\.5rem\);[\s\S]*position: fixed;/u);
   assert.match(contentStyles, /@media \(min-width: 768px\) \{[\s\S]*\.scroll-shadow-space,[\s\S]*\.scroll-shadow-space--compact \{[\s\S]*padding-bottom: var\(--scroll-shadow-space\);/u);
   assert.match(primitives, /\.viewport-floating-inline \{[\s\S]*left: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-left\)\);[\s\S]*right: max\(var\(--app-viewport-gutter\), env\(safe-area-inset-right\)\);/u);
   assert.match(primitives, /\.route-page-frame \{[\s\S]*max-width: var\(--app-content-max-width\);[\s\S]*min-width: 0;[\s\S]*width: 100%;/u);

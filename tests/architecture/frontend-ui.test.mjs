@@ -32,11 +32,15 @@ test('entry and comment limits are enforced across UI, Edge, and a new migration
   assert.doesNotMatch(commentComposer, /MarkdownRenderer|showPreview|預覽留言/u);
   assert.match(commentComposer, /disabledPlaceholder[\s\S]*comments\.commentsAreCurrentlyDisabled/u);
   assert.match(commentComposer, /if \(props\.disabled\) return/u);
+  assert.match(commentComposer, /:disabled="disabled \|\| submitting"/u);
+  assert.match(commentComposer, /:disabled="disabled"[\s\S]*@change="handleImagePicked"/u);
+  assert.match(commentComposer, /if \(!props\.disabled\) commentTextareaRef\.value\?\.focus\(\)/u);
+  assert.match(commentComposer, /comment-composer-dock viewport-floating-inline[\s\S]*mobileDocked/u);
   assert.match(commentThread, /<CommentComposer[\s\S]*:disabled="!canCompose"/u);
   assert.doesNotMatch(commentThread, /v-else[\s\S]{0,180}disabledComposerLabelKey/u);
   assert.match(commentItem, /plain-text/u);
   assert.doesNotMatch(commentThread, /第一則留言會出現在這裡/u);
-  assert.match(detailShell, /label: t\('comments\.countComments'/u);
+  assert.match(detailShell, /comment-feed-scroll[\s\S]*<slot name="details"[\s\S]*<slot name="actions"[\s\S]*<slot name="comments"/u);
   assert.match(primitives, /padding-bottom: calc\(var\(--app-bottom-nav-height\) \+ 1rem\)/u);
   assert.match(responsiveStyles, /padding-left: max\(var\(--dialog-safe-padding, 1rem\), env\(safe-area-inset-left\)\)/u);
   assert.match(responsiveStyles, /padding-right: max\(var\(--dialog-safe-padding, 1rem\), env\(safe-area-inset-right\)\)/u);
@@ -178,9 +182,11 @@ test('primary navigation keeps desktop chrome and persistent mobile navigation',
   assert.match(navigationStyles, /\.app-header__back-slot \{[\s\S]*width: 0;[\s\S]*opacity: 0;[\s\S]*width var\(--motion-duration-panel\) var\(--motion-ease-spring\)/u);
   assert.match(navigationStyles, /\.app-header__back-slot--visible \{[\s\S]*width: var\(--tap-target\);[\s\S]*margin-right: 0\.5rem;[\s\S]*opacity: 1;/u);
   assert.match(baseStyles, /\.app-root\[data-bottom-nav='true'\] \.app-main-content \{\s*padding-bottom: 0;/u);
-  assert.match(detailShell, /detail-tab-stage[\s\S]*<AnimatePresence mode="popLayout"[\s\S]*<m\.div/u);
-  assert.doesNotMatch(detailShell, /detailTabTransitionName/u);
-  assert.match(detailShell, /:initial="\{ opacity: 0, x: -18 \}"[\s\S]*:transition="MOTION_SMOOTH_TWEEN"/u);
+  assert.match(detailShell, /class="comment-feed-scroll[^"]*overflow-auto[\s\S]*<slot name="details"[\s\S]*<slot name="actions"[\s\S]*ref="mobileCommentsRef"[\s\S]*:embedded="true"/u);
+  assert.match(detailShell, /props\.initialTab === 'comments'[\s\S]*scrollToMobileComments\('auto'\)/u);
+  assert.match(detailShell, /scrollToMobileComments[\s\S]*scrollIntoView\(\{ behavior, block: 'start' \}\)/u);
+  assert.doesNotMatch(detailShell, /PillSegmentedControl|detail-tab-stage|AnimatePresence|MOTION_SMOOTH_TWEEN/u);
+  assert.doesNotMatch(detailSkeleton, /PillSegmentedControl|detail-tab-stage/u);
   assert.doesNotMatch(responsiveStyles, /\.detail-tab-enter-active/u);
   assert.match(baseStyles, /@media \(max-width: 767px\) \{[\s\S]*--app-header-height: var\(--tap-target\)/u);
   assert.doesNotMatch(detailShell, /v-else[\s\S]{0,120}class="panel/u);
@@ -210,6 +216,8 @@ test('proposals, announcements, and facilities share list cards and detail panel
   const cardShell = await read('src/components/ui/organisms/ContentCardShell.vue');
   const cardSkeleton = await read('src/components/ui/organisms/ContentCardSkeleton.vue');
   const detailPagePanel = await read('src/components/ContentDetailPagePanel.vue');
+  const commentThread = await read('src/components/CommentThreadPanel.vue');
+  const unavailableDiscussion = await read('src/components/UnavailableCommentDiscussion.vue');
   const detailActionGroup = await read('src/components/ui/molecules/DetailActionGroup.vue');
   const detailActionComponents = await Promise.all([
     read('src/components/IssueDetailSupportFooter.vue'),
@@ -264,7 +272,15 @@ test('proposals, announcements, and facilities share list cards and detail panel
   assert.match(contentListRuntime, /useInfiniteScroll/u);
   assert.match(contentListRuntime, /registerActiveNavigationRefreshHandler/u);
   assert.match(detailPagePanel, /DetailPageShell/u);
+  assert.match(detailPagePanel, /#comments="\{ compactHeader, embedded \}"[\s\S]*:embedded="embedded"/u);
   assert.match(detailPagePanel, /ContentDetailBody/u);
+  assert.match(commentThread, /embedded \? 'overflow-visible' : 'min-h-0 flex-1 overflow-auto'/u);
+  assert.match(commentThread, /root: props\.embedded \? undefined : scrollContainerRef/u);
+  assert.match(commentThread, /:mobile-docked="mobileDocked"/u);
+  assert.match(detailPanels[2], /show-mobile-comments[\s\S]*UnavailableCommentDiscussion/u);
+  assert.match(unavailableDiscussion, /<CommentComposer[\s\S]*disabled[\s\S]*:mobile-docked="mobileDocked"/u);
+  assert.doesNotMatch(unavailableDiscussion, /use(?:Issue|Announcement|Discussion)Comments|services\//u);
+  assert.doesNotMatch(detailPanels[2], /use(?:Issue|Announcement|Discussion)Comments|services\//u);
   assert.match(detailActionGroup, /DetailActionButton/u);
   assert.match(detailActionGroup, /OperationTimeList/u);
   assert.match(detailActionGroup, /summary \? SurfacePanel/u);

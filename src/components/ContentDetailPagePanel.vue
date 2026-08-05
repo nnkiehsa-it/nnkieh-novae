@@ -6,6 +6,7 @@
     :details-label="detailsLabel"
     :initial-tab="initialTab"
     :show-comments="showComments"
+    :show-mobile-comments="showMobileComments"
     :show-mobile-back-button="showMobileBackButton"
     @back="emit('back')"
   >
@@ -38,8 +39,8 @@
       <slot name="actions" :compact="compact" />
     </template>
 
-    <template #comments="{ compactHeader }">
-      <slot name="comments" :compact-header="compactHeader" />
+    <template #comments="{ compactHeader, embedded }">
+      <slot name="comments" :compact-header="compactHeader" :embedded="embedded" />
     </template>
   </DetailPageShell>
 </template>
@@ -68,6 +69,7 @@ withDefaults(defineProps<{
   noticeTone?: 'error' | 'success';
   showAuthor?: boolean;
   showComments?: boolean;
+  showMobileComments?: boolean;
   showMobileBackButton?: boolean;
   title: string;
 }>(), {
@@ -87,6 +89,7 @@ withDefaults(defineProps<{
   noticeTone: 'success',
   showAuthor: true,
   showComments: true,
+  showMobileComments: true,
   showMobileBackButton: false,
   supportCount: 0,
   supportEnabled: false,
@@ -101,7 +104,7 @@ const emit = defineEmits<{
 
 defineSlots<{
   actions(props: { compact: boolean }): unknown;
-  comments(props: { compactHeader: boolean }): unknown;
+  comments(props: { compactHeader: boolean; embedded: boolean }): unknown;
   header(): unknown;
 }>();
 </script>

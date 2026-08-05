@@ -12,6 +12,7 @@
     notice-title="issue.result"
     notice-markdown
     :show-comments="false"
+    show-mobile-comments
     :title="facility.title"
     @back="emit('back')"
   >
@@ -36,6 +37,14 @@
         @toggle-affected="emit('toggleAffected')"
       />
     </template>
+
+    <template #comments="{ compactHeader, embedded }">
+      <UnavailableCommentDiscussion
+        :compact-header="compactHeader"
+        :embedded="embedded"
+        :mobile-docked="embedded"
+      />
+    </template>
   </ContentDetailPagePanel>
 </template>
 
@@ -43,6 +52,7 @@
 import { computed } from 'vue';
 import FacilityDetailActions from '@/components/FacilityDetailActions.vue';
 import ContentDetailPagePanel from '@/components/ContentDetailPagePanel.vue';
+import UnavailableCommentDiscussion from '@/components/UnavailableCommentDiscussion.vue';
 import TagBadge from '@/components/ui/atoms/TagBadge.vue';
 import type { FacilityRecord, OperationTimeListItem } from '@/types';
 import { useI18n } from '@/i18n';

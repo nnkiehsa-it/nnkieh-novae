@@ -28,11 +28,12 @@
       />
     </template>
 
-    <template #comments="{ compactHeader }">
+    <template #comments="{ compactHeader, embedded }">
       <AnnouncementComments
         :announcement-id="announcement.id"
         :can-compose="announcement.comments_enabled"
         :compact-header="compactHeader"
+        :embedded="embedded"
         :focus-comment-id="focusCommentId"
         class="h-full"
         @comment-count-changed="emit('commentCountChanged', $event)"

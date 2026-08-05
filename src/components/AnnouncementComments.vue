@@ -4,6 +4,8 @@
     :can-compose="canCompose"
     :comments="comments"
     :compact-header="compactHeader"
+    :embedded="embedded"
+    :mobile-docked="embedded"
     :deleting-id="deletingId"
     :error="error"
     :loaded="loaded"
@@ -32,9 +34,11 @@ const props = withDefaults(defineProps<{
   announcementId: string;
   canCompose?: boolean;
   compactHeader?: boolean;
+  embedded?: boolean;
   focusCommentId?: string;
 }>(), {
   compactHeader: false,
+  embedded: false,
   canCompose: true,
   focusCommentId: '',
 });

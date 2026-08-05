@@ -22,6 +22,19 @@
     overscroll-behavior-y: none;
   }
 
+  .comment-feed-scroll {
+    padding-bottom: max(0.75rem, calc(var(--app-bottom-nav-height) + var(--app-bottom-nav-gap) + 7rem));
+    scroll-padding-bottom: calc(var(--app-bottom-nav-height) + var(--app-bottom-nav-gap) + 7rem);
+  }
+
+  .comment-composer-dock {
+    bottom: calc(var(--app-bottom-nav-height) + var(--app-bottom-nav-gap) + 0.5rem);
+    pointer-events: auto;
+    position: fixed;
+    z-index: 30;
+  }
+
+
   .feed-enter {
     animation: feed-enter 280ms var(--motion-ease-enter) both;
     animation-delay: calc(var(--feed-enter-index, 0) * 45ms);

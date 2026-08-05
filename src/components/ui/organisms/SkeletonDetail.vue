@@ -5,12 +5,11 @@
     aria-busy="true"
   >
     <!-- Desktop Viewport Skeleton -->
-    <SurfacePanel
+    <article
       v-if="isDesktopViewport"
-      as="article"
       class="flex h-full min-h-0 flex-col overflow-visible"
     >
-      <header class="flex shrink-0 items-center gap-3 px-5 py-4">
+      <header class="flex shrink-0 items-center gap-3 px-1 py-2">
         <!-- Back Button -->
         <SkeletonBlock as="div" class="h-8 w-8 shrink-0 rounded-full" />
         <!-- Tags -->
@@ -27,7 +26,7 @@
         }"
       >
         <!-- Details Column -->
-        <div class="flex min-h-0 min-w-0 flex-col px-5 py-5 pr-6 space-y-6">
+        <div class="flex min-h-0 min-w-0 flex-col py-3 pr-5 space-y-6">
           <!-- Title -->
           <div class="pb-1">
             <SkeletonBlock as="div" class="h-7 w-3/4 rounded" />
@@ -55,7 +54,7 @@
         <!-- Comments Column -->
         <aside
           v-if="showComments"
-          class="flex min-h-0 min-w-0 flex-col border-l border-ink-100/70 px-5 py-5 dark:border-ink-800/70 space-y-4"
+          class="flex min-h-0 min-w-0 flex-col border-l border-ink-100/70 py-3 pl-5 dark:border-ink-800/70 space-y-4"
         >
           <div
             class="flex items-center gap-2 border-b border-ink-100 pb-2 dark:border-ink-800/60"
@@ -81,7 +80,7 @@
           </div>
         </aside>
       </div>
-    </SurfacePanel>
+    </article>
 
     <!-- Mobile Viewport Skeleton -->
     <article
@@ -94,18 +93,13 @@
           <SkeletonBlock as="div" class="h-6 w-16 rounded-full" />
           <SkeletonBlock as="div" class="h-6 w-20 rounded-full" />
         </div>
-        <SkeletonBlock
-          v-if="showComments"
-          as="div"
-          class="h-8 w-[9.375rem] shrink-0 rounded-full"
-        />
       </header>
 
       <div
         class="flex min-h-0 flex-1 flex-col border-t border-ink-100/70 dark:border-ink-800/70"
       >
         <div
-          class="scroll-shadow-space--compact min-h-0 flex-1 overflow-auto py-3 space-y-5"
+          class="comment-feed-scroll scroll-shadow-space--compact min-h-0 flex-1 overflow-auto py-3 space-y-5"
         >
           <!-- Title -->
           <div class="pb-1">
@@ -129,6 +123,17 @@
             <SkeletonBlock as="div" class="h-4 w-11/12 rounded" />
             <SkeletonBlock as="div" class="h-4 w-3/4 rounded" />
           </div>
+          <div class="mt-4 space-y-3">
+            <SkeletonBlock as="div" class="h-2 w-3/4 rounded" />
+            <SkeletonBlock as="div" class="h-10 w-40 rounded-full" />
+          </div>
+          <div class="mt-8 space-y-3">
+            <div class="flex items-center justify-between">
+              <SkeletonBlock as="div" class="h-5 w-24 rounded" />
+              <SkeletonBlock as="div" class="h-5 w-10 rounded-full" />
+            </div>
+            <SkeletonBlock as="div" class="h-16 w-full rounded-xl" />
+          </div>
         </div>
       </div>
     </article>
@@ -138,7 +143,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "@/i18n";
-import SurfacePanel from "@/components/ui/molecules/SurfacePanel.vue";
 import SkeletonBlock from "@/components/ui/atoms/SkeletonBlock.vue";
 
 const { t } = useI18n();

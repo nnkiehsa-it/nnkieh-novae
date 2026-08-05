@@ -58,7 +58,7 @@
       />
     </template>
 
-    <template #comments="{ compactHeader }">
+    <template #comments="{ compactHeader, embedded }">
       <div v-if="contentLoading" class="space-y-3 py-2" role="status" :aria-label="t('comments.loadingComments')">
         <SkeletonBlock class="block h-4 w-2/3 rounded" />
         <SkeletonBlock class="block h-16 w-full rounded-2xl" />
@@ -70,6 +70,7 @@
         :can-compose="commentsEnabled"
         :category="issue.category"
         :compact-header="compactHeader"
+        :embedded="embedded"
         :focus-comment-id="focusCommentId"
         :issue-id="issue.id"
         class="h-full"

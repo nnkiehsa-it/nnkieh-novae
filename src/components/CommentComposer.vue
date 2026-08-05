@@ -1,6 +1,7 @@
 <template>
   <form
     class="space-y-2"
+    :class="{ 'comment-composer-dock viewport-floating-inline': mobileDocked }"
     autocomplete="off"
     :aria-disabled="disabled ? 'true' : undefined"
     @submit.prevent="submit"
@@ -53,7 +54,7 @@
         />
 
         <label :for="`comment-content-${composerId}`" class="sr-only">
-          {{ t(parentCommentId ? 'comments.leaveYourReply' : 'comments.shareYourThoughts') }}
+          {{ t(disabled ? disabledPlaceholder : parentCommentId ? 'comments.leaveYourReply' : 'comments.shareYourThoughts') }}
         </label>
         <textarea
           :id="`comment-content-${composerId}`"
@@ -132,6 +133,7 @@ const props = withDefaults(defineProps<{
   disabledPlaceholder?: MessageKey;
   error: string;
   issueId?: string;
+  mobileDocked?: boolean;
   parentCommentId?: string | null;
   submitting: boolean;
   targetId?: string;
@@ -139,6 +141,7 @@ const props = withDefaults(defineProps<{
   disabled: false,
   disabledPlaceholder: 'comments.commentsAreCurrentlyDisabled',
   issueId: '',
+  mobileDocked: false,
   parentCommentId: null,
   targetId: '',
 });
