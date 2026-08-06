@@ -49,13 +49,13 @@
 
 - `main.ts` — 掛載 app、resume、PWA、session
 - `i18n/` — `messages/<locale>/<domain>.ts` 依語系與領域拆分的 catalog（含 API error code 對應文案）、系統語言首次偵測、localStorage 語言偏好、日期 locale 與共用 `t()`；所有前端可見字串只放語系目錄，key 使用短而穩定的語意命名
-- `App.vue` — startup gate + AppShell；全域以 MotionConfig 尊重 reduced motion，LazyMotion 延後載入 DOM layout 功能；route stage 使用固定 Grid 疊放新舊頁，依 navigation depth 以 smooth opacity／短距位移表達前進、返回與同層切換
+- `App.vue` — startup gate + AppShell；版本檢查在首屏後非阻塞執行，偵測到更新時取消尚未開始的路由預載；全域以 MotionConfig 尊重 reduced motion，LazyMotion 延後載入 DOM layout 功能；route stage 使用固定 Grid 疊放新舊頁，依 navigation depth 以 smooth opacity／短距位移表達前進、返回與同層切換
 - `sw.ts` — PWA SW、快取策略、FCM 背景通知
 - `style.css` — 全域樣式載入入口；依序載入 base、primitives 與領域樣式
 - `styles/base.css` — design tokens、全域基礎與頁面骨架；所有捲動容器全域隱藏原生捲動條但保留滾輪／觸控／鍵盤操作，route frame 維持同一 Grid 疊放，實際轉場由 App 的 Motion 層負責
 - `styles/primitives.css` — viewport、control／card／floating 表面與陰影、list、dropdown、control frame、GPU progress fill 的單一可復用視覺契約；Tailwind 陰影名稱同樣只使用 `shadow-control`、`shadow-card`、`shadow-floating`
 - `styles/components.css` / `controls.css` — 共用表面、互動狀態、按鈕與欄位；全域點擊回饋使用無位移的輕微放大與 spring-like 回彈，大型表面降低幅度；Pill 指示器的連續位移交給 Motion spring
-- `styles/navigation.css` — 桌面側欄與手機底部導覽；浮入與 scrim 使用 opacity／局部 transform，窄桌面側欄展開不再推動整個內容 viewport
+- `styles/navigation.css` — 桌面側欄與手機底部導覽；手機底部導覽使用不取樣背景的穩定 surface、靜態柔和 active 與保留有色按壓回饋；浮入與 scrim 使用 opacity／局部 transform，窄桌面側欄展開不再推動整個內容 viewport
 - `styles/content.css` / `responsive.css` — 列表、設定、統計、Dialog 與跨裝置覆寫；手機詳情 feed 為 fixed 留言 Composer 預留 Bottom Tab／safe-area 捲動空間，dock 水平位置沿用 viewport primitive；Dialog 根節點保留 Vue transition 生命週期，surface 與獨立全畫面 backdrop 延後分層進場，blur 維持固定值只動畫 opacity
 - `assets/fonts/` — JetBrains Mono 與 Material Symbols 子集
 - `router/index.ts` / `router/default-route.ts` / `router/route-components.ts` / `router/navigation-hierarchy.ts` — 組合 modules、依啟用功能選擇登入預設頁並阻擋已關閉入口、abort 上一頁、session guard、主要頁面與三領域新增頁 chunk 預載，以及 root／新增／子頁／巢狀詳情深度與通知來源返回

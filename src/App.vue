@@ -176,11 +176,12 @@ function cancelRoutePreload() {
 
 function scheduleRoutePreload() {
   cancelRoutePreload();
-  if (startupGateOpen.value || !user.value?.uid) return;
+  if (startupGateOpen.value || !user.value?.uid || updateAvailable.value) return;
 
   const preload = () => {
     routePreloadIdleId = null;
     routePreloadTimer = 0;
+    if (updateAvailable.value) return;
     void preloadPrimaryRouteComponents(isAdmin.value);
   };
   if (idleWindow.requestIdleCallback) {
@@ -321,7 +322,7 @@ watch(
 );
 
 watch(
-  [startupGateOpen, () => user.value?.uid ?? '', isAdmin],
+  [startupGateOpen, () => user.value?.uid ?? '', isAdmin, updateAvailable],
   scheduleRoutePreload,
   { immediate: true },
 );

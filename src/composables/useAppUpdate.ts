@@ -14,6 +14,7 @@ const remoteVersion = ref('');
 const initialCheckDone = ref(false);
 let lastCheckedAt = 0;
 let listenersRegistered = false;
+let serviceWorkerUpdatePromise: Promise<ServiceWorkerRegistration | null> | null = null;
 
 const APP_RELOAD_TIMEOUT_MS = 5_000;
 const SERVICE_WORKER_PREPARE_TIMEOUT_MS = 4_000;
@@ -61,31 +62,37 @@ function shouldCheckAfterResume() {
 }
 
 async function updateServiceWorker(): Promise<ServiceWorkerRegistration | null> {
+  if (serviceWorkerUpdatePromise) return serviceWorkerUpdatePromise;
   if (!('serviceWorker' in navigator)) {
     return null;
   }
 
-  try {
-    const registration = await withRequestTimeout(
-      () => navigator.serviceWorker.register('/sw.js', {
-        scope: '/',
-        type: 'module',
-        updateViaCache: 'none',
-      }),
-      { label: 'app.update.serviceWorkerRegistration', timeoutMs: APP_RELOAD_TIMEOUT_MS },
-    );
-    await withRequestTimeout(() => navigator.serviceWorker.ready, {
-      label: 'app.update.serviceWorkerStart',
-      timeoutMs: APP_RELOAD_TIMEOUT_MS,
-    });
-    await withRequestTimeout(() => registration.update(), {
-      label: 'app.update.serviceWorkerUpdate',
-      timeoutMs: APP_RELOAD_TIMEOUT_MS,
-    });
-    return registration;
-  } catch {
-    return null;
-  }
+  serviceWorkerUpdatePromise = (async () => {
+    try {
+      const registration = await withRequestTimeout(
+        () => navigator.serviceWorker.register('/sw.js', {
+          scope: '/',
+          type: 'module',
+          updateViaCache: 'none',
+        }),
+        { label: 'app.update.serviceWorkerRegistration', timeoutMs: APP_RELOAD_TIMEOUT_MS },
+      );
+      await withRequestTimeout(() => navigator.serviceWorker.ready, {
+        label: 'app.update.serviceWorkerStart',
+        timeoutMs: APP_RELOAD_TIMEOUT_MS,
+      });
+      await withRequestTimeout(() => registration.update(), {
+        label: 'app.update.serviceWorkerUpdate',
+        timeoutMs: APP_RELOAD_TIMEOUT_MS,
+      });
+      return registration;
+    } catch {
+      return null;
+    } finally {
+      serviceWorkerUpdatePromise = null;
+    }
+  })();
+  return serviceWorkerUpdatePromise;
 }
 
 async function waitForServiceWorkerTakeover(registration: ServiceWorkerRegistration, signal: AbortSignal) {

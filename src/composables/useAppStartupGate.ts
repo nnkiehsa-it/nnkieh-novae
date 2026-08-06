@@ -8,7 +8,6 @@ const APP_STARTUP_TIMEOUT_MS = 20_000;
 export function useAppStartupGate() {
   const router = useRouter();
   const { appReady, authChecking, userLoading, appInitializing } = useSession();
-  const { initialCheckDone } = useAppUpdate();
   const routerReady = ref(false);
   const routerFailed = ref(false);
   const timedOut = ref(false);
@@ -20,7 +19,6 @@ export function useAppStartupGate() {
     || authChecking.value
     || userLoading.value
     || appInitializing.value
-    || !initialCheckDone.value
   );
 
   function clearStartupTimeout() {

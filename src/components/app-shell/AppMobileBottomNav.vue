@@ -1,6 +1,6 @@
 <template>
   <nav
-    class="app-bottom-nav viewport-floating-inline fixed z-40 mx-auto max-w-md rounded-full border-0 bg-surface/94 px-3 py-1.5 shadow-floating backdrop-blur-xl dark:bg-surface/94 md:hidden"
+    class="app-bottom-nav viewport-floating-inline fixed z-40 mx-auto max-w-md rounded-full border-0 bg-surface px-3 py-1.5 shadow-floating dark:bg-surface md:hidden"
     :style="{ bottom: `${bottomGap}px` }"
     :aria-label="t('navigation.primaryNavigation')"
   >
@@ -8,16 +8,6 @@
       class="app-bottom-nav__inner relative mx-auto grid"
       :style="{ gridTemplateColumns: `repeat(${items.length + 2}, minmax(0, 1fr))` }"
     >
-      <m.div
-        v-if="activeIndex >= 0"
-        class="app-bottom-nav__active-indicator"
-        :initial="false"
-        :animate="{ x: `${activeIndex * 100}%` }"
-        :transition="MOTION_SMOOTH_SPRING"
-        :style="{ width: `${100 / itemCount}%` }"
-        aria-hidden="true"
-      />
-
       <RouterLink
         v-for="item in items"
         :key="item.key"
@@ -62,13 +52,10 @@
 
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
-import { computed } from 'vue';
-import { m } from 'motion-v';
 import AppIcon from '@/components/ui/atoms/AppIcon.vue';
 import UserAvatar from '@/components/ui/atoms/UserAvatar.vue';
 import type { AppNavigationItem } from './types';
 import { useI18n } from '@/i18n';
-import { MOTION_SMOOTH_SPRING } from '@/lib/ui-motion';
 
 const props = defineProps<{
   activeKey: string;
@@ -80,15 +67,6 @@ const props = defineProps<{
   userName: string;
 }>();
 const { t } = useI18n();
-const itemCount = computed(() => props.items.length + 2);
-const activeIndex = computed(() => {
-  const primaryIndex = props.items.findIndex((item) => item.isActive);
-  if (primaryIndex >= 0) return primaryIndex;
-  if (props.activeKey === 'notifications') return props.items.length;
-  if (props.profileActive) return props.items.length + 1;
-  return -1;
-});
-
 defineEmits<{
   navigate: [isActive: boolean];
 }>();
