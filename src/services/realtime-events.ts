@@ -2,7 +2,12 @@ import { authorizeSupabaseRealtime, getSupabaseClient } from '@/lib/supabase';
 import { auth } from '@/lib/firebase';
 import { getCachedSessionRole } from '@/services/session-role';
 import { markContentCachePrefixStale } from '@/services/content-read-cache';
-import { ensureContentVersionsFresh } from '@/services/content-versions';
+import {
+  ensureContentVersionsFresh,
+  hasContentVersionGap,
+  registerContentVersion,
+  type ContentVersionDomain,
+} from '@/services/content-versions';
 
 type SupabaseAppClient = ReturnType<typeof getSupabaseClient>;
 type RealtimeChannel = ReturnType<SupabaseAppClient['channel']>;
@@ -17,8 +22,12 @@ let sharedRealtimeChannels: RealtimeChannel[] = [];
 let sharedRealtimeKey = '';
 let reconnectAttempt = 0;
 let reconnectTimer = 0;
-let resyncAfterReconnect = false;
 let realtimeConnectPending = false;
+let realtimeSessionActive = false;
+
+function shouldMaintainRealtimeConnection() {
+  return realtimeSessionActive || realtimeSubscribers.size > 0;
+}
 
 function clearReconnectTimer() {
   window.clearTimeout(reconnectTimer);
@@ -26,7 +35,7 @@ function clearReconnectTimer() {
 }
 
 function scheduleReconnect() {
-  if (realtimeSubscribers.size === 0 || reconnectTimer) return;
+  if (!shouldMaintainRealtimeConnection() || reconnectTimer) return;
   const delay = Math.min(30_000, 1_000 * 2 ** reconnectAttempt);
   reconnectAttempt += 1;
   reconnectTimer = window.setTimeout(() => {
@@ -114,9 +123,9 @@ function normalizeRealtimeEvent(data: Record<string, unknown>): ContentRealtimeE
 
 async function connectSharedRealtimeChannels() {
   const uid = auth?.currentUser?.uid;
-  if (!uid || realtimeSubscribers.size === 0) return;
+  if (!uid || !shouldMaintainRealtimeConnection()) return;
   if (!await authorizeSupabaseRealtime()) return;
-  if (auth?.currentUser?.uid !== uid || realtimeSubscribers.size === 0) return;
+  if (auth?.currentUser?.uid !== uid || !shouldMaintainRealtimeConnection()) return;
   const topics = ['content:school'];
   topics.push(getCachedSessionRole() === 'admin' ? 'content:admin' : `content:user:${uid}`);
   const realtimeKey = topics.join('|');
@@ -128,7 +137,6 @@ async function connectSharedRealtimeChannels() {
     sharedRealtimeKey = '';
     realtimeChannelSerial += 1;
     staleChannels.forEach((channel) => void client.removeChannel(channel));
-    resyncAfterReconnect = true;
   }
   clearReconnectTimer();
   const generation = realtimeChannelSerial += 1;
@@ -140,6 +148,7 @@ async function connectSharedRealtimeChannels() {
         const event = normalizeRealtimeEvent(message.payload as Record<string, unknown>);
         if (!event) return;
         invalidateRealtimeContent(event);
+        synchronizeRealtimeVersion(event);
         realtimeSubscribers.forEach((subscriber) => subscriber.callback(event));
       })
       .subscribe((status) => {
@@ -147,10 +156,9 @@ async function connectSharedRealtimeChannels() {
           subscribedCount += 1;
           if (subscribedCount === topics.length) {
             reconnectAttempt = 0;
-            if (resyncAfterReconnect) {
-              resyncAfterReconnect = false;
-              void ensureContentVersionsFresh({ notify: true });
-            }
+            // Close both the initial bootstrap-to-subscribe race and later
+            // reconnect gaps with one authoritative version check.
+            void ensureContentVersionsFresh({ notify: true });
           }
           return;
         }
@@ -159,7 +167,6 @@ async function connectSharedRealtimeChannels() {
         const failedChannels = sharedRealtimeChannels;
         sharedRealtimeChannels = [];
         sharedRealtimeKey = '';
-        resyncAfterReconnect = true;
         // Version validation on reconnect is the single resync path.
         failedChannels.forEach((failedChannel) => void client.removeChannel(failedChannel));
         scheduleReconnect();
@@ -170,12 +177,52 @@ async function connectSharedRealtimeChannels() {
   sharedRealtimeKey = realtimeKey;
 }
 
+function realtimeEventDomain(event: ContentRealtimeEvent): ContentVersionDomain {
+  if (event.eventType.startsWith('issue_')) return 'issues';
+  if (event.eventType === 'facility_changed') return 'facilities';
+  return 'announcements';
+}
+
+function synchronizeRealtimeVersion(event: ContentRealtimeEvent) {
+  if (event.version <= 0) return;
+  const domain = realtimeEventDomain(event);
+  if (hasContentVersionGap(domain, event.version)) {
+    void ensureContentVersionsFresh({ notify: true }).catch(() => undefined);
+    return;
+  }
+  registerContentVersion(domain, event.version);
+}
+
+function disconnectSharedRealtimeChannels() {
+  clearReconnectTimer();
+  reconnectAttempt = 0;
+  realtimeChannelSerial += 1;
+  if (sharedRealtimeChannels.length === 0) {
+    sharedRealtimeKey = '';
+    return;
+  }
+  const client = getSupabaseClient();
+  const channels = sharedRealtimeChannels;
+  sharedRealtimeChannels = [];
+  sharedRealtimeKey = '';
+  channels.forEach((channel) => void client.removeChannel(channel));
+}
+
+export function startContentRealtimeSession() {
+  realtimeSessionActive = true;
+  ensureSharedRealtimeChannel();
+}
+
+export function stopContentRealtimeSession() {
+  realtimeSessionActive = false;
+  disconnectSharedRealtimeChannels();
+}
+
 function ensureSharedRealtimeChannel() {
   if (realtimeConnectPending) return;
   realtimeConnectPending = true;
   void connectSharedRealtimeChannels()
     .catch(() => {
-      resyncAfterReconnect = true;
       // A failed connection is recovered by the shared reconnect/version check.
       scheduleReconnect();
     })
@@ -225,16 +272,7 @@ export function subscribeContentRealtimeEvents(
 
   return () => {
     realtimeSubscribers.delete(subscriberId);
-    if (realtimeSubscribers.size > 0) return;
-    clearReconnectTimer();
-    reconnectAttempt = 0;
-    if (sharedRealtimeChannels.length === 0) return;
-    const client = getSupabaseClient();
-    const channels = sharedRealtimeChannels;
-    sharedRealtimeChannels = [];
-    sharedRealtimeKey = '';
-    resyncAfterReconnect = false;
-    realtimeChannelSerial += 1;
-    channels.forEach((channel) => void client.removeChannel(channel));
+    if (shouldMaintainRealtimeConnection()) return;
+    disconnectSharedRealtimeChannels();
   };
 }

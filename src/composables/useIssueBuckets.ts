@@ -3,7 +3,7 @@ import { useNetworkStatus } from '@/composables/useNetworkStatus';
 import { getIssueStatusBucket } from '@/lib/issue-timeline';
 import { sortIssues } from '@/lib/issue-sort';
 import { fetchIssuesPageByStatus } from '@/services/issues';
-import { isContentCacheFresh } from '@/services/content-read-cache';
+import { isContentCacheFresh, subscribeContentCacheInvalidations } from '@/services/content-read-cache';
 import type { IssueCursor, IssueFilter, IssueRecord, IssueSortOption, IssueStatusBucket } from '@/types';
 import { isAbortFailure } from '@/lib/request';
 
@@ -43,6 +43,10 @@ export function invalidateIssueBucketMemory(issueId?: string) {
     bucket.updatedAt = 0;
   });
 }
+
+subscribeContentCacheInvalidations((prefix) => {
+  if (prefix.startsWith('issue-list-page|')) invalidateIssueBucketMemory();
+});
 
 function createBucketState(statusBucket: IssueStatusBucket, sortOption: IssueSortOption): BucketState {
   return reactive({
@@ -215,7 +219,6 @@ export function useIssueBuckets(deps: BucketDeps) {
   function removeIssueFromBuckets(issueId: string) {
     globalBucketCache.forEach((bucket) => {
       bucket.issues = bucket.issues.filter((issue) => issue.id !== issueId);
-      bucket.updatedAt = Date.now();
     });
   }
 

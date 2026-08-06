@@ -32,6 +32,7 @@
         :embedded="embedded"
         :focus-comment-id="focusCommentId"
         class="h-full"
+        @comment-count-changed="emit('commentCountChanged', $event)"
         @content-unavailable="emit('contentUnavailable', $event)"
       />
     </template>
@@ -61,6 +62,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   back: [];
+  commentCountChanged: [commentCount: number];
   contentUnavailable: [announcementId: string];
   share: [];
   delete: [];

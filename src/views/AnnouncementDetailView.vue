@@ -18,6 +18,7 @@
         :focus-comment-id="focusCommentId"
         :liking="liking"
         @back="goBack"
+        @comment-count-changed="updateCommentCount"
         @content-unavailable="goBack"
         @delete="openDeleteDialog"
         @share="copyUrl"
@@ -69,6 +70,7 @@ const {
   loading,
   openDeleteDialog,
   toggleLike,
+  updateCommentCount,
 } = useAnnouncementDetail(canLoadAnnouncement);
 
 async function reloadPage() {

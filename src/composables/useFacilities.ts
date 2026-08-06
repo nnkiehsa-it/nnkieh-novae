@@ -4,7 +4,7 @@ import { isAbortFailure } from '@/lib/request';
 import { normalizeSearchText } from '@/lib/search';
 import { FACILITY_STATUS_LABELS, isFacilityClosed } from '@/constants/statuses';
 import type { FacilityCursor, FacilitySortOption, FacilityStatus, FacilitySummary } from '@/types';
-import { hasContentVersionGap, registerContentVersion, subscribeContentVersionChanges } from '@/services/content-versions';
+import { subscribeContentVersionChanges } from '@/services/content-versions';
 import { subscribeContentRealtimeEvents } from '@/services/realtime-events';
 import { isContentUnavailableError } from '@/services/issues-core';
 import { preserveContentListScroll } from '@/lib/content-list-scroll';
@@ -192,19 +192,13 @@ export function useFacilities(categoryId: Ref<string>) {
     `facilities:${categoryId.value}`,
     (event) => {
       if (event.eventType !== 'facility_changed') return;
-      if (event.version > 0 && hasContentVersionGap('facilities', event.version)) {
-        void load(false, { forceRefresh: true, silent: facilities.value.length > 0 });
-        return;
-      }
       if (event.op === 'delete' || event.category !== categoryId.value) {
         removeRealtimeFacility(event.targetId);
-        registerContentVersion('facilities', event.version);
         return;
       }
       void getFacility(event.targetId, { forceRefresh: true }).then((facility) => {
         facilities.value = upsertRealtimeFacility(facilities.value, facility, true);
         browseFacilities.value = upsertRealtimeFacility(browseFacilities.value, facility, false);
-        registerContentVersion('facilities', event.version);
       }).catch((caught) => {
         if (isContentUnavailableError(caught)) removeRealtimeFacility(event.targetId);
         else void load(false, { forceRefresh: true, silent: facilities.value.length > 0 });

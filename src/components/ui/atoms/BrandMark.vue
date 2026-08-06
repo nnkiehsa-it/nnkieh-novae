@@ -54,10 +54,12 @@ withDefaults(
    1. 當滑鼠懸停在標誌本身
    2. 當滑鼠懸停在標誌所在的超連結 a 上
    3. 當滑鼠懸停在標誌所在的 h1 標題上 */
-.brand-mark:hover .brand-mark-path,
-:global(a:hover) .brand-mark .brand-mark-path,
-:global(h1:hover) .brand-mark .brand-mark-path {
-  animation: brand-draw-again 850ms cubic-bezier(0.45, 0, 0.2, 1) both;
+@media (hover: hover) and (pointer: fine) {
+  .brand-mark:hover .brand-mark-path,
+  :global(a:hover) .brand-mark .brand-mark-path,
+  :global(h1:hover) .brand-mark .brand-mark-path {
+    animation: brand-draw-again 850ms cubic-bezier(0.45, 0, 0.2, 1) both;
+  }
 }
 
 @keyframes brand-draw {

@@ -3,7 +3,7 @@ import type { AnnouncementRecord } from '@/types';
 import { fetchAnnouncementsPage, type AnnouncementCursor } from '@/services/announcements';
 import { useNetworkStatus } from '@/composables/useNetworkStatus';
 import { CONTENT_FEED_PAGE_SIZE } from '@/lib/page-size';
-import { isContentCacheFresh } from '@/services/content-read-cache';
+import { isContentCacheFresh, subscribeContentCacheInvalidations } from '@/services/content-read-cache';
 import { isAbortFailure } from '@/lib/request';
 
 interface UseAnnouncementsOptions {
@@ -24,6 +24,13 @@ interface AnnouncementListState {
 
 const announcementStateCache = new Map<string, AnnouncementListState>();
 const announcementRequestVersions = new WeakMap<AnnouncementListState, number>();
+
+subscribeContentCacheInvalidations((prefix) => {
+  if (!prefix.startsWith('announcement-list-page|')) return;
+  announcementStateCache.forEach((state) => {
+    state.updatedAt = 0;
+  });
+});
 
 function createListState(): AnnouncementListState {
   return reactive({

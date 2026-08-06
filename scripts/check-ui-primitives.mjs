@@ -1,9 +1,12 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
+import postcss from 'postcss';
+import { parse as parseVueSfc } from '@vue/compiler-sfc';
 
 const root = process.cwd();
 const sourceRoot = path.join(root, 'src');
 const errors = [];
+const LAYOUT_PROPERTIES = /(?:^|[\s,])(?:width|height|max-width|max-height|min-width|min-height|margin(?:-(?:top|right|bottom|left|inline|block))?|padding(?:-(?:top|right|bottom|left|inline|block))?|top|right|bottom|left)(?:[\s,]|$)/u;
 
 async function listFiles(directory) {
   const files = [];
@@ -20,6 +23,46 @@ const files = await listFiles(sourceRoot);
 for (const file of files) {
   const source = await readFile(file, 'utf8');
   const relativePath = path.relative(root, file);
+  const styleSources = file.endsWith('.vue')
+    ? parseVueSfc(source, { filename: relativePath }).descriptor.styles.map((style) => style.content)
+    : file.endsWith('.css') ? [source] : [];
+
+  if (/transition-\[[^\]]*(?:width|height|max-width|max-height|min-width|min-height|margin|padding|(?:^|,)top|(?:^|,)right|(?:^|,)bottom|(?:^|,)left)/u.test(source)) {
+    errors.push(`${relativePath} uses a Tailwind transition utility for a layout property; use transform or opacity`);
+  }
+
+  for (const styleSource of styleSources) {
+    const stylesheet = postcss.parse(styleSource, { from: relativePath });
+    stylesheet.walkRules((rule) => {
+      if (!rule.selector?.includes(':hover')) return;
+      let ancestor = rule.parent;
+      let capabilityGated = false;
+      while (ancestor) {
+        if (
+          ancestor.type === 'atrule'
+          && ancestor.name === 'media'
+          && /\(hover:\s*hover\)/u.test(ancestor.params)
+          && /\(pointer:\s*fine\)/u.test(ancestor.params)
+        ) {
+          capabilityGated = true;
+          break;
+        }
+        ancestor = ancestor.parent;
+      }
+      if (!capabilityGated) {
+        errors.push(`${relativePath} has an ungated :hover selector; wrap it in @media (hover: hover) and (pointer: fine)`);
+      }
+    });
+    stylesheet.walkDecls((declaration) => {
+      if (
+        (declaration.prop === 'transition' || declaration.prop === 'transition-property' || declaration.prop === 'will-change')
+        && LAYOUT_PROPERTIES.test(declaration.value)
+      ) {
+        errors.push(`${relativePath} transitions or promotes a layout property (${declaration.value}); use transform or opacity`);
+      }
+    });
+  }
+
   if (/\bpopover-panel\b/u.test(source)) {
     errors.push(`${relativePath} uses the legacy popover-panel class; use DropdownPanel or DropdownMenu`);
   }

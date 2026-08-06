@@ -41,6 +41,7 @@ const props = withDefaults(defineProps<{
 });
 
 const emit = defineEmits<{
+  commentCountChanged: [commentCount: number];
   contentUnavailable: [announcementId: string];
 }>();
 
@@ -63,6 +64,7 @@ const {
 } = useAnnouncementComments(
   () => props.announcementId,
   (announcementId) => emit('contentUnavailable', announcementId),
+  (commentCount) => emit('commentCountChanged', commentCount),
 );
 
 async function handleSubmit(payload: { content: string; parentCommentId: string | null }) {

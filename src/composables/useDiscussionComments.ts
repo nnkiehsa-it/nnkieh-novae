@@ -6,6 +6,7 @@ import { formatRequestError, isAbortFailure, RequestFailure } from '@/lib/reques
 import {
   createContentCacheKey,
   isContentCacheFresh,
+  subscribeContentCacheInvalidations,
 } from '@/services/content-read-cache';
 import { isContentUnavailableError } from '@/services/issues-core';
 import { subscribeContentRealtimeEvents } from '@/services/realtime-events';
@@ -58,6 +59,15 @@ interface CommentsSnapshot<TComment extends DiscussionCommentRecord> {
 
 const caches = new Map<string, Map<string, CommentsSnapshot<DiscussionCommentRecord>>>();
 const MAX_COMMENT_SNAPSHOTS_PER_NAMESPACE = 100;
+
+subscribeContentCacheInvalidations((prefix) => {
+  if (prefix.startsWith('issue-comments-page|')) {
+    caches.get('issue-comments-state')?.clear();
+  }
+  if (prefix.startsWith('announcement-comments-page|')) {
+    caches.get('announcement-comments-state')?.clear();
+  }
+});
 
 function getNamespaceCache(namespace: string) {
   let cache = caches.get(namespace);

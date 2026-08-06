@@ -14,7 +14,7 @@
 - `config/backend-actions.config.json` — Cloudflare 原生防刷群組與 Supabase 細部業務配額映射
 - `config/data-retention.config.json` — 已結案內容、通知、事件、log、暫存與維護紀錄保留期的單一設定入口
 - `structure.md` / `AGENTS.md` / `ui-design-system.md` / `design-qa.md` — 結構地圖 / 代理人規則 / 前端 UI 復用與新增設計規範 / 最近一次視覺比對紀錄
-- `package.json` — scripts（typecheck、lint、build、check:edge、Vitest 單元測試、架構測試、Playwright 真實瀏覽器 E2E、build budget、verify:local／integration／all）；本地 `test`／`verify:local`／`verify:all` 由 `scripts/run-local-verification.mjs` 統一顯示精簡進度，成功時只保留 warning，失敗時才展開診斷；`vitest.config.ts` 提供 Vue／jsdom 測試環境，`playwright.config.ts` 定義 bootstrap、桌面 Chromium 與手機 Chromium 專案
+- `package.json` — scripts（typecheck、lint、build、check:edge、Vitest 單元測試、架構測試、Playwright 真實瀏覽器 E2E、build budget、verify:local／integration／all）；本地 `test`／`verify:local`／`verify:all` 由 `scripts/run-local-verification.mjs` 統一顯示精簡進度，成功時只保留 warning，失敗時才展開診斷；`check:ui` 同時拒絕未受裝置能力限制的原生 hover 與逐幀觸發 layout 的 transition／will-change；`vitest.config.ts` 提供 Vue／jsdom 測試環境，`playwright.config.ts` 定義 bootstrap、桌面 Chromium 與手機 Chromium 專案
 - `index.html` / `vite.config.ts` / `vercel.json` / `firebase.json`（僅本機 Auth emulator）/ `eslint.config.js` / `tsconfig*.json` / `tailwind.config.cjs`
 - `.env.example` / `.gitignore` / `skills-lock.json`
 
@@ -111,10 +111,10 @@
 - Session：`useSession` + `sessionTypes` / `sessionDebug` / `sessionValidation` / `sessionAuthActions`（production：GIS Token Client → `signInWithCredential`；emulator：`signInWithPopup`）/ `sessionEffects`（登入 bootstrap 的 visit 最多每日寫入一次）
 - 分類：`useCategories` — 動態 catalog、平台功能開關、預設分類與標籤查找的前端單一狀態來源
 - 權限：`useMemberAccessManagement` — 分類／公告 scope 的負責人載入、精確查找、競態防護與單一範圍授權流程
-- 看板：`useIssueBoardData`、`useIssueBuckets`（進行中／已結案各自持有請求，切換不互相中止）、`useIssueBoardPagination`、`useIssueSearch`、`useUserIssuesData`、`useIssueRouteFilter`、`useDocumentTitle`、`useFilter`
+- 看板：`useIssueBoardData`、`useIssueBuckets`（進行中／已結案各自持有請求，切換不互相中止；訂閱 service cache prefix 失效，避免返回 route 使用舊 module bucket）、`useIssueBoardPagination`、`useIssueSearch`、`useUserIssuesData`（同樣由 user list prefix 統一失效）、`useIssueRouteFilter`、`useDocumentTitle`、`useFilter`
 - 詳情／列：`useIssueRouteDetail`、`useIssueDetailCacheScope`（列表 intent 預抓與詳情讀取共用的權限範圍 key）、`useIssueDisplay`、`useIssueSupport`、`useIssueItemController`、`useIssueComposerForm`、`useVoteSupport`、`useDeleteIssue`、`useStatusStyling`
-- 留言：`useIssueComments`、`useAnnouncementComments`、`useDiscussionComments`（共用 core，依提案／公告領域權限判斷管理操作）
-- 公告：`useAnnouncements`、`useAnnouncementManagement`、`useAnnouncementDetail`（詳情讀取、快取、Realtime、按讚與刪除流程）
+- 留言：`useIssueComments`、`useAnnouncementComments`、`useDiscussionComments`（共用 core，依提案／公告領域權限判斷管理操作；module snapshot 跟隨 comments page prefix 失效）
+- 公告：`useAnnouncements`（module list state 跟隨 list page prefix 失效）、`useAnnouncementManagement`、`useAnnouncementDetail`（詳情讀取、快取、Realtime、按讚與刪除流程）
 - 設備：`useFacilities`、`useFacilityDetail`、`useFacilityComposerForm`
 - 通知／推播：`useNotificationBadge`、`useNotifications`、`useNotificationNavigation`（開啟內容時保留通知 root 來源，詳情返回會 pop 回通知）、`useNotificationDisplay`（依目前語系組合通知標題、狀態與舊資料內容）、`usePushNotifications`、`usePushPermissionPrompt`
 - UI 流程：`useActionFeedback`、`useActiveNavigationRefresh`（目前導覽項重按以 20 秒 cooldown 合併重抓）、`useAuthenticatedDetailState`、`useDetailRouteQuery`、`useContentListRuntime`（三領域共用最短載入、逾時／斷線、重試、無限捲動與導覽重新整理）、`useOverlayBack`（LIFO 系統返回）、`useLongPress`（移動容差與 click 抑制）、`useVisualViewport`（手機鍵盤可視高度）、`useDialogThemeColor`、`useClickOutside`（僅供非浮層的既有局部點擊邊界）、`useInfiniteScroll`（自動解析實際 scroll root；載入更多時以三筆領域骨架形成底部邊界，只阻止向下越過邊界的 wheel／touch overscroll，保留向上捲動）、`useMinimumLoading`、`useLoadingTimeout`、`useTimedMessage`、`useNetworkStatus`、`useCompactTableLayout`（以 VueUse ResizeObserver 維持表格斷點）；媒體查詢與 observer 優先 VueUse，Dialog／Drawer／Popover 的 focus、scroll lock、手勢與碰撞定位統一由 Reka UI 負責
@@ -128,14 +128,14 @@
 
 - `constants/app.ts` / `constants/input-limits.ts` — Novae 品牌名稱、學校顯示設定與前端輸入長度
 - `constants/categories.ts` / `statuses.ts` — 動態分類衍生規則與提案／設備狀態判斷
-- `lib/` — `firebase`、`google-identity`（lazy GIS Token Client）、`firebase-messaging`、`firebase-app-check`、`auth-token`、`supabase`（REST client 與 private Realtime 共用的 Firebase token 授權閘門）、`browser-storage`（local/session storage 的受限瀏覽器與 quota-safe 單一邊界）、`session-access`（role／permission／提案與設備分類 scope 的純權限判斷）、`feature-access`（提案／設備開關對預設頁與路由可用性的純矩陣）、`request`、`request-id`、`route-request`、`reconnect`、`route`、`page-size`、`content-list-scroll`（silent refresh 的可見項目 anchor 與相對位移恢復）、`feed-loading`（所有 infinite feed 共用三筆載入更多 placeholder 數量）、`format`、`search`、`issue-status`、`issue-timeline`、`issue-notice`（列表與詳情共用的結案內容／標題／tone 正規化）、`issue-sort`、`issue-detail-preview`（列表到詳情的一次性同步摘要 seed）、`persistent-cache`（IndexedDB 跨 reload 快取）、`press-feedback`（共用 pointer 按壓狀態、12px 捲動取消與放開後固定 160ms 可見時間）、`ui-motion`（smooth spring／tween／stagger 單一參數來源）、`motion-features`（LazyMotion 的 DOM layout feature 邊界）、`touch-zoom`（以 capture touchend 座標與 dblclick 雙層攔截雙擊放大，仍保留 pinch zoom）、`in-app-browser`、`pwa-install`、`caret`、`markdown-*`、`image-processing`
+- `lib/` — `firebase`、`google-identity`（lazy GIS Token Client）、`firebase-messaging`、`firebase-app-check`、`auth-token`、`supabase`（REST client 與 private Realtime 共用的 Firebase token 授權閘門）、`browser-storage`（local/session storage 的受限瀏覽器與 quota-safe 單一邊界）、`session-access`（role／permission／提案與設備分類 scope 的純權限判斷）、`feature-access`（提案／設備開關對預設頁與路由可用性的純矩陣）、`request`、`request-id`、`route-request`、`reconnect`、`route`、`page-size`、`content-list-scroll`（silent refresh 的可見項目 anchor 與相對位移恢復）、`feed-loading`（所有 infinite feed 共用三筆載入更多 placeholder 數量）、`format`、`search`、`issue-status`、`issue-timeline`、`issue-notice`（列表與詳情共用的結案內容／標題／tone 正規化）、`issue-sort`、`issue-detail-preview`（列表到詳情的一次性同步摘要 seed）、`persistent-cache`（IndexedDB 跨 reload 快取）、`press-feedback`（共用 pointer 按壓狀態、12px 捲動取消、放開後固定 160ms 可見時間，以及 pointer 遺失／頁面生命週期的集中清理）、`ui-motion`（smooth spring／tween／stagger 單一參數來源）、`motion-features`（LazyMotion 的 DOM layout feature 邊界）、`touch-zoom`（以 capture touchend 座標與 dblclick 雙層攔截雙擊放大，仍保留 pinch zoom）、`in-app-browser`、`pwa-install`、`caret`、`markdown-*`、`image-processing`
 - `types/index.ts` / `types/categories.ts` / `types/pwa.d.ts` / `types/google-identity.d.ts` — 共通型別、動態分類契約、設備領域型別與 GIS Token Client 型別
 
 ---
 
 ## services
 
-- `backend-action.ts` / `backend-action-contract.ts` / `supabase-auth.ts` / `session-role.ts`（roles／permissions）/ `session-bootstrap.ts`（冷啟動合併 session 讀取）/ `access.ts`（負責人查找與單一 scope 授權）/ `categories.ts`（動態 catalog／setup／整體原子管理）/ `content-read-cache.ts` / `content-versions.ts`（提案／公告／設備的資料庫單調版本、批次 resume／online／reconnect 驗證、精準失效與 domain listener）/ `realtime-events.ts`（依 UID／角色共用 private Broadcast 長連線，事件攜帶同 transaction version；連續事件本地 patch，version gap 或重連才批次驗證）
+- `backend-action.ts` / `backend-action-contract.ts` / `supabase-auth.ts` / `session-role.ts`（roles／permissions）/ `session-bootstrap.ts`（冷啟動合併 session 讀取）/ `access.ts`（負責人查找與單一 scope 授權）/ `categories.ts`（動態 catalog／setup／整體原子管理）/ `content-read-cache.ts`（持久與 memory read cache 的單一 prefix 失效入口，並同步通知 composable module cache）/ `content-versions.ts`（提案／公告／設備的資料庫單調版本、批次 resume／online 驗證與 domain listener）/ `realtime-events.ts`（登入期間依 UID／角色維持 private Broadcast 長連線；集中失效、version 註冊、gap／首次訂閱／重連批次驗證，再分派畫面 patch）
 - 列表讀取：初次與 infinite scroll 直接從 list response 取得 version，不額外呼叫版本 action；resume／online／Realtime reconnect 只呼叫一次 `getContentVersions`，只有落後 domain 做 silent first-page refresh。背景 refresh 保留現有內容，`lib/content-list-scroll.ts` 以第一個可見 content id 與相對位移恢復捲動位置；使用者主動切分類／狀態／排序／搜尋則沿用各領域既有換頁流程
 - 提案：`issues.ts` barrel + `issues-core` / `constants` / `errors` / `utils` / `normalize` / `read*` / `write` / `comment-cursor`
 - 其他：`facilities.ts`（設備分類摘要分頁／詳情／寫入）、`announcements.ts`、`notifications.ts`（公告廣播與提案／設備分類負責人的個人通知讀取）、`dashboard.ts`、`uploads.ts`、`users-read.ts`（50 筆批次、request coalescing 與 24 小時 IndexedDB 個別 profile cache）、`users-write.ts`

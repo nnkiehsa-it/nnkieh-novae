@@ -184,8 +184,10 @@ test('primary navigation keeps desktop chrome and persistent mobile navigation',
   assert.doesNotMatch(mobileHeader, /<AppButton\s+v-if="showBackButton"/u);
   assert.doesNotMatch(mobileHeader, /header-title|`title:|`category:/u);
   assert.match(baseStyles, /\.app-header__back \{[\s\S]*height: var\(--tap-target\);[\s\S]*min-width: var\(--tap-target\);[\s\S]*width: var\(--tap-target\)/u);
-  assert.match(navigationStyles, /\.app-header__back-slot \{[\s\S]*width: 0;[\s\S]*opacity: 0;[\s\S]*width var\(--motion-duration-panel\) var\(--motion-ease-spring\)/u);
-  assert.match(navigationStyles, /\.app-header__back-slot--visible \{[\s\S]*width: var\(--tap-target\);[\s\S]*margin-right: 0\.5rem;[\s\S]*opacity: 1;/u);
+  assert.match(navigationStyles, /\.app-header__back-slot \{[\s\S]*width: 0;[\s\S]*opacity: 0;[\s\S]*opacity var\(--motion-duration\)[\s\S]*transform var\(--motion-duration-panel\)/u);
+  assert.match(navigationStyles, /\.app-header__back-slot--visible \{[\s\S]*width: var\(--tap-target\);[\s\S]*margin-right: 0\.5rem;[\s\S]*opacity: 1;[\s\S]*transform: translateX\(0\) scale\(1\);/u);
+  assert.doesNotMatch(navigationStyles, /(?:transition|will-change):[^;]*(?:width|margin)/u);
+  assert.doesNotMatch(baseStyles, /transition:[^;]*(?:width|margin)/u);
   assert.match(baseStyles, /\.app-root\[data-bottom-nav='true'\] \.app-main-content \{\s*padding-bottom: 0;/u);
   assert.match(detailShell, /class="comment-feed-scroll[^"]*overflow-auto[\s\S]*<slot name="details"[\s\S]*<slot name="actions"[\s\S]*ref="mobileCommentsRef"[\s\S]*:embedded="true"/u);
   assert.match(detailShell, /props\.initialTab === 'comments'[\s\S]*scrollToMobileComments\('auto'\)/u);

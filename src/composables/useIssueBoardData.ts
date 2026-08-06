@@ -9,7 +9,6 @@ import { useIssueSearch } from '@/composables/useIssueSearch';
 import { useSession } from '@/composables/useSession';
 import { useTimedMessage } from '@/composables/useTimedMessage';
 import { useUserIssuesData } from '@/composables/useUserIssuesData';
-import { registerContentVersion, hasContentVersionGap } from '@/services/content-versions';
 import { subscribeContentRealtimeEvents } from '@/services/realtime-events';
 import { fetchIssueRecordById } from '@/services/issues';
 import type { IssueRecord, IssueSortOption } from '@/types';
@@ -262,14 +261,7 @@ export function useIssueBoardData() {
       realtimeUnsubscribe = subscribeContentRealtimeEvents(
         `issues:${uid}:${activeFilter.value}:${statusTab.value}`,
         (event) => {
-          if (event.eventType === 'issue_comment_changed') {
-            registerContentVersion('issues', event.version);
-            return;
-          }
-          if (event.version > 0 && hasContentVersionGap('issues', event.version)) {
-            void refreshCurrentData();
-            return;
-          }
+          if (event.eventType === 'issue_comment_changed') return;
           if (event.eventType === 'issue_support_changed') {
             if (event.supportCount === null) return;
             if (activeFilter.value !== 'my-proposals' && event.category !== activeFilter.value) return;
@@ -278,7 +270,6 @@ export function useIssueBoardData() {
               support_count: event.supportCount ?? issue.support_count,
             }));
             if (sortOption.value === 'most-supported') void refreshCurrentData();
-            registerContentVersion('issues', event.version);
             return;
           }
           if (event.eventType !== 'issue_changed') return;
@@ -287,7 +278,6 @@ export function useIssueBoardData() {
           invalidateIssueBuckets();
           if (event.op === 'delete') {
             handleIssueDeleted(event.targetId);
-            registerContentVersion('issues', event.version);
             return;
           }
           if (activeFilter.value !== 'my-proposals' && event.category !== activeFilter.value) {
@@ -299,7 +289,6 @@ export function useIssueBoardData() {
             forceRefresh: true,
           }).then((issue) => {
             handleIssueUpdated(issue);
-            registerContentVersion('issues', event.version);
           }).catch(() => {
             handleIssueDeleted(event.targetId);
             void refreshCurrentData();

@@ -335,6 +335,20 @@ test('announcement writes open the created detail and invalidate list-page cache
   );
 });
 
+test('announcement comment mutations apply returned counts without waiting for realtime', async () => {
+  const comments = await read('src/composables/useAnnouncementComments.ts');
+  const commentComponent = await read('src/components/AnnouncementComments.vue');
+  const detailPanel = await read('src/components/AnnouncementDetailPagePanel.vue');
+  const detail = await read('src/composables/useAnnouncementDetail.ts');
+  const detailView = await read('src/views/AnnouncementDetailView.vue');
+
+  assert.match(comments, /onCommentCountChanged: \(\{ commentCount \}\) => onCommentCountChanged\?\.\(commentCount\)/u);
+  assert.match(commentComponent, /commentCountChanged[\s\S]*emit\('commentCountChanged', commentCount\)/u);
+  assert.match(detailPanel, /@comment-count-changed="emit\('commentCountChanged', \$event\)"/u);
+  assert.match(detail, /function updateCommentCount[\s\S]*comment_count: commentCount[\s\S]*patchCachedContent/u);
+  assert.match(detailView, /@comment-count-changed="updateCommentCount"/u);
+});
+
 test('realtime-backed lists revalidate after stale resumes without fixed polling', async () => {
   const discussionComments = await read('src/composables/useDiscussionComments.ts');
   const announcementManagement = await read('src/composables/useAnnouncementManagement.ts');

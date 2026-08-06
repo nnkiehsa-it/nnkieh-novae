@@ -9,6 +9,7 @@ import type { AnnouncementCommentRecord } from '@/types';
 export function useAnnouncementComments(
   announcementId: () => string | null,
   onContentUnavailable?: (announcementId: string) => void,
+  onCommentCountChanged?: (commentCount: number) => void,
 ) {
   const core = useDiscussionComments<AnnouncementCommentRecord>({
     cacheNamespace: 'announcement-comments-state',
@@ -31,6 +32,7 @@ export function useAnnouncementComments(
         commentCount: result.comment_count,
       };
     },
+    onCommentCountChanged: ({ commentCount }) => onCommentCountChanged?.(commentCount),
     onContentUnavailable,
   });
 

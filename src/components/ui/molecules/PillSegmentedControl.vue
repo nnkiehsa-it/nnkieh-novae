@@ -10,10 +10,12 @@
       :transition="MOTION_SMOOTH_SPRING"
     />
 
-    <button
+    <m.button
       v-for="item in options"
       :key="item.value"
       type="button"
+      :layout="layout === 'adaptive'"
+      :transition="MOTION_SMOOTH_SPRING"
       class="segmented-control__button relative z-10 flex h-full items-center justify-center rounded-full text-xs font-semibold select-none"
       :class="[
         layout === 'equal' ? 'segmented-control__button--equal' : '',
@@ -27,16 +29,14 @@
       :data-value="item.value"
       @click="emit('update:modelValue', item.value)"
     >
-      <AppIcon :name="item.icon" :size="3.5" />
+      <AppIcon class="segmented-control__icon" :name="item.icon" :size="3.5" />
       <span
-        class="inline-block overflow-hidden whitespace-nowrap transition-[opacity,transform,max-width,margin] duration-300 ease-[var(--motion-ease-enter)]"
-        :class="layout === 'equal' || modelValue === item.value
-          ? 'ml-1.5 max-w-28 translate-x-0 opacity-100'
-          : 'ml-0 max-w-0 -translate-x-1 opacity-0'"
+        class="segmented-control__label"
+        :class="{ 'segmented-control__label--visible': layout === 'equal' || modelValue === item.value }"
       >
         {{ item.label }}
       </span>
-    </button>
+    </m.button>
   </div>
 </template>
 

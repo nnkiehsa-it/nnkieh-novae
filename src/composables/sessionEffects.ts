@@ -6,6 +6,7 @@ import { ensureContentVersionsFresh, resetContentVersionState } from '@/services
 import { registerAppResumeHandler } from '@/composables/useAppResume';
 import { clearAuthorProfileCache } from '@/composables/useAuthorProfile';
 import { readLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
+import { stopContentRealtimeSession } from '@/services/realtime-events';
 
 export const mySupportedIssueIds = ref<Set<string>>(new Set());
 export const customPhotoUrl = ref<string | null>(null);
@@ -36,6 +37,7 @@ function initializeContentVersionResume() {
 }
 
 export function clearActiveSessionData() {
+  stopContentRealtimeSession();
   activeSessionToken += 1;
   mySupportedIssueIds.value = new Set();
   customPhotoUrl.value = null;

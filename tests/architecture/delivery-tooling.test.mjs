@@ -212,6 +212,8 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   assert.doesNotMatch(componentStyles, /:active[^}]+scale\(0\.9/u);
   assert.match(pressFeedback, /RELEASE_VISIBLE_MS = 160[\s\S]*MOVE_TOLERANCE_PX = 12/u);
   assert.match(pressFeedback, /\[data-list-row-trigger\][\s\S]*classList\.add\('is-pressing'\)[\s\S]*pointermove/u);
+  assert.match(pressFeedback, /lostpointercapture[\s\S]*contextmenu[\s\S]*visibilitychange[\s\S]*blur[\s\S]*pagehide/u);
+  assert.match(checker, /walkRules[\s\S]*includes\(':hover'\)[\s\S]*hover:\\s\*hover[\s\S]*pointer:\\s\*fine/u);
   assert.match(mainEntry, /initializePressFeedback\(\)/u);
   [markdownMediaContent, markdownImagePreviews, commentComposer, userAvatar]
     .forEach((consumer) => assert.match(consumer, /<DecodedImage/u));
@@ -285,9 +287,13 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   assert.match(segmentedControl, /segmented-control__indicator[\s\S]*--segment-active-index[\s\S]*--segment-count/u);
   assert.doesNotMatch(segmentedControl, /ResizeObserver|offsetWidth|offsetLeft/u);
   assert.match(segmentedControl, /<m\.div[\s\S]*:animate="indicatorMotion"[\s\S]*MOTION_SMOOTH_SPRING/u);
+  assert.match(segmentedControl, /<m\.button[\s\S]*:layout="layout === 'adaptive'"[\s\S]*MOTION_SMOOTH_SPRING/u);
+  assert.match(segmentedControl, /segmented-control__label--visible/u);
   assert.match(controls, /\.segmented-control__indicator \{[\s\S]*will-change: transform/u);
   assert.match(controls, /\.segmented-control__button--active \{[\s\S]*width: 7rem/u);
   assert.match(controls, /\.segmented-control__button--compact \{[\s\S]*width: 2rem/u);
+  assert.doesNotMatch(controls, /transition:[^;]*(?:width|height|margin|padding)/u);
+  assert.match(checker, /LAYOUT_PROPERTIES[\s\S]*transition-property[\s\S]*will-change/u);
   assert.match(app, /<MotionConfig reduced-motion="user"[\s\S]*<LazyMotion strict/u);
   assert.match(app, /<AnimatePresence mode="popLayout"[\s\S]*MOTION_ROUTE_TRANSITION/u);
   assert.match(uiMotion, /MOTION_SMOOTH_SPRING[\s\S]*MOTION_ROUTE_TRANSITION[\s\S]*getStaggerTransition/u);

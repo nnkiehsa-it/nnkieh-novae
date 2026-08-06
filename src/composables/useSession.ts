@@ -22,6 +22,7 @@ import { ensureSupabaseAuthenticatedRole } from '@/services/supabase-auth';
 import { fetchCurrentUserRole, seedSessionAccess } from '@/services/session-role';
 import { applyContentVersionsSnapshot, ensureContentVersionsFresh } from '@/services/content-versions';
 import { fetchSessionBootstrap } from '@/services/session-bootstrap';
+import { startContentRealtimeSession } from '@/services/realtime-events';
 import { ensureCategoryCatalog, seedCategoryCatalog } from '@/composables/useCategories';
 import { seedNotificationUnreadHint } from '@/services/notifications';
 import {
@@ -271,6 +272,7 @@ async function refreshVerifiedSession(user: NonNullable<SessionState['user']>, v
   } finally {
     if (isCurrentVerification(user, verificationId)) {
       state.roleLoading = false;
+      startContentRealtimeSession();
       resolveRoleReadyWaiters();
     }
   }

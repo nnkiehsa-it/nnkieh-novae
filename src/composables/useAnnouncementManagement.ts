@@ -10,7 +10,6 @@ import {
 import { subscribeContentRealtimeEvents } from '@/services/realtime-events';
 import type { AnnouncementRecord } from '@/types';
 import { isContentUnavailableError } from '@/services/issues-core';
-import { hasContentVersionGap, registerContentVersion } from '@/services/content-versions';
 import { subscribeContentVersionChanges } from '@/services/content-versions';
 import { preserveContentListScroll } from '@/lib/content-list-scroll';
 
@@ -130,27 +129,18 @@ export function useAnnouncementManagement() {
       if (!ready || !allowed || waitingForRole) return;
 
       realtimeUnsubscribe = subscribeContentRealtimeEvents('announcements', (event) => {
-        if (event.eventType === 'announcement_comment_changed') {
-          registerContentVersion('announcements', event.version);
-          return;
-        }
-        if (event.version > 0 && hasContentVersionGap('announcements', event.version)) {
-          void refreshAnnouncementList({ force: true });
-          return;
-        }
+        if (event.eventType === 'announcement_comment_changed') return;
         if (event.eventType === 'announcement_metrics_changed') {
           patchAnnouncement(event.targetId, (announcement) => ({
             ...announcement,
             comment_count: event.commentCount ?? announcement.comment_count,
             like_count: event.likeCount ?? announcement.like_count,
           }));
-          registerContentVersion('announcements', event.version);
           return;
         }
         if (event.eventType !== 'announcement_changed') return;
         if (event.op === 'delete') {
           removeAnnouncement(event.targetId);
-          registerContentVersion('announcements', event.version);
           return;
         }
         void fetchAnnouncementRecordById(event.targetId, {
@@ -158,7 +148,6 @@ export function useAnnouncementManagement() {
           forceRefresh: true,
         }).then((announcement) => {
           upsertAnnouncement(announcement);
-          registerContentVersion('announcements', event.version);
         }).catch((caught) => {
           if (isContentUnavailableError(caught)) removeAnnouncement(event.targetId);
           else void refreshAnnouncementList({ force: true });

@@ -14,12 +14,14 @@ test('proposal comment, sharing, and status actions persist', async ({
   const manager = await newUserPage(browser, 'issueManager');
   await manager.page.goto(content.proposalA);
   await expect(manager.page.getByRole('textbox', { name: 'Write a comment…' })).toBeVisible();
+  await manager.page.goto('/settings');
 
   const other = await newUserPage(browser, 'other');
+  const commentText = `E2E proposal comment ${Date.now()}`;
   await other.page.goto(content.proposalA);
-  await other.page.getByRole('textbox', { name: 'Write a comment…' }).fill('E2E proposal comment');
+  await other.page.getByRole('textbox', { name: 'Write a comment…' }).fill(commentText);
   await other.page.getByRole('button', { name: 'Post comment' }).click();
-  await expect(other.page.getByText('E2E proposal comment').first()).toBeVisible();
+  await expect(other.page.getByText(commentText).first()).toBeVisible();
   await other.page.evaluate(() => {
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -36,7 +38,8 @@ test('proposal comment, sharing, and status actions persist', async ({
   )).toBe(content.proposalA);
   await other.context.close();
 
-  await manager.page.reload();
+  await manager.page.goto(content.proposalA);
+  await expect(manager.page.getByText(commentText).first()).toBeVisible();
   await expect(manager.page.getByRole('textbox', { name: 'Write a comment…' })).toBeVisible();
 
   await manager.page.getByRole('button', { name: 'Change status or result' }).click();
@@ -75,19 +78,34 @@ test('facility affected and status actions persist while cross-category controls
 
 test('owners and announcement managers can execute every delete path', async ({ browser }) => {
   const ordinary = await newUserPage(browser, 'ordinary');
-  await createProposal(ordinary.page, 'proposal-a', 'Disposable Proposal');
+  await ordinary.page.goto('/issues/proposal-a');
+  await expect(ordinary.page.getByRole('button', { name: /Add to Proposal A/i })).toBeVisible();
+  const proposalUrl = await createProposal(ordinary.page, 'proposal-a', 'Disposable Proposal');
+  await ordinary.page.getByRole('button', { name: 'Back to proposals' }).click();
+  await expect(ordinary.page.getByText('Disposable Proposal').first()).toBeVisible();
+  await ordinary.page.goto(proposalUrl);
   await ordinary.page.getByRole('button', { name: 'Delete proposal' }).click();
   await ordinary.page.getByRole('button', { name: 'Confirm deletion' }).click();
   await expect(ordinary.page).toHaveURL(/\/issues\/proposal-a$/u);
 
-  await createFacility(ordinary.page, 'facility-a', 'Disposable Facility');
+  await ordinary.page.goto('/facilities?category=facility-a');
+  await expect(ordinary.page.getByRole('button', { name: 'Add facility report' })).toBeVisible();
+  const facilityUrl = await createFacility(ordinary.page, 'facility-a', 'Disposable Facility');
+  await ordinary.page.getByRole('button', { name: 'Back to facility reports' }).click();
+  await expect(ordinary.page.getByText('Disposable Facility').first()).toBeVisible();
+  await ordinary.page.goto(facilityUrl);
   await ordinary.page.getByRole('button', { name: 'Delete facility report' }).click();
   await ordinary.page.getByRole('button', { name: 'Confirm deletion' }).click();
   await expect(ordinary.page).toHaveURL(/\/facilities/u);
   await ordinary.context.close();
 
   const manager = await newUserPage(browser, 'announcementManager');
-  await createAnnouncement(manager.page, 'Disposable Announcement');
+  await manager.page.goto('/announcements');
+  await expect(manager.page.getByRole('button', { name: 'New announcement' })).toBeVisible();
+  const announcementUrl = await createAnnouncement(manager.page, 'Disposable Announcement');
+  await manager.page.getByRole('button', { name: 'Back to announcements' }).click();
+  await expect(manager.page.getByText('Disposable Announcement').first()).toBeVisible();
+  await manager.page.goto(announcementUrl);
   await manager.page.getByRole('button', { name: 'Delete announcement' }).click();
   await manager.page.getByRole('button', { name: 'Confirm deletion' }).click();
   await expect(manager.page).toHaveURL(/\/announcements$/u);

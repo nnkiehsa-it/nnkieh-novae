@@ -20,11 +20,23 @@ const pendingPersistentReads = new Map<string, Promise<unknown | null>>();
 const pendingRequests = new Map<string, Promise<unknown>>();
 const pendingInvalidations = new Map<string, Promise<void>>();
 const invalidationVersions = new Map<string, number>();
+const invalidationListeners = new Set<(prefix: string) => void>();
 const MAX_MEMORY_CACHE_ENTRIES = 2_000;
 let activeScope = 'anonymous';
 let cacheVersion = 0;
 let persistentWriteVersion = 0;
 let scopeVersion = 0;
+
+function notifyContentCacheInvalidation(prefix: string) {
+  invalidationListeners.forEach((listener) => {
+    try {
+      listener(prefix);
+    } catch {
+      // Cache invalidation observers must never turn an already committed
+      // backend mutation into a client-visible write failure.
+    }
+  });
+}
 
 export interface ContentCacheWriteGuard {
   cacheVersion: number;
@@ -166,6 +178,7 @@ export function markContentCacheStale(predicate: (key: string) => boolean) {
 
 export function markContentCachePrefixStale(prefix: string) {
   markContentCacheStale((key) => key.startsWith(prefix));
+  notifyContentCacheInvalidation(prefix);
   const scope = activeScope;
   cacheVersion += 1;
   invalidationVersions.set(`${scope}\u0000${prefix}`, cacheVersion);
@@ -177,6 +190,11 @@ export function markContentCachePrefixStale(prefix: string) {
       if (pendingInvalidations.get(invalidationKey) === pending) pendingInvalidations.delete(invalidationKey);
     });
   pendingInvalidations.set(invalidationKey, pending);
+}
+
+export function subscribeContentCacheInvalidations(listener: (prefix: string) => void) {
+  invalidationListeners.add(listener);
+  return () => invalidationListeners.delete(listener);
 }
 
 export function clearContentReadMemoryCache() {

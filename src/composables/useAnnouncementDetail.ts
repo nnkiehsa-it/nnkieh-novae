@@ -146,6 +146,16 @@ export function useAnnouncementDetail(canLoad: Ref<boolean>) {
     }
   }
 
+  function updateCommentCount(commentCount: number) {
+    if (!announcement.value) return;
+    const announcementId = announcement.value.id;
+    announcement.value = { ...announcement.value, comment_count: commentCount };
+    patchCachedContent<AnnouncementRecord>(
+      detailCacheKey(announcementId),
+      (cached) => ({ ...cached, comment_count: commentCount }),
+    );
+  }
+
   function scheduleRealtimeRefresh() {
     window.clearTimeout(realtimeRefreshTimer);
     realtimeRefreshTimer = window.setTimeout(() => void refresh({ force: true }), 300);
@@ -244,5 +254,6 @@ export function useAnnouncementDetail(canLoad: Ref<boolean>) {
     loading,
     openDeleteDialog,
     toggleLike,
+    updateCommentCount,
   };
 }

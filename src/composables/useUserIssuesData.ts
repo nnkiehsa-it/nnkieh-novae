@@ -1,6 +1,10 @@
 import { computed, reactive, watch, type Ref } from 'vue';
 import { fetchUserIssues } from '@/services/issues';
-import { createContentCacheKey, isContentCacheFresh } from '@/services/content-read-cache';
+import {
+  createContentCacheKey,
+  isContentCacheFresh,
+  subscribeContentCacheInvalidations,
+} from '@/services/content-read-cache';
 import { sortIssues } from '@/lib/issue-sort';
 import { getIssueStatusBucket } from '@/lib/issue-timeline';
 import type { IssueCursor, IssueFilter, IssueRecord, IssueSortOption, IssueStatusBucket } from '@/types';
@@ -16,12 +20,16 @@ interface UserIssuesSnapshot {
 
 const userIssuesCache = new Map<string, UserIssuesSnapshot>();
 
-export function invalidateUserIssueMemory(issueId: string) {
+export function invalidateUserIssueMemory(issueId?: string) {
   userIssuesCache.forEach((snapshot) => {
-    snapshot.allIssues = snapshot.allIssues.filter((issue) => issue.id !== issueId);
+    if (issueId) snapshot.allIssues = snapshot.allIssues.filter((issue) => issue.id !== issueId);
     snapshot.updatedAt = 0;
   });
 }
+
+subscribeContentCacheInvalidations((prefix) => {
+  if (prefix.startsWith('user-issue-list-page|')) invalidateUserIssueMemory();
+});
 
 export function useUserIssuesData(
   activeFilter: Ref<IssueBoardFilter>,

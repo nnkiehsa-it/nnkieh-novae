@@ -375,7 +375,6 @@
     color: rgb(var(--color-on-surface-variant));
   }
 
-  .action-menu-trigger:hover,
   .action-menu-trigger.button-toolbar--active {
     background-color: rgb(var(--color-secondary-container) / 0.86);
     box-shadow: var(--shadow-card), inset 0 1px 0 rgb(255 255 255 / 0.58);
@@ -443,7 +442,6 @@
     border-top: 1px solid rgb(var(--color-outline) / 0.12);
   }
 
-  .list-surface-row--interactive:hover,
   .list-surface-row--interactive:focus-visible {
     background-color: rgb(var(--color-secondary-container) / 0.52);
   }
@@ -497,7 +495,6 @@
     width: 100%;
   }
 
-  .dropdown-item:hover,
   .dropdown-item:focus-visible {
     background-color: rgb(var(--color-secondary-container) / 0.72);
   }
@@ -520,7 +517,6 @@
     color: rgb(var(--color-danger));
   }
 
-  .dropdown-item--danger:hover,
   .dropdown-item--danger:focus-visible {
     background-color: rgb(var(--color-error-container) / 0.4);
   }
@@ -588,6 +584,24 @@
   }
 
   @media (hover: hover) and (pointer: fine) {
+    .action-menu-trigger:hover {
+      background-color: rgb(var(--color-secondary-container) / 0.86);
+      box-shadow: var(--shadow-card), inset 0 1px 0 rgb(255 255 255 / 0.58);
+      color: rgb(var(--color-on-surface));
+    }
+
+    .list-surface-row--interactive:hover {
+      background-color: rgb(var(--color-secondary-container) / 0.52);
+    }
+
+    .dropdown-item:hover {
+      background-color: rgb(var(--color-secondary-container) / 0.72);
+    }
+
+    .dropdown-item--danger:hover {
+      background-color: rgb(var(--color-error-container) / 0.4);
+    }
+
     .surface-card--interactive:hover {
       box-shadow: var(--shadow-floating);
     }

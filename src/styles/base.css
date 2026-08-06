@@ -437,7 +437,6 @@
       margin-right: 0;
       padding-bottom: 3px;
       padding-top: 1.25rem;
-      transition: width var(--motion-duration-panel) var(--motion-ease-enter), margin-left var(--motion-duration-panel) var(--motion-ease-enter);
     }
 
     .app-root[data-bottom-nav='true'] .app-main-content {

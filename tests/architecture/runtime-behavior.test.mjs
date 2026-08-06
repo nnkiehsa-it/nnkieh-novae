@@ -345,6 +345,9 @@ test('content reads persist by account and invalidate after writes or realtime e
   assert.match(contentCache, /pendingPersistentReads\.get\(persistentKey\) === pending/u);
   assert.match(contentCache, /pendingRequests\.get\(scopedRequestKey\) === pending/u);
   assert.match(contentCache, /deletePersistentCacheIfVersion\(persistentKey, writeVersion\)/u);
+  assert.match(contentCache, /subscribeContentCacheInvalidations/u);
+  assert.match(contentCache, /notifyContentCacheInvalidation\(prefix\)/u);
+  assert.match(contentCache, /invalidationListeners\.forEach[\s\S]*try \{[\s\S]*listener\(prefix\)[\s\S]*catch/u);
   assert.match(sessionEffects, /setContentCacheScope\(uid\)/u);
   assert.match(issuePages, /getCachedContentPersistent/u);
   assert.match(announcements, /getCachedContentPersistent/u);
@@ -378,4 +381,35 @@ test('content versions batch validation and searches only submit explicitly', as
   assert.match(facilities, /committedQuery/u);
   assert.doesNotMatch(issueSearch, /debounce|setTimeout/u);
   assert.doesNotMatch(facilities, /searchTimer|setTimeout/u);
+});
+
+test('content invalidation reaches module caches and realtime versions have one owner', async () => {
+  const issueBuckets = await read('src/composables/useIssueBuckets.ts');
+  const userIssues = await read('src/composables/useUserIssuesData.ts');
+  const announcements = await read('src/composables/useAnnouncements.ts');
+  const comments = await read('src/composables/useDiscussionComments.ts');
+  const issueBoard = await read('src/composables/useIssueBoardData.ts');
+  const announcementManagement = await read('src/composables/useAnnouncementManagement.ts');
+  const facilities = await read('src/composables/useFacilities.ts');
+  const realtime = await read('src/services/realtime-events.ts');
+  const session = await read('src/composables/useSession.ts');
+  const sessionEffects = await read('src/composables/sessionEffects.ts');
+
+  assert.match(issueBuckets, /subscribeContentCacheInvalidations[\s\S]*issue-list-page\|[\s\S]*invalidateIssueBucketMemory/u);
+  assert.match(issueBuckets, /function removeIssueFromBuckets[\s\S]*filter\(\(issue\) => issue\.id !== issueId\)[\s\S]*function invalidateIssueBuckets/u);
+  assert.doesNotMatch(
+    issueBuckets,
+    /function removeIssueFromBuckets[\s\S]*bucket\.updatedAt = Date\.now\(\)[\s\S]*function invalidateIssueBuckets/u,
+  );
+  assert.match(userIssues, /subscribeContentCacheInvalidations[\s\S]*user-issue-list-page\|[\s\S]*invalidateUserIssueMemory/u);
+  assert.match(announcements, /subscribeContentCacheInvalidations[\s\S]*announcement-list-page\|[\s\S]*state\.updatedAt = 0/u);
+  assert.match(comments, /issue-comments-page\|[\s\S]*issue-comments-state[\s\S]*announcement-comments-page\|[\s\S]*announcement-comments-state/u);
+  assert.match(realtime, /synchronizeRealtimeVersion\(event\)/u);
+  assert.match(realtime, /hasContentVersionGap\(domain, event\.version\)[\s\S]*ensureContentVersionsFresh\(\{ notify: true \}\)/u);
+  assert.match(realtime, /startContentRealtimeSession[\s\S]*realtimeSessionActive = true/u);
+  assert.match(session, /startContentRealtimeSession\(\)/u);
+  assert.match(sessionEffects, /stopContentRealtimeSession\(\)/u);
+  for (const viewFlow of [issueBoard, announcementManagement, facilities]) {
+    assert.doesNotMatch(viewFlow, /hasContentVersionGap|registerContentVersion/u);
+  }
 });
