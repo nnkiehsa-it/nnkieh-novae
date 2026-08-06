@@ -42,8 +42,7 @@
   }
 
   .app-bottom-nav__item--active {
-    background-color: rgb(var(--color-secondary-container) / 0.52);
-    color: rgb(var(--color-on-secondary-container));
+    @apply bg-ink-100/90 text-ink-900 shadow-control dark:bg-ink-800/80 dark:text-ink-100;
   }
 
   .app-bottom-nav__item--active:is(:active, .is-pressing):not([aria-disabled='true']) {

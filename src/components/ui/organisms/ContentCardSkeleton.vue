@@ -10,21 +10,23 @@
         class="skeleton-card"
         :style="{ '--skeleton-enter-index': index - 1 }"
       >
-        <header class="flex min-w-0 items-center gap-2">
-          <SkeletonBlock class="h-5 w-14 shrink-0 rounded-full" />
-          <SkeletonBlock class="ml-auto h-3 w-20 rounded" />
-        </header>
-
-        <div class="mt-3 flex min-w-0 items-center gap-2.5">
+        <header class="flex items-start gap-3">
           <SkeletonBlock
             v-if="showAuthor"
-            class="h-8 w-8 shrink-0 rounded-full"
+            class="h-10 w-10 shrink-0 rounded-full"
           />
-          <div class="min-w-0 flex-1 space-y-2">
-            <SkeletonBlock class="block h-4 w-4/5 rounded" />
-            <SkeletonBlock v-if="showAuthor" class="block h-3 w-2/5 rounded" />
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <SkeletonBlock v-if="showAuthor" class="h-3.5 w-20 rounded" />
+              <SkeletonBlock class="h-3 w-14 shrink-0 rounded" />
+              <SkeletonBlock class="ml-auto h-5 w-14 shrink-0 rounded-full" />
+            </div>
+            <div class="mt-1 space-y-1.5">
+              <SkeletonBlock class="block h-4 w-4/5 rounded" />
+              <SkeletonBlock class="block h-4 w-3/5 rounded" />
+            </div>
           </div>
-        </div>
+        </header>
 
         <SurfacePanel
           v-if="supplement !== 'none'"

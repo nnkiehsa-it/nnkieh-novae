@@ -56,6 +56,7 @@
 - `styles/primitives.css` — viewport、control／card／floating 表面與陰影、list、dropdown、control frame、GPU progress fill 的單一可復用視覺契約；Tailwind 陰影名稱同樣只使用 `shadow-control`、`shadow-card`、`shadow-floating`
 - `styles/components.css` / `controls.css` — 共用表面、互動狀態、按鈕與欄位；全域點擊回饋使用無位移的輕微放大與 spring-like 回彈，大型表面降低幅度；Pill 指示器的連續位移交給 Motion spring
 - `styles/navigation.css` — 桌面側欄與手機底部導覽；手機底部導覽使用不取樣背景的穩定 surface、靜態柔和 active 與保留有色按壓回饋；浮入與 scrim 使用 opacity／局部 transform，窄桌面側欄展開不再推動整個內容 viewport
+- `components/ui/organisms/ContentCardShell.vue` / `ContentCardSkeleton.vue` — 提案、設備與公告共用列表卡片骨架；loading skeleton 與實際卡片共用頭像、作者／時間／狀態列及雙行標題的排列契約
 - `styles/content.css` / `responsive.css` — 列表、設定、統計、Dialog 與跨裝置覆寫；手機詳情 feed 為 fixed 留言 Composer 預留 Bottom Tab／safe-area 捲動空間，dock 水平位置沿用 viewport primitive；Dialog 根節點保留 Vue transition 生命週期，surface 與獨立全畫面 backdrop 延後分層進場，blur 維持固定值只動畫 opacity
 - `assets/fonts/` — JetBrains Mono 與 Material Symbols 子集
 - `router/index.ts` / `router/default-route.ts` / `router/route-components.ts` / `router/navigation-hierarchy.ts` — 組合 modules、依啟用功能選擇登入預設頁並阻擋已關閉入口、abort 上一頁、session guard、主要頁面與三領域新增頁 chunk 預載，以及 root／新增／子頁／巢狀詳情深度與通知來源返回

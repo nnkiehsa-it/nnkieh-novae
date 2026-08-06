@@ -166,7 +166,7 @@ test('primary navigation keeps desktop chrome and persistent mobile navigation',
   assert.doesNotMatch(mobileBottomNav, /app-bottom-nav__active-indicator|activeIndex|MOTION_SMOOTH_SPRING/u);
   assert.match(mobileBottomNav, /app-bottom-nav__item--active/u);
   assert.match(navigationStyles, /\.app-bottom-nav \{[\s\S]*contain: layout paint/u);
-  assert.match(navigationStyles, /\.app-bottom-nav__item--active \{[\s\S]*secondary-container/u);
+  assert.match(navigationStyles, /\.app-bottom-nav__item--active \{[\s\S]*bg-ink-100\/90[\s\S]*shadow-control[\s\S]*dark:bg-ink-800\/80/u);
   assert.match(baseStyles, /\.app-root\[data-sidebar='false'\] \.app-main-content/u);
   assert.match(appShell, /<ViewportFrame as="main" class="flex min-h-0 flex-1 flex-col">/u);
   assert.match(navigationStyles, /\.mobile-nav-enter-from,[\s\S]*translate3d\(0, 18px, 0\) scale\(0\.96\)/u);
