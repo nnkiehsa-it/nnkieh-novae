@@ -123,7 +123,8 @@ test('primary navigation keeps desktop chrome and persistent mobile navigation',
   assert.match(appShell, /@pointerover\.capture="handleNavigationIntent"/u);
   assert.match(appShell, /preloadRoutePath/u);
   assert.match(routeComponents, /preloadRequests/u);
-  assert.match(routeComponents, /for \(const routeName of routeNames\)/u);
+  assert.match(routeComponents, /const routeNames = \[[\s\S]*'announcement-create'[\s\S]*'facility-create'[\s\S]*'issue-create'[\s\S]*'setup'[\s\S]*includeAdmin \? \['dashboard'\][\s\S]*includeAdmin \? \['administration'\]/u);
+  assert.match(routeComponents, /await Promise\.all\(routeNames\.map\(preloadRouteComponent\)\)/u);
   assert.match(routeComponents, /loadIssueComposerView[\s\S]*loadFacilityComposerView[\s\S]*loadAnnouncementComposerView/u);
   assert.match(routeComponents, /\/facilities\/new[\s\S]*facility-create[\s\S]*\/announcements\/new[\s\S]*announcement-create/u);
   assert.match(defaultRoute, /isRouteEnabledByFeatures/u);

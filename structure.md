@@ -49,7 +49,7 @@
 
 - `main.ts` — 掛載 app、resume、PWA、session
 - `i18n/` — `messages/<locale>/<domain>.ts` 依語系與領域拆分的 catalog（含 API error code 對應文案）、系統語言首次偵測、localStorage 語言偏好、日期 locale 與共用 `t()`；所有前端可見字串只放語系目錄，key 使用短而穩定的語意命名
-- `App.vue` — startup gate + AppShell；版本檢查在首屏後非阻塞執行，偵測到更新時取消尚未開始的路由預載；全域以 MotionConfig 尊重 reduced motion，LazyMotion 延後載入 DOM layout 功能；route stage 使用固定 Grid 疊放新舊頁，依 navigation depth 以 smooth opacity／短距位移表達前進、返回與同層切換
+- `App.vue` — startup gate + AppShell；版本檢查在首屏後非阻塞執行，偵測到更新時取消尚未開始的路由預載；登入後於閒置時平行預載全部一般路由 chunk，管理頁 chunk 只對管理員預載；全域以 MotionConfig 尊重 reduced motion，LazyMotion 延後載入 DOM layout 功能；route stage 使用固定 Grid 疊放新舊頁，依 navigation depth 以 smooth opacity／短距位移表達前進、返回與同層切換
 - `sw.ts` — PWA SW、快取策略、FCM 背景通知
 - `style.css` — 全域樣式載入入口；依序載入 base、primitives 與領域樣式
 - `styles/base.css` — design tokens、全域基礎與頁面骨架；所有捲動容器全域隱藏原生捲動條但保留滾輪／觸控／鍵盤操作，route frame 維持同一 Grid 疊放，實際轉場由 App 的 Motion 層負責
