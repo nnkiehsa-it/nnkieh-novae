@@ -1,4 +1,4 @@
-import { readdir, stat } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 
 const assetsDirectory = path.resolve('dist', 'assets');
@@ -12,6 +12,7 @@ const sum = (extension) => assets
   .filter((asset) => asset.name.endsWith(extension))
   .reduce((total, asset) => total + asset.size, 0);
 const fonts = assets.filter((asset) => asset.name.endsWith('.woff2'));
+const cssAssets = assets.filter((asset) => asset.name.endsWith('.css'));
 const limits = {
   cssBytes: 550 * 1024,
   fontBytes: 9.2 * 1024 * 1024,
@@ -32,6 +33,23 @@ const exceeded = Object.entries(limits)
 
 if (exceeded.length > 0) {
   throw new Error(`Build budget exceeded:\n${exceeded.join('\n')}`);
+}
+
+const bundledCss = (await Promise.all(
+  cssAssets.map((asset) => readFile(path.join(assetsDirectory, asset.name), 'utf8')),
+)).join('\n');
+const dialogBackdropDeclarations = bundledCss
+  .match(/\.dialog-overlay\[data-backdrop=dimmed\]\{([^}]*)\}/u)?.[1];
+const dialogBackdropCompatibility = {
+  standard: /(?:^|;)backdrop-filter:/u.test(dialogBackdropDeclarations ?? ''),
+  webkit: /(?:^|;)-webkit-backdrop-filter:/u.test(dialogBackdropDeclarations ?? ''),
+};
+
+if (!dialogBackdropCompatibility.standard || !dialogBackdropCompatibility.webkit) {
+  throw new Error(
+    'Dialog backdrop compatibility check failed: the production CSS must include '
+    + 'both backdrop-filter and -webkit-backdrop-filter.',
+  );
 }
 
 console.info(

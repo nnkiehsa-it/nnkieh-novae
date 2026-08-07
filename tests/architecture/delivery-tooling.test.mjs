@@ -256,6 +256,7 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   assert.match(dialogShell, /:open="rootOpen"[\s\S]*@after-leave="handleAfterLeave"[\s\S]*v-if="visible"/u);
   assert.doesNotMatch(dialogShell, /useBodyScrollLock|useDialogFocus|useBottomSheetDrag/u);
   assert.match(responsiveStyles, /\.dialog-overlay\[data-backdrop='dimmed'\] \{[\s\S]*blur\(12px\) saturate\(0\.88\)/u);
+  assert.doesNotMatch(responsiveStyles, /-webkit-backdrop-filter/u);
   assert.match(responsiveStyles, /\.dialog-backdrop \{[\s\S]*background-color: transparent;[\s\S]*position: fixed;[\s\S]*inset: 0;/u);
   assert.match(responsiveStyles, /\.dialog-enter-active \{[\s\S]*visibility 300ms/u);
   assert.match(responsiveStyles, /\.dialog-leave-active \{[\s\S]*visibility 190ms/u);

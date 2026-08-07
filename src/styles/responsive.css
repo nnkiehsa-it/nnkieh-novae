@@ -10,7 +10,6 @@
 .dialog-overlay[data-backdrop='dimmed'] {
   background-color: rgb(var(--color-shadow) / var(--dialog-backdrop-alpha));
   backdrop-filter: blur(12px) saturate(0.88);
-  -webkit-backdrop-filter: blur(12px) saturate(0.88);
 }
 
 .dialog-backdrop {
