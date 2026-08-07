@@ -185,6 +185,9 @@ export default defineConfig(({ mode }) => {
           },
           manualChunks(id) {
             if (id.includes('node_modules')) {
+              if (id.includes('node_modules/modern-screenshot/')) {
+                return 'dialog-snapshot';
+              }
               if (id.includes('node_modules/@firebase/messaging/') || id.includes('node_modules/firebase/messaging/')) {
                 return;
               }

@@ -249,17 +249,19 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   }
   assert.match(tableGridPicker, /event\.key === ' '/u);
   assert.match(dialogShell, /<DrawerRoot[\s\S]*<DrawerContent[\s\S]*<DialogRoot[\s\S]*<DialogContent/u);
-  assert.match(dialogShell, /<div class="dialog-backdrop" aria-hidden="true"><\/div>[\s\S]*<DrawerContent[\s\S]*<div class="dialog-backdrop" aria-hidden="true"><\/div>[\s\S]*<DialogContent/u);
-  assert.doesNotMatch(dialogShell, /DialogOverlay|DrawerOverlay/u);
-  assert.match(dialogShell, /activeBodyScrollLocks[\s\S]*document\.body\.style\.overflow = 'hidden'[\s\S]*document\.body\.style\.overflow = savedBodyOverflow/u);
+  assert.match(dialogShell, /<div class="dialog-backdrop" aria-hidden="true">[\s\S]*v-if="backdropSnapshotUrl"[\s\S]*<DrawerOverlay force-mount class="dialog-backdrop-behavior" \/>[\s\S]*<DrawerContent/u);
+  assert.match(dialogShell, /<DialogOverlay force-mount class="dialog-backdrop-behavior" \/>[\s\S]*<DialogContent/u);
+  assert.match(dialogShell, /import\('modern-screenshot'\)[\s\S]*domToBlob[\s\S]*image\.decode\(\)/u);
+  assert.doesNotMatch(dialogShell, /activeBodyScrollLocks|setBodyScrollLock/u);
   assert.match(dialogShell, /handleDismissEvent[\s\S]*event\.preventDefault\(\)/u);
   assert.match(dialogShell, /:open="rootOpen"[\s\S]*@after-leave="handleAfterLeave"[\s\S]*v-if="visible"/u);
   assert.doesNotMatch(dialogShell, /useBodyScrollLock|useDialogFocus|useBottomSheetDrag/u);
-  assert.match(responsiveStyles, /\.dialog-overlay\[data-backdrop='dimmed'\] \{[\s\S]*blur\(12px\) saturate\(0\.88\)/u);
-  assert.match(responsiveStyles, /\.dialog-backdrop \{[\s\S]*background-color: transparent;[\s\S]*position: fixed;[\s\S]*inset: 0;/u);
+  assert.match(responsiveStyles, /\.dialog-overlay\[data-backdrop='dimmed'\] \{[\s\S]*background-color: rgb\(var\(--color-shadow\) \/ var\(--dialog-backdrop-alpha\)\);/u);
+  assert.match(responsiveStyles, /\.dialog-backdrop \{[\s\S]*position: fixed;[\s\S]*inset: 0;/u);
+  assert.match(responsiveStyles, /\.dialog-backdrop__snapshot \{[\s\S]*filter: blur\(12px\) saturate\(0\.88\);/u);
   assert.match(responsiveStyles, /\.dialog-enter-active \{[\s\S]*visibility 300ms/u);
   assert.match(responsiveStyles, /\.dialog-leave-active \{[\s\S]*visibility 190ms/u);
-  assert.doesNotMatch(responsiveStyles, /\.dialog-backdrop \{[\s\S]{0,240}backdrop-filter/u);
+  assert.doesNotMatch(responsiveStyles, /\.dialog-overlay\[data-backdrop='dimmed'\] \{[\s\S]{0,240}backdrop-filter/u);
   assert.match(responsiveStyles, /\.dialog-enter-active \[data-dialog-root\] \{[\s\S]*transform 300ms var\(--motion-ease-enter\)/u);
   assert.match(responsiveStyles, /\.dialog-leave-active \[data-dialog-root\] \{[\s\S]*transform 190ms var\(--motion-ease-exit\)/u);
   assert.match(responsiveStyles, /--drawer-swipe-movement-y/u);

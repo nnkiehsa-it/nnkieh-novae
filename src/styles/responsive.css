@@ -9,18 +9,33 @@
 
 .dialog-overlay[data-backdrop='dimmed'] {
   background-color: rgb(var(--color-shadow) / var(--dialog-backdrop-alpha));
-  backdrop-filter: blur(12px) saturate(0.88);
-  -webkit-backdrop-filter: blur(12px) saturate(0.88);
 }
 
 .dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.dialog-backdrop__snapshot {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.04);
+  transform-origin: center;
+  width: 100%;
+  filter: blur(12px) saturate(0.88);
+}
+
+.dialog-backdrop-behavior {
   background-color: transparent;
   position: fixed;
   inset: 0;
   z-index: 0;
 }
 
-.dialog-overlay[data-backdrop='none'] > .dialog-backdrop {
+.dialog-overlay[data-backdrop='none'] > :is(.dialog-backdrop, .dialog-backdrop-behavior) {
   display: none;
 }
 
