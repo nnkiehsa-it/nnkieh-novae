@@ -253,11 +253,11 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   assert.match(dialogShell, /handleDismissEvent[\s\S]*event\.preventDefault\(\)/u);
   assert.match(dialogShell, /:open="rootOpen"[\s\S]*@after-leave="handleAfterLeave"[\s\S]*v-if="visible"/u);
   assert.doesNotMatch(dialogShell, /useBodyScrollLock|useDialogFocus|useBottomSheetDrag/u);
-  assert.match(responsiveStyles, /\.dialog-backdrop \{[\s\S]*blur\(12px\) saturate\(0\.88\)[\s\S]*position: fixed;[\s\S]*inset: 0;/u);
+  assert.match(responsiveStyles, /\.dialog-overlay\[data-backdrop='dimmed'\] \{[\s\S]*blur\(12px\) saturate\(0\.88\)/u);
+  assert.match(responsiveStyles, /\.dialog-backdrop \{[\s\S]*background-color: transparent;[\s\S]*position: fixed;[\s\S]*inset: 0;/u);
   assert.match(responsiveStyles, /\.dialog-enter-active \{[\s\S]*visibility 300ms/u);
   assert.match(responsiveStyles, /\.dialog-leave-active \{[\s\S]*visibility 190ms/u);
-  assert.match(responsiveStyles, /\.dialog-enter-active \.dialog-backdrop \{[\s\S]*opacity 220ms/u);
-  assert.doesNotMatch(responsiveStyles, /\.dialog-enter-active \.dialog-backdrop \{[\s\S]{0,240}backdrop-filter/u);
+  assert.doesNotMatch(responsiveStyles, /\.dialog-backdrop \{[\s\S]{0,240}backdrop-filter/u);
   assert.match(responsiveStyles, /\.dialog-enter-active \[data-dialog-root\] \{[\s\S]*transform 300ms var\(--motion-ease-enter\)/u);
   assert.match(responsiveStyles, /\.dialog-leave-active \[data-dialog-root\] \{[\s\S]*transform 190ms var\(--motion-ease-exit\)/u);
   assert.match(responsiveStyles, /--drawer-swipe-movement-y/u);

@@ -7,16 +7,17 @@
   width: 100dvw;
 }
 
-.dialog-backdrop {
+.dialog-overlay[data-backdrop='dimmed'] {
   background-color: rgb(var(--color-shadow) / var(--dialog-backdrop-alpha));
   backdrop-filter: blur(12px) saturate(0.88);
   -webkit-backdrop-filter: blur(12px) saturate(0.88);
+}
+
+.dialog-backdrop {
+  background-color: transparent;
   position: fixed;
   inset: 0;
-  opacity: var(--sheet-backdrop-opacity, 1);
-  pointer-events: none;
   z-index: 0;
-  transform: translateZ(0);
 }
 
 .dialog-overlay[data-backdrop='none'] > .dialog-backdrop {
@@ -227,7 +228,6 @@
 }
 
 .dialog-overlay[data-presentation='sheet'] {
-  --sheet-backdrop-opacity: 1;
   align-items: flex-end;
   justify-content: center;
   padding: 0 max(0.5rem, env(safe-area-inset-right)) max(0.5rem, env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-left));
@@ -323,7 +323,9 @@
 .dialog-enter-active {
   /* Vue measures the transition root, not its descendants. This non-visual
      transition keeps the child backdrop and surface classes alive. */
-  transition: visibility 300ms linear;
+  transition:
+    background-color 220ms var(--motion-ease-enter),
+    visibility 300ms linear;
 }
 
 .dialog-overlay[data-backdrop='none'].dialog-enter-active {
@@ -335,17 +337,9 @@
 }
 
 .dialog-leave-active {
-  transition: visibility 190ms linear;
-}
-
-.dialog-enter-active .dialog-backdrop {
-  transition: opacity 220ms var(--motion-ease-enter);
-  will-change: opacity;
-}
-
-.dialog-leave-active .dialog-backdrop {
-  transition: opacity 170ms var(--motion-ease-exit);
-  will-change: opacity;
+  transition:
+    background-color 170ms var(--motion-ease-exit),
+    visibility 190ms linear;
 }
 
 .dialog-enter-active [data-dialog-root] {
@@ -362,9 +356,9 @@
   will-change: transform, opacity;
 }
 
-.dialog-enter-from .dialog-backdrop,
-.dialog-leave-to .dialog-backdrop {
-  opacity: 0;
+.dialog-enter-from[data-backdrop='dimmed'],
+.dialog-leave-to[data-backdrop='dimmed'] {
+  background-color: transparent;
 }
 
 .dialog-overlay[data-backdrop='none'].dialog-enter-from,
