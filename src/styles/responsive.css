@@ -5,8 +5,6 @@
   min-height: 0;
   overflow: hidden;
   width: 100dvw;
-  contain: paint;
-  isolation: isolate;
 }
 
 .dialog-backdrop {

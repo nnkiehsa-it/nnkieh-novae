@@ -50,6 +50,15 @@ function normalizeRedirectPath(value: unknown) {
   return path;
 }
 
+async function ensureCategoryCatalogForNavigation() {
+  try {
+    await ensureCategoryCatalog();
+  } catch {
+    // The authenticated route can use feature defaults until the catalog reloads.
+    // Never leave an accepted user on /login because this optional read failed.
+  }
+}
+
 async function resolveAuthenticatedDestination(
   to: { name?: unknown; fullPath: string; query: Record<string, unknown>; meta: { setupAllowed?: boolean } },
   session: ReturnType<typeof useSession>,
@@ -64,7 +73,7 @@ async function resolveAuthenticatedDestination(
   }
 
   if (session.setupCompleted.value) {
-    await ensureCategoryCatalog();
+    await ensureCategoryCatalogForNavigation();
     if (to.name === 'setup' || !isFeatureRouteEnabled(to.name)) {
       return getDefaultAuthenticatedRoute();
     }
@@ -84,7 +93,7 @@ router.beforeEach(async (to) => {
     const roleReady = await waitForRoleReady();
     if (!roleReady) return false;
     if (!session.setupCompleted.value) return { name: 'setup' };
-    await ensureCategoryCatalog();
+    await ensureCategoryCatalogForNavigation();
     return normalizeRedirectPath(to.query.redirect) || getDefaultAuthenticatedRoute();
   }
 
