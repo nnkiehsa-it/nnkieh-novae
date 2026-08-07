@@ -16,7 +16,7 @@
           :data-padding="paddingMode"
           data-presentation="sheet"
         >
-          <DrawerOverlay force-mount class="dialog-backdrop" />
+          <div class="dialog-backdrop" aria-hidden="true"></div>
           <DrawerContent
             force-mount
             as="section"
@@ -61,7 +61,7 @@
           :data-padding="paddingMode"
           :data-presentation="resolvedPresentation"
         >
-          <DialogOverlay force-mount class="dialog-backdrop" />
+          <div class="dialog-backdrop" aria-hidden="true"></div>
           <DialogContent
             force-mount
             as="section"
@@ -92,14 +92,12 @@
 import {
   DialogContent,
   DialogDescription,
-  DialogOverlay,
   DialogPortal,
   DialogRoot,
   DialogTitle,
   DrawerContent,
   DrawerDescription,
   DrawerHandle,
-  DrawerOverlay,
   DrawerPortal,
   DrawerRoot,
   DrawerTitle,
@@ -152,9 +150,12 @@ type DrawerOpenChangeDetails = { reason?: string };
 let pendingCloseReason: CloseReason = 'overlay';
 let shouldRestoreFocus = false;
 let focusScrollFrame: number | null = null;
+let activeBodyScrollLocks = 0;
+let savedBodyOverflow = '';
 const rootOpen = ref(props.open);
 const visible = ref(props.open);
 const restoreFocusTarget = ref<HTMLElement | null>(null);
+let hasBodyScrollLock = false;
 
 watch(
   () => props.open,
@@ -168,6 +169,28 @@ watch(
   },
   { immediate: true },
 );
+
+function setBodyScrollLock(shouldLock: boolean) {
+  if (typeof document === 'undefined' || shouldLock === hasBodyScrollLock) return;
+  hasBodyScrollLock = shouldLock;
+
+  if (shouldLock) {
+    if (activeBodyScrollLocks === 0) {
+      savedBodyOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+    }
+    activeBodyScrollLocks += 1;
+    return;
+  }
+
+  activeBodyScrollLocks = Math.max(0, activeBodyScrollLocks - 1);
+  if (activeBodyScrollLocks === 0) {
+    document.body.style.overflow = savedBodyOverflow;
+    savedBodyOverflow = '';
+  }
+}
+
+watch(visible, setBodyScrollLock, { immediate: true });
 
 function handleAfterLeave() {
   if (visible.value) return;
@@ -236,6 +259,7 @@ function keepFocusedControlVisible(event: FocusEvent) {
 }
 
 onBeforeUnmount(() => {
+  setBodyScrollLock(false);
   if (focusScrollFrame !== null) cancelAnimationFrame(focusScrollFrame);
 });
 

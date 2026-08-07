@@ -249,7 +249,9 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   }
   assert.match(tableGridPicker, /event\.key === ' '/u);
   assert.match(dialogShell, /<DrawerRoot[\s\S]*<DrawerContent[\s\S]*<DialogRoot[\s\S]*<DialogContent/u);
-  assert.match(dialogShell, /DrawerOverlay force-mount[\s\S]*DialogOverlay force-mount/u);
+  assert.match(dialogShell, /<div class="dialog-backdrop" aria-hidden="true"><\/div>[\s\S]*<DrawerContent[\s\S]*<div class="dialog-backdrop" aria-hidden="true"><\/div>[\s\S]*<DialogContent/u);
+  assert.doesNotMatch(dialogShell, /DialogOverlay|DrawerOverlay/u);
+  assert.match(dialogShell, /activeBodyScrollLocks[\s\S]*document\.body\.style\.overflow = 'hidden'[\s\S]*document\.body\.style\.overflow = savedBodyOverflow/u);
   assert.match(dialogShell, /handleDismissEvent[\s\S]*event\.preventDefault\(\)/u);
   assert.match(dialogShell, /:open="rootOpen"[\s\S]*@after-leave="handleAfterLeave"[\s\S]*v-if="visible"/u);
   assert.doesNotMatch(dialogShell, /useBodyScrollLock|useDialogFocus|useBottomSheetDrag/u);
