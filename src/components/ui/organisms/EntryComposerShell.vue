@@ -97,7 +97,7 @@
             :disabled="blocked || submitDisabled"
             :aria-busy="busy || undefined"
           >
-            <BusyButtonContent :busy="busy" :label="t(submitLabel)" :busy-label="t(busyLabel)" />
+            <BusyButtonContent :busy="busy" :state="state" :label="t(submitLabel)" :busy-label="t(busyLabel)" />
           </AppButton>
         </div>
       </div>
@@ -126,6 +126,7 @@ import SurfacePanel from '@/components/ui/molecules/SurfacePanel.vue';
 import MarkdownImageEditor, { type MarkdownEditorImage } from '@/components/ui/organisms/MarkdownImageEditor.vue';
 import { INPUT_LIMITS } from '@/constants/input-limits';
 import { useI18n } from '@/i18n';
+import type { ActionPhase } from '@/composables/useActionFeedback';
 
 const entryTitle = defineModel<string>('entryTitle', { required: true });
 const content = defineModel<string>('content', { required: true });
@@ -150,6 +151,7 @@ const props = withDefaults(defineProps<{
   maxImages: number;
   maxImagesLabel: string;
   submitDisabled?: boolean;
+  state?: ActionPhase;
   submitLabel: string;
   title: string;
   titleInputId: string;
@@ -170,6 +172,7 @@ const props = withDefaults(defineProps<{
   locationPlaceholder: '',
   locationWarningLength: 108,
   submitDisabled: false,
+  state: 'idle',
   titlePlaceholder: '',
   titleRequired: false,
   uploading: false,

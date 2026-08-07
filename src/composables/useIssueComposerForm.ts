@@ -37,6 +37,7 @@ export function useIssueComposerForm(options: IssueComposerFormOptions) {
   const submitting = ref(false);
   const showPreview = ref(false);
   const error = ref('');
+  const feedbackPhase = ref<'idle' | 'busy' | 'success'>('idle');
 
   function resetForm() {
     form.title = '';
@@ -81,6 +82,7 @@ export function useIssueComposerForm(options: IssueComposerFormOptions) {
 
     submitting.value = true;
     const feedbackHandle = start('issue.sendingProposal');
+    feedbackPhase.value = 'busy';
     let uploadedImages: Awaited<ReturnType<typeof uploadImagesAndBuildContent>>['uploadedImages'] = [];
 
     try {
@@ -95,9 +97,11 @@ export function useIssueComposerForm(options: IssueComposerFormOptions) {
         category: options.category.value,
       });
 
+      feedbackHandle.succeed('issue.proposalHasBeenSent');
+      feedbackPhase.value = 'success';
+      await feedbackHandle.complete();
       resetForm();
       options.onSubmitted(issue);
-      feedbackHandle.succeed('issue.proposalHasBeenSent');
     } catch (caught) {
       if (uploadedImages.length) {
         await deleteUploadedImages(uploadedImages);
@@ -105,6 +109,7 @@ export function useIssueComposerForm(options: IssueComposerFormOptions) {
       error.value = caught instanceof Error ? caught.message : 'issue.sendingFailedPleaseTryAgainLater';
       feedbackHandle.fail(error.value);
     } finally {
+      feedbackPhase.value = 'idle';
       submitting.value = false;
     }
   }
@@ -120,6 +125,7 @@ export function useIssueComposerForm(options: IssueComposerFormOptions) {
     submitting,
     showPreview,
     error,
+    feedbackPhase,
     handleClose,
     submit,
   };

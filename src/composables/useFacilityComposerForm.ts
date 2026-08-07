@@ -13,6 +13,7 @@ export function useFacilityComposerForm(initialCategoryId: Ref<string>, onClose:
   const submitting = ref(false);
   const error = ref('');
   const showPreview = ref(false);
+  const feedbackPhase = ref<'idle' | 'busy' | 'success'>('idle');
   const { show, start } = useActionFeedback();
 
   function reset() {
@@ -47,6 +48,7 @@ export function useFacilityComposerForm(initialCategoryId: Ref<string>, onClose:
     }
     submitting.value = true;
     const feedback = start('facility.submittingFacilityReport');
+    feedbackPhase.value = 'busy';
     let uploaded: Awaited<ReturnType<typeof images.uploadImagesAndBuildContent>>['uploadedImages'] = [];
     try {
       if (images.imageUrls.value.length > 0) feedback.update('facility.uploadingImages');
@@ -54,12 +56,15 @@ export function useFacilityComposerForm(initialCategoryId: Ref<string>, onClose:
       uploaded = result.uploadedImages;
       feedback.update('facility.creatingFacilityReport');
       const facility = await createFacility({ categoryId: form.categoryId, title: form.title.trim(), location: form.location.trim(), content: result.content });
-      reset(); onSubmitted(facility); feedback.succeed('facility.facilityReportSubmitted');
+      feedback.succeed('facility.facilityReportSubmitted');
+      feedbackPhase.value = 'success';
+      await feedback.complete();
+      reset(); onSubmitted(facility);
     } catch (caught) {
       if (uploaded.length) await images.deleteUploadedImages(uploaded);
       error.value = caught instanceof Error ? caught.message : 'facility.sendingFailed';
       feedback.fail(error.value);
-    } finally { submitting.value = false; }
+    } finally { feedbackPhase.value = 'idle'; submitting.value = false; }
   }
 
   return {
@@ -69,6 +74,7 @@ export function useFacilityComposerForm(initialCategoryId: Ref<string>, onClose:
     images,
     showPreview,
     submitting,
+    feedbackPhase,
     close,
     submit,
   };

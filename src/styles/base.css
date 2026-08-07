@@ -379,9 +379,7 @@
     }
 
     .app-header {
-      -webkit-backdrop-filter: blur(12px);
-      backdrop-filter: blur(12px);
-      background-color: rgb(var(--color-page-background) / 0.88);
+      background-color: rgb(var(--color-page-background));
       box-shadow: none;
     }
 

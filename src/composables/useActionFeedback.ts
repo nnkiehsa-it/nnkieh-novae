@@ -1,4 +1,4 @@
-import { readonly, ref } from 'vue';
+import { readonly, ref, type Ref } from 'vue';
 
 export type FeedbackTone = 'info' | 'progress' | 'success' | 'warning' | 'error';
 
@@ -20,11 +20,15 @@ export interface FeedbackItem extends FeedbackOptions {
 }
 
 export interface FeedbackHandle {
+  readonly phase: Readonly<Ref<ActionPhase>>;
+  complete: () => Promise<void>;
   dismiss: () => void;
   fail: (message: string, action?: FeedbackAction) => void;
   succeed: (message: string) => void;
   update: (message: string) => void;
 }
+
+export type ActionPhase = 'idle' | 'busy' | 'success';
 
 interface RunFeedbackCopy<TResult> {
   action?: FeedbackAction;
@@ -98,12 +102,37 @@ export function useActionFeedback() {
   }
 
   function start(message: string): FeedbackHandle {
-    const id = show(message, 'progress');
+    dismiss();
+    const id = nextFeedbackId++;
+    const phase = ref<ActionPhase>('busy');
+    let successMessage = '';
+    let completion: Promise<void> | null = null;
+    const complete = async () => {
+      if (!completion) {
+        completion = new Promise((resolve) => {
+          window.setTimeout(() => {
+            phase.value = 'idle';
+            if (successMessage) show(successMessage, 'success');
+            resolve();
+          }, 420);
+        });
+      }
+      await completion;
+    };
     return {
+      phase: readonly(phase),
+      complete,
       dismiss: () => dismiss(id),
-      fail: (nextMessage, action) => update(id, nextMessage, 'error', action),
-      succeed: (nextMessage) => update(id, nextMessage, 'success'),
-      update: (nextMessage) => update(id, nextMessage, 'progress'),
+      fail: (nextMessage, action) => {
+        phase.value = 'idle';
+        show({ message: nextMessage, tone: 'error', action });
+      },
+      succeed: (nextMessage) => {
+        successMessage = nextMessage;
+        phase.value = 'success';
+        void complete();
+      },
+      update: (_nextMessage) => {},
     };
   }
 
@@ -115,6 +144,7 @@ export function useActionFeedback() {
     try {
       const result = await operation();
       handle.succeed(typeof copy.success === 'function' ? copy.success(result) : copy.success);
+      await handle.complete();
       return result;
     } catch (error) {
       handle.fail(typeof copy.error === 'function' ? copy.error(error) : copy.error, copy.action);

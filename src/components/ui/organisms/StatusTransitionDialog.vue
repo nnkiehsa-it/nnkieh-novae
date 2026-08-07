@@ -68,7 +68,7 @@
         @click="handlePrimary"
       >
         <BusyButtonContent
-          :busy="saving"
+          :state="savingState"
           :label="primaryLabel"
           :busy-label="t('app.update.updating')"
         />
@@ -89,6 +89,7 @@ import DialogHeading from "@/components/ui/molecules/DialogHeading.vue";
 import DialogShell from "@/components/ui/organisms/DialogShell.vue";
 import SelectionOptionButton from "@/components/ui/molecules/SelectionOptionButton.vue";
 import { useI18n } from "@/i18n";
+import type { ActionPhase } from "@/composables/useActionFeedback";
 
 interface StatusOption {
   description: string;
@@ -114,6 +115,7 @@ const props = withDefaults(
     resultTitle: string;
     resultWarningLength: number;
     saving?: boolean;
+    savingState?: ActionPhase;
     selectDescription?: string;
     selectTitle: string;
     statusWarnings?: Record<string, string>;
@@ -122,6 +124,7 @@ const props = withDefaults(
     error: "",
     initialResult: "",
     saving: false,
+    savingState: 'idle',
     selectDescription: "common.pleaseSelectTheNextStatus",
     statusWarnings: () => ({}),
   },

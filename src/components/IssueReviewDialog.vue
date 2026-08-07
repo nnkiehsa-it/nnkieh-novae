@@ -70,7 +70,7 @@
         @click="handlePrimaryClick"
       >
         <BusyButtonContent
-          :busy="saving"
+          :state="feedbackPhase"
           :label="idlePrimaryLabel"
           busy-label="app.update.updating"
         />
@@ -124,6 +124,7 @@ const rejectionReason = ref(props.issue.review_rejection_reason ?? "");
 const saving = ref(false);
 const errorMsg = ref("");
 const { start } = useActionFeedback();
+const feedbackPhase = ref<"idle" | "busy" | "success">("idle");
 
 const idlePrimaryLabel = computed(() => {
   if (step.value === 1) {
@@ -164,11 +165,14 @@ async function submitReview() {
   saving.value = true;
   errorMsg.value = "";
   const feedbackHandle = start("issue.updatingProposalReview");
+  feedbackPhase.value = "busy";
   try {
     if (reviewDecision.value === "approved") {
       const updated = await moderateIssueStatus(props.issue.id, "pending");
-      emit("success", updated);
       feedbackHandle.succeed("issue.proposalReviewPassed");
+      feedbackPhase.value = "success";
+      await feedbackHandle.complete();
+      emit("success", updated);
       emit("close");
     } else {
       const reason = rejectionReason.value.replace(/\s+/g, " ").trim();
@@ -183,8 +187,10 @@ async function submitReview() {
         "review-rejected",
         reason,
       );
-      emit("success", updated);
       feedbackHandle.succeed("issue.proposalReviewUpdated");
+      feedbackPhase.value = "success";
+      await feedbackHandle.complete();
+      emit("success", updated);
       emit("close");
     }
   } catch (caught) {
@@ -194,6 +200,7 @@ async function submitReview() {
         : "issue.reviewProcessingFailedPleaseTryAgainLater";
     feedbackHandle.fail(errorMsg.value);
   } finally {
+    feedbackPhase.value = "idle";
     saving.value = false;
   }
 }

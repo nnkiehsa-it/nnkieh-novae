@@ -19,6 +19,7 @@
     hint="issue.itIsRecommendedToMakePreciseProposals"
     submit-label="common.confirmPublish"
     :busy="submitting"
+    :state="feedbackPhase"
     :uploading="uploading"
     :error="error || uploadError"
     @close="handleClose"
@@ -58,6 +59,7 @@ const {
   submitting,
   showPreview,
   error,
+  feedbackPhase,
   handleClose,
   submit,
 } = useIssueComposerForm({

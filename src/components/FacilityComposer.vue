@@ -25,6 +25,7 @@
     hint="facility.createReviewHint"
     submit-label="common.confirmPublish"
     :busy="submitting"
+    :state="feedbackPhase"
     :uploading="images.uploading.value"
     :error="error || images.uploadError.value"
     @close="close"
@@ -59,7 +60,7 @@ const props = defineProps<{ categoryId: string }>();
 const emit = defineEmits<{ close: []; submitted: [facility: FacilityRecord] }>();
 const { activeFacilityCategories } = useCategories();
 const { t } = useI18n();
-const { editorImages, error, form, images, showPreview, submitting, close, submit } = useFacilityComposerForm(
+const { editorImages, error, form, images, showPreview, submitting, feedbackPhase, close, submit } = useFacilityComposerForm(
   toRef(props, 'categoryId'),
   () => emit('close'),
   (facility) => emit('submitted', facility),

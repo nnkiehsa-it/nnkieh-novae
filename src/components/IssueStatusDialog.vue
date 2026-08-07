@@ -3,6 +3,7 @@
     dialog-title-id="status-dialog-title"
     :open="open"
     :saving="saving"
+    :saving-state="feedbackPhase"
     :error="errorMsg"
     :options="availableStatusOptions"
     :initial-status="initialStatus"
@@ -77,31 +78,38 @@ const statusWarnings = computed<Record<string, string>>(() => {
 const saving = ref(false);
 const errorMsg = ref('');
 const { start } = useActionFeedback();
+const feedbackPhase = ref<'idle' | 'busy' | 'success'>('idle');
 
 async function save(rawStatus: string, resultContent: string) {
   const nextStatus = rawStatus as EditableStatus;
   saving.value = true;
   errorMsg.value = '';
   const feedback = start('issue.updatingProposalStatus');
+  feedbackPhase.value = 'busy';
   try {
     if (nextStatus === 'processing') {
       let finalIssue = await moderateIssueStatus(props.issue.id, nextStatus);
       if (props.issue.result_content) {
         finalIssue = await updateIssueResult(props.issue.id, '');
       }
-      emit('success', finalIssue);
       feedback.succeed('issue.proposalStatusUpdated');
+      feedbackPhase.value = 'success';
+      await feedback.complete();
+      emit('success', finalIssue);
     } else {
       const updated = await moderateIssueStatus(props.issue.id, nextStatus);
       const finalIssue = await updateIssueResult(props.issue.id, resultContent);
-      emit('success', finalIssue);
       feedback.succeed('issue.proposalStatusAndResultsUpdated');
+      feedbackPhase.value = 'success';
+      await feedback.complete();
+      emit('success', finalIssue);
     }
     emit('close');
   } catch (caught) {
     errorMsg.value = caught instanceof Error ? caught.message : 'facility.updateFailedPleaseTryAgainLater';
     feedback.fail(errorMsg.value);
   } finally {
+    feedbackPhase.value = 'idle';
     saving.value = false;
   }
 }

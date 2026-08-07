@@ -57,9 +57,9 @@ const toneClass = computed(() => {
   if (!feedback.value) return '';
   return {
     error: 'text-error',
-    info: 'text-info',
-    progress: 'text-processing',
-    success: 'text-success',
+    info: 'text-ink-800 dark:text-ink-100',
+    progress: 'text-ink-800 dark:text-ink-100',
+    success: 'text-ink-800 dark:text-ink-100',
     warning: 'text-warning',
   }[feedback.value.tone];
 });
