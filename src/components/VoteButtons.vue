@@ -59,6 +59,7 @@ const {
   toggle,
 } = useVoteSupport({
   issueId: toRef(props, 'issueId'),
+  authorFixed: computed(() => props.authorFixed === true),
   currentUserSupported: toRef(props, 'currentUserSupported'),
   supportCount: toRef(props, 'supportCount'),
   supportClosed,

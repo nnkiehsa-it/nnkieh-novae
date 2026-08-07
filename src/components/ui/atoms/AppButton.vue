@@ -1,15 +1,20 @@
 <template>
   <button
     :type="type"
-    :class="['max-w-full', variantClass, sizeClass, { 'button-toolbar--active': active && variant === 'toolbar', 'w-full': block }]"
-    :disabled="disabled"
+    :class="['max-w-full', variantClass, sizeClass, { 'button-toolbar--active': active && variant === 'toolbar', 'w-full': block, 'app-button--stateful': state !== 'idle' }]"
+    :disabled="disabled || state !== 'idle'"
+    :aria-busy="state === 'busy' ? 'true' : undefined"
   >
-    <slot />
+    <BusyButtonContent v-if="state !== 'idle'" :state="state" :spinner-size="spinnerSize">
+      <slot />
+    </BusyButtonContent>
+    <slot v-else />
   </button>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import BusyButtonContent from '@/components/ui/atoms/BusyButtonContent.vue';
 
 type ButtonSize = 'sm' | 'md' | 'lg';
 type ButtonVariant =
@@ -28,6 +33,8 @@ const props = withDefaults(defineProps<{
   active?: boolean;
   block?: boolean;
   disabled?: boolean;
+  spinnerSize?: number;
+  state?: 'idle' | 'busy' | 'success';
   size?: ButtonSize;
   type?: 'button' | 'reset' | 'submit';
   variant?: ButtonVariant;
@@ -38,6 +45,8 @@ const props = withDefaults(defineProps<{
   size: 'md',
   type: 'button',
   variant: 'secondary',
+  spinnerSize: 4,
+  state: 'idle',
 });
 
 const variantClass = computed(() => ({

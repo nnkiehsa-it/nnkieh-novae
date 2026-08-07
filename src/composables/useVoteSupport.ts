@@ -6,6 +6,7 @@ import { isContentUnavailableError } from '@/services/issues-core';
 import { useI18n } from '@/i18n';
 
 interface VoteSupportOptions {
+  authorFixed: Ref<boolean>;
   issueId: Ref<string>;
   currentUserSupported: Ref<boolean>;
   supportCount: Ref<number>;
@@ -48,6 +49,9 @@ export function useVoteSupport(options: VoteSupportOptions) {
   );
 
   async function toggle() {
+    if (options.authorFixed.value) {
+      return;
+    }
     if (!user.value) {
       show('issue.logInToSupportThisProposal', 'error');
       return;

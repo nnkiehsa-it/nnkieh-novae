@@ -57,6 +57,7 @@
         :support-closed="supportClosed"
         :status-label="statusLabel"
         :compact="true"
+        :author-fixed="issue.isOwnIssue"
         @supported="handleSupport"
       />
     </template>

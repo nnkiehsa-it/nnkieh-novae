@@ -250,6 +250,7 @@ Route view 不得自行加入另一套頁面級 `px-*`、`left-*`、`right-*`、
 - 提案、公告、設備類內容列表先檢查 `ContentCardCollection` 與 `ContentCardShell` 的 slots。
 - loading 使用現有 skeleton organism 或 `SkeletonBlock`，不可自行指定 shimmer 底色。
 - 提交型操作使用 `BusyButtonContent` 的 idle／busy／success 狀態；成功 check 維持短暫可見後才完成 Dialog／操作物件退場，成功 toast 在退場後顯示。進度不以全域 toast 取代觸發操作的按鈕狀態。
+- 按鈕 loading／success 不顯示文字，只在固定內容區切換 spinner／check；按鈕即使 disabled 仍保留原 variant 的 control／card elevation，不得因狀態移除陰影。
 - empty/error/loading 分支優先 `ContentListState`、`EmptyStatePanel`、`PageLoadFailure`。
 - 相同資料在手機與桌面只切 layout，不建立第二份 fetching、permission 或 mutation 流程。
 

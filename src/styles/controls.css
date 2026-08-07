@@ -32,26 +32,26 @@
   }
 
   .button-primary {
-    @apply inline-flex items-center justify-center whitespace-nowrap border-0 bg-ink-800 text-sm font-semibold tracking-[0.01em] text-white shadow-control hover:bg-ink-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none dark:bg-ink-100 dark:text-ink-900 dark:hover:bg-ink-200;
+    @apply inline-flex items-center justify-center whitespace-nowrap border-0 bg-ink-800 text-sm font-semibold tracking-[0.01em] text-white shadow-control hover:bg-ink-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 dark:bg-ink-100 dark:text-ink-900 dark:hover:bg-ink-200;
     min-height: var(--control-height);
     border-radius: 9999px;
     padding: 0.625rem 1rem;
   }
 
   .button-contextual {
-    @apply inline-flex h-8 min-h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border-0 bg-surface text-xs font-semibold tracking-[0.01em] text-ink-700 dark:bg-surface dark:text-ink-200 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none;
+    @apply inline-flex h-8 min-h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border-0 bg-surface text-xs font-semibold tracking-[0.01em] text-ink-700 dark:bg-surface dark:text-ink-200 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50;
     box-shadow: var(--shadow-card);
   }
 
   .button-secondary {
-    @apply inline-flex items-center justify-center whitespace-nowrap border-0 bg-surface text-sm font-medium tracking-[0.01em] text-ink-700 shadow-control hover:text-ink-900 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none dark:bg-surface dark:text-ink-200 dark:hover:text-ink-50;
+    @apply inline-flex items-center justify-center whitespace-nowrap border-0 bg-surface text-sm font-medium tracking-[0.01em] text-ink-700 shadow-control hover:text-ink-900 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 dark:bg-surface dark:text-ink-200 dark:hover:text-ink-50;
     min-height: var(--control-height);
     border-radius: 9999px;
     padding: 0.625rem 1rem;
   }
 
   .button-danger {
-    @apply inline-flex items-center justify-center whitespace-nowrap border-0 text-sm font-semibold tracking-[0.01em] shadow-control cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none;
+    @apply inline-flex items-center justify-center whitespace-nowrap border-0 text-sm font-semibold tracking-[0.01em] shadow-control cursor-pointer disabled:cursor-not-allowed disabled:opacity-50;
     min-height: var(--control-height);
     border-radius: 9999px;
     padding: 0.625rem 1rem;

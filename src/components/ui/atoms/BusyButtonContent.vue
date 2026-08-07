@@ -3,11 +3,8 @@
     <span class="col-start-1 row-start-1 inline-flex items-center justify-center gap-2 transition-[opacity,transform] duration-200" :class="resolvedState === 'idle' ? 'opacity-100' : 'pointer-events-none opacity-0'">
       <slot>{{ t(label) }}</slot>
     </span>
-    <span class="col-start-1 row-start-1 inline-flex items-center justify-center gap-2 transition-[opacity,transform] duration-200" :class="resolvedState === 'busy' ? 'opacity-100' : 'pointer-events-none opacity-0 scale-90'" role="status">
-      <span class="busy-button-spinner grid place-items-center rounded-full" aria-hidden="true">
-        <LoadingSpinner :size="spinnerSize" class="shrink-0" />
-      </span>
-      {{ t(busyLabel || label || 'facility.processing') }}
+    <span class="col-start-1 row-start-1 inline-flex items-center justify-center transition-[opacity,transform] duration-200" :class="resolvedState === 'busy' ? 'opacity-100' : 'pointer-events-none opacity-0 scale-90'" aria-hidden="true">
+      <LoadingSpinner :size="spinnerSize" class="busy-button-spinner shrink-0" />
     </span>
     <span class="col-start-1 row-start-1 inline-flex items-center justify-center transition-[opacity,transform] duration-200" :class="resolvedState === 'success' ? 'opacity-100 scale-100' : 'pointer-events-none opacity-0 scale-75'" aria-hidden="true">
       <AppIcon name="check" :size="5" :stroke-width="2.4" aria-hidden="true" />
