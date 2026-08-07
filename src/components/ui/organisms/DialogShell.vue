@@ -16,15 +16,7 @@
           :data-padding="paddingMode"
           data-presentation="sheet"
         >
-          <div class="dialog-backdrop" aria-hidden="true">
-            <img
-              v-if="backdropSnapshotUrl"
-              class="dialog-backdrop__snapshot"
-              :src="backdropSnapshotUrl"
-              alt=""
-            >
-          </div>
-          <DrawerOverlay force-mount class="dialog-backdrop-behavior" />
+          <div class="dialog-backdrop" aria-hidden="true"></div>
           <DrawerContent
             force-mount
             as="section"
@@ -69,15 +61,7 @@
           :data-padding="paddingMode"
           :data-presentation="resolvedPresentation"
         >
-          <div class="dialog-backdrop" aria-hidden="true">
-            <img
-              v-if="backdropSnapshotUrl"
-              class="dialog-backdrop__snapshot"
-              :src="backdropSnapshotUrl"
-              alt=""
-            >
-          </div>
-          <DialogOverlay force-mount class="dialog-backdrop-behavior" />
+          <div class="dialog-backdrop" aria-hidden="true"></div>
           <DialogContent
             force-mount
             as="section"
@@ -108,14 +92,12 @@
 import {
   DialogContent,
   DialogDescription,
-  DialogOverlay,
   DialogPortal,
   DialogRoot,
   DialogTitle,
   DrawerContent,
   DrawerDescription,
   DrawerHandle,
-  DrawerOverlay,
   DrawerPortal,
   DrawerRoot,
   DrawerTitle,
@@ -168,74 +150,51 @@ type DrawerOpenChangeDetails = { reason?: string };
 let pendingCloseReason: CloseReason = 'overlay';
 let shouldRestoreFocus = false;
 let focusScrollFrame: number | null = null;
-let openRequestVersion = 0;
-const rootOpen = ref(false);
-const visible = ref(false);
+let activeBodyScrollLocks = 0;
+let savedBodyOverflow = '';
+const rootOpen = ref(props.open);
+const visible = ref(props.open);
 const restoreFocusTarget = ref<HTMLElement | null>(null);
-const backdropSnapshotUrl = ref<string | null>(null);
+let hasBodyScrollLock = false;
 
 watch(
   () => props.open,
   (nextOpen, previousOpen) => {
     if (nextOpen && !previousOpen) {
       captureRestoreFocusTarget();
-      void openWhenBackdropReady();
+      rootOpen.value = true;
     }
-    if (!nextOpen && previousOpen) {
-      openRequestVersion += 1;
-      shouldRestoreFocus = true;
-      visible.value = false;
-    }
+    if (!nextOpen && previousOpen) shouldRestoreFocus = true;
+    visible.value = nextOpen;
   },
   { immediate: true },
 );
 
-function clearBackdropSnapshot() {
-  if (backdropSnapshotUrl.value) URL.revokeObjectURL(backdropSnapshotUrl.value);
-  backdropSnapshotUrl.value = null;
-}
+function setBodyScrollLock(shouldLock: boolean) {
+  if (typeof document === 'undefined' || shouldLock === hasBodyScrollLock) return;
+  hasBodyScrollLock = shouldLock;
 
-async function captureBackdropSnapshot() {
-  if (typeof document === 'undefined' || isFullScreen.value) return null;
-  const appRoot = document.querySelector<HTMLElement>('#app');
-  if (!appRoot) return null;
-
-  try {
-    const { domToBlob } = await import('modern-screenshot');
-    const blob = await domToBlob(appRoot, { scale: 0.5 });
-    const url = URL.createObjectURL(blob);
-    const image = new Image();
-    image.src = url;
-    try {
-      await image.decode();
-      return url;
-    } catch {
-      URL.revokeObjectURL(url);
-      return null;
+  if (shouldLock) {
+    if (activeBodyScrollLocks === 0) {
+      savedBodyOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
     }
-  } catch {
-    return null;
-  }
-}
-
-async function openWhenBackdropReady() {
-  const requestVersion = ++openRequestVersion;
-  clearBackdropSnapshot();
-  const snapshotUrl = await captureBackdropSnapshot();
-  if (requestVersion !== openRequestVersion || !props.open) {
-    if (snapshotUrl) URL.revokeObjectURL(snapshotUrl);
+    activeBodyScrollLocks += 1;
     return;
   }
 
-  backdropSnapshotUrl.value = snapshotUrl;
-  rootOpen.value = true;
-  visible.value = true;
+  activeBodyScrollLocks = Math.max(0, activeBodyScrollLocks - 1);
+  if (activeBodyScrollLocks === 0) {
+    document.body.style.overflow = savedBodyOverflow;
+    savedBodyOverflow = '';
+  }
 }
+
+watch(visible, setBodyScrollLock, { immediate: true });
 
 function handleAfterLeave() {
   if (visible.value) return;
   rootOpen.value = false;
-  clearBackdropSnapshot();
   restoreFocus();
 }
 
@@ -300,8 +259,7 @@ function keepFocusedControlVisible(event: FocusEvent) {
 }
 
 onBeforeUnmount(() => {
-  openRequestVersion += 1;
-  clearBackdropSnapshot();
+  setBodyScrollLock(false);
   if (focusScrollFrame !== null) cancelAnimationFrame(focusScrollFrame);
 });
 

@@ -50,17 +50,6 @@ jobs:
           cache: 'npm'
           cache-dependency-path: package-lock.json
 
-      - name: Cache node_modules
-        uses: actions/cache@v6
-        id: cache-node-modules
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-node24-${{ hashFiles('package-lock.json') }}
-
-      - name: Install dependencies
-        if: steps.cache-node-modules.outputs.cache-hit != 'true'
-        run: npm ci --prefer-offline
-
       - name: Wait for matching backend deployment
         if: github.event_name == 'push'
         env:
@@ -144,6 +133,9 @@ jobs:
       - name: Build Project Artifacts
         run: npx -y vercel@56.2.1 build ${{ github.ref_name == 'main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
         env:
+          NPM_CONFIG_AUDIT: 'false'
+          NPM_CONFIG_FUND: 'false'
+          NPM_CONFIG_PREFER_OFFLINE: 'true'
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VITE_SCHOOL_NAME: ${{ secrets.VITE_SCHOOL_NAME }}
