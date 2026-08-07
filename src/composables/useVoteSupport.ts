@@ -4,6 +4,7 @@ import { useActionFeedback } from '@/composables/useActionFeedback';
 import { removeSupport, toggleSupport } from '@/services/issues';
 import { isContentUnavailableError } from '@/services/issues-core';
 import { useI18n } from '@/i18n';
+import type { ActionPhase } from '@/composables/useActionFeedback';
 
 interface VoteSupportOptions {
   authorFixed: Ref<boolean>;
@@ -21,6 +22,7 @@ export function useVoteSupport(options: VoteSupportOptions) {
   const { show, start } = useActionFeedback();
   const { t } = useI18n();
   const busy = ref(false);
+  const phase = ref<ActionPhase>('idle');
   const optimisticSupported = ref(options.currentUserSupported.value);
 
   watch(options.currentUserSupported, (value) => {
@@ -65,6 +67,7 @@ export function useVoteSupport(options: VoteSupportOptions) {
     const previousSupported = optimisticSupported.value;
     optimisticSupported.value = nextSupported;
     busy.value = true;
+    phase.value = 'busy';
     const feedbackHandle = start(nextSupported ? 'common.addingSupport' : 'common.removingSupport');
 
     try {
@@ -78,6 +81,8 @@ export function useVoteSupport(options: VoteSupportOptions) {
         supportCount: result.support_count,
       });
       feedbackHandle.succeed(result.supported ? 'common.supportAdded' : 'common.supportRemoved');
+      phase.value = 'success';
+      await feedbackHandle.complete();
     } catch (err) {
       optimisticSupported.value = previousSupported;
       const errMsg = err instanceof Error ? err.message : '';
@@ -94,12 +99,14 @@ export function useVoteSupport(options: VoteSupportOptions) {
         feedbackHandle.fail('common.failedToAddSupportTryAgainLater');
       }
     } finally {
+      phase.value = 'idle';
       busy.value = false;
     }
   }
 
   return {
     busy,
+    phase,
     optimisticSupported,
     displaySupportCount,
     supportVariant,

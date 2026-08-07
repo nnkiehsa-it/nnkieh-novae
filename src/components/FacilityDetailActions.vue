@@ -12,6 +12,7 @@
       <DetailActionButton
         :active="facility.currentUserAffected"
         :disabled="facility.isOwnFacility || closed || affecting"
+        :busy="affecting"
         :label="t('facility.affectedCount', { count: facility.affected_count })"
         :compact="compact"
         :title="facility.isOwnFacility ? 'facility.authorIncludedInAffectedCount' : 'facility.iAlsoEncountered'"

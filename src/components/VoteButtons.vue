@@ -3,6 +3,7 @@
     <AppButton
       v-if="compact"
       :variant="supportVariant"
+      :state="phase"
       class="button-card-count"
       :disabled="busy || supportClosed || authorFixed"
       :title="supportTitle"
@@ -17,6 +18,8 @@
       v-else
       :active="optimisticSupported"
       :disabled="busy || supportClosed || authorFixed"
+      :busy="busy"
+      :state="phase"
       :label="String(displaySupportCount)"
       :title="supportTitle"
       :aria-label="authorFixed ? 'issue.theAuthorAutomaticallySupportsThisProposal' : optimisticSupported ? 'common.removeSupport' : 'issue.supportProposal'"
@@ -53,6 +56,7 @@ const { t } = useI18n();
 const supportClosed = computed(() => props.supportClosed);
 const {
   busy,
+  phase,
   optimisticSupported,
   displaySupportCount,
   supportVariant,

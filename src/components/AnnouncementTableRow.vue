@@ -21,6 +21,7 @@
         :variant="announcement.currentUserLiked ? 'icon-pill-filled' : 'icon-pill'"
         class="button-card-count"
         :disabled="liking"
+        :busy="liking"
         :title="t(announcement.currentUserLiked ? 'announcement.removeLike' : 'announcement.like')"
         :aria-label="t(announcement.currentUserLiked ? 'announcement.removeLike' : 'announcement.like')"
         @click.stop="emit('toggleLike', announcement)"

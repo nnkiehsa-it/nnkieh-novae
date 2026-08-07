@@ -15,10 +15,13 @@
 <script setup lang="ts">
 import AppIcon from '@/components/ui/atoms/AppIcon.vue';
 import LoadingSpinner from '@/components/ui/atoms/LoadingSpinner.vue';
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from '@/i18n';
+import { useActionFeedback } from '@/composables/useActionFeedback';
 
 const { t } = useI18n();
+const { actionPhase } = useActionFeedback();
+const hadActiveOperation = ref(false);
 
 const props = withDefaults(defineProps<{
   busy?: boolean;
@@ -34,7 +37,18 @@ const props = withDefaults(defineProps<{
   state: 'idle',
 });
 
-const resolvedState = computed(() => props.state !== 'idle' ? props.state : props.busy ? 'busy' : 'idle');
+watch(() => props.busy, (busy) => {
+  if (busy) hadActiveOperation.value = true;
+});
+watch(actionPhase, (phase) => {
+  if (phase === 'idle') hadActiveOperation.value = false;
+});
+
+const resolvedState = computed(() => {
+  if (props.state !== 'idle') return props.state;
+  if (props.busy) return actionPhase.value;
+  return hadActiveOperation.value && actionPhase.value === 'success' ? 'success' : 'idle';
+});
 </script>
 
 <style scoped>

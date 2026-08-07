@@ -38,6 +38,7 @@ interface RunFeedbackCopy<TResult> {
 }
 
 const feedback = ref<FeedbackItem | null>(null);
+const actionPhase = ref<ActionPhase>('idle');
 let nextFeedbackId = 1;
 let dismissTimer: number | undefined;
 
@@ -103,6 +104,7 @@ export function useActionFeedback() {
 
   function start(message: string): FeedbackHandle {
     dismiss();
+    actionPhase.value = 'busy';
     const id = nextFeedbackId++;
     const phase = ref<ActionPhase>('busy');
     let successMessage = '';
@@ -112,6 +114,7 @@ export function useActionFeedback() {
         completion = new Promise((resolve) => {
           window.setTimeout(() => {
             phase.value = 'idle';
+            actionPhase.value = 'idle';
             if (successMessage) show(successMessage, 'success');
             resolve();
           }, 420);
@@ -125,11 +128,13 @@ export function useActionFeedback() {
       dismiss: () => dismiss(id),
       fail: (nextMessage, action) => {
         phase.value = 'idle';
+        actionPhase.value = 'idle';
         show({ message: nextMessage, tone: 'error', action });
       },
       succeed: (nextMessage) => {
         successMessage = nextMessage;
         phase.value = 'success';
+        actionPhase.value = 'success';
         void complete();
       },
       update: (_nextMessage) => {},
@@ -155,6 +160,7 @@ export function useActionFeedback() {
   return {
     dismiss,
     feedback: readonly(feedback),
+    actionPhase: readonly(actionPhase),
     run,
     show,
     start,

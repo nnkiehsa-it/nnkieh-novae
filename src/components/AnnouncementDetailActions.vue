@@ -10,6 +10,7 @@
       <DetailActionButton
         :active="announcement.currentUserLiked"
         :disabled="liking"
+        :busy="liking"
         :label="String(announcement.like_count)"
         :compact="compact"
         :title="announcement.currentUserLiked ? 'announcement.removeLike' : 'announcement.unlikeAnnouncement'"

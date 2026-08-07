@@ -7,6 +7,8 @@
       compact ? '!h-8 !min-h-0 !gap-1 !px-2.5 text-xs' : '',
     ]"
     :disabled="disabled"
+    :busy="busy"
+    :state="state"
     :title="t(title || label)"
     :aria-label="t(ariaLabel || label)"
     @click="emit('click')"
@@ -27,6 +29,8 @@ withDefaults(defineProps<{
   ariaLabel?: string;
   danger?: boolean;
   disabled?: boolean;
+  busy?: boolean;
+  state?: 'idle' | 'busy' | 'success';
   label: string;
   title?: string;
   compact?: boolean;
@@ -35,8 +39,10 @@ withDefaults(defineProps<{
   ariaLabel: '',
   danger: false,
   disabled: false,
+  busy: false,
   title: '',
   compact: false,
+  state: 'idle',
 });
 
 const emit = defineEmits<{
