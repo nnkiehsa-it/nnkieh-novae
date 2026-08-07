@@ -389,8 +389,6 @@
     }
 
     .app-root[data-detail-route='true'] .app-header {
-      -webkit-backdrop-filter: none;
-      backdrop-filter: none;
       background-color: rgb(var(--color-page-background));
       border-bottom: 0;
       box-shadow: none;

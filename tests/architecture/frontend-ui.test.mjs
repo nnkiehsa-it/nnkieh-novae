@@ -105,8 +105,8 @@ test('primary navigation keeps desktop chrome and persistent mobile navigation',
   assert.match(appShell, /DETAIL_ROUTE_NAMES = new Set\(\['announcement-detail', 'facility-detail', 'issue-detail'\]\)/u);
   assert.match(appShell, /contentScrolled\.value = false;[\s\S]*restoredScrollTop[\s\S]*contentScrolled\.value = restoredScrollTop > 8/u);
   assert.match(baseStyles, /--app-header-height: var\(--tap-target\)/u);
-  assert.match(baseStyles, /\.app-header \{[\s\S]*backdrop-filter: blur\(12px\);/u);
-  assert.match(baseStyles, /\.app-root\[data-detail-route='true'\] \.app-header \{[\s\S]*backdrop-filter: none;[\s\S]*border-bottom: 0;[\s\S]*box-shadow: none;/u);
+  assert.doesNotMatch(baseStyles, /backdrop-filter/u);
+  assert.match(baseStyles, /\.app-root\[data-detail-route='true'\] \.app-header \{[\s\S]*border-bottom: 0;[\s\S]*box-shadow: none;/u);
   assert.match(mobileHeader, /AppIcon name="arrow-left" :size="4\.5"/u);
   assert.doesNotMatch(mobileHeader, /backdrop-blur/u);
   assert.match(issueBoard, /overflow-auto overscroll-contain/u);

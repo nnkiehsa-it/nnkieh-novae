@@ -1,5 +1,5 @@
 <template>
-  <span class="busy-button-content relative inline-grid min-w-[4.5rem] place-items-center" :class="`is-${resolvedState}`">
+  <span class="busy-button-content relative inline-grid place-items-center" :class="`is-${resolvedState}`">
     <span class="col-start-1 row-start-1 inline-flex items-center justify-center gap-2 transition-[opacity,transform] duration-200" :class="resolvedState === 'idle' ? 'opacity-100' : 'pointer-events-none opacity-0'">
       <slot>{{ t(label) }}</slot>
     </span>
