@@ -135,7 +135,7 @@
             <AppIcon
               name="chevron-right"
               :size="4"
-              class="mt-7 shrink-0 text-ink-300 dark:text-ink-600"
+              class="shrink-0 self-center text-ink-300 dark:text-ink-600"
             />
           </ListSurfaceRow>
 

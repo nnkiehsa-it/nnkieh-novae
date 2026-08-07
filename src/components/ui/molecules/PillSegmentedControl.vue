@@ -1,6 +1,7 @@
 <template>
   <div
     class="segmented-control relative isolate flex items-center"
+    :class="{ 'segmented-control--equal': layout === 'equal' }"
     :style="containerStyle"
   >
     <m.div

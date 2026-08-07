@@ -12,7 +12,6 @@
       </IconTile>
       <DialogHeading
         class="flex-1"
-        :eyebrow="t('app.update.eyebrow')"
         :title="t('app.update.title')"
         title-id="app-update-title"
         :description="t('app.update.description')"

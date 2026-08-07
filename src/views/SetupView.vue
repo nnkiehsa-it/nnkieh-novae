@@ -3,8 +3,7 @@
     <div class="mx-auto w-full max-w-4xl py-4">
       <div v-if="!languageConfirmed" class="mx-auto max-w-2xl space-y-5">
         <div class="text-center">
-          <p class="text-xs font-bold uppercase tracking-[0.16em] text-primary-600">{{ t('categoryAdmin.setupStepLanguage') }}</p>
-          <h1 class="mt-2 text-2xl font-bold text-ink-950 dark:text-ink-50">{{ t('categoryAdmin.chooseLanguageTitle') }}</h1>
+          <h1 class="text-2xl font-bold text-ink-950 dark:text-ink-50">{{ t('categoryAdmin.chooseLanguageTitle') }}</h1>
           <p class="mx-auto mt-2 max-w-xl text-sm leading-6 text-ink-500">{{ t('categoryAdmin.chooseLanguageDescription') }}</p>
         </div>
         <SurfacePanel variant="list">
@@ -25,8 +24,7 @@
 
       <form v-else class="space-y-5" @submit.prevent="requestSetupCompletion">
         <div>
-          <p class="text-xs font-bold uppercase tracking-[0.16em] text-primary-600">{{ t('categoryAdmin.initialSetup') }}</p>
-          <h1 class="mt-2 text-2xl font-bold text-ink-950 dark:text-ink-50">{{ t('categoryAdmin.setupTitle') }}</h1>
+          <h1 class="text-2xl font-bold text-ink-950 dark:text-ink-50">{{ t('categoryAdmin.setupTitle') }}</h1>
           <p class="mt-2 max-w-2xl text-sm leading-6 text-ink-500">{{ t('categoryAdmin.setupDescription') }}</p>
         </div>
 

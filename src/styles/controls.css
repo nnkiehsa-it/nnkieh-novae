@@ -69,6 +69,13 @@
     @apply bg-ink-200 text-ink-800 dark:bg-ink-700 dark:text-ink-100;
   }
 
+  @media (forced-colors: active) {
+    .button-toolbar--active {
+      outline: 2px solid Highlight;
+      outline-offset: 2px;
+    }
+  }
+
   .button-remove-image {
     @apply absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-ink-950 text-white shadow-control hover:bg-ink-800 cursor-pointer focus-visible:outline-white/80;
   }
@@ -235,6 +242,28 @@
     flex: 1 1 0;
     padding-inline: 0.75rem;
     width: auto;
+  }
+
+  @media (max-width: 359px) {
+    .segmented-control--equal {
+      align-items: stretch;
+    }
+
+    .segmented-control__button--equal {
+      height: auto;
+      min-height: 3.25rem;
+      padding-inline: 0.5rem;
+    }
+
+    .segmented-control__button--equal .segmented-control__label {
+      display: -webkit-box;
+      line-height: 1rem;
+      overflow: hidden;
+      text-align: left;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      white-space: normal;
+    }
   }
 
   .tag {

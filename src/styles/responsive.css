@@ -133,6 +133,28 @@
   padding-inline: 0.5rem;
 }
 
+.administration-tabs {
+  position: relative;
+}
+
+.administration-tabs__scroll-cue {
+  bottom: 1px;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 2.5rem;
+}
+
+.administration-tabs__scroll-cue--left {
+  background: linear-gradient(90deg, rgb(var(--color-page-background)) 20%, transparent);
+  left: 0;
+}
+
+.administration-tabs__scroll-cue--right {
+  background: linear-gradient(270deg, rgb(var(--color-page-background)) 20%, transparent);
+  right: 0;
+}
+
 @media (max-width: 767px) {
   .board-controls {
     padding-top: 0.5rem;

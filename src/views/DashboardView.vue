@@ -95,49 +95,54 @@
                 <span class="dashboard-total">{{ t('dashboard.countItems', { count: stats.total_issues_created + stats.total_comments_created }) }}</span>
               </template>
             </SectionHeader>
-            <SurfacePanel variant="inset" class="mt-4 overflow-hidden">
-              <div class="hidden grid-cols-[minmax(0,1fr)_5rem_5rem_4rem] gap-3 border-b border-ink-200/35 px-4 py-2.5 text-xs font-semibold tracking-[0.02em] text-ink-500 dark:border-ink-700/30 dark:text-ink-400 sm:grid">
-                <span>{{ t('dashboard.category') }}</span>
-                <span class="text-right">{{ t('issue.proposal') }}</span>
-                <span class="text-right">{{ t('dashboard.comment') }}</span>
-                <span class="text-right">{{ t('dashboard.proportion') }}</span>
+            <SurfacePanel variant="inset" class="mt-4 overflow-hidden" role="table" :aria-label="t('dashboard.categoryUsageOverview')">
+              <div role="rowgroup">
+                <div class="hidden grid-cols-[minmax(0,1fr)_5rem_5rem_4rem] gap-3 border-b border-ink-200/35 px-4 py-2.5 text-xs font-semibold tracking-[0.02em] text-ink-500 dark:border-ink-700/30 dark:text-ink-400 sm:grid" role="row">
+                  <span role="columnheader">{{ t('dashboard.category') }}</span>
+                  <span role="columnheader" class="text-right">{{ t('issue.proposal') }}</span>
+                  <span role="columnheader" class="text-right">{{ t('dashboard.comment') }}</span>
+                  <span role="columnheader" class="text-right">{{ t('dashboard.proportion') }}</span>
+                </div>
               </div>
-              <m.div
-                v-for="(row, index) in categoryComparisonRows"
-                :key="row.label"
-                class="grid grid-cols-3 items-end gap-x-3 gap-y-2 border-b border-ink-200/30 px-4 py-3.5 last:border-b-0 dark:border-ink-700/25 sm:grid-cols-[minmax(0,1fr)_5rem_5rem_4rem] sm:items-center"
-                :initial="{ opacity: 0, y: 12 }"
-                :while-in-view="{ opacity: 1, y: 0 }"
-                :viewport="{ once: true, amount: 0.3 }"
-                :transition="getStaggerTransition(index)"
-              >
-                <div class="col-span-3 min-w-0 sm:col-span-1">
-                  <p class="truncate text-sm font-bold text-ink-900 dark:text-ink-100">{{ t(row.label) }}</p>
-                  <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800">
-                    <m.div
-                      class="h-full rounded-full"
-                      :class="row.barClass"
-                      :initial="{ scaleX: 0 }"
-                      :while-in-view="{ scaleX: row.percent / 100 }"
-                      :viewport="{ once: true, amount: 0.5 }"
-                      :transition="{ ...MOTION_SOFT_SPRING, delay: 0.12 + index * 0.05 }"
-                      style="width: 100%; transform-origin: left center"
-                    />
+              <div role="rowgroup">
+                <m.div
+                  v-for="(row, index) in categoryComparisonRows"
+                  :key="row.label"
+                  class="grid grid-cols-3 items-end gap-x-3 gap-y-2 border-b border-ink-200/30 px-4 py-3.5 last:border-b-0 dark:border-ink-700/25 sm:grid-cols-[minmax(0,1fr)_5rem_5rem_4rem] sm:items-center"
+                  role="row"
+                  :initial="{ opacity: 0, y: 12 }"
+                  :while-in-view="{ opacity: 1, y: 0 }"
+                  :viewport="{ once: true, amount: 0.3 }"
+                  :transition="getStaggerTransition(index)"
+                >
+                  <div class="col-span-3 min-w-0 sm:col-span-1" role="rowheader">
+                    <p class="truncate text-sm font-bold text-ink-900 dark:text-ink-100">{{ t(row.label) }}</p>
+                    <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800">
+                      <m.div
+                        class="h-full rounded-full"
+                        :class="row.barClass"
+                        :initial="{ scaleX: 0 }"
+                        :while-in-view="{ scaleX: row.percent / 100 }"
+                        :viewport="{ once: true, amount: 0.5 }"
+                        :transition="{ ...MOTION_SOFT_SPRING, delay: 0.12 + index * 0.05 }"
+                        style="width: 100%; transform-origin: left center"
+                      />
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <span class="block text-[0.6875rem] font-medium text-ink-500 dark:text-ink-400 sm:hidden">{{ t('issue.proposal') }}</span>
-                  <p class="mt-0.5 text-sm font-bold tabular-nums text-ink-950 dark:text-ink-50 sm:mt-0 sm:text-right">{{ row.issues }}</p>
-                </div>
-                <div>
-                  <span class="block text-[0.6875rem] font-medium text-ink-500 dark:text-ink-400 sm:hidden">{{ t('dashboard.comment') }}</span>
-                  <p class="mt-0.5 text-sm font-bold tabular-nums text-ink-950 dark:text-ink-50 sm:mt-0 sm:text-right">{{ row.comments }}</p>
-                </div>
-                <div>
-                  <span class="block text-[0.6875rem] font-medium text-ink-500 dark:text-ink-400 sm:hidden">{{ t('dashboard.proportion') }}</span>
-                  <p class="mt-0.5 text-xs font-semibold tabular-nums text-ink-500 dark:text-ink-400 sm:mt-0 sm:text-right">{{ row.percentLabel }}</p>
-                </div>
-              </m.div>
+                  <div role="cell">
+                    <span class="block text-[0.6875rem] font-medium text-ink-500 dark:text-ink-400 sm:hidden">{{ t('issue.proposal') }}</span>
+                    <p class="mt-0.5 text-sm font-bold tabular-nums text-ink-950 dark:text-ink-50 sm:mt-0 sm:text-right">{{ row.issues }}</p>
+                  </div>
+                  <div role="cell">
+                    <span class="block text-[0.6875rem] font-medium text-ink-500 dark:text-ink-400 sm:hidden">{{ t('dashboard.comment') }}</span>
+                    <p class="mt-0.5 text-sm font-bold tabular-nums text-ink-950 dark:text-ink-50 sm:mt-0 sm:text-right">{{ row.comments }}</p>
+                  </div>
+                  <div role="cell">
+                    <span class="block text-[0.6875rem] font-medium text-ink-500 dark:text-ink-400 sm:hidden">{{ t('dashboard.proportion') }}</span>
+                    <p class="mt-0.5 text-xs font-semibold tabular-nums text-ink-500 dark:text-ink-400 sm:mt-0 sm:text-right">{{ row.percentLabel }}</p>
+                  </div>
+                </m.div>
+              </div>
             </SurfacePanel>
           </SurfacePanel>
         </div>
@@ -189,9 +194,20 @@
                     <p class="text-sm font-bold text-ink-900 dark:text-ink-100">{{ failure.sourceLabel }}</p>
                     <p class="text-xs font-semibold text-ink-500 dark:text-ink-400">{{ failure.updatedLabel }}</p>
                   </div>
-                  <InlineMessage class="mt-2 break-all">
-                    {{ t('dashboard.trackingCodeCode', { code: failure.trackingCode }) }}
-                  </InlineMessage>
+                  <div class="mt-2 flex items-start justify-between gap-2">
+                    <InlineMessage class="min-w-0 break-all">
+                      {{ t('dashboard.trackingCodeCode', { code: failure.trackingCode }) }}
+                    </InlineMessage>
+                    <AppButton
+                      variant="toolbar"
+                      class="tap-target shrink-0 rounded-full p-0"
+                      :aria-label="t('dashboard.copyTrackingCode')"
+                      :title="t('dashboard.copyTrackingCode')"
+                      @click="copyTrackingCode(failure.trackingCode)"
+                    >
+                      <AppIcon name="copy" :size="3" :stroke-width="2" />
+                    </AppButton>
+                  </div>
                 </SurfacePanel>
               </m.div>
             </div>
@@ -220,6 +236,8 @@ import EmptyStatePanel from '@/components/ui/molecules/EmptyStatePanel.vue';
 import SkeletonDashboard from '@/components/ui/organisms/SkeletonDashboard.vue';
 import PageLoadFailure from '@/components/ui/molecules/PageLoadFailure.vue';
 import InlineMessage from '@/components/ui/atoms/InlineMessage.vue';
+import AppButton from '@/components/ui/atoms/AppButton.vue';
+import AppIcon from '@/components/ui/atoms/AppIcon.vue';
 import SectionHeader from '@/components/ui/molecules/SectionHeader.vue';
 import SurfacePanel from '@/components/ui/molecules/SurfacePanel.vue';
 import { useDashboardMetrics } from '@/composables/useDashboardMetrics';
@@ -227,16 +245,27 @@ import { usePlatformDashboard } from '@/composables/usePlatformDashboard';
 import { useSession } from '@/composables/useSession';
 import { useLoadingTimeout } from '@/composables/useLoadingTimeout';
 import { resetAppConnection } from '@/lib/reconnect';
+import { copyText } from '@/composables/useShareUrl';
+import { useActionFeedback } from '@/composables/useActionFeedback';
 import { useI18n } from '@/i18n';
 import { getStaggerTransition, MOTION_SOFT_SPRING } from '@/lib/ui-motion';
 
 const { t } = useI18n();
+const { show } = useActionFeedback();
 
 const { initialized, isAdmin, loading: authLoading } = useSession();
 const { stats, operations, loading, error, loadDashboard } = usePlatformDashboard();
 async function retryDashboard() {
   await resetAppConnection();
   await loadDashboard({ forceRefresh: true });
+}
+async function copyTrackingCode(trackingCode: string) {
+  try {
+    await copyText(trackingCode);
+    show(t('dashboard.trackingCodeCopied'), 'success');
+  } catch {
+    show(t('dashboard.unableToCopyTrackingCode'), 'error');
+  }
 }
 const sessionLoading = computed(() => authLoading.value || !initialized.value);
 const dashboardLoading = computed(() => sessionLoading.value || loading.value);

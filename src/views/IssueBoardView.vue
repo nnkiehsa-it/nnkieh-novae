@@ -16,9 +16,9 @@
     >
       <div class="board-controls relative z-20 space-y-3">
         <div class="flex flex-row items-center justify-between gap-3 md:mt-0">
-          <SkeletonBlock class="hidden h-8 w-32 rounded md:block" />
+          <SkeletonBlock class="h-8 w-32 shrink-0 rounded" />
           <div
-            class="flex w-full shrink-0 items-center justify-end gap-1.5 sm:gap-2 md:w-auto"
+            class="flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1.5 sm:gap-2 md:w-auto md:flex-none"
           >
             <SkeletonBlock class="h-8 w-[9.375rem] rounded-full" />
             <SkeletonBlock class="h-8 w-8 rounded-full md:h-9 md:w-9" />

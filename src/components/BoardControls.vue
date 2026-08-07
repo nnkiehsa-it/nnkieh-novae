@@ -106,8 +106,9 @@
               </AppButton>
             </form>
             <p
-              v-if="searchHint"
+              v-if="searchHint || mode === 'facility'"
               class="mt-2 text-xs font-normal leading-5 text-ink-500 dark:text-ink-400"
+              :class="{ 'min-h-10': mode === 'facility' }"
               aria-live="polite"
             >
               {{ searchHint }}

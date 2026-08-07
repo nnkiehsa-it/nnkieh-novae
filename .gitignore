@@ -7,6 +7,8 @@ cloudflare/.wrangler/
 vite.config.js
 vite.config.d.ts
 .npmrc
+.impeccable/
+temp/
 
 temp.jsonl
 .vercel

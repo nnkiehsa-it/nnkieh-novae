@@ -30,6 +30,8 @@
             :aria-describedby="describedBy || undefined"
             @escape-key-down="handleDismissEvent($event, 'escape')"
             @pointer-down-outside="handleDismissEvent($event, 'overlay')"
+            @close-auto-focus="handleCloseAutoFocus"
+            @focusin="keepFocusedControlVisible"
           >
             <DrawerTitle class="sr-only" aria-hidden="true">{{ labelledBy }}</DrawerTitle>
             <DrawerDescription v-if="describedBy" class="sr-only" aria-hidden="true">{{ describedBy }}</DrawerDescription>
@@ -73,6 +75,8 @@
             :aria-describedby="describedBy || undefined"
             @escape-key-down="handleDismissEvent($event, 'escape')"
             @pointer-down-outside="handleDismissEvent($event, 'overlay')"
+            @close-auto-focus="handleCloseAutoFocus"
+            @focusin="keepFocusedControlVisible"
           >
             <DialogTitle class="sr-only" aria-hidden="true">{{ labelledBy }}</DialogTitle>
             <DialogDescription v-if="describedBy" class="sr-only" aria-hidden="true">{{ describedBy }}</DialogDescription>
@@ -101,7 +105,7 @@ import {
   DrawerTitle,
 } from 'reka-ui';
 import { useMediaQuery } from '@vueuse/core';
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { useDialogThemeColor } from '@/composables/useDialogThemeColor';
 import { useOverlayBack } from '@/composables/useOverlayBack';
 
@@ -146,23 +150,35 @@ type CloseReason = 'back' | 'drag' | 'escape' | 'overlay';
 type DrawerOpenChangeDetails = { reason?: string };
 
 let pendingCloseReason: CloseReason = 'overlay';
+let shouldRestoreFocus = false;
+let focusScrollFrame: number | null = null;
 const rootOpen = ref(props.open);
 const visible = ref(props.open);
+const restoreFocusTarget = ref<HTMLElement | null>(null);
 
 watch(
   () => props.open,
-  (nextOpen) => {
-    if (nextOpen) rootOpen.value = true;
+  (nextOpen, previousOpen) => {
+    if (nextOpen && !previousOpen) {
+      captureRestoreFocusTarget();
+      rootOpen.value = true;
+    }
+    if (!nextOpen && previousOpen) shouldRestoreFocus = true;
     visible.value = nextOpen;
   },
+  { immediate: true },
 );
 
 function handleAfterLeave() {
-  if (!visible.value) rootOpen.value = false;
+  if (visible.value) return;
+  rootOpen.value = false;
+  restoreFocus();
 }
 
 function handleClose(reason: CloseReason = 'overlay') {
-  if (props.closeable && !props.busy && !props.persistent) emit('close', reason);
+  if (!props.closeable || props.busy || props.persistent) return;
+  shouldRestoreFocus = true;
+  emit('close', reason);
 }
 
 const coarsePointer = useMediaQuery('(max-width: 767px) and (pointer: coarse)');
@@ -186,6 +202,42 @@ function handleDismissEvent(event: Event, reason: Extract<CloseReason, 'escape' 
   pendingCloseReason = reason;
   if (!canDismiss.value) event.preventDefault();
 }
+
+function captureRestoreFocusTarget() {
+  if (typeof document === 'undefined') return;
+  const activeElement = document.activeElement;
+  restoreFocusTarget.value = activeElement instanceof HTMLElement && activeElement !== document.body
+    ? activeElement
+    : null;
+}
+
+function handleCloseAutoFocus(event: Event) {
+  event.preventDefault();
+  shouldRestoreFocus = true;
+}
+
+function restoreFocus() {
+  if (!shouldRestoreFocus) return;
+  shouldRestoreFocus = false;
+  const target = restoreFocusTarget.value;
+  restoreFocusTarget.value = null;
+  void nextTick(() => {
+    if (target?.isConnected) target.focus({ preventScroll: true });
+  });
+}
+
+function keepFocusedControlVisible(event: FocusEvent) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement) || focusScrollFrame !== null) return;
+  focusScrollFrame = requestAnimationFrame(() => {
+    focusScrollFrame = null;
+    target.scrollIntoView({ block: 'nearest' });
+  });
+}
+
+onBeforeUnmount(() => {
+  if (focusScrollFrame !== null) cancelAnimationFrame(focusScrollFrame);
+});
 
 function handleDialogOpenChange(nextOpen: boolean) {
   if (!nextOpen) handleClose(pendingCloseReason);
