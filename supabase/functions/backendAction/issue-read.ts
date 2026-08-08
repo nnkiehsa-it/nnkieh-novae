@@ -1,6 +1,6 @@
 import { asString } from "../_shared/http.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
-import { getIssueCategory, issueCategoryPolicyLists } from "./categories.ts";
+import { issueCategoryPolicyLists } from "./categories.ts";
 import {
   asNumber,
   asUuid,
@@ -10,7 +10,6 @@ import {
 import { INPUT_LIMITS, optionalText } from "./validation.ts";
 import { canManageIssueCategory } from "./auth.ts";
 import { selectIssueCategory } from "./issue-shared.ts";
-import { attachContentVersion, loadContentVersion } from "./content-versions.ts";
 
 function readSort(payload: JsonRecord) {
   const sort = asString(payload.sort);
@@ -32,8 +31,8 @@ async function issueReadPolicyParams(supabase: BackendSupabase, auth: AuthContex
   };
 }
 
-function compactIssueListResult(data: unknown) {
-  if (!data || typeof data !== "object" || Array.isArray(data)) return data;
+function compactIssueListResult(data: unknown): JsonRecord {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return {};
   const result = data as JsonRecord;
   if (!Array.isArray(result.issues)) return result;
   return {
@@ -76,15 +75,15 @@ async function listIssues(
   supabase: BackendSupabase,
 ) {
   const category = asString(payload.activeFilter);
-  await getIssueCategory(supabase, category);
 
   const cursor = readCursor(payload);
   const titleQuery = action === "searchIssues"
     ? optionalText(payload.titleQuery, "search", INPUT_LIMITS.search).toLowerCase()
     : null;
-  const version = await loadContentVersion(supabase, "issues");
-  const { data, error } = await supabase.schema("app_api").rpc("backend_list_issues", {
+  const { data, error } = await supabase.schema("app_api").rpc("backend_list_issues_snapshot", {
     action_name: action,
+    actor_can_manage: canManageIssueCategory(auth, category),
+    actor_uid: auth.uid,
     active_filter: category,
     status_bucket: asString(payload.statusBucket, "active"),
     sort_name: readSort(payload),
@@ -96,10 +95,9 @@ async function listIssues(
     cursor_sort_number: Number.isFinite(asNumber(cursor.sort_number, Number.NaN))
       ? asNumber(cursor.sort_number, Number.NaN)
       : null,
-    ...await issueReadPolicyParams(supabase, auth, canManageIssueCategory(auth, category)),
   });
   if (error) throw error;
-  return attachContentVersion(compactIssueListResult(data), version);
+  return compactIssueListResult(data);
 }
 
 async function listUserIssues(
@@ -108,8 +106,9 @@ async function listUserIssues(
   supabase: BackendSupabase,
 ) {
   const cursor = readCursor(payload);
-  const version = await loadContentVersion(supabase, "issues");
-  const { data, error } = await supabase.schema("app_api").rpc("backend_list_user_issues", {
+  const { data, error } = await supabase.schema("app_api").rpc("backend_list_user_issues_snapshot", {
+    actor_is_admin: auth.isAdmin,
+    actor_uid: auth.uid,
     status_bucket: asString(payload.statusBucket, "active"),
     sort_name: readSort(payload),
     page_size: readPageSize(payload),
@@ -119,10 +118,9 @@ async function listUserIssues(
     cursor_sort_number: Number.isFinite(asNumber(cursor.sort_number, Number.NaN))
       ? asNumber(cursor.sort_number, Number.NaN)
       : null,
-    ...await issueReadPolicyParams(supabase, auth),
   });
   if (error) throw error;
-  return attachContentVersion(compactIssueListResult(data), version);
+  return compactIssueListResult(data);
 }
 
 export function isIssueReadAction(action: string) {

@@ -351,6 +351,14 @@ interface AppApiFunctions {
     issues_enabled: boolean;
   }, Json>;
   backend_get_access_context: AppFunction<{ actor_uid: string }, Json>;
+  backend_get_session_bootstrap_snapshot: AppFunction<{
+    actor_email: string;
+    actor_is_admin: boolean;
+    actor_name: string;
+    actor_photo_url: string | null;
+    actor_uid: string;
+    record_visit: boolean;
+  }, Json>;
   backend_get_notification_unread_hint: AppFunction<{ actor_is_admin: boolean; actor_uid: string }, Json>;
   backend_create_facility: AppFunction<{
     actor_uid: string;
@@ -361,6 +369,20 @@ interface AppApiFunctions {
     actor_uid: string; actor_can_manage: boolean; bucket: string; status_filter: string;
     search_query: string; sort_name: string; cursor_created_at: string | null;
     cursor_number: number | null; cursor_id: string | null; page_size: number;
+  }, Json>;
+  backend_list_facilities_snapshot: AppFunction<{
+    actor_is_admin: boolean;
+    actor_uid: string;
+    bucket: string;
+    category_filter: string;
+    cursor_created_at: string | null;
+    cursor_id: string | null;
+    cursor_number: number | null;
+    managed_category_ids: string[];
+    page_size: number;
+    search_query: string;
+    sort_name: string;
+    status_filter: string;
   }, Json>;
   backend_toggle_facility_affected: AppFunction<{ facility_id: string; actor_uid: string }, Json>;
   backend_update_facility_status: AppFunction<{
@@ -457,6 +479,12 @@ interface AppApiFunctions {
     page_size: number;
     sort_name: string;
   }, Json>;
+  backend_list_announcements_snapshot: AppFunction<{
+    actor_uid: string;
+    cursor_id: string | null;
+    cursor_published_at: string | null;
+    page_size: number;
+  }, Json>;
   backend_list_announcement_comments: AppFunction<{
     announcement_id: string;
     cursor_created_at: string | null;
@@ -489,6 +517,20 @@ interface AppApiFunctions {
     status_bucket: string;
     title_query: string | null;
   }, Json>;
+  backend_list_issues_snapshot: AppFunction<{
+    action_name: string;
+    actor_can_manage: boolean;
+    actor_uid: string;
+    active_filter: string;
+    cursor_created_at: string | null;
+    cursor_id: string | null;
+    cursor_sort_date: string | null;
+    cursor_sort_number: number | null;
+    page_size: number;
+    sort_name: string;
+    status_bucket: string;
+    title_query: string | null;
+  }, Json>;
   backend_list_user_issues: AppFunction<{
     actor_is_admin: boolean;
     actor_uid: string;
@@ -500,6 +542,17 @@ interface AppApiFunctions {
     page_size: number;
     private_to_owner_categories: string[];
     review_required_categories: string[];
+    sort_name: string;
+    status_bucket: string;
+  }, Json>;
+  backend_list_user_issues_snapshot: AppFunction<{
+    actor_is_admin: boolean;
+    actor_uid: string;
+    cursor_created_at: string | null;
+    cursor_id: string | null;
+    cursor_sort_date: string | null;
+    cursor_sort_number: number | null;
+    page_size: number;
     sort_name: string;
     status_bucket: string;
   }, Json>;
@@ -617,6 +670,7 @@ interface AppApiFunctions {
     retention_config?: Json;
     valid_issue_categories?: string[] | null;
   }, Json>;
+  run_scheduled_maintenance_cleanup: AppFunction<{ retention_config: Json }, Json>;
   sync_runtime_settings: AppFunction<{ settings: Json }, void>;
 }
 

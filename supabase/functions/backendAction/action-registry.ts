@@ -80,6 +80,17 @@ function idempotentWrite(
   });
 }
 
+function naturallyIdempotentWrite(
+  name: string,
+  domain: BackendActionDomain,
+  rateLimitGroup: BackendActionRateLimitGroup,
+  handler: BackendActionDefinition["handler"],
+) {
+  return action(name, domain, rateLimitGroup, handler, {
+    requiresRequestId: true,
+  });
+}
+
 export const backendActionDefinitions = [
   action("getCategoryCatalog", "category", "read", handleCategoryAction),
   action("getCategoryManagement", "category", "read", handleCategoryAction, { requiredPermission: "category.manage" }),
@@ -125,7 +136,7 @@ export const backendActionDefinitions = [
     idempotent: true, requiredPermission: "proposal.manage", requiresRequestId: true,
   }),
   idempotentWrite("toggleSupport", "issue", "sensitive-write", issueHandler),
-  idempotentWrite("removeSupport", "issue", "sensitive-write", issueHandler),
+  naturallyIdempotentWrite("removeSupport", "issue", "sensitive-write", issueHandler),
   idempotentWrite("deleteIssue", "issue", "admin-write", issueHandler),
   action("listComments", "issue", "read", issueHandler),
   idempotentWrite("createComment", "issue", "sensitive-write", issueHandler),
@@ -148,7 +159,7 @@ export const backendActionDefinitions = [
   action("deleteAnnouncement", "announcement", "admin-write", announcementHandler, {
     idempotent: true, requiredPermission: "announcement.manage", requiresRequestId: true,
   }),
-  idempotentWrite("setAnnouncementLike", "announcement", "sensitive-write", announcementHandler),
+  naturallyIdempotentWrite("setAnnouncementLike", "announcement", "sensitive-write", announcementHandler),
   action("listAnnouncementComments", "announcement", "read", announcementHandler),
   idempotentWrite("createAnnouncementComment", "announcement", "sensitive-write", announcementHandler),
   idempotentWrite("deleteAnnouncementComment", "announcement", "sensitive-write", announcementHandler),

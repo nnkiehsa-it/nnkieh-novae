@@ -284,6 +284,7 @@ test('cost-sensitive hot paths use aggregation, patching, and lazy startup', asy
   const vite = await read('vite.config.ts');
   const sessionBootstrap = await read('src/services/session-bootstrap.ts');
   const edgeBootstrap = await read('supabase/functions/backendAction/session-bootstrap.ts');
+  const requestCostMigration = await read('supabase/migrations/202608080001_reduce_runtime_requests_and_background_cost.sql');
   const actionRegistry = await read('supabase/functions/backendAction/action-registry.ts');
   const session = await read('src/composables/useSession.ts');
 
@@ -307,9 +308,13 @@ test('cost-sensitive hot paths use aggregation, patching, and lazy startup', asy
   assert.match(cleanupMigration, /support\.created/u);
   assert.match(cleanupMigration, /drop column if exists secure_url/u);
   assert.match(actionRegistry, /action\("getSessionBootstrap", "user", "read"/u);
-  assert.match(edgeBootstrap, /loadCategoryCatalog/u);
-  assert.match(edgeBootstrap, /backend_get_notification_unread_hint/u);
-  assert.match(edgeBootstrap, /recordVisitIfRequested|recordVisit/u);
+  assert.match(edgeBootstrap, /backend_get_session_bootstrap_snapshot/u);
+  assert.doesNotMatch(edgeBootstrap, /loadCategoryCatalog|loadContentVersions|backend_get_notification_unread_hint/u);
+  assert.match(requestCostMigration, /last_seen_at <= now\(\) - interval '24 hours'/u);
+  assert.match(requestCostMigration, /backend_list_issues_snapshot/u);
+  assert.match(requestCostMigration, /backend_list_facilities_snapshot/u);
+  assert.match(requestCostMigration, /backend_list_announcements_snapshot/u);
+  assert.match(requestCostMigration, /'\*\/5 \* \* \* \*'/u);
   assert.match(sessionBootstrap, /getSessionBootstrap/u);
   assert.match(session, /fetchSessionBootstrap/u);
   assert.doesNotMatch(session, /recordPlatformVisitOnLogin/u);

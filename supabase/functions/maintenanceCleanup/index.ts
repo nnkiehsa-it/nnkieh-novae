@@ -1,6 +1,6 @@
 import { createDatabaseClient } from "../_shared/database-client.ts";
+import { asRecord, errorMessage, errorStatus, jsonResponse, publicErrorBody, requireMethod } from "../_shared/http.ts";
 import { requireEnv } from "../_shared/env.ts";
-import { errorMessage, errorStatus, jsonResponse, publicErrorBody, requireMethod } from "../_shared/http.ts";
 import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 import { DATA_RETENTION } from "../_shared/data-retention.ts";
 import { claimFixedWindowRateLimits, utcMinuteWindow, utcSecondWindow } from "../_shared/upstash-rate-limit.ts";
@@ -22,35 +22,31 @@ Deno.serve(async (request) => {
       { identifier: "global", actionName: "worker.maintenance", window: utcMinuteWindow(), config: RATE_LIMITS.workerRunMinute },
     ]);
     const supabase = createDatabaseClient();
-    const { data: issueCategories, error: categoryError } = await supabase.schema("app_private")
-      .from("issue_categories").select("id");
-    if (categoryError) throw categoryError;
     const { data, error } = await supabase
       .schema("app_api")
-      .rpc("run_maintenance_cleanup", {
+      .rpc("run_scheduled_maintenance_cleanup", {
         retention_config: DATA_RETENTION,
-        valid_issue_categories: (issueCategories ?? []).map((category) => category.id),
       });
     if (error) throw error;
-
+    const snapshot = asRecord(data);
+    const dueWorkers = asRecord(snapshot.dueWorkers);
     const authorization = `Bearer ${requireEnv("WEBHOOK_SECRET")}`;
     const originSecret = requireEnv("EDGE_ORIGIN_SECRET");
     const workers = [
-      { name: "processDeletionJobs", url: edgeFunctionUrl("delete") },
-      { name: "outboxWorker", url: edgeFunctionUrl("outbox") },
-    ];
+      { due: dueWorkers.deletion === true, name: "processDeletionJobs", url: edgeFunctionUrl("delete") },
+      { due: dueWorkers.outbox === true, name: "outboxWorker", url: edgeFunctionUrl("outbox") },
+    ].filter(({ due }) => due);
     const workerResults = await Promise.all(workers.map(async ({ name, url }) => {
       const response = await fetch(url, {
         method: "POST",
         headers: { authorization, "content-type": "application/json", "x-novae-origin-secret": originSecret },
-        body: JSON.stringify({ signal: "daily_maintenance" }),
+        body: JSON.stringify({ signal: "maintenance_backlog" }),
         signal: AbortSignal.timeout(30_000),
       });
       if (!response.ok) throw new Error(`${name}-failed`);
       return await response.json();
     }));
-
-    return jsonResponse({ ok: true, result: data, workers: workerResults });
+    return jsonResponse({ ok: true, result: snapshot.result, workers: workerResults });
   } catch (error) {
     console.error(errorMessage(error));
     return jsonResponse({ ok: false, error: publicErrorBody(error) }, { status: errorStatus(error) });

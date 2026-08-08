@@ -7,6 +7,7 @@ import {
   requestId,
   saveCategoryDraft,
   seedActor,
+  supabase,
 } from "./helpers.ts";
 
 async function createFacility(
@@ -157,12 +158,25 @@ integrationTest("announcement.manage, likes, comments, and ownership", async () 
   }, user.auth));
   assert.equal(asRecord(read.announcement).id, announcementId);
 
+  const likeRequestId = requestId("announcement-like");
   const liked = asRecord(await callAction("setAnnouncementLike", {
     announcementId,
     liked: true,
-    requestId: requestId("announcement-like"),
+    requestId: likeRequestId,
   }, user.auth));
   assert.equal(liked.liked, true);
+  const repeatedLike = asRecord(await callAction("setAnnouncementLike", {
+    announcementId,
+    liked: true,
+    requestId: likeRequestId,
+  }, user.auth));
+  assert.equal(repeatedLike.liked, true);
+  assert.equal(repeatedLike.like_count, liked.like_count);
+  const { count: likeIdempotencyWrites, error: likeIdempotencyError } = await supabase
+    .schema("app_private").from("idempotency_keys").select("request_id", { count: "exact", head: true })
+    .eq("uid", user.auth.uid).eq("action", "setAnnouncementLike").eq("request_id", likeRequestId);
+  if (likeIdempotencyError) throw likeIdempotencyError;
+  assert.equal(likeIdempotencyWrites, 0);
   const unliked = asRecord(await callAction("setAnnouncementLike", {
     announcementId,
     liked: false,

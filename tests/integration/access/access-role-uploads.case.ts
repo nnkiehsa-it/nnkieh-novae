@@ -35,7 +35,11 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   assert.ok(Array.isArray(asRecord(bootstrap.catalog).issueCategories));
   assert.equal(typeof asRecord(bootstrap.notificationUnread).hasUnread, "boolean");
   assert.equal(bootstrap.visitRecorded, true);
-  assert.ok((await tableRow("user_profiles", "uid", user.auth.uid))?.last_seen_at);
+  const firstVisitAt = (await tableRow("user_profiles", "uid", user.auth.uid))?.last_seen_at;
+  assert.ok(firstVisitAt);
+  const repeatedBootstrap = asRecord(await callAction("getSessionBootstrap", { recordVisit: true }, user.auth));
+  assert.equal(repeatedBootstrap.visitRecorded, true);
+  assert.equal((await tableRow("user_profiles", "uid", user.auth.uid))?.last_seen_at, firstVisitAt);
 
   const userRole = asRecord(await callAction("getCurrentUserRole", {}, user.auth));
   assert.equal(userRole.role, "user");

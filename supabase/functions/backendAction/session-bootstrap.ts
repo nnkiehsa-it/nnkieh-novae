@@ -1,45 +1,24 @@
-import { asBoolean } from "./utils.ts";
-import { loadCategoryCatalog } from "./categories.ts";
+import { asRecord } from "../_shared/http.ts";
 import type { AuthContext, BackendSupabase, JsonRecord } from "./types.ts";
-import { loadContentVersions } from "./content-versions.ts";
-
-async function recordVisitIfRequested(
-  payload: JsonRecord,
-  auth: AuthContext,
-  supabase: BackendSupabase,
-) {
-  if (asBoolean(payload.recordVisit, false) !== true) return false;
-  const { error } = await supabase.schema("app_private").from("user_profiles").upsert({
-    uid: auth.uid,
-    email: auth.email.toLowerCase(),
-    display_name: auth.name,
-    photo_url: auth.photoUrl,
-    last_seen_at: new Date().toISOString(),
-  }, { onConflict: "uid" });
-  if (error) throw error;
-  return true;
-}
+import { asBoolean } from "./utils.ts";
 
 export async function getSessionBootstrap(
   payload: JsonRecord,
   auth: AuthContext,
   supabase: BackendSupabase,
 ) {
-  const [catalog, versions, unreadHint, visitRecorded] = await Promise.all([
-    loadCategoryCatalog(supabase, true),
-    loadContentVersions(supabase),
-    supabase.schema("app_api").rpc("backend_get_notification_unread_hint", {
+  const { data, error } = await supabase.schema("app_api")
+    .rpc("backend_get_session_bootstrap_snapshot", {
+      actor_email: auth.email,
       actor_is_admin: auth.isAdmin,
+      actor_name: auth.name,
+      actor_photo_url: auth.photoUrl,
       actor_uid: auth.uid,
-    }).then(({ data, error }) => {
-      if (error) throw error;
-      const record = data && typeof data === "object" && !Array.isArray(data)
-        ? data as Record<string, unknown>
-        : {};
-      return { hasUnread: record.hasUnread === true };
-    }),
-    recordVisitIfRequested(payload, auth, supabase),
-  ]);
+      record_visit: asBoolean(payload.recordVisit, false),
+    });
+  if (error) throw error;
+  const snapshot = asRecord(data);
+  const catalog = asRecord(snapshot.catalog);
 
   return {
     access: {
@@ -54,8 +33,8 @@ export async function getSessionBootstrap(
       ...catalog,
       setupCompleted: auth.setupCompleted,
     },
-    notificationUnread: unreadHint,
-    versions,
-    visitRecorded,
+    notificationUnread: asRecord(snapshot.notificationUnread),
+    versions: asRecord(snapshot.versions),
+    visitRecorded: snapshot.visitRecorded === true,
   };
 }

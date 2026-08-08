@@ -202,7 +202,8 @@ test('backendAction covers frontend actions and Cloudinary direct upload', async
   assert.match(backendAction, /requestId/u);
   assert.match(backendAction, /backendActionDefinitions/u);
   assert.match(backendAction, /idempotentWrite/u);
-  assert.match(backendAction, /idempotentWrite\("setAnnouncementLike"/u);
+  assert.match(backendAction, /naturallyIdempotentWrite\("setAnnouncementLike"/u);
+  assert.match(backendAction, /naturallyIdempotentWrite\("removeSupport"/u);
   assert.match(backendAction, /async function runWithIdempotency/u);
   assert.match(backendAction, /claim_idempotency_key/u);
   assert.match(backendAction, /complete_idempotency_key/u);
@@ -335,12 +336,13 @@ test('outbox, webhooks, FCM, and Notion deletion marks are guarded', async () =>
   assert.match(outboxWorker, /batch_size: 10/u);
   assert.match(deletionJobs, /batch_size: 10/u);
   const usageHardening = await read('supabase/migrations/202607100004_security_usage_hardening.sql');
+  const requestCostMigration = await read('supabase/migrations/202608080001_reduce_runtime_requests_and_background_cost.sql');
   assert.match(usageHardening, /current_setting\('app\.outbox_worker_signaled', true\)/u);
   assert.match(usageHardening, /current_setting\('app\.deletion_worker_signaled', true\)/u);
   assert.match(usageHardening, /set_config\('app\.deletion_worker_signaled', '1', true\)/u);
   assert.match(usageHardening, /create or replace function app_api\.resignal_background_worker/u);
   assert.match(usageHardening, /jobname = 'srp_retry_background_workers'/u);
-  assert.match(usageHardening, /'\* \* \* \* \*'/u);
+  assert.match(requestCostMigration, /'\*\/5 \* \* \* \*'/u);
   assert.match(outboxWorker, /rpc\("resignal_background_worker", \{ worker_name: "outbox" \}\)/u);
   assert.match(deletionJobs, /rpc\("resignal_background_worker", \{ worker_name: "deletion" \}\)/u);
   assert.match(outboxWorker, /sendFcmMessage/u);
@@ -366,9 +368,10 @@ test('outbox, webhooks, FCM, and Notion deletion marks are guarded', async () =>
   assert.match(deletionJobs, /markNotionPageDeleted/u);
   assert.match(maintenanceCleanup, /requireBearerSecret/u);
   assert.match(maintenanceCleanup, /requireMethod\(request, "POST"\)/u);
-  assert.match(maintenanceCleanup, /run_maintenance_cleanup/u);
-  assert.match(maintenanceCleanup, /issue_categories/u);
-  assert.match(maintenanceCleanup, /valid_issue_categories/u);
+  assert.match(maintenanceCleanup, /run_scheduled_maintenance_cleanup/u);
+  assert.doesNotMatch(maintenanceCleanup, /issue_categories|valid_issue_categories/u);
+  assert.match(maintenanceCleanup, /dueWorkers[\s\S]*filter\(\(\{ due \}\) => due\)/u);
+  assert.match(requestCostMigration, /'dueWorkers'[\s\S]*app_private\.outbox_events[\s\S]*app_private\.deletion_jobs/u);
   assert.match(origin, /timingSafeEqual/u);
   assert.match(origin, /EDGE_FUNCTION_NAMESPACE/u);
   assert.match(origin, /EDGE_ORIGIN_SECRET/u);
@@ -493,6 +496,7 @@ test('cost-sensitive ingress and provider operations are bounded before work', a
 
 test('removed issue categories are cleaned and Notion backups are marked deleted', async () => {
   const cleanupMigration = await read('supabase/migrations/202607060002_cleanup_removed_issue_categories.sql');
+  const requestCostMigration = await read('supabase/migrations/202608080001_reduce_runtime_requests_and_background_cost.sql');
   const maintenanceCleanup = await read('supabase/functions/maintenanceCleanup/index.ts');
   const workflow = await read('.github/workflows/deploy-backend.yml');
 
@@ -506,7 +510,8 @@ test('removed issue categories are cleaned and Notion backups are marked deleted
   assert.match(cleanupMigration, /delete from app_private\.uploads/u);
   assert.match(cleanupMigration, /delete from app_private\.issues/u);
   assert.doesNotMatch(cleanupMigration, /notion_pages|notion_page_id/u);
-  assert.match(maintenanceCleanup, /valid_issue_categories: \(issueCategories \?\? \[\]\)\.map/u);
+  assert.match(maintenanceCleanup, /run_scheduled_maintenance_cleanup/u);
+  assert.match(requestCostMigration, /array_agg\(category\.id order by category\.id\)/u);
   assert.match(workflow, /Run maintenance cleanup/u);
 });
 
@@ -570,8 +575,8 @@ test('backend list actions use stable cursor pagination at the service boundary'
   assert.match(backendAction, /function applyDescendingDateCursor/u);
   assert.match(backendAction, /function applyAscendingDateCursor/u);
   assert.match(backendAction, /if \(action === "listIssues" \|\| action === "searchIssues"\)/u);
-  assert.match(backendAction, /rpc\("backend_list_issues"/u);
-  assert.match(backendAction, /rpc\("backend_list_user_issues"/u);
+  assert.match(backendAction, /rpc\("backend_list_issues_snapshot"/u);
+  assert.match(backendAction, /rpc\("backend_list_user_issues_snapshot"/u);
   assert.match(backendAction, /cursor_created_at: readCursorDate\(cursor, "created_at"\) \|\| null/u);
   assert.match(backendAction, /private_to_owner_categories: policy\.privateToOwnerCategoryIds/u);
   assert.match(issueReadMigration, /sort_name = 'most-supported'/u);
