@@ -121,6 +121,7 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   const contentCardCollection = await read('src/components/ui/organisms/ContentCardCollection.vue');
   const tableGridPicker = await read('src/components/ui/molecules/TableGridPicker.vue');
   const dialogShell = await read('src/components/ui/organisms/DialogShell.vue');
+  const issueDetailPagePanel = await read('src/components/IssueDetailPagePanel.vue');
   const responsiveStyles = await read('src/styles/responsive.css');
   const confirmDialog = await read('src/components/ConfirmDialog.vue');
   const entryComposer = await read('src/components/ui/organisms/EntryComposerShell.vue');
@@ -255,6 +256,9 @@ test('reusable UI primitives own buttons, surfaces, lists, dropdowns, controls, 
   assert.match(dialogShell, /handleDismissEvent[\s\S]*event\.preventDefault\(\)/u);
   assert.match(dialogShell, /:open="rootOpen"[\s\S]*@after-leave="handleAfterLeave"[\s\S]*v-if="visible"/u);
   assert.doesNotMatch(dialogShell, /useBodyScrollLock|useDialogFocus|useBottomSheetDrag/u);
+  assert.match(app, /v-if="renderedInstallPromptMode"[\s\S]*:open="isInstallPromptOpen"[\s\S]*:mode="renderedInstallPromptMode"/u);
+  assert.match(app, /watch\(installPromptMode,[\s\S]*if \(mode\) renderedInstallPromptMode\.value = mode/u);
+  assert.doesNotMatch(issueDetailPagePanel, /<Issue(?:Review|Status)Dialog\s+v-if=/u);
   assert.match(responsiveStyles, /\.dialog-overlay\[data-backdrop='dimmed'\] \{[\s\S]*blur\(12px\) saturate\(0\.88\)/u);
   assert.doesNotMatch(responsiveStyles, /-webkit-backdrop-filter/u);
   assert.match(responsiveStyles, /\.dialog-backdrop \{[\s\S]*background-color: transparent;[\s\S]*position: fixed;[\s\S]*inset: 0;/u);

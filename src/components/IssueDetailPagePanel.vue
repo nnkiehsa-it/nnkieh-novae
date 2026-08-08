@@ -76,7 +76,6 @@
 
   <!-- Moderation Dialogs -->
   <IssueReviewDialog
-    v-if="isReviewDialogOpen"
     :open="isReviewDialogOpen"
     :issue="issue"
     @success="handleStatusChanged"
@@ -84,7 +83,6 @@
   />
 
   <IssueStatusDialog
-    v-if="isStatusDialogOpen"
     :open="isStatusDialogOpen"
     :issue="issue"
     :initial-action="statusDialogInitialAction"

@@ -41,10 +41,10 @@
           @enable="enablePushFromPrompt"
         />
         <AppInstallPromptDialog
-          v-if="installPromptMode"
+          v-if="renderedInstallPromptMode"
           :can-install-natively="canInstallPromptNatively"
           :open="isInstallPromptOpen"
-          :mode="installPromptMode"
+          :mode="renderedInstallPromptMode"
           :browser-name="installPromptBrowserName"
           :ios-browser-guide="installPromptIosBrowserGuide"
           :installing="isInstallPrompting"
@@ -99,7 +99,10 @@ import AppUpdatePromptDialog from '@/components/AppUpdatePromptDialog.vue';
 import PushPermissionPromptDialog from '@/components/PushPermissionPromptDialog.vue';
 import ActionFeedbackBar from '@/components/ActionFeedbackBar.vue';
 import LoadingSpinner from '@/components/ui/atoms/LoadingSpinner.vue';
-import { useAppInstallPrompt } from '@/composables/useAppInstallPrompt';
+import {
+  useAppInstallPrompt,
+  type AppInstallPromptMode,
+} from '@/composables/useAppInstallPrompt';
 import { useAppStartupGate } from '@/composables/useAppStartupGate';
 import { useAppUpdate } from '@/composables/useAppUpdate';
 import { usePushPermissionPrompt } from '@/composables/usePushPermissionPrompt';
@@ -239,6 +242,11 @@ const {
   promptInstall,
   reason: installPromptReason,
 } = useAppInstallPrompt();
+const renderedInstallPromptMode = ref<AppInstallPromptMode | null>(installPromptMode.value);
+
+watch(installPromptMode, (mode) => {
+  if (mode) renderedInstallPromptMode.value = mode;
+});
 
 function normalizeRedirectPath(value: unknown) {
   const rawValue = Array.isArray(value) ? value[0] : value;

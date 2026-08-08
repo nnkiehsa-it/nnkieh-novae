@@ -87,7 +87,7 @@
 - `organisms/ContentCardCollection.vue` / `ContentCardShell.vue` / `ContentCardSkeleton.vue` — 提案、公告、設備共用的列表狀態、卡片表面、作者／標題／時間／狀態與一般互動操作；列表卡片只負責開啟 detail 與內容互動，不再承載管理員長按／右鍵入口；鍵盤 focus 可立即預抓，mouse 停留 180ms 且非省流／2G／背景頁才轉發 intent，手機 pointer 不做 hover 預抓；列表與 load-more 骨架共用無陰影內層的 opacity 進場（`skeleton-card`／`skeleton-enter`），保留卡片陰影並避免 iOS WebKit 卸載殘影，領域元件只填資料及差異 slots
 - `organisms/DetailRouteState.vue` / `DetailPageShell.vue` / `SkeletonDetail.vue` — 三領域詳情共用的完整高度鏈、狀態與操作；桌面詳情採無外層卡片的平面雙欄，沿用父層可用高度與 `min-h-0` 捲動鏈以釋放正文／留言空間，不自行推算 `100dvh`；手機移除內容／留言 segmented tabs，以單一 scroll root 依序呈現正文、actions 與討論，使用分隔線而不重複顯示討論標題／留言數／空留言卡，留言 query 深連結先定位討論 anchor，再由留言串定位指定留言
 - `organisms/EntryComposerShell.vue` / `MarkdownImageEditor.vue` / `VisualTableEditor.vue` — 三領域共用的路由新增頁、鍵盤可視高度、未儲存離頁攔截與 Markdown／表格編輯流程；較小控制留在 molecules
-- `organisms/DialogShell.vue` / `AdaptiveActionMenu.vue` — Dialog overlay、獨立全螢幕 backdrop、ARIA、返回鍵堆疊與 dismiss/persistent 行為的唯一完整外殼；底層以 Reka Dialog／Drawer 提供 focus trap、scroll lock、鍵盤與下拉手勢，外層以共用 `dialog-surface--panel` 維持新擬態高光／內陰影與進退場 token；一般浮層在手機自適應為含標題與分組 action 的 iOS 式 Sheet，桌面使用 Reka Popover 定位；管理員與內容操作入口共用 `action-menu-trigger`、`dropdown-panel` 與圓角 action row，領域元件只填內容與 actions
+- `organisms/DialogShell.vue` / `AdaptiveActionMenu.vue` — Dialog overlay、獨立全螢幕 backdrop、ARIA、返回鍵堆疊與 dismiss/persistent 行為的唯一完整外殼；底層以 Reka Dialog／Drawer 提供 focus trap、scroll lock、鍵盤與下拉手勢，外層以共用 `dialog-surface--panel` 維持新擬態高光／內陰影與進退場 token；呼叫端必須保留 dialog 掛載並只以 `open` 控制顯示，讓 leave 完成後才卸載內層；一般浮層在手機自適應為含標題與分組 action 的 iOS 式 Sheet，桌面使用 Reka Popover 定位；管理員與內容操作入口共用 `action-menu-trigger`、`dropdown-panel` 與圓角 action row，領域元件只填內容與 actions
 
 ---
 
