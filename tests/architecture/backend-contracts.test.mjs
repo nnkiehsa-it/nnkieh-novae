@@ -59,7 +59,7 @@ test('Supabase backend deployment owns database and Edge Functions', async () =>
   const workflow = await read('.github/workflows/deploy-backend.yml');
   const config = await read('supabase/config.toml');
 
-  assert.match(workflow, /supabase\/setup-cli@v3[\s\S]*version: 2\.110\.0/u);
+  assert.match(workflow, /supabase\/setup-cli@v3[\s\S]*version: 2\.113\.0/u);
   assert.match(workflow, /actions\/setup-node@v7/u);
   assert.match(workflow, /cache-node-modules/u);
   assert.match(workflow, /npm ci --prefer-offline/u);
@@ -69,8 +69,8 @@ test('Supabase backend deployment owns database and Edge Functions', async () =>
   assert.match(workflow, /supabase functions deploy \$names --no-verify-jwt/u);
   assert.match(workflow, /function_namespace="n\$\{EDGE_FUNCTION_NAMESPACE\}"/u);
   assert.match(workflow, /Deploy Cloudflare API Gateway/u);
-  assert.match(workflow, /wrangler@4\.111\.0 secret bulk/u);
-  assert.match(workflow, /wrangler@4\.111\.0 deploy/u);
+  assert.match(workflow, /wrangler@4\.120\.0 secret bulk/u);
+  assert.match(workflow, /wrangler@4\.120\.0 deploy/u);
   assert.match(workflow, /for attempt in \$\(seq 1 12\)/u);
   assert.match(workflow, /"code":"origin-denied"/u);
   assert.match(workflow, /Smoke test API origin deployment/u);
@@ -331,7 +331,7 @@ test('outbox, webhooks, FCM, and Notion deletion marks are guarded', async () =>
   assert.match(outboxWorker, /requireBearerSecret/u);
   assert.ok(outboxWorker.indexOf('requireOriginSecret(request)') < outboxWorker.indexOf('requireBearerSecret(request)'));
   assert.match(outboxWorker, /requireMethod\(request, "POST"\)/u);
-  assert.match(outboxWorker, /errorMessage/u);
+  assert.match(outboxWorker, /log\.error\("outbox-event\.failed"/u);
   assert.match(outboxWorker, /claim_outbox_events/u);
   assert.match(outboxWorker, /batch_size: 10/u);
   assert.match(deletionJobs, /batch_size: 10/u);
@@ -364,7 +364,7 @@ test('outbox, webhooks, FCM, and Notion deletion marks are guarded', async () =>
   assert.match(cloudinaryWebhook, /requireMethod\(request, "POST"\)/u);
   assert.match(deletionJobs, /deleteCloudinaryAsset/u);
   assert.match(deletionJobs, /requireMethod\(request, "POST"\)/u);
-  assert.match(deletionJobs, /errorMessage/u);
+  assert.match(deletionJobs, /log\.error\("deletion-job\.failed"/u);
   assert.match(deletionJobs, /markNotionPageDeleted/u);
   assert.match(maintenanceCleanup, /requireBearerSecret/u);
   assert.match(maintenanceCleanup, /requireMethod\(request, "POST"\)/u);

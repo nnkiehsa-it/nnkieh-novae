@@ -1,4 +1,4 @@
-import { GoogleAuth } from "npm:google-auth-library@10";
+import { GoogleAuth } from "npm:google-auth-library@11.0.0";
 import { requireEnv } from "./env.ts";
 
 interface CachedToken {

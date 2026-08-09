@@ -47,8 +47,8 @@ test('personal notification writes and pushes are scoped to the recipient', asyn
   assert.match(outboxWorker, /event\.event_type === "support\.goal_met" \|\| uid !== event\.actor_uid/u);
   assert.match(outboxWorker, /query = query\.in\("uid", recipientUids\)/u);
   assert.match(outboxWorker, /upsert\(notifications, \{ ignoreDuplicates: true, onConflict: "id" \}\)/u);
-  assert.match(outboxWorker, /deliverPushes\(supabase, event\.id, base, recipients\)/u);
-  assert.match(outboxWorker, /retryPushDeliveries\(supabase\)/u);
+  assert.match(outboxWorker, /deliverPushes\(supabase, event\.id, base, recipients, log\)/u);
+  assert.match(outboxWorker, /retryPushDeliveries\(supabase, log\)/u);
   assert.match(pushRetryMigration, /claim_push_delivery_jobs[\s\S]*for update skip locked/u);
   assert.match(pushRetryMigration, /fail_push_delivery_job[\s\S]*power\(2/u);
   assert.doesNotMatch(outboxWorker, /srp-admin|topic_admin/u);

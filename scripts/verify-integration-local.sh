@@ -420,7 +420,7 @@ if [[ "$SERVE" != "true" ]]; then
 fi
 
 progress_begin "start local Cloudflare gateway"
-"${TEST_NPX[@]}" wrangler@4.112.0 dev --config "$TEST_ROOT/cloudflare/wrangler.toml" --env development --local --port 8787 \
+"${TEST_NPX[@]}" wrangler@4.120.0 dev --config "$TEST_ROOT/cloudflare/wrangler.toml" --env development --local --port 8787 \
   --var "ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173" \
   --var "CLOUDINARY_API_SECRET:integration-cloudinary-secret" \
   --var "CLOUDINARY_CLOUD_NAME:integration" \

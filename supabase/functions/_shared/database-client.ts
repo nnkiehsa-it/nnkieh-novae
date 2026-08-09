@@ -1,5 +1,5 @@
-import { PostgrestClient } from "npm:@supabase/postgrest-js@2.110.7";
-import type { SupabaseClient } from "npm:@supabase/supabase-js@2.110.7";
+import { PostgrestClient } from "npm:@supabase/postgrest-js@2.112.2";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.112.2";
 import type { Database } from "./database.ts";
 import { requireEnv } from "./env.ts";
 

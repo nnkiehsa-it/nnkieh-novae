@@ -58,14 +58,14 @@ jobs:
 
       - uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.9.4
+          deno-version: v2.9.5
 
       - name: Verify local database, permissions, and Edge workflows
         run: npm run verify:integration
 
       - uses: supabase/setup-cli@v3
         with:
-          version: 2.110.0
+          version: 2.113.0
 
       - name: Validate Supabase deployment secrets
         env:
@@ -245,12 +245,12 @@ jobs:
         run: |
           environment="${{ github.ref_name == 'main' && 'production' || 'development' }}"
           node -e "const fs=require('node:fs'); const keys=['ALLOWED_ORIGINS','CLOUDINARY_API_SECRET','CLOUDINARY_CLOUD_NAME','CLOUDINARY_WEBHOOK_SECRET','EDGE_FUNCTION_NAMESPACE','EDGE_ORIGIN_SECRET','FIREBASE_PROJECT_ID','SUPABASE_FUNCTIONS_BASE_URL']; fs.writeFileSync('/tmp/novae-worker-secrets.json', JSON.stringify(Object.fromEntries(keys.map((key) => [key, process.env[key]]))))"
-          npx -y wrangler@4.111.0 deploy --config cloudflare/wrangler.toml --env "$environment"
-          npx -y wrangler@4.111.0 secret bulk /tmp/novae-worker-secrets.json --config cloudflare/wrangler.toml --env "$environment"
+          npx -y wrangler@4.120.0 deploy --config cloudflare/wrangler.toml --env "$environment"
+          npx -y wrangler@4.120.0 secret bulk /tmp/novae-worker-secrets.json --config cloudflare/wrangler.toml --env "$environment"
           for obsolete_key in UPSTASH_REDIS_REST_TOKEN UPSTASH_REDIS_REST_URL; do
-            npx -y wrangler@4.111.0 secret delete "$obsolete_key" --config cloudflare/wrangler.toml --env "$environment" >/dev/null 2>&1 || true
+            npx -y wrangler@4.120.0 secret delete "$obsolete_key" --config cloudflare/wrangler.toml --env "$environment" >/dev/null 2>&1 || true
           done
-          npx -y wrangler@4.111.0 deploy --config cloudflare/wrangler.toml --env "$environment"
+          npx -y wrangler@4.120.0 deploy --config cloudflare/wrangler.toml --env "$environment"
           rm -f /tmp/novae-worker-secrets.json
 
       - name: Smoke test Cloudflare API Gateway

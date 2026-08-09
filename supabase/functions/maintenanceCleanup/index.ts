@@ -1,11 +1,12 @@
 import { createDatabaseClient } from "../_shared/database-client.ts";
-import { asRecord, errorMessage, errorStatus, jsonResponse, publicErrorBody, requireMethod } from "../_shared/http.ts";
+import { asRecord, errorStatus, jsonResponse, publicErrorBody, requireMethod } from "../_shared/http.ts";
 import { requireEnv } from "../_shared/env.ts";
 import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 import { DATA_RETENTION } from "../_shared/data-retention.ts";
 import { claimFixedWindowRateLimits, utcMinuteWindow, utcSecondWindow } from "../_shared/upstash-rate-limit.ts";
 import { requireBearerSecret } from "../_shared/webhook.ts";
 import { edgeFunctionUrl, requireOriginSecret } from "../_shared/origin.ts";
+import { createFunctionLogger } from "../_shared/observability.ts";
 
 Deno.serve(async (request) => {
   const originFailure = requireOriginSecret(request);
@@ -16,6 +17,7 @@ Deno.serve(async (request) => {
   const authFailure = requireBearerSecret(request);
   if (authFailure) return authFailure;
 
+  const log = createFunctionLogger("maintenanceCleanup");
   try {
     await claimFixedWindowRateLimits([
       { identifier: "global", actionName: "worker.maintenance.second", window: utcSecondWindow(), config: RATE_LIMITS.workerRunSecond },
@@ -46,9 +48,12 @@ Deno.serve(async (request) => {
       if (!response.ok) throw new Error(`${name}-failed`);
       return await response.json();
     }));
+    log.success("maintenance.completed", { status: 200, workerCount: workers.length });
     return jsonResponse({ ok: true, result: snapshot.result, workers: workerResults });
   } catch (error) {
-    console.error(errorMessage(error));
-    return jsonResponse({ ok: false, error: publicErrorBody(error) }, { status: errorStatus(error) });
+    const status = errorStatus(error);
+    if (status >= 500) log.error("maintenance.failed", error, { status });
+    else log.warn("maintenance.rejected", { status });
+    return jsonResponse({ ok: false, error: publicErrorBody(error) }, { status });
   }
 });

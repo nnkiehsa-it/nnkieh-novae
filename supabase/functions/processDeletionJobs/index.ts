@@ -1,7 +1,8 @@
 import { createDatabaseClient } from "../_shared/database-client.ts";
 import { deleteCloudinaryAsset } from "../_shared/cloudinary.ts";
-import { errorMessage, errorStatus, jsonResponse, publicErrorBody, requireMethod } from "../_shared/http.ts";
+import { errorStatus, jsonResponse, publicErrorBody, requireMethod } from "../_shared/http.ts";
 import { markNotionPageDeleted } from "../_shared/notion.ts";
+import { createFunctionLogger } from "../_shared/observability.ts";
 import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 import { claimFixedWindowRateLimits, utcMinuteWindow, utcSecondWindow } from "../_shared/upstash-rate-limit.ts";
 import { requireBearerSecret } from "../_shared/webhook.ts";
@@ -24,6 +25,7 @@ Deno.serve(async (request) => {
   const authFailure = requireBearerSecret(request);
   if (authFailure) return authFailure;
 
+  const log = createFunctionLogger("processDeletionJobs");
   try {
     await claimFixedWindowRateLimits([
       { identifier: "global", actionName: "worker.deletion.second", window: utcSecondWindow(), config: RATE_LIMITS.workerRunSecond },
@@ -69,13 +71,11 @@ Deno.serve(async (request) => {
         if (completeError) throw completeError;
       } catch (error) {
         const traceCode = crypto.randomUUID();
-        console.error(JSON.stringify({
-          error: errorMessage(error),
+        log.error("deletion-job.failed", error, {
           jobId: job.id,
-          targetId: job.target_id,
           targetType: job.target_type,
           traceCode,
-        }));
+        });
         const { error: failError } = await supabase
           .schema("app_api")
           .rpc("fail_deletion_job", {
@@ -92,13 +92,16 @@ Deno.serve(async (request) => {
       const { error: resignalError } = await supabase.schema("app_api")
         .rpc("resignal_background_worker", { worker_name: "deletion" });
       if (resignalError) {
-        console.error("deletion backlog resignal failed", errorMessage(resignalError));
+        log.error("deletion-backlog-resignal.failed", resignalError);
       }
     }
 
+    log.success("deletion-worker.completed", { processedCount: jobs.length, status: 200 });
     return jsonResponse({ ok: true, processedCount: jobs.length });
   } catch (error) {
-    console.error(errorMessage(error));
-    return jsonResponse({ ok: false, error: publicErrorBody(error) }, { status: errorStatus(error) });
+    const status = errorStatus(error);
+    if (status >= 500) log.error("deletion-worker.failed", error, { status });
+    else log.warn("deletion-worker.rejected", { status });
+    return jsonResponse({ ok: false, error: publicErrorBody(error) }, { status });
   }
 });

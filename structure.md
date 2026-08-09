@@ -32,7 +32,7 @@
   - shared helpers：`issue-shared.ts`、`announcement-shared.ts`
   - 省 Edge Function 次數靠合併讀取與前端快取，不把 domain 業務搬進 Cloudflare Worker
 - 獨立 Functions：`syncUser`、`cloudinaryWebhook`、`outboxWorker`、`processDeletionJobs`、`maintenanceCleanup`
-- `_shared/` — `env`、`http`、`api-errors`（公開錯誤契約 codegen）、`origin`（Worker／內部 origin secret 與動態 Function URL）、`firebase-auth`（Redis 15 分鐘絕對期限與 warm isolate 5 分鐘記憶體快取）、`cloudinary`（只負責上傳、驗證與刪除）、`media-delivery`（公開固定／私人 15 分鐘簽名 Worker 媒體網址）、`database`、`database-client`（Edge 專用精簡 PostgREST client）、`google-oauth`、`fcm`、`notion`（提案狀態變更時以完整正文／原因／結果／留言快照更新受控 blocks 與最新附議數；設備正文同步地點與處理結果；圖片匯入同樣經 Media Gateway）、`rate-limits`、`upstash-rate-limit`、`webhook`
+- `_shared/` — `env`、`http`、`api-errors`（公開錯誤契約 codegen）、`origin`（Worker／內部 origin secret 與動態 Function URL）、`observability`（輸出至 Supabase Edge Function Logs 的結構化 JSON；統一 function／invocation、事件、耗時與安全錯誤欄位，不記 payload、憑證或個資）、`firebase-auth`（Redis 15 分鐘絕對期限與 warm isolate 5 分鐘記憶體快取）、`cloudinary`（只負責上傳、驗證與刪除）、`media-delivery`（公開固定／私人 15 分鐘簽名 Worker 媒體網址）、`database`、`database-client`（Edge 專用精簡 PostgREST client）、`google-oauth`、`fcm`、`notion`（提案狀態變更時以完整正文／原因／結果／留言快照更新受控 blocks 與最新附議數；設備正文同步地點與處理結果；圖片匯入同樣經 Media Gateway）、`rate-limits`、`upstash-rate-limit`、`webhook`
 
 ---
 

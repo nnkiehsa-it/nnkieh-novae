@@ -125,13 +125,13 @@ jobs:
           fi
 
       - name: Pull Vercel Project Info
-        run: npx -y vercel@56.2.1 pull --yes --environment=${{ github.ref_name == 'main' && 'production' || 'preview' }} --token=${{ secrets.VERCEL_TOKEN }}
+        run: npx -y vercel@58.9.0 pull --yes --environment=${{ github.ref_name == 'main' && 'production' || 'preview' }} --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: Build Project Artifacts
-        run: npx -y vercel@56.2.1 build ${{ github.ref_name == 'main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
+        run: npx -y vercel@58.9.0 build ${{ github.ref_name == 'main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
         env:
           NPM_CONFIG_AUDIT: 'false'
           NPM_CONFIG_FUND: 'false'
@@ -154,7 +154,7 @@ jobs:
           VITE_API_BASE_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
 
       - name: Deploy Project Artifacts to Vercel
-        run: npx -y vercel@56.2.1 deploy --prebuilt ${{ github.ref_name == 'main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
+        run: npx -y vercel@58.9.0 deploy --prebuilt ${{ github.ref_name == 'main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

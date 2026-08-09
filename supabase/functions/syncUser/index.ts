@@ -2,8 +2,9 @@ import { createDatabaseClient } from "../_shared/database-client.ts";
 import { requireEnv } from "../_shared/env.ts";
 import { firebaseAuthEmulatorHost, requireEligibleFirebaseUser } from "../_shared/firebase-auth.ts";
 import { getGoogleAccessToken } from "../_shared/google-oauth.ts";
-import { errorMessage, errorStatus, handleCorsPreflight, jsonResponse, publicErrorBody, requireMethod } from "../_shared/http.ts";
+import { errorStatus, handleCorsPreflight, jsonResponse, publicErrorBody, requireMethod } from "../_shared/http.ts";
 import { requireOriginSecret } from "../_shared/origin.ts";
+import { createFunctionLogger } from "../_shared/observability.ts";
 import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 import { claimFixedWindowRateLimit, utcHourWindow } from "../_shared/upstash-rate-limit.ts";
 
@@ -71,6 +72,7 @@ Deno.serve(async (request) => {
   const methodFailure = requireMethod(request, "POST");
   if (methodFailure) return methodFailure;
 
+  const log = createFunctionLogger("syncUser");
   try {
     const projectId = requireEnv("FIREBASE_PROJECT_ID");
     const user = await requireEligibleFirebaseUser(request);
@@ -102,9 +104,12 @@ Deno.serve(async (request) => {
     });
     if (adminSyncError) throw adminSyncError;
 
+    log.success("user-sync.completed", { status: 200 });
     return jsonResponse({ ok: true, role: "authenticated" });
   } catch (error) {
-    console.error(errorMessage(error));
-    return jsonResponse({ ok: false, error: publicErrorBody(error) }, { status: errorStatus(error) });
+    const status = errorStatus(error);
+    if (status >= 500) log.error("user-sync.failed", error, { status });
+    else log.warn("user-sync.rejected", { status });
+    return jsonResponse({ ok: false, error: publicErrorBody(error) }, { status });
   }
 });

@@ -2,7 +2,6 @@ import { createDatabaseClient } from "../_shared/database-client.ts";
 import {
   asRecord,
   asString,
-  errorMessage,
   errorStatus,
   handleCorsPreflight,
   readJsonRecord,
@@ -12,6 +11,7 @@ import { getBackendActionDefinition } from "./action-registry.ts";
 import { claimBackendHealthcheckRateLimit } from "./rate-limit.ts";
 import { errorResponse, successResponse } from "./response.ts";
 import { requireOriginSecret } from "../_shared/origin.ts";
+import { createFunctionLogger } from "../_shared/observability.ts";
 import { executeBackendAction } from "./execution.ts";
 
 Deno.serve(async (request) => {
@@ -21,6 +21,7 @@ Deno.serve(async (request) => {
   if (preflight) return preflight;
 
   const requestId = crypto.randomUUID();
+  const log = createFunctionLogger("backendAction");
   let action = "";
 
   try {
@@ -38,23 +39,33 @@ Deno.serve(async (request) => {
     const supabase = createDatabaseClient();
     if (action === "healthcheck") {
       await claimBackendHealthcheckRateLimit();
-      return successResponse(await handleHealthcheck(request, supabase), requestId);
+      const data = await handleHealthcheck(request, supabase);
+      log.success("backend-action.completed", { action, domain: "system", requestId, status: 200 });
+      return successResponse(data, requestId);
     }
 
     const definition = getBackendActionDefinition(action);
     if (!definition) throw new Error("invalid-action");
     const auth = await requireAuth(supabase, request);
     const data = await executeBackendAction(definition, payload, auth, supabase);
+    if (definition.rateLimitGroup !== "read") {
+      log.success("backend-action.completed", {
+        action,
+        domain: definition.domain,
+        requestId,
+        status: 200,
+      });
+    }
     return successResponse(data, requestId);
   } catch (error) {
     const status = errorStatus(error);
-    console.error(JSON.stringify({
+    const fields = {
       action: action || "unknown",
-      error: errorMessage(error),
       requestId,
-      stack: error instanceof Error ? error.stack : undefined,
       status,
-    }));
+    };
+    if (status >= 500) log.error("backend-action.failed", error, fields);
+    else log.warn("backend-action.rejected", fields);
     return errorResponse(error, requestId);
   }
 });

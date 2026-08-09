@@ -1,6 +1,5 @@
 import { createDatabaseClient } from "../_shared/database-client.ts";
 import {
-  errorMessage,
   errorStatus,
   jsonResponse,
   MAX_WEBHOOK_BODY_BYTES,
@@ -12,6 +11,7 @@ import {
 import { verifyCloudinarySignature } from "../_shared/webhook.ts";
 import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 import { requireOriginSecret } from "../_shared/origin.ts";
+import { createFunctionLogger } from "../_shared/observability.ts";
 
 Deno.serve(async (request) => {
   const originFailure = requireOriginSecret(request);
@@ -19,6 +19,7 @@ Deno.serve(async (request) => {
   const methodFailure = requireMethod(request, "POST");
   if (methodFailure) return methodFailure;
 
+  const log = createFunctionLogger("cloudinaryWebhook");
   try {
     const rawBody = await readRequestText(request, MAX_WEBHOOK_BODY_BYTES);
     const signatureFailure = await verifyCloudinarySignature(request, rawBody);
@@ -76,9 +77,15 @@ Deno.serve(async (request) => {
       if (deletionError && deletionError.code !== "23505") throw deletionError;
     }
 
+    log.success("media-webhook.completed", {
+      assetStatus: validAsset ? "ready" : "rejected",
+      status: 200,
+    });
     return jsonResponse({ ok: true });
   } catch (error) {
-    console.error(errorMessage(error));
-    return jsonResponse({ ok: false, error: publicErrorBody(error) }, { status: errorStatus(error) });
+    const status = errorStatus(error);
+    if (status >= 500) log.error("media-webhook.failed", error, { status });
+    else log.warn("media-webhook.rejected", { status });
+    return jsonResponse({ ok: false, error: publicErrorBody(error) }, { status });
   }
 });

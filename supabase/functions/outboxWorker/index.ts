@@ -3,7 +3,7 @@ import {
   type AppDatabaseClient,
 } from "../_shared/database-client.ts";
 import { isInvalidFcmTokenError, sendFcmMessage, sendFcmTopicMessage } from "../_shared/fcm.ts";
-import { asRecord, errorMessage, errorStatus, jsonResponse, publicErrorBody, requireMethod } from "../_shared/http.ts";
+import { asRecord, errorStatus, jsonResponse, publicErrorBody, requireMethod } from "../_shared/http.ts";
 import { RATE_LIMITS } from "../_shared/rate-limits.ts";
 import { claimFixedWindowRateLimits, utcMinuteWindow, utcSecondWindow } from "../_shared/upstash-rate-limit.ts";
 import {
@@ -18,6 +18,7 @@ import {
 } from "../_shared/notion.ts";
 import { requireBearerSecret } from "../_shared/webhook.ts";
 import { requireOriginSecret } from "../_shared/origin.ts";
+import { createFunctionLogger, type FunctionLogger } from "../_shared/observability.ts";
 
 interface OutboxEvent {
   id: string;
@@ -384,7 +385,8 @@ async function syncNotionForEvent(
 async function sendPushes(
   supabase: AppSupabase,
   notification: Record<string, unknown>,
-  explicitRecipientUids: string[] = [],
+  explicitRecipientUids: string[],
+  log: FunctionLogger,
 ) {
   if (isCommentNotificationType(asString(notification.type))) {
     const actorName = await findDisplayName(supabase, asString(notification.actor_uid));
@@ -446,7 +448,7 @@ async function sendPushes(
     try {
       await sendFcmTopicMessage(topic, topicData);
     } catch (error) {
-      console.error(JSON.stringify({ error: errorMessage(error), notificationType, operation: "fcm-topic-send", topic }));
+      log.error("push-topic.failed", error, { notificationType, topic });
       // Topic subscribers must be included in the token fallback when fanout fails.
       tokens.length = 0;
       for (let offset = 0; ; offset += 200) {
@@ -547,7 +549,8 @@ async function deliverPushes(
   supabase: AppSupabase,
   deliveryKey: string,
   notification: Record<string, unknown>,
-  recipientUids: string[] = [],
+  recipientUids: string[],
+  log: FunctionLogger,
 ) {
   const { data: delivery, error: insertError } = await supabase
     .schema("app_private")
@@ -572,7 +575,7 @@ async function deliverPushes(
   if (!delivery) throw new Error("push-delivery-job-not-created");
 
   try {
-    await sendPushes(supabase, notification, recipientUids);
+    await sendPushes(supabase, notification, recipientUids, log);
     const { error: completeError } = await supabase.schema("app_private").from("push_delivery_logs")
       .update({
         locked_at: null,
@@ -585,11 +588,11 @@ async function deliverPushes(
     if (completeError) throw completeError;
   } catch (error) {
     const traceCode = crypto.randomUUID();
-    console.error(JSON.stringify({
-      error: errorMessage(error),
+    log.error("push-delivery.failed", error, {
+      deliveryKey,
       notificationType: asString(notification.type),
       traceCode,
-    }));
+    });
     const { error: failError } = await supabase.schema("app_private").from("push_delivery_logs").update({
       error_trace_id: traceCode,
       locked_at: null,
@@ -604,7 +607,7 @@ async function deliverPushes(
   }
 }
 
-async function retryPushDeliveries(supabase: AppSupabase) {
+async function retryPushDeliveries(supabase: AppSupabase, log: FunctionLogger) {
   const { data, error } = await supabase.schema("app_api")
     .rpc("claim_push_delivery_jobs", { batch_size: 10 });
   if (error) throw error;
@@ -614,18 +617,17 @@ async function retryPushDeliveries(supabase: AppSupabase) {
         supabase,
         asRecord(job.notification),
         Array.isArray(job.recipient_uids) ? job.recipient_uids.map(asString).filter(Boolean) : [],
+        log,
       );
       const { error: completeError } = await supabase.schema("app_api")
         .rpc("complete_push_delivery_job", { job_id: job.id });
       if (completeError) throw completeError;
     } catch (retryError) {
       const traceCode = crypto.randomUUID();
-      console.error(JSON.stringify({
+      log.error("push-delivery-retry.failed", retryError, {
         deliveryKey: asString(job.delivery_key),
-        error: errorMessage(retryError),
-        operation: "push-delivery-retry",
         traceCode,
-      }));
+      });
       const { error: failError } = await supabase.schema("app_api")
         .rpc("fail_push_delivery_job", { job_id: job.id, trace_id: traceCode });
       if (failError) throw failError;
@@ -649,6 +651,7 @@ async function insertNotifications(
 async function createNotificationsForEvent(
   supabase: AppSupabase,
   event: OutboxEvent,
+  log: FunctionLogger,
 ) {
   if (event.event_type === "issue.created" || event.event_type === "facility.created") {
     const base = notificationForEvent(event);
@@ -667,7 +670,7 @@ async function createNotificationsForEvent(
       ...base, recipient_uid: recipientUid, id: await deterministicNotificationId(event.id, recipientUid),
     })));
     await insertNotifications(supabase, notifications);
-    if (recipients.length > 0) await deliverPushes(supabase, event.id, base, recipients);
+    if (recipients.length > 0) await deliverPushes(supabase, event.id, base, recipients, log);
     return { hasNotification: recipients.length > 0 };
   }
   if (event.event_type === "facility.status_changed") {
@@ -684,7 +687,7 @@ async function createNotificationsForEvent(
       id: await deterministicNotificationId(event.id, recipientUid),
     })));
     await insertNotifications(supabase, notifications);
-    if (recipients.length > 0) await deliverPushes(supabase, event.id, base, recipients);
+    if (recipients.length > 0) await deliverPushes(supabase, event.id, base, recipients, log);
     return { hasNotification: recipients.length > 0 };
   }
   if (
@@ -712,7 +715,7 @@ async function createNotificationsForEvent(
         id: await deterministicNotificationId(event.id, recipientUid),
       })));
     await insertNotifications(supabase, notifications);
-    if (recipients.length > 0) await deliverPushes(supabase, event.id, base, recipients);
+    if (recipients.length > 0) await deliverPushes(supabase, event.id, base, recipients, log);
     return { hasNotification: recipients.length > 0 };
   }
   const notification = await resolveNotification(supabase, event);
@@ -722,7 +725,7 @@ async function createNotificationsForEvent(
       id: await deterministicNotificationId(event.id, "primary"),
     };
     await insertNotification(supabase, notificationWithId);
-    await deliverPushes(supabase, event.id, notificationWithId);
+    await deliverPushes(supabase, event.id, notificationWithId, [], log);
   }
 
   return {
@@ -730,11 +733,11 @@ async function createNotificationsForEvent(
   };
 }
 
-async function processEvent(supabase: AppSupabase, event: OutboxEvent) {
+async function processEvent(supabase: AppSupabase, event: OutboxEvent, log: FunctionLogger) {
   await hydrateCommentContent(supabase, event);
   let hasNotification: boolean;
   if (!event.notification_completed_at) {
-    ({ hasNotification } = await createNotificationsForEvent(supabase, event));
+    ({ hasNotification } = await createNotificationsForEvent(supabase, event, log));
     const { error } = await supabase.schema("app_private").from("outbox_events")
       .update({ notification_completed_at: new Date().toISOString() }).eq("id", event.id);
     if (error) throw error;
@@ -781,13 +784,14 @@ Deno.serve(async (request) => {
   const authFailure = requireBearerSecret(request);
   if (authFailure) return authFailure;
 
+  const log = createFunctionLogger("outboxWorker");
   try {
     await claimFixedWindowRateLimits([
       { identifier: "global", actionName: "worker.outbox.second", window: utcSecondWindow(), config: RATE_LIMITS.workerRunSecond },
       { identifier: "global", actionName: "worker.outbox", window: utcMinuteWindow(), config: RATE_LIMITS.workerRunMinute },
     ]);
     const supabase = createDatabaseClient();
-    const retriedPushCount = await retryPushDeliveries(supabase);
+    const retriedPushCount = await retryPushDeliveries(supabase, log);
     const { data, error } = await supabase
       .schema("app_api")
       .rpc("claim_outbox_events", { batch_size: 10 });
@@ -798,21 +802,19 @@ Deno.serve(async (request) => {
     const events = (data ?? []) as OutboxEvent[];
     for (const event of events) {
       try {
-        await processEvent(supabase, event);
+        await processEvent(supabase, event, log);
         const { error: completeError } = await supabase
           .schema("app_api")
           .rpc("complete_outbox_event", { event_id: event.id });
         if (completeError) throw completeError;
       } catch (error) {
         const traceCode = crypto.randomUUID();
-        console.error("outbox event failed", {
-          event_id: event.id,
-          event_type: event.event_type,
-          notification_completed_at: event.notification_completed_at ?? null,
-          notion_completed_at: event.notion_completed_at ?? null,
-          target_id: event.target_id,
-          target_type: event.target_type,
-          error: errorMessage(error),
+        log.error("outbox-event.failed", error, {
+          eventId: event.id,
+          eventType: event.event_type,
+          notificationCompleted: Boolean(event.notification_completed_at),
+          notionCompleted: Boolean(event.notion_completed_at),
+          targetType: event.target_type,
           traceCode,
         });
         const { error: failError } = await supabase
@@ -828,13 +830,16 @@ Deno.serve(async (request) => {
       const { error: resignalError } = await supabase.schema("app_api")
         .rpc("resignal_background_worker", { worker_name: "outbox" });
       if (resignalError) {
-        console.error("outbox backlog resignal failed", errorMessage(resignalError));
+        log.error("outbox-backlog-resignal.failed", resignalError);
       }
     }
 
+    log.success("outbox-worker.completed", { processedCount: events.length, retriedPushCount, status: 200 });
     return jsonResponse({ ok: true, processedCount: events.length, retriedPushCount });
   } catch (error) {
-    console.error(errorMessage(error));
-    return jsonResponse({ ok: false, error: publicErrorBody(error) }, { status: errorStatus(error) });
+    const status = errorStatus(error);
+    if (status >= 500) log.error("outbox-worker.failed", error, { status });
+    else log.warn("outbox-worker.rejected", { status });
+    return jsonResponse({ ok: false, error: publicErrorBody(error) }, { status });
   }
 });
