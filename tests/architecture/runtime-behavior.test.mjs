@@ -174,15 +174,20 @@ test('notification realtime subscriptions use authorized private broadcasts', as
 
 test('app updates hand over the service worker with bounded reload recovery', async () => {
   const appUpdate = await read('src/composables/useAppUpdate.ts');
+  const appUpdateGate = await read('src/components/AppUpdateGate.vue');
+  const main = await read('src/main.ts');
   const serviceWorker = await read('src/sw.ts');
   const realtimeEvents = await read('src/services/realtime-events.ts');
 
   assert.match(appUpdate, /SERVICE_WORKER_PREPARE_TIMEOUT_MS = 2_000/u);
+  assert.match(appUpdate, /VERSION_CHECK_TIMEOUT_MS = 2_000/u);
   assert.match(appUpdate, /MAX_AUTO_RELOAD_ATTEMPTS = 2/u);
   assert.match(appUpdate, /waitForServiceWorkerTakeover/u);
   assert.match(appUpdate, /registration\.waiting\?\.postMessage\(\{ type: 'SKIP_WAITING' \}\)/u);
   assert.match(appUpdate, /serviceWorker\.register\('\/sw\.js',[\s\S]*type: 'module'/u);
   assert.doesNotMatch(appUpdate, /navigator\.serviceWorker\.ready/u);
+  assert.match(appUpdateGate, /reloadApp\(\{ automatic: true, reason: 'update' \}\)/u);
+  assert.match(main, /const updateRequired = await initializeAppUpdate\(\);[\s\S]*if \(updateRequired\)[\s\S]*createApp\(AppUpdateGate\)\.mount\('#app'\);[\s\S]*return;[\s\S]*initializeSession\(\)/u);
   assert.match(appUpdate, /RELOAD_RECOVERY_TIMEOUT_MS = 10_000/u);
   assert.match(serviceWorker, /event\.data[\s\S]*SKIP_WAITING/u);
   assert.match(realtimeEvents, /config: \{ private: true \}/u);

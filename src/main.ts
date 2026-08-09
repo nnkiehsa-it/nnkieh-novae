@@ -1,5 +1,6 @@
 import { createApp } from 'vue';
 import App from './App.vue';
+import AppUpdateGate from './components/AppUpdateGate.vue';
 import router from './router';
 import '../node_modules/harmonyos-sans-webfont-splitted/dist/HarmonyOS_Sans_TC/Regular.css';
 import '../node_modules/harmonyos-sans-webfont-splitted/dist/HarmonyOS_Sans_TC/Medium.css';
@@ -25,7 +26,11 @@ async function bootstrap() {
   preventDoubleTapZoom();
   initializePressFeedback();
   initializeI18n();
-  void initializeAppUpdate();
+  const updateRequired = await initializeAppUpdate();
+  if (updateRequired) {
+    createApp(AppUpdateGate).mount('#app');
+    return;
+  }
   initializeSession();
   if (import.meta.env.DEV && import.meta.env.VITE_FIREBASE_AUTH_EMULATOR_URL) {
     const { signInForE2e } = await import('./testing/e2e-auth');

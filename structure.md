@@ -47,7 +47,7 @@
 
 ## src 入口與路由
 
-- `main.ts` — 掛載 app、resume、PWA、session；應用程式更新在背景檢查 Service Worker，偵測版本差異後以短時有界交接自動重載，首次未命中新部署時再自動修復一次才顯示手動更新
+- `main.ts` — 掛載 app、resume、PWA、session；啟動時先以短 timeout 檢查版本，確認不需更新後才初始化 session 與業務資料；若有新版則只掛載更新閘門並以短時有界 Service Worker 交接自動重載，首次未命中新部署時再自動修復一次才顯示手動更新
 - `i18n/` — `messages/<locale>/<domain>.ts` 依語系與領域拆分的 catalog（含 API error code 對應文案）、系統語言首次偵測、localStorage 語言偏好、日期 locale 與共用 `t()`；所有前端可見字串只放語系目錄，key 使用短而穩定的語意命名
 - `App.vue` — startup gate + AppShell；版本檢查在首屏後非阻塞執行，偵測到更新時取消尚未開始的路由預載；登入後於閒置時平行預載全部一般路由 chunk，管理頁 chunk 只對管理員預載；全域以 MotionConfig 尊重 reduced motion，LazyMotion 延後載入 DOM layout 功能；route stage 使用固定 Grid 疊放新舊頁，依 navigation depth 以 smooth opacity／短距位移表達前進、返回與同層切換
 - `sw.ts` — PWA SW、快取策略、FCM 背景通知
@@ -93,7 +93,7 @@
 
 ## components（應用）
 
-- Shell：`AppShell.vue`（共用導覽狀態、返回、逐路由捲動記憶、提案／設備的手機分類切換與桌面 utility popup；換頁時重算 Header 捲動狀態，三領域詳情頁使用平面實色 Header，避免與內層固定標籤列疊加模糊／陰影；設備分類以 URL query 同步手機 Header 和桌面 BoardControls；顯示 Bottom Tab 時不再額外加 main-content 底距）、`app-shell/AppDesktopSidebar.vue`、`app-shell/AppMobileHeader.vue`（共用字串型分類選項；手機高度與 44px 點擊區一致，返回箭頭與標題同為 24px 視覺尺寸；返回鍵保留單一 DOM，槽位以寬度／opacity 收合，避免按鈕溢出壓字；標題維持單一內容實例）、`app-shell/AppMobileBottomNav.vue`（共用 Motion 選中指示器依索引平滑滑動，不量測 DOM）、`app-shell/types.ts`、`AppStartupScreen.vue`、`LoginPanel.vue`、`ActionFeedbackBar.vue`
+- Shell：`AppShell.vue`（共用導覽狀態、返回、逐路由捲動記憶、提案／設備的手機分類切換與桌面 utility popup；換頁時重算 Header 捲動狀態，三領域詳情頁使用平面實色 Header，避免與內層固定標籤列疊加模糊／陰影；設備分類以 URL query 同步手機 Header 和桌面 BoardControls；顯示 Bottom Tab 時不再額外加 main-content 底距）、`app-shell/AppDesktopSidebar.vue`、`app-shell/AppMobileHeader.vue`（共用字串型分類選項；手機高度與 44px 點擊區一致，返回箭頭與標題同為 24px 視覺尺寸；返回鍵保留單一 DOM，槽位以寬度／opacity 收合，避免按鈕溢出壓字；標題維持單一內容實例）、`app-shell/AppMobileBottomNav.vue`（共用 Motion 選中指示器依索引平滑滑動，不量測 DOM）、`app-shell/types.ts`、`AppStartupScreen.vue`、`AppUpdateGate.vue`（啟動前與執行中共用的強制更新、自動重載及失敗後手動操作閘門）、`LoginPanel.vue`、`ActionFeedbackBar.vue`
 - 設定／通知：`SettingsPanelContent.vue`、`DesktopUtilityDialog.vue`；手機與深層連結保留獨立路由頁，桌面側欄的通知與頭像分別開啟各自尺寸與內容的獨立大型 popup
 - 新增頁：`IssueComposer`、`FacilityComposer`、`AnnouncementComposer` 搭配 `views/IssueComposerView.vue`、`FacilityComposerView.vue`、`AnnouncementComposerView.vue`；手機隱藏 Bottom Nav，手機與桌面皆填滿 AppShell padding 內的可用內容區，不另做 full-bleed 補償；共用 Composer 以內側 padding 預留按鈕陰影繪製空間，手機沿用 AppShell 的 iOS 式側距並只保留扣除多餘安全區後的緊湊底距，送出後 replace 至新內容詳情
 - Dialog：`ConfirmDialog`、`AppInstallPromptDialog`、`AppUpdatePromptDialog`、`PushPermissionPromptDialog`、`FacilityStatusDialog`、`IssueReviewDialog`、`IssueStatusDialog`

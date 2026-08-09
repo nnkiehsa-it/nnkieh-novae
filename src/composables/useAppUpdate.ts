@@ -17,6 +17,7 @@ let listenersRegistered = false;
 let serviceWorkerUpdatePromise: Promise<ServiceWorkerRegistration | null> | null = null;
 
 const APP_RELOAD_TIMEOUT_MS = 5_000;
+const VERSION_CHECK_TIMEOUT_MS = 2_000;
 const SERVICE_WORKER_PREPARE_TIMEOUT_MS = 2_000;
 const RELOAD_NAVIGATION_RETRY_MS = 4_000;
 const RELOAD_RECOVERY_TIMEOUT_MS = 10_000;
@@ -40,7 +41,7 @@ async function checkAppVersion() {
   try {
     const response = await safeFetch('/version.json', { cache: 'no-store' }, {
       label: 'app.update.versionCheck',
-      timeoutMs: APP_RELOAD_TIMEOUT_MS,
+      timeoutMs: VERSION_CHECK_TIMEOUT_MS,
     });
 
     const data = await response.json() as VersionResponse;
@@ -152,6 +153,7 @@ export async function initializeAppUpdate() {
   } finally {
     initialCheckDone.value = true;
   }
+  return updateAvailable.value;
 }
 
 export function useAppUpdate() {

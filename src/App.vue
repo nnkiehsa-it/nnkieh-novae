@@ -54,37 +54,7 @@
           @install="promptInstall"
         />
       </AppShell>
-      <AppUpdatePromptDialog
-        :open="shouldShowUpdateDialog"
-        :busy="Boolean(reloading)"
-        @reload="reloadApp({ reason: 'update' })"
-      />
-      <Teleport to="body">
-        <AnimatePresence>
-          <m.div
-            v-if="reloading"
-            class="fixed inset-0 z-[90] flex items-center justify-center bg-ink-950/65 text-white backdrop-blur-md"
-            :initial="{ opacity: 0 }"
-            :animate="{ opacity: 1 }"
-            :exit="{ opacity: 0 }"
-            :transition="MOTION_SMOOTH_TWEEN"
-            role="status"
-            aria-live="assertive"
-            :aria-label="reloadingAriaLabel"
-          >
-            <m.div
-              class="flex flex-col items-center gap-3"
-              :initial="{ opacity: 0, scale: 0.94, y: 10 }"
-              :animate="{ opacity: 1, scale: 1, y: 0 }"
-              :exit="{ opacity: 0, scale: 0.97, y: -6 }"
-              :transition="MOTION_SOFT_SPRING"
-            >
-              <LoadingSpinner :size="8" />
-              <p class="text-sm font-semibold">{{ reloadingText }}</p>
-            </m.div>
-          </m.div>
-        </AnimatePresence>
-      </Teleport>
+      <AppUpdateGate />
     </LazyMotion>
   </MotionConfig>
 </template>
@@ -95,7 +65,7 @@ import { RouterView, useRoute, useRouter } from 'vue-router';
 import AppShell from '@/components/AppShell.vue';
 import AppStartupScreen from '@/components/AppStartupScreen.vue';
 import AppInstallPromptDialog from '@/components/AppInstallPromptDialog.vue';
-import AppUpdatePromptDialog from '@/components/AppUpdatePromptDialog.vue';
+import AppUpdateGate from '@/components/AppUpdateGate.vue';
 import PushPermissionPromptDialog from '@/components/PushPermissionPromptDialog.vue';
 import ActionFeedbackBar from '@/components/ActionFeedbackBar.vue';
 import LoadingSpinner from '@/components/ui/atoms/LoadingSpinner.vue';
@@ -118,7 +88,6 @@ import { readLocalStorage, removeLocalStorage, writeLocalStorage } from '@/lib/b
 import {
   MOTION_ROUTE_TRANSITION,
   MOTION_SMOOTH_TWEEN,
-  MOTION_SOFT_SPRING,
 } from '@/lib/ui-motion';
 
 const loadMotionFeatures = () => import('@/lib/motion-features').then((module) => module.default);
@@ -131,7 +100,7 @@ if (typeof document !== 'undefined') {
   document.documentElement.dataset.appRelease = APP_RELEASE_MARKER;
 }
 
-const { canAutoReloadCurrentVersion, reloadApp, reloading, updateAvailable } = useAppUpdate();
+const { reloadApp, reloading, updateAvailable } = useAppUpdate();
 const { open: startupGateOpen, stalled: startupGateStalled } = useAppStartupGate();
 const route = useRoute();
 const router = useRouter();
@@ -194,14 +163,6 @@ function scheduleRoutePreload() {
   routePreloadTimer = window.setTimeout(preload, 250);
 }
 
-const reloadingText = computed(() => {
-  return t(reloading.value === 'restart' ? 'common.restarting' : 'common.updating');
-});
-
-const reloadingAriaLabel = computed(() => {
-  return t(reloading.value === 'restart' ? 'common.restarting' : 'common.updating');
-});
-
 const startupAriaLabel = computed(() => {
   if (reloading.value === 'restart') return t('common.restartingApp');
   if (reloading.value === 'update') return t('common.updatingApp');
@@ -212,14 +173,6 @@ const startupMessage = computed(() => {
   if (reloading.value === 'restart') return t('common.restarting');
   if (reloading.value === 'update') return t('common.updating');
   return '';
-});
-
-const shouldShowUpdateDialog = computed(() => {
-  if (!updateAvailable.value) return false;
-  if (startupGateOpen.value) return false;
-  if (reloading.value) return false;
-  if (canAutoReloadCurrentVersion()) return false;
-  return true;
 });
 
 const {
@@ -258,16 +211,6 @@ function normalizeRedirectPath(value: unknown) {
 
   return path;
 }
-
-watch(
-  updateAvailable,
-  (hasUpdate) => {
-    if (hasUpdate && canAutoReloadCurrentVersion()) {
-      void reloadApp({ automatic: true, reason: 'update' });
-    }
-  },
-  { immediate: true },
-);
 
 watch(
   [appReady, roleLoading, () => user.value?.uid ?? '', () => route.fullPath],
