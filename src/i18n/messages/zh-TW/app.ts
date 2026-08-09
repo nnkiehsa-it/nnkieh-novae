@@ -78,7 +78,6 @@ const messages = {
   'app.install.clickTheMenuButton': '點擊選單按鈕',
   'app.install.installedAsApp': '安裝為 App',
   'app.install.ifYouSeeOpenAsWebAppPleaseKeepItOpen': '若有看到「作為 Web App 打開」，請保持開啟。',
-  'app.update.serviceWorkerStart': '背景更新啟動',
   'app.install.addToHomeScreenFirst': '需先加入主畫面',
   'app.install.copying': '複製中…',
   'app.install.safariNotificationLaunchReminder': 'Safari 開啟後，若要使用通知，請記得從主畫面再次開啟平台。',

@@ -47,7 +47,7 @@
 
 ## src 入口與路由
 
-- `main.ts` — 掛載 app、resume、PWA、session
+- `main.ts` — 掛載 app、resume、PWA、session；應用程式更新在背景檢查 Service Worker，偵測版本差異後以短時有界交接自動重載，首次未命中新部署時再自動修復一次才顯示手動更新
 - `i18n/` — `messages/<locale>/<domain>.ts` 依語系與領域拆分的 catalog（含 API error code 對應文案）、系統語言首次偵測、localStorage 語言偏好、日期 locale 與共用 `t()`；所有前端可見字串只放語系目錄，key 使用短而穩定的語意命名
 - `App.vue` — startup gate + AppShell；版本檢查在首屏後非阻塞執行，偵測到更新時取消尚未開始的路由預載；登入後於閒置時平行預載全部一般路由 chunk，管理頁 chunk 只對管理員預載；全域以 MotionConfig 尊重 reduced motion，LazyMotion 延後載入 DOM layout 功能；route stage 使用固定 Grid 疊放新舊頁，依 navigation depth 以 smooth opacity／短距位移表達前進、返回與同層切換
 - `sw.ts` — PWA SW、快取策略、FCM 背景通知

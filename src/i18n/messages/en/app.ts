@@ -78,7 +78,6 @@ const messages = {
   'app.install.clickTheMenuButton': 'Open the menu button',
   'app.install.installedAsApp': 'Installed as app',
   'app.install.ifYouSeeOpenAsWebAppPleaseKeepItOpen': 'If you see “Open as Web App,” keep it enabled.',
-  'app.update.serviceWorkerStart': 'Background update start',
   'app.install.addToHomeScreenFirst': 'Add to Home Screen first',
   'app.install.copying': 'Copying…',
   'app.install.safariNotificationLaunchReminder': 'After opening in Safari, reopen the platform from the Home Screen to use notifications.',

@@ -177,10 +177,12 @@ test('app updates hand over the service worker with bounded reload recovery', as
   const serviceWorker = await read('src/sw.ts');
   const realtimeEvents = await read('src/services/realtime-events.ts');
 
-  assert.match(appUpdate, /SERVICE_WORKER_PREPARE_TIMEOUT_MS = 4_000/u);
+  assert.match(appUpdate, /SERVICE_WORKER_PREPARE_TIMEOUT_MS = 2_000/u);
+  assert.match(appUpdate, /MAX_AUTO_RELOAD_ATTEMPTS = 2/u);
   assert.match(appUpdate, /waitForServiceWorkerTakeover/u);
   assert.match(appUpdate, /registration\.waiting\?\.postMessage\(\{ type: 'SKIP_WAITING' \}\)/u);
   assert.match(appUpdate, /serviceWorker\.register\('\/sw\.js',[\s\S]*type: 'module'/u);
+  assert.doesNotMatch(appUpdate, /navigator\.serviceWorker\.ready/u);
   assert.match(appUpdate, /RELOAD_RECOVERY_TIMEOUT_MS = 10_000/u);
   assert.match(serviceWorker, /event\.data[\s\S]*SKIP_WAITING/u);
   assert.match(realtimeEvents, /config: \{ private: true \}/u);

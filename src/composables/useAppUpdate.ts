@@ -17,10 +17,10 @@ let listenersRegistered = false;
 let serviceWorkerUpdatePromise: Promise<ServiceWorkerRegistration | null> | null = null;
 
 const APP_RELOAD_TIMEOUT_MS = 5_000;
-const SERVICE_WORKER_PREPARE_TIMEOUT_MS = 4_000;
+const SERVICE_WORKER_PREPARE_TIMEOUT_MS = 2_000;
 const RELOAD_NAVIGATION_RETRY_MS = 4_000;
 const RELOAD_RECOVERY_TIMEOUT_MS = 10_000;
-const MAX_AUTO_RELOAD_ATTEMPTS = 1;
+const MAX_AUTO_RELOAD_ATTEMPTS = 2;
 const AUTO_RELOAD_STORAGE_KEY = 'novae:auto-update-reloaded-version';
 const AUTO_RELOAD_COUNT_KEY = 'novae:auto-update-reloaded-count';
 const PENDING_UPDATE_VERSION_STORAGE_KEY = 'novae:pending-update-version';
@@ -77,10 +77,6 @@ async function updateServiceWorker(): Promise<ServiceWorkerRegistration | null> 
         }),
         { label: 'app.update.serviceWorkerRegistration', timeoutMs: APP_RELOAD_TIMEOUT_MS },
       );
-      await withRequestTimeout(() => navigator.serviceWorker.ready, {
-        label: 'app.update.serviceWorkerStart',
-        timeoutMs: APP_RELOAD_TIMEOUT_MS,
-      });
       await withRequestTimeout(() => registration.update(), {
         label: 'app.update.serviceWorkerUpdate',
         timeoutMs: APP_RELOAD_TIMEOUT_MS,
