@@ -39,10 +39,11 @@ function DropdownMenuContent({
   return (
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content
+        collisionPadding={16}
         data-slot="dropdown-menu-content"
         sideOffset={sideOffset}
         className={cn(
-          "t-dropdown z-50 max-h-(--radix-dropdown-menu-content-available-height) min-w-36 origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-xl border bg-popover p-1.5 text-popover-foreground shadow-[var(--shadow-floating)]",
+          "t-dropdown z-50 w-max max-w-[calc(100vw-2rem)] min-w-36 origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-xl border bg-popover p-1.5 text-popover-foreground shadow-[var(--shadow-floating)]",
           className,
         )}
         {...props}
@@ -228,9 +229,10 @@ function DropdownMenuSubContent({
 }: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent>) {
   return (
     <DropdownMenuPrimitive.SubContent
+      collisionPadding={16}
       data-slot="dropdown-menu-sub-content"
       className={cn(
-        "t-dropdown z-50 min-w-36 origin-(--radix-dropdown-menu-content-transform-origin) overflow-hidden rounded-xl border bg-popover p-1.5 text-popover-foreground shadow-[var(--shadow-floating)]",
+        "t-dropdown z-50 w-max max-w-[calc(100vw-2rem)] min-w-36 origin-(--radix-dropdown-menu-content-transform-origin) overflow-hidden rounded-xl border bg-popover p-1.5 text-popover-foreground shadow-[var(--shadow-floating)]",
         className,
       )}
       {...props}

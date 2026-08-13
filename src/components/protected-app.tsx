@@ -12,15 +12,18 @@ function StartupScreen() {
   useLocaleSubscription();
   return (
     <div className="grid min-h-[100dvh] place-items-center bg-background p-6">
-      <div className="t-panel-reveal flex flex-col items-center gap-4 text-center">
-        <BrandLockup className="flex-col gap-2 text-xl" markClassName="size-20 rounded-2xl [&_img]:size-16" />
-        <div>
+      <div className="t-panel-reveal flex flex-col items-center gap-3 text-center">
+        <BrandLockup
+          className="flex-col gap-2 [&>span:last-child]:text-2xl"
+          markClassName="size-24 rounded-3xl p-4"
+        />
+        <div className="mt-0.5">
           <p
             className="t-shimmer text-base text-muted-foreground"
             data-text={translate('ui.app.preparing')}
           >{translate('ui.app.preparing')}</p>
         </div>
-        <LoaderCircle className="t-spinner size-5 text-muted-foreground" />
+        <LoaderCircle className="t-spinner mt-1 size-5 text-muted-foreground" />
       </div>
     </div>
   );

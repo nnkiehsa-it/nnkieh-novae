@@ -9,6 +9,7 @@ import { useIssueFeed } from "@/hooks/use-issue-feed";
 import { usePublicProfiles } from "@/hooks/use-public-profiles";
 import { getIssueFilterOptions } from "@/constants/categories";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
 import {
@@ -100,7 +101,7 @@ export default function IssueBoardPage() {
           </Select>
         }
       />
-      <div className="sticky top-[var(--safe-top)] z-20 -mx-1 rounded-2xl border bg-background/90 p-2 shadow-[var(--shadow-card)] backdrop-blur-xl md:top-2">
+      <Card className="gap-0 p-2">
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative min-w-40 flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -147,7 +148,7 @@ export default function IssueBoardPage() {
             </SelectContent>
           </Select>
         </div>
-      </div>
+      </Card>
       {error && feed.issues.length === 0 ? (
         <ErrorState error={error} onRetry={() => void load()} />
       ) : loading && feed.issues.length === 0 ? (

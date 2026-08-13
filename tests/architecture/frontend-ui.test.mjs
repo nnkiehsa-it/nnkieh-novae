@@ -34,7 +34,22 @@ test("shared shell owns desktop, compact, and mobile navigation", async () => {
   assert.match(nav, /aria-current/u);
   assert.match(nav, /bg-secondary text-foreground/u);
   assert.doesNotMatch(nav, /liquid-gooey|Liquid\.Item/u);
+  assert.match(shell, /getDefaultIssueRouteFilter/u);
+  assert.match(shell, /activePathPrefix: "\/issues"/u);
+  assert.match(shell, /href: issueHref/u);
+  assert.match(nav, /item\.activePathPrefix/u);
   assert.match(nav, /ui\.nav\.primary/u);
+});
+
+test("all interface logos use the square shared brand primitive", async () => {
+  const brand = await read("src/components/ui/brand.tsx");
+  const login = await read("src/app/login/page.tsx");
+  const startup = await read("src/components/protected-app.tsx");
+  assert.match(brand, /aspect-square/u);
+  assert.match(brand, /object-contain/u);
+  assert.match(login, /<BrandLockup/u);
+  assert.doesNotMatch(login, /LockKeyhole/u);
+  assert.match(startup, /markClassName="size-24 rounded-3xl p-4"/u);
 });
 
 test("route and component presentation delegates service flows to hooks", async () => {
@@ -70,13 +85,14 @@ test("domain lists, details, discussion, and composers use shared components", a
   ]) assert.match(await read(path), /ComposerField/u);
 });
 
-test("authenticated shell preloads primary route bundles after startup", async () => {
+test("authenticated shell preloads route bundles without loading content data", async () => {
   const shell = await read("src/components/app-shell.tsx");
   const preload = await read("src/hooks/use-route-preload.ts");
   assert.match(shell, /useRoutePreload\(\)/u);
-  assert.match(preload, /requestIdleCallback|setTimeout/u);
-  assert.match(preload, /router\.prefetch/u);
-  assert.match(preload, /issues|facilities|announcements|notifications|settings/u);
+  assert.match(preload, /primaryRoutes\.forEach\(\(route\) => router\.prefetch\(route\)\)/u);
+  assert.match(preload, /requestIdleCallback/u);
+  assert.match(preload, /deferredRoutes/u);
+  assert.doesNotMatch(preload, /@\/services|(?:^|[^\w])fetch\(|supabase|backendAction/u);
 });
 
 test("list status controls stay beside their create action", async () => {
@@ -86,6 +102,69 @@ test("list status controls stay beside their create action", async () => {
   assert.match(facilityList, /<PageHeader[\s\S]*<Button asChild>[\s\S]*<LiquidTabs/u);
   assert.equal((issueList.match(/<LiquidTabs/g) ?? []).length, 1);
   assert.equal((facilityList.match(/<LiquidTabs/g) ?? []).length, 1);
+});
+
+test("list action bars scroll normally and mobile navigation stays outside route motion", async () => {
+  const issueList = await read("src/app/(protected)/issues/[filter]/page.tsx");
+  const facilityList = await read("src/app/(protected)/facilities/page.tsx");
+  const shell = await read("src/components/app-shell.tsx");
+  const motion = await read("src/styles/motion.css");
+  for (const source of [issueList, facilityList]) {
+    assert.doesNotMatch(source, /sticky top-\[var\(--safe-top\)\]/u);
+  }
+  assert.match(shell, /app-top-blur/u);
+  assert.match(shell, /window\.scrollY > 8/u);
+  assert.match(shell, /data-visible=\{scrolled\}/u);
+  assert.match(shell, /app-mobile-nav/u);
+  assert.match(motion, /view-transition-group\(app-mobile-nav\)/u);
+  assert.match(motion, /view-transition-old\(app-mobile-nav\)[\s\S]*display: none/u);
+  assert.match(motion, /app-route-enter\)[^{]*\{[\s\S]*var\(--motion-quick\) var\(--ease-smooth-out\) both/u);
+  assert.doesNotMatch(motion, /app-route-enter\)[^{]*\{[\s\S]*var\(--motion-quick\) var\(--ease-smooth-out\) var\(--motion-/u);
+});
+
+test("mobile document gestures prevent double-tap zoom and scroll chaining", async () => {
+  const globals = await read("src/app/globals.css");
+  assert.match(globals, /html\s*\{[\s\S]*touch-action: manipulation/u);
+  assert.match(globals, /html\s*\{[\s\S]*overscroll-behavior: none/u);
+  assert.match(globals, /body\s*\{[\s\S]*overscroll-behavior: none/u);
+  assert.match(globals, /app-top-blur\s*\{[\s\S]*opacity: 0/u);
+  assert.match(globals, /app-top-blur\[data-visible="true"\][\s\S]*opacity: 1/u);
+});
+
+test("mobile menus stay content-sized and navigation uses floating app geometry", async () => {
+  const select = await read("src/components/ui/select.tsx");
+  const dropdown = await read("src/components/ui/dropdown-menu.tsx");
+  const shell = await read("src/components/app-shell.tsx");
+  const globals = await read("src/app/globals.css");
+  assert.match(select, /position = "popper"/u);
+  assert.match(select, /collisionPadding=\{16\}/u);
+  assert.match(select, /w-max max-w-\[calc\(100vw-2rem\)\]/u);
+  assert.doesNotMatch(select, /(?:^|\s)min-w-\[var\(--radix-select-trigger-width\)\]/u);
+  assert.match(select, /sm:min-w-\[var\(--radix-select-trigger-width\)\]/u);
+  assert.match(dropdown, /w-max max-w-\[calc\(100vw-2rem\)\]/u);
+  assert.match(dropdown, /collisionPadding=\{16\}/u);
+  assert.match(shell, /max-w-md rounded-full[^"]*px-3 py-1\.5/u);
+  assert.match(shell, /className="mx-auto h-12"/u);
+  assert.match(shell, /pb-\[calc\(5\.0625rem\+min\(0\.625rem,var\(--safe-bottom\)\)\)\]/u);
+  assert.match(shell, /isSecondaryMobileRoute\(pathname\)/u);
+  assert.match(shell, /aria-hidden=\{!showMobileNavigation\}/u);
+  assert.match(shell, /inert=\{!showMobileNavigation\}/u);
+  assert.match(shell, /pb-\[max\(2rem,var\(--safe-bottom\)\)\]/u);
+  assert.match(globals, /app-mobile-nav[\s\S]*bottom: max\(0\.9375rem, min\(1\.5625rem/u);
+  assert.match(globals, /app-mobile-nav\[data-visible="true"\][\s\S]*visibility: visible/u);
+  assert.match(globals, /app-mobile-nav \[data-liquid-nav-index\][\s\S]*border-radius: 9999px/u);
+});
+
+test("secondary mobile routes hide bottom navigation", async () => {
+  const shell = await read("src/components/app-shell.tsx");
+  for (const routePattern of [
+    String.raw`pathname === "/issues/my-proposals"`,
+    String.raw`pathname === "/dashboard"`,
+    String.raw`pathname.startsWith("/admin/")`,
+    String.raw`\/issues\/[^/]+\/(?:new|[^/]+)`,
+    String.raw`\/facilities\/(?:new|[^/]+)`,
+    String.raw`\/announcements\/(?:new|[^/]+)`,
+  ]) assert.ok(shell.includes(routePattern), `missing secondary route rule ${routePattern}`);
 });
 
 test("design tokens and motion recipes are centralized and capability-aware", async () => {

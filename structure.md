@@ -44,7 +44,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/components/discussion.tsx` — shared threaded discussion presentation.
 - `src/components/content-author.tsx` — shared author avatar and name row for list content.
 - `src/components/content-renderer.tsx` — sanitized Markdown/media rendering.
-- `src/components/protected-app.tsx`, `app-providers.tsx`, `app-update-gate.tsx` — startup/session, providers, theme/i18n, PWA update, and toast boundaries.
+- `src/components/protected-app.tsx`, `app-providers.tsx`, `app-update-gate.tsx` — startup/session, providers, theme/i18n, toast boundaries, and bounded forced PWA updates with version polling, service-worker takeover, and reload recovery.
 - `src/components/feature-route-guard.tsx` — shared disabled-feature guard for direct proposal and facility routes.
 
 ## Hooks and stateful flows
@@ -55,7 +55,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/hooks/use-facility-feed.ts`, `use-facility-detail.ts`, `use-facility-status.ts` — facility list/detail, affected-user, delete, and moderation flows.
 - `src/hooks/use-announcement-feed.ts`, `use-announcement-detail.ts` — announcement list/detail, likes, comments, and deletion.
 - `src/hooks/use-notifications-page.ts`, `use-notification-badge.ts` — notification aggregation, realtime subscriptions, pagination, target routing, and unread hints.
-- `src/hooks/use-route-preload.ts` — idle-time authenticated route bundle preloading without mounting route data flows.
+- `src/hooks/use-route-preload.ts` — authenticated route bundle and RSC-shell warming only; primary navigation preloads immediately and secondary routes during idle time without mounting data hooks or requesting content services.
 - `src/hooks/use-entry-composer.ts` — issue/facility/announcement composer workflows and upload rollback.
 - `src/hooks/use-initial-setup.ts` — setup validation, persistence, polling, and retry-safe completion.
 - `src/hooks/use-category-management.ts`, `use-access-management.ts` — platform configuration and category-scoped RBAC flows.

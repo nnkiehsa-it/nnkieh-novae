@@ -158,6 +158,8 @@
 }
 
 html {
+  overscroll-behavior: none;
+  touch-action: manipulation;
   background: var(--background);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -167,7 +169,8 @@ body {
   min-width: 20rem;
   min-height: 100dvh;
   margin: 0;
-  overflow-x: hidden;
+  overflow-x: clip;
+  overscroll-behavior: none;
   background: var(--background);
   color: var(--foreground);
   font-family:
@@ -211,6 +214,52 @@ textarea {
 .route-page {
   width: min(100%, var(--content-max));
   margin-inline: auto;
+}
+
+.app-top-blur {
+  position: fixed;
+  z-index: 20;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: calc(var(--safe-top) + 1.25rem);
+  pointer-events: none;
+  opacity: 0;
+  background: color-mix(in srgb, var(--surface-stage) 82%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-mask-image: linear-gradient(to bottom, black 45%, transparent);
+  mask-image: linear-gradient(to bottom, black 45%, transparent);
+  transition: opacity var(--motion-quick) var(--ease-smooth-out);
+}
+
+.app-top-blur[data-visible="true"] {
+  opacity: 1;
+}
+
+.app-mobile-nav {
+  right: max(1rem, var(--safe-right));
+  bottom: max(0.9375rem, min(1.5625rem, calc(var(--safe-bottom) + 0.9375rem)));
+  left: max(1rem, var(--safe-left));
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(1.125rem) scale(0.96);
+  visibility: hidden;
+  transition:
+    opacity var(--motion-quick) var(--ease-smooth-out),
+    transform var(--motion-fast) var(--ease-smooth-out),
+    visibility 0s linear var(--motion-fast);
+}
+
+.app-mobile-nav[data-visible="true"] {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.app-mobile-nav [data-liquid-nav-index] {
+  border-radius: 9999px;
 }
 
 .surface-stage {
@@ -351,17 +400,9 @@ textarea {
   }
 }
 
-@media (pointer: coarse) {
-  [data-slot="button"][data-size="default"],
-  [data-slot="button"][data-size="lg"],
-  [data-slot="button"][data-size="icon"],
-  [data-slot="button"][data-size="icon-lg"] {
-    min-height: 2.75rem;
-  }
-
-  [data-slot="button"][data-size="icon"],
-  [data-slot="button"][data-size="icon-lg"] {
-    min-width: 2.75rem;
+@media (min-width: 48rem) {
+  .app-top-blur {
+    left: 15rem;
   }
 }
 

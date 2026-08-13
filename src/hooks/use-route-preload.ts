@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import { useCategories } from "@/hooks/use-categories";
 import { useSession } from "@/hooks/use-session";
 
-const PRELOAD_DELAY_MS = 250;
-
 export function useRoutePreload() {
   const router = useRouter();
   const session = useSession();
@@ -15,34 +13,37 @@ export function useRoutePreload() {
   const canManageAdministration =
     session.can("role.manage") || session.can("category.manage");
   const facilityCategory = categories.facilityCategories[0]?.id || "";
-  const issueCategory =
-    categories.issueCategories[0]?.id || "my-proposals";
+  const issueCategory = categories.issueCategories[0]?.id || "my-proposals";
 
   React.useEffect(() => {
     if (!categories.loaded || !session.initialized || !session.user) return;
 
-    const routes = [
+    const primaryRoutes = [
+      ...(categories.issuesEnabled
+        ? [`/issues/${encodeURIComponent(issueCategory)}`]
+        : []),
+      ...(categories.facilitiesEnabled ? ["/facilities"] : []),
+      "/announcements",
+      "/notifications",
+      "/settings",
+    ];
+    const deferredRoutes = [
       ...(categories.issuesEnabled
         ? [
-            `/issues/${encodeURIComponent(issueCategory)}`,
             `/issues/${encodeURIComponent(issueCategory)}/new`,
             `/issues/${encodeURIComponent(issueCategory)}/__route-preload__`,
           ]
         : []),
       ...(categories.facilitiesEnabled
         ? [
-            "/facilities",
             `/facilities/__route-preload__${facilityCategory ? `?category=${encodeURIComponent(facilityCategory)}` : ""}`,
             ...(facilityCategory
               ? [`/facilities/new?category=${encodeURIComponent(facilityCategory)}`]
               : []),
           ]
         : []),
-      "/announcements",
       "/announcements/new",
       "/announcements/__route-preload__",
-      "/notifications",
-      "/settings",
       ...(canViewDashboard ? ["/dashboard"] : []),
       ...(canManageAdministration
         ? ["/admin/management?tab=categories"]
@@ -50,21 +51,27 @@ export function useRoutePreload() {
     ];
     let cancelled = false;
     let idleHandle: number | undefined;
-    const preload = () => {
+    primaryRoutes.forEach((route) => router.prefetch(route));
+
+    const preloadDeferred = () => {
       if (cancelled) return;
-      routes.forEach((route) => router.prefetch(route));
+      deferredRoutes.forEach((route) => router.prefetch(route));
     };
     const idleWindow = window as unknown as {
-      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      requestIdleCallback?: (
+        callback: () => void,
+        options?: { timeout: number },
+      ) => number;
       cancelIdleCallback?: (handle: number) => void;
     };
     if (idleWindow.requestIdleCallback) {
-      idleHandle = idleWindow.requestIdleCallback(preload, {
+      idleHandle = idleWindow.requestIdleCallback(preloadDeferred, {
         timeout: 1_200,
       });
     } else {
-      idleHandle = window.setTimeout(preload, PRELOAD_DELAY_MS);
+      idleHandle = window.setTimeout(preloadDeferred, 250);
     }
+
     return () => {
       cancelled = true;
       if (idleHandle === undefined) return;

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export interface LiquidNavItem {
+  activePathPrefix?: string;
   badge?: React.ReactNode;
   href: string;
   icon: React.ReactNode;
@@ -26,7 +27,14 @@ export function LiquidNav({
   const activeIndex = Math.max(
     0,
     items.findIndex(
-      (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
+      (item) =>
+        pathname === item.href ||
+        pathname.startsWith(`${item.href}/`) ||
+        Boolean(
+          item.activePathPrefix &&
+            (pathname === item.activePathPrefix ||
+              pathname.startsWith(`${item.activePathPrefix}/`)),
+        ),
     ),
   );
 

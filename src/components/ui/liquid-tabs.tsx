@@ -35,7 +35,7 @@ export function LiquidTabs({
       <TabsPrimitive.List
         aria-label={ariaLabel}
         className={cn(
-          "relative isolate inline-flex min-h-[2.125rem] max-w-full items-center gap-0.5 overflow-x-auto rounded-full bg-muted p-0.5",
+          "relative isolate inline-flex h-8 max-w-full items-center gap-0.5 overflow-x-auto rounded-full bg-muted p-[3px]",
           className,
         )}
       >
@@ -46,7 +46,7 @@ export function LiquidTabs({
             key={option.value}
             value={option.value}
             data-liquid-tab={option.value}
-             className="t-tab-label relative isolate inline-flex h-[1.875rem] shrink-0 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-medium leading-4 text-muted-foreground outline-none transition-colors duration-[var(--motion-quick)] ease-[var(--ease-smooth-out)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 data-[state=active]:text-foreground"
+            className="t-tab-label relative isolate inline-flex h-[1.625rem] shrink-0 items-center justify-center gap-1 rounded-full px-3 text-[0.6875rem] font-medium leading-3.5 text-muted-foreground outline-none transition-colors duration-[var(--motion-quick)] ease-[var(--ease-smooth-out)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 data-[state=active]:text-foreground"
           >
             {active ? (
               <motion.span

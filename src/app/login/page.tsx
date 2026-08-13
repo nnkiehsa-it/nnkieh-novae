@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Liquid } from "liquid-gooey";
-import { ArrowRight, Blocks, Check, LockKeyhole } from "lucide-react";
+import { ArrowRight, Blocks, Check } from "lucide-react";
 import { useSession } from "@/hooks/use-session";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
@@ -62,7 +62,7 @@ export default function LoginPage() {
   return (
     <main className="relative grid min-h-[100dvh] overflow-hidden bg-[var(--surface-stage)] lg:grid-cols-[1.08fr_.92fr]">
       <section className="relative hidden min-h-[100dvh] overflow-hidden border-r bg-background p-12 lg:flex lg:flex-col lg:justify-between">
-        <BrandLockup className="text-sm" markClassName="size-9 [&_img]:size-7" />
+        <BrandLockup />
         <div className="relative mx-auto w-full max-w-xl">
           <div className="relative h-[26rem]">
             <Liquid
@@ -131,21 +131,20 @@ export default function LoginPage() {
 
       <section className="flex min-h-[100dvh] items-center justify-center px-4 py-12 sm:px-8">
         <div className="t-panel-reveal w-full max-w-sm">
-          <BrandLockup className="mb-10 lg:hidden" />
-          <div className="mb-7">
-            <span className="mb-5 grid size-10 place-items-center rounded-xl border bg-card shadow-[var(--shadow-control)]">
-              <LockKeyhole className="size-4" />
-            </span>
-            <h1 className="text-2xl font-semibold tracking-[-0.03em]">
-              {t("auth.signInWithASchoolAccount")}
-            </h1>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              {t("auth.useYour")}{" "}
-              <strong className="font-medium text-foreground">
-                {session.allowedDomain || t("auth.configuredSchoolDomain")}
-              </strong>{" "}
-              {t("auth.toContinue")}
-            </p>
+          <div className="mb-7 space-y-4">
+            <BrandLockup className="lg:hidden" />
+            <div>
+              <h1 className="text-2xl font-semibold tracking-[-0.03em]">
+                {t("auth.signInWithASchoolAccount")}
+              </h1>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                {t("auth.useYour")}{" "}
+                <strong className="font-medium text-foreground">
+                  {session.allowedDomain || t("auth.configuredSchoolDomain")}
+                </strong>{" "}
+                {t("auth.toContinue")}
+              </p>
+            </div>
           </div>
           <Button
             className="group w-full"

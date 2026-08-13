@@ -42,6 +42,14 @@ test("app updates use bounded service-worker reload recovery", async () => {
   assert.match(gate, /serviceWorker/u);
   assert.match(gate, /version\.json/u);
   assert.match(gate, /sessionStorage/u);
+  assert.match(gate, /VERSION_CHECK_TIMEOUT_MS = 2_000/u);
+  assert.match(gate, /SERVICE_WORKER_PREPARE_TIMEOUT_MS = 2_000/u);
+  assert.match(gate, /MAX_AUTO_RELOAD_ATTEMPTS = 2/u);
+  assert.match(gate, /serviceWorker\.register\("\/sw\.js"[\s\S]*updateViaCache: "none"/u);
+  assert.match(gate, /registration\.waiting\?\.postMessage\(\{ type: "SKIP_WAITING" \}\)/u);
+  assert.match(gate, /pageshow/u);
+  assert.match(gate, /visibilitychange/u);
+  assert.match(gate, /RELOAD_RECOVERY_TIMEOUT_MS = 10_000/u);
   assert.match(gate, /location\.(?:reload|replace)/u);
 });
 
