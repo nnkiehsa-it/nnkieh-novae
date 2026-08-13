@@ -15,14 +15,14 @@ export function AnimatedNumber({
   return (
     <span
       className={cn(
-        "relative inline-flex overflow-hidden tabular-nums",
+        "relative inline-flex shrink-0 whitespace-nowrap overflow-hidden tabular-nums",
         className,
       )}
       aria-label={text}
     >
       <AnimatePresence initial={false} mode="popLayout">
         <motion.span
-          className="inline-flex"
+          className="inline-flex whitespace-nowrap"
           key={text}
           aria-hidden
           exit={reduceMotion ? undefined : { filter: "blur(2px)", opacity: 0, y: -4 }}

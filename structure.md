@@ -8,7 +8,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/app/` — Next App Router. Route `page.tsx` files assemble views and forward events; they do not import `services/` directly.
 - `src/app/layout.tsx` — root metadata, Inter/Roboto Mono plus HarmonyOS Sans TC split-font loading, global providers, and global CSS.
 - `src/app/globals.css` — semantic light/dark color, typography, radius, shadow, safe-area, viewport, and surface tokens.
-- `src/assets/fonts/harmonyos-sans-tc/` — generated, project-character-scoped HarmonyOS Sans TC Regular shards and CSS; refreshed by `scripts/generate-harmonyos-subset.mjs`.
+- `src/assets/fonts/harmonyos-sans-tc/` — generated, project-character-scoped HarmonyOS Sans TC Regular, Medium, Semibold, and Bold shards plus CSS; refreshed by `scripts/generate-harmonyos-subset.mjs`.
 - `src/styles/motion.css` — transition.dev-inspired timings/easing and named recipes for routes, panels, cards, text, digits, dialogs, dropdowns, toasts, loading, and success states. Includes hover-capability and reduced-motion media queries.
 - `src/app/sw.ts` — Serwist service worker; `next.config.mjs` compiles and registers it at `public/sw.js`.
 - `src/proxy.ts` — per-request nonce CSP for Next hydration, strict production script execution, and local-emulator development connections.
@@ -33,7 +33,7 @@ This document is the maintained map of the repository. Read it before broad sear
 
 - `src/components/ui/` — business-free shadcn/Radix primitives. Buttons, fields, cards, overlays, tabs, sheets, menus, status badges, skeletons, page states, and the shared Novae brand lockup share global semantic tokens.
 - `src/components/motion/` — reusable motion wrappers: animated numbers/text, like feedback, staggered lists, and transition helpers.
-- `src/components/app-shell.tsx` / `liquid-nav.tsx` — desktop, compact desktop, and mobile navigation. liquid-gooey is constrained to intentional navigation/tab state changes.
+- `src/components/app-shell.tsx` / `liquid-nav.tsx` — desktop, compact desktop, and mobile navigation. Route content commits without full-page snapshots, then only the new pathname-keyed node receives the short entrance motion; liquid-gooey is constrained to intentional navigation/tab state changes.
 - `src/components/issues/` — issue cards, detail content/actions, and moderation presentation.
 - `src/components/facilities/` — facility cards and status-dialog presentation.
 - `src/components/announcements/` — announcement cards.
@@ -41,7 +41,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/components/setup/` — setup step chrome and reusable category draft editors.
 - `src/components/admin/` — category, reusable category-editor controls, and scoped-access presentation.
 - `src/components/composer-fields.tsx` — shared title/Markdown/media composer surface.
-- `src/components/discussion.tsx` — shared threaded discussion presentation.
+- `src/components/discussion.tsx`, `comments/comment-composer.tsx` — shared threaded discussion presentation and reusable root/reply composer.
 - `src/components/content-author.tsx` — shared author avatar and name row for list content.
 - `src/components/content-renderer.tsx` — sanitized Markdown/media rendering.
 - `src/components/protected-app.tsx`, `app-providers.tsx`, `app-update-gate.tsx` — startup/session, providers, theme/i18n, toast boundaries, and bounded forced PWA updates with version polling, service-worker takeover, and reload recovery.

@@ -59,7 +59,7 @@ export default function IssueBoardPage() {
     <div className="space-y-5">
       <PageHeader
         actions={
-          <>
+          <div className="flex w-full items-center gap-2">
             {filter !== "my-proposals" ? (
               <Button asChild>
                 <Link href={`/issues/${encodeURIComponent(filter)}/new`}>
@@ -67,6 +67,7 @@ export default function IssueBoardPage() {
               </Button>
             ) : null}
             <LiquidTabs
+              className="ml-auto"
               ariaLabel={translate('ui.issue.statusFilter')}
               onValueChange={(value) => setBucket(value as IssueStatusBucket)}
               options={[
@@ -75,7 +76,7 @@ export default function IssueBoardPage() {
               ]}
               value={bucket}
             />
-          </>
+          </div>
         }
         title={
           <Select

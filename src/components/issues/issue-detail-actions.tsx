@@ -138,9 +138,9 @@ export function IssueDetailSidebar({
     <aside className="space-y-3 lg:sticky lg:top-6">
       {issue.support_enabled ? (
         <Card className="gap-5 p-5 sm:p-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-medium">{translate('ui.issue.supportProgress')}</p>
-            <p className="text-sm font-semibold tabular-nums">
+            <p className="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums">
               <AnimatedNumber value={issue.support_count} />
               {issue.support_goal ? ` / ${issue.support_goal}` : ""}
             </p>
@@ -155,7 +155,7 @@ export function IssueDetailSidebar({
               />
             </div>
           ) : null}
-          <div className="flex justify-end">
+          <div className="flex justify-center">
             <LikeActionButton
               active={issue.currentUserSupported === true}
               burst={burst}

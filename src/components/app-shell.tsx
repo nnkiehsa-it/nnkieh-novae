@@ -221,14 +221,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               : "pb-[max(2rem,var(--safe-bottom))]"
           }`}
         >
-          <React.ViewTransition
-            default="none"
-            enter="app-route-enter"
-            exit="app-route-exit"
-            key={pathname}
-          >
-            <div className="route-page">{children}</div>
-          </React.ViewTransition>
+          <div className="route-page t-route-enter" key={pathname}>
+            {children}
+          </div>
         </main>
 
         <div

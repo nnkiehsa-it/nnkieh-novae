@@ -37,7 +37,7 @@ export default function FacilitiesPage() {
     <div className="space-y-5">
       <PageHeader
         actions={
-          <>
+          <div className="flex w-full items-center gap-2">
             <Button asChild>
               <Link
                 href={`/facilities/new?category=${encodeURIComponent(state.category)}`}
@@ -45,6 +45,7 @@ export default function FacilitiesPage() {
                 <Plus />{translate('ui.facility.new')}</Link>
             </Button>
             <LiquidTabs
+              className="ml-auto"
               ariaLabel={translate('ui.facility.statusFilter')}
               onValueChange={(value) => {
                 state.setBucket(value as "active" | "closed");
@@ -56,7 +57,7 @@ export default function FacilitiesPage() {
               ]}
               value={state.bucket}
             />
-          </>
+          </div>
         }
         title={
           <Select onValueChange={state.changeCategory} value={state.category}>

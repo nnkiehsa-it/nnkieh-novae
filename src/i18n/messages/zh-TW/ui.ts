@@ -75,7 +75,7 @@ const messages = {
   'ui.discussion.replyInput': '輸入回覆',
   'ui.discussion.commentInput': '輸入留言',
   'ui.discussion.replyPlaceholder': '寫下你的回覆…',
-  'ui.discussion.commentPlaceholder': '加入討論…',
+  'ui.discussion.commentPlaceholder': '新增留言…',
   'ui.discussion.reply': '回覆',
   'ui.discussion.submit': '送出',
   'ui.discussion.disabled': '此內容目前不開放留言。',

@@ -41,8 +41,8 @@ Routes, cards, text, numbers, dialogs, dropdowns, tabs, menus, toasts, loading s
 
 - Proposal support and facility affected actions use a line-hand reaction that presses and rises with an upward particle fan; announcement likes retain the filled-heart pop and radial particle burst. Reaction controls keep their icon visible while the request is pending, prevent duplicate input, and play their own confirmation animation immediately after server success instead of inserting a generic spinner or check.
 - Reaction counts animate per character without changing their inline width. Celebration particles are reserved for activating a reaction; removing one still receives the success check but no celebration.
-- Route content remounts on pathname changes with a quick 150ms crossfade while the persistent app shell stays anchored. Feed results stagger only when filters, sort, category, or committed search terms change.
-- Route changes never add a deliberate entrance delay: route bundles and RSC shells may warm in advance, but content services do not preload; the old route remains legible until the new route is ready, and the final crossfade stays within the quick-control timing.
+- Route navigation commits directly without full-page snapshots or an outgoing layer. The newly committed route alone moves 22px from right to left over 150ms with no delay; local loading states appear through the same destination node. Feed results stagger only when filters, sort, category, or committed search terms change.
+- Route changes never add a deliberate entrance delay: route bundles and RSC shells may warm in advance, but content services do not preload; the destination commits directly and owns its immediate loading feedback.
 - Skeletons, spinners, toasts, and success marks use shared motion classes so async feedback has the same timing throughout the app.
 
 ## Responsive behavior

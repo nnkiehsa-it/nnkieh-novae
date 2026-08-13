@@ -75,7 +75,7 @@ const messages = {
   'ui.discussion.replyInput': 'Enter a reply',
   'ui.discussion.commentInput': 'Enter a comment',
   'ui.discussion.replyPlaceholder': 'Write your reply…',
-  'ui.discussion.commentPlaceholder': 'Join the discussion…',
+  'ui.discussion.commentPlaceholder': 'Add a comment…',
   'ui.discussion.reply': 'Reply',
   'ui.discussion.submit': 'Post',
   'ui.discussion.disabled': 'Comments are not available for this content.',

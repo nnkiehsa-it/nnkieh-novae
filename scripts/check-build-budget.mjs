@@ -26,8 +26,8 @@ const actual = {
 };
 const limits = {
   cssBytes: 600 * 1024,
-  fontBytes: 2 * 1024 * 1024,
-  fontFiles: 40,
+  fontBytes: 6 * 1024 * 1024,
+  fontFiles: 100,
   jsBytes: 2.5 * 1024 * 1024,
 };
 const exceeded = Object.entries(limits).filter(([metric, limit]) => actual[metric] > limit).map(([metric, limit]) => `${metric}: ${actual[metric]} > ${limit}`);

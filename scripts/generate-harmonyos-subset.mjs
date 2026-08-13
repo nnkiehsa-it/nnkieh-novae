@@ -38,24 +38,39 @@ const sourceText = (
   await Promise.all((await listSourceFiles(sourceRoot)).map((file) => readFile(file, "utf8")))
 ).join("\n");
 const characters = [...new Set([...sourceText].filter((character) => cjkCharacter.test(character)))];
-const regularCss = await readFile(path.join(fontRoot, "Regular.css"), "utf8");
-const selectedFaces = [...regularCss.matchAll(/@font-face\s*\{[^}]+\}/gu)]
-  .map((match) => match[0])
-  .filter((face) => {
-    const range = face.match(/unicode-range:([^;}]+)/u)?.[1];
-    return range ? rangeIncludesCharacter(range, characters) : false;
-  });
+const weights = [
+  { file: "Regular.css", name: "Regular", weight: 400 },
+  { file: "Medium.css", name: "Medium", weight: 500 },
+  { file: "Semibold.css", name: "Semibold", weight: 600 },
+  { file: "Bold.css", name: "Bold", weight: 700 },
+];
+const selectedFaces = (
+  await Promise.all(weights.map(async ({ file, name, weight }) => {
+    const css = await readFile(path.join(fontRoot, file), "utf8");
+    return [...css.matchAll(/@font-face\s*\{[^}]+\}/gu)]
+      .map((match) => match[0])
+      .filter((face) => {
+        const range = face.match(/unicode-range:([^;}]+)/u)?.[1];
+        return range ? rangeIncludesCharacter(range, characters) : false;
+      })
+      .map((face) => ({ face, name, weight }));
+  }))
+).flat();
 
 await rm(outputRoot, { force: true, recursive: true });
 await mkdir(outputRoot, { recursive: true });
 
 const outputFaces = [];
-for (const face of selectedFaces) {
+for (const { face, name, weight } of selectedFaces) {
   const relativeFontPath = face.match(/url\("([^"]+)"\)/u)?.[1];
   if (!relativeFontPath) continue;
-  const fileName = path.basename(relativeFontPath);
+  const fileName = path.basename(relativeFontPath).replace(/^[^_]+/u, name);
   await cp(path.resolve(fontRoot, relativeFontPath), path.join(outputRoot, fileName));
-  outputFaces.push(face.replace(relativeFontPath, `./${fileName}`));
+  outputFaces.push(
+    face
+      .replace(relativeFontPath, `./${fileName}`)
+      .replace(/font-weight:\s*\d+/u, `font-weight: ${weight}`),
+  );
 }
 
 await writeFile(

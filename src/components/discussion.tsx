@@ -2,19 +2,18 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import * as React from "react";
-import { LoaderCircle, MessageCircle, Reply, Send, Trash2, X } from "lucide-react";
+import { LoaderCircle, MessageCircle, Reply, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { DiscussionCommentRecord, UserPublicProfile } from "@/types";
 import { useDiscussionProfiles } from "@/hooks/use-public-profiles";
 import { useSession } from "@/hooks/use-session";
 import { formatRelativeTime } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
+import { CommentComposer } from "@/components/comments/comment-composer";
 
 export function Discussion({
   comments,
@@ -77,70 +76,77 @@ export function Discussion({
       ) : null}
       {loading ? (
         <div className="t-skeleton h-24 rounded-xl bg-muted" />
-      ) : (
+      ) : comments.length === 0 && enabled ? (
         <Card className="gap-0 overflow-hidden p-0">
-          {comments.length > 0 ? (
-        <StaggerList className="divide-y">
-          {comments.map((comment) => (
-            <StaggerItem key={comment.id}>
-              <CommentRow
-                comment={comment}
-                currentUid={session.user?.uid}
-                onDelete={onDelete}
-                onReply={(commentId) => {
-                  setReplyDraft("");
-                  setReplyTo(commentId);
-                }}
-                profile={profiles[comment.author_uid]}
-              />
-              {enabled && replyTo === comment.id ? (
-                <CommentComposer
-                  busy={busy}
-                   content={replyDraft}
-                   onCancel={() => {
-                     setReplyDraft("");
-                     setReplyTo(null);
-                   }}
-                   onChange={setReplyDraft}
-                   onSubmit={() => submit(true)}
-                  reply
+          <CommentComposer
+            busy={busy}
+            content={commentDraft}
+            main
+            onChange={setCommentDraft}
+            onSubmit={() => submit(false)}
+          />
+        </Card>
+      ) : comments.length > 0 ? (
+        <Card className="gap-0 overflow-hidden p-0">
+          <StaggerList className="divide-y">
+            {comments.map((comment) => (
+              <StaggerItem key={comment.id}>
+                <CommentRow
+                  comment={comment}
+                  currentUid={session.user?.uid}
+                  onDelete={onDelete}
+                  onReply={(commentId) => {
+                    setReplyDraft("");
+                    setReplyTo(commentId);
+                  }}
+                  profile={profiles[comment.author_uid]}
                 />
-              ) : null}
-              {comment.replies.length > 0 ? (
-                <div className="ml-8 border-l sm:ml-11">
-                  {comment.replies.map((reply) => (
-                    <CommentRow
-                      comment={reply}
-                      compact
-                      currentUid={session.user?.uid}
-                      key={reply.id}
-                      onDelete={onDelete}
-                      onReply={() => {
-                        setReplyDraft("");
-                        setReplyTo(comment.id);
-                      }}
-                      profile={profiles[reply.author_uid]}
-                    />
-                  ))}
-                </div>
-              ) : null}
-            </StaggerItem>
-          ))}
-        </StaggerList>
-      ) : (
-        <p className="p-6 text-center text-sm text-muted-foreground">{translate('ui.discussion.empty')}</p>
-      )}
+                {enabled && replyTo === comment.id ? (
+                  <CommentComposer
+                    busy={busy}
+                    content={replyDraft}
+                    onCancel={() => {
+                      setReplyDraft("");
+                      setReplyTo(null);
+                    }}
+                    onChange={setReplyDraft}
+                    onSubmit={() => submit(true)}
+                    reply
+                  />
+                ) : null}
+                {comment.replies.length > 0 ? (
+                  <div className="ml-8 border-l sm:ml-11">
+                    {comment.replies.map((reply) => (
+                      <CommentRow
+                        comment={reply}
+                        compact
+                        currentUid={session.user?.uid}
+                        key={reply.id}
+                        onDelete={onDelete}
+                        onReply={() => {
+                          setReplyDraft("");
+                          setReplyTo(comment.id);
+                        }}
+                        profile={profiles[reply.author_uid]}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+              </StaggerItem>
+            ))}
+          </StaggerList>
           {enabled ? (
             <CommentComposer
               busy={busy}
               content={commentDraft}
               main
+              separated
               onChange={setCommentDraft}
               onSubmit={() => submit(false)}
             />
           ) : null}
         </Card>
-      )}
+      ) : null}
       {hasMore && onLoadMore ? (
         <div className="flex justify-center">
           <Button
@@ -230,64 +236,5 @@ function CommentRow({
         </div>
       </div>
     </article>
-  );
-}
-
-function CommentComposer({
-  busy,
-  content,
-  onCancel,
-  onChange,
-  onSubmit,
-  main = false,
-  reply = false,
-}: {
-  busy: boolean;
-  content: string;
-  onCancel?: () => void;
-  onChange: (value: string) => void;
-  onSubmit: () => Promise<void>;
-  main?: boolean;
-  reply?: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "grid gap-3 bg-muted/25 p-4 sm:p-5",
-        main ? "border-t" : "border-y sm:ml-11",
-      )}
-    >
-      {reply ? (
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>{translate('ui.discussion.replying')}</span>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button aria-label={translate('ui.common.cancel')} onClick={onCancel} size="icon-xs" variant="ghost">
-                <X />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{translate('ui.common.cancel')}</TooltipContent>
-          </Tooltip>
-        </div>
-      ) : null}
-      <Textarea
-        aria-label={reply ? translate('ui.discussion.replyInput') : translate('ui.discussion.commentInput')}
-        autoFocus={reply}
-        className={cn("resize-y bg-background", main ? "min-h-24" : "min-h-20")}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={reply ? translate('ui.discussion.replyPlaceholder') : translate('ui.discussion.commentPlaceholder')}
-        value={content}
-      />
-      <div className="flex justify-end">
-        <Button
-          disabled={!content.trim() || busy}
-          onClick={() => void onSubmit()}
-          size="sm"
-        >
-          {busy ? <LoaderCircle className="t-spinner" /> : <Send />}
-          {reply ? translate('ui.discussion.reply') : translate('ui.discussion.submit')}
-        </Button>
-      </div>
-    </div>
   );
 }

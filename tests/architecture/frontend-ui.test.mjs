@@ -95,16 +95,39 @@ test("authenticated shell preloads route bundles without loading content data", 
   assert.doesNotMatch(preload, /@\/services|(?:^|[^\w])fetch\(|supabase|backendAction/u);
 });
 
-test("list status controls stay beside their create action", async () => {
+test("list status controls use the full action row and stay right aligned", async () => {
   const issueList = await read("src/app/(protected)/issues/[filter]/page.tsx");
   const facilityList = await read("src/app/(protected)/facilities/page.tsx");
-  assert.match(issueList, /<PageHeader[\s\S]*<Button asChild>[\s\S]*<LiquidTabs/u);
-  assert.match(facilityList, /<PageHeader[\s\S]*<Button asChild>[\s\S]*<LiquidTabs/u);
+  assert.match(issueList, /flex w-full items-center gap-2[\s\S]*<Button asChild>[\s\S]*className="ml-auto"/u);
+  assert.match(facilityList, /flex w-full items-center gap-2[\s\S]*<Button asChild>[\s\S]*className="ml-auto"/u);
   assert.equal((issueList.match(/<LiquidTabs/g) ?? []).length, 1);
   assert.equal((facilityList.match(/<LiquidTabs/g) ?? []).length, 1);
 });
 
-test("list action bars scroll normally and mobile navigation stays outside route motion", async () => {
+test("discussion empty state opens directly into the composer", async () => {
+  const discussion = await read("src/components/discussion.tsx");
+  const zhUi = await read("src/i18n/messages/zh-TW/ui.ts");
+  assert.match(discussion, /comments\.length === 0 && enabled[\s\S]*<CommentComposer/u);
+  assert.doesNotMatch(discussion, /ui\.discussion\.empty/u);
+  assert.match(zhUi, /'ui\.discussion\.commentPlaceholder': '新增留言…'/u);
+});
+
+test("proposal detail reaction and count match centered announcement layout", async () => {
+  const actions = await read("src/components/issues/issue-detail-actions.tsx");
+  const animatedNumber = await read("src/components/motion/animated-number.tsx");
+  assert.match(actions, /whitespace-nowrap text-sm font-semibold tabular-nums/u);
+  assert.match(actions, /<div className="flex justify-center">[\s\S]*<LikeActionButton/u);
+  assert.match(animatedNumber, /shrink-0 whitespace-nowrap overflow-hidden/u);
+});
+
+test("HarmonyOS subset preserves the weights used before the frontend rewrite", async () => {
+  const generator = await read("scripts/generate-harmonyos-subset.mjs");
+  for (const weight of [400, 500, 600, 700]) {
+    assert.match(generator, new RegExp(`weight: ${weight}`, "u"));
+  }
+});
+
+test("list action bars scroll normally and route navigation animates only the committed page", async () => {
   const issueList = await read("src/app/(protected)/issues/[filter]/page.tsx");
   const facilityList = await read("src/app/(protected)/facilities/page.tsx");
   const shell = await read("src/components/app-shell.tsx");
@@ -116,10 +139,11 @@ test("list action bars scroll normally and mobile navigation stays outside route
   assert.match(shell, /window\.scrollY > 8/u);
   assert.match(shell, /data-visible=\{scrolled\}/u);
   assert.match(shell, /app-mobile-nav/u);
-  assert.match(motion, /view-transition-group\(app-mobile-nav\)/u);
-  assert.match(motion, /view-transition-old\(app-mobile-nav\)[\s\S]*display: none/u);
-  assert.match(motion, /app-route-enter\)[^{]*\{[\s\S]*var\(--motion-quick\) var\(--ease-smooth-out\) both/u);
-  assert.doesNotMatch(motion, /app-route-enter\)[^{]*\{[\s\S]*var\(--motion-quick\) var\(--ease-smooth-out\) var\(--motion-/u);
+  assert.match(shell, /className="route-page t-route-enter" key=\{pathname\}/u);
+  assert.doesNotMatch(shell, /React\.ViewTransition|app-route-enter|app-route-exit/u);
+  assert.match(motion, /\.t-route-enter\s*\{[\s\S]*var\(--motion-quick\)[\s\S]*backwards/u);
+  assert.match(motion, /@keyframes t-route-enter[\s\S]*translateX\(22px\)[\s\S]*translateX\(0\)/u);
+  assert.doesNotMatch(motion, /t-route-exit|\.t-route-enter[^}]*animation-delay/u);
 });
 
 test("mobile document gestures prevent double-tap zoom and scroll chaining", async () => {
