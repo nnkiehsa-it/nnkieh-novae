@@ -70,6 +70,24 @@ test("domain lists, details, discussion, and composers use shared components", a
   ]) assert.match(await read(path), /ComposerField/u);
 });
 
+test("authenticated shell preloads primary route bundles after startup", async () => {
+  const shell = await read("src/components/app-shell.tsx");
+  const preload = await read("src/hooks/use-route-preload.ts");
+  assert.match(shell, /useRoutePreload\(\)/u);
+  assert.match(preload, /requestIdleCallback|setTimeout/u);
+  assert.match(preload, /router\.prefetch/u);
+  assert.match(preload, /issues|facilities|announcements|notifications|settings/u);
+});
+
+test("list status controls stay beside their create action", async () => {
+  const issueList = await read("src/app/(protected)/issues/[filter]/page.tsx");
+  const facilityList = await read("src/app/(protected)/facilities/page.tsx");
+  assert.match(issueList, /<PageHeader[\s\S]*<Button asChild>[\s\S]*<LiquidTabs/u);
+  assert.match(facilityList, /<PageHeader[\s\S]*<Button asChild>[\s\S]*<LiquidTabs/u);
+  assert.equal((issueList.match(/<LiquidTabs/g) ?? []).length, 1);
+  assert.equal((facilityList.match(/<LiquidTabs/g) ?? []).length, 1);
+});
+
 test("design tokens and motion recipes are centralized and capability-aware", async () => {
   const globals = await read("src/app/globals.css");
   const motion = await read("src/styles/motion.css");

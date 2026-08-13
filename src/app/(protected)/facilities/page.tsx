@@ -36,12 +36,26 @@ export default function FacilitiesPage() {
     <div className="space-y-5">
       <PageHeader
         actions={
-          <Button asChild>
-            <Link
-              href={`/facilities/new?category=${encodeURIComponent(state.category)}`}
-            >
-              <Plus />{translate('ui.facility.new')}</Link>
-          </Button>
+          <>
+            <Button asChild>
+              <Link
+                href={`/facilities/new?category=${encodeURIComponent(state.category)}`}
+              >
+                <Plus />{translate('ui.facility.new')}</Link>
+            </Button>
+            <LiquidTabs
+              ariaLabel={translate('ui.facility.statusFilter')}
+              onValueChange={(value) => {
+                state.setBucket(value as "active" | "closed");
+                state.setStatus("");
+              }}
+              options={[
+                { label: translate('ui.status.processing'), value: "active" },
+                { label: translate('ui.common.closed'), value: "closed" },
+              ]}
+              value={state.bucket}
+            />
+          </>
         }
         title={
           <Select onValueChange={state.changeCategory} value={state.category}>
@@ -63,18 +77,6 @@ export default function FacilitiesPage() {
       />
       <div className="sticky top-[var(--safe-top)] z-20 -mx-1 rounded-2xl border bg-background/90 p-2 shadow-[var(--shadow-card)] backdrop-blur-xl md:top-2">
         <div className="flex flex-wrap items-center gap-2">
-          <LiquidTabs
-            ariaLabel={translate('ui.facility.statusFilter')}
-            onValueChange={(value) => {
-              state.setBucket(value as "active" | "closed");
-              state.setStatus("");
-            }}
-            options={[
-              { label: translate('ui.status.processing'), value: "active" },
-              { label: translate('ui.common.closed'), value: "closed" },
-            ]}
-            value={state.bucket}
-          />
           <div className="relative min-w-40 flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input

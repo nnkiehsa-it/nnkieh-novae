@@ -20,6 +20,7 @@ import {
 import { useTheme } from "next-themes";
 import { useCategories } from "@/hooks/use-categories";
 import { useNotificationBadge } from "@/hooks/use-notification-badge";
+import { useRoutePreload } from "@/hooks/use-route-preload";
 import { useSession } from "@/hooks/use-session";
 import { LiquidNav, type LiquidNavItem } from "@/components/liquid-nav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -123,6 +124,7 @@ function AccountMenu({ compact = false }: { compact?: boolean }) {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  useRoutePreload();
   const pathname = usePathname();
   const categories = useCategories();
   const unread = useNotificationBadge();

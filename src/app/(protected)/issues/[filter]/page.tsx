@@ -58,12 +58,23 @@ export default function IssueBoardPage() {
     <div className="space-y-5">
       <PageHeader
         actions={
-          filter !== "my-proposals" ? (
-            <Button asChild>
-              <Link href={`/issues/${encodeURIComponent(filter)}/new`}>
-                <Plus />{translate('ui.issue.new')}</Link>
-            </Button>
-          ) : null
+          <>
+            {filter !== "my-proposals" ? (
+              <Button asChild>
+                <Link href={`/issues/${encodeURIComponent(filter)}/new`}>
+                  <Plus />{translate('ui.issue.new')}</Link>
+              </Button>
+            ) : null}
+            <LiquidTabs
+              ariaLabel={translate('ui.issue.statusFilter')}
+              onValueChange={(value) => setBucket(value as IssueStatusBucket)}
+              options={[
+                { label: translate('ui.common.active'), value: "active" },
+                { label: translate('ui.common.closed'), value: "closed" },
+              ]}
+              value={bucket}
+            />
+          </>
         }
         title={
           <Select
@@ -91,15 +102,6 @@ export default function IssueBoardPage() {
       />
       <div className="sticky top-[var(--safe-top)] z-20 -mx-1 rounded-2xl border bg-background/90 p-2 shadow-[var(--shadow-card)] backdrop-blur-xl md:top-2">
         <div className="flex flex-wrap items-center gap-2">
-          <LiquidTabs
-            ariaLabel={translate('ui.issue.statusFilter')}
-            onValueChange={(value) => setBucket(value as IssueStatusBucket)}
-            options={[
-              { label: translate('ui.common.active'), value: "active" },
-              { label: translate('ui.common.closed'), value: "closed" },
-            ]}
-            value={bucket}
-          />
           <div className="relative min-w-40 flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
