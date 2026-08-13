@@ -24,8 +24,8 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/app/(protected)/issues/` — feature-guarded issue redirect, feed, composer, and detail routes.
 - `src/app/(protected)/facilities/` — feature-guarded facility feed, composer, and detail routes.
 - `src/app/(protected)/announcements/` — announcement feed, composer, and detail routes.
-- `src/app/(protected)/notifications/` — merged broadcast/admin/user notification presentation.
-- `src/app/(protected)/settings/` — account, appearance, language, install, push, and resource settings.
+- `src/app/(protected)/notifications/` — merged broadcast/admin/user notification presentation with an immediately prefetchable route-loading shell.
+- `src/app/(protected)/settings/` — account, appearance, language, install, push, and resource settings with a stable prefetchable card shell.
 - `src/app/(protected)/dashboard/` — animated platform statistics and operational diagnostics.
 - `src/app/(protected)/admin/` — unified category/feature and scoped member-access management.
 
@@ -47,7 +47,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/components/detail-toolbar.tsx` — shared, geometry-stable back/share/action toolbar used by detail routes.
 - `src/components/protected-app.tsx`, `app-providers.tsx`, `app-update-gate.tsx` — startup/session, providers, theme/i18n, toast boundaries, and bounded forced PWA updates with version polling, service-worker takeover, animated progress, and reload recovery.
 - `src/components/feature-route-guard.tsx` — shared disabled-feature guard for direct proposal and facility routes.
-- `src/components/ui/route-skeleton.tsx` and route `loading.tsx` files — prefetched list/detail app-shell fallbacks that keep headers, buttons, filters, form controls, and card frames as real UI while skeletonizing only unresolved domain fields; no domain requests are started by the fallback.
+- `src/components/ui/route-skeleton.tsx` and route `loading.tsx` files — prefetched list/detail app-shell fallbacks that keep headers, buttons, filters, form controls, and card frames as real UI while skeletonizing only unresolved domain fields; proposal detail fallbacks reuse a cached title and two-line content preview when available, and no domain requests are started by the fallback.
 - `src/components/ui/tooltip.tsx` — shared fine-pointer-only tooltip capability boundary; touch and non-hover devices keep labelled controls without opening tooltip layers.
 - `src/components/ui/action-feedback-icon.tsx`, `pending-alert-dialog-action.tsx` — shared transitions.dev-style spinner-to-check primitives for backend mutation, destructive confirmation, and update feedback.
 

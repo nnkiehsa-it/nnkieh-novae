@@ -16,7 +16,12 @@ export default function IssueDetailPage() {
   const { t } = useI18n();
   const detail = useIssueDetail();
   if (detail.loading)
-    return <DetailRouteSkeleton title={detail.issue?.title} />;
+    return (
+      <DetailRouteSkeleton
+        content={detail.issue?.content}
+        title={detail.issue?.title}
+      />
+    );
   if (detail.error || !detail.issue || !detail.status) {
     return (
       <ErrorState

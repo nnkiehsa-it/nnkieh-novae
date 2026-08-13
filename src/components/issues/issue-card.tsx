@@ -42,7 +42,7 @@ export function IssueCard({
     <Card className="t-card group relative h-full gap-4 p-5 sm:p-6">
       <div className="flex h-full flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
-          <div className="t-data-content-enter min-w-0">
+          <div className="t-data-content-enter t-stagger-copy min-w-0">
             <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
               {issue.canViewAuthor && issue.author_uid ? (
                 <ContentAuthor profile={profile} />
@@ -53,15 +53,13 @@ export function IssueCard({
               <span className="shrink-0">{formatRelativeTime(issue.created_at)}</span>
             </div>
             <h2 className="mt-1.5 text-balance font-semibold leading-6 tracking-[-0.015em]">
-              <Link className="outline-none after:absolute after:inset-0 focus-visible:underline" href={`/issues/${encodeURIComponent(filter)}/${issue.id}`}>
-                {issue.title}
-              </Link>
+              {issue.title}
             </h2>
           </div>
           <ArrowUpRight className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-250 ease-[var(--ease-smooth-out)] group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
         </div>
         {issue.content ? (
-          <p className="t-data-content-enter line-clamp-2 text-sm leading-6 text-muted-foreground">
+          <p className="t-data-content-enter t-stagger-copy line-clamp-2 text-sm leading-6 text-muted-foreground">
             {stripMarkdownImages(issue.content)}
           </p>
         ) : null}
@@ -122,6 +120,11 @@ export function IssueCard({
           ) : null}
         </div>
       </div>
+      <Link
+        aria-label={issue.title}
+        className="absolute inset-0 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        href={`/issues/${encodeURIComponent(filter)}/${issue.id}`}
+      />
     </Card>
   );
 }

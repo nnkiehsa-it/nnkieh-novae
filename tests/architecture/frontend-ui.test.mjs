@@ -102,6 +102,12 @@ test("authenticated shell preloads route bundles without loading content data", 
   assert.match(preload, /requestIdleCallback/u);
   assert.match(preload, /deferredRoutes/u);
   assert.doesNotMatch(preload, /@\/services|(?:^|[^\w])fetch\(|supabase|backendAction/u);
+  for (const path of [
+    "src/app/(protected)/notifications/loading.tsx",
+    "src/app/(protected)/settings/loading.tsx",
+  ]) {
+    assert.match(await read(path), /PageHeader/u);
+  }
 });
 
 test("list status controls use the full action row and stay right aligned", async () => {

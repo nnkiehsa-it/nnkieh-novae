@@ -39,6 +39,8 @@ describe("React frontend design system", () => {
     expect(reveal).not.toContain("translate");
     expect(dataReveal).toContain("translateY(2px)");
     expect(initialStagger).not.toContain("translate");
+    expect(initialStagger).not.toContain("filter");
+    expect(motion).toContain(".t-stagger-copy");
     expect(motion).toMatch(/@keyframes t-route-enter[\s\S]*translate/u);
   });
 
@@ -51,6 +53,8 @@ describe("React frontend design system", () => {
     expect(skeleton).toContain("<Input");
     expect(skeleton).toContain("<Textarea");
     expect(skeleton).toContain("<StableDetailToolbar />");
+    expect(skeleton).toContain("line-clamp-2");
+    expect(skeleton).toContain("stripMarkdownImages(content)");
     expect(skeleton).not.toContain('Skeleton className="size-9 rounded-xl"');
     expect(issueCard).not.toContain('t-data-content-enter flex h-full');
     expect(facilityCard).not.toContain('t-data-content-enter flex h-full');
@@ -59,6 +63,10 @@ describe("React frontend design system", () => {
     expect(issueCard).not.toMatch(/t-data-content-enter[^\n]*<LikeActionButton/u);
     expect(facilityCard).not.toMatch(/t-data-content-enter[^\n]*<LikeActionButton/u);
     expect(announcementCard).not.toMatch(/t-data-content-enter[^\n]*<LikeActionButton/u);
+    for (const card of [issueCard, facilityCard, announcementCard]) {
+      expect(card).toContain('className="absolute inset-0 rounded-xl');
+      expect(card).not.toContain("after:absolute after:inset-0");
+    }
   });
 
   it("disables tooltip layers without fine-pointer hover capability", () => {

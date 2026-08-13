@@ -47,8 +47,11 @@ Routes, cards, text, numbers, dialogs, dropdowns, tabs, menus, toasts, loading s
 - Device push enable/disable and notification preference writes replace only the operated switch with that spinner-to-check morph; successful writes do not also emit a toast.
 - Route changes never add a deliberate entrance delay: route bundles and RSC shells may warm in advance, but content services do not preload; the destination commits directly and owns its immediate loading feedback.
 - Static primary route shells for announcements, notifications, and settings warm as soon as the authenticated app shell mounts, without waiting for session-category hydration; category-dependent routes join as soon as their destinations are known, and focus/hover intent refreshes the selected destination prefetch.
+- Notification and settings routes provide explicit loading boundaries, so their prefetched headers and stable card geometry can commit before route-specific client code or backend reads complete.
 - Skeletons, spinners, progress tracks, toasts, and success marks use shared motion classes so async feedback has the same timing throughout the app. Startup and forced-update stages reuse the Novae brand lockup and bounded progress motion without delaying navigation.
+- Feed re-entry keeps the cheap opacity/translate treatment on the item wrapper, but limits blur to compact primary-copy spans. Card borders, shadows, icons, progress, and action controls never enter a filter layer.
 - Every route or local loading boundary hands off through the shared skeleton-to-content recipe: card and control frames stay fixed while only the exact fields represented by skeleton placeholders sharpen from a bounded 3px blur and rise 2px over 400ms. Buttons, reaction controls, static labels, and surrounding layout never inherit this animation from a parent. This never replays the route-scale movement. Feed cards retain their capped sibling stagger without translating the outer card during initial handoff.
+- Proposal details reuse the cached list title and a two-line cached content preview while the authoritative detail request is pending; direct entries without a cached entity reserve the same space with two text skeleton rows.
 
 ## Responsive behavior
 

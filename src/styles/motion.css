@@ -109,31 +109,48 @@
   animation: none;
   transition:
     opacity var(--motion-medium) var(--ease-smooth-out),
-    transform var(--motion-medium) var(--ease-smooth-out),
-    filter var(--motion-medium) var(--ease-smooth-out);
+    transform var(--motion-medium) var(--ease-smooth-out);
 }
 
 .t-stagger-item[data-observed="true"][data-visible="false"] {
   opacity: 0.28;
   transform: translateY(var(--motion-distance-sm));
-  filter: blur(var(--motion-blur-md));
 }
 
 .t-stagger-item[data-observed="true"][data-visible="true"] {
   opacity: 1;
   transform: translateY(0);
-  filter: blur(0);
 }
 
 @keyframes t-stagger-item {
   from {
     opacity: 0;
-    filter: blur(var(--motion-blur-md));
   }
   to {
     opacity: 1;
-    filter: blur(0);
   }
+}
+
+.t-stagger-copy {
+  animation: t-stagger-copy var(--motion-medium) var(--ease-smooth-out) both;
+  transition: filter var(--motion-medium) var(--ease-smooth-out);
+}
+
+.t-stagger-item[data-observed="true"] .t-stagger-copy {
+  animation: none;
+}
+
+.t-stagger-item[data-observed="true"][data-visible="false"] .t-stagger-copy {
+  filter: blur(var(--motion-blur-sm));
+}
+
+.t-stagger-item[data-observed="true"][data-visible="true"] .t-stagger-copy {
+  filter: blur(0);
+}
+
+@keyframes t-stagger-copy {
+  from { filter: blur(var(--motion-blur-sm)); }
+  to { filter: blur(0); }
 }
 
 .t-stagger-list > .t-stagger-item,
@@ -998,6 +1015,7 @@
   .t-panel-reveal,
   .t-data-content-enter,
   .t-stagger-item,
+  .t-stagger-copy,
   .t-digit,
   .t-success-check,
   .t-success-check path,
@@ -1023,6 +1041,9 @@
   .t-stagger-item[data-observed] {
     opacity: 1 !important;
     transform: none !important;
+    filter: none !important;
+  }
+  .t-stagger-item[data-observed] .t-stagger-copy {
     filter: none !important;
   }
   .t-notification-badge,

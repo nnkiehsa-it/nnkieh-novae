@@ -87,7 +87,7 @@ export default function NotificationsPage() {
                 type="button"
               >
                 <NotificationIcon notification={notification} />
-                <span className="min-w-0 flex-1">
+                <span className="t-stagger-copy min-w-0 flex-1">
                   <span className="flex items-start justify-between gap-3">
                     <span className="font-medium leading-5">
                       {notificationTitle(notification, t)}
