@@ -31,6 +31,7 @@ import {
 import { useContentEntity } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
+import { returnToPreviousRoute } from "@/lib/navigation-memory";
 
 export function useIssueDetail() {
   const params = useParams<{ filter: string; issueId: string }>();
@@ -220,7 +221,12 @@ export function useIssueDetail() {
   );
 
   return {
-    back: () => router.push(`/issues/${encodeURIComponent(filter)}`),
+    back: () =>
+      returnToPreviousRoute(
+        router,
+        `/issues/${encodeURIComponent(filter)}`,
+        "/issues",
+      ),
     burst,
     comments,
     commentSort,

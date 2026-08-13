@@ -34,10 +34,13 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/components/ui/` — business-free shadcn/Radix primitives. Buttons, fields, cards, overlays, tabs, sheets, menus, status badges, skeletons, page states, and the shared Novae brand lockup share global semantic tokens.
 - `src/components/motion/` — reusable animated numbers, reaction feedback, and staggered feed items. One shared IntersectionObserver drives card re-entry state while CSS owns the bounded blur/transform animation.
 - `src/components/app-shell.tsx` / `liquid-nav.tsx` — desktop, compact desktop, and mobile navigation. Route content commits without full-page snapshots, then only the new pathname-keyed node receives the short entrance motion; selected navigation and tab surfaces use measurement-free shared-layout motion.
+- `src/lib/navigation-memory.ts` — remembers the immediately preceding in-app pathname so detail back actions restore a compatible cached list through history, with a canonical-route fallback for direct entries.
 - `src/components/issues/` — issue cards, detail content/actions, and moderation presentation.
 - `src/components/facilities/` — facility cards and status-dialog presentation.
 - `src/components/announcements/` — announcement cards.
 - `src/components/settings/` — account, appearance/install, push preferences, and resource cards.
+- `src/components/notifications/notification-skeleton.tsx` — route and local notification loading rows that share the resolved list container, padding, icon column, and text anchors.
+- `src/components/dashboard/dashboard-skeleton.tsx` — geometry-matched dashboard header, metric grid, distribution/operations columns, and failure-panel loading shell.
 - `src/components/setup/` — setup step chrome and reusable category draft editors.
 - `src/components/admin/` — category, reusable category-editor controls, and scoped-access presentation.
 - `src/components/composer-fields.tsx` — shared title/Markdown/media composer surface.
@@ -47,7 +50,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/components/detail-toolbar.tsx` — shared, geometry-stable back/share/action toolbar used by detail routes.
 - `src/components/protected-app.tsx`, `app-providers.tsx`, `app-update-gate.tsx` — startup/session, providers, theme/i18n, toast boundaries, and bounded forced PWA updates with version polling, service-worker takeover, animated progress, and reload recovery.
 - `src/components/feature-route-guard.tsx` — shared disabled-feature guard for direct proposal and facility routes.
-- `src/components/ui/route-skeleton.tsx` and route `loading.tsx` files — prefetched list/detail app-shell fallbacks that keep headers, buttons, filters, form controls, and card frames as real UI while skeletonizing only unresolved domain fields; proposal detail fallbacks reuse a cached title and two-line content preview when available, and no domain requests are started by the fallback.
+- `src/components/ui/route-skeleton.tsx` and route `loading.tsx` files — prefetched list/detail app-shell fallbacks that reuse the same header/grid/control geometry as their resolved routes while skeletonizing only unresolved domain fields; detail fallbacks reuse a cached title and two-line content preview when available, and no domain requests are started by the fallback.
 - `src/components/ui/tooltip.tsx` — shared fine-pointer-only tooltip capability boundary; touch and non-hover devices keep labelled controls without opening tooltip layers.
 - `src/components/ui/action-feedback-icon.tsx`, `pending-alert-dialog-action.tsx` — shared transitions.dev-style spinner-to-check primitives for backend mutation, destructive confirmation, and update feedback.
 
@@ -75,6 +78,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/lib/` — framework-independent request, Firebase, Supabase, caching, Markdown, image, route, formatting, pagination, and domain utilities.
 - `src/hooks/use-paged-request-guard.ts` — shared feed request generation/in-flight guard that prevents duplicate loads and stale query responses from committing.
 - `src/lib/content-entity-store.ts` and `src/hooks/use-content-entity.ts` — normalized user-scoped content entities shared by lists, details, mutations, and realtime; field revisions prevent older reads from overwriting newer local or realtime patches.
+- `src/lib/view-memory-cache.ts` — bounded 30-minute, user-scoped LRU snapshots for primary list/query UI, pagination and dashboard state; hooks repaint cached views synchronously, refresh through existing services, and clear snapshots with the active session.
 - `src/constants/` — generated/static application, category, status, retention, API error, and rate-limit constants.
 - `src/types/` — shared frontend/domain types.
 - `src/i18n/` — reactive React i18n store and paired `en` / `zh-TW` domain catalogs. `ui.ts` contains the rebuilt interface language.

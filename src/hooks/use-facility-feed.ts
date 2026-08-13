@@ -26,6 +26,7 @@ import { canContinuePage, mergePageById } from "@/lib/pagination";
 import { usePagedRequestGuard } from "@/hooks/use-paged-request-guard";
 import { useContentEntityDomainVersion } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
+import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 
 const FACILITY_LIST_CACHE_PREFIXES = ["facility-list-page|"] as const;
 
@@ -35,6 +36,16 @@ interface FacilityFeed {
   hasMore: boolean;
 }
 
+interface FacilityFeedViewMemory {
+  bucket: "active" | "closed";
+  category: string;
+  committedQuery: string;
+  feed: FacilityFeed;
+  query: string;
+  sort: FacilitySortOption;
+  status: FacilityStatus | "";
+}
+
 export function useFacilityFeed() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -42,22 +53,26 @@ export function useFacilityFeed() {
   const session = useSession();
   const { t } = useI18n();
   const requestedCategory = searchParams.get("category");
+  const viewMemory = getViewMemory<FacilityFeedViewMemory>(
+    session.user?.uid,
+    "facility-feed",
+  );
   const [category, setCategory] = React.useState(
     requestedCategory && findFacilityCategory(requestedCategory)
       ? requestedCategory
-      : getDefaultFacilityCategoryId(),
+      : viewMemory?.category || getDefaultFacilityCategoryId(),
   );
-  const [bucket, setBucket] = React.useState<"active" | "closed">("active");
-  const [sort, setSort] = React.useState<FacilitySortOption>("latest");
-  const [status, setStatus] = React.useState<FacilityStatus | "">("");
-  const [query, setQuery] = React.useState("");
-  const [committedQuery, setCommittedQuery] = React.useState("");
+  const [bucket, setBucket] = React.useState<"active" | "closed">(viewMemory?.bucket ?? "active");
+  const [sort, setSort] = React.useState<FacilitySortOption>(viewMemory?.sort ?? "latest");
+  const [status, setStatus] = React.useState<FacilityStatus | "">(viewMemory?.status ?? "");
+  const [query, setQuery] = React.useState(viewMemory?.query ?? "");
+  const [committedQuery, setCommittedQuery] = React.useState(viewMemory?.committedQuery ?? "");
   const [feed, setFeed] = React.useState<FacilityFeed>({
-    cursor: null,
-    facilities: [],
-    hasMore: false,
+    cursor: viewMemory?.feed.cursor ?? null,
+    facilities: viewMemory?.feed.facilities ?? [],
+    hasMore: viewMemory?.feed.hasMore ?? false,
   });
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(!viewMemory);
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
   const [affectingId, setAffectingId] = React.useState<string | null>(null);
@@ -160,6 +175,24 @@ export function useFacilityFeed() {
   React.useEffect(() => {
     void load();
   }, [load]);
+
+  React.useEffect(() => {
+    if (loading) return;
+    setViewMemory<FacilityFeedViewMemory>(
+      session.user?.uid,
+      "facility-feed",
+      {
+        bucket,
+        category,
+        committedQuery,
+        feed,
+        query,
+        sort,
+        status,
+      },
+      FACILITY_LIST_CACHE_PREFIXES,
+    );
+  }, [bucket, category, committedQuery, feed, loading, query, session.user?.uid, sort, status]);
 
   useContentInvalidationRefresh(FACILITY_LIST_CACHE_PREFIXES, () => load(null, true));
 

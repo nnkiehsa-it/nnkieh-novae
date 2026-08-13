@@ -35,6 +35,7 @@ describe("React frontend design system", () => {
     const reveal = motion.match(/@keyframes t-reveal-content\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
     const dataReveal = motion.match(/@keyframes t-data-content-enter\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
     const initialStagger = motion.match(/@keyframes t-stagger-item\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
+    const routeEnter = motion.match(/@keyframes t-route-enter\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
     expect(reveal).toContain("filter: blur");
     expect(reveal).not.toContain("translate");
     expect(dataReveal).toContain("translateY(2px)");
@@ -42,6 +43,8 @@ describe("React frontend design system", () => {
     expect(initialStagger).not.toContain("filter");
     expect(motion).toContain(".t-stagger-copy");
     expect(motion).toMatch(/@keyframes t-route-enter[\s\S]*translate/u);
+    expect(motion).toContain("t-route-blur var(--motion-quick)");
+    expect(routeEnter).not.toContain("filter:");
   });
 
   it("keeps app controls real while only data fields use route skeletons", () => {
@@ -55,6 +58,7 @@ describe("React frontend design system", () => {
     expect(skeleton).toContain("<StableDetailToolbar />");
     expect(skeleton).toContain("line-clamp-2");
     expect(skeleton).toContain("stripMarkdownImages(content)");
+    expect(skeleton).toContain('kind === "announcement"');
     expect(skeleton).not.toContain('Skeleton className="size-9 rounded-xl"');
     expect(issueCard).not.toContain('t-data-content-enter flex h-full');
     expect(facilityCard).not.toContain('t-data-content-enter flex h-full');

@@ -49,7 +49,13 @@ export default function FacilityDetailPage() {
   const detail = useFacilityDetail();
 
   if (detail.loading)
-    return <DetailRouteSkeleton title={detail.facility?.title} />;
+    return (
+      <DetailRouteSkeleton
+        content={detail.facility?.content}
+        kind="facility"
+        title={detail.facility?.title}
+      />
+    );
   if (detail.error || !detail.facility)
     return (
       <ErrorState
@@ -144,14 +150,15 @@ export default function FacilityDetailPage() {
               <span>{formatDate(facility.created_at)}</span>
             </div>
           </div>
-          <CardContent className="t-data-content-enter py-5 sm:px-7 sm:py-6">
+          <CardContent className="py-5 sm:px-7 sm:py-6">
             <ContentRenderer
               content={facility.content}
               fallbackAlt={facility.title}
+              textClassName="t-data-content-enter"
             />
           </CardContent>
           {facility.result_content ? (
-            <div className="t-data-content-enter border-t bg-emerald-500/[0.045] px-5 py-5 sm:px-7">
+            <div className="border-t bg-emerald-500/[0.045] px-5 py-5 sm:px-7">
               <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-success">
                 <span
                   className="t-success-check grid size-6 place-items-center rounded-full bg-success/12"
@@ -162,6 +169,7 @@ export default function FacilityDetailPage() {
               <ContentRenderer
                 content={facility.result_content}
                 fallbackAlt={translate('ui.issue.resultAlt', { title: facility.title })}
+                textClassName="t-data-content-enter"
               />
             </div>
           ) : null}

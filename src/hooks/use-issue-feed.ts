@@ -31,6 +31,7 @@ import { canContinuePage, mergePageById } from "@/lib/pagination";
 import { usePagedRequestGuard } from "@/hooks/use-paged-request-guard";
 import { useContentEntityDomainVersion } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
+import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 
 const ISSUE_LIST_CACHE_PREFIXES = [
   "issue-list-page|",
@@ -44,6 +45,14 @@ interface IssueFeed {
   issues: IssueRecord[];
 }
 
+interface IssueFeedViewMemory {
+  bucket: IssueStatusBucket;
+  committedQuery: string;
+  feed: IssueFeed;
+  query: string;
+  sort: IssueSortOption;
+}
+
 export function useIssueFeed() {
   const params = useParams<{ filter: string }>();
   const router = useRouter();
@@ -51,18 +60,22 @@ export function useIssueFeed() {
   const categories = useCategories();
   const { t } = useI18n();
   const filter = decodeURIComponent(params.filter);
+  const viewMemory = getViewMemory<IssueFeedViewMemory>(
+    session.user?.uid,
+    `issue-feed|${filter}`,
+  );
   const validFilter =
     filter === "my-proposals" || Boolean(findIssueCategory(filter));
-  const [bucket, setBucket] = React.useState<IssueStatusBucket>("active");
-  const [sort, setSort] = React.useState<IssueSortOption>("latest");
-  const [query, setQuery] = React.useState("");
-  const [committedQuery, setCommittedQuery] = React.useState("");
+  const [bucket, setBucket] = React.useState<IssueStatusBucket>(viewMemory?.bucket ?? "active");
+  const [sort, setSort] = React.useState<IssueSortOption>(viewMemory?.sort ?? "latest");
+  const [query, setQuery] = React.useState(viewMemory?.query ?? "");
+  const [committedQuery, setCommittedQuery] = React.useState(viewMemory?.committedQuery ?? "");
   const [feed, setFeed] = React.useState<IssueFeed>({
-    cursor: null,
-    hasMore: false,
-    issues: [],
+    cursor: viewMemory?.feed.cursor ?? null,
+    hasMore: viewMemory?.feed.hasMore ?? false,
+    issues: viewMemory?.feed.issues ?? [],
   });
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(!viewMemory);
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
   const [supportingId, setSupportingId] = React.useState<string | null>(null);
@@ -200,6 +213,16 @@ export function useIssueFeed() {
   React.useEffect(() => {
     void load();
   }, [load]);
+
+  React.useEffect(() => {
+    if (loading) return;
+    setViewMemory<IssueFeedViewMemory>(
+      session.user?.uid,
+      `issue-feed|${filter}`,
+      { bucket, committedQuery, feed, query, sort },
+      ISSUE_LIST_CACHE_PREFIXES,
+    );
+  }, [bucket, committedQuery, feed, filter, loading, query, session.user?.uid, sort]);
 
   useContentInvalidationRefresh(ISSUE_LIST_CACHE_PREFIXES, () => load(null, true));
 

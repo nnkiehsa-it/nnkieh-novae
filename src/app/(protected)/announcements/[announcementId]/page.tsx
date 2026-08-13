@@ -7,6 +7,7 @@ import { useI18n } from "@/i18n";
 import { useAnnouncementDetail } from "@/hooks/use-announcement-detail";
 import { formatDate } from "@/lib/format";
 import { shareCurrentPage } from "@/lib/share";
+import { returnToPreviousRoute } from "@/lib/navigation-memory";
 import { ContentRenderer } from "@/components/content-renderer";
 import { Discussion } from "@/components/discussion";
 import { AnimatedNumber } from "@/components/motion/animated-number";
@@ -41,7 +42,13 @@ export default function AnnouncementDetailPage() {
   const { t } = useI18n();
   const detail = useAnnouncementDetail();
   if (detail.loading)
-    return <DetailRouteSkeleton title={detail.announcement?.title} />;
+    return (
+      <DetailRouteSkeleton
+        content={detail.announcement?.content}
+        kind="announcement"
+        title={detail.announcement?.title}
+      />
+    );
   if (detail.error || !detail.announcement) {
     return (
       <ErrorState
@@ -101,7 +108,9 @@ export default function AnnouncementDetailPage() {
           ) : null
         }
         backLabel={t("ui.announcement.back")}
-        onBack={() => router.push("/announcements")}
+        onBack={() =>
+          returnToPreviousRoute(router, "/announcements", "/announcements")
+        }
         onShare={() =>
               void shareCurrentPage(announcement.title)
                 .then((result) => {
@@ -134,8 +143,12 @@ export default function AnnouncementDetailPage() {
                 <span>{formatDate(announcement.published_at)}</span>
               </div>
             </div>
-            <CardContent className="t-data-content-enter py-5 sm:px-7 sm:py-6">
-              <ContentRenderer content={announcement.content} fallbackAlt={announcement.title} />
+            <CardContent className="py-5 sm:px-7 sm:py-6">
+              <ContentRenderer
+                content={announcement.content}
+                fallbackAlt={announcement.title}
+                textClassName="t-data-content-enter"
+              />
             </CardContent>
           </Card>
           <Discussion

@@ -54,10 +54,12 @@ export function ContentRenderer({
   className,
   content,
   fallbackAlt,
+  textClassName,
 }: {
   className?: string;
   content: string;
   fallbackAlt: string;
+  textClassName?: string;
 }) {
   const [selected, setSelected] = React.useState<MarkdownImageRecord | null>(
     null,
@@ -119,7 +121,10 @@ export function ContentRenderer({
       ) : null}
       {text ? (
         <div
-          className="markdown-body break-words text-base leading-7 text-foreground/84"
+          className={cn(
+            "markdown-body break-words text-base leading-7 text-foreground/84",
+            textClassName,
+          )}
           dangerouslySetInnerHTML={{ __html: html }}
         />
       ) : null}

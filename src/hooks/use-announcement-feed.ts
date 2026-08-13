@@ -20,16 +20,22 @@ import { usePagedRequestGuard } from "@/hooks/use-paged-request-guard";
 import { useContentEntityDomainVersion } from "@/hooks/use-content-entity";
 
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
+import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 
 const ANNOUNCEMENT_LIST_CACHE_PREFIXES = ["announcement-list-page|"] as const;
 
 export function useAnnouncementFeed() {
   const session = useSession();
   const { t } = useI18n();
-  const [items, setItems] = React.useState<AnnouncementRecord[]>([]);
-  const [cursor, setCursor] = React.useState<AnnouncementCursor>(null);
-  const [hasMore, setHasMore] = React.useState(false);
-  const [loading, setLoading] = React.useState(true);
+  const viewMemory = getViewMemory<{
+    cursor: AnnouncementCursor;
+    hasMore: boolean;
+    items: AnnouncementRecord[];
+  }>(session.user?.uid, "announcement-feed");
+  const [items, setItems] = React.useState<AnnouncementRecord[]>(viewMemory?.items ?? []);
+  const [cursor, setCursor] = React.useState<AnnouncementCursor>(viewMemory?.cursor ?? null);
+  const [hasMore, setHasMore] = React.useState(viewMemory?.hasMore ?? false);
+  const [loading, setLoading] = React.useState(!viewMemory);
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
   const [likingId, setLikingId] = React.useState<string | null>(null);
@@ -118,6 +124,15 @@ export function useAnnouncementFeed() {
   React.useEffect(() => {
     void load();
   }, [load]);
+
+  React.useEffect(() => {
+    if (loading) return;
+    setViewMemory(session.user?.uid, "announcement-feed", {
+      cursor,
+      hasMore,
+      items,
+    }, ANNOUNCEMENT_LIST_CACHE_PREFIXES);
+  }, [cursor, hasMore, items, loading, session.user?.uid]);
 
   useContentInvalidationRefresh(
     ANNOUNCEMENT_LIST_CACHE_PREFIXES,

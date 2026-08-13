@@ -110,6 +110,36 @@ test("authenticated shell preloads route bundles without loading content data", 
   }
 });
 
+test("detail back actions restore compatible list history with a canonical fallback", async () => {
+  const navigationMemory = await read("src/lib/navigation-memory.ts");
+  const issueDetail = await read("src/hooks/use-issue-detail.ts");
+  const facilityDetail = await read("src/hooks/use-facility-detail.ts");
+  const announcementDetail = await read("src/app/(protected)/announcements/[announcementId]/page.tsx");
+  assert.match(navigationMemory, /router\.back\(\)/u);
+  assert.match(navigationMemory, /router\.push\(fallback\)/u);
+  for (const source of [issueDetail, facilityDetail, announcementDetail])
+    assert.match(source, /returnToPreviousRoute/u);
+});
+
+test("primary data views restore bounded user-scoped memory before refresh", async () => {
+  const memory = await read("src/lib/view-memory-cache.ts");
+  assert.match(memory, /MAX_VIEW_MEMORY_ENTRIES/u);
+  assert.match(memory, /VIEW_MEMORY_TTL_MS/u);
+  assert.match(await read("src/hooks/use-session.tsx"), /clearViewMemoryScope/u);
+  for (const path of [
+    "src/hooks/use-issue-feed.ts",
+    "src/hooks/use-facility-feed.ts",
+    "src/hooks/use-announcement-feed.ts",
+    "src/hooks/use-notifications-page.ts",
+    "src/hooks/use-platform-dashboard.ts",
+    "src/hooks/use-push-notifications.ts",
+  ]) {
+    const source = await read(path);
+    assert.match(source, /getViewMemory/u);
+    assert.match(source, /setViewMemory/u);
+  }
+});
+
 test("list status controls use the full action row and stay right aligned", async () => {
   const issueList = await read("src/app/(protected)/issues/[filter]/page.tsx");
   const facilityList = await read("src/app/(protected)/facilities/page.tsx");

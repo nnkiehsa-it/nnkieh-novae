@@ -26,9 +26,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   ErrorState,
-  LoadingState,
   PageHeader,
 } from "@/components/ui/page-state";
+import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 
 export default function DashboardPage() {
   useLocaleSubscription();
@@ -37,7 +37,7 @@ export default function DashboardPage() {
   usePermissionRedirect(dashboard.canView);
   if (!dashboard.canView)
     return <ErrorState error={translate('ui.dashboard.noPermission')} />;
-  if (dashboard.loading && !dashboard.data) return <LoadingState rows={6} />;
+  if (dashboard.loading && !dashboard.data) return <DashboardSkeleton />;
   if (dashboard.error && !dashboard.data)
     return <ErrorState error={dashboard.error} onRetry={() => void dashboard.load(true)} />;
   if (!dashboard.data) return null;

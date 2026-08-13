@@ -21,6 +21,7 @@ import { useTheme } from "next-themes";
 import { useCategories } from "@/hooks/use-categories";
 import { useNotificationBadge } from "@/hooks/use-notification-badge";
 import { useRoutePreload } from "@/hooks/use-route-preload";
+import { rememberRoutePath } from "@/lib/navigation-memory";
 import { useSession } from "@/hooks/use-session";
 import { getDefaultIssueRouteFilter } from "@/constants/categories";
 import { LiquidNav, type LiquidNavItem } from "@/components/liquid-nav";
@@ -143,6 +144,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [scrolled, setScrolled] = React.useState(false);
   const issueHref = `/issues/${encodeURIComponent(getDefaultIssueRouteFilter())}`;
   const showMobileNavigation = !isSecondaryMobileRoute(pathname);
+
+  React.useEffect(() => rememberRoutePath(pathname), [pathname]);
 
   React.useEffect(() => {
     const updateScrolled = () => setScrolled(window.scrollY > 8);

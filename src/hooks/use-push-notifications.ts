@@ -16,6 +16,7 @@ import {
   type PushNotificationPermission,
 } from "@/services/notifications";
 import { useSession } from "@/hooks/use-session";
+import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 
 export type {
   PersonalPushPreferenceKey,
@@ -40,13 +41,19 @@ function getDeviceId() {
 
 export function usePushNotifications() {
   const session = useSession();
-  const [enabled, setEnabled] = React.useState(false);
-  const [supported, setSupported] = React.useState(false);
+  const viewMemory = getViewMemory<{
+    enabled: boolean;
+    permission: PushNotificationPermission;
+    preferences: PersonalPushPreferences;
+    supported: boolean;
+  }>(session.user?.uid, "push-settings");
+  const [enabled, setEnabled] = React.useState(viewMemory?.enabled ?? false);
+  const [supported, setSupported] = React.useState(viewMemory?.supported ?? false);
   const [permission, setPermission] =
-    React.useState<PushNotificationPermission>("default");
+    React.useState<PushNotificationPermission>(viewMemory?.permission ?? "default");
   const [preferences, setPreferences] =
-    React.useState<PersonalPushPreferences>(defaultPreferences);
-  const [loading, setLoading] = React.useState(false);
+    React.useState<PersonalPushPreferences>(viewMemory?.preferences ?? defaultPreferences);
+  const [loading, setLoading] = React.useState(!viewMemory);
   const [error, setError] = React.useState("");
   const tokenRef = React.useRef("");
   const deviceIdRef = React.useRef("");
@@ -90,6 +97,16 @@ export function usePushNotifications() {
   React.useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  React.useEffect(() => {
+    if (loading) return;
+    setViewMemory(
+      session.user?.uid,
+      "push-settings",
+      { enabled, permission, preferences, supported },
+      ["push-notification-preference|"],
+    );
+  }, [enabled, loading, permission, preferences, session.user?.uid, supported]);
 
   async function messagingBundle() {
     if (!firebaseVapidKey) return null;

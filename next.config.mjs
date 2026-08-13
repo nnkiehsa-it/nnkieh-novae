@@ -52,6 +52,12 @@ const nextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
   distDir: process.env.NOVAE_NEXT_DIST_DIR || ".next",
   env: publicEnvironment,
+  experimental: {
+    staleTimes: {
+      dynamic: 300,
+      static: 1800,
+    },
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "res.cloudinary.com" },

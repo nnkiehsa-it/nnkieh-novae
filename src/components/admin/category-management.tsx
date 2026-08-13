@@ -7,7 +7,8 @@ import { useCategoryManagement } from "@/hooks/use-category-management";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
-import { ErrorState, LoadingState } from "@/components/ui/page-state";
+import { ErrorState } from "@/components/ui/page-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   CategoryFeatureHeader,
   FacilityCategoryEditor,
@@ -18,7 +19,7 @@ export function CategoryManagement() {
   useLocaleSubscription();
   const state = useCategoryManagement();
 
-  if (state.loading) return <LoadingState rows={4} />;
+  if (state.loading) return <CategoryManagementSkeleton />;
   if (state.error)
     return <ErrorState error={state.error} onRetry={() => void state.load()} />;
   return (
@@ -108,6 +109,43 @@ export function CategoryManagement() {
               state={state.feedbackState === "success" ? "success" : "loading"}
             />
           ) : <Save />}{translate('ui.admin.saveAll')}</Button>
+      </div>
+    </section>
+  );
+}
+
+function CategoryManagementSkeleton() {
+  return (
+    <section className="space-y-4" aria-busy="true">
+      <LiquidTabs
+        ariaLabel={translate("ui.admin.contentType")}
+        disabled
+        onValueChange={() => undefined}
+        options={[
+          { label: translate("ui.nav.issues"), value: "issue" },
+          { label: translate("ui.nav.facilities"), value: "facility" },
+          { label: translate("ui.nav.announcements"), value: "announcement" },
+        ]}
+        value="issue"
+      />
+      <Card className="gap-0 py-0">
+        <div className="flex items-center justify-between border-b px-5 py-4 sm:px-7">
+          <span className="text-sm font-semibold">{translate("ui.admin.issueFeature")}</span>
+          <Skeleton className="h-5 w-8 rounded-full" />
+        </div>
+        <CardContent className="grid gap-3 py-4">
+          {Array.from({ length: 3 }, (_, index) => (
+            <Skeleton className="h-24 rounded-xl" key={index} />
+          ))}
+          <Button className="opacity-100" disabled variant="ghost">
+            <Plus />{translate("ui.admin.addIssueCategory")}
+          </Button>
+        </CardContent>
+      </Card>
+      <div className="flex justify-end">
+        <Button disabled>
+          <Save />{translate("ui.admin.saveAll")}
+        </Button>
       </div>
     </section>
   );

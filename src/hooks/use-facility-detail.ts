@@ -20,6 +20,7 @@ import {
 import { useContentEntity } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
+import { returnToPreviousRoute } from "@/lib/navigation-memory";
 
 export function useFacilityDetail() {
   const params = useParams<{ facilityId: string }>();
@@ -122,8 +123,10 @@ export function useFacilityDetail() {
     affecting,
     back: () => {
       if (currentFacility)
-        router.push(
+        returnToPreviousRoute(
+          router,
           `/facilities?category=${encodeURIComponent(currentFacility.category_id)}`,
+          "/facilities",
         );
     },
     burst,

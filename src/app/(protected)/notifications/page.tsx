@@ -18,9 +18,9 @@ import { Button } from "@/components/ui/button";
 import {
   EmptyState,
   ErrorState,
-  LoadingState,
   PageHeader,
 } from "@/components/ui/page-state";
+import { NotificationListSkeleton } from "@/components/notifications/notification-skeleton";
 
 function notificationTitle(notification: NotificationRecord, t: (key: string) => string) {
   if (notification.type === "announcement_created")
@@ -71,7 +71,7 @@ export default function NotificationsPage() {
       {state.error && state.notifications.length === 0 ? (
         <ErrorState error={state.error} onRetry={() => void state.load()} />
       ) : state.loading ? (
-        <LoadingState />
+        <NotificationListSkeleton />
       ) : state.notifications.length === 0 ? (
         <EmptyState
           description={t("ui.notification.emptyDescription")}

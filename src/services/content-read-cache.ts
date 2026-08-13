@@ -5,6 +5,7 @@ import {
   readPersistentCache,
   writePersistentCache,
 } from '@/lib/persistent-cache';
+import { invalidateViewMemoryByDependency } from '@/lib/view-memory-cache';
 
 export const CONTENT_READ_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1_000;
 export const CONTENT_SHORT_CACHE_TTL_MS = 10 * 60 * 1_000;
@@ -178,6 +179,7 @@ export function markContentCacheStale(predicate: (key: string) => boolean) {
 
 export function markContentCachePrefixStale(prefix: string) {
   markContentCacheStale((key) => key.startsWith(prefix));
+  invalidateViewMemoryByDependency(prefix);
   notifyContentCacheInvalidation(prefix);
   const scope = activeScope;
   cacheVersion += 1;

@@ -16,6 +16,7 @@ export interface LiquidTabOption {
 interface LiquidTabsProps {
   ariaLabel: string;
   className?: string;
+  disabled?: boolean;
   onValueChange: (value: string) => void;
   options: LiquidTabOption[];
   value: string;
@@ -24,6 +25,7 @@ interface LiquidTabsProps {
 export function LiquidTabs({
   ariaLabel,
   className,
+  disabled = false,
   onValueChange,
   options,
   value,
@@ -59,6 +61,7 @@ export function LiquidTabs({
     <TabsPrimitive.Root value={value} onValueChange={onValueChange}>
       <TabsPrimitive.List
         aria-label={ariaLabel}
+        aria-disabled={disabled}
         className={cn(
           "relative isolate inline-flex h-8 max-w-full items-center gap-0.5 overflow-x-auto rounded-full bg-muted p-[3px]",
           className,
@@ -68,11 +71,14 @@ export function LiquidTabs({
           const active = option.value === displayedValue;
           return (
           <TabsPrimitive.Trigger
+            disabled={disabled}
             key={option.value}
             value={option.value}
             data-liquid-tab={option.value}
             className="t-tab-label relative isolate inline-flex h-[1.625rem] shrink-0 items-center justify-center gap-1 rounded-full px-3 font-medium leading-3.5 text-muted-foreground outline-none transition-colors duration-[var(--motion-quick)] ease-[var(--ease-smooth-out)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 data-[state=active]:text-foreground"
-            onPointerDown={() => acknowledgeTab(option.value)}
+            onPointerDown={() => {
+              if (!disabled) acknowledgeTab(option.value);
+            }}
           >
             {active ? (
               <motion.span

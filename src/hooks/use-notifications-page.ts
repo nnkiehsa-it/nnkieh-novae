@@ -16,6 +16,7 @@ import {
   type NotificationCursor,
 } from "@/services/notifications";
 import type { NotificationRecord, NotificationSource } from "@/types";
+import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 
 const sourceOrder: NotificationSource[] = ["broadcast", "admin", "user"];
 const sourceRecord = <T,>(value: () => T): Record<NotificationSource, T> => ({
@@ -32,16 +33,21 @@ export function useNotificationsPage() {
     () => (session.isAdmin ? sourceOrder : ["broadcast", "user"]),
     [session.isAdmin],
   );
+  const viewMemory = getViewMemory<{
+    cursors: Record<NotificationSource, NotificationCursor>;
+    more: Record<NotificationSource, boolean>;
+    pages: Record<NotificationSource, NotificationRecord[]>;
+  }>(session.user?.uid, "notifications");
   const [pages, setPages] = React.useState<
     Record<NotificationSource, NotificationRecord[]>
-  >(sourceRecord(() => []));
+  >(viewMemory?.pages ?? sourceRecord(() => []));
   const [cursors, setCursors] = React.useState<
     Record<NotificationSource, NotificationCursor>
-  >(sourceRecord(() => null));
+  >(viewMemory?.cursors ?? sourceRecord(() => null));
   const [more, setMore] = React.useState<Record<NotificationSource, boolean>>(
-    sourceRecord(() => false),
+    viewMemory?.more ?? sourceRecord(() => false),
   );
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(!viewMemory);
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
 
@@ -88,6 +94,15 @@ export function useNotificationsPage() {
   React.useEffect(() => {
     void load();
   }, [load]);
+
+  React.useEffect(() => {
+    if (loading) return;
+    setViewMemory(session.user?.uid, "notifications", {
+      cursors,
+      more,
+      pages,
+    }, ["notification-pages|"]);
+  }, [cursors, loading, more, pages, session.user?.uid]);
 
   React.useEffect(() => {
     if (!session.user) return;

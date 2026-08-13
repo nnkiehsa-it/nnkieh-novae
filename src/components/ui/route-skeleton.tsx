@@ -19,6 +19,8 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { PageHeader } from "@/components/ui/page-state";
+import { LiquidTabs } from "@/components/ui/liquid-tabs";
 import { stripMarkdownImages } from "@/lib/format";
 
 export type FeedSkeletonKind = "announcement" | "facility" | "issue";
@@ -45,14 +47,27 @@ const createKeys = {
 function StableTabs({ kind }: { kind: FeedSkeletonKind }) {
   if (kind === "announcement") return null;
   return (
-    <div className="ml-auto inline-flex h-8 items-center gap-0.5 rounded-full bg-muted p-[3px]">
-      <span className="t-tab-label rounded-full bg-card px-3 py-1 font-medium shadow-[var(--shadow-control)]">
-        {kind === "facility" ? translate("ui.status.processing") : translate("ui.common.active")}
-      </span>
-      <span className="t-tab-label px-3 py-1 font-medium text-muted-foreground">
-        {translate("ui.common.closed")}
-      </span>
-    </div>
+    <LiquidTabs
+      ariaLabel={
+        kind === "facility"
+          ? translate("ui.facility.statusFilter")
+          : translate("ui.issue.statusFilter")
+      }
+      className="ml-auto"
+      disabled
+      onValueChange={() => undefined}
+      options={[
+        {
+          label:
+            kind === "facility"
+              ? translate("ui.status.processing")
+              : translate("ui.common.active"),
+          value: "active",
+        },
+        { label: translate("ui.common.closed"), value: "closed" },
+      ]}
+      value="active"
+    />
   );
 }
 
@@ -138,25 +153,37 @@ function FeedCardSkeleton({ index, kind }: { index: number; kind: FeedSkeletonKi
   );
 }
 
-export function ListRouteSkeleton({ kind }: { kind: FeedSkeletonKind }) {
+export function ListRouteSkeleton({
+  kind,
+  showCreate = kind !== "announcement",
+  title,
+}: {
+  kind: FeedSkeletonKind;
+  showCreate?: boolean;
+  title?: string;
+}) {
   useLocaleSubscription();
   const filters = kind !== "announcement";
   return (
     <div className="space-y-5" aria-busy="true" aria-label={translate("ui.common.loading")}>
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold leading-8">{translate(listTitleKeys[kind])}</h1>
-        <div className="flex w-full items-center gap-2 sm:w-auto">
-          {kind !== "announcement" ? (
-            <Button className="opacity-100" disabled>
-              <Plus />{translate(createKeys[kind])}
-            </Button>
-          ) : null}
-          <StableTabs kind={kind} />
-        </div>
-      </header>
+      <PageHeader
+        actions={
+          kind !== "announcement" ? (
+            <div className="flex w-full items-center gap-2">
+              {showCreate ? (
+                <Button className="opacity-100" disabled>
+                  <Plus />{translate(createKeys[kind])}
+                </Button>
+              ) : null}
+              <StableTabs kind={kind} />
+            </div>
+          ) : undefined
+        }
+        title={title || translate(listTitleKeys[kind])}
+      />
       {filters ? (
         <Card className="gap-0 p-2">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <div className="relative min-w-40 flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -165,8 +192,9 @@ export function ListRouteSkeleton({ kind }: { kind: FeedSkeletonKind }) {
                 placeholder={kind === "issue" ? translate("ui.issue.searchPlaceholder") : translate("ui.facility.searchPlaceholder")}
               />
             </div>
-            <Button aria-label={translate("ui.common.sort")} className="opacity-100" disabled size="icon" variant="outline">
+            <Button aria-label={translate("ui.common.sort")} className="w-auto min-w-0 gap-1 px-2.5 opacity-100 sm:w-36 sm:gap-2 sm:px-3" disabled variant="outline">
               <SlidersHorizontal />
+              <span className="hidden sm:inline">{translate("ui.common.latest")}</span>
             </Button>
           </div>
         </Card>
@@ -188,16 +216,18 @@ export function FeedCardsSkeleton({ kind }: { kind: FeedSkeletonKind }) {
 
 export function DetailRouteSkeleton({
   content,
+  kind = "issue",
   title,
 }: {
   content?: string;
+  kind?: FeedSkeletonKind;
   title?: string;
 }) {
   useLocaleSubscription();
   return (
     <div className="space-y-5" aria-busy="true" aria-label={translate("ui.common.loading")}>
       <StableDetailToolbar />
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
+      <div className={kind === "announcement" ? "grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start" : "grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start"}>
         <Card className="min-h-[25rem] gap-0 overflow-hidden py-0">
           <div className="space-y-3 border-b px-5 py-5 sm:px-7 sm:py-6">
             <div className="flex gap-2">
@@ -247,22 +277,14 @@ export function ComposerRouteSkeleton({
   const submitKey = kind === "announcement" ? "ui.announcement.publish" : kind === "facility" ? "ui.facility.submit" : "ui.issue.submit";
   return (
     <div className="mx-auto max-w-3xl space-y-5" aria-busy="true" aria-label={translate("ui.common.loading")}>
-      <header className="flex min-h-9 items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold leading-8">{translate(titleKey)}</h1>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              aria-label={translate("ui.common.back")}
-              onClick={() => window.history.back()}
-              size="icon"
-              variant="ghost"
-            >
-              <ArrowLeft />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{translate("ui.common.back")}</TooltipContent>
-        </Tooltip>
-      </header>
+      <PageHeader
+        actions={
+          <Button onClick={() => window.history.back()} variant="ghost">
+            <ArrowLeft />{translate("ui.common.back")}
+          </Button>
+        }
+        title={translate(titleKey)}
+      />
       <Card className="py-6">
         <div className="grid gap-5 px-5 sm:px-7">
           {extraFields ? (

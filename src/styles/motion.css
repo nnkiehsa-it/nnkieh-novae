@@ -28,20 +28,25 @@
 
 /* Animate only the newly committed route node; no old-page snapshot or exit layer. */
 .t-route-enter {
-  animation: t-route-enter var(--motion-medium) var(--ease-smooth-out) backwards;
+  animation:
+    t-route-enter var(--motion-medium) var(--ease-smooth-out) backwards,
+    t-route-blur var(--motion-quick) var(--ease-smooth-out) backwards;
 }
 
 @keyframes t-route-enter {
   from {
     opacity: 0.9;
     transform: translateX(24px);
-    filter: blur(var(--motion-blur-sm));
   }
   to {
     opacity: 1;
     transform: translateX(0);
-    filter: blur(0);
   }
+}
+
+@keyframes t-route-blur {
+  from { filter: blur(var(--motion-blur-sm)); }
+  to { filter: blur(0); }
 }
 
 @media (min-width: 48rem) {
@@ -49,31 +54,27 @@
     from {
       opacity: 0.9;
       transform: translateY(var(--motion-distance-md));
-      filter: blur(var(--motion-blur-sm));
     }
     to {
       opacity: 1;
       transform: translateY(0);
-      filter: blur(0);
     }
   }
 }
 
 @media (max-width: 47.99rem) {
   html[data-route-direction="back"] .t-route-enter {
-    animation-name: t-route-enter-back;
+    animation-name: t-route-enter-back, t-route-blur;
   }
 
   @keyframes t-route-enter-back {
     from {
       opacity: 0.9;
       transform: translateX(-24px);
-      filter: blur(var(--motion-blur-sm));
     }
     to {
       opacity: 1;
       transform: translateX(0);
-      filter: blur(0);
     }
   }
 }
