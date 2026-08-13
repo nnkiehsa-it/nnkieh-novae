@@ -12,6 +12,8 @@ import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 
 export function CommentThread({
   comment,
@@ -100,11 +102,13 @@ function CommentRow({
           <AvatarFallback>{name.slice(0, 1)}</AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <p className="truncate text-[0.9375rem] font-semibold">{name}</p>
-            <p className="shrink-0 text-[0.8125rem] text-muted-foreground">{formatRelativeTime(comment.created_at)}</p>
-          </div>
-          <p className="mt-1 whitespace-pre-wrap break-words text-[0.9375rem] leading-6 text-foreground/88">{comment.content}</p>
+          <SkeletonReveal as="div" skeleton={<div className="space-y-2"><Skeleton className="h-4 w-36" /><Skeleton className="h-5 w-4/5" /></div>}>
+            <div className="flex items-center gap-2">
+              <p className="truncate text-[0.9375rem] font-semibold">{name}</p>
+              <p className="shrink-0 text-[0.8125rem] text-muted-foreground">{formatRelativeTime(comment.created_at)}</p>
+            </div>
+            <p className="mt-1 whitespace-pre-wrap break-words text-[0.9375rem] leading-6 text-foreground/88">{comment.content}</p>
+          </SkeletonReveal>
           <div className="mt-1.5 flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger asChild>

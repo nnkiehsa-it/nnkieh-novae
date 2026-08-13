@@ -9,6 +9,8 @@ import { stripMarkdownImages } from "@/lib/markdown-images";
 import { useResolvedMarkdown } from "@/hooks/use-resolved-markdown";
 import type { MarkdownImageRecord } from "@/types";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { cn } from "@/lib/utils";
 
 const imageAltSizePattern = /^(.*)\|(\d{1,5})x(\d{1,5})$/u;
@@ -54,12 +56,12 @@ export function ContentRenderer({
   className,
   content,
   fallbackAlt,
-  textClassName,
+  revealText = false,
 }: {
   className?: string;
   content: string;
   fallbackAlt: string;
-  textClassName?: string;
+  revealText?: boolean;
 }) {
   const [selected, setSelected] = React.useState<MarkdownImageRecord | null>(
     null,
@@ -119,12 +121,24 @@ export function ContentRenderer({
           ))}
         </div>
       ) : null}
-      {text ? (
+      {text ? revealText ? (
+        <SkeletonReveal
+          as="div"
+          skeleton={
+            <div className="space-y-3 py-1">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
+          }
+        >
+          <div
+            className="markdown-body break-words text-base leading-7 text-foreground/84"
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
+        </SkeletonReveal>
+      ) : (
         <div
-          className={cn(
-            "markdown-body break-words text-base leading-7 text-foreground/84",
-            textClassName,
-          )}
+          className="markdown-body break-words text-base leading-7 text-foreground/84"
           dangerouslySetInnerHTML={{ __html: html }}
         />
       ) : null}

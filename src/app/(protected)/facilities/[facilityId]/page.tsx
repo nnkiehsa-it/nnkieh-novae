@@ -40,6 +40,8 @@ import {
 import { ErrorState } from "@/components/ui/page-state";
 import { DetailRouteSkeleton } from "@/components/ui/route-skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatDate } from "@/lib/format";
 import { shareCurrentPage } from "@/lib/share";
@@ -133,28 +135,28 @@ export default function FacilityDetailPage() {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
         <Card className="gap-0 overflow-hidden py-0">
           <div className="border-b px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6">
-            <div className="t-data-content-enter flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-[var(--shadow-control)]">
-                {findFacilityCategory(facility.category_id)?.label || translate('ui.nav.facilities')}
+                <SkeletonReveal className="min-w-16" skeleton={<Skeleton className="h-3 w-16" />}><span>{findFacilityCategory(facility.category_id)?.label || translate('ui.nav.facilities')}</span></SkeletonReveal>
               </span>
-              <StatusBadge domain="facility" status={facility.status} />
+              <StatusBadge domain="facility" revealLabel status={facility.status} />
             </div>
-            <h1 className="t-data-content-enter mt-3 text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">
+            <SkeletonReveal as="div" className="mt-3" skeleton={<Skeleton className="h-8 w-4/5" />}><h1 className="text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">
               {facility.title}
-            </h1>
-            <div className="t-data-content-enter mt-3 flex flex-wrap gap-3 text-[0.8125rem] text-muted-foreground">
+            </h1></SkeletonReveal>
+            <div className="mt-3 flex flex-wrap gap-3 text-[0.8125rem] text-muted-foreground">
               <span className="inline-flex items-center gap-1">
                 <MapPin className="size-3.5" />
-                {facility.location}
+                <SkeletonReveal skeleton={<Skeleton className="h-4 w-24" />}><span>{facility.location}</span></SkeletonReveal>
               </span>
-              <span>{formatDate(facility.created_at)}</span>
+              <SkeletonReveal skeleton={<Skeleton className="h-4 w-32" />}><span>{formatDate(facility.created_at)}</span></SkeletonReveal>
             </div>
           </div>
           <CardContent className="py-5 sm:px-7 sm:py-6">
             <ContentRenderer
               content={facility.content}
               fallbackAlt={facility.title}
-              textClassName="t-data-content-enter"
+              revealText
             />
           </CardContent>
           {facility.result_content ? (
@@ -169,7 +171,7 @@ export default function FacilityDetailPage() {
               <ContentRenderer
                 content={facility.result_content}
                 fallbackAlt={translate('ui.issue.resultAlt', { title: facility.title })}
-                textClassName="t-data-content-enter"
+                revealText
               />
             </div>
           ) : null}
@@ -177,13 +179,13 @@ export default function FacilityDetailPage() {
         <aside className="space-y-3 lg:sticky lg:top-6">
           <Card className="gap-5 p-5 sm:p-6">
             <div className="flex flex-col gap-5">
-            <div className="t-data-content-enter flex items-center justify-between">
+            <div className="flex items-center justify-between">
               <span className="inline-flex items-center gap-2 text-sm font-medium">
                 <Hand className="size-4 text-muted-foreground" />{translate('ui.facility.affectedCount')}</span>
-              <AnimatedNumber
+              <SkeletonReveal skeleton={<Skeleton className="h-6 w-8" />}><AnimatedNumber
                 className="text-lg font-semibold"
                 value={facility.affected_count}
-              />
+              /></SkeletonReveal>
             </div>
             <div className="flex justify-end">
               <LikeActionButton

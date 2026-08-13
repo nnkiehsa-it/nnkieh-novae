@@ -3,6 +3,7 @@
 import {
   ArrowLeft,
   ArrowUpRight,
+  Clock3,
   Hand,
   Heart,
   MessageCircle,
@@ -250,16 +251,49 @@ export function DetailRouteSkeleton({
             )}
           </div>
         </Card>
-        <Card className="min-h-40 gap-4 p-5 sm:p-6">
-          <div className="flex justify-between">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-5 w-12" />
-          </div>
-          <Skeleton className="h-2 w-full rounded-full" />
-          <Button className="mx-auto opacity-100" disabled size="icon-lg">
-            <Hand />
-          </Button>
-        </Card>
+        <aside className="space-y-3 lg:sticky lg:top-6">
+          <Card className="min-h-40 gap-4 p-5 sm:p-6">
+            {kind === "announcement" ? (
+              <>
+                <Button className="mx-auto opacity-100" disabled size="icon-lg"><Heart /></Button>
+                <Skeleton className="mx-auto h-4 w-24" />
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-medium">
+                    {kind === "issue" ? translate("ui.issue.supportProgress") : translate("ui.facility.affectedCount")}
+                  </p>
+                  <Skeleton className="h-5 w-14" />
+                </div>
+                {kind === "issue" ? <div className="h-2 rounded-full bg-muted" /> : null}
+                <Button className="mx-auto opacity-100" disabled size="icon-lg"><Hand /></Button>
+              </>
+            )}
+          </Card>
+          {kind === "issue" ? (
+            <Card className="gap-4 p-5 sm:p-6">
+              <div className="flex items-center gap-2">
+                <Clock3 className="size-4 text-muted-foreground" />
+                <p className="text-sm font-medium">{translate("ui.issue.timeline")}</p>
+              </div>
+              <div className="grid gap-0">
+                {Array.from({ length: 3 }, (_, index) => (
+                  <div className="relative grid grid-cols-[1rem_1fr] gap-2 pb-4 last:pb-0" key={index}>
+                    <div className="flex flex-col items-center">
+                      <span className="mt-1 size-2 rounded-full bg-foreground" />
+                      {index < 2 ? <span className="mt-1 w-px flex-1 bg-border" /> : null}
+                    </div>
+                    <div className="space-y-1.5">
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-4 w-28" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          ) : null}
+        </aside>
       </div>
     </div>
   );

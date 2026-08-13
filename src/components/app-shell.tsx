@@ -21,7 +21,7 @@ import { useTheme } from "next-themes";
 import { useCategories } from "@/hooks/use-categories";
 import { useNotificationBadge } from "@/hooks/use-notification-badge";
 import { useRoutePreload } from "@/hooks/use-route-preload";
-import { rememberRoutePath } from "@/lib/navigation-memory";
+import { markRouteDirection, rememberRoutePath } from "@/lib/navigation-memory";
 import { useSession } from "@/hooks/use-session";
 import { getDefaultIssueRouteFilter } from "@/constants/categories";
 import { LiquidNav, type LiquidNavItem } from "@/components/liquid-nav";
@@ -155,12 +155,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   React.useEffect(() => {
-    const markBrowserBack = () => {
-      document.documentElement.dataset.routeDirection = "back";
-      window.setTimeout(() => {
-        delete document.documentElement.dataset.routeDirection;
-      }, 700);
-    };
+    const markBrowserBack = () => markRouteDirection("restore");
     window.addEventListener("popstate", markBrowserBack);
     return () => window.removeEventListener("popstate", markBrowserBack);
   }, []);

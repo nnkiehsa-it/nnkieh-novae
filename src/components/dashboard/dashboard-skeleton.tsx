@@ -1,29 +1,32 @@
 "use client";
 
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { t, useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SecondaryToolbar } from "@/components/detail-toolbar";
 
 export function DashboardSkeleton() {
   useI18n();
   return (
     <div className="space-y-5" aria-busy="true">
-      <PageHeader
+      <SecondaryToolbar
         actions={
-          <>
-            <Button disabled variant="ghost">
-              <ArrowLeft />{t("ui.common.back")}
-            </Button>
-            <Button disabled variant="outline">
-              <RefreshCw />{t("ui.dashboard.refresh")}
-            </Button>
-          </>
+          <Button
+            aria-label={t("ui.dashboard.refresh")}
+            disabled
+            size="icon"
+            variant="ghost"
+          >
+            <RefreshCw />
+          </Button>
         }
-        title={t("ui.nav.dashboard")}
+        backLabel={t("ui.common.back")}
+        onBack={() => window.history.back()}
       />
+      <PageHeader title={t("ui.nav.dashboard")} />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }, (_, index) => (
           <Card className="gap-5 p-5" key={index}>

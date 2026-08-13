@@ -3,7 +3,6 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import {
   AlertTriangle,
-  ArrowLeft,
   CheckCircle2,
   Clock3,
   Copy,
@@ -29,6 +28,10 @@ import {
   PageHeader,
 } from "@/components/ui/page-state";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
+import { SecondaryToolbar } from "@/components/detail-toolbar";
+import { returnToPreviousInAppRoute } from "@/lib/navigation-memory";
 
 export default function DashboardPage() {
   useLocaleSubscription();
@@ -62,21 +65,27 @@ export default function DashboardPage() {
   ];
   return (
     <div className="space-y-5">
-      <PageHeader
+      <SecondaryToolbar
         actions={
-          <>
-            <Button onClick={() => router.back()} variant="ghost">
-              <ArrowLeft />{translate('ui.common.back')}</Button>
-            <Button
-              disabled={dashboard.loading}
-              onClick={() => void dashboard.load(true)}
-              variant="outline"
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label={translate('ui.dashboard.refresh')}
+                disabled={dashboard.loading}
+                onClick={() => void dashboard.load(true)}
+                size="icon"
+                variant="ghost"
             >
-              <RefreshCw className={dashboard.loading ? "t-spinner" : ""} />{translate('ui.dashboard.refresh')}</Button>
-          </>
+                <RefreshCw className={dashboard.loading ? "t-spinner" : ""} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{translate('ui.dashboard.refresh')}</TooltipContent>
+          </Tooltip>
         }
-        title={translate('ui.nav.dashboard')}
+        backLabel={translate('ui.common.back')}
+        onBack={() => returnToPreviousInAppRoute(router, "/settings")}
       />
+      <PageHeader title={translate('ui.nav.dashboard')} />
       <StaggerList className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {statsCards.map(({ icon: Icon, label, value }) => (
           <StaggerItem key={label}>
@@ -87,10 +96,10 @@ export default function DashboardPage() {
                   <Icon className="size-4" />
                 </span>
               </div>
-              <AnimatedNumber
+              <SkeletonReveal skeleton={<Skeleton className="h-9 w-20" />}><AnimatedNumber
                 className="text-3xl font-semibold tracking-[-0.04em]"
                 value={value}
-              />
+              /></SkeletonReveal>
             </Card>
           </StaggerItem>
         ))}
@@ -109,7 +118,7 @@ export default function DashboardPage() {
                     <span className="truncate">
                       {getIssueCategoryLabel(category)}
                     </span>
-                    <AnimatedNumber className="font-medium" value={count} />
+                    <SkeletonReveal skeleton={<Skeleton className="h-5 w-7" />}><AnimatedNumber className="font-medium" value={count} /></SkeletonReveal>
                   </div>
                   <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                     <span
@@ -142,10 +151,10 @@ export default function DashboardPage() {
                 <p className="text-xs leading-5 text-muted-foreground">
                   {item.label}
                 </p>
-                <AnimatedNumber
+                <SkeletonReveal skeleton={<Skeleton className="mt-1 h-7 w-10" />}><AnimatedNumber
                   className="mt-1 text-xl font-semibold"
                   value={item.value}
-                />
+                /></SkeletonReveal>
               </div>
             ))}
           </CardContent>

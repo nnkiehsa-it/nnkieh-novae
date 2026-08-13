@@ -9,6 +9,8 @@ import { CategoryManagement } from "@/components/admin/category-management";
 import { AccessManagement } from "@/components/admin/access-management";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
 import { ErrorState, PageHeader } from "@/components/ui/page-state";
+import { SecondaryToolbar } from "@/components/detail-toolbar";
+import { returnToPreviousInAppRoute } from "@/lib/navigation-memory";
 
 export default function AdministrationPage() {
   useLocaleSubscription();
@@ -31,9 +33,11 @@ export default function AdministrationPage() {
     return <ErrorState error={translate('ui.admin.noPermission')} />;
   return (
     <div className="space-y-5">
-      <PageHeader
-        title={translate('ui.admin.title')}
+      <SecondaryToolbar
+        backLabel={translate('ui.common.back')}
+        onBack={() => returnToPreviousInAppRoute(router, "/settings")}
       />
+      <PageHeader title={translate('ui.admin.title')} />
       <LiquidTabs
         ariaLabel={translate('ui.admin.items')}
         onValueChange={(value) =>

@@ -6,14 +6,18 @@ import {
 } from "@/constants/statuses";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 
 export function StatusBadge({
   className,
   domain,
+  revealLabel = false,
   status,
 }: {
   className?: string;
   domain: "facility" | "issue";
+  revealLabel?: boolean;
   status: IssueStatus | FacilityStatus;
 }) {
   useLocaleSubscription();
@@ -43,7 +47,11 @@ export function StatusBadge({
         className,
       )}
     >
-      {translate(labelKey)}
+      {revealLabel ? (
+        <SkeletonReveal className="min-w-12" skeleton={<Skeleton className="h-3 w-12" />}>
+          <span>{translate(labelKey)}</span>
+        </SkeletonReveal>
+      ) : translate(labelKey)}
     </Badge>
   );
 }

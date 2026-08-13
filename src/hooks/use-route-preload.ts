@@ -25,6 +25,21 @@ export function useRoutePreload() {
   }, [router]);
 
   React.useEffect(() => {
+    if (!session.initialized || !session.user) return;
+    if (canViewDashboard) router.prefetch("/dashboard");
+    if (canManageAdministration) {
+      router.prefetch("/admin/management?tab=categories");
+      router.prefetch("/admin/management?tab=members");
+    }
+  }, [
+    canManageAdministration,
+    canViewDashboard,
+    router,
+    session.initialized,
+    session.user,
+  ]);
+
+  React.useEffect(() => {
     if (!categories.loaded || !session.initialized || !session.user) return;
 
     const categoryRoutes = [
@@ -50,10 +65,6 @@ export function useRoutePreload() {
         : []),
       "/announcements/new",
       "/announcements/__route-preload__",
-      ...(canViewDashboard ? ["/dashboard"] : []),
-      ...(canManageAdministration
-        ? ["/admin/management?tab=categories"]
-        : []),
     ];
     let cancelled = false;
     let idleHandle: number | undefined;
@@ -88,8 +99,6 @@ export function useRoutePreload() {
       }
     };
   }, [
-    canManageAdministration,
-    canViewDashboard,
     categories.facilitiesEnabled,
     categories.issuesEnabled,
     categories.loaded,

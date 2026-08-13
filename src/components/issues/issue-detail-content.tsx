@@ -9,6 +9,8 @@ import { ContentRenderer } from "@/components/content-renderer";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 
 export function IssueDetailContent({
   issue,
@@ -23,17 +25,23 @@ export function IssueDetailContent({
   return (
     <Card className="gap-0 overflow-hidden py-0">
       <div className="border-b px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6">
-        <div className="t-data-content-enter flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-[var(--shadow-control)]">
-            {getIssueCategoryLabel(issue.category)}
+            <SkeletonReveal className="min-w-16" skeleton={<Skeleton className="h-3 w-16" />}>
+              <span>
+              {getIssueCategoryLabel(issue.category)}
+              </span>
+            </SkeletonReveal>
           </span>
-          <StatusBadge domain="issue" status={status} />
+          <StatusBadge domain="issue" revealLabel status={status} />
         </div>
-        <h1 className="t-data-content-enter mt-3 text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">
-          {issue.title}
-        </h1>
-        <div className="t-data-content-enter mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[0.8125rem] text-muted-foreground">
-          <span>{formatDate(issue.created_at)}</span>
+        <SkeletonReveal as="div" className="mt-3" skeleton={<Skeleton className="h-8 w-4/5" />}>
+          <h1 className="text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">
+            {issue.title}
+          </h1>
+        </SkeletonReveal>
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[0.8125rem] text-muted-foreground">
+          <SkeletonReveal skeleton={<Skeleton className="h-4 w-32" />}><span>{formatDate(issue.created_at)}</span></SkeletonReveal>
           {issue.canViewAuthor ? (
             <span className="inline-flex items-center gap-1.5">
               <Avatar className="size-5">
@@ -45,7 +53,9 @@ export function IssueDetailContent({
                   {profile?.displayName?.slice(0, 1) || "?"}
                 </AvatarFallback>
               </Avatar>
-              {profile?.displayName || translate('ui.common.schoolMember')}
+              <SkeletonReveal skeleton={<Skeleton className="h-4 w-20" />}>
+                <span>{profile?.displayName || translate('ui.common.schoolMember')}</span>
+              </SkeletonReveal>
             </span>
           ) : null}
         </div>
@@ -54,7 +64,7 @@ export function IssueDetailContent({
         <ContentRenderer
           content={issue.content}
           fallbackAlt={issue.title}
-          textClassName="t-data-content-enter"
+          revealText
         />
       </CardContent>
       {issue.result_content ? (
@@ -69,7 +79,7 @@ export function IssueDetailContent({
           <ContentRenderer
             content={issue.result_content}
             fallbackAlt={translate('ui.issue.resultAlt', { title: issue.title })}
-            textClassName="t-data-content-enter"
+            revealText
           />
         </div>
       ) : null}

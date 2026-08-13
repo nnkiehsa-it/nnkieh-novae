@@ -26,28 +26,29 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/app/(protected)/announcements/` — announcement feed, composer, and detail routes.
 - `src/app/(protected)/notifications/` — merged broadcast/admin/user notification presentation with an immediately prefetchable route-loading shell.
 - `src/app/(protected)/settings/` — account, appearance, language, install, push, and resource settings with a stable prefetchable card shell.
-- `src/app/(protected)/dashboard/` — animated platform statistics and operational diagnostics.
-- `src/app/(protected)/admin/` — unified category/feature and scoped member-access management.
+- `src/app/(protected)/dashboard/` — animated platform statistics and operational diagnostics, with a prefetched geometry-matched `loading.tsx` shell.
+- `src/app/(protected)/admin/` — unified category/feature and scoped member-access management; the management route owns a prefetched responsive loading boundary.
 
 ## Presentation components
 
-- `src/components/ui/` — business-free shadcn/Radix primitives. Buttons, fields, cards, overlays, tabs, sheets, menus, status badges, skeletons, page states, and the shared Novae brand lockup share global semantic tokens.
+- `src/components/ui/` — business-free shadcn/Radix primitives. Buttons, fields, cards, overlays, tabs, sheets, menus, status badges, skeletons, page states, and the shared Novae brand lockup share global semantic tokens. `skeleton-reveal.tsx` stacks a field skeleton over its final text/number slot so async handoff cannot move or filter a card frame.
 - `src/components/motion/` — reusable animated numbers, reaction feedback, and staggered feed items. One shared IntersectionObserver drives card re-entry state while CSS owns the bounded blur/transform animation.
 - `src/components/app-shell.tsx` / `liquid-nav.tsx` — desktop, compact desktop, and mobile navigation. Route content commits without full-page snapshots, then only the new pathname-keyed node receives the short entrance motion; selected navigation and tab surfaces use measurement-free shared-layout motion.
-- `src/lib/navigation-memory.ts` — remembers the immediately preceding in-app pathname so detail back actions restore a compatible cached list through history, with a canonical-route fallback for direct entries.
+- `src/lib/navigation-memory.ts` — remembers the immediately preceding in-app pathname, distinguishes atomic history restoration from animated fallback navigation, and prevents cached routes from replaying their entrance after a back action.
 - `src/components/issues/` — issue cards, detail content/actions, and moderation presentation.
 - `src/components/facilities/` — facility cards and status-dialog presentation.
 - `src/components/announcements/` — announcement cards.
 - `src/components/settings/` — account, appearance/install, push preferences, and resource cards.
 - `src/components/notifications/notification-skeleton.tsx` — route and local notification loading rows that share the resolved list container, padding, icon column, and text anchors.
-- `src/components/dashboard/dashboard-skeleton.tsx` — geometry-matched dashboard header, metric grid, distribution/operations columns, and failure-panel loading shell.
+- `src/components/dashboard/dashboard-skeleton.tsx` — geometry-matched dashboard toolbar, header, metric grid, distribution/operations columns, and failure-panel loading shell.
+- `src/components/admin/administration-skeleton.tsx` — permission-matched system-management toolbar, tabs, and editor-frame loading shell used by route prefetch.
 - `src/components/setup/` — setup step chrome and reusable category draft editors.
 - `src/components/admin/` — category, reusable category-editor controls, and scoped-access presentation.
 - `src/components/composer-fields.tsx` — shared title/Markdown/media composer surface.
 - `src/components/discussion.tsx`, `comments/comment-composer.tsx`, `comments/comment-thread.tsx` — shared server-sorted discussion flow, compact avatar-led root/reply composer, and collapsible reply-rail presentation.
 - `src/components/content-author.tsx` — shared author avatar and name row for list content.
-- `src/components/content-renderer.tsx` — sanitized Markdown/media rendering.
-- `src/components/detail-toolbar.tsx` — shared, geometry-stable back/share/action toolbar used by detail routes.
+- `src/components/content-renderer.tsx` — sanitized Markdown/media rendering; its optional field-level reveal affects Markdown text only and leaves media/card chrome outside the filter layer.
+- `src/components/detail-toolbar.tsx` — shared, geometry-stable secondary toolbar; detail routes add share/actions while Dashboard and system management reuse the same back geometry on mobile and desktop.
 - `src/components/protected-app.tsx`, `app-providers.tsx`, `app-update-gate.tsx` — startup/session, providers, theme/i18n, toast boundaries, and bounded forced PWA updates with version polling, service-worker takeover, animated progress, and reload recovery.
 - `src/components/feature-route-guard.tsx` — shared disabled-feature guard for direct proposal and facility routes.
 - `src/components/ui/route-skeleton.tsx` and route `loading.tsx` files — prefetched list/detail app-shell fallbacks that reuse the same header/grid/control geometry as their resolved routes while skeletonizing only unresolved domain fields; detail fallbacks reuse a cached title and two-line content preview when available, and no domain requests are started by the fallback.

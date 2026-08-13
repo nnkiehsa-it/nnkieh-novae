@@ -32,19 +32,41 @@ describe("React frontend design system", () => {
 
   it("keeps route motion separate from skeleton-to-content sharpening", () => {
     const motion = read("src/styles/motion.css");
-    const reveal = motion.match(/@keyframes t-reveal-content\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
-    const dataReveal = motion.match(/@keyframes t-data-content-enter\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
+    const skeletonReveal = read("src/components/ui/skeleton-reveal.tsx");
     const initialStagger = motion.match(/@keyframes t-stagger-item\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
     const routeEnter = motion.match(/@keyframes t-route-enter\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
-    expect(reveal).toContain("filter: blur");
-    expect(reveal).not.toContain("translate");
-    expect(dataReveal).toContain("translateY(2px)");
+    expect(motion).toContain("--reveal-blur: 2px");
+    expect(motion).toContain(".t-skel.is-revealed .t-skel-content");
+    expect(motion).toContain("filter: blur(var(--reveal-blur))");
+    expect(skeletonReveal).not.toContain("useEffect");
+    expect(skeletonReveal).toContain('className={cn("t-skel is-revealed"');
+    expect(motion).toContain("@starting-style");
+    expect(skeletonReveal).toContain('data-block={as === "div"');
     expect(initialStagger).not.toContain("translate");
     expect(initialStagger).not.toContain("filter");
-    expect(motion).toContain(".t-stagger-copy");
+    expect(motion).not.toContain("t-data-content-enter");
+    expect(motion).not.toContain("t-stagger-copy");
+    expect(motion).not.toContain("t-reveal-content");
     expect(motion).toMatch(/@keyframes t-route-enter[\s\S]*translate/u);
     expect(motion).toContain("t-route-blur var(--motion-quick)");
     expect(routeEnter).not.toContain("filter:");
+    expect(motion).toContain('html[data-route-direction="restore"] .t-route-enter');
+    expect(motion).toMatch(/data-route-direction="restore"[^}]*animation: none/u);
+  });
+
+  it("warms privileged route shells immediately and gives them one mobile toolbar", () => {
+    const preload = read("src/hooks/use-route-preload.ts");
+    const dashboard = read("src/app/(protected)/dashboard/page.tsx");
+    const administration = read("src/app/(protected)/admin/management/page.tsx");
+    const navigationMemory = read("src/lib/navigation-memory.ts");
+    expect(preload).toContain('router.prefetch("/dashboard")');
+    expect(preload).toContain('router.prefetch("/admin/management?tab=categories")');
+    expect(preload).toContain('router.prefetch("/admin/management?tab=members")');
+    expect(dashboard).toContain("<SecondaryToolbar");
+    expect(administration).toContain("<SecondaryToolbar");
+    expect(navigationMemory).toContain('markRouteDirection("restore")');
+    expect(read("src/app/(protected)/dashboard/loading.tsx")).toContain("DashboardSkeleton");
+    expect(read("src/app/(protected)/admin/management/loading.tsx")).toContain("AdministrationSkeleton");
   });
 
   it("keeps app controls real while only data fields use route skeletons", () => {

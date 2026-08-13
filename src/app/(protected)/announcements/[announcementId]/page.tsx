@@ -36,6 +36,8 @@ import {
 import { ErrorState } from "@/components/ui/page-state";
 import { DetailRouteSkeleton } from "@/components/ui/route-skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 
 export default function AnnouncementDetailPage() {
   const router = useRouter();
@@ -127,10 +129,10 @@ export default function AnnouncementDetailPage() {
               <p className="text-[0.8125rem] font-medium text-muted-foreground">
                 {t("ui.announcement.campus")}
               </p>
-              <h1 className="t-data-content-enter mt-2.5 text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">
+              <SkeletonReveal as="div" className="mt-2.5" skeleton={<Skeleton className="h-8 w-4/5" />}><h1 className="text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">
                 {announcement.title}
-              </h1>
-              <div className="t-data-content-enter mt-3 flex items-center gap-2 text-[0.8125rem] text-muted-foreground">
+              </h1></SkeletonReveal>
+              <div className="mt-3 flex items-center gap-2 text-[0.8125rem] text-muted-foreground">
                 <Avatar className="size-5">
                   <AvatarImage
                     alt={profile?.displayName ?? t("ui.announcement.author")}
@@ -138,16 +140,16 @@ export default function AnnouncementDetailPage() {
                   />
                   <AvatarFallback>{profile?.displayName?.slice(0, 1) || "?"}</AvatarFallback>
                 </Avatar>
-                <span>{profile?.displayName || t("ui.announcement.admin")}</span>
+                <SkeletonReveal skeleton={<Skeleton className="h-4 w-20" />}><span>{profile?.displayName || t("ui.announcement.admin")}</span></SkeletonReveal>
                 <span>·</span>
-                <span>{formatDate(announcement.published_at)}</span>
+                <SkeletonReveal skeleton={<Skeleton className="h-4 w-32" />}><span>{formatDate(announcement.published_at)}</span></SkeletonReveal>
               </div>
             </div>
             <CardContent className="py-5 sm:px-7 sm:py-6">
               <ContentRenderer
                 content={announcement.content}
                 fallbackAlt={announcement.title}
-                textClassName="t-data-content-enter"
+                revealText
               />
             </CardContent>
           </Card>
@@ -182,10 +184,10 @@ export default function AnnouncementDetailPage() {
                 reaction="heart"
               />
             </div>
-            <div className="t-data-content-enter flex items-center justify-center gap-1 text-xs text-muted-foreground">
+            <SkeletonReveal as="div" skeleton={<Skeleton className="mx-auto h-4 w-24" />}><div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
               <AnimatedNumber value={announcement.like_count} />
               {t("ui.announcement.peopleLiked")}
-            </div>
+            </div></SkeletonReveal>
             </div>
           </Card>
         </aside>

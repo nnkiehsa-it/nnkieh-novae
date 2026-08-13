@@ -19,6 +19,8 @@ import { LikeActionButton } from "@/components/motion/like-action-button";
 import { DetailToolbar } from "@/components/detail-toolbar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
@@ -139,10 +141,10 @@ export function IssueDetailSidebar({
         <Card className="gap-5 p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-medium">{translate('ui.issue.supportProgress')}</p>
-            <p className="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums">
+            <SkeletonReveal skeleton={<Skeleton className="h-5 w-14" />}><p className="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums">
               <AnimatedNumber value={issue.support_count} />
               {issue.support_goal ? ` / ${issue.support_goal}` : ""}
-            </p>
+            </p></SkeletonReveal>
           </div>
           {issue.support_goal ? (
             <div className="h-2 overflow-hidden rounded-full bg-muted">
@@ -192,12 +194,14 @@ export function IssueDetailSidebar({
                   <span className="mt-1 w-px flex-1 bg-border" />
                 ) : null}
               </div>
-              <div>
-                <p className="text-[0.8125rem] font-medium">{translate(item.shortLabel)}</p>
-                <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">
-                  {formatDate(item.value)}
-                </p>
-              </div>
+              <SkeletonReveal as="div" skeleton={<div className="space-y-1.5"><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-28" /></div>}>
+                <div>
+                  <p className="text-[0.8125rem] font-medium">{translate(item.shortLabel)}</p>
+                  <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">
+                    {formatDate(item.value)}
+                  </p>
+                </div>
+              </SkeletonReveal>
             </div>
           ))}
         </div>

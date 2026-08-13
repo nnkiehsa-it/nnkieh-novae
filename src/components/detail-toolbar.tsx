@@ -4,14 +4,38 @@ import type { ReactNode } from "react";
 import { ArrowLeft, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { markRouteDirection } from "@/lib/navigation-memory";
 
-const BACK_DIRECTION_WINDOW_MS = 700;
-
-function markBackNavigation() {
-  document.documentElement.dataset.routeDirection = "back";
-  window.setTimeout(() => {
-    delete document.documentElement.dataset.routeDirection;
-  }, BACK_DIRECTION_WINDOW_MS);
+export function SecondaryToolbar({
+  actions,
+  backLabel,
+  onBack,
+}: {
+  actions?: ReactNode;
+  backLabel: string;
+  onBack: () => void;
+}) {
+  return (
+    <div className="flex h-9 items-center justify-between gap-3">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            aria-label={backLabel}
+            onClick={() => {
+              markRouteDirection("back");
+              onBack();
+            }}
+            size="icon"
+            variant="ghost"
+          >
+            <ArrowLeft />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{backLabel}</TooltipContent>
+      </Tooltip>
+      <div className="flex items-center gap-1">{actions}</div>
+    </div>
+  );
 }
 
 export function DetailToolbar({
@@ -28,34 +52,22 @@ export function DetailToolbar({
   shareLabel: string;
 }) {
   return (
-    <div className="flex h-9 items-center justify-between gap-3">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            aria-label={backLabel}
-            onClick={() => {
-              markBackNavigation();
-              onBack();
-            }}
-            size="icon"
-            variant="ghost"
-          >
-            <ArrowLeft />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{backLabel}</TooltipContent>
-      </Tooltip>
-      <div className="flex items-center gap-1">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button aria-label={shareLabel} onClick={onShare} size="icon" variant="ghost">
-              <Share2 />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{shareLabel}</TooltipContent>
-        </Tooltip>
-        {actions}
-      </div>
-    </div>
+    <SecondaryToolbar
+      actions={
+        <>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button aria-label={shareLabel} onClick={onShare} size="icon" variant="ghost">
+                <Share2 />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{shareLabel}</TooltipContent>
+          </Tooltip>
+          {actions}
+        </>
+      }
+      backLabel={backLabel}
+      onBack={onBack}
+    />
   );
 }

@@ -21,6 +21,8 @@ import {
   PageHeader,
 } from "@/components/ui/page-state";
 import { NotificationListSkeleton } from "@/components/notifications/notification-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 
 function notificationTitle(notification: NotificationRecord, t: (key: string) => string) {
   if (notification.type === "announcement_created")
@@ -87,17 +89,13 @@ export default function NotificationsPage() {
                 type="button"
               >
                 <NotificationIcon notification={notification} />
-                <span className="t-stagger-copy min-w-0 flex-1">
-                  <span className="flex items-start justify-between gap-3">
-                    <span className="font-medium leading-5">
-                      {notificationTitle(notification, t)}
-                    </span>
-                    {!notification.is_read ? (
-                      <span
-                        className="t-notification-badge mt-1.5 size-2 shrink-0 rounded-full bg-blue-500"
-                        data-open="true"
-                      />
-                    ) : null}
+                <SkeletonReveal
+                  as="div"
+                  className="min-w-0 flex-1"
+                  skeleton={<div className="space-y-2"><Skeleton className="h-4 w-2/5" /><Skeleton className="h-4 w-4/5" /><Skeleton className="h-3 w-28" /></div>}
+                >
+                  <span className="font-medium leading-5">
+                    {notificationTitle(notification, t)}
                   </span>
                   {notification.body_preview ? (
                     <span className="mt-1 line-clamp-2 text-sm leading-5 text-muted-foreground">
@@ -107,7 +105,13 @@ export default function NotificationsPage() {
                   <span className="mt-1.5 block text-xs text-muted-foreground">
                     {formatDate(notification.created_at)}
                   </span>
-                </span>
+                </SkeletonReveal>
+                {!notification.is_read ? (
+                  <span
+                    className="t-notification-badge mt-1.5 size-2 shrink-0 rounded-full bg-blue-500"
+                    data-open="true"
+                  />
+                ) : null}
                 <ChevronRight className="mt-3 size-4 shrink-0 text-muted-foreground transition-transform duration-250 group-hover:translate-x-0.5" />
               </button>
             </StaggerItem>

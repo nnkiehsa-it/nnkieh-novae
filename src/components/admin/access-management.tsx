@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/page-state";
 import { Input } from "@/components/ui/input";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import {
   Select,
   SelectContent,
@@ -228,17 +230,20 @@ function MemberRow({
         <AvatarImage alt={name} src={member.photoUrl ?? undefined} />
         <AvatarFallback>{name.slice(0, 1)}</AvatarFallback>
       </Avatar>
-      <div className="min-w-0 flex-1">
+      <SkeletonReveal as="div" className="min-w-0 flex-1" skeleton={<div className="space-y-1.5"><Skeleton className="h-4 w-32" /><Skeleton className="h-3 w-44" /></div>}>
+        <div>
         <p className="truncate text-sm font-medium">{name}</p>
         <p className="truncate text-xs text-muted-foreground">
           {member.email || member.uid}
         </p>
-      </div>
+        </div>
+      </SkeletonReveal>
       <span className="hidden items-center gap-1 text-xs text-muted-foreground sm:inline-flex">
         <ShieldCheck className="size-3.5" />
-        {member.roles.length +
-          member.managedIssueCategoryIds.length +
-          member.managedFacilityCategoryIds.length}{" "}{translate('ui.access.scopeCount')}</span>
+        <SkeletonReveal skeleton={<Skeleton className="h-3 w-14" />}><span>{member.roles.length +
+            member.managedIssueCategoryIds.length +
+            member.managedFacilityCategoryIds.length}{" "}{translate('ui.access.scopeCount')}</span></SkeletonReveal>
+      </span>
       {action}
     </div>
   );

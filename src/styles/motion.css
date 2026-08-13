@@ -17,6 +17,12 @@
   --motion-distance-md: 12px;
   --motion-scale-soft: 0.98;
   --motion-scale-overlay: 0.96;
+  --pulse-dur: 1000ms;
+  --pulse-count: 1;
+  --pulse-min: 0.5;
+  --reveal-dur: 400ms;
+  --reveal-blur: 2px;
+  --reveal-ease: ease-in-out;
   --shimmer-base: #7c7c7c;
   --shimmer-highlight: #0d0d0d;
 }
@@ -47,6 +53,10 @@
 @keyframes t-route-blur {
   from { filter: blur(var(--motion-blur-sm)); }
   to { filter: blur(0); }
+}
+
+html[data-route-direction="restore"] .t-route-enter {
+  animation: none;
 }
 
 @media (min-width: 48rem) {
@@ -97,14 +107,7 @@
 }
 
 /* Staggered content and list rows */
-.t-stagger-item {
-  animation: t-stagger-item var(--motion-medium) var(--ease-smooth-out) both;
-}
-
-.t-stagger-list > :nth-child(2) { animation-delay: 35ms; }
-.t-stagger-list > :nth-child(3) { animation-delay: 70ms; }
-.t-stagger-list > :nth-child(4) { animation-delay: 105ms; }
-.t-stagger-list > :nth-child(n + 5) { animation-delay: 140ms; }
+.t-stagger-item { opacity: 1; }
 
 .t-stagger-item[data-observed="true"] {
   animation: none;
@@ -121,37 +124,6 @@
 .t-stagger-item[data-observed="true"][data-visible="true"] {
   opacity: 1;
   transform: translateY(0);
-}
-
-@keyframes t-stagger-item {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.t-stagger-copy {
-  animation: t-stagger-copy var(--motion-medium) var(--ease-smooth-out) both;
-  transition: filter var(--motion-medium) var(--ease-smooth-out);
-}
-
-.t-stagger-item[data-observed="true"] .t-stagger-copy {
-  animation: none;
-}
-
-.t-stagger-item[data-observed="true"][data-visible="false"] .t-stagger-copy {
-  filter: blur(var(--motion-blur-sm));
-}
-
-.t-stagger-item[data-observed="true"][data-visible="true"] .t-stagger-copy {
-  filter: blur(0);
-}
-
-@keyframes t-stagger-copy {
-  from { filter: blur(var(--motion-blur-sm)); }
-  to { filter: blur(0); }
 }
 
 .t-stagger-list > .t-stagger-item,
@@ -514,7 +486,7 @@
 
 /* Skeleton reveal and loading label */
 .t-skeleton {
-  animation: t-skeleton-pulse 1000ms ease-in-out infinite;
+  animation: t-skeleton-pulse var(--pulse-dur) ease-in-out var(--pulse-count);
 }
 @keyframes t-skeleton-pulse {
   0%,
@@ -525,35 +497,60 @@
     opacity: 0.5;
   }
 }
-.t-reveal-content {
-  animation: t-reveal-content var(--motion-slow) var(--ease-smooth-out) both;
+.t-skel {
+  position: relative;
+  display: inline-block;
 }
-@keyframes t-reveal-content {
-  from {
-    opacity: 0.24;
-    filter: blur(var(--motion-blur-md));
-  }
-  to {
+.t-skel[data-block="true"] { display: block; }
+.t-skel-skeleton {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  opacity: 1;
+  filter: blur(0);
+  pointer-events: none;
+  transition:
+    opacity var(--reveal-dur) var(--reveal-ease),
+    filter var(--reveal-dur) var(--reveal-ease);
+}
+.t-skel-content {
+  position: relative;
+  z-index: 2;
+  display: inherit;
+  opacity: 0;
+  filter: blur(var(--reveal-blur));
+  transition:
+    opacity var(--reveal-dur) var(--reveal-ease),
+    filter var(--reveal-dur) var(--reveal-ease);
+}
+.t-skel.is-revealed .t-skel-skeleton {
+  opacity: 0;
+  filter: blur(var(--reveal-blur));
+}
+.t-skel.is-revealed .t-skel-content {
+  opacity: 1;
+  filter: blur(0);
+}
+@starting-style {
+  .t-skel.is-revealed .t-skel-skeleton {
     opacity: 1;
     filter: blur(0);
   }
-}
-
-.t-data-content-enter {
-  animation: t-data-content-enter var(--motion-slow) var(--ease-smooth-out) both;
-}
-
-@keyframes t-data-content-enter {
-  from {
-    opacity: 0.24;
-    transform: translateY(2px);
-    filter: blur(var(--motion-blur-md));
+  .t-skel.is-revealed .t-skel-content {
+    opacity: 0;
+    filter: blur(var(--reveal-blur));
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
-  }
+}
+.t-skel.is-resetting .t-skel-skeleton,
+.t-skel.is-resetting .t-skel-content {
+  transition: none !important;
+}
+.t-skel-skeleton.is-pulsing > * {
+  animation: t-skel-pulse var(--pulse-dur) ease-in-out var(--pulse-count);
+}
+@keyframes t-skel-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: var(--pulse-min); }
 }
 
 .t-shimmer {
@@ -1014,9 +1011,7 @@
   }
   .t-route-enter,
   .t-panel-reveal,
-  .t-data-content-enter,
   .t-stagger-item,
-  .t-stagger-copy,
   .t-digit,
   .t-success-check,
   .t-success-check path,
@@ -1026,7 +1021,6 @@
   .t-progress-track > span,
   .t-shake,
   .t-skeleton,
-  .t-reveal-content,
   .t-shimmer::before,
   .t-reaction-icon,
   .t-like-particles i,
@@ -1044,8 +1038,12 @@
     transform: none !important;
     filter: none !important;
   }
-  .t-stagger-item[data-observed] .t-stagger-copy {
-    filter: none !important;
+  .t-skel-skeleton,
+  .t-skel-content {
+    transition: none !important;
+  }
+  .t-skel-skeleton.is-pulsing > * {
+    animation: none !important;
   }
   .t-notification-badge,
   .t-text-swap,
