@@ -48,6 +48,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/components/protected-app.tsx`, `app-providers.tsx`, `app-update-gate.tsx` — startup/session, providers, theme/i18n, toast boundaries, and bounded forced PWA updates with version polling, service-worker takeover, animated progress, and reload recovery.
 - `src/components/feature-route-guard.tsx` — shared disabled-feature guard for direct proposal and facility routes.
 - `src/components/ui/route-skeleton.tsx` and route `loading.tsx` files — prefetched list/detail app-shell fallbacks that keep headers, buttons, filters, form controls, and card frames as real UI while skeletonizing only unresolved domain fields; no domain requests are started by the fallback.
+- `src/components/ui/tooltip.tsx` — shared fine-pointer-only tooltip capability boundary; touch and non-hover devices keep labelled controls without opening tooltip layers.
 - `src/components/ui/action-feedback-icon.tsx`, `pending-alert-dialog-action.tsx` — shared transitions.dev-style spinner-to-check primitives for backend mutation, destructive confirmation, and update feedback.
 
 ## Hooks and stateful flows
@@ -58,13 +59,13 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/hooks/use-facility-feed.ts`, `use-facility-detail.ts`, `use-facility-status.ts` — facility list/detail, affected-user, delete, and moderation flows.
 - `src/hooks/use-announcement-feed.ts`, `use-announcement-detail.ts` — announcement list/detail, likes, comments, and deletion.
 - `src/hooks/use-notifications-page.ts`, `use-notification-badge.ts` — notification aggregation, realtime subscriptions, pagination, target routing, and unread hints.
-- `src/hooks/use-route-preload.ts` — authenticated route bundle and RSC-shell warming only; primary navigation preloads immediately and secondary routes during idle time without mounting data hooks or requesting content services.
+- `src/hooks/use-route-preload.ts` — authenticated route bundle and RSC-shell warming only; static primary destinations preload at shell mount, category destinations join after category hydration, and secondary routes warm during idle time without mounting data hooks or requesting content services.
 - `src/hooks/use-entry-composer.ts` — issue/facility/announcement composer workflows and upload rollback.
 - `src/hooks/use-initial-setup.ts` — setup validation, persistence, polling, and retry-safe completion.
 - `src/hooks/use-category-management.ts`, `use-access-management.ts` — platform configuration and category-scoped RBAC flows.
 - `src/hooks/use-platform-dashboard.ts` — dashboard fetching and refresh.
 - `src/hooks/use-permission-redirect.ts` — shared client-side redirect for authenticated routes that require a specific permission.
-- `src/hooks/use-push-notifications.ts`, `use-pwa-install.ts` — device push preferences and install flow.
+- `src/hooks/use-push-notifications.ts`, `use-pwa-install.ts` — device push preferences and install flow; settings present each push write through the shared targeted spinner-to-check lifecycle.
 - `src/hooks/use-image-attachments.ts`, `use-resolved-markdown.ts`, `use-public-profiles.ts` — reusable media, Markdown, and public-profile helpers.
 - `src/hooks/use-content-invalidation-refresh.ts`, `use-action-feedback.ts` — shared stale-cache refresh wiring and 500 ms successful-action feedback lifecycle.
 

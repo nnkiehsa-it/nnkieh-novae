@@ -5,23 +5,66 @@ import { Tooltip as TooltipPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
 
+const TOOLTIP_POINTER_QUERY = "(hover: hover) and (pointer: fine)";
+const TooltipEnabledContext = React.createContext(false);
+
+function subscribeToTooltipCapability(onChange: () => void) {
+  const media = window.matchMedia(TOOLTIP_POINTER_QUERY);
+  media.addEventListener("change", onChange);
+  return () => media.removeEventListener("change", onChange);
+}
+
+function getTooltipCapability() {
+  return window.matchMedia(TOOLTIP_POINTER_QUERY).matches;
+}
+
 function TooltipProvider({
   delayDuration = 80,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
+  const enabled = React.useSyncExternalStore(
+    subscribeToTooltipCapability,
+    getTooltipCapability,
+    () => false,
+  );
   return (
-    <TooltipPrimitive.Provider
-      data-slot="tooltip-provider"
-      delayDuration={delayDuration}
-      {...props}
-    />
+    <TooltipEnabledContext.Provider value={enabled}>
+      <TooltipPrimitive.Provider
+        data-slot="tooltip-provider"
+        delayDuration={delayDuration}
+        {...props}
+      />
+    </TooltipEnabledContext.Provider>
   );
 }
 
 function Tooltip({
+  defaultOpen = false,
+  onOpenChange,
+  open: controlledOpen,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
-  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />;
+  const enabled = React.useContext(TooltipEnabledContext);
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen);
+  const isControlled = controlledOpen !== undefined;
+  const open = enabled && (isControlled ? controlledOpen : uncontrolledOpen);
+
+  React.useEffect(() => {
+    if (!enabled && !isControlled) setUncontrolledOpen(false);
+  }, [enabled, isControlled]);
+
+  return (
+    <TooltipPrimitive.Root
+      data-slot="tooltip"
+      {...props}
+      onOpenChange={(nextOpen) => {
+        if (!enabled) return;
+        if (!isControlled) setUncontrolledOpen(nextOpen);
+        onOpenChange?.(nextOpen);
+      }}
+      open={open}
+    />
+  );
 }
 
 function TooltipTrigger({

@@ -61,7 +61,7 @@ export default function DashboardPage() {
     { label: translate('ui.dashboard.stuckUploads'), value: operations.stuck_upload_count },
   ];
   return (
-    <div className="t-reveal-content space-y-5">
+    <div className="space-y-5">
       <PageHeader
         actions={
           <>

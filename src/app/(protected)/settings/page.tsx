@@ -1,6 +1,7 @@
 "use client";
 import { t as translate } from "@/i18n";
 
+import * as React from "react";
 import { LogOut } from "lucide-react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -12,6 +13,7 @@ import { SettingsAccountCard } from "@/components/settings/account-card";
 import { AppearanceInstallCards } from "@/components/settings/appearance-install-cards";
 import {
   NotificationCard,
+  type NotificationFeedbackTarget,
   type NotificationOption,
 } from "@/components/settings/notification-card";
 import {
@@ -20,6 +22,7 @@ import {
 } from "@/components/settings/settings-links";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-state";
+import { useActionFeedback } from "@/hooks/use-action-feedback";
 
 export default function SettingsPage() {
   const session = useSession();
@@ -27,6 +30,9 @@ export default function SettingsPage() {
   const pwa = usePwaInstall();
   const { locale } = useI18n();
   const { resolvedTheme, setTheme, theme } = useTheme();
+  const notificationFeedback = useActionFeedback();
+  const [notificationFeedbackTarget, setNotificationFeedbackTarget] =
+    React.useState<NotificationFeedbackTarget | null>(null);
   const user = session.user!;
   const notificationOptions: NotificationOption[] = [
     {
@@ -47,18 +53,42 @@ export default function SettingsPage() {
   ];
 
   async function togglePush(enabled: boolean) {
-    const ok = enabled ? await push.enable() : await push.disable();
-    if (ok) toast.success(enabled ? translate('ui.settings.pushEnabled') : translate('ui.settings.pushDisabled'));
-    else toast.error(push.error || translate('ui.settings.pushUpdateFailed'));
+    setNotificationFeedbackTarget("device");
+    try {
+      await notificationFeedback.run(async () => {
+        const ok = enabled ? await push.enable() : await push.disable();
+        if (!ok) throw new Error(translate("ui.settings.pushUpdateFailed"));
+      });
+    } catch (caught) {
+      toast.error(
+        caught instanceof Error
+          ? caught.message
+          : translate("ui.settings.pushUpdateFailed"),
+      );
+    } finally {
+      setNotificationFeedbackTarget(null);
+    }
   }
 
   async function setPreference(
     key: NotificationOption["key"],
     enabled: boolean,
   ) {
-    const ok = await push.setPreference(key, enabled);
-    if (ok) toast.success(translate('ui.settings.preferencesUpdated'));
-    else toast.error(push.error || translate('ui.common.updateFailed'));
+    setNotificationFeedbackTarget(key);
+    try {
+      await notificationFeedback.run(async () => {
+        const ok = await push.setPreference(key, enabled);
+        if (!ok) throw new Error(translate("ui.common.updateFailed"));
+      });
+    } catch (caught) {
+      toast.error(
+        caught instanceof Error
+          ? caught.message
+          : translate("ui.common.updateFailed"),
+      );
+    } finally {
+      setNotificationFeedbackTarget(null);
+    }
   }
 
   return (
@@ -90,6 +120,8 @@ export default function SettingsPage() {
       />
       <NotificationCard
         enabled={push.enabled}
+        feedbackState={notificationFeedback.state}
+        feedbackTarget={notificationFeedbackTarget}
         loading={push.loading}
         onEnabledChange={(enabled) => void togglePush(enabled)}
         onPreferenceChange={(key, enabled) => void setPreference(key, enabled)}

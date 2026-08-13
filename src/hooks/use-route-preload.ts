@@ -16,16 +16,22 @@ export function useRoutePreload() {
   const issueCategory = categories.issueCategories[0]?.id || "my-proposals";
 
   React.useEffect(() => {
+    const primaryRoutes = [
+      "/announcements",
+      "/notifications",
+      "/settings",
+    ];
+    primaryRoutes.forEach((route) => router.prefetch(route));
+  }, [router]);
+
+  React.useEffect(() => {
     if (!categories.loaded || !session.initialized || !session.user) return;
 
-    const primaryRoutes = [
+    const categoryRoutes = [
       ...(categories.issuesEnabled
         ? [`/issues/${encodeURIComponent(issueCategory)}`]
         : []),
       ...(categories.facilitiesEnabled ? ["/facilities"] : []),
-      "/announcements",
-      "/notifications",
-      "/settings",
     ];
     const deferredRoutes = [
       ...(categories.issuesEnabled
@@ -51,7 +57,7 @@ export function useRoutePreload() {
     ];
     let cancelled = false;
     let idleHandle: number | undefined;
-    primaryRoutes.forEach((route) => router.prefetch(route));
+    categoryRoutes.forEach((route) => router.prefetch(route));
 
     const preloadDeferred = () => {
       if (cancelled) return;

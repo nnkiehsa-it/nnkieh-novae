@@ -2,6 +2,7 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +26,7 @@ export function LiquidNav({
   vertical?: boolean;
 }) {
   useLocaleSubscription();
+  const router = useRouter();
   const [pendingRoute, setPendingRoute] = React.useState<{
     fromPath: string;
     href: string;
@@ -86,7 +88,9 @@ export function LiquidNav({
             href={item.href}
             key={item.href}
             onClick={() => acknowledgeNavigation(item.href)}
+            onFocus={() => router.prefetch(item.href)}
             onPointerDown={() => acknowledgeNavigation(item.href)}
+            onPointerEnter={() => router.prefetch(item.href)}
           >
             <span className="relative shrink-0">
               {item.icon}

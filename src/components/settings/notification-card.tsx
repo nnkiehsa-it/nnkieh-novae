@@ -7,6 +7,7 @@ import type {
   PushNotificationPermission,
 } from "@/hooks/use-push-notifications";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import { Switch } from "@/components/ui/switch";
 
 export interface NotificationOption {
@@ -15,8 +16,14 @@ export interface NotificationOption {
   label: string;
 }
 
+export type NotificationFeedbackTarget =
+  | "device"
+  | PersonalPushPreferenceKey;
+
 export function NotificationCard({
   enabled,
+  feedbackState,
+  feedbackTarget,
   loading,
   onEnabledChange,
   onPreferenceChange,
@@ -26,6 +33,8 @@ export function NotificationCard({
   supported,
 }: {
   enabled: boolean;
+  feedbackState: "idle" | "loading" | "success";
+  feedbackTarget: NotificationFeedbackTarget | null;
   loading: boolean;
   onEnabledChange: (enabled: boolean) => void;
   onPreferenceChange: (
@@ -55,6 +64,7 @@ export function NotificationCard({
           checked={enabled}
           description={status}
           disabled={loading || !supported || permission === "denied"}
+          feedbackState={feedbackTarget === "device" ? feedbackState : "idle"}
           label={translate('ui.settings.pushDevice')}
           onCheckedChange={onEnabledChange}
         />
@@ -63,6 +73,7 @@ export function NotificationCard({
             checked={preferences[option.key]}
             description={option.description}
             disabled={loading}
+            feedbackState={feedbackTarget === option.key ? feedbackState : "idle"}
             key={option.key}
             label={option.label}
             onCheckedChange={(value) => onPreferenceChange(option.key, value)}
@@ -77,12 +88,14 @@ function PreferenceRow({
   checked,
   description,
   disabled,
+  feedbackState,
   label,
   onCheckedChange,
 }: {
   checked: boolean;
   description: string;
   disabled: boolean;
+  feedbackState: "idle" | "loading" | "success";
   label: string;
   onCheckedChange: (enabled: boolean) => void;
 }) {
@@ -94,11 +107,28 @@ function PreferenceRow({
           {description}
         </span>
       </span>
-      <Switch
-        checked={checked}
-        disabled={disabled}
-        onCheckedChange={onCheckedChange}
-      />
+      {feedbackState === "idle" ? (
+        <Switch
+          checked={checked}
+          disabled={disabled}
+          onCheckedChange={onCheckedChange}
+        />
+      ) : (
+        <span
+          aria-label={
+            feedbackState === "success"
+              ? translate("notification.notificationSettingsSaved")
+              : translate("notification.savingNotificationSettings")
+          }
+          className="grid w-8 shrink-0 place-items-center"
+          role="status"
+        >
+          <ActionFeedbackIcon
+            size="md"
+            state={feedbackState === "success" ? "success" : "loading"}
+          />
+        </span>
+      )}
     </label>
   );
 }

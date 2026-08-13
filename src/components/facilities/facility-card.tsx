@@ -25,9 +25,9 @@ export function FacilityCard({
 }) {
   return (
       <Card className="t-card group relative h-full gap-4 p-5 sm:p-6">
-        <div className="t-data-content-enter flex h-full flex-col gap-4">
+        <div className="flex h-full flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+          <div className="t-data-content-enter min-w-0">
             <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
               <ContentAuthor profile={profile} />
               <span aria-hidden>·</span>
@@ -42,10 +42,10 @@ export function FacilityCard({
           <ArrowUpRight className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-250 ease-[var(--ease-smooth-out)] group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
         </div>
         <div className="mt-auto flex flex-wrap items-center gap-2 border-t pt-3">
-          <StatusBadge domain="facility" status={facility.status} />
+          <StatusBadge className="t-data-content-enter" domain="facility" status={facility.status} />
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
             <MapPin className="size-3.5" />
-            {facility.location}
+            <span className="t-data-content-enter">{facility.location}</span>
           </span>
           <LikeActionButton
             active={facility.currentUserAffected === true}

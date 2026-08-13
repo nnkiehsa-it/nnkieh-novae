@@ -22,7 +22,7 @@ export function CategoryManagement() {
   if (state.error)
     return <ErrorState error={state.error} onRetry={() => void state.load()} />;
   return (
-    <section className="t-reveal-content space-y-4">
+    <section className="space-y-4">
       <LiquidTabs
         ariaLabel={translate('ui.admin.contentType')}
         onValueChange={state.setKind}

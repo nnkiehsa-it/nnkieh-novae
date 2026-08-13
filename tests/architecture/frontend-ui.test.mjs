@@ -93,6 +93,12 @@ test("authenticated shell preloads route bundles without loading content data", 
   const preload = await read("src/hooks/use-route-preload.ts");
   assert.match(shell, /useRoutePreload\(\)/u);
   assert.match(preload, /primaryRoutes\.forEach\(\(route\) => router\.prefetch\(route\)\)/u);
+  assert.ok(
+    preload.indexOf("const primaryRoutes") <
+      preload.indexOf("if (!categories.loaded"),
+    "static primary routes should warm before category hydration",
+  );
+  assert.match(preload, /"\/notifications"[\s\S]*"\/settings"/u);
   assert.match(preload, /requestIdleCallback/u);
   assert.match(preload, /deferredRoutes/u);
   assert.doesNotMatch(preload, /@\/services|(?:^|[^\w])fetch\(|supabase|backendAction/u);

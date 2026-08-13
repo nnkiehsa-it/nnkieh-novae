@@ -65,7 +65,7 @@ export function EmptyState({
   title: string;
 }) {
   return (
-    <Card className="t-reveal-content items-center px-5 py-12 text-center">
+    <Card className="items-center px-5 py-12 text-center">
       <div className="grid size-10 place-items-center rounded-full bg-muted text-muted-foreground">
         <Inbox className="size-5" />
       </div>

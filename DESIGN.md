@@ -44,9 +44,11 @@ Routes, cards, text, numbers, dialogs, dropdowns, tabs, menus, toasts, loading s
 - Reaction counts animate per character without changing their inline width. Celebration particles are reserved for activating a reaction; removing one still receives the success check but no celebration.
 - Route navigation commits directly without full-page snapshots or an outgoing layer. On desktop the newly committed route rises 12px; on mobile forward navigation moves 24px right-to-left and explicit back navigation reverses left-to-right. All use the same restrained 2px blur over 350ms with no entrance delay. Feed results use capped initial staggering, then a shared observer lets cards softly blur and rise when they re-enter the viewport.
 - Forced updates and backend mutations use the shared spinner-to-check morph, holding the completed state for 500ms before navigation or dismissal so success is legible without a redundant toast.
+- Device push enable/disable and notification preference writes replace only the operated switch with that spinner-to-check morph; successful writes do not also emit a toast.
 - Route changes never add a deliberate entrance delay: route bundles and RSC shells may warm in advance, but content services do not preload; the destination commits directly and owns its immediate loading feedback.
+- Static primary route shells for announcements, notifications, and settings warm as soon as the authenticated app shell mounts, without waiting for session-category hydration; category-dependent routes join as soon as their destinations are known, and focus/hover intent refreshes the selected destination prefetch.
 - Skeletons, spinners, progress tracks, toasts, and success marks use shared motion classes so async feedback has the same timing throughout the app. Startup and forced-update stages reuse the Novae brand lockup and bounded progress motion without delaying navigation.
-- Every route or local loading boundary hands off through the shared skeleton-to-content recipe: card and control frames stay fixed while only the data-bearing inner layer sharpens from a bounded 3px blur and rises 2px over 400ms. This never replays the route-scale movement. Feed cards retain their capped sibling stagger without translating the outer card during initial handoff.
+- Every route or local loading boundary hands off through the shared skeleton-to-content recipe: card and control frames stay fixed while only the exact fields represented by skeleton placeholders sharpen from a bounded 3px blur and rise 2px over 400ms. Buttons, reaction controls, static labels, and surrounding layout never inherit this animation from a parent. This never replays the route-scale movement. Feed cards retain their capped sibling stagger without translating the outer card during initial handoff.
 
 ## Responsive behavior
 
@@ -61,6 +63,7 @@ Routes, cards, text, numbers, dialogs, dropdowns, tabs, menus, toasts, loading s
 - Layouts use `100dvh`, safe-area tokens, and content-aware grids. Sticky controls account for mobile headers and desktop shells independently.
 - Feed cards use one column on compact viewports and two equal-height columns on desktop, keeping actions aligned at each card footer.
 - Hover treatments only exist inside `@media (hover: hover) and (pointer: fine)` to avoid sticky touch hover.
+- Tooltips are a fine-pointer enhancement only. Coarse-pointer and non-hover devices never open tooltip layers; mobile actions remain understandable through their accessible labels and native placement.
 - The document disables double-tap zoom and scroll chaining while retaining pinch zoom, native single-finger scrolling, and independent overflow inside dialogs or menus. Top-edge blur appears only after the page has actually scrolled.
 
 ## Architecture rules

@@ -114,15 +114,14 @@ export default function AnnouncementDetailPage() {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start">
         <article className="space-y-4">
           <Card className="gap-0 overflow-hidden py-0">
-            <div className="t-data-content-enter">
             <div className="border-b px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6">
               <p className="text-[0.8125rem] font-medium text-muted-foreground">
                 {t("ui.announcement.campus")}
               </p>
-              <h1 className="mt-2.5 text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">
+              <h1 className="t-data-content-enter mt-2.5 text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">
                 {announcement.title}
               </h1>
-              <div className="mt-3 flex items-center gap-2 text-[0.8125rem] text-muted-foreground">
+              <div className="t-data-content-enter mt-3 flex items-center gap-2 text-[0.8125rem] text-muted-foreground">
                 <Avatar className="size-5">
                   <AvatarImage
                     alt={profile?.displayName ?? t("ui.announcement.author")}
@@ -135,10 +134,9 @@ export default function AnnouncementDetailPage() {
                 <span>{formatDate(announcement.published_at)}</span>
               </div>
             </div>
-            <CardContent className="py-5 sm:px-7 sm:py-6">
+            <CardContent className="t-data-content-enter py-5 sm:px-7 sm:py-6">
               <ContentRenderer content={announcement.content} fallbackAlt={announcement.title} />
             </CardContent>
-            </div>
           </Card>
           <Discussion
             comments={detail.comments}
@@ -155,7 +153,7 @@ export default function AnnouncementDetailPage() {
         </article>
         <aside className="lg:sticky lg:top-6">
           <Card className="gap-4 p-5 sm:p-6">
-            <div className="t-data-content-enter flex flex-col gap-4">
+            <div className="flex flex-col gap-4">
             <div className="flex justify-center">
               <LikeActionButton
                 active={announcement.currentUserLiked}
@@ -171,7 +169,7 @@ export default function AnnouncementDetailPage() {
                 reaction="heart"
               />
             </div>
-            <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+            <div className="t-data-content-enter flex items-center justify-center gap-1 text-xs text-muted-foreground">
               <AnimatedNumber value={announcement.like_count} />
               {t("ui.announcement.peopleLiked")}
             </div>

@@ -14,9 +14,20 @@ describe("React frontend design system", () => {
     expect(navigation).toContain("bg-secondary text-foreground");
     expect(navigation).toContain("pendingRoute");
     expect(navigation).toContain("onPointerDown");
+    expect(navigation).toContain("onPointerEnter");
+    expect(navigation).toContain("router.prefetch(item.href)");
     expect(navigation).toContain("aria-current");
     expect(tabs).not.toContain("<Liquid");
     expect(navigation).not.toContain("<Liquid");
+  });
+
+  it("gives push mutations targeted spinner-to-check feedback", () => {
+    const settings = read("src/app/(protected)/settings/page.tsx");
+    const notificationCard = read("src/components/settings/notification-card.tsx");
+    expect(settings).toContain("useActionFeedback");
+    expect(settings).toContain('setNotificationFeedbackTarget("device")');
+    expect(notificationCard).toContain("ActionFeedbackIcon");
+    expect(notificationCard).toContain('feedbackTarget === "device"');
   });
 
   it("keeps route motion separate from skeleton-to-content sharpening", () => {
@@ -33,11 +44,29 @@ describe("React frontend design system", () => {
 
   it("keeps app controls real while only data fields use route skeletons", () => {
     const skeleton = read("src/components/ui/route-skeleton.tsx");
+    const issueCard = read("src/components/issues/issue-card.tsx");
+    const facilityCard = read("src/components/facilities/facility-card.tsx");
+    const announcementCard = read("src/components/announcements/announcement-card.tsx");
     expect(skeleton).toContain("<Button");
     expect(skeleton).toContain("<Input");
     expect(skeleton).toContain("<Textarea");
     expect(skeleton).toContain("<StableDetailToolbar />");
     expect(skeleton).not.toContain('Skeleton className="size-9 rounded-xl"');
+    expect(issueCard).not.toContain('t-data-content-enter flex h-full');
+    expect(facilityCard).not.toContain('t-data-content-enter flex h-full');
+    expect(announcementCard).not.toContain('t-data-content-enter flex h-full');
+    expect(issueCard).toMatch(/<LikeActionButton[\s\S]*className="z-10 ml-auto"/u);
+    expect(issueCard).not.toMatch(/t-data-content-enter[^\n]*<LikeActionButton/u);
+    expect(facilityCard).not.toMatch(/t-data-content-enter[^\n]*<LikeActionButton/u);
+    expect(announcementCard).not.toMatch(/t-data-content-enter[^\n]*<LikeActionButton/u);
+  });
+
+  it("disables tooltip layers without fine-pointer hover capability", () => {
+    const tooltip = read("src/components/ui/tooltip.tsx");
+    expect(tooltip).toContain('(hover: hover) and (pointer: fine)');
+    expect(tooltip).toContain('const open = enabled &&');
+    expect(tooltip).toContain('open={open}');
+    expect(tooltip).toContain("useSyncExternalStore");
   });
 
   it("centralizes motion and honors reduced motion and hover capability", () => {

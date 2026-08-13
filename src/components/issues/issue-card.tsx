@@ -40,9 +40,9 @@ export function IssueCard({
   const progress = getSupportProgressPercent(issue.support_count, goal);
   return (
     <Card className="t-card group relative h-full gap-4 p-5 sm:p-6">
-      <div className="t-data-content-enter flex h-full flex-col gap-4">
+      <div className="flex h-full flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+          <div className="t-data-content-enter min-w-0">
             <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
               {issue.canViewAuthor && issue.author_uid ? (
                 <ContentAuthor profile={profile} />
@@ -61,12 +61,12 @@ export function IssueCard({
           <ArrowUpRight className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-250 ease-[var(--ease-smooth-out)] group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
         </div>
         {issue.content ? (
-          <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">
+          <p className="t-data-content-enter line-clamp-2 text-sm leading-6 text-muted-foreground">
             {stripMarkdownImages(issue.content)}
           </p>
         ) : null}
         {issue.support_enabled && goal ? (
-          <div className="space-y-1.5">
+          <div className="t-data-content-enter space-y-1.5">
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>{translate('ui.issue.supportProgress')}</span>
               <span className="tabular-nums">
@@ -90,7 +90,7 @@ export function IssueCard({
           </div>
         ) : null}
         <div className="mt-auto flex flex-wrap items-center gap-2 border-t pt-3">
-          <StatusBadge domain="issue" status={getDerivedIssueStatus(issue)} />
+          <StatusBadge className="t-data-content-enter" domain="issue" status={getDerivedIssueStatus(issue)} />
           {issue.support_enabled ? (
             <LikeActionButton
               active={issue.currentUserSupported === true}
