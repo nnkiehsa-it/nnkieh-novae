@@ -190,11 +190,17 @@ test("mobile menus stay content-sized and navigation uses floating app geometry"
 
 test("semantic controls preserve geometry while using compact shared type", async () => {
   const globals = await read("src/app/globals.css");
+  const button = await read("src/components/ui/button.tsx");
   const tabs = await read("src/components/ui/tabs.tsx");
   const liquidTabs = await read("src/components/ui/liquid-tabs.tsx");
-  assert.match(globals, /--segmented-font-size: 0\.6875rem/u);
-  assert.match(tabs, /text-\[length:var\(--segmented-font-size\)\]/u);
-  assert.match(liquidTabs, /text-\[length:var\(--segmented-font-size\)\]/u);
+  assert.match(button, /text-\[0\.8125rem\]/u);
+  assert.match(globals, /--segmented-font-size: 0\.8125rem/u);
+  assert.match(
+    globals,
+    /\.t-tab-label\s*\{\s*font-size: var\(--segmented-font-size\);\s*\}/u,
+  );
+  assert.doesNotMatch(tabs, /text-\[length:var\(--segmented-font-size\)\]/u);
+  assert.doesNotMatch(liquidTabs, /text-\[length:var\(--segmented-font-size\)\]/u);
   assert.match(liquidTabs, /h-\[1\.625rem\][\s\S]*px-3/u);
 });
 

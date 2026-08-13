@@ -11,7 +11,7 @@ Novae keeps its existing information architecture and product flows, but present
 - Borders are thin and translucent. Depth comes from surface separation first, then the three constrained shadows: `--shadow-control`, `--shadow-card`, and `--shadow-floating`.
 - Radius hierarchy is intentional: compact controls use the smaller radius, cards use the base radius, larger floating surfaces use the larger radius, and segmented/navigation controls are pills.
 - Spacing is compact but never crowded. Page gutters belong to the app shell; route views only establish vertical rhythm and local grids.
-- Product typography uses stable semantic roles across routes: 24px page titles, 24px mobile and 28px desktop detail titles, 16px/28px reading text, 16px card and section titles, 13px buttons, 13px metadata, and 11px segmented controls.
+- Product typography uses stable semantic roles across routes: 24px page titles, 24px mobile and 28px desktop detail titles, 16px/28px reading text, 16px card and section titles, 13px buttons, 13px metadata, and 13px segmented controls. Segmented labels share the button text size while preserving their existing pill geometry.
 - Gradients, neon, glow, oversized shadows, and ambient glass effects are not part of the language.
 - Every rendered Novae mark uses the shared square brand frame. The N preserves its original geometry with `object-contain`, generous internal clearance, and a frame large enough to remain legible in the sidebar, authentication, setup, and startup surfaces.
 
