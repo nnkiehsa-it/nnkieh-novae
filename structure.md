@@ -4,7 +4,7 @@ This document is the maintained map of the repository. Read it before broad sear
 
 ## Runtime and entry points
 
-- `package.json` — Node 24, Next.js 16.3, React 19.2, TypeScript 7, Tailwind CSS 4, Radix/shadcn primitives, Motion, liquid-gooey, Serwist, Vitest, and Playwright scripts.
+- `package.json` — Node 24, Next.js 16.3, React 19.2, TypeScript 7, Tailwind CSS 4, Radix/shadcn primitives, Motion, Serwist, Vitest, and Playwright scripts.
 - `src/app/` — Next App Router. Route `page.tsx` files assemble views and forward events; they do not import `services/` directly.
 - `src/app/layout.tsx` — root metadata, Inter/Roboto Mono plus HarmonyOS Sans TC split-font loading, global providers, and global CSS.
 - `src/app/globals.css` — semantic light/dark color, typography, radius, shadow, safe-area, viewport, and surface tokens.
@@ -18,7 +18,7 @@ This document is the maintained map of the repository. Read it before broad sear
 
 ## App Router
 
-- `src/app/login/` — Google sign-in presentation and animated product overview.
+- `src/app/login/` — focused Google sign-in presentation with a quiet, stagger-revealed brand statement; decorative product cards stay out of the authentication path.
 - `src/app/(protected)/layout.tsx` — authenticated application guard and shared shell boundary.
 - `src/app/(protected)/setup/` — two-stage language and category setup; idempotent completion recovery lives in `use-initial-setup`.
 - `src/app/(protected)/issues/` — feature-guarded issue redirect, feed, composer, and detail routes.
@@ -33,7 +33,7 @@ This document is the maintained map of the repository. Read it before broad sear
 
 - `src/components/ui/` — business-free shadcn/Radix primitives. Buttons, fields, cards, overlays, tabs, sheets, menus, status badges, skeletons, page states, and the shared Novae brand lockup share global semantic tokens.
 - `src/components/motion/` — reusable motion wrappers: animated numbers/text and like feedback; high-volume staggered lists use CSS-only wrappers to avoid per-row animation runtime work.
-- `src/components/app-shell.tsx` / `liquid-nav.tsx` — desktop, compact desktop, and mobile navigation. Route content commits without full-page snapshots, then only the new pathname-keyed node receives the short entrance motion; liquid-gooey is constrained to intentional navigation/tab state changes.
+- `src/components/app-shell.tsx` / `liquid-nav.tsx` — desktop, compact desktop, and mobile navigation. Route content commits without full-page snapshots, then only the new pathname-keyed node receives the short entrance motion; selected navigation and tab surfaces use measurement-free shared-layout motion.
 - `src/components/issues/` — issue cards, detail content/actions, and moderation presentation.
 - `src/components/facilities/` — facility cards and status-dialog presentation.
 - `src/components/announcements/` — announcement cards.
@@ -45,7 +45,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/components/content-author.tsx` — shared author avatar and name row for list content.
 - `src/components/content-renderer.tsx` — sanitized Markdown/media rendering.
 - `src/components/detail-toolbar.tsx` — shared, geometry-stable back/share/action toolbar used by detail routes.
-- `src/components/protected-app.tsx`, `app-providers.tsx`, `app-update-gate.tsx` — startup/session, providers, theme/i18n, toast boundaries, and bounded forced PWA updates with version polling, service-worker takeover, and reload recovery.
+- `src/components/protected-app.tsx`, `app-providers.tsx`, `app-update-gate.tsx` — startup/session, providers, theme/i18n, toast boundaries, and bounded forced PWA updates with version polling, service-worker takeover, animated progress, and reload recovery.
 - `src/components/feature-route-guard.tsx` — shared disabled-feature guard for direct proposal and facility routes.
 - `src/components/ui/route-skeleton.tsx` and route `loading.tsx` files — prefetched list/detail app-shell fallbacks that reserve headers, controls, content, and sidebar geometry without requesting domain data.
 
@@ -70,6 +70,7 @@ This document is the maintained map of the repository. Read it before broad sear
 
 - `src/services/` — frontend boundary for Cloudflare gateway, Supabase reads/realtime, uploads, session roles, and backend actions. Only hooks and other services import it.
 - `src/lib/` — framework-independent request, Firebase, Supabase, caching, Markdown, image, route, formatting, and domain utilities.
+- `src/lib/reaction-state.ts` — user-scoped reaction snapshot reconciliation shared by proposal support, facility affected, and announcement like list/detail flows; detail reads outrank older list snapshots and successful mutations outrank both.
 - `src/constants/` — generated/static application, category, status, retention, API error, and rate-limit constants.
 - `src/types/` — shared frontend/domain types.
 - `src/i18n/` — reactive React i18n store and paired `en` / `zh-TW` domain catalogs. `ui.ts` contains the rebuilt interface language.

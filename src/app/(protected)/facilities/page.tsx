@@ -34,7 +34,7 @@ export default function FacilitiesPage() {
   );
 
   return (
-    <div className="space-y-5">
+    <div className="t-reveal-content space-y-5">
       <PageHeader
         actions={
           <div className="flex w-full items-center gap-2">

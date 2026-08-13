@@ -110,7 +110,7 @@ export function AccessManagement() {
                   />
                 </div>
               ) : (
-                <div className="divide-y">
+                <div className="t-reveal-content divide-y">
                   {members.map((member) => (
                     <MemberRow
                       action={

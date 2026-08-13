@@ -5,6 +5,8 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import { AppProviders } from "@/components/app-providers";
 
+const appVersion = process.env.NEXT_PUBLIC_APP_VERSION ?? "development";
+
 const inter = Inter({
   display: "swap",
   subsets: ["latin"],
@@ -21,6 +23,16 @@ export const metadata: Metadata = {
   applicationName: "Novae",
   description: "Novae campus participation platform",
   formatDetection: { telephone: false },
+  icons: {
+    apple: [
+      {
+        url: `/apple-touch-icon-180x180.png?v=${appVersion}`,
+        sizes: "180x180",
+        type: "image/png",
+      },
+    ],
+    icon: `/favicon.ico?v=${appVersion}`,
+  },
   manifest: "/manifest.webmanifest",
   title: {
     default: "Novae",

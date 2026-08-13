@@ -16,7 +16,7 @@ export default function AnnouncementComposerPage() {
   if (!form.canManage)
     return <ErrorState error={translate('ui.announcement.noPublishPermission')} />;
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
+    <div className="t-reveal-content mx-auto max-w-3xl space-y-5">
       <PageHeader
         actions={
           <Button onClick={form.back} variant="ghost">

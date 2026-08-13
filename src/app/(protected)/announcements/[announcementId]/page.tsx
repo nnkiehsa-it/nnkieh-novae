@@ -50,7 +50,7 @@ export default function AnnouncementDetailPage() {
   }
   const { announcement, profile } = detail;
   return (
-    <div className="space-y-5">
+    <div className="t-reveal-content space-y-5">
       <DetailToolbar
         actions={
           detail.canManage ? (

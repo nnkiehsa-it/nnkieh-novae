@@ -1,7 +1,7 @@
 "use client";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
-import { Copy, UserRoundCog } from "lucide-react";
+import { Copy, RefreshCw } from "lucide-react";
 import type { User } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -34,8 +34,14 @@ export function SettingsAccountCard({
           <p className="truncate font-medium">{name}</p>
           <p className="truncate text-sm text-muted-foreground">{user.email}</p>
         </div>
-        <Button onClick={onSwitchAccount} variant="outline">
-          <UserRoundCog />{translate('ui.settings.switchAccount')}</Button>
+        <Button
+          aria-label={translate('ui.settings.switchAccount')}
+          onClick={onSwitchAccount}
+          size="icon"
+          variant="outline"
+        >
+          <RefreshCw />
+        </Button>
       </CardContent>
       <div className="flex items-center gap-2 border-t px-5 py-3 text-xs text-muted-foreground">
         <span className="min-w-0 flex-1 truncate">UID {user.uid}</span>

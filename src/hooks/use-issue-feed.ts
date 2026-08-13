@@ -21,6 +21,7 @@ import type {
   IssueSortOption,
   IssueStatusBucket,
 } from "@/types";
+import { reconcileReactionState, recordReactionMutation } from "@/lib/reaction-state";
 
 interface IssueFeed {
   cursor: IssueCursor | null;
@@ -62,6 +63,10 @@ export function useIssueFeed() {
     setSupportingId(issueId);
     try {
       const result = await toggleSupport(issueId);
+      recordReactionMutation(session.user?.uid, "issue", issueId, {
+        active: result.supported,
+        count: result.support_count,
+      });
       setFeed((current) => ({
         ...current,
         issues: current.issues.map((issue) =>
@@ -127,9 +132,23 @@ export function useIssueFeed() {
             },
           );
         }
+        const issues = result.issues.map((issue) => {
+          const reaction = reconcileReactionState(
+            session.user?.uid,
+            "issue",
+            issue.id,
+            { active: issue.currentUserSupported === true, count: issue.support_count },
+            "list",
+          );
+          return {
+            ...issue,
+            currentUserSupported: reaction.active,
+            support_count: reaction.count,
+          };
+        });
         setFeed((current) => ({
           ...result,
-          issues: cursor ? [...current.issues, ...result.issues] : result.issues,
+          issues: cursor ? [...current.issues, ...issues] : issues,
         }));
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));

@@ -77,7 +77,7 @@ export function Discussion({
       {loading ? (
         <div className="t-skeleton h-24 rounded-xl bg-muted" />
       ) : comments.length === 0 && enabled ? (
-        <Card className="gap-0 overflow-hidden p-0">
+        <Card className="t-reveal-content gap-0 overflow-hidden p-0">
           <CommentComposer
             busy={busy}
             content={commentDraft}
@@ -87,7 +87,7 @@ export function Discussion({
           />
         </Card>
       ) : comments.length > 0 ? (
-        <Card className="gap-0 overflow-hidden p-0">
+        <Card className="t-reveal-content gap-0 overflow-hidden p-0">
           <StaggerList className="divide-y">
             {comments.map((comment) => (
               <StaggerItem key={comment.id}>

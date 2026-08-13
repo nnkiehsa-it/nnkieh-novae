@@ -53,7 +53,7 @@ export function LiquidNav({
           <Link
             aria-current={active ? "page" : undefined}
             className={cn(
-              "relative z-10 flex min-h-10 min-w-0 items-center rounded-[0.625rem] text-sm font-medium text-muted-foreground outline-none transition-[background-color,color,transform] duration-[var(--motion-quick)] ease-[var(--ease-smooth-out)] hover:bg-[var(--surface-hover)] hover:text-foreground active:scale-[.97] focus-visible:ring-2 focus-visible:ring-ring/40",
+              "relative z-10 flex min-h-10 min-w-0 items-center overflow-hidden rounded-[0.625rem] text-sm font-medium text-muted-foreground outline-none transition-[background-color,color,transform] duration-[var(--motion-quick)] ease-[var(--ease-smooth-out)] hover:bg-[var(--surface-hover)] hover:text-foreground active:scale-[.97] focus-visible:ring-2 focus-visible:ring-ring/40",
               vertical
                 ? "gap-3 px-3"
                 : "flex-1 flex-col justify-center gap-1 px-1 py-1.5 text-[0.6875rem]",
@@ -67,7 +67,7 @@ export function LiquidNav({
               {item.icon}
               {item.badge}
             </span>
-            <span className="truncate">{item.label}</span>
+            <span className="w-full min-w-0 truncate text-center">{item.label}</span>
           </Link>
         );
       })}

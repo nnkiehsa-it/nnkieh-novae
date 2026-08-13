@@ -57,7 +57,7 @@ export default function FacilityDetailPage() {
     );
   const { facility } = detail;
   return (
-    <div className="space-y-5">
+    <div className="t-reveal-content space-y-5">
       <DetailToolbar
         actions={
           facility.isOwnFacility || facility.canManageFacility ? (

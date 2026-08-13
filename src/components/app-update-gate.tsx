@@ -3,6 +3,7 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import * as React from "react";
 import { RefreshCw } from "lucide-react";
+import { BrandLockup } from "@/components/ui/brand";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -213,12 +214,21 @@ export function AppUpdateGate() {
           aria-live="assertive"
           className="fixed inset-0 z-[100] grid place-items-center bg-background/72 backdrop-blur-md"
         >
-          <div className="flex flex-col items-center gap-3">
-            <RefreshCw className="t-spinner size-6" />
+          <div className="t-update-stage flex w-[min(20rem,calc(100%-2rem))] flex-col items-center gap-4 text-center">
+            <BrandLockup
+              className="flex-col gap-2 [&>span:last-child]:text-xl"
+              markClassName="size-20 rounded-3xl p-4"
+            />
+            <div className="t-loading-orbit" aria-hidden>
+              <RefreshCw className="t-spinner size-5" />
+            </div>
             <p
               className="t-shimmer text-sm font-medium"
               data-text={translate('ui.update.loading')}
             >{translate('ui.update.loading')}</p>
+            <span className="t-progress-track" aria-hidden>
+              <span />
+            </span>
           </div>
         </div>
       ) : null}

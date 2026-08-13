@@ -9,6 +9,7 @@ import {
   type AnnouncementCursor,
 } from "@/services/announcements";
 import type { AnnouncementRecord } from "@/types";
+import { reconcileReactionState, recordReactionMutation } from "@/lib/reaction-state";
 
 export function useAnnouncementFeed() {
   const session = useSession();
@@ -32,6 +33,10 @@ export function useAnnouncementFeed() {
         announcementId,
         !announcement.currentUserLiked,
       );
+      recordReactionMutation(session.user?.uid, "announcement", announcementId, {
+        active: result.liked,
+        count: result.like_count,
+      });
       setItems((current) =>
         current.map((item) =>
           item.id === announcementId
@@ -56,8 +61,22 @@ export function useAnnouncementFeed() {
         const result = await fetchAnnouncementsPage(nextCursor, 10, {
           cacheScope: session.user?.uid,
         });
+        const announcements = result.announcements.map((announcement) => {
+          const reaction = reconcileReactionState(
+            session.user?.uid,
+            "announcement",
+            announcement.id,
+            { active: announcement.currentUserLiked, count: announcement.like_count },
+            "list",
+          );
+          return {
+            ...announcement,
+            currentUserLiked: reaction.active,
+            like_count: reaction.count,
+          };
+        });
         setItems((current) =>
-          nextCursor ? [...current, ...result.announcements] : result.announcements,
+          nextCursor ? [...current, ...announcements] : announcements,
         );
         setCursor(result.cursor);
         setHasMore(result.hasMore);

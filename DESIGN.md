@@ -23,7 +23,7 @@ Novae keeps its existing information architecture and product flows, but present
 - Cards use soft surface contrast, a hairline border, and restrained elevation. Only clickable cards receive hover feedback: a spatially stable 1% light-mode or 0.5% dark-mode surface tint, while directional icons may move independently.
 - Inputs and composer surfaces use a shared control frame with explicit focus rings and no layout shift.
 - Desktop dialogs become bottom-sheet presentations on small screens where appropriate, with safe-area padding and `100dvh` constraints.
-- The liquid motion language is reserved for navigation, segmented state movement, and bounded identity moments. Tabs use a measurement-free shared-layout spring so their selected surface exists on the first frame. The `liquid-gooey` SVG silhouette is bounded to the login identity scene with reduced blur, filter padding, and content blur so it sleeps at idle; high-density feed items never instantiate per-row liquid or Motion runtimes.
+- The liquid motion language is reserved for navigation, segmented state movement, and bounded identity moments. Tabs use a measurement-free shared-layout spring so their selected surface exists on the first frame. Gooey-style motion is expressed through small transform/opacity layers rather than a full-screen SVG filter; high-density feed items never instantiate per-row filter or Motion runtimes.
 
 ## Motion
 
@@ -43,7 +43,8 @@ Routes, cards, text, numbers, dialogs, dropdowns, tabs, menus, toasts, loading s
 - Reaction counts animate per character without changing their inline width. Celebration particles are reserved for activating a reaction; removing one still receives the success check but no celebration.
 - Route navigation commits directly without full-page snapshots or an outgoing layer. The newly committed route alone moves 24px from right to left over 350ms with a restrained 2px blur and no delay; local loading states appear through the same destination node. Feed results use CSS-only opacity/translate staggering only when filters, sort, category, or committed search terms change.
 - Route changes never add a deliberate entrance delay: route bundles and RSC shells may warm in advance, but content services do not preload; the destination commits directly and owns its immediate loading feedback.
-- Skeletons, spinners, toasts, and success marks use shared motion classes so async feedback has the same timing throughout the app.
+- Skeletons, spinners, progress tracks, toasts, and success marks use shared motion classes so async feedback has the same timing throughout the app. Startup and forced-update stages reuse the Novae brand lockup and bounded progress motion without delaying navigation.
+- Every route or local loading boundary hands off through the shared skeleton-to-content recipe: destination geometry stays fixed while content sharpens from a bounded 3px blur and 4px rise over 400ms. Feed cards retain their capped sibling stagger.
 
 ## Responsive behavior
 
@@ -52,6 +53,7 @@ Routes, cards, text, numbers, dialogs, dropdowns, tabs, menus, toasts, loading s
 - Mobile uses an intentional top bar and bottom navigation with safe-area insets; it is not a scaled-down desktop sidebar.
 - Mobile navigation retains generous touch regions, while in-content buttons and segmented controls prioritize the product's compact operating density instead of a blanket 44px minimum.
 - Mobile primary navigation uses the established floating geometry: a 60px pill with 16px viewport insets, 12px/6px internal padding, a 15–25px safe bottom gap, and the current neutral surfaces, shadows, and active-state treatment.
+- Mobile primary-navigation labels are single-line, width-constrained, and ellipsized so long translations never overlap adjacent destinations. Primary routes reserve an additional 1.4rem above the floating bar for final-page actions.
 - The mobile bottom navigation recedes on secondary routes: proposal/facility/announcement detail and composer pages, My Proposals, Dashboard, and administration. Its reserved content space disappears with it and returns only on primary list destinations.
 - Select and dropdown surfaces stay content-sized on compact viewports, match the proposal-category menu behavior, and never exceed the viewport minus 16px on either side.
 - Layouts use `100dvh`, safe-area tokens, and content-aware grids. Sticky controls account for mobile headers and desktop shells independently.

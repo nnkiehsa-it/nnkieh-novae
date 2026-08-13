@@ -25,7 +25,7 @@ export default function IssueDetailPage() {
     );
   }
   return (
-    <div className="space-y-5">
+    <div className="t-reveal-content space-y-5">
       <IssueDetailToolbar
         issue={detail.issue}
         onBack={detail.back}

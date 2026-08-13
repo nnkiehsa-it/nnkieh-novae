@@ -22,7 +22,7 @@ export default function FacilityComposerPage() {
   const form = useFacilityComposer();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
+    <div className="t-reveal-content mx-auto max-w-3xl space-y-5">
       <PageHeader
         actions={
           <Button onClick={form.back} variant="ghost">

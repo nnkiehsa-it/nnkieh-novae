@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useI18n } from "@/i18n";
+import { useSession } from "@/hooks/use-session";
 import {
   findFacilityCategory,
   getDefaultFacilityCategoryId,
@@ -15,6 +16,7 @@ import type {
   FacilityStatus,
   FacilitySummary,
 } from "@/types";
+import { reconcileReactionState, recordReactionMutation } from "@/lib/reaction-state";
 
 interface FacilityFeed {
   cursor: FacilityCursor | null;
@@ -26,6 +28,7 @@ export function useFacilityFeed() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const categories = useCategories();
+  const session = useSession();
   const { t } = useI18n();
   const requestedCategory = searchParams.get("category");
   const [category, setCategory] = React.useState(
@@ -54,6 +57,10 @@ export function useFacilityFeed() {
     setAffectingId(facilityId);
     try {
       const result = await toggleFacilityAffected(facilityId);
+      recordReactionMutation(session.user?.uid, "facility", facilityId, {
+        active: result.affected,
+        count: result.affected_count,
+      });
       setFeed((current) => ({
         ...current,
         facilities: current.facilities.map((facility) =>
@@ -89,11 +96,25 @@ export function useFacilityFeed() {
           sort,
           status,
         });
+        const facilities = result.facilities.map((facility) => {
+          const reaction = reconcileReactionState(
+            session.user?.uid,
+            "facility",
+            facility.id,
+            { active: facility.currentUserAffected === true, count: facility.affected_count },
+            "list",
+          );
+          return {
+            ...facility,
+            affected_count: reaction.count,
+            currentUserAffected: reaction.active,
+          };
+        });
         setFeed((current) => ({
           ...result,
           facilities: cursor
-            ? [...current.facilities, ...result.facilities]
-            : result.facilities,
+            ? [...current.facilities, ...facilities]
+            : facilities,
         }));
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
@@ -102,7 +123,7 @@ export function useFacilityFeed() {
         setLoadingMore(false);
       }
     },
-    [bucket, category, committedQuery, sort, status, t],
+    [bucket, category, committedQuery, session.user?.uid, sort, status, t],
   );
 
   React.useEffect(() => {

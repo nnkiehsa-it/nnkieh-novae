@@ -136,6 +136,7 @@ function AccountMenu({ compact = false }: { compact?: boolean }) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   useRoutePreload();
+  const { t } = useLocaleSubscription();
   const pathname = usePathname();
   const categories = useCategories();
   const unread = useNotificationBadge();
@@ -158,7 +159,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               activePathPrefix: "/issues",
               href: issueHref,
               icon: <Blocks className="size-[1.125rem]" />,
-              label: translate('ui.nav.issues'),
+              label: t('ui.nav.issues'),
             },
           ]
         : []),
@@ -167,28 +168,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {
               href: "/facilities",
               icon: <Wrench className="size-[1.125rem]" />,
-              label: translate('ui.nav.facilities'),
+              label: t('ui.nav.facilities'),
             },
           ]
         : []),
       {
         href: "/announcements",
         icon: <Megaphone className="size-[1.125rem]" />,
-        label: translate('ui.nav.announcements'),
+        label: t('ui.nav.announcements'),
       },
       {
         href: "/notifications",
         icon: <Bell className="size-[1.125rem]" />,
-        label: translate('ui.nav.notifications'),
+        label: t('ui.nav.notifications'),
         badge: <NotificationDot unread={unread} />,
       },
       {
         href: "/settings",
         icon: <Settings className="size-[1.125rem]" />,
-        label: translate('ui.nav.settings'),
+        label: t('ui.nav.settings'),
       },
     ],
-    [categories.facilitiesEnabled, categories.issuesEnabled, issueHref, unread],
+    [categories.facilitiesEnabled, categories.issuesEnabled, issueHref, t, unread],
   );
 
   const navigationPathname =
@@ -217,7 +218,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <main
           className={`app-viewport pt-[max(1rem,var(--safe-top))] md:pb-12 md:pt-6 ${
             showMobileNavigation
-              ? "pb-[calc(5.0625rem+min(0.625rem,var(--safe-bottom)))]"
+              ? "pb-[calc(6.5rem+min(0.625rem,var(--safe-bottom)))]"
               : "pb-[max(2rem,var(--safe-bottom))]"
           }`}
         >

@@ -43,12 +43,15 @@ test("shared shell owns desktop, compact, and mobile navigation", async () => {
 
 test("all interface logos use the square shared brand primitive", async () => {
   const brand = await read("src/components/ui/brand.tsx");
+  const layout = await read("src/app/layout.tsx");
   const login = await read("src/app/login/page.tsx");
   const startup = await read("src/components/protected-app.tsx");
   assert.match(brand, /aspect-square/u);
   assert.match(brand, /object-contain/u);
   assert.match(login, /<BrandLockup/u);
   assert.doesNotMatch(login, /LockKeyhole/u);
+  assert.doesNotMatch(login, /liquid-gooey|<Liquid|Secure campus participation platform/u);
+  assert.match(layout, /apple-touch-icon-180x180\.png/u);
   assert.match(startup, /markClassName="size-24 rounded-3xl p-4"/u);
 });
 
@@ -169,14 +172,17 @@ test("mobile menus stay content-sized and navigation uses floating app geometry"
   assert.match(dropdown, /collisionPadding=\{16\}/u);
   assert.match(shell, /max-w-md rounded-full[^"]*px-3 py-1\.5/u);
   assert.match(shell, /className="mx-auto h-12"/u);
-  assert.match(shell, /pb-\[calc\(5\.0625rem\+min\(0\.625rem,var\(--safe-bottom\)\)\)\]/u);
+  assert.match(shell, /pb-\[calc\(6\.5rem\+min\(0\.625rem,var\(--safe-bottom\)\)\)\]/u);
   assert.match(shell, /isSecondaryMobileRoute\(pathname\)/u);
   assert.match(shell, /aria-hidden=\{!showMobileNavigation\}/u);
   assert.match(shell, /inert=\{!showMobileNavigation\}/u);
   assert.match(shell, /pb-\[max\(2rem,var\(--safe-bottom\)\)\]/u);
+  assert.match(shell, /const \{ t \} = useLocaleSubscription\(\)/u);
+  assert.match(shell, /issueHref, t, unread/u);
   assert.match(globals, /app-mobile-nav[\s\S]*bottom: max\(0\.9375rem, min\(1\.5625rem/u);
   assert.match(globals, /app-mobile-nav\[data-visible="true"\][\s\S]*visibility: visible/u);
   assert.match(globals, /app-mobile-nav \[data-liquid-nav-index\][\s\S]*border-radius: 9999px/u);
+  assert.match(globals, /app-mobile-nav \[data-liquid-nav-index\] > span:last-child[\s\S]*text-overflow: ellipsis/u);
 });
 
 test("secondary mobile routes hide bottom navigation", async () => {

@@ -456,15 +456,17 @@
   }
 }
 .t-reveal-content {
-  animation: t-reveal-content var(--motion-slow) ease-in-out both;
+  animation: t-reveal-content var(--motion-slow) var(--ease-smooth-out) both;
 }
 @keyframes t-reveal-content {
   from {
-    opacity: 0;
-    filter: blur(var(--motion-blur-sm));
+    opacity: 0.24;
+    transform: translateY(var(--motion-distance-xs));
+    filter: blur(var(--motion-blur-md));
   }
   to {
     opacity: 1;
+    transform: translateY(0);
     filter: blur(0);
   }
 }
@@ -608,6 +610,57 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Startup and update progress stay bounded to one small compositor layer. */
+.t-loading-orbit {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--muted);
+  transform: translateZ(0);
+}
+
+.t-update-stage {
+  animation: t-update-stage-in var(--motion-slow) var(--ease-smooth-out) both;
+}
+
+@keyframes t-update-stage-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--motion-distance-sm)) scale(var(--motion-scale-soft));
+    filter: blur(var(--motion-blur-sm));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.t-progress-track {
+  width: 7.5rem;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--muted);
+}
+
+.t-progress-track > span {
+  display: block;
+  width: 45%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--foreground);
+  animation: t-progress-sweep 1100ms var(--ease-smooth-out) infinite;
+  will-change: transform;
+}
+
+@keyframes t-progress-sweep {
+  from { transform: translateX(-125%); }
+  to { transform: translateX(300%); }
 }
 .t-like-icon {
   display: grid;
@@ -816,6 +869,8 @@
   .t-success-check,
   .t-success-check path,
   .t-spinner,
+  .t-update-stage,
+  .t-progress-track > span,
   .t-shake,
   .t-skeleton,
   .t-reveal-content,

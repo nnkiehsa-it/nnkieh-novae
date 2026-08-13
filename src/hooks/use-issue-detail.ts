@@ -22,12 +22,14 @@ import {
 } from "@/services/issues";
 import { fetchUserPublicProfiles } from "@/services/users-read";
 import type { CommentRecord, IssueRecord, UserPublicProfile } from "@/types";
+import { reconcileReactionState, recordReactionMutation } from "@/lib/reaction-state";
 
 export function useIssueDetail() {
   const params = useParams<{ filter: string; issueId: string }>();
   const search = useSearchParams();
   const router = useRouter();
   const session = useSession();
+  const { setSupportedIssue } = session;
   const { t } = useI18n();
   const issueId = params.issueId;
   const filter = decodeURIComponent(params.filter);
@@ -53,7 +55,19 @@ export function useIssueDetail() {
           cacheScope: session.user?.uid,
           forceRefresh,
         });
-        setIssue(result);
+        const reaction = reconcileReactionState(
+          session.user?.uid,
+          "issue",
+          result.id,
+          { active: result.currentUserSupported === true, count: result.support_count },
+          "detail",
+        );
+        setIssue({
+          ...result,
+          currentUserSupported: reaction.active,
+          support_count: reaction.count,
+        });
+        setSupportedIssue(result.id, reaction.active);
         if (result.canViewAuthor && result.author_uid) {
           void fetchUserPublicProfiles([result.author_uid])
             .then((profiles) => setProfile(profiles[result.author_uid!] ?? null))
@@ -65,7 +79,7 @@ export function useIssueDetail() {
         setLoading(false);
       }
     },
-    [issueId, session.user?.uid, t],
+    [issueId, session.user?.uid, setSupportedIssue, t],
   );
 
   React.useEffect(() => {
@@ -126,6 +140,10 @@ export function useIssueDetail() {
     setSupporting(true);
     try {
       const result = await toggleSupport(issue.id);
+      recordReactionMutation(session.user?.uid, "issue", issue.id, {
+        active: result.supported,
+        count: result.support_count,
+      });
       setIssue({
         ...issue,
         currentUserSupported: result.supported,

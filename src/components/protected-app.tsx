@@ -23,7 +23,9 @@ function StartupScreen() {
             data-text={translate('ui.app.preparing')}
           >{translate('ui.app.preparing')}</p>
         </div>
-        <LoaderCircle className="t-spinner mt-1 size-5 text-muted-foreground" />
+        <div className="t-loading-orbit mt-1" aria-hidden>
+          <LoaderCircle className="t-spinner size-5 text-muted-foreground" />
+        </div>
       </div>
     </div>
   );

@@ -2,13 +2,11 @@
 
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Liquid } from "liquid-gooey";
-import { ArrowRight, Blocks, Check } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useSession } from "@/hooks/use-session";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { BrandLockup } from "@/components/ui/brand";
-import { Card } from "@/components/ui/card";
 import { BusyLabel } from "@/components/ui/page-state";
 
 function GoogleMark() {
@@ -61,73 +59,16 @@ export default function LoginPage() {
 
   return (
     <main className="relative grid min-h-[100dvh] overflow-hidden bg-[var(--surface-stage)] lg:grid-cols-[1.08fr_.92fr]">
-      <section className="relative hidden min-h-[100dvh] overflow-hidden border-r bg-background p-12 lg:flex lg:flex-col lg:justify-between">
-        <BrandLockup />
-        <div className="relative mx-auto w-full max-w-xl">
-          <div className="relative h-[26rem]">
-            <Liquid
-              blur={6}
-              className="absolute inset-0"
-              contrast={19}
-              fill="var(--card)"
-              filterPadding={8}
-              shadow="var(--shadow-floating)"
-            >
-              <Liquid.Item
-                delay={0}
-                morph={{ bounce: 0.24, contentBlur: 2, shape: true, speed: 1.2 }}
-                radius={20}
-                x={18}
-                y={6}
-              >
-                <Card className="w-80 gap-4 p-5">
-                  <div className="flex items-start justify-between">
-                    <span className="grid size-9 place-items-center rounded-xl bg-muted">
-                      <Blocks className="size-4" />
-                    </span>
-                    <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">{t('ui.status.processing')}</span>
-                  </div>
-                  <div>
-                    <p className="font-semibold">{t('ui.login.heroTitle')}</p>
-                    <p className="mt-1.5 text-sm leading-6 text-muted-foreground">{t('ui.login.heroDescription')}</p>
-                  </div>
-                </Card>
-              </Liquid.Item>
-              <Liquid.Item
-                delay={80}
-                morph={{ bounce: 0.32, contentBlur: 1, shape: true, speed: 1.15 }}
-                radius={18}
-                x={272}
-                y={158}
-              >
-                <Card className="w-56 gap-3 p-4">
-                  <p className="text-xs font-medium text-muted-foreground">{t('ui.login.weeklyActivity')}</p>
-                  <p className="text-3xl font-semibold tracking-[-0.04em] tabular-nums">
-                    1,248
-                  </p>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                    <span className="block h-full w-3/4 rounded-full bg-foreground" />
-                  </div>
-                </Card>
-              </Liquid.Item>
-              <Liquid.Item
-                delay={140}
-                morph={{ bounce: 0.2, contentBlur: 1, shape: true, speed: 1.3 }}
-                radius={999}
-                x={18}
-                y={196}
-              >
-                <span className="flex h-10 items-center gap-2 rounded-full px-4 text-sm font-medium">
-                  <Check className="size-4 text-success" />{t('ui.login.synced')}</span>
-              </Liquid.Item>
-            </Liquid>
-          </div>
-          <h1 className="mt-8 max-w-md text-4xl font-semibold leading-[1.08] tracking-[-0.045em]">{t('ui.login.heading')}</h1>
-          <p className="mt-4 max-w-md text-sm leading-7 text-muted-foreground">{t('ui.login.subheading')}</p>
+      <section className="relative hidden min-h-[100dvh] overflow-hidden border-r bg-background p-12 lg:grid lg:place-items-center">
+        <BrandLockup className="t-panel-reveal absolute top-12 left-12" />
+        <div className="t-stagger-list w-full max-w-xl">
+          <h1 className="t-stagger-item max-w-lg text-4xl font-semibold leading-[1.08] tracking-[-0.045em] text-balance">
+            {t("ui.login.heading")}
+          </h1>
+          <p className="t-stagger-item mt-5 max-w-md text-sm leading-7 text-muted-foreground">
+            {t("ui.login.subheading")}
+          </p>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Secure campus participation platform
-        </p>
       </section>
 
       <section className="flex min-h-[100dvh] items-center justify-center px-4 py-12 sm:px-8">

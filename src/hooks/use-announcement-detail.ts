@@ -21,6 +21,7 @@ import type {
   AnnouncementRecord,
   UserPublicProfile,
 } from "@/types";
+import { reconcileReactionState, recordReactionMutation } from "@/lib/reaction-state";
 
 export function useAnnouncementDetail() {
   const params = useParams<{ announcementId: string }>();
@@ -50,7 +51,18 @@ export function useAnnouncementDetail() {
           cacheScope: session.user?.uid,
           forceRefresh,
         });
-        setAnnouncement(result);
+        const reaction = reconcileReactionState(
+          session.user?.uid,
+          "announcement",
+          result.id,
+          { active: result.currentUserLiked, count: result.like_count },
+          "detail",
+        );
+        setAnnouncement({
+          ...result,
+          currentUserLiked: reaction.active,
+          like_count: reaction.count,
+        });
         void fetchUserPublicProfiles([result.author_uid])
           .then((profiles) => setProfile(profiles[result.author_uid] ?? null))
           .catch(() => undefined);
@@ -100,6 +112,10 @@ export function useAnnouncementDetail() {
         announcement.id,
         !announcement.currentUserLiked,
       );
+      recordReactionMutation(session.user?.uid, "announcement", announcement.id, {
+        active: result.liked,
+        count: result.like_count,
+      });
       setAnnouncement({
         ...announcement,
         currentUserLiked: result.liked,
