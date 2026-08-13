@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { openAccessManagement, setMemberAccess } from './pages/access-page';
+import { expectMoreActions } from './pages/content-pages';
 import { E2E_USERS } from './support/accounts';
 import { readContentState } from './support/content-state';
 import { newUserPage } from './support/session';
@@ -11,7 +12,7 @@ test('proposal scope revocation removes controls immediately and restore returns
   const admin = await newUserPage(browser, 'admin');
   const manager = await newUserPage(browser, 'issueManager');
   await manager.page.goto(content.proposalA);
-  await expect(manager.page.getByRole('button', { name: 'Change status or result' })).toBeVisible();
+  await expectMoreActions(manager.page, ['Manage status', 'Delete proposal']);
 
   await openAccessManagement(admin.page);
   await setMemberAccess(
@@ -21,8 +22,7 @@ test('proposal scope revocation removes controls immediately and restore returns
     false,
   );
   await manager.page.reload();
-  await expect(manager.page.getByRole('button', { name: 'Change status or result' })).toHaveCount(0);
-  await expect(manager.page.getByRole('button', { name: 'Delete proposal' })).toHaveCount(0);
+  await expectMoreActions(manager.page, [], ['Manage status', 'Delete proposal']);
 
   await setMemberAccess(
     admin.page,
@@ -31,7 +31,7 @@ test('proposal scope revocation removes controls immediately and restore returns
     true,
   );
   await manager.page.reload();
-  await expect(manager.page.getByRole('button', { name: 'Change status or result' })).toBeVisible();
+  await expectMoreActions(manager.page, ['Manage status', 'Delete proposal']);
   await manager.context.close();
   await admin.context.close();
 });
@@ -43,9 +43,7 @@ test('facility scope revocation removes controls without affecting proposal scop
   const admin = await newUserPage(browser, 'admin');
   const manager = await newUserPage(browser, 'facilityManager');
   await manager.page.goto(content.facilityA);
-  await expect(manager.page.getByRole('button', {
-    name: /Start processing|Complete \/ Cannot resolve/,
-  })).toBeVisible();
+  await expectMoreActions(manager.page, ['Update status', 'Delete report']);
 
   await openAccessManagement(admin.page);
   await setMemberAccess(
@@ -55,9 +53,7 @@ test('facility scope revocation removes controls without affecting proposal scop
     false,
   );
   await manager.page.reload();
-  await expect(manager.page.getByRole('button', {
-    name: /Start processing|Complete \/ Cannot resolve/,
-  })).toHaveCount(0);
+  await expectMoreActions(manager.page, [], ['Update status', 'Delete report']);
 
   await setMemberAccess(
     admin.page,
@@ -66,9 +62,7 @@ test('facility scope revocation removes controls without affecting proposal scop
     true,
   );
   await manager.page.reload();
-  await expect(manager.page.getByRole('button', {
-    name: /Start processing|Complete \/ Cannot resolve/,
-  })).toBeVisible();
+  await expectMoreActions(manager.page, ['Update status', 'Delete report']);
   await manager.context.close();
   await admin.context.close();
 });
@@ -79,7 +73,7 @@ test('announcement revocation blocks composer route and restore enables it again
   const admin = await newUserPage(browser, 'admin');
   const manager = await newUserPage(browser, 'announcementManager');
   await manager.page.goto('/announcements/new');
-  await expect(manager.page.getByRole('heading', { name: 'Announcement content' })).toBeVisible();
+  await expect(manager.page.getByRole('heading', { name: 'Publish announcement' })).toBeVisible();
 
   await openAccessManagement(admin.page);
   await setMemberAccess(
@@ -98,7 +92,7 @@ test('announcement revocation blocks composer route and restore enables it again
     true,
   );
   await manager.page.goto('/announcements/new');
-  await expect(manager.page.getByRole('heading', { name: 'Announcement content' })).toBeVisible();
+  await expect(manager.page.getByRole('heading', { name: 'Publish announcement' })).toBeVisible();
   await manager.context.close();
   await admin.context.close();
 });

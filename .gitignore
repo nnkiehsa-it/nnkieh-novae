@@ -1,5 +1,11 @@
 node_modules/
 dist/
+.next/
+.next-verify/
+*.tsbuildinfo
+public/sw.js
+public/sw.js.map
+public/swe-worker*
 cloudflare/.wrangler/
 .env
 .env.local

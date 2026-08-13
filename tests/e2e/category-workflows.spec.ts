@@ -7,27 +7,35 @@ async function createCategory(
   label: string,
   id: string,
 ) {
-  await page.getByRole('button', { name: 'Add category' }).click();
-  const dialog = page.getByRole('dialog');
-  await dialog.getByRole('textbox', { name: 'Category name' }).fill(label);
-  await dialog.getByRole('textbox', { name: 'Category ID' }).fill(id);
-  await dialog.getByRole('button', { name: 'Next' }).click();
-  if (kind === 'issue') {
-    await dialog.getByRole('button', { name: 'Next' }).click();
-    await dialog.getByRole('button', { name: 'Next' }).click();
-  }
-  await dialog.getByRole('button', { name: 'Create' }).click();
-  await expect(page.getByRole('listitem').filter({ hasText: label })).toBeVisible();
+  await page.getByRole('tab', {
+    name: kind === 'issue' ? 'Proposals' : 'Facilities',
+  }).click();
+  await page.getByRole('button', {
+    name: kind === 'issue' ? 'Add proposal category' : 'Add facility category',
+  }).click();
+  const editor = page
+    .getByRole('group')
+    .filter({ has: page.getByRole('textbox', { name: 'Name' }) })
+    .last();
+  await editor.getByRole('textbox', { name: 'Name' }).fill(label);
+  await editor.getByRole('textbox', { name: 'Identifier' }).fill(id);
+  await expect(page.getByRole('group', { name: label })).toBeVisible();
 }
 
 async function saveCategories(page: Page) {
   await page.getByRole('button', { name: 'Save all changes' }).click();
-  await expect(page.getByRole('button', { name: 'Save all changes' })).toBeEnabled();
+  await expect(page.getByText('Categories and features saved').last()).toBeVisible();
 }
 
-async function deleteSelectedCategory(page: Page) {
-  await page.getByRole('button', { name: 'Delete category' }).click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click();
+async function deleteCategory(page: Page, label: string) {
+  await page
+    .getByRole('group', { name: label })
+    .getByRole('button', { name: 'Delete category' })
+    .click();
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: 'Confirm delete' })
+    .click();
 }
 
 test('proposal and facility categories create, rename, surface, and delete atomically', async ({
@@ -47,30 +55,29 @@ test('proposal and facility categories create, rename, surface, and delete atomi
 
   let ordinary = await newUserPage(browser, 'ordinary');
   await ordinary.page.goto('/issues/proposal-a');
-  await ordinary.page.getByRole('button', { name: 'Choose proposal category' }).click();
-  await expect(ordinary.page.getByRole('button', { name: 'E2E Temporary Proposal' }))
+  await ordinary.page.getByRole('combobox').first().click();
+  await expect(ordinary.page.getByRole('option', { name: 'E2E Temporary Proposal' }))
     .toBeVisible();
   await ordinary.context.close();
 
   await admin.page.goto('/admin/management?tab=categories');
-  await admin.page.getByRole('listitem').filter({ hasText: 'E2E Temporary Proposal' }).click();
-  await admin.page.getByRole('textbox', { name: 'Category name' })
+  await admin.page
+    .getByRole('group', { name: 'E2E Temporary Proposal' })
+    .getByRole('textbox', { name: 'Name' })
     .fill('E2E Renamed Proposal');
   await saveCategories(admin.page);
 
   ordinary = await newUserPage(browser, 'ordinary');
   await ordinary.page.goto('/issues/proposal-a');
-  await ordinary.page.getByRole('button', { name: 'Choose proposal category' }).click();
-  await expect(ordinary.page.getByRole('button', { name: 'E2E Renamed Proposal' })).toBeVisible();
-  await expect(ordinary.page.getByRole('button', { name: 'E2E Temporary Proposal' })).toHaveCount(0);
+  await ordinary.page.getByRole('combobox').first().click();
+  await expect(ordinary.page.getByRole('option', { name: 'E2E Renamed Proposal' })).toBeVisible();
+  await expect(ordinary.page.getByRole('option', { name: 'E2E Temporary Proposal' })).toHaveCount(0);
   await ordinary.context.close();
 
   await admin.page.goto('/admin/management?tab=categories');
-  await admin.page.getByRole('listitem').filter({ hasText: 'E2E Renamed Proposal' }).click();
-  await deleteSelectedCategory(admin.page);
+  await deleteCategory(admin.page, 'E2E Renamed Proposal');
   await saveCategories(admin.page);
 
-  await admin.page.getByRole('button', { name: 'Facilities', exact: true }).click();
   await createCategory(
     admin.page,
     'facility',
@@ -81,20 +88,19 @@ test('proposal and facility categories create, rename, surface, and delete atomi
 
   ordinary = await newUserPage(browser, 'ordinary');
   await ordinary.page.goto('/facilities');
-  await ordinary.page.getByRole('button', { name: 'Choose a facility-report category' }).click();
-  await expect(ordinary.page.getByRole('button', { name: 'E2E Temporary Facility' })).toBeVisible();
+  await ordinary.page.getByRole('combobox').first().click();
+  await expect(ordinary.page.getByRole('option', { name: 'E2E Temporary Facility' })).toBeVisible();
   await ordinary.context.close();
 
   await admin.page.goto('/admin/management?tab=categories');
-  await admin.page.getByRole('button', { name: 'Facilities', exact: true }).click();
-  await admin.page.getByRole('listitem').filter({ hasText: 'E2E Temporary Facility' }).click();
-  await deleteSelectedCategory(admin.page);
+  await admin.page.getByRole('tab', { name: 'Facilities' }).click();
+  await deleteCategory(admin.page, 'E2E Temporary Facility');
   await saveCategories(admin.page);
 
   ordinary = await newUserPage(browser, 'ordinary');
   await ordinary.page.goto('/facilities');
-  await ordinary.page.getByRole('button', { name: 'Choose a facility-report category' }).click();
-  await expect(ordinary.page.getByRole('button', { name: 'E2E Temporary Facility' })).toHaveCount(0);
+  await ordinary.page.getByRole('combobox').first().click();
+  await expect(ordinary.page.getByRole('option', { name: 'E2E Temporary Facility' })).toHaveCount(0);
   await ordinary.context.close();
   await admin.context.close();
 });

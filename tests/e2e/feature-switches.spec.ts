@@ -7,17 +7,17 @@ async function setFeatureSwitches(
   facilitiesEnabled: boolean,
 ) {
   await page.goto('/admin/management?tab=categories');
-  const issues = page.getByRole('switch', { name: 'Proposals' });
+  const issues = page.getByRole('switch', { name: 'Proposal feature' });
   await expect(issues).toBeVisible();
   if (await issues.isChecked() !== issuesEnabled) await issues.click();
 
-  await page.getByRole('button', { name: 'Facilities', exact: true }).click();
+  await page.getByRole('tab', { name: 'Facilities' }).click();
   const facilities = page.getByRole('switch', { name: 'Facility reports' });
   await expect(facilities).toBeVisible();
   if (await facilities.isChecked() !== facilitiesEnabled) await facilities.click();
 
   await page.getByRole('button', { name: 'Save all changes' }).click();
-  await expect(page.getByRole('button', { name: 'Save all changes' })).toBeEnabled();
+  await expect(page.getByText('Categories and features saved').last()).toBeVisible();
 }
 
 test('all four proposal and facility feature combinations update navigation and direct routes', async ({
@@ -37,9 +37,9 @@ test('all four proposal and facility feature combinations update navigation and 
       await setFeatureSwitches(admin.page, combination.issues, combination.facilities);
       const ordinary = await newUserPage(browser, 'ordinary');
       await ordinary.page.goto('/');
-      await expect(ordinary.page.getByRole('link', { name: 'Proposal', exact: true }))
+      await expect(ordinary.page.getByRole('link', { name: 'Proposals', exact: true }))
         .toHaveCount(combination.issues ? 1 : 0);
-      await expect(ordinary.page.getByRole('link', { name: 'Facility', exact: true }))
+      await expect(ordinary.page.getByRole('link', { name: 'Facilities', exact: true }))
         .toHaveCount(combination.facilities ? 1 : 0);
 
       if (!combination.issues) {

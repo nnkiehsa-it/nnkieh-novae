@@ -2,7 +2,7 @@ const messages = {
   'notification.announcementCreated': '有新的公告',
   'notification.commentTitle': '來自 {name} 的留言',
   'notification.facilityStatusChanged': '設備狀態已更新',
-  'notification.facilityReportCreated': '收到新的設備報修',
+  'notification.facilityReportCreated': '收到新的設備案件',
   'notification.issueCreated': '收到新的提案',
   'notification.issueDeleted': '提案已被刪除',
   'notification.issueReviewApproved': '提案審核已通過',

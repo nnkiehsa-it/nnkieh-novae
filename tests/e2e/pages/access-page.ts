@@ -7,21 +7,26 @@ type Scope =
 
 const scopeButton = {
   announcement: 'Announcement management',
-  facility: 'Facility-report responsibilities',
-  issue: 'Proposal responsibilities',
+  facility: 'Facility category',
+  issue: 'Proposal category',
 } as const;
 
 export async function openAccessManagement(page: Page) {
   await page.goto('/admin/management?tab=members');
-  await expect(page.getByRole('heading', { name: 'People and permissions' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Platform management' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Member access' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
 }
 
 export async function selectScope(page: Page, scope: Scope) {
-  await page.getByRole('button', { name: new RegExp(scopeButton[scope.kind], 'i') }).click();
+  await page.getByRole('tab', { name: scopeButton[scope.kind] }).click();
   if ('category' in scope) {
-    await page.getByRole('button', { name: new RegExp(scope.category, 'i') }).click();
+    await page.getByRole('combobox').click();
+    await page.getByRole('option', { name: scope.category }).click();
   }
-  await expect(page.getByRole('heading', { name: 'People with this permission' })).toBeVisible();
+  await expect(page.getByText('2. Current owners')).toBeVisible();
 }
 
 export async function setMemberAccess(
@@ -31,16 +36,17 @@ export async function setMemberAccess(
   grant: boolean,
 ) {
   await selectScope(page, scope);
-  const lookup = page.getByPlaceholder('Full email or UID');
+  const lookup = page.getByPlaceholder('Enter a campus email, name, or UID');
   await lookup.fill(email);
-  await page.getByRole('button', { name: 'Look up' }).click();
-  const candidateEmail = page.getByText(email, { exact: true }).last();
-  await expect(candidateEmail).toBeVisible();
-  const candidate = candidateEmail.locator('..').locator('..');
+  await page.getByRole('button', { name: 'Search' }).click();
+  const candidate = page.getByRole('group', { name: email }).last();
+  await expect(candidate).toBeVisible();
   const action = candidate.getByRole('button', {
-    name: grant ? 'Grant permission' : 'Remove permission',
+    name: grant ? 'Grant access' : 'Revoke',
   });
   if (!await action.isVisible()) return;
   await action.click();
-  await expect(page.getByText('Management access updated').last()).toBeVisible();
+  await expect(
+    candidate.getByRole('button', { name: grant ? 'Revoke' : 'Grant access' }),
+  ).toBeVisible();
 }

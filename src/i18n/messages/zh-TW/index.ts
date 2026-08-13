@@ -22,6 +22,7 @@ import request from './request';
 import service from './service';
 import settings from './settings';
 import upload from './upload';
+import ui from './ui';
 
 const messages = {
   ...access,
@@ -48,6 +49,7 @@ const messages = {
   ...service,
   ...settings,
   ...upload,
+  ...ui,
 } as const;
 
 export default messages;

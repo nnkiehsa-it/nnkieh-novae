@@ -1,6 +1,15 @@
-import { findIssueCategory, getDefaultIssueCategoryId, getIssueCategorySnapshot } from '@/composables/useCategories';
-import type { IssueCategory, IssueFilter, IssueRouteFilter, IssueStatus } from '@/types';
-import type { IssueReadAccess } from '@/types/categories';
+import {
+  findIssueCategory,
+  getDefaultIssueCategoryId,
+  getIssueCategorySnapshot,
+} from "@/hooks/use-categories";
+import type {
+  IssueCategory,
+  IssueFilter,
+  IssueRouteFilter,
+  IssueStatus,
+} from "@/types";
+import type { IssueReadAccess } from "@/types/categories";
 
 export interface CategoryOption<TValue extends string> {
   value: TValue;
@@ -22,29 +31,31 @@ export function getIssueFilterOptions(): CategoryOption<IssueFilter>[] {
 }
 
 export function getDefaultIssueRouteFilter(): IssueRouteFilter {
-  return getDefaultIssueCategoryId() || 'my-proposals';
+  return getDefaultIssueCategoryId() || "my-proposals";
 }
 
 export function isIssueCategory(value: unknown): value is IssueCategory {
-  return typeof value === 'string' && Boolean(findIssueCategory(value));
+  return typeof value === "string" && Boolean(findIssueCategory(value));
 }
 
 export function isKnownIssueCategory(value: unknown): value is IssueCategory {
-  return typeof value === 'string' && findIssueCategory(value) !== null;
+  return typeof value === "string" && findIssueCategory(value) !== null;
 }
 
 export function isIssueRouteFilter(value: unknown): value is IssueRouteFilter {
   const normalized = Array.isArray(value) ? value[0] : value;
-  return normalized === 'my-proposals' || isIssueCategory(normalized);
+  return normalized === "my-proposals" || isIssueCategory(normalized);
 }
 
-export function normalizeIssueRouteFilterParam(param: unknown): IssueRouteFilter {
+export function normalizeIssueRouteFilterParam(
+  param: unknown,
+): IssueRouteFilter {
   const value = Array.isArray(param) ? param[0] : param;
   return isIssueRouteFilter(value) ? value : getDefaultIssueRouteFilter();
 }
 
 export function getIssueCategoryLabel(category: string | null | undefined) {
-  return findIssueCategory(category)?.label ?? String(category ?? '');
+  return findIssueCategory(category)?.label ?? String(category ?? "");
 }
 
 export function issueAllowsSupport(category: string | null | undefined) {
@@ -52,46 +63,64 @@ export function issueAllowsSupport(category: string | null | undefined) {
 }
 
 export function issueRequiresReview(category: string | null | undefined) {
-  return findIssueCategory(category)?.readAccess === 'reviewed-school';
+  return findIssueCategory(category)?.readAccess === "reviewed-school";
 }
 
-export function issueStoresAuthorPrivately(category: string | null | undefined) {
+export function issueStoresAuthorPrivately(
+  category: string | null | undefined,
+) {
   return findIssueCategory(category)?.authorVisible === false;
 }
 
 export function issueIsPrivateToOwner(category: string | null | undefined) {
-  return findIssueCategory(category)?.readAccess === 'owner-admin';
+  return findIssueCategory(category)?.readAccess === "owner-admin";
 }
 
 export function getIssueSupportGoal(category: string | null | undefined) {
   return findIssueCategory(category)?.supportGoal ?? null;
 }
 
-export function issueAutoRejectsUnmetSupport(category: string | null | undefined) {
+export function issueAutoRejectsUnmetSupport(
+  category: string | null | undefined,
+) {
   return findIssueCategory(category)?.supportEnabled === true;
 }
 
-export function issueCategoryAllowsComments(category: string | null | undefined) {
+export function issueCategoryAllowsComments(
+  category: string | null | undefined,
+) {
   return findIssueCategory(category)?.commentsEnabled === true;
 }
 
-export function getIssueResponseDeadlineDays(category: string | null | undefined) {
+export function getIssueResponseDeadlineDays(
+  category: string | null | undefined,
+) {
   return findIssueCategory(category)?.responseDeadlineDays ?? null;
 }
 
-export function getIssueResponseDeadlineStart(category: string | null | undefined) {
+export function getIssueResponseDeadlineStart(
+  category: string | null | undefined,
+) {
   const config = findIssueCategory(category);
-  if (!config?.responseDeadlineDays) return 'none' as const;
-  return config.supportEnabled ? 'support-met' as const : 'created' as const;
+  if (!config?.responseDeadlineDays) return "none" as const;
+  return config.supportEnabled
+    ? ("support-met" as const)
+    : ("created" as const);
 }
 
 export function issueAllowsCommentsForStatus(
   readAccess: IssueReadAccess,
   status: IssueStatus,
 ) {
-  if (status === 'completed' || status === 'infeasible' || status === 'review-rejected' || status === 'auto-rejected') {
+  if (
+    status === "completed" ||
+    status === "infeasible" ||
+    status === "review-rejected" ||
+    status === "auto-rejected"
+  ) {
     return false;
   }
-  if (readAccess === 'reviewed-school') return status === 'pending' || status === 'processing';
-  return status !== 'under-review';
+  if (readAccess === "reviewed-school")
+    return status === "pending" || status === "processing";
+  return status !== "under-review";
 }

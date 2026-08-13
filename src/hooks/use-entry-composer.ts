@@ -1,0 +1,140 @@
+"use client";
+
+import * as React from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
+import { useI18n } from "@/i18n";
+import {
+  findFacilityCategory,
+  findIssueCategory,
+  getDefaultFacilityCategoryId,
+  useCategories,
+} from "@/hooks/use-categories";
+import { useImageAttachments } from "@/hooks/use-image-attachments";
+import { useSession } from "@/hooks/use-session";
+import { createAnnouncement } from "@/services/announcements";
+import { createFacility } from "@/services/facilities";
+import { createIssue } from "@/services/issues";
+import { deleteUploadedImages } from "@/services/uploads";
+
+function useComposerBase() {
+  const [title, setTitle] = React.useState("");
+  const [content, setContent] = React.useState("");
+  const [saving, setSaving] = React.useState(false);
+  const images = useImageAttachments(6);
+
+  async function withUploads(
+    create: (content: string) => Promise<void>,
+    fallbackMessage: string,
+  ) {
+    setSaving(true);
+    let uploaded: Awaited<ReturnType<typeof images.uploadAndAppend>>["uploaded"] = [];
+    try {
+      const result = await images.uploadAndAppend(content);
+      uploaded = result.uploaded;
+      await create(result.content);
+      images.clear();
+    } catch (caught) {
+      if (uploaded.length > 0) {
+        await deleteUploadedImages(uploaded.map((image) => image.storagePath)).catch(
+          () => undefined,
+        );
+      }
+      toast.error(caught instanceof Error ? caught.message : fallbackMessage);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return { content, images, saving, setContent, setSaving, setTitle, title, withUploads };
+}
+
+export function useAnnouncementComposer() {
+  const router = useRouter();
+  const session = useSession();
+  const { t } = useI18n();
+  const form = useComposerBase();
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!form.title.trim() || !form.content.trim() || form.saving) return;
+    await form.withUploads(async (content) => {
+      const announcement = await createAnnouncement({
+        content,
+        title: form.title.trim(),
+      });
+      toast.success(t("ui.announcement.published"));
+      router.replace(`/announcements/${announcement.id}`);
+    }, t("ui.announcement.publishFailed"));
+  }
+  return {
+    ...form,
+    back: router.back,
+    canManage: session.can("announcement.manage"),
+    submit,
+  };
+}
+
+export function useIssueComposer() {
+  const params = useParams<{ filter: string }>();
+  const router = useRouter();
+  const { t } = useI18n();
+  const form = useComposerBase();
+  const category = decodeURIComponent(params.filter);
+  const config = findIssueCategory(category);
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!config || !form.title.trim() || !form.content.trim() || form.saving) return;
+    await form.withUploads(async (content) => {
+      const issue = await createIssue({ category, content, title: form.title.trim() });
+      toast.success(t("ui.issue.submitSuccess"));
+      router.replace(`/issues/${encodeURIComponent(category)}/${issue.id}`);
+    }, t("ui.issue.submitFailed"));
+  }
+  return { ...form, back: router.back, category, config, submit };
+}
+
+export function useFacilityComposer() {
+  const router = useRouter();
+  const search = useSearchParams();
+  const categories = useCategories();
+  const { t } = useI18n();
+  const form = useComposerBase();
+  const requested = search.get("category");
+  const [category, setCategory] = React.useState(
+    requested && findFacilityCategory(requested)
+      ? requested
+      : getDefaultFacilityCategoryId(),
+  );
+  const [location, setLocation] = React.useState("");
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    if (
+      !category ||
+      !form.title.trim() ||
+      !location.trim() ||
+      !form.content.trim() ||
+      form.saving
+    )
+      return;
+    await form.withUploads(async (content) => {
+      const facility = await createFacility({
+        categoryId: category,
+        content,
+        location: location.trim(),
+        title: form.title.trim(),
+      });
+      toast.success(t("ui.facility.submitSuccess"));
+      router.replace(`/facilities/${facility.id}?category=${encodeURIComponent(category)}`);
+    }, t("ui.facility.submitFailed"));
+  }
+  return {
+    ...form,
+    back: router.back,
+    categories: categories.activeFacilityCategories,
+    category,
+    location,
+    setCategory,
+    setLocation,
+    submit,
+  };
+}

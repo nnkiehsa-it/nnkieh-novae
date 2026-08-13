@@ -1,5 +1,5 @@
 interface BeforeInstallPromptUserChoice {
-  outcome: 'accepted' | 'dismissed';
+  outcome: "accepted" | "dismissed";
   platform: string;
 }
 

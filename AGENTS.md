@@ -16,11 +16,11 @@
 
 | 層 | 職責 |
 |---|---|
-| `views/` | 路由頁組裝與頁面級狀態，不直接存取資料 |
-| `components/` | 應用 UI 與事件轉發；流程進 composable |
+| `app/` | Next App Router 路由頁組裝，不直接存取 service |
+| `components/` | 應用 UI 與事件轉發；流程進 hook |
 | `components/ui/` | 無業務資料的共用 UI；**不** import service / session |
-| `composables/` | Vue 狀態與流程；不重複純函式／正規化 |
-| `lib/` | 無 Vue 相依的純工具 |
+| `hooks/` | React 狀態與流程；不重複純函式／正規化 |
+| `lib/` | 無 React 相依的純工具 |
 | `services/` | Edge Function / Supabase client 邊界；元件不直查表、不自組 action |
 | `types/` | 跨模組型別；共通欄位先 base 再擴充 |
 | `supabase/functions/_shared/` | Edge 共用 env、HTTP、auth、FCM、Notion、Cloudinary、schema |
@@ -31,7 +31,7 @@
 ## 拆分與共用
 
 1. 相同 UI／流程出現兩次且差異僅 props／slots／callback → 抽共用。
-2. 元件同時扛讀取、權限、流程與大模板 → 流程進 composable，再拆展示。
+2. 元件同時扛讀取、權限、流程與大模板 → 流程進 hook，再拆展示。
 3. 單檔 ≳250 行檢查責任；≳400 行須能說明不拆理由。
 4. 不為單一呼叫點的簡單片段建抽象。
 5. 新增／刪除／搬移／拆分檔案時同步更新 `structure.md`。
@@ -40,18 +40,18 @@
 
 ## 命名與 TypeScript
 
-- composable `useXxx`；元件 PascalCase；純函式描述輸入輸出。
-- Props／emits／request／response 明確型別；邊界資料先 `unknown`，不用 `any` 穿透。
+- hook `useXxx`；元件 PascalCase；純函式描述輸入輸出。
+- Props／callback／request／response 明確型別；邊界資料先 `unknown`，不用 `any` 穿透。
 - 重複 union／label 放 types 或 constants；魔法數字用具名常數。
 
-## Vue 與 UI
+## React 與 UI
 
-- `src/styles/primitives.css` 與 `components/ui/` 是 UI 規範的單一來源；重複 dialog／empty／action 優先既有共用元件。
+- `src/app/globals.css`、`src/styles/motion.css` 與 `components/ui/` 是 UI 規範的單一來源；重複 dialog／empty／action 優先既有共用元件。
 - 互動狀態單一來源；手機桌機同資料流、只切 layout。
-- viewport 左右留白由 `AppShell`／`ViewportFrame` 統一負責；route view 只使用 `route-page` 組版，不自行加頁面級 `px-*`、`left-*`／`right-*` 或另一套 max-width。
-- 卡片、控制項、浮動層只使用 control／card／floating 三階陰影 token。卡片與 list 用 `SurfacePanel`、`surface-*`、`list-surface(-row)`；按鈕用 `AppButton` 或既有 `button-*`；dropdown 用 `DropdownMenu`／`DropdownPanel` 與 `dropdown-item`；輸入組合用 `field`／`control-frame`。
-- 相同結構若只差字串、icon、狀態、slot 或 callback，必須以 props／slots 共用；不得複製近似 button、dropdown、card、list、shadow、control 或 viewport 樣式。
-- 新 UI primitive 必須有至少兩個合理使用點，加入 `primitives.css`／`components/ui`，同步更新 `structure.md`、架構測試與官方貢獻文件；不得在領域元件建立平行設計系統。
+- viewport 左右留白由 `AppShell` 統一負責；route page 不自行建立另一套 viewport gutter。
+- 卡片、控制項、浮動層只使用 control／card／floating 三階陰影 token。卡片、按鈕、dropdown 與輸入優先使用 `components/ui/` 既有 primitive。
+- 相同結構若只差字串、icon、狀態或 callback，必須以 props／children 共用；不得複製近似 button、dropdown、card、list、shadow、control 或 viewport 樣式。
+- 新 UI primitive 必須有至少兩個合理使用點，加入 `globals.css`／`motion.css`／`components/ui`，同步更新 `structure.md`、架構測試與官方貢獻文件；不得在領域元件建立平行設計系統。
 - 維持必要 `aria-label`／label／alt。
 
 ## 安全
@@ -66,7 +66,7 @@
 
 ## 路由與初始設定
 
-- `issues` named route 必須帶合法 `filter`；需要預設值時使用共用的 `getDefaultIssueRouteFilter`，不得組出缺少 required param 的導航。
+- `issues/[filter]` 路由必須帶合法 `filter`；需要預設值時使用共用的預設分類 helper，不得組出缺少 required segment 的導航。
 - Setup 先讓使用者確認語言，再設定至少一個提案分類與設備分類；完成操作必須可安全重試，若資料庫已提交而回應中斷，前端刷新狀態後直接進入已完成流程。
 
 ## 驗證
@@ -81,3 +81,12 @@
 
 # 注意:代碼追求簡潔乾淨 好維護 盡量不要打補丁式 要以可以復用為目標
 
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

@@ -162,11 +162,11 @@ if [[ "$SERVE" == "true" ]]; then
     echo "The interactive test environment requires Node.js 24 LTS." >&2
     exit 2
   fi
-  VITE_NPM=(npm)
-  VITE_IS_WINDOWS="false"
+  NEXT_NPM=(npm)
+  NEXT_IS_WINDOWS="false"
   if [[ "$ROOT" == /mnt/* ]] && command -v cmd.exe >/dev/null 2>&1; then
-    VITE_NPM=(cmd.exe /d /s /c npm)
-    VITE_IS_WINDOWS="true"
+    NEXT_NPM=(cmd.exe /d /s /c npm)
+    NEXT_IS_WINDOWS="true"
   fi
 fi
 
@@ -186,8 +186,9 @@ UPSTASH_LOG="$(mktemp)"
 UPSTASH_PID=""
 WORKER_LOG="$(mktemp)"
 WORKER_PID=""
-VITE_PID=""
-VITE_WINDOWS_PID=""
+NEXT_PID=""
+NEXT_WINDOWS_PID=""
+NEXT_WINDOWS_LISTENER_PID=""
 COMMAND_LOG_DIR="$(mktemp -d)"
 
 cleanup() {
@@ -203,12 +204,12 @@ cleanup() {
     kill "$WORKER_PID" >/dev/null 2>&1 || true
     wait "$WORKER_PID" >/dev/null 2>&1 || true
   fi
-  if [[ -n "$VITE_PID" ]] && kill -0 "$VITE_PID" >/dev/null 2>&1; then
-    kill "$VITE_PID" >/dev/null 2>&1 || true
-    wait "$VITE_PID" >/dev/null 2>&1 || true
+  if [[ -n "$NEXT_PID" ]] && kill -0 "$NEXT_PID" >/dev/null 2>&1; then
+    kill "$NEXT_PID" >/dev/null 2>&1 || true
+    wait "$NEXT_PID" >/dev/null 2>&1 || true
   fi
-  if [[ -n "$VITE_WINDOWS_PID" ]]; then
-    taskkill.exe /PID "$VITE_WINDOWS_PID" /T /F >/dev/null 2>&1 || true
+  if [[ -n "$NEXT_WINDOWS_PID" ]]; then
+    taskkill.exe /PID "$NEXT_WINDOWS_PID" /T /F >/dev/null 2>&1 || true
   fi
   if [[ -n "$FIREBASE_PID" ]] && kill -0 "$FIREBASE_PID" >/dev/null 2>&1; then
     kill "$FIREBASE_PID" >/dev/null 2>&1 || true
@@ -229,7 +230,11 @@ trap cleanup EXIT
 START_EXCLUDES="edge-runtime,imgproxy,logflare,realtime,studio,vector"
 supabase stop >/dev/null 2>&1 || true
 run_quiet "start local database" "$COMMAND_LOG_DIR/db-start.log" supabase db start
-run_quiet "reset local database" "$COMMAND_LOG_DIR/db-reset.log" supabase db reset --local
+RESET_DATABASE=(supabase db reset --local)
+if [[ "$SERVE" != "true" ]]; then
+  RESET_DATABASE+=(--no-seed)
+fi
+run_quiet "reset local database" "$COMMAND_LOG_DIR/db-reset.log" "${RESET_DATABASE[@]}"
 progress_begin "start local API services"
 supabase stop >"$COMMAND_LOG_DIR/api-stop.log" 2>&1 || true
 if ! supabase start --exclude "$START_EXCLUDES" >"$COMMAND_LOG_DIR/api-start.log" 2>&1; then
@@ -421,7 +426,7 @@ fi
 
 progress_begin "start local Cloudflare gateway"
 "${TEST_NPX[@]}" wrangler@4.120.0 dev --config "$TEST_ROOT/cloudflare/wrangler.toml" --env development --local --port 8787 \
-  --var "ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173" \
+  --var "ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000" \
   --var "CLOUDINARY_API_SECRET:integration-cloudinary-secret" \
   --var "CLOUDINARY_CLOUD_NAME:integration" \
   --var "CLOUDINARY_DELIVERY_BASE_URL:http://127.0.0.1:54330" \
@@ -434,7 +439,7 @@ progress_begin "start local Cloudflare gateway"
 WORKER_PID="$!"
 worker_status=""
 for _ in $(seq 1 60); do
-  worker_status="$(curl -s -o /dev/null -w '%{http_code}' -X OPTIONS http://127.0.0.1:8787/v1/actions -H 'origin: http://localhost:5173' || true)"
+  worker_status="$(curl -s -o /dev/null -w '%{http_code}' -X OPTIONS http://127.0.0.1:8787/v1/actions -H 'origin: http://localhost:3000' || true)"
   [[ "$worker_status" == "204" ]] && break
   if ! kill -0 "$WORKER_PID" >/dev/null 2>&1; then
     fail_with_log "Cloudflare gateway stopped before becoming ready" "$WORKER_LOG"
@@ -447,42 +452,66 @@ fi
 emit_warnings "$WORKER_LOG"
 progress_finish
 
-progress_begin "start Vite"
-export VITE_ALLOWED_DOMAIN=integration.invalid
-export VITE_API_BASE_URL=http://127.0.0.1:8787
-export VITE_FIREBASE_API_KEY=integration-web-api-key
-export VITE_FIREBASE_APP_ID=1:123456789:web:local
-export VITE_FIREBASE_AUTH_DOMAIN=integration-project.firebaseapp.com
-export VITE_FIREBASE_AUTH_EMULATOR_URL=http://127.0.0.1:9099
-export VITE_FIREBASE_MESSAGING_SENDER_ID=123456789
-export VITE_FIREBASE_PROJECT_ID=integration-project
-export VITE_FIREBASE_APP_CHECK_ENABLED=false
-export VITE_SUPABASE_URL="$API_URL"
-export VITE_SUPABASE_PUBLISHABLE_KEY="$ANON_KEY"
-export WSLENV="${WSLENV:-}:VITE_ALLOWED_DOMAIN/w:VITE_API_BASE_URL/w:VITE_FIREBASE_API_KEY/w:VITE_FIREBASE_APP_ID/w:VITE_FIREBASE_AUTH_DOMAIN/w:VITE_FIREBASE_AUTH_EMULATOR_URL/w:VITE_FIREBASE_MESSAGING_SENDER_ID/w:VITE_FIREBASE_PROJECT_ID/w:VITE_FIREBASE_APP_CHECK_ENABLED/w:VITE_SUPABASE_URL/w:VITE_SUPABASE_PUBLISHABLE_KEY/w"
-"${VITE_NPM[@]}" run dev -- --host 0.0.0.0 --port 5173 --strictPort >"$COMMAND_LOG_DIR/vite.log" 2>&1 &
-VITE_PID="$!"
+progress_begin "start Next.js"
+export NEXT_PUBLIC_ALLOWED_DOMAIN=integration.invalid
+export NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8787
+export NEXT_PUBLIC_FIREBASE_API_KEY=integration-web-api-key
+export NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:local
+export NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=integration-project.firebaseapp.com
+export NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_URL=http://127.0.0.1:9099
+export NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
+export NEXT_PUBLIC_FIREBASE_PROJECT_ID=integration-project
+export NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED=false
+export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
+export NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$ANON_KEY"
+if [[ "$E2E" == "true" ]]; then
+  export NEXT_PUBLIC_LOCAL_DEV_AUTH=false
+else
+  export NEXT_PUBLIC_LOCAL_DEV_AUTH=true
+fi
+export NEXT_PUBLIC_LOCAL_DEV_AUTH_EMAIL=admin@integration.invalid
+export NOVAE_E2E_BASE_URL="${NOVAE_E2E_BASE_URL:-http://127.0.0.1:3000}"
+export WSLENV="${WSLENV:-}:NOVAE_E2E_BASE_URL/w:NEXT_PUBLIC_ALLOWED_DOMAIN/w:NEXT_PUBLIC_API_BASE_URL/w:NEXT_PUBLIC_FIREBASE_API_KEY/w:NEXT_PUBLIC_FIREBASE_APP_ID/w:NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN/w:NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_URL/w:NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID/w:NEXT_PUBLIC_FIREBASE_PROJECT_ID/w:NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED/w:NEXT_PUBLIC_LOCAL_DEV_AUTH/w:NEXT_PUBLIC_LOCAL_DEV_AUTH_EMAIL/w:NEXT_PUBLIC_SUPABASE_URL/w:NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY/w"
+if [[ "$NEXT_IS_WINDOWS" == "true" ]] && netstat.exe -ano | tr -d '\r' | awk '$2 ~ /:3000$/ && $4 == "LISTENING" { found=1 } END { exit !found }'; then
+  fail_with_log "Windows port 3000 is already in use" "$COMMAND_LOG_DIR/next.log"
+fi
+if [[ "$E2E" == "true" ]]; then
+  if ! "${NEXT_NPM[@]}" run build:deploy >"$COMMAND_LOG_DIR/next-build.log" 2>&1; then
+    fail_with_log "Next.js E2E production build failed" "$COMMAND_LOG_DIR/next-build.log"
+  fi
+  "${NEXT_NPM[@]}" run start -- -H 0.0.0.0 -p 3000 >"$COMMAND_LOG_DIR/next.log" 2>&1 &
+else
+  "${NEXT_NPM[@]}" run dev -- -H 0.0.0.0 -p 3000 >"$COMMAND_LOG_DIR/next.log" 2>&1 &
+fi
+NEXT_PID="$!"
 
 for _ in $(seq 1 60); do
-  if [[ "$VITE_IS_WINDOWS" == "true" ]]; then
-    VITE_WINDOWS_PID="$(netstat.exe -ano | tr -d '\r' | awk '$2 ~ /:5173$/ && $4 == "LISTENING" { print $5; exit }')"
-    [[ "$VITE_WINDOWS_PID" =~ ^[0-9]+$ ]] && break
+  if [[ "$NEXT_IS_WINDOWS" == "true" ]]; then
+    next_status="$(curl.exe -s -o NUL -w '%{http_code}' "$NOVAE_E2E_BASE_URL/login" | tr -d '\r' || true)"
+    if [[ "$next_status" == "200" ]]; then
+      NEXT_WINDOWS_LISTENER_PID="$(netstat.exe -ano | tr -d '\r' | awk '$2 ~ /:3000$/ && $4 == "LISTENING" { print $5; exit }')"
+      if [[ "$NEXT_WINDOWS_LISTENER_PID" =~ ^[0-9]+$ ]]; then
+        WINDOWS_ROOT="$(wslpath -w "$ROOT")"
+        NEXT_WINDOWS_PID="$(powershell.exe -NoProfile -File "$(wslpath -w "$ROOT/scripts/find-windows-next-root.ps1")" -ListenerProcessId "$NEXT_WINDOWS_LISTENER_PID" -WorkspacePath "$WINDOWS_ROOT" | tr -d '\r\n' || true)"
+        [[ "$NEXT_WINDOWS_PID" =~ ^[0-9]+$ ]] && break
+      fi
+    fi
   else
-    vite_status="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:5173/ || true)"
-    [[ "$vite_status" == "200" ]] && break
+    next_status="$(curl -s -o /dev/null -w '%{http_code}' "$NOVAE_E2E_BASE_URL/login" || true)"
+    [[ "$next_status" == "200" ]] && break
   fi
-  if ! kill -0 "$VITE_PID" >/dev/null 2>&1; then
-    wait "$VITE_PID" || true
-    fail_with_log "Vite stopped before becoming ready" "$COMMAND_LOG_DIR/vite.log"
+  if ! kill -0 "$NEXT_PID" >/dev/null 2>&1; then
+    wait "$NEXT_PID" || true
+    fail_with_log "Next.js stopped before becoming ready" "$COMMAND_LOG_DIR/next.log"
   fi
   sleep 1
 done
-if [[ "$VITE_IS_WINDOWS" == "true" ]]; then
-  if ! [[ "$VITE_WINDOWS_PID" =~ ^[0-9]+$ ]]; then
-    fail_with_log "could not resolve the Windows Vite process" "$COMMAND_LOG_DIR/vite.log"
+if [[ "$NEXT_IS_WINDOWS" == "true" ]]; then
+  if [[ "$next_status" != "200" ]] || ! [[ "$NEXT_WINDOWS_PID" =~ ^[0-9]+$ ]]; then
+    fail_with_log "Next.js did not become ready on Windows port 3000" "$COMMAND_LOG_DIR/next.log"
   fi
-elif [[ "$vite_status" != "200" ]]; then
-  fail_with_log "Vite did not become ready on port 5173" "$COMMAND_LOG_DIR/vite.log"
+elif [[ "$next_status" != "200" ]]; then
+  fail_with_log "Next.js did not become ready on port 3000" "$COMMAND_LOG_DIR/next.log"
 fi
 progress_finish
 
@@ -492,19 +521,19 @@ run_quiet "verify local authentication" "$COMMAND_LOG_DIR/auth-probe.log" \
 {
   echo ""
   echo "[environment] Ready"
-  echo "  App:           http://localhost:5173"
+  echo "  App:           http://localhost:3000"
   echo "  Auth emulator: http://localhost:4000/auth"
   echo "  API gateway:   http://localhost:8787"
-  echo "  Admin login:   use Google sign-in, enter admin@integration.invalid in the emulator"
+  echo "  Admin login:   automatic as admin@integration.invalid"
   echo "  New users:     sign out and use Google sign-in with any *@integration.invalid address"
   echo "  Stop:          press Ctrl+C"
 } >&2
 if [[ "$E2E" == "true" ]]; then
   run_quiet "Playwright browser journeys" "$COMMAND_LOG_DIR/e2e.log" \
-    "${VITE_NPM[@]}" run --silent test:e2e:runner
+    "${NEXT_NPM[@]}" run --silent test:e2e:runner
   printf '✓ End-to-end verification passed (%d stages)\n' "$PROGRESS_TOTAL" >&2
   exit 0
 fi
-if ! wait "$VITE_PID"; then
-  fail_with_log "Vite stopped unexpectedly" "$COMMAND_LOG_DIR/vite.log"
+if ! wait "$NEXT_PID"; then
+  fail_with_log "Next.js stopped unexpectedly" "$COMMAND_LOG_DIR/next.log"
 fi

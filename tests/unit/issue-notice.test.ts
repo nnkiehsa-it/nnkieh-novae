@@ -34,9 +34,9 @@ describe('getIssueNotice', () => {
   });
 
   it('returns error tone and reasonForRejection title for auto-rejected issue', () => {
-    const notice = getIssueNotice({ status: 'auto-rejected', result_content: null, review_rejection_reason: null }, '連署未達標');
+    const notice = getIssueNotice({ status: 'auto-rejected', result_content: null, review_rejection_reason: null }, '附議未達標');
     expect(notice).toEqual({
-      content: '連署未達標',
+      content: '附議未達標',
       title: 'issue.reasonForRejection',
       tone: 'error',
     });

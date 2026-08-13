@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { readContentState } from './support/content-state';
 import { newUserPage } from './support/session';
+import { expectMoreActions } from './pages/content-pages';
 
 test('proposal controls follow ownership, category scope, and platform administration', async ({
   browser,
@@ -8,32 +9,32 @@ test('proposal controls follow ownership, category scope, and platform administr
   const content = await readContentState();
   const cases = [
     {
-      absent: ['Change status or result'],
-      present: ['Delete proposal'],
+      absent: [],
+      present: ['Manage status', 'Delete proposal'],
       url: content.proposalA,
       user: 'ordinary',
     },
     {
-      absent: ['Change status or result', 'Delete proposal'],
+      absent: ['Manage status', 'Delete proposal'],
       present: [],
       url: content.proposalA,
       user: 'other',
     },
     {
       absent: [],
-      present: ['Change status or result', 'Delete proposal'],
+      present: ['Manage status', 'Delete proposal'],
       url: content.proposalA,
       user: 'issueManager',
     },
     {
-      absent: ['Change status or result', 'Delete proposal'],
+      absent: ['Manage status', 'Delete proposal'],
       present: [],
       url: content.proposalB,
       user: 'issueManager',
     },
     {
       absent: [],
-      present: ['Change status or result', 'Delete proposal'],
+      present: ['Manage status', 'Delete proposal'],
       url: content.proposalB,
       user: 'admin',
     },
@@ -42,13 +43,8 @@ test('proposal controls follow ownership, category scope, and platform administr
   for (const entry of cases) {
     const { context, page } = await newUserPage(browser, entry.user);
     await page.goto(entry.url);
-    await expect(page.getByRole('button', { name: 'Share link' })).toBeVisible();
-    for (const name of entry.present) {
-      await expect(page.getByRole('button', { name })).toBeVisible();
-    }
-    for (const name of entry.absent) {
-      await expect(page.getByRole('button', { name })).toHaveCount(0);
-    }
+    await expect(page.getByRole('button', { name: 'Share proposal' })).toBeVisible();
+    await expectMoreActions(page, entry.present, entry.absent);
     await context.close();
   }
 });
@@ -68,12 +64,20 @@ test('facility controls follow ownership, category scope, and platform administr
   for (const entry of cases) {
     const { context, page } = await newUserPage(browser, entry.user);
     await page.goto(entry.url);
-    await expect(page.getByRole('button', { name: 'Share link' })).toBeVisible();
-    await expect(page.getByRole('button', { name: /affected|encountered/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Delete facility report' }))
-      .toHaveCount(entry.delete ? 1 : 0);
-    await expect(page.getByRole('button', { name: /Start processing|Complete \/ Cannot resolve/i }))
-      .toHaveCount(entry.manage ? 1 : 0);
+    await expect(page.getByRole('button', { name: 'Share facility report' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /I have this issue too|Remove marker/i }))
+      .toBeVisible();
+    await expectMoreActions(
+      page,
+      [
+        ...(entry.manage ? ['Update status'] : []),
+        ...(entry.delete ? ['Delete report'] : []),
+      ],
+      [
+        ...(!entry.manage ? ['Update status'] : []),
+        ...(!entry.delete ? ['Delete report'] : []),
+      ],
+    );
     await context.close();
   }
 });
@@ -89,8 +93,11 @@ test('announcement and administration entry points reject unassigned users', asy
   ] as const) {
     const { context, page } = await newUserPage(browser, user);
     await page.goto(content.announcement);
-    await expect(page.getByRole('button', { name: 'Delete announcement' }))
-      .toHaveCount(canDelete ? 1 : 0);
+    await expectMoreActions(
+      page,
+      canDelete ? ['Delete announcement'] : [],
+      canDelete ? [] : ['Delete announcement'],
+    );
     await context.close();
   }
 
@@ -103,7 +110,7 @@ test('announcement and administration entry points reject unassigned users', asy
 
   const admin = await newUserPage(browser, 'admin');
   await admin.page.goto('/admin/management');
-  await expect(admin.page.getByRole('heading', { name: 'System settings' })).toBeVisible();
+  await expect(admin.page.getByRole('heading', { name: 'Platform management' })).toBeVisible();
   await admin.page.goto('/dashboard');
   await expect(admin.page).toHaveURL(/\/dashboard/u);
   await admin.context.close();

@@ -1,7 +1,6 @@
 import { authorizeSupabaseRealtime, getSupabaseClient } from '@/lib/supabase';
 import { isIssueCategory } from '@/constants/categories';
 import type {
-  IssueCategory,
   IssueStatus,
   NotificationRecord,
   NotificationSource,

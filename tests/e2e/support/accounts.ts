@@ -12,7 +12,7 @@ export const E2E_USERS = {
 } as const;
 
 const authEmulatorUrl = process.env.NOVAE_AUTH_EMULATOR_URL ?? 'http://127.0.0.1:9099';
-const appOrigin = process.env.NOVAE_E2E_BASE_URL ?? 'http://localhost:5173';
+const appOrigin = process.env.NOVAE_E2E_BASE_URL ?? 'http://127.0.0.1:3000';
 const apiKey = 'integration-web-api-key';
 
 function fakeGoogleIdToken(email: string) {
@@ -64,7 +64,9 @@ export async function ensureGoogleAccount(email: string) {
 export async function signInWithEmulator(page: Page, email: string) {
   await ensureGoogleAccount(email);
   await page.goto('/login');
-  await page.waitForFunction(() => Boolean(window.__NOVAE_E2E__));
+  await page.waitForFunction(() => Boolean(window.__NOVAE_E2E__), undefined, {
+    timeout: 20_000,
+  });
   await page.evaluate(async (accountEmail) => {
     await window.__NOVAE_E2E__?.signIn(accountEmail);
   }, email);

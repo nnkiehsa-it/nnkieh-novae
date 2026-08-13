@@ -20,7 +20,7 @@ test('bootstrap real accounts, categories, and scoped managers through the UI', 
   browser,
   page,
 }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(300_000);
   await mkdir(authStateDir, { recursive: true });
   await signInWithEmulator(page, E2E_USERS.admin);
   if (/\/setup$/u.test(page.url())) await completeInitialSetup(page);

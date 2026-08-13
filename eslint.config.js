@@ -1,78 +1,105 @@
-import js from '@eslint/js';
-import vuePlugin from 'eslint-plugin-vue';
-import vueParser from 'vue-eslint-parser';
-import tsParser from '@typescript-eslint/parser';
+import babelParser from "@babel/eslint-parser";
+import js from "@eslint/js";
+import nextPlugin from "@next/eslint-plugin-next";
+import reactHooks from "eslint-plugin-react-hooks";
 
 const browserGlobals = {
-  console: 'readonly',
-  document: 'readonly',
-  window: 'readonly',
-  MediaQueryList: 'readonly',
-  MediaQueryListEvent: 'readonly',
-  ImportMetaEnv: 'readonly',
+  AbortController: "readonly",
+  Blob: "readonly",
+  console: "readonly",
+  document: "readonly",
+  fetch: "readonly",
+  File: "readonly",
+  FormData: "readonly",
+  Headers: "readonly",
+  Image: "readonly",
+  localStorage: "readonly",
+  matchMedia: "readonly",
+  MediaQueryList: "readonly",
+  MediaQueryListEvent: "readonly",
+  navigator: "readonly",
+  Notification: "readonly",
+  performance: "readonly",
+  requestAnimationFrame: "readonly",
+  ResizeObserver: "readonly",
+  sessionStorage: "readonly",
+  URL: "readonly",
+  URLSearchParams: "readonly",
+  window: "readonly",
 };
 
 const nodeGlobals = {
-  Buffer: 'readonly',
-  fetch: 'readonly',
-  module: 'readonly',
-  __dirname: 'readonly',
-  process: 'readonly',
-  console: 'readonly',
-  URLSearchParams: 'readonly',
+  Buffer: "readonly",
+  console: "readonly",
+  fetch: "readonly",
+  module: "readonly",
+  process: "readonly",
+  URL: "readonly",
+  URLSearchParams: "readonly",
 };
 
 export default [
   {
     ignores: [
-      'dist/**',
-      'node_modules/**',
-      '**/.wrangler/**',
-      '*.d.ts',
-      'vite.config.js',
+      ".next/**",
+      ".next-verify/**",
+      ".vercel/**",
+      "dist/**",
+      "node_modules/**",
+      "playwright-report/**",
+      "public/sw.js",
+      "public/swe-worker*",
+      "src/**/*.vue",
+      "src/main.ts",
+      "src/router/**",
+      "src/composables/**",
+      "src/sw.ts",
+      "supabase/**",
+      "test-results/**",
+      "cloudflare/**",
+      "vite.config.ts",
+      "tsconfig.app.json",
+      "tsconfig.node.json",
     ],
   },
   js.configs.recommended,
-  ...vuePlugin.configs['flat/recommended'],
   {
-    files: ['**/*.ts', '**/*.vue'],
+    files: ["src/**/*.{ts,tsx}", "tests/**/*.{ts,tsx}", "*.{ts,tsx}"],
     languageOptions: {
-      parser: vueParser,
-      globals: browserGlobals,
+      globals: { ...browserGlobals, ...nodeGlobals },
+      parser: babelParser,
       parserOptions: {
-        parser: tsParser,
-        ecmaVersion: 'latest',
-        sourceType: 'module',
-        extraFileExtensions: ['.vue'],
+        babelOptions: {
+          presets: [
+            ["@babel/preset-react", { runtime: "automatic" }],
+            ["@babel/preset-typescript", { allExtensions: true, isTSX: true }],
+          ],
+        },
+        ecmaFeatures: { jsx: true },
+        ecmaVersion: "latest",
+        requireConfigFile: false,
+        sourceType: "module",
       },
     },
+    plugins: {
+      "@next/next": nextPlugin,
+      "react-hooks": reactHooks,
+    },
     rules: {
-      'no-undef': 'off',
-      'no-unused-vars': 'off',
-      'no-console': 'off',
-      'vue/multi-word-component-names': 'off',
-      'vue/html-self-closing': 'off',
-      'vue/max-attributes-per-line': 'off',
-      'vue/singleline-html-element-content-newline': 'off',
+      ...nextPlugin.configs.recommended.rules,
+      ...nextPlugin.configs["core-web-vitals"].rules,
+      ...reactHooks.configs.flat.recommended.rules,
+      "no-console": "off",
+      "no-undef": "off",
+      "no-unused-vars": "off",
+      "@next/next/no-img-element": "off",
+      "react-hooks/preserve-manual-memoization": "off",
+      "react-hooks/set-state-in-effect": "off",
     },
   },
   {
-    files: ['*.cjs'],
-    languageOptions: {
-      sourceType: 'commonjs',
-      globals: nodeGlobals,
-    },
-    rules: {
-      'no-unused-vars': 'off',
-    },
-  },
-  {
-    files: ['*.js', '*.mjs', '*.ts', 'scripts/**/*.mjs'],
-    languageOptions: {
-      globals: nodeGlobals,
-    },
-    rules: {
-      'no-unused-vars': 'off',
-    },
+    files: ["*.js", "*.mjs", "scripts/**/*.mjs"],
+    languageOptions: { globals: nodeGlobals },
+    rules: { "no-console": "off", "no-unused-vars": "off" },
   },
 ];

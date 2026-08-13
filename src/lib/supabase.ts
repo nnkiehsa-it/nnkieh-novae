@@ -1,31 +1,35 @@
-import { createClient } from '@supabase/supabase-js';
-import { getFirebaseIdToken } from '@/lib/auth-token';
-import type { Database } from '../../supabase/functions/_shared/database';
+import { createClient } from "@supabase/supabase-js";
+import { getFirebaseIdToken } from "@/lib/auth-token";
+import type { Database } from "../../supabase/functions/_shared/database";
 
-const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL ?? '').trim();
-const supabasePublishableKey = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '').trim();
+const supabaseUrl = String(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
+const supabasePublishableKey = String(
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "",
+).trim();
 
-type SupabaseAppClient = ReturnType<typeof createClient<Database, 'app_api'>>;
+type SupabaseAppClient = ReturnType<typeof createClient<Database, "app_api">>;
 
 let supabaseClient: SupabaseAppClient | null = null;
 let realtimeAuthPromise: Promise<boolean> | null = null;
 
 export function getSupabaseClient() {
   if (!supabaseUrl || !supabasePublishableKey) {
-    throw new Error('settings.supabaseSettingsHaveNotBeenCompleted');
+    throw new Error("settings.supabaseSettingsHaveNotBeenCompleted");
   }
 
-  const client = supabaseClient ?? createClient<Database, 'app_api'>(supabaseUrl, supabasePublishableKey, {
-    accessToken: getFirebaseIdToken,
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-    },
-    db: {
-      schema: 'app_api',
-    },
-  });
+  const client =
+    supabaseClient ??
+    createClient<Database, "app_api">(supabaseUrl, supabasePublishableKey, {
+      accessToken: getFirebaseIdToken,
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+      db: {
+        schema: "app_api",
+      },
+    });
   supabaseClient = client;
 
   return client;
