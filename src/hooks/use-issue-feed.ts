@@ -21,7 +21,22 @@ import type {
   IssueSortOption,
   IssueStatusBucket,
 } from "@/types";
-import { reconcileReactionState, recordReactionMutation } from "@/lib/reaction-state";
+import {
+  beginContentEntityRead,
+  getContentEntity,
+  mergeContentEntityRead,
+  patchContentEntity,
+} from "@/lib/content-entity-store";
+import { canContinuePage, mergePageById } from "@/lib/pagination";
+import { usePagedRequestGuard } from "@/hooks/use-paged-request-guard";
+import { useContentEntityDomainVersion } from "@/hooks/use-content-entity";
+import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
+
+const ISSUE_LIST_CACHE_PREFIXES = [
+  "issue-list-page|",
+  "issue-search|",
+  "user-issue-list-page|",
+] as const;
 
 interface IssueFeed {
   cursor: IssueCursor | null;
@@ -53,6 +68,16 @@ export function useIssueFeed() {
   const [supportingId, setSupportingId] = React.useState<string | null>(null);
   const [supportBurstById, setSupportBurstById] = React.useState<Record<string, number>>({});
   const supportedIssueIdsRef = React.useRef(session.mySupportedIssueIds);
+  const requestGuard = usePagedRequestGuard();
+  const entityVersion = useContentEntityDomainVersion(session.user?.uid, "issue");
+  const queryKey = [
+    session.user?.uid ?? "",
+    filter,
+    bucket,
+    sort,
+    committedQuery,
+    session.isAdmin ? "admin" : "user",
+  ].join("|");
 
   React.useEffect(() => {
     supportedIssueIdsRef.current = session.mySupportedIssueIds;
@@ -60,21 +85,15 @@ export function useIssueFeed() {
 
   async function support(issueId: string) {
     if (supportingId) return;
+    const issue = feed.issues.find((item) => item.id === issueId);
+    if (!issue || issue.isOwnIssue) return;
     setSupportingId(issueId);
     try {
       const result = await toggleSupport(issueId);
-      recordReactionMutation(session.user?.uid, "issue", issueId, {
-        active: result.supported,
-        count: result.support_count,
+      patchContentEntity<IssueRecord>(session.user?.uid, "issue", issueId, {
+        currentUserSupported: result.supported,
+        support_count: result.support_count,
       });
-      setFeed((current) => ({
-        ...current,
-        issues: current.issues.map((issue) =>
-          issue.id === issueId
-            ? { ...issue, currentUserSupported: result.supported, support_count: result.support_count }
-            : issue,
-        ),
-      }));
       session.setSupportedIssue(issueId, result.supported);
       setSupportBurstById((current) => ({
         ...current,
@@ -94,8 +113,12 @@ export function useIssueFeed() {
   }, [categories.loaded, router, validFilter]);
 
   const load = React.useCallback(
-    async (cursor: IssueCursor | null = null) => {
+    async (cursor: IssueCursor | null = null, restart = false) => {
       if (!session.user || !validFilter) return;
+      if (restart) requestGuard.restart(queryKey);
+      const requestToken = requestGuard.begin(queryKey);
+      if (!requestToken) return;
+      const entityReadRevision = beginContentEntityRead();
       cursor ? setLoadingMore(true) : setLoading(true);
       setError("");
       try {
@@ -132,29 +155,32 @@ export function useIssueFeed() {
             },
           );
         }
-        const issues = result.issues.map((issue) => {
-          const reaction = reconcileReactionState(
+        if (!requestGuard.isCurrent(requestToken)) return;
+        const issues = result.issues.map((issue) =>
+          mergeContentEntityRead(
             session.user?.uid,
             "issue",
-            issue.id,
-            { active: issue.currentUserSupported === true, count: issue.support_count },
-            "list",
-          );
-          return {
+            {
             ...issue,
-            currentUserSupported: reaction.active,
-            support_count: reaction.count,
-          };
-        });
+              currentUserSupported:
+                issue.isOwnIssue || issue.currentUserSupported === true,
+            },
+            entityReadRevision,
+          ),
+        );
         setFeed((current) => ({
           ...result,
-          issues: cursor ? [...current.issues, ...issues] : issues,
+          hasMore: canContinuePage(cursor, result.cursor, result.hasMore),
+          issues: cursor ? mergePageById(current.issues, issues) : issues,
         }));
       } catch (caught) {
-        setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
+        if (requestGuard.isCurrent(requestToken))
+          setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
       } finally {
-        setLoading(false);
-        setLoadingMore(false);
+        if (requestGuard.finish(requestToken)) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
     },
     [
@@ -166,6 +192,8 @@ export function useIssueFeed() {
       sort,
       t,
       validFilter,
+      queryKey,
+      requestGuard,
     ],
   );
 
@@ -173,11 +201,26 @@ export function useIssueFeed() {
     void load();
   }, [load]);
 
+  useContentInvalidationRefresh(ISSUE_LIST_CACHE_PREFIXES, () => load(null, true));
+
+  const synchronizedFeed = {
+    ...feed,
+    issues: feed.issues.map(
+      (issue) =>
+        getContentEntity<IssueRecord>(
+          session.user?.uid,
+          "issue",
+          issue.id,
+        ) ?? issue,
+    ),
+  };
+  void entityVersion;
+
   return {
     bucket,
     committedQuery,
     error,
-    feed,
+    feed: synchronizedFeed,
     filter,
     load,
     loading,

@@ -5,6 +5,7 @@ import * as React from "react";
 import { RefreshCw } from "lucide-react";
 import { BrandLockup } from "@/components/ui/brand";
 import { Button } from "@/components/ui/button";
+import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,7 @@ const SERVICE_WORKER_PREPARE_TIMEOUT_MS = 2_000;
 const RELOAD_NAVIGATION_RETRY_MS = 4_000;
 const RELOAD_RECOVERY_TIMEOUT_MS = 10_000;
 const MAX_AUTO_RELOAD_ATTEMPTS = 2;
+const UPDATE_SUCCESS_HOLD_MS = 500;
 
 function rejectWhenAborted(signal: AbortSignal) {
   return new Promise<never>((_, reject) => {
@@ -37,6 +39,7 @@ export function AppUpdateGate() {
   useLocaleSubscription();
   const [availableVersion, setAvailableVersion] = React.useState("");
   const [reloading, setReloading] = React.useState(false);
+  const [updateComplete, setUpdateComplete] = React.useState(false);
   const [promptVisible, setPromptVisible] = React.useState(false);
   const lastCheckedAt = React.useRef(0);
   const checking = React.useRef(false);
@@ -172,8 +175,13 @@ export function AppUpdateGate() {
     if (reloadInFlight.current) return;
     reloadInFlight.current = true;
     setReloading(true);
+    setUpdateComplete(false);
     if (options.automatic && availableVersion) markAutoReload(availableVersion);
     await prepareServiceWorker();
+    setUpdateComplete(true);
+    await new Promise((resolve) =>
+      window.setTimeout(resolve, UPDATE_SUCCESS_HOLD_MS),
+    );
     window.setTimeout(() => {
       try {
         window.location.reload();
@@ -181,12 +189,14 @@ export function AppUpdateGate() {
         setPromptVisible(true);
         reloadInFlight.current = false;
         setReloading(false);
+        setUpdateComplete(false);
       }
     }, RELOAD_NAVIGATION_RETRY_MS);
     window.setTimeout(() => {
       setPromptVisible(true);
       reloadInFlight.current = false;
       setReloading(false);
+      setUpdateComplete(false);
     }, RELOAD_RECOVERY_TIMEOUT_MS);
     try {
       window.location.replace(window.location.href);
@@ -219,9 +229,10 @@ export function AppUpdateGate() {
               className="flex-col gap-2 [&>span:last-child]:text-xl"
               markClassName="size-20 rounded-3xl p-4"
             />
-            <div className="t-loading-orbit" aria-hidden>
-              <RefreshCw className="t-spinner size-5" />
-            </div>
+            <ActionFeedbackIcon
+              className="[&>svg]:size-5"
+              state={updateComplete ? "success" : "loading"}
+            />
             <p
               className="t-shimmer text-sm font-medium"
               data-text={translate('ui.update.loading')}

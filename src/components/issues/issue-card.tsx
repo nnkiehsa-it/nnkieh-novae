@@ -97,9 +97,18 @@ export function IssueCard({
               busy={supporting}
               className="z-10 ml-auto"
               count={issue.support_count}
-              disabled={!["pending", "processing"].includes(issue.status)}
+              disabled={
+                issue.isOwnIssue ||
+                !["pending", "processing"].includes(issue.status)
+              }
               icon={Hand}
-              label={issue.currentUserSupported ? translate('ui.issue.cancelSupport') : translate('ui.issue.support')}
+              label={
+                issue.isOwnIssue
+                  ? translate("ui.issue.ownSupport")
+                  : issue.currentUserSupported
+                    ? translate("ui.issue.cancelSupport")
+                    : translate("ui.issue.support")
+              }
               onClick={onSupport}
               size="sm"
               variant="ghost"

@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -30,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { PendingAlertDialogAction } from "@/components/ui/pending-alert-dialog-action";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,7 +47,8 @@ export default function FacilityDetailPage() {
   useLocaleSubscription();
   const detail = useFacilityDetail();
 
-  if (detail.loading) return <DetailRouteSkeleton />;
+  if (detail.loading)
+    return <DetailRouteSkeleton title={detail.facility?.title} />;
   if (detail.error || !detail.facility)
     return (
       <ErrorState
@@ -94,7 +95,10 @@ export default function FacilityDetailPage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>{translate('ui.common.cancel')}</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => void detail.remove()}>{translate('ui.common.confirmDelete')}</AlertDialogAction>
+                      <PendingAlertDialogAction
+                        onConfirm={() => void detail.remove()}
+                        state={detail.deleteFeedbackState}
+                      >{translate('ui.common.confirmDelete')}</PendingAlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>

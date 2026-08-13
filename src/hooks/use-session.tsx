@@ -17,6 +17,7 @@ import {
 } from "@/lib/session-access";
 import { sessionDebug } from "@/lib/session-debug";
 import { readLocalStorage, writeLocalStorage } from "@/lib/browser-storage";
+import { clearContentEntityScope } from "@/lib/content-entity-store";
 import { ensureSupabaseAuthenticatedRole } from "@/services/supabase-auth";
 import {
   fetchCurrentUserRole,
@@ -122,6 +123,7 @@ function shouldRecordPlatformVisit() {
 }
 
 function clearActiveSessionData() {
+  clearContentEntityScope(state.user?.uid);
   stopContentRealtimeSession();
   clearCategoryCatalog();
   clearResolvedUploadCache();

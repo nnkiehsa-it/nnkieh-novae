@@ -11,6 +11,7 @@ import type {
   FacilityCategoryDraft,
   IssueCategoryDraft,
 } from "@/types/categories";
+import { useActionFeedback } from "@/hooks/use-action-feedback";
 
 const categoryPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 const newIssue = (isDefault = false): IssueCategoryDraft => ({
@@ -47,8 +48,9 @@ export function useInitialSetup() {
   const [facilities, setFacilities] = React.useState<FacilityCategoryDraft[]>([
     newFacility(true),
   ]);
-  const [saving, setSaving] = React.useState(false);
+  const feedback = useActionFeedback();
   const [confirming, setConfirming] = React.useState(false);
+  const submittingRef = React.useRef(false);
 
   React.useEffect(() => {
     if (isAdmin || setupCompleted) return;
@@ -57,7 +59,7 @@ export function useInitialSetup() {
   }, [isAdmin, refreshSessionAccess, setupCompleted]);
 
   React.useEffect(() => {
-    if (setupCompleted) router.replace("/issues");
+    if (setupCompleted && !submittingRef.current) router.replace("/issues");
   }, [router, setupCompleted]);
 
   const valid = React.useMemo(() => {
@@ -82,37 +84,37 @@ export function useInitialSetup() {
   }, [facilities, facilitiesEnabled, issues, issuesEnabled]);
 
   async function save() {
-    if (!valid || saving) return;
-    setConfirming(false);
-    setSaving(true);
+    if (!valid || feedback.busy) return;
+    submittingRef.current = true;
     try {
-      await completeInitialSetup({
-        facilitiesEnabled,
-        facilityCategories: facilitiesEnabled ? facilities : [],
-        issuesEnabled,
-        issueCategories: issuesEnabled ? issues : [],
-      });
-      await refreshSessionAccess();
-      await categories.refresh();
-      toast.success(t("ui.setup.completed"));
-      const defaultIssueCategory =
-        issues.find((category) => category.isDefault)?.id || issues[0]?.id;
-      const defaultFacilityCategory =
-        facilities.find((category) => category.isDefault)?.id ||
-        facilities[0]?.id;
-      router.replace(
-        issuesEnabled
+      const destination = await feedback.run(async () => {
+        await completeInitialSetup({
+          facilitiesEnabled,
+          facilityCategories: facilitiesEnabled ? facilities : [],
+          issuesEnabled,
+          issueCategories: issuesEnabled ? issues : [],
+        });
+        await refreshSessionAccess();
+        await categories.refresh();
+        const defaultIssueCategory =
+          issues.find((category) => category.isDefault)?.id || issues[0]?.id;
+        const defaultFacilityCategory =
+          facilities.find((category) => category.isDefault)?.id ||
+          facilities[0]?.id;
+        return issuesEnabled
           ? `/issues/${encodeURIComponent(defaultIssueCategory || "my-proposals")}`
           : facilitiesEnabled
             ? `/facilities/${encodeURIComponent(defaultFacilityCategory || "all")}`
-            : "/announcements",
-      );
+            : "/announcements";
+      });
+      setConfirming(false);
+      router.replace(destination);
     } catch (caught) {
       const access = await refreshSessionAccess().catch(() => undefined);
       if (access?.setupCompleted) router.replace("/issues");
       else toast.error(t(caught instanceof Error ? caught.message : "common.saveFailed"));
     } finally {
-      setSaving(false);
+      submittingRef.current = false;
     }
   }
 
@@ -122,13 +124,14 @@ export function useInitialSetup() {
     confirming,
     facilities,
     facilitiesEnabled,
+    feedbackState: feedback.state,
     isAdmin,
     issues,
     issuesEnabled,
     kind,
     locale,
     save,
-    saving,
+    saving: feedback.busy,
     setConfirming,
     setFacilities,
     setFacilitiesEnabled,

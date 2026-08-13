@@ -16,7 +16,18 @@ import type {
   FacilityStatus,
   FacilitySummary,
 } from "@/types";
-import { reconcileReactionState, recordReactionMutation } from "@/lib/reaction-state";
+import {
+  beginContentEntityRead,
+  getContentEntity,
+  mergeContentEntityRead,
+  patchContentEntity,
+} from "@/lib/content-entity-store";
+import { canContinuePage, mergePageById } from "@/lib/pagination";
+import { usePagedRequestGuard } from "@/hooks/use-paged-request-guard";
+import { useContentEntityDomainVersion } from "@/hooks/use-content-entity";
+import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
+
+const FACILITY_LIST_CACHE_PREFIXES = ["facility-list-page|"] as const;
 
 interface FacilityFeed {
   cursor: FacilityCursor | null;
@@ -51,24 +62,31 @@ export function useFacilityFeed() {
   const [error, setError] = React.useState("");
   const [affectingId, setAffectingId] = React.useState<string | null>(null);
   const [affectBurstById, setAffectBurstById] = React.useState<Record<string, number>>({});
+  const requestGuard = usePagedRequestGuard();
+  const entityVersion = useContentEntityDomainVersion(session.user?.uid, "facility");
+  const queryKey = [
+    session.user?.uid ?? "",
+    category,
+    bucket,
+    sort,
+    status,
+    committedQuery,
+  ].join("|");
 
   async function toggleAffected(facilityId: string) {
     if (affectingId) return;
     setAffectingId(facilityId);
     try {
       const result = await toggleFacilityAffected(facilityId);
-      recordReactionMutation(session.user?.uid, "facility", facilityId, {
-        active: result.affected,
-        count: result.affected_count,
-      });
-      setFeed((current) => ({
-        ...current,
-        facilities: current.facilities.map((facility) =>
-          facility.id === facilityId
-            ? { ...facility, affected_count: result.affected_count, currentUserAffected: result.affected }
-            : facility,
-        ),
-      }));
+      patchContentEntity<FacilitySummary>(
+        session.user?.uid,
+        "facility",
+        facilityId,
+        {
+          affected_count: result.affected_count,
+          currentUserAffected: result.affected,
+        },
+      );
       setAffectBurstById((current) => ({
         ...current,
         [facilityId]: (current[facilityId] ?? 0) + 1,
@@ -83,8 +101,12 @@ export function useFacilityFeed() {
   }, [categories.loaded, category]);
 
   const load = React.useCallback(
-    async (cursor: FacilityCursor | null = null) => {
+    async (cursor: FacilityCursor | null = null, restart = false) => {
       if (!category) return;
+      if (restart) requestGuard.restart(queryKey);
+      const requestToken = requestGuard.begin(queryKey);
+      if (!requestToken) return;
+      const entityReadRevision = beginContentEntityRead();
       cursor ? setLoadingMore(true) : setLoading(true);
       setError("");
       try {
@@ -96,39 +118,63 @@ export function useFacilityFeed() {
           sort,
           status,
         });
-        const facilities = result.facilities.map((facility) => {
-          const reaction = reconcileReactionState(
+        if (!requestGuard.isCurrent(requestToken)) return;
+        const facilities = result.facilities.map((facility) =>
+          mergeContentEntityRead(
             session.user?.uid,
             "facility",
-            facility.id,
-            { active: facility.currentUserAffected === true, count: facility.affected_count },
-            "list",
-          );
-          return {
-            ...facility,
-            affected_count: reaction.count,
-            currentUserAffected: reaction.active,
-          };
-        });
+            facility,
+            entityReadRevision,
+          ),
+        );
         setFeed((current) => ({
           ...result,
+          hasMore: canContinuePage(cursor, result.cursor, result.hasMore),
           facilities: cursor
-            ? [...current.facilities, ...facilities]
+            ? mergePageById(current.facilities, facilities)
             : facilities,
         }));
       } catch (caught) {
-        setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
+        if (requestGuard.isCurrent(requestToken))
+          setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
       } finally {
-        setLoading(false);
-        setLoadingMore(false);
+        if (requestGuard.finish(requestToken)) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
     },
-    [bucket, category, committedQuery, session.user?.uid, sort, status, t],
+    [
+      bucket,
+      category,
+      committedQuery,
+      queryKey,
+      requestGuard,
+      session.user?.uid,
+      sort,
+      status,
+      t,
+    ],
   );
 
   React.useEffect(() => {
     void load();
   }, [load]);
+
+  useContentInvalidationRefresh(FACILITY_LIST_CACHE_PREFIXES, () => load(null, true));
+
+  const synchronizedFeed = {
+    ...feed,
+    facilities: feed.facilities.map(
+      (facility) =>
+        getContentEntity<FacilitySummary>(
+          session.user?.uid,
+          "facility",
+          facility.id,
+        ) ?? facility,
+    ),
+  };
+  void entityVersion;
 
   return {
     bucket,
@@ -142,7 +188,7 @@ export function useFacilityFeed() {
     },
     committedQuery,
     error,
-    feed,
+    feed: synchronizedFeed,
     load,
     loading,
     loadingMore,

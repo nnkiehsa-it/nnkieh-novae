@@ -93,6 +93,7 @@ export default function FacilityComposerPage() {
                   busy={form.saving || form.images.uploading}
                   busyLabel={translate('ui.issue.submitting')}
                   label={translate('ui.facility.submit')}
+                  success={form.succeeded}
                 />
               </Button>
             </div>

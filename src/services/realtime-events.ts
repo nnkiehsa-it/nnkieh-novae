@@ -8,6 +8,8 @@ import {
   registerContentVersion,
   type ContentVersionDomain,
 } from '@/services/content-versions';
+import { patchContentEntity } from '@/lib/content-entity-store';
+import type { AnnouncementRecord, IssueRecord } from '@/types';
 
 type SupabaseAppClient = ReturnType<typeof getSupabaseClient>;
 type RealtimeChannel = ReturnType<SupabaseAppClient['channel']>;
@@ -233,6 +235,7 @@ function ensureSharedRealtimeChannel() {
 }
 
 function invalidateRealtimeContent(event: ContentRealtimeEvent) {
+  const scope = auth?.currentUser?.uid;
   if (event.eventType.startsWith('issue_')) {
     const issueId = event.eventType === 'issue_comment_changed'
       ? event.parentId
@@ -243,6 +246,14 @@ function invalidateRealtimeContent(event: ContentRealtimeEvent) {
     if (issueId) markContentCachePrefixStale(`issue-detail|${issueId}|`);
     if (event.eventType === 'issue_comment_changed') {
       if (issueId) markContentCachePrefixStale(`issue-comments-page|${issueId}|`);
+    }
+    if (
+      event.eventType === 'issue_support_changed'
+      && event.supportCount !== null
+    ) {
+      patchContentEntity<IssueRecord>(scope, 'issue', event.targetId, {
+        support_count: event.supportCount,
+      });
     }
     return;
   }
@@ -258,6 +269,18 @@ function invalidateRealtimeContent(event: ContentRealtimeEvent) {
   if (announcementId) markContentCachePrefixStale(`announcement-detail|${announcementId}|`);
   if (event.eventType === 'announcement_comment_changed') {
     if (announcementId) markContentCachePrefixStale(`announcement-comments-page|${announcementId}|`);
+  }
+  if (announcementId) {
+    const patch: Partial<AnnouncementRecord> = {};
+    if (event.likeCount !== null) patch.like_count = event.likeCount;
+    if (event.commentCount !== null) patch.comment_count = event.commentCount;
+    if (Object.keys(patch).length > 0)
+      patchContentEntity<AnnouncementRecord>(
+        scope,
+        'announcement',
+        announcementId,
+        patch,
+      );
   }
 }
 

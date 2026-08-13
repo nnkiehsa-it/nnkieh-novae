@@ -14,7 +14,6 @@ import { LikeActionButton } from "@/components/motion/like-action-button";
 import { DetailToolbar } from "@/components/detail-toolbar";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -23,6 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { PendingAlertDialogAction } from "@/components/ui/pending-alert-dialog-action";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,7 +39,8 @@ export default function AnnouncementDetailPage() {
   const router = useRouter();
   const { t } = useI18n();
   const detail = useAnnouncementDetail();
-  if (detail.loading) return <DetailRouteSkeleton />;
+  if (detail.loading)
+    return <DetailRouteSkeleton title={detail.announcement?.title} />;
   if (detail.error || !detail.announcement) {
     return (
       <ErrorState
@@ -80,9 +81,12 @@ export default function AnnouncementDetailPage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>{t("ui.common.cancel")}</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => void detail.remove()}>
+                      <PendingAlertDialogAction
+                        onConfirm={() => void detail.remove()}
+                        state={detail.deleteFeedbackState}
+                      >
                         {t("ui.common.confirmDelete")}
-                      </AlertDialogAction>
+                      </PendingAlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>

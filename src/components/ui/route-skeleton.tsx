@@ -92,7 +92,7 @@ export function FeedCardsSkeleton({ kind }: { kind: FeedSkeletonKind }) {
   );
 }
 
-export function DetailRouteSkeleton() {
+export function DetailRouteSkeleton({ title }: { title?: string }) {
   return (
     <div className="space-y-5" aria-busy="true" aria-label="Loading">
       <ToolbarSkeleton />
@@ -103,7 +103,13 @@ export function DetailRouteSkeleton() {
               <Skeleton className="h-6 w-20 rounded-full" />
               <Skeleton className="h-6 w-16 rounded-full" />
             </div>
-            <Skeleton className="h-8 w-4/5" />
+            {title ? (
+              <h1 className="t-reveal-content text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">
+                {title}
+              </h1>
+            ) : (
+              <Skeleton className="h-8 w-4/5" />
+            )}
             <Skeleton className="h-4 w-40" />
           </div>
           <div className="space-y-3 px-5 py-5 sm:px-7 sm:py-6">

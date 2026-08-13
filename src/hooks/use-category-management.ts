@@ -4,6 +4,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { useCategories } from "@/hooks/use-categories";
+import { useActionFeedback } from "@/hooks/use-action-feedback";
 import {
   getCategoryManagement,
   saveCategoryManagement,
@@ -76,7 +77,7 @@ export function useCategoryManagement() {
   const [facilitiesEnabled, setFacilitiesEnabled] = React.useState(true);
   const [announcementComments, setAnnouncementComments] = React.useState(true);
   const [loading, setLoading] = React.useState(true);
-  const [saving, setSaving] = React.useState(false);
+  const feedback = useActionFeedback();
   const [error, setError] = React.useState("");
 
   const valid = React.useMemo(() => {
@@ -138,18 +139,19 @@ export function useCategoryManagement() {
   }
 
   async function save() {
-    if (!valid || saving) return;
-    setSaving(true);
+    if (!valid || feedback.busy) return;
     try {
-      const result = await saveCategoryManagement({
-        announcementCommentsEnabled: announcementComments,
-        deletedFacilityCategoryIds: deletedFacilities,
-        deletedIssueCategoryIds: deletedIssues,
-        facilitiesEnabled,
-        facilityCategories: facilities.map((item, sortOrder) => ({ ...item, sortOrder })),
-        issueCategories: issues.map((item, sortOrder) => ({ ...item, sortOrder })),
-        issuesEnabled,
-      });
+      const result = await feedback.run(() =>
+        saveCategoryManagement({
+          announcementCommentsEnabled: announcementComments,
+          deletedFacilityCategoryIds: deletedFacilities,
+          deletedIssueCategoryIds: deletedIssues,
+          facilitiesEnabled,
+          facilityCategories: facilities.map((item, sortOrder) => ({ ...item, sortOrder })),
+          issueCategories: issues.map((item, sortOrder) => ({ ...item, sortOrder })),
+          issuesEnabled,
+        }),
+      );
       setIssues(result.issueCategories);
       setFacilities(result.facilityCategories);
       setPersistedIssues(new Set(result.issueCategories.map((item) => item.id)));
@@ -159,11 +161,8 @@ export function useCategoryManagement() {
       setDeletedIssues([]);
       setDeletedFacilities([]);
       await categories.refresh();
-      toast.success(t("ui.admin.saved"));
     } catch (caught) {
       toast.error(caught instanceof Error ? caught.message : t("common.saveFailed"));
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -184,7 +183,8 @@ export function useCategoryManagement() {
     persistedFacilities,
     persistedIssues,
     save,
-    saving,
+    feedbackState: feedback.state,
+    saving: feedback.busy,
     setAnnouncementComments,
     setDefaultFacility: (index: number) =>
       setFacilities((current) =>

@@ -1,7 +1,8 @@
 "use client";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
-import { AlertCircle, Inbox, LoaderCircle, RefreshCw } from "lucide-react";
+import { AlertCircle, Inbox, RefreshCw } from "lucide-react";
+import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -112,14 +113,22 @@ export function BusyLabel({
   busy,
   busyLabel,
   label,
+  success = false,
 }: {
   busy: boolean;
   busyLabel: string;
   label: string;
+  success?: boolean;
 }) {
   return (
     <span className="inline-flex items-center gap-2">
-      {busy ? <LoaderCircle className="t-spinner size-4" /> : null}
+      {busy ? (
+        <ActionFeedbackIcon
+          className="bg-transparent [&>svg]:size-4"
+          size="sm"
+          state={success ? "success" : "loading"}
+        />
+      ) : null}
       <span
         className={cn(busy && "t-shimmer")}
         data-text={busy ? busyLabel : undefined}

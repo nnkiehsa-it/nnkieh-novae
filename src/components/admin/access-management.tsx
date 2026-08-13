@@ -9,6 +9,7 @@ import {
   Trash2,
   UserPlus,
 } from "lucide-react";
+import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import {
   type AccessScope,
   type AccessUser,
@@ -47,6 +48,7 @@ export function AccessManagement() {
     query,
     save,
     savingUid,
+    successUid,
     search,
     searching,
     setCategoryId,
@@ -121,7 +123,11 @@ export function AccessManagement() {
                           variant="outline"
                         >
                           {savingUid === member.uid ? (
-                            <LoaderCircle className="t-spinner" />
+                            <ActionFeedbackIcon
+                              className="bg-transparent [&>svg]:size-5"
+                              size="md"
+                              state={successUid === member.uid ? "success" : "loading"}
+                            />
                           ) : (
                             <Trash2 />
                           )}{translate('ui.access.revoke')}</Button>
@@ -173,7 +179,11 @@ export function AccessManagement() {
                       variant={hasScope(candidate) ? "outline" : "default"}
                     >
                       {savingUid === candidate.uid ? (
-                        <LoaderCircle className="t-spinner" />
+                        <ActionFeedbackIcon
+                          className="bg-transparent [&>svg]:size-5"
+                          size="md"
+                          state={successUid === candidate.uid ? "success" : "loading"}
+                        />
                       ) : hasScope(candidate) ? (
                         <Trash2 />
                       ) : (

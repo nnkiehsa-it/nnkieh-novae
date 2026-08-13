@@ -52,6 +52,7 @@ export default function AnnouncementComposerPage() {
                   busy={form.saving || form.images.uploading}
                   busyLabel={translate('ui.announcement.publishing')}
                   label={translate('ui.announcement.publish')}
+                  success={form.succeeded}
                 />
               </Button>
             </div>

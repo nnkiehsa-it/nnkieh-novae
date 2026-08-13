@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -30,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { PendingAlertDialogAction } from "@/components/ui/pending-alert-dialog-action";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,11 +40,13 @@ import {
 
 export function IssueDetailToolbar({
   issue,
+  deleteFeedbackState,
   onBack,
   onDelete,
   onManage,
 }: {
   issue: IssueRecord;
+  deleteFeedbackState: "idle" | "loading" | "success";
   onBack: () => void;
   onDelete: () => void;
   onManage: () => void;
@@ -81,7 +83,10 @@ export function IssueDetailToolbar({
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>{translate('ui.common.cancel')}</AlertDialogCancel>
-                    <AlertDialogAction onClick={onDelete}>{translate('ui.common.confirmDelete')}</AlertDialogAction>
+                    <PendingAlertDialogAction
+                      onConfirm={onDelete}
+                      state={deleteFeedbackState}
+                    >{translate('ui.common.confirmDelete')}</PendingAlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
@@ -146,11 +151,13 @@ export function IssueDetailSidebar({
               active={issue.currentUserSupported === true}
               burst={burst}
               busy={supporting}
-              disabled={!supportOpen}
+              disabled={issue.isOwnIssue || !supportOpen}
               icon={Hand}
               label={
-                issue.currentUserSupported
-                  ? translate('ui.issue.cancelSupport')
+                issue.isOwnIssue
+                  ? translate("ui.issue.ownSupport")
+                  : issue.currentUserSupported
+                    ? translate('ui.issue.cancelSupport')
                   : supportOpen
                     ? translate('ui.issue.support')
                     : translate('ui.issue.supportClosed')

@@ -14,6 +14,8 @@ import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 import { CommentComposer } from "@/components/comments/comment-composer";
+import { useActionFeedback } from "@/hooks/use-action-feedback";
+import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 
 export function Discussion({
   comments,
@@ -39,26 +41,22 @@ export function Discussion({
   const [commentDraft, setCommentDraft] = React.useState("");
   const [replyDraft, setReplyDraft] = React.useState("");
   const [replyTo, setReplyTo] = React.useState<string | null>(null);
-  const [busy, setBusy] = React.useState(false);
+  const feedback = useActionFeedback();
   const profiles = useDiscussionProfiles(comments);
 
   async function submit(reply = false) {
     const value = (reply ? replyDraft : commentDraft).trim();
-    if (!value || busy) return;
-    setBusy(true);
+    if (!value || feedback.busy) return;
     try {
-      await onCreate(value, reply ? replyTo : null);
+      await feedback.run(() => onCreate(value, reply ? replyTo : null));
       if (reply) {
         setReplyDraft("");
         setReplyTo(null);
       } else {
         setCommentDraft("");
       }
-      toast.success(reply ? translate('ui.discussion.replySent') : translate('ui.discussion.commentSent'));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : translate('ui.discussion.submitFailed'));
-    } finally {
-      setBusy(false);
     }
   }
 
@@ -79,8 +77,9 @@ export function Discussion({
       ) : comments.length === 0 && enabled ? (
         <Card className="t-reveal-content gap-0 overflow-hidden p-0">
           <CommentComposer
-            busy={busy}
+            busy={feedback.busy}
             content={commentDraft}
+            feedbackState={feedback.state}
             main
             onChange={setCommentDraft}
             onSubmit={() => submit(false)}
@@ -103,8 +102,9 @@ export function Discussion({
                 />
                 {enabled && replyTo === comment.id ? (
                   <CommentComposer
-                    busy={busy}
+                    busy={feedback.busy}
                     content={replyDraft}
+                    feedbackState={feedback.state}
                     onCancel={() => {
                       setReplyDraft("");
                       setReplyTo(null);
@@ -137,8 +137,9 @@ export function Discussion({
           </StaggerList>
           {enabled ? (
             <CommentComposer
-              busy={busy}
+              busy={feedback.busy}
               content={commentDraft}
+              feedbackState={feedback.state}
               main
               separated
               onChange={setCommentDraft}
@@ -180,6 +181,7 @@ function CommentRow({
   profile?: UserPublicProfile;
 }) {
   const name = profile?.displayName || translate('ui.common.schoolMember');
+  const deleteFeedback = useActionFeedback();
   return (
     <article className="p-3 sm:p-4">
       <div className="flex items-start gap-3">
@@ -216,8 +218,9 @@ function CommentRow({
                 <TooltipTrigger asChild>
                   <Button
                     aria-label={translate('ui.common.delete')}
+                    disabled={deleteFeedback.busy}
                     onClick={() =>
-                      void onDelete(comment.id).catch((error) =>
+                      void deleteFeedback.run(() => onDelete(comment.id)).catch((error) =>
                         toast.error(
                           error instanceof Error ? error.message : translate('ui.common.deleteFailed'),
                         ),
@@ -226,7 +229,13 @@ function CommentRow({
                     size="icon-xs"
                     variant="ghost"
                   >
-                    <Trash2 />
+                    {deleteFeedback.busy ? (
+                      <ActionFeedbackIcon
+                        className="bg-transparent [&>svg]:size-4"
+                        size="sm"
+                        state={deleteFeedback.state === "success" ? "success" : "loading"}
+                      />
+                    ) : <Trash2 />}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>{translate('ui.common.delete')}</TooltipContent>

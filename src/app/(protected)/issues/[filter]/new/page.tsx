@@ -53,6 +53,7 @@ export default function IssueComposerPage() {
                   busy={form.saving || form.images.uploading}
                   busyLabel={translate('ui.issue.submitting')}
                   label={translate('ui.issue.submit')}
+                  success={form.succeeded}
                 />
               </Button>
             </div>

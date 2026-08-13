@@ -1,7 +1,8 @@
 "use client";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
-import { LoaderCircle, Plus, Save } from "lucide-react";
+import { Plus, Save } from "lucide-react";
+import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import { useCategoryManagement } from "@/hooks/use-category-management";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -100,7 +101,13 @@ export function CategoryManagement() {
       ) : null}
       <div className="flex justify-end">
         <Button disabled={!state.valid || state.saving} onClick={() => void state.save()}>
-          {state.saving ? <LoaderCircle className="t-spinner" /> : <Save />}{translate('ui.admin.saveAll')}</Button>
+          {state.saving ? (
+            <ActionFeedbackIcon
+              className="bg-transparent [&>svg]:size-5"
+              size="md"
+              state={state.feedbackState === "success" ? "success" : "loading"}
+            />
+          ) : <Save />}{translate('ui.admin.saveAll')}</Button>
       </div>
     </section>
   );

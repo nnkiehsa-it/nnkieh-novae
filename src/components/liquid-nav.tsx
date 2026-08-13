@@ -67,7 +67,14 @@ export function LiquidNav({
               {item.icon}
               {item.badge}
             </span>
-            <span className="w-full min-w-0 truncate text-center">{item.label}</span>
+            <span
+              className={cn(
+                "w-full min-w-0 truncate",
+                vertical ? "text-left" : "text-center",
+              )}
+            >
+              {item.label}
+            </span>
           </Link>
         );
       })}

@@ -32,7 +32,7 @@ This document is the maintained map of the repository. Read it before broad sear
 ## Presentation components
 
 - `src/components/ui/` — business-free shadcn/Radix primitives. Buttons, fields, cards, overlays, tabs, sheets, menus, status badges, skeletons, page states, and the shared Novae brand lockup share global semantic tokens.
-- `src/components/motion/` — reusable motion wrappers: animated numbers/text and like feedback; high-volume staggered lists use CSS-only wrappers to avoid per-row animation runtime work.
+- `src/components/motion/` — reusable animated numbers, reaction feedback, and staggered feed items. One shared IntersectionObserver drives card re-entry state while CSS owns the bounded blur/transform animation.
 - `src/components/app-shell.tsx` / `liquid-nav.tsx` — desktop, compact desktop, and mobile navigation. Route content commits without full-page snapshots, then only the new pathname-keyed node receives the short entrance motion; selected navigation and tab surfaces use measurement-free shared-layout motion.
 - `src/components/issues/` — issue cards, detail content/actions, and moderation presentation.
 - `src/components/facilities/` — facility cards and status-dialog presentation.
@@ -48,6 +48,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/components/protected-app.tsx`, `app-providers.tsx`, `app-update-gate.tsx` — startup/session, providers, theme/i18n, toast boundaries, and bounded forced PWA updates with version polling, service-worker takeover, animated progress, and reload recovery.
 - `src/components/feature-route-guard.tsx` — shared disabled-feature guard for direct proposal and facility routes.
 - `src/components/ui/route-skeleton.tsx` and route `loading.tsx` files — prefetched list/detail app-shell fallbacks that reserve headers, controls, content, and sidebar geometry without requesting domain data.
+- `src/components/ui/action-feedback-icon.tsx`, `pending-alert-dialog-action.tsx` — shared transitions.dev-style spinner-to-check primitives for backend mutation, destructive confirmation, and update feedback.
 
 ## Hooks and stateful flows
 
@@ -65,12 +66,14 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/hooks/use-permission-redirect.ts` — shared client-side redirect for authenticated routes that require a specific permission.
 - `src/hooks/use-push-notifications.ts`, `use-pwa-install.ts` — device push preferences and install flow.
 - `src/hooks/use-image-attachments.ts`, `use-resolved-markdown.ts`, `use-public-profiles.ts` — reusable media, Markdown, and public-profile helpers.
+- `src/hooks/use-content-invalidation-refresh.ts`, `use-action-feedback.ts` — shared stale-cache refresh wiring and 500 ms successful-action feedback lifecycle.
 
 ## Data, domain, and infrastructure
 
 - `src/services/` — frontend boundary for Cloudflare gateway, Supabase reads/realtime, uploads, session roles, and backend actions. Only hooks and other services import it.
-- `src/lib/` — framework-independent request, Firebase, Supabase, caching, Markdown, image, route, formatting, and domain utilities.
-- `src/lib/reaction-state.ts` — user-scoped reaction snapshot reconciliation shared by proposal support, facility affected, and announcement like list/detail flows; detail reads outrank older list snapshots and successful mutations outrank both.
+- `src/lib/` — framework-independent request, Firebase, Supabase, caching, Markdown, image, route, formatting, pagination, and domain utilities.
+- `src/hooks/use-paged-request-guard.ts` — shared feed request generation/in-flight guard that prevents duplicate loads and stale query responses from committing.
+- `src/lib/content-entity-store.ts` and `src/hooks/use-content-entity.ts` — normalized user-scoped content entities shared by lists, details, mutations, and realtime; field revisions prevent older reads from overwriting newer local or realtime patches.
 - `src/constants/` — generated/static application, category, status, retention, API error, and rate-limit constants.
 - `src/types/` — shared frontend/domain types.
 - `src/i18n/` — reactive React i18n store and paired `en` / `zh-TW` domain catalogs. `ui.ts` contains the rebuilt interface language.

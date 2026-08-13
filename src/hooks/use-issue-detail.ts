@@ -22,7 +22,15 @@ import {
 } from "@/services/issues";
 import { fetchUserPublicProfiles } from "@/services/users-read";
 import type { CommentRecord, IssueRecord, UserPublicProfile } from "@/types";
-import { reconcileReactionState, recordReactionMutation } from "@/lib/reaction-state";
+import {
+  beginContentEntityRead,
+  mergeContentEntityRead,
+  patchContentEntity,
+  removeContentEntity,
+} from "@/lib/content-entity-store";
+import { useContentEntity } from "@/hooks/use-content-entity";
+import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
+import { useActionFeedback } from "@/hooks/use-action-feedback";
 
 export function useIssueDetail() {
   const params = useParams<{ filter: string; issueId: string }>();
@@ -33,7 +41,12 @@ export function useIssueDetail() {
   const { t } = useI18n();
   const issueId = params.issueId;
   const filter = decodeURIComponent(params.filter);
-  const [issue, setIssue] = React.useState<IssueRecord | null>(null);
+  const storedIssue = useContentEntity<IssueRecord>(
+    session.user?.uid,
+    "issue",
+    issueId,
+  );
+  const currentIssue = storedIssue ?? null;
   const [comments, setComments] = React.useState<CommentRecord[]>([]);
   const [commentCursor, setCommentCursor] = React.useState<CommentCursor>(null);
   const [commentsHaveMore, setCommentsHaveMore] = React.useState(false);
@@ -45,29 +58,30 @@ export function useIssueDetail() {
   const [supporting, setSupporting] = React.useState(false);
   const [burst, setBurst] = React.useState(0);
   const [moderationOpen, setModerationOpen] = React.useState(false);
+  const deleteFeedback = useActionFeedback();
+  const deletingRef = React.useRef(false);
 
   const loadIssue = React.useCallback(
     async (forceRefresh = false) => {
       setLoading(true);
       setError("");
+      const entityReadRevision = beginContentEntityRead();
       try {
         const result = await fetchIssueRecordById(issueId, {
           cacheScope: session.user?.uid,
           forceRefresh,
         });
-        const reaction = reconcileReactionState(
+        const merged = mergeContentEntityRead(
           session.user?.uid,
           "issue",
-          result.id,
-          { active: result.currentUserSupported === true, count: result.support_count },
-          "detail",
-        );
-        setIssue({
+          {
           ...result,
-          currentUserSupported: reaction.active,
-          support_count: reaction.count,
-        });
-        setSupportedIssue(result.id, reaction.active);
+            currentUserSupported:
+              result.isOwnIssue || result.currentUserSupported === true,
+          },
+          entityReadRevision,
+        );
+        setSupportedIssue(merged.id, merged.currentUserSupported === true);
         if (result.canViewAuthor && result.author_uid) {
           void fetchUserPublicProfiles([result.author_uid])
             .then((profiles) => setProfile(profiles[result.author_uid!] ?? null))
@@ -86,8 +100,18 @@ export function useIssueDetail() {
     void loadIssue();
   }, [loadIssue]);
 
+  const issueCachePrefixes = React.useMemo(
+    () => [`issue-detail|${issueId}|`],
+    [issueId],
+  );
+  useContentInvalidationRefresh(issueCachePrefixes, () => {
+    if (!deletingRef.current) return loadIssue(true);
+  });
+
   const commentsReadable = Boolean(
-    issue && issue.status !== "under-review" && issue.status !== "review-rejected",
+    currentIssue &&
+      currentIssue.status !== "under-review" &&
+      currentIssue.status !== "review-rejected",
   );
   const loadComments = React.useCallback(
     async (forceRefresh = false) => {
@@ -136,24 +160,21 @@ export function useIssueDetail() {
   }
 
   async function support() {
-    if (!issue || supporting) return;
+    if (!currentIssue || currentIssue.isOwnIssue || supporting) return;
     setSupporting(true);
     try {
-      const result = await toggleSupport(issue.id);
-      recordReactionMutation(session.user?.uid, "issue", issue.id, {
-        active: result.supported,
-        count: result.support_count,
-      });
-      setIssue({
-        ...issue,
-        currentUserSupported: result.supported,
-        support_count: result.support_count,
-      });
-      session.setSupportedIssue(issue.id, result.supported);
-      setBurst((value) => value + 1);
-      toast.success(
-        result.supported ? t("ui.issue.supported") : t("ui.issue.unsupported"),
+      const result = await toggleSupport(currentIssue.id);
+      patchContentEntity<IssueRecord>(
+        session.user?.uid,
+        "issue",
+        currentIssue.id,
+        {
+          currentUserSupported: result.supported,
+          support_count: result.support_count,
+        },
       );
+      session.setSupportedIssue(currentIssue.id, result.supported);
+      setBurst((value) => value + 1);
     } catch (caught) {
       toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
     } finally {
@@ -162,10 +183,18 @@ export function useIssueDetail() {
   }
 
   async function remove() {
-    if (!issue) return;
-    await deleteIssue(issue.id);
-    toast.success(t("ui.notification.issueDeleted"));
-    router.replace(`/issues/${encodeURIComponent(filter)}`);
+    if (!currentIssue) return;
+    deletingRef.current = true;
+    try {
+      await deleteFeedback.run(async () => {
+        await deleteIssue(currentIssue.id);
+        removeContentEntity(session.user?.uid, "issue", currentIssue.id);
+      });
+      router.replace(`/issues/${encodeURIComponent(filter)}`);
+    } catch (caught) {
+      toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
+      deletingRef.current = false;
+    }
   }
 
   async function createIssueComment(content: string, parentCommentId: string | null) {
@@ -179,11 +208,14 @@ export function useIssueDetail() {
   }
 
   const commentsEnabled = Boolean(
-    issue &&
+    currentIssue &&
       commentsReadable &&
-      issue.comments_enabled &&
-      issueCategoryAllowsComments(issue.category) &&
-      issueAllowsCommentsForStatus(issue.read_access, issue.status),
+      currentIssue.comments_enabled &&
+      issueCategoryAllowsComments(currentIssue.category) &&
+      issueAllowsCommentsForStatus(
+        currentIssue.read_access,
+        currentIssue.status,
+      ),
   );
 
   return {
@@ -196,8 +228,9 @@ export function useIssueDetail() {
     commentsLoading,
     commentsLoadingMore,
     createIssueComment,
+    deleteFeedbackState: deleteFeedback.state,
     error,
-    issue,
+    issue: currentIssue,
     loadIssue,
     loading,
     loadMoreComments,
@@ -205,18 +238,30 @@ export function useIssueDetail() {
     profile,
     remove,
     removeIssueComment,
-    setIssue,
+    setIssue: (next: IssueRecord) => {
+      patchContentEntity<IssueRecord>(
+        session.user?.uid,
+        "issue",
+        next.id,
+        next,
+      );
+    },
     setModerationOpen,
-    status: issue ? getDerivedIssueStatus(issue) : null,
+    status: currentIssue ? getDerivedIssueStatus(currentIssue) : null,
     support,
     supportOpen: Boolean(
-      issue?.support_enabled &&
-        (issue.status === "pending" || issue.status === "processing"),
+      currentIssue?.support_enabled &&
+        !currentIssue.isOwnIssue &&
+        (currentIssue.status === "pending" ||
+          currentIssue.status === "processing"),
     ),
-    supportProgress: issue
-      ? getSupportProgressPercent(issue.support_count, issue.support_goal)
+    supportProgress: currentIssue
+      ? getSupportProgressPercent(
+          currentIssue.support_count,
+          currentIssue.support_goal,
+        )
       : 0,
     supporting,
-    timeline: issue ? getIssueOperationTimeItems(issue) : [],
+    timeline: currentIssue ? getIssueOperationTimeItems(currentIssue) : [],
   };
 }

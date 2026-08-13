@@ -11,7 +11,15 @@ import {
   toggleFacilityAffected,
 } from "@/services/facilities";
 import type { FacilityRecord } from "@/types";
-import { reconcileReactionState, recordReactionMutation } from "@/lib/reaction-state";
+import {
+  beginContentEntityRead,
+  mergeContentEntityRead,
+  patchContentEntity,
+  removeContentEntity,
+} from "@/lib/content-entity-store";
+import { useContentEntity } from "@/hooks/use-content-entity";
+import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
+import { useActionFeedback } from "@/hooks/use-action-feedback";
 
 export function useFacilityDetail() {
   const params = useParams<{ facilityId: string }>();
@@ -19,31 +27,33 @@ export function useFacilityDetail() {
   const router = useRouter();
   const session = useSession();
   const { t } = useI18n();
-  const [facility, setFacility] = React.useState<FacilityRecord | null>(null);
+  const storedFacility = useContentEntity<FacilityRecord>(
+    session.user?.uid,
+    "facility",
+    params.facilityId,
+  );
+  const currentFacility = storedFacility ?? null;
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
   const [affecting, setAffecting] = React.useState(false);
   const [burst, setBurst] = React.useState(0);
   const [statusOpen, setStatusOpen] = React.useState(false);
+  const deleteFeedback = useActionFeedback();
+  const deletingRef = React.useRef(false);
 
   const load = React.useCallback(
     async (forceRefresh = false) => {
       setLoading(true);
       setError("");
+      const entityReadRevision = beginContentEntityRead();
       try {
         const result = await getFacility(params.facilityId, { forceRefresh });
-        const reaction = reconcileReactionState(
+        mergeContentEntityRead(
           session.user?.uid,
           "facility",
-          result.id,
-          { active: result.currentUserAffected === true, count: result.affected_count },
-          "detail",
+          result,
+          entityReadRevision,
         );
-        setFacility({
-          ...result,
-          affected_count: reaction.count,
-          currentUserAffected: reaction.active,
-        });
       } catch (caught) {
         setError(
           caught instanceof Error ? caught.message : t("ui.facility.notFound"),
@@ -59,22 +69,29 @@ export function useFacilityDetail() {
     void load();
   }, [load]);
 
+  const facilityCachePrefixes = React.useMemo(
+    () => [`facility-detail|${params.facilityId}`],
+    [params.facilityId],
+  );
+  useContentInvalidationRefresh(facilityCachePrefixes, () => {
+    if (!deletingRef.current) return load(true);
+  });
+
   async function toggleAffected() {
-    if (!facility || affecting) return;
+    if (!currentFacility || affecting) return;
     setAffecting(true);
     try {
-      const result = await toggleFacilityAffected(facility.id);
-      recordReactionMutation(session.user?.uid, "facility", facility.id, {
-        active: result.affected,
-        count: result.affected_count,
-      });
-      setFacility({ ...facility, ...result, currentUserAffected: result.affected });
-      setBurst((value) => value + 1);
-      toast.success(
-        result.affected
-          ? t("ui.facility.markedAffected")
-          : t("ui.facility.unmarkedAffected"),
+      const result = await toggleFacilityAffected(currentFacility.id);
+      patchContentEntity<FacilityRecord>(
+        session.user?.uid,
+        "facility",
+        currentFacility.id,
+        {
+          affected_count: result.affected_count,
+          currentUserAffected: result.affected,
+        },
       );
+      setBurst((value) => value + 1);
     } catch (caught) {
       toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
     } finally {
@@ -83,29 +100,47 @@ export function useFacilityDetail() {
   }
 
   async function remove() {
-    if (!facility) return;
-    await deleteFacility(facility.id);
-    toast.success(t("ui.facility.deleted"));
-    router.replace(
-      `/facilities?category=${encodeURIComponent(
-        search.get("category") || facility.category_id,
-      )}`,
-    );
+    if (!currentFacility) return;
+    deletingRef.current = true;
+    try {
+      await deleteFeedback.run(async () => {
+        await deleteFacility(currentFacility.id);
+        removeContentEntity(session.user?.uid, "facility", currentFacility.id);
+      });
+      router.replace(
+        `/facilities?category=${encodeURIComponent(
+          search.get("category") || currentFacility.category_id,
+        )}`,
+      );
+    } catch (caught) {
+      toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
+      deletingRef.current = false;
+    }
   }
 
   return {
     affecting,
     back: () => {
-      if (facility)
-        router.push(`/facilities?category=${encodeURIComponent(facility.category_id)}`);
+      if (currentFacility)
+        router.push(
+          `/facilities?category=${encodeURIComponent(currentFacility.category_id)}`,
+        );
     },
     burst,
+    deleteFeedbackState: deleteFeedback.state,
     error,
-    facility,
+    facility: currentFacility,
     load,
     loading,
     remove,
-    setFacility,
+    setFacility: (next: FacilityRecord) => {
+      patchContentEntity<FacilityRecord>(
+        session.user?.uid,
+        "facility",
+        next.id,
+        next,
+      );
+    },
     setStatusOpen,
     statusOpen,
     toggleAffected,

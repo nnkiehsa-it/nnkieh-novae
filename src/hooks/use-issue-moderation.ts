@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { moderateIssueStatus, updateIssueResult } from "@/services/issues";
 import type { IssueRecord, IssueStatus } from "@/types";
+import { useActionFeedback } from "@/hooks/use-action-feedback";
 
 export function useIssueModeration({
   issue,
@@ -21,7 +22,7 @@ export function useIssueModeration({
   const [status, setStatus] = React.useState<IssueStatus>(issue.status);
   const [result, setResult] = React.useState(issue.result_content ?? "");
   const [reason, setReason] = React.useState(issue.review_rejection_reason ?? "");
-  const [saving, setSaving] = React.useState(false);
+  const feedback = useActionFeedback();
 
   React.useEffect(() => {
     if (!open) return;
@@ -42,26 +43,35 @@ export function useIssueModeration({
       ((status === "completed" || status === "infeasible") && !result.trim())
     )
       return;
-    setSaving(true);
     try {
-      let updated = await moderateIssueStatus(
-        issue.id,
-        status,
-        status === "review-rejected" ? reason.trim() : undefined,
-      );
-      if (status === "completed" || status === "infeasible")
-        updated = await updateIssueResult(issue.id, result.trim());
-      else if (status === "processing" && issue.result_content)
-        updated = await updateIssueResult(issue.id, "");
+      const updated = await feedback.run(async () => {
+        let next = await moderateIssueStatus(
+          issue.id,
+          status,
+          status === "review-rejected" ? reason.trim() : undefined,
+        );
+        if (status === "completed" || status === "infeasible")
+          next = await updateIssueResult(issue.id, result.trim());
+        else if (status === "processing" && issue.result_content)
+          next = await updateIssueResult(issue.id, "");
+        return next;
+      });
       onUpdated(updated);
-      toast.success(t("ui.issue.statusUpdated"));
       onClose();
     } catch (caught) {
       toast.error(caught instanceof Error ? caught.message : t("ui.common.updateFailed"));
-    } finally {
-      setSaving(false);
     }
   }
 
-  return { reason, result, save, saving, setReason, setResult, setStatus, status };
+  return {
+    feedbackState: feedback.state,
+    reason,
+    result,
+    save,
+    saving: feedback.busy,
+    setReason,
+    setResult,
+    setStatus,
+    status,
+  };
 }

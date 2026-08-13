@@ -16,11 +16,23 @@ import { createAnnouncement } from "@/services/announcements";
 import { createFacility } from "@/services/facilities";
 import { createIssue } from "@/services/issues";
 import { deleteUploadedImages } from "@/services/uploads";
+import {
+  beginContentEntityRead,
+  mergeContentEntityRead,
+} from "@/lib/content-entity-store";
+import { ACTION_SUCCESS_HOLD_MS } from "@/hooks/use-action-feedback";
+
+async function holdActionSuccess() {
+  await new Promise<void>((resolve) =>
+    window.setTimeout(resolve, ACTION_SUCCESS_HOLD_MS),
+  );
+}
 
 function useComposerBase() {
   const [title, setTitle] = React.useState("");
   const [content, setContent] = React.useState("");
   const [saving, setSaving] = React.useState(false);
+  const [succeeded, setSucceeded] = React.useState(false);
   const images = useImageAttachments(6);
 
   async function withUploads(
@@ -28,6 +40,7 @@ function useComposerBase() {
     fallbackMessage: string,
   ) {
     setSaving(true);
+    setSucceeded(false);
     let uploaded: Awaited<ReturnType<typeof images.uploadAndAppend>>["uploaded"] = [];
     try {
       const result = await images.uploadAndAppend(content);
@@ -46,7 +59,17 @@ function useComposerBase() {
     }
   }
 
-  return { content, images, saving, setContent, setSaving, setTitle, title, withUploads };
+  return {
+    content,
+    images,
+    saving,
+    setContent,
+    setSucceeded,
+    setTitle,
+    succeeded,
+    title,
+    withUploads,
+  };
 }
 
 export function useAnnouncementComposer() {
@@ -62,7 +85,14 @@ export function useAnnouncementComposer() {
         content,
         title: form.title.trim(),
       });
-      toast.success(t("ui.announcement.published"));
+      mergeContentEntityRead(
+        session.user?.uid,
+        "announcement",
+        announcement,
+        beginContentEntityRead(),
+      );
+      form.setSucceeded(true);
+      await holdActionSuccess();
       router.replace(`/announcements/${announcement.id}`);
     }, t("ui.announcement.publishFailed"));
   }
@@ -78,6 +108,7 @@ export function useIssueComposer() {
   const params = useParams<{ filter: string }>();
   const router = useRouter();
   const { t } = useI18n();
+  const session = useSession();
   const form = useComposerBase();
   const category = decodeURIComponent(params.filter);
   const config = findIssueCategory(category);
@@ -86,7 +117,14 @@ export function useIssueComposer() {
     if (!config || !form.title.trim() || !form.content.trim() || form.saving) return;
     await form.withUploads(async (content) => {
       const issue = await createIssue({ category, content, title: form.title.trim() });
-      toast.success(t("ui.issue.submitSuccess"));
+      mergeContentEntityRead(
+        session.user?.uid,
+        "issue",
+        { ...issue, currentUserSupported: true, isOwnIssue: true },
+        beginContentEntityRead(),
+      );
+      form.setSucceeded(true);
+      await holdActionSuccess();
       router.replace(`/issues/${encodeURIComponent(category)}/${issue.id}`);
     }, t("ui.issue.submitFailed"));
   }
@@ -98,6 +136,7 @@ export function useFacilityComposer() {
   const search = useSearchParams();
   const categories = useCategories();
   const { t } = useI18n();
+  const session = useSession();
   const form = useComposerBase();
   const requested = search.get("category");
   const [category, setCategory] = React.useState(
@@ -123,7 +162,14 @@ export function useFacilityComposer() {
         location: location.trim(),
         title: form.title.trim(),
       });
-      toast.success(t("ui.facility.submitSuccess"));
+      mergeContentEntityRead(
+        session.user?.uid,
+        "facility",
+        facility,
+        beginContentEntityRead(),
+      );
+      form.setSucceeded(true);
+      await holdActionSuccess();
       router.replace(`/facilities/${facility.id}?category=${encodeURIComponent(category)}`);
     }, t("ui.facility.submitFailed"));
   }

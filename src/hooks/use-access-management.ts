@@ -11,6 +11,7 @@ import {
   type AccessScope,
   type AccessUser,
 } from "@/services/access";
+import { ACTION_SUCCESS_HOLD_MS } from "@/hooks/use-action-feedback";
 
 export type { AccessScope, AccessUser };
 
@@ -34,6 +35,7 @@ export function useAccessManagement() {
   const [loading, setLoading] = React.useState(false);
   const [searching, setSearching] = React.useState(false);
   const [savingUid, setSavingUid] = React.useState("");
+  const [successUid, setSuccessUid] = React.useState("");
   const [error, setError] = React.useState("");
   const scope = React.useMemo<AccessScope | null>(
     () =>
@@ -98,6 +100,7 @@ export function useAccessManagement() {
   async function save(user: AccessUser, grant: boolean) {
     if (!scope) return;
     setSavingUid(user.uid);
+    setSuccessUid("");
     try {
       const result = await setUserAccessScope(user.uid, scope, grant);
       const updated = { ...user, ...result };
@@ -111,13 +114,17 @@ export function useAccessManagement() {
       setCandidate((current) =>
         current?.uid === user.uid ? { ...current, ...result } : current,
       );
-      toast.success(grant ? t("ui.access.granted") : t("ui.access.revoked"));
+      setSuccessUid(user.uid);
+      await new Promise<void>((resolve) =>
+        window.setTimeout(resolve, ACTION_SUCCESS_HOLD_MS),
+      );
     } catch (caught) {
       toast.error(
         caught instanceof Error ? caught.message : t("ui.access.updateFailed"),
       );
     } finally {
       setSavingUid("");
+      setSuccessUid("");
     }
   }
 
@@ -134,6 +141,7 @@ export function useAccessManagement() {
     query,
     save,
     savingUid,
+    successUid,
     search,
     searching,
     setCategoryId,

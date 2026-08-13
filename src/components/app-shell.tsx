@@ -151,6 +151,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("scroll", updateScrolled);
   }, []);
 
+  React.useEffect(() => {
+    const markBrowserBack = () => {
+      document.documentElement.dataset.routeDirection = "back";
+      window.setTimeout(() => {
+        delete document.documentElement.dataset.routeDirection;
+      }, 700);
+    };
+    window.addEventListener("popstate", markBrowserBack);
+    return () => window.removeEventListener("popstate", markBrowserBack);
+  }, []);
+
   const navItems = React.useMemo<LiquidNavItem[]>(
     () => [
       ...(categories.issuesEnabled

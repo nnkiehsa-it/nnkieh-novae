@@ -146,6 +146,8 @@ test("list action bars scroll normally and route navigation animates only the co
   assert.doesNotMatch(shell, /React\.ViewTransition|app-route-enter|app-route-exit/u);
   assert.match(motion, /\.t-route-enter\s*\{[\s\S]*var\(--motion-medium\)[\s\S]*backwards/u);
   assert.match(motion, /@keyframes t-route-enter[\s\S]*translateX\(24px\)[\s\S]*filter: blur\(var\(--motion-blur-sm\)\)[\s\S]*translateX\(0\)/u);
+  assert.match(motion, /@media \(min-width: 48rem\)[\s\S]*translateY\(var\(--motion-distance-md\)\)/u);
+  assert.match(motion, /data-route-direction="back"[\s\S]*t-route-enter-back/u);
   assert.doesNotMatch(motion, /t-route-exit|\.t-route-enter[^}]*animation-delay/u);
 });
 
@@ -168,6 +170,7 @@ test("mobile menus stay content-sized and navigation uses floating app geometry"
   assert.match(select, /w-max max-w-\[calc\(100vw-2rem\)\]/u);
   assert.doesNotMatch(select, /(?:^|\s)min-w-\[var\(--radix-select-trigger-width\)\]/u);
   assert.match(select, /sm:min-w-\[var\(--radix-select-trigger-width\)\]/u);
+  assert.match(select, /"w-full max-w-full min-w-0 scroll-my-1/u);
   assert.match(dropdown, /w-max max-w-\[calc\(100vw-2rem\)\]/u);
   assert.match(dropdown, /collisionPadding=\{16\}/u);
   assert.match(shell, /max-w-md rounded-full[^"]*px-3 py-1\.5/u);
@@ -183,6 +186,16 @@ test("mobile menus stay content-sized and navigation uses floating app geometry"
   assert.match(globals, /app-mobile-nav\[data-visible="true"\][\s\S]*visibility: visible/u);
   assert.match(globals, /app-mobile-nav \[data-liquid-nav-index\][\s\S]*border-radius: 9999px/u);
   assert.match(globals, /app-mobile-nav \[data-liquid-nav-index\] > span:last-child[\s\S]*text-overflow: ellipsis/u);
+});
+
+test("semantic controls preserve geometry while using compact shared type", async () => {
+  const globals = await read("src/app/globals.css");
+  const tabs = await read("src/components/ui/tabs.tsx");
+  const liquidTabs = await read("src/components/ui/liquid-tabs.tsx");
+  assert.match(globals, /--segmented-font-size: 0\.6875rem/u);
+  assert.match(tabs, /text-\[length:var\(--segmented-font-size\)\]/u);
+  assert.match(liquidTabs, /text-\[length:var\(--segmented-font-size\)\]/u);
+  assert.match(liquidTabs, /h-\[1\.625rem\][\s\S]*px-3/u);
 });
 
 test("secondary mobile routes hide bottom navigation", async () => {

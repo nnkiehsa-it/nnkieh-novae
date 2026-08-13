@@ -6,6 +6,7 @@ import { useInitialSetup } from "@/hooks/use-initial-setup";
 import { Button } from "@/components/ui/button";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
 import { BusyLabel, PageHeader } from "@/components/ui/page-state";
+import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import {
   Dialog,
   DialogContent,
@@ -156,7 +157,16 @@ export default function SetupPage() {
           </DialogHeader>
           <DialogFooter>
             <Button onClick={() => state.setConfirming(false)} variant="outline">{translate('ui.common.cancel')}</Button>
-            <Button onClick={() => void state.save()}>{translate('ui.setup.confirm')}</Button>
+            <Button disabled={state.saving} onClick={() => void state.save()}>
+              {state.saving ? (
+                <ActionFeedbackIcon
+                  className="bg-transparent [&>svg]:size-5"
+                  size="md"
+                  state={state.feedbackState === "success" ? "success" : "loading"}
+                />
+              ) : null}
+              {translate('ui.setup.confirm')}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

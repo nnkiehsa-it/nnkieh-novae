@@ -9,7 +9,19 @@ import {
   type AnnouncementCursor,
 } from "@/services/announcements";
 import type { AnnouncementRecord } from "@/types";
-import { reconcileReactionState, recordReactionMutation } from "@/lib/reaction-state";
+import {
+  beginContentEntityRead,
+  getContentEntity,
+  mergeContentEntityRead,
+  patchContentEntity,
+} from "@/lib/content-entity-store";
+import { canContinuePage, mergePageById } from "@/lib/pagination";
+import { usePagedRequestGuard } from "@/hooks/use-paged-request-guard";
+import { useContentEntityDomainVersion } from "@/hooks/use-content-entity";
+
+import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
+
+const ANNOUNCEMENT_LIST_CACHE_PREFIXES = ["announcement-list-page|"] as const;
 
 export function useAnnouncementFeed() {
   const session = useSession();
@@ -22,10 +34,21 @@ export function useAnnouncementFeed() {
   const [error, setError] = React.useState("");
   const [likingId, setLikingId] = React.useState<string | null>(null);
   const [likeBurstById, setLikeBurstById] = React.useState<Record<string, number>>({});
+  const requestGuard = usePagedRequestGuard();
+  const entityVersion = useContentEntityDomainVersion(
+    session.user?.uid,
+    "announcement",
+  );
+  const queryKey = session.user?.uid ?? "anonymous";
 
   async function like(announcementId: string) {
     if (likingId) return;
-    const announcement = items.find((item) => item.id === announcementId);
+    const announcement =
+      getContentEntity<AnnouncementRecord>(
+        session.user?.uid,
+        "announcement",
+        announcementId,
+      ) ?? items.find((item) => item.id === announcementId);
     if (!announcement) return;
     setLikingId(announcementId);
     try {
@@ -33,16 +56,14 @@ export function useAnnouncementFeed() {
         announcementId,
         !announcement.currentUserLiked,
       );
-      recordReactionMutation(session.user?.uid, "announcement", announcementId, {
-        active: result.liked,
-        count: result.like_count,
-      });
-      setItems((current) =>
-        current.map((item) =>
-          item.id === announcementId
-            ? { ...item, currentUserLiked: result.liked, like_count: result.like_count }
-            : item,
-        ),
+      patchContentEntity<AnnouncementRecord>(
+        session.user?.uid,
+        "announcement",
+        announcementId,
+        {
+          currentUserLiked: result.liked,
+          like_count: result.like_count,
+        },
       );
       setLikeBurstById((current) => ({
         ...current,
@@ -54,52 +75,71 @@ export function useAnnouncementFeed() {
   }
 
   const load = React.useCallback(
-    async (nextCursor: AnnouncementCursor = null) => {
+    async (nextCursor: AnnouncementCursor = null, restart = false) => {
+      if (restart) requestGuard.restart(queryKey);
+      const requestToken = requestGuard.begin(queryKey);
+      if (!requestToken) return;
+      const entityReadRevision = beginContentEntityRead();
       nextCursor ? setLoadingMore(true) : setLoading(true);
       setError("");
       try {
         const result = await fetchAnnouncementsPage(nextCursor, 10, {
           cacheScope: session.user?.uid,
         });
-        const announcements = result.announcements.map((announcement) => {
-          const reaction = reconcileReactionState(
+        if (!requestGuard.isCurrent(requestToken)) return;
+        const announcements = result.announcements.map((announcement) =>
+          mergeContentEntityRead(
             session.user?.uid,
             "announcement",
-            announcement.id,
-            { active: announcement.currentUserLiked, count: announcement.like_count },
-            "list",
-          );
-          return {
-            ...announcement,
-            currentUserLiked: reaction.active,
-            like_count: reaction.count,
-          };
-        });
+            announcement,
+            entityReadRevision,
+          ),
+        );
         setItems((current) =>
-          nextCursor ? [...current, ...announcements] : announcements,
+          nextCursor ? mergePageById(current, announcements) : announcements,
         );
         setCursor(result.cursor);
-        setHasMore(result.hasMore);
+        setHasMore(
+          canContinuePage(nextCursor, result.cursor, result.hasMore),
+        );
       } catch (caught) {
-        setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
+        if (requestGuard.isCurrent(requestToken))
+          setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
       } finally {
-        setLoading(false);
-        setLoadingMore(false);
+        if (requestGuard.finish(requestToken)) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
     },
-    [session.user?.uid, t],
+    [queryKey, requestGuard, session.user?.uid, t],
   );
 
   React.useEffect(() => {
     void load();
   }, [load]);
 
+  useContentInvalidationRefresh(
+    ANNOUNCEMENT_LIST_CACHE_PREFIXES,
+    () => load(null, true),
+  );
+
+  const synchronizedItems = items.map(
+    (announcement) =>
+      getContentEntity<AnnouncementRecord>(
+        session.user?.uid,
+        "announcement",
+        announcement.id,
+      ) ?? announcement,
+  );
+  void entityVersion;
+
   return {
     canManage: session.can("announcement.manage"),
     cursor,
     error,
     hasMore,
-    items,
+    items: synchronizedItems,
     like,
     likeBurstById,
     likingId,

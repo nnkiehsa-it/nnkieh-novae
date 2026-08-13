@@ -1,7 +1,8 @@
 "use client";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
-import { LoaderCircle, Send } from "lucide-react";
+import { Send } from "lucide-react";
+import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import type { FacilityRecord, FacilityStatus } from "@/types";
 import { useFacilityStatus } from "@/hooks/use-facility-status";
 import { Button } from "@/components/ui/button";
@@ -83,7 +84,13 @@ export function FacilityStatusDialog({
         <DialogFooter>
           <Button onClick={() => onOpenChange(false)} variant="outline">{translate('ui.common.cancel')}</Button>
           <Button disabled={state.saving} onClick={() => void state.save()}>
-            {state.saving ? <LoaderCircle className="t-spinner" /> : <Send />}{translate('ui.common.saveChanges')}</Button>
+            {state.saving ? (
+              <ActionFeedbackIcon
+                className="bg-transparent [&>svg]:size-5"
+                size="md"
+                state={state.feedbackState === "success" ? "success" : "loading"}
+              />
+            ) : <Send />}{translate('ui.common.saveChanges')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

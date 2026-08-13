@@ -5,6 +5,15 @@ import { ArrowLeft, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+const BACK_DIRECTION_WINDOW_MS = 700;
+
+function markBackNavigation() {
+  document.documentElement.dataset.routeDirection = "back";
+  window.setTimeout(() => {
+    delete document.documentElement.dataset.routeDirection;
+  }, BACK_DIRECTION_WINDOW_MS);
+}
+
 export function DetailToolbar({
   actions,
   backLabel,
@@ -22,7 +31,15 @@ export function DetailToolbar({
     <div className="flex h-9 items-center justify-between gap-3">
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button aria-label={backLabel} onClick={onBack} size="icon" variant="ghost">
+          <Button
+            aria-label={backLabel}
+            onClick={() => {
+              markBackNavigation();
+              onBack();
+            }}
+            size="icon"
+            variant="ghost"
+          >
             <ArrowLeft />
           </Button>
         </TooltipTrigger>

@@ -1,15 +1,17 @@
 "use client";
 
-import { LoaderCircle, Send, X } from "lucide-react";
+import { Send, X } from "lucide-react";
 import { t as translate } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 
 export function CommentComposer({
   busy,
   content,
+  feedbackState = "idle",
   main = false,
   onCancel,
   onChange,
@@ -19,6 +21,7 @@ export function CommentComposer({
 }: {
   busy: boolean;
   content: string;
+  feedbackState?: "idle" | "loading" | "success";
   main?: boolean;
   onCancel?: () => void;
   onChange: (value: string) => void;
@@ -65,7 +68,13 @@ export function CommentComposer({
           onClick={() => void onSubmit()}
           size="sm"
         >
-          {busy ? <LoaderCircle className="t-spinner" /> : <Send />}
+          {busy ? (
+            <ActionFeedbackIcon
+              className="bg-transparent [&>svg]:size-5"
+              size="md"
+              state={feedbackState === "success" ? "success" : "loading"}
+            />
+          ) : <Send />}
           {reply ? translate("ui.discussion.reply") : translate("ui.discussion.submit")}
         </Button>
       </div>

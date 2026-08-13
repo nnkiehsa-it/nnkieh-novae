@@ -15,7 +15,8 @@ import { DetailRouteSkeleton } from "@/components/ui/route-skeleton";
 export default function IssueDetailPage() {
   const { t } = useI18n();
   const detail = useIssueDetail();
-  if (detail.loading) return <DetailRouteSkeleton />;
+  if (detail.loading)
+    return <DetailRouteSkeleton title={detail.issue?.title} />;
   if (detail.error || !detail.issue || !detail.status) {
     return (
       <ErrorState
@@ -27,6 +28,7 @@ export default function IssueDetailPage() {
   return (
     <div className="t-reveal-content space-y-5">
       <IssueDetailToolbar
+        deleteFeedbackState={detail.deleteFeedbackState}
         issue={detail.issue}
         onBack={detail.back}
         onDelete={() => void detail.remove()}

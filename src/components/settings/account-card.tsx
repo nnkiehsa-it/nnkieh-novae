@@ -1,7 +1,7 @@
 "use client";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
-import { Copy, RefreshCw } from "lucide-react";
+import { ArrowLeftRight, Copy } from "lucide-react";
 import type { User } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,7 @@ export function SettingsAccountCard({
           size="icon"
           variant="outline"
         >
-          <RefreshCw />
+          <ArrowLeftRight />
         </Button>
       </CardContent>
       <div className="flex items-center gap-2 border-t px-5 py-3 text-xs text-muted-foreground">

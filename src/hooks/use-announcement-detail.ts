@@ -21,7 +21,15 @@ import type {
   AnnouncementRecord,
   UserPublicProfile,
 } from "@/types";
-import { reconcileReactionState, recordReactionMutation } from "@/lib/reaction-state";
+import {
+  beginContentEntityRead,
+  mergeContentEntityRead,
+  patchContentEntity,
+  removeContentEntity,
+} from "@/lib/content-entity-store";
+import { useContentEntity } from "@/hooks/use-content-entity";
+import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
+import { useActionFeedback } from "@/hooks/use-action-feedback";
 
 export function useAnnouncementDetail() {
   const params = useParams<{ announcementId: string }>();
@@ -29,8 +37,12 @@ export function useAnnouncementDetail() {
   const session = useSession();
   const categories = useCategories();
   const { t } = useI18n();
-  const [announcement, setAnnouncement] =
-    React.useState<AnnouncementRecord | null>(null);
+  const storedAnnouncement = useContentEntity<AnnouncementRecord>(
+    session.user?.uid,
+    "announcement",
+    params.announcementId,
+  );
+  const currentAnnouncement = storedAnnouncement ?? null;
   const [comments, setComments] = React.useState<AnnouncementCommentRecord[]>([]);
   const [commentCursor, setCommentCursor] = React.useState<CommentCursor>(null);
   const [commentsHaveMore, setCommentsHaveMore] = React.useState(false);
@@ -41,28 +53,25 @@ export function useAnnouncementDetail() {
   const [error, setError] = React.useState("");
   const [liking, setLiking] = React.useState(false);
   const [burst, setBurst] = React.useState(0);
+  const deleteFeedback = useActionFeedback();
+  const deletingRef = React.useRef(false);
 
   const load = React.useCallback(
     async (forceRefresh = false) => {
       setLoading(true);
       setError("");
+      const entityReadRevision = beginContentEntityRead();
       try {
         const result = await fetchAnnouncementRecordById(params.announcementId, {
           cacheScope: session.user?.uid,
           forceRefresh,
         });
-        const reaction = reconcileReactionState(
+        mergeContentEntityRead(
           session.user?.uid,
           "announcement",
-          result.id,
-          { active: result.currentUserLiked, count: result.like_count },
-          "detail",
+          result,
+          entityReadRevision,
         );
-        setAnnouncement({
-          ...result,
-          currentUserLiked: reaction.active,
-          like_count: reaction.count,
-        });
         void fetchUserPublicProfiles([result.author_uid])
           .then((profiles) => setProfile(profiles[result.author_uid] ?? null))
           .catch(() => undefined);
@@ -104,23 +113,31 @@ export function useAnnouncementDetail() {
     void Promise.all([load(), loadComments()]);
   }, [load, loadComments]);
 
+  const announcementCachePrefixes = React.useMemo(
+    () => [`announcement-detail|${params.announcementId}|`],
+    [params.announcementId],
+  );
+  useContentInvalidationRefresh(announcementCachePrefixes, () => {
+    if (!deletingRef.current) return load(true);
+  });
+
   async function like() {
-    if (!announcement || liking) return;
+    if (!currentAnnouncement || liking) return;
     setLiking(true);
     try {
       const result = await setAnnouncementLike(
-        announcement.id,
-        !announcement.currentUserLiked,
+        currentAnnouncement.id,
+        !currentAnnouncement.currentUserLiked,
       );
-      recordReactionMutation(session.user?.uid, "announcement", announcement.id, {
-        active: result.liked,
-        count: result.like_count,
-      });
-      setAnnouncement({
-        ...announcement,
-        currentUserLiked: result.liked,
-        like_count: result.like_count,
-      });
+      patchContentEntity<AnnouncementRecord>(
+        session.user?.uid,
+        "announcement",
+        currentAnnouncement.id,
+        {
+          currentUserLiked: result.liked,
+          like_count: result.like_count,
+        },
+      );
       setBurst((value) => value + 1);
     } catch (caught) {
       toast.error(
@@ -132,26 +149,46 @@ export function useAnnouncementDetail() {
   }
 
   async function remove() {
-    if (!announcement) return;
-    await deleteAnnouncement(announcement.id);
-    toast.success(t("ui.announcement.deleted"));
-    router.replace("/announcements");
+    if (!currentAnnouncement) return;
+    deletingRef.current = true;
+    try {
+      await deleteFeedback.run(async () => {
+        await deleteAnnouncement(currentAnnouncement.id);
+        removeContentEntity(
+          session.user?.uid,
+          "announcement",
+          currentAnnouncement.id,
+        );
+      });
+      router.replace("/announcements");
+    } catch (caught) {
+      toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
+      deletingRef.current = false;
+    }
   }
 
   async function createComment(content: string, parentId: string | null) {
     await createAnnouncementComment(params.announcementId, content, parentId);
     await loadComments(true);
-    setAnnouncement((current) =>
-      current ? { ...current, comment_count: current.comment_count + 1 } : current,
-    );
+    if (currentAnnouncement)
+      patchContentEntity<AnnouncementRecord>(
+        session.user?.uid,
+        "announcement",
+        currentAnnouncement.id,
+        { comment_count: currentAnnouncement.comment_count + 1 },
+      );
   }
 
   async function removeComment(commentId: string) {
     const result = await deleteAnnouncementComment(commentId);
     await loadComments(true);
-    setAnnouncement((current) =>
-      current ? { ...current, comment_count: result.comment_count } : current,
-    );
+    if (currentAnnouncement)
+      patchContentEntity<AnnouncementRecord>(
+        session.user?.uid,
+        "announcement",
+        currentAnnouncement.id,
+        { comment_count: result.comment_count },
+      );
   }
 
   async function loadMoreComments() {
@@ -177,17 +214,18 @@ export function useAnnouncementDetail() {
   }
 
   return {
-    announcement,
+    announcement: currentAnnouncement,
     burst,
     canManage: session.can("announcement.manage"),
     comments,
     commentsEnabled:
-      Boolean(announcement?.comments_enabled) &&
+      Boolean(currentAnnouncement?.comments_enabled) &&
       categories.announcementCommentsEnabled,
     commentsHaveMore,
     commentsLoading,
     commentsLoadingMore,
     createComment,
+    deleteFeedbackState: deleteFeedback.state,
     error,
     like,
     liking,
