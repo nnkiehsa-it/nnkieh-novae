@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CategorySetupPanelProps {
   children: React.ReactNode;
@@ -104,14 +105,19 @@ export function FacilityDraftEditor({
         />
       </div>
       {onRemove ? (
-        <Button
-          aria-label={translate('ui.admin.deleteCategory')}
-          onClick={onRemove}
-          size="icon"
-          variant="ghost"
-        >
-          <Trash2 />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              aria-label={translate('ui.admin.deleteCategory')}
+              onClick={onRemove}
+              size="icon"
+              variant="ghost"
+            >
+              <Trash2 />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{translate('ui.admin.deleteCategory')}</TooltipContent>
+        </Tooltip>
       ) : (
         <span className="pb-2 text-xs text-muted-foreground">{translate('ui.common.default')}</span>
       )}
@@ -167,14 +173,19 @@ export function IssueDraftEditor({
           />
         </div>
         {onRemove ? (
-          <Button
-            aria-label={translate('ui.admin.deleteCategory')}
-            onClick={onRemove}
-            size="icon"
-            variant="ghost"
-          >
-            <Trash2 />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label={translate('ui.admin.deleteCategory')}
+                onClick={onRemove}
+                size="icon"
+                variant="ghost"
+              >
+                <Trash2 />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{translate('ui.admin.deleteCategory')}</TooltipContent>
+          </Tooltip>
         ) : (
           <span className="pb-2 text-xs text-muted-foreground">{translate('ui.common.default')}</span>
         )}

@@ -30,6 +30,31 @@ export function LiquidTabs({
 }: LiquidTabsProps) {
   const indicatorId = React.useId();
   const reduceMotion = useReducedMotion();
+  const [pressedTab, setPressedTab] = React.useState<{
+    fromValue: string;
+    value: string;
+  } | null>(null);
+  const pressedResetRef = React.useRef(0);
+  const displayedValue =
+    pressedTab?.fromValue === value ? pressedTab.value : value;
+
+  React.useEffect(
+    () => () => window.clearTimeout(pressedResetRef.current),
+    [],
+  );
+
+  const acknowledgeTab = React.useCallback(
+    (nextValue: string) => {
+      setPressedTab({ fromValue: value, value: nextValue });
+      window.clearTimeout(pressedResetRef.current);
+      pressedResetRef.current = window.setTimeout(
+        () => setPressedTab(null),
+        1_000,
+      );
+    },
+    [value],
+  );
+
   return (
     <TabsPrimitive.Root value={value} onValueChange={onValueChange}>
       <TabsPrimitive.List
@@ -40,13 +65,14 @@ export function LiquidTabs({
         )}
       >
         {options.map((option) => {
-          const active = option.value === value;
+          const active = option.value === displayedValue;
           return (
           <TabsPrimitive.Trigger
             key={option.value}
             value={option.value}
             data-liquid-tab={option.value}
             className="t-tab-label relative isolate inline-flex h-[1.625rem] shrink-0 items-center justify-center gap-1 rounded-full px-3 font-medium leading-3.5 text-muted-foreground outline-none transition-colors duration-[var(--motion-quick)] ease-[var(--ease-smooth-out)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 data-[state=active]:text-foreground"
+            onPointerDown={() => acknowledgeTab(option.value)}
           >
             {active ? (
               <motion.span
@@ -55,7 +81,7 @@ export function LiquidTabs({
                 transition={
                   reduceMotion
                     ? { duration: 0 }
-                    : { type: "spring", stiffness: 520, damping: 38, mass: 0.7 }
+                    : { type: "spring", stiffness: 760, damping: 46, mass: 0.55 }
                 }
               />
             ) : null}

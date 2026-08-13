@@ -19,6 +19,7 @@ import { LikeActionButton } from "@/components/motion/like-action-button";
 import { DetailToolbar } from "@/components/detail-toolbar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -39,12 +40,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function IssueDetailToolbar({
+  canManage,
   issue,
   deleteFeedbackState,
   onBack,
   onDelete,
   onManage,
 }: {
+  canManage: boolean;
   issue: IssueRecord;
   deleteFeedbackState: "idle" | "loading" | "success";
   onBack: () => void;
@@ -55,19 +58,24 @@ export function IssueDetailToolbar({
   return (
     <DetailToolbar
       actions={
-        issue.isOwnIssue || issue.canManageIssue ? (
+        issue.isOwnIssue || canManage ? (
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button aria-label={translate('ui.common.moreActions')} size="icon" variant="ghost">
-                <MoreHorizontal />
-              </Button>
-            </DropdownMenuTrigger>
+            <Tooltip>
+              <DropdownMenuTrigger asChild>
+                <TooltipTrigger asChild>
+                  <Button aria-label={translate('ui.common.moreActions')} size="icon" variant="ghost">
+                    <MoreHorizontal />
+                  </Button>
+                </TooltipTrigger>
+              </DropdownMenuTrigger>
+              <TooltipContent>{translate('ui.common.moreActions')}</TooltipContent>
+            </Tooltip>
             <DropdownMenuContent align="end">
-              {issue.canManageIssue ? (
+              {canManage ? (
                 <DropdownMenuItem onSelect={onManage}>
                   <ShieldCheck />{translate('ui.issue.manageStatus')}</DropdownMenuItem>
               ) : null}
-              <DropdownMenuSeparator />
+              {canManage ? <DropdownMenuSeparator /> : null}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <DropdownMenuItem

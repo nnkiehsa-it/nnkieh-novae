@@ -12,9 +12,32 @@ describe("React frontend design system", () => {
     expect(tabs).toContain("useReducedMotion");
     expect(tabs).not.toContain("data-[state=active]:bg-card");
     expect(navigation).toContain("bg-secondary text-foreground");
+    expect(navigation).toContain("pendingRoute");
+    expect(navigation).toContain("onPointerDown");
     expect(navigation).toContain("aria-current");
     expect(tabs).not.toContain("<Liquid");
     expect(navigation).not.toContain("<Liquid");
+  });
+
+  it("keeps route motion separate from skeleton-to-content sharpening", () => {
+    const motion = read("src/styles/motion.css");
+    const reveal = motion.match(/@keyframes t-reveal-content\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
+    const dataReveal = motion.match(/@keyframes t-data-content-enter\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
+    const initialStagger = motion.match(/@keyframes t-stagger-item\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
+    expect(reveal).toContain("filter: blur");
+    expect(reveal).not.toContain("translate");
+    expect(dataReveal).toContain("translateY(2px)");
+    expect(initialStagger).not.toContain("translate");
+    expect(motion).toMatch(/@keyframes t-route-enter[\s\S]*translate/u);
+  });
+
+  it("keeps app controls real while only data fields use route skeletons", () => {
+    const skeleton = read("src/components/ui/route-skeleton.tsx");
+    expect(skeleton).toContain("<Button");
+    expect(skeleton).toContain("<Input");
+    expect(skeleton).toContain("<Textarea");
+    expect(skeleton).toContain("<StableDetailToolbar />");
+    expect(skeleton).not.toContain('Skeleton className="size-9 rounded-xl"');
   });
 
   it("centralizes motion and honors reduced motion and hover capability", () => {

@@ -27,6 +27,7 @@ import {
 import { FeedCardsSkeleton } from "@/components/ui/route-skeleton";
 import { IssueCard } from "@/components/issues/issue-card";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function IssueBoardPage() {
   useLocaleSubscription();
@@ -56,7 +57,7 @@ export default function IssueBoardPage() {
 
   const categoryOptions = getIssueFilterOptions();
   return (
-    <div className="t-reveal-content space-y-5">
+    <div className="space-y-5">
       <PageHeader
         actions={
           <div className="flex w-full items-center gap-2">
@@ -116,17 +117,22 @@ export default function IssueBoardPage() {
               value={query}
             />
             {query ? (
-              <button
-                aria-label={translate('ui.common.clearSearch')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground"
-                onClick={() => {
-                  setQuery("");
-                  setCommittedQuery("");
-                }}
-                type="button"
-              >
-                <X className="size-3.5" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    aria-label={translate('ui.common.clearSearch')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground"
+                    onClick={() => {
+                      setQuery("");
+                      setCommittedQuery("");
+                    }}
+                    type="button"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>{translate('ui.common.clearSearch')}</TooltipContent>
+              </Tooltip>
             ) : null}
           </div>
           <Select

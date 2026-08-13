@@ -13,7 +13,7 @@ export default function IssueComposerPage() {
   const form = useIssueComposer();
 
   return (
-    <div className="t-reveal-content mx-auto max-w-3xl space-y-5">
+    <div className="mx-auto max-w-3xl space-y-5">
       <PageHeader
         actions={
           <Button onClick={form.back} variant="ghost">

@@ -30,7 +30,7 @@ export function issueToReadableResponse(issue: JsonRecord, auth: AuthContext): J
   const authorUid = asString(issue.author_uid);
   const isOwnIssue = authorUid === auth.uid;
   const actorCanManageCategory = canManageIssueCategory(auth, asString(issue.category));
-  const canManageIssue = actorCanManageCategory || isOwnIssue;
+  const canManageIssue = actorCanManageCategory;
   const canViewAuthor = actorCanManageCategory || isOwnIssue || issue.author_visible === true;
 
   return {

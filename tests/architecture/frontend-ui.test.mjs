@@ -110,9 +110,20 @@ test("list status controls use the full action row and stay right aligned", asyn
 test("discussion empty state opens directly into the composer", async () => {
   const discussion = await read("src/components/discussion.tsx");
   const zhUi = await read("src/i18n/messages/zh-TW/ui.ts");
-  assert.match(discussion, /comments\.length === 0 && enabled[\s\S]*<CommentComposer/u);
+  assert.match(discussion, /\{enabled \? \([\s\S]*<CommentComposer/u);
   assert.doesNotMatch(discussion, /ui\.discussion\.empty/u);
   assert.match(zhUi, /'ui\.discussion\.commentPlaceholder': '新增留言…'/u);
+});
+
+test("proposal ownership and moderation remain separate capabilities", async () => {
+  const actions = await read("src/components/issues/issue-detail-actions.tsx");
+  const detail = await read("src/hooks/use-issue-detail.ts");
+  const issueShared = await read("supabase/functions/backendAction/issue-shared.ts");
+  assert.match(actions, /issue\.isOwnIssue \|\| canManage/u);
+  assert.match(actions, /\{canManage \? \(/u);
+  assert.doesNotMatch(actions, /issue\.canManageIssue/u);
+  assert.match(detail, /session\.canManageIssueCategory\(currentIssue\.category\)/u);
+  assert.match(issueShared, /const canManageIssue = actorCanManageCategory;/u);
 });
 
 test("proposal detail reaction and count match centered announcement layout", async () => {

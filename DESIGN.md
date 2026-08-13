@@ -22,6 +22,7 @@ Novae keeps its existing information architecture and product flows, but present
 - Hover follows interaction semantics: controls and clickable rows change by one restrained surface or text step, directional icons may shift 1–2px, and non-interactive surfaces remain visually still.
 - Cards use soft surface contrast, a hairline border, and restrained elevation. Only clickable cards receive hover feedback: a spatially stable 1% light-mode or 0.5% dark-mode surface tint, while directional icons may move independently.
 - Inputs and composer surfaces use a shared control frame with explicit focus rings and no layout shift.
+- Discussion uses an avatar-led pill composer, unboxed root comments, and a single hairline rail for nested replies. Reply groups start collapsed and expose an explicit count; root order is user-selectable while replies remain chronological.
 - Desktop dialogs become bottom-sheet presentations on small screens where appropriate, with safe-area padding and `100dvh` constraints.
 - The liquid motion language is reserved for navigation, segmented state movement, and bounded identity moments. Tabs use a measurement-free shared-layout spring so their selected surface exists on the first frame. Gooey-style motion is expressed through small transform/opacity layers rather than a full-screen SVG filter; high-density feed items never instantiate per-row filter or Motion runtimes.
 
@@ -39,13 +40,13 @@ Motion uses opacity, blur, and transform in named recipes instead of `transition
 
 Routes, cards, text, numbers, dialogs, dropdowns, tabs, menus, toasts, loading skeletons, and success feedback all use state-specific recipes. Motion must communicate what changed, not run continuously for decoration. `prefers-reduced-motion` removes nonessential transform/blur movement while preserving state clarity.
 
-- Proposal support and facility affected actions use a line-hand reaction that presses and rises with an upward particle fan; announcement likes retain the filled-heart pop and radial particle burst. Reaction controls morph the shared spinner into a check after server success, hold it for 500ms, then play the domain accent motion without a redundant success toast.
+- Proposal support and facility affected actions use a line-hand reaction that presses and rises with an upward particle fan; announcement likes retain the filled-heart pop and radial particle burst. Reaction controls keep their domain icon visible while the request is pending, prevent duplicate input, and use their own particles as the success response without an extra spinner, check, or toast.
 - Reaction counts animate per character without changing their inline width. Celebration particles are reserved for activating a reaction; removing one still receives the success check but no celebration.
 - Route navigation commits directly without full-page snapshots or an outgoing layer. On desktop the newly committed route rises 12px; on mobile forward navigation moves 24px right-to-left and explicit back navigation reverses left-to-right. All use the same restrained 2px blur over 350ms with no entrance delay. Feed results use capped initial staggering, then a shared observer lets cards softly blur and rise when they re-enter the viewport.
 - Forced updates and backend mutations use the shared spinner-to-check morph, holding the completed state for 500ms before navigation or dismissal so success is legible without a redundant toast.
 - Route changes never add a deliberate entrance delay: route bundles and RSC shells may warm in advance, but content services do not preload; the destination commits directly and owns its immediate loading feedback.
 - Skeletons, spinners, progress tracks, toasts, and success marks use shared motion classes so async feedback has the same timing throughout the app. Startup and forced-update stages reuse the Novae brand lockup and bounded progress motion without delaying navigation.
-- Every route or local loading boundary hands off through the shared skeleton-to-content recipe: destination geometry stays fixed while content sharpens from a bounded 3px blur and 4px rise over 400ms. Feed cards retain their capped sibling stagger.
+- Every route or local loading boundary hands off through the shared skeleton-to-content recipe: card and control frames stay fixed while only the data-bearing inner layer sharpens from a bounded 3px blur and rises 2px over 400ms. This never replays the route-scale movement. Feed cards retain their capped sibling stagger without translating the outer card during initial handoff.
 
 ## Responsive behavior
 

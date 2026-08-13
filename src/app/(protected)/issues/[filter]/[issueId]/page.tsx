@@ -26,8 +26,9 @@ export default function IssueDetailPage() {
     );
   }
   return (
-    <div className="t-reveal-content space-y-5">
+    <div className="space-y-5">
       <IssueDetailToolbar
+        canManage={detail.canManageIssue}
         deleteFeedbackState={detail.deleteFeedbackState}
         issue={detail.issue}
         onBack={detail.back}
@@ -44,6 +45,7 @@ export default function IssueDetailPage() {
           <div className={detail.commentsHighlighted ? "t-panel-reveal" : ""}>
             <Discussion
               comments={detail.comments}
+              sort={detail.commentSort}
               enabled={detail.commentsEnabled}
               hasMore={detail.commentsHaveMore}
               loading={detail.commentsLoading}
@@ -51,6 +53,7 @@ export default function IssueDetailPage() {
               onCreate={detail.createIssueComment}
               onDelete={detail.removeIssueComment}
               onLoadMore={detail.loadMoreComments}
+              onSortChange={detail.setCommentSort}
             />
           </div>
         </article>
@@ -64,12 +67,14 @@ export default function IssueDetailPage() {
           timeline={detail.timeline}
         />
       </div>
-      <IssueModerationDialog
-        issue={detail.issue}
-        onOpenChange={detail.setModerationOpen}
-        onUpdated={detail.setIssue}
-        open={detail.moderationOpen}
-      />
+      {detail.canManageIssue ? (
+        <IssueModerationDialog
+          issue={detail.issue}
+          onOpenChange={detail.setModerationOpen}
+          onUpdated={detail.setIssue}
+          open={detail.moderationOpen}
+        />
+      ) : null}
     </div>
   );
 }

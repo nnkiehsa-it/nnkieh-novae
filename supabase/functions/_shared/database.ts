@@ -409,6 +409,7 @@ interface AppApiFunctions {
     private_to_owner_categories: string[];
     public_comment_categories: string[];
     review_required_categories: string[];
+    sort_name: string;
   }, IssueRow>;
   backend_comment_to_json: AppFunction<{
     comment_record: CommentRow;
@@ -489,6 +490,8 @@ interface AppApiFunctions {
     announcement_id: string;
     cursor_created_at: string | null;
     cursor_id: string | null;
+    page_size: number;
+    sort_name: string;
   }, Json>;
   backend_list_issue_comments: AppFunction<{
     actor_is_admin: boolean;
@@ -496,6 +499,7 @@ interface AppApiFunctions {
     cursor_created_at: string | null;
     cursor_id: string | null;
     issue_id: string;
+    page_size: number;
     private_to_owner_categories: string[];
     public_comment_categories: string[];
     review_required_categories: string[];

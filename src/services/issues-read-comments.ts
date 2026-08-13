@@ -1,4 +1,4 @@
-import type { CommentRecord } from '@/types';
+import type { CommentRecord, CommentSortOption } from '@/types';
 import { invokeBackendAction } from './backend-action';
 import type { CommentCursor } from './comment-cursor';
 import { normalizeCommentCursor } from './comment-cursor';
@@ -24,12 +24,14 @@ function getCommentRequestSignal(options?: FetchCommentsOptions) {
 export async function fetchComments(
   issueId: string,
   cursor?: CommentCursor | null,
+  sort: CommentSortOption = 'newest',
   options?: FetchCommentsOptions,
 ) {
   const cacheKey = createContentCacheKey([
     'issue-comments-page',
     issueId,
     options?.cacheScope ?? 'default',
+    sort,
     cursor?.id ?? 'first',
     cursor?.createdAtMs ?? '',
   ]);
@@ -44,13 +46,13 @@ export async function fetchComments(
 
   try {
     const fn = invokeBackendAction<
-      { issueId: string; cursor?: CommentCursor | null; pageSize: number },
+      { issueId: string; cursor?: CommentCursor | null; pageSize: number; sort: CommentSortOption },
       { comments: CommentResponseRecord[]; cursor: CommentCursor | null; hasMore: boolean; version: number }
     >('listComments', {
       signal: getCommentRequestSignal(options),
       timeoutMs: READ_REQUEST_TIMEOUT_MS,
     });
-    const result = await fn({ issueId, cursor, pageSize: COMMENT_FEED_PAGE_SIZE });
+    const result = await fn({ issueId, cursor, pageSize: COMMENT_FEED_PAGE_SIZE, sort });
 
     const page = {
       comments: result.comments.map((comment) => ({

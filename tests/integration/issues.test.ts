@@ -98,6 +98,7 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     owner.auth,
   ));
   assert.equal(asRecord(ownerRead.issue).id, publicIssueId);
+  assert.equal(asRecord(ownerRead.issue).canManageIssue, false);
   await expectActionError(
     "not-found",
     () => callAction("getIssue", { issueId: publicIssueId }, user.auth),
@@ -209,12 +210,27 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     requestId: requestId("comment"),
   }, user.auth));
   const commentId = String(asRecord(commentWrite.comment).id);
+  const secondCommentWrite = asRecord(await callAction("createComment", {
+    content: "Second integration issue comment",
+    issueId: publicIssueId,
+    requestId: requestId("comment-second"),
+  }, user.auth));
+  const secondCommentId = String(asRecord(secondCommentWrite.comment).id);
   const comments = asRecord(await callAction("listComments", {
     issueId: publicIssueId,
     pageSize: 30,
+    sort: "newest",
   }, stranger.auth));
   assert.ok(JSON.stringify(comments).includes(commentId));
   assert.equal(typeof comments.version, "number");
+  const newestIds = (comments.comments as Array<Record<string, unknown>>).map((comment) => String(comment.id));
+  const oldestComments = asRecord(await callAction("listComments", {
+    issueId: publicIssueId,
+    pageSize: 30,
+    sort: "oldest",
+  }, stranger.auth));
+  const oldestIds = (oldestComments.comments as Array<Record<string, unknown>>).map((comment) => String(comment.id));
+  assert.deepEqual(oldestIds, [...newestIds].reverse());
   await expectActionError(
     "permission-denied",
     () => callAction("deleteComment", {
@@ -225,6 +241,10 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
   await callAction("deleteComment", {
     commentId,
     requestId: requestId("owner-delete-comment"),
+  }, user.auth);
+  await callAction("deleteComment", {
+    commentId: secondCommentId,
+    requestId: requestId("owner-delete-comment-second"),
   }, user.auth);
 
   const managedCommentWrite = asRecord(await callAction("createComment", {

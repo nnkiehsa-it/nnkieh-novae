@@ -6,6 +6,7 @@ import type { User } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function SettingsAccountCard({
   customPhotoUrl,
@@ -34,25 +35,35 @@ export function SettingsAccountCard({
           <p className="truncate font-medium">{name}</p>
           <p className="truncate text-sm text-muted-foreground">{user.email}</p>
         </div>
-        <Button
-          aria-label={translate('ui.settings.switchAccount')}
-          onClick={onSwitchAccount}
-          size="icon"
-          variant="outline"
-        >
-          <ArrowLeftRight />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              aria-label={translate('ui.settings.switchAccount')}
+              onClick={onSwitchAccount}
+              size="icon"
+              variant="outline"
+            >
+              <ArrowLeftRight />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{translate('ui.settings.switchAccount')}</TooltipContent>
+        </Tooltip>
       </CardContent>
       <div className="flex items-center gap-2 border-t px-5 py-3 text-xs text-muted-foreground">
         <span className="min-w-0 flex-1 truncate">UID {user.uid}</span>
-        <Button
-          aria-label={translate('ui.settings.copyUid')}
-          onClick={onCopyUid}
-          size="icon-xs"
-          variant="ghost"
-        >
-          <Copy />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              aria-label={translate('ui.settings.copyUid')}
+              onClick={onCopyUid}
+              size="icon-xs"
+              variant="ghost"
+            >
+              <Copy />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{translate('ui.settings.copyUid')}</TooltipContent>
+        </Tooltip>
       </div>
     </Card>
   );

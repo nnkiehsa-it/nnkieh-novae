@@ -65,7 +65,11 @@ async function getIssue(
     actor_is_admin: actorCanManage,
   });
   if (error) throw error;
-  return { issue: data };
+  return {
+    issue: data && typeof data === "object" && !Array.isArray(data)
+      ? { ...(data as JsonRecord), canManageIssue: actorCanManage }
+      : data,
+  };
 }
 
 async function listIssues(

@@ -190,12 +190,27 @@ integrationTest("announcement.manage, likes, comments, and ownership", async () 
     requestId: requestId("announcement-comment"),
   }, user.auth));
   const commentId = String(asRecord(commentWrite.comment).id);
+  const secondCommentWrite = asRecord(await callAction("createAnnouncementComment", {
+    announcementId,
+    content: "Second integration announcement comment",
+    requestId: requestId("announcement-comment-second"),
+  }, user.auth));
+  const secondCommentId = String(asRecord(secondCommentWrite.comment).id);
   const comments = asRecord(await callAction("listAnnouncementComments", {
     announcementId,
     pageSize: 30,
+    sort: "newest",
   }, stranger.auth));
   assert.ok(JSON.stringify(comments).includes(commentId));
   assert.equal(typeof comments.version, "number");
+  const newestIds = (comments.comments as Array<Record<string, unknown>>).map((comment) => String(comment.id));
+  const oldestComments = asRecord(await callAction("listAnnouncementComments", {
+    announcementId,
+    pageSize: 30,
+    sort: "oldest",
+  }, stranger.auth));
+  const oldestIds = (oldestComments.comments as Array<Record<string, unknown>>).map((comment) => String(comment.id));
+  assert.deepEqual(oldestIds, [...newestIds].reverse());
   await expectActionError(
     "permission-denied",
     () => callAction("deleteAnnouncementComment", {
@@ -206,6 +221,10 @@ integrationTest("announcement.manage, likes, comments, and ownership", async () 
   await callAction("deleteAnnouncementComment", {
     commentId,
     requestId: requestId("announcement-comment-owner-delete"),
+  }, user.auth);
+  await callAction("deleteAnnouncementComment", {
+    commentId: secondCommentId,
+    requestId: requestId("announcement-comment-owner-delete-second"),
   }, user.auth);
 
   const managedCommentWrite = asRecord(await callAction("createAnnouncementComment", {

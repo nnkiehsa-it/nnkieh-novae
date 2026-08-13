@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function CategoryIdentityFields<
   T extends { id: string; label: string },
@@ -108,16 +109,21 @@ export function CategoryDeleteButton({
 }) {
   return (
     <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button
-          aria-label={translate('ui.admin.deleteCategory')}
-          disabled={disabled}
-          size="icon"
-          variant="ghost"
-        >
-          <Trash2 />
-        </Button>
-      </AlertDialogTrigger>
+      <Tooltip>
+        <AlertDialogTrigger asChild>
+          <TooltipTrigger asChild>
+            <Button
+              aria-label={translate('ui.admin.deleteCategory')}
+              disabled={disabled}
+              size="icon"
+              variant="ghost"
+            >
+              <Trash2 />
+            </Button>
+          </TooltipTrigger>
+        </AlertDialogTrigger>
+        <TooltipContent>{translate('ui.admin.deleteCategory')}</TooltipContent>
+      </Tooltip>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>

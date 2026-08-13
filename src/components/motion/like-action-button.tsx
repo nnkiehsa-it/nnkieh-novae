@@ -5,7 +5,6 @@ import { type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AnimatedNumber } from "@/components/motion/animated-number";
-import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import { cn } from "@/lib/utils";
 
 const heartParticles = [
@@ -55,20 +54,14 @@ export function LikeActionButton({
   variant?: "default" | "ghost";
 }) {
   const [celebrationBurst, setCelebrationBurst] = React.useState(0);
-  const [showSuccess, setShowSuccess] = React.useState(false);
 
   React.useEffect(() => {
     if (burst <= 0) return;
     setCelebrationBurst(burst);
-    setShowSuccess(true);
-    const successTimeout = window.setTimeout(() => setShowSuccess(false), 500);
     const celebrationTimeout = window.setTimeout(() => {
       setCelebrationBurst(0);
     }, 660);
-    return () => {
-      window.clearTimeout(celebrationTimeout);
-      window.clearTimeout(successTimeout);
-    };
+    return () => window.clearTimeout(celebrationTimeout);
   }, [burst]);
 
   const particles = reaction === "heart" ? heartParticles : handParticles;
@@ -82,27 +75,19 @@ export function LikeActionButton({
           data-accent={reaction}
           data-celebrating={active && celebrationBurst ? celebrationBurst : undefined}
           data-liked={active}
-          disabled={disabled || busy || showSuccess}
+          disabled={disabled || busy}
           onClick={onClick}
           size={size}
           variant={active ? "secondary" : variant}
         >
           <span className="t-action-icon">
-            {busy || showSuccess ? (
-              <ActionFeedbackIcon
-                className="bg-transparent [&>svg]:size-5"
-                size="md"
-                state={showSuccess ? "success" : "loading"}
+            <span className="t-like-icon">
+              <Icon
+                className="t-reaction-icon"
+                fill={active && reaction === "heart" ? "currentColor" : "none"}
+                strokeWidth={2}
               />
-            ) : (
-              <span className="t-like-icon">
-                <Icon
-                  className="t-reaction-icon"
-                  fill={active && reaction === "heart" ? "currentColor" : "none"}
-                  strokeWidth={2}
-                />
-              </span>
-            )}
+            </span>
           </span>
           {count !== undefined ? <AnimatedNumber value={count} /> : null}
           {active && celebrationBurst > 0

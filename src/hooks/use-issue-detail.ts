@@ -21,7 +21,7 @@ import {
   toggleSupport,
 } from "@/services/issues";
 import { fetchUserPublicProfiles } from "@/services/users-read";
-import type { CommentRecord, IssueRecord, UserPublicProfile } from "@/types";
+import type { CommentRecord, CommentSortOption, IssueRecord, UserPublicProfile } from "@/types";
 import {
   beginContentEntityRead,
   mergeContentEntityRead,
@@ -48,6 +48,7 @@ export function useIssueDetail() {
   );
   const currentIssue = storedIssue ?? null;
   const [comments, setComments] = React.useState<CommentRecord[]>([]);
+  const [commentSort, setCommentSort] = React.useState<CommentSortOption>("newest");
   const [commentCursor, setCommentCursor] = React.useState<CommentCursor>(null);
   const [commentsHaveMore, setCommentsHaveMore] = React.useState(false);
   const [profile, setProfile] = React.useState<UserPublicProfile | null>(null);
@@ -121,7 +122,7 @@ export function useIssueDetail() {
       }
       setCommentsLoading(true);
       try {
-        const result = await fetchComments(issueId, null, {
+        const result = await fetchComments(issueId, null, commentSort, {
           cacheScope: session.user?.uid,
           forceRefresh,
         });
@@ -132,7 +133,7 @@ export function useIssueDetail() {
         setCommentsLoading(false);
       }
     },
-    [commentsReadable, issueId, session.user?.uid],
+    [commentSort, commentsReadable, issueId, session.user?.uid],
   );
 
   React.useEffect(() => {
@@ -143,7 +144,7 @@ export function useIssueDetail() {
     if (!commentsHaveMore || !commentCursor || commentsLoadingMore) return;
     setCommentsLoadingMore(true);
     try {
-      const result = await fetchComments(issueId, commentCursor, {
+      const result = await fetchComments(issueId, commentCursor, commentSort, {
         cacheScope: session.user?.uid,
       });
       setComments((current) => [
@@ -222,6 +223,7 @@ export function useIssueDetail() {
     back: () => router.push(`/issues/${encodeURIComponent(filter)}`),
     burst,
     comments,
+    commentSort,
     commentsEnabled,
     commentsHaveMore,
     commentsHighlighted: search.get("tab") === "comments",
@@ -246,8 +248,12 @@ export function useIssueDetail() {
         next,
       );
     },
+    setCommentSort,
     setModerationOpen,
     status: currentIssue ? getDerivedIssueStatus(currentIssue) : null,
+    canManageIssue: currentIssue
+      ? session.canManageIssueCategory(currentIssue.category)
+      : false,
     support,
     supportOpen: Boolean(
       currentIssue?.support_enabled &&

@@ -41,13 +41,13 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/components/setup/` — setup step chrome and reusable category draft editors.
 - `src/components/admin/` — category, reusable category-editor controls, and scoped-access presentation.
 - `src/components/composer-fields.tsx` — shared title/Markdown/media composer surface.
-- `src/components/discussion.tsx`, `comments/comment-composer.tsx` — shared threaded discussion presentation and reusable root/reply composer.
+- `src/components/discussion.tsx`, `comments/comment-composer.tsx`, `comments/comment-thread.tsx` — shared server-sorted discussion flow, compact avatar-led root/reply composer, and collapsible reply-rail presentation.
 - `src/components/content-author.tsx` — shared author avatar and name row for list content.
 - `src/components/content-renderer.tsx` — sanitized Markdown/media rendering.
 - `src/components/detail-toolbar.tsx` — shared, geometry-stable back/share/action toolbar used by detail routes.
 - `src/components/protected-app.tsx`, `app-providers.tsx`, `app-update-gate.tsx` — startup/session, providers, theme/i18n, toast boundaries, and bounded forced PWA updates with version polling, service-worker takeover, animated progress, and reload recovery.
 - `src/components/feature-route-guard.tsx` — shared disabled-feature guard for direct proposal and facility routes.
-- `src/components/ui/route-skeleton.tsx` and route `loading.tsx` files — prefetched list/detail app-shell fallbacks that reserve headers, controls, content, and sidebar geometry without requesting domain data.
+- `src/components/ui/route-skeleton.tsx` and route `loading.tsx` files — prefetched list/detail app-shell fallbacks that keep headers, buttons, filters, form controls, and card frames as real UI while skeletonizing only unresolved domain fields; no domain requests are started by the fallback.
 - `src/components/ui/action-feedback-icon.tsx`, `pending-alert-dialog-action.tsx` — shared transitions.dev-style spinner-to-check primitives for backend mutation, destructive confirmation, and update feedback.
 
 ## Hooks and stateful flows
@@ -81,6 +81,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `cloudflare/` — API gateway worker and generated action policies.
 - `supabase/functions/` — Edge Functions and shared backend code; unchanged by the frontend redesign.
 - `supabase/migrations/` — immutable deployed migrations plus append-only new migrations.
+  - `202608130001_comment_sorting.sql` adds cursor-safe newest/oldest root-comment ordering while preserving chronological replies.
 - `config/` — source JSON for generated contracts, categories, limits, and retention.
 
 ## Verification and delivery

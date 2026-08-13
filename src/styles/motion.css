@@ -128,12 +128,10 @@
 @keyframes t-stagger-item {
   from {
     opacity: 0;
-    transform: translateY(var(--motion-distance-sm));
     filter: blur(var(--motion-blur-md));
   }
   to {
     opacity: 1;
-    transform: translateY(0);
     filter: blur(0);
   }
 }
@@ -515,7 +513,22 @@
 @keyframes t-reveal-content {
   from {
     opacity: 0.24;
-    transform: translateY(var(--motion-distance-xs));
+    filter: blur(var(--motion-blur-md));
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.t-data-content-enter {
+  animation: t-data-content-enter var(--motion-slow) var(--ease-smooth-out) both;
+}
+
+@keyframes t-data-content-enter {
+  from {
+    opacity: 0.24;
+    transform: translateY(2px);
     filter: blur(var(--motion-blur-md));
   }
   to {
@@ -684,8 +697,11 @@
   height: 2rem;
   place-items: center;
   border-radius: 999px;
-  background: var(--muted);
+  background: transparent;
   transform: translateZ(0);
+}
+.t-spinner-check[data-surface="disc"] {
+  background: var(--muted);
 }
 .t-spinner-check[data-size="md"] {
   width: 1.25rem;
@@ -980,6 +996,7 @@
   }
   .t-route-enter,
   .t-panel-reveal,
+  .t-data-content-enter,
   .t-stagger-item,
   .t-digit,
   .t-success-check,

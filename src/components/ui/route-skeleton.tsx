@@ -1,7 +1,27 @@
+"use client";
+
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  Hand,
+  Heart,
+  MessageCircle,
+  Plus,
+  Search,
+  Send,
+  Share2,
+  SlidersHorizontal,
+} from "lucide-react";
+import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export type FeedSkeletonKind = "announcement" | "facility" | "issue";
+export type ComposerSkeletonKind = FeedSkeletonKind;
 
 const FEED_SKELETON_COUNTS: Record<FeedSkeletonKind, number> = {
   announcement: 10,
@@ -9,14 +29,64 @@ const FEED_SKELETON_COUNTS: Record<FeedSkeletonKind, number> = {
   issue: 30,
 };
 
-function ToolbarSkeleton() {
+const listTitleKeys = {
+  announcement: "ui.announcement.title",
+  facility: "ui.facility.title",
+  issue: "ui.nav.issues",
+} as const;
+
+const createKeys = {
+  announcement: "ui.announcement.new",
+  facility: "ui.facility.new",
+  issue: "ui.issue.new",
+} as const;
+
+function StableTabs({ kind }: { kind: FeedSkeletonKind }) {
+  if (kind === "announcement") return null;
   return (
-    <div className="flex h-9 items-center justify-between" aria-hidden>
-      <Skeleton className="size-9 rounded-xl" />
-      <div className="flex gap-1">
-        <Skeleton className="size-9 rounded-xl" />
-        <Skeleton className="size-9 rounded-xl" />
-      </div>
+    <div className="ml-auto inline-flex h-8 items-center gap-0.5 rounded-full bg-muted p-[3px]">
+      <span className="t-tab-label rounded-full bg-card px-3 py-1 font-medium shadow-[var(--shadow-control)]">
+        {kind === "facility" ? translate("ui.status.processing") : translate("ui.common.active")}
+      </span>
+      <span className="t-tab-label px-3 py-1 font-medium text-muted-foreground">
+        {translate("ui.common.closed")}
+      </span>
+    </div>
+  );
+}
+
+function StableDetailToolbar() {
+  return (
+    <div className="flex h-9 items-center justify-between gap-3">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            aria-label={translate("ui.common.back")}
+            onClick={() => window.history.back()}
+            size="icon"
+            variant="ghost"
+          >
+            <ArrowLeft />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{translate("ui.common.back")}</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            aria-label={translate("ui.common.share")}
+            onClick={() => {
+              if (navigator.share) void navigator.share({ url: window.location.href });
+              else void navigator.clipboard?.writeText(window.location.href);
+            }}
+            size="icon"
+            variant="ghost"
+          >
+            <Share2 />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{translate("ui.common.share")}</TooltipContent>
+      </Tooltip>
     </div>
   );
 }
@@ -24,6 +94,7 @@ function ToolbarSkeleton() {
 function FeedCardSkeleton({ index, kind }: { index: number; kind: FeedSkeletonKind }) {
   const hasSummary = kind !== "facility";
   const hasProgress = kind === "issue" && index % 2 === 0;
+  const ReactionIcon = kind === "announcement" ? Heart : Hand;
   return (
     <Card className="route-card-skeleton min-h-36 gap-4 p-5 sm:p-6">
       <div className="flex justify-between gap-4">
@@ -31,7 +102,7 @@ function FeedCardSkeleton({ index, kind }: { index: number; kind: FeedSkeletonKi
           <Skeleton className="h-3 w-28" />
           <Skeleton className="h-5 w-4/5" />
         </div>
-        <Skeleton className="size-4" />
+        <ArrowUpRight className="size-4 text-muted-foreground" />
       </div>
       {hasSummary ? (
         <div className="space-y-2">
@@ -51,29 +122,51 @@ function FeedCardSkeleton({ index, kind }: { index: number; kind: FeedSkeletonKi
       <div className="mt-auto flex items-center gap-2 border-t pt-3">
         {kind !== "announcement" ? <Skeleton className="h-6 w-20 rounded-full" /> : null}
         {kind === "facility" ? <Skeleton className="h-4 w-24" /> : null}
-        <Skeleton className="ml-auto h-8 w-20 rounded-lg" />
-        {kind === "announcement" ? <Skeleton className="h-8 w-12 rounded-lg" /> : null}
+        <Button className="ml-auto opacity-100" disabled size="sm" variant="ghost">
+          <ReactionIcon />
+          <Skeleton className="h-3 w-5" />
+        </Button>
+        {kind === "announcement" ? (
+          <Button className="opacity-100" disabled size="sm" variant="ghost">
+            <MessageCircle />
+            <Skeleton className="h-3 w-4" />
+          </Button>
+        ) : null}
       </div>
     </Card>
   );
 }
 
 export function ListRouteSkeleton({ kind }: { kind: FeedSkeletonKind }) {
+  useLocaleSubscription();
   const filters = kind !== "announcement";
   return (
-    <div className="space-y-5" aria-busy="true" aria-label="Loading">
-      <div className="flex min-h-9 items-center justify-between gap-3">
-        <Skeleton className="h-8 w-36" />
-        <div className="flex gap-2">
-          <Skeleton className="h-9 w-24 rounded-xl" />
-          {filters ? <Skeleton className="h-8 w-28 rounded-full" /> : null}
+    <div className="space-y-5" aria-busy="true" aria-label={translate("ui.common.loading")}>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-semibold leading-8">{translate(listTitleKeys[kind])}</h1>
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          {kind !== "announcement" ? (
+            <Button className="opacity-100" disabled>
+              <Plus />{translate(createKeys[kind])}
+            </Button>
+          ) : null}
+          <StableTabs kind={kind} />
         </div>
-      </div>
+      </header>
       {filters ? (
         <Card className="gap-0 p-2">
-          <div className="flex gap-2">
-            <Skeleton className="h-10 flex-1 rounded-xl" />
-            <Skeleton className="h-10 w-20 rounded-xl sm:w-36" />
+          <div className="flex items-center gap-2">
+            <div className="relative min-w-40 flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="pl-9 opacity-100"
+                disabled
+                placeholder={kind === "issue" ? translate("ui.issue.searchPlaceholder") : translate("ui.facility.searchPlaceholder")}
+              />
+            </div>
+            <Button aria-label={translate("ui.common.sort")} className="opacity-100" disabled size="icon" variant="outline">
+              <SlidersHorizontal />
+            </Button>
           </div>
         </Card>
       ) : null}
@@ -93,9 +186,10 @@ export function FeedCardsSkeleton({ kind }: { kind: FeedSkeletonKind }) {
 }
 
 export function DetailRouteSkeleton({ title }: { title?: string }) {
+  useLocaleSubscription();
   return (
-    <div className="space-y-5" aria-busy="true" aria-label="Loading">
-      <ToolbarSkeleton />
+    <div className="space-y-5" aria-busy="true" aria-label={translate("ui.common.loading")}>
+      <StableDetailToolbar />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
         <Card className="min-h-[25rem] gap-0 overflow-hidden py-0">
           <div className="space-y-3 border-b px-5 py-5 sm:px-7 sm:py-6">
@@ -103,13 +197,7 @@ export function DetailRouteSkeleton({ title }: { title?: string }) {
               <Skeleton className="h-6 w-20 rounded-full" />
               <Skeleton className="h-6 w-16 rounded-full" />
             </div>
-            {title ? (
-              <h1 className="t-reveal-content text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">
-                {title}
-              </h1>
-            ) : (
-              <Skeleton className="h-8 w-4/5" />
-            )}
+            {title ? <h1 className="text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">{title}</h1> : <Skeleton className="h-8 w-4/5" />}
             <Skeleton className="h-4 w-40" />
           </div>
           <div className="space-y-3 px-5 py-5 sm:px-7 sm:py-6">
@@ -125,43 +213,54 @@ export function DetailRouteSkeleton({ title }: { title?: string }) {
             <Skeleton className="h-5 w-12" />
           </div>
           <Skeleton className="h-2 w-full rounded-full" />
-          <Skeleton className="mx-auto h-9 w-24 rounded-xl" />
+          <Button className="mx-auto opacity-100" disabled size="icon-lg">
+            <Hand />
+          </Button>
         </Card>
       </div>
     </div>
   );
 }
 
-export function ComposerRouteSkeleton({ extraFields = false }: { extraFields?: boolean }) {
+export function ComposerRouteSkeleton({
+  extraFields = false,
+  kind = "issue",
+}: {
+  extraFields?: boolean;
+  kind?: ComposerSkeletonKind;
+}) {
+  useLocaleSubscription();
+  const titleKey = kind === "announcement" ? "ui.announcement.newTitle" : kind === "facility" ? "ui.facility.newTitle" : "ui.issue.newTitle";
+  const submitKey = kind === "announcement" ? "ui.announcement.publish" : kind === "facility" ? "ui.facility.submit" : "ui.issue.submit";
   return (
-    <div className="mx-auto max-w-3xl space-y-5" aria-busy="true" aria-label="Loading">
-      <div className="flex min-h-9 items-center justify-between gap-3">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-9 w-20 rounded-xl" />
-      </div>
+    <div className="mx-auto max-w-3xl space-y-5" aria-busy="true" aria-label={translate("ui.common.loading")}>
+      <header className="flex min-h-9 items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold leading-8">{translate(titleKey)}</h1>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              aria-label={translate("ui.common.back")}
+              onClick={() => window.history.back()}
+              size="icon"
+              variant="ghost"
+            >
+              <ArrowLeft />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{translate("ui.common.back")}</TooltipContent>
+        </Tooltip>
+      </header>
       <Card className="py-6">
         <div className="grid gap-5 px-5 sm:px-7">
           {extraFields ? (
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-10 w-full rounded-xl" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-10 w-full rounded-xl" />
-              </div>
+              <label className="grid gap-2 text-sm font-medium">{translate("ui.facility.category")}<Input className="opacity-100" disabled /></label>
+              <label className="grid gap-2 text-sm font-medium">{translate("ui.facility.location")}<Input className="opacity-100" disabled /></label>
             </div>
           ) : null}
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-10 w-full rounded-xl" />
-          </div>
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-48 w-full rounded-xl" />
-          </div>
-          <Skeleton className="ml-auto h-9 w-24 rounded-xl" />
+          <label className="grid gap-2 text-sm font-medium">{kind === "facility" ? translate("ui.facility.reportTitle") : kind === "announcement" ? translate("ui.announcement.titleLabel") : translate("ui.issue.titleLabel")}<Input className="opacity-100" disabled /></label>
+          <label className="grid gap-2 text-sm font-medium">{kind === "facility" ? translate("ui.facility.problemDescription") : kind === "announcement" ? translate("ui.announcement.contentLabel") : translate("ui.issue.contentLabel")}<Textarea className="min-h-48 opacity-100" disabled /></label>
+          <Button className="ml-auto opacity-100" disabled><Send />{translate(submitKey)}</Button>
         </div>
       </Card>
     </div>

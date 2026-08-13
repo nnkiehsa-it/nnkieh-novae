@@ -150,17 +150,23 @@ export function ComposerField({
                 src={image.previewUrl}
                 width={image.width}
               />
-              <Button
-                className={cn(
-                  "absolute right-1.5 top-1.5 bg-card/88 backdrop-blur-sm",
-                )}
-                onClick={() => onRemoveImage(index)}
-                size="icon-xs"
-                type="button"
-                variant="outline"
-              >
-                <Trash2 />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    aria-label={translate('ui.common.delete')}
+                    className={cn(
+                      "absolute right-1.5 top-1.5 bg-card/88 backdrop-blur-sm",
+                    )}
+                    onClick={() => onRemoveImage(index)}
+                    size="icon-xs"
+                    type="button"
+                    variant="outline"
+                  >
+                    <Trash2 />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{translate('ui.common.delete')}</TooltipContent>
+              </Tooltip>
             </div>
           ))}
         </div>

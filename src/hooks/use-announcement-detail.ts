@@ -19,6 +19,7 @@ import { fetchUserPublicProfiles } from "@/services/users-read";
 import type {
   AnnouncementCommentRecord,
   AnnouncementRecord,
+  CommentSortOption,
   UserPublicProfile,
 } from "@/types";
 import {
@@ -44,6 +45,7 @@ export function useAnnouncementDetail() {
   );
   const currentAnnouncement = storedAnnouncement ?? null;
   const [comments, setComments] = React.useState<AnnouncementCommentRecord[]>([]);
+  const [commentSort, setCommentSort] = React.useState<CommentSortOption>("newest");
   const [commentCursor, setCommentCursor] = React.useState<CommentCursor>(null);
   const [commentsHaveMore, setCommentsHaveMore] = React.useState(false);
   const [profile, setProfile] = React.useState<UserPublicProfile | null>(null);
@@ -95,6 +97,7 @@ export function useAnnouncementDetail() {
         const result = await fetchAnnouncementComments(
           params.announcementId,
           undefined,
+          commentSort,
           { cacheScope: session.user?.uid, forceRefresh },
         );
         setComments(result.comments);
@@ -106,7 +109,7 @@ export function useAnnouncementDetail() {
         setCommentsLoading(false);
       }
     },
-    [params.announcementId, session.user?.uid],
+    [commentSort, params.announcementId, session.user?.uid],
   );
 
   React.useEffect(() => {
@@ -198,6 +201,7 @@ export function useAnnouncementDetail() {
       const result = await fetchAnnouncementComments(
         params.announcementId,
         commentCursor,
+        commentSort,
         { cacheScope: session.user?.uid },
       );
       setComments((current) => [
@@ -218,6 +222,7 @@ export function useAnnouncementDetail() {
     burst,
     canManage: session.can("announcement.manage"),
     comments,
+    commentSort,
     commentsEnabled:
       Boolean(currentAnnouncement?.comments_enabled) &&
       categories.announcementCommentsEnabled,
@@ -233,6 +238,7 @@ export function useAnnouncementDetail() {
     loading,
     loadMoreComments,
     profile,
+    setCommentSort,
     remove,
     removeComment,
   };

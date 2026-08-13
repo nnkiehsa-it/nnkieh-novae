@@ -22,6 +22,7 @@ export function IssueDetailContent({
   useLocaleSubscription();
   return (
     <Card className="gap-0 overflow-hidden py-0">
+      <div className="t-data-content-enter">
       <div className="border-b px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6">
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-[var(--shadow-control)]">
@@ -68,6 +69,7 @@ export function IssueDetailContent({
           />
         </div>
       ) : null}
+      </div>
     </Card>
   );
 }

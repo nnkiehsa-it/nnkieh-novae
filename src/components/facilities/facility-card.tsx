@@ -25,6 +25,7 @@ export function FacilityCard({
 }) {
   return (
       <Card className="t-card group relative h-full gap-4 p-5 sm:p-6">
+        <div className="t-data-content-enter flex h-full flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
@@ -59,6 +60,7 @@ export function FacilityCard({
             size="sm"
             variant="ghost"
           />
+        </div>
         </div>
       </Card>
   );

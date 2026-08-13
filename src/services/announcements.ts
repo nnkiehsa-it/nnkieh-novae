@@ -2,6 +2,7 @@ import type {
   AnnouncementCommentRecord,
   AnnouncementInput,
   AnnouncementRecord,
+  CommentSortOption,
 } from '@/types';
 import { invokeBackendAction } from '@/services/backend-action';
 import { createRequestId } from '@/lib/request-id';
@@ -174,12 +175,14 @@ export async function setAnnouncementLike(announcementId: string, liked: boolean
 export async function fetchAnnouncementComments(
   announcementId: string,
   cursor?: CommentCursor,
+  sort: CommentSortOption = 'newest',
   options: { cacheScope?: string; forceRefresh?: boolean; signal?: AbortSignal | null } = {},
 ) {
   const cacheKey = createContentCacheKey([
     'announcement-comments-page',
     announcementId,
     options.cacheScope ?? 'default',
+    sort,
     cursor?.id ?? 'first',
     cursor?.createdAtMs ?? '',
   ]);
@@ -193,13 +196,13 @@ export async function fetchAnnouncementComments(
   const cacheGuard = captureContentCacheWriteGuard(cacheKey);
 
   const fn = invokeBackendAction<
-    { announcementId: string; cursor?: CommentCursor; pageSize: number },
+    { announcementId: string; cursor?: CommentCursor; pageSize: number; sort: CommentSortOption },
     { comments: Array<Record<string, unknown>>; cursor: CommentCursor; hasMore: boolean; version: number }
   >('listAnnouncementComments', {
     signal: 'signal' in options ? options.signal ?? undefined : undefined,
     timeoutMs: READ_REQUEST_TIMEOUT_MS,
   });
-  const result = await fn({ announcementId, cursor, pageSize: COMMENT_FEED_PAGE_SIZE });
+  const result = await fn({ announcementId, cursor, pageSize: COMMENT_FEED_PAGE_SIZE, sort });
   const page = {
     comments: result.comments.map(normalizeAnnouncementComment),
     cursor: normalizeCommentCursor(result.cursor),

@@ -46,9 +46,14 @@ export function DetailToolbar({
         <TooltipContent>{backLabel}</TooltipContent>
       </Tooltip>
       <div className="flex items-center gap-1">
-        <Button aria-label={shareLabel} onClick={onShare} size="icon" variant="ghost">
-          <Share2 />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button aria-label={shareLabel} onClick={onShare} size="icon" variant="ghost">
+              <Share2 />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{shareLabel}</TooltipContent>
+        </Tooltip>
         {actions}
       </div>
     </div>

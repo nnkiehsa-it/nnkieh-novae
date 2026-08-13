@@ -23,6 +23,7 @@ import { AnimatedNumber } from "@/components/motion/animated-number";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   ErrorState,
   LoadingState,
@@ -180,18 +181,23 @@ export default function DashboardPage() {
                     {formatDate(failure.updated_at)}
                   </p>
                 </div>
-                <Button
-                  aria-label={translate('ui.dashboard.copyTrace')}
-                  onClick={() =>
-                    void navigator.clipboard
-                      .writeText(failure.error_trace_id)
-                      .then(() => toast.success(translate('ui.common.copiedTrace')))
-                  }
-                  size="icon-sm"
-                  variant="ghost"
-                >
-                  <Copy />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      aria-label={translate('ui.dashboard.copyTrace')}
+                      onClick={() =>
+                        void navigator.clipboard
+                          .writeText(failure.error_trace_id)
+                          .then(() => toast.success(translate('ui.common.copiedTrace')))
+                      }
+                      size="icon-sm"
+                      variant="ghost"
+                    >
+                      <Copy />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{translate('ui.dashboard.copyTrace')}</TooltipContent>
+                </Tooltip>
               </div>
             ))
           )}

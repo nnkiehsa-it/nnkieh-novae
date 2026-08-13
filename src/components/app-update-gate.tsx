@@ -232,6 +232,7 @@ export function AppUpdateGate() {
             <ActionFeedbackIcon
               className="[&>svg]:size-5"
               state={updateComplete ? "success" : "loading"}
+              surface="disc"
             />
             <p
               className="t-shimmer text-sm font-medium"

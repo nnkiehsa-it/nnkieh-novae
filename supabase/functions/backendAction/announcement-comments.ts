@@ -11,11 +11,13 @@ async function listAnnouncementComments(payload: JsonRecord, supabase: BackendSu
   if (!announcementId) throw new Error("not-found");
   const cursor = readCursor(payload);
   const version = await loadContentVersion(supabase, "announcements");
+  const sortName = asString(payload.sort) === "oldest" ? "oldest" : "newest";
   const { data, error } = await supabase.schema("app_api").rpc("backend_list_announcement_comments", {
     announcement_id: announcementId,
     cursor_id: asUuid(cursor.id) || null,
     cursor_created_at: readCursorDate(cursor, "createdAtMs", "created_at") || null,
     page_size: Math.min(Math.max(Math.round(asNumber(payload.pageSize, 30)), 1), 30),
+    sort_name: sortName,
   });
   if (error) throw error;
   return attachContentVersion(data, version);

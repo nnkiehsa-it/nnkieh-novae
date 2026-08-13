@@ -25,11 +25,13 @@ async function listComments(payload: JsonRecord, auth: AuthContext, supabase: Ba
   const issue = await selectIssue(supabase, issueId);
   const cursor = readCursor(payload);
   const version = await loadContentVersion(supabase, "issues");
+  const sortName = asString(payload.sort) === "oldest" ? "oldest" : "newest";
   const { data, error } = await supabase.schema("app_api").rpc("backend_list_issue_comments", {
     issue_id: issueId,
     cursor_id: asUuid(cursor.id) || null,
     cursor_created_at: readCursorDate(cursor, "createdAtMs", "created_at") || null,
     page_size: Math.min(Math.max(Math.round(asNumber(payload.pageSize, 30)), 1), 30),
+    sort_name: sortName,
     ...await issueCommentPolicyParams(supabase, auth, canManageIssueCategory(auth, asString(issue.category))),
   });
   if (error) throw error;

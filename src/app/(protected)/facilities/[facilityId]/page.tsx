@@ -40,6 +40,7 @@ import {
 import { ErrorState } from "@/components/ui/page-state";
 import { DetailRouteSkeleton } from "@/components/ui/route-skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatDate } from "@/lib/format";
 import { shareCurrentPage } from "@/lib/share";
 
@@ -58,16 +59,21 @@ export default function FacilityDetailPage() {
     );
   const { facility } = detail;
   return (
-    <div className="t-reveal-content space-y-5">
+    <div className="space-y-5">
       <DetailToolbar
         actions={
           facility.isOwnFacility || facility.canManageFacility ? (
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button aria-label={translate('ui.common.moreActions')} size="icon" variant="ghost">
-                  <MoreHorizontal />
-                </Button>
-              </DropdownMenuTrigger>
+              <Tooltip>
+                <DropdownMenuTrigger asChild>
+                  <TooltipTrigger asChild>
+                    <Button aria-label={translate('ui.common.moreActions')} size="icon" variant="ghost">
+                      <MoreHorizontal />
+                    </Button>
+                  </TooltipTrigger>
+                </DropdownMenuTrigger>
+                <TooltipContent>{translate('ui.common.moreActions')}</TooltipContent>
+              </Tooltip>
               <DropdownMenuContent align="end">
                 {facility.canManageFacility ? (
                   <DropdownMenuItem onSelect={() => detail.setStatusOpen(true)}>
@@ -75,7 +81,7 @@ export default function FacilityDetailPage() {
                     {translate('ui.facility.updateStatus')}
                   </DropdownMenuItem>
                 ) : null}
-                <DropdownMenuSeparator />
+                {facility.canManageFacility ? <DropdownMenuSeparator /> : null}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <DropdownMenuItem
@@ -120,6 +126,7 @@ export default function FacilityDetailPage() {
       />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
         <Card className="gap-0 overflow-hidden py-0">
+          <div className="t-data-content-enter">
           <div className="border-b px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6">
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-[var(--shadow-control)]">
@@ -159,9 +166,11 @@ export default function FacilityDetailPage() {
               />
             </div>
           ) : null}
+          </div>
         </Card>
         <aside className="space-y-3 lg:sticky lg:top-6">
           <Card className="gap-5 p-5 sm:p-6">
+            <div className="t-data-content-enter flex flex-col gap-5">
             <div className="flex items-center justify-between">
               <span className="inline-flex items-center gap-2 text-sm font-medium">
                 <Hand className="size-4 text-muted-foreground" />{translate('ui.facility.affectedCount')}</span>
@@ -183,6 +192,7 @@ export default function FacilityDetailPage() {
                 label={facility.currentUserAffected ? translate('ui.facility.cancelAffected') : translate('ui.facility.markAffected')}
                 onClick={() => void detail.toggleAffected()}
               />
+            </div>
             </div>
           </Card>
         </aside>

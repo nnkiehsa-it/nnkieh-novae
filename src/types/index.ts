@@ -87,6 +87,8 @@ export interface DiscussionCommentRecord {
   replies: DiscussionCommentRecord[];
 }
 
+export type CommentSortOption = 'newest' | 'oldest';
+
 export interface CommentRecord extends DiscussionCommentRecord {
   issue_id: string;
 }
@@ -268,4 +270,3 @@ export interface MarkdownImageRecord {
   width?: number;
   height?: number;
 }
-

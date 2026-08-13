@@ -5,10 +5,12 @@ export function ActionFeedbackIcon({
   className,
   size = "lg",
   state,
+  surface = "plain",
 }: {
   className?: string;
   size?: "lg" | "md" | "sm";
   state: "loading" | "success";
+  surface?: "disc" | "plain";
 }) {
   return (
     <span
@@ -16,6 +18,7 @@ export function ActionFeedbackIcon({
       className={cn("t-spinner-check", className)}
       data-size={size}
       data-state={state === "success" ? "complete" : "loading"}
+      data-surface={surface}
     >
       <LoaderCircle className="t-spinner t-spinner-check-loader" />
       <svg className="t-spinner-check-success" viewBox="0 0 24 24">
