@@ -3,10 +3,8 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import { motion } from "motion/react";
 import {
-  ArrowLeft,
   Clock3,
   MoreHorizontal,
-  Share2,
   ShieldCheck,
   Hand,
   Trash2,
@@ -18,6 +16,7 @@ import { formatDate } from "@/lib/format";
 import { shareCurrentPage } from "@/lib/share";
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { LikeActionButton } from "@/components/motion/like-action-button";
+import { DetailToolbar } from "@/components/detail-toolbar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -38,7 +37,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function IssueDetailToolbar({
   issue,
@@ -53,31 +51,9 @@ export function IssueDetailToolbar({
 }) {
   useLocaleSubscription();
   return (
-    <div className="flex items-center justify-between gap-3">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button aria-label={translate('ui.issue.back')} onClick={onBack} size="icon" variant="ghost">
-            <ArrowLeft />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{translate('ui.issue.back')}</TooltipContent>
-      </Tooltip>
-      <div className="flex items-center gap-1">
-        <Button
-          aria-label={translate('ui.issue.share')}
-          onClick={() =>
-            void shareCurrentPage(issue.title)
-              .then((result) => {
-                if (result === "copied") toast.success(translate('ui.common.linkCopied'));
-              })
-              .catch(() => toast.error(translate('ui.common.shareFailed')))
-          }
-          size="icon"
-          variant="ghost"
-        >
-          <Share2 />
-        </Button>
-        {issue.isOwnIssue || issue.canManageIssue ? (
+    <DetailToolbar
+      actions={
+        issue.isOwnIssue || issue.canManageIssue ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button aria-label={translate('ui.common.moreActions')} size="icon" variant="ghost">
@@ -111,9 +87,19 @@ export function IssueDetailToolbar({
               </AlertDialog>
             </DropdownMenuContent>
           </DropdownMenu>
-        ) : null}
-      </div>
-    </div>
+        ) : null
+      }
+      backLabel={translate('ui.issue.back')}
+      onBack={onBack}
+      onShare={() =>
+            void shareCurrentPage(issue.title)
+              .then((result) => {
+                if (result === "copied") toast.success(translate('ui.common.linkCopied'));
+              })
+              .catch(() => toast.error(translate('ui.common.shareFailed')))
+      }
+      shareLabel={translate('ui.issue.share')}
+    />
   );
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Heart, MoreHorizontal, Share2, Trash2 } from "lucide-react";
+import { Heart, MoreHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { useAnnouncementDetail } from "@/hooks/use-announcement-detail";
@@ -11,6 +11,7 @@ import { ContentRenderer } from "@/components/content-renderer";
 import { Discussion } from "@/components/discussion";
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { LikeActionButton } from "@/components/motion/like-action-button";
+import { DetailToolbar } from "@/components/detail-toolbar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,14 +32,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ErrorState, LoadingState } from "@/components/ui/page-state";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ErrorState } from "@/components/ui/page-state";
+import { DetailRouteSkeleton } from "@/components/ui/route-skeleton";
 
 export default function AnnouncementDetailPage() {
   const router = useRouter();
   const { t } = useI18n();
   const detail = useAnnouncementDetail();
-  if (detail.loading) return <LoadingState rows={3} />;
+  if (detail.loading) return <DetailRouteSkeleton />;
   if (detail.error || !detail.announcement) {
     return (
       <ErrorState
@@ -50,31 +51,9 @@ export default function AnnouncementDetailPage() {
   const { announcement, profile } = detail;
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button aria-label={t("ui.announcement.back")} onClick={() => router.push("/announcements")} size="icon" variant="ghost">
-              <ArrowLeft />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{t("ui.announcement.back")}</TooltipContent>
-        </Tooltip>
-        <div className="flex items-center gap-1">
-          <Button
-            aria-label={t("ui.announcement.share")}
-            onClick={() =>
-              void shareCurrentPage(announcement.title)
-                .then((result) => {
-                  if (result === "copied") toast.success(t("ui.common.linkCopied"));
-                })
-                .catch(() => toast.error(t("ui.common.shareFailed")))
-            }
-            size="icon"
-            variant="ghost"
-          >
-            <Share2 />
-          </Button>
-          {detail.canManage ? (
+      <DetailToolbar
+        actions={
+          detail.canManage ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button aria-label={t("ui.common.moreActions")} size="icon" variant="ghost">
@@ -109,9 +88,19 @@ export default function AnnouncementDetailPage() {
                 </AlertDialog>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : null}
-        </div>
-      </div>
+          ) : null
+        }
+        backLabel={t("ui.announcement.back")}
+        onBack={() => router.push("/announcements")}
+        onShare={() =>
+              void shareCurrentPage(announcement.title)
+                .then((result) => {
+                  if (result === "copied") toast.success(t("ui.common.linkCopied"));
+                })
+                .catch(() => toast.error(t("ui.common.shareFailed")))
+        }
+        shareLabel={t("ui.announcement.share")}
+      />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start">
         <article className="space-y-4">
           <Card className="gap-0 overflow-hidden py-0">

@@ -28,17 +28,19 @@
 
 /* Animate only the newly committed route node; no old-page snapshot or exit layer. */
 .t-route-enter {
-  animation: t-route-enter var(--motion-quick) var(--ease-smooth-out) backwards;
+  animation: t-route-enter var(--motion-medium) var(--ease-smooth-out) backwards;
 }
 
 @keyframes t-route-enter {
   from {
-    opacity: 0.96;
-    transform: translateX(22px);
+    opacity: 0.9;
+    transform: translateX(24px);
+    filter: blur(var(--motion-blur-sm));
   }
   to {
     opacity: 1;
     transform: translateX(0);
+    filter: blur(0);
   }
 }
 
@@ -61,14 +63,18 @@
 
 /* Staggered content and list rows */
 .t-stagger-item {
-  animation: t-stagger-item var(--motion-emphasis) var(--ease-smooth-out) both;
-  animation-delay: calc(var(--stagger-index, 0) * var(--motion-stagger));
+  animation: t-stagger-item var(--motion-medium) var(--ease-smooth-out) both;
 }
+
+.t-stagger-list > :nth-child(2) { animation-delay: 35ms; }
+.t-stagger-list > :nth-child(3) { animation-delay: 70ms; }
+.t-stagger-list > :nth-child(4) { animation-delay: 105ms; }
+.t-stagger-list > :nth-child(n + 5) { animation-delay: 140ms; }
 
 @keyframes t-stagger-item {
   from {
     opacity: 0;
-    transform: translateY(var(--motion-distance-md));
+    transform: translateY(var(--motion-distance-sm));
     filter: blur(var(--motion-blur-md));
   }
   to {
@@ -76,6 +82,12 @@
     transform: translateY(0);
     filter: blur(0);
   }
+}
+
+.t-stagger-list > .t-stagger-item,
+.route-card-skeleton {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 12rem;
 }
 
 /* Number updates */

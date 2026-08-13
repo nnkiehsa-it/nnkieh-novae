@@ -9,12 +9,13 @@ import {
 } from "@/components/issues/issue-detail-actions";
 import { IssueDetailContent } from "@/components/issues/issue-detail-content";
 import { IssueModerationDialog } from "@/components/issues/issue-moderation-dialog";
-import { ErrorState, LoadingState } from "@/components/ui/page-state";
+import { ErrorState } from "@/components/ui/page-state";
+import { DetailRouteSkeleton } from "@/components/ui/route-skeleton";
 
 export default function IssueDetailPage() {
   const { t } = useI18n();
   const detail = useIssueDetail();
-  if (detail.loading) return <LoadingState rows={3} />;
+  if (detail.loading) return <DetailRouteSkeleton />;
   if (detail.error || !detail.issue || !detail.status) {
     return (
       <ErrorState

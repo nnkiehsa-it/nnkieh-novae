@@ -32,7 +32,7 @@ This document is the maintained map of the repository. Read it before broad sear
 ## Presentation components
 
 - `src/components/ui/` — business-free shadcn/Radix primitives. Buttons, fields, cards, overlays, tabs, sheets, menus, status badges, skeletons, page states, and the shared Novae brand lockup share global semantic tokens.
-- `src/components/motion/` — reusable motion wrappers: animated numbers/text, like feedback, staggered lists, and transition helpers.
+- `src/components/motion/` — reusable motion wrappers: animated numbers/text and like feedback; high-volume staggered lists use CSS-only wrappers to avoid per-row animation runtime work.
 - `src/components/app-shell.tsx` / `liquid-nav.tsx` — desktop, compact desktop, and mobile navigation. Route content commits without full-page snapshots, then only the new pathname-keyed node receives the short entrance motion; liquid-gooey is constrained to intentional navigation/tab state changes.
 - `src/components/issues/` — issue cards, detail content/actions, and moderation presentation.
 - `src/components/facilities/` — facility cards and status-dialog presentation.
@@ -44,8 +44,10 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/components/discussion.tsx`, `comments/comment-composer.tsx` — shared threaded discussion presentation and reusable root/reply composer.
 - `src/components/content-author.tsx` — shared author avatar and name row for list content.
 - `src/components/content-renderer.tsx` — sanitized Markdown/media rendering.
+- `src/components/detail-toolbar.tsx` — shared, geometry-stable back/share/action toolbar used by detail routes.
 - `src/components/protected-app.tsx`, `app-providers.tsx`, `app-update-gate.tsx` — startup/session, providers, theme/i18n, toast boundaries, and bounded forced PWA updates with version polling, service-worker takeover, and reload recovery.
 - `src/components/feature-route-guard.tsx` — shared disabled-feature guard for direct proposal and facility routes.
+- `src/components/ui/route-skeleton.tsx` and route `loading.tsx` files — prefetched list/detail app-shell fallbacks that reserve headers, controls, content, and sidebar geometry without requesting domain data.
 
 ## Hooks and stateful flows
 

@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 import {
   EmptyState,
   ErrorState,
-  LoadingState,
   PageHeader,
 } from "@/components/ui/page-state";
+import { FeedCardsSkeleton } from "@/components/ui/route-skeleton";
 import { AnnouncementCard } from "@/components/announcements/announcement-card";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 
@@ -37,7 +37,7 @@ export default function AnnouncementsPage() {
       {feed.error && feed.items.length === 0 ? (
         <ErrorState error={feed.error} onRetry={() => void feed.load()} />
       ) : feed.loading && feed.items.length === 0 ? (
-        <LoadingState />
+        <FeedCardsSkeleton kind="announcement" />
       ) : feed.items.length === 0 ? (
         <EmptyState
           action={

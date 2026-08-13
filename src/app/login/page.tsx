@@ -66,15 +66,16 @@ export default function LoginPage() {
         <div className="relative mx-auto w-full max-w-xl">
           <div className="relative h-[26rem]">
             <Liquid
-              blur={8}
+              blur={6}
               className="absolute inset-0"
               contrast={19}
               fill="var(--card)"
+              filterPadding={8}
               shadow="var(--shadow-floating)"
             >
               <Liquid.Item
                 delay={0}
-                morph={{ bounce: 0.24, contentBlur: 3, shape: true, speed: 1.2 }}
+                morph={{ bounce: 0.24, contentBlur: 2, shape: true, speed: 1.2 }}
                 radius={20}
                 x={18}
                 y={6}
@@ -94,7 +95,7 @@ export default function LoginPage() {
               </Liquid.Item>
               <Liquid.Item
                 delay={80}
-                morph={{ bounce: 0.32, contentBlur: 2, shape: true, speed: 1.15 }}
+                morph={{ bounce: 0.32, contentBlur: 1, shape: true, speed: 1.15 }}
                 radius={18}
                 x={272}
                 y={158}
@@ -111,7 +112,7 @@ export default function LoginPage() {
               </Liquid.Item>
               <Liquid.Item
                 delay={140}
-                morph={{ bounce: 0.2, contentBlur: 2, shape: true, speed: 1.3 }}
+                morph={{ bounce: 0.2, contentBlur: 1, shape: true, speed: 1.3 }}
                 radius={999}
                 x={18}
                 y={196}

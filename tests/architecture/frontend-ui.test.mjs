@@ -141,8 +141,8 @@ test("list action bars scroll normally and route navigation animates only the co
   assert.match(shell, /app-mobile-nav/u);
   assert.match(shell, /className="route-page t-route-enter" key=\{pathname\}/u);
   assert.doesNotMatch(shell, /React\.ViewTransition|app-route-enter|app-route-exit/u);
-  assert.match(motion, /\.t-route-enter\s*\{[\s\S]*var\(--motion-quick\)[\s\S]*backwards/u);
-  assert.match(motion, /@keyframes t-route-enter[\s\S]*translateX\(22px\)[\s\S]*translateX\(0\)/u);
+  assert.match(motion, /\.t-route-enter\s*\{[\s\S]*var\(--motion-medium\)[\s\S]*backwards/u);
+  assert.match(motion, /@keyframes t-route-enter[\s\S]*translateX\(24px\)[\s\S]*filter: blur\(var\(--motion-blur-sm\)\)[\s\S]*translateX\(0\)/u);
   assert.doesNotMatch(motion, /t-route-exit|\.t-route-enter[^}]*animation-delay/u);
 });
 

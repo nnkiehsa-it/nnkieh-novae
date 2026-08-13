@@ -2,12 +2,10 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import {
-  ArrowLeft,
   Check,
   Clock3,
   MapPin,
   MoreHorizontal,
-  Share2,
   Trash2,
   Hand,
 } from "lucide-react";
@@ -17,6 +15,7 @@ import { findFacilityCategory } from "@/hooks/use-categories";
 import { ContentRenderer } from "@/components/content-renderer";
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { LikeActionButton } from "@/components/motion/like-action-button";
+import { DetailToolbar } from "@/components/detail-toolbar";
 import { FacilityStatusDialog } from "@/components/facilities/facility-status-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,9 +37,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ErrorState, LoadingState } from "@/components/ui/page-state";
+import { ErrorState } from "@/components/ui/page-state";
+import { DetailRouteSkeleton } from "@/components/ui/route-skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatDate } from "@/lib/format";
 import { shareCurrentPage } from "@/lib/share";
 
@@ -48,7 +47,7 @@ export default function FacilityDetailPage() {
   useLocaleSubscription();
   const detail = useFacilityDetail();
 
-  if (detail.loading) return <LoadingState rows={3} />;
+  if (detail.loading) return <DetailRouteSkeleton />;
   if (detail.error || !detail.facility)
     return (
       <ErrorState
@@ -59,74 +58,62 @@ export default function FacilityDetailPage() {
   const { facility } = detail;
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button aria-label={translate('ui.facility.back')} onClick={detail.back} size="icon" variant="ghost">
-              <ArrowLeft />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{translate('ui.facility.back')}</TooltipContent>
-        </Tooltip>
-        <div className="flex items-center gap-1">
-          <Button
-            aria-label={translate('ui.facility.share')}
-            onClick={() =>
+      <DetailToolbar
+        actions={
+          facility.isOwnFacility || facility.canManageFacility ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button aria-label={translate('ui.common.moreActions')} size="icon" variant="ghost">
+                  <MoreHorizontal />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {facility.canManageFacility ? (
+                  <DropdownMenuItem onSelect={() => detail.setStatusOpen(true)}>
+                    <Clock3 />
+                    {translate('ui.facility.updateStatus')}
+                  </DropdownMenuItem>
+                ) : null}
+                <DropdownMenuSeparator />
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onSelect={(event) => event.preventDefault()}
+                    >
+                      <Trash2 />
+                      {translate('ui.facility.deleteReport')}
+                    </DropdownMenuItem>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{translate('ui.facility.deleteTitle')}</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {translate('ui.facility.deleteShortDescription')}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{translate('ui.common.cancel')}</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => void detail.remove()}>{translate('ui.common.confirmDelete')}</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null
+        }
+        backLabel={translate('ui.facility.back')}
+        onBack={detail.back}
+        onShare={() =>
               void shareCurrentPage(facility.title)
                 .then((result) => {
                   if (result === "copied")
                     toast.success(translate('ui.common.linkCopied'));
                 })
                 .catch(() => toast.error(translate('ui.common.shareFailed')))
-            }
-            size="icon"
-            variant="ghost"
-          >
-            <Share2 />
-          </Button>
-          {facility.isOwnFacility || facility.canManageFacility ? (
-            <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button aria-label={translate('ui.common.moreActions')} size="icon" variant="ghost">
-                <MoreHorizontal />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {facility.canManageFacility ? (
-                <DropdownMenuItem onSelect={() => detail.setStatusOpen(true)}>
-                  <Clock3 />
-                  {translate('ui.facility.updateStatus')}
-                </DropdownMenuItem>
-              ) : null}
-              <DropdownMenuSeparator />
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <DropdownMenuItem
-                    className="text-destructive"
-                    onSelect={(event) => event.preventDefault()}
-                  >
-                    <Trash2 />
-                    {translate('ui.facility.deleteReport')}
-                  </DropdownMenuItem>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>{translate('ui.facility.deleteTitle')}</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {translate('ui.facility.deleteShortDescription')}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>{translate('ui.common.cancel')}</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => void detail.remove()}>{translate('ui.common.confirmDelete')}</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </DropdownMenuContent>
-            </DropdownMenu>
-          ) : null}
-        </div>
-      </div>
+        }
+        shareLabel={translate('ui.facility.share')}
+      />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
         <Card className="gap-0 overflow-hidden py-0">
           <div className="border-b px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6">

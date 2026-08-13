@@ -20,9 +20,9 @@ import {
 import {
   EmptyState,
   ErrorState,
-  LoadingState,
   PageHeader,
 } from "@/components/ui/page-state";
+import { FeedCardsSkeleton } from "@/components/ui/route-skeleton";
 import { FacilityCard } from "@/components/facilities/facility-card";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 
@@ -127,7 +127,7 @@ export default function FacilitiesPage() {
       {state.error && state.feed.facilities.length === 0 ? (
         <ErrorState error={state.error} onRetry={() => void state.load()} />
       ) : state.loading && state.feed.facilities.length === 0 ? (
-        <LoadingState />
+        <FeedCardsSkeleton kind="facility" />
       ) : state.feed.facilities.length === 0 ? (
         <EmptyState
           action={

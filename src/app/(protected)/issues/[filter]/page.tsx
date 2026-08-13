@@ -22,9 +22,9 @@ import {
 import {
   EmptyState,
   ErrorState,
-  LoadingState,
   PageHeader,
 } from "@/components/ui/page-state";
+import { FeedCardsSkeleton } from "@/components/ui/route-skeleton";
 import { IssueCard } from "@/components/issues/issue-card";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 
@@ -153,7 +153,7 @@ export default function IssueBoardPage() {
       {error && feed.issues.length === 0 ? (
         <ErrorState error={error} onRetry={() => void load()} />
       ) : loading && feed.issues.length === 0 ? (
-        <LoadingState />
+        <FeedCardsSkeleton kind="issue" />
       ) : feed.issues.length === 0 ? (
         <EmptyState
           action={
