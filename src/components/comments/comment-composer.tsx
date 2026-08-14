@@ -32,8 +32,8 @@ export function CommentComposer({
 
   return (
     <div className="grid gap-2">
-      <div className="flex items-end gap-2">
-        <Avatar className="size-9 self-end border bg-background">
+      <div className="flex items-end gap-3 px-1">
+        <Avatar className="size-10 border bg-background">
           <AvatarImage alt={displayName} src={photoUrl} />
           <AvatarFallback>
             {displayName ? displayName.slice(0, 1) : <Skeleton className="size-full rounded-full" />}
@@ -58,7 +58,7 @@ export function CommentComposer({
           <TooltipTrigger asChild>
             <Button
               aria-label={submitLabel}
-              className="shrink-0 self-end rounded-full"
+              className="shrink-0 rounded-full"
               disabled={!content.trim() || busy}
               onClick={() => void onSubmit()}
               size="icon-lg"

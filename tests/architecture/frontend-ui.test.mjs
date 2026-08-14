@@ -160,10 +160,18 @@ test("discussion uses one card surface and a fixed reply-aware composer", async 
   assert.match(discussion, /characters\.slice\(0, 20\)/u);
   assert.match(discussion, /ui\.discussion\.replying/u);
   assert.match(composer, /import \{ ArrowUp \} from "lucide-react"/u);
-  assert.match(composer, /className="shrink-0 self-end rounded-full"/u);
+  assert.match(composer, /className="flex items-end gap-3 px-1"/u);
+  assert.match(composer, /Avatar className="size-10 border bg-background"/u);
+  assert.match(composer, /className="shrink-0 rounded-full"/u);
   assert.doesNotMatch(composer, /rounded-2xl border bg-muted\/35/u);
   assert.match(thread, /onReply\(reply, comment\.id\)/u);
   assert.match(globals, /\.discussion-composer-dock \{[\s\S]*position: fixed/u);
+  assert.doesNotMatch(discussion, /pb-\[calc\(9rem\+var\(--safe-bottom\)\)\]/u);
+  const issueDetailPage = await read("src/app/(protected)/issues/[filter]/[issueId]/page.tsx");
+  const announcementDetailPage = await read("src/app/(protected)/announcements/[announcementId]/page.tsx");
+  for (const detailPage of [issueDetailPage, announcementDetailPage]) {
+    assert.match(detailPage, /commentsEnabled \? "space-y-5 pb-\[calc\(7rem\+var\(--safe-bottom\)\)\]"/u);
+  }
   assert.doesNotMatch(discussion, /ui\.discussion\.empty/u);
   assert.match(zhUi, /'ui\.discussion\.replying': '正在回覆 \{name\}'/u);
   assert.match(zhUi, /'ui\.discussion\.commentPlaceholder': '新增留言…'/u);

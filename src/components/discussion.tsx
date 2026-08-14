@@ -75,10 +75,7 @@ export function Discussion({
   }
 
   return (
-    <section
-      className={enabled ? "pb-[calc(9rem+var(--safe-bottom))]" : undefined}
-      aria-labelledby="discussion-title"
-    >
+    <section aria-labelledby="discussion-title">
       <ResizableCard className="gap-0 overflow-hidden py-0">
         <div className="flex items-center gap-2 border-b px-5 py-4 sm:px-7">
           <MessageCircle className="size-4 text-muted-foreground" />
@@ -144,7 +141,7 @@ export function Discussion({
 
       {enabled ? (
         <div className="discussion-composer-dock">
-          <div className="mx-auto w-full max-w-2xl rounded-[2rem] border bg-background p-1.5 shadow-[var(--shadow-floating)] focus-within:border-ring/45 focus-within:ring-2 focus-within:ring-ring/20">
+          <div className="mx-auto w-full max-w-2xl rounded-[2rem] border bg-background p-2 shadow-[var(--shadow-floating)] focus-within:border-ring/45 focus-within:ring-2 focus-within:ring-ring/20">
             {replyTarget ? (
               <div className="mb-1 flex items-start gap-3 border-b px-2 pb-2 pt-1">
                 <div className="min-w-0 flex-1 text-xs leading-5">

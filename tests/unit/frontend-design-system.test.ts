@@ -103,7 +103,9 @@ describe("React frontend design system", () => {
     expect(discussion).toContain("characters.slice(0, 20)");
     expect(discussion).toContain('translate("ui.discussion.replying"');
     expect(composer).toContain('import { ArrowUp } from "lucide-react"');
-    expect(composer).toContain('className="shrink-0 self-end rounded-full"');
+    expect(composer).toContain('className="flex items-end gap-3 px-1"');
+    expect(composer).toContain('Avatar className="size-10 border bg-background"');
+    expect(composer).toContain('className="shrink-0 rounded-full"');
     expect(composer).toContain('size="icon-lg"');
     expect(composer).not.toContain("rounded-2xl border bg-muted/35");
     expect(thread).toContain("onReply(reply, comment.id)");

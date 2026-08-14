@@ -26,7 +26,7 @@ export default function IssueDetailPage() {
     );
   }
   return (
-    <div className="space-y-5">
+    <div className={detail.commentsEnabled ? "space-y-5 pb-[calc(7rem+var(--safe-bottom))]" : "space-y-5"}>
       <IssueDetailToolbar
         canManage={detail.canManageIssue}
         deleteFeedbackState={detail.deleteFeedbackState}
