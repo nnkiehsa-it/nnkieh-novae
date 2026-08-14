@@ -107,40 +107,56 @@ function StableDetailToolbar() {
   );
 }
 
-function FeedCardSkeleton({ index, kind }: { index: number; kind: FeedSkeletonKind }) {
-  const hasProgress = kind === "issue" && index % 2 === 0;
+function FeedCardSkeleton({ kind }: { kind: FeedSkeletonKind }) {
+  const isIssue = kind === "issue";
+  const isFacility = kind === "facility";
   const ReactionIcon = kind === "announcement" ? Heart : Hand;
   return (
-    <Card className="route-card-skeleton min-h-36 gap-4 p-5 sm:p-6">
-      <div className="flex justify-between gap-4">
-        <div className="flex-1 space-y-2">
-          <Skeleton className="h-3 w-28" />
-          <Skeleton className="h-5 w-4/5" />
-        </div>
-        <ArrowUpRight className="size-4 text-muted-foreground" />
-      </div>
-      {hasProgress ? (
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <Skeleton className="h-3 w-20" />
-            <Skeleton className="h-3 w-14" />
+    <Card className="route-card-skeleton h-full gap-4 p-5 sm:p-6">
+      <div className="flex h-full flex-col gap-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
+              <Skeleton className="size-6 shrink-0 rounded-full" />
+              <Skeleton className="h-3 w-16" />
+              <span aria-hidden>·</span>
+              <Skeleton className="h-3 w-12" />
+            </div>
+            <Skeleton className="mt-1.5 h-5 w-4/5" />
           </div>
-          <Skeleton className="h-1.5 w-full rounded-full" />
+          <ArrowUpRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
         </div>
-      ) : null}
-      <div className="mt-auto flex items-center gap-2 border-t pt-3">
-        {kind !== "announcement" ? <Skeleton className="h-6 w-20 rounded-full" /> : null}
-        {kind === "facility" ? <Skeleton className="h-4 w-24" /> : null}
-        <Button className="ml-auto opacity-100" disabled size="sm" variant="ghost">
-          <ReactionIcon />
-          <Skeleton className="h-3 w-5" />
-        </Button>
-        {kind === "announcement" ? (
+        {isIssue ? (
+          <div className="space-y-1.5">
+            <div className="flex justify-between text-xs">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-3 w-14" />
+            </div>
+            <Skeleton className="h-1.5 w-full rounded-full" />
+            <div className="flex justify-end">
+              <Skeleton className="h-3 w-24" />
+            </div>
+          </div>
+        ) : null}
+        <div className="mt-auto flex flex-wrap items-center gap-2 border-t pt-3">
+          {kind !== "announcement" ? <Skeleton className="h-6 w-20 rounded-full" /> : null}
+          {isFacility ? (
+            <span className="inline-flex items-center gap-1">
+              <Skeleton className="size-3.5 rounded-full" />
+              <Skeleton className="h-3 w-24" />
+            </span>
+          ) : null}
+          <Button className="ml-auto opacity-100" disabled size="sm" variant="ghost">
+            <ReactionIcon />
+            <Skeleton className="h-3 w-5" />
+          </Button>
+          {kind === "announcement" ? (
           <Button className="opacity-100" disabled size="sm" variant="ghost">
             <MessageCircle />
             <Skeleton className="h-3 w-4" />
           </Button>
-        ) : null}
+          ) : isIssue ? <MessageCircle className="size-3.5 text-muted-foreground" /> : null}
+        </div>
       </div>
     </Card>
   );
@@ -201,7 +217,7 @@ export function FeedCardsSkeleton({ kind }: { kind: FeedSkeletonKind }) {
   return (
     <div className="grid gap-3 lg:grid-cols-2 lg:items-stretch" aria-busy="true">
       {Array.from({ length: FEED_SKELETON_COUNTS[kind] }, (_, index) => (
-        <FeedCardSkeleton index={index} key={index} kind={kind} />
+        <FeedCardSkeleton key={index} kind={kind} />
       ))}
     </div>
   );

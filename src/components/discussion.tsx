@@ -57,6 +57,34 @@ export function Discussion({
   const [replyTarget, setReplyTarget] = React.useState<ReplyTarget | null>(null);
   const feedback = useActionFeedback();
   const profiles = useDiscussionProfiles(comments);
+  const composerDockRef = React.useRef<HTMLDivElement>(null);
+
+  React.useLayoutEffect(() => {
+    if (!enabled || !composerDockRef.current) return;
+    const root = document.documentElement;
+    const dock = composerDockRef.current;
+    const updateClearance = () => {
+      const bounds = dock.getBoundingClientRect();
+      const bottomGap = Math.max(0, window.innerHeight - bounds.bottom);
+      const clearance = Math.ceil(
+        bounds.height + bottomGap + 20,
+      );
+      root.style.setProperty("--discussion-composer-clearance", `${clearance}px`);
+    };
+    updateClearance();
+    const observer = typeof ResizeObserver === "undefined"
+      ? null
+      : new ResizeObserver(updateClearance);
+    observer?.observe(dock);
+    window.addEventListener("resize", updateClearance);
+    window.visualViewport?.addEventListener("resize", updateClearance);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", updateClearance);
+      window.visualViewport?.removeEventListener("resize", updateClearance);
+      root.style.removeProperty("--discussion-composer-clearance");
+    };
+  }, [enabled]);
 
   async function submit(reply = false) {
     const value = (reply ? replyDraft : commentDraft).trim();
@@ -140,7 +168,7 @@ export function Discussion({
       </ResizableCard>
 
       {enabled ? (
-        <div className="discussion-composer-dock">
+        <div className="discussion-composer-dock" ref={composerDockRef}>
           <div className="mx-auto w-full max-w-2xl rounded-[2rem] border bg-background p-2 shadow-[var(--shadow-floating)] focus-within:border-ring/45 focus-within:ring-2 focus-within:ring-ring/20">
             {replyTarget ? (
               <div className="mb-1 flex items-start gap-3 border-b px-2 pb-2 pt-1">

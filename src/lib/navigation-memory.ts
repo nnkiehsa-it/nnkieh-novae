@@ -26,10 +26,7 @@ export function markRouteDirection(direction: RouteDirection) {
 }
 
 export function consumeRouteDirection(pathname: string) {
-  const direction =
-    pendingRouteDirection ?? (isRootRoute(pathname) ? "root" : "child");
-  pendingRouteDirection = null;
-  return direction;
+  return pendingRouteDirection ?? (isRootRoute(pathname) ? "root" : "child");
 }
 
 export function rememberRoutePath(pathname: string) {
@@ -68,12 +65,18 @@ export function commitRouteHistory(pathname: string) {
     stampHistoryIndex(currentHistoryIndex);
   }
   rememberRoutePath(pathname);
+  // A route can render more than once while its loading boundary resolves.
+  // Keep the intended direction through those renders, then retire it only
+  // once the destination pathname is committed.
+  pendingRouteDirection = null;
 }
 
 export function markPopstateRouteDirection(state: unknown, pathname: string) {
   const targetIndex = readHistoryIndex(state);
   if (targetIndex === null || currentHistoryIndex === null) {
-    markRouteDirection(isRootRoute(pathname) ? "root" : "child");
+    // Without our stamp this is still a browser history traversal, so retain
+    // the return motion instead of treating a detail pathname as a new child.
+    markRouteDirection("back");
     return;
   }
   pendingHistoryIndex = targetIndex;

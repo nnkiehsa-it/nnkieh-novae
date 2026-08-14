@@ -166,11 +166,14 @@ test("discussion uses one card surface and a fixed reply-aware composer", async 
   assert.doesNotMatch(composer, /rounded-2xl border bg-muted\/35/u);
   assert.match(thread, /onReply\(reply, comment\.id\)/u);
   assert.match(globals, /\.discussion-composer-dock \{[\s\S]*position: fixed/u);
+  assert.match(globals, /\.detail-with-discussion-composer \{[\s\S]*--discussion-composer-clearance/u);
   assert.doesNotMatch(discussion, /pb-\[calc\(9rem\+var\(--safe-bottom\)\)\]/u);
+  assert.match(discussion, /new ResizeObserver\(updateClearance\)/u);
+  assert.match(discussion, /--discussion-composer-clearance/u);
   const issueDetailPage = await read("src/app/(protected)/issues/[filter]/[issueId]/page.tsx");
   const announcementDetailPage = await read("src/app/(protected)/announcements/[announcementId]/page.tsx");
   for (const detailPage of [issueDetailPage, announcementDetailPage]) {
-    assert.match(detailPage, /commentsEnabled \? "space-y-5 pb-\[calc\(7rem\+var\(--safe-bottom\)\)\]"/u);
+    assert.match(detailPage, /commentsEnabled \? "detail-with-discussion-composer space-y-5"/u);
   }
   assert.doesNotMatch(discussion, /ui\.discussion\.empty/u);
   assert.match(zhUi, /'ui\.discussion\.replying': '正在回覆 \{name\}'/u);
@@ -226,6 +229,10 @@ test("feed summaries never normalize or render full content bodies", async () =>
   );
   assert.match(announcementEdge, /delete announcement\.content/u);
   assert.doesNotMatch(routeSkeleton, /const hasSummary|\{hasSummary \?/u);
+  assert.doesNotMatch(routeSkeleton, /index % 2/u);
+  assert.match(routeSkeleton, /size-6 shrink-0 rounded-full/u);
+  assert.match(routeSkeleton, /isIssue \? \([\s\S]*h-1\.5 w-full rounded-full/u);
+  assert.match(routeSkeleton, /isFacility \? \([\s\S]*size-3\.5 rounded-full/u);
 });
 
 test("reactions paint optimistically and roll back with retry feedback", async () => {
@@ -284,6 +291,8 @@ test("list action bars scroll normally and route navigation animates only the co
   assert.match(shell, /markPopstateRouteDirection\(event\.state, window\.location\.pathname\)/u);
   const navigationMemory = await read("src/lib/navigation-memory.ts");
   assert.match(navigationMemory, /HISTORY_INDEX_KEY/u);
+  assert.match(navigationMemory, /pendingRouteDirection = null/u);
+  assert.match(navigationMemory, /Without our stamp[\s\S]*markRouteDirection\("back"\)/u);
   assert.match(navigationMemory, /targetIndex < currentHistoryIndex[\s\S]*"back"/u);
   assert.doesNotMatch(motion, /t-route-exit|\.t-route-enter[^}]*animation-delay/u);
 });

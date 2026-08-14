@@ -55,7 +55,7 @@ export default function AnnouncementDetailPage() {
   }
   const { announcement, profile } = detail;
   return (
-    <div className={detail.commentsEnabled ? "space-y-5 pb-[calc(7rem+var(--safe-bottom))]" : "space-y-5"}>
+    <div className={detail.commentsEnabled ? "detail-with-discussion-composer space-y-5" : "space-y-5"}>
       <DetailToolbar
         actions={
           detail.canManage ? (

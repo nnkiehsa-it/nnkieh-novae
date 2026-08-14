@@ -298,6 +298,13 @@ textarea {
   left: max(1rem, var(--safe-left));
 }
 
+.detail-with-discussion-composer {
+  padding-bottom: var(
+    --discussion-composer-clearance,
+    calc(7rem + var(--safe-bottom))
+  );
+}
+
 @media (min-width: 48rem) {
   .discussion-composer-dock {
     left: calc(15rem + max(var(--page-gutter), var(--safe-left)));

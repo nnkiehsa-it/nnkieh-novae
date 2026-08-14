@@ -100,6 +100,8 @@ describe("React frontend design system", () => {
     const layout = read("src/app/layout.tsx");
     expect(discussion).toContain('<ResizableCard className="gap-0 overflow-hidden py-0">');
     expect(discussion).toContain('className="discussion-composer-dock"');
+    expect(discussion).toContain('new ResizeObserver(updateClearance)');
+    expect(discussion).toContain('--discussion-composer-clearance');
     expect(discussion).toContain("characters.slice(0, 20)");
     expect(discussion).toContain('translate("ui.discussion.replying"');
     expect(composer).toContain('import { ArrowUp } from "lucide-react"');
@@ -142,6 +144,9 @@ describe("React frontend design system", () => {
     expect(skeleton).not.toContain("content?: string");
     expect(skeleton).toMatch(/export function DetailRouteSkeleton\(\{\s*kind = "issue",\s*\}/u);
     expect(skeleton).toContain('kind === "announcement"');
+    expect(skeleton).not.toContain("index % 2");
+    expect(skeleton).toContain('const isIssue = kind === "issue"');
+    expect(skeleton).toContain('const isFacility = kind === "facility"');
     expect(skeleton).not.toContain('min-h-[25rem]');
     expect(skeleton).not.toContain('Skeleton className="size-9 rounded-xl"');
     expect(issueCard).not.toContain('t-data-content-enter flex h-full');
