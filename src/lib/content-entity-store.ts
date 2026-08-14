@@ -13,15 +13,36 @@ export type ContentEntity =
   | IssueRecord;
 
 interface ContentEntityEntry {
+  completeness: ContentEntityCompleteness;
   fields: Map<string, number>;
   value: ContentEntity;
 }
+
+export type ContentEntityCompleteness = "detail" | "summary";
 
 const entries = new Map<string, ContentEntityEntry>();
 const entityListeners = new Map<string, Set<() => void>>();
 const domainListeners = new Map<string, Set<() => void>>();
 const domainVersions = new Map<string, number>();
 let revision = 0;
+
+const SUMMARY_MUTABLE_FIELDS: Record<ContentEntityDomain, ReadonlySet<string>> = {
+  announcement: new Set([
+    "id", "title", "author_uid", "published_at", "like_count",
+    "comment_count", "comments_enabled", "currentUserLiked", "deleting",
+  ]),
+  facility: new Set([
+    "id", "category_id", "title", "location", "status", "affected_count",
+    "created_at", "updated_at", "author_uid", "isOwnFacility",
+    "currentUserAffected", "canManageFacility",
+  ]),
+  issue: new Set([
+    "id", "title", "created_at", "support_count", "status", "category",
+    "read_access", "comments_enabled", "support_enabled", "support_goal",
+    "support_deadline_at", "currentUserSupported", "isOwnIssue",
+    "canManageIssue", "canViewAuthor", "deleting", "author_uid",
+  ]),
+};
 
 function normalizedScope(scope: string | undefined) {
   return scope?.trim() || "anonymous";
@@ -61,6 +82,7 @@ export function mergeContentEntityRead<T extends ContentEntity>(
   domain: ContentEntityDomain,
   incoming: T,
   readRevision: number,
+  completeness: ContentEntityCompleteness = "detail",
 ) {
   const key = entityKey(scope, domain, incoming.id);
   const current = entries.get(key);
@@ -69,6 +91,16 @@ export function mergeContentEntityRead<T extends ContentEntity>(
 
   if (current) {
     for (const [field, value] of Object.entries(incoming)) {
+      if (
+        current.completeness === "detail" &&
+        completeness === "summary" &&
+        !SUMMARY_MUTABLE_FIELDS[domain].has(field)
+      ) {
+        (nextValue as unknown as Record<string, unknown>)[field] = (
+          current.value as unknown as Record<string, unknown>
+        )[field];
+        continue;
+      }
       if ((current.fields.get(field) ?? 0) > readRevision) {
         (nextValue as unknown as Record<string, unknown>)[field] = (
           current.value as unknown as Record<string, unknown>
@@ -82,7 +114,14 @@ export function mergeContentEntityRead<T extends ContentEntity>(
     Object.keys(incoming).forEach((field) => nextFields.set(field, readRevision));
   }
 
-  entries.set(key, { fields: nextFields, value: nextValue });
+  entries.set(key, {
+    completeness:
+      current?.completeness === "detail" || completeness === "detail"
+        ? "detail"
+        : "summary",
+    fields: nextFields,
+    value: nextValue,
+  });
   notify(scope, domain, incoming.id);
   return nextValue;
 }
@@ -100,7 +139,7 @@ export function patchContentEntity<T extends ContentEntity>(
   const fields = new Map(current.fields);
   Object.keys(patch).forEach((field) => fields.set(field, patchRevision));
   const value = { ...current.value, ...patch } as T;
-  entries.set(key, { fields, value });
+  entries.set(key, { completeness: current.completeness, fields, value });
   notify(scope, domain, id);
   return value;
 }
@@ -121,6 +160,15 @@ export function getContentEntity<T extends ContentEntity>(
   id: string,
 ) {
   return entries.get(entityKey(scope, domain, id))?.value as T | undefined;
+}
+
+export function getDetailContentEntity<T extends ContentEntity>(
+  scope: string | undefined,
+  domain: ContentEntityDomain,
+  id: string,
+) {
+  const entry = entries.get(entityKey(scope, domain, id));
+  return entry?.completeness === "detail" ? (entry.value as T) : undefined;
 }
 
 export function getContentEntityDomainVersion(

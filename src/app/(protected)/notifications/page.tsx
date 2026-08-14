@@ -92,6 +92,7 @@ export default function NotificationsPage() {
                 <SkeletonReveal
                   as="div"
                   className="min-w-0 flex-1"
+                  enabled={state.revealFields}
                   skeleton={<div className="space-y-2"><Skeleton className="h-4 w-2/5" /><Skeleton className="h-4 w-4/5" /><Skeleton className="h-3 w-28" /></div>}
                 >
                   <span className="font-medium leading-5">

@@ -32,6 +32,7 @@ import { usePagedRequestGuard } from "@/hooks/use-paged-request-guard";
 import { useContentEntityDomainVersion } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
+import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 
 const ISSUE_LIST_CACHE_PREFIXES = [
   "issue-list-page|",
@@ -64,6 +65,7 @@ export function useIssueFeed() {
     session.user?.uid,
     `issue-feed|${filter}`,
   );
+  const [revealFields] = React.useState(() => !viewMemory);
   const validFilter =
     filter === "my-proposals" || Boolean(findIssueCategory(filter));
   const [bucket, setBucket] = React.useState<IssueStatusBucket>(viewMemory?.bucket ?? "active");
@@ -132,6 +134,7 @@ export function useIssueFeed() {
       const requestToken = requestGuard.begin(queryKey);
       if (!requestToken) return;
       const entityReadRevision = beginContentEntityRead();
+      const skeletonStartedAt = !cursor && revealFields ? Date.now() : 0;
       cursor ? setLoadingMore(true) : setLoading(true);
       setError("");
       try {
@@ -179,6 +182,7 @@ export function useIssueFeed() {
                 issue.isOwnIssue || issue.currentUserSupported === true,
             },
             entityReadRevision,
+            "summary",
           ),
         );
         setFeed((current) => ({
@@ -190,6 +194,8 @@ export function useIssueFeed() {
         if (requestGuard.isCurrent(requestToken))
           setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
       } finally {
+        if (skeletonStartedAt)
+          await waitForMinimumSkeletonDuration(skeletonStartedAt);
         if (requestGuard.finish(requestToken)) {
           setLoading(false);
           setLoadingMore(false);
@@ -207,6 +213,7 @@ export function useIssueFeed() {
       validFilter,
       queryKey,
       requestGuard,
+      revealFields,
     ],
   );
 
@@ -249,6 +256,7 @@ export function useIssueFeed() {
     loading,
     loadingMore,
     query,
+    revealFields,
     setBucket,
     setCommittedQuery,
     setQuery,

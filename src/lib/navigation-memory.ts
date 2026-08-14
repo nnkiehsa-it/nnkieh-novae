@@ -5,16 +5,18 @@ interface ClientRouter {
 
 let currentPath = "";
 let previousPath = "";
-let directionReset = 0;
+let pendingRouteDirection: RouteDirection = "forward";
 
-export type RouteDirection = "back" | "restore";
+export type RouteDirection = "back" | "forward";
 
 export function markRouteDirection(direction: RouteDirection) {
-  document.documentElement.dataset.routeDirection = direction;
-  window.clearTimeout(directionReset);
-  directionReset = window.setTimeout(() => {
-    delete document.documentElement.dataset.routeDirection;
-  }, 700);
+  pendingRouteDirection = direction;
+}
+
+export function consumeRouteDirection() {
+  const direction = pendingRouteDirection;
+  pendingRouteDirection = "forward";
+  return direction;
 }
 
 export function rememberRoutePath(pathname: string) {
@@ -33,10 +35,11 @@ export function returnToPreviousRoute(
     previousPath.startsWith(`${expectedPrefix}/`) ||
     previousPath.startsWith(`${expectedPrefix}?`)
   ) {
-    markRouteDirection("restore");
+    markRouteDirection("back");
     router.back();
     return;
   }
+  markRouteDirection("back");
   router.push(fallback);
 }
 
@@ -45,7 +48,7 @@ export function returnToPreviousInAppRoute(
   fallback: string,
 ) {
   if (previousPath && previousPath !== currentPath) {
-    markRouteDirection("restore");
+    markRouteDirection("back");
     router.back();
     return;
   }

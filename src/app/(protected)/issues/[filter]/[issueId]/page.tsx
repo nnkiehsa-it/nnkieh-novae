@@ -16,12 +16,7 @@ export default function IssueDetailPage() {
   const { t } = useI18n();
   const detail = useIssueDetail();
   if (detail.loading)
-    return (
-      <DetailRouteSkeleton
-        content={detail.issue?.content}
-        title={detail.issue?.title}
-      />
-    );
+    return <DetailRouteSkeleton />;
   if (detail.error || !detail.issue || !detail.status) {
     return (
       <ErrorState
@@ -45,6 +40,7 @@ export default function IssueDetailPage() {
           <IssueDetailContent
             issue={detail.issue}
             profile={detail.profile}
+            reveal={detail.revealDetail}
             status={detail.status}
           />
           <div className={detail.commentsHighlighted ? "t-panel-reveal" : ""}>
@@ -66,6 +62,7 @@ export default function IssueDetailPage() {
           burst={detail.burst}
           issue={detail.issue}
           onSupport={() => void detail.support()}
+          reveal={detail.revealDetail}
           supportOpen={detail.supportOpen}
           supportProgress={detail.supportProgress}
           supporting={detail.supporting}

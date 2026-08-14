@@ -42,6 +42,7 @@ export default function IssueBoardPage() {
     loading,
     loadingMore,
     query,
+    revealFields,
     setBucket,
     setCommittedQuery,
     setQuery,
@@ -190,6 +191,7 @@ export default function IssueBoardPage() {
                 issue={issue}
                 onSupport={() => void support(issue.id)}
                 profile={issue.author_uid ? profiles[issue.author_uid] : undefined}
+                reveal={revealFields}
                 supporting={supportingId === issue.id}
               />
             </StaggerItem>

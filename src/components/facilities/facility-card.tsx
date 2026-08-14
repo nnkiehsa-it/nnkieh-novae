@@ -18,12 +18,14 @@ export function FacilityCard({
   facility,
   onToggleAffected,
   profile,
+  reveal,
 }: {
   affecting: boolean;
   burst: number;
   facility: FacilitySummary;
   onToggleAffected: () => void;
   profile?: UserPublicProfile;
+  reveal: boolean;
 }) {
   return (
       <Card className="t-card group relative h-full gap-4 p-5 sm:p-6">
@@ -31,21 +33,21 @@ export function FacilityCard({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
-              <ContentAuthor profile={profile} revealName />
+              <ContentAuthor profile={profile} revealName={reveal} />
               <span aria-hidden>·</span>
-              <SkeletonReveal skeleton={<Skeleton className="h-3 w-12" />}><span className="shrink-0">{formatRelativeTime(facility.created_at)}</span></SkeletonReveal>
+              <SkeletonReveal enabled={reveal} skeleton={<Skeleton className="h-3 w-12" />}><span className="shrink-0">{formatRelativeTime(facility.created_at)}</span></SkeletonReveal>
             </div>
-            <SkeletonReveal as="div" className="mt-1.5" skeleton={<Skeleton className="h-5 w-4/5" />}><h2 className="text-balance font-semibold leading-6 tracking-[-0.015em]">
+            <SkeletonReveal as="div" className="mt-1.5" enabled={reveal} skeleton={<Skeleton className="h-5 w-4/5" />}><h2 className="text-balance font-semibold leading-6 tracking-[-0.015em]">
               {facility.title}
             </h2></SkeletonReveal>
           </div>
           <ArrowUpRight className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-250 ease-[var(--ease-smooth-out)] group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
         </div>
         <div className="mt-auto flex flex-wrap items-center gap-2 border-t pt-3">
-          <StatusBadge domain="facility" revealLabel status={facility.status} />
+          <StatusBadge domain="facility" revealLabel={reveal} status={facility.status} />
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
             <MapPin className="size-3.5" />
-            <SkeletonReveal className="min-w-24" skeleton={<Skeleton className="h-4 w-24" />}>
+            <SkeletonReveal className="min-w-24" enabled={reveal} skeleton={<Skeleton className="h-4 w-24" />}>
               <span>{facility.location}</span>
             </SkeletonReveal>
           </span>

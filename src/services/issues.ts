@@ -1,4 +1,4 @@
-export { fetchIssueRecordById } from './issues-core';
+export { fetchIssueRecordById, peekIssueRecordById } from './issues-core';
 export {
   fetchComments,
   fetchIssuesForTitleSearch,

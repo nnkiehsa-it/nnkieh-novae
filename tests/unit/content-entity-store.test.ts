@@ -3,6 +3,7 @@ import {
   beginContentEntityRead,
   clearContentEntityScope,
   getContentEntity,
+  getDetailContentEntity,
   mergeContentEntityRead,
   patchContentEntity,
   removeContentEntity,
@@ -19,13 +20,43 @@ function issue(id: string, title: string, supported = false) {
 }
 
 describe("content entity store", () => {
-  it("shares list fields with detail reads", () => {
+  it("shares list state without treating a summary as authoritative detail", () => {
     const scope = "entity-list-detail";
-    mergeContentEntityRead(scope, "issue", issue("one", "List title"), beginContentEntityRead());
+    mergeContentEntityRead(
+      scope,
+      "issue",
+      issue("one", "List title"),
+      beginContentEntityRead(),
+      "summary",
+    );
 
     expect(getContentEntity<IssueRecord>(scope, "issue", "one")?.title).toBe(
       "List title",
     );
+    expect(getDetailContentEntity(scope, "issue", "one")).toBeUndefined();
+    clearContentEntityScope(scope);
+  });
+
+  it("does not let a later list summary replace authoritative detail content", () => {
+    const scope = "entity-detail-protection";
+    mergeContentEntityRead(
+      scope,
+      "issue",
+      { ...issue("one", "Detail title"), content: "Full detail" },
+      beginContentEntityRead(),
+    );
+    mergeContentEntityRead(
+      scope,
+      "issue",
+      { ...issue("one", "Updated list title"), content: "List excerpt" },
+      beginContentEntityRead(),
+      "summary",
+    );
+
+    expect(getDetailContentEntity<IssueRecord>(scope, "issue", "one")).toMatchObject({
+      content: "Full detail",
+      title: "Updated list title",
+    });
     clearContentEntityScope(scope);
   });
 

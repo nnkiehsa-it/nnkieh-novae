@@ -27,6 +27,7 @@ import { usePagedRequestGuard } from "@/hooks/use-paged-request-guard";
 import { useContentEntityDomainVersion } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
+import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 
 const FACILITY_LIST_CACHE_PREFIXES = ["facility-list-page|"] as const;
 
@@ -57,6 +58,7 @@ export function useFacilityFeed() {
     session.user?.uid,
     "facility-feed",
   );
+  const [revealFields] = React.useState(() => !viewMemory);
   const [category, setCategory] = React.useState(
     requestedCategory && findFacilityCategory(requestedCategory)
       ? requestedCategory
@@ -122,6 +124,7 @@ export function useFacilityFeed() {
       const requestToken = requestGuard.begin(queryKey);
       if (!requestToken) return;
       const entityReadRevision = beginContentEntityRead();
+      const skeletonStartedAt = !cursor && revealFields ? Date.now() : 0;
       cursor ? setLoadingMore(true) : setLoading(true);
       setError("");
       try {
@@ -140,6 +143,7 @@ export function useFacilityFeed() {
             "facility",
             facility,
             entityReadRevision,
+            "summary",
           ),
         );
         setFeed((current) => ({
@@ -153,6 +157,8 @@ export function useFacilityFeed() {
         if (requestGuard.isCurrent(requestToken))
           setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
       } finally {
+        if (skeletonStartedAt)
+          await waitForMinimumSkeletonDuration(skeletonStartedAt);
         if (requestGuard.finish(requestToken)) {
           setLoading(false);
           setLoadingMore(false);
@@ -165,6 +171,7 @@ export function useFacilityFeed() {
       committedQuery,
       queryKey,
       requestGuard,
+      revealFields,
       session.user?.uid,
       sort,
       status,
@@ -226,6 +233,7 @@ export function useFacilityFeed() {
     loading,
     loadingMore,
     query,
+    revealFields,
     setBucket,
     setCommittedQuery,
     setQuery,

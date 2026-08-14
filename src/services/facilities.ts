@@ -10,7 +10,7 @@ import type {
   FacilitySummary,
 } from '@/types';
 import { toReadableBackendError } from '@/services/issues-core';
-import { captureContentCacheWriteGuard, createContentCacheKey, getCachedContentPersistent, markContentCachePrefixStale, runCoalescedContentRequest, setCachedContentFromRead } from '@/services/content-read-cache';
+import { captureContentCacheWriteGuard, createContentCacheKey, getCachedContent, getCachedContentPersistent, markContentCachePrefixStale, runCoalescedContentRequest, setCachedContentFromRead } from '@/services/content-read-cache';
 import { READ_REQUEST_TIMEOUT_MS } from '@/lib/request';
 import { registerContentVersion } from '@/services/content-versions';
 
@@ -80,6 +80,12 @@ export async function getFacility(facilityId: string, options: { forceRefresh?: 
     setCachedContentFromRead(cacheGuard, facility);
     return facility;
   } catch (error) { throw toReadableBackendError(error); } });
+}
+
+export function peekFacility(facilityId: string) {
+  return getCachedContent<FacilityRecord>(
+    createContentCacheKey(['facility-detail', facilityId]),
+  );
 }
 
 export async function createFacility(input: FacilityInput) {

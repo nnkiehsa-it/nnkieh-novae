@@ -27,6 +27,7 @@ export function IssueCard({
   issue,
   onSupport,
   profile,
+  reveal,
   burst,
   supporting,
 }: {
@@ -35,6 +36,7 @@ export function IssueCard({
   issue: IssueRecord;
   onSupport: () => void;
   profile?: UserPublicProfile;
+  reveal: boolean;
   supporting: boolean;
 }) {
   useLocaleSubscription();
@@ -47,14 +49,14 @@ export function IssueCard({
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
               {issue.canViewAuthor && issue.author_uid ? (
-                <ContentAuthor profile={profile} revealName />
+                <ContentAuthor profile={profile} revealName={reveal} />
               ) : null}
               {issue.canViewAuthor && issue.author_uid ? (
                 <span aria-hidden>·</span>
               ) : null}
-              <SkeletonReveal skeleton={<Skeleton className="h-3 w-12" />}><span className="shrink-0">{formatRelativeTime(issue.created_at)}</span></SkeletonReveal>
+              <SkeletonReveal enabled={reveal} skeleton={<Skeleton className="h-3 w-12" />}><span className="shrink-0">{formatRelativeTime(issue.created_at)}</span></SkeletonReveal>
             </div>
-            <SkeletonReveal as="div" className="mt-1.5" skeleton={<Skeleton className="h-5 w-4/5" />}><h2 className="text-balance font-semibold leading-6 tracking-[-0.015em]">
+            <SkeletonReveal as="div" className="mt-1.5" enabled={reveal} skeleton={<Skeleton className="h-5 w-4/5" />}><h2 className="text-balance font-semibold leading-6 tracking-[-0.015em]">
               {issue.title}
             </h2></SkeletonReveal>
           </div>
@@ -63,6 +65,7 @@ export function IssueCard({
         {issue.content ? (
           <SkeletonReveal
             as="div"
+            enabled={reveal}
             skeleton={<div className="space-y-2"><Skeleton className="h-3 w-full" /><Skeleton className="h-3 w-2/3" /></div>}
           >
             <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">
@@ -74,7 +77,7 @@ export function IssueCard({
           <div className="space-y-1.5">
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>{translate('ui.issue.supportProgress')}</span>
-              <SkeletonReveal className="min-w-14" skeleton={<Skeleton className="h-3 w-14" />}>
+              <SkeletonReveal className="min-w-14" enabled={reveal} skeleton={<Skeleton className="h-3 w-14" />}>
                 <span className="tabular-nums"><AnimatedNumber value={issue.support_count} /> / {goal}</span>
               </SkeletonReveal>
             </div>
@@ -95,7 +98,7 @@ export function IssueCard({
           </div>
         ) : null}
         <div className="mt-auto flex flex-wrap items-center gap-2 border-t pt-3">
-          <StatusBadge domain="issue" revealLabel status={getDerivedIssueStatus(issue)} />
+          <StatusBadge domain="issue" revealLabel={reveal} status={getDerivedIssueStatus(issue)} />
           {issue.support_enabled ? (
             <LikeActionButton
               active={issue.currentUserSupported === true}

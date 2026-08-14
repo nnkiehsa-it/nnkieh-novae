@@ -3,6 +3,7 @@
 import * as React from "react";
 import {
   getContentEntity,
+  getDetailContentEntity,
   getContentEntityDomainVersion,
   subscribeContentEntity,
   subscribeContentEntityDomain,
@@ -14,6 +15,7 @@ export function useContentEntity<T extends ContentEntity>(
   scope: string | undefined,
   domain: ContentEntityDomain,
   id: string,
+  completeness: "detail" | "summary" = "summary",
 ) {
   return React.useSyncExternalStore(
     React.useCallback(
@@ -21,8 +23,10 @@ export function useContentEntity<T extends ContentEntity>(
       [domain, id, scope],
     ),
     React.useCallback(
-      () => getContentEntity<T>(scope, domain, id),
-      [domain, id, scope],
+      () => completeness === "detail"
+        ? getDetailContentEntity<T>(scope, domain, id)
+        : getContentEntity<T>(scope, domain, id),
+      [completeness, domain, id, scope],
     ),
     () => undefined,
   );

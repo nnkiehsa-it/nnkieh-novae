@@ -13,6 +13,7 @@ import {
   deleteAnnouncementComment,
   fetchAnnouncementComments,
   fetchAnnouncementRecordById,
+  peekAnnouncementRecordById,
   setAnnouncementLike,
 } from "@/services/announcements";
 import { fetchUserPublicProfiles } from "@/services/users-read";
@@ -24,6 +25,7 @@ import type {
 } from "@/types";
 import {
   beginContentEntityRead,
+  getDetailContentEntity,
   mergeContentEntityRead,
   patchContentEntity,
   removeContentEntity,
@@ -31,6 +33,7 @@ import {
 import { useContentEntity } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
+import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 
 export function useAnnouncementDetail() {
   const params = useParams<{ announcementId: string }>();
@@ -42,14 +45,19 @@ export function useAnnouncementDetail() {
     session.user?.uid,
     "announcement",
     params.announcementId,
+    "detail",
   );
-  const currentAnnouncement = storedAnnouncement ?? null;
+  const currentAnnouncement = storedAnnouncement ?? peekAnnouncementRecordById(
+    params.announcementId,
+    session.user?.uid,
+  );
   const [comments, setComments] = React.useState<AnnouncementCommentRecord[]>([]);
   const [commentSort, setCommentSort] = React.useState<CommentSortOption>("newest");
   const [commentCursor, setCommentCursor] = React.useState<CommentCursor>(null);
   const [commentsHaveMore, setCommentsHaveMore] = React.useState(false);
   const [profile, setProfile] = React.useState<UserPublicProfile | null>(null);
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(!currentAnnouncement);
+  const [revealDetail, setRevealDetail] = React.useState(false);
   const [commentsLoading, setCommentsLoading] = React.useState(true);
   const [commentsLoadingMore, setCommentsLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
@@ -60,7 +68,13 @@ export function useAnnouncementDetail() {
 
   const load = React.useCallback(
     async (forceRefresh = false) => {
-      setLoading(true);
+      const cached =
+        getDetailContentEntity<AnnouncementRecord>(session.user?.uid, "announcement", params.announcementId) ??
+        peekAnnouncementRecordById(params.announcementId, session.user?.uid);
+      const coldRead = !cached;
+      const startedAt = Date.now();
+      if (coldRead) setLoading(true);
+      setRevealDetail(coldRead);
       setError("");
       const entityReadRevision = beginContentEntityRead();
       try {
@@ -84,6 +98,7 @@ export function useAnnouncementDetail() {
             : t("ui.announcement.notFound"),
         );
       } finally {
+        if (coldRead) await waitForMinimumSkeletonDuration(startedAt);
         setLoading(false);
       }
     },
@@ -236,6 +251,7 @@ export function useAnnouncementDetail() {
     liking,
     load,
     loading,
+    revealDetail,
     loadMoreComments,
     profile,
     setCommentSort,

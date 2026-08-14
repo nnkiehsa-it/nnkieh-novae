@@ -22,7 +22,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PageHeader } from "@/components/ui/page-state";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
-import { stripMarkdownImages } from "@/lib/format";
 
 export type FeedSkeletonKind = "announcement" | "facility" | "issue";
 export type ComposerSkeletonKind = FeedSkeletonKind;
@@ -216,13 +215,9 @@ export function FeedCardsSkeleton({ kind }: { kind: FeedSkeletonKind }) {
 }
 
 export function DetailRouteSkeleton({
-  content,
   kind = "issue",
-  title,
 }: {
-  content?: string;
   kind?: FeedSkeletonKind;
-  title?: string;
 }) {
   useLocaleSubscription();
   return (
@@ -235,20 +230,12 @@ export function DetailRouteSkeleton({
               <Skeleton className="h-6 w-20 rounded-full" />
               <Skeleton className="h-6 w-16 rounded-full" />
             </div>
-            {title ? <h1 className="text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">{title}</h1> : <Skeleton className="h-8 w-4/5" />}
+            <Skeleton className="h-8 w-4/5" />
             <Skeleton className="h-4 w-40" />
           </div>
           <div className="space-y-3 px-5 py-5 sm:px-7 sm:py-6">
-            {content ? (
-              <p className="line-clamp-2 text-base leading-7 text-foreground/84">
-                {stripMarkdownImages(content)}
-              </p>
-            ) : (
-              <>
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-              </>
-            )}
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
           </div>
         </Card>
         <aside className="space-y-3 lg:sticky lg:top-6">

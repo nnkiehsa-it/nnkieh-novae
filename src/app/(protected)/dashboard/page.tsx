@@ -96,7 +96,7 @@ export default function DashboardPage() {
                   <Icon className="size-4" />
                 </span>
               </div>
-              <SkeletonReveal skeleton={<Skeleton className="h-9 w-20" />}><AnimatedNumber
+              <SkeletonReveal enabled={dashboard.revealFields} skeleton={<Skeleton className="h-9 w-20" />}><AnimatedNumber
                 className="text-3xl font-semibold tracking-[-0.04em]"
                 value={value}
               /></SkeletonReveal>
@@ -118,7 +118,7 @@ export default function DashboardPage() {
                     <span className="truncate">
                       {getIssueCategoryLabel(category)}
                     </span>
-                    <SkeletonReveal skeleton={<Skeleton className="h-5 w-7" />}><AnimatedNumber className="font-medium" value={count} /></SkeletonReveal>
+                    <SkeletonReveal enabled={dashboard.revealFields} skeleton={<Skeleton className="h-5 w-7" />}><AnimatedNumber className="font-medium" value={count} /></SkeletonReveal>
                   </div>
                   <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                     <span
@@ -151,7 +151,7 @@ export default function DashboardPage() {
                 <p className="text-xs leading-5 text-muted-foreground">
                   {item.label}
                 </p>
-                <SkeletonReveal skeleton={<Skeleton className="mt-1 h-7 w-10" />}><AnimatedNumber
+                <SkeletonReveal enabled={dashboard.revealFields} skeleton={<Skeleton className="mt-1 h-7 w-10" />}><AnimatedNumber
                   className="mt-1 text-xl font-semibold"
                   value={item.value}
                 /></SkeletonReveal>

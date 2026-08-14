@@ -55,10 +55,6 @@
   to { filter: blur(0); }
 }
 
-html[data-route-direction="restore"] .t-route-enter {
-  animation: none;
-}
-
 @media (min-width: 48rem) {
   @keyframes t-route-enter {
     from {
@@ -73,7 +69,7 @@ html[data-route-direction="restore"] .t-route-enter {
 }
 
 @media (max-width: 47.99rem) {
-  html[data-route-direction="back"] .t-route-enter {
+  .t-route-enter[data-route-direction="back"] {
     animation-name: t-route-enter-back, t-route-blur;
   }
 
@@ -106,31 +102,8 @@ html[data-route-direction="restore"] .t-route-enter {
   }
 }
 
-/* Staggered content and list rows */
+/* Dense lists stay fully painted ahead of the viewport. */
 .t-stagger-item { opacity: 1; }
-
-.t-stagger-item[data-observed="true"] {
-  animation: none;
-  transition:
-    opacity var(--motion-medium) var(--ease-smooth-out),
-    transform var(--motion-medium) var(--ease-smooth-out);
-}
-
-.t-stagger-item[data-observed="true"][data-visible="false"] {
-  opacity: 0.28;
-  transform: translateY(var(--motion-distance-sm));
-}
-
-.t-stagger-item[data-observed="true"][data-visible="true"] {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.t-stagger-list > .t-stagger-item,
-.route-card-skeleton {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 12rem;
-}
 
 /* Number updates */
 .t-digit-group {
@@ -1032,11 +1005,6 @@ html[data-route-direction="restore"] .t-route-enter {
   .t-dropdown,
   .t-tooltip {
     animation: none !important;
-  }
-  .t-stagger-item[data-observed] {
-    opacity: 1 !important;
-    transform: none !important;
-    filter: none !important;
   }
   .t-skel-skeleton,
   .t-skel-content {

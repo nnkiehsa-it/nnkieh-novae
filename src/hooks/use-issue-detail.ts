@@ -18,12 +18,14 @@ import {
   deleteIssue,
   fetchComments,
   fetchIssueRecordById,
+  peekIssueRecordById,
   toggleSupport,
 } from "@/services/issues";
 import { fetchUserPublicProfiles } from "@/services/users-read";
 import type { CommentRecord, CommentSortOption, IssueRecord, UserPublicProfile } from "@/types";
 import {
   beginContentEntityRead,
+  getDetailContentEntity,
   mergeContentEntityRead,
   patchContentEntity,
   removeContentEntity,
@@ -32,6 +34,7 @@ import { useContentEntity } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
 import { returnToPreviousRoute } from "@/lib/navigation-memory";
+import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 
 export function useIssueDetail() {
   const params = useParams<{ filter: string; issueId: string }>();
@@ -46,14 +49,16 @@ export function useIssueDetail() {
     session.user?.uid,
     "issue",
     issueId,
+    "detail",
   );
-  const currentIssue = storedIssue ?? null;
+  const currentIssue = storedIssue ?? peekIssueRecordById(issueId, session.user?.uid);
   const [comments, setComments] = React.useState<CommentRecord[]>([]);
   const [commentSort, setCommentSort] = React.useState<CommentSortOption>("newest");
   const [commentCursor, setCommentCursor] = React.useState<CommentCursor>(null);
   const [commentsHaveMore, setCommentsHaveMore] = React.useState(false);
   const [profile, setProfile] = React.useState<UserPublicProfile | null>(null);
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(!currentIssue);
+  const [revealDetail, setRevealDetail] = React.useState(false);
   const [commentsLoading, setCommentsLoading] = React.useState(true);
   const [commentsLoadingMore, setCommentsLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
@@ -65,7 +70,13 @@ export function useIssueDetail() {
 
   const loadIssue = React.useCallback(
     async (forceRefresh = false) => {
-      setLoading(true);
+      const cached =
+        getDetailContentEntity<IssueRecord>(session.user?.uid, "issue", issueId) ??
+        peekIssueRecordById(issueId, session.user?.uid);
+      const coldRead = !cached;
+      const startedAt = Date.now();
+      if (coldRead) setLoading(true);
+      setRevealDetail(coldRead);
       setError("");
       const entityReadRevision = beginContentEntityRead();
       try {
@@ -92,6 +103,7 @@ export function useIssueDetail() {
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : t("ui.issue.notFound"));
       } finally {
+        if (coldRead) await waitForMinimumSkeletonDuration(startedAt);
         setLoading(false);
       }
     },
@@ -241,6 +253,7 @@ export function useIssueDetail() {
     issue: currentIssue,
     loadIssue,
     loading,
+    revealDetail,
     loadMoreComments,
     moderationOpen,
     profile,

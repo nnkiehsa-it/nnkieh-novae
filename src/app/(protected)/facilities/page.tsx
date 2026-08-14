@@ -164,6 +164,7 @@ export default function FacilitiesPage() {
                 facility={facility}
                 onToggleAffected={() => void state.toggleAffected(facility.id)}
                 profile={profiles[facility.author_uid]}
+                reveal={state.revealFields}
               />
             </StaggerItem>
           ))}

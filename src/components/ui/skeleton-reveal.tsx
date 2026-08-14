@@ -5,15 +5,18 @@ export function SkeletonReveal({
   as = "span",
   children,
   className,
+  enabled = true,
   skeleton,
 }: {
   as?: "div" | "span";
   children: React.ReactNode;
   className?: string;
+  enabled?: boolean;
   skeleton: React.ReactNode;
 }) {
   const Element = as;
   const Layer = as;
+  if (!enabled) return <Element className={className}>{children}</Element>;
   return (
     <Element
       className={cn("t-skel is-revealed", className)}

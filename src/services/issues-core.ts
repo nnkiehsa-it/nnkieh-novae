@@ -1,7 +1,7 @@
 import type { IssueRecord } from '@/types';
 import { invokeBackendAction } from '@/services/backend-action';
 import { READ_REQUEST_TIMEOUT_MS, RequestFailure } from '@/lib/request';
-import { createContentCacheKey, getCachedContentPersistent, runCoalescedContentRequest, setCachedContentFromRead } from '@/services/content-read-cache';
+import { createContentCacheKey, getCachedContent, getCachedContentPersistent, runCoalescedContentRequest, setCachedContentFromRead } from '@/services/content-read-cache';
 import {
   STATUS_BUCKETS,
   TABLE_PAGE_SIZE,
@@ -49,4 +49,13 @@ export async function fetchIssueRecordById(
     if (error instanceof RequestFailure) throw error;
     throw new Error('issue.thisProposalCannotBeFound', { cause: error });
   } });
+}
+
+export function peekIssueRecordById(
+  issueId: string,
+  cacheScope: string | undefined,
+) {
+  return getCachedContent<IssueRecord>(
+    createContentCacheKey(['issue-detail', issueId, cacheScope ?? 'default']),
+  );
 }

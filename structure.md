@@ -32,9 +32,9 @@ This document is the maintained map of the repository. Read it before broad sear
 ## Presentation components
 
 - `src/components/ui/` — business-free shadcn/Radix primitives. Buttons, fields, cards, overlays, tabs, sheets, menus, status badges, skeletons, page states, and the shared Novae brand lockup share global semantic tokens. `skeleton-reveal.tsx` stacks a field skeleton over its final text/number slot so async handoff cannot move or filter a card frame.
-- `src/components/motion/` — reusable animated numbers, reaction feedback, and staggered feed items. One shared IntersectionObserver drives card re-entry state while CSS owns the bounded blur/transform animation.
+- `src/components/motion/` — reusable animated numbers, reaction feedback, and geometry-only feed wrappers. Dense list items stay mounted and painted without viewport observers or offscreen opacity states.
 - `src/components/app-shell.tsx` / `liquid-nav.tsx` — desktop, compact desktop, and mobile navigation. Route content commits without full-page snapshots, then only the new pathname-keyed node receives the short entrance motion; selected navigation and tab surfaces use measurement-free shared-layout motion.
-- `src/lib/navigation-memory.ts` — remembers the immediately preceding in-app pathname, distinguishes atomic history restoration from animated fallback navigation, and prevents cached routes from replaying their entrance after a back action.
+- `src/lib/navigation-memory.ts` — remembers the immediately preceding in-app pathname and hands one immutable forward/back direction to each newly mounted route node, including browser-history and fallback returns.
 - `src/components/issues/` — issue cards, detail content/actions, and moderation presentation.
 - `src/components/facilities/` — facility cards and status-dialog presentation.
 - `src/components/announcements/` — announcement cards.
@@ -78,8 +78,9 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/services/` — frontend boundary for Cloudflare gateway, Supabase reads/realtime, uploads, session roles, and backend actions. Only hooks and other services import it.
 - `src/lib/` — framework-independent request, Firebase, Supabase, caching, Markdown, image, route, formatting, pagination, and domain utilities.
 - `src/hooks/use-paged-request-guard.ts` — shared feed request generation/in-flight guard that prevents duplicate loads and stale query responses from committing.
-- `src/lib/content-entity-store.ts` and `src/hooks/use-content-entity.ts` — normalized user-scoped content entities shared by lists, details, mutations, and realtime; field revisions prevent older reads from overwriting newer local or realtime patches.
+- `src/lib/content-entity-store.ts` and `src/hooks/use-content-entity.ts` — normalized user-scoped content entities shared by lists, details, mutations, and realtime; summary/detail completeness prevents list excerpts from satisfying or overwriting authoritative detail reads, while field revisions prevent older requests from replacing newer local or realtime patches.
 - `src/lib/view-memory-cache.ts` — bounded 30-minute, user-scoped LRU snapshots for primary list/query UI, pagination and dashboard state; hooks repaint cached views synchronously, refresh through existing services, and clear snapshots with the active session.
+- `src/lib/loading-timing.ts` — shared cold-skeleton minimum duration; cached views bypass it while genuinely unresolved backend reads avoid one-frame loading flashes.
 - `src/constants/` — generated/static application, category, status, retention, API error, and rate-limit constants.
 - `src/types/` — shared frontend/domain types.
 - `src/i18n/` — reactive React i18n store and paired `en` / `zh-TW` domain catalogs. `ui.ts` contains the rebuilt interface language.

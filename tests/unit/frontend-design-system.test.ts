@@ -50,8 +50,8 @@ describe("React frontend design system", () => {
     expect(motion).toMatch(/@keyframes t-route-enter[\s\S]*translate/u);
     expect(motion).toContain("t-route-blur var(--motion-quick)");
     expect(routeEnter).not.toContain("filter:");
-    expect(motion).toContain('html[data-route-direction="restore"] .t-route-enter');
-    expect(motion).toMatch(/data-route-direction="restore"[^}]*animation: none/u);
+    expect(read("src/components/app-shell.tsx")).toContain("React.useState(consumeRouteDirection)");
+    expect(read("src/components/app-shell.tsx")).toContain('markRouteDirection("back")');
   });
 
   it("warms privileged route shells immediately and gives them one mobile toolbar", () => {
@@ -64,7 +64,7 @@ describe("React frontend design system", () => {
     expect(preload).toContain('router.prefetch("/admin/management?tab=members")');
     expect(dashboard).toContain("<SecondaryToolbar");
     expect(administration).toContain("<SecondaryToolbar");
-    expect(navigationMemory).toContain('markRouteDirection("restore")');
+    expect(navigationMemory).toContain('markRouteDirection("back")');
     expect(read("src/app/(protected)/dashboard/loading.tsx")).toContain("DashboardSkeleton");
     expect(read("src/app/(protected)/admin/management/loading.tsx")).toContain("AdministrationSkeleton");
   });
@@ -78,8 +78,9 @@ describe("React frontend design system", () => {
     expect(skeleton).toContain("<Input");
     expect(skeleton).toContain("<Textarea");
     expect(skeleton).toContain("<StableDetailToolbar />");
-    expect(skeleton).toContain("line-clamp-2");
-    expect(skeleton).toContain("stripMarkdownImages(content)");
+    expect(skeleton).not.toContain("stripMarkdownImages(content)");
+    expect(skeleton).not.toContain("content?: string");
+    expect(skeleton).toMatch(/export function DetailRouteSkeleton\(\{\s*kind = "issue",\s*\}/u);
     expect(skeleton).toContain('kind === "announcement"');
     expect(skeleton).not.toContain('Skeleton className="size-9 rounded-xl"');
     expect(issueCard).not.toContain('t-data-content-enter flex h-full');
@@ -111,6 +112,19 @@ describe("React frontend design system", () => {
     expect(motion).toContain("@media (prefers-reduced-motion: reduce)");
     expect(`${globals}\n${motion}`).toMatch(/@media \(hover: hover\).*\(pointer: fine\)/s);
     expect(`${globals}\n${motion}`).not.toContain("transition-all");
+  });
+
+  it("paints dense scrolling content before it reaches the viewport", () => {
+    const globals = read("src/app/globals.css");
+    const motion = read("src/styles/motion.css");
+    const stagger = read("src/components/motion/stagger.tsx");
+    const renderer = read("src/components/content-renderer.tsx");
+    expect(`${globals}\n${motion}`).not.toContain("content-visibility: auto");
+    expect(`${globals}\n${motion}`).not.toContain("contain-intrinsic-size");
+    expect(stagger).not.toContain("IntersectionObserver");
+    expect(stagger).not.toContain("data-visible");
+    expect(renderer).toContain('loading="eager"');
+    expect(renderer).toContain('fetchPriority="low"');
   });
 
   it("keeps route modules composed from reusable domain components", () => {

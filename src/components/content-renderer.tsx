@@ -41,7 +41,7 @@ marked.use({
       } catch {
         return escapeAttribute(alt);
       }
-      return `<img src="${escapeAttribute(href)}" alt="${escapeAttribute(alt)}" width="${Number(size?.[2] ?? 1200)}" height="${Number(size?.[3] ?? 675)}" loading="lazy" decoding="async">`;
+      return `<img src="${escapeAttribute(href)}" alt="${escapeAttribute(alt)}" width="${Number(size?.[2] ?? 1200)}" height="${Number(size?.[3] ?? 675)}" loading="eager" fetchpriority="low" decoding="async">`;
     },
   },
 });
@@ -49,7 +49,7 @@ marked.setOptions({ breaks: true, gfm: true });
 
 function renderMarkdown(content: string) {
   const raw = marked.parse(content, { async: false }) as string;
-  return DOMPurify.sanitize(raw, { ADD_ATTR: ["loading", "decoding"] });
+  return DOMPurify.sanitize(raw, { ADD_ATTR: ["loading", "fetchpriority", "decoding"] });
 }
 
 export function ContentRenderer({
@@ -101,7 +101,8 @@ export function ContentRenderer({
                   alt={image.alt || fallbackAlt}
                   className="size-full object-cover transition-transform duration-300 ease-[var(--ease-smooth-out)] group-hover:scale-[1.025]"
                   height={image.height}
-                  loading="lazy"
+                  fetchPriority="low"
+                  loading="eager"
                   src={image.src}
                   width={image.width}
                 />

@@ -6,6 +6,7 @@ import { useSession } from "@/hooks/use-session";
 import { fetchPlatformDashboard } from "@/services/dashboard";
 import type { PlatformDashboardData } from "@/types";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
+import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 
 export function usePlatformDashboard() {
   const session = useSession();
@@ -17,11 +18,13 @@ export function usePlatformDashboard() {
   const [data, setData] = React.useState<PlatformDashboardData | null>(viewMemory);
   const [loading, setLoading] = React.useState(!viewMemory);
   const [error, setError] = React.useState("");
+  const [revealFields] = React.useState(() => !viewMemory);
   const canView = session.can("dashboard.view");
 
   const load = React.useCallback(
     async (forceRefresh = false) => {
       if (!canView) return;
+      const skeletonStartedAt = revealFields ? Date.now() : 0;
       setLoading(true);
       setError("");
       try {
@@ -29,10 +32,12 @@ export function usePlatformDashboard() {
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
       } finally {
+        if (skeletonStartedAt)
+          await waitForMinimumSkeletonDuration(skeletonStartedAt);
         setLoading(false);
       }
     },
-    [canView, t],
+    [canView, revealFields, t],
   );
 
   React.useEffect(() => {
@@ -43,5 +48,5 @@ export function usePlatformDashboard() {
     if (data) setViewMemory(session.user?.uid, "dashboard", data);
   }, [data, session.user?.uid]);
 
-  return { canView, data, error, load, loading };
+  return { canView, data, error, load, loading, revealFields };
 }

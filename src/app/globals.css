@@ -402,14 +402,6 @@ textarea {
   }
 }
 
-@supports (content-visibility: auto) {
-  [data-slot="card"],
-  [role="article"] {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 9rem;
-  }
-}
-
 @media (max-width: 47.99rem) {
   :root {
     --page-gutter: 1rem;

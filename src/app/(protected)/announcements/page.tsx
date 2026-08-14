@@ -61,6 +61,7 @@ export default function AnnouncementsPage() {
                 liking={feed.likingId === announcement.id}
                 onLike={() => void feed.like(announcement.id)}
                 profile={profiles[announcement.author_uid]}
+                reveal={feed.revealFields}
               />
             </StaggerItem>
           ))}

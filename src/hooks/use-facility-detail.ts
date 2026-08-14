@@ -8,11 +8,13 @@ import { useSession } from "@/hooks/use-session";
 import {
   deleteFacility,
   getFacility,
+  peekFacility,
   toggleFacilityAffected,
 } from "@/services/facilities";
 import type { FacilityRecord } from "@/types";
 import {
   beginContentEntityRead,
+  getDetailContentEntity,
   mergeContentEntityRead,
   patchContentEntity,
   removeContentEntity,
@@ -21,6 +23,7 @@ import { useContentEntity } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
 import { returnToPreviousRoute } from "@/lib/navigation-memory";
+import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 
 export function useFacilityDetail() {
   const params = useParams<{ facilityId: string }>();
@@ -32,9 +35,11 @@ export function useFacilityDetail() {
     session.user?.uid,
     "facility",
     params.facilityId,
+    "detail",
   );
-  const currentFacility = storedFacility ?? null;
-  const [loading, setLoading] = React.useState(true);
+  const currentFacility = storedFacility ?? peekFacility(params.facilityId);
+  const [loading, setLoading] = React.useState(!currentFacility);
+  const [revealDetail, setRevealDetail] = React.useState(false);
   const [error, setError] = React.useState("");
   const [affecting, setAffecting] = React.useState(false);
   const [burst, setBurst] = React.useState(0);
@@ -44,7 +49,13 @@ export function useFacilityDetail() {
 
   const load = React.useCallback(
     async (forceRefresh = false) => {
-      setLoading(true);
+      const cached =
+        getDetailContentEntity<FacilityRecord>(session.user?.uid, "facility", params.facilityId) ??
+        peekFacility(params.facilityId);
+      const coldRead = !cached;
+      const startedAt = Date.now();
+      if (coldRead) setLoading(true);
+      setRevealDetail(coldRead);
       setError("");
       const entityReadRevision = beginContentEntityRead();
       try {
@@ -60,6 +71,7 @@ export function useFacilityDetail() {
           caught instanceof Error ? caught.message : t("ui.facility.notFound"),
         );
       } finally {
+        if (coldRead) await waitForMinimumSkeletonDuration(startedAt);
         setLoading(false);
       }
     },
@@ -135,6 +147,7 @@ export function useFacilityDetail() {
     facility: currentFacility,
     load,
     loading,
+    revealDetail,
     remove,
     setFacility: (next: FacilityRecord) => {
       patchContentEntity<FacilityRecord>(

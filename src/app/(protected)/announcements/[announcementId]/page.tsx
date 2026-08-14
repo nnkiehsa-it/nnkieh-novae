@@ -44,13 +44,7 @@ export default function AnnouncementDetailPage() {
   const { t } = useI18n();
   const detail = useAnnouncementDetail();
   if (detail.loading)
-    return (
-      <DetailRouteSkeleton
-        content={detail.announcement?.content}
-        kind="announcement"
-        title={detail.announcement?.title}
-      />
-    );
+    return <DetailRouteSkeleton kind="announcement" />;
   if (detail.error || !detail.announcement) {
     return (
       <ErrorState
@@ -129,7 +123,7 @@ export default function AnnouncementDetailPage() {
               <p className="text-[0.8125rem] font-medium text-muted-foreground">
                 {t("ui.announcement.campus")}
               </p>
-              <SkeletonReveal as="div" className="mt-2.5" skeleton={<Skeleton className="h-8 w-4/5" />}><h1 className="text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">
+              <SkeletonReveal as="div" className="mt-2.5" enabled={detail.revealDetail} skeleton={<Skeleton className="h-8 w-4/5" />}><h1 className="text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">
                 {announcement.title}
               </h1></SkeletonReveal>
               <div className="mt-3 flex items-center gap-2 text-[0.8125rem] text-muted-foreground">
@@ -140,16 +134,16 @@ export default function AnnouncementDetailPage() {
                   />
                   <AvatarFallback>{profile?.displayName?.slice(0, 1) || "?"}</AvatarFallback>
                 </Avatar>
-                <SkeletonReveal skeleton={<Skeleton className="h-4 w-20" />}><span>{profile?.displayName || t("ui.announcement.admin")}</span></SkeletonReveal>
+                <SkeletonReveal enabled={detail.revealDetail} skeleton={<Skeleton className="h-4 w-20" />}><span>{profile?.displayName || t("ui.announcement.admin")}</span></SkeletonReveal>
                 <span>·</span>
-                <SkeletonReveal skeleton={<Skeleton className="h-4 w-32" />}><span>{formatDate(announcement.published_at)}</span></SkeletonReveal>
+                <SkeletonReveal enabled={detail.revealDetail} skeleton={<Skeleton className="h-4 w-32" />}><span>{formatDate(announcement.published_at)}</span></SkeletonReveal>
               </div>
             </div>
             <CardContent className="py-5 sm:px-7 sm:py-6">
               <ContentRenderer
                 content={announcement.content}
                 fallbackAlt={announcement.title}
-                revealText
+                revealText={detail.revealDetail}
               />
             </CardContent>
           </Card>
@@ -184,7 +178,7 @@ export default function AnnouncementDetailPage() {
                 reaction="heart"
               />
             </div>
-            <SkeletonReveal as="div" skeleton={<Skeleton className="mx-auto h-4 w-24" />}><div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+            <SkeletonReveal as="div" enabled={detail.revealDetail} skeleton={<Skeleton className="mx-auto h-4 w-24" />}><div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
               <AnimatedNumber value={announcement.like_count} />
               {t("ui.announcement.peopleLiked")}
             </div></SkeletonReveal>

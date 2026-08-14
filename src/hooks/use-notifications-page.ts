@@ -17,6 +17,7 @@ import {
 } from "@/services/notifications";
 import type { NotificationRecord, NotificationSource } from "@/types";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
+import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 
 const sourceOrder: NotificationSource[] = ["broadcast", "admin", "user"];
 const sourceRecord = <T,>(value: () => T): Record<NotificationSource, T> => ({
@@ -38,6 +39,7 @@ export function useNotificationsPage() {
     more: Record<NotificationSource, boolean>;
     pages: Record<NotificationSource, NotificationRecord[]>;
   }>(session.user?.uid, "notifications");
+  const [revealFields] = React.useState(() => !viewMemory);
   const [pages, setPages] = React.useState<
     Record<NotificationSource, NotificationRecord[]>
   >(viewMemory?.pages ?? sourceRecord(() => []));
@@ -53,7 +55,8 @@ export function useNotificationsPage() {
 
   const load = React.useCallback(async () => {
     if (!session.user) return;
-    setLoading(true);
+    const skeletonStartedAt = revealFields ? Date.now() : 0;
+    if (revealFields) setLoading(true);
     setError("");
     try {
       const snapshot = await fetchNotificationSnapshot(
@@ -87,9 +90,11 @@ export function useNotificationsPage() {
         caught instanceof Error ? caught.message : t("notification.loadFailed"),
       );
     } finally {
+      if (skeletonStartedAt)
+        await waitForMinimumSkeletonDuration(skeletonStartedAt);
       setLoading(false);
     }
-  }, [activeSources, session.user, t]);
+  }, [activeSources, revealFields, session.user, t]);
 
   React.useEffect(() => {
     void load();
@@ -208,5 +213,5 @@ export function useNotificationsPage() {
     [router, t],
   );
 
-  return { error, hasMore, load, loadMore, loading, loadingMore, notifications, open };
+  return { error, hasMore, load, loadMore, loading, loadingMore, notifications, open, revealFields };
 }

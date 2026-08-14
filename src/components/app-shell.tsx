@@ -21,7 +21,11 @@ import { useTheme } from "next-themes";
 import { useCategories } from "@/hooks/use-categories";
 import { useNotificationBadge } from "@/hooks/use-notification-badge";
 import { useRoutePreload } from "@/hooks/use-route-preload";
-import { markRouteDirection, rememberRoutePath } from "@/lib/navigation-memory";
+import {
+  consumeRouteDirection,
+  markRouteDirection,
+  rememberRoutePath,
+} from "@/lib/navigation-memory";
 import { useSession } from "@/hooks/use-session";
 import { getDefaultIssueRouteFilter } from "@/constants/categories";
 import { LiquidNav, type LiquidNavItem } from "@/components/liquid-nav";
@@ -135,6 +139,15 @@ function AccountMenu({ compact = false }: { compact?: boolean }) {
   );
 }
 
+function RouteTransition({ children }: { children: React.ReactNode }) {
+  const [direction] = React.useState(consumeRouteDirection);
+  return (
+    <div className="route-page t-route-enter" data-route-direction={direction}>
+      {children}
+    </div>
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   useRoutePreload();
   const { t } = useLocaleSubscription();
@@ -155,7 +168,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   React.useEffect(() => {
-    const markBrowserBack = () => markRouteDirection("restore");
+    const markBrowserBack = () => markRouteDirection("back");
     window.addEventListener("popstate", markBrowserBack);
     return () => window.removeEventListener("popstate", markBrowserBack);
   }, []);
@@ -231,9 +244,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               : "pb-[max(2rem,var(--safe-bottom))]"
           }`}
         >
-          <div className="route-page t-route-enter" key={pathname}>
+          <RouteTransition key={pathname}>
             {children}
-          </div>
+          </RouteTransition>
         </main>
 
         <div

@@ -10,6 +10,7 @@ import { READ_REQUEST_TIMEOUT_MS, RequestFailure } from '@/lib/request';
 import {
   captureContentCacheWriteGuard,
   createContentCacheKey,
+  getCachedContent,
   getCachedContentPersistent,
   markContentCachePrefixStale,
   setCachedContentFromRead,
@@ -143,6 +144,15 @@ export async function fetchAnnouncementRecordById(
     if (error instanceof RequestFailure) throw error;
     throw new Error('announcement.thisAnnouncementCannotBeFound', { cause: error });
   }
+}
+
+export function peekAnnouncementRecordById(
+  announcementId: string,
+  cacheScope: string | undefined,
+) {
+  return getCachedContent<AnnouncementRecord>(
+    createContentCacheKey(['announcement-detail', announcementId, cacheScope ?? 'default']),
+  );
 }
 
 export async function createAnnouncement(input: AnnouncementInput): Promise<AnnouncementRecord> {

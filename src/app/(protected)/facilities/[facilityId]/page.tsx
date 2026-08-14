@@ -51,13 +51,7 @@ export default function FacilityDetailPage() {
   const detail = useFacilityDetail();
 
   if (detail.loading)
-    return (
-      <DetailRouteSkeleton
-        content={detail.facility?.content}
-        kind="facility"
-        title={detail.facility?.title}
-      />
-    );
+    return <DetailRouteSkeleton kind="facility" />;
   if (detail.error || !detail.facility)
     return (
       <ErrorState
@@ -137,26 +131,26 @@ export default function FacilityDetailPage() {
           <div className="border-b px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6">
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-[var(--shadow-control)]">
-                <SkeletonReveal className="min-w-16" skeleton={<Skeleton className="h-3 w-16" />}><span>{findFacilityCategory(facility.category_id)?.label || translate('ui.nav.facilities')}</span></SkeletonReveal>
+                <SkeletonReveal className="min-w-16" enabled={detail.revealDetail} skeleton={<Skeleton className="h-3 w-16" />}><span>{findFacilityCategory(facility.category_id)?.label || translate('ui.nav.facilities')}</span></SkeletonReveal>
               </span>
-              <StatusBadge domain="facility" revealLabel status={facility.status} />
+              <StatusBadge domain="facility" revealLabel={detail.revealDetail} status={facility.status} />
             </div>
-            <SkeletonReveal as="div" className="mt-3" skeleton={<Skeleton className="h-8 w-4/5" />}><h1 className="text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">
+            <SkeletonReveal as="div" className="mt-3" enabled={detail.revealDetail} skeleton={<Skeleton className="h-8 w-4/5" />}><h1 className="text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">
               {facility.title}
             </h1></SkeletonReveal>
             <div className="mt-3 flex flex-wrap gap-3 text-[0.8125rem] text-muted-foreground">
               <span className="inline-flex items-center gap-1">
                 <MapPin className="size-3.5" />
-                <SkeletonReveal skeleton={<Skeleton className="h-4 w-24" />}><span>{facility.location}</span></SkeletonReveal>
+                <SkeletonReveal enabled={detail.revealDetail} skeleton={<Skeleton className="h-4 w-24" />}><span>{facility.location}</span></SkeletonReveal>
               </span>
-              <SkeletonReveal skeleton={<Skeleton className="h-4 w-32" />}><span>{formatDate(facility.created_at)}</span></SkeletonReveal>
+              <SkeletonReveal enabled={detail.revealDetail} skeleton={<Skeleton className="h-4 w-32" />}><span>{formatDate(facility.created_at)}</span></SkeletonReveal>
             </div>
           </div>
           <CardContent className="py-5 sm:px-7 sm:py-6">
             <ContentRenderer
               content={facility.content}
               fallbackAlt={facility.title}
-              revealText
+              revealText={detail.revealDetail}
             />
           </CardContent>
           {facility.result_content ? (
@@ -171,7 +165,7 @@ export default function FacilityDetailPage() {
               <ContentRenderer
                 content={facility.result_content}
                 fallbackAlt={translate('ui.issue.resultAlt', { title: facility.title })}
-                revealText
+                revealText={detail.revealDetail}
               />
             </div>
           ) : null}
@@ -182,7 +176,7 @@ export default function FacilityDetailPage() {
             <div className="flex items-center justify-between">
               <span className="inline-flex items-center gap-2 text-sm font-medium">
                 <Hand className="size-4 text-muted-foreground" />{translate('ui.facility.affectedCount')}</span>
-              <SkeletonReveal skeleton={<Skeleton className="h-6 w-8" />}><AnimatedNumber
+              <SkeletonReveal enabled={detail.revealDetail} skeleton={<Skeleton className="h-6 w-8" />}><AnimatedNumber
                 className="text-lg font-semibold"
                 value={facility.affected_count}
               /></SkeletonReveal>

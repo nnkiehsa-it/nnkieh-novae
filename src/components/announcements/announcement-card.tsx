@@ -20,12 +20,14 @@ export function AnnouncementCard({
   liking,
   onLike,
   profile,
+  reveal,
 }: {
   announcement: AnnouncementRecord;
   burst: number;
   liking: boolean;
   onLike: () => void;
   profile?: UserPublicProfile;
+  reveal: boolean;
 }) {
   return (
       <Card className="t-card group relative h-full gap-4 p-5 sm:p-6">
@@ -33,11 +35,11 @@ export function AnnouncementCard({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
-              <ContentAuthor profile={profile} revealName />
+              <ContentAuthor profile={profile} revealName={reveal} />
               <span aria-hidden>·</span>
-              <SkeletonReveal skeleton={<Skeleton className="h-3 w-12" />}><span className="shrink-0">{formatRelativeTime(announcement.published_at)}</span></SkeletonReveal>
+              <SkeletonReveal enabled={reveal} skeleton={<Skeleton className="h-3 w-12" />}><span className="shrink-0">{formatRelativeTime(announcement.published_at)}</span></SkeletonReveal>
             </div>
-            <SkeletonReveal as="div" className="mt-1.5" skeleton={<Skeleton className="h-5 w-4/5" />}><h2 className="text-balance font-semibold leading-6 tracking-[-0.015em]">
+            <SkeletonReveal as="div" className="mt-1.5" enabled={reveal} skeleton={<Skeleton className="h-5 w-4/5" />}><h2 className="text-balance font-semibold leading-6 tracking-[-0.015em]">
               {announcement.title}
             </h2></SkeletonReveal>
           </div>
@@ -45,6 +47,7 @@ export function AnnouncementCard({
         </div>
         <SkeletonReveal
           as="div"
+          enabled={reveal}
           skeleton={<div className="space-y-2"><Skeleton className="h-3 w-full" /><Skeleton className="h-3 w-2/3" /></div>}
         >
           <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">

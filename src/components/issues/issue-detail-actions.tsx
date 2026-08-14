@@ -122,6 +122,7 @@ export function IssueDetailSidebar({
   burst,
   issue,
   onSupport,
+  reveal,
   supportOpen,
   supportProgress,
   supporting,
@@ -130,6 +131,7 @@ export function IssueDetailSidebar({
   burst: number;
   issue: IssueRecord;
   onSupport: () => void;
+  reveal: boolean;
   supportOpen: boolean;
   supportProgress: number;
   supporting: boolean;
@@ -141,7 +143,7 @@ export function IssueDetailSidebar({
         <Card className="gap-5 p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-medium">{translate('ui.issue.supportProgress')}</p>
-            <SkeletonReveal skeleton={<Skeleton className="h-5 w-14" />}><p className="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums">
+            <SkeletonReveal enabled={reveal} skeleton={<Skeleton className="h-5 w-14" />}><p className="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums">
               <AnimatedNumber value={issue.support_count} />
               {issue.support_goal ? ` / ${issue.support_goal}` : ""}
             </p></SkeletonReveal>
@@ -194,7 +196,7 @@ export function IssueDetailSidebar({
                   <span className="mt-1 w-px flex-1 bg-border" />
                 ) : null}
               </div>
-              <SkeletonReveal as="div" skeleton={<div className="space-y-1.5"><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-28" /></div>}>
+              <SkeletonReveal as="div" enabled={reveal} skeleton={<div className="space-y-1.5"><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-28" /></div>}>
                 <div>
                   <p className="text-[0.8125rem] font-medium">{translate(item.shortLabel)}</p>
                   <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">
