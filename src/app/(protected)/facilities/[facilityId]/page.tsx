@@ -41,7 +41,7 @@ import { ErrorState } from "@/components/ui/page-state";
 import { DetailRouteSkeleton } from "@/components/ui/route-skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
+import { SkeletonBadgeLabel, SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatDate } from "@/lib/format";
 import { shareCurrentPage } from "@/lib/share";
@@ -130,8 +130,8 @@ export default function FacilityDetailPage() {
         <Card className="gap-0 overflow-hidden py-0">
           <div className="border-b px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-[var(--shadow-control)]">
-                <SkeletonReveal className="min-w-16" enabled={detail.revealDetail} skeleton={<Skeleton className="h-3 w-16" />}><span>{findFacilityCategory(facility.category_id)?.label || translate('ui.nav.facilities')}</span></SkeletonReveal>
+              <span className="inline-grid place-items-center rounded-full bg-card px-2.5 py-1 text-center text-xs font-medium text-muted-foreground shadow-[var(--shadow-control)]">
+                <SkeletonBadgeLabel className="min-w-16" enabled={detail.revealDetail} skeleton={<Skeleton className="h-3 w-16" />}>{findFacilityCategory(facility.category_id)?.label || translate('ui.nav.facilities')}</SkeletonBadgeLabel>
               </span>
               <StatusBadge domain="facility" revealLabel={detail.revealDetail} status={facility.status} />
             </div>

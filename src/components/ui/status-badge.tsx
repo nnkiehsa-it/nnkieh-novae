@@ -7,7 +7,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
+import { SkeletonBadgeLabel } from "@/components/ui/skeleton-reveal";
 
 export function StatusBadge({
   className,
@@ -47,14 +47,13 @@ export function StatusBadge({
         className,
       )}
     >
-      <span className="inline-grid min-w-12 place-items-center text-center">
-        <SkeletonReveal
-          enabled={revealLabel}
-          skeleton={<Skeleton className="h-3 w-12" />}
-        >
-          <span className="block w-full text-center">{translate(labelKey)}</span>
-        </SkeletonReveal>
-      </span>
+      <SkeletonBadgeLabel
+        className="min-w-12"
+        enabled={revealLabel}
+        skeleton={<Skeleton className="h-3 w-12" />}
+      >
+        {translate(labelKey)}
+      </SkeletonBadgeLabel>
     </Badge>
   );
 }

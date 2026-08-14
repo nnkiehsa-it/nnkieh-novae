@@ -1,9 +1,8 @@
 "use client";
 
-import { Send, X } from "lucide-react";
+import { Send } from "lucide-react";
 import { t as translate } from "@/i18n";
 import { useSession } from "@/hooks/use-session";
-import { cn } from "@/lib/utils";
 import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,6 @@ export function CommentComposer({
   busy,
   content,
   feedbackState = "idle",
-  onCancel,
   onChange,
   onSubmit,
   reply = false,
@@ -22,7 +20,6 @@ export function CommentComposer({
   busy: boolean;
   content: string;
   feedbackState?: "idle" | "loading" | "success";
-  onCancel?: () => void;
   onChange: (value: string) => void;
   onSubmit: () => Promise<void>;
   reply?: boolean;
@@ -33,25 +30,7 @@ export function CommentComposer({
   const submitLabel = reply ? translate("ui.discussion.reply") : translate("ui.discussion.submit");
 
   return (
-    <div className={cn("grid gap-2", reply && "mt-2 pl-10 sm:pl-11")}>
-      {reply ? (
-        <div className="flex items-center justify-between pl-1 text-xs text-muted-foreground">
-          <span>{translate("ui.discussion.replying")}</span>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-label={translate("ui.common.cancel")}
-                onClick={onCancel}
-                size="icon-xs"
-                variant="ghost"
-              >
-                <X />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{translate("ui.common.cancel")}</TooltipContent>
-          </Tooltip>
-        </div>
-      ) : null}
+    <div className="grid gap-2">
       <div className="flex items-end gap-2 rounded-2xl border bg-muted/35 p-1.5 shadow-[var(--shadow-control)] transition-[background-color,border-color,box-shadow] duration-150 focus-within:border-ring/45 focus-within:bg-background focus-within:ring-2 focus-within:ring-ring/20">
         <Avatar className="mb-0.5 size-9 border bg-background">
           <AvatarImage alt={displayName} src={photoUrl} />

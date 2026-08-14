@@ -21,26 +21,25 @@ export function CommentThread({
   onDelete,
   onReply,
   profile,
-  replyComposer,
+  replyActive,
   replyProfiles,
 }: {
   comment: DiscussionCommentRecord;
   currentUid?: string;
   onDelete: (commentId: string) => Promise<void>;
-  onReply: (commentId: string) => void;
+  onReply: (comment: DiscussionCommentRecord, parentCommentId: string) => void;
   profile?: UserPublicProfile;
-  replyComposer: React.ReactNode;
+  replyActive: boolean;
   replyProfiles: Record<string, UserPublicProfile>;
 }) {
   const [expanded, setExpanded] = React.useState(false);
   React.useEffect(() => {
-    if (replyComposer) setExpanded(true);
-  }, [replyComposer]);
+    if (replyActive) setExpanded(true);
+  }, [replyActive]);
 
   return (
-    <div className="rounded-xl transition-colors hover:bg-muted/20">
-      <CommentRow comment={comment} currentUid={currentUid} onDelete={onDelete} onReply={onReply} profile={profile} />
-      {replyComposer}
+    <div className="transition-colors hover:bg-muted/20">
+      <CommentRow comment={comment} currentUid={currentUid} onDelete={onDelete} onReply={() => onReply(comment, comment.id)} profile={profile} />
       {comment.replies.length > 0 ? (
         <div className="relative ml-4 border-l border-border/80 pb-2 pl-7 sm:ml-5 sm:pl-9">
           <button
@@ -65,7 +64,7 @@ export function CommentThread({
                   currentUid={currentUid}
                   key={reply.id}
                   onDelete={onDelete}
-                  onReply={() => onReply(comment.id)}
+                  onReply={() => onReply(reply, comment.id)}
                   profile={replyProfiles[reply.author_uid]}
                 />
               ))}
@@ -89,13 +88,13 @@ function CommentRow({
   compact?: boolean;
   currentUid?: string;
   onDelete: (commentId: string) => Promise<void>;
-  onReply: (commentId: string) => void;
+  onReply: () => void;
   profile?: UserPublicProfile;
 }) {
   const name = profile?.displayName || translate("ui.common.schoolMember");
   const deleteFeedback = useActionFeedback();
   return (
-    <article className={cn("px-1 py-3 sm:px-2", compact && "py-2.5")}>
+    <article className={cn("px-5 py-4 sm:px-7", compact && "px-0 py-3")}>
       <div className="flex items-start gap-3">
         <Avatar className={compact ? "size-7" : "size-9"}>
           <AvatarImage alt={name} src={profile?.photoUrl ?? undefined} />
@@ -112,7 +111,7 @@ function CommentRow({
           <div className="mt-1.5 flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button aria-label={translate("ui.discussion.reply")} onClick={() => onReply(comment.id)} size="icon-xs" variant="ghost">
+                <Button aria-label={translate("ui.discussion.reply")} onClick={onReply} size="icon-xs" variant="ghost">
                   <Reply />
                 </Button>
               </TooltipTrigger>

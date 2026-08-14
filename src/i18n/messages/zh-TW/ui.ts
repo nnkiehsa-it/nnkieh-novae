@@ -66,7 +66,7 @@ const messages = {
   'ui.composer.addImage': '加入圖片',
   'ui.composer.attachmentPreview': '附件預覽',
   'ui.discussion.title': '留言',
-  'ui.discussion.replying': '正在回覆留言',
+  'ui.discussion.replying': '正在回覆 {name}',
   'ui.discussion.replyInput': '輸入回覆',
   'ui.discussion.commentInput': '輸入留言',
   'ui.discussion.replyPlaceholder': '寫下你的回覆…',

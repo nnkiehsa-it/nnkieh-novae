@@ -2,7 +2,7 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import * as React from "react";
-import { ChevronDown, LoaderCircle, MessageCircle } from "lucide-react";
+import { ChevronDown, LoaderCircle, MessageCircle, X } from "lucide-react";
 import { toast } from "sonner";
 import type { CommentSortOption, DiscussionCommentRecord } from "@/types";
 import { useDiscussionProfiles } from "@/hooks/use-public-profiles";
@@ -13,6 +13,19 @@ import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 import { CommentComposer } from "@/components/comments/comment-composer";
 import { CommentThread } from "@/components/comments/comment-thread";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
+import { Card } from "@/components/ui/card";
+
+interface ReplyTarget {
+  authorUid: string;
+  content: string;
+  parentCommentId: string;
+}
+
+function getReplyExcerpt(content: string) {
+  const characters = Array.from(content.trim().replace(/\s+/gu, " "));
+  const excerpt = characters.slice(0, 20).join("");
+  return characters.length > 20 ? `${excerpt}…` : excerpt;
+}
 
 export function Discussion({
   comments,
@@ -41,7 +54,7 @@ export function Discussion({
   const session = useSession();
   const [commentDraft, setCommentDraft] = React.useState("");
   const [replyDraft, setReplyDraft] = React.useState("");
-  const [replyTo, setReplyTo] = React.useState<string | null>(null);
+  const [replyTarget, setReplyTarget] = React.useState<ReplyTarget | null>(null);
   const feedback = useActionFeedback();
   const profiles = useDiscussionProfiles(comments);
 
@@ -49,10 +62,10 @@ export function Discussion({
     const value = (reply ? replyDraft : commentDraft).trim();
     if (!value || feedback.busy) return;
     try {
-      await feedback.run(() => onCreate(value, reply ? replyTo : null));
+      await feedback.run(() => onCreate(value, reply ? replyTarget?.parentCommentId ?? null : null));
       if (reply) {
         setReplyDraft("");
-        setReplyTo(null);
+        setReplyTarget(null);
       } else {
         setCommentDraft("");
       }
@@ -62,82 +75,109 @@ export function Discussion({
   }
 
   return (
-    <section className="space-y-4" aria-labelledby="discussion-title">
-      <div className="flex items-center gap-2">
-        <MessageCircle className="size-4 text-muted-foreground" />
-        <h2 className="font-semibold" id="discussion-title">{translate("ui.discussion.title")}</h2>
-        <span className="text-sm tabular-nums text-muted-foreground">{comments.length}</span>
-        <Select onValueChange={(value) => onSortChange(value as CommentSortOption)} value={sort}>
-          <SelectTrigger
-            aria-label={translate("ui.discussion.sort")}
-            className="ml-auto h-8 w-auto min-w-28 gap-1.5 px-2.5 text-xs"
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent align="end">
-            <SelectItem value="newest">{translate("ui.discussion.newest")}</SelectItem>
-            <SelectItem value="oldest">{translate("ui.discussion.oldest")}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+    <section
+      className={enabled ? "pb-[calc(9rem+var(--safe-bottom))]" : undefined}
+      aria-labelledby="discussion-title"
+    >
+      <Card className="gap-0 overflow-hidden py-0">
+        <div className="flex items-center gap-2 border-b px-5 py-4 sm:px-7">
+          <MessageCircle className="size-4 text-muted-foreground" />
+          <h2 className="font-semibold" id="discussion-title">{translate("ui.discussion.title")}</h2>
+          <span className="text-sm tabular-nums text-muted-foreground">{comments.length}</span>
+          <Select onValueChange={(value) => onSortChange(value as CommentSortOption)} value={sort}>
+            <SelectTrigger
+              aria-label={translate("ui.discussion.sort")}
+              className="ml-auto h-8 w-auto min-w-28 gap-1.5 px-2.5 text-xs"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              <SelectItem value="newest">{translate("ui.discussion.newest")}</SelectItem>
+              <SelectItem value="oldest">{translate("ui.discussion.oldest")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {!enabled ? (
+          <p className="bg-muted/20 px-5 py-4 text-sm text-muted-foreground sm:px-7">{translate("ui.discussion.disabled")}</p>
+        ) : null}
+
+        {loading ? (
+          <div className="space-y-3 px-5 py-4 sm:px-7" aria-label={translate("ui.common.loadingMore")}>
+            <div className="t-skeleton h-28 rounded-xl bg-muted" />
+            <div className="t-skeleton h-24 rounded-xl bg-muted" />
+          </div>
+        ) : comments.length > 0 ? (
+          <StaggerList className="divide-y">
+            {comments.map((comment) => (
+              <StaggerItem key={comment.id}>
+                <CommentThread
+                  comment={comment}
+                  currentUid={session.user?.uid}
+                  onDelete={onDelete}
+                  onReply={(target, parentCommentId) => {
+                    setReplyDraft("");
+                    setReplyTarget({
+                      authorUid: target.author_uid,
+                      content: target.content,
+                      parentCommentId,
+                    });
+                  }}
+                  profile={profiles[comment.author_uid]}
+                  replyActive={replyTarget?.parentCommentId === comment.id}
+                  replyProfiles={profiles}
+                />
+              </StaggerItem>
+            ))}
+          </StaggerList>
+        ) : null}
+
+        {hasMore && onLoadMore ? (
+          <div className="flex justify-center border-t px-5 py-4 sm:px-7">
+            <Button disabled={loadingMore} onClick={() => void onLoadMore()} size="sm" variant="outline">
+              {loadingMore ? <LoaderCircle className="t-spinner" /> : <ChevronDown />}
+              {loadingMore ? translate("ui.common.loadingMore") : translate("ui.discussion.loadMore")}
+            </Button>
+          </div>
+        ) : null}
+      </Card>
 
       {enabled ? (
-        <CommentComposer
-          busy={feedback.busy}
-          content={commentDraft}
-          feedbackState={feedback.state}
-          onChange={setCommentDraft}
-          onSubmit={() => submit(false)}
-        />
-      ) : (
-        <p className="rounded-xl border bg-muted/40 p-4 text-sm text-muted-foreground">{translate("ui.discussion.disabled")}</p>
-      )}
-
-      {loading ? (
-        <div className="space-y-3" aria-label={translate("ui.common.loadingMore")}>
-          <div className="t-skeleton h-28 rounded-xl bg-muted" />
-          <div className="t-skeleton h-24 rounded-xl bg-muted" />
-        </div>
-      ) : comments.length > 0 ? (
-        <StaggerList className="space-y-1">
-          {comments.map((comment) => (
-            <StaggerItem key={comment.id}>
-              <CommentThread
-                comment={comment}
-                currentUid={session.user?.uid}
-                onDelete={onDelete}
-                onReply={(commentId) => {
-                  setReplyDraft("");
-                  setReplyTo(commentId);
-                }}
-                profile={profiles[comment.author_uid]}
-                replyComposer={enabled && replyTo === comment.id ? (
-                  <CommentComposer
-                    busy={feedback.busy}
-                    content={replyDraft}
-                    feedbackState={feedback.state}
-                    onCancel={() => {
-                      setReplyDraft("");
-                      setReplyTo(null);
-                    }}
-                    onChange={setReplyDraft}
-                    onSubmit={() => submit(true)}
-                    reply
-                  />
-                ) : null}
-                replyProfiles={profiles}
-              />
-            </StaggerItem>
-          ))}
-        </StaggerList>
-      ) : null}
-
-      {hasMore && onLoadMore ? (
-        <div className="flex justify-center pt-1">
-          <Button disabled={loadingMore} onClick={() => void onLoadMore()} size="sm" variant="outline">
-            {loadingMore ? <LoaderCircle className="t-spinner" /> : <ChevronDown />}
-            {loadingMore ? translate("ui.common.loadingMore") : translate("ui.discussion.loadMore")}
-          </Button>
+        <div className="discussion-composer-dock">
+          <div className="mx-auto w-full max-w-2xl rounded-[1.25rem] border bg-background/94 p-2 shadow-[var(--shadow-floating)] backdrop-blur-xl">
+            {replyTarget ? (
+              <div className="mb-1 flex items-start gap-3 rounded-xl bg-muted/55 px-3 py-2">
+                <div className="min-w-0 flex-1 text-xs leading-5">
+                  <p className="font-medium text-foreground">
+                    {translate("ui.discussion.replying", {
+                      name: profiles[replyTarget.authorUid]?.displayName || translate("ui.common.schoolMember"),
+                    })}
+                  </p>
+                  <p className="truncate text-muted-foreground">{getReplyExcerpt(replyTarget.content)}</p>
+                </div>
+                <Button
+                  aria-label={translate("ui.common.cancel")}
+                  className="shrink-0"
+                  onClick={() => {
+                    setReplyDraft("");
+                    setReplyTarget(null);
+                  }}
+                  size="icon-xs"
+                  variant="ghost"
+                >
+                  <X />
+                </Button>
+              </div>
+            ) : null}
+            <CommentComposer
+              busy={feedback.busy}
+              content={replyTarget ? replyDraft : commentDraft}
+              feedbackState={feedback.state}
+              onChange={replyTarget ? setReplyDraft : setCommentDraft}
+              onSubmit={() => submit(Boolean(replyTarget))}
+              reply={Boolean(replyTarget)}
+            />
+          </div>
         </div>
       ) : null}
     </section>

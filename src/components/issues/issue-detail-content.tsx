@@ -10,7 +10,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
+import {
+  SkeletonBadgeLabel,
+  SkeletonReveal,
+} from "@/components/ui/skeleton-reveal";
 
 export function IssueDetailContent({
   issue,
@@ -28,12 +31,14 @@ export function IssueDetailContent({
     <Card className="gap-0 overflow-hidden py-0">
       <div className="border-b px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-[var(--shadow-control)]">
-            <SkeletonReveal className="min-w-16" enabled={reveal} skeleton={<Skeleton className="h-3 w-16" />}>
-              <span>
+          <span className="inline-grid place-items-center rounded-full bg-card px-2.5 py-1 text-center text-xs font-medium text-muted-foreground shadow-[var(--shadow-control)]">
+            <SkeletonBadgeLabel
+              className="min-w-16"
+              enabled={reveal}
+              skeleton={<Skeleton className="h-3 w-16" />}
+            >
               {getIssueCategoryLabel(issue.category)}
-              </span>
-            </SkeletonReveal>
+            </SkeletonBadgeLabel>
           </span>
           <StatusBadge domain="issue" revealLabel={reveal} status={status} />
         </div>

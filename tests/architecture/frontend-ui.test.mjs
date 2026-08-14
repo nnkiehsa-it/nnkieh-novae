@@ -149,11 +149,19 @@ test("list status controls use the full action row and stay right aligned", asyn
   assert.equal((facilityList.match(/<LiquidTabs/g) ?? []).length, 1);
 });
 
-test("discussion empty state opens directly into the composer", async () => {
+test("discussion uses one card surface and a fixed reply-aware composer", async () => {
   const discussion = await read("src/components/discussion.tsx");
+  const thread = await read("src/components/comments/comment-thread.tsx");
+  const globals = await read("src/app/globals.css");
   const zhUi = await read("src/i18n/messages/zh-TW/ui.ts");
-  assert.match(discussion, /\{enabled \? \([\s\S]*<CommentComposer/u);
+  assert.match(discussion, /<Card className="gap-0 overflow-hidden py-0">/u);
+  assert.match(discussion, /className="discussion-composer-dock"/u);
+  assert.match(discussion, /characters\.slice\(0, 20\)/u);
+  assert.match(discussion, /ui\.discussion\.replying/u);
+  assert.match(thread, /onReply\(reply, comment\.id\)/u);
+  assert.match(globals, /\.discussion-composer-dock \{[\s\S]*position: fixed/u);
   assert.doesNotMatch(discussion, /ui\.discussion\.empty/u);
+  assert.match(zhUi, /'ui\.discussion\.replying': '正在回覆 \{name\}'/u);
   assert.match(zhUi, /'ui\.discussion\.commentPlaceholder': '新增留言…'/u);
 });
 

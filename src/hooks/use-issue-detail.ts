@@ -122,8 +122,14 @@ export function useIssueDetail() {
     if (!deletingRef.current) return loadIssue(true);
   });
 
+  const commentsAvailable = Boolean(
+    currentIssue &&
+      currentIssue.comments_enabled &&
+      issueCategoryAllowsComments(currentIssue.category),
+  );
   const commentsReadable = Boolean(
     currentIssue &&
+      commentsAvailable &&
       currentIssue.status !== "under-review" &&
       currentIssue.status !== "review-rejected",
   );
@@ -224,8 +230,6 @@ export function useIssueDetail() {
   const commentsEnabled = Boolean(
     currentIssue &&
       commentsReadable &&
-      currentIssue.comments_enabled &&
-      issueCategoryAllowsComments(currentIssue.category) &&
       issueAllowsCommentsForStatus(
         currentIssue.read_access,
         currentIssue.status,
@@ -242,6 +246,7 @@ export function useIssueDetail() {
     burst,
     comments,
     commentSort,
+    commentsAvailable,
     commentsEnabled,
     commentsHaveMore,
     commentsHighlighted: search.get("tab") === "comments",

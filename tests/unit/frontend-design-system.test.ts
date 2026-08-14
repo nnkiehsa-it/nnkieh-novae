@@ -59,15 +59,44 @@ describe("React frontend design system", () => {
 
   it("centers status labels through cold reveal and extends the stage into iOS chrome", () => {
     const statusBadge = read("src/components/ui/status-badge.tsx");
+    const issueDetail = read("src/components/issues/issue-detail-content.tsx");
+    const facilityDetail = read("src/app/(protected)/facilities/[facilityId]/page.tsx");
+    const skeletonReveal = read("src/components/ui/skeleton-reveal.tsx");
     const layout = read("src/app/layout.tsx");
     const globals = read("src/app/globals.css");
     const manifest = read("src/app/manifest.ts");
-    expect(statusBadge).toContain("inline-grid min-w-12 place-items-center text-center");
-    expect(statusBadge).toContain("block w-full text-center");
+    expect(skeletonReveal).toContain("export function SkeletonBadgeLabel");
+    expect(skeletonReveal).toContain('cn("inline-grid place-items-center text-center"');
+    for (const source of [statusBadge, issueDetail, facilityDetail]) {
+      expect(source).toContain("<SkeletonBadgeLabel");
+    }
     expect(layout).toContain('statusBarStyle: "black-translucent"');
     expect(layout).toContain('viewportFit: "cover"');
     expect(globals.match(/background: var\(--surface-stage\)/gu)?.length).toBeGreaterThanOrEqual(2);
     expect(manifest).toContain('theme_color: "#f9f9f9"');
+  });
+
+  it("omits proposal discussion when its category has no comment capability", () => {
+    const issueDetailPage = read("src/app/(protected)/issues/[filter]/[issueId]/page.tsx");
+    const issueDetailHook = read("src/hooks/use-issue-detail.ts");
+    expect(issueDetailPage).toContain("detail.commentsAvailable ?");
+    expect(issueDetailHook).toMatch(/commentsAvailable[\s\S]*issueCategoryAllowsComments/u);
+    expect(issueDetailHook).toMatch(/commentsReadable[\s\S]*commentsAvailable/u);
+  });
+
+  it("keeps discussion in a card with a safe-area fixed reply composer", () => {
+    const discussion = read("src/components/discussion.tsx");
+    const thread = read("src/components/comments/comment-thread.tsx");
+    const globals = read("src/app/globals.css");
+    const layout = read("src/app/layout.tsx");
+    expect(discussion).toContain('<Card className="gap-0 overflow-hidden py-0">');
+    expect(discussion).toContain('className="discussion-composer-dock"');
+    expect(discussion).toContain("characters.slice(0, 20)");
+    expect(discussion).toContain('translate("ui.discussion.replying"');
+    expect(thread).toContain("onReply(reply, comment.id)");
+    expect(globals).toMatch(/\.discussion-composer-dock \{[\s\S]*position: fixed/u);
+    expect(globals).toContain("bottom: max(0.75rem, var(--safe-bottom))");
+    expect(layout).toContain('interactiveWidget: "resizes-content"');
   });
 
   it("warms privileged route shells immediately and gives them one mobile toolbar", () => {

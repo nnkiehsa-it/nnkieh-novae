@@ -43,20 +43,22 @@ export default function IssueDetailPage() {
             reveal={detail.revealDetail}
             status={detail.status}
           />
-          <div className={detail.commentsHighlighted ? "t-panel-reveal" : ""}>
-            <Discussion
-              comments={detail.comments}
-              sort={detail.commentSort}
-              enabled={detail.commentsEnabled}
-              hasMore={detail.commentsHaveMore}
-              loading={detail.commentsLoading}
-              loadingMore={detail.commentsLoadingMore}
-              onCreate={detail.createIssueComment}
-              onDelete={detail.removeIssueComment}
-              onLoadMore={detail.loadMoreComments}
-              onSortChange={detail.setCommentSort}
-            />
-          </div>
+          {detail.commentsAvailable ? (
+            <div className={detail.commentsHighlighted ? "t-panel-reveal" : ""}>
+              <Discussion
+                comments={detail.comments}
+                sort={detail.commentSort}
+                enabled={detail.commentsEnabled}
+                hasMore={detail.commentsHaveMore}
+                loading={detail.commentsLoading}
+                loadingMore={detail.commentsLoadingMore}
+                onCreate={detail.createIssueComment}
+                onDelete={detail.removeIssueComment}
+                onLoadMore={detail.loadMoreComments}
+                onSortChange={detail.setCommentSort}
+              />
+            </div>
+          ) : null}
         </article>
         <IssueDetailSidebar
           burst={detail.burst}

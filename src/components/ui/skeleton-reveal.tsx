@@ -29,3 +29,23 @@ export function SkeletonReveal({
     </Element>
   );
 }
+
+export function SkeletonBadgeLabel({
+  children,
+  className,
+  enabled,
+  skeleton,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  enabled: boolean;
+  skeleton: React.ReactNode;
+}) {
+  return (
+    <span className={cn("inline-grid place-items-center text-center", className)}>
+      <SkeletonReveal enabled={enabled} skeleton={skeleton}>
+        <span className="block w-full text-center">{children}</span>
+      </SkeletonReveal>
+    </span>
+  );
+}
