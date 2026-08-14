@@ -59,10 +59,10 @@ export function FacilityCard({
             count={facility.affected_count}
             disabled={["completed", "unable-to-handle"].includes(facility.status)}
             icon={Hand}
+            inactiveVariant="ghost"
             label={facility.currentUserAffected ? translate('ui.facility.cancelAffected') : translate('ui.facility.markAffected')}
             onClick={onToggleAffected}
             size="sm"
-            variant="ghost"
           />
         </div>
         </div>

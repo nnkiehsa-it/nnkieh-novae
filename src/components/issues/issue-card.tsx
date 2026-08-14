@@ -111,6 +111,7 @@ export function IssueCard({
                 !["pending", "processing"].includes(issue.status)
               }
               icon={Hand}
+              inactiveVariant="ghost"
               label={
                 issue.isOwnIssue
                   ? translate("ui.issue.ownSupport")
@@ -120,7 +121,6 @@ export function IssueCard({
               }
               onClick={onSupport}
               size="sm"
-              variant="ghost"
             />
           ) : null}
           {issue.comments_enabled ? (

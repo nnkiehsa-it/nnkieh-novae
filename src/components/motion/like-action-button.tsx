@@ -34,11 +34,11 @@ export function LikeActionButton({
   count,
   disabled,
   icon: Icon,
+  inactiveVariant = "secondary",
   label,
   onClick,
   reaction = "hand",
   size = "icon-lg",
-  variant = "default",
 }: {
   active: boolean;
   burst: number;
@@ -47,11 +47,11 @@ export function LikeActionButton({
   count?: number;
   disabled?: boolean;
   icon: LucideIcon;
+  inactiveVariant?: "secondary" | "ghost";
   label: string;
   onClick: () => void;
   reaction?: "hand" | "heart";
   size?: "icon-lg" | "sm";
-  variant?: "default" | "ghost";
 }) {
   const [celebrationBurst, setCelebrationBurst] = React.useState(0);
 
@@ -71,6 +71,7 @@ export function LikeActionButton({
         <Button
           aria-label={label}
           aria-busy={busy}
+          aria-pressed={active}
           className={cn("t-like relative overflow-visible", busy && "opacity-70", className)}
           data-accent={reaction}
           data-celebrating={active && celebrationBurst ? celebrationBurst : undefined}
@@ -78,7 +79,7 @@ export function LikeActionButton({
           disabled={disabled || busy}
           onClick={onClick}
           size={size}
-          variant={active ? "secondary" : variant}
+          variant={active ? "default" : inactiveVariant}
         >
           <span className="t-action-icon">
             <span className="t-like-icon">

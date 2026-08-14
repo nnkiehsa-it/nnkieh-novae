@@ -181,7 +181,7 @@ export default function FacilityDetailPage() {
                 value={facility.affected_count}
               /></SkeletonReveal>
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-center">
               <LikeActionButton
                 active={facility.currentUserAffected === true}
                 burst={detail.burst}

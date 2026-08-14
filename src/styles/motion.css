@@ -679,8 +679,9 @@
 .t-action-icon {
   display: inline-grid;
   place-items: center;
-  width: 1em;
-  height: 1em;
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 1rem;
 }
 .t-spinner {
   animation: t-spinner 700ms linear infinite;
@@ -809,13 +810,17 @@
 .t-like-icon {
   display: grid;
   place-items: center;
+  width: 1rem;
+  height: 1rem;
   transition: color var(--motion-quick) var(--ease-smooth-out);
+}
+.t-reaction-icon {
+  display: block;
+  width: 1rem;
+  height: 1rem;
 }
 .t-like[data-accent="heart"][data-liked="true"] .t-like-icon {
   color: #f40051;
-}
-.t-like[data-accent="hand"][data-liked="true"] .t-like-icon {
-  color: var(--foreground);
 }
 .t-like[data-accent="heart"][data-celebrating] .t-reaction-icon {
   animation: t-like-pop var(--motion-medium) var(--ease-emphasized) both;

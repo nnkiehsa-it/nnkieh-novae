@@ -62,11 +62,11 @@ export function AnnouncementCard({
             className="z-10 ml-auto"
             count={announcement.like_count}
             icon={Heart}
+            inactiveVariant="ghost"
             label={announcement.currentUserLiked ? translate('ui.announcement.liked') : translate('ui.announcement.like')}
             onClick={onLike}
             reaction="heart"
             size="sm"
-            variant="ghost"
           />
           <Tooltip>
             <TooltipTrigger asChild>

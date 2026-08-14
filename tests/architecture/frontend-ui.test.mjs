@@ -182,9 +182,18 @@ test("proposal ownership and moderation remain separate capabilities", async () 
 
 test("proposal detail reaction and count match centered announcement layout", async () => {
   const actions = await read("src/components/issues/issue-detail-actions.tsx");
+  const facilityDetail = await read("src/app/(protected)/facilities/[facilityId]/page.tsx");
+  const reaction = await read("src/components/motion/like-action-button.tsx");
+  const motion = await read("src/styles/motion.css");
   const animatedNumber = await read("src/components/motion/animated-number.tsx");
   assert.match(actions, /whitespace-nowrap text-sm font-semibold tabular-nums/u);
   assert.match(actions, /<div className="flex justify-center">[\s\S]*<LikeActionButton/u);
+  assert.match(facilityDetail, /<div className="flex justify-center">[\s\S]*<LikeActionButton/u);
+  assert.match(reaction, /inactiveVariant = "secondary"/u);
+  assert.match(reaction, /inactiveVariant\?: "secondary" \| "ghost"/u);
+  assert.match(reaction, /variant=\{active \? "default" : inactiveVariant\}/u);
+  assert.match(reaction, /aria-pressed=\{active\}/u);
+  assert.match(motion, /\.t-action-icon\s*\{[\s\S]*width: 1rem;[\s\S]*flex: 0 0 1rem;/u);
   assert.match(animatedNumber, /shrink-0 whitespace-nowrap overflow-hidden/u);
 });
 
