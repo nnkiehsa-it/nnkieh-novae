@@ -3,6 +3,7 @@ import { READ_REQUEST_TIMEOUT_MS } from '@/lib/request';
 import { toReadableBackendError } from './issues-core';
 import {
   createContentCacheKey,
+  getCachedContent,
   getCachedContentPersistent,
   runCoalescedContentRequest,
   setCachedContent,
@@ -11,6 +12,18 @@ import type { UserPublicProfile } from '@/types';
 
 const USER_PROFILE_REQUEST_PREFIX = 'user-profile|';
 const USER_PROFILE_CACHE_TTL_MS = 24 * 60 * 60 * 1_000;
+
+export function getCachedUserPublicProfiles(uids: string[]) {
+  const profiles: Record<string, UserPublicProfile> = {};
+  for (const uid of new Set(uids.filter((value) => value.trim().length > 0))) {
+    const profile = getCachedContent<UserPublicProfile>(
+      createContentCacheKey(['user-profile', uid]),
+      USER_PROFILE_CACHE_TTL_MS,
+    );
+    if (profile) profiles[uid] = profile;
+  }
+  return profiles;
+}
 
 export async function fetchUserPublicProfiles(uids: string[]) {
   const uniqueUids = Array.from(new Set(uids.filter((uid) => uid && uid.trim().length > 0)))

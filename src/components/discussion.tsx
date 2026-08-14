@@ -148,11 +148,13 @@ export function Discussion({
             {replyTarget ? (
               <div className="mb-1 flex items-start gap-3 border-b px-2 pb-2 pt-1">
                 <div className="min-w-0 flex-1 text-xs leading-5">
-                  <p className="font-medium text-foreground">
-                    {translate("ui.discussion.replying", {
-                      name: profiles[replyTarget.authorUid]?.displayName || translate("ui.common.schoolMember"),
-                    })}
-                  </p>
+                  {profiles[replyTarget.authorUid] ? (
+                    <p className="font-medium text-foreground">
+                      {translate("ui.discussion.replying", {
+                        name: profiles[replyTarget.authorUid].displayName,
+                      })}
+                    </p>
+                  ) : <div aria-hidden className="t-skeleton h-3 w-24 rounded bg-muted/55" />}
                   <p className="truncate text-muted-foreground">{getReplyExcerpt(replyTarget.content)}</p>
                 </div>
                 <Button

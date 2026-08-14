@@ -49,7 +49,7 @@ export function IssueCard({
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
               {issue.canViewAuthor && issue.author_uid ? (
-                <ContentAuthor profile={profile} revealName={reveal} />
+                <ContentAuthor profile={profile} />
               ) : null}
               {issue.canViewAuthor && issue.author_uid ? (
                 <span aria-hidden>·</span>

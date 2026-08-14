@@ -224,12 +224,33 @@ test("list action bars scroll normally and route navigation animates only the co
   assert.match(motion, /\.t-route-enter\s*\{[\s\S]*var\(--motion-medium\)[\s\S]*backwards/u);
   assert.match(motion, /@keyframes t-route-enter-child[\s\S]*translateX\(24px\)[\s\S]*translateX\(0\)/u);
   const rootRoute = motion.match(/@keyframes t-route-enter-root\s*\{([\s\S]*?)\n\}/u)?.[1] ?? "";
-  assert.match(motion, /data-route-direction="root"[\s\S]*animation-name: t-route-enter-root[\s\S]*animation-duration: var\(--motion-fast\)/u);
+  assert.match(motion, /\.route-page\.t-route-enter\[data-route-direction="root"\][\s\S]*t-route-enter-root var\(--motion-medium\)/u);
   assert.match(rootRoute, /opacity: 0[\s\S]*opacity: 1/u);
   assert.doesNotMatch(rootRoute, /transform|filter/u);
   assert.doesNotMatch(motion, /root-route-fade|t-route-root-fade|active-view-transition-type/u);
   assert.match(motion, /data-route-direction="back"[\s\S]*t-route-enter-back/u);
+  assert.match(shell, /commitRouteHistory\(pathname\)/u);
+  assert.match(shell, /markPopstateRouteDirection\(event\.state, window\.location\.pathname\)/u);
+  const navigationMemory = await read("src/lib/navigation-memory.ts");
+  assert.match(navigationMemory, /HISTORY_INDEX_KEY/u);
+  assert.match(navigationMemory, /targetIndex < currentHistoryIndex[\s\S]*"back"/u);
   assert.doesNotMatch(motion, /t-route-exit|\.t-route-enter[^}]*animation-delay/u);
+});
+
+test("author rows synchronously reuse profiles and cold reveals retire after one play", async () => {
+  const author = await read("src/components/content-author.tsx");
+  const profiles = await read("src/hooks/use-public-profiles.ts");
+  const profileService = await read("src/services/users-read.ts");
+  const reveal = await read("src/hooks/use-cold-data-reveal.ts");
+  const thread = await read("src/components/comments/comment-thread.tsx");
+  assert.match(author, /size-6 shrink-0 rounded-full/u);
+  assert.match(author, /h-3 w-16 shrink-0/u);
+  assert.doesNotMatch(author, /schoolMember|SkeletonReveal/u);
+  assert.match(profiles, /getCachedUserPublicProfiles/u);
+  assert.match(profileService, /getCachedContent<UserPublicProfile>/u);
+  assert.match(reveal, /SKELETON_REVEAL_DURATION_MS/u);
+  assert.match(reveal, /setReveal\(false\)/u);
+  assert.doesNotMatch(thread, /schoolMember|SkeletonReveal/u);
 });
 
 test("mobile document gestures prevent double-tap zoom and scroll chaining", async () => {

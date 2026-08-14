@@ -29,6 +29,7 @@ import { useContentEntityDomainVersion } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
+import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 
 const FACILITY_LIST_CACHE_PREFIXES = ["facility-list-page|"] as const;
 
@@ -59,7 +60,7 @@ export function useFacilityFeed() {
     session.user?.uid,
     "facility-feed",
   );
-  const [revealFields] = React.useState(() => !viewMemory);
+  const [coldRead] = React.useState(() => !viewMemory);
   const [category, setCategory] = React.useState(
     requestedCategory && findFacilityCategory(requestedCategory)
       ? requestedCategory
@@ -76,6 +77,7 @@ export function useFacilityFeed() {
     hasMore: viewMemory?.feed.hasMore ?? false,
   });
   const [loading, setLoading] = React.useState(!viewMemory);
+  const revealFields = useColdDataReveal(coldRead, loading);
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
   const [affectingId, setAffectingId] = React.useState<string | null>(null);
@@ -129,7 +131,7 @@ export function useFacilityFeed() {
       const requestToken = requestGuard.begin(queryKey);
       if (!requestToken) return;
       const entityReadRevision = beginContentEntityRead();
-      const skeletonStartedAt = !cursor && revealFields ? Date.now() : 0;
+      const skeletonStartedAt = !cursor && coldRead ? Date.now() : 0;
       cursor ? setLoadingMore(true) : setLoading(true);
       setError("");
       try {
@@ -176,7 +178,7 @@ export function useFacilityFeed() {
       committedQuery,
       queryKey,
       requestGuard,
-      revealFields,
+      coldRead,
       session.user?.uid,
       sort,
       status,

@@ -16,7 +16,10 @@ import {
   peekAnnouncementRecordById,
   setAnnouncementLike,
 } from "@/services/announcements";
-import { fetchUserPublicProfiles } from "@/services/users-read";
+import {
+  fetchUserPublicProfiles,
+  getCachedUserPublicProfiles,
+} from "@/services/users-read";
 import type {
   AnnouncementCommentRecord,
   AnnouncementRecord,
@@ -33,6 +36,7 @@ import { useContentEntity } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
 import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
+import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 
 export function useAnnouncementDetail() {
   const params = useParams<{ announcementId: string }>();
@@ -54,9 +58,14 @@ export function useAnnouncementDetail() {
   const [commentSort, setCommentSort] = React.useState<CommentSortOption>("newest");
   const [commentCursor, setCommentCursor] = React.useState<CommentCursor>(null);
   const [commentsHaveMore, setCommentsHaveMore] = React.useState(false);
-  const [profile, setProfile] = React.useState<UserPublicProfile | null>(null);
+  const [profile, setProfile] = React.useState<UserPublicProfile | null>(() =>
+    currentAnnouncement?.author_uid
+      ? getCachedUserPublicProfiles([currentAnnouncement.author_uid])[currentAnnouncement.author_uid] ?? null
+      : null,
+  );
+  const [coldRead] = React.useState(() => !currentAnnouncement);
   const [loading, setLoading] = React.useState(!currentAnnouncement);
-  const [revealDetail, setRevealDetail] = React.useState(false);
+  const revealDetail = useColdDataReveal(coldRead, loading);
   const [commentsLoading, setCommentsLoading] = React.useState(true);
   const [commentsLoadingMore, setCommentsLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
@@ -73,7 +82,6 @@ export function useAnnouncementDetail() {
       const coldRead = !cached;
       const startedAt = Date.now();
       if (coldRead) setLoading(true);
-      setRevealDetail(coldRead);
       setError("");
       const entityReadRevision = beginContentEntityRead();
       try {

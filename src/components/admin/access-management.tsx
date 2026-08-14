@@ -26,8 +26,6 @@ import {
 } from "@/components/ui/page-state";
 import { Input } from "@/components/ui/input";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
-import { Skeleton } from "@/components/ui/skeleton";
-import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import {
   Select,
   SelectContent,
@@ -220,7 +218,7 @@ function MemberRow({
   action: React.ReactNode;
   member: AccessUser;
 }) {
-  const name = member.name || member.email || translate('ui.common.schoolMember');
+  const name = member.name || member.email || member.uid;
   return (
     <div
       aria-label={member.email || name}
@@ -231,19 +229,17 @@ function MemberRow({
         <AvatarImage alt={name} src={member.photoUrl ?? undefined} />
         <AvatarFallback>{name.slice(0, 1)}</AvatarFallback>
       </Avatar>
-      <SkeletonReveal as="div" className="min-w-0 flex-1" skeleton={<div className="space-y-1.5"><Skeleton className="h-4 w-32" /><Skeleton className="h-3 w-44" /></div>}>
-        <div>
+      <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{name}</p>
         <p className="truncate text-xs text-muted-foreground">
           {member.email || member.uid}
         </p>
-        </div>
-      </SkeletonReveal>
+      </div>
       <span className="hidden items-center gap-1 text-xs text-muted-foreground sm:inline-flex">
         <ShieldCheck className="size-3.5" />
-        <SkeletonReveal skeleton={<Skeleton className="h-3 w-14" />}><span>{member.roles.length +
+        <span>{member.roles.length +
             member.managedIssueCategoryIds.length +
-            member.managedFacilityCategoryIds.length}{" "}{translate('ui.access.scopeCount')}</span></SkeletonReveal>
+            member.managedFacilityCategoryIds.length}{" "}{translate('ui.access.scopeCount')}</span>
       </span>
       {action}
     </div>

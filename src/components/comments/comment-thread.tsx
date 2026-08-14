@@ -13,7 +13,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 
 export function CommentThread({
   comment,
@@ -91,23 +90,24 @@ function CommentRow({
   onReply: () => void;
   profile?: UserPublicProfile;
 }) {
-  const name = profile?.displayName || translate("ui.common.schoolMember");
   const deleteFeedback = useActionFeedback();
   return (
     <article className={cn("px-5 py-4 sm:px-7", compact && "px-0 py-3")}>
       <div className="flex items-start gap-3">
-        <Avatar className={compact ? "size-7" : "size-9"}>
-          <AvatarImage alt={name} src={profile?.photoUrl ?? undefined} />
-          <AvatarFallback>{name.slice(0, 1)}</AvatarFallback>
-        </Avatar>
+        {profile ? (
+          <Avatar className={compact ? "size-7" : "size-9"}>
+            <AvatarImage alt={profile.displayName} src={profile.photoUrl ?? undefined} />
+            <AvatarFallback>{profile.displayName.slice(0, 1)}</AvatarFallback>
+          </Avatar>
+        ) : <Skeleton className={cn("shrink-0 rounded-full", compact ? "size-7" : "size-9")} />}
         <div className="min-w-0 flex-1">
-          <SkeletonReveal as="div" skeleton={<div className="space-y-2"><Skeleton className="h-4 w-36" /><Skeleton className="h-5 w-4/5" /></div>}>
-            <div className="flex items-center gap-2">
-              <p className="truncate text-[0.9375rem] font-semibold">{name}</p>
-              <p className="shrink-0 text-[0.8125rem] text-muted-foreground">{formatRelativeTime(comment.created_at)}</p>
-            </div>
-            <p className="mt-1 whitespace-pre-wrap break-words text-[0.9375rem] leading-6 text-foreground/88">{comment.content}</p>
-          </SkeletonReveal>
+          <div className="flex items-center gap-2">
+            {profile ? (
+              <p className="truncate text-[0.9375rem] font-semibold">{profile.displayName}</p>
+            ) : <Skeleton className="h-4 w-16 shrink-0" />}
+            <p className="shrink-0 text-[0.8125rem] text-muted-foreground">{formatRelativeTime(comment.created_at)}</p>
+          </div>
+          <p className="mt-1 whitespace-pre-wrap break-words text-[0.9375rem] leading-6 text-foreground/88">{comment.content}</p>
           <div className="mt-1.5 flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger asChild>

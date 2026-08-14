@@ -23,6 +23,7 @@ import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-
 import { useActionFeedback } from "@/hooks/use-action-feedback";
 import { returnToPreviousRoute } from "@/lib/navigation-memory";
 import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
+import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 
 export function useFacilityDetail() {
   const params = useParams<{ facilityId: string }>();
@@ -37,8 +38,9 @@ export function useFacilityDetail() {
     "detail",
   );
   const currentFacility = storedFacility ?? peekFacility(params.facilityId);
+  const [coldRead] = React.useState(() => !currentFacility);
   const [loading, setLoading] = React.useState(!currentFacility);
-  const [revealDetail, setRevealDetail] = React.useState(false);
+  const revealDetail = useColdDataReveal(coldRead, loading);
   const [error, setError] = React.useState("");
   const [affecting, setAffecting] = React.useState(false);
   const [burst, setBurst] = React.useState(0);
@@ -54,7 +56,6 @@ export function useFacilityDetail() {
       const coldRead = !cached;
       const startedAt = Date.now();
       if (coldRead) setLoading(true);
-      setRevealDetail(coldRead);
       setError("");
       const entityReadRevision = beginContentEntityRead();
       try {

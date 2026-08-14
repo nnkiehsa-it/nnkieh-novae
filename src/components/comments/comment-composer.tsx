@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function CommentComposer({
   busy,
@@ -25,7 +26,7 @@ export function CommentComposer({
   reply?: boolean;
 }) {
   const session = useSession();
-  const displayName = session.user?.displayName || translate("ui.common.schoolMember");
+  const displayName = session.user?.displayName || session.user?.email || "";
   const photoUrl = session.customPhotoUrl || session.user?.photoURL || undefined;
   const submitLabel = reply ? translate("ui.discussion.reply") : translate("ui.discussion.submit");
 
@@ -34,7 +35,9 @@ export function CommentComposer({
       <div className="flex items-end gap-2">
         <Avatar className="size-9 self-end border bg-background">
           <AvatarImage alt={displayName} src={photoUrl} />
-          <AvatarFallback>{displayName.slice(0, 1)}</AvatarFallback>
+          <AvatarFallback>
+            {displayName ? displayName.slice(0, 1) : <Skeleton className="size-full rounded-full" />}
+          </AvatarFallback>
         </Avatar>
         <Textarea
           aria-label={reply ? translate("ui.discussion.replyInput") : translate("ui.discussion.commentInput")}

@@ -1,4 +1,5 @@
 export const MINIMUM_SKELETON_DURATION_MS = 280;
+export const SKELETON_REVEAL_DURATION_MS = 400;
 
 export async function waitForMinimumSkeletonDuration(startedAt: number) {
   const remaining = MINIMUM_SKELETON_DURATION_MS - (Date.now() - startedAt);

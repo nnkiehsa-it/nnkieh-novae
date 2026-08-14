@@ -7,6 +7,7 @@ import { fetchPlatformDashboard } from "@/services/dashboard";
 import type { PlatformDashboardData } from "@/types";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
+import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 
 export function usePlatformDashboard() {
   const session = useSession();
@@ -18,13 +19,14 @@ export function usePlatformDashboard() {
   const [data, setData] = React.useState<PlatformDashboardData | null>(viewMemory);
   const [loading, setLoading] = React.useState(!viewMemory);
   const [error, setError] = React.useState("");
-  const [revealFields] = React.useState(() => !viewMemory);
+  const [coldRead] = React.useState(() => !viewMemory);
+  const revealFields = useColdDataReveal(coldRead, loading);
   const canView = session.can("dashboard.view");
 
   const load = React.useCallback(
     async (forceRefresh = false) => {
       if (!canView) return;
-      const skeletonStartedAt = revealFields ? Date.now() : 0;
+      const skeletonStartedAt = coldRead ? Date.now() : 0;
       setLoading(true);
       setError("");
       try {
@@ -37,7 +39,7 @@ export function usePlatformDashboard() {
         setLoading(false);
       }
     },
-    [canView, revealFields, t],
+    [canView, coldRead, t],
   );
 
   React.useEffect(() => {

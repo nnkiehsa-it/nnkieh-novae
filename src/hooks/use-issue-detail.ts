@@ -21,7 +21,10 @@ import {
   peekIssueRecordById,
   toggleSupport,
 } from "@/services/issues";
-import { fetchUserPublicProfiles } from "@/services/users-read";
+import {
+  fetchUserPublicProfiles,
+  getCachedUserPublicProfiles,
+} from "@/services/users-read";
 import type { CommentRecord, CommentSortOption, IssueRecord, UserPublicProfile } from "@/types";
 import {
   beginContentEntityRead,
@@ -34,6 +37,7 @@ import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-
 import { useActionFeedback } from "@/hooks/use-action-feedback";
 import { returnToPreviousRoute } from "@/lib/navigation-memory";
 import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
+import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 
 export function useIssueDetail() {
   const params = useParams<{ filter: string; issueId: string }>();
@@ -55,9 +59,14 @@ export function useIssueDetail() {
   const [commentSort, setCommentSort] = React.useState<CommentSortOption>("newest");
   const [commentCursor, setCommentCursor] = React.useState<CommentCursor>(null);
   const [commentsHaveMore, setCommentsHaveMore] = React.useState(false);
-  const [profile, setProfile] = React.useState<UserPublicProfile | null>(null);
+  const [profile, setProfile] = React.useState<UserPublicProfile | null>(() =>
+    currentIssue?.author_uid
+      ? getCachedUserPublicProfiles([currentIssue.author_uid])[currentIssue.author_uid] ?? null
+      : null,
+  );
+  const [coldRead] = React.useState(() => !currentIssue);
   const [loading, setLoading] = React.useState(!currentIssue);
-  const [revealDetail, setRevealDetail] = React.useState(false);
+  const revealDetail = useColdDataReveal(coldRead, loading);
   const [commentsLoading, setCommentsLoading] = React.useState(true);
   const [commentsLoadingMore, setCommentsLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
@@ -75,7 +84,6 @@ export function useIssueDetail() {
       const coldRead = !cached;
       const startedAt = Date.now();
       if (coldRead) setLoading(true);
-      setRevealDetail(coldRead);
       setError("");
       const entityReadRevision = beginContentEntityRead();
       try {

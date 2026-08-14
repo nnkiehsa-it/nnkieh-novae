@@ -6,7 +6,7 @@ import type { IssueRecord, UserPublicProfile } from "@/types";
 import { getIssueCategoryLabel } from "@/constants/categories";
 import { formatDate } from "@/lib/format";
 import { ContentRenderer } from "@/components/content-renderer";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ContentAuthor } from "@/components/content-author";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -50,20 +50,7 @@ export function IssueDetailContent({
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[0.8125rem] text-muted-foreground">
           <SkeletonReveal enabled={reveal} skeleton={<Skeleton className="h-4 w-32" />}><span>{formatDate(issue.created_at)}</span></SkeletonReveal>
           {issue.canViewAuthor ? (
-            <span className="inline-flex items-center gap-1.5">
-              <Avatar className="size-5">
-                <AvatarImage
-                  alt={profile?.displayName ?? translate('ui.issue.author')}
-                  src={profile?.photoUrl ?? undefined}
-                />
-                <AvatarFallback>
-                  {profile?.displayName?.slice(0, 1) || "?"}
-                </AvatarFallback>
-              </Avatar>
-              <SkeletonReveal enabled={reveal} skeleton={<Skeleton className="h-4 w-20" />}>
-                <span>{profile?.displayName || translate('ui.common.schoolMember')}</span>
-              </SkeletonReveal>
-            </span>
+            <ContentAuthor profile={profile ?? undefined} />
           ) : null}
         </div>
       </div>

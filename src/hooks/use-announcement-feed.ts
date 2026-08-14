@@ -22,6 +22,7 @@ import { useContentEntityDomainVersion } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
+import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 
 const ANNOUNCEMENT_LIST_CACHE_PREFIXES = ["announcement-list-page|"] as const;
 
@@ -33,11 +34,12 @@ export function useAnnouncementFeed() {
     hasMore: boolean;
     items: AnnouncementRecord[];
   }>(session.user?.uid, "announcement-feed");
-  const [revealFields] = React.useState(() => !viewMemory);
+  const [coldRead] = React.useState(() => !viewMemory);
   const [items, setItems] = React.useState<AnnouncementRecord[]>(viewMemory?.items ?? []);
   const [cursor, setCursor] = React.useState<AnnouncementCursor>(viewMemory?.cursor ?? null);
   const [hasMore, setHasMore] = React.useState(viewMemory?.hasMore ?? false);
   const [loading, setLoading] = React.useState(!viewMemory);
+  const revealFields = useColdDataReveal(coldRead, loading);
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
   const [likingId, setLikingId] = React.useState<string | null>(null);
@@ -88,7 +90,7 @@ export function useAnnouncementFeed() {
       const requestToken = requestGuard.begin(queryKey);
       if (!requestToken) return;
       const entityReadRevision = beginContentEntityRead();
-      const skeletonStartedAt = !nextCursor && revealFields ? Date.now() : 0;
+      const skeletonStartedAt = !nextCursor && coldRead ? Date.now() : 0;
       nextCursor ? setLoadingMore(true) : setLoading(true);
       setError("");
       try {
@@ -124,7 +126,7 @@ export function useAnnouncementFeed() {
         }
       }
     },
-    [queryKey, requestGuard, revealFields, session.user?.uid, t],
+    [coldRead, queryKey, requestGuard, session.user?.uid, t],
   );
 
   React.useEffect(() => {

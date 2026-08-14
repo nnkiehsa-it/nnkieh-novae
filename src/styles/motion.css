@@ -50,9 +50,8 @@
   }
 }
 
-.t-route-enter[data-route-direction="root"] {
-  animation-name: t-route-enter-root;
-  animation-duration: var(--motion-fast);
+.route-page.t-route-enter[data-route-direction="root"] {
+  animation: t-route-enter-root var(--motion-medium) var(--ease-smooth-out) backwards;
 }
 
 @keyframes t-route-enter-root {

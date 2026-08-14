@@ -51,7 +51,7 @@ describe("React frontend design system", () => {
     expect(motion).toContain("t-route-blur var(--motion-quick)");
     expect(childRouteEnter).not.toContain("filter:");
     expect(read("src/components/app-shell.tsx")).toContain("consumeRouteDirection(pathname)");
-    expect(read("src/components/app-shell.tsx")).toContain('markRouteDirection("back")');
+    expect(read("src/components/app-shell.tsx")).toContain("markPopstateRouteDirection");
     expect(read("src/components/app-shell.tsx")).not.toContain("ViewTransition");
     expect(read("src/components/liquid-nav.tsx")).not.toContain("transitionTypes");
     expect(motion).toContain('data-route-direction="root"');
@@ -59,6 +59,8 @@ describe("React frontend design system", () => {
     expect(rootRouteEnter).toContain("opacity: 0");
     expect(rootRouteEnter).not.toContain("transform");
     expect(rootRouteEnter).not.toContain("filter");
+    expect(motion).toContain(".route-page.t-route-enter");
+    expect(motion).toContain("t-route-enter-root var(--motion-medium)");
     expect(motion).toContain("t-route-enter-child");
     expect(motion).toContain("t-route-enter-back");
   });

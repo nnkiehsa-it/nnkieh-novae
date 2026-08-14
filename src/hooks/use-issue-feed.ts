@@ -33,6 +33,7 @@ import { useContentEntityDomainVersion } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
+import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 
 const ISSUE_LIST_CACHE_PREFIXES = [
   "issue-list-page|",
@@ -65,7 +66,7 @@ export function useIssueFeed() {
     session.user?.uid,
     `issue-feed|${filter}`,
   );
-  const [revealFields] = React.useState(() => !viewMemory);
+  const [coldRead] = React.useState(() => !viewMemory);
   const validFilter =
     filter === "my-proposals" || Boolean(findIssueCategory(filter));
   const [bucket, setBucket] = React.useState<IssueStatusBucket>(viewMemory?.bucket ?? "active");
@@ -78,6 +79,7 @@ export function useIssueFeed() {
     issues: viewMemory?.feed.issues ?? [],
   });
   const [loading, setLoading] = React.useState(!viewMemory);
+  const revealFields = useColdDataReveal(coldRead, loading);
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
   const [supportingId, setSupportingId] = React.useState<string | null>(null);
@@ -134,7 +136,7 @@ export function useIssueFeed() {
       const requestToken = requestGuard.begin(queryKey);
       if (!requestToken) return;
       const entityReadRevision = beginContentEntityRead();
-      const skeletonStartedAt = !cursor && revealFields ? Date.now() : 0;
+      const skeletonStartedAt = !cursor && coldRead ? Date.now() : 0;
       cursor ? setLoadingMore(true) : setLoading(true);
       setError("");
       try {
@@ -213,7 +215,7 @@ export function useIssueFeed() {
       validFilter,
       queryKey,
       requestGuard,
-      revealFields,
+      coldRead,
     ],
   );
 

@@ -22,9 +22,9 @@ import { useCategories } from "@/hooks/use-categories";
 import { useNotificationBadge } from "@/hooks/use-notification-badge";
 import { useRoutePreload } from "@/hooks/use-route-preload";
 import {
+  commitRouteHistory,
   consumeRouteDirection,
-  markRouteDirection,
-  rememberRoutePath,
+  markPopstateRouteDirection,
 } from "@/lib/navigation-memory";
 import { useSession } from "@/hooks/use-session";
 import { getDefaultIssueRouteFilter } from "@/constants/categories";
@@ -164,7 +164,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const issueHref = `/issues/${encodeURIComponent(getDefaultIssueRouteFilter())}`;
   const showMobileNavigation = !isSecondaryMobileRoute(pathname);
 
-  React.useEffect(() => rememberRoutePath(pathname), [pathname]);
+  React.useEffect(() => commitRouteHistory(pathname), [pathname]);
 
   React.useEffect(() => {
     const updateScrolled = () => setScrolled(window.scrollY > 8);
@@ -174,9 +174,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   React.useEffect(() => {
-    const markBrowserBack = () => markRouteDirection("back");
-    window.addEventListener("popstate", markBrowserBack);
-    return () => window.removeEventListener("popstate", markBrowserBack);
+    const markHistoryTraversal = (event: PopStateEvent) =>
+      markPopstateRouteDirection(event.state, window.location.pathname);
+    window.addEventListener("popstate", markHistoryTraversal);
+    return () => window.removeEventListener("popstate", markHistoryTraversal);
   }, []);
 
   const navItems = React.useMemo<LiquidNavItem[]>(

@@ -18,6 +18,7 @@ import {
 import type { NotificationRecord, NotificationSource } from "@/types";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
+import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 
 const sourceOrder: NotificationSource[] = ["broadcast", "admin", "user"];
 const sourceRecord = <T,>(value: () => T): Record<NotificationSource, T> => ({
@@ -39,7 +40,7 @@ export function useNotificationsPage() {
     more: Record<NotificationSource, boolean>;
     pages: Record<NotificationSource, NotificationRecord[]>;
   }>(session.user?.uid, "notifications");
-  const [revealFields] = React.useState(() => !viewMemory);
+  const [coldRead] = React.useState(() => !viewMemory);
   const [pages, setPages] = React.useState<
     Record<NotificationSource, NotificationRecord[]>
   >(viewMemory?.pages ?? sourceRecord(() => []));
@@ -50,13 +51,14 @@ export function useNotificationsPage() {
     viewMemory?.more ?? sourceRecord(() => false),
   );
   const [loading, setLoading] = React.useState(!viewMemory);
+  const revealFields = useColdDataReveal(coldRead, loading);
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
 
   const load = React.useCallback(async () => {
     if (!session.user) return;
-    const skeletonStartedAt = revealFields ? Date.now() : 0;
-    if (revealFields) setLoading(true);
+    const skeletonStartedAt = coldRead ? Date.now() : 0;
+    if (coldRead) setLoading(true);
     setError("");
     try {
       const snapshot = await fetchNotificationSnapshot(
@@ -94,7 +96,7 @@ export function useNotificationsPage() {
         await waitForMinimumSkeletonDuration(skeletonStartedAt);
       setLoading(false);
     }
-  }, [activeSources, revealFields, session.user, t]);
+  }, [activeSources, coldRead, session.user, t]);
 
   React.useEffect(() => {
     void load();

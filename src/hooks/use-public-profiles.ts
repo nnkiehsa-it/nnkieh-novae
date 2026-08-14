@@ -1,11 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { fetchUserPublicProfiles } from "@/services/users-read";
+import {
+  fetchUserPublicProfiles,
+  getCachedUserPublicProfiles,
+} from "@/services/users-read";
 import type { DiscussionCommentRecord, UserPublicProfile } from "@/types";
 
 export function usePublicProfiles(authorUids: Array<string | null | undefined>) {
-  const [profiles, setProfiles] = React.useState<Record<string, UserPublicProfile>>({});
   const profileKey = React.useMemo(
     () =>
       [...new Set(authorUids.filter((uid): uid is string => Boolean(uid)))]
@@ -13,17 +15,22 @@ export function usePublicProfiles(authorUids: Array<string | null | undefined>) 
         .join("|"),
     [authorUids],
   );
+  const [profiles, setProfiles] = React.useState<Record<string, UserPublicProfile>>(
+    () => getCachedUserPublicProfiles(profileKey ? profileKey.split("|") : []),
+  );
 
   React.useEffect(() => {
     const uids = profileKey ? profileKey.split("|") : [];
-    if (uids.length === 0) {
-      setProfiles({});
-      return;
-    }
+    if (uids.length === 0) return;
+    const cached = getCachedUserPublicProfiles(uids);
+    if (Object.keys(cached).length > 0)
+      setProfiles((current) => ({ ...current, ...cached }));
+    const missingUids = uids.filter((uid) => !cached[uid]);
+    if (missingUids.length === 0) return;
     let active = true;
-    void fetchUserPublicProfiles(uids)
+    void fetchUserPublicProfiles(missingUids)
       .then((result) => {
-        if (active) setProfiles(result);
+        if (active) setProfiles((current) => ({ ...current, ...result }));
       })
       .catch(() => undefined);
     return () => {

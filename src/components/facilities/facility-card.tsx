@@ -33,7 +33,7 @@ export function FacilityCard({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
-              <ContentAuthor profile={profile} revealName={reveal} />
+              <ContentAuthor profile={profile} />
               <span aria-hidden>·</span>
               <SkeletonReveal enabled={reveal} skeleton={<Skeleton className="h-3 w-12" />}><span className="shrink-0">{formatRelativeTime(facility.created_at)}</span></SkeletonReveal>
             </div>
