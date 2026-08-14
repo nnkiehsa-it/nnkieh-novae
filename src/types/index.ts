@@ -115,6 +115,7 @@ export interface FacilitySummary {
   isOwnFacility: boolean;
   currentUserAffected: boolean;
   canManageFacility: boolean;
+  deleting?: boolean;
 }
 
 export interface FacilityRecord extends FacilitySummary {

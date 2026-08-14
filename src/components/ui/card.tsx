@@ -2,14 +2,18 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+export function getCardClassName(className?: string) {
+  return cn(
+    "t-resize flex flex-col gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow-[var(--shadow-card)]",
+    className,
+  );
+}
+
 function Card({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card"
-      className={cn(
-        "flex flex-col gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow-[var(--shadow-card)]",
-        className,
-      )}
+      className={getCardClassName(className)}
       {...props}
     />
   );

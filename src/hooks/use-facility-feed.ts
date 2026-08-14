@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { useSession } from "@/hooks/use-session";
 import {
@@ -108,6 +109,10 @@ export function useFacilityFeed() {
         ...current,
         [facilityId]: (current[facilityId] ?? 0) + 1,
       }));
+    } catch (caught) {
+      toast.error(
+        caught instanceof Error ? caught.message : t("ui.common.operationFailed"),
+      );
     } finally {
       setAffectingId(null);
     }
@@ -212,7 +217,7 @@ export function useFacilityFeed() {
           "facility",
           facility.id,
         ) ?? facility,
-    ),
+    ).filter((facility) => !facility.deleting),
   };
   void entityVersion;
 

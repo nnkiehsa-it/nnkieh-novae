@@ -39,12 +39,12 @@ export function AppProviders({
         <TooltipProvider>
           <SessionProvider>
             <Suspense fallback={null}>
-              {i18nReady ? children : <div className="min-h-[100dvh] bg-[var(--surface-stage)]" />}
+              {i18nReady ? children : <div className="app-start-surface" />}
             </Suspense>
           </SessionProvider>
           <E2eAuthBridge />
           <AppUpdateGate />
-          <Toaster closeButton position="bottom-center" richColors />
+          <Toaster position="bottom-center" />
         </TooltipProvider>
       </MotionConfig>
     </ThemeProvider>

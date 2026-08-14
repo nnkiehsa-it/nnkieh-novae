@@ -17,7 +17,6 @@ import {
   getDetailContentEntity,
   mergeContentEntityRead,
   patchContentEntity,
-  removeContentEntity,
 } from "@/lib/content-entity-store";
 import { useContentEntity } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
@@ -118,14 +117,26 @@ export function useFacilityDetail() {
     try {
       await deleteFeedback.run(async () => {
         await deleteFacility(currentFacility.id);
-        removeContentEntity(session.user?.uid, "facility", currentFacility.id);
+        patchContentEntity<FacilityRecord>(
+          session.user?.uid,
+          "facility",
+          currentFacility.id,
+          { deleting: true },
+        );
       });
+      toast.success(t("facility.facilityReportDeleted"));
       router.replace(
         `/facilities?category=${encodeURIComponent(
           search.get("category") || currentFacility.category_id,
         )}`,
       );
     } catch (caught) {
+      patchContentEntity<FacilityRecord>(
+        session.user?.uid,
+        "facility",
+        currentFacility.id,
+        { deleting: false },
+      );
       toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
       deletingRef.current = false;
     }

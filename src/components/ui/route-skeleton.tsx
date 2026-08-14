@@ -224,7 +224,7 @@ export function DetailRouteSkeleton({
     <div className="space-y-5" aria-busy="true" aria-label={translate("ui.common.loading")}>
       <StableDetailToolbar />
       <div className={kind === "announcement" ? "grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start" : "grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start"}>
-        <Card className="min-h-[25rem] gap-0 overflow-hidden py-0">
+        <Card className="gap-0 overflow-hidden py-0">
           <div className="space-y-3 border-b px-5 py-5 sm:px-7 sm:py-6">
             <div className="flex gap-2">
               <Skeleton className="h-6 w-20 rounded-full" />

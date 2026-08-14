@@ -66,7 +66,7 @@ export default function FacilitiesPage() {
               aria-label={translate('ui.access.selectCategory')}
               className="h-auto max-w-full border-0 bg-transparent p-0 text-2xl font-semibold leading-8 shadow-none"
             >
-              <SelectValue>{translate('ui.facility.title')}</SelectValue>
+              <SelectValue />
             </SelectTrigger>
             <SelectContent align="start">
               {state.categories.map((option) => (

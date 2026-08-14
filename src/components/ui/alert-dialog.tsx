@@ -54,15 +54,17 @@ function AlertDialogContent({
   return (
     <AlertDialogPortal>
       <AlertDialogOverlay />
-      <AlertDialogPrimitive.Content
-        data-slot="alert-dialog-content"
-        data-size={size}
-        className={cn(
-          "t-dialog surface-floating group/alert-dialog-content fixed top-1/2 left-1/2 z-50 grid max-h-[86dvh] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-5 overflow-y-auto p-6 outline-none data-[size=sm]:max-w-xs sm:p-7",
-          className,
-        )}
-        {...props}
-      />
+      <div className="pointer-events-none fixed inset-0 z-50 grid place-items-center p-4">
+        <AlertDialogPrimitive.Content
+          data-slot="alert-dialog-content"
+          data-size={size}
+          className={cn(
+            "t-dialog surface-floating group/alert-dialog-content pointer-events-auto relative grid max-h-[86dvh] w-full max-w-lg gap-5 overflow-y-auto p-6 outline-none data-[size=sm]:max-w-xs sm:p-7",
+            className,
+          )}
+          {...props}
+        />
+      </div>
     </AlertDialogPortal>
   );
 }

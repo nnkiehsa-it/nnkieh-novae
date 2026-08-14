@@ -17,7 +17,8 @@ import {
 } from "@/hooks/use-access-management";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ResizableCard } from "@/components/ui/resizable-card";
 import {
   EmptyState,
   ErrorState,
@@ -59,12 +60,12 @@ export function AccessManagement() {
     scope,
   } = useAccessManagement();
   return (
-    <section className="space-y-4">
-      <Card>
-        <CardHeader>
+    <section className="space-y-6">
+      <ResizableCard>
+        <CardHeader className="pb-2">
           <CardTitle className="text-base">{translate('ui.access.scopeStep')}</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4">
+        <CardContent className="grid gap-5 pb-6 sm:grid-cols-[minmax(0,1.25fr)_minmax(15rem,0.75fr)] sm:items-end">
           <LiquidTabs
             ariaLabel={translate('ui.access.scopeType')}
             onValueChange={(value) => setKind(value as AccessScope["kind"])}
@@ -88,12 +89,12 @@ export function AccessManagement() {
                 ))}
               </SelectContent>
             </Select>
-          ) : null}
+          ) : <div className="hidden sm:block" />}
         </CardContent>
-      </Card>
+      </ResizableCard>
       {scope ? (
-        <>
-          <Card className="gap-0 py-0">
+        <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
+          <ResizableCard className="gap-0 py-0">
             <CardHeader className="border-b py-4">
               <CardTitle className="text-base">{translate('ui.access.currentStep')}</CardTitle>
             </CardHeader>
@@ -141,8 +142,8 @@ export function AccessManagement() {
                 </div>
               )}
             </CardContent>
-          </Card>
-          <Card>
+          </ResizableCard>
+          <ResizableCard>
             <CardHeader>
               <CardTitle className="text-base">{translate('ui.access.searchStep')}</CardTitle>
             </CardHeader>
@@ -200,8 +201,8 @@ export function AccessManagement() {
                 <div className="rounded-xl border border-dashed p-5 text-center text-sm text-muted-foreground">{translate('ui.access.searchHint')}</div>
               )}
             </CardContent>
-          </Card>
-        </>
+          </ResizableCard>
+        </div>
       ) : (
         <EmptyState
           description={translate('ui.access.selectDescription')}
@@ -223,7 +224,7 @@ function MemberRow({
   return (
     <div
       aria-label={member.email || name}
-      className="flex items-center gap-3 p-4"
+      className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 sm:p-5"
       role="group"
     >
       <Avatar className="size-9">

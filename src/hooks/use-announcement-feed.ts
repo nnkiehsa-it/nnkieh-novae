@@ -152,7 +152,7 @@ export function useAnnouncementFeed() {
         "announcement",
         announcement.id,
       ) ?? announcement,
-  );
+  ).filter((announcement) => !announcement.deleting);
   void entityVersion;
 
   return {

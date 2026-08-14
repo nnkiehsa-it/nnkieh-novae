@@ -73,7 +73,7 @@ export function FacilityCategoryEditor({
       aria-label={
         item.label || `${translate('ui.access.facilityCategory')} ${index + 1}`
       }
-      className="grid gap-4 rounded-xl border bg-[var(--surface-inset)] p-5 sm:grid-cols-[auto_1fr_1fr_auto] sm:items-end sm:p-6"
+      className="grid gap-5 border-b py-6 first:pt-0 sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end"
       role="group"
     >
       <GripVertical className="mb-2 hidden size-4 text-muted-foreground sm:block" />
@@ -120,7 +120,7 @@ export function IssueCategoryEditor({
       aria-label={
         item.label || `${translate('ui.access.issueCategory')} ${index + 1}`
       }
-      className="grid gap-5 rounded-xl border bg-[var(--surface-inset)] p-5 sm:p-6"
+      className="grid gap-6 border-b py-6 first:pt-0"
       role="group"
     >
       <div className="grid gap-3 sm:grid-cols-[auto_1fr_1fr_auto] sm:items-end">

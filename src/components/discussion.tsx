@@ -13,7 +13,7 @@ import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 import { CommentComposer } from "@/components/comments/comment-composer";
 import { CommentThread } from "@/components/comments/comment-thread";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
-import { Card } from "@/components/ui/card";
+import { ResizableCard } from "@/components/ui/resizable-card";
 
 interface ReplyTarget {
   authorUid: string;
@@ -79,7 +79,7 @@ export function Discussion({
       className={enabled ? "pb-[calc(9rem+var(--safe-bottom))]" : undefined}
       aria-labelledby="discussion-title"
     >
-      <Card className="gap-0 overflow-hidden py-0">
+      <ResizableCard className="gap-0 overflow-hidden py-0">
         <div className="flex items-center gap-2 border-b px-5 py-4 sm:px-7">
           <MessageCircle className="size-4 text-muted-foreground" />
           <h2 className="font-semibold" id="discussion-title">{translate("ui.discussion.title")}</h2>
@@ -140,11 +140,11 @@ export function Discussion({
             </Button>
           </div>
         ) : null}
-      </Card>
+      </ResizableCard>
 
       {enabled ? (
         <div className="discussion-composer-dock">
-          <div className="mx-auto w-full max-w-2xl rounded-[1.25rem] border bg-background p-1.5 shadow-[var(--shadow-floating)] focus-within:border-ring/45 focus-within:ring-2 focus-within:ring-ring/20">
+          <div className="mx-auto w-full max-w-2xl rounded-[2rem] border bg-background p-1.5 shadow-[var(--shadow-floating)] focus-within:border-ring/45 focus-within:ring-2 focus-within:ring-ring/20">
             {replyTarget ? (
               <div className="mb-1 flex items-start gap-3 border-b px-2 pb-2 pt-1">
                 <div className="min-w-0 flex-1 text-xs leading-5">

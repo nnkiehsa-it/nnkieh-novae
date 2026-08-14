@@ -242,7 +242,7 @@ export function useIssueFeed() {
           "issue",
           issue.id,
         ) ?? issue,
-    ),
+    ).filter((issue) => !issue.deleting),
   };
   void entityVersion;
 

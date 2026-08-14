@@ -11,10 +11,12 @@ import { cn } from "@/lib/utils";
 export function PageHeader({
   actions,
   className,
+  description,
   title,
 }: {
   actions?: React.ReactNode;
   className?: string;
+  description?: React.ReactNode;
   title: React.ReactNode;
 }) {
   useLocaleSubscription();
@@ -29,6 +31,11 @@ export function PageHeader({
         <h1 className="text-balance text-2xl font-semibold leading-8">
           {title}
         </h1>
+        {description ? (
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+            {description}
+          </p>
+        ) : null}
       </div>
       {actions ? (
         <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:flex-1 sm:justify-end">

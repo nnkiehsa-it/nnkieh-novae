@@ -11,7 +11,7 @@ import { BrandLockup } from "@/components/ui/brand";
 function StartupScreen() {
   useLocaleSubscription();
   return (
-    <div className="grid min-h-[100dvh] place-items-center bg-background p-6">
+    <div className="app-start-surface grid place-items-center">
       <div className="t-panel-reveal flex flex-col items-center gap-3 text-center">
         <BrandLockup
           className="flex-col gap-2 [&>span:last-child]:text-2xl"

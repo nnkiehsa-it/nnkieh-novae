@@ -155,12 +155,12 @@ test("discussion uses one card surface and a fixed reply-aware composer", async 
   const thread = await read("src/components/comments/comment-thread.tsx");
   const globals = await read("src/app/globals.css");
   const zhUi = await read("src/i18n/messages/zh-TW/ui.ts");
-  assert.match(discussion, /<Card className="gap-0 overflow-hidden py-0">/u);
+  assert.match(discussion, /<ResizableCard className="gap-0 overflow-hidden py-0">/u);
   assert.match(discussion, /className="discussion-composer-dock"/u);
   assert.match(discussion, /characters\.slice\(0, 20\)/u);
   assert.match(discussion, /ui\.discussion\.replying/u);
   assert.match(composer, /import \{ ArrowUp \} from "lucide-react"/u);
-  assert.match(composer, /className="shrink-0 rounded-full"/u);
+  assert.match(composer, /className="shrink-0 self-end rounded-full"/u);
   assert.doesNotMatch(composer, /rounded-2xl border bg-muted\/35/u);
   assert.match(thread, /onReply\(reply, comment\.id\)/u);
   assert.match(globals, /\.discussion-composer-dock \{[\s\S]*position: fixed/u);
@@ -210,10 +210,16 @@ test("list action bars scroll normally and route navigation animates only the co
   assert.match(shell, /<RouteTransition key=\{pathname\} pathname=\{pathname\}>/u);
   assert.match(shell, /consumeRouteDirection\(pathname\)/u);
   assert.match(shell, /data-route-direction=\{direction\}/u);
-  assert.doesNotMatch(shell, /React\.ViewTransition|app-route-enter|app-route-exit/u);
+  assert.match(shell, /<ViewTransition[\s\S]*"root-fade": "root-route-fade"/u);
+  assert.match(await read("src/components/liquid-nav.tsx"), /transitionTypes=\{\["root-fade"\]\}/u);
   assert.match(motion, /\.t-route-enter\s*\{[\s\S]*var\(--motion-medium\)[\s\S]*backwards/u);
   assert.match(motion, /@keyframes t-route-enter-child[\s\S]*translateX\(24px\)[\s\S]*translateX\(0\)/u);
-  assert.match(motion, /data-route-direction="root"[\s\S]*t-route-enter-root[\s\S]*translateY\(var\(--motion-distance-md\)\)/u);
+  const rootRoute = motion.match(/@keyframes t-route-enter-root\s*\{([\s\S]*?)\n\}/u)?.[1] ?? "";
+  assert.match(motion, /data-route-direction="root"[\s\S]*animation-name: t-route-enter-root[\s\S]*animation-duration: var\(--motion-fast\)/u);
+  assert.match(rootRoute, /opacity: 0[\s\S]*opacity: 1/u);
+  assert.doesNotMatch(rootRoute, /transform|filter/u);
+  assert.match(motion, /::view-transition-old\(\.root-route-fade\)[\s\S]*t-route-root-fade-out/u);
+  assert.match(motion, /::view-transition-new\(\.root-route-fade\)[\s\S]*t-route-root-fade-in/u);
   assert.match(motion, /data-route-direction="back"[\s\S]*t-route-enter-back/u);
   assert.doesNotMatch(motion, /t-route-exit|\.t-route-enter[^}]*animation-delay/u);
 });
@@ -260,14 +266,15 @@ test("semantic controls preserve geometry while using compact shared type", asyn
   const button = await read("src/components/ui/button.tsx");
   const tabs = await read("src/components/ui/tabs.tsx");
   const liquidTabs = await read("src/components/ui/liquid-tabs.tsx");
-  assert.match(button, /text-\[0\.8125rem\]/u);
-  assert.match(globals, /--segmented-font-size: 0\.8125rem/u);
+  assert.match(button, /text-\[length:var\(--control-label-size\)\]/u);
+  assert.match(globals, /--control-label-size: 0\.8125rem/u);
+  assert.match(globals, /--segmented-font-size: var\(--control-label-size\)/u);
   assert.match(
     globals,
     /\.t-tab-label\s*\{\s*font-size: var\(--segmented-font-size\);\s*\}/u,
   );
-  assert.doesNotMatch(tabs, /text-\[length:var\(--segmented-font-size\)\]/u);
-  assert.doesNotMatch(liquidTabs, /text-\[length:var\(--segmented-font-size\)\]/u);
+  assert.match(tabs, /text-\[length:var\(--control-label-size\)\]/u);
+  assert.match(liquidTabs, /text-\[length:var\(--control-label-size\)\]/u);
   assert.match(liquidTabs, /h-\[1\.625rem\][\s\S]*px-3/u);
 });
 
@@ -291,6 +298,48 @@ test("design tokens and motion recipes are centralized and capability-aware", as
   assert.match(motion, /@media \(prefers-reduced-motion: reduce\)/u);
   assert.match(motion, /@media \(hover: hover\) and \(pointer: fine\)/u);
   assert.doesNotMatch(`${globals}\n${motion}`, /transition-all/u);
+});
+
+test("dialogs, toast feedback, and destructive navigation stay visually stable", async () => {
+  const dialog = await read("src/components/ui/dialog.tsx");
+  const alertDialog = await read("src/components/ui/alert-dialog.tsx");
+  const motion = await read("src/styles/motion.css");
+  const issueDetail = await read("src/hooks/use-issue-detail.ts");
+  const issueFeed = await read("src/hooks/use-issue-feed.ts");
+  const facilityPage = await read("src/app/(protected)/facilities/page.tsx");
+  for (const source of [dialog, alertDialog]) {
+    assert.match(source, /fixed inset-0 z-50 grid place-items-center/u);
+    assert.doesNotMatch(source, /top-1\/2 left-1\/2/u);
+  }
+  for (const value of ["350ms", "250ms", "16px", "2px", "0.97", "52px"]) {
+    assert.ok(motion.includes(value), `missing toast recipe value ${value}`);
+  }
+  assert.match(issueDetail, /deleting: true[\s\S]*router\.replace/u);
+  assert.match(issueFeed, /filter\(\(issue\) => !issue\.deleting\)/u);
+  assert.match(facilityPage, /<SelectValue \/>/u);
+  assert.doesNotMatch(facilityPage, /<SelectValue>\{translate\('ui\.facility\.title'\)\}/u);
+});
+
+test("dynamic cards resize continuously while dense feeds stay on the static path", async () => {
+  const card = await read("src/components/ui/card.tsx");
+  const resizableCard = await read("src/components/ui/resizable-card.tsx");
+  const skeleton = await read("src/components/ui/route-skeleton.tsx");
+  assert.match(card, /"t-resize flex flex-col/u);
+  assert.doesNotMatch(card, /"use client"|motion\/react/u);
+  assert.match(resizableCard, /layout[\s\S]*transition=\{\{ layout: cardLayoutTransition \}\}/u);
+  assert.match(resizableCard, /duration: 0\.3[\s\S]*ease: \[0\.22, 1, 0\.36, 1\]/u);
+  assert.doesNotMatch(skeleton, /ResizableCard|motion\/react/u);
+  for (const path of [
+    "src/components/issues/issue-card.tsx",
+    "src/components/facilities/facility-card.tsx",
+    "src/components/announcements/announcement-card.tsx",
+  ]) assert.doesNotMatch(await read(path), /ResizableCard|motion\/react/u);
+  for (const path of [
+    "src/components/discussion.tsx",
+    "src/components/setup/category-setup-fields.tsx",
+    "src/components/admin/category-management.tsx",
+    "src/components/admin/access-management.tsx",
+  ]) assert.match(await read(path), /<ResizableCard/u);
 });
 
 test("the frontend contains no parallel Vue implementation", async () => {

@@ -94,7 +94,8 @@
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --segmented-font-size: 0.8125rem;
+  --control-label-size: 0.8125rem;
+  --segmented-font-size: var(--control-label-size);
   --safe-left: env(safe-area-inset-left, 0px);
 }
 
@@ -180,6 +181,15 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
+}
+
+.app-start-surface {
+  box-sizing: border-box;
+  min-height: 100dvh;
+  padding-top: max(1.5rem, var(--safe-top));
+  padding-bottom: max(1.5rem, var(--safe-bottom));
+  padding-inline: max(1.5rem, var(--safe-left), var(--safe-right));
+  background: var(--surface-stage);
 }
 
 button,

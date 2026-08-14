@@ -34,7 +34,7 @@ const SUMMARY_MUTABLE_FIELDS: Record<ContentEntityDomain, ReadonlySet<string>> =
   facility: new Set([
     "id", "category_id", "title", "location", "status", "affected_count",
     "created_at", "updated_at", "author_uid", "isOwnFacility",
-    "currentUserAffected", "canManageFacility",
+    "currentUserAffected", "canManageFacility", "deleting",
   ]),
   issue: new Set([
     "id", "title", "created_at", "support_count", "status", "category",

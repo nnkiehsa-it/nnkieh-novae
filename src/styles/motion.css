@@ -51,18 +51,41 @@
 }
 
 .t-route-enter[data-route-direction="root"] {
-  animation-name: t-route-enter-root, t-route-blur;
+  animation-name: t-route-enter-root;
+  animation-duration: var(--motion-fast);
 }
 
 @keyframes t-route-enter-root {
   from {
-    opacity: 0.9;
-    transform: translateY(var(--motion-distance-md));
+    opacity: 0;
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
+}
+
+/* Primary navigation crossfades its outgoing and incoming route snapshots. */
+::view-transition-old(.root-route-fade) {
+  animation: t-route-root-fade-out var(--motion-quick) ease-out both;
+}
+
+::view-transition-new(.root-route-fade) {
+  animation: t-route-root-fade-in var(--motion-fast) ease-out both;
+}
+
+html:active-view-transition-type(root-fade)
+  .t-route-enter[data-route-direction="root"] {
+  animation: none;
+}
+
+@keyframes t-route-root-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes t-route-root-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes t-route-blur {
@@ -104,6 +127,13 @@
 
 /* Dense lists stay fully painted ahead of the viewport. */
 .t-stagger-item { opacity: 1; }
+
+/* Transitions.dev card resize: explicit size changes stay continuous without JS. */
+.t-resize {
+  transition:
+    width 300ms var(--ease-smooth-out),
+    height 300ms var(--ease-smooth-out);
+}
 
 /* Number updates */
 .t-digit-group {
@@ -244,23 +274,23 @@
 @keyframes t-dialog-in {
   from {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.96);
+    transform: translateY(8px) scale(0.96);
     filter: blur(var(--motion-blur-sm));
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateY(0) scale(1);
     filter: blur(0);
   }
 }
 @keyframes t-dialog-out {
   from {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateY(0) scale(1);
   }
   to {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.96);
+    transform: translateY(8px) scale(0.96);
   }
 }
 
@@ -628,24 +658,42 @@
   }
 }
 
-/* Toast */
-[data-sonner-toast] {
-  transition-timing-function: var(--ease-smooth-out) !important;
+/* Transitions.dev — Toast open / close. Sonner owns stack position in --y;
+   this layer adds the recipe's 16px rise, cross-blur and 0.97 scale. */
+.t-toast[data-sonner-toast] {
+  --toast-open: 350ms;
+  --toast-close: 250ms;
+  --toast-distance: 16px;
+  --toast-blur: 2px;
+  --toast-scale: 0.97;
+  --toast-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  min-height: 46px;
+  border-radius: 52px !important;
+  padding: 12px 16px !important;
+  gap: 10px !important;
+  opacity: 0;
+  transform: var(--y) translateY(var(--toast-distance)) scale(var(--toast-scale));
+  filter: blur(var(--toast-blur));
+  will-change: transform, opacity, filter;
+  transition:
+    opacity var(--toast-close) var(--toast-ease),
+    transform var(--toast-close) var(--toast-ease),
+    filter var(--toast-close) var(--toast-ease),
+    height var(--toast-close) var(--toast-ease) !important;
 }
-.t-toast {
-  animation: t-toast-in var(--motion-medium) var(--ease-smooth-out) both;
+.t-toast[data-sonner-toast][data-mounted="true"][data-removed="false"] {
+  opacity: 1;
+  transform: var(--y) translateY(0) scale(1);
+  filter: blur(0);
+  transition:
+    opacity var(--toast-open) var(--toast-ease),
+    transform var(--toast-open) var(--toast-ease),
+    filter var(--toast-open) var(--toast-ease),
+    height var(--toast-open) var(--toast-ease) !important;
 }
-@keyframes t-toast-in {
-  from {
-    opacity: 0;
-    transform: translateY(16px) scale(0.97);
-    filter: blur(var(--motion-blur-sm));
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-  }
+.t-toast[data-sonner-toast][data-removed="true"][data-swipe-out="false"] {
+  opacity: 0;
+  filter: blur(var(--toast-blur));
 }
 
 /* Like / support celebration */
@@ -944,37 +992,6 @@
   }
 }
 
-@media (max-width: 47.99rem) {
-  .t-dialog[data-state="open"] {
-    animation-name: t-dialog-mobile-in;
-  }
-  .t-dialog[data-state="closed"] {
-    animation-name: t-dialog-mobile-out;
-  }
-  @keyframes t-dialog-mobile-in {
-    from {
-      opacity: 0;
-      transform: translate(-50%, 100%);
-      filter: blur(var(--motion-blur-sm));
-    }
-    to {
-      opacity: 1;
-      transform: translate(-50%, 0);
-      filter: blur(0);
-    }
-  }
-  @keyframes t-dialog-mobile-out {
-    from {
-      opacity: 1;
-      transform: translate(-50%, 0);
-    }
-    to {
-      opacity: 0;
-      transform: translate(-50%, 100%);
-    }
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(*),
   ::view-transition-new(*),
@@ -983,6 +1000,7 @@
     animation-delay: 0s !important;
   }
   .t-route-enter,
+  .t-resize,
   .t-panel-reveal,
   .t-stagger-item,
   .t-digit,
@@ -1022,6 +1040,8 @@
   .t-tab-label,
   .t-learn-arrow,
   .t-checkmark,
+  .t-toast,
+  .t-resize,
   .t-card {
     transition: none !important;
     transform: none !important;

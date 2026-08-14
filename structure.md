@@ -7,9 +7,9 @@ This document is the maintained map of the repository. Read it before broad sear
 - `package.json` — Node 24, Next.js 16.3, React 19.2, TypeScript 7, Tailwind CSS 4, Radix/shadcn primitives, Motion, Serwist, Vitest, and Playwright scripts.
 - `src/app/` — Next App Router. Route `page.tsx` files assemble views and forward events; they do not import `services/` directly.
 - `src/app/layout.tsx` — root metadata, immersive iOS viewport/status-bar configuration, Inter/Roboto Mono plus HarmonyOS Sans TC split-font loading, global providers, and global CSS.
-- `src/app/globals.css` — semantic light/dark color, typography, radius, shadow, safe-area, viewport, surface tokens, and the responsive safe-area dock used by the shared discussion composer.
+- `src/app/globals.css` — semantic light/dark color, typography, radius, shadow, safe-area, viewport, surface tokens, the AppStart safe-area surface, and the responsive dock used by the shared discussion composer.
 - `src/assets/fonts/harmonyos-sans-tc/` — generated, project-character-scoped HarmonyOS Sans TC Regular, Medium, Semibold, and Bold shards plus CSS; refreshed by `scripts/generate-harmonyos-subset.mjs`.
-- `src/styles/motion.css` — transition.dev-inspired timings/easing and named recipes for routes, panels, cards, text, digits, dialogs, dropdowns, toasts, loading, and success states. Includes hover-capability and reduced-motion media queries.
+- `src/styles/motion.css` — transition.dev-inspired timings/easing and named recipes for routes, panels, cards, text, digits, dialogs, dropdowns, toasts, loading, and success states. Toasts use the source recipe's asymmetric 350/250ms rise, scale, and cross-blur; dialog motion is independent from its shared viewport centering positioner. Root routes use opacity-only entry while child/return routes retain spatial direction; hover-capability and reduced-motion media queries remain centralized here.
 - `src/app/sw.ts` — Serwist service worker; `next.config.mjs` compiles and registers it at `public/sw.js`.
 - `src/proxy.ts` — per-request nonce CSP for Next hydration, strict production script execution, and local-emulator development connections.
 - `next.config.mjs` — public environment injection, static security headers, image hosts, and Serwist integration.
@@ -31,9 +31,9 @@ This document is the maintained map of the repository. Read it before broad sear
 
 ## Presentation components
 
-- `src/components/ui/` — business-free shadcn/Radix primitives. Buttons, fields, cards, overlays, tabs, sheets, menus, status badges, skeletons, page states, and the shared Novae brand lockup share global semantic tokens. `skeleton-reveal.tsx` stacks a field skeleton over its final text/number slot and supplies the centered badge-label handoff used by category/status tags.
+- `src/components/ui/` — business-free shadcn/Radix primitives. Buttons, fields, overlays, tabs, sheets, menus, status badges, skeletons, page states, and the shared Novae brand lockup share global semantic tokens. `card.tsx` keeps the base card server-renderable with the low-cost transitions.dev CSS resize recipe; `resizable-card.tsx` adds opt-in Motion layout projection for cards whose intrinsic height changes in place. `skeleton-reveal.tsx` stacks a field skeleton over its final text/number slot and supplies the centered badge-label handoff used by category/status tags.
 - `src/components/motion/` — reusable animated numbers, reaction feedback, and geometry-only feed wrappers. Dense list items stay mounted and painted without viewport observers or offscreen opacity states.
-- `src/components/app-shell.tsx` / `liquid-nav.tsx` — desktop, compact desktop, and mobile navigation. Route content commits without full-page snapshots, then only the new pathname-keyed node receives the short depth-aware entrance motion; selected navigation and tab surfaces use measurement-free shared-layout motion.
+- `src/components/app-shell.tsx` / `liquid-nav.tsx` — desktop, compact desktop, and mobile navigation. Primary navigation supplies a `root-fade` transition type to a pathname-keyed React View Transition crossfade, while child/back routes keep the shared depth-aware entrance motion; selected navigation and tab surfaces use measurement-free shared-layout motion.
 - `src/lib/navigation-memory.ts` — remembers the immediately preceding in-app pathname and hands one immutable root/child/back direction to each newly mounted route node, including browser-history and fallback returns.
 - `src/components/issues/` — issue cards, detail content/actions, and moderation presentation.
 - `src/components/facilities/` — facility cards and status-dialog presentation.
@@ -43,13 +43,13 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/components/dashboard/dashboard-skeleton.tsx` — geometry-matched dashboard toolbar, header, metric grid, distribution/operations columns, and failure-panel loading shell.
 - `src/components/admin/administration-skeleton.tsx` — permission-matched system-management toolbar, tabs, and editor-frame loading shell used by route prefetch.
 - `src/components/setup/` — setup step chrome and reusable category draft editors.
-- `src/components/admin/` — category, reusable category-editor controls, and scoped-access presentation.
+- `src/components/admin/` — category, reusable category-editor controls, and scoped-access presentation. The management surface follows a spacious choose-scope → edit → save hierarchy, uses divider-based category rows instead of nested cards, and adapts member assignment into two columns only at wide widths.
 - `src/components/composer-fields.tsx` — shared title/Markdown/media composer surface.
 - `src/components/discussion.tsx`, `comments/comment-composer.tsx`, `comments/comment-thread.tsx` — shared server-sorted discussion card, fixed safe-area avatar composer, reply-target preview, and collapsible reply-rail presentation.
 - `src/components/content-author.tsx` — shared author avatar and name row for list content.
 - `src/components/content-renderer.tsx` — sanitized Markdown/media rendering; its optional field-level reveal affects Markdown text only and leaves media/card chrome outside the filter layer.
 - `src/components/detail-toolbar.tsx` — shared, geometry-stable secondary toolbar; detail routes add share/actions while Dashboard and system management reuse the same back geometry on mobile and desktop.
-- `src/components/protected-app.tsx`, `app-providers.tsx`, `app-update-gate.tsx` — startup/session, providers, theme/i18n, toast boundaries, and bounded forced PWA updates with version polling, service-worker takeover, animated progress, and reload recovery.
+- `src/components/protected-app.tsx`, `app-providers.tsx`, `app-update-gate.tsx` — startup/session, providers, theme/i18n, transitions.dev-matched pill toast boundaries, and bounded forced PWA updates with version polling, service-worker takeover, animated progress, and reload recovery.
 - `src/components/feature-route-guard.tsx` — shared disabled-feature guard for direct proposal and facility routes.
 - `src/components/ui/route-skeleton.tsx` and route `loading.tsx` files — prefetched list/detail app-shell fallbacks that reuse the same header/grid/control geometry as their resolved routes while skeletonizing only unresolved domain fields; detail fallbacks reserve full title and two-line content geometry without treating list excerpts as detail cache, and no domain requests are started by the fallback.
 - `src/components/ui/tooltip.tsx` — shared fine-pointer-only tooltip capability boundary; touch and non-hover devices keep labelled controls without opening tooltip layers.
@@ -59,7 +59,7 @@ This document is the maintained map of the repository. Read it before broad sear
 
 - `src/hooks/use-session.tsx` — Firebase authentication, role/permission snapshot, setup status, and supported-issue session state.
 - `src/hooks/use-categories.ts` — category and platform-feature store.
-- `src/hooks/use-issue-feed.ts`, `use-issue-detail.ts` — issue list/detail fetching, pagination, comments, support, and delete flows; categories without comment capability short-circuit comment reads and presentation.
+- `src/hooks/use-issue-feed.ts`, `use-issue-detail.ts` — issue list/detail fetching, pagination, comments, support, and delete flows; successful deletes retain the mounted detail entity through the success hold/navigation while a shared deletion marker removes it from list snapshots, preventing a transient not-found page. Categories without comment capability short-circuit comment reads and presentation.
 - `src/hooks/use-facility-feed.ts`, `use-facility-detail.ts`, `use-facility-status.ts` — facility list/detail, affected-user, delete, and moderation flows.
 - `src/hooks/use-announcement-feed.ts`, `use-announcement-detail.ts` — announcement list/detail, likes, comments, and deletion.
 - `src/hooks/use-notifications-page.ts`, `use-notification-badge.ts` — notification aggregation, realtime subscriptions, pagination, target routing, and unread hints.

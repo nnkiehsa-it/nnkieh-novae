@@ -6,6 +6,7 @@ import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import { useCategoryManagement } from "@/hooks/use-category-management";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ResizableCard } from "@/components/ui/resizable-card";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
 import { ErrorState } from "@/components/ui/page-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,7 +24,7 @@ export function CategoryManagement() {
   if (state.error)
     return <ErrorState error={state.error} onRetry={() => void state.load()} />;
   return (
-    <section className="space-y-4">
+    <section className="space-y-6">
       <LiquidTabs
         ariaLabel={translate('ui.admin.contentType')}
         onValueChange={state.setKind}
@@ -35,13 +36,13 @@ export function CategoryManagement() {
         value={state.kind}
       />
       {state.kind === "issue" ? (
-        <Card className="gap-0 py-0">
+        <ResizableCard className="gap-0 py-0">
           <CategoryFeatureHeader
             enabled={state.issuesEnabled}
             onChange={state.setIssuesEnabled}
             title={translate('ui.admin.issueFeature')}
           />
-          <CardContent className="grid gap-3 py-4">
+          <CardContent className="grid gap-0 px-5 py-6 sm:px-7">
             {state.issues.map((item, index) => (
               <IssueCategoryEditor
                 identifierLocked={state.persistedIssues.has(item.id)}
@@ -54,22 +55,23 @@ export function CategoryManagement() {
               />
             ))}
             <Button
+              className="mt-5"
               disabled={!state.issuesEnabled}
               onClick={state.addIssue}
               variant="ghost"
             >
               <Plus />{translate('ui.admin.addIssueCategory')}</Button>
           </CardContent>
-        </Card>
+        </ResizableCard>
       ) : null}
       {state.kind === "facility" ? (
-        <Card className="gap-0 py-0">
+        <ResizableCard className="gap-0 py-0">
           <CategoryFeatureHeader
             enabled={state.facilitiesEnabled}
             onChange={state.setFacilitiesEnabled}
             title={translate('ui.admin.facilityFeature')}
           />
-          <CardContent className="grid gap-3 py-4">
+          <CardContent className="grid gap-0 px-5 py-6 sm:px-7">
             {state.facilities.map((item, index) => (
               <FacilityCategoryEditor
                 identifierLocked={state.persistedFacilities.has(item.id)}
@@ -82,25 +84,26 @@ export function CategoryManagement() {
               />
             ))}
             <Button
+              className="mt-5"
               disabled={!state.facilitiesEnabled}
               onClick={state.addFacility}
               variant="ghost"
             >
               <Plus />{translate('ui.admin.addFacilityCategory')}</Button>
           </CardContent>
-        </Card>
+        </ResizableCard>
       ) : null}
       {state.kind === "announcement" ? (
-        <Card className="gap-0 py-0">
+        <ResizableCard className="gap-0 py-0">
           <CategoryFeatureHeader
             description={translate('ui.admin.announcementCommentsDescription')}
             enabled={state.announcementComments}
             onChange={state.setAnnouncementComments}
             title={translate('ui.admin.announcementComments')}
           />
-        </Card>
+        </ResizableCard>
       ) : null}
-      <div className="flex justify-end">
+      <div className="flex justify-end border-t pt-5">
         <Button disabled={!state.valid || state.saving} onClick={() => void state.save()}>
           {state.saving ? (
             <ActionFeedbackIcon

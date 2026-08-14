@@ -52,7 +52,13 @@ describe("React frontend design system", () => {
     expect(childRouteEnter).not.toContain("filter:");
     expect(read("src/components/app-shell.tsx")).toContain("consumeRouteDirection(pathname)");
     expect(read("src/components/app-shell.tsx")).toContain('markRouteDirection("back")');
+    expect(read("src/components/app-shell.tsx")).toContain("<ViewTransition");
+    expect(read("src/components/liquid-nav.tsx")).toContain('transitionTypes={["root-fade"]}');
     expect(motion).toContain('data-route-direction="root"');
+    const rootRouteEnter = motion.match(/@keyframes t-route-enter-root\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
+    expect(rootRouteEnter).toContain("opacity: 0");
+    expect(rootRouteEnter).not.toContain("transform");
+    expect(rootRouteEnter).not.toContain("filter");
     expect(motion).toContain("t-route-enter-child");
     expect(motion).toContain("t-route-enter-back");
   });
@@ -90,12 +96,12 @@ describe("React frontend design system", () => {
     const thread = read("src/components/comments/comment-thread.tsx");
     const globals = read("src/app/globals.css");
     const layout = read("src/app/layout.tsx");
-    expect(discussion).toContain('<Card className="gap-0 overflow-hidden py-0">');
+    expect(discussion).toContain('<ResizableCard className="gap-0 overflow-hidden py-0">');
     expect(discussion).toContain('className="discussion-composer-dock"');
     expect(discussion).toContain("characters.slice(0, 20)");
     expect(discussion).toContain('translate("ui.discussion.replying"');
     expect(composer).toContain('import { ArrowUp } from "lucide-react"');
-    expect(composer).toContain('className="shrink-0 rounded-full"');
+    expect(composer).toContain('className="shrink-0 self-end rounded-full"');
     expect(composer).toContain('size="icon-lg"');
     expect(composer).not.toContain("rounded-2xl border bg-muted/35");
     expect(thread).toContain("onReply(reply, comment.id)");
@@ -132,6 +138,7 @@ describe("React frontend design system", () => {
     expect(skeleton).not.toContain("content?: string");
     expect(skeleton).toMatch(/export function DetailRouteSkeleton\(\{\s*kind = "issue",\s*\}/u);
     expect(skeleton).toContain('kind === "announcement"');
+    expect(skeleton).not.toContain('min-h-[25rem]');
     expect(skeleton).not.toContain('Skeleton className="size-9 rounded-xl"');
     expect(issueCard).not.toContain('t-data-content-enter flex h-full');
     expect(facilityCard).not.toContain('t-data-content-enter flex h-full');
@@ -144,6 +151,28 @@ describe("React frontend design system", () => {
       expect(card).toContain('className="absolute inset-0 rounded-xl');
       expect(card).not.toContain("after:absolute after:inset-0");
     }
+  });
+
+  it("animates intrinsic card resize without projecting dense feed rows", () => {
+    const card = read("src/components/ui/card.tsx");
+    const resizableCard = read("src/components/ui/resizable-card.tsx");
+    expect(card).toContain("t-resize flex flex-col");
+    expect(card).not.toContain('"use client"');
+    expect(resizableCard).toContain("layout");
+    expect(resizableCard).toContain("transition={{ layout: cardLayoutTransition }}");
+    expect(resizableCard).toContain("duration: 0.3");
+    expect(resizableCard).toContain("ease: [0.22, 1, 0.36, 1]");
+    expect(read("src/components/discussion.tsx")).toContain("<ResizableCard");
+  });
+
+  it("keeps the startup fallback inside the same iOS safe-area surface", () => {
+    const providers = read("src/components/app-providers.tsx");
+    const startup = read("src/components/protected-app.tsx");
+    const globals = read("src/app/globals.css");
+    expect(providers).toContain('className="app-start-surface"');
+    expect(startup).toContain('className="app-start-surface grid place-items-center"');
+    expect(globals).toMatch(/\.app-start-surface \{[\s\S]*min-height: 100dvh/u);
+    expect(globals).toMatch(/\.app-start-surface \{[\s\S]*var\(--safe-top\)[\s\S]*var\(--safe-bottom\)/u);
   });
 
   it("disables tooltip layers without fine-pointer hover capability", () => {
@@ -186,16 +215,22 @@ describe("React frontend design system", () => {
   });
 
   it("owns dialog, dropdown, card, and control styling in shared primitives", () => {
-    expect(read("src/components/ui/button.tsx")).toContain("buttonVariants");
+    const button = read("src/components/ui/button.tsx");
+    const dialog = read("src/components/ui/dialog.tsx");
+    const alertDialog = read("src/components/ui/alert-dialog.tsx");
+    expect(button).toContain("buttonVariants");
+    expect(button).toContain("--control-label-size");
     expect(read("src/components/ui/card.tsx")).toContain('data-slot="card"');
-    expect(read("src/components/ui/dialog.tsx")).toContain('data-slot="dialog-content"');
+    expect(dialog).toContain('data-slot="dialog-content"');
+    expect(dialog).toContain("fixed inset-0 z-50 grid place-items-center");
+    expect(alertDialog).toContain("fixed inset-0 z-50 grid place-items-center");
     expect(read("src/components/ui/dropdown-menu.tsx")).toContain('data-slot="dropdown-menu-content"');
   });
 
   it("keeps page headers concise and product terminology consistent", () => {
     const pageState = read("src/components/ui/page-state.tsx");
     const i18nCheck = read("scripts/check-i18n.mjs");
-    expect(pageState).not.toContain("description?:");
+    expect(pageState).toContain("description?: React.ReactNode");
     expect(pageState).not.toContain("eyebrow?:");
     for (const term of ["連署", "連屬", "設備回報", "設備報修", "報修", "校園提案", "討論留言"]) {
       expect(i18nCheck).toContain(`"${term}"`);

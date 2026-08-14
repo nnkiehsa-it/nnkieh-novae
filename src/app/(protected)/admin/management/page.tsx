@@ -32,18 +32,22 @@ export default function AdministrationPage() {
   if (!canManage)
     return <ErrorState error={translate('ui.admin.noPermission')} />;
   return (
-    <div className="space-y-5">
+    <div className="mx-auto w-full max-w-5xl space-y-7 pb-8">
       <SecondaryToolbar
         backLabel={translate('ui.common.back')}
         onBack={() => returnToPreviousInAppRoute(router, "/settings")}
       />
-      <PageHeader title={translate('ui.admin.title')} />
-      <LiquidTabs
-        ariaLabel={translate('ui.admin.items')}
-        onValueChange={(value) =>
-          router.replace(`/admin/management?tab=${value}`)
-        }
-        options={[
+      <PageHeader
+        description={translate('ui.admin.description')}
+        title={translate('ui.admin.title')}
+      />
+      <div className="flex border-b pb-5">
+        <LiquidTabs
+          ariaLabel={translate('ui.admin.items')}
+          onValueChange={(value) =>
+            router.replace(`/admin/management?tab=${value}`)
+          }
+          options={[
           ...(session.can("category.manage")
             ? [
                 {
@@ -62,10 +66,11 @@ export default function AdministrationPage() {
                 },
               ]
             : []),
-        ]}
-        value={tab}
-      />
-      <div className="t-panel-reveal" key={tab}>
+          ]}
+          value={tab}
+        />
+      </div>
+      <div className="t-panel-reveal min-w-0" key={tab}>
         {tab === "members" ? <AccessManagement /> : <CategoryManagement />}
       </div>
     </div>
