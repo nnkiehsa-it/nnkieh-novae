@@ -2,7 +2,6 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import * as React from "react";
-import { ViewTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -149,15 +148,9 @@ function RouteTransition({
 }) {
   const [direction] = React.useState(() => consumeRouteDirection(pathname));
   return (
-    <ViewTransition
-      default="none"
-      enter={{ default: "none", "root-fade": "root-route-fade" }}
-      exit={{ default: "none", "root-fade": "root-route-fade" }}
-    >
-      <div className="route-page t-route-enter" data-route-direction={direction}>
-        {children}
-      </div>
-    </ViewTransition>
+    <div className="route-page t-route-enter" data-route-direction={direction}>
+      {children}
+    </div>
   );
 }
 

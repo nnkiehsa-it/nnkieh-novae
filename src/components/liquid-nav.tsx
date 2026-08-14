@@ -91,7 +91,6 @@ export function LiquidNav({
             onFocus={() => router.prefetch(item.href)}
             onPointerDown={() => acknowledgeNavigation(item.href)}
             onPointerEnter={() => router.prefetch(item.href)}
-            transitionTypes={["root-fade"]}
           >
             <span className="relative shrink-0">
               {item.icon}

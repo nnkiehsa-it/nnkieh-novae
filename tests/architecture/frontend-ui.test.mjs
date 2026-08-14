@@ -210,16 +210,15 @@ test("list action bars scroll normally and route navigation animates only the co
   assert.match(shell, /<RouteTransition key=\{pathname\} pathname=\{pathname\}>/u);
   assert.match(shell, /consumeRouteDirection\(pathname\)/u);
   assert.match(shell, /data-route-direction=\{direction\}/u);
-  assert.match(shell, /<ViewTransition[\s\S]*"root-fade": "root-route-fade"/u);
-  assert.match(await read("src/components/liquid-nav.tsx"), /transitionTypes=\{\["root-fade"\]\}/u);
+  assert.doesNotMatch(shell, /ViewTransition|root-route-fade/u);
+  assert.doesNotMatch(await read("src/components/liquid-nav.tsx"), /transitionTypes|root-fade/u);
   assert.match(motion, /\.t-route-enter\s*\{[\s\S]*var\(--motion-medium\)[\s\S]*backwards/u);
   assert.match(motion, /@keyframes t-route-enter-child[\s\S]*translateX\(24px\)[\s\S]*translateX\(0\)/u);
   const rootRoute = motion.match(/@keyframes t-route-enter-root\s*\{([\s\S]*?)\n\}/u)?.[1] ?? "";
   assert.match(motion, /data-route-direction="root"[\s\S]*animation-name: t-route-enter-root[\s\S]*animation-duration: var\(--motion-fast\)/u);
   assert.match(rootRoute, /opacity: 0[\s\S]*opacity: 1/u);
   assert.doesNotMatch(rootRoute, /transform|filter/u);
-  assert.match(motion, /::view-transition-old\(\.root-route-fade\)[\s\S]*t-route-root-fade-out/u);
-  assert.match(motion, /::view-transition-new\(\.root-route-fade\)[\s\S]*t-route-root-fade-in/u);
+  assert.doesNotMatch(motion, /root-route-fade|t-route-root-fade|active-view-transition-type/u);
   assert.match(motion, /data-route-direction="back"[\s\S]*t-route-enter-back/u);
   assert.doesNotMatch(motion, /t-route-exit|\.t-route-enter[^}]*animation-delay/u);
 });
@@ -264,17 +263,20 @@ test("mobile menus stay content-sized and navigation uses floating app geometry"
 test("semantic controls preserve geometry while using compact shared type", async () => {
   const globals = await read("src/app/globals.css");
   const button = await read("src/components/ui/button.tsx");
+  const select = await read("src/components/ui/select.tsx");
+  const dropdown = await read("src/components/ui/dropdown-menu.tsx");
   const tabs = await read("src/components/ui/tabs.tsx");
   const liquidTabs = await read("src/components/ui/liquid-tabs.tsx");
-  assert.match(button, /text-\[length:var\(--control-label-size\)\]/u);
-  assert.match(globals, /--control-label-size: 0\.8125rem/u);
-  assert.match(globals, /--segmented-font-size: var\(--control-label-size\)/u);
+  assert.match(globals, /--control-label-size: 0\.75rem/u);
   assert.match(
     globals,
-    /\.t-tab-label\s*\{\s*font-size: var\(--segmented-font-size\);\s*\}/u,
+    /\[data-control-label=""\]\s*\{\s*font-size: var\(--control-label-size\);\s*\}/u,
   );
-  assert.match(tabs, /text-\[length:var\(--control-label-size\)\]/u);
-  assert.match(liquidTabs, /text-\[length:var\(--control-label-size\)\]/u);
+  for (const source of [button, select, dropdown, tabs, liquidTabs]) {
+    assert.match(source, /data-control-label/u);
+    assert.doesNotMatch(source, /text-\[length:var\(--control-label-size\)\]/u);
+  }
+  assert.doesNotMatch(button, /text-\[0\.8125rem\]|text-xs/u);
   assert.match(liquidTabs, /h-\[1\.625rem\][\s\S]*px-3/u);
 });
 

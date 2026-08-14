@@ -94,8 +94,7 @@
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --control-label-size: 0.8125rem;
-  --segmented-font-size: var(--control-label-size);
+  --control-label-size: 0.75rem;
   --safe-left: env(safe-area-inset-left, 0px);
 }
 
@@ -199,8 +198,8 @@ textarea {
   font: inherit;
 }
 
-.t-tab-label {
-  font-size: var(--segmented-font-size);
+[data-control-label=""] {
+  font-size: var(--control-label-size);
 }
 
 button,

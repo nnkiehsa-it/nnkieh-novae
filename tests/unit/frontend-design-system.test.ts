@@ -52,8 +52,8 @@ describe("React frontend design system", () => {
     expect(childRouteEnter).not.toContain("filter:");
     expect(read("src/components/app-shell.tsx")).toContain("consumeRouteDirection(pathname)");
     expect(read("src/components/app-shell.tsx")).toContain('markRouteDirection("back")');
-    expect(read("src/components/app-shell.tsx")).toContain("<ViewTransition");
-    expect(read("src/components/liquid-nav.tsx")).toContain('transitionTypes={["root-fade"]}');
+    expect(read("src/components/app-shell.tsx")).not.toContain("ViewTransition");
+    expect(read("src/components/liquid-nav.tsx")).not.toContain("transitionTypes");
     expect(motion).toContain('data-route-direction="root"');
     const rootRouteEnter = motion.match(/@keyframes t-route-enter-root\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
     expect(rootRouteEnter).toContain("opacity: 0");
@@ -219,7 +219,7 @@ describe("React frontend design system", () => {
     const dialog = read("src/components/ui/dialog.tsx");
     const alertDialog = read("src/components/ui/alert-dialog.tsx");
     expect(button).toContain("buttonVariants");
-    expect(button).toContain("--control-label-size");
+    expect(button).toContain('data-control-label=""');
     expect(read("src/components/ui/card.tsx")).toContain('data-slot="card"');
     expect(dialog).toContain('data-slot="dialog-content"');
     expect(dialog).toContain("fixed inset-0 z-50 grid place-items-center");

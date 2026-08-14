@@ -89,6 +89,7 @@ export default function IssueBoardPage() {
           >
             <SelectTrigger
               aria-label={translate('ui.access.selectCategory')}
+              data-control-label="heading"
               className="h-auto max-w-full border-0 bg-transparent p-0 text-2xl font-semibold leading-8 shadow-none"
             >
               <SelectValue />

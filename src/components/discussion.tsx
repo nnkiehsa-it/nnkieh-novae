@@ -87,7 +87,7 @@ export function Discussion({
           <Select onValueChange={(value) => onSortChange(value as CommentSortOption)} value={sort}>
             <SelectTrigger
               aria-label={translate("ui.discussion.sort")}
-              className="ml-auto h-8 w-auto min-w-28 gap-1.5 px-2.5 text-xs"
+              className="ml-auto h-8 w-auto min-w-28 gap-1.5 px-2.5"
             >
               <SelectValue />
             </SelectTrigger>

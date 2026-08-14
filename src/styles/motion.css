@@ -64,30 +64,6 @@
   }
 }
 
-/* Primary navigation crossfades its outgoing and incoming route snapshots. */
-::view-transition-old(.root-route-fade) {
-  animation: t-route-root-fade-out var(--motion-quick) ease-out both;
-}
-
-::view-transition-new(.root-route-fade) {
-  animation: t-route-root-fade-in var(--motion-fast) ease-out both;
-}
-
-html:active-view-transition-type(root-fade)
-  .t-route-enter[data-route-direction="root"] {
-  animation: none;
-}
-
-@keyframes t-route-root-fade-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-@keyframes t-route-root-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
 @keyframes t-route-blur {
   from { filter: blur(var(--motion-blur-sm)); }
   to { filter: blur(0); }
