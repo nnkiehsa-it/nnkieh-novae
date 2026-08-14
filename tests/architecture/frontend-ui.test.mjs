@@ -151,6 +151,7 @@ test("list status controls use the full action row and stay right aligned", asyn
 
 test("discussion uses one card surface and a fixed reply-aware composer", async () => {
   const discussion = await read("src/components/discussion.tsx");
+  const composer = await read("src/components/comments/comment-composer.tsx");
   const thread = await read("src/components/comments/comment-thread.tsx");
   const globals = await read("src/app/globals.css");
   const zhUi = await read("src/i18n/messages/zh-TW/ui.ts");
@@ -158,6 +159,9 @@ test("discussion uses one card surface and a fixed reply-aware composer", async 
   assert.match(discussion, /className="discussion-composer-dock"/u);
   assert.match(discussion, /characters\.slice\(0, 20\)/u);
   assert.match(discussion, /ui\.discussion\.replying/u);
+  assert.match(composer, /import \{ ArrowUp \} from "lucide-react"/u);
+  assert.match(composer, /className="shrink-0 rounded-full"/u);
+  assert.doesNotMatch(composer, /rounded-2xl border bg-muted\/35/u);
   assert.match(thread, /onReply\(reply, comment\.id\)/u);
   assert.match(globals, /\.discussion-composer-dock \{[\s\S]*position: fixed/u);
   assert.doesNotMatch(discussion, /ui\.discussion\.empty/u);

@@ -86,6 +86,7 @@ describe("React frontend design system", () => {
 
   it("keeps discussion in a card with a safe-area fixed reply composer", () => {
     const discussion = read("src/components/discussion.tsx");
+    const composer = read("src/components/comments/comment-composer.tsx");
     const thread = read("src/components/comments/comment-thread.tsx");
     const globals = read("src/app/globals.css");
     const layout = read("src/app/layout.tsx");
@@ -93,6 +94,10 @@ describe("React frontend design system", () => {
     expect(discussion).toContain('className="discussion-composer-dock"');
     expect(discussion).toContain("characters.slice(0, 20)");
     expect(discussion).toContain('translate("ui.discussion.replying"');
+    expect(composer).toContain('import { ArrowUp } from "lucide-react"');
+    expect(composer).toContain('className="shrink-0 rounded-full"');
+    expect(composer).toContain('size="icon-lg"');
+    expect(composer).not.toContain("rounded-2xl border bg-muted/35");
     expect(thread).toContain("onReply(reply, comment.id)");
     expect(globals).toMatch(/\.discussion-composer-dock \{[\s\S]*position: fixed/u);
     expect(globals).toContain("bottom: max(0.75rem, var(--safe-bottom))");

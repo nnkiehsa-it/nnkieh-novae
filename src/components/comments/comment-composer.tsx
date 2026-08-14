@@ -1,6 +1,6 @@
 "use client";
 
-import { Send } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { t as translate } from "@/i18n";
 import { useSession } from "@/hooks/use-session";
 import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
@@ -31,8 +31,8 @@ export function CommentComposer({
 
   return (
     <div className="grid gap-2">
-      <div className="flex items-end gap-2 rounded-2xl border bg-muted/35 p-1.5 shadow-[var(--shadow-control)] transition-[background-color,border-color,box-shadow] duration-150 focus-within:border-ring/45 focus-within:bg-background focus-within:ring-2 focus-within:ring-ring/20">
-        <Avatar className="mb-0.5 size-9 border bg-background">
+      <div className="flex items-end gap-2">
+        <Avatar className="size-9 border bg-background">
           <AvatarImage alt={displayName} src={photoUrl} />
           <AvatarFallback>{displayName.slice(0, 1)}</AvatarFallback>
         </Avatar>
@@ -55,10 +55,10 @@ export function CommentComposer({
           <TooltipTrigger asChild>
             <Button
               aria-label={submitLabel}
-              className="mb-0.5 shrink-0"
+              className="shrink-0 rounded-full"
               disabled={!content.trim() || busy}
               onClick={() => void onSubmit()}
-              size="icon-sm"
+              size="icon-lg"
             >
               {busy ? (
                 <ActionFeedbackIcon
@@ -66,7 +66,7 @@ export function CommentComposer({
                   size="sm"
                   state={feedbackState === "success" ? "success" : "loading"}
                 />
-              ) : <Send />}
+              ) : <ArrowUp className="size-5" strokeWidth={2.25} />}
             </Button>
           </TooltipTrigger>
           <TooltipContent>{submitLabel}</TooltipContent>

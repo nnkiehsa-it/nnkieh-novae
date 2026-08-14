@@ -144,9 +144,9 @@ export function Discussion({
 
       {enabled ? (
         <div className="discussion-composer-dock">
-          <div className="mx-auto w-full max-w-2xl rounded-[1.25rem] border bg-background/94 p-2 shadow-[var(--shadow-floating)] backdrop-blur-xl">
+          <div className="mx-auto w-full max-w-2xl rounded-[1.25rem] border bg-background p-1.5 shadow-[var(--shadow-floating)] focus-within:border-ring/45 focus-within:ring-2 focus-within:ring-ring/20">
             {replyTarget ? (
-              <div className="mb-1 flex items-start gap-3 rounded-xl bg-muted/55 px-3 py-2">
+              <div className="mb-1 flex items-start gap-3 border-b px-2 pb-2 pt-1">
                 <div className="min-w-0 flex-1 text-xs leading-5">
                   <p className="font-medium text-foreground">
                     {translate("ui.discussion.replying", {
