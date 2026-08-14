@@ -24,6 +24,7 @@ import { useActionFeedback } from "@/hooks/use-action-feedback";
 import { returnToPreviousRoute } from "@/lib/navigation-memory";
 import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
+import { toggleReactionState } from "@/lib/reaction-state";
 
 export function useFacilityDetail() {
   const params = useParams<{ facilityId: string }>();
@@ -43,6 +44,7 @@ export function useFacilityDetail() {
   const revealDetail = useColdDataReveal(coldRead, loading);
   const [error, setError] = React.useState("");
   const [affecting, setAffecting] = React.useState(false);
+  const affectingRef = React.useRef(false);
   const [burst, setBurst] = React.useState(0);
   const [statusOpen, setStatusOpen] = React.useState(false);
   const deleteFeedback = useActionFeedback();
@@ -91,8 +93,24 @@ export function useFacilityDetail() {
   });
 
   async function toggleAffected() {
-    if (!currentFacility || affecting) return;
+    if (!currentFacility || affectingRef.current) return;
+    const previous = {
+      active: currentFacility.currentUserAffected,
+      count: currentFacility.affected_count,
+    };
+    const optimistic = toggleReactionState(previous);
+    affectingRef.current = true;
     setAffecting(true);
+    patchContentEntity<FacilityRecord>(
+      session.user?.uid,
+      "facility",
+      currentFacility.id,
+      {
+        affected_count: optimistic.count,
+        currentUserAffected: optimistic.active,
+      },
+    );
+    if (optimistic.active) setBurst((value) => value + 1);
     try {
       const result = await toggleFacilityAffected(currentFacility.id);
       patchContentEntity<FacilityRecord>(
@@ -104,10 +122,19 @@ export function useFacilityDetail() {
           currentUserAffected: result.affected,
         },
       );
-      setBurst((value) => value + 1);
-    } catch (caught) {
-      toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
+    } catch {
+      patchContentEntity<FacilityRecord>(
+        session.user?.uid,
+        "facility",
+        currentFacility.id,
+        {
+          affected_count: previous.count,
+          currentUserAffected: previous.active,
+        },
+      );
+      toast.error(t("ui.facility.affectedFailed"));
     } finally {
+      affectingRef.current = false;
       setAffecting(false);
     }
   }

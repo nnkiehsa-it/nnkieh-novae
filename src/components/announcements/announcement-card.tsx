@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { ArrowUpRight, Heart, MessageCircle } from "lucide-react";
 import { t as translate } from "@/i18n";
-import type { AnnouncementRecord, UserPublicProfile } from "@/types";
-import { formatRelativeTime, stripMarkdownImages } from "@/lib/format";
+import type { AnnouncementSummary, UserPublicProfile } from "@/types";
+import { formatRelativeTime } from "@/lib/format";
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { LikeActionButton } from "@/components/motion/like-action-button";
 import { ContentAuthor } from "@/components/content-author";
@@ -22,7 +22,7 @@ export function AnnouncementCard({
   profile,
   reveal,
 }: {
-  announcement: AnnouncementRecord;
+  announcement: AnnouncementSummary;
   burst: number;
   liking: boolean;
   onLike: () => void;
@@ -45,15 +45,6 @@ export function AnnouncementCard({
           </div>
           <ArrowUpRight className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-250 ease-[var(--ease-smooth-out)] group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
         </div>
-        <SkeletonReveal
-          as="div"
-          enabled={reveal}
-          skeleton={<div className="space-y-2"><Skeleton className="h-3 w-full" /><Skeleton className="h-3 w-2/3" /></div>}
-        >
-          <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">
-            {stripMarkdownImages(announcement.content)}
-          </p>
-        </SkeletonReveal>
         <div className="mt-auto flex items-center gap-2 border-t pt-3">
           <LikeActionButton
             active={announcement.currentUserLiked === true}

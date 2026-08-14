@@ -37,6 +37,7 @@ import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-
 import { useActionFeedback } from "@/hooks/use-action-feedback";
 import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
+import { toggleReactionState } from "@/lib/reaction-state";
 
 export function useAnnouncementDetail() {
   const params = useParams<{ announcementId: string }>();
@@ -70,6 +71,7 @@ export function useAnnouncementDetail() {
   const [commentsLoadingMore, setCommentsLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
   const [liking, setLiking] = React.useState(false);
+  const likingRef = React.useRef(false);
   const [burst, setBurst] = React.useState(0);
   const deleteFeedback = useActionFeedback();
   const deletingRef = React.useRef(false);
@@ -147,12 +149,28 @@ export function useAnnouncementDetail() {
   });
 
   async function like() {
-    if (!currentAnnouncement || liking) return;
+    if (!currentAnnouncement || likingRef.current) return;
+    const previous = {
+      active: currentAnnouncement.currentUserLiked,
+      count: currentAnnouncement.like_count,
+    };
+    const optimistic = toggleReactionState(previous);
+    likingRef.current = true;
     setLiking(true);
+    patchContentEntity<AnnouncementRecord>(
+      session.user?.uid,
+      "announcement",
+      currentAnnouncement.id,
+      {
+        currentUserLiked: optimistic.active,
+        like_count: optimistic.count,
+      },
+    );
+    if (optimistic.active) setBurst((value) => value + 1);
     try {
       const result = await setAnnouncementLike(
         currentAnnouncement.id,
-        !currentAnnouncement.currentUserLiked,
+        optimistic.active,
       );
       patchContentEntity<AnnouncementRecord>(
         session.user?.uid,
@@ -163,12 +181,19 @@ export function useAnnouncementDetail() {
           like_count: result.like_count,
         },
       );
-      setBurst((value) => value + 1);
-    } catch (caught) {
-      toast.error(
-        caught instanceof Error ? caught.message : t("ui.common.operationFailed"),
+    } catch {
+      patchContentEntity<AnnouncementRecord>(
+        session.user?.uid,
+        "announcement",
+        currentAnnouncement.id,
+        {
+          currentUserLiked: previous.active,
+          like_count: previous.count,
+        },
       );
+      toast.error(t("ui.announcement.likeFailed"));
     } finally {
+      likingRef.current = false;
       setLiking(false);
     }
   }

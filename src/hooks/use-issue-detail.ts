@@ -38,6 +38,7 @@ import { useActionFeedback } from "@/hooks/use-action-feedback";
 import { returnToPreviousRoute } from "@/lib/navigation-memory";
 import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
+import { toggleReactionState } from "@/lib/reaction-state";
 
 export function useIssueDetail() {
   const params = useParams<{ filter: string; issueId: string }>();
@@ -71,6 +72,7 @@ export function useIssueDetail() {
   const [commentsLoadingMore, setCommentsLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
   const [supporting, setSupporting] = React.useState(false);
+  const supportingRef = React.useRef(false);
   const [burst, setBurst] = React.useState(0);
   const [moderationOpen, setModerationOpen] = React.useState(false);
   const deleteFeedback = useActionFeedback();
@@ -187,8 +189,25 @@ export function useIssueDetail() {
   }
 
   async function support() {
-    if (!currentIssue || currentIssue.isOwnIssue || supporting) return;
+    if (!currentIssue || currentIssue.isOwnIssue || supportingRef.current) return;
+    const previous = {
+      active: currentIssue.currentUserSupported === true,
+      count: currentIssue.support_count,
+    };
+    const optimistic = toggleReactionState(previous);
+    supportingRef.current = true;
     setSupporting(true);
+    patchContentEntity<IssueRecord>(
+      session.user?.uid,
+      "issue",
+      currentIssue.id,
+      {
+        currentUserSupported: optimistic.active,
+        support_count: optimistic.count,
+      },
+    );
+    session.setSupportedIssue(currentIssue.id, optimistic.active);
+    if (optimistic.active) setBurst((value) => value + 1);
     try {
       const result = await toggleSupport(currentIssue.id);
       patchContentEntity<IssueRecord>(
@@ -201,10 +220,20 @@ export function useIssueDetail() {
         },
       );
       session.setSupportedIssue(currentIssue.id, result.supported);
-      setBurst((value) => value + 1);
-    } catch (caught) {
-      toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
+    } catch {
+      patchContentEntity<IssueRecord>(
+        session.user?.uid,
+        "issue",
+        currentIssue.id,
+        {
+          currentUserSupported: previous.active,
+          support_count: previous.count,
+        },
+      );
+      session.setSupportedIssue(currentIssue.id, previous.active);
+      toast.error(t("ui.issue.supportFailed"));
     } finally {
+      supportingRef.current = false;
       setSupporting(false);
     }
   }

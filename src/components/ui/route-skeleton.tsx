@@ -108,7 +108,6 @@ function StableDetailToolbar() {
 }
 
 function FeedCardSkeleton({ index, kind }: { index: number; kind: FeedSkeletonKind }) {
-  const hasSummary = kind !== "facility";
   const hasProgress = kind === "issue" && index % 2 === 0;
   const ReactionIcon = kind === "announcement" ? Heart : Hand;
   return (
@@ -120,12 +119,6 @@ function FeedCardSkeleton({ index, kind }: { index: number; kind: FeedSkeletonKi
         </div>
         <ArrowUpRight className="size-4 text-muted-foreground" />
       </div>
-      {hasSummary ? (
-        <div className="space-y-2">
-          <Skeleton className="h-3 w-full" />
-          <Skeleton className="h-3 w-2/3" />
-        </div>
-      ) : null}
       {hasProgress ? (
         <div className="space-y-2">
           <div className="flex justify-between">

@@ -12,7 +12,7 @@ const messages = {
   'auth.loginWidgetInitFailed': '無法啟動登入，請重新整理頁面後再試。',
   'auth.useYour': '請使用',
   'auth.toContinue': '登入以繼續使用平台。',
-  'auth.popupBlocked': '登入視窗被瀏覽器封鎖，請允許彈出視窗後再試。',
+  'auth.popupBlocked': '登入視窗被瀏覽器封鎖，請允許彈出視窗後，重新點擊 Google 登入再試一次。',
   'auth.connectionFailed': '登入連線失敗，請確認網路狀態後再試。',
   'auth.signingIn': '登入中…',
   'auth.pleaseUseTheDesignatedSchoolAccountToLogIn': '請使用指定的校內帳號登入。',

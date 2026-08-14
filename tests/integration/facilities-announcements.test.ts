@@ -150,13 +150,16 @@ integrationTest("announcement.manage, likes, comments, and ownership", async () 
   const list = asRecord(await callAction("listAnnouncements", {
     pageSize: 30,
   }, user.auth));
-  assert.ok((list.announcements as Array<Record<string, unknown>>)
-    .some((announcement) => announcement.id === announcementId));
+  const listedAnnouncement = (list.announcements as Array<Record<string, unknown>>)
+    .find((announcement) => announcement.id === announcementId);
+  assert.ok(listedAnnouncement);
+  assert.equal("content" in listedAnnouncement, false);
   assert.equal(typeof list.version, "number");
   const read = asRecord(await callAction("getAnnouncement", {
     announcementId,
   }, user.auth));
   assert.equal(asRecord(read.announcement).id, announcementId);
+  assert.equal(asRecord(read.announcement).content, "Integration announcement content");
 
   const likeRequestId = requestId("announcement-like");
   const liked = asRecord(await callAction("setAnnouncementLike", {

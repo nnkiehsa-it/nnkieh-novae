@@ -118,7 +118,9 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     sort: "latest",
     statusBucket: "active",
   }, publicManager.auth));
-  assert.ok((managerList.issues as JsonRecord[]).some((issue) => issue.id === publicIssueId));
+  const managerIssue = (managerList.issues as JsonRecord[]).find((issue) => issue.id === publicIssueId);
+  assert.ok(managerIssue);
+  assert.equal("content" in managerIssue, false);
   const searched = asRecord(await callAction("searchIssues", {
     activeFilter: "public-issues",
     pageSize: 20,
@@ -133,7 +135,9 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     sort: "latest",
     statusBucket: "active",
   }, owner.auth));
-  assert.ok((ownIssues.issues as JsonRecord[]).some((issue) => issue.id === publicIssueId));
+  const ownIssue = (ownIssues.issues as JsonRecord[]).find((issue) => issue.id === publicIssueId);
+  assert.ok(ownIssue);
+  assert.equal("content" in ownIssue, false);
   assert.equal(typeof ownIssues.version, "number");
 
   await expectActionError(

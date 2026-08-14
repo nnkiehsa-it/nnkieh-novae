@@ -10,6 +10,7 @@ import {
   normalizeDate,
   normalizeIssueCursor,
   normalizeIssueRecord,
+  normalizeIssueSummary,
   normalizeStatus,
   withSupportState,
 } from './issues-normalize';
@@ -21,6 +22,7 @@ export {
   normalizeDate,
   normalizeIssueCursor,
   normalizeIssueRecord,
+  normalizeIssueSummary,
   normalizeStatus,
   isContentUnavailableError,
   toReadableBackendError,

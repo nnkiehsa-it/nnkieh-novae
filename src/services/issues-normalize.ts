@@ -6,6 +6,7 @@ import type { IssueReadAccess } from '@/types/categories';
 import type {
   IssueCursor,
   IssueRecord,
+  IssueSummary,
   IssueStatus,
 } from '@/types';
 
@@ -31,7 +32,7 @@ export function normalizeDate(value: unknown): Date | null {
   return null;
 }
 
-function normalizeCategory(value: unknown): IssueRecord['category'] {
+function normalizeCategory(value: unknown): IssueSummary['category'] {
   const fallback = getDefaultIssueRouteFilter();
   return isKnownIssueCategory(value) ? value : fallback === 'my-proposals' ? '' : fallback;
 }
@@ -57,15 +58,14 @@ export function normalizeStatus(value: unknown): IssueStatus {
   return 'pending';
 }
 
-export function normalizeIssueRecord(id: string, data: Record<string, unknown>): IssueRecord {
+export function normalizeIssueSummary(id: string, data: Record<string, unknown>): IssueSummary {
   const category = normalizeCategory(data.category);
   const isOwnIssue = data.isOwnIssue === true;
   const supportEnabled = data.support_enabled === true;
 
-  const record: IssueRecord = {
+  const record: IssueSummary = {
     id,
     title: String(data.title ?? ''),
-    content: String(data.content ?? ''),
     created_at: normalizeDate(data.created_at),
     closed_at: normalizeDate(data.closed_at),
     support_count: typeof data.support_count === 'number' ? data.support_count : 0,
@@ -104,6 +104,13 @@ export function normalizeIssueRecord(id: string, data: Record<string, unknown>):
   return record;
 }
 
+export function normalizeIssueRecord(id: string, data: Record<string, unknown>): IssueRecord {
+  return {
+    ...normalizeIssueSummary(id, data),
+    content: String(data.content ?? ''),
+  };
+}
+
 export function normalizeIssueCursor(data: unknown): IssueCursor | null {
   if (!data || typeof data !== 'object') return null;
   const record = data as Record<string, unknown>;
@@ -119,7 +126,7 @@ export function normalizeIssueCursor(data: unknown): IssueCursor | null {
   };
 }
 
-export function withSupportState(issues: IssueRecord[], supportedIssueIds?: Set<string>) {
+export function withSupportState<T extends IssueSummary>(issues: T[], supportedIssueIds?: Set<string>) {
   if (!supportedIssueIds) {
     return issues;
   }

@@ -12,7 +12,7 @@ const messages = {
   'auth.loginWidgetInitFailed': 'Unable to start sign-in. Refresh the page and try again.',
   'auth.useYour': 'Use your',
   'auth.toContinue': 'To continue.',
-  'auth.popupBlocked': 'The sign-in window was blocked by the browser. Allow pop-ups and try again.',
+  'auth.popupBlocked': 'The sign-in window was blocked by the browser. Allow pop-ups, then tap Google sign-in again.',
   'auth.connectionFailed': 'Unable to connect for sign-in. Check your network and try again.',
   'auth.signingIn': 'Signing in…',
   'auth.pleaseUseTheDesignatedSchoolAccountToLogIn': 'Please sign in with the designated school account.',

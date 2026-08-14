@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import {
   findIssueCategory,
@@ -17,7 +18,7 @@ import {
 import { toggleSupport } from "@/services/issues";
 import type {
   IssueCursor,
-  IssueRecord,
+  IssueSummary,
   IssueSortOption,
   IssueStatusBucket,
 } from "@/types";
@@ -34,6 +35,7 @@ import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
+import { toggleReactionState } from "@/lib/reaction-state";
 
 const ISSUE_LIST_CACHE_PREFIXES = [
   "issue-list-page|",
@@ -44,7 +46,7 @@ const ISSUE_LIST_CACHE_PREFIXES = [
 interface IssueFeed {
   cursor: IssueCursor | null;
   hasMore: boolean;
-  issues: IssueRecord[];
+  issues: IssueSummary[];
 }
 
 interface IssueFeedViewMemory {
@@ -83,6 +85,7 @@ export function useIssueFeed() {
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
   const [supportingId, setSupportingId] = React.useState<string | null>(null);
+  const supportingRef = React.useRef<string | null>(null);
   const [supportBurstById, setSupportBurstById] = React.useState<Record<string, number>>({});
   const supportedIssueIdsRef = React.useRef(session.mySupportedIssueIds);
   const requestGuard = usePagedRequestGuard();
@@ -101,22 +104,45 @@ export function useIssueFeed() {
   }, [session.mySupportedIssueIds]);
 
   async function support(issueId: string) {
-    if (supportingId) return;
-    const issue = feed.issues.find((item) => item.id === issueId);
+    if (supportingRef.current) return;
+    const issue =
+      getContentEntity<IssueSummary>(session.user?.uid, "issue", issueId) ??
+      feed.issues.find((item) => item.id === issueId);
     if (!issue || issue.isOwnIssue) return;
+    const previous = {
+      active: issue.currentUserSupported === true,
+      count: issue.support_count,
+    };
+    const optimistic = toggleReactionState(previous);
+    supportingRef.current = issueId;
     setSupportingId(issueId);
-    try {
-      const result = await toggleSupport(issueId);
-      patchContentEntity<IssueRecord>(session.user?.uid, "issue", issueId, {
-        currentUserSupported: result.supported,
-        support_count: result.support_count,
-      });
-      session.setSupportedIssue(issueId, result.supported);
+    patchContentEntity<IssueSummary>(session.user?.uid, "issue", issueId, {
+      currentUserSupported: optimistic.active,
+      support_count: optimistic.count,
+    });
+    session.setSupportedIssue(issueId, optimistic.active);
+    if (optimistic.active) {
       setSupportBurstById((current) => ({
         ...current,
         [issueId]: (current[issueId] ?? 0) + 1,
       }));
+    }
+    try {
+      const result = await toggleSupport(issueId);
+      patchContentEntity<IssueSummary>(session.user?.uid, "issue", issueId, {
+        currentUserSupported: result.supported,
+        support_count: result.support_count,
+      });
+      session.setSupportedIssue(issueId, result.supported);
+    } catch {
+      patchContentEntity<IssueSummary>(session.user?.uid, "issue", issueId, {
+        currentUserSupported: previous.active,
+        support_count: previous.count,
+      });
+      session.setSupportedIssue(issueId, previous.active);
+      toast.error(t("ui.issue.supportFailed"));
     } finally {
+      supportingRef.current = null;
       setSupportingId(null);
     }
   }
@@ -239,7 +265,7 @@ export function useIssueFeed() {
     ...feed,
     issues: feed.issues.map(
       (issue) =>
-        getContentEntity<IssueRecord>(
+        getContentEntity<IssueSummary>(
           session.user?.uid,
           "issue",
           issue.id,

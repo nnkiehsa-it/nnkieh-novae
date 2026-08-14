@@ -1,16 +1,20 @@
 import type {
   AnnouncementRecord,
+  AnnouncementSummary,
   FacilityRecord,
   FacilitySummary,
   IssueRecord,
+  IssueSummary,
 } from "@/types";
 
 export type ContentEntityDomain = "announcement" | "facility" | "issue";
 export type ContentEntity =
   | AnnouncementRecord
+  | AnnouncementSummary
   | FacilityRecord
   | FacilitySummary
-  | IssueRecord;
+  | IssueRecord
+  | IssueSummary;
 
 interface ContentEntityEntry {
   completeness: ContentEntityCompleteness;

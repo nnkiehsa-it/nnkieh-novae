@@ -8,7 +8,7 @@ import {
   patchContentEntity,
   removeContentEntity,
 } from "../../src/lib/content-entity-store";
-import type { IssueRecord } from "../../src/types";
+import type { IssueRecord, IssueSummary } from "../../src/types";
 
 function issue(id: string, title: string, supported = false) {
   return {
@@ -16,7 +16,7 @@ function issue(id: string, title: string, supported = false) {
     id,
     support_count: supported ? 4 : 3,
     title,
-  } as unknown as IssueRecord;
+  } as unknown as IssueSummary;
 }
 
 describe("content entity store", () => {
@@ -30,7 +30,7 @@ describe("content entity store", () => {
       "summary",
     );
 
-    expect(getContentEntity<IssueRecord>(scope, "issue", "one")?.title).toBe(
+    expect(getContentEntity<IssueSummary>(scope, "issue", "one")?.title).toBe(
       "List title",
     );
     expect(getDetailContentEntity(scope, "issue", "one")).toBeUndefined();
@@ -48,7 +48,7 @@ describe("content entity store", () => {
     mergeContentEntityRead(
       scope,
       "issue",
-      { ...issue("one", "Updated list title"), content: "List excerpt" },
+      issue("one", "Updated list title"),
       beginContentEntityRead(),
       "summary",
     );

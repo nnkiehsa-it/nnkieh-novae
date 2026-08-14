@@ -30,6 +30,7 @@ import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
+import { toggleReactionState } from "@/lib/reaction-state";
 
 const FACILITY_LIST_CACHE_PREFIXES = ["facility-list-page|"] as const;
 
@@ -81,6 +82,7 @@ export function useFacilityFeed() {
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
   const [affectingId, setAffectingId] = React.useState<string | null>(null);
+  const affectingRef = React.useRef<string | null>(null);
   const [affectBurstById, setAffectBurstById] = React.useState<Record<string, number>>({});
   const requestGuard = usePagedRequestGuard();
   const entityVersion = useContentEntityDomainVersion(session.user?.uid, "facility");
@@ -94,8 +96,36 @@ export function useFacilityFeed() {
   ].join("|");
 
   async function toggleAffected(facilityId: string) {
-    if (affectingId) return;
+    if (affectingRef.current) return;
+    const facility =
+      getContentEntity<FacilitySummary>(
+        session.user?.uid,
+        "facility",
+        facilityId,
+      ) ?? feed.facilities.find((item) => item.id === facilityId);
+    if (!facility) return;
+    const previous = {
+      active: facility.currentUserAffected,
+      count: facility.affected_count,
+    };
+    const optimistic = toggleReactionState(previous);
+    affectingRef.current = facilityId;
     setAffectingId(facilityId);
+    patchContentEntity<FacilitySummary>(
+      session.user?.uid,
+      "facility",
+      facilityId,
+      {
+        affected_count: optimistic.count,
+        currentUserAffected: optimistic.active,
+      },
+    );
+    if (optimistic.active) {
+      setAffectBurstById((current) => ({
+        ...current,
+        [facilityId]: (current[facilityId] ?? 0) + 1,
+      }));
+    }
     try {
       const result = await toggleFacilityAffected(facilityId);
       patchContentEntity<FacilitySummary>(
@@ -107,15 +137,19 @@ export function useFacilityFeed() {
           currentUserAffected: result.affected,
         },
       );
-      setAffectBurstById((current) => ({
-        ...current,
-        [facilityId]: (current[facilityId] ?? 0) + 1,
-      }));
-    } catch (caught) {
-      toast.error(
-        caught instanceof Error ? caught.message : t("ui.common.operationFailed"),
+    } catch {
+      patchContentEntity<FacilitySummary>(
+        session.user?.uid,
+        "facility",
+        facilityId,
+        {
+          affected_count: previous.count,
+          currentUserAffected: previous.active,
+        },
       );
+      toast.error(t("ui.facility.affectedFailed"));
     } finally {
+      affectingRef.current = null;
       setAffectingId(null);
     }
   }

@@ -28,10 +28,9 @@ export type NotificationTargetType = 'announcement' | 'facility' | 'issue';
 export type NotificationSource = 'broadcast' | 'admin' | 'user';
 
 
-export interface IssueRecord {
+export interface IssueSummary {
   id: string;
   title: string;
-  content: string;
   created_at: Date | null;
   closed_at: Date | null;
   support_count: number;
@@ -55,6 +54,10 @@ export interface IssueRecord {
   author_uid: string | null;
 }
 
+export interface IssueRecord extends IssueSummary {
+  content: string;
+}
+
 export interface OperationTimeListItem {
   label: string;
   shortLabel: string;
@@ -73,7 +76,7 @@ export interface IssueCursor {
 }
 
 export interface IssuePageResult {
-  issues: IssueRecord[];
+  issues: IssueSummary[];
   cursor: IssueCursor | null;
   hasMore: boolean;
 }
@@ -232,10 +235,9 @@ export interface NotificationRecord {
   created_at: Date | null;
 }
 
-export interface AnnouncementRecord {
+export interface AnnouncementSummary {
   id: string;
   title: string;
-  content: string;
   author_uid: string;
   published_at: Date | null;
   like_count: number;
@@ -243,6 +245,10 @@ export interface AnnouncementRecord {
   comments_enabled: boolean;
   currentUserLiked: boolean;
   deleting?: boolean;
+}
+
+export interface AnnouncementRecord extends AnnouncementSummary {
+  content: string;
 }
 
 export interface AnnouncementCommentRecord extends DiscussionCommentRecord {

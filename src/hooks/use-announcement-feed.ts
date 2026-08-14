@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { useSession } from "@/hooks/use-session";
 import {
@@ -8,7 +9,7 @@ import {
   setAnnouncementLike,
   type AnnouncementCursor,
 } from "@/services/announcements";
-import type { AnnouncementRecord } from "@/types";
+import type { AnnouncementSummary } from "@/types";
 import {
   beginContentEntityRead,
   getContentEntity,
@@ -23,6 +24,7 @@ import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
+import { toggleReactionState } from "@/lib/reaction-state";
 
 const ANNOUNCEMENT_LIST_CACHE_PREFIXES = ["announcement-list-page|"] as const;
 
@@ -32,10 +34,10 @@ export function useAnnouncementFeed() {
   const viewMemory = getViewMemory<{
     cursor: AnnouncementCursor;
     hasMore: boolean;
-    items: AnnouncementRecord[];
+    items: AnnouncementSummary[];
   }>(session.user?.uid, "announcement-feed");
   const [coldRead] = React.useState(() => !viewMemory);
-  const [items, setItems] = React.useState<AnnouncementRecord[]>(viewMemory?.items ?? []);
+  const [items, setItems] = React.useState<AnnouncementSummary[]>(viewMemory?.items ?? []);
   const [cursor, setCursor] = React.useState<AnnouncementCursor>(viewMemory?.cursor ?? null);
   const [hasMore, setHasMore] = React.useState(viewMemory?.hasMore ?? false);
   const [loading, setLoading] = React.useState(!viewMemory);
@@ -43,6 +45,7 @@ export function useAnnouncementFeed() {
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
   const [likingId, setLikingId] = React.useState<string | null>(null);
+  const likingRef = React.useRef<string | null>(null);
   const [likeBurstById, setLikeBurstById] = React.useState<Record<string, number>>({});
   const requestGuard = usePagedRequestGuard();
   const entityVersion = useContentEntityDomainVersion(
@@ -52,21 +55,42 @@ export function useAnnouncementFeed() {
   const queryKey = session.user?.uid ?? "anonymous";
 
   async function like(announcementId: string) {
-    if (likingId) return;
+    if (likingRef.current) return;
     const announcement =
-      getContentEntity<AnnouncementRecord>(
+      getContentEntity<AnnouncementSummary>(
         session.user?.uid,
         "announcement",
         announcementId,
       ) ?? items.find((item) => item.id === announcementId);
     if (!announcement) return;
+    const previous = {
+      active: announcement.currentUserLiked,
+      count: announcement.like_count,
+    };
+    const optimistic = toggleReactionState(previous);
+    likingRef.current = announcementId;
     setLikingId(announcementId);
+    patchContentEntity<AnnouncementSummary>(
+      session.user?.uid,
+      "announcement",
+      announcementId,
+      {
+        currentUserLiked: optimistic.active,
+        like_count: optimistic.count,
+      },
+    );
+    if (optimistic.active) {
+      setLikeBurstById((current) => ({
+        ...current,
+        [announcementId]: (current[announcementId] ?? 0) + 1,
+      }));
+    }
     try {
       const result = await setAnnouncementLike(
         announcementId,
-        !announcement.currentUserLiked,
+        optimistic.active,
       );
-      patchContentEntity<AnnouncementRecord>(
+      patchContentEntity<AnnouncementSummary>(
         session.user?.uid,
         "announcement",
         announcementId,
@@ -75,11 +99,19 @@ export function useAnnouncementFeed() {
           like_count: result.like_count,
         },
       );
-      setLikeBurstById((current) => ({
-        ...current,
-        [announcementId]: (current[announcementId] ?? 0) + 1,
-      }));
+    } catch {
+      patchContentEntity<AnnouncementSummary>(
+        session.user?.uid,
+        "announcement",
+        announcementId,
+        {
+          currentUserLiked: previous.active,
+          like_count: previous.count,
+        },
+      );
+      toast.error(t("ui.announcement.likeFailed"));
     } finally {
+      likingRef.current = null;
       setLikingId(null);
     }
   }
@@ -149,7 +181,7 @@ export function useAnnouncementFeed() {
 
   const synchronizedItems = items.map(
     (announcement) =>
-      getContentEntity<AnnouncementRecord>(
+      getContentEntity<AnnouncementSummary>(
         session.user?.uid,
         "announcement",
         announcement.id,

@@ -1,14 +1,14 @@
-import type { IssueCursor, IssueFilter, IssueRecord, IssueSortOption, IssueStatusBucket } from '@/types';
+import type { IssueCursor, IssueFilter, IssueSortOption, IssueStatusBucket, IssueSummary } from '@/types';
 import { buildTitleSearchTokens, normalizeSearchText } from '@/lib/search';
 import { READ_REQUEST_TIMEOUT_MS } from '@/lib/request';
 import { invokeBackendAction } from '@/services/backend-action';
 import { captureContentCacheWriteGuard, createContentCacheKey, getCachedContentPersistent, setCachedContentFromRead } from '@/services/content-read-cache';
-import { TABLE_PAGE_SIZE, normalizeIssueCursor, normalizeIssueRecord, toReadableBackendError, withSupportState } from './issues-core';
+import { TABLE_PAGE_SIZE, normalizeIssueCursor, normalizeIssueSummary, toReadableBackendError, withSupportState } from './issues-core';
 import { CONTENT_FEED_PAGE_SIZE } from '@/lib/page-size';
 import { registerContentVersion } from '@/services/content-versions';
 
 function normalizeIssueList(records: Record<string, unknown>[]) {
-  return records.map((record) => normalizeIssueRecord(String(record.id ?? ''), record));
+  return records.map((record) => normalizeIssueSummary(String(record.id ?? ''), record));
 }
 
 export async function fetchIssuesPageByStatus(
@@ -28,6 +28,7 @@ export async function fetchIssuesPageByStatus(
   const pageSize = options?.pageSize ?? TABLE_PAGE_SIZE;
   const cacheKey = createContentCacheKey([
     'issue-list-page',
+    'summary-v2',
     uid,
     options?.isAdmin ? 'admin' : 'user',
     activeFilter,
@@ -40,7 +41,7 @@ export async function fetchIssuesPageByStatus(
     cursor?.created_at?.getTime() ?? '',
   ]);
   if (!options?.forceRefresh) {
-    const cached = await getCachedContentPersistent<{ cursor: IssueCursor | null; hasMore: boolean; issues: IssueRecord[]; version: number }>(cacheKey);
+    const cached = await getCachedContentPersistent<{ cursor: IssueCursor | null; hasMore: boolean; issues: IssueSummary[]; version: number }>(cacheKey);
     if (cached) {
       registerContentVersion('issues', cached.version ?? 1);
       return {
@@ -103,7 +104,7 @@ export async function fetchIssuesForTitleSearch(
 ): Promise<{
   cursor: IssueCursor | null;
   hasMore: boolean;
-  issues: IssueRecord[];
+  issues: IssueSummary[];
   limited: boolean;
   version: number;
 }> {
@@ -114,6 +115,7 @@ export async function fetchIssuesForTitleSearch(
   }
   const cacheKey = createContentCacheKey([
     'issue-search',
+    'summary-v2',
     uid,
     options?.isAdmin ? 'admin' : 'user',
     activeFilter,
@@ -129,7 +131,7 @@ export async function fetchIssuesForTitleSearch(
     const cached = await getCachedContentPersistent<{
       cursor: IssueCursor | null;
       hasMore: boolean;
-      issues: IssueRecord[];
+      issues: IssueSummary[];
       limited: boolean;
       version: number;
     }>(cacheKey);

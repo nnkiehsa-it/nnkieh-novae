@@ -34,7 +34,7 @@ export function LikeActionButton({
   count,
   disabled,
   icon: Icon,
-  inactiveVariant = "secondary",
+  inactiveVariant = "ghost",
   label,
   onClick,
   reaction = "hand",
@@ -72,14 +72,14 @@ export function LikeActionButton({
           aria-label={label}
           aria-busy={busy}
           aria-pressed={active}
-          className={cn("t-like relative overflow-visible", busy && "opacity-70", className)}
+          className={cn("t-like relative overflow-visible", className)}
           data-accent={reaction}
           data-celebrating={active && celebrationBurst ? celebrationBurst : undefined}
           data-liked={active}
-          disabled={disabled || busy}
+          disabled={disabled}
           onClick={onClick}
           size={size}
-          variant={active ? "default" : inactiveVariant}
+          variant={active ? "secondary" : inactiveVariant}
         >
           <span className="t-action-icon">
             <span className="t-like-icon">

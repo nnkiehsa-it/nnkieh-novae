@@ -189,12 +189,55 @@ test("proposal detail reaction and count match centered announcement layout", as
   assert.match(actions, /whitespace-nowrap text-sm font-semibold tabular-nums/u);
   assert.match(actions, /<div className="flex justify-center">[\s\S]*<LikeActionButton/u);
   assert.match(facilityDetail, /<div className="flex justify-center">[\s\S]*<LikeActionButton/u);
-  assert.match(reaction, /inactiveVariant = "secondary"/u);
+  assert.match(reaction, /inactiveVariant = "ghost"/u);
   assert.match(reaction, /inactiveVariant\?: "secondary" \| "ghost"/u);
-  assert.match(reaction, /variant=\{active \? "default" : inactiveVariant\}/u);
+  assert.match(reaction, /variant=\{active \? "secondary" : inactiveVariant\}/u);
   assert.match(reaction, /aria-pressed=\{active\}/u);
+  assert.match(reaction, /disabled=\{disabled\}/u);
+  assert.doesNotMatch(reaction, /disabled=\{disabled \|\| busy\}/u);
   assert.match(motion, /\.t-action-icon\s*\{[\s\S]*width: 1rem;[\s\S]*flex: 0 0 1rem;/u);
   assert.match(animatedNumber, /shrink-0 whitespace-nowrap overflow-hidden/u);
+});
+
+test("feed summaries never normalize or render full content bodies", async () => {
+  const issueCard = await read("src/components/issues/issue-card.tsx");
+  const announcementCard = await read("src/components/announcements/announcement-card.tsx");
+  const issueNormalizer = await read("src/services/issues-normalize.ts");
+  const announcements = await read("src/services/announcements.ts");
+  const announcementEdge = await read("supabase/functions/backendAction/announcement-read.ts");
+  const routeSkeleton = await read("src/components/ui/route-skeleton.tsx");
+  assert.doesNotMatch(issueCard, /issue\.content|stripMarkdownImages/u);
+  assert.doesNotMatch(announcementCard, /announcement\.content|stripMarkdownImages/u);
+  assert.doesNotMatch(
+    issueNormalizer.match(/function normalizeIssueSummary[\s\S]*?\n\}/u)?.[0] ?? "",
+    /\n\s+content:/u,
+  );
+  assert.doesNotMatch(
+    announcements.match(/function normalizeAnnouncementSummary[\s\S]*?\n\}/u)?.[0] ?? "",
+    /\n\s+content:/u,
+  );
+  assert.match(announcementEdge, /delete announcement\.content/u);
+  assert.doesNotMatch(routeSkeleton, /const hasSummary|\{hasSummary \?/u);
+});
+
+test("reactions paint optimistically and roll back with retry feedback", async () => {
+  const sources = await Promise.all([
+    read("src/hooks/use-issue-feed.ts"),
+    read("src/hooks/use-issue-detail.ts"),
+    read("src/hooks/use-facility-feed.ts"),
+    read("src/hooks/use-facility-detail.ts"),
+    read("src/hooks/use-announcement-feed.ts"),
+    read("src/hooks/use-announcement-detail.ts"),
+  ]);
+  for (const source of sources) {
+    assert.match(
+      source,
+      /const optimistic = toggleReactionState\(previous\);[\s\S]*patchContentEntity<[\s\S]*try \{[\s\S]*await /u,
+    );
+    assert.match(source, /catch \{[\s\S]*previous\.active/u);
+    assert.match(source, /catch \{[\s\S]*previous\.count/u);
+    assert.match(source, /catch \{[\s\S]*toast\.error/u);
+  }
 });
 
 test("HarmonyOS subset preserves the weights used before the frontend rewrite", async () => {

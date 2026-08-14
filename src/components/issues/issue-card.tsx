@@ -8,8 +8,8 @@ import {
   Hand,
   MessageCircle,
 } from "lucide-react";
-import type { IssueRecord, UserPublicProfile } from "@/types";
-import { formatDateOnly, formatRelativeTime, stripMarkdownImages } from "@/lib/format";
+import type { IssueSummary, UserPublicProfile } from "@/types";
+import { formatDateOnly, formatRelativeTime } from "@/lib/format";
 import {
   getDerivedIssueStatus,
   getSupportProgressPercent,
@@ -33,7 +33,7 @@ export function IssueCard({
 }: {
   burst: number;
   filter: string;
-  issue: IssueRecord;
+  issue: IssueSummary;
   onSupport: () => void;
   profile?: UserPublicProfile;
   reveal: boolean;
@@ -62,17 +62,6 @@ export function IssueCard({
           </div>
           <ArrowUpRight className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-250 ease-[var(--ease-smooth-out)] group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
         </div>
-        {issue.content ? (
-          <SkeletonReveal
-            as="div"
-            enabled={reveal}
-            skeleton={<div className="space-y-2"><Skeleton className="h-3 w-full" /><Skeleton className="h-3 w-2/3" /></div>}
-          >
-            <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">
-              {stripMarkdownImages(issue.content)}
-            </p>
-          </SkeletonReveal>
-        ) : null}
         {issue.support_enabled && goal ? (
           <div className="space-y-1.5">
             <div className="flex justify-between text-xs text-muted-foreground">

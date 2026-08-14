@@ -1,8 +1,8 @@
 import { READ_REQUEST_TIMEOUT_MS } from '@/lib/request';
 import { invokeBackendAction } from '@/services/backend-action';
 import { captureContentCacheWriteGuard, createContentCacheKey, getCachedContentPersistent, setCachedContentFromRead } from '@/services/content-read-cache';
-import type { IssueCursor, IssueSortOption, IssueStatusBucket } from '@/types';
-import { normalizeIssueCursor, normalizeIssueRecord, toReadableBackendError, withSupportState } from './issues-core';
+import type { IssueCursor, IssueSortOption, IssueStatusBucket, IssueSummary } from '@/types';
+import { normalizeIssueCursor, normalizeIssueSummary, toReadableBackendError, withSupportState } from './issues-core';
 import { registerContentVersion } from '@/services/content-versions';
 
 export async function fetchUserIssues(
@@ -22,6 +22,7 @@ export async function fetchUserIssues(
   const statusBucket = options?.statusBucket ?? 'active';
   const cacheKey = createContentCacheKey([
     'user-issue-list-page',
+    'summary-v2',
     uid,
     statusBucket,
     sort,
@@ -32,7 +33,7 @@ export async function fetchUserIssues(
     cursor?.created_at?.getTime() ?? '',
   ]);
   if (!options?.forceRefresh) {
-    const cached = await getCachedContentPersistent<{ cursor: IssueCursor | null; hasMore: boolean; issues: ReturnType<typeof normalizeIssueRecord>[]; version: number }>(cacheKey);
+    const cached = await getCachedContentPersistent<{ cursor: IssueCursor | null; hasMore: boolean; issues: IssueSummary[]; version: number }>(cacheKey);
     if (cached) {
       registerContentVersion('issues', cached.version ?? 1);
       return {
@@ -52,7 +53,7 @@ export async function fetchUserIssues(
       timeoutMs: READ_REQUEST_TIMEOUT_MS,
     });
     const result = await fn({ cursor, pageSize, sort, statusBucket, uid });
-    const issues = result.issues.map((issue) => normalizeIssueRecord(String(issue.id ?? ''), issue));
+    const issues = result.issues.map((issue) => normalizeIssueSummary(String(issue.id ?? ''), issue));
     const page = {
       cursor: normalizeIssueCursor(result.cursor),
       hasMore: result.hasMore,

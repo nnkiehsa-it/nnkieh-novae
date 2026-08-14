@@ -2,6 +2,7 @@ import type {
   AnnouncementCommentRecord,
   AnnouncementInput,
   AnnouncementRecord,
+  AnnouncementSummary,
   CommentSortOption,
 } from '@/types';
 import { invokeBackendAction } from '@/services/backend-action';
@@ -47,11 +48,10 @@ function normalizeAnnouncementCursor(data: unknown): AnnouncementCursor {
   };
 }
 
-function normalizeAnnouncementRecord(data: Record<string, unknown>): AnnouncementRecord {
+function normalizeAnnouncementSummary(data: Record<string, unknown>): AnnouncementSummary {
   return {
     id: String(data.id ?? ''),
     title: String(data.title ?? ''),
-    content: String(data.content ?? ''),
     author_uid: String(data.author_uid ?? ''),
     published_at: dateFromMs(data.published_at_ms ?? data.published_at),
     like_count: Number(data.like_count ?? 0),
@@ -59,6 +59,13 @@ function normalizeAnnouncementRecord(data: Record<string, unknown>): Announcemen
     comments_enabled: data.comments_enabled !== false,
     currentUserLiked: Boolean(data.currentUserLiked),
     deleting: data.deleting === true,
+  };
+}
+
+function normalizeAnnouncementRecord(data: Record<string, unknown>): AnnouncementRecord {
+  return {
+    ...normalizeAnnouncementSummary(data),
+    content: String(data.content ?? ''),
   };
 }
 
@@ -86,13 +93,14 @@ export async function fetchAnnouncementsPage(
 ) {
   const cacheKey = createContentCacheKey([
     'announcement-list-page',
+    'summary-v2',
     options.cacheScope ?? 'default',
     pageSize,
     cursor?.id ?? 'first',
     cursor?.publishedAtMs ?? '',
   ]);
   if (!options.forceRefresh) {
-    const cached = await getCachedContentPersistent<{ announcements: AnnouncementRecord[]; cursor: AnnouncementCursor; hasMore: boolean; version: number }>(cacheKey);
+    const cached = await getCachedContentPersistent<{ announcements: AnnouncementSummary[]; cursor: AnnouncementCursor; hasMore: boolean; version: number }>(cacheKey);
     if (cached) {
       registerContentVersion('announcements', cached.version);
       return cached;
@@ -107,7 +115,7 @@ export async function fetchAnnouncementsPage(
     >('listAnnouncements', { signal: options.signal, timeoutMs: READ_REQUEST_TIMEOUT_MS });
     const result = await fn({ cursor, pageSize });
     const page = {
-      announcements: result.announcements.map(normalizeAnnouncementRecord),
+      announcements: result.announcements.map(normalizeAnnouncementSummary),
       cursor: normalizeAnnouncementCursor(result.cursor),
       hasMore: result.hasMore,
       version: result.version,
