@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Novae",
   },
 };
@@ -49,8 +49,8 @@ export const viewport: Viewport = {
   colorScheme: "light dark",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fdfdfd" },
-    { media: "(prefers-color-scheme: dark)", color: "#121212" },
+    { media: "(prefers-color-scheme: light)", color: "#f9f9f9" },
+    { media: "(prefers-color-scheme: dark)", color: "#131313" },
   ],
   viewportFit: "cover",
   width: "device-width",

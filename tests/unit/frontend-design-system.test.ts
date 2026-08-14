@@ -34,7 +34,7 @@ describe("React frontend design system", () => {
     const motion = read("src/styles/motion.css");
     const skeletonReveal = read("src/components/ui/skeleton-reveal.tsx");
     const initialStagger = motion.match(/@keyframes t-stagger-item\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
-    const routeEnter = motion.match(/@keyframes t-route-enter\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
+    const childRouteEnter = motion.match(/@keyframes t-route-enter-child\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
     expect(motion).toContain("--reveal-blur: 2px");
     expect(motion).toContain(".t-skel.is-revealed .t-skel-content");
     expect(motion).toContain("filter: blur(var(--reveal-blur))");
@@ -49,9 +49,25 @@ describe("React frontend design system", () => {
     expect(motion).not.toContain("t-reveal-content");
     expect(motion).toMatch(/@keyframes t-route-enter[\s\S]*translate/u);
     expect(motion).toContain("t-route-blur var(--motion-quick)");
-    expect(routeEnter).not.toContain("filter:");
-    expect(read("src/components/app-shell.tsx")).toContain("React.useState(consumeRouteDirection)");
+    expect(childRouteEnter).not.toContain("filter:");
+    expect(read("src/components/app-shell.tsx")).toContain("consumeRouteDirection(pathname)");
     expect(read("src/components/app-shell.tsx")).toContain('markRouteDirection("back")');
+    expect(motion).toContain('data-route-direction="root"');
+    expect(motion).toContain("t-route-enter-child");
+    expect(motion).toContain("t-route-enter-back");
+  });
+
+  it("centers status labels through cold reveal and extends the stage into iOS chrome", () => {
+    const statusBadge = read("src/components/ui/status-badge.tsx");
+    const layout = read("src/app/layout.tsx");
+    const globals = read("src/app/globals.css");
+    const manifest = read("src/app/manifest.ts");
+    expect(statusBadge).toContain("inline-grid min-w-12 place-items-center text-center");
+    expect(statusBadge).toContain("block w-full text-center");
+    expect(layout).toContain('statusBarStyle: "black-translucent"');
+    expect(layout).toContain('viewportFit: "cover"');
+    expect(globals.match(/background: var\(--surface-stage\)/gu)?.length).toBeGreaterThanOrEqual(2);
+    expect(manifest).toContain('theme_color: "#f9f9f9"');
   });
 
   it("warms privileged route shells immediately and gives them one mobile toolbar", () => {

@@ -6,7 +6,7 @@ This document is the maintained map of the repository. Read it before broad sear
 
 - `package.json` — Node 24, Next.js 16.3, React 19.2, TypeScript 7, Tailwind CSS 4, Radix/shadcn primitives, Motion, Serwist, Vitest, and Playwright scripts.
 - `src/app/` — Next App Router. Route `page.tsx` files assemble views and forward events; they do not import `services/` directly.
-- `src/app/layout.tsx` — root metadata, Inter/Roboto Mono plus HarmonyOS Sans TC split-font loading, global providers, and global CSS.
+- `src/app/layout.tsx` — root metadata, immersive iOS viewport/status-bar configuration, Inter/Roboto Mono plus HarmonyOS Sans TC split-font loading, global providers, and global CSS.
 - `src/app/globals.css` — semantic light/dark color, typography, radius, shadow, safe-area, viewport, and surface tokens.
 - `src/assets/fonts/harmonyos-sans-tc/` — generated, project-character-scoped HarmonyOS Sans TC Regular, Medium, Semibold, and Bold shards plus CSS; refreshed by `scripts/generate-harmonyos-subset.mjs`.
 - `src/styles/motion.css` — transition.dev-inspired timings/easing and named recipes for routes, panels, cards, text, digits, dialogs, dropdowns, toasts, loading, and success states. Includes hover-capability and reduced-motion media queries.
@@ -33,8 +33,8 @@ This document is the maintained map of the repository. Read it before broad sear
 
 - `src/components/ui/` — business-free shadcn/Radix primitives. Buttons, fields, cards, overlays, tabs, sheets, menus, status badges, skeletons, page states, and the shared Novae brand lockup share global semantic tokens. `skeleton-reveal.tsx` stacks a field skeleton over its final text/number slot so async handoff cannot move or filter a card frame.
 - `src/components/motion/` — reusable animated numbers, reaction feedback, and geometry-only feed wrappers. Dense list items stay mounted and painted without viewport observers or offscreen opacity states.
-- `src/components/app-shell.tsx` / `liquid-nav.tsx` — desktop, compact desktop, and mobile navigation. Route content commits without full-page snapshots, then only the new pathname-keyed node receives the short entrance motion; selected navigation and tab surfaces use measurement-free shared-layout motion.
-- `src/lib/navigation-memory.ts` — remembers the immediately preceding in-app pathname and hands one immutable forward/back direction to each newly mounted route node, including browser-history and fallback returns.
+- `src/components/app-shell.tsx` / `liquid-nav.tsx` — desktop, compact desktop, and mobile navigation. Route content commits without full-page snapshots, then only the new pathname-keyed node receives the short depth-aware entrance motion; selected navigation and tab surfaces use measurement-free shared-layout motion.
+- `src/lib/navigation-memory.ts` — remembers the immediately preceding in-app pathname and hands one immutable root/child/back direction to each newly mounted route node, including browser-history and fallback returns.
 - `src/components/issues/` — issue cards, detail content/actions, and moderation presentation.
 - `src/components/facilities/` — facility cards and status-dialog presentation.
 - `src/components/announcements/` — announcement cards.
@@ -51,7 +51,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/components/detail-toolbar.tsx` — shared, geometry-stable secondary toolbar; detail routes add share/actions while Dashboard and system management reuse the same back geometry on mobile and desktop.
 - `src/components/protected-app.tsx`, `app-providers.tsx`, `app-update-gate.tsx` — startup/session, providers, theme/i18n, toast boundaries, and bounded forced PWA updates with version polling, service-worker takeover, animated progress, and reload recovery.
 - `src/components/feature-route-guard.tsx` — shared disabled-feature guard for direct proposal and facility routes.
-- `src/components/ui/route-skeleton.tsx` and route `loading.tsx` files — prefetched list/detail app-shell fallbacks that reuse the same header/grid/control geometry as their resolved routes while skeletonizing only unresolved domain fields; detail fallbacks reuse a cached title and two-line content preview when available, and no domain requests are started by the fallback.
+- `src/components/ui/route-skeleton.tsx` and route `loading.tsx` files — prefetched list/detail app-shell fallbacks that reuse the same header/grid/control geometry as their resolved routes while skeletonizing only unresolved domain fields; detail fallbacks reserve full title and two-line content geometry without treating list excerpts as detail cache, and no domain requests are started by the fallback.
 - `src/components/ui/tooltip.tsx` — shared fine-pointer-only tooltip capability boundary; touch and non-hover devices keep labelled controls without opening tooltip layers.
 - `src/components/ui/action-feedback-icon.tsx`, `pending-alert-dialog-action.tsx` — shared transitions.dev-style spinner-to-check primitives for backend mutation, destructive confirmation, and update feedback.
 

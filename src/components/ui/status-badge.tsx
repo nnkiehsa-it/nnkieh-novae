@@ -47,11 +47,14 @@ export function StatusBadge({
         className,
       )}
     >
-      {revealLabel ? (
-        <SkeletonReveal className="min-w-12" skeleton={<Skeleton className="h-3 w-12" />}>
-          <span>{translate(labelKey)}</span>
+      <span className="inline-grid min-w-12 place-items-center text-center">
+        <SkeletonReveal
+          enabled={revealLabel}
+          skeleton={<Skeleton className="h-3 w-12" />}
+        >
+          <span className="block w-full text-center">{translate(labelKey)}</span>
         </SkeletonReveal>
-      ) : translate(labelKey)}
+      </span>
     </Badge>
   );
 }

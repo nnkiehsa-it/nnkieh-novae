@@ -39,7 +39,7 @@ export function AppProviders({
         <TooltipProvider>
           <SessionProvider>
             <Suspense fallback={null}>
-              {i18nReady ? children : <div className="min-h-[100dvh] bg-background" />}
+              {i18nReady ? children : <div className="min-h-[100dvh] bg-[var(--surface-stage)]" />}
             </Suspense>
           </SessionProvider>
           <E2eAuthBridge />

@@ -35,11 +35,11 @@
 /* Animate only the newly committed route node; no old-page snapshot or exit layer. */
 .t-route-enter {
   animation:
-    t-route-enter var(--motion-medium) var(--ease-smooth-out) backwards,
+    t-route-enter-child var(--motion-medium) var(--ease-smooth-out) backwards,
     t-route-blur var(--motion-quick) var(--ease-smooth-out) backwards;
 }
 
-@keyframes t-route-enter {
+@keyframes t-route-enter-child {
   from {
     opacity: 0.9;
     transform: translateX(24px);
@@ -50,38 +50,38 @@
   }
 }
 
+.t-route-enter[data-route-direction="root"] {
+  animation-name: t-route-enter-root, t-route-blur;
+}
+
+@keyframes t-route-enter-root {
+  from {
+    opacity: 0.9;
+    transform: translateY(var(--motion-distance-md));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes t-route-blur {
   from { filter: blur(var(--motion-blur-sm)); }
   to { filter: blur(0); }
 }
 
-@media (min-width: 48rem) {
-  @keyframes t-route-enter {
-    from {
-      opacity: 0.9;
-      transform: translateY(var(--motion-distance-md));
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
+.t-route-enter[data-route-direction="back"] {
+  animation-name: t-route-enter-back, t-route-blur;
 }
 
-@media (max-width: 47.99rem) {
-  .t-route-enter[data-route-direction="back"] {
-    animation-name: t-route-enter-back, t-route-blur;
+@keyframes t-route-enter-back {
+  from {
+    opacity: 0.9;
+    transform: translateX(-24px);
   }
-
-  @keyframes t-route-enter-back {
-    from {
-      opacity: 0.9;
-      transform: translateX(-24px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 

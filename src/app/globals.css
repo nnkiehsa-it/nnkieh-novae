@@ -161,7 +161,7 @@
 html {
   overscroll-behavior: none;
   touch-action: manipulation;
-  background: var(--background);
+  background: var(--surface-stage);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -172,7 +172,7 @@ body {
   margin: 0;
   overflow-x: clip;
   overscroll-behavior: none;
-  background: var(--background);
+  background: var(--surface-stage);
   color: var(--foreground);
   font-family:
     var(--font-inter), "HarmonyOS Sans TC", "PingFang TC", "Microsoft JhengHei",

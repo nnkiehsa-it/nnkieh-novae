@@ -139,8 +139,14 @@ function AccountMenu({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function RouteTransition({ children }: { children: React.ReactNode }) {
-  const [direction] = React.useState(consumeRouteDirection);
+function RouteTransition({
+  children,
+  pathname,
+}: {
+  children: React.ReactNode;
+  pathname: string;
+}) {
+  const [direction] = React.useState(() => consumeRouteDirection(pathname));
   return (
     <div className="route-page t-route-enter" data-route-direction={direction}>
       {children}
@@ -244,7 +250,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               : "pb-[max(2rem,var(--safe-bottom))]"
           }`}
         >
-          <RouteTransition key={pathname}>
+          <RouteTransition key={pathname} pathname={pathname}>
             {children}
           </RouteTransition>
         </main>

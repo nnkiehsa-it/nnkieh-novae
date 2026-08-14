@@ -43,7 +43,7 @@ export default function SetupPage() {
             onContinue={() => state.setStep("categories")}
           />
         ) : (
-          <section className="t-route-enter">
+          <section className="t-route-enter" data-route-direction="root">
             <PageHeader
               title={translate('ui.setup.categoryTitle')}
             />

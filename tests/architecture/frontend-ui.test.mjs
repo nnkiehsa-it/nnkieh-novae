@@ -195,13 +195,13 @@ test("list action bars scroll normally and route navigation animates only the co
   assert.match(shell, /window\.scrollY > 8/u);
   assert.match(shell, /data-visible=\{scrolled\}/u);
   assert.match(shell, /app-mobile-nav/u);
-  assert.match(shell, /<RouteTransition key=\{pathname\}>/u);
-  assert.match(shell, /React\.useState\(consumeRouteDirection\)/u);
+  assert.match(shell, /<RouteTransition key=\{pathname\} pathname=\{pathname\}>/u);
+  assert.match(shell, /consumeRouteDirection\(pathname\)/u);
   assert.match(shell, /data-route-direction=\{direction\}/u);
   assert.doesNotMatch(shell, /React\.ViewTransition|app-route-enter|app-route-exit/u);
   assert.match(motion, /\.t-route-enter\s*\{[\s\S]*var\(--motion-medium\)[\s\S]*backwards/u);
-  assert.match(motion, /@keyframes t-route-enter[\s\S]*translateX\(24px\)[\s\S]*filter: blur\(var\(--motion-blur-sm\)\)[\s\S]*translateX\(0\)/u);
-  assert.match(motion, /@media \(min-width: 48rem\)[\s\S]*translateY\(var\(--motion-distance-md\)\)/u);
+  assert.match(motion, /@keyframes t-route-enter-child[\s\S]*translateX\(24px\)[\s\S]*translateX\(0\)/u);
+  assert.match(motion, /data-route-direction="root"[\s\S]*t-route-enter-root[\s\S]*translateY\(var\(--motion-distance-md\)\)/u);
   assert.match(motion, /data-route-direction="back"[\s\S]*t-route-enter-back/u);
   assert.doesNotMatch(motion, /t-route-exit|\.t-route-enter[^}]*animation-delay/u);
 });

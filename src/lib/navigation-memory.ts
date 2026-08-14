@@ -5,17 +5,27 @@ interface ClientRouter {
 
 let currentPath = "";
 let previousPath = "";
-let pendingRouteDirection: RouteDirection = "forward";
+let pendingRouteDirection: RouteDirection | null = null;
 
-export type RouteDirection = "back" | "forward";
+export type RouteDirection = "back" | "child" | "root";
+
+function isRootRoute(pathname: string) {
+  return (
+    /^\/issues\/[^/]+\/?$/u.test(pathname) ||
+    ["/announcements", "/facilities", "/notifications", "/settings"].includes(
+      pathname,
+    )
+  );
+}
 
 export function markRouteDirection(direction: RouteDirection) {
   pendingRouteDirection = direction;
 }
 
-export function consumeRouteDirection() {
-  const direction = pendingRouteDirection;
-  pendingRouteDirection = "forward";
+export function consumeRouteDirection(pathname: string) {
+  const direction =
+    pendingRouteDirection ?? (isRootRoute(pathname) ? "root" : "child");
+  pendingRouteDirection = null;
   return direction;
 }
 
