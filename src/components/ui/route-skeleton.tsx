@@ -122,7 +122,7 @@ function FeedCardSkeleton({ kind }: { kind: FeedSkeletonKind }) {
               <span aria-hidden>·</span>
               <Skeleton className="h-3 w-12" />
             </div>
-            <Skeleton className="mt-1.5 h-5 w-4/5" />
+            <Skeleton className="mt-1.5 h-5 w-3/5" />
           </div>
           <ArrowUpRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
         </div>
@@ -239,7 +239,7 @@ export function DetailRouteSkeleton({
               <Skeleton className="h-6 w-20 rounded-full" />
               <Skeleton className="h-6 w-16 rounded-full" />
             </div>
-            <Skeleton className="h-8 w-4/5" />
+            <Skeleton className="h-8 w-3/5" />
             <Skeleton className="h-4 w-40" />
           </div>
           <div className="space-y-3 px-5 py-5 sm:px-7 sm:py-6">

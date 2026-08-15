@@ -23,6 +23,8 @@
   --reveal-dur: 400ms;
   --reveal-blur: 2px;
   --reveal-ease: ease-in-out;
+  --resize-dur: 300ms;
+  --resize-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --shimmer-base: #7c7c7c;
   --shimmer-highlight: #0d0d0d;
 }
@@ -100,32 +102,15 @@
   }
 }
 
-/* Dense lists stay fully painted ahead of the viewport with smooth cascading entry. */
-.t-stagger-item {
-  opacity: 1;
-  animation: t-stagger-item-in var(--motion-medium) var(--ease-smooth-out) backwards;
-}
+/* Dense lists stay fully painted ahead of the viewport. */
+.t-stagger-item { opacity: 1; }
 
-@keyframes t-stagger-item-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-    filter: blur(var(--motion-blur-sm));
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
-  }
-}
-
-/* Transitions.dev card resize: explicit size changes stay continuous without JS. */
+/* Transitions.dev — Card resize */
 .t-resize {
   transition:
-    width 300ms var(--ease-smooth-out),
-    height 300ms var(--ease-smooth-out),
-    padding 300ms var(--ease-smooth-out),
-    transform 300ms var(--ease-smooth-out);
+    width var(--resize-dur) var(--resize-ease),
+    height var(--resize-dur) var(--resize-ease);
+  will-change: width, height;
 }
 
 /* Number updates */
@@ -513,63 +498,60 @@
     transform: translateX(100%);
   }
 }
+/* Transitions.dev — Skeleton loader and reveal */
 .t-skel {
   position: relative;
   display: inline-block;
 }
 .t-skel[data-block="true"] { display: block; }
-.t-skel-skeleton {
+.t-skel-skeleton,
+.t-skel-content {
   position: absolute;
-  z-index: 1;
   inset: 0;
+}
+.t-skel-skeleton {
+  z-index: 1;
   opacity: 1;
   filter: blur(0);
   pointer-events: none;
   transition:
-    opacity var(--reveal-dur) var(--ease-smooth-out),
-    filter var(--reveal-dur) var(--ease-smooth-out),
-    transform var(--reveal-dur) var(--ease-smooth-out);
+    opacity var(--reveal-dur) var(--reveal-ease),
+    filter var(--reveal-dur) var(--reveal-ease);
 }
 .t-skel-content {
-  position: relative;
   z-index: 2;
-  display: inherit;
+  position: relative;
   opacity: 0;
   filter: blur(var(--reveal-blur));
-  transform: translateY(2px);
   transition:
-    opacity var(--reveal-dur) var(--ease-smooth-out),
-    filter var(--reveal-dur) var(--ease-smooth-out),
-    transform var(--reveal-dur) var(--ease-smooth-out);
+    opacity var(--reveal-dur) var(--reveal-ease),
+    filter var(--reveal-dur) var(--reveal-ease);
 }
 .t-skel.is-revealed .t-skel-skeleton {
   opacity: 0;
   filter: blur(var(--reveal-blur));
-  transform: scale(0.99);
 }
 .t-skel.is-revealed .t-skel-content {
   opacity: 1;
   filter: blur(0);
-  transform: translateY(0);
 }
 @starting-style {
   .t-skel.is-revealed .t-skel-skeleton {
     opacity: 1;
     filter: blur(0);
-    transform: scale(1);
   }
   .t-skel.is-revealed .t-skel-content {
     opacity: 0;
     filter: blur(var(--reveal-blur));
-    transform: translateY(2px);
   }
 }
 .t-skel.is-resetting .t-skel-skeleton,
 .t-skel.is-resetting .t-skel-content {
   transition: none !important;
 }
+
 .t-skel-skeleton.is-pulsing > * {
-  animation: t-skel-pulse var(--pulse-dur) ease-in-out infinite;
+  animation: t-skel-pulse var(--pulse-dur) ease-in-out var(--pulse-count);
 }
 @keyframes t-skel-pulse {
   0%, 100% { opacity: 1; }
