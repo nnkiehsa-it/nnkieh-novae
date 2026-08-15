@@ -75,8 +75,8 @@ This document is the maintained map of the repository. Read it before broad sear
 
 ## Data, domain, and infrastructure
 
-- `src/services/` — frontend boundary for Cloudflare gateway, Supabase reads/realtime, uploads, session roles, and backend actions. Only hooks and other services import it.
-- `src/lib/` — framework-independent request, Firebase, Supabase, caching, Markdown, image, route, formatting, pagination, and domain utilities.
+- `src/services/` — frontend boundary for the Cloudflare Workers API, native WebSocket realtime transport, uploads, Firebase-backed sessions, and backend actions. Only hooks and other services import it; no browser database client exists.
+- `src/lib/` — framework-independent request, Firebase, caching, Markdown, image, route, formatting, pagination, and domain utilities.
 - `src/hooks/use-paged-request-guard.ts` — shared feed request generation/in-flight guard that prevents duplicate loads and stale query responses from committing.
 - `src/lib/content-entity-store.ts` and `src/hooks/use-content-entity.ts` — normalized user-scoped content entities shared by lists, details, mutations, and realtime; explicit issue/announcement summary types omit full bodies and cannot satisfy or overwrite authoritative detail reads, while field revisions prevent older requests from replacing newer optimistic, server-confirmed, or realtime patches.
 - `src/lib/reaction-state.ts` — shared pure optimistic reaction state transition used by proposal support, facility affected, and announcement like flows so immediate counts and rollback snapshots follow one rule.
@@ -86,10 +86,15 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/types/` — shared frontend/domain types.
 - `src/i18n/` — reactive React i18n store and paired `en` / `zh-TW` domain catalogs. `ui.ts` contains the rebuilt interface language.
 - `src/generated/` — generated frontend contracts; do not edit manually.
-- `cloudflare/` — API gateway worker and generated action policies.
-- `supabase/functions/` — Edge Functions and shared backend code; unchanged by the frontend redesign.
-- `supabase/migrations/` — immutable deployed migrations plus append-only new migrations.
-  - `202608130001_comment_sorting.sql` adds cursor-safe newest/oldest root-comment ordering while preserving chronological replies.
+- `cloudflare/src/index.ts` — sole public API entrypoint for actions, auth sync, realtime tickets/WebSockets, signed media, Cloudinary webhooks, Queue consumption, and scheduled maintenance.
+- `cloudflare/src/backend/actions/` — generated-registry-driven action dispatch and domain workflows. Authorization is enforced here and in database functions, never by frontend visibility checks.
+- `cloudflare/src/backend/database/` — parameterized PostgreSQL adapter and schema names used through the request-scoped Hyperdrive connection.
+- `cloudflare/src/backend/jobs/` — durable outbox, FCM/Notion delivery, deletion, realtime fan-out, and maintenance consumers driven by Cloudflare Queues.
+- `cloudflare/src/backend/shared/` — Worker environment, Firebase token validation, Cloudinary, FCM, Notion, HTTP, media, and structured-observability boundaries.
+- `cloudflare/src/durable/` — SQLite-backed business rate limits and WebSocket Hibernation realtime hub. Realtime state can reconnect from PostgreSQL content versions instead of becoming a source of record.
+- `cloudflare/wrangler.json` — local/default Worker bindings for Hyperdrive, Queue, Durable Objects, cron, native rate limits, observability, and Smart Placement; deployment renders an ignored environment-specific copy.
+- `database/migrations/` — fresh PostgreSQL 17 baseline and append-only migrations for Neon. `0002` creates private/API schemas, `0003` completes realtime batches, `0004` seals the Worker-only database boundary, and `0005` exposes scheduled support expiry.
+- `database/seed.local.sql` / `seed.integration.sql` — deterministic sample and backend-test seeds; production deploys never run either seed.
 - `config/` — source JSON for generated contracts, categories, limits, and retention.
 
 ## Verification and delivery
@@ -97,17 +102,20 @@ This document is the maintained map of the repository. Read it before broad sear
 - `scripts/check-ui-primitives.mjs` — rejects retired Vue references, `transition-all`, arbitrary elevation, ungated hover, business imports in UI primitives, direct service imports in pages/components, route pages over 220 lines, and domain components over 300 lines.
 - `scripts/check-i18n.mjs` — validates catalog parity/shape/interpolation, API error references, direct `t()` references, and hard-coded Han text across React/TSX sources.
 - `scripts/run-local-verification.mjs` — local typecheck, lint, UI/i18n checks, unit/architecture tests, build, and build-budget orchestration.
-- `scripts/verify-integration-local.mjs` / `.sh` — Windows-to-WSL or native Linux Supabase, Firebase Auth emulator, Cloudflare gateway, interactive Next.js dev server, production E2E server, integration, stress, and Playwright orchestration on port 3000. Backend-only integration resets omit development seed data; served and E2E environments load it.
-- `scripts/find-windows-next-root.ps1` — resolves the workspace-owned Windows `npm run dev` root so WSL verification cleanup terminates the full Next.js process tree.
-- `supabase/seed.sql` — deterministic local categories, setup state, profiles, roles, and sample content for emulator-backed development; never used by production migrations.
+- `scripts/database.mjs` — cross-platform PostgreSQL 17 container lifecycle, checksummed forward migrations, deterministic local seeding, and migration status. Remote operation is migration-only and requires an explicit `DATABASE_URL`.
+- `scripts/configure-database-runtime.mjs` — creates or rotates the `novae_runtime` login and grants only DML, sequence use, and function execution; it grants no DDL or role-management capability.
+- `scripts/verify-integration.mjs` — single Node.js orchestrator for PostgreSQL, least-privilege role setup, provider receivers, Wrangler, Firebase Auth Emulator, interactive Next.js, integration/stress tests, and Playwright. Backend-only runs use the integration seed; served/E2E runs use the local sample seed.
+- `scripts/render-worker-config.mjs` — validates the Hyperdrive ID and renders environment-specific Worker/Queue names, native rate-limit namespace IDs, and optional Notion state without committing deployment bindings.
+- `scripts/external-provider-test-server.mjs` — isolated Cloudinary, FCM, and Notion-compatible receiver used only by integration verification.
 - `scripts/generate-harmonyos-subset.mjs` / `check-build-budget.mjs` — derive the used Traditional Chinese HarmonyOS Sans shards from source text, then enforce Next build asset/font/JS/CSS budgets.
 - `tests/unit/` — Vitest domain and design-system tests.
 - `tests/architecture/` — route, data-access, generated contract, UI boundary, and delivery tooling tests.
-- `tests/integration/` — backend action/RLS/RPC behavior; required for backend changes.
+- `tests/integration/` — backend actions, category-scoped authorization, least-privilege database boundary, RPCs, jobs, retention, and Worker ingress/realtime behavior; required for backend changes.
 - `tests/e2e/` — Playwright bootstrap plus authenticated desktop/mobile workflows.
-- `.github/workflows/verify-pr.yml` — Node 24 verification.
+- `.github/workflows/verify-pr.yml` — Node 24 local, PostgreSQL/Worker integration, and real-browser verification.
 - `.github/workflows/deploy-frontend.yml` — Vercel Next.js build/deploy using `NEXT_PUBLIC_*` runtime names mapped from existing secret storage names.
-- `.github/workflows/deploy-backend.yml` — backend deployment; not part of frontend restyling.
+- `.github/workflows/deploy-backend.yml` — local backend verification, forward Neon migrations, runtime-role configuration, environment-specific Worker rendering, Queue provisioning, Cloudflare deployment, and authenticated/database smoke checks.
+- `.github/workflows/backup-database.yml` — daily PostgreSQL 17 logical dump, age encryption, checksum, and 14-day GitHub artifact retention; plaintext never leaves the runner.
 
 ## Design documentation
 

@@ -101,7 +101,7 @@ test("authenticated shell preloads route bundles without loading content data", 
   assert.match(preload, /"\/notifications"[\s\S]*"\/settings"/u);
   assert.match(preload, /requestIdleCallback/u);
   assert.match(preload, /deferredRoutes/u);
-  assert.doesNotMatch(preload, /@\/services|(?:^|[^\w])fetch\(|supabase|backendAction/u);
+  assert.doesNotMatch(preload, /@\/services|(?:^|[^\w])fetch\(|backendAction/u);
   for (const path of [
     "src/app/(protected)/notifications/loading.tsx",
     "src/app/(protected)/settings/loading.tsx",
@@ -183,7 +183,7 @@ test("discussion uses one card surface and a fixed reply-aware composer", async 
 test("proposal ownership and moderation remain separate capabilities", async () => {
   const actions = await read("src/components/issues/issue-detail-actions.tsx");
   const detail = await read("src/hooks/use-issue-detail.ts");
-  const issueShared = await read("supabase/functions/backendAction/issue-shared.ts");
+  const issueShared = await read("cloudflare/src/backend/actions/issue-shared.ts");
   assert.match(actions, /issue\.isOwnIssue \|\| canManage/u);
   assert.match(actions, /\{canManage \? \(/u);
   assert.doesNotMatch(actions, /issue\.canManageIssue/u);
@@ -215,7 +215,7 @@ test("feed summaries never normalize or render full content bodies", async () =>
   const announcementCard = await read("src/components/announcements/announcement-card.tsx");
   const issueNormalizer = await read("src/services/issues-normalize.ts");
   const announcements = await read("src/services/announcements.ts");
-  const announcementEdge = await read("supabase/functions/backendAction/announcement-read.ts");
+  const announcementEdge = await read("cloudflare/src/backend/actions/announcement-read.ts");
   const routeSkeleton = await read("src/components/ui/route-skeleton.tsx");
   assert.doesNotMatch(issueCard, /issue\.content|stripMarkdownImages/u);
   assert.doesNotMatch(announcementCard, /announcement\.content|stripMarkdownImages/u);

@@ -65,7 +65,12 @@ export function IssueDetailToolbar({
             <Tooltip>
               <DropdownMenuTrigger asChild>
                 <TooltipTrigger asChild>
-                  <Button aria-label={translate('ui.common.moreActions')} size="icon" variant="ghost">
+                  <Button
+                    aria-label={translate('ui.common.moreActions')}
+                    className="size-11 md:size-9"
+                    size="icon"
+                    variant="ghost"
+                  >
                     <MoreHorizontal />
                   </Button>
                 </TooltipTrigger>
@@ -163,6 +168,7 @@ export function IssueDetailSidebar({
               active={issue.currentUserSupported === true}
               burst={burst}
               busy={supporting}
+              className="size-11"
               disabled={issue.isOwnIssue || !supportOpen}
               icon={Hand}
               label={

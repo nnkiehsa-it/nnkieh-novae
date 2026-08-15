@@ -1,13 +1,12 @@
-import { assert, authenticatedJwt, callAction, createClient, DATA_RETENTION, expectActionError, failNextFcmRequests, integrationTest, notificationStressScale, readFcmRequests, requestId, requiredEnv, resetFcmRequests, saveCategoryDraft, seedActor, supabase } from "./support.ts";
-import type { Database } from "./support.ts";
+import { assert, integrationTest, requiredEnv } from "./support.ts";
 
-integrationTest("real Edge Function HTTP boundaries reject missing trust signals", async () => {
-  const functionsUrl = requiredEnv("SUPABASE_FUNCTIONS_URL").replace(/\/+$/u, "");
-  const originSecret = requiredEnv("EDGE_ORIGIN_SECRET");
-  const post = async (functionName: string, body: unknown, headers: HeadersInit = {}) => {
+integrationTest("real Worker HTTP boundaries reject missing origin, auth, and signatures", async () => {
+  const workerUrl = requiredEnv("WORKER_URL").replace(/\/+$/u, "");
+  const allowedOrigin = "http://localhost:3000";
+  const post = async (path: string, body: unknown, headers: HeadersInit = {}) => {
     let response: Response | undefined;
     for (let attempt = 0; attempt < 5; attempt += 1) {
-      response = await fetch(`${functionsUrl}/${functionName}`, {
+      response = await fetch(`${workerUrl}${path}`, {
         body: JSON.stringify(body),
         headers: { "content-type": "application/json", ...headers },
         method: "POST",
@@ -19,39 +18,45 @@ integrationTest("real Edge Function HTTP boundaries reject missing trust signals
     return response;
   };
 
-  const missingOrigin = await post("backendAction", { action: "getContentVersions", payload: {} });
-  assert.equal(missingOrigin.status, 401);
+  const missingOrigin = await post("/v1/actions", { action: "getContentVersions", payload: {} });
+  assert.equal(missingOrigin.status, 403);
 
-  const unsupported = await post("backendAction", { action: "integrationUnknown", payload: {} }, {
-    "x-novae-origin-secret": originSecret,
+  const unsupported = await post("/v1/actions", { action: "integrationUnknown", payload: {} }, {
+    origin: allowedOrigin,
   });
   assert.equal(unsupported.status, 400);
 
-  const unauthenticated = await post("backendAction", {
+  const unauthenticated = await post("/v1/actions", {
     action: "getContentVersions",
     payload: {},
   }, {
-    "x-novae-origin-secret": originSecret,
+    origin: allowedOrigin,
   });
   assert.equal(unauthenticated.status, 401);
 
-  for (const functionName of [
-    "maintenanceCleanup",
-    "outboxWorker",
-    "processDeletionJobs",
-  ]) {
-    const response = await post(functionName, {}, {
-      "x-novae-origin-secret": originSecret,
-    });
-    assert.equal(response.status, 401, `${functionName} must require its bearer secret`);
-  }
-
-  const syncUser = await post("syncUser", {}, {
-    "x-novae-origin-secret": originSecret,
+  const syncUser = await post("/v1/auth/sync", {}, {
+    origin: allowedOrigin,
   });
   assert.equal(syncUser.status, 401);
-  const cloudinary = await post("cloudinaryWebhook", {}, {
-    "x-novae-origin-secret": originSecret,
+  const realtimeTicket = await post("/v1/realtime/ticket", {}, {
+    origin: allowedOrigin,
   });
+  assert.equal(realtimeTicket.status, 401);
+  const cloudinary = await post("/v1/webhooks/cloudinary", {}, { origin: allowedOrigin });
   assert.equal(cloudinary.status, 401);
+  const healthcheck = await post("/v1/actions", { action: "healthcheck", payload: {} }, {
+    origin: allowedOrigin,
+    "x-healthcheck-secret": "wrong",
+  });
+  assert.equal(healthcheck.status, 403);
+
+  const preflight = await fetch(`${workerUrl}/v1/actions`, {
+    headers: { origin: allowedOrigin },
+    method: "OPTIONS",
+  });
+  assert.equal(preflight.status, 204);
+  const websocketWithoutUpgrade = await fetch(`${workerUrl}/v1/realtime`, {
+    headers: { origin: allowedOrigin },
+  });
+  assert.equal(websocketWithoutUpgrade.status, 426);
 });

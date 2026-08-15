@@ -1,0 +1,48 @@
+import { asString } from "../shared/http.ts";
+import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
+import { getIssueCategory, issueCategoryPolicyLists } from "./categories.ts";
+import { validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
+import { INPUT_LIMITS, requiredMediaContent, requiredText } from "./validation.ts";
+
+export async function createIssue(payload: JsonRecord, auth: AuthContext, database: BackendDatabase) {
+  const title = requiredText(payload.title, "title", INPUT_LIMITS.title);
+  const content = requiredMediaContent(
+    payload.content,
+    "content",
+    INPUT_LIMITS.content,
+    INPUT_LIMITS.contentStorage,
+  );
+  const category = asString(payload.category);
+  await validateMarkdownUploadsBeforeCreate(database, auth.uid, content, "issue");
+
+  const [categoryConfig, policyLists] = await Promise.all([
+    getIssueCategory(database, category),
+    issueCategoryPolicyLists(database),
+  ]);
+  const now = new Date();
+  const requiresReview = categoryConfig.readAccess === "reviewed-school";
+  const supportDeadlineAt = !requiresReview && categoryConfig.supportEnabled && categoryConfig.supportDeadlineDays !== null
+    ? new Date(now.getTime() + categoryConfig.supportDeadlineDays * 24 * 60 * 60 * 1000).toISOString()
+    : null;
+  const responseDeadlineAt = !categoryConfig.supportEnabled && categoryConfig.responseDeadlineDays !== null
+    ? new Date(now.getTime() + categoryConfig.responseDeadlineDays * 24 * 60 * 60 * 1000).toISOString()
+    : null;
+  const { data, error } = await database.call("app_api", "backend_create_issue", {
+    actor_uid: auth.uid,
+    issue_title: title,
+    issue_content: content,
+    issue_category: category,
+    issue_status: requiresReview ? "under-review" : "pending",
+    support_enabled: categoryConfig.supportEnabled,
+    support_goal: categoryConfig.supportGoal,
+    support_deadline_at: supportDeadlineAt,
+    response_deadline_at: responseDeadlineAt,
+    author_is_private: !categoryConfig.authorVisible,
+    actor_is_admin: false,
+    private_to_owner_categories: policyLists.privateToOwnerCategoryIds,
+    review_required_categories: policyLists.reviewRequiredCategoryIds,
+    author_private_categories: policyLists.authorPrivateCategoryIds,
+  });
+  if (error) throw error;
+  return { issue: data };
+}

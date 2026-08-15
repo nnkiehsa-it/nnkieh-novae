@@ -44,6 +44,7 @@ const messages = {
   'notification.notificationSettingsSaved': 'Notification settings saved',
   'notification.loadFailed': 'Unable to load notifications. Please try again later.',
   'notification.pushServiceStarted': 'Push service started',
+  'notification.realtimeConnection': 'Realtime notification connection',
   'notification.unread': 'Unread',
   'notification.turnOffPushNotifications': 'Turn off push notifications',
   'notification.pushDeviceUnsupported': 'This device does not currently support push notifications',

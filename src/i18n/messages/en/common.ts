@@ -69,7 +69,6 @@ const messages = {
   'common.close': 'Close',
   'common.failedToAddSupportTryAgainLater': 'Unable to add support. Please try again later.',
   'common.confirmPublish': 'Confirm publish',
-  'common.refreshingSupabaseSignIn': 'Refreshing sign-in',
   'common.shareLink': 'Share link',
   'common.stepCount': 'Step {current} of {total}',
   'common.previous': 'Previous',

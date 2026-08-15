@@ -1,26 +1,140 @@
 import assert from "node:assert/strict";
-import { createClient } from "npm:@supabase/supabase-js@2";
-import type { Database } from "../../supabase/functions/_shared/database.ts";
-import { getBackendActionDefinition } from "../../supabase/functions/backendAction/action-registry.ts";
-import { resolveAuthContext } from "../../supabase/functions/backendAction/auth.ts";
-import { executeBackendAction } from "../../supabase/functions/backendAction/execution.ts";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import pg from "pg";
+import { afterAll, beforeEach, test } from "vitest";
+import { AppDatabaseClient } from "../../cloudflare/src/backend/database/client.ts";
+import { getBackendActionDefinition } from "../../cloudflare/src/backend/actions/action-registry.ts";
+import { resolveAuthContext } from "../../cloudflare/src/backend/actions/auth.ts";
+import { executeBackendAction } from "../../cloudflare/src/backend/actions/execution.ts";
+import { withRuntimeEnvironment } from "../../cloudflare/src/backend/shared/env.ts";
 import type {
   AuthContext,
-  BackendSupabase,
+  BackendDatabase,
   JsonRecord,
-} from "../../supabase/functions/backendAction/types.ts";
+} from "../../cloudflare/src/backend/actions/types.ts";
+import type { Env } from "../../cloudflare/src/types.ts";
+import type { DurableRateLimitClaim } from "../../cloudflare/src/durable/business-rate-limiter.ts";
 
 function requiredEnv(name: string) {
-  const value = Deno.env.get(name)?.trim();
+  const value = process.env[name]?.trim();
   if (!value) throw new Error(`${name} is required for local integration tests.`);
   return value;
 }
 
-export const supabase = createClient<Database>(
-  requiredEnv("SUPABASE_URL"),
-  requiredEnv("APP_SUPABASE_SERVICE_ROLE_KEY"),
-  { auth: { persistSession: false } },
-) as BackendSupabase;
+export const database = new AppDatabaseClient(requiredEnv("DATABASE_URL"));
+const ownerDatabase = new pg.Client({ connectionString: requiredEnv("DATABASE_OWNER_URL") });
+let ownerDatabaseConnected = false;
+
+const businessLimits = new Map<string, Map<string, { expiresAtMs: number; units: number }>>();
+const successfulIngress = { limit: async () => ({ success: true }) };
+const businessRateLimits = {
+  getByName(identifier: string) {
+    return {
+      claim(claims: DurableRateLimitClaim[]) {
+        const now = Date.now();
+        const entries = businessLimits.get(identifier) ?? new Map();
+        for (const [key, value] of entries) {
+          if (value.expiresAtMs <= now) entries.delete(key);
+        }
+        for (const claim of claims) {
+          const current = entries.get(claim.key)?.units ?? 0;
+          if (current + claim.units > claim.limit) {
+            return {
+              errorCode: claim.errorCode,
+              retryAfterSeconds: Math.max(1, Math.ceil((claim.expiresAtMs - now) / 1000)),
+              success: false,
+            };
+          }
+        }
+        for (const claim of claims) {
+          const current = entries.get(claim.key)?.units ?? 0;
+          entries.set(claim.key, { expiresAtMs: claim.expiresAtMs, units: current + claim.units });
+        }
+        businessLimits.set(identifier, entries);
+        return { success: true };
+      },
+    };
+  },
+};
+
+export const testEnvironment = {
+  ACTION_IP_RATE_LIMITER: successfulIngress,
+  ADMIN_EMAILS: "admin@integration.invalid",
+  ADMIN_WRITE_RATE_LIMITER: successfulIngress,
+  ALLOWED_DOMAIN: "integration.invalid",
+  ALLOWED_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000",
+  BUSINESS_RATE_LIMITS: businessRateLimits,
+  CLOUDINARY_API_BASE_URL: process.env.CLOUDINARY_API_BASE_URL,
+  CLOUDINARY_API_KEY: "integration-api-key",
+  CLOUDINARY_API_SECRET: "integration-api-secret",
+  CLOUDINARY_CLOUD_NAME: "integration-cloud",
+  CLOUDINARY_DELIVERY_BASE_URL: process.env.CLOUDINARY_DELIVERY_BASE_URL,
+  DATABASE_URL: requiredEnv("DATABASE_URL"),
+  FCM_EMULATOR_URL: process.env.FCM_EMULATOR_URL,
+  FIREBASE_AUTH_EMULATOR_HOST: "127.0.0.1:9099",
+  FIREBASE_PROJECT_ID: "integration-project",
+  FIREBASE_WEB_API_KEY: "integration-web-api-key",
+  GOOGLE_SERVICE_ACCOUNT_JSON: "not-used-with-emulator",
+  HEALTHCHECK_SECRET: "integration-healthcheck-secret",
+  JOBS: { send: async () => undefined },
+  LOCAL_TEST_MODE: "true",
+  MEDIA_IP_RATE_LIMITER: successfulIngress,
+  MEDIA_SIGNING_SECRET: "integration-media-signing-secret-that-is-long-enough",
+  NOTION_ENABLED: "false",
+  PUBLIC_API_URL: "http://127.0.0.1:8787",
+  READ_RATE_LIMITER: successfulIngress,
+  REALTIME: { getByName: () => ({ publish: async () => ({ delivered: 0 }) }) },
+  REALTIME_TICKET_SECRET: "integration-realtime-ticket-secret-that-is-long-enough",
+  SENSITIVE_WRITE_RATE_LIMITER: successfulIngress,
+  SYNC_IP_RATE_LIMITER: successfulIngress,
+  SYNC_USER_RATE_LIMITER: successfulIngress,
+  UPLOAD_RESOLVE_RATE_LIMITER: successfulIngress,
+  UPLOAD_WRITE_RATE_LIMITER: successfulIngress,
+  WEBHOOK_GLOBAL_RATE_LIMITER: successfulIngress,
+  WEBHOOK_IP_RATE_LIMITER: successfulIngress,
+  WRITE_RATE_LIMITER: successfulIngress,
+} as unknown as Env;
+
+const resetSql = `
+  do $$
+  declare
+    statement text;
+  begin
+    select 'truncate table '
+      || string_agg(format('%I.%I', schemaname, tablename), ', ')
+      || ' restart identity cascade'
+    into statement
+    from pg_tables
+    where schemaname = 'app_private';
+    if statement is not null then execute statement; end if;
+  end
+  $$;
+`;
+const bootstrapSql = await readFile(
+  join(process.cwd(), "database", "migrations", "0002_bootstrap.sql"),
+  "utf8",
+);
+const integrationSeedSql = await readFile(
+  join(process.cwd(), "database", "seed.integration.sql"),
+  "utf8",
+);
+
+beforeEach(async () => {
+  if (!ownerDatabaseConnected) {
+    await ownerDatabase.connect();
+    ownerDatabaseConnected = true;
+  }
+  await ownerDatabase.query(resetSql);
+  await ownerDatabase.query(bootstrapSql);
+  await ownerDatabase.query(integrationSeedSql);
+  businessLimits.clear();
+});
+
+afterAll(async () => {
+  await database.close();
+  if (ownerDatabaseConnected) await ownerDatabase.end();
+});
 
 export interface TestIdentity {
   email: string;
@@ -33,12 +147,9 @@ export function integrationTest(
   name: string,
   execute: () => void | Promise<void>,
 ) {
-  Deno.test({
-    fn: execute,
-    name,
-    // supabase-js can finish an internal compatibility timer during the
-    // following test. Resource sanitization and all durable assertions remain.
-    sanitizeOps: false,
+  test(name, async () => {
+    await database.connect();
+    await withRuntimeEnvironment(testEnvironment, execute);
   });
 }
 
@@ -66,8 +177,8 @@ export async function seedActor(
     photoUrl: null,
     uid,
   };
-  const { error: profileError } = await supabase.schema("app_private")
-    .from("user_profiles")
+  const { error: profileError } = await database
+    .table("app_private", "user_profiles")
     .insert({
       display_name: identity.name,
       email: identity.email,
@@ -77,8 +188,8 @@ export async function seedActor(
   if (profileError) throw profileError;
 
   if (options.roles?.length) {
-    const { error } = await supabase.schema("app_private")
-      .from("user_role_assignments")
+    const { error } = await database
+      .table("app_private", "user_role_assignments")
       .insert(options.roles.map((role_code) => ({
         granted_by: uid,
         role_code,
@@ -87,8 +198,8 @@ export async function seedActor(
     if (error) throw error;
   }
   if (options.categoryIds?.length) {
-    const { error } = await supabase.schema("app_private")
-      .from("user_issue_category_assignments")
+    const { error } = await database
+      .table("app_private", "user_issue_category_assignments")
       .insert(options.categoryIds.map((category_id) => ({
         category_id,
         granted_by: uid,
@@ -97,8 +208,8 @@ export async function seedActor(
     if (error) throw error;
   }
   if (options.facilityCategoryIds?.length) {
-    const { error } = await supabase.schema("app_private")
-      .from("user_facility_category_assignments")
+    const { error } = await database
+      .table("app_private", "user_facility_category_assignments")
       .insert(options.facilityCategoryIds.map((category_id) => ({
         category_id,
         granted_by: uid,
@@ -109,14 +220,14 @@ export async function seedActor(
 
   return {
     identity,
-    auth: await resolveAuthContext(supabase, identity),
+    auth: await resolveAuthContext(database as BackendDatabase, identity),
   };
 }
 
 export async function refreshActor(actor: { identity: TestIdentity }) {
   return {
     ...actor,
-    auth: await resolveAuthContext(supabase, actor.identity),
+    auth: await resolveAuthContext(database as BackendDatabase, actor.identity),
   };
 }
 
@@ -127,7 +238,7 @@ export async function callAction(
 ) {
   const definition = getBackendActionDefinition(actionName);
   assert.ok(definition, `Missing backend action definition: ${actionName}`);
-  return await executeBackendAction(definition, payload, auth, supabase);
+  return await executeBackendAction(definition, payload, auth, database as BackendDatabase);
 }
 
 export async function expectActionError(
@@ -203,7 +314,7 @@ export async function saveCategoryDraft(
 export async function insertReadyUpload(ownerUid: string, label: string) {
   const id = crypto.randomUUID();
   const cloudinaryPublicId = `srp/${ownerUid}/${label}-${id}`;
-  const { error } = await supabase.schema("app_private").from("uploads").insert({
+  const { error } = await database.table("app_private", "uploads").insert({
     cloudinary_public_id: cloudinaryPublicId,
     content_type: "image/webp",
     height: 64,
@@ -219,12 +330,12 @@ export async function insertReadyUpload(ownerUid: string, label: string) {
 }
 
 export async function tableRow(
-  table: keyof Database["app_private"]["Tables"],
+  table: Parameters<AppDatabaseClient["table"]>[1],
   column: string,
   value: string,
 ) {
-  const { data, error } = await supabase.schema("app_private")
-    .from(table)
+  const { data, error } = await database
+    .table("app_private", table)
     .select("*")
     .eq(column, value)
     .maybeSingle();

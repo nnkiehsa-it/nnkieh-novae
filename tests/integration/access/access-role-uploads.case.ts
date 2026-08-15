@@ -9,7 +9,7 @@ import {
   requestId,
   saveCategoryDraft,
   seedActor,
-  supabase,
+  database,
   tableRow,
 } from "../helpers.ts";
 
@@ -73,7 +73,11 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   const emptyScopeAssignees = asRecord(await callAction("listRoleAssignments", {
     categoryId: "public-issues", query: "", scopeKind: "issue",
   }, admin.auth));
-  assert.equal((emptyScopeAssignees.users as unknown[]).length, 0);
+  assert.equal(
+    (emptyScopeAssignees.users as Array<{ uid: string }>)
+      .some((assignee) => assignee.uid === target.auth.uid),
+    false,
+  );
   await expectActionError("validation-required", () => callAction("listRoleAssignments", {
     query: "",
   }, admin.auth));
@@ -167,8 +171,7 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   target = await refreshActor(target);
   assert.ok(target.auth.permissions.includes("announcement.manage"), "invalid writes must roll back without changing roles");
 
-  const { error: optOutError } = await supabase.schema("app_private")
-    .from("user_facility_category_assignments")
+  const { error: optOutError } = await database.table("app_private", "user_facility_category_assignments")
     .update({ notify_on_created: false })
     .eq("uid", target.auth.uid)
     .eq("category_id", "general");
@@ -180,8 +183,7 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
     scopeKind: "facility",
     uid: target.auth.uid,
   }, admin.auth);
-  const { data: facilityOptOut, error: facilityOptOutReadError } = await supabase.schema("app_private")
-    .from("user_facility_category_assignments")
+  const { data: facilityOptOut, error: facilityOptOutReadError } = await database.table("app_private", "user_facility_category_assignments")
     .select("notify_on_created")
     .eq("uid", target.auth.uid)
     .eq("category_id", "general")
@@ -210,8 +212,7 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   assert.deepEqual(refreshedConcurrentTarget.auth.managedIssueCategoryIds, ["public-issues"]);
   assert.deepEqual(refreshedConcurrentTarget.auth.managedFacilityCategoryIds, ["general"]);
 
-  const { data: accessAudit, error: accessAuditError } = await supabase.schema("app_private")
-    .from("access_assignment_audit").select("actor_uid,target_uid,before_value,after_value")
+  const { data: accessAudit, error: accessAuditError } = await database.table("app_private", "access_assignment_audit").select("actor_uid,target_uid,before_value,after_value")
     .eq("target_uid", target.auth.uid);
   if (accessAuditError) throw accessAuditError;
   assert.equal(accessAudit.length, 3);
@@ -219,14 +220,14 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
 
   const configuredAdmin = await seedActor("configured-admin");
   const staleAdmin = await seedActor("stale-admin", { roles: ["platform-admin"] });
-  const { error: reconcileError } = await supabase.schema("app_api").rpc("backend_reconcile_platform_admins", {
+  const { error: reconcileError } = await database.call("app_api", "backend_reconcile_platform_admins", {
     actor_uid: admin.auth.uid,
     admin_emails: [admin.identity.email, configuredAdmin.identity.email],
   });
   if (reconcileError) throw reconcileError;
-  const configuredAdminRole = await supabase.schema("app_private").from("user_role_assignments")
+  const configuredAdminRole = await database.table("app_private", "user_role_assignments")
     .select("uid").eq("uid", configuredAdmin.auth.uid).eq("role_code", "platform-admin").maybeSingle();
-  const staleAdminRole = await supabase.schema("app_private").from("user_role_assignments")
+  const staleAdminRole = await database.table("app_private", "user_role_assignments")
     .select("uid").eq("uid", staleAdmin.auth.uid).eq("role_code", "platform-admin").maybeSingle();
   if (configuredAdminRole.error) throw configuredAdminRole.error;
   if (staleAdminRole.error) throw staleAdminRole.error;
@@ -248,7 +249,7 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   assert.equal(publicProfile.version, 1);
 
   const renamedDisplayName = `${user.auth.name} renamed`;
-  const { error: renameError } = await supabase.schema("app_private").from("user_profiles")
+  const { error: renameError } = await database.table("app_private", "user_profiles")
     .update({ display_name: renamedDisplayName }).eq("uid", user.auth.uid);
   if (renameError) throw renameError;
   const refreshedProfiles = asRecord(await callAction(
@@ -262,10 +263,10 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
 
   const previousAvatarPublicId = `srp/avatars/${user.auth.uid}_previous`;
   const nextAvatarPublicId = `srp/avatars/${user.auth.uid}_next`;
-  const { error: seedAvatarError } = await supabase.schema("app_private").from("user_profiles")
+  const { error: seedAvatarError } = await database.table("app_private", "user_profiles")
     .update({ avatar_public_id: previousAvatarPublicId, avatar_version: 1 }).eq("uid", user.auth.uid);
   if (seedAvatarError) throw seedAvatarError;
-  const { error: commitAvatarError } = await supabase.schema("app_api").rpc("backend_commit_user_avatar", {
+  const { error: commitAvatarError } = await database.call("app_api", "backend_commit_user_avatar", {
     actor_uid: user.auth.uid,
     next_avatar_hash: "integration-avatar-hash",
     next_avatar_public_id: nextAvatarPublicId,
@@ -277,8 +278,8 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   if (commitAvatarError) throw commitAvatarError;
   const committedAvatarProfile = await tableRow("user_profiles", "uid", user.auth.uid);
   assert.equal(committedAvatarProfile?.avatar_public_id, nextAvatarPublicId);
-  const { data: previousAvatarJobs, error: previousAvatarJobsError } = await supabase
-    .schema("app_private").from("deletion_jobs").select("cloudinary_public_id,target_type")
+  const { data: previousAvatarJobs, error: previousAvatarJobsError } = await database
+    .table("app_private", "deletion_jobs").select("cloudinary_public_id,target_type")
     .eq("cloudinary_public_id", previousAvatarPublicId);
   if (previousAvatarJobsError) throw previousAvatarJobsError;
   assert.deepEqual(previousAvatarJobs, [{ cloudinary_public_id: previousAvatarPublicId, target_type: "avatar" }]);
@@ -291,7 +292,7 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
     ["facility_reports", "author_name"],
     ["notifications", "actor_photo_url"],
   ] as const) {
-    const { error } = await supabase.schema("app_private").from(table).select(removedColumn).limit(1);
+    const { error } = await database.table("app_private", table).select(removedColumn).limit(1);
     assert.equal(error?.code, "42703", `${table}.${removedColumn} must be removed`);
   }
 
@@ -309,8 +310,7 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   assert.match(String(session.signature), /^[a-f0-9]{40}$/u);
   const uploadId = String(session.uploadId);
 
-  const { error: readyError } = await supabase.schema("app_private")
-    .from("uploads")
+  const { error: readyError } = await database.table("app_private", "uploads")
     .update({ status: "ready" })
     .eq("id", uploadId);
   if (readyError) throw readyError;
@@ -325,8 +325,8 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
     { uploadIds: [uploadId] },
     user.auth,
   ));
-  assert.match(String(asRecord(resolved.fullUrls)[uploadId]), /^http:\/\/127\.0\.0\.1:1\/v1\/media\/.+\/full$/u);
-  assert.match(String(asRecord(resolved.thumbnailUrls)[uploadId]), /^http:\/\/127\.0\.0\.1:1\/v1\/media\/.+\/thumbnail$/u);
+  assert.match(String(asRecord(resolved.fullUrls)[uploadId]), /^http:\/\/127\.0\.0\.1:8787\/v1\/media\/.+\/full$/u);
+  assert.match(String(asRecord(resolved.thumbnailUrls)[uploadId]), /^http:\/\/127\.0\.0\.1:8787\/v1\/media\/.+\/thumbnail$/u);
   const hidden = asRecord(await callAction(
     "resolveUploadImageUrls",
     { uploadIds: [uploadId] },

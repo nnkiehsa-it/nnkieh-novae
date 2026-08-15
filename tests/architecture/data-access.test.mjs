@@ -62,13 +62,13 @@ test("category setup and later management use atomic service boundaries", async 
 
 test("database retention and cascade contracts remain present", async () => {
   const retention = await read("config/data-retention.config.json");
-  const migration = await read("supabase/migrations/202607150002_input_length_limits.sql");
+  const migration = await read("database/migrations/0001_baseline.sql");
   const deletion = [
-    await read("supabase/functions/backendAction/issue-delete.ts"),
-    await read("supabase/functions/backendAction/facilities.ts"),
-    await read("supabase/functions/backendAction/announcement-write.ts"),
+    await read("cloudflare/src/backend/actions/issue-delete.ts"),
+    await read("cloudflare/src/backend/actions/facilities.ts"),
+    await read("cloudflare/src/backend/actions/announcement-write.ts"),
   ].join("\n");
   assert.match(retention, /outboxCompletedDays/u);
-  assert.match(migration, /create trigger/u);
+  assert.match(migration, /create trigger/iu);
   assert.match(deletion, /deleteIssue|deleteFacility|deleteAnnouncement/u);
 });

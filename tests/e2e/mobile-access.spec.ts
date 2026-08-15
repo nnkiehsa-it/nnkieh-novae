@@ -26,9 +26,17 @@ async function expectMobileInteractionBaseline(page: Page) {
   ).resolves.toEqual({ finePointer: false, hover: false });
 
   const navigation = page.getByRole('navigation', { name: 'Primary navigation' });
-  const navigationBox = await navigation.boundingBox();
-  expect(navigationBox).not.toBeNull();
-  expect(Math.abs((navigationBox?.y ?? 0) + (navigationBox?.height ?? 0) - page.viewportSize()!.height))
+  const navigationDock = page.locator('.app-mobile-nav');
+  const navigationDockBox = await navigationDock.boundingBox();
+  expect(navigationDockBox).not.toBeNull();
+  const renderedBottom = await navigationDock.evaluate((element) =>
+    Number.parseFloat(getComputedStyle(element).bottom),
+  );
+  const viewportBottomGap = page.viewportSize()!.height
+    - (navigationDockBox?.y ?? 0)
+    - (navigationDockBox?.height ?? 0);
+  expect(viewportBottomGap).toBeGreaterThanOrEqual(0);
+  expect(Math.abs(viewportBottomGap - renderedBottom))
     .toBeLessThanOrEqual(1);
 
   for (const link of await navigation.getByRole('link').all()) {
@@ -52,10 +60,12 @@ test.describe('proposal manager on mobile', () => {
   test('keeps category-scoped controls and mobile navigation in sync', async ({ page }) => {
     await suppressInstallPrompt(page);
     const content = await readContentState();
-    await page.goto(content.proposalA);
-    await expect(page.getByRole('button', { name: 'Back to proposals' })).toBeVisible();
+    await page.goto('/issues/proposal-a');
     await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible();
     await expectMobileInteractionBaseline(page);
+    await page.goto(content.proposalA);
+    await expect(page.getByRole('button', { name: 'Back to proposals' })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toHaveCount(0);
     await expectTouchTarget(page, 'Back to proposals');
     await expectTouchTarget(page, /Support this proposal|Remove support/u);
     await expectMoreActions(page, ['Manage status', 'Delete proposal']);
@@ -84,7 +94,7 @@ test.describe('ordinary owner on mobile', () => {
     await suppressInstallPrompt(page);
     const content = await readContentState();
     await page.goto(content.proposalA);
-    await expectMoreActions(page, ['Manage status', 'Delete proposal']);
+    await expectMoreActions(page, ['Delete proposal'], ['Manage status']);
     await page.goto(content.facilityB);
     await expectMoreActions(page, ['Delete report'], ['Update status']);
   });

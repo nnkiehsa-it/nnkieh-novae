@@ -35,9 +35,6 @@ const publicEnvironment = {
   NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY:
     process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY || "",
   NEXT_PUBLIC_SCHOOL_NAME: process.env.NEXT_PUBLIC_SCHOOL_NAME || "",
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "",
-  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || "",
 };
 
 const withSerwist = withSerwistInit({
@@ -82,12 +79,6 @@ const nextConfig = {
         vendorFirebase: {
           test: /[\\/]node_modules[\\/](?:@firebase|firebase)[\\/]/,
           name: "vendor-firebase",
-          chunks: "all",
-          priority: 30,
-        },
-        vendorSupabase: {
-          test: /[\\/]node_modules[\\/](?:@supabase)[\\/]/,
-          name: "vendor-supabase",
           chunks: "all",
           priority: 30,
         },

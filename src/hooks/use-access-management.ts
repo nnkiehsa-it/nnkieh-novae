@@ -80,6 +80,7 @@ export function useAccessManagement() {
   async function search() {
     if (!query.trim()) return;
     setSearching(true);
+    setCandidate(null);
     try {
       setCandidate((await lookupAccessMember(query.trim())).users[0] ?? null);
     } catch (caught) {

@@ -6,7 +6,7 @@
 
 0. Node.js 統一使用 24 LTS；不得為繞過依賴警告降到 Node 20 或降級主要 runtime 套件。
 1. 修改依既有模組擴充，不另起平行實作。
-2. 搜尋避開 `node_modules`、`dist`、`.vercel`、`.supabase` 等產物。
+2. 搜尋避開 `node_modules`、`dist`、`.vercel`、`.wrangler` 等產物。
 3. 不做 in-app browser preview；以 typecheck / lint / build 驗證。
 4. 不覆蓋、不回復無關的工作樹變更。
 5. Staging 用 `git add .`，不要逐檔 add。
@@ -21,12 +21,12 @@
 | `components/ui/` | 無業務資料的共用 UI；**不** import service / session |
 | `hooks/` | React 狀態與流程；不重複純函式／正規化 |
 | `lib/` | 無 React 相依的純工具 |
-| `services/` | Edge Function / Supabase client 邊界；元件不直查表、不自組 action |
+| `services/` | Cloudflare Workers API 與即時傳輸邊界；元件不直查資料庫、不自組 action |
 | `types/` | 跨模組型別；共通欄位先 base 再擴充 |
-| `supabase/functions/_shared/` | Edge 共用 env、HTTP、auth、FCM、Notion、Cloudinary、schema |
-| `supabase/functions/backendAction/` | 受控 action 入口與領域流程；entrypoint 只做 CORS／驗證／冪等／分派 |
-| `supabase/functions/<fn>/` | 獨立 Function（登入同步、webhook、outbox、刪除、維護） |
-| `supabase/migrations/` | schema / RLS / RPC；改 schema 時同步檢查 Edge 型別 |
+| `cloudflare/src/` | Worker 路由、CORS、Firebase token 驗證、原生限流、Queue／排程入口 |
+| `cloudflare/src/backend/` | action、資料庫 adapter、登入同步、webhook、outbox、刪除與維護流程 |
+| `cloudflare/src/durable/` | SQLite Durable Objects 業務限流與 WebSocket Hibernation 即時廣播 |
+| `database/migrations/` | Neon/PostgreSQL schema 與 RPC；已部署檔案不可回改，只能新增 migration |
 
 ## 拆分與共用
 
@@ -56,8 +56,8 @@
 
 ## 安全
 
-- 不因重構改路由名、table／RPC／RLS、Edge action、Storage path、部署設定。
-- 權限在 RLS／Edge；前端條件只負責顯示。
+- 不因重構改路由名、table／RPC、backend action、Storage path、部署設定。
+- 權限在 Worker action 與資料庫函式；前端條件只負責顯示。資料庫 runtime role 保持最低權限且不得持有 DDL 權限。
 - 平台總管理員只由後端 `ADMIN_EMAILS` 環境變數決定；不得新增 UI、action、RPC 或資料表欄位來授予或撤銷平台總管理員。
 - 提案與設備管理權限以分類指派為範圍；平台總管理員可跨分類處理，但一般分類管理員不得靠全域 permission 繞過分類檢查。管理介面採「先選分類，再查看／新增／修改／撤銷該分類負責人」。
 - 新提案與新設備回報只通知該分類明確指派的負責人並排除作者；不得因平台總管理員身分自動收件。個人通知使用 user scope，避免混入管理員廣播。
@@ -73,7 +73,7 @@
 
 一般前端／重構：`npm run verify:local`。
 其中 `check:ui` 會拒絕舊 dropdown、任意陰影、手組卡片與自行管理 viewport gutter；不要跳過或以例外規避。
-後端 action、權限、RPC、RLS、migration、worker：加跑 `npm run verify:integration`；Windows 入口會自動轉入 WSL，不手動維護第二套 Windows 流程。
+後端 action、權限、RPC、migration、Worker、Queue、Durable Object：加跑 `npm run verify:integration`；Windows 入口會透過 WSL Docker 啟動 PostgreSQL，不手動維護第二套流程。
 大型變更／交付前：`npm run verify:all`。
 完整本地測試環境：`npm run test:env`，Ready 後可用 Auth Emulator 建立任意測試帳號；以 `Ctrl+C` 關閉全部本地服務。多人、多分類、多權限壓力矩陣使用 `npm run verify:stress`。
 新增 backend action 必須在 `tests/integration/` 加入有 assertion 的成功與拒絕案例；角色／scope 變更至少驗證 allowed、denied、跨 scope。`action-coverage.test.ts` 只作漏測防線，不得用無 assertion 呼叫敷衍。

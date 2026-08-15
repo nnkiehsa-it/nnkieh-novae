@@ -76,7 +76,9 @@ const refreshed = await jsonRequest(
     }),
   },
 );
-assert.equal(tokenClaims(refreshed.id_token).role, "authenticated");
+const refreshedClaims = tokenClaims(refreshed.id_token);
+assert.equal(refreshedClaims.aud, projectId);
+assert.equal(refreshedClaims.email, adminEmail);
 
 const access = await jsonRequest(`${gatewayBaseUrl}/v1/actions`, {
   method: "POST",

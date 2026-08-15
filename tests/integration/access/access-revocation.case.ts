@@ -9,7 +9,7 @@ import {
   requestId,
   saveCategoryDraft,
   seedActor,
-  supabase,
+  database,
   tableRow,
 } from "../helpers.ts";
 

@@ -117,7 +117,7 @@ export async function handleMedia(request: Request, env: Env, token: string, raw
     return new Response(null, { status: 429, headers: { 'retry-after': '60' } });
   }
   const variant = VARIANTS.has(rawVariant as MediaVariant) ? rawVariant as MediaVariant : null;
-  const payload = await verifyMediaToken(token, env.EDGE_ORIGIN_SECRET);
+  const payload = await verifyMediaToken(token, env.MEDIA_SIGNING_SECRET);
   if (!variant || !payload) return new Response(null, { status: 404 });
 
   const workerCache = (caches as CacheStorage & { default?: Cache }).default;

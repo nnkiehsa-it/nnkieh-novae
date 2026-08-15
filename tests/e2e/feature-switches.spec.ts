@@ -16,8 +16,10 @@ async function setFeatureSwitches(
   await expect(facilities).toBeVisible();
   if (await facilities.isChecked() !== facilitiesEnabled) await facilities.click();
 
-  await page.getByRole('button', { name: 'Save all changes' }).click();
-  await expect(page.getByText('Categories and features saved').last()).toBeVisible();
+  const save = page.getByRole('button', { name: 'Save all changes' });
+  await save.click();
+  await expect(save.locator('[data-state="complete"]')).toBeVisible();
+  await expect(save).toBeEnabled();
 }
 
 test('all four proposal and facility feature combinations update navigation and direct routes', async ({

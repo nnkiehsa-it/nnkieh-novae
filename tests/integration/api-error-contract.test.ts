@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
-import { errorEnvelope, errorResponse } from "../../supabase/functions/backendAction/response.ts";
-import { claimFixedWindowRateLimit, RateLimitError, utcHourWindow } from "../../supabase/functions/_shared/upstash-rate-limit.ts";
+import { errorEnvelope, errorResponse } from "../../cloudflare/src/backend/actions/response.ts";
+import { claimFixedWindowRateLimit, RateLimitError, utcHourWindow } from "../../cloudflare/src/backend/shared/business-rate-limit.ts";
+import { integrationTest } from "./helpers.ts";
 
-Deno.test("API errors expose stable codes without backend-localized messages", async () => {
+integrationTest("API errors expose stable codes without backend-localized messages", async () => {
   const envelope = errorEnvelope(new Error("title-required"), "request-123");
   assert.deepEqual(envelope, {
     error: { code: "validation-required" },
@@ -20,7 +21,7 @@ Deno.test("API errors expose stable codes without backend-localized messages", a
   });
 });
 
-Deno.test("rate-limit errors include machine-readable retry metadata", async () => {
+integrationTest("rate-limit errors include machine-readable retry metadata", async () => {
   const response = errorResponse(
     new RateLimitError("rate-limit.issue-create", 42),
     "request-rate-limit",
@@ -34,7 +35,7 @@ Deno.test("rate-limit errors include machine-readable retry metadata", async () 
   });
 });
 
-Deno.test("Upstash business limits allow the configured quota and reject overflow", async () => {
+integrationTest("Durable Object business limits allow the configured quota and reject overflow", async () => {
   const identifier = `integration-rate-${crypto.randomUUID()}`;
   const config = { errorCode: "rate-limit.issue-create" as const, limit: 1 };
   await claimFixedWindowRateLimit(identifier, "integration.issue-create", utcHourWindow(), config);

@@ -29,7 +29,7 @@ The product combines community-facing participation with category-scoped operati
 ## Capabilities and Constraints
 
 - Firebase Google authentication is restricted to the configured school domain.
-- Supabase RLS and Edge Functions enforce access; frontend conditions only control presentation.
+- The Cloudflare Workers API enforces authorization and uses a least-privilege Neon runtime role; frontend conditions only control presentation and the browser has no database credentials.
 - Platform administrators are derived only from the backend `ADMIN_EMAILS` environment variable.
 - General managers are scoped by category and cannot bypass that scope with a global frontend permission.
 - Existing routes, navigation information architecture, workflows, data flow, API contracts, authentication behavior, backend logic, and database schema must remain stable during the frontend redesign.

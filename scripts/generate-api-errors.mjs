@@ -44,7 +44,7 @@ try {
   const output = render(definitions);
   const outputPaths = [
     path.join(projectRoot, 'src', 'generated', 'api-errors.ts'),
-    path.join(projectRoot, 'supabase', 'functions', '_shared', 'api-errors.ts'),
+    path.join(projectRoot, 'cloudflare', 'src', 'backend', 'shared', 'api-errors.ts'),
     path.join(projectRoot, 'cloudflare', 'generated', 'api-errors.ts'),
   ];
   await Promise.all(outputPaths.map(async (outputPath) => {

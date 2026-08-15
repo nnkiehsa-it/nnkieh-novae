@@ -1,5 +1,4 @@
-import { asRecord, assert, authenticatedJwt, callAction, createClient, DATA_RETENTION, expectActionError, failNextFcmRequests, integrationTest, notificationStressScale, readFcmRequests, requestId, requiredEnv, resetFcmRequests, saveCategoryDraft, seedActor, supabase } from "./support.ts";
-import type { Database } from "./support.ts";
+import { asRecord, assert, callAction, database, drainJobs, integrationTest, notificationStressScale, readFcmRequests, requestId, resetFcmRequests, saveCategoryDraft, seedActor } from "./support.ts";
 
 integrationTest("new proposal and facility notifications are personal to category managers", async () => {
   const admin = await seedActor(`category-notification-admin-${crypto.randomUUID()}`, { roles: ["platform-admin"] });
@@ -49,8 +48,7 @@ integrationTest("new proposal and facility notifications are personal to categor
       },
     }, managers[index].auth);
   }
-  const { error: disableFacilityNotificationError } = await supabase.schema("app_private")
-    .from("user_facility_category_assignments")
+  const { error: disableFacilityNotificationError } = await database.table("app_private", "user_facility_category_assignments")
     .update({ notify_on_created: false })
     .eq("uid", managers.at(-1)!.auth.uid)
     .eq("category_id", facilityCategoryId);
@@ -61,8 +59,7 @@ integrationTest("new proposal and facility notifications are personal to categor
     scopeKind: "announcement",
     uid: managers.at(-1)!.auth.uid,
   }, admin.auth);
-  const { data: preservedOptOut, error: preservedOptOutError } = await supabase.schema("app_private")
-    .from("user_facility_category_assignments")
+  const { data: preservedOptOut, error: preservedOptOutError } = await database.table("app_private", "user_facility_category_assignments")
     .select("notify_on_created")
     .eq("uid", managers.at(-1)!.auth.uid)
     .eq("category_id", facilityCategoryId)
@@ -88,25 +85,15 @@ integrationTest("new proposal and facility notifications are personal to categor
   const issueId = String(asRecord(issueResult.issue).id);
   const facilityId = String(asRecord(facilityResult.facility).id);
 
-  const workerUrl = `${requiredEnv("SUPABASE_FUNCTIONS_URL").replace(/\/+$/u, "")}/outboxWorker`;
   for (let attempt = 0; attempt < 15; attempt += 1) {
-    const { data, error } = await supabase.schema("app_private").from("notifications")
+    const { data, error } = await database.table("app_private", "notifications")
       .select("recipient_uid,source,target_id,type").in("target_id", [issueId, facilityId]);
     if (error) throw error;
     if ((data ?? []).length >= managers.length * 2) break;
-    const response = await fetch(workerUrl, {
-      headers: {
-        authorization: `Bearer ${requiredEnv("WEBHOOK_SECRET")}`,
-        "x-novae-origin-secret": requiredEnv("EDGE_ORIGIN_SECRET"),
-      },
-      method: "POST",
-    });
-    assert.ok(response.ok || response.status === 429, `outbox worker returned ${response.status}`);
-    await new Promise((resolve) => setTimeout(resolve, 550));
+    await drainJobs();
   }
 
-  const { data: notifications, error: notificationError } = await supabase.schema("app_private")
-    .from("notifications")
+  const { data: notifications, error: notificationError } = await database.table("app_private", "notifications")
     .select("recipient_uid,source,target_id,type")
     .in("target_id", [issueId, facilityId]);
   if (notificationError) throw notificationError;

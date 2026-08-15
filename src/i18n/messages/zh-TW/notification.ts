@@ -44,6 +44,7 @@ const messages = {
   'notification.notificationSettingsSaved': '通知設定已儲存',
   'notification.loadFailed': '通知載入失敗，請稍後再試。',
   'notification.pushServiceStarted': '推播服務已啟動',
+  'notification.realtimeConnection': '即時通知連線',
   'notification.unread': '未讀',
   'notification.turnOffPushNotifications': '關閉推播通知',
   'notification.pushDeviceUnsupported': '此裝置暫不支援推播通知',

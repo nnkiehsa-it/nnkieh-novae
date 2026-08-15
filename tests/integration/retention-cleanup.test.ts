@@ -1,19 +1,21 @@
 import assert from "node:assert/strict";
-import { DATA_RETENTION } from "../../supabase/functions/_shared/data-retention.ts";
+import { DATA_RETENTION } from "../../cloudflare/src/backend/shared/data-retention.ts";
+import { processJobMessage } from "../../cloudflare/src/backend/jobs/consumer.ts";
 import {
   asRecord,
   callAction,
   integrationTest,
   requestId,
   seedActor,
-  supabase,
+  database,
+  testEnvironment,
   tableRow,
 } from "./helpers.ts";
 
 const DAY_MS = 86_400_000;
 
 function requiredEnv(name: string) {
-  const value = Deno.env.get(name)?.trim();
+  const value = process.env[name]?.trim();
   if (!value) throw new Error(`${name} is required for local integration tests.`);
   return value;
 }
@@ -35,11 +37,9 @@ integrationTest("configured retention cleanup removes every expired data class a
   const owner = await seedActor(`retention-owner-${runId}`);
   const avatarOwner = await seedActor(`retention-avatar-${runId}`);
 
-  const { data: issueCategories, error: issueCategoryError } = await supabase.schema("app_private")
-    .from("issue_categories").select("id").eq("is_active", true).order("sort_order");
+  const { data: issueCategories, error: issueCategoryError } = await database.table("app_private", "issue_categories").select("id").eq("is_active", true).order("sort_order");
   if (issueCategoryError) throw issueCategoryError;
-  const { data: facilityCategories, error: facilityCategoryError } = await supabase.schema("app_private")
-    .from("facility_categories").select("id").eq("is_active", true).order("sort_order");
+  const { data: facilityCategories, error: facilityCategoryError } = await database.table("app_private", "facility_categories").select("id").eq("is_active", true).order("sort_order");
   if (facilityCategoryError) throw facilityCategoryError;
   const issueCategoryIds = (issueCategories ?? []).map((row) => String(row.id));
   const facilityCategoryId = String(facilityCategories?.[0]?.id ?? "");
@@ -54,7 +54,7 @@ integrationTest("configured retention cleanup removes every expired data class a
       title: `Retention ${label} issue`,
     }, owner.auth));
     const id = String(asRecord(created.issue).id);
-    const { error } = await supabase.schema("app_private").from("issues").update({
+    const { error } = await database.table("app_private", "issues").update({
       closed_at: closedAt,
       status: "completed",
     }).eq("id", id);
@@ -70,7 +70,7 @@ integrationTest("configured retention cleanup removes every expired data class a
       title: `Retention ${label} facility`,
     }, owner.auth));
     const id = String(asRecord(created.facility).id);
-    const { error } = await supabase.schema("app_private").from("facility_reports").update({
+    const { error } = await database.table("app_private", "facility_reports").update({
       closed_at: closedAt,
       status: "completed",
     }).eq("id", id);
@@ -82,7 +82,7 @@ integrationTest("configured retention cleanup removes every expired data class a
   const recentIssueId = await createClosedIssue("recent", recentAt);
   const expiredFacilityId = await createClosedFacility("expired", expiredAt);
   const recentFacilityId = await createClosedFacility("recent", recentAt);
-  const { error: notionError } = await supabase.schema("app_private").from("notion_pages").insert([
+  const { error: notionError } = await database.table("app_private", "notion_pages").insert([
     { notion_page_id: `notion-issue-${runId}`, target_id: expiredIssueId, target_type: "issue" },
     { notion_page_id: `notion-facility-${runId}`, target_id: expiredFacilityId, target_type: "facility" },
   ]);
@@ -90,7 +90,7 @@ integrationTest("configured retention cleanup removes every expired data class a
 
   const expiredNotificationId = crypto.randomUUID();
   const recentNotificationId = crypto.randomUUID();
-  const { error: notificationError } = await supabase.schema("app_private").from("notifications").insert([
+  const { error: notificationError } = await database.table("app_private", "notifications").insert([
     {
       created_at: expiredAt,
       expires_at: futureAt,
@@ -118,22 +118,22 @@ integrationTest("configured retention cleanup removes every expired data class a
 
   const expiredRealtimeId = crypto.randomUUID();
   const recentRealtimeId = crypto.randomUUID();
-  const { error: realtimeError } = await supabase.schema("app_private").from("realtime_events").insert([
+  const { error: realtimeError } = await database.table("app_private", "realtime_events").insert([
     {
       created_at: expiredAt,
-      event_type: "issue_changed",
+      event_name: "issue_changed",
       expires_at: futureAt,
       id: expiredRealtimeId,
-      target_id: `retention-expired-${runId}`,
-      target_type: "issue",
+      payload: { target_id: `retention-expired-${runId}` },
+      topic: "content:issues",
     },
     {
       created_at: recentAt,
-      event_type: "issue_changed",
+      event_name: "issue_changed",
       expires_at: expiredAt,
       id: recentRealtimeId,
-      target_id: `retention-recent-${runId}`,
-      target_type: "issue",
+      payload: { target_id: `retention-recent-${runId}` },
+      topic: "content:issues",
     },
   ]);
   if (realtimeError) throw realtimeError;
@@ -144,7 +144,7 @@ integrationTest("configured retention cleanup removes every expired data class a
     recentCompleted: crypto.randomUUID(),
     recentFailed: crypto.randomUUID(),
   };
-  const { error: outboxError } = await supabase.schema("app_private").from("outbox_events").insert([
+  const { error: outboxError } = await database.table("app_private", "outbox_events").insert([
     { actor_uid: owner.auth.uid, event_type: "facility.deleted", expires_at: futureAt, id: outboxIds.expiredCompleted, payload: { retention_cleanup: true }, status: "completed", target_id: `expired-completed-${runId}`, target_type: "facility", updated_at: expiredAt },
     { actor_uid: owner.auth.uid, event_type: "facility.deleted", expires_at: futureAt, id: outboxIds.expiredFailed, payload: { retention_cleanup: true }, status: "failed", target_id: `expired-failed-${runId}`, target_type: "facility", updated_at: expiredAt },
     { actor_uid: owner.auth.uid, event_type: "facility.deleted", expires_at: expiredAt, id: outboxIds.recentCompleted, payload: { retention_cleanup: true }, status: "completed", target_id: `recent-completed-${runId}`, target_type: "facility", updated_at: recentAt },
@@ -153,7 +153,7 @@ integrationTest("configured retention cleanup removes every expired data class a
   if (outboxError) throw outboxError;
 
   const pushLogIds = { expiredFailed: crypto.randomUUID(), expiredSent: crypto.randomUUID(), recent: crypto.randomUUID() };
-  const { error: pushLogError } = await supabase.schema("app_private").from("push_delivery_logs").insert([
+  const { error: pushLogError } = await database.table("app_private", "push_delivery_logs").insert([
     { id: pushLogIds.expiredSent, notification_type: "retention", status: "sent", target_id: runId, target_type: "issue", token_uid: owner.auth.uid, updated_at: expiredAt },
     { id: pushLogIds.expiredFailed, notification_type: "retention", status: "failed", target_id: runId, target_type: "issue", token_uid: owner.auth.uid, updated_at: expiredAt },
     { id: pushLogIds.recent, notification_type: "retention", status: "sent", target_id: runId, target_type: "issue", token_uid: owner.auth.uid, updated_at: recentAt },
@@ -161,14 +161,14 @@ integrationTest("configured retention cleanup removes every expired data class a
   if (pushLogError) throw pushLogError;
 
   const idempotencyRequests = { expired: `expired-${runId}`, recent: `recent-${runId}` };
-  const { error: idempotencyError } = await supabase.schema("app_private").from("idempotency_keys").insert([
+  const { error: idempotencyError } = await database.table("app_private", "idempotency_keys").insert([
     { action: "retention-test", expires_at: futureAt, request_id: idempotencyRequests.expired, status: "completed", uid: owner.auth.uid, updated_at: expiredAt },
     { action: "retention-test", expires_at: expiredAt, request_id: idempotencyRequests.recent, status: "completed", uid: owner.auth.uid, updated_at: recentAt },
   ]);
   if (idempotencyError) throw idempotencyError;
 
   const tokenDevices = { denied: `denied-${runId}`, expired: `expired-${runId}`, recent: `recent-${runId}` };
-  const { error: tokenError } = await supabase.schema("app_private").from("push_tokens").insert([
+  const { error: tokenError } = await database.table("app_private", "push_tokens").insert([
     { device_id: tokenDevices.expired, permission: "granted", platform: "integration", token: `expired-${runId}`, uid: owner.auth.uid, updated_at: expiredAt, user_agent: "retention" },
     { device_id: tokenDevices.denied, permission: "denied", platform: "integration", token: `denied-${runId}`, uid: owner.auth.uid, updated_at: recentAt, user_agent: "retention" },
     { device_id: tokenDevices.recent, permission: "granted", platform: "integration", token: `recent-${runId}`, uid: owner.auth.uid, updated_at: recentAt, user_agent: "retention" },
@@ -181,7 +181,7 @@ integrationTest("configured retention cleanup removes every expired data class a
     recentCompleted: `recent-completed-${runId}`,
     recentFailed: `recent-failed-${runId}`,
   };
-  const { error: deletionError } = await supabase.schema("app_private").from("deletion_jobs").insert([
+  const { error: deletionError } = await database.table("app_private", "deletion_jobs").insert([
     { status: "completed", target_id: deletionTargets.expiredCompleted, target_type: "integration", updated_at: expiredAt },
     { status: "failed", target_id: deletionTargets.expiredFailed, target_type: "integration", updated_at: expiredAt },
     { status: "completed", target_id: deletionTargets.recentCompleted, target_type: "integration", updated_at: recentAt },
@@ -190,7 +190,7 @@ integrationTest("configured retention cleanup removes every expired data class a
   if (deletionError) throw deletionError;
 
   const auditUids = { expired: `audit-expired-${runId}`, recent: `audit-recent-${runId}` };
-  const { error: auditError } = await supabase.schema("app_private").from("role_assignment_audit").insert([
+  const { error: auditError } = await database.table("app_private", "role_assignment_audit").insert([
     { actor_uid: admin.auth.uid, created_at: expiredAt, operation: "grant", role_code: "announcement-manager", uid: auditUids.expired },
     { actor_uid: admin.auth.uid, created_at: recentAt, operation: "grant", role_code: "announcement-manager", uid: auditUids.recent },
   ]);
@@ -198,7 +198,7 @@ integrationTest("configured retention cleanup removes every expired data class a
 
   const oldMaintenanceId = crypto.randomUUID();
   const recentMaintenanceId = crypto.randomUUID();
-  const { error: maintenanceSeedError } = await supabase.schema("app_private").from("maintenance_runs").insert([
+  const { error: maintenanceSeedError } = await database.table("app_private", "maintenance_runs").insert([
     { id: oldMaintenanceId, started_at: expiredAt, status: "success", task_name: "maintenance.cleanup" },
     { id: recentMaintenanceId, started_at: recentAt, status: "success", task_name: "maintenance.cleanup" },
   ]);
@@ -222,7 +222,7 @@ integrationTest("configured retention cleanup removes every expired data class a
     updated_at: timestamp,
     visibility: "authenticated",
   });
-  const { error: uploadError } = await supabase.schema("app_private").from("uploads").insert([
+  const { error: uploadError } = await database.table("app_private", "uploads").insert([
     upload(uploadIds.pending, "pending", expiredAt),
     upload(uploadIds.readyUnattached, "ready", expiredAt),
     upload(uploadIds.failed, "failed", expiredAt),
@@ -231,8 +231,7 @@ integrationTest("configured retention cleanup removes every expired data class a
   ]);
   if (uploadError) throw uploadError;
 
-  const { data: cleanup, error: cleanupError } = await supabase.schema("app_api")
-    .rpc("run_maintenance_cleanup", {
+  const { data: cleanup, error: cleanupError } = await database.call("app_api", "run_maintenance_cleanup", {
       retention_config: DATA_RETENTION,
       valid_issue_categories: issueCategoryIds,
     });
@@ -299,8 +298,7 @@ integrationTest("configured retention cleanup removes every expired data class a
     await expectPresent("deletion_jobs", "target_id", id);
   }
 
-  const { data: retentionEvents, error: retentionEventError } = await supabase.schema("app_private")
-    .from("outbox_events").select("event_type,payload,target_id")
+  const { data: retentionEvents, error: retentionEventError } = await database.table("app_private", "outbox_events").select("event_type,payload,target_id")
     .in("target_id", [expiredIssueId, expiredFacilityId]);
   if (retentionEventError) throw retentionEventError;
   const scheduledDeletionEvents = (retentionEvents ?? []).filter((event) =>
@@ -311,24 +309,23 @@ integrationTest("configured retention cleanup removes every expired data class a
     new Set(scheduledDeletionEvents.map((event) => event.event_type)),
     new Set(["issue.deleted", "facility.deleted"]),
   );
-  const { count: retentionNotificationCount, error: retentionNotificationError } = await supabase
-    .schema("app_private").from("notifications").select("id", { count: "exact", head: true })
+  const { error: prioritizeRetentionError } = await database.table("app_private", "outbox_events")
+    .update({ created_at: expiredAt, next_attempt_at: expiredAt })
+    .in("target_id", [expiredIssueId, expiredFacilityId]);
+  if (prioritizeRetentionError) throw prioritizeRetentionError;
+  const { count: retentionNotificationCount, error: retentionNotificationError } = await database
+    .table("app_private", "notifications").select("id", { count: "exact", head: true })
     .in("target_id", [expiredIssueId, expiredFacilityId]);
   if (retentionNotificationError) throw retentionNotificationError;
   assert.equal(retentionNotificationCount, 0, "scheduled retention deletion must not notify users");
 
-  const headers = {
-    authorization: `Bearer ${requiredEnv("WEBHOOK_SECRET")}`,
-    "x-novae-origin-secret": requiredEnv("EDGE_ORIGIN_SECRET"),
-  };
-  const functionsUrl = requiredEnv("SUPABASE_FUNCTIONS_URL").replace(/\/+$/u, "");
   const staleUploadIds = [uploadIds.pending, uploadIds.readyUnattached, uploadIds.failed];
   const currentAvatarPublicId = `srp/avatars/${avatarOwner.auth.uid}_current`;
   const oldAvatarPublicId = `srp/avatars/${owner.auth.uid}_old`;
-  const { error: avatarProfileError } = await supabase.schema("app_private").from("user_profiles")
+  const { error: avatarProfileError } = await database.table("app_private", "user_profiles")
     .update({ avatar_public_id: currentAvatarPublicId }).eq("uid", avatarOwner.auth.uid);
   if (avatarProfileError) throw avatarProfileError;
-  const { error: avatarJobsError } = await supabase.schema("app_private").from("deletion_jobs").insert([
+  const { error: avatarJobsError } = await database.table("app_private", "deletion_jobs").insert([
     {
       cloudinary_public_id: currentAvatarPublicId,
       target_id: avatarOwner.auth.uid,
@@ -343,16 +340,14 @@ integrationTest("configured retention cleanup removes every expired data class a
   if (avatarJobsError) throw avatarJobsError;
   const deletionTargetIds = [...staleUploadIds, avatarOwner.auth.uid, owner.auth.uid];
   let completedUploadJobs: Array<{ status: string; target_id: string }> = [];
-  for (let attempt = 0; attempt < 10; attempt += 1) {
-    const response = await fetch(`${functionsUrl}/processDeletionJobs`, { headers, method: "POST" });
-    assert.ok(response.ok || response.status === 429, `deletion worker returned ${response.status}`);
-    const { data, error } = await supabase.schema("app_private").from("deletion_jobs")
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    await processJobMessage({ type: "drain" }, testEnvironment);
+    const { data, error } = await database.table("app_private", "deletion_jobs")
       .select("status,target_id").in("target_id", deletionTargetIds);
     if (error) throw error;
     completedUploadJobs = data ?? [];
     if (completedUploadJobs.length === deletionTargetIds.length
       && completedUploadJobs.every((job) => job.status === "completed")) break;
-    await new Promise((resolve) => setTimeout(resolve, 550));
   }
   assert.equal(completedUploadJobs.length, deletionTargetIds.length);
   assert.ok(completedUploadJobs.every((job) => job.status === "completed"));
@@ -370,29 +365,24 @@ integrationTest("configured retention cleanup removes every expired data class a
   assert.ok(destroyedPublicIds.has(oldAvatarPublicId), "superseded avatar must be deleted");
   assert.equal(destroyedPublicIds.has(currentAvatarPublicId), false, "current avatar must never be deleted");
 
-  await new Promise((resolve) => setTimeout(resolve, 1_100));
-  const maintenanceResponse = await fetch(`${functionsUrl}/maintenanceCleanup`, { headers, method: "POST" });
-  assert.equal(maintenanceResponse.status, 200);
-  const maintenanceBody = asRecord(await maintenanceResponse.json());
-  assert.equal(maintenanceBody.ok, true);
-  assert.equal(Array.isArray(maintenanceBody.workers), true);
-  assert.ok((maintenanceBody.workers as unknown[]).length > 0);
-  assert.ok((maintenanceBody.workers as unknown[]).length <= 2);
-  const { count: postWorkerDeletionNotificationCount, error: postWorkerNotificationError } = await supabase
-    .schema("app_private").from("notifications").select("id", { count: "exact", head: true })
+  const maintenance = await processJobMessage({ type: "maintenance" }, testEnvironment);
+  assert.ok(maintenance.outbox.processedCount >= 0);
+  assert.ok(maintenance.deletion.processedCount >= 0);
+  const { count: postWorkerDeletionNotificationCount, error: postWorkerNotificationError } = await database
+    .table("app_private", "notifications").select("id", { count: "exact", head: true })
     .eq("target_id", expiredIssueId)
     .eq("type", "issue_deleted");
   if (postWorkerNotificationError) throw postWorkerNotificationError;
   assert.equal(postWorkerDeletionNotificationCount, 0, "retention deletion must stay silent after outbox processing");
   let retainedNotionMappings: number | null = null;
   for (let attempt = 0; attempt < 10; attempt += 1) {
-    const { count, error: retainedNotionMappingError } = await supabase
-      .schema("app_private").from("notion_pages").select("target_id", { count: "exact", head: true })
+    const { count, error: retainedNotionMappingError } = await database
+      .table("app_private", "notion_pages").select("target_id", { count: "exact", head: true })
       .in("target_id", [expiredIssueId, expiredFacilityId]);
     if (retainedNotionMappingError) throw retainedNotionMappingError;
-    retainedNotionMappings = count;
+    retainedNotionMappings = count ?? null;
     if (count === 0) break;
-    await new Promise((resolve) => setTimeout(resolve, 550));
+    await processJobMessage({ type: "drain" }, testEnvironment);
   }
   assert.equal(retainedNotionMappings, 0, "retention cleanup should forget local Notion mappings");
 

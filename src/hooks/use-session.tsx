@@ -19,7 +19,7 @@ import { sessionDebug } from "@/lib/session-debug";
 import { readLocalStorage, writeLocalStorage } from "@/lib/browser-storage";
 import { clearContentEntityScope } from "@/lib/content-entity-store";
 import { clearViewMemoryScope } from "@/lib/view-memory-cache";
-import { ensureSupabaseAuthenticatedRole } from "@/services/supabase-auth";
+import { ensureBackendProfile } from "@/services/backend-auth";
 import {
   fetchCurrentUserRole,
   seedSessionAccess,
@@ -172,7 +172,7 @@ async function refreshVerifiedSession(user: User, verificationId: number) {
     const tokenValidation = await validateUserAgainstToken(user);
     if (!current()) return;
     if (!tokenValidation.ok) return await rejectUser(tokenValidation.reason);
-    await ensureSupabaseAuthenticatedRole(user);
+    await ensureBackendProfile(user);
     if (!current()) return;
     try {
       const bootstrap = await fetchSessionBootstrap({

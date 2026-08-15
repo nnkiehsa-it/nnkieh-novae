@@ -23,8 +23,10 @@ async function createCategory(
 }
 
 async function saveCategories(page: Page) {
-  await page.getByRole('button', { name: 'Save all changes' }).click();
-  await expect(page.getByText('Categories and features saved').last()).toBeVisible();
+  const save = page.getByRole('button', { name: 'Save all changes' });
+  await save.click();
+  await expect(save.locator('[data-state="complete"]')).toBeVisible();
+  await expect(save).toBeEnabled();
 }
 
 async function deleteCategory(page: Page, label: string) {

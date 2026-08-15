@@ -66,18 +66,9 @@ const steps = {
       ["-p", "cloudflare/tsconfig.json", "--noEmit"],
     ],
     [
-      "Edge Function types",
-      executable("deno"),
-      [
-        "check",
-        "--no-lock",
-        "supabase/functions/outboxWorker/index.ts",
-        "supabase/functions/backendAction/index.ts",
-        "supabase/functions/syncUser/index.ts",
-        "supabase/functions/cloudinaryWebhook/index.ts",
-        "supabase/functions/processDeletionJobs/index.ts",
-        "supabase/functions/maintenanceCleanup/index.ts",
-      ],
+      "integration test types",
+      executable("tsc"),
+      ["-p", "tsconfig.integration.json", "--noEmit"],
     ],
   ],
   tests: [
@@ -244,10 +235,10 @@ async function runSuite(label, args) {
 
 if (runAll) {
   await runSuite("[2/3] Integration verification", [
-    "scripts/verify-integration-local.mjs",
+    "scripts/verify-integration.mjs",
   ]);
   await runSuite("[3/3] End-to-end verification", [
-    "scripts/verify-integration-local.mjs",
+    "scripts/verify-integration.mjs",
     "--e2e",
   ]);
   process.stderr.write("\n✓ All verification suites passed\n");

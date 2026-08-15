@@ -9,13 +9,13 @@ import {
   requestId,
   saveCategoryDraft,
   seedActor,
-  supabase,
+  database,
 } from "./helpers.ts";
 
 type Actor = Awaited<ReturnType<typeof seedActor>>;
 type RecordValue = Record<string, unknown>;
 
-const stressScale = Math.min(20, Math.max(2, Number(Deno.env.get("NOVAE_STRESS_SCALE") ?? 4)));
+const stressScale = Math.min(20, Math.max(2, Number(process.env.NOVAE_STRESS_SCALE ?? 4)));
 const runId = crypto.randomUUID().slice(0, 8);
 
 function records(value: unknown) {
@@ -351,8 +351,8 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
     deletedIssueCategoryIds: [issueCategoryId],
   });
   const [issueCategoryRow, facilityCategoryRow] = await Promise.all([
-    supabase.schema("app_private").from("issue_categories").select("id").eq("id", issueCategoryId).maybeSingle(),
-    supabase.schema("app_private").from("facility_categories").select("id").eq("id", facilityCategoryId).maybeSingle(),
+    database.table("app_private", "issue_categories").select("id").eq("id", issueCategoryId).maybeSingle(),
+    database.table("app_private", "facility_categories").select("id").eq("id", facilityCategoryId).maybeSingle(),
   ]);
   if (issueCategoryRow.error) throw issueCategoryRow.error;
   if (facilityCategoryRow.error) throw facilityCategoryRow.error;

@@ -1,33 +1,27 @@
-import { assert, authenticatedJwt, callAction, createClient, DATA_RETENTION, expectActionError, failNextFcmRequests, integrationTest, notificationStressScale, readFcmRequests, requestId, requiredEnv, resetFcmRequests, saveCategoryDraft, seedActor, supabase } from "./support.ts";
-import type { Database } from "./support.ts";
+import { Client } from "pg";
+import { assert, integrationTest, requiredEnv } from "./support.ts";
 
-integrationTest("raw PostgREST access fails closed while service role remains available", async () => {
-  const url = requiredEnv("SUPABASE_URL");
-  const anonKey = requiredEnv("SUPABASE_ANON_KEY");
-  const anon = createClient<Database>(url, anonKey, {
-    auth: { persistSession: false },
-  });
-  const anonResult = await anon.schema("app_private").from("user_profiles").select("uid").limit(1);
-  assert.ok(anonResult.error, "anon must not read app_private.user_profiles");
-
-  const uid = `local-test-rls-${crypto.randomUUID()}`;
-  const authenticated = createClient<Database>(url, anonKey, {
-    auth: { persistSession: false },
-    global: {
-      headers: {
-        Authorization: `Bearer ${await authenticatedJwt(uid)}`,
-      },
-    },
-  });
-  const authenticatedResult = await authenticated.schema("app_private")
-    .from("user_profiles")
-    .select("uid")
-    .limit(1);
-  assert.ok(authenticatedResult.error, "authenticated must not read private profiles directly");
-
-  const serviceResult = await supabase.schema("app_private")
-    .from("user_profiles")
-    .select("uid")
-    .limit(1);
-  assert.equal(serviceResult.error, null);
+integrationTest("Worker database role can use app data but cannot mutate the schema", async () => {
+  const client = new Client({ connectionString: requiredEnv("DATABASE_URL") });
+  await client.connect();
+  try {
+    const role = await client.query(`
+      select r.rolsuper, r.rolcreatedb, r.rolcreaterole,
+             has_schema_privilege(current_user, 'app_private', 'create') as schema_create
+      from pg_roles r where r.rolname = current_user
+    `);
+    assert.deepEqual(role.rows[0], {
+      rolcreatedb: false,
+      rolcreaterole: false,
+      rolsuper: false,
+      schema_create: false,
+    });
+    assert.ok(Number((await client.query("select count(*) from app_private.roles")).rows[0].count) > 0);
+    await assert.rejects(
+      () => client.query("create table app_private.integration_forbidden_ddl(id integer)"),
+      (error: unknown) => typeof error === "object" && error !== null && "code" in error && error.code === "42501",
+    );
+  } finally {
+    await client.end();
+  }
 });

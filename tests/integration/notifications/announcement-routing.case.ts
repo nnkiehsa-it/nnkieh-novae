@@ -1,5 +1,4 @@
-import { asRecord, assert, authenticatedJwt, callAction, createClient, DATA_RETENTION, expectActionError, failNextFcmRequests, integrationTest, notificationStressScale, readFcmRequests, requestId, requiredEnv, resetFcmRequests, saveCategoryDraft, seedActor, supabase } from "./support.ts";
-import type { Database } from "./support.ts";
+import { asRecord, assert, callAction, database, drainJobs, integrationTest, readFcmRequests, requestId, resetFcmRequests, seedActor } from "./support.ts";
 
 integrationTest("announcement and nested comment notifications cover broadcast, personal, and push routing", async () => {
   const manager = await seedActor(`notification-announcement-manager-${crypto.randomUUID()}`, {
@@ -43,27 +42,18 @@ integrationTest("announcement and nested comment notifications cover broadcast, 
   }, replier.auth));
   const replyCommentId = String(asRecord(reply.comment).id);
 
-  const workerUrl = `${requiredEnv("SUPABASE_FUNCTIONS_URL").replace(/\/+$/u, "")}/outboxWorker`;
   for (let attempt = 0; attempt < 15; attempt += 1) {
-    const { data, error } = await supabase.schema("app_private").from("notifications")
+    const { data, error } = await database.table("app_private", "notifications")
       .select("comment_id,recipient_uid,source,type")
       .eq("target_id", announcementId);
     if (error) throw error;
     if ((data ?? []).some((row) => row.type === "announcement_created")
       && (data ?? []).some((row) => row.comment_id === rootCommentId)
       && (data ?? []).some((row) => row.comment_id === replyCommentId)) break;
-    const response = await fetch(workerUrl, {
-      headers: {
-        authorization: `Bearer ${requiredEnv("WEBHOOK_SECRET")}`,
-        "x-novae-origin-secret": requiredEnv("EDGE_ORIGIN_SECRET"),
-      },
-      method: "POST",
-    });
-    assert.ok(response.ok || response.status === 429, `outbox worker returned ${response.status}`);
-    await new Promise((resolve) => setTimeout(resolve, 550));
+    await drainJobs();
   }
 
-  const { data: rows, error: rowError } = await supabase.schema("app_private").from("notifications")
+  const { data: rows, error: rowError } = await database.table("app_private", "notifications")
     .select("comment_id,recipient_uid,source,type")
     .eq("target_id", announcementId);
   if (rowError) throw rowError;

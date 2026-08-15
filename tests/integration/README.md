@@ -1,41 +1,33 @@
 # Local integration verifier
 
-The suite rebuilds an isolated local Supabase stack and never writes to the
-configured remote project.
+The suite rebuilds an isolated PostgreSQL 17 database, configures the same
+least-privilege role used by the production Worker, and never reads deployment
+credentials or writes to Neon.
 
 ## Commands
 
 | Change | Command |
-| --- | --- | --- |
+| --- | --- |
 | Frontend / ordinary refactor | `npm run verify:local` |
-| Migration, RPC, RLS, permission, Edge action or worker | `npm run verify:integration` |
+| Migration, RPC, permission, Worker action, Queue, or Durable Object | `npm run verify:integration` |
 | Large change / before merge | `npm run verify:all` |
 
-PR CI runs both suites.
+PR CI runs the local, integration, and browser suites.
 
 ## Environment
 
-On Windows, run the npm command normally; it enters WSL automatically. WSL 2,
-Docker, Supabase CLI and Deno must be available. To use a distro other than
-Debian:
+Docker is required. On Windows, the command invokes Docker through WSL while
+the Worker and test processes run under Node.js 24 on Windows. Set
+`NOVAE_WSL_DISTRO` only when the Docker-enabled distribution is not `Debian`.
 
-```powershell
-$env:NOVAE_WSL_DISTRO = 'Ubuntu'
-```
+The verifier starts PostgreSQL 17, a local Cloudflare Worker, isolated external
+provider receivers, and—only for served/E2E runs—the Firebase Auth Emulator and
+Next.js. It uses fixed local credentials. Backend integration gets an empty
+setup state; served and E2E environments receive deterministic sample data.
 
-`.env.local` is optional and gitignored. The suite uses fixed safe local values
-and never injects deployment/provider credentials into Edge tests. Use
-`--keep-running` to retain containers after a run.
-
-GitHub Actions installs the current official Deno runtime explicitly instead of
-using the compatibility runtime bundled for Windows Edge type checks.
-
-New actions must include asserted positive and denial cases. The coverage guard
-fails when a registered action is not referenced. Full maintenance rules:
-[official contributing guide](https://tavricccc.github.io/novae-website/docs/contributing.html).
-
-The verifier also starts isolated Upstash and external-provider receivers. Notification tests
-assert in-app recipients, FCM topic/token payloads, preference filtering, and
-deep links without contacting production providers. Retention tests seed both
-sides of every configured expiry boundary and assert deletion, preservation,
-Cloudinary deletion execution, worker chaining, and silent scheduled cleanup.
+New actions require asserted success and denial cases. The coverage guard fails
+when a registered action is not referenced. Notification tests assert in-app
+recipients, FCM payloads, preference filtering, realtime persistence, and deep
+links without contacting production providers. Retention tests cover every
+configured expiry boundary, Cloudinary deletion execution, queue chaining, and
+scheduled cleanup.

@@ -67,6 +67,18 @@ export async function signInWithEmulator(page: Page, email: string) {
   await page.waitForFunction(() => Boolean(window.__NOVAE_E2E__), undefined, {
     timeout: 20_000,
   });
+  await page.waitForFunction(
+    () => {
+      const probe = document.createElement('div');
+      probe.className = 'fixed';
+      document.body.append(probe);
+      const loaded = getComputedStyle(probe).position === 'fixed';
+      probe.remove();
+      return loaded;
+    },
+    undefined,
+    { timeout: 20_000 },
+  );
   await page.evaluate(async (accountEmail) => {
     await window.__NOVAE_E2E__?.signIn(accountEmail);
   }, email);
@@ -83,7 +95,15 @@ export async function saveSignedInState(
   const page = await context.newPage();
   await signInWithEmulator(page, email);
   await expect(page).not.toHaveURL(/\/setup$/u, { timeout: 20_000 });
-  await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible();
+  await page.waitForFunction(
+    () => {
+      const dock = document.querySelector('.app-mobile-nav');
+      return dock instanceof HTMLElement && getComputedStyle(dock).position === 'fixed';
+    },
+    undefined,
+    { timeout: 20_000 },
+  );
+  await expect(page.getByRole('navigation', { name: 'Primary navigation' }).first()).toBeVisible();
   await context.storageState({ indexedDB: true, path });
   await context.close();
 }

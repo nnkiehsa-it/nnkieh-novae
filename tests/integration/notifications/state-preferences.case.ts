@@ -1,5 +1,4 @@
-import { asRecord, assert, authenticatedJwt, callAction, createClient, DATA_RETENTION, expectActionError, failNextFcmRequests, integrationTest, notificationStressScale, readFcmRequests, requestId, resetFcmRequests, saveCategoryDraft, seedActor, supabase } from "./support.ts";
-import type { Database } from "./support.ts";
+import { asRecord, assert, callAction, expectActionError, integrationTest, requestId, seedActor } from "./support.ts";
 
 integrationTest("notification state, push preferences, and dashboard permissions", async () => {
   const admin = await seedActor("notification-admin", { roles: ["platform-admin"] });
@@ -44,7 +43,7 @@ integrationTest("notification state, push preferences, and dashboard permissions
     permission: "granted",
     platform: "integration",
     token: `integration-token-${crypto.randomUUID()}`,
-    userAgent: "Deno integration test",
+    userAgent: "Node integration test",
   }, user.auth));
   assert.equal(registered.deviceEnabled, true);
   const updated = asRecord(await callAction("updatePushNotificationPreferences", {

@@ -1,4 +1,4 @@
-name: Deploy Supabase Backend
+name: Deploy Neon and Cloudflare Backend
 
 on:
   push:
@@ -6,17 +6,25 @@ on:
       - main
       - dev
     paths:
-      - 'supabase/**'
       - 'cloudflare/**'
+      - 'database/**'
       - 'config/**'
-      - 'scripts/prepare-edge-functions.mjs'
-      - 'scripts/sync-supabase-firebase-auth.mjs'
+      - 'scripts/configure-database-runtime.mjs'
+      - 'scripts/database.mjs'
+      - 'scripts/generate-*.mjs'
+      - 'scripts/render-worker-config.mjs'
+      - 'scripts/verify-integration.mjs'
+      - 'tests/integration/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.integration.json'
+      - 'vitest.integration.config.ts'
       - '.github/workflows/deploy-backend.yml'
   workflow_dispatch:
 
 concurrency:
   group: backend-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -26,8 +34,12 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
     env:
-      # config.toml resolves this for every Supabase CLI command in the job.
-      FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_HYPERDRIVE_ID: ${{ secrets.CLOUDFLARE_HYPERDRIVE_ID }}
+      CLOUDFLARE_QUEUE_NAME: ${{ vars.CLOUDFLARE_QUEUE_NAME }}
+      CLOUDFLARE_WORKER_NAME: ${{ vars.CLOUDFLARE_WORKER_NAME }}
+      DEPLOYMENT_ENVIRONMENT: ${{ github.ref_name == 'main' && 'production' || 'development' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -37,290 +49,185 @@ jobs:
           cache: 'npm'
           cache-dependency-path: package-lock.json
 
-      - name: Cache node_modules
-        uses: actions/cache@v6
-        id: cache-node-modules
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-node24-${{ hashFiles('package-lock.json') }}
-
       - name: Install dependencies
-        if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: npm ci --prefer-offline
 
-      - name: Verify backend architecture
+      - name: Verify generated contracts and backend types
         run: |
           npm run generate:all
           git diff --exit-code
           npm run check:worker
-          npm run check:edge
+          npm run check:integration-types
           npm run test:architecture
 
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.9.5
-
-      - name: Verify local database, permissions, and Edge workflows
+      - name: Verify database, permissions, actions, jobs, and realtime locally
         run: npm run verify:integration
 
-      - uses: supabase/setup-cli@v3
-        with:
-          version: 2.113.0
-
-      - name: Validate Supabase deployment secrets
+      - name: Validate deployment configuration
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-          APP_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
+          ALLOWED_DOMAIN: ${{ secrets.ALLOWED_DOMAIN }}
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+          CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
           FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID }}
           FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
-          ALLOWED_DOMAIN: ${{ secrets.ALLOWED_DOMAIN }}
-          # Bootstrap-only; live authorization comes from RBAC assignments.
-          ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
-          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
-          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
-          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
-          CLOUDINARY_WEBHOOK_SECRET: ${{ secrets.CLOUDINARY_WEBHOOK_SECRET }}
-          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
-          EDGE_ORIGIN_SECRET: ${{ secrets.EDGE_ORIGIN_SECRET }}
-          EDGE_FUNCTION_NAMESPACE: ${{ secrets.EDGE_FUNCTION_NAMESPACE }}
-          CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
-          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          HEALTHCHECK_SECRET: ${{ secrets.HEALTHCHECK_SECRET }}
+          MEDIA_SIGNING_SECRET: ${{ secrets.MEDIA_SIGNING_SECRET }}
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          NEON_RUNTIME_PASSWORD: ${{ secrets.NEON_RUNTIME_PASSWORD }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
           NOTION_DATA_SOURCE_ID: ${{ secrets.NOTION_DATA_SOURCE_ID }}
-          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
-          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          REALTIME_TICKET_SECRET: ${{ secrets.REALTIME_TICKET_SECRET }}
         run: |
           missing=()
           for name in \
-            SUPABASE_ACCESS_TOKEN \
-            SUPABASE_PROJECT_REF \
-            SUPABASE_DB_PASSWORD \
-            APP_SUPABASE_SERVICE_ROLE_KEY \
+            ADMIN_EMAILS \
+            ALLOWED_DOMAIN \
+            ALLOWED_ORIGINS \
+            CLOUDFLARE_ACCOUNT_ID \
+            CLOUDFLARE_API_TOKEN \
+            CLOUDFLARE_HYPERDRIVE_ID \
+            CLOUDFLARE_WORKER_URL \
+            CLOUDINARY_API_KEY \
+            CLOUDINARY_API_SECRET \
+            CLOUDINARY_CLOUD_NAME \
             FIREBASE_PROJECT_ID \
             FIREBASE_WEB_API_KEY \
             GOOGLE_SERVICE_ACCOUNT_JSON \
-            ALLOWED_DOMAIN \
-            ADMIN_EMAILS \
-            CLOUDINARY_CLOUD_NAME \
-            CLOUDINARY_API_KEY \
-            CLOUDINARY_API_SECRET \
-            CLOUDINARY_WEBHOOK_SECRET \
-            WEBHOOK_SECRET \
-            EDGE_ORIGIN_SECRET \
-            EDGE_FUNCTION_NAMESPACE \
-            CLOUDFLARE_WORKER_URL \
-            CLOUDFLARE_API_TOKEN \
-            CLOUDFLARE_ACCOUNT_ID \
-            ALLOWED_ORIGINS \
-            UPSTASH_REDIS_REST_URL \
-            UPSTASH_REDIS_REST_TOKEN; do
-            if [ -z "${!name}" ]; then
-              missing+=("$name")
-            fi
+            HEALTHCHECK_SECRET \
+            MEDIA_SIGNING_SECRET \
+            NEON_DATABASE_URL \
+            NEON_RUNTIME_PASSWORD \
+            REALTIME_TICKET_SECRET; do
+            if [ -z "${!name}" ]; then missing+=("$name"); fi
           done
-
           if [ "${#missing[@]}" -gt 0 ]; then
-            printf 'Missing Supabase backend secrets: %s\n' "${missing[*]}" >&2
+            printf 'Missing backend deployment values: %s\n' "${missing[*]}" >&2
             exit 1
           fi
-
+          if ! [[ "$CLOUDFLARE_HYPERDRIVE_ID" =~ ^[a-f0-9]{32}$ ]]; then
+            echo 'CLOUDFLARE_HYPERDRIVE_ID must be a 32-character hexadecimal ID.' >&2
+            exit 1
+          fi
           if { [ -n "$NOTION_TOKEN" ] && [ -z "$NOTION_DATABASE_ID" ]; } || \
              { [ -z "$NOTION_TOKEN" ] && [ -n "$NOTION_DATABASE_ID" ]; }; then
-            echo 'NOTION_TOKEN and NOTION_DATABASE_ID must either both be set or both be omitted.' >&2
+            echo 'NOTION_TOKEN and NOTION_DATABASE_ID must both be set or both be omitted.' >&2
             exit 1
           fi
-
           if [ -n "$NOTION_DATA_SOURCE_ID" ] && \
              { [ -z "$NOTION_TOKEN" ] || [ -z "$NOTION_DATABASE_ID" ]; }; then
             echo 'NOTION_DATA_SOURCE_ID requires NOTION_TOKEN and NOTION_DATABASE_ID.' >&2
             exit 1
           fi
 
-      - name: Link Supabase project
+      - name: Apply forward-only Neon migrations
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: npm run db:migrate
 
-      - name: Synchronize Firebase third-party authentication
+      - name: Configure the least-privilege Worker database role
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-          FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID }}
-        run: node scripts/sync-supabase-firebase-auth.mjs
+          DATABASE_RUNTIME_PASSWORD: ${{ secrets.NEON_RUNTIME_PASSWORD }}
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: npm run db:configure-runtime
 
-      - name: Push database migrations
+      - name: Render environment-specific Worker configuration
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: supabase db push
+          NOTION_ENABLED: ${{ secrets.NOTION_TOKEN != '' && 'true' || 'false' }}
+        run: node scripts/render-worker-config.mjs --environment "$DEPLOYMENT_ENVIRONMENT" --output /tmp/novae-wrangler.json
 
-      - name: Set Edge Function secrets
+      - name: Ensure the Cloudflare Queue exists
+        run: |
+          if [ -n "$CLOUDFLARE_QUEUE_NAME" ]; then
+            queue_name="$CLOUDFLARE_QUEUE_NAME"
+          elif [ "$DEPLOYMENT_ENVIRONMENT" = "production" ]; then
+            queue_name='novae-jobs'
+          else
+            queue_name="novae-jobs-${DEPLOYMENT_ENVIRONMENT}"
+          fi
+          if ! npx wrangler queues info "$queue_name" --config /tmp/novae-wrangler.json >/dev/null 2>&1; then
+            npx wrangler queues create "$queue_name" --config /tmp/novae-wrangler.json
+          fi
+
+      - name: Create the ephemeral Worker secrets file
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          APP_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
+          ALLOWED_DOMAIN: ${{ secrets.ALLOWED_DOMAIN }}
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+          CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
           FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID }}
           FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
-          ALLOWED_DOMAIN: ${{ secrets.ALLOWED_DOMAIN }}
-          # Bootstrap-only; live authorization comes from RBAC assignments.
-          ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
-          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
-          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
-          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
-          CLOUDINARY_WEBHOOK_SECRET: ${{ secrets.CLOUDINARY_WEBHOOK_SECRET }}
-          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
-          EDGE_ORIGIN_SECRET: ${{ secrets.EDGE_ORIGIN_SECRET }}
-          EDGE_FUNCTION_NAMESPACE: ${{ secrets.EDGE_FUNCTION_NAMESPACE }}
-          CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
-          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-          # 提案與設備共用這個 Database，不建立設備專用 secret。
+          HEALTHCHECK_SECRET: ${{ secrets.HEALTHCHECK_SECRET }}
+          MEDIA_SIGNING_SECRET: ${{ secrets.MEDIA_SIGNING_SECRET }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
-          # Database 有多個 data source 時必填；單一 data source 可由 API 自動探索。
           NOTION_DATA_SOURCE_ID: ${{ secrets.NOTION_DATA_SOURCE_ID }}
-          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
-          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          REALTIME_TICKET_SECRET: ${{ secrets.REALTIME_TICKET_SECRET }}
         run: |
-          notion_enabled=false
-          notion_secrets=()
-          if [ -n "$NOTION_TOKEN" ] && [ -n "$NOTION_DATABASE_ID" ]; then
-            notion_enabled=true
-            notion_secrets+=(
-              "NOTION_TOKEN=$NOTION_TOKEN"
-              "NOTION_DATABASE_ID=$NOTION_DATABASE_ID"
-            )
-            if [ -n "$NOTION_DATA_SOURCE_ID" ]; then
-              notion_secrets+=("NOTION_DATA_SOURCE_ID=$NOTION_DATA_SOURCE_ID")
-            fi
-          fi
+          node --input-type=module <<'NODE'
+          import { writeFileSync } from 'node:fs';
+          const secrets = {
+            ADMIN_EMAILS: process.env.ADMIN_EMAILS,
+            ALLOWED_DOMAIN: process.env.ALLOWED_DOMAIN,
+            ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
+            CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
+            CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
+            CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
+            FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
+            FIREBASE_WEB_API_KEY: process.env.FIREBASE_WEB_API_KEY,
+            GOOGLE_SERVICE_ACCOUNT_JSON: process.env.GOOGLE_SERVICE_ACCOUNT_JSON,
+            HEALTHCHECK_SECRET: process.env.HEALTHCHECK_SECRET,
+            MEDIA_SIGNING_SECRET: process.env.MEDIA_SIGNING_SECRET,
+            NOTION_DATABASE_ID: process.env.NOTION_DATABASE_ID,
+            NOTION_DATA_SOURCE_ID: process.env.NOTION_DATA_SOURCE_ID,
+            NOTION_TOKEN: process.env.NOTION_TOKEN,
+            PUBLIC_API_URL: process.env.CLOUDFLARE_WORKER_URL,
+            REALTIME_TICKET_SECRET: process.env.REALTIME_TICKET_SECRET,
+          };
+          for (const key of Object.keys(secrets)) {
+            if (!secrets[key]) delete secrets[key];
+          }
+          writeFileSync('/tmp/novae-worker-secrets.json', JSON.stringify(secrets), { mode: 0o600 });
+          NODE
 
-          supabase secrets set \
-            APP_SUPABASE_SERVICE_ROLE_KEY="$APP_SUPABASE_SERVICE_ROLE_KEY" \
-            FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID" \
-            FIREBASE_WEB_API_KEY="$FIREBASE_WEB_API_KEY" \
-            GOOGLE_SERVICE_ACCOUNT_JSON="$GOOGLE_SERVICE_ACCOUNT_JSON" \
-            ALLOWED_DOMAIN="$ALLOWED_DOMAIN" \
-            ADMIN_EMAILS="$ADMIN_EMAILS" \
-            CLOUDINARY_CLOUD_NAME="$CLOUDINARY_CLOUD_NAME" \
-            CLOUDINARY_API_KEY="$CLOUDINARY_API_KEY" \
-            CLOUDINARY_API_SECRET="$CLOUDINARY_API_SECRET" \
-            CLOUDINARY_WEBHOOK_SECRET="$CLOUDINARY_WEBHOOK_SECRET" \
-            WEBHOOK_SECRET="$WEBHOOK_SECRET" \
-            EDGE_ORIGIN_SECRET="$EDGE_ORIGIN_SECRET" \
-            EDGE_FUNCTION_NAMESPACE="$EDGE_FUNCTION_NAMESPACE" \
-            CLOUDFLARE_WORKER_URL="$CLOUDFLARE_WORKER_URL" \
-            NOTION_ENABLED="$notion_enabled" \
-            UPSTASH_REDIS_REST_URL="$UPSTASH_REDIS_REST_URL" \
-            UPSTASH_REDIS_REST_TOKEN="$UPSTASH_REDIS_REST_TOKEN" \
-            "${notion_secrets[@]}"
+      - name: Deploy the Cloudflare Worker
+        run: npx wrangler deploy --config /tmp/novae-wrangler.json --secrets-file /tmp/novae-worker-secrets.json
 
-      - name: Deploy Edge Functions
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          EDGE_FUNCTION_NAMESPACE: ${{ secrets.EDGE_FUNCTION_NAMESPACE }}
-        run: |
-          names="$(node scripts/prepare-edge-functions.mjs prepare)"
-          trap 'node scripts/prepare-edge-functions.mjs cleanup' EXIT
-          supabase functions deploy $names --no-verify-jwt
+      - name: Remove ephemeral deployment secrets
+        if: always()
+        run: rm -f /tmp/novae-worker-secrets.json
 
-      - name: Deploy Cloudflare API Gateway
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
-          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
-          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
-          CLOUDINARY_WEBHOOK_SECRET: ${{ secrets.CLOUDINARY_WEBHOOK_SECRET }}
-          EDGE_FUNCTION_NAMESPACE: ${{ secrets.EDGE_FUNCTION_NAMESPACE }}
-          EDGE_ORIGIN_SECRET: ${{ secrets.EDGE_ORIGIN_SECRET }}
-          FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID }}
-          SUPABASE_FUNCTIONS_BASE_URL: https://${{ secrets.SUPABASE_PROJECT_REF }}.supabase.co/functions/v1
-        run: |
-          environment="${{ github.ref_name == 'main' && 'production' || 'development' }}"
-          node -e "const fs=require('node:fs'); const keys=['ALLOWED_ORIGINS','CLOUDINARY_API_SECRET','CLOUDINARY_CLOUD_NAME','CLOUDINARY_WEBHOOK_SECRET','EDGE_FUNCTION_NAMESPACE','EDGE_ORIGIN_SECRET','FIREBASE_PROJECT_ID','SUPABASE_FUNCTIONS_BASE_URL']; fs.writeFileSync('/tmp/novae-worker-secrets.json', JSON.stringify(Object.fromEntries(keys.map((key) => [key, process.env[key]]))))"
-          npx -y wrangler@4.120.0 deploy --config cloudflare/wrangler.toml --env "$environment"
-          npx -y wrangler@4.120.0 secret bulk /tmp/novae-worker-secrets.json --config cloudflare/wrangler.toml --env "$environment"
-          for obsolete_key in UPSTASH_REDIS_REST_TOKEN UPSTASH_REDIS_REST_URL; do
-            npx -y wrangler@4.120.0 secret delete "$obsolete_key" --config cloudflare/wrangler.toml --env "$environment" >/dev/null 2>&1 || true
-          done
-          npx -y wrangler@4.120.0 deploy --config cloudflare/wrangler.toml --env "$environment"
-          rm -f /tmp/novae-worker-secrets.json
-
-      - name: Smoke test Cloudflare API Gateway
+      - name: Smoke test authentication and database health
         env:
           ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
           CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
+          HEALTHCHECK_SECRET: ${{ secrets.HEALTHCHECK_SECRET }}
         run: |
           origin="${ALLOWED_ORIGINS%%,*}"
           for attempt in $(seq 1 12); do
-            status="$(curl -sS -o /tmp/worker-smoke.json -w '%{http_code}' \
+            unauthorized="$(curl -sS -o /tmp/unauthorized.json -w '%{http_code}' \
               -X POST "${CLOUDFLARE_WORKER_URL%/}/v1/actions" \
-              -H "content-type: application/json" \
-              -H "origin: ${origin}" \
+              -H 'content-type: application/json' -H "origin: $origin" \
               --data '{"action":"getCurrentUserRole","payload":{}}')"
-            if [ "$status" = "401" ]; then
+            health="$(curl -sS -o /tmp/health.json -w '%{http_code}' \
+              -X POST "${CLOUDFLARE_WORKER_URL%/}/v1/actions" \
+              -H 'content-type: application/json' -H "origin: $origin" \
+              -H "x-healthcheck-secret: $HEALTHCHECK_SECRET" \
+              -H 'x-reconcile-config: true' \
+              --data '{"action":"healthcheck","payload":{}}')"
+            if [ "$unauthorized" = '401' ] && [ "$health" = '200' ] && grep -q '"ok":true' /tmp/health.json; then
               exit 0
-            fi
-            if [ "$status" = "403" ] && grep -q '"code":"origin-denied"' /tmp/worker-smoke.json; then
-              sleep 5
-              continue
-            fi
-            if [ "$status" -lt 500 ]; then
-              break
             fi
             sleep 5
           done
-          printf 'Cloudflare API Gateway smoke test failed with HTTP %s: %s\n' "$status" "$(cat /tmp/worker-smoke.json)" >&2
+          printf 'Worker smoke test failed (auth=%s health=%s): %s\n' "$unauthorized" "$health" "$(cat /tmp/health.json)" >&2
           exit 1
-
-      - name: Smoke test API origin deployment
-        env:
-          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
-          EDGE_ORIGIN_SECRET: ${{ secrets.EDGE_ORIGIN_SECRET }}
-          EDGE_FUNCTION_NAMESPACE: ${{ secrets.EDGE_FUNCTION_NAMESPACE }}
-        run: |
-          function_namespace="n${EDGE_FUNCTION_NAMESPACE}"
-          response="$(curl -sS -w '\n%{http_code}' \
-            -X POST "https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/${function_namespace}-api" \
-            -H "content-type: application/json" \
-            -H "x-healthcheck-secret: ${WEBHOOK_SECRET}" \
-            -H "x-reconcile-config: true" \
-            -H "x-novae-origin-secret: ${EDGE_ORIGIN_SECRET}" \
-            --data '{"action":"healthcheck","payload":{}}')"
-          status="$(printf '%s' "$response" | tail -n 1)"
-          body="$(printf '%s' "$response" | sed '$d')"
-          printf 'backendAction healthcheck response: %s\n' "$body"
-          if [ "$status" != "200" ] || ! printf '%s' "$body" | grep -q '"ok":true'; then
-            printf 'backendAction healthcheck failed with HTTP %s\n' "$status" >&2
-            exit 1
-          fi
-
-      - name: Run maintenance cleanup
-        env:
-          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
-          EDGE_ORIGIN_SECRET: ${{ secrets.EDGE_ORIGIN_SECRET }}
-          EDGE_FUNCTION_NAMESPACE: ${{ secrets.EDGE_FUNCTION_NAMESPACE }}
-        run: |
-          function_namespace="n${EDGE_FUNCTION_NAMESPACE}"
-          response="$(curl -sS -w '\n%{http_code}' \
-            -X POST "https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/${function_namespace}-maintenance" \
-            -H "content-type: application/json" \
-            -H "authorization: Bearer ${WEBHOOK_SECRET}" \
-            -H "x-novae-origin-secret: ${EDGE_ORIGIN_SECRET}" \
-            --data '{"signal":"post_deploy"}')"
-          status="$(printf '%s' "$response" | tail -n 1)"
-          body="$(printf '%s' "$response" | sed '$d')"
-          printf 'maintenance cleanup response: %s\n' "$body"
-          if [ "$status" != "200" ] || ! printf '%s' "$body" | grep -q '"ok":true'; then
-            printf 'maintenance cleanup failed with HTTP %s\n' "$status" >&2
-            exit 1
-          fi

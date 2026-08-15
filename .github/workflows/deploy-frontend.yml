@@ -58,7 +58,7 @@ jobs:
           if [ -z "$before" ] || ! git cat-file -e "$before^{commit}" 2>/dev/null; then
             before="HEAD^"
           fi
-          if ! git diff --name-only "$before" "$GITHUB_SHA" | grep -Eq '^(supabase/|cloudflare/|config/|scripts/prepare-edge-functions\.mjs)'; then
+          if ! git diff --name-only "$before" "$GITHUB_SHA" | grep -Eq '^(cloudflare/|database/|config/|scripts/generate-|scripts/render-worker-config\.mjs)'; then
             exit 0
           fi
           for attempt in $(seq 1 60); do
@@ -87,11 +87,8 @@ jobs:
           NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
           NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED: ${{ secrets.VITE_FIREBASE_APP_CHECK_ENABLED }}
           NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY: ${{ secrets.VITE_RECAPTCHA_ENTERPRISE_SITE_KEY }}
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           NEXT_PUBLIC_API_BASE_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          NEXT_PUBLIC_ALLOWED_DOMAIN: ${{ secrets.VITE_ALLOWED_DOMAIN }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -105,11 +102,8 @@ jobs:
             NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID \
             NEXT_PUBLIC_FIREBASE_VAPID_KEY \
             NEXT_PUBLIC_GOOGLE_CLIENT_ID \
-            NEXT_PUBLIC_SUPABASE_URL \
-            NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY \
             NEXT_PUBLIC_API_BASE_URL \
-            SUPABASE_ACCESS_TOKEN \
-            SUPABASE_PROJECT_REF \
+            NEXT_PUBLIC_ALLOWED_DOMAIN \
             VERCEL_TOKEN \
             VERCEL_ORG_ID \
             VERCEL_PROJECT_ID; do
@@ -120,6 +114,10 @@ jobs:
 
           if [ "${#missing[@]}" -gt 0 ]; then
             printf 'Missing deployment secrets: %s\n' "${missing[*]}" >&2
+            exit 1
+          fi
+          if [ "$NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED" = 'true' ] && [ -z "$NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY" ]; then
+            echo 'VITE_RECAPTCHA_ENTERPRISE_SITE_KEY is required when Firebase App Check is enabled.' >&2
             exit 1
           fi
 
@@ -148,8 +146,6 @@ jobs:
           NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
           NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED: ${{ secrets.VITE_FIREBASE_APP_CHECK_ENABLED }}
           NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY: ${{ secrets.VITE_RECAPTCHA_ENTERPRISE_SITE_KEY }}
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           NEXT_PUBLIC_API_BASE_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
 
       - name: Deploy Project Artifacts to Vercel
@@ -157,15 +153,3 @@ jobs:
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
-      - name: Retire legacy Edge Function entrypoints
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-        run: |
-          deployed="$(npx supabase functions list --project-ref "$SUPABASE_PROJECT_REF" --output json)"
-          for name in backendAction syncUser cloudinaryWebhook outboxWorker processDeletionJobs maintenanceCleanup; do
-            if printf '%s' "$deployed" | node -e "let input=''; process.stdin.on('data',(chunk)=>input+=chunk); process.stdin.on('end',()=>{ const rows=JSON.parse(input); process.exit(rows.some((row)=>row.name===process.argv[1]) ? 0 : 1); });" "$name"; then
-              npx supabase functions delete "$name" --project-ref "$SUPABASE_PROJECT_REF" --yes
-            fi
-          done

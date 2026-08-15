@@ -19,8 +19,7 @@ temp/
 temp.jsonl
 .vercel
 .env*
-supabase/.branches/
-supabase/.temp/
+cloudflare/wrangler.deploy.json
 
 # Local-only database capacity benchmarks
 scripts/benchmark-db-*.mjs

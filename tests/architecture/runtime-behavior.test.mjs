@@ -6,7 +6,7 @@ test("session bootstrap validates domain, token, access, and content versions", 
   const session = await read("src/hooks/use-session.tsx");
   const validation = await read("src/services/session-validation.ts");
   assert.match(session, /fetchSessionBootstrap/u);
-  assert.match(session, /ensureSupabaseAuthenticatedRole/u);
+  assert.match(session, /ensureBackendProfile/u);
   assert.match(session, /applyContentVersionsSnapshot/u);
   assert.match(validation, /email_verified|emailVerified/u);
   assert.match(validation, /allowedDomain/u);
@@ -23,9 +23,11 @@ test("Google login retains the Firebase credential boundary", async () => {
 test("private notifications and realtime remain recipient scoped", async () => {
   const notifications = await read("src/services/notifications.ts");
   const realtime = await read("src/services/realtime-events.ts");
+  const transport = await read("src/services/realtime-transport.ts");
   assert.match(notifications, /userId|user_id|recipient/u);
-  assert.match(realtime, /private/u);
   assert.match(realtime, /content:user:/u);
+  assert.match(transport, /WebSocket/u);
+  assert.match(transport, /realtime\/ticket/u);
 });
 
 test("content versions and caches have one invalidation path", async () => {

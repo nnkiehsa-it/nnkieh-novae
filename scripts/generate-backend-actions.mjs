@@ -32,7 +32,7 @@ export type BackendActionName = typeof BACKEND_ACTION_NAMES[number];
 `;
 const outputs = [
   path.join(projectRoot, 'cloudflare', 'generated', 'backend-actions.ts'),
-  path.join(projectRoot, 'supabase', 'functions', '_shared', 'backend-action-policies.ts'),
+  path.join(projectRoot, 'cloudflare', 'src', 'backend', 'shared', 'backend-action-policies.ts'),
 ];
 await Promise.all(outputs.map(async (output) => {
   await mkdir(path.dirname(output), { recursive: true });
@@ -43,4 +43,4 @@ await writeFile(
   frontendRendered,
   'utf8',
 );
-console.info('Generated Cloudflare and Supabase backend action policies.');
+console.info('Generated Cloudflare backend action policies.');

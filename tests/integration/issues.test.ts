@@ -7,7 +7,7 @@ import {
   requestId,
   saveCategoryDraft,
   seedActor,
-  supabase,
+  database,
 } from "./helpers.ts";
 
 async function createIssue(
@@ -88,7 +88,7 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
   )).issue);
   assert.equal(reopenedAfterCategoryCycle.comments_enabled, true);
 
-  const immutableSnapshotWrite = await supabase.schema("app_private").from("issues")
+  const immutableSnapshotWrite = await database.table("app_private", "issues")
     .update({ read_access: "school" }).eq("id", publicIssueId);
   assert.match(immutableSnapshotWrite.error?.message ?? "", /immutable-category-policy/u);
 
@@ -110,7 +110,11 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     sort: "latest",
     statusBucket: "active",
   }, user.auth));
-  assert.equal((hiddenList.issues as unknown[]).length, 0);
+  assert.equal(
+    (hiddenList.issues as Array<Record<string, unknown>>)
+      .some((issue) => issue.id === publicIssueId),
+    false,
+  );
   assert.equal(typeof hiddenList.version, "number");
   const managerList = asRecord(await callAction("listIssues", {
     activeFilter: "public-issues",

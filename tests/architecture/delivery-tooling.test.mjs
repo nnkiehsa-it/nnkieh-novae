@@ -16,11 +16,12 @@ test("delivery tooling targets Node 24 and Next.js 16", async () => {
   assert.match(packageJson.scripts.build, /next build --webpack/u);
 });
 
-test("local verification runs contracts, Next build, tests, audit, integration, and E2E", async () => {
+test("local verification runs contracts, Next build, tests, audit, Worker checks, integration, and E2E", async () => {
   const runner = await read("scripts/run-local-verification.mjs");
   assert.match(runner, /executable\("tsc"\)/u);
   assert.match(runner, /executable\("next"\)/u);
   assert.match(runner, /"build", "--webpack"/u);
+  assert.match(runner, /Cloudflare Worker types/u);
   assert.match(runner, /unit tests/u);
   assert.match(runner, /architecture tests/u);
   assert.match(runner, /dependency audit/u);
@@ -39,18 +40,15 @@ test("PWA delivery uses Serwist and an App Router service worker", async () => {
   assert.match(manifest, /display: "standalone"/u);
 });
 
-test("integration and E2E remain isolated and enforced", async () => {
+test("integration and E2E share the isolated Postgres, Worker, and Firebase harness", async () => {
   const packageJson = JSON.parse(await read("package.json"));
-  const integration = await read("scripts/verify-integration-local.mjs");
-  const integrationShell = await read("scripts/verify-integration-local.sh");
+  const integration = await read("scripts/verify-integration.mjs");
   const playwright = await read("playwright.config.ts");
   assert.match(packageJson.scripts["verify:all"], /--all/u);
-  assert.match(integrationShell, /integration\.invalid/u);
-  assert.match(
-    integrationShell,
-    /if \[\[ "\$E2E" == "true" \]\]; then\s+export NEXT_PUBLIC_LOCAL_DEV_AUTH=false\s+else\s+export NEXT_PUBLIC_LOCAL_DEV_AUTH=true/u,
-  );
-  assert.match(integrationShell, /NEXT_PUBLIC_LOCAL_DEV_AUTH_EMAIL\/w/u);
+  assert.match(integration, /integration\.invalid/u);
+  assert.match(integration, /NEXT_PUBLIC_LOCAL_DEV_AUTH/u);
+  assert.match(integration, /wrangler/u);
+  assert.match(integration, /database\.mjs/u);
   assert.match(integration, /--e2e/u);
   assert.match(playwright, /tests\/e2e/u);
   assert.match(playwright, /chromium/u);

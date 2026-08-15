@@ -11,7 +11,6 @@ const messages = {
   'settings.changelog': '更新紀錄',
   'settings.updatingPushSettings': '正在更新推播設定',
   'settings.pushSettingsHaveBeenUpdated': '推播設定已更新',
-  'settings.supabaseSettingsHaveNotBeenCompleted': '登入設定尚未完成。',
   'settings.features': '功能',
   'settings.userAvatar': '使用者頭像',
   'settings.english': 'English',

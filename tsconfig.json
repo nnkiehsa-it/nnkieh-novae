@@ -52,7 +52,6 @@
     "src/composables/**",
     "src/sw.ts",
     "src/lib/motion-features.ts",
-    "cloudflare/**",
-    "supabase/**"
+    "cloudflare/**"
   ]
 }

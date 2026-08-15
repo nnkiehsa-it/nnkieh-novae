@@ -1,0 +1,167 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "novae-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-11",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": true,
+  "placement": {
+    "mode": "smart"
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.1
+  },
+  "vars": {
+    "NOTION_ENABLED": "false"
+  },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "00000000000000000000000000000001",
+      "localConnectionString": "postgresql://novae_runtime:novae-runtime-local@127.0.0.1:55432/novae"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "BUSINESS_RATE_LIMITS",
+        "class_name": "BusinessRateLimiter"
+      },
+      {
+        "name": "REALTIME",
+        "class_name": "RealtimeHub"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "BusinessRateLimiter",
+        "RealtimeHub"
+      ]
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "JOBS",
+        "queue": "novae-jobs"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "novae-jobs",
+        "max_batch_size": 10,
+        "max_batch_timeout": 5,
+        "max_retries": 5
+      }
+    ]
+  },
+  "triggers": {
+    "crons": [
+      "*/30 * * * *"
+    ]
+  },
+  "ratelimits": [
+    {
+      "name": "ACTION_IP_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": {
+        "limit": 6000,
+        "period": 60
+      }
+    },
+    {
+      "name": "READ_RATE_LIMITER",
+      "namespace_id": "1002",
+      "simple": {
+        "limit": 60,
+        "period": 10
+      }
+    },
+    {
+      "name": "WRITE_RATE_LIMITER",
+      "namespace_id": "1003",
+      "simple": {
+        "limit": 20,
+        "period": 10
+      }
+    },
+    {
+      "name": "SENSITIVE_WRITE_RATE_LIMITER",
+      "namespace_id": "1004",
+      "simple": {
+        "limit": 10,
+        "period": 10
+      }
+    },
+    {
+      "name": "ADMIN_WRITE_RATE_LIMITER",
+      "namespace_id": "1005",
+      "simple": {
+        "limit": 10,
+        "period": 10
+      }
+    },
+    {
+      "name": "UPLOAD_WRITE_RATE_LIMITER",
+      "namespace_id": "1006",
+      "simple": {
+        "limit": 6,
+        "period": 10
+      }
+    },
+    {
+      "name": "UPLOAD_RESOLVE_RATE_LIMITER",
+      "namespace_id": "1007",
+      "simple": {
+        "limit": 30,
+        "period": 10
+      }
+    },
+    {
+      "name": "SYNC_IP_RATE_LIMITER",
+      "namespace_id": "1008",
+      "simple": {
+        "limit": 300,
+        "period": 60
+      }
+    },
+    {
+      "name": "SYNC_USER_RATE_LIMITER",
+      "namespace_id": "1009",
+      "simple": {
+        "limit": 10,
+        "period": 60
+      }
+    },
+    {
+      "name": "WEBHOOK_IP_RATE_LIMITER",
+      "namespace_id": "1010",
+      "simple": {
+        "limit": 120,
+        "period": 60
+      }
+    },
+    {
+      "name": "WEBHOOK_GLOBAL_RATE_LIMITER",
+      "namespace_id": "1011",
+      "simple": {
+        "limit": 300,
+        "period": 60
+      }
+    },
+    {
+      "name": "MEDIA_IP_RATE_LIMITER",
+      "namespace_id": "1012",
+      "simple": {
+        "limit": 1200,
+        "period": 60
+      }
+    }
+  ]
+}

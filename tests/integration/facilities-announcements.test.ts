@@ -7,7 +7,7 @@ import {
   requestId,
   saveCategoryDraft,
   seedActor,
-  supabase,
+  database,
 } from "./helpers.ts";
 
 async function createFacility(
@@ -175,8 +175,8 @@ integrationTest("announcement.manage, likes, comments, and ownership", async () 
   }, user.auth));
   assert.equal(repeatedLike.liked, true);
   assert.equal(repeatedLike.like_count, liked.like_count);
-  const { count: likeIdempotencyWrites, error: likeIdempotencyError } = await supabase
-    .schema("app_private").from("idempotency_keys").select("request_id", { count: "exact", head: true })
+  const { count: likeIdempotencyWrites, error: likeIdempotencyError } = await database
+    .table("app_private", "idempotency_keys").select("request_id", { count: "exact", head: true })
     .eq("uid", user.auth.uid).eq("action", "setAnnouncementLike").eq("request_id", likeRequestId);
   if (likeIdempotencyError) throw likeIdempotencyError;
   assert.equal(likeIdempotencyWrites, 0);

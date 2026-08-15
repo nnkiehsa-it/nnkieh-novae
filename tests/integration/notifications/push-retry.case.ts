@@ -1,5 +1,4 @@
-import { assert, authenticatedJwt, callAction, createClient, DATA_RETENTION, expectActionError, failNextFcmRequests, integrationTest, notificationStressScale, readFcmRequests, requestId, requiredEnv, resetFcmRequests, saveCategoryDraft, seedActor, supabase } from "./support.ts";
-import type { Database } from "./support.ts";
+import { assert, callAction, database, drainJobs, failNextFcmRequests, integrationTest, readFcmRequests, resetFcmRequests, seedActor } from "./support.ts";
 
 integrationTest("transient FCM failures persist and retry without losing the push", async () => {
   const recipient = await seedActor(`push-retry-recipient-${crypto.randomUUID()}`);
@@ -27,7 +26,7 @@ integrationTest("transient FCM failures persist and retry without losing the pus
     title: "Retry delivery",
     type: "issue_status_changed",
   };
-  const { error: insertError } = await supabase.schema("app_private").from("push_delivery_logs").insert({
+  const { error: insertError } = await database.table("app_private", "push_delivery_logs").insert({
     attempt_count: 0,
     delivery_key: deliveryKey,
     id: deliveryId,
@@ -42,15 +41,8 @@ integrationTest("transient FCM failures persist and retry without losing the pus
   });
   if (insertError) throw insertError;
 
-  const workerUrl = `${requiredEnv("SUPABASE_FUNCTIONS_URL").replace(/\/+$/u, "")}/outboxWorker`;
-  const workerHeaders = {
-    authorization: `Bearer ${requiredEnv("WEBHOOK_SECRET")}`,
-    "x-novae-origin-secret": requiredEnv("EDGE_ORIGIN_SECRET"),
-  };
-  const firstAttempt = await fetch(workerUrl, { headers: workerHeaders, method: "POST" });
-  assert.equal(firstAttempt.status, 200);
-  const { data: failedDelivery, error: failedError } = await supabase.schema("app_private")
-    .from("push_delivery_logs")
+  await drainJobs();
+  const { data: failedDelivery, error: failedError } = await database.table("app_private", "push_delivery_logs")
     .select("attempt_count,notification,status")
     .eq("id", deliveryId)
     .single();
@@ -59,14 +51,12 @@ integrationTest("transient FCM failures persist and retry without losing the pus
   assert.equal(failedDelivery.attempt_count, 1);
   assert.ok(failedDelivery.notification);
 
-  const { error: dueError } = await supabase.schema("app_private").from("push_delivery_logs")
+  const { error: dueError } = await database.table("app_private", "push_delivery_logs")
     .update({ next_attempt_at: new Date().toISOString() })
     .eq("id", deliveryId);
   if (dueError) throw dueError;
-  const secondAttempt = await fetch(workerUrl, { headers: workerHeaders, method: "POST" });
-  assert.equal(secondAttempt.status, 200);
-  const { data: completedDelivery, error: completedError } = await supabase.schema("app_private")
-    .from("push_delivery_logs")
+  await drainJobs();
+  const { data: completedDelivery, error: completedError } = await database.table("app_private", "push_delivery_logs")
     .select("attempt_count,notification,recipient_uids,status")
     .eq("id", deliveryId)
     .single();

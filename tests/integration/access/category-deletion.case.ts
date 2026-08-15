@@ -9,7 +9,7 @@ import {
   requestId,
   saveCategoryDraft,
   seedActor,
-  supabase,
+  database,
   tableRow,
 } from "../helpers.ts";
 
@@ -27,13 +27,13 @@ integrationTest("category deletion removes category and all associated resources
   const remainingIssueCategories = issueCats
     .filter((category) => asRecord(category).id !== defaultIssueCat.id)
     .map((category, index) => ({ ...asRecord(category), isDefault: index === 0, sortOrder: index }));
-  const { error: defaultDeleteError } = await supabase.schema("app_api")
-    .rpc("backend_save_category_management", {
+  const { error: defaultDeleteError } = await database.call("app_api", "backend_save_category_management", {
       actor_uid: admin.auth.uid,
+      announcement_comments_enabled: Boolean(asRecord(managementBefore.features).announcementCommentsEnabled),
       deleted_facility_category_ids: [],
       deleted_issue_category_ids: [String(defaultIssueCat.id)],
       facilities_enabled: Boolean(asRecord(managementBefore.features).facilitiesEnabled),
-      facility_categories: managementBefore.facilityCategories,
+      facility_categories: managementBefore.facilityCategories as never,
       issue_categories: remainingIssueCategories,
       issues_enabled: true,
     });
@@ -55,7 +55,7 @@ integrationTest("category deletion removes category and all associated resources
       sortOrder: 99,
     }],
   });
-  const { error: archiveAttemptError } = await supabase.schema("app_private").from("issue_categories")
+  const { error: archiveAttemptError } = await database.table("app_private", "issue_categories")
     .update({ is_active: false }).eq("id", "temp-cat-to-delete");
   assert.ok(archiveAttemptError, "database must reject attempts to archive a retained category");
   assert.equal((await tableRow("issue_categories", "id", "temp-cat-to-delete"))?.is_active, true);
@@ -90,7 +90,7 @@ integrationTest("category deletion removes category and all associated resources
     requestId: requestId("create-support-to-delete"),
   }, supporter.auth);
   const notificationId = crypto.randomUUID();
-  const { error: notificationError } = await supabase.schema("app_private").from("notifications").insert({
+  const { error: notificationError } = await database.table("app_private", "notifications").insert({
     id: notificationId,
     recipient_uid: user.auth.uid,
     source: "user",
@@ -126,9 +126,8 @@ integrationTest("category deletion removes category and all associated resources
   assert.ok(await tableRow("deletion_jobs", "cloudinary_public_id", upload.cloudinaryPublicId));
 
   // 8. Verify outbox event is queued
-  const { data: outboxRows, error: outboxError } = await supabase
-    .schema("app_private")
-    .from("outbox_events")
+  const { data: outboxRows, error: outboxError } = await database
+    .table("app_private", "outbox_events")
     .select("*")
     .eq("target_id", String(issueId))
     .eq("event_type", "issue.deleted");
@@ -143,8 +142,7 @@ integrationTest("category deletion removes category and all associated resources
     deletedIssueCategoryIds: ["temp-cat-to-delete"],
   }));
 
-  const { data: deletionAudit, error: deletionAuditError } = await supabase.schema("app_private")
-    .from("category_configuration_audit").select("domain,category_id,operation,actor_uid")
+  const { data: deletionAudit, error: deletionAuditError } = await database.table("app_private", "category_configuration_audit").select("domain,category_id,operation,actor_uid")
     .eq("category_id", "temp-cat-to-delete").eq("operation", "delete");
   if (deletionAuditError) throw deletionAuditError;
   assert.equal(deletionAudit.length, 1);
@@ -172,7 +170,7 @@ integrationTest("category deletion removes category and all associated resources
     requestId: requestId("create-facility-affected-to-delete"),
   }, supporter.auth);
   const facilityNotificationId = crypto.randomUUID();
-  const { error: facilityNotificationError } = await supabase.schema("app_private").from("notifications").insert({
+  const { error: facilityNotificationError } = await database.table("app_private", "notifications").insert({
     id: facilityNotificationId,
     recipient_uid: user.auth.uid,
     source: "user",
@@ -194,8 +192,7 @@ integrationTest("category deletion removes category and all associated resources
   assert.equal(await tableRow("notifications", "id", facilityNotificationId), null);
   assert.ok(await tableRow("deletion_jobs", "cloudinary_public_id", facilityUpload.cloudinaryPublicId));
 
-  const { data: facilityOutbox, error: facilityOutboxError } = await supabase.schema("app_private")
-    .from("outbox_events").select("event_type").eq("target_id", facilityId).eq("event_type", "facility.deleted");
+  const { data: facilityOutbox, error: facilityOutboxError } = await database.table("app_private", "outbox_events").select("event_type").eq("target_id", facilityId).eq("event_type", "facility.deleted");
   if (facilityOutboxError) throw facilityOutboxError;
   assert.equal(facilityOutbox.length, 1);
 });

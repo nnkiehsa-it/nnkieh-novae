@@ -76,13 +76,13 @@ try {
   const rendered = renderRateLimitsTs(limits);
   const outputPaths = [
     path.join(projectRoot, 'src', 'generated', 'rate-limits.ts'),
-    path.join(projectRoot, 'supabase', 'functions', '_shared', 'rate-limits.ts'),
+    path.join(projectRoot, 'cloudflare', 'src', 'backend', 'shared', 'rate-limits.ts'),
   ];
   await Promise.all(outputPaths.map(async (outputPath) => {
     await mkdir(path.dirname(outputPath), { recursive: true });
     await writeFile(outputPath, rendered, 'utf8');
   }));
-  console.info('Generated frontend and Supabase rate limits.');
+  console.info('Generated frontend and Worker rate limits.');
 } catch (error) {
   console.error('Failed to generate rate limits config:', error.message);
   process.exit(1);

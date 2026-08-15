@@ -9,8 +9,8 @@ test('proposal controls follow ownership, category scope, and platform administr
   const content = await readContentState();
   const cases = [
     {
-      absent: [],
-      present: ['Manage status', 'Delete proposal'],
+      absent: ['Manage status'],
+      present: ['Delete proposal'],
       url: content.proposalA,
       user: 'ordinary',
     },

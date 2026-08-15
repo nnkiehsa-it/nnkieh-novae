@@ -68,8 +68,10 @@ test('facility affected and status actions persist while cross-category controls
   const after = before === 'true' ? 'false' : 'true';
   await affected.click();
   await expect(affected).toHaveAttribute('data-liked', after);
+  await expect(affected).not.toHaveAttribute('aria-busy', 'true');
   await affected.click();
   await expect(affected).toHaveAttribute('data-liked', before!);
+  await expect(affected).not.toHaveAttribute('aria-busy', 'true');
   await other.context.close();
 
   const manager = await newUserPage(browser, 'facilityManager');

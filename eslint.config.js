@@ -29,6 +29,7 @@ const browserGlobals = {
 };
 
 const nodeGlobals = {
+  AbortSignal: "readonly",
   Buffer: "readonly",
   console: "readonly",
   fetch: "readonly",
@@ -54,7 +55,6 @@ export default [
       "src/router/**",
       "src/composables/**",
       "src/sw.ts",
-      "supabase/**",
       "test-results/**",
       "cloudflare/**",
       "vite.config.ts",

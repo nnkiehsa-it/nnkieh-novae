@@ -69,7 +69,6 @@ const messages = {
   'common.close': '關閉',
   'common.failedToAddSupportTryAgainLater': '附議失敗，請稍後再試。',
   'common.confirmPublish': '確認發布',
-  'common.refreshingSupabaseSignIn': '正在更新登入狀態',
   'common.shareLink': '分享連結',
   'common.stepCount': '第 {current} 步，共 {total} 步',
   'common.previous': '上一步',

@@ -11,7 +11,6 @@ const messages = {
   'settings.changelog': 'Changelog',
   'settings.updatingPushSettings': 'Updating push settings',
   'settings.pushSettingsHaveBeenUpdated': 'Push settings updated',
-  'settings.supabaseSettingsHaveNotBeenCompleted': 'Sign-in settings are incomplete.',
   'settings.features': 'Features',
   'settings.userAvatar': 'User avatar',
   'settings.english': 'English',

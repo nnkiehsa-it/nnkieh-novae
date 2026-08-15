@@ -21,6 +21,7 @@ export function SecondaryToolbar({
         <TooltipTrigger asChild>
           <Button
             aria-label={backLabel}
+            className="size-11 md:size-9"
             onClick={() => {
               markRouteDirection("back");
               onBack();
@@ -57,7 +58,13 @@ export function DetailToolbar({
         <>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button aria-label={shareLabel} onClick={onShare} size="icon" variant="ghost">
+              <Button
+                aria-label={shareLabel}
+                className="size-11 md:size-9"
+                onClick={onShare}
+                size="icon"
+                variant="ghost"
+              >
                 <Share2 />
               </Button>
             </TooltipTrigger>

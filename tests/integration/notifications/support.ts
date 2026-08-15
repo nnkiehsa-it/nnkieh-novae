@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
-import { createClient } from "npm:@supabase/supabase-js@2";
-import { DATA_RETENTION } from "../../../supabase/functions/_shared/data-retention.ts";
-import type { Database } from "../../../supabase/functions/_shared/database.ts";
+import { DATA_RETENTION } from "../../../cloudflare/src/backend/shared/data-retention.ts";
+import { processJobMessage } from "../../../cloudflare/src/backend/jobs/consumer.ts";
 import {
   asRecord,
   callAction,
@@ -10,16 +9,17 @@ import {
   requestId,
   saveCategoryDraft,
   seedActor,
-  supabase,
+  database,
+  testEnvironment,
 } from "../helpers.ts";
 
 export const notificationStressScale = Math.min(
   20,
-  Math.max(4, Number(Deno.env.get("NOVAE_STRESS_SCALE") ?? 4)),
+  Math.max(4, Number(process.env.NOVAE_STRESS_SCALE ?? 4)),
 );
 
 export function requiredEnv(name: string) {
-  const value = Deno.env.get(name)?.trim();
+  const value = process.env[name]?.trim();
   if (!value) throw new Error(`${name} is required for local integration tests.`);
   return value;
 }
@@ -60,38 +60,12 @@ export async function failNextFcmRequests(count: number) {
   assert.equal(response.status, 200);
 }
 
-export function base64Url(value: string | Uint8Array) {
-  const bytes = typeof value === "string" ? new TextEncoder().encode(value) : value;
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/gu, "-").replace(/\//gu, "_").replace(/=+$/gu, "");
+export async function drainJobs() {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const result = await processJobMessage({ type: "drain" }, testEnvironment);
+    if (!result.deletion.hasMore && !result.outbox.hasMore && !result.realtime.hasMore) return result;
+  }
+  throw new Error("integration-job-drain-did-not-settle");
 }
 
-export async function authenticatedJwt(uid: string) {
-  const now = Math.floor(Date.now() / 1000);
-  const header = base64Url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const payload = base64Url(JSON.stringify({
-    aud: Deno.env.get("FIREBASE_PROJECT_ID") ?? "local-test",
-    exp: now + 3600,
-    iat: now,
-    role: "authenticated",
-    sub: uid,
-  }));
-  const signingInput = `${header}.${payload}`;
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(requiredEnv("SUPABASE_JWT_SECRET")),
-    { hash: "SHA-256", name: "HMAC" },
-    false,
-    ["sign"],
-  );
-  const signature = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    new TextEncoder().encode(signingInput),
-  );
-  return `${signingInput}.${base64Url(new Uint8Array(signature))}`;
-}
-
-export { assert, createClient, DATA_RETENTION, asRecord, callAction, expectActionError, integrationTest, requestId, saveCategoryDraft, seedActor, supabase };
-export type { Database };
+export { assert, DATA_RETENTION, asRecord, callAction, expectActionError, integrationTest, requestId, saveCategoryDraft, seedActor, database };
