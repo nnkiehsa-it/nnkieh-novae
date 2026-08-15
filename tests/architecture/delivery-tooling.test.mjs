@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import process from "node:process";
 import test from "node:test";
+import { fileURLToPath, URL } from "node:url";
 import { read } from "./helpers.mjs";
+
+const root = fileURLToPath(new URL("../../", import.meta.url));
 
 test("delivery tooling targets Node 24 and Next.js 16", async () => {
   const packageJson = JSON.parse(await read("package.json"));
@@ -52,4 +60,41 @@ test("integration and E2E share the isolated Postgres, Worker, and Firebase harn
   assert.match(integration, /--e2e/u);
   assert.match(playwright, /tests\/e2e/u);
   assert.match(playwright, /chromium/u);
+});
+
+test("rendered Wrangler config keeps paths valid outside the repository", async () => {
+  const temporaryDirectory = await mkdtemp(join(tmpdir(), "novae-wrangler-"));
+  const outputPath = join(temporaryDirectory, "wrangler.json");
+  try {
+    const result = spawnSync(
+      process.execPath,
+      [
+        "scripts/render-worker-config.mjs",
+        "--environment",
+        "production",
+        "--output",
+        outputPath,
+      ],
+      {
+        cwd: root,
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          CLOUDFLARE_HYPERDRIVE_ID: "1".repeat(32),
+        },
+      },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    const config = JSON.parse(await readFile(outputPath, "utf8"));
+    assert.equal(
+      resolve(dirname(outputPath), config.main),
+      join(root, "cloudflare", "src", "index.ts"),
+    );
+    assert.equal(
+      resolve(dirname(outputPath), config.$schema),
+      join(root, "node_modules", "wrangler", "config-schema.json"),
+    );
+  } finally {
+    await rm(temporaryDirectory, { force: true, recursive: true });
+  }
 });

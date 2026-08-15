@@ -106,7 +106,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `scripts/migration-checksum.mjs` — canonical cross-platform migration hashing and immutable applied-migration validation for every current and future SQL migration.
 - `scripts/configure-database-runtime.mjs` — creates or rotates the `novae_runtime` login and grants only DML, sequence use, and function execution; it grants no DDL or role-management capability.
 - `scripts/verify-integration.mjs` — single Node.js orchestrator for PostgreSQL, Windows WSL runtime lifetime, least-privilege role setup, provider receivers, Wrangler, Firebase Auth Emulator, interactive Next.js, integration/stress tests, and Playwright. Backend-only runs use the integration seed; served/E2E runs use the local sample seed.
-- `scripts/render-worker-config.mjs` — validates the Hyperdrive ID and renders environment-specific Worker/Queue names, native rate-limit namespace IDs, and optional Notion state without committing deployment bindings.
+- `scripts/render-worker-config.mjs` — validates the Hyperdrive ID and renders relocatable environment-specific Worker/Queue names, entry paths, native rate-limit namespace IDs, and optional Notion state without committing deployment bindings.
 - `scripts/external-provider-test-server.mjs` — isolated Cloudinary, FCM, and Notion-compatible receiver used only by integration verification.
 - `scripts/generate-harmonyos-subset.mjs` / `check-build-budget.mjs` — derive the used Traditional Chinese HarmonyOS Sans shards from source text, then enforce Next build asset/font/JS/CSS budgets.
 - `tests/unit/` — Vitest domain and design-system tests.

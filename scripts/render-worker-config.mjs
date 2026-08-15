@@ -1,4 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises";
+import { dirname, isAbsolute, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
@@ -19,6 +20,17 @@ const outputPath = option("--output") || fileURLToPath(
   new URL("../cloudflare/wrangler.deploy.json", import.meta.url),
 );
 const config = JSON.parse(await readFile(sourcePath, "utf8"));
+const sourceDirectory = dirname(sourcePath);
+const outputDirectory = dirname(outputPath);
+const rebasePath = (value) => {
+  const target = resolve(sourceDirectory, value);
+  const rebased = relative(outputDirectory, target);
+  if (isAbsolute(rebased)) return target.replaceAll("\\", "/");
+  const portable = rebased.replaceAll("\\", "/");
+  return portable.startsWith(".") ? portable : `./${portable}`;
+};
+config.main = rebasePath(config.main);
+if (typeof config.$schema === "string") config.$schema = rebasePath(config.$schema);
 const production = environment === "production";
 const workerName = process.env.CLOUDFLARE_WORKER_NAME?.trim()
   || (production ? "novae-api" : `novae-api-${environment}`);
