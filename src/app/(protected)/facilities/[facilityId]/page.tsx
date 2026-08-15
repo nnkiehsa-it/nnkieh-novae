@@ -46,6 +46,7 @@ import { SkeletonBadgeLabel, SkeletonReveal } from "@/components/ui/skeleton-rev
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatDate } from "@/lib/format";
 import { shareCurrentPage } from "@/lib/share";
+import { cn } from "@/lib/utils";
 
 export default function FacilityDetailPage() {
   useLocaleSubscription();
@@ -129,7 +130,12 @@ export default function FacilityDetailPage() {
       />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
         <ResizableCard className="gap-0 overflow-hidden py-0">
-          <div className="border-b px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6">
+          <div
+            className={cn(
+              "px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6",
+              (Boolean(facility.content?.trim()) || Boolean(facility.result_content?.trim())) && "border-b",
+            )}
+          >
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-grid place-items-center rounded-full bg-card px-2.5 py-1 text-center text-xs font-medium text-muted-foreground shadow-[var(--shadow-control)]">
                 <SkeletonBadgeLabel className="min-w-16" enabled={detail.revealDetail} skeleton={<Skeleton className="h-3 w-16" />}>{findFacilityCategory(facility.category_id)?.label || translate('ui.nav.facilities')}</SkeletonBadgeLabel>
@@ -147,13 +153,15 @@ export default function FacilityDetailPage() {
               <SkeletonReveal enabled={detail.revealDetail} skeleton={<Skeleton className="h-4 w-32" />}><span>{formatDate(facility.created_at)}</span></SkeletonReveal>
             </div>
           </div>
-          <CardContent className="py-5 sm:px-7 sm:py-6">
-            <ContentRenderer
-              content={facility.content}
-              fallbackAlt={facility.title}
-              revealText={detail.revealDetail}
-            />
-          </CardContent>
+          {facility.content?.trim() ? (
+            <CardContent className="py-5 sm:px-7 sm:py-6">
+              <ContentRenderer
+                content={facility.content}
+                fallbackAlt={facility.title}
+                revealText={detail.revealDetail}
+              />
+            </CardContent>
+          ) : null}
           {facility.result_content ? (
             <div className="border-t bg-emerald-500/[0.045] px-5 py-5 sm:px-7">
               <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-success">

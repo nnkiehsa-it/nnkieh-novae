@@ -488,7 +488,7 @@
     color-mix(in srgb, var(--shimmer-highlight) 12%, transparent) 50%,
     transparent 100%
   );
-  animation: t-skeleton-shimmer 2.8s var(--ease-smooth-out) infinite;
+  animation: t-skeleton-shimmer var(--pulse-dur) ease-in-out infinite;
 }
 @keyframes t-skeleton-pulse {
   0%,
@@ -496,12 +496,23 @@
     opacity: 1;
   }
   50% {
-    opacity: 0.6;
+    opacity: var(--pulse-min);
   }
 }
 @keyframes t-skeleton-shimmer {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
   100% {
     transform: translateX(100%);
+    opacity: 0;
   }
 }
 /* Transitions.dev — Skeleton loader and reveal */

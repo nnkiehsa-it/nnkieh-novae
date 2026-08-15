@@ -7,6 +7,7 @@ import { useI18n } from "@/i18n";
 import { useAnnouncementDetail } from "@/hooks/use-announcement-detail";
 import { formatDate } from "@/lib/format";
 import { shareCurrentPage } from "@/lib/share";
+import { cn } from "@/lib/utils";
 import { returnToPreviousRoute } from "@/lib/navigation-memory";
 import { ContentRenderer } from "@/components/content-renderer";
 import { Discussion } from "@/components/discussion";
@@ -120,7 +121,12 @@ export default function AnnouncementDetailPage() {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start">
         <article className="space-y-4">
           <ResizableCard className="gap-0 overflow-hidden py-0">
-            <div className="border-b px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6">
+            <div
+              className={cn(
+                "px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6",
+                Boolean(announcement.content?.trim()) && "border-b",
+              )}
+            >
               <p className="text-[0.8125rem] font-medium text-muted-foreground">
                 {t("ui.announcement.campus")}
               </p>
@@ -140,13 +146,15 @@ export default function AnnouncementDetailPage() {
                 <SkeletonReveal enabled={detail.revealDetail} skeleton={<Skeleton className="h-4 w-32" />}><span>{formatDate(announcement.published_at)}</span></SkeletonReveal>
               </div>
             </div>
-            <CardContent className="py-5 sm:px-7 sm:py-6">
-              <ContentRenderer
-                content={announcement.content}
-                fallbackAlt={announcement.title}
-                revealText={detail.revealDetail}
-              />
-            </CardContent>
+            {announcement.content?.trim() ? (
+              <CardContent className="py-5 sm:px-7 sm:py-6">
+                <ContentRenderer
+                  content={announcement.content}
+                  fallbackAlt={announcement.title}
+                  revealText={detail.revealDetail}
+                />
+              </CardContent>
+            ) : null}
           </ResizableCard>
           <Discussion
             comments={detail.comments}

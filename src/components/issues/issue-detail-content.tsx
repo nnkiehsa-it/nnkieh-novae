@@ -5,6 +5,7 @@ import { Check } from "lucide-react";
 import type { IssueRecord, UserPublicProfile } from "@/types";
 import { getIssueCategoryLabel } from "@/constants/categories";
 import { formatDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { ContentRenderer } from "@/components/content-renderer";
 import { ContentAuthor } from "@/components/content-author";
 import { CardContent } from "@/components/ui/card";
@@ -28,9 +29,16 @@ export function IssueDetailContent({
   status: IssueRecord["status"];
 }) {
   useLocaleSubscription();
+  const hasContent = Boolean(issue.content?.trim());
+  const hasResult = Boolean(issue.result_content?.trim());
   return (
     <ResizableCard className="gap-0 overflow-hidden py-0">
-      <div className="border-b px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6">
+      <div
+        className={cn(
+          "px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6",
+          (hasContent || hasResult) && "border-b",
+        )}
+      >
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-grid place-items-center rounded-full bg-card px-2.5 py-1 text-center text-xs font-medium text-muted-foreground shadow-[var(--shadow-control)]">
             <SkeletonBadgeLabel
@@ -55,13 +63,15 @@ export function IssueDetailContent({
           ) : null}
         </div>
       </div>
-      <CardContent className="py-5 sm:px-7 sm:py-6">
-        <ContentRenderer
-          content={issue.content}
-          fallbackAlt={issue.title}
-          revealText={reveal}
-        />
-      </CardContent>
+      {hasContent ? (
+        <CardContent className="py-5 sm:px-7 sm:py-6">
+          <ContentRenderer
+            content={issue.content}
+            fallbackAlt={issue.title}
+            revealText={reveal}
+          />
+        </CardContent>
+      ) : null}
       {issue.result_content ? (
         <div className="border-t bg-emerald-500/[0.045] px-5 py-5 sm:px-7">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-success">
