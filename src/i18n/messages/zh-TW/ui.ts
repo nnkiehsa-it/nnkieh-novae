@@ -195,7 +195,7 @@ const messages = {
   'ui.facility.delete': '刪除設備案件',
   'ui.facility.deleteTitle': '刪除這筆設備案件？',
   'ui.facility.deleteDescription': '刪除後無法復原，相關內容也將無法查看。',
-  'ui.facility.affectedCount': '受影響人數',
+  'ui.facility.affectedCount': '我也遇到',
   'ui.facility.cancelAffected': '取消標記',
   'ui.facility.markAffected': '我也遇到這個問題',
   'ui.facility.affectedFailed': '更新受影響狀態失敗，請重試。',
