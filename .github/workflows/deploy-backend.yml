@@ -91,7 +91,6 @@ jobs:
             ALLOWED_ORIGINS \
             CLOUDFLARE_ACCOUNT_ID \
             CLOUDFLARE_API_TOKEN \
-            CLOUDFLARE_HYPERDRIVE_ID \
             CLOUDFLARE_WORKER_URL \
             CLOUDINARY_API_KEY \
             CLOUDINARY_API_SECRET \
@@ -108,10 +107,6 @@ jobs:
           done
           if [ "${#missing[@]}" -gt 0 ]; then
             printf 'Missing backend deployment values: %s\n' "${missing[*]}" >&2
-            exit 1
-          fi
-          if ! [[ "$CLOUDFLARE_HYPERDRIVE_ID" =~ ^[a-f0-9]{32}$ ]]; then
-            echo 'CLOUDFLARE_HYPERDRIVE_ID must be a 32-character hexadecimal ID.' >&2
             exit 1
           fi
           if { [ -n "$NOTION_TOKEN" ] && [ -z "$NOTION_DATABASE_ID" ]; } || \
@@ -135,6 +130,15 @@ jobs:
           DATABASE_RUNTIME_PASSWORD: ${{ secrets.NEON_RUNTIME_PASSWORD }}
           DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
         run: npm run db:configure-runtime
+
+      - name: Validate Hyperdrive binding
+        env:
+          CLOUDFLARE_HYPERDRIVE_ID: ${{ secrets.CLOUDFLARE_HYPERDRIVE_ID }}
+        run: |
+          if ! [[ "$CLOUDFLARE_HYPERDRIVE_ID" =~ ^[a-f0-9]{32}$ ]]; then
+            echo 'CLOUDFLARE_HYPERDRIVE_ID must be a 32-character hexadecimal ID.' >&2
+            exit 1
+          fi
 
       - name: Render environment-specific Worker configuration
         env:
