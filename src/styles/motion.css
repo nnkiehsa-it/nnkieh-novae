@@ -17,14 +17,20 @@
   --motion-distance-md: 12px;
   --motion-scale-soft: 0.98;
   --motion-scale-overlay: 0.96;
-  --pulse-dur: 1000ms;
+  --pulse-dur: 2200ms;
   --pulse-count: 1;
-  --pulse-min: 0.5;
+  --pulse-min: 0.6;
   --reveal-dur: 400ms;
   --reveal-blur: 2px;
   --reveal-ease: ease-in-out;
   --resize-dur: 300ms;
   --resize-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --tabs-dur: 250ms;
+  --tabs-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --tabs-text-muted: var(--muted-foreground);
+  --tabs-text-active: var(--foreground);
+  --tabs-bar-bg: var(--muted);
+  --tabs-pill-bg: var(--card);
   --shimmer-base: #7c7c7c;
   --shimmer-highlight: #0d0d0d;
 }
@@ -482,7 +488,7 @@
     color-mix(in srgb, var(--shimmer-highlight) 12%, transparent) 50%,
     transparent 100%
   );
-  animation: t-skeleton-shimmer 1.8s var(--ease-smooth-out) infinite;
+  animation: t-skeleton-shimmer 2.8s var(--ease-smooth-out) infinite;
 }
 @keyframes t-skeleton-pulse {
   0%,
@@ -490,7 +496,7 @@
     opacity: 1;
   }
   50% {
-    opacity: 0.55;
+    opacity: 0.6;
   }
 }
 @keyframes t-skeleton-shimmer {
@@ -590,15 +596,58 @@
   }
 }
 
-/* Tabs */
+/* Transitions.dev — Tabs sliding */
+.t-tabs {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 48px;
+  background: var(--tabs-bar-bg);
+}
+.t-tab {
+  position: relative;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  height: 30px;
+  padding: 4px 12px;
+  color: var(--tabs-text-muted);
+  cursor: pointer;
+  border-radius: 48px;
+  z-index: 1;
+  transition: color var(--tabs-dur) var(--tabs-ease);
+}
+.t-tab[aria-selected="true"],
+.t-tab[data-state="active"] {
+  color: var(--tabs-text-active);
+}
+@media (hover: hover) and (pointer: fine) {
+  .t-tab:not([aria-selected="true"]):hover {
+    color: var(--tabs-text-active);
+  }
+}
+
 .t-tabs-pill {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  height: calc(100% - 6px);
+  width: 0;
+  background: var(--tabs-pill-bg);
+  box-shadow: var(--shadow-control);
+  border-radius: 48px;
+  transform: translateX(0);
   transition:
-    transform var(--motion-fast) var(--ease-smooth-out),
-    width var(--motion-fast) var(--ease-smooth-out);
+    transform var(--tabs-dur) var(--tabs-ease),
+    width var(--tabs-dur) var(--tabs-ease);
   will-change: transform, width;
+  z-index: 0;
+  pointer-events: none;
 }
 .t-tab-label {
-  transition: color var(--motion-fast) var(--ease-smooth-out);
+  transition: color var(--tabs-dur) var(--tabs-ease);
 }
 
 /* Tooltip */

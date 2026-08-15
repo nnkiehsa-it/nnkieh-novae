@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
+import { INPUT_LIMITS } from "@/constants/input-limits";
+
 export function ComposerField({
   attachments,
   content,
@@ -71,16 +73,41 @@ export function ComposerField({
   return (
     <div className="grid gap-5">
       <div className="grid gap-2">
-        <Label htmlFor="composer-title">{titleLabel}</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="composer-title">{titleLabel}</Label>
+          <span
+            className={cn(
+              "text-xs tabular-nums",
+              title.length > INPUT_LIMITS.title
+                ? "font-medium text-destructive"
+                : "text-muted-foreground",
+            )}
+          >
+            {title.length} / {INPUT_LIMITS.title}
+          </span>
+        </div>
         <Input
           id="composer-title"
-          value={title}
+          maxLength={INPUT_LIMITS.title}
           onChange={(event) => onTitleChange(event.target.value)}
           placeholder={titlePlaceholder}
+          value={title}
         />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="composer-content">{contentLabel}</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="composer-content">{contentLabel}</Label>
+          <span
+            className={cn(
+              "text-xs tabular-nums",
+              content.length > INPUT_LIMITS.content
+                ? "font-medium text-destructive"
+                : "text-muted-foreground",
+            )}
+          >
+            {content.length} / {INPUT_LIMITS.content}
+          </span>
+        </div>
         <div className="overflow-hidden rounded-xl border bg-card shadow-[var(--shadow-control)] focus-within:ring-2 focus-within:ring-ring/30">
           <div className="flex items-center gap-0.5 border-b bg-muted/40 p-1.5">
             {tools.map(({ after, before, icon: Icon, label }) => (
@@ -130,6 +157,7 @@ export function ComposerField({
             ref={textareaRef}
             className="min-h-52 resize-y rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0"
             id="composer-content"
+            maxLength={INPUT_LIMITS.content}
             onChange={(event) => onContentChange(event.target.value)}
             placeholder={placeholder}
             value={content}

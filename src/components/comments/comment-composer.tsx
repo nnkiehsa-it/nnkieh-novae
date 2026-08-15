@@ -10,6 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { INPUT_LIMITS } from "@/constants/input-limits";
+import { cn } from "@/lib/utils";
+
 export function CommentComposer({
   busy,
   content,
@@ -43,6 +46,7 @@ export function CommentComposer({
           aria-label={reply ? translate("ui.discussion.replyInput") : translate("ui.discussion.commentInput")}
           autoFocus={reply}
           className="max-h-40 min-h-10 flex-1 resize-none border-0 bg-transparent px-1 py-2.5 shadow-none focus-visible:ring-0"
+          maxLength={INPUT_LIMITS.comment}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={(event) => {
             if ((event.metaKey || event.ctrlKey) && event.key === "Enter" && content.trim() && !busy) {
@@ -75,6 +79,20 @@ export function CommentComposer({
           <TooltipContent>{submitLabel}</TooltipContent>
         </Tooltip>
       </div>
+      {content.length > 0 ? (
+        <div className="flex justify-end px-3">
+          <span
+            className={cn(
+              "text-[11px] tabular-nums",
+              content.length > INPUT_LIMITS.comment
+                ? "font-medium text-destructive"
+                : "text-muted-foreground",
+            )}
+          >
+            {content.length} / {INPUT_LIMITS.comment}
+          </span>
+        </div>
+      ) : null}
       <span className="sr-only">{translate("ui.discussion.submitShortcut")}</span>
     </div>
   );

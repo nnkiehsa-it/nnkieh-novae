@@ -37,7 +37,7 @@ export function FacilityCard({
               <span aria-hidden>·</span>
               <SkeletonReveal enabled={reveal} skeleton={<Skeleton className="h-3 w-12" />}><span className="shrink-0">{formatRelativeTime(facility.created_at)}</span></SkeletonReveal>
             </div>
-            <SkeletonReveal as="div" className="mt-1.5" enabled={reveal} skeleton={<Skeleton className="h-5 w-3/5" />}><h2 className="text-balance font-semibold leading-6 tracking-[-0.015em]">
+            <SkeletonReveal as="div" className="mt-1.5" enabled={reveal} skeleton={<Skeleton className="h-5 w-3/5" />}><h2 className="line-clamp-1 truncate font-semibold leading-6 tracking-[-0.015em]">
               {facility.title}
             </h2></SkeletonReveal>
           </div>

@@ -17,6 +17,9 @@ import {
 } from "@/components/ui/select";
 import { BusyLabel, PageHeader } from "@/components/ui/page-state";
 
+import { INPUT_LIMITS } from "@/constants/input-limits";
+import { cn } from "@/lib/utils";
+
 export default function FacilityComposerPage() {
   useLocaleSubscription();
   const form = useFacilityComposer();
@@ -50,12 +53,25 @@ export default function FacilityComposerPage() {
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="facility-location">{translate('ui.facility.location')}</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="facility-location">{translate('ui.facility.location')}</Label>
+                  <span
+                    className={cn(
+                      "text-xs tabular-nums",
+                      form.location.length > INPUT_LIMITS.facilityLocation
+                        ? "font-medium text-destructive"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {form.location.length} / {INPUT_LIMITS.facilityLocation}
+                  </span>
+                </div>
                 <div className="relative">
                   <MapPin className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     className="pl-9"
                     id="facility-location"
+                    maxLength={INPUT_LIMITS.facilityLocation}
                     onChange={(event) => form.setLocation(event.target.value)}
                     placeholder={translate('ui.facility.locationExample')}
                     value={form.location}

@@ -7,9 +7,8 @@ describe("React frontend design system", () => {
   it("renders selected navigation state without measurement-dependent overlays", () => {
     const tabs = read("src/components/ui/liquid-tabs.tsx");
     const navigation = read("src/components/liquid-nav.tsx");
-    expect(tabs).toContain('layoutId={`segmented-control-${indicatorId}`}');
-    expect(tabs).toContain('type: "spring"');
-    expect(tabs).toContain("useReducedMotion");
+    expect(tabs).toContain("t-tabs-pill");
+    expect(tabs).toContain("t-tab");
     expect(tabs).not.toContain("data-[state=active]:bg-card");
     expect(navigation).toContain("bg-secondary text-foreground");
     expect(navigation).toContain("pendingRoute");

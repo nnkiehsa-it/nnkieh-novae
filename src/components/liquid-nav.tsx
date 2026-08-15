@@ -4,7 +4,6 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
-import { motion, useReducedMotion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { markRouteDirection } from "@/lib/navigation-memory";
 
@@ -28,8 +27,6 @@ export function LiquidNav({
   vertical?: boolean;
 }) {
   useLocaleSubscription();
-  const navId = React.useId();
-  const reduceMotion = useReducedMotion();
   const router = useRouter();
   const [pendingRoute, setPendingRoute] = React.useState<{
     fromPath: string;
@@ -99,17 +96,6 @@ export function LiquidNav({
             onPointerDown={() => acknowledgeNavigation(item.href)}
             onPointerEnter={() => router.prefetch(item.href)}
           >
-            {active ? (
-              <motion.span
-                className="absolute inset-0 -z-10 rounded-[inherit] bg-secondary shadow-[var(--shadow-control)]"
-                layoutId={`liquid-nav-pill-${navId}`}
-                transition={
-                  reduceMotion
-                    ? { duration: 0 }
-                    : { type: "spring", stiffness: 680, damping: 44, mass: 0.55 }
-                }
-              />
-            ) : null}
             <span className="relative shrink-0">
               {item.icon}
               {item.badge}

@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { motion, useReducedMotion } from "motion/react";
 import { Tabs as TabsPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
@@ -30,8 +29,9 @@ export function LiquidTabs({
   options,
   value,
 }: LiquidTabsProps) {
-  const indicatorId = React.useId();
-  const reduceMotion = useReducedMotion();
+  const pillRef = React.useRef<HTMLSpanElement>(null);
+  const tabRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
+
   const [pressedTab, setPressedTab] = React.useState<{
     fromValue: string;
     value: string;
@@ -44,6 +44,38 @@ export function LiquidTabs({
     () => () => window.clearTimeout(pressedResetRef.current),
     [],
   );
+
+  const updatePill = React.useCallback(
+    (animate = true) => {
+      const tab = tabRefs.current[displayedValue];
+      const pill = pillRef.current;
+      if (!tab || !pill) return;
+      if (!animate) {
+        pill.style.transition = "none";
+      }
+      pill.style.transform = `translateX(${tab.offsetLeft}px)`;
+      pill.style.width = `${tab.offsetWidth}px`;
+      if (!animate) {
+        void pill.offsetHeight;
+        pill.style.transition = "";
+      }
+    },
+    [displayedValue],
+  );
+
+  React.useLayoutEffect(() => {
+    updatePill(false);
+  }, [updatePill]);
+
+  React.useEffect(() => {
+    updatePill(true);
+  }, [displayedValue, updatePill]);
+
+  React.useEffect(() => {
+    const handleResize = () => updatePill(false);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [updatePill]);
 
   const acknowledgeTab = React.useCallback(
     (nextValue: string) => {
@@ -63,43 +95,39 @@ export function LiquidTabs({
         aria-label={ariaLabel}
         aria-disabled={disabled}
         className={cn(
-          "relative isolate inline-flex h-8 max-w-full items-center gap-0.5 overflow-x-auto rounded-full bg-muted p-[3px]",
+          "t-tabs relative isolate inline-flex h-8 max-w-full items-center gap-0.5 overflow-x-auto rounded-full bg-muted p-[3px]",
           className,
         )}
       >
+        <span
+          aria-hidden="true"
+          className="t-tabs-pill"
+          ref={pillRef}
+        />
         {options.map((option) => {
-          const active = option.value === displayedValue;
           return (
-          <TabsPrimitive.Trigger
-            disabled={disabled}
-            key={option.value}
-            value={option.value}
-            data-control-label=""
-            data-liquid-tab={option.value}
-            className="t-tab-label relative isolate inline-flex h-[1.625rem] shrink-0 items-center justify-center gap-1 rounded-full px-3 font-medium leading-3.5 text-muted-foreground outline-none transition-colors duration-[var(--motion-quick)] ease-[var(--ease-smooth-out)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 data-[state=active]:text-foreground"
-            onPointerDown={() => {
-              if (!disabled) acknowledgeTab(option.value);
-            }}
-          >
-            {active ? (
-              <motion.span
-                className="absolute inset-0 -z-10 rounded-full bg-card shadow-[var(--shadow-control)]"
-                layoutId={`segmented-control-${indicatorId}`}
-                transition={
-                  reduceMotion
-                    ? { duration: 0 }
-                    : { type: "spring", stiffness: 760, damping: 46, mass: 0.55 }
-                }
-              />
-            ) : null}
-            <span className="relative z-10 contents">{option.icon}</span>
-            <span className={cn("relative z-10", option.shortLabel && "hidden sm:inline")}>
-              {option.label}
-            </span>
-            {option.shortLabel ? (
-              <span className="relative z-10 sm:hidden">{option.shortLabel}</span>
-            ) : null}
-          </TabsPrimitive.Trigger>
+            <TabsPrimitive.Trigger
+              className="t-tab t-tab-label relative z-10 isolate inline-flex h-[1.625rem] shrink-0 items-center justify-center gap-1 rounded-full px-3 font-medium leading-3.5 text-muted-foreground outline-none transition-colors duration-[var(--tabs-dur)] ease-[var(--tabs-ease)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 data-[state=active]:text-foreground"
+              data-control-label=""
+              data-liquid-tab={option.value}
+              disabled={disabled}
+              key={option.value}
+              onPointerDown={() => {
+                if (!disabled) acknowledgeTab(option.value);
+              }}
+              ref={(el) => {
+                tabRefs.current[option.value] = el;
+              }}
+              value={option.value}
+            >
+              <span className="relative z-10 contents">{option.icon}</span>
+              <span className={cn("relative z-10", option.shortLabel && "hidden sm:inline")}>
+                {option.label}
+              </span>
+              {option.shortLabel ? (
+                <span className="relative z-10 sm:hidden">{option.shortLabel}</span>
+              ) : null}
+            </TabsPrimitive.Trigger>
           );
         })}
       </TabsPrimitive.List>
