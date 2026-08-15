@@ -4,6 +4,7 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { markRouteDirection } from "@/lib/navigation-memory";
 
@@ -27,6 +28,8 @@ export function LiquidNav({
   vertical?: boolean;
 }) {
   useLocaleSubscription();
+  const navId = React.useId();
+  const reduceMotion = useReducedMotion();
   const router = useRouter();
   const [pendingRoute, setPendingRoute] = React.useState<{
     fromPath: string;
@@ -78,7 +81,7 @@ export function LiquidNav({
           <Link
             aria-current={active ? "page" : undefined}
             className={cn(
-              "t-primary-nav-link relative z-10 flex min-h-10 min-w-0 items-center overflow-hidden rounded-[0.625rem] text-sm font-medium text-muted-foreground outline-none transition-[background-color,color,transform] duration-[var(--motion-quick)] ease-[var(--ease-smooth-out)] hover:bg-[var(--surface-hover)] hover:text-foreground active:scale-[.97] focus-visible:ring-2 focus-visible:ring-ring/40",
+              "t-primary-nav-link relative z-10 flex min-h-10 min-w-0 items-center overflow-hidden rounded-[0.625rem] text-sm font-medium text-muted-foreground outline-none transition-[color,transform] duration-[var(--motion-quick)] ease-[var(--ease-smooth-out)] hover:bg-[var(--surface-hover)] hover:text-foreground active:scale-[.97] focus-visible:ring-2 focus-visible:ring-ring/40",
               vertical
                 ? "gap-3 px-3"
                 : "flex-1 flex-col justify-center gap-1 px-1 py-1.5 text-[0.6875rem]",
@@ -96,6 +99,17 @@ export function LiquidNav({
             onPointerDown={() => acknowledgeNavigation(item.href)}
             onPointerEnter={() => router.prefetch(item.href)}
           >
+            {active ? (
+              <motion.span
+                className="absolute inset-0 -z-10 rounded-[inherit] bg-secondary shadow-[var(--shadow-control)]"
+                layoutId={`liquid-nav-pill-${navId}`}
+                transition={
+                  reduceMotion
+                    ? { duration: 0 }
+                    : { type: "spring", stiffness: 680, damping: 44, mass: 0.55 }
+                }
+              />
+            ) : null}
             <span className="relative shrink-0">
               {item.icon}
               {item.badge}

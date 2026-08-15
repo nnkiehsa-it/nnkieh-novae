@@ -51,6 +51,9 @@ export function useRoutePreload() {
     const deferredRoutes = [
       ...(categories.issuesEnabled
         ? [
+            ...categories.issueCategories.map(
+              (cat) => `/issues/${encodeURIComponent(cat.id)}`,
+            ),
             `/issues/${encodeURIComponent(issueCategory)}/new`,
             `/issues/${encodeURIComponent(issueCategory)}/__route-preload__`,
           ]
@@ -100,6 +103,7 @@ export function useRoutePreload() {
     };
   }, [
     categories.facilitiesEnabled,
+    categories.issueCategories,
     categories.issuesEnabled,
     categories.loaded,
     facilityCategory,

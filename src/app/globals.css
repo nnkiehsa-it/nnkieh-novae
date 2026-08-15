@@ -161,6 +161,7 @@
 html {
   overscroll-behavior: none;
   touch-action: manipulation;
+  interpolate-size: allow-keywords;
   background: var(--surface-stage);
   font-synthesis: none;
   text-rendering: optimizeLegibility;

@@ -100,14 +100,32 @@
   }
 }
 
-/* Dense lists stay fully painted ahead of the viewport. */
-.t-stagger-item { opacity: 1; }
+/* Dense lists stay fully painted ahead of the viewport with smooth cascading entry. */
+.t-stagger-item {
+  opacity: 1;
+  animation: t-stagger-item-in var(--motion-medium) var(--ease-smooth-out) backwards;
+}
+
+@keyframes t-stagger-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+    filter: blur(var(--motion-blur-sm));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
 
 /* Transitions.dev card resize: explicit size changes stay continuous without JS. */
 .t-resize {
   transition:
     width 300ms var(--ease-smooth-out),
-    height 300ms var(--ease-smooth-out);
+    height 300ms var(--ease-smooth-out),
+    padding 300ms var(--ease-smooth-out),
+    transform 300ms var(--ease-smooth-out);
 }
 
 /* Number updates */
@@ -464,7 +482,22 @@
 
 /* Skeleton reveal and loading label */
 .t-skeleton {
-  animation: t-skeleton-pulse var(--pulse-dur) ease-in-out var(--pulse-count);
+  position: relative;
+  overflow: hidden;
+  animation: t-skeleton-pulse var(--pulse-dur) ease-in-out infinite;
+}
+.t-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--shimmer-highlight) 12%, transparent) 50%,
+    transparent 100%
+  );
+  animation: t-skeleton-shimmer 1.8s var(--ease-smooth-out) infinite;
 }
 @keyframes t-skeleton-pulse {
   0%,
@@ -472,7 +505,12 @@
     opacity: 1;
   }
   50% {
-    opacity: 0.5;
+    opacity: 0.55;
+  }
+}
+@keyframes t-skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
   }
 }
 .t-skel {
@@ -488,8 +526,9 @@
   filter: blur(0);
   pointer-events: none;
   transition:
-    opacity var(--reveal-dur) var(--reveal-ease),
-    filter var(--reveal-dur) var(--reveal-ease);
+    opacity var(--reveal-dur) var(--ease-smooth-out),
+    filter var(--reveal-dur) var(--ease-smooth-out),
+    transform var(--reveal-dur) var(--ease-smooth-out);
 }
 .t-skel-content {
   position: relative;
@@ -497,26 +536,32 @@
   display: inherit;
   opacity: 0;
   filter: blur(var(--reveal-blur));
+  transform: translateY(2px);
   transition:
-    opacity var(--reveal-dur) var(--reveal-ease),
-    filter var(--reveal-dur) var(--reveal-ease);
+    opacity var(--reveal-dur) var(--ease-smooth-out),
+    filter var(--reveal-dur) var(--ease-smooth-out),
+    transform var(--reveal-dur) var(--ease-smooth-out);
 }
 .t-skel.is-revealed .t-skel-skeleton {
   opacity: 0;
   filter: blur(var(--reveal-blur));
+  transform: scale(0.99);
 }
 .t-skel.is-revealed .t-skel-content {
   opacity: 1;
   filter: blur(0);
+  transform: translateY(0);
 }
 @starting-style {
   .t-skel.is-revealed .t-skel-skeleton {
     opacity: 1;
     filter: blur(0);
+    transform: scale(1);
   }
   .t-skel.is-revealed .t-skel-content {
     opacity: 0;
     filter: blur(var(--reveal-blur));
+    transform: translateY(2px);
   }
 }
 .t-skel.is-resetting .t-skel-skeleton,
@@ -524,7 +569,7 @@
   transition: none !important;
 }
 .t-skel-skeleton.is-pulsing > * {
-  animation: t-skel-pulse var(--pulse-dur) ease-in-out var(--pulse-count);
+  animation: t-skel-pulse var(--pulse-dur) ease-in-out infinite;
 }
 @keyframes t-skel-pulse {
   0%, 100% { opacity: 1; }
@@ -826,10 +871,13 @@
 }
 @keyframes t-like-pop {
   0% {
-    transform: scale(0.82);
+    transform: scale(0.8);
   }
-  70% {
-    transform: scale(1.08);
+  50% {
+    transform: scale(1.18);
+  }
+  75% {
+    transform: scale(0.96);
   }
   100% {
     transform: scale(1);
@@ -841,15 +889,15 @@
 }
 @keyframes t-hand-raise {
   0% {
-    transform: translateY(2px) rotate(-3deg) scale(0.88);
+    transform: translateY(2px) rotate(-4deg) scale(0.85);
     filter: blur(1px);
   }
   42% {
-    transform: translateY(-3px) rotate(2deg) scale(1.05);
+    transform: translateY(-4px) rotate(3deg) scale(1.12);
     filter: blur(0);
   }
   72% {
-    transform: translateY(-1px) rotate(-1deg) scale(1.01);
+    transform: translateY(-1px) rotate(-1deg) scale(1.02);
   }
   100% {
     transform: translateY(0) rotate(0) scale(1);
@@ -961,14 +1009,21 @@
 /* Only explicitly interactive cards receive restrained surface feedback. */
 .t-card {
   transform: translateZ(0);
-  transition: background-color 200ms var(--ease-smooth-out);
+  transition:
+    background-color 200ms var(--ease-smooth-out),
+    border-color 200ms var(--ease-smooth-out),
+    transform 200ms var(--ease-smooth-out);
 }
 @media (hover: hover) and (pointer: fine) {
   .t-card:hover {
     background-color: color-mix(in srgb, var(--card) 99%, #000 1%);
+    border-color: color-mix(in srgb, var(--border) 60%, var(--foreground) 10%);
+    transform: translateY(-1px);
   }
   .dark .t-card:hover {
     background-color: color-mix(in srgb, var(--card) 99.5%, #fff 0.5%);
+    border-color: color-mix(in srgb, var(--border) 60%, var(--foreground) 12%);
+    transform: translateY(-1px);
   }
 }
 

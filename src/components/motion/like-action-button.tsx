@@ -16,6 +16,10 @@ const heartParticles = [
   { delay: "20ms", duration: "620ms", scale: 0.5, size: 0.85, x: "-16px", y: "17px" },
   { delay: "10ms", duration: "570ms", scale: 0.7, size: 1, x: "0px", y: "20px" },
   { delay: "30ms", duration: "650ms", scale: 0.55, size: 0.9, x: "17px", y: "17px" },
+  { delay: "8ms", duration: "590ms", scale: 0.6, size: 0.95, x: "-12px", y: "-20px" },
+  { delay: "18ms", duration: "630ms", scale: 0.5, size: 0.8, x: "12px", y: "-20px" },
+  { delay: "22ms", duration: "610ms", scale: 0.55, size: 1.05, x: "-20px", y: "10px" },
+  { delay: "12ms", duration: "580ms", scale: 0.65, size: 0.85, x: "20px", y: "10px" },
 ];
 
 const handParticles = [
@@ -24,6 +28,9 @@ const handParticles = [
   { delay: "35ms", duration: "610ms", scale: 0.5, size: 0.85, x: "0px", y: "-26px" },
   { delay: "10ms", duration: "560ms", scale: 0.6, size: 0.9, x: "9px", y: "-23px" },
   { delay: "25ms", duration: "540ms", scale: 0.45, size: 0.7, x: "17px", y: "-15px" },
+  { delay: "15ms", duration: "560ms", scale: 0.5, size: 0.8, x: "-14px", y: "-20px" },
+  { delay: "5ms", duration: "590ms", scale: 0.55, size: 0.95, x: "14px", y: "-20px" },
+  { delay: "30ms", duration: "570ms", scale: 0.45, size: 0.75, x: "0px", y: "-16px" },
 ];
 
 export function LikeActionButton({

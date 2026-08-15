@@ -53,10 +53,59 @@ const nextConfig = {
   distDir: process.env.NOVAE_NEXT_DIST_DIR || ".next",
   env: publicEnvironment,
   experimental: {
+    optimizePackageImports: ["lucide-react", "motion", "radix-ui"],
     staleTimes: {
       dynamic: 300,
       static: 1800,
     },
+  },
+  webpack(config, { isServer }) {
+    if (!isServer) {
+      config.optimization = config.optimization || {};
+      config.optimization.splitChunks = config.optimization.splitChunks || {};
+      const existingCacheGroups =
+        config.optimization.splitChunks.cacheGroups || {};
+      config.optimization.splitChunks.cacheGroups = {
+        ...existingCacheGroups,
+        vendorMotion: {
+          test: /[\\/]node_modules[\\/](?:motion|framer-motion)[\\/]/,
+          name: "vendor-motion",
+          chunks: "all",
+          priority: 30,
+        },
+        vendorRadix: {
+          test: /[\\/]node_modules[\\/](?:@radix-ui|radix-ui)[\\/]/,
+          name: "vendor-radix",
+          chunks: "all",
+          priority: 30,
+        },
+        vendorFirebase: {
+          test: /[\\/]node_modules[\\/](?:@firebase|firebase)[\\/]/,
+          name: "vendor-firebase",
+          chunks: "all",
+          priority: 30,
+        },
+        vendorSupabase: {
+          test: /[\\/]node_modules[\\/](?:@supabase)[\\/]/,
+          name: "vendor-supabase",
+          chunks: "all",
+          priority: 30,
+        },
+        vendorIcons: {
+          test: /[\\/]node_modules[\\/](?:lucide-react)[\\/]/,
+          name: "vendor-icons",
+          chunks: "all",
+          priority: 30,
+        },
+        vendorMarkdown: {
+          test: /[\\/]node_modules[\\/](?:marked|dompurify)[\\/]/,
+          name: "vendor-markdown",
+          chunks: "all",
+          priority: 30,
+        },
+      };
+    }
+    return config;
   },
   images: {
     remotePatterns: [
