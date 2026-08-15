@@ -18,7 +18,7 @@ import { AnimatedNumber } from "@/components/motion/animated-number";
 import { LikeActionButton } from "@/components/motion/like-action-button";
 import { DetailToolbar } from "@/components/detail-toolbar";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { ResizableCard } from "@/components/ui/resizable-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -140,7 +140,7 @@ export function IssueDetailSidebar({
   return (
     <aside className="space-y-3 lg:sticky lg:top-6">
       {issue.support_enabled ? (
-        <Card className="gap-5 p-5 sm:p-6">
+        <ResizableCard className="gap-5 p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-medium">{translate('ui.issue.supportProgress')}</p>
             <SkeletonReveal enabled={reveal} skeleton={<Skeleton className="h-5 w-14" />}><p className="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums">
@@ -177,9 +177,9 @@ export function IssueDetailSidebar({
               onClick={onSupport}
             />
           </div>
-        </Card>
+        </ResizableCard>
       ) : null}
-      <Card className="gap-4 p-5 sm:p-6">
+      <ResizableCard className="gap-4 p-5 sm:p-6">
         <div className="flex items-center gap-2">
           <Clock3 className="size-4 text-muted-foreground" />
           <p className="text-sm font-medium">{translate('ui.issue.timeline')}</p>
@@ -207,7 +207,7 @@ export function IssueDetailSidebar({
             </div>
           ))}
         </div>
-      </Card>
+      </ResizableCard>
     </aside>
   );
 }

@@ -7,7 +7,8 @@ import { getIssueCategoryLabel } from "@/constants/categories";
 import { formatDate } from "@/lib/format";
 import { ContentRenderer } from "@/components/content-renderer";
 import { ContentAuthor } from "@/components/content-author";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
+import { ResizableCard } from "@/components/ui/resizable-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -28,7 +29,7 @@ export function IssueDetailContent({
 }) {
   useLocaleSubscription();
   return (
-    <Card className="gap-0 overflow-hidden py-0">
+    <ResizableCard className="gap-0 overflow-hidden py-0">
       <div className="border-b px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6">
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-grid place-items-center rounded-full bg-card px-2.5 py-1 text-center text-xs font-medium text-muted-foreground shadow-[var(--shadow-control)]">
@@ -42,7 +43,7 @@ export function IssueDetailContent({
           </span>
           <StatusBadge domain="issue" revealLabel={reveal} status={status} />
         </div>
-        <SkeletonReveal as="div" className="mt-3" enabled={reveal} skeleton={<Skeleton className="h-8 w-4/5" />}>
+        <SkeletonReveal as="div" className="mt-3" enabled={reveal} skeleton={<Skeleton className="h-8 w-3/5" />}>
           <h1 className="text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">
             {issue.title}
           </h1>
@@ -77,6 +78,6 @@ export function IssueDetailContent({
           />
         </div>
       ) : null}
-    </Card>
+    </ResizableCard>
   );
 }

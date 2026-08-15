@@ -26,7 +26,8 @@ import {
 import { PendingAlertDialogAction } from "@/components/ui/pending-alert-dialog-action";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
+import { ResizableCard } from "@/components/ui/resizable-card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -118,12 +119,12 @@ export default function AnnouncementDetailPage() {
       />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start">
         <article className="space-y-4">
-          <Card className="gap-0 overflow-hidden py-0">
+          <ResizableCard className="gap-0 overflow-hidden py-0">
             <div className="border-b px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6">
               <p className="text-[0.8125rem] font-medium text-muted-foreground">
                 {t("ui.announcement.campus")}
               </p>
-              <SkeletonReveal as="div" className="mt-2.5" enabled={detail.revealDetail} skeleton={<Skeleton className="h-8 w-4/5" />}><h1 className="text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">
+              <SkeletonReveal as="div" className="mt-2.5" enabled={detail.revealDetail} skeleton={<Skeleton className="h-8 w-3/5" />}><h1 className="text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">
                 {announcement.title}
               </h1></SkeletonReveal>
               <div className="mt-3 flex items-center gap-2 text-[0.8125rem] text-muted-foreground">
@@ -146,7 +147,7 @@ export default function AnnouncementDetailPage() {
                 revealText={detail.revealDetail}
               />
             </CardContent>
-          </Card>
+          </ResizableCard>
           <Discussion
             comments={detail.comments}
             sort={detail.commentSort}
@@ -161,7 +162,7 @@ export default function AnnouncementDetailPage() {
           />
         </article>
         <aside className="lg:sticky lg:top-6">
-          <Card className="gap-4 p-5 sm:p-6">
+          <ResizableCard className="gap-4 p-5 sm:p-6">
             <div className="flex flex-col gap-4">
             <div className="flex justify-center">
               <LikeActionButton
@@ -183,7 +184,7 @@ export default function AnnouncementDetailPage() {
               {t("ui.announcement.peopleLiked")}
             </div></SkeletonReveal>
             </div>
-          </Card>
+          </ResizableCard>
         </aside>
       </div>
     </div>
