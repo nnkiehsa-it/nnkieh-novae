@@ -29,6 +29,15 @@ describe("React frontend design system", () => {
     expect(notificationCard).toContain('feedbackTarget === "device"');
   });
 
+  it("centers shared spinners and keeps startup loading transparent", () => {
+    const motion = read("src/styles/motion.css");
+    expect(motion).toMatch(/\.t-spinner \{[\s\S]*display: block[\s\S]*align-self: center/u);
+    expect(motion).toMatch(/@keyframes t-spinner[\s\S]*translate3d/u);
+    expect(motion).toMatch(/\.t-spinner-check \{[\s\S]*line-height: 0[\s\S]*vertical-align: middle/u);
+    const startupOrbit = motion.match(/\.t-loading-orbit \{([\s\S]*?)\n\}/u)?.[1] ?? "";
+    expect(startupOrbit).not.toContain("background:");
+  });
+
   it("keeps route motion separate from skeleton-to-content sharpening", () => {
     const motion = read("src/styles/motion.css");
     const skeletonReveal = read("src/components/ui/skeleton-reveal.tsx");

@@ -800,11 +800,28 @@
   flex: 0 0 1rem;
 }
 .t-spinner {
-  animation: t-spinner 700ms linear infinite;
+  display: block;
+  align-self: center;
+  flex: none;
+  transform-origin: center;
+  vertical-align: middle;
+  animation: t-spinner 800ms linear infinite;
 }
 @keyframes t-spinner {
-  to {
-    transform: rotate(360deg);
+  0% {
+    transform: translate3d(0, -0.5px, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate3d(0.5px, 0, 0) rotate(90deg);
+  }
+  50% {
+    transform: translate3d(0, 0.5px, 0) rotate(180deg);
+  }
+  75% {
+    transform: translate3d(-0.5px, 0, 0) rotate(270deg);
+  }
+  100% {
+    transform: translate3d(0, -0.5px, 0) rotate(360deg);
   }
 }
 
@@ -814,20 +831,21 @@
   width: 2rem;
   height: 2rem;
   place-items: center;
-  border-radius: 999px;
-  background: var(--muted);
   transform: translateZ(0);
 }
 
 .t-spinner-check {
   position: relative;
-  display: grid;
+  display: inline-grid;
   width: 2rem;
   height: 2rem;
+  align-self: center;
   place-items: center;
   border-radius: 999px;
   background: transparent;
+  line-height: 0;
   transform: translateZ(0);
+  vertical-align: middle;
 }
 .t-spinner-check[data-surface="disc"] {
   background: var(--muted);
@@ -843,7 +861,10 @@
 
 .t-spinner-check-loader,
 .t-spinner-check-success {
+  display: block;
   grid-area: 1 / 1;
+  align-self: center;
+  justify-self: center;
   transition:
     opacity var(--motion-quick) var(--ease-smooth-out),
     transform var(--motion-fast) var(--ease-emphasized),
