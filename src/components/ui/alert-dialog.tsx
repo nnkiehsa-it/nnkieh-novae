@@ -59,7 +59,7 @@ function AlertDialogContent({
           data-slot="alert-dialog-content"
           data-size={size}
           className={cn(
-            "t-dialog surface-floating group/alert-dialog-content pointer-events-auto relative grid max-h-[86dvh] w-full max-w-lg gap-5 overflow-y-auto p-6 outline-none data-[size=sm]:max-w-xs sm:p-7",
+            "t-dialog surface-floating group/alert-dialog-content pointer-events-auto relative grid max-h-[86svh] w-full max-w-lg gap-5 overflow-y-auto p-6 outline-none data-[size=sm]:max-w-xs sm:p-7",
             className,
           )}
           {...props}

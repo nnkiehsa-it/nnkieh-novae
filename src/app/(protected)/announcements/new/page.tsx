@@ -1,7 +1,7 @@
 "use client";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, ArrowUp } from "lucide-react";
 import { useAnnouncementComposer } from "@/hooks/use-entry-composer";
 import { usePermissionRedirect } from "@/hooks/use-permission-redirect";
 import { ComposerField } from "@/components/composer-fields";
@@ -47,7 +47,7 @@ export default function AnnouncementComposerPage() {
                 }
                 type="submit"
               >
-                <Send />
+                {form.saving || form.images.uploading ? null : <ArrowUp />}
                 <BusyLabel
                   busy={form.saving || form.images.uploading}
                   busyLabel={translate('ui.announcement.publishing')}

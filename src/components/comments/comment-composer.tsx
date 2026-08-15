@@ -35,7 +35,7 @@ export function CommentComposer({
 
   return (
     <div className="grid gap-2">
-      <div className="flex items-end gap-3 px-1">
+      <div className="flex min-h-10 items-center gap-3 px-1">
         <Avatar className="size-10 border bg-background">
           <AvatarImage alt={displayName} src={photoUrl} />
           <AvatarFallback>
@@ -45,7 +45,7 @@ export function CommentComposer({
         <Textarea
           aria-label={reply ? translate("ui.discussion.replyInput") : translate("ui.discussion.commentInput")}
           autoFocus={reply}
-          className="max-h-40 min-h-10 flex-1 resize-none border-0 bg-transparent px-1 py-2.5 shadow-none focus-visible:ring-0"
+          className="max-h-40 min-h-10 flex-1 resize-none border-0 bg-transparent px-1 py-2.5 shadow-none focus-visible:outline-none focus-visible:ring-0"
           maxLength={INPUT_LIMITS.comment}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={(event) => {
@@ -62,7 +62,7 @@ export function CommentComposer({
           <TooltipTrigger asChild>
             <Button
               aria-label={submitLabel}
-              className="shrink-0 rounded-full"
+              className="size-10 min-h-10 min-w-10 shrink-0 rounded-full"
               disabled={!content.trim() || busy}
               onClick={() => void onSubmit()}
               size="icon-lg"

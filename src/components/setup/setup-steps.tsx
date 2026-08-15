@@ -17,7 +17,7 @@ export function SetupBrand() {
 
 export function SetupWaitingState() {
   return (
-    <main className="grid min-h-[100dvh] place-items-center bg-[var(--surface-stage)] p-4">
+    <main className="grid min-h-[100svh] place-items-center bg-[var(--surface-stage)] p-4">
       <Card className="t-panel-reveal w-full max-w-lg items-center px-6 py-12 text-center">
         <span className="grid size-11 place-items-center rounded-2xl bg-muted">
           <Users className="size-5" />

@@ -100,19 +100,22 @@ describe("React frontend design system", () => {
     expect(discussion).toContain('<ResizableCard className="gap-0 overflow-hidden py-0">');
     expect(discussion).toContain('className="discussion-composer-dock"');
     expect(discussion).toContain('new ResizeObserver(updateClearance)');
-    expect(discussion).toContain('--discussion-composer-clearance');
+    expect(discussion).toContain('--discussion-composer-height');
+    expect(discussion).not.toContain('window.innerHeight');
+    expect(discussion).not.toContain('window.visualViewport');
     expect(discussion).toContain("characters.slice(0, 20)");
     expect(discussion).toContain('translate("ui.discussion.replying"');
     expect(composer).toContain('import { ArrowUp } from "lucide-react"');
-    expect(composer).toContain('className="flex items-end gap-3 px-1"');
+    expect(composer).toContain('className="flex min-h-10 items-center gap-3 px-1"');
     expect(composer).toContain('Avatar className="size-10 border bg-background"');
-    expect(composer).toContain('className="shrink-0 rounded-full"');
+    expect(composer).toContain('focus-visible:outline-none focus-visible:ring-0');
+    expect(composer).toContain('className="size-10 min-h-10 min-w-10 shrink-0 rounded-full"');
     expect(composer).toContain('size="icon-lg"');
     expect(composer).not.toContain("rounded-2xl border bg-muted/35");
     expect(thread).toContain("onReply(reply, comment.id)");
     expect(globals).toMatch(/\.discussion-composer-dock \{[\s\S]*position: fixed/u);
     expect(globals).toContain("bottom: max(0.75rem, var(--safe-bottom))");
-    expect(layout).toContain('interactiveWidget: "resizes-content"');
+    expect(layout).not.toContain('interactiveWidget: "resizes-content"');
   });
 
   it("warms privileged route shells immediately and gives them one mobile toolbar", () => {
@@ -179,7 +182,7 @@ describe("React frontend design system", () => {
     const globals = read("src/app/globals.css");
     expect(providers).toContain('className="app-start-surface"');
     expect(startup).toContain('className="app-start-surface grid place-items-center"');
-    expect(globals).toMatch(/\.app-start-surface \{[\s\S]*min-height: 100dvh/u);
+    expect(globals).toMatch(/\.app-start-surface \{[\s\S]*min-height: 100svh/u);
     expect(globals).toMatch(/\.app-start-surface \{[\s\S]*var\(--safe-top\)[\s\S]*var\(--safe-bottom\)/u);
   });
 

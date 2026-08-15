@@ -3,7 +3,7 @@ const messages = {
   'ui.common.cancel': '取消',
   'ui.common.delete': '刪除',
   'ui.common.confirmDelete': '確認刪除',
-  'ui.common.saveChanges': '儲存變更',
+  'ui.common.submit': '送出',
   'ui.common.search': '搜尋',
   'ui.common.loadMore': '載入更多',
   'ui.common.loadingMore': '載入中…',

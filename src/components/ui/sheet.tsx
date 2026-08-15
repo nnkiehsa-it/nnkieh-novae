@@ -68,7 +68,7 @@ function SheetContent({
             "inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm",
           side === "top" && "inset-x-0 top-0 h-auto border-b",
           side === "bottom" &&
-            "inset-x-0 bottom-0 h-auto max-h-[88dvh] rounded-t-2xl border-t pb-[var(--safe-bottom)]",
+            "inset-x-0 bottom-0 h-auto max-h-[88svh] rounded-t-2xl border-t pb-[var(--safe-bottom)]",
           className,
         )}
         {...props}

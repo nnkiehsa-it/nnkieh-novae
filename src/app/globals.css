@@ -169,7 +169,8 @@ html {
 
 body {
   min-width: 20rem;
-  min-height: 100dvh;
+  min-height: 100vh;
+  min-height: 100svh;
   margin: 0;
   overflow-x: clip;
   overscroll-behavior: none;
@@ -185,7 +186,8 @@ body {
 
 .app-start-surface {
   box-sizing: border-box;
-  min-height: 100dvh;
+  min-height: 100vh;
+  min-height: 100svh;
   padding-top: max(1.5rem, var(--safe-top));
   padding-bottom: max(1.5rem, var(--safe-bottom));
   padding-inline: max(1.5rem, var(--safe-left), var(--safe-right));
@@ -222,7 +224,8 @@ textarea {
 }
 
 .app-viewport {
-  min-height: 100dvh;
+  min-height: 100vh;
+  min-height: 100svh;
   padding-inline: max(var(--page-gutter), var(--safe-left), var(--safe-right));
 }
 
@@ -300,9 +303,10 @@ textarea {
 }
 
 .detail-with-discussion-composer {
-  padding-bottom: var(
-    --discussion-composer-clearance,
-    calc(7rem + var(--safe-bottom))
+  padding-bottom: calc(
+    var(--discussion-composer-height, 4.5rem) +
+    max(0.75rem, var(--safe-bottom)) +
+    1.25rem
   );
 }
 
@@ -440,6 +444,12 @@ textarea {
   }
   .surface-stage {
     border-radius: var(--radius-2xl);
+  }
+  body:has(input:focus, textarea:focus, [contenteditable="true"]:focus) .app-mobile-nav {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(1.125rem) scale(0.96);
+    visibility: hidden;
   }
 }
 

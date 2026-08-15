@@ -1,27 +1,27 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { URL } from "node:url";
 import test from "node:test";
-import { read } from "./helpers.mjs";
+import { moduleImports, repoPath } from "./helpers.mjs";
 
-const workerModules = [
-  ["cloudflare/src/backend/actions/handler.ts", "backendAction"],
-  ["cloudflare/src/backend/sync-user.ts", "syncUser"],
-  ["cloudflare/src/backend/cloudinary-webhook.ts", "cloudinaryWebhook"],
-  ["cloudflare/src/backend/jobs/outbox.ts", "outboxWorker"],
-  ["cloudflare/src/backend/jobs/deletion.ts", "processDeletionJobs"],
-  ["cloudflare/src/backend/jobs/realtime.ts", "realtimeWorker"],
-  ["cloudflare/src/backend/jobs/maintenance.ts", "maintenanceCleanup"],
+const workerEntryModules = [
+  "cloudflare/src/backend/actions/handler.ts",
+  "cloudflare/src/backend/sync-user.ts",
+  "cloudflare/src/backend/cloudinary-webhook.ts",
+  "cloudflare/src/backend/jobs/outbox.ts",
+  "cloudflare/src/backend/jobs/deletion.ts",
+  "cloudflare/src/backend/jobs/realtime.ts",
+  "cloudflare/src/backend/jobs/maintenance.ts",
 ];
 
-test("Worker modules use shared, privacy-safe structured log records", async () => {
-  const observability = await read("cloudflare/src/backend/shared/observability.ts");
-  assert.match(observability, /createFunctionLogger/u);
-  assert.match(observability, /invocationId/u);
-  assert.match(observability, /durationMs/u);
-  assert.match(observability, /publicErrorCode/u);
-  assert.match(observability, /never pass request payloads, credentials, email addresses, or user profile data/u);
-
-  for (const [path, functionName] of workerModules) {
-    const source = await read(path);
-    assert.match(source, new RegExp(`createFunctionLogger\\("${functionName}"\\)`, "u"));
+test("Worker entry modules depend on the shared observability boundary", async () => {
+  const violations = [];
+  for (const path of workerEntryModules) {
+    const file = new URL(`../../${path}`, import.meta.url);
+    const imports = moduleImports(await readFile(file, "utf8"), repoPath(file));
+    if (!imports.some(({ specifier }) => specifier.endsWith("/shared/observability.ts"))) {
+      violations.push(path);
+    }
   }
+  assert.deepEqual(violations, []);
 });

@@ -1,7 +1,6 @@
 "use client";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
-import { Send } from "lucide-react";
 import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import type { FacilityRecord, FacilityStatus } from "@/types";
 import { useFacilityStatus } from "@/hooks/use-facility-status";
@@ -90,7 +89,7 @@ export function FacilityStatusDialog({
                 size="md"
                 state={state.feedbackState === "success" ? "success" : "loading"}
               />
-            ) : <Send />}{translate('ui.common.saveChanges')}</Button>
+            ) : null}{translate('ui.common.submit')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

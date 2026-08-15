@@ -226,7 +226,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       ? "/settings"
       : pathname;
   return (
-    <div className="min-h-[100dvh] bg-[var(--surface-stage)] md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
+    <div className="min-h-[100svh] bg-[var(--surface-stage)] md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-background/92 p-3 backdrop-blur-xl md:flex">
         <div className="px-2 pb-5 pt-2">
           <BrandLockup href={issueHref} />

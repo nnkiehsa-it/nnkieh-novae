@@ -6,8 +6,8 @@ This document is the maintained map of the repository. Read it before broad sear
 
 - `package.json` — Node 24, Next.js 16.3, React 19.2, TypeScript 7, Tailwind CSS 4, Radix/shadcn primitives, Motion, Serwist, Vitest, and Playwright scripts.
 - `src/app/` — Next App Router. Route `page.tsx` files assemble views and forward events; they do not import `services/` directly.
-- `src/app/layout.tsx` — root metadata, immersive iOS viewport/status-bar configuration, Inter/Roboto Mono plus HarmonyOS Sans TC split-font loading, global providers, and global CSS.
-- `src/app/globals.css` — semantic light/dark color, typography, radius, shadow, safe-area, viewport, surface tokens, the AppStart safe-area surface, and the responsive dock used by the shared discussion composer.
+- `src/app/layout.tsx` — root metadata, stable immersive iOS viewport/status-bar configuration, Inter/Roboto Mono plus HarmonyOS Sans TC split-font loading, global providers, and global CSS.
+- `src/app/globals.css` — semantic light/dark color, typography, radius, shadow, safe-area, stable small-viewport sizing, surface tokens, the AppStart safe-area surface, keyboard-aware mobile navigation, and the responsive dock used by the shared discussion composer.
 - `src/assets/fonts/harmonyos-sans-tc/` — generated, project-character-scoped HarmonyOS Sans TC Regular, Medium, Semibold, and Bold shards plus CSS; refreshed by `scripts/generate-harmonyos-subset.mjs`.
 - `src/styles/motion.css` — transition.dev-inspired timings/easing and named recipes for routes, panels, cards, text, digits, dialogs, dropdowns, toasts, loading, and success states. Toasts use the source recipe's asymmetric 350/250ms rise, scale, and cross-blur; dialog motion is independent from its shared viewport centering positioner. Root routes use opacity-only entry while child/return routes retain spatial direction; hover-capability and reduced-motion media queries remain centralized here.
 - `src/app/sw.ts` — Serwist service worker; `next.config.mjs` compiles and registers it at `public/sw.js`.
@@ -45,7 +45,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/components/setup/` — setup step chrome and reusable category draft editors.
 - `src/components/admin/` — category, reusable category-editor controls, and scoped-access presentation. The management surface follows a spacious choose-scope → edit → save hierarchy, uses divider-based category rows instead of nested cards, and adapts member assignment into two columns only at wide widths.
 - `src/components/composer-fields.tsx` — shared title/Markdown/media composer surface.
-- `src/components/discussion.tsx`, `comments/comment-composer.tsx`, `comments/comment-thread.tsx` — shared server-sorted discussion card, fixed safe-area composer with bottom-aligned 40px avatar/action geometry and symmetric inset, reply-target preview, and collapsible reply-rail presentation. The dock publishes its ResizeObserver-measured live height; detail pages consume that final clearance so mobile sidebar cards stay adjacent to discussion while the last page content can always scroll fully above the composer.
+- `src/components/discussion.tsx`, `comments/comment-composer.tsx`, `comments/comment-thread.tsx` — shared server-sorted discussion card, fixed safe-area composer with vertically aligned 40px avatar/action geometry, focus-ring-free textarea presentation, reply-target preview, and collapsible reply-rail presentation. The dock publishes only its ResizeObserver-measured height; CSS owns safe-area clearance so visual viewport and keyboard changes cannot inflate page padding.
 - `src/components/content-author.tsx` — shared author avatar and name row for list/detail content; unresolved profiles reserve a 24px avatar plus 64px mixed-script name skeleton and never flash a generic member label.
 - `src/components/content-renderer.tsx` — sanitized Markdown/media rendering; its optional field-level reveal affects Markdown text only and leaves media/card chrome outside the filter layer.
 - `src/components/content-resolution-notice.tsx` / `content-resolution-notice-skeleton.tsx` — shared success/error conclusion block for proposals and facility reports, paired with a lightweight cold-load skeleton that does not pull Markdown rendering into route fallbacks; the resolved block uses status-aware copy and reduced-motion-safe state entrance animation.
@@ -112,8 +112,8 @@ This document is the maintained map of the repository. Read it before broad sear
 - `scripts/render-worker-config.mjs` — validates the Hyperdrive ID and renders relocatable environment-specific Worker/Queue names, entry paths, native rate-limit namespace IDs, and optional Notion state without committing deployment bindings.
 - `scripts/external-provider-test-server.mjs` — isolated Cloudinary, FCM, and Notion-compatible receiver used only by integration verification.
 - `scripts/generate-harmonyos-subset.mjs` / `check-build-budget.mjs` — derive the used Traditional Chinese HarmonyOS Sans shards from source text, then enforce Next build asset/font/JS/CSS budgets.
-- `tests/unit/` — Vitest domain and design-system tests.
-- `tests/architecture/` — route, data-access, generated contract, UI boundary, and delivery tooling tests.
+- `tests/unit/` — Vitest domain, design-system, and migration checksum behavior tests.
+- `tests/architecture/` — stable AST-backed module-boundary tests for route presence, frontend dependency direction, UI primitive purity, database ownership, frontend/Worker contracts, observability, and delivery entry points; presentation strings and implementation details belong to unit or UI checks instead.
 - `tests/integration/` — backend actions, category-scoped authorization, least-privilege database boundary, RPCs, jobs, retention, and Worker ingress/realtime behavior; required for backend changes.
 - `tests/e2e/` — Playwright bootstrap plus authenticated desktop/mobile workflows.
 - `.github/workflows/verify-pr.yml` — Node 24 local, PostgreSQL/Worker integration, and real-browser verification.

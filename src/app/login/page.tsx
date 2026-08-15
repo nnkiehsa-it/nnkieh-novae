@@ -58,8 +58,8 @@ export default function LoginPage() {
   ]);
 
   return (
-    <main className="relative grid min-h-[100dvh] overflow-hidden bg-[var(--surface-stage)] lg:grid-cols-[1.08fr_.92fr]">
-      <section className="relative hidden min-h-[100dvh] overflow-hidden border-r bg-background p-12 lg:grid lg:place-items-center">
+    <main className="relative grid min-h-[100svh] overflow-hidden bg-[var(--surface-stage)] lg:grid-cols-[1.08fr_.92fr]">
+      <section className="relative hidden min-h-[100svh] overflow-hidden border-r bg-background p-12 lg:grid lg:place-items-center">
         <BrandLockup className="t-panel-reveal absolute top-12 left-12" />
         <div className="t-stagger-list w-full max-w-xl">
           <h1 className="t-stagger-item max-w-lg text-4xl font-semibold leading-[1.08] tracking-[-0.045em] text-balance">
@@ -71,7 +71,7 @@ export default function LoginPage() {
         </div>
       </section>
 
-      <section className="flex min-h-[100dvh] items-center justify-center px-4 py-12 sm:px-8">
+      <section className="flex min-h-[100svh] items-center justify-center px-4 py-12 sm:px-8">
         <div className="t-panel-reveal w-full max-w-sm">
           <div className="mb-7 space-y-4">
             <BrandLockup className="lg:hidden" />

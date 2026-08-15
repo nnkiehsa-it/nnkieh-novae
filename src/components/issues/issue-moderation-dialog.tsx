@@ -1,7 +1,6 @@
 "use client";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
-import { Send } from "lucide-react";
 import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import type { IssueRecord, IssueStatus } from "@/types";
 import { useIssueModeration } from "@/hooks/use-issue-moderation";
@@ -109,7 +108,7 @@ export function IssueModerationDialog({
                 size="md"
                 state={state.feedbackState === "success" ? "success" : "loading"}
               />
-            ) : <Send />}{translate('ui.common.saveChanges')}</Button>
+            ) : null}{translate('ui.common.submit')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

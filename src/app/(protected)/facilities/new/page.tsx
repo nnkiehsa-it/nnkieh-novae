@@ -1,7 +1,7 @@
 "use client";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
-import { ArrowLeft, MapPin, Send } from "lucide-react";
+import { ArrowLeft, ArrowUp, MapPin } from "lucide-react";
 import { useFacilityComposer } from "@/hooks/use-entry-composer";
 import { ComposerField } from "@/components/composer-fields";
 import { Button } from "@/components/ui/button";
@@ -104,7 +104,7 @@ export default function FacilityComposerPage() {
                 }
                 type="submit"
               >
-                <Send />
+                {form.saving || form.images.uploading ? null : <ArrowUp />}
                 <BusyLabel
                   busy={form.saving || form.images.uploading}
                   busyLabel={translate('ui.issue.submitting')}

@@ -48,7 +48,7 @@ test('proposal comment, sharing, and status actions persist', async ({
   await chooseMoreAction(manager.page, 'Manage status');
   await manager.page.getByRole('combobox', { name: 'Status' }).click();
   await manager.page.getByRole('option', { name: 'In progress' }).click();
-  await manager.page.getByRole('button', { name: 'Save changes' }).click();
+  await manager.page.getByRole('button', { name: 'Submit' }).click();
   await expect(manager.page.getByText('In progress', { exact: true })).toBeVisible();
   await manager.context.close();
 });
@@ -79,7 +79,7 @@ test('facility affected and status actions persist while cross-category controls
   await chooseMoreAction(manager.page, 'Update status');
   await manager.page.getByRole('combobox', { name: 'Status' }).click();
   await manager.page.getByRole('option', { name: 'In progress' }).click();
-  await manager.page.getByRole('button', { name: 'Save changes' }).click();
+  await manager.page.getByRole('button', { name: 'Submit' }).click();
   await expect(manager.page.getByText('In progress', { exact: true })).toBeVisible();
   await manager.page.goto(content.facilityB);
   await expect(manager.page.getByRole('button', { name: 'More actions' })).toHaveCount(0);

@@ -64,25 +64,19 @@ export function Discussion({
     const root = document.documentElement;
     const dock = composerDockRef.current;
     const updateClearance = () => {
-      const bounds = dock.getBoundingClientRect();
-      const bottomGap = Math.max(0, window.innerHeight - bounds.bottom);
-      const clearance = Math.ceil(
-        bounds.height + bottomGap + 20,
+      root.style.setProperty(
+        "--discussion-composer-height",
+        `${Math.ceil(dock.getBoundingClientRect().height)}px`,
       );
-      root.style.setProperty("--discussion-composer-clearance", `${clearance}px`);
     };
     updateClearance();
     const observer = typeof ResizeObserver === "undefined"
       ? null
       : new ResizeObserver(updateClearance);
     observer?.observe(dock);
-    window.addEventListener("resize", updateClearance);
-    window.visualViewport?.addEventListener("resize", updateClearance);
     return () => {
       observer?.disconnect();
-      window.removeEventListener("resize", updateClearance);
-      window.visualViewport?.removeEventListener("resize", updateClearance);
-      root.style.removeProperty("--discussion-composer-clearance");
+      root.style.removeProperty("--discussion-composer-height");
     };
   }, [enabled]);
 
@@ -169,7 +163,7 @@ export function Discussion({
 
       {enabled ? (
         <div className="discussion-composer-dock" ref={composerDockRef}>
-          <div className="mx-auto w-full max-w-2xl rounded-[2rem] border bg-background p-2 shadow-[var(--shadow-floating)] focus-within:border-ring/45 focus-within:ring-2 focus-within:ring-ring/20">
+          <div className="mx-auto w-full max-w-2xl rounded-[2rem] border bg-background p-2 shadow-[var(--shadow-floating)]">
             {replyTarget ? (
               <div className="mb-1 flex items-start gap-3 border-b px-2 pb-2 pt-1">
                 <div className="min-w-0 flex-1 text-xs leading-5">

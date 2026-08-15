@@ -3,7 +3,7 @@ const messages = {
   'ui.common.cancel': 'Cancel',
   'ui.common.delete': 'Delete',
   'ui.common.confirmDelete': 'Confirm delete',
-  'ui.common.saveChanges': 'Save changes',
+  'ui.common.submit': 'Submit',
   'ui.common.search': 'Search',
   'ui.common.loadMore': 'Load more',
   'ui.common.loadingMore': 'Loading…',

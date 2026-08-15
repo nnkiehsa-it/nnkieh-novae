@@ -34,7 +34,7 @@ export default function SetupPage() {
   }
 
   return (
-    <main className="min-h-[100dvh] bg-[var(--surface-stage)] px-[max(1rem,var(--safe-left))] py-[max(2rem,var(--safe-top))]">
+    <main className="min-h-[100svh] bg-[var(--surface-stage)] px-[max(1rem,var(--safe-left))] py-[max(2rem,var(--safe-top))]">
       <div className="mx-auto max-w-4xl">
         <SetupBrand />
         {state.step === "language" ? (

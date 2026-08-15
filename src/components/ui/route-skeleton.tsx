@@ -2,6 +2,7 @@
 
 import {
   ArrowLeft,
+  ArrowUp,
   ArrowUpRight,
   Clock3,
   Hand,
@@ -9,7 +10,6 @@ import {
   MessageCircle,
   Plus,
   Search,
-  Send,
   Share2,
   SlidersHorizontal,
 } from "lucide-react";
@@ -327,7 +327,7 @@ export function ComposerRouteSkeleton({
           ) : null}
           <label className="grid gap-2 text-sm font-medium">{kind === "facility" ? translate("ui.facility.reportTitle") : kind === "announcement" ? translate("ui.announcement.titleLabel") : translate("ui.issue.titleLabel")}<Input className="opacity-100" disabled /></label>
           <label className="grid gap-2 text-sm font-medium">{kind === "facility" ? translate("ui.facility.problemDescription") : kind === "announcement" ? translate("ui.announcement.contentLabel") : translate("ui.issue.contentLabel")}<Textarea className="min-h-48 opacity-100" disabled /></label>
-          <Button className="ml-auto opacity-100" disabled><Send />{translate(submitKey)}</Button>
+          <Button className="ml-auto opacity-100" disabled><ArrowUp />{translate(submitKey)}</Button>
         </div>
       </Card>
     </div>

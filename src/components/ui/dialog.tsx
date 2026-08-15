@@ -62,7 +62,7 @@ function DialogContent({
         <DialogPrimitive.Content
           data-slot="dialog-content"
           className={cn(
-            "t-dialog surface-floating pointer-events-auto relative grid max-h-[min(86dvh,46rem)] w-full max-w-lg gap-5 overflow-y-auto p-6 outline-none sm:p-7",
+            "t-dialog surface-floating pointer-events-auto relative grid max-h-[min(86svh,46rem)] w-full max-w-lg gap-5 overflow-y-auto p-6 outline-none sm:p-7",
             className,
           )}
           {...props}

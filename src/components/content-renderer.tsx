@@ -156,7 +156,7 @@ export function ContentRenderer({
           {selected ? (
             <img
               alt={selected.alt || fallbackAlt}
-              className="max-h-[calc(100dvh-3rem)] w-full rounded-xl object-contain"
+              className="max-h-[calc(100svh-3rem)] w-full rounded-xl object-contain"
               src={selected.fullSrc || selected.src}
             />
           ) : null}
