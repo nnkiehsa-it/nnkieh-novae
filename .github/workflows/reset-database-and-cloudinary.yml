@@ -1,0 +1,84 @@
+name: Reset Database and Cloudinary
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type RESET_DATABASE_AND_CLOUDINARY to permanently erase application data and Cloudinary assets.
+        required: true
+        type: string
+
+concurrency:
+  group: reset-database-and-cloudinary-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+    steps:
+      - name: Confirm destructive reset
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          if [ "$CONFIRMATION" != 'RESET_DATABASE_AND_CLOUDINARY' ]; then
+            echo 'Confirmation must exactly equal RESET_DATABASE_AND_CLOUDINARY.' >&2
+            exit 1
+          fi
+
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Reset application database schemas
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo 'NEON_DATABASE_URL is required in this environment.' >&2
+            exit 1
+          fi
+          docker run --rm --env DATABASE_URL postgres:18-alpine sh -ceu '
+            psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "
+              drop schema if exists app_api cascade;
+              drop schema if exists app_private cascade;
+              drop schema if exists public cascade;
+              create schema public;
+              grant usage on schema public to public;
+            "
+          '
+
+      - name: Reapply database migrations
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: npm run db:migrate
+
+      - name: Restore the least-privilege Worker database role
+        env:
+          DATABASE_RUNTIME_PASSWORD: ${{ secrets.NEON_RUNTIME_PASSWORD }}
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: node scripts/configure-database-runtime.mjs
+
+      - name: Reset Cloudinary resources
+        env:
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+        run: node scripts/reset-cloudinary.mjs
+
+      - name: Restore the Cloudinary upload preset
+        env:
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+        run: node scripts/configure-cloudinary.mjs

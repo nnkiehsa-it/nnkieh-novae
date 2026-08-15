@@ -29,9 +29,21 @@ test("Vercel hosts the frontend while Cloudflare Workers owns the API", async ()
 test("database backups run on a three-day cadence and retain only the latest two artifacts", async () => {
   const backupWorkflow = await read(".github/workflows/backup-database.yml");
   assert.match(backupWorkflow, /259200/u);
+  assert.match(backupWorkflow, /postgres:18-alpine/u);
   assert.match(backupWorkflow, /actions: write/u);
   assert.match(backupWorkflow, /artifact_ids\[@\]:2/u);
   assert.match(backupWorkflow, /actions\/artifacts\/\$artifact_id/u);
+});
+
+test("the destructive reset workflow resets application data and Cloudinary together", async () => {
+  const resetWorkflow = await read(".github/workflows/reset-database-and-cloudinary.yml");
+  assert.match(resetWorkflow, /RESET_DATABASE_AND_CLOUDINARY/u);
+  assert.match(resetWorkflow, /drop schema if exists app_private cascade/u);
+  assert.match(resetWorkflow, /postgres:18-alpine/u);
+  assert.match(resetWorkflow, /npm run db:migrate/u);
+  assert.match(resetWorkflow, /configure-database-runtime\.mjs/u);
+  assert.match(resetWorkflow, /reset-cloudinary\.mjs/u);
+  assert.match(resetWorkflow, /configure-cloudinary\.mjs/u);
 });
 
 test("backend action registry covers the generated frontend contract", async () => {

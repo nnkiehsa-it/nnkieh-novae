@@ -107,6 +107,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `scripts/migration-checksum.mjs` — canonical cross-platform migration hashing and immutable applied-migration validation for every current and future SQL migration.
 - `scripts/configure-database-runtime.mjs` — creates or rotates the `novae_runtime` login, grants only DML, sequence use, and function execution, verifies those credentials with a real application-table query, and can hand the verified URL to deployment for immediate Hyperdrive synchronization; it grants no DDL or role-management capability.
 - `scripts/configure-cloudinary.mjs` — idempotently provisions the authenticated image upload preset during deployment, with explicit provider errors instead of healthcheck side effects.
+- `scripts/reset-cloudinary.mjs` — explicit destructive Cloudinary Admin API cleanup used only by the protected reset workflow.
 - `scripts/verify-integration.mjs` — single Node.js orchestrator for PostgreSQL, Windows WSL runtime lifetime, least-privilege role setup, provider receivers, Wrangler, Firebase Auth Emulator, interactive Next.js, integration/stress tests, and Playwright. Backend-only runs use the integration seed; served/E2E runs use the local sample seed.
 - `scripts/render-worker-config.mjs` — validates the Hyperdrive ID and renders relocatable environment-specific Worker/Queue names, entry paths, native rate-limit namespace IDs, and optional Notion state without committing deployment bindings.
 - `scripts/external-provider-test-server.mjs` — isolated Cloudinary, FCM, and Notion-compatible receiver used only by integration verification.
@@ -118,7 +119,8 @@ This document is the maintained map of the repository. Read it before broad sear
 - `.github/workflows/verify-pr.yml` — Node 24 local, PostgreSQL/Worker integration, and real-browser verification.
 - `.github/workflows/deploy-frontend.yml` — Vercel Next.js build/deploy using `NEXT_PUBLIC_*` runtime names mapped from existing secret storage names.
 - `.github/workflows/deploy-backend.yml` — local backend verification, forward Neon migrations, runtime-role configuration, environment-specific Worker rendering, Queue provisioning, Cloudflare deployment, and authenticated/database smoke checks.
-- `.github/workflows/backup-database.yml` — daily cadence check that creates a PostgreSQL 17 logical dump only when the newest backup is at least 72 hours old, encrypts it with age, verifies it with a checksum, and prunes GitHub artifacts to the latest two; plaintext never leaves the runner.
+- `.github/workflows/backup-database.yml` — daily cadence check that creates a PostgreSQL 18 logical dump only when the newest backup is at least 72 hours old, encrypts it with age, verifies it with a checksum, and prunes GitHub artifacts to the latest two; plaintext never leaves the runner.
+- `.github/workflows/reset-database-and-cloudinary.yml` — protected manual disaster-reset flow: after an exact confirmation string, resets the application schemas, reapplies migrations, restores the Worker runtime role, clears Cloudinary resources, and restores the upload preset.
 
 ## Design documentation
 

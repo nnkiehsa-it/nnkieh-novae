@@ -64,7 +64,7 @@ jobs:
             exit 1
           fi
 
-      - name: Create a PostgreSQL 17 logical backup
+      - name: Create a PostgreSQL 18 logical backup
         if: steps.cadence.outputs.run == 'true'
         env:
           DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
@@ -73,7 +73,7 @@ jobs:
           docker run --rm \
             --env DATABASE_URL \
             --volume "$PWD/backup:/backup" \
-            postgres:17-alpine \
+            postgres:18-alpine \
             sh -ceu 'pg_dump "$DATABASE_URL" --format=custom --compress=9 --no-owner --no-privileges --file=/backup/novae.dump'
 
       - name: Encrypt the backup before upload
