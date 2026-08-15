@@ -1,7 +1,5 @@
 import { requireEnv } from "../shared/env.ts";
-import { ensureCloudinaryImageUploadPreset } from "../shared/cloudinary.ts";
 import { requireVerifiedFirebaseUser } from "../shared/firebase-auth.ts";
-import { RATE_LIMITS } from "../shared/rate-limits.ts";
 import type { AuthContext, BackendDatabase, PermissionCode } from "./types.ts";
 
 interface AuthIdentity {
@@ -98,12 +96,6 @@ export async function handleHealthcheck(request: Request, database: BackendDatab
   requireEnv("ADMIN_EMAILS");
   requireEnv("PUBLIC_API_URL");
   requireEnv("MEDIA_SIGNING_SECRET");
-
-  if (request.headers.get("x-reconcile-config") === "true") {
-    await ensureCloudinaryImageUploadPreset(
-      RATE_LIMITS.imageCompression.maxUploadBytes,
-    );
-  }
 
   const { error } = await database
     .table("app_private", "roles")

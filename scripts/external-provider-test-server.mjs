@@ -51,6 +51,11 @@ const server = createServer(async (request, response) => {
       response.end(Buffer.from("UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA", "base64"));
       return;
     }
+    if (request.method === "PUT" && url.pathname.endsWith("/upload_presets/srp-secure-images")) {
+      requests.push({ body: await readBody(request), path: url.pathname });
+      send(response, 200, { message: "updated" });
+      return;
+    }
     if (request.method !== "POST") {
       send(response, 405, "Method Not Allowed", "text/plain");
       return;
@@ -81,6 +86,10 @@ const server = createServer(async (request, response) => {
       send(response, 200, { result: "ok" });
       return;
     }
+    if (url.pathname.endsWith("/upload_presets")) {
+      send(response, 200, { message: "created" });
+      return;
+    }
     send(response, 404, { error: "not-found" });
   } catch (error) {
     send(response, 500, { error: error instanceof Error ? error.message : String(error) });
@@ -94,4 +103,3 @@ server.listen(port, "0.0.0.0", () => {
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.on(signal, () => server.close(() => process.exit(0)));
 }
-

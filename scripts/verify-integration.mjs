@@ -183,6 +183,17 @@ try {
     provider,
     providerEntry.logPath,
   );
+  run(
+    "configure Cloudinary upload preset",
+    process.execPath,
+    ["scripts/configure-cloudinary.mjs"],
+    {
+      CLOUDINARY_API_BASE_URL: "http://127.0.0.1:54330",
+      CLOUDINARY_API_KEY: "integration-api-key",
+      CLOUDINARY_API_SECRET: "integration-api-secret",
+      CLOUDINARY_CLOUD_NAME: "integration-cloud",
+    },
+  );
 
   let firebase;
   if (serve || e2e) {

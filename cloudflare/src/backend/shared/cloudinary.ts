@@ -1,7 +1,6 @@
 import { optionalEnv, requireEnv } from "./env.ts";
 
 export const CLOUDINARY_IMAGE_UPLOAD_PRESET = "srp-secure-images";
-let uploadPresetVerifiedUntil = 0;
 
 function cloudinaryApiBaseUrl() {
   return optionalEnv("CLOUDINARY_API_BASE_URL").replace(/\/+$/u, "") || "https://api.cloudinary.com";
@@ -68,55 +67,6 @@ export async function getCloudinaryAuthenticatedImageMetadata(publicId: string) 
   );
   if (!response.ok) throw new Error(`cloudinary-resource-lookup:${response.status}`);
   return await response.json() as Record<string, unknown>;
-}
-
-function cloudinaryAdminAuthorization() {
-  return `Basic ${btoa(`${requireEnv("CLOUDINARY_API_KEY")}:${requireEnv("CLOUDINARY_API_SECRET")}`)}`;
-}
-
-export async function ensureCloudinaryImageUploadPreset(maxFileSize: number) {
-  if (uploadPresetVerifiedUntil > Date.now()) return;
-  const cloudName = requireEnv("CLOUDINARY_CLOUD_NAME");
-  const preset = new URLSearchParams({
-    allowed_formats: "webp",
-    max_file_size: String(maxFileSize),
-    overwrite: "false",
-    transformation: "",
-    type: "authenticated",
-    unsigned: "false",
-  });
-  const headers = {
-    authorization: cloudinaryAdminAuthorization(),
-    "content-type": "application/x-www-form-urlencoded",
-  };
-  const update = await fetch(
-    `${cloudinaryApiBaseUrl()}/v1_1/${cloudName}/upload_presets/${CLOUDINARY_IMAGE_UPLOAD_PRESET}`,
-    {
-      body: preset,
-      headers,
-      method: "PUT",
-      signal: AbortSignal.timeout(10_000),
-    },
-  );
-  if (update.ok) {
-    uploadPresetVerifiedUntil = Date.now() + 60 * 60 * 1000;
-    return;
-  }
-  if (update.status !== 404) {
-    throw new Error(`cloudinary-upload-preset-update:${update.status}:${await update.text()}`);
-  }
-
-  preset.set("name", CLOUDINARY_IMAGE_UPLOAD_PRESET);
-  const create = await fetch(`${cloudinaryApiBaseUrl()}/v1_1/${cloudName}/upload_presets`, {
-    body: preset,
-    headers,
-    method: "POST",
-    signal: AbortSignal.timeout(10_000),
-  });
-  if (!create.ok && create.status !== 409) {
-    throw new Error(`cloudinary-upload-preset-create:${create.status}:${await create.text()}`);
-  }
-  uploadPresetVerifiedUntil = Date.now() + 60 * 60 * 1000;
 }
 
 export async function uploadCloudinaryAuthenticatedImage(publicId: string, source: string | Blob) {

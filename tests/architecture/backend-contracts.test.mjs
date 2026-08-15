@@ -21,6 +21,8 @@ test("Vercel hosts the frontend while Cloudflare Workers owns the API", async ()
   assert.match(frontendWorkflow, /vercel(?:@\S+)? deploy/iu);
   assert.match(backendWorkflow, /wrangler deploy/iu);
   assert.match(backendWorkflow, /db:migrate/u);
+  assert.match(backendWorkflow, /configure-cloudinary\.mjs/u);
+  assert.doesNotMatch(backendWorkflow, /x-reconcile-config/u);
 });
 
 test("backend action registry covers the generated frontend contract", async () => {

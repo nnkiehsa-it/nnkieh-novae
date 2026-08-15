@@ -10,6 +10,7 @@ on:
       - 'database/**'
       - 'config/**'
       - 'scripts/configure-database-runtime.mjs'
+      - 'scripts/configure-cloudinary.mjs'
       - 'scripts/database.mjs'
       - 'scripts/generate-*.mjs'
       - 'scripts/render-worker-config.mjs'
@@ -131,6 +132,13 @@ jobs:
           DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
         run: npm run db:configure-runtime
 
+      - name: Configure the Cloudinary authenticated upload preset
+        env:
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+        run: node scripts/configure-cloudinary.mjs
+
       - name: Validate Hyperdrive binding
         env:
           CLOUDFLARE_HYPERDRIVE_ID: ${{ secrets.CLOUDFLARE_HYPERDRIVE_ID }}
@@ -226,7 +234,6 @@ jobs:
               -X POST "${CLOUDFLARE_WORKER_URL%/}/v1/actions" \
               -H 'content-type: application/json' -H "origin: $origin" \
               -H "x-healthcheck-secret: $HEALTHCHECK_SECRET" \
-              -H 'x-reconcile-config: true' \
               --data '{"action":"healthcheck","payload":{}}')"
             if [ "$unauthorized" = '401' ] && [ "$health" = '200' ] && grep -q '"ok":true' /tmp/health.json; then
               exit 0
