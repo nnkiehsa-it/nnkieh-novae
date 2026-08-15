@@ -1,5 +1,5 @@
-import { LoaderCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export function ActionFeedbackIcon({
   className,
@@ -20,7 +20,7 @@ export function ActionFeedbackIcon({
       data-state={state === "success" ? "complete" : "loading"}
       data-surface={surface}
     >
-      <LoaderCircle className="t-spinner t-spinner-check-loader" />
+      <LoadingSpinner className="t-spinner-check-loader" />
       <svg className="t-spinner-check-success" viewBox="0 0 24 24">
         <path d="m6.5 12.5 3.25 3.25 7.75-8" />
       </svg>

@@ -3,13 +3,13 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import * as React from "react";
 import {
-  LoaderCircle,
   Search,
   ShieldCheck,
   Trash2,
   UserPlus,
 } from "lucide-react";
 import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import {
   type AccessScope,
   type AccessUser,
@@ -165,7 +165,7 @@ export function AccessManagement() {
                   variant="outline"
                 >
                   {searching ? (
-                    <LoaderCircle className="t-spinner" />
+                    <LoadingSpinner />
                   ) : (
                     <Search />
                   )}{translate('ui.common.search')}</Button>

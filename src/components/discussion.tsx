@@ -2,12 +2,13 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import * as React from "react";
-import { ChevronDown, LoaderCircle, MessageCircle, X } from "lucide-react";
+import { ChevronDown, MessageCircle, X } from "lucide-react";
 import { toast } from "sonner";
 import type { CommentSortOption, DiscussionCommentRecord } from "@/types";
 import { useDiscussionProfiles } from "@/hooks/use-public-profiles";
 import { useSession } from "@/hooks/use-session";
 import { Button } from "@/components/ui/button";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 import { CommentComposer } from "@/components/comments/comment-composer";
@@ -154,7 +155,7 @@ export function Discussion({
         {hasMore && onLoadMore ? (
           <div className="flex justify-center border-t px-5 py-4 sm:px-7">
             <Button disabled={loadingMore} onClick={() => void onLoadMore()} size="sm" variant="outline">
-              {loadingMore ? <LoaderCircle className="t-spinner" /> : <ChevronDown />}
+              {loadingMore ? <LoadingSpinner /> : <ChevronDown />}
               {loadingMore ? translate("ui.common.loadingMore") : translate("ui.discussion.loadMore")}
             </Button>
           </div>

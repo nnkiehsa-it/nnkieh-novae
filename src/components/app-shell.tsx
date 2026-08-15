@@ -226,7 +226,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       ? "/settings"
       : pathname;
   return (
-    <div className="min-h-[100svh] bg-[var(--surface-stage)] md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
+    <div className="app-shell bg-[var(--surface-stage)] md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-background/92 p-3 backdrop-blur-xl md:flex">
         <div className="px-2 pb-5 pt-2">
           <BrandLockup href={issueHref} />
@@ -247,7 +247,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <main
           className={`app-viewport pt-[max(1rem,var(--safe-top))] md:pb-12 md:pt-6 ${
             showMobileNavigation
-              ? "pb-[calc(6.5rem+min(0.625rem,var(--safe-bottom)))]"
+              ? "pb-[calc(var(--mobile-nav-height)+var(--mobile-nav-bottom-gap)+1.4rem)]"
               : "pb-[max(2rem,var(--safe-bottom))]"
           }`}
         >

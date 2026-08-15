@@ -3,10 +3,10 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { LoaderCircle } from "lucide-react";
 import { useSession } from "@/hooks/use-session";
 import { AppShell } from "@/components/app-shell";
 import { BrandLockup } from "@/components/ui/brand";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 function StartupScreen() {
   useLocaleSubscription();
@@ -23,9 +23,7 @@ function StartupScreen() {
             data-text={translate('ui.app.preparing')}
           >{translate('ui.app.preparing')}</p>
         </div>
-        <div className="t-loading-orbit mt-1" aria-hidden>
-          <LoaderCircle className="t-spinner size-5 text-muted-foreground" />
-        </div>
+        <LoadingSpinner className="mt-1 size-8 text-muted-foreground" iconClassName="size-5" />
       </div>
     </div>
   );

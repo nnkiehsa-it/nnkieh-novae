@@ -31,11 +31,26 @@ describe("React frontend design system", () => {
 
   it("centers shared spinners and keeps startup loading transparent", () => {
     const motion = read("src/styles/motion.css");
-    expect(motion).toMatch(/\.t-spinner \{[\s\S]*display: block[\s\S]*align-self: center/u);
-    expect(motion).toMatch(/@keyframes t-spinner[\s\S]*translate3d/u);
+    const spinner = read("src/components/ui/loading-spinner.tsx");
+    expect(motion).toMatch(/\.t-spinner \{[\s\S]*display: block[\s\S]*transform-origin: 50% 50%/u);
+    expect(motion).toMatch(/\.t-loading-spinner \{[\s\S]*place-items: center[\s\S]*line-height: 0/u);
+    expect(motion).toMatch(/@keyframes t-spinner-orbit[\s\S]*translate3d/u);
+    expect(motion).toMatch(/@keyframes t-spinner-turn[\s\S]*rotate\(360deg\)/u);
+    expect(spinner).toContain('data-slot="loading-spinner"');
     expect(motion).toMatch(/\.t-spinner-check \{[\s\S]*line-height: 0[\s\S]*vertical-align: middle/u);
-    const startupOrbit = motion.match(/\.t-loading-orbit \{([\s\S]*?)\n\}/u)?.[1] ?? "";
-    expect(startupOrbit).not.toContain("background:");
+    expect(motion).not.toContain(".t-loading-orbit");
+  });
+
+  it("anchors mobile navigation to a stable viewport in Safari and standalone PWA mode", () => {
+    const globals = read("src/app/globals.css");
+    const shell = read("src/components/app-shell.tsx");
+    expect(globals).toContain("--safe-bottom-stable: env(safe-area-max-inset-bottom");
+    expect(globals).toContain("--app-fixed-viewport-height: 100svh");
+    expect(globals).toContain("--app-fixed-viewport-height: 100vh");
+    expect(globals).toMatch(/\.app-mobile-nav \{[\s\S]*top: calc\(var\(--app-fixed-viewport-height\)/u);
+    expect(globals).toMatch(/\.app-mobile-nav \{[\s\S]*bottom: auto/u);
+    expect(shell).toContain("className=\"app-shell bg-[var(--surface-stage)]");
+    expect(shell).toContain("var(--mobile-nav-height)+var(--mobile-nav-bottom-gap)");
   });
 
   it("keeps route motion separate from skeleton-to-content sharpening", () => {

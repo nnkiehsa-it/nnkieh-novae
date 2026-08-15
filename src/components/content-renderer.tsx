@@ -3,7 +3,7 @@
 import * as React from "react";
 import DOMPurify from "dompurify";
 import { marked } from "marked";
-import { ImageIcon, LoaderCircle, ZoomIn } from "lucide-react";
+import { ImageIcon, ZoomIn } from "lucide-react";
 import { apiGatewayUrl } from "@/lib/api-gateway";
 import { stripMarkdownImages } from "@/lib/markdown-images";
 import { useResolvedMarkdown } from "@/hooks/use-resolved-markdown";
@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { cn } from "@/lib/utils";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 const imageAltSizePattern = /^(.*)\|(\d{1,5})x(\d{1,5})$/u;
 
@@ -111,7 +112,7 @@ export function ContentRenderer({
                   {image.resolveError ? (
                     <ImageIcon className="size-5" />
                   ) : (
-                    <LoaderCircle className="t-spinner size-5" />
+                    <LoadingSpinner className="size-5" />
                   )}
                 </span>
               )}

@@ -94,8 +94,12 @@
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-bottom-stable: env(safe-area-max-inset-bottom, env(safe-area-inset-bottom, 0px));
   --control-label-size: 0.75rem;
   --safe-left: env(safe-area-inset-left, 0px);
+  --app-fixed-viewport-height: 100svh;
+  --mobile-nav-height: 3.875rem;
+  --mobile-nav-bottom-gap: max(0.9375rem, var(--safe-bottom-stable));
 }
 
 .dark {
@@ -229,6 +233,11 @@ textarea {
   padding-inline: max(var(--page-gutter), var(--safe-left), var(--safe-right));
 }
 
+.app-shell {
+  min-height: 100vh;
+  min-height: 100svh;
+}
+
 .route-page {
   width: min(100%, var(--content-max));
   margin-inline: auto;
@@ -255,9 +264,12 @@ textarea {
 }
 
 .app-mobile-nav {
+  box-sizing: border-box;
   right: max(1rem, var(--safe-right));
-  bottom: max(0.9375rem, min(1.5625rem, calc(var(--safe-bottom) + 0.9375rem)));
+  top: calc(var(--app-fixed-viewport-height) - var(--mobile-nav-height) - var(--mobile-nav-bottom-gap));
+  bottom: auto;
   left: max(1rem, var(--safe-left));
+  height: var(--mobile-nav-height);
   opacity: 0;
   pointer-events: none;
   transform: translateY(1.125rem) scale(0.96);
@@ -266,6 +278,19 @@ textarea {
     opacity var(--motion-quick) var(--ease-smooth-out),
     transform var(--motion-fast) var(--ease-smooth-out),
     visibility 0s linear var(--motion-fast);
+}
+
+@media (display-mode: standalone) {
+  :root {
+    --app-fixed-viewport-height: 100vh;
+  }
+
+  body,
+  .app-shell,
+  .app-start-surface,
+  .app-viewport {
+    min-height: 100vh;
+  }
 }
 
 .app-mobile-nav[data-visible="true"] {

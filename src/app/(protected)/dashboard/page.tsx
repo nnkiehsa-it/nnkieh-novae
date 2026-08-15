@@ -21,6 +21,7 @@ import { formatDate } from "@/lib/format";
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 import { Button } from "@/components/ui/button";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -76,7 +77,7 @@ export default function DashboardPage() {
                 size="icon"
                 variant="ghost"
             >
-                <RefreshCw className={dashboard.loading ? "t-spinner" : ""} />
+                {dashboard.loading ? <LoadingSpinner /> : <RefreshCw />}
               </Button>
             </TooltipTrigger>
             <TooltipContent>{translate('ui.dashboard.refresh')}</TooltipContent>
