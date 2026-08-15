@@ -19,7 +19,7 @@ try {
   const quotedRole = `"${roleName}"`;
   if (role.rowCount === 0) await client.query(`create role ${quotedRole} login`);
   const passwordStatement = await client.query(
-    "select format('alter role %I with login nosuperuser nocreatedb nocreaterole noinherit password %L', $1::text, $2::text) as sql",
+    "select format('alter role %I with login nocreatedb nocreaterole noinherit password %L', $1::text, $2::text) as sql",
     [roleName, password],
   );
   await client.query(passwordStatement.rows[0].sql);
