@@ -11,12 +11,13 @@ function createContentSecurityPolicy(nonce: string) {
     process.env.NODE_ENV === "development" || isolatedLocalAuth
       ? " http://127.0.0.1:* http://localhost:* ws://127.0.0.1:* ws://localhost:*"
       : "";
+  const webAssemblyScripts = " 'wasm-unsafe-eval'";
   const developmentScripts =
     process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : "";
 
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${developmentScripts} https://accounts.google.com https://apis.google.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${webAssemblyScripts}${developmentScripts} https://accounts.google.com https://apis.google.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/`,
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self' data:",
     "img-src 'self' data: blob: https:",

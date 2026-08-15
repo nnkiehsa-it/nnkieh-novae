@@ -26,6 +26,12 @@ test("Vercel hosts the frontend while Cloudflare Workers owns the API", async ()
   assert.doesNotMatch(backendWorkflow, /x-reconcile-config/u);
 });
 
+test("production CSP permits WebAssembly image encoding without enabling unsafe eval", async () => {
+  const proxy = await read("src/proxy.ts");
+  assert.match(proxy, /wasm-unsafe-eval/u);
+  assert.match(proxy, /NODE_ENV === "development" \? " 'unsafe-eval'" : ""/u);
+});
+
 test("database backups run on a three-day cadence and retain only the latest two artifacts", async () => {
   const backupWorkflow = await read(".github/workflows/backup-database.yml");
   assert.match(backupWorkflow, /259200/u);
