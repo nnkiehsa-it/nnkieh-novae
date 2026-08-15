@@ -79,6 +79,17 @@ test("domain lists, details, discussion, and composers use shared components", a
   assert.match(facilityList, /FacilityCard/u);
   assert.match(announcementList, /AnnouncementCard/u);
   assert.match(issueDetail, /IssueDetailContent/u);
+  const issueDetailContent = await read("src/components/issues/issue-detail-content.tsx");
+  const facilityDetailContent = await read("src/components/facilities/facility-detail-content.tsx");
+  const resolutionNotice = await read("src/components/content-resolution-notice.tsx");
+  const resolutionSkeleton = await read("src/components/content-resolution-notice-skeleton.tsx");
+  assert.match(issueDetailContent, /getIssueNotice/u);
+  assert.match(issueDetailContent, /ContentResolutionNotice/u);
+  assert.match(facilityDetail, /FacilityDetailContent/u);
+  assert.match(facilityDetailContent, /ContentResolutionNotice/u);
+  assert.match(resolutionNotice, /ContentResolutionNoticeSkeleton/u);
+  assert.match(resolutionSkeleton, /ContentResolutionNoticeSkeleton/u);
+  assert.match(resolutionNotice, /data-resolution-icon/u);
   for (const source of [issueDetail, announcementDetail]) assert.match(source, /Discussion/u);
   assert.match(facilityDetail, /FacilityStatusDialog/u);
   for (const path of [
@@ -386,7 +397,7 @@ test("design tokens and motion recipes are centralized and capability-aware", as
   const globals = await read("src/app/globals.css");
   const motion = await read("src/styles/motion.css");
   for (const token of ["--background", "--surface-stage", "--border", "--radius", "--shadow-control", "--shadow-card", "--shadow-floating"]) assert.ok(globals.includes(token));
-  for (const recipe of ["t-route-enter", "t-panel-reveal", "t-stagger-item", "t-digit", "t-dialog", "t-dropdown", "t-success-check", "t-shimmer"]) assert.ok(motion.includes(recipe));
+  for (const recipe of ["t-route-enter", "t-panel-reveal", "t-stagger-item", "t-digit", "t-dialog", "t-dropdown", "t-success-check", "t-resolution-notice", "t-shimmer"]) assert.ok(motion.includes(recipe));
   assert.match(motion, /@media \(prefers-reduced-motion: reduce\)/u);
   assert.match(motion, /@media \(hover: hover\) and \(pointer: fine\)/u);
   assert.doesNotMatch(`${globals}\n${motion}`, /transition-all/u);

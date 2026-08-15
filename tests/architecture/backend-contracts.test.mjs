@@ -26,6 +26,14 @@ test("Vercel hosts the frontend while Cloudflare Workers owns the API", async ()
   assert.doesNotMatch(backendWorkflow, /x-reconcile-config/u);
 });
 
+test("database backups run on a three-day cadence and retain only the latest two artifacts", async () => {
+  const backupWorkflow = await read(".github/workflows/backup-database.yml");
+  assert.match(backupWorkflow, /259200/u);
+  assert.match(backupWorkflow, /actions: write/u);
+  assert.match(backupWorkflow, /artifact_ids\[@\]:2/u);
+  assert.match(backupWorkflow, /actions\/artifacts\/\$artifact_id/u);
+});
+
 test("backend action registry covers the generated frontend contract", async () => {
   const generated = await read("src/services/backend-action-contract.ts");
   const registry = await read("cloudflare/src/backend/actions/action-registry.ts");

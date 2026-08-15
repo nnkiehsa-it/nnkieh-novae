@@ -2,23 +2,19 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import {
-  Check,
   Clock3,
-  MapPin,
   MoreHorizontal,
   Trash2,
   Hand,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useFacilityDetail } from "@/hooks/use-facility-detail";
-import { findFacilityCategory } from "@/hooks/use-categories";
-import { ContentRenderer } from "@/components/content-renderer";
+import { FacilityDetailContent } from "@/components/facilities/facility-detail-content";
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { LikeActionButton } from "@/components/motion/like-action-button";
 import { DetailToolbar } from "@/components/detail-toolbar";
 import { FacilityStatusDialog } from "@/components/facilities/facility-status-dialog";
 import { Button } from "@/components/ui/button";
-import { CardContent } from "@/components/ui/card";
 import { ResizableCard } from "@/components/ui/resizable-card";
 import {
   AlertDialog,
@@ -40,13 +36,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ErrorState } from "@/components/ui/page-state";
 import { DetailRouteSkeleton } from "@/components/ui/route-skeleton";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SkeletonBadgeLabel, SkeletonReveal } from "@/components/ui/skeleton-reveal";
+import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { formatDate } from "@/lib/format";
 import { shareCurrentPage } from "@/lib/share";
-import { cn } from "@/lib/utils";
 
 export default function FacilityDetailPage() {
   useLocaleSubscription();
@@ -129,56 +122,10 @@ export default function FacilityDetailPage() {
         shareLabel={translate('ui.facility.share')}
       />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
-        <ResizableCard className="gap-0 overflow-hidden py-0">
-          <div
-            className={cn(
-              "px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6",
-              (Boolean(facility.content?.trim()) || Boolean(facility.result_content?.trim())) && "border-b",
-            )}
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-grid place-items-center rounded-full bg-card px-2.5 py-1 text-center text-xs font-medium text-muted-foreground shadow-[var(--shadow-control)]">
-                <SkeletonBadgeLabel className="min-w-16" enabled={detail.revealDetail} skeleton={<Skeleton className="h-3 w-16" />}>{findFacilityCategory(facility.category_id)?.label || translate('ui.nav.facilities')}</SkeletonBadgeLabel>
-              </span>
-              <StatusBadge domain="facility" revealLabel={detail.revealDetail} status={facility.status} />
-            </div>
-            <SkeletonReveal as="div" className="mt-3" enabled={detail.revealDetail} skeleton={<Skeleton className="h-8 w-3/5" />}><h1 className="text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">
-              {facility.title}
-            </h1></SkeletonReveal>
-            <div className="mt-3 flex flex-wrap gap-3 text-[0.8125rem] text-muted-foreground">
-              <span className="inline-flex items-center gap-1">
-                <MapPin className="size-3.5" />
-                <SkeletonReveal enabled={detail.revealDetail} skeleton={<Skeleton className="h-4 w-24" />}><span>{facility.location}</span></SkeletonReveal>
-              </span>
-              <SkeletonReveal enabled={detail.revealDetail} skeleton={<Skeleton className="h-4 w-32" />}><span>{formatDate(facility.created_at)}</span></SkeletonReveal>
-            </div>
-          </div>
-          {facility.content?.trim() ? (
-            <CardContent className="py-5 sm:px-7 sm:py-6">
-              <ContentRenderer
-                content={facility.content}
-                fallbackAlt={facility.title}
-                revealText={detail.revealDetail}
-              />
-            </CardContent>
-          ) : null}
-          {facility.result_content ? (
-            <div className="border-t bg-emerald-500/[0.045] px-5 py-5 sm:px-7">
-              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-success">
-                <span
-                  className="t-success-check grid size-6 place-items-center rounded-full bg-success/12"
-                  data-state="in"
-                >
-                  <Check className="size-3.5" />
-                </span>{translate('ui.common.result')}</div>
-              <ContentRenderer
-                content={facility.result_content}
-                fallbackAlt={translate('ui.issue.resultAlt', { title: facility.title })}
-                revealText={detail.revealDetail}
-              />
-            </div>
-          ) : null}
-        </ResizableCard>
+        <FacilityDetailContent
+          facility={facility}
+          reveal={detail.revealDetail}
+        />
         <aside className="space-y-3 lg:sticky lg:top-6">
           <ResizableCard className="gap-5 p-5 sm:p-6">
             <div className="flex flex-col gap-5">

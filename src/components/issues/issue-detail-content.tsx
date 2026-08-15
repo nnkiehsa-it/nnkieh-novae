@@ -1,13 +1,15 @@
 "use client";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
-import { Check } from "lucide-react";
 import type { IssueRecord, UserPublicProfile } from "@/types";
 import { getIssueCategoryLabel } from "@/constants/categories";
+import { ISSUE_STATUS_LABELS } from "@/constants/statuses";
 import { formatDate } from "@/lib/format";
+import { getIssueNotice } from "@/lib/issue-notice";
 import { cn } from "@/lib/utils";
 import { ContentRenderer } from "@/components/content-renderer";
 import { ContentAuthor } from "@/components/content-author";
+import { ContentResolutionNotice } from "@/components/content-resolution-notice";
 import { CardContent } from "@/components/ui/card";
 import { ResizableCard } from "@/components/ui/resizable-card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -30,13 +32,16 @@ export function IssueDetailContent({
 }) {
   useLocaleSubscription();
   const hasContent = Boolean(issue.content?.trim());
-  const hasResult = Boolean(issue.result_content?.trim());
+  const notice = getIssueNotice(
+    issue,
+    translate(ISSUE_STATUS_LABELS[issue.status]),
+  );
   return (
     <ResizableCard className="gap-0 overflow-hidden py-0">
       <div
         className={cn(
           "px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6",
-          (hasContent || hasResult) && "border-b",
+          (hasContent || notice) && "border-b",
         )}
       >
         <div className="flex flex-wrap items-center gap-2">
@@ -72,21 +77,15 @@ export function IssueDetailContent({
           />
         </CardContent>
       ) : null}
-      {issue.result_content ? (
-        <div className="border-t bg-emerald-500/[0.045] px-5 py-5 sm:px-7">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-success">
-            <span
-              className="t-success-check grid size-6 place-items-center rounded-full bg-success/12"
-              data-state="in"
-            >
-              <Check className="size-3.5" />
-            </span>{translate('ui.common.result')}</div>
-          <ContentRenderer
-            content={issue.result_content}
-            fallbackAlt={translate('ui.issue.resultAlt', { title: issue.title })}
-            revealText={reveal}
-          />
-        </div>
+      {notice ? (
+        <ContentResolutionNotice
+          content={notice.content}
+          fallbackAlt={translate("ui.issue.resultAlt", { title: issue.title })}
+          reveal={reveal}
+          separated={hasContent}
+          title={translate(notice.title)}
+          tone={notice.tone}
+        />
       ) : null}
     </ResizableCard>
   );

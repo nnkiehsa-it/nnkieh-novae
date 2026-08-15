@@ -36,7 +36,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/components/app-shell.tsx` / `liquid-nav.tsx` — desktop, compact desktop, and mobile navigation. Primary navigation updates immediately while the pathname-keyed whole incoming route node fades in for 350ms only after the prior node has unmounted; no document View Transition snapshot can overlap content or cover the fixed sidebar/mobile dock. Child/back routes retain the shared depth-aware entrance motion, while selected navigation and tab surfaces use measurement-free shared-layout motion.
 - `src/lib/navigation-memory.ts` — remembers the immediately preceding in-app pathname, stamps each committed in-app history entry with a monotonic index, and preserves the intended root/child/back direction until its destination pathname commits. Browser back and forward therefore resolve to opposite deterministic directions even when a loading boundary causes intermediate renders.
 - `src/components/issues/` — issue cards, detail content/actions, and moderation presentation.
-- `src/components/facilities/` — facility cards and status-dialog presentation.
+- `src/components/facilities/` — facility cards, shared detail content with status-aware conclusion presentation, and status-dialog presentation.
 - `src/components/announcements/` — announcement cards.
 - `src/components/settings/` — account, appearance/install, push preferences, and resource cards.
 - `src/components/notifications/notification-skeleton.tsx` — route and local notification loading rows that share the resolved list container, padding, icon column, and text anchors.
@@ -48,10 +48,11 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/components/discussion.tsx`, `comments/comment-composer.tsx`, `comments/comment-thread.tsx` — shared server-sorted discussion card, fixed safe-area composer with bottom-aligned 40px avatar/action geometry and symmetric inset, reply-target preview, and collapsible reply-rail presentation. The dock publishes its ResizeObserver-measured live height; detail pages consume that final clearance so mobile sidebar cards stay adjacent to discussion while the last page content can always scroll fully above the composer.
 - `src/components/content-author.tsx` — shared author avatar and name row for list/detail content; unresolved profiles reserve a 24px avatar plus 64px mixed-script name skeleton and never flash a generic member label.
 - `src/components/content-renderer.tsx` — sanitized Markdown/media rendering; its optional field-level reveal affects Markdown text only and leaves media/card chrome outside the filter layer.
+- `src/components/content-resolution-notice.tsx` / `content-resolution-notice-skeleton.tsx` — shared success/error conclusion block for proposals and facility reports, paired with a lightweight cold-load skeleton that does not pull Markdown rendering into route fallbacks; the resolved block uses status-aware copy and reduced-motion-safe state entrance animation.
 - `src/components/detail-toolbar.tsx` — shared, geometry-stable secondary toolbar; detail routes add share/actions while Dashboard and system management reuse the same back geometry on mobile and desktop.
 - `src/components/protected-app.tsx`, `app-providers.tsx`, `app-update-gate.tsx` — startup/session, providers, theme/i18n, transitions.dev-matched pill toast boundaries, and bounded forced PWA updates with version polling, service-worker takeover, animated progress, and reload recovery.
 - `src/components/feature-route-guard.tsx` — shared disabled-feature guard for direct proposal and facility routes.
-- `src/components/ui/route-skeleton.tsx` and route `loading.tsx` files — prefetched list/detail app-shell fallbacks that reuse the same header/grid/control geometry as their resolved routes while skeletonizing only unresolved domain fields. Feed skeletons mirror each domain card's author, progress/location, status, and interaction rows; detail fallbacks reserve full title and two-line content geometry without treating list excerpts as detail cache, and no domain requests are started by the fallback.
+- `src/components/ui/route-skeleton.tsx` and route `loading.tsx` files — prefetched list/detail app-shell fallbacks that reuse the same header/grid/control geometry as their resolved routes while skeletonizing only unresolved domain fields. Feed skeletons mirror each domain card's author, progress/location, status, and interaction rows; proposal and facility detail fallbacks also reserve the shared conclusion block before the final success/error content is known, and no domain requests are started by the fallback.
 - `src/components/ui/tooltip.tsx` — shared fine-pointer-only tooltip capability boundary; touch and non-hover devices keep labelled controls without opening tooltip layers.
 - `src/components/ui/action-feedback-icon.tsx`, `pending-alert-dialog-action.tsx` — shared transitions.dev-style spinner-to-check primitives for backend mutation, destructive confirmation, and update feedback.
 
@@ -117,7 +118,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `.github/workflows/verify-pr.yml` — Node 24 local, PostgreSQL/Worker integration, and real-browser verification.
 - `.github/workflows/deploy-frontend.yml` — Vercel Next.js build/deploy using `NEXT_PUBLIC_*` runtime names mapped from existing secret storage names.
 - `.github/workflows/deploy-backend.yml` — local backend verification, forward Neon migrations, runtime-role configuration, environment-specific Worker rendering, Queue provisioning, Cloudflare deployment, and authenticated/database smoke checks.
-- `.github/workflows/backup-database.yml` — daily PostgreSQL 17 logical dump, age encryption, checksum, and 14-day GitHub artifact retention; plaintext never leaves the runner.
+- `.github/workflows/backup-database.yml` — daily cadence check that creates a PostgreSQL 17 logical dump only when the newest backup is at least 72 hours old, encrypts it with age, verifies it with a checksum, and prunes GitHub artifacts to the latest two; plaintext never leaves the runner.
 
 ## Design documentation
 
