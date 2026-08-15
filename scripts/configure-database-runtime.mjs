@@ -1,13 +1,19 @@
 import process from "node:process";
+import { writeFile } from "node:fs/promises";
 import pg from "pg";
 
 const { Client } = pg;
+const connectionOutputIndex = process.argv.indexOf("--connection-output");
+const connectionOutput = connectionOutputIndex === -1 ? undefined : process.argv[connectionOutputIndex + 1];
 const roleName = (process.env.DATABASE_RUNTIME_ROLE || "novae_runtime").trim();
 const password = process.env.DATABASE_RUNTIME_PASSWORD?.trim();
 const connectionString = process.env.DATABASE_URL?.trim();
 
 if (!connectionString) throw new Error("DATABASE_URL is required.");
 if (!password) throw new Error("DATABASE_RUNTIME_PASSWORD is required.");
+if (connectionOutputIndex !== -1 && !connectionOutput) {
+  throw new Error("--connection-output requires a file path.");
+}
 if (!/^[a-z_][a-z0-9_]{0,62}$/u.test(roleName)) {
   throw new Error("DATABASE_RUNTIME_ROLE must be a safe PostgreSQL role name.");
 }
@@ -41,3 +47,20 @@ try {
 } finally {
   await client.end();
 }
+
+const runtimeUrl = new URL(connectionString);
+runtimeUrl.username = roleName;
+runtimeUrl.password = password;
+const runtimeConnectionString = runtimeUrl.toString();
+const runtimeClient = new Client({ connectionString: runtimeConnectionString });
+await runtimeClient.connect();
+try {
+  await runtimeClient.query("select code from app_private.roles limit 1");
+} finally {
+  await runtimeClient.end();
+}
+
+if (connectionOutput) {
+  await writeFile(connectionOutput, runtimeConnectionString, { encoding: "utf8", mode: 0o600 });
+}
+console.log(`Verified least-privilege PostgreSQL role ${roleName}.`);

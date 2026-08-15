@@ -20,6 +20,7 @@ test("Vercel hosts the frontend while Cloudflare Workers owns the API", async ()
   assert.ok(vercel.framework === "nextjs" || nextConfig.includes("nextConfig"));
   assert.match(frontendWorkflow, /vercel(?:@\S+)? deploy/iu);
   assert.match(backendWorkflow, /wrangler deploy/iu);
+  assert.match(backendWorkflow, /wrangler hyperdrive update/iu);
   assert.match(backendWorkflow, /db:migrate/u);
   assert.match(backendWorkflow, /configure-cloudinary\.mjs/u);
   assert.doesNotMatch(backendWorkflow, /x-reconcile-config/u);
@@ -42,6 +43,7 @@ test("Postgres is reachable only through the least-privilege Worker boundary", a
   assert.match(boundary, /revoke all on schema app_private from public/iu);
   assert.match(runtime, /novae_runtime/u);
   assert.match(runtime, /NOINHERIT|noinherit/iu);
+  assert.match(runtime, /select code from app_private\.roles limit 1/u);
   assert.doesNotMatch(runtime, /grant create on schema/iu);
   assert.match(worker, /createDatabaseClient/u);
 });

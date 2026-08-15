@@ -130,7 +130,7 @@ jobs:
         env:
           DATABASE_RUNTIME_PASSWORD: ${{ secrets.NEON_RUNTIME_PASSWORD }}
           DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
-        run: npm run db:configure-runtime
+        run: node scripts/configure-database-runtime.mjs --connection-output /tmp/novae-runtime-database-url
 
       - name: Configure the Cloudinary authenticated upload preset
         env:
@@ -152,6 +152,15 @@ jobs:
         env:
           NOTION_ENABLED: ${{ secrets.NOTION_TOKEN != '' && 'true' || 'false' }}
         run: node scripts/render-worker-config.mjs --environment "$DEPLOYMENT_ENVIRONMENT" --output /tmp/novae-wrangler.json
+
+      - name: Synchronize the verified runtime credentials to Hyperdrive
+        run: |
+          runtime_database_url="$(< /tmp/novae-runtime-database-url)"
+          echo "::add-mask::$runtime_database_url"
+          npx wrangler hyperdrive update "$CLOUDFLARE_HYPERDRIVE_ID" \
+            --connection-string "$runtime_database_url" \
+            --caching-disabled \
+            --config /tmp/novae-wrangler.json
 
       - name: Ensure the Cloudflare Queue exists
         run: |
@@ -214,9 +223,9 @@ jobs:
       - name: Deploy the Cloudflare Worker
         run: npx wrangler deploy --config /tmp/novae-wrangler.json --secrets-file /tmp/novae-worker-secrets.json
 
-      - name: Remove ephemeral deployment secrets
+      - name: Remove ephemeral deployment credentials
         if: always()
-        run: rm -f /tmp/novae-worker-secrets.json
+        run: rm -f /tmp/novae-worker-secrets.json /tmp/novae-runtime-database-url
 
       - name: Smoke test authentication and database health
         env:
