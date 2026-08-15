@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import process from "node:process";
@@ -6,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 import pg from "pg";
+import { resolveAppliedMigrationChecksum } from "./migration-checksum.mjs";
 
 const { Client } = pg;
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -146,11 +146,8 @@ async function migrate(connectionString = databaseUrl()) {
     );
     for (const name of await migrationFiles()) {
       const source = await readFile(join(migrationsDirectory, name), "utf8");
-      const checksum = createHash("sha256").update(source).digest("hex");
       const existing = applied.get(name);
-      if (existing && existing !== checksum) {
-        throw new Error(`Applied migration checksum changed: ${name}`);
-      }
+      const checksum = resolveAppliedMigrationChecksum(name, source, existing);
       if (existing) continue;
       await client.query("begin");
       try {

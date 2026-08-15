@@ -59,6 +59,20 @@ function start(label, command, args, environment = {}, ports = []) {
   return child;
 }
 
+async function keepWindowsWslRunning() {
+  if (process.platform !== "win32") return;
+  const distro = process.env.NOVAE_WSL_DISTRO || "Debian";
+  const keepalive = start(
+    "wsl-keepalive",
+    "wsl.exe",
+    ["-d", distro, "--", "sh", "-lc", "while :; do sleep 60; done"],
+  );
+  await delay(250);
+  if (keepalive.exitCode !== null) {
+    throw new Error(`Could not keep the ${distro} WSL runtime active.`);
+  }
+}
+
 function windowsListenerPids(ports) {
   if (process.platform !== "win32") return [];
   const result = spawnSync("netstat.exe", ["-ano", "-p", "tcp"], { encoding: "utf8" });
@@ -138,6 +152,7 @@ if (occupiedServicePids.length > 0) {
 }
 
 try {
+  await keepWindowsWslRunning();
   run("reset PostgreSQL and apply migrations", process.execPath, [
     "scripts/database.mjs",
     "reset-local",
