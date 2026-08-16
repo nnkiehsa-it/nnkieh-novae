@@ -13,6 +13,8 @@ import {
 import { readLocalStorage, writeLocalStorage } from "@/lib/browser-storage";
 import { withRequestTimeout } from "@/lib/request";
 import { sessionDebug } from "@/lib/session-debug";
+import { setPendingTurnstileToken } from "@/lib/turnstile";
+import { ensureFirebaseAppCheck } from "@/lib/firebase-app-check";
 
 const LOGIN_ATTEMPT_KEY = "novae-login-attempts";
 const LOGIN_ATTEMPT_WINDOW_MS = 10 * 60 * 1_000;
@@ -94,17 +96,22 @@ function loginError(error: unknown) {
     )
       return "auth.loginWidgetInitFailed";
   }
+  if (error instanceof Error && error.message === "app-check-not-configured") {
+    return "auth.appCheckFailed";
+  }
   return "auth.loginFailedPleaseTryAgainLater";
 }
 
 export async function loginWithGoogle(
-  options: { selectAccount?: boolean } = {},
+  options: { selectAccount?: boolean; turnstileToken?: string | null } = {},
 ) {
   if (!claimLoginAttempt())
     return "auth.theLoginOperationIsTooFrequentPleaseTryAgainLater";
   if (!auth) return "auth.serviceUnavailable";
   const firebaseAuth = auth;
   try {
+    await ensureFirebaseAppCheck();
+    setPendingTurnstileToken(options.turnstileToken);
     if (authEmulatorUrl) {
       await signInWithPopup(
         firebaseAuth,
@@ -123,6 +130,7 @@ export async function loginWithGoogle(
     );
     return "";
   } catch (error) {
+    setPendingTurnstileToken(null);
     sessionDebug("login failed", error);
     return loginError(error);
   }

@@ -68,10 +68,10 @@
   },
   "ratelimits": [
     {
-      "name": "ACTION_IP_RATE_LIMITER",
+      "name": "INVALID_AUTH_IP_RATE_LIMITER",
       "namespace_id": "1001",
       "simple": {
-        "limit": 6000,
+        "limit": 300,
         "period": 60
       }
     },
@@ -124,16 +124,8 @@
       }
     },
     {
-      "name": "SYNC_IP_RATE_LIMITER",
-      "namespace_id": "1008",
-      "simple": {
-        "limit": 300,
-        "period": 60
-      }
-    },
-    {
       "name": "SYNC_USER_RATE_LIMITER",
-      "namespace_id": "1009",
+      "namespace_id": "1008",
       "simple": {
         "limit": 10,
         "period": 60
@@ -141,7 +133,7 @@
     },
     {
       "name": "WEBHOOK_IP_RATE_LIMITER",
-      "namespace_id": "1010",
+      "namespace_id": "1009",
       "simple": {
         "limit": 120,
         "period": 60
@@ -149,17 +141,25 @@
     },
     {
       "name": "WEBHOOK_GLOBAL_RATE_LIMITER",
-      "namespace_id": "1011",
+      "namespace_id": "1010",
       "simple": {
         "limit": 300,
         "period": 60
       }
     },
     {
-      "name": "MEDIA_IP_RATE_LIMITER",
-      "namespace_id": "1012",
+      "name": "MEDIA_USER_RATE_LIMITER",
+      "namespace_id": "1011",
       "simple": {
         "limit": 1200,
+        "period": 60
+      }
+    },
+    {
+      "name": "MEDIA_INVALID_IP_RATE_LIMITER",
+      "namespace_id": "1012",
+      "simple": {
+        "limit": 120,
         "period": 60
       }
     }

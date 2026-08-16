@@ -61,7 +61,7 @@ export async function handleUserAction(
       && Number.isFinite(checkedAt)
       && Date.now() - checkedAt < AVATAR_REVALIDATE_INTERVAL_MS
     ) {
-      const media = await createMediaDeliveryUrl(existing.avatar_public_id, "avatar", false);
+      const media = await createMediaDeliveryUrl(existing.avatar_public_id, "avatar", false, auth.uid);
       return { photoUrl: media.url };
     }
 
@@ -91,7 +91,7 @@ export async function handleUserAction(
         updated_at: new Date().toISOString(),
       }, { onConflict: "uid" });
       if (error) throw error;
-      const media = await createMediaDeliveryUrl(existing.avatar_public_id, "avatar", false);
+      const media = await createMediaDeliveryUrl(existing.avatar_public_id, "avatar", false, auth.uid);
       return { photoUrl: media.url };
     }
 
@@ -101,7 +101,7 @@ export async function handleUserAction(
       nextPublicId,
       new Blob([imageBuffer], { type: contentType }),
     );
-    const cachedPhotoUrl = (await createMediaDeliveryUrl(nextPublicId, "avatar", false)).url;
+    const cachedPhotoUrl = (await createMediaDeliveryUrl(nextPublicId, "avatar", false, auth.uid)).url;
     const { error } = await database.call("app_api", "backend_commit_user_avatar", {
       actor_uid: auth.uid,
       next_avatar_hash: avatarHash,
@@ -121,7 +121,7 @@ export async function handleUserAction(
   if (error) throw error;
   const profiles = await Promise.all((data ?? []).map(async (profile) => {
     const media = profile.avatar_public_id
-      ? await createMediaDeliveryUrl(profile.avatar_public_id, "avatar", false)
+      ? await createMediaDeliveryUrl(profile.avatar_public_id, "avatar", false, auth.uid)
       : null;
     return [
       profile.uid,

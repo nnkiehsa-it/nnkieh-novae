@@ -2,6 +2,8 @@
   "internal-error": { "status": 500, "messageKey": "apiError.internal" },
   "upstream-unavailable": { "status": 502, "messageKey": "apiError.upstreamUnavailable" },
   "unauthenticated": { "status": 401, "messageKey": "apiError.unauthenticated" },
+  "app-check-failed": { "status": 401, "messageKey": "apiError.appCheckFailed" },
+  "turnstile-failed": { "status": 401, "messageKey": "apiError.turnstileFailed" },
   "permission-denied": { "status": 403, "messageKey": "apiError.permissionDenied" },
   "origin-denied": { "status": 403, "messageKey": "apiError.originDenied" },
   "not-found": { "status": 404, "messageKey": "apiError.notFound" },

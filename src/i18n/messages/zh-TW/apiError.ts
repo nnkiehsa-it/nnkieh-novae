@@ -1,4 +1,6 @@
 const messages = {
+  'apiError.appCheckFailed': '應用程式安全驗證失敗，請重新整理頁面後再試。',
+  'apiError.turnstileFailed': '安全驗證失敗，請再試一次。',
   'apiError.invalidFacilityCategory': '這個設備分類不存在。',
   'apiError.commentsDisabled': '此內容已關閉新留言；既有留言仍可查看。',
   'apiError.immutableCategoryPolicy': '分類建立後不能修改閱讀範圍或作者顯示規則。',

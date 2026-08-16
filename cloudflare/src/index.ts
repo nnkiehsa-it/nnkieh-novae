@@ -1,4 +1,5 @@
 import { requireFirebaseUid } from "./auth";
+import { requireFirebaseAppCheck } from "./app-check";
 import {
   apiErrorResponse,
   corsHeaders,
@@ -8,10 +9,10 @@ import {
   readBody,
 } from "./http";
 import {
-  claimActionIngress,
   claimActionRateLimit,
   claimCloudinaryIngress,
-  claimSyncIngress,
+  claimInvalidAuthenticationIngress,
+  claimRealtimeTicketRateLimit,
   claimSyncUser,
   RateLimitError,
 } from "./rate-limit";
@@ -34,6 +35,20 @@ export { BusinessRateLimiter, RealtimeHub };
 
 function clientIp(request: Request) {
   return request.headers.get("cf-connecting-ip")?.trim() || "unknown";
+}
+
+async function requireBrowserUid(
+  request: Request,
+  env: Env,
+  rateLimitCode: "rate-limit.login-sync" | "rate-limit.operation" | "rate-limit.read",
+) {
+  try {
+    await requireFirebaseAppCheck(request, env);
+    return await requireFirebaseUid(request, env);
+  } catch (error) {
+    await claimInvalidAuthenticationIngress(env, clientIp(request), rateLimitCode);
+    throw error;
+  }
 }
 
 function addCors(response: Response, request: Request, env: Env) {
@@ -61,9 +76,8 @@ async function handleAction(
   if (action !== "healthcheck" && !(action in BACKEND_ACTION_POLICIES)) {
     return apiErrorResponse(request, env, requestId, "invalid-action");
   }
-  await claimActionIngress(env, clientIp(request));
   if (action !== "healthcheck") {
-    const uid = await requireFirebaseUid(request, env);
+    const uid = await requireBrowserUid(request, env, "rate-limit.operation");
     await claimActionRateLimit(env, uid, action);
   }
 
@@ -82,8 +96,7 @@ async function handleSync(request: Request, env: Env, requestId: string) {
   if (!isAllowedBrowserRequest(request, env)) return apiErrorResponse(request, env, requestId, "origin-denied");
   const body = await readBody(request);
   parseJsonRecord(body);
-  await claimSyncIngress(env, clientIp(request));
-  const uid = await requireFirebaseUid(request, env);
+  const uid = await requireBrowserUid(request, env, "rate-limit.login-sync");
   await claimSyncUser(env, uid);
   const database = await createDatabaseClient(env);
   try {
@@ -95,10 +108,8 @@ async function handleSync(request: Request, env: Env, requestId: string) {
 
 async function handleRealtimeTicket(request: Request, env: Env, requestId: string) {
   if (!isAllowedBrowserRequest(request, env)) return apiErrorResponse(request, env, requestId, "origin-denied");
-  await claimActionIngress(env, clientIp(request));
-  const uid = await requireFirebaseUid(request, env);
-  const rateLimit = await env.READ_RATE_LIMITER.limit({ key: `realtime-ticket:${uid}` });
-  if (!rateLimit.success) throw new RateLimitError("rate-limit.read", 10);
+  const uid = await requireBrowserUid(request, env, "rate-limit.read");
+  await claimRealtimeTicketRateLimit(env, uid);
   const database = await createDatabaseClient(env);
   try {
     return jsonResponse(request, env, { data: await createRealtimeTicket(request, database), success: true });

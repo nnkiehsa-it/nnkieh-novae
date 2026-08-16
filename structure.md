@@ -11,7 +11,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/assets/fonts/harmonyos-sans-tc/` — generated, project-character-scoped HarmonyOS Sans TC Regular, Medium, Semibold, and Bold shards plus CSS; refreshed by `scripts/generate-harmonyos-subset.mjs`.
 - `src/styles/motion.css` — transition.dev-inspired timings/easing and named recipes for routes, panels, cards, text, digits, dialogs, dropdowns, toasts, loading, and success states. Shared spinners use baseline-independent centered geometry plus a subtle four-direction orbit, while the startup orbit stays transparent. Toasts use the source recipe's asymmetric 350/250ms rise, scale, and cross-blur; dialog motion is independent from its shared viewport centering positioner. Root routes use a quick opacity-only entry while child/return routes use a more legible compositor-only directional push. Skeletons delay their first paint to avoid flashing on fast reads, then retain a bounded visible and reveal interval; hover-capability and reduced-motion media queries remain centralized here.
 - `src/app/sw.ts` — Serwist service worker; `next.config.mjs` compiles and registers it at `public/sw.js`.
-- `src/proxy.ts` — per-request nonce CSP for Next hydration, strict production script execution, and local-emulator development connections.
+- `src/proxy.ts` — per-request nonce CSP for Next hydration, strict production script execution, Firebase App Check/reCAPTCHA, Cloudflare Turnstile, and local-emulator development connections.
 - `next.config.mjs` — public environment injection, static security headers, image hosts, and Serwist integration.
 - `components.json` — shadcn/ui aliases and Tailwind 4 configuration.
 - `vercel.json` — Vercel Next.js framework configuration.
@@ -51,6 +51,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/components/content-resolution-notice.tsx` / `content-resolution-notice-skeleton.tsx` — shared success/error conclusion block for closed proposals and facility reports, paired with a lightweight field-level skeleton shown only after the closed status is known; the resolved block uses status-aware copy and reduced-motion-safe state entrance animation.
 - `src/components/detail-toolbar.tsx` — shared, geometry-stable secondary toolbar; detail routes add share/actions while Dashboard and system management reuse the same back geometry on mobile and desktop.
 - `src/components/protected-app.tsx`, `app-providers.tsx`, `app-update-gate.tsx` — startup/session, providers, theme/i18n, transitions.dev-matched pill toast boundaries, and bounded forced PWA updates with version polling, service-worker takeover, animated progress, and reload recovery.
+- `src/components/turnstile-provider.tsx` — explicit invisible Cloudflare Turnstile execution for first authenticated profile sync; tokens remain in memory and are single-use at the backend boundary.
 - `src/components/feature-route-guard.tsx` — shared disabled-feature guard for direct proposal and facility routes.
 - `src/components/ui/route-skeleton.tsx` and route `loading.tsx` files — prefetched list/detail app-shell fallbacks that reuse the same header/grid/control geometry as their resolved routes while skeletonizing only unresolved domain fields. Feed skeletons mirror each domain card's author, progress/location, status, and interaction rows; detail fallbacks do not speculate about status-dependent conclusion content, and no domain requests are started by the fallback.
 - `src/components/ui/tooltip.tsx` — shared fine-pointer-only tooltip capability boundary; touch and non-hover devices keep labelled controls without opening tooltip layers.
@@ -76,8 +77,9 @@ This document is the maintained map of the repository. Read it before broad sear
 
 ## Data, domain, and infrastructure
 
-- `src/services/` — frontend boundary for the Cloudflare Workers API, native WebSocket realtime transport, uploads, Firebase-backed sessions, and backend actions. Only hooks and other services import it; no browser database client exists.
-- `src/lib/` — framework-independent request, Firebase, caching, Markdown, image, route, formatting, pagination, and domain utilities.
+- `src/services/` — frontend boundary for the Cloudflare Workers API, native WebSocket realtime transport, uploads, Firebase-backed sessions, and backend actions. Every browser API request obtains an App Check token through the shared security helper; no browser database client exists.
+- `src/lib/` — framework-independent request, Firebase/App Check, Turnstile token handoff, caching, Markdown, image, route, formatting, pagination, and domain utilities.
+- `src/lib/backend-security.ts` — shared Firebase ID token plus App Check request-header construction for browser-to-Worker API calls.
 - `src/hooks/use-paged-request-guard.ts` — shared feed request generation/in-flight guard that prevents duplicate loads and stale query responses from committing.
 - `src/lib/content-entity-store.ts` and `src/hooks/use-content-entity.ts` — normalized user-scoped content entities shared by lists, details, mutations, and realtime; explicit issue/announcement summary types omit full bodies and cannot satisfy or overwrite authoritative detail reads, while field revisions prevent older requests from replacing newer optimistic, server-confirmed, or realtime patches.
 - `src/lib/reaction-state.ts` — shared pure optimistic reaction state transition used by proposal support, facility affected, and announcement like flows so immediate counts and rollback snapshots follow one rule.
@@ -87,12 +89,14 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/types/` — shared frontend/domain types.
 - `src/i18n/` — reactive React i18n store and paired `en` / `zh-TW` domain catalogs. `ui.ts` contains the rebuilt interface language.
 - `src/generated/` — generated frontend contracts; do not edit manually.
-- `cloudflare/src/index.ts` — sole public API entrypoint for actions, auth sync, realtime tickets/WebSockets, signed media, Cloudinary webhooks, Queue consumption, and scheduled maintenance.
+- `cloudflare/src/index.ts` — sole public API entrypoint for actions, App Check and Firebase auth ingress, auth sync, realtime tickets/WebSockets, signed media, Cloudinary webhooks, Queue consumption, and scheduled maintenance.
+- `cloudflare/src/app-check.ts` / `turnstile.ts` — Worker-side Firebase App Check JWT validation and Cloudflare Turnstile Siteverify boundaries; App Check is required for browser API requests and Turnstile gates first-time profile creation.
 - `cloudflare/src/backend/actions/` — generated-registry-driven action dispatch and domain workflows. Authorization is enforced here and in database functions, never by frontend visibility checks.
 - `cloudflare/src/backend/database/` — parameterized PostgreSQL adapter and schema names used through a request-scoped, bounded Hyperdrive-backed PostgreSQL pool so independent reads can overlap without leaking connections across invocations.
 - `cloudflare/src/backend/jobs/` — durable outbox, FCM/Notion delivery, deletion, realtime fan-out, and maintenance consumers driven by Cloudflare Queues.
 - `cloudflare/src/backend/shared/` — Worker environment, Firebase token validation, Cloudinary, FCM, Notion, HTTP, media, platform runtime settings, and structured-observability boundaries.
 - `cloudflare/src/durable/` — SQLite-backed business rate limits and WebSocket Hibernation realtime hub. Realtime state can reconnect from PostgreSQL content versions instead of becoming a source of record.
+- `cloudflare/src/rate-limit.ts` / `cloudflare/src/media.ts` — opaque per-UID native limiter keys, invalid-auth IP breakers, and viewer-scoped media limiter keys; shared IP is not used for valid school traffic.
 - `cloudflare/wrangler.json` — local/default Worker bindings for Hyperdrive, Queue, Durable Objects, cron, native rate limits, observability, and Smart Placement; deployment renders an ignored environment-specific copy.
 - `database/migrations/` — fresh PostgreSQL 17 baseline and append-only migrations for Neon. `0002` creates private/API schemas, `0003` completes realtime batches, `0004` seals the Worker-only database boundary, and `0005` exposes scheduled support expiry.
 - `database/seed.local.sql` / `seed.integration.sql` — deterministic sample and backend-test seeds; production deploys never run either seed.

@@ -2,6 +2,7 @@ import { getFirebaseIdToken } from '@/lib/auth-token';
 import { apiGatewayUrl } from '@/lib/api-gateway';
 import { auth } from '@/lib/firebase';
 import { withRequestTimeout } from '@/lib/request';
+import { backendSecurityHeaders } from '@/lib/backend-security';
 
 interface RealtimeTicketEnvelope {
   data?: {
@@ -102,7 +103,10 @@ async function requestRealtimeTicket(uid: string) {
   return withRequestTimeout(async (signal) => {
     const response = await fetch(apiGatewayUrl('/v1/realtime/ticket'), {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: {
+        ...(await backendSecurityHeaders(token)),
+        'Content-Type': 'application/json',
+      },
       body: '{}',
       signal,
     });

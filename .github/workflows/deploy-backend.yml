@@ -80,6 +80,8 @@ jobs:
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
           CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
           FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_PROJECT_NUMBER: ${{ secrets.FIREBASE_PROJECT_NUMBER || secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_APP_IDS: ${{ secrets.FIREBASE_APP_IDS || secrets.VITE_FIREBASE_APP_ID }}
           FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           HEALTHCHECK_SECRET: ${{ secrets.HEALTHCHECK_SECRET }}
@@ -90,6 +92,7 @@ jobs:
           NOTION_DATA_SOURCE_ID: ${{ secrets.NOTION_DATA_SOURCE_ID }}
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           REALTIME_TICKET_SECRET: ${{ secrets.REALTIME_TICKET_SECRET }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
         run: |
           missing=()
           for name in \
@@ -103,13 +106,16 @@ jobs:
             CLOUDINARY_API_SECRET \
             CLOUDINARY_CLOUD_NAME \
             FIREBASE_PROJECT_ID \
+            FIREBASE_PROJECT_NUMBER \
+            FIREBASE_APP_IDS \
             FIREBASE_WEB_API_KEY \
             GOOGLE_SERVICE_ACCOUNT_JSON \
             HEALTHCHECK_SECRET \
             MEDIA_SIGNING_SECRET \
             NEON_DATABASE_URL \
             NEON_RUNTIME_PASSWORD \
-            REALTIME_TICKET_SECRET; do
+            REALTIME_TICKET_SECRET \
+            TURNSTILE_SECRET_KEY; do
             if [ -z "${!name}" ]; then missing+=("$name"); fi
           done
           if [ "${#missing[@]}" -gt 0 ]; then
@@ -191,6 +197,8 @@ jobs:
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
           CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
           FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_PROJECT_NUMBER: ${{ secrets.FIREBASE_PROJECT_NUMBER || secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_APP_IDS: ${{ secrets.FIREBASE_APP_IDS || secrets.VITE_FIREBASE_APP_ID }}
           FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           HEALTHCHECK_SECRET: ${{ secrets.HEALTHCHECK_SECRET }}
@@ -199,6 +207,7 @@ jobs:
           NOTION_DATA_SOURCE_ID: ${{ secrets.NOTION_DATA_SOURCE_ID }}
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           REALTIME_TICKET_SECRET: ${{ secrets.REALTIME_TICKET_SECRET }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
         run: |
           node --input-type=module <<'NODE'
           import { writeFileSync } from 'node:fs';
@@ -210,6 +219,8 @@ jobs:
             CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
             CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
             FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
+            FIREBASE_PROJECT_NUMBER: process.env.FIREBASE_PROJECT_NUMBER,
+            FIREBASE_APP_IDS: process.env.FIREBASE_APP_IDS,
             FIREBASE_WEB_API_KEY: process.env.FIREBASE_WEB_API_KEY,
             GOOGLE_SERVICE_ACCOUNT_JSON: process.env.GOOGLE_SERVICE_ACCOUNT_JSON,
             HEALTHCHECK_SECRET: process.env.HEALTHCHECK_SECRET,
@@ -219,6 +230,7 @@ jobs:
             NOTION_TOKEN: process.env.NOTION_TOKEN,
             PUBLIC_API_URL: process.env.CLOUDFLARE_WORKER_URL,
             REALTIME_TICKET_SECRET: process.env.REALTIME_TICKET_SECRET,
+            TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,
           };
           for (const key of Object.keys(secrets)) {
             if (!secrets[key]) delete secrets[key];

@@ -50,6 +50,8 @@ import {
   seedCategoryCatalog,
 } from "@/hooks/use-categories";
 import { loginWithGoogle, logoutFromFirebase } from "@/services/session-auth";
+import { useTurnstile } from "@/components/turnstile-provider";
+import { ApiRequestError } from "@/lib/api-error";
 import {
   validateBasicUser,
   validateUserAgainstToken,
@@ -213,7 +215,12 @@ async function refreshVerifiedSession(user: User, verificationId: number) {
   } catch (error) {
     if (!current()) return;
     sessionDebug("session verification failed", error);
-    patch({ error: "auth.initializationFailed" });
+    patch({
+      error: error instanceof ApiRequestError
+        && (error.code === "app-check-failed" || error.code === "turnstile-failed")
+        ? "auth.appCheckFailed"
+        : "auth.initializationFailed",
+    });
   } finally {
     if (current()) {
       patch({ roleLoading: false });
@@ -306,6 +313,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 }
 
 export function useSession() {
+  const { requestToken } = useTurnstile();
   const snapshot = useSyncExternalStore(
     subscribe,
     () => state,
@@ -340,9 +348,16 @@ export function useSession() {
   );
   const login = useCallback(async (options?: { selectAccount?: boolean }) => {
     patch({ error: "", loading: true });
-    const error = await loginWithGoogle(options);
+    let turnstileToken: string | null = null;
+    try {
+      turnstileToken = await requestToken("auth_sync");
+    } catch {
+      patch({ error: "auth.appCheckFailed", loading: false });
+      return;
+    }
+    const error = await loginWithGoogle({ ...options, turnstileToken });
     patch({ error, loading: false });
-  }, []);
+  }, [requestToken]);
   const logout = useCallback(async () => {
     patch({ loading: true });
     try {

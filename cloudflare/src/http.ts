@@ -10,7 +10,7 @@ export function allowedOrigins(env: Env) {
 export function corsHeaders(request: Request, env: Env) {
   const origin = request.headers.get('origin') ?? '';
   return {
-    'access-control-allow-headers': 'authorization, content-type',
+    'access-control-allow-headers': 'authorization, content-type, x-firebase-appcheck, x-turnstile-token',
     'access-control-allow-methods': 'POST, OPTIONS',
     'access-control-allow-origin': allowedOrigins(env).has(origin) ? origin : 'null',
     'access-control-max-age': '86400',

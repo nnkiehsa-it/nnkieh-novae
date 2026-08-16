@@ -285,7 +285,7 @@ async function mapWithConcurrency<T, TResult>(
 }
 
 async function uploadImageToNotion(publicId: string, filename: string) {
-  const sourceUrl = await createMediaDeliveryUrl(publicId, "full", true);
+  const sourceUrl = await createMediaDeliveryUrl(publicId, "full", true, "system:notion");
   const source = await fetch(sourceUrl.url, { signal: AbortSignal.timeout(15_000) });
   if (!source.ok) throw new Error("notion-image-source-failed");
   const bytes = await source.arrayBuffer();

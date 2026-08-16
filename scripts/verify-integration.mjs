@@ -226,7 +226,9 @@ try {
     CLOUDINARY_DELIVERY_BASE_URL: "http://127.0.0.1:54330",
     FCM_EMULATOR_URL: "http://127.0.0.1:54330",
     FIREBASE_AUTH_EMULATOR_HOST: "127.0.0.1:9099",
+    FIREBASE_APP_IDS: "1:123456789:web:local",
     FIREBASE_PROJECT_ID: "integration-project",
+    FIREBASE_PROJECT_NUMBER: "123456789",
     FIREBASE_WEB_API_KEY: "integration-web-api-key",
     GOOGLE_SERVICE_ACCOUNT_JSON: "not-used-with-emulator",
     HEALTHCHECK_SECRET: "integration-healthcheck-secret",
@@ -234,6 +236,7 @@ try {
     MEDIA_SIGNING_SECRET: "integration-media-signing-secret-that-is-long-enough",
     PUBLIC_API_URL: workerUrl,
     REALTIME_TICKET_SECRET: "integration-realtime-ticket-secret-that-is-long-enough",
+    TURNSTILE_SECRET_KEY: "integration-turnstile-secret",
   };
   const workerArgs = [
     "dev",
@@ -288,6 +291,7 @@ try {
       NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_URL: "http://127.0.0.1:9099",
       NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "123456789",
       NEXT_PUBLIC_FIREBASE_PROJECT_ID: "integration-project",
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: "",
       NEXT_PUBLIC_LOCAL_DEV_AUTH: e2e ? "false" : "true",
       NEXT_PUBLIC_LOCAL_DEV_AUTH_EMAIL: "admin@integration.invalid",
       NOVAE_AUTH_EMULATOR_URL: "http://127.0.0.1:9099",

@@ -6,7 +6,8 @@ interface MediaDeliveryPayload {
   expiresAt: number;
   private: boolean;
   publicId: string;
-  version: 1;
+  rateLimitKey: string;
+  version: 2;
 }
 
 const PRIVATE_MEDIA_LIFETIME_SECONDS = 15 * 60;
@@ -33,7 +34,23 @@ async function signPayload(encodedPayload: string) {
   const signature = await crypto.subtle.sign(
     "HMAC",
     key,
-    new TextEncoder().encode(`novae-media-v1.${encodedPayload}`),
+    new TextEncoder().encode(`novae-media-v2.${encodedPayload}`),
+  );
+  return toUrlSafeBase64(new Uint8Array(signature));
+}
+
+async function createRateLimitKey(identifier: string) {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(requireEnv("MEDIA_SIGNING_SECRET")),
+    { hash: "SHA-256", name: "HMAC" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(`novae-media-viewer-v1.${identifier}`),
   );
   return toUrlSafeBase64(new Uint8Array(signature));
 }
@@ -48,13 +65,15 @@ export async function createMediaDeliveryUrl(
   publicId: string,
   variant: MediaDeliveryVariant,
   privateDelivery: boolean,
+  rateLimitIdentifier: string,
 ) {
   const expiresAt = privateDelivery ? privateExpirySeconds() : 0;
   const encodedPayload = encodePayload({
     expiresAt,
     private: privateDelivery,
     publicId,
-    version: 1,
+    rateLimitKey: await createRateLimitKey(rateLimitIdentifier),
+    version: 2,
   });
   const signature = await signPayload(encodedPayload);
   const workerUrl = requireEnv("PUBLIC_API_URL").replace(/\/+$/u, "");
@@ -64,10 +83,14 @@ export async function createMediaDeliveryUrl(
   };
 }
 
-export async function createMediaDeliveryUrls(publicId: string, privateDelivery: boolean) {
+export async function createMediaDeliveryUrls(
+  publicId: string,
+  privateDelivery: boolean,
+  rateLimitIdentifier: string,
+) {
   const [full, thumbnail] = await Promise.all([
-    createMediaDeliveryUrl(publicId, "full", privateDelivery),
-    createMediaDeliveryUrl(publicId, "thumbnail", privateDelivery),
+    createMediaDeliveryUrl(publicId, "full", privateDelivery, rateLimitIdentifier),
+    createMediaDeliveryUrl(publicId, "thumbnail", privateDelivery, rateLimitIdentifier),
   ]);
   return {
     expiresAtMs: Math.min(full.expiresAtMs, thumbnail.expiresAtMs),

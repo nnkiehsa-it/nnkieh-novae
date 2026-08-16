@@ -37,7 +37,11 @@ async function scopedAccessUids(scope: AccessScopeSelector, database: BackendDat
   return { truncated: uids.length > ACCESS_LIST_LIMIT, uids: uids.slice(0, ACCESS_LIST_LIMIT) };
 }
 
-async function accessUsersForUids(uids: string[], database: BackendDatabase) {
+async function accessUsersForUids(
+  uids: string[],
+  database: BackendDatabase,
+  viewerUid: string,
+) {
   if (uids.length === 0) return [];
   const { data: profiles, error: profileError } = await database.table("app_private", "user_profiles")
     .select("uid,email,display_name,avatar_public_id,photo_url").in("uid", uids)
@@ -65,7 +69,7 @@ async function accessUsersForUids(uids: string[], database: BackendDatabase) {
   }
   return await Promise.all((profiles ?? []).map(async (profile) => {
     const media = profile.avatar_public_id
-      ? await createMediaDeliveryUrl(profile.avatar_public_id, "avatar", false)
+      ? await createMediaDeliveryUrl(profile.avatar_public_id, "avatar", false, viewerUid)
       : null;
     return {
       uid: profile.uid,
@@ -104,7 +108,7 @@ export async function handleUserAccessAction(
       truncated = scoped.truncated;
       uids = scoped.uids;
     }
-    const users = await accessUsersForUids(uids, database);
+    const users = await accessUsersForUids(uids, database, auth.uid);
     return { truncated, users: users.filter((user) => !user.roles.includes("platform-admin")) };
   }
 

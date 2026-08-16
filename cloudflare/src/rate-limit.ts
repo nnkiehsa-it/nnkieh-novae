@@ -17,6 +17,16 @@ async function claim(binding: RateLimitBinding, key: string, code: ApiErrorCode,
   if (!result.success) throw new RateLimitError(code, retryAfterSeconds);
 }
 
+async function opaqueRateLimitKey(scope: string, identifier: string) {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(`${scope}\0${identifier}`),
+  );
+  let binary = '';
+  for (const byte of new Uint8Array(digest)) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/gu, '-').replace(/\//gu, '_').replace(/=+$/u, '');
+}
+
 const actionGroups = {
   read: { binding: 'READ_RATE_LIMITER', errorCode: 'rate-limit.read' },
   'general-write': { binding: 'WRITE_RATE_LIMITER', errorCode: 'rate-limit.operation' },
@@ -26,23 +36,42 @@ const actionGroups = {
   'upload-resolve': { binding: 'UPLOAD_RESOLVE_RATE_LIMITER', errorCode: 'rate-limit.image-read' },
 } as const satisfies Record<string, { binding: keyof Env; errorCode: ApiErrorCode }>;
 
-export async function claimActionIngress(env: Env, ip: string) {
-  await claim(env.ACTION_IP_RATE_LIMITER, `ip:${ip}`, 'rate-limit.operation', 60);
+export async function claimInvalidAuthenticationIngress(
+  env: Env,
+  ip: string,
+  code: ApiErrorCode,
+) {
+  await claim(env.INVALID_AUTH_IP_RATE_LIMITER, `invalid-auth:${ip}`, code, 60);
 }
 
 export async function claimActionRateLimit(env: Env, uid: string, action: string) {
   const policy = BACKEND_ACTION_POLICIES[action as keyof typeof BACKEND_ACTION_POLICIES];
   if (!policy) throw new Error('invalid-action');
   const group = actionGroups[policy.group];
-  await claim(env[group.binding] as RateLimitBinding, `${policy.group}:${uid}`, group.errorCode, 10);
-}
-
-export async function claimSyncIngress(env: Env, ip: string) {
-  await claim(env.SYNC_IP_RATE_LIMITER, `ip:${ip}`, 'rate-limit.login-sync', 60);
+  await claim(
+    env[group.binding] as RateLimitBinding,
+    await opaqueRateLimitKey(policy.group, uid),
+    group.errorCode,
+    10,
+  );
 }
 
 export async function claimSyncUser(env: Env, uid: string) {
-  await claim(env.SYNC_USER_RATE_LIMITER, uid, 'rate-limit.login-sync', 60);
+  await claim(
+    env.SYNC_USER_RATE_LIMITER,
+    await opaqueRateLimitKey('auth-sync', uid),
+    'rate-limit.login-sync',
+    60,
+  );
+}
+
+export async function claimRealtimeTicketRateLimit(env: Env, uid: string) {
+  await claim(
+    env.READ_RATE_LIMITER,
+    await opaqueRateLimitKey('realtime-ticket', uid),
+    'rate-limit.read',
+    10,
+  );
 }
 
 export async function claimCloudinaryIngress(env: Env, ip: string) {

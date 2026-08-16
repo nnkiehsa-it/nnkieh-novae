@@ -3,6 +3,8 @@ import { withRequestTimeout } from '@/lib/request';
 import { apiGatewayUrl, hasApiGatewayConfig } from '@/lib/api-gateway';
 import { ApiRequestError, type ApiErrorResponse } from '@/lib/api-error';
 import { readLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
+import { backendSecurityHeaders } from '@/lib/backend-security';
+import { takePendingTurnstileToken } from '@/lib/turnstile';
 
 interface SyncUserResponse extends ApiErrorResponse {
   ok?: boolean;
@@ -21,7 +23,9 @@ function rememberSync(uid: string) {
 }
 
 export async function ensureBackendProfile(user: User) {
-  if (!hasApiGatewayConfig() || wasRecentlySynced(user.uid)) return;
+  if (!hasApiGatewayConfig()) return;
+  const turnstileToken = takePendingTurnstileToken();
+  if (wasRecentlySynced(user.uid)) return;
 
   const token = await withRequestTimeout(
     () => user.getIdTokenResult(),
@@ -29,11 +33,12 @@ export async function ensureBackendProfile(user: User) {
   );
 
   const response = await withRequestTimeout(
-    (signal) => fetch(apiGatewayUrl('/v1/auth/sync'), {
+    async (signal) => fetch(apiGatewayUrl('/v1/auth/sync'), {
       method: 'POST',
       body: JSON.stringify({ email: user.email }),
       headers: {
-        Authorization: `Bearer ${token.token}`,
+        ...(await backendSecurityHeaders(token.token)),
+        ...(turnstileToken ? { 'X-Turnstile-Token': turnstileToken } : {}),
         'Content-Type': 'application/json',
       },
       signal,

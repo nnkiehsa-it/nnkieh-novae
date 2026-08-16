@@ -14,6 +14,14 @@ export const API_ERRORS = {
     "status": 401,
     "messageKey": "apiError.unauthenticated"
   },
+  "app-check-failed": {
+    "status": 401,
+    "messageKey": "apiError.appCheckFailed"
+  },
+  "turnstile-failed": {
+    "status": 401,
+    "messageKey": "apiError.turnstileFailed"
+  },
   "permission-denied": {
     "status": 403,
     "messageKey": "apiError.permissionDenied"

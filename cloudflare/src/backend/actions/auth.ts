@@ -92,6 +92,9 @@ export async function handleHealthcheck(request: Request, database: BackendDatab
 
   requireEnv("FIREBASE_WEB_API_KEY");
   requireEnv("FIREBASE_PROJECT_ID");
+  requireEnv("FIREBASE_PROJECT_NUMBER");
+  requireEnv("FIREBASE_APP_IDS");
+  requireEnv("TURNSTILE_SECRET_KEY");
   requireEnv("ALLOWED_DOMAIN");
   requireEnv("ADMIN_EMAILS");
   requireEnv("PUBLIC_API_URL");

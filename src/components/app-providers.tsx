@@ -9,6 +9,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { AppUpdateGate } from "@/components/app-update-gate";
 import { E2eAuthBridge } from "@/components/e2e-auth-bridge";
+import { TurnstileProvider } from "@/components/turnstile-provider";
+import { ensureFirebaseAppCheck } from "@/lib/firebase-app-check";
 
 export function AppProviders({
   children,
@@ -21,6 +23,7 @@ export function AppProviders({
 
   useEffect(() => {
     initializeI18n();
+    void ensureFirebaseAppCheck().catch(() => undefined);
     setI18nReady(true);
   }, []);
 
@@ -37,14 +40,16 @@ export function AppProviders({
         transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
       >
         <TooltipProvider>
-          <SessionProvider>
-            <Suspense fallback={null}>
-              {i18nReady ? children : <div className="app-start-surface" />}
-            </Suspense>
-          </SessionProvider>
-          <E2eAuthBridge />
-          <AppUpdateGate />
-          <Toaster position="bottom-center" />
+          <TurnstileProvider nonce={nonce}>
+            <SessionProvider>
+              <Suspense fallback={null}>
+                {i18nReady ? children : <div className="app-start-surface" />}
+              </Suspense>
+            </SessionProvider>
+            <E2eAuthBridge />
+            <AppUpdateGate />
+            <Toaster position="bottom-center" />
+          </TurnstileProvider>
         </TooltipProvider>
       </MotionConfig>
     </ThemeProvider>

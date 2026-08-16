@@ -6,13 +6,15 @@ interface MediaPayload {
   expiresAt: number;
   private: boolean;
   publicId: string;
-  version: 1;
+  rateLimitKey: string;
+  version: 2;
 }
 
 const MEDIA_CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
 const PUBLIC_BROWSER_CACHE_TTL_SECONDS = 365 * 24 * 60 * 60;
 const TOKEN_PATTERN = /^([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)$/u;
 const PUBLIC_ID_PATTERN = /^[A-Za-z0-9_./-]{1,500}$/u;
+const RATE_LIMIT_KEY_PATTERN = /^[A-Za-z0-9_-]{43}$/u;
 const VARIANTS = new Set<MediaVariant>(['avatar', 'full', 'thumbnail']);
 
 function fromUrlSafeBase64(value: string) {
@@ -43,16 +45,17 @@ async function verifyMediaToken(token: string, secret: string) {
     'HMAC',
     key,
     fromUrlSafeBase64(encodedSignature),
-    new TextEncoder().encode(`novae-media-v1.${encodedPayload}`),
+    new TextEncoder().encode(`novae-media-v2.${encodedPayload}`),
   ).catch(() => false);
   if (!valid) return null;
   try {
     const payload = JSON.parse(new TextDecoder().decode(fromUrlSafeBase64(encodedPayload))) as MediaPayload;
     if (
-      payload.version !== 1
+      payload.version !== 2
       || typeof payload.private !== 'boolean'
       || !Number.isSafeInteger(payload.expiresAt)
       || !PUBLIC_ID_PATTERN.test(payload.publicId)
+      || !RATE_LIMIT_KEY_PATTERN.test(payload.rateLimitKey)
       || (payload.private && payload.expiresAt <= Math.floor(Date.now() / 1000))
       || (!payload.private && payload.expiresAt !== 0)
     ) return null;
@@ -112,13 +115,18 @@ function imageFetchOptions(variant: MediaVariant) {
 
 export async function handleMedia(request: Request, env: Env, token: string, rawVariant: string) {
   const clientIp = request.headers.get('cf-connecting-ip')?.trim() || 'unknown';
-  const rateLimit = await env.MEDIA_IP_RATE_LIMITER.limit({ key: `media:${clientIp}` });
+  const variant = VARIANTS.has(rawVariant as MediaVariant) ? rawVariant as MediaVariant : null;
+  const payload = await verifyMediaToken(token, env.MEDIA_SIGNING_SECRET);
+  if (!variant || !payload) {
+    const invalidLimit = await env.MEDIA_INVALID_IP_RATE_LIMITER.limit({ key: `invalid-media:${clientIp}` });
+    return invalidLimit.success
+      ? new Response(null, { status: 404 })
+      : new Response(null, { status: 429, headers: { 'retry-after': '60' } });
+  }
+  const rateLimit = await env.MEDIA_USER_RATE_LIMITER.limit({ key: payload.rateLimitKey });
   if (!rateLimit.success) {
     return new Response(null, { status: 429, headers: { 'retry-after': '60' } });
   }
-  const variant = VARIANTS.has(rawVariant as MediaVariant) ? rawVariant as MediaVariant : null;
-  const payload = await verifyMediaToken(token, env.MEDIA_SIGNING_SECRET);
-  if (!variant || !payload) return new Response(null, { status: 404 });
 
   const workerCache = (caches as CacheStorage & { default?: Cache }).default;
   const cacheKey = await mediaCacheKey(payload.publicId, variant);

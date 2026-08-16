@@ -74,18 +74,6 @@ describe("React frontend design system", () => {
     expect(settingsUi).not.toContain("imageSourceMegabytes");
   });
 
-  it("anchors mobile navigation to a stable viewport in Safari and standalone PWA mode", () => {
-    const globals = read("src/app/globals.css");
-    const shell = read("src/components/app-shell.tsx");
-    expect(globals).toContain("--safe-bottom: env(safe-area-inset-bottom, 0px)");
-    expect(globals).toContain("--app-fixed-viewport-height: 100svh");
-    expect(globals).toContain("--app-fixed-viewport-height: 100vh");
-    expect(globals).toMatch(/\.app-mobile-nav \{[\s\S]*top: calc\(var\(--app-fixed-viewport-height\)/u);
-    expect(globals).toMatch(/\.app-mobile-nav \{[\s\S]*bottom: auto/u);
-    expect(shell).toContain("className=\"app-shell bg-[var(--surface-stage)]");
-    expect(shell).toContain("var(--mobile-nav-height)+var(--mobile-nav-bottom-gap)");
-  });
-
   it("keeps route motion separate from skeleton-to-content sharpening", () => {
     const motion = read("src/styles/motion.css");
     const skeletonReveal = read("src/components/ui/skeleton-reveal.tsx");

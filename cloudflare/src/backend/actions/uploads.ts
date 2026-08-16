@@ -373,7 +373,7 @@ export async function handleUploadAction(
     if (!access.allowed || !upload.cloudinary_public_id) return null;
     return {
       id: upload.id,
-      ...await createMediaDeliveryUrls(upload.cloudinary_public_id, access.privateDelivery),
+      ...await createMediaDeliveryUrls(upload.cloudinary_public_id, access.privateDelivery, auth.uid),
     };
   }));
   const available = resolved.filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));

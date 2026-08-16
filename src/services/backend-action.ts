@@ -5,6 +5,7 @@ import { auth } from '@/lib/firebase';
 import { apiGatewayUrl } from '@/lib/api-gateway';
 import { ApiRequestError, type ApiErrorResponse } from '@/lib/api-error';
 import { readSessionStorage, removeSessionStorage, writeSessionStorage } from '@/lib/browser-storage';
+import { backendSecurityHeaders } from '@/lib/backend-security';
 
 interface BackendActionSuccessEnvelope<TResponse> {
   data: TResponse;
@@ -66,7 +67,7 @@ export function invokeBackendAction<TRequest = Record<string, unknown>, TRespons
         method: 'POST',
         body: JSON.stringify({ action: name, payload: stableOperation.payload }),
         headers: {
-          Authorization: `Bearer ${token}`,
+          ...(await backendSecurityHeaders(token)),
           'Content-Type': 'application/json',
         },
         signal,

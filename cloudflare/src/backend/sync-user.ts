@@ -5,6 +5,8 @@ import { errorStatus, publicErrorBody } from "./shared/http.ts";
 import { createFunctionLogger } from "./shared/observability.ts";
 import { RATE_LIMITS } from "./shared/rate-limits.ts";
 import { claimFixedWindowRateLimit, utcHourWindow } from "./shared/business-rate-limit.ts";
+import { currentEnvironment } from "./shared/env.ts";
+import { requireTurnstile } from "../turnstile.ts";
 
 function adminEmails() {
   const emails = requireEnv("ADMIN_EMAILS")
@@ -20,6 +22,16 @@ export async function handleSyncUser(request: Request, database: AppDatabaseClie
   try {
     const user = await requireEligibleFirebaseUser(request);
     await claimFixedWindowRateLimit(user.uid, "auth.sync", utcHourWindow(), RATE_LIMITS.loginSyncHourly);
+
+    const { data: existingProfile, error: existingProfileError } = await database
+      .table("app_private", "user_profiles")
+      .select("uid")
+      .eq("uid", user.uid)
+      .maybeSingle();
+    if (existingProfileError) throw existingProfileError;
+    if (!existingProfile) {
+      await requireTurnstile(request, currentEnvironment(), "auth_sync");
+    }
 
     const { error: conflictError } = await database.table("app_private", "user_profiles")
       .update({ email: null })
