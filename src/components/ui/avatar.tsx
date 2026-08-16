@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Avatar as AvatarPrimitive } from "radix-ui";
 
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
 
 function Avatar({
@@ -27,14 +28,42 @@ function Avatar({
 
 function AvatarImage({
   className,
+  onLoadingStatusChange,
+  src,
   ...props
 }: React.ComponentProps<typeof AvatarPrimitive.Image>) {
+  const sourceKey = typeof src === "string" ? src : "";
+  const [resolved, setResolved] = React.useState<{
+    sourceKey: string;
+    status: "error" | "idle" | "loaded" | "loading";
+  }>({ sourceKey: "", status: "idle" });
+  const status = resolved.sourceKey === sourceKey
+    ? resolved.status
+    : sourceKey
+      ? "loading"
+      : "idle";
+
   return (
-    <AvatarPrimitive.Image
-      data-slot="avatar-image"
-      className={cn("aspect-square size-full", className)}
-      {...props}
-    />
+    <>
+      <AvatarPrimitive.Image
+        data-slot="avatar-image"
+        className={cn("aspect-square size-full", className)}
+        onLoadingStatusChange={(nextStatus) => {
+          setResolved({ sourceKey, status: nextStatus });
+          onLoadingStatusChange?.(nextStatus);
+        }}
+        src={src}
+        {...props}
+      />
+      {status === "loading" ? (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-muted text-muted-foreground"
+        >
+          <LoadingSpinner className="size-3.5" />
+        </span>
+      ) : null}
+    </>
   );
 }
 

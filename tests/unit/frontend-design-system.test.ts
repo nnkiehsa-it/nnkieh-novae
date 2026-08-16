@@ -41,6 +41,26 @@ describe("React frontend design system", () => {
     expect(motion).not.toContain(".t-loading-orbit");
   });
 
+  it("reveals images only after decoding and gives loading and failure feedback", () => {
+    const decodedImage = read("src/components/ui/decoded-image.tsx");
+    const avatar = read("src/components/ui/avatar.tsx");
+    const renderer = read("src/components/content-renderer.tsx");
+    const composer = read("src/components/composer-fields.tsx");
+    const brand = read("src/components/ui/brand.tsx");
+    const motion = read("src/styles/motion.css");
+    expect(decodedImage).toContain("image.decode()");
+    expect(decodedImage).toContain("<LoadingSpinner");
+    expect(decodedImage).toContain("<ImageOff");
+    expect(decodedImage).toContain('data-image-state={state}');
+    expect(avatar).toContain("onLoadingStatusChange");
+    expect(avatar).toContain('<LoadingSpinner className="size-3.5"');
+    for (const source of [renderer, composer, brand]) {
+      expect(source).toContain("<DecodedImage");
+    }
+    expect(renderer).toContain('FORBID_TAGS: ["img"]');
+    expect(motion).toContain('@keyframes t-image-ready');
+  });
+
   it("anchors mobile navigation to a stable viewport in Safari and standalone PWA mode", () => {
     const globals = read("src/app/globals.css");
     const shell = read("src/components/app-shell.tsx");

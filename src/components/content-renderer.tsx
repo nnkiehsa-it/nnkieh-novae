@@ -4,7 +4,6 @@ import * as React from "react";
 import DOMPurify from "dompurify";
 import { marked } from "marked";
 import { ImageIcon, ZoomIn } from "lucide-react";
-import { apiGatewayUrl } from "@/lib/api-gateway";
 import { stripMarkdownImages } from "@/lib/markdown-images";
 import { useResolvedMarkdown } from "@/hooks/use-resolved-markdown";
 import type { MarkdownImageRecord } from "@/types";
@@ -13,44 +12,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { cn } from "@/lib/utils";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { DecodedImage } from "@/components/ui/decoded-image";
 
-const imageAltSizePattern = /^(.*)\|(\d{1,5})x(\d{1,5})$/u;
-
-function escapeAttribute(value: string) {
-  return value
-    .replace(/&/gu, "&amp;")
-    .replace(/"/gu, "&quot;")
-    .replace(/</gu, "&lt;")
-    .replace(/>/gu, "&gt;");
-}
-
-marked.use({
-  renderer: {
-    image(token) {
-      const href = String(token.href ?? "");
-      const rawText = String(token.text ?? "");
-      const size = rawText.match(imageAltSizePattern);
-      const alt = size?.[1] ?? rawText;
-      try {
-        const imageUrl = new URL(href, window.location.origin);
-        const mediaGateway = new URL(apiGatewayUrl("/"));
-        if (
-          imageUrl.origin !== mediaGateway.origin ||
-          !imageUrl.pathname.startsWith("/v1/media/")
-        )
-          return escapeAttribute(alt);
-      } catch {
-        return escapeAttribute(alt);
-      }
-      return `<img src="${escapeAttribute(href)}" alt="${escapeAttribute(alt)}" width="${Number(size?.[2] ?? 1200)}" height="${Number(size?.[3] ?? 675)}" loading="eager" fetchpriority="low" decoding="async">`;
-    },
-  },
-});
 marked.setOptions({ breaks: true, gfm: true });
 
 function renderMarkdown(content: string) {
   const raw = marked.parse(content, { async: false }) as string;
-  return DOMPurify.sanitize(raw, { ADD_ATTR: ["loading", "fetchpriority", "decoding"] });
+  return DOMPurify.sanitize(raw, {
+    ADD_ATTR: ["loading", "fetchpriority", "decoding"],
+    FORBID_TAGS: ["img"],
+  });
 }
 
 export function ContentRenderer({
@@ -98,9 +69,10 @@ export function ContentRenderer({
               type="button"
             >
               {image.src ? (
-                <img
+                <DecodedImage
                   alt={image.alt || fallbackAlt}
                   className="size-full object-cover transition-transform duration-300 ease-[var(--ease-smooth-out)] group-hover:scale-[1.025]"
+                  containerClassName="size-full"
                   height={image.height}
                   fetchPriority="low"
                   loading="eager"
@@ -155,10 +127,13 @@ export function ContentRenderer({
             {selected?.alt || fallbackAlt}
           </DialogTitle>
           {selected ? (
-            <img
+            <DecodedImage
               alt={selected.alt || fallbackAlt}
               className="max-h-[calc(100svh-3rem)] w-full rounded-xl object-contain"
+              containerClassName="min-h-48 w-full place-items-center rounded-xl bg-black/20"
+              height={selected.height}
               src={selected.fullSrc || selected.src}
+              width={selected.width}
             />
           ) : null}
         </DialogContent>

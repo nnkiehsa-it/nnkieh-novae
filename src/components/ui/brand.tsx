@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { DecodedImage } from "@/components/ui/decoded-image";
 import { cn } from "@/lib/utils";
 
 export function BrandMark({
@@ -17,12 +18,14 @@ export function BrandMark({
         className,
       )}
     >
-      <img
+      <DecodedImage
         alt=""
         className={cn(
           "block size-full aspect-square object-contain dark:invert",
           imageClassName,
         )}
+        containerClassName="size-full"
+        indicatorClassName="size-4"
         src="/logo.svg"
       />
     </span>

@@ -551,6 +551,20 @@
     opacity: 0;
   }
 }
+
+/* Images stay hidden until the resource is fully decoded. */
+.t-decoded-image[data-image-state="loading"],
+.t-decoded-image[data-image-state="error"] {
+  opacity: 0;
+}
+.t-decoded-image[data-image-state="ready"] {
+  animation: t-image-ready var(--motion-fast) var(--ease-smooth-out) both;
+}
+@keyframes t-image-ready {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 /* Transitions.dev — Skeleton loader and reveal */
 .t-skel {
   position: relative;
@@ -1143,6 +1157,7 @@
     animation-delay: 0s !important;
   }
   .t-route-enter,
+  .t-decoded-image,
   .t-resize,
   .t-panel-reveal,
   .t-stagger-item,

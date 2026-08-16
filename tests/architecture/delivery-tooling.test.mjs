@@ -38,3 +38,16 @@ test("delivery entry points remain owned by their platform directories", async (
     "scripts/render-worker-config.mjs",
   ]) assert.ok(paths.includes(required), `missing delivery entry point ${required}`);
 });
+
+test("CI restores bounded build and emulator caches", async () => {
+  const verify = await read(".github/workflows/verify-pr.yml");
+  const frontend = await read(".github/workflows/deploy-frontend.yml");
+  const backend = await read(".github/workflows/deploy-backend.yml");
+  assert.match(verify, /path: \.next\/cache/u);
+  assert.match(frontend, /path: \.next\/cache/u);
+  assert.match(verify, /path: ~\/\.cache\/firebase\/emulators/u);
+  assert.match(backend, /path: ~\/\.cache\/firebase\/emulators/u);
+  for (const workflow of [verify, frontend, backend]) {
+    assert.doesNotMatch(workflow, /path: (?:node_modules|\.next\s*$)/mu);
+  }
+});

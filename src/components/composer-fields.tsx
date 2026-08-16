@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DecodedImage } from "@/components/ui/decoded-image";
 import {
   Tooltip,
   TooltipContent,
@@ -171,9 +172,10 @@ export function ComposerField({
               className="group relative aspect-[4/3] w-32 shrink-0 snap-start overflow-hidden rounded-xl border bg-muted"
               key={image.previewUrl}
             >
-              <img
+              <DecodedImage
                 alt={translate('ui.composer.attachmentPreview')}
                 className="size-full object-cover"
+                containerClassName="size-full"
                 height={image.height}
                 src={image.previewUrl}
                 width={image.width}
