@@ -1,4 +1,6 @@
 export const APP_NAME = "Novae";
+export const APP_DESCRIPTION =
+  "Novae, A better way for campus communities to speak up, act together, and shape what happens next.";
 export const SCHOOL_NAME = String(
   process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "",
 ).trim();

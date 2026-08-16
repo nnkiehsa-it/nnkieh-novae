@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { AppProviders } from "@/components/app-providers";
+import { APP_DESCRIPTION } from "@/constants/app";
 
 const appVersion = process.env.NEXT_PUBLIC_APP_VERSION ?? "development";
 
@@ -21,7 +22,7 @@ const robotoMono = Roboto_Mono({
 
 export const metadata: Metadata = {
   applicationName: "Novae",
-  description: "Novae campus participation platform",
+  description: APP_DESCRIPTION,
   formatDetection: { telephone: false },
   icons: {
     apple: [

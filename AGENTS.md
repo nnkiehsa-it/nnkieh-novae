@@ -11,6 +11,7 @@
 4. 不覆蓋、不回復無關的工作樹變更。
 5. Staging 用 `git add .`，不要逐檔 add。
 6. 官方網站、完整文件與更新紀錄位於 `tavricccc/novae-website`，此 repo 只保留主程式必要入口。
+7. 禁止在未提到的情況下建立PR或branch，如被要求push，直接commit and push.
 
 ## 架構邊界
 

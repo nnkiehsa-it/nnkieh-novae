@@ -1,10 +1,11 @@
 import type { MetadataRoute } from "next";
+import { APP_DESCRIPTION } from "@/constants/app";
 
 export default function manifest(): MetadataRoute.Manifest {
   const version = process.env.NEXT_PUBLIC_APP_VERSION ?? "development";
   return {
     background_color: "#f9f9f9",
-    description: "Novae",
+    description: APP_DESCRIPTION,
     display: "standalone",
     icons: [
       { src: `/pwa-64x64.png?v=${version}`, sizes: "64x64", type: "image/png" },
