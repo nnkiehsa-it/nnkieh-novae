@@ -89,7 +89,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/generated/` — generated frontend contracts; do not edit manually.
 - `cloudflare/src/index.ts` — sole public API entrypoint for actions, auth sync, realtime tickets/WebSockets, signed media, Cloudinary webhooks, Queue consumption, and scheduled maintenance.
 - `cloudflare/src/backend/actions/` — generated-registry-driven action dispatch and domain workflows. Authorization is enforced here and in database functions, never by frontend visibility checks.
-- `cloudflare/src/backend/database/` — parameterized PostgreSQL adapter and schema names used through the request-scoped Hyperdrive connection.
+- `cloudflare/src/backend/database/` — parameterized PostgreSQL adapter and schema names used through a request-scoped, bounded Hyperdrive-backed PostgreSQL pool so independent reads can overlap without leaking connections across invocations.
 - `cloudflare/src/backend/jobs/` — durable outbox, FCM/Notion delivery, deletion, realtime fan-out, and maintenance consumers driven by Cloudflare Queues.
 - `cloudflare/src/backend/shared/` — Worker environment, Firebase token validation, Cloudinary, FCM, Notion, HTTP, media, platform runtime settings, and structured-observability boundaries.
 - `cloudflare/src/durable/` — SQLite-backed business rate limits and WebSocket Hibernation realtime hub. Realtime state can reconnect from PostgreSQL content versions instead of becoming a source of record.
@@ -102,7 +102,8 @@ This document is the maintained map of the repository. Read it before broad sear
 
 - `scripts/check-ui-primitives.mjs` — rejects retired Vue references, `transition-all`, arbitrary elevation, ungated hover, business imports in UI primitives, direct service imports in pages/components, route pages over 220 lines, and domain components over 300 lines.
 - `scripts/check-i18n.mjs` — validates catalog parity/shape/interpolation, API error references, direct `t()` references, and hard-coded Han text across React/TSX sources.
-- `scripts/run-local-verification.mjs` — local typecheck, lint, UI/i18n checks, unit/architecture tests, build, and build-budget orchestration.
+- `scripts/generate-all.mjs` — lock-protected sequential entry point for all generated contracts and font subsets; generated outputs remain committed and verification checks for drift explicitly.
+- `scripts/run-local-verification.mjs` — fast verification (typecheck, lint, boundary checks, and unit/architecture tests) plus the full local build, build-budget, and dependency-audit orchestration.
 - `scripts/database.mjs` — cross-platform PostgreSQL 17 container lifecycle, checksummed forward migrations, deterministic local seeding, and migration status. Remote operation is migration-only and requires an explicit `DATABASE_URL`.
 - `scripts/migration-checksum.mjs` — canonical cross-platform migration hashing and immutable applied-migration validation for every current and future SQL migration.
 - `scripts/configure-database-runtime.mjs` — creates or rotates the `novae_runtime` login, grants only DML, sequence use, and function execution, verifies those credentials with a real application-table query, and can hand the verified URL to deployment for immediate Hyperdrive synchronization; it grants no DDL or role-management capability.
@@ -111,8 +112,8 @@ This document is the maintained map of the repository. Read it before broad sear
 - `scripts/verify-integration.mjs` — single Node.js orchestrator for PostgreSQL, Windows WSL runtime lifetime, least-privilege role setup, provider receivers, Wrangler, Firebase Auth Emulator, interactive Next.js, integration/stress tests, and Playwright. Backend-only runs use the integration seed; served/E2E runs use the local sample seed.
 - `scripts/render-worker-config.mjs` — validates the Hyperdrive ID and renders relocatable environment-specific Worker/Queue names, entry paths, native rate-limit namespace IDs, and optional Notion state without committing deployment bindings.
 - `scripts/external-provider-test-server.mjs` — isolated Cloudinary, FCM, and Notion-compatible receiver used only by integration verification.
-- `scripts/generate-harmonyos-subset.mjs` / `check-build-budget.mjs` — derive the used Traditional Chinese HarmonyOS Sans shards from source text, then enforce Next build asset/font/JS/CSS budgets.
-- `tests/unit/` — Vitest domain, design-system, and migration checksum behavior tests.
+- `scripts/generate-harmonyos-subset.mjs` / `check-build-budget.mjs` — derive the used Traditional Chinese HarmonyOS Sans shards from source text, then enforce configurable Next build asset/font/JS/CSS budgets with near-limit warnings.
+- `tests/unit/` — Vitest domain, design-system, migration checksum, and database-client concurrency behavior tests.
 - `tests/architecture/` — stable AST-backed module-boundary tests for route presence, frontend dependency direction, UI primitive purity, database ownership, frontend/Worker contracts, observability, and delivery entry points; presentation strings and implementation details belong to unit or UI checks instead.
 - `tests/integration/` — backend actions, category-scoped authorization, least-privilege database boundary, RPCs, jobs, retention, and Worker ingress/realtime behavior; required for backend changes.
 - `tests/e2e/` — Playwright bootstrap plus authenticated desktop/mobile workflows.

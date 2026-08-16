@@ -11,7 +11,9 @@ const suite = process.argv.includes("--unit-only")
     ? "architecture"
     : process.argv.includes("--test-only")
       ? "test"
-      : "local";
+      : process.argv.includes("--fast")
+        ? "fast"
+        : "local";
 const verbose = process.env.NOVAE_VERBOSE_TESTS === "1";
 const isInteractive = Boolean(process.stderr.isTTY);
 const maxCapturedCharacters = 4_000_000;
@@ -42,12 +44,6 @@ const npmAuditArgs = process.env.npm_execpath
   ? [process.env.npm_execpath, "audit", "--audit-level=high"]
   : ["audit", "--audit-level=high"];
 const steps = {
-  contracts: [
-    ["API error contract", node, ["scripts/generate-api-errors.mjs"]],
-    ["rate-limit contract", node, ["scripts/generate-rate-limits.mjs"]],
-    ["retention contract", node, ["scripts/generate-data-retention.mjs"]],
-    ["backend action contract", node, ["scripts/generate-backend-actions.mjs"]],
-  ],
   checks: [
     ["TypeScript", executable("tsc"), ["--noEmit"]],
     [
@@ -78,6 +74,13 @@ const steps = {
   audit: [["dependency audit", npmAuditCommand, npmAuditArgs]],
 };
 
+steps.fast = [
+  ...steps.checks.slice(0, 5),
+  steps.checks[7],
+  steps.checks[8],
+  ...steps.tests,
+];
+
 const selectedSteps =
   suite === "unit"
     ? [steps.tests[0]]
@@ -85,7 +88,9 @@ const selectedSteps =
       ? [steps.tests[1]]
       : suite === "test"
         ? steps.tests
-        : [...steps.contracts, ...steps.checks, ...steps.tests, ...steps.audit];
+        : suite === "fast"
+          ? steps.fast
+          : [...steps.checks, ...steps.tests, ...steps.audit];
 
 let completed = 0;
 let progressTimer;
@@ -211,6 +216,7 @@ for (const step of selectedSteps) {
 
 const suiteLabel = {
   local: "Local verification",
+  fast: "Fast verification",
   test: "Local tests",
   unit: "Unit tests",
   architecture: "Architecture tests",

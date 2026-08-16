@@ -264,6 +264,26 @@ function appendBlock(pageId: string, content: string): Promise<unknown> {
 }
 
 const UPLOAD_PATTERN = /!\[([^\]]*)\]\(srp-upload:\/\/([0-9a-fA-F-]{36})\)/gu;
+const NOTION_IMAGE_UPLOAD_CONCURRENCY = 3;
+
+async function mapWithConcurrency<T, TResult>(
+  items: readonly T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<TResult>,
+) {
+  const results = new Array<TResult>(items.length);
+  let nextIndex = 0;
+  const workerCount = Math.min(Math.max(1, concurrency), items.length);
+  await Promise.all(Array.from({ length: workerCount }, async () => {
+    while (true) {
+      const index = nextIndex++;
+      if (index >= items.length) return;
+      results[index] = await mapper(items[index], index);
+    }
+  }));
+  return results;
+}
+
 async function uploadImageToNotion(publicId: string, filename: string) {
   const sourceUrl = await createMediaDeliveryUrl(publicId, "full", true);
   const source = await fetch(sourceUrl.url, { signal: AbortSignal.timeout(15_000) });
@@ -334,21 +354,24 @@ async function replaceManagedContent(
     : { data: [], error: null };
   if (uploadError) throw uploadError;
   const publicIds = new Map((uploads ?? []).map((upload) => [upload.id, upload.cloudinary_public_id]));
-  const imageBlocks = [];
-  for (const [index, match] of uploadMatches.entries()) {
-    const publicId = publicIds.get(match[2]);
-    if (!publicId) continue;
-    const fileUploadId = await uploadImageToNotion(publicId, `${targetType}-${targetId}-${index + 1}.webp`);
-    imageBlocks.push({
-      object: "block",
-      type: "image",
-      image: {
-        type: "file_upload",
-        file_upload: { id: fileUploadId },
-        caption: match[1] ? [{ type: "text", text: { content: match[1].slice(0, 500) } }] : [],
-      },
-    });
-  }
+  const imageBlocks = (await mapWithConcurrency(
+    uploadMatches,
+    NOTION_IMAGE_UPLOAD_CONCURRENCY,
+    async (match, index) => {
+      const publicId = publicIds.get(match[2]);
+      if (!publicId) return null;
+      const fileUploadId = await uploadImageToNotion(publicId, `${targetType}-${targetId}-${index + 1}.webp`);
+      return {
+        object: "block",
+        type: "image",
+        image: {
+          type: "file_upload",
+          file_upload: { id: fileUploadId },
+          caption: match[1] ? [{ type: "text", text: { content: match[1].slice(0, 500) } }] : [],
+        },
+      };
+    },
+  )).filter((block): block is NonNullable<typeof block> => block !== null);
   const blocks = [...textBlocks(content), ...imageBlocks];
   const createdIds: string[] = [];
   for (let offset = 0; offset < blocks.length; offset += 100) {

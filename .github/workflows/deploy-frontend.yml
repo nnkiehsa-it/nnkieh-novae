@@ -8,9 +8,9 @@ on:
       - dev
     paths:
       - 'src/**'
-      - 'cloudflare/**'
+      - 'config/api-errors.config.json'
       - 'config/backend-actions.config.json'
-      - 'config/issue-categories.config.json'
+      - 'config/data-retention.config.json'
       - 'config/rate-limits.config.json'
       - 'public/**'
       - 'package.json'
@@ -20,10 +20,7 @@ on:
       - 'postcss.config.mjs'
       - 'tsconfig*.json'
       - 'vercel.json'
-      - 'scripts/generate-issue-categories.mjs'
-      - 'scripts/generate-rate-limits.mjs'
-      - 'scripts/generate-backend-actions.mjs'
-      - 'scripts/issue-category-config.mjs'
+      - 'scripts/generate-*.mjs'
       - '.github/workflows/deploy-frontend.yml'
 
 concurrency:

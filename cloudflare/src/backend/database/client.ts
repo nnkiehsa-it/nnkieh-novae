@@ -1,4 +1,4 @@
-import { Client, types as postgresTypes } from "pg";
+import { Pool, types as postgresTypes } from "pg";
 import type { Env } from "../../types";
 import type { AppApiFunctions, AppPrivateTables } from "./schema";
 
@@ -49,6 +49,7 @@ const JSON_FUNCTION_ARGUMENTS = new Map<string, Set<string>>([
 ]);
 
 const IDENTIFIER_PATTERN = /^[a-z_][a-z0-9_]*$/u;
+const DATABASE_QUERY_CONCURRENCY = 4;
 
 function quoteIdentifier(identifier: string) {
   if (!IDENTIFIER_PATTERN.test(identifier)) throw new Error("invalid-database-identifier");
@@ -345,11 +346,15 @@ class FunctionQuery<TReturn> implements PromiseLike<DatabaseResult<TReturn>> {
 
 export class AppDatabaseClient {
   private connected = false;
-  private readonly client: Client;
-  private pendingQuery: Promise<unknown> = Promise.resolve();
+  private closed = false;
+  private connecting: Promise<void> | null = null;
+  private readonly pool: Pool;
 
   constructor(connectionString: string) {
-    this.client = new Client({ connectionString });
+    this.pool = new Pool({
+      connectionString,
+      max: DATABASE_QUERY_CONCURRENCY,
+    });
   }
 
   table<TName extends TableName>(schema: "app_private", table: TName) {
@@ -386,21 +391,36 @@ export class AppDatabaseClient {
 
   async connect() {
     if (this.connected) return;
-    await this.client.connect();
-    this.connected = true;
+    if (this.closed) throw new Error("database-client-closed");
+    if (this.connecting) return this.connecting;
+
+    const connection = this.pool.connect().then(
+      (client) => {
+        client.release();
+        this.connected = true;
+      },
+      (error: unknown) => {
+        throw error;
+      },
+    );
+    this.connecting = connection;
+    try {
+      await connection;
+    } finally {
+      if (this.connecting === connection) this.connecting = null;
+    }
   }
 
   async close() {
-    if (!this.connected) return;
-    await this.pendingQuery.catch(() => undefined);
+    if (this.connecting) await this.connecting.catch(() => undefined);
+    if (this.closed) return;
+    this.closed = true;
     this.connected = false;
-    await this.client.end();
+    await this.pool.end();
   }
 
   private query<TRow extends Record<string, unknown>>(sql: string, values: unknown[] = []) {
-    const operation = this.pendingQuery.then(() => this.client.query<TRow>(sql, values));
-    this.pendingQuery = operation.then(() => undefined, () => undefined);
-    return operation;
+    return this.connect().then(() => this.pool.query<TRow>(sql, values));
   }
 }
 

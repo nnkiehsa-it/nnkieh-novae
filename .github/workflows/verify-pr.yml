@@ -25,7 +25,36 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.paths.outputs.backend }}
+      browser: ${{ steps.paths.outputs.browser }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - id: paths
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          files="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+          backend=false
+          browser=false
+          if printf '%s\n' "$files" | grep -Eq '^(cloudflare/|database/|config/|tests/integration/|scripts/(configure-|database\.mjs|external-provider-test-server\.mjs|render-worker-config\.mjs|verify-integration\.mjs|generate-(api-errors|backend-actions|data-retention|rate-limits|all)\.mjs)|package(-lock)?\.json$|tsconfig\.integration\.json$|vitest\.integration\.config\.ts$)'; then
+            backend=true
+          fi
+          if printf '%s\n' "$files" | grep -Eq '^(src/app/|src/components/|src/hooks/|src/lib/|src/services/|src/styles/|public/|next\.config\.mjs$|tests/e2e/|package(-lock)?\.json$|scripts/(generate-harmonyos-subset|check-build-budget|generate-all)\.mjs)'; then
+            browser=true
+          fi
+          echo "backend=$backend" >> "$GITHUB_OUTPUT"
+          echo "browser=$browser" >> "$GITHUB_OUTPUT"
+
+  fast:
+    needs: changes
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -44,14 +73,52 @@ jobs:
           npm run generate:all
           git diff --exit-code
 
-      - name: Verify frontend, Worker, architecture, and dependencies
-        run: npm run verify:local
+      - name: Run fast verification
+        run: npm run verify:fast
 
-      - name: Verify database, permissions, actions, jobs, and realtime
-        run: npm run verify:integration
+  backend:
+    needs: [changes, fast]
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Verify backend types and integration behavior
+        run: |
+          npm run check:worker
+          npm run check:integration-types
+          npm run verify:integration
+
+  browser:
+    needs: [changes, fast]
+    if: needs.changes.outputs.browser == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
 
       - name: Install Chromium for browser E2E
         run: npx playwright install --with-deps chromium
 
       - name: Verify real browser journeys
         run: npm run test:e2e
+
+      - name: Verify production asset budget
+        run: npm run check:build-budget

@@ -2,6 +2,7 @@ node_modules/
 dist/
 .next/
 .next-verify/
+.novae-generate.lock/
 *.tsbuildinfo
 public/sw.js
 public/sw.js.map

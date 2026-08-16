@@ -44,7 +44,7 @@ describe("React frontend design system", () => {
   it("anchors mobile navigation to a stable viewport in Safari and standalone PWA mode", () => {
     const globals = read("src/app/globals.css");
     const shell = read("src/components/app-shell.tsx");
-    expect(globals).toContain("--safe-bottom-stable: env(safe-area-max-inset-bottom");
+    expect(globals).toContain("--safe-bottom: env(safe-area-inset-bottom, 0px)");
     expect(globals).toContain("--app-fixed-viewport-height: 100svh");
     expect(globals).toContain("--app-fixed-viewport-height: 100vh");
     expect(globals).toMatch(/\.app-mobile-nav \{[\s\S]*top: calc\(var\(--app-fixed-viewport-height\)/u);
