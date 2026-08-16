@@ -71,7 +71,12 @@ describe("React frontend design system", () => {
     expect(motion).not.toContain("t-stagger-copy");
     expect(motion).not.toContain("t-reveal-content");
     expect(motion).toMatch(/@keyframes t-route-enter[\s\S]*translate/u);
-    expect(motion).toContain("t-route-blur var(--motion-quick)");
+    expect(motion).toContain("--route-duration: 420ms");
+    expect(motion).toContain("--route-distance: 40px");
+    expect(motion).toContain("--ease-route: cubic-bezier(0.32, 0.72, 0, 1)");
+    expect(motion).toContain("--skeleton-appear-delay: 120ms");
+    expect(motion).toContain("--reveal-dur: 240ms");
+    expect(motion).not.toContain("t-route-blur");
     expect(childRouteEnter).not.toContain("filter:");
     expect(read("src/components/app-shell.tsx")).toContain("consumeRouteDirection(pathname)");
     expect(read("src/components/app-shell.tsx")).toContain("markPopstateRouteDirection");
@@ -83,7 +88,7 @@ describe("React frontend design system", () => {
     expect(rootRouteEnter).not.toContain("transform");
     expect(rootRouteEnter).not.toContain("filter");
     expect(motion).toContain(".route-page.t-route-enter");
-    expect(motion).toContain("t-route-enter-root var(--motion-medium)");
+    expect(motion).toContain("t-route-enter-root var(--route-root-duration)");
     expect(motion).toContain("t-route-enter-child");
     expect(motion).toContain("t-route-enter-back");
   });

@@ -6,7 +6,11 @@
   --motion-slow: 400ms;
   --motion-emphasis: 500ms;
   --motion-stagger: 40ms;
+  --route-duration: 420ms;
+  --route-root-duration: 280ms;
+  --route-distance: 40px;
   --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-route: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-assertive: cubic-bezier(0.2, 0.9, 0.3, 1);
@@ -20,7 +24,8 @@
   --pulse-dur: 2200ms;
   --pulse-count: 1;
   --pulse-min: 0.6;
-  --reveal-dur: 400ms;
+  --skeleton-appear-delay: 120ms;
+  --reveal-dur: 240ms;
   --reveal-blur: 2px;
   --reveal-ease: ease-in-out;
   --resize-dur: 300ms;
@@ -42,24 +47,22 @@
 
 /* Animate only the newly committed route node; no old-page snapshot or exit layer. */
 .t-route-enter {
-  animation:
-    t-route-enter-child var(--motion-medium) var(--ease-smooth-out) backwards,
-    t-route-blur var(--motion-quick) var(--ease-smooth-out) backwards;
+  animation: t-route-enter-child var(--route-duration) var(--ease-route) backwards;
 }
 
 @keyframes t-route-enter-child {
   from {
-    opacity: 0.9;
-    transform: translateX(24px);
+    opacity: 0.96;
+    transform: translate3d(var(--route-distance), 0, 0);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 .route-page.t-route-enter[data-route-direction="root"] {
-  animation: t-route-enter-root var(--motion-medium) var(--ease-smooth-out) backwards;
+  animation: t-route-enter-root var(--route-root-duration) var(--ease-smooth-out) backwards;
 }
 
 @keyframes t-route-enter-root {
@@ -71,23 +74,18 @@
   }
 }
 
-@keyframes t-route-blur {
-  from { filter: blur(var(--motion-blur-sm)); }
-  to { filter: blur(0); }
-}
-
 .t-route-enter[data-route-direction="back"] {
-  animation-name: t-route-enter-back, t-route-blur;
+  animation-name: t-route-enter-back;
 }
 
 @keyframes t-route-enter-back {
   from {
-    opacity: 0.9;
-    transform: translateX(-24px);
+    opacity: 0.96;
+    transform: translate3d(calc(0px - var(--route-distance)), 0, 0);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
@@ -505,7 +503,10 @@
 .t-skeleton {
   position: relative;
   overflow: hidden;
-  animation: t-skeleton-pulse var(--pulse-dur) ease-in-out infinite;
+  visibility: hidden;
+  animation:
+    t-skeleton-show 0s linear var(--skeleton-appear-delay) forwards,
+    t-skeleton-pulse var(--pulse-dur) ease-in-out var(--skeleton-appear-delay) infinite;
 }
 .t-skeleton::after {
   content: "";
@@ -518,7 +519,12 @@
     color-mix(in srgb, var(--shimmer-highlight) 12%, transparent) 50%,
     transparent 100%
   );
-  animation: t-skeleton-shimmer var(--pulse-dur) ease-in-out infinite;
+  animation: t-skeleton-shimmer var(--pulse-dur) ease-in-out var(--skeleton-appear-delay) infinite;
+}
+@keyframes t-skeleton-show {
+  to {
+    visibility: visible;
+  }
 }
 @keyframes t-skeleton-pulse {
   0%,
@@ -1169,6 +1175,9 @@
   }
   .t-skel-skeleton.is-pulsing > * {
     animation: none !important;
+  }
+  .t-skeleton {
+    visibility: visible;
   }
   .t-notification-badge,
   .t-text-swap,
