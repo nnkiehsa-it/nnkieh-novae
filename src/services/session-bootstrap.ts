@@ -1,5 +1,6 @@
 import { invokeBackendAction } from '@/services/backend-action';
 import type { CategoryCatalog } from '@/types/categories';
+import { RATE_LIMITS } from '@/generated/rate-limits';
 import type { SessionAccess } from '@/services/session-role';
 import {
   CONTENT_SHORT_CACHE_TTL_MS,
@@ -74,6 +75,16 @@ export async function fetchSessionBootstrap(options: {
           announcementCommentsEnabled: result.catalog?.features?.announcementCommentsEnabled !== false,
           facilitiesEnabled: result.catalog?.features?.facilitiesEnabled !== false,
           issuesEnabled: result.catalog?.features?.issuesEnabled !== false,
+        },
+        imageUploads: result.catalog?.imageUploads ?? {
+          announcementMaxImages: RATE_LIMITS.imageUploads.announcementMaxImages,
+          commentMaxImages: RATE_LIMITS.imageUploads.commentMaxImages,
+          facilityMaxImages: RATE_LIMITS.imageUploads.facilityMaxImages,
+          issueMaxImages: RATE_LIMITS.imageUploads.issueMaxImages,
+          maxDimension: RATE_LIMITS.imageCompression.maxDimension,
+          maxSourceMegabytes: RATE_LIMITS.imageCompression.maxSourceMegabytes,
+          maxUploadKilobytes: RATE_LIMITS.imageCompression.maxUploadKilobytes,
+          webpQuality: RATE_LIMITS.imageCompression.webpQuality,
         },
         issueCategories: Array.isArray(result.catalog?.issueCategories)
           ? result.catalog.issueCategories

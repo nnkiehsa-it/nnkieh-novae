@@ -87,6 +87,7 @@
   },
   "imageCompression": {
     "maxUploadKilobytes": 800,
+    "maxPlatformUploadKilobytes": 5000,
     "maxSourceMegabytes": 20,
     "maxDimension": 2000,
     "webpQuality": 0.82,

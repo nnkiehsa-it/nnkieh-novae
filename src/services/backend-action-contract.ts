@@ -44,6 +44,7 @@ export const BACKEND_ACTION_NAMES = [
   'resolveUploadImageUrls',
   'searchIssues',
   'saveCategoryManagement',
+  'savePlatformSettings',
   'savePlatformFeatures',
   'setAnnouncementLike',
   'setUserAccessScope',

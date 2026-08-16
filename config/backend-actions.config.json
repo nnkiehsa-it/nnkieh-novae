@@ -43,6 +43,7 @@
   "resolveUploadImageUrls": { "group": "upload-resolve" },
   "searchIssues": { "group": "read" },
   "saveCategoryManagement": { "group": "admin-write", "extraLimit": "roleWriteHourly" },
+  "savePlatformSettings": { "group": "admin-write", "extraLimit": "roleWriteHourly" },
   "savePlatformFeatures": { "group": "admin-write", "extraLimit": "roleWriteHourly" },
   "setAnnouncementLike": { "group": "sensitive-write", "extraLimit": "announcementLikeHourly" },
   "setUserAccessScope": { "group": "admin-write", "extraLimit": "roleWriteHourly" },

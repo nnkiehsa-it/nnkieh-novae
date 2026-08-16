@@ -7,7 +7,13 @@ import {
 import { createMediaDeliveryUrls } from "../shared/media-delivery.ts";
 import { requireEnv } from "../shared/env.ts";
 import { asString } from "../shared/http.ts";
-import { RATE_LIMITS } from "../shared/rate-limits.ts";
+import {
+  loadPlatformSettings,
+  maxImagesForTarget,
+  maxUploadBytes,
+  type ImageUploadSettings,
+  type UploadTargetType,
+} from "../shared/platform-settings.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { asNumber } from "./utils.ts";
 import { canReadIssue } from "./issue-shared.ts";
@@ -33,17 +39,12 @@ async function assertMarkdownUploadsAttachable(
   database: BackendDatabase,
   ownerUid: string,
   uploadIds: string[],
-  targetType: "announcement" | "announcement_comment" | "comment" | "facility" | "issue",
+  targetType: UploadTargetType,
   targetId: string | null,
 ) {
   if (uploadIds.length === 0) return;
-  const maxImages = targetType === "issue"
-    ? RATE_LIMITS.imageUploads.issueMaxImages
-    : targetType === "facility"
-      ? RATE_LIMITS.imageUploads.facilityMaxImages
-    : targetType === "announcement"
-      ? RATE_LIMITS.imageUploads.announcementMaxImages
-      : RATE_LIMITS.imageUploads.commentMaxImages;
+  const { imageUploads } = await loadPlatformSettings(database);
+  const maxImages = maxImagesForTarget(imageUploads, targetType);
   if (uploadIds.length > maxImages) throw new Error("validation-too-many");
 
   const { data: attachable, error: attachableError } = await database.table("app_private", "uploads")
@@ -182,22 +183,16 @@ export async function handleUploadAction(
   database: BackendDatabase,
 ): Promise<JsonRecord> {
   if (action === "createImageUploadSessions") {
+    const targetType = uploadTargetType(payload.targetType);
+    const { imageUploads } = await loadPlatformSettings(database);
     const images = Array.isArray(payload.images)
-      ? payload.images.slice(0, RATE_LIMITS.imageUploads.issueMaxImages).map((image) => image as JsonRecord)
+      ? payload.images.map((image) => image as JsonRecord)
       : [];
-    if (images.length === 0) throw new Error("validation-required");
+    if (images.length === 0 || images.length > maxImagesForTarget(imageUploads, targetType)) {
+      throw new Error(images.length > 0 ? "validation-too-many" : "validation-required");
+    }
     for (const image of images) {
-      if (
-        asString(image.contentType) !== "image/webp"
-        || asNumber(image.size, 0) <= 0
-        || asNumber(image.size, 0) > RATE_LIMITS.imageCompression.maxUploadBytes
-        || asNumber(image.width, 0) <= 0
-        || asNumber(image.width, 0) > RATE_LIMITS.imageCompression.maxDimension
-        || asNumber(image.height, 0) <= 0
-        || asNumber(image.height, 0) > RATE_LIMITS.imageCompression.maxDimension
-      ) {
-        throw new Error("upload-validation-failed");
-      }
+      if (!hasValidUploadDimensions(image, imageUploads)) throw new Error("upload-validation-failed");
     }
     const sessions = await Promise.all(images.map((image) =>
       handleUploadAction("internal:create-upload-session", image, auth, database)
@@ -206,10 +201,14 @@ export async function handleUploadAction(
   }
 
   if (action === "finalizeImageUploads") {
+    const targetType = uploadTargetType(payload.targetType);
+    const { imageUploads } = await loadPlatformSettings(database);
     const uploads = Array.isArray(payload.uploads)
-      ? payload.uploads.slice(0, RATE_LIMITS.imageUploads.issueMaxImages).map((upload) => upload as JsonRecord)
+      ? payload.uploads.map((upload) => upload as JsonRecord)
       : [];
-    if (uploads.length === 0) throw new Error("validation-required");
+    if (uploads.length === 0 || uploads.length > maxImagesForTarget(imageUploads, targetType)) {
+      throw new Error(uploads.length > 0 ? "validation-too-many" : "validation-required");
+    }
     const finalized = await Promise.all(uploads.map((upload) =>
       handleUploadAction("internal:finalize-upload", upload, auth, database)
     ));
@@ -249,9 +248,11 @@ export async function handleUploadAction(
     const folder = `srp/${auth.uid}`;
     const publicId = uploadId;
     const notificationUrl = `${requireEnv("PUBLIC_API_URL").replace(/\/+$/u, "")}/v1/webhooks/cloudinary`;
+    const { imageUploads } = await loadPlatformSettings(database);
     const params = {
       allowed_formats: "webp",
       folder,
+      max_file_size: String(maxUploadBytes(imageUploads)),
       notification_url: notificationUrl,
       overwrite: "false",
       public_id: publicId,
@@ -276,6 +277,7 @@ export async function handleUploadAction(
       allowedFormats: params.allowed_formats,
       cloudName: requireEnv("CLOUDINARY_CLOUD_NAME"),
       folder,
+      maxFileSize: params.max_file_size,
       notificationUrl,
       overwrite: params.overwrite,
       publicId,
@@ -312,15 +314,16 @@ export async function handleUploadAction(
       const bytes = Math.round(asNumber(metadata.bytes, 0));
       const width = Math.round(asNumber(metadata.width, 0));
       const height = Math.round(asNumber(metadata.height, 0));
+      const { imageUploads } = await loadPlatformSettings(database);
       const validAsset = asString(metadata.format).toLowerCase() === "webp"
         && asString(metadata.resource_type) === "image"
         && asString(metadata.type) === "authenticated"
         && bytes > 0
-        && bytes <= RATE_LIMITS.imageCompression.maxUploadBytes
+        && bytes <= maxUploadBytes(imageUploads)
         && width > 0
         && height > 0
-        && width <= RATE_LIMITS.imageCompression.maxDimension
-        && height <= RATE_LIMITS.imageCompression.maxDimension;
+        && width <= imageUploads.maxDimension
+        && height <= imageUploads.maxDimension;
       if (!validAsset) throw new Error("upload-validation-failed");
 
       const { data: finalized, error: finalizeError } = await database.table("app_private", "uploads")
@@ -384,4 +387,26 @@ export async function handleUploadAction(
     fullUrls: Object.fromEntries(available.map((entry) => [entry.id, entry.fullUrl])),
     thumbnailUrls: Object.fromEntries(available.map((entry) => [entry.id, entry.thumbnailUrl])),
   };
+}
+
+function uploadTargetType(value: unknown): UploadTargetType {
+  const targetType = asString(value);
+  if (
+    targetType !== "issue"
+    && targetType !== "facility"
+    && targetType !== "announcement"
+    && targetType !== "comment"
+    && targetType !== "announcement_comment"
+  ) throw new Error("validation-required");
+  return targetType;
+}
+
+function hasValidUploadDimensions(image: JsonRecord, settings: ImageUploadSettings) {
+  return asString(image.contentType) === "image/webp"
+    && asNumber(image.size, 0) > 0
+    && asNumber(image.size, 0) <= maxUploadBytes(settings)
+    && asNumber(image.width, 0) > 0
+    && asNumber(image.width, 0) <= settings.maxDimension
+    && asNumber(image.height, 0) > 0
+    && asNumber(image.height, 0) <= settings.maxDimension;
 }

@@ -2,6 +2,11 @@ import { asRecord, asString } from "../shared/http.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { asBoolean, asNumber } from "./utils.ts";
 import { requirePermission } from "./auth.ts";
+import {
+  loadPlatformSettings,
+  platformSettingsFromInput,
+  savePlatformSettings,
+} from "../shared/platform-settings.ts";
 
 const CATEGORY_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 const READ_ACCESS_VALUES = new Set(["school", "reviewed-school", "owner-admin"]);
@@ -165,17 +170,19 @@ export async function issueCategoryPolicyLists(database: BackendDatabase) {
 }
 
 export async function loadCategoryCatalog(database: BackendDatabase, includeInactive: boolean) {
-  const [issueCategories, facilityCategories, setupResult] = await Promise.all([
+  const [issueCategories, facilityCategories, setupResult, platformSettings] = await Promise.all([
     getIssueCategories(database, includeInactive),
     getFacilityCategories(database, includeInactive),
     database.table("app_private", "system_setup")
       .select("issues_enabled,facilities_enabled,announcement_comments_enabled")
       .eq("singleton", true).single(),
+    loadPlatformSettings(database),
   ]);
   if (setupResult.error) throw setupResult.error;
   return {
     issueCategories,
     facilityCategories,
+    imageUploads: platformSettings.imageUploads,
     features: {
       announcementCommentsEnabled: setupResult.data.announcement_comments_enabled !== false,
       facilitiesEnabled: setupResult.data.facilities_enabled !== false,
@@ -195,7 +202,17 @@ export async function handleCategoryAction(
   }
   if (action === "getCategoryManagement") {
     requirePermission(auth, "category.manage");
-    return { ...await loadCategoryCatalog(database, true), setupCompleted: auth.setupCompleted };
+    return {
+      ...await loadCategoryCatalog(database, true),
+      platformSettings: await loadPlatformSettings(database),
+      setupCompleted: auth.setupCompleted,
+    };
+  }
+  if (action === "savePlatformSettings") {
+    requirePermission(auth, "category.manage");
+    const settings = platformSettingsFromInput(payload);
+    await savePlatformSettings(database, settings);
+    return { ...settings, success: true };
   }
   if (action === "saveCategoryManagement") {
     requirePermission(auth, "category.manage");

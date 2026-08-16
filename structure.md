@@ -43,7 +43,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/components/dashboard/dashboard-skeleton.tsx` — geometry-matched dashboard toolbar, header, metric grid, distribution/operations columns, and failure-panel loading shell.
 - `src/components/admin/administration-skeleton.tsx` — permission-matched system-management toolbar, tabs, and editor-frame loading shell used by route prefetch.
 - `src/components/setup/` — setup step chrome and reusable category draft editors.
-- `src/components/admin/` — category, reusable category-editor controls, and scoped-access presentation. The management surface follows a spacious choose-scope → edit → save hierarchy, uses divider-based category rows instead of nested cards, and adapts member assignment into two columns only at wide widths.
+- `src/components/admin/` — category, reusable category-editor controls, scoped-access presentation, and platform retention/media-limit settings. The management surface follows a spacious choose-scope → edit → save hierarchy, uses divider-based category rows instead of nested cards, and adapts member assignment into two columns only at wide widths.
 - `src/components/composer-fields.tsx` — shared title/Markdown/media composer surface.
 - `src/components/discussion.tsx`, `comments/comment-composer.tsx`, `comments/comment-thread.tsx` — shared server-sorted discussion card, fixed safe-area composer with vertically aligned 40px avatar/action geometry, focus-ring-free textarea presentation, reply-target preview, and collapsible reply-rail presentation. The dock publishes only its ResizeObserver-measured height; CSS owns safe-area clearance so visual viewport and keyboard changes cannot inflate page padding.
 - `src/components/content-author.tsx` — shared author avatar and name row for list/detail content; unresolved profiles reserve a 24px avatar plus 64px mixed-script name skeleton and never flash a generic member label.
@@ -67,7 +67,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/hooks/use-route-preload.ts` — authenticated route bundle and RSC-shell warming only; static primary destinations preload at shell mount, category destinations join after category hydration, and secondary routes warm during idle time without mounting data hooks or requesting content services.
 - `src/hooks/use-entry-composer.ts` — issue/facility/announcement composer workflows and upload rollback.
 - `src/hooks/use-initial-setup.ts` — setup validation, persistence, polling, and retry-safe completion.
-- `src/hooks/use-category-management.ts`, `use-access-management.ts` — platform configuration and category-scoped RBAC flows.
+- `src/hooks/use-category-management.ts`, `use-platform-settings.ts`, `use-access-management.ts` — category configuration, platform retention/media-limit configuration, and category-scoped RBAC flows.
 - `src/hooks/use-platform-dashboard.ts` — dashboard fetching and refresh.
 - `src/hooks/use-permission-redirect.ts` — shared client-side redirect for authenticated routes that require a specific permission.
 - `src/hooks/use-push-notifications.ts`, `use-pwa-install.ts` — device push preferences and install flow; settings present each push write through the shared targeted spinner-to-check lifecycle.
@@ -91,7 +91,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `cloudflare/src/backend/actions/` — generated-registry-driven action dispatch and domain workflows. Authorization is enforced here and in database functions, never by frontend visibility checks.
 - `cloudflare/src/backend/database/` — parameterized PostgreSQL adapter and schema names used through the request-scoped Hyperdrive connection.
 - `cloudflare/src/backend/jobs/` — durable outbox, FCM/Notion delivery, deletion, realtime fan-out, and maintenance consumers driven by Cloudflare Queues.
-- `cloudflare/src/backend/shared/` — Worker environment, Firebase token validation, Cloudinary, FCM, Notion, HTTP, media, and structured-observability boundaries.
+- `cloudflare/src/backend/shared/` — Worker environment, Firebase token validation, Cloudinary, FCM, Notion, HTTP, media, platform runtime settings, and structured-observability boundaries.
 - `cloudflare/src/durable/` — SQLite-backed business rate limits and WebSocket Hibernation realtime hub. Realtime state can reconnect from PostgreSQL content versions instead of becoming a source of record.
 - `cloudflare/wrangler.json` — local/default Worker bindings for Hyperdrive, Queue, Durable Objects, cron, native rate limits, observability, and Smart Placement; deployment renders an ignored environment-specific copy.
 - `database/migrations/` — fresh PostgreSQL 17 baseline and append-only migrations for Neon. `0002` creates private/API schemas, `0003` completes realtime batches, `0004` seals the Worker-only database boundary, and `0005` exposes scheduled support expiry.

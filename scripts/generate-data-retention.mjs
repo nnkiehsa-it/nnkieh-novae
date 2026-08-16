@@ -8,6 +8,10 @@ const configPath = path.join(projectRoot, 'config', 'data-retention.config.json'
 try {
   const raw = JSON.parse(await readFile(configPath, 'utf8'));
   const config = Object.fromEntries(Object.entries(raw).map(([key, value]) => {
+    if (key === 'closedIssuesEnabled' || key === 'closedFacilitiesEnabled') {
+      if (typeof value !== 'boolean') throw new Error(`${key} 必須是布林值。`);
+      return [key, value];
+    }
     if (typeof value !== 'number' || !Number.isInteger(value) || value <= 0) {
       throw new Error(`${key} 必須是正整數。`);
     }

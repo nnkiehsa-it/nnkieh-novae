@@ -2,11 +2,13 @@ import { invokeBackendAction } from '@/services/backend-action';
 import { createRequestId } from '@/lib/request-id';
 import type {
   CategoryCatalog,
+  CategoryManagementCatalog,
   FacilityCategoryConfig,
   FacilityCategoryDraft,
   IssueCategoryConfig,
   IssueCategoryDraft,
   PlatformFeatures,
+  PlatformSettings,
 } from '@/types/categories';
 
 export async function getCategoryCatalog() {
@@ -14,7 +16,7 @@ export async function getCategoryCatalog() {
 }
 
 export async function getCategoryManagement() {
-  return await invokeBackendAction<Record<string, never>, CategoryCatalog>('getCategoryManagement')({});
+  return await invokeBackendAction<Record<string, never>, CategoryManagementCatalog>('getCategoryManagement')({});
 }
 
 export async function completeInitialSetup(input: {
@@ -49,4 +51,12 @@ export async function saveCategoryManagement(input: {
     CategoryCatalog & { success: boolean }
   >('saveCategoryManagement');
   return await action({ ...input, requestId: createRequestId() });
+}
+
+export async function savePlatformSettings(settings: PlatformSettings) {
+  const action = invokeBackendAction<
+    PlatformSettings & { requestId: string },
+    PlatformSettings & { success: boolean }
+  >('savePlatformSettings');
+  return await action({ ...settings, requestId: createRequestId() });
 }

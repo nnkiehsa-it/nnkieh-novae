@@ -28,12 +28,13 @@ async function holdActionSuccess() {
   );
 }
 
-function useComposerBase() {
+function useComposerBase(targetType: "announcement" | "facility" | "issue") {
   const [title, setTitle] = React.useState("");
   const [content, setContent] = React.useState("");
   const [saving, setSaving] = React.useState(false);
   const [succeeded, setSucceeded] = React.useState(false);
-  const images = useImageAttachments(6);
+  const categories = useCategories();
+  const images = useImageAttachments(targetType, categories.imageUploads);
 
   async function withUploads(
     create: (content: string) => Promise<void>,
@@ -76,7 +77,7 @@ export function useAnnouncementComposer() {
   const router = useRouter();
   const session = useSession();
   const { t } = useI18n();
-  const form = useComposerBase();
+  const form = useComposerBase("announcement");
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (!form.title.trim() || !form.content.trim() || form.saving) return;
@@ -109,7 +110,7 @@ export function useIssueComposer() {
   const router = useRouter();
   const { t } = useI18n();
   const session = useSession();
-  const form = useComposerBase();
+  const form = useComposerBase("issue");
   const category = decodeURIComponent(params.filter);
   const config = findIssueCategory(category);
   async function submit(event: React.FormEvent) {
@@ -137,7 +138,7 @@ export function useFacilityComposer() {
   const categories = useCategories();
   const { t } = useI18n();
   const session = useSession();
-  const form = useComposerBase();
+  const form = useComposerBase("facility");
   const requested = search.get("category");
   const [category, setCategory] = React.useState(
     requested && findFacilityCategory(requested)

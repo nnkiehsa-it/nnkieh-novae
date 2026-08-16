@@ -91,6 +91,7 @@ export const RATE_LIMITS = {
   "imageCompression": {
     "maxUploadKilobytes": 800,
     "maxUploadBytes": 819200,
+    "maxPlatformUploadKilobytes": 5000,
     "maxSourceMegabytes": 20,
     "maxSourceBytes": 20971520,
     "maxDimension": 2000,

@@ -305,6 +305,7 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
       width: 64,
     }],
     requestId: createUploadRequestId,
+    targetType: "issue",
   }, user.auth));
   const session = asRecord((uploadResult.sessions as unknown[])[0]);
   assert.match(String(session.signature), /^[a-f0-9]{40}$/u);
@@ -316,6 +317,7 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   if (readyError) throw readyError;
   const finalized = asRecord(await callAction("finalizeImageUploads", {
     requestId: requestId("finalize-upload"),
+    targetType: "issue",
     uploads: [{ uploadId }],
   }, user.auth));
   assert.equal(asRecord((finalized.uploads as unknown[])[0]).uploadId, uploadId);

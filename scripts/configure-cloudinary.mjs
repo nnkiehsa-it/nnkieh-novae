@@ -17,14 +17,14 @@ const limitsPath = fileURLToPath(
   new URL("../config/rate-limits.config.json", import.meta.url),
 );
 const limits = JSON.parse(await readFile(limitsPath, "utf8"));
-const maxUploadKilobytes = Number(limits.imageCompression?.maxUploadKilobytes);
-if (!Number.isSafeInteger(maxUploadKilobytes) || maxUploadKilobytes <= 0) {
-  throw new Error("imageCompression.maxUploadKilobytes must be a positive integer.");
+const maxPlatformUploadKilobytes = Number(limits.imageCompression?.maxPlatformUploadKilobytes);
+if (!Number.isSafeInteger(maxPlatformUploadKilobytes) || maxPlatformUploadKilobytes <= 0) {
+  throw new Error("imageCompression.maxPlatformUploadKilobytes must be a positive integer.");
 }
 
 const preset = new URLSearchParams({
   allowed_formats: "webp",
-  max_file_size: String(maxUploadKilobytes * 1024),
+  max_file_size: String(maxPlatformUploadKilobytes * 1024),
   overwrite: "false",
   type: "authenticated",
   unsigned: "false",

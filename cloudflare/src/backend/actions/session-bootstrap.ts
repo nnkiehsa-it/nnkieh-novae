@@ -1,6 +1,7 @@
 import { asRecord } from "../shared/http.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { asBoolean } from "./utils.ts";
+import { loadPlatformSettings } from "../shared/platform-settings.ts";
 
 export async function getSessionBootstrap(
   payload: JsonRecord,
@@ -18,6 +19,7 @@ export async function getSessionBootstrap(
   if (error) throw error;
   const snapshot = asRecord(data);
   const catalog = asRecord(snapshot.catalog);
+  const platformSettings = await loadPlatformSettings(database);
 
   return {
     access: {
@@ -30,6 +32,7 @@ export async function getSessionBootstrap(
     },
     catalog: {
       ...catalog,
+      imageUploads: platformSettings.imageUploads,
       setupCompleted: auth.setupCompleted,
     },
     notificationUnread: asRecord(snapshot.notificationUnread),

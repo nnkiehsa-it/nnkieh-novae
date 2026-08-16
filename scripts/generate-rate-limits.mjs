@@ -49,6 +49,7 @@ async function readRateLimitsConfig() {
     imageCompression: {
       maxUploadKilobytes: assertPositiveInteger(imageCompression.maxUploadKilobytes, 'imageCompression.maxUploadKilobytes 必須是正整數。'),
       maxUploadBytes: assertPositiveInteger(imageCompression.maxUploadKilobytes, '') * 1024,
+      maxPlatformUploadKilobytes: assertPositiveInteger(imageCompression.maxPlatformUploadKilobytes, 'imageCompression.maxPlatformUploadKilobytes 必須是正整數。'),
       maxSourceMegabytes: assertPositiveInteger(imageCompression.maxSourceMegabytes, 'imageCompression.maxSourceMegabytes 必須是正整數。'),
       maxSourceBytes: assertPositiveInteger(imageCompression.maxSourceMegabytes, '') * 1024 * 1024,
       maxDimension: assertPositiveInteger(imageCompression.maxDimension, 'imageCompression.maxDimension 必須是正整數。'),

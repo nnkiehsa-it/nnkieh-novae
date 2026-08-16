@@ -7,13 +7,16 @@ import type {
   FacilityCategoryConfig,
   IssueCategoryConfig,
   PlatformFeatures,
+  ImageUploadSettings,
 } from "@/types/categories";
+import { RATE_LIMITS } from "@/generated/rate-limits";
 
 interface CategoryState {
   error: string;
   facilityCategories: FacilityCategoryConfig[];
   features: PlatformFeatures;
   issueCategories: IssueCategoryConfig[];
+  imageUploads: ImageUploadSettings;
   loaded: boolean;
   loading: boolean;
 }
@@ -24,12 +27,24 @@ const defaultFeatures: PlatformFeatures = {
   issuesEnabled: true,
 };
 
+const defaultImageUploads: ImageUploadSettings = {
+  announcementMaxImages: RATE_LIMITS.imageUploads.announcementMaxImages,
+  commentMaxImages: RATE_LIMITS.imageUploads.commentMaxImages,
+  facilityMaxImages: RATE_LIMITS.imageUploads.facilityMaxImages,
+  issueMaxImages: RATE_LIMITS.imageUploads.issueMaxImages,
+  maxDimension: RATE_LIMITS.imageCompression.maxDimension,
+  maxSourceMegabytes: RATE_LIMITS.imageCompression.maxSourceMegabytes,
+  maxUploadKilobytes: RATE_LIMITS.imageCompression.maxUploadKilobytes,
+  webpQuality: RATE_LIMITS.imageCompression.webpQuality,
+};
+
 const listeners = new Set<() => void>();
 const initialCategoryState: CategoryState = {
   error: "",
   facilityCategories: [],
   features: defaultFeatures,
   issueCategories: [],
+  imageUploads: defaultImageUploads,
   loaded: false,
   loading: false,
 };
@@ -49,6 +64,7 @@ function replaceCatalog(next: {
   features: PlatformFeatures;
   issueCategories: IssueCategoryConfig[];
   facilityCategories: FacilityCategoryConfig[];
+  imageUploads: ImageUploadSettings;
 }) {
   state = {
     ...state,
@@ -56,6 +72,7 @@ function replaceCatalog(next: {
       (a, b) => a.sortOrder - b.sortOrder,
     ),
     features: { ...next.features },
+    imageUploads: { ...next.imageUploads },
     issueCategories: [...next.issueCategories].sort(
       (a, b) => a.sortOrder - b.sortOrder,
     ),
@@ -68,6 +85,7 @@ export function seedCategoryCatalog(next: {
   features: PlatformFeatures;
   issueCategories: IssueCategoryConfig[];
   facilityCategories: FacilityCategoryConfig[];
+  imageUploads: ImageUploadSettings;
 }) {
   replaceCatalog(next);
 }
@@ -111,6 +129,7 @@ export function clearCategoryCatalog() {
     facilityCategories: [],
     features: defaultFeatures,
     issueCategories: [],
+    imageUploads: defaultImageUploads,
     loaded: false,
     loading: false,
   };
@@ -153,6 +172,10 @@ export function getIssueCategorySnapshot() {
 
 export function getPlatformFeaturesSnapshot() {
   return { ...state.features };
+}
+
+export function getImageUploadSettingsSnapshot() {
+  return { ...state.imageUploads };
 }
 
 export function useCategories() {

@@ -1,7 +1,7 @@
 import type { AppDatabaseClient } from "./database/client.ts";
 import { errorStatus, publicErrorBody } from "./shared/http.ts";
-import { RATE_LIMITS } from "./shared/rate-limits.ts";
 import { createFunctionLogger } from "./shared/observability.ts";
+import { loadPlatformSettings, maxUploadBytes } from "./shared/platform-settings.ts";
 
 export async function handleCloudinaryWebhook(body: Uint8Array, database: AppDatabaseClient) {
   const log = createFunctionLogger("cloudinaryWebhook");
@@ -20,15 +20,16 @@ export async function handleCloudinaryWebhook(body: Uint8Array, database: AppDat
     const bytes = Number(payload.bytes ?? 0);
     const width = Number(payload.width ?? 0);
     const height = Number(payload.height ?? 0);
+    const { imageUploads } = await loadPlatformSettings(database);
     const validAsset = format === "webp"
       && resourceType === "image"
       && deliveryType === "authenticated"
       && bytes > 0
-      && bytes <= RATE_LIMITS.imageCompression.maxUploadBytes
+      && bytes <= maxUploadBytes(imageUploads)
       && width > 0
       && height > 0
-      && width <= RATE_LIMITS.imageCompression.maxDimension
-      && height <= RATE_LIMITS.imageCompression.maxDimension;
+      && width <= imageUploads.maxDimension
+      && height <= imageUploads.maxDimension;
 
     const { error } = await database.table("app_private", "uploads")
       .update({

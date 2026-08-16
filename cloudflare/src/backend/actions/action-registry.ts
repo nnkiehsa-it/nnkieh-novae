@@ -94,6 +94,9 @@ function naturallyIdempotentWrite(
 export const backendActionDefinitions = [
   action("getCategoryCatalog", "category", "read", handleCategoryAction),
   action("getCategoryManagement", "category", "read", handleCategoryAction, { requiredPermission: "category.manage" }),
+  action("savePlatformSettings", "category", "admin-write", handleCategoryAction, {
+    idempotent: true, requiredPermission: "category.manage", requiresRequestId: true,
+  }),
   action("saveCategoryManagement", "category", "admin-write", handleCategoryAction, {
     idempotent: true, requiredPermission: "category.manage", requiresRequestId: true,
   }),

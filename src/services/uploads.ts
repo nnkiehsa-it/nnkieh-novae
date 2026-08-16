@@ -29,6 +29,7 @@ interface ImageUploadSession {
   allowedFormats?: string;
   cloudName: string;
   folder?: string;
+  maxFileSize?: string;
   overwrite?: string;
   notificationUrl?: string;
   publicId: string;
@@ -56,6 +57,8 @@ export interface ImageUploadInput {
   height: number;
   width: number;
 }
+
+export type ImageUploadTargetType = 'announcement' | 'announcement_comment' | 'comment' | 'facility' | 'issue';
 
 function toReadableUploadError(error: unknown) {
   const message = error instanceof Error ? error.message : '';
@@ -101,6 +104,7 @@ async function uploadToCloudinary(file: File, session: ImageUploadSession) {
   body.set('signature', session.signature);
   if (session.allowedFormats) body.set('allowed_formats', session.allowedFormats);
   if (session.folder) body.set('folder', session.folder);
+  if (session.maxFileSize) body.set('max_file_size', session.maxFileSize);
   if (session.overwrite) body.set('overwrite', session.overwrite);
   if (session.notificationUrl) body.set('notification_url', session.notificationUrl);
   if (session.type) body.set('type', session.type);
@@ -116,7 +120,10 @@ async function uploadToCloudinary(file: File, session: ImageUploadSession) {
   }, { label: 'dashboard.imageUpload', timeoutMs: LONG_REQUEST_TIMEOUT_MS });
 }
 
-export async function createImageUploadPolicies(inputs: ImageUploadInput[]): Promise<ImageUploadPolicy[]> {
+export async function createImageUploadPolicies(
+  inputs: ImageUploadInput[],
+  targetType: ImageUploadTargetType,
+): Promise<ImageUploadPolicy[]> {
   if (inputs.length === 0) return [];
   if (inputs.some(({ file }) => file.type !== 'image/webp')) {
     throw new Error('image.imagesMustBeConvertedToWebpBeforeUploading');
@@ -124,7 +131,7 @@ export async function createImageUploadPolicies(inputs: ImageUploadInput[]): Pro
 
   try {
     const createSession = invokeBackendAction<
-      { images: Array<{ contentType: string; height: number; size: number; width: number }>; requestId: string },
+      { images: Array<{ contentType: string; height: number; size: number; width: number }>; requestId: string; targetType: ImageUploadTargetType },
       { sessions: ImageUploadSession[] }
     >('createImageUploadSessions');
     const { sessions } = await createSession({
@@ -135,6 +142,7 @@ export async function createImageUploadPolicies(inputs: ImageUploadInput[]): Pro
         width,
       })),
       requestId: createRequestId(),
+      targetType,
     });
     if (sessions.length !== inputs.length) throw new Error('image.theImageUploadJobIsNotSetUpCompletely');
     const uploadResponses = await Promise.all(
@@ -143,12 +151,14 @@ export async function createImageUploadPolicies(inputs: ImageUploadInput[]): Pro
 
     const finalize = invokeBackendAction<{
       requestId: string;
+      targetType: ImageUploadTargetType;
       uploads: Array<{ publicId: string; signature: string; uploadId: string; version: number }>;
     }, { uploads: ImageUploadPolicy[] }>('finalizeImageUploads', {
       timeoutMs: LONG_REQUEST_TIMEOUT_MS,
     });
     const result = await finalize({
       requestId: createRequestId(),
+      targetType,
       uploads: uploadResponses.map((response, index) => ({
         publicId: response.public_id ?? '',
         signature: response.signature ?? '',

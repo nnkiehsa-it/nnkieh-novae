@@ -1,5 +1,7 @@
 {
+  "closedIssuesEnabled": true,
   "closedIssuesDays": 180,
+  "closedFacilitiesEnabled": true,
   "closedFacilitiesDays": 180,
   "notificationsDays": 7,
   "realtimeEventsHours": 3,

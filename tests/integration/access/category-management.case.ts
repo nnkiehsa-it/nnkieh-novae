@@ -34,6 +34,17 @@ integrationTest("runtime category setup and management enforce platform permissi
     announcementCommentsEnabled: true,
     facilitiesEnabled: false, issuesEnabled: false, requestId: requestId("features-denied"),
   }, user.auth));
+  await expectActionError("permission-denied", () => callAction("savePlatformSettings", {
+    imageUploads: {
+      announcementMaxImages: 10, commentMaxImages: 1, facilityMaxImages: 2, issueMaxImages: 3,
+      maxDimension: 2000, maxSourceMegabytes: 20, maxUploadKilobytes: 800, webpQuality: 0.82,
+    },
+    retention: {
+      closedFacilitiesDays: 180, closedFacilitiesEnabled: false,
+      closedIssuesDays: 180, closedIssuesEnabled: false,
+    },
+    requestId: requestId("platform-settings-denied"),
+  }, user.auth));
 
   const setup = asRecord(await callAction("completeInitialSetup", {
     issueCategories: [
@@ -69,6 +80,49 @@ integrationTest("runtime category setup and management enforce platform permissi
     facilitiesEnabled: false,
     issuesEnabled: true,
   });
+  const platformSettings = asRecord(management.platformSettings);
+  const updatedSettings = asRecord(await callAction("savePlatformSettings", {
+    imageUploads: {
+      ...asRecord(platformSettings.imageUploads),
+      issueMaxImages: 3,
+    },
+    retention: {
+      ...asRecord(platformSettings.retention),
+      closedFacilitiesEnabled: false,
+      closedIssuesEnabled: false,
+    },
+    requestId: requestId("platform-settings-save"),
+  }, admin.auth));
+  assert.equal(asRecord(updatedSettings.imageUploads).issueMaxImages, 3);
+  assert.equal(asRecord(updatedSettings.retention).closedIssuesEnabled, false);
+  const catalogWithImageSettings = asRecord(await callAction("getCategoryCatalog", {}, user.auth));
+  assert.equal(asRecord(catalogWithImageSettings.imageUploads).issueMaxImages, 3);
+  const uploadMetadata = Array.from({ length: 3 }, () => ({
+    contentType: "image/webp", height: 64, size: 256, width: 64,
+  }));
+  const uploadSessions = asRecord(await callAction("createImageUploadSessions", {
+    images: uploadMetadata,
+    requestId: requestId("configured-image-count"),
+    targetType: "issue",
+  }, user.auth));
+  assert.equal((uploadSessions.sessions as unknown[]).length, 3);
+  await expectActionError("validation-too-many", () => callAction("createImageUploadSessions", {
+    images: [...uploadMetadata, uploadMetadata[0]],
+    requestId: requestId("configured-image-count-too-many"),
+    targetType: "issue",
+  }, user.auth));
+  const sessionPaths = (uploadSessions.sessions as unknown[]).map((value) => {
+    const session = asRecord(value);
+    return `${String(session.folder)}/${String(session.publicId)}`;
+  });
+  await callAction("deleteUploadedImages", {
+    requestId: requestId("configured-image-count-cleanup"), storagePaths: sessionPaths,
+  }, user.auth);
+  await callAction("savePlatformSettings", {
+    imageUploads: asRecord(platformSettings.imageUploads),
+    retention: asRecord(platformSettings.retention),
+    requestId: requestId("platform-settings-restore"),
+  }, admin.auth);
   const publicCategory = asRecord((management.issueCategories as unknown[])
     .find((value) => asRecord(value).id === "public-issues"));
   const savedIssue = asRecord(await saveCategoryDraft(admin.auth, {

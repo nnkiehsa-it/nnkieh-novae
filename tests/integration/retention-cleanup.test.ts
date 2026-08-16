@@ -400,3 +400,34 @@ integrationTest("configured retention cleanup removes every expired data class a
     "retention cleanup must leave the Notion archive pages untouched",
   );
 });
+
+integrationTest("closed-content retention can be disabled without disabling other maintenance", async () => {
+  const runId = crypto.randomUUID();
+  const expiredAt = new Date(Date.now() - 4_000 * DAY_MS).toISOString();
+  const owner = await seedActor(`retention-disabled-owner-${runId}`);
+  const { data: categories, error: categoryError } = await database.table("app_private", "issue_categories")
+    .select("id").eq("is_active", true).order("sort_order").limit(1);
+  if (categoryError) throw categoryError;
+  const category = String(categories?.[0]?.id ?? "");
+  assert.ok(category);
+  const created = asRecord(await callAction("createIssue", {
+    category,
+    content: "A closed proposal retained by the disabled cleanup policy.",
+    requestId: requestId(`retention-disabled-${runId}`),
+    title: "Retention disabled",
+  }, owner.auth));
+  const issueId = String(asRecord(created.issue).id);
+  const { error: closeError } = await database.table("app_private", "issues")
+    .update({ closed_at: expiredAt, status: "completed" }).eq("id", issueId);
+  if (closeError) throw closeError;
+  const { data, error } = await database.call("app_api", "run_maintenance_cleanup", {
+    retention_config: {
+      ...DATA_RETENTION,
+      closedFacilitiesEnabled: false,
+      closedIssuesEnabled: false,
+    },
+  });
+  if (error) throw error;
+  assert.equal(asRecord(asRecord(data).details).expired_closed_issues_deleted, 0);
+  await expectPresent("issues", "id", issueId);
+});

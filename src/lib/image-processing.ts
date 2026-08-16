@@ -1,13 +1,7 @@
 import { RATE_LIMITS } from '../generated/rate-limits';
 import { t } from '@/i18n';
+import type { ImageUploadSettings } from '@/types/categories';
 
-const {
-  maxUploadBytes: maxImageUploadBytes,
-  maxSourceBytes: maxImageSourceBytes,
-  maxDimension: maxImageDimension,
-  webpQuality,
-  outputScales,
-} = RATE_LIMITS.imageCompression;
 let webpEncoderPromise: Promise<typeof import('@jsquash/webp/encode')> | null = null;
 
 interface ProcessedImage {
@@ -48,7 +42,7 @@ function loadImage(file: File) {
   });
 }
 
-function canvasToBlob(canvas: HTMLCanvasElement) {
+function canvasToBlob(canvas: HTMLCanvasElement, webpQuality: number) {
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (!blob) {
@@ -60,8 +54,8 @@ function canvasToBlob(canvas: HTMLCanvasElement) {
   });
 }
 
-async function canvasToWebp(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) {
-  const nativeBlob = await canvasToBlob(canvas);
+async function canvasToWebp(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, webpQuality: number) {
+  const nativeBlob = await canvasToBlob(canvas, webpQuality);
   if (nativeBlob.type === 'image/webp' && await isWebpFile(nativeBlob)) {
     return nativeBlob;
   }
@@ -77,7 +71,7 @@ async function canvasToWebp(canvas: HTMLCanvasElement, context: CanvasRenderingC
   return fallbackBlob;
 }
 
-function outputDimensions(width: number, height: number, scale: number) {
+function outputDimensions(width: number, height: number, scale: number, maxImageDimension: number) {
   const dimensionScale = Math.min(1, maxImageDimension / Math.max(width, height)) * scale;
   return {
     height: Math.max(1, Math.round(height * dimensionScale)),
@@ -90,13 +84,18 @@ function webpFileName(fileName: string) {
   return `${baseName}.webp`;
 }
 
-export async function processImageForUpload(file: File): Promise<ProcessedImage> {
+export async function processImageForUpload(file: File, settings: ImageUploadSettings): Promise<ProcessedImage> {
+  const maxImageUploadBytes = settings.maxUploadKilobytes * 1024;
+  const maxImageSourceBytes = settings.maxSourceMegabytes * 1024 * 1024;
+  const maxImageDimension = settings.maxDimension;
+  const { webpQuality } = settings;
+  const { outputScales } = RATE_LIMITS.imageCompression;
   if (file.size <= 0) {
     throw new Error(`[IMG-SOURCE-EMPTY] ${t('image.empty', { details: fileDetails(file) })}`);
   }
   if (file.size > maxImageSourceBytes) {
     throw new Error(`[IMG-SOURCE-SIZE] ${t('image.sourceTooLarge', {
-      megabytes: RATE_LIMITS.imageCompression.maxSourceMegabytes,
+      megabytes: settings.maxSourceMegabytes,
       details: fileDetails(file),
     })}`);
   }
@@ -125,13 +124,13 @@ export async function processImageForUpload(file: File): Promise<ProcessedImage>
 
   try {
     for (const scale of outputScales) {
-      const size = outputDimensions(sourceWidth, sourceHeight, scale);
+      const size = outputDimensions(sourceWidth, sourceHeight, scale, maxImageDimension);
       canvas.width = size.width;
       canvas.height = size.height;
       context.clearRect(0, 0, size.width, size.height);
       context.drawImage(image, 0, 0, size.width, size.height);
 
-      const blob = await canvasToWebp(canvas, context);
+      const blob = await canvasToWebp(canvas, context, webpQuality);
       if (!await isWebpFile(blob)) {
         throw new Error(`[IMG-WEBP] ${t('image.webpInvalid', { type: blob.type, size: blob.size })}`);
       }
@@ -151,6 +150,6 @@ export async function processImageForUpload(file: File): Promise<ProcessedImage>
   }
 
   throw new Error(t('image.outputTooLarge', {
-    kilobytes: RATE_LIMITS.imageCompression.maxUploadKilobytes,
+    kilobytes: settings.maxUploadKilobytes,
   }));
 }

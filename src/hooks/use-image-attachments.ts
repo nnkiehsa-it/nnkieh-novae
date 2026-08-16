@@ -7,7 +7,9 @@ import {
   createImageUploadPolicies,
   deleteUploadedImages,
 } from "@/services/uploads";
+import type { ImageUploadTargetType } from "@/services/uploads";
 import { useI18n } from "@/i18n";
+import type { ImageUploadSettings } from "@/types/categories";
 
 interface PreparedImage {
   file: File;
@@ -24,7 +26,17 @@ interface UploadedImage {
   width: number;
 }
 
-export function useImageAttachments(maxImages: number) {
+export function useImageAttachments(
+  targetType: ImageUploadTargetType,
+  settings: ImageUploadSettings,
+) {
+  const maxImages = targetType === "issue"
+    ? settings.issueMaxImages
+    : targetType === "facility"
+      ? settings.facilityMaxImages
+      : targetType === "announcement"
+        ? settings.announcementMaxImages
+        : settings.commentMaxImages;
   const { t } = useI18n();
   const [images, setImages] = React.useState<PreparedImage[]>([]);
   const [uploading, setUploading] = React.useState(false);
@@ -55,7 +67,7 @@ export function useImageAttachments(maxImages: number) {
       const prepared: PreparedImage[] = [];
       try {
         for (const file of Array.from(files).slice(0, remaining)) {
-          const result = await processImageForUpload(file);
+          const result = await processImageForUpload(file, settings);
           prepared.push({
             ...result,
             previewUrl: URL.createObjectURL(result.file),
@@ -77,7 +89,7 @@ export function useImageAttachments(maxImages: number) {
         setUploading(false);
       }
     },
-    [maxImages, t],
+    [maxImages, settings, t],
   );
 
   const remove = React.useCallback((index: number) => {
@@ -107,6 +119,7 @@ export function useImageAttachments(maxImages: number) {
           height,
           width,
         })),
+        targetType,
       );
       uploaded = policies.map(({ height, storagePath, uploadId, width }) => ({
         height,
@@ -134,7 +147,7 @@ export function useImageAttachments(maxImages: number) {
     } finally {
       setUploading(false);
     }
-  }, []);
+  }, [targetType]);
 
   return { clear, images, pick, remove, uploadAndAppend, uploading };
 }

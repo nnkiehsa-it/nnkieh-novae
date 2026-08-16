@@ -151,6 +151,10 @@ export const BACKEND_ACTION_POLICIES = {
     "group": "admin-write",
     "extraLimit": "roleWriteHourly"
   },
+  "savePlatformSettings": {
+    "group": "admin-write",
+    "extraLimit": "roleWriteHourly"
+  },
   "savePlatformFeatures": {
     "group": "admin-write",
     "extraLimit": "roleWriteHourly"

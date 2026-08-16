@@ -15,6 +15,7 @@ import {
   FacilityCategoryEditor,
   IssueCategoryEditor,
 } from "@/components/admin/category-editors";
+import { PlatformSettings } from "@/components/admin/platform-settings";
 
 export function CategoryManagement() {
   useLocaleSubscription();
@@ -32,6 +33,7 @@ export function CategoryManagement() {
           { label: translate('ui.nav.issues'), value: "issue" },
           { label: translate('ui.nav.facilities'), value: "facility" },
           { label: translate('ui.nav.announcements'), value: "announcement" },
+          { label: translate('ui.admin.platformSettings'), value: "platform" },
         ]}
         value={state.kind}
       />
@@ -103,7 +105,8 @@ export function CategoryManagement() {
           />
         </ResizableCard>
       ) : null}
-      <div className="flex justify-end border-t pt-5">
+      {state.kind === "platform" ? <PlatformSettings /> : null}
+      {state.kind !== "platform" ? <div className="flex justify-end border-t pt-5">
         <Button disabled={!state.valid || state.saving} onClick={() => void state.save()}>
           {state.saving ? (
             <ActionFeedbackIcon
@@ -112,7 +115,7 @@ export function CategoryManagement() {
               state={state.feedbackState === "success" ? "success" : "loading"}
             />
           ) : <Save />}{translate('ui.admin.saveAll')}</Button>
-      </div>
+      </div> : null}
     </section>
   );
 }
@@ -128,6 +131,7 @@ function CategoryManagementSkeleton() {
           { label: translate("ui.nav.issues"), value: "issue" },
           { label: translate("ui.nav.facilities"), value: "facility" },
           { label: translate("ui.nav.announcements"), value: "announcement" },
+          { label: translate("ui.admin.platformSettings"), value: "platform" },
         ]}
         value="issue"
       />
