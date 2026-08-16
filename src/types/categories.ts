@@ -37,7 +37,6 @@ export interface ImageUploadSettings {
   facilityMaxImages: number;
   issueMaxImages: number;
   maxDimension: number;
-  maxSourceMegabytes: number;
   maxUploadKilobytes: number;
   webpQuality: number;
 }

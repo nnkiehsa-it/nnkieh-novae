@@ -78,7 +78,6 @@ export function PlatformSettings() {
             <NumberSetting label={translate("ui.admin.announcementImageLimit")} max={20} onChange={(value) => state.updateImage("announcementMaxImages", value)} value={imageUploads.announcementMaxImages} />
             <NumberSetting label={translate("ui.admin.commentImageLimit")} max={20} onChange={(value) => state.updateImage("commentMaxImages", value)} value={imageUploads.commentMaxImages} />
             <NumberSetting label={translate("ui.admin.imageUploadKilobytes")} max={RATE_LIMITS.imageCompression.maxPlatformUploadKilobytes} min={100} onChange={(value) => state.updateImage("maxUploadKilobytes", value)} value={imageUploads.maxUploadKilobytes} />
-            <NumberSetting label={translate("ui.admin.imageSourceMegabytes")} max={50} onChange={(value) => state.updateImage("maxSourceMegabytes", value)} value={imageUploads.maxSourceMegabytes} />
             <NumberSetting label={translate("ui.admin.imageMaxDimension")} max={8000} min={256} onChange={(value) => state.updateImage("maxDimension", value)} value={imageUploads.maxDimension} />
             <NumberSetting label={translate("ui.admin.imageWebpQuality")} max={0.95} min={0.4} onChange={(value) => state.updateImage("webpQuality", value)} step={0.01} value={imageUploads.webpQuality} />
           </div>

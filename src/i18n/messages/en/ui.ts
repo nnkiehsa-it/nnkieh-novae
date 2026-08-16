@@ -103,7 +103,6 @@ const messages = {
   'ui.admin.announcementImageLimit': 'Images per announcement',
   'ui.admin.commentImageLimit': 'Images per comment',
   'ui.admin.imageUploadKilobytes': 'Maximum uploaded image size (KB)',
-  'ui.admin.imageSourceMegabytes': 'Maximum source file size (MB)',
   'ui.admin.imageMaxDimension': 'Maximum image dimension (px)',
   'ui.admin.imageWebpQuality': 'WebP quality',
   'ui.admin.issueFeature': 'Proposal feature',

@@ -61,6 +61,19 @@ describe("React frontend design system", () => {
     expect(motion).toContain('@keyframes t-image-ready');
   });
 
+  it("applies saved image settings locally and limits only compressed output size", () => {
+    const platformSettings = read("src/hooks/use-platform-settings.ts");
+    const categories = read("src/hooks/use-categories.ts");
+    const imageProcessing = read("src/lib/image-processing.ts");
+    const settingsUi = read("src/components/admin/platform-settings.tsx");
+    expect(platformSettings).toContain("seedImageUploadSettings(saved.imageUploads)");
+    expect(platformSettings).not.toContain("categories.refresh()");
+    expect(categories).toContain("export function seedImageUploadSettings");
+    expect(imageProcessing).not.toContain("maxImageSourceBytes");
+    expect(imageProcessing).not.toContain("image.sourceTooLarge");
+    expect(settingsUi).not.toContain("imageSourceMegabytes");
+  });
+
   it("anchors mobile navigation to a stable viewport in Safari and standalone PWA mode", () => {
     const globals = read("src/app/globals.css");
     const shell = read("src/components/app-shell.tsx");
@@ -187,6 +200,7 @@ describe("React frontend design system", () => {
     const issueCard = read("src/components/issues/issue-card.tsx");
     const facilityCard = read("src/components/facilities/facility-card.tsx");
     const announcementCard = read("src/components/announcements/announcement-card.tsx");
+    const resolutionNotice = read("src/components/content-resolution-notice.tsx");
     expect(skeleton).toContain("<Button");
     expect(skeleton).toContain("<Input");
     expect(skeleton).toContain("<Textarea");
@@ -200,6 +214,8 @@ describe("React frontend design system", () => {
     expect(skeleton).toContain('const isFacility = kind === "facility"');
     expect(skeleton).not.toContain('min-h-[25rem]');
     expect(skeleton).not.toContain('Skeleton className="size-9 rounded-xl"');
+    expect(skeleton).not.toContain("ContentResolutionNoticeSkeleton");
+    expect(resolutionNotice).toContain("ContentResolutionNoticeSkeleton");
     expect(issueCard).not.toContain('t-data-content-enter flex h-full');
     expect(facilityCard).not.toContain('t-data-content-enter flex h-full');
     expect(announcementCard).not.toContain('t-data-content-enter flex h-full');

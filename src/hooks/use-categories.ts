@@ -33,7 +33,6 @@ const defaultImageUploads: ImageUploadSettings = {
   facilityMaxImages: RATE_LIMITS.imageUploads.facilityMaxImages,
   issueMaxImages: RATE_LIMITS.imageUploads.issueMaxImages,
   maxDimension: RATE_LIMITS.imageCompression.maxDimension,
-  maxSourceMegabytes: RATE_LIMITS.imageCompression.maxSourceMegabytes,
   maxUploadKilobytes: RATE_LIMITS.imageCompression.maxUploadKilobytes,
   webpQuality: RATE_LIMITS.imageCompression.webpQuality,
 };
@@ -88,6 +87,11 @@ export function seedCategoryCatalog(next: {
   imageUploads: ImageUploadSettings;
 }) {
   replaceCatalog(next);
+}
+
+export function seedImageUploadSettings(imageUploads: ImageUploadSettings) {
+  state = { ...state, imageUploads: { ...imageUploads } };
+  emit();
 }
 
 export async function ensureCategoryCatalog(force = false) {

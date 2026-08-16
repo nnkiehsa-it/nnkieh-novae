@@ -103,7 +103,6 @@ const messages = {
   'ui.admin.announcementImageLimit': '每則公告圖片數量',
   'ui.admin.commentImageLimit': '每則留言圖片數量',
   'ui.admin.imageUploadKilobytes': '上傳後圖片大小上限（KB）',
-  'ui.admin.imageSourceMegabytes': '原始檔案大小上限（MB）',
   'ui.admin.imageMaxDimension': '圖片最長邊上限（px）',
   'ui.admin.imageWebpQuality': 'WebP 品質',
   'ui.admin.issueFeature': '提案功能',

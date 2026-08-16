@@ -3,7 +3,6 @@ const messages = {
   'image.empty': 'The image file is empty; {details}',
   'image.invalidType': 'Please select a valid image file; {details}',
   'image.outputTooLarge': 'The image still exceeds {kilobytes} KB after compression. Please use a smaller image.',
-  'image.sourceTooLarge': 'The original image cannot exceed {megabytes} MB; {details}',
   'image.webpEncodeFailed': 'Unable to convert the image; format={type}',
   'image.webpInvalid': 'The browser did not produce a valid image; type={type}, size={size}',
   'image.unableToReadImageDimensions': 'Unable to read image dimensions.',

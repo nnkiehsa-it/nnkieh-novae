@@ -82,7 +82,6 @@ export async function fetchSessionBootstrap(options: {
           facilityMaxImages: RATE_LIMITS.imageUploads.facilityMaxImages,
           issueMaxImages: RATE_LIMITS.imageUploads.issueMaxImages,
           maxDimension: RATE_LIMITS.imageCompression.maxDimension,
-          maxSourceMegabytes: RATE_LIMITS.imageCompression.maxSourceMegabytes,
           maxUploadKilobytes: RATE_LIMITS.imageCompression.maxUploadKilobytes,
           webpQuality: RATE_LIMITS.imageCompression.webpQuality,
         },

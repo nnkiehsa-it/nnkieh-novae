@@ -13,7 +13,6 @@ export interface ImageUploadSettings {
   facilityMaxImages: number;
   issueMaxImages: number;
   maxDimension: number;
-  maxSourceMegabytes: number;
   maxUploadKilobytes: number;
   webpQuality: number;
 }
@@ -38,7 +37,6 @@ const defaultImageUploads: ImageUploadSettings = {
   facilityMaxImages: RATE_LIMITS.imageUploads.facilityMaxImages,
   issueMaxImages: RATE_LIMITS.imageUploads.issueMaxImages,
   maxDimension: RATE_LIMITS.imageCompression.maxDimension,
-  maxSourceMegabytes: RATE_LIMITS.imageCompression.maxSourceMegabytes,
   maxUploadKilobytes: RATE_LIMITS.imageCompression.maxUploadKilobytes,
   webpQuality: RATE_LIMITS.imageCompression.webpQuality,
 };
@@ -87,7 +85,6 @@ function normalizeImageUploads(value: unknown): ImageUploadSettings {
     facilityMaxImages: positiveInteger(settings.facilityMaxImages, defaultImageUploads.facilityMaxImages, 1, MAX_IMAGES),
     issueMaxImages: positiveInteger(settings.issueMaxImages, defaultImageUploads.issueMaxImages, 1, MAX_IMAGES),
     maxDimension: positiveInteger(settings.maxDimension, defaultImageUploads.maxDimension, 256, 8000),
-    maxSourceMegabytes: positiveInteger(settings.maxSourceMegabytes, defaultImageUploads.maxSourceMegabytes, 1, 50),
     maxUploadKilobytes: positiveInteger(
       settings.maxUploadKilobytes,
       defaultImageUploads.maxUploadKilobytes,
@@ -152,8 +149,4 @@ export function maxImagesForTarget(settings: ImageUploadSettings, targetType: Up
 
 export function maxUploadBytes(settings: ImageUploadSettings) {
   return settings.maxUploadKilobytes * 1024;
-}
-
-export function maxSourceBytes(settings: ImageUploadSettings) {
-  return settings.maxSourceMegabytes * 1024 * 1024;
 }

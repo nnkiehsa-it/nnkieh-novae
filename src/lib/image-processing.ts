@@ -86,18 +86,11 @@ function webpFileName(fileName: string) {
 
 export async function processImageForUpload(file: File, settings: ImageUploadSettings): Promise<ProcessedImage> {
   const maxImageUploadBytes = settings.maxUploadKilobytes * 1024;
-  const maxImageSourceBytes = settings.maxSourceMegabytes * 1024 * 1024;
   const maxImageDimension = settings.maxDimension;
   const { webpQuality } = settings;
   const { outputScales } = RATE_LIMITS.imageCompression;
   if (file.size <= 0) {
     throw new Error(`[IMG-SOURCE-EMPTY] ${t('image.empty', { details: fileDetails(file) })}`);
-  }
-  if (file.size > maxImageSourceBytes) {
-    throw new Error(`[IMG-SOURCE-SIZE] ${t('image.sourceTooLarge', {
-      megabytes: settings.maxSourceMegabytes,
-      details: fileDetails(file),
-    })}`);
   }
   if (!file.type.startsWith('image/')) {
     throw new Error(`[IMG-SOURCE-TYPE] ${t('image.invalidType', { details: fileDetails(file) })}`);

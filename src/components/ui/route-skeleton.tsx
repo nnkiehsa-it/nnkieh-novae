@@ -22,7 +22,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PageHeader } from "@/components/ui/page-state";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
-import { ContentResolutionNoticeSkeleton } from "@/components/content-resolution-notice-skeleton";
 
 export type FeedSkeletonKind = "announcement" | "facility" | "issue";
 export type ComposerSkeletonKind = FeedSkeletonKind;
@@ -247,7 +246,6 @@ export function DetailRouteSkeleton({
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-3/4" />
           </div>
-          {kind !== "announcement" ? <ContentResolutionNoticeSkeleton /> : null}
         </Card>
         <aside className="space-y-3 lg:sticky lg:top-6">
           <Card className="min-h-40 gap-4 p-5 sm:p-6">

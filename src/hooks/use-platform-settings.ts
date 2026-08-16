@@ -3,7 +3,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
-import { useCategories } from "@/hooks/use-categories";
+import { seedImageUploadSettings } from "@/hooks/use-categories";
 import { useI18n } from "@/i18n";
 import { getCategoryManagement, savePlatformSettings } from "@/services/categories";
 import { markSessionBootstrapStale } from "@/services/session-bootstrap";
@@ -11,7 +11,6 @@ import type { PlatformSettings } from "@/types/categories";
 
 export function usePlatformSettings() {
   const { t } = useI18n();
-  const categories = useCategories();
   const feedback = useActionFeedback();
   const [settings, setSettings] = React.useState<PlatformSettings | null>(null);
   const [error, setError] = React.useState("");
@@ -40,7 +39,6 @@ export function usePlatformSettings() {
       image.facilityMaxImages,
       image.issueMaxImages,
       image.maxDimension,
-      image.maxSourceMegabytes,
       image.maxUploadKilobytes,
       image.webpQuality,
       retention.closedFacilitiesDays,
@@ -53,8 +51,8 @@ export function usePlatformSettings() {
     try {
       const saved = await feedback.run(() => savePlatformSettings(settings));
       setSettings({ imageUploads: saved.imageUploads, retention: saved.retention });
+      seedImageUploadSettings(saved.imageUploads);
       markSessionBootstrapStale();
-      await categories.refresh();
     } catch (caught) {
       toast.error(caught instanceof Error ? caught.message : t("common.saveFailed"));
     }

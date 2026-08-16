@@ -3,7 +3,6 @@ const messages = {
   'image.empty': '圖片檔案是空的；{details}',
   'image.invalidType': '請選擇有效的圖片檔案；{details}',
   'image.outputTooLarge': '圖片壓縮後仍超過 {kilobytes} KB，請改用較小的圖片。',
-  'image.sourceTooLarge': '原始圖片不能超過 {megabytes} MB；{details}',
   'image.webpEncodeFailed': '圖片轉換失敗；format={type}',
   'image.webpInvalid': '瀏覽器未產生有效圖片；type={type}, size={size}',
   'image.unableToReadImageDimensions': '無法讀取圖片尺寸。',

@@ -37,7 +37,7 @@ integrationTest("runtime category setup and management enforce platform permissi
   await expectActionError("permission-denied", () => callAction("savePlatformSettings", {
     imageUploads: {
       announcementMaxImages: 10, commentMaxImages: 1, facilityMaxImages: 2, issueMaxImages: 3,
-      maxDimension: 2000, maxSourceMegabytes: 20, maxUploadKilobytes: 800, webpQuality: 0.82,
+      maxDimension: 2000, maxUploadKilobytes: 800, webpQuality: 0.82,
     },
     retention: {
       closedFacilitiesDays: 180, closedFacilitiesEnabled: false,
@@ -81,6 +81,7 @@ integrationTest("runtime category setup and management enforce platform permissi
     issuesEnabled: true,
   });
   const platformSettings = asRecord(management.platformSettings);
+  assert.equal("maxSourceMegabytes" in asRecord(platformSettings.imageUploads), false);
   const updatedSettings = asRecord(await callAction("savePlatformSettings", {
     imageUploads: {
       ...asRecord(platformSettings.imageUploads),
