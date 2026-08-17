@@ -1,5 +1,3 @@
-import { raceWithAbort } from '@/lib/abort-signal';
-
 const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
 export const READ_REQUEST_TIMEOUT_MS = 5_000;
 export const LONG_REQUEST_TIMEOUT_MS = 30_000;
@@ -37,25 +35,26 @@ export async function withRequestTimeout<T>(
   const label = options.label ?? 'common.request';
   const controller = new AbortController();
   const timeoutMs = options.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
-  let timedOut = false;
 
   const abortFromParent = () => controller.abort(options.signal?.reason);
-  if (options.signal?.aborted) abortFromParent();
+  if (options.signal?.aborted) throw abortedFailure(options.signal, label);
   options.signal?.addEventListener('abort', abortFromParent, { once: true });
 
   const timeoutId = window.setTimeout(() => {
-    timedOut = true;
     controller.abort(new RequestFailure(t('request.timeout', { label: t(label) }), 'timeout'));
   }, timeoutMs);
 
-  try {
-    return await raceWithAbort(
-      controller.signal,
-      () => operation(controller.signal),
-      () => timedOut
-        ? new RequestFailure(t('request.timeout', { label: t(label) }), 'timeout')
-        : abortedFailure(controller.signal, label),
+
+  const aborted = new Promise<never>((_, reject) => {
+    controller.signal.addEventListener(
+      'abort',
+      () => reject(abortedFailure(controller.signal, label)),
+      { once: true },
     );
+  });
+
+  try {
+    return await Promise.race([operation(controller.signal), aborted]);
   } catch (error) {
     if (error instanceof RequestFailure) throw error;
     if (controller.signal.aborted) throw abortedFailure(controller.signal, label);
@@ -67,6 +66,7 @@ export async function withRequestTimeout<T>(
     window.clearTimeout(timeoutId);
     options.signal?.removeEventListener('abort', abortFromParent);
   }
+
 }
 
 export async function safeFetch(

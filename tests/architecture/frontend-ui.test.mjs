@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import path from "node:path";
 import test from "node:test";
 import {
   listFiles,
   moduleImports,
   repoPath,
 } from "./helpers.mjs";
+import { findOrphanCssClassSelectors } from "../../scripts/css-orphan-selectors.mjs";
 
 const sourceExtensions = /\.(?:ts|tsx)$/u;
 
@@ -24,6 +26,21 @@ function dependencyViolations(modules, forbidden) {
   return modules.flatMap(({ imports, path }) => imports
     .filter((entry) => forbidden(entry, path))
     .map((entry) => `${path} -> ${entry.specifier}`));
+}
+
+function resolveFrontendImport(fromPath, specifier, knownPaths) {
+  const basePath = specifier.startsWith("@/")
+    ? `src/${specifier.slice(2)}`
+    : specifier.startsWith(".")
+      ? path.posix.normalize(path.posix.join(path.posix.dirname(fromPath), specifier))
+      : null;
+  if (!basePath) return null;
+  return [
+    `${basePath}.ts`,
+    `${basePath}.tsx`,
+    `${basePath}/index.ts`,
+    `${basePath}/index.tsx`,
+  ].find((candidate) => knownPaths.has(candidate)) ?? null;
 }
 
 test("primary App Router entry points remain present", async () => {
@@ -89,4 +106,46 @@ test("pure libraries and services do not depend upward on React presentation", a
       specifier.startsWith("@/hooks/"),
   );
   assert.deepEqual([...libraryViolations, ...serviceViolations], []);
+});
+
+test("shared frontend runtime modules have a product consumer", async () => {
+  const modules = await sourceModules("src");
+  const knownPaths = new Set(modules.map(({ path: modulePath }) => modulePath));
+  const importedPaths = new Set(modules.flatMap(({ imports, path: modulePath }) =>
+    imports
+      .map(({ specifier }) => resolveFrontendImport(modulePath, specifier, knownPaths))
+      .filter(Boolean),
+  ));
+  const sharedRuntimePrefixes = [
+    "src/components/",
+    "src/hooks/",
+    "src/lib/",
+    "src/services/",
+  ];
+  const orphaned = modules
+    .map(({ path: modulePath }) => modulePath)
+    .filter((modulePath) => sharedRuntimePrefixes.some((prefix) => modulePath.startsWith(prefix)))
+    .filter((modulePath) => !modulePath.endsWith(".d.ts"))
+    .filter((modulePath) => !importedPaths.has(modulePath));
+
+  assert.deepEqual(orphaned, []);
+});
+
+test("CSS orphan analysis ignores keyframe percentages and matches whole class tokens", () => {
+  const orphans = findOrphanCssClassSelectors(
+    [{
+      path: "fixture.css",
+      source: `
+        .used.unused { opacity: 1; }
+        .used-longer { opacity: 0; }
+        @keyframes shake { 28.57% { transform: none; } }
+      `,
+    }],
+    ['<div className="used used-longer" />'],
+  );
+
+  assert.deepEqual(orphans, [{
+    className: "unused",
+    locations: ["fixture.css:2"],
+  }]);
 });

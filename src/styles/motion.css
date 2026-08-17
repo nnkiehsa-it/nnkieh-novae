@@ -117,33 +117,6 @@
   will-change: width, height;
 }
 
-/* Number updates */
-.t-digit-group {
-  display: inline-flex;
-  align-items: baseline;
-}
-.t-digit {
-  display: inline-block;
-  will-change: transform, opacity, filter;
-}
-.t-digit-group[data-animate="true"] .t-digit {
-  animation: t-digit-pop var(--motion-emphasis) var(--ease-emphasized) both;
-  animation-delay: calc(var(--digit-index, 0) * 32ms);
-}
-
-@keyframes t-digit-pop {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-    filter: blur(var(--motion-blur-sm));
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
-  }
-}
-
 /* Notification badge */
 .t-notification-badge {
   transform-origin: center;
@@ -159,36 +132,6 @@
   filter: blur(var(--motion-blur-sm));
   transition-duration: var(--motion-quick);
   transition-timing-function: var(--ease-standard);
-}
-
-/* Status text swap */
-.t-text-swap {
-  display: inline-block;
-  transition:
-    transform var(--motion-quick) ease-in-out,
-    opacity var(--motion-quick) ease-in-out,
-    filter var(--motion-quick) ease-in-out;
-}
-
-.t-text-swap[data-phase="exit"] {
-  opacity: 0;
-  transform: translateY(-4px);
-  filter: blur(var(--motion-blur-sm));
-}
-.t-text-swap[data-phase="enter"] {
-  animation: t-text-enter var(--motion-quick) ease-in-out both;
-}
-@keyframes t-text-enter {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-    filter: blur(var(--motion-blur-sm));
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
-  }
 }
 
 /* Radix dropdown, popover and select content */
@@ -219,7 +162,7 @@
   }
 }
 
-/* Dialog / sheet */
+/* Dialog */
 .t-overlay[data-state="open"] {
   animation: t-overlay-in var(--motion-fast) ease-out both;
 }
@@ -273,119 +216,6 @@
   to {
     opacity: 0;
     transform: translateY(8px) scale(0.96);
-  }
-}
-
-.t-sheet[data-state="open"] {
-  animation: t-sheet-in var(--motion-slow) var(--ease-smooth-out) both;
-}
-.t-sheet[data-state="closed"] {
-  animation: t-sheet-out var(--motion-medium) var(--ease-smooth-out) both;
-}
-@keyframes t-sheet-in {
-  from {
-    opacity: 0;
-    transform: translateY(100%);
-    filter: blur(var(--motion-blur-sm));
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
-  }
-}
-@keyframes t-sheet-out {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(100%);
-  }
-}
-.t-sheet[data-side="right"][data-state="open"] {
-  animation-name: t-sheet-right-in;
-}
-.t-sheet[data-side="right"][data-state="closed"] {
-  animation-name: t-sheet-right-out;
-}
-.t-sheet[data-side="left"][data-state="open"] {
-  animation-name: t-sheet-left-in;
-}
-.t-sheet[data-side="left"][data-state="closed"] {
-  animation-name: t-sheet-left-out;
-}
-.t-sheet[data-side="top"][data-state="open"] {
-  animation-name: t-sheet-top-in;
-}
-.t-sheet[data-side="top"][data-state="closed"] {
-  animation-name: t-sheet-top-out;
-}
-@keyframes t-sheet-right-in {
-  from {
-    opacity: 0;
-    transform: translateX(100%);
-    filter: blur(var(--motion-blur-sm));
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-    filter: blur(0);
-  }
-}
-@keyframes t-sheet-right-out {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(100%);
-  }
-}
-@keyframes t-sheet-left-in {
-  from {
-    opacity: 0;
-    transform: translateX(-100%);
-    filter: blur(var(--motion-blur-sm));
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-    filter: blur(0);
-  }
-}
-@keyframes t-sheet-left-out {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(-100%);
-  }
-}
-@keyframes t-sheet-top-in {
-  from {
-    opacity: 0;
-    transform: translateY(-100%);
-    filter: blur(var(--motion-blur-sm));
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
-  }
-}
-@keyframes t-sheet-top-out {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-100%);
   }
 }
 
@@ -612,11 +442,6 @@
     filter: blur(var(--reveal-blur));
   }
 }
-.t-skel.is-resetting .t-skel-skeleton,
-.t-skel.is-resetting .t-skel-content {
-  transition: none !important;
-}
-
 .t-skel-skeleton.is-pulsing > * {
   animation: t-skel-pulse var(--pulse-dur) ease-in-out var(--pulse-count);
 }
@@ -737,36 +562,6 @@
   to {
     opacity: 0;
     transform: scale(0.98);
-  }
-}
-
-/* Accordion */
-.t-accordion[data-state="open"] {
-  animation: t-accordion-down var(--motion-fast) var(--ease-smooth-out);
-}
-.t-accordion[data-state="closed"] {
-  animation: t-accordion-up var(--motion-fast) var(--ease-smooth-out);
-}
-@keyframes t-accordion-down {
-  from {
-    height: 0;
-    opacity: 0;
-    filter: blur(var(--motion-blur-sm));
-  }
-  to {
-    height: var(--radix-accordion-content-height);
-    opacity: 1;
-    filter: blur(0);
-  }
-}
-@keyframes t-accordion-up {
-  from {
-    height: var(--radix-accordion-content-height);
-    opacity: 1;
-  }
-  to {
-    height: 0;
-    opacity: 0;
   }
 }
 
@@ -1069,27 +864,7 @@
   }
 }
 
-/* Directional link arrow */
-.t-learn-arrow {
-  transition: transform var(--motion-medium) var(--ease-smooth-out);
-}
-@media (hover: hover) and (pointer: fine) {
-  .t-learn:hover .t-learn-arrow {
-    transform: translateX(2px) scaleX(1.08);
-  }
-}
-
-/* Checkbox and switch */
-.t-checkmark path {
-  stroke-dasharray: var(--check-length, 15);
-  stroke-dashoffset: var(--check-length, 15);
-  transition: stroke-dashoffset var(--motion-quick) var(--ease-smooth-out);
-}
-[data-state="checked"] .t-checkmark path {
-  stroke-dashoffset: 0;
-  transition-duration: var(--motion-medium);
-}
-
+/* Switch */
 .t-toggle-thumb {
   translate: 0 0;
   will-change: translate;
@@ -1161,7 +936,6 @@
   .t-resize,
   .t-panel-reveal,
   .t-stagger-item,
-  .t-digit,
   .t-success-check,
   .t-success-check path,
   .t-resolution-notice,
@@ -1176,9 +950,7 @@
   .t-reaction-icon,
   .t-like-particles i,
   .t-toast,
-  .t-accordion,
   .t-dialog,
-  .t-sheet,
   .t-overlay,
   .t-dropdown,
   .t-tooltip {
@@ -1195,14 +967,11 @@
     visibility: visible;
   }
   .t-notification-badge,
-  .t-text-swap,
   .t-icon-swap > *,
   .t-spinner-check-loader,
   .t-spinner-check-success,
   .t-tabs-pill,
   .t-tab-label,
-  .t-learn-arrow,
-  .t-checkmark,
   .t-toast,
   .t-resize,
   .t-card {

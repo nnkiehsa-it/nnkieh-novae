@@ -13,6 +13,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/app/sw.ts` — Serwist service worker; `next.config.mjs` compiles and registers it at `public/sw.js`.
 - `src/proxy.ts` — per-request nonce CSP for Next hydration, strict production script execution, Firebase App Check/reCAPTCHA, Cloudflare Turnstile, and local-emulator development connections.
 - `next.config.mjs` — public environment injection, static security headers, image hosts, and Serwist integration.
+- `next-env.d.ts` — ignored framework-generated type references; Next.js regenerates the file for the active development or isolated verification output directory.
 - `components.json` — shadcn/ui aliases and Tailwind 4 configuration.
 - `vercel.json` — Vercel Next.js framework configuration.
 
@@ -31,7 +32,7 @@ This document is the maintained map of the repository. Read it before broad sear
 
 ## Presentation components
 
-- `src/components/ui/` — business-free shadcn/Radix primitives. Buttons, fields, overlays, tabs, sheets, menus, status badges, skeletons, page states, the shared loading spinner, decoded-image loading/error presentation, and the shared Novae brand lockup share global semantic tokens. `avatar.tsx` keeps a spinner over remote photos until Radix reports them loaded, while `decoded-image.tsx` hides regular images until browser decode completes and then reveals the full frame at once. `card.tsx` keeps the base card server-renderable with the low-cost transitions.dev CSS resize recipe; `resizable-card.tsx` adds opt-in Motion layout projection for cards whose intrinsic height changes in place. `skeleton-reveal.tsx` stacks a field skeleton over its final text/number slot and supplies the centered badge-label handoff used by category/status tags.
+- `src/components/ui/` — business-free shadcn/Radix primitives with active product consumers. Buttons, fields, overlays, segmented tabs, menus, status badges, skeletons, page states, the shared loading spinner, decoded-image loading/error presentation, and the shared Novae brand lockup share global semantic tokens. `avatar.tsx` keeps a spinner over remote photos until Radix reports them loaded, while `decoded-image.tsx` hides regular images until browser decode completes and then reveals the full frame at once. `card.tsx` keeps the base card server-renderable with the low-cost transitions.dev CSS resize recipe; `resizable-card.tsx` adds opt-in Motion layout projection for cards whose intrinsic height changes in place. `skeleton-reveal.tsx` stacks a field skeleton over its final text/number slot and supplies the centered badge-label handoff used by category/status tags.
 - `src/components/motion/` — reusable animated numbers, reaction feedback, and geometry-only feed wrappers. The shared reaction button owns a soft-gray active/quiet-ghost inactive hierarchy and fixed 16px icon geometry across proposal support, facility affected, and announcement like actions; reaction hooks update immediately, confirm in the background, and roll back with retry feedback on failure. Dense list items stay mounted and painted without viewport observers or offscreen opacity states.
 - `src/components/app-shell.tsx` / `liquid-nav.tsx` — desktop, compact desktop, and mobile navigation. Primary navigation updates immediately while the pathname-keyed whole incoming route node fades in for 350ms only after the prior node has unmounted; no document View Transition snapshot can overlap content or cover the fixed sidebar/mobile dock. Child/back routes retain the shared depth-aware entrance motion, while selected navigation and tab surfaces use measurement-free shared-layout motion.
 - `src/lib/navigation-memory.ts` — remembers the immediately preceding in-app pathname, stamps each committed in-app history entry with a monotonic index, and preserves the intended root/child/back direction until its destination pathname commits. Browser back and forward therefore resolve to opposite deterministic directions even when a loading boundary causes intermediate renders.
@@ -78,9 +79,11 @@ This document is the maintained map of the repository. Read it before broad sear
 ## Data, domain, and infrastructure
 
 - `src/services/` — frontend boundary for the Cloudflare Workers API, native WebSocket realtime transport, uploads, Firebase-backed sessions, and backend actions. Every browser API request obtains an App Check token through the shared security helper; no browser database client exists.
-- `src/lib/` — framework-independent request, Firebase/App Check, Turnstile token handoff, caching, Markdown, image, route, formatting, pagination, and domain utilities.
+- `src/lib/` — framework-independent request, Firebase/App Check, Turnstile token handoff, caching, Markdown, image, route, formatting, pagination, and active domain utilities. Obsolete Vue-era route-name, touch interception, caret/table editor, and `motion-v` compatibility helpers are intentionally removed rather than excluded from checks.
 - `src/lib/backend-security.ts` — shared Firebase ID token plus App Check request-header construction for browser-to-Worker API calls.
+- `src/lib/request.ts` — shared timeout and cancellation boundary for browser requests; already-aborted parents short-circuit before an operation can start, while active aborts and deadlines reject even if the underlying operation ignores its signal.
 - `src/lib/abort-signal.ts` — shared abort-aware async race that rejects pre-aborted work immediately and removes listeners after settlement.
+
 - `src/hooks/use-paged-request-guard.ts` — shared feed request generation/in-flight guard that prevents duplicate loads and stale query responses from committing.
 - `src/lib/content-entity-store.ts` and `src/hooks/use-content-entity.ts` — normalized user-scoped content entities shared by lists, details, mutations, and realtime; explicit issue/announcement summary types omit full bodies and cannot satisfy or overwrite authoritative detail reads, while field revisions prevent older requests from replacing newer optimistic, server-confirmed, or realtime patches.
 - `src/lib/reaction-state.ts` — shared pure optimistic reaction state transition used by proposal support, facility affected, and announcement like flows so immediate counts and rollback snapshots follow one rule.
@@ -105,7 +108,7 @@ This document is the maintained map of the repository. Read it before broad sear
 
 ## Verification and delivery
 
-- `scripts/check-ui-primitives.mjs` — rejects retired Vue references, `transition-all`, arbitrary elevation, ungated hover, business imports in UI primitives, direct service imports in pages/components, route pages over 220 lines, and domain components over 300 lines.
+- `scripts/check-ui-primitives.mjs` / `css-orphan-selectors.mjs` — reject retired Vue references, `transition-all`, arbitrary elevation, ungated hover, orphaned source CSS class selectors, business imports in UI primitives, direct service imports in pages/components, route pages over 220 lines, and domain components over 300 lines. The PostCSS-backed orphan check ignores keyframe percentages and requires a whole class token in product TS/TSX.
 - `scripts/check-i18n.mjs` — validates catalog parity/shape/interpolation, API error references, direct `t()` references, and hard-coded Han text across React/TSX sources.
 - `scripts/generate-all.mjs` — lock-protected sequential entry point for all generated contracts and font subsets; generated outputs remain committed and verification checks for drift explicitly.
 - `scripts/run-local-verification.mjs` — fast verification (typecheck, lint, boundary checks, and unit/architecture tests) plus the full local build, build-budget, and dependency-audit orchestration.
@@ -118,8 +121,9 @@ This document is the maintained map of the repository. Read it before broad sear
 - `scripts/render-worker-config.mjs` — validates the Hyperdrive ID and renders relocatable environment-specific Worker/Queue names, entry paths, native rate-limit namespace IDs, and optional Notion state without committing deployment bindings.
 - `scripts/external-provider-test-server.mjs` — isolated Cloudinary, FCM, and Notion-compatible receiver used only by integration verification.
 - `scripts/generate-harmonyos-subset.mjs` / `check-build-budget.mjs` — derive the used Traditional Chinese HarmonyOS Sans shards from source text, then enforce configurable Next build asset/font/JS/CSS budgets with near-limit warnings.
-- `tests/unit/` — Vitest domain, design-system, loading-timing, migration checksum, and database-client concurrency behavior tests.
-- `tests/architecture/` — stable AST-backed module-boundary tests for route presence, frontend dependency direction, UI primitive purity, database ownership, frontend/Worker contracts, observability, and delivery entry points; presentation strings and implementation details belong to unit or UI checks instead.
+- `.gitignore`-excluded `vite.config.js` / `vite.config.d.ts` — legacy local Vite artifacts are outside the current Next.js application and are excluded from ESLint and repository ownership.
+- `tests/unit/` — Vitest domain, design-system, request cancellation/timeout, loading-timing, migration checksum, and database-client concurrency behavior tests.
+- `tests/architecture/` — stable AST-backed module-boundary tests for route presence, frontend dependency direction, orphaned shared runtime modules, UI primitive purity, database ownership, frontend/Worker contracts, observability, and delivery entry points; presentation strings and implementation details belong to unit or UI checks instead.
 - `tests/integration/` — backend actions, category-scoped authorization, least-privilege database boundary, RPCs, jobs, retention, and Worker ingress/realtime behavior; required for backend changes.
 - `tests/e2e/` — Playwright bootstrap plus authenticated desktop/mobile workflows.
 - `.github/workflows/verify-pr.yml` — Node 24 local, PostgreSQL/Worker integration, and real-browser verification; browser builds restore a branch-safe Next compiler cache, while integration jobs restore the pinned Firebase Emulator binary cache.

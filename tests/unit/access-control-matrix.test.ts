@@ -6,10 +6,6 @@ import {
   hasRole,
   type SessionAccessPolicy,
 } from '@/lib/session-access';
-import {
-  getDefaultFeatureRoute,
-  isRouteEnabledByFeatures,
-} from '@/lib/feature-access';
 
 const emptyAccess: SessionAccessPolicy = {
   managedFacilityCategoryIds: [],
@@ -122,58 +118,4 @@ describe('session access policy matrix', () => {
     expect(canManageFacilityCategory(access, 'facility-a')).toBe(facilityA);
     expect(canManageFacilityCategory(access, 'facility-b')).toBe(facilityB);
   });
-});
-
-describe('feature-switch routing matrix', () => {
-  it.each([
-    {
-      facilitiesEnabled: true,
-      issuesEnabled: true,
-      defaultName: 'issues',
-      issueRoutes: true,
-      facilityRoutes: true,
-    },
-    {
-      facilitiesEnabled: false,
-      issuesEnabled: true,
-      defaultName: 'issues',
-      issueRoutes: true,
-      facilityRoutes: false,
-    },
-    {
-      facilitiesEnabled: true,
-      issuesEnabled: false,
-      defaultName: 'facilities',
-      issueRoutes: false,
-      facilityRoutes: true,
-    },
-    {
-      facilitiesEnabled: false,
-      issuesEnabled: false,
-      defaultName: 'announcements',
-      issueRoutes: false,
-      facilityRoutes: false,
-    },
-  ])(
-    'issues=$issuesEnabled facilities=$facilitiesEnabled selects $defaultName and gates every feature route',
-    ({
-      defaultName,
-      facilitiesEnabled,
-      facilityRoutes,
-      issuesEnabled,
-      issueRoutes,
-    }) => {
-      const features = { facilitiesEnabled, issuesEnabled };
-
-      expect(getDefaultFeatureRoute(features, 'issue-a').name).toBe(defaultName);
-      for (const routeName of ['issues', 'issue-create', 'issue-detail']) {
-        expect(isRouteEnabledByFeatures(routeName, features)).toBe(issueRoutes);
-      }
-      for (const routeName of ['facilities', 'facility-create', 'facility-detail']) {
-        expect(isRouteEnabledByFeatures(routeName, features)).toBe(facilityRoutes);
-      }
-      expect(isRouteEnabledByFeatures('announcements', features)).toBe(true);
-      expect(isRouteEnabledByFeatures('settings', features)).toBe(true);
-    },
-  );
 });

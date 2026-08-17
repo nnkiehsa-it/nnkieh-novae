@@ -4,6 +4,7 @@ dist/
 .next-verify/
 .novae-generate.lock/
 *.tsbuildinfo
+next-env.d.ts
 public/sw.js
 public/sw.js.map
 public/swe-worker*

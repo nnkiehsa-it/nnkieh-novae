@@ -45,13 +45,6 @@
   "exclude": [
     "node_modules",
     "public/sw.js",
-    "src/**/*.vue",
-    "src/main.ts",
-    "src/components/app-shell/**",
-    "src/router/**",
-    "src/composables/**",
-    "src/sw.ts",
-    "src/lib/motion-features.ts",
     "cloudflare/**"
   ]
 }

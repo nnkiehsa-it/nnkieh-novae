@@ -341,18 +341,6 @@ textarea {
   }
 }
 
-.surface-stage {
-  background: var(--surface-stage);
-  border-radius: var(--radius-3xl);
-}
-
-.surface-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  background: var(--card);
-  box-shadow: var(--shadow-card);
-}
-
 .surface-floating {
   border-radius: var(--radius-xl);
   background: var(--popover);
@@ -465,9 +453,6 @@ textarea {
 @media (max-width: 47.99rem) {
   :root {
     --page-gutter: 1rem;
-  }
-  .surface-stage {
-    border-radius: var(--radius-2xl);
   }
   body:has(input:focus, textarea:focus, [contenteditable="true"]:focus) .app-mobile-nav {
     opacity: 0;
