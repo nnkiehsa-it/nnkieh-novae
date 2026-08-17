@@ -346,18 +346,19 @@ export function useSession() {
     (categoryId: string) => canManageIssueCategory(accessPolicy, categoryId),
     [accessPolicy],
   );
-  const login = useCallback(async (options?: { selectAccount?: boolean }) => {
-    patch({ error: "", loading: true });
-    let turnstileToken: string | null = null;
-    try {
-      turnstileToken = await requestToken("auth_sync");
-    } catch {
-      patch({ error: "auth.appCheckFailed", loading: false });
-      return;
-    }
-    const error = await loginWithGoogle({ ...options, turnstileToken });
-    patch({ error, loading: false });
-  }, [requestToken]);
+  const login = useCallback(
+    async (options?: { selectAccount?: boolean }) => {
+      patch({ error: "", loading: true });
+      const turnstilePromise = requestToken("auth_sync").catch(() => null);
+      const error = await loginWithGoogle({
+        ...options,
+        turnstileToken: turnstilePromise,
+      });
+      patch({ error, loading: false });
+    },
+    [requestToken],
+  );
+
   const logout = useCallback(async () => {
     patch({ loading: true });
     try {

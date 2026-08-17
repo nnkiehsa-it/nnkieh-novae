@@ -1,3 +1,5 @@
+import { raceWithAbort } from '@/lib/abort-signal';
+
 const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
 export const READ_REQUEST_TIMEOUT_MS = 5_000;
 export const LONG_REQUEST_TIMEOUT_MS = 30_000;
@@ -46,16 +48,14 @@ export async function withRequestTimeout<T>(
     controller.abort(new RequestFailure(t('request.timeout', { label: t(label) }), 'timeout'));
   }, timeoutMs);
 
-  const aborted = new Promise<never>((_, reject) => {
-    controller.signal.addEventListener('abort', () => reject(
-      timedOut
+  try {
+    return await raceWithAbort(
+      controller.signal,
+      () => operation(controller.signal),
+      () => timedOut
         ? new RequestFailure(t('request.timeout', { label: t(label) }), 'timeout')
         : abortedFailure(controller.signal, label),
-    ), { once: true });
-  });
-
-  try {
-    return await Promise.race([operation(controller.signal), aborted]);
+    );
   } catch (error) {
     if (error instanceof RequestFailure) throw error;
     if (controller.signal.aborted) throw abortedFailure(controller.signal, label);

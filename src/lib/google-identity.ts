@@ -64,6 +64,10 @@ function loadGsiClient(): Promise<void> {
   return gsiLoadPromise;
 }
 
+export function preloadGoogleIdentity(): Promise<void> {
+  return loadGsiClient().catch(() => undefined);
+}
+
 function mapTokenResponseError(error?: string): GoogleIdentityErrorCode {
   if (error === 'access_denied' || error === 'immediate_failed') return 'access_denied';
   if (error === 'popup_closed') return 'popup_closed';
@@ -76,41 +80,17 @@ function mapClientError(type?: string): GoogleIdentityErrorCode {
   return 'unknown';
 }
 
-/** iOS Safari often blocks the first GIS popup; retry once for transient open failures. */
-function shouldRetryGoogleAccessToken(error: unknown) {
-  if (!(error instanceof GoogleIdentityError)) return false;
-  return error.code === 'popup_blocked'
-    || error.code === 'popup_closed'
-    || error.code === 'unknown';
-}
-
-function wait(ms: number) {
-  return new Promise<void>((resolve) => {
-    window.setTimeout(resolve, ms);
-  });
-}
-
-async function requestGoogleAccessTokenOnce(options: {
-  clientId: string;
-  hd?: string;
-}): Promise<string> {
-  const clientId = options.clientId.trim();
-  if (!clientId) {
-    throw new GoogleIdentityError('unavailable');
-  }
-
-  await loadGsiClient();
-  const oauth2 = window.google?.accounts?.oauth2;
-  if (!oauth2) {
-    throw new GoogleIdentityError('unavailable');
-  }
-
+function triggerTokenRequest(
+  oauth2: GoogleOAuth2,
+  clientId: string,
+  hd?: string,
+): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     const client = oauth2.initTokenClient({
       client_id: clientId,
       scope: GSI_SCOPE,
       prompt: 'select_account',
-      ...(options.hd ? { hd: options.hd } : {}),
+      ...(hd ? { hd } : {}),
       callback: (response) => {
         if (response.error || !response.access_token) {
           reject(new GoogleIdentityError(mapTokenResponseError(response.error)));
@@ -130,12 +110,21 @@ export async function requestGoogleAccessToken(options: {
   clientId: string;
   hd?: string;
 }): Promise<string> {
-  try {
-    return await requestGoogleAccessTokenOnce(options);
-  } catch (error) {
-    if (!shouldRetryGoogleAccessToken(error)) throw error;
-    // Brief pause so the blocked first popup can settle before the second open.
-    await wait(150);
-    return requestGoogleAccessTokenOnce(options);
+  const clientId = options.clientId.trim();
+  if (!clientId) {
+    throw new GoogleIdentityError('unavailable');
   }
+
+  if (typeof window !== 'undefined' && window.google?.accounts?.oauth2) {
+    return triggerTokenRequest(window.google.accounts.oauth2, clientId, options.hd);
+  }
+
+  await loadGsiClient();
+  const oauth2 = window.google?.accounts?.oauth2;
+  if (!oauth2) {
+    throw new GoogleIdentityError('unavailable');
+  }
+
+  return triggerTokenRequest(oauth2, clientId, options.hd);
 }
+

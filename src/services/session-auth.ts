@@ -15,6 +15,7 @@ import { withRequestTimeout } from "@/lib/request";
 import { sessionDebug } from "@/lib/session-debug";
 import { setPendingTurnstileToken } from "@/lib/turnstile";
 import { ensureFirebaseAppCheck } from "@/lib/firebase-app-check";
+import { isIosStandalonePwa } from "@/lib/pwa-install";
 
 const LOGIN_ATTEMPT_KEY = "novae-login-attempts";
 const LOGIN_ATTEMPT_WINDOW_MS = 10 * 60 * 1_000;
@@ -103,16 +104,21 @@ function loginError(error: unknown) {
 }
 
 export async function loginWithGoogle(
-  options: { selectAccount?: boolean; turnstileToken?: string | null } = {},
+  options: {
+    selectAccount?: boolean;
+    turnstileToken?: string | null | Promise<string | null>;
+  } = {},
 ) {
+  if (isIosStandalonePwa()) return "auth.systemBrowserRequired";
   if (!claimLoginAttempt())
     return "auth.theLoginOperationIsTooFrequentPleaseTryAgainLater";
   if (!auth) return "auth.serviceUnavailable";
   const firebaseAuth = auth;
   try {
-    await ensureFirebaseAppCheck();
-    setPendingTurnstileToken(options.turnstileToken);
     if (authEmulatorUrl) {
+      await ensureFirebaseAppCheck();
+      const resolvedToken = await Promise.resolve(options.turnstileToken).catch(() => null);
+      setPendingTurnstileToken(resolvedToken);
       await signInWithPopup(
         firebaseAuth,
         googleProvider(Boolean(options.selectAccount)),
@@ -120,10 +126,16 @@ export async function loginWithGoogle(
       return "";
     }
     if (!googleClientId) return "auth.loginWidgetInitFailed";
-    const accessToken = await requestGoogleAccessToken({
+    const accessTokenPromise = requestGoogleAccessToken({
       clientId: googleClientId,
       hd: allowedDomain || undefined,
     });
+    const [accessToken, resolvedTurnstileToken] = await Promise.all([
+      accessTokenPromise,
+      Promise.resolve(options.turnstileToken).catch(() => null),
+      ensureFirebaseAppCheck().catch(() => undefined),
+    ]);
+    setPendingTurnstileToken(resolvedTurnstileToken);
     await signInWithCredential(
       firebaseAuth,
       GoogleAuthProvider.credential(null, accessToken),
@@ -135,6 +147,7 @@ export async function loginWithGoogle(
     return loginError(error);
   }
 }
+
 
 export async function logoutFromFirebase() {
   if (!auth) return;

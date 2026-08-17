@@ -46,3 +46,13 @@ export function isIosSafari(userAgent: string, platform: string, maxTouchPoints:
 
   return isIosDevice(userAgent, platform, maxTouchPoints) && isSafari;
 }
+
+export function isIosStandalonePwa(
+  userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '',
+  platform = typeof navigator !== 'undefined' ? navigator.platform : '',
+  maxTouchPoints = typeof navigator !== 'undefined' ? navigator.maxTouchPoints : 0,
+) {
+  if (typeof window === 'undefined') return false;
+  return isIosDevice(userAgent, platform, maxTouchPoints) && isStandaloneMode();
+}
+

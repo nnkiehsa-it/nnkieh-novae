@@ -8,6 +8,7 @@ import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { BrandLockup } from "@/components/ui/brand";
 import { BusyLabel } from "@/components/ui/page-state";
+import { preloadGoogleIdentity } from "@/lib/google-identity";
 
 function GoogleMark() {
   return (
@@ -39,6 +40,10 @@ export default function LoginPage() {
   const { t } = useI18n();
 
   React.useEffect(() => {
+    void preloadGoogleIdentity();
+  }, []);
+
+  React.useEffect(() => {
     if (!session.initialized || !session.user || session.roleLoading) return;
     const requested = search.get("redirect");
     router.replace(
@@ -56,6 +61,7 @@ export default function LoginPage() {
     session.setupCompleted,
     session.user,
   ]);
+
 
   return (
     <main className="relative grid min-h-[100svh] overflow-hidden bg-[var(--surface-stage)] lg:grid-cols-[1.08fr_.92fr]">

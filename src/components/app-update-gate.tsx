@@ -6,6 +6,7 @@ import { RefreshCw } from "lucide-react";
 import { BrandLockup } from "@/components/ui/brand";
 import { Button } from "@/components/ui/button";
 import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
+import { raceWithAbort } from "@/lib/abort-signal";
 import {
   Dialog,
   DialogContent,
@@ -24,16 +25,6 @@ const RELOAD_NAVIGATION_RETRY_MS = 4_000;
 const RELOAD_RECOVERY_TIMEOUT_MS = 10_000;
 const MAX_AUTO_RELOAD_ATTEMPTS = 2;
 const UPDATE_SUCCESS_HOLD_MS = 500;
-
-function rejectWhenAborted(signal: AbortSignal) {
-  return new Promise<never>((_, reject) => {
-    signal.addEventListener(
-      "abort",
-      () => reject(new Error("service worker update timed out")),
-      { once: true },
-    );
-  });
-}
 
 export function AppUpdateGate() {
   useLocaleSubscription();
@@ -132,18 +123,21 @@ export function AppUpdateGate() {
       SERVICE_WORKER_PREPARE_TIMEOUT_MS,
     );
     try {
-      const registration = await Promise.race([
-        navigator.serviceWorker.register("/sw.js", {
+      const timeoutError = () => new Error("service worker update timed out");
+      const registration = await raceWithAbort(
+        controller.signal,
+        () => navigator.serviceWorker.register("/sw.js", {
           scope: "/",
           type: "module",
           updateViaCache: "none",
         }),
-        rejectWhenAborted(controller.signal),
-      ]);
-      await Promise.race([
-        registration.update(),
-        rejectWhenAborted(controller.signal),
-      ]);
+        timeoutError,
+      );
+      await raceWithAbort(
+        controller.signal,
+        () => registration.update(),
+        timeoutError,
+      );
       const candidate = registration.waiting ?? registration.installing;
       if (!candidate || controller.signal.aborted) return;
       await new Promise<void>((resolve) => {
