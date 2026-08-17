@@ -1,5 +1,7 @@
 const GSI_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
 const GSI_SCOPE = 'openid email profile';
+const GSI_LOAD_TIMEOUT_MS = 10_000;
+const TOKEN_REQUEST_TIMEOUT_MS = 30_000;
 
 export type GoogleIdentityErrorCode =
   | 'script_load_failed'
@@ -7,6 +9,7 @@ export type GoogleIdentityErrorCode =
   | 'popup_closed'
   | 'access_denied'
   | 'unavailable'
+  | 'timeout'
   | 'unknown';
 
 export class GoogleIdentityError extends Error {
@@ -31,33 +34,39 @@ function loadGsiClient(): Promise<void> {
   if (gsiLoadPromise) return gsiLoadPromise;
 
   gsiLoadPromise = new Promise<void>((resolve, reject) => {
+    let script: HTMLScriptElement | null = null;
+    let timeoutId = 0;
     const fail = () => {
+      window.clearTimeout(timeoutId);
+      script?.remove();
       gsiLoadPromise = null;
       reject(new GoogleIdentityError('script_load_failed'));
+    };
+    const succeed = () => {
+      window.clearTimeout(timeoutId);
+      resolve();
     };
 
     const existing = document.querySelector<HTMLScriptElement>(`script[src="${GSI_SCRIPT_SRC}"]`);
     if (existing) {
       if (window.google?.accounts?.oauth2) {
-        resolve();
+        succeed();
         return;
       }
-      existing.addEventListener('load', () => {
-        if (window.google?.accounts?.oauth2) resolve();
-        else fail();
-      }, { once: true });
-      existing.addEventListener('error', fail, { once: true });
-      return;
+      // A previous failed/half-loaded GIS script will never emit load/error again.
+      // Remove it so this attempt can make a fresh request instead of hanging forever.
+      existing.remove();
     }
 
-    const script = document.createElement('script');
+    script = document.createElement('script');
     script.src = GSI_SCRIPT_SRC;
     script.async = true;
     script.onload = () => {
-      if (window.google?.accounts?.oauth2) resolve();
+      if (window.google?.accounts?.oauth2) succeed();
       else fail();
     };
     script.onerror = fail;
+    timeoutId = window.setTimeout(fail, GSI_LOAD_TIMEOUT_MS);
     document.head.appendChild(script);
   });
 
@@ -86,6 +95,17 @@ function triggerTokenRequest(
   hd?: string,
 ): Promise<string> {
   return new Promise<string>((resolve, reject) => {
+    let settled = false;
+    let timeoutId = 0;
+    const finish = (callback: () => void) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      callback();
+    };
+    timeoutId = window.setTimeout(() => {
+      finish(() => reject(new GoogleIdentityError('timeout')));
+    }, TOKEN_REQUEST_TIMEOUT_MS);
     const client = oauth2.initTokenClient({
       client_id: clientId,
       scope: GSI_SCOPE,
@@ -93,16 +113,20 @@ function triggerTokenRequest(
       ...(hd ? { hd } : {}),
       callback: (response) => {
         if (response.error || !response.access_token) {
-          reject(new GoogleIdentityError(mapTokenResponseError(response.error)));
+          finish(() => reject(new GoogleIdentityError(mapTokenResponseError(response.error))));
           return;
         }
-        resolve(response.access_token);
+        finish(() => resolve(response.access_token));
       },
       error_callback: (error) => {
-        reject(new GoogleIdentityError(mapClientError(error?.type)));
+        finish(() => reject(new GoogleIdentityError(mapClientError(error?.type))));
       },
     });
-    client.requestAccessToken();
+    try {
+      client.requestAccessToken();
+    } catch {
+      finish(() => reject(new GoogleIdentityError('unavailable')));
+    }
   });
 }
 

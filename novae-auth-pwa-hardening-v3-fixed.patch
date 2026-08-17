@@ -1,0 +1,1111 @@
+diff --git a/cloudflare/src/backend/sync-user.ts b/cloudflare/src/backend/sync-user.ts
+index 2d7d1d2..1bcd728 100644
+--- a/cloudflare/src/backend/sync-user.ts
++++ b/cloudflare/src/backend/sync-user.ts
+@@ -21,8 +21,6 @@ export async function handleSyncUser(request: Request, database: AppDatabaseClie
+   const log = createFunctionLogger("syncUser");
+   try {
+     const user = await requireEligibleFirebaseUser(request);
+-    await claimFixedWindowRateLimit(user.uid, "auth.sync", utcHourWindow(), RATE_LIMITS.loginSyncHourly);
+-
+     const { data: existingProfile, error: existingProfileError } = await database
+       .table("app_private", "user_profiles")
+       .select("uid")
+@@ -33,6 +31,8 @@ export async function handleSyncUser(request: Request, database: AppDatabaseClie
+       await requireTurnstile(request, currentEnvironment(), "auth_sync");
+     }
+ 
++    await claimFixedWindowRateLimit(user.uid, "auth.sync", utcHourWindow(), RATE_LIMITS.loginSyncHourly);
++
+     const { error: conflictError } = await database.table("app_private", "user_profiles")
+       .update({ email: null })
+       .eq("email", user.email.toLowerCase())
+diff --git a/src/components/app-install-prompt.tsx b/src/components/app-install-prompt.tsx
+new file mode 100644
+index 0000000..1d050cd
+--- /dev/null
++++ b/src/components/app-install-prompt.tsx
+@@ -0,0 +1,147 @@
++"use client";
++
++import { Copy, Download, ExternalLink, Share2, TriangleAlert } from "lucide-react";
++import { useAppInstallPrompt } from "@/hooks/use-app-install-prompt";
++import { useI18n } from "@/i18n";
++import { Button } from "@/components/ui/button";
++import {
++  Dialog,
++  DialogContent,
++  DialogDescription,
++  DialogFooter,
++  DialogHeader,
++  DialogTitle,
++} from "@/components/ui/dialog";
++
++export function AppInstallPrompt() {
++  const prompt = useAppInstallPrompt();
++  const { t } = useI18n();
++  const mode = prompt.mode;
++
++  if (!mode) return null;
++
++  const browserLabel = prompt.browserName
++    ?? (prompt.iosBrowserGuide === "Google" ? "Google App" : "Chrome");
++  const notificationsNote = prompt.reason === "notifications"
++    ? t("auth.pwaNotificationsNote")
++    : "";
++
++  let title = "";
++  let description = "";
++  let steps: string[] = [];
++  let icon = <Download className="size-5" aria-hidden />;
++
++  if (mode === "in-app-browser") {
++    title = t("auth.pwaInAppTitle");
++    description = t("auth.pwaInAppDescription", { browser: browserLabel });
++    steps = [
++      t("auth.pwaStepOpenMenu"),
++      t("auth.pwaStepOpenBrowser"),
++      t("auth.pwaStepInstall"),
++    ];
++    icon = <TriangleAlert className="size-5" aria-hidden />;
++  } else if (mode === "ios-open-safari") {
++    title = t("auth.pwaOpenSafariTitle");
++    description = t("auth.pwaOpenSafariDescription", { browser: browserLabel });
++    steps = [
++      t("auth.pwaStepCopyUrl"),
++      t("auth.pwaStepOpenSafari"),
++      t("auth.pwaStepShare"),
++      t("auth.pwaStepAddHome"),
++    ];
++    icon = <ExternalLink className="size-5" aria-hidden />;
++  } else if (mode === "ios-install") {
++    title = t("auth.pwaIosInstallTitle");
++    description = t("auth.pwaIosInstallDescription");
++    steps = [
++      t("auth.pwaStepShare"),
++      t("auth.pwaStepAddHome"),
++      t("auth.pwaStepOpenFromHome"),
++    ];
++    icon = <Share2 className="size-5" aria-hidden />;
++  } else {
++    title = t("auth.pwaAndroidInstallTitle");
++    description = t("auth.pwaAndroidInstallDescription");
++    steps = prompt.canInstallNatively
++      ? [t("auth.pwaStepTapInstall"), t("auth.pwaStepOpenFromHome")]
++      : [t("auth.pwaStepOpenMenu"), t("auth.pwaStepInstall"), t("auth.pwaStepOpenFromHome")];
++  }
++
++  const handlePrimaryAction = async () => {
++    if (mode === "native-install" && prompt.canInstallNatively) {
++      await prompt.promptInstall();
++      return;
++    }
++    if (mode === "in-app-browser" && prompt.isAndroid) {
++      if (prompt.openExternalBrowser()) return;
++    }
++    if (mode === "in-app-browser" || mode === "ios-open-safari") {
++      await prompt.copyInstallUrl();
++    }
++  };
++
++  const hasPrimaryAction =
++    (mode === "native-install" && prompt.canInstallNatively)
++    || mode === "in-app-browser"
++    || mode === "ios-open-safari";
++
++  const primaryLabel = mode === "native-install"
++    ? t("auth.pwaInstall")
++    : mode === "in-app-browser" && prompt.isAndroid
++      ? t("auth.pwaOpenBrowser")
++      : t("auth.pwaCopyUrl");
++
++  return (
++    <Dialog
++      open={prompt.open}
++      onOpenChange={(open) => {
++        if (!open) prompt.dismiss();
++      }}
++    >
++      <DialogContent>
++        <DialogHeader>
++          <div className="mb-1 flex size-10 items-center justify-center rounded-xl bg-accent text-foreground">
++            {icon}
++          </div>
++          <DialogTitle>{title}</DialogTitle>
++          <DialogDescription>
++            {description}{notificationsNote ? ` ${notificationsNote}` : ""}
++          </DialogDescription>
++        </DialogHeader>
++
++        <ol className="space-y-3">
++          {steps.map((step, index) => (
++            <li className="flex gap-3 text-sm leading-6" key={step}>
++              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold">
++                {index + 1}
++              </span>
++              <span>{step}</span>
++            </li>
++          ))}
++        </ol>
++
++        <DialogFooter>
++          <Button variant="outline" onClick={prompt.dismiss} disabled={prompt.isPrompting}>
++            {t("auth.pwaLater")}
++          </Button>
++          {mode === "in-app-browser" && prompt.isAndroid ? (
++            <Button
++              variant="outline"
++              onClick={() => void prompt.copyInstallUrl()}
++              disabled={prompt.isPrompting}
++            >
++              <Copy className="size-4" />
++              {t("auth.pwaCopyUrl")}
++            </Button>
++          ) : null}
++          {hasPrimaryAction ? (
++            <Button onClick={() => void handlePrimaryAction()} disabled={prompt.isPrompting}>
++              {mode === "native-install" ? <Download className="size-4" /> : <ExternalLink className="size-4" />}
++              {primaryLabel}
++            </Button>
++          ) : null}
++        </DialogFooter>
++      </DialogContent>
++    </Dialog>
++  );
++}
+diff --git a/src/components/app-providers.tsx b/src/components/app-providers.tsx
+index 4dd2bf2..6a49267 100644
+--- a/src/components/app-providers.tsx
++++ b/src/components/app-providers.tsx
+@@ -10,6 +10,7 @@ import { Toaster } from "@/components/ui/sonner";
+ import { AppUpdateGate } from "@/components/app-update-gate";
+ import { E2eAuthBridge } from "@/components/e2e-auth-bridge";
+ import { TurnstileProvider } from "@/components/turnstile-provider";
++import { AppInstallPrompt } from "@/components/app-install-prompt";
+ import { ensureFirebaseAppCheck } from "@/lib/firebase-app-check";
+ 
+ export function AppProviders({
+@@ -48,6 +49,7 @@ export function AppProviders({
+             </SessionProvider>
+             <E2eAuthBridge />
+             <AppUpdateGate />
++            <AppInstallPrompt />
+             <Toaster position="bottom-center" />
+           </TurnstileProvider>
+         </TooltipProvider>
+diff --git a/src/components/turnstile-provider.tsx b/src/components/turnstile-provider.tsx
+index 4e15d36..0546791 100644
+--- a/src/components/turnstile-provider.tsx
++++ b/src/components/turnstile-provider.tsx
+@@ -1,15 +1,25 @@
+ "use client";
+ 
+ import Script from "next/script";
++import { ShieldCheck } from "lucide-react";
+ import {
+   createContext,
+   useCallback,
+   useContext,
++  useEffect,
+   useMemo,
+   useRef,
+   useState,
+   type ReactNode,
+ } from "react";
++import { t } from "@/i18n";
++import {
++  Dialog,
++  DialogContent,
++  DialogDescription,
++  DialogHeader,
++  DialogTitle,
++} from "@/components/ui/dialog";
+ 
+ const siteKey = String(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "").trim();
+ const TOKEN_TIMEOUT_MS = 60_000;
+@@ -21,13 +31,16 @@ interface TurnstileApi {
+     container: HTMLElement,
+     options: {
+       action: string;
+-      appearance: "interaction-only";
+-      "error-callback": () => void;
++      appearance: "always";
++      "error-callback": (errorCode?: string) => void;
+       "expired-callback": () => void;
++      "timeout-callback": () => void;
++      "unsupported-callback": () => void;
+       execution: "execute";
+       callback: (token: string) => void;
+       sitekey: string;
+-      size: "invisible";
++      size: "normal";
++      theme: "auto";
+     },
+   ) => string;
+ }
+@@ -42,6 +55,12 @@ interface TurnstileContextValue {
+   requestToken: (action: string) => Promise<string | null>;
+ }
+ 
++interface PendingChallenge {
++  action: string;
++  reject: (error: Error) => void;
++  resolve: (token: string) => void;
++}
++
+ const TurnstileContext = createContext<TurnstileContextValue>({
+   requestToken: async () => null,
+ });
+@@ -54,6 +73,8 @@ export function TurnstileProvider({
+   nonce?: string;
+ }) {
+   const [ready, setReady] = useState(false);
++  const [challenge, setChallenge] = useState<PendingChallenge | null>(null);
++  const widgetHostRef = useRef<HTMLDivElement | null>(null);
+   const waiters = useRef<Array<{
+     reject: (error: Error) => void;
+     resolve: () => void;
+@@ -89,47 +110,55 @@ export function TurnstileProvider({
+     });
+   }, [ready]);
+ 
++  useEffect(() => {
++    if (!challenge) return;
++    const turnstile = window.turnstile;
++    const container = widgetHostRef.current;
++    if (!turnstile || !container) return;
++
++    let widgetId = "";
++    let settled = false;
++    const finish = (callback: () => void) => {
++      if (settled) return;
++      settled = true;
++      window.clearTimeout(timeout);
++      if (widgetId) turnstile.remove?.(widgetId);
++      setChallenge((current) => current === challenge ? null : current);
++      callback();
++    };
++    const timeout = window.setTimeout(() => {
++      finish(() => challenge.reject(new Error("turnstile-timeout")));
++    }, TOKEN_TIMEOUT_MS);
++
++    widgetId = turnstile.render(container, {
++      action: challenge.action,
++      appearance: "always",
++      "error-callback": () => finish(() => challenge.reject(new Error("turnstile-failed"))),
++      "expired-callback": () => finish(() => challenge.reject(new Error("turnstile-expired"))),
++      "timeout-callback": () => finish(() => challenge.reject(new Error("turnstile-timeout"))),
++      "unsupported-callback": () => finish(() => challenge.reject(new Error("turnstile-unsupported"))),
++      execution: "execute",
++      callback: (token) => finish(() => challenge.resolve(token)),
++      sitekey: siteKey,
++      size: "normal",
++      theme: "auto",
++    });
++    turnstile.execute(widgetId);
++
++    return () => {
++      window.clearTimeout(timeout);
++      if (!settled && widgetId) turnstile.remove?.(widgetId);
++    };
++  }, [challenge]);
++
+   const requestToken = useCallback(async (action: string) => {
+     if (!siteKey) return null;
+     if (pendingRequest.current) return pendingRequest.current;
+     const request = (async () => {
+       await waitUntilReady();
+-      const turnstile = window.turnstile;
+-      if (!turnstile) throw new Error("turnstile-unavailable");
+-      const container = document.createElement("div");
+-      container.setAttribute("aria-hidden", "true");
+-      container.style.height = "1px";
+-      container.style.left = "-10000px";
+-      container.style.overflow = "hidden";
+-      container.style.position = "fixed";
+-      container.style.top = "0";
+-      container.style.width = "1px";
+-      document.body.appendChild(container);
+-
++      if (!window.turnstile) throw new Error("turnstile-unavailable");
+       return await new Promise<string>((resolve, reject) => {
+-        let widgetId = "";
+-        const timeout = window.setTimeout(() => {
+-          if (widgetId) turnstile.remove?.(widgetId);
+-          container.remove();
+-          reject(new Error("turnstile-timeout"));
+-        }, TOKEN_TIMEOUT_MS);
+-        const finish = (callback: () => void) => {
+-          window.clearTimeout(timeout);
+-          if (widgetId) turnstile.remove?.(widgetId);
+-          container.remove();
+-          callback();
+-        };
+-        widgetId = turnstile.render(container, {
+-          action,
+-          appearance: "interaction-only",
+-          "error-callback": () => finish(() => reject(new Error("turnstile-failed"))),
+-          "expired-callback": () => finish(() => reject(new Error("turnstile-expired"))),
+-          execution: "execute",
+-          callback: (token) => finish(() => resolve(token)),
+-          sitekey: siteKey,
+-          size: "invisible",
+-        });
+-        turnstile.execute(widgetId);
++        setChallenge({ action, reject, resolve });
+       });
+     })();
+     pendingRequest.current = request;
+@@ -153,6 +182,30 @@ export function TurnstileProvider({
+         />
+       ) : null}
+       {children}
++      <Dialog open={challenge !== null} onOpenChange={() => undefined}>
++        <DialogContent
++          className="max-w-sm gap-5"
++          showCloseButton={false}
++          onEscapeKeyDown={(event) => event.preventDefault()}
++          onPointerDownOutside={(event) => event.preventDefault()}
++        >
++          <DialogHeader className="items-center text-center sm:items-center sm:text-center">
++            <div className="mb-1 flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
++              <ShieldCheck className="size-5" aria-hidden />
++            </div>
++            <DialogTitle>{t("auth.loginVerification")}</DialogTitle>
++            <DialogDescription>
++              {t("auth.signingIn")}
++            </DialogDescription>
++          </DialogHeader>
++          <div className="mx-auto w-full overflow-hidden rounded-xl border bg-background/70 p-3 shadow-sm">
++            <div
++              ref={widgetHostRef}
++              className="mx-auto min-h-[65px] w-[300px] max-w-full"
++            />
++          </div>
++        </DialogContent>
++      </Dialog>
+     </TurnstileContext.Provider>
+   );
+ }
+diff --git a/src/hooks/use-app-install-prompt.ts b/src/hooks/use-app-install-prompt.ts
+new file mode 100644
+index 0000000..d2c85a6
+--- /dev/null
++++ b/src/hooks/use-app-install-prompt.ts
+@@ -0,0 +1,153 @@
++"use client";
++
++import { useCallback, useEffect, useMemo, useState } from "react";
++import {
++  detectInAppBrowser,
++  tryRedirectToExternalBrowser,
++  type InAppBrowserName,
++} from "@/lib/in-app-browser";
++import {
++  REQUEST_APP_INSTALL_PROMPT_EVENT,
++  detectIosBrowserGuide,
++  isAndroidDevice,
++  isIosSafari,
++  isStandaloneMode,
++  isTouchPrimaryDevice,
++  type AppInstallPromptReason,
++  type IosBrowserGuide,
++} from "@/lib/pwa-install";
++
++export type AppInstallPromptMode =
++  | "in-app-browser"
++  | "native-install"
++  | "ios-install"
++  | "ios-open-safari";
++
++interface BeforeInstallPromptEvent extends Event {
++  prompt: () => Promise<void>;
++  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform?: string }>;
++}
++
++const DISMISSED_KEY = "novae:app-install-prompt-dismissed";
++
++function hasDismissedPrompt() {
++  try {
++    return sessionStorage.getItem(DISMISSED_KEY) === "1";
++  } catch {
++    return false;
++  }
++}
++
++function rememberDismissedPrompt() {
++  try {
++    sessionStorage.setItem(DISMISSED_KEY, "1");
++  } catch {
++    // Storage is optional; the dialog can be shown again next navigation.
++  }
++}
++
++export function useAppInstallPrompt() {
++  const [hydrated, setHydrated] = useState(false);
++  const [browserName, setBrowserName] = useState<InAppBrowserName | null>(null);
++  const [iosBrowserGuide, setIosBrowserGuide] = useState<IosBrowserGuide | null>(null);
++  const [isAndroid, setIsAndroid] = useState(false);
++  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
++  const [dismissed, setDismissed] = useState(true);
++  const [isPrompting, setIsPrompting] = useState(false);
++  const [reason, setReason] = useState<AppInstallPromptReason>("default");
++
++  useEffect(() => {
++    const userAgent = navigator.userAgent;
++    setBrowserName(detectInAppBrowser(userAgent));
++    setIosBrowserGuide(
++      detectIosBrowserGuide(userAgent, navigator.platform, navigator.maxTouchPoints),
++    );
++    setIsAndroid(isAndroidDevice(userAgent));
++    setDismissed(hasDismissedPrompt());
++    setHydrated(true);
++
++    const handleBeforeInstallPrompt = (event: Event) => {
++      if (isStandaloneMode()) return;
++      event.preventDefault();
++      setDeferredPrompt(event as BeforeInstallPromptEvent);
++    };
++    const handleAppInstalled = () => {
++      setDeferredPrompt(null);
++      setDismissed(true);
++      rememberDismissedPrompt();
++    };
++    const handleInstallPromptRequest = (event: Event) => {
++      const requestedReason = (event as CustomEvent<{ reason?: AppInstallPromptReason }>).detail?.reason;
++      setReason(requestedReason === "notifications" ? "notifications" : "default");
++      setDismissed(false);
++    };
++
++    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
++    window.addEventListener("appinstalled", handleAppInstalled);
++    window.addEventListener(REQUEST_APP_INSTALL_PROMPT_EVENT, handleInstallPromptRequest);
++    return () => {
++      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
++      window.removeEventListener("appinstalled", handleAppInstalled);
++      window.removeEventListener(REQUEST_APP_INSTALL_PROMPT_EVENT, handleInstallPromptRequest);
++    };
++  }, []);
++
++  const mode = useMemo<AppInstallPromptMode | null>(() => {
++    if (!hydrated || (dismissed && reason === "default") || isStandaloneMode()) return null;
++    if (iosBrowserGuide) return "ios-open-safari";
++    if (browserName) return "in-app-browser";
++    if (isAndroid || (deferredPrompt && isTouchPrimaryDevice())) return "native-install";
++    if (isIosSafari(navigator.userAgent, navigator.platform, navigator.maxTouchPoints)) {
++      return "ios-install";
++    }
++    return null;
++  }, [browserName, deferredPrompt, dismissed, hydrated, iosBrowserGuide, isAndroid, reason]);
++
++  const dismiss = useCallback(() => {
++    setDismissed(true);
++    setReason("default");
++    rememberDismissedPrompt();
++  }, []);
++
++  const promptInstall = useCallback(async () => {
++    if (!deferredPrompt || isPrompting) return;
++    setDeferredPrompt(null);
++    setIsPrompting(true);
++    try {
++      await deferredPrompt.prompt();
++      await deferredPrompt.userChoice.catch(() => null);
++    } finally {
++      setIsPrompting(false);
++      dismiss();
++    }
++  }, [deferredPrompt, dismiss, isPrompting]);
++
++  const copyInstallUrl = useCallback(async () => {
++    if (isPrompting) return;
++    setIsPrompting(true);
++    try {
++      await navigator.clipboard?.writeText(window.location.href);
++    } finally {
++      setIsPrompting(false);
++    }
++  }, [isPrompting]);
++
++  const openExternalBrowser = useCallback(() => {
++    return tryRedirectToExternalBrowser(navigator.userAgent);
++  }, []);
++
++  return {
++    browserName,
++    canInstallNatively: deferredPrompt !== null,
++    copyInstallUrl,
++    dismiss,
++    iosBrowserGuide,
++    isAndroid,
++    isPrompting,
++    mode,
++    open: mode !== null,
++    openExternalBrowser,
++    promptInstall,
++    reason,
++  };
++}
+diff --git a/src/hooks/use-session.tsx b/src/hooks/use-session.tsx
+index b7b58f4..9358a2d 100644
+--- a/src/hooks/use-session.tsx
++++ b/src/hooks/use-session.tsx
+@@ -19,7 +19,10 @@ import { sessionDebug } from "@/lib/session-debug";
+ import { readLocalStorage, writeLocalStorage } from "@/lib/browser-storage";
+ import { clearContentEntityScope } from "@/lib/content-entity-store";
+ import { clearViewMemoryScope } from "@/lib/view-memory-cache";
+-import { ensureBackendProfile } from "@/services/backend-auth";
++import {
++  ensureBackendProfile,
++  type TurnstileTokenRequester,
++} from "@/services/backend-auth";
+ import {
+   fetchCurrentUserRole,
+   seedSessionAccess,
+@@ -167,14 +170,18 @@ async function loadAvatar(photoUrl: string, uid: string) {
+   }
+ }
+ 
+-async function refreshVerifiedSession(user: User, verificationId: number) {
++async function refreshVerifiedSession(
++  user: User,
++  verificationId: number,
++  requestTurnstileToken: TurnstileTokenRequester,
++) {
+   const current = () =>
+     verificationId === verificationSerial && state.user?.uid === user.uid;
+   try {
+     const tokenValidation = await validateUserAgainstToken(user);
+     if (!current()) return;
+     if (!tokenValidation.ok) return await rejectUser(tokenValidation.reason);
+-    await ensureBackendProfile(user);
++    await ensureBackendProfile(user, requestTurnstileToken);
+     if (!current()) return;
+     try {
+       const bootstrap = await fetchSessionBootstrap({
+@@ -216,10 +223,11 @@ async function refreshVerifiedSession(user: User, verificationId: number) {
+     if (!current()) return;
+     sessionDebug("session verification failed", error);
+     patch({
+-      error: error instanceof ApiRequestError
+-        && (error.code === "app-check-failed" || error.code === "turnstile-failed")
++      error: error instanceof ApiRequestError && error.code === "app-check-failed"
+         ? "auth.appCheckFailed"
+-        : "auth.initializationFailed",
++        : error instanceof ApiRequestError && error.code === "turnstile-failed"
++          ? "auth.securityCheckFailed"
++          : "auth.initializationFailed",
+     });
+   } finally {
+     if (current()) {
+@@ -229,7 +237,7 @@ async function refreshVerifiedSession(user: User, verificationId: number) {
+   }
+ }
+ 
+-function acceptUser(user: User) {
++function acceptUser(user: User, requestTurnstileToken: TurnstileTokenRequester) {
+   const verificationId = ++verificationSerial;
+   setContentCacheScope(user.uid);
+   clearContentReadMemoryCache();
+@@ -249,10 +257,10 @@ function acceptUser(user: User) {
+     userRole: "user",
+   });
+   if (user.photoURL) void loadAvatar(user.photoURL, user.uid);
+-  void refreshVerifiedSession(user, verificationId);
++  void refreshVerifiedSession(user, verificationId, requestTurnstileToken);
+ }
+ 
+-export function initializeSession() {
++export function initializeSession(requestTurnstileToken: TurnstileTokenRequester) {
+   if (booted || typeof window === "undefined") return;
+   booted = true;
+   if (!auth) {
+@@ -286,7 +294,7 @@ export function initializeSession() {
+         patch({ appReady: true, initialized: true, loading: false });
+         return;
+       }
+-      acceptUser(user);
++      acceptUser(user, requestTurnstileToken);
+     },
+     (error) => {
+       sessionDebug("auth observer failed", error);
+@@ -308,12 +316,12 @@ export function initializeSession() {
+ }
+ 
+ export function SessionProvider({ children }: { children: ReactNode }) {
+-  useEffect(() => initializeSession(), []);
++  const { requestToken } = useTurnstile();
++  useEffect(() => initializeSession(requestToken), [requestToken]);
+   return children;
+ }
+ 
+ export function useSession() {
+-  const { requestToken } = useTurnstile();
+   const snapshot = useSyncExternalStore(
+     subscribe,
+     () => state,
+@@ -349,14 +357,10 @@ export function useSession() {
+   const login = useCallback(
+     async (options?: { selectAccount?: boolean }) => {
+       patch({ error: "", loading: true });
+-      const turnstilePromise = requestToken("auth_sync").catch(() => null);
+-      const error = await loginWithGoogle({
+-        ...options,
+-        turnstileToken: turnstilePromise,
+-      });
++      const error = await loginWithGoogle(options);
+       patch({ error, loading: false });
+     },
+-    [requestToken],
++    [],
+   );
+ 
+   const logout = useCallback(async () => {
+diff --git a/src/i18n/messages/en/auth.ts b/src/i18n/messages/en/auth.ts
+index df36db4..7f4d34a 100644
+--- a/src/i18n/messages/en/auth.ts
++++ b/src/i18n/messages/en/auth.ts
+@@ -13,6 +13,8 @@ const messages = {
+   'auth.useYour': 'Use your',
+   'auth.toContinue': 'To continue.',
+   'auth.popupBlocked': 'The sign-in window was blocked by the browser. Allow pop-ups, then tap Google sign-in again.',
++  'auth.loginReplyTimedOut': 'Google did not return a sign-in response. Try again, or open Novae in your system browser if you are inside another app.',
++  'auth.securityCheckFailed': 'Security verification did not complete. Try again, or use your system browser if the problem continues.',
+   'auth.connectionFailed': 'Unable to connect for sign-in. Check your network and try again.',
+   'auth.signingIn': 'Signing in…',
+   'auth.pleaseUseTheDesignatedSchoolAccountToLogIn': 'Please sign in with the designated school account.',
+@@ -32,7 +34,29 @@ const messages = {
+   'auth.signInAgainNotice': 'You will need to sign in again with your school Google account.',
+   'auth.serviceUnavailable': 'The service is temporarily unavailable. Please try again later.',
+   'auth.schoolVerificationFailed': 'This account could not pass school identity verification.',
+-  'auth.systemBrowserRequired': 'This browser cannot open the sign-in window. Open the page in your system browser instead.',
++  'auth.systemBrowserRequired': 'This browser cannot reliably complete Google sign-in. Open Novae in Safari, Chrome, or your system browser.',
++  'auth.pwaInAppTitle': 'Open Novae in your system browser',
++  'auth.pwaInAppDescription': 'Novae is open inside the {browser} in-app browser. Google sign-in and security checks may not return reliably here.',
++  'auth.pwaOpenSafariTitle': 'Open Novae in Safari first',
++  'auth.pwaOpenSafariDescription': 'You are using {browser}. On iPhone and iPad, open Novae in Safari before adding it to the Home Screen.',
++  'auth.pwaIosInstallTitle': 'Install Novae as an app',
++  'auth.pwaIosInstallDescription': 'Add Novae to the Home Screen from Safari for an app-like launch experience with less browser UI.',
++  'auth.pwaAndroidInstallTitle': 'Install Novae on your Home Screen',
++  'auth.pwaAndroidInstallDescription': 'Launch Novae directly from the Home Screen. When supported, the browser-native install prompt will be used.',
++  'auth.pwaNotificationsNote': 'For reliable notifications, finish installing and reopen Novae from the Home Screen.',
++  'auth.pwaStepOpenMenu': 'Open the current app or browser menu.',
++  'auth.pwaStepOpenBrowser': 'Choose Open in Browser, Open in Safari, or your system default browser.',
++  'auth.pwaStepCopyUrl': 'Copy the current Novae URL.',
++  'auth.pwaStepOpenSafari': 'Switch to Safari, paste the URL, and open it.',
++  'auth.pwaStepShare': 'Tap the Share button in Safari.',
++  'auth.pwaStepAddHome': 'Choose Add to Home Screen and keep the Web App option enabled.',
++  'auth.pwaStepInstall': 'Choose Install app or Add to Home Screen from the browser menu.',
++  'auth.pwaStepTapInstall': 'Tap Install app and let the browser finish installation.',
++  'auth.pwaStepOpenFromHome': 'When installation finishes, reopen Novae from its Home Screen icon.',
++  'auth.pwaInstall': 'Install app',
++  'auth.pwaCopyUrl': 'Copy URL',
++  'auth.pwaOpenBrowser': 'Open in browser',
++  'auth.pwaLater': 'Not now',
+ } as const;
+ 
+ export default messages;
+diff --git a/src/i18n/messages/zh-TW/auth.ts b/src/i18n/messages/zh-TW/auth.ts
+index c5d9494..acc83c7 100644
+--- a/src/i18n/messages/zh-TW/auth.ts
++++ b/src/i18n/messages/zh-TW/auth.ts
+@@ -13,6 +13,8 @@ const messages = {
+   'auth.useYour': '請使用',
+   'auth.toContinue': '登入以繼續使用平台。',
+   'auth.popupBlocked': '登入視窗被瀏覽器封鎖，請允許彈出視窗後，重新點擊 Google 登入再試一次。',
++  'auth.loginReplyTimedOut': '沒有收到 Google 登入回覆。請重試；若正在 App 內建瀏覽器中，請改用系統瀏覽器開啟。',
++  'auth.securityCheckFailed': '安全驗證未完成，請再試一次。若持續失敗，請改用系統瀏覽器。',
+   'auth.connectionFailed': '登入連線失敗，請確認網路狀態後再試。',
+   'auth.signingIn': '登入中…',
+   'auth.pleaseUseTheDesignatedSchoolAccountToLogIn': '請使用指定的校內帳號登入。',
+@@ -32,7 +34,29 @@ const messages = {
+   'auth.signInAgainNotice': '登出後需要再次使用校內 Google 帳號登入。',
+   'auth.serviceUnavailable': '服務暫時無法使用，請稍後再試。',
+   'auth.schoolVerificationFailed': '目前登入帳號無法通過校內身分驗證。',
+-  'auth.systemBrowserRequired': '目前瀏覽器無法開啟登入視窗，請改用系統瀏覽器開啟。',
++  'auth.systemBrowserRequired': '目前瀏覽器無法可靠完成 Google 登入，請改用 Safari、Chrome 或系統預設瀏覽器開啟。',
++  'auth.pwaInAppTitle': '請改用系統瀏覽器開啟',
++  'auth.pwaInAppDescription': '目前正在 {browser} 的內建瀏覽器中開啟。Google 登入與安全驗證可能無法正常返回 Novae。',
++  'auth.pwaOpenSafariTitle': '請先用 Safari 開啟',
++  'auth.pwaOpenSafariDescription': '目前使用 {browser}。在 iPhone / iPad 上，請改用 Safari 開啟後再加入主畫面。',
++  'auth.pwaIosInstallTitle': '建議將 Novae 安裝為 App',
++  'auth.pwaIosInstallDescription': '從 Safari 加入主畫面後，可像一般 App 一樣開啟，並減少瀏覽器介面干擾。',
++  'auth.pwaAndroidInstallTitle': '將 Novae 安裝到主畫面',
++  'auth.pwaAndroidInstallDescription': '安裝後可直接從主畫面開啟；若瀏覽器支援，會使用系統原生安裝提示。',
++  'auth.pwaNotificationsNote': '若要穩定使用通知，請完成安裝後再從主畫面開啟。',
++  'auth.pwaStepOpenMenu': '打開目前 App 或瀏覽器的選單。',
++  'auth.pwaStepOpenBrowser': '選擇「以瀏覽器開啟」、「在 Safari 中開啟」或系統預設瀏覽器。',
++  'auth.pwaStepCopyUrl': '複製目前 Novae 網址。',
++  'auth.pwaStepOpenSafari': '切換到 Safari，貼上並開啟剛才的網址。',
++  'auth.pwaStepShare': '在 Safari 點分享按鈕。',
++  'auth.pwaStepAddHome': '選擇「加入主畫面」，並確認以 Web App 開啟。',
++  'auth.pwaStepInstall': '在瀏覽器選單選擇「安裝 App」或「加入主畫面」。',
++  'auth.pwaStepTapInstall': '按下「安裝 App」，交由瀏覽器完成安裝。',
++  'auth.pwaStepOpenFromHome': '完成後從主畫面的 Novae 圖示重新開啟。',
++  'auth.pwaInstall': '安裝 App',
++  'auth.pwaCopyUrl': '複製網址',
++  'auth.pwaOpenBrowser': '用瀏覽器開啟',
++  'auth.pwaLater': '稍後再說',
+ } as const;
+ 
+ export default messages;
+diff --git a/src/lib/google-identity.ts b/src/lib/google-identity.ts
+index 013ecc5..932cfde 100644
+--- a/src/lib/google-identity.ts
++++ b/src/lib/google-identity.ts
+@@ -1,5 +1,7 @@
+ const GSI_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
+ const GSI_SCOPE = 'openid email profile';
++const GSI_LOAD_TIMEOUT_MS = 10_000;
++const TOKEN_REQUEST_TIMEOUT_MS = 30_000;
+ 
+ export type GoogleIdentityErrorCode =
+   | 'script_load_failed'
+@@ -7,6 +9,7 @@ export type GoogleIdentityErrorCode =
+   | 'popup_closed'
+   | 'access_denied'
+   | 'unavailable'
++  | 'timeout'
+   | 'unknown';
+ 
+ export class GoogleIdentityError extends Error {
+@@ -31,33 +34,39 @@ function loadGsiClient(): Promise<void> {
+   if (gsiLoadPromise) return gsiLoadPromise;
+ 
+   gsiLoadPromise = new Promise<void>((resolve, reject) => {
++    let script: HTMLScriptElement | null = null;
++    let timeoutId = 0;
+     const fail = () => {
++      window.clearTimeout(timeoutId);
++      script?.remove();
+       gsiLoadPromise = null;
+       reject(new GoogleIdentityError('script_load_failed'));
+     };
++    const succeed = () => {
++      window.clearTimeout(timeoutId);
++      resolve();
++    };
+ 
+     const existing = document.querySelector<HTMLScriptElement>(`script[src="${GSI_SCRIPT_SRC}"]`);
+     if (existing) {
+       if (window.google?.accounts?.oauth2) {
+-        resolve();
++        succeed();
+         return;
+       }
+-      existing.addEventListener('load', () => {
+-        if (window.google?.accounts?.oauth2) resolve();
+-        else fail();
+-      }, { once: true });
+-      existing.addEventListener('error', fail, { once: true });
+-      return;
++      // A previous failed/half-loaded GIS script will never emit load/error again.
++      // Remove it so this attempt can make a fresh request instead of hanging forever.
++      existing.remove();
+     }
+ 
+-    const script = document.createElement('script');
++    script = document.createElement('script');
+     script.src = GSI_SCRIPT_SRC;
+     script.async = true;
+     script.onload = () => {
+-      if (window.google?.accounts?.oauth2) resolve();
++      if (window.google?.accounts?.oauth2) succeed();
+       else fail();
+     };
+     script.onerror = fail;
++    timeoutId = window.setTimeout(fail, GSI_LOAD_TIMEOUT_MS);
+     document.head.appendChild(script);
+   });
+ 
+@@ -86,6 +95,17 @@ function triggerTokenRequest(
+   hd?: string,
+ ): Promise<string> {
+   return new Promise<string>((resolve, reject) => {
++    let settled = false;
++    let timeoutId = 0;
++    const finish = (callback: () => void) => {
++      if (settled) return;
++      settled = true;
++      window.clearTimeout(timeoutId);
++      callback();
++    };
++    timeoutId = window.setTimeout(() => {
++      finish(() => reject(new GoogleIdentityError('timeout')));
++    }, TOKEN_REQUEST_TIMEOUT_MS);
+     const client = oauth2.initTokenClient({
+       client_id: clientId,
+       scope: GSI_SCOPE,
+@@ -93,16 +113,20 @@ function triggerTokenRequest(
+       ...(hd ? { hd } : {}),
+       callback: (response) => {
+         if (response.error || !response.access_token) {
+-          reject(new GoogleIdentityError(mapTokenResponseError(response.error)));
++          finish(() => reject(new GoogleIdentityError(mapTokenResponseError(response.error))));
+           return;
+         }
+-        resolve(response.access_token);
++        finish(() => resolve(response.access_token));
+       },
+       error_callback: (error) => {
+-        reject(new GoogleIdentityError(mapClientError(error?.type)));
++        finish(() => reject(new GoogleIdentityError(mapClientError(error?.type))));
+       },
+     });
+-    client.requestAccessToken();
++    try {
++      client.requestAccessToken();
++    } catch {
++      finish(() => reject(new GoogleIdentityError('unavailable')));
++    }
+   });
+ }
+ 
+diff --git a/src/lib/in-app-browser.ts b/src/lib/in-app-browser.ts
+new file mode 100644
+index 0000000..2d064d1
+--- /dev/null
++++ b/src/lib/in-app-browser.ts
+@@ -0,0 +1,74 @@
++export type InAppBrowserName =
++  | 'LINE'
++  | 'Facebook'
++  | 'Messenger'
++  | 'Instagram'
++  | 'Threads'
++  | 'TikTok'
++  | 'WeChat'
++  | 'Google'
++  | 'Android WebView';
++
++const browserPatterns: Array<[InAppBrowserName, RegExp]> = [
++  ['LINE', /\bLine\//i],
++  ['Messenger', /\bFBAN\/MessengerForiOS|\bFB_IAB\/Messenger|\bMessengerLiteForiOS/i],
++  ['Facebook', /\bFBAN\/|\bFBAV\/|\bFB_IAB\/FB4A/i],
++  ['Instagram', /\bInstagram\b/i],
++  ['Threads', /\bBarcelona\b|\bThreads\b/i],
++  ['TikTok', /\bBytedanceWebview\b|\bTikTok\b|\bmusical_ly\b/i],
++  ['WeChat', /\bMicroMessenger\b/i],
++  ['Google', /\bGSA\//i],
++  ['Android WebView', /(?:;\s*wv\)|\bVersion\/4\.0\b.*\bChrome\/.*\bMobile Safari\/)/i],
++];
++
++export function detectInAppBrowser(userAgent: string): InAppBrowserName | null {
++  return browserPatterns.find(([, pattern]) => pattern.test(userAgent))?.[0] ?? null;
++}
++
++export function tryRedirectToExternalBrowser(userAgent: string): boolean {
++  if (typeof window === 'undefined') return false;
++
++  const browser = detectInAppBrowser(userAgent);
++  if (!browser) return false;
++
++  const currentUrl = new URL(window.location.href);
++
++  if (browser === 'LINE') {
++    if (!currentUrl.searchParams.has('openExternalBrowser')) {
++      currentUrl.searchParams.set('openExternalBrowser', '1');
++      window.location.replace(currentUrl.toString());
++      return true;
++    }
++    return false;
++  }
++
++  if (!/Android/i.test(userAgent)) return false;
++
++  const redirectState = currentUrl.searchParams.get('intent_redirected');
++  if (redirectState === 'final_fallback') return false;
++
++  const host = currentUrl.host;
++  const pathname = currentUrl.pathname;
++  const search = currentUrl.search;
++  const hash = currentUrl.hash;
++  const scheme = currentUrl.protocol.replace(':', '');
++
++  if (redirectState !== 'chrome_fallback') {
++    const fallbackUrl = new URL(window.location.href);
++    fallbackUrl.searchParams.set('intent_redirected', 'chrome_fallback');
++    window.location.href =
++      `intent://${host}${pathname}${search}${hash}`
++      + `#Intent;scheme=${scheme};package=com.android.chrome;`
++      + `S.browser_fallback_url=${encodeURIComponent(fallbackUrl.toString())};end`;
++    return true;
++  }
++
++  const fallbackUrl = new URL(window.location.href);
++  fallbackUrl.searchParams.set('intent_redirected', 'final_fallback');
++  window.location.href =
++    `intent://${host}${pathname}${search}${hash}`
++    + `#Intent;scheme=${scheme};action=android.intent.action.VIEW;`
++    + 'category=android.intent.category.BROWSABLE;'
++    + `S.browser_fallback_url=${encodeURIComponent(fallbackUrl.toString())};end`;
++  return true;
++}
+diff --git a/src/services/backend-auth.ts b/src/services/backend-auth.ts
+index 21e37e6..8278fc4 100644
+--- a/src/services/backend-auth.ts
++++ b/src/services/backend-auth.ts
+@@ -4,7 +4,6 @@ import { apiGatewayUrl, hasApiGatewayConfig } from '@/lib/api-gateway';
+ import { ApiRequestError, type ApiErrorResponse } from '@/lib/api-error';
+ import { readLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
+ import { backendSecurityHeaders } from '@/lib/backend-security';
+-import { takePendingTurnstileToken } from '@/lib/turnstile';
+ 
+ interface SyncUserResponse extends ApiErrorResponse {
+   ok?: boolean;
+@@ -22,22 +21,19 @@ function rememberSync(uid: string) {
+   writeLocalStorage(`${PROFILE_SYNC_KEY_PREFIX}${uid}`, String(Date.now()));
+ }
+ 
+-export async function ensureBackendProfile(user: User) {
+-  if (!hasApiGatewayConfig()) return;
+-  const turnstileToken = takePendingTurnstileToken();
+-  if (wasRecentlySynced(user.uid)) return;
+-
+-  const token = await withRequestTimeout(
+-    () => user.getIdTokenResult(),
+-    { label: 'auth.backendLoginInitialization' },
+-  );
++export type TurnstileTokenRequester = (action: string) => Promise<string | null>;
+ 
++async function syncBackendProfile(
++  user: User,
++  firebaseToken: string,
++  turnstileToken?: string | null,
++) {
+   const response = await withRequestTimeout(
+     async (signal) => fetch(apiGatewayUrl('/v1/auth/sync'), {
+       method: 'POST',
+       body: JSON.stringify({ email: user.email }),
+       headers: {
+-        ...(await backendSecurityHeaders(token.token)),
++        ...(await backendSecurityHeaders(firebaseToken)),
+         ...(turnstileToken ? { 'X-Turnstile-Token': turnstileToken } : {}),
+         'Content-Type': 'application/json',
+       },
+@@ -51,9 +47,43 @@ export async function ensureBackendProfile(user: User) {
+   } catch {
+     // Use the HTTP fallback below.
+   }
++  return { data, response };
++}
++
++function syncRequestError(data: SyncUserResponse | null) {
++  return new ApiRequestError(data ?? { error: { code: 'upstream-invalid-response' } });
++}
++
++export async function ensureBackendProfile(
++  user: User,
++  requestTurnstileToken?: TurnstileTokenRequester,
++) {
++  if (!hasApiGatewayConfig()) return;
++  if (wasRecentlySynced(user.uid)) return;
++
++  const token = await withRequestTimeout(
++    () => user.getIdTokenResult(),
++    { label: 'auth.backendLoginInitialization' },
++  );
++
++  let result = await syncBackendProfile(user, token.token);
++  const firstError = result.data?.error?.code;
++  if ((!result.response.ok || result.data?.ok !== true) && firstError === 'turnstile-failed') {
++    if (!requestTurnstileToken) throw syncRequestError(result.data);
++    let challengeToken: string | null = null;
++    try {
++      challengeToken = await requestTurnstileToken('auth_sync');
++    } catch {
++      throw new ApiRequestError({ error: { code: 'turnstile-failed' } });
++    }
++    if (!challengeToken) {
++      throw new ApiRequestError({ error: { code: 'turnstile-failed' } });
++    }
++    result = await syncBackendProfile(user, token.token, challengeToken);
++  }
+ 
+-  if (!response.ok || data?.ok !== true) {
+-    throw new ApiRequestError(data ?? { error: { code: 'upstream-invalid-response' } });
++  if (!result.response.ok || result.data?.ok !== true) {
++    throw syncRequestError(result.data);
+   }
+   rememberSync(user.uid);
+ }
+diff --git a/src/services/session-auth.ts b/src/services/session-auth.ts
+index dd1f765..db2f258 100644
+--- a/src/services/session-auth.ts
++++ b/src/services/session-auth.ts
+@@ -13,8 +13,7 @@ import {
+ import { readLocalStorage, writeLocalStorage } from "@/lib/browser-storage";
+ import { withRequestTimeout } from "@/lib/request";
+ import { sessionDebug } from "@/lib/session-debug";
+-import { setPendingTurnstileToken } from "@/lib/turnstile";
+-import { ensureFirebaseAppCheck } from "@/lib/firebase-app-check";
++import { detectInAppBrowser } from "@/lib/in-app-browser";
+ 
+ 
+ const LOGIN_ATTEMPT_KEY = "novae-login-attempts";
+@@ -69,6 +68,7 @@ function loginError(error: unknown) {
+     if (error.code === "popup_closed" || error.code === "access_denied")
+       return "auth.theLoginWindowHasBeenClosedPleaseTryAgain";
+     if (error.code === "popup_blocked") return "auth.popupBlocked";
++    if (error.code === "timeout") return "auth.loginReplyTimedOut";
+     if (error.code === "script_load_failed" || error.code === "unavailable")
+       return "auth.loginWidgetInitFailed";
+   }
+@@ -104,45 +104,37 @@ function loginError(error: unknown) {
+ }
+ 
+ export async function loginWithGoogle(
+-  options: {
+-    selectAccount?: boolean;
+-    turnstileToken?: string | null | Promise<string | null>;
+-  } = {},
++  options: { selectAccount?: boolean } = {},
+ ) {
++  if (!auth) return "auth.serviceUnavailable";
++  if (!authEmulatorUrl && !googleClientId) return "auth.loginWidgetInitFailed";
++  if (typeof navigator !== "undefined" && detectInAppBrowser(navigator.userAgent))
++    return "auth.systemBrowserRequired";
+   if (!claimLoginAttempt())
+     return "auth.theLoginOperationIsTooFrequentPleaseTryAgainLater";
+ 
+-  if (!auth) return "auth.serviceUnavailable";
+   const firebaseAuth = auth;
+   try {
+     if (authEmulatorUrl) {
+-      await ensureFirebaseAppCheck();
+-      const resolvedToken = await Promise.resolve(options.turnstileToken).catch(() => null);
+-      setPendingTurnstileToken(resolvedToken);
+       await signInWithPopup(
+         firebaseAuth,
+         googleProvider(Boolean(options.selectAccount)),
+       );
+       return "";
+     }
+-    if (!googleClientId) return "auth.loginWidgetInitFailed";
+-    const accessTokenPromise = requestGoogleAccessToken({
++    const accessToken = await requestGoogleAccessToken({
+       clientId: googleClientId,
+       hd: allowedDomain || undefined,
+     });
+-    const [accessToken, resolvedTurnstileToken] = await Promise.all([
+-      accessTokenPromise,
+-      Promise.resolve(options.turnstileToken).catch(() => null),
+-      ensureFirebaseAppCheck().catch(() => undefined),
+-    ]);
+-    setPendingTurnstileToken(resolvedTurnstileToken);
+-    await signInWithCredential(
+-      firebaseAuth,
+-      GoogleAuthProvider.credential(null, accessToken),
++    await withRequestTimeout(
++      () => signInWithCredential(
++        firebaseAuth,
++        GoogleAuthProvider.credential(null, accessToken),
++      ),
++      { label: "auth.loginVerification" },
+     );
+     return "";
+   } catch (error) {
+-    setPendingTurnstileToken(null);
+     sessionDebug("login failed", error);
+     return loginError(error);
+   }

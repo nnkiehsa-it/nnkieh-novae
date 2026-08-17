@@ -21,8 +21,6 @@ export async function handleSyncUser(request: Request, database: AppDatabaseClie
   const log = createFunctionLogger("syncUser");
   try {
     const user = await requireEligibleFirebaseUser(request);
-    await claimFixedWindowRateLimit(user.uid, "auth.sync", utcHourWindow(), RATE_LIMITS.loginSyncHourly);
-
     const { data: existingProfile, error: existingProfileError } = await database
       .table("app_private", "user_profiles")
       .select("uid")
@@ -32,6 +30,8 @@ export async function handleSyncUser(request: Request, database: AppDatabaseClie
     if (!existingProfile) {
       await requireTurnstile(request, currentEnvironment(), "auth_sync");
     }
+
+    await claimFixedWindowRateLimit(user.uid, "auth.sync", utcHourWindow(), RATE_LIMITS.loginSyncHourly);
 
     const { error: conflictError } = await database.table("app_private", "user_profiles")
       .update({ email: null })

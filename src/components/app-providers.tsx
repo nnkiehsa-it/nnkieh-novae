@@ -10,6 +10,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AppUpdateGate } from "@/components/app-update-gate";
 import { E2eAuthBridge } from "@/components/e2e-auth-bridge";
 import { TurnstileProvider } from "@/components/turnstile-provider";
+import { AppInstallPrompt } from "@/components/app-install-prompt";
 import { ensureFirebaseAppCheck } from "@/lib/firebase-app-check";
 
 export function AppProviders({
@@ -48,6 +49,7 @@ export function AppProviders({
             </SessionProvider>
             <E2eAuthBridge />
             <AppUpdateGate />
+            <AppInstallPrompt />
             <Toaster position="bottom-center" />
           </TurnstileProvider>
         </TooltipProvider>

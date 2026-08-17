@@ -13,8 +13,7 @@ import {
 import { readLocalStorage, writeLocalStorage } from "@/lib/browser-storage";
 import { withRequestTimeout } from "@/lib/request";
 import { sessionDebug } from "@/lib/session-debug";
-import { setPendingTurnstileToken } from "@/lib/turnstile";
-import { ensureFirebaseAppCheck } from "@/lib/firebase-app-check";
+import { detectInAppBrowser } from "@/lib/in-app-browser";
 
 
 const LOGIN_ATTEMPT_KEY = "novae-login-attempts";
@@ -69,6 +68,7 @@ function loginError(error: unknown) {
     if (error.code === "popup_closed" || error.code === "access_denied")
       return "auth.theLoginWindowHasBeenClosedPleaseTryAgain";
     if (error.code === "popup_blocked") return "auth.popupBlocked";
+    if (error.code === "timeout") return "auth.loginReplyTimedOut";
     if (error.code === "script_load_failed" || error.code === "unavailable")
       return "auth.loginWidgetInitFailed";
   }
@@ -104,45 +104,37 @@ function loginError(error: unknown) {
 }
 
 export async function loginWithGoogle(
-  options: {
-    selectAccount?: boolean;
-    turnstileToken?: string | null | Promise<string | null>;
-  } = {},
+  options: { selectAccount?: boolean } = {},
 ) {
+  if (!auth) return "auth.serviceUnavailable";
+  if (!authEmulatorUrl && !googleClientId) return "auth.loginWidgetInitFailed";
+  if (typeof navigator !== "undefined" && detectInAppBrowser(navigator.userAgent))
+    return "auth.systemBrowserRequired";
   if (!claimLoginAttempt())
     return "auth.theLoginOperationIsTooFrequentPleaseTryAgainLater";
 
-  if (!auth) return "auth.serviceUnavailable";
   const firebaseAuth = auth;
   try {
     if (authEmulatorUrl) {
-      await ensureFirebaseAppCheck();
-      const resolvedToken = await Promise.resolve(options.turnstileToken).catch(() => null);
-      setPendingTurnstileToken(resolvedToken);
       await signInWithPopup(
         firebaseAuth,
         googleProvider(Boolean(options.selectAccount)),
       );
       return "";
     }
-    if (!googleClientId) return "auth.loginWidgetInitFailed";
-    const accessTokenPromise = requestGoogleAccessToken({
+    const accessToken = await requestGoogleAccessToken({
       clientId: googleClientId,
       hd: allowedDomain || undefined,
     });
-    const [accessToken, resolvedTurnstileToken] = await Promise.all([
-      accessTokenPromise,
-      Promise.resolve(options.turnstileToken).catch(() => null),
-      ensureFirebaseAppCheck().catch(() => undefined),
-    ]);
-    setPendingTurnstileToken(resolvedTurnstileToken);
-    await signInWithCredential(
-      firebaseAuth,
-      GoogleAuthProvider.credential(null, accessToken),
+    await withRequestTimeout(
+      () => signInWithCredential(
+        firebaseAuth,
+        GoogleAuthProvider.credential(null, accessToken),
+      ),
+      { label: "auth.loginVerification" },
     );
     return "";
   } catch (error) {
-    setPendingTurnstileToken(null);
     sessionDebug("login failed", error);
     return loginError(error);
   }

@@ -4,7 +4,6 @@ import { apiGatewayUrl, hasApiGatewayConfig } from '@/lib/api-gateway';
 import { ApiRequestError, type ApiErrorResponse } from '@/lib/api-error';
 import { readLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
 import { backendSecurityHeaders } from '@/lib/backend-security';
-import { takePendingTurnstileToken } from '@/lib/turnstile';
 
 interface SyncUserResponse extends ApiErrorResponse {
   ok?: boolean;
@@ -22,22 +21,19 @@ function rememberSync(uid: string) {
   writeLocalStorage(`${PROFILE_SYNC_KEY_PREFIX}${uid}`, String(Date.now()));
 }
 
-export async function ensureBackendProfile(user: User) {
-  if (!hasApiGatewayConfig()) return;
-  const turnstileToken = takePendingTurnstileToken();
-  if (wasRecentlySynced(user.uid)) return;
+export type TurnstileTokenRequester = (action: string) => Promise<string | null>;
 
-  const token = await withRequestTimeout(
-    () => user.getIdTokenResult(),
-    { label: 'auth.backendLoginInitialization' },
-  );
-
+async function syncBackendProfile(
+  user: User,
+  firebaseToken: string,
+  turnstileToken?: string | null,
+) {
   const response = await withRequestTimeout(
     async (signal) => fetch(apiGatewayUrl('/v1/auth/sync'), {
       method: 'POST',
       body: JSON.stringify({ email: user.email }),
       headers: {
-        ...(await backendSecurityHeaders(token.token)),
+        ...(await backendSecurityHeaders(firebaseToken)),
         ...(turnstileToken ? { 'X-Turnstile-Token': turnstileToken } : {}),
         'Content-Type': 'application/json',
       },
@@ -51,9 +47,43 @@ export async function ensureBackendProfile(user: User) {
   } catch {
     // Use the HTTP fallback below.
   }
+  return { data, response };
+}
 
-  if (!response.ok || data?.ok !== true) {
-    throw new ApiRequestError(data ?? { error: { code: 'upstream-invalid-response' } });
+function syncRequestError(data: SyncUserResponse | null) {
+  return new ApiRequestError(data ?? { error: { code: 'upstream-invalid-response' } });
+}
+
+export async function ensureBackendProfile(
+  user: User,
+  requestTurnstileToken?: TurnstileTokenRequester,
+) {
+  if (!hasApiGatewayConfig()) return;
+  if (wasRecentlySynced(user.uid)) return;
+
+  const token = await withRequestTimeout(
+    () => user.getIdTokenResult(),
+    { label: 'auth.backendLoginInitialization' },
+  );
+
+  let result = await syncBackendProfile(user, token.token);
+  const firstError = result.data?.error?.code;
+  if ((!result.response.ok || result.data?.ok !== true) && firstError === 'turnstile-failed') {
+    if (!requestTurnstileToken) throw syncRequestError(result.data);
+    let challengeToken: string | null = null;
+    try {
+      challengeToken = await requestTurnstileToken('auth_sync');
+    } catch {
+      throw new ApiRequestError({ error: { code: 'turnstile-failed' } });
+    }
+    if (!challengeToken) {
+      throw new ApiRequestError({ error: { code: 'turnstile-failed' } });
+    }
+    result = await syncBackendProfile(user, token.token, challengeToken);
+  }
+
+  if (!result.response.ok || result.data?.ok !== true) {
+    throw syncRequestError(result.data);
   }
   rememberSync(user.uid);
 }

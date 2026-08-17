@@ -19,7 +19,10 @@ import { sessionDebug } from "@/lib/session-debug";
 import { readLocalStorage, writeLocalStorage } from "@/lib/browser-storage";
 import { clearContentEntityScope } from "@/lib/content-entity-store";
 import { clearViewMemoryScope } from "@/lib/view-memory-cache";
-import { ensureBackendProfile } from "@/services/backend-auth";
+import {
+  ensureBackendProfile,
+  type TurnstileTokenRequester,
+} from "@/services/backend-auth";
 import {
   fetchCurrentUserRole,
   seedSessionAccess,
@@ -167,14 +170,18 @@ async function loadAvatar(photoUrl: string, uid: string) {
   }
 }
 
-async function refreshVerifiedSession(user: User, verificationId: number) {
+async function refreshVerifiedSession(
+  user: User,
+  verificationId: number,
+  requestTurnstileToken: TurnstileTokenRequester,
+) {
   const current = () =>
     verificationId === verificationSerial && state.user?.uid === user.uid;
   try {
     const tokenValidation = await validateUserAgainstToken(user);
     if (!current()) return;
     if (!tokenValidation.ok) return await rejectUser(tokenValidation.reason);
-    await ensureBackendProfile(user);
+    await ensureBackendProfile(user, requestTurnstileToken);
     if (!current()) return;
     try {
       const bootstrap = await fetchSessionBootstrap({
@@ -216,10 +223,11 @@ async function refreshVerifiedSession(user: User, verificationId: number) {
     if (!current()) return;
     sessionDebug("session verification failed", error);
     patch({
-      error: error instanceof ApiRequestError
-        && (error.code === "app-check-failed" || error.code === "turnstile-failed")
+      error: error instanceof ApiRequestError && error.code === "app-check-failed"
         ? "auth.appCheckFailed"
-        : "auth.initializationFailed",
+        : error instanceof ApiRequestError && error.code === "turnstile-failed"
+          ? "auth.securityCheckFailed"
+          : "auth.initializationFailed",
     });
   } finally {
     if (current()) {
@@ -229,7 +237,7 @@ async function refreshVerifiedSession(user: User, verificationId: number) {
   }
 }
 
-function acceptUser(user: User) {
+function acceptUser(user: User, requestTurnstileToken: TurnstileTokenRequester) {
   const verificationId = ++verificationSerial;
   setContentCacheScope(user.uid);
   clearContentReadMemoryCache();
@@ -249,10 +257,10 @@ function acceptUser(user: User) {
     userRole: "user",
   });
   if (user.photoURL) void loadAvatar(user.photoURL, user.uid);
-  void refreshVerifiedSession(user, verificationId);
+  void refreshVerifiedSession(user, verificationId, requestTurnstileToken);
 }
 
-export function initializeSession() {
+export function initializeSession(requestTurnstileToken: TurnstileTokenRequester) {
   if (booted || typeof window === "undefined") return;
   booted = true;
   if (!auth) {
@@ -286,7 +294,7 @@ export function initializeSession() {
         patch({ appReady: true, initialized: true, loading: false });
         return;
       }
-      acceptUser(user);
+      acceptUser(user, requestTurnstileToken);
     },
     (error) => {
       sessionDebug("auth observer failed", error);
@@ -308,12 +316,12 @@ export function initializeSession() {
 }
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  useEffect(() => initializeSession(), []);
+  const { requestToken } = useTurnstile();
+  useEffect(() => initializeSession(requestToken), [requestToken]);
   return children;
 }
 
 export function useSession() {
-  const { requestToken } = useTurnstile();
   const snapshot = useSyncExternalStore(
     subscribe,
     () => state,
@@ -349,14 +357,10 @@ export function useSession() {
   const login = useCallback(
     async (options?: { selectAccount?: boolean }) => {
       patch({ error: "", loading: true });
-      const turnstilePromise = requestToken("auth_sync").catch(() => null);
-      const error = await loginWithGoogle({
-        ...options,
-        turnstileToken: turnstilePromise,
-      });
+      const error = await loginWithGoogle(options);
       patch({ error, loading: false });
     },
-    [requestToken],
+    [],
   );
 
   const logout = useCallback(async () => {

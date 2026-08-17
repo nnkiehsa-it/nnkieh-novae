@@ -1,15 +1,25 @@
 "use client";
 
 import Script from "next/script";
+import { ShieldCheck } from "lucide-react";
 import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
   type ReactNode,
 } from "react";
+import { t } from "@/i18n";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const siteKey = String(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "").trim();
 const TOKEN_TIMEOUT_MS = 60_000;
@@ -21,13 +31,16 @@ interface TurnstileApi {
     container: HTMLElement,
     options: {
       action: string;
-      appearance: "interaction-only";
-      "error-callback": () => void;
+      appearance: "always";
+      "error-callback": (errorCode?: string) => void;
       "expired-callback": () => void;
+      "timeout-callback": () => void;
+      "unsupported-callback": () => void;
       execution: "execute";
       callback: (token: string) => void;
       sitekey: string;
-      size: "invisible";
+      size: "normal";
+      theme: "auto";
     },
   ) => string;
 }
@@ -42,6 +55,12 @@ interface TurnstileContextValue {
   requestToken: (action: string) => Promise<string | null>;
 }
 
+interface PendingChallenge {
+  action: string;
+  reject: (error: Error) => void;
+  resolve: (token: string) => void;
+}
+
 const TurnstileContext = createContext<TurnstileContextValue>({
   requestToken: async () => null,
 });
@@ -54,6 +73,8 @@ export function TurnstileProvider({
   nonce?: string;
 }) {
   const [ready, setReady] = useState(false);
+  const [challenge, setChallenge] = useState<PendingChallenge | null>(null);
+  const widgetHostRef = useRef<HTMLDivElement | null>(null);
   const waiters = useRef<Array<{
     reject: (error: Error) => void;
     resolve: () => void;
@@ -89,47 +110,55 @@ export function TurnstileProvider({
     });
   }, [ready]);
 
+  useEffect(() => {
+    if (!challenge) return;
+    const turnstile = window.turnstile;
+    const container = widgetHostRef.current;
+    if (!turnstile || !container) return;
+
+    let widgetId = "";
+    let settled = false;
+    const finish = (callback: () => void) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      if (widgetId) turnstile.remove?.(widgetId);
+      setChallenge((current) => current === challenge ? null : current);
+      callback();
+    };
+    const timeout = window.setTimeout(() => {
+      finish(() => challenge.reject(new Error("turnstile-timeout")));
+    }, TOKEN_TIMEOUT_MS);
+
+    widgetId = turnstile.render(container, {
+      action: challenge.action,
+      appearance: "always",
+      "error-callback": () => finish(() => challenge.reject(new Error("turnstile-failed"))),
+      "expired-callback": () => finish(() => challenge.reject(new Error("turnstile-expired"))),
+      "timeout-callback": () => finish(() => challenge.reject(new Error("turnstile-timeout"))),
+      "unsupported-callback": () => finish(() => challenge.reject(new Error("turnstile-unsupported"))),
+      execution: "execute",
+      callback: (token) => finish(() => challenge.resolve(token)),
+      sitekey: siteKey,
+      size: "normal",
+      theme: "auto",
+    });
+    turnstile.execute(widgetId);
+
+    return () => {
+      window.clearTimeout(timeout);
+      if (!settled && widgetId) turnstile.remove?.(widgetId);
+    };
+  }, [challenge]);
+
   const requestToken = useCallback(async (action: string) => {
     if (!siteKey) return null;
     if (pendingRequest.current) return pendingRequest.current;
     const request = (async () => {
       await waitUntilReady();
-      const turnstile = window.turnstile;
-      if (!turnstile) throw new Error("turnstile-unavailable");
-      const container = document.createElement("div");
-      container.setAttribute("aria-hidden", "true");
-      container.style.height = "1px";
-      container.style.left = "-10000px";
-      container.style.overflow = "hidden";
-      container.style.position = "fixed";
-      container.style.top = "0";
-      container.style.width = "1px";
-      document.body.appendChild(container);
-
+      if (!window.turnstile) throw new Error("turnstile-unavailable");
       return await new Promise<string>((resolve, reject) => {
-        let widgetId = "";
-        const timeout = window.setTimeout(() => {
-          if (widgetId) turnstile.remove?.(widgetId);
-          container.remove();
-          reject(new Error("turnstile-timeout"));
-        }, TOKEN_TIMEOUT_MS);
-        const finish = (callback: () => void) => {
-          window.clearTimeout(timeout);
-          if (widgetId) turnstile.remove?.(widgetId);
-          container.remove();
-          callback();
-        };
-        widgetId = turnstile.render(container, {
-          action,
-          appearance: "interaction-only",
-          "error-callback": () => finish(() => reject(new Error("turnstile-failed"))),
-          "expired-callback": () => finish(() => reject(new Error("turnstile-expired"))),
-          execution: "execute",
-          callback: (token) => finish(() => resolve(token)),
-          sitekey: siteKey,
-          size: "invisible",
-        });
-        turnstile.execute(widgetId);
+        setChallenge({ action, reject, resolve });
       });
     })();
     pendingRequest.current = request;
@@ -153,6 +182,30 @@ export function TurnstileProvider({
         />
       ) : null}
       {children}
+      <Dialog open={challenge !== null} onOpenChange={() => undefined}>
+        <DialogContent
+          className="max-w-sm gap-5"
+          showCloseButton={false}
+          onEscapeKeyDown={(event) => event.preventDefault()}
+          onPointerDownOutside={(event) => event.preventDefault()}
+        >
+          <DialogHeader className="items-center text-center sm:items-center sm:text-center">
+            <div className="mb-1 flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <ShieldCheck className="size-5" aria-hidden />
+            </div>
+            <DialogTitle>{t("auth.loginVerification")}</DialogTitle>
+            <DialogDescription>
+              {t("auth.signingIn")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mx-auto w-full overflow-hidden rounded-xl border bg-background/70 p-3 shadow-sm">
+            <div
+              ref={widgetHostRef}
+              className="mx-auto min-h-[65px] w-[300px] max-w-full"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </TurnstileContext.Provider>
   );
 }
