@@ -110,10 +110,10 @@ async function uploadToCloudinary(file: File, session: ImageUploadSession) {
   if (session.type) body.set('type', session.type);
   if (session.uploadPreset) body.set('upload_preset', session.uploadPreset);
 
-  return await withRequestTimeout(async () => {
+  return await withRequestTimeout(async (signal) => {
     const response = await fetch(
       `https://api.cloudinary.com/v1_1/${session.cloudName}/image/upload`,
-      { method: 'POST', body },
+      { method: 'POST', body, signal },
     );
     if (!response.ok) throw await createCloudinaryUploadError(response);
     return await response.json() as CloudinaryUploadResponse;

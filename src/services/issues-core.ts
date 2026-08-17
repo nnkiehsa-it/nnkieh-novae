@@ -49,6 +49,7 @@ export async function fetchIssueRecordById(
     return issue;
   } catch (error) {
     if (error instanceof RequestFailure) throw error;
+    if (!isContentUnavailableError(error)) throw toReadableBackendError(error);
     throw new Error('issue.thisProposalCannotBeFound', { cause: error });
   } });
 }
