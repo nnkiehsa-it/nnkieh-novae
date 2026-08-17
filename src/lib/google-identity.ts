@@ -116,7 +116,8 @@ function triggerTokenRequest(
           finish(() => reject(new GoogleIdentityError(mapTokenResponseError(response.error))));
           return;
         }
-        finish(() => resolve(response.access_token));
+        const accessToken = response.access_token;
+        finish(() => resolve(accessToken));
       },
       error_callback: (error) => {
         finish(() => reject(new GoogleIdentityError(mapClientError(error?.type))));
