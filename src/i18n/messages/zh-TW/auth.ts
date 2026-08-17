@@ -43,7 +43,7 @@ const messages = {
   'auth.pwaIosInstallDescription': '從 Safari 加入主畫面後，可像一般 App 一樣開啟，並減少瀏覽器介面干擾。',
   'auth.pwaAndroidInstallTitle': '將 Novae 安裝到主畫面',
   'auth.pwaAndroidInstallDescription': '安裝後可直接從主畫面開啟；若瀏覽器支援，會使用系統原生安裝提示。',
-  'auth.pwaNotificationsNote': '若要穩定使用通知，請完成安裝後再從主畫面開啟。',
+  'auth.pwaNotificationsNote': '手機通知功能需要先安裝 Novae，並從主畫面開啟後才能啟用。',
   'auth.pwaStepOpenMenu': '打開目前 App 或瀏覽器的選單。',
   'auth.pwaStepOpenBrowser': '選擇「以瀏覽器開啟」、「在 Safari 中開啟」或系統預設瀏覽器。',
   'auth.pwaStepCopyUrl': '複製目前 Novae 網址。',
@@ -57,6 +57,10 @@ const messages = {
   'auth.pwaCopyUrl': '複製網址',
   'auth.pwaOpenBrowser': '用瀏覽器開啟',
   'auth.pwaLater': '稍後再說',
+  'auth.pwaDismissConfirmTitle': '真的要稍後再安裝嗎？',
+  'auth.pwaDismissConfirmDescription': 'Novae 的手機通知功能需要安裝 PWA 才能啟用。現在略過的話，你將暫時無法開啟通知；之後仍可再回來安裝。',
+  'auth.pwaDismissGoBack': '返回安裝',
+  'auth.pwaDismissConfirm': '仍然稍後',
 } as const;
 
 export default messages;

@@ -11,6 +11,7 @@ import {
   detectIosBrowserGuide,
   isAndroidDevice,
   isIosSafari,
+  isMobilePwaRequiredPlatform,
   isStandaloneMode,
   isTouchPrimaryDevice,
   type AppInstallPromptReason,
@@ -77,6 +78,7 @@ export function useAppInstallPrompt() {
       rememberDismissedPrompt();
     };
     const handleInstallPromptRequest = (event: Event) => {
+      if (!isMobilePwaRequiredPlatform(userAgent, navigator.platform, navigator.maxTouchPoints)) return;
       const requestedReason = (event as CustomEvent<{ reason?: AppInstallPromptReason }>).detail?.reason;
       setReason(requestedReason === "notifications" ? "notifications" : "default");
       setDismissed(false);
@@ -93,7 +95,12 @@ export function useAppInstallPrompt() {
   }, []);
 
   const mode = useMemo<AppInstallPromptMode | null>(() => {
-    if (!hydrated || (dismissed && reason === "default") || isStandaloneMode()) return null;
+    if (
+      !hydrated
+      || (dismissed && reason === "default")
+      || isStandaloneMode()
+      || !isMobilePwaRequiredPlatform(navigator.userAgent, navigator.platform, navigator.maxTouchPoints)
+    ) return null;
     if (iosBrowserGuide) return "ios-open-safari";
     if (browserName) return "in-app-browser";
     if (isAndroid || (deferredPrompt && isTouchPrimaryDevice())) return "native-install";

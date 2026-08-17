@@ -43,7 +43,7 @@ const messages = {
   'auth.pwaIosInstallDescription': 'Add Novae to the Home Screen from Safari for an app-like launch experience with less browser UI.',
   'auth.pwaAndroidInstallTitle': 'Install Novae on your Home Screen',
   'auth.pwaAndroidInstallDescription': 'Launch Novae directly from the Home Screen. When supported, the browser-native install prompt will be used.',
-  'auth.pwaNotificationsNote': 'For reliable notifications, finish installing and reopen Novae from the Home Screen.',
+  'auth.pwaNotificationsNote': 'Mobile notifications require Novae to be installed and opened from the Home Screen before they can be enabled.',
   'auth.pwaStepOpenMenu': 'Open the current app or browser menu.',
   'auth.pwaStepOpenBrowser': 'Choose Open in Browser, Open in Safari, or your system default browser.',
   'auth.pwaStepCopyUrl': 'Copy the current Novae URL.',
@@ -57,6 +57,10 @@ const messages = {
   'auth.pwaCopyUrl': 'Copy URL',
   'auth.pwaOpenBrowser': 'Open in browser',
   'auth.pwaLater': 'Not now',
+  'auth.pwaDismissConfirmTitle': 'Install Novae later?',
+  'auth.pwaDismissConfirmDescription': 'Mobile notifications require the Novae PWA to be installed. If you skip installation now, notifications will remain unavailable until you install it later.',
+  'auth.pwaDismissGoBack': 'Back to install',
+  'auth.pwaDismissConfirm': 'Still not now',
 } as const;
 
 export default messages;

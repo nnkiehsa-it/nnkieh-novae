@@ -28,7 +28,7 @@ export function isAndroidDevice(userAgent: string) {
   return /Android/i.test(userAgent);
 }
 
-function isMobilePwaRequiredPlatform(userAgent: string, platform: string, maxTouchPoints: number) {
+export function isMobilePwaRequiredPlatform(userAgent: string, platform: string, maxTouchPoints: number) {
   return isAndroidDevice(userAgent) || isIosDevice(userAgent, platform, maxTouchPoints);
 }
 

@@ -1,0 +1,227 @@
+--- a/src/lib/pwa-install.ts
++++ b/src/lib/pwa-install.ts
+@@ -28,7 +28,7 @@
+   return /Android/i.test(userAgent);
+ }
+ 
+-function isMobilePwaRequiredPlatform(userAgent: string, platform: string, maxTouchPoints: number) {
++export function isMobilePwaRequiredPlatform(userAgent: string, platform: string, maxTouchPoints: number) {
+   return isAndroidDevice(userAgent) || isIosDevice(userAgent, platform, maxTouchPoints);
+ }
+ 
+--- a/src/hooks/use-app-install-prompt.ts
++++ b/src/hooks/use-app-install-prompt.ts
+@@ -11,6 +11,7 @@
+   detectIosBrowserGuide,
+   isAndroidDevice,
+   isIosSafari,
++  isMobilePwaRequiredPlatform,
+   isStandaloneMode,
+   isTouchPrimaryDevice,
+   type AppInstallPromptReason,
+@@ -77,6 +78,7 @@
+       rememberDismissedPrompt();
+     };
+     const handleInstallPromptRequest = (event: Event) => {
++      if (!isMobilePwaRequiredPlatform(userAgent, navigator.platform, navigator.maxTouchPoints)) return;
+       const requestedReason = (event as CustomEvent<{ reason?: AppInstallPromptReason }>).detail?.reason;
+       setReason(requestedReason === "notifications" ? "notifications" : "default");
+       setDismissed(false);
+@@ -93,7 +95,12 @@
+   }, []);
+ 
+   const mode = useMemo<AppInstallPromptMode | null>(() => {
+-    if (!hydrated || (dismissed && reason === "default") || isStandaloneMode()) return null;
++    if (
++      !hydrated
++      || (dismissed && reason === "default")
++      || isStandaloneMode()
++      || !isMobilePwaRequiredPlatform(navigator.userAgent, navigator.platform, navigator.maxTouchPoints)
++    ) return null;
+     if (iosBrowserGuide) return "ios-open-safari";
+     if (browserName) return "in-app-browser";
+     if (isAndroid || (deferredPrompt && isTouchPrimaryDevice())) return "native-install";
+--- a/src/components/app-install-prompt.tsx
++++ b/src/components/app-install-prompt.tsx
+@@ -1,5 +1,6 @@
+ "use client";
+ 
++import { useState } from "react";
+ import { Copy, Download, ExternalLink, Share2, TriangleAlert } from "lucide-react";
+ import { useAppInstallPrompt } from "@/hooks/use-app-install-prompt";
+ import { useI18n } from "@/i18n";
+@@ -17,6 +18,7 @@
+   const prompt = useAppInstallPrompt();
+   const { t } = useI18n();
+   const mode = prompt.mode;
++  const [confirmingDismiss, setConfirmingDismiss] = useState(false);
+ 
+   if (!mode) return null;
+ 
+@@ -91,55 +93,81 @@
+       ? t("auth.pwaOpenBrowser")
+       : t("auth.pwaCopyUrl");
+ 
++  const handleDismiss = () => {
++    setConfirmingDismiss(false);
++    prompt.dismiss();
++  };
++
++  const dialogTitle = confirmingDismiss ? t("auth.pwaDismissConfirmTitle") : title;
++  const dialogDescription = confirmingDismiss
++    ? t("auth.pwaDismissConfirmDescription")
++    : `${description}${notificationsNote ? ` ${notificationsNote}` : ""}`;
++  const dialogIcon = confirmingDismiss
++    ? <TriangleAlert className="size-5" aria-hidden />
++    : icon;
++
+   return (
+-    <Dialog
+-      open={prompt.open}
+-      onOpenChange={(open) => {
+-        if (!open) prompt.dismiss();
+-      }}
+-    >
+-      <DialogContent>
++    <Dialog open={prompt.open}>
++      <DialogContent showCloseButton={false}>
+         <DialogHeader>
+           <div className="mb-1 flex size-10 items-center justify-center rounded-xl bg-accent text-foreground">
+-            {icon}
++            {dialogIcon}
+           </div>
+-          <DialogTitle>{title}</DialogTitle>
+-          <DialogDescription>
+-            {description}{notificationsNote ? ` ${notificationsNote}` : ""}
+-          </DialogDescription>
++          <DialogTitle>{dialogTitle}</DialogTitle>
++          <DialogDescription>{dialogDescription}</DialogDescription>
+         </DialogHeader>
+ 
+-        <ol className="space-y-3">
+-          {steps.map((step, index) => (
+-            <li className="flex gap-3 text-sm leading-6" key={step}>
+-              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold">
+-                {index + 1}
+-              </span>
+-              <span>{step}</span>
+-            </li>
+-          ))}
+-        </ol>
++        {!confirmingDismiss ? (
++          <ol className="space-y-3">
++            {steps.map((step, index) => (
++              <li className="flex gap-3 text-sm leading-6" key={step}>
++                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold">
++                  {index + 1}
++                </span>
++                <span>{step}</span>
++              </li>
++            ))}
++          </ol>
++        ) : null}
+ 
+         <DialogFooter>
+-          <Button variant="outline" onClick={prompt.dismiss} disabled={prompt.isPrompting}>
+-            {t("auth.pwaLater")}
+-          </Button>
+-          {mode === "in-app-browser" && prompt.isAndroid ? (
+-            <Button
+-              variant="outline"
+-              onClick={() => void prompt.copyInstallUrl()}
+-              disabled={prompt.isPrompting}
+-            >
+-              <Copy className="size-4" />
+-              {t("auth.pwaCopyUrl")}
+-            </Button>
+-          ) : null}
+-          {hasPrimaryAction ? (
+-            <Button onClick={() => void handlePrimaryAction()} disabled={prompt.isPrompting}>
+-              {mode === "native-install" ? <Download className="size-4" /> : <ExternalLink className="size-4" />}
+-              {primaryLabel}
+-            </Button>
+-          ) : null}
++          {confirmingDismiss ? (
++            <>
++              <Button variant="ghost" onClick={handleDismiss} disabled={prompt.isPrompting}>
++                {t("auth.pwaDismissConfirm")}
++              </Button>
++              <Button onClick={() => setConfirmingDismiss(false)} disabled={prompt.isPrompting}>
++                <Download className="size-4" />
++                {t("auth.pwaDismissGoBack")}
++              </Button>
++            </>
++          ) : (
++            <>
++              <Button
++                variant="outline"
++                onClick={() => setConfirmingDismiss(true)}
++                disabled={prompt.isPrompting}
++              >
++                {t("auth.pwaLater")}
++              </Button>
++              {mode === "in-app-browser" && prompt.isAndroid ? (
++                <Button
++                  variant="outline"
++                  onClick={() => void prompt.copyInstallUrl()}
++                  disabled={prompt.isPrompting}
++                >
++                  <Copy className="size-4" />
++                  {t("auth.pwaCopyUrl")}
++                </Button>
++              ) : null}
++              {hasPrimaryAction ? (
++                <Button onClick={() => void handlePrimaryAction()} disabled={prompt.isPrompting}>
++                  {mode === "native-install" ? <Download className="size-4" /> : <ExternalLink className="size-4" />}
++                  {primaryLabel}
++                </Button>
++              ) : null}
++            </>
++          )}
+         </DialogFooter>
+       </DialogContent>
+     </Dialog>
+--- a/src/i18n/messages/zh-TW/auth.ts
++++ b/src/i18n/messages/zh-TW/auth.ts
+@@ -43,7 +43,7 @@
+   'auth.pwaIosInstallDescription': '從 Safari 加入主畫面後，可像一般 App 一樣開啟，並減少瀏覽器介面干擾。',
+   'auth.pwaAndroidInstallTitle': '將 Novae 安裝到主畫面',
+   'auth.pwaAndroidInstallDescription': '安裝後可直接從主畫面開啟；若瀏覽器支援，會使用系統原生安裝提示。',
+-  'auth.pwaNotificationsNote': '若要穩定使用通知，請完成安裝後再從主畫面開啟。',
++  'auth.pwaNotificationsNote': '手機通知功能需要先安裝 Novae，並從主畫面開啟後才能啟用。',
+   'auth.pwaStepOpenMenu': '打開目前 App 或瀏覽器的選單。',
+   'auth.pwaStepOpenBrowser': '選擇「以瀏覽器開啟」、「在 Safari 中開啟」或系統預設瀏覽器。',
+   'auth.pwaStepCopyUrl': '複製目前 Novae 網址。',
+@@ -57,6 +57,10 @@
+   'auth.pwaCopyUrl': '複製網址',
+   'auth.pwaOpenBrowser': '用瀏覽器開啟',
+   'auth.pwaLater': '稍後再說',
++  'auth.pwaDismissConfirmTitle': '真的要稍後再安裝嗎？',
++  'auth.pwaDismissConfirmDescription': 'Novae 的手機通知功能需要安裝 PWA 才能啟用。現在略過的話，你將暫時無法開啟通知；之後仍可再回來安裝。',
++  'auth.pwaDismissGoBack': '返回安裝',
++  'auth.pwaDismissConfirm': '仍然稍後',
+ } as const;
+ 
+ export default messages;
+--- a/src/i18n/messages/en/auth.ts
++++ b/src/i18n/messages/en/auth.ts
+@@ -43,7 +43,7 @@
+   'auth.pwaIosInstallDescription': 'Add Novae to the Home Screen from Safari for an app-like launch experience with less browser UI.',
+   'auth.pwaAndroidInstallTitle': 'Install Novae on your Home Screen',
+   'auth.pwaAndroidInstallDescription': 'Launch Novae directly from the Home Screen. When supported, the browser-native install prompt will be used.',
+-  'auth.pwaNotificationsNote': 'For reliable notifications, finish installing and reopen Novae from the Home Screen.',
++  'auth.pwaNotificationsNote': 'Mobile notifications require Novae to be installed and opened from the Home Screen before they can be enabled.',
+   'auth.pwaStepOpenMenu': 'Open the current app or browser menu.',
+   'auth.pwaStepOpenBrowser': 'Choose Open in Browser, Open in Safari, or your system default browser.',
+   'auth.pwaStepCopyUrl': 'Copy the current Novae URL.',
+@@ -57,6 +57,10 @@
+   'auth.pwaCopyUrl': 'Copy URL',
+   'auth.pwaOpenBrowser': 'Open in browser',
+   'auth.pwaLater': 'Not now',
++  'auth.pwaDismissConfirmTitle': 'Install Novae later?',
++  'auth.pwaDismissConfirmDescription': 'Mobile notifications require the Novae PWA to be installed. If you skip installation now, notifications will remain unavailable until you install it later.',
++  'auth.pwaDismissGoBack': 'Back to install',
++  'auth.pwaDismissConfirm': 'Still not now',
+ } as const;
+ 
+ export default messages;
