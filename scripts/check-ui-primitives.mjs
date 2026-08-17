@@ -1,5 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
+import { findOrphanCssClassSelectors } from "./css-orphan-selectors.mjs";
 
 const root = process.cwd();
 const sourceRoot = path.join(root, "src");
@@ -17,9 +18,17 @@ async function listFiles(directory) {
 }
 
 const files = await listFiles(sourceRoot);
+const productSources = [];
+const stylesheets = [];
 for (const file of files) {
   const source = await readFile(file, "utf8");
   const relativePath = path.relative(root, file);
+
+  if (file.endsWith(".css")) {
+    stylesheets.push({ path: relativePath.replaceAll(path.sep, "/"), source });
+  } else {
+    productSources.push(source);
+  }
 
   if (/\btransition-all\b/u.test(source)) errors.push(`${relativePath} uses transition-all; name the state-changing properties`);
   if (/shadow-\[(?!var\(--shadow-(?:control|card|floating)\))/u.test(source)) errors.push(`${relativePath} defines an arbitrary shadow outside the elevation tokens`);
@@ -59,6 +68,12 @@ for (const file of files) {
     const lineCount = source.split(/\r?\n/u).length;
     if (lineCount > 300) errors.push(`${relativePath} has ${lineCount} lines; split domain presentation into focused components`);
   }
+}
+
+for (const orphan of findOrphanCssClassSelectors(stylesheets, productSources)) {
+  errors.push(
+    `${orphan.locations.join(", ")} defines orphan CSS selector .${orphan.className}`,
+  );
 }
 
 const globals = await readFile(path.join(sourceRoot, "app/globals.css"), "utf8");

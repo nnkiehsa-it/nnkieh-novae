@@ -35,23 +35,21 @@ export async function withRequestTimeout<T>(
   const label = options.label ?? 'common.request';
   const controller = new AbortController();
   const timeoutMs = options.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
-  let timedOut = false;
 
   const abortFromParent = () => controller.abort(options.signal?.reason);
-  if (options.signal?.aborted) abortFromParent();
+  if (options.signal?.aborted) throw abortedFailure(options.signal, label);
   options.signal?.addEventListener('abort', abortFromParent, { once: true });
 
   const timeoutId = window.setTimeout(() => {
-    timedOut = true;
     controller.abort(new RequestFailure(t('request.timeout', { label: t(label) }), 'timeout'));
   }, timeoutMs);
 
   const aborted = new Promise<never>((_, reject) => {
-    controller.signal.addEventListener('abort', () => reject(
-      timedOut
-        ? new RequestFailure(t('request.timeout', { label: t(label) }), 'timeout')
-        : abortedFailure(controller.signal, label),
-    ), { once: true });
+    controller.signal.addEventListener(
+      'abort',
+      () => reject(abortedFailure(controller.signal, label)),
+      { once: true },
+    );
   });
 
   try {

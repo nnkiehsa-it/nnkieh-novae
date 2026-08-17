@@ -17,7 +17,7 @@ Novae keeps its existing information architecture and product flows, but present
 
 ## Components
 
-- shadcn/ui composition and Radix accessibility behavior remain the base for buttons, inputs, cards, dialogs, sheets, dropdowns, tabs, switches, selects, tooltips, alerts, and toasts.
+- shadcn/ui composition and Radix accessibility behavior remain the base for buttons, inputs, cards, dialogs, dropdowns, segmented tabs, switches, selects, tooltips, alerts, and toasts.
 - Primary actions use a dense, high-contrast treatment. Common buttons are 36px tall, compact buttons are 32px, and the visible control is not enlarged to a blanket 44px touch target. Secondary and ghost variants preserve geometry and focus affordances.
 - Hover follows interaction semantics: controls and clickable rows change by one restrained surface or text step, directional icons may shift 1–2px, and non-interactive surfaces remain visually still.
 - Cards use soft surface contrast, a hairline border, and restrained elevation. Only clickable cards receive hover feedback: a spatially stable 1% light-mode or 0.5% dark-mode surface tint, while directional icons may move independently.
