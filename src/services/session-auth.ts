@@ -15,7 +15,7 @@ import { withRequestTimeout } from "@/lib/request";
 import { sessionDebug } from "@/lib/session-debug";
 import { setPendingTurnstileToken } from "@/lib/turnstile";
 import { ensureFirebaseAppCheck } from "@/lib/firebase-app-check";
-import { isIosStandalonePwa } from "@/lib/pwa-install";
+
 
 const LOGIN_ATTEMPT_KEY = "novae-login-attempts";
 const LOGIN_ATTEMPT_WINDOW_MS = 10 * 60 * 1_000;
@@ -109,9 +109,9 @@ export async function loginWithGoogle(
     turnstileToken?: string | null | Promise<string | null>;
   } = {},
 ) {
-  if (isIosStandalonePwa()) return "auth.systemBrowserRequired";
   if (!claimLoginAttempt())
     return "auth.theLoginOperationIsTooFrequentPleaseTryAgainLater";
+
   if (!auth) return "auth.serviceUnavailable";
   const firebaseAuth = auth;
   try {
