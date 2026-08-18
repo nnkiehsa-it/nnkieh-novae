@@ -109,7 +109,7 @@ export default function NotificationsPage() {
                 </SkeletonReveal>
                 {!notification.is_read ? (
                   <span
-                    className="t-notification-badge mt-1.5 size-2 shrink-0 rounded-full bg-blue-500"
+                    className="t-notification-badge mt-1.5 size-2 shrink-0 rounded-full bg-[var(--notification-accent)]"
                     data-open="true"
                   />
                 ) : null}

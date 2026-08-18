@@ -6,6 +6,7 @@ import type { AppLocale } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
+import { AccentThemePicker } from "@/components/settings/accent-theme-picker";
 
 export function AppearanceInstallCards({
   canInstall,
@@ -59,6 +60,7 @@ export function AppearanceInstallCards({
               value={theme || "system"}
             />
           </div>
+          <AccentThemePicker resolvedTheme={resolvedTheme} />
           <div>
             <p className="mb-2 text-sm text-muted-foreground">{translate('ui.settings.language')}</p>
             <LiquidTabs

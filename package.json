@@ -49,6 +49,8 @@
     "db:stop": "node scripts/database.mjs stop-local"
   },
   "dependencies": {
+    "@heroui/react": "^3.2.4",
+    "@heroui/styles": "^3.2.4",
     "@jsquash/webp": "1.5.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

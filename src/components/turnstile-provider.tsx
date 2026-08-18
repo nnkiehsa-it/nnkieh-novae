@@ -190,7 +190,7 @@ export function TurnstileProvider({
           onPointerDownOutside={(event) => event.preventDefault()}
         >
           <DialogHeader className="items-center text-center sm:items-center sm:text-center">
-            <div className="mb-1 flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <div className="mb-1 flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-[var(--tint-content)]">
               <ShieldCheck className="size-5" aria-hidden />
             </div>
             <DialogTitle>{t("auth.loginVerification")}</DialogTitle>

@@ -32,12 +32,18 @@
   --resize-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --tabs-dur: 250ms;
   --tabs-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --like-accent: #f40051;
   --tabs-text-muted: var(--muted-foreground);
   --tabs-text-active: var(--foreground);
   --tabs-bar-bg: var(--muted);
   --tabs-pill-bg: var(--card);
   --shimmer-base: #7c7c7c;
   --shimmer-highlight: #0d0d0d;
+}
+
+:root[data-accent-theme="custom"] {
+  --tabs-text-active: var(--tint-surface-foreground);
+  --tabs-pill-bg: var(--tint-surface);
 }
 
 .dark {
@@ -506,30 +512,19 @@
   transition: color var(--tabs-dur) var(--tabs-ease);
 }
 .t-tab[aria-selected="true"],
-.t-tab[data-state="active"] {
+.t-tab[data-state="active"],
+.t-tab[data-displayed-active="true"] {
   color: var(--tabs-text-active);
 }
 @media (hover: hover) and (pointer: fine) {
-  .t-tab:not([aria-selected="true"]):hover {
+  .t-tab:not([aria-selected="true"]):not([data-displayed-active="true"]):hover {
     color: var(--tabs-text-active);
   }
 }
 
 .t-tabs-pill {
-  position: absolute;
-  top: 3px;
-  left: 0;
-  height: calc(100% - 6px);
-  width: 0;
   background: var(--tabs-pill-bg);
   box-shadow: var(--shadow-control);
-  border-radius: 48px;
-  transform: translateX(0);
-  transition:
-    transform var(--tabs-dur) var(--tabs-ease),
-    width var(--tabs-dur) var(--tabs-ease);
-  will-change: transform, width;
-  z-index: 0;
   pointer-events: none;
 }
 .t-tab-label {
@@ -781,7 +776,7 @@
   height: 1rem;
 }
 .t-like[data-accent="heart"][data-liked="true"] .t-like-icon {
-  color: #f40051;
+  color: var(--like-accent);
 }
 .t-like[data-accent="heart"][data-celebrating] .t-reaction-icon {
   animation: t-like-pop var(--motion-medium) var(--ease-emphasized) both;
@@ -840,7 +835,7 @@
   animation: t-like-burst var(--pdur) var(--ease-emphasized) var(--pdelay) both;
 }
 .t-like[data-accent="heart"] .t-like-particles i {
-  color: #f40051;
+  color: var(--like-accent);
 }
 .t-like[data-accent="hand"] .t-like-particles {
   transform: translate(1px, -5px);
@@ -913,12 +908,12 @@
 }
 @media (hover: hover) and (pointer: fine) {
   .t-card:hover {
-    background-color: color-mix(in srgb, var(--card) 99%, #000 1%);
+    background-color: color-mix(in srgb, var(--card) 99%, var(--foreground) 1%);
     border-color: color-mix(in srgb, var(--border) 60%, var(--foreground) 10%);
     transform: translateY(-1px);
   }
   .dark .t-card:hover {
-    background-color: color-mix(in srgb, var(--card) 99.5%, #fff 0.5%);
+    background-color: color-mix(in srgb, var(--card) 99.5%, var(--foreground) 0.5%);
     border-color: color-mix(in srgb, var(--border) 60%, var(--foreground) 12%);
     transform: translateY(-1px);
   }

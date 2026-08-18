@@ -1,21 +1,28 @@
 import * as React from "react";
+import { Card as HeroCard } from "@heroui/react";
 
 import { cn } from "@/lib/utils";
 
 export function getCardClassName(className?: string) {
   return cn(
-    "t-resize flex flex-col gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow-[var(--shadow-card)]",
+    "t-resize flex flex-col gap-6 rounded-xl border bg-card px-0 py-6 text-card-foreground shadow-[var(--shadow-card)]",
     className,
   );
 }
 
-function Card({ className, ...props }: React.ComponentProps<"div">) {
+function Card({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<"div">) {
   return (
-    <div
+    <HeroCard.Root
       data-slot="card"
       className={getCardClassName(className)}
       {...props}
-    />
+    >
+      {children}
+    </HeroCard.Root>
   );
 }
 

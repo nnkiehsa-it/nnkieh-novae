@@ -9,8 +9,13 @@ describe("React frontend design system", () => {
     const navigation = read("src/components/liquid-nav.tsx");
     expect(tabs).toContain("t-tabs-pill");
     expect(tabs).toContain("t-tab");
+    expect(tabs).toContain('import { motion } from "motion/react"');
+    expect(tabs).toContain("layoutId={`liquid-tab-pill-${layoutId}`}");
+    expect(tabs).toContain('type: "spring"');
+    expect(tabs).not.toContain("offsetLeft");
+    expect(tabs).not.toContain("ResizeObserver");
     expect(tabs).not.toContain("data-[state=active]:bg-card");
-    expect(navigation).toContain("bg-secondary text-foreground");
+    expect(navigation).toContain("bg-[var(--nav-active-bg)] text-[var(--nav-active-fg)]");
     expect(navigation).toContain("pendingRoute");
     expect(navigation).toContain("onPointerDown");
     expect(navigation).toContain("onPointerEnter");
