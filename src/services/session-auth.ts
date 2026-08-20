@@ -30,6 +30,7 @@ const googleClientId = String(
 ).trim();
 let lastLoginAttemptAt = 0;
 let loginEntrancePrepared = false;
+const TURNSTILE_SERVER_RETRY_LIMIT = 3;
 
 function loginEntranceVerified() {
   return loginEntrancePrepared;
@@ -41,20 +42,22 @@ export function consumePreparedLoginEntrance() {
   return true;
 }
 
-export async function verifyRestoredSession(options: {
+async function verifyTurnstileEndpoint(options: {
+  action: "auth_login" | "auth_restore";
+  path: "/v1/auth/login-check" | "/v1/auth/session-check";
+  presentation: "dialog" | "inline";
   requestTurnstileToken?: (
     action: string,
     options?: { presentation?: "dialog" | "inline" },
   ) => Promise<string | null>;
-} = {}) {
-  if (authEmulatorUrl || !hasApiGatewayConfig()) return "";
-  try {
-    const token = await options.requestTurnstileToken?.("auth_restore", {
-      presentation: "dialog",
+}) {
+  for (let attempt = 0; attempt < TURNSTILE_SERVER_RETRY_LIMIT; attempt += 1) {
+    const token = await options.requestTurnstileToken?.(options.action, {
+      presentation: options.presentation,
     }) ?? null;
-    if (!token) return "auth.securityCheckFailed";
+    if (!token) return false;
     const response = await withRequestTimeout(
-      (signal) => fetch(apiGatewayUrl("/v1/auth/session-check"), {
+      (signal) => fetch(apiGatewayUrl(options.path), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -65,7 +68,27 @@ export async function verifyRestoredSession(options: {
       }),
       { label: "auth.loginVerification" },
     );
-    return response.ok ? "" : "auth.securityCheckFailed";
+    if (response.ok) return true;
+    if (response.status !== 401) return false;
+  }
+  return false;
+}
+
+export async function verifyRestoredSession(options: {
+  requestTurnstileToken?: (
+    action: string,
+    options?: { presentation?: "dialog" | "inline" },
+  ) => Promise<string | null>;
+} = {}) {
+  if (authEmulatorUrl || !hasApiGatewayConfig()) return "";
+  try {
+    const verified = await verifyTurnstileEndpoint({
+      action: "auth_restore",
+      path: "/v1/auth/session-check",
+      presentation: "dialog",
+      requestTurnstileToken: options.requestTurnstileToken,
+    });
+    return verified ? "" : "auth.securityCheckFailed";
   } catch {
     return "auth.securityCheckFailed";
   }
@@ -90,28 +113,13 @@ export async function prepareGoogleLoginEntrance(options: {
 
   try {
     if (!authEmulatorUrl && hasApiGatewayConfig()) {
-      let turnstileToken: string | null = null;
-      try {
-        turnstileToken = await options.requestTurnstileToken?.("auth_login", {
-          presentation: "inline",
-        }) ?? null;
-      } catch {
-        return "auth.securityCheckFailed";
-      }
-      if (!turnstileToken) return "auth.securityCheckFailed";
-      const verificationResponse = await withRequestTimeout(
-        (signal) => fetch(apiGatewayUrl("/v1/auth/login-check"), {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Turnstile-Token": turnstileToken,
-          },
-          body: "{}",
-          signal,
-        }),
-        { label: "auth.loginVerification" },
-      );
-      if (!verificationResponse.ok) return "auth.securityCheckFailed";
+      const verified = await verifyTurnstileEndpoint({
+        action: "auth_login",
+        path: "/v1/auth/login-check",
+        presentation: "inline",
+        requestTurnstileToken: options.requestTurnstileToken,
+      });
+      if (!verified) return "auth.securityCheckFailed";
     }
     await googleReady;
     loginEntrancePrepared = true;

@@ -22,7 +22,8 @@ import {
 } from "@/components/ui/dialog";
 
 const siteKey = String(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "").trim();
-const TOKEN_TIMEOUT_MS = 60_000;
+const SCRIPT_READY_TIMEOUT_MS = 30_000;
+const CHALLENGE_TIMEOUT_MS = 5 * 60_000;
 
 interface TurnstileApi {
   execute: (widgetId: string) => void;
@@ -34,6 +35,9 @@ interface TurnstileApi {
       appearance: "always";
       "error-callback": (errorCode?: string) => boolean | void;
       "expired-callback": () => void;
+      "refresh-expired": "auto";
+      "refresh-timeout": "manual";
+      retry: "auto";
       "timeout-callback": () => void;
       "unsupported-callback": () => void;
       execution: "execute";
@@ -112,7 +116,7 @@ export function TurnstileProvider({
       const timeout = window.setTimeout(() => {
         waiters.current = waiters.current.filter((entry) => entry !== waiter);
         reject(new Error("turnstile-unavailable"));
-      }, TOKEN_TIMEOUT_MS);
+      }, SCRIPT_READY_TIMEOUT_MS);
       waiters.current.push(waiter);
     });
   }, [ready]);
@@ -144,7 +148,7 @@ export function TurnstileProvider({
     };
     const timeout = window.setTimeout(() => {
       finish(() => challenge.reject(new Error("turnstile-timeout")));
-    }, TOKEN_TIMEOUT_MS);
+    }, CHALLENGE_TIMEOUT_MS);
 
     try {
       widgetId = turnstile.render(container, {
@@ -154,14 +158,19 @@ export function TurnstileProvider({
           if (process.env.NODE_ENV === "development") {
             console.debug("[Turnstile] challenge rejected", errorCode || "unknown");
           }
-          finish(() => challenge.reject(new Error("turnstile-failed")));
-          return true;
+          // Returning false leaves Turnstile in control of its normal managed
+          // fallback/retry flow instead of tearing the widget down here.
+          return false;
         },
         "expired-callback": () => {
-          finish(() => challenge.reject(new Error("turnstile-expired")));
+          // Turnstile refreshes expired tokens automatically.
         },
+        "refresh-expired": "auto",
+        "refresh-timeout": "manual",
+        retry: "auto",
         "timeout-callback": () => {
-          finish(() => challenge.reject(new Error("turnstile-timeout")));
+          // Keep the timed-out managed widget visible so the visitor can use
+          // Turnstile's manual refresh instead of losing the verification UI.
         },
         "unsupported-callback": () => {
           finish(() => challenge.reject(new Error("turnstile-unsupported")));
@@ -237,8 +246,8 @@ export function TurnstileProvider({
       >
         <DialogContent
           className="max-w-sm gap-5 border-0 ring-0 shadow-none"
-          style={{ boxShadow: "none" }}
           showCloseButton={false}
+          surface="plain"
           onEscapeKeyDown={(event) => event.preventDefault()}
           onPointerDownOutside={(event) => event.preventDefault()}
         >
