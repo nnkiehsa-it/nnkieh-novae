@@ -49,7 +49,13 @@ import {
   ensureCategoryCatalog,
   seedCategoryCatalog,
 } from "@/hooks/use-categories";
-import { loginWithGoogle, logoutFromFirebase } from "@/services/session-auth";
+import {
+  consumePreparedLoginEntrance,
+  loginWithGoogle,
+  logoutFromFirebase,
+  prepareGoogleLoginEntrance,
+  verifyRestoredSession,
+} from "@/services/session-auth";
 import { useTurnstile } from "@/components/turnstile-provider";
 import { ApiRequestError } from "@/lib/api-error";
 import {
@@ -254,7 +260,12 @@ function acceptUser(user: User) {
   void refreshVerifiedSession(user, verificationId);
 }
 
-export function initializeSession() {
+export function initializeSession(
+  requestTurnstileToken?: (
+    action: string,
+    options?: { presentation?: "dialog" | "inline" },
+  ) => Promise<string | null>,
+) {
   if (booted || typeof window === "undefined") return;
   booted = true;
   if (!auth) {
@@ -288,6 +299,16 @@ export function initializeSession() {
         patch({ appReady: true, initialized: true, loading: false });
         return;
       }
+      if (!consumePreparedLoginEntrance()) {
+        const restorationError = await verifyRestoredSession({
+          requestTurnstileToken,
+        });
+        if (restorationError) {
+          await rejectUser(restorationError);
+          patch({ appReady: true, initialized: true, loading: false });
+          return;
+        }
+      }
       acceptUser(user);
     },
     (error) => {
@@ -310,7 +331,8 @@ export function initializeSession() {
 }
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  useEffect(() => initializeSession(), []);
+  const { requestToken } = useTurnstile();
+  useEffect(() => initializeSession(requestToken), [requestToken]);
   return children;
 }
 
@@ -359,6 +381,9 @@ export function useSession() {
     },
     [requestToken],
   );
+  const prepareLogin = useCallback(async () => {
+    return await prepareGoogleLoginEntrance({ requestTurnstileToken: requestToken });
+  }, [requestToken]);
 
   const logout = useCallback(async () => {
     patch({ loading: true });
@@ -404,6 +429,7 @@ export function useSession() {
       snapshot.authChecking ||
       (Boolean(snapshot.user) && snapshot.roleLoading),
     login,
+    prepareLogin,
     logout,
     refreshSessionAccess,
     setSupportedIssue,

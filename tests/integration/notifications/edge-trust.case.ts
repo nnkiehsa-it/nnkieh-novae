@@ -44,6 +44,10 @@ integrationTest("real Worker HTTP boundaries reject missing origin, auth, and si
     origin: allowedOrigin,
   });
   assert.equal(loginCheckWithoutToken.status, 401);
+  const sessionCheckWithoutToken = await post("/v1/auth/session-check", {}, {
+    origin: allowedOrigin,
+  });
+  assert.equal(sessionCheckWithoutToken.status, 401);
   const realtimeTicket = await post("/v1/realtime/ticket", {}, {
     origin: allowedOrigin,
   });

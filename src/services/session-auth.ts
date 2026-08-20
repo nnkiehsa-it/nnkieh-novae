@@ -7,6 +7,7 @@ import {
 } from "firebase/auth";
 import { auth, allowedDomain } from "@/lib/firebase";
 import {
+  ensureGoogleIdentityLoaded,
   GoogleIdentityError,
   requestGoogleAccessToken,
 } from "@/lib/google-identity";
@@ -28,6 +29,98 @@ const googleClientId = String(
   process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "",
 ).trim();
 let lastLoginAttemptAt = 0;
+let loginEntrancePrepared = false;
+
+function loginEntranceVerified() {
+  return loginEntrancePrepared;
+}
+
+export function consumePreparedLoginEntrance() {
+  if (!loginEntrancePrepared) return false;
+  loginEntrancePrepared = false;
+  return true;
+}
+
+export async function verifyRestoredSession(options: {
+  requestTurnstileToken?: (
+    action: string,
+    options?: { presentation?: "dialog" | "inline" },
+  ) => Promise<string | null>;
+} = {}) {
+  if (authEmulatorUrl || !hasApiGatewayConfig()) return "";
+  try {
+    const token = await options.requestTurnstileToken?.("auth_restore", {
+      presentation: "dialog",
+    }) ?? null;
+    if (!token) return "auth.securityCheckFailed";
+    const response = await withRequestTimeout(
+      (signal) => fetch(apiGatewayUrl("/v1/auth/session-check"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Turnstile-Token": token,
+        },
+        body: "{}",
+        signal,
+      }),
+      { label: "auth.loginVerification" },
+    );
+    return response.ok ? "" : "auth.securityCheckFailed";
+  } catch {
+    return "auth.securityCheckFailed";
+  }
+}
+
+export async function prepareGoogleLoginEntrance(options: {
+  requestTurnstileToken?: (
+    action: string,
+    options?: { presentation?: "dialog" | "inline" },
+  ) => Promise<string | null>;
+} = {}) {
+  if (!auth) return "auth.serviceUnavailable";
+  if (!authEmulatorUrl && !googleClientId) return "auth.loginWidgetInitFailed";
+  if (typeof navigator !== "undefined" && detectInAppBrowser(navigator.userAgent))
+    return "auth.systemBrowserRequired";
+  if (loginEntranceVerified()) return "";
+
+  const googleReady = authEmulatorUrl
+    ? Promise.resolve()
+    : ensureGoogleIdentityLoaded();
+  void googleReady.catch(() => undefined);
+
+  try {
+    if (!authEmulatorUrl && hasApiGatewayConfig()) {
+      let turnstileToken: string | null = null;
+      try {
+        turnstileToken = await options.requestTurnstileToken?.("auth_login", {
+          presentation: "inline",
+        }) ?? null;
+      } catch {
+        return "auth.securityCheckFailed";
+      }
+      if (!turnstileToken) return "auth.securityCheckFailed";
+      const verificationResponse = await withRequestTimeout(
+        (signal) => fetch(apiGatewayUrl("/v1/auth/login-check"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Turnstile-Token": turnstileToken,
+          },
+          body: "{}",
+          signal,
+        }),
+        { label: "auth.loginVerification" },
+      );
+      if (!verificationResponse.ok) return "auth.securityCheckFailed";
+    }
+    await googleReady;
+    loginEntrancePrepared = true;
+    return "";
+  } catch (error) {
+    sessionDebug("login preparation failed", error);
+    return loginError(error);
+  }
+}
 
 function claimLoginAttempt() {
   const now = Date.now();
@@ -107,7 +200,10 @@ function loginError(error: unknown) {
 export async function loginWithGoogle(
   options: {
     selectAccount?: boolean;
-    requestTurnstileToken?: (action: string) => Promise<string | null>;
+    requestTurnstileToken?: (
+      action: string,
+      options?: { presentation?: "dialog" | "inline" },
+    ) => Promise<string | null>;
   } = {},
 ) {
   if (!auth) return "auth.serviceUnavailable";
@@ -119,22 +215,11 @@ export async function loginWithGoogle(
 
   const firebaseAuth = auth;
   try {
-    if (!authEmulatorUrl && hasApiGatewayConfig()) {
-      const turnstileToken = await options.requestTurnstileToken?.("auth_login");
-      if (!turnstileToken) return "auth.securityCheckFailed";
-      const verificationResponse = await withRequestTimeout(
-        (signal) => fetch(apiGatewayUrl("/v1/auth/login-check"), {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Turnstile-Token": turnstileToken,
-          },
-          body: "{}",
-          signal,
-        }),
-        { label: "auth.loginVerification" },
-      );
-      if (!verificationResponse.ok) return "auth.securityCheckFailed";
+    if (!loginEntranceVerified()) {
+      const preparationError = await prepareGoogleLoginEntrance({
+        requestTurnstileToken: options.requestTurnstileToken,
+      });
+      if (preparationError) return preparationError;
     }
     if (authEmulatorUrl) {
       await signInWithPopup(

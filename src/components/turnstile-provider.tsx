@@ -52,17 +52,23 @@ declare global {
 }
 
 interface TurnstileContextValue {
-  requestToken: (action: string) => Promise<string | null>;
+  requestToken: (
+    action: string,
+    options?: { presentation?: "dialog" | "inline" },
+  ) => Promise<string | null>;
+  setInlineHost: (host: HTMLDivElement | null) => void;
 }
 
 interface PendingChallenge {
   action: string;
+  presentation: "dialog" | "inline";
   reject: (error: Error) => void;
   resolve: (token: string) => void;
 }
 
 const TurnstileContext = createContext<TurnstileContextValue>({
   requestToken: async () => null,
+  setInlineHost: () => undefined,
 });
 
 export function TurnstileProvider({
@@ -74,7 +80,8 @@ export function TurnstileProvider({
 }) {
   const [ready, setReady] = useState(false);
   const [challenge, setChallenge] = useState<PendingChallenge | null>(null);
-  const [widgetHost, setWidgetHost] = useState<HTMLDivElement | null>(null);
+  const [dialogHost, setDialogHost] = useState<HTMLDivElement | null>(null);
+  const [inlineHost, setInlineHost] = useState<HTMLDivElement | null>(null);
   const waiters = useRef<Array<{
     reject: (error: Error) => void;
     resolve: () => void;
@@ -113,7 +120,7 @@ export function TurnstileProvider({
   useEffect(() => {
     if (!challenge) return;
     const turnstile = window.turnstile;
-    const container = widgetHost;
+    const container = challenge.presentation === "inline" ? inlineHost : dialogHost;
     if (!turnstile) {
       window.setTimeout(() => {
         challenge.reject(new Error("turnstile-unavailable"));
@@ -180,16 +187,24 @@ export function TurnstileProvider({
       window.clearTimeout(timeout);
       if (!settled && widgetId) turnstile.remove?.(widgetId);
     };
-  }, [challenge, widgetHost]);
+  }, [challenge, dialogHost, inlineHost]);
 
-  const requestToken = useCallback(async (action: string) => {
+  const requestToken = useCallback(async (
+    action: string,
+    options?: { presentation?: "dialog" | "inline" },
+  ) => {
     if (!siteKey) return null;
     if (pendingRequest.current) return pendingRequest.current;
     const request = (async () => {
       await waitUntilReady();
       if (!window.turnstile) throw new Error("turnstile-unavailable");
       return await new Promise<string>((resolve, reject) => {
-        setChallenge({ action, reject, resolve });
+        setChallenge({
+          action,
+          presentation: options?.presentation ?? "dialog",
+          reject,
+          resolve,
+        });
       });
     })();
     pendingRequest.current = request;
@@ -200,7 +215,10 @@ export function TurnstileProvider({
     }
   }, [waitUntilReady]);
 
-  const value = useMemo(() => ({ requestToken }), [requestToken]);
+  const value = useMemo(
+    () => ({ requestToken, setInlineHost }),
+    [requestToken],
+  );
   return (
     <TurnstileContext.Provider value={value}>
       {siteKey ? (
@@ -213,7 +231,10 @@ export function TurnstileProvider({
         />
       ) : null}
       {children}
-      <Dialog open={challenge !== null} onOpenChange={() => undefined}>
+      <Dialog
+        open={challenge?.presentation === "dialog"}
+        onOpenChange={() => undefined}
+      >
         <DialogContent
           className="max-w-sm gap-5"
           showCloseButton={false}
@@ -231,7 +252,7 @@ export function TurnstileProvider({
           </DialogHeader>
           <div className="mx-auto w-full overflow-hidden rounded-xl border bg-background/70 p-3 shadow-sm">
             <div
-              ref={setWidgetHost}
+              ref={setDialogHost}
               className="mx-auto min-h-[65px] w-[300px] max-w-full"
             />
           </div>
@@ -243,4 +264,16 @@ export function TurnstileProvider({
 
 export function useTurnstile() {
   return useContext(TurnstileContext);
+}
+
+export function TurnstileInlineHost() {
+  const { setInlineHost } = useTurnstile();
+  return (
+    <div className="mx-auto w-full overflow-hidden rounded-xl border bg-background/70 p-3 shadow-sm">
+      <div
+        ref={setInlineHost}
+        className="mx-auto min-h-[65px] w-[300px] max-w-full"
+      />
+    </div>
+  );
 }

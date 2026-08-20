@@ -77,6 +77,10 @@ export function preloadGoogleIdentity(): Promise<void> {
   return loadGsiClient().catch(() => undefined);
 }
 
+export function ensureGoogleIdentityLoaded(): Promise<void> {
+  return loadGsiClient();
+}
+
 function mapTokenResponseError(error?: string): GoogleIdentityErrorCode {
   if (error === 'access_denied' || error === 'immediate_failed') return 'access_denied';
   if (error === 'popup_closed') return 'popup_closed';

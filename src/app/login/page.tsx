@@ -8,7 +8,7 @@ import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { BrandLockup } from "@/components/ui/brand";
 import { BusyLabel } from "@/components/ui/page-state";
-import { preloadGoogleIdentity } from "@/lib/google-identity";
+import { TurnstileInlineHost } from "@/components/turnstile-provider";
 
 function GoogleMark() {
   return (
@@ -38,10 +38,21 @@ export default function LoginPage() {
   const search = useSearchParams();
   const session = useSession();
   const { t } = useI18n();
+  const [loginReady, setLoginReady] = React.useState(false);
+  const [verificationError, setVerificationError] = React.useState("");
 
   React.useEffect(() => {
-    void preloadGoogleIdentity();
-  }, []);
+    if (!session.initialized || session.user) return;
+    let active = true;
+    void session.prepareLogin().then((error) => {
+      if (!active) return;
+      setVerificationError(error);
+      setLoginReady(!error);
+    });
+    return () => {
+      active = false;
+    };
+  }, [session.initialized, session.prepareLogin, session.user]);
 
   React.useEffect(() => {
     if (!session.initialized || !session.user || session.roleLoading) return;
@@ -94,9 +105,14 @@ export default function LoginPage() {
               </p>
             </div>
           </div>
+          {!loginReady ? (
+            <div className="mb-4">
+              <TurnstileInlineHost />
+            </div>
+          ) : null}
           <Button
             className="group w-full"
-            disabled={session.loginBusy}
+            disabled={!loginReady || session.loginBusy}
             onClick={() => void session.login()}
             size="lg"
           >
@@ -114,12 +130,12 @@ export default function LoginPage() {
               </>
             )}
           </Button>
-          {session.error ? (
+          {session.error || verificationError ? (
             <p
               className="t-shake mt-3 rounded-lg bg-destructive/8 p-3 text-sm leading-5 text-destructive"
               data-error="true"
             >
-              {t(session.error)}
+              {t(session.error || verificationError)}
             </p>
           ) : null}
           <p className="mt-5 text-center text-xs leading-5 text-muted-foreground">{t('ui.login.terms')}</p>
