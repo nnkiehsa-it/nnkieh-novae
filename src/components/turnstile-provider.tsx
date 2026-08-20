@@ -250,10 +250,10 @@ export function TurnstileProvider({
               {t("auth.signingIn")}
             </DialogDescription>
           </DialogHeader>
-          <div className="mx-auto w-full overflow-hidden rounded-xl border bg-background/70 p-3 shadow-sm">
+          <div className="flex min-h-[65px] w-full items-center justify-center overflow-hidden">
             <div
               ref={setDialogHost}
-              className="mx-auto min-h-[65px] w-[300px] max-w-full"
+              className="min-h-[65px] w-[300px] max-w-full"
             />
           </div>
         </DialogContent>
@@ -269,10 +269,10 @@ export function useTurnstile() {
 export function TurnstileInlineHost() {
   const { setInlineHost } = useTurnstile();
   return (
-    <div className="mx-auto w-full overflow-hidden rounded-xl border bg-background/70 p-3 shadow-sm">
+    <div className="flex min-h-[65px] w-full items-center justify-center overflow-hidden">
       <div
         ref={setInlineHost}
-        className="mx-auto min-h-[65px] w-[300px] max-w-full"
+        className="min-h-[65px] w-[300px] max-w-full"
       />
     </div>
   );

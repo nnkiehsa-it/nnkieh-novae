@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { BrandLockup } from "@/components/ui/brand";
 import { BusyLabel } from "@/components/ui/page-state";
 import { TurnstileInlineHost } from "@/components/turnstile-provider";
+import { AppStartupScreen } from "@/components/protected-app";
 
 function GoogleMark() {
   return (
@@ -73,6 +74,7 @@ export default function LoginPage() {
     session.user,
   ]);
 
+  if (session.restoringSession) return <AppStartupScreen />;
 
   return (
     <main className="relative grid min-h-[100svh] overflow-hidden bg-[var(--surface-stage)] lg:grid-cols-[1.08fr_.92fr]">
@@ -90,7 +92,7 @@ export default function LoginPage() {
 
       <section className="flex min-h-[100svh] items-center justify-center px-4 py-12 sm:px-8">
         <div className="t-panel-reveal w-full max-w-sm">
-          <div className="mb-7 space-y-4">
+          <div className="mb-6 space-y-4">
             <BrandLockup className="lg:hidden" />
             <div>
               <h1 className="text-2xl font-semibold tracking-[-0.03em]">
@@ -105,31 +107,29 @@ export default function LoginPage() {
               </p>
             </div>
           </div>
-          {!loginReady ? (
-            <div className="mb-4">
-              <TurnstileInlineHost />
-            </div>
-          ) : null}
-          <Button
-            className="group w-full"
-            disabled={!loginReady || session.loginBusy}
-            onClick={() => void session.login()}
-            size="lg"
-          >
-            {session.loginBusy ? (
-              <BusyLabel
-                busy
-                busyLabel={t("auth.signingIn")}
-                label={t("auth.signInWithGoogle")}
-              />
-            ) : (
-              <>
-                <GoogleMark />
-                {t("auth.signInWithGoogle")}
-                <ArrowRight className="ml-auto transition-transform duration-250 ease-[var(--ease-smooth-out)] group-hover:translate-x-0.5" />
-              </>
-            )}
-          </Button>
+          <div className="space-y-5">
+            {!loginReady ? <TurnstileInlineHost /> : null}
+            <Button
+              className="group w-full"
+              disabled={!loginReady || session.loginBusy}
+              onClick={() => void session.login()}
+              size="lg"
+            >
+              {session.loginBusy ? (
+                <BusyLabel
+                  busy
+                  busyLabel={t("auth.signingIn")}
+                  label={t("auth.signInWithGoogle")}
+                />
+              ) : (
+                <>
+                  <GoogleMark />
+                  {t("auth.signInWithGoogle")}
+                  <ArrowRight className="ml-auto transition-transform duration-250 ease-[var(--ease-smooth-out)] group-hover:translate-x-0.5" />
+                </>
+              )}
+            </Button>
+          </div>
           {session.error || verificationError ? (
             <p
               className="t-shake mt-3 rounded-lg bg-destructive/8 p-3 text-sm leading-5 text-destructive"

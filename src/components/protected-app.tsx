@@ -8,7 +8,7 @@ import { AppShell } from "@/components/app-shell";
 import { BrandLockup } from "@/components/ui/brand";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
-function StartupScreen() {
+export function AppStartupScreen() {
   useLocaleSubscription();
   return (
     <div className="app-start-surface grid place-items-center">
@@ -57,11 +57,11 @@ export function ProtectedApp({ children }: { children: React.ReactNode }) {
   ]);
 
   if (!session.initialized || session.loading || session.roleLoading)
-    return <StartupScreen />;
-  if (!session.user) return <StartupScreen />;
+    return <AppStartupScreen />;
+  if (!session.user) return <AppStartupScreen />;
   if (!session.setupCompleted && pathname !== "/setup")
-    return <StartupScreen />;
-  if (session.setupCompleted && pathname === "/setup") return <StartupScreen />;
+    return <AppStartupScreen />;
+  if (session.setupCompleted && pathname === "/setup") return <AppStartupScreen />;
   if (pathname === "/setup") return <>{children}</>;
   return <AppShell>{children}</AppShell>;
 }

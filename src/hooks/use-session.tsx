@@ -78,6 +78,7 @@ interface SessionState {
   mySupportedIssueIds: Set<string>;
   permissions: PermissionCode[];
   roleLoading: boolean;
+  restoringSession: boolean;
   roles: RoleCode[];
   setupCompleted: boolean;
   user: User | null;
@@ -97,6 +98,7 @@ const initialSessionState: SessionState = {
   mySupportedIssueIds: new Set(),
   permissions: [],
   roleLoading: false,
+  restoringSession: false,
   roles: [],
   setupCompleted: false,
   user: null,
@@ -300,14 +302,16 @@ export function initializeSession(
         return;
       }
       if (!consumePreparedLoginEntrance()) {
+        patch({ restoringSession: true });
         const restorationError = await verifyRestoredSession({
           requestTurnstileToken,
         });
         if (restorationError) {
           await rejectUser(restorationError);
-          patch({ appReady: true, initialized: true, loading: false });
+          patch({ appReady: true, initialized: true, loading: false, restoringSession: false });
           return;
         }
+        patch({ restoringSession: false });
       }
       acceptUser(user);
     },
