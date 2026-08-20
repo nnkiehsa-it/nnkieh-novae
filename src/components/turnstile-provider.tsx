@@ -74,7 +74,6 @@ export function TurnstileProvider({
 }) {
   const [ready, setReady] = useState(false);
   const [challenge, setChallenge] = useState<PendingChallenge | null>(null);
-  const [debugError, setDebugError] = useState("");
   const [widgetHost, setWidgetHost] = useState<HTMLDivElement | null>(null);
   const waiters = useRef<Array<{
     reject: (error: Error) => void;
@@ -83,19 +82,10 @@ export function TurnstileProvider({
   const pendingRequest = useRef<Promise<string | null> | null>(null);
 
   const resolveReady = useCallback(() => {
-    console.info("[Turnstile] script loaded", {
-      hostname: window.location.hostname,
-      hasApi: Boolean(window.turnstile),
-      hasSiteKey: Boolean(siteKey),
-    });
     setReady(true);
     waiters.current.splice(0).forEach(({ resolve }) => resolve());
   }, []);
   const rejectReady = useCallback(() => {
-    console.error("[Turnstile] failed to load Cloudflare script", {
-      hostname: window.location.hostname,
-      hasSiteKey: Boolean(siteKey),
-    });
     waiters.current.splice(0).forEach(({ reject }) => reject(new Error("turnstile-unavailable")));
   }, []);
 
@@ -125,14 +115,6 @@ export function TurnstileProvider({
     const turnstile = window.turnstile;
     const container = widgetHost;
     if (!turnstile) {
-      const details = {
-        action: challenge.action,
-        hasContainer: Boolean(widgetHost),
-        hasTurnstileApi: Boolean(turnstile),
-        hostname: window.location.hostname,
-      };
-      console.error("[Turnstile] render precondition failed", details);
-      setDebugError(`render precondition failed: ${JSON.stringify(details)}`);
       window.setTimeout(() => {
         challenge.reject(new Error("turnstile-unavailable"));
         setChallenge((current) => current === challenge ? null : current);
@@ -140,10 +122,6 @@ export function TurnstileProvider({
       return;
     }
     if (!container) {
-      console.info("[Turnstile] waiting for widget host to mount", {
-        action: challenge.action,
-        hostname: window.location.hostname,
-      });
       return;
     }
 
@@ -158,91 +136,44 @@ export function TurnstileProvider({
       callback();
     };
     const timeout = window.setTimeout(() => {
-      console.error("[Turnstile] challenge timed out", {
-        action: challenge.action,
-        hostname: window.location.hostname,
-        timeoutMs: TOKEN_TIMEOUT_MS,
-        widgetId,
-      });
-      setDebugError(`challenge timeout after ${TOKEN_TIMEOUT_MS}ms (action=${challenge.action}, widgetId=${widgetId || "none"})`);
       finish(() => challenge.reject(new Error("turnstile-timeout")));
     }, TOKEN_TIMEOUT_MS);
 
     try {
-      console.info("[Turnstile] rendering challenge", {
-        action: challenge.action,
-        hostname: window.location.hostname,
-        siteKeySuffix: siteKey.slice(-6),
-      });
-
       widgetId = turnstile.render(container, {
         action: challenge.action,
         appearance: "always",
         "error-callback": (errorCode) => {
-          const code = errorCode || "unknown";
-          console.error("[Turnstile] Cloudflare error-callback", {
-            action: challenge.action,
-            errorCode: code,
-            hostname: window.location.hostname,
-            widgetId,
-          });
-          setDebugError(`Cloudflare error-callback: ${code} (action=${challenge.action}, widgetId=${widgetId || "pending"})`);
-          finish(() => challenge.reject(new Error(`turnstile-failed:${code}`)));
+          if (process.env.NODE_ENV === "development") {
+            console.debug("[Turnstile] challenge rejected", errorCode || "unknown");
+          }
+          finish(() => challenge.reject(new Error("turnstile-failed")));
           return true;
         },
         "expired-callback": () => {
-          console.error("[Turnstile] token expired", { action: challenge.action, widgetId });
-          setDebugError(`token expired (action=${challenge.action}, widgetId=${widgetId || "none"})`);
           finish(() => challenge.reject(new Error("turnstile-expired")));
         },
         "timeout-callback": () => {
-          console.error("[Turnstile] Cloudflare timeout-callback", { action: challenge.action, widgetId });
-          setDebugError(`Cloudflare timeout-callback (action=${challenge.action}, widgetId=${widgetId || "none"})`);
           finish(() => challenge.reject(new Error("turnstile-timeout")));
         },
         "unsupported-callback": () => {
-          console.error("[Turnstile] browser unsupported", {
-            action: challenge.action,
-            hostname: window.location.hostname,
-            userAgent: navigator.userAgent,
-          });
-          setDebugError(`browser unsupported (action=${challenge.action})`);
           finish(() => challenge.reject(new Error("turnstile-unsupported")));
         },
         execution: "execute",
         callback: (token) => {
-          console.info("[Turnstile] challenge succeeded", {
-            action: challenge.action,
-            tokenLength: token.length,
-            widgetId,
-          });
-          setDebugError("");
           finish(() => challenge.resolve(token));
         },
         sitekey: siteKey,
         size: "normal",
         theme: "auto",
       });
-
-      console.info("[Turnstile] render returned", {
-        action: challenge.action,
-        widgetId,
-      });
       turnstile.execute(widgetId);
-      console.info("[Turnstile] execute called", {
-        action: challenge.action,
-        widgetId,
-      });
     } catch (error) {
-      const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
-      console.error("[Turnstile] render/execute threw", {
-        action: challenge.action,
-        error,
-        hostname: window.location.hostname,
-        widgetId,
-      });
-      setDebugError(`render/execute threw: ${message} (action=${challenge.action}, widgetId=${widgetId || "none"})`);
-      finish(() => challenge.reject(error instanceof Error ? error : new Error(message)));
+      if (process.env.NODE_ENV === "development") {
+        const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+        console.debug("[Turnstile] render/execute failed", message);
+      }
+      finish(() => challenge.reject(new Error("turnstile-unavailable")));
     }
 
     return () => {
@@ -255,7 +186,6 @@ export function TurnstileProvider({
     if (!siteKey) return null;
     if (pendingRequest.current) return pendingRequest.current;
     const request = (async () => {
-      setDebugError("");
       await waitUntilReady();
       if (!window.turnstile) throw new Error("turnstile-unavailable");
       return await new Promise<string>((resolve, reject) => {
@@ -305,11 +235,6 @@ export function TurnstileProvider({
               className="mx-auto min-h-[65px] w-[300px] max-w-full"
             />
           </div>
-          {debugError ? (
-            <pre className="max-h-32 overflow-auto whitespace-pre-wrap break-all rounded-lg border bg-muted/50 p-3 text-xs text-destructive">
-              {debugError}
-            </pre>
-          ) : null}
         </DialogContent>
       </Dialog>
     </TurnstileContext.Provider>

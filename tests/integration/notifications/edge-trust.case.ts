@@ -20,6 +20,8 @@ integrationTest("real Worker HTTP boundaries reject missing origin, auth, and si
 
   const missingOrigin = await post("/v1/actions", { action: "getContentVersions", payload: {} });
   assert.equal(missingOrigin.status, 403);
+  const loginCheckMissingOrigin = await post("/v1/auth/login-check", {});
+  assert.equal(loginCheckMissingOrigin.status, 403);
 
   const unsupported = await post("/v1/actions", { action: "integrationUnknown", payload: {} }, {
     origin: allowedOrigin,
@@ -38,6 +40,10 @@ integrationTest("real Worker HTTP boundaries reject missing origin, auth, and si
     origin: allowedOrigin,
   });
   assert.equal(syncUser.status, 401);
+  const loginCheckWithoutToken = await post("/v1/auth/login-check", {}, {
+    origin: allowedOrigin,
+  });
+  assert.equal(loginCheckWithoutToken.status, 401);
   const realtimeTicket = await post("/v1/realtime/ticket", {}, {
     origin: allowedOrigin,
   });

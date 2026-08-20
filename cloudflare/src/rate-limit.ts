@@ -44,6 +44,15 @@ export async function claimInvalidAuthenticationIngress(
   await claim(env.INVALID_AUTH_IP_RATE_LIMITER, `invalid-auth:${ip}`, code, 60);
 }
 
+export async function claimLoginIngress(env: Env, ip: string) {
+  await claim(
+    env.LOGIN_IP_RATE_LIMITER,
+    await opaqueRateLimitKey('auth-login', ip),
+    'rate-limit.login-sync',
+    60,
+  );
+}
+
 export async function claimActionRateLimit(env: Env, uid: string, action: string) {
   const policy = BACKEND_ACTION_POLICIES[action as keyof typeof BACKEND_ACTION_POLICIES];
   if (!policy) throw new Error('invalid-action');

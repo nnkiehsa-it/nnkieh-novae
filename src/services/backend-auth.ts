@@ -21,12 +21,9 @@ function rememberSync(uid: string) {
   writeLocalStorage(`${PROFILE_SYNC_KEY_PREFIX}${uid}`, String(Date.now()));
 }
 
-export type TurnstileTokenRequester = (action: string) => Promise<string | null>;
-
 async function syncBackendProfile(
   user: User,
   firebaseToken: string,
-  turnstileToken?: string | null,
 ) {
   const response = await withRequestTimeout(
     async (signal) => fetch(apiGatewayUrl('/v1/auth/sync'), {
@@ -34,7 +31,6 @@ async function syncBackendProfile(
       body: JSON.stringify({ email: user.email }),
       headers: {
         ...(await backendSecurityHeaders(firebaseToken)),
-        ...(turnstileToken ? { 'X-Turnstile-Token': turnstileToken } : {}),
         'Content-Type': 'application/json',
       },
       signal,
@@ -56,7 +52,6 @@ function syncRequestError(data: SyncUserResponse | null) {
 
 export async function ensureBackendProfile(
   user: User,
-  requestTurnstileToken?: TurnstileTokenRequester,
 ) {
   if (!hasApiGatewayConfig()) return;
   if (wasRecentlySynced(user.uid)) return;
@@ -66,21 +61,7 @@ export async function ensureBackendProfile(
     { label: 'auth.backendLoginInitialization' },
   );
 
-  let result = await syncBackendProfile(user, token.token);
-  const firstError = result.data?.error?.code;
-  if ((!result.response.ok || result.data?.ok !== true) && firstError === 'turnstile-failed') {
-    if (!requestTurnstileToken) throw syncRequestError(result.data);
-    let challengeToken: string | null = null;
-    try {
-      challengeToken = await requestTurnstileToken('auth_sync');
-    } catch {
-      throw new ApiRequestError({ error: { code: 'turnstile-failed' } });
-    }
-    if (!challengeToken) {
-      throw new ApiRequestError({ error: { code: 'turnstile-failed' } });
-    }
-    result = await syncBackendProfile(user, token.token, challengeToken);
-  }
+  const result = await syncBackendProfile(user, token.token);
 
   if (!result.response.ok || result.data?.ok !== true) {
     throw syncRequestError(result.data);

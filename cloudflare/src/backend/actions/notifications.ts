@@ -164,8 +164,8 @@ export async function handleNotificationAction(
         topic_broadcast: true,
       }).eq("uid", auth.uid).eq("device_id", deviceId);
       if (topicStateError) throw topicStateError;
-    } catch (topicError) {
-      console.error(JSON.stringify({ error: String(topicError), operation: "push-topic-subscribe", uid: auth.uid }));
+    } catch {
+      console.error(JSON.stringify({ error: "topic-operation-failed", operation: "push-topic-subscribe" }));
     }
     return data;
   }
@@ -183,8 +183,8 @@ export async function handleNotificationAction(
     if (existingToken?.token) {
       try {
         await unsubscribeTokensFromTopic([existingToken.token], "srp-broadcast");
-      } catch (topicError) {
-        console.error(JSON.stringify({ error: String(topicError), operation: "push-topic-unsubscribe", uid: auth.uid }));
+      } catch {
+        console.error(JSON.stringify({ error: "topic-operation-failed", operation: "push-topic-unsubscribe" }));
       }
     }
     return data;

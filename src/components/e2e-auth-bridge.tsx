@@ -23,8 +23,10 @@ export function E2eAuthBridge() {
           );
         }
       })
-      .catch((error: unknown) => {
-        console.error("Unable to initialize the isolated E2E auth bridge.", error);
+      .catch(() => {
+        if (process.env.NODE_ENV === "development") {
+          console.debug("Unable to initialize the isolated E2E auth bridge.");
+        }
       });
     return () => {
       active = false;

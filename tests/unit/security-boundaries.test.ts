@@ -3,7 +3,7 @@ import {
   requireFirebaseAppCheck,
   validateFirebaseAppCheckClaims,
 } from "../../cloudflare/src/app-check";
-import { claimActionRateLimit } from "../../cloudflare/src/rate-limit";
+import { claimActionRateLimit, claimLoginIngress } from "../../cloudflare/src/rate-limit";
 import { validateTurnstileResult } from "../../cloudflare/src/turnstile";
 import { createMediaDeliveryUrl } from "../../cloudflare/src/backend/shared/media-delivery";
 import { withRuntimeEnvironment } from "../../cloudflare/src/backend/shared/env";
@@ -41,20 +41,20 @@ describe("security boundaries", () => {
   it("binds Turnstile verification to the expected action and allowed hostname", () => {
     const env = securityEnvironment();
     expect(() => validateTurnstileResult({
-      action: "auth_sync",
+      action: "auth_login",
       hostname: "app.school.example",
       success: true,
-    }, env, "auth_sync")).not.toThrow();
+    }, env, "auth_login")).not.toThrow();
     expect(() => validateTurnstileResult({
       action: "different_action",
       hostname: "app.school.example",
       success: true,
-    }, env, "auth_sync")).toThrow("turnstile-failed");
+    }, env, "auth_login")).toThrow("turnstile-failed");
     expect(() => validateTurnstileResult({
-      action: "auth_sync",
+      action: "auth_login",
       hostname: "attacker.example",
       success: true,
-    }, env, "auth_sync")).toThrow("turnstile-failed");
+    }, env, "auth_login")).toThrow("turnstile-failed");
   });
 
   it("uses stable opaque native limiter keys per UID", async () => {
@@ -75,6 +75,22 @@ describe("security boundaries", () => {
     expect(keys[0]).not.toBe(keys[2]);
     expect(keys[0]).not.toContain("school-user-a");
     expect(keys.every((key) => key.length === 43)).toBe(true);
+  });
+
+  it("does not expose the client IP in login limiter keys", async () => {
+    const keys: string[] = [];
+    const env = securityEnvironment({
+      LOGIN_IP_RATE_LIMITER: {
+        limit: async ({ key }) => {
+          keys.push(key);
+          return { success: true };
+        },
+      },
+    });
+    await claimLoginIngress(env, "203.0.113.42");
+    expect(keys).toHaveLength(1);
+    expect(keys[0]).not.toContain("203.0.113.42");
+    expect(keys[0]).toHaveLength(43);
   });
 
   it("signs media URLs with viewer-scoped keys without exposing the UID", async () => {

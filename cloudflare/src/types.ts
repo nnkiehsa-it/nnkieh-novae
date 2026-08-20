@@ -25,6 +25,7 @@ export interface Env {
   HYPERDRIVE?: { connectionString: string };
   INVALID_AUTH_IP_RATE_LIMITER: RateLimitBinding;
   JOBS: Queue<JobMessage>;
+  LOGIN_IP_RATE_LIMITER: RateLimitBinding;
   LOCAL_TEST_MODE?: string;
   MEDIA_INVALID_IP_RATE_LIMITER: RateLimitBinding;
   MEDIA_SIGNING_SECRET: string;

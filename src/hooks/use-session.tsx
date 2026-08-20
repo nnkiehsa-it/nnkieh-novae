@@ -19,10 +19,7 @@ import { sessionDebug } from "@/lib/session-debug";
 import { readLocalStorage, writeLocalStorage } from "@/lib/browser-storage";
 import { clearContentEntityScope } from "@/lib/content-entity-store";
 import { clearViewMemoryScope } from "@/lib/view-memory-cache";
-import {
-  ensureBackendProfile,
-  type TurnstileTokenRequester,
-} from "@/services/backend-auth";
+import { ensureBackendProfile } from "@/services/backend-auth";
 import {
   fetchCurrentUserRole,
   seedSessionAccess,
@@ -173,7 +170,6 @@ async function loadAvatar(photoUrl: string, uid: string) {
 async function refreshVerifiedSession(
   user: User,
   verificationId: number,
-  requestTurnstileToken: TurnstileTokenRequester,
 ) {
   const current = () =>
     verificationId === verificationSerial && state.user?.uid === user.uid;
@@ -181,7 +177,7 @@ async function refreshVerifiedSession(
     const tokenValidation = await validateUserAgainstToken(user);
     if (!current()) return;
     if (!tokenValidation.ok) return await rejectUser(tokenValidation.reason);
-    await ensureBackendProfile(user, requestTurnstileToken);
+    await ensureBackendProfile(user);
     if (!current()) return;
     try {
       const bootstrap = await fetchSessionBootstrap({
@@ -225,9 +221,7 @@ async function refreshVerifiedSession(
     patch({
       error: error instanceof ApiRequestError && error.code === "app-check-failed"
         ? "auth.appCheckFailed"
-        : error instanceof ApiRequestError && error.code === "turnstile-failed"
-          ? "auth.securityCheckFailed"
-          : "auth.initializationFailed",
+        : "auth.initializationFailed",
     });
   } finally {
     if (current()) {
@@ -237,7 +231,7 @@ async function refreshVerifiedSession(
   }
 }
 
-function acceptUser(user: User, requestTurnstileToken: TurnstileTokenRequester) {
+function acceptUser(user: User) {
   const verificationId = ++verificationSerial;
   setContentCacheScope(user.uid);
   clearContentReadMemoryCache();
@@ -257,10 +251,10 @@ function acceptUser(user: User, requestTurnstileToken: TurnstileTokenRequester) 
     userRole: "user",
   });
   if (user.photoURL) void loadAvatar(user.photoURL, user.uid);
-  void refreshVerifiedSession(user, verificationId, requestTurnstileToken);
+  void refreshVerifiedSession(user, verificationId);
 }
 
-export function initializeSession(requestTurnstileToken: TurnstileTokenRequester) {
+export function initializeSession() {
   if (booted || typeof window === "undefined") return;
   booted = true;
   if (!auth) {
@@ -294,7 +288,7 @@ export function initializeSession(requestTurnstileToken: TurnstileTokenRequester
         patch({ appReady: true, initialized: true, loading: false });
         return;
       }
-      acceptUser(user, requestTurnstileToken);
+      acceptUser(user);
     },
     (error) => {
       sessionDebug("auth observer failed", error);
@@ -316,12 +310,12 @@ export function initializeSession(requestTurnstileToken: TurnstileTokenRequester
 }
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const { requestToken } = useTurnstile();
-  useEffect(() => initializeSession(requestToken), [requestToken]);
+  useEffect(() => initializeSession(), []);
   return children;
 }
 
 export function useSession() {
+  const { requestToken } = useTurnstile();
   const snapshot = useSyncExternalStore(
     subscribe,
     () => state,
@@ -357,10 +351,13 @@ export function useSession() {
   const login = useCallback(
     async (options?: { selectAccount?: boolean }) => {
       patch({ error: "", loading: true });
-      const error = await loginWithGoogle(options);
+      const error = await loginWithGoogle({
+        ...options,
+        requestTurnstileToken: requestToken,
+      });
       patch({ error, loading: false });
     },
-    [],
+    [requestToken],
   );
 
   const logout = useCallback(async () => {

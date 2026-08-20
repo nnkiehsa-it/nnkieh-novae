@@ -55,7 +55,7 @@ export async function validateUserAgainstToken(
     token.claims.email_verified ?? user.emailVerified,
   );
   const expectedDomain = allowedDomain || "auth.designateAnOnCampusDomain";
-  sessionDebug("token validated", { email, signInProvider, uid: user.uid });
+  sessionDebug("token validated", { signInProvider });
   if (!email) return { ok: false, reason: "auth.schoolVerificationFailed" };
   if (domainFromEmail(email) !== allowedDomain) {
     return {

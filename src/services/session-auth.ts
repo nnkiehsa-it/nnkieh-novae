@@ -14,6 +14,7 @@ import { readLocalStorage, writeLocalStorage } from "@/lib/browser-storage";
 import { withRequestTimeout } from "@/lib/request";
 import { sessionDebug } from "@/lib/session-debug";
 import { detectInAppBrowser } from "@/lib/in-app-browser";
+import { apiGatewayUrl, hasApiGatewayConfig } from "@/lib/api-gateway";
 
 
 const LOGIN_ATTEMPT_KEY = "novae-login-attempts";
@@ -104,7 +105,10 @@ function loginError(error: unknown) {
 }
 
 export async function loginWithGoogle(
-  options: { selectAccount?: boolean } = {},
+  options: {
+    selectAccount?: boolean;
+    requestTurnstileToken?: (action: string) => Promise<string | null>;
+  } = {},
 ) {
   if (!auth) return "auth.serviceUnavailable";
   if (!authEmulatorUrl && !googleClientId) return "auth.loginWidgetInitFailed";
@@ -115,6 +119,23 @@ export async function loginWithGoogle(
 
   const firebaseAuth = auth;
   try {
+    if (!authEmulatorUrl && hasApiGatewayConfig()) {
+      const turnstileToken = await options.requestTurnstileToken?.("auth_login");
+      if (!turnstileToken) return "auth.securityCheckFailed";
+      const verificationResponse = await withRequestTimeout(
+        (signal) => fetch(apiGatewayUrl("/v1/auth/login-check"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Turnstile-Token": turnstileToken,
+          },
+          body: "{}",
+          signal,
+        }),
+        { label: "auth.loginVerification" },
+      );
+      if (!verificationResponse.ok) return "auth.securityCheckFailed";
+    }
     if (authEmulatorUrl) {
       await signInWithPopup(
         firebaseAuth,

@@ -12,6 +12,7 @@ import {
   claimActionRateLimit,
   claimCloudinaryIngress,
   claimInvalidAuthenticationIngress,
+  claimLoginIngress,
   claimRealtimeTicketRateLimit,
   claimSyncUser,
   RateLimitError,
@@ -30,6 +31,7 @@ import { withRuntimeEnvironment } from "./backend/shared/env";
 import { processJobMessage, type JobMessage } from "./backend/jobs/consumer";
 import { BusinessRateLimiter } from "./durable/business-rate-limiter";
 import { RealtimeHub } from "./durable/realtime-hub";
+import { requireTurnstile } from "./turnstile";
 
 export { BusinessRateLimiter, RealtimeHub };
 
@@ -106,6 +108,13 @@ async function handleSync(request: Request, env: Env, requestId: string) {
   }
 }
 
+async function handleLoginCheck(request: Request, env: Env, requestId: string) {
+  if (!isAllowedBrowserRequest(request, env)) return apiErrorResponse(request, env, requestId, "origin-denied");
+  await claimLoginIngress(env, clientIp(request));
+  await requireTurnstile(request, env, "auth_login");
+  return jsonResponse(request, env, { ok: true });
+}
+
 async function handleRealtimeTicket(request: Request, env: Env, requestId: string) {
   if (!isAllowedBrowserRequest(request, env)) return apiErrorResponse(request, env, requestId, "origin-denied");
   const uid = await requireBrowserUid(request, env, "rate-limit.read");
@@ -160,6 +169,7 @@ async function fetchHandler(request: Request, env: Env, ctx: ExecutionContext) {
 
   try {
     if (pathname === "/v1/actions") return await handleAction(request, env, ctx, requestId);
+    if (pathname === "/v1/auth/login-check") return await handleLoginCheck(request, env, requestId);
     if (pathname === "/v1/auth/sync") return await handleSync(request, env, requestId);
     if (pathname === "/v1/realtime/ticket") return await handleRealtimeTicket(request, env, requestId);
     if (pathname === "/v1/webhooks/cloudinary") return await handleCloudinary(request, env, ctx, requestId);

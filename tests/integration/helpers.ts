@@ -80,6 +80,7 @@ export const testEnvironment = {
   HEALTHCHECK_SECRET: "integration-healthcheck-secret",
   INVALID_AUTH_IP_RATE_LIMITER: successfulIngress,
   JOBS: { send: async () => undefined },
+  LOGIN_IP_RATE_LIMITER: successfulIngress,
   LOCAL_TEST_MODE: "true",
   MEDIA_INVALID_IP_RATE_LIMITER: successfulIngress,
   MEDIA_SIGNING_SECRET: "integration-media-signing-secret-that-is-long-enough",
