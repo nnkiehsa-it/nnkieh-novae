@@ -236,7 +236,8 @@ export function TurnstileProvider({
         onOpenChange={() => undefined}
       >
         <DialogContent
-          className="max-w-sm gap-5"
+          className="max-w-sm gap-5 border-0 ring-0 shadow-none"
+          style={{ boxShadow: "none" }}
           showCloseButton={false}
           onEscapeKeyDown={(event) => event.preventDefault()}
           onPointerDownOutside={(event) => event.preventDefault()}
