@@ -45,7 +45,6 @@ export async function requireTurnstile(
   env: Env,
   expectedAction: string,
 ) {
-  if (env.LOCAL_TEST_MODE === "true") return;
   if (!TURNSTILE_ACTION_PATTERN.test(expectedAction)) {
     throw new Error("service-not-configured");
   }
@@ -53,6 +52,9 @@ export async function requireTurnstile(
   if (!token || token.length > TURNSTILE_MAX_TOKEN_LENGTH) {
     throw new Error("turnstile-failed");
   }
+  // Local integration runs still enforce the presence/shape of the token,
+  // but skip the external Cloudflare Siteverify request.
+  if (env.LOCAL_TEST_MODE === "true") return;
 
   const body = new FormData();
   body.set("secret", env.TURNSTILE_SECRET_KEY);
