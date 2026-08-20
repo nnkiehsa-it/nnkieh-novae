@@ -75,7 +75,7 @@ export function TurnstileProvider({
   const [ready, setReady] = useState(false);
   const [challenge, setChallenge] = useState<PendingChallenge | null>(null);
   const [debugError, setDebugError] = useState("");
-  const widgetHostRef = useRef<HTMLDivElement | null>(null);
+  const [widgetHost, setWidgetHost] = useState<HTMLDivElement | null>(null);
   const waiters = useRef<Array<{
     reject: (error: Error) => void;
     resolve: () => void;
@@ -123,11 +123,11 @@ export function TurnstileProvider({
   useEffect(() => {
     if (!challenge) return;
     const turnstile = window.turnstile;
-    const container = widgetHostRef.current;
-    if (!turnstile || !container) {
+    const container = widgetHost;
+    if (!turnstile) {
       const details = {
         action: challenge.action,
-        hasContainer: Boolean(container),
+        hasContainer: Boolean(widgetHost),
         hasTurnstileApi: Boolean(turnstile),
         hostname: window.location.hostname,
       };
@@ -137,6 +137,13 @@ export function TurnstileProvider({
         challenge.reject(new Error("turnstile-unavailable"));
         setChallenge((current) => current === challenge ? null : current);
       }, 0);
+      return;
+    }
+    if (!container) {
+      console.info("[Turnstile] waiting for widget host to mount", {
+        action: challenge.action,
+        hostname: window.location.hostname,
+      });
       return;
     }
 
@@ -242,7 +249,7 @@ export function TurnstileProvider({
       window.clearTimeout(timeout);
       if (!settled && widgetId) turnstile.remove?.(widgetId);
     };
-  }, [challenge]);
+  }, [challenge, widgetHost]);
 
   const requestToken = useCallback(async (action: string) => {
     if (!siteKey) return null;
@@ -294,7 +301,7 @@ export function TurnstileProvider({
           </DialogHeader>
           <div className="mx-auto w-full overflow-hidden rounded-xl border bg-background/70 p-3 shadow-sm">
             <div
-              ref={widgetHostRef}
+              ref={setWidgetHost}
               className="mx-auto min-h-[65px] w-[300px] max-w-full"
             />
           </div>
