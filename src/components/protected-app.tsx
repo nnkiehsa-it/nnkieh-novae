@@ -4,6 +4,7 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "@/hooks/use-session";
+import { AppLocaleGate } from "@/components/app-locale-gate";
 import { AppShell } from "@/components/app-shell";
 import { BrandLockup } from "@/components/ui/brand";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -62,6 +63,11 @@ export function ProtectedApp({ children }: { children: React.ReactNode }) {
   if (!session.setupCompleted && pathname !== "/setup")
     return <AppStartupScreen />;
   if (session.setupCompleted && pathname === "/setup") return <AppStartupScreen />;
-  if (pathname === "/setup") return <>{children}</>;
-  return <AppShell>{children}</AppShell>;
+  if (pathname === "/setup")
+    return <AppLocaleGate>{children}</AppLocaleGate>;
+  return (
+    <AppLocaleGate>
+      <AppShell>{children}</AppShell>
+    </AppLocaleGate>
+  );
 }

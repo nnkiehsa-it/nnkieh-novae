@@ -21,7 +21,7 @@ This document is the maintained map of the repository. Read it before broad sear
 
 - `src/app/login/` — focused Google sign-in presentation with a quiet, stagger-revealed brand statement; decorative product cards stay out of the authentication path.
 - `src/app/(protected)/layout.tsx` — authenticated application guard and shared shell boundary.
-- `src/app/(protected)/setup/` — two-stage language and category setup; idempotent completion recovery lives in `use-initial-setup`.
+- `src/app/(protected)/setup/` — admin-only idempotent category setup with completion recovery in `use-initial-setup`; first-visit language selection happens through the shared locale gate before any route.
 - `src/app/(protected)/issues/` — feature-guarded issue redirect, feed, composer, and detail routes.
 - `src/app/(protected)/facilities/` — feature-guarded facility feed, composer, and detail routes.
 - `src/app/(protected)/announcements/` — announcement feed, composer, and detail routes.
@@ -51,7 +51,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/components/content-renderer.tsx` — sanitized Markdown/media rendering; its optional field-level reveal affects Markdown text only and leaves media/card chrome outside the filter layer.
 - `src/components/content-resolution-notice.tsx` / `content-resolution-notice-skeleton.tsx` — shared success/error conclusion block for closed proposals and facility reports, paired with a lightweight field-level skeleton shown only after the closed status is known; the resolved block uses status-aware copy and reduced-motion-safe state entrance animation.
 - `src/components/detail-toolbar.tsx` — shared, geometry-stable secondary toolbar; detail routes add share/actions while Dashboard and system management reuse the same back geometry on mobile and desktop.
-- `src/components/protected-app.tsx`, `app-providers.tsx`, `app-update-gate.tsx`, `app-install-prompt.tsx` — startup/session, providers, theme/i18n, transitions.dev-matched pill toast boundaries, bounded forced PWA updates with version polling and reload recovery, and platform-aware install guidance.
+- `src/components/protected-app.tsx`, `app-providers.tsx`, `app-update-gate.tsx`, `app-install-prompt.tsx`, `app-locale-gate.tsx` — startup/session, providers, theme/i18n, transitions.dev-matched pill toast boundaries, bounded forced PWA updates with version polling and reload recovery, platform-aware install guidance, and the local-only first-visit language gate shown until the browser has an explicitly chosen locale.
 - `src/components/turnstile-provider.tsx` — explicit invisible Cloudflare Turnstile execution for first authenticated profile sync; tokens remain in memory and are single-use at the backend boundary.
 - `src/components/feature-route-guard.tsx` — shared disabled-feature guard for direct proposal and facility routes.
 - `src/components/ui/route-skeleton.tsx` and route `loading.tsx` files — prefetched list/detail app-shell fallbacks that reuse the same header/grid/control geometry as their resolved routes while skeletonizing only unresolved domain fields. Feed skeletons mirror each domain card's author, progress/location, status, and interaction rows; detail fallbacks do not speculate about status-dependent conclusion content, and no domain requests are started by the fallback.
@@ -93,7 +93,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/lib/loading-timing.ts` — shared cold-skeleton minimum duration; cached views bypass it while genuinely unresolved backend reads avoid one-frame loading flashes.
 - `src/constants/` — generated/static application, category, status, retention, API error, and rate-limit constants.
 - `src/types/` — shared frontend/domain types.
-- `src/i18n/` — reactive React i18n store and paired `en` / `zh-TW` domain catalogs. `ui.ts` contains the rebuilt interface language.
+- `src/i18n/` — reactive React i18n store and paired `en` / `zh-TW` domain catalogs. `ui.ts` contains the rebuilt interface language; only explicit user choices persist the locale locally.
 - `src/generated/` — generated frontend contracts; do not edit manually.
 - `cloudflare/src/index.ts` — sole public API entrypoint for actions, App Check and Firebase auth ingress, auth sync, realtime tickets/WebSockets, signed media, Cloudinary webhooks, Queue consumption, and scheduled maintenance.
 - `cloudflare/src/app-check.ts` / `turnstile.ts` — Worker-side Firebase App Check JWT validation and Cloudflare Turnstile Siteverify boundaries; App Check is required for browser API requests and Turnstile gates first-time profile creation.

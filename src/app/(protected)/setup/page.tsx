@@ -20,11 +20,7 @@ import {
   FacilityDraftEditor,
   IssueDraftEditor,
 } from "@/components/setup/category-setup-fields";
-import {
-  SetupBrand,
-  SetupLanguageStep,
-  SetupWaitingState,
-} from "@/components/setup/setup-steps";
+import { SetupBrand, SetupWaitingState } from "@/components/setup/setup-steps";
 
 export default function SetupPage() {
   const state = useInitialSetup();
@@ -37,16 +33,10 @@ export default function SetupPage() {
     <main className="min-h-[100svh] bg-[var(--surface-stage)] px-[max(1rem,var(--safe-left))] py-[max(2rem,var(--safe-top))]">
       <div className="mx-auto max-w-4xl">
         <SetupBrand />
-        {state.step === "language" ? (
-          <SetupLanguageStep
-            locale={state.locale}
-            onContinue={() => state.setStep("categories")}
+        <section>
+          <PageHeader
+            title={translate('ui.setup.categoryTitle')}
           />
-        ) : (
-          <section className="t-route-enter" data-route-direction="root">
-            <PageHeader
-              title={translate('ui.setup.categoryTitle')}
-            />
             <div className="mt-6">
               <LiquidTabs
                 ariaLabel={translate('ui.setup.categoryType')}
@@ -133,8 +123,7 @@ export default function SetupPage() {
                 </CategorySetupPanel>
               )}
             </div>
-            <div className="mt-6 flex items-center justify-between gap-3">
-              <Button onClick={() => state.setStep("language")} variant="ghost">{translate('ui.common.back')}</Button>
+            <div className="mt-6 flex items-center justify-end gap-3">
               <Button
                 disabled={!state.valid || state.saving}
                 onClick={() => state.setConfirming(true)}
@@ -147,7 +136,6 @@ export default function SetupPage() {
               </Button>
             </div>
           </section>
-        )}
       </div>
       <Dialog open={state.confirming} onOpenChange={state.setConfirming}>
         <DialogContent>

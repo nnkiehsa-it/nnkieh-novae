@@ -70,16 +70,21 @@ export function initializeI18n() {
   const storedLocale = normalizeLocale(readLocalStorage(LOCALE_STORAGE_KEY));
   localeState = storedLocale ?? detectSystemLocale();
   applyDocumentLocale(localeState);
-  if (!storedLocale) writeLocalStorage(LOCALE_STORAGE_KEY, localeState);
   emitLocaleChange();
 }
 
 export function setLocale(locale: AppLocale) {
-  if (localeState === locale) return;
   localeState = locale;
   applyDocumentLocale(locale);
   writeLocalStorage(LOCALE_STORAGE_KEY, locale);
   emitLocaleChange();
+}
+
+export function hasStoredLocale() {
+  return (
+    typeof window !== "undefined" &&
+    readLocalStorage(LOCALE_STORAGE_KEY) !== null
+  );
 }
 
 export function t(source: string, params: TranslationParams = {}) {

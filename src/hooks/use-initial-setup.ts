@@ -39,8 +39,7 @@ export function useInitialSetup() {
   const refreshSessionAccess = session.refreshSessionAccess;
   const setupCompleted = session.setupCompleted;
   const categories = useCategories();
-  const { locale, t } = useI18n();
-  const [step, setStep] = React.useState<"language" | "categories">("language");
+  const { t } = useI18n();
   const [kind, setKind] = React.useState("issue");
   const [issuesEnabled, setIssuesEnabled] = React.useState(true);
   const [facilitiesEnabled, setFacilitiesEnabled] = React.useState(true);
@@ -129,7 +128,6 @@ export function useInitialSetup() {
     issues,
     issuesEnabled,
     kind,
-    locale,
     save,
     saving: feedback.busy,
     setConfirming,
@@ -138,8 +136,6 @@ export function useInitialSetup() {
     setIssues,
     setIssuesEnabled,
     setKind,
-    setStep,
-    step,
     valid,
   };
 }
