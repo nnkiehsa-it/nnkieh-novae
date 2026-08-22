@@ -80,7 +80,7 @@ This document is the maintained map of the repository. Read it before broad sear
 
 ## Data, domain, and infrastructure
 
-- `src/services/` — frontend boundary for the Cloudflare Workers API, native WebSocket realtime transport, uploads, Firebase-backed sessions, and backend actions. Every browser API request obtains an App Check token through the shared security helper; no browser database client exists.
+- `src/services/` — frontend boundary for the Cloudflare Workers API, native WebSocket realtime transport, uploads, Firebase-backed sessions, and backend actions. Every verified Firebase session synchronizes its backend profile and reconciles `ADMIN_EMAILS` before access bootstrap; every browser API request obtains an App Check token through the shared security helper, and no browser database client exists.
 - `src/lib/` — framework-independent request, Firebase/App Check, Google identity, in-app browser detection, caching, Markdown, image, route, formatting, pagination, and active domain utilities. Obsolete Vue-era route-name, touch interception, caret/table editor, and `motion-v` compatibility helpers are intentionally removed rather than excluded from checks.
 - `src/lib/backend-security.ts` — shared Firebase ID token plus App Check request-header construction for browser-to-Worker API calls.
 - `src/lib/request.ts` — shared timeout and cancellation boundary for browser requests; already-aborted parents short-circuit before an operation can start, while active aborts and deadlines reject even if the underlying operation ignores its signal.

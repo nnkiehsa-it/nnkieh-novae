@@ -2,23 +2,10 @@ import type { User } from 'firebase/auth';
 import { withRequestTimeout } from '@/lib/request';
 import { apiGatewayUrl, hasApiGatewayConfig } from '@/lib/api-gateway';
 import { ApiRequestError, type ApiErrorResponse } from '@/lib/api-error';
-import { readLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
 import { backendSecurityHeaders } from '@/lib/backend-security';
 
 interface SyncUserResponse extends ApiErrorResponse {
   ok?: boolean;
-}
-
-const PROFILE_SYNC_INTERVAL_MS = 24 * 60 * 60 * 1_000;
-const PROFILE_SYNC_KEY_PREFIX = 'novae:profile-synced-at:';
-
-function wasRecentlySynced(uid: string) {
-  const syncedAt = Number.parseInt(readLocalStorage(`${PROFILE_SYNC_KEY_PREFIX}${uid}`) ?? '0', 10);
-  return Number.isFinite(syncedAt) && Date.now() - syncedAt < PROFILE_SYNC_INTERVAL_MS;
-}
-
-function rememberSync(uid: string) {
-  writeLocalStorage(`${PROFILE_SYNC_KEY_PREFIX}${uid}`, String(Date.now()));
 }
 
 async function syncBackendProfile(
@@ -41,7 +28,7 @@ async function syncBackendProfile(
   try {
     data = await response.json() as SyncUserResponse;
   } catch {
-    // Use the HTTP fallback below.
+    // Response validation below reports an invalid payload.
   }
   return { data, response };
 }
@@ -54,7 +41,6 @@ export async function ensureBackendProfile(
   user: User,
 ) {
   if (!hasApiGatewayConfig()) return;
-  if (wasRecentlySynced(user.uid)) return;
 
   const token = await withRequestTimeout(
     () => user.getIdTokenResult(),
@@ -66,5 +52,4 @@ export async function ensureBackendProfile(
   if (!result.response.ok || result.data?.ok !== true) {
     throw syncRequestError(result.data);
   }
-  rememberSync(user.uid);
 }
