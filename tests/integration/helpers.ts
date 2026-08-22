@@ -119,6 +119,10 @@ const bootstrapSql = await readFile(
   join(process.cwd(), "database", "migrations", "0002_bootstrap.sql"),
   "utf8",
 );
+const contentVersionIdentitySql = await readFile(
+  join(process.cwd(), "database", "migrations", "0011_content_version_reset_identity.sql"),
+  "utf8",
+);
 const integrationSeedSql = await readFile(
   join(process.cwd(), "database", "seed.integration.sql"),
   "utf8",
@@ -131,6 +135,7 @@ beforeEach(async () => {
   }
   await ownerDatabase.query(resetSql);
   await ownerDatabase.query(bootstrapSql);
+  await ownerDatabase.query(contentVersionIdentitySql);
   await ownerDatabase.query(integrationSeedSql);
   businessLimits.clear();
 });

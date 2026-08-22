@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   beginContentEntityRead,
+  clearContentEntityDomain,
   clearContentEntityScope,
   getContentEntity,
   getDetailContentEntity,
@@ -20,6 +21,23 @@ function issue(id: string, title: string, supported = false) {
 }
 
 describe("content entity store", () => {
+  it("clears one content domain without retaining reset database entities", () => {
+    const scope = "entity-domain-reset";
+    mergeContentEntityRead(scope, "issue", issue("old", "Old proposal"), beginContentEntityRead());
+    mergeContentEntityRead(
+      scope,
+      "announcement",
+      { id: "kept", title: "Announcement" } as never,
+      beginContentEntityRead(),
+    );
+
+    clearContentEntityDomain(scope, "issue");
+
+    expect(getContentEntity(scope, "issue", "old")).toBeUndefined();
+    expect(getContentEntity(scope, "announcement", "kept")).toBeDefined();
+    clearContentEntityScope(scope);
+  });
+
   it("shares list state without treating a summary as authoritative detail", () => {
     const scope = "entity-list-detail";
     mergeContentEntityRead(

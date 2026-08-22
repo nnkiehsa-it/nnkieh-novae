@@ -219,3 +219,16 @@ export function clearContentEntityScope(scope: string | undefined) {
     if (key.startsWith(prefix)) entries.delete(key);
   }
 }
+
+export function clearContentEntityDomain(
+  scope: string | undefined,
+  domain: ContentEntityDomain,
+) {
+  const prefix = `${domainKey(scope, domain)}|`;
+  for (const key of entries.keys()) {
+    if (key.startsWith(prefix)) entries.delete(key);
+  }
+  const key = domainKey(scope, domain);
+  domainVersions.set(key, (domainVersions.get(key) ?? 0) + 1);
+  domainListeners.get(key)?.forEach((listener) => listener());
+}

@@ -2,6 +2,7 @@ import { auth } from '@/lib/firebase';
 import { invokeBackendAction } from '@/services/backend-action';
 import { markContentCachePrefixStale } from '@/services/content-read-cache';
 import { readLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
+import { clearContentEntityDomain, type ContentEntityDomain } from '@/lib/content-entity-store';
 
 export type ContentVersionDomain = 'announcements' | 'facilities' | 'issues';
 export type ContentVersions = Record<ContentVersionDomain, number>;
@@ -15,6 +16,11 @@ const DOMAIN_PREFIXES: Record<ContentVersionDomain, readonly string[]> = {
   announcements: ['announcement-list-page|', 'announcement-detail|', 'announcement-comments-page|'],
   facilities: ['facility-list-page|', 'facility-detail|'],
   issues: ['issue-list-page|', 'issue-search|', 'user-issue-list-page|', 'issue-detail|', 'issue-comments-page|'],
+};
+const ENTITY_DOMAINS: Record<ContentVersionDomain, ContentEntityDomain> = {
+  announcements: 'announcement',
+  facilities: 'facility',
+  issues: 'issue',
 };
 
 const listeners = new Map<ContentVersionDomain, Set<() => void | Promise<void>>>();
@@ -46,8 +52,9 @@ function writeStoredVersions(uid: string, value: StoredContentVersions) {
   writeLocalStorage(storageKey(uid), JSON.stringify(value));
 }
 
-function invalidateDomain(domain: ContentVersionDomain) {
+function invalidateDomain(uid: string, domain: ContentVersionDomain) {
   DOMAIN_PREFIXES[domain].forEach(markContentCachePrefixStale);
+  clearContentEntityDomain(uid, ENTITY_DOMAINS[domain]);
 }
 
 function notifyChangedDomains(domains: ContentVersionDomain[]) {
@@ -63,15 +70,13 @@ export function applyContentVersionsSnapshot(
   const uid = auth?.currentUser?.uid ?? '';
   if (!uid) return [] as ContentVersionDomain[];
   const previous = readStoredVersions(uid);
-  const nextVersions = { ...(previous?.versions ?? { announcements: 1, facilities: 1, issues: 1 }) };
-  const domains = (Object.keys(versions) as ContentVersionDomain[]).filter((domain) => {
-    const next = Math.max(nextVersions[domain], versions[domain]);
-    const changed = next > nextVersions[domain];
-    nextVersions[domain] = next;
-    return changed;
-  });
-  domains.forEach(invalidateDomain);
-  writeStoredVersions(uid, { versions: nextVersions });
+  const domains = previous
+    ? (Object.keys(versions) as ContentVersionDomain[]).filter(
+        (domain) => previous.versions[domain] !== versions[domain],
+      )
+    : (Object.keys(versions) as ContentVersionDomain[]);
+  domains.forEach((domain) => invalidateDomain(uid, domain));
+  writeStoredVersions(uid, { versions: { ...versions } });
   if (options.notify) notifyChangedDomains(domains);
   return domains;
 }

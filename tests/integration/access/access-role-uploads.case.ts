@@ -24,6 +24,9 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
     "facilities",
     "issues",
   ]);
+  for (const version of Object.values(asRecord(versions.versions))) {
+    assert.ok(Number(version) > 1_000_000_000_000);
+  }
 
   const bootstrap = asRecord(await callAction("getSessionBootstrap", { recordVisit: true }, user.auth));
   assert.equal(asRecord(bootstrap.access).role, "user");
@@ -32,6 +35,7 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
     "facilities",
     "issues",
   ]);
+  assert.deepEqual(bootstrap.versions, versions.versions);
   assert.ok(Array.isArray(asRecord(bootstrap.catalog).issueCategories));
   assert.equal(typeof asRecord(bootstrap.notificationUnread).hasUnread, "boolean");
   assert.equal(bootstrap.visitRecorded, true);
