@@ -173,6 +173,7 @@ interface PushTokenRow {
 
 interface UserProfileRow {
   uid: string;
+  created_at: string;
   email: string | null;
   avatar_hash: string | null;
   avatar_public_id: string | null;
@@ -184,6 +185,26 @@ interface UserProfileRow {
   display_name: string | null;
   profile_version: number;
   updated_at: string;
+}
+
+interface UserRestrictionRow {
+  uid: string;
+  restricted_until: string | null;
+  restricted_permanently: boolean;
+  reason: string | null;
+  updated_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface AdminAuditLogRow {
+  id: number;
+  actor_uid: string;
+  action: string;
+  domain: string;
+  target_id: string | null;
+  detail: Json;
+  created_at: string;
 }
 
 interface UserRoleRow {
@@ -300,7 +321,9 @@ export interface AppPrivateTables {
   push_tokens: Table<PushTokenRow>;
   supports: Table<{ issue_id: string; uid: string; created_at: string }>;
   uploads: Table<UploadRow>;
+  admin_audit_log: Table<AdminAuditLogRow>;
   user_profiles: Table<UserProfileRow>;
+  user_restrictions: Table<UserRestrictionRow>;
   user_roles: Table<UserRoleRow>;
   roles: Table<{ code: string; label: string; created_at: string }>;
   permissions: Table<{ code: string; label: string }>;
@@ -354,6 +377,15 @@ export interface AppApiFunctions {
     issues_enabled: boolean;
   }, Json>;
   backend_get_access_context: AppFunction<{ actor_uid: string }, Json>;
+  backend_list_admin_users: AppFunction<{ search_query: string; page_limit: number }, Json>;
+  backend_list_admin_audit: AppFunction<{ search_query: string; page_limit: number }, Json>;
+  backend_set_user_restriction: AppFunction<{
+    actor_uid: string;
+    target_uid: string;
+    restriction_mode: string;
+    reason: string;
+  }, Json>;
+  get_admin_overview: AppFunction<{ window_hours: number }, Json>;
   backend_get_session_bootstrap_snapshot: AppFunction<{
     actor_email: string;
     actor_is_admin: boolean;

@@ -72,6 +72,9 @@ export const BACKEND_ACTION_POLICIES = {
   "getContentVersions": {
     "group": "read"
   },
+  "getAdminOverview": {
+    "group": "read"
+  },
   "getCurrentUserRole": {
     "group": "read"
   },
@@ -115,6 +118,12 @@ export const BACKEND_ACTION_POLICIES = {
     "group": "read"
   },
   "listIssues": {
+    "group": "read"
+  },
+  "listAdminAudit": {
+    "group": "read"
+  },
+  "listAdminUsers": {
     "group": "read"
   },
   "listNotificationPages": {
@@ -166,6 +175,10 @@ export const BACKEND_ACTION_POLICIES = {
   "setUserAccessScope": {
     "group": "admin-write",
     "extraLimit": "roleWriteHourly"
+  },
+  "setUserRestriction": {
+    "group": "admin-write",
+    "extraLimit": "moderationWriteHourly"
   },
   "toggleFacilityAffected": {
     "group": "sensitive-write",

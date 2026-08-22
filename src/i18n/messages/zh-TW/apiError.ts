@@ -9,6 +9,7 @@ const messages = {
   'apiError.upstreamUnavailable': '連線服務暫時無法使用，請稍後再試。',
   'apiError.unauthenticated': '請先登入後再操作。',
   'apiError.permissionDenied': '沒有執行此操作的權限。',
+  'apiError.userMuted': '此帳號目前受到互動限制。',
   'apiError.originDenied': '不允許的請求來源。',
   'apiError.notFound': '找不到指定內容。',
   'apiError.methodNotAllowed': '請求方法不正確。',

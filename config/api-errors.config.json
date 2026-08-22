@@ -5,6 +5,7 @@
   "app-check-failed": { "status": 401, "messageKey": "apiError.appCheckFailed" },
   "turnstile-failed": { "status": 401, "messageKey": "apiError.turnstileFailed" },
   "permission-denied": { "status": 403, "messageKey": "apiError.permissionDenied" },
+  "user-muted": { "status": 403, "messageKey": "apiError.userMuted" },
   "origin-denied": { "status": 403, "messageKey": "apiError.originDenied" },
   "not-found": { "status": 404, "messageKey": "apiError.notFound" },
   "method-not-allowed": { "status": 405, "messageKey": "apiError.methodNotAllowed" },

@@ -9,6 +9,7 @@ const messages = {
   'apiError.upstreamUnavailable': 'A connected service is temporarily unavailable. Please try again later.',
   'apiError.unauthenticated': 'Please sign in to continue.',
   'apiError.permissionDenied': 'You do not have permission to perform this action.',
+  'apiError.userMuted': 'This account is currently restricted from interacting.',
   'apiError.originDenied': 'Requests from this origin are not allowed.',
   'apiError.notFound': 'The requested content could not be found.',
   'apiError.methodNotAllowed': 'This request method is not allowed.',

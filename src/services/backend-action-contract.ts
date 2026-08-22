@@ -57,6 +57,9 @@ export const BACKEND_ACTION_POLICIES = {
   "getContentVersions": {
     "group": "read"
   },
+  "getAdminOverview": {
+    "group": "read"
+  },
   "getCurrentUserRole": {
     "group": "read"
   },
@@ -102,6 +105,12 @@ export const BACKEND_ACTION_POLICIES = {
   "listIssues": {
     "group": "read"
   },
+  "listAdminAudit": {
+    "group": "read"
+  },
+  "listAdminUsers": {
+    "group": "read"
+  },
   "listNotificationPages": {
     "group": "read"
   },
@@ -144,6 +153,9 @@ export const BACKEND_ACTION_POLICIES = {
   "setUserAccessScope": {
     "group": "admin-write"
   },
+  "setUserRestriction": {
+    "group": "admin-write"
+  },
   "toggleFacilityAffected": {
     "group": "sensitive-write"
   },
@@ -184,6 +196,7 @@ export const BACKEND_ACTION_NAMES = [
   'getCategoryCatalog',
   'getCategoryManagement',
   'getContentVersions',
+  'getAdminOverview',
   'getCurrentUserRole',
   'getSessionBootstrap',
   'getFacility',
@@ -199,6 +212,8 @@ export const BACKEND_ACTION_NAMES = [
   'listComments',
   'listFacilities',
   'listIssues',
+  'listAdminAudit',
+  'listAdminUsers',
   'listNotificationPages',
   'listRoleAssignments',
   'listUserIssues',
@@ -213,6 +228,7 @@ export const BACKEND_ACTION_NAMES = [
   'savePlatformFeatures',
   'setAnnouncementLike',
   'setUserAccessScope',
+  'setUserRestriction',
   'toggleFacilityAffected',
   'toggleSupport',
   'unregisterPushToken',

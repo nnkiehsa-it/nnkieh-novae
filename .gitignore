@@ -17,6 +17,7 @@ vite.config.d.ts
 .npmrc
 .impeccable/
 temp/
+/*.patch
 
 temp.jsonl
 .vercel

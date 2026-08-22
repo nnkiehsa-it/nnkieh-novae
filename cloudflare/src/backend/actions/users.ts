@@ -6,6 +6,7 @@ import { createMediaDeliveryUrl } from "../shared/media-delivery.ts";
 import { asString } from "../shared/http.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { handleUserAccessAction } from "./user-access.ts";
+import { handleUserAdminAction } from "./user-admin.ts";
 
 const AVATAR_REVALIDATE_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
@@ -13,6 +14,10 @@ export function isUserAction(action: string) {
   return action === "getCurrentUserRole"
     || action === "listRoleAssignments"
     || action === "setUserAccessScope"
+    || action === "listAdminUsers"
+    || action === "setUserRestriction"
+    || action === "listAdminAudit"
+    || action === "getAdminOverview"
     || action === "cacheUserAvatar"
     || action === "getUserPublicProfiles";
 }
@@ -36,6 +41,15 @@ export async function handleUserAction(
 
   if (action === "listRoleAssignments" || action === "setUserAccessScope") {
     return await handleUserAccessAction(action, payload, auth, database);
+  }
+
+  if (
+    action === "listAdminUsers"
+    || action === "setUserRestriction"
+    || action === "listAdminAudit"
+    || action === "getAdminOverview"
+  ) {
+    return await handleUserAdminAction(action, payload, auth, database);
   }
 
   if (action === "cacheUserAvatar") {

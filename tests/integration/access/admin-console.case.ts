@@ -1,0 +1,99 @@
+import assert from "node:assert/strict";
+
+import {
+  asRecord,
+  callAction,
+  expectActionError,
+  integrationTest,
+  refreshActor,
+  requestId,
+  seedActor,
+} from "../helpers.ts";
+
+integrationTest("admin console restriction and overview actions", async () => {
+  const admin = await seedActor("console-admin", { roles: ["platform-admin"] });
+  const user = await seedActor("console-user");
+  const target = await seedActor("console-target");
+
+  await expectActionError(
+    "permission-denied",
+    () => callAction("listAdminUsers", { query: target.auth.uid }, user.auth),
+  );
+  await expectActionError(
+    "permission-denied",
+    () => callAction("setUserRestriction", {
+      uid: target.auth.uid,
+      mode: "7d",
+      reason: "denied",
+      requestId: requestId("restrict-user-denied"),
+    }, user.auth),
+  );
+
+  const users = asRecord(await callAction(
+    "listAdminUsers",
+    { query: target.auth.uid },
+    admin.auth,
+  ));
+  assert.equal(
+    (users.users as Array<{ uid: string }>)[0]?.uid,
+    target.auth.uid,
+  );
+
+  await expectActionError(
+    "permission-denied",
+    () => callAction("setUserRestriction", {
+      uid: admin.auth.uid,
+      mode: "permanent",
+      reason: "cannot restrict platform admins",
+      requestId: requestId("restrict-platform-admin"),
+    }, admin.auth),
+  );
+
+  await callAction("setUserRestriction", {
+    uid: target.auth.uid,
+    mode: "7d",
+    reason: "integration test",
+    requestId: requestId("restrict-user"),
+  }, admin.auth);
+
+  const restricted = await refreshActor(target);
+  assert.equal(restricted.auth.interactionRestricted, true);
+
+  await expectActionError(
+    "user-muted",
+    () => callAction("createIssue", {
+      title: "blocked",
+      content: "blocked",
+      category: "public-issues",
+      requestId: requestId("restricted-create"),
+    }, restricted.auth),
+  );
+
+  const announcements = await callAction("listAnnouncements", {}, restricted.auth);
+  assert.ok(announcements);
+
+  await callAction("setUserRestriction", {
+    uid: target.auth.uid,
+    mode: "clear",
+    reason: "",
+    requestId: requestId("clear-restriction"),
+  }, admin.auth);
+
+  const restored = await refreshActor(target);
+  assert.equal(restored.auth.interactionRestricted, false);
+
+  const overview = asRecord(await callAction(
+    "getAdminOverview",
+    { window: "24h" },
+    admin.auth,
+  ));
+  assert.ok(Number(overview.totalUsers) >= 3);
+  assert.ok(Number(overview.activeUsers24h) >= 0);
+
+  const audit = asRecord(await callAction(
+    "listAdminAudit",
+    { query: "setUserRestriction" },
+    admin.auth,
+  ));
+  assert.ok((audit.entries as unknown[]).length >= 2);
+});

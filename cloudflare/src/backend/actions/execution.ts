@@ -1,8 +1,66 @@
 import { asRecord, asString } from "../shared/http.ts";
+import type { Json } from "../database/schema.ts";
 import { hasPermission } from "./auth.ts";
 import { claimBackendActionBusinessLimit } from "./rate-limit.ts";
 import type { BackendActionDefinition } from "./action-registry.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
+
+const RESTRICTED_INTERACTION_ACTIONS = new Set([
+  "createAnnouncementComment",
+  "createComment",
+  "createFacility",
+  "createImageUploadSessions",
+  "createIssue",
+  "finalizeImageUploads",
+  "setAnnouncementLike",
+  "toggleFacilityAffected",
+  "toggleSupport",
+]);
+
+function auditTarget(payload: JsonRecord) {
+  const candidates = [
+    payload.uid,
+    payload.id,
+    payload.categoryId,
+    payload.issueId,
+    payload.facilityId,
+    payload.announcementId,
+    payload.commentId,
+  ];
+  return candidates.find(
+    (value): value is string => typeof value === "string" && value.length > 0,
+  ) ?? null;
+}
+
+function auditDetail(payload: JsonRecord) {
+  const detail: { [key: string]: Json | undefined } = {};
+  for (const key of ["kind", "mode", "scopeKind", "categoryId", "grant", "status"]) {
+    const value = payload[key];
+    if (typeof value === "string" || typeof value === "boolean" || typeof value === "number") {
+      detail[key] = value;
+    }
+  }
+  return detail;
+}
+
+async function recordAdminAudit(
+  definition: BackendActionDefinition,
+  payload: JsonRecord,
+  auth: AuthContext,
+  database: BackendDatabase,
+) {
+  if (definition.rateLimitGroup !== "admin-write" || definition.name === "setUserRestriction") {
+    return;
+  }
+  const { error } = await database.table("app_private", "admin_audit_log").insert({
+    actor_uid: auth.uid,
+    action: definition.name,
+    domain: definition.domain,
+    target_id: auditTarget(payload),
+    detail: auditDetail(payload),
+  });
+  if (error) console.error("admin-audit-write-failed", error);
+}
 
 async function runWithIdempotency(
   definition: BackendActionDefinition,
@@ -65,6 +123,9 @@ export async function executeBackendAction(
   auth: AuthContext,
   database: BackendDatabase,
 ) {
+  if (auth.interactionRestricted && RESTRICTED_INTERACTION_ACTIONS.has(definition.name)) {
+    throw new Error("user-muted");
+  }
   if (definition.requiredPermission && !hasPermission(auth, definition.requiredPermission)) {
     throw new Error("permission-denied");
   }
@@ -73,6 +134,10 @@ export async function executeBackendAction(
     payload,
     auth,
     database,
-    () => definition.handler(definition.name, payload, auth, database),
+    async () => {
+      const result = await definition.handler(definition.name, payload, auth, database);
+      await recordAdminAudit(definition, payload, auth, database);
+      return result;
+    },
   );
 }

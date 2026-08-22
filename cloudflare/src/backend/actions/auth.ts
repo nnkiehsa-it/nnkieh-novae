@@ -45,6 +45,7 @@ export async function resolveAuthContext(
   return {
     email: firebaseUser.email,
     isAdmin: isPlatformAdmin,
+    interactionRestricted: access.interactionRestricted === true,
     managedFacilityCategoryIds,
     managedIssueCategoryIds,
     name: firebaseUser.name,

@@ -13,6 +13,7 @@ export type PermissionCode =
 export interface AuthContext {
   email: string;
   isAdmin: boolean;
+  interactionRestricted: boolean;
   managedIssueCategoryIds: string[];
   managedFacilityCategoryIds: string[];
   permissions: PermissionCode[];
