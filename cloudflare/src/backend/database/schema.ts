@@ -381,6 +381,12 @@ export interface AppApiFunctions {
   backend_get_access_context: AppFunction<{ actor_uid: string }, Json>;
   backend_list_admin_users: AppFunction<{ search_query: string; page_limit: number }, Json>;
   backend_list_admin_audit: AppFunction<{ search_query: string; page_limit: number }, Json>;
+  backend_list_admin_activity: AppFunction<{
+    window_hours: number;
+    before_occurred_at: string | null;
+    before_key: string | null;
+    page_limit: number;
+  }, Json>;
   backend_set_user_restriction: AppFunction<{
     actor_uid: string;
     target_uid: string;

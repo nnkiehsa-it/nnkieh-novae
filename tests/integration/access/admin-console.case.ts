@@ -22,6 +22,10 @@ integrationTest("admin console restriction and overview actions", async () => {
   );
   await expectActionError(
     "permission-denied",
+    () => callAction("listAdminActivity", { cursor: null, window: "24h" }, user.auth),
+  );
+  await expectActionError(
+    "permission-denied",
     () => callAction("setUserRestriction", {
       uid: target.auth.uid,
       mode: "7d",
@@ -106,6 +110,26 @@ integrationTest("admin console restriction and overview actions", async () => {
     ),
     true,
   );
+  const activityPage = asRecord(await callAction(
+    "listAdminActivity",
+    { cursor: null, window: "24h" },
+    admin.auth,
+  ));
+  assert.equal(
+    (activityPage.entries as Array<{ kind: string; target_id: string }>).some(
+      (entry) => entry.kind === "admin" && entry.target_id === target.auth.uid,
+    ),
+    true,
+  );
+
+  const { data: queuedAuditEvents, error: queuedAuditError } = await database
+    .table("app_private", "outbox_events")
+    .select("payload")
+    .eq("event_type", "admin.audit_recorded");
+  if (queuedAuditError) throw queuedAuditError;
+  assert.ok((queuedAuditEvents ?? []).filter(
+    (event) => asRecord(event.payload).target_id === target.auth.uid,
+  ).length >= 2);
 
   const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000).toISOString();
   const { error: ageAuditError } = await database.table("app_private", "admin_audit_log")
@@ -124,6 +148,17 @@ integrationTest("admin console restriction and overview actions", async () => {
   assert.equal(
     activity24h.some((entry) => entry.kind === "admin" && entry.target_id === target.auth.uid),
     false,
+  );
+  const activity7d = asRecord(await callAction(
+    "listAdminActivity",
+    { cursor: null, window: "7d" },
+    admin.auth,
+  ));
+  assert.equal(
+    (activity7d.entries as Array<{ kind: string; target_id: string }>).some(
+      (entry) => entry.kind === "admin" && entry.target_id === target.auth.uid,
+    ),
+    true,
   );
   const audit = asRecord(await callAction(
     "listAdminAudit",

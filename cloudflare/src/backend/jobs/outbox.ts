@@ -3,6 +3,7 @@ import { isInvalidFcmTokenError, sendFcmMessage, sendFcmTopicMessage } from "../
 import { asRecord } from "../shared/http.ts";
 import {
   markNotionPageDeleted,
+  syncAdminAuditToNotion,
   syncAnnouncementCreatedToNotion,
   syncIssueCreatedToNotion,
   syncIssueResultUpdatedToNotion,
@@ -332,6 +333,9 @@ async function syncNotionForEvent(
   event: OutboxEvent,
 ): Promise<void> {
   switch (event.event_type) {
+    case "admin.audit_recorded":
+      await syncAdminAuditToNotion(database, event.target_type, event.target_id, event.payload);
+      break;
     case "issue.created":
       await syncIssueCreatedToNotion(database, event.target_id, event.payload);
       break;

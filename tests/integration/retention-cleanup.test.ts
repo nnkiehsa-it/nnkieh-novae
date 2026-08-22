@@ -213,6 +213,21 @@ integrationTest("configured retention cleanup removes every expired data class a
     { action: "retention-test", actor_uid: admin.auth.uid, created_at: recentAt, domain: "test", target_id: adminAuditTargets.recent },
   ]);
   if (adminAuditError) throw adminAuditError;
+  const { data: expiredAdminAudit, error: expiredAdminAuditError } = await database
+    .table("app_private", "admin_audit_log")
+    .select("id")
+    .eq("target_id", adminAuditTargets.expired)
+    .single();
+  if (expiredAdminAuditError) throw expiredAdminAuditError;
+  const orphanedNotionTargets = {
+    admin: String(expiredAdminAudit.id),
+    announcement: expiredAnnouncementId,
+  };
+  const { error: orphanedNotionError } = await database.table("app_private", "notion_pages").insert([
+    { notion_page_id: `notion-admin-${runId}`, target_id: orphanedNotionTargets.admin, target_type: "admin-audit" },
+    { notion_page_id: `notion-announcement-${runId}`, target_id: orphanedNotionTargets.announcement, target_type: "announcement" },
+  ]);
+  if (orphanedNotionError) throw orphanedNotionError;
 
   const categoryAuditTargets = { expired: `category-expired-${runId}`, recent: `category-recent-${runId}` };
   const { error: categoryAuditError } = await database.table("app_private", "category_configuration_audit").insert([
@@ -312,6 +327,7 @@ integrationTest("configured retention cleanup removes every expired data class a
     idempotency_keys_deleted: 1,
     maintenance_runs_deleted: 0,
     notifications_deleted: 1,
+    orphaned_notion_mappings_deleted: 2,
     outbox_events_deleted: 2,
     push_delivery_logs_deleted: 2,
     push_tokens_deleted: 2,
@@ -362,6 +378,8 @@ integrationTest("configured retention cleanup removes every expired data class a
   await expectPresent("category_configuration_audit", "category_id", categoryAuditTargets.recent);
   await expectRemoved("access_assignment_audit", "target_uid", accessAuditTargets.expired);
   await expectPresent("access_assignment_audit", "target_uid", accessAuditTargets.recent);
+  await expectRemoved("notion_pages", "target_id", orphanedNotionTargets.admin);
+  await expectRemoved("notion_pages", "target_id", orphanedNotionTargets.announcement);
   await expectRemoved("user_restrictions", "uid", staleAvatarOwner.auth.uid);
   await expectPresent("user_restrictions", "uid", owner.auth.uid);
   await expectRemoved("maintenance_runs", "id", oldMaintenanceId);

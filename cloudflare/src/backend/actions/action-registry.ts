@@ -118,6 +118,7 @@ export const backendActionDefinitions = [
   action("listRoleAssignments", "user", "read", userHandler, { requiredPermission: "role.manage" }),
   action("listAdminUsers", "user", "read", userHandler, { requiredPermission: "role.manage" }),
   action("listAdminAudit", "user", "read", userHandler, { requiredPermission: "role.manage" }),
+  action("listAdminActivity", "user", "read", userHandler, { requiredPermission: "dashboard.view" }),
   action("getAdminOverview", "user", "read", userHandler, { requiredPermission: "dashboard.view" }),
   action("setUserRestriction", "user", "admin-write", userHandler, {
     idempotent: true, requiredPermission: "role.manage", requiresRequestId: true,

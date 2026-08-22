@@ -31,6 +31,8 @@ const NOTION_API_VERSION = "2026-03-11";
 const knownSelectOptions = new Set<string>();
 const knownDateProperties = new Set<string>();
 const knownRichTextProperties = new Set<string>();
+const knownNumberProperties = new Set<string>();
+const knownFormulaProperties = new Set<string>();
 let discoveredDataSourceId: Promise<string> | undefined;
 let cachedDataSource: Promise<Record<string, unknown>> | undefined;
 
@@ -211,6 +213,32 @@ async function ensureRichTextProperty(propertyName: string): Promise<void> {
   knownRichTextProperties.add(propertyName);
 }
 
+async function ensureNumberProperty(propertyName: string): Promise<void> {
+  if (!propertyName || knownNumberProperties.has(propertyName)) return;
+  const dataSource = await retrieveDataSource();
+  if (!isRecord(dataSource.properties)) return;
+  const property = dataSource.properties[propertyName];
+  if (isRecord(property) && property.type === "number") {
+    knownNumberProperties.add(propertyName);
+    return;
+  }
+  await updateDataSourceProperties({ [propertyName]: { number: {} } });
+  knownNumberProperties.add(propertyName);
+}
+
+async function ensureFormulaProperty(propertyName: string, expression: string): Promise<void> {
+  if (!propertyName || knownFormulaProperties.has(propertyName)) return;
+  const dataSource = await retrieveDataSource();
+  if (!isRecord(dataSource.properties)) return;
+  const property = dataSource.properties[propertyName];
+  if (isRecord(property) && property.type === "formula") {
+    knownFormulaProperties.add(propertyName);
+    return;
+  }
+  await updateDataSourceProperties({ [propertyName]: { formula: { expression } } });
+  knownFormulaProperties.add(propertyName);
+}
+
 function dateProperty(value: unknown) {
   return typeof value === "string" && value
     ? { date: { start: value } }
@@ -227,6 +255,11 @@ function richTextProperty(value: unknown) {
   };
 }
 
+function numberProperty(value: unknown) {
+  const number = Number(value);
+  return { number: Number.isFinite(number) ? number : null };
+}
+
 function issueTimeProperties(issue: Partial<Database["app_private"]["Tables"]["issues"]["Row"]>) {
   return {
     "提案時間": dateProperty(issue.created_at),
@@ -240,6 +273,26 @@ function issueTimeProperties(issue: Partial<Database["app_private"]["Tables"]["i
 
 async function ensureIssueTimeProperties() {
   await Promise.all(Object.keys(issueTimeProperties({})).map(ensureDateProperty));
+}
+
+async function ensureContentFormulaProperties() {
+  await Promise.all([
+    ensureDateProperty("建立時間"),
+    ensureDateProperty("提案時間"),
+    ensureDateProperty("結案時間"),
+    ensureNumberProperty("附議數量"),
+    ensureNumberProperty("附議目標"),
+  ]);
+  await Promise.all([
+    ensureFormulaProperty(
+      "活動天數",
+      'if(and(empty(prop("建立時間")), empty(prop("提案時間"))), 0, dateBetween(if(empty(prop("結案時間")), now(), prop("結案時間")), if(empty(prop("建立時間")), prop("提案時間"), prop("建立時間")), "days"))',
+    ),
+    ensureFormulaProperty(
+      "附議進度",
+      'if(or(empty(prop("附議目標")), prop("附議目標") <= 0), "", format(round(prop("附議數量") / prop("附議目標") * 100)) + "%")',
+    ),
+  ]);
 }
 
 async function updateIssueTimeProperties(
@@ -454,7 +507,7 @@ async function getOrCreateNotionPage(
   authorName: string,
   supportCount?: unknown,
   supportGoal?: unknown,
-  countProperty = "附議數",
+  countProperty: string | null = "附議數",
 ): Promise<string | null> {
   const reservationId = `pending:${crypto.randomUUID()}`;
   const reservationExpiredBefore = new Date(Date.now() - 10 * 60_000).toISOString();
@@ -498,7 +551,7 @@ async function getOrCreateNotionPage(
     await Promise.all([
       ensureSelectOption("分類", categoryLabel),
       ensureSelectOption("狀態", statusLabel),
-      ensureRichTextProperty(countProperty),
+      countProperty ? ensureRichTextProperty(countProperty) : Promise.resolve(),
       ensureRichTextProperty("Novae ID"),
     ]);
 
@@ -509,16 +562,21 @@ async function getOrCreateNotionPage(
     }) as { results?: Array<{ id?: string }> };
     let pageId = existingRemote.results?.[0]?.id;
     if (!pageId) {
+      const properties: Record<string, unknown> = {
+        "名稱": { title: [{ text: { content: title } }] },
+        "分類": { select: { name: categoryLabel } },
+        "狀態": { select: { name: statusLabel } },
+        "作者": { rich_text: [{ text: { content: authorName } }] },
+        "Novae ID": { rich_text: [{ text: { content: externalId } }] },
+      };
+      if (countProperty) {
+        properties[countProperty] = {
+          rich_text: [{ text: { content: supportLabel(supportCount, supportGoal) } }],
+        };
+      }
       const result = await callNotionAPI("/pages", "POST", {
         parent: { type: "data_source_id", data_source_id: dataSourceId },
-        properties: {
-          "名稱": { title: [{ text: { content: title } }] },
-          "分類": { select: { name: categoryLabel } },
-          "狀態": { select: { name: statusLabel } },
-          "作者": { rich_text: [{ text: { content: authorName } }] },
-          "Novae ID": { rich_text: [{ text: { content: externalId } }] },
-          [countProperty]: { rich_text: [{ text: { content: supportLabel(supportCount, supportGoal) } }] },
-        },
+        properties,
       }) as { id?: string };
       pageId = result?.id;
       remotePageCreated = Boolean(pageId);
@@ -604,7 +662,12 @@ export async function syncIssueCreatedToNotion(
     issue?.support_goal ?? payload.support_goal,
   );
   if (pageId) {
-    await updateIssueTimeProperties(pageId, issue ?? {});
+    await Promise.all([
+      updateIssueTimeProperties(pageId, issue ?? {}),
+      ensureNumberProperty("附議數量"),
+      ensureNumberProperty("附議目標"),
+    ]);
+    await ensureContentFormulaProperties();
     await Promise.all([
       ensureRichTextProperty("審核未通過原因"),
       ensureRichTextProperty("提案結果"),
@@ -613,6 +676,8 @@ export async function syncIssueCreatedToNotion(
       properties: {
         "審核未通過原因": richTextProperty(issue?.review_rejection_reason),
         "提案結果": richTextProperty(issue?.result_content),
+        "附議數量": numberProperty(issue?.support_count ?? payload.support_count),
+        "附議目標": numberProperty(issue?.support_goal ?? payload.support_goal),
       },
     });
     await replaceManagedContent(
@@ -645,12 +710,18 @@ export async function syncFacilityCreatedToNotion(
     String(facility.category_id), translateFacilityStatus(String(facility.status)), authorName, facility.affected_count, null, "遇到人數",
   );
   if (!pageId) return;
-  await Promise.all([ensureRichTextProperty("地點"), ...["建立時間", "開始處理時間", "結案時間"].map(ensureDateProperty)]);
+  await Promise.all([
+    ensureRichTextProperty("地點"),
+    ensureNumberProperty("遇到人數數量"),
+    ...["建立時間", "開始處理時間", "結案時間"].map(ensureDateProperty),
+  ]);
+  await ensureContentFormulaProperties();
   await callNotionAPI(`/pages/${pageId}`, "PATCH", { properties: {
     "地點": richTextProperty(facility.location),
     "建立時間": dateProperty(facility.created_at),
     "開始處理時間": dateProperty(facility.started_at),
     "結案時間": dateProperty(facility.closed_at),
+    "遇到人數數量": numberProperty(facility.affected_count),
   } });
   await replaceManagedContent(
     database,
@@ -682,13 +753,16 @@ export async function syncFacilityStatusToNotion(
   await Promise.all([
     ensureSelectOption("狀態", statusLabel), ensureRichTextProperty("處理結果"), ensureRichTextProperty("遇到人數"),
     ...["建立時間", "開始處理時間", "結案時間"].map(ensureDateProperty),
+    ensureNumberProperty("遇到人數數量"),
   ]);
+  await ensureContentFormulaProperties();
   await callNotionAPI(`/pages/${pageId}`, "PATCH", { properties: {
     "狀態": { select: { name: statusLabel } },
     "建立時間": dateProperty(facility.created_at),
     "開始處理時間": dateProperty(facility.started_at),
     "結案時間": dateProperty(facility.closed_at),
     "遇到人數": { rich_text: [{ text: { content: String(facility.affected_count) } }] },
+    "遇到人數數量": numberProperty(facility.affected_count),
     "處理結果": richTextProperty(facility.result_content ?? payload.result_content),
   } });
   await replaceManagedContent(
@@ -742,7 +816,10 @@ export async function syncIssueStatusChangedToNotion(
     ensureRichTextProperty("審核未通過原因"),
     ensureRichTextProperty("提案結果"),
     ensureRichTextProperty("附議數"),
+    ensureNumberProperty("附議數量"),
+    ensureNumberProperty("附議目標"),
   ]);
+  await ensureContentFormulaProperties();
   await callNotionAPI(`/pages/${pageId}`, "PATCH", {
     properties: {
       "狀態": { select: { name: newStatusLabel } },
@@ -752,6 +829,8 @@ export async function syncIssueStatusChangedToNotion(
           issue?.support_goal ?? payload.support_goal,
         ),
       ),
+      "附議數量": numberProperty(issue?.support_count ?? payload.support_count),
+      "附議目標": numberProperty(issue?.support_goal ?? payload.support_goal),
       "審核未通過原因": richTextProperty(issue?.review_rejection_reason ?? payload.reason),
       "提案結果": richTextProperty(issue?.result_content),
       ...issueTimeProperties(issue ?? {}),
@@ -798,10 +877,17 @@ export async function syncIssueSupportToNotion(
   if (!pageId) return;
 
   const label = supportLabel(issue?.support_count, issue?.support_goal);
-  await ensureIssueTimeProperties();
+  await Promise.all([
+    ensureIssueTimeProperties(),
+    ensureNumberProperty("附議數量"),
+    ensureNumberProperty("附議目標"),
+  ]);
+  await ensureContentFormulaProperties();
   await callNotionAPI(`/pages/${pageId}`, "PATCH", {
     properties: {
       "附議數": { rich_text: [{ text: { content: label } }] },
+      "附議數量": numberProperty(issue?.support_count),
+      "附議目標": numberProperty(issue?.support_goal),
       ...issueTimeProperties(issue ?? {}),
     },
   });
@@ -841,6 +927,7 @@ export async function syncIssueResultUpdatedToNotion(
     updateIssueTimeProperties(pageId, issue ?? {}),
     ensureRichTextProperty("提案結果"),
   ]);
+  await ensureContentFormulaProperties();
   await callNotionAPI(`/pages/${pageId}`, "PATCH", {
     properties: {
       "提案結果": richTextProperty(issue?.result_content ?? payload.result_content),
@@ -901,4 +988,80 @@ export async function syncAnnouncementCreatedToNotion(
       String(announcement?.content ?? payload.content ?? ""),
     );
   }
+}
+
+export async function syncAdminAuditToNotion(
+  database: AppDatabase,
+  targetType: string,
+  targetId: string,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  if (!notionEnabled()) return;
+  const { data: audit, error } = targetType === "admin-audit"
+    ? await database.table("app_private", "admin_audit_log")
+      .select("actor_uid,action,domain,target_id,detail,created_at")
+      .eq("id", targetId)
+      .maybeSingle()
+    : { data: null, error: null };
+  if (error) throw error;
+  const action = String(audit?.action ?? payload.action ?? "管理操作");
+  const actorUid = String(audit?.actor_uid ?? payload.actor_uid ?? "");
+  const actorName = await resolveDisplayName(database, actorUid);
+  const pageId = await getOrCreateNotionPage(
+    database,
+    targetType,
+    targetId,
+    `${action} · ${String(audit?.target_id ?? payload.target_id ?? targetId)}`,
+    "管理操作",
+    "已記錄",
+    actorName,
+    undefined,
+    undefined,
+    null,
+  );
+  if (!pageId) return;
+  await Promise.all([
+    ensureDateProperty("操作時間"),
+    ensureRichTextProperty("操作類型"),
+    ensureRichTextProperty("操作領域"),
+    ensureRichTextProperty("目標 ID"),
+    ensureRichTextProperty("詳細資料"),
+  ]);
+  await Promise.all([
+    ensureFormulaProperty(
+      "Neon 保留截止",
+      'dateAdd(prop("操作時間"), 365, "days")',
+    ),
+    ensureFormulaProperty(
+      "資料保存位置",
+      'if(empty(prop("操作時間")), "", if(now() > dateAdd(prop("操作時間"), 365, "days"), "僅 Notion", "Neon 與 Notion"))',
+    ),
+  ]);
+  const detail = audit?.detail ?? payload.detail ?? {};
+  const createdAt = audit?.created_at ?? payload.created_at;
+  await callNotionAPI(`/pages/${pageId}`, "PATCH", {
+    properties: {
+      "名稱": { title: [{ text: { content: `${action} · ${String(audit?.target_id ?? payload.target_id ?? targetId)}` } }] },
+      "作者": richTextProperty(actorName),
+      "操作時間": dateProperty(createdAt),
+      "操作類型": richTextProperty(action),
+      "操作領域": richTextProperty(audit?.domain ?? payload.domain),
+      "目標 ID": richTextProperty(audit?.target_id ?? payload.target_id),
+      "詳細資料": richTextProperty(JSON.stringify(detail)),
+    },
+  });
+  await replaceManagedContent(
+    database,
+    targetType,
+    targetId,
+    pageId,
+    [
+      `【操作者 UID】\n${actorUid}`,
+      `【操作類型】\n${action}`,
+      `【操作領域】\n${String(audit?.domain ?? payload.domain ?? "")}`,
+      `【目標 ID】\n${String(audit?.target_id ?? payload.target_id ?? "")}`,
+      `【操作時間】\n${String(createdAt ?? "")}`,
+      `【詳細資料】\n${JSON.stringify(detail, null, 2)}`,
+    ].join("\n\n"),
+  );
 }

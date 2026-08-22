@@ -35,6 +35,7 @@
   "listFacilities": { "group": "read" },
   "listIssues": { "group": "read" },
   "listAdminAudit": { "group": "read" },
+  "listAdminActivity": { "group": "read" },
   "listAdminUsers": { "group": "read" },
   "listNotificationPages": { "group": "read" },
   "listRoleAssignments": { "group": "read" },

@@ -41,6 +41,11 @@ export interface AdminOverviewActivity {
   occurred_at: string;
 }
 
+export interface AdminActivityCursor {
+  occurredAt: string;
+  key: string;
+}
+
 export interface AdminOverviewData {
   windowHours: number;
   totalUsers: number;
@@ -76,6 +81,16 @@ export async function fetchAdminOverview(window: AdminOverviewWindow) {
   return await invokeBackendAction<{ window: AdminOverviewWindow }, AdminOverviewData>(
     'getAdminOverview',
   )({ window });
+}
+
+export async function listAdminActivity(
+  window: AdminOverviewWindow,
+  cursor: AdminActivityCursor | null = null,
+) {
+  return await invokeBackendAction<
+    { window: AdminOverviewWindow; cursor: AdminActivityCursor | null },
+    { entries: AdminOverviewActivity[]; nextCursor: AdminActivityCursor | null }
+  >('listAdminActivity')({ cursor, window });
 }
 
 export async function listAdminUsers(query = '') {

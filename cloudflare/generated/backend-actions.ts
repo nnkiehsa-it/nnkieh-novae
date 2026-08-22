@@ -123,6 +123,9 @@ export const BACKEND_ACTION_POLICIES = {
   "listAdminAudit": {
     "group": "read"
   },
+  "listAdminActivity": {
+    "group": "read"
+  },
   "listAdminUsers": {
     "group": "read"
   },

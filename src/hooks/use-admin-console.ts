@@ -7,9 +7,11 @@ import { useI18n } from "@/i18n";
 import {
   fetchAdminOverview,
   listAdminAudit,
+  listAdminActivity,
   listAdminUsers,
   setUserRestriction,
   type AdminAuditEntry,
+  type AdminActivityCursor,
   type AdminOverviewData,
   type AdminOverviewWindow,
   type AdminUser,
@@ -24,6 +26,39 @@ export type {
   AdminUser,
   RestrictionMode,
 } from "@/services/admin-console";
+
+export function useAdminActivity(window: AdminOverviewWindow, enabled: boolean) {
+  const { t } = useI18n();
+  const [entries, setEntries] = useState<AdminOverviewData["recentActivity"]>([]);
+  const [cursor, setCursor] = useState<AdminActivityCursor | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const load = useCallback(async (nextCursor: AdminActivityCursor | null = null) => {
+    setLoading(true);
+    setError("");
+    try {
+      const result = await listAdminActivity(window, nextCursor);
+      setEntries((current) => nextCursor ? [...current, ...result.entries] : result.entries);
+      setCursor(result.nextCursor);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("ui.adminConsole.loadActivityFailed"));
+    } finally {
+      setLoading(false);
+    }
+  }, [t, window]);
+
+  useEffect(() => {
+    if (enabled) void load();
+    else {
+      setEntries([]);
+      setCursor(null);
+      setError("");
+    }
+  }, [enabled, load]);
+
+  return { cursor, entries, error, load, loading };
+}
 
 export function useAdminOverview(window: AdminOverviewWindow) {
   const { t } = useI18n();

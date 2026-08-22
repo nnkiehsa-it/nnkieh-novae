@@ -34,11 +34,9 @@ function auditTarget(payload: JsonRecord) {
 
 function auditDetail(payload: JsonRecord) {
   const detail: { [key: string]: Json | undefined } = {};
-  for (const key of ["kind", "mode", "scopeKind", "categoryId", "grant", "status"]) {
-    const value = payload[key];
-    if (typeof value === "string" || typeof value === "boolean" || typeof value === "number") {
-      detail[key] = value;
-    }
+  for (const [key, value] of Object.entries(payload)) {
+    if (["content", "requestId", "resultContent"].includes(key)) continue;
+    detail[key] = value as Json;
   }
   return detail;
 }

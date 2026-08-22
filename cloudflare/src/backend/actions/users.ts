@@ -17,6 +17,7 @@ export function isUserAction(action: string) {
     || action === "listAdminUsers"
     || action === "setUserRestriction"
     || action === "listAdminAudit"
+    || action === "listAdminActivity"
     || action === "getAdminOverview"
     || action === "cacheUserAvatar"
     || action === "getUserPublicProfiles";
@@ -47,6 +48,7 @@ export async function handleUserAction(
     action === "listAdminUsers"
     || action === "setUserRestriction"
     || action === "listAdminAudit"
+    || action === "listAdminActivity"
     || action === "getAdminOverview"
   ) {
     return await handleUserAdminAction(action, payload, auth, database);

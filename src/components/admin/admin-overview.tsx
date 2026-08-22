@@ -1,25 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Activity,
-  AlertTriangle,
-  BellRing,
-  Building2,
-  FileText,
-  MessageSquare,
-  RefreshCw,
-  ShieldCheck,
-  UserPlus,
-} from "lucide-react";
+import { AlertTriangle, Building2, FileText, MessageSquare, RefreshCw, UserPlus } from "lucide-react";
 
 import { AnimatedNumber } from "@/components/motion/animated-number";
+import { AdminActivityLogDialog, AdminActivityRows } from "@/components/admin/admin-activity-log-dialog";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ErrorState } from "@/components/ui/page-state";
 import { useAdminOverview, type AdminOverviewWindow } from "@/hooks/use-admin-console";
 import { useI18n } from "@/i18n";
-import { formatDate } from "@/lib/format";
 
 const WINDOWS: Array<{ value: AdminOverviewWindow; labelKey: string }> = [
   { value: "24h", labelKey: "ui.adminConsole.window24h" },
@@ -27,27 +17,10 @@ const WINDOWS: Array<{ value: AdminOverviewWindow; labelKey: string }> = [
   { value: "30d", labelKey: "ui.adminConsole.window30d" },
 ];
 
-function activityIcon(kind: string) {
-  if (kind === "registration") return UserPlus;
-  if (kind === "issue") return FileText;
-  if (kind === "facility") return Building2;
-  if (kind === "announcement") return BellRing;
-  if (kind === "admin") return ShieldCheck;
-  return Activity;
-}
-
-function activityLabelKey(kind: string) {
-  if (kind === "registration") return "ui.adminConsole.activityRegistration";
-  if (kind === "admin") return "ui.adminConsole.activityAdmin";
-  if (kind === "issue") return "ui.adminConsole.activityIssue";
-  if (kind === "facility") return "ui.adminConsole.activityFacility";
-  if (kind === "announcement") return "ui.adminConsole.activityAnnouncement";
-  return "ui.adminConsole.activityPlatform";
-}
-
 export function AdminOverview() {
   const { t } = useI18n();
   const [window, setWindow] = useState<AdminOverviewWindow>("24h");
+  const [activityOpen, setActivityOpen] = useState(false);
   const { data, error, load, loading, systemFailures } = useAdminOverview(window);
 
   if (error && !data) return <ErrorState error={error} onRetry={() => void load()} />;
@@ -174,28 +147,13 @@ export function AdminOverview() {
                   {t("ui.adminConsole.noRecentActivity")}
                 </p>
               ) : (
-                <div className="divide-y">
-                  {data.recentActivity.map((item, index) => {
-                    const Icon = activityIcon(item.kind);
-                    return (
-                      <div className="flex items-center gap-3 px-4 py-3" key={`${item.kind}-${item.target_id}-${index}`}>
-                        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
-                          <Icon className="size-4" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">{item.title}</p>
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            {t(activityLabelKey(item.kind))}
-                          </p>
-                        </div>
-                        <time className="shrink-0 text-xs text-muted-foreground">
-                          {formatDate(new Date(item.occurred_at))}
-                        </time>
-                      </div>
-                    );
-                  })}
-                </div>
+                <AdminActivityRows entries={data.recentActivity} />
               )}
+              <div className="border-t p-2">
+                <Button className="w-full" onClick={() => setActivityOpen(true)} variant="ghost">
+                  {t("ui.adminConsole.viewAllActivity")}
+                </Button>
+              </div>
             </div>
           </section>
         </div>
@@ -219,6 +177,11 @@ export function AdminOverview() {
           </section>
         </aside>
       </div>
+      <AdminActivityLogDialog
+        onOpenChange={setActivityOpen}
+        open={activityOpen}
+        window={window}
+      />
     </div>
   );
 }
