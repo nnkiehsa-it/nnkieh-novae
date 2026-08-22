@@ -108,7 +108,7 @@ export default function LoginPage() {
             </div>
           </div>
           <div className="space-y-5">
-            {!loginReady ? <TurnstileInlineHost /> : null}
+            <TurnstileInlineHost />
             <Button
               className="group w-full"
               disabled={!loginReady || session.loginBusy}

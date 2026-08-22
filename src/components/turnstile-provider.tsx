@@ -138,12 +138,14 @@ export function TurnstileProvider({
 
     let widgetId = "";
     let settled = false;
-    const finish = (callback: () => void) => {
+    const finish = (callback: () => void, keepWidget = false) => {
       if (settled) return;
       settled = true;
       window.clearTimeout(timeout);
-      if (widgetId) turnstile.remove?.(widgetId);
-      setChallenge((current) => current === challenge ? null : current);
+      if (widgetId && !keepWidget) turnstile.remove?.(widgetId);
+      if (!keepWidget) {
+        setChallenge((current) => current === challenge ? null : current);
+      }
       callback();
     };
     const timeout = window.setTimeout(() => {
@@ -177,7 +179,12 @@ export function TurnstileProvider({
         },
         execution: "execute",
         callback: (token) => {
-          finish(() => challenge.resolve(token));
+          // Inline widgets stay mounted so the completed verification frame
+          // remains visible instead of collapsing right after success.
+          finish(
+            () => challenge.resolve(token),
+            challenge.presentation === "inline",
+          );
         },
         sitekey: siteKey,
         size: "normal",
@@ -279,7 +286,7 @@ export function useTurnstile() {
 export function TurnstileInlineHost() {
   const { setInlineHost } = useTurnstile();
   return (
-    <div className="flex min-h-[65px] w-full items-center justify-center overflow-hidden">
+    <div className="flex min-h-[65px] w-full items-start overflow-hidden">
       <div
         ref={setInlineHost}
         className="min-h-[65px] w-[300px] max-w-full"
