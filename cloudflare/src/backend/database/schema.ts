@@ -167,6 +167,7 @@ interface PushTokenRow {
   platform: string;
   user_agent: string;
   created_at: string;
+  last_confirmed_at: string;
   updated_at: string;
   topic_broadcast: boolean;
 }
@@ -183,6 +184,7 @@ interface UserProfileRow {
   cached_photo_url: string | null;
   photo_url: string | null;
   display_name: string | null;
+  last_seen_at: string | null;
   profile_version: number;
   updated_at: string;
 }

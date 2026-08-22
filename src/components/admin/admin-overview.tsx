@@ -11,7 +11,6 @@ import {
   RefreshCw,
   ShieldCheck,
   UserPlus,
-  Users,
 } from "lucide-react";
 
 import { AnimatedNumber } from "@/components/motion/animated-number";
@@ -77,7 +76,9 @@ export function AdminOverview() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">Overview</h2>
+          <h2 className="text-lg font-semibold tracking-tight">
+            {t("ui.adminConsole.overviewTab")}
+          </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {t("ui.adminConsole.overviewDescription")}
           </p>
@@ -161,7 +162,12 @@ export function AdminOverview() {
           </section>
 
           <section>
-            <h3 className="mb-3 text-sm font-semibold">{t("ui.adminConsole.recentActivity")}</h3>
+            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+              <h3 className="text-sm font-semibold">{t("ui.adminConsole.recentActivity")}</h3>
+              <span className="text-xs text-muted-foreground">
+                {t("ui.adminConsole.recentActivityScope")}
+              </span>
+            </div>
             <div className="overflow-hidden rounded-xl border bg-card">
               {data.recentActivity.length === 0 ? (
                 <p className="px-4 py-8 text-center text-sm text-muted-foreground">
@@ -210,16 +216,6 @@ export function AdminOverview() {
                 </div>
               ))}
             </div>
-          </section>
-
-          <section className="rounded-xl border bg-card p-4">
-            <div className="flex items-center gap-2">
-              <Users className="size-4 text-muted-foreground" />
-              <h3 className="text-sm font-semibold">{t("ui.adminConsole.dataStrategy")}</h3>
-            </div>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              {t("ui.adminConsole.dataStrategyDescription")}
-            </p>
           </section>
         </aside>
       </div>

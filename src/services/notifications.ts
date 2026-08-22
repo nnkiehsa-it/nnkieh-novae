@@ -79,7 +79,7 @@ export interface PersonalPushPreferences {
   facilityUpdates: boolean;
 }
 
-interface PushNotificationPreference {
+export interface PushNotificationPreference {
   deviceEnabled: boolean;
   enabled: boolean;
   personalPreferences: PersonalPushPreferences;

@@ -6,6 +6,13 @@ import { spawnSync } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 import pg from "pg";
 import { resolveAppliedMigrationChecksum } from "./migration-checksum.mjs";
+import {
+  disableWindowsWslDockerAutostart,
+  isWindowsWslDockerActive,
+  resolveWindowsWslDistro,
+  startWindowsWslDocker,
+  stopWindowsWslDockerIfIdle,
+} from "./wsl.mjs";
 
 const { Client } = pg;
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -24,6 +31,7 @@ const localAdminConnectionString =
   "postgresql://novae:novae-local@127.0.0.1:55432/postgres";
 const containerName = "novae-postgres-local";
 const volumeName = "novae-postgres-local-data";
+let windowsWslDistro = process.env.NOVAE_WSL_DISTRO?.trim() || null;
 
 function databaseUrl() {
   return process.env.DATABASE_URL?.trim() || localConnectionString;
@@ -33,7 +41,7 @@ function dockerInvocation(args) {
   if (process.platform !== "win32") return { command: "docker", args };
   return {
     command: "wsl.exe",
-    args: ["-d", process.env.NOVAE_WSL_DISTRO || "Debian", "--", "docker", ...args],
+    args: ["-d", windowsWslDistro, "--", "docker", ...args],
   };
 }
 
@@ -75,6 +83,7 @@ async function startLocalDatabase() {
     quiet: true,
   });
   if (inspected.status === 0) {
+    docker(["update", "--restart=no", containerName]);
     const running = docker(
       ["inspect", "--format", "{{.State.Running}}", containerName],
       { quiet: true },
@@ -85,6 +94,8 @@ async function startLocalDatabase() {
       "run",
       "--name",
       containerName,
+      "--restart",
+      "no",
       "--env",
       "POSTGRES_DB=novae",
       "--env",
@@ -101,6 +112,26 @@ async function startLocalDatabase() {
   }
   await waitForDatabase();
   console.log("Local PostgreSQL is ready on 127.0.0.1:55432.");
+}
+
+function stopLocalDatabase() {
+  if (process.platform === "win32" && !isWindowsWslDockerActive(windowsWslDistro)) {
+    stopWindowsWslDockerIfIdle(windowsWslDistro);
+    return;
+  }
+  const inspected = docker(["inspect", containerName], { allowFailure: true, quiet: true });
+  if (inspected.status === 0) {
+    docker(["update", "--restart=no", containerName]);
+    docker(["stop", "--timeout", "5", containerName], { allowFailure: true });
+    const running = docker(
+      ["inspect", "--format", "{{.State.Running}}", containerName],
+      { quiet: true },
+    ).stdout.trim();
+    if (running === "true") throw new Error(`Docker container ${containerName} did not stop.`);
+  }
+  if (process.platform === "win32" && process.env.NOVAE_KEEP_DOCKER_RUNNING !== "1") {
+    stopWindowsWslDockerIfIdle(windowsWslDistro);
+  }
 }
 
 async function resetLocalDatabase() {
@@ -194,6 +225,17 @@ async function status(connectionString = databaseUrl()) {
 }
 
 const command = process.argv[2] || "migrate";
+if (
+  process.platform === "win32"
+  && ["reset-local", "start-local", "stop-local"].includes(command)
+) {
+  windowsWslDistro = await resolveWindowsWslDistro();
+  process.env.NOVAE_WSL_DISTRO = windowsWslDistro;
+  disableWindowsWslDockerAutostart(windowsWslDistro);
+  if (command !== "stop-local" && !isWindowsWslDockerActive(windowsWslDistro)) {
+    startWindowsWslDocker(windowsWslDistro);
+  }
+}
 if (command === "start-local") {
   await startLocalDatabase();
 } else if (command === "reset-local") {
@@ -212,7 +254,7 @@ if (command === "start-local") {
 } else if (command === "status") {
   await status();
 } else if (command === "stop-local") {
-  docker(["stop", containerName], { allowFailure: true });
+  stopLocalDatabase();
 } else {
   throw new Error(`Unknown database command: ${command}`);
 }

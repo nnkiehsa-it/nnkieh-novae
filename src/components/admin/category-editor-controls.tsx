@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 export function CategoryIdentityFields<
   T extends { id: string; label: string },
@@ -64,15 +65,17 @@ export function CategoryIdentityFields<
 
 export function DefaultToggle({
   checked,
+  className,
   index,
   onCheckedChange,
 }: {
   checked: boolean;
+  className?: string;
   index: number;
   onCheckedChange: () => void;
 }) {
   return (
-    <label className="flex items-center gap-2 text-xs text-muted-foreground sm:col-start-2 sm:col-span-2">
+    <label className={cn("flex items-center gap-2 text-xs text-muted-foreground", className)}>
       <Switch checked={checked} onCheckedChange={onCheckedChange} />
       {translate('ui.admin.setDefaultOrder', { order: index + 1 })}
     </label>

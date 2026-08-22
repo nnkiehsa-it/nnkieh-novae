@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   asRecord,
   callAction,
+  database,
   expectActionError,
   integrationTest,
   refreshActor,
@@ -38,6 +39,14 @@ integrationTest("admin console restriction and overview actions", async () => {
     (users.users as Array<{ uid: string }>)[0]?.uid,
     target.auth.uid,
   );
+  const adminUsers = asRecord(await callAction(
+    "listAdminUsers",
+    { query: admin.auth.uid },
+    admin.auth,
+  ));
+  const listedAdmin = (adminUsers.users as Array<{ roles: string[]; uid: string }>)[0];
+  assert.equal(listedAdmin?.uid, admin.auth.uid);
+  assert.ok(listedAdmin?.roles.includes("platform-admin"));
 
   await expectActionError(
     "permission-denied",
@@ -82,6 +91,28 @@ integrationTest("admin console restriction and overview actions", async () => {
   const restored = await refreshActor(target);
   assert.equal(restored.auth.interactionRestricted, false);
 
+  const overviewBeforeAging = asRecord(await callAction(
+    "getAdminOverview",
+    { window: "24h" },
+    admin.auth,
+  ));
+  const activityBeforeAging = overviewBeforeAging.recentActivity as Array<{
+    kind: string;
+    target_id: string;
+  }>;
+  assert.equal(
+    activityBeforeAging.some(
+      (entry) => entry.kind === "admin" && entry.target_id === target.auth.uid,
+    ),
+    true,
+  );
+
+  const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000).toISOString();
+  const { error: ageAuditError } = await database.table("app_private", "admin_audit_log")
+    .update({ created_at: twoDaysAgo })
+    .eq("target_id", target.auth.uid);
+  if (ageAuditError) throw ageAuditError;
+
   const overview = asRecord(await callAction(
     "getAdminOverview",
     { window: "24h" },
@@ -89,7 +120,11 @@ integrationTest("admin console restriction and overview actions", async () => {
   ));
   assert.ok(Number(overview.totalUsers) >= 3);
   assert.ok(Number(overview.activeUsers24h) >= 0);
-
+  const activity24h = overview.recentActivity as Array<{ kind: string; target_id: string }>;
+  assert.equal(
+    activity24h.some((entry) => entry.kind === "admin" && entry.target_id === target.auth.uid),
+    false,
+  );
   const audit = asRecord(await callAction(
     "listAdminAudit",
     { query: "setUserRestriction" },

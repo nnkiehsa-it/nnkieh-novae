@@ -70,6 +70,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/hooks/use-entry-composer.ts` — issue/facility/announcement composer workflows and upload rollback.
 - `src/hooks/use-initial-setup.ts` — setup validation, persistence, polling, and retry-safe completion.
 - `src/hooks/use-category-management.ts`, `use-platform-settings.ts`, `use-access-management.ts` — category configuration, platform retention/media-limit configuration, and category-scoped RBAC flows.
+- `src/hooks/use-push-token-heartbeat.ts`, `src/services/push-token-registration.ts` — authenticated-shell push-token confirmation, seven-day client throttling, shared-device token reassignment, and settings-page enable/disable registration primitives.
 - `src/hooks/use-platform-dashboard.ts` — dashboard fetching and refresh.
 - `src/hooks/use-admin-console.ts` — admin overview, user search/restriction, and audit-log stateful flows over the admin-console service boundary.
 - `src/hooks/use-permission-redirect.ts` — shared client-side redirect for authenticated routes that require a specific permission.
@@ -103,7 +104,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `cloudflare/src/durable/` — SQLite-backed business rate limits and WebSocket Hibernation realtime hub. Realtime state can reconnect from PostgreSQL content versions instead of becoming a source of record.
 - `cloudflare/src/rate-limit.ts` / `cloudflare/src/media.ts` — opaque per-UID native limiter keys, invalid-auth IP breakers, and viewer-scoped media limiter keys; shared IP is not used for valid school traffic.
 - `cloudflare/wrangler.json` — local/default Worker bindings for Hyperdrive, Queue, Durable Objects, cron, native rate limits, observability, and Smart Placement; deployment renders an ignored environment-specific copy.
-- `database/migrations/` — fresh PostgreSQL 17 baseline and append-only migrations for Neon. `0002` bootstraps roles, `0003` completes realtime batches, `0004` seals the Worker-only database boundary, `0005` exposes scheduled support expiry, `0006` adds runtime settings, and `0007` adds admin overview, user interaction restrictions, and audit-log data/functions.
+- `database/migrations/` — fresh PostgreSQL 17 baseline and append-only migrations for Neon. `0002` bootstraps roles, `0003` completes realtime batches, `0004` seals the Worker-only database boundary, `0005` exposes scheduled support expiry, `0006` adds runtime settings, `0007` adds admin overview, user interaction restrictions, and audit-log data/functions, `0008` aligns admin user/activity visibility and adds audit-log retention cleanup, and `0009` applies the complete retention lifecycle for content, audits, inactive profile PII/avatars, confirmed push devices, expired restrictions, and terminal jobs.
 - `database/seed.local.sql` / `seed.integration.sql` — deterministic sample and backend-test seeds; production deploys never run either seed.
 - `config/` — source JSON for generated contracts, categories, limits, and retention.
 
@@ -127,6 +128,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `tests/architecture/` — stable AST-backed module-boundary tests for route presence, frontend dependency direction, orphaned shared runtime modules, UI primitive purity, database ownership, frontend/Worker contracts, observability, and delivery entry points; presentation strings and implementation details belong to unit or UI checks instead.
 - `tests/integration/` — backend actions, category-scoped authorization, least-privilege database boundary, RPCs, jobs, retention, and Worker ingress/realtime behavior; required for backend changes.
 - `tests/e2e/` — Playwright bootstrap plus authenticated desktop/mobile workflows.
+- `scripts/wsl.mjs`, `scripts/database.mjs`, `scripts/verify-integration.mjs` — automatic single-distro WSL selection (interactive selection when several are installed), on-demand Docker lifecycle with systemd autostart disabled, non-restarting local PostgreSQL ownership, and failure/Ctrl+C-safe teardown of every local verification service; a distro started solely for verification is terminated afterward to release memory.
 - `.github/workflows/verify-pr.yml` — Node 24 local, PostgreSQL/Worker integration, and real-browser verification; browser builds restore a branch-safe Next compiler cache, while integration jobs restore the pinned Firebase Emulator binary cache.
 - `.github/workflows/deploy-frontend.yml` — Vercel Next.js build/deploy using `NEXT_PUBLIC_*` runtime names mapped from existing secret storage names, with environment-separated `.next/cache` restoration.
 - `.github/workflows/deploy-backend.yml` — local backend verification with a pinned Firebase Emulator cache, forward Neon migrations, runtime-role configuration, environment-specific Worker rendering, Queue provisioning, Cloudflare deployment, and authenticated/database smoke checks.

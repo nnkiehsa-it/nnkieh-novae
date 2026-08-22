@@ -36,6 +36,7 @@ integrationTest("configured retention cleanup removes every expired data class a
   const admin = await seedActor(`retention-admin-${runId}`, { roles: ["platform-admin"] });
   const owner = await seedActor(`retention-owner-${runId}`);
   const avatarOwner = await seedActor(`retention-avatar-${runId}`);
+  const staleAvatarOwner = await seedActor(`retention-stale-avatar-${runId}`);
 
   const { data: issueCategories, error: issueCategoryError } = await database.table("app_private", "issue_categories").select("id").eq("is_active", true).order("sort_order");
   if (issueCategoryError) throw issueCategoryError;
@@ -82,6 +83,14 @@ integrationTest("configured retention cleanup removes every expired data class a
   const recentIssueId = await createClosedIssue("recent", recentAt);
   const expiredFacilityId = await createClosedFacility("expired", expiredAt);
   const recentFacilityId = await createClosedFacility("recent", recentAt);
+
+  const expiredAnnouncementId = crypto.randomUUID();
+  const recentAnnouncementId = crypto.randomUUID();
+  const { error: announcementError } = await database.table("app_private", "announcements").insert([
+    { author_uid: admin.auth.uid, content: "Expired retention announcement", id: expiredAnnouncementId, published_at: expiredAt, title: "Expired announcement" },
+    { author_uid: admin.auth.uid, content: "Recent retention announcement", id: recentAnnouncementId, published_at: recentAt, title: "Recent announcement" },
+  ]);
+  if (announcementError) throw announcementError;
   const { error: notionError } = await database.table("app_private", "notion_pages").insert([
     { notion_page_id: `notion-issue-${runId}`, target_id: expiredIssueId, target_type: "issue" },
     { notion_page_id: `notion-facility-${runId}`, target_id: expiredFacilityId, target_type: "facility" },
@@ -169,9 +178,9 @@ integrationTest("configured retention cleanup removes every expired data class a
 
   const tokenDevices = { denied: `denied-${runId}`, expired: `expired-${runId}`, recent: `recent-${runId}` };
   const { error: tokenError } = await database.table("app_private", "push_tokens").insert([
-    { device_id: tokenDevices.expired, permission: "granted", platform: "integration", token: `expired-${runId}`, uid: owner.auth.uid, updated_at: expiredAt, user_agent: "retention" },
-    { device_id: tokenDevices.denied, permission: "denied", platform: "integration", token: `denied-${runId}`, uid: owner.auth.uid, updated_at: recentAt, user_agent: "retention" },
-    { device_id: tokenDevices.recent, permission: "granted", platform: "integration", token: `recent-${runId}`, uid: owner.auth.uid, updated_at: recentAt, user_agent: "retention" },
+    { device_id: tokenDevices.expired, last_confirmed_at: expiredAt, permission: "granted", platform: "integration", token: `expired-${runId}`, uid: owner.auth.uid, updated_at: recentAt, user_agent: "retention" },
+    { device_id: tokenDevices.denied, last_confirmed_at: recentAt, permission: "denied", platform: "integration", token: `denied-${runId}`, uid: owner.auth.uid, updated_at: recentAt, user_agent: "retention" },
+    { device_id: tokenDevices.recent, last_confirmed_at: recentAt, permission: "granted", platform: "integration", token: `recent-${runId}`, uid: owner.auth.uid, updated_at: expiredAt, user_agent: "retention" },
   ]);
   if (tokenError) throw tokenError;
 
@@ -195,6 +204,55 @@ integrationTest("configured retention cleanup removes every expired data class a
     { actor_uid: admin.auth.uid, created_at: recentAt, operation: "grant", role_code: "announcement-manager", uid: auditUids.recent },
   ]);
   if (auditError) throw auditError;
+  const adminAuditTargets = {
+    expired: `admin-audit-expired-${runId}`,
+    recent: `admin-audit-recent-${runId}`,
+  };
+  const { error: adminAuditError } = await database.table("app_private", "admin_audit_log").insert([
+    { action: "retention-test", actor_uid: admin.auth.uid, created_at: expiredAt, domain: "test", target_id: adminAuditTargets.expired },
+    { action: "retention-test", actor_uid: admin.auth.uid, created_at: recentAt, domain: "test", target_id: adminAuditTargets.recent },
+  ]);
+  if (adminAuditError) throw adminAuditError;
+
+  const categoryAuditTargets = { expired: `category-expired-${runId}`, recent: `category-recent-${runId}` };
+  const { error: categoryAuditError } = await database.table("app_private", "category_configuration_audit").insert([
+    { actor_uid: admin.auth.uid, category_id: categoryAuditTargets.expired, created_at: expiredAt, domain: "issue", operation: "update" },
+    { actor_uid: admin.auth.uid, category_id: categoryAuditTargets.recent, created_at: recentAt, domain: "issue", operation: "update" },
+  ]);
+  if (categoryAuditError) throw categoryAuditError;
+
+  const accessAuditTargets = { expired: `access-expired-${runId}`, recent: `access-recent-${runId}` };
+  const { error: accessAuditError } = await database.table("app_private", "access_assignment_audit").insert([
+    { actor_uid: admin.auth.uid, after_value: {}, before_value: {}, created_at: expiredAt, target_uid: accessAuditTargets.expired },
+    { actor_uid: admin.auth.uid, after_value: {}, before_value: {}, created_at: recentAt, target_uid: accessAuditTargets.recent },
+  ]);
+  if (accessAuditError) throw accessAuditError;
+
+  const staleAvatarPublicId = `srp/avatars/${staleAvatarOwner.auth.uid}_stale`;
+  const referencedAvatarPublicId = `srp/avatars/${owner.auth.uid}_referenced`;
+  const { error: staleProfilesError } = await database.table("app_private", "user_profiles").update({
+    avatar_hash: "stale-avatar-hash",
+    avatar_public_id: staleAvatarPublicId,
+    avatar_source_url: "https://example.test/stale-avatar",
+    cached_photo_url: "https://example.test/stale-avatar-cache",
+    last_seen_at: expiredAt,
+    photo_url: "https://example.test/stale-avatar-source",
+  }).eq("uid", staleAvatarOwner.auth.uid);
+  if (staleProfilesError) throw staleProfilesError;
+  const { error: referencedProfileError } = await database.table("app_private", "user_profiles").update({
+    avatar_public_id: referencedAvatarPublicId,
+    last_seen_at: expiredAt,
+  }).eq("uid", owner.auth.uid);
+  if (referencedProfileError) throw referencedProfileError;
+  const { error: staleAdminError } = await database.table("app_private", "user_profiles")
+    .update({ last_seen_at: expiredAt }).eq("uid", admin.auth.uid);
+  if (staleAdminError) throw staleAdminError;
+
+  const { error: restrictionError } = await database.table("app_private", "user_restrictions").insert([
+    { reason: "expired retention restriction", restricted_until: expiredAt, uid: staleAvatarOwner.auth.uid, updated_by: admin.auth.uid },
+    { reason: "recent retention restriction", restricted_until: futureAt, uid: owner.auth.uid, updated_by: admin.auth.uid },
+  ]);
+  if (restrictionError) throw restrictionError;
 
   const oldMaintenanceId = crypto.randomUUID();
   const recentMaintenanceId = crypto.randomUUID();
@@ -241,11 +299,16 @@ integrationTest("configured retention cleanup removes every expired data class a
   assert.equal(result.ok, true);
   assert.equal(result.status, "attention");
   for (const [key, minimum] of Object.entries({
+    admin_audit_log_deleted: 1,
+    access_assignment_audit_deleted: 1,
+    category_configuration_audit_deleted: 1,
     deletion_jobs_deleted: 2,
     expired_closed_facilities_deleted: 1,
     expired_closed_facility_notion_deletions_queued: 1,
     expired_closed_issues_deleted: 1,
     expired_closed_issue_notion_deletions_queued: 1,
+    expired_announcements_deleted: 1,
+    expired_user_restrictions_deleted: 1,
     idempotency_keys_deleted: 1,
     maintenance_runs_deleted: 0,
     notifications_deleted: 1,
@@ -256,6 +319,10 @@ integrationTest("configured retention cleanup removes every expired data class a
     role_assignment_audit_deleted: 1,
     uploads_deleted: 3,
     uploads_queued_for_deletion: 3,
+    inactive_avatar_deletions_queued: 1,
+    inactive_avatars_cleared: 1,
+    inactive_profile_emails_cleared: 1,
+    inactive_profile_names_cleared: 1,
   })) {
     if (key === "maintenance_runs_deleted") continue;
     assert.ok(Number(details[key]) >= minimum, `${key} should be at least ${minimum}`);
@@ -265,6 +332,8 @@ integrationTest("configured retention cleanup removes every expired data class a
   await expectPresent("issues", "id", recentIssueId);
   await expectRemoved("facility_reports", "id", expiredFacilityId);
   await expectPresent("facility_reports", "id", recentFacilityId);
+  await expectRemoved("announcements", "id", expiredAnnouncementId);
+  await expectPresent("announcements", "id", recentAnnouncementId);
   await expectRemoved("notifications", "id", expiredNotificationId);
   await expectPresent("notifications", "id", recentNotificationId);
   await expectRemoved("realtime_events", "id", expiredRealtimeId);
@@ -287,6 +356,14 @@ integrationTest("configured retention cleanup removes every expired data class a
   await expectPresent("deletion_jobs", "target_id", deletionTargets.recentFailed);
   await expectRemoved("role_assignment_audit", "uid", auditUids.expired);
   await expectPresent("role_assignment_audit", "uid", auditUids.recent);
+  await expectRemoved("admin_audit_log", "target_id", adminAuditTargets.expired);
+  await expectPresent("admin_audit_log", "target_id", adminAuditTargets.recent);
+  await expectRemoved("category_configuration_audit", "category_id", categoryAuditTargets.expired);
+  await expectPresent("category_configuration_audit", "category_id", categoryAuditTargets.recent);
+  await expectRemoved("access_assignment_audit", "target_uid", accessAuditTargets.expired);
+  await expectPresent("access_assignment_audit", "target_uid", accessAuditTargets.recent);
+  await expectRemoved("user_restrictions", "uid", staleAvatarOwner.auth.uid);
+  await expectPresent("user_restrictions", "uid", owner.auth.uid);
   await expectRemoved("maintenance_runs", "id", oldMaintenanceId);
   await expectPresent("maintenance_runs", "id", recentMaintenanceId);
   await expectRemoved("uploads", "id", uploadIds.pending);
@@ -297,6 +374,17 @@ integrationTest("configured retention cleanup removes every expired data class a
   for (const id of [uploadIds.pending, uploadIds.readyUnattached, uploadIds.failed]) {
     await expectPresent("deletion_jobs", "target_id", id);
   }
+
+  const staleAvatarProfile = await tableRow("user_profiles", "uid", staleAvatarOwner.auth.uid);
+  assert.equal(staleAvatarProfile?.avatar_public_id, null);
+  assert.equal(staleAvatarProfile?.display_name, null);
+  assert.equal(staleAvatarProfile?.email, null);
+  const referencedAvatarProfile = await tableRow("user_profiles", "uid", owner.auth.uid);
+  assert.equal(referencedAvatarProfile?.avatar_public_id, referencedAvatarPublicId);
+  assert.notEqual(referencedAvatarProfile?.display_name, null);
+  const adminProfile = await tableRow("user_profiles", "uid", admin.auth.uid);
+  assert.notEqual(adminProfile?.email, null, "assigned administrators must not be PII-minimized automatically");
+  await expectPresent("deletion_jobs", "target_id", staleAvatarOwner.auth.uid);
 
   const { data: retentionEvents, error: retentionEventError } = await database.table("app_private", "outbox_events").select("event_type,payload,target_id")
     .in("target_id", [expiredIssueId, expiredFacilityId]);
@@ -338,7 +426,12 @@ integrationTest("configured retention cleanup removes every expired data class a
     },
   ]);
   if (avatarJobsError) throw avatarJobsError;
-  const deletionTargetIds = [...staleUploadIds, avatarOwner.auth.uid, owner.auth.uid];
+  const deletionTargetIds = [
+    ...staleUploadIds,
+    avatarOwner.auth.uid,
+    owner.auth.uid,
+    staleAvatarOwner.auth.uid,
+  ];
   let completedUploadJobs: Array<{ status: string; target_id: string }> = [];
   for (let attempt = 0; attempt < 20; attempt += 1) {
     await processJobMessage({ type: "drain" }, testEnvironment);
@@ -363,6 +456,7 @@ integrationTest("configured retention cleanup removes every expired data class a
     .map((request) => String(request.body.public_id)));
   for (const id of staleUploadIds) assert.ok(destroyedPublicIds.has(`retention/${id}`));
   assert.ok(destroyedPublicIds.has(oldAvatarPublicId), "superseded avatar must be deleted");
+  assert.ok(destroyedPublicIds.has(staleAvatarPublicId), "unreferenced inactive avatar must be deleted");
   assert.equal(destroyedPublicIds.has(currentAvatarPublicId), false, "current avatar must never be deleted");
 
   const maintenance = await processJobMessage({ type: "maintenance" }, testEnvironment);

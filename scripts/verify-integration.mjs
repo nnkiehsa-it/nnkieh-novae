@@ -5,11 +5,19 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import process from "node:process";
 import { setTimeout as delay } from "node:timers/promises";
+import {
+  disableWindowsWslDockerAutostart,
+  isWindowsWslDistroRunning,
+  isWindowsWslDockerActive,
+  resolveWindowsWslDistro,
+  startWindowsWslDocker,
+  stopWindowsWslDockerIfIdle,
+  terminateWindowsWslDistro,
+} from "./wsl.mjs";
 
 const root = process.cwd();
 const e2e = process.argv.includes("--e2e");
 const serve = process.argv.includes("--serve");
-const keepRunning = process.argv.includes("--keep-running") || serve;
 const stressIndex = process.argv.indexOf("--stress-scale");
 const stressScale = stressIndex >= 0 ? process.argv[stressIndex + 1] : "4";
 if (!/^\d+$/u.test(stressScale) || Number(stressScale) < 2 || Number(stressScale) > 20) {
@@ -29,6 +37,10 @@ const wranglerCli = join(root, "node_modules", "wrangler", "bin", "wrangler.js")
 const tempDirectory = await mkdtemp(join(tmpdir(), "novae-integration-"));
 const children = [];
 const ownedPorts = new Set();
+let cleanupPromise;
+let windowsWslDistro = null;
+let windowsWslWasRunning = false;
+let windowsDockerWasActive = false;
 
 function run(label, command, args, environment = {}) {
   process.stderr.write(`[integration] ${label}\n`);
@@ -61,7 +73,10 @@ function start(label, command, args, environment = {}, ports = []) {
 
 async function keepWindowsWslRunning() {
   if (process.platform !== "win32") return;
-  const distro = process.env.NOVAE_WSL_DISTRO || "Debian";
+  const distro = await resolveWindowsWslDistro();
+  windowsWslDistro = distro;
+  windowsWslWasRunning = isWindowsWslDistroRunning(distro);
+  process.env.NOVAE_WSL_DISTRO = distro;
   const keepalive = start(
     "wsl-keepalive",
     "wsl.exe",
@@ -71,6 +86,9 @@ async function keepWindowsWslRunning() {
   if (keepalive.exitCode !== null) {
     throw new Error(`Could not keep the ${distro} WSL runtime active.`);
   }
+  disableWindowsWslDockerAutostart(distro);
+  windowsDockerWasActive = windowsWslWasRunning && isWindowsWslDockerActive(distro);
+  if (!isWindowsWslDockerActive(distro)) startWindowsWslDocker(distro);
 }
 
 function windowsListenerPids(ports) {
@@ -103,7 +121,8 @@ async function stopChild(entry) {
   }
 }
 
-async function cleanup() {
+async function performCleanup() {
+  let cleanupError;
   for (const entry of [...children].reverse()) await stopChild(entry);
   if (process.platform === "win32") {
     for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -114,8 +133,41 @@ async function cleanup() {
       }
       await delay(100);
     }
+    const remainingPids = windowsListenerPids(ownedPorts);
+    if (remainingPids.length > 0) {
+      cleanupError = new Error(`Local verification processes did not stop: ${remainingPids.join(", ")}.`);
+    }
   }
   for (const entry of children) entry.log.end();
+  if (process.platform === "win32" && windowsWslDistro) {
+    const stopped = spawnSync(process.execPath, ["scripts/database.mjs", "stop-local"], {
+      cwd: root,
+      env: {
+        ...process.env,
+        NOVAE_KEEP_DOCKER_RUNNING: "1",
+        NOVAE_WSL_DISTRO: windowsWslDistro,
+      },
+      stdio: "inherit",
+    });
+    if (stopped.error) cleanupError ??= stopped.error;
+    else if (stopped.status !== 0) cleanupError ??= new Error("Local PostgreSQL did not stop cleanly.");
+    const dockerStopped = windowsDockerWasActive
+      ? false
+      : stopWindowsWslDockerIfIdle(windowsWslDistro);
+    if (!windowsWslWasRunning && dockerStopped) {
+      try {
+        terminateWindowsWslDistro(windowsWslDistro);
+      } catch (error) {
+        cleanupError ??= error;
+      }
+    }
+  }
+  if (cleanupError) throw cleanupError;
+}
+
+function cleanup() {
+  cleanupPromise ??= performCleanup();
+  return cleanupPromise;
 }
 
 async function waitFor(label, url, expected, child, logPath, init = {}) {
@@ -327,5 +379,5 @@ try {
     }
   }
 } finally {
-  if (!keepRunning || e2e) await cleanup();
+  await cleanup();
 }

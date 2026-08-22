@@ -91,6 +91,7 @@ export function FacilityCategoryEditor({
       />
       <DefaultToggle
         checked={item.isDefault}
+        className="sm:col-span-2 sm:col-start-2"
         index={index}
         onCheckedChange={onDefault}
       />

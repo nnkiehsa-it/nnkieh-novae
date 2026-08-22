@@ -1,4 +1,4 @@
-import { asRecord, assert, callAction, expectActionError, integrationTest, requestId, seedActor } from "./support.ts";
+import { asRecord, assert, callAction, database, expectActionError, integrationTest, requestId, seedActor } from "./support.ts";
 
 integrationTest("notification state, push preferences, and dashboard permissions", async () => {
   const admin = await seedActor("notification-admin", { roles: ["platform-admin"] });
@@ -33,6 +33,7 @@ integrationTest("notification state, push preferences, and dashboard permissions
   assert.equal(opened.success, true);
 
   const deviceId = `integration-device-${crypto.randomUUID()}`;
+  const token = `integration-token-${crypto.randomUUID()}`;
   const initialPreference = asRecord(await callAction("getPushNotificationPreference", {
     deviceId,
     permission: "default",
@@ -42,10 +43,15 @@ integrationTest("notification state, push preferences, and dashboard permissions
     deviceId,
     permission: "granted",
     platform: "integration",
-    token: `integration-token-${crypto.randomUUID()}`,
+    token,
     userAgent: "Node integration test",
   }, user.auth));
   assert.equal(registered.deviceEnabled, true);
+  const { data: registeredToken, error: registeredTokenError } = await database.table("app_private", "push_tokens")
+    .select("last_confirmed_at,uid").eq("token", token).single();
+  if (registeredTokenError) throw registeredTokenError;
+  assert.equal(registeredToken.uid, user.auth.uid);
+  assert.ok(Date.parse(registeredToken.last_confirmed_at) > Date.now() - 60_000);
   const updated = asRecord(await callAction("updatePushNotificationPreferences", {
     deviceId,
     permission: "granted",
@@ -62,6 +68,30 @@ integrationTest("notification state, push preferences, and dashboard permissions
     permission: "denied",
   }, user.auth));
   assert.equal(unregistered.deviceEnabled, false);
+
+  const adminDeviceId = `integration-admin-device-${crypto.randomUUID()}`;
+  await callAction("registerPushToken", {
+    deviceId,
+    permission: "granted",
+    platform: "integration",
+    token,
+    userAgent: "Shared device integration test",
+  }, user.auth);
+  await callAction("registerPushToken", {
+    deviceId: adminDeviceId,
+    permission: "granted",
+    platform: "integration",
+    token,
+    userAgent: "Shared device integration test",
+  }, admin.auth);
+  const { data: reassignedTokens, error: reassignedTokenError } = await database.table("app_private", "push_tokens")
+    .select("device_id,uid").eq("token", token);
+  if (reassignedTokenError) throw reassignedTokenError;
+  assert.deepEqual(reassignedTokens, [{ device_id: adminDeviceId, uid: admin.auth.uid }]);
+  await callAction("unregisterPushToken", {
+    deviceId: adminDeviceId,
+    permission: "denied",
+  }, admin.auth);
 
   await expectActionError(
     "permission-denied",

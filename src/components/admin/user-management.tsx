@@ -51,7 +51,9 @@ export function UserManagement() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">Users</h2>
+          <h2 className="text-lg font-semibold tracking-tight">
+            {t("ui.adminConsole.usersTab")}
+          </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {t("ui.adminConsole.usersDescription")}
           </p>
@@ -86,7 +88,7 @@ export function UserManagement() {
       </form>
 
       <div className="overflow-hidden rounded-xl border bg-card">
-        <div className="hidden grid-cols-[minmax(13rem,1.5fr)_8rem_9rem_9rem_minmax(10rem,1fr)_2.5rem] gap-3 border-b bg-muted/35 px-4 py-2.5 text-xs font-medium text-muted-foreground md:grid">
+        <div className="hidden grid-cols-[minmax(10rem,1.4fr)_6rem_7.5rem_7.5rem_minmax(7rem,1fr)_2.5rem] gap-3 border-b bg-muted/35 px-4 py-2.5 text-xs font-medium text-muted-foreground lg:grid">
           <span>{t("ui.adminConsole.userColumn")}</span>
           <span>{t("ui.adminConsole.statusColumn")}</span>
           <span>{t("ui.adminConsole.lastSeenColumn")}</span>
@@ -103,9 +105,10 @@ export function UserManagement() {
           <div className="divide-y">
             {users.map((user) => {
               const restricted = isUserRestricted(user);
+              const platformAdmin = user.roles.includes("platform-admin");
               return (
                 <div
-                  className="grid gap-3 px-4 py-3 md:grid-cols-[minmax(13rem,1.5fr)_8rem_9rem_9rem_minmax(10rem,1fr)_2.5rem] md:items-center"
+                  className="relative grid gap-3 px-4 py-3 pr-14 lg:grid-cols-[minmax(10rem,1.4fr)_6rem_7.5rem_7.5rem_minmax(7rem,1fr)_2.5rem] lg:items-center lg:pr-4"
                   key={user.uid}
                 >
                   <button
@@ -118,34 +121,38 @@ export function UserManagement() {
                       {user.email ?? user.uid}
                     </p>
                   </button>
-                  <div>
+                  <div className="hidden lg:block">
                     <span
                       className={[
                         "inline-flex rounded-full px-2 py-1 text-xs font-medium",
-                        restricted
+                        platformAdmin
+                          ? "bg-muted text-foreground"
+                          : restricted
                           ? "bg-destructive/10 text-destructive"
                           : "bg-muted text-muted-foreground",
                       ].join(" ")}
                     >
-                      {restricted
-                        ? t("ui.adminConsole.restricted")
-                        : t("ui.adminConsole.normal")}
+                      {platformAdmin
+                        ? t("ui.adminConsole.platformAdmin")
+                        : restricted
+                          ? t("ui.adminConsole.restricted")
+                          : t("ui.adminConsole.normal")}
                     </span>
                   </div>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="hidden text-xs text-muted-foreground lg:block">
                     {user.lastSeenAt
                       ? formatDate(user.lastSeenAt)
                       : t("ui.adminConsole.neverSeen")}
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="hidden text-xs text-muted-foreground lg:block">
                     {formatDate(user.createdAt)}
                   </span>
-                  <span className="truncate text-xs text-muted-foreground">
+                  <span className="hidden truncate text-xs text-muted-foreground lg:block">
                     {responsibilityLabel(user, t)}
                   </span>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button aria-label={t("ui.common.moreActions")} size="icon-sm" variant="ghost">
+                      <Button className="absolute right-3 top-3 lg:static" aria-label={t("ui.common.moreActions")} size="icon-sm" variant="ghost">
                         <MoreHorizontal className="size-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -153,7 +160,7 @@ export function UserManagement() {
                       <DropdownMenuItem onSelect={() => setSelected(user)}>
                         {t("ui.adminConsole.viewDetails")}
                       </DropdownMenuItem>
-                      {restricted ? (
+                      {restricted && !platformAdmin ? (
                         <DropdownMenuItem
                           disabled={busy === user.uid}
                           onSelect={() => void updateRestriction(user, "clear")}
@@ -163,6 +170,34 @@ export function UserManagement() {
                       ) : null}
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  <dl className="grid gap-x-4 gap-y-3 text-xs sm:grid-cols-3 lg:hidden">
+                    <div>
+                      <dt className="text-muted-foreground">{t("ui.adminConsole.statusColumn")}</dt>
+                      <dd className="mt-1 font-medium">
+                        {platformAdmin
+                          ? t("ui.adminConsole.platformAdmin")
+                          : restricted
+                            ? t("ui.adminConsole.restricted")
+                            : t("ui.adminConsole.normal")}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">{t("ui.adminConsole.lastSeenColumn")}</dt>
+                      <dd className="mt-1">
+                        {user.lastSeenAt
+                          ? formatDate(user.lastSeenAt)
+                          : t("ui.adminConsole.neverSeen")}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">{t("ui.adminConsole.registeredAtColumn")}</dt>
+                      <dd className="mt-1">{formatDate(user.createdAt)}</dd>
+                    </div>
+                    <div className="sm:col-span-3">
+                      <dt className="text-muted-foreground">{t("ui.adminConsole.scopeColumn")}</dt>
+                      <dd className="mt-1">{responsibilityLabel(user, t)}</dd>
+                    </div>
+                  </dl>
                 </div>
               );
             })}

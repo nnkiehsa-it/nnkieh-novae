@@ -24,6 +24,9 @@ type Translator = (key: string, params?: TranslationParams) => string;
 
 export function responsibilityLabel(user: AdminUser, t: Translator) {
   const labels: string[] = [];
+  if (user.roles.includes("platform-admin")) {
+    labels.push(t("ui.adminConsole.platformAdmin"));
+  }
   if (user.roles.includes("announcement-manager")) {
     labels.push(t("ui.adminConsole.announcementScope"));
   }
@@ -123,7 +126,11 @@ export function UserDetailsDialog({
             </div>
           </div>
 
-          {isUserRestricted(user) ? (
+          {user.roles.includes("platform-admin") ? (
+            <div className="rounded-xl border bg-muted/35 p-4 text-sm text-muted-foreground">
+              {t("ui.adminConsole.platformAdminRestrictionNotice")}
+            </div>
+          ) : isUserRestricted(user) ? (
             <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4">
               <div className="flex items-start gap-3">
                 <ShieldOff className="mt-0.5 size-4 text-destructive" />

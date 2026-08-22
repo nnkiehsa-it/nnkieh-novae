@@ -21,6 +21,7 @@ import { useTheme } from "next-themes";
 import { useCategories } from "@/hooks/use-categories";
 import { useNotificationBadge } from "@/hooks/use-notification-badge";
 import { useRoutePreload } from "@/hooks/use-route-preload";
+import { usePushTokenHeartbeat } from "@/hooks/use-push-token-heartbeat";
 import {
   commitRouteHistory,
   consumeRouteDirection,
@@ -156,6 +157,7 @@ function RouteTransition({
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   useRoutePreload();
+  usePushTokenHeartbeat();
   const { t } = useLocaleSubscription();
   const pathname = usePathname();
   const categories = useCategories();

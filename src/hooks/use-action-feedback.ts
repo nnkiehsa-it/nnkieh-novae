@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-export const ACTION_SUCCESS_HOLD_MS = 500;
+export const ACTION_SUCCESS_HOLD_MS = 1_000;
 
 export function useActionFeedback() {
   const [state, setState] = React.useState<"idle" | "loading" | "success">(

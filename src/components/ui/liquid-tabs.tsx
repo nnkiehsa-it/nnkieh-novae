@@ -97,7 +97,11 @@ export function LiquidTabs({
                   }}
                 />
               ) : null}
-              <span className="relative z-10 contents">{option.icon}</span>
+              {option.icon ? (
+                <span aria-hidden="true" className="relative z-10 inline-flex shrink-0">
+                  {option.icon}
+                </span>
+              ) : null}
               <span
                 className={cn(
                   "relative z-10",
