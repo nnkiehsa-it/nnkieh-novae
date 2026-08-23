@@ -61,7 +61,10 @@ jobs:
 
       - name: Verify generated contracts and backend types
         run: |
-          npm run generate:all
+          npm run generate:api-errors
+          npm run generate:rate-limits
+          npm run generate:data-retention
+          npm run generate:backend-actions
           git diff --exit-code
           npm run check:worker
           npm run check:integration-types
