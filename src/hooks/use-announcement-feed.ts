@@ -25,6 +25,7 @@ import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 import { toggleReactionState } from "@/lib/reaction-state";
+import { advanceFeedPageCount, canLoadAnotherFeedPage } from "@/lib/feed-page-limit";
 
 const ANNOUNCEMENT_LIST_CACHE_PREFIXES = ["announcement-list-page|"] as const;
 
@@ -35,11 +36,16 @@ export function useAnnouncementFeed() {
     cursor: AnnouncementCursor;
     hasMore: boolean;
     items: AnnouncementSummary[];
+    pageCount: number;
   }>(session.user?.uid, "announcement-feed");
   const [coldRead] = React.useState(() => !viewMemory);
   const [items, setItems] = React.useState<AnnouncementSummary[]>(viewMemory?.items ?? []);
   const [cursor, setCursor] = React.useState<AnnouncementCursor>(viewMemory?.cursor ?? null);
   const [hasMore, setHasMore] = React.useState(viewMemory?.hasMore ?? false);
+  const [pageCount, setPageCount] = React.useState(
+    viewMemory?.pageCount ?? (viewMemory?.items.length ? 1 : 0),
+  );
+  const pageCountRef = React.useRef(pageCount);
   const [loading, setLoading] = React.useState(!viewMemory);
   const revealFields = useColdDataReveal(coldRead, loading);
   const [loadingMore, setLoadingMore] = React.useState(false);
@@ -143,9 +149,13 @@ export function useAnnouncementFeed() {
           nextCursor ? mergePageById(current, announcements) : announcements,
         );
         setCursor(result.cursor);
-        setHasMore(
+        const nextPageCount = advanceFeedPageCount(pageCountRef.current, Boolean(nextCursor));
+        pageCountRef.current = nextPageCount;
+        setPageCount(nextPageCount);
+        setHasMore(canLoadAnotherFeedPage(
+          nextPageCount,
           canContinuePage(nextCursor, result.cursor, result.hasMore),
-        );
+        ));
       } catch (caught) {
         if (requestGuard.isCurrent(requestToken))
           setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
@@ -171,8 +181,9 @@ export function useAnnouncementFeed() {
       cursor,
       hasMore,
       items,
+      pageCount,
     }, ANNOUNCEMENT_LIST_CACHE_PREFIXES);
-  }, [cursor, hasMore, items, loading, session.user?.uid]);
+  }, [cursor, hasMore, items, loading, pageCount, session.user?.uid]);
 
   useContentInvalidationRefresh(
     ANNOUNCEMENT_LIST_CACHE_PREFIXES,

@@ -6,60 +6,23 @@ import { useI18n } from "@/i18n";
 import { useCategories } from "@/hooks/use-categories";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
 import {
+  estimateCategoryPolicyChanges,
   getCategoryManagement,
   saveCategoryManagement,
+  type CategoryManagementInput,
 } from "@/services/categories";
 import type {
   FacilityCategoryConfig,
   IssueCategoryConfig,
+  PolicyImpactEstimate,
 } from "@/types/categories";
-
-const categoryPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
-
-const newIssue = (sortOrder: number): IssueCategoryConfig => ({
-  authorVisible: true,
-  commentsEnabled: true,
-  id: "",
-  isDefault: sortOrder === 0,
-  label: "",
-  readAccess: "school",
-  responseDeadlineDays: null,
-  sortOrder,
-  supportDeadlineDays: null,
-  supportEnabled: false,
-  supportGoal: null,
-});
-
-const newFacility = (sortOrder: number): FacilityCategoryConfig => ({
-  id: "",
-  isDefault: sortOrder === 0,
-  label: "",
-  sortOrder,
-});
-
-function removeCategory<T extends { isDefault: boolean; sortOrder: number }>(
-  values: T[],
-  index: number,
-) {
-  const next = values.filter((_, currentIndex) => currentIndex !== index);
-  const hasDefault = next.some((item) => item.isDefault);
-  return next.map((item, sortOrder) => ({
-    ...item,
-    isDefault: hasDefault ? item.isDefault : sortOrder === 0,
-    sortOrder,
-  }));
-}
-
-function hasValidIdentity(values: Array<{ id: string; label: string }>) {
-  const ids = values.map((item) => item.id.trim());
-  return (
-    values.length > 0 &&
-    new Set(ids).size === ids.length &&
-    values.every(
-      (item) => categoryPattern.test(item.id.trim()) && Boolean(item.label.trim()),
-    )
-  );
-}
+import {
+  hasValidCategoryIdentity,
+  newFacilityCategory,
+  newIssueCategory,
+  removeCategory,
+} from "@/lib/category-management-state";
+import { notifyPlatformJobsChanged } from "@/lib/platform-job-events";
 
 export function useCategoryManagement() {
   const categories = useCategories();
@@ -79,11 +42,14 @@ export function useCategoryManagement() {
   const [loading, setLoading] = React.useState(true);
   const feedback = useActionFeedback();
   const [error, setError] = React.useState("");
+  const [pendingSave, setPendingSave] = React.useState<CategoryManagementInput | null>(null);
+  const [impactEstimates, setImpactEstimates] = React.useState<PolicyImpactEstimate[]>([]);
+  const [totalEstimatedRows, setTotalEstimatedRows] = React.useState(0);
 
   const valid = React.useMemo(() => {
     const issuesValid =
       !issuesEnabled ||
-      (hasValidIdentity(issues) &&
+      (hasValidCategoryIdentity(issues) &&
         issues.some((item) => item.isDefault) &&
         issues.every(
           (item) =>
@@ -92,7 +58,7 @@ export function useCategoryManagement() {
         ));
     const facilitiesValid =
       !facilitiesEnabled ||
-      (hasValidIdentity(facilities) &&
+      (hasValidCategoryIdentity(facilities) &&
         facilities.some((item) => item.isDefault));
     return issuesValid && facilitiesValid;
   }, [facilities, facilitiesEnabled, issues, issuesEnabled]);
@@ -138,20 +104,27 @@ export function useCategoryManagement() {
     setFacilities((current) => removeCategory(current, index));
   }
 
-  async function save() {
-    if (!valid || feedback.busy) return;
+  const createInput = React.useCallback((): CategoryManagementInput => ({
+    announcementCommentsEnabled: announcementComments,
+    deletedFacilityCategoryIds: deletedFacilities,
+    deletedIssueCategoryIds: deletedIssues,
+    facilitiesEnabled,
+    facilityCategories: facilities.map((item, sortOrder) => ({ ...item, sortOrder })),
+    issueCategories: issues.map((item, sortOrder) => ({ ...item, sortOrder })),
+    issuesEnabled,
+  }), [
+    announcementComments,
+    deletedFacilities,
+    deletedIssues,
+    facilities,
+    facilitiesEnabled,
+    issues,
+    issuesEnabled,
+  ]);
+
+  async function persist(input: CategoryManagementInput) {
     try {
-      const result = await feedback.run(() =>
-        saveCategoryManagement({
-          announcementCommentsEnabled: announcementComments,
-          deletedFacilityCategoryIds: deletedFacilities,
-          deletedIssueCategoryIds: deletedIssues,
-          facilitiesEnabled,
-          facilityCategories: facilities.map((item, sortOrder) => ({ ...item, sortOrder })),
-          issueCategories: issues.map((item, sortOrder) => ({ ...item, sortOrder })),
-          issuesEnabled,
-        }),
-      );
+      const result = await feedback.run(() => saveCategoryManagement(input));
       setIssues(result.issueCategories);
       setFacilities(result.facilityCategories);
       setPersistedIssues(new Set(result.issueCategories.map((item) => item.id)));
@@ -161,14 +134,38 @@ export function useCategoryManagement() {
       setDeletedIssues([]);
       setDeletedFacilities([]);
       await categories.refresh();
+      notifyPlatformJobsChanged();
     } catch (caught) {
       toast.error(caught instanceof Error ? caught.message : t("common.saveFailed"));
     }
   }
 
+  async function save() {
+    if (!valid || feedback.busy) return;
+    const input = createInput();
+    try {
+      const impact = await estimateCategoryPolicyChanges(input);
+      if (impact.totalEstimatedRows > 0) {
+        setPendingSave(input);
+        setImpactEstimates(impact.estimates);
+        setTotalEstimatedRows(impact.totalEstimatedRows);
+        return;
+      }
+      await persist(input);
+    } catch (caught) {
+      toast.error(caught instanceof Error ? caught.message : t("common.saveFailed"));
+    }
+  }
+
+  async function confirmSave() {
+    const input = pendingSave;
+    setPendingSave(null);
+    if (input) await persist(input);
+  }
+
   return {
-    addFacility: () => setFacilities((current) => [...current, newFacility(current.length)]),
-    addIssue: () => setIssues((current) => [...current, newIssue(current.length)]),
+    addFacility: () => setFacilities((current) => [...current, newFacilityCategory(current.length)]),
+    addIssue: () => setIssues((current) => [...current, newIssueCategory(current.length)]),
     announcementComments,
     deleteFacility,
     deleteIssue,
@@ -177,12 +174,16 @@ export function useCategoryManagement() {
     facilitiesEnabled,
     issues,
     issuesEnabled,
+    impactEstimates,
+    impactOpen: pendingSave !== null,
     kind,
     load,
     loading,
     persistedFacilities,
     persistedIssues,
     save,
+    confirmSave,
+    cancelSave: () => setPendingSave(null),
     feedbackState: feedback.state,
     saving: feedback.busy,
     setAnnouncementComments,
@@ -203,6 +204,7 @@ export function useCategoryManagement() {
     setFacilitiesEnabled,
     setIssuesEnabled,
     setKind,
+    totalEstimatedRows,
     updateFacility: (index: number, next: FacilityCategoryConfig) =>
       setFacilities((current) =>
         current.map((entry, currentIndex) => (currentIndex === index ? next : entry)),

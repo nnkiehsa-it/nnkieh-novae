@@ -73,6 +73,25 @@ export interface AdminAuditEntry {
   createdAt: Date;
 }
 
+interface DeletionJobWire {
+  id: string;
+  targetType: string;
+  targetId: string;
+  cloudinaryPublicId: string | null;
+  status: string;
+  attemptCount: number;
+  nextAttemptAtMs: number;
+  errorTraceId: string | null;
+  createdAtMs: number;
+  updatedAtMs: number;
+}
+
+export interface DeletionJob extends Omit<DeletionJobWire, 'createdAtMs' | 'nextAttemptAtMs' | 'updatedAtMs'> {
+  createdAt: Date;
+  nextAttemptAt: Date;
+  updatedAt: Date;
+}
+
 function toDate(value: number | null) {
   return typeof value === 'number' ? new Date(value) : null;
 }
@@ -158,4 +177,23 @@ export async function listAdminAudit(query = '') {
       createdAt: new Date(createdAtMs),
     })),
   };
+}
+
+export async function listDeletionJobs() {
+  const result = await invokeBackendAction<Record<string, never>, { entries: DeletionJobWire[] }>(
+    'listDeletionJobs',
+  )({});
+  return result.entries.map(({ createdAtMs, nextAttemptAtMs, updatedAtMs, ...entry }) => ({
+    ...entry,
+    createdAt: new Date(createdAtMs),
+    nextAttemptAt: new Date(nextAttemptAtMs),
+    updatedAt: new Date(updatedAtMs),
+  }));
+}
+
+export async function retryDeletionJob(jobId: string) {
+  return await invokeBackendAction<
+    { jobId: string; requestId: string },
+    { id: string; queuedAtMs: number; status: 'pending' }
+  >('retryDeletionJob')({ jobId, requestId: createRequestId() });
 }

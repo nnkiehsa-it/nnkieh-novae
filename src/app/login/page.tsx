@@ -38,14 +38,22 @@ export default function LoginPage() {
   const router = useRouter();
   const search = useSearchParams();
   const session = useSession();
+  const {
+    initialized,
+    prepareLogin,
+    restoringSession,
+    roleLoading,
+    setupCompleted,
+    user,
+  } = session;
   const { t } = useI18n();
   const [loginReady, setLoginReady] = React.useState(false);
   const [verificationError, setVerificationError] = React.useState("");
 
   React.useEffect(() => {
-    if (!session.initialized || session.user) return;
+    if (!initialized || user) return;
     let active = true;
-    void session.prepareLogin().then((error) => {
+    void prepareLogin().then((error) => {
       if (!active) return;
       setVerificationError(error);
       setLoginReady(!error);
@@ -53,13 +61,13 @@ export default function LoginPage() {
     return () => {
       active = false;
     };
-  }, [session.initialized, session.prepareLogin, session.user]);
+  }, [initialized, prepareLogin, user]);
 
   React.useEffect(() => {
-    if (!session.initialized || !session.user || session.roleLoading) return;
+    if (!initialized || !user || roleLoading) return;
     const requested = search.get("redirect");
     router.replace(
-      !session.setupCompleted
+      !setupCompleted
         ? "/setup"
         : requested?.startsWith("/") && !requested.startsWith("//")
           ? requested
@@ -68,13 +76,13 @@ export default function LoginPage() {
   }, [
     router,
     search,
-    session.initialized,
-    session.roleLoading,
-    session.setupCompleted,
-    session.user,
+    initialized,
+    roleLoading,
+    setupCompleted,
+    user,
   ]);
 
-  if (session.restoringSession) return <AppStartupScreen />;
+  if (restoringSession) return <AppStartupScreen />;
 
   return (
     <main className="relative grid min-h-[100svh] overflow-hidden bg-[var(--surface-stage)] lg:grid-cols-[1.08fr_.92fr]">

@@ -3,6 +3,7 @@ import { apiGatewayUrl } from '@/lib/api-gateway';
 import { auth } from '@/lib/firebase';
 import { withRequestTimeout } from '@/lib/request';
 import { backendSecurityHeaders } from '@/lib/backend-security';
+import { realtimeIdleRemaining } from '@/lib/realtime-idle';
 
 interface RealtimeTicketEnvelope {
   data?: {
@@ -39,9 +40,19 @@ let reconnectAttempt = 0;
 let reconnectTimer = 0;
 let connectedBefore = false;
 let sessionActive = false;
+let activityTracking = false;
+let idleSuspended = false;
+let idleTimer = 0;
+let lastActivityAt = 0;
+
+const activityEvents = ['keydown', 'pointerdown', 'scroll', 'touchstart'] as const;
+
+function hasRealtimeInterest() {
+  return sessionActive || listeners.size > 0;
+}
 
 function shouldConnect() {
-  return sessionActive || listeners.size > 0;
+  return hasRealtimeInterest() && !idleSuspended;
 }
 
 function rememberDelivery(id: string) {
@@ -76,6 +87,65 @@ function closeSocket() {
   const activeSocket = socket;
   socket = null;
   if (activeSocket && activeSocket.readyState < WebSocket.CLOSING) activeSocket.close(1000, 'idle');
+}
+
+function scheduleIdleCheck() {
+  window.clearTimeout(idleTimer);
+  idleTimer = 0;
+  if (!hasRealtimeInterest()) return;
+  const remaining = realtimeIdleRemaining(lastActivityAt);
+  if (remaining === 0) {
+    idleSuspended = true;
+    closeSocket();
+    return;
+  }
+  idleTimer = window.setTimeout(scheduleIdleCheck, remaining);
+}
+
+function recordRealtimeActivity() {
+  if (document.visibilityState === 'hidden') return;
+  lastActivityAt = Date.now();
+  if (idleSuspended) {
+    idleSuspended = false;
+    ensureRealtimeConnection();
+  }
+  if (!idleTimer) scheduleIdleCheck();
+}
+
+function handleVisibilityChange() {
+  if (document.visibilityState !== 'visible') return;
+  if (realtimeIdleRemaining(lastActivityAt) === 0) {
+    idleSuspended = true;
+    closeSocket();
+  }
+  recordRealtimeActivity();
+}
+
+function startActivityTracking() {
+  if (activityTracking) return;
+  activityTracking = true;
+  idleSuspended = false;
+  lastActivityAt = Date.now();
+  activityEvents.forEach((event) =>
+    window.addEventListener(event, recordRealtimeActivity, { passive: true }),
+  );
+  window.addEventListener('focus', recordRealtimeActivity);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  scheduleIdleCheck();
+}
+
+function stopActivityTracking() {
+  if (!activityTracking || hasRealtimeInterest()) return;
+  activityTracking = false;
+  idleSuspended = false;
+  lastActivityAt = 0;
+  window.clearTimeout(idleTimer);
+  idleTimer = 0;
+  activityEvents.forEach((event) =>
+    window.removeEventListener(event, recordRealtimeActivity),
+  );
+  window.removeEventListener('focus', recordRealtimeActivity);
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
 }
 
 function normalizeMessage(value: unknown): RealtimeMessage | null {
@@ -132,7 +202,13 @@ async function connectRealtime() {
     nextSocket.onopen = () => {
       if (socket !== nextSocket) return;
       reconnectAttempt = 0;
-      if (connectedBefore) listeners.forEach((listener) => listener.onResync?.());
+      if (connectedBefore) {
+        const resyncCallbacks = new Set(
+          Array.from(listeners.values(), (listener) => listener.onResync)
+            .filter((callback): callback is () => void => Boolean(callback)),
+        );
+        resyncCallbacks.forEach((callback) => callback());
+      }
       connectedBefore = true;
     };
     nextSocket.onmessage = (event) => {
@@ -173,12 +249,14 @@ export function ensureRealtimeConnection() {
 
 export function startRealtimeSession() {
   sessionActive = true;
+  startActivityTracking();
   ensureRealtimeConnection();
 }
 
 export function stopRealtimeSession() {
   sessionActive = false;
   if (listeners.size === 0) closeSocket();
+  stopActivityTracking();
 }
 
 export function subscribeRealtimeTopic(
@@ -189,9 +267,11 @@ export function subscribeRealtimeTopic(
 ) {
   const id = listenerSerial += 1;
   listeners.set(id, { event, onMessage, topic, ...options });
+  startActivityTracking();
   ensureRealtimeConnection();
   return () => {
     listeners.delete(id);
     if (!shouldConnect()) closeSocket();
+    stopActivityTracking();
   };
 }

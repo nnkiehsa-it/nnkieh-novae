@@ -1,4 +1,4 @@
-import { getPlatformDashboard } from "./dashboard.ts";
+import { handleDashboardAction } from "./dashboard.ts";
 import { handleUserAction } from "./users.ts";
 import { handleUploadAction } from "./uploads.ts";
 import { handleIssueAction } from "./issues.ts";
@@ -94,6 +94,9 @@ function naturallyIdempotentWrite(
 export const backendActionDefinitions = [
   action("getCategoryCatalog", "category", "read", handleCategoryAction),
   action("getCategoryManagement", "category", "read", handleCategoryAction, { requiredPermission: "category.manage" }),
+  action("estimateCategoryPolicyChanges", "category", "read", handleCategoryAction, { requiredPermission: "category.manage" }),
+  action("estimateRetentionCleanup", "category", "read", handleCategoryAction, { requiredPermission: "category.manage" }),
+  action("listPlatformJobs", "category", "read", handleCategoryAction, { requiredPermission: "category.manage" }),
   action("savePlatformSettings", "category", "admin-write", handleCategoryAction, {
     idempotent: true, requiredPermission: "category.manage", requiresRequestId: true,
   }),
@@ -184,9 +187,15 @@ export const backendActionDefinitions = [
   action("unregisterPushToken", "notification", "sensitive-write", notificationHandler),
   action("updatePushNotificationPreferences", "notification", "general-write", notificationHandler),
 
-  action("getPlatformDashboard", "dashboard", "read", async (_action, _payload, _auth, database) => {
-    return await getPlatformDashboard(database);
-  }, { requiredPermission: "dashboard.view" }),
+  action("getPlatformDashboard", "dashboard", "read", handleDashboardAction, {
+    requiredPermission: "dashboard.view",
+  }),
+  action("listDeletionJobs", "dashboard", "read", handleDashboardAction, {
+    requiredPermission: "dashboard.view",
+  }),
+  action("retryDeletionJob", "dashboard", "admin-write", handleDashboardAction, {
+    idempotent: true, requiredPermission: "role.manage", requiresRequestId: true,
+  }),
 ] as const satisfies readonly BackendActionDefinition[];
 
 const backendActionDefinitionMap = new Map(

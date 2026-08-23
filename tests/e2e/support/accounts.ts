@@ -79,10 +79,26 @@ export async function signInWithEmulator(page: Page, email: string) {
     undefined,
     { timeout: 20_000 },
   );
-  await page.evaluate(async (accountEmail) => {
-    await window.__NOVAE_E2E__?.signIn(accountEmail);
-  }, email);
+  const profileSynced = page.waitForResponse((response) =>
+    response.url().endsWith('/v1/auth/sync') && response.status() === 200,
+  );
+  await Promise.all([
+    profileSynced,
+    page.evaluate(async (accountEmail) => {
+      await window.__NOVAE_E2E__?.signIn(accountEmail);
+    }, email),
+  ]);
+  await page.goto('/issues');
   await expect(page).not.toHaveURL(/\/login/u, { timeout: 20_000 });
+  await page.waitForFunction(
+    () => Boolean(document.querySelector('.app-mobile-nav') || document.querySelector('main h1')),
+    undefined,
+    { timeout: 20_000 },
+  );
+  const localeGate = page.getByRole('heading', { name: /Choose interface language|選擇介面語言/u });
+  if (await localeGate.isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: /Continue|繼續/u }).click();
+  }
 }
 
 export async function saveSignedInState(

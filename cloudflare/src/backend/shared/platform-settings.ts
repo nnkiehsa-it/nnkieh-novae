@@ -17,16 +17,14 @@ export interface ImageUploadSettings {
   webpQuality: number;
 }
 
-export interface ClosedContentRetentionSettings {
-  closedFacilitiesDays: number;
-  closedFacilitiesEnabled: boolean;
-  closedIssuesDays: number;
-  closedIssuesEnabled: boolean;
-}
+type RetentionDefaults = typeof DATA_RETENTION;
+export type DataRetentionSettings = {
+  -readonly [Key in keyof RetentionDefaults]: RetentionDefaults[Key] extends boolean ? boolean : number;
+};
 
 export interface PlatformSettings {
   imageUploads: ImageUploadSettings;
-  retention: ClosedContentRetentionSettings;
+  retention: DataRetentionSettings;
 }
 
 export type UploadTargetType = "announcement" | "announcement_comment" | "comment" | "facility" | "issue";
@@ -41,12 +39,7 @@ const defaultImageUploads: ImageUploadSettings = {
   webpQuality: RATE_LIMITS.imageCompression.webpQuality,
 };
 
-const defaultRetention: ClosedContentRetentionSettings = {
-  closedFacilitiesDays: DATA_RETENTION.closedFacilitiesDays,
-  closedFacilitiesEnabled: Boolean(DATA_RETENTION.closedFacilitiesEnabled),
-  closedIssuesDays: DATA_RETENTION.closedIssuesDays,
-  closedIssuesEnabled: Boolean(DATA_RETENTION.closedIssuesEnabled),
-};
+const defaultRetention = { ...DATA_RETENTION } as DataRetentionSettings;
 
 function record(value: unknown) {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -95,14 +88,19 @@ function normalizeImageUploads(value: unknown): ImageUploadSettings {
   };
 }
 
-function normalizeRetention(value: unknown): ClosedContentRetentionSettings {
+function normalizeRetention(value: unknown): DataRetentionSettings {
   const settings = record(value);
-  return {
-    closedFacilitiesDays: positiveInteger(settings.closedFacilitiesDays, defaultRetention.closedFacilitiesDays, 1, MAX_RETENTION_DAYS),
-    closedFacilitiesEnabled: boolean(settings.closedFacilitiesEnabled, defaultRetention.closedFacilitiesEnabled),
-    closedIssuesDays: positiveInteger(settings.closedIssuesDays, defaultRetention.closedIssuesDays, 1, MAX_RETENTION_DAYS),
-    closedIssuesEnabled: boolean(settings.closedIssuesEnabled, defaultRetention.closedIssuesEnabled),
-  };
+  return Object.fromEntries(Object.entries(defaultRetention).map(([key, fallback]) => [
+    key,
+    typeof fallback === "boolean"
+      ? boolean(settings[key], fallback)
+      : positiveInteger(
+        settings[key],
+        fallback,
+        1,
+        key.endsWith("Hours") ? 87_600 : MAX_RETENTION_DAYS,
+      ),
+  ])) as DataRetentionSettings;
 }
 
 export function platformSettingsFromInput(value: unknown): PlatformSettings {
@@ -114,7 +112,7 @@ export function platformSettingsFromInput(value: unknown): PlatformSettings {
   const retentionInput = record(input.retention);
   if (
     Object.keys(imageUploads).some((key) => imageUploads[key as keyof ImageUploadSettings] !== imageInput[key])
-    || Object.keys(retention).some((key) => retention[key as keyof ClosedContentRetentionSettings] !== retentionInput[key])
+    || Object.keys(retention).some((key) => retention[key as keyof DataRetentionSettings] !== retentionInput[key])
   ) {
     throw new Error("validation-required");
   }
@@ -130,14 +128,6 @@ export async function loadPlatformSettings(database: AppDatabaseClient): Promise
     imageUploads: normalizeImageUploads(parseStoredValue(values.get(IMAGE_UPLOADS_KEY))),
     retention: normalizeRetention(parseStoredValue(values.get(RETENTION_KEY))),
   };
-}
-
-export async function savePlatformSettings(database: AppDatabaseClient, settings: PlatformSettings) {
-  const { error } = await database.table("app_private", "runtime_settings").upsert([
-    { key: IMAGE_UPLOADS_KEY, value: JSON.stringify(settings.imageUploads), updated_at: new Date().toISOString() },
-    { key: RETENTION_KEY, value: JSON.stringify(settings.retention), updated_at: new Date().toISOString() },
-  ], { onConflict: "key" });
-  if (error) throw error;
 }
 
 export function maxImagesForTarget(settings: ImageUploadSettings, targetType: UploadTargetType) {

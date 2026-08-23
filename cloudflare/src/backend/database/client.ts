@@ -42,6 +42,9 @@ const SET_RETURNING_FUNCTIONS = new Set<string>([
 
 const JSON_FUNCTION_ARGUMENTS = new Map<string, Set<string>>([
   ["app_api.backend_complete_initial_setup", new Set(["facility_categories", "issue_categories"])],
+  ["app_api.backend_estimate_category_policy_changes", new Set(["issue_categories"])],
+  ["app_api.backend_estimate_retention_cleanup", new Set(["retention_config"])],
+  ["app_api.backend_save_platform_settings", new Set(["image_settings", "retention_config"])],
   ["app_api.backend_save_category_management", new Set(["facility_categories", "issue_categories"])],
   ["app_api.complete_idempotency_key", new Set(["action_response"])],
   ["app_api.run_maintenance_cleanup", new Set(["retention_config"])],

@@ -1,5 +1,5 @@
 import { asRecord, asString } from "../shared/http.ts";
-import type { BackendDatabase } from "./types.ts";
+import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { toMs } from "./utils.ts";
 
 function asCount(value: unknown) {
@@ -96,4 +96,35 @@ export async function getPlatformDashboard(database: BackendDatabase) {
       stuck_upload_count: uploadPending,
     },
   };
+}
+
+export async function handleDashboardAction(
+  action: string,
+  payload: JsonRecord,
+  auth: AuthContext,
+  database: BackendDatabase,
+) {
+  if (action === "getPlatformDashboard") return await getPlatformDashboard(database);
+
+  if (action === "listDeletionJobs") {
+    const { data, error } = await database.call("app_api", "backend_list_deletion_jobs", {
+      actor_uid: auth.uid,
+      page_limit: 50,
+    });
+    if (error) throw error;
+    return asRecord(data);
+  }
+
+  if (action === "retryDeletionJob") {
+    const jobId = asString(payload.jobId).trim();
+    if (!jobId) throw new Error("validation-required");
+    const { data, error } = await database.call("app_api", "backend_retry_deletion_job", {
+      actor_uid: auth.uid,
+      job_id: jobId,
+    });
+    if (error) throw error;
+    return asRecord(data);
+  }
+
+  throw new Error("invalid-action");
 }

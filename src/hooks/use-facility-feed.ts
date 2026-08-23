@@ -31,6 +31,7 @@ import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 import { toggleReactionState } from "@/lib/reaction-state";
+import { advanceFeedPageCount, canLoadAnotherFeedPage } from "@/lib/feed-page-limit";
 
 const FACILITY_LIST_CACHE_PREFIXES = ["facility-list-page|"] as const;
 
@@ -38,6 +39,7 @@ interface FacilityFeed {
   cursor: FacilityCursor | null;
   facilities: FacilitySummary[];
   hasMore: boolean;
+  pageCount: number;
 }
 
 interface FacilityFeedViewMemory {
@@ -76,6 +78,7 @@ export function useFacilityFeed() {
     cursor: viewMemory?.feed.cursor ?? null,
     facilities: viewMemory?.feed.facilities ?? [],
     hasMore: viewMemory?.feed.hasMore ?? false,
+    pageCount: viewMemory?.feed.pageCount ?? (viewMemory?.feed.facilities.length ? 1 : 0),
   });
   const [loading, setLoading] = React.useState(!viewMemory);
   const revealFields = useColdDataReveal(coldRead, loading);
@@ -187,13 +190,20 @@ export function useFacilityFeed() {
             "summary",
           ),
         );
-        setFeed((current) => ({
-          ...result,
-          hasMore: canContinuePage(cursor, result.cursor, result.hasMore),
-          facilities: cursor
-            ? mergePageById(current.facilities, facilities)
-            : facilities,
-        }));
+        setFeed((current) => {
+          const pageCount = advanceFeedPageCount(current.pageCount, Boolean(cursor));
+          return {
+            ...result,
+            hasMore: canLoadAnotherFeedPage(
+              pageCount,
+              canContinuePage(cursor, result.cursor, result.hasMore),
+            ),
+            facilities: cursor
+              ? mergePageById(current.facilities, facilities)
+              : facilities,
+            pageCount,
+          };
+        });
       } catch (caught) {
         if (requestGuard.isCurrent(requestToken))
           setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));

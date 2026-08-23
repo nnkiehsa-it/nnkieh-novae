@@ -4,6 +4,7 @@ import { processDeletionBatch } from "./deletion.ts";
 import { runMaintenance } from "./maintenance.ts";
 import { processOutboxBatch } from "./outbox.ts";
 import { processRealtimeBatch } from "./realtime.ts";
+import { asRecord } from "../shared/http.ts";
 
 export type JobMessage = { type: "drain" | "maintenance" };
 
@@ -13,6 +14,14 @@ export async function processJobMessage(message: JobMessage, env: Env) {
     let maintenance = { deletionDue: true, outboxDue: true };
     if (message.type === "maintenance") maintenance = await runMaintenance(database);
 
+    const { data: platformJobData, error: platformJobError } = await database.call(
+      "app_api",
+      "backend_process_platform_job_batch",
+      { batch_size: 100 },
+    );
+    if (platformJobError) throw platformJobError;
+    const platformJob = asRecord(platformJobData);
+
     const outbox = maintenance.outboxDue
       ? await processOutboxBatch(database)
       : { hasMore: false, processedCount: 0, retriedPushCount: 0 };
@@ -21,10 +30,10 @@ export async function processJobMessage(message: JobMessage, env: Env) {
       : { hasMore: false, processedCount: 0 };
     const realtime = await processRealtimeBatch(database, env);
 
-    if (outbox.hasMore || deletion.hasMore || realtime.hasMore) {
+    if (platformJob.hasMore === true || outbox.hasMore || deletion.hasMore || realtime.hasMore) {
       await env.JOBS.send({ type: "drain" });
     }
-    return { deletion, outbox, realtime };
+    return { deletion, outbox, platformJob, realtime };
   } finally {
     await database.close();
   }

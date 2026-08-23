@@ -36,6 +36,9 @@ export async function getSessionBootstrap(
       setupCompleted: auth.setupCompleted,
     },
     notificationUnread: asRecord(snapshot.notificationUnread),
+    runtime: {
+      pushTokenConfirmationDays: platformSettings.retention.pushTokenConfirmationDays,
+    },
     versions: asRecord(snapshot.versions),
     visitRecorded: snapshot.visitRecorded === true,
   };

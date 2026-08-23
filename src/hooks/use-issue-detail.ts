@@ -9,6 +9,7 @@ import {
   issueCategoryAllowsComments,
 } from "@/constants/categories";
 import { useSession } from "@/hooks/use-session";
+import { rememberSupportedIssue } from "@/lib/supported-issue-memory";
 import { getDerivedIssueStatus, getSupportProgressPercent } from "@/lib/issue-status";
 import { getIssueOperationTimeItems } from "@/lib/issue-timeline";
 import type { CommentCursor } from "@/services/comment-cursor";
@@ -45,7 +46,6 @@ export function useIssueDetail() {
   const search = useSearchParams();
   const router = useRouter();
   const session = useSession();
-  const { setSupportedIssue } = session;
   const { t } = useI18n();
   const issueId = params.issueId;
   const filter = decodeURIComponent(params.filter);
@@ -103,7 +103,7 @@ export function useIssueDetail() {
           },
           entityReadRevision,
         );
-        setSupportedIssue(merged.id, merged.currentUserSupported === true);
+        rememberSupportedIssue(merged.id, merged.currentUserSupported === true);
         if (result.canViewAuthor && result.author_uid) {
           void fetchUserPublicProfiles([result.author_uid])
             .then((profiles) => setProfile(profiles[result.author_uid!] ?? null))
@@ -116,7 +116,7 @@ export function useIssueDetail() {
         setLoading(false);
       }
     },
-    [issueId, session.user?.uid, setSupportedIssue, t],
+    [issueId, session.user?.uid, t],
   );
 
   React.useEffect(() => {
@@ -206,7 +206,7 @@ export function useIssueDetail() {
         support_count: optimistic.count,
       },
     );
-    session.setSupportedIssue(currentIssue.id, optimistic.active);
+    rememberSupportedIssue(currentIssue.id, optimistic.active);
     if (optimistic.active) setBurst((value) => value + 1);
     try {
       const result = await toggleSupport(currentIssue.id);
@@ -219,7 +219,7 @@ export function useIssueDetail() {
           support_count: result.support_count,
         },
       );
-      session.setSupportedIssue(currentIssue.id, result.supported);
+      rememberSupportedIssue(currentIssue.id, result.supported);
     } catch {
       patchContentEntity<IssueRecord>(
         session.user?.uid,
@@ -230,7 +230,7 @@ export function useIssueDetail() {
           support_count: previous.count,
         },
       );
-      session.setSupportedIssue(currentIssue.id, previous.active);
+      rememberSupportedIssue(currentIssue.id, previous.active);
       toast.error(t("ui.issue.supportFailed"));
     } finally {
       supportingRef.current = false;

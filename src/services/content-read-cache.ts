@@ -108,7 +108,12 @@ export async function getCachedContentPersistent<T>(key: string, maxAgeMs = CONT
 
   const guard = captureContentCacheWriteGuard(key);
   const pending = readPersistentCache<T>(persistentKey).then((entry) => {
-    if (!entry || entry.scope !== guard.scope || !isContentCacheFresh(entry.updatedAt, Date.now(), maxAgeMs)) return null;
+    if (!entry || entry.scope !== guard.scope) return null;
+    if (!isContentCacheFresh(entry.updatedAt, Date.now(), maxAgeMs)) {
+      if (entry.writeVersion !== undefined)
+        void deletePersistentCacheIfVersion(persistentKey, entry.writeVersion);
+      return null;
+    }
     if (!isContentCacheWriteGuardCurrent(guard)) return null;
     rememberContentCacheEntry(key, { stale: false, updatedAt: entry.updatedAt, value: entry.value });
     return entry.value;

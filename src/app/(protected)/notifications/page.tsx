@@ -86,6 +86,8 @@ export default function NotificationsPage() {
               <button
                 className="group flex w-full items-start gap-3 border-b p-4 text-left outline-none last:border-b-0 hover:bg-[var(--surface-hover)] focus-visible:bg-[var(--surface-hover)]"
                 onClick={() => void state.open(notification)}
+                onFocus={() => state.preload(notification)}
+                onPointerEnter={() => state.preload(notification)}
                 type="button"
               >
                 <NotificationIcon notification={notification} />

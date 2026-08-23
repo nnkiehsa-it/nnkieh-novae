@@ -57,6 +57,12 @@ export const BACKEND_ACTION_POLICIES = {
     "group": "upload-write",
     "extraLimit": "destructiveWriteHourly"
   },
+  "estimateCategoryPolicyChanges": {
+    "group": "read"
+  },
+  "estimateRetentionCleanup": {
+    "group": "read"
+  },
   "finalizeImageUploads": {
     "group": "upload-write"
   },
@@ -114,6 +120,9 @@ export const BACKEND_ACTION_POLICIES = {
   "listComments": {
     "group": "read"
   },
+  "listDeletionJobs": {
+    "group": "read"
+  },
   "listFacilities": {
     "group": "read"
   },
@@ -130,6 +139,9 @@ export const BACKEND_ACTION_POLICIES = {
     "group": "read"
   },
   "listNotificationPages": {
+    "group": "read"
+  },
+  "listPlatformJobs": {
     "group": "read"
   },
   "listRoleAssignments": {
@@ -155,6 +167,10 @@ export const BACKEND_ACTION_POLICIES = {
   },
   "resolveUploadImageUrls": {
     "group": "upload-resolve"
+  },
+  "retryDeletionJob": {
+    "group": "admin-write",
+    "extraLimit": "destructiveWriteHourly"
   },
   "searchIssues": {
     "group": "read"

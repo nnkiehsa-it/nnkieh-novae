@@ -1,7 +1,9 @@
 import { invokeBackendAction } from '@/services/backend-action';
 import type { CategoryCatalog } from '@/types/categories';
 import { RATE_LIMITS } from '@/generated/rate-limits';
+import { DATA_RETENTION } from '@/generated/data-retention';
 import type { SessionAccess } from '@/services/session-role';
+import { seedRuntimeSettings } from '@/services/runtime-settings';
 import {
   CONTENT_SHORT_CACHE_TTL_MS,
   getCachedContentPersistent,
@@ -18,6 +20,7 @@ export interface SessionBootstrapResult {
   access: SessionAccess;
   catalog: CategoryCatalog;
   notificationUnread: { hasUnread: boolean };
+  runtime: { pushTokenConfirmationDays: number };
   versions: ContentVersions;
   visitRecorded: boolean;
 }
@@ -45,7 +48,10 @@ export async function fetchSessionBootstrap(options: {
       SESSION_BOOTSTRAP_CACHE_KEY,
       CONTENT_SHORT_CACHE_TTL_MS,
     );
-    if (cached?.access?.setupCompleted) return cached;
+    if (cached?.access?.setupCompleted) {
+      seedRuntimeSettings(cached.runtime);
+      return cached;
+    }
   }
 
   return runCoalescedContentRequest(SESSION_BOOTSTRAP_CACHE_KEY, async (cacheGuard) => {
@@ -97,6 +103,11 @@ export async function fetchSessionBootstrap(options: {
       notificationUnread: {
         hasUnread: result.notificationUnread?.hasUnread === true,
       },
+      runtime: {
+        pushTokenConfirmationDays: Number(
+          result.runtime?.pushTokenConfirmationDays ?? DATA_RETENTION.pushTokenConfirmationDays,
+        ),
+      },
       versions: {
         announcements: Number(result.versions?.announcements ?? 1),
         facilities: Number(result.versions?.facilities ?? 1),
@@ -104,6 +115,7 @@ export async function fetchSessionBootstrap(options: {
       },
       visitRecorded: result.visitRecorded === true,
     };
+    seedRuntimeSettings(normalized.runtime);
     if (!shouldRecordVisit) setCachedContentFromRead(cacheGuard, { ...normalized, visitRecorded: false });
     else setCachedContent(SESSION_BOOTSTRAP_CACHE_KEY, { ...normalized, visitRecorded: false });
     return normalized;

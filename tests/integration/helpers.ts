@@ -299,7 +299,7 @@ export async function saveCategoryDraft(
     return [...byId.values()].map((category, sortOrder) => ({ ...category, sortOrder }));
   };
   const features = asRecord(current.features);
-  return await callAction("saveCategoryManagement", {
+  const result = await callAction("saveCategoryManagement", {
     announcementCommentsEnabled: options.announcementCommentsEnabled
       ?? Boolean(features.announcementCommentsEnabled),
     deletedFacilityCategoryIds: [...deletedFacilityIds],
@@ -318,6 +318,16 @@ export async function saveCategoryDraft(
     issuesEnabled: options.issuesEnabled ?? Boolean(features.issuesEnabled),
     requestId: requestId("save-category-draft"),
   }, auth);
+  for (let index = 0; index < 100; index += 1) {
+    const { data, error } = await database.call(
+      "app_api",
+      "backend_process_platform_job_batch",
+      { batch_size: 100 },
+    );
+    if (error) throw error;
+    if (asRecord(data).hasMore !== true) break;
+  }
+  return result;
 }
 
 export async function insertReadyUpload(ownerUid: string, label: string) {

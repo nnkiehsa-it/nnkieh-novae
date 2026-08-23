@@ -4,6 +4,7 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { allowedDomain, auth } from "@/lib/firebase";
+import { prepareGoogleLoginEntrance } from "@/services/session-auth";
 
 const emulatorUrl = String(
   process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_URL ?? "",
@@ -39,6 +40,8 @@ export async function signInForE2e(email: string) {
   if (!auth || !normalizedEmail.endsWith(`@${allowedDomain}`)) {
     throw new Error("Invalid E2E account.");
   }
+  const preparationError = await prepareGoogleLoginEntrance();
+  if (preparationError) throw new Error(preparationError);
   const credential = await signInWithCredential(
     auth,
     GoogleAuthProvider.credential(fakeGoogleIdToken(normalizedEmail)),

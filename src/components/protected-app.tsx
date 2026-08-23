@@ -4,6 +4,7 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "@/hooks/use-session";
+import { useContentRealtime } from "@/hooks/use-content-realtime";
 import { AppLocaleGate } from "@/components/app-locale-gate";
 import { AppShell } from "@/components/app-shell";
 import { BrandLockup } from "@/components/ui/brand";
@@ -34,35 +35,37 @@ export function ProtectedApp({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const session = useSession();
+  const { initialized, loading, roleLoading, setupCompleted, user } = session;
+  useContentRealtime(pathname, Boolean(user && setupCompleted));
 
   React.useEffect(() => {
-    if (!session.initialized || session.loading || session.roleLoading) return;
-    if (!session.user) {
+    if (!initialized || loading || roleLoading) return;
+    if (!user) {
       router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
       return;
     }
-    if (!session.setupCompleted && pathname !== "/setup") {
+    if (!setupCompleted && pathname !== "/setup") {
       router.replace("/setup");
       return;
     }
-    if (session.setupCompleted && pathname === "/setup")
+    if (setupCompleted && pathname === "/setup")
       router.replace("/issues");
   }, [
+    initialized,
+    loading,
     pathname,
+    roleLoading,
     router,
-    session.initialized,
-    session.loading,
-    session.roleLoading,
-    session.setupCompleted,
-    session.user,
+    setupCompleted,
+    user,
   ]);
 
-  if (!session.initialized || session.loading || session.roleLoading)
+  if (!initialized || loading || roleLoading)
     return <AppStartupScreen />;
-  if (!session.user) return <AppStartupScreen />;
-  if (!session.setupCompleted && pathname !== "/setup")
+  if (!user) return <AppStartupScreen />;
+  if (!setupCompleted && pathname !== "/setup")
     return <AppStartupScreen />;
-  if (session.setupCompleted && pathname === "/setup") return <AppStartupScreen />;
+  if (setupCompleted && pathname === "/setup") return <AppStartupScreen />;
   if (pathname === "/setup")
     return <AppLocaleGate>{children}</AppLocaleGate>;
   return (

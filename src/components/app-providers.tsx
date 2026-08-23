@@ -43,7 +43,7 @@ export function AppProviders({
           transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
         >
           <TooltipProvider>
-            <TurnstileProvider nonce={nonce}>
+            <TurnstileProvider>
               <SessionProvider>
                 <Suspense fallback={null}>
                   {i18nReady ? children : <div className="app-start-surface" />}

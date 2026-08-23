@@ -5,6 +5,7 @@ import { AlertTriangle, Building2, FileText, MessageSquare, RefreshCw, UserPlus 
 
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { AdminActivityLogDialog, AdminActivityRows } from "@/components/admin/admin-activity-log-dialog";
+import { DeletionJobRecovery } from "@/components/admin/deletion-job-recovery";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ErrorState } from "@/components/ui/page-state";
@@ -175,6 +176,7 @@ export function AdminOverview() {
               ))}
             </div>
           </section>
+          <DeletionJobRecovery />
         </aside>
       </div>
       <AdminActivityLogDialog

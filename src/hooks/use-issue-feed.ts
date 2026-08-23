@@ -36,6 +36,11 @@ import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 import { toggleReactionState } from "@/lib/reaction-state";
+import { advanceFeedPageCount, canLoadAnotherFeedPage } from "@/lib/feed-page-limit";
+import {
+  getSupportedIssueIdsSnapshot,
+  rememberSupportedIssue,
+} from "@/lib/supported-issue-memory";
 
 const ISSUE_LIST_CACHE_PREFIXES = [
   "issue-list-page|",
@@ -47,6 +52,7 @@ interface IssueFeed {
   cursor: IssueCursor | null;
   hasMore: boolean;
   issues: IssueSummary[];
+  pageCount: number;
 }
 
 interface IssueFeedViewMemory {
@@ -79,6 +85,7 @@ export function useIssueFeed() {
     cursor: viewMemory?.feed.cursor ?? null,
     hasMore: viewMemory?.feed.hasMore ?? false,
     issues: viewMemory?.feed.issues ?? [],
+    pageCount: viewMemory?.feed.pageCount ?? (viewMemory?.feed.issues.length ? 1 : 0),
   });
   const [loading, setLoading] = React.useState(!viewMemory);
   const revealFields = useColdDataReveal(coldRead, loading);
@@ -87,7 +94,7 @@ export function useIssueFeed() {
   const [supportingId, setSupportingId] = React.useState<string | null>(null);
   const supportingRef = React.useRef<string | null>(null);
   const [supportBurstById, setSupportBurstById] = React.useState<Record<string, number>>({});
-  const supportedIssueIdsRef = React.useRef(session.mySupportedIssueIds);
+  const supportedIssueIdsRef = React.useRef(getSupportedIssueIdsSnapshot());
   const requestGuard = usePagedRequestGuard();
   const entityVersion = useContentEntityDomainVersion(session.user?.uid, "issue");
   const queryKey = [
@@ -99,9 +106,13 @@ export function useIssueFeed() {
     session.isAdmin ? "admin" : "user",
   ].join("|");
 
-  React.useEffect(() => {
-    supportedIssueIdsRef.current = session.mySupportedIssueIds;
-  }, [session.mySupportedIssueIds]);
+  function setSupportedIssue(issueId: string, supported: boolean) {
+    rememberSupportedIssue(issueId, supported);
+    const next = new Set(supportedIssueIdsRef.current);
+    if (supported) next.add(issueId);
+    else next.delete(issueId);
+    supportedIssueIdsRef.current = next;
+  }
 
   async function support(issueId: string) {
     if (supportingRef.current) return;
@@ -120,7 +131,7 @@ export function useIssueFeed() {
       currentUserSupported: optimistic.active,
       support_count: optimistic.count,
     });
-    session.setSupportedIssue(issueId, optimistic.active);
+    setSupportedIssue(issueId, optimistic.active);
     if (optimistic.active) {
       setSupportBurstById((current) => ({
         ...current,
@@ -133,13 +144,13 @@ export function useIssueFeed() {
         currentUserSupported: result.supported,
         support_count: result.support_count,
       });
-      session.setSupportedIssue(issueId, result.supported);
+      setSupportedIssue(issueId, result.supported);
     } catch {
       patchContentEntity<IssueSummary>(session.user?.uid, "issue", issueId, {
         currentUserSupported: previous.active,
         support_count: previous.count,
       });
-      session.setSupportedIssue(issueId, previous.active);
+      setSupportedIssue(issueId, previous.active);
       toast.error(t("ui.issue.supportFailed"));
     } finally {
       supportingRef.current = null;
@@ -166,7 +177,7 @@ export function useIssueFeed() {
       cursor ? setLoadingMore(true) : setLoading(true);
       setError("");
       try {
-        let result: IssueFeed;
+        let result: Omit<IssueFeed, "pageCount">;
         if (filter === "my-proposals") {
           result = await fetchUserIssues(session.user.uid, cursor, {
             sort,
@@ -213,11 +224,18 @@ export function useIssueFeed() {
             "summary",
           ),
         );
-        setFeed((current) => ({
-          ...result,
-          hasMore: canContinuePage(cursor, result.cursor, result.hasMore),
-          issues: cursor ? mergePageById(current.issues, issues) : issues,
-        }));
+        setFeed((current) => {
+          const pageCount = advanceFeedPageCount(current.pageCount, Boolean(cursor));
+          return {
+            ...result,
+            hasMore: canLoadAnotherFeedPage(
+              pageCount,
+              canContinuePage(cursor, result.cursor, result.hasMore),
+            ),
+            issues: cursor ? mergePageById(current.issues, issues) : issues,
+            pageCount,
+          };
+        });
       } catch (caught) {
         if (requestGuard.isCurrent(requestToken))
           setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));

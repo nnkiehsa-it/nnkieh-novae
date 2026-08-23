@@ -81,7 +81,10 @@ if (
 const serwist = new Serwist({
   clientsClaim: true,
   navigationPreload: true,
-  precacheEntries: self.__SW_MANIFEST,
+  precacheEntries: self.__SW_MANIFEST?.filter((entry) => {
+    const value = typeof entry === "string" ? entry : entry.url;
+    return !new URL(value, self.location.origin).pathname.endsWith(".woff2");
+  }),
   runtimeCaching: defaultCache,
   skipWaiting: true,
 });

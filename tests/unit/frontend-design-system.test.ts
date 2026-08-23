@@ -97,8 +97,8 @@ describe("React frontend design system", () => {
     expect(motion).not.toContain("t-stagger-copy");
     expect(motion).not.toContain("t-reveal-content");
     expect(motion).toMatch(/@keyframes t-route-enter[\s\S]*translate/u);
-    expect(motion).toContain("--route-duration: 420ms");
-    expect(motion).toContain("--route-distance: 40px");
+    expect(motion).toContain("--route-duration: 440ms");
+    expect(motion).toContain("--route-distance: clamp(28px, 7vw, 64px)");
     expect(motion).toContain("--ease-route: cubic-bezier(0.32, 0.72, 0, 1)");
     expect(motion).toContain("--skeleton-appear-delay: 120ms");
     expect(motion).toContain("--reveal-dur: 240ms");
@@ -110,8 +110,8 @@ describe("React frontend design system", () => {
     expect(read("src/components/liquid-nav.tsx")).not.toContain("transitionTypes");
     expect(motion).toContain('data-route-direction="root"');
     const rootRouteEnter = motion.match(/@keyframes t-route-enter-root\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
-    expect(rootRouteEnter).toContain("opacity: 0");
-    expect(rootRouteEnter).not.toContain("transform");
+    expect(rootRouteEnter).toContain("opacity: 0.35");
+    expect(rootRouteEnter).toContain("translate3d(0, 14px, 0) scale(0.985)");
     expect(rootRouteEnter).not.toContain("filter");
     expect(motion).toContain(".route-page.t-route-enter");
     expect(motion).toContain("t-route-enter-root var(--route-root-duration)");

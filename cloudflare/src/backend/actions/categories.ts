@@ -5,7 +5,6 @@ import { requirePermission } from "./auth.ts";
 import {
   loadPlatformSettings,
   platformSettingsFromInput,
-  savePlatformSettings,
 } from "../shared/platform-settings.ts";
 
 const CATEGORY_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
@@ -208,11 +207,51 @@ export async function handleCategoryAction(
       setupCompleted: auth.setupCompleted,
     };
   }
+  if (action === "estimateCategoryPolicyChanges") {
+    requirePermission(auth, "category.manage");
+    const rawIssueCategories = Array.isArray(payload.issueCategories) ? payload.issueCategories : [];
+    const issueCategories = rawIssueCategories.map((value, index) => ({
+      ...issueCategoryInput(value, index),
+      isDefault: asBoolean(asRecord(value).isDefault),
+    }));
+    const { data, error } = await database.call("app_api", "backend_estimate_category_policy_changes", {
+      actor_uid: auth.uid,
+      announcement_comments_enabled: await announcementCommentsSetting(payload, database),
+      deleted_issue_category_ids: deletedCategoryIds(payload.deletedIssueCategoryIds),
+      issue_categories: issueCategories,
+    });
+    if (error) throw error;
+    return asRecord(data);
+  }
+  if (action === "listPlatformJobs") {
+    requirePermission(auth, "category.manage");
+    const { data, error } = await database.call("app_api", "backend_list_platform_jobs", {
+      actor_uid: auth.uid,
+      page_limit: 30,
+    });
+    if (error) throw error;
+    return asRecord(data);
+  }
   if (action === "savePlatformSettings") {
     requirePermission(auth, "category.manage");
     const settings = platformSettingsFromInput(payload);
-    await savePlatformSettings(database, settings);
-    return { ...settings, success: true };
+    const { data, error } = await database.call("app_api", "backend_save_platform_settings", {
+      actor_uid: auth.uid,
+      image_settings: { ...settings.imageUploads },
+      retention_config: { ...settings.retention },
+    });
+    if (error) throw error;
+    return { ...settings, ...asRecord(data), success: true };
+  }
+  if (action === "estimateRetentionCleanup") {
+    requirePermission(auth, "category.manage");
+    const settings = platformSettingsFromInput(payload);
+    const { data, error } = await database.call("app_api", "backend_estimate_retention_cleanup", {
+      actor_uid: auth.uid,
+      retention_config: { ...settings.retention },
+    });
+    if (error) throw error;
+    return asRecord(data);
   }
   if (action === "saveCategoryManagement") {
     requirePermission(auth, "category.manage");

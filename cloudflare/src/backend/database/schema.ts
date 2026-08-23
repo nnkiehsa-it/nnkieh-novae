@@ -301,6 +301,25 @@ export interface AppPrivateTables {
   notification_states: Table<NotificationStateRow>;
   notifications: Table<NotificationRow>;
   outbox_events: Table<OutboxEventRow>;
+  platform_jobs: Table<{
+    id: string;
+    job_type: string;
+    scope_id: string;
+    payload: Json;
+    status: string;
+    estimated_rows: number;
+    processed_rows: number;
+    affected_rows: number;
+    batch_size: number;
+    created_by: string;
+    result: Json;
+    error_trace_id: string | null;
+    created_at: string;
+    started_at: string | null;
+    completed_at: string | null;
+    updated_at: string;
+    locked_at: string | null;
+  }>;
   push_delivery_logs: Table<{
     attempt_count: number;
     id: string;
@@ -671,6 +690,36 @@ export interface AppApiFunctions {
     facility_updates_enabled: boolean;
     issue_updates_enabled: boolean;
     permission: string;
+  }, Json>;
+  backend_list_deletion_jobs: AppFunction<{
+    actor_uid: string;
+    page_limit?: number;
+  }, Json>;
+  backend_estimate_category_policy_changes: AppFunction<{
+    actor_uid: string;
+    announcement_comments_enabled: boolean;
+    deleted_issue_category_ids: string[];
+    issue_categories: Json;
+  }, Json>;
+  backend_estimate_retention_cleanup: AppFunction<{
+    actor_uid: string;
+    retention_config: Json;
+  }, Json>;
+  backend_save_platform_settings: AppFunction<{
+    actor_uid: string;
+    image_settings: Json;
+    retention_config: Json;
+  }, Json>;
+  backend_list_platform_jobs: AppFunction<{
+    actor_uid: string;
+    page_limit?: number;
+  }, Json>;
+  backend_process_platform_job_batch: AppFunction<{
+    batch_size?: number;
+  }, Json>;
+  backend_retry_deletion_job: AppFunction<{
+    actor_uid: string;
+    job_id: string;
   }, Json>;
   backend_set_announcement_like: AppFunction<{
     actor_uid: string;

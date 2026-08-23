@@ -26,6 +26,16 @@ integrationTest("runtime category setup and management enforce platform permissi
     issuesEnabled: true,
   });
   await expectActionError("permission-denied", () => callAction("getCategoryManagement", {}, user.auth));
+  await expectActionError("permission-denied", () => callAction("listPlatformJobs", {}, user.auth));
+  await expectActionError("permission-denied", () => callAction("estimateCategoryPolicyChanges", {
+    announcementCommentsEnabled: false,
+    deletedIssueCategoryIds: [],
+    issueCategories: [],
+  }, user.auth));
+  await expectActionError("permission-denied", () => callAction("estimateRetentionCleanup", {
+    imageUploads: {},
+    retention: {},
+  }, user.auth));
   await expectActionError("permission-denied", () => callAction("completeInitialSetup", {
     facilitiesEnabled: false, facilityCategories: [], issuesEnabled: false,
     issueCategories: [], requestId: requestId("setup-denied"),
@@ -82,20 +92,53 @@ integrationTest("runtime category setup and management enforce platform permissi
   });
   const platformSettings = asRecord(management.platformSettings);
   assert.equal("maxSourceMegabytes" in asRecord(platformSettings.imageUploads), false);
-  const updatedSettings = asRecord(await callAction("savePlatformSettings", {
+  const { data: retainedAnnouncement, error: retainedAnnouncementError } = await database
+    .table("app_private", "announcements")
+    .insert({
+      author_uid: admin.auth.uid,
+      content: "Retention batch integration test",
+      published_at: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+      title: "Retention batch",
+    })
+    .select("id")
+    .single();
+  if (retainedAnnouncementError) throw retainedAnnouncementError;
+  const nextPlatformSettings = {
     imageUploads: {
       ...asRecord(platformSettings.imageUploads),
       issueMaxImages: 3,
     },
     retention: {
       ...asRecord(platformSettings.retention),
+      announcementsDays: 1,
       closedFacilitiesEnabled: false,
       closedIssuesEnabled: false,
     },
+  };
+  const retentionImpact = asRecord(await callAction(
+    "estimateRetentionCleanup",
+    nextPlatformSettings,
+    admin.auth,
+  ));
+  assert.ok(Number(retentionImpact.totalEstimatedRows) >= 1);
+  const updatedSettings = asRecord(await callAction("savePlatformSettings", {
+    ...nextPlatformSettings,
     requestId: requestId("platform-settings-save"),
   }, admin.auth));
   assert.equal(asRecord(updatedSettings.imageUploads).issueMaxImages, 3);
   assert.equal(asRecord(updatedSettings.retention).closedIssuesEnabled, false);
+  assert.ok(String(updatedSettings.jobId));
+  assert.ok(await tableRow("announcements", "id", retainedAnnouncement.id));
+  for (let index = 0; index < 20; index += 1) {
+    const { data: batch, error: batchError } = await database.call(
+      "app_api",
+      "backend_process_platform_job_batch",
+      { batch_size: 1 },
+    );
+    if (batchError) throw batchError;
+    if (asRecord(batch).hasMore !== true) break;
+  }
+  assert.equal(await tableRow("announcements", "id", retainedAnnouncement.id), null);
   const catalogWithImageSettings = asRecord(await callAction("getCategoryCatalog", {}, user.auth));
   assert.equal(asRecord(catalogWithImageSettings.imageUploads).issueMaxImages, 3);
   const uploadMetadata = Array.from({ length: 3 }, () => ({
@@ -183,6 +226,22 @@ integrationTest("runtime category setup and management enforce platform permissi
       sortOrder: index,
     };
   });
+  const { data: policyAnnouncement, error: policyAnnouncementError } = await database
+    .table("app_private", "announcements")
+    .insert({
+      author_uid: admin.auth.uid,
+      content: "Background policy integration test",
+      title: "Background policy",
+    })
+    .select("id")
+    .single();
+  if (policyAnnouncementError) throw policyAnnouncementError;
+  const impact = asRecord(await callAction("estimateCategoryPolicyChanges", {
+    announcementCommentsEnabled: false,
+    deletedIssueCategoryIds: [],
+    issueCategories: managedIssues,
+  }, admin.auth));
+  assert.ok(Number(impact.totalEstimatedRows) >= 1);
   await expectActionError("permission-denied", () => callAction("saveCategoryManagement", {
     announcementCommentsEnabled: true,
     deletedFacilityCategoryIds: [],
@@ -214,6 +273,38 @@ integrationTest("runtime category setup and management enforce platform permissi
     requestId: requestId("save-management-ok"),
   }, admin.auth));
   assert.equal(atomicSave.success, true);
+  const announcementBeforeBatch = await tableRow("announcements", "id", policyAnnouncement.id);
+  assert.ok(announcementBeforeBatch);
+  assert.equal(announcementBeforeBatch.comments_enabled, true);
+  const queuedJobs = asRecord(await callAction("listPlatformJobs", {}, admin.auth));
+  const announcementJob = (queuedJobs.entries as Array<{
+    estimatedRows: number;
+    jobType: string;
+    status: string;
+  }>).find((entry) => entry.jobType === "announcement-comments");
+  assert.ok(announcementJob);
+  assert.ok(announcementJob.estimatedRows >= 1);
+  assert.equal(announcementJob.status, "pending");
+  for (let index = 0; index < 10; index += 1) {
+    const { data: batch, error: batchError } = await database.call(
+      "app_api",
+      "backend_process_platform_job_batch",
+      { batch_size: 1 },
+    );
+    if (batchError) throw batchError;
+    if (asRecord(batch).hasMore !== true) break;
+  }
+  const announcementAfterBatch = await tableRow("announcements", "id", policyAnnouncement.id);
+  assert.ok(announcementAfterBatch);
+  assert.equal(announcementAfterBatch.comments_enabled, false);
+  const completedJobs = asRecord(await callAction("listPlatformJobs", {}, admin.auth));
+  const completedAnnouncementJob = (completedJobs.entries as Array<{
+    affectedRows: number;
+    jobType: string;
+    status: string;
+  }>).find((entry) => entry.jobType === "announcement-comments");
+  assert.equal(completedAnnouncementJob?.status, "completed");
+  assert.ok(Number(completedAnnouncementJob?.affectedRows) >= 1);
   assert.deepEqual(asRecord(atomicSave.features), {
     announcementCommentsEnabled: false,
     facilitiesEnabled: true,

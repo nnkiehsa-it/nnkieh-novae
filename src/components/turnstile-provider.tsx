@@ -1,6 +1,5 @@
 "use client";
 
-import Script from "next/script";
 import { ShieldCheck } from "lucide-react";
 import {
   createContext,
@@ -77,49 +76,29 @@ const TurnstileContext = createContext<TurnstileContextValue>({
 
 export function TurnstileProvider({
   children,
-  nonce,
 }: {
   children: ReactNode;
-  nonce?: string;
 }) {
-  const [ready, setReady] = useState(false);
   const [challenge, setChallenge] = useState<PendingChallenge | null>(null);
   const [dialogHost, setDialogHost] = useState<HTMLDivElement | null>(null);
   const [inlineHost, setInlineHost] = useState<HTMLDivElement | null>(null);
-  const waiters = useRef<Array<{
-    reject: (error: Error) => void;
-    resolve: () => void;
-  }>>([]);
   const pendingRequest = useRef<Promise<string | null> | null>(null);
 
-  const resolveReady = useCallback(() => {
-    setReady(true);
-    waiters.current.splice(0).forEach(({ resolve }) => resolve());
-  }, []);
-  const rejectReady = useCallback(() => {
-    waiters.current.splice(0).forEach(({ reject }) => reject(new Error("turnstile-unavailable")));
-  }, []);
-
   const waitUntilReady = useCallback(async () => {
-    if (window.turnstile || ready) return;
+    if (window.turnstile) return;
     await new Promise<void>((resolve, reject) => {
-      const waiter = {
-        reject: (error: Error) => {
-          window.clearTimeout(timeout);
-          reject(error);
-        },
-        resolve: () => {
-          window.clearTimeout(timeout);
-          resolve();
-        },
-      };
+      const poll = window.setInterval(() => {
+        if (!window.turnstile) return;
+        window.clearInterval(poll);
+        window.clearTimeout(timeout);
+        resolve();
+      }, 25);
       const timeout = window.setTimeout(() => {
-        waiters.current = waiters.current.filter((entry) => entry !== waiter);
+        window.clearInterval(poll);
         reject(new Error("turnstile-unavailable"));
       }, SCRIPT_READY_TIMEOUT_MS);
-      waiters.current.push(waiter);
     });
-  }, [ready]);
+  }, []);
 
   useEffect(() => {
     if (!challenge) return;
@@ -237,15 +216,6 @@ export function TurnstileProvider({
   );
   return (
     <TurnstileContext.Provider value={value}>
-      {siteKey ? (
-        <Script
-          nonce={nonce}
-          onError={rejectReady}
-          onLoad={resolveReady}
-          src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-          strategy="afterInteractive"
-        />
-      ) : null}
       {children}
       <Dialog
         open={challenge?.presentation === "dialog"}

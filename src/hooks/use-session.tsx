@@ -19,6 +19,7 @@ import { sessionDebug } from "@/lib/session-debug";
 import { readLocalStorage, writeLocalStorage } from "@/lib/browser-storage";
 import { clearContentEntityScope } from "@/lib/content-entity-store";
 import { clearViewMemoryScope } from "@/lib/view-memory-cache";
+import { clearSupportedIssueMemory } from "@/lib/supported-issue-memory";
 import { ensureBackendProfile } from "@/services/backend-auth";
 import {
   fetchCurrentUserRole,
@@ -32,10 +33,7 @@ import {
   resetContentVersionState,
 } from "@/services/content-versions";
 import { fetchSessionBootstrap } from "@/services/session-bootstrap";
-import {
-  startContentRealtimeSession,
-  stopContentRealtimeSession,
-} from "@/services/realtime-events";
+import { stopContentRealtimeSession } from "@/services/realtime-events";
 import {
   clearContentReadCache,
   clearContentReadMemoryCache,
@@ -61,6 +59,7 @@ import { ApiRequestError } from "@/lib/api-error";
 import {
   validateBasicUser,
   validateUserAgainstToken,
+  type ValidationResult,
 } from "@/services/session-validation";
 
 const VISIT_RECORD_INTERVAL_MS = 24 * 60 * 60 * 1_000;
@@ -75,7 +74,6 @@ interface SessionState {
   loading: boolean;
   managedFacilityCategoryIds: string[];
   managedIssueCategoryIds: string[];
-  mySupportedIssueIds: Set<string>;
   permissions: PermissionCode[];
   roleLoading: boolean;
   restoringSession: boolean;
@@ -95,7 +93,6 @@ const initialSessionState: SessionState = {
   loading: true,
   managedFacilityCategoryIds: [],
   managedIssueCategoryIds: [],
-  mySupportedIssueIds: new Set(),
   permissions: [],
   roleLoading: false,
   restoringSession: false,
@@ -136,6 +133,7 @@ function shouldRecordPlatformVisit() {
 function clearActiveSessionData() {
   clearContentEntityScope(state.user?.uid);
   clearViewMemoryScope(state.user?.uid);
+  clearSupportedIssueMemory();
   stopContentRealtimeSession();
   clearCategoryCatalog();
   clearResolvedUploadCache();
@@ -148,7 +146,6 @@ function resetAccess(next: Partial<SessionState> = {}) {
     customPhotoUrl: null,
     managedFacilityCategoryIds: [],
     managedIssueCategoryIds: [],
-    mySupportedIssueIds: new Set(),
     permissions: [],
     roleLoading: false,
     roles: [],
@@ -178,15 +175,19 @@ async function loadAvatar(photoUrl: string, uid: string) {
 async function refreshVerifiedSession(
   user: User,
   verificationId: number,
+  tokenValidationPromise: Promise<ValidationResult>,
+  syncProfile: boolean,
 ) {
   const current = () =>
     verificationId === verificationSerial && state.user?.uid === user.uid;
   try {
-    const tokenValidation = await validateUserAgainstToken(user);
+    const tokenValidation = await tokenValidationPromise;
     if (!current()) return;
     if (!tokenValidation.ok) return await rejectUser(tokenValidation.reason);
-    await ensureBackendProfile(user);
-    if (!current()) return;
+    if (syncProfile) {
+      await ensureBackendProfile(user);
+      if (!current()) return;
+    }
     try {
       const bootstrap = await fetchSessionBootstrap({
         force: true,
@@ -234,12 +235,15 @@ async function refreshVerifiedSession(
   } finally {
     if (current()) {
       patch({ roleLoading: false });
-      startContentRealtimeSession();
     }
   }
 }
 
-function acceptUser(user: User) {
+function acceptUser(
+  user: User,
+  tokenValidationPromise: Promise<ValidationResult>,
+  syncProfile: boolean,
+) {
   const verificationId = ++verificationSerial;
   setContentCacheScope(user.uid);
   clearContentReadMemoryCache();
@@ -259,7 +263,7 @@ function acceptUser(user: User) {
     userRole: "user",
   });
   if (user.photoURL) void loadAvatar(user.photoURL, user.uid);
-  void refreshVerifiedSession(user, verificationId);
+  void refreshVerifiedSession(user, verificationId, tokenValidationPromise, syncProfile);
 }
 
 export function initializeSession(
@@ -301,7 +305,10 @@ export function initializeSession(
         patch({ appReady: true, initialized: true, loading: false });
         return;
       }
-      if (!consumePreparedLoginEntrance()) {
+      const tokenValidationPromise = validateUserAgainstToken(user);
+      void tokenValidationPromise.catch(() => undefined);
+      const freshLogin = consumePreparedLoginEntrance();
+      if (!freshLogin) {
         patch({ restoringSession: true });
         const restorationError = await verifyRestoredSession({
           requestTurnstileToken,
@@ -313,7 +320,7 @@ export function initializeSession(
         }
         patch({ restoringSession: false });
       }
-      acceptUser(user);
+      acceptUser(user, tokenValidationPromise, freshLogin);
     },
     (error) => {
       sessionDebug("auth observer failed", error);
@@ -410,16 +417,6 @@ export function useSession() {
     });
     return access;
   }, [snapshot.user]);
-  const setSupportedIssue = useCallback(
-    (issueId: string, supported: boolean) => {
-      const next = new Set(state.mySupportedIssueIds);
-      if (supported) next.add(issueId);
-      else next.delete(issueId);
-      patch({ mySupportedIssueIds: next });
-    },
-    [],
-  );
-
   return {
     ...snapshot,
     allowedDomain,
@@ -436,6 +433,5 @@ export function useSession() {
     prepareLogin,
     logout,
     refreshSessionAccess,
-    setSupportedIssue,
   };
 }

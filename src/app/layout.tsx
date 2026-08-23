@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Inter, Roboto_Mono } from "next/font/google";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
@@ -7,6 +8,9 @@ import { AppProviders } from "@/components/app-providers";
 import { APP_DESCRIPTION } from "@/constants/app";
 
 const appVersion = process.env.NEXT_PUBLIC_APP_VERSION ?? "development";
+const turnstileSiteKey = String(
+  process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "",
+).trim();
 
 const inter = Inter({
   display: "swap",
@@ -68,9 +72,31 @@ export default async function RootLayout({
       suppressHydrationWarning
       className={`${inter.variable} ${robotoMono.variable}`}
     >
+      <head>
+        {turnstileSiteKey ? (
+          <>
+            <link
+              crossOrigin="anonymous"
+              href="https://challenges.cloudflare.com"
+              rel="preconnect"
+            />
+            <link
+              href="https://challenges.cloudflare.com"
+              rel="dns-prefetch"
+            />
+          </>
+        ) : null}
+      </head>
       {/* Direction contract: transitions.dev product UI; quiet neutral surfaces, compact shadcn/Radix controls, rich state-driven motion, intentional responsive layouts. */}
       <body>
         <AppProviders nonce={nonce}>{children}</AppProviders>
+        {turnstileSiteKey ? (
+          <Script
+            nonce={nonce}
+            src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+            strategy="beforeInteractive"
+          />
+        ) : null}
       </body>
     </html>
   );

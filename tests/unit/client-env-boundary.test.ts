@@ -25,6 +25,14 @@ function sourceFiles(root: string): string[] {
 }
 
 describe("client environment boundary", () => {
+  it("does not initialize the Google popup resolver in isolated Auth Emulator sessions", () => {
+    const source = readFileSync(join(process.cwd(), "src", "lib", "firebase.ts"), "utf8");
+
+    expect(source).toContain("authEmulatorUrl");
+    expect(source).toContain("{ popupRedirectResolver: browserPopupRedirectResolver }");
+    expect(source).toMatch(/authEmulatorUrl\s*\?\s*\{\}/u);
+  });
+
   it("does not reference backend secrets from frontend source or publish secret-shaped env names", () => {
     const root = process.cwd();
     const files = [...sourceFiles(join(root, "src")), join(root, "next.config.mjs")];

@@ -1,6 +1,5 @@
 import "client-only";
 
-import { DATA_RETENTION } from "@/generated/data-retention";
 import { ensureFirebaseAppCheck } from "@/lib/firebase-app-check";
 import { firebaseVapidKey } from "@/lib/firebase";
 import { loadFirebaseMessaging } from "@/lib/firebase-messaging";
@@ -13,12 +12,12 @@ import {
   registerPushToken,
   type PushNotificationPreference,
 } from "@/services/notifications";
+import { getPushTokenConfirmationIntervalMs } from "@/services/runtime-settings";
 
 const DEVICE_KEY = "novae:push-device-id";
 const CONFIRMED_AT_KEY = "novae:push-confirmed-at";
 const CONFIRMED_TOKEN_KEY = "novae:push-confirmed-token";
 const CONFIRMED_UID_KEY = "novae:push-confirmed-uid";
-const CONFIRMATION_INTERVAL_MS = DATA_RETENTION.pushTokenConfirmationDays * 86_400_000;
 type PushTokenConfirmation = {
   preference: PushNotificationPreference;
   token: string;
@@ -44,7 +43,8 @@ function shouldConfirm(uid: string, token: string, force: boolean) {
   if (readLocalStorage(CONFIRMED_UID_KEY) !== uid) return true;
   if (readLocalStorage(CONFIRMED_TOKEN_KEY) !== token) return true;
   const confirmedAt = Number(readLocalStorage(CONFIRMED_AT_KEY));
-  return !Number.isFinite(confirmedAt) || Date.now() - confirmedAt >= CONFIRMATION_INTERVAL_MS;
+  return !Number.isFinite(confirmedAt)
+    || Date.now() - confirmedAt >= getPushTokenConfirmationIntervalMs();
 }
 
 function rememberConfirmation(uid: string, token: string) {

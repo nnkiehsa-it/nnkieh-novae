@@ -16,6 +16,20 @@ integrationTest("admin console restriction and overview actions", async () => {
   const user = await seedActor("console-user");
   const target = await seedActor("console-target");
 
+  const { data: deletionJob, error: deletionJobError } = await database
+    .table("app_private", "deletion_jobs")
+    .insert({
+      attempt_count: 8,
+      cloudinary_public_id: `integration/deletion-${crypto.randomUUID()}`,
+      error_trace_id: crypto.randomUUID(),
+      status: "failed",
+      target_id: target.auth.uid,
+      target_type: "avatar",
+    })
+    .select("id")
+    .single();
+  if (deletionJobError) throw deletionJobError;
+
   await expectActionError(
     "permission-denied",
     () => callAction("listAdminUsers", { query: target.auth.uid }, user.auth),
@@ -23,6 +37,17 @@ integrationTest("admin console restriction and overview actions", async () => {
   await expectActionError(
     "permission-denied",
     () => callAction("listAdminActivity", { cursor: null, window: "24h" }, user.auth),
+  );
+  await expectActionError(
+    "permission-denied",
+    () => callAction("listDeletionJobs", {}, user.auth),
+  );
+  await expectActionError(
+    "permission-denied",
+    () => callAction("retryDeletionJob", {
+      jobId: deletionJob.id,
+      requestId: requestId("retry-deletion-denied"),
+    }, user.auth),
   );
   await expectActionError(
     "permission-denied",
@@ -51,6 +76,26 @@ integrationTest("admin console restriction and overview actions", async () => {
   const listedAdmin = (adminUsers.users as Array<{ roles: string[]; uid: string }>)[0];
   assert.equal(listedAdmin?.uid, admin.auth.uid);
   assert.ok(listedAdmin?.roles.includes("platform-admin"));
+
+  const failedDeletionJobs = asRecord(await callAction("listDeletionJobs", {}, admin.auth));
+  assert.equal(
+    (failedDeletionJobs.entries as Array<{ id: string }>).some((entry) => entry.id === deletionJob.id),
+    true,
+  );
+  const retriedDeletion = asRecord(await callAction("retryDeletionJob", {
+    jobId: deletionJob.id,
+    requestId: requestId("retry-deletion"),
+  }, admin.auth));
+  assert.equal(retriedDeletion.status, "pending");
+  const { data: queuedDeletion, error: queuedDeletionError } = await database
+    .table("app_private", "deletion_jobs")
+    .select("attempt_count,error_trace_id,status")
+    .eq("id", deletionJob.id)
+    .single();
+  if (queuedDeletionError) throw queuedDeletionError;
+  assert.equal(queuedDeletion.status, "pending");
+  assert.equal(queuedDeletion.attempt_count, 0);
+  assert.equal(queuedDeletion.error_trace_id, null);
 
   await expectActionError(
     "permission-denied",

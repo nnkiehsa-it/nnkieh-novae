@@ -6,9 +6,9 @@
   --motion-slow: 400ms;
   --motion-emphasis: 500ms;
   --motion-stagger: 40ms;
-  --route-duration: 420ms;
-  --route-root-duration: 280ms;
-  --route-distance: 40px;
+  --route-duration: 440ms;
+  --route-root-duration: 360ms;
+  --route-distance: clamp(28px, 7vw, 64px);
   --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-route: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
@@ -58,8 +58,8 @@
 
 @keyframes t-route-enter-child {
   from {
-    opacity: 0.96;
-    transform: translate3d(var(--route-distance), 0, 0);
+    opacity: 0.42;
+    transform: translate3d(var(--route-distance), 0, 0) scale(0.985);
   }
   to {
     opacity: 1;
@@ -73,10 +73,12 @@
 
 @keyframes t-route-enter-root {
   from {
-    opacity: 0;
+    opacity: 0.35;
+    transform: translate3d(0, 14px, 0) scale(0.985);
   }
   to {
     opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
@@ -86,8 +88,8 @@
 
 @keyframes t-route-enter-back {
   from {
-    opacity: 0.96;
-    transform: translate3d(calc(0px - var(--route-distance)), 0, 0);
+    opacity: 0.42;
+    transform: translate3d(calc(0px - var(--route-distance)), 0, 0) scale(0.985);
   }
   to {
     opacity: 1;
@@ -906,6 +908,26 @@
     border-color 200ms var(--ease-smooth-out),
     transform 200ms var(--ease-smooth-out);
 }
+.t-card:active {
+  transform: translateY(1px) scale(0.985);
+  transition-duration: var(--motion-micro);
+}
+
+/* Navigation acknowledges the tap immediately, before the destination commits. */
+.t-primary-nav-link > span:first-child {
+  transition: transform var(--motion-fast) var(--ease-emphasized);
+}
+.t-primary-nav-link[data-active="true"] {
+  animation: t-nav-settle var(--motion-medium) var(--ease-emphasized) both;
+}
+.t-primary-nav-link[data-active="true"] > span:first-child {
+  transform: translateY(-1px) scale(1.12);
+}
+@keyframes t-nav-settle {
+  0% { transform: scale(0.92); }
+  62% { transform: scale(1.035); }
+  100% { transform: scale(1); }
+}
 @media (hover: hover) and (pointer: fine) {
   .t-card:hover {
     background-color: color-mix(in srgb, var(--card) 99%, var(--foreground) 1%);
@@ -973,5 +995,11 @@
     transition: none !important;
     transform: none !important;
     filter: none !important;
+  }
+  .t-primary-nav-link,
+  .t-primary-nav-link > span:first-child {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
   }
 }

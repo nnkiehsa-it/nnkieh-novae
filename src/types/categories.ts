@@ -41,16 +41,20 @@ export interface ImageUploadSettings {
   webpQuality: number;
 }
 
-export interface ClosedContentRetentionSettings {
-  closedFacilitiesDays: number;
-  closedFacilitiesEnabled: boolean;
-  closedIssuesDays: number;
-  closedIssuesEnabled: boolean;
-}
+type RetentionDefaults = typeof DATA_RETENTION;
+export type DataRetentionSettings = {
+  -readonly [Key in keyof RetentionDefaults]: RetentionDefaults[Key] extends boolean ? boolean : number;
+};
 
 export interface PlatformSettings {
   imageUploads: ImageUploadSettings;
-  retention: ClosedContentRetentionSettings;
+  retention: DataRetentionSettings;
+}
+
+export interface PolicyImpactEstimate {
+  jobType: 'announcement-comments' | 'issue-category-comments' | string;
+  scopeId: string;
+  estimatedRows: number;
 }
 
 export interface CategoryManagementCatalog extends CategoryCatalog {
@@ -81,3 +85,4 @@ export interface FacilityCategoryDraft {
   isDefault: boolean;
   label: string;
 }
+import { DATA_RETENTION } from '@/generated/data-retention';

@@ -16,6 +16,8 @@ import {
   IssueCategoryEditor,
 } from "@/components/admin/category-editors";
 import { PlatformSettings } from "@/components/admin/platform-settings";
+import { PlatformJobProgress } from "@/components/admin/platform-job-progress";
+import { PolicyImpactDialog } from "@/components/admin/policy-impact-dialog";
 
 export function CategoryManagement() {
   useLocaleSubscription();
@@ -116,6 +118,14 @@ export function CategoryManagement() {
             />
           ) : <Save />}{translate('ui.admin.saveAll')}</Button>
       </div> : null}
+      <PlatformJobProgress />
+      <PolicyImpactDialog
+        estimates={state.impactEstimates}
+        onCancel={state.cancelSave}
+        onConfirm={() => void state.confirmSave()}
+        open={state.impactOpen}
+        totalEstimatedRows={state.totalEstimatedRows}
+      />
     </section>
   );
 }

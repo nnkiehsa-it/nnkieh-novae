@@ -57,7 +57,9 @@ if (!firebaseInitError && typeof window !== "undefined") {
   try {
     auth = initializeAuth(app, {
       persistence: browserLocalPersistence,
-      popupRedirectResolver: browserPopupRedirectResolver,
+      ...(authEmulatorUrl
+        ? {}
+        : { popupRedirectResolver: browserPopupRedirectResolver }),
     });
   } catch {
     auth = getAuth(app);

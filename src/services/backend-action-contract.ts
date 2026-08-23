@@ -42,6 +42,12 @@ export const BACKEND_ACTION_POLICIES = {
   "deleteUploadedImages": {
     "group": "upload-write"
   },
+  "estimateCategoryPolicyChanges": {
+    "group": "read"
+  },
+  "estimateRetentionCleanup": {
+    "group": "read"
+  },
   "finalizeImageUploads": {
     "group": "upload-write"
   },
@@ -99,6 +105,9 @@ export const BACKEND_ACTION_POLICIES = {
   "listComments": {
     "group": "read"
   },
+  "listDeletionJobs": {
+    "group": "read"
+  },
   "listFacilities": {
     "group": "read"
   },
@@ -115,6 +124,9 @@ export const BACKEND_ACTION_POLICIES = {
     "group": "read"
   },
   "listNotificationPages": {
+    "group": "read"
+  },
+  "listPlatformJobs": {
     "group": "read"
   },
   "listRoleAssignments": {
@@ -137,6 +149,9 @@ export const BACKEND_ACTION_POLICIES = {
   },
   "resolveUploadImageUrls": {
     "group": "upload-resolve"
+  },
+  "retryDeletionJob": {
+    "group": "admin-write"
   },
   "searchIssues": {
     "group": "read"
@@ -194,6 +209,8 @@ export const BACKEND_ACTION_NAMES = [
   'deleteFacility',
   'deleteIssue',
   'deleteUploadedImages',
+  'estimateCategoryPolicyChanges',
+  'estimateRetentionCleanup',
   'finalizeImageUploads',
   'getAnnouncement',
   'getCategoryCatalog',
@@ -213,12 +230,14 @@ export const BACKEND_ACTION_NAMES = [
   'listAnnouncementComments',
   'listAnnouncements',
   'listComments',
+  'listDeletionJobs',
   'listFacilities',
   'listIssues',
   'listAdminAudit',
   'listAdminActivity',
   'listAdminUsers',
   'listNotificationPages',
+  'listPlatformJobs',
   'listRoleAssignments',
   'listUserIssues',
   'markNotificationsOpened',
@@ -226,6 +245,7 @@ export const BACKEND_ACTION_NAMES = [
   'registerPushToken',
   'removeSupport',
   'resolveUploadImageUrls',
+  'retryDeletionJob',
   'searchIssues',
   'saveCategoryManagement',
   'savePlatformSettings',

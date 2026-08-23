@@ -336,6 +336,7 @@ try {
       ...integrationEnvironment,
       NEXT_PUBLIC_ALLOWED_DOMAIN: "integration.invalid",
       NEXT_PUBLIC_API_BASE_URL: workerUrl,
+      NEXT_PUBLIC_CONTENT_REALTIME_ENABLED: e2e ? "false" : "true",
       NEXT_PUBLIC_FIREBASE_API_KEY: "integration-web-api-key",
       NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED: "false",
       NEXT_PUBLIC_FIREBASE_APP_ID: "1:123456789:web:local",

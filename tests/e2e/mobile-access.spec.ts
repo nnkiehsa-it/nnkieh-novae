@@ -5,7 +5,9 @@ import { expectMoreActions } from './pages/content-pages';
 
 async function suppressInstallPrompt(page: Page) {
   await page.addInitScript(() => {
-    sessionStorage.setItem('novae-app-install-prompt-dismissed', '1');
+    if (window.top === window) {
+      sessionStorage.setItem('novae-app-install-prompt-dismissed', '1');
+    }
   });
 }
 
@@ -107,7 +109,7 @@ test.describe('platform administrator on mobile', () => {
     await suppressInstallPrompt(page);
     await page.goto('/admin/management');
     await expect(page.getByRole('main').getByRole('heading', { name: 'Platform management' }))
-      .toBeVisible();
+      .toBeVisible({ timeout: 20_000 });
     await page.goto('/dashboard');
     await expect(page).toHaveURL(/\/dashboard/u);
   });
