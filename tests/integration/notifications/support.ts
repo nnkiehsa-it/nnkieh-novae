@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { DATA_RETENTION } from "../../../cloudflare/src/backend/shared/data-retention.ts";
 import { processJobMessage } from "../../../cloudflare/src/backend/jobs/consumer.ts";
 import {
   asRecord,
@@ -68,4 +67,4 @@ export async function drainJobs() {
   throw new Error("integration-job-drain-did-not-settle");
 }
 
-export { assert, DATA_RETENTION, asRecord, callAction, expectActionError, integrationTest, requestId, saveCategoryDraft, seedActor, database };
+export { assert, asRecord, callAction, expectActionError, integrationTest, requestId, saveCategoryDraft, seedActor, database };

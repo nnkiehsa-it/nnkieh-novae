@@ -1,4 +1,4 @@
-import { asRecord, assert, callAction, DATA_RETENTION, database, integrationTest, requestId, seedActor } from "./support.ts";
+import { asRecord, assert, callAction, database, integrationTest, requestId, seedActor } from "./support.ts";
 
 integrationTest("worker database lifecycles and maintenance RPC", async () => {
   const { data: categoryRows, error: categoryError } = await database.table("app_private", "issue_categories").select("id").eq("is_active", true).order("sort_order");
@@ -89,10 +89,7 @@ integrationTest("worker database lifecycles and maintenance RPC", async () => {
   assert.ok(legacyFailError, "legacy error_message RPC parameter must be removed");
 
   const { data: maintenance, error: maintenanceError } = await database
-    .call("app_api", "run_maintenance_cleanup", {
-      retention_config: DATA_RETENTION,
-      valid_issue_categories: issueCategoryIds,
-    });
+    .call("app_api", "run_scheduled_maintenance_cleanup");
   if (maintenanceError) throw maintenanceError;
   assert.ok(maintenance && typeof maintenance === "object");
 });

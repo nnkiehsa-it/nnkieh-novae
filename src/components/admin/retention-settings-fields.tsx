@@ -57,6 +57,7 @@ const GROUPS: Array<{ descriptionKey: string; items: RetentionItem[]; titleKey: 
     descriptionKey: "ui.admin.retentionAuditHelp",
     items: [
       { key: "roleAssignmentAuditDays", unit: "days" },
+      { key: "adminAuditDays", unit: "days" },
       { key: "categoryConfigurationAuditDays", unit: "days" },
       { key: "accessAssignmentAuditDays", unit: "days" },
     ],

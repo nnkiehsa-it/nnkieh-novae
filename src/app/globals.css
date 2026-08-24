@@ -61,9 +61,9 @@
   --tint-surface: var(--secondary);
   --tint-surface-hover: var(--secondary-hover);
   --tint-surface-foreground: var(--foreground);
-  --primary: var(--accent);
-  --primary-foreground: var(--accent-foreground);
-  --primary-hover: color-mix(in oklab, var(--primary) 88%, var(--primary-foreground) 12%);
+  --primary: #d1d1d6;
+  --primary-foreground: #2c2c2e;
+  --primary-hover: #c7c7cc;
   --secondary: #f2f2f2;
   --secondary-foreground: #171717;
   --secondary-hover: color-mix(in oklab, var(--secondary) 94%, var(--secondary-foreground) 6%);
@@ -136,9 +136,9 @@
   --tint-surface: var(--secondary);
   --tint-surface-hover: var(--secondary-hover);
   --tint-surface-foreground: var(--foreground);
-  --primary: var(--accent);
-  --primary-foreground: var(--accent-foreground);
-  --primary-hover: color-mix(in oklab, var(--primary) 88%, var(--primary-foreground) 12%);
+  --primary: #3a3a3c;
+  --primary-foreground: #f2f2f7;
+  --primary-hover: #48484a;
   --secondary: #242424;
   --secondary-foreground: #f0f0f0;
   --secondary-hover: color-mix(in oklab, var(--secondary) 92%, var(--secondary-foreground) 8%);
@@ -190,15 +190,21 @@
   --tint-surface: color-mix(in srgb, var(--accent) 13%, transparent);
   --tint-surface-hover: color-mix(in srgb, var(--accent) 18%, transparent);
   --tint-surface-foreground: var(--tint-content);
-  --primary: var(--tint-surface);
-  --primary-foreground: var(--tint-surface-foreground);
-  --primary-hover: var(--tint-surface-hover);
+  --primary: var(--theme-primary-light);
+  --primary-foreground: var(--theme-primary-light-foreground);
+  --primary-hover: var(--theme-primary-light-hover);
   --nav-active-bg: var(--tint-surface);
   --nav-active-fg: var(--tint-surface-foreground);
   --choice-indicator: var(--tint-content);
   --selection-bg: var(--tint-surface);
   --selection-fg: var(--tint-surface-foreground);
   --notification-accent: var(--tint-content);
+}
+
+:root.dark[data-accent-theme="custom"] {
+  --primary: var(--theme-primary-dark);
+  --primary-foreground: var(--theme-primary-dark-foreground);
+  --primary-hover: var(--theme-primary-dark-hover);
 }
 
 ::selection {
@@ -276,6 +282,20 @@ textarea {
 :focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
+}
+
+[data-slot="dialog-content"]:focus-visible,
+[data-slot="alert-dialog-content"]:focus-visible {
+  outline: none;
+}
+
+@media (hover: none), (pointer: coarse) {
+  :focus-visible,
+  :focus-within {
+    --tw-ring-offset-shadow: 0 0 #0000 !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    outline: none !important;
+  }
 }
 
 ::selection {

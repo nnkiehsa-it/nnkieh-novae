@@ -15,6 +15,7 @@ import type {
 } from "../../cloudflare/src/backend/actions/types.ts";
 import type { Env } from "../../cloudflare/src/types.ts";
 import type { DurableRateLimitClaim } from "../../cloudflare/src/durable/business-rate-limiter.ts";
+import { DATA_RETENTION } from "../../cloudflare/src/backend/shared/data-retention.ts";
 
 function requiredEnv(name: string) {
   const value = process.env[name]?.trim();
@@ -134,6 +135,10 @@ beforeEach(async () => {
     ownerDatabaseConnected = true;
   }
   await ownerDatabase.query(resetSql);
+  await ownerDatabase.query(
+    "insert into app_private.runtime_settings(key,value,updated_at) values($1,$2,now())",
+    ["data_retention_settings", JSON.stringify(DATA_RETENTION)],
+  );
   await ownerDatabase.query(bootstrapSql);
   await ownerDatabase.query(contentVersionIdentitySql);
   await ownerDatabase.query(integrationSeedSql);
@@ -318,16 +323,23 @@ export async function saveCategoryDraft(
     issuesEnabled: options.issuesEnabled ?? Boolean(features.issuesEnabled),
     requestId: requestId("save-category-draft"),
   }, auth);
+  await processPlatformJobs();
+  return result;
+}
+
+export async function processPlatformJobs(batchSize = 100) {
+  let latest: Record<string, unknown> = {};
   for (let index = 0; index < 100; index += 1) {
     const { data, error } = await database.call(
       "app_api",
       "backend_process_platform_job_batch",
-      { batch_size: 100 },
+      { batch_size: batchSize },
     );
     if (error) throw error;
-    if (asRecord(data).hasMore !== true) break;
+    latest = asRecord(data);
+    if (latest.hasMore !== true) break;
   }
-  return result;
+  return latest;
 }
 
 export async function insertReadyUpload(ownerUid: string, label: string) {

@@ -29,7 +29,7 @@ function StableSettingsCard({
 
 export default function Loading() {
   return (
-    <div className="mx-auto max-w-4xl space-y-5" aria-busy="true">
+    <div className="w-full space-y-5" aria-busy="true">
       <PageHeader title={t("ui.nav.settings")} />
       <Card className="gap-3 p-5">
         <div className="flex items-center gap-3">

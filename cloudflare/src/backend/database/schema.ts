@@ -767,11 +767,7 @@ export interface AppApiFunctions {
   backend_delete_issue: AppFunction<{ actor_is_admin: boolean; actor_uid: string; issue_id: string }, void>;
   release_idempotency_key: AppFunction<{ action_name: string; actor_uid: string; request_id: string }, void>;
   reject_expired_support_issues: AppFunction<Record<string, never>, number>;
-  run_maintenance_cleanup: AppFunction<{
-    retention_config?: Json;
-    valid_issue_categories?: string[] | null;
-  }, Json>;
-  run_scheduled_maintenance_cleanup: AppFunction<{ retention_config: Json }, Json>;
+  run_scheduled_maintenance_cleanup: AppFunction<Record<string, never>, Json>;
 }
 
 interface EmptySchema {

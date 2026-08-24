@@ -262,6 +262,16 @@ describe("React frontend design system", () => {
     expect(`${globals}\n${motion}`).not.toContain("transition-all");
   });
 
+  it("keeps focus feedback intentional across pointer capabilities", () => {
+    const globals = read("src/app/globals.css");
+    const settings = read("src/app/(protected)/settings/page.tsx");
+    const settingsLoading = read("src/app/(protected)/settings/loading.tsx");
+    expect(globals).toContain('[data-slot="dialog-content"]:focus-visible');
+    expect(globals).toMatch(/@media \(hover: none\), \(pointer: coarse\)[\s\S]*:focus-visible,[\s\S]*:focus-within/s);
+    expect(settings).toContain('<div className="w-full space-y-5">');
+    expect(settingsLoading).toContain('<div className="w-full space-y-5" aria-busy="true">');
+  });
+
   it("paints dense scrolling content before it reaches the viewport", () => {
     const globals = read("src/app/globals.css");
     const motion = read("src/styles/motion.css");

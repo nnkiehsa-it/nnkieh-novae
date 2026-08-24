@@ -110,9 +110,17 @@ integrationTest("runtime category setup and management enforce platform permissi
     },
     retention: {
       ...asRecord(platformSettings.retention),
+      adminAuditDays: 2,
       announcementsDays: 1,
       closedFacilitiesEnabled: false,
       closedIssuesEnabled: false,
+      idempotencyHours: 19,
+      notificationsDays: 9,
+      outboxCompletedDays: 13,
+      outboxFailedDays: 17,
+      pendingUploadHours: 23,
+      realtimeEventsHours: 11,
+      roleAssignmentAuditDays: 4,
     },
   };
   const retentionImpact = asRecord(await callAction(
@@ -128,6 +136,46 @@ integrationTest("runtime category setup and management enforce platform permissi
   assert.equal(asRecord(updatedSettings.imageUploads).issueMaxImages, 3);
   assert.equal(asRecord(updatedSettings.retention).closedIssuesEnabled, false);
   assert.ok(String(updatedSettings.jobId));
+  const runtimeDeadlineId = crypto.randomUUID();
+  const { data: runtimeNotification, error: runtimeNotificationError } = await database
+    .table("app_private", "notifications")
+    .insert({
+      id: runtimeDeadlineId,
+      recipient_uid: user.auth.uid,
+      source: "user",
+      target_id: runtimeDeadlineId,
+      target_type: "issue",
+      title: "Runtime retention deadline",
+      type: "retention_runtime",
+    })
+    .select("created_at,expires_at")
+    .single();
+  if (runtimeNotificationError) throw runtimeNotificationError;
+  const notificationLifetimeDays = (
+    new Date(runtimeNotification.expires_at).getTime() - new Date(runtimeNotification.created_at).getTime()
+  ) / 86_400_000;
+  assert.ok(Math.abs(notificationLifetimeDays - 9) < 0.001, "new rows must use the saved retention immediately");
+  const independentAuditAt = new Date(Date.now() - 3 * 86_400_000).toISOString();
+  const independentRoleAuditUid = `retention-role-${crypto.randomUUID()}`;
+  const { error: independentRoleAuditError } = await database.table("app_private", "role_assignment_audit")
+    .insert({
+      actor_uid: admin.auth.uid,
+      created_at: independentAuditAt,
+      operation: "grant",
+      role_code: "announcement-manager",
+      uid: independentRoleAuditUid,
+    });
+  if (independentRoleAuditError) throw independentRoleAuditError;
+  const independentAdminAuditTarget = `retention-admin-${crypto.randomUUID()}`;
+  const { error: independentAdminAuditError } = await database.table("app_private", "admin_audit_log")
+    .insert({
+      action: "retention-independent",
+      actor_uid: admin.auth.uid,
+      created_at: independentAuditAt,
+      domain: "platform",
+      target_id: independentAdminAuditTarget,
+    });
+  if (independentAdminAuditError) throw independentAdminAuditError;
   assert.ok(await tableRow("announcements", "id", retainedAnnouncement.id));
   for (let index = 0; index < 20; index += 1) {
     const { data: batch, error: batchError } = await database.call(
@@ -139,6 +187,8 @@ integrationTest("runtime category setup and management enforce platform permissi
     if (asRecord(batch).hasMore !== true) break;
   }
   assert.equal(await tableRow("announcements", "id", retainedAnnouncement.id), null);
+  assert.ok(await tableRow("role_assignment_audit", "uid", independentRoleAuditUid));
+  assert.equal(await tableRow("admin_audit_log", "target_id", independentAdminAuditTarget), null);
   const catalogWithImageSettings = asRecord(await callAction("getCategoryCatalog", {}, user.auth));
   assert.equal(asRecord(catalogWithImageSettings.imageUploads).issueMaxImages, 3);
   const uploadMetadata = Array.from({ length: 3 }, () => ({

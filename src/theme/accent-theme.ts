@@ -21,6 +21,21 @@ export const ACCENT_PRESETS = [
   { color: "#F97316", name: "Orange" },
 ] as const;
 
+const ACCENT_BUTTON_TONES = {
+  light: {
+    background: "#FDFDFD",
+    contrastTarget: "#0D0D0D",
+    hoverBackgroundBlend: 0.84,
+    restBackgroundBlend: 0.9,
+  },
+  dark: {
+    background: "#121212",
+    contrastTarget: "#F3F3F3",
+    hoverBackgroundBlend: 0.76,
+    restBackgroundBlend: 0.82,
+  },
+} as const;
+
 const HEX_PATTERN = /^#([0-9a-f]{3}|[0-9a-f]{6})$/iu;
 
 export function normalizeAccentColor(value: string | null | undefined) {
@@ -49,7 +64,7 @@ function relativeLuminance(hex: string) {
   return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
 }
 
-function contrastRatio(first: string, second: string) {
+export function colorContrastRatio(first: string, second: string) {
   const firstLuminance = relativeLuminance(first);
   const secondLuminance = relativeLuminance(second);
   const lighter = Math.max(firstLuminance, secondLuminance);
@@ -89,13 +104,33 @@ export function accentContentColor(
   if (!normalized || !normalizedBackground || !normalizedTarget) {
     return normalizedTarget ?? "#FFFFFF";
   }
-  if (contrastRatio(normalized, normalizedBackground) >= 4.5) return normalized;
+  if (colorContrastRatio(normalized, normalizedBackground) >= 4.5) return normalized;
 
   for (let step = 1; step <= 20; step += 1) {
     const candidate = blendHex(normalized, normalizedTarget, step / 20);
-    if (contrastRatio(candidate, normalizedBackground) >= 4.5) return candidate;
+    if (colorContrastRatio(candidate, normalizedBackground) >= 4.5) return candidate;
   }
   return normalizedTarget;
+}
+
+export function accentButtonColors(hex: string, mode: "light" | "dark") {
+  const normalized = normalizeAccentColor(hex);
+  const tone = ACCENT_BUTTON_TONES[mode];
+  if (!normalized) {
+    return {
+      foreground: tone.contrastTarget,
+      hover: tone.background,
+      surface: tone.background,
+    };
+  }
+
+  const surface = blendHex(normalized, tone.background, tone.restBackgroundBlend);
+  const hover = blendHex(normalized, tone.background, tone.hoverBackgroundBlend);
+  return {
+    foreground: accentContentColor(normalized, hover, tone.contrastTarget),
+    hover,
+    surface,
+  };
 }
 
 export function readAccentColor() {
@@ -122,9 +157,18 @@ export function applyAccentColor(color: string | null) {
     root.style.removeProperty("--theme-accent-foreground");
     root.style.removeProperty("--theme-accent-content-light");
     root.style.removeProperty("--theme-accent-content-dark");
+    root.style.removeProperty("--theme-primary-light");
+    root.style.removeProperty("--theme-primary-light-hover");
+    root.style.removeProperty("--theme-primary-light-foreground");
+    root.style.removeProperty("--theme-primary-dark");
+    root.style.removeProperty("--theme-primary-dark-hover");
+    root.style.removeProperty("--theme-primary-dark-foreground");
     root.removeAttribute("data-accent-theme");
     return;
   }
+
+  const lightButton = accentButtonColors(normalized, "light");
+  const darkButton = accentButtonColors(normalized, "dark");
 
   root.style.setProperty("--theme-accent", normalized);
   root.style.setProperty("--theme-accent-foreground", accentForeground(normalized));
@@ -135,6 +179,18 @@ export function applyAccentColor(color: string | null) {
   root.style.setProperty(
     "--theme-accent-content-dark",
     accentContentColor(normalized, "#121212", "#F3F3F3"),
+  );
+  root.style.setProperty("--theme-primary-light", lightButton.surface);
+  root.style.setProperty("--theme-primary-light-hover", lightButton.hover);
+  root.style.setProperty(
+    "--theme-primary-light-foreground",
+    lightButton.foreground,
+  );
+  root.style.setProperty("--theme-primary-dark", darkButton.surface);
+  root.style.setProperty("--theme-primary-dark-hover", darkButton.hover);
+  root.style.setProperty(
+    "--theme-primary-dark-foreground",
+    darkButton.foreground,
   );
   root.setAttribute("data-accent-theme", "custom");
 }

@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
-import { DATA_RETENTION } from "../../cloudflare/src/backend/shared/data-retention.ts";
 import { processJobMessage } from "../../cloudflare/src/backend/jobs/consumer.ts";
 import {
   asRecord,
   callAction,
   integrationTest,
+  processPlatformJobs,
   requestId,
   seedActor,
   database,
@@ -304,45 +304,14 @@ integrationTest("configured retention cleanup removes every expired data class a
   ]);
   if (uploadError) throw uploadError;
 
-  const { data: cleanup, error: cleanupError } = await database.call("app_api", "run_maintenance_cleanup", {
-      retention_config: DATA_RETENTION,
-      valid_issue_categories: issueCategoryIds,
-    });
-  if (cleanupError) throw cleanupError;
-  const result = asRecord(cleanup);
-  const details = asRecord(result.details);
-  assert.equal(result.ok, true);
-  assert.equal(result.status, "attention");
-  for (const [key, minimum] of Object.entries({
-    admin_audit_log_deleted: 1,
-    access_assignment_audit_deleted: 1,
-    category_configuration_audit_deleted: 1,
-    deletion_jobs_deleted: 2,
-    expired_closed_facilities_deleted: 1,
-    expired_closed_facility_notion_deletions_queued: 1,
-    expired_closed_issues_deleted: 1,
-    expired_closed_issue_notion_deletions_queued: 1,
-    expired_announcements_deleted: 1,
-    expired_user_restrictions_deleted: 1,
-    idempotency_keys_deleted: 1,
-    maintenance_runs_deleted: 0,
-    notifications_deleted: 1,
-    orphaned_notion_mappings_deleted: 2,
-    outbox_events_deleted: 2,
-    push_delivery_logs_deleted: 2,
-    push_tokens_deleted: 2,
-    realtime_events_deleted: 1,
-    role_assignment_audit_deleted: 1,
-    uploads_deleted: 3,
-    uploads_queued_for_deletion: 3,
-    inactive_avatar_deletions_queued: 1,
-    inactive_avatars_cleared: 1,
-    inactive_profile_emails_cleared: 1,
-    inactive_profile_names_cleared: 1,
-  })) {
-    if (key === "maintenance_runs_deleted") continue;
-    assert.ok(Number(details[key]) >= minimum, `${key} should be at least ${minimum}`);
-  }
+  const management = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
+  const platformSettings = asRecord(management.platformSettings);
+  await callAction("savePlatformSettings", {
+    imageUploads: asRecord(platformSettings.imageUploads),
+    retention: asRecord(platformSettings.retention),
+    requestId: requestId(`retention-cleanup-${runId}`),
+  }, admin.auth);
+  await processPlatformJobs(500);
 
   await expectRemoved("issues", "id", expiredIssueId);
   await expectPresent("issues", "id", recentIssueId);
@@ -516,6 +485,7 @@ integrationTest("configured retention cleanup removes every expired data class a
 integrationTest("closed-content retention can be disabled without disabling other maintenance", async () => {
   const runId = crypto.randomUUID();
   const expiredAt = new Date(Date.now() - 4_000 * DAY_MS).toISOString();
+  const admin = await seedActor(`retention-disabled-admin-${runId}`, { roles: ["platform-admin"] });
   const owner = await seedActor(`retention-disabled-owner-${runId}`);
   const { data: categories, error: categoryError } = await database.table("app_private", "issue_categories")
     .select("id").eq("is_active", true).order("sort_order").limit(1);
@@ -532,14 +502,23 @@ integrationTest("closed-content retention can be disabled without disabling othe
   const { error: closeError } = await database.table("app_private", "issues")
     .update({ closed_at: expiredAt, status: "completed" }).eq("id", issueId);
   if (closeError) throw closeError;
-  const { data, error } = await database.call("app_api", "run_maintenance_cleanup", {
-    retention_config: {
-      ...DATA_RETENTION,
+  const management = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
+  const platformSettings = asRecord(management.platformSettings);
+  await callAction("savePlatformSettings", {
+    imageUploads: asRecord(platformSettings.imageUploads),
+    retention: {
+      ...asRecord(platformSettings.retention),
       closedFacilitiesEnabled: false,
       closedIssuesEnabled: false,
     },
-  });
-  if (error) throw error;
-  assert.equal(asRecord(asRecord(data).details).expired_closed_issues_deleted, 0);
+    requestId: requestId(`retention-disabled-save-${runId}`),
+  }, admin.auth);
+  await processPlatformJobs();
   await expectPresent("issues", "id", issueId);
+  await callAction("savePlatformSettings", {
+    imageUploads: asRecord(platformSettings.imageUploads),
+    retention: asRecord(platformSettings.retention),
+    requestId: requestId(`retention-disabled-restore-${runId}`),
+  }, admin.auth);
+  await processPlatformJobs();
 });

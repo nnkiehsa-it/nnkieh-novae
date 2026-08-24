@@ -29,6 +29,7 @@ export const DATA_RETENTION = {
   "maintenanceRunsDays": 30,
   "platformJobsDays": 30,
   "roleAssignmentAuditDays": 365,
+  "adminAuditDays": 365,
   "categoryConfigurationAuditDays": 365,
   "accessAssignmentAuditDays": 365,
   "pendingUploadHours": 24,
