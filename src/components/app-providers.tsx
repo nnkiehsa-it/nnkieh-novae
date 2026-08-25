@@ -29,6 +29,35 @@ export function AppProviders({
     setI18nReady(true);
   }, []);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    const setModality = (modality: "keyboard" | "pointer") => {
+      if (root.dataset.inputModality !== modality) {
+        root.dataset.inputModality = modality;
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!event.altKey && !event.ctrlKey && !event.metaKey) {
+        setModality("keyboard");
+      }
+    };
+    const handlePointer = () => setModality("pointer");
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    window.addEventListener("pointerdown", handlePointer, true);
+    window.addEventListener("pointermove", handlePointer, {
+      capture: true,
+      passive: true,
+    });
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown, true);
+      window.removeEventListener("pointerdown", handlePointer, true);
+      window.removeEventListener("pointermove", handlePointer, true);
+      delete root.dataset.inputModality;
+    };
+  }, []);
+
   return (
     <ThemeProvider
       attribute="class"

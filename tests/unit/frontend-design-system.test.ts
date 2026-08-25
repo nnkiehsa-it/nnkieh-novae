@@ -299,6 +299,8 @@ describe("React frontend design system", () => {
     const alertDialog = read("src/components/ui/alert-dialog.tsx");
     expect(button).toContain("buttonVariants");
     expect(button).toContain('data-control-label=""');
+    expect(button).toContain('default:\n          "bg-card text-card-foreground');
+    expect(button).not.toContain('default: "bg-primary text-primary-foreground');
     expect(alertDialog).toMatch(/function AlertDialogCancel[\s\S]*variant = "default"/u);
     expect(read("src/app/globals.css")).not.toContain("--theme-primary-");
     expect(read("src/theme/accent-theme.ts")).not.toContain("accentButtonColors");
@@ -307,6 +309,18 @@ describe("React frontend design system", () => {
     expect(dialog).toContain("fixed inset-0 z-50 grid place-items-center");
     expect(alertDialog).toContain("fixed inset-0 z-50 grid place-items-center");
     expect(read("src/components/ui/dropdown-menu.tsx")).toContain('data-slot="dropdown-menu-content"');
+  });
+
+  it("shows focus rings only while keyboard input is active", () => {
+    const providers = read("src/components/app-providers.tsx");
+    const globals = read("src/app/globals.css");
+    expect(providers).toContain('setModality("keyboard")');
+    expect(providers).toContain('setModality("pointer")');
+    expect(providers).toContain('window.addEventListener("pointermove"');
+    expect(providers).toContain('window.addEventListener("pointerdown"');
+    expect(providers).toContain('window.addEventListener("keydown"');
+    expect(globals).toContain('html[data-input-modality="pointer"] :focus-visible');
+    expect(globals).toMatch(/data-input-modality="pointer"[\s\S]*--tw-ring-shadow: 0 0 #0000 !important;[\s\S]*outline: none !important;/u);
   });
 
   it("keeps page headers concise and product terminology consistent", () => {

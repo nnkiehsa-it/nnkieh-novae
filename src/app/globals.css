@@ -275,6 +275,12 @@ textarea {
   outline-offset: 2px;
 }
 
+html[data-input-modality="pointer"] :focus-visible {
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  outline: none !important;
+}
+
 [data-slot="dialog-content"]:focus-visible,
 [data-slot="alert-dialog-content"]:focus-visible {
   outline: none;
