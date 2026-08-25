@@ -190,21 +190,12 @@
   --tint-surface: color-mix(in srgb, var(--accent) 13%, transparent);
   --tint-surface-hover: color-mix(in srgb, var(--accent) 18%, transparent);
   --tint-surface-foreground: var(--tint-content);
-  --primary: var(--theme-primary-light);
-  --primary-foreground: var(--theme-primary-light-foreground);
-  --primary-hover: var(--theme-primary-light-hover);
   --nav-active-bg: var(--tint-surface);
   --nav-active-fg: var(--tint-surface-foreground);
   --choice-indicator: var(--tint-content);
   --selection-bg: var(--tint-surface);
   --selection-fg: var(--tint-surface-foreground);
   --notification-accent: var(--tint-content);
-}
-
-:root.dark[data-accent-theme="custom"] {
-  --primary: var(--theme-primary-dark);
-  --primary-foreground: var(--theme-primary-dark-foreground);
-  --primary-hover: var(--theme-primary-dark-hover);
 }
 
 ::selection {

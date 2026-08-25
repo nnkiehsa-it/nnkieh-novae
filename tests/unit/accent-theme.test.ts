@@ -3,10 +3,8 @@ import {
   ACCENT_PRESETS,
   DEFAULT_ACCENT_DARK,
   DEFAULT_ACCENT_LIGHT,
-  accentButtonColors,
   accentContentColor,
   accentForeground,
-  colorContrastRatio,
   normalizeAccentColor,
 } from "../../src/theme/accent-theme";
 
@@ -45,20 +43,4 @@ describe("accent theme", () => {
       /^#[0-9A-F]{6}$/u,
     );
   });
-
-  it.each(ACCENT_PRESETS)(
-    "builds quiet, readable tonal buttons for $name",
-    ({ color }) => {
-      for (const mode of ["light", "dark"] as const) {
-        const button = accentButtonColors(color, mode);
-        expect(button.surface).not.toBe(color);
-        expect(
-          colorContrastRatio(button.foreground, button.surface),
-        ).toBeGreaterThanOrEqual(4.5);
-        expect(
-          colorContrastRatio(button.foreground, button.hover),
-        ).toBeGreaterThanOrEqual(4.5);
-      }
-    },
-  );
 });

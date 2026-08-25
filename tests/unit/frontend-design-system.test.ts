@@ -299,6 +299,9 @@ describe("React frontend design system", () => {
     const alertDialog = read("src/components/ui/alert-dialog.tsx");
     expect(button).toContain("buttonVariants");
     expect(button).toContain('data-control-label=""');
+    expect(alertDialog).toMatch(/function AlertDialogCancel[\s\S]*variant = "default"/u);
+    expect(read("src/app/globals.css")).not.toContain("--theme-primary-");
+    expect(read("src/theme/accent-theme.ts")).not.toContain("accentButtonColors");
     expect(read("src/components/ui/card.tsx")).toContain('data-slot="card"');
     expect(dialog).toContain('data-slot="dialog-content"');
     expect(dialog).toContain("fixed inset-0 z-50 grid place-items-center");
