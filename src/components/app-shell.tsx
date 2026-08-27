@@ -22,11 +22,7 @@ import { useCategories } from "@/hooks/use-categories";
 import { useNotificationBadge } from "@/hooks/use-notification-badge";
 import { useRoutePreload } from "@/hooks/use-route-preload";
 import { usePushTokenHeartbeat } from "@/hooks/use-push-token-heartbeat";
-import {
-  commitRouteHistory,
-  consumeRouteDirection,
-  markPopstateRouteDirection,
-} from "@/lib/navigation-memory";
+import { rememberCurrentRoute } from "@/lib/navigation-memory";
 import { useSession } from "@/hooks/use-session";
 import { getDefaultIssueRouteFilter } from "@/constants/categories";
 import { LiquidNav, type LiquidNavItem } from "@/components/liquid-nav";
@@ -140,21 +136,6 @@ function AccountMenu({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function RouteTransition({
-  children,
-  pathname,
-}: {
-  children: React.ReactNode;
-  pathname: string;
-}) {
-  const [direction] = React.useState(() => consumeRouteDirection(pathname));
-  return (
-    <div className="route-page t-route-enter" data-route-direction={direction}>
-      {children}
-    </div>
-  );
-}
-
 export function AppShell({ children }: { children: React.ReactNode }) {
   useRoutePreload();
   usePushTokenHeartbeat();
@@ -166,20 +147,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const issueHref = `/issues/${encodeURIComponent(getDefaultIssueRouteFilter())}`;
   const showMobileNavigation = !isSecondaryMobileRoute(pathname);
 
-  React.useEffect(() => commitRouteHistory(pathname), [pathname]);
+  React.useEffect(() => rememberCurrentRoute(pathname), [pathname]);
 
   React.useEffect(() => {
     const updateScrolled = () => setScrolled(window.scrollY > 8);
     updateScrolled();
     window.addEventListener("scroll", updateScrolled, { passive: true });
     return () => window.removeEventListener("scroll", updateScrolled);
-  }, []);
-
-  React.useEffect(() => {
-    const markHistoryTraversal = (event: PopStateEvent) =>
-      markPopstateRouteDirection(event.state, window.location.pathname);
-    window.addEventListener("popstate", markHistoryTraversal);
-    return () => window.removeEventListener("popstate", markHistoryTraversal);
   }, []);
 
   const navItems = React.useMemo<LiquidNavItem[]>(
@@ -253,9 +227,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               : "pb-[max(2rem,var(--safe-bottom))]"
           }`}
         >
-          <RouteTransition key={pathname} pathname={pathname}>
-            {children}
-          </RouteTransition>
+          <div className="route-page">{children}</div>
         </main>
 
         <div

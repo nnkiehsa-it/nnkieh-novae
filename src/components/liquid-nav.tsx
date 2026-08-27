@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { markRouteDirection } from "@/lib/navigation-memory";
 
 export interface LiquidNavItem {
   activePathPrefix?: string;
@@ -90,7 +89,6 @@ export function LiquidNav({
             href={item.href}
             key={item.href}
             onClick={() => {
-              if (item.href !== pathname) markRouteDirection("root");
               acknowledgeNavigation(item.href);
             }}
             onFocus={() => router.prefetch(item.href)}

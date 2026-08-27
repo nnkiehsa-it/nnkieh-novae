@@ -7,11 +7,10 @@ import { useAnnouncementFeed } from "@/hooks/use-announcement-feed";
 import { usePublicProfiles } from "@/hooks/use-public-profiles";
 import { Button } from "@/components/ui/button";
 import {
-  EmptyState,
   ErrorState,
   PageHeader,
 } from "@/components/ui/page-state";
-import { FeedCardsSkeleton } from "@/components/ui/route-skeleton";
+import { FeedCardsSkeleton, FeedEmptyState } from "@/components/ui/route-skeleton";
 import { AnnouncementCard } from "@/components/announcements/announcement-card";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 
@@ -39,7 +38,7 @@ export default function AnnouncementsPage() {
       ) : feed.loading && feed.items.length === 0 ? (
         <FeedCardsSkeleton kind="announcement" />
       ) : feed.items.length === 0 ? (
-        <EmptyState
+        <FeedEmptyState
           action={
             feed.canManage ? (
               <Button asChild variant="outline">

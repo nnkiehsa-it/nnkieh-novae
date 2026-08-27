@@ -7,6 +7,7 @@ import {
   Clock3,
   Hand,
   Heart,
+  Inbox,
   MessageCircle,
   Plus,
   Search,
@@ -186,6 +187,10 @@ export function ListRouteSkeleton({
               ) : null}
               <StableTabs kind={kind} />
             </div>
+          ) : showCreate ? (
+            <Button className="opacity-100" disabled>
+              <Plus />{translate(createKeys[kind])}
+            </Button>
           ) : undefined
         }
         title={title || translate(listTitleKeys[kind])}
@@ -219,6 +224,41 @@ export function FeedCardsSkeleton({ kind }: { kind: FeedSkeletonKind }) {
       {Array.from({ length: FEED_SKELETON_COUNTS[kind] }, (_, index) => (
         <FeedCardSkeleton key={index} kind={kind} />
       ))}
+    </div>
+  );
+}
+
+export function FeedEmptyState({
+  action,
+  description,
+  title,
+}: {
+  action?: React.ReactNode;
+  description: string;
+  title: string;
+}) {
+  return (
+    <div className="grid gap-3 lg:grid-cols-2 lg:items-stretch">
+      <Card className="route-card-skeleton h-full gap-4 p-5 sm:p-6">
+        <div className="flex h-full flex-col gap-4">
+          <div className="flex items-start gap-3">
+            <div className="grid size-6 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
+              <Inbox className="size-3.5" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="font-semibold leading-6">{title}</h2>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                {description}
+              </p>
+            </div>
+          </div>
+          {action ? (
+            <div className="mt-auto flex items-center border-t pt-3">
+              {action}
+            </div>
+          ) : null}
+        </div>
+      </Card>
     </div>
   );
 }

@@ -20,11 +20,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  EmptyState,
   ErrorState,
   PageHeader,
 } from "@/components/ui/page-state";
-import { FeedCardsSkeleton } from "@/components/ui/route-skeleton";
+import { FeedCardsSkeleton, FeedEmptyState } from "@/components/ui/route-skeleton";
 import { IssueCard } from "@/components/issues/issue-card";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -163,7 +162,7 @@ export default function IssueBoardPage() {
       ) : loading && feed.issues.length === 0 ? (
         <FeedCardsSkeleton kind="issue" />
       ) : feed.issues.length === 0 ? (
-        <EmptyState
+        <FeedEmptyState
           action={
             filter !== "my-proposals" ? (
               <Button asChild variant="outline">

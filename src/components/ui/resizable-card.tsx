@@ -13,7 +13,7 @@ export function ResizableCard({ className, ...props }: HTMLMotionProps<"div">) {
     <motion.div
       className={getCardClassName(className)}
       data-slot="card"
-      layout
+      layout="position"
       transition={{ layout: cardLayoutTransition }}
       {...props}
     />

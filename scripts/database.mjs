@@ -41,7 +41,7 @@ function dockerInvocation(args) {
   if (process.platform !== "win32") return { command: "docker", args };
   return {
     command: "wsl.exe",
-    args: ["-d", windowsWslDistro, "--", "docker", ...args],
+    args: ["-d", windowsWslDistro, "-u", "root", "--", "docker", ...args],
   };
 }
 

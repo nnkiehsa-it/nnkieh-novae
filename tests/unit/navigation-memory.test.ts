@@ -1,25 +1,30 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
-  commitRouteHistory,
-  consumeRouteDirection,
-  markRouteDirection,
+  rememberCurrentRoute,
+  returnToPreviousInAppRoute,
+  returnToPreviousRoute,
 } from "@/lib/navigation-memory";
 
-describe("route depth motion", () => {
-  it("keeps an explicit direction until the destination route commits", () => {
-    expect(consumeRouteDirection("/issues/public")).toBe("root");
-    expect(consumeRouteDirection("/facilities")).toBe("root");
-    expect(consumeRouteDirection("/announcements")).toBe("root");
-    expect(consumeRouteDirection("/notifications")).toBe("root");
-    expect(consumeRouteDirection("/settings")).toBe("root");
-    expect(consumeRouteDirection("/issues/public/issue-1")).toBe("child");
-    expect(consumeRouteDirection("/facilities/facility-1")).toBe("child");
-    expect(consumeRouteDirection("/dashboard")).toBe("child");
+describe("in-app return navigation", () => {
+  it("returns to a matching previous route and otherwise uses its fallback", () => {
+    const router = { back: vi.fn(), push: vi.fn() };
+    rememberCurrentRoute("/issues/public");
+    rememberCurrentRoute("/issues/public/issue-1");
 
-    markRouteDirection("back");
-    expect(consumeRouteDirection("/issues/public")).toBe("back");
-    expect(consumeRouteDirection("/issues/public")).toBe("back");
-    commitRouteHistory("/issues/public");
-    expect(consumeRouteDirection("/issues/public")).toBe("root");
+    returnToPreviousRoute(router, "/issues/public", "/issues");
+    expect(router.back).toHaveBeenCalledOnce();
+    expect(router.push).not.toHaveBeenCalled();
+
+    rememberCurrentRoute("/facilities");
+    rememberCurrentRoute("/settings");
+    returnToPreviousRoute(router, "/issues/public", "/issues");
+    expect(router.push).toHaveBeenCalledWith("/issues/public");
+  });
+
+  it("returns to the last in-app route when one exists", () => {
+    const router = { back: vi.fn(), push: vi.fn() };
+    rememberCurrentRoute("/dashboard");
+    returnToPreviousInAppRoute(router, "/settings");
+    expect(router.back).toHaveBeenCalledOnce();
   });
 });

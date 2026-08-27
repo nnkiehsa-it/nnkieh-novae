@@ -79,11 +79,10 @@ describe("React frontend design system", () => {
     expect(settingsUi).not.toContain("imageSourceMegabytes");
   });
 
-  it("keeps route motion separate from skeleton-to-content sharpening", () => {
+  it("keeps route containers static while skeleton fields sharpen independently", () => {
     const motion = read("src/styles/motion.css");
     const skeletonReveal = read("src/components/ui/skeleton-reveal.tsx");
     const initialStagger = motion.match(/@keyframes t-stagger-item\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
-    const childRouteEnter = motion.match(/@keyframes t-route-enter-child\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
     expect(motion).toContain("--reveal-blur: 2px");
     expect(motion).toContain(".t-skel.is-revealed .t-skel-content");
     expect(motion).toContain("filter: blur(var(--reveal-blur))");
@@ -96,27 +95,14 @@ describe("React frontend design system", () => {
     expect(motion).not.toContain("t-data-content-enter");
     expect(motion).not.toContain("t-stagger-copy");
     expect(motion).not.toContain("t-reveal-content");
-    expect(motion).toMatch(/@keyframes t-route-enter[\s\S]*translate/u);
-    expect(motion).toContain("--route-duration: 440ms");
-    expect(motion).toContain("--route-distance: clamp(28px, 7vw, 64px)");
-    expect(motion).toContain("--ease-route: cubic-bezier(0.32, 0.72, 0, 1)");
     expect(motion).toContain("--skeleton-appear-delay: 120ms");
     expect(motion).toContain("--reveal-dur: 240ms");
     expect(motion).not.toContain("t-route-blur");
-    expect(childRouteEnter).not.toContain("filter:");
-    expect(read("src/components/app-shell.tsx")).toContain("consumeRouteDirection(pathname)");
-    expect(read("src/components/app-shell.tsx")).toContain("markPopstateRouteDirection");
+    expect(motion).not.toContain("t-route-enter");
+    expect(read("src/components/app-shell.tsx")).toContain('<div className="route-page">{children}</div>');
+    expect(read("src/components/app-shell.tsx")).not.toContain("RouteTransition");
     expect(read("src/components/app-shell.tsx")).not.toContain("ViewTransition");
     expect(read("src/components/liquid-nav.tsx")).not.toContain("transitionTypes");
-    expect(motion).toContain('data-route-direction="root"');
-    const rootRouteEnter = motion.match(/@keyframes t-route-enter-root\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
-    expect(rootRouteEnter).toContain("opacity: 0.35");
-    expect(rootRouteEnter).toContain("translate3d(0, 14px, 0) scale(0.985)");
-    expect(rootRouteEnter).not.toContain("filter");
-    expect(motion).toContain(".route-page.t-route-enter");
-    expect(motion).toContain("t-route-enter-root var(--route-root-duration)");
-    expect(motion).toContain("t-route-enter-child");
-    expect(motion).toContain("t-route-enter-back");
   });
 
   it("centers status labels through cold reveal and extends the stage into iOS chrome", () => {
@@ -183,18 +169,24 @@ describe("React frontend design system", () => {
     expect(preload).toContain('router.prefetch("/admin/management?tab=members")');
     expect(dashboard).toContain("<SecondaryToolbar");
     expect(administration).toContain("<SecondaryToolbar");
-    expect(navigationMemory).toContain('markRouteDirection("back")');
+    expect(navigationMemory).toContain("returnToPreviousInAppRoute");
     expect(read("src/app/(protected)/dashboard/loading.tsx")).toContain("DashboardSkeleton");
     expect(read("src/app/(protected)/admin/management/loading.tsx")).toContain("AdministrationSkeleton");
   });
 
   it("keeps app controls real while only data fields use route skeletons", () => {
     const skeleton = read("src/components/ui/route-skeleton.tsx");
+    const announcementLoading = read("src/app/(protected)/announcements/loading.tsx");
     const issueCard = read("src/components/issues/issue-card.tsx");
     const facilityCard = read("src/components/facilities/facility-card.tsx");
     const announcementCard = read("src/components/announcements/announcement-card.tsx");
     const resolutionNotice = read("src/components/content-resolution-notice.tsx");
     expect(skeleton).toContain("<Button");
+    expect(skeleton).toContain("export function FeedEmptyState");
+    expect(skeleton).toContain("route-card-skeleton h-full gap-4 p-5 sm:p-6");
+    expect(skeleton).toContain('kind !== "announcement" ?');
+    expect(skeleton).toContain('showCreate ? (');
+    expect(announcementLoading).toContain('session.can("announcement.manage")');
     expect(skeleton).toContain("<Input");
     expect(skeleton).toContain("<Textarea");
     expect(skeleton).toContain("<StableDetailToolbar />");
@@ -222,12 +214,13 @@ describe("React frontend design system", () => {
     }
   });
 
-  it("animates intrinsic card resize without projecting dense feed rows", () => {
+  it("keeps card copy unscaled while animating surrounding layout", () => {
     const card = read("src/components/ui/card.tsx");
     const resizableCard = read("src/components/ui/resizable-card.tsx");
     expect(card).toContain("t-resize flex flex-col");
     expect(card).not.toContain('"use client"');
-    expect(resizableCard).toContain("layout");
+    expect(resizableCard).toContain('layout="position"');
+    expect(resizableCard).not.toContain("layout\n");
     expect(resizableCard).toContain("transition={{ layout: cardLayoutTransition }}");
     expect(resizableCard).toContain("duration: 0.3");
     expect(resizableCard).toContain("ease: [0.22, 1, 0.36, 1]");
@@ -294,7 +287,7 @@ describe("React frontend design system", () => {
   });
 
   it("owns dialog, dropdown, card, and control styling in shared primitives", () => {
-    const button = read("src/components/ui/button.tsx");
+    const button = read("src/components/ui/button.tsx").replace(/\r\n/gu, "\n");
     const dialog = read("src/components/ui/dialog.tsx");
     const alertDialog = read("src/components/ui/alert-dialog.tsx");
     expect(button).toContain("buttonVariants");

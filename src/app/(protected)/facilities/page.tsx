@@ -18,11 +18,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  EmptyState,
   ErrorState,
   PageHeader,
 } from "@/components/ui/page-state";
-import { FeedCardsSkeleton } from "@/components/ui/route-skeleton";
+import { FeedCardsSkeleton, FeedEmptyState } from "@/components/ui/route-skeleton";
 import { FacilityCard } from "@/components/facilities/facility-card";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -136,7 +135,7 @@ export default function FacilitiesPage() {
       ) : state.loading && state.feed.facilities.length === 0 ? (
         <FeedCardsSkeleton kind="facility" />
       ) : state.feed.facilities.length === 0 ? (
-        <EmptyState
+        <FeedEmptyState
           action={
             <Button asChild variant="outline">
               <Link

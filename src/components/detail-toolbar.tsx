@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import { ArrowLeft, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { markRouteDirection } from "@/lib/navigation-memory";
 
 export function SecondaryToolbar({
   actions,
@@ -22,10 +21,7 @@ export function SecondaryToolbar({
           <Button
             aria-label={backLabel}
             className="size-11 md:size-9"
-            onClick={() => {
-              markRouteDirection("back");
-              onBack();
-            }}
+            onClick={onBack}
             size="icon"
             variant="ghost"
           >
