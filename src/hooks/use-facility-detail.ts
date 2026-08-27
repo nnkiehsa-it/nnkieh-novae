@@ -22,7 +22,6 @@ import { useContentEntity } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
 import { returnToPreviousRoute } from "@/lib/navigation-memory";
-import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 import { toggleReactionState } from "@/lib/reaction-state";
 
@@ -56,7 +55,6 @@ export function useFacilityDetail() {
         getDetailContentEntity<FacilityRecord>(session.user?.uid, "facility", params.facilityId) ??
         peekFacility(params.facilityId);
       const coldRead = !cached;
-      const startedAt = Date.now();
       if (coldRead) setLoading(true);
       setError("");
       const entityReadRevision = beginContentEntityRead();
@@ -73,7 +71,6 @@ export function useFacilityDetail() {
           caught instanceof Error ? caught.message : t("ui.facility.notFound"),
         );
       } finally {
-        if (coldRead) await waitForMinimumSkeletonDuration(startedAt);
         setLoading(false);
       }
     },

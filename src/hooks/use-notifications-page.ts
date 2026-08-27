@@ -14,7 +14,6 @@ import {
 } from "@/services/notifications";
 import type { NotificationRecord, NotificationSource } from "@/types";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
-import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 import {
   advanceFeedPageCount,
@@ -66,7 +65,6 @@ export function useNotificationsPage() {
 
   const load = React.useCallback(async () => {
     if (!session.user) return;
-    const skeletonStartedAt = coldRead ? Date.now() : 0;
     if (coldRead) setLoading(true);
     setError("");
     try {
@@ -105,8 +103,6 @@ export function useNotificationsPage() {
         caught instanceof Error ? caught.message : t("notification.loadFailed"),
       );
     } finally {
-      if (skeletonStartedAt)
-        await waitForMinimumSkeletonDuration(skeletonStartedAt);
       setLoading(false);
     }
   }, [activeSources, coldRead, session.user, t]);

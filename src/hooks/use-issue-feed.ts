@@ -33,7 +33,6 @@ import { usePagedRequestGuard } from "@/hooks/use-paged-request-guard";
 import { useContentEntityDomainVersion } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
-import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 import { toggleReactionState } from "@/lib/reaction-state";
 import { advanceFeedPageCount, canLoadAnotherFeedPage } from "@/lib/feed-page-limit";
@@ -173,7 +172,6 @@ export function useIssueFeed() {
       const requestToken = requestGuard.begin(queryKey);
       if (!requestToken) return;
       const entityReadRevision = beginContentEntityRead();
-      const skeletonStartedAt = !cursor && coldRead ? Date.now() : 0;
       cursor ? setLoadingMore(true) : setLoading(true);
       setError("");
       try {
@@ -240,8 +238,6 @@ export function useIssueFeed() {
         if (requestGuard.isCurrent(requestToken))
           setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
       } finally {
-        if (skeletonStartedAt)
-          await waitForMinimumSkeletonDuration(skeletonStartedAt);
         if (requestGuard.finish(requestToken)) {
           setLoading(false);
           setLoadingMore(false);
@@ -259,7 +255,6 @@ export function useIssueFeed() {
       validFilter,
       queryKey,
       requestGuard,
-      coldRead,
     ],
   );
 

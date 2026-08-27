@@ -20,7 +20,7 @@
   --pulse-dur: 2200ms;
   --pulse-count: 1;
   --pulse-min: 0.6;
-  --skeleton-appear-delay: 120ms;
+  --skeleton-appear-delay: 0ms;
   --reveal-dur: 240ms;
   --reveal-blur: 2px;
   --reveal-ease: ease-in-out;

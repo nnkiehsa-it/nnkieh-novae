@@ -95,7 +95,7 @@ describe("React frontend design system", () => {
     expect(motion).not.toContain("t-data-content-enter");
     expect(motion).not.toContain("t-stagger-copy");
     expect(motion).not.toContain("t-reveal-content");
-    expect(motion).toContain("--skeleton-appear-delay: 120ms");
+    expect(motion).toContain("--skeleton-appear-delay: 0ms");
     expect(motion).toContain("--reveal-dur: 240ms");
     expect(motion).not.toContain("t-route-blur");
     expect(motion).not.toContain("t-route-enter");

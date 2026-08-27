@@ -22,7 +22,6 @@ import { useContentEntityDomainVersion } from "@/hooks/use-content-entity";
 
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
-import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 import { toggleReactionState } from "@/lib/reaction-state";
 import { advanceFeedPageCount, canLoadAnotherFeedPage } from "@/lib/feed-page-limit";
@@ -128,7 +127,6 @@ export function useAnnouncementFeed() {
       const requestToken = requestGuard.begin(queryKey);
       if (!requestToken) return;
       const entityReadRevision = beginContentEntityRead();
-      const skeletonStartedAt = !nextCursor && coldRead ? Date.now() : 0;
       nextCursor ? setLoadingMore(true) : setLoading(true);
       setError("");
       try {
@@ -160,15 +158,13 @@ export function useAnnouncementFeed() {
         if (requestGuard.isCurrent(requestToken))
           setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
       } finally {
-        if (skeletonStartedAt)
-          await waitForMinimumSkeletonDuration(skeletonStartedAt);
         if (requestGuard.finish(requestToken)) {
           setLoading(false);
           setLoadingMore(false);
         }
       }
     },
-    [coldRead, queryKey, requestGuard, session.user?.uid, t],
+    [queryKey, requestGuard, session.user?.uid, t],
   );
 
   React.useEffect(() => {

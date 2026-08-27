@@ -48,7 +48,7 @@ export function useRoutePreload() {
         : []),
       ...(categories.facilitiesEnabled ? ["/facilities"] : []),
     ];
-    const deferredRoutes = [
+    const secondaryRoutes = [
       ...(categories.issuesEnabled
         ? [
             ...categories.issueCategories.map(
@@ -69,38 +69,8 @@ export function useRoutePreload() {
       "/announcements/new",
       "/announcements/__route-preload__",
     ];
-    let cancelled = false;
-    let idleHandle: number | undefined;
     categoryRoutes.forEach((route) => router.prefetch(route));
-
-    const preloadDeferred = () => {
-      if (cancelled) return;
-      deferredRoutes.forEach((route) => router.prefetch(route));
-    };
-    const idleWindow = window as unknown as {
-      requestIdleCallback?: (
-        callback: () => void,
-        options?: { timeout: number },
-      ) => number;
-      cancelIdleCallback?: (handle: number) => void;
-    };
-    if (idleWindow.requestIdleCallback) {
-      idleHandle = idleWindow.requestIdleCallback(preloadDeferred, {
-        timeout: 1_200,
-      });
-    } else {
-      idleHandle = window.setTimeout(preloadDeferred, 250);
-    }
-
-    return () => {
-      cancelled = true;
-      if (idleHandle === undefined) return;
-      if (idleWindow.cancelIdleCallback && idleWindow.requestIdleCallback) {
-        idleWindow.cancelIdleCallback(idleHandle);
-      } else {
-        window.clearTimeout(idleHandle);
-      }
-    };
+    secondaryRoutes.forEach((route) => router.prefetch(route));
   }, [
     categories.facilitiesEnabled,
     categories.issueCategories,

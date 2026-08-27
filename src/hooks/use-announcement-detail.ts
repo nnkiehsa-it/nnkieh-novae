@@ -35,7 +35,6 @@ import {
 import { useContentEntity } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
-import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 import { toggleReactionState } from "@/lib/reaction-state";
 
@@ -82,7 +81,6 @@ export function useAnnouncementDetail() {
         getDetailContentEntity<AnnouncementRecord>(session.user?.uid, "announcement", params.announcementId) ??
         peekAnnouncementRecordById(params.announcementId, session.user?.uid);
       const coldRead = !cached;
-      const startedAt = Date.now();
       if (coldRead) setLoading(true);
       setError("");
       const entityReadRevision = beginContentEntityRead();
@@ -107,7 +105,6 @@ export function useAnnouncementDetail() {
             : t("ui.announcement.notFound"),
         );
       } finally {
-        if (coldRead) await waitForMinimumSkeletonDuration(startedAt);
         setLoading(false);
       }
     },

@@ -6,7 +6,6 @@ import { useSession } from "@/hooks/use-session";
 import { fetchPlatformDashboard } from "@/services/dashboard";
 import type { PlatformDashboardData } from "@/types";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
-import { waitForMinimumSkeletonDuration } from "@/lib/loading-timing";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 
 export function usePlatformDashboard() {
@@ -26,7 +25,6 @@ export function usePlatformDashboard() {
   const load = React.useCallback(
     async (forceRefresh = false) => {
       if (!canView) return;
-      const skeletonStartedAt = coldRead ? Date.now() : 0;
       setLoading(true);
       setError("");
       try {
@@ -34,12 +32,10 @@ export function usePlatformDashboard() {
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
       } finally {
-        if (skeletonStartedAt)
-          await waitForMinimumSkeletonDuration(skeletonStartedAt);
         setLoading(false);
       }
     },
-    [canView, coldRead, t],
+    [canView, t],
   );
 
   React.useEffect(() => {
