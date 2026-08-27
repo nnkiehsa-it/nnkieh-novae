@@ -11,7 +11,7 @@ on:
       - 'scripts/**'
       - 'public/**'
       - 'package.json'
-      - 'package-lock.json'
+      - 'bun.lock'
       - 'components.json'
       - 'next.config.mjs'
       - 'postcss.config.mjs'
@@ -44,10 +44,10 @@ jobs:
           files="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
           backend=false
           browser=false
-          if printf '%s\n' "$files" | grep -Eq '^(cloudflare/|database/|config/|tests/integration/|scripts/(configure-|database\.mjs|external-provider-test-server\.mjs|render-worker-config\.mjs|verify-integration\.mjs|generate-(api-errors|backend-actions|data-retention|rate-limits|all)\.mjs)|package(-lock)?\.json$|tsconfig\.integration\.json$|vitest\.integration\.config\.ts$)'; then
+          if printf '%s\n' "$files" | grep -Eq '^(cloudflare/|database/|config/|tests/integration/|scripts/(configure-|database\.mjs|external-provider-test-server\.mjs|render-worker-config\.mjs|verify-integration\.mjs|generate-(api-errors|backend-actions|data-retention|rate-limits|all)\.mjs)|(?:package\.json|bun\.lock)$|tsconfig\.integration\.json$|vitest\.integration\.config\.ts$)'; then
             backend=true
           fi
-          if printf '%s\n' "$files" | grep -Eq '^(src/app/|src/components/|src/hooks/|src/lib/|src/services/|src/styles/|public/|next\.config\.mjs$|tests/e2e/|package(-lock)?\.json$|scripts/(generate-harmonyos-subset|check-build-budget|generate-all)\.mjs)'; then
+          if printf '%s\n' "$files" | grep -Eq '^(src/app/|src/components/|src/hooks/|src/lib/|src/services/|src/styles/|public/|next\.config\.mjs$|tests/e2e/|(?:package\.json|bun\.lock)$|scripts/(generate-harmonyos-subset|check-build-budget|generate-all)\.mjs)'; then
             browser=true
           fi
           echo "backend=$backend" >> "$GITHUB_OUTPUT"
@@ -62,19 +62,21 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-          cache: 'npm'
-          cache-dependency-path: package-lock.json
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
 
       - name: Install dependencies
-        run: npm ci --prefer-offline
+        run: bun install --frozen-lockfile
 
       - name: Verify generated configuration is committed
         run: |
-          npm run generate:all
+          bun run generate:all
           git diff --exit-code
 
       - name: Run fast verification
-        run: npm run verify:fast
+        run: bun run verify:fast
 
   backend:
     needs: [changes, fast]
@@ -86,8 +88,10 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-          cache: 'npm'
-          cache-dependency-path: package-lock.json
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
 
       - name: Restore Firebase Emulator cache
         uses: actions/cache@v5
@@ -96,13 +100,13 @@ jobs:
           key: ${{ runner.os }}-firebase-emulators-15.24.0
 
       - name: Install dependencies
-        run: npm ci --prefer-offline
+        run: bun install --frozen-lockfile
 
       - name: Verify backend types and integration behavior
         run: |
-          npm run check:worker
-          npm run check:integration-types
-          npm run verify:integration
+          bun run check:worker
+          bun run check:integration-types
+          bun run verify:integration
 
   browser:
     needs: [changes, fast]
@@ -114,8 +118,10 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-          cache: 'npm'
-          cache-dependency-path: package-lock.json
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
 
       - name: Restore Firebase Emulator cache
         uses: actions/cache@v5
@@ -127,19 +133,19 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .next/cache
-          key: ${{ runner.os }}-node24-next-browser-${{ hashFiles('package-lock.json', 'next.config.mjs') }}-${{ github.sha }}
+          key: ${{ runner.os }}-node24-next-browser-${{ hashFiles('bun.lock', 'next.config.mjs') }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-node24-next-browser-${{ hashFiles('package-lock.json', 'next.config.mjs') }}-
+            ${{ runner.os }}-node24-next-browser-${{ hashFiles('bun.lock', 'next.config.mjs') }}-
             ${{ runner.os }}-node24-next-browser-
 
       - name: Install dependencies
-        run: npm ci --prefer-offline
+        run: bun install --frozen-lockfile
 
       - name: Install Chromium for browser E2E
-        run: npx playwright install --with-deps chromium
+        run: bunx playwright install --with-deps chromium
 
       - name: Verify real browser journeys
-        run: npm run test:e2e
+        run: bun run test:e2e
 
       - name: Verify production asset budget
-        run: npm run check:build-budget
+        run: bun run check:build-budget

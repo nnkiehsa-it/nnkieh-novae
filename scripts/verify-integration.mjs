@@ -2,7 +2,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { createWriteStream, readFileSync } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import process from "node:process";
 import { setTimeout as delay } from "node:timers/promises";
 import {
@@ -30,8 +30,7 @@ const ownerDatabaseUrl =
   "postgresql://novae:novae-local@127.0.0.1:55432/novae";
 const workerUrl = "http://127.0.0.1:8787";
 const appUrl = "http://127.0.0.1:3000";
-const npmCli = process.env.npm_execpath;
-const npxCli = npmCli ? join(dirname(npmCli), "npx-cli.js") : "";
+const bun = process.platform === "win32" ? "bun.exe" : "bun";
 const vitestCli = join(root, "node_modules", "vitest", "vitest.mjs");
 const wranglerCli = join(root, "node_modules", "wrangler", "bin", "wrangler.js");
 const tempDirectory = await mkdtemp(join(tmpdir(), "novae-integration-"));
@@ -249,11 +248,10 @@ try {
 
   let firebase;
   if (serve || e2e) {
-    if (!npxCli) throw new Error("Run the integration environment through npm so Firebase tools can be resolved.");
     firebase = start(
       "firebase-auth",
-      process.execPath,
-      [npxCli, "--yes", "firebase-tools@15.24.0", "emulators:start", "--only", "auth", "--project", "integration-project"],
+      bun,
+      ["x", "--yes", "firebase-tools@15.24.0", "emulators:start", "--only", "auth", "--project", "integration-project"],
       {},
       [4000, 4400, 4500, 9099],
     );
@@ -352,13 +350,12 @@ try {
       NOVAE_LOCAL_GATEWAY_URL: workerUrl,
     };
     if (e2e) {
-      if (!npmCli) throw new Error("Run E2E verification through npm.");
-      run("build production frontend", process.execPath, [npmCli, "run", "build:deploy"], frontendEnvironment);
+      run("build production frontend", bun, ["run", "build:deploy"], frontendEnvironment);
     }
     const frontend = start(
       "next",
-      process.execPath,
-      e2e ? [npmCli, "run", "start", "--", "-H", "0.0.0.0", "-p", "3000"] : [npmCli, "run", "dev", "--", "-H", "0.0.0.0", "-p", "3000"],
+      bun,
+      e2e ? ["run", "start", "--", "-H", "0.0.0.0", "-p", "3000"] : ["run", "dev", "--", "-H", "0.0.0.0", "-p", "3000"],
       frontendEnvironment,
       [3000],
     );
@@ -372,7 +369,7 @@ try {
     );
     run("Firebase login and API routing probe", process.execPath, ["scripts/check-local-auth-emulator.mjs"], frontendEnvironment);
     if (e2e) {
-      run("Playwright browser journeys", process.execPath, [npmCli, "run", "--silent", "test:e2e:runner"], frontendEnvironment);
+      run("Playwright browser journeys", bun, ["run", "test:e2e:runner"], frontendEnvironment);
       process.stderr.write("✓ End-to-end verification passed\n");
     } else {
       process.stderr.write(`\n[environment] Ready\n  App: ${appUrl}\n  API: ${workerUrl}\n  Auth emulator: http://127.0.0.1:4000/auth\n  Stop: Ctrl+C\n`);

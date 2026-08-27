@@ -38,11 +38,7 @@ function executable(name) {
 }
 
 const node = process.execPath;
-const npm = process.platform === "win32" ? "npm.cmd" : "npm";
-const npmAuditCommand = process.env.npm_execpath ? node : npm;
-const npmAuditArgs = process.env.npm_execpath
-  ? [process.env.npm_execpath, "audit", "--audit-level=high"]
-  : ["audit", "--audit-level=high"];
+const bun = process.platform === "win32" ? "bun.exe" : "bun";
 const steps = {
   checks: [
     ["TypeScript", executable("tsc"), ["--noEmit"]],
@@ -71,7 +67,7 @@ const steps = {
     ["unit tests", executable("vitest"), ["run"]],
     ["architecture tests", node, ["--test", "tests/architecture.test.mjs"]],
   ],
-  audit: [["dependency audit", npmAuditCommand, npmAuditArgs]],
+  audit: [["dependency audit", bun, ["audit", "--audit-level=high"]]],
 };
 
 steps.fast = [

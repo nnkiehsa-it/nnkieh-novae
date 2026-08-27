@@ -8,9 +8,9 @@ credentials or writes to Neon.
 
 | Change | Command |
 | --- | --- |
-| Frontend / ordinary refactor | `npm run verify:local` |
-| Migration, RPC, permission, Worker action, Queue, or Durable Object | `npm run verify:integration` |
-| Large change / before merge | `npm run verify:all` |
+| Frontend / ordinary refactor | `bun run verify:local` |
+| Migration, RPC, permission, Worker action, Queue, or Durable Object | `bun run verify:integration` |
+| Large change / before merge | `bun run verify:all` |
 
 PR CI runs the local, integration, and browser suites.
 

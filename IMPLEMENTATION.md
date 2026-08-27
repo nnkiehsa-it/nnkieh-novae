@@ -56,10 +56,10 @@ This file is the source of truth for the implementation approved on 2026-08-23. 
 - [x] Integration tests with successful and rejected backend actions for new deletion and batch-job actions.
 - [x] Allowed and denied tests for role-sensitive actions; the new actions are platform-scoped and expose no cross-scope selector.
 - [x] Browser checks for desktop/mobile loading, notification navigation, management progress, and reduced motion; the final clean Playwright run passes all 16 journeys.
-- [x] `npm run check:unused`.
-- [x] `npm run verify:local`.
-- [x] `npm run verify:integration`.
-- [x] `npm run verify:all`.
+- [x] `bun run check:unused`.
+- [x] `bun run verify:local`.
+- [x] `bun run verify:integration`.
+- [x] `bun run verify:all`.
 
 ## Implementation log
 
@@ -81,4 +81,4 @@ This file is the source of truth for the implementation approved on 2026-08-23. 
 - 2026-08-23: Restored sessions no longer repeat `/v1/auth/sync` profile writes and platform-admin reconciliation on every app start. That mutation now runs only after a newly completed login; restored sessions retain the unchanged Turnstile/Siteverify gate and proceed directly to the authoritative session bootstrap.
 - 2026-08-23: Content realtime has an explicit deployment switch and remains enabled by default. Browser permission journeys disable content sockets because realtime transport is covered by integration tests; notification realtime remains enabled and independent.
 - 2026-08-23: The final clean Playwright run passes all 16 desktop and mobile journeys. The failures were caused by emulator-only login resolver initialization, incomplete E2E profile synchronization, unnecessary restored-session writes, and accumulated content realtime connections rather than an outdated Playwright dependency or selector set.
-- 2026-08-23: `npm run verify:all` passes the complete local, integration, and end-to-end pipeline.
+- 2026-08-23: `bun run verify:all` passes the complete local, integration, and end-to-end pipeline.

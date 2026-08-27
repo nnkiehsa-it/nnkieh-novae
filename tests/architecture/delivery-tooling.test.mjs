@@ -6,10 +6,29 @@ test("runtime and framework versions remain pinned to the supported platform", a
   const packageJson = JSON.parse(await read("package.json"));
   assert.equal((await read(".node-version")).trim(), "24");
   assert.equal((await read(".nvmrc")).trim(), "24");
+  assert.equal(packageJson.packageManager, "bun@1.4.0");
+  assert.match(packageJson.engines.bun, /^>=1\.4/u);
   assert.match(packageJson.engines.node, /^>=24/u);
   assert.match(packageJson.dependencies.next, /^16\./u);
   assert.match(packageJson.dependencies.react, /^19\./u);
   assert.equal(packageJson.devDependencies.typescript, "7.0.2");
+});
+
+test("Bun is the sole package-management entry point", async () => {
+  await assert.rejects(() => read("package-lock.json"));
+  await read("bun.lock");
+
+  for (const workflowPath of [
+    ".github/workflows/verify-pr.yml",
+    ".github/workflows/deploy-frontend.yml",
+    ".github/workflows/deploy-backend.yml",
+    ".github/workflows/reset-database-and-cloudinary.yml",
+  ]) {
+    const workflow = await read(workflowPath);
+    assert.match(workflow, /oven-sh\/setup-bun@v2/u);
+    assert.match(workflow, /bun install --frozen-lockfile/u);
+    assert.doesNotMatch(workflow, /\b(?:npm|npx)\b/u);
+  }
 });
 
 test("package scripts expose the required verification and deployment boundaries", async () => {

@@ -34,11 +34,13 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-          cache: 'npm'
-          cache-dependency-path: package-lock.json
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
 
       - name: Install dependencies
-        run: npm ci --prefer-offline
+        run: bun install --frozen-lockfile
 
       - name: Reset application database schemas
         env:
@@ -61,7 +63,7 @@ jobs:
       - name: Reapply database migrations
         env:
           DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
-        run: npm run db:migrate
+        run: bun run db:migrate
 
       - name: Restore the least-privilege Worker database role
         env:

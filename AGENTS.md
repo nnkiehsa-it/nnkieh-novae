@@ -15,7 +15,7 @@
 - 不為單一呼叫點的簡單片段建抽象。
 - 新增／刪除／搬移／拆分檔案時同步更新 `structure.md`。
 - 新流程接手後刪舊 API／props／CSS／轉場／註解，不留相容殘留。
-- 重構後用 `npm run check:unused`（或等效）確認無未使用宣告。
+- 重構後用 `bun run check:unused`（或等效）確認無未使用宣告。
 - 遵守組件化開發，如有成熟免費組件可以優先考慮使用。
 
 # 安全
@@ -26,11 +26,11 @@
 
 # 驗證
 
-一般前端／重構：`npm run verify:local`。
+一般前端／重構：`bun run verify:local`。
 其中 `check:ui` 會拒絕舊 dropdown、任意陰影、手組卡片與自行管理 viewport gutter；不要跳過或以例外規避。
-後端 action、權限、RPC、migration、Worker、Queue、Durable Object：加跑 `npm run verify:integration`；Windows 入口會透過 WSL Docker 啟動 PostgreSQL，不手動維護第二套流程。
-大型變更／交付前：`npm run verify:all`。
-完整本地測試環境：`npm run test:env`，Ready 後可用 Auth Emulator 建立任意測試帳號；以 `Ctrl+C` 關閉全部本地服務。多人、多分類、多權限壓力矩陣使用 `npm run verify:stress`。
+後端 action、權限、RPC、migration、Worker、Queue、Durable Object：加跑 `bun run verify:integration`；Windows 入口會透過 WSL Docker 啟動 PostgreSQL，不手動維護第二套流程。
+大型變更／交付前：`bun run verify:all`。
+完整本地測試環境：`bun run test:env`，Ready 後可用 Auth Emulator 建立任意測試帳號；以 `Ctrl+C` 關閉全部本地服務。多人、多分類、多權限壓力矩陣使用 `bun run verify:stress`。
 新增 backend action 必須在 `tests/integration/` 加入有 assertion 的成功與拒絕案例；角色／scope 變更至少驗證 allowed、denied、跨 scope。`action-coverage.test.ts` 只作漏測防線，不得用無 assertion 呼叫敷衍。
 失敗與 warning 能修就修，否則在報告說明。
 

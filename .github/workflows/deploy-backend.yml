@@ -17,7 +17,7 @@ on:
       - 'scripts/verify-integration.mjs'
       - 'tests/integration/**'
       - 'package.json'
-      - 'package-lock.json'
+      - 'bun.lock'
       - 'tsconfig.integration.json'
       - 'vitest.integration.config.ts'
       - '.github/workflows/deploy-backend.yml'
@@ -47,8 +47,10 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-          cache: 'npm'
-          cache-dependency-path: package-lock.json
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
 
       - name: Restore Firebase Emulator cache
         uses: actions/cache@v5
@@ -57,21 +59,21 @@ jobs:
           key: ${{ runner.os }}-firebase-emulators-15.24.0
 
       - name: Install dependencies
-        run: npm ci --prefer-offline
+        run: bun install --frozen-lockfile
 
       - name: Verify generated contracts and backend types
         run: |
-          npm run generate:api-errors
-          npm run generate:rate-limits
-          npm run generate:data-retention
-          npm run generate:backend-actions
+          bun run generate:api-errors
+          bun run generate:rate-limits
+          bun run generate:data-retention
+          bun run generate:backend-actions
           git diff --exit-code
-          npm run check:worker
-          npm run check:integration-types
-          npm run test:architecture
+          bun run check:worker
+          bun run check:integration-types
+          bun run test:architecture
 
       - name: Verify database, permissions, actions, jobs, and realtime locally
-        run: npm run verify:integration
+        run: bun run verify:integration
 
       - name: Validate deployment configuration
         env:
@@ -139,7 +141,7 @@ jobs:
       - name: Apply forward-only Neon migrations
         env:
           DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
-        run: npm run db:migrate
+        run: bun run db:migrate
 
       - name: Configure the least-privilege Worker database role
         env:
@@ -172,7 +174,7 @@ jobs:
         run: |
           runtime_database_url="$(< /tmp/novae-runtime-database-url)"
           echo "::add-mask::$runtime_database_url"
-          npx wrangler hyperdrive update "$CLOUDFLARE_HYPERDRIVE_ID" \
+          bunx wrangler hyperdrive update "$CLOUDFLARE_HYPERDRIVE_ID" \
             --connection-string "$runtime_database_url" \
             --caching-disabled \
             --config /tmp/novae-wrangler.json
@@ -186,8 +188,8 @@ jobs:
           else
             queue_name="novae-jobs-${DEPLOYMENT_ENVIRONMENT}"
           fi
-          if ! npx wrangler queues info "$queue_name" --config /tmp/novae-wrangler.json >/dev/null 2>&1; then
-            npx wrangler queues create "$queue_name" --config /tmp/novae-wrangler.json
+          if ! bunx wrangler queues info "$queue_name" --config /tmp/novae-wrangler.json >/dev/null 2>&1; then
+            bunx wrangler queues create "$queue_name" --config /tmp/novae-wrangler.json
           fi
 
       - name: Create the ephemeral Worker secrets file
@@ -242,7 +244,7 @@ jobs:
           NODE
 
       - name: Deploy the Cloudflare Worker
-        run: npx wrangler deploy --config /tmp/novae-wrangler.json --secrets-file /tmp/novae-worker-secrets.json
+        run: bunx wrangler deploy --config /tmp/novae-wrangler.json --secrets-file /tmp/novae-worker-secrets.json
 
       - name: Remove ephemeral deployment credentials
         if: always()
