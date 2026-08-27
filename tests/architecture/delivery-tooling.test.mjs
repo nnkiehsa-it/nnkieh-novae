@@ -15,8 +15,10 @@ test("runtime and framework versions remain pinned to the supported platform", a
 });
 
 test("Bun is the sole package-management entry point", async () => {
+  const vercel = JSON.parse(await read("vercel.json"));
   await assert.rejects(() => read("package-lock.json"));
   await read("bun.lock");
+  assert.equal(vercel.installCommand, "bun install --frozen-lockfile");
 
   for (const workflowPath of [
     ".github/workflows/verify-pr.yml",
