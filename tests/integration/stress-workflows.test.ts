@@ -27,6 +27,49 @@ function markdownWithUpload(id: string, label: string) {
   return `${label}\n\n![${label}](srp-upload://${id})`;
 }
 
+integrationTest("100-user registration and session-bootstrap burst", async () => {
+  const identities = Array.from({ length: 100 }, (_, index) => {
+    const uid = `registration-burst-${runId}-${index}`;
+    return {
+      email: `${uid}@integration.invalid`,
+      name: `Registration burst ${index}`,
+      photoUrl: null,
+      uid,
+    };
+  });
+
+  await Promise.all(identities.map(async (identity) => {
+    const { error: conflictError } = await database.table("app_private", "user_profiles")
+      .update({ email: null })
+      .eq("email", identity.email)
+      .neq("uid", identity.uid);
+    if (conflictError) throw conflictError;
+    const { error: profileError } = await database.table("app_private", "user_profiles").upsert({
+      display_name: identity.name,
+      email: identity.email,
+      photo_url: identity.photoUrl,
+      uid: identity.uid,
+    }, { onConflict: "uid" });
+    if (profileError) throw profileError;
+    const { error: adminSyncError } = await database.call(
+      "app_api",
+      "backend_reconcile_platform_admins",
+      { actor_uid: identity.uid, admin_emails: ["admin@integration.invalid"] },
+    );
+    if (adminSyncError) throw adminSyncError;
+  }));
+
+  const actors = await Promise.all(identities.map((identity) => refreshActor({ identity })));
+  const bootstraps = await Promise.all(actors.map((actor) =>
+    callAction("getSessionBootstrap", { recordVisit: true }, actor.auth)
+  ));
+  assert.equal(bootstraps.length, 100);
+  assert.equal(new Set(actors.map((actor) => actor.auth.uid)).size, 100);
+  for (const bootstrap of bootstraps) {
+    assert.equal(asRecord(asRecord(bootstrap).access).role, "user");
+  }
+});
+
 async function configureAccess(
   admin: Actor,
   actor: Actor,

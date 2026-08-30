@@ -22,7 +22,6 @@
   --pulse-min: 0.6;
   --skeleton-appear-delay: 0ms;
   --reveal-dur: 240ms;
-  --reveal-blur: 2px;
   --reveal-ease: ease-in-out;
   --resize-dur: 300ms;
   --resize-ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -367,37 +366,27 @@
 .t-skel-skeleton {
   z-index: 1;
   opacity: 1;
-  filter: blur(0);
   pointer-events: none;
-  transition:
-    opacity var(--reveal-dur) var(--reveal-ease),
-    filter var(--reveal-dur) var(--reveal-ease);
+  transition: opacity var(--reveal-dur) var(--reveal-ease);
 }
 .t-skel-content {
   z-index: 2;
   position: relative;
   opacity: 0;
-  filter: blur(var(--reveal-blur));
-  transition:
-    opacity var(--reveal-dur) var(--reveal-ease),
-    filter var(--reveal-dur) var(--reveal-ease);
+  transition: opacity var(--reveal-dur) var(--reveal-ease);
 }
 .t-skel.is-revealed .t-skel-skeleton {
   opacity: 0;
-  filter: blur(var(--reveal-blur));
 }
 .t-skel.is-revealed .t-skel-content {
   opacity: 1;
-  filter: blur(0);
 }
 @starting-style {
   .t-skel.is-revealed .t-skel-skeleton {
     opacity: 1;
-    filter: blur(0);
   }
   .t-skel.is-revealed .t-skel-content {
     opacity: 0;
-    filter: blur(var(--reveal-blur));
   }
 }
 .t-skel-skeleton.is-pulsing > * {

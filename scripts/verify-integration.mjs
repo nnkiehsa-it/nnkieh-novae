@@ -2,7 +2,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { createWriteStream, readFileSync } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import process from "node:process";
 import { setTimeout as delay } from "node:timers/promises";
 import {
@@ -31,6 +31,12 @@ const ownerDatabaseUrl =
 const workerUrl = "http://127.0.0.1:8787";
 const appUrl = "http://127.0.0.1:3000";
 const bun = process.platform === "win32" ? "bun.exe" : "bun";
+const npx = process.platform === "win32"
+  ? {
+      args: [join(dirname(process.execPath), "node_modules", "npm", "bin", "npx-cli.js")],
+      command: process.execPath,
+    }
+  : { args: [], command: "npx" };
 const vitestCli = join(root, "node_modules", "vitest", "vitest.mjs");
 const wranglerCli = join(root, "node_modules", "wrangler", "bin", "wrangler.js");
 const tempDirectory = await mkdtemp(join(tmpdir(), "novae-integration-"));
@@ -250,8 +256,8 @@ try {
   if (serve || e2e) {
     firebase = start(
       "firebase-auth",
-      bun,
-      ["x", "--yes", "firebase-tools@15.24.0", "emulators:start", "--only", "auth", "--project", "integration-project"],
+      npx.command,
+      [...npx.args, "--yes", "firebase-tools@15.24.0", "emulators:start", "--only", "auth", "--project", "integration-project"],
       {},
       [4000, 4400, 4500, 9099],
     );

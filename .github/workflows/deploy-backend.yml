@@ -14,13 +14,10 @@ on:
       - 'scripts/database.mjs'
       - 'scripts/generate-*.mjs'
       - 'scripts/render-worker-config.mjs'
-      - 'scripts/verify-integration.mjs'
-      - 'tests/integration/**'
       - 'package.json'
       - 'bun.lock'
-      - 'tsconfig.integration.json'
-      - 'vitest.integration.config.ts'
       - '.github/workflows/deploy-backend.yml'
+      - '.github/workflows/verify-pr.yml'
   workflow_dispatch:
 
 concurrency:
@@ -28,6 +25,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
@@ -44,6 +42,26 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Wait for verification of this commit
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for attempt in $(seq 1 90); do
+            status="$(gh run list --workflow verify-pr.yml --commit "$GITHUB_SHA" --event push --limit 1 --json status --jq '.[0].status // "waiting"')"
+            conclusion="$(gh run list --workflow verify-pr.yml --commit "$GITHUB_SHA" --event push --limit 1 --json conclusion --jq '.[0].conclusion // ""')"
+            if [ "$status" = 'completed' ] && [ "$conclusion" = 'success' ]; then
+              exit 0
+            fi
+            if [ "$status" = 'completed' ] && [ "$conclusion" != 'success' ]; then
+              echo "Commit verification failed with conclusion: $conclusion" >&2
+              exit 1
+            fi
+            sleep 10
+          done
+          echo 'Timed out waiting for commit verification.' >&2
+          exit 1
+
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -53,6 +71,7 @@ jobs:
           bun-version: 1.4.0
 
       - name: Restore Firebase Emulator cache
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/cache@v5
         with:
           path: ~/.cache/firebase/emulators
@@ -62,6 +81,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Verify generated contracts and backend types
+        if: github.event_name == 'workflow_dispatch'
         run: |
           bun run generate:api-errors
           bun run generate:rate-limits
@@ -73,6 +93,7 @@ jobs:
           bun run test:architecture
 
       - name: Verify database, permissions, actions, jobs, and realtime locally
+        if: github.event_name == 'workflow_dispatch'
         run: bun run verify:integration
 
       - name: Validate deployment configuration

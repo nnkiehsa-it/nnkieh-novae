@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import workerConfig from "../../cloudflare/wrangler.json" with { type: "json" };
 import {
   requireFirebaseAppCheck,
   validateFirebaseAppCheckClaims,
@@ -28,6 +29,14 @@ function decodeMediaPayload(url: string) {
 }
 
 describe("security boundaries", () => {
+  it("allows a 100-person shared-network login burst before IP throttling", () => {
+    const loginLimiter = workerConfig.ratelimits.find(
+      (binding) => binding.name === "LOGIN_IP_RATE_LIMITER",
+    );
+    expect(loginLimiter?.simple.period).toBe(60);
+    expect(loginLimiter?.simple.limit).toBeGreaterThanOrEqual(100);
+  });
+
   it("requires App Check outside local tests and restricts tokens to configured app IDs", async () => {
     const env = securityEnvironment();
     await expect(requireFirebaseAppCheck(new Request("https://api.school.example"), env))
