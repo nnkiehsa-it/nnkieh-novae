@@ -17,6 +17,10 @@ import {
   type AppInstallPromptReason,
   type IosBrowserGuide,
 } from "@/lib/pwa-install";
+import {
+  readSessionStorage,
+  writeSessionStorage,
+} from "@/lib/browser-storage";
 
 export type AppInstallPromptMode =
   | "in-app-browser"
@@ -29,6 +33,20 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform?: string }>;
 }
 
+interface AppInstallPromptRequestDetail {
+  reason?: AppInstallPromptReason;
+}
+
+const DISMISSED_KEY = "novae:app-install-prompt-dismissed";
+
+function hasDismissedPrompt() {
+  return readSessionStorage(DISMISSED_KEY) === "1";
+}
+
+function rememberDismissedPrompt() {
+  writeSessionStorage(DISMISSED_KEY, "1");
+}
+
 export function useAppInstallPrompt() {
   const [hydrated, setHydrated] = useState(false);
   const [browserName, setBrowserName] = useState<InAppBrowserName | null>(null);
@@ -39,6 +57,29 @@ export function useAppInstallPrompt() {
   const [isPrompting, setIsPrompting] = useState(false);
   const [reason, setReason] = useState<AppInstallPromptReason>("default");
 
+  const handleBeforeInstallPrompt = useCallback((event: Event) => {
+    if (isStandaloneMode()) return;
+    event.preventDefault();
+    setDeferredPrompt(event as BeforeInstallPromptEvent);
+  }, []);
+
+  const handleAppInstalled = useCallback(() => {
+    setDeferredPrompt(null);
+    setDismissed(true);
+    rememberDismissedPrompt();
+  }, []);
+
+  const handleInstallPromptRequest = useCallback((event: Event) => {
+    if (!isMobilePwaRequiredPlatform(
+      navigator.userAgent,
+      navigator.platform,
+      navigator.maxTouchPoints,
+    )) return;
+    const requestedReason = (event as CustomEvent<AppInstallPromptRequestDetail>).detail?.reason;
+    setReason(requestedReason === "notifications" ? "notifications" : "default");
+    setDismissed(false);
+  }, []);
+
   useEffect(() => {
     const userAgent = navigator.userAgent;
     setBrowserName(detectInAppBrowser(userAgent));
@@ -46,24 +87,11 @@ export function useAppInstallPrompt() {
       detectIosBrowserGuide(userAgent, navigator.platform, navigator.maxTouchPoints),
     );
     setIsAndroid(isAndroidDevice(userAgent));
+    setDismissed(hasDismissedPrompt());
     setHydrated(true);
+  }, []);
 
-    const handleBeforeInstallPrompt = (event: Event) => {
-      if (isStandaloneMode()) return;
-      event.preventDefault();
-      setDeferredPrompt(event as BeforeInstallPromptEvent);
-    };
-    const handleAppInstalled = () => {
-      setDeferredPrompt(null);
-      setDismissed(true);
-    };
-    const handleInstallPromptRequest = (event: Event) => {
-      if (!isMobilePwaRequiredPlatform(userAgent, navigator.platform, navigator.maxTouchPoints)) return;
-      const requestedReason = (event as CustomEvent<{ reason?: AppInstallPromptReason }>).detail?.reason;
-      setReason(requestedReason === "notifications" ? "notifications" : "default");
-      setDismissed(false);
-    };
-
+  useEffect(() => {
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     window.addEventListener("appinstalled", handleAppInstalled);
     window.addEventListener(REQUEST_APP_INSTALL_PROMPT_EVENT, handleInstallPromptRequest);
@@ -72,12 +100,12 @@ export function useAppInstallPrompt() {
       window.removeEventListener("appinstalled", handleAppInstalled);
       window.removeEventListener(REQUEST_APP_INSTALL_PROMPT_EVENT, handleInstallPromptRequest);
     };
-  }, [reason]);
+  }, [handleAppInstalled, handleBeforeInstallPrompt, handleInstallPromptRequest]);
 
   const mode = useMemo<AppInstallPromptMode | null>(() => {
     if (
       !hydrated
-      || dismissed
+      || (dismissed && reason === "default")
       || isStandaloneMode()
       || !isMobilePwaRequiredPlatform(navigator.userAgent, navigator.platform, navigator.maxTouchPoints)
     ) return null;
@@ -88,11 +116,12 @@ export function useAppInstallPrompt() {
       return "ios-install";
     }
     return null;
-  }, [browserName, deferredPrompt, dismissed, hydrated, iosBrowserGuide, isAndroid]);
+  }, [browserName, deferredPrompt, dismissed, hydrated, iosBrowserGuide, isAndroid, reason]);
 
   const dismiss = useCallback(() => {
     setDismissed(true);
     setReason("default");
+    rememberDismissedPrompt();
   }, []);
 
   const promptInstall = useCallback(async () => {

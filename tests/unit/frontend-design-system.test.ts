@@ -105,6 +105,15 @@ describe("React frontend design system", () => {
     expect(read("src/components/liquid-nav.tsx")).not.toContain("transitionTypes");
   });
 
+  it("actively offers PWA installation and reconnects the notification install flow", () => {
+    const installPrompt = read("src/hooks/use-app-install-prompt.ts");
+    const pushNotifications = read("src/hooks/use-push-notifications.ts");
+    expect(installPrompt).toContain("setDismissed(hasDismissedPrompt())");
+    expect(installPrompt).toContain('(dismissed && reason === "default")');
+    expect(installPrompt).toContain("rememberDismissedPrompt()");
+    expect(pushNotifications).toContain('requestAppInstallPrompt("notifications")');
+  });
+
   it("centers status labels through cold reveal and extends the stage into iOS chrome", () => {
     const statusBadge = read("src/components/ui/status-badge.tsx");
     const issueDetail = read("src/components/issues/issue-detail-content.tsx");

@@ -2,7 +2,10 @@
 
 import * as React from "react";
 import { firebaseVapidKey } from "@/lib/firebase";
-import { shouldInstallPwaBeforePush } from "@/lib/pwa-install";
+import {
+  requestAppInstallPrompt,
+  shouldInstallPwaBeforePush,
+} from "@/lib/pwa-install";
 import {
   getPushNotificationPreference,
   unregisterPushToken,
@@ -118,6 +121,7 @@ export function usePushNotifications() {
       )
     ) {
       setError("app.install.enableNotificationsAfterInstall");
+      requestAppInstallPrompt("notifications");
       return false;
     }
     setLoading(true);
