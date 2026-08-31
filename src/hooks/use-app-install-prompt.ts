@@ -7,6 +7,7 @@ import {
   type InAppBrowserName,
 } from "@/lib/in-app-browser";
 import {
+  APP_INSTALL_PROMPT_DISMISSED_KEY,
   REQUEST_APP_INSTALL_PROMPT_EVENT,
   detectIosBrowserGuide,
   isAndroidDevice,
@@ -37,14 +38,12 @@ interface AppInstallPromptRequestDetail {
   reason?: AppInstallPromptReason;
 }
 
-const DISMISSED_KEY = "novae:app-install-prompt-dismissed";
-
 function hasDismissedPrompt() {
-  return readSessionStorage(DISMISSED_KEY) === "1";
+  return readSessionStorage(APP_INSTALL_PROMPT_DISMISSED_KEY) === "1";
 }
 
 function rememberDismissedPrompt() {
-  writeSessionStorage(DISMISSED_KEY, "1");
+  writeSessionStorage(APP_INSTALL_PROMPT_DISMISSED_KEY, "1");
 }
 
 export function useAppInstallPrompt() {

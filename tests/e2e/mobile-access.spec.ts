@@ -1,14 +1,15 @@
 import { expect, test, type Page } from '@playwright/test';
+import { APP_INSTALL_PROMPT_DISMISSED_KEY } from '../../src/lib/pwa-install';
 import { authStatePath } from './support/paths';
 import { readContentState } from './support/content-state';
 import { expectMoreActions } from './pages/content-pages';
 
 async function suppressInstallPrompt(page: Page) {
-  await page.addInitScript(() => {
+  await page.addInitScript((dismissedKey) => {
     if (window.top === window) {
-      sessionStorage.setItem('novae-app-install-prompt-dismissed', '1');
+      sessionStorage.setItem(dismissedKey, '1');
     }
-  });
+  }, APP_INSTALL_PROMPT_DISMISSED_KEY);
 }
 
 async function expectMobileInteractionBaseline(page: Page) {
