@@ -23,11 +23,13 @@ export function IssueDetailContent({
   issue,
   profile,
   reveal,
+  showAuthor,
   status,
 }: {
   issue: IssueRecord;
   profile: UserPublicProfile | null;
   reveal: boolean;
+  showAuthor: boolean;
   status: IssueRecord["status"];
 }) {
   useLocaleSubscription();
@@ -63,7 +65,7 @@ export function IssueDetailContent({
         </SkeletonReveal>
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[0.8125rem] text-muted-foreground">
           <SkeletonReveal enabled={reveal} skeleton={<Skeleton className="h-4 w-32" />}><span>{formatDate(issue.created_at)}</span></SkeletonReveal>
-          {issue.canViewAuthor ? (
+          {issue.canViewAuthor && showAuthor ? (
             <ContentAuthor profile={profile ?? undefined} />
           ) : null}
         </div>

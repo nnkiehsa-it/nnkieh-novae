@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useI18n } from "@/i18n";
 import { useIssueDetail } from "@/hooks/use-issue-detail";
 import { Discussion } from "@/components/discussion";
@@ -15,6 +16,9 @@ import { DetailRouteSkeleton } from "@/components/ui/route-skeleton";
 export default function IssueDetailPage() {
   const { t } = useI18n();
   const detail = useIssueDetail();
+  const [authorHiddenForIssueId, setAuthorHiddenForIssueId] = useState<
+    string | null
+  >(null);
   if (detail.loading)
     return <DetailRouteSkeleton />;
   if (detail.error || !detail.issue || !detail.status) {
@@ -25,12 +29,17 @@ export default function IssueDetailPage() {
       />
     );
   }
+  const authorVisible = authorHiddenForIssueId !== detail.issue.id;
   return (
     <div className={detail.commentsEnabled ? "detail-with-discussion-composer space-y-5" : "space-y-5"}>
       <IssueDetailToolbar
         canManage={detail.canManageIssue}
+        authorVisible={authorVisible}
         deleteFeedbackState={detail.deleteFeedbackState}
         issue={detail.issue}
+        onAuthorVisibilityChange={(visible) =>
+          setAuthorHiddenForIssueId(visible ? null : detail.issue?.id ?? null)
+        }
         onBack={detail.back}
         onDelete={() => void detail.remove()}
         onManage={() => detail.setModerationOpen(true)}
@@ -41,6 +50,7 @@ export default function IssueDetailPage() {
             issue={detail.issue}
             profile={detail.profile}
             reveal={detail.revealDetail}
+            showAuthor={authorVisible}
             status={detail.status}
           />
           {detail.commentsAvailable ? (

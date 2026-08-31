@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { ResizableCard } from "@/components/ui/resizable-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
+import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
@@ -42,16 +43,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function IssueDetailToolbar({
+  authorVisible,
   canManage,
   issue,
   deleteFeedbackState,
+  onAuthorVisibilityChange,
   onBack,
   onDelete,
   onManage,
 }: {
+  authorVisible: boolean;
   canManage: boolean;
   issue: IssueRecord;
   deleteFeedbackState: "idle" | "loading" | "success";
+  onAuthorVisibilityChange: (visible: boolean) => void;
   onBack: () => void;
   onDelete: () => void;
   onManage: () => void;
@@ -61,52 +66,64 @@ export function IssueDetailToolbar({
     <DetailToolbar
       actions={
         issue.isOwnIssue || canManage ? (
-          <DropdownMenu>
-            <Tooltip>
-              <DropdownMenuTrigger asChild>
-                <TooltipTrigger asChild>
-                  <Button
-                    aria-label={translate('ui.common.moreActions')}
-                    className="size-11 md:size-9"
-                    size="icon"
-                    variant="ghost"
-                  >
-                    <MoreHorizontal />
-                  </Button>
-                </TooltipTrigger>
-              </DropdownMenuTrigger>
-              <TooltipContent>{translate('ui.common.moreActions')}</TooltipContent>
-            </Tooltip>
-            <DropdownMenuContent align="end">
-              {canManage ? (
-                <DropdownMenuItem onSelect={onManage}>
-                  <ShieldCheck />{translate('ui.issue.manageStatus')}</DropdownMenuItem>
-              ) : null}
-              {canManage ? <DropdownMenuSeparator /> : null}
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <DropdownMenuItem
-                    className="text-destructive"
-                    onSelect={(event) => event.preventDefault()}
-                  >
-                    <Trash2 />{translate('ui.issue.delete')}</DropdownMenuItem>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>{translate('ui.issue.deleteTitle')}</AlertDialogTitle>
-                    <AlertDialogDescription>{translate('ui.issue.deleteDescription')}</AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>{translate('ui.common.cancel')}</AlertDialogCancel>
-                    <PendingAlertDialogAction
-                      onConfirm={onDelete}
-                      state={deleteFeedbackState}
-                    >{translate('ui.common.confirmDelete')}</PendingAlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <>
+            {canManage && issue.canViewAuthor ? (
+              <label className="flex h-11 shrink-0 cursor-pointer items-center gap-2 px-2 text-xs font-medium text-muted-foreground md:h-9">
+                <span>{translate('ui.issue.showAuthor')}</span>
+                <Switch
+                  checked={authorVisible}
+                  onCheckedChange={onAuthorVisibilityChange}
+                  size="sm"
+                />
+              </label>
+            ) : null}
+            <DropdownMenu>
+              <Tooltip>
+                <DropdownMenuTrigger asChild>
+                  <TooltipTrigger asChild>
+                    <Button
+                      aria-label={translate('ui.common.moreActions')}
+                      className="size-11 md:size-9"
+                      size="icon"
+                      variant="ghost"
+                    >
+                      <MoreHorizontal />
+                    </Button>
+                  </TooltipTrigger>
+                </DropdownMenuTrigger>
+                <TooltipContent>{translate('ui.common.moreActions')}</TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent align="end">
+                {canManage ? (
+                  <DropdownMenuItem onSelect={onManage}>
+                    <ShieldCheck />{translate('ui.issue.manageStatus')}</DropdownMenuItem>
+                ) : null}
+                {canManage ? <DropdownMenuSeparator /> : null}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onSelect={(event) => event.preventDefault()}
+                    >
+                      <Trash2 />{translate('ui.issue.delete')}</DropdownMenuItem>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{translate('ui.issue.deleteTitle')}</AlertDialogTitle>
+                      <AlertDialogDescription>{translate('ui.issue.deleteDescription')}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{translate('ui.common.cancel')}</AlertDialogCancel>
+                      <PendingAlertDialogAction
+                        onConfirm={onDelete}
+                        state={deleteFeedbackState}
+                      >{translate('ui.common.confirmDelete')}</PendingAlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
         ) : null
       }
       backLabel={translate('ui.issue.back')}

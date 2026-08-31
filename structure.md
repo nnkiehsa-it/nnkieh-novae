@@ -37,7 +37,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/components/app-providers.tsx` — root client providers plus global input-modality ownership; keyboard activity enables focus-visible presentation, while pointer movement/down immediately returns controls to pointer presentation.
 - `src/components/app-shell.tsx` / `liquid-nav.tsx` — desktop, compact desktop, and mobile navigation. Primary navigation updates immediately within a stable application shell; selected navigation and tab surfaces use measurement-free shared-layout motion without moving the route container that owns fixed content.
 - `src/lib/navigation-memory.ts` — remembers the immediately preceding in-app pathname solely to choose safe detail, dashboard, and administration return targets; route rendering and browser history remain native App Router responsibilities.
-- `src/components/issues/` — issue cards, detail content/actions, and moderation presentation.
+- `src/components/issues/` — issue cards, detail content/actions, moderation presentation, and the administrator-only local author-visibility control used when presenting a proposal.
 - `src/components/facilities/` — facility cards, shared detail content with status-aware conclusion presentation, and status-dialog presentation.
 - `src/components/announcements/` — announcement cards.
 - `src/components/settings/` — account, appearance/install, push preferences, and resource cards.

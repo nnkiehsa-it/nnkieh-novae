@@ -12,6 +12,7 @@ const messages = {
   'issue.support.daysRemaining': '剩 {count} 天',
   'issue.support.progress': '附議進度 {count} / {goal}',
   'issue.proposalAuthor': '提案作者',
+  'issue.showAuthor': '顯示作者',
   'issue.search.searchFailedPleaseTryAgainLater': '搜尋失敗，請稍後再試。',
   'issue.addToCategory': '新增到{category}',
   'issue.chooseProposalCategory': '選擇提案分類',

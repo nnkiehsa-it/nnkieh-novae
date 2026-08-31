@@ -12,6 +12,7 @@ const messages = {
   'issue.support.daysRemaining': '{count} days left',
   'issue.support.progress': 'Support progress {count} / {goal}',
   'issue.proposalAuthor': 'Proposal author',
+  'issue.showAuthor': 'Show author',
   'issue.search.searchFailedPleaseTryAgainLater': 'Search failed. Please try again later.',
   'issue.addToCategory': 'Add to {category}',
   'issue.chooseProposalCategory': 'Choose proposal category',
