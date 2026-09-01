@@ -97,3 +97,13 @@ export function confirmCurrentPushToken(
   pendingConfirmations.set(uid, confirmation);
   return confirmation;
 }
+
+export async function enableCurrentDevicePushNotifications(uid: string) {
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") {
+    return { permission, registration: null };
+  }
+  const registration = await confirmCurrentPushToken(uid, true);
+  if (!registration) throw new Error("notification.pushTokenUnavailable");
+  return { permission, registration };
+}

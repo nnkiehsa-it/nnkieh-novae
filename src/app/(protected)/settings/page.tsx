@@ -93,54 +93,68 @@ export default function SettingsPage() {
 
   return (
     <div className="w-full space-y-5">
-      <PageHeader
-        title={translate('ui.nav.settings')}
-      />
-      <SettingsAccountCard
-        customPhotoUrl={session.customPhotoUrl}
-        onCopyUid={() =>
-          void navigator.clipboard
-            .writeText(user.uid)
-            .then(() => toast.success(translate('ui.settings.uidCopied')))
-        }
-        onSwitchAccount={() => void session.login({ selectAccount: true })}
-        user={user}
-      />
-      <AppearanceInstallCards
-        canInstall={pwa.canInstall}
-        installed={pwa.installed}
-        locale={locale}
-        onInstall={() =>
-          void pwa.install().then((ok) => ok && toast.success(translate('ui.settings.installStarted')))
-        }
-        onLocaleChange={setLocale}
-        onThemeChange={setTheme}
-        resolvedTheme={resolvedTheme}
-        theme={theme}
-      />
-      <NotificationCard
-        enabled={push.enabled}
-        feedbackState={notificationFeedback.state}
-        feedbackTarget={notificationFeedbackTarget}
-        loading={push.loading}
-        onEnabledChange={(enabled) => void togglePush(enabled)}
-        onPreferenceChange={(key, enabled) => void setPreference(key, enabled)}
-        options={notificationOptions}
-        permission={push.permission}
-        preferences={push.preferences}
-        supported={push.supported}
-      />
-      <ManagementLinks
-        canManage={session.can("role.manage")}
-        canViewDashboard={session.can("dashboard.view")}
-      />
-      <ResourceLinks />
-      <Button
-        className="w-full"
-        onClick={() => void session.logout()}
-        variant="outline"
-      >
-        <LogOut />{translate('ui.nav.signOut')}</Button>
+      <PageHeader title={translate("ui.nav.settings")} />
+      <div className="t-settings-section">
+        <SettingsAccountCard
+          customPhotoUrl={session.customPhotoUrl}
+          onCopyUid={() =>
+            void navigator.clipboard
+              .writeText(user.uid)
+              .then(() => toast.success(translate("ui.settings.uidCopied")))
+          }
+          onSwitchAccount={() => void session.login({ selectAccount: true })}
+          user={user}
+        />
+      </div>
+      <div className="t-settings-section">
+        <AppearanceInstallCards
+          canInstall={pwa.canInstall}
+          installed={pwa.installed}
+          locale={locale}
+          onInstall={() =>
+            void pwa.install().then(
+              (ok) => ok && toast.success(translate("ui.settings.installStarted")),
+            )
+          }
+          onLocaleChange={setLocale}
+          onThemeChange={setTheme}
+          resolvedTheme={resolvedTheme}
+          theme={theme}
+        />
+      </div>
+      <div className="t-settings-section">
+        <NotificationCard
+          enabled={push.enabled}
+          feedbackState={notificationFeedback.state}
+          feedbackTarget={notificationFeedbackTarget}
+          loading={push.loading}
+          onEnabledChange={(enabled) => void togglePush(enabled)}
+          onPreferenceChange={(key, enabled) => void setPreference(key, enabled)}
+          options={notificationOptions}
+          permission={push.permission}
+          preferences={push.preferences}
+          supported={push.supported}
+        />
+      </div>
+      <div className="t-settings-section">
+        <ManagementLinks
+          canManage={session.can("role.manage")}
+          canViewDashboard={session.can("dashboard.view")}
+        />
+      </div>
+      <div className="t-settings-section">
+        <ResourceLinks />
+      </div>
+      <div className="t-settings-section">
+        <Button
+          className="w-full"
+          onClick={() => void session.logout()}
+          variant="outline"
+        >
+          <LogOut />
+          {translate("ui.nav.signOut")}
+        </Button>
+      </div>
     </div>
   );
 }

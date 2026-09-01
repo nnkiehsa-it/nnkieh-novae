@@ -48,6 +48,10 @@ const messages = {
   'notification.unread': '未讀',
   'notification.turnOffPushNotifications': '關閉推播通知',
   'notification.pushDeviceUnsupported': '此裝置暫不支援推播通知',
+  'notification.promptTitle': '要開啟通知嗎？',
+  'notification.promptDescription': '提案有新留言、狀態更新或重要公告時，會即時通知這台裝置；之後可在設定中調整通知類型。',
+  'notification.promptLater': '暫時不要',
+  'notification.promptEnable': '開啟通知',
 } as const;
 
 export default messages;

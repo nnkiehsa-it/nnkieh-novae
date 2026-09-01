@@ -45,6 +45,8 @@ export default function Loading() {
         <StableSettingsCard icon={Download} title={t("ui.settings.install")} />
       </div>
       <StableSettingsCard icon={Bell} title={t("ui.settings.push")} />
+      <StableSettingsCard icon={Bell} title={t("ui.settings.resources")} />
+      <Skeleton className="h-9 w-full rounded-xl" />
     </div>
   );
 }

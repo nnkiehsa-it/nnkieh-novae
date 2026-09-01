@@ -16,6 +16,7 @@ import {
 } from "@/services/notifications";
 import {
   confirmCurrentPushToken,
+  enableCurrentDevicePushNotifications,
   forgetPushTokenConfirmation,
   getCurrentPushToken,
   getPushDeviceId,
@@ -127,14 +128,12 @@ export function usePushNotifications() {
     setLoading(true);
     setError("");
     try {
-      const nextPermission = await Notification.requestPermission();
-      setPermission(nextPermission);
-      if (nextPermission !== "granted") return false;
-      const confirmed = await confirmCurrentPushToken(session.user.uid, true);
-      if (!confirmed) throw new Error("notification.pushTokenUnavailable");
-      tokenRef.current = confirmed.token;
-      setEnabled(confirmed.preference.deviceEnabled);
-      setPreferences(confirmed.preference.personalPreferences);
+      const result = await enableCurrentDevicePushNotifications(session.user.uid);
+      setPermission(result.permission);
+      if (!result.registration) return false;
+      tokenRef.current = result.registration.token;
+      setEnabled(result.registration.preference.deviceEnabled);
+      setPreferences(result.registration.preference.personalPreferences);
       return true;
     } catch (caught) {
       setError(

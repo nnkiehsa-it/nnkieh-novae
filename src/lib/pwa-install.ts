@@ -37,6 +37,22 @@ export function shouldInstallPwaBeforePush(userAgent: string, platform: string, 
   return isMobilePwaRequiredPlatform(userAgent, platform, maxTouchPoints) && !isStandaloneMode();
 }
 
+export function shouldOfferPushNotificationPrompt({
+  isMobilePlatform,
+  isStandalone,
+  permission,
+  supported,
+}: {
+  isMobilePlatform: boolean;
+  isStandalone: boolean;
+  permission: NotificationPermission;
+  supported: boolean;
+}) {
+  return supported
+    && permission === 'default'
+    && (isStandalone || !isMobilePlatform);
+}
+
 export function requestAppInstallPrompt(reason: AppInstallPromptReason = 'default') {
   window.dispatchEvent(new CustomEvent(REQUEST_APP_INSTALL_PROMPT_EVENT, { detail: { reason } }));
 }

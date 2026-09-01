@@ -187,14 +187,19 @@
 }
 
 :root[data-accent-theme="custom"] {
-  --tint-surface: color-mix(in srgb, var(--accent) 13%, transparent);
-  --tint-surface-hover: color-mix(in srgb, var(--accent) 18%, transparent);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-foreground);
+  --primary-hover: color-mix(in srgb, var(--accent) 88%, var(--foreground));
+  --interaction: color-mix(in srgb, var(--accent) 12%, var(--card));
+  --interaction-foreground: var(--foreground);
+  --tint-surface: color-mix(in srgb, var(--accent) 13%, var(--card));
+  --tint-surface-hover: color-mix(in srgb, var(--accent) 18%, var(--card));
   --tint-surface-foreground: var(--tint-content);
   --nav-active-bg: var(--tint-surface);
   --nav-active-fg: var(--tint-surface-foreground);
   --choice-indicator: var(--tint-content);
-  --selection-bg: var(--tint-surface);
-  --selection-fg: var(--tint-surface-foreground);
+  --selection-bg: var(--accent);
+  --selection-fg: var(--accent-foreground);
   --notification-accent: var(--tint-content);
 }
 
@@ -296,7 +301,8 @@ html[data-input-modality="pointer"] :focus-visible {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--foreground) 14%, transparent);
+  background: var(--selection-bg);
+  color: var(--selection-fg);
 }
 
 .app-viewport {

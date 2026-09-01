@@ -48,6 +48,10 @@ const messages = {
   'notification.unread': 'Unread',
   'notification.turnOffPushNotifications': 'Turn off push notifications',
   'notification.pushDeviceUnsupported': 'This device does not currently support push notifications',
+  'notification.promptTitle': 'Turn on notifications?',
+  'notification.promptDescription': 'Get proposal comments, status updates, and important announcements on this device. You can choose notification types later in Settings.',
+  'notification.promptLater': 'Not now',
+  'notification.promptEnable': 'Turn on notifications',
 } as const;
 
 export default messages;

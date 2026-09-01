@@ -26,6 +26,7 @@ import { rememberCurrentRoute } from "@/lib/navigation-memory";
 import { useSession } from "@/hooks/use-session";
 import { getDefaultIssueRouteFilter } from "@/constants/categories";
 import { LiquidNav, type LiquidNavItem } from "@/components/liquid-nav";
+import { AppNotificationPrompt } from "@/components/app-notification-prompt";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { BrandLockup } from "@/components/ui/brand";
@@ -203,6 +204,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       : pathname;
   return (
     <div className="app-shell bg-[var(--surface-stage)] md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
+      <AppNotificationPrompt />
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-background/92 p-3 backdrop-blur-xl md:flex">
         <div className="px-2 pb-5 pt-2">
           <BrandLockup href={issueHref} />
