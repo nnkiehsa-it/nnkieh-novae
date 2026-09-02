@@ -43,6 +43,7 @@ const node = process.execPath;
 const bun = process.platform === "win32" ? "bun.exe" : "bun";
 const steps = {
   checks: [
+    ["generated artifacts", node, ["scripts/verify-generated.mjs"]],
     ["TypeScript", executable("tsc"), ["--noEmit"]],
     [
       "unused declarations",
@@ -74,9 +75,9 @@ const steps = {
 };
 
 steps.fast = [
-  ...steps.checks.slice(0, 5),
-  steps.checks[7],
+  ...steps.checks.slice(0, 6),
   steps.checks[8],
+  steps.checks[9],
   ...steps.tests,
 ];
 
@@ -141,7 +142,9 @@ function warningLines(output) {
   const lines = output.split(/\r?\n/u);
   const warningPattern =
     /\b(?:warning|warn|error|deprecated|ignored build scripts)\b/iu;
-  return [...new Set(lines.filter((line) => warningPattern.test(line)))].slice(
+  return [...new Set(lines.filter(
+    (line) => warningPattern.test(line) && !/^Generated\b/u.test(line),
+  ))].slice(
     0,
     40,
   );

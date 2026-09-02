@@ -34,6 +34,7 @@
     "check:build-budget": "node scripts/check-build-budget.mjs",
     "verify:local": "node scripts/run-local-verification.mjs",
     "verify:fast": "node scripts/run-local-verification.mjs --fast",
+    "verify:generated": "node scripts/verify-generated.mjs",
     "verify:data-consistency": "node scripts/verify-data-consistency.mjs",
     "verify:database-contracts": "node scripts/generate-database-contracts.mjs --check",
     "verify:integration": "node scripts/verify-integration.mjs",

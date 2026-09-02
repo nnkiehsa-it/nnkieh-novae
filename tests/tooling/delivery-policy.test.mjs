@@ -34,8 +34,15 @@ test("Bun is the sole package-management entry point", async () => {
 
 test("package scripts expose required verification and deployment commands", async () => {
   const scripts = JSON.parse(await read("package.json")).scripts;
-  for (const name of ["build", "check:ui", "check:worker", "verify:local", "verify:integration", "verify:all", "test:e2e"])
+  for (const name of ["build", "check:ui", "check:worker", "verify:generated", "verify:local", "verify:integration", "verify:all", "test:e2e"])
     assert.equal(typeof scripts[name], "string", `missing package script ${name}`);
+});
+
+test("local and CI verification share the generated-artifact drift gate", async () => {
+  const localVerification = await read("scripts/run-local-verification.mjs");
+  const workflow = await read(".github/workflows/verify-pr.yml");
+  assert.match(localVerification, /scripts\/verify-generated\.mjs/u);
+  assert.match(workflow, /bun run verify:generated/u);
 });
 
 test("delivery entry points remain in their platform directories", async () => {
