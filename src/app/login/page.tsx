@@ -10,6 +10,7 @@ import { BrandLockup } from "@/components/ui/brand";
 import { BusyLabel } from "@/components/ui/page-state";
 import { TurnstileInlineHost } from "@/components/turnstile-provider";
 import { AppStartupScreen } from "@/components/protected-app";
+import { RouteSurface } from "@/components/motion/route-surface";
 
 function GoogleMark() {
   return (
@@ -85,7 +86,8 @@ export default function LoginPage() {
   if (restoringSession) return <AppStartupScreen />;
 
   return (
-    <main className="relative grid min-h-[100svh] overflow-hidden bg-[var(--surface-stage)] lg:grid-cols-[1.08fr_.92fr]">
+    <RouteSurface>
+      <main className="relative grid min-h-[100svh] overflow-hidden bg-[var(--surface-stage)] lg:grid-cols-[1.08fr_.92fr]">
       <section className="relative hidden min-h-[100svh] overflow-hidden border-r bg-background p-12 lg:grid lg:place-items-center">
         <BrandLockup className="t-panel-reveal absolute top-12 left-12" />
         <div className="t-stagger-list w-full max-w-xl">
@@ -149,6 +151,7 @@ export default function LoginPage() {
           <p className="mt-5 text-center text-xs leading-5 text-muted-foreground">{t('ui.login.terms')}</p>
         </div>
       </section>
-    </main>
+      </main>
+    </RouteSurface>
   );
 }

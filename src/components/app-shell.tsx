@@ -27,6 +27,7 @@ import { useSession } from "@/hooks/use-session";
 import { getDefaultIssueRouteFilter } from "@/constants/categories";
 import { LiquidNav, type LiquidNavItem } from "@/components/liquid-nav";
 import { AppNotificationPrompt } from "@/components/app-notification-prompt";
+import { RouteSurface } from "@/components/motion/route-surface";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { BrandLockup } from "@/components/ui/brand";
@@ -65,6 +66,24 @@ function AccountMenu({ compact = false }: { compact?: boolean }) {
   const { resolvedTheme, setTheme } = useTheme();
   const photo = session.customPhotoUrl || session.user?.photoURL || undefined;
   const name = session.user?.displayName || session.user?.email || "Novae";
+  const changeTheme = React.useCallback(() => {
+    const update = () => setTheme(resolvedTheme === "dark" ? "light" : "dark");
+    if (
+      !("startViewTransition" in document) ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      update();
+      return;
+    }
+    document.documentElement.dataset.themeTransition = "true";
+    const transition = document.startViewTransition(async () => {
+      update();
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    });
+    void transition.finished.finally(() => {
+      delete document.documentElement.dataset.themeTransition;
+    });
+  }, [resolvedTheme, setTheme]);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -91,7 +110,7 @@ function AccountMenu({ compact = false }: { compact?: boolean }) {
                   {session.user?.email}
                 </span>
               </span>
-              <ChevronDown className="size-3.5 text-muted-foreground" />
+              <ChevronDown className="t-disclosure-icon size-3.5 text-muted-foreground" />
             </>
           )}
         </Button>
@@ -120,9 +139,7 @@ function AccountMenu({ compact = false }: { compact?: boolean }) {
               <ShieldCheck />{translate('ui.nav.management')}</Link>
           </DropdownMenuItem>
         ) : null}
-        <DropdownMenuItem
-          onSelect={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-        >
+        <DropdownMenuItem onSelect={changeTheme}>
           <span className="t-icon-swap">
             <Sun data-visible={resolvedTheme === "dark"} />
             <Moon data-visible={resolvedTheme !== "dark"} />
@@ -229,7 +246,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               : "pb-[max(2rem,var(--safe-bottom))]"
           }`}
         >
-          <div className="route-page">{children}</div>
+          <RouteSurface>{children}</RouteSurface>
         </main>
 
         <div

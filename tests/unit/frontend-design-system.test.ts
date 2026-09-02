@@ -79,10 +79,11 @@ describe("React frontend design system", () => {
     expect(settingsUi).not.toContain("imageSourceMegabytes");
   });
 
-  it("keeps route containers static while skeleton fields cross-fade cheaply", () => {
+  it("cross-fades skeleton fields and gives route changes persistent motion feedback", () => {
     const motion = read("src/styles/motion.css");
     const skeletonReveal = read("src/components/ui/skeleton-reveal.tsx");
-    const initialStagger = motion.match(/@keyframes t-stagger-item\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
+    const routeSurface = read("src/components/motion/route-surface.tsx");
+    const navigationFeedback = read("src/components/motion/navigation-feedback.tsx");
     expect(motion).toContain(".t-skel.is-revealed .t-skel-content");
     expect(motion).not.toContain("--reveal-blur");
     expect(motion).toMatch(/\.t-skel-content \{[\s\S]*transition: opacity var\(--reveal-dur\)/u);
@@ -90,18 +91,18 @@ describe("React frontend design system", () => {
     expect(skeletonReveal).toContain('className={cn("t-skel is-revealed"');
     expect(motion).toContain("@starting-style");
     expect(skeletonReveal).toContain('data-block={as === "div"');
-    expect(initialStagger).not.toContain("translate");
-    expect(initialStagger).not.toContain("filter");
     expect(motion).not.toContain("t-data-content-enter");
     expect(motion).not.toContain("t-stagger-copy");
     expect(motion).not.toContain("t-reveal-content");
     expect(motion).toContain("--skeleton-appear-delay: 0ms");
     expect(motion).toContain("--reveal-dur: 240ms");
     expect(motion).not.toContain("t-route-blur");
-    expect(motion).not.toContain("t-route-enter");
-    expect(read("src/components/app-shell.tsx")).toContain('<div className="route-page">{children}</div>');
-    expect(read("src/components/app-shell.tsx")).not.toContain("RouteTransition");
-    expect(read("src/components/app-shell.tsx")).not.toContain("ViewTransition");
+    expect(motion).toContain("t-route-in");
+    expect(read("src/components/app-shell.tsx")).toContain("<RouteSurface>{children}</RouteSurface>");
+    expect(routeSurface).toContain("<ViewTransition");
+    expect(routeSurface).toContain('share="novae-route-swap"');
+    expect(navigationFeedback).toContain("t-navigation-echo");
+    expect(navigationFeedback).toContain("t-navigation-progress");
     expect(read("src/components/liquid-nav.tsx")).not.toContain("transitionTypes");
   });
 

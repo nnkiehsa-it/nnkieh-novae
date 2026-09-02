@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Heart, MoreHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
@@ -13,6 +13,8 @@ import { ContentRenderer } from "@/components/content-renderer";
 import { Discussion } from "@/components/discussion";
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { LikeActionButton } from "@/components/motion/like-action-button";
+import { ContentMorph } from "@/components/motion/content-morph";
+import { StateTransition } from "@/components/motion/state-transition";
 import { DetailToolbar } from "@/components/detail-toolbar";
 import {
   AlertDialog,
@@ -43,20 +45,22 @@ import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 
 export default function AnnouncementDetailPage() {
   const router = useRouter();
+  const { announcementId } = useParams<{ announcementId: string }>();
   const { t } = useI18n();
   const detail = useAnnouncementDetail();
   if (detail.loading)
-    return <DetailRouteSkeleton kind="announcement" />;
+    return <StateTransition identity="loading"><ContentMorph id={announcementId} kind="announcement"><DetailRouteSkeleton kind="announcement" /></ContentMorph></StateTransition>;
   if (detail.error || !detail.announcement) {
     return (
-      <ErrorState
+      <StateTransition identity="error"><ErrorState
         error={detail.error || t("ui.announcement.notFound")}
         onRetry={() => void detail.load(true)}
-      />
+      /></StateTransition>
     );
   }
   const { announcement, profile } = detail;
   return (
+    <StateTransition identity="content">
     <div className={detail.commentsEnabled ? "detail-with-discussion-composer space-y-5" : "space-y-5"}>
       <DetailToolbar
         actions={
@@ -120,6 +124,7 @@ export default function AnnouncementDetailPage() {
       />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start">
         <article className="space-y-4">
+          <ContentMorph id={announcement.id} kind="announcement">
           <ResizableCard className="gap-0 overflow-hidden py-0">
             <div
               className={cn(
@@ -156,6 +161,7 @@ export default function AnnouncementDetailPage() {
               </CardContent>
             ) : null}
           </ResizableCard>
+          </ContentMorph>
           <Discussion
             comments={detail.comments}
             sort={detail.commentSort}
@@ -196,5 +202,6 @@ export default function AnnouncementDetailPage() {
         </aside>
       </div>
     </div>
+    </StateTransition>
   );
 }

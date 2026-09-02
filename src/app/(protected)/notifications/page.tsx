@@ -14,6 +14,7 @@ import { useNotificationsPage } from "@/hooks/use-notifications-page";
 import { formatDate } from "@/lib/format";
 import type { NotificationRecord } from "@/types";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
+import { StateTransition, stateTransitionIdentity } from "@/components/motion/state-transition";
 import { Button } from "@/components/ui/button";
 import {
   EmptyState,
@@ -70,6 +71,13 @@ export default function NotificationsPage() {
       <PageHeader
         title={t("ui.nav.notifications")}
       />
+      <StateTransition
+        identity={stateTransitionIdentity({
+          empty: state.notifications.length === 0,
+          error: Boolean(state.error && state.notifications.length === 0),
+          loading: state.loading,
+        })}
+      >
       {state.error && state.notifications.length === 0 ? (
         <ErrorState error={state.error} onRetry={() => void state.load()} />
       ) : state.loading ? (
@@ -121,6 +129,7 @@ export default function NotificationsPage() {
           ))}
         </StaggerList>
       )}
+      </StateTransition>
       {state.hasMore ? (
         <div className="flex justify-center">
           <Button

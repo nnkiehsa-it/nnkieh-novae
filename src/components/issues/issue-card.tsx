@@ -16,6 +16,7 @@ import {
 } from "@/lib/issue-status";
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { LikeActionButton } from "@/components/motion/like-action-button";
+import { ContentMorph } from "@/components/motion/content-morph";
 import { ContentAuthor } from "@/components/content-author";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -43,6 +44,7 @@ export function IssueCard({
   const goal = issue.support_goal;
   const progress = getSupportProgressPercent(issue.support_count, goal);
   return (
+    <ContentMorph id={issue.id} kind="issue">
     <Card className="t-card group relative h-full gap-4 p-5 sm:p-6">
       <div className="flex h-full flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
@@ -125,5 +127,6 @@ export function IssueCard({
         href={`/issues/${encodeURIComponent(filter)}/${issue.id}`}
       />
     </Card>
+    </ContentMorph>
   );
 }

@@ -4,6 +4,7 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 import * as React from "react";
 import { ChevronDown, MessageCircle, X } from "lucide-react";
 import { toast } from "sonner";
+import { AnimatePresence, motion } from "motion/react";
 import type { CommentSortOption, DiscussionCommentRecord } from "@/types";
 import { useDiscussionProfiles } from "@/hooks/use-public-profiles";
 import { useSession } from "@/hooks/use-session";
@@ -165,8 +166,15 @@ export function Discussion({
       {enabled ? (
         <div className="discussion-composer-dock" ref={composerDockRef}>
           <div className="mx-auto w-full max-w-2xl rounded-[2rem] border bg-background p-2 shadow-[var(--shadow-floating)]">
+            <AnimatePresence initial={false}>
             {replyTarget ? (
-              <div className="mb-1 flex items-start gap-3 border-b px-2 pb-2 pt-1">
+              <motion.div
+                className="mb-1 flex items-start gap-3 overflow-hidden border-b px-2 pb-2 pt-1"
+                initial={{ height: 0, opacity: 0, y: 8 }}
+                animate={{ height: "auto", opacity: 1, y: 0 }}
+                exit={{ height: 0, opacity: 0, y: 8 }}
+                transition={{ type: "spring", stiffness: 380, damping: 36, mass: 0.72 }}
+              >
                 <div className="min-w-0 flex-1 text-xs leading-5">
                   {profiles[replyTarget.authorUid] ? (
                     <p className="font-medium text-foreground">
@@ -189,8 +197,9 @@ export function Discussion({
                 >
                   <X />
                 </Button>
-              </div>
+              </motion.div>
             ) : null}
+            </AnimatePresence>
             <CommentComposer
               busy={feedback.busy}
               content={replyTarget ? replyDraft : commentDraft}

@@ -19,13 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  ErrorState,
-  PageHeader,
-} from "@/components/ui/page-state";
+import { ErrorState, PageHeader } from "@/components/ui/page-state";
 import { FeedCardsSkeleton, FeedEmptyState } from "@/components/ui/route-skeleton";
 import { IssueCard } from "@/components/issues/issue-card";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
+import { StateTransition, stateTransitionIdentity } from "@/components/motion/state-transition";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function IssueBoardPage() {
@@ -157,6 +155,13 @@ export default function IssueBoardPage() {
           </Select>
         </div>
       </Card>
+      <StateTransition
+        identity={stateTransitionIdentity({
+          empty: feed.issues.length === 0,
+          error: Boolean(error && feed.issues.length === 0),
+          loading: loading && feed.issues.length === 0,
+        })}
+      >
       {error && feed.issues.length === 0 ? (
         <ErrorState error={error} onRetry={() => void load()} />
       ) : loading && feed.issues.length === 0 ? (
@@ -179,10 +184,7 @@ export default function IssueBoardPage() {
           title={translate('ui.issue.emptyTitle')}
         />
       ) : (
-        <StaggerList
-          className="grid gap-3 lg:grid-cols-2 lg:items-stretch"
-          key={`${filter}:${bucket}:${sort}:${committedQuery}`}
-        >
+        <StaggerList className="grid gap-3 lg:grid-cols-2 lg:items-stretch">
           {feed.issues.map((issue) => (
             <StaggerItem className="h-full" key={issue.id}>
               <IssueCard
@@ -198,6 +200,7 @@ export default function IssueBoardPage() {
           ))}
         </StaggerList>
       )}
+      </StateTransition>
       {feed.hasMore ? (
         <div className="flex justify-center pt-2">
           <Button

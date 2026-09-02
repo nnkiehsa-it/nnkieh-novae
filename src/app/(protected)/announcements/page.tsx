@@ -13,6 +13,7 @@ import {
 import { FeedCardsSkeleton, FeedEmptyState } from "@/components/ui/route-skeleton";
 import { AnnouncementCard } from "@/components/announcements/announcement-card";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
+import { StateTransition, stateTransitionIdentity } from "@/components/motion/state-transition";
 
 export default function AnnouncementsPage() {
   useLocaleSubscription();
@@ -33,6 +34,13 @@ export default function AnnouncementsPage() {
         }
         title={translate('ui.nav.announcements')}
       />
+      <StateTransition
+        identity={stateTransitionIdentity({
+          empty: feed.items.length === 0,
+          error: Boolean(feed.error && feed.items.length === 0),
+          loading: feed.loading && feed.items.length === 0,
+        })}
+      >
       {feed.error && feed.items.length === 0 ? (
         <ErrorState error={feed.error} onRetry={() => void feed.load()} />
       ) : feed.loading && feed.items.length === 0 ? (
@@ -66,6 +74,7 @@ export default function AnnouncementsPage() {
           ))}
         </StaggerList>
       )}
+      </StateTransition>
       {feed.hasMore ? (
         <div className="flex justify-center">
           <Button

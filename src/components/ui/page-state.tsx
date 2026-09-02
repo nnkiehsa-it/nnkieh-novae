@@ -2,6 +2,7 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import { AlertCircle, Inbox, RefreshCw } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -128,20 +129,31 @@ export function BusyLabel({
   success?: boolean;
 }) {
   return (
-    <span className="inline-flex items-center gap-2">
-      {busy ? (
-        <ActionFeedbackIcon
-          className="bg-transparent [&>svg]:size-4"
-          size="sm"
-          state={success ? "success" : "loading"}
-        />
-      ) : null}
-      <span
-        className={cn(busy && "t-shimmer")}
-        data-text={busy ? busyLabel : undefined}
-      >
-        {busy ? busyLabel : label}
-      </span>
+    <span className="inline-grid items-center">
+      <AnimatePresence initial={false} mode="popLayout">
+        <motion.span
+          className="col-start-1 row-start-1 inline-flex items-center gap-2"
+          key={busy ? `busy:${busyLabel}` : `idle:${label}`}
+          initial={{ opacity: 0, scale: 0.94, y: 5 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.94, y: -5 }}
+          transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+        >
+          {busy ? (
+            <ActionFeedbackIcon
+              className="bg-transparent [&>svg]:size-4"
+              size="sm"
+              state={success ? "success" : "loading"}
+            />
+          ) : null}
+          <span
+            className={cn(busy && "t-shimmer")}
+            data-text={busy ? busyLabel : undefined}
+          >
+            {busy ? busyLabel : label}
+          </span>
+        </motion.span>
+      </AnimatePresence>
     </span>
   );
 }

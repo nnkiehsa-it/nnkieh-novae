@@ -9,6 +9,7 @@ import { AppLocaleGate } from "@/components/app-locale-gate";
 import { AppShell } from "@/components/app-shell";
 import { BrandLockup } from "@/components/ui/brand";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { RouteSurface } from "@/components/motion/route-surface";
 
 export function AppStartupScreen() {
   useLocaleSubscription();
@@ -67,7 +68,11 @@ export function ProtectedApp({ children }: { children: React.ReactNode }) {
     return <AppStartupScreen />;
   if (setupCompleted && pathname === "/setup") return <AppStartupScreen />;
   if (pathname === "/setup")
-    return <AppLocaleGate>{children}</AppLocaleGate>;
+    return (
+      <AppLocaleGate>
+        <RouteSurface>{children}</RouteSurface>
+      </AppLocaleGate>
+    );
   return (
     <AppLocaleGate>
       <AppShell>{children}</AppShell>

@@ -24,6 +24,7 @@ import {
 import { FeedCardsSkeleton, FeedEmptyState } from "@/components/ui/route-skeleton";
 import { FacilityCard } from "@/components/facilities/facility-card";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
+import { StateTransition, stateTransitionIdentity } from "@/components/motion/state-transition";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function FacilitiesPage() {
@@ -130,6 +131,13 @@ export default function FacilitiesPage() {
           </Select>
         </div>
       </Card>
+      <StateTransition
+        identity={stateTransitionIdentity({
+          empty: state.feed.facilities.length === 0,
+          error: Boolean(state.error && state.feed.facilities.length === 0),
+          loading: state.loading && state.feed.facilities.length === 0,
+        })}
+      >
       {state.error && state.feed.facilities.length === 0 ? (
         <ErrorState error={state.error} onRetry={() => void state.load()} />
       ) : state.loading && state.feed.facilities.length === 0 ? (
@@ -154,7 +162,6 @@ export default function FacilitiesPage() {
       ) : (
         <StaggerList
           className="grid gap-3 lg:grid-cols-2 lg:items-stretch"
-          key={`${state.category}:${state.bucket}:${state.sort}:${state.committedQuery}`}
         >
           {state.feed.facilities.map((facility) => (
             <StaggerItem className="h-full" key={facility.id}>
@@ -170,6 +177,7 @@ export default function FacilitiesPage() {
           ))}
         </StaggerList>
       )}
+      </StateTransition>
       {state.feed.hasMore ? (
         <div className="flex justify-center pt-2">
           <Button

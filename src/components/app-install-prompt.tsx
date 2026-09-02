@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Copy, Download, ExternalLink, Share2, TriangleAlert } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useAppInstallPrompt } from "@/hooks/use-app-install-prompt";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
@@ -109,66 +110,77 @@ export function AppInstallPrompt() {
   return (
     <Dialog open={prompt.open}>
       <DialogContent showCloseButton={false}>
-        <DialogHeader>
-          <div className="mb-1 flex size-10 items-center justify-center rounded-xl bg-accent text-foreground">
-            {dialogIcon}
-          </div>
-          <DialogTitle>{dialogTitle}</DialogTitle>
-          <DialogDescription>{dialogDescription}</DialogDescription>
-        </DialogHeader>
+        <AnimatePresence initial={false} mode="wait">
+          <motion.div
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            className="grid gap-5"
+            exit={{ opacity: 0, scale: 0.98, x: confirmingDismiss ? 12 : -12 }}
+            initial={{ opacity: 0, scale: 0.98, x: confirmingDismiss ? -12 : 12 }}
+            key={confirmingDismiss ? "confirm-dismiss" : mode}
+            transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <DialogHeader>
+              <div className="mb-1 flex size-10 items-center justify-center rounded-xl bg-accent text-foreground">
+                {dialogIcon}
+              </div>
+              <DialogTitle>{dialogTitle}</DialogTitle>
+              <DialogDescription>{dialogDescription}</DialogDescription>
+            </DialogHeader>
 
-        {!confirmingDismiss ? (
-          <ol className="space-y-3">
-            {steps.map((step, index) => (
-              <li className="flex gap-3 text-sm leading-6" key={step}>
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold">
-                  {index + 1}
-                </span>
-                <span>{step}</span>
-              </li>
-            ))}
-          </ol>
-        ) : null}
+            {!confirmingDismiss ? (
+              <ol className="space-y-3">
+                {steps.map((step, index) => (
+                  <li className="flex gap-3 text-sm leading-6" key={step}>
+                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold">
+                      {index + 1}
+                    </span>
+                    <span>{step}</span>
+                  </li>
+                ))}
+              </ol>
+            ) : null}
 
-        <DialogFooter>
-          {confirmingDismiss ? (
-            <>
-              <Button variant="ghost" onClick={handleDismiss} disabled={prompt.isPrompting}>
-                {t("auth.pwaDismissConfirm")}
-              </Button>
-              <Button onClick={() => setConfirmingDismiss(false)} disabled={prompt.isPrompting}>
-                <Download className="size-4" />
-                {t("auth.pwaDismissGoBack")}
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                variant="outline"
-                onClick={() => setConfirmingDismiss(true)}
-                disabled={prompt.isPrompting}
-              >
-                {t("auth.pwaLater")}
-              </Button>
-              {mode === "in-app-browser" && prompt.isAndroid ? (
-                <Button
-                  variant="outline"
-                  onClick={() => void prompt.copyInstallUrl()}
-                  disabled={prompt.isPrompting}
-                >
-                  <Copy className="size-4" />
-                  {t("auth.pwaCopyUrl")}
-                </Button>
-              ) : null}
-              {hasPrimaryAction ? (
-                <Button onClick={() => void handlePrimaryAction()} disabled={prompt.isPrompting}>
-                  {mode === "native-install" ? <Download className="size-4" /> : <ExternalLink className="size-4" />}
-                  {primaryLabel}
-                </Button>
-              ) : null}
-            </>
-          )}
-        </DialogFooter>
+            <DialogFooter>
+              {confirmingDismiss ? (
+                <>
+                  <Button variant="ghost" onClick={handleDismiss} disabled={prompt.isPrompting}>
+                    {t("auth.pwaDismissConfirm")}
+                  </Button>
+                  <Button onClick={() => setConfirmingDismiss(false)} disabled={prompt.isPrompting}>
+                    <Download className="size-4" />
+                    {t("auth.pwaDismissGoBack")}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => setConfirmingDismiss(true)}
+                    disabled={prompt.isPrompting}
+                  >
+                    {t("auth.pwaLater")}
+                  </Button>
+                  {mode === "in-app-browser" && prompt.isAndroid ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => void prompt.copyInstallUrl()}
+                      disabled={prompt.isPrompting}
+                    >
+                      <Copy className="size-4" />
+                      {t("auth.pwaCopyUrl")}
+                    </Button>
+                  ) : null}
+                  {hasPrimaryAction ? (
+                    <Button onClick={() => void handlePrimaryAction()} disabled={prompt.isPrompting}>
+                      {mode === "native-install" ? <Download className="size-4" /> : <ExternalLink className="size-4" />}
+                      {primaryLabel}
+                    </Button>
+                  ) : null}
+                </>
+              )}
+            </DialogFooter>
+          </motion.div>
+        </AnimatePresence>
       </DialogContent>
     </Dialog>
   );

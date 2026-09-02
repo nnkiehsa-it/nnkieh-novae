@@ -8,10 +8,13 @@ import {
   Hand,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useParams } from "next/navigation";
 import { useFacilityDetail } from "@/hooks/use-facility-detail";
 import { FacilityDetailContent } from "@/components/facilities/facility-detail-content";
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { LikeActionButton } from "@/components/motion/like-action-button";
+import { ContentMorph } from "@/components/motion/content-morph";
+import { StateTransition } from "@/components/motion/state-transition";
 import { DetailToolbar } from "@/components/detail-toolbar";
 import { FacilityStatusDialog } from "@/components/facilities/facility-status-dialog";
 import { Button } from "@/components/ui/button";
@@ -43,19 +46,21 @@ import { shareCurrentPage } from "@/lib/share";
 
 export default function FacilityDetailPage() {
   useLocaleSubscription();
+  const { facilityId } = useParams<{ facilityId: string }>();
   const detail = useFacilityDetail();
 
   if (detail.loading)
-    return <DetailRouteSkeleton kind="facility" />;
+    return <StateTransition identity="loading"><ContentMorph id={facilityId} kind="facility"><DetailRouteSkeleton kind="facility" /></ContentMorph></StateTransition>;
   if (detail.error || !detail.facility)
     return (
-      <ErrorState
+      <StateTransition identity="error"><ErrorState
         error={detail.error || translate('ui.facility.notFound')}
         onRetry={() => void detail.load(true)}
-      />
+      /></StateTransition>
     );
   const { facility } = detail;
   return (
+    <StateTransition identity="content">
     <div className="space-y-5">
       <DetailToolbar
         actions={
@@ -162,5 +167,6 @@ export default function FacilityDetailPage() {
         open={detail.statusOpen}
       />
     </div>
+    </StateTransition>
   );
 }

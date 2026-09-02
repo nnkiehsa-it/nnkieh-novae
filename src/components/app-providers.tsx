@@ -12,6 +12,7 @@ import { E2eAuthBridge } from "@/components/e2e-auth-bridge";
 import { TurnstileProvider } from "@/components/turnstile-provider";
 import { AppInstallPrompt } from "@/components/app-install-prompt";
 import { AccentThemeProvider } from "@/components/accent-theme-provider";
+import { NavigationFeedback } from "@/components/motion/navigation-feedback";
 import { ensureFirebaseAppCheck } from "@/lib/firebase-app-check";
 
 export function AppProviders({
@@ -63,7 +64,6 @@ export function AppProviders({
       attribute="class"
       defaultTheme="system"
       enableSystem
-      disableTransitionOnChange
       nonce={nonce}
     >
       <AccentThemeProvider>
@@ -78,6 +78,7 @@ export function AppProviders({
                   {i18nReady ? children : <div className="app-start-surface" />}
                 </Suspense>
               </SessionProvider>
+              <NavigationFeedback />
               <E2eAuthBridge />
               <AppUpdateGate />
               <AppInstallPrompt />

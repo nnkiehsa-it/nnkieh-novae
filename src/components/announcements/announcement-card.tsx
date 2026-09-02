@@ -7,6 +7,7 @@ import type { AnnouncementSummary, UserPublicProfile } from "@/types";
 import { formatRelativeTime } from "@/lib/format";
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { LikeActionButton } from "@/components/motion/like-action-button";
+import { ContentMorph } from "@/components/motion/content-morph";
 import { ContentAuthor } from "@/components/content-author";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -30,6 +31,7 @@ export function AnnouncementCard({
   reveal: boolean;
 }) {
   return (
+    <ContentMorph id={announcement.id} kind="announcement">
       <Card className="t-card group relative h-full gap-4 p-5 sm:p-6">
         <div className="flex h-full flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
@@ -81,5 +83,6 @@ export function AnnouncementCard({
           href={`/announcements/${announcement.id}`}
         />
       </Card>
+    </ContentMorph>
   );
 }

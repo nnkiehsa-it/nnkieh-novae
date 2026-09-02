@@ -78,12 +78,12 @@ export function AccentThemePicker({ resolvedTheme }: { resolvedTheme?: string })
         onChange={(color) => setAccentColor(color.toString("hex"))}
         value={activeColor}
       >
-        <ColorPicker.Trigger className="w-fit rounded-xl border border-input bg-card px-3 py-2 shadow-[var(--shadow-control)]">
+        <ColorPicker.Trigger className="w-fit rounded-xl border border-input bg-card px-3 py-2 shadow-[var(--shadow-control)] transition-[background-color,border-color,box-shadow,transform] duration-[var(--motion-fast)] ease-[var(--ease-emphasized)] active:scale-[.96]">
           <ColorSwatch className="size-5" />
           <Label className="text-sm">{translate("ui.settings.customAccent")}</Label>
           <span className="font-mono text-xs text-muted-foreground">{activeColor}</span>
         </ColorPicker.Trigger>
-        <ColorPicker.Popover className="w-64 rounded-xl border bg-popover p-4 text-popover-foreground shadow-[var(--shadow-floating)]">
+        <ColorPicker.Popover className="t-panel-reveal w-64 rounded-xl border bg-popover p-4 text-popover-foreground shadow-[var(--shadow-floating)]">
           <ColorArea
             className="h-40 w-full rounded-lg"
             colorSpace="hsb"

@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { ContentRenderer } from "@/components/content-renderer";
 import { ContentAuthor } from "@/components/content-author";
 import { ContentResolutionNotice } from "@/components/content-resolution-notice";
+import { ContentMorph } from "@/components/motion/content-morph";
 import { CardContent } from "@/components/ui/card";
 import { ResizableCard } from "@/components/ui/resizable-card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -39,6 +40,7 @@ export function IssueDetailContent({
     translate(ISSUE_STATUS_LABELS[issue.status]),
   );
   return (
+    <ContentMorph id={issue.id} kind="issue">
     <ResizableCard className="gap-0 overflow-hidden py-0">
       <div
         className={cn(
@@ -90,5 +92,6 @@ export function IssueDetailContent({
         />
       ) : null}
     </ResizableCard>
+    </ContentMorph>
   );
 }

@@ -1,11 +1,11 @@
 :root {
-  --motion-micro: 80ms;
-  --motion-quick: 150ms;
-  --motion-fast: 250ms;
-  --motion-medium: 350ms;
-  --motion-slow: 400ms;
-  --motion-emphasis: 500ms;
-  --motion-stagger: 40ms;
+  --motion-micro: 90ms;
+  --motion-quick: 180ms;
+  --motion-fast: 280ms;
+  --motion-medium: 380ms;
+  --motion-slow: 460ms;
+  --motion-emphasis: 560ms;
+  --motion-stagger: 45ms;
   --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
@@ -63,8 +63,11 @@
   }
 }
 
-/* Dense lists stay fully painted ahead of the viewport. */
-.t-stagger-item { opacity: 1; }
+/* Motion owns list entry, exit, and position changes without reflow animation. */
+.t-stagger-list,
+.t-stagger-item {
+  transform-origin: center top;
+}
 
 /* Transitions.dev — Card resize */
 .t-resize {
@@ -131,7 +134,7 @@
 @keyframes t-dropdown-in {
   from {
     opacity: 0;
-    transform: scale(0.97);
+    transform: translateY(-6px) scale(0.96);
   }
   to {
     opacity: 1;
@@ -145,7 +148,30 @@
   }
   to {
     opacity: 0;
-    transform: scale(0.99);
+    transform: translateY(-3px) scale(0.975);
+  }
+}
+
+.t-dropdown[data-state="open"] :is(
+  [data-slot="dropdown-menu-item"],
+  [data-slot="dropdown-menu-checkbox-item"],
+  [data-slot="dropdown-menu-radio-item"],
+  [data-slot="select-item"]
+) {
+  animation: t-dropdown-item-in var(--motion-fast) var(--ease-smooth-out) both;
+}
+.t-dropdown[data-state="open"] :is([data-slot="dropdown-menu-item"], [data-slot="select-item"]):nth-child(2) { animation-delay: 24ms; }
+.t-dropdown[data-state="open"] :is([data-slot="dropdown-menu-item"], [data-slot="select-item"]):nth-child(3) { animation-delay: 48ms; }
+.t-dropdown[data-state="open"] :is([data-slot="dropdown-menu-item"], [data-slot="select-item"]):nth-child(4) { animation-delay: 72ms; }
+.t-dropdown[data-state="open"] :is([data-slot="dropdown-menu-item"], [data-slot="select-item"]):nth-child(n + 5) { animation-delay: 90ms; }
+@keyframes t-dropdown-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -178,7 +204,7 @@
 }
 
 .t-dialog[data-state="open"] {
-  animation: t-dialog-in var(--motion-fast) var(--ease-smooth-out) both;
+  animation: t-dialog-in var(--motion-medium) var(--ease-emphasized) both;
 }
 .t-dialog[data-state="closed"] {
   animation: t-dialog-out var(--motion-quick) var(--ease-smooth-out) both;
@@ -186,13 +212,30 @@
 @keyframes t-dialog-in {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.96);
+    transform: translateY(18px) scale(0.94);
     filter: blur(var(--motion-blur-sm));
   }
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
     filter: blur(0);
+  }
+}
+
+.t-dialog[data-state="open"] > * {
+  animation: t-dialog-content-in var(--motion-medium) var(--ease-smooth-out) both;
+}
+.t-dialog[data-state="open"] > :nth-child(2) { animation-delay: 35ms; }
+.t-dialog[data-state="open"] > :nth-child(3) { animation-delay: 70ms; }
+.t-dialog[data-state="open"] > :nth-child(n + 4) { animation-delay: 95ms; }
+@keyframes t-dialog-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 @keyframes t-dialog-out {
@@ -891,6 +934,144 @@
 [data-slot="select-item"] {
   touch-action: manipulation;
 }
+
+:is(
+  a[href],
+  button,
+  [role="button"],
+  [role="menuitem"],
+  [role="option"],
+  [role="radio"],
+  [role="checkbox"],
+  [role="tab"],
+  [role="switch"],
+  [data-slot="select-trigger"]
+):not(:disabled, [aria-disabled="true"], [data-disabled]) {
+  transform-origin: center;
+  transition:
+    color var(--motion-quick) var(--ease-smooth-out),
+    background-color var(--motion-quick) var(--ease-smooth-out),
+    border-color var(--motion-quick) var(--ease-smooth-out),
+    box-shadow var(--motion-fast) var(--ease-smooth-out),
+    opacity var(--motion-quick) var(--ease-smooth-out),
+    transform var(--motion-fast) var(--ease-emphasized);
+}
+
+:is(
+  a[href],
+  button,
+  [role="button"],
+  [role="menuitem"],
+  [role="option"],
+  [role="radio"],
+  [role="checkbox"],
+  [role="tab"],
+  [role="switch"],
+  [data-slot="select-trigger"]
+):not(:disabled, [aria-disabled="true"], [data-disabled]):active {
+  transform: translateY(1px) scale(0.955);
+  transition-duration: var(--motion-micro);
+}
+
+.t-input:focus-visible {
+  transform: translateY(-1px) scale(1.003);
+}
+
+.t-disclosure-icon {
+  transition: transform var(--motion-medium) var(--ease-emphasized);
+}
+[data-state="open"] > .t-disclosure-icon,
+[data-state="open"] .t-disclosure-icon {
+  transform: rotate(180deg);
+}
+[data-slot="dropdown-menu-sub-trigger"][data-state="open"] > .t-disclosure-icon {
+  transform: translateX(2px) rotate(90deg);
+}
+
+.t-navigation-echo {
+  border: 1px solid color-mix(in srgb, var(--tint-content) 24%, transparent);
+  background: color-mix(in srgb, var(--tint-content) 9%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--background) 35%, transparent);
+}
+.t-navigation-progress {
+  background: var(--tint-content);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--tint-content) 34%, transparent);
+}
+
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-group(novae-route-content) {
+  animation-duration: 520ms;
+  animation-timing-function: var(--ease-emphasized);
+  overflow: clip;
+}
+::view-transition-group(.novae-object-morph) {
+  animation-duration: 560ms;
+  animation-timing-function: var(--ease-emphasized);
+  z-index: 2;
+}
+::view-transition-image-pair(.novae-object-morph) {
+  isolation: auto;
+}
+::view-transition-old(.novae-object-morph),
+::view-transition-new(.novae-object-morph) {
+  animation-duration: 560ms;
+  animation-timing-function: var(--ease-emphasized);
+  mix-blend-mode: normal;
+}
+::view-transition-old(.novae-object-morph) {
+  animation-name: t-object-morph-out;
+}
+::view-transition-new(.novae-object-morph) {
+  animation-name: t-object-morph-in;
+}
+@keyframes t-object-morph-out {
+  from { opacity: 1; }
+  to { opacity: 0.15; }
+}
+@keyframes t-object-morph-in {
+  from { opacity: 0.15; }
+  to { opacity: 1; }
+}
+::view-transition-old(.novae-route-swap),
+::view-transition-old(.novae-route-exit) {
+  animation: t-route-out 180ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+::view-transition-new(.novae-route-swap),
+::view-transition-new(.novae-route-enter) {
+  animation: t-route-in 480ms var(--ease-emphasized) 70ms both;
+}
+@keyframes t-route-out {
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.992);
+  }
+}
+@keyframes t-route-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+html[data-theme-transition="true"]::view-transition-old(root) {
+  animation: t-theme-out 180ms ease-in both;
+}
+html[data-theme-transition="true"]::view-transition-new(root) {
+  animation: t-theme-in 460ms var(--ease-emphasized) both;
+}
+@keyframes t-theme-out {
+  to { opacity: 0.35; }
+}
+@keyframes t-theme-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 @media (hover: hover) and (pointer: fine) {
   [data-slot="button"]:not(:disabled):hover {
     transform: translateY(-1px);
@@ -987,5 +1168,11 @@
   }
   .t-settings-section {
     animation: none !important;
+  }
+  .t-input,
+  .t-disclosure-icon,
+  :is(a[href], button, [role="button"], [role="menuitem"], [role="option"], [role="radio"], [role="checkbox"], [role="tab"], [role="switch"]) {
+    transition: none !important;
+    transform: none !important;
   }
 }

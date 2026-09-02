@@ -3,6 +3,7 @@
 import * as React from "react";
 import { ChevronDown, Reply, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { AnimatePresence, motion } from "motion/react";
 import { t as translate } from "@/i18n";
 import type { DiscussionCommentRecord, UserPublicProfile } from "@/types";
 import { formatRelativeTime } from "@/lib/format";
@@ -54,8 +55,15 @@ export function CommentThread({
               ? translate("ui.discussion.hideReplies")
               : translate("ui.discussion.showReplies", { count: comment.replies.length })}
           </button>
+          <AnimatePresence initial={false}>
           {expanded ? (
-            <div className="t-panel-reveal space-y-0.5">
+            <motion.div
+              className="space-y-0.5 overflow-hidden"
+              initial={{ height: 0, opacity: 0, y: -8 }}
+              animate={{ height: "auto", opacity: 1, y: 0 }}
+              exit={{ height: 0, opacity: 0, y: -6 }}
+              transition={{ type: "spring", stiffness: 360, damping: 36, mass: 0.75 }}
+            >
               {comment.replies.map((reply) => (
                 <CommentRow
                   comment={reply}
@@ -67,8 +75,9 @@ export function CommentThread({
                   profile={replyProfiles[reply.author_uid]}
                 />
               ))}
-            </div>
+            </motion.div>
           ) : null}
+          </AnimatePresence>
         </div>
       ) : null}
     </div>

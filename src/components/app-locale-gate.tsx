@@ -1,6 +1,7 @@
 "use client";
 import * as React from "react";
 import { Check, ChevronRight, Languages } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { hasStoredLocale, setLocale, useI18n } from "@/i18n";
 import { BrandLockup } from "@/components/ui/brand";
 import { Button } from "@/components/ui/button";
@@ -11,10 +12,27 @@ export function AppLocaleGate({ children }: { children: React.ReactNode }) {
   const [entered, setEntered] = React.useState(false);
   const { locale, t } = useI18n();
 
-  if (!gating || entered) return <>{children}</>;
+  if (!gating) return <>{children}</>;
 
   return (
-    <main className="grid min-h-[100svh] place-items-center bg-[var(--surface-stage)] p-4">
+    <AnimatePresence initial={false} mode="wait">
+    {entered ? (
+      <motion.div
+        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, y: 16 }}
+        key="localized-app"
+        transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
+      >
+        {children}
+      </motion.div>
+    ) : (
+    <motion.main
+      animate={{ opacity: 1, scale: 1 }}
+      className="grid min-h-[100svh] place-items-center bg-[var(--surface-stage)] p-4"
+      exit={{ opacity: 0, scale: 0.985, y: -12 }}
+      key="locale-gate"
+      transition={{ duration: 0.32, ease: [0.4, 0, 1, 1] }}
+    >
       <Card className="t-panel-reveal w-full max-w-lg px-6 py-12 sm:px-10">
         <BrandLockup className="justify-center" />
         <div className="mt-8 text-center">
@@ -40,14 +58,20 @@ export function AppLocaleGate({ children }: { children: React.ReactNode }) {
                 <Languages className="size-4" />
               </span>
               <span className="flex-1 font-medium">{label}</span>
+              <AnimatePresence>
               {locale === value ? (
-                <span
+                <motion.span
+                  animate={{ opacity: 1, scale: 1 }}
                   className="t-success-check grid size-6 place-items-center rounded-full bg-foreground text-background"
                   data-state="in"
+                  exit={{ opacity: 0, scale: 0.6 }}
+                  initial={{ opacity: 0, scale: 0.6 }}
+                  key="selected"
                 >
                   <Check className="size-3.5" />
-                </span>
+                </motion.span>
               ) : null}
+              </AnimatePresence>
             </button>
           ))}
         </div>
@@ -63,6 +87,8 @@ export function AppLocaleGate({ children }: { children: React.ReactNode }) {
           </Button>
         </div>
       </Card>
-    </main>
+    </motion.main>
+    )}
+    </AnimatePresence>
   );
 }
