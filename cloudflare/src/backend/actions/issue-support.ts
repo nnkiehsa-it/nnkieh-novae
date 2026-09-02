@@ -22,8 +22,9 @@ export async function updateSupport(action: string, payload: JsonRecord, auth: A
   const issue = asRecord(issueData);
   if (
     asString(issue.status) !== "pending"
-    || issue.support_enabled !== true
-    || (typeof issue.support_deadline_at === "string" && Date.parse(issue.support_deadline_at) <= Date.now())
+    || issue.supportEnabled !== true
+    || (typeof issue.supportDeadlineAt === "string" && Date.parse(issue.supportDeadlineAt) <= Date.now())
+    || (action !== "removeSupport" && (issue.isOwnIssue === true || storedIssue.author_uid === auth.uid))
   ) throw new Error("support-not-available");
 
   const { data: result, error: toggleError } = await database.call("app_api", "backend_toggle_support", {

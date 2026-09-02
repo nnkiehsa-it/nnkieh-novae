@@ -88,6 +88,8 @@ test('announcement and administration entry points reject unassigned users', asy
   const content = await readContentState();
   for (const [user, canDelete] of [
     ['ordinary', false],
+    ['issueManager', false],
+    ['facilityManager', false],
     ['announcementManager', true],
     ['admin', true],
   ] as const) {
@@ -107,6 +109,15 @@ test('announcement and administration entry points reject unassigned users', asy
   await ordinary.page.goto('/dashboard');
   await expect(ordinary.page).not.toHaveURL(/\/dashboard/u);
   await ordinary.context.close();
+
+  for (const user of ['issueManager', 'facilityManager', 'announcementManager'] as const) {
+    const scopedManager = await newUserPage(browser, user);
+    await scopedManager.page.goto('/admin/management');
+    await expect(scopedManager.page).not.toHaveURL(/\/admin\/management/u);
+    await scopedManager.page.goto('/dashboard');
+    await expect(scopedManager.page).not.toHaveURL(/\/dashboard/u);
+    await scopedManager.context.close();
+  }
 
   const admin = await newUserPage(browser, 'admin');
   await admin.page.goto('/admin/management');

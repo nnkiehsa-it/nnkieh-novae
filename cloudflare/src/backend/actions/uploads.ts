@@ -1,6 +1,7 @@
 import {
   createCloudinaryUploadSignature,
   CLOUDINARY_IMAGE_UPLOAD_PRESET,
+  cloudinaryImageUploadUrl,
   getCloudinaryAuthenticatedImageMetadata,
   verifyCloudinaryUploadResponseSignature,
 } from "../shared/cloudinary.ts";
@@ -51,7 +52,7 @@ async function assertMarkdownUploadsAttachable(
     .select("id,owner_uid,status,attached_target_type,attached_target_id")
     .in("id", uploadIds);
   if (attachableError) throw attachableError;
-  const validIds = new Set((attachable ?? []).filter((upload) =>
+  const validIds = new Set((attachable ?? []).filter((upload: any) =>
     (upload.status === "ready" || upload.status === "attached")
     && (targetId
       ? (
@@ -59,7 +60,7 @@ async function assertMarkdownUploadsAttachable(
         || (upload.owner_uid === ownerUid && !upload.attached_target_id)
       )
       : upload.owner_uid === ownerUid && !upload.attached_target_id)
-  ).map((upload) => upload.id));
+  ).map((upload: any) => upload.id));
   if (validIds.size !== uploadIds.length) throw new Error("validation-invalid");
 }
 
@@ -227,16 +228,21 @@ export async function handleUploadAction(
     if (error) throw error;
     const uploads = data ?? [];
     if (uploads.length > 0) {
-      const { error: jobError } = await database.table("app_private", "deletion_jobs").insert(
-        uploads.map((upload) => ({
-          target_type: "upload",
-          target_id: upload.id,
-          cloudinary_public_id: upload.cloudinary_public_id,
-        })),
-      );
-      if (jobError) throw jobError;
+      for (const upload of uploads as Array<{ cloudinary_public_id: string; id: string }>) {
+        const { error: jobError } = await database.call("app_api", "enqueue_background_job", {
+          job_type: "deletion",
+          scope_id: upload.id,
+          payload: {
+            cloudinary_public_id: upload.cloudinary_public_id,
+            target_id: upload.id,
+            target_type: "upload",
+          },
+          created_by: auth.uid,
+        });
+        if (jobError) throw jobError;
+      }
       const { error: deleteError } = await database.table("app_private", "uploads")
-        .delete().in("id", uploads.map((upload) => upload.id));
+        .delete().in("id", uploads.map((upload: any) => upload.id));
       if (deleteError) throw deleteError;
     }
     return { deleted: uploads.length, success: true };
@@ -285,6 +291,7 @@ export async function handleUploadAction(
       timestamp,
       type: params.type,
       uploadPreset: params.upload_preset,
+      uploadUrl: cloudinaryImageUploadUrl(requireEnv("CLOUDINARY_CLOUD_NAME")),
       uploadId,
     };
   }
@@ -368,7 +375,7 @@ export async function handleUploadAction(
     .in("status", ["ready", "attached"]);
   if (error) throw error;
   const accessByUploadId = await resolveUploadAccessBatch((data ?? []) as JsonRecord[], auth, database);
-  const resolved = await Promise.all((data ?? []).map(async (upload) => {
+  const resolved = await Promise.all((data ?? []).map(async (upload: any) => {
     const access = accessByUploadId.get(upload.id) ?? { allowed: false, privateDelivery: true };
     if (!access.allowed || !upload.cloudinary_public_id) return null;
     return {
@@ -376,16 +383,16 @@ export async function handleUploadAction(
       ...await createMediaDeliveryUrls(upload.cloudinary_public_id, access.privateDelivery, auth.uid),
     };
   }));
-  const available = resolved.filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+  const available = resolved.filter((entry: any): entry is NonNullable<typeof entry> => Boolean(entry));
   const expiresAtMs = available.length
-    ? Math.min(...available.map((entry) => entry.expiresAtMs))
+    ? Math.min(...available.map((entry: any) => entry.expiresAtMs))
     : Date.now();
   return {
-    errors: Object.fromEntries(uploadIds.filter((id) => !available.some((entry) => entry.id === id)).map((id) => [id, "not-found"])),
-    expiresAtByUploadId: Object.fromEntries(available.map((entry) => [entry.id, entry.expiresAtMs])),
-    expiresAtMs,
-    fullUrls: Object.fromEntries(available.map((entry) => [entry.id, entry.fullUrl])),
-    thumbnailUrls: Object.fromEntries(available.map((entry) => [entry.id, entry.thumbnailUrl])),
+    errors: Object.fromEntries(uploadIds.filter((id) => !available.some((entry: any) => entry.id === id)).map((id) => [id, "not-found"])),
+    expiresAt: new Date(expiresAtMs).toISOString(),
+    expiresAtByUploadId: Object.fromEntries(available.map((entry: any) => [entry.id, new Date(entry.expiresAtMs).toISOString()])),
+    fullUrls: Object.fromEntries(available.map((entry: any) => [entry.id, entry.fullUrl])),
+    thumbnailUrls: Object.fromEntries(available.map((entry: any) => [entry.id, entry.thumbnailUrl])),
   };
 }
 

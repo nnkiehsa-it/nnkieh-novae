@@ -94,10 +94,10 @@ async function listIssues(
     page_size: readPageSize(payload),
     title_query: titleQuery,
     cursor_id: asUuid(cursor.id) || null,
-    cursor_created_at: readCursorDate(cursor, "created_at") || null,
-    cursor_sort_date: readCursorDate(cursor, "sort_date") || null,
-    cursor_sort_number: Number.isFinite(asNumber(cursor.sort_number, Number.NaN))
-      ? asNumber(cursor.sort_number, Number.NaN)
+    cursor_created_at: readCursorDate(cursor, "createdAt") || null,
+    cursor_sort_date: readCursorDate(cursor, "sortDate") || null,
+    cursor_sort_number: Number.isFinite(asNumber(cursor.sortNumber, Number.NaN))
+      ? asNumber(cursor.sortNumber, Number.NaN)
       : null,
   });
   if (error) throw error;
@@ -117,10 +117,10 @@ async function listUserIssues(
     sort_name: readSort(payload),
     page_size: readPageSize(payload),
     cursor_id: asUuid(cursor.id) || null,
-    cursor_created_at: readCursorDate(cursor, "created_at") || null,
-    cursor_sort_date: readCursorDate(cursor, "sort_date") || null,
-    cursor_sort_number: Number.isFinite(asNumber(cursor.sort_number, Number.NaN))
-      ? asNumber(cursor.sort_number, Number.NaN)
+    cursor_created_at: readCursorDate(cursor, "createdAt") || null,
+    cursor_sort_date: readCursorDate(cursor, "sortDate") || null,
+    cursor_sort_number: Number.isFinite(asNumber(cursor.sortNumber, Number.NaN))
+      ? asNumber(cursor.sortNumber, Number.NaN)
       : null,
   });
   if (error) throw error;

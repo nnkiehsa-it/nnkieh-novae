@@ -1,9 +1,9 @@
 export interface CommentResponseRecord {
   id: string;
-  issue_id: string;
-  parent_comment_id: string | null;
+  issueId: string;
+  parentCommentId: string | null;
   content: string;
-  author_uid: string;
-  created_at_ms: number | null;
+  authorUid: string;
+  createdAt: string | null;
   replies?: CommentResponseRecord[];
 }

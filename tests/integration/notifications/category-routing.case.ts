@@ -1,4 +1,4 @@
-import { asRecord, assert, callAction, database, drainJobs, integrationTest, notificationStressScale, readFcmRequests, requestId, resetFcmRequests, saveCategoryDraft, seedActor } from "./support.ts";
+import { asRecord, assert, callAction, database, drainJobs, integrationTest, notificationStressScale, readFcmRequests, resetFcmRequests, saveCategoryDraft, seedActor } from "./support.ts";
 
 integrationTest("new proposal and facility notifications are personal to category managers", async () => {
   const admin = await seedActor(`category-notification-admin-${crypto.randomUUID()}`, { roles: ["platform-admin"] });
@@ -55,7 +55,6 @@ integrationTest("new proposal and facility notifications are personal to categor
   if (disableFacilityNotificationError) throw disableFacilityNotificationError;
   await callAction("setUserAccessScope", {
     grant: true,
-    requestId: requestId("notification-preserve-facility-opt-out"),
     scopeKind: "announcement",
     uid: managers.at(-1)!.auth.uid,
   }, admin.auth);
@@ -72,14 +71,12 @@ integrationTest("new proposal and facility notifications are personal to categor
   const issueResult = asRecord(await callAction("createIssue", {
     category: issueCategoryId,
     content: "Category manager proposal notification integration content",
-    requestId: requestId("category-notification-issue"),
     title: "Category notification proposal",
   }, issueAuthor.auth));
   const facilityResult = asRecord(await callAction("createFacility", {
     categoryId: facilityCategoryId,
     content: "Category manager facility notification integration content",
     location: "Integration room",
-    requestId: requestId("category-notification-facility"),
     title: "Category notification facility",
   }, facilityAuthor.auth));
   const issueId = String(asRecord(issueResult.issue).id);

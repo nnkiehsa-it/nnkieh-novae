@@ -5,7 +5,6 @@ import {
   callAction,
   integrationTest,
   processPlatformJobs,
-  requestId,
   seedActor,
   database,
   testEnvironment,
@@ -51,7 +50,6 @@ integrationTest("configured retention cleanup removes every expired data class a
     const created = asRecord(await callAction("createIssue", {
       category: issueCategoryIds[0],
       content: `Retention ${label} issue content`,
-      requestId: requestId(`retention-${label}-issue`),
       title: `Retention ${label} issue`,
     }, owner.auth));
     const id = String(asRecord(created.issue).id);
@@ -67,7 +65,6 @@ integrationTest("configured retention cleanup removes every expired data class a
       categoryId: facilityCategoryId,
       content: `Retention ${label} facility content`,
       location: "Retention room",
-      requestId: requestId(`retention-${label}-facility`),
       title: `Retention ${label} facility`,
     }, owner.auth));
     const id = String(asRecord(created.facility).id);
@@ -125,56 +122,113 @@ integrationTest("configured retention cleanup removes every expired data class a
   ]);
   if (notificationError) throw notificationError;
 
-  const expiredRealtimeId = crypto.randomUUID();
-  const recentRealtimeId = crypto.randomUUID();
-  const { error: realtimeError } = await database.table("app_private", "realtime_events").insert([
+  const operationIds = { expired: crypto.randomUUID(), recent: crypto.randomUUID() };
+  const { error: opError } = await database.table("app_private", "operations").insert([
     {
+      operation_id: operationIds.expired,
+      action: "createIssue",
+      actor_uid: owner.auth.uid,
+      response: { seeded: true },
+      status: "completed",
+      expires_at: expiredAt,
       created_at: expiredAt,
-      event_name: "issue_changed",
-      expires_at: futureAt,
-      id: expiredRealtimeId,
-      payload: { target_id: `retention-expired-${runId}` },
-      topic: "content:issues",
+      updated_at: expiredAt,
     },
     {
+      operation_id: operationIds.recent,
+      action: "createIssue",
+      actor_uid: owner.auth.uid,
+      response: { seeded: true },
+      status: "completed",
+      expires_at: futureAt,
       created_at: recentAt,
-      event_name: "issue_changed",
-      expires_at: expiredAt,
-      id: recentRealtimeId,
-      payload: { target_id: `retention-recent-${runId}` },
-      topic: "content:issues",
+      updated_at: recentAt,
     },
   ]);
-  if (realtimeError) throw realtimeError;
+  if (opError) throw opError;
 
-  const outboxIds = {
+  const eventIds = { expired: crypto.randomUUID(), recent: crypto.randomUUID() };
+  const { error: eventError } = await database.table("app_private", "domain_events").insert([
+    {
+      actor_uid: owner.auth.uid,
+      aggregate_id: `expired-${runId}`,
+      aggregate_type: "issue",
+      event_id: eventIds.expired,
+      event_type: "issue.deleted",
+      occurred_at: expiredAt,
+      operation_id: operationIds.expired,
+      payload: { retention_cleanup: true },
+    },
+    {
+      actor_uid: owner.auth.uid,
+      aggregate_id: `recent-${runId}`,
+      aggregate_type: "issue",
+      event_id: eventIds.recent,
+      event_type: "issue.deleted",
+      occurred_at: recentAt,
+      operation_id: operationIds.recent,
+      payload: { retention_cleanup: true },
+    },
+  ]);
+  if (eventError) throw eventError;
+
+  const deliveryIds = {
     expiredCompleted: crypto.randomUUID(),
     expiredFailed: crypto.randomUUID(),
     recentCompleted: crypto.randomUUID(),
     recentFailed: crypto.randomUUID(),
   };
-  const { error: outboxError } = await database.table("app_private", "outbox_events").insert([
-    { actor_uid: owner.auth.uid, event_type: "facility.deleted", expires_at: futureAt, id: outboxIds.expiredCompleted, payload: { retention_cleanup: true }, status: "completed", target_id: `expired-completed-${runId}`, target_type: "facility", updated_at: expiredAt },
-    { actor_uid: owner.auth.uid, event_type: "facility.deleted", expires_at: futureAt, id: outboxIds.expiredFailed, payload: { retention_cleanup: true }, status: "failed", target_id: `expired-failed-${runId}`, target_type: "facility", updated_at: expiredAt },
-    { actor_uid: owner.auth.uid, event_type: "facility.deleted", expires_at: expiredAt, id: outboxIds.recentCompleted, payload: { retention_cleanup: true }, status: "completed", target_id: `recent-completed-${runId}`, target_type: "facility", updated_at: recentAt },
-    { actor_uid: owner.auth.uid, event_type: "facility.deleted", expires_at: expiredAt, id: outboxIds.recentFailed, payload: { retention_cleanup: true }, status: "failed", target_id: `recent-failed-${runId}`, target_type: "facility", updated_at: recentAt },
+  const { error: deliveryError } = await database.table("app_private", "event_deliveries").insert([
+    {
+      attempt_count: 1,
+      created_at: expiredAt,
+      destination: "notion",
+      expires_at: expiredAt,
+      id: deliveryIds.expiredCompleted,
+      event_id: eventIds.expired,
+      completed_at: expiredAt,
+      last_attempt_id: crypto.randomUUID(),
+      status: "completed",
+      updated_at: expiredAt,
+    },
+    {
+      attempt_count: 8,
+      created_at: expiredAt,
+      destination: "push",
+      expires_at: expiredAt,
+      id: deliveryIds.expiredFailed,
+      event_id: eventIds.expired,
+      error_detail: { code: "expired-failure" },
+      last_attempt_id: crypto.randomUUID(),
+      status: "failed",
+      updated_at: expiredAt,
+    },
+    {
+      attempt_count: 1,
+      created_at: recentAt,
+      destination: "notion",
+      expires_at: futureAt,
+      id: deliveryIds.recentCompleted,
+      event_id: eventIds.recent,
+      completed_at: recentAt,
+      last_attempt_id: crypto.randomUUID(),
+      status: "completed",
+      updated_at: recentAt,
+    },
+    {
+      attempt_count: 1,
+      created_at: recentAt,
+      destination: "push",
+      expires_at: futureAt,
+      id: deliveryIds.recentFailed,
+      event_id: eventIds.recent,
+      error_detail: { code: "recent-failure" },
+      last_attempt_id: crypto.randomUUID(),
+      status: "failed",
+      updated_at: recentAt,
+    },
   ]);
-  if (outboxError) throw outboxError;
-
-  const pushLogIds = { expiredFailed: crypto.randomUUID(), expiredSent: crypto.randomUUID(), recent: crypto.randomUUID() };
-  const { error: pushLogError } = await database.table("app_private", "push_delivery_logs").insert([
-    { id: pushLogIds.expiredSent, notification_type: "retention", status: "sent", target_id: runId, target_type: "issue", token_uid: owner.auth.uid, updated_at: expiredAt },
-    { id: pushLogIds.expiredFailed, notification_type: "retention", status: "failed", target_id: runId, target_type: "issue", token_uid: owner.auth.uid, updated_at: expiredAt },
-    { id: pushLogIds.recent, notification_type: "retention", status: "sent", target_id: runId, target_type: "issue", token_uid: owner.auth.uid, updated_at: recentAt },
-  ]);
-  if (pushLogError) throw pushLogError;
-
-  const idempotencyRequests = { expired: `expired-${runId}`, recent: `recent-${runId}` };
-  const { error: idempotencyError } = await database.table("app_private", "idempotency_keys").insert([
-    { action: "retention-test", expires_at: futureAt, request_id: idempotencyRequests.expired, status: "completed", uid: owner.auth.uid, updated_at: expiredAt },
-    { action: "retention-test", expires_at: expiredAt, request_id: idempotencyRequests.recent, status: "completed", uid: owner.auth.uid, updated_at: recentAt },
-  ]);
-  if (idempotencyError) throw idempotencyError;
+  if (deliveryError) throw deliveryError;
 
   const tokenDevices = { denied: `denied-${runId}`, expired: `expired-${runId}`, recent: `recent-${runId}` };
   const { error: tokenError } = await database.table("app_private", "push_tokens").insert([
@@ -184,19 +238,65 @@ integrationTest("configured retention cleanup removes every expired data class a
   ]);
   if (tokenError) throw tokenError;
 
-  const deletionTargets = {
-    expiredCompleted: `expired-completed-${runId}`,
-    expiredFailed: `expired-failed-${runId}`,
-    recentCompleted: `recent-completed-${runId}`,
-    recentFailed: `recent-failed-${runId}`,
+  const bgJobIds = {
+    expiredCompleted: crypto.randomUUID(),
+    expiredFailed: crypto.randomUUID(),
+    recentCompleted: crypto.randomUUID(),
+    recentFailed: crypto.randomUUID(),
   };
-  const { error: deletionError } = await database.table("app_private", "deletion_jobs").insert([
-    { status: "completed", target_id: deletionTargets.expiredCompleted, target_type: "integration", updated_at: expiredAt },
-    { status: "failed", target_id: deletionTargets.expiredFailed, target_type: "integration", updated_at: expiredAt },
-    { status: "completed", target_id: deletionTargets.recentCompleted, target_type: "integration", updated_at: recentAt },
-    { status: "failed", target_id: deletionTargets.recentFailed, target_type: "integration", updated_at: recentAt },
+  const { error: bgJobError } = await database.table("app_private", "background_jobs").insert([
+    {
+      attempt_count: 1,
+      created_at: expiredAt,
+      expires_at: expiredAt,
+      id: bgJobIds.expiredCompleted,
+      job_type: "deletion",
+      payload: { target_id: `expired-completed-${runId}` },
+      scope_id: `expired-completed-${runId}`,
+      completed_at: expiredAt,
+      status: "completed",
+      updated_at: expiredAt,
+    },
+    {
+      attempt_count: 8,
+      created_at: expiredAt,
+      expires_at: expiredAt,
+      id: bgJobIds.expiredFailed,
+      job_type: "deletion",
+      payload: { target_id: `expired-failed-${runId}` },
+      scope_id: `expired-failed-${runId}`,
+      error_detail: { code: "expired-failure" },
+      last_attempt_id: crypto.randomUUID(),
+      status: "failed",
+      updated_at: expiredAt,
+    },
+    {
+      attempt_count: 1,
+      created_at: recentAt,
+      expires_at: futureAt,
+      id: bgJobIds.recentCompleted,
+      job_type: "deletion",
+      payload: { target_id: `recent-completed-${runId}` },
+      scope_id: `recent-completed-${runId}`,
+      completed_at: recentAt,
+      status: "completed",
+      updated_at: recentAt,
+    },
+    {
+      attempt_count: 1,
+      created_at: recentAt,
+      expires_at: futureAt,
+      id: bgJobIds.recentFailed,
+      job_type: "deletion",
+      payload: { target_id: `recent-failed-${runId}` },
+      scope_id: `recent-failed-${runId}`,
+      error_detail: { code: "recent-failure" },
+      last_attempt_id: crypto.randomUUID(),
+      status: "failed",
+      updated_at: recentAt,
+    },
   ]);
-  if (deletionError) throw deletionError;
+  if (bgJobError) throw bgJobError;
 
   const auditUids = { expired: `audit-expired-${runId}`, recent: `audit-recent-${runId}` };
   const { error: auditError } = await database.table("app_private", "role_assignment_audit").insert([
@@ -269,14 +369,6 @@ integrationTest("configured retention cleanup removes every expired data class a
   ]);
   if (restrictionError) throw restrictionError;
 
-  const oldMaintenanceId = crypto.randomUUID();
-  const recentMaintenanceId = crypto.randomUUID();
-  const { error: maintenanceSeedError } = await database.table("app_private", "maintenance_runs").insert([
-    { id: oldMaintenanceId, started_at: expiredAt, status: "success", task_name: "maintenance.cleanup" },
-    { id: recentMaintenanceId, started_at: recentAt, status: "success", task_name: "maintenance.cleanup" },
-  ]);
-  if (maintenanceSeedError) throw maintenanceSeedError;
-
   const uploadIds = {
     attached: crypto.randomUUID(),
     failed: crypto.randomUUID(),
@@ -309,7 +401,6 @@ integrationTest("configured retention cleanup removes every expired data class a
   await callAction("savePlatformSettings", {
     imageUploads: asRecord(platformSettings.imageUploads),
     retention: asRecord(platformSettings.retention),
-    requestId: requestId(`retention-cleanup-${runId}`),
   }, admin.auth);
   await processPlatformJobs(500);
 
@@ -321,24 +412,19 @@ integrationTest("configured retention cleanup removes every expired data class a
   await expectPresent("announcements", "id", recentAnnouncementId);
   await expectRemoved("notifications", "id", expiredNotificationId);
   await expectPresent("notifications", "id", recentNotificationId);
-  await expectRemoved("realtime_events", "id", expiredRealtimeId);
-  await expectPresent("realtime_events", "id", recentRealtimeId);
-  await expectRemoved("outbox_events", "id", outboxIds.expiredCompleted);
-  await expectRemoved("outbox_events", "id", outboxIds.expiredFailed);
-  await expectPresent("outbox_events", "id", outboxIds.recentCompleted);
-  await expectPresent("outbox_events", "id", outboxIds.recentFailed);
-  await expectRemoved("push_delivery_logs", "id", pushLogIds.expiredSent);
-  await expectRemoved("push_delivery_logs", "id", pushLogIds.expiredFailed);
-  await expectPresent("push_delivery_logs", "id", pushLogIds.recent);
-  await expectRemoved("idempotency_keys", "request_id", idempotencyRequests.expired);
-  await expectPresent("idempotency_keys", "request_id", idempotencyRequests.recent);
+  await expectPresent("operations", "operation_id", operationIds.expired);
+  await expectPresent("operations", "operation_id", operationIds.recent);
+  await expectRemoved("event_deliveries", "id", deliveryIds.expiredCompleted);
+  await expectRemoved("event_deliveries", "id", deliveryIds.expiredFailed);
+  await expectPresent("event_deliveries", "id", deliveryIds.recentCompleted);
+  await expectPresent("event_deliveries", "id", deliveryIds.recentFailed);
   await expectRemoved("push_tokens", "device_id", tokenDevices.expired);
   await expectRemoved("push_tokens", "device_id", tokenDevices.denied);
   await expectPresent("push_tokens", "device_id", tokenDevices.recent);
-  await expectRemoved("deletion_jobs", "target_id", deletionTargets.expiredCompleted);
-  await expectRemoved("deletion_jobs", "target_id", deletionTargets.expiredFailed);
-  await expectPresent("deletion_jobs", "target_id", deletionTargets.recentCompleted);
-  await expectPresent("deletion_jobs", "target_id", deletionTargets.recentFailed);
+  await expectRemoved("background_jobs", "id", bgJobIds.expiredCompleted);
+  await expectRemoved("background_jobs", "id", bgJobIds.expiredFailed);
+  await expectPresent("background_jobs", "id", bgJobIds.recentCompleted);
+  await expectPresent("background_jobs", "id", bgJobIds.recentFailed);
   await expectRemoved("role_assignment_audit", "uid", auditUids.expired);
   await expectPresent("role_assignment_audit", "uid", auditUids.recent);
   await expectRemoved("admin_audit_log", "target_id", adminAuditTargets.expired);
@@ -351,15 +437,13 @@ integrationTest("configured retention cleanup removes every expired data class a
   await expectRemoved("notion_pages", "target_id", orphanedNotionTargets.announcement);
   await expectRemoved("user_restrictions", "uid", staleAvatarOwner.auth.uid);
   await expectPresent("user_restrictions", "uid", owner.auth.uid);
-  await expectRemoved("maintenance_runs", "id", oldMaintenanceId);
-  await expectPresent("maintenance_runs", "id", recentMaintenanceId);
   await expectRemoved("uploads", "id", uploadIds.pending);
   await expectRemoved("uploads", "id", uploadIds.readyUnattached);
   await expectRemoved("uploads", "id", uploadIds.failed);
   await expectPresent("uploads", "id", uploadIds.recentPending);
   await expectPresent("uploads", "id", uploadIds.attached);
   for (const id of [uploadIds.pending, uploadIds.readyUnattached, uploadIds.failed]) {
-    await expectPresent("deletion_jobs", "target_id", id);
+    await expectPresent("background_jobs", "scope_id", id);
   }
 
   const staleAvatarProfile = await tableRow("user_profiles", "uid", staleAvatarOwner.auth.uid);
@@ -371,23 +455,19 @@ integrationTest("configured retention cleanup removes every expired data class a
   assert.notEqual(referencedAvatarProfile?.display_name, null);
   const adminProfile = await tableRow("user_profiles", "uid", admin.auth.uid);
   assert.notEqual(adminProfile?.email, null, "assigned administrators must not be PII-minimized automatically");
-  await expectPresent("deletion_jobs", "target_id", staleAvatarOwner.auth.uid);
+  await expectPresent("background_jobs", "scope_id", staleAvatarOwner.auth.uid);
 
-  const { data: retentionEvents, error: retentionEventError } = await database.table("app_private", "outbox_events").select("event_type,payload,target_id")
-    .in("target_id", [expiredIssueId, expiredFacilityId]);
+  const { data: retentionEvents, error: retentionEventError } = await database.table("app_private", "domain_events").select("event_type,payload,aggregate_id")
+    .in("aggregate_id", [expiredIssueId, expiredFacilityId]);
   if (retentionEventError) throw retentionEventError;
-  const scheduledDeletionEvents = (retentionEvents ?? []).filter((event) =>
+  const scheduledDeletionEvents = (retentionEvents ?? []).filter((event: any) =>
     asRecord(event.payload).retention_cleanup === true
   );
   assert.equal(scheduledDeletionEvents.length, 2);
   assert.deepEqual(
-    new Set(scheduledDeletionEvents.map((event) => event.event_type)),
+    new Set(scheduledDeletionEvents.map((event: any) => event.event_type)),
     new Set(["issue.deleted", "facility.deleted"]),
   );
-  const { error: prioritizeRetentionError } = await database.table("app_private", "outbox_events")
-    .update({ created_at: expiredAt, next_attempt_at: expiredAt })
-    .in("target_id", [expiredIssueId, expiredFacilityId]);
-  if (prioritizeRetentionError) throw prioritizeRetentionError;
   const { count: retentionNotificationCount, error: retentionNotificationError } = await database
     .table("app_private", "notifications").select("id", { count: "exact", head: true })
     .in("target_id", [expiredIssueId, expiredFacilityId]);
@@ -400,16 +480,30 @@ integrationTest("configured retention cleanup removes every expired data class a
   const { error: avatarProfileError } = await database.table("app_private", "user_profiles")
     .update({ avatar_public_id: currentAvatarPublicId }).eq("uid", avatarOwner.auth.uid);
   if (avatarProfileError) throw avatarProfileError;
-  const { error: avatarJobsError } = await database.table("app_private", "deletion_jobs").insert([
+  const { error: avatarJobsError } = await database.table("app_private", "background_jobs").insert([
     {
-      cloudinary_public_id: currentAvatarPublicId,
-      target_id: avatarOwner.auth.uid,
-      target_type: "avatar",
+      attempt_count: 0,
+      id: crypto.randomUUID(),
+      job_type: "deletion",
+      payload: {
+        cloudinary_public_id: currentAvatarPublicId,
+        target_id: avatarOwner.auth.uid,
+        target_type: "avatar",
+      },
+      scope_id: avatarOwner.auth.uid,
+      status: "pending",
     },
     {
-      cloudinary_public_id: oldAvatarPublicId,
-      target_id: owner.auth.uid,
-      target_type: "avatar",
+      attempt_count: 0,
+      id: crypto.randomUUID(),
+      job_type: "deletion",
+      payload: {
+        cloudinary_public_id: oldAvatarPublicId,
+        target_id: owner.auth.uid,
+        target_type: "avatar",
+      },
+      scope_id: owner.auth.uid,
+      status: "pending",
     },
   ]);
   if (avatarJobsError) throw avatarJobsError;
@@ -422,12 +516,17 @@ integrationTest("configured retention cleanup removes every expired data class a
   let completedUploadJobs: Array<{ status: string; target_id: string }> = [];
   for (let attempt = 0; attempt < 20; attempt += 1) {
     await processJobMessage({ type: "drain" }, testEnvironment);
-    const { data, error } = await database.table("app_private", "deletion_jobs")
-      .select("status,target_id").in("target_id", deletionTargetIds);
+    const { data, error } = await database.table("app_private", "background_jobs")
+      .select("status,scope_id").in("scope_id", deletionTargetIds);
     if (error) throw error;
-    completedUploadJobs = data ?? [];
+    completedUploadJobs = (data ?? []).map((job: any) => ({ status: job.status, target_id: job.scope_id }));
     if (completedUploadJobs.length === deletionTargetIds.length
       && completedUploadJobs.every((job) => job.status === "completed")) break;
+  }
+  if (!completedUploadJobs.every((job) => job.status === "completed")) {
+    console.log("[DEBUG completedUploadJobs]", JSON.stringify(completedUploadJobs));
+    const { data: allPending } = await database.table("app_private", "background_jobs").select("*").in("scope_id", deletionTargetIds);
+    console.log("[DEBUG allPending]", JSON.stringify(allPending));
   }
   assert.equal(completedUploadJobs.length, deletionTargetIds.length);
   assert.ok(completedUploadJobs.every((job) => job.status === "completed"));
@@ -447,8 +546,7 @@ integrationTest("configured retention cleanup removes every expired data class a
   assert.equal(destroyedPublicIds.has(currentAvatarPublicId), false, "current avatar must never be deleted");
 
   const maintenance = await processJobMessage({ type: "maintenance" }, testEnvironment);
-  assert.ok(maintenance.outbox.processedCount >= 0);
-  assert.ok(maintenance.deletion.processedCount >= 0);
+  assert.ok(maintenance.backgroundJobs.processedCount >= 0);
   const { count: postWorkerDeletionNotificationCount, error: postWorkerNotificationError } = await database
     .table("app_private", "notifications").select("id", { count: "exact", head: true })
     .eq("target_id", expiredIssueId)
@@ -495,7 +593,6 @@ integrationTest("closed-content retention can be disabled without disabling othe
   const created = asRecord(await callAction("createIssue", {
     category,
     content: "A closed proposal retained by the disabled cleanup policy.",
-    requestId: requestId(`retention-disabled-${runId}`),
     title: "Retention disabled",
   }, owner.auth));
   const issueId = String(asRecord(created.issue).id);
@@ -511,14 +608,12 @@ integrationTest("closed-content retention can be disabled without disabling othe
       closedFacilitiesEnabled: false,
       closedIssuesEnabled: false,
     },
-    requestId: requestId(`retention-disabled-save-${runId}`),
   }, admin.auth);
   await processPlatformJobs();
   await expectPresent("issues", "id", issueId);
   await callAction("savePlatformSettings", {
     imageUploads: asRecord(platformSettings.imageUploads),
     retention: asRecord(platformSettings.retention),
-    requestId: requestId(`retention-disabled-restore-${runId}`),
   }, admin.auth);
   await processPlatformJobs();
 });

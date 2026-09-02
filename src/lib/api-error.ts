@@ -3,12 +3,14 @@ import { t } from '@/i18n';
 
 export interface ApiErrorBody {
   code?: unknown;
+  message?: unknown;
+  failureId?: unknown;
   retryAfterSeconds?: unknown;
 }
 
 export interface ApiErrorResponse {
   error?: ApiErrorBody;
-  requestId?: unknown;
+  operationId?: unknown;
 }
 
 interface ApiRequestErrorOptions {
@@ -24,15 +26,19 @@ function normalizeRetryAfterSeconds(value: unknown) {
 export class ApiRequestError extends Error {
   readonly code: ApiErrorCode;
   readonly messageKey: (typeof API_ERRORS)[ApiErrorCode]['messageKey'];
-  readonly requestId?: string;
+  readonly operationId?: string;
+  readonly failureId?: string;
   readonly retryAfterSeconds?: number;
   readonly status: number;
 
   constructor(response: ApiErrorResponse, options: ApiRequestErrorOptions = {}) {
     const code = isApiErrorCode(response.error?.code) ? response.error.code : 'internal-error';
     const messageKey = API_ERRORS[code].messageKey;
-    const requestId = typeof response.requestId === 'string' && response.requestId.trim()
-      ? response.requestId.trim()
+    const operationId = typeof response.operationId === 'string' && response.operationId.trim()
+      ? response.operationId.trim()
+      : undefined;
+    const failureId = typeof response.error?.failureId === 'string' && response.error.failureId.trim()
+      ? response.error.failureId.trim()
       : undefined;
     const retryAfterSeconds = normalizeRetryAfterSeconds(response.error?.retryAfterSeconds)
       ?? normalizeRetryAfterSeconds(options.retryAfterSeconds);
@@ -40,11 +46,13 @@ export class ApiRequestError extends Error {
     const message = retryAfterSeconds
       ? t('common.retryAfterSeconds', { message: localizedMessage, seconds: retryAfterSeconds })
       : localizedMessage;
-    super(requestId ? t('service.errorTrackingCode', { message, requestId }) : message);
+    const trackingId = failureId || operationId;
+    super(trackingId ? t('service.errorTrackingCode', { message, trackingId }) : message);
     this.name = 'ApiRequestError';
     this.code = code;
     this.messageKey = messageKey;
-    this.requestId = requestId;
+    this.operationId = operationId;
+    this.failureId = failureId;
     this.retryAfterSeconds = retryAfterSeconds;
     this.status = API_ERRORS[code].status;
   }

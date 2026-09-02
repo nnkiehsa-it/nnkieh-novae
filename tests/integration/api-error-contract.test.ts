@@ -7,7 +7,7 @@ integrationTest("API errors expose stable codes without backend-localized messag
   const envelope = errorEnvelope(new Error("title-required"), "request-123");
   assert.deepEqual(envelope, {
     error: { code: "validation-required" },
-    requestId: "request-123",
+    operationId: "request-123",
     success: false,
   });
   assert.equal("message" in envelope.error, false);
@@ -16,7 +16,7 @@ integrationTest("API errors expose stable codes without backend-localized messag
   assert.equal(response.status, 403);
   assert.deepEqual(await response.json(), {
     error: { code: "permission-denied" },
-    requestId: "request-456",
+    operationId: "request-456",
     success: false,
   });
 });
@@ -30,7 +30,7 @@ integrationTest("rate-limit errors include machine-readable retry metadata", asy
   assert.equal(response.headers.get("retry-after"), "42");
   assert.deepEqual(await response.json(), {
     error: { code: "rate-limit.issue-create", retryAfterSeconds: 42 },
-    requestId: "request-rate-limit",
+    operationId: "request-rate-limit",
     success: false,
   });
 });

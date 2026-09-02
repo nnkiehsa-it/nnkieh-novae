@@ -33,11 +33,9 @@ type Filter =
 
 const SET_RETURNING_FUNCTIONS = new Set<string>([
   "app_api.backend_toggle_support",
-  "app_api.claim_deletion_jobs",
-  "app_api.claim_idempotency_key",
-  "app_api.claim_outbox_events",
-  "app_api.claim_push_delivery_jobs",
-  "app_api.claim_realtime_events",
+  "app_api.claim_background_jobs",
+  "app_api.claim_event_deliveries",
+  "app_api.claim_operation",
 ]);
 
 const JSON_FUNCTION_ARGUMENTS = new Map<string, Set<string>>([
@@ -46,7 +44,13 @@ const JSON_FUNCTION_ARGUMENTS = new Map<string, Set<string>>([
   ["app_api.backend_estimate_retention_cleanup", new Set(["retention_config"])],
   ["app_api.backend_save_platform_settings", new Set(["image_settings", "retention_config"])],
   ["app_api.backend_save_category_management", new Set(["facility_categories", "issue_categories"])],
-  ["app_api.complete_idempotency_key", new Set(["action_response"])],
+  ["app_api.complete_operation", new Set(["action_response"])],
+  ["app_api.fail_operation", new Set(["error_detail"])],
+  ["app_api.record_domain_event", new Set(["payload"])],
+  ["app_api.fail_event_delivery", new Set(["error_info"])],
+  ["app_api.complete_background_job", new Set(["job_result"])],
+  ["app_api.fail_background_job", new Set(["error_info"])],
+  ["app_api.enqueue_background_job", new Set(["payload"])],
 ]);
 
 const IDENTIFIER_PATTERN = /^[a-z_][a-z0-9_]*$/u;
@@ -345,22 +349,27 @@ class FunctionQuery<TReturn> implements PromiseLike<DatabaseResult<TReturn>> {
   }
 }
 
-export class AppDatabaseClient {
-  private connected = false;
-  private closed = false;
-  private connecting: Promise<void> | null = null;
-  private readonly pool: Pool;
+export interface DatabaseSession {
+  table<TName extends TableName>(schema: "app_private", table: TName): TableQuery<TName>;
+  call<TName extends FunctionName>(
+    schema: "app_api",
+    functionName: TName,
+    args?: FunctionArgs<TName>,
+  ): FunctionQuery<FunctionReturn<TName>>;
+  query<TRow extends Record<string, unknown>>(sql: string, values?: unknown[]): Promise<{ rows: TRow[]; rowCount?: number | null }>;
+}
 
-  constructor(connectionString: string) {
-    this.pool = new Pool({
-      connectionString,
-      max: DATABASE_QUERY_CONCURRENCY,
-    });
-  }
+export class AppDatabaseSession implements DatabaseSession {
+  constructor(
+    private readonly runQuery: <TRow extends Record<string, unknown>>(
+      sql: string,
+      values?: unknown[],
+    ) => Promise<{ rows: TRow[]; rowCount?: number | null }>,
+  ) {}
 
   table<TName extends TableName>(schema: "app_private", table: TName) {
     if (schema !== "app_private") throw new Error("invalid-database-schema");
-    return new TableQuery(this.query.bind(this), table);
+    return new TableQuery(this.runQuery, table);
   }
 
   call<TName extends FunctionName>(
@@ -370,7 +379,6 @@ export class AppDatabaseClient {
   ) {
     return new FunctionQuery<FunctionReturn<TName>>(async () => {
       try {
-        await this.connect();
         const qualifiedName = `${schema}.${functionName}`;
         const jsonArguments = JSON_FUNCTION_ARGUMENTS.get(qualifiedName);
         const entries = Object.entries(args ?? {}).filter(([, value]) => value !== undefined);
@@ -378,9 +386,11 @@ export class AppDatabaseClient {
           jsonArguments?.has(name) ? JSON.stringify(value) : value
         );
         const parameters = entries.map(([name], index) => `${quoteIdentifier(name)} => $${index + 1}`).join(", ");
-        const sql = `SELECT to_jsonb(result) AS value FROM ${quoteIdentifier(schema)}.${quoteIdentifier(functionName)}(${parameters}) result`;
-        const result = await this.query<{ value: FunctionReturn<TName> }>(sql, values);
-        const data = SET_RETURNING_FUNCTIONS.has(qualifiedName)
+        const setReturning = SET_RETURNING_FUNCTIONS.has(qualifiedName);
+        const rowAlias = setReturning ? "novae_function_row" : "result";
+        const sql = `SELECT to_jsonb(${rowAlias}) AS value FROM ${quoteIdentifier(schema)}.${quoteIdentifier(functionName)}(${parameters}) ${rowAlias}`;
+        const result = await this.runQuery<{ value: FunctionReturn<TName> }>(sql, values);
+        const data = setReturning
           ? result.rows.map((row) => row.value)
           : result.rows[0]?.value ?? null;
         return { data: data as FunctionReturn<TName>, error: null };
@@ -388,6 +398,63 @@ export class AppDatabaseClient {
         return { data: null, error: databaseError(error) };
       }
     });
+  }
+
+  query<TRow extends Record<string, unknown>>(sql: string, values: unknown[] = []) {
+    return this.runQuery<TRow>(sql, values);
+  }
+}
+
+export class AppDatabaseClient implements DatabaseSession {
+  private connected = false;
+  private closed = false;
+  private connecting: Promise<void> | null = null;
+  private readonly pool: Pool;
+  private readonly session: DatabaseSession;
+
+  constructor(connectionString: string) {
+    this.pool = new Pool({
+      connectionString,
+      max: DATABASE_QUERY_CONCURRENCY,
+    });
+    this.session = new AppDatabaseSession(this.query.bind(this));
+  }
+
+  table<TName extends TableName>(schema: "app_private", table: TName) {
+    return this.session.table(schema, table);
+  }
+
+  call<TName extends FunctionName>(
+    schema: "app_api",
+    functionName: TName,
+    args?: FunctionArgs<TName>,
+  ) {
+    return this.session.call(schema, functionName, args);
+  }
+
+  async transaction<T>(callback: (tx: DatabaseSession) => Promise<T>): Promise<T> {
+    await this.connect();
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      let transactionQueryTail: Promise<unknown> = Promise.resolve();
+      const txSession = new AppDatabaseSession(<TRow extends Record<string, unknown>>(
+        sql: string,
+        values: unknown[] = [],
+      ) => {
+        const query = transactionQueryTail.then(() => client.query<TRow>(sql, values));
+        transactionQueryTail = query.then(() => undefined, () => undefined);
+        return query;
+      });
+      const result = await callback(txSession);
+      await client.query("COMMIT");
+      return result;
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async connect() {
@@ -420,7 +487,7 @@ export class AppDatabaseClient {
     await this.pool.end();
   }
 
-  private query<TRow extends Record<string, unknown>>(sql: string, values: unknown[] = []) {
+  query<TRow extends Record<string, unknown>>(sql: string, values: unknown[] = []) {
     return this.connect().then(() => this.pool.query<TRow>(sql, values));
   }
 }

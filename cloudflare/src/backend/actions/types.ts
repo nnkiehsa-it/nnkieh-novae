@@ -1,6 +1,6 @@
-import type { AppDatabaseClient } from "../database/client.ts";
+import type { DatabaseSession } from "../database/client.ts";
 
-export type BackendDatabase = AppDatabaseClient;
+export type BackendDatabase = DatabaseSession;
 export type JsonRecord = Record<string, unknown>;
 export type PermissionCode =
   | "announcement.manage"

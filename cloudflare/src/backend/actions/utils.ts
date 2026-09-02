@@ -35,34 +35,8 @@ export function readCursor(payload: JsonRecord) {
   return asRecord(payload.cursor);
 }
 
-export function readCursorDate(payload: JsonRecord, key: string, fallbackKey?: string) {
-  return asDateIso(payload[key] ?? (fallbackKey ? payload[fallbackKey] : undefined));
-}
-
-export function applyDescendingDateCursor<TQuery>(
-  query: TQuery,
-  cursor: JsonRecord,
-  dateColumn: string,
-) {
-  const id = asUuid(cursor.id);
-  const date = readCursorDate(cursor, `${dateColumn}Ms`, dateColumn);
-  if (!id || !date || typeof query !== "object" || query === null || !("cursor" in query)) return query;
-  return (query as {
-    cursor: (column: string, cursorDate: string, cursorId: string, direction: "descending") => TQuery;
-  }).cursor(dateColumn, date, id, "descending");
-}
-
-export function applyAscendingDateCursor<TQuery>(
-  query: TQuery,
-  cursor: JsonRecord,
-  dateColumn: string,
-) {
-  const id = asUuid(cursor.id);
-  const date = readCursorDate(cursor, `${dateColumn}Ms`, dateColumn);
-  if (!id || !date || typeof query !== "object" || query === null || !("cursor" in query)) return query;
-  return (query as {
-    cursor: (column: string, cursorDate: string, cursorId: string, direction: "ascending") => TQuery;
-  }).cursor(dateColumn, date, id, "ascending");
+export function readCursorDate(payload: JsonRecord, key: string) {
+  return asDateIso(payload[key]);
 }
 
 export function cursorRange(pageSize: number) {

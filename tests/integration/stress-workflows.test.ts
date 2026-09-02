@@ -6,7 +6,6 @@ import {
   insertReadyUpload,
   integrationTest,
   refreshActor,
-  requestId,
   saveCategoryDraft,
   seedActor,
   database,
@@ -104,7 +103,6 @@ async function configureAccess(
   const results = await Promise.all(operations.map((operation) => callAction("setUserAccessScope", {
     categoryId: operation.categoryId,
     grant: operation.grant,
-    requestId: requestId(`stress-access-${operation.scopeKind}`),
     scopeKind: operation.scopeKind,
     uid: actor.auth.uid,
   }, admin.auth)));
@@ -239,7 +237,6 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
       const created = asRecord(await callAction("createIssue", {
         category: String(category.id),
         content: markdownWithUpload(upload.id, `Stress issue ${categoryIndex}-${itemIndex}`),
-        requestId: requestId("stress-create-issue"),
         title: `Stress ${categoryIndex}-${itemIndex}`,
       }, owner.auth));
       return { category, issue: asRecord(created.issue), owner };
@@ -255,7 +252,6 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
     if (issue.status === "under-review") {
       const approved = asRecord(await callAction("moderateIssueStatus", {
         issueId,
-        requestId: requestId("stress-review"),
         status: "pending",
       }, managerA.auth));
       assert.equal(asRecord(approved.issue).status, "pending");
@@ -263,30 +259,26 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
     const root = asRecord(await callAction("createComment", {
       content: `Stress root ${index}`,
       issueId,
-      requestId: requestId("stress-root-comment"),
     }, owner.auth));
     const rootId = String(asRecord(root.comment).id);
     const reply = asRecord(await callAction("createComment", {
       content: `Stress nested reply ${index}`,
       issueId,
       parentCommentId: rootId,
-      requestId: requestId("stress-nested-comment"),
     }, managerB.auth));
-    assert.equal(asRecord(reply.comment).parent_comment_id, rootId);
+    assert.equal(asRecord(reply.comment).parentCommentId, rootId);
     const comments = asRecord(await callAction("listComments", { issueId, pageSize: 30 }, managerA.auth));
     assert.ok(JSON.stringify(comments).includes(rootId));
     const result = asRecord(await callAction("updateIssueResult", {
       issueId,
-      requestId: requestId("stress-issue-result"),
       resultContent: `Handled by multiple managers ${runId}`,
     }, managerB.auth));
-    assert.equal(asRecord(result.issue).result_content, `Handled by multiple managers ${runId}`);
+    assert.equal(asRecord(result.issue).resultContent, `Handled by multiple managers ${runId}`);
     if (category.supportEnabled === true && category.readAccess !== "owner-admin") {
       const supporter = ordinaryUsers[(index + 1) % ordinaryUsers.length];
       if (supporter.auth.uid !== owner.auth.uid) {
         const supported = asRecord(await callAction("toggleSupport", {
           issueId,
-          requestId: requestId("stress-support"),
         }, supporter.auth));
         assert.equal(supported.supported, true);
       }
@@ -301,7 +293,6 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
         categoryId: String(category.id),
         content: markdownWithUpload(upload.id, `Stress facility ${categoryIndex}-${itemIndex}`),
         location: `Stress room ${categoryIndex}-${itemIndex}`,
-        requestId: requestId("stress-create-facility"),
         title: `Facility ${categoryIndex}-${itemIndex}`,
       }, owner.auth));
       return { facility: asRecord(created.facility), owner };
@@ -313,12 +304,10 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
     assert.ok(affectedUser);
     const affected = asRecord(await callAction("toggleFacilityAffected", {
       facilityId,
-      requestId: requestId("stress-facility-affected"),
     }, affectedUser.auth));
     assert.equal(affected.affected, true);
     const updated = asRecord(await callAction("updateFacilityStatus", {
       facilityId,
-      requestId: requestId("stress-facility-status"),
       status: "processing",
     }, managers[index % managers.length].auth));
     assert.equal(asRecord(updated.facility).status, "processing");
@@ -328,7 +317,6 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
     const upload = await insertReadyUpload(manager.auth.uid, `announcement-${runId}-${index}`);
     const created = asRecord(await callAction("createAnnouncement", {
       content: markdownWithUpload(upload.id, `Stress announcement ${index}`),
-      requestId: requestId("stress-announcement"),
       title: `Stress announcement ${index}`,
     }, manager.auth));
     return asRecord(created.announcement);
@@ -337,25 +325,23 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
     const announcementId = String(announcements[index].id);
     const user = ordinaryUsers[index % ordinaryUsers.length];
     assert.equal(asRecord(await callAction("setAnnouncementLike", {
-      announcementId, liked: true, requestId: requestId("stress-like"),
+      announcementId, liked: true,
     }, user.auth)).liked, true);
     const root = asRecord(await callAction("createAnnouncementComment", {
-      announcementId, content: `Announcement root ${index}`, requestId: requestId("stress-announcement-root"),
+      announcementId, content: `Announcement root ${index}`,
     }, user.auth));
     const rootId = String(asRecord(root.comment).id);
     const nested = asRecord(await callAction("createAnnouncementComment", {
       announcementId,
       content: `Announcement nested ${index}`,
       parentCommentId: rootId,
-      requestId: requestId("stress-announcement-nested"),
     }, ordinaryUsers[(index + 1) % ordinaryUsers.length].auth));
-    assert.equal(asRecord(nested.comment).parent_comment_id, rootId);
+    assert.equal(asRecord(nested.comment).parentCommentId, rootId);
   }
 
   await Promise.all(ordinaryUsers.map(exerciseNotifications));
   await expectActionError("permission-denied", () => callAction("createAnnouncement", {
     content: "Denied under stress",
-    requestId: requestId("stress-denied-announcement"),
     title: "Denied",
   }, ordinaryUsers[0].auth));
 
@@ -365,7 +351,6 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
     assert.ok(outside);
     await expectActionError("permission-denied", () => callAction("moderateIssueStatus", {
       issueId: String(outside.issue.id),
-      requestId: requestId("stress-cross-scope-denied"),
       status: "processing",
     }, scoped.auth));
   }
@@ -376,7 +361,6 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
         announcementCommentsEnabled: true,
         facilitiesEnabled,
         issuesEnabled,
-        requestId: requestId("stress-platform-features"),
       }, admins[0].auth));
       assert.equal(saved.issuesEnabled, issuesEnabled);
       assert.equal(saved.facilitiesEnabled, facilitiesEnabled);

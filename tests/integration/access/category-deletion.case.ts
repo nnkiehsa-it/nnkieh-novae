@@ -6,7 +6,6 @@ import {
   insertReadyUpload,
   integrationTest,
   refreshActor,
-  requestId,
   saveCategoryDraft,
   seedActor,
   database,
@@ -72,7 +71,6 @@ integrationTest("category deletion removes category and all associated resources
     content: `這是一個測試提案\n\n![測試圖片](srp-upload://${upload.id})`,
     category: "temp-cat-to-delete",
     authorName: "測試者",
-    requestId: requestId("create-issue-to-delete"),
   };
   const createdIssue = asRecord(await callAction("createIssue", issuePayload, user.auth));
   const issueId = asRecord(createdIssue.issue).id;
@@ -81,13 +79,11 @@ integrationTest("category deletion removes category and all associated resources
   const commentResult = asRecord(await callAction("createComment", {
     content: "分類刪除時也必須移除此留言",
     issueId: String(issueId),
-    requestId: requestId("create-comment-to-delete"),
   }, user.auth));
   const commentId = String(asRecord(commentResult.comment).id);
   const supporter = await seedActor("delete-cat-supporter");
   await callAction("toggleSupport", {
     issueId: String(issueId),
-    requestId: requestId("create-support-to-delete"),
   }, supporter.auth);
   const notificationId = crypto.randomUUID();
   const { error: notificationError } = await database.table("app_private", "notifications").insert({
@@ -123,20 +119,20 @@ integrationTest("category deletion removes category and all associated resources
   assert.equal(await tableRow("supports", "issue_id", String(issueId)), null);
   assert.equal(await tableRow("uploads", "id", upload.id), null);
   assert.equal(await tableRow("notifications", "id", notificationId), null);
-  assert.ok(await tableRow("deletion_jobs", "cloudinary_public_id", upload.cloudinaryPublicId));
+  assert.ok(await tableRow("background_jobs", "scope_id", upload.id));
 
-  // 8. Verify outbox event is queued
-  const { data: outboxRows, error: outboxError } = await database
-    .table("app_private", "outbox_events")
+  // 8. Verify domain event is recorded
+  const { data: eventRows, error: eventError } = await database
+    .table("app_private", "domain_events")
     .select("*")
-    .eq("target_id", String(issueId))
+    .eq("aggregate_id", String(issueId))
     .eq("event_type", "issue.deleted");
-  if (outboxError) throw outboxError;
+  if (eventError) throw eventError;
 
-  assert.equal(outboxRows.length, 1);
-  const outboxRow = outboxRows[0];
-  assert.ok(outboxRow);
-  assert.equal(asRecord(outboxRow).event_type, "issue.deleted");
+  assert.equal(eventRows.length, 1);
+  const eventRow = eventRows[0];
+  assert.ok(eventRow);
+  assert.equal(asRecord(eventRow).event_type, "issue.deleted");
 
   await expectActionError("not-found", () => saveCategoryDraft(admin.auth, {
     deletedIssueCategoryIds: ["temp-cat-to-delete"],
@@ -161,13 +157,11 @@ integrationTest("category deletion removes category and all associated resources
     categoryId: "temp-facility-to-delete",
     content: `設備分類刪除測試\n\n![測試圖片](srp-upload://${facilityUpload.id})`,
     location: "測試位置",
-    requestId: requestId("create-facility-to-delete"),
     title: "測試設備案件",
   }, user.auth));
   const facilityId = String(asRecord(facilityResult.facility).id);
   await callAction("toggleFacilityAffected", {
     facilityId,
-    requestId: requestId("create-facility-affected-to-delete"),
   }, supporter.auth);
   const facilityNotificationId = crypto.randomUUID();
   const { error: facilityNotificationError } = await database.table("app_private", "notifications").insert({
@@ -190,9 +184,9 @@ integrationTest("category deletion removes category and all associated resources
   assert.equal(await tableRow("facility_report_affected_users", "facility_id", facilityId), null);
   assert.equal(await tableRow("uploads", "id", facilityUpload.id), null);
   assert.equal(await tableRow("notifications", "id", facilityNotificationId), null);
-  assert.ok(await tableRow("deletion_jobs", "cloudinary_public_id", facilityUpload.cloudinaryPublicId));
+  assert.ok(await tableRow("background_jobs", "scope_id", facilityUpload.id));
 
-  const { data: facilityOutbox, error: facilityOutboxError } = await database.table("app_private", "outbox_events").select("event_type").eq("target_id", facilityId).eq("event_type", "facility.deleted");
-  if (facilityOutboxError) throw facilityOutboxError;
-  assert.equal(facilityOutbox.length, 1);
+  const { data: facilityEvents, error: facilityEventError } = await database.table("app_private", "domain_events").select("event_type").eq("aggregate_id", facilityId).eq("event_type", "facility.deleted");
+  if (facilityEventError) throw facilityEventError;
+  assert.equal(facilityEvents.length, 1);
 });

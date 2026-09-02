@@ -56,7 +56,7 @@ function subscribeNotificationBroadcast(
   }, { onError, onResync });
 }
 
-export type NotificationCursor = { createdAtMs: number; id: string } | null;
+export type NotificationCursor = { createdAt: string; id: string } | null;
 export interface NotificationSourcePage {
   cursor: NotificationCursor;
   hasMore: boolean;
@@ -135,8 +135,8 @@ function normalizeNotificationCursor(data: unknown): NotificationCursor {
   if (!data || typeof data !== 'object') return null;
   const record = data as Record<string, unknown>;
   const id = typeof record.id === 'string' ? record.id : '';
-  const createdAt = normalizeDate(record.createdAtMs ?? record.created_at);
-  return id && createdAt ? { id, createdAtMs: createdAt.getTime() } : null;
+  const createdAt = normalizeDate(record.createdAt);
+  return id && createdAt ? { id, createdAt: createdAt.toISOString() } : null;
 }
 
 function normalizeTargetType(value: unknown): NotificationTargetType {
@@ -161,17 +161,17 @@ function normalizeNotificationRecord(
     id: `${source}:${id}`,
     source,
     type: normalizeNotificationType(data.type),
-    target_type: normalizeTargetType(data.target_type),
-    target_id: String(data.target_id ?? ''),
-    comment_id: normalizeNullableString(data.comment_id),
+    target_type: normalizeTargetType(data.targetType),
+    target_id: String(data.targetId ?? ''),
+    comment_id: normalizeNullableString(data.commentId),
     title: String(data.title ?? ''),
-    actor_uid: normalizeNullableString(data.actor_uid),
-    body_preview: normalizeNullableString(data.body_preview),
-    issue_category: isIssueCategory(data.issue_category) ? data.issue_category : null,
-    old_status: normalizeOptionalStatus(data.old_status),
-    new_status: normalizeOptionalStatus(data.new_status),
-    is_read: Boolean(data.is_read),
-    created_at: normalizeDate(data.created_at_ms ?? data.created_at),
+    actor_uid: normalizeNullableString(data.actorUid),
+    body_preview: normalizeNullableString(data.bodyPreview),
+    issue_category: isIssueCategory(data.issueCategory) ? data.issueCategory : null,
+    old_status: normalizeOptionalStatus(data.oldStatus),
+    new_status: normalizeOptionalStatus(data.newStatus),
+    is_read: Boolean(data.isRead),
+    created_at: normalizeDate(data.createdAt),
   };
 }
 
@@ -189,7 +189,7 @@ export function subscribeNotificationSource(
     (message) => {
       const data = message.payload as Record<string, unknown>;
       if (data.source !== source) return;
-      if (source === 'user' && data.recipient_uid !== uid) return;
+      if (source === 'user' && data.recipientUid !== uid) return;
       onInsert(normalizeNotificationRecord(source, data));
     },
     onError,
@@ -205,7 +205,7 @@ export async function fetchNotificationSourcePages(
   const cacheKey = createContentCacheKey([
     'notification-pages',
     uid,
-    ...requests.map(({ cursor, source }) => `${source}:${cursor?.id ?? 'first'}:${cursor?.createdAtMs ?? ''}`),
+    ...requests.map(({ cursor, source }) => `${source}:${cursor?.id ?? 'first'}:${cursor?.createdAt ?? ''}`),
   ]);
   const cached = await getCachedContentPersistent<Partial<Record<NotificationSource, NotificationSourcePage>>>(
     cacheKey,
@@ -292,7 +292,7 @@ export async function fetchNotificationSnapshot(
 ) {
   const fn = invokeBackendAction<
     { sources: NotificationSource[]; uid: string },
-    { openedAtMs: number; pages: Partial<Record<NotificationSource, Record<string, unknown>>>; state: Record<string, unknown> }
+    { openedAt: string; pages: Partial<Record<NotificationSource, Record<string, unknown>>>; state: Record<string, unknown> }
   >('getNotificationSnapshot', { signal, timeoutMs: READ_REQUEST_TIMEOUT_MS });
   const result = await fn({ sources, uid });
   return {
@@ -308,7 +308,7 @@ export async function fetchNotificationSnapshot(
         )),
       } satisfies NotificationSourcePage];
     })) as Record<NotificationSource, NotificationSourcePage>,
-    openedAtMs: result.openedAtMs,
+    openedAtMs: Date.parse(result.openedAt),
     state: normalizeNotificationReadState(result.state),
   };
 }
@@ -359,20 +359,20 @@ export function subscribeNotificationBadge(
 
 function normalizeNotificationReadState(data: Record<string, unknown>): NotificationReadState {
   return {
-    admin: normalizeDate(data.admin_opened_at_ms ?? data.admin_opened_at),
-    broadcast: normalizeDate(data.broadcast_opened_at_ms ?? data.broadcast_opened_at),
+    admin: normalizeDate(data.adminOpenedAt),
+    broadcast: normalizeDate(data.broadcastOpenedAt),
     personalPreferences: {
-      comments: data.push_comments_enabled !== false,
-      issueUpdates: data.push_issue_updates_enabled !== false,
-      facilityUpdates: data.push_facility_updates_enabled !== false,
+      comments: data.pushCommentsEnabled !== false,
+      issueUpdates: data.pushIssueUpdatesEnabled !== false,
+      facilityUpdates: data.pushFacilityUpdatesEnabled !== false,
     },
-    user: normalizeDate(data.user_opened_at_ms ?? data.user_opened_at),
+    user: normalizeDate(data.userOpenedAt),
   };
 }
 
 export async function markNotificationsOpened() {
   try {
-    const fn = invokeBackendAction<Record<string, never>, { openedAtMs: number; success: boolean }>('markNotificationsOpened');
+    const fn = invokeBackendAction<Record<string, never>, { openedAt: string; success: boolean }>('markNotificationsOpened');
     const result = await fn({});
     markContentCachePrefixStale(NOTIFICATION_STATE_CACHE_KEY);
     setCachedContent(NOTIFICATION_UNREAD_CACHE_KEY, { value: false });

@@ -35,6 +35,7 @@ export type ContentRealtimeEventType =
   | 'facility_changed';
 
 export interface ContentRealtimeEvent {
+  aggregateRevision: number;
   category: string | null;
   commentCount: number | null;
   createdAt: Date | null;
@@ -42,9 +43,10 @@ export interface ContentRealtimeEvent {
   parentId: string | null;
   likeCount: number | null;
   op: 'insert' | 'update' | 'delete' | null;
+  operationId: string;
   supportCount: number | null;
   targetId: string;
-  version: number;
+  domainRevision: number;
 }
 
 function normalizeNullableString(value: unknown) {
@@ -74,26 +76,30 @@ function normalizeEventType(value: unknown): ContentRealtimeEventType | null {
 }
 
 function normalizeRealtimeEvent(data: Record<string, unknown>): ContentRealtimeEvent | null {
-  const eventType = normalizeEventType(data.event_type);
-  const targetId = normalizeNullableString(data.target_id);
+  const eventType = normalizeEventType(data.eventType);
+  const targetId = normalizeNullableString(data.targetId);
   if (!eventType || !targetId) return null;
   return {
+    aggregateRevision: typeof data.aggregateRevision === 'number' && Number.isFinite(data.aggregateRevision)
+      ? data.aggregateRevision
+      : 0,
     category: normalizeNullableString(data.category),
-    commentCount: typeof data.comment_count === 'number' && Number.isFinite(data.comment_count)
-      ? data.comment_count
+    commentCount: typeof data.commentCount === 'number' && Number.isFinite(data.commentCount)
+      ? data.commentCount
       : null,
-    createdAt: normalizeDate(data.created_at),
+    createdAt: normalizeDate(data.createdAt),
     eventType,
-    likeCount: typeof data.like_count === 'number' && Number.isFinite(data.like_count)
-      ? data.like_count
+    likeCount: typeof data.likeCount === 'number' && Number.isFinite(data.likeCount)
+      ? data.likeCount
       : null,
     op: data.op === 'insert' || data.op === 'update' || data.op === 'delete' ? data.op : null,
-    parentId: normalizeNullableString(data.parent_id),
-    supportCount: typeof data.support_count === 'number' && Number.isFinite(data.support_count)
-      ? data.support_count
+    operationId: normalizeNullableString(data.operationId) ?? '',
+    parentId: normalizeNullableString(data.parentId),
+    supportCount: typeof data.supportCount === 'number' && Number.isFinite(data.supportCount)
+      ? data.supportCount
       : null,
     targetId,
-    version: typeof data.version === 'number' && Number.isFinite(data.version) ? data.version : 0,
+    domainRevision: typeof data.domainRevision === 'number' && Number.isFinite(data.domainRevision) ? data.domainRevision : 0,
   };
 }
 
@@ -104,13 +110,13 @@ function realtimeEventDomain(event: ContentRealtimeEvent): ContentVersionDomain 
 }
 
 function synchronizeRealtimeVersion(event: ContentRealtimeEvent) {
-  if (event.version <= 0) return;
+  if (event.domainRevision <= 0) return;
   const domain = realtimeEventDomain(event);
-  if (hasContentVersionGap(domain, event.version)) {
+  if (hasContentVersionGap(domain, event.domainRevision)) {
     void ensureContentVersionsFresh({ notify: true }).catch(() => undefined);
     return;
   }
-  registerContentVersion(domain, event.version);
+  registerContentVersion(domain, event.domainRevision);
 }
 
 function invalidateRealtimeContent(event: ContentRealtimeEvent) {
@@ -127,7 +133,7 @@ function invalidateRealtimeContent(event: ContentRealtimeEvent) {
     if (event.eventType === 'issue_support_changed' && event.supportCount !== null) {
       patchContentEntity<IssueRecord>(scope, 'issue', event.targetId, {
         support_count: event.supportCount,
-      });
+      }, { serverRevision: event.aggregateRevision });
     }
     return;
   }
@@ -149,7 +155,9 @@ function invalidateRealtimeContent(event: ContentRealtimeEvent) {
     if (event.likeCount !== null) patch.like_count = event.likeCount;
     if (event.commentCount !== null) patch.comment_count = event.commentCount;
     if (Object.keys(patch).length > 0) {
-      patchContentEntity<AnnouncementRecord>(scope, 'announcement', announcementId, patch);
+      patchContentEntity<AnnouncementRecord>(scope, 'announcement', announcementId, patch, {
+        serverRevision: event.aggregateRevision,
+      });
     }
   }
 }

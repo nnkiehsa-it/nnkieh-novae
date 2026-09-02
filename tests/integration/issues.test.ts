@@ -4,7 +4,6 @@ import {
   callAction,
   expectActionError,
   integrationTest,
-  requestId,
   saveCategoryDraft,
   seedActor,
   database,
@@ -18,7 +17,6 @@ async function createIssue(
   const result = asRecord(await callAction("createIssue", {
     category,
     content: `Integration content ${label}`,
-    requestId: requestId(`create-issue-${label}`),
     title: `Test ${label}`.slice(0, 30),
   }, actor.auth));
   return asRecord(result.issue);
@@ -42,7 +40,7 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
   const publicIssue = await createIssue(owner, "public-issues", "public");
   const publicIssueId = String(publicIssue.id);
   assert.equal(publicIssue.status, "under-review");
-  assert.equal(publicIssue.read_access, "reviewed-school");
+  assert.equal(publicIssue.readAccess, "reviewed-school");
 
   const categoryManagement = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
   const originalPublicCategory = asRecord((categoryManagement.issueCategories as unknown[])
@@ -56,15 +54,15 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     }],
   });
   const futureDefaultsIssue = await createIssue(owner, "public-issues", "future-defaults");
-  assert.equal(futureDefaultsIssue.comments_enabled, false);
-  assert.equal(futureDefaultsIssue.support_goal, nextSupportGoal);
+  assert.equal(futureDefaultsIssue.commentsEnabled, false);
+  assert.equal(futureDefaultsIssue.supportGoal, nextSupportGoal);
   const unchangedExistingIssue = asRecord(asRecord(await callAction(
     "getIssue",
     { issueId: publicIssueId },
     owner.auth,
   )).issue);
-  assert.equal(unchangedExistingIssue.comments_enabled, false);
-  assert.equal(unchangedExistingIssue.support_goal, publicIssue.support_goal);
+  assert.equal(unchangedExistingIssue.commentsEnabled, false);
+  assert.equal(unchangedExistingIssue.supportGoal, publicIssue.supportGoal);
   await saveCategoryDraft(admin.auth, {
     upsertIssueCategories: [originalPublicCategory],
   });
@@ -73,7 +71,7 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     { issueId: publicIssueId },
     owner.auth,
   )).issue);
-  assert.equal(stillClosedAfterCategoryReopen.comments_enabled, true);
+  assert.equal(stillClosedAfterCategoryReopen.commentsEnabled, true);
 
   await saveCategoryDraft(admin.auth, {
     upsertIssueCategories: [{ ...originalPublicCategory, commentsEnabled: false }],
@@ -86,7 +84,7 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     { issueId: publicIssueId },
     owner.auth,
   )).issue);
-  assert.equal(reopenedAfterCategoryCycle.comments_enabled, true);
+  assert.equal(reopenedAfterCategoryCycle.commentsEnabled, true);
 
   const immutableSnapshotWrite = await database.table("app_private", "issues")
     .update({ read_access: "school" }).eq("id", publicIssueId);
@@ -156,7 +154,6 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     "permission-denied",
     () => callAction("moderateIssueStatus", {
       issueId: publicIssueId,
-      requestId: requestId("regular-moderate"),
       status: "pending",
     }, user.auth),
   );
@@ -164,64 +161,55 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     "permission-denied",
     () => callAction("moderateIssueStatus", {
       issueId: publicIssueId,
-      requestId: requestId("wrong-scope-moderate"),
       status: "pending",
     }, rightsManager.auth),
   );
   const approved = asRecord(await callAction("moderateIssueStatus", {
     issueId: publicIssueId,
-    requestId: requestId("approve"),
     status: "pending",
   }, publicManager.auth));
   assert.equal(asRecord(approved.issue).status, "pending");
   const reopenedAfterCategoryEnabled = asRecord(asRecord(await callAction("getIssue", {
     issueId: publicIssueId,
   }, owner.auth)).issue);
-  assert.equal(reopenedAfterCategoryEnabled.comments_enabled, true);
+  assert.equal(reopenedAfterCategoryEnabled.commentsEnabled, true);
 
   await expectActionError(
     "permission-denied",
     () => callAction("updateIssueResult", {
       issueId: publicIssueId,
-      requestId: requestId("regular-result"),
       resultContent: "Not allowed",
     }, user.auth),
   );
   const resultWrite = asRecord(await callAction("updateIssueResult", {
     issueId: publicIssueId,
-    requestId: requestId("manager-result"),
     resultContent: "Integration result",
   }, publicManager.auth));
-  assert.equal(asRecord(resultWrite.issue).result_content, "Integration result");
+  assert.equal(asRecord(resultWrite.issue).resultContent, "Integration result");
 
   await expectActionError(
     "support-not-available",
     () => callAction("toggleSupport", {
       issueId: publicIssueId,
-      requestId: requestId("self-support"),
     }, owner.auth),
   );
   const supported = asRecord(await callAction("toggleSupport", {
     issueId: publicIssueId,
-    requestId: requestId("support"),
   }, user.auth));
   assert.equal(supported.supported, true);
   const removed = asRecord(await callAction("removeSupport", {
     issueId: publicIssueId,
-    requestId: requestId("remove-support"),
   }, user.auth));
   assert.equal(removed.supported, false);
 
   const commentWrite = asRecord(await callAction("createComment", {
     content: "Integration issue comment",
     issueId: publicIssueId,
-    requestId: requestId("comment"),
   }, user.auth));
   const commentId = String(asRecord(commentWrite.comment).id);
   const secondCommentWrite = asRecord(await callAction("createComment", {
     content: "Second integration issue comment",
     issueId: publicIssueId,
-    requestId: requestId("comment-second"),
   }, user.auth));
   const secondCommentId = String(asRecord(secondCommentWrite.comment).id);
   const comments = asRecord(await callAction("listComments", {
@@ -243,40 +231,33 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     "permission-denied",
     () => callAction("deleteComment", {
       commentId,
-      requestId: requestId("stranger-delete-comment"),
     }, stranger.auth),
   );
   await callAction("deleteComment", {
     commentId,
-    requestId: requestId("owner-delete-comment"),
   }, user.auth);
   await callAction("deleteComment", {
     commentId: secondCommentId,
-    requestId: requestId("owner-delete-comment-second"),
   }, user.auth);
 
   const managedCommentWrite = asRecord(await callAction("createComment", {
     content: "Manager removable comment",
     issueId: publicIssueId,
-    requestId: requestId("managed-comment"),
   }, stranger.auth));
   await callAction("deleteComment", {
     commentId: String(asRecord(managedCommentWrite.comment).id),
-    requestId: requestId("manager-delete-comment"),
   }, publicManager.auth);
 
   const completedIssue = asRecord(await callAction("moderateIssueStatus", {
     issueId: publicIssueId,
-    requestId: requestId("complete-before-comment-reopen-check"),
     status: "completed",
   }, publicManager.auth));
-  assert.equal(asRecord(completedIssue.issue).comments_enabled, false);
+  assert.equal(asRecord(completedIssue.issue).commentsEnabled, false);
   await expectActionError(
     "comments-disabled",
     () => callAction("createComment", {
       content: "Must be rejected after proposal closes",
       issueId: publicIssueId,
-      requestId: requestId("closed-comment"),
     }, user.auth),
   );
 
@@ -290,13 +271,11 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     "permission-denied",
     () => callAction("moderateIssueStatus", {
       issueId: privateIssueId,
-      requestId: requestId("public-manager-private"),
       status: "processing",
     }, publicManager.auth),
   );
   const privateManaged = asRecord(await callAction("moderateIssueStatus", {
     issueId: privateIssueId,
-    requestId: requestId("rights-manager-private"),
     status: "processing",
   }, rightsManager.auth));
   assert.equal(asRecord(privateManaged.issue).status, "processing");
@@ -306,20 +285,16 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     "permission-denied",
     () => callAction("deleteIssue", {
       issueId: String(ownerDeleteIssue.id),
-      requestId: requestId("stranger-delete-issue"),
     }, stranger.auth),
   );
   await callAction("deleteIssue", {
     issueId: String(ownerDeleteIssue.id),
-    requestId: requestId("owner-delete-issue"),
   }, owner.auth);
   await callAction("deleteIssue", {
     issueId: String(futureDefaultsIssue.id),
-    requestId: requestId("admin-delete-future-defaults"),
   }, admin.auth);
   await callAction("deleteIssue", {
     issueId: publicIssueId,
-    requestId: requestId("admin-delete-issue"),
   }, admin.auth);
 });
 

@@ -26,8 +26,8 @@ export async function getPlatformDashboard(database: BackendDatabase) {
   const failedMaintenanceTasks = failedDeletionJobs > 0
     ? ["maintenance.deletion-jobs-stale"]
     : [];
-  const outboxFailed = asCount(snapshot.outbox_failed);
-  const outboxPending = asCount(snapshot.outbox_pending);
+  const deliveryFailed = asCount(snapshot.delivery_failed);
+  const deliveryPending = asCount(snapshot.delivery_pending);
   const pushFailed = asCount(snapshot.push_failed);
   const deletionFailed = asCount(snapshot.deletion_failed);
   const deletionPending = asCount(snapshot.deletion_pending);
@@ -40,9 +40,9 @@ export async function getPlatformDashboard(database: BackendDatabase) {
         attempt_count: asCount(failure.attempt_count),
         created_at_ms: toMs(failure.created_at),
         detail_type: asString(failure.detail_type),
-        error_trace_id: asString(failure.error_trace_id),
+        failure_id: asString(failure.failure_id),
         next_attempt_at_ms: toMs(failure.next_attempt_at),
-        source: asString(failure.source, "outbox"),
+        source: asString(failure.source, "delivery"),
         status: asString(failure.status),
         target_id: asString(failure.target_id),
         target_type: asString(failure.target_type),
@@ -70,15 +70,15 @@ export async function getPlatformDashboard(database: BackendDatabase) {
       cleanup_backlog_count: deletionPending,
       failed_notion_sync_capped: false,
       failed_notion_sync_count: asCount(snapshot.notion_failed),
-      failed_outbox_capped: false,
-      failed_outbox_count: outboxFailed,
+      failed_delivery_capped: false,
+      failed_delivery_count: deliveryFailed,
       failed_push_delivery_capped: false,
       failed_push_delivery_count: pushFailed,
       next_sync_count: asCount(snapshot.notion_pending),
       oldest_pending_sync_at_ms: toMs(snapshot.oldest_pending_notion_at),
-      overall_status: outboxFailed > 0 || pushFailed > 0 || deletionFailed > 0
+      overall_status: deliveryFailed > 0 || pushFailed > 0 || deletionFailed > 0
         ? "critical"
-        : outboxPending > 0 || deletionPending > 0 || uploadPending > 0
+        : deliveryPending > 0 || deletionPending > 0 || uploadPending > 0
           ? "attention"
           : "healthy",
       pending_notion_sync_capped: false,
@@ -86,7 +86,7 @@ export async function getPlatformDashboard(database: BackendDatabase) {
       recent_failures: recentFailures,
       scheduled_maintenance: {
         completed_at_ms: toMs(maintenance.completed_at),
-        error_trace_id: asString(maintenance.error_trace_id),
+        failure_id: asString(maintenance.failure_id),
         failed_task_codes: failedMaintenanceTasks,
         started_at_ms: toMs(maintenance.started_at),
         status: asString(maintenance.status, "idle"),

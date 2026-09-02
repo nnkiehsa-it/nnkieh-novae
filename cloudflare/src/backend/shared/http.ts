@@ -147,14 +147,16 @@ export function publicErrorCode(error: unknown): ApiErrorCode {
   return "internal-error";
 }
 
-export function publicErrorBody(error: unknown) {
+export function publicErrorBody(error: unknown, failureId?: string) {
   const retryAfterSeconds = error && typeof error === "object" && "retryAfterSeconds" in error
     && typeof error.retryAfterSeconds === "number" && Number.isFinite(error.retryAfterSeconds)
     ? Math.max(1, Math.ceil(error.retryAfterSeconds))
     : undefined;
-  return retryAfterSeconds
-    ? { code: publicErrorCode(error), retryAfterSeconds }
-    : { code: publicErrorCode(error) };
+  const code = publicErrorCode(error);
+  const result: { code: ApiErrorCode; message?: string; failureId?: string; retryAfterSeconds?: number } = { code };
+  if (failureId) result.failureId = failureId;
+  if (retryAfterSeconds) result.retryAfterSeconds = retryAfterSeconds;
+  return result;
 }
 
 export function asRecord(value: unknown): Record<string, unknown> {

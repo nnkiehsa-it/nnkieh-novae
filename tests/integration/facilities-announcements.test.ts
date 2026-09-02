@@ -4,7 +4,6 @@ import {
   callAction,
   expectActionError,
   integrationTest,
-  requestId,
   saveCategoryDraft,
   seedActor,
   database,
@@ -23,7 +22,6 @@ async function createFacility(
     categoryId: String(category.id),
     content,
     location: `Room ${label}`,
-    requestId: requestId(`create-facility-${label}`),
     title: `Facility ${label}`.slice(0, 30),
   }, actor.auth));
   return asRecord(result.facility);
@@ -41,7 +39,7 @@ integrationTest("facility ownership and category-scoped management permissions",
 
   const facility = await createFacility(owner, "status");
   const facilityId = String(facility.id);
-  const facilityCategoryId = String(facility.category_id);
+  const facilityCategoryId = String(facility.categoryId);
   const manager = await seedActor("facility-manager", {
     facilityCategoryIds: [facilityCategoryId],
     roles: ["general-affairs"],
@@ -57,12 +55,14 @@ integrationTest("facility ownership and category-scoped management permissions",
     sort: "latest",
   }, user.auth));
   assert.ok((list.facilities as Array<Record<string, unknown>>).some((row) => row.id === facilityId));
-  assert.ok((list.facilities as Array<Record<string, unknown>>).every((row) => row.category_id === facilityCategoryId));
+  assert.ok(
+    (list.facilities as Array<Record<string, unknown>>).every((row) => row.categoryId === facilityCategoryId),
+    JSON.stringify({ facilityCategoryId, facilities: list.facilities }),
+  );
   assert.equal(typeof list.version, "number");
 
   const affected = asRecord(await callAction("toggleFacilityAffected", {
     facilityId,
-    requestId: requestId("facility-affected"),
   }, user.auth));
   assert.equal(affected.affected, true);
 
@@ -70,7 +70,6 @@ integrationTest("facility ownership and category-scoped management permissions",
     "permission-denied",
     () => callAction("updateFacilityStatus", {
       facilityId,
-      requestId: requestId("facility-status-denied"),
       status: "processing",
     }, owner.auth),
   );
@@ -78,13 +77,11 @@ integrationTest("facility ownership and category-scoped management permissions",
     "permission-denied",
     () => callAction("updateFacilityStatus", {
       facilityId,
-      requestId: requestId("facility-status-wrong-category"),
       status: "processing",
     }, wrongCategoryManager.auth),
   );
   const processing = asRecord(await callAction("updateFacilityStatus", {
     facilityId,
-    requestId: requestId("facility-processing"),
     status: "processing",
   }, manager.auth));
   assert.equal(asRecord(processing.facility).status, "processing");
@@ -92,20 +89,17 @@ integrationTest("facility ownership and category-scoped management permissions",
     "missing-result",
     () => callAction("updateFacilityStatus", {
       facilityId,
-      requestId: requestId("facility-complete-missing-result"),
       status: "completed",
     }, manager.auth),
   );
   const completed = asRecord(await callAction("updateFacilityStatus", {
     facilityId,
-    requestId: requestId("facility-complete"),
     resultContent: "Facility handled",
     status: "completed",
   }, manager.auth));
   assert.equal(asRecord(completed.facility).status, "completed");
   await callAction("deleteFacility", {
     facilityId,
-    requestId: requestId("facility-manager-delete"),
   }, manager.auth);
 
   const ownerDelete = await createFacility(owner, "owner-delete");
@@ -114,12 +108,10 @@ integrationTest("facility ownership and category-scoped management permissions",
     "permission-denied",
     () => callAction("deleteFacility", {
       facilityId: ownerDeleteId,
-      requestId: requestId("facility-stranger-delete"),
     }, user.auth),
   );
   await callAction("deleteFacility", {
     facilityId: ownerDeleteId,
-    requestId: requestId("facility-owner-delete"),
   }, owner.auth);
 });
 
@@ -136,13 +128,11 @@ integrationTest("announcement.manage, likes, comments, and ownership", async () 
     "permission-denied",
     () => callAction("createAnnouncement", {
       content: "Denied announcement",
-      requestId: requestId("announcement-denied"),
       title: "Denied",
     }, user.auth),
   );
   const created = asRecord(await callAction("createAnnouncement", {
     content: "Integration announcement content",
-    requestId: requestId("announcement-create"),
     title: "Integration announcement",
   }, manager.auth));
   const announcementId = String(asRecord(created.announcement).id);
@@ -161,42 +151,37 @@ integrationTest("announcement.manage, likes, comments, and ownership", async () 
   assert.equal(asRecord(read.announcement).id, announcementId);
   assert.equal(asRecord(read.announcement).content, "Integration announcement content");
 
-  const likeRequestId = requestId("announcement-like");
+  const likeOperationId = crypto.randomUUID();
   const liked = asRecord(await callAction("setAnnouncementLike", {
     announcementId,
     liked: true,
-    requestId: likeRequestId,
-  }, user.auth));
+  }, user.auth, likeOperationId));
   assert.equal(liked.liked, true);
   const repeatedLike = asRecord(await callAction("setAnnouncementLike", {
     announcementId,
     liked: true,
-    requestId: likeRequestId,
-  }, user.auth));
+  }, user.auth, likeOperationId));
   assert.equal(repeatedLike.liked, true);
-  assert.equal(repeatedLike.like_count, liked.like_count);
-  const { count: likeIdempotencyWrites, error: likeIdempotencyError } = await database
-    .table("app_private", "idempotency_keys").select("request_id", { count: "exact", head: true })
-    .eq("uid", user.auth.uid).eq("action", "setAnnouncementLike").eq("request_id", likeRequestId);
-  if (likeIdempotencyError) throw likeIdempotencyError;
-  assert.equal(likeIdempotencyWrites, 0);
+  assert.equal(repeatedLike.likeCount, liked.likeCount);
+  const { count: likeOperationWrites, error: likeOpError } = await database
+    .table("app_private", "operations").select("operation_id", { count: "exact", head: true })
+    .eq("actor_uid", user.auth.uid).eq("action", "setAnnouncementLike").eq("operation_id", likeOperationId);
+  if (likeOpError) throw likeOpError;
+  assert.equal(likeOperationWrites, 1);
   const unliked = asRecord(await callAction("setAnnouncementLike", {
     announcementId,
     liked: false,
-    requestId: requestId("announcement-unlike"),
   }, user.auth));
   assert.equal(unliked.liked, false);
 
   const commentWrite = asRecord(await callAction("createAnnouncementComment", {
     announcementId,
     content: "Integration announcement comment",
-    requestId: requestId("announcement-comment"),
   }, user.auth));
   const commentId = String(asRecord(commentWrite.comment).id);
   const secondCommentWrite = asRecord(await callAction("createAnnouncementComment", {
     announcementId,
     content: "Second integration announcement comment",
-    requestId: requestId("announcement-comment-second"),
   }, user.auth));
   const secondCommentId = String(asRecord(secondCommentWrite.comment).id);
   const comments = asRecord(await callAction("listAnnouncementComments", {
@@ -218,31 +203,25 @@ integrationTest("announcement.manage, likes, comments, and ownership", async () 
     "permission-denied",
     () => callAction("deleteAnnouncementComment", {
       commentId,
-      requestId: requestId("announcement-comment-denied"),
     }, stranger.auth),
   );
   await callAction("deleteAnnouncementComment", {
     commentId,
-    requestId: requestId("announcement-comment-owner-delete"),
   }, user.auth);
   await callAction("deleteAnnouncementComment", {
     commentId: secondCommentId,
-    requestId: requestId("announcement-comment-owner-delete-second"),
   }, user.auth);
 
   const managedCommentWrite = asRecord(await callAction("createAnnouncementComment", {
     announcementId,
     content: "Manager removable announcement comment",
-    requestId: requestId("announcement-managed-comment"),
   }, stranger.auth));
   await callAction("deleteAnnouncementComment", {
     commentId: String(asRecord(managedCommentWrite.comment).id),
-    requestId: requestId("announcement-manager-comment-delete"),
   }, manager.auth);
 
   const following = asRecord(await callAction("createAnnouncement", {
     content: "Follows the global announcement comment setting",
-    requestId: requestId("announcement-global-following-create"),
     title: "Global setting follower",
   }, manager.auth));
   const followingId = String(asRecord(following.announcement).id);
@@ -252,51 +231,45 @@ integrationTest("announcement.manage, likes, comments, and ownership", async () 
     const globallyClosed = asRecord(await callAction("getAnnouncement", {
       announcementId: id,
     }, user.auth));
-    assert.equal(asRecord(globallyClosed.announcement).comments_enabled, false);
+    assert.equal(asRecord(globallyClosed.announcement).commentsEnabled, false);
   }
   await expectActionError(
     "comments-disabled",
     () => callAction("createAnnouncementComment", {
       announcementId: followingId,
       content: "Must be rejected by the global setting",
-      requestId: requestId("announcement-global-comment-denied"),
     }, stranger.auth),
   );
   const createdWhileClosed = asRecord(await callAction("createAnnouncement", {
     content: "Created while global comments are closed",
-    requestId: requestId("announcement-created-while-global-closed"),
     title: "Created while closed",
   }, manager.auth));
   const createdWhileClosedId = String(asRecord(createdWhileClosed.announcement).id);
-  assert.equal(asRecord(createdWhileClosed.announcement).comments_enabled, false);
+  assert.equal(asRecord(createdWhileClosed.announcement).commentsEnabled, false);
 
   await saveCategoryDraft(admin.auth, { announcementCommentsEnabled: true });
   const reopenedAfterGlobalSetting = asRecord(await callAction("getAnnouncement", {
     announcementId,
   }, user.auth));
-  assert.equal(asRecord(reopenedAfterGlobalSetting.announcement).comments_enabled, true);
+  assert.equal(asRecord(reopenedAfterGlobalSetting.announcement).commentsEnabled, true);
   for (const id of [followingId, createdWhileClosedId]) {
     const reopened = asRecord(await callAction("getAnnouncement", { announcementId: id }, user.auth));
-    assert.equal(asRecord(reopened.announcement).comments_enabled, true);
+    assert.equal(asRecord(reopened.announcement).commentsEnabled, true);
   }
 
   await expectActionError(
     "permission-denied",
     () => callAction("deleteAnnouncement", {
       announcementId,
-      requestId: requestId("announcement-delete-denied"),
     }, user.auth),
   );
   await callAction("deleteAnnouncement", {
     announcementId,
-    requestId: requestId("announcement-delete"),
   }, manager.auth);
   await callAction("deleteAnnouncement", {
     announcementId: followingId,
-    requestId: requestId("announcement-following-delete"),
   }, manager.auth);
   await callAction("deleteAnnouncement", {
     announcementId: createdWhileClosedId,
-    requestId: requestId("announcement-created-while-closed-delete"),
   }, manager.auth);
 });

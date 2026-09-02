@@ -7,7 +7,6 @@ import {
   expectActionError,
   integrationTest,
   refreshActor,
-  requestId,
   seedActor,
 } from "../helpers.ts";
 
@@ -17,14 +16,19 @@ integrationTest("admin console restriction and overview actions", async () => {
   const target = await seedActor("console-target");
 
   const { data: deletionJob, error: deletionJobError } = await database
-    .table("app_private", "deletion_jobs")
+    .table("app_private", "background_jobs")
     .insert({
       attempt_count: 8,
-      cloudinary_public_id: `integration/deletion-${crypto.randomUUID()}`,
-      error_trace_id: crypto.randomUUID(),
+      error_detail: { code: "integration-failure" },
+      job_type: "deletion",
+      last_attempt_id: crypto.randomUUID(),
+      payload: {
+        cloudinary_public_id: `integration/deletion-${crypto.randomUUID()}`,
+        target_id: target.auth.uid,
+        target_type: "avatar",
+      },
+      scope_id: target.auth.uid,
       status: "failed",
-      target_id: target.auth.uid,
-      target_type: "avatar",
     })
     .select("id")
     .single();
@@ -46,7 +50,6 @@ integrationTest("admin console restriction and overview actions", async () => {
     "permission-denied",
     () => callAction("retryDeletionJob", {
       jobId: deletionJob.id,
-      requestId: requestId("retry-deletion-denied"),
     }, user.auth),
   );
   await expectActionError(
@@ -55,7 +58,6 @@ integrationTest("admin console restriction and overview actions", async () => {
       uid: target.auth.uid,
       mode: "7d",
       reason: "denied",
-      requestId: requestId("restrict-user-denied"),
     }, user.auth),
   );
 
@@ -64,10 +66,12 @@ integrationTest("admin console restriction and overview actions", async () => {
     { query: target.auth.uid },
     admin.auth,
   ));
-  assert.equal(
-    (users.users as Array<{ uid: string }>)[0]?.uid,
-    target.auth.uid,
-  );
+  const listedTarget = asRecord((users.users as unknown[])[0]);
+  assert.equal(listedTarget.uid, target.auth.uid);
+  assert.equal(typeof listedTarget.createdAt, "string");
+  assert.equal(Number.isNaN(Date.parse(String(listedTarget.createdAt))), false);
+  assert.equal("createdAtMs" in listedTarget, false);
+  assert.equal("restrictedUntilMs" in listedTarget, false);
   const adminUsers = asRecord(await callAction(
     "listAdminUsers",
     { query: admin.auth.uid },
@@ -84,18 +88,17 @@ integrationTest("admin console restriction and overview actions", async () => {
   );
   const retriedDeletion = asRecord(await callAction("retryDeletionJob", {
     jobId: deletionJob.id,
-    requestId: requestId("retry-deletion"),
   }, admin.auth));
   assert.equal(retriedDeletion.status, "pending");
   const { data: queuedDeletion, error: queuedDeletionError } = await database
-    .table("app_private", "deletion_jobs")
-    .select("attempt_count,error_trace_id,status")
+    .table("app_private", "background_jobs")
+    .select("attempt_count,last_attempt_id,status")
     .eq("id", deletionJob.id)
     .single();
   if (queuedDeletionError) throw queuedDeletionError;
   assert.equal(queuedDeletion.status, "pending");
   assert.equal(queuedDeletion.attempt_count, 0);
-  assert.equal(queuedDeletion.error_trace_id, null);
+  assert.equal(queuedDeletion.last_attempt_id, null);
 
   await expectActionError(
     "permission-denied",
@@ -103,7 +106,6 @@ integrationTest("admin console restriction and overview actions", async () => {
       uid: admin.auth.uid,
       mode: "permanent",
       reason: "cannot restrict platform admins",
-      requestId: requestId("restrict-platform-admin"),
     }, admin.auth),
   );
 
@@ -111,8 +113,20 @@ integrationTest("admin console restriction and overview actions", async () => {
     uid: target.auth.uid,
     mode: "7d",
     reason: "integration test",
-    requestId: requestId("restrict-user"),
   }, admin.auth);
+
+  const restrictedUsers = asRecord(await callAction(
+    "listAdminUsers",
+    { query: target.auth.uid },
+    admin.auth,
+  ));
+  const listedRestrictedTarget = asRecord((restrictedUsers.users as unknown[])[0]);
+  assert.equal(typeof listedRestrictedTarget.restrictedUntil, "string");
+  assert.equal(
+    Number.isNaN(Date.parse(String(listedRestrictedTarget.restrictedUntil))),
+    false,
+  );
+  assert.equal("restrictedUntilMs" in listedRestrictedTarget, false);
 
   const restricted = await refreshActor(target);
   assert.equal(restricted.auth.interactionRestricted, true);
@@ -123,7 +137,6 @@ integrationTest("admin console restriction and overview actions", async () => {
       title: "blocked",
       content: "blocked",
       category: "public-issues",
-      requestId: requestId("restricted-create"),
     }, restricted.auth),
   );
 
@@ -134,8 +147,15 @@ integrationTest("admin console restriction and overview actions", async () => {
     uid: target.auth.uid,
     mode: "clear",
     reason: "",
-    requestId: requestId("clear-restriction"),
   }, admin.auth);
+
+  const restoredUsers = asRecord(await callAction(
+    "listAdminUsers",
+    { query: target.auth.uid },
+    admin.auth,
+  ));
+  const listedRestoredTarget = asRecord((restoredUsers.users as unknown[])[0]);
+  assert.equal(listedRestoredTarget.restrictedUntil, null);
 
   const restored = await refreshActor(target);
   assert.equal(restored.auth.interactionRestricted, false);
@@ -147,11 +167,11 @@ integrationTest("admin console restriction and overview actions", async () => {
   ));
   const activityBeforeAging = overviewBeforeAging.recentActivity as Array<{
     kind: string;
-    target_id: string;
+    targetId: string;
   }>;
   assert.equal(
     activityBeforeAging.some(
-      (entry) => entry.kind === "admin" && entry.target_id === target.auth.uid,
+      (entry) => entry.kind === "admin" && entry.targetId === target.auth.uid,
     ),
     true,
   );
@@ -161,19 +181,19 @@ integrationTest("admin console restriction and overview actions", async () => {
     admin.auth,
   ));
   assert.equal(
-    (activityPage.entries as Array<{ kind: string; target_id: string }>).some(
-      (entry) => entry.kind === "admin" && entry.target_id === target.auth.uid,
+    (activityPage.entries as Array<{ kind: string; targetId: string }>).some(
+      (entry) => entry.kind === "admin" && entry.targetId === target.auth.uid,
     ),
     true,
   );
 
   const { data: queuedAuditEvents, error: queuedAuditError } = await database
-    .table("app_private", "outbox_events")
+    .table("app_private", "domain_events")
     .select("payload")
     .eq("event_type", "admin.audit_recorded");
   if (queuedAuditError) throw queuedAuditError;
   assert.ok((queuedAuditEvents ?? []).filter(
-    (event) => asRecord(event.payload).target_id === target.auth.uid,
+    (event: any) => asRecord(event.payload).target_id === target.auth.uid,
   ).length >= 2);
 
   const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000).toISOString();
@@ -189,9 +209,9 @@ integrationTest("admin console restriction and overview actions", async () => {
   ));
   assert.ok(Number(overview.totalUsers) >= 3);
   assert.ok(Number(overview.activeUsers24h) >= 0);
-  const activity24h = overview.recentActivity as Array<{ kind: string; target_id: string }>;
+  const activity24h = overview.recentActivity as Array<{ kind: string; targetId: string }>;
   assert.equal(
-    activity24h.some((entry) => entry.kind === "admin" && entry.target_id === target.auth.uid),
+    activity24h.some((entry) => entry.kind === "admin" && entry.targetId === target.auth.uid),
     false,
   );
   const activity7d = asRecord(await callAction(
@@ -200,8 +220,8 @@ integrationTest("admin console restriction and overview actions", async () => {
     admin.auth,
   ));
   assert.equal(
-    (activity7d.entries as Array<{ kind: string; target_id: string }>).some(
-      (entry) => entry.kind === "admin" && entry.target_id === target.auth.uid,
+    (activity7d.entries as Array<{ kind: string; targetId: string }>).some(
+      (entry) => entry.kind === "admin" && entry.targetId === target.auth.uid,
     ),
     true,
   );

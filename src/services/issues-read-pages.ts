@@ -11,6 +11,15 @@ function normalizeIssueList(records: Record<string, unknown>[]) {
   return records.map((record) => normalizeIssueSummary(String(record.id ?? ''), record));
 }
 
+function issueCursorPayload(cursor: IssueCursor | null) {
+  return cursor ? {
+    createdAt: cursor.created_at?.toISOString() ?? null,
+    id: cursor.id,
+    sortDate: cursor.sort_date?.toISOString() ?? null,
+    sortNumber: cursor.sort_number,
+  } : null;
+}
+
 export async function fetchIssuesPageByStatus(
   uid: string,
   activeFilter: IssueFilter,
@@ -56,7 +65,7 @@ export async function fetchIssuesPageByStatus(
     const fn = invokeBackendAction<
       {
         activeFilter: IssueFilter;
-        cursor: IssueCursor | null;
+        cursor: ReturnType<typeof issueCursorPayload>;
         isAdmin: boolean;
         pageSize: number;
         sort: IssueSortOption;
@@ -67,7 +76,7 @@ export async function fetchIssuesPageByStatus(
     >('listIssues', { signal: options?.signal, timeoutMs: READ_REQUEST_TIMEOUT_MS });
     const result = await fn({
       activeFilter,
-      cursor,
+      cursor: issueCursorPayload(cursor),
       isAdmin: options?.isAdmin ?? false,
       pageSize,
       sort: options?.sort ?? 'latest',
@@ -152,7 +161,7 @@ export async function fetchIssuesForTitleSearch(
     const fn = invokeBackendAction<
       {
         activeFilter: IssueFilter;
-        cursor: IssueCursor | null;
+        cursor: ReturnType<typeof issueCursorPayload>;
         isAdmin: boolean;
         pageSize: number;
         sort: IssueSortOption;
@@ -164,7 +173,7 @@ export async function fetchIssuesForTitleSearch(
     >('searchIssues', { signal: options?.signal, timeoutMs: READ_REQUEST_TIMEOUT_MS });
     const result = await fn({
       activeFilter,
-      cursor: options?.cursor ?? null,
+      cursor: issueCursorPayload(options?.cursor ?? null),
       isAdmin: options?.isAdmin ?? false,
       pageSize: CONTENT_FEED_PAGE_SIZE,
       sort: options?.sort ?? 'latest',

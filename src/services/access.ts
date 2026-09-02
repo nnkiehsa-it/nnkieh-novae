@@ -1,5 +1,4 @@
 import { invokeBackendAction } from '@/services/backend-action';
-import { createRequestId } from '@/lib/request-id';
 import type { RoleCode } from '@/services/session-role';
 
 export interface AccessUser {
@@ -54,13 +53,12 @@ export async function setUserAccessScope(
   grant: boolean,
 ) {
   const fn = invokeBackendAction<
-    { categoryId?: string; grant: boolean; requestId: string; scopeKind: AccessScope['kind']; uid: string },
+    { categoryId?: string; grant: boolean; scopeKind: AccessScope['kind']; uid: string },
     { success: boolean; roles: RoleCode[]; managedIssueCategoryIds: string[]; managedFacilityCategoryIds: string[] }
   >('setUserAccessScope');
   return await fn({
     categoryId: 'categoryId' in scope ? scope.categoryId : undefined,
     grant,
-    requestId: createRequestId(),
     scopeKind: scope.kind,
     uid,
   });

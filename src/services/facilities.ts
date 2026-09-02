@@ -1,5 +1,4 @@
 import { invokeBackendAction } from '@/services/backend-action';
-import { createRequestId } from '@/lib/request-id';
 import type {
   FacilityCursor,
   FacilityInput,
@@ -14,11 +13,23 @@ import { captureContentCacheWriteGuard, createContentCacheKey, getCachedContent,
 import { READ_REQUEST_TIMEOUT_MS } from '@/lib/request';
 import { registerContentVersion } from '@/services/content-versions';
 
-interface RawFacility extends Omit<FacilityRecord, 'closed_at' | 'created_at' | 'started_at' | 'updated_at'> {
-  closed_at?: string | null;
-  created_at?: string | null;
-  started_at?: string | null;
-  updated_at?: string | null;
+interface RawFacility {
+  id: string;
+  categoryId: string;
+  title: string;
+  location: string;
+  status: FacilityStatus;
+  affectedCount: number;
+  authorUid: string;
+  isOwnFacility: boolean;
+  currentUserAffected: boolean;
+  canManageFacility: boolean;
+  content?: string;
+  resultContent?: string | null;
+  closedAt?: string | null;
+  createdAt?: string | null;
+  startedAt?: string | null;
+  updatedAt?: string | null;
 }
 
 function date(value: string | null | undefined) {
@@ -27,13 +38,22 @@ function date(value: string | null | undefined) {
 
 function normalizeFacility(value: RawFacility): FacilityRecord {
   return {
-    ...value,
+    id: value.id,
+    category_id: value.categoryId,
+    title: value.title,
+    location: value.location,
+    status: value.status,
+    affected_count: value.affectedCount,
+    author_uid: value.authorUid,
+    isOwnFacility: value.isOwnFacility,
+    currentUserAffected: value.currentUserAffected,
+    canManageFacility: value.canManageFacility,
     content: value.content ?? '',
-    result_content: value.result_content ?? null,
-    closed_at: date(value.closed_at),
-    created_at: date(value.created_at),
-    started_at: date(value.started_at),
-    updated_at: date(value.updated_at),
+    result_content: value.resultContent ?? null,
+    closed_at: date(value.closedAt),
+    created_at: date(value.createdAt),
+    started_at: date(value.startedAt),
+    updated_at: date(value.updatedAt),
   };
 }
 
@@ -90,8 +110,8 @@ export function peekFacility(facilityId: string) {
 
 export async function createFacility(input: FacilityInput) {
   try {
-    const fn = invokeBackendAction<FacilityInput & { requestId: string }, { facility: RawFacility }>('createFacility');
-    const facility = normalizeFacility((await fn({ ...input, requestId: createRequestId() })).facility);
+    const fn = invokeBackendAction<FacilityInput, { facility: RawFacility }>('createFacility');
+    const facility = normalizeFacility((await fn(input)).facility);
     markContentCachePrefixStale('facility-list-page|');
     return facility;
   } catch (error) { throw toReadableBackendError(error); }
@@ -99,18 +119,18 @@ export async function createFacility(input: FacilityInput) {
 
 export async function toggleFacilityAffected(facilityId: string) {
   try {
-    const fn = invokeBackendAction<{ facilityId: string; requestId: string }, { affected: boolean; affected_count: number }>('toggleFacilityAffected');
-    const result = await fn({ facilityId, requestId: createRequestId() });
+    const fn = invokeBackendAction<{ facilityId: string }, { affected: boolean; affectedCount: number }>('toggleFacilityAffected');
+    const result = await fn({ facilityId });
     markContentCachePrefixStale('facility-list-page|');
     markContentCachePrefixStale(`facility-detail|${facilityId}`);
-    return result;
+    return { ...result, affected_count: result.affectedCount };
   } catch (error) { throw toReadableBackendError(error); }
 }
 
 export async function updateFacilityStatus(facilityId: string, status: FacilityStatus, resultContent?: string) {
   try {
-    const fn = invokeBackendAction<{ facilityId: string; status: FacilityStatus; resultContent?: string; requestId: string }, { facility: RawFacility }>('updateFacilityStatus');
-    const facility = normalizeFacility((await fn({ facilityId, status, resultContent, requestId: createRequestId() })).facility);
+    const fn = invokeBackendAction<{ facilityId: string; status: FacilityStatus; resultContent?: string }, { facility: RawFacility }>('updateFacilityStatus');
+    const facility = normalizeFacility((await fn({ facilityId, status, resultContent })).facility);
     markContentCachePrefixStale('facility-list-page|');
     markContentCachePrefixStale(`facility-detail|${facilityId}`);
     return facility;
@@ -119,8 +139,8 @@ export async function updateFacilityStatus(facilityId: string, status: FacilityS
 
 export async function deleteFacility(facilityId: string) {
   try {
-    const fn = invokeBackendAction<{ facilityId: string; requestId: string }, { success: boolean }>('deleteFacility');
-    const result = await fn({ facilityId, requestId: createRequestId() });
+    const fn = invokeBackendAction<{ facilityId: string }, { success: boolean }>('deleteFacility');
+    const result = await fn({ facilityId });
     markContentCachePrefixStale('facility-list-page|');
     markContentCachePrefixStale(`facility-detail|${facilityId}`);
     return result;

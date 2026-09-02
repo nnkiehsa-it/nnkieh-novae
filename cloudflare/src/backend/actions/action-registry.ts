@@ -33,9 +33,7 @@ export interface BackendActionDefinition {
   domain: BackendActionDomain;
   name: string;
   rateLimitGroup: BackendActionRateLimitGroup;
-  idempotent?: boolean;
   requiredPermission?: PermissionCode;
-  requiresRequestId?: boolean;
   handler: (
     action: string,
     payload: JsonRecord,
@@ -55,40 +53,15 @@ function action(
   domain: BackendActionDomain,
   rateLimitGroup: BackendActionRateLimitGroup,
   handler: BackendActionDefinition["handler"],
-  options: Pick<BackendActionDefinition, "idempotent" | "requiredPermission" | "requiresRequestId"> = {},
+  options: Pick<BackendActionDefinition, "requiredPermission"> = {},
 ): BackendActionDefinition {
   return {
     domain,
     handler,
-    idempotent: options.idempotent === true,
     name,
     rateLimitGroup,
     requiredPermission: options.requiredPermission,
-    requiresRequestId: options.requiresRequestId === true,
   };
-}
-
-function idempotentWrite(
-  name: string,
-  domain: BackendActionDomain,
-  rateLimitGroup: BackendActionRateLimitGroup,
-  handler: BackendActionDefinition["handler"],
-) {
-  return action(name, domain, rateLimitGroup, handler, {
-    idempotent: true,
-    requiresRequestId: true,
-  });
-}
-
-function naturallyIdempotentWrite(
-  name: string,
-  domain: BackendActionDomain,
-  rateLimitGroup: BackendActionRateLimitGroup,
-  handler: BackendActionDefinition["handler"],
-) {
-  return action(name, domain, rateLimitGroup, handler, {
-    requiresRequestId: true,
-  });
 }
 
 export const backendActionDefinitions = [
@@ -97,18 +70,10 @@ export const backendActionDefinitions = [
   action("estimateCategoryPolicyChanges", "category", "read", handleCategoryAction, { requiredPermission: "category.manage" }),
   action("estimateRetentionCleanup", "category", "read", handleCategoryAction, { requiredPermission: "category.manage" }),
   action("listPlatformJobs", "category", "read", handleCategoryAction, { requiredPermission: "category.manage" }),
-  action("savePlatformSettings", "category", "admin-write", handleCategoryAction, {
-    idempotent: true, requiredPermission: "category.manage", requiresRequestId: true,
-  }),
-  action("saveCategoryManagement", "category", "admin-write", handleCategoryAction, {
-    idempotent: true, requiredPermission: "category.manage", requiresRequestId: true,
-  }),
-  action("savePlatformFeatures", "category", "admin-write", handleCategoryAction, {
-    idempotent: true, requiredPermission: "category.manage", requiresRequestId: true,
-  }),
-  action("completeInitialSetup", "category", "admin-write", handleCategoryAction, {
-    idempotent: true, requiresRequestId: true,
-  }),
+  action("savePlatformSettings", "category", "admin-write", handleCategoryAction, { requiredPermission: "category.manage" }),
+  action("saveCategoryManagement", "category", "admin-write", handleCategoryAction, { requiredPermission: "category.manage" }),
+  action("savePlatformFeatures", "category", "admin-write", handleCategoryAction, { requiredPermission: "category.manage" }),
+  action("completeInitialSetup", "category", "admin-write", handleCategoryAction),
 
   action("getContentVersions", "content", "read", async (_action, _payload, _auth, database) => ({
     versions: await loadContentVersions(database),
@@ -123,59 +88,45 @@ export const backendActionDefinitions = [
   action("listAdminAudit", "user", "read", userHandler, { requiredPermission: "role.manage" }),
   action("listAdminActivity", "user", "read", userHandler, { requiredPermission: "dashboard.view" }),
   action("getAdminOverview", "user", "read", userHandler, { requiredPermission: "dashboard.view" }),
-  action("setUserRestriction", "user", "admin-write", userHandler, {
-    idempotent: true, requiredPermission: "role.manage", requiresRequestId: true,
-  }),
-  action("setUserAccessScope", "user", "admin-write", userHandler, {
-    idempotent: true, requiredPermission: "role.manage", requiresRequestId: true,
-  }),
+  action("setUserRestriction", "user", "admin-write", userHandler, { requiredPermission: "role.manage" }),
+  action("setUserAccessScope", "user", "admin-write", userHandler, { requiredPermission: "role.manage" }),
   action("cacheUserAvatar", "user", "sensitive-write", userHandler),
   action("getUserPublicProfiles", "user", "read", userHandler),
 
-  idempotentWrite("createImageUploadSessions", "upload", "upload-write", uploadHandler),
-  idempotentWrite("finalizeImageUploads", "upload", "upload-write", uploadHandler),
-  idempotentWrite("deleteUploadedImages", "upload", "upload-write", uploadHandler),
+  action("createImageUploadSessions", "upload", "upload-write", uploadHandler),
+  action("finalizeImageUploads", "upload", "upload-write", uploadHandler),
+  action("deleteUploadedImages", "upload", "upload-write", uploadHandler),
   action("resolveUploadImageUrls", "upload", "upload-resolve", uploadHandler),
 
   action("getIssue", "issue", "read", issueHandler),
   action("listIssues", "issue", "read", issueHandler),
   action("searchIssues", "issue", "read", issueHandler),
   action("listUserIssues", "issue", "read", issueHandler),
-  idempotentWrite("createIssue", "issue", "sensitive-write", issueHandler),
-  action("moderateIssueStatus", "issue", "admin-write", issueHandler, {
-    idempotent: true, requiredPermission: "proposal.manage", requiresRequestId: true,
-  }),
-  action("updateIssueResult", "issue", "admin-write", issueHandler, {
-    idempotent: true, requiredPermission: "proposal.manage", requiresRequestId: true,
-  }),
-  idempotentWrite("toggleSupport", "issue", "sensitive-write", issueHandler),
-  naturallyIdempotentWrite("removeSupport", "issue", "sensitive-write", issueHandler),
-  idempotentWrite("deleteIssue", "issue", "admin-write", issueHandler),
+  action("createIssue", "issue", "sensitive-write", issueHandler),
+  action("moderateIssueStatus", "issue", "admin-write", issueHandler, { requiredPermission: "proposal.manage" }),
+  action("updateIssueResult", "issue", "admin-write", issueHandler, { requiredPermission: "proposal.manage" }),
+  action("toggleSupport", "issue", "sensitive-write", issueHandler),
+  action("removeSupport", "issue", "sensitive-write", issueHandler),
+  action("deleteIssue", "issue", "admin-write", issueHandler),
   action("listComments", "issue", "read", issueHandler),
-  idempotentWrite("createComment", "issue", "sensitive-write", issueHandler),
-  idempotentWrite("deleteComment", "issue", "sensitive-write", issueHandler),
+  action("createComment", "issue", "sensitive-write", issueHandler),
+  action("deleteComment", "issue", "sensitive-write", issueHandler),
 
   action("listFacilities", "facility", "read", async (_action, payload, auth, database) => await listFacilities(payload, auth, database)),
   action("getFacility", "facility", "read", handleFacilityAction),
-  idempotentWrite("createFacility", "facility", "sensitive-write", handleFacilityAction),
-  idempotentWrite("toggleFacilityAffected", "facility", "sensitive-write", handleFacilityAction),
-  action("updateFacilityStatus", "facility", "admin-write", handleFacilityAction, {
-    idempotent: true, requiresRequestId: true,
-  }),
-  idempotentWrite("deleteFacility", "facility", "admin-write", handleFacilityAction),
+  action("createFacility", "facility", "sensitive-write", handleFacilityAction),
+  action("toggleFacilityAffected", "facility", "sensitive-write", handleFacilityAction),
+  action("updateFacilityStatus", "facility", "admin-write", handleFacilityAction),
+  action("deleteFacility", "facility", "admin-write", handleFacilityAction),
 
   action("listAnnouncements", "announcement", "read", announcementHandler),
   action("getAnnouncement", "announcement", "read", announcementHandler),
-  action("createAnnouncement", "announcement", "admin-write", announcementHandler, {
-    idempotent: true, requiredPermission: "announcement.manage", requiresRequestId: true,
-  }),
-  action("deleteAnnouncement", "announcement", "admin-write", announcementHandler, {
-    idempotent: true, requiredPermission: "announcement.manage", requiresRequestId: true,
-  }),
-  naturallyIdempotentWrite("setAnnouncementLike", "announcement", "sensitive-write", announcementHandler),
+  action("createAnnouncement", "announcement", "admin-write", announcementHandler, { requiredPermission: "announcement.manage" }),
+  action("deleteAnnouncement", "announcement", "admin-write", announcementHandler, { requiredPermission: "announcement.manage" }),
+  action("setAnnouncementLike", "announcement", "sensitive-write", announcementHandler),
   action("listAnnouncementComments", "announcement", "read", announcementHandler),
-  idempotentWrite("createAnnouncementComment", "announcement", "sensitive-write", announcementHandler),
-  idempotentWrite("deleteAnnouncementComment", "announcement", "sensitive-write", announcementHandler),
+  action("createAnnouncementComment", "announcement", "sensitive-write", announcementHandler),
+  action("deleteAnnouncementComment", "announcement", "sensitive-write", announcementHandler),
 
   action("listNotificationPages", "notification", "read", notificationHandler),
   action("getNotificationSnapshot", "notification", "read", notificationHandler),
@@ -194,7 +145,7 @@ export const backendActionDefinitions = [
     requiredPermission: "dashboard.view",
   }),
   action("retryDeletionJob", "dashboard", "admin-write", handleDashboardAction, {
-    idempotent: true, requiredPermission: "role.manage", requiresRequestId: true,
+    requiredPermission: "role.manage",
   }),
 ] as const satisfies readonly BackendActionDefinition[];
 

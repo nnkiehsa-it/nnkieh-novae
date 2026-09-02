@@ -1,4 +1,4 @@
-import { asRecord, assert, callAction, database, expectActionError, integrationTest, requestId, seedActor } from "./support.ts";
+import { asRecord, assert, callAction, database, expectActionError, integrationTest, seedActor } from "./support.ts";
 
 integrationTest("notification state, push preferences, and dashboard permissions", async () => {
   const admin = await seedActor("notification-admin", { roles: ["platform-admin"] });
@@ -23,7 +23,7 @@ integrationTest("notification state, push preferences, and dashboard permissions
     sources: ["broadcast", "user", "admin"],
   }, user.auth));
   assert.ok(!("admin" in asRecord(snapshot.pages)));
-  assert.ok(Number(snapshot.openedAtMs) > 0);
+  assert.ok(Date.parse(String(snapshot.openedAt)) > 0);
 
   const state = asRecord(await callAction("getNotificationReadState", {}, user.auth));
   assert.equal(asRecord(state.state).uid, user.auth.uid);

@@ -2,8 +2,12 @@ import { optionalEnv, requireEnv } from "./env.ts";
 
 export const CLOUDINARY_IMAGE_UPLOAD_PRESET = "srp-secure-images";
 
-function cloudinaryApiBaseUrl() {
+export function cloudinaryApiBaseUrl() {
   return optionalEnv("CLOUDINARY_API_BASE_URL").replace(/\/+$/u, "") || "https://api.cloudinary.com";
+}
+
+export function cloudinaryImageUploadUrl(cloudName: string) {
+  return `${cloudinaryApiBaseUrl()}/v1_1/${encodeURIComponent(cloudName)}/image/upload`;
 }
 
 function toHex(buffer: ArrayBuffer) {
@@ -90,7 +94,7 @@ export async function uploadCloudinaryAuthenticatedImage(publicId: string, sourc
   body.set("signature", await signCloudinaryParams(params));
 
   const response = await fetch(
-    `${cloudinaryApiBaseUrl()}/v1_1/${cloudName}/image/upload`,
+    cloudinaryImageUploadUrl(cloudName),
     { method: "POST", body, signal: AbortSignal.timeout(20_000) },
   );
   if (!response.ok) {

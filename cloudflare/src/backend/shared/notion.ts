@@ -1,24 +1,20 @@
 import type { AppDatabaseClient } from "../database/client.ts";
-import type { Database } from "../database/schema.ts";
 import { optionalEnv, requireEnv } from "./env.ts";
 import { createMediaDeliveryUrl } from "./media-delivery.ts";
 
-// ---------------------------------------------------------------------------
-// Status label translation (matches ISSUE_STATUS_LABELS in src/constants/statuses.ts)
-// ---------------------------------------------------------------------------
-
 const STATUS_LABELS: Record<string, string> = {
-  "pending": "未回覆",
+  pending: "未回覆",
   "under-review": "待審核",
-  "processing": "處理中",
+  processing: "處理中",
   "auto-rejected": "未通過",
   "review-rejected": "審核未通過",
-  "infeasible": "無法實行",
-  "completed": "已完成",
-  "已刪除": "已刪除",
-  "發布": "發布",
+  infeasible: "無法實行",
+  completed: "已完成",
+  已刪除: "已刪除",
+  發布: "發布",
   "unable-to-handle": "無法處理",
 };
+
 const FACILITY_STATUS_LABELS: Record<string, string> = {
   pending: "待受理",
   processing: "處理中",
@@ -28,13 +24,15 @@ const FACILITY_STATUS_LABELS: Record<string, string> = {
 
 type AppDatabase = AppDatabaseClient;
 const NOTION_API_VERSION = "2026-03-11";
+const UPLOAD_PATTERN = /!\[([^\]]*)\]\((upload:[0-9a-f-]+)\)/giu;
+const NOTION_IMAGE_UPLOAD_CONCURRENCY = 2;
+
 const knownSelectOptions = new Set<string>();
 const knownDateProperties = new Set<string>();
 const knownRichTextProperties = new Set<string>();
 const knownNumberProperties = new Set<string>();
 const knownFormulaProperties = new Set<string>();
 let discoveredDataSourceId: Promise<string> | undefined;
-let cachedDataSource: Promise<Record<string, unknown>> | undefined;
 
 function translateStatus(status: string): string {
   return STATUS_LABELS[status] ?? status;
@@ -47,8 +45,11 @@ function translateFacilityStatus(status: string): string {
 async function translateCategory(database: AppDatabase, targetType: string, category: string): Promise<string> {
   if (category === "公告") return "公告";
   const table = targetType === "facility" ? "facility_categories" : "issue_categories";
-  const { data, error } = await database.table("app_private", table)
-    .select("label").eq("id", category).maybeSingle();
+  const { data, error } = await database
+    .table("app_private", table)
+    .select("label")
+    .eq("id", category)
+    .maybeSingle();
   if (error) throw error;
   return String(data?.label ?? category);
 }
@@ -61,32 +62,20 @@ function supportLabel(supportCount: unknown, supportGoal: unknown): string {
   return `${count}/${goal}`;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function normalizeNotionId(value: string): string {
-  return value.replaceAll("-", "").toLowerCase();
-}
-
-async function contentHash(content: string) {
-  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(content));
-  return Array.from(new Uint8Array(bytes))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-// ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
-
-function notionEnabled(): boolean {
+export function notionEnabled(): boolean {
   if (optionalEnv("NOTION_ENABLED") === "false") return false;
   return Boolean(optionalEnv("NOTION_TOKEN") && optionalEnv("NOTION_DATABASE_ID"));
 }
 
+function notionBaseUrl(): string {
+  const base = optionalEnv("NOTION_API_BASE_URL") || "https://api.notion.com";
+  return base.replace(/\/+$/u, "");
+}
+
 async function callNotionAPI(path: string, method: string, body?: unknown): Promise<unknown> {
-  const response = await fetch(`https://api.notion.com/v1${path}`, {
+  const base = notionBaseUrl();
+  const url = path.startsWith("http") ? path : `${base}/v1${path}`;
+  const response = await fetch(url, {
     method,
     headers: {
       Authorization: `Bearer ${requireEnv("NOTION_TOKEN")}`,
@@ -99,405 +88,280 @@ async function callNotionAPI(path: string, method: string, body?: unknown): Prom
   if (!response.ok) {
     throw new Error(`Notion API error (${response.status}): ${await response.text()}`);
   }
-  return response.status === 204 ? {} : response.json();
+  const text = await response.text();
+  return text ? JSON.parse(text) : {};
 }
 
-async function discoverDataSourceId(): Promise<string> {
-  const configuredId = optionalEnv("NOTION_DATA_SOURCE_ID");
-  if (configuredId) return configuredId;
-
-  const database = await callNotionAPI(`/databases/${requireEnv("NOTION_DATABASE_ID")}`, "GET");
-  const dataSources = isRecord(database) && Array.isArray(database.data_sources)
-    ? database.data_sources.filter(isRecord)
-    : [];
-  const ids = dataSources
-    .map((dataSource) => typeof dataSource.id === "string" ? dataSource.id : "")
-    .filter(Boolean);
-  if (ids.length === 1) return ids[0];
-  if (ids.length === 0) throw new Error("Notion database has no accessible data source");
-  throw new Error(
-    "Notion database has multiple data sources; set NOTION_DATA_SOURCE_ID to select one",
-  );
-}
-
-function getDataSourceId(): Promise<string> {
-  discoveredDataSourceId ??= discoverDataSourceId().catch((error) => {
-    discoveredDataSourceId = undefined;
-    throw error;
-  });
+async function getDataSourceId(): Promise<string> {
+  if (discoveredDataSourceId) return discoveredDataSourceId;
+  discoveredDataSourceId = (async () => {
+    const databaseId = requireEnv("NOTION_DATABASE_ID");
+    const db = (await callNotionAPI(`/databases/${databaseId}`, "GET")) as {
+      data_sources?: Array<{ id?: string }>;
+    };
+    const firstId = db.data_sources?.[0]?.id;
+    if (!firstId) throw new Error("notion-data-source-missing");
+    return firstId;
+  })();
   return discoveredDataSourceId;
 }
 
-async function retrieveDataSource(): Promise<Record<string, unknown>> {
-  cachedDataSource ??= (async () => {
-    const dataSource = await callNotionAPI(`/data_sources/${await getDataSourceId()}`, "GET");
-    if (!isRecord(dataSource)) throw new Error("Notion data source response is invalid");
-    const parent = dataSource.parent;
-    if (
-      !isRecord(parent) ||
-      typeof parent.database_id !== "string" ||
-      normalizeNotionId(parent.database_id) !== normalizeNotionId(requireEnv("NOTION_DATABASE_ID"))
-    ) {
-      throw new Error("NOTION_DATA_SOURCE_ID does not belong to NOTION_DATABASE_ID");
-    }
-    return dataSource;
-  })().catch((error) => {
-    cachedDataSource = undefined;
-    throw error;
-  });
-  return await cachedDataSource;
+function richTextProperty(value: unknown) {
+  const content = String(value ?? "").trim();
+  return {
+    rich_text: content ? [{ type: "text", text: { content: content.slice(0, 2000) } }] : [],
+  };
 }
 
-async function updateDataSourceProperties(properties: Record<string, unknown>): Promise<void> {
-  await callNotionAPI(`/data_sources/${await getDataSourceId()}`, "PATCH", { properties });
-  cachedDataSource = undefined;
+function dateProperty(value: unknown) {
+  if (!value) return { date: null };
+  const parsed = new Date(String(value));
+  if (Number.isNaN(parsed.getTime())) return { date: null };
+  return { date: { start: parsed.toISOString() } };
 }
 
-async function ensureSelectOption(propertyName: "分類" | "狀態", label: string): Promise<void> {
-  if (!label) return;
-  const cacheKey = `${propertyName}:${label}`;
-  if (knownSelectOptions.has(cacheKey)) return;
-  const dataSource = await retrieveDataSource();
-  if (!isRecord(dataSource.properties)) return;
-  const property = dataSource.properties[propertyName];
-  if (!isRecord(property) || property.type !== "select" || !isRecord(property.select)) return;
-  const options = Array.isArray(property.select.options) ? property.select.options : [];
-  if (options.some((option) => isRecord(option) && option.name === label)) {
-    knownSelectOptions.add(cacheKey);
-    return;
-  }
+function numberProperty(value: unknown) {
+  const parsed = Number(value);
+  return { number: Number.isFinite(parsed) ? parsed : null };
+}
 
-  await updateDataSourceProperties({
-    [propertyName]: {
-      select: {
-        options: [
-          ...options
-            .filter(isRecord)
-            .map((option) => ({
-              name: String(option.name ?? ""),
-              color: typeof option.color === "string" ? option.color : "default",
-            }))
-            .filter((option) => option.name),
-          { name: label, color: "default" },
-        ],
-      },
+async function ensureSelectOption(propertyName: string, optionName: string): Promise<void> {
+  if (!optionName) return;
+  const key = `${propertyName}:${optionName}`;
+  if (knownSelectOptions.has(key)) return;
+  const dataSourceId = await getDataSourceId();
+  await callNotionAPI(`/data_sources/${dataSourceId}`, "PATCH", {
+    properties: {
+      [propertyName]: { select: { options: [{ name: optionName }] } },
     },
   });
-  knownSelectOptions.add(cacheKey);
-}
-
-async function ensureDateProperty(propertyName: string): Promise<void> {
-  if (!propertyName || knownDateProperties.has(propertyName)) return;
-  const dataSource = await retrieveDataSource();
-  if (!isRecord(dataSource.properties)) return;
-  const property = dataSource.properties[propertyName];
-  if (isRecord(property) && property.type === "date") {
-    knownDateProperties.add(propertyName);
-    return;
-  }
-
-  await updateDataSourceProperties({ [propertyName]: { date: {} } });
-  knownDateProperties.add(propertyName);
+  knownSelectOptions.add(key);
 }
 
 async function ensureRichTextProperty(propertyName: string): Promise<void> {
-  if (!propertyName || knownRichTextProperties.has(propertyName)) return;
-  const dataSource = await retrieveDataSource();
-  if (!isRecord(dataSource.properties)) return;
-  const property = dataSource.properties[propertyName];
-  if (isRecord(property) && property.type === "rich_text") {
-    knownRichTextProperties.add(propertyName);
-    return;
-  }
-  await updateDataSourceProperties({ [propertyName]: { rich_text: {} } });
+  if (knownRichTextProperties.has(propertyName)) return;
+  const dataSourceId = await getDataSourceId();
+  await callNotionAPI(`/data_sources/${dataSourceId}`, "PATCH", {
+    properties: { [propertyName]: { rich_text: {} } },
+  });
   knownRichTextProperties.add(propertyName);
 }
 
 async function ensureNumberProperty(propertyName: string): Promise<void> {
-  if (!propertyName || knownNumberProperties.has(propertyName)) return;
-  const dataSource = await retrieveDataSource();
-  if (!isRecord(dataSource.properties)) return;
-  const property = dataSource.properties[propertyName];
-  if (isRecord(property) && property.type === "number") {
-    knownNumberProperties.add(propertyName);
-    return;
-  }
-  await updateDataSourceProperties({ [propertyName]: { number: {} } });
+  if (knownNumberProperties.has(propertyName)) return;
+  const dataSourceId = await getDataSourceId();
+  await callNotionAPI(`/data_sources/${dataSourceId}`, "PATCH", {
+    properties: { [propertyName]: { number: { format: "number" } } },
+  });
   knownNumberProperties.add(propertyName);
 }
 
+async function ensureDateProperty(propertyName: string): Promise<void> {
+  if (knownDateProperties.has(propertyName)) return;
+  const dataSourceId = await getDataSourceId();
+  await callNotionAPI(`/data_sources/${dataSourceId}`, "PATCH", {
+    properties: { [propertyName]: { date: {} } },
+  });
+  knownDateProperties.add(propertyName);
+}
+
 async function ensureFormulaProperty(propertyName: string, expression: string): Promise<void> {
-  if (!propertyName || knownFormulaProperties.has(propertyName)) return;
-  const dataSource = await retrieveDataSource();
-  if (!isRecord(dataSource.properties)) return;
-  const property = dataSource.properties[propertyName];
-  if (isRecord(property) && property.type === "formula") {
-    knownFormulaProperties.add(propertyName);
-    return;
-  }
-  await updateDataSourceProperties({ [propertyName]: { formula: { expression } } });
+  if (knownFormulaProperties.has(propertyName)) return;
+  const dataSourceId = await getDataSourceId();
+  await callNotionAPI(`/data_sources/${dataSourceId}`, "PATCH", {
+    properties: { [propertyName]: { formula: { expression } } },
+  });
   knownFormulaProperties.add(propertyName);
 }
 
-function dateProperty(value: unknown) {
-  return typeof value === "string" && value
-    ? { date: { start: value } }
-    : { date: null };
+interface NotionBlock {
+  id: string;
+  type: string;
+  [key: string]: unknown;
 }
 
-function richTextProperty(value: unknown) {
-  const chunks = String(value ?? "").match(/[\s\S]{1,1900}/gu) ?? [];
-  return {
-    rich_text: chunks.map((content) => ({
-      type: "text",
-      text: { content },
-    })),
-  };
+function getBlockPlainText(block: NotionBlock): string {
+  const type = typeof block.type === "string" ? block.type : "";
+  const sub = block[type];
+  if (sub && typeof sub === "object" && "rich_text" in sub && Array.isArray(sub.rich_text)) {
+    return sub.rich_text
+      .map((item: { plain_text?: string; text?: { content?: string } }) => item.plain_text ?? item.text?.content ?? "")
+      .join("");
+  }
+  return "";
 }
 
-function numberProperty(value: unknown) {
-  const number = Number(value);
-  return { number: Number.isFinite(number) ? number : null };
-}
-
-function issueTimeProperties(issue: Partial<Database["app_private"]["Tables"]["issues"]["Row"]>) {
-  return {
-    "提案時間": dateProperty(issue.created_at),
-    "審核通過時間": dateProperty(issue.review_approved_at),
-    "附議截止時間": dateProperty(issue.support_deadline_at),
-    "附議達標時間": dateProperty(issue.support_met_at),
-    "回覆期限": dateProperty(issue.response_deadline_at),
-    "結案時間": dateProperty(issue.closed_at),
-  };
-}
-
-async function ensureIssueTimeProperties() {
-  await Promise.all(Object.keys(issueTimeProperties({})).map(ensureDateProperty));
-}
-
-async function ensureContentFormulaProperties() {
-  await Promise.all([
-    ensureDateProperty("建立時間"),
-    ensureDateProperty("提案時間"),
-    ensureDateProperty("結案時間"),
-    ensureNumberProperty("附議數量"),
-    ensureNumberProperty("附議目標"),
-  ]);
-  await Promise.all([
-    ensureFormulaProperty(
-      "活動天數",
-      'if(and(empty(prop("建立時間")), empty(prop("提案時間"))), 0, dateBetween(if(empty(prop("結案時間")), now(), prop("結案時間")), if(empty(prop("建立時間")), prop("提案時間"), prop("建立時間")), "days"))',
-    ),
-    ensureFormulaProperty(
-      "附議進度",
-      'if(or(empty(prop("附議目標")), prop("附議目標") <= 0), "", format(round(prop("附議數量") / prop("附議目標") * 100)) + "%")',
-    ),
-  ]);
-}
-
-async function updateIssueTimeProperties(
-  pageId: string,
-  issue: Partial<Database["app_private"]["Tables"]["issues"]["Row"]>,
-) {
-  await ensureIssueTimeProperties();
-  await callNotionAPI(`/pages/${pageId}`, "PATCH", {
-    properties: issueTimeProperties(issue),
-  });
-}
-
-/** Append a single paragraph block to a Notion page. */
-function appendBlock(pageId: string, content: string): Promise<unknown> {
-  return callNotionAPI(`/blocks/${pageId}/children`, "PATCH", {
-    children: [{
-      object: "block",
-      type: "paragraph",
-      paragraph: { rich_text: [{ text: { content } }] },
-    }],
-  });
-}
-
-const UPLOAD_PATTERN = /!\[([^\]]*)\]\(srp-upload:\/\/([0-9a-fA-F-]{36})\)/gu;
-const NOTION_IMAGE_UPLOAD_CONCURRENCY = 3;
-
-async function mapWithConcurrency<T, TResult>(
-  items: readonly T[],
-  concurrency: number,
-  mapper: (item: T, index: number) => Promise<TResult>,
-) {
-  const results = new Array<TResult>(items.length);
-  let nextIndex = 0;
-  const workerCount = Math.min(Math.max(1, concurrency), items.length);
-  await Promise.all(Array.from({ length: workerCount }, async () => {
-    while (true) {
-      const index = nextIndex++;
-      if (index >= items.length) return;
-      results[index] = await mapper(items[index], index);
+async function fetchAllBlockChildren(pageId: string): Promise<NotionBlock[]> {
+  const blocks: NotionBlock[] = [];
+  let startCursor: string | undefined = undefined;
+  let hasMore = true;
+  while (hasMore) {
+    const url = `/blocks/${pageId}/children?page_size=100${startCursor ? `&start_cursor=${startCursor}` : ""}`;
+    const response = (await callNotionAPI(url, "GET")) as {
+      results?: NotionBlock[];
+      has_more?: boolean;
+      next_cursor?: string | null;
+    };
+    if (Array.isArray(response.results)) {
+      blocks.push(...response.results);
     }
-  }));
-  return results;
+    hasMore = Boolean(response.has_more && response.next_cursor);
+    startCursor = response.next_cursor ?? undefined;
+  }
+  return blocks;
 }
 
-async function uploadImageToNotion(publicId: string, filename: string) {
-  const sourceUrl = await createMediaDeliveryUrl(publicId, "full", true, "system:notion");
-  const source = await fetch(sourceUrl.url, { signal: AbortSignal.timeout(15_000) });
-  if (!source.ok) throw new Error("notion-image-source-failed");
-  const bytes = await source.arrayBuffer();
-  const created = await fetch("https://api.notion.com/v1/file_uploads", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${requireEnv("NOTION_TOKEN")}`,
-      "Content-Type": "application/json",
-      "Notion-Version": NOTION_API_VERSION,
+export async function appendTimelineBlockWithDeduplication(
+  pageId: string,
+  eventId: string,
+  summary: string,
+  details?: string,
+): Promise<void> {
+  const marker = `[eventId: ${eventId}]`;
+  const matchingBlocks = (await fetchAllBlockChildren(pageId))
+    .filter((block) => getBlockPlainText(block).includes(marker));
+
+  if (matchingBlocks.length === 1) {
+    return;
+  }
+
+  if (matchingBlocks.length > 1) {
+    for (const duplicate of matchingBlocks.slice(1)) {
+      await callNotionAPI(`/blocks/${duplicate.id}`, "DELETE");
+    }
+    const repaired = (await fetchAllBlockChildren(pageId))
+      .filter((block) => getBlockPlainText(block).includes(marker));
+    if (repaired.length !== 1) throw new Error("notion-event-marker-repair-failed");
+    return;
+  }
+
+  const textContent = `${marker} ${summary}${details ? `\n${details}` : ""}`;
+  const newBlock = {
+    object: "block",
+    type: "paragraph",
+    paragraph: {
+      rich_text: [{ type: "text", text: { content: textContent.slice(0, 2000) } }],
     },
-    body: JSON.stringify({ mode: "single_part", filename, content_type: "image/webp" }),
-    signal: AbortSignal.timeout(15_000),
+  };
+
+  await callNotionAPI(`/blocks/${pageId}/children`, "PATCH", {
+    children: [newBlock],
   });
-  if (!created.ok) throw new Error(`notion-file-create:${created.status}`);
-  const upload = await created.json() as { id?: string };
-  if (!upload.id) throw new Error("notion-file-id-missing");
-  const form = new FormData();
-  form.set("file", new Blob([bytes], { type: "image/webp" }), filename);
-  const sent = await fetch(`https://api.notion.com/v1/file_uploads/${upload.id}/send`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${requireEnv("NOTION_TOKEN")}`,
-      "Notion-Version": NOTION_API_VERSION,
-    },
-    body: form,
-    signal: AbortSignal.timeout(30_000),
-  });
-  if (!sent.ok) throw new Error(`notion-file-send:${sent.status}`);
-  return upload.id;
+  const verified = (await fetchAllBlockChildren(pageId))
+    .filter((block) => getBlockPlainText(block).includes(marker));
+  if (verified.length === 0) throw new Error("notion-event-marker-missing");
+  for (const duplicate of verified.slice(1)) {
+    await callNotionAPI(`/blocks/${duplicate.id}`, "DELETE");
+  }
+  if (verified.length > 1) {
+    const repaired = (await fetchAllBlockChildren(pageId))
+      .filter((block) => getBlockPlainText(block).includes(marker));
+    if (repaired.length !== 1) throw new Error("notion-event-marker-repair-failed");
+  }
 }
 
-function textBlocks(content: string) {
-  const text = content.replace(UPLOAD_PATTERN, "").trim();
-  const chunks = text.match(/[\s\S]{1,1900}/gu) ?? [];
-  return chunks.map((chunk) => ({
+async function uploadImageToNotion(publicId: string, filename: string): Promise<string> {
+  const delivery = await createMediaDeliveryUrl(publicId, "full", true, "notion-sync");
+  const imageResponse = await fetch(delivery.url);
+  if (!imageResponse.ok) throw new Error(`failed-to-fetch-image: ${imageResponse.status}`);
+  const imageData = await imageResponse.arrayBuffer();
+
+  const fileUpload = (await callNotionAPI("/file_uploads", "POST", {
+    filename,
+    content_type: "image/webp",
+  })) as { id: string; upload_url?: string };
+
+  if (fileUpload.upload_url) {
+    const uploadRes = await fetch(fileUpload.upload_url, {
+      method: "POST",
+      body: imageData,
+      headers: { "Content-Type": "image/webp" },
+    });
+    if (!uploadRes.ok) throw new Error(`notion-file-upload-failed: ${uploadRes.status}`);
+  }
+  return fileUpload.id;
+}
+
+function splitNotionText(content: string): string[] {
+  if (!content) return [];
+  const chunks: string[] = [];
+  for (let offset = 0; offset < content.length; offset += 1900) {
+    chunks.push(content.slice(offset, offset + 1900));
+  }
+  return chunks;
+}
+
+async function appendCreationTimeline(
+  database: AppDatabase,
+  pageId: string,
+  eventId: string,
+  summary: string,
+  content: string,
+): Promise<void> {
+  const marker = `[eventId: ${eventId}]`;
+  const existing = (await fetchAllBlockChildren(pageId))
+    .filter((block) => getBlockPlainText(block).includes(marker));
+  if (existing.length > 0) {
+    await appendTimelineBlockWithDeduplication(pageId, eventId, summary, content);
+    return;
+  }
+
+  const uploadIds = [...content.matchAll(/srp-upload:\/\/([0-9a-fA-F-]{36})/gu)]
+    .map((match) => match[1]);
+  const notionUploadIds: string[] = [];
+  if (uploadIds.length > 0) {
+    const { data: uploads, error } = await database
+      .table("app_private", "uploads")
+      .select("id,cloudinary_public_id")
+      .in("id", [...new Set(uploadIds)]);
+    if (error) throw error;
+    for (const upload of uploads ?? []) {
+      if (!upload.cloudinary_public_id) throw new Error("notion-image-public-id-missing");
+      notionUploadIds.push(await uploadImageToNotion(
+        String(upload.cloudinary_public_id),
+        `${upload.id}.webp`,
+      ));
+    }
+  }
+
+  const textBlocks = splitNotionText(content).map((chunk) => ({
     object: "block",
     type: "paragraph",
     paragraph: { rich_text: [{ type: "text", text: { content: chunk } }] },
   }));
-}
-
-async function replaceManagedContent(
-  database: AppDatabase,
-  targetType: string,
-  targetId: string,
-  pageId: string,
-  content: string,
-) {
-  const nextContentHash = await contentHash(content);
-  const { data: mapping, error } = await database.table("app_private", "notion_pages")
-    .select("managed_block_ids,content_hash").eq("target_type", targetType).eq("target_id", targetId).single();
-  if (error) throw error;
-  if (mapping.content_hash === nextContentHash) return;
-  const oldIds = Array.isArray(mapping.managed_block_ids)
-    ? mapping.managed_block_ids.filter((id): id is string => typeof id === "string")
-    : [];
-  for (let offset = 0; offset < oldIds.length; offset += 10) {
-    await Promise.all(oldIds.slice(offset, offset + 10).map((id) => callNotionAPI(`/blocks/${id}`, "DELETE")));
-  }
-
-  const uploadMatches = [...content.matchAll(UPLOAD_PATTERN)];
-  const uploadIds = uploadMatches.map((match) => match[2]).filter(Boolean);
-  const { data: uploads, error: uploadError } = uploadIds.length
-    ? await database.table("app_private", "uploads")
-      .select("id,cloudinary_public_id").in("id", uploadIds).in("status", ["ready", "attached"])
-    : { data: [], error: null };
-  if (uploadError) throw uploadError;
-  const publicIds = new Map((uploads ?? []).map((upload) => [upload.id, upload.cloudinary_public_id]));
-  const imageBlocks = (await mapWithConcurrency(
-    uploadMatches,
-    NOTION_IMAGE_UPLOAD_CONCURRENCY,
-    async (match, index) => {
-      const publicId = publicIds.get(match[2]);
-      if (!publicId) return null;
-      const fileUploadId = await uploadImageToNotion(publicId, `${targetType}-${targetId}-${index + 1}.webp`);
-      return {
+  await callNotionAPI(`/blocks/${pageId}/children`, "PATCH", {
+    children: [
+      {
+        object: "block",
+        type: "paragraph",
+        paragraph: { rich_text: [{ type: "text", text: { content: `${marker} ${summary}`.slice(0, 2000) } }] },
+      },
+      ...textBlocks,
+      ...notionUploadIds.map((id) => ({
         object: "block",
         type: "image",
-        image: {
-          type: "file_upload",
-          file_upload: { id: fileUploadId },
-          caption: match[1] ? [{ type: "text", text: { content: match[1].slice(0, 500) } }] : [],
-        },
-      };
-    },
-  )).filter((block): block is NonNullable<typeof block> => block !== null);
-  const blocks = [...textBlocks(content), ...imageBlocks];
-  const createdIds: string[] = [];
-  for (let offset = 0; offset < blocks.length; offset += 100) {
-    const response = await callNotionAPI(`/blocks/${pageId}/children`, "PATCH", {
-      children: blocks.slice(offset, offset + 100),
-    }) as { results?: Array<{ id?: string }> };
-    createdIds.push(...(response.results ?? []).map((block) => block.id ?? "").filter(Boolean));
-  }
-  const { error: updateError } = await database.table("app_private", "notion_pages")
-    .update({
-      content_hash: nextContentHash,
-      managed_block_ids: createdIds,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("target_type", targetType).eq("target_id", targetId);
-  if (updateError) throw updateError;
-}
-
-function appendContentSection(parts: string[], label: string, value: unknown) {
-  const content = String(value ?? "").trim();
-  if (content) parts.push(`【${label}】\n${content}`);
-}
-
-async function buildIssueManagedContent(
-  database: AppDatabase,
-  targetId: string,
-  issue: Partial<Database["app_private"]["Tables"]["issues"]["Row"]>,
-) {
-  const parts = [String(issue.content ?? "").trim()].filter(Boolean);
-  appendContentSection(parts, "審核未通過原因", issue.review_rejection_reason);
-  appendContentSection(parts, "提案結果", issue.result_content);
-
-  const { data: comments, error: commentsError } = await database
-    .table("app_private", "comments")
-    .select("id,author_uid,content,created_at")
-    .eq("issue_id", targetId)
-    .order("created_at", { ascending: true })
-    .order("id", { ascending: true });
-  if (commentsError) throw commentsError;
-  if (!comments?.length) return parts.join("\n\n");
-
-  const authorUids = [...new Set(comments.map((comment) => String(comment.author_uid)).filter(Boolean))];
-  const { data: profiles, error: profilesError } = authorUids.length
-    ? await database.table("app_private", "user_profiles")
-      .select("uid,display_name").in("uid", authorUids)
-    : { data: [], error: null };
-  if (profilesError) throw profilesError;
-  const displayNames = new Map(
-    (profiles ?? []).map((profile) => [String(profile.uid), String(profile.display_name)]),
-  );
-  const commentLines = comments.map((comment) => {
-    const uid = String(comment.author_uid);
-    const authorName = (displayNames.get(uid) ?? uid) || "使用者";
-    return `${String(comment.created_at)} | ${authorName}：${String(comment.content)}`;
+        image: { type: "file_upload", file_upload: { id } },
+      })),
+    ],
   });
-  appendContentSection(parts, "留言", commentLines.join("\n\n"));
-  return parts.join("\n\n");
+  const verified = (await fetchAllBlockChildren(pageId))
+    .filter((block) => getBlockPlainText(block).includes(marker));
+  if (verified.length !== 1) throw new Error("notion-creation-marker-verification-failed");
 }
 
-function buildFacilityManagedContent(
-  facility: Partial<Database["app_private"]["Tables"]["facility_reports"]["Row"]>,
-) {
-  const parts = [String(facility.content ?? "").trim()].filter(Boolean);
-  appendContentSection(parts, "地點", facility.location);
-  appendContentSection(parts, "處理結果", facility.result_content);
-  return parts.join("\n\n");
+async function resolveDisplayName(database: AppDatabase, uid: unknown) {
+  const normalizedUid = typeof uid === "string" ? uid : "";
+  if (!normalizedUid) return "使用者";
+  const { data, error } = await database
+    .table("app_private", "user_profiles")
+    .select("display_name")
+    .eq("uid", normalizedUid)
+    .maybeSingle();
+  if (error) throw error;
+  return String(data?.display_name ?? normalizedUid);
 }
 
-/**
- * Return the existing Notion page ID for a target, or create a new page in the
- * configured database and record it in app_private.notion_pages.
- */
-async function getOrCreateNotionPage(
+export async function getOrCreateNotionPage(
   database: AppDatabase,
   targetType: string,
   targetId: string,
@@ -509,559 +373,641 @@ async function getOrCreateNotionPage(
   supportGoal?: unknown,
   countProperty: string | null = "附議數",
 ): Promise<string | null> {
-  const reservationId = `pending:${crypto.randomUUID()}`;
-  const reservationExpiredBefore = new Date(Date.now() - 10 * 60_000).toISOString();
   const externalId = `${targetType}:${targetId}`;
   const { data, error } = await database
     .table("app_private", "notion_pages")
-    .select("notion_page_id,updated_at")
+    .select("notion_page_id")
     .eq("target_type", targetType)
     .eq("target_id", targetId)
     .maybeSingle();
   if (error) throw error;
+
   if (data?.notion_page_id) {
-    const existingPageId = String(data.notion_page_id);
-    if (!existingPageId.startsWith("pending:")) return existingPageId;
-    if (String(data.updated_at) >= reservationExpiredBefore) throw new Error("notion-sync-in-progress");
-    const { data: reclaimed, error: reclaimError } = await database
-      .table("app_private", "notion_pages")
-      .update({ notion_page_id: reservationId, updated_at: new Date().toISOString() })
-      .eq("target_type", targetType)
-      .eq("target_id", targetId)
-      .eq("notion_page_id", existingPageId)
-      .lt("updated_at", reservationExpiredBefore)
-      .select("notion_page_id")
-      .maybeSingle();
-    if (reclaimError) throw reclaimError;
-    if (!reclaimed) throw new Error("notion-sync-in-progress");
-  } else {
-    const { error: reservationError } = await database
-      .table("app_private", "notion_pages")
-      .insert({ target_type: targetType, target_id: targetId, notion_page_id: reservationId });
-    if (reservationError) {
-      if (reservationError.code === "23505") throw new Error("notion-sync-in-progress");
-      throw reservationError;
-    }
+    return String(data.notion_page_id);
   }
 
-  let remotePageCreated = false;
-  try {
-    const categoryLabel = await translateCategory(database, targetType, category);
-    const statusLabel = translateStatus(status);
-    await Promise.all([
-      ensureSelectOption("分類", categoryLabel),
-      ensureSelectOption("狀態", statusLabel),
-      countProperty ? ensureRichTextProperty(countProperty) : Promise.resolve(),
-      ensureRichTextProperty("Novae ID"),
-    ]);
+  const categoryLabel = await translateCategory(database, targetType, category);
+  const statusLabel = translateStatus(status);
+  await Promise.all([
+    ensureSelectOption("分類", categoryLabel),
+    ensureSelectOption("狀態", statusLabel),
+    countProperty ? ensureRichTextProperty(countProperty) : Promise.resolve(),
+    ensureRichTextProperty("Novae ID"),
+  ]);
 
-    const dataSourceId = await getDataSourceId();
-    const existingRemote = await callNotionAPI(`/data_sources/${dataSourceId}/query`, "POST", {
-      filter: { property: "Novae ID", rich_text: { equals: externalId } },
-      page_size: 1,
-    }) as { results?: Array<{ id?: string }> };
-    let pageId = existingRemote.results?.[0]?.id;
-    if (!pageId) {
-      const properties: Record<string, unknown> = {
-        "名稱": { title: [{ text: { content: title } }] },
-        "分類": { select: { name: categoryLabel } },
-        "狀態": { select: { name: statusLabel } },
-        "作者": { rich_text: [{ text: { content: authorName } }] },
-        "Novae ID": { rich_text: [{ text: { content: externalId } }] },
+  const dataSourceId = await getDataSourceId();
+  const existingRemote = (await callNotionAPI(`/data_sources/${dataSourceId}/query`, "POST", {
+    filter: { property: "Novae ID", rich_text: { equals: externalId } },
+    page_size: 1,
+  })) as { results?: Array<{ id?: string }> };
+
+  let pageId = existingRemote.results?.[0]?.id;
+  if (!pageId) {
+    const properties: Record<string, unknown> = {
+      名稱: { title: [{ text: { content: title.slice(0, 2000) } }] },
+      分類: { select: { name: categoryLabel } },
+      狀態: { select: { name: statusLabel } },
+      作者: { rich_text: [{ text: { content: authorName.slice(0, 2000) } }] },
+      "Novae ID": { rich_text: [{ text: { content: externalId } }] },
+    };
+    if (countProperty) {
+      properties[countProperty] = {
+        rich_text: [{ text: { content: supportLabel(supportCount, supportGoal) } }],
       };
-      if (countProperty) {
-        properties[countProperty] = {
-          rich_text: [{ text: { content: supportLabel(supportCount, supportGoal) } }],
-        };
-      }
-      const result = await callNotionAPI("/pages", "POST", {
-        parent: { type: "data_source_id", data_source_id: dataSourceId },
-        properties,
-      }) as { id?: string };
-      pageId = result?.id;
-      remotePageCreated = Boolean(pageId);
     }
-
-    if (!pageId) throw new Error("Notion page creation did not return an ID");
-
-    const { data: mapped, error: mappingError } = await database
-      .table("app_private", "notion_pages")
-      .update({ notion_page_id: pageId, updated_at: new Date().toISOString() })
-      .eq("target_type", targetType)
-      .eq("target_id", targetId)
-      .eq("notion_page_id", reservationId)
-      .select("notion_page_id")
-      .maybeSingle();
-    if (mappingError) throw mappingError;
-    if (!mapped) throw new Error("notion-reservation-lost");
-    return pageId;
-  } catch (creationError) {
-    if (!remotePageCreated) {
-      await database.table("app_private", "notion_pages")
-        .delete()
-        .eq("target_type", targetType)
-        .eq("target_id", targetId)
-        .eq("notion_page_id", reservationId);
-    }
-    throw creationError;
+    const result = (await callNotionAPI("/pages", "POST", {
+      parent: { type: "data_source_id", data_source_id: dataSourceId },
+      properties,
+    })) as { id?: string };
+    pageId = result?.id;
   }
+
+  if (!pageId) throw new Error("Notion page creation did not return an ID");
+
+  await database
+    .table("app_private", "notion_pages")
+    .upsert(
+      {
+        target_type: targetType,
+        target_id: targetId,
+        notion_page_id: pageId,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "target_type,target_id" },
+    );
+
+  return pageId;
 }
 
-// ---------------------------------------------------------------------------
-// Public API — called from outboxWorker
-// ---------------------------------------------------------------------------
-
-async function resolveDisplayName(database: AppDatabase, uid: unknown) {
-  const normalizedUid = typeof uid === "string" ? uid : "";
-  if (!normalizedUid) return "使用者";
-  const { data, error } = await database.table("app_private", "user_profiles")
-    .select("display_name").eq("uid", normalizedUid).maybeSingle();
-  if (error) throw error;
-  return String(data?.display_name ?? normalizedUid);
-}
-
-/**
- * Mark a Notion page as deleted by setting its 狀態 to 已刪除.
- * Called when the target content is deleted from the platform.
- */
-export async function markNotionPageDeleted(pageId: string): Promise<void> {
-  if (!notionEnabled()) return;
-  await ensureSelectOption("狀態", "已刪除");
-  await callNotionAPI(`/pages/${pageId}`, "PATCH", {
-    properties: { "狀態": { select: { name: "已刪除" } } },
-  });
-}
-
-/**
- * Create a Notion page when a new issue is submitted.
- * Queries the issues table to get full issue details.
- */
-export async function syncIssueCreatedToNotion(
+export async function syncDomainEventToNotion(
   database: AppDatabase,
-  targetId: string,
-  payload: Record<string, unknown>,
+  event: {
+    event_id: string;
+    event_type: string;
+    aggregate_type: string;
+    aggregate_id: string;
+    actor_uid: string;
+    occurred_at: string;
+    payload: Record<string, unknown>;
+  },
 ): Promise<void> {
   if (!notionEnabled()) return;
+  const { event_id, event_type, aggregate_type, aggregate_id, actor_uid, payload } = event;
 
-  const { data: issue } = await database
+  switch (event_type) {
+    case "issue.created": {
+      const { data: issue } = await database
+        .table("app_private", "issues")
+        .select("title,content,category,status,author_uid,support_count,support_goal,created_at")
+        .eq("id", aggregate_id)
+        .maybeSingle();
+      const authorName = await resolveDisplayName(database, issue?.author_uid ?? actor_uid);
+      const title = String(issue?.title ?? payload.title ?? "未命名提案");
+      const category = String(issue?.category ?? payload.category ?? "公共議題");
+      const pageId = await getOrCreateNotionPage(
+        database,
+        "issue",
+        aggregate_id,
+        title,
+        category,
+        "pending",
+        authorName,
+        issue?.support_count ?? 0,
+        issue?.support_goal,
+      );
+      if (!pageId) return;
+
+      const content = String(issue?.content ?? payload.content ?? "");
+      await appendCreationTimeline(
+        database,
+        pageId,
+        event_id,
+        `【提案建立】${title}`,
+        content,
+      );
+      break;
+    }
+
+    case "issue.status_changed": {
+      const { data: issue } = await database
+        .table("app_private", "issues")
+        .select("title,category,status,author_uid,support_count,support_goal,closed_at,result_content,review_rejection_reason")
+        .eq("id", aggregate_id)
+        .maybeSingle();
+      const newStatus = String(issue?.status ?? payload.new_status ?? "pending");
+      const authorName = await resolveDisplayName(database, issue?.author_uid);
+      const pageId = await getOrCreateNotionPage(
+        database,
+        "issue",
+        aggregate_id,
+        String(issue?.title ?? payload.title ?? "提案"),
+        String(issue?.category ?? "公共議題"),
+        newStatus,
+        authorName,
+        issue?.support_count,
+        issue?.support_goal,
+      );
+      if (!pageId) return;
+
+      const newStatusLabel = translateStatus(newStatus);
+      await ensureSelectOption("狀態", newStatusLabel);
+      await callNotionAPI(`/pages/${pageId}`, "PATCH", {
+        properties: {
+          狀態: { select: { name: newStatusLabel } },
+          結案時間: dateProperty(issue?.closed_at),
+          審核未通過原因: richTextProperty(issue?.review_rejection_reason),
+          提案結果: richTextProperty(issue?.result_content),
+        },
+      });
+      await appendTimelineBlockWithDeduplication(
+        pageId,
+        event_id,
+        `【狀態變更】${newStatusLabel}`,
+        issue?.review_rejection_reason ? `審核未通過原因：${issue.review_rejection_reason}` : undefined,
+      );
+      break;
+    }
+
+    case "issue.result_updated": {
+      const pageId = await getOrCreateNotionPage(
+        database, "issue", aggregate_id, "提案", "公共議題", "completed", "使用者",
+      );
+      if (!pageId) return;
+      const resultContent = String(payload.result_content ?? "");
+      await ensureRichTextProperty("提案結果");
+      await callNotionAPI(`/pages/${pageId}`, "PATCH", {
+        properties: { 提案結果: richTextProperty(resultContent) },
+      });
+      await appendTimelineBlockWithDeduplication(
+        pageId,
+        event_id,
+        "【提案結果更新】",
+        resultContent,
+      );
+      break;
+    }
+
+    case "support.goal_met":
+    case "support.toggled": {
+      const { data: issue } = await database
+        .table("app_private", "issues")
+        .select("title,category,status,author_uid,support_count,support_goal")
+        .eq("id", aggregate_id)
+        .maybeSingle();
+      const pageId = await getOrCreateNotionPage(
+        database,
+        "issue",
+        aggregate_id,
+        String(issue?.title ?? "提案"),
+        String(issue?.category ?? "公共議題"),
+        String(issue?.status ?? "pending"),
+        await resolveDisplayName(database, issue?.author_uid),
+        issue?.support_count,
+        issue?.support_goal,
+      );
+      if (!pageId) return;
+
+      const label = supportLabel(issue?.support_count, issue?.support_goal);
+      await ensureRichTextProperty("附議數");
+      await ensureNumberProperty("附議數量");
+      await callNotionAPI(`/pages/${pageId}`, "PATCH", {
+        properties: {
+          附議數: { rich_text: [{ text: { content: label } }] },
+          附議數量: numberProperty(issue?.support_count),
+        },
+      });
+
+      if (event_type === "support.goal_met") {
+        await appendTimelineBlockWithDeduplication(
+          pageId,
+          event_id,
+          `【附議達標】目前附議數：${label}，已達門檻！`,
+        );
+      }
+      break;
+    }
+
+    case "issue.comment_created": {
+      const pageId = await getOrCreateNotionPage(
+        database, "issue", aggregate_id, "提案", "公共議題", "pending", "使用者",
+      );
+      if (!pageId) return;
+      const author = await resolveDisplayName(database, actor_uid);
+      const content = String(payload.content ?? "");
+      await appendTimelineBlockWithDeduplication(pageId, event_id, `【新留言】${author}`, content);
+      break;
+    }
+
+    case "issue.deleted": {
+      const pageId = await getOrCreateNotionPage(
+        database, "issue", aggregate_id, "提案", "公共議題", "已刪除", "使用者",
+      );
+      if (!pageId) return;
+      await ensureSelectOption("狀態", "已刪除");
+      await callNotionAPI(`/pages/${pageId}`, "PATCH", {
+        properties: { 狀態: { select: { name: "已刪除" } } },
+      });
+      await appendTimelineBlockWithDeduplication(
+        pageId,
+        event_id,
+        "【提案刪除】此提案已自 Novae 刪除",
+      );
+      break;
+    }
+
+    case "facility.created": {
+      const { data: facility } = await database
+        .table("app_private", "facility_reports")
+        .select("title,content,location,status,author_uid,affected_count,category_id,created_at")
+        .eq("id", aggregate_id)
+        .maybeSingle();
+      const authorName = await resolveDisplayName(database, facility?.author_uid ?? actor_uid);
+      const title = String(facility?.title ?? payload.title ?? "未命名設備報修");
+      const pageId = await getOrCreateNotionPage(
+        database,
+        "facility",
+        aggregate_id,
+        title,
+        String(facility?.category_id ?? payload.category_id ?? "設備"),
+        translateFacilityStatus(String(facility?.status ?? "pending")),
+        authorName,
+        facility?.affected_count ?? 1,
+        null,
+        "遇到人數",
+      );
+      if (!pageId) return;
+
+      await ensureRichTextProperty("地點");
+      await ensureDateProperty("建立時間");
+      await callNotionAPI(`/pages/${pageId}`, "PATCH", {
+        properties: {
+          地點: richTextProperty(facility?.location),
+          建立時間: dateProperty(facility?.created_at),
+        },
+      });
+
+      await appendCreationTimeline(
+        database,
+        pageId,
+        event_id,
+        `【報修建立】${title} (地點: ${String(facility?.location ?? "")})`,
+        String(facility?.content ?? ""),
+      );
+      break;
+    }
+
+    case "facility.status_changed": {
+      const { data: facility } = await database
+        .table("app_private", "facility_reports")
+        .select("title,category_id,status,author_uid,affected_count,closed_at,result_content")
+        .eq("id", aggregate_id)
+        .maybeSingle();
+      const statusLabel = translateFacilityStatus(String(facility?.status ?? payload.new_status ?? "pending"));
+      const pageId = await getOrCreateNotionPage(
+        database,
+        "facility",
+        aggregate_id,
+        String(facility?.title ?? "設備"),
+        String(facility?.category_id ?? "設備"),
+        statusLabel,
+        await resolveDisplayName(database, facility?.author_uid),
+        facility?.affected_count,
+        null,
+        "遇到人數",
+      );
+      if (!pageId) return;
+
+      await ensureSelectOption("狀態", statusLabel);
+      await callNotionAPI(`/pages/${pageId}`, "PATCH", {
+        properties: {
+          狀態: { select: { name: statusLabel } },
+          結案時間: dateProperty(facility?.closed_at),
+        },
+      });
+
+      await appendTimelineBlockWithDeduplication(
+        pageId,
+        event_id,
+        `【狀態變更】${statusLabel}`,
+        facility?.result_content ? `處理說明：${facility.result_content}` : undefined,
+      );
+      break;
+    }
+
+    case "facility.deleted": {
+      const pageId = await getOrCreateNotionPage(
+        database, "facility", aggregate_id, "設備", "設備", "已刪除", "使用者",
+      );
+      if (!pageId) return;
+      await ensureSelectOption("狀態", "已刪除");
+      await callNotionAPI(`/pages/${pageId}`, "PATCH", {
+        properties: { 狀態: { select: { name: "已刪除" } } },
+      });
+      await appendTimelineBlockWithDeduplication(
+        pageId,
+        event_id,
+        "【報修刪除】此設備報修已自 Novae 刪除",
+      );
+      break;
+    }
+
+    case "announcement.created": {
+      const { data: announcement } = await database
+        .table("app_private", "announcements")
+        .select("title,content,author_uid,published_at")
+        .eq("id", aggregate_id)
+        .maybeSingle();
+      const title = String(announcement?.title ?? payload.title ?? "未命名公告");
+      const authorName = await resolveDisplayName(database, announcement?.author_uid ?? actor_uid);
+      const pageId = await getOrCreateNotionPage(
+        database,
+        "announcement",
+        aggregate_id,
+        title,
+        "公告",
+        "發布",
+        authorName,
+      );
+      if (!pageId) return;
+
+      await appendCreationTimeline(
+        database,
+        pageId,
+        event_id,
+        `【公告發布】${title}`,
+        String(announcement?.content ?? payload.content ?? ""),
+      );
+      break;
+    }
+
+    case "announcement.deleted": {
+      const pageId = await getOrCreateNotionPage(
+        database, "announcement", aggregate_id, "公告", "公告", "已刪除", "使用者",
+      );
+      if (!pageId) return;
+      await ensureSelectOption("狀態", "已刪除");
+      await callNotionAPI(`/pages/${pageId}`, "PATCH", {
+        properties: { 狀態: { select: { name: "已刪除" } } },
+      });
+      await appendTimelineBlockWithDeduplication(
+        pageId,
+        event_id,
+        "【公告刪除】此公告已自 Novae 刪除",
+      );
+      break;
+    }
+
+    case "announcement.comment_created": {
+      const pageId = await getOrCreateNotionPage(
+        database, "announcement", aggregate_id, "公告", "公告", "發布", "使用者",
+      );
+      if (!pageId) return;
+      const author = await resolveDisplayName(database, actor_uid);
+      const content = String(payload.content ?? "");
+      await appendTimelineBlockWithDeduplication(
+        pageId,
+        event_id,
+        `【公告留言】${author}`,
+        content,
+      );
+      break;
+    }
+
+    case "admin.audit_recorded": {
+      const action = String(payload.action ?? "管理操作");
+      const actorName = await resolveDisplayName(database, actor_uid);
+      const pageId = await getOrCreateNotionPage(
+        database,
+        "admin-audit",
+        aggregate_id,
+        `【管理稽核】${action}`,
+        "管理操作",
+        "已記錄",
+        actorName,
+        undefined,
+        undefined,
+        null,
+      );
+      if (!pageId) return;
+
+      await Promise.all([
+        ensureDateProperty("操作時間"),
+        ensureRichTextProperty("操作類型"),
+        ensureRichTextProperty("操作領域"),
+        ensureRichTextProperty("目標 ID"),
+        ensureRichTextProperty("詳細資料"),
+      ]);
+
+      const detail = (payload.detail ?? {}) as Record<string, unknown>;
+      await callNotionAPI(`/pages/${pageId}`, "PATCH", {
+        properties: {
+          操作時間: dateProperty(event.occurred_at),
+          操作類型: richTextProperty(action),
+          操作領域: richTextProperty(payload.domain),
+          "目標 ID": richTextProperty(payload.target_id),
+          詳細資料: richTextProperty(JSON.stringify(detail)),
+        },
+      });
+
+      await appendTimelineBlockWithDeduplication(
+        pageId,
+        event_id,
+        `【管理稽核】${action} 由 ${actorName}`,
+        JSON.stringify(detail, null, 2),
+      );
+      break;
+    }
+
+    default: {
+      // General/system/category management events
+      const pageId = await getOrCreateNotionPage(
+        database,
+        aggregate_type,
+        aggregate_id,
+        `系統事件: ${event_type}`,
+        "系統維運",
+        "已處理",
+        await resolveDisplayName(database, actor_uid),
+      );
+      if (pageId) {
+        await appendTimelineBlockWithDeduplication(
+          pageId,
+          event_id,
+          `【系統事件】${event_type}`,
+          JSON.stringify(payload),
+        );
+      }
+      break;
+    }
+  }
+}
+
+async function archiveManagedNotionPages(): Promise<number> {
+  const dataSourceId = await getDataSourceId();
+  let archived = 0;
+  let startCursor: string | undefined;
+  do {
+    const response = (await callNotionAPI(`/data_sources/${dataSourceId}/query`, "POST", {
+      filter: { property: "Novae ID", rich_text: { is_not_empty: true } },
+      page_size: 100,
+      ...(startCursor ? { start_cursor: startCursor } : {}),
+    })) as {
+      has_more?: boolean;
+      next_cursor?: string | null;
+      results?: Array<{ id?: string }>;
+    };
+    for (const page of response.results ?? []) {
+      if (!page.id) throw new Error("notion-managed-page-id-missing");
+      await callNotionAPI(`/pages/${page.id}`, "PATCH", { archived: true });
+      archived += 1;
+    }
+    startCursor = response.has_more ? response.next_cursor ?? undefined : undefined;
+    if (response.has_more && !startCursor) throw new Error("notion-query-cursor-missing");
+  } while (startCursor);
+  return archived;
+}
+
+export async function reconcileNotionPages(database: AppDatabase): Promise<{ archived: number; reconciled: number }> {
+  if (!notionEnabled()) return { archived: 0, reconciled: 0 };
+  let reconciled = 0;
+  const archived = await archiveManagedNotionPages();
+  const { error: mappingError } = await database.table("app_private", "notion_pages").delete();
+  if (mappingError) throw mappingError;
+
+  const { data: issues, error: issueError } = await database
     .table("app_private", "issues")
-    .select("title, content, category, status, author_uid, support_count, support_goal, review_rejection_reason, result_content, created_at, review_approved_at, support_deadline_at, support_met_at, response_deadline_at, closed_at")
-    .eq("id", targetId)
-    .maybeSingle();
+    .select("id,title,content,category,status,author_uid,support_count,support_goal");
+  if (issueError) throw issueError;
 
-  const authorName = await resolveDisplayName(database, issue?.author_uid ?? payload.author_uid);
-  const pageId = await getOrCreateNotionPage(
-    database,
-    "issue",
-    targetId,
-    String(issue?.title ?? payload.title ?? "未命名提案"),
-    String(issue?.category ?? payload.category ?? "公共議題"),
-    String(issue?.status ?? "pending"),
-    authorName,
-    issue?.support_count ?? payload.support_count,
-    issue?.support_goal ?? payload.support_goal,
-  );
-  if (pageId) {
-    await Promise.all([
-      updateIssueTimeProperties(pageId, issue ?? {}),
-      ensureNumberProperty("附議數量"),
-      ensureNumberProperty("附議目標"),
-    ]);
-    await ensureContentFormulaProperties();
-    await Promise.all([
-      ensureRichTextProperty("審核未通過原因"),
-      ensureRichTextProperty("提案結果"),
-    ]);
-    await callNotionAPI(`/pages/${pageId}`, "PATCH", {
-      properties: {
-        "審核未通過原因": richTextProperty(issue?.review_rejection_reason),
-        "提案結果": richTextProperty(issue?.result_content),
-        "附議數量": numberProperty(issue?.support_count ?? payload.support_count),
-        "附議目標": numberProperty(issue?.support_goal ?? payload.support_goal),
-      },
-    });
-    await replaceManagedContent(
+  for (const issue of issues ?? []) {
+    const authorName = await resolveDisplayName(database, issue.author_uid);
+    const pageId = await getOrCreateNotionPage(
       database,
       "issue",
-      targetId,
-      pageId,
-      await buildIssueManagedContent(database, targetId, {
-        ...issue,
-        content: issue?.content ?? String(payload.content ?? ""),
-      }),
+      issue.id,
+      issue.title,
+      issue.category,
+      issue.status,
+      authorName,
+      issue.support_count,
+      issue.support_goal,
     );
+    if (!pageId) throw new Error("notion-issue-page-missing");
+    await appendCreationTimeline(
+      database,
+      pageId,
+      `migration-0016:issue:${issue.id}`,
+      `【遷移快照】${issue.title}`,
+      String(issue.content ?? ""),
+    );
+    reconciled += 1;
   }
-}
 
-export async function syncFacilityCreatedToNotion(
-  database: AppDatabase,
-  targetId: string,
-  payload: Record<string, unknown>,
-): Promise<void> {
-  if (!notionEnabled()) return;
-  const { data: facility, error } = await database.table("app_private", "facility_reports")
-    .select("title,content,location,status,author_uid,affected_count,category_id,created_at,started_at,closed_at,result_content")
-    .eq("id", targetId).maybeSingle();
-  if (error) throw error;
-  if (!facility) return;
-  const authorName = await resolveDisplayName(database, facility.author_uid);
-  const pageId = await getOrCreateNotionPage(
-    database, "facility", targetId, String(facility.title ?? payload.title ?? "設備"),
-    String(facility.category_id), translateFacilityStatus(String(facility.status)), authorName, facility.affected_count, null, "遇到人數",
-  );
-  if (!pageId) return;
-  await Promise.all([
-    ensureRichTextProperty("地點"),
-    ensureNumberProperty("遇到人數數量"),
-    ...["建立時間", "開始處理時間", "結案時間"].map(ensureDateProperty),
-  ]);
-  await ensureContentFormulaProperties();
-  await callNotionAPI(`/pages/${pageId}`, "PATCH", { properties: {
-    "地點": richTextProperty(facility.location),
-    "建立時間": dateProperty(facility.created_at),
-    "開始處理時間": dateProperty(facility.started_at),
-    "結案時間": dateProperty(facility.closed_at),
-    "遇到人數數量": numberProperty(facility.affected_count),
-  } });
-  await replaceManagedContent(
-    database,
-    "facility",
-    targetId,
-    pageId,
-    buildFacilityManagedContent(facility),
-  );
-}
+  const { data: facilities, error: facilityError } = await database
+    .table("app_private", "facility_reports")
+    .select("id,title,content,location,category_id,status,author_uid,affected_count");
+  if (facilityError) throw facilityError;
 
-export async function syncFacilityStatusToNotion(
-  database: AppDatabase,
-  targetId: string,
-  payload: Record<string, unknown>,
-): Promise<void> {
-  if (!notionEnabled()) return;
-  const { data: facility, error } = await database.table("app_private", "facility_reports")
-    .select("title,content,location,status,author_uid,affected_count,category_id,created_at,started_at,closed_at,result_content")
-    .eq("id", targetId).maybeSingle();
-  if (error) throw error;
-  if (!facility) return;
-  const terminal = ["completed", "unable-to-handle"].includes(String(facility.status));
-  if (!terminal) return;
-  const authorName = await resolveDisplayName(database, facility.author_uid);
-  const pageId = await getOrCreateNotionPage(database, "facility", targetId, String(facility.title), String(facility.category_id),
-    translateFacilityStatus(String(facility.status)), authorName, 1, null, "遇到人數");
-  if (!pageId) return;
-  const statusLabel = translateFacilityStatus(String(facility.status));
-  await Promise.all([
-    ensureSelectOption("狀態", statusLabel), ensureRichTextProperty("處理結果"), ensureRichTextProperty("遇到人數"),
-    ...["建立時間", "開始處理時間", "結案時間"].map(ensureDateProperty),
-    ensureNumberProperty("遇到人數數量"),
-  ]);
-  await ensureContentFormulaProperties();
-  await callNotionAPI(`/pages/${pageId}`, "PATCH", { properties: {
-    "狀態": { select: { name: statusLabel } },
-    "建立時間": dateProperty(facility.created_at),
-    "開始處理時間": dateProperty(facility.started_at),
-    "結案時間": dateProperty(facility.closed_at),
-    "遇到人數": { rich_text: [{ text: { content: String(facility.affected_count) } }] },
-    "遇到人數數量": numberProperty(facility.affected_count),
-    "處理結果": richTextProperty(facility.result_content ?? payload.result_content),
-  } });
-  await replaceManagedContent(
-    database,
-    "facility",
-    targetId,
-    pageId,
-    buildFacilityManagedContent(facility),
-  );
-}
-
-/**
- * Update the 狀態 property on the Notion page and append a timeline entry
- * when an admin changes the issue status.
- */
-export async function syncIssueStatusChangedToNotion(
-  database: AppDatabase,
-  targetId: string,
-  payload: Record<string, unknown>,
-): Promise<void> {
-  if (!notionEnabled()) return;
-
-  const oldStatus = String(payload.old_status ?? "");
-  const newStatus = String(payload.new_status ?? "");
-  if (!newStatus) return;
-  const newStatusLabel = translateStatus(newStatus);
-
-  const { data: issue } = await database
-    .table("app_private", "issues")
-    .select("title, content, category, author_uid, support_count, support_goal, review_rejection_reason, result_content, created_at, review_approved_at, support_deadline_at, support_met_at, response_deadline_at, closed_at")
-    .eq("id", targetId)
-    .maybeSingle();
-
-  const authorName = await resolveDisplayName(database, issue?.author_uid ?? payload.author_uid);
-  const pageId = await getOrCreateNotionPage(
-    database,
-    "issue",
-    targetId,
-    String(issue?.title ?? payload.title ?? "提案"),
-    String(issue?.category ?? "公共議題"),
-    newStatus,
-    authorName,
-    issue?.support_count ?? payload.support_count,
-    issue?.support_goal ?? payload.support_goal,
-  );
-  if (!pageId) return;
-
-  await Promise.all([
-    ensureSelectOption("狀態", newStatusLabel),
-    ensureIssueTimeProperties(),
-    ensureRichTextProperty("審核未通過原因"),
-    ensureRichTextProperty("提案結果"),
-    ensureRichTextProperty("附議數"),
-    ensureNumberProperty("附議數量"),
-    ensureNumberProperty("附議目標"),
-  ]);
-  await ensureContentFormulaProperties();
-  await callNotionAPI(`/pages/${pageId}`, "PATCH", {
-    properties: {
-      "狀態": { select: { name: newStatusLabel } },
-      "附議數": richTextProperty(
-        supportLabel(
-          issue?.support_count ?? payload.support_count,
-          issue?.support_goal ?? payload.support_goal,
-        ),
-      ),
-      "附議數量": numberProperty(issue?.support_count ?? payload.support_count),
-      "附議目標": numberProperty(issue?.support_goal ?? payload.support_goal),
-      "審核未通過原因": richTextProperty(issue?.review_rejection_reason ?? payload.reason),
-      "提案結果": richTextProperty(issue?.result_content),
-      ...issueTimeProperties(issue ?? {}),
-    },
-  });
-  await replaceManagedContent(
-    database,
-    "issue",
-    targetId,
-    pageId,
-    await buildIssueManagedContent(database, targetId, issue ?? {
-      review_rejection_reason: String(payload.reason ?? ""),
-    }),
-  );
-  const oldLabel = oldStatus ? `${translateStatus(oldStatus)} → ` : "";
-  await appendBlock(pageId, `【狀態更新】${oldLabel}${newStatusLabel}`);
-}
-
-export async function syncIssueSupportToNotion(
-  database: AppDatabase,
-  targetId: string,
-  options: { appendTimeline?: boolean } = {},
-): Promise<void> {
-  if (!notionEnabled()) return;
-
-  const { data: issue } = await database
-    .table("app_private", "issues")
-    .select("title, category, status, author_uid, support_count, support_goal, created_at, review_approved_at, support_deadline_at, support_met_at, response_deadline_at, closed_at")
-    .eq("id", targetId)
-    .maybeSingle();
-
-  const authorName = await resolveDisplayName(database, issue?.author_uid);
-  const pageId = await getOrCreateNotionPage(
-    database,
-    "issue",
-    targetId,
-    String(issue?.title ?? "提案"),
-    String(issue?.category ?? "公共議題"),
-    String(issue?.status ?? "pending"),
-    authorName,
-    issue?.support_count,
-    issue?.support_goal,
-  );
-  if (!pageId) return;
-
-  const label = supportLabel(issue?.support_count, issue?.support_goal);
-  await Promise.all([
-    ensureIssueTimeProperties(),
-    ensureNumberProperty("附議數量"),
-    ensureNumberProperty("附議目標"),
-  ]);
-  await ensureContentFormulaProperties();
-  await callNotionAPI(`/pages/${pageId}`, "PATCH", {
-    properties: {
-      "附議數": { rich_text: [{ text: { content: label } }] },
-      "附議數量": numberProperty(issue?.support_count),
-      "附議目標": numberProperty(issue?.support_goal),
-      ...issueTimeProperties(issue ?? {}),
-    },
-  });
-  if (options.appendTimeline !== false) {
-    await appendBlock(pageId, `【附議更新】目前附議數：${label}`);
+  for (const facility of facilities ?? []) {
+    const authorName = await resolveDisplayName(database, facility.author_uid);
+    const pageId = await getOrCreateNotionPage(
+      database,
+      "facility",
+      facility.id,
+      facility.title,
+      facility.category_id,
+      translateFacilityStatus(facility.status),
+      authorName,
+      facility.affected_count,
+      null,
+      "遇到人數",
+    );
+    if (!pageId) throw new Error("notion-facility-page-missing");
+    await appendCreationTimeline(
+      database,
+      pageId,
+      `migration-0016:facility:${facility.id}`,
+      `【遷移快照】${facility.title}（${String(facility.location ?? "")}）`,
+      String(facility.content ?? ""),
+    );
+    reconciled += 1;
   }
-}
 
-export async function syncIssueResultUpdatedToNotion(
-  database: AppDatabase,
-  targetId: string,
-  payload: Record<string, unknown>,
-): Promise<void> {
-  if (!notionEnabled()) return;
-
-  const { data: issue } = await database
-    .table("app_private", "issues")
-    .select("title, content, category, status, author_uid, support_count, support_goal, review_rejection_reason, result_content, created_at, review_approved_at, support_deadline_at, support_met_at, response_deadline_at, closed_at")
-    .eq("id", targetId)
-    .maybeSingle();
-
-  const authorName = await resolveDisplayName(database, issue?.author_uid ?? payload.author_uid);
-  const pageId = await getOrCreateNotionPage(
-    database,
-    "issue",
-    targetId,
-    String(issue?.title ?? payload.title ?? "提案"),
-    String(issue?.category ?? "公共議題"),
-    String(issue?.status ?? "pending"),
-    authorName,
-    issue?.support_count ?? payload.support_count,
-    issue?.support_goal ?? payload.support_goal,
-  );
-  if (!pageId) return;
-
-  await Promise.all([
-    updateIssueTimeProperties(pageId, issue ?? {}),
-    ensureRichTextProperty("提案結果"),
-  ]);
-  await ensureContentFormulaProperties();
-  await callNotionAPI(`/pages/${pageId}`, "PATCH", {
-    properties: {
-      "提案結果": richTextProperty(issue?.result_content ?? payload.result_content),
-    },
-  });
-  await replaceManagedContent(
-    database,
-    "issue",
-    targetId,
-    pageId,
-    await buildIssueManagedContent(database, targetId, issue ?? {
-      result_content: String(payload.result_content ?? ""),
-    }),
-  );
-  await appendBlock(pageId, `【結果更新】${String(issue?.result_content ?? payload.result_content ?? "").slice(0, 150)}`);
-}
-
-/**
- * Create a Notion page when a new announcement is published.
- */
-export async function syncAnnouncementCreatedToNotion(
-  database: AppDatabase,
-  targetId: string,
-  payload: Record<string, unknown>,
-): Promise<void> {
-  if (!notionEnabled()) return;
-
-  const { data: announcement } = await database
+  const { data: announcements, error: announcementError } = await database
     .table("app_private", "announcements")
-    .select("title,content,author_uid")
-    .eq("id", targetId)
-    .maybeSingle();
-
-  const authorName = await resolveDisplayName(database, announcement?.author_uid ?? payload.author_uid);
-  const pageId = await getOrCreateNotionPage(
-    database,
-    "announcement",
-    targetId,
-    String(announcement?.title ?? payload.title ?? "未命名公告"),
-    "公告",
-    "發布",
-    authorName,
-    0,
-    null,
-  );
-  if (pageId) {
-    await callNotionAPI(`/pages/${pageId}`, "PATCH", {
-      properties: {
-        "名稱": { title: [{ text: { content: String(announcement?.title ?? payload.title ?? "未命名公告") } }] },
-        "作者": { rich_text: [{ text: { content: authorName } }] },
-      },
-    });
-    await replaceManagedContent(
+    .select("id,title,content,author_uid,published_at");
+  if (announcementError) throw announcementError;
+  for (const announcement of announcements ?? []) {
+    const pageId = await getOrCreateNotionPage(
       database,
       "announcement",
-      targetId,
-      pageId,
-      String(announcement?.content ?? payload.content ?? ""),
+      announcement.id,
+      announcement.title,
+      "公告",
+      "發布",
+      await resolveDisplayName(database, announcement.author_uid),
+      undefined,
+      undefined,
+      null,
     );
+    if (!pageId) throw new Error("notion-announcement-page-missing");
+    await appendCreationTimeline(
+      database,
+      pageId,
+      `migration-0016:announcement:${announcement.id}`,
+      `【遷移快照】${announcement.title}`,
+      String(announcement.content ?? ""),
+    );
+    reconciled += 1;
   }
+
+  const { data: audits, error: auditError } = await database
+    .table("app_private", "admin_audit_log")
+    .select("id,actor_uid,action,domain,target_id,detail,created_at");
+  if (auditError) throw auditError;
+  for (const audit of audits ?? []) {
+    const pageId = await getOrCreateNotionPage(
+      database,
+      "admin-audit",
+      String(audit.id),
+      `【管理稽核】${audit.action}`,
+      "管理操作",
+      "已記錄",
+      await resolveDisplayName(database, audit.actor_uid),
+      undefined,
+      undefined,
+      null,
+    );
+    if (!pageId) throw new Error("notion-audit-page-missing");
+    await Promise.all([
+      ensureDateProperty("操作時間"),
+      ensureRichTextProperty("操作類型"),
+      ensureRichTextProperty("操作領域"),
+      ensureRichTextProperty("目標 ID"),
+      ensureRichTextProperty("詳細資料"),
+    ]);
+    await callNotionAPI(`/pages/${pageId}`, "PATCH", {
+      properties: {
+        操作時間: dateProperty(audit.created_at),
+        操作類型: richTextProperty(audit.action),
+        操作領域: richTextProperty(audit.domain),
+        "目標 ID": richTextProperty(audit.target_id),
+        詳細資料: richTextProperty(JSON.stringify(audit.detail ?? {})),
+      },
+    });
+    await appendTimelineBlockWithDeduplication(
+      pageId,
+      `migration-0016:admin-audit:${audit.id}`,
+      `【遷移稽核】${audit.action}`,
+      JSON.stringify(audit.detail ?? {}, null, 2),
+    );
+    reconciled += 1;
+  }
+
+  return { archived, reconciled };
 }
 
-export async function syncAdminAuditToNotion(
-  database: AppDatabase,
-  targetType: string,
-  targetId: string,
-  payload: Record<string, unknown>,
-): Promise<void> {
+export async function markNotionPageDeleted(pageId: string): Promise<void> {
   if (!notionEnabled()) return;
-  const { data: audit, error } = targetType === "admin-audit"
-    ? await database.table("app_private", "admin_audit_log")
-      .select("actor_uid,action,domain,target_id,detail,created_at")
-      .eq("id", targetId)
-      .maybeSingle()
-    : { data: null, error: null };
-  if (error) throw error;
-  const action = String(audit?.action ?? payload.action ?? "管理操作");
-  const actorUid = String(audit?.actor_uid ?? payload.actor_uid ?? "");
-  const actorName = await resolveDisplayName(database, actorUid);
-  const pageId = await getOrCreateNotionPage(
-    database,
-    targetType,
-    targetId,
-    `${action} · ${String(audit?.target_id ?? payload.target_id ?? targetId)}`,
-    "管理操作",
-    "已記錄",
-    actorName,
-    undefined,
-    undefined,
-    null,
-  );
-  if (!pageId) return;
-  await Promise.all([
-    ensureDateProperty("操作時間"),
-    ensureRichTextProperty("操作類型"),
-    ensureRichTextProperty("操作領域"),
-    ensureRichTextProperty("目標 ID"),
-    ensureRichTextProperty("詳細資料"),
-  ]);
-  await Promise.all([
-    ensureFormulaProperty(
-      "Neon 保留截止",
-      'dateAdd(prop("操作時間"), 365, "days")',
-    ),
-    ensureFormulaProperty(
-      "資料保存位置",
-      'if(empty(prop("操作時間")), "", if(now() > dateAdd(prop("操作時間"), 365, "days"), "僅 Notion", "Neon 與 Notion"))',
-    ),
-  ]);
-  const detail = audit?.detail ?? payload.detail ?? {};
-  const createdAt = audit?.created_at ?? payload.created_at;
-  await callNotionAPI(`/pages/${pageId}`, "PATCH", {
-    properties: {
-      "名稱": { title: [{ text: { content: `${action} · ${String(audit?.target_id ?? payload.target_id ?? targetId)}` } }] },
-      "作者": richTextProperty(actorName),
-      "操作時間": dateProperty(createdAt),
-      "操作類型": richTextProperty(action),
-      "操作領域": richTextProperty(audit?.domain ?? payload.domain),
-      "目標 ID": richTextProperty(audit?.target_id ?? payload.target_id),
-      "詳細資料": richTextProperty(JSON.stringify(detail)),
-    },
-  });
-  await replaceManagedContent(
-    database,
-    targetType,
-    targetId,
-    pageId,
-    [
-      `【操作者 UID】\n${actorUid}`,
-      `【操作類型】\n${action}`,
-      `【操作領域】\n${String(audit?.domain ?? payload.domain ?? "")}`,
-      `【目標 ID】\n${String(audit?.target_id ?? payload.target_id ?? "")}`,
-      `【操作時間】\n${String(createdAt ?? "")}`,
-      `【詳細資料】\n${JSON.stringify(detail, null, 2)}`,
-    ].join("\n\n"),
-  );
+  await callNotionAPI(`/pages/${pageId}`, "PATCH", { archived: true });
 }

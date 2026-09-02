@@ -14,57 +14,67 @@ integrationTest("transient FCM failures persist and retry without losing the pus
   await resetFcmRequests();
   await failNextFcmRequests(1);
 
+  const eventId = crypto.randomUUID();
   const deliveryId = crypto.randomUUID();
-  const deliveryKey = `integration-push-retry-${crypto.randomUUID()}`;
   const targetId = crypto.randomUUID();
-  const notification = {
-    body_preview: "Temporary delivery failure",
-    issue_category: "public-issues",
-    source: "user",
-    target_id: targetId,
-    target_type: "issue",
-    title: "Retry delivery",
-    type: "issue_status_changed",
-  };
-  const { error: insertError } = await database.table("app_private", "push_delivery_logs").insert({
+  const operationId = crypto.randomUUID();
+  const moderatorUid = `push-retry-moderator-${crypto.randomUUID()}`;
+
+  const { error: opError } = await database.table("app_private", "operations").insert({
+    action: "updateIssueStatus",
+    actor_uid: moderatorUid,
+    operation_id: operationId,
+    response: { seeded: true },
+    status: "completed",
+  });
+  if (opError) throw opError;
+
+  const { error: eventError } = await database.table("app_private", "domain_events").insert({
+    actor_uid: moderatorUid,
+    aggregate_id: targetId,
+    aggregate_type: "issue",
+    event_id: eventId,
+    event_type: "issue.status_changed",
+    operation_id: operationId,
+    payload: {
+      author_uid: recipient.auth.uid,
+      status: "in-progress",
+      title: "Retry delivery",
+    },
+  });
+  if (eventError) throw eventError;
+
+  const { error: insertError } = await database.table("app_private", "event_deliveries").insert({
     attempt_count: 0,
-    delivery_key: deliveryKey,
+    destination: "push",
+    event_id: eventId,
     id: deliveryId,
     next_attempt_at: new Date().toISOString(),
-    notification,
-    notification_type: notification.type,
-    recipient_uids: [recipient.auth.uid],
-    status: "failed",
-    target_id: targetId,
-    target_type: "issue",
-    token_uid: recipient.auth.uid,
+    status: "pending",
   });
   if (insertError) throw insertError;
 
   await drainJobs();
-  const { data: failedDelivery, error: failedError } = await database.table("app_private", "push_delivery_logs")
-    .select("attempt_count,notification,status")
+  const { data: failedDelivery, error: failedError } = await database.table("app_private", "event_deliveries")
+    .select("attempt_count,status")
     .eq("id", deliveryId)
     .single();
   if (failedError) throw failedError;
   assert.equal(failedDelivery.status, "failed");
   assert.equal(failedDelivery.attempt_count, 1);
-  assert.ok(failedDelivery.notification);
 
-  const { error: dueError } = await database.table("app_private", "push_delivery_logs")
+  const { error: dueError } = await database.table("app_private", "event_deliveries")
     .update({ next_attempt_at: new Date().toISOString() })
     .eq("id", deliveryId);
   if (dueError) throw dueError;
   await drainJobs();
-  const { data: completedDelivery, error: completedError } = await database.table("app_private", "push_delivery_logs")
-    .select("attempt_count,notification,recipient_uids,status")
+  const { data: completedDelivery, error: completedError } = await database.table("app_private", "event_deliveries")
+    .select("attempt_count,status")
     .eq("id", deliveryId)
     .single();
   if (completedError) throw completedError;
-  assert.equal(completedDelivery.status, "sent");
+  assert.equal(completedDelivery.status, "completed");
   assert.equal(completedDelivery.attempt_count, 2);
-  assert.equal(completedDelivery.notification, null);
-  assert.deepEqual(completedDelivery.recipient_uids, []);
 
   const attempts = (await readFcmRequests())
     .map((request) => request.body.message)

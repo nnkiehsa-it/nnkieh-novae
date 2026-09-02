@@ -59,7 +59,7 @@ export default function DashboardPage() {
   const maxCategory = Math.max(1, ...Object.values(stats.issues_by_category));
   const operationCards = [
     { label: translate('ui.dashboard.pendingNotion'), value: operations.pending_notion_sync_count },
-    { label: translate('ui.dashboard.failedOutbox'), value: operations.failed_outbox_count },
+    { label: translate('ui.dashboard.failedDelivery'), value: operations.failed_delivery_count },
     { label: translate('ui.dashboard.failedPush'), value: operations.failed_push_delivery_count },
     { label: translate('ui.dashboard.cleanup'), value: operations.cleanup_backlog_count },
     { label: translate('ui.dashboard.stuckUploads'), value: operations.stuck_upload_count },
@@ -185,7 +185,7 @@ export default function DashboardPage() {
                     {failure.source} · {failure.status}
                   </p>
                   <p className="mt-1 break-all text-xs leading-5 text-muted-foreground">
-                    {translate('ui.dashboard.trace', { id: failure.error_trace_id })}
+                    {translate('ui.dashboard.trace', { id: failure.failure_id })}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {formatDate(failure.updated_at)}
@@ -197,7 +197,7 @@ export default function DashboardPage() {
                       aria-label={translate('ui.dashboard.copyTrace')}
                       onClick={() =>
                         void navigator.clipboard
-                          .writeText(failure.error_trace_id)
+                          .writeText(failure.failure_id)
                           .then(() => toast.success(translate('ui.common.copiedTrace')))
                       }
                       size="icon-sm"

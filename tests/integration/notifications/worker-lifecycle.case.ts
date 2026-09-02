@@ -1,4 +1,4 @@
-import { asRecord, assert, callAction, database, integrationTest, requestId, seedActor } from "./support.ts";
+import { asRecord, assert, callAction, database, integrationTest, seedActor } from "./support.ts";
 
 integrationTest("worker database lifecycles and maintenance RPC", async () => {
   const { data: categoryRows, error: categoryError } = await database.table("app_private", "issue_categories").select("id").eq("is_active", true).order("sort_order");
@@ -9,7 +9,6 @@ integrationTest("worker database lifecycles and maintenance RPC", async () => {
   const expiredIssueResult = asRecord(await callAction("createIssue", {
     category: issueCategoryIds[0],
     content: "Integration expired support content",
-    requestId: requestId("expired-support"),
     title: "Expired support",
   }, expiredOwner.auth));
   const expiredIssue = asRecord(expiredIssueResult.issue);
@@ -36,57 +35,82 @@ integrationTest("worker database lifecycles and maintenance RPC", async () => {
   assert.equal(rejectedIssue.status, "auto-rejected");
 
   const deletionTarget = `integration-deletion-${crypto.randomUUID()}`;
-  const { error: deletionInsertError } = await database.table("app_private", "deletion_jobs")
+  const { error: deletionInsertError } = await database.table("app_private", "background_jobs")
     .insert({
-      target_id: deletionTarget,
-      target_type: "integration-test",
+      job_type: "deletion",
+      next_attempt_at: new Date(0).toISOString(),
+      payload: { target_id: deletionTarget, target_type: "integration-test" },
+      scope_id: deletionTarget,
+      status: "pending",
     });
   if (deletionInsertError) throw deletionInsertError;
-  const { data: deletionJobs, error: deletionClaimError } = await database
-    .call("app_api", "claim_deletion_jobs", { batch_size: 50 });
-  if (deletionClaimError) throw deletionClaimError;
-  const deletionJob = ((deletionJobs ?? []) as Array<{ id: string; target_id: string }>)
-    .find((job) => job.target_id === deletionTarget);
+  let deletionJob: { id: string; scope_id: string } | undefined;
+  for (let batch = 0; batch < 10 && !deletionJob; batch += 1) {
+    const { data: deletionJobs, error: deletionClaimError } = await database
+      .call("app_api", "claim_background_jobs", { requested_batch_size: 1 });
+    if (deletionClaimError) throw deletionClaimError;
+    deletionJob = ((deletionJobs ?? []) as Array<{ id: string; scope_id: string }>)
+      .find((job) => job.scope_id === deletionTarget);
+  }
   assert.ok(deletionJob);
-  const { error: deletionCompleteError } = await database.call("app_api", "complete_deletion_job", { job_id: deletionJob.id });
+  const attemptId = crypto.randomUUID();
+  const { error: deletionCompleteError } = await database.call("app_api", "complete_background_job", {
+    attempt_id: attemptId,
+    job_id: deletionJob.id,
+  });
   if (deletionCompleteError) throw deletionCompleteError;
 
-  const outboxTarget = `integration-outbox-${crypto.randomUUID()}`;
-  const { error: outboxInsertError } = await database.table("app_private", "outbox_events")
+  const eventTarget = `integration-event-${crypto.randomUUID()}`;
+  const opId = crypto.randomUUID();
+  const eventId = crypto.randomUUID();
+  await database.table("app_private", "operations").insert({
+    action: "integrationTest",
+    actor_uid: "integration-worker",
+    operation_id: opId,
+    response: { seeded: true },
+    status: "completed",
+  });
+  await database.table("app_private", "domain_events").insert({
+    actor_uid: "integration-worker",
+    aggregate_id: eventTarget,
+    aggregate_type: "integration-test",
+    event_id: eventId,
+    event_type: "issue.created",
+    operation_id: opId,
+    payload: { source: "local-verifier" },
+  });
+  const deliveryId = crypto.randomUUID();
+  const { error: deliveryInsertError } = await database.table("app_private", "event_deliveries")
     .insert({
-      actor_uid: "integration-worker",
-      event_type: "integration.test",
-      payload: { source: "local-verifier" },
-      target_id: outboxTarget,
-      target_type: "integration-test",
+      next_attempt_at: new Date(0).toISOString(),
+      destination: "notion",
+      event_id: eventId,
+      id: deliveryId,
+      status: "pending",
     });
-  if (outboxInsertError) throw outboxInsertError;
-  let outboxEvent: { id: string; target_id: string } | undefined;
-  for (let batch = 0; batch < 10 && !outboxEvent; batch += 1) {
-    const { data: outboxEvents, error: outboxClaimError } = await database
-      .call("app_api", "claim_outbox_events", { batch_size: 100 });
-    if (outboxClaimError) throw outboxClaimError;
-    outboxEvent = ((outboxEvents ?? []) as Array<{ id: string; target_id: string }>)
-      .find((event) => event.target_id === outboxTarget);
-  }
-  assert.ok(outboxEvent);
-  const errorTraceId = crypto.randomUUID();
-  const { error: outboxFailError } = await database.call("app_api", "fail_outbox_event", {
-      error_trace_id: errorTraceId,
-      event_id: outboxEvent.id,
-    });
-  if (outboxFailError) throw outboxFailError;
-  const { data: failedOutbox, error: failedOutboxError } = await database.table("app_private", "outbox_events")
-    .select("error_trace_id")
-    .eq("id", outboxEvent.id)
+  if (deliveryInsertError) throw deliveryInsertError;
+
+  const { data: claimedDeliveries, error: deliveryClaimError } = await database
+    .call("app_api", "claim_event_deliveries", { target_destination: "notion", batch_size: 1 });
+  if (deliveryClaimError) throw deliveryClaimError;
+  const claimedDelivery = ((claimedDeliveries ?? []) as Array<{ delivery_id: string }>)
+    .find((delivery) => delivery.delivery_id === deliveryId);
+  assert.ok(claimedDelivery);
+
+  const deliveryAttemptId = crypto.randomUUID();
+  const { error: deliveryFailError } = await database.call("app_api", "fail_event_delivery", {
+    attempt_id: deliveryAttemptId,
+    delivery_id: deliveryId,
+    error_info: { code: "simulated-failure" },
+  });
+  if (deliveryFailError) throw deliveryFailError;
+  const { data: failedDelivery, error: failedDeliveryError } = await database.table("app_private", "event_deliveries")
+    .select("last_attempt_id,status")
+    .eq("id", deliveryId)
     .single();
-  if (failedOutboxError) throw failedOutboxError;
-  assert.equal(failedOutbox.error_trace_id, errorTraceId);
-  const { error: legacyFailError } = await database.call("app_api", "fail_outbox_event", {
-      error_message: "legacy-format-must-not-exist",
-      event_id: outboxEvent.id,
-    } as never);
-  assert.ok(legacyFailError, "legacy error_message RPC parameter must be removed");
+  if (failedDeliveryError) throw failedDeliveryError;
+  assert.equal(failedDelivery.status, "failed");
+  assert.equal(failedDelivery.last_attempt_id, deliveryAttemptId);
 
   const { data: maintenance, error: maintenanceError } = await database
     .call("app_api", "run_scheduled_maintenance_cleanup");

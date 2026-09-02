@@ -8,9 +8,8 @@ const workerEntryModules = [
   "cloudflare/src/backend/actions/handler.ts",
   "cloudflare/src/backend/sync-user.ts",
   "cloudflare/src/backend/cloudinary-webhook.ts",
-  "cloudflare/src/backend/jobs/outbox.ts",
-  "cloudflare/src/backend/jobs/deletion.ts",
-  "cloudflare/src/backend/jobs/realtime.ts",
+  "cloudflare/src/backend/jobs/deliveries.ts",
+  "cloudflare/src/backend/jobs/background-jobs.ts",
   "cloudflare/src/backend/jobs/maintenance.ts",
 ];
 

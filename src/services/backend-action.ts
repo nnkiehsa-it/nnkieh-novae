@@ -4,16 +4,16 @@ import { BACKEND_ACTION_POLICIES, type BackendActionName } from '@/services/back
 import { auth } from '@/lib/firebase';
 import { apiGatewayUrl } from '@/lib/api-gateway';
 import { ApiRequestError, type ApiErrorResponse } from '@/lib/api-error';
-import { readSessionStorage, removeSessionStorage, writeSessionStorage } from '@/lib/browser-storage';
 import { backendSecurityHeaders } from '@/lib/backend-security';
 
 interface BackendActionSuccessEnvelope<TResponse> {
   data: TResponse;
-  requestId: string;
+  operationId: string;
   success: true;
 }
 
 interface BackendActionErrorEnvelope extends ApiErrorResponse {
+  operationId: string;
   success: false;
 }
 
@@ -21,41 +21,15 @@ type BackendActionEnvelope<TResponse> =
   | BackendActionSuccessEnvelope<TResponse>
   | BackendActionErrorEnvelope;
 
-function operationStorageKey(name: BackendActionName, payload: Record<string, unknown>) {
-  const operationPayload = { ...payload };
-  delete operationPayload.requestId;
-  const source = `${name}:${JSON.stringify(operationPayload)}`;
-  let hash = 2166136261;
-  for (let index = 0; index < source.length; index += 1) {
-    hash ^= source.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return `novae:pending-action:${name}:${(hash >>> 0).toString(36)}`;
-}
-
-function withStableRequestId<TRequest>(name: BackendActionName, payload: TRequest) {
-  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
-    return { payload, storageKey: '' };
-  }
-  const record = payload as Record<string, unknown>;
-  if (typeof record.requestId !== 'string' || !record.requestId) {
-    return { payload, storageKey: '' };
-  }
-  const storageKey = operationStorageKey(name, record);
-  const requestId = readSessionStorage(storageKey) || record.requestId;
-  writeSessionStorage(storageKey, requestId);
-  return {
-    payload: { ...record, requestId } as TRequest,
-    storageKey,
-  };
-}
-
 export function invokeBackendAction<TRequest = Record<string, unknown>, TResponse = unknown>(
   name: BackendActionName,
-  options: { signal?: AbortSignal; timeoutMs?: number } = {},
+  options: { signal?: AbortSignal; timeoutMs?: number; operationId?: string } = {},
 ) {
   return async (initialPayload: TRequest): Promise<TResponse> => {
-    const stableOperation = withStableRequestId(name, initialPayload);
+    const policy = BACKEND_ACTION_POLICIES[name];
+    const isWrite = policy.group !== 'read';
+    const operationId = options.operationId || crypto.randomUUID();
+
     const requestUid = auth?.currentUser?.uid ?? '';
     const securityHeaders = await withRequestTimeout(async () => {
       const token = await getFirebaseIdToken();
@@ -69,18 +43,17 @@ export function invokeBackendAction<TRequest = Record<string, unknown>, TRespons
       timeoutMs: options.timeoutMs,
     });
 
-    const policy = BACKEND_ACTION_POLICIES[name];
-    const retrySafe = policy.group === 'read' || Boolean(stableOperation.storageKey);
     const response = await safeFetch(apiGatewayUrl('/v1/actions'), {
       method: 'POST',
-      body: JSON.stringify({ action: name, payload: stableOperation.payload }),
+      body: JSON.stringify({ action: name, payload: initialPayload }),
       headers: {
         ...securityHeaders,
         'Content-Type': 'application/json',
+        ...(isWrite ? { 'X-Novae-Operation-Id': operationId } : {}),
       },
     }, {
       label: name,
-      retry: { allowUnsafe: retrySafe },
+      retry: { allowUnsafe: isWrite },
       signal: options.signal,
       timeoutMs: options.timeoutMs,
     });
@@ -88,21 +61,22 @@ export function invokeBackendAction<TRequest = Record<string, unknown>, TRespons
     if (auth?.currentUser?.uid !== requestUid) {
       throw new Error('auth.loginStatusChangedPreviousResponseIgnored');
     }
+
     let envelope: BackendActionEnvelope<TResponse> | null = null;
     try {
       envelope = await response.json() as BackendActionEnvelope<TResponse>;
     } catch {
-      // The response status below supplies the useful fallback.
+      // JSON parse error handled below
     }
+
     if (!envelope) {
       throw new Error('common.theServiceDidNotReturnAnyData');
     }
+
     if (envelope.success !== true) {
-      throw envelope.success === false
-        ? new ApiRequestError(envelope)
-        : new ApiRequestError({ error: { code: 'upstream-invalid-response' } });
+      throw new ApiRequestError(envelope);
     }
-    if (stableOperation.storageKey) removeSessionStorage(stableOperation.storageKey);
+
     return envelope.data;
   };
 }

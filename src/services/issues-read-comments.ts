@@ -33,7 +33,7 @@ export async function fetchComments(
     options?.cacheScope ?? 'default',
     sort,
     cursor?.id ?? 'first',
-    cursor?.createdAtMs ?? '',
+    cursor?.createdAt ?? '',
   ]);
   if (!options?.forceRefresh) {
     const cached = await getCachedContentPersistent<{ comments: CommentRecord[]; cursor: CommentCursor | null; hasMore: boolean; version: number }>(cacheKey);
@@ -57,18 +57,18 @@ export async function fetchComments(
     const page = {
       comments: result.comments.map((comment) => ({
         id: comment.id,
-        issue_id: comment.issue_id,
-        parent_comment_id: comment.parent_comment_id,
+        issue_id: comment.issueId,
+        parent_comment_id: comment.parentCommentId,
         content: comment.content,
-        author_uid: comment.author_uid,
-        created_at: comment.created_at_ms === null ? null : new Date(comment.created_at_ms),
+        author_uid: comment.authorUid,
+        created_at: comment.createdAt === null ? null : new Date(comment.createdAt),
         replies: (comment.replies ?? []).map((reply) => ({
           id: reply.id,
-          issue_id: comment.issue_id,
-          parent_comment_id: reply.parent_comment_id,
+          issue_id: comment.issueId,
+          parent_comment_id: reply.parentCommentId,
           content: reply.content,
-          author_uid: reply.author_uid,
-          created_at: reply.created_at_ms === null ? null : new Date(reply.created_at_ms),
+          author_uid: reply.authorUid,
+          created_at: reply.createdAt === null ? null : new Date(reply.createdAt),
           replies: [],
         })),
       })),

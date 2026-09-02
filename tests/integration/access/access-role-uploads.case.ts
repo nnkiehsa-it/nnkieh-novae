@@ -6,7 +6,6 @@ import {
   insertReadyUpload,
   integrationTest,
   refreshActor,
-  requestId,
   saveCategoryDraft,
   seedActor,
   database,
@@ -87,44 +86,32 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   }, admin.auth));
 
   await expectActionError(
-    "validation-required",
-    () => callAction("setUserAccessScope", {
-      grant: true,
-      scopeKind: "announcement",
-      uid: target.auth.uid,
-    }, admin.auth),
-  );
-  await expectActionError(
     "permission-denied",
     () => callAction("setUserAccessScope", {
       grant: true,
-      requestId: requestId("denied-role"),
       scopeKind: "announcement",
       uid: target.auth.uid,
     }, user.auth),
   );
 
-  const roleRequestId = requestId("set-role");
+  const roleOperationId = crypto.randomUUID();
   const rolePayload = {
     grant: true,
-    requestId: roleRequestId,
     scopeKind: "announcement",
     uid: target.auth.uid,
   };
-  const firstRoleWrite = await callAction("setUserAccessScope", rolePayload, admin.auth);
-  const replayedRoleWrite = await callAction("setUserAccessScope", rolePayload, admin.auth);
+  const firstRoleWrite = await callAction("setUserAccessScope", rolePayload, admin.auth, roleOperationId);
+  const replayedRoleWrite = await callAction("setUserAccessScope", rolePayload, admin.auth, roleOperationId);
   assert.deepEqual(replayedRoleWrite, firstRoleWrite);
   await callAction("setUserAccessScope", {
     categoryId: "public-issues",
     grant: true,
-    requestId: requestId("set-issue-scope"),
     scopeKind: "issue",
     uid: target.auth.uid,
   }, admin.auth);
   await callAction("setUserAccessScope", {
     categoryId: "general",
     grant: true,
-    requestId: requestId("set-facility-scope"),
     scopeKind: "facility",
     uid: target.auth.uid,
   }, admin.auth);
@@ -154,13 +141,11 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   }, admin.auth));
   await expectActionError("validation-required", () => callAction("setUserAccessScope", {
     grant: true,
-    requestId: requestId("platform-role-api-denied"),
     scopeKind: "platform",
     uid: target.auth.uid,
   }, admin.auth));
   await expectActionError("permission-denied", () => callAction("setUserAccessScope", {
     grant: false,
-    requestId: requestId("platform-role-revoke-denied"),
     scopeKind: "announcement",
     uid: admin.auth.uid,
   }, admin.auth));
@@ -168,7 +153,6 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   await expectActionError("validation-invalid", () => callAction("setUserAccessScope", {
     categoryId: "missing-category",
     grant: true,
-    requestId: requestId("invalid-category-assignment"),
     scopeKind: "issue",
     uid: target.auth.uid,
   }, admin.auth));
@@ -183,7 +167,6 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   await callAction("setUserAccessScope", {
     categoryId: "general",
     grant: true,
-    requestId: requestId("preserve-facility-opt-out"),
     scopeKind: "facility",
     uid: target.auth.uid,
   }, admin.auth);
@@ -200,14 +183,12 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
     callAction("setUserAccessScope", {
       categoryId: "public-issues",
       grant: true,
-      requestId: requestId("concurrent-issue-scope"),
       scopeKind: "issue",
       uid: concurrentTarget.auth.uid,
     }, admin.auth),
     callAction("setUserAccessScope", {
       categoryId: "general",
       grant: true,
-      requestId: requestId("concurrent-facility-scope"),
       scopeKind: "facility",
       uid: concurrentTarget.auth.uid,
     }, admin.auth),
@@ -283,10 +264,12 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   const committedAvatarProfile = await tableRow("user_profiles", "uid", user.auth.uid);
   assert.equal(committedAvatarProfile?.avatar_public_id, nextAvatarPublicId);
   const { data: previousAvatarJobs, error: previousAvatarJobsError } = await database
-    .table("app_private", "deletion_jobs").select("cloudinary_public_id,target_type")
-    .eq("cloudinary_public_id", previousAvatarPublicId);
+    .table("app_private", "background_jobs").select("payload,job_type")
+    .eq("scope_id", user.auth.uid)
+    .eq("job_type", "deletion");
   if (previousAvatarJobsError) throw previousAvatarJobsError;
-  assert.deepEqual(previousAvatarJobs, [{ cloudinary_public_id: previousAvatarPublicId, target_type: "avatar" }]);
+  assert.equal(previousAvatarJobs?.length, 1);
+  assert.equal(asRecord(previousAvatarJobs?.[0]?.payload).cloudinary_public_id, previousAvatarPublicId);
 
   for (const [table, removedColumn] of [
     ["issues", "author_name"],
@@ -300,7 +283,6 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
     assert.equal(error?.code, "42703", `${table}.${removedColumn} must be removed`);
   }
 
-  const createUploadRequestId = requestId("create-upload");
   const uploadResult = asRecord(await callAction("createImageUploadSessions", {
     images: [{
       contentType: "image/webp",
@@ -308,7 +290,6 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
       size: 256,
       width: 64,
     }],
-    requestId: createUploadRequestId,
     targetType: "issue",
   }, user.auth));
   const session = asRecord((uploadResult.sessions as unknown[])[0]);
@@ -320,7 +301,6 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
     .eq("id", uploadId);
   if (readyError) throw readyError;
   const finalized = asRecord(await callAction("finalizeImageUploads", {
-    requestId: requestId("finalize-upload"),
     targetType: "issue",
     uploads: [{ uploadId }],
   }, user.auth));
@@ -341,7 +321,6 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   assert.equal(asRecord(hidden.errors)[uploadId], "not-found");
 
   const deleted = asRecord(await callAction("deleteUploadedImages", {
-    requestId: requestId("delete-upload"),
     storagePaths: [String(session.folder) + "/" + String(session.publicId)],
   }, user.auth));
   assert.equal(deleted.deleted, 1);

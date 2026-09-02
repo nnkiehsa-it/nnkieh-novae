@@ -31,26 +31,33 @@ export async function handleCloudinaryWebhook(body: Uint8Array, database: AppDat
       && width <= imageUploads.maxDimension
       && height <= imageUploads.maxDimension;
 
-    const { error } = await database.table("app_private", "uploads")
-      .update({
-        status: validAsset ? "ready" : "failed",
-        size_bytes: Number.isFinite(bytes) ? bytes : null,
-        width: Number.isFinite(width) ? width : null,
-        height: Number.isFinite(height) ? height : null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("cloudinary_public_id", publicId)
-      .eq("status", "pending");
-    if (error) throw error;
+    await database.transaction(async (tx) => {
+      const { error } = await tx.table("app_private", "uploads")
+        .update({
+          status: validAsset ? "ready" : "failed",
+          size_bytes: Number.isFinite(bytes) ? bytes : null,
+          width: Number.isFinite(width) ? width : null,
+          height: Number.isFinite(height) ? height : null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("cloudinary_public_id", publicId)
+        .eq("status", "pending");
+      if (error) throw error;
 
-    if (!validAsset) {
-      const { error: deletionError } = await database.table("app_private", "deletion_jobs").insert({
-        target_type: "upload",
-        target_id: publicId,
-        cloudinary_public_id: publicId,
-      });
-      if (deletionError && deletionError.code !== "23505") throw deletionError;
-    }
+      if (!validAsset) {
+        const { error: deletionError } = await tx.call("app_api", "enqueue_background_job", {
+          job_type: "deletion",
+          scope_id: publicId,
+          payload: {
+            cloudinary_public_id: publicId,
+            target_id: publicId,
+            target_type: "upload",
+          },
+          created_by: "cloudinary-webhook",
+        });
+        if (deletionError) throw deletionError;
+      }
+    });
 
     log.success("media-webhook.completed", {
       assetStatus: validAsset ? "ready" : "rejected",

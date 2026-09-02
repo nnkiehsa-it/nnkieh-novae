@@ -1,4 +1,5 @@
 import { expect, type Page } from '@playwright/test';
+import { expectBackendAction } from '../support/backend-action';
 
 type Scope =
   | { kind: 'announcement' }
@@ -45,7 +46,7 @@ export async function setMemberAccess(
     name: grant ? 'Grant access' : 'Revoke',
   });
   if (!await action.isVisible()) return;
-  await action.click();
+  await expectBackendAction(page, 'setUserAccessScope', async () => action.click());
   await expect(
     candidate.getByRole('button', { name: grant ? 'Revoke' : 'Grant access' }),
   ).toBeVisible();

@@ -1,4 +1,5 @@
 import { expect, type Page } from '@playwright/test';
+import { expectBackendAction } from '../support/backend-action';
 
 async function fillActiveCategory(page: Page, label: string, id: string) {
   await page.getByRole('textbox', { name: 'Category name' }).last().fill(label);
@@ -28,6 +29,8 @@ export async function completeInitialSetup(page: Page) {
   const complete = page.getByRole('button', { name: 'Finish setup' });
   await expect(complete).toBeEnabled();
   await complete.click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Confirm setup' }).click();
+  await expectBackendAction(page, 'completeInitialSetup', async () => {
+    await page.getByRole('dialog').getByRole('button', { name: 'Confirm setup' }).click();
+  });
   await expect(page).toHaveURL(/\/issues\/proposal-a/u, { timeout: 20_000 });
 }

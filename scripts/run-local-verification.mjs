@@ -9,11 +9,13 @@ const suite = process.argv.includes("--unit-only")
   ? "unit"
   : process.argv.includes("--architecture-only")
     ? "architecture"
-    : process.argv.includes("--test-only")
-      ? "test"
-      : process.argv.includes("--fast")
-        ? "fast"
-        : "local";
+    : process.argv.includes("--tooling-only")
+      ? "tooling"
+      : process.argv.includes("--test-only")
+        ? "test"
+        : process.argv.includes("--fast")
+          ? "fast"
+          : "local";
 const verbose = process.env.NOVAE_VERBOSE_TESTS === "1";
 const isInteractive = Boolean(process.stderr.isTTY);
 const maxCapturedCharacters = 4_000_000;
@@ -66,6 +68,7 @@ const steps = {
   tests: [
     ["unit tests", executable("vitest"), ["run"]],
     ["architecture tests", node, ["--test", "tests/architecture.test.mjs"]],
+    ["tooling policy tests", node, ["--test", "tests/tooling.test.mjs"]],
   ],
   audit: [["dependency audit", bun, ["audit", "--audit-level=high"]]],
 };
@@ -82,11 +85,13 @@ const selectedSteps =
     ? [steps.tests[0]]
     : suite === "architecture"
       ? [steps.tests[1]]
-      : suite === "test"
-        ? steps.tests
-        : suite === "fast"
-          ? steps.fast
-          : [...steps.checks, ...steps.tests, ...steps.audit];
+      : suite === "tooling"
+        ? [steps.tests[2]]
+        : suite === "test"
+          ? steps.tests
+          : suite === "fast"
+            ? steps.fast
+            : [...steps.checks, ...steps.tests, ...steps.audit];
 
 let completed = 0;
 let progressTimer;
@@ -216,6 +221,7 @@ const suiteLabel = {
   test: "Local tests",
   unit: "Unit tests",
   architecture: "Architecture tests",
+  tooling: "Tooling policy tests",
 }[suite];
 process.stderr.write(
   `✓ ${suiteLabel} passed (${selectedSteps.length} stages)\n`,

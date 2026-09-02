@@ -49,7 +49,7 @@ export function PlatformJobProgress() {
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {job.status === "failed"
-                      ? t("ui.admin.backgroundFailed", { traceId: job.errorTraceId ?? "—" })
+                      ? t("ui.admin.backgroundFailed", { traceId: job.failureId ?? "—" })
                       : job.status === "completed"
                       ? t("ui.admin.backgroundResult", { count: job.affectedRows })
                       : t("ui.admin.backgroundProgress", {

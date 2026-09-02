@@ -9,6 +9,7 @@
   },
   "packageManager": "bun@1.4.0",
   "overrides": {
+    "browserslist": "4.28.7",
     "sharp": "0.35.3"
   },
   "scripts": {
@@ -17,6 +18,7 @@
     "generate:rate-limits": "node scripts/generate-rate-limits.mjs",
     "generate:data-retention": "node scripts/generate-data-retention.mjs",
     "generate:backend-actions": "node scripts/generate-backend-actions.mjs",
+    "generate:database-contracts": "node scripts/generate-database-contracts.mjs",
     "generate:harmonyos-font": "node scripts/generate-harmonyos-subset.mjs",
     "generate:all": "node scripts/generate-all.mjs",
     "build": "tsc --noEmit && next build --webpack",
@@ -32,6 +34,8 @@
     "check:build-budget": "node scripts/check-build-budget.mjs",
     "verify:local": "node scripts/run-local-verification.mjs",
     "verify:fast": "node scripts/run-local-verification.mjs --fast",
+    "verify:data-consistency": "node scripts/verify-data-consistency.mjs",
+    "verify:database-contracts": "node scripts/generate-database-contracts.mjs --check",
     "verify:integration": "node scripts/verify-integration.mjs",
     "test:e2e": "node scripts/verify-integration.mjs --e2e",
     "test:e2e:runner": "playwright test",
@@ -40,6 +44,7 @@
     "test:env": "node scripts/verify-integration.mjs --serve",
     "verify:all": "node scripts/run-local-verification.mjs --all",
     "test:architecture": "node scripts/run-local-verification.mjs --architecture-only",
+    "test:tooling": "node scripts/run-local-verification.mjs --tooling-only",
     "test:unit": "node scripts/run-local-verification.mjs --unit-only",
     "test": "node scripts/run-local-verification.mjs --test-only",
     "db:start": "node scripts/database.mjs start-local",

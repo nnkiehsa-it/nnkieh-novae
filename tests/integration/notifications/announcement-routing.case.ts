@@ -1,4 +1,4 @@
-import { asRecord, assert, callAction, database, drainJobs, integrationTest, readFcmRequests, requestId, resetFcmRequests, seedActor } from "./support.ts";
+import { asRecord, assert, callAction, database, drainJobs, integrationTest, readFcmRequests, resetFcmRequests, seedActor } from "./support.ts";
 
 integrationTest("announcement and nested comment notifications cover broadcast, personal, and push routing", async () => {
   const manager = await seedActor(`notification-announcement-manager-${crypto.randomUUID()}`, {
@@ -24,21 +24,18 @@ integrationTest("announcement and nested comment notifications cover broadcast, 
 
   const created = asRecord(await callAction("createAnnouncement", {
     content: "Notification routing announcement content",
-    requestId: requestId("notification-announcement"),
     title: "Notification routing",
   }, manager.auth));
   const announcementId = String(asRecord(created.announcement).id);
   const root = asRecord(await callAction("createAnnouncementComment", {
     announcementId,
     content: "Root announcement notification comment",
-    requestId: requestId("notification-announcement-root"),
   }, commenter.auth));
   const rootCommentId = String(asRecord(root.comment).id);
   const reply = asRecord(await callAction("createAnnouncementComment", {
     announcementId,
     content: "Nested announcement notification reply",
     parentCommentId: rootCommentId,
-    requestId: requestId("notification-announcement-reply"),
   }, replier.auth));
   const replyCommentId = String(asRecord(reply.comment).id);
 
@@ -69,7 +66,7 @@ integrationTest("announcement and nested comment notifications cover broadcast, 
 
   const messages = (await readFcmRequests()).map((request) => request.body.message).filter(Boolean);
   assert.ok(messages.some((message) =>
-    message?.topic === "srp-broadcast"
+    message?.token === "announcement-notification-token-0"
     && message.data?.target_id === announcementId
     && message.data?.link === `/announcements/${announcementId}`
   ));

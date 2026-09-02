@@ -11,43 +11,63 @@ import {
 } from '@/services/content-read-cache';
 
 interface DashboardResponse {
-  stats: Omit<PlatformDashboardStats, 'last_activity_at' | 'updated_at'> & {
-    last_activity_at_ms: number | null;
-    updated_at_ms: number | null;
+  stats: {
+    totalUsersSeen: number;
+    totalIssuesCreated: number;
+    totalCommentsCreated: number;
+    totalSupportsAdded: number;
+    totalSupportsRemoved: number;
+    totalIssuesDeleted: number;
+    totalCommentsDeleted: number;
+    issuesByCategory: PlatformDashboardStats['issues_by_category'];
+    commentsByCategory: PlatformDashboardStats['comments_by_category'];
+    lastActivityAt: string | null;
+    updatedAt: string | null;
   };
-  operations: Omit<
-    PlatformDashboardOperations,
-    'oldest_pending_sync_at' | 'scheduled_maintenance' | 'recent_failures'
-  > & {
-    oldest_pending_sync_at_ms: number | null;
-    scheduled_maintenance: {
+  operations: {
+    overallStatus: PlatformDashboardOperations['overall_status'];
+    pendingNotionSyncCount: number;
+    pendingNotionSyncCapped: boolean;
+    nextSyncCount: number;
+    failedNotionSyncCount: number;
+    failedNotionSyncCapped: boolean;
+    oldestPendingSyncAt: string | null;
+    failedDeliveryCount: number;
+    failedDeliveryCapped: boolean;
+    failedPushDeliveryCount: number;
+    failedPushDeliveryCapped: boolean;
+    stuckUploadCount: number;
+    stuckUploadCapped: boolean;
+    cleanupBacklogCount: number;
+    cleanupBacklogCapped: boolean;
+    scheduledMaintenance: {
       status: string;
-      started_at_ms: number | null;
-      completed_at_ms: number | null;
-      updated_at_ms: number | null;
-      failed_task_codes: string[];
-      error_trace_id: string;
+      startedAt: string | null;
+      completedAt: string | null;
+      updatedAt: string | null;
+      failedTaskCodes: string[];
+      failureId: string;
     };
-    recent_failures: Array<{
+    recentFailures: Array<{
       id: string;
-      attempt_count: number;
-      created_at_ms: number | null;
-      detail_type: string;
+      attemptCount: number;
+      createdAt: string | null;
+      detailType: string;
       source: string;
       status: string;
-      error_trace_id: string;
-      next_attempt_at_ms: number | null;
-      target_id: string;
-      target_type: string;
-      updated_at_ms: number | null;
+      failureId: string;
+      nextAttemptAt: string | null;
+      targetId: string;
+      targetType: string;
+      updatedAt: string | null;
     }>;
   };
 }
 
 const DASHBOARD_CACHE_KEY = 'platform-dashboard';
 
-function toDate(value: number | null) {
-  return typeof value === 'number' ? new Date(value) : null;
+function toDate(value: string | null) {
+  return typeof value === 'string' ? new Date(value) : null;
 }
 
 export async function fetchPlatformDashboard(options: { forceRefresh?: boolean } = {}): Promise<PlatformDashboardData> {
@@ -78,54 +98,54 @@ async function loadPlatformDashboard(): Promise<PlatformDashboardData> {
 
     return {
       stats: {
-        total_users_seen: stats.total_users_seen,
-        total_issues_created: stats.total_issues_created,
-        total_comments_created: stats.total_comments_created,
-        total_supports_added: stats.total_supports_added,
-        total_supports_removed: stats.total_supports_removed,
-        total_issues_deleted: stats.total_issues_deleted,
-        total_comments_deleted: stats.total_comments_deleted,
-        issues_by_category: stats.issues_by_category,
-        comments_by_category: stats.comments_by_category,
-        last_activity_at: toDate(stats.last_activity_at_ms),
-        updated_at: toDate(stats.updated_at_ms),
+        total_users_seen: stats.totalUsersSeen,
+        total_issues_created: stats.totalIssuesCreated,
+        total_comments_created: stats.totalCommentsCreated,
+        total_supports_added: stats.totalSupportsAdded,
+        total_supports_removed: stats.totalSupportsRemoved,
+        total_issues_deleted: stats.totalIssuesDeleted,
+        total_comments_deleted: stats.totalCommentsDeleted,
+        issues_by_category: stats.issuesByCategory,
+        comments_by_category: stats.commentsByCategory,
+        last_activity_at: toDate(stats.lastActivityAt),
+        updated_at: toDate(stats.updatedAt),
       },
       operations: {
-        overall_status: operations.overall_status,
-        pending_notion_sync_count: operations.pending_notion_sync_count,
-        pending_notion_sync_capped: operations.pending_notion_sync_capped,
-        next_sync_count: operations.next_sync_count,
-        failed_notion_sync_count: operations.failed_notion_sync_count,
-        failed_notion_sync_capped: operations.failed_notion_sync_capped,
-        oldest_pending_sync_at: toDate(operations.oldest_pending_sync_at_ms),
-        failed_outbox_count: operations.failed_outbox_count,
-        failed_outbox_capped: operations.failed_outbox_capped,
-        failed_push_delivery_count: operations.failed_push_delivery_count,
-        failed_push_delivery_capped: operations.failed_push_delivery_capped,
-        stuck_upload_count: operations.stuck_upload_count,
-        stuck_upload_capped: operations.stuck_upload_capped,
-        cleanup_backlog_count: operations.cleanup_backlog_count,
-        cleanup_backlog_capped: operations.cleanup_backlog_capped,
+        overall_status: operations.overallStatus,
+        pending_notion_sync_count: operations.pendingNotionSyncCount,
+        pending_notion_sync_capped: operations.pendingNotionSyncCapped,
+        next_sync_count: operations.nextSyncCount,
+        failed_notion_sync_count: operations.failedNotionSyncCount,
+        failed_notion_sync_capped: operations.failedNotionSyncCapped,
+        oldest_pending_sync_at: toDate(operations.oldestPendingSyncAt),
+        failed_delivery_count: operations.failedDeliveryCount,
+        failed_delivery_capped: operations.failedDeliveryCapped,
+        failed_push_delivery_count: operations.failedPushDeliveryCount,
+        failed_push_delivery_capped: operations.failedPushDeliveryCapped,
+        stuck_upload_count: operations.stuckUploadCount,
+        stuck_upload_capped: operations.stuckUploadCapped,
+        cleanup_backlog_count: operations.cleanupBacklogCount,
+        cleanup_backlog_capped: operations.cleanupBacklogCapped,
         scheduled_maintenance: {
-          status: operations.scheduled_maintenance.status,
-          started_at: toDate(operations.scheduled_maintenance.started_at_ms),
-          completed_at: toDate(operations.scheduled_maintenance.completed_at_ms),
-          updated_at: toDate(operations.scheduled_maintenance.updated_at_ms),
-          failed_task_codes: operations.scheduled_maintenance.failed_task_codes,
-          error_trace_id: operations.scheduled_maintenance.error_trace_id,
+          status: operations.scheduledMaintenance.status,
+          started_at: toDate(operations.scheduledMaintenance.startedAt),
+          completed_at: toDate(operations.scheduledMaintenance.completedAt),
+          updated_at: toDate(operations.scheduledMaintenance.updatedAt),
+          failed_task_codes: operations.scheduledMaintenance.failedTaskCodes,
+          failure_id: operations.scheduledMaintenance.failureId,
         },
-        recent_failures: operations.recent_failures.map((failure) => ({
+        recent_failures: operations.recentFailures.map((failure) => ({
           id: failure.id,
-          attempt_count: failure.attempt_count,
-          created_at: toDate(failure.created_at_ms),
-          detail_type: failure.detail_type,
+          attempt_count: failure.attemptCount,
+          created_at: toDate(failure.createdAt),
+          detail_type: failure.detailType,
           source: failure.source,
           status: failure.status,
-          error_trace_id: failure.error_trace_id,
-          next_attempt_at: toDate(failure.next_attempt_at_ms),
-          target_id: failure.target_id,
-          target_type: failure.target_type,
-          updated_at: toDate(failure.updated_at_ms),
+          failure_id: failure.failureId,
+          next_attempt_at: toDate(failure.nextAttemptAt),
+          target_id: failure.targetId,
+          target_type: failure.targetType,
+          updated_at: toDate(failure.updatedAt),
         })),
       },
     };

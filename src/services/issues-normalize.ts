@@ -61,43 +61,43 @@ export function normalizeStatus(value: unknown): IssueStatus {
 export function normalizeIssueSummary(id: string, data: Record<string, unknown>): IssueSummary {
   const category = normalizeCategory(data.category);
   const isOwnIssue = data.isOwnIssue === true;
-  const supportEnabled = data.support_enabled === true;
+  const supportEnabled = data.supportEnabled === true;
 
   const record: IssueSummary = {
     id,
     title: String(data.title ?? ''),
-    created_at: normalizeDate(data.created_at),
-    closed_at: normalizeDate(data.closed_at),
-    support_count: typeof data.support_count === 'number' ? data.support_count : 0,
+    created_at: normalizeDate(data.createdAt),
+    closed_at: normalizeDate(data.closedAt),
+    support_count: typeof data.supportCount === 'number' ? data.supportCount : 0,
     status: normalizeStatus(data.status),
     category,
-    read_access: normalizeReadAccess(data.read_access),
-    comments_enabled: data.comments_enabled !== false,
+    read_access: normalizeReadAccess(data.readAccess),
+    comments_enabled: data.commentsEnabled !== false,
     support_enabled: supportEnabled,
-    support_goal: typeof data.support_goal === 'number' ? data.support_goal : null,
+    support_goal: typeof data.supportGoal === 'number' ? data.supportGoal : null,
     support_deadline_at: normalizeDate(
-      data.support_deadline_at
+      data.supportDeadlineAt
     ),
     response_deadline_at: normalizeDate(
-      data.response_deadline_at
+      data.responseDeadlineAt
     ),
-    review_approved_at: normalizeDate(data.review_approved_at),
-    result_content: typeof data.result_content === 'string'
-      ? data.result_content
+    review_approved_at: normalizeDate(data.reviewApprovedAt),
+    result_content: typeof data.resultContent === 'string'
+      ? data.resultContent
       : undefined,
     support_met_at: normalizeDate(
-      data.support_met_at
+      data.supportMetAt
     ),
-    review_rejection_reason: typeof data.review_rejection_reason === 'string'
-      ? data.review_rejection_reason
+    review_rejection_reason: typeof data.reviewRejectionReason === 'string'
+      ? data.reviewRejectionReason
       : undefined,
     currentUserSupported: data.currentUserSupported === true || (isOwnIssue && supportEnabled),
     isOwnIssue,
     canManageIssue: data.canManageIssue === true,
     canViewAuthor: data.canViewAuthor === true,
     deleting: data.deleting === true,
-    author_uid: data.canViewAuthor === true && typeof data.author_uid === 'string'
-      ? data.author_uid
+    author_uid: data.canViewAuthor === true && typeof data.authorUid === 'string'
+      ? data.authorUid
       : null,
   };
 
@@ -115,14 +115,14 @@ export function normalizeIssueCursor(data: unknown): IssueCursor | null {
   if (!data || typeof data !== 'object') return null;
   const record = data as Record<string, unknown>;
   const id = typeof record.id === 'string' ? record.id : '';
-  const createdAt = normalizeDate(record.created_at);
+  const createdAt = normalizeDate(record.createdAt);
   if (!id || !createdAt) return null;
 
   return {
     id,
     created_at: createdAt,
-    sort_date: normalizeDate(record.sort_date),
-    sort_number: typeof record.sort_number === 'number' ? record.sort_number : null,
+    sort_date: normalizeDate(record.sortDate),
+    sort_number: typeof record.sortNumber === 'number' ? record.sortNumber : null,
   };
 }
 

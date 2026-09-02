@@ -23,7 +23,7 @@ async function listAnnouncements(payload: JsonRecord, auth: AuthContext, databas
     actor_uid: auth.uid,
     page_size: pageSize,
     cursor_id: asUuid(cursor.id) || null,
-    cursor_published_at: readCursorDate(cursor, "publishedAtMs", "published_at") || null,
+    cursor_published_at: readCursorDate(cursor, "publishedAt") || null,
   });
   if (error) throw error;
   return compactAnnouncementListResult(data);

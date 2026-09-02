@@ -6,7 +6,6 @@ import {
   insertReadyUpload,
   integrationTest,
   refreshActor,
-  requestId,
   saveCategoryDraft,
   seedActor,
   database,
@@ -34,7 +33,6 @@ integrationTest("revoking each access scope immediately removes its reads, write
     await callAction("setUserAccessScope", {
       ...scope,
       grant: true,
-      requestId: requestId(`revocation-grant-${scope.scopeKind}`),
       uid: target.auth.uid,
     }, admin.auth);
   }
@@ -47,19 +45,16 @@ integrationTest("revoking each access scope immediately removes its reads, write
   const issue = asRecord(asRecord(await callAction("createIssue", {
     category: issueCategoryId,
     content: "Revocation issue content",
-    requestId: requestId("revocation-create-issue"),
     title: "Revocation issue",
   }, owner.auth)).issue);
   const facility = asRecord(asRecord(await callAction("createFacility", {
     categoryId: facilityCategoryId,
     content: "Revocation facility content",
     location: "Revocation room",
-    requestId: requestId("revocation-create-facility"),
     title: "Revocation facility",
   }, owner.auth)).facility);
   const announcement = asRecord(asRecord(await callAction("createAnnouncement", {
     content: "Revocation announcement content",
-    requestId: requestId("revocation-create-announcement"),
     title: "Revocation announcement",
   }, target.auth)).announcement);
 
@@ -79,7 +74,6 @@ integrationTest("revoking each access scope immediately removes its reads, write
   await callAction("setUserAccessScope", {
     categoryId: issueCategoryId,
     grant: false,
-    requestId: requestId("revocation-remove-issue"),
     scopeKind: "issue",
     uid: target.auth.uid,
   }, admin.auth);
@@ -93,7 +87,6 @@ integrationTest("revoking each access scope immediately removes its reads, write
   }, target.auth));
   await expectActionError("permission-denied", () => callAction("moderateIssueStatus", {
     issueId: String(issue.id),
-    requestId: requestId("revocation-moderate-denied"),
     status: "pending",
   }, target.auth));
   const issueAssignees = asRecord(await callAction("listRoleAssignments", {
@@ -107,7 +100,6 @@ integrationTest("revoking each access scope immediately removes its reads, write
   await callAction("setUserAccessScope", {
     categoryId: facilityCategoryId,
     grant: false,
-    requestId: requestId("revocation-remove-facility"),
     scopeKind: "facility",
     uid: target.auth.uid,
   }, admin.auth);
@@ -117,7 +109,6 @@ integrationTest("revoking each access scope immediately removes its reads, write
   assert.ok(target.auth.permissions.includes("announcement.manage"));
   await expectActionError("permission-denied", () => callAction("updateFacilityStatus", {
     facilityId: String(facility.id),
-    requestId: requestId("revocation-facility-denied"),
     status: "processing",
   }, target.auth));
   const facilityAssignees = asRecord(await callAction("listRoleAssignments", {
@@ -130,7 +121,6 @@ integrationTest("revoking each access scope immediately removes its reads, write
 
   await callAction("setUserAccessScope", {
     grant: false,
-    requestId: requestId("revocation-remove-announcement"),
     scopeKind: "announcement",
     uid: target.auth.uid,
   }, admin.auth);
@@ -139,12 +129,10 @@ integrationTest("revoking each access scope immediately removes its reads, write
   assert.deepEqual(target.auth.permissions, []);
   await expectActionError("permission-denied", () => callAction("createAnnouncement", {
     content: "Must not publish after revocation",
-    requestId: requestId("revocation-announcement-denied"),
     title: "Denied after revocation",
   }, target.auth));
   await expectActionError("permission-denied", () => callAction("deleteAnnouncement", {
     announcementId: String(announcement.id),
-    requestId: requestId("revocation-delete-announcement-denied"),
   }, target.auth));
   const announcementAssignees = asRecord(await callAction("listRoleAssignments", {
     query: "",

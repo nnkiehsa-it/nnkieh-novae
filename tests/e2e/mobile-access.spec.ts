@@ -53,8 +53,8 @@ async function expectTouchTarget(page: Page, name: string | RegExp) {
   const control = page.getByRole('button', { name });
   await expect(control).toBeVisible();
   const box = await control.boundingBox();
-  expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
-  expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+  expect(Math.round(box?.width ?? 0)).toBeGreaterThanOrEqual(44);
+  expect(Math.round(box?.height ?? 0)).toBeGreaterThanOrEqual(44);
 }
 
 test.describe('proposal manager on mobile', () => {

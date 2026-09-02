@@ -20,6 +20,7 @@ import {
   fetchComments,
   fetchIssueRecordById,
   peekIssueRecordById,
+  removeSupport,
   toggleSupport,
 } from "@/services/issues";
 import {
@@ -206,7 +207,9 @@ export function useIssueDetail() {
     rememberSupportedIssue(currentIssue.id, optimistic.active);
     if (optimistic.active) setBurst((value) => value + 1);
     try {
-      const result = await toggleSupport(currentIssue.id);
+      const result = previous.active
+        ? await removeSupport(currentIssue.id)
+        : await toggleSupport(currentIssue.id);
       patchContentEntity<IssueRecord>(
         session.user?.uid,
         "issue",

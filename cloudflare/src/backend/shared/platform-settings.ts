@@ -1,6 +1,6 @@
 import { DATA_RETENTION } from "./data-retention.ts";
 import { RATE_LIMITS } from "./rate-limits.ts";
-import type { AppDatabaseClient } from "../database/client.ts";
+import type { DatabaseSession } from "../database/client.ts";
 
 const IMAGE_UPLOADS_KEY = "image_upload_settings";
 const RETENTION_KEY = "data_retention_settings";
@@ -119,14 +119,14 @@ export function platformSettingsFromInput(value: unknown): PlatformSettings {
   return { imageUploads, retention };
 }
 
-export async function loadPlatformSettings(database: AppDatabaseClient): Promise<PlatformSettings> {
+export async function loadPlatformSettings(database: DatabaseSession): Promise<PlatformSettings> {
   const { data, error } = await database.table("app_private", "runtime_settings")
     .select("key,value").in("key", [IMAGE_UPLOADS_KEY, RETENTION_KEY]);
   if (error) throw error;
   const values = new Map((data ?? []).map((entry) => [entry.key, entry.value]));
   return {
-    imageUploads: normalizeImageUploads(parseStoredValue(values.get(IMAGE_UPLOADS_KEY))),
-    retention: normalizeRetention(parseStoredValue(values.get(RETENTION_KEY))),
+    imageUploads: normalizeImageUploads(parseStoredValue(typeof values.get(IMAGE_UPLOADS_KEY) === "string" ? values.get(IMAGE_UPLOADS_KEY) : null)),
+    retention: normalizeRetention(parseStoredValue(typeof values.get(RETENTION_KEY) === "string" ? values.get(RETENTION_KEY) : null)),
   };
 }
 

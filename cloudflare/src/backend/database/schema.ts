@@ -1,3 +1,5 @@
+import type { GeneratedDatabaseTables } from "./schema.generated.ts";
+
 export type Json = boolean | null | number | string | Json[] | { [key: string]: Json | undefined };
 
 type Table<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
@@ -26,6 +28,7 @@ interface IssueRow {
   result_content: string | null;
   review_approved_at: string | null;
   review_rejection_reason: string | null;
+  revision: number;
   status: string;
   support_count: number;
   support_deadline_at: string | null;
@@ -44,6 +47,7 @@ interface CommentRow {
   parent_comment_id: string | null;
   author_uid: string;
   content: string;
+  revision: number;
   created_at: string;
 }
 
@@ -55,6 +59,7 @@ interface AnnouncementRow {
   like_count: number;
   comment_count: number;
   comments_enabled: boolean;
+  revision: number;
   published_at: string;
 }
 
@@ -64,6 +69,7 @@ interface AnnouncementCommentRow {
   parent_comment_id: string | null;
   author_uid: string;
   content: string;
+  revision: number;
   created_at: string;
 }
 
@@ -83,6 +89,7 @@ interface NotificationRow {
   new_status: string | null;
   created_at: string;
   expires_at: string;
+  origin: "live" | "migration";
 }
 
 interface NotificationStateRow {
@@ -96,21 +103,65 @@ interface NotificationStateRow {
   updated_at: string;
 }
 
-interface OutboxEventRow {
-  id: string;
-  event_type: string;
-  target_type: string;
-  target_id: string;
+interface OperationRow {
+  operation_id: string;
   actor_uid: string;
-  payload: Json;
-  status: string;
-  attempt_count: number;
-  next_attempt_at: string;
+  action: string;
+  status: "processing" | "completed" | "failed";
+  response: Json | null;
+  error_detail: Json | null;
+  created_at: string;
+  updated_at: string;
+  expires_at: string;
+}
+
+interface DomainEventRow {
+  event_id: string;
+  operation_id: string;
+  aggregate_type: string;
+  aggregate_id: string;
+  event_type: string;
+  actor_uid: string;
   occurred_at: string;
+  payload: Json;
+  aggregate_version: number;
+}
+
+interface EventDeliveryRow {
+  id: string;
+  event_id: string;
+  destination: "notion" | "in_app" | "push" | "realtime";
+  status: "pending" | "processing" | "completed" | "failed";
+  attempt_count: number;
+  last_attempt_id: string | null;
+  next_attempt_at: string;
   locked_at: string | null;
-  notification_completed_at: string | null;
-  notion_completed_at: string | null;
-  error_trace_id: string | null;
+  completed_at: string | null;
+  error_detail: Json | null;
+  created_at: string;
+  updated_at: string;
+  expires_at: string;
+}
+
+interface BackgroundJobRow {
+  id: string;
+  job_type: "deletion" | "retention_cleanup" | "notion_reconcile" | "category_policy";
+  scope_id: string;
+  payload: Json;
+  status: "pending" | "processing" | "completed" | "failed" | "superseded";
+  estimated_rows: number;
+  processed_rows: number;
+  affected_rows: number;
+  batch_size: number;
+  attempt_count: number;
+  last_attempt_id: string | null;
+  next_attempt_at: string;
+  locked_at: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  result: Json;
+  error_detail: Json | null;
+  created_by: string;
   created_at: string;
   updated_at: string;
   expires_at: string;
@@ -133,30 +184,11 @@ interface UploadRow {
   updated_at: string;
 }
 
-interface DeletionJobRow {
-  id: string;
-  target_type: string;
-  target_id: string;
-  cloudinary_public_id: string | null;
-  notion_page_id: string | null;
-  status: string;
-  attempt_count: number;
-  next_attempt_at: string;
-  error_trace_id: string | null;
-  locked_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 interface NotionPageRow {
-  id: string;
   target_type: string;
   target_id: string;
   notion_page_id: string;
-  created_at: string;
   updated_at: string;
-  managed_block_ids: Json;
-  content_hash: string | null;
 }
 
 interface PushTokenRow {
@@ -169,7 +201,6 @@ interface PushTokenRow {
   created_at: string;
   last_confirmed_at: string;
   updated_at: string;
-  topic_broadcast: boolean;
 }
 
 interface UserProfileRow {
@@ -201,6 +232,7 @@ interface UserRestrictionRow {
 
 interface AdminAuditLogRow {
   id: number;
+  operation_id: string | null;
   actor_uid: string;
   action: string;
   domain: string;
@@ -223,6 +255,7 @@ interface FacilityRow {
   location: string;
   content: string;
   category_id: string;
+  revision: number;
   status: string;
   affected_count: number;
   result_content: string | null;
@@ -231,42 +264,6 @@ interface FacilityRow {
   started_at: string | null;
   closed_at: string | null;
   updated_at: string;
-}
-
-interface IdempotencyKeyRow {
-  action: string;
-  created_at: string;
-  expires_at: string;
-  request_id: string;
-  response: Json | null;
-  status: string;
-  uid: string;
-  updated_at: string;
-}
-
-interface MaintenanceRunRow {
-  id: string;
-  completed_at: string | null;
-  details: Json;
-  error_trace_id: string | null;
-  started_at: string;
-  status: string;
-  task_name: string;
-}
-
-interface RealtimeEventRow {
-  attempt_count: number;
-  completed_at: string | null;
-  created_at: string;
-  event_name: string;
-  expires_at: string;
-  id: string;
-  error_trace_id: string | null;
-  locked_at: string | null;
-  next_attempt_at: string;
-  payload: Json;
-  status: string;
-  topic: string;
 }
 
 interface ContentVersionRow {
@@ -291,53 +288,16 @@ export interface AppPrivateTables {
     sort_order: number; created_by: string; created_at: string; updated_at: string;
   }>;
   content_versions: Table<ContentVersionRow>;
-  deletion_jobs: Table<DeletionJobRow>;
+  operations: Table<OperationRow>;
+  domain_events: Table<DomainEventRow>;
+  event_deliveries: Table<EventDeliveryRow>;
+  background_jobs: Table<BackgroundJobRow>;
   facility_reports: Table<FacilityRow>;
   facility_report_affected_users: Table<{ facility_id: string; uid: string; created_at: string }>;
-  idempotency_keys: Table<IdempotencyKeyRow>;
   issues: Table<IssueRow>;
-  maintenance_runs: Table<MaintenanceRunRow>;
   notion_pages: Table<NotionPageRow>;
   notification_states: Table<NotificationStateRow>;
   notifications: Table<NotificationRow>;
-  outbox_events: Table<OutboxEventRow>;
-  platform_jobs: Table<{
-    id: string;
-    job_type: string;
-    scope_id: string;
-    payload: Json;
-    status: string;
-    estimated_rows: number;
-    processed_rows: number;
-    affected_rows: number;
-    batch_size: number;
-    created_by: string;
-    result: Json;
-    error_trace_id: string | null;
-    created_at: string;
-    started_at: string | null;
-    completed_at: string | null;
-    updated_at: string;
-    locked_at: string | null;
-  }>;
-  push_delivery_logs: Table<{
-    attempt_count: number;
-    id: string;
-    delivery_key: string | null;
-    error_trace_id: string | null;
-    locked_at: string | null;
-    next_attempt_at: string;
-    notification: unknown | null;
-    notification_type: string;
-    recipient_uids: string[];
-    status: string;
-    target_id: string;
-    target_type: string;
-    token_uid: string;
-    created_at: string;
-    updated_at: string;
-  }>;
-  realtime_events: Table<RealtimeEventRow>;
   runtime_settings: Table<{ key: string; value: string; updated_at: string }>;
   push_tokens: Table<PushTokenRow>;
   supports: Table<{ issue_id: string; uid: string; created_at: string }>;
@@ -368,6 +328,16 @@ export interface AppPrivateTables {
   }>;
   role_assignment_audit: Table<{ id: number; uid: string; role_code: string; operation: string; actor_uid: string; created_at: string }>;
 }
+
+type GeneratedTableCoverage = Extract<keyof AppPrivateTables, keyof GeneratedDatabaseTables>;
+type DatabaseColumnCoverage = {
+  [TableName in GeneratedTableCoverage]: Exclude<
+    keyof AppPrivateTables[TableName]["Row"],
+    keyof GeneratedDatabaseTables[TableName]
+  > extends never ? true : false;
+};
+type AssertDatabaseCoverage<T extends Record<GeneratedTableCoverage, true>> = T;
+export type DatabaseSchemaDriftGuard = AssertDatabaseCoverage<DatabaseColumnCoverage>;
 
 export interface AppApiFunctions {
   backend_commit_user_avatar: AppFunction<{
@@ -741,31 +711,44 @@ export interface AppApiFunctions {
     remove_support: boolean;
     response_deadline_days: number | null;
   }, Array<{ goal_met: boolean; support_count: number; supported: boolean }>>;
-  claim_deletion_jobs: AppFunction<{ batch_size?: number }, DeletionJobRow[]>;
-  claim_idempotency_key: AppFunction<{ action_name: string; actor_uid: string; request_id: string }, Array<{
+  claim_operation: AppFunction<{ operation_id: string; actor_uid: string; action_name: string }, Array<{
     claimed: boolean;
     completed: boolean;
     response: Json | null;
   }>>;
-  claim_outbox_events: AppFunction<{ batch_size?: number }, OutboxEventRow[]>;
-  claim_push_delivery_jobs: AppFunction<{ batch_size?: number }, Array<
-    AppPrivateTables["push_delivery_logs"]["Row"]
-  >>;
-  claim_realtime_events: AppFunction<{ batch_size?: number }, RealtimeEventRow[]>;
-  complete_deletion_job: AppFunction<{ job_id: string }, void>;
-  complete_idempotency_key: AppFunction<{ action_name: string; action_response: unknown; actor_uid: string; request_id: string }, void>;
-  complete_outbox_event: AppFunction<{ event_id: string }, void>;
-  complete_push_delivery_job: AppFunction<{ job_id: string }, void>;
-  complete_realtime_event: AppFunction<{ event_id: string }, void>;
-  complete_realtime_events: AppFunction<{ event_ids: string[] }, void>;
-  fail_deletion_job: AppFunction<{ error_trace_id: string; job_id: string }, void>;
-  fail_outbox_event: AppFunction<{ error_trace_id: string; event_id: string }, void>;
-  fail_push_delivery_job: AppFunction<{ job_id: string; trace_id: string }, void>;
-  fail_realtime_event: AppFunction<{ error_trace_id: string; event_id: string }, void>;
-  fail_realtime_events: AppFunction<{ event_ids: string[]; trace_id: string }, void>;
+  set_operation_context: AppFunction<{ operation_id: string }, void>;
+  complete_operation: AppFunction<{ operation_id: string; action_response: Json }, void>;
+  fail_operation: AppFunction<{ operation_id: string; error_detail: Json }, void>;
+  record_domain_event: AppFunction<{
+    operation_id: string;
+    aggregate_type: string;
+    aggregate_id: string;
+    event_type: string;
+    actor_uid: string;
+    payload?: Json;
+    destinations?: string[];
+  }, string>;
+  claim_event_deliveries: AppFunction<{ target_destination: string; batch_size?: number }, Array<{
+    delivery_id: string;
+    event_id: string;
+    destination: string;
+    attempt_count: number;
+    event_type: string;
+    aggregate_type: string;
+    aggregate_id: string;
+    actor_uid: string;
+    occurred_at: string;
+    payload: Json;
+    aggregate_version: number;
+  }>>;
+  complete_event_delivery: AppFunction<{ delivery_id: string; attempt_id: string }, void>;
+  fail_event_delivery: AppFunction<{ delivery_id: string; attempt_id: string; error_info: Json }, void>;
+  claim_background_jobs: AppFunction<{ requested_batch_size?: number }, BackgroundJobRow[]>;
+  complete_background_job: AppFunction<{ job_id: string; attempt_id: string; job_result?: Json }, void>;
+  fail_background_job: AppFunction<{ job_id: string; attempt_id: string; error_info: Json }, void>;
+  enqueue_background_job: AppFunction<{ job_type: string; scope_id?: string; payload?: Json; created_by?: string }, string>;
   get_platform_dashboard_snapshot: AppFunction<Record<string, never>, Json>;
   backend_delete_issue: AppFunction<{ actor_is_admin: boolean; actor_uid: string; issue_id: string }, void>;
-  release_idempotency_key: AppFunction<{ action_name: string; actor_uid: string; request_id: string }, void>;
   reject_expired_support_issues: AppFunction<Record<string, never>, number>;
   run_scheduled_maintenance_cleanup: AppFunction<Record<string, never>, Json>;
 }

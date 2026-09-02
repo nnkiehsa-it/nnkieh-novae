@@ -10,10 +10,11 @@ import { executeBackendAction } from "./execution.ts";
 export async function handleBackendAction(
   request: Request,
   body: Record<string, unknown>,
-  requestId: string,
+  operationId: string,
   database: AppDatabaseClient,
+  invocationId?: string,
 ) {
-  const log = createFunctionLogger("backendAction");
+  const log = createFunctionLogger("backendAction", { invocationId, operationId });
   const action = asString(body.action);
   try {
     const payload = asRecord(body.payload);
@@ -22,28 +23,29 @@ export async function handleBackendAction(
     if (action === "healthcheck") {
       await claimBackendHealthcheckRateLimit();
       const data = await handleHealthcheck(request, database);
-      log.success("backend-action.completed", { action, domain: "system", requestId, status: 200 });
-      return successResponse(data, requestId);
+      log.success("backend-action.completed", { action, domain: "system", operationId, status: 200 });
+      return successResponse(data, operationId);
     }
 
     const definition = getBackendActionDefinition(action);
     if (!definition) throw new Error("invalid-action");
     const auth = await requireAuth(database, request);
-    const data = await executeBackendAction(definition, payload, auth, database);
-    if (definition.rateLimitGroup !== "read") {
+    const data = await executeBackendAction(definition, payload, auth, database, operationId);
+    if (definition.rateLimitGroup !== "read" && definition.rateLimitGroup !== "upload-resolve") {
       log.success("backend-action.completed", {
         action,
         domain: definition.domain,
-        requestId,
+        operationId,
         status: 200,
       });
     }
-    return successResponse(data, requestId);
+    return successResponse(data, operationId);
   } catch (error) {
     const status = errorStatus(error);
-    const fields = { action: action || "unknown", requestId, status };
+    const failureId = status >= 500 ? crypto.randomUUID() : undefined;
+    const fields = { action: action || "unknown", operationId, status, ...(failureId ? { failureId } : {}) };
     if (status >= 500) log.error("backend-action.failed", error, fields);
     else log.warn("backend-action.rejected", fields);
-    return errorResponse(error, requestId);
+    return errorResponse(error, operationId, failureId);
   }
 }

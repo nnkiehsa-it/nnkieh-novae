@@ -135,7 +135,7 @@ export async function handleUserAction(
   const { data, error } = await database.table("app_private", "user_profiles")
     .select("uid,display_name,avatar_public_id,photo_url,profile_version").in("uid", uids);
   if (error) throw error;
-  const profiles = await Promise.all((data ?? []).map(async (profile) => {
+  const profiles = await Promise.all((data ?? []).map(async (profile: any) => {
     const media = profile.avatar_public_id
       ? await createMediaDeliveryUrl(profile.avatar_public_id, "avatar", false, auth.uid)
       : null;

@@ -5,6 +5,15 @@ import type { IssueCursor, IssueSortOption, IssueStatusBucket, IssueSummary } fr
 import { normalizeIssueCursor, normalizeIssueSummary, toReadableBackendError, withSupportState } from './issues-core';
 import { registerContentVersion } from '@/services/content-versions';
 
+function issueCursorPayload(cursor: IssueCursor | null) {
+  return cursor ? {
+    createdAt: cursor.created_at?.toISOString() ?? null,
+    id: cursor.id,
+    sortDate: cursor.sort_date?.toISOString() ?? null,
+    sortNumber: cursor.sort_number,
+  } : null;
+}
+
 export async function fetchUserIssues(
   uid: string,
   cursor: IssueCursor | null,
@@ -46,13 +55,13 @@ export async function fetchUserIssues(
 
   try {
     const fn = invokeBackendAction<
-      { cursor: IssueCursor | null; pageSize: number; sort: IssueSortOption; statusBucket: IssueStatusBucket; uid: string },
+      { cursor: ReturnType<typeof issueCursorPayload>; pageSize: number; sort: IssueSortOption; statusBucket: IssueStatusBucket; uid: string },
       { cursor: IssueCursor | null; hasMore: boolean; issues: Record<string, unknown>[]; version: number }
     >('listUserIssues', {
       signal: options?.signal,
       timeoutMs: READ_REQUEST_TIMEOUT_MS,
     });
-    const result = await fn({ cursor, pageSize, sort, statusBucket, uid });
+    const result = await fn({ cursor: issueCursorPayload(cursor), pageSize, sort, statusBucket, uid });
     const issues = result.issues.map((issue) => normalizeIssueSummary(String(issue.id ?? ''), issue));
     const page = {
       cursor: normalizeIssueCursor(result.cursor),

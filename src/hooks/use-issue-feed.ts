@@ -15,7 +15,7 @@ import {
   fetchIssuesPageByStatus,
   fetchUserIssues,
 } from "@/services/issues";
-import { toggleSupport } from "@/services/issues";
+import { removeSupport, toggleSupport } from "@/services/issues";
 import type {
   IssueCursor,
   IssueSummary,
@@ -138,7 +138,9 @@ export function useIssueFeed() {
       }));
     }
     try {
-      const result = await toggleSupport(issueId);
+      const result = previous.active
+        ? await removeSupport(issueId)
+        : await toggleSupport(issueId);
       patchContentEntity<IssueSummary>(session.user?.uid, "issue", issueId, {
         currentUserSupported: result.supported,
         support_count: result.support_count,

@@ -77,7 +77,7 @@ export function useAdminOverview(window: AdminOverviewWindow) {
       ]);
       setData(overview);
       setSystemFailures(
-        dashboard.operations.failed_outbox_count
+        dashboard.operations.failed_delivery_count
           + dashboard.operations.failed_push_delivery_count
           + dashboard.operations.cleanup_backlog_count
           + dashboard.operations.stuck_upload_count,

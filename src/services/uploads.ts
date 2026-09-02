@@ -1,5 +1,4 @@
 import { invokeBackendAction } from '@/services/backend-action';
-import { createRequestId } from '@/lib/request-id';
 import { LONG_REQUEST_TIMEOUT_MS, READ_REQUEST_TIMEOUT_MS, withRequestTimeout } from '@/lib/request';
 import { toReadableBackendError } from './issues-core';
 import { t } from '@/i18n';
@@ -37,6 +36,7 @@ interface ImageUploadSession {
   timestamp: number;
   type?: string;
   uploadPreset?: string;
+  uploadUrl: string;
   uploadId: string;
 }
 
@@ -112,7 +112,7 @@ async function uploadToCloudinary(file: File, session: ImageUploadSession) {
 
   return await withRequestTimeout(async (signal) => {
     const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${session.cloudName}/image/upload`,
+      session.uploadUrl,
       { method: 'POST', body, signal },
     );
     if (!response.ok) throw await createCloudinaryUploadError(response);
@@ -131,7 +131,7 @@ export async function createImageUploadPolicies(
 
   try {
     const createSession = invokeBackendAction<
-      { images: Array<{ contentType: string; height: number; size: number; width: number }>; requestId: string; targetType: ImageUploadTargetType },
+      { images: Array<{ contentType: string; height: number; size: number; width: number }>; targetType: ImageUploadTargetType },
       { sessions: ImageUploadSession[] }
     >('createImageUploadSessions');
     const { sessions } = await createSession({
@@ -141,7 +141,6 @@ export async function createImageUploadPolicies(
         size: file.size,
         width,
       })),
-      requestId: createRequestId(),
       targetType,
     });
     if (sessions.length !== inputs.length) throw new Error('image.theImageUploadJobIsNotSetUpCompletely');
@@ -150,14 +149,12 @@ export async function createImageUploadPolicies(
     );
 
     const finalize = invokeBackendAction<{
-      requestId: string;
       targetType: ImageUploadTargetType;
       uploads: Array<{ publicId: string; signature: string; uploadId: string; version: number }>;
     }, { uploads: ImageUploadPolicy[] }>('finalizeImageUploads', {
       timeoutMs: LONG_REQUEST_TIMEOUT_MS,
     });
     const result = await finalize({
-      requestId: createRequestId(),
       targetType,
       uploads: uploadResponses.map((response, index) => ({
         publicId: response.public_id ?? '',
@@ -177,10 +174,10 @@ export async function deleteUploadedImages(storagePaths: string[]) {
   if (uniquePaths.length === 0) return;
   try {
     const fn = invokeBackendAction<
-      { requestId: string; storagePaths: string[] },
+      { storagePaths: string[] },
       { deleted: number; success: boolean }
     >('deleteUploadedImages');
-    await fn({ requestId: createRequestId(), storagePaths: uniquePaths });
+    await fn({ storagePaths: uniquePaths });
   } catch (error) {
     throw toReadableBackendError(error);
   }
@@ -225,8 +222,8 @@ export async function resolveUploadImageUrls(uploadIds: string[], options: Resol
       { uploadIds: string[] },
       {
         errors?: Record<string, string>;
-        expiresAtByUploadId?: Record<string, number>;
-        expiresAtMs: number;
+        expiresAtByUploadId?: Record<string, string>;
+        expiresAt: string;
         fullUrls: Record<string, string>;
         thumbnailUrls: Record<string, string>;
       }
@@ -235,11 +232,16 @@ export async function resolveUploadImageUrls(uploadIds: string[], options: Resol
     });
     const result = await fn({ uploadIds: unresolvedIds });
     const fetched = result;
+    const defaultExpiration = Date.parse(fetched.expiresAt);
+    const expirationFor = (uploadId: string) => {
+      const value = Date.parse(fetched.expiresAtByUploadId?.[uploadId] ?? fetched.expiresAt);
+      return Number.isFinite(value) ? value : defaultExpiration;
+    };
     Object.entries(fetched.fullUrls).forEach(([uploadId, fullUrl]) => {
       const thumbnailUrl = fetched.thumbnailUrls[uploadId];
       if (!thumbnailUrl) return;
       resolvedUploadCache.set(uploadId, {
-        expiresAtMs: fetched.expiresAtByUploadId?.[uploadId] ?? fetched.expiresAtMs,
+        expiresAtMs: expirationFor(uploadId),
         fullUrl,
         thumbnailUrl,
       });
@@ -250,7 +252,7 @@ export async function resolveUploadImageUrls(uploadIds: string[], options: Resol
       const fetchedFullUrl = fetched.fullUrls[uploadId];
       const fetchedThumbnailUrl = fetched.thumbnailUrls[uploadId];
       const entry = cachedEntry ?? (fetchedFullUrl && fetchedThumbnailUrl ? {
-        expiresAtMs: fetched.expiresAtByUploadId?.[uploadId] ?? fetched.expiresAtMs,
+        expiresAtMs: expirationFor(uploadId),
         fullUrl: fetchedFullUrl,
         thumbnailUrl: fetchedThumbnailUrl,
       } : undefined);
@@ -262,7 +264,7 @@ export async function resolveUploadImageUrls(uploadIds: string[], options: Resol
       expiresAtByUploadId: Object.fromEntries(allEntries.map(([id, entry]) => [id, entry.expiresAtMs])),
       expiresAtMs: allExpirationValues.length > 0
         ? Math.min(...allExpirationValues)
-        : fetched.expiresAtMs,
+        : defaultExpiration,
       fullUrls: Object.fromEntries(allEntries.map(([id, entry]) => [id, entry.fullUrl])),
       thumbnailUrls: Object.fromEntries(allEntries.map(([id, entry]) => [id, entry.thumbnailUrl])),
     };

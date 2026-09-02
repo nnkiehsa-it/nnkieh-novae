@@ -172,9 +172,9 @@ type PlatformDashboardStatus = 'healthy' | 'attention' | 'critical';
 
 interface PlatformDashboardFailure {
   id: string;
-  source: 'outbox' | 'push' | 'cleanup' | string;
+  source: 'delivery' | 'push' | 'cleanup' | string;
   status: string;
-  error_trace_id: string;
+  failure_id: string;
   detail_type: string;
   target_type: string;
   target_id: string;
@@ -190,7 +190,7 @@ interface PlatformDashboardScheduledMaintenance {
   completed_at: Date | null;
   updated_at: Date | null;
   failed_task_codes: string[];
-  error_trace_id: string;
+  failure_id: string;
 }
 
 export interface PlatformDashboardOperations {
@@ -201,8 +201,8 @@ export interface PlatformDashboardOperations {
   failed_notion_sync_count: number;
   failed_notion_sync_capped: boolean;
   oldest_pending_sync_at: Date | null;
-  failed_outbox_count: number;
-  failed_outbox_capped: boolean;
+  failed_delivery_count: number;
+  failed_delivery_capped: boolean;
   failed_push_delivery_count: number;
   failed_push_delivery_capped: boolean;
   stuck_upload_count: number;

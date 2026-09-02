@@ -11,7 +11,14 @@ export interface FunctionLogger {
   warn(event: string, fields?: EdgeLogFields): void;
 }
 
-const EDGE_LOG_SCHEMA_VERSION = 1;
+export interface LoggerContext {
+  invocationId?: string;
+  operationId?: string;
+  eventId?: string;
+  attemptId?: string;
+}
+
+const EDGE_LOG_SCHEMA_VERSION = 2;
 const MAX_ERROR_MESSAGE_LENGTH = 500;
 
 function elapsedMilliseconds(startedAt: number) {
@@ -40,12 +47,22 @@ function writeLog(
   }));
 }
 
-// Emits one-line JSON records to Cloudflare Worker Logs. Keep fields operational
-// only: never pass request payloads, credentials, email addresses, or user profile data.
-export function createFunctionLogger(functionName: string): FunctionLogger {
-  const invocationId = crypto.randomUUID();
+// Emits one-line JSON records to Cloudflare Worker Logs with schemaVersion: 2.
+// Standard identifiers: invocationId, operationId, eventId, attemptId, failureId.
+export function createFunctionLogger(
+  functionName: string,
+  context: LoggerContext = {},
+): FunctionLogger {
+  const invocationId = context.invocationId ?? crypto.randomUUID();
   const startedAt = performance.now();
+  const baseFields: EdgeLogFields = {
+    ...(context.operationId ? { operationId: context.operationId } : {}),
+    ...(context.eventId ? { eventId: context.eventId } : {}),
+    ...(context.attemptId ? { attemptId: context.attemptId } : {}),
+  };
+
   const withDuration = (fields: EdgeLogFields = {}) => ({
+    ...baseFields,
     ...fields,
     durationMs: elapsedMilliseconds(startedAt),
   });

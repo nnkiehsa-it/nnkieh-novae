@@ -30,6 +30,7 @@ export interface Env {
   MEDIA_INVALID_IP_RATE_LIMITER: RateLimitBinding;
   MEDIA_SIGNING_SECRET: string;
   MEDIA_USER_RATE_LIMITER: RateLimitBinding;
+  NOTION_API_BASE_URL?: string;
   NOTION_DATABASE_ID?: string;
   NOTION_DATA_SOURCE_ID?: string;
   NOTION_ENABLED?: string;

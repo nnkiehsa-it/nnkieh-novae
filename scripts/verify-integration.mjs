@@ -290,6 +290,9 @@ try {
     HEALTHCHECK_SECRET: "integration-healthcheck-secret",
     LOCAL_TEST_MODE: "true",
     MEDIA_SIGNING_SECRET: "integration-media-signing-secret-that-is-long-enough",
+    NOTION_API_BASE_URL: "http://127.0.0.1:54330",
+    NOTION_DATABASE_ID: "mock-database-id",
+    NOTION_TOKEN: "mock-notion-token",
     PUBLIC_API_URL: workerUrl,
     REALTIME_TICKET_SECRET: "integration-realtime-ticket-secret-that-is-long-enough",
     TURNSTILE_SECRET_KEY: "integration-turnstile-secret",
@@ -323,6 +326,9 @@ try {
     DATABASE_OWNER_URL: ownerDatabaseUrl,
     FCM_EMULATOR_URL: "http://127.0.0.1:54330",
     FIREBASE_PROJECT_ID: "integration-project",
+    NOTION_API_BASE_URL: "http://127.0.0.1:54330",
+    NOTION_DATABASE_ID: "mock-database-id",
+    NOTION_TOKEN: "mock-notion-token",
     NOVAE_STRESS_SCALE: stressScale,
     WORKER_URL: workerUrl,
   };
@@ -332,6 +338,18 @@ try {
       "backend actions, permissions, jobs, realtime persistence, and Worker boundaries",
       process.execPath,
       [vitestCli, "run", "--config", "vitest.integration.config.ts"],
+      integrationEnvironment,
+    );
+    run(
+      "system data consistency verification",
+      process.execPath,
+      ["scripts/verify-data-consistency.mjs"],
+      integrationEnvironment,
+    );
+    run(
+      "generated database contract drift verification",
+      process.execPath,
+      ["scripts/generate-database-contracts.mjs", "--check"],
       integrationEnvironment,
     );
     process.stderr.write("✓ Local integration verification passed\n");

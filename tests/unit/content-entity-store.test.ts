@@ -5,6 +5,7 @@ import {
   clearContentEntityScope,
   getContentEntity,
   getDetailContentEntity,
+  getSummaryContentEntity,
   mergeContentEntityRead,
   patchContentEntity,
   removeContentEntity,
@@ -73,8 +74,9 @@ describe("content entity store", () => {
 
     expect(getDetailContentEntity<IssueRecord>(scope, "issue", "one")).toMatchObject({
       content: "Full detail",
-      title: "Updated list title",
+      title: "Detail title",
     });
+    expect(getSummaryContentEntity<IssueSummary>(scope, "issue", "one")?.title).toBe("Updated list title");
     clearContentEntityScope(scope);
   });
 

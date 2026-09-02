@@ -33,7 +33,7 @@ async function scopedAccessUids(scope: AccessScopeSelector, database: BackendDat
       .select("uid").eq("category_id", scope.categoryId).limit(ACCESS_LIST_LIMIT + 1);
   const { data, error } = await query;
   if (error) throw error;
-  const uids = [...new Set((data ?? []).map((row) => row.uid))];
+  const uids: string[] = [...new Set((data ?? []).map((row: any) => asString(row.uid)))];
   return { truncated: uids.length > ACCESS_LIST_LIMIT, uids: uids.slice(0, ACCESS_LIST_LIMIT) };
 }
 
@@ -67,7 +67,7 @@ async function accessUsersForUids(
   for (const assignment of facilityResult.data ?? []) {
     facilityCategories.set(assignment.uid, [...(facilityCategories.get(assignment.uid) ?? []), assignment.category_id]);
   }
-  return await Promise.all((profiles ?? []).map(async (profile) => {
+  return await Promise.all((profiles ?? []).map(async (profile: any) => {
     const media = profile.avatar_public_id
       ? await createMediaDeliveryUrl(profile.avatar_public_id, "avatar", false, viewerUid)
       : null;
@@ -102,20 +102,22 @@ export async function handleUserAccessAction(
       profileQuery = query.includes("@") ? profileQuery.eq("email", query) : profileQuery.eq("uid", query);
       const { data, error } = await profileQuery;
       if (error) throw error;
-      uids = (data ?? []).map((profile) => profile.uid);
+      uids = (data ?? []).map((profile: any) => asString(profile.uid));
     } else if (scope) {
       const scoped = await scopedAccessUids(scope, database);
       truncated = scoped.truncated;
       uids = scoped.uids;
     }
     const users = await accessUsersForUids(uids, database, auth.uid);
-    return { truncated, users: users.filter((user) => !user.roles.includes("platform-admin")) };
+    return { truncated, users: users.filter((user: any) => !user.roles.includes("platform-admin")) };
   }
 
   if (action === "setUserAccessScope") {
     const uid = asString(payload.uid).trim();
     const scope = readAccessScope(payload);
-    if (!uid || !scope || typeof payload.grant !== "boolean") throw new Error("validation-required");
+    if (!uid || !scope || typeof payload.grant !== "boolean") {
+      throw new Error("validation-required");
+    }
     const { data, error } = await database.call("app_api", "backend_update_user_access_scope", {
       actor_uid: auth.uid,
       target_uid: uid,

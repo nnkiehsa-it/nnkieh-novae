@@ -1,5 +1,4 @@
 import { invokeBackendAction } from '@/services/backend-action';
-import { createRequestId } from '@/lib/request-id';
 import type {
   CategoryCatalog,
   CategoryManagementCatalog,
@@ -31,10 +30,10 @@ export interface PlatformJob {
   processedRows: number;
   affectedRows: number;
   result: Record<string, unknown>;
-  errorTraceId: string | null;
-  createdAtMs: number;
-  updatedAtMs: number;
-  completedAtMs: number | null;
+  failureId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
 }
 
 export async function getCategoryCatalog() {
@@ -51,24 +50,24 @@ export async function completeInitialSetup(input: {
   facilityCategories: FacilityCategoryDraft[];
   issuesEnabled: boolean;
 }) {
-  const action = invokeBackendAction<typeof input & { requestId: string }, { success: boolean; setupCompleted: boolean }>('completeInitialSetup');
-  return await action({ ...input, requestId: createRequestId() });
+  const action = invokeBackendAction<typeof input, { success: boolean; setupCompleted: boolean }>('completeInitialSetup');
+  return await action(input);
 }
 
 export async function savePlatformFeatures(features: PlatformFeatures) {
   const action = invokeBackendAction<
-    PlatformFeatures & { requestId: string },
+    PlatformFeatures,
     PlatformFeatures & { success: boolean }
   >('savePlatformFeatures');
-  return await action({ ...features, requestId: createRequestId() });
+  return await action(features);
 }
 
 export async function saveCategoryManagement(input: CategoryManagementInput) {
   const action = invokeBackendAction<
-    typeof input & { requestId: string },
+    typeof input,
     CategoryCatalog & { success: boolean }
   >('saveCategoryManagement');
-  return await action({ ...input, requestId: createRequestId() });
+  return await action(input);
 }
 
 export async function estimateCategoryPolicyChanges(input: CategoryManagementInput) {
@@ -90,10 +89,10 @@ export async function listPlatformJobs() {
 
 export async function savePlatformSettings(settings: PlatformSettings) {
   const action = invokeBackendAction<
-    PlatformSettings & { requestId: string },
+    PlatformSettings,
     PlatformSettings & { estimatedRows: number; jobId: string; success: boolean }
   >('savePlatformSettings');
-  return await action({ ...settings, requestId: createRequestId() });
+  return await action(settings);
 }
 
 export async function estimateRetentionCleanup(settings: PlatformSettings) {

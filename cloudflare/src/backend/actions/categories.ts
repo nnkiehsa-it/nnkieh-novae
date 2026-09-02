@@ -132,22 +132,22 @@ async function announcementCommentsSetting(payload: JsonRecord, database: Backen
   return data.announcement_comments_enabled !== false;
 }
 
-export async function getIssueCategories(database: BackendDatabase, includeInactive = false) {
+export async function getIssueCategories(database: BackendDatabase, includeInactive = false): Promise<RuntimeIssueCategory[]> {
   let query = database.table("app_private", "issue_categories").select("*")
     .order("sort_order", { ascending: true }).order("created_at", { ascending: true });
   if (!includeInactive) query = query.eq("is_active", true);
   const { data, error } = await query;
   if (error) throw error;
-  return (data ?? []).map((row) => issueCategoryResponse(row));
+  return (data ?? []).map((row: any) => issueCategoryResponse(row));
 }
 
-export async function getFacilityCategories(database: BackendDatabase, includeInactive = false) {
+export async function getFacilityCategories(database: BackendDatabase, includeInactive = false): Promise<RuntimeFacilityCategory[]> {
   let query = database.table("app_private", "facility_categories").select("*")
     .order("sort_order", { ascending: true }).order("created_at", { ascending: true });
   if (!includeInactive) query = query.eq("is_active", true);
   const { data, error } = await query;
   if (error) throw error;
-  return (data ?? []).map((row) => facilityCategoryResponse(row));
+  return (data ?? []).map((row: any) => facilityCategoryResponse(row));
 }
 
 export async function getIssueCategory(database: BackendDatabase, categoryId: string) {

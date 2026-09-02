@@ -87,6 +87,9 @@ export const testEnvironment = {
   MEDIA_SIGNING_SECRET: "integration-media-signing-secret-that-is-long-enough",
   MEDIA_USER_RATE_LIMITER: successfulIngress,
   NOTION_ENABLED: "false",
+  NOTION_API_BASE_URL: process.env.NOTION_API_BASE_URL,
+  NOTION_DATABASE_ID: "mock-database-id",
+  NOTION_TOKEN: "mock-notion-token",
   PUBLIC_API_URL: "http://127.0.0.1:8787",
   READ_RATE_LIMITER: successfulIngress,
   REALTIME: { getByName: () => ({ publish: async () => ({ delivered: 0 }) }) },
@@ -111,7 +114,8 @@ const resetSql = `
       || ' restart identity cascade'
     into statement
     from pg_tables
-    where schemaname = 'app_private';
+    where schemaname = 'app_private'
+      and tablename not in ('domain_event_types', 'event_destinations');
     if statement is not null then execute statement; end if;
   end
   $$;
@@ -172,8 +176,12 @@ export function asRecord(value: unknown): JsonRecord {
   return value as JsonRecord;
 }
 
-export function requestId(label: string) {
-  return `${label}-${crypto.randomUUID()}`;
+export function operationId(_label?: string) {
+  return crypto.randomUUID();
+}
+
+export async function ownerQuery(sql: string) {
+  return await ownerDatabase.query(sql);
 }
 
 export async function seedActor(
@@ -249,10 +257,12 @@ export async function callAction(
   actionName: string,
   payload: JsonRecord,
   auth: AuthContext,
+  operationId?: string,
 ) {
   const definition = getBackendActionDefinition(actionName);
   assert.ok(definition, `Missing backend action definition: ${actionName}`);
-  return await executeBackendAction(definition, payload, auth, database as BackendDatabase);
+  const opId = operationId || crypto.randomUUID();
+  return await executeBackendAction(definition, payload, auth, database as BackendDatabase, opId);
 }
 
 export async function expectActionError(
@@ -321,7 +331,6 @@ export async function saveCategoryDraft(
       deletedIssueIds,
     ),
     issuesEnabled: options.issuesEnabled ?? Boolean(features.issuesEnabled),
-    requestId: requestId("save-category-draft"),
   }, auth);
   await processPlatformJobs();
   return result;

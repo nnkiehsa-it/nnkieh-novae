@@ -7,7 +7,6 @@ import type {
   IssueStatus,
 } from '@/types';
 import { invokeBackendAction } from '@/services/backend-action';
-import { createRequestId } from '@/lib/request-id';
 import { markContentCachePrefixStale } from '@/services/content-read-cache';
 import {
   normalizeIssueRecord,
@@ -22,34 +21,34 @@ interface IssueResponseRecord {
   content: string;
   category: string;
   status: string;
-  support_count: number;
-  comments_enabled: boolean;
-  read_access: IssueReadAccess;
-  support_enabled: boolean;
-  support_goal: number | null;
-  created_at_ms: number | null;
-  closed_at_ms: number | null;
-  support_deadline_at_ms: number | null;
-  response_deadline_at_ms: number | null;
-  review_approved_at_ms: number | null;
-  result_content?: string | null;
-  support_met_at_ms: number | null;
-  review_rejection_reason?: string;
+  supportCount: number;
+  commentsEnabled: boolean;
+  readAccess: IssueReadAccess;
+  supportEnabled: boolean;
+  supportGoal: number | null;
+  createdAt: string | null;
+  closedAt: string | null;
+  supportDeadlineAt: string | null;
+  responseDeadlineAt: string | null;
+  reviewApprovedAt: string | null;
+  resultContent?: string | null;
+  supportMetAt: string | null;
+  reviewRejectionReason?: string;
   currentUserSupported?: boolean;
   isOwnIssue?: boolean;
   canManageIssue?: boolean;
   canViewAuthor?: boolean;
-  author_uid?: string | null;
+  authorUid?: string | null;
 }
 
 interface SupportResponse {
   success: boolean;
   supported: boolean;
-  support_count: number;
+  supportCount: number;
 }
 
-function dateFromMs(value: number | null | undefined) {
-  return typeof value === 'number' ? new Date(value) : null;
+function dateFromApi(value: string | null | undefined) {
+  return typeof value === 'string' ? new Date(value) : null;
 }
 
 function normalizeIssueResponse(issue: IssueResponseRecord): IssueRecord {
@@ -58,24 +57,24 @@ function normalizeIssueResponse(issue: IssueResponseRecord): IssueRecord {
     content: issue.content,
     category: issue.category,
     status: issue.status,
-    support_count: issue.support_count,
-    comments_enabled: issue.comments_enabled,
-    read_access: issue.read_access,
-    support_enabled: issue.support_enabled,
-    support_goal: issue.support_goal,
-    created_at: dateFromMs(issue.created_at_ms),
-    closed_at: dateFromMs(issue.closed_at_ms),
-    support_deadline_at: dateFromMs(issue.support_deadline_at_ms),
-    response_deadline_at: dateFromMs(issue.response_deadline_at_ms),
-    review_approved_at: dateFromMs(issue.review_approved_at_ms),
-    result_content: issue.result_content ?? undefined,
-    support_met_at: dateFromMs(issue.support_met_at_ms),
-    review_rejection_reason: issue.review_rejection_reason,
+    support_count: issue.supportCount,
+    comments_enabled: issue.commentsEnabled,
+    read_access: issue.readAccess,
+    support_enabled: issue.supportEnabled,
+    support_goal: issue.supportGoal,
+    created_at: dateFromApi(issue.createdAt),
+    closed_at: dateFromApi(issue.closedAt),
+    support_deadline_at: dateFromApi(issue.supportDeadlineAt),
+    response_deadline_at: dateFromApi(issue.responseDeadlineAt),
+    review_approved_at: dateFromApi(issue.reviewApprovedAt),
+    result_content: issue.resultContent ?? undefined,
+    support_met_at: dateFromApi(issue.supportMetAt),
+    review_rejection_reason: issue.reviewRejectionReason,
     currentUserSupported: issue.currentUserSupported,
     isOwnIssue: issue.isOwnIssue,
     canManageIssue: issue.canManageIssue,
     canViewAuthor: issue.canViewAuthor,
-    author_uid: issue.author_uid,
+    author_uid: issue.authorUid,
   });
   return record;
 }
@@ -83,10 +82,10 @@ function normalizeIssueResponse(issue: IssueResponseRecord): IssueRecord {
 function normalizeDiscussionCommentResponse(comment: CommentResponseRecord): DiscussionCommentRecord {
   return {
     id: comment.id,
-    parent_comment_id: comment.parent_comment_id,
+    parent_comment_id: comment.parentCommentId,
     content: comment.content,
-    author_uid: comment.author_uid,
-    created_at: dateFromMs(comment.created_at_ms),
+    author_uid: comment.authorUid,
+    created_at: dateFromApi(comment.createdAt),
     replies: (comment.replies ?? []).map(normalizeDiscussionCommentResponse),
   };
 }
@@ -94,7 +93,7 @@ function normalizeDiscussionCommentResponse(comment: CommentResponseRecord): Dis
 function normalizeCommentResponse(comment: CommentResponseRecord): CommentRecord {
   return {
     ...normalizeDiscussionCommentResponse(comment),
-    issue_id: comment.issue_id,
+    issue_id: comment.issueId,
   };
 }
 
@@ -110,14 +109,13 @@ export async function createIssue(
 ) {
   try {
     const fn = invokeBackendAction<
-      { title: string; content: string; category: string; requestId: string },
+      { title: string; content: string; category: string },
       { issue: IssueResponseRecord }
     >('createIssue');
     const result = await fn({
       title: input.title,
       content: input.content,
       category: input.category,
-      requestId: createRequestId(),
     });
     invalidateIssueCache(result.issue.id);
     return normalizeIssueResponse(result.issue);
@@ -129,10 +127,10 @@ export async function createIssue(
 export async function moderateIssueStatus(issueId: string, status: IssueStatus, reason?: string) {
   try {
     const fn = invokeBackendAction<
-      { issueId: string; status: IssueStatus; reason?: string; requestId: string },
+      { issueId: string; status: IssueStatus; reason?: string },
       { issue: IssueResponseRecord }
     >('moderateIssueStatus');
-    const result = await fn({ issueId, status, reason, requestId: createRequestId() });
+    const result = await fn({ issueId, status, reason });
     invalidateIssueCache(issueId);
     return normalizeIssueResponse(result.issue);
   } catch (error) {
@@ -143,10 +141,10 @@ export async function moderateIssueStatus(issueId: string, status: IssueStatus, 
 export async function updateIssueResult(issueId: string, resultContent: string) {
   try {
     const fn = invokeBackendAction<
-      { issueId: string; resultContent: string; requestId: string },
+      { issueId: string; resultContent: string },
       { issue: IssueResponseRecord }
     >('updateIssueResult');
-    const result = await fn({ issueId, resultContent, requestId: createRequestId() });
+    const result = await fn({ issueId, resultContent });
     invalidateIssueCache(issueId);
     return normalizeIssueResponse(result.issue);
   } catch (error) {
@@ -158,10 +156,10 @@ export async function toggleSupport(
   issueId: string,
 ) {
   try {
-    const fn = invokeBackendAction<{ issueId: string; requestId: string }, SupportResponse>('toggleSupport');
-    const result = await fn({ issueId, requestId: createRequestId() });
+    const fn = invokeBackendAction<{ issueId: string }, SupportResponse>('toggleSupport');
+    const result = await fn({ issueId });
     invalidateIssueCache(issueId);
-    return result;
+    return { ...result, support_count: result.supportCount };
   } catch (error) {
     throw toReadableBackendError(error);
   }
@@ -169,10 +167,10 @@ export async function toggleSupport(
 
 export async function removeSupport(issueId: string) {
   try {
-    const fn = invokeBackendAction<{ issueId: string; requestId: string }, SupportResponse>('removeSupport');
-    const result = await fn({ issueId, requestId: createRequestId() });
+    const fn = invokeBackendAction<{ issueId: string }, SupportResponse>('removeSupport');
+    const result = await fn({ issueId });
     invalidateIssueCache(issueId);
-    return result;
+    return { ...result, support_count: result.supportCount };
   } catch (error) {
     throw toReadableBackendError(error);
   }
@@ -182,8 +180,8 @@ export async function deleteIssue(
   issueId: string,
 ) {
   try {
-    const fn = invokeBackendAction<{ issueId: string; requestId: string }, { success: boolean; issueId: string }>('deleteIssue');
-    const result = await fn({ issueId, requestId: createRequestId() });
+    const fn = invokeBackendAction<{ issueId: string }, { success: boolean; issueId: string }>('deleteIssue');
+    const result = await fn({ issueId });
     invalidateIssueCache(issueId);
     return result;
   } catch (error) {
@@ -198,14 +196,13 @@ export async function createComment(
 ) {
   try {
     const fn = invokeBackendAction<
-      { issueId: string; content: string; parentCommentId?: string | null; requestId: string },
+      { issueId: string; content: string; parentCommentId?: string | null },
       { comment: CommentResponseRecord }
     >('createComment');
     const result = await fn({
       issueId,
       content: input.content,
       parentCommentId,
-      requestId: createRequestId(),
     });
     const comment = normalizeCommentResponse(result.comment);
     markContentCachePrefixStale(`issue-comments-page|${issueId}|`);
@@ -219,7 +216,7 @@ export async function createComment(
 export async function deleteComment(commentId: string) {
   try {
     const fn = invokeBackendAction('deleteComment');
-    await fn({ commentId, requestId: createRequestId() });
+    await fn({ commentId });
     markContentCachePrefixStale('issue-comments-page|');
   } catch (error) {
     throw toReadableBackendError(error);

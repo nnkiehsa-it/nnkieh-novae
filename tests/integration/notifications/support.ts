@@ -5,7 +5,7 @@ import {
   callAction,
   expectActionError,
   integrationTest,
-  requestId,
+  operationId,
   saveCategoryDraft,
   seedActor,
   database,
@@ -62,9 +62,9 @@ export async function failNextFcmRequests(count: number) {
 export async function drainJobs() {
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const result = await processJobMessage({ type: "drain" }, testEnvironment);
-    if (!result.deletion.hasMore && !result.outbox.hasMore && !result.realtime.hasMore) return result;
+    if (!result.backgroundJobs.hasMore && !result.push.hasMore && !result.realtime.hasMore && !result.notion.hasMore && !result.inApp.hasMore) return result;
   }
   throw new Error("integration-job-drain-did-not-settle");
 }
 
-export { assert, asRecord, callAction, expectActionError, integrationTest, requestId, saveCategoryDraft, seedActor, database };
+export { assert, asRecord, callAction, expectActionError, integrationTest, operationId, saveCategoryDraft, seedActor, database };

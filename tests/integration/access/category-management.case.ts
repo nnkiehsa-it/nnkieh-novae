@@ -6,7 +6,6 @@ import {
   insertReadyUpload,
   integrationTest,
   refreshActor,
-  requestId,
   saveCategoryDraft,
   seedActor,
   database,
@@ -38,11 +37,11 @@ integrationTest("runtime category setup and management enforce platform permissi
   }, user.auth));
   await expectActionError("permission-denied", () => callAction("completeInitialSetup", {
     facilitiesEnabled: false, facilityCategories: [], issuesEnabled: false,
-    issueCategories: [], requestId: requestId("setup-denied"),
+    issueCategories: [],
   }, user.auth));
   await expectActionError("permission-denied", () => callAction("savePlatformFeatures", {
     announcementCommentsEnabled: true,
-    facilitiesEnabled: false, issuesEnabled: false, requestId: requestId("features-denied"),
+    facilitiesEnabled: false, issuesEnabled: false,
   }, user.auth));
   await expectActionError("permission-denied", () => callAction("savePlatformSettings", {
     imageUploads: {
@@ -53,7 +52,6 @@ integrationTest("runtime category setup and management enforce platform permissi
       closedFacilitiesDays: 180, closedFacilitiesEnabled: false,
       closedIssuesDays: 180, closedIssuesEnabled: false,
     },
-    requestId: requestId("platform-settings-denied"),
   }, user.auth));
 
   const setup = asRecord(await callAction("completeInitialSetup", {
@@ -72,14 +70,12 @@ integrationTest("runtime category setup and management enforce platform permissi
     facilitiesEnabled: false,
     facilityCategories: [],
     issuesEnabled: true,
-    requestId: requestId("complete-setup"),
   }, admin.auth));
   assert.equal(setup.success, true);
   assert.equal(setup.facilitiesEnabled, false);
   const repeatedSetup = asRecord(await callAction("completeInitialSetup", {
     issueCategories: [],
     facilityCategories: [],
-    requestId: requestId("complete-setup-repeat"),
   }, admin.auth));
   assert.equal(repeatedSetup.success, true);
   assert.equal(repeatedSetup.setupCompleted, true);
@@ -114,12 +110,11 @@ integrationTest("runtime category setup and management enforce platform permissi
       announcementsDays: 1,
       closedFacilitiesEnabled: false,
       closedIssuesEnabled: false,
-      idempotencyHours: 19,
+      operationHours: 19,
       notificationsDays: 9,
-      outboxCompletedDays: 13,
-      outboxFailedDays: 17,
+      deliveryCompletedDays: 13,
+      deliveryFailedDays: 17,
       pendingUploadHours: 23,
-      realtimeEventsHours: 11,
       roleAssignmentAuditDays: 4,
     },
   };
@@ -131,7 +126,6 @@ integrationTest("runtime category setup and management enforce platform permissi
   assert.ok(Number(retentionImpact.totalEstimatedRows) >= 1);
   const updatedSettings = asRecord(await callAction("savePlatformSettings", {
     ...nextPlatformSettings,
-    requestId: requestId("platform-settings-save"),
   }, admin.auth));
   assert.equal(asRecord(updatedSettings.imageUploads).issueMaxImages, 3);
   assert.equal(asRecord(updatedSettings.retention).closedIssuesEnabled, false);
@@ -196,13 +190,11 @@ integrationTest("runtime category setup and management enforce platform permissi
   }));
   const uploadSessions = asRecord(await callAction("createImageUploadSessions", {
     images: uploadMetadata,
-    requestId: requestId("configured-image-count"),
     targetType: "issue",
   }, user.auth));
   assert.equal((uploadSessions.sessions as unknown[]).length, 3);
   await expectActionError("validation-too-many", () => callAction("createImageUploadSessions", {
     images: [...uploadMetadata, uploadMetadata[0]],
-    requestId: requestId("configured-image-count-too-many"),
     targetType: "issue",
   }, user.auth));
   const sessionPaths = (uploadSessions.sessions as unknown[]).map((value) => {
@@ -210,12 +202,11 @@ integrationTest("runtime category setup and management enforce platform permissi
     return `${String(session.folder)}/${String(session.publicId)}`;
   });
   await callAction("deleteUploadedImages", {
-    requestId: requestId("configured-image-count-cleanup"), storagePaths: sessionPaths,
+    storagePaths: sessionPaths,
   }, user.auth);
   await callAction("savePlatformSettings", {
     imageUploads: asRecord(platformSettings.imageUploads),
     retention: asRecord(platformSettings.retention),
-    requestId: requestId("platform-settings-restore"),
   }, admin.auth);
   const publicCategory = asRecord((management.issueCategories as unknown[])
     .find((value) => asRecord(value).id === "public-issues"));
@@ -238,7 +229,6 @@ integrationTest("runtime category setup and management enforce platform permissi
     facilityCategories: [],
     issueCategories: [publicCategory],
     issuesEnabled: true,
-    requestId: requestId("save-category-denied"),
   }, user.auth));
 
   const savedFacility = asRecord(await saveCategoryDraft(admin.auth, {
@@ -300,7 +290,6 @@ integrationTest("runtime category setup and management enforce platform permissi
     facilityCategories: managedFacilities,
     issueCategories: managedIssues,
     issuesEnabled: true,
-    requestId: requestId("save-management-denied"),
   }, user.auth));
   await expectActionError("validation-required", () => callAction("saveCategoryManagement", {
     announcementCommentsEnabled: true,
@@ -310,7 +299,6 @@ integrationTest("runtime category setup and management enforce platform permissi
     facilityCategories: [],
     issueCategories: managedIssues,
     issuesEnabled: true,
-    requestId: requestId("save-management-empty"),
   }, admin.auth));
   const atomicSave = asRecord(await callAction("saveCategoryManagement", {
     announcementCommentsEnabled: false,
@@ -320,7 +308,6 @@ integrationTest("runtime category setup and management enforce platform permissi
     facilityCategories: managedFacilities,
     issueCategories: managedIssues,
     issuesEnabled: true,
-    requestId: requestId("save-management-ok"),
   }, admin.auth));
   assert.equal(atomicSave.success, true);
   const announcementBeforeBatch = await tableRow("announcements", "id", policyAnnouncement.id);

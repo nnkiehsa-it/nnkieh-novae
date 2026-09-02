@@ -1,8 +1,37 @@
-const DATABASE_NAME = 'novae-content-cache';
-const DATABASE_VERSION = 3;
+export const PERSISTENT_CACHE_NAMESPACE = 'novae-content-cache-v5';
+const DATABASE_VERSION = 5;
+const RETIRED_DATABASE_NAMES = ['novae-content-cache-v4'] as const;
 const ENTRY_STORE_NAME = 'entries';
 const METADATA_STORE_NAME = 'metadata';
 const BUDGET_KEY = 'budget';
+
+// Clean legacy localStorage / sessionStorage keys from older versions
+if (typeof window !== 'undefined') {
+  try {
+    for (const databaseName of RETIRED_DATABASE_NAMES) {
+      window.indexedDB?.deleteDatabase(databaseName);
+    }
+    const storageTargets = [window.localStorage, window.sessionStorage];
+    for (const storage of storageTargets) {
+      if (!storage) continue;
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < storage.length; i++) {
+        const key = storage.key(i);
+        if (key && (
+          key.startsWith('pending-action') ||
+          key.startsWith('content-version') ||
+          key.startsWith('novae:pending-action') ||
+          key.startsWith('novae-content-cache')
+        )) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((k) => storage.removeItem(k));
+    }
+  } catch {
+    // Ignore browser storage exceptions
+  }
+}
 
 export const PERSISTENT_CACHE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1_000;
 export const PERSISTENT_CACHE_MAX_BYTES = 16 * 1024 * 1024;
@@ -48,7 +77,7 @@ function openDatabase() {
       reject(new Error('IndexedDB unavailable'));
       return;
     }
-    const request = indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
+    const request = indexedDB.open(PERSISTENT_CACHE_NAMESPACE, DATABASE_VERSION);
     request.onupgradeneeded = () => {
       const database = request.result;
       const transaction = request.transaction;

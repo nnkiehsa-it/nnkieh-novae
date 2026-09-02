@@ -15,7 +15,7 @@ async function listAnnouncementComments(payload: JsonRecord, database: BackendDa
   const { data, error } = await database.call("app_api", "backend_list_announcement_comments", {
     announcement_id: announcementId,
     cursor_id: asUuid(cursor.id) || null,
-    cursor_created_at: readCursorDate(cursor, "createdAtMs", "created_at") || null,
+    cursor_created_at: readCursorDate(cursor, "createdAt") || null,
     page_size: Math.min(Math.max(Math.round(asNumber(payload.pageSize, 30)), 1), 30),
     sort_name: sortName,
   });

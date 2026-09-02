@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { newUserPage } from './support/session';
+import { expectBackendAction } from './support/backend-action';
 
 async function createCategory(
   page: Page,
@@ -24,7 +25,7 @@ async function createCategory(
 
 async function saveCategories(page: Page) {
   const save = page.getByRole('button', { name: 'Save all changes' });
-  await save.click();
+  await expectBackendAction(page, 'saveCategoryManagement', async () => save.click());
   await expect(save.locator('[data-state="complete"]')).toBeVisible();
   await expect(save).toBeEnabled();
 }

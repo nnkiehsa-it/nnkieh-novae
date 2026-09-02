@@ -6,7 +6,6 @@ import type {
   CommentSortOption,
 } from '@/types';
 import { invokeBackendAction } from '@/services/backend-action';
-import { createRequestId } from '@/lib/request-id';
 import { READ_REQUEST_TIMEOUT_MS, RequestFailure } from '@/lib/request';
 import {
   captureContentCacheWriteGuard,
@@ -24,7 +23,7 @@ import { registerContentVersion } from '@/services/content-versions';
 
 const ANNOUNCEMENT_LIMIT = 10;
 const ANNOUNCEMENT_LIST_CACHE_PREFIX = 'announcement-list-page|';
-export type AnnouncementCursor = { id: string; publishedAtMs: number } | null;
+export type AnnouncementCursor = { id: string; publishedAt: string } | null;
 
 function dateFromMs(value: unknown) {
   return typeof value === 'number' ? new Date(value) : normalizeDate(value);
@@ -40,11 +39,11 @@ function normalizeAnnouncementCursor(data: unknown): AnnouncementCursor {
   if (!data || typeof data !== 'object') return null;
   const record = data as Record<string, unknown>;
   const id = typeof record.id === 'string' ? record.id : '';
-  const publishedAtMs = numberFromDateLike(record.publishedAtMs ?? record.published_at);
+  const publishedAtMs = numberFromDateLike(record.publishedAt);
   if (!id || publishedAtMs === null) return null;
   return {
     id,
-    publishedAtMs,
+    publishedAt: new Date(publishedAtMs).toISOString(),
   };
 }
 
@@ -52,11 +51,11 @@ function normalizeAnnouncementSummary(data: Record<string, unknown>): Announceme
   return {
     id: String(data.id ?? ''),
     title: String(data.title ?? ''),
-    author_uid: String(data.author_uid ?? ''),
-    published_at: dateFromMs(data.published_at_ms ?? data.published_at),
-    like_count: Number(data.like_count ?? 0),
-    comment_count: Number(data.comment_count ?? 0),
-    comments_enabled: data.comments_enabled !== false,
+    author_uid: String(data.authorUid ?? ''),
+    published_at: dateFromMs(data.publishedAt),
+    like_count: Number(data.likeCount ?? 0),
+    comment_count: Number(data.commentCount ?? 0),
+    comments_enabled: data.commentsEnabled !== false,
     currentUserLiked: Boolean(data.currentUserLiked),
     deleting: data.deleting === true,
   };
@@ -72,15 +71,15 @@ function normalizeAnnouncementRecord(data: Record<string, unknown>): Announcemen
 function normalizeAnnouncementComment(data: Record<string, unknown>): AnnouncementCommentRecord {
   return {
     id: String(data.id ?? ''),
-    announcement_id: String(data.announcement_id ?? ''),
-    parent_comment_id: typeof data.parent_comment_id === 'string' ? data.parent_comment_id : null,
+    announcement_id: String(data.announcementId ?? ''),
+    parent_comment_id: typeof data.parentCommentId === 'string' ? data.parentCommentId : null,
     content: String(data.content ?? ''),
-    author_uid: String(data.author_uid ?? ''),
-    created_at: dateFromMs(data.created_at_ms ?? data.created_at),
+    author_uid: String(data.authorUid ?? ''),
+    created_at: dateFromMs(data.createdAt),
     replies: Array.isArray(data.replies)
       ? data.replies.map((reply) => normalizeAnnouncementComment({
         ...(reply as Record<string, unknown>),
-        announcement_id: data.announcement_id,
+        announcementId: data.announcementId,
       }))
       : [],
   };
@@ -97,7 +96,7 @@ export async function fetchAnnouncementsPage(
     options.cacheScope ?? 'default',
     pageSize,
     cursor?.id ?? 'first',
-    cursor?.publishedAtMs ?? '',
+    cursor?.publishedAt ?? '',
   ]);
   if (!options.forceRefresh) {
     const cached = await getCachedContentPersistent<{ announcements: AnnouncementSummary[]; cursor: AnnouncementCursor; hasMore: boolean; version: number }>(cacheKey);
@@ -164,16 +163,16 @@ export function peekAnnouncementRecordById(
 }
 
 export async function createAnnouncement(input: AnnouncementInput): Promise<AnnouncementRecord> {
-  const fn = invokeBackendAction<AnnouncementInput & { requestId: string }, { announcement: Record<string, unknown> }>('createAnnouncement');
-  const result = await fn({ ...input, requestId: createRequestId() });
+  const fn = invokeBackendAction<AnnouncementInput, { announcement: Record<string, unknown> }>('createAnnouncement');
+  const result = await fn(input);
   const announcement = normalizeAnnouncementRecord(result.announcement);
   markContentCachePrefixStale(ANNOUNCEMENT_LIST_CACHE_PREFIX);
   return announcement;
 }
 
 export async function deleteAnnouncement(announcementId: string) {
-  const fn = invokeBackendAction<{ announcementId: string; requestId: string }, { success: boolean }>('deleteAnnouncement');
-  const result = await fn({ announcementId, requestId: createRequestId() });
+  const fn = invokeBackendAction<{ announcementId: string }, { success: boolean }>('deleteAnnouncement');
+  const result = await fn({ announcementId });
   markContentCachePrefixStale(ANNOUNCEMENT_LIST_CACHE_PREFIX);
   markContentCachePrefixStale(`announcement-detail|${announcementId}|`);
   return result;
@@ -181,13 +180,13 @@ export async function deleteAnnouncement(announcementId: string) {
 
 export async function setAnnouncementLike(announcementId: string, liked: boolean) {
   const fn = invokeBackendAction<
-    { announcementId: string; liked: boolean; requestId: string },
-    { liked: boolean; like_count: number }
+    { announcementId: string; liked: boolean },
+    { liked: boolean; likeCount: number }
   >('setAnnouncementLike');
-  const result = await fn({ announcementId, liked, requestId: createRequestId() });
+  const result = await fn({ announcementId, liked });
   markContentCachePrefixStale(ANNOUNCEMENT_LIST_CACHE_PREFIX);
   markContentCachePrefixStale(`announcement-detail|${announcementId}|`);
-  return result;
+  return { ...result, like_count: result.likeCount };
 }
 
 export async function fetchAnnouncementComments(
@@ -202,7 +201,7 @@ export async function fetchAnnouncementComments(
     options.cacheScope ?? 'default',
     sort,
     cursor?.id ?? 'first',
-    cursor?.createdAtMs ?? '',
+    cursor?.createdAt ?? '',
   ]);
   if (!options.forceRefresh) {
     const cached = await getCachedContentPersistent<{ comments: AnnouncementCommentRecord[]; cursor: CommentCursor; hasMore: boolean; version: number }>(cacheKey);
@@ -239,27 +238,27 @@ export async function fetchAnnouncementComments(
 
 export async function createAnnouncementComment(announcementId: string, content: string, parentCommentId: string | null = null) {
   const fn = invokeBackendAction<
-    { announcementId: string; content: string; parentCommentId?: string | null; requestId: string },
-    { comment: Record<string, unknown>; comment_count: number }
+    { announcementId: string; content: string; parentCommentId?: string | null },
+    { comment: Record<string, unknown>; commentCount: number }
   >('createAnnouncementComment');
-  const result = await fn({ announcementId, content, parentCommentId, requestId: createRequestId() });
+  const result = await fn({ announcementId, content, parentCommentId });
   markContentCachePrefixStale(`announcement-comments-page|${announcementId}|`);
   markContentCachePrefixStale(ANNOUNCEMENT_LIST_CACHE_PREFIX);
   markContentCachePrefixStale(`announcement-detail|${announcementId}|`);
   return {
     comment: normalizeAnnouncementComment(result.comment),
-    comment_count: result.comment_count,
+    comment_count: result.commentCount,
   };
 }
 
 export async function deleteAnnouncementComment(commentId: string) {
   const fn = invokeBackendAction<
-    { commentId: string; requestId: string },
-    { success: boolean; announcement_id: string; comment_count: number }
+    { commentId: string },
+    { success: boolean; announcementId: string; commentCount: number }
   >('deleteAnnouncementComment');
-  const result = await fn({ commentId, requestId: createRequestId() });
-  markContentCachePrefixStale(`announcement-comments-page|${result.announcement_id}|`);
+  const result = await fn({ commentId });
+  markContentCachePrefixStale(`announcement-comments-page|${result.announcementId}|`);
   markContentCachePrefixStale(ANNOUNCEMENT_LIST_CACHE_PREFIX);
-  markContentCachePrefixStale(`announcement-detail|${result.announcement_id}|`);
-  return result;
+  markContentCachePrefixStale(`announcement-detail|${result.announcementId}|`);
+  return { ...result, announcement_id: result.announcementId, comment_count: result.commentCount };
 }

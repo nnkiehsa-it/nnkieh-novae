@@ -2,7 +2,6 @@ import { asRecord, asString } from "../shared/http.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { asNumber, readCursor, readCursorDate, asUuid } from "./utils.ts";
 import { requiredText } from "./validation.ts";
-import { subscribeTokensToTopic, unsubscribeTokensFromTopic } from "../shared/fcm.ts";
 
 const PUSH_TOKEN_LIMITS = {
   deviceId: 160,
@@ -82,7 +81,7 @@ export async function handleNotificationAction(
     });
     if (openedResult.error) throw openedResult.error;
     return {
-      openedAtMs: Date.parse(openedAt),
+      openedAt,
       pages: Object.fromEntries(pageEntries),
       state: stateResult.data,
     };
@@ -101,7 +100,7 @@ export async function handleNotificationAction(
         notification_source: source,
         page_size: Math.min(Math.max(Math.round(asNumber(request.pageSize, 10)), 1), 30),
         cursor_id: asUuid(cursor.id) || null,
-        cursor_created_at: readCursorDate(cursor, "createdAtMs", "created_at") || null,
+        cursor_created_at: readCursorDate(cursor, "createdAt") || null,
       });
       if (error) throw error;
       return [source, data] as const;
@@ -139,8 +138,6 @@ export async function handleNotificationAction(
   if (action === "registerPushToken") {
     const token = requiredText(payload.token, "token", PUSH_TOKEN_LIMITS.token);
     const deviceId = requiredText(payload.deviceId, "deviceId", PUSH_TOKEN_LIMITS.deviceId);
-    const { data: previousDevice, error: previousDeviceError } = await database.table("app_private", "push_tokens").select("token").eq("uid", auth.uid).eq("device_id", deviceId).maybeSingle();
-    if (previousDeviceError) throw previousDeviceError;
     const { data, error } = await database.call("app_api", "backend_register_push_token", {
       actor_uid: auth.uid,
       device_id: deviceId,
@@ -150,43 +147,17 @@ export async function handleNotificationAction(
       user_agent: optionalLimitedText(payload.userAgent, "userAgent", PUSH_TOKEN_LIMITS.userAgent),
     });
     if (error) throw error;
-    try {
-      const topicUpdates: Array<Promise<unknown>> = [
-        subscribeTokensToTopic([token], "srp-broadcast"),
-      ];
-      if (previousDevice?.token && previousDevice.token !== token) {
-        topicUpdates.push(
-          unsubscribeTokensFromTopic([previousDevice.token], "srp-broadcast"),
-        );
-      }
-      await Promise.all(topicUpdates);
-      const { error: topicStateError } = await database.table("app_private", "push_tokens").update({
-        topic_broadcast: true,
-      }).eq("uid", auth.uid).eq("device_id", deviceId);
-      if (topicStateError) throw topicStateError;
-    } catch {
-      console.error(JSON.stringify({ error: "topic-operation-failed", operation: "push-topic-subscribe" }));
-    }
     return data;
   }
 
   if (action === "unregisterPushToken") {
     const deviceId = requiredText(payload.deviceId, "deviceId", PUSH_TOKEN_LIMITS.deviceId);
-    const { data: existingToken } = await database.table("app_private", "push_tokens")
-      .select("token").eq("uid", auth.uid).eq("device_id", deviceId).maybeSingle();
     const { data, error } = await database.call("app_api", "backend_unregister_push_token", {
       actor_uid: auth.uid,
       device_id: deviceId,
       permission: readPermission(payload),
     });
     if (error) throw error;
-    if (existingToken?.token) {
-      try {
-        await unsubscribeTokensFromTopic([existingToken.token], "srp-broadcast");
-      } catch {
-        console.error(JSON.stringify({ error: "topic-operation-failed", operation: "push-topic-unsubscribe" }));
-      }
-    }
     return data;
   }
 

@@ -10,7 +10,7 @@ export function allowedOrigins(env: Env) {
 export function corsHeaders(request: Request, env: Env) {
   const origin = request.headers.get('origin') ?? '';
   return {
-    'access-control-allow-headers': 'authorization, content-type, x-firebase-appcheck, x-turnstile-token',
+    'access-control-allow-headers': 'authorization, content-type, x-firebase-appcheck, x-turnstile-token, x-novae-operation-id',
     'access-control-allow-methods': 'POST, OPTIONS',
     'access-control-allow-origin': allowedOrigins(env).has(origin) ? origin : 'null',
     'access-control-max-age': '86400',
@@ -29,22 +29,34 @@ export function jsonResponse(request: Request, env: Env, data: unknown, status =
   });
 }
 
+export interface ApiErrorOptions {
+  failureId?: string;
+  message?: string;
+  retryAfterSeconds?: number;
+}
+
 export function apiErrorResponse(
   request: Request,
   env: Env,
-  requestId: string,
+  operationId: string,
   code: ApiErrorCode,
-  retryAfterSeconds?: number,
+  options: ApiErrorOptions | number = {},
   headers: HeadersInit = {},
 ) {
-  const retryAfter = retryAfterSeconds && Number.isFinite(retryAfterSeconds)
-    ? Math.max(1, Math.ceil(retryAfterSeconds))
+  const normalizedOptions: ApiErrorOptions =
+    typeof options === "number" ? { retryAfterSeconds: options } : options;
+  const retryAfter = normalizedOptions.retryAfterSeconds && Number.isFinite(normalizedOptions.retryAfterSeconds)
+    ? Math.max(1, Math.ceil(normalizedOptions.retryAfterSeconds))
     : undefined;
-  const error = retryAfter ? { code, retryAfterSeconds: retryAfter } : { code };
+  const error: { code: ApiErrorCode; message?: string; failureId?: string; retryAfterSeconds?: number } = { code };
+  if (normalizedOptions.failureId) error.failureId = normalizedOptions.failureId;
+  if (normalizedOptions.message) error.message = normalizedOptions.message;
+  if (retryAfter) error.retryAfterSeconds = retryAfter;
+
   return jsonResponse(
     request,
     env,
-    { error, requestId, success: false },
+    { error, operationId, success: false },
     API_ERRORS[code].status,
     retryAfter ? { ...headers, 'retry-after': String(retryAfter) } : headers,
   );

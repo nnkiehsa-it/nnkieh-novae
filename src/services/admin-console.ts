@@ -1,4 +1,3 @@
-import { createRequestId } from '@/lib/request-id';
 import { invokeBackendAction } from '@/services/backend-action';
 import type { RoleCode } from '@/services/session-role';
 
@@ -9,9 +8,9 @@ interface AdminUserWire {
   uid: string;
   email: string | null;
   name: string;
-  createdAtMs: number;
-  lastSeenAtMs: number | null;
-  restrictedUntilMs: number | null;
+  createdAt: string;
+  lastSeenAt: string | null;
+  restrictedUntil: string | null;
   restrictedPermanently: boolean;
   restrictionReason: string;
   roles: RoleCode[];
@@ -80,36 +79,52 @@ interface DeletionJobWire {
   cloudinaryPublicId: string | null;
   status: string;
   attemptCount: number;
-  nextAttemptAtMs: number;
-  errorTraceId: string | null;
-  createdAtMs: number;
-  updatedAtMs: number;
+  nextAttemptAt: string;
+  failureId: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface DeletionJob extends Omit<DeletionJobWire, 'createdAtMs' | 'nextAttemptAtMs' | 'updatedAtMs'> {
+export interface DeletionJob extends Omit<DeletionJobWire, 'createdAt' | 'failureId' | 'nextAttemptAt' | 'updatedAt'> {
   createdAt: Date;
+  errorTraceId: string | null;
   nextAttemptAt: Date;
   updatedAt: Date;
 }
 
-function toDate(value: number | null) {
-  return typeof value === 'number' ? new Date(value) : null;
+function toDate(value: string | null) {
+  return value ? new Date(value) : null;
+}
+
+function normalizeActivity(activity: Record<string, unknown>): AdminOverviewActivity {
+  return {
+    actor_uid: String(activity.actorUid ?? ''),
+    kind: String(activity.kind ?? ''),
+    occurred_at: String(activity.occurredAt ?? ''),
+    target_id: String(activity.targetId ?? ''),
+    title: String(activity.title ?? ''),
+  };
 }
 
 export async function fetchAdminOverview(window: AdminOverviewWindow) {
-  return await invokeBackendAction<{ window: AdminOverviewWindow }, AdminOverviewData>(
+  const result = await invokeBackendAction<
+    { window: AdminOverviewWindow },
+    Omit<AdminOverviewData, 'recentActivity'> & { recentActivity: Record<string, unknown>[] }
+  >(
     'getAdminOverview',
   )({ window });
+  return { ...result, recentActivity: result.recentActivity.map(normalizeActivity) };
 }
 
 export async function listAdminActivity(
   window: AdminOverviewWindow,
   cursor: AdminActivityCursor | null = null,
 ) {
-  return await invokeBackendAction<
+  const result = await invokeBackendAction<
     { window: AdminOverviewWindow; cursor: AdminActivityCursor | null },
-    { entries: AdminOverviewActivity[]; nextCursor: AdminActivityCursor | null }
+    { entries: Record<string, unknown>[]; nextCursor: AdminActivityCursor | null }
   >('listAdminActivity')({ cursor, window });
+  return { ...result, entries: result.entries.map(normalizeActivity) };
 }
 
 export async function listAdminUsers(query = '') {
@@ -124,9 +139,9 @@ export async function listAdminUsers(query = '') {
       uid: user.uid,
       email: user.email,
       name: user.name,
-      createdAt: new Date(user.createdAtMs),
-      lastSeenAt: toDate(user.lastSeenAtMs),
-      restrictedUntil: toDate(user.restrictedUntilMs),
+      createdAt: new Date(user.createdAt),
+      lastSeenAt: toDate(user.lastSeenAt),
+      restrictedUntil: toDate(user.restrictedUntil),
       restrictedPermanently: user.restrictedPermanently,
       restrictionReason: user.restrictionReason,
       roles: Array.isArray(user.roles) ? user.roles : [],
@@ -146,18 +161,17 @@ export async function setUserRestriction(
   reason: string,
 ) {
   return await invokeBackendAction<
-    { uid: string; mode: RestrictionMode; reason: string; requestId: string },
+    { uid: string; mode: RestrictionMode; reason: string },
     {
       success: boolean;
       uid: string;
-      restrictedUntilMs: number | null;
+      restrictedUntil: string | null;
       restrictedPermanently: boolean;
     }
   >('setUserRestriction')({
     uid,
     mode,
     reason: reason.trim(),
-    requestId: createRequestId(),
   });
 }
 
@@ -166,15 +180,15 @@ export async function listAdminAudit(query = '') {
     { query: string },
     {
       truncated: boolean;
-      entries: Array<Omit<AdminAuditEntry, 'createdAt'> & { createdAtMs: number }>;
+      entries: Array<Omit<AdminAuditEntry, 'createdAt'> & { createdAt: string }>;
     }
   >('listAdminAudit')({ query: query.trim() });
 
   return {
     truncated: result.truncated,
-    entries: result.entries.map(({ createdAtMs, ...entry }) => ({
+    entries: result.entries.map(({ createdAt, ...entry }) => ({
       ...entry,
-      createdAt: new Date(createdAtMs),
+      createdAt: new Date(createdAt),
     })),
   };
 }
@@ -183,17 +197,18 @@ export async function listDeletionJobs() {
   const result = await invokeBackendAction<Record<string, never>, { entries: DeletionJobWire[] }>(
     'listDeletionJobs',
   )({});
-  return result.entries.map(({ createdAtMs, nextAttemptAtMs, updatedAtMs, ...entry }) => ({
+  return result.entries.map(({ createdAt, failureId, nextAttemptAt, updatedAt, ...entry }) => ({
     ...entry,
-    createdAt: new Date(createdAtMs),
-    nextAttemptAt: new Date(nextAttemptAtMs),
-    updatedAt: new Date(updatedAtMs),
+    createdAt: new Date(createdAt),
+    errorTraceId: failureId,
+    nextAttemptAt: new Date(nextAttemptAt),
+    updatedAt: new Date(updatedAt),
   }));
 }
 
 export async function retryDeletionJob(jobId: string) {
   return await invokeBackendAction<
-    { jobId: string; requestId: string },
-    { id: string; queuedAtMs: number; status: 'pending' }
-  >('retryDeletionJob')({ jobId, requestId: createRequestId() });
+    { jobId: string },
+    { id: string; queuedAt: string; status: 'pending' }
+  >('retryDeletionJob')({ jobId });
 }
