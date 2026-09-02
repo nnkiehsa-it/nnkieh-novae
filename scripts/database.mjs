@@ -149,6 +149,7 @@ async function resetLocalDatabase() {
       "select pg_terminate_backend(pid) from pg_stat_activity where datname = 'novae' and pid <> pg_backend_pid()",
     );
     await client.query("drop database if exists novae");
+    await client.query("drop role if exists novae_runtime");
     await client.query("create database novae");
   } finally {
     await client.end();

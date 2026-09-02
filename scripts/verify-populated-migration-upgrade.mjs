@@ -21,11 +21,14 @@ const migrationNames = (await readdir(migrationsDirectory, { withFileTypes: true
   .map((entry) => entry.name)
   .sort();
 const consistencyMigration = "0016_system_data_consistency.sql";
-const bridgeMigration = "0015_z_quiesce_legacy_projection_triggers.sql";
+const bridgeMigrations = [
+  "0015_z_quiesce_legacy_projection_triggers.sql",
+  "0015_zz_bootstrap_runtime_role.sql",
+];
 const consistencyIndex = migrationNames.indexOf(consistencyMigration);
 if (consistencyIndex < 0) throw new Error(`${consistencyMigration} is missing.`);
-if (migrationNames[consistencyIndex - 1] !== bridgeMigration) {
-  throw new Error(`${bridgeMigration} must run immediately before ${consistencyMigration}.`);
+if (migrationNames.slice(consistencyIndex - bridgeMigrations.length, consistencyIndex).join() !== bridgeMigrations.join()) {
+  throw new Error(`Forward bridges must run immediately before ${consistencyMigration}.`);
 }
 
 async function executeMigration(client, name) {
@@ -71,7 +74,7 @@ try {
       );
     `);
     await executeMigration(database, consistencyMigration);
-    await executeMigration(database, bridgeMigration);
+    for (const name of bridgeMigrations) await executeMigration(database, name);
     const result = await database.query(`
       select
         to_regclass('app_private.realtime_events') is null as legacy_realtime_removed,
