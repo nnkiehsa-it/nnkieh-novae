@@ -57,6 +57,57 @@ async function expectTouchTarget(page: Page, name: string | RegExp) {
   expect(Math.round(box?.height ?? 0)).toBeGreaterThanOrEqual(44);
 }
 
+test.describe('mobile route motion', () => {
+  test.use({ storageState: authStatePath('ordinary') });
+
+  test('keeps one route surface below the persistent navigation dock', async ({ page }) => {
+    await suppressInstallPrompt(page);
+    await page.goto('/issues');
+    const dock = page.locator('.app-mobile-nav');
+    await expect(dock).toBeVisible();
+    await page.evaluate(() => {
+      const state = window as typeof window & {
+        __novaeMobileDockStayedAboveRoute?: boolean;
+        __novaeMobileMaxRoutePages?: number;
+      };
+      state.__novaeMobileDockStayedAboveRoute = true;
+      state.__novaeMobileMaxRoutePages = 0;
+      const deadline = performance.now() + 2_000;
+      const inspect = () => {
+        const navigation = document.querySelector('.app-mobile-nav');
+        if (navigation) {
+          const box = navigation.getBoundingClientRect();
+          const stack = document.elementsFromPoint(
+            box.left + box.width / 2,
+            box.top + box.height / 2,
+          );
+          const navigationIndex = stack.findIndex((element) => navigation.contains(element));
+          const routeIndex = stack.findIndex((element) => element.classList.contains('route-page'));
+          if (navigationIndex < 0 || (routeIndex >= 0 && navigationIndex > routeIndex)) {
+            state.__novaeMobileDockStayedAboveRoute = false;
+          }
+        }
+        state.__novaeMobileMaxRoutePages = Math.max(
+          state.__novaeMobileMaxRoutePages ?? 0,
+          document.querySelectorAll('.route-page').length,
+        );
+        if (performance.now() < deadline) requestAnimationFrame(inspect);
+      };
+      requestAnimationFrame(inspect);
+    });
+
+    await dock.locator('a[href="/announcements"]').click();
+    await page.waitForURL(/\/announcements$/u);
+    await expect(page.locator('.route-page[data-route-path="/announcements"]')).toBeVisible();
+    expect(await page.evaluate(() =>
+      (window as typeof window & { __novaeMobileMaxRoutePages?: number }).__novaeMobileMaxRoutePages,
+    )).toBe(1);
+    expect(await page.evaluate(() =>
+      (window as typeof window & { __novaeMobileDockStayedAboveRoute?: boolean }).__novaeMobileDockStayedAboveRoute,
+    )).toBe(true);
+  });
+});
+
 test.describe('proposal manager on mobile', () => {
   test.use({ storageState: authStatePath('issueManager') });
 

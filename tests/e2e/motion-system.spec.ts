@@ -10,10 +10,20 @@ test('navigation feedback survives the source control and route content transiti
   await expect(page.locator('.route-page')).toBeVisible();
 
   await page.evaluate(() => {
-    const state = window as typeof window & { __novaeSawRouteMotion?: boolean };
+    const state = window as typeof window & {
+      __novaeMaxRoutePages?: number;
+      __novaeSawRouteMotion?: boolean;
+      __novaeSawRouteViewTransition?: boolean;
+    };
+    state.__novaeMaxRoutePages = 0;
     state.__novaeSawRouteMotion = false;
+    state.__novaeSawRouteViewTransition = false;
     const deadline = performance.now() + 2_000;
     const inspect = () => {
+      state.__novaeMaxRoutePages = Math.max(
+        state.__novaeMaxRoutePages ?? 0,
+        document.querySelectorAll('.route-page').length,
+      );
       if (
         document.getAnimations().some((animation) =>
           animation instanceof CSSAnimation
@@ -21,6 +31,10 @@ test('navigation feedback survives the source control and route content transiti
       ) {
         state.__novaeSawRouteMotion = true;
       }
+      if (document.getAnimations().some((animation) => {
+        const effect = animation.effect as KeyframeEffect & { pseudoElement?: string };
+        return effect?.pseudoElement?.includes('view-transition');
+      })) state.__novaeSawRouteViewTransition = true;
       if (performance.now() < deadline) requestAnimationFrame(inspect);
     };
     requestAnimationFrame(inspect);
@@ -37,27 +51,39 @@ test('navigation feedback survives the source control and route content transiti
   await expect.poll(() => page.evaluate(() =>
     Boolean((window as typeof window & { __novaeSawRouteMotion?: boolean }).__novaeSawRouteMotion),
   )).toBe(true);
+  expect(await page.evaluate(() =>
+    (window as typeof window & { __novaeMaxRoutePages?: number }).__novaeMaxRoutePages,
+  )).toBe(1);
+  expect(await page.evaluate(() =>
+    (window as typeof window & { __novaeSawRouteViewTransition?: boolean }).__novaeSawRouteViewTransition,
+  )).toBe(false);
+  const stacking = await page.evaluate(() => ({
+    mobileNavigation: Number.parseInt(getComputedStyle(document.querySelector('.app-mobile-nav')!).zIndex, 10),
+    route: Number.parseInt(getComputedStyle(document.querySelector('.route-page')!).zIndex, 10),
+  }));
+  expect(stacking.mobileNavigation).toBeGreaterThan(stacking.route);
 
+  await page.goto('/issues');
+  await expect(page.locator('.t-card > a[href^="/issues/"]').first()).toBeVisible();
   await page.evaluate(() => {
-    const state = window as typeof window & { __novaeSawObjectMorph?: boolean };
-    state.__novaeSawObjectMorph = false;
-    const deadline = performance.now() + 2_000;
+    const state = window as typeof window & { __novaeMaxStateSurfaces?: number };
+    state.__novaeMaxStateSurfaces = 0;
+    const deadline = performance.now() + 4_000;
     const inspect = () => {
-      if (document.getAnimations().some((animation) =>
-        animation instanceof CSSAnimation
-        && animation.animationName.startsWith('t-object-morph-')
-      )) {
-        state.__novaeSawObjectMorph = true;
-      }
+      state.__novaeMaxStateSurfaces = Math.max(
+        state.__novaeMaxStateSurfaces ?? 0,
+        document.querySelectorAll('.route-page > [data-state-transition]').length,
+      );
       if (performance.now() < deadline) requestAnimationFrame(inspect);
     };
     requestAnimationFrame(inspect);
   });
-  await page.locator('.t-card > a[href^="/announcements/"]').first().click();
-  await page.waitForURL(/\/announcements\/[^/]+$/u);
-  await expect.poll(() => page.evaluate(() =>
-    Boolean((window as typeof window & { __novaeSawObjectMorph?: boolean }).__novaeSawObjectMorph),
-  )).toBe(true);
+  await page.locator('.t-card > a[href^="/issues/"]').first().click();
+  await page.waitForURL(/\/issues\/[^/]+\/[^/]+$/u);
+  await expect(page.locator('article h1')).toBeVisible();
+  expect(await page.evaluate(() =>
+    (window as typeof window & { __novaeMaxStateSurfaces?: number }).__novaeMaxStateSurfaces,
+  )).toBe(1);
   await context.close();
 });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { ViewTransition, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -14,17 +14,12 @@ export function RouteSurface({
   const pathname = usePathname();
 
   return (
-    <ViewTransition
+    <div
+      className={cn("route-page t-route-page-enter", className)}
+      data-route-path={pathname}
       key={pathname}
-      name="novae-route-content"
-      share="novae-route-swap"
-      enter="novae-route-enter"
-      exit="novae-route-exit"
-      default="none"
     >
-      <div className={cn("route-page", className)} data-route-path={pathname}>
-        {children}
-      </div>
-    </ViewTransition>
+      {children}
+    </div>
   );
 }

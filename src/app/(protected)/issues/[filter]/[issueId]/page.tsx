@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useParams } from "next/navigation";
 import { useI18n } from "@/i18n";
 import { useIssueDetail } from "@/hooks/use-issue-detail";
 import { Discussion } from "@/components/discussion";
@@ -13,18 +12,20 @@ import { IssueDetailContent } from "@/components/issues/issue-detail-content";
 import { IssueModerationDialog } from "@/components/issues/issue-moderation-dialog";
 import { ErrorState } from "@/components/ui/page-state";
 import { DetailRouteSkeleton } from "@/components/ui/route-skeleton";
-import { ContentMorph } from "@/components/motion/content-morph";
 import { StateTransition } from "@/components/motion/state-transition";
 
 export default function IssueDetailPage() {
   const { t } = useI18n();
-  const { issueId } = useParams<{ issueId: string }>();
   const detail = useIssueDetail();
   const [authorHiddenForIssueId, setAuthorHiddenForIssueId] = useState<
     string | null
   >(null);
   if (detail.loading)
-    return <StateTransition identity="loading"><ContentMorph id={issueId} kind="issue"><DetailRouteSkeleton /></ContentMorph></StateTransition>;
+    return (
+      <StateTransition identity="loading">
+        <DetailRouteSkeleton />
+      </StateTransition>
+    );
   if (detail.error || !detail.issue || !detail.status) {
     return (
       <StateTransition identity="error"><ErrorState

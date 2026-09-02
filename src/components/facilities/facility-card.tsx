@@ -6,7 +6,6 @@ import { t as translate } from "@/i18n";
 import type { FacilitySummary, UserPublicProfile } from "@/types";
 import { formatRelativeTime } from "@/lib/format";
 import { LikeActionButton } from "@/components/motion/like-action-button";
-import { ContentMorph } from "@/components/motion/content-morph";
 import { ContentAuthor } from "@/components/content-author";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -29,9 +28,8 @@ export function FacilityCard({
   reveal: boolean;
 }) {
   return (
-    <ContentMorph id={facility.id} kind="facility">
-      <Card className="t-card group relative h-full gap-4 p-5 sm:p-6">
-        <div className="flex h-full flex-col gap-4">
+    <Card className="t-card group relative h-full gap-4 p-5 sm:p-6">
+      <div className="flex h-full flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
@@ -67,13 +65,12 @@ export function FacilityCard({
             size="sm"
           />
         </div>
-        </div>
-        <Link
-          aria-label={facility.title}
-          className="absolute inset-0 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-          href={`/facilities/${facility.id}?category=${encodeURIComponent(facility.category_id)}`}
-        />
-      </Card>
-    </ContentMorph>
+      </div>
+      <Link
+        aria-label={facility.title}
+        className="absolute inset-0 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        href={`/facilities/${facility.id}?category=${encodeURIComponent(facility.category_id)}`}
+      />
+    </Card>
   );
 }

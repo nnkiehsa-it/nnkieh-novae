@@ -9,7 +9,6 @@ import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { ContentRenderer } from "@/components/content-renderer";
 import { ContentResolutionNotice } from "@/components/content-resolution-notice";
-import { ContentMorph } from "@/components/motion/content-morph";
 import { CardContent } from "@/components/ui/card";
 import { ResizableCard } from "@/components/ui/resizable-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -38,7 +37,6 @@ export function FacilityDetailContent({
     : null;
 
   return (
-    <ContentMorph id={facility.id} kind="facility">
     <ResizableCard className="gap-0 overflow-hidden py-0">
       <div
         className={cn(
@@ -113,6 +111,5 @@ export function FacilityDetailContent({
         />
       ) : null}
     </ResizableCard>
-    </ContentMorph>
   );
 }

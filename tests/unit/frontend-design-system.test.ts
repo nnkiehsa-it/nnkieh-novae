@@ -98,9 +98,11 @@ describe("React frontend design system", () => {
     expect(motion).toContain("--reveal-dur: 240ms");
     expect(motion).not.toContain("t-route-blur");
     expect(motion).toContain("t-route-in");
+    expect(motion).not.toContain("novae-object-morph");
+    expect(motion).not.toContain("view-transition-group(novae-route-content)");
     expect(read("src/components/app-shell.tsx")).toContain("<RouteSurface>{children}</RouteSurface>");
-    expect(routeSurface).toContain("<ViewTransition");
-    expect(routeSurface).toContain('share="novae-route-swap"');
+    expect(routeSurface).not.toContain("ViewTransition");
+    expect(routeSurface).toContain("t-route-page-enter");
     expect(navigationFeedback).toContain("t-navigation-echo");
     expect(navigationFeedback).toContain("t-navigation-progress");
     expect(read("src/components/liquid-nav.tsx")).not.toContain("transitionTypes");
