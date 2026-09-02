@@ -215,6 +215,14 @@ try {
     "reset-local",
     serve || e2e ? "--seed" : "--seed-integration",
   ]);
+  if (!serve && !e2e) {
+    run(
+      "upgrade a populated pre-0016 database",
+      process.execPath,
+      ["scripts/verify-populated-migration-upgrade.mjs"],
+      { DATABASE_OWNER_URL: ownerDatabaseUrl },
+    );
+  }
   run(
     "configure least-privilege Worker role",
     process.execPath,

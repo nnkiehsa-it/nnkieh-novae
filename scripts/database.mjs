@@ -34,7 +34,13 @@ const volumeName = "novae-postgres-local-data";
 let windowsWslDistro = process.env.NOVAE_WSL_DISTRO?.trim() || null;
 
 function databaseUrl() {
-  return process.env.DATABASE_URL?.trim() || localConnectionString;
+  const connectionString = process.env.DATABASE_URL?.trim() || localConnectionString;
+  const url = new URL(connectionString);
+  const sslMode = url.searchParams.get("sslmode");
+  if (sslMode === "prefer" || sslMode === "require" || sslMode === "verify-ca") {
+    url.searchParams.set("sslmode", "verify-full");
+  }
+  return url.toString();
 }
 
 function dockerInvocation(args) {
