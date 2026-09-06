@@ -145,10 +145,20 @@ This document is the maintained map of the repository. Read it before broad sear
 - `.github/workflows/backup-database.yml` — daily cadence check that creates a PostgreSQL 18 logical dump only when the newest backup is at least 72 hours old, encrypts it with age, verifies it with a checksum, and prunes GitHub artifacts to the latest two; plaintext never leaves the runner.
 - `.github/workflows/reset-database-and-cloudinary.yml` — protected manual disaster-reset flow: after an exact confirmation string, resets the application schemas, reapplies migrations, restores the Worker runtime role, clears Cloudinary resources, and restores the upload preset.
 
-## Design documentation
+## Repository documentation
 
+- `README.md` — Traditional Chinese project entry with stack badges, product scope, architecture overview, local quick start, operational boundaries, and links to repository-owned documentation.
+- `docs/README.md` — documentation index.
+- `docs/product.md` — users, content workflows, initial setup, administration scope, and interface principles.
+- `docs/routes-and-permissions.md` — complete application route map, role and permission codes, category scopes, backend authorization order, restricted-user behavior, and issue visibility rules.
+- `docs/architecture.md` — browser, Worker, PostgreSQL, Queue, Durable Object, Firebase, Cloudinary, and Notion boundaries plus write/event flow.
+- `docs/local-development.md` — prerequisites, the complete emulator environment, manual frontend work, local database commands, and generated artifacts.
+- `docs/configuration.md` — frontend, Worker, database, Cloudflare, provider, Vercel, and backup environment-variable reference.
+- `docs/backend-and-data.md` — public Worker routes, generated action registry, database permissions, forward migrations, domain events, jobs, retention, and generated database contracts.
+- `docs/events-realtime-and-media.md` — domain-event destinations, Queue behavior, realtime topics and cache invalidation, notification/Push flow, and signed Cloudinary upload/delivery lifecycle.
+- `docs/runtime-policies.md` — exact business and Cloudflare ingress limits, image-processing constraints, and initial runtime retention settings.
+- `docs/deployment-and-operations.md` — branch-to-environment mapping, gated backend/frontend deployment, maintenance, encrypted backups, and destructive reset behavior.
+- `docs/testing.md` — local, integration, browser, stress, and full verification commands plus test-suite ownership.
 - `IMPLEMENTATION.md` — active source of truth for the approved performance, cost-control, runtime-customization, realtime, background-batch, and app-motion implementation scope and verification status.
-- `DESIGN.md` — current frontend visual language, component, responsive, and motion rules.
-- `ui-design-system.md` — compatibility pointer to `DESIGN.md` and implementation constraints.
 - `PRODUCT.md` — product purpose, users, features, and explicitly approved runtime migration.
 - `AGENTS.md` — repository boundaries, safety rules, and required verification commands.
