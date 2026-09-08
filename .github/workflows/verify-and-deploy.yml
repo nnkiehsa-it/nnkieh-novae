@@ -432,14 +432,15 @@ jobs:
           printf 'Worker smoke test failed (auth=%s health=%s): %s\n' "$unauthorized" "$health" "$(< /tmp/health.json)" >&2
           exit 1
 
-  frontend_build:
-    needs: [changes, fast, backend_verify, browser_verify]
+  deploy_frontend:
+    needs: [changes, fast, backend_verify, browser_verify, deploy_backend]
     if: >-
       always() &&
       needs.fast.result == 'success' &&
       needs.browser_verify.result == 'success' &&
       needs.changes.outputs.browser == 'true' &&
       (needs.changes.outputs.backend != 'true' || needs.backend_verify.result == 'success') &&
+      (needs.changes.outputs.backend != 'true' || needs.deploy_backend.result == 'success') &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
@@ -454,7 +455,7 @@ jobs:
         with:
           bun-version: 1.4.0
 
-      - name: Install dependencies
+      - name: Install dependencies for Vercel build and deploy
         run: bun install --frozen-lockfile
 
       - name: Restore Next.js build cache
@@ -536,45 +537,6 @@ jobs:
           NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY: ${{ secrets.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY || secrets.VITE_RECAPTCHA_ENTERPRISE_SITE_KEY }}
           NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY || secrets.VITE_TURNSTILE_SITE_KEY || secrets.TURNSTILE_SITE_KEY }}
           NEXT_PUBLIC_API_BASE_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
-
-      - name: Save Vercel prebuilt artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: vercel-prebuilt-${{ github.sha }}
-          path: .vercel
-          if-no-files-found: error
-          include-hidden-files: true
-          retention-days: 1
-
-  deploy_frontend:
-    needs: [changes, frontend_build, deploy_backend]
-    if: >-
-      always() &&
-      needs.frontend_build.result == 'success' &&
-      needs.changes.outputs.browser == 'true' &&
-      (needs.changes.outputs.backend != 'true' || needs.deploy_backend.result == 'success') &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-    runs-on: ubuntu-latest
-    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.4.0
-
-      - name: Install dependencies for Vercel prebuilt publishing
-        run: bun install --frozen-lockfile
-
-      - name: Restore Vercel prebuilt artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: vercel-prebuilt-${{ github.sha }}
-          path: .vercel
 
       - name: Deploy Project Artifacts to Vercel
         run: bunx --yes vercel@58.9.0 deploy --prebuilt ${{ github.ref_name == 'main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}

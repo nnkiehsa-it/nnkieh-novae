@@ -19,7 +19,7 @@ GitHub branch 決定部署環境：
 
 `.github/workflows/verify-and-deploy.yml` 在 backend 相關檔案 push 到 `main` / `dev` 時執行，也可以手動啟動。Push 與 manual deployment 都先經過同一 workflow 的 `fast` 與 `backend_verify` job；成功後直接進入 `deploy_backend`，不再透過另一個 workflow 輪詢同一 commit。
 
-Backend concurrency group 是 `backend-${github.ref}`，`cancel-in-progress: false`。同一 branch 的 migration / Worker deployment 會排隊，不會讓新 push 中止正在套 schema 的 job。
+整個 workflow 的 concurrency group 是 `verify-deploy-${github.ref}`，`cancel-in-progress: false`。同一 branch 的 migration / Worker deployment 會排隊，不會讓新 push 中止正在套 schema 的 job。
 
 部署順序固定為：
 
@@ -36,7 +36,7 @@ Backend deployment 不回改 migration，也不把 owner URL 交給 Worker。
 
 ### 手動 dispatch 的差異
 
-手動啟動時在 `deploy_target` 選 `all`、`backend` 或 `frontend`。選取的部署路徑會依然先跑其所需的 verify job；`all` 會平行驗證 backend 與 browser，frontend build 也會和 backend deployment 平行，最後由 dependency gate 控制發佈順序。
+手動啟動時在 `deploy_target` 選 `all`、`backend` 或 `frontend`。選取的部署路徑會依然先跑其所需的 verify job；`all` 會平行驗證 backend 與 browser，之後 frontend deploy job 會在同一 runner 完成 build 與 publish。
 
 ### Backend smoke test
 
@@ -49,11 +49,11 @@ Origin 使用 `ALLOWED_ORIGINS` 的第一個值。任一條件一直不成立，
 
 ## Frontend deployment
 
-同一個 `.github/workflows/verify-and-deploy.yml` 的 `frontend_build` 會驗證所有 Firebase / App Check / Vercel 值，且部署環境必須設定 `NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED=true`，接著用固定的 Vercel CLI 版本建立 prebuilt artifact。`deploy_frontend` job 只在必要的 backend deployment 成功後發布該 artifact。
+同一個 `.github/workflows/verify-and-deploy.yml` 的 `deploy_frontend` 會驗證所有 Firebase / App Check / Vercel 值，且部署環境必須設定 `NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED=true`，接著在同一 runner 用固定的 Vercel CLI 版本 build 並直接 publish prebuilt output。
 
-若同一 commit 也改動 backend、database 或 generated config，workflow 會等 `deploy_backend` 成功後才發布前端 artifact。這避免新前端先接到舊 action 或 schema；frontend build 本身可同時進行，不必浪費等待時間。
+若同一 commit 也改動 backend、database 或 generated config，workflow 會等 `deploy_backend` 成功後才開始 frontend build 與 publish。這避免新前端先接到舊 action 或 schema，也避免跨 runner 傳遞 `.vercel` / `.next` 內容。
 
-整個 workflow 的 concurrency group 是 `verify-deploy-${github.ref}`，`cancel-in-progress: false`，避免驗證或 migration 期間出現交錯部署。流程使用 Vercel CLI `58.9.0`：先 `pull` project info，再 `build`，最後由獨立 job `deploy --prebuilt`；`main` 會加 `--prod`，`dev` 使用 preview environment。
+流程使用 Vercel CLI `58.9.0`：先 `pull` project info，再 `build`，最後在同一 job 直接 `deploy --prebuilt`；`main` 會加 `--prod`，`dev` 使用 preview environment。
 
 若 diff 沒碰 `cloudflare/`、`database/`、`config/` 或 backend generator / renderer，frontend publish 不會等待 backend deployment job。
 

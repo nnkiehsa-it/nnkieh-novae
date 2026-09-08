@@ -48,11 +48,9 @@ test("verification and deployment share one dependency-gated workflow", async ()
   assert.match(workflow, /backend_verify:/u);
   assert.match(workflow, /browser_verify:/u);
   assert.match(workflow, /deploy_backend:/u);
-  assert.match(workflow, /frontend_build:/u);
   assert.match(workflow, /deploy_frontend:/u);
-  assert.match(workflow, /actions\/upload-artifact@v4/u);
-  assert.match(workflow, /actions\/download-artifact@v4/u);
-  assert.match(workflow, /deploy_frontend:[\s\S]*?bun install --frozen-lockfile[\s\S]*?Restore Vercel prebuilt artifact/u);
+  assert.match(workflow, /deploy_frontend:[\s\S]*?Build Project Artifacts[\s\S]*?Deploy Project Artifacts to Vercel/u);
+  assert.doesNotMatch(workflow, /frontend_build:|actions\/upload-artifact@v4|actions\/download-artifact@v4|Restore Vercel prebuilt artifact/u);
   assert.match(workflow, /verify-and-deploy[\s\S]*?backend=true[\s\S]*?browser=true/u);
   assert.doesNotMatch(workflow, /\(\?:/u);
   assert.doesNotMatch(workflow, /Wait for verification|gh run list/u);

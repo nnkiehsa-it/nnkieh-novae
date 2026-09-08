@@ -70,9 +70,9 @@ Verify and Deploy 先用 git diff 判斷是否需要額外 job：
 | `backend_verify` | `cloudflare/`、`database/`、`config/`、integration tests、backend scripts、package / lockfile | Worker types、integration types、`verify:integration` |
 | `browser_verify` | App / components / hooks / lib / services / styles、public、Next config、E2E、package / lockfile | 安裝 Chromium、`test:e2e`、build budget |
 | `deploy_backend` | push / manual 且 backend 受影響 | forward migration、runtime role、Worker / Queue / provider 設定與 smoke test |
-| `frontend_build` / `deploy_frontend` | push / manual 且 browser 受影響 | 驗證 Vercel secrets、平行建立 prebuilt artifact，待 backend deploy 成功後發布 |
+| `deploy_frontend` | push / manual 且 browser 受影響 | 驗證 Vercel secrets，在同一 runner 建立並直接發布 prebuilt output；必要時等待 backend deploy |
 
-Backend 與 browser verify job 都等 fast 成功後才執行；frontend build 可與 backend deployment 平行，frontend publish 則由 job dependency 保證新前端不會先於新 backend。`workflow_dispatch` 可選 `all`、`backend` 或 `frontend`。單純改 docs 不在 workflow path filter 內，不會消耗完整 CI stack。
+Backend 與 browser verify job 都等 fast 成功後才執行；frontend deploy job 由 dependency 保證新前端不會先於新 backend，並在同一 runner 保留 Vercel build 的 `.next` / `node_modules` 狀態直到 publish 完成。`workflow_dispatch` 可選 `all`、`backend` 或 `frontend`。單純改 docs 不在 workflow path filter 內，不會消耗完整 CI stack。
 
 ## 測試目錄
 
