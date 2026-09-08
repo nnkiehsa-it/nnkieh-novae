@@ -52,6 +52,7 @@ test("verification and deployment share one dependency-gated workflow", async ()
   assert.match(workflow, /deploy_frontend:/u);
   assert.match(workflow, /actions\/upload-artifact@v4/u);
   assert.match(workflow, /actions\/download-artifact@v4/u);
+  assert.match(workflow, /deploy_frontend:[\s\S]*?bun install --frozen-lockfile[\s\S]*?Restore Vercel prebuilt artifact/u);
   assert.doesNotMatch(workflow, /Wait for verification|gh run list/u);
 });
 
