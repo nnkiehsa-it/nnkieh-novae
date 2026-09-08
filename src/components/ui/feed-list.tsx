@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FeedCard, FeedProgress, feedGridClassName } from "@/components/ui/feed-card";
+import { ContentTransition } from "@/components/motion/state-transition";
+import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 import { cn } from "@/lib/utils";
 
 export type FeedKind = "issue" | "facility" | "announcement";
@@ -55,25 +57,30 @@ export function FeedList<T extends { id: string }>({
   const count = items.length || (pending ? 6 : 1);
   const state = pending ? "loading" : items.length ? "content" : error ? "error" : "empty";
   return (
-    <div aria-busy={pending} className={feedGridClassName} data-resize-motion="" data-state-transition={state}>
+    <StaggerList aria-busy={pending} className={feedGridClassName} data-state-transition={state}>
       {Array.from({ length: count }, (_, index) => {
         const item = items[index];
+        const contentIdentity = pending ? "loading" : item ? item.id : state;
         return (
           // These keys identify physical card slots. Entity-local state stays
           // keyed inside, while each frame survives loading/empty/data changes.
-          <Card className={cn("group relative h-full gap-0 p-0", pending ? "route-card-skeleton" : item ? "t-card" : undefined)} data-feed-slot={index} key={index}>
-            {item ? <div className="h-full" key={item.id}>{renderItem?.(item)}</div> : pending ? (
-              <FeedPlaceholder kind={kind} showProgress={showProgress} />
-            ) : (
-              <FeedCard
-                title={<h2>{error ? t('ui.common.loadFailed') : empty?.title}</h2>}
-                metadata={<><Inbox className="size-4 shrink-0" /><span className="text-sm leading-6">{error || empty?.description}</span></>}
-                footer={error ? <Button onClick={onRetry} variant="outline"><RefreshCw />{t('ui.common.reload')}</Button> : empty?.action}
-              />
-            )}
-          </Card>
+          <StaggerItem className="h-full" key={index}>
+            <Card className={cn("group relative h-full gap-0 p-0", pending ? "route-card-skeleton" : item ? "t-card" : undefined)} data-feed-slot={index} data-resize-motion="">
+              <ContentTransition identity={contentIdentity}>
+                {item ? <div className="h-full">{renderItem?.(item)}</div> : pending ? (
+                  <FeedPlaceholder kind={kind} showProgress={showProgress} />
+                ) : (
+                  <FeedCard
+                    title={<h2>{error ? t('ui.common.loadFailed') : empty?.title}</h2>}
+                    metadata={<><Inbox className="size-4 shrink-0" /><span className="text-sm leading-6">{error || empty?.description}</span></>}
+                    footer={error ? <Button onClick={onRetry} variant="outline"><RefreshCw />{t('ui.common.reload')}</Button> : empty?.action}
+                  />
+                )}
+              </ContentTransition>
+            </Card>
+          </StaggerItem>
         );
       })}
-    </div>
+    </StaggerList>
   );
 }

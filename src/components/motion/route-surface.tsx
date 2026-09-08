@@ -13,13 +13,13 @@ export function RouteSurface({
 }) {
   const pathname = usePathname();
   const surface = useRef<HTMLDivElement>(null);
-  const previousPath = useRef(pathname);
   useLayoutEffect(() => {
-    if (previousPath.current === pathname) return;
-    previousPath.current = pathname;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const animation = surface.current?.animate([{ opacity: 0.85 }, { opacity: 1 }], {
-      duration: 180, easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+    const animation = surface.current?.animate([
+      { opacity: 0, transform: "translateY(6px)" },
+      { opacity: 1, transform: "translateY(0)" },
+    ], {
+      duration: 220, easing: "cubic-bezier(0.22, 1, 0.36, 1)",
     });
     if (animation) animation.id = "novae-route-enter";
     return () => animation?.cancel();

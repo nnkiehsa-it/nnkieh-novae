@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
+import { ContentTransition, StateTransition } from "@/components/motion/state-transition";
 import { CommentComposer } from "@/components/comments/comment-composer";
 import { CommentThread } from "@/components/comments/comment-thread";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
@@ -62,6 +63,7 @@ export function Discussion({
   const feedback = useActionFeedback();
   const profiles = useDiscussionProfiles(comments);
   const composerDockRef = React.useRef<HTMLDivElement>(null);
+  const view = !enabled ? "disabled" : loading && !comments.length ? "loading" : "content";
 
   React.useLayoutEffect(() => {
     if (!enabled || !composerDockRef.current) return;
@@ -121,36 +123,40 @@ export function Discussion({
           </Select>
         </div>
 
-        {!enabled ? (
-          <p className="bg-muted/20 px-5 py-4 text-sm text-muted-foreground sm:px-7">{translate("ui.discussion.disabled")}</p>
-        ) : null}
+        <StateTransition identity={view}>
+          <ContentTransition identity={view}>
+            {!enabled ? (
+              <p className="bg-muted/20 px-5 py-4 text-sm text-muted-foreground sm:px-7">{translate("ui.discussion.disabled")}</p>
+            ) : null}
 
-        {loading && !comments.length ? (
-          <SkeletonRows rows={2} />
-        ) : comments.length > 0 ? (
-          <StaggerList className="divide-y">
-            {comments.map((comment) => (
-              <StaggerItem key={comment.id}>
-                <CommentThread
-                  comment={comment}
-                  currentUid={session.user?.uid}
-                  onDelete={onDelete}
-                  onReply={(target, parentCommentId) => {
-                    setReplyDraft("");
-                    setReplyTarget({
-                      authorUid: target.author_uid,
-                      content: target.content,
-                      parentCommentId,
-                    });
-                  }}
-                  profile={profiles[comment.author_uid]}
-                  replyActive={replyTarget?.parentCommentId === comment.id}
-                  replyProfiles={profiles}
-                />
-              </StaggerItem>
-            ))}
-          </StaggerList>
-        ) : null}
+            {view === "loading" ? (
+              <SkeletonRows rows={2} />
+            ) : comments.length > 0 ? (
+              <StaggerList className="divide-y">
+                {comments.map((comment) => (
+                  <StaggerItem key={comment.id}>
+                    <CommentThread
+                      comment={comment}
+                      currentUid={session.user?.uid}
+                      onDelete={onDelete}
+                      onReply={(target, parentCommentId) => {
+                        setReplyDraft("");
+                        setReplyTarget({
+                          authorUid: target.author_uid,
+                          content: target.content,
+                          parentCommentId,
+                        });
+                      }}
+                      profile={profiles[comment.author_uid]}
+                      replyActive={replyTarget?.parentCommentId === comment.id}
+                      replyProfiles={profiles}
+                    />
+                  </StaggerItem>
+                ))}
+              </StaggerList>
+            ) : null}
+          </ContentTransition>
+        </StateTransition>
 
         {hasMore && onLoadMore ? (
           <div className="flex justify-center border-t px-5 py-4 sm:px-7">

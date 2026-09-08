@@ -10,7 +10,7 @@ Taste-guided visual overhaul for a daily-use campus application, using the curre
 - Feed titles use 18px type and a 28px line height.
 - `FeedList` retains physical card frames across pending, populated, empty, and error states. `DetailLayout` does the same for the content and sidebar cards.
 - Notifications, dashboard metrics, category settings, and administrative lists retain their surfaces while fields resolve. Pending platform settings render disabled real fields instead of a blank page.
-- Explicit state containers opt into a shared 180ms height-only resize transition. Viewport reflow, route containers, and individual cards never animate intrinsic dimensions; grid content aligns to the start to avoid feedback loops. Reduced motion disables the size animation.
+- Explicit state containers opt into a shared 180ms height-only resize transition. Their loading, empty, error, and resolved children crossfade in and out without replacing the physical card; dynamic lists animate item entry and exit. Viewport reflow never becomes a size animation, grid content aligns to the start to avoid feedback loops, and reduced motion disables movement.
 - Route surfaces no longer remount by pathname, and state containers no longer remount by loading identity. Route prefetch and preload remain intact.
 - Warm-navigation browser checks confirmed retained feed nodes and a single settled empty-card resize; the fast verification suite passed. No full-suite rerun is claimed for this revision.
 
@@ -38,7 +38,7 @@ Taste-guided visual overhaul for a daily-use campus application, using the curre
 - Category support capability determines whether a proposal feed placeholder reserves a progress region. Mixed-category personal feeds cannot know every row's shape before the data arrives.
 - Optional support deadlines share the progress label row, so they do not add a vertical jump.
 - Titles and author metadata retain minimum heights. Unknown long content and wrapped detail titles can still increase height once fetched; no fake fixed-height document is imposed.
-- Existing route prefetching, session-scoped feed memory, optimistic reactions, stable navigation, and position-only card resizing remain in use.
+- Existing route prefetching, session-scoped feed memory, optimistic reactions, stable navigation, retained card frames, and state-height resizing remain in use.
 - Reduced motion removes displacement and transition delays. Avoid new perpetual effects, scroll reveals, or per-row viewport observers in feeds.
 
 ## Acceptance

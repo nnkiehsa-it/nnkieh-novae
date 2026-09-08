@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-state";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
+import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 
 export default function SettingsPage() {
   const session = useSession();
@@ -94,7 +95,8 @@ export default function SettingsPage() {
   return (
     <div className="w-full space-y-5">
       <PageHeader title={translate("ui.nav.settings")} />
-      <div className="t-settings-section">
+      <StaggerList className="space-y-5">
+      <StaggerItem>
         <SettingsAccountCard
           customPhotoUrl={session.customPhotoUrl}
           onCopyUid={() =>
@@ -105,8 +107,8 @@ export default function SettingsPage() {
           onSwitchAccount={() => void session.login({ selectAccount: true })}
           user={user}
         />
-      </div>
-      <div className="t-settings-section">
+      </StaggerItem>
+      <StaggerItem>
         <AppearanceInstallCards
           canInstall={pwa.canInstall}
           installed={pwa.installed}
@@ -121,8 +123,8 @@ export default function SettingsPage() {
           resolvedTheme={resolvedTheme}
           theme={theme}
         />
-      </div>
-      <div className="t-settings-section">
+      </StaggerItem>
+      <StaggerItem>
         <NotificationCard
           enabled={push.enabled}
           feedbackState={notificationFeedback.state}
@@ -135,17 +137,17 @@ export default function SettingsPage() {
           preferences={push.preferences}
           supported={push.supported}
         />
-      </div>
-      <div className="t-settings-section">
+      </StaggerItem>
+      <StaggerItem>
         <ManagementLinks
           canManage={session.can("role.manage")}
           canViewDashboard={session.can("dashboard.view")}
         />
-      </div>
-      <div className="t-settings-section">
+      </StaggerItem>
+      <StaggerItem>
         <ResourceLinks />
-      </div>
-      <div className="t-settings-section">
+      </StaggerItem>
+      <StaggerItem>
         <Button
           className="w-full"
           onClick={() => void session.logout()}
@@ -154,7 +156,8 @@ export default function SettingsPage() {
           <LogOut />
           {translate("ui.nav.signOut")}
         </Button>
-      </div>
+      </StaggerItem>
+      </StaggerList>
     </div>
   );
 }

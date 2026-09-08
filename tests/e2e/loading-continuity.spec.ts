@@ -19,7 +19,7 @@ async function coldContext(browser: Browser, user = 'ordinary') {
   return browser.newContext({ storageState: state, viewport: { width: 1280, height: 800 } });
 }
 
-test('empty feed keeps its original card and settles without fading the surface', async ({ browser }) => {
+test('empty feed keeps its original card while content enters and the frame resizes', async ({ browser }) => {
   const context = await coldContext(browser);
   const page = await context.newPage();
   let release = () => {};
@@ -54,11 +54,11 @@ test('empty feed keeps its original card and settles without fading the surface'
     await expect(page.locator('[data-state-transition="empty"]')).toBeVisible();
     const values = await samples;
     expect(await node!.evaluate((element) => element === document.querySelector('[data-feed-slot="0"]'))).toBe(true);
-    expect(values.every((value) => value.connected && value.opacity === 1)).toBe(true);
+    expect(values.every((value) => value.connected && value.opacity > 0)).toBe(true);
     const first = values[0].height;
     const last = values.at(-1)!.height;
     expect(first - last).toBeGreaterThan(10);
-    expect(values.some((value) => value.height < first - 1 && value.height > last + 1)).toBe(false);
+    expect(values.some((value) => value.height < first - 1 && value.height > last + 1)).toBe(true);
     expect(Math.max(...values.map((value) => value.height))).toBeLessThanOrEqual(first + 1);
     expect(await frame.evaluate((element) => element.getAnimations().filter((animation) => animation.id === 'novae-resize').length)).toBe(0);
   } finally { release(); await context.close(); }
@@ -180,7 +180,7 @@ for (const kind of ['proposalA', 'facilityA', 'announcement'] as const) {
       await expect(frame.getByRole('button', { name: 'Reload' })).toBeVisible();
       await frame.getByRole('button', { name: 'Reload' }).click();
       await expect.poll(() => attempts).toBe(2);
-      await expect(page.locator('[data-state-transition="content"]')).toBeVisible();
+      await expect(page.locator('[data-state-transition="content"]').first()).toBeVisible();
       await expect(frame.getByRole('button', { name: 'Reload' })).toHaveCount(0);
       await expect(frame.getByRole('heading', { level: 1 })).not.toHaveText('Failed to load');
       expect(await node!.evaluate((element) => element === document.querySelector('[data-detail-card="content"]'))).toBe(true);

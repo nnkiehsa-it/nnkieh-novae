@@ -11,6 +11,7 @@ import { AdminAuditLog } from "@/components/admin/admin-audit-log";
 import { AdminOverview } from "@/components/admin/admin-overview";
 import { UserManagement } from "@/components/admin/user-management";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
+import { ContentTransition, StateTransition } from "@/components/motion/state-transition";
 import { ErrorState, PageHeader } from "@/components/ui/page-state";
 import { SecondaryToolbar } from "@/components/detail-toolbar";
 import { returnToPreviousInAppRoute } from "@/lib/navigation-memory";
@@ -112,19 +113,21 @@ export default function AdministrationPage() {
           value={tab}
         />
       </div>
-      <div className="min-w-0" data-admin-content data-resize-motion="">
-        {tab === "overview" ? (
-          <AdminOverview />
-        ) : tab === "users" ? (
-          <UserManagement />
-        ) : tab === "members" ? (
-          <AccessManagement />
-        ) : tab === "audit" ? (
-          <AdminAuditLog />
-        ) : (
-          <CategoryManagement />
-        )}
-      </div>
+      <StateTransition className="min-w-0" data-admin-content identity={tab}>
+        <ContentTransition identity={tab}>
+          {tab === "overview" ? (
+            <AdminOverview />
+          ) : tab === "users" ? (
+            <UserManagement />
+          ) : tab === "members" ? (
+            <AccessManagement />
+          ) : tab === "audit" ? (
+            <AdminAuditLog />
+          ) : (
+            <CategoryManagement />
+          )}
+        </ContentTransition>
+      </StateTransition>
     </div>
   );
 }

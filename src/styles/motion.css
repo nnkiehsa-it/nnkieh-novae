@@ -74,25 +74,19 @@
   will-change: height;
 }
 
-/* Settings stays in document flow from the first frame, then settles in as a page. */
-.t-settings-section {
-  animation: t-settings-section-in var(--motion-medium) var(--ease-smooth-out) both;
+/* All physical cards share the same restrained first-frame entrance. */
+.t-card-surface {
+  animation: t-card-surface-in var(--motion-fast) var(--ease-smooth-out) both;
 }
-.t-settings-section:nth-of-type(1) { animation-delay: 20ms; }
-.t-settings-section:nth-of-type(2) { animation-delay: 55ms; }
-.t-settings-section:nth-of-type(3) { animation-delay: 90ms; }
-.t-settings-section:nth-of-type(4) { animation-delay: 125ms; }
-.t-settings-section:nth-of-type(5) { animation-delay: 160ms; }
-.t-settings-section:nth-of-type(6) { animation-delay: 195ms; }
-@keyframes t-settings-section-in {
+@keyframes t-card-surface-in {
   from {
     opacity: 0;
-    transform: translateY(var(--motion-distance-sm)) scale(0.992);
+    transform: translateY(var(--motion-distance-xs));
     filter: blur(var(--motion-blur-sm));
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
     filter: blur(0);
   }
 }
@@ -161,7 +155,7 @@
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
@@ -1099,7 +1093,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     transition: none !important;
     transform: none !important;
   }
-  .t-settings-section {
+  .t-card-surface {
     animation: none !important;
   }
   .t-input,

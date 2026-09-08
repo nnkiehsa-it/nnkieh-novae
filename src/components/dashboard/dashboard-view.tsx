@@ -19,6 +19,7 @@ import { getIssueCategoryLabel } from "@/constants/categories";
 import { formatDate } from "@/lib/format";
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
+import { ContentTransition, StateTransition } from "@/components/motion/state-transition";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,6 +56,7 @@ export function DashboardView({ data, error, loading, onRefresh, reveal = false 
     { label: translate('ui.dashboard.cleanup'), value: operations?.cleanup_backlog_count },
     { label: translate('ui.dashboard.stuckUploads'), value: operations?.stuck_upload_count },
   ];
+  const view = loading ? "loading" : error ? "error" : "content";
   return (
     <div className="space-y-5" data-dashboard-surface>
       <SecondaryToolbar
@@ -78,8 +80,10 @@ export function DashboardView({ data, error, loading, onRefresh, reveal = false 
         onBack={() => returnToPreviousInAppRoute(router, "/settings")}
       />
       <PageHeader title={translate('ui.nav.dashboard')} />
-      {error ? <Card className="gap-0 p-0"><ErrorStateContent error={error} onRetry={onRefresh} /></Card> : null}
-      <StaggerList className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <StateTransition identity={view}>
+        <ContentTransition identity={view}>
+          {error ? <Card className="gap-0 p-0"><ErrorStateContent error={error} onRetry={onRefresh} /></Card> : null}
+          <StaggerList className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {statsCards.map(({ icon: Icon, label, value }) => (
           <StaggerItem key={label}>
             <Card className="h-full p-5">
@@ -96,8 +100,8 @@ export function DashboardView({ data, error, loading, onRefresh, reveal = false 
             </Card>
           </StaggerItem>
         ))}
-      </StaggerList>
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(18rem,.75fr)]">
+          </StaggerList>
+          <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(18rem,.75fr)]">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">{translate('ui.dashboard.categoryDistribution')}</CardTitle>
@@ -150,8 +154,8 @@ export function DashboardView({ data, error, loading, onRefresh, reveal = false 
             ))}
           </CardContent>
         </Card>
-      </div>
-      <Card className="gap-0 py-0">
+          </div>
+          <Card className="mt-5 gap-0 py-0">
         <CardHeader className="border-b py-4">
           <CardTitle className="flex items-center gap-2 text-base">
             <AlertTriangle className="size-4 text-muted-foreground" />{translate('ui.dashboard.failures')}</CardTitle>
@@ -202,7 +206,9 @@ export function DashboardView({ data, error, loading, onRefresh, reveal = false 
             ))
           )}
         </CardContent>
-      </Card>
+          </Card>
+        </ContentTransition>
+      </StateTransition>
     </div>
   );
 }

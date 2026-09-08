@@ -7,7 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DetailCardHeader, DetailCardBody } from "@/components/ui/detail-card";
-import { StateTransition } from "@/components/motion/state-transition";
+import { ContentTransition, StateTransition } from "@/components/motion/state-transition";
+import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 import type { FeedKind } from "@/components/ui/feed-list";
 
 export interface DetailPanel { key: string; content: ReactNode }
@@ -60,12 +61,22 @@ export function DetailLayout({
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
           <article className="min-w-0 space-y-4">
             <Card className="gap-0 overflow-hidden py-0" data-detail-card="content" aria-busy={loading}>
-              {loading ? <DetailPlaceholder kind={kind} /> : error ? <div className="space-y-4 p-5"><h1 className="text-xl font-semibold">{t('ui.common.loadFailed')}</h1><p className="text-sm text-muted-foreground">{error}</p><Button onClick={onRetry} variant="outline"><RefreshCw />{t('ui.common.reload')}</Button></div> : content}
+              <ContentTransition identity={loading ? "loading" : error ? "error" : "content"}>
+                {loading ? <DetailPlaceholder kind={kind} /> : error ? <div className="space-y-4 p-5"><h1 className="text-xl font-semibold">{t('ui.common.loadFailed')}</h1><p className="text-sm text-muted-foreground">{error}</p><Button onClick={onRetry} variant="outline"><RefreshCw />{t('ui.common.reload')}</Button></div> : content}
+              </ContentTransition>
             </Card>
             {discussion}
           </article>
-          <aside className="space-y-3 lg:sticky lg:top-6">
-            {(error ? [] : panels ?? pendingPanels).map((panel) => <Card className="gap-4 p-5" data-detail-card={panel.key} key={panel.key}>{panel.content}</Card>)}
+          <aside className="lg:sticky lg:top-6">
+            <StaggerList className="space-y-3">
+              {(error ? [] : panels ?? pendingPanels).map((panel) => (
+                <StaggerItem key={panel.key}>
+                  <Card className="gap-4 p-5" data-detail-card={panel.key}>
+                    <ContentTransition identity={loading ? "loading" : "content"}>{panel.content}</ContentTransition>
+                  </Card>
+                </StaggerItem>
+              ))}
+            </StaggerList>
           </aside>
         </div>
         {after}
