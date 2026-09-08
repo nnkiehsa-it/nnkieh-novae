@@ -56,7 +56,7 @@ export function DashboardView({ data, error, loading, onRefresh, reveal = false 
     { label: translate('ui.dashboard.stuckUploads'), value: operations?.stuck_upload_count },
   ];
   return (
-    <div className="space-y-5">
+    <div className="space-y-5" data-dashboard-surface>
       <SecondaryToolbar
         actions={
           <Tooltip>

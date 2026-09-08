@@ -11,13 +11,13 @@ GitHub branch 決定部署環境：
 
 所有 secret 和 variable 都設在相應 GitHub Environment。完整清單見[設定參考](configuration.md)。
 
-`main` 與 `dev` 都會觸發驗證；不是所有變更都觸發部署。Frontend workflow 監看 `src/`、公開資產、四份 generated source config、Next / TypeScript / Vercel 設定、generator、package 與 lockfile。Backend workflow 監看 `cloudflare/`、`database/`、`config/`、database / provider / Worker config 腳本、package、lockfile 和自身 workflow。
+`main` 與 `dev` 都會觸發驗證；不是所有變更都觸發部署。單一 `Verify and Deploy` workflow 監看 app、backend、測試、設定、scripts、package / lockfile 與 workflow 變更，再由 changes job 分流 backend 與 browser job。
 
 只改 README 或 `docs/` 不會部署 production，也不會啟動 CI verification workflow。
 
 ## Backend deployment
 
-`.github/workflows/deploy-backend.yml` 在 backend 相關檔案 push 到 `main` / `dev` 時執行，也可以手動啟動。Push deployment 會等待同一 commit 的 `Verify Changes` 成功；手動執行因為沒有對應 push gate，會自行跑 generated contract、type、architecture 與 integration verification。
+`.github/workflows/verify-and-deploy.yml` 在 backend 相關檔案 push 到 `main` / `dev` 時執行，也可以手動啟動。Push 與 manual deployment 都先經過同一 workflow 的 `fast` 與 `backend_verify` job；成功後直接進入 `deploy_backend`，不再透過另一個 workflow 輪詢同一 commit。
 
 Backend concurrency group 是 `backend-${github.ref}`，`cancel-in-progress: false`。同一 branch 的 migration / Worker deployment 會排隊，不會讓新 push 中止正在套 schema 的 job。
 
@@ -36,14 +36,7 @@ Backend deployment 不回改 migration，也不把 owner URL 交給 Worker。
 
 ### 手動 dispatch 的差異
 
-手動 backend deployment 會額外執行：
-
-- 四個 config generator 並要求 `git diff --exit-code`
-- Worker typecheck 與 integration-test typecheck
-- Architecture tests
-- 完整 `verify:integration`
-
-Push deployment 已等待同一 commit 的 Verify Changes，因此不重跑這套 backend integration。兩條路最後都會做相同的設定驗證、migration、runtime role、provider configuration、Worker deploy 與 smoke test。
+手動啟動時在 `deploy_target` 選 `all`、`backend` 或 `frontend`。選取的部署路徑會依然先跑其所需的 verify job；`all` 會平行驗證 backend 與 browser，frontend build 也會和 backend deployment 平行，最後由 dependency gate 控制發佈順序。
 
 ### Backend smoke test
 
@@ -56,13 +49,13 @@ Origin 使用 `ALLOWED_ORIGINS` 的第一個值。任一條件一直不成立，
 
 ## Frontend deployment
 
-`.github/workflows/deploy-frontend.yml` 同樣等待該 commit 的 verification。它驗證所有 Firebase / App Check / Vercel 值，且部署環境必須設定 `NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED=true`，接著用固定的 Vercel CLI 版本 build prebuilt artifact。
+同一個 `.github/workflows/verify-and-deploy.yml` 的 `frontend_build` 會驗證所有 Firebase / App Check / Vercel 值，且部署環境必須設定 `NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED=true`，接著用固定的 Vercel CLI 版本建立 prebuilt artifact。`deploy_frontend` job 只在必要的 backend deployment 成功後發布該 artifact。
 
-若同一 commit 也改動 backend、database 或 generated config，workflow 會等 matching backend deployment 成功後才發布前端 artifact。這避免新前端先接到舊 action 或 schema。
+若同一 commit 也改動 backend、database 或 generated config，workflow 會等 `deploy_backend` 成功後才發布前端 artifact。這避免新前端先接到舊 action 或 schema；frontend build 本身可同時進行，不必浪費等待時間。
 
-Frontend concurrency group 是 `frontend-${github.ref}`，`cancel-in-progress: true`。新的同 branch push 可以取消尚未完成的舊前端 build。流程使用 Vercel CLI `58.9.0`：先 `pull` project info，再 `build`，最後 `deploy --prebuilt`；`main` 會加 `--prod`，`dev` 使用 preview environment。
+整個 workflow 的 concurrency group 是 `verify-deploy-${github.ref}`，`cancel-in-progress: false`，避免驗證或 migration 期間出現交錯部署。流程使用 Vercel CLI `58.9.0`：先 `pull` project info，再 `build`，最後由獨立 job `deploy --prebuilt`；`main` 會加 `--prod`，`dev` 使用 preview environment。
 
-Build artifact 完成後才檢查 matching backend deployment。若 diff 沒碰 `cloudflare/`、`database/`、`config/` 或 backend generator / renderer，frontend 不等待 backend workflow。
+若 diff 沒碰 `cloudflare/`、`database/`、`config/` 或 backend generator / renderer，frontend publish 不會等待 backend deployment job。
 
 ## 排程工作
 

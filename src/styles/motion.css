@@ -907,6 +907,8 @@
 .t-card {
   transform: translateZ(0);
   transition:
+    width var(--resize-dur) var(--resize-ease),
+    height var(--resize-dur) var(--resize-ease),
     background-color 200ms var(--ease-smooth-out),
     border-color 200ms var(--ease-smooth-out),
     transform 200ms var(--ease-smooth-out);

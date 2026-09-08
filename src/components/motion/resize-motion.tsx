@@ -2,40 +2,79 @@
 
 import { useEffect } from "react";
 
-// CSS handles explicit sizes. Observe intrinsic content sizes so auto -> auto
-// changes use the same timing without scaling text or replacing the surface.
+interface Size {
+  width: number;
+  height: number;
+}
+
+interface ActiveResize {
+  frame: number | null;
+  timer: number | null;
+  originalHeight: string;
+  originalTransition: string;
+  originalWidth: string;
+}
+
+// Animate the physical box, not its contents. CSS grid items with h-full do
+// not reliably interpolate an auto-to-auto Web Animation, so temporarily pin
+// the measured box and let the shared CSS transition interpolate the pixels.
 export function ResizeMotion() {
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const sizes = new Map<HTMLElement, { width: number; height: number }>();
-    const animations = new Map<HTMLElement, Animation>();
+    const sizes = new Map<HTMLElement, Size>();
+    const active = new Map<HTMLElement, ActiveResize>();
     const read = (element: HTMLElement) => ({ width: element.offsetWidth, height: element.offsetHeight });
-    const changed = (a: { width: number; height: number }, b: { width: number; height: number }) =>
+    const changed = (a: Size, b: Size) =>
       Math.abs(a.width - b.width) > 1 || Math.abs(a.height - b.height) > 1;
 
+    function restore(element: HTMLElement, resize: ActiveResize) {
+      if (resize.frame !== null) window.cancelAnimationFrame(resize.frame);
+      if (resize.timer !== null) window.clearTimeout(resize.timer);
+      element.style.width = resize.originalWidth;
+      element.style.height = resize.originalHeight;
+      element.style.transition = resize.originalTransition;
+      delete element.dataset.resizing;
+      active.delete(element);
+      sizes.set(element, read(element));
+    }
+
     function resize(element: HTMLElement, next = read(element)) {
-      if (!element.isConnected || animations.has(element)) return;
+      if (!element.isConnected || active.has(element)) return;
       const previous = sizes.get(element);
       sizes.set(element, next);
       if (reduced.matches || !previous || !previous.width || !previous.height || !changed(previous, next)) return;
       const style = getComputedStyle(element);
       const duration = Number.parseFloat(style.getPropertyValue("--resize-dur")) || 300;
-      const animation = element.animate(
-        { width: [`${previous.width}px`, `${next.width}px`], height: [`${previous.height}px`, `${next.height}px`] },
-        { duration, easing: style.getPropertyValue("--resize-ease").trim(), fill: "none" },
-      );
-      animation.id = "novae-resize";
-      animations.set(element, animation);
-      element.dataset.resizing = "true";
-      animation.onfinish = () => {
-        animations.delete(element);
-        delete element.dataset.resizing;
-        resize(element);
+      const resizeState: ActiveResize = {
+        frame: null,
+        timer: null,
+        originalHeight: element.style.height,
+        originalTransition: element.style.transition,
+        originalWidth: element.style.width,
       };
+      active.set(element, resizeState);
+      element.dataset.resizing = "true";
+      element.style.transition = "none";
+      if (previous.width !== next.width) element.style.width = `${previous.width}px`;
+      if (previous.height !== next.height) element.style.height = `${previous.height}px`;
+      void element.offsetWidth;
+      resizeState.frame = window.requestAnimationFrame(() => {
+        if (active.get(element) !== resizeState) return;
+        element.style.transition = resizeState.originalTransition;
+        if (previous.width !== next.width) element.style.width = `${next.width}px`;
+        if (previous.height !== next.height) element.style.height = `${next.height}px`;
+        resizeState.timer = window.setTimeout(() => {
+          if (active.get(element) === resizeState) restore(element, resizeState);
+        }, duration + 50);
+      });
     }
 
     const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) resize(entry.target as HTMLElement);
+      const targets = entries.map((entry) => ({
+        element: entry.target as HTMLElement,
+        size: read(entry.target as HTMLElement),
+      }));
+      for (const target of targets) resize(target.element, target.size);
     });
     function register(element: HTMLElement) {
       if (sizes.has(element)) return;
@@ -65,19 +104,14 @@ export function ResizeMotion() {
       for (const element of sizes.keys()) {
         if (element.isConnected) continue;
         observer.unobserve(element);
-        animations.get(element)?.cancel();
-        animations.delete(element);
+        const resizeState = active.get(element);
+        if (resizeState) restore(element, resizeState);
         sizes.delete(element);
       }
     });
     mutations.observe(document.body, { childList: true, subtree: true });
     const stop = () => {
-      for (const [element, animation] of animations) {
-        animation.cancel();
-        delete element.dataset.resizing;
-        sizes.set(element, read(element));
-      }
-      animations.clear();
+      for (const [element, resizeState] of active) restore(element, resizeState);
     };
     reduced.addEventListener("change", stop);
     return () => {

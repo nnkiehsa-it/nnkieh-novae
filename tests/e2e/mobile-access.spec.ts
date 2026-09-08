@@ -159,10 +159,19 @@ test.describe('platform administrator on mobile', () => {
 
   test('can reach protected management pages', async ({ page }) => {
     await suppressInstallPrompt(page);
-    await page.goto('/admin/management');
+    await page.goto('/issues');
+    await expect(page.locator('.app-mobile-nav')).toBeVisible({ timeout: 30_000 });
+    await page.locator('.app-mobile-nav').getByRole('link', { name: 'Settings', exact: true }).click();
+    await expect(page).toHaveURL(/\/settings$/u);
+    await page.getByRole('link', { name: /Platform management/u }).click();
+    await page.waitForURL(/\/admin\/management/u);
     await expect(page.getByRole('main').getByRole('heading', { name: 'Platform management' }))
       .toBeVisible({ timeout: 20_000 });
-    await page.goto('/dashboard');
-    await expect(page).toHaveURL(/\/dashboard/u);
+    await page.getByRole('button', { name: 'Back' }).click();
+    await expect(page).toHaveURL(/\/settings$/u);
+    const dashboardLink = page.getByRole('link', { name: /dashboard/u });
+    await expect(dashboardLink).toBeVisible();
+    await dashboardLink.click();
+    await page.waitForURL(/\/dashboard$/u);
   });
 });

@@ -9,12 +9,16 @@ import {
 import { expectBackendAction, expectBackendActions } from './support/backend-action';
 import { newUserPage } from './support/session';
 
+function commentRow(page: Page, text: string) {
+  return page.locator('[data-comment-id]').filter({ hasText: text }).first();
+}
+
 async function createComment(page: Page, text: string, action: 'createComment' | 'createAnnouncementComment') {
   await page.getByRole('textbox', { name: 'Enter a comment' }).fill(text);
   await expectBackendAction(page, action, async () => {
     await page.getByRole('button', { name: 'Post' }).click();
   });
-  await expect(page.getByText(text).first()).toBeVisible();
+  await expect(commentRow(page, text)).toBeVisible();
 }
 
 async function replyToComment(page: Page, text: string, action: 'createComment' | 'createAnnouncementComment') {
@@ -23,13 +27,16 @@ async function replyToComment(page: Page, text: string, action: 'createComment' 
   await expectBackendAction(page, action, async () => {
     await page.getByRole('button', { name: 'Reply' }).last().click();
   });
-  await expect(page.getByText(text).first()).toBeVisible();
+  await expect(commentRow(page, text)).toBeVisible();
 }
 
-async function deleteOwnComment(page: Page, action: 'deleteComment' | 'deleteAnnouncementComment') {
+async function deleteOwnComment(page: Page, text: string, action: 'deleteComment' | 'deleteAnnouncementComment') {
+  const row = commentRow(page, text);
+  await expect(row).toBeVisible();
   await expectBackendAction(page, action, async () => {
-    await page.getByRole('button', { name: 'Delete' }).last().click();
+    await row.getByRole('button', { name: 'Delete' }).click();
   });
+  await expect(row).toHaveCount(0);
 }
 
 test('proposal covers support, threaded comments, deletion, and terminal outcome writes', async ({ browser }) => {
@@ -62,9 +69,9 @@ test('proposal covers support, threaded comments, deletion, and terminal outcome
   const reply = `Proposal reply ${Date.now()}`;
   await createComment(member.page, rootComment, 'createComment');
   await replyToComment(member.page, reply, 'createComment');
-  await deleteOwnComment(member.page, 'deleteComment');
+  await deleteOwnComment(member.page, reply, 'deleteComment');
   await expect(member.page.getByText(reply)).toHaveCount(0);
-  await deleteOwnComment(member.page, 'deleteComment');
+  await deleteOwnComment(member.page, rootComment, 'deleteComment');
   await expect(member.page.getByText(rootComment)).toHaveCount(0);
   await member.context.close();
 
@@ -136,9 +143,9 @@ test('announcement covers like, threaded comments, deletion, and manager removal
   const reply = `Announcement reply ${Date.now()}`;
   await createComment(member.page, rootComment, 'createAnnouncementComment');
   await replyToComment(member.page, reply, 'createAnnouncementComment');
-  await deleteOwnComment(member.page, 'deleteAnnouncementComment');
+  await deleteOwnComment(member.page, reply, 'deleteAnnouncementComment');
   await expect(member.page.getByText(reply)).toHaveCount(0);
-  await deleteOwnComment(member.page, 'deleteAnnouncementComment');
+  await deleteOwnComment(member.page, rootComment, 'deleteAnnouncementComment');
   await expect(member.page.getByText(rootComment)).toHaveCount(0);
   await member.context.close();
 

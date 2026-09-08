@@ -84,12 +84,6 @@ test('revoking one scope preserves the same member proposal and second-category 
   );
   await manager.page.goto('/announcements/new');
   await expect(manager.page).not.toHaveURL(/\/announcements\/new/u);
-  await setMemberAccess(
-    admin.page,
-    { category: 'Facility A', kind: 'facility' },
-    E2E_USERS.facilityManager,
-    true,
-  );
   await manager.context.close();
   await admin.context.close();
 });

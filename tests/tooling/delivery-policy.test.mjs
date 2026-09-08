@@ -20,9 +20,7 @@ test("Bun is the sole package-management entry point", async () => {
   await read("bun.lock");
   assert.equal(vercel.installCommand, "bun install --frozen-lockfile");
   for (const workflowPath of [
-    ".github/workflows/verify-pr.yml",
-    ".github/workflows/deploy-frontend.yml",
-    ".github/workflows/deploy-backend.yml",
+    ".github/workflows/verify-and-deploy.yml",
     ".github/workflows/reset-database-and-cloudinary.yml",
   ]) {
     const workflow = await read(workflowPath);
@@ -40,16 +38,27 @@ test("package scripts expose required verification and deployment commands", asy
 
 test("local and CI verification share the generated-artifact drift gate", async () => {
   const localVerification = await read("scripts/run-local-verification.mjs");
-  const workflow = await read(".github/workflows/verify-pr.yml");
+  const workflow = await read(".github/workflows/verify-and-deploy.yml");
   assert.match(localVerification, /scripts\/verify-generated\.mjs/u);
   assert.match(workflow, /bun run verify:generated/u);
+});
+
+test("verification and deployment share one dependency-gated workflow", async () => {
+  const workflow = await read(".github/workflows/verify-and-deploy.yml");
+  assert.match(workflow, /backend_verify:/u);
+  assert.match(workflow, /browser_verify:/u);
+  assert.match(workflow, /deploy_backend:/u);
+  assert.match(workflow, /frontend_build:/u);
+  assert.match(workflow, /deploy_frontend:/u);
+  assert.match(workflow, /actions\/upload-artifact@v4/u);
+  assert.match(workflow, /actions\/download-artifact@v4/u);
+  assert.doesNotMatch(workflow, /Wait for verification|gh run list/u);
 });
 
 test("delivery entry points remain in their platform directories", async () => {
   const paths = [...(await listFiles(".github/workflows")), ...(await listFiles("scripts"))].map(repoPath);
   for (const required of [
-    ".github/workflows/deploy-frontend.yml",
-    ".github/workflows/deploy-backend.yml",
+    ".github/workflows/verify-and-deploy.yml",
     "scripts/run-local-verification.mjs",
     "scripts/verify-integration.mjs",
     "scripts/render-worker-config.mjs",
@@ -57,13 +66,8 @@ test("delivery entry points remain in their platform directories", async () => {
 });
 
 test("CI cache policy stays bounded", async () => {
-  const verify = await read(".github/workflows/verify-pr.yml");
-  const frontend = await read(".github/workflows/deploy-frontend.yml");
-  const backend = await read(".github/workflows/deploy-backend.yml");
-  assert.match(verify, /path: \.next\/cache/u);
-  assert.match(frontend, /path: \.next\/cache/u);
-  assert.match(verify, /path: ~\/\.cache\/firebase\/emulators/u);
-  assert.match(backend, /path: ~\/\.cache\/firebase\/emulators/u);
-  for (const workflow of [verify, frontend, backend])
-    assert.doesNotMatch(workflow, /path: (?:node_modules|\.next\s*$)/mu);
+  const workflow = await read(".github/workflows/verify-and-deploy.yml");
+  assert.match(workflow, /path: \.next\/cache/u);
+  assert.match(workflow, /path: ~\/\.cache\/firebase\/emulators/u);
+  assert.doesNotMatch(workflow, /path: (?:node_modules|\.next\s*$)/mu);
 });

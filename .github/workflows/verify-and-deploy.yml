@@ -1,0 +1,576 @@
+name: Verify and Deploy
+
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'cloudflare/**'
+      - 'database/**'
+      - 'config/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - 'public/**'
+      - 'package.json'
+      - 'bun.lock'
+      - 'components.json'
+      - 'next.config.mjs'
+      - 'postcss.config.mjs'
+      - 'tsconfig*.json'
+      - 'vercel.json'
+      - 'vitest.integration.config.ts'
+      - '.github/workflows/**'
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - 'src/**'
+      - 'cloudflare/**'
+      - 'database/**'
+      - 'config/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - 'public/**'
+      - 'package.json'
+      - 'bun.lock'
+      - 'components.json'
+      - 'next.config.mjs'
+      - 'postcss.config.mjs'
+      - 'tsconfig*.json'
+      - 'vercel.json'
+      - 'vitest.integration.config.ts'
+      - '.github/workflows/**'
+  workflow_dispatch:
+    inputs:
+      deploy_target:
+        description: Deployment target for a manual run
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - backend
+          - frontend
+
+concurrency:
+  group: verify-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  checks: write
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.paths.outputs.backend }}
+      browser: ${{ steps.paths.outputs.browser }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - id: paths
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          DEPLOY_TARGET: ${{ inputs.deploy_target || 'all' }}
+        run: |
+          backend=false
+          browser=false
+          if [ "$GITHUB_EVENT_NAME" = 'workflow_dispatch' ]; then
+            case "$DEPLOY_TARGET" in
+              all) backend=true; browser=true ;;
+              backend) backend=true ;;
+              frontend) browser=true ;;
+            esac
+          else
+            if [ -z "$BASE_SHA" ] || ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+              BASE_SHA="$HEAD_SHA^"
+            fi
+            files="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+            if printf '%s\n' "$files" | grep -Eq '^(cloudflare/|database/|config/|tests/integration/|scripts/(configure-|database\.mjs|external-provider-test-server\.mjs|render-worker-config\.mjs|verify-integration\.mjs|generate-(api-errors|backend-actions|data-retention|rate-limits|all)\.mjs)|(?:package\.json|bun\.lock)$|tsconfig\.integration\.json$|vitest\.integration\.config\.ts$)'; then
+              backend=true
+            fi
+            if printf '%s\n' "$files" | grep -Eq '^(src/|config/|public/|tests/e2e/|(?:package\.json|bun\.lock|components\.json|next\.config\.mjs|postcss\.config\.mjs|tsconfig[^/]*\.json|vercel\.json)$|scripts/(check-build-budget|generate-(all|api-errors|backend-actions|data-retention|harmonyos-subset|rate-limits))\.mjs)'; then
+              browser=true
+            fi
+          fi
+          echo "backend=$backend" >> "$GITHUB_OUTPUT"
+          echo "browser=$browser" >> "$GITHUB_OUTPUT"
+
+  fast:
+    needs: changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Verify generated configuration is committed
+        run: bun run verify:generated
+
+      - name: Run fast verification
+        run: bun run verify:fast
+
+  backend_verify:
+    needs: [changes, fast]
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+
+      - name: Restore Firebase Emulator cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/firebase/emulators
+          key: ${{ runner.os }}-firebase-emulators-15.24.0
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Verify backend types and integration behavior
+        run: |
+          bun run check:worker
+          bun run check:integration-types
+          bun run verify:integration
+
+  browser_verify:
+    needs: [changes, fast]
+    if: needs.changes.outputs.browser == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+
+      - name: Restore Firebase Emulator cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/firebase/emulators
+          key: ${{ runner.os }}-firebase-emulators-15.24.0
+
+      - name: Restore Next.js build cache
+        uses: actions/cache@v5
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-node24-next-browser-${{ hashFiles('bun.lock', 'next.config.mjs') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-node24-next-browser-${{ hashFiles('bun.lock', 'next.config.mjs') }}-
+            ${{ runner.os }}-node24-next-browser-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Chromium for browser E2E
+        run: bunx playwright install --with-deps chromium
+
+      - name: Verify real browser journeys
+        run: bun run test:e2e
+
+      - name: Verify production asset budget
+        run: bun run check:build-budget
+
+  deploy_backend:
+    needs: [changes, fast, backend_verify]
+    if: >-
+      always() &&
+      needs.fast.result == 'success' &&
+      needs.backend_verify.result == 'success' &&
+      needs.changes.outputs.backend == 'true' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_HYPERDRIVE_ID: ${{ secrets.CLOUDFLARE_HYPERDRIVE_ID }}
+      CLOUDFLARE_QUEUE_NAME: ${{ vars.CLOUDFLARE_QUEUE_NAME }}
+      CLOUDFLARE_WORKER_NAME: ${{ vars.CLOUDFLARE_WORKER_NAME }}
+      DEPLOYMENT_ENVIRONMENT: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Validate deployment configuration
+        env:
+          ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
+          ALLOWED_DOMAIN: ${{ secrets.ALLOWED_DOMAIN || secrets.NEXT_PUBLIC_ALLOWED_DOMAIN || secrets.VITE_ALLOWED_DOMAIN }}
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+          CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID || secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID || secrets.VITE_FIREBASE_PROJECT_ID }}
+          FIREBASE_PROJECT_NUMBER: ${{ secrets.FIREBASE_PROJECT_NUMBER || secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_APP_IDS: ${{ secrets.FIREBASE_APP_IDS || secrets.NEXT_PUBLIC_FIREBASE_APP_ID || secrets.VITE_FIREBASE_APP_ID }}
+          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY || secrets.NEXT_PUBLIC_FIREBASE_API_KEY || secrets.VITE_FIREBASE_API_KEY }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          HEALTHCHECK_SECRET: ${{ secrets.HEALTHCHECK_SECRET }}
+          MEDIA_SIGNING_SECRET: ${{ secrets.MEDIA_SIGNING_SECRET }}
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          NEON_RUNTIME_PASSWORD: ${{ secrets.NEON_RUNTIME_PASSWORD }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          NOTION_DATA_SOURCE_ID: ${{ secrets.NOTION_DATA_SOURCE_ID }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          REALTIME_TICKET_SECRET: ${{ secrets.REALTIME_TICKET_SECRET }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+        run: |
+          missing=()
+          for name in \
+            ADMIN_EMAILS \
+            ALLOWED_DOMAIN \
+            ALLOWED_ORIGINS \
+            CLOUDFLARE_ACCOUNT_ID \
+            CLOUDFLARE_API_TOKEN \
+            CLOUDFLARE_WORKER_URL \
+            CLOUDINARY_API_KEY \
+            CLOUDINARY_API_SECRET \
+            CLOUDINARY_CLOUD_NAME \
+            FIREBASE_PROJECT_ID \
+            FIREBASE_PROJECT_NUMBER \
+            FIREBASE_APP_IDS \
+            FIREBASE_WEB_API_KEY \
+            GOOGLE_SERVICE_ACCOUNT_JSON \
+            HEALTHCHECK_SECRET \
+            MEDIA_SIGNING_SECRET \
+            NEON_DATABASE_URL \
+            NEON_RUNTIME_PASSWORD \
+            REALTIME_TICKET_SECRET \
+            TURNSTILE_SECRET_KEY; do
+            if [ -z "${!name}" ]; then missing+=("$name"); fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            printf 'Missing backend deployment values: %s\n' "${missing[*]}" >&2
+            exit 1
+          fi
+          if { [ -n "$NOTION_TOKEN" ] && [ -z "$NOTION_DATABASE_ID" ]; } || \
+             { [ -z "$NOTION_TOKEN" ] && [ -n "$NOTION_DATABASE_ID" ]; }; then
+            echo 'NOTION_TOKEN and NOTION_DATABASE_ID must both be set or both be omitted.' >&2
+            exit 1
+          fi
+          if [ -n "$NOTION_DATA_SOURCE_ID" ] && \
+             { [ -z "$NOTION_TOKEN" ] || [ -z "$NOTION_DATABASE_ID" ]; }; then
+            echo 'NOTION_DATA_SOURCE_ID requires NOTION_TOKEN and NOTION_DATABASE_ID.' >&2
+            exit 1
+          fi
+
+      - name: Apply forward-only Neon migrations
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: bun run db:migrate
+
+      - name: Configure the least-privilege Worker database role
+        env:
+          DATABASE_RUNTIME_PASSWORD: ${{ secrets.NEON_RUNTIME_PASSWORD }}
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: node scripts/configure-database-runtime.mjs --connection-output /tmp/novae-runtime-database-url
+
+      - name: Configure the Cloudinary authenticated upload preset
+        env:
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+        run: node scripts/configure-cloudinary.mjs
+
+      - name: Validate Hyperdrive binding
+        env:
+          CLOUDFLARE_HYPERDRIVE_ID: ${{ secrets.CLOUDFLARE_HYPERDRIVE_ID }}
+        run: |
+          if ! [[ "$CLOUDFLARE_HYPERDRIVE_ID" =~ ^[a-f0-9]{32}$ ]]; then
+            echo 'CLOUDFLARE_HYPERDRIVE_ID must be a 32-character hexadecimal ID.' >&2
+            exit 1
+          fi
+
+      - name: Render environment-specific Worker configuration
+        env:
+          NOTION_ENABLED: ${{ secrets.NOTION_TOKEN != '' && 'true' || 'false' }}
+        run: node scripts/render-worker-config.mjs --environment "$DEPLOYMENT_ENVIRONMENT" --output /tmp/novae-wrangler.json
+
+      - name: Synchronize the verified runtime credentials to Hyperdrive
+        run: |
+          runtime_database_url="$(< /tmp/novae-runtime-database-url)"
+          echo "::add-mask::$runtime_database_url"
+          bunx wrangler hyperdrive update "$CLOUDFLARE_HYPERDRIVE_ID" \
+            --connection-string "$runtime_database_url" \
+            --caching-disabled \
+            --config /tmp/novae-wrangler.json
+
+      - name: Ensure the Cloudflare Queue exists
+        run: |
+          if [ -n "$CLOUDFLARE_QUEUE_NAME" ]; then
+            queue_name="$CLOUDFLARE_QUEUE_NAME"
+          elif [ "$DEPLOYMENT_ENVIRONMENT" = 'production' ]; then
+            queue_name='novae-jobs'
+          else
+            queue_name="novae-jobs-${DEPLOYMENT_ENVIRONMENT}"
+          fi
+          if ! bunx wrangler queues info "$queue_name" --config /tmp/novae-wrangler.json >/dev/null 2>&1; then
+            bunx wrangler queues create "$queue_name" --config /tmp/novae-wrangler.json
+          fi
+
+      - name: Create the ephemeral Worker secrets file
+        env:
+          ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
+          ALLOWED_DOMAIN: ${{ secrets.ALLOWED_DOMAIN || secrets.NEXT_PUBLIC_ALLOWED_DOMAIN || secrets.VITE_ALLOWED_DOMAIN }}
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+          CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID || secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID || secrets.VITE_FIREBASE_PROJECT_ID }}
+          FIREBASE_PROJECT_NUMBER: ${{ secrets.FIREBASE_PROJECT_NUMBER || secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_APP_IDS: ${{ secrets.FIREBASE_APP_IDS || secrets.NEXT_PUBLIC_FIREBASE_APP_ID || secrets.VITE_FIREBASE_APP_ID }}
+          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY || secrets.NEXT_PUBLIC_FIREBASE_API_KEY || secrets.VITE_FIREBASE_API_KEY }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          HEALTHCHECK_SECRET: ${{ secrets.HEALTHCHECK_SECRET }}
+          MEDIA_SIGNING_SECRET: ${{ secrets.MEDIA_SIGNING_SECRET }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          NOTION_DATA_SOURCE_ID: ${{ secrets.NOTION_DATA_SOURCE_ID }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          REALTIME_TICKET_SECRET: ${{ secrets.REALTIME_TICKET_SECRET }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { writeFileSync } from 'node:fs';
+          const secrets = {
+            ADMIN_EMAILS: process.env.ADMIN_EMAILS,
+            ALLOWED_DOMAIN: process.env.ALLOWED_DOMAIN,
+            ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
+            CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
+            CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
+            CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
+            FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
+            FIREBASE_PROJECT_NUMBER: process.env.FIREBASE_PROJECT_NUMBER,
+            FIREBASE_APP_IDS: process.env.FIREBASE_APP_IDS,
+            FIREBASE_WEB_API_KEY: process.env.FIREBASE_WEB_API_KEY,
+            GOOGLE_SERVICE_ACCOUNT_JSON: process.env.GOOGLE_SERVICE_ACCOUNT_JSON,
+            HEALTHCHECK_SECRET: process.env.HEALTHCHECK_SECRET,
+            MEDIA_SIGNING_SECRET: process.env.MEDIA_SIGNING_SECRET,
+            NOTION_DATABASE_ID: process.env.NOTION_DATABASE_ID,
+            NOTION_DATA_SOURCE_ID: process.env.NOTION_DATA_SOURCE_ID,
+            NOTION_TOKEN: process.env.NOTION_TOKEN,
+            PUBLIC_API_URL: process.env.CLOUDFLARE_WORKER_URL,
+            REALTIME_TICKET_SECRET: process.env.REALTIME_TICKET_SECRET,
+            TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,
+          };
+          for (const key of Object.keys(secrets)) {
+            if (!secrets[key]) delete secrets[key];
+          }
+          writeFileSync('/tmp/novae-worker-secrets.json', JSON.stringify(secrets), { mode: 0o600 });
+          NODE
+
+      - name: Deploy the Cloudflare Worker
+        run: bunx wrangler deploy --config /tmp/novae-wrangler.json --secrets-file /tmp/novae-worker-secrets.json
+
+      - name: Remove ephemeral deployment credentials
+        if: always()
+        run: rm -f /tmp/novae-worker-secrets.json /tmp/novae-runtime-database-url
+
+      - name: Smoke test authentication and database health
+        env:
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+          CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
+          HEALTHCHECK_SECRET: ${{ secrets.HEALTHCHECK_SECRET }}
+        run: |
+          origin="${ALLOWED_ORIGINS%%,*}"
+          for attempt in $(seq 1 12); do
+            unauthorized="$(curl -sS -o /tmp/unauthorized.json -w '%{http_code}' \
+              -X POST "${CLOUDFLARE_WORKER_URL%/}/v1/actions" \
+              -H 'content-type: application/json' -H "origin: $origin" \
+              --data '{"action":"getCurrentUserRole","payload":{}}')"
+            health="$(curl -sS -o /tmp/health.json -w '%{http_code}' \
+              -X POST "${CLOUDFLARE_WORKER_URL%/}/v1/actions" \
+              -H 'content-type: application/json' -H "origin: $origin" \
+              -H "x-healthcheck-secret: $HEALTHCHECK_SECRET" \
+              --data '{"action":"healthcheck","payload":{}}')"
+            if [ "$unauthorized" = '401' ] && [ "$health" = '200' ] && grep -q '"ok":true' /tmp/health.json; then
+              exit 0
+            fi
+            sleep 5
+          done
+          printf 'Worker smoke test failed (auth=%s health=%s): %s\n' "$unauthorized" "$health" "$(< /tmp/health.json)" >&2
+          exit 1
+
+  frontend_build:
+    needs: [changes, fast, backend_verify, browser_verify]
+    if: >-
+      always() &&
+      needs.fast.result == 'success' &&
+      needs.browser_verify.result == 'success' &&
+      needs.changes.outputs.browser == 'true' &&
+      (needs.changes.outputs.backend != 'true' || needs.backend_verify.result == 'success') &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Restore Next.js build cache
+        uses: actions/cache@v5
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-node24-next-vercel-${{ github.ref_name }}-${{ hashFiles('bun.lock', 'next.config.mjs') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-node24-next-vercel-${{ github.ref_name }}-${{ hashFiles('bun.lock', 'next.config.mjs') }}-
+            ${{ runner.os }}-node24-next-vercel-${{ github.ref_name }}-
+
+      - name: Validate deployment secrets
+        env:
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY || secrets.VITE_FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID || secrets.VITE_FIREBASE_PROJECT_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID || secrets.VITE_FIREBASE_APP_ID }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          NEXT_PUBLIC_FIREBASE_VAPID_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_VAPID_KEY || secrets.VITE_FIREBASE_VAPID_KEY }}
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID || secrets.VITE_GOOGLE_CLIENT_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED || secrets.VITE_FIREBASE_APP_CHECK_ENABLED }}
+          NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY: ${{ secrets.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY || secrets.VITE_RECAPTCHA_ENTERPRISE_SITE_KEY }}
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY || secrets.VITE_TURNSTILE_SITE_KEY || secrets.TURNSTILE_SITE_KEY }}
+          NEXT_PUBLIC_API_BASE_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
+          NEXT_PUBLIC_ALLOWED_DOMAIN: ${{ secrets.NEXT_PUBLIC_ALLOWED_DOMAIN || secrets.VITE_ALLOWED_DOMAIN }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          missing=()
+          for name in \
+            NEXT_PUBLIC_FIREBASE_API_KEY \
+            NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN \
+            NEXT_PUBLIC_FIREBASE_PROJECT_ID \
+            NEXT_PUBLIC_FIREBASE_APP_ID \
+            NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID \
+            NEXT_PUBLIC_FIREBASE_VAPID_KEY \
+            NEXT_PUBLIC_GOOGLE_CLIENT_ID \
+            NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED \
+            NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY \
+            NEXT_PUBLIC_TURNSTILE_SITE_KEY \
+            NEXT_PUBLIC_API_BASE_URL \
+            NEXT_PUBLIC_ALLOWED_DOMAIN \
+            VERCEL_TOKEN \
+            VERCEL_ORG_ID \
+            VERCEL_PROJECT_ID; do
+            if [ -z "${!name}" ]; then missing+=("$name"); fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            printf 'Missing deployment secrets: %s\n' "${missing[*]}" >&2
+            exit 1
+          fi
+          if [ "$NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED" != 'true' ]; then
+            echo 'NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED must be true for deployed environments.' >&2
+            exit 1
+          fi
+
+      - name: Pull Vercel Project Info
+        run: bunx --yes vercel@58.9.0 pull --yes --environment=${{ github.ref_name == 'main' && 'production' || 'preview' }} --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Build Project Artifacts
+        run: bunx --yes vercel@58.9.0 build ${{ github.ref_name == 'main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          NEXT_PUBLIC_SCHOOL_NAME: ${{ secrets.NEXT_PUBLIC_SCHOOL_NAME || secrets.VITE_SCHOOL_NAME }}
+          NEXT_PUBLIC_ALLOWED_DOMAIN: ${{ secrets.NEXT_PUBLIC_ALLOWED_DOMAIN || secrets.VITE_ALLOWED_DOMAIN }}
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY || secrets.VITE_FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID || secrets.VITE_FIREBASE_PROJECT_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID || secrets.VITE_FIREBASE_APP_ID }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          NEXT_PUBLIC_FIREBASE_VAPID_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_VAPID_KEY || secrets.VITE_FIREBASE_VAPID_KEY }}
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID || secrets.VITE_GOOGLE_CLIENT_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED || secrets.VITE_FIREBASE_APP_CHECK_ENABLED }}
+          NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY: ${{ secrets.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY || secrets.VITE_RECAPTCHA_ENTERPRISE_SITE_KEY }}
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY || secrets.VITE_TURNSTILE_SITE_KEY || secrets.TURNSTILE_SITE_KEY }}
+          NEXT_PUBLIC_API_BASE_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
+
+      - name: Save Vercel prebuilt artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vercel-prebuilt-${{ github.sha }}
+          path: .vercel
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 1
+
+  deploy_frontend:
+    needs: [changes, frontend_build, deploy_backend]
+    if: >-
+      always() &&
+      needs.frontend_build.result == 'success' &&
+      needs.changes.outputs.browser == 'true' &&
+      (needs.changes.outputs.backend != 'true' || needs.deploy_backend.result == 'success') &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+
+      - name: Restore Vercel prebuilt artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vercel-prebuilt-${{ github.sha }}
+          path: .vercel
+
+      - name: Deploy Project Artifacts to Vercel
+        run: bunx --yes vercel@58.9.0 deploy --prebuilt ${{ github.ref_name == 'main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

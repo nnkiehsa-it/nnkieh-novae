@@ -22,7 +22,9 @@ export async function openAccessManagement(page: Page) {
 }
 
 export async function selectScope(page: Page, scope: Scope) {
-  await page.getByRole('tab', { name: scopeButton[scope.kind] }).click();
+  const scopeTab = page.getByRole('tab', { name: scopeButton[scope.kind] });
+  await scopeTab.click();
+  await expect(scopeTab).toHaveAttribute('aria-selected', 'true');
   if ('category' in scope) {
     await page.getByRole('combobox').click();
     await page.getByRole('option', { name: scope.category }).click();
@@ -45,7 +47,7 @@ export async function setMemberAccess(
   const action = candidate.getByRole('button', {
     name: grant ? 'Grant access' : 'Revoke',
   });
-  if (!await action.isVisible()) return;
+  await expect(action).toBeVisible();
   await expectBackendAction(page, 'setUserAccessScope', async () => action.click());
   await expect(
     candidate.getByRole('button', { name: grant ? 'Revoke' : 'Grant access' }),

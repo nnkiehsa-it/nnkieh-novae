@@ -112,7 +112,7 @@ export default function AdministrationPage() {
           value={tab}
         />
       </div>
-      <div className="t-resize min-w-0">
+      <div className="t-resize min-w-0" data-admin-content>
         {tab === "overview" ? (
           <AdminOverview />
         ) : tab === "users" ? (

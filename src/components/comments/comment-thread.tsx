@@ -101,7 +101,7 @@ function CommentRow({
 }) {
   const deleteFeedback = useActionFeedback();
   return (
-    <article className={cn("px-5 py-4 sm:px-7", compact && "px-0 py-3")}>
+    <article className={cn("px-5 py-4 sm:px-7", compact && "px-0 py-3")} data-comment-id={comment.id}>
       <div className="flex items-start gap-3">
         {profile ? (
           <Avatar className={compact ? "size-7" : "size-9"}>

@@ -54,7 +54,7 @@ Migration 變更還會建立 populated pre-0016 database，從切換前 schema �
 | `bun run verify:all` | local、integration 與 E2E 完整交付驗證 |
 | `bun run test:env` | 保留完整本機 stack 供手動測試，直到 `Ctrl+C` |
 
-大型變更或交付前跑 `bun run verify:all`。CI 的 `Verify Changes` 先固定安裝 Bun 1.4 與 lockfile，再一律跑 fast job；只有受影響路徑才額外啟動 backend integration 或 browser E2E，以免無關文件變更浪費完整環境時間。
+大型變更或交付前跑 `bun run verify:all`。CI 的 `Verify and Deploy` 先固定安裝 Bun 1.4 與 lockfile，再一律跑 fast job；只有受影響路徑才額外啟動 backend integration 或 browser E2E。Push 成功後沿用同一 workflow 的驗證結果直接進入對應部署 job，避免另外啟動 workflow 再輪詢等待。
 
 E2E mode 先以 deployment build environment 執行 `build:deploy`，再用 `next start` 跑 production artifact。它會啟動 Firebase Auth Emulator，Playwright 走真的登入、API、database、Worker、Queue 和 responsive UI，不把 browser journey 改成 mock service call。
 
@@ -62,15 +62,17 @@ E2E mode 先以 deployment build environment 執行 `build:deploy`，再用 `nex
 
 ## CI path selection
 
-Verify Changes 先用 git diff 判斷是否需要額外 job：
+Verify and Deploy 先用 git diff 判斷是否需要額外 job：
 
 | Job | 主要觸發範圍 | 工作 |
 | --- | --- | --- |
 | `fast` | 每個符合 workflow paths 的變更 | `verify:generated` 後跑 `verify:fast` |
-| `backend` | `cloudflare/`、`database/`、`config/`、integration tests、backend scripts、package / lockfile | Worker types、integration types、`verify:integration` |
-| `browser` | App / components / hooks / lib / services / styles、public、Next config、E2E、package / lockfile | 安裝 Chromium、`test:e2e`、build budget |
+| `backend_verify` | `cloudflare/`、`database/`、`config/`、integration tests、backend scripts、package / lockfile | Worker types、integration types、`verify:integration` |
+| `browser_verify` | App / components / hooks / lib / services / styles、public、Next config、E2E、package / lockfile | 安裝 Chromium、`test:e2e`、build budget |
+| `deploy_backend` | push / manual 且 backend 受影響 | forward migration、runtime role、Worker / Queue / provider 設定與 smoke test |
+| `frontend_build` / `deploy_frontend` | push / manual 且 browser 受影響 | 驗證 Vercel secrets、平行建立 prebuilt artifact，待 backend deploy 成功後發布 |
 
-Backend 與 browser job 都等 fast 成功後才執行。單純改 docs 不在 workflow path filter 內，不會消耗完整 CI stack。
+Backend 與 browser verify job 都等 fast 成功後才執行；frontend build 可與 backend deployment 平行，frontend publish 則由 job dependency 保證新前端不會先於新 backend。`workflow_dispatch` 可選 `all`、`backend` 或 `frontend`。單純改 docs 不在 workflow path filter 內，不會消耗完整 CI stack。
 
 ## 測試目錄
 
