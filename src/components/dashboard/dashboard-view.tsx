@@ -81,9 +81,12 @@ export function DashboardView({ data, error, loading, onRefresh, reveal = false 
       />
       <PageHeader title={translate('ui.nav.dashboard')} />
       <StateTransition identity={view}>
-        <ContentTransition identity={view}>
-          {error ? <Card className="gap-0 p-0"><ErrorStateContent error={error} onRetry={onRefresh} /></Card> : null}
-          <StaggerList className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {error ? (
+          <ContentTransition identity="error">
+            <Card className="gap-0 p-0"><ErrorStateContent error={error} onRetry={onRefresh} /></Card>
+          </ContentTransition>
+        ) : null}
+        <StaggerList className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {statsCards.map(({ icon: Icon, label, value }) => (
           <StaggerItem key={label}>
             <Card className="h-full p-5">
@@ -207,7 +210,6 @@ export function DashboardView({ data, error, loading, onRefresh, reveal = false 
           )}
         </CardContent>
           </Card>
-        </ContentTransition>
       </StateTransition>
     </div>
   );

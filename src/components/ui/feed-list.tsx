@@ -33,6 +33,8 @@ function FeedPlaceholder({ kind, showProgress }: { kind: FeedKind; showProgress:
   );
 }
 
+const SKELETON_SLOT_COUNT = 3;
+
 export function FeedList<T extends { id: string }>({
   empty,
   error,
@@ -54,7 +56,7 @@ export function FeedList<T extends { id: string }>({
 }) {
   const { t } = useI18n();
   const pending = loading && !items.length;
-  const count = items.length || (pending ? 6 : 1);
+  const count = items.length || (pending ? SKELETON_SLOT_COUNT : 1);
   const state = pending ? "loading" : items.length ? "content" : error ? "error" : "empty";
   return (
     <StaggerList aria-busy={pending} className={feedGridClassName} data-state-transition={state}>

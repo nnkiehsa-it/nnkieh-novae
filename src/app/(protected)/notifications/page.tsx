@@ -22,7 +22,7 @@ import {
   ErrorStateContent,
   PageHeader,
 } from "@/components/ui/page-state";
-import { NotificationListSkeleton } from "@/components/notifications/notification-skeleton";
+import { NotificationRowSkeleton } from "@/components/notifications/notification-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 
@@ -64,12 +64,16 @@ function NotificationIcon({ notification }: { notification: NotificationRecord }
   );
 }
 
+const SKELETON_ROWS = 5;
+
 export default function NotificationsPage() {
   const { t } = useI18n();
   const state = useNotificationsPage();
+  const pending = state.loading && !state.notifications.length;
+  const count = state.notifications.length || (pending ? SKELETON_ROWS : 1);
   const view = state.error && state.notifications.length === 0
     ? "error"
-    : state.loading && !state.notifications.length
+    : pending
       ? "loading"
       : state.notifications.length === 0
         ? "empty"
@@ -81,59 +85,69 @@ export default function NotificationsPage() {
       />
       <Card className="gap-0 overflow-hidden py-0" data-notification-surface aria-busy={state.loading}>
         <StateTransition identity={view}>
-          <ContentTransition identity={view}>
-            {view === "error" ? (
+          {view === "error" ? (
+            <ContentTransition identity="error">
               <ErrorStateContent error={state.error!} onRetry={() => void state.load()} />
-            ) : view === "loading" ? (
-              <NotificationListSkeleton />
-            ) : view === "empty" ? (
+            </ContentTransition>
+          ) : view === "empty" ? (
+            <ContentTransition identity="empty">
               <EmptyStateContent
                 description={t("ui.notification.emptyDescription")}
                 title={t("ui.notification.emptyTitle")}
               />
-            ) : (
-              <StaggerList className="divide-y">
-                {state.notifications.map((notification) => (
-                  <StaggerItem key={notification.id}>
-                    <button
-                      className="group flex w-full items-start gap-3 border-b p-4 text-left outline-none last:border-b-0 hover:bg-[var(--surface-hover)] focus-visible:bg-[var(--surface-hover)]"
-                      onClick={() => void state.open(notification)}
-                      onFocus={() => state.preload(notification)}
-                      onPointerEnter={() => state.preload(notification)}
-                      type="button"
-                    >
-                      <NotificationIcon notification={notification} />
-                      <SkeletonReveal
-                        as="div"
-                        className="min-w-0 flex-1"
-                        enabled={state.revealFields}
-                        skeleton={<div className="space-y-2"><Skeleton className="h-4 w-2/5" /><Skeleton className="h-4 w-4/5" /><Skeleton className="h-3 w-28" /></div>}
-                      >
-                        <span className="font-medium leading-5">
-                          {notificationTitle(notification, t)}
-                        </span>
-                        {notification.body_preview ? (
-                          <span className="mt-1 line-clamp-2 text-sm leading-5 text-muted-foreground">
-                            {notification.body_preview}
-                          </span>
-                        ) : null}
-                        <span className="mt-1.5 block text-xs text-muted-foreground">
-                          {formatDate(notification.created_at)}
-                        </span>
-                      </SkeletonReveal>
-                      {!notification.is_read ? (
-                        <span
-                          className="t-notification-badge mt-1.5 size-2 shrink-0 rounded-full bg-[var(--notification-accent)]"
-                          data-open="true"
-                        />
+            </ContentTransition>
+          ) : (
+            <StaggerList className="divide-y">
+              {Array.from({ length: count }, (_, index) => {
+                const notification = state.notifications[index];
+                const rowIdentity = pending ? "loading" : notification ? notification.id : view;
+                return (
+                  <StaggerItem key={index}>
+                    <ContentTransition identity={rowIdentity}>
+                      {notification ? (
+                        <button
+                          className="group flex w-full items-start gap-3 p-4 text-left outline-none hover:bg-[var(--surface-hover)] focus-visible:bg-[var(--surface-hover)]"
+                          onClick={() => void state.open(notification)}
+                          onFocus={() => state.preload(notification)}
+                          onPointerEnter={() => state.preload(notification)}
+                          type="button"
+                        >
+                          <NotificationIcon notification={notification} />
+                          <SkeletonReveal
+                            as="div"
+                            className="min-w-0 flex-1"
+                            enabled={state.revealFields}
+                            skeleton={<div className="space-y-2"><Skeleton className="h-4 w-2/5" /><Skeleton className="h-4 w-4/5" /><Skeleton className="h-3 w-28" /></div>}
+                          >
+                            <span className="font-medium leading-5">
+                              {notificationTitle(notification, t)}
+                            </span>
+                            {notification.body_preview ? (
+                              <span className="mt-1 line-clamp-2 text-sm leading-5 text-muted-foreground">
+                                {notification.body_preview}
+                              </span>
+                            ) : null}
+                            <span className="mt-1.5 block text-xs text-muted-foreground">
+                              {formatDate(notification.created_at)}
+                            </span>
+                          </SkeletonReveal>
+                          {!notification.is_read ? (
+                            <span
+                              className="t-notification-badge mt-1.5 size-2 shrink-0 rounded-full bg-[var(--notification-accent)]"
+                              data-open="true"
+                            />
+                          ) : null}
+                          <ChevronRight className="mt-3 size-4 shrink-0 text-muted-foreground transition-transform duration-250 group-hover:translate-x-0.5" />
+                        </button>
+                      ) : pending ? (
+                        <NotificationRowSkeleton />
                       ) : null}
-                      <ChevronRight className="mt-3 size-4 shrink-0 text-muted-foreground transition-transform duration-250 group-hover:translate-x-0.5" />
-                    </button>
+                    </ContentTransition>
                   </StaggerItem>
-                ))}
-              </StaggerList>
-            )}
-          </ContentTransition>
+                );
+              })}
+            </StaggerList>
+          )}
         </StateTransition>
       </Card>
       {state.hasMore ? (
