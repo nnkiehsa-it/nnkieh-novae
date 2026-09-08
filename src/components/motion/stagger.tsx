@@ -10,7 +10,7 @@ export function StaggerList({
   ...props
 }: Omit<ComponentProps<typeof motion.div>, "children"> & { children: ReactNode }) {
   return (
-    <motion.div className={cn("t-resize t-stagger-list relative", className)} layout="position" {...props}>
+    <motion.div className={cn("t-stagger-list relative", className)} layout="position" {...props}>
       <AnimatePresence initial={false} mode="popLayout">
         {children}
       </AnimatePresence>

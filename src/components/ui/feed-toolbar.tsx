@@ -57,7 +57,7 @@ export function FeedToolbar({
         ) : null}
       </div>
       <Select disabled={disabled} onValueChange={onSortChange} value={sort}>
-        <SelectTrigger aria-label={t('ui.common.sort')} className="h-10 w-10 shrink-0 justify-center gap-1 px-2 disabled:opacity-100 sm:w-36 sm:justify-between sm:gap-2 sm:px-3">
+        <SelectTrigger aria-label={t('ui.common.sort')} className="h-10 w-10 shrink-0 justify-center gap-0 px-0 [&_.t-disclosure-icon]:hidden disabled:opacity-100 sm:w-36 sm:justify-between sm:gap-2 sm:px-3 sm:[&_.t-disclosure-icon]:block">
           <SlidersHorizontal className="shrink-0 sm:hidden" />
           <span className="hidden sm:inline"><SelectValue /></span>
         </SelectTrigger>

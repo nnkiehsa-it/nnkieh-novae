@@ -92,7 +92,7 @@ export function AdminActivityLogDialog({
           <DialogTitle>{t("ui.adminConsole.activityLogTitle")}</DialogTitle>
           <DialogDescription>{t("ui.adminConsole.activityLogDescription")}</DialogDescription>
         </DialogHeader>
-        <div className="t-resize overflow-hidden rounded-xl border bg-card">
+        <div className="overflow-hidden rounded-xl border bg-card">
           {activity.entries.length ? <AdminActivityRows entries={activity.entries} /> : null}
           {!activity.entries.length && !activity.loading ? (
             <p className="px-4 py-10 text-center text-sm text-muted-foreground">

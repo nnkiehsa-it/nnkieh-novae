@@ -23,14 +23,14 @@
   --skeleton-appear-delay: 0ms;
   --reveal-dur: 240ms;
   --reveal-ease: ease-in-out;
-  --resize-dur: 300ms;
+  --resize-dur: 180ms;
   --resize-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --tabs-dur: 250ms;
   --tabs-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --like-accent: #f40051;
   --tabs-text-muted: var(--muted-foreground);
   --tabs-text-active: var(--primary-foreground);
-  --tabs-bar-bg: transparent;
+  --tabs-bar-bg: color-mix(in srgb, var(--secondary) 78%, var(--card));
   --tabs-pill-bg: var(--primary);
   --shimmer-base: #7c7c7c;
   --shimmer-highlight: #0d0d0d;
@@ -64,16 +64,14 @@
   transform-origin: center top;
 }
 
-/* Transitions.dev — Card resize */
-.t-resize {
+/* Only explicit state containers animate their intrinsic height. */
+[data-resize-motion] {
   align-content: start;
-  transition:
-    width var(--resize-dur) var(--resize-ease),
-    height var(--resize-dur) var(--resize-ease);
+  transition: height var(--resize-dur) var(--resize-ease);
 }
-.t-resize[data-resizing="true"] {
+[data-resize-motion][data-resizing="true"] {
   overflow: clip;
-  will-change: width, height;
+  will-change: height;
 }
 
 /* Settings stays in document flow from the first frame, then settles in as a page. */
@@ -907,8 +905,6 @@
 .t-card {
   transform: translateZ(0);
   transition:
-    width var(--resize-dur) var(--resize-ease),
-    height var(--resize-dur) var(--resize-ease),
     background-color 200ms var(--ease-smooth-out),
     border-color 200ms var(--ease-smooth-out),
     transform 200ms var(--ease-smooth-out);
@@ -1053,7 +1049,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     animation-delay: 0s !important;
   }
   .t-decoded-image,
-  .t-resize,
   .t-panel-reveal,
   .t-stagger-item,
   .t-success-check,
@@ -1093,7 +1088,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   .t-tabs-pill,
   .t-tab-label,
   .t-toast,
-  .t-resize,
   .t-card {
     transition: none !important;
     transform: none !important;

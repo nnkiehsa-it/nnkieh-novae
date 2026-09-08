@@ -71,7 +71,7 @@ export function AdminAuditLog() {
         </Button>
       </form>
 
-      <div className="t-resize overflow-hidden rounded-xl border bg-card">
+      <div className="overflow-hidden rounded-xl border bg-card">
         <div className="hidden grid-cols-[9rem_10rem_11rem_minmax(10rem,1fr)_minmax(12rem,1.2fr)] gap-3 border-b bg-muted/35 px-4 py-2.5 text-xs font-medium text-muted-foreground md:grid">
           <span>{t("ui.adminConsole.timeColumn")}</span>
           <span>{t("ui.adminConsole.adminColumn")}</span>

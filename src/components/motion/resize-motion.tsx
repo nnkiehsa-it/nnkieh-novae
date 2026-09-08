@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 
 interface Size {
-  width: number;
   height: number;
 }
 
@@ -12,25 +11,23 @@ interface ActiveResize {
   timer: number | null;
   originalHeight: string;
   originalTransition: string;
-  originalWidth: string;
 }
 
-// Animate the physical box, not its contents. CSS grid items with h-full do
-// not reliably interpolate an auto-to-auto Web Animation, so temporarily pin
-// the measured box and let the shared CSS transition interpolate the pixels.
+// Only explicit state containers opt into height animation. Observing every
+// card or route makes viewport reflow look like content motion and causes
+// resize feedback on long pages.
 export function ResizeMotion() {
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
     const sizes = new Map<HTMLElement, Size>();
     const active = new Map<HTMLElement, ActiveResize>();
-    const read = (element: HTMLElement) => ({ width: element.offsetWidth, height: element.offsetHeight });
-    const changed = (a: Size, b: Size) =>
-      Math.abs(a.width - b.width) > 1 || Math.abs(a.height - b.height) > 1;
+    const read = (element: HTMLElement) => ({ height: element.offsetHeight });
+    const changed = (a: Size, b: Size) => Math.abs(a.height - b.height) > 1;
+    let viewportWidth = window.innerWidth;
 
     function restore(element: HTMLElement, resize: ActiveResize) {
       if (resize.frame !== null) window.cancelAnimationFrame(resize.frame);
       if (resize.timer !== null) window.clearTimeout(resize.timer);
-      element.style.width = resize.originalWidth;
       element.style.height = resize.originalHeight;
       element.style.transition = resize.originalTransition;
       delete element.dataset.resizing;
@@ -42,27 +39,24 @@ export function ResizeMotion() {
       if (!element.isConnected || active.has(element)) return;
       const previous = sizes.get(element);
       sizes.set(element, next);
-      if (reduced.matches || !previous || !previous.width || !previous.height || !changed(previous, next)) return;
+      if (reduced.matches || !previous || !previous.height || !changed(previous, next)) return;
       const style = getComputedStyle(element);
-      const duration = Number.parseFloat(style.getPropertyValue("--resize-dur")) || 300;
+      const duration = Number.parseFloat(style.getPropertyValue("--resize-dur")) || 180;
       const resizeState: ActiveResize = {
         frame: null,
         timer: null,
         originalHeight: element.style.height,
         originalTransition: element.style.transition,
-        originalWidth: element.style.width,
       };
       active.set(element, resizeState);
       element.dataset.resizing = "true";
       element.style.transition = "none";
-      if (previous.width !== next.width) element.style.width = `${previous.width}px`;
-      if (previous.height !== next.height) element.style.height = `${previous.height}px`;
+      element.style.height = `${previous.height}px`;
       void element.offsetWidth;
       resizeState.frame = window.requestAnimationFrame(() => {
         if (active.get(element) !== resizeState) return;
         element.style.transition = resizeState.originalTransition;
-        if (previous.width !== next.width) element.style.width = `${next.width}px`;
-        if (previous.height !== next.height) element.style.height = `${next.height}px`;
+        element.style.height = `${next.height}px`;
         resizeState.timer = window.setTimeout(() => {
           if (active.get(element) === resizeState) restore(element, resizeState);
         }, duration + 50);
@@ -83,8 +77,8 @@ export function ResizeMotion() {
     }
     function visit(node: Node) {
       if (!(node instanceof HTMLElement)) return;
-      if (node.matches(".t-resize")) register(node);
-      node.querySelectorAll<HTMLElement>(".t-resize").forEach(register);
+      if (node.matches("[data-resize-motion]")) register(node);
+      node.querySelectorAll<HTMLElement>("[data-resize-motion]").forEach(register);
     }
     visit(document.body);
     const mutations = new MutationObserver((records) => {
@@ -93,9 +87,14 @@ export function ResizeMotion() {
         record.addedNodes.forEach(visit);
         let parent = record.target instanceof HTMLElement ? record.target : record.target.parentElement;
         while (parent) {
-          if (sizes.has(parent)) affected.add(parent);
+          if (parent.matches("[data-resize-motion]") && sizes.has(parent)) affected.add(parent);
           parent = parent.parentElement;
         }
+      }
+      if (viewportWidth !== window.innerWidth) {
+        viewportWidth = window.innerWidth;
+        for (const element of affected) sizes.set(element, read(element));
+        return;
       }
       // Read every natural target before animating any ancestor. This avoids
       // measuring a descendant against an already-animated parent height.
@@ -110,11 +109,20 @@ export function ResizeMotion() {
       }
     });
     mutations.observe(document.body, { childList: true, subtree: true });
+    const settleViewport = () => {
+      viewportWidth = window.innerWidth;
+      for (const [element, resizeState] of active) restore(element, resizeState);
+      for (const element of sizes.keys()) {
+        if (element.isConnected) sizes.set(element, read(element));
+      }
+    };
     const stop = () => {
       for (const [element, resizeState] of active) restore(element, resizeState);
     };
+    window.addEventListener("resize", settleViewport, { passive: true });
     reduced.addEventListener("change", stop);
     return () => {
+      window.removeEventListener("resize", settleViewport);
       reduced.removeEventListener("change", stop);
       mutations.disconnect();
       observer.disconnect();

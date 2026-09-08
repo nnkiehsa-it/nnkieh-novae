@@ -61,9 +61,9 @@
   --tint-surface: color-mix(in srgb, var(--accent) 9%, var(--card));
   --tint-surface-hover: color-mix(in srgb, var(--accent) 14%, var(--card));
   --tint-surface-foreground: var(--tint-content);
-  --primary: var(--accent);
+  --primary: color-mix(in oklab, var(--accent) 90%, var(--card));
   --primary-foreground: var(--accent-foreground);
-  --primary-hover: color-mix(in srgb, var(--accent) 88%, var(--foreground));
+  --primary-hover: color-mix(in oklab, var(--primary) 94%, var(--foreground));
   --secondary: #edf2f8;
   --secondary-foreground: #26364c;
   --secondary-hover: color-mix(in oklab, var(--secondary) 94%, var(--secondary-foreground) 6%);
@@ -135,9 +135,9 @@
   --tint-surface: color-mix(in srgb, var(--accent) 13%, var(--card));
   --tint-surface-hover: color-mix(in srgb, var(--accent) 20%, var(--card));
   --tint-surface-foreground: var(--tint-content);
-  --primary: var(--accent);
+  --primary: color-mix(in oklab, var(--accent) 88%, var(--card));
   --primary-foreground: var(--accent-foreground);
-  --primary-hover: color-mix(in srgb, var(--accent) 88%, var(--foreground));
+  --primary-hover: color-mix(in oklab, var(--primary) 94%, var(--foreground));
   --secondary: #1a2534;
   --secondary-foreground: #e0e8f5;
   --secondary-hover: color-mix(in oklab, var(--secondary) 92%, var(--secondary-foreground) 8%);

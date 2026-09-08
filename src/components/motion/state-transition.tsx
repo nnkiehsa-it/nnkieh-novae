@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { cn } from "@/lib/utils";
 
 export function StateTransition({
   children,
@@ -14,7 +13,8 @@ export function StateTransition({
 }) {
   return (
     <div
-      className={cn("t-resize", className)}
+      className={className}
+      data-resize-motion=""
       data-state-transition={identity}
     >
       {children}

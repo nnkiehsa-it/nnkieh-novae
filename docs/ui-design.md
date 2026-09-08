@@ -6,11 +6,11 @@ Taste-guided visual overhaul for a daily-use campus application, using the curre
 
 ## Continuity revision
 
-- LiquidTabs use brand fill only on the selected pill; the rail and inactive options remain neutral. Custom color selection and persistence are removed.
+- LiquidTabs use a soft neutral rail for inactive options and a restrained brand fill only on the selected pill. Custom color selection and persistence are removed.
 - Feed titles use 18px type and a 28px line height.
 - `FeedList` retains physical card frames across pending, populated, empty, and error states. `DetailLayout` does the same for the content and sidebar cards.
 - Notifications, dashboard metrics, category settings, and administrative lists retain their surfaces while fields resolve. Pending platform settings render disabled real fields instead of a blank page.
-- `.t-resize` uses shared 300ms timing for explicit and measured intrinsic dimensions. Grid content aligns to the start to avoid stretch-feedback loops. Reduced motion disables the size animation.
+- Explicit state containers opt into a shared 180ms height-only resize transition. Viewport reflow, route containers, and individual cards never animate intrinsic dimensions; grid content aligns to the start to avoid feedback loops. Reduced motion disables the size animation.
 - Route surfaces no longer remount by pathname, and state containers no longer remount by loading identity. Route prefetch and preload remain intact.
 - Warm-navigation browser checks confirmed retained feed nodes and a single settled empty-card resize; the fast verification suite passed. No full-suite rerun is claimed for this revision.
 

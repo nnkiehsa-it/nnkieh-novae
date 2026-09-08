@@ -27,7 +27,7 @@ export function RouteSurface({
 
   return (
     <div
-      className={cn("route-page t-resize t-route-page-enter", className)}
+      className={cn("route-page t-route-page-enter", className)}
       data-route-path={pathname}
       ref={surface}
     >

@@ -84,7 +84,7 @@ export function UserManagement() {
         </Button>
       </form>
 
-      <div className="t-resize overflow-hidden rounded-xl border bg-card">
+      <div className="overflow-hidden rounded-xl border bg-card">
         <div className="hidden grid-cols-[minmax(10rem,1.4fr)_6rem_7.5rem_7.5rem_minmax(7rem,1fr)_2.5rem] gap-3 border-b bg-muted/35 px-4 py-2.5 text-xs font-medium text-muted-foreground lg:grid">
           <span>{t("ui.adminConsole.userColumn")}</span>
           <span>{t("ui.adminConsole.statusColumn")}</span>

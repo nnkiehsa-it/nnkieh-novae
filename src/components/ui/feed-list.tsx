@@ -55,7 +55,7 @@ export function FeedList<T extends { id: string }>({
   const count = items.length || (pending ? 6 : 1);
   const state = pending ? "loading" : items.length ? "content" : error ? "error" : "empty";
   return (
-    <div aria-busy={pending} className={cn("t-resize", feedGridClassName)} data-state-transition={state}>
+    <div aria-busy={pending} className={feedGridClassName} data-resize-motion="" data-state-transition={state}>
       {Array.from({ length: count }, (_, index) => {
         const item = items[index];
         return (

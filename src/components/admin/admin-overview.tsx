@@ -39,7 +39,7 @@ export function AdminOverview() {
   ];
 
   return (
-    <div className="t-resize space-y-8" aria-busy={loading}>
+    <div className="space-y-8" aria-busy={loading}>
       {error ? <ErrorState error={error} onRetry={() => void load()} /> : null}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -103,7 +103,7 @@ export function AdminOverview() {
                 {t(WINDOWS.find((item) => item.value === window)?.labelKey ?? "")}
               </span>
             </div>
-            <div className="t-resize overflow-hidden rounded-xl border bg-card">
+            <div className="overflow-hidden rounded-xl border bg-card">
               <div className="grid sm:grid-cols-2">
                 {periodMetrics.map(({ icon: Icon, label, value }, index) => (
                   <div
@@ -135,7 +135,7 @@ export function AdminOverview() {
                 {t("ui.adminConsole.recentActivityScope")}
               </span>
             </div>
-            <div className="t-resize overflow-hidden rounded-xl border bg-card">
+            <div className="overflow-hidden rounded-xl border bg-card">
               {!data ? <div className="space-y-3 p-4"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div> : data.recentActivity.length === 0 ? (
                 <p className="px-4 py-8 text-center text-sm text-muted-foreground">
                   {t("ui.adminConsole.noRecentActivity")}
@@ -155,7 +155,7 @@ export function AdminOverview() {
         <aside className="space-y-4">
           <section>
             <h3 className="mb-3 text-sm font-semibold">{t("ui.adminConsole.pending")}</h3>
-            <div className="t-resize overflow-hidden rounded-xl border bg-card">
+            <div className="overflow-hidden rounded-xl border bg-card">
               {[
                 { label: t("ui.adminConsole.openIssues"), value: data?.openIssues, icon: FileText },
                 { label: t("ui.adminConsole.openFacilities"), value: data?.openFacilities, icon: Building2 },

@@ -232,16 +232,32 @@ describe("React frontend design system", () => {
     }
   });
 
-  it("keeps card copy unscaled while animating surrounding layout", () => {
+  it("limits intrinsic-size motion to explicit content-state containers", () => {
     const card = read("src/components/ui/card.tsx");
     const resize = read("src/components/motion/resize-motion.tsx");
-    expect(card).toContain("t-resize flex flex-col");
+    const stateTransition = read("src/components/motion/state-transition.tsx");
+    expect(card).toContain("flex flex-col gap-5");
+    expect(card).not.toContain("t-resize");
     expect(card).not.toContain('"use client"');
     expect(resize).toContain("new ResizeObserver");
+    expect(resize).toContain('[data-resize-motion]');
     expect(resize).toContain('getPropertyValue("--resize-dur")');
+    expect(resize).toContain('window.addEventListener("resize", settleViewport');
+    expect(resize).not.toContain("element.style.width");
     expect(resize).not.toContain("scale:");
     expect(resize).toContain("observer.disconnect()");
+    expect(stateTransition).toContain('data-resize-motion=""');
     expect(read("src/components/discussion.tsx")).toContain("<Card");
+  });
+
+  it("keeps compact feed controls and tabs visually distinct on mobile", () => {
+    const toolbar = read("src/components/ui/feed-toolbar.tsx");
+    const motion = read("src/styles/motion.css");
+    const globals = read("src/app/globals.css");
+    expect(toolbar).toContain("[&_.t-disclosure-icon]:hidden");
+    expect(toolbar).toContain("sm:[&_.t-disclosure-icon]:block");
+    expect(motion).toContain("--tabs-bar-bg: color-mix");
+    expect(globals).toContain("--primary: color-mix(in oklab, var(--accent) 90%, var(--card))");
   });
 
   it("keeps the startup fallback inside the same iOS safe-area surface", () => {
