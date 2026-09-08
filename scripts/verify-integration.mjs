@@ -18,10 +18,14 @@ import {
 const root = process.cwd();
 const e2e = process.argv.includes("--e2e");
 const serve = process.argv.includes("--serve");
+const e2eShard = process.env.NOVAE_E2E_SHARD;
 const stressIndex = process.argv.indexOf("--stress-scale");
 const stressScale = stressIndex >= 0 ? process.argv[stressIndex + 1] : "4";
 if (!/^\d+$/u.test(stressScale) || Number(stressScale) < 2 || Number(stressScale) > 20) {
   throw new Error("--stress-scale must be an integer between 2 and 20.");
+}
+if (e2eShard && !/^\d+\/\d+$/u.test(e2eShard)) {
+  throw new Error("NOVAE_E2E_SHARD must use Playwright's index/total format, for example 1/2.");
 }
 
 const runtimeDatabaseUrl =
@@ -401,7 +405,12 @@ try {
     );
     run("Firebase login and API routing probe", process.execPath, ["scripts/check-local-auth-emulator.mjs"], frontendEnvironment);
     if (e2e) {
-      run("Playwright browser journeys", bun, ["run", "test:e2e:runner"], frontendEnvironment);
+      run(
+        "Playwright browser journeys",
+        bun,
+        ["run", "test:e2e:runner", ...(e2eShard ? [`--shard=${e2eShard}`] : [])],
+        frontendEnvironment,
+      );
       process.stderr.write("✓ End-to-end verification passed\n");
     } else {
       process.stderr.write(`\n[environment] Ready\n  App: ${appUrl}\n  API: ${workerUrl}\n  Auth emulator: http://127.0.0.1:4000/auth\n  Stop: Ctrl+C\n`);
