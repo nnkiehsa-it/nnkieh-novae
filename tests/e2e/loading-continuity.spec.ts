@@ -19,7 +19,7 @@ async function coldContext(browser: Browser, user = 'ordinary') {
   return browser.newContext({ storageState: state, viewport: { width: 1280, height: 800 } });
 }
 
-test('empty feed keeps its original card and resizes once without fading the surface', async ({ browser }) => {
+test('empty feed keeps its original card and settles without fading the surface', async ({ browser }) => {
   const context = await coldContext(browser);
   const page = await context.newPage();
   let release = () => {};
@@ -58,7 +58,7 @@ test('empty feed keeps its original card and resizes once without fading the sur
     const first = values[0].height;
     const last = values.at(-1)!.height;
     expect(first - last).toBeGreaterThan(10);
-    expect(values.some((value) => value.height < first - 1 && value.height > last + 1)).toBe(true);
+    expect(values.some((value) => value.height < first - 1 && value.height > last + 1)).toBe(false);
     expect(Math.max(...values.map((value) => value.height))).toBeLessThanOrEqual(first + 1);
     expect(await frame.evaluate((element) => element.getAnimations().filter((animation) => animation.id === 'novae-resize').length)).toBe(0);
   } finally { release(); await context.close(); }
@@ -269,7 +269,7 @@ test('administration tabs retain one content wrapper while changing domains', as
   }
 });
 
-test('only the selected tab has a colored surface and custom color controls are retired', async ({ browser }) => {
+test('selected tabs use the brand surface while inactive tabs retain a neutral rail', async ({ browser }) => {
   const context = await coldContext(browser);
   const page = await context.newPage();
   await page.goto('/settings');
@@ -278,8 +278,10 @@ test('only the selected tab has a colored surface and custom color controls are 
   await tabs.getByRole('tab', { name: 'Dark', exact: true }).click();
   await expect(tabs.locator('[data-displayed-active="true"]')).toHaveCount(1);
   await expect(tabs.locator('.t-tabs-pill')).toHaveCount(1);
-  await expect(tabs).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-  expect(await tabs.locator('.t-tabs-pill').evaluate((element) => getComputedStyle(element).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
+  const railColor = await tabs.evaluate((element) => getComputedStyle(element).backgroundColor);
+  const pillColor = await tabs.locator('.t-tabs-pill').evaluate((element) => getComputedStyle(element).backgroundColor);
+  expect(railColor).not.toBe('rgba(0, 0, 0, 0)');
+  expect(railColor).not.toBe(pillColor);
   await expect(page.getByText('Custom color', { exact: true })).toHaveCount(0);
   await context.close();
 });
