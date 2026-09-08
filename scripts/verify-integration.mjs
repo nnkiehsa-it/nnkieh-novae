@@ -1,4 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
+import { createServer } from "node:net";
 import { createWriteStream, readFileSync } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -78,6 +79,21 @@ function start(label, command, args, environment = {}, ports = []) {
   children.push({ child, label, log, logPath });
   for (const port of ports) ownedPorts.add(port);
   return child;
+}
+
+async function findAvailablePort() {
+  const server = createServer();
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  const address = server.address();
+  if (!address || typeof address === "string") {
+    server.close();
+    throw new Error("Could not allocate an external provider test port.");
+  }
+  await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  return address.port;
 }
 
 async function keepWindowsWslRunning() {
@@ -204,7 +220,7 @@ process.once("SIGTERM", async () => {
   process.exit(143);
 });
 
-const requiredServicePorts = new Set([3000, 4000, 4400, 4500, 8787, 9099, 54330]);
+const requiredServicePorts = new Set([3000, 4000, 4400, 4500, 8787, 9099]);
 const occupiedServicePids = windowsListenerPids(requiredServicePorts);
 if (occupiedServicePids.length > 0) {
   throw new Error(
@@ -214,6 +230,8 @@ if (occupiedServicePids.length > 0) {
 
 try {
   await keepWindowsWslRunning();
+  const externalProviderPort = await findAvailablePort();
+  const externalProviderUrl = `http://127.0.0.1:${externalProviderPort}`;
   run("reset PostgreSQL and apply migrations", process.execPath, [
     "scripts/database.mjs",
     "reset-local",
@@ -241,13 +259,13 @@ try {
     "external-provider",
     process.execPath,
     ["scripts/external-provider-test-server.mjs"],
-    {},
-    [54330],
+    { NOVAE_EXTERNAL_PROVIDER_TEST_PORT: String(externalProviderPort) },
+    [externalProviderPort],
   );
   const providerEntry = children.at(-1);
   await waitFor(
     "external provider",
-    "http://127.0.0.1:54330/__requests",
+    `${externalProviderUrl}/__requests`,
     (response) => response.status === 200,
     provider,
     providerEntry.logPath,
@@ -257,7 +275,7 @@ try {
     process.execPath,
     ["scripts/configure-cloudinary.mjs"],
     {
-      CLOUDINARY_API_BASE_URL: "http://127.0.0.1:54330",
+      CLOUDINARY_API_BASE_URL: externalProviderUrl,
       CLOUDINARY_API_KEY: "integration-api-key",
       CLOUDINARY_API_SECRET: "integration-api-secret",
       CLOUDINARY_CLOUD_NAME: "integration-cloud",
@@ -287,12 +305,12 @@ try {
     ALLOWED_DOMAIN: "integration.invalid",
     ALLOWED_ORIGINS: `${appUrl},http://localhost:3000`,
     ADMIN_EMAILS: "admin@integration.invalid",
-    CLOUDINARY_API_BASE_URL: "http://127.0.0.1:54330",
+    CLOUDINARY_API_BASE_URL: externalProviderUrl,
     CLOUDINARY_API_KEY: "integration-api-key",
     CLOUDINARY_API_SECRET: "integration-api-secret",
     CLOUDINARY_CLOUD_NAME: "integration-cloud",
-    CLOUDINARY_DELIVERY_BASE_URL: "http://127.0.0.1:54330",
-    FCM_EMULATOR_URL: "http://127.0.0.1:54330",
+    CLOUDINARY_DELIVERY_BASE_URL: externalProviderUrl,
+    FCM_EMULATOR_URL: externalProviderUrl,
     FIREBASE_AUTH_EMULATOR_HOST: "127.0.0.1:9099",
     FIREBASE_APP_IDS: "1:123456789:web:local",
     FIREBASE_PROJECT_ID: "integration-project",
@@ -302,7 +320,7 @@ try {
     HEALTHCHECK_SECRET: "integration-healthcheck-secret",
     LOCAL_TEST_MODE: "true",
     MEDIA_SIGNING_SECRET: "integration-media-signing-secret-that-is-long-enough",
-    NOTION_API_BASE_URL: "http://127.0.0.1:54330",
+    NOTION_API_BASE_URL: externalProviderUrl,
     NOTION_DATABASE_ID: "mock-database-id",
     NOTION_TOKEN: "mock-notion-token",
     PUBLIC_API_URL: workerUrl,
@@ -332,13 +350,13 @@ try {
   );
 
   const integrationEnvironment = {
-    CLOUDINARY_API_BASE_URL: "http://127.0.0.1:54330",
-    CLOUDINARY_DELIVERY_BASE_URL: "http://127.0.0.1:54330",
+    CLOUDINARY_API_BASE_URL: externalProviderUrl,
+    CLOUDINARY_DELIVERY_BASE_URL: externalProviderUrl,
     DATABASE_URL: runtimeDatabaseUrl,
     DATABASE_OWNER_URL: ownerDatabaseUrl,
-    FCM_EMULATOR_URL: "http://127.0.0.1:54330",
+    FCM_EMULATOR_URL: externalProviderUrl,
     FIREBASE_PROJECT_ID: "integration-project",
-    NOTION_API_BASE_URL: "http://127.0.0.1:54330",
+    NOTION_API_BASE_URL: externalProviderUrl,
     NOTION_DATABASE_ID: "mock-database-id",
     NOTION_TOKEN: "mock-notion-token",
     NOVAE_STRESS_SCALE: stressScale,

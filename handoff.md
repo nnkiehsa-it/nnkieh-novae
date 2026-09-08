@@ -64,6 +64,7 @@
 - `bun run test:env`：建立本機 seed、Worker、Auth Emulator 與開發前端，適合手動檢查。
 - `bun run test:e2e`：官方正式建置與多帳號瀏覽器測試流程。
 - `NOVAE_E2E_SHARD=1/2 bun run test:e2e`：以 Playwright shard 執行同一套隔離環境；CI 以兩個 runner 分別執行 `1/2`、`2/2`，每個 shard 都會自行 bootstrap。
+- 整合／E2E 的外部 provider receiver 使用每次 run 動態配置的 loopback port，不依賴固定 `54330`，避免 GitHub runner 的既有服務或殘留程序造成啟動衝突。
 - `bun run verify:all`：本地檢查、整合與 E2E 的完整入口。
 - 已有正確 E2E 服務時，可用 `bun run test:e2e:runner tests/e2e/feed-layout.spec.ts tests/e2e/loading-continuity.spec.ts tests/e2e/motion-system.spec.ts --project=chromium-desktop` 聚焦執行；它仍有 bootstrap 相依。
 - 不要假設 `test:env` 的自動登入 admin 模式等同正式多帳號 E2E 環境。先前新建 context 的自動登入會造成 startup／setup 短暫切換，干擾節點量測。
