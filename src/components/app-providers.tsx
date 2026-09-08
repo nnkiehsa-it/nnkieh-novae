@@ -11,7 +11,7 @@ import { AppUpdateGate } from "@/components/app-update-gate";
 import { E2eAuthBridge } from "@/components/e2e-auth-bridge";
 import { TurnstileProvider } from "@/components/turnstile-provider";
 import { AppInstallPrompt } from "@/components/app-install-prompt";
-import { AccentThemeProvider } from "@/components/accent-theme-provider";
+import { ResizeMotion } from "@/components/motion/resize-motion";
 import { NavigationFeedback } from "@/components/motion/navigation-feedback";
 import { ensureFirebaseAppCheck } from "@/lib/firebase-app-check";
 
@@ -66,7 +66,6 @@ export function AppProviders({
       enableSystem
       nonce={nonce}
     >
-      <AccentThemeProvider>
         <MotionConfig
           reducedMotion="user"
           transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
@@ -79,6 +78,7 @@ export function AppProviders({
                 </Suspense>
               </SessionProvider>
               <NavigationFeedback />
+              <ResizeMotion />
               <E2eAuthBridge />
               <AppUpdateGate />
               <AppInstallPrompt />
@@ -86,7 +86,6 @@ export function AppProviders({
             </TurnstileProvider>
           </TooltipProvider>
         </MotionConfig>
-      </AccentThemeProvider>
     </ThemeProvider>
   );
 }

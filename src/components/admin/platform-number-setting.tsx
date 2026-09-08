@@ -15,12 +15,14 @@ export function PlatformNumberSetting({
   min?: number;
   onChange: (value: number) => void;
   step?: number;
-  value: number;
+  value?: number;
 }) {
   return (
     <label className="grid gap-2 text-sm font-medium sm:grid-cols-[minmax(0,1fr)_9rem] sm:items-center">
       <span>{label}</span>
       <Input
+        aria-busy={value === undefined}
+        disabled={value === undefined}
         max={max}
         min={min}
         onChange={(event) => onChange(Number(event.target.value))}

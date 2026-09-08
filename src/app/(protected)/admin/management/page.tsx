@@ -112,7 +112,7 @@ export default function AdministrationPage() {
           value={tab}
         />
       </div>
-      <div className="t-panel-reveal min-w-0" key={tab}>
+      <div className="t-resize min-w-0">
         {tab === "overview" ? (
           <AdminOverview />
         ) : tab === "users" ? (

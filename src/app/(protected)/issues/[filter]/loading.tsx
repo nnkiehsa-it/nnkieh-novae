@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { getIssueCategoryLabel } from "@/constants/categories";
+import { getIssueCategoryLabel, getIssueSupportGoal, issueAllowsSupport } from "@/constants/categories";
 import { t } from "@/i18n";
 import { useCategories } from "@/hooks/use-categories";
 import { ListRouteSkeleton } from "@/components/ui/route-skeleton";
@@ -18,6 +18,7 @@ export default function Loading() {
     <ListRouteSkeleton
       kind="issue"
       showCreate={filter !== "my-proposals"}
+      showProgress={filter === "my-proposals" || (issueAllowsSupport(filter) && Boolean(getIssueSupportGoal(filter)))}
       title={title}
     />
   );

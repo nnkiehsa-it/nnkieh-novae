@@ -15,7 +15,9 @@ import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 import { CommentComposer } from "@/components/comments/comment-composer";
 import { CommentThread } from "@/components/comments/comment-thread";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
-import { ResizableCard } from "@/components/ui/resizable-card";
+import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonRows } from "@/components/ui/skeleton-rows";
 
 interface ReplyTarget {
   authorUid: string;
@@ -100,7 +102,7 @@ export function Discussion({
 
   return (
     <section aria-labelledby="discussion-title">
-      <ResizableCard className="gap-0 overflow-hidden py-0">
+      <Card className="gap-0 overflow-hidden py-0">
         <div className="flex items-center gap-2 border-b px-5 py-4 sm:px-7">
           <MessageCircle className="size-4 text-muted-foreground" />
           <h2 className="font-semibold" id="discussion-title">{translate("ui.discussion.title")}</h2>
@@ -123,11 +125,8 @@ export function Discussion({
           <p className="bg-muted/20 px-5 py-4 text-sm text-muted-foreground sm:px-7">{translate("ui.discussion.disabled")}</p>
         ) : null}
 
-        {loading ? (
-          <div className="space-y-3 px-5 py-4 sm:px-7" aria-label={translate("ui.common.loadingMore")}>
-            <div className="t-skeleton h-28 rounded-xl bg-muted" />
-            <div className="t-skeleton h-24 rounded-xl bg-muted" />
-          </div>
+        {loading && !comments.length ? (
+          <SkeletonRows rows={2} />
         ) : comments.length > 0 ? (
           <StaggerList className="divide-y">
             {comments.map((comment) => (
@@ -161,7 +160,7 @@ export function Discussion({
             </Button>
           </div>
         ) : null}
-      </ResizableCard>
+      </Card>
 
       {enabled ? (
         <div className="discussion-composer-dock" ref={composerDockRef}>
@@ -182,7 +181,7 @@ export function Discussion({
                         name: profiles[replyTarget.authorUid].displayName,
                       })}
                     </p>
-                  ) : <div aria-hidden className="t-skeleton h-3 w-24 rounded bg-muted/55" />}
+                  ) : <Skeleton className="h-3 w-24" />}
                   <p className="truncate text-muted-foreground">{getReplyExcerpt(replyTarget.content)}</p>
                 </div>
                 <Button

@@ -10,7 +10,7 @@ export function StaggerList({
   ...props
 }: Omit<ComponentProps<typeof motion.div>, "children"> & { children: ReactNode }) {
   return (
-    <motion.div className={cn("t-stagger-list relative", className)} layout {...props}>
+    <motion.div className={cn("t-resize t-stagger-list relative", className)} layout="position" {...props}>
       <AnimatePresence initial={false} mode="popLayout">
         {children}
       </AnimatePresence>
@@ -22,9 +22,9 @@ export function StaggerItem({ className, ...props }: ComponentProps<typeof motio
   return (
     <motion.div
       className={cn("t-stagger-item", className)}
-      initial={{ opacity: 0, scale: 0.975, y: 14 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.97, y: -8 }}
+      initial={false}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -4 }}
       layout="position"
       transition={{ type: "spring", stiffness: 380, damping: 34, mass: 0.72 }}
       {...props}

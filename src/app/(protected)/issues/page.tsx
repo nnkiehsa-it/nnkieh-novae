@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { ListRouteSkeleton } from "@/components/ui/route-skeleton";
 import {
   ensureCategoryCatalog,
   getDefaultIssueCategoryId,
@@ -18,5 +19,5 @@ export default function IssueEntryPage() {
       })
       .catch(() => undefined);
   }, [router]);
-  return <div className="t-skeleton h-52 rounded-2xl bg-muted" />;
+  return <ListRouteSkeleton kind="issue" />;
 }

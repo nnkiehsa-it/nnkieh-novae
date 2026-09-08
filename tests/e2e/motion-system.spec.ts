@@ -26,8 +26,7 @@ test('navigation feedback survives the source control and route content transiti
       );
       if (
         document.getAnimations().some((animation) =>
-          animation instanceof CSSAnimation
-          && animation.animationName.startsWith('t-route-'))
+          animation.id === 'novae-route-enter')
       ) {
         state.__novaeSawRouteMotion = true;
       }
@@ -64,7 +63,7 @@ test('navigation feedback survives the source control and route content transiti
   expect(stacking.mobileNavigation).toBeGreaterThan(stacking.route);
 
   await page.goto('/issues');
-  await expect(page.locator('.t-card > a[href^="/issues/"]').first()).toBeVisible();
+  await expect(page.locator('.t-card a[href^="/issues/"]').first()).toBeVisible();
   await page.evaluate(() => {
     const state = window as typeof window & { __novaeMaxStateSurfaces?: number };
     state.__novaeMaxStateSurfaces = 0;
@@ -78,7 +77,7 @@ test('navigation feedback survives the source control and route content transiti
     };
     requestAnimationFrame(inspect);
   });
-  await page.locator('.t-card > a[href^="/issues/"]').first().click();
+  await page.locator('.t-card a[href^="/issues/"]').first().click();
   await page.waitForURL(/\/issues\/[^/]+\/[^/]+$/u);
   await expect(page.locator('article h1')).toBeVisible();
   expect(await page.evaluate(() =>

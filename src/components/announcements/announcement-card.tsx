@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Heart, MessageCircle } from "lucide-react";
+import { Heart, MessageCircle } from "lucide-react";
 import { t as translate } from "@/i18n";
 import type { AnnouncementSummary, UserPublicProfile } from "@/types";
 import { formatRelativeTime } from "@/lib/format";
@@ -9,7 +9,7 @@ import { AnimatedNumber } from "@/components/motion/animated-number";
 import { LikeActionButton } from "@/components/motion/like-action-button";
 import { ContentAuthor } from "@/components/content-author";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { FeedCard } from "@/components/ui/feed-card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
@@ -30,22 +30,19 @@ export function AnnouncementCard({
   reveal: boolean;
 }) {
   return (
-    <Card className="t-card group relative h-full gap-4 p-5 sm:p-6">
-      <div className="flex h-full flex-col gap-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
+    <FeedCard
+      href={`/announcements/${announcement.id}`}
+      label={announcement.title}
+      metadata={
+        <>
               <ContentAuthor profile={profile} />
               <span aria-hidden>·</span>
               <SkeletonReveal enabled={reveal} skeleton={<Skeleton className="h-3 w-12" />}><span className="shrink-0">{formatRelativeTime(announcement.published_at)}</span></SkeletonReveal>
-            </div>
-            <SkeletonReveal as="div" className="mt-1.5" enabled={reveal} skeleton={<Skeleton className="h-5 w-3/5" />}><h2 className="line-clamp-1 truncate font-semibold leading-6 tracking-[-0.015em]">
-              {announcement.title}
-            </h2></SkeletonReveal>
-          </div>
-          <ArrowUpRight className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-250 ease-[var(--ease-smooth-out)] group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-        </div>
-        <div className="mt-auto flex items-center gap-2 border-t pt-3">
+        </>
+      }
+      title={<SkeletonReveal as="div" enabled={reveal} skeleton={<Skeleton className="h-7 w-3/5" />}><h2 className="truncate">{announcement.title}</h2></SkeletonReveal>}
+      footer={
+        <>
           <LikeActionButton
             active={announcement.currentUserLiked === true}
             burst={burst}
@@ -73,13 +70,8 @@ export function AnnouncementCard({
             </TooltipTrigger>
             <TooltipContent>{translate('comments.viewComments')}</TooltipContent>
           </Tooltip>
-        </div>
-      </div>
-      <Link
-        aria-label={announcement.title}
-        className="absolute inset-0 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-        href={`/announcements/${announcement.id}`}
-      />
-    </Card>
+        </>
+      }
+    />
   );
 }

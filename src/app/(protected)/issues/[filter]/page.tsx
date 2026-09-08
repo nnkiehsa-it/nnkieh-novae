@@ -3,14 +3,13 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowDown, Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import { ArrowDown, Plus } from "lucide-react";
 import type { IssueSortOption, IssueStatusBucket } from "@/types";
 import { useIssueFeed } from "@/hooks/use-issue-feed";
 import { usePublicProfiles } from "@/hooks/use-public-profiles";
-import { getIssueFilterOptions } from "@/constants/categories";
+import { getIssueFilterOptions, getIssueSupportGoal, issueAllowsSupport } from "@/constants/categories";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { FeedToolbar } from "@/components/ui/feed-toolbar";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
 import {
   Select,
@@ -19,12 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ErrorState, PageHeader } from "@/components/ui/page-state";
-import { FeedCardsSkeleton, FeedEmptyState } from "@/components/ui/route-skeleton";
+import { PageHeader } from "@/components/ui/page-state";
+import { FeedList } from "@/components/ui/feed-list";
 import { IssueCard } from "@/components/issues/issue-card";
-import { StaggerItem, StaggerList } from "@/components/motion/stagger";
-import { StateTransition, stateTransitionIdentity } from "@/components/motion/state-transition";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function IssueBoardPage() {
   useLocaleSubscription();
@@ -102,91 +98,43 @@ export default function IssueBoardPage() {
           </Select>
         }
       />
-      <Card className="gap-0 p-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative min-w-40 flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="pl-9 pr-8"
-              onChange={(event) => setQuery(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") setCommittedQuery(query.trim());
-              }}
-              placeholder={translate('ui.issue.searchPlaceholder')}
-              value={query}
-            />
-            {query ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    aria-label={translate('ui.common.clearSearch')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground"
-                    onClick={() => {
-                      setQuery("");
-                      setCommittedQuery("");
-                    }}
-                    type="button"
-                  >
-                    <X className="size-3.5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>{translate('ui.common.clearSearch')}</TooltipContent>
-              </Tooltip>
-            ) : null}
-          </div>
-          <Select
-            onValueChange={(value) => setSort(value as IssueSortOption)}
-            value={sort}
-          >
-            <SelectTrigger
-              aria-label={translate('ui.common.sort')}
-              className="w-auto min-w-0 gap-1 px-2.5 sm:w-36 sm:gap-2 sm:px-3"
-            >
-              <SlidersHorizontal className="shrink-0 sm:hidden" />
-              <span className="hidden sm:inline">
-                <SelectValue />
-              </span>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="latest">{translate('ui.common.latest')}</SelectItem>
-              <SelectItem value="most-supported">{translate('ui.issue.mostSupported')}</SelectItem>
-              <SelectItem value="ending-soon">{translate('ui.issue.endingSoon')}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </Card>
-      <StateTransition
-        identity={stateTransitionIdentity({
-          empty: feed.issues.length === 0,
-          error: Boolean(error && feed.issues.length === 0),
-          loading: loading && feed.issues.length === 0,
-        })}
-      >
-      {error && feed.issues.length === 0 ? (
-        <ErrorState error={error} onRetry={() => void load()} />
-      ) : loading && feed.issues.length === 0 ? (
-        <FeedCardsSkeleton kind="issue" />
-      ) : feed.issues.length === 0 ? (
-        <FeedEmptyState
-          action={
+      <FeedToolbar
+        onQueryChange={setQuery}
+        onSearch={setCommittedQuery}
+        onSortChange={(value) => setSort(value as IssueSortOption)}
+        options={[
+          { value: "latest", label: translate('ui.common.latest') },
+          { value: "most-supported", label: translate('ui.issue.mostSupported') },
+          { value: "ending-soon", label: translate('ui.issue.endingSoon') },
+        ]}
+        query={query}
+        searchLabel={translate('ui.issue.searchPlaceholder')}
+        sort={sort}
+      />
+      <FeedList
+        kind="issue"
+        items={feed.issues}
+        loading={loading}
+        error={error}
+        onRetry={() => void load()}
+        showProgress={filter === "my-proposals" || (issueAllowsSupport(filter) && Boolean(getIssueSupportGoal(filter)))}
+        empty={{
+          action:
             filter !== "my-proposals" ? (
               <Button asChild variant="outline">
                 <Link href={`/issues/${encodeURIComponent(filter)}/new`}>
                   <Plus />{translate('ui.issue.createFirst')}</Link>
               </Button>
             ) : undefined
-          }
-          description={
+          ,
+          description:
             committedQuery
               ? translate('ui.issue.emptySearch', { query: committedQuery })
               : translate('ui.issue.emptyCategory')
-          }
-          title={translate('ui.issue.emptyTitle')}
-        />
-      ) : (
-        <StaggerList className="grid gap-3 lg:grid-cols-2 lg:items-stretch">
-          {feed.issues.map((issue) => (
-            <StaggerItem className="h-full" key={issue.id}>
+          ,
+          title: translate('ui.issue.emptyTitle'),
+        }}
+        renderItem={(issue) => (
               <IssueCard
                 burst={supportBurstById[issue.id] ?? 0}
                 filter={filter === "my-proposals" ? issue.category : filter}
@@ -196,11 +144,8 @@ export default function IssueBoardPage() {
                 reveal={revealFields}
                 supporting={supportingId === issue.id}
               />
-            </StaggerItem>
-          ))}
-        </StaggerList>
-      )}
-      </StateTransition>
+        )}
+      />
       {feed.hasMore ? (
         <div className="flex justify-center pt-2">
           <Button

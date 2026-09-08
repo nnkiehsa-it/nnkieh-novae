@@ -1,9 +1,8 @@
-import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function NotificationListSkeleton({ rows = 5 }: { rows?: number }) {
   return (
-    <Card
+    <div
       aria-busy="true"
       className="gap-0 overflow-hidden py-0"
       role="status"
@@ -21,6 +20,6 @@ export function NotificationListSkeleton({ rows = 5 }: { rows?: number }) {
           </div>
         </div>
       ))}
-    </Card>
+    </div>
   );
 }

@@ -18,7 +18,7 @@ import { AnimatedNumber } from "@/components/motion/animated-number";
 import { LikeActionButton } from "@/components/motion/like-action-button";
 import { DetailToolbar } from "@/components/detail-toolbar";
 import { Button } from "@/components/ui/button";
-import { ResizableCard } from "@/components/ui/resizable-card";
+import type { DetailPanel } from "@/components/ui/detail-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { Switch } from "@/components/ui/switch";
@@ -69,7 +69,7 @@ export function IssueDetailToolbar({
           <>
             {canManage && issue.canViewAuthor ? (
               <label className="flex h-11 shrink-0 cursor-pointer items-center gap-2 px-2 text-xs font-medium text-muted-foreground md:h-9">
-                <span>{translate('ui.issue.showAuthor')}</span>
+                <span>{translate('issue.showAuthor')}</span>
                 <Switch
                   checked={authorVisible}
                   onCheckedChange={onAuthorVisibilityChange}
@@ -140,7 +140,7 @@ export function IssueDetailToolbar({
   );
 }
 
-export function IssueDetailSidebar({
+export function getIssueDetailPanels({
   burst,
   issue,
   onSupport,
@@ -159,10 +159,8 @@ export function IssueDetailSidebar({
   supporting: boolean;
   timeline: ReturnType<typeof getIssueOperationTimeItems>;
 }) {
-  return (
-    <aside className="space-y-3 lg:sticky lg:top-6">
-      {issue.support_enabled ? (
-        <ResizableCard className="gap-5 p-5 sm:p-6">
+  const panels: DetailPanel[] = [];
+  if (issue.support_enabled) panels.push({ key: "reaction", content: <>
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-medium">{translate('ui.issue.supportProgress')}</p>
             <SkeletonReveal enabled={reveal} skeleton={<Skeleton className="h-5 w-14" />}><p className="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums">
@@ -174,7 +172,7 @@ export function IssueDetailSidebar({
             <div className="h-2 overflow-hidden rounded-full bg-muted">
               <motion.span
                 animate={{ scaleX: supportProgress / 100 }}
-                className="block h-full origin-left rounded-full bg-foreground"
+                className="block h-full origin-left rounded-full bg-tint-content"
                 initial={false}
                 transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               />
@@ -200,9 +198,8 @@ export function IssueDetailSidebar({
               onClick={onSupport}
             />
           </div>
-        </ResizableCard>
-      ) : null}
-      <ResizableCard className="gap-4 p-5 sm:p-6">
+  </> });
+  panels.push({ key: "timeline", content: <>
         <div className="flex items-center gap-2">
           <Clock3 className="size-4 text-muted-foreground" />
           <p className="text-sm font-medium">{translate('ui.issue.timeline')}</p>
@@ -230,7 +227,6 @@ export function IssueDetailSidebar({
             </div>
           ))}
         </div>
-      </ResizableCard>
-    </aside>
-  );
+  </> });
+  return panels;
 }

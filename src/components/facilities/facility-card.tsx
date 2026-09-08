@@ -1,13 +1,12 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowUpRight, Hand, MapPin } from "lucide-react";
+import { Hand, MapPin } from "lucide-react";
 import { t as translate } from "@/i18n";
 import type { FacilitySummary, UserPublicProfile } from "@/types";
 import { formatRelativeTime } from "@/lib/format";
 import { LikeActionButton } from "@/components/motion/like-action-button";
 import { ContentAuthor } from "@/components/content-author";
-import { Card } from "@/components/ui/card";
+import { FeedCard } from "@/components/ui/feed-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
@@ -28,22 +27,19 @@ export function FacilityCard({
   reveal: boolean;
 }) {
   return (
-    <Card className="t-card group relative h-full gap-4 p-5 sm:p-6">
-      <div className="flex h-full flex-col gap-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
+    <FeedCard
+      href={`/facilities/${facility.id}?category=${encodeURIComponent(facility.category_id)}`}
+      label={facility.title}
+      metadata={
+        <>
               <ContentAuthor profile={profile} />
               <span aria-hidden>·</span>
               <SkeletonReveal enabled={reveal} skeleton={<Skeleton className="h-3 w-12" />}><span className="shrink-0">{formatRelativeTime(facility.created_at)}</span></SkeletonReveal>
-            </div>
-            <SkeletonReveal as="div" className="mt-1.5" enabled={reveal} skeleton={<Skeleton className="h-5 w-3/5" />}><h2 className="line-clamp-1 truncate font-semibold leading-6 tracking-[-0.015em]">
-              {facility.title}
-            </h2></SkeletonReveal>
-          </div>
-          <ArrowUpRight className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-250 ease-[var(--ease-smooth-out)] group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-        </div>
-        <div className="mt-auto flex flex-wrap items-center gap-2 border-t pt-3">
+        </>
+      }
+      title={<SkeletonReveal as="div" enabled={reveal} skeleton={<Skeleton className="h-7 w-3/5" />}><h2 className="truncate">{facility.title}</h2></SkeletonReveal>}
+      footer={
+        <>
           <StatusBadge domain="facility" revealLabel={reveal} status={facility.status} />
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
             <MapPin className="size-3.5" />
@@ -64,13 +60,8 @@ export function FacilityCard({
             onClick={onToggleAffected}
             size="sm"
           />
-        </div>
-      </div>
-      <Link
-        aria-label={facility.title}
-        className="absolute inset-0 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-        href={`/facilities/${facility.id}?category=${encodeURIComponent(facility.category_id)}`}
-      />
-    </Card>
+        </>
+      }
+    />
   );
 }

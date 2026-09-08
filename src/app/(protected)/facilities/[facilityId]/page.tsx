@@ -12,11 +12,10 @@ import { useFacilityDetail } from "@/hooks/use-facility-detail";
 import { FacilityDetailContent } from "@/components/facilities/facility-detail-content";
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { LikeActionButton } from "@/components/motion/like-action-button";
-import { StateTransition } from "@/components/motion/state-transition";
+import { DetailLayout } from "@/components/ui/detail-layout";
 import { DetailToolbar } from "@/components/detail-toolbar";
 import { FacilityStatusDialog } from "@/components/facilities/facility-status-dialog";
 import { Button } from "@/components/ui/button";
-import { ResizableCard } from "@/components/ui/resizable-card";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -35,8 +34,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ErrorState } from "@/components/ui/page-state";
-import { DetailRouteSkeleton } from "@/components/ui/route-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -46,24 +43,14 @@ export default function FacilityDetailPage() {
   useLocaleSubscription();
   const detail = useFacilityDetail();
 
-  if (detail.loading)
-    return (
-      <StateTransition identity="loading">
-        <DetailRouteSkeleton kind="facility" />
-      </StateTransition>
-    );
-  if (detail.error || !detail.facility)
-    return (
-      <StateTransition identity="error"><ErrorState
-        error={detail.error || translate('ui.facility.notFound')}
-        onRetry={() => void detail.load(true)}
-      /></StateTransition>
-    );
   const { facility } = detail;
   return (
-    <StateTransition identity="content">
-    <div className="space-y-5">
-      <DetailToolbar
+    <DetailLayout
+      kind="facility"
+      loading={!facility && detail.loading}
+      error={!facility && !detail.loading ? detail.error || translate('ui.facility.notFound') : undefined}
+      onRetry={() => void detail.load(true)}
+      toolbar={facility ? <DetailToolbar
         actions={
           facility.isOwnFacility || facility.canManageFacility ? (
             <DropdownMenu>
@@ -126,14 +113,12 @@ export default function FacilityDetailPage() {
                 .catch(() => toast.error(translate('ui.common.shareFailed')))
         }
         shareLabel={translate('ui.facility.share')}
-      />
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
-        <FacilityDetailContent
+      /> : undefined}
+      content={facility ? <FacilityDetailContent
           facility={facility}
           reveal={detail.revealDetail}
-        />
-        <aside className="space-y-3 lg:sticky lg:top-6">
-          <ResizableCard className="gap-5 p-5 sm:p-6">
+        /> : undefined}
+      panels={facility ? [{ key: "reaction", content:
             <div className="flex flex-col gap-5">
             <div className="flex items-center justify-between">
               <span className="inline-flex items-center gap-2 text-sm font-medium">
@@ -158,16 +143,13 @@ export default function FacilityDetailPage() {
               />
             </div>
             </div>
-          </ResizableCard>
-        </aside>
-      </div>
-      <FacilityStatusDialog
+      }] : undefined}
+      after={facility ? <FacilityStatusDialog
         facility={facility}
         onOpenChange={detail.setStatusOpen}
         onUpdated={detail.setFacility}
         open={detail.statusOpen}
-      />
-    </div>
-    </StateTransition>
+      /> : undefined}
+    />
   );
 }

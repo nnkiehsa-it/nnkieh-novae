@@ -14,11 +14,11 @@ import { useNotificationsPage } from "@/hooks/use-notifications-page";
 import { formatDate } from "@/lib/format";
 import type { NotificationRecord } from "@/types";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
-import { StateTransition, stateTransitionIdentity } from "@/components/motion/state-transition";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  EmptyState,
-  ErrorState,
+  EmptyStateContent,
+  ErrorStateContent,
   PageHeader,
 } from "@/components/ui/page-state";
 import { NotificationListSkeleton } from "@/components/notifications/notification-skeleton";
@@ -71,24 +71,18 @@ export default function NotificationsPage() {
       <PageHeader
         title={t("ui.nav.notifications")}
       />
-      <StateTransition
-        identity={stateTransitionIdentity({
-          empty: state.notifications.length === 0,
-          error: Boolean(state.error && state.notifications.length === 0),
-          loading: state.loading,
-        })}
-      >
+      <Card className="gap-0 overflow-hidden py-0" data-notification-surface aria-busy={state.loading}>
       {state.error && state.notifications.length === 0 ? (
-        <ErrorState error={state.error} onRetry={() => void state.load()} />
-      ) : state.loading ? (
+        <ErrorStateContent error={state.error} onRetry={() => void state.load()} />
+      ) : state.loading && !state.notifications.length ? (
         <NotificationListSkeleton />
       ) : state.notifications.length === 0 ? (
-        <EmptyState
+        <EmptyStateContent
           description={t("ui.notification.emptyDescription")}
           title={t("ui.notification.emptyTitle")}
         />
       ) : (
-        <StaggerList className="overflow-hidden rounded-xl border bg-card shadow-[var(--shadow-card)]">
+        <StaggerList className="divide-y">
           {state.notifications.map((notification) => (
             <StaggerItem key={notification.id}>
               <button
@@ -129,7 +123,7 @@ export default function NotificationsPage() {
           ))}
         </StaggerList>
       )}
-      </StateTransition>
+      </Card>
       {state.hasMore ? (
         <div className="flex justify-center">
           <Button

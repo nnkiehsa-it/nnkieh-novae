@@ -5,7 +5,8 @@ import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { ErrorState } from "@/components/ui/page-state";
+import { ErrorStateContent } from "@/components/ui/page-state";
+import { SkeletonRows } from "@/components/ui/skeleton-rows";
 import { useAdminAudit, type AdminAuditEntry } from "@/hooks/use-admin-console";
 import { useI18n } from "@/i18n";
 import { formatDate } from "@/lib/format";
@@ -40,10 +41,6 @@ export function AdminAuditLog() {
   const { t } = useI18n();
   const { entries, error, load, loading, query, setQuery } = useAdminAudit();
 
-  if (error && entries.length === 0) {
-    return <ErrorState error={error} onRetry={() => void load(query)} />;
-  }
-
   return (
     <div className="space-y-5">
       <div>
@@ -74,7 +71,7 @@ export function AdminAuditLog() {
         </Button>
       </form>
 
-      <div className="overflow-hidden rounded-xl border bg-card">
+      <div className="t-resize overflow-hidden rounded-xl border bg-card">
         <div className="hidden grid-cols-[9rem_10rem_11rem_minmax(10rem,1fr)_minmax(12rem,1.2fr)] gap-3 border-b bg-muted/35 px-4 py-2.5 text-xs font-medium text-muted-foreground md:grid">
           <span>{t("ui.adminConsole.timeColumn")}</span>
           <span>{t("ui.adminConsole.adminColumn")}</span>
@@ -82,7 +79,7 @@ export function AdminAuditLog() {
           <span>{t("ui.adminConsole.targetColumn")}</span>
           <span>{t("ui.adminConsole.detailColumn")}</span>
         </div>
-        {entries.length === 0 && !loading ? (
+        {error && !entries.length ? <ErrorStateContent error={error} onRetry={() => void load(query)} /> : loading && !entries.length ? <SkeletonRows /> : entries.length === 0 ? (
           <div className="px-4 py-10 text-center text-sm text-muted-foreground">
             {t("ui.adminConsole.noAudit")}
           </div>

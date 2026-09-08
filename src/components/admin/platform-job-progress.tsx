@@ -25,7 +25,7 @@ export function PlatformJobProgress() {
           {t("ui.admin.backgroundChangesHelp")}
         </p>
       </div>
-      <div className="overflow-hidden rounded-xl border bg-card">
+      <div className="t-resize overflow-hidden rounded-xl border bg-card">
         {error ? (
           <p className="px-4 py-3 text-sm text-destructive">{error}</p>
         ) : visible.map((job) => {

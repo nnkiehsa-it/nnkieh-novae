@@ -6,11 +6,9 @@ import type { FacilityRecord } from "@/types";
 import { FACILITY_STATUS_LABELS, isFacilityClosed } from "@/constants/statuses";
 import { findFacilityCategory } from "@/hooks/use-categories";
 import { formatDate } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import { ContentRenderer } from "@/components/content-renderer";
 import { ContentResolutionNotice } from "@/components/content-resolution-notice";
-import { CardContent } from "@/components/ui/card";
-import { ResizableCard } from "@/components/ui/resizable-card";
+import { DetailCardHeader, DetailCardBody } from "@/components/ui/detail-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonBadgeLabel, SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -37,14 +35,10 @@ export function FacilityDetailContent({
     : null;
 
   return (
-    <ResizableCard className="gap-0 overflow-hidden py-0">
-      <div
-        className={cn(
-          "px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6",
-          (hasContent || resolution) && "border-b",
-        )}
-      >
-        <div className="flex flex-wrap items-center gap-2">
+    <>
+      <DetailCardHeader
+        separated={Boolean(hasContent || resolution)}
+        badges={<>
           <span className="inline-grid place-items-center rounded-full bg-card px-2.5 py-1 text-center text-xs font-medium text-muted-foreground shadow-[var(--shadow-control)]">
             <SkeletonBadgeLabel
               className="min-w-16"
@@ -60,18 +54,17 @@ export function FacilityDetailContent({
             revealLabel={reveal}
             status={facility.status}
           />
-        </div>
-        <SkeletonReveal
+        </>}
+        title={<SkeletonReveal
           as="div"
-          className="mt-3"
           enabled={reveal}
-          skeleton={<Skeleton className="h-8 w-3/5" />}
+          skeleton={<Skeleton className="h-9 w-3/5" />}
         >
-          <h1 className="text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">
+          <h1 className="text-balance">
             {facility.title}
           </h1>
-        </SkeletonReveal>
-        <div className="mt-3 flex flex-wrap gap-3 text-[0.8125rem] text-muted-foreground">
+        </SkeletonReveal>}
+        metadata={<>
           <span className="inline-flex items-center gap-1">
             <MapPin className="size-3.5" />
             <SkeletonReveal
@@ -87,16 +80,16 @@ export function FacilityDetailContent({
           >
             <span>{formatDate(facility.created_at)}</span>
           </SkeletonReveal>
-        </div>
-      </div>
+        </>}
+      />
       {hasContent ? (
-        <CardContent className="py-5 sm:px-7 sm:py-6">
+        <DetailCardBody>
           <ContentRenderer
             content={facility.content}
             fallbackAlt={facility.title}
             revealText={reveal}
           />
-        </CardContent>
+        </DetailCardBody>
       ) : null}
       {resolution ? (
         <ContentResolutionNotice
@@ -110,6 +103,6 @@ export function FacilityDetailContent({
           tone={resolution.tone}
         />
       ) : null}
-    </ResizableCard>
+    </>
   );
 }

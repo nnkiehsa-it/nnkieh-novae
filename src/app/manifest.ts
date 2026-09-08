@@ -4,7 +4,7 @@ import { APP_DESCRIPTION } from "@/constants/app";
 export default function manifest(): MetadataRoute.Manifest {
   const version = process.env.NEXT_PUBLIC_APP_VERSION ?? "development";
   return {
-    background_color: "#f9f9f9",
+    background_color: "#f5f7fb",
     description: APP_DESCRIPTION,
     display: "standalone",
     icons: [
@@ -31,6 +31,6 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     short_name: "Novae",
     start_url: "/",
-    theme_color: "#f9f9f9",
+    theme_color: "#f5f7fb",
   };
 }

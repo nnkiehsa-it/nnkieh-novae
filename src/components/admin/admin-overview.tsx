@@ -8,6 +8,7 @@ import { AdminActivityLogDialog, AdminActivityRows } from "@/components/admin/ad
 import { DeletionJobRecovery } from "@/components/admin/deletion-job-recovery";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/page-state";
 import { useAdminOverview, type AdminOverviewWindow } from "@/hooks/use-admin-console";
 import { useI18n } from "@/i18n";
@@ -24,30 +25,22 @@ export function AdminOverview() {
   const [activityOpen, setActivityOpen] = useState(false);
   const { data, error, load, loading, systemFailures } = useAdminOverview(window);
 
-  if (error && !data) return <ErrorState error={error} onRetry={() => void load()} />;
-  if (!data) {
-    return (
-      <div className="grid min-h-56 place-items-center">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
   const primaryMetrics = [
-    [t("ui.adminConsole.registeredUsers"), data.totalUsers],
-    [t("ui.adminConsole.active24h"), data.activeUsers24h],
-    [t("ui.adminConsole.active7d"), data.activeUsers7d],
-    [t("ui.adminConsole.active30d"), data.activeUsers30d],
+    [t("ui.adminConsole.registeredUsers"), data?.totalUsers],
+    [t("ui.adminConsole.active24h"), data?.activeUsers24h],
+    [t("ui.adminConsole.active7d"), data?.activeUsers7d],
+    [t("ui.adminConsole.active30d"), data?.activeUsers30d],
   ] as const;
   const periodMetrics = [
-    { icon: UserPlus, label: t("ui.adminConsole.newRegistrations"), value: data.newUsers },
-    { icon: FileText, label: t("ui.adminConsole.newIssues"), value: data.newIssues },
-    { icon: MessageSquare, label: t("ui.adminConsole.newComments"), value: data.newComments },
-    { icon: Building2, label: t("ui.adminConsole.newFacilities"), value: data.newFacilities },
+    { icon: UserPlus, label: t("ui.adminConsole.newRegistrations"), value: data?.newUsers },
+    { icon: FileText, label: t("ui.adminConsole.newIssues"), value: data?.newIssues },
+    { icon: MessageSquare, label: t("ui.adminConsole.newComments"), value: data?.newComments },
+    { icon: Building2, label: t("ui.adminConsole.newFacilities"), value: data?.newFacilities },
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="t-resize space-y-8" aria-busy={loading}>
+      {error ? <ErrorState error={error} onRetry={() => void load()} /> : null}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">
@@ -92,10 +85,10 @@ export function AdminOverview() {
               key={label}
             >
               <p className="text-xs font-medium text-muted-foreground">{label}</p>
-              <AnimatedNumber
+              {value === undefined ? <Skeleton className="mt-1 h-9 w-16" /> : <AnimatedNumber
                 className="mt-1 text-3xl font-semibold tracking-[-0.04em]"
                 value={value}
-              />
+              />}
             </div>
           ))}
         </div>
@@ -110,7 +103,7 @@ export function AdminOverview() {
                 {t(WINDOWS.find((item) => item.value === window)?.labelKey ?? "")}
               </span>
             </div>
-            <div className="overflow-hidden rounded-xl border bg-card">
+            <div className="t-resize overflow-hidden rounded-xl border bg-card">
               <div className="grid sm:grid-cols-2">
                 {periodMetrics.map(({ icon: Icon, label, value }, index) => (
                   <div
@@ -127,7 +120,7 @@ export function AdminOverview() {
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="text-xs text-muted-foreground">{label}</p>
-                      <AnimatedNumber className="text-lg font-semibold" value={value} />
+                      {value === undefined ? <Skeleton className="h-7 w-12" /> : <AnimatedNumber className="text-lg font-semibold" value={value} />}
                     </div>
                   </div>
                 ))}
@@ -142,8 +135,8 @@ export function AdminOverview() {
                 {t("ui.adminConsole.recentActivityScope")}
               </span>
             </div>
-            <div className="overflow-hidden rounded-xl border bg-card">
-              {data.recentActivity.length === 0 ? (
+            <div className="t-resize overflow-hidden rounded-xl border bg-card">
+              {!data ? <div className="space-y-3 p-4"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div> : data.recentActivity.length === 0 ? (
                 <p className="px-4 py-8 text-center text-sm text-muted-foreground">
                   {t("ui.adminConsole.noRecentActivity")}
                 </p>
@@ -162,16 +155,16 @@ export function AdminOverview() {
         <aside className="space-y-4">
           <section>
             <h3 className="mb-3 text-sm font-semibold">{t("ui.adminConsole.pending")}</h3>
-            <div className="overflow-hidden rounded-xl border bg-card">
+            <div className="t-resize overflow-hidden rounded-xl border bg-card">
               {[
-                { label: t("ui.adminConsole.openIssues"), value: data.openIssues, icon: FileText },
-                { label: t("ui.adminConsole.openFacilities"), value: data.openFacilities, icon: Building2 },
+                { label: t("ui.adminConsole.openIssues"), value: data?.openIssues, icon: FileText },
+                { label: t("ui.adminConsole.openFacilities"), value: data?.openFacilities, icon: Building2 },
                 { label: t("ui.adminConsole.systemQueue"), value: systemFailures, icon: AlertTriangle },
               ].map(({ label, value, icon: Icon }) => (
                 <div className="flex items-center gap-3 border-b px-4 py-3 last:border-b-0" key={label}>
                   <Icon className="size-4 text-muted-foreground" />
                   <span className="min-w-0 flex-1 text-sm">{label}</span>
-                  <span className="font-mono text-sm font-semibold tabular-nums">{value}</span>
+                  {value === undefined || !data ? <Skeleton className="h-5 w-8" /> : <span className="font-mono text-sm font-semibold tabular-nums">{value}</span>}
                 </div>
               ))}
             </div>

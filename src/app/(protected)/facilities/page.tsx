@@ -2,13 +2,12 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import Link from "next/link";
-import { ArrowDown, Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import { ArrowDown, Plus } from "lucide-react";
 import type { FacilitySortOption } from "@/types";
 import { useFacilityFeed } from "@/hooks/use-facility-feed";
 import { usePublicProfiles } from "@/hooks/use-public-profiles";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { FeedToolbar } from "@/components/ui/feed-toolbar";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
 import {
   Select,
@@ -18,14 +17,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  ErrorState,
   PageHeader,
 } from "@/components/ui/page-state";
-import { FeedCardsSkeleton, FeedEmptyState } from "@/components/ui/route-skeleton";
 import { FacilityCard } from "@/components/facilities/facility-card";
-import { StaggerItem, StaggerList } from "@/components/motion/stagger";
-import { StateTransition, stateTransitionIdentity } from "@/components/motion/state-transition";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { FeedList } from "@/components/ui/feed-list";
 
 export default function FacilitiesPage() {
   useLocaleSubscription();
@@ -79,92 +74,41 @@ export default function FacilitiesPage() {
           </Select>
         }
       />
-      <Card className="gap-0 p-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative min-w-40 flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="pl-9 pr-8"
-              onChange={(event) => state.setQuery(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") state.setCommittedQuery(state.query.trim());
-              }}
-              placeholder={translate('ui.facility.searchPlaceholder')}
-              value={state.query}
-            />
-            {state.query ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    aria-label={translate('ui.common.clearSearch')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground"
-                    onClick={() => {
-                      state.setQuery("");
-                      state.setCommittedQuery("");
-                    }}
-                    type="button"
-                  >
-                    <X className="size-3.5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>{translate('ui.common.clearSearch')}</TooltipContent>
-              </Tooltip>
-            ) : null}
-          </div>
-          <Select
-            onValueChange={(value) => state.setSort(value as FacilitySortOption)}
-            value={state.sort}
-          >
-            <SelectTrigger
-              aria-label={translate('ui.common.sort')}
-              className="w-auto min-w-0 gap-1 px-2.5 sm:w-36 sm:gap-2 sm:px-3"
-            >
-              <SlidersHorizontal className="shrink-0 sm:hidden" />
-              <span className="hidden sm:inline">
-                <SelectValue />
-              </span>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="latest">{translate('ui.common.latest')}</SelectItem>
-              <SelectItem value="most-affected">{translate('ui.facility.mostAffected')}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </Card>
-      <StateTransition
-        identity={stateTransitionIdentity({
-          empty: state.feed.facilities.length === 0,
-          error: Boolean(state.error && state.feed.facilities.length === 0),
-          loading: state.loading && state.feed.facilities.length === 0,
-        })}
-      >
-      {state.error && state.feed.facilities.length === 0 ? (
-        <ErrorState error={state.error} onRetry={() => void state.load()} />
-      ) : state.loading && state.feed.facilities.length === 0 ? (
-        <FeedCardsSkeleton kind="facility" />
-      ) : state.feed.facilities.length === 0 ? (
-        <FeedEmptyState
-          action={
+      <FeedToolbar
+        onQueryChange={state.setQuery}
+        onSearch={state.setCommittedQuery}
+        onSortChange={(value) => state.setSort(value as FacilitySortOption)}
+        options={[
+          { value: "latest", label: translate('ui.common.latest') },
+          { value: "most-affected", label: translate('ui.facility.mostAffected') },
+        ]}
+        query={state.query}
+        searchLabel={translate('ui.facility.searchPlaceholder')}
+        sort={state.sort}
+      />
+      <FeedList
+        kind="facility"
+        items={state.feed.facilities}
+        loading={state.loading}
+        error={state.error}
+        onRetry={() => void state.load()}
+        empty={{
+          action:
             <Button asChild variant="outline">
               <Link
                 href={`/facilities/new?category=${encodeURIComponent(state.category)}`}
               >
                 <Plus />{translate('ui.facility.createFirst')}</Link>
             </Button>
-          }
-          description={
+          ,
+          description:
             state.committedQuery
               ? translate('ui.facility.emptySearch', { query: state.committedQuery })
               : translate('ui.facility.emptyCategory')
-          }
-          title={translate('ui.facility.emptyTitle')}
-        />
-      ) : (
-        <StaggerList
-          className="grid gap-3 lg:grid-cols-2 lg:items-stretch"
-        >
-          {state.feed.facilities.map((facility) => (
-            <StaggerItem className="h-full" key={facility.id}>
+          ,
+          title: translate('ui.facility.emptyTitle'),
+        }}
+        renderItem={(facility) => (
               <FacilityCard
                 affecting={state.affectingId === facility.id}
                 burst={state.affectBurstById[facility.id] ?? 0}
@@ -173,11 +117,8 @@ export default function FacilitiesPage() {
                 profile={profiles[facility.author_uid]}
                 reveal={state.revealFields}
               />
-            </StaggerItem>
-          ))}
-        </StaggerList>
-      )}
-      </StateTransition>
+        )}
+      />
       {state.feed.hasMore ? (
         <div className="flex justify-center pt-2">
           <Button

@@ -54,8 +54,8 @@ export const viewport: Viewport = {
   colorScheme: "light dark",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f9f9f9" },
-    { media: "(prefers-color-scheme: dark)", color: "#131313" },
+    { media: "(prefers-color-scheme: light)", color: "#f5f7fb" },
+    { media: "(prefers-color-scheme: dark)", color: "#0d121b" },
   ],
   viewportFit: "cover",
   width: "device-width",
@@ -87,7 +87,7 @@ export default async function RootLayout({
           </>
         ) : null}
       </head>
-      {/* Direction contract: transitions.dev product UI; quiet neutral surfaces, compact shadcn/Radix controls, rich state-driven motion, intentional responsive layouts. */}
+      {/* Novae website brand, compact product density, shared light/dark surfaces and stable loading geometry. */}
       <body>
         <AppProviders nonce={nonce}>{children}</AppProviders>
         {turnstileSiteKey ? (

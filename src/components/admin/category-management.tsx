@@ -6,9 +6,8 @@ import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import { useCategoryManagement } from "@/hooks/use-category-management";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ResizableCard } from "@/components/ui/resizable-card";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
-import { ErrorState } from "@/components/ui/page-state";
+import { ErrorStateContent } from "@/components/ui/page-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   CategoryFeatureHeader,
@@ -23,13 +22,11 @@ export function CategoryManagement() {
   useLocaleSubscription();
   const state = useCategoryManagement();
 
-  if (state.loading) return <CategoryManagementSkeleton />;
-  if (state.error)
-    return <ErrorState error={state.error} onRetry={() => void state.load()} />;
   return (
     <section className="space-y-6">
       <LiquidTabs
         ariaLabel={translate('ui.admin.contentType')}
+        disabled={state.loading}
         onValueChange={state.setKind}
         options={[
           { label: translate('ui.nav.issues'), value: "issue" },
@@ -39,8 +36,10 @@ export function CategoryManagement() {
         ]}
         value={state.kind}
       />
+      <Card className={state.kind === "platform" ? "hidden" : "gap-0 py-0"} aria-busy={state.loading}>
+      {state.error ? <ErrorStateContent error={state.error} onRetry={() => void state.load()} /> : state.loading ? <CategoryEditorPlaceholder /> : <>
       {state.kind === "issue" ? (
-        <ResizableCard className="gap-0 py-0">
+        <>
           <CategoryFeatureHeader
             enabled={state.issuesEnabled}
             onChange={state.setIssuesEnabled}
@@ -66,10 +65,10 @@ export function CategoryManagement() {
             >
               <Plus />{translate('ui.admin.addIssueCategory')}</Button>
           </CardContent>
-        </ResizableCard>
+        </>
       ) : null}
       {state.kind === "facility" ? (
-        <ResizableCard className="gap-0 py-0">
+        <>
           <CategoryFeatureHeader
             enabled={state.facilitiesEnabled}
             onChange={state.setFacilitiesEnabled}
@@ -95,21 +94,23 @@ export function CategoryManagement() {
             >
               <Plus />{translate('ui.admin.addFacilityCategory')}</Button>
           </CardContent>
-        </ResizableCard>
+        </>
       ) : null}
       {state.kind === "announcement" ? (
-        <ResizableCard className="gap-0 py-0">
+        <>
           <CategoryFeatureHeader
             description={translate('ui.admin.announcementCommentsDescription')}
             enabled={state.announcementComments}
             onChange={state.setAnnouncementComments}
             title={translate('ui.admin.announcementComments')}
           />
-        </ResizableCard>
+        </>
       ) : null}
+      </>}
+      </Card>
       {state.kind === "platform" ? <PlatformSettings /> : null}
       {state.kind !== "platform" ? <div className="flex justify-end border-t pt-5">
-        <Button disabled={!state.valid || state.saving} onClick={() => void state.save()}>
+        <Button disabled={state.loading || !state.valid || state.saving} onClick={() => void state.save()}>
           {state.saving ? (
             <ActionFeedbackIcon
               className="bg-transparent [&>svg]:size-5"
@@ -130,22 +131,9 @@ export function CategoryManagement() {
   );
 }
 
-function CategoryManagementSkeleton() {
+function CategoryEditorPlaceholder() {
   return (
-    <section className="space-y-4" aria-busy="true">
-      <LiquidTabs
-        ariaLabel={translate("ui.admin.contentType")}
-        disabled
-        onValueChange={() => undefined}
-        options={[
-          { label: translate("ui.nav.issues"), value: "issue" },
-          { label: translate("ui.nav.facilities"), value: "facility" },
-          { label: translate("ui.nav.announcements"), value: "announcement" },
-          { label: translate("ui.admin.platformSettings"), value: "platform" },
-        ]}
-        value="issue"
-      />
-      <Card className="gap-0 py-0">
+    <>
         <div className="flex items-center justify-between border-b px-5 py-4 sm:px-7">
           <span className="text-sm font-semibold">{translate("ui.admin.issueFeature")}</span>
           <Skeleton className="h-5 w-8 rounded-full" />
@@ -158,12 +146,6 @@ function CategoryManagementSkeleton() {
             <Plus />{translate("ui.admin.addIssueCategory")}
           </Button>
         </CardContent>
-      </Card>
-      <div className="flex justify-end">
-        <Button disabled>
-          <Save />{translate("ui.admin.saveAll")}
-        </Button>
-      </div>
-    </section>
+    </>
   );
 }

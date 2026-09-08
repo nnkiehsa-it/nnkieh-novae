@@ -34,7 +34,7 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --font-sans:
-    var(--font-inter), "HarmonyOS Sans TC", "PingFang TC", "Microsoft JhengHei",
+    "HarmonyOS Sans TC", var(--font-inter), "PingFang TC", "Microsoft JhengHei",
     ui-sans-serif, system-ui, sans-serif;
   --font-mono:
     var(--font-roboto-mono), ui-monospace, SFMono-Regular, Consolas, monospace;
@@ -49,28 +49,28 @@
 
 :root {
   color-scheme: light;
-  --background: #fdfdfd;
-  --foreground: #0d0d0d;
-  --card: #ffffff;
-  --card-foreground: #0d0d0d;
-  --popover: #ffffff;
-  --popover-foreground: #0d0d0d;
-  --accent: var(--theme-accent, #171717);
-  --accent-foreground: var(--theme-accent-foreground, #fafafa);
-  --tint-content: var(--theme-accent-content-light, var(--accent));
-  --tint-surface: var(--secondary);
-  --tint-surface-hover: var(--secondary-hover);
-  --tint-surface-foreground: var(--foreground);
-  --primary: #d1d1d6;
-  --primary-foreground: #2c2c2e;
-  --primary-hover: #c7c7cc;
-  --secondary: #f2f2f2;
-  --secondary-foreground: #171717;
+  --background: #f5f7fb;
+  --foreground: #101828;
+  --card: #fdfefe;
+  --card-foreground: #101828;
+  --popover: #fdfefe;
+  --popover-foreground: #101828;
+  --accent: #1557d5;
+  --accent-foreground: #f7f9ff;
+  --tint-content: var(--accent);
+  --tint-surface: color-mix(in srgb, var(--accent) 9%, var(--card));
+  --tint-surface-hover: color-mix(in srgb, var(--accent) 14%, var(--card));
+  --tint-surface-foreground: var(--tint-content);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-foreground);
+  --primary-hover: color-mix(in srgb, var(--accent) 88%, var(--foreground));
+  --secondary: #edf2f8;
+  --secondary-foreground: #26364c;
   --secondary-hover: color-mix(in oklab, var(--secondary) 94%, var(--secondary-foreground) 6%);
-  --muted: #f5f5f5;
-  --muted-foreground: #6c6c6c;
-  --interaction: #eeeeee;
-  --interaction-foreground: #171717;
+  --muted: #edf2f8;
+  --muted-foreground: #566477;
+  --interaction: #e3eaf3;
+  --interaction-foreground: #101828;
   --destructive: #c93434;
   --destructive-foreground: #ffffff;
   --success: #23865a;
@@ -89,33 +89,32 @@
   --status-rejected-fg: #991b1b;
   --status-infeasible-bg: #f5e9e9;
   --status-infeasible-fg: #5a2323;
-  --border: rgb(0 0 0 / 6%);
-  --input: rgb(0 0 0 / 9%);
-  --ring: color-mix(in srgb, var(--tint-content) 38%, transparent);
+  --border: rgb(16 24 40 / 10%);
+  --input: #8898ac;
+  --ring: var(--tint-content);
   --focus: var(--tint-content);
   --nav-active-bg: var(--tint-surface);
   --nav-active-fg: var(--tint-surface-foreground);
-  --choice-indicator: var(--foreground);
+  --choice-indicator: var(--tint-content);
   --selection-bg: var(--primary);
   --selection-fg: var(--primary-foreground);
-  --notification-accent: var(--color-blue-500);
-  --surface-stage: #f9f9f9;
-  --surface-inset: #f4f4f4;
-  --surface-hover: rgb(0 0 0 / 3%);
-  --surface-active: rgb(0 0 0 / 6%);
-  --backdrop: rgb(0 0 0 / 24%);
-  --radius: 0.875rem;
-  --shadow-control: 0 1px 1px rgb(0 0 0 / 4%), 0 0 0 1px rgb(0 0 0 / 5%);
-  --shadow-card: 0 1px 3px rgb(0 0 0 / 4%);
+  --notification-accent: var(--tint-content);
+  --surface-stage: #f5f7fb;
+  --surface-inset: #edf2f8;
+  --surface-hover: rgb(21 87 213 / 5%);
+  --surface-active: rgb(21 87 213 / 10%);
+  --backdrop: rgb(16 24 40 / 32%);
+  --radius: 0.75rem;
+  --shadow-control: 0 1px 2px rgb(16 40 80 / 4%);
+  --shadow-card: 0 2px 5px rgb(16 40 80 / 3%);
   --shadow-floating:
-    0 4px 42px rgb(0 0 0 / 6%), 0 2px 6px rgb(0 0 0 / 5%),
-    0 0 0 1px rgb(0 0 0 / 6%);
+    0 12px 36px rgb(16 40 80 / 10%), 0 2px 6px rgb(16 40 80 / 5%);
   --content-max: 72rem;
-  --page-gutter: clamp(1rem, 2.5vw, 2rem);
+  --page-gutter: clamp(1rem, 2vw, 1.5rem);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --control-label-size: 0.75rem;
+  --control-label-size: 0.8125rem;
   --safe-left: env(safe-area-inset-left, 0px);
   --app-fixed-viewport-height: 100svh;
   --mobile-nav-height: 3.875rem;
@@ -124,28 +123,28 @@
 
 .dark {
   color-scheme: dark;
-  --background: #121212;
-  --foreground: #f3f3f3;
-  --card: #181818;
-  --card-foreground: #f3f3f3;
-  --popover: #1b1b1b;
-  --popover-foreground: #f3f3f3;
-  --accent: var(--theme-accent, #f1f1f1);
-  --accent-foreground: var(--theme-accent-foreground, #141414);
-  --tint-content: var(--theme-accent-content-dark, var(--accent));
-  --tint-surface: var(--secondary);
-  --tint-surface-hover: var(--secondary-hover);
-  --tint-surface-foreground: var(--foreground);
-  --primary: #3a3a3c;
-  --primary-foreground: #f2f2f7;
-  --primary-hover: #48484a;
-  --secondary: #242424;
-  --secondary-foreground: #f0f0f0;
+  --background: #0d121b;
+  --foreground: #edf3fb;
+  --card: #131b27;
+  --card-foreground: #edf3fb;
+  --popover: #1a2534;
+  --popover-foreground: #edf3fb;
+  --accent: #5d8ff0;
+  --accent-foreground: #0d121b;
+  --tint-content: var(--accent);
+  --tint-surface: color-mix(in srgb, var(--accent) 13%, var(--card));
+  --tint-surface-hover: color-mix(in srgb, var(--accent) 20%, var(--card));
+  --tint-surface-foreground: var(--tint-content);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-foreground);
+  --primary-hover: color-mix(in srgb, var(--accent) 88%, var(--foreground));
+  --secondary: #1a2534;
+  --secondary-foreground: #e0e8f5;
   --secondary-hover: color-mix(in oklab, var(--secondary) 92%, var(--secondary-foreground) 8%);
-  --muted: #202020;
-  --muted-foreground: #a0a0a0;
-  --interaction: #292929;
-  --interaction-foreground: #f4f4f4;
+  --muted: #1a2534;
+  --muted-foreground: #9cabbf;
+  --interaction: #233146;
+  --interaction-foreground: #edf3fb;
   --destructive: #e05a5a;
   --destructive-foreground: #190707;
   --success: #59b987;
@@ -164,52 +163,40 @@
   --status-rejected-fg: #fee2e2;
   --status-infeasible-bg: #401e1e;
   --status-infeasible-fg: #f5dcdc;
-  --border: rgb(255 255 255 / 7%);
-  --input: rgb(255 255 255 / 11%);
-  --ring: color-mix(in srgb, var(--tint-content) 42%, transparent);
+  --border: rgb(226 235 247 / 12%);
+  --input: #60728b;
+  --ring: var(--tint-content);
   --focus: var(--tint-content);
   --nav-active-bg: var(--tint-surface);
   --nav-active-fg: var(--tint-surface-foreground);
-  --choice-indicator: var(--foreground);
+  --choice-indicator: var(--tint-content);
   --selection-bg: var(--primary);
   --selection-fg: var(--primary-foreground);
-  --notification-accent: var(--color-blue-500);
-  --surface-stage: #131313;
-  --surface-inset: #1d1d1d;
-  --surface-hover: rgb(255 255 255 / 6%);
-  --surface-active: rgb(255 255 255 / 7%);
-  --backdrop: rgb(0 0 0 / 62%);
-  --shadow-control: 0 1px 1px rgb(0 0 0 / 22%), 0 0 0 1px rgb(255 255 255 / 6%);
-  --shadow-card: 0 1px 3px rgb(0 0 0 / 28%);
+  --notification-accent: var(--tint-content);
+  --surface-stage: #0d121b;
+  --surface-inset: #1a2534;
+  --surface-hover: rgb(93 143 240 / 8%);
+  --surface-active: rgb(93 143 240 / 14%);
+  --backdrop: rgb(5 10 20 / 68%);
+  --shadow-control: 0 1px 2px rgb(5 10 20 / 20%);
+  --shadow-card: 0 2px 5px rgb(5 10 20 / 18%);
   --shadow-floating:
-    0 18px 48px rgb(0 0 0 / 38%), 0 3px 10px rgb(0 0 0 / 28%),
-    0 0 0 1px rgb(255 255 255 / 7%);
+    0 18px 48px rgb(5 10 20 / 38%), 0 3px 10px rgb(5 10 20 / 28%);
 }
 
-:root[data-accent-theme="custom"] {
-  --primary: var(--accent);
-  --primary-foreground: var(--accent-foreground);
-  --primary-hover: color-mix(in srgb, var(--accent) 88%, var(--foreground));
-  --interaction: color-mix(in srgb, var(--accent) 12%, var(--card));
-  --interaction-foreground: var(--foreground);
-  --tint-surface: color-mix(in srgb, var(--accent) 13%, var(--card));
-  --tint-surface-hover: color-mix(in srgb, var(--accent) 18%, var(--card));
-  --tint-surface-foreground: var(--tint-content);
-  --nav-active-bg: var(--tint-surface);
-  --nav-active-fg: var(--tint-surface-foreground);
-  --choice-indicator: var(--tint-content);
-  --selection-bg: var(--accent);
-  --selection-fg: var(--accent-foreground);
-  --notification-accent: var(--tint-content);
-}
 
 ::selection {
   background: var(--selection-bg);
   color: var(--selection-fg);
 }
 
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+}
+
 * {
-  border-color: var(--border);
   scrollbar-width: none;
 }
 
@@ -238,7 +225,7 @@ body {
   background: var(--surface-stage);
   color: var(--foreground);
   font-family:
-    var(--font-inter), "HarmonyOS Sans TC", "PingFang TC", "Microsoft JhengHei",
+    "HarmonyOS Sans TC", var(--font-inter), "PingFang TC", "Microsoft JhengHei",
     ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

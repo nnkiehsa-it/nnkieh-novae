@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { useSession } from "@/hooks/use-session";
@@ -88,20 +89,21 @@ export default function LoginPage() {
   return (
     <RouteSurface>
       <main className="relative grid min-h-[100svh] overflow-hidden bg-[var(--surface-stage)] lg:grid-cols-[1.08fr_.92fr]">
-      <section className="relative hidden min-h-[100svh] overflow-hidden border-r bg-background p-12 lg:grid lg:place-items-center">
+      <section className="relative hidden min-h-[100svh] overflow-hidden border-r bg-secondary/50 p-12 lg:grid lg:place-items-center">
         <BrandLockup className="t-panel-reveal absolute top-12 left-12" />
-        <div className="t-stagger-list w-full max-w-xl">
-          <h1 className="t-stagger-item max-w-lg text-4xl font-semibold leading-[1.08] tracking-[-0.045em] text-balance">
+        <div className="t-stagger-list grid w-full max-w-lg gap-5 pt-16">
+          <h1 className="t-stagger-item max-w-lg text-4xl font-semibold leading-[1.15] tracking-[-0.045em] text-tint-content text-balance">
             {t("ui.login.heading")}
           </h1>
-          <p className="t-stagger-item mt-5 max-w-md text-sm leading-7 text-muted-foreground">
+          <p className="t-stagger-item max-w-md text-sm leading-7 text-muted-foreground">
             {t("ui.login.subheading")}
           </p>
+          <Image alt="" className="t-stagger-item max-h-[35svh] w-auto justify-self-end object-contain" height={360} src="/novae-constellation.webp" width={240} />
         </div>
       </section>
 
       <section className="flex min-h-[100svh] items-center justify-center px-4 py-12 sm:px-8">
-        <div className="t-panel-reveal w-full max-w-sm">
+        <div className="t-panel-reveal w-full max-w-sm border-t-2 border-tint-content pt-6">
           <div className="mb-6 space-y-4">
             <BrandLockup className="lg:hidden" />
             <div>

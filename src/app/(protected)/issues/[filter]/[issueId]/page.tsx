@@ -5,14 +5,12 @@ import { useI18n } from "@/i18n";
 import { useIssueDetail } from "@/hooks/use-issue-detail";
 import { Discussion } from "@/components/discussion";
 import {
-  IssueDetailSidebar,
+  getIssueDetailPanels,
   IssueDetailToolbar,
 } from "@/components/issues/issue-detail-actions";
 import { IssueDetailContent } from "@/components/issues/issue-detail-content";
 import { IssueModerationDialog } from "@/components/issues/issue-moderation-dialog";
-import { ErrorState } from "@/components/ui/page-state";
-import { DetailRouteSkeleton } from "@/components/ui/route-skeleton";
-import { StateTransition } from "@/components/motion/state-transition";
+import { DetailLayout } from "@/components/ui/detail-layout";
 
 export default function IssueDetailPage() {
   const { t } = useI18n();
@@ -20,46 +18,35 @@ export default function IssueDetailPage() {
   const [authorHiddenForIssueId, setAuthorHiddenForIssueId] = useState<
     string | null
   >(null);
-  if (detail.loading)
-    return (
-      <StateTransition identity="loading">
-        <DetailRouteSkeleton />
-      </StateTransition>
-    );
-  if (detail.error || !detail.issue || !detail.status) {
-    return (
-      <StateTransition identity="error"><ErrorState
-        error={detail.error || t("ui.issue.notFound")}
-        onRetry={() => void detail.loadIssue(true)}
-      /></StateTransition>
-    );
-  }
-  const authorVisible = authorHiddenForIssueId !== detail.issue.id;
+  const issue = detail.issue;
+  const authorVisible = authorHiddenForIssueId !== issue?.id;
   return (
-    <StateTransition identity="content">
-    <div className={detail.commentsEnabled ? "detail-with-discussion-composer space-y-5" : "space-y-5"}>
-      <IssueDetailToolbar
+    <DetailLayout
+      kind="issue"
+      loading={!issue && detail.loading}
+      error={!issue && !detail.loading ? detail.error || t('ui.issue.notFound') : undefined}
+      onRetry={() => void detail.loadIssue(true)}
+      dock={detail.commentsEnabled}
+      toolbar={issue ? <IssueDetailToolbar
         canManage={detail.canManageIssue}
         authorVisible={authorVisible}
         deleteFeedbackState={detail.deleteFeedbackState}
-        issue={detail.issue}
+        issue={issue}
         onAuthorVisibilityChange={(visible) =>
           setAuthorHiddenForIssueId(visible ? null : detail.issue?.id ?? null)
         }
         onBack={detail.back}
         onDelete={() => void detail.remove()}
         onManage={() => detail.setModerationOpen(true)}
-      />
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
-        <article className="space-y-4">
-          <IssueDetailContent
-            issue={detail.issue}
+      /> : undefined}
+      content={issue && detail.status ? <IssueDetailContent
+            issue={issue}
             profile={detail.profile}
             reveal={detail.revealDetail}
             showAuthor={authorVisible}
             status={detail.status}
-          />
-          {detail.commentsAvailable ? (
+          /> : undefined}
+      discussion={issue && detail.commentsAvailable ? (
             <div className={detail.commentsHighlighted ? "t-panel-reveal" : ""}>
               <Discussion
                 comments={detail.comments}
@@ -75,27 +62,15 @@ export default function IssueDetailPage() {
               />
             </div>
           ) : null}
-        </article>
-        <IssueDetailSidebar
-          burst={detail.burst}
-          issue={detail.issue}
-          onSupport={() => void detail.support()}
-          reveal={detail.revealDetail}
-          supportOpen={detail.supportOpen}
-          supportProgress={detail.supportProgress}
-          supporting={detail.supporting}
-          timeline={detail.timeline}
-        />
-      </div>
-      {detail.canManageIssue ? (
+      panels={issue ? getIssueDetailPanels({ burst: detail.burst, issue, onSupport: () => void detail.support(), reveal: detail.revealDetail, supportOpen: detail.supportOpen, supportProgress: detail.supportProgress, supporting: detail.supporting, timeline: detail.timeline }) : undefined}
+      after={issue && detail.canManageIssue ? (
         <IssueModerationDialog
-          issue={detail.issue}
+          issue={issue}
           onOpenChange={detail.setModerationOpen}
           onUpdated={detail.setIssue}
           open={detail.moderationOpen}
         />
       ) : null}
-    </div>
-    </StateTransition>
+    />
   );
 }

@@ -32,7 +32,7 @@ export function DeletionJobRecovery() {
         </Button>
       </div>
 
-      <div className="overflow-hidden rounded-xl border bg-card">
+      <div className="t-resize overflow-hidden rounded-xl border bg-card">
         {error ? (
           <div className="flex items-start gap-2 px-4 py-3 text-sm text-destructive">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />

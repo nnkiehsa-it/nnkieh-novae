@@ -9,7 +9,7 @@ import type {
 } from "@/types/categories";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ResizableCard } from "@/components/ui/resizable-card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -39,7 +39,7 @@ export function CategorySetupPanel({
 }: CategorySetupPanelProps) {
   useLocaleSubscription();
   return (
-    <ResizableCard className="gap-0 py-0">
+    <Card className="gap-0 py-0">
       <CardHeader className="flex-row items-center justify-between border-b py-4">
         <div>
           <CardTitle>{title}</CardTitle>
@@ -61,7 +61,7 @@ export function CategorySetupPanel({
         >
           <Plus />{translate('ui.setup.addCategory')}</Button>
       </CardContent>
-    </ResizableCard>
+    </Card>
   );
 }
 

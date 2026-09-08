@@ -18,12 +18,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ResizableCard } from "@/components/ui/resizable-card";
+import { Card } from "@/components/ui/card";
 import {
+  EmptyStateContent,
   EmptyState,
-  ErrorState,
-  LoadingState,
+  ErrorStateContent,
 } from "@/components/ui/page-state";
+import { SkeletonRows } from "@/components/ui/skeleton-rows";
 import { Input } from "@/components/ui/input";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
 import {
@@ -59,7 +60,7 @@ export function AccessManagement() {
   } = useAccessManagement();
   return (
     <section className="space-y-6">
-      <ResizableCard>
+      <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">{translate('ui.access.scopeStep')}</CardTitle>
         </CardHeader>
@@ -89,25 +90,23 @@ export function AccessManagement() {
             </Select>
           ) : <div className="hidden sm:block" />}
         </CardContent>
-      </ResizableCard>
+      </Card>
       {scope ? (
         <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
-          <ResizableCard className="gap-0 py-0">
+          <Card className="gap-0 py-0">
             <CardHeader className="border-b py-4">
               <CardTitle className="text-base">{translate('ui.access.currentStep')}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              {loading ? (
-                <div className="p-4">
-                  <LoadingState rows={2} />
-                </div>
+              {loading && !members.length ? (
+                <SkeletonRows rows={2} />
               ) : error ? (
                 <div className="p-4">
-                  <ErrorState error={error} onRetry={() => void load()} />
+                  <ErrorStateContent error={error} onRetry={() => void load()} />
                 </div>
               ) : members.length === 0 ? (
                 <div className="p-4">
-                  <EmptyState
+                  <EmptyStateContent
                     description={translate('ui.access.noneDescription')}
                     title={translate('ui.access.noneTitle')}
                   />
@@ -140,8 +139,8 @@ export function AccessManagement() {
                 </div>
               )}
             </CardContent>
-          </ResizableCard>
-          <ResizableCard>
+          </Card>
+          <Card>
             <CardHeader>
               <CardTitle className="text-base">{translate('ui.access.searchStep')}</CardTitle>
             </CardHeader>
@@ -199,7 +198,7 @@ export function AccessManagement() {
                 <div className="rounded-xl border border-dashed p-5 text-center text-sm text-muted-foreground">{translate('ui.access.searchHint')}</div>
               )}
             </CardContent>
-          </ResizableCard>
+          </Card>
         </div>
       ) : (
         <EmptyState

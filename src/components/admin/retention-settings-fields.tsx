@@ -3,7 +3,7 @@
 import { PlatformNumberSetting } from "@/components/admin/platform-number-setting";
 import { CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { ResizableCard } from "@/components/ui/resizable-card";
+import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useI18n } from "@/i18n";
 import type { DataRetentionSettings } from "@/types/categories";
@@ -74,11 +74,11 @@ export function RetentionSettingsFields({
   retention,
 }: {
   onChange: (key: RetentionKey, value: boolean | number) => void;
-  retention: DataRetentionSettings;
+  retention?: DataRetentionSettings;
 }) {
   const { t } = useI18n();
   return GROUPS.map((group) => (
-    <ResizableCard className="gap-0 py-0" key={group.titleKey}>
+    <Card className="gap-0 py-0" key={group.titleKey}>
       <CardContent className="grid gap-5 px-5 py-6 sm:px-7">
         <div>
           <h2 className="text-sm font-semibold">{t(group.titleKey)}</h2>
@@ -86,7 +86,7 @@ export function RetentionSettingsFields({
         </div>
         <div className="grid gap-4">
           {group.items.map((item, index) => {
-            const enabled = item.enableKey ? retention[item.enableKey] === true : true;
+            const enabled = item.enableKey ? retention?.[item.enableKey] === true : true;
             return (
               <div className={index > 0 ? "border-t pt-4" : ""} key={item.key}>
                 {item.enableKey ? (
@@ -94,17 +94,18 @@ export function RetentionSettingsFields({
                     <Label htmlFor={`retention-${item.enableKey}`}>{t(`ui.admin.retention.${item.enableKey}`)}</Label>
                     <Switch
                       checked={enabled}
+                      disabled={!retention}
                       id={`retention-${item.enableKey}`}
                       onCheckedChange={(value) => onChange(item.enableKey as RetentionKey, value)}
                     />
                   </div>
                 ) : null}
-                {enabled ? (
+                {enabled || !retention ? (
                   <PlatformNumberSetting
                     label={t(`ui.admin.retention.${item.key}`)}
                     max={item.unit === "hours" ? 87_600 : 3_650}
                     onChange={(value) => onChange(item.key, value)}
-                    value={retention[item.key] as number}
+                    value={retention?.[item.key] as number | undefined}
                   />
                 ) : null}
               </div>
@@ -112,6 +113,6 @@ export function RetentionSettingsFields({
           })}
         </div>
       </CardContent>
-    </ResizableCard>
+    </Card>
   ));
 }

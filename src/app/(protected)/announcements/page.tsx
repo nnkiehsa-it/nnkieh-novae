@@ -7,13 +7,10 @@ import { useAnnouncementFeed } from "@/hooks/use-announcement-feed";
 import { usePublicProfiles } from "@/hooks/use-public-profiles";
 import { Button } from "@/components/ui/button";
 import {
-  ErrorState,
   PageHeader,
 } from "@/components/ui/page-state";
-import { FeedCardsSkeleton, FeedEmptyState } from "@/components/ui/route-skeleton";
 import { AnnouncementCard } from "@/components/announcements/announcement-card";
-import { StaggerItem, StaggerList } from "@/components/motion/stagger";
-import { StateTransition, stateTransitionIdentity } from "@/components/motion/state-transition";
+import { FeedList } from "@/components/ui/feed-list";
 
 export default function AnnouncementsPage() {
   useLocaleSubscription();
@@ -34,34 +31,25 @@ export default function AnnouncementsPage() {
         }
         title={translate('ui.nav.announcements')}
       />
-      <StateTransition
-        identity={stateTransitionIdentity({
-          empty: feed.items.length === 0,
-          error: Boolean(feed.error && feed.items.length === 0),
-          loading: feed.loading && feed.items.length === 0,
-        })}
-      >
-      {feed.error && feed.items.length === 0 ? (
-        <ErrorState error={feed.error} onRetry={() => void feed.load()} />
-      ) : feed.loading && feed.items.length === 0 ? (
-        <FeedCardsSkeleton kind="announcement" />
-      ) : feed.items.length === 0 ? (
-        <FeedEmptyState
-          action={
+      <FeedList
+        kind="announcement"
+        items={feed.items}
+        loading={feed.loading}
+        error={feed.error}
+        onRetry={() => void feed.load()}
+        empty={{
+          action:
             feed.canManage ? (
               <Button asChild variant="outline">
                 <Link href="/announcements/new">
                   <Plus />{translate('ui.announcement.createFirst')}</Link>
               </Button>
             ) : undefined
-          }
-          description={translate('ui.announcement.emptyDescription')}
-          title={translate('ui.announcement.emptyTitle')}
-        />
-      ) : (
-        <StaggerList className="grid gap-3 lg:grid-cols-2 lg:items-stretch">
-          {feed.items.map((announcement) => (
-            <StaggerItem className="h-full" key={announcement.id}>
+          ,
+          description: translate('ui.announcement.emptyDescription'),
+          title: translate('ui.announcement.emptyTitle'),
+        }}
+        renderItem={(announcement) => (
               <AnnouncementCard
                 announcement={announcement}
                 burst={feed.likeBurstById[announcement.id] ?? 0}
@@ -70,11 +58,8 @@ export default function AnnouncementsPage() {
                 profile={profiles[announcement.author_uid]}
                 reveal={feed.revealFields}
               />
-            </StaggerItem>
-          ))}
-        </StaggerList>
-      )}
-      </StateTransition>
+        )}
+      />
       {feed.hasMore ? (
         <div className="flex justify-center">
           <Button

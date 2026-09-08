@@ -7,7 +7,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `package.json` / `bun.lock` — Bun 1.4 package management with a pinned install graph; Node 24 remains the Next.js, build-script, and Worker runtime alongside Next.js 16.3, React 19.2, TypeScript 7, Tailwind CSS 4, Radix/shadcn primitives, Motion, Serwist, Vitest, and Playwright.
 - `src/app/` — Next App Router. Route `page.tsx` files assemble views and forward events; they do not import `services/` directly.
 - `src/app/layout.tsx` — root metadata, stable immersive iOS viewport/status-bar configuration, Inter/Roboto Mono plus HarmonyOS Sans TC split-font loading, global providers, global CSS, and nonce-bound critical Managed Turnstile preconnect/loading before hydration.
-- `src/app/globals.css` — semantic light/dark color with shared neutral action-control surfaces that remain independent of custom accent themes, typography, radius, shadow, safe-area, stable small-viewport sizing, standalone-PWA viewport selection, surface tokens, the AppStart safe-area surface, keyboard-aware mobile navigation, pointer/touch focus-ring suppression, non-interactive dialog-surface focus cleanup, and the responsive dock used by the shared discussion composer.
+- `src/app/globals.css` — website-aligned cool blue light/dark surfaces, semantic brand actions and custom accent themes, compact typography and radius scale, restrained elevation, safe-area and stable PWA viewport sizing, keyboard-aware navigation, input-modality focus handling, and the shared discussion composer dock.
 - `src/assets/fonts/harmonyos-sans-tc/` — generated, project-character-scoped HarmonyOS Sans TC Regular, Medium, Semibold, and Bold shards plus CSS; refreshed by `scripts/generate-harmonyos-subset.mjs`.
 - `src/styles/motion.css` — shared high-fluidity motion tokens and recipes for single-surface route entry, persistent navigation feedback, panels, list/layout changes, cards, controls, text, digits, dialogs, sequenced dropdown items, toasts, loading, and success states. Routes immediately retire the previous surface and fade in only the replacement inside normal document stacking, so no page snapshot can cover shell navigation; the root feedback layer preserves a pressed-control echo after its source route unmounts. Reduced-motion fallbacks and the interactive press vocabulary remain centralized here.
 - `src/app/sw.ts` — Serwist service worker; `next.config.mjs` compiles and registers it at `public/sw.js`, while WOFF2 font shards stay outside install-time precaching and load normally through their unicode ranges.
@@ -19,7 +19,8 @@ This document is the maintained map of the repository. Read it before broad sear
 
 ## App Router
 
-- `src/app/login/` — focused Google sign-in presentation with a quiet, stagger-revealed brand statement; decorative product cards stay out of the authentication path.
+- `src/app/login/` — focused Google sign-in presentation with the website's blue brand statement and desktop constellation image; the mobile authentication path stays compact.
+- `public/novae-constellation.webp` — original website brand artwork, reused on the desktop login surface with reserved image dimensions.
 - `src/app/(protected)/layout.tsx` — authenticated application guard and shared shell boundary.
 - `src/app/(protected)/setup/` — admin-only idempotent category setup with completion recovery in `use-initial-setup`; first-visit language selection happens through the shared locale gate before any route.
 - `src/app/(protected)/issues/` — feature-guarded issue redirect, feed, composer, and detail routes.
@@ -32,7 +33,16 @@ This document is the maintained map of the repository. Read it before broad sear
 
 ## Presentation components
 
-- `src/components/ui/` — business-free shadcn/Radix primitives with active product consumers. Ordinary buttons use the same card-colored control surface without a separate primary fill, and ordinary AlertDialog actions share that material; destructive actions alone retain warning color. Fields, overlays, segmented tabs, menus, status badges, skeletons, page states, the shared loading spinner, decoded-image loading/error presentation, and the shared Novae brand lockup share global semantic tokens. `avatar.tsx` keeps a spinner over remote photos until Radix reports them loaded, while `decoded-image.tsx` hides regular images until browser decode completes and then reveals the full frame at once. `card.tsx` keeps the base card server-renderable with the low-cost transitions.dev CSS resize recipe; `resizable-card.tsx` uses position-only Motion layout projection so surrounding layout settles without scaling card copy. `skeleton-reveal.tsx` stacks a field skeleton over its final text/number slot and supplies the centered badge-label handoff used by category/status tags.
+- `src/components/motion/resize-motion.tsx` — shared intrinsic-size animation for `.t-resize`, using the 300ms CSS timing without scaling text; cleans up observers and honors reduced motion.
+- `src/components/ui/feed-list.tsx` — persistent physical card slots for loading, content, error, and empty states; domain content stays keyed by entity inside the retained frame.
+- `src/components/ui/detail-layout.tsx` — persistent detail content and reaction/timeline cards; record loading replaces only their contents.
+- `src/components/ui/skeleton-rows.tsx` — shared pending rows for discussions and administrative lists. Skeleton animation phases follow the document clock.
+- `src/components/dashboard/dashboard-view.tsx` — one dashboard view for pending and resolved metrics; cards remain mounted during data arrival.
+- Custom accent controls, provider, persistence module, and the separate `ResizableCard` implementation are removed. All cards use `Card`; selected tabs use the fixed brand accent.
+- `src/components/ui/` — business-free shared primitives. Primary actions use the adaptive brand color; secondary/cancel controls use neutral surfaces and destructive actions retain warning color. Fields, overlays, tabs, menus, badges, skeletons, page states, loading indicators, image presentation, and branding share semantic tokens. `card.tsx` and the shared resize observer preserve text geometry during resizing; `skeleton-reveal.tsx` overlays placeholders on the actual final field footprint.
+- `src/components/ui/feed-card.tsx` — shared compact title/author/action geometry and grid for proposal, facility, announcement, loading, and empty cards; `FeedProgress` keeps deadline and count in one row so optional deadlines cannot shift the footer.
+- `src/components/ui/feed-toolbar.tsx` — one labelled search/clear/sort control row used by live feeds and disabled route placeholders, without a redundant outer card.
+- `src/components/ui/detail-card.tsx` — shared detail header and body for proposals, facilities, announcements, and their loading placeholders; badges, title, and metadata reserve the same minimum heights.
 - `src/components/motion/` — product-consumed animated numbers and reactions, single-surface route entry, persistent navigation feedback, spring-based list entry/exit/reordering, and non-overlapping state replacement transitions. Reaction hooks still update immediately, confirm in the background, and roll back with retry feedback on failure.
 - `src/components/app-providers.tsx` — root client providers plus global input-modality ownership; keyboard activity enables focus-visible presentation, while pointer movement/down immediately returns controls to pointer presentation.
 - `src/components/app-shell.tsx` / `liquid-nav.tsx` — desktop, compact desktop, and mobile navigation. Primary navigation updates immediately within a stable application shell; selected navigation and tabs use shared-layout motion, route content performs a single replacement-surface fade below navigation, and theme changes crossfade without moving persistent navigation anchors.
@@ -117,6 +127,7 @@ This document is the maintained map of the repository. Read it before broad sear
 
 ## Verification and delivery
 
+- `tests/e2e/feed-layout.spec.ts` — cold-feed response gating and actual skeleton/content geometry comparisons at 390px and 1440px, plus dense card height, overflow, labelled search, and single-surface navigation assertions.
 - `scripts/check-ui-primitives.mjs` / `css-orphan-selectors.mjs` — reject retired Vue references, `transition-all`, arbitrary elevation, ungated hover, orphaned source CSS class selectors, business imports in UI primitives, direct service imports in pages/components, route pages over 220 lines, and domain components over 300 lines. The PostCSS-backed orphan check ignores keyframe percentages and requires a whole class token in product TS/TSX.
 - `scripts/check-i18n.mjs` — validates catalog parity/shape/interpolation, API error references, direct `t()` references, and hard-coded Han text across React/TSX sources.
 - `scripts/generate-all.mjs` — lock-protected sequential entry point for all generated contracts and font subsets; generated outputs remain committed and verification checks for drift explicitly.
@@ -150,6 +161,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `README.md` — Traditional Chinese project entry with stack badges, product scope, architecture overview, local quick start, operational boundaries, and links to repository-owned documentation.
 - `docs/README.md` — documentation index.
 - `docs/product.md` — users, content workflows, initial setup, administration scope, and interface principles.
+- `docs/ui-design.md` — website brand mapping, dense application spacing, shared-component ownership, and loading/motion acceptance criteria for the taste-guided redesign.
 - `docs/routes-and-permissions.md` — complete application route map, role and permission codes, category scopes, backend authorization order, restricted-user behavior, and issue visibility rules.
 - `docs/architecture.md` — browser, Worker, PostgreSQL, Queue, Durable Object, Firebase, Cloudinary, and Notion boundaries plus write/event flow.
 - `docs/local-development.md` — prerequisites, the complete emulator environment, manual frontend work, local database commands, and generated artifacts.

@@ -222,8 +222,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="app-shell bg-[var(--surface-stage)] md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
       <AppNotificationPrompt />
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-background/92 p-3 backdrop-blur-xl md:flex">
-        <div className="px-2 pb-5 pt-2">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-card p-3 md:flex">
+        <div className="mb-4 border-b px-3 pb-5 pt-3">
           <BrandLockup href={issueHref} />
         </div>
         <LiquidNav
@@ -251,7 +251,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <div
           aria-hidden={!showMobileNavigation}
-          className="app-mobile-nav fixed z-30 mx-auto max-w-md rounded-full border bg-background/92 px-3 py-1.5 shadow-[var(--shadow-floating)] backdrop-blur-xl md:hidden"
+          className="app-mobile-nav fixed z-30 mx-auto max-w-md rounded-full border bg-card px-3 py-1.5 shadow-[var(--shadow-floating)] md:hidden"
           data-visible={showMobileNavigation}
           inert={!showMobileNavigation}
         >

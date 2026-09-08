@@ -63,7 +63,7 @@ export function LiquidTabs({
         aria-label={ariaLabel}
         aria-disabled={disabled}
         className={cn(
-          "t-tabs relative isolate inline-flex h-8 max-w-full items-center gap-0.5 overflow-x-auto rounded-full bg-muted p-[3px]",
+          "t-tabs relative isolate inline-flex h-9 max-w-full items-center gap-1 overflow-x-auto rounded-full p-[3px]",
           className,
         )}
       >
@@ -72,7 +72,7 @@ export function LiquidTabs({
 
           return (
             <TabsPrimitive.Trigger
-              className="t-tab t-tab-label relative z-10 isolate inline-flex h-[1.625rem] shrink-0 items-center justify-center gap-1 rounded-full px-3 font-medium leading-3.5 text-muted-foreground outline-none transition-colors duration-[var(--tabs-dur)] ease-[var(--tabs-ease)] focus-visible:ring-2 focus-visible:ring-ring/40"
+              className="t-tab t-tab-label relative z-10 isolate inline-flex h-[1.875rem] shrink-0 items-center justify-center gap-1 rounded-full px-3 font-semibold leading-4 text-muted-foreground outline-none transition-colors duration-[var(--tabs-dur)] ease-[var(--tabs-ease)] focus-visible:ring-2 focus-visible:ring-ring"
               data-control-label=""
               data-displayed-active={displayedActive}
               data-liquid-tab={option.value}

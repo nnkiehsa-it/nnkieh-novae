@@ -7,13 +7,13 @@ import { useI18n } from "@/i18n";
 import { useAnnouncementDetail } from "@/hooks/use-announcement-detail";
 import { formatDate } from "@/lib/format";
 import { shareCurrentPage } from "@/lib/share";
-import { cn } from "@/lib/utils";
 import { returnToPreviousRoute } from "@/lib/navigation-memory";
 import { ContentRenderer } from "@/components/content-renderer";
+import { ContentAuthor } from "@/components/content-author";
 import { Discussion } from "@/components/discussion";
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { LikeActionButton } from "@/components/motion/like-action-button";
-import { StateTransition } from "@/components/motion/state-transition";
+import { DetailLayout } from "@/components/ui/detail-layout";
 import { DetailToolbar } from "@/components/detail-toolbar";
 import {
   AlertDialog,
@@ -26,18 +26,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { PendingAlertDialogAction } from "@/components/ui/pending-alert-dialog-action";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { CardContent } from "@/components/ui/card";
-import { ResizableCard } from "@/components/ui/resizable-card";
+import { DetailCardHeader, DetailCardBody } from "@/components/ui/detail-card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ErrorState } from "@/components/ui/page-state";
-import { DetailRouteSkeleton } from "@/components/ui/route-skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
@@ -46,25 +42,15 @@ export default function AnnouncementDetailPage() {
   const router = useRouter();
   const { t } = useI18n();
   const detail = useAnnouncementDetail();
-  if (detail.loading)
-    return (
-      <StateTransition identity="loading">
-        <DetailRouteSkeleton kind="announcement" />
-      </StateTransition>
-    );
-  if (detail.error || !detail.announcement) {
-    return (
-      <StateTransition identity="error"><ErrorState
-        error={detail.error || t("ui.announcement.notFound")}
-        onRetry={() => void detail.load(true)}
-      /></StateTransition>
-    );
-  }
   const { announcement, profile } = detail;
   return (
-    <StateTransition identity="content">
-    <div className={detail.commentsEnabled ? "detail-with-discussion-composer space-y-5" : "space-y-5"}>
-      <DetailToolbar
+    <DetailLayout
+      kind="announcement"
+      loading={!announcement && detail.loading}
+      error={!announcement && !detail.loading ? detail.error || t('ui.announcement.notFound') : undefined}
+      onRetry={() => void detail.load(true)}
+      dock={detail.commentsEnabled}
+      toolbar={announcement ? <DetailToolbar
         actions={
           detail.canManage ? (
             <DropdownMenu>
@@ -123,46 +109,33 @@ export default function AnnouncementDetailPage() {
                 .catch(() => toast.error(t("ui.common.shareFailed")))
         }
         shareLabel={t("ui.announcement.share")}
-      />
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start">
-        <article className="space-y-4">
-          <ResizableCard className="gap-0 overflow-hidden py-0">
-            <div
-              className={cn(
-                "px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6",
-                Boolean(announcement.content?.trim()) && "border-b",
-              )}
-            >
-              <p className="text-[0.8125rem] font-medium text-muted-foreground">
+      /> : undefined}
+      content={announcement ? <>
+            <DetailCardHeader
+              separated={Boolean(announcement.content?.trim())}
+              badges={<p className="text-[0.8125rem] font-medium text-tint-content">
                 {t("ui.announcement.campus")}
-              </p>
-              <SkeletonReveal as="div" className="mt-2.5" enabled={detail.revealDetail} skeleton={<Skeleton className="h-8 w-3/5" />}><h1 className="text-balance text-2xl font-semibold leading-8 sm:text-[1.75rem] sm:leading-9">
+              </p>}
+              title={<SkeletonReveal as="div" enabled={detail.revealDetail} skeleton={<Skeleton className="h-9 w-3/5" />}><h1 className="text-balance">
                 {announcement.title}
-              </h1></SkeletonReveal>
-              <div className="mt-3 flex items-center gap-2 text-[0.8125rem] text-muted-foreground">
-                <Avatar className="size-5">
-                  <AvatarImage
-                    alt={profile?.displayName ?? t("ui.announcement.author")}
-                    src={profile?.photoUrl ?? undefined}
-                  />
-                  <AvatarFallback>{profile?.displayName?.slice(0, 1) || "?"}</AvatarFallback>
-                </Avatar>
-                <SkeletonReveal enabled={detail.revealDetail} skeleton={<Skeleton className="h-4 w-20" />}><span>{profile?.displayName || t("ui.announcement.admin")}</span></SkeletonReveal>
+              </h1></SkeletonReveal>}
+              metadata={<>
+                <ContentAuthor profile={profile ?? undefined} />
                 <span>·</span>
                 <SkeletonReveal enabled={detail.revealDetail} skeleton={<Skeleton className="h-4 w-32" />}><span>{formatDate(announcement.published_at)}</span></SkeletonReveal>
-              </div>
-            </div>
+              </>}
+            />
             {announcement.content?.trim() ? (
-              <CardContent className="py-5 sm:px-7 sm:py-6">
+              <DetailCardBody>
                 <ContentRenderer
                   content={announcement.content}
                   fallbackAlt={announcement.title}
                   revealText={detail.revealDetail}
                 />
-              </CardContent>
+              </DetailCardBody>
             ) : null}
-          </ResizableCard>
-          <Discussion
+      </> : undefined}
+      discussion={announcement ? <Discussion
             comments={detail.comments}
             sort={detail.commentSort}
             enabled={detail.commentsEnabled}
@@ -173,10 +146,8 @@ export default function AnnouncementDetailPage() {
             onDelete={detail.removeComment}
             onLoadMore={detail.loadMoreComments}
             onSortChange={detail.setCommentSort}
-          />
-        </article>
-        <aside className="lg:sticky lg:top-6">
-          <ResizableCard className="gap-4 p-5 sm:p-6">
+          /> : undefined}
+      panels={announcement ? [{ key: "reaction", content:
             <div className="flex flex-col gap-4">
             <div className="flex justify-center">
               <LikeActionButton
@@ -198,10 +169,7 @@ export default function AnnouncementDetailPage() {
               {t("ui.announcement.peopleLiked")}
             </div></SkeletonReveal>
             </div>
-          </ResizableCard>
-        </aside>
-      </div>
-    </div>
-    </StateTransition>
+      }] : undefined}
+    />
   );
 }

@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { ErrorState } from "@/components/ui/page-state";
+import { ErrorStateContent } from "@/components/ui/page-state";
+import { SkeletonRows } from "@/components/ui/skeleton-rows";
 import { useAdminUsers } from "@/hooks/use-admin-console";
 import { useI18n } from "@/i18n";
 import { formatDate } from "@/lib/format";
@@ -42,10 +43,6 @@ export function UserManagement() {
     () => users.filter((user) => isUserRestricted(user)).length,
     [users],
   );
-
-  if (error && users.length === 0) {
-    return <ErrorState error={error} onRetry={() => void load(query)} />;
-  }
 
   return (
     <div className="space-y-5">
@@ -87,7 +84,7 @@ export function UserManagement() {
         </Button>
       </form>
 
-      <div className="overflow-hidden rounded-xl border bg-card">
+      <div className="t-resize overflow-hidden rounded-xl border bg-card">
         <div className="hidden grid-cols-[minmax(10rem,1.4fr)_6rem_7.5rem_7.5rem_minmax(7rem,1fr)_2.5rem] gap-3 border-b bg-muted/35 px-4 py-2.5 text-xs font-medium text-muted-foreground lg:grid">
           <span>{t("ui.adminConsole.userColumn")}</span>
           <span>{t("ui.adminConsole.statusColumn")}</span>
@@ -97,7 +94,7 @@ export function UserManagement() {
           <span />
         </div>
 
-        {users.length === 0 && !loading ? (
+        {error && !users.length ? <ErrorStateContent error={error} onRetry={() => void load(query)} /> : loading && !users.length ? <SkeletonRows /> : users.length === 0 ? (
           <div className="px-4 py-10 text-center text-sm text-muted-foreground">
             {t("ui.adminConsole.noUsers")}
           </div>

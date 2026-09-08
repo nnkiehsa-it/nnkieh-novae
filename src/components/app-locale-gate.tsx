@@ -15,13 +15,13 @@ export function AppLocaleGate({ children }: { children: React.ReactNode }) {
   if (!gating) return <>{children}</>;
 
   return (
-    <AnimatePresence initial={false} mode="wait">
+    <AnimatePresence initial={false} mode="popLayout">
     {entered ? (
       <motion.div
         animate={{ opacity: 1, y: 0 }}
-        initial={{ opacity: 0, y: 16 }}
+        initial={{ opacity: 0.85, y: 0 }}
         key="localized-app"
-        transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
       >
         {children}
       </motion.div>

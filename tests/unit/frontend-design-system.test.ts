@@ -97,7 +97,8 @@ describe("React frontend design system", () => {
     expect(motion).toContain("--skeleton-appear-delay: 0ms");
     expect(motion).toContain("--reveal-dur: 240ms");
     expect(motion).not.toContain("t-route-blur");
-    expect(motion).toContain("t-route-in");
+    expect(routeSurface).toContain('animation.id = "novae-route-enter"');
+    expect(routeSurface).not.toContain('key={pathname}');
     expect(motion).not.toContain("novae-object-morph");
     expect(motion).not.toContain("view-transition-group(novae-route-content)");
     expect(read("src/components/app-shell.tsx")).toContain("<RouteSurface>{children}</RouteSurface>");
@@ -133,7 +134,7 @@ describe("React frontend design system", () => {
     expect(layout).toContain('statusBarStyle: "black-translucent"');
     expect(layout).toContain('viewportFit: "cover"');
     expect(globals.match(/background: var\(--surface-stage\)/gu)?.length).toBeGreaterThanOrEqual(2);
-    expect(manifest).toContain('theme_color: "#f9f9f9"');
+    expect(manifest).toContain('theme_color: "#f5f7fb"');
   });
 
   it("omits proposal discussion when its category has no comment capability", () => {
@@ -150,7 +151,7 @@ describe("React frontend design system", () => {
     const thread = read("src/components/comments/comment-thread.tsx");
     const globals = read("src/app/globals.css");
     const layout = read("src/app/layout.tsx");
-    expect(discussion).toContain('<ResizableCard className="gap-0 overflow-hidden py-0">');
+    expect(discussion).toContain('<Card className="gap-0 overflow-hidden py-0">');
     expect(discussion).toContain('className="discussion-composer-dock"');
     expect(discussion).toContain('new ResizeObserver(updateClearance)');
     expect(discussion).toContain('--discussion-composer-height');
@@ -173,7 +174,7 @@ describe("React frontend design system", () => {
 
   it("warms privileged route shells immediately and gives them one mobile toolbar", () => {
     const preload = read("src/hooks/use-route-preload.ts");
-    const dashboard = read("src/app/(protected)/dashboard/page.tsx");
+    const dashboard = read("src/components/dashboard/dashboard-view.tsx");
     const administration = read("src/app/(protected)/admin/management/page.tsx");
     const navigationMemory = read("src/lib/navigation-memory.ts");
     expect(preload).toContain('router.prefetch("/dashboard")');
@@ -194,21 +195,26 @@ describe("React frontend design system", () => {
     const announcementCard = read("src/components/announcements/announcement-card.tsx");
     const resolutionNotice = read("src/components/content-resolution-notice.tsx");
     expect(skeleton).toContain("<Button");
-    expect(skeleton).toContain("export function FeedEmptyState");
-    expect(skeleton).toContain("route-card-skeleton h-full gap-4 p-5 sm:p-6");
+    const feed = read("src/components/ui/feed-list.tsx");
+    const detail = read("src/components/ui/detail-layout.tsx");
+    expect(skeleton).toContain("<FeedList");
+    expect(feed).toContain("data-feed-slot={index}");
+    expect(feed).toContain("<FeedCard");
+    expect(skeleton).toContain("<FeedToolbar");
+    expect(detail).toContain("<DetailCardHeader");
     expect(skeleton).toContain('kind !== "announcement" ?');
     expect(skeleton).toContain('showCreate ? (');
     expect(announcementLoading).toContain('session.can("announcement.manage")');
     expect(skeleton).toContain("<Input");
     expect(skeleton).toContain("<Textarea");
-    expect(skeleton).toContain("<StableDetailToolbar />");
+    expect(skeleton).toContain("<DetailLayout");
     expect(skeleton).not.toContain("stripMarkdownImages(content)");
     expect(skeleton).not.toContain("content?: string");
-    expect(skeleton).toMatch(/export function DetailRouteSkeleton\(\{\s*kind = "issue",\s*\}/u);
+    expect(skeleton).toContain('DetailRouteSkeleton({ kind = "issue" }');
     expect(skeleton).toContain('kind === "announcement"');
     expect(skeleton).not.toContain("index % 2");
-    expect(skeleton).toContain('const isIssue = kind === "issue"');
-    expect(skeleton).toContain('const isFacility = kind === "facility"');
+    expect(feed).toContain('kind === "issue"');
+    expect(feed).toContain('kind === "facility"');
     expect(skeleton).not.toContain('min-h-[25rem]');
     expect(skeleton).not.toContain('Skeleton className="size-9 rounded-xl"');
     expect(skeleton).not.toContain("ContentResolutionNoticeSkeleton");
@@ -221,22 +227,21 @@ describe("React frontend design system", () => {
     expect(facilityCard).not.toMatch(/t-data-content-enter[^\n]*<LikeActionButton/u);
     expect(announcementCard).not.toMatch(/t-data-content-enter[^\n]*<LikeActionButton/u);
     for (const card of [issueCard, facilityCard, announcementCard]) {
-      expect(card).toContain('className="absolute inset-0 rounded-xl');
+      expect(card).toContain('<FeedCard');
       expect(card).not.toContain("after:absolute after:inset-0");
     }
   });
 
   it("keeps card copy unscaled while animating surrounding layout", () => {
     const card = read("src/components/ui/card.tsx");
-    const resizableCard = read("src/components/ui/resizable-card.tsx");
+    const resize = read("src/components/motion/resize-motion.tsx");
     expect(card).toContain("t-resize flex flex-col");
     expect(card).not.toContain('"use client"');
-    expect(resizableCard).toContain('layout="position"');
-    expect(resizableCard).not.toContain("layout\n");
-    expect(resizableCard).toContain("transition={{ layout: cardLayoutTransition }}");
-    expect(resizableCard).toContain("duration: 0.3");
-    expect(resizableCard).toContain("ease: [0.22, 1, 0.36, 1]");
-    expect(read("src/components/discussion.tsx")).toContain("<ResizableCard");
+    expect(resize).toContain("new ResizeObserver");
+    expect(resize).toContain('getPropertyValue("--resize-dur")');
+    expect(resize).not.toContain("scale:");
+    expect(resize).toContain("observer.disconnect()");
+    expect(read("src/components/discussion.tsx")).toContain("<Card");
   });
 
   it("keeps the startup fallback inside the same iOS safe-area surface", () => {
@@ -293,7 +298,8 @@ describe("React frontend design system", () => {
   it("keeps route modules composed from reusable domain components", () => {
     const issueDetail = read("src/app/(protected)/issues/[filter]/[issueId]/page.tsx");
     expect(issueDetail).toContain("<IssueDetailContent");
-    expect(issueDetail).toContain("<IssueDetailSidebar");
+    expect(issueDetail).toContain("getIssueDetailPanels");
+    expect(issueDetail).toContain("<DetailLayout");
     expect(issueDetail).toContain("<IssueModerationDialog");
     expect(issueDetail.split(/\r?\n/u).length).toBeLessThan(350);
   });
@@ -304,11 +310,10 @@ describe("React frontend design system", () => {
     const alertDialog = read("src/components/ui/alert-dialog.tsx");
     expect(button).toContain("buttonVariants");
     expect(button).toContain('data-control-label=""');
-    expect(button).toContain('default:\n          "bg-card text-card-foreground');
-    expect(button).not.toContain('default: "bg-primary text-primary-foreground');
-    expect(alertDialog).toMatch(/function AlertDialogCancel[\s\S]*variant = "default"/u);
+    expect(button).toContain('default:\n          "bg-primary text-primary-foreground');
+    expect(alertDialog).toMatch(/function AlertDialogCancel[\s\S]*variant = "outline"/u);
     expect(read("src/app/globals.css")).not.toContain("--theme-primary-");
-    expect(read("src/theme/accent-theme.ts")).not.toContain("accentButtonColors");
+    expect(read("src/app/globals.css")).not.toContain("--theme-accent");
     expect(read("src/components/ui/card.tsx")).toContain('data-slot="card"');
     expect(dialog).toContain('data-slot="dialog-content"');
     expect(dialog).toContain("fixed inset-0 z-50 grid place-items-center");

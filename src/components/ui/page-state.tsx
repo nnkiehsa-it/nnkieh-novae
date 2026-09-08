@@ -24,12 +24,12 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
+        "flex flex-col gap-3 border-b pb-4 sm:flex-row sm:items-center sm:justify-between",
         className,
       )}
     >
       <div className="min-w-0">
-        <h1 className="text-balance text-2xl font-semibold leading-8">
+        <h1 className="text-balance text-2xl font-semibold leading-8 tracking-[-0.035em]">
           {title}
         </h1>
         {description ? (
@@ -51,7 +51,7 @@ export function LoadingState({ rows = 5 }: { rows?: number }) {
   return (
     <div className="grid gap-2" aria-busy="true" aria-label="Loading">
       {Array.from({ length: rows }, (_, index) => (
-        <Card className="t-skeleton gap-3 p-4" key={index}>
+        <Card className="gap-3 p-4" key={index}>
           <div className="flex items-center justify-between gap-3">
             <Skeleton className="h-4 w-2/3" />
             <Skeleton className="h-6 w-16 rounded-full" />
@@ -63,7 +63,7 @@ export function LoadingState({ rows = 5 }: { rows?: number }) {
   );
 }
 
-export function EmptyState({
+export function EmptyStateContent({
   action,
   description,
   title,
@@ -73,7 +73,7 @@ export function EmptyState({
   title: string;
 }) {
   return (
-    <Card className="items-center px-5 py-12 text-center">
+    <div className="flex flex-col items-center gap-4 px-5 py-8 text-center">
       <div className="grid size-10 place-items-center rounded-full bg-muted text-muted-foreground">
         <Inbox className="size-5" />
       </div>
@@ -84,11 +84,11 @@ export function EmptyState({
         </p>
       </div>
       {action}
-    </Card>
+    </div>
   );
 }
 
-export function ErrorState({
+export function ErrorStateContent({
   error,
   onRetry,
 }: {
@@ -96,8 +96,8 @@ export function ErrorState({
   onRetry?: () => void;
 }) {
   return (
-    <Card
-      className="t-shake items-center px-5 py-10 text-center"
+    <div
+      className="flex flex-col items-center gap-4 px-5 py-8 text-center"
       data-error="true"
     >
       <div className="grid size-10 place-items-center rounded-full bg-destructive/10 text-destructive">
@@ -113,8 +113,16 @@ export function ErrorState({
         <Button variant="outline" onClick={onRetry}>
           <RefreshCw />{translate('ui.common.reload')}</Button>
       ) : null}
-    </Card>
+    </div>
   );
+}
+
+export function EmptyState(props: React.ComponentProps<typeof EmptyStateContent>) {
+  return <Card className="gap-0 p-0"><EmptyStateContent {...props} /></Card>;
+}
+
+export function ErrorState(props: React.ComponentProps<typeof ErrorStateContent>) {
+  return <Card className="gap-0 p-0"><ErrorStateContent {...props} /></Card>;
 }
 
 export function BusyLabel({
