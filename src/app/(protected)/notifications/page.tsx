@@ -102,7 +102,10 @@ export default function NotificationsPage() {
                 const notification = state.notifications[index];
                 const rowIdentity = pending ? "loading" : notification ? notification.id : view;
                 return (
-                  <StaggerItem key={index}>
+                  <StaggerItem
+                    initial={index < SKELETON_ROWS ? false : undefined}
+                    key={index}
+                  >
                     <ContentTransition identity={rowIdentity}>
                       {notification ? (
                         <button

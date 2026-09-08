@@ -81,12 +81,10 @@
 @keyframes t-card-surface-in {
   from {
     opacity: 0;
-    transform: translateY(var(--motion-distance-xs));
     filter: blur(var(--motion-blur-sm));
   }
   to {
     opacity: 1;
-    transform: translateY(0);
     filter: blur(0);
   }
 }

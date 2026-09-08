@@ -84,6 +84,13 @@ export default async function RootLayout({
               href="https://challenges.cloudflare.com"
               rel="dns-prefetch"
             />
+            <link
+              as="script"
+              crossOrigin="anonymous"
+              href="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+              nonce={nonce}
+              rel="preload"
+            />
           </>
         ) : null}
       </head>

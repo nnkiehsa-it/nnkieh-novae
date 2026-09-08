@@ -11,6 +11,7 @@ describe("Turnstile loading", () => {
     const layout = read("src/app/layout.tsx");
     const provider = read("src/components/turnstile-provider.tsx");
     expect(layout).toContain('rel="preconnect"');
+    expect(layout).toContain('rel="preload"');
     expect(layout).toContain('strategy="beforeInteractive"');
     expect(provider).toContain('appearance: "always"');
     expect(provider).toContain('execution: "execute"');

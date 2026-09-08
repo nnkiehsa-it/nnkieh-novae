@@ -8,26 +8,26 @@ export function StaggerList({
   children,
   className,
   ...props
-}: Omit<ComponentProps<typeof motion.div>, "children"> & { children: ReactNode }) {
+}: Omit<ComponentProps<"div">, "children"> & { children: ReactNode }) {
   return (
-    <motion.div className={cn("t-stagger-list relative", className)} layout="position" {...props}>
-      <AnimatePresence mode="popLayout">
+    <div className={cn("t-stagger-list relative", className)} {...props}>
+      <AnimatePresence>
         {children}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
 
-export function StaggerItem({ className, ...props }: ComponentProps<typeof motion.div>) {
+export function StaggerItem({ className, initial, ...props }: ComponentProps<typeof motion.div>) {
   const reduced = useReducedMotion();
+  const defaultInitial = reduced ? false : { opacity: 0, filter: "blur(1px)" };
   return (
     <motion.div
       className={cn("t-stagger-item", className)}
-      initial={reduced ? false : { opacity: 0, y: 8, filter: "blur(1px)" }}
-      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-      exit={reduced ? undefined : { opacity: 0, y: -6, filter: "blur(1px)" }}
-      layout="position"
-      transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 380, damping: 34, mass: 0.72 }}
+      initial={initial !== undefined ? initial : defaultInitial}
+      animate={{ opacity: 1, filter: "blur(0px)" }}
+      exit={reduced ? undefined : { opacity: 0, filter: "blur(1px)" }}
+      transition={reduced ? { duration: 0 } : { duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
       {...props}
     />
   );
