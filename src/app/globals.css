@@ -16,6 +16,9 @@
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-hover: var(--primary-hover);
+  --color-action: var(--action);
+  --color-action-foreground: var(--action-foreground);
+  --color-action-hover: var(--action-hover);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary-hover: var(--secondary-hover);
@@ -55,8 +58,11 @@
   --card-foreground: #101828;
   --popover: #fdfefe;
   --popover-foreground: #101828;
-  --accent: #1d68ed;
+  --accent: #1557d5;
   --accent-foreground: #f7f9ff;
+  --action: var(--foreground);
+  --action-foreground: var(--background);
+  --action-hover: color-mix(in oklab, var(--action) 92%, var(--action-foreground));
   --tint-content: var(--accent);
   --tint-surface: color-mix(in srgb, var(--accent) 9%, var(--card));
   --tint-surface-hover: color-mix(in srgb, var(--accent) 14%, var(--card));
@@ -101,8 +107,8 @@
   --notification-accent: var(--tint-content);
   --surface-stage: #f5f7fb;
   --surface-inset: #edf2f8;
-  --surface-hover: rgb(29 104 237 / 5%);
-  --surface-active: rgb(29 104 237 / 10%);
+  --surface-hover: rgb(21 87 213 / 5%);
+  --surface-active: rgb(21 87 213 / 10%);
   --backdrop: rgb(16 24 40 / 32%);
   --radius: 0.75rem;
   --shadow-control: 0 1px 2px rgb(16 40 80 / 4%);
@@ -129,7 +135,7 @@
   --card-foreground: #edf3fb;
   --popover: #1a2534;
   --popover-foreground: #edf3fb;
-  --accent: #4f80ff;
+  --accent: #5d8ff0;
   --accent-foreground: #0d121b;
   --tint-content: var(--accent);
   --tint-surface: color-mix(in srgb, var(--accent) 13%, var(--card));
@@ -398,6 +404,15 @@ html[data-input-modality="pointer"] :focus-visible {
     max(0.75rem, var(--safe-bottom)) +
     1.25rem
   );
+}
+
+@media (max-width: 47.99rem) {
+  body:has(.app-mobile-nav[data-visible="true"])
+    [data-sonner-toaster][data-y-position="bottom"] {
+    bottom: calc(
+      var(--mobile-nav-height) + var(--mobile-nav-bottom-gap) + 0.75rem
+    ) !important;
+  }
 }
 
 @media (min-width: 48rem) {

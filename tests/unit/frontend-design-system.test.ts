@@ -342,7 +342,7 @@ describe("React frontend design system", () => {
     const alertDialog = read("src/components/ui/alert-dialog.tsx");
     expect(button).toContain("buttonVariants");
     expect(button).toContain('data-control-label=""');
-    expect(button).toContain('default:\n          "bg-primary text-primary-foreground');
+    expect(button).toContain('default:\n          "bg-action text-action-foreground');
     expect(alertDialog).toMatch(/function AlertDialogCancel[\s\S]*variant = "outline"/u);
     expect(read("src/app/globals.css")).not.toContain("--theme-primary-");
     expect(read("src/app/globals.css")).not.toContain("--theme-accent");

@@ -103,7 +103,7 @@ export default function LoginPage() {
       </section>
 
       <section className="flex min-h-[100svh] items-center justify-center px-4 py-12 sm:px-8">
-        <div className="t-panel-reveal w-full max-w-sm border-t-2 border-tint-content pt-6">
+        <div className="t-panel-reveal w-full max-w-sm pt-6">
           <div className="mb-6 space-y-4">
             <BrandLockup className="lg:hidden" />
             <div>

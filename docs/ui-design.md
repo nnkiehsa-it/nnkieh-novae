@@ -21,7 +21,7 @@ Taste-guided visual overhaul for a daily-use campus application, using the curre
 - Blue is the fixed brand accent, expressed through semantic tokens. Dark blue actions use dark ink for readable contrast. Status colors retain their operational meaning.
 - HarmonyOS Sans TC leads the existing self-hosted font stack. Page headings are 24px, detail headings 24-26px, feed titles 15px, ordinary controls 13px, metadata 12px. Editable mobile text stays at 16px.
 - Base radius 12px, cards 16px, compact inset regions 10.5px; round avatars and the mobile navigation dock retain their functional shapes.
-- Primary actions use brand fill, cancel/secondary actions remain neutral. Elevation is centralized in three subtle shadow tokens.
+- Primary actions use adaptive neutral ink, while accent remains reserved for brand emphasis, selected states, and links. Cancel/secondary actions remain neutral. Elevation is centralized in three subtle shadow tokens.
 
 ## Density and reuse
 
