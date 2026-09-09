@@ -12,9 +12,7 @@ type VditorInstance = InstanceType<typeof import("vditor").default>;
 const vditorCdn = "https://unpkg.com/vditor@4.0.0";
 
 function findEditable(root: HTMLElement) {
-  return root.querySelector<HTMLElement>(
-    '[class~="vditor-ir"] > [contenteditable="true"]',
-  );
+  return root.querySelector<HTMLElement>('[class~="vditor-wysiwyg"] > [contenteditable="true"]');
 }
 
 function decorateEditable(
@@ -121,7 +119,7 @@ export function MarkdownEditor({
         lang: locale === "en" ? "en_US" : "zh_TW",
         link: { isOpen: false },
         minHeight: 208,
-        mode: "ir",
+        mode: "wysiwyg",
         icon: "ant",
         placeholder,
         preview: {

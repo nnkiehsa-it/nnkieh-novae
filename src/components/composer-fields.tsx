@@ -77,14 +77,8 @@ export function ComposerField({
             {content.length} / {INPUT_LIMITS.content}
           </span>
         </div>
-        <p
-          className="text-xs leading-5 text-muted-foreground"
-          id="composer-content-help"
-        >
-          {translate("markdown.editorHelp")}
-        </p>
         <MarkdownEditor
-          ariaDescribedBy="composer-content-help composer-content-count"
+          ariaDescribedBy="composer-content-count"
           ariaLabel={contentLabel}
           content={content}
           id="composer-content"

@@ -20,7 +20,6 @@ const messages = {
   'markdown.middleTitleH2': 'Subheading (H2)',
   'markdown.theMostEyeCatchingTitleStyle': 'Main heading style',
   'markdown.insertTable': 'Insert table',
-  'markdown.editorHelp': 'Type your content directly. Select text to format it from the toolbar; you do not need to know Markdown.',
   'markdown.editorLoading': 'Loading editor',
   'markdown.imageAttachments': 'Image attachments',
   'markdown.contentTooLong': 'Content cannot exceed {count} characters.',

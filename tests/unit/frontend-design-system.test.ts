@@ -71,7 +71,7 @@ describe("React frontend design system", () => {
   it("keeps the Markdown editor client-only and images outside its content", () => {
     const editor = read("src/components/markdown-editor.tsx");
     const mediaAttachments = read("src/components/composer-media-attachments.tsx");
-    expect(editor).toContain('mode: "ir"');
+    expect(editor).toContain('mode: "wysiwyg"');
     expect(editor).toContain("cache: { enable: false }");
     expect(editor).toContain("onPasteCapture={handleImageTransfer}");
     expect(editor).not.toContain('"undo"');

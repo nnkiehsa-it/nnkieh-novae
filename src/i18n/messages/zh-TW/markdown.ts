@@ -20,7 +20,6 @@ const messages = {
   'markdown.middleTitleH2': '中標題 (H2)',
   'markdown.theMostEyeCatchingTitleStyle': '主要標題樣式',
   'markdown.insertTable': '插入表格',
-  'markdown.editorHelp': '直接輸入內容；選取文字後可用工具列套用格式，不需要記住 Markdown 語法。',
   'markdown.editorLoading': '正在載入編輯器',
   'markdown.imageAttachments': '圖片附件',
   'markdown.contentTooLong': '內容不能超過 {count} 字。',

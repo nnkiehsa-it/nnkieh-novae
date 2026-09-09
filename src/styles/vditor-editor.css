@@ -32,12 +32,6 @@
   --count-background-color: var(--muted);
   --heading-border-color: var(--border);
   --blockquote-color: var(--muted-foreground);
-  --ir-heading-color: var(--primary);
-  --ir-title-color: var(--muted-foreground);
-  --ir-bi-color: var(--foreground);
-  --ir-link-color: var(--primary);
-  --ir-bracket-color: var(--primary);
-  --ir-paren-color: var(--muted-foreground);
   border: 0;
   border-radius: var(--radius-xl);
   box-shadow: none;
@@ -105,15 +99,16 @@
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
 }
 
-.novae-markdown-editor [class~="vditor-ir"] {
+.novae-markdown-editor [class~="vditor-wysiwyg"] {
   min-height: 0;
   background: var(--card);
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
 }
 
-.novae-markdown-editor [class~="vditor-ir"] > [contenteditable="true"] {
+.novae-markdown-editor [class~="vditor-wysiwyg"] > [contenteditable="true"] {
   min-height: 13rem;
   padding: 1rem 1rem 1.5rem;
+  overflow-x: auto;
   color: var(--foreground);
   background: var(--card);
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
@@ -125,7 +120,7 @@
   user-select: text;
 }
 
-.novae-markdown-editor [class~="vditor-ir"] > [contenteditable="true"]:focus {
+.novae-markdown-editor [class~="vditor-wysiwyg"] > [contenteditable="true"]:focus {
   background: var(--card);
 }
 
@@ -202,7 +197,13 @@
 .novae-markdown-editor [class~="vditor-reset"] table td,
 .novae-markdown-editor [class~="vditor-reset"] table th {
   border-color: var(--border);
+  min-width: 8rem;
+  vertical-align: top;
   white-space: normal;
+}
+
+.novae-markdown-editor [class~="vditor-reset"] table {
+  min-width: max-content;
 }
 
 .novae-markdown-editor [class~="vditor-reset"] table th {
@@ -230,7 +231,7 @@
     padding: 0;
   }
 
-  .novae-markdown-editor [class~="vditor-ir"] > [contenteditable="true"] {
+  .novae-markdown-editor [class~="vditor-wysiwyg"] > [contenteditable="true"] {
     min-height: 12rem;
     padding: 0.875rem 0.875rem 1.25rem;
   }

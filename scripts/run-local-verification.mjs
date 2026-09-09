@@ -44,12 +44,7 @@ const bun = process.platform === "win32" ? "bun.exe" : "bun";
 const steps = {
   checks: [
     ["generated artifacts", node, ["scripts/verify-generated.mjs"]],
-    ["TypeScript", executable("tsc"), ["--noEmit"]],
-    [
-      "unused declarations",
-      executable("tsc"),
-      ["--noEmit", "--noUnusedLocals", "--noUnusedParameters"],
-    ],
+    ["TypeScript", executable("tsc"), ["--noEmit", "--noUnusedLocals", "--noUnusedParameters"]],
     ["translations", node, ["scripts/check-i18n.mjs"]],
     ["UI architecture", node, ["scripts/check-ui-primitives.mjs"]],
     ["ESLint", executable("eslint"), ["."]],
@@ -75,9 +70,7 @@ const steps = {
 };
 
 steps.fast = [
-  ...steps.checks.slice(0, 6),
-  steps.checks[8],
-  steps.checks[9],
+  ...steps.checks.filter(([label]) => label !== "production bundle" && label !== "build budget"),
   ...steps.tests,
 ];
 

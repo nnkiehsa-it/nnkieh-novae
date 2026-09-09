@@ -160,8 +160,8 @@ export function getIssueDetailPanels({
   timeline: ReturnType<typeof getIssueOperationTimeItems>;
 }) {
   const panels: DetailPanel[] = [];
-  if (issue.support_enabled) panels.push({ key: "reaction", content: <>
-          <div className="flex items-center justify-between gap-3">
+  if (issue.support_enabled) panels.push({ key: "reaction", content: <div className="grid gap-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
             <p className="text-sm font-medium">{translate('ui.issue.supportProgress')}</p>
             <SkeletonReveal enabled={reveal} skeleton={<Skeleton className="h-5 w-14" />}><p className="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums">
               <AnimatedNumber value={issue.support_count} />
@@ -178,7 +178,7 @@ export function getIssueDetailPanels({
               />
             </div>
           ) : null}
-          <div className="flex justify-center">
+          <div className="flex items-center justify-center border-t border-border/70 pt-4">
             <LikeActionButton
               active={issue.currentUserSupported === true}
               burst={burst}
@@ -198,7 +198,7 @@ export function getIssueDetailPanels({
               onClick={onSupport}
             />
           </div>
-  </> });
+  </div> });
   panels.push({ key: "timeline", content: <>
         <div className="flex items-center gap-2">
           <Clock3 className="size-4 text-muted-foreground" />

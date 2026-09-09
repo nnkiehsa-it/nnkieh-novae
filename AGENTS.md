@@ -15,7 +15,7 @@
 - 不為單一呼叫點的簡單片段建抽象。
 - 新增／刪除／搬移／拆分檔案時同步更新 `structure.md`。
 - 新流程接手後刪舊 API／props／CSS／轉場／註解，不留相容殘留。
-- 重構後用 `bun run check:unused`（或等效）確認無未使用宣告。
+- 重構後用 `bun run verify:fast`（或等效）確認型別、未使用宣告與相關測試；其 TypeScript 階段已合併 `noUnusedLocals`／`noUnusedParameters`。
 - 遵守組件化開發，如有成熟免費組件可以優先考慮使用。
 
 # 安全
@@ -26,7 +26,7 @@
 
 # 驗證
 
-一般前端／重構：`bun run verify:local`。
+一般前端／重構：`bun run verify:fast`；production build、build budget 與 dependency audit 留給交付前的 `bun run verify:local`。
 其中 `check:ui` 會拒絕舊 dropdown、任意陰影、手組卡片與自行管理 viewport gutter；不要跳過或以例外規避。
 後端 action、權限、RPC、migration、Worker、Queue、Durable Object：加跑 `bun run verify:integration`；Windows 入口會透過 WSL Docker 啟動 PostgreSQL，不手動維護第二套流程。
 大型變更／交付前：`bun run verify:all`。

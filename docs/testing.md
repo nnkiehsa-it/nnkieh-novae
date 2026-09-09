@@ -5,29 +5,27 @@
 | 指令 | 使用時機 | 內容 |
 | --- | --- | --- |
 | `bun run verify:fast` | 開發中的快速回饋 | generated drift、type / lint、boundary、unit 與 tooling checks 的快速組合 |
-| `bun run verify:local` | 一般前端與重構 | 完整本機靜態、單元、架構檢查、production build、asset budget 與 dependency audit |
-| `bun run check:unused` | 拆分或重構後 | TypeScript unused locals / parameters |
+| `bun run verify:local` | 交付前完整本機驗證 | 在快速檢查外加入 production build、asset budget 與 dependency audit |
 | `bun run verify:generated` | 修改 `config/`、generator 或字型來源後 | 重跑所有 generator，拒絕 committed artifact drift |
 
 `check:ui` 包含在本機驗證內，會拒絕舊 dropdown、任意 shadow、手組 card、未受控 viewport gutter、UI primitive 夾帶業務 import、component 直接碰 service，以及超出 route / domain component 尺寸政策的程式碼。不要用例外繞過。
 
-### `verify:fast` 的 11 階段
+### `verify:fast` 的 10 階段
 
 1. Generated artifacts
 2. Frontend TypeScript
-3. Unused declaration check
-4. Translation catalog check
-5. UI architecture check
-6. ESLint
-7. Cloudflare Worker TypeScript
-8. Integration-test TypeScript
-9. Unit tests
-10. Architecture tests
-11. Tooling policy tests
+3. Translation catalog check
+4. UI architecture check
+5. ESLint
+6. Cloudflare Worker TypeScript
+7. Integration-test TypeScript
+8. Unit tests
+9. Architecture tests
+10. Tooling policy tests
 
 ### `verify:local` 多做的工作
 
-完整 local suite 在 fast checks 中加入 production Next.js build、build budget 和 Bun high-severity dependency audit，共 14 階段。Dependency audit 要連 npm advisory API；離線時即使前 13 階段全過，整體仍會失敗。
+完整 local suite 在 fast checks 中加入 production Next.js build、build budget 和 Bun high-severity dependency audit。Dependency audit 要連 npm advisory API；離線時即使前面階段全過，整體仍會失敗。
 
 Build budget 會檢查 production asset、font、JS 與 CSS。達到上限 85% 時先警告，超過硬上限才失敗；警告不能當成測試失敗，但交付報告要寫出來。
 
@@ -78,7 +76,7 @@ Backend 與 browser verify job 都等 fast 成功後才執行；frontend deploy 
 
 - `tests/unit/`：純函式、cache、request、realtime idle、Turnstile 與資料庫 client 行為。
 - `tests/architecture/`：frontend dependency direction、UI primitive purity、database ownership、provider ownership、contract 與 observability 邊界。
-- `tests/tooling/`：route / version / command / CI policy、生成入口與 source hygiene。
+- `tests/tooling/`：package-management、生成入口與 source hygiene 等穩定 tooling policy。
 - `tests/integration/`：真 PostgreSQL + Worker 的成功、拒絕、scope、transaction、job 與 provider 行為。
 - `tests/e2e/`：使用 Firebase Auth Emulator 的真實瀏覽器流程。
 
@@ -89,8 +87,8 @@ Backend 與 browser verify job 都等 fast 成功後才執行；frontend deploy 
 | 變更 | 最低要求 |
 | --- | --- |
 | README / docs | `git diff --check`，檢查相對連結；若敘述涉及指令或 config，再對照 source |
-| 一般 React / CSS / hooks 重構 | `bun run verify:local` |
-| 新增、刪除、搬移或拆檔 | `bun run check:unused`、`bun run verify:local`，同步 `structure.md` |
+| 一般 React / CSS / hooks 重構 | `bun run verify:fast` |
+| 新增、刪除、搬移或拆檔 | `bun run verify:fast`，同步 `structure.md` |
 | Backend action / permission / Worker | `bun run verify:local`、`bun run verify:integration` |
 | Migration / RPC / database client | 上述兩項，加 database contract 與 populated upgrade 覆蓋 |
 | Realtime / Push / PWA browser flow | `bun run verify:all` |
