@@ -230,12 +230,12 @@ process.stderr.write(
   `✓ ${suiteLabel} passed (${selectedSteps.length} stages)\n`,
 );
 
-async function runSuite(label, args) {
+async function runSuite(label, args, environment = process.env) {
   process.stderr.write(`\n${label}\n`);
   const status = await new Promise((resolve, reject) => {
     const child = spawn(node, args, {
       cwd: process.cwd(),
-      env: process.env,
+      env: environment,
       stdio: "inherit",
     });
     child.once("error", reject);
@@ -248,9 +248,12 @@ if (runAll) {
   await runSuite("[2/3] Integration verification", [
     "scripts/verify-integration.mjs",
   ]);
-  await runSuite("[3/3] End-to-end verification", [
-    "scripts/verify-integration.mjs",
-    "--e2e",
-  ]);
+  for (const project of ["chromium-desktop", "chromium-mobile"]) {
+    await runSuite(
+      `[3/3] End-to-end verification (${project})`,
+      ["scripts/verify-integration.mjs", "--e2e"],
+      { ...process.env, NOVAE_E2E_PROJECT: project },
+    );
+  }
   process.stderr.write("\n✓ All verification suites passed\n");
 }

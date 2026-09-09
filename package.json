@@ -10,7 +10,8 @@
   "packageManager": "bun@1.4.0",
   "overrides": {
     "browserslist": "4.28.7",
-    "sharp": "0.35.3"
+    "js-yaml": "4.3.2",
+    "sharp": "0.35.4"
   },
   "scripts": {
     "dev": "next dev --webpack",
@@ -63,14 +64,14 @@
     "@jsquash/webp": "1.5.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "dompurify": "3.4.13",
-    "firebase": "12.17.1",
+    "dompurify": "3.4.15",
+    "firebase": "12.18.0",
     "harmonyos-sans-webfont-splitted": "^1.2.1",
-    "jose": "6.2.8",
+    "jose": "6.2.12",
     "lucide-react": "^0.539.0",
-    "marked": "18.0.9",
-    "motion": "13.1.0",
-    "next": "16.3.0",
+    "marked": "18.0.12",
+    "motion": "13.2.0",
+    "next": "16.3.4",
     "next-themes": "0.4.6",
     "pg": "^8.23.0",
     "radix-ui": "1.6.7",
@@ -78,32 +79,33 @@
     "react-dom": "19.2.8",
     "sonner": "2.0.8",
     "tailwind-merge": "^3.3.1",
-    "tw-animate-css": "^1.3.8"
+    "tw-animate-css": "^1.3.8",
+    "vditor": "4.0.0"
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.28.6",
     "@babel/parser": "7.29.8",
     "@babel/preset-react": "^7.28.5",
     "@babel/preset-typescript": "^7.28.5",
-    "@cloudflare/workers-types": "^5.20260815.1",
+    "@cloudflare/workers-types": "^5.20260908.1",
     "@eslint/js": "9.39.5",
-    "@next/eslint-plugin-next": "^16.3.0",
-    "@playwright/test": "^1.62.1",
+    "@next/eslint-plugin-next": "^16.3.4",
+    "@playwright/test": "^1.63.0",
     "@serwist/next": "9.5.12",
     "@tailwindcss/postcss": "4.3.3",
     "@tailwindcss/typography": "0.5.20",
     "@types/node": "24.13.3",
-    "@types/pg": "^8.21.0",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
+    "@types/react-dom": "^19.2.7",
     "eslint": "9.39.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "jsdom": "30.0.1",
-    "postcss": "8.5.26",
+    "postcss": "8.5.28",
     "serwist": "9.5.12",
     "tailwindcss": "4.3.3",
     "typescript": "7.0.2",
     "vitest": "4.1.10",
-    "wrangler": "^4.123.0"
+    "wrangler": "^4.130.0"
   }
 }

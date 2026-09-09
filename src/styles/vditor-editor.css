@@ -1,0 +1,266 @@
+.novae-markdown-editor {
+  overflow: visible;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--card);
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.novae-markdown-editor:focus-within {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 18%, transparent);
+}
+
+.novae-markdown-editor.is-loading {
+  min-height: 14rem;
+  background: linear-gradient(90deg, var(--muted), color-mix(in srgb, var(--muted) 70%, var(--card)), var(--muted));
+  background-size: 200% 100%;
+  animation: novae-editor-loading 1.25s ease-in-out infinite;
+}
+
+.novae-markdown-editor [class~="vditor"] {
+  --border-color: var(--border);
+  --second-color: var(--muted-foreground);
+  --panel-background-color: var(--popover);
+  --panel-shadow: var(--shadow-floating);
+  --toolbar-background-color: color-mix(in srgb, var(--muted) 72%, var(--card));
+  --toolbar-icon-color: var(--muted-foreground);
+  --toolbar-icon-hover-color: var(--primary);
+  --toolbar-height: 2rem;
+  --textarea-background-color: var(--card);
+  --textarea-text-color: var(--foreground);
+  --count-background-color: var(--muted);
+  --heading-border-color: var(--border);
+  --blockquote-color: var(--muted-foreground);
+  --ir-heading-color: var(--primary);
+  --ir-title-color: var(--muted-foreground);
+  --ir-bi-color: var(--foreground);
+  --ir-link-color: var(--primary);
+  --ir-bracket-color: var(--primary);
+  --ir-paren-color: var(--muted-foreground);
+  border: 0;
+  border-radius: var(--radius-xl);
+  box-shadow: none;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+.novae-markdown-editor [class~="vditor-toolbar"] {
+  display: flex;
+  align-items: center;
+  float: none;
+  gap: 0.125rem;
+  min-height: 2.875rem;
+  padding: 0.5rem 0.625rem;
+  overflow: visible;
+  flex-wrap: wrap;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.novae-markdown-editor [class~="vditor-toolbar__item"] {
+  float: none;
+  flex: 0 0 auto;
+  padding: 0;
+}
+
+.novae-markdown-editor [class~="vditor-toolbar__item"] [class~="vditor-tooltipped"] {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  padding: 0;
+  border-radius: var(--radius-md);
+  color: var(--muted-foreground);
+  transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.novae-markdown-editor [class~="vditor-toolbar__item"] [class~="vditor-tooltipped"]:active {
+  transform: translateY(1px) scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .novae-markdown-editor [class~="vditor-toolbar__item"] [class~="vditor-tooltipped"]:hover {
+    background: var(--interaction);
+    color: var(--primary);
+  }
+}
+
+.novae-markdown-editor [class~="vditor-toolbar__item"] [class~="vditor-tooltipped"]:focus-visible,
+.novae-markdown-editor [class~="vditor-panel"] button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.novae-markdown-editor [class~="vditor-toolbar__divider"] {
+  flex: 0 0 auto;
+  float: none;
+  height: 1.25rem;
+  margin: 0 0.35rem;
+  border-color: var(--border);
+}
+
+.novae-markdown-editor [class~="vditor-content"] {
+  min-height: 0;
+  background: var(--card);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+
+.novae-markdown-editor [class~="vditor-ir"] {
+  min-height: 0;
+  background: var(--card);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+
+.novae-markdown-editor [class~="vditor-ir"] > [contenteditable="true"] {
+  min-height: 13rem;
+  padding: 1rem 1rem 1.5rem;
+  color: var(--foreground);
+  background: var(--card);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  caret-color: var(--primary);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.75;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.novae-markdown-editor [class~="vditor-ir"] > [contenteditable="true"]:focus {
+  background: var(--card);
+}
+
+.novae-markdown-editor [class~="vditor-reset"] {
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  line-height: 1.75;
+}
+
+.novae-markdown-editor [class~="vditor-reset"] > :first-child {
+  margin-top: 0;
+}
+
+.novae-markdown-editor [class~="vditor-reset"] > :last-child {
+  margin-bottom: 0;
+}
+
+.novae-markdown-editor [class~="vditor-reset"] p {
+  margin: 0.65rem 0;
+}
+
+.novae-markdown-editor [class~="vditor-reset"] h1,
+.novae-markdown-editor [class~="vditor-reset"] h2,
+.novae-markdown-editor [class~="vditor-reset"] h3,
+.novae-markdown-editor [class~="vditor-reset"] h4,
+.novae-markdown-editor [class~="vditor-reset"] h5,
+.novae-markdown-editor [class~="vditor-reset"] h6 {
+  margin: 1.25rem 0 0.45rem;
+  border: 0;
+  color: var(--foreground);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.novae-markdown-editor [class~="vditor-reset"] h1 {
+  font-size: 1.45rem;
+}
+
+.novae-markdown-editor [class~="vditor-reset"] h2 {
+  font-size: 1.2rem;
+}
+
+.novae-markdown-editor [class~="vditor-reset"] h3 {
+  font-size: 1.05rem;
+}
+
+.novae-markdown-editor [class~="vditor-reset"] ul,
+.novae-markdown-editor [class~="vditor-reset"] ol {
+  margin: 0.65rem 0;
+  padding-left: 1.35rem;
+}
+
+.novae-markdown-editor [class~="vditor-reset"] blockquote {
+  margin: 0.9rem 0;
+  border-left: 2px solid var(--border);
+  color: var(--muted-foreground);
+}
+
+.novae-markdown-editor [class~="vditor-reset"] code:not([class*="language-"]) {
+  border-radius: var(--radius-xs);
+  background: var(--muted);
+  font-family: var(--font-mono);
+}
+
+.novae-markdown-editor [class~="vditor-reset"] pre {
+  border-radius: var(--radius-lg);
+  background: var(--muted);
+}
+
+.novae-markdown-editor [class~="vditor-reset"] table {
+  margin: 1rem 0;
+}
+
+.novae-markdown-editor [class~="vditor-reset"] table td,
+.novae-markdown-editor [class~="vditor-reset"] table th {
+  border-color: var(--border);
+  white-space: normal;
+}
+
+.novae-markdown-editor [class~="vditor-reset"] table th {
+  background: var(--muted);
+}
+
+.novae-markdown-editor [class~="vditor-panel"] {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-floating);
+  z-index: 20;
+}
+
+.novae-markdown-editor [class~="vditor-toolbar__item"]:has([data-type="headings"]) [class~="vditor-hint"] button:nth-child(n + 3) {
+  display: none;
+}
+
+@media (max-width: 47.99rem) {
+  .novae-markdown-editor [class~="vditor-toolbar"] {
+    min-height: 2.625rem;
+    padding: 0.375rem 0.5rem;
+  }
+
+  .novae-markdown-editor [class~="vditor-toolbar__item"] {
+    padding: 0;
+  }
+
+  .novae-markdown-editor [class~="vditor-ir"] > [contenteditable="true"] {
+    min-height: 12rem;
+    padding: 0.875rem 0.875rem 1.25rem;
+  }
+
+  .novae-markdown-editor [class~="vditor"] {
+    --toolbar-height: 1.875rem;
+  }
+
+  .novae-markdown-editor [class~="vditor-toolbar__item"] [class~="vditor-tooltipped"] {
+    width: 1.875rem;
+    height: 1.875rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .novae-markdown-editor,
+  .novae-markdown-editor [class~="vditor-toolbar__item"] [class~="vditor-tooltipped"] {
+    transition: none;
+  }
+
+  .novae-markdown-editor.is-loading {
+    animation: none;
+  }
+}
+
+@keyframes novae-editor-loading {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}

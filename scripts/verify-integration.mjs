@@ -20,6 +20,7 @@ const root = process.cwd();
 const e2e = process.argv.includes("--e2e");
 const serve = process.argv.includes("--serve");
 const e2eShard = process.env.NOVAE_E2E_SHARD;
+const e2eProject = process.env.NOVAE_E2E_PROJECT;
 const stressIndex = process.argv.indexOf("--stress-scale");
 const stressScale = stressIndex >= 0 ? process.argv[stressIndex + 1] : "4";
 if (!/^\d+$/u.test(stressScale) || Number(stressScale) < 2 || Number(stressScale) > 20) {
@@ -423,10 +424,13 @@ try {
     );
     run("Firebase login and API routing probe", process.execPath, ["scripts/check-local-auth-emulator.mjs"], frontendEnvironment);
     if (e2e) {
+      const e2eArguments = ["run", "test:e2e:runner"];
+      if (e2eProject) e2eArguments.push("--project", e2eProject);
+      if (e2eShard) e2eArguments.push(`--shard=${e2eShard}`);
       run(
         "Playwright browser journeys",
         bun,
-        ["run", "test:e2e:runner", ...(e2eShard ? [`--shard=${e2eShard}`] : [])],
+        e2eArguments,
         frontendEnvironment,
       );
       process.stderr.write("✓ End-to-end verification passed\n");

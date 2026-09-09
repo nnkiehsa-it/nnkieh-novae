@@ -26,6 +26,7 @@ export default function IssueComposerPage() {
           <CardContent>
             <ComposerField
               attachments={form.images.images}
+              attachmentsUploading={form.images.uploading}
               content={form.content}
               contentLabel={translate('ui.issue.contentLabel')}
               onContentChange={form.setContent}
@@ -43,6 +44,7 @@ export default function IssueComposerPage() {
                   !form.config ||
                   !form.title.trim() ||
                   !form.content.trim() ||
+                  !form.contentWithinLimit ||
                   form.saving ||
                   form.images.uploading
                 }

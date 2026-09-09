@@ -81,6 +81,7 @@ export default function FacilityComposerPage() {
             </div>
             <ComposerField
               attachments={form.images.images}
+              attachmentsUploading={form.images.uploading}
               content={form.content}
               contentLabel={translate('ui.facility.problemDescription')}
               onContentChange={form.setContent}
@@ -99,6 +100,7 @@ export default function FacilityComposerPage() {
                   !form.title.trim() ||
                   !form.location.trim() ||
                   !form.content.trim() ||
+                  !form.contentWithinLimit ||
                   form.saving ||
                   form.images.uploading
                 }

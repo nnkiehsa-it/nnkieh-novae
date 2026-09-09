@@ -51,6 +51,7 @@ describe("React frontend design system", () => {
     const avatar = read("src/components/ui/avatar.tsx");
     const renderer = read("src/components/content-renderer.tsx");
     const composer = read("src/components/composer-fields.tsx");
+    const mediaAttachments = read("src/components/composer-media-attachments.tsx");
     const brand = read("src/components/ui/brand.tsx");
     const motion = read("src/styles/motion.css");
     expect(decodedImage).toContain("image.decode()");
@@ -59,11 +60,26 @@ describe("React frontend design system", () => {
     expect(decodedImage).toContain('data-image-state={state}');
     expect(avatar).toContain("onLoadingStatusChange");
     expect(avatar).toContain('<LoadingSpinner className="size-3.5"');
-    for (const source of [renderer, composer, brand]) {
+    for (const source of [renderer, mediaAttachments, brand]) {
       expect(source).toContain("<DecodedImage");
     }
+    expect(composer).toContain("<MarkdownEditor");
     expect(renderer).toContain('FORBID_TAGS: ["img"]');
     expect(motion).toContain('@keyframes t-image-ready');
+  });
+
+  it("keeps the Markdown editor client-only and images outside its content", () => {
+    const editor = read("src/components/markdown-editor.tsx");
+    const mediaAttachments = read("src/components/composer-media-attachments.tsx");
+    expect(editor).toContain('mode: "ir"');
+    expect(editor).toContain("cache: { enable: false }");
+    expect(editor).toContain("onPasteCapture={handleImageTransfer}");
+    expect(editor).not.toContain('"undo"');
+    expect(editor).not.toContain('"redo"');
+    expect(read("src/styles/vditor-editor.css")).toContain("button:nth-child(n + 3)");
+    expect(editor).not.toContain('toolbar: [\n          "upload"');
+    expect(mediaAttachments).toContain('type="file"');
+    expect(mediaAttachments).toContain("onPickImages");
   });
 
   it("applies saved image settings locally and limits only compressed output size", () => {

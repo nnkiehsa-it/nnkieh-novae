@@ -21,6 +21,7 @@ import {
   mergeContentEntityRead,
 } from "@/lib/content-entity-store";
 import { ACTION_SUCCESS_HOLD_MS } from "@/hooks/use-action-feedback";
+import { INPUT_LIMITS } from "@/constants/input-limits";
 
 async function holdActionSuccess() {
   await new Promise<void>((resolve) =>
@@ -35,6 +36,7 @@ function useComposerBase(targetType: "announcement" | "facility" | "issue") {
   const [succeeded, setSucceeded] = React.useState(false);
   const categories = useCategories();
   const images = useImageAttachments(targetType, categories.imageUploads);
+  const contentWithinLimit = content.length <= INPUT_LIMITS.content;
 
   async function withUploads(
     create: (content: string) => Promise<void>,
@@ -62,6 +64,7 @@ function useComposerBase(targetType: "announcement" | "facility" | "issue") {
 
   return {
     content,
+    contentWithinLimit,
     images,
     saving,
     setContent,
@@ -80,7 +83,12 @@ export function useAnnouncementComposer() {
   const form = useComposerBase("announcement");
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (!form.title.trim() || !form.content.trim() || form.saving) return;
+    if (
+      !form.title.trim() ||
+      !form.content.trim() ||
+      !form.contentWithinLimit ||
+      form.saving
+    ) return;
     await form.withUploads(async (content) => {
       const announcement = await createAnnouncement({
         content,
@@ -115,7 +123,13 @@ export function useIssueComposer() {
   const config = findIssueCategory(category);
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (!config || !form.title.trim() || !form.content.trim() || form.saving) return;
+    if (
+      !config ||
+      !form.title.trim() ||
+      !form.content.trim() ||
+      !form.contentWithinLimit ||
+      form.saving
+    ) return;
     await form.withUploads(async (content) => {
       const issue = await createIssue({ category, content, title: form.title.trim() });
       mergeContentEntityRead(
@@ -153,6 +167,7 @@ export function useFacilityComposer() {
       !form.title.trim() ||
       !location.trim() ||
       !form.content.trim() ||
+      !form.contentWithinLimit ||
       form.saving
     )
       return;

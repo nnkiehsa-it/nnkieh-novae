@@ -29,6 +29,7 @@ export default function AnnouncementComposerPage() {
           <CardContent>
             <ComposerField
               attachments={form.images.images}
+              attachmentsUploading={form.images.uploading}
               content={form.content}
               contentLabel={translate('ui.announcement.contentLabel')}
               onContentChange={form.setContent}
@@ -43,7 +44,11 @@ export default function AnnouncementComposerPage() {
             <div className="mt-6 flex justify-end">
               <Button
                 disabled={
-                  !form.title.trim() || !form.content.trim() || form.saving || form.images.uploading
+                  !form.title.trim() ||
+                  !form.content.trim() ||
+                  !form.contentWithinLimit ||
+                  form.saving ||
+                  form.images.uploading
                 }
                 type="submit"
               >
