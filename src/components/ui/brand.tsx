@@ -14,14 +14,14 @@ export function BrandMark({
     <span
       aria-hidden
       className={cn(
-        "grid size-12 aspect-square shrink-0 place-items-center overflow-hidden rounded-xl bg-white p-2.5 shadow-[var(--shadow-control)] dark:bg-black",
+        "grid size-12 aspect-square shrink-0 place-items-center overflow-hidden rounded-xl bg-white p-2 shadow-[var(--shadow-control)] dark:bg-black",
         className,
       )}
     >
       <DecodedImage
         alt=""
         className={cn(
-          "block size-full aspect-square object-contain dark:invert",
+          "block size-full aspect-square object-contain",
           imageClassName,
         )}
         containerClassName="size-full"

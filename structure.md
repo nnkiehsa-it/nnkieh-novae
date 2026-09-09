@@ -16,6 +16,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `next.config.mjs` — public environment injection, static security headers, image hosts, and Serwist integration.
 - `next-env.d.ts` — ignored framework-generated type references; Next.js regenerates the file for the active development or isolated verification output directory.
 - `components.json` — shadcn/ui aliases and Tailwind 4 configuration.
+- `public/` — brand identity assets (`logo.svg`, `logo.png`, `favicon.ico`, `apple-touch-icon-180x180.png`, `maskable-icon-512x512.png`, `pwa-*.png`), constellation login artwork, and compiled service worker runtime.
 - `vercel.json` — Vercel Next.js framework configuration with an explicit frozen Bun install command for CLI and hosted builds.
 
 ## App Router

@@ -1,4 +1,4 @@
-﻿@import "../assets/fonts/harmonyos-sans-tc/harmonyos-sans-tc.css";
+@import "../assets/fonts/harmonyos-sans-tc/harmonyos-sans-tc.css";
 @import "tailwindcss";
 @import "@heroui/styles";
 @import "tw-animate-css";
@@ -55,7 +55,7 @@
   --card-foreground: #101828;
   --popover: #fdfefe;
   --popover-foreground: #101828;
-  --accent: #1557d5;
+  --accent: #1d68ed;
   --accent-foreground: #f7f9ff;
   --tint-content: var(--accent);
   --tint-surface: color-mix(in srgb, var(--accent) 9%, var(--card));
@@ -101,8 +101,8 @@
   --notification-accent: var(--tint-content);
   --surface-stage: #f5f7fb;
   --surface-inset: #edf2f8;
-  --surface-hover: rgb(21 87 213 / 5%);
-  --surface-active: rgb(21 87 213 / 10%);
+  --surface-hover: rgb(29 104 237 / 5%);
+  --surface-active: rgb(29 104 237 / 10%);
   --backdrop: rgb(16 24 40 / 32%);
   --radius: 0.75rem;
   --shadow-control: 0 1px 2px rgb(16 40 80 / 4%);
@@ -129,7 +129,7 @@
   --card-foreground: #edf3fb;
   --popover: #1a2534;
   --popover-foreground: #edf3fb;
-  --accent: #5d8ff0;
+  --accent: #4f80ff;
   --accent-foreground: #0d121b;
   --tint-content: var(--accent);
   --tint-surface: color-mix(in srgb, var(--accent) 13%, var(--card));
