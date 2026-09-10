@@ -45,10 +45,45 @@ function routeChangeReport(page: Page) {
   });
 }
 
+// Records which surfaces took part in each view transition the page ran, read
+// at the moment the browser has created the pseudo-elements and started their
+// animations, so nothing depends on catching a short animation mid-flight.
+async function recordViewTransitions(page: Page) {
+  await page.addInitScript(() => {
+    const state = window as typeof window & { __novaeViewTransitions?: string[][] };
+    state.__novaeViewTransitions = [];
+    const start = document.startViewTransition?.bind(document);
+    if (!start) return;
+    document.startViewTransition = ((...args: Parameters<typeof start>) => {
+      const transition = start(...args);
+      void transition.ready
+        .then(() => {
+          state.__novaeViewTransitions?.push(
+            document.getAnimations().flatMap((animation) => {
+              const effect = animation.effect as KeyframeEffect & { pseudoElement?: string };
+              const pseudo = effect?.pseudoElement ?? '';
+              return /^::view-transition-(?:old|new)\(/u.test(pseudo) ? [pseudo] : [];
+            }),
+          );
+        })
+        .catch(() => undefined);
+      return transition;
+    }) as typeof document.startViewTransition;
+  });
+}
+
+function lastViewTransition(page: Page) {
+  return page.evaluate(
+    () => (window as typeof window & { __novaeViewTransitions?: string[][] })
+      .__novaeViewTransitions?.at(-1) ?? [],
+  );
+}
+
 test('navigation direction follows the information hierarchy in both directions', async ({
   browser,
 }) => {
   const { context, page } = await newUserPage(browser, 'ordinary');
+  await recordViewTransitions(page);
   await page.goto('/issues');
   await expect(page.locator('.route-page')).toBeVisible();
   await expect(page.locator('.t-card a[href^="/issues/"]').first()).toBeVisible();
@@ -65,6 +100,16 @@ test('navigation direction follows the information hierarchy in both directions'
   await page.getByRole('button', { name: /^Back to/u }).click();
   await page.waitForURL(/\/issues\/[^/]+$/u);
   await expect.poll(() => navigationDirection(page)).toBe('pop');
+  // Next dispatches a history traversal outside a React Transition so that Back
+  // stays instant, which leaves React with nothing to animate. Going back is
+  // given a view transition of its own instead, with the two route surfaces
+  // named from the stylesheet rather than by the boundary.
+  await expect.poll(() => lastViewTransition(page)).toEqual(
+    expect.arrayContaining([
+      '::view-transition-old(route-leaving)',
+      '::view-transition-new(route-arriving)',
+    ]),
+  );
 
   // The browser's own Back button carries no navigation intent of its own, so
   // returning to the detail page has to be recognised as a push all the same.

@@ -125,6 +125,20 @@
     animation: t-route-recede var(--motion-page) var(--ease-page) reverse both;
   }
 }
+/* A history traversal never runs inside a React Transition -- Next keeps Back
+   instant on purpose -- so the boundary is not there to name the two surfaces
+   for it. While one is in flight the stylesheet names them instead, and gives
+   them the same classes the boundary would have, which is what lets a traversal
+   animate on the recipes above rather than on a second set of its own. */
+:root[data-route-traversal] .route-page[data-route-leaving] {
+  view-transition-name: route-leaving;
+  view-transition-class: t-route-out;
+}
+:root[data-route-traversal] .route-page:not([data-route-leaving]) {
+  view-transition-name: route-arriving;
+  view-transition-class: t-route-in;
+}
+
 @keyframes t-route-advance {
   from {
     transform: translateX(100%);
