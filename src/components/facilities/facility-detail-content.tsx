@@ -37,7 +37,6 @@ export function FacilityDetailContent({
   return (
     <>
       <DetailCardHeader
-        separated={Boolean(hasContent || resolution)}
         badges={<>
           <span className="inline-grid place-items-center rounded-full bg-card px-2.5 py-1 text-center text-xs font-medium text-muted-foreground shadow-[var(--shadow-control)]">
             <SkeletonBadgeLabel
@@ -98,7 +97,6 @@ export function FacilityDetailContent({
             title: facility.title,
           })}
           reveal={reveal}
-          separated={hasContent}
           title={translate("ui.common.result")}
           tone={resolution.tone}
         />

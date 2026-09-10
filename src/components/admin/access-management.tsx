@@ -94,7 +94,7 @@ export function AccessManagement() {
       {scope ? (
         <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
           <Card className="gap-0 py-0">
-            <CardHeader className="border-b py-4">
+            <CardHeader className="py-4">
               <CardTitle className="text-base">{translate('ui.access.currentStep')}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">

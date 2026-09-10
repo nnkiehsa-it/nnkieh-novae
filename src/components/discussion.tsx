@@ -105,7 +105,7 @@ export function Discussion({
   return (
     <section aria-labelledby="discussion-title">
       <Card className="gap-0 overflow-hidden py-0">
-        <div className="flex items-center gap-2 border-b px-5 py-4 sm:px-7">
+        <div className="flex items-center gap-2 px-5 py-4 sm:px-7">
           <MessageCircle className="size-4 text-muted-foreground" />
           <h2 className="font-semibold" id="discussion-title">{translate("ui.discussion.title")}</h2>
           <span className="text-sm tabular-nums text-muted-foreground">{comments.length}</span>
@@ -159,7 +159,7 @@ export function Discussion({
         </StateTransition>
 
         {hasMore && onLoadMore ? (
-          <div className="flex justify-center border-t px-5 py-4 sm:px-7">
+          <div className="flex justify-center px-5 py-4 sm:px-7">
             <Button disabled={loadingMore} onClick={() => void onLoadMore()} size="sm" variant="outline">
               {loadingMore ? <LoadingSpinner /> : <ChevronDown />}
               {loadingMore ? translate("ui.common.loadingMore") : translate("ui.discussion.loadMore")}

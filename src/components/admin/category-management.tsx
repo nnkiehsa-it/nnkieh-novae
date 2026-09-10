@@ -109,7 +109,7 @@ export function CategoryManagement() {
       </>}
       </Card>
       {state.kind === "platform" ? <PlatformSettings /> : null}
-      {state.kind !== "platform" ? <div className="flex justify-end border-t pt-5">
+      {state.kind !== "platform" ? <div className="flex justify-end pt-5">
         <Button disabled={state.loading || !state.valid || state.saving} onClick={() => void state.save()}>
           {state.saving ? (
             <ActionFeedbackIcon
@@ -134,7 +134,7 @@ export function CategoryManagement() {
 function CategoryEditorPlaceholder() {
   return (
     <>
-        <div className="flex items-center justify-between border-b px-5 py-4 sm:px-7">
+        <div className="flex items-center justify-between px-5 py-4 sm:px-7">
           <span className="text-sm font-semibold">{translate("ui.admin.issueFeature")}</span>
           <Skeleton className="h-5 w-8 rounded-full" />
         </div>

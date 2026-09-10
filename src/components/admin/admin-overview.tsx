@@ -143,7 +143,7 @@ export function AdminOverview() {
               ) : (
                 <AdminActivityRows entries={data.recentActivity} />
               )}
-              <div className="border-t p-2">
+              <div className="p-2">
                 <Button className="w-full" onClick={() => setActivityOpen(true)} variant="ghost">
                   {t("ui.adminConsole.viewAllActivity")}
                 </Button>

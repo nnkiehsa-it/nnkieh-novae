@@ -15,7 +15,7 @@ export interface DetailPanel { key: string; content: ReactNode }
 
 function DetailPlaceholder({ kind }: { kind: FeedKind }) {
   return <>
-    <DetailCardHeader separated badges={<><Skeleton className="h-6 w-20 rounded-full" />{kind !== "announcement" ? <Skeleton className="h-6 w-16 rounded-full" /> : null}</>} title={<Skeleton className="h-9 w-3/5" />} metadata={<Skeleton className="h-4 w-40" />} />
+    <DetailCardHeader badges={<><Skeleton className="h-6 w-20 rounded-full" />{kind !== "announcement" ? <Skeleton className="h-6 w-16 rounded-full" /> : null}</>} title={<Skeleton className="h-9 w-3/5" />} metadata={<Skeleton className="h-4 w-40" />} />
     <DetailCardBody><div className="space-y-3"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-3/4" /></div></DetailCardBody>
   </>;
 }

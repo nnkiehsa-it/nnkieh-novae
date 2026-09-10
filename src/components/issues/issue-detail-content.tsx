@@ -39,7 +39,6 @@ export function IssueDetailContent({
   return (
     <>
       <DetailCardHeader
-        separated={Boolean(hasContent || notice)}
         badges={<>
           <span className="inline-grid place-items-center rounded-full bg-card px-2.5 py-1 text-center text-xs font-medium text-muted-foreground shadow-[var(--shadow-control)]">
             <SkeletonBadgeLabel
@@ -78,7 +77,6 @@ export function IssueDetailContent({
           content={notice.content}
           fallbackAlt={translate("ui.issue.resultAlt", { title: issue.title })}
           reveal={reveal}
-          separated={hasContent}
           title={translate(notice.title)}
           tone={notice.tone}
         />

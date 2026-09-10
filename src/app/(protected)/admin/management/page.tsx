@@ -61,7 +61,7 @@ export default function AdministrationPage() {
         description={translate('ui.admin.description')}
         title={translate('ui.admin.title')}
       />
-      <div className="flex border-b pb-5">
+      <div className="flex pb-5">
         <LiquidTabs
           ariaLabel={translate('ui.admin.items')}
           onValueChange={(value) =>

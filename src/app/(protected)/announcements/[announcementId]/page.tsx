@@ -112,7 +112,6 @@ export default function AnnouncementDetailPage() {
       /> : undefined}
       content={announcement ? <>
             <DetailCardHeader
-              separated={Boolean(announcement.content?.trim())}
               badges={<p className="text-[0.8125rem] font-medium text-tint-content">
                 {t("ui.announcement.campus")}
               </p>}

@@ -10,14 +10,12 @@ export function ContentResolutionNotice({
   content,
   fallbackAlt,
   reveal,
-  separated = true,
   title,
   tone,
 }: {
   content: string;
   fallbackAlt: string;
   reveal: boolean;
-  separated?: boolean;
   title: string;
   tone: ContentResolutionTone;
 }) {
@@ -26,13 +24,12 @@ export function ContentResolutionNotice({
     <SkeletonReveal
       as="div"
       enabled={reveal}
-      skeleton={<ContentResolutionNoticeSkeleton separated={separated} />}
+      skeleton={<ContentResolutionNoticeSkeleton />}
     >
       <section
         aria-label={title}
         className={cn(
           "t-resolution-notice px-5 py-5 sm:px-7 sm:py-6",
-          separated && "border-t",
           tone === "error"
             ? "bg-[var(--status-infeasible-bg)] text-[var(--status-infeasible-fg)]"
             : "bg-emerald-500/[0.055]",

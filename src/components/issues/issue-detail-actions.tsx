@@ -178,7 +178,7 @@ export function getIssueDetailPanels({
               />
             </div>
           ) : null}
-          <div className="flex items-center justify-center border-t border-border/70 pt-4">
+          <div className="flex items-center justify-center pt-4">
             <LikeActionButton
               active={issue.currentUserSupported === true}
               burst={burst}

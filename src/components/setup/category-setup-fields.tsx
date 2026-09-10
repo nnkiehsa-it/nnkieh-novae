@@ -40,7 +40,7 @@ export function CategorySetupPanel({
   useLocaleSubscription();
   return (
     <Card className="gap-0 py-0">
-      <CardHeader className="flex-row items-center justify-between border-b py-4">
+      <CardHeader className="flex-row items-center justify-between py-4">
         <div>
           <CardTitle>{title}</CardTitle>
           <p className="mt-1 text-sm text-muted-foreground">{translate('ui.setup.navHint')}</p>

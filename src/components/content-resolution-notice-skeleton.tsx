@@ -1,17 +1,8 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
-
-export function ContentResolutionNoticeSkeleton({
-  separated = true,
-}: {
-  separated?: boolean;
-}) {
+export function ContentResolutionNoticeSkeleton() {
   return (
     <div
-      className={cn(
-        "space-y-3 px-5 py-5 sm:px-7 sm:py-6",
-        separated && "border-t",
-      )}
+      className="space-y-3 px-5 py-5 sm:px-7 sm:py-6"
     >
       <div className="flex items-center gap-2">
         <Skeleton className="size-6 rounded-full" />

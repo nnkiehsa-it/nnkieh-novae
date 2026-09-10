@@ -37,7 +37,7 @@ export function CategoryFeatureHeader({
 }) {
   useLocaleSubscription();
   return (
-    <CardHeader className="flex-row items-center justify-between border-b py-4">
+    <CardHeader className="flex-row items-center justify-between py-4">
       <div>
         <CardTitle className="text-base">{title}</CardTitle>
         <p className="mt-1 text-sm text-muted-foreground">{description}</p>

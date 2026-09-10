@@ -66,7 +66,7 @@ export function AdministrationSkeleton() {
             <Skeleton className="h-9 w-full rounded-lg" />
           </Card>
           <Card className="gap-0 py-0">
-            <div className="border-b px-5 py-4 sm:px-7">
+            <div className="px-5 py-4 sm:px-7">
               <p className="text-base font-semibold">{translate("ui.access.currentStep")}</p>
             </div>
             <CardContent className="divide-y p-0">
@@ -85,7 +85,7 @@ export function AdministrationSkeleton() {
         </div>
       ) : (
         <Card className="gap-0 py-0">
-          <div className="flex items-center justify-between border-b px-5 py-4 sm:px-7">
+          <div className="flex items-center justify-between px-5 py-4 sm:px-7">
             <span className="text-sm font-semibold">
               {translate("ui.admin.issueFeature")}
             </span>

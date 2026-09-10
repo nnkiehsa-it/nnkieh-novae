@@ -39,7 +39,7 @@ export function PlatformSettings() {
           </div>
         </CardContent>
       </Card>
-      <div className="flex justify-end border-t pt-5">
+      <div className="flex justify-end pt-5">
         <Button disabled={!state.settings || !state.valid || state.saving} onClick={() => void state.save()}>
           {state.saving ? <ActionFeedbackIcon className="bg-transparent [&>svg]:size-5" size="md" state={state.feedbackState === "success" ? "success" : "loading"} /> : <Save />}
           {translate("ui.admin.saveAll")}

@@ -37,7 +37,7 @@ export function FeedCard({
       </div>
       {children}
       {footer ? (
-        <div data-slot="feed-card-footer" className="mt-auto flex min-h-10 flex-wrap items-center gap-2 border-t pt-2">
+        <div data-slot="feed-card-footer" className="mt-auto flex min-h-10 flex-wrap items-center gap-2 pt-2">
           {footer}
         </div>
       ) : null}

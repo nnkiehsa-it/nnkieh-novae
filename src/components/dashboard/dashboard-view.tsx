@@ -159,7 +159,7 @@ export function DashboardView({ data, error, loading, onRefresh, reveal = false 
         </Card>
           </div>
           <Card className="mt-5 gap-0 py-0">
-        <CardHeader className="border-b py-4">
+        <CardHeader className="py-4">
           <CardTitle className="flex items-center gap-2 text-base">
             <AlertTriangle className="size-4 text-muted-foreground" />{translate('ui.dashboard.failures')}</CardTitle>
         </CardHeader>
