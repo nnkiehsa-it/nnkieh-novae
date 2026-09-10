@@ -22,8 +22,8 @@ export default function IssueComposerPage() {
         title={translate('ui.issue.new')}
       />
       <form onSubmit={form.submit}>
-        <Card className="py-6">
-          <CardContent>
+        <Card className="-mx-[var(--page-gutter)] rounded-none border-x-0 py-5 sm:mx-0 sm:rounded-xl sm:border-x sm:py-6">
+          <CardContent className="px-4 sm:px-7">
             <ComposerField
               attachments={form.images.images}
               attachmentsUploading={form.images.uploading}

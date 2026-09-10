@@ -126,7 +126,7 @@ E2E 共用 6 個固定帳號與一組共享內容，`workers: 1` 是刻意的，
 | `bun run verify:integration` | 改了 backend action、權限、migration、Worker、Queue、Durable Object | 真的起 PostgreSQL 跑 |
 | `bun run verify:local` | 交付前 | fast + production build + build budget + 相依套件稽核 |
 | `bun run verify:all` | 大型變更／交付前 | local + integration + E2E |
-| `bun run test:env` | 要手動操作完整本地環境 | Ready 後可用 Auth Emulator 建測試帳號，`Ctrl+C` 全部關閉 |
+| `bun run test:env` | 要手動操作完整本地環境，不需主動啟動 | Ready 後可用 Auth Emulator 建測試帳號，`Ctrl+C` 全部關閉 |
 | `bun run verify:stress` | 多人／多分類／多權限壓力矩陣 | |
 
 Windows 會自動透過 WSL Docker 起 PostgreSQL，不要另外手動維護第二套流程。

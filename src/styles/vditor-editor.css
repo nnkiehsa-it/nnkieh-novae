@@ -94,21 +94,27 @@
 }
 
 .novae-markdown-editor [class~="vditor-content"] {
+  min-width: 0;
   min-height: 0;
+  overflow: hidden;
   background: var(--card);
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
 }
 
 .novae-markdown-editor [class~="vditor-wysiwyg"] {
+  min-width: 0;
   min-height: 0;
+  overflow: hidden;
   background: var(--card);
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
 }
 
 .novae-markdown-editor [class~="vditor-wysiwyg"] > [contenteditable="true"] {
+  width: 100%;
+  min-width: 0;
   min-height: 13rem;
   padding: 1rem 1rem 1.5rem;
-  overflow-x: auto;
+  overflow-x: hidden;
   color: var(--foreground);
   background: var(--card);
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
@@ -191,7 +197,13 @@
 }
 
 .novae-markdown-editor [class~="vditor-reset"] table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
   margin: 1rem 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .novae-markdown-editor [class~="vditor-reset"] table td,
@@ -200,10 +212,6 @@
   min-width: 8rem;
   vertical-align: top;
   white-space: normal;
-}
-
-.novae-markdown-editor [class~="vditor-reset"] table {
-  min-width: max-content;
 }
 
 .novae-markdown-editor [class~="vditor-reset"] table th {
@@ -223,8 +231,9 @@
 
 @media (max-width: 47.99rem) {
   .novae-markdown-editor [class~="vditor-toolbar"] {
-    min-height: 2.625rem;
-    padding: 0.375rem 0.5rem;
+    flex-wrap: nowrap;
+    min-height: 3.25rem;
+    padding: 0.25rem;
   }
 
   .novae-markdown-editor [class~="vditor-toolbar__item"] {
@@ -237,12 +246,21 @@
   }
 
   .novae-markdown-editor [class~="vditor"] {
-    --toolbar-height: 1.875rem;
+    --toolbar-height: 2.75rem;
   }
 
   .novae-markdown-editor [class~="vditor-toolbar__item"] [class~="vditor-tooltipped"] {
-    width: 1.875rem;
-    height: 1.875rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: var(--radius-lg);
+  }
+
+  .novae-markdown-editor [class~="vditor-toolbar--pin"] {
+    top: max(0px, var(--safe-top));
+  }
+
+  .novae-markdown-editor [class~="vditor-panel"] {
+    max-width: calc(100vw - 2rem);
   }
 }
 
