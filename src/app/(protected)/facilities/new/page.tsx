@@ -33,9 +33,9 @@ export default function FacilityComposerPage() {
         }
         title={translate('ui.facility.newTitle')}
       />
-      <form onSubmit={form.submit}>
-        <Card className="-mx-[var(--page-gutter)] rounded-none border-x-0 py-5 sm:mx-0 sm:rounded-xl sm:border-x sm:py-6">
-          <CardContent className="grid gap-5 px-4 sm:px-7">
+      <form className="min-w-0" onSubmit={form.submit}>
+        <Card className="-mx-[var(--page-gutter)] min-w-0 rounded-none border-x-0 py-5 sm:mx-0 sm:rounded-xl sm:border-x sm:py-6">
+          <CardContent className="grid min-w-0 max-w-full gap-5 px-4 sm:px-7">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label>{translate('ui.access.facilityCategory')}</Label>

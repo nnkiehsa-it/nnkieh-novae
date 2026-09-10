@@ -39,8 +39,8 @@ export function ComposerField({
   useLocaleSubscription();
 
   return (
-    <div className="grid gap-5">
-      <div className="grid gap-2">
+    <div className="grid min-w-0 gap-5">
+      <div className="grid min-w-0 gap-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="composer-title">{titleLabel}</Label>
           <span
@@ -62,7 +62,7 @@ export function ComposerField({
           value={title}
         />
       </div>
-      <div className="grid gap-2">
+      <div className="grid min-w-0 gap-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="composer-content">{contentLabel}</Label>
           <span

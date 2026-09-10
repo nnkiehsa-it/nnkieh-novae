@@ -152,9 +152,7 @@ export function MarkdownEditor({
             ],
           },
         ],
-        toolbarConfig: {
-          pin: window.matchMedia("(max-width: 47.99rem)").matches,
-        },
+        toolbarConfig: { pin: false },
         upload: { url: "" },
         value: initialValue,
       });

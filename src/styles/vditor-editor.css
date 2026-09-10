@@ -1,9 +1,21 @@
 .novae-markdown-editor {
+  contain: inline-size;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   overflow: visible;
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   background: var(--card);
   transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.novae-markdown-editor > div,
+.novae-markdown-editor [class~="vditor"] {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .novae-markdown-editor:focus-within {
@@ -94,27 +106,32 @@
 }
 
 .novae-markdown-editor [class~="vditor-content"] {
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
   background: var(--card);
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
 }
 
 .novae-markdown-editor [class~="vditor-wysiwyg"] {
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
   background: var(--card);
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
 }
 
 .novae-markdown-editor [class~="vditor-wysiwyg"] > [contenteditable="true"] {
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
   min-height: 13rem;
   padding: 1rem 1rem 1.5rem;
-  overflow-x: hidden;
+  overflow-x: auto;
   color: var(--foreground);
   background: var(--card);
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
@@ -197,13 +214,8 @@
 }
 
 .novae-markdown-editor [class~="vditor-reset"] table {
-  display: block;
-  width: max-content;
-  max-width: 100%;
   margin: 1rem 0;
-  overflow-x: auto;
-  overscroll-behavior-inline: contain;
-  -webkit-overflow-scrolling: touch;
+  min-width: max-content;
 }
 
 .novae-markdown-editor [class~="vditor-reset"] table td,
@@ -219,6 +231,7 @@
 }
 
 .novae-markdown-editor [class~="vditor-panel"] {
+  box-sizing: border-box;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-floating);
@@ -255,13 +268,16 @@
     border-radius: var(--radius-lg);
   }
 
-  .novae-markdown-editor [class~="vditor-toolbar--pin"] {
-    top: max(0px, var(--safe-top));
-  }
-
   .novae-markdown-editor [class~="vditor-panel"] {
-    max-width: calc(100vw - 2rem);
+    max-width: 100%;
   }
+}
+
+.novae-markdown-editor [class~="vditor-panel--none"] {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 @media (prefers-reduced-motion: reduce) {

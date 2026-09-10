@@ -60,6 +60,54 @@ async function expectTouchTarget(page: Page, name: string | RegExp) {
 test.describe('mobile route motion', () => {
   test.use({ storageState: authStatePath('ordinary') });
 
+  test('keeps wide editor tables and their controls inside the composer', async ({ page }) => {
+    await suppressInstallPrompt(page);
+    await page.goto('/issues/proposal-a/new');
+
+    const editor = page.locator('.novae-markdown-editor');
+    const textbox = page.getByRole('textbox', { name: 'Proposal content' });
+    await expect(textbox).toBeVisible();
+    await textbox.evaluate((element) => {
+      const transfer = new DataTransfer();
+      transfer.setData(
+        'text/plain',
+        '| col1 | col2 | col3 | col4 |\n| --- | --- | --- | --- |\n| one | two | three | four |',
+      );
+      element.focus();
+      element.dispatchEvent(new ClipboardEvent('paste', {
+        bubbles: true,
+        cancelable: true,
+        clipboardData: transfer,
+      }));
+    });
+
+    const firstCell = editor.locator('table th').first();
+    await expect(firstCell).toBeVisible();
+    await firstCell.click();
+    const tableControls = editor.locator('.vditor-panel--none:visible').first();
+    await expect(tableControls).toBeVisible();
+
+    const dimensions = await page.evaluate(() => {
+      const editorElement = document.querySelector('.novae-markdown-editor')!;
+      const controlsElement = editorElement.querySelector<HTMLElement>('.vditor-panel--none[style*="display: block"]')!;
+      const editableElement = editorElement.querySelector<HTMLElement>('[contenteditable="true"]')!;
+      const editorRect = editorElement.getBoundingClientRect();
+      const controlsRect = controlsElement.getBoundingClientRect();
+      return {
+        controlsRight: controlsRect.right,
+        controlsLeft: controlsRect.left,
+        editorLeft: editorRect.left,
+        editorRight: editorRect.right,
+        pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        tableScrollsInsideEditor: editableElement.scrollWidth > editableElement.clientWidth,
+      };
+    });
+    expect(dimensions.pageOverflow).toBeLessThanOrEqual(1);
+    expect(dimensions.controlsLeft).toBeGreaterThanOrEqual(dimensions.editorLeft - 1);
+    expect(dimensions.controlsRight).toBeLessThanOrEqual(dimensions.editorRight + 1);
+    expect(dimensions.tableScrollsInsideEditor).toBe(true);
+  });
+
   test('keeps one route surface below the persistent navigation dock', async ({ page }) => {
     await suppressInstallPrompt(page);
     await page.goto('/issues');
