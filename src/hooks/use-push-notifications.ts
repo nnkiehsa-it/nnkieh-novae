@@ -13,7 +13,7 @@ import {
   type PersonalPushPreferenceKey,
   type PersonalPushPreferences,
   type PushNotificationPermission,
-} from "@/services/notifications";
+} from "@/services/push-notifications";
 import {
   confirmCurrentPushToken,
   enableCurrentDevicePushNotifications,
@@ -28,7 +28,7 @@ export type {
   PersonalPushPreferenceKey,
   PersonalPushPreferences,
   PushNotificationPermission,
-} from "@/services/notifications";
+} from "@/services/push-notifications";
 
 const defaultPreferences: PersonalPushPreferences = {
   comments: true,

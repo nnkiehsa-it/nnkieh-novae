@@ -2,6 +2,13 @@ import { spawnSync } from "node:child_process";
 import process from "node:process";
 import { createInterface } from "node:readline/promises";
 
+const dockerReadyTimeoutMs = 60_000;
+const dockerReadyPollMs = 500;
+
+function sleepSync(milliseconds) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
+}
+
 function decodeWslOutput(value) {
   const buffer = Buffer.isBuffer(value) ? value : Buffer.from(value ?? "");
   const utf8 = buffer.toString("utf8");
@@ -81,6 +88,16 @@ export function isWindowsWslDockerActive(name) {
 export function startWindowsWslDocker(name) {
   if (process.platform !== "win32") return;
   runInWindowsWsl(name, ["systemctl", "start", "docker.service"]);
+  const deadline = Date.now() + dockerReadyTimeoutMs;
+  while (Date.now() < deadline) {
+    if (runInWindowsWsl(name, ["docker", "ps", "--quiet"], { allowFailure: true }).status === 0) {
+      return;
+    }
+    sleepSync(dockerReadyPollMs);
+  }
+  throw new Error(
+    `Docker did not accept connections in the ${name} WSL distribution within ${dockerReadyTimeoutMs / 1_000}s.`,
+  );
 }
 
 export function stopWindowsWslDockerIfIdle(name) {

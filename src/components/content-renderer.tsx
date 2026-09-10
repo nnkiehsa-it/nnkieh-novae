@@ -1,10 +1,9 @@
 "use client";
 
 import * as React from "react";
-import DOMPurify from "dompurify";
-import { marked } from "marked";
 import { ImageIcon, ZoomIn } from "lucide-react";
 import { stripMarkdownImages } from "@/lib/markdown-images";
+import { renderMarkdown } from "@/lib/render-markdown";
 import { useResolvedMarkdown } from "@/hooks/use-resolved-markdown";
 import type { MarkdownImageRecord } from "@/types";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -13,16 +12,6 @@ import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { cn } from "@/lib/utils";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { DecodedImage } from "@/components/ui/decoded-image";
-
-marked.setOptions({ breaks: true, gfm: true });
-
-function renderMarkdown(content: string) {
-  const raw = marked.parse(content, { async: false }) as string;
-  return DOMPurify.sanitize(raw, {
-    ADD_ATTR: ["loading", "fetchpriority", "decoding"],
-    FORBID_TAGS: ["img"],
-  });
-}
 
 export function ContentRenderer({
   className,

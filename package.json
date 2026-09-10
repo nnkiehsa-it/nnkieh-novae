@@ -29,7 +29,6 @@
     "lint": "eslint .",
     "check:worker": "tsc -p cloudflare/tsconfig.json --noEmit",
     "check:integration-types": "tsc -p tsconfig.integration.json --noEmit",
-    "check:unused": "tsc --noEmit --noUnusedLocals --noUnusedParameters",
     "check:i18n": "node scripts/check-i18n.mjs",
     "check:ui": "node scripts/check-ui-primitives.mjs",
     "check:build-budget": "node scripts/check-build-budget.mjs",

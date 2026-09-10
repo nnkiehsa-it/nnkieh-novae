@@ -19,6 +19,7 @@
   --color-action: var(--action);
   --color-action-foreground: var(--action-foreground);
   --color-action-hover: var(--action-hover);
+  --color-action-border: var(--action-border);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary-hover: var(--secondary-hover);
@@ -60,9 +61,10 @@
   --popover-foreground: #101828;
   --accent: #1557d5;
   --accent-foreground: #f7f9ff;
-  --action: var(--foreground);
-  --action-foreground: var(--background);
-  --action-hover: color-mix(in oklab, var(--action) 92%, var(--action-foreground));
+  --action: var(--card);
+  --action-foreground: var(--card-foreground);
+  --action-hover: color-mix(in oklab, var(--action) 94%, var(--action-foreground));
+  --action-border: color-mix(in oklab, var(--action-foreground) 70%, var(--action));
   --tint-content: var(--accent);
   --tint-surface: color-mix(in srgb, var(--accent) 9%, var(--card));
   --tint-surface-hover: color-mix(in srgb, var(--accent) 14%, var(--card));

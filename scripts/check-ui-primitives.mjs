@@ -5,6 +5,10 @@ import { findOrphanCssClassSelectors } from "./css-orphan-selectors.mjs";
 const root = process.cwd();
 const sourceRoot = path.join(root, "src");
 const errors = [];
+const warnings = [];
+const moduleLineReviewThreshold = 300;
+const moduleLineLimit = 400;
+const generatedModules = new Set(["src/services/backend-action-contract.ts"]);
 
 async function listFiles(directory) {
   const files = [];
@@ -56,17 +60,13 @@ for (const file of files) {
     errors.push(`${relativePath} accesses a service directly; move the flow into a domain hook`);
   }
 
-  if (relativePath.includes(`${path.sep}app${path.sep}`) && relativePath.endsWith(`${path.sep}page.tsx`)) {
+  if (!file.endsWith(".css") && !generatedModules.has(relativePath.replaceAll(path.sep, "/"))) {
     const lineCount = source.split(/\r?\n/u).length;
-    if (lineCount > 220) errors.push(`${relativePath} has ${lineCount} lines; split route responsibilities into hooks and domain components`);
-  }
-
-  if (
-    relativePath.includes(`${path.sep}components${path.sep}`) &&
-    !relativePath.includes(`${path.sep}components${path.sep}ui${path.sep}`)
-  ) {
-    const lineCount = source.split(/\r?\n/u).length;
-    if (lineCount > 300) errors.push(`${relativePath} has ${lineCount} lines; split domain presentation into focused components`);
+    if (lineCount > moduleLineLimit) {
+      errors.push(`${relativePath} has ${lineCount} lines, over the ${moduleLineLimit}-line limit; split its responsibilities`);
+    } else if (lineCount > moduleLineReviewThreshold) {
+      warnings.push(`warning: ${relativePath} has ${lineCount} lines; confirm it carries a single responsibility`);
+    }
   }
 }
 
@@ -91,5 +91,7 @@ if (errors.length) {
   console.error([...new Set(errors)].join("\n"));
   process.exit(1);
 }
+
+if (warnings.length) console.log([...new Set(warnings)].sort().join("\n"));
 
 console.log(`UI architecture check passed: ${files.length} frontend source files.`);

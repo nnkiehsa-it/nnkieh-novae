@@ -64,9 +64,9 @@ Verify and Deploy 先用 git diff 判斷是否需要額外 job：
 
 | Job | 主要觸發範圍 | 工作 |
 | --- | --- | --- |
-| `fast` | 每個符合 workflow paths 的變更 | `verify:generated` 後跑 `verify:fast` |
+| `fast` | 每個符合 workflow paths 的變更 | `verify:fast`（第一個 stage 即 generated drift gate）|
 | `backend_verify` | `cloudflare/`、`database/`、`config/`、integration tests、backend scripts、package / lockfile | Worker types、integration types、`verify:integration` |
-| `browser_verify` | App / components / hooks / lib / services / styles、public、Next config、E2E、package / lockfile | 安裝 Chromium、`test:e2e`、build budget |
+| `browser_verify` | App / components / hooks / lib / services / styles、public、Next config、E2E、package / lockfile | 安裝 Chromium、`test:e2e`；build budget 只在 shard 1 跑 |
 | `deploy_backend` | push / manual 且 backend 受影響 | forward migration、runtime role、Worker / Queue / provider 設定與 smoke test |
 | `deploy_frontend` | push / manual 且 browser 受影響 | 驗證 Vercel secrets，在同一 runner 建立並直接發布 prebuilt output；必要時等待 backend deploy |
 
@@ -74,7 +74,7 @@ Backend 與 browser verify job 都等 fast 成功後才執行；frontend deploy 
 
 ## 測試目錄
 
-- `tests/unit/`：純函式、cache、request、realtime idle、Turnstile 與資料庫 client 行為。
+- `tests/unit/`：純函式、cache、request、realtime idle、Markdown 淨化與資料庫 client 行為。只斷言可觀察行為，不比對原始碼文字；結構性規則放 `check:ui` 或 `tests/architecture/`。
 - `tests/architecture/`：frontend dependency direction、UI primitive purity、database ownership、provider ownership、contract 與 observability 邊界。
 - `tests/tooling/`：package-management、生成入口與 source hygiene 等穩定 tooling policy。
 - `tests/integration/`：真 PostgreSQL + Worker 的成功、拒絕、scope、transaction、job 與 provider 行為。

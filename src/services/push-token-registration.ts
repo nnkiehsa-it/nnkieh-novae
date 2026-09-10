@@ -11,7 +11,7 @@ import {
 import {
   registerPushToken,
   type PushNotificationPreference,
-} from "@/services/notifications";
+} from "@/services/push-notifications";
 import { getPushTokenConfirmationIntervalMs } from "@/services/runtime-settings";
 
 const DEVICE_KEY = "novae:push-device-id";

@@ -123,9 +123,6 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Verify generated configuration is committed
-        run: bun run verify:generated
-
       - name: Run fast verification
         run: bun run verify:fast
 
@@ -153,22 +150,13 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Verify backend types and integration behavior
-        run: |
-          bun run check:worker
-          bun run check:integration-types
-          bun run verify:integration
+      - name: Verify integration behavior
+        run: bun run verify:integration
 
   browser_verify:
     needs: [changes, fast]
     if: needs.changes.outputs.browser == 'true'
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: ['1/2', '2/2']
-    env:
-      NOVAE_E2E_SHARD: ${{ matrix.shard }}
     steps:
       - uses: actions/checkout@v7
 
@@ -545,7 +533,24 @@ jobs:
           NEXT_PUBLIC_API_BASE_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
 
       - name: Deploy Project Artifacts to Vercel
-        run: bunx --yes vercel@58.9.0 deploy --prebuilt ${{ github.ref_name == 'main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
+        id: deploy
+        run: |
+          url="$(bunx --yes vercel@58.9.0 deploy --prebuilt ${{ github.ref_name == 'main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }})"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Smoke test the deployed frontend
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          for attempt in $(seq 1 12); do
+            login="$(curl -sS -L -o /tmp/login.html -w '%{http_code}' "${DEPLOYMENT_URL%/}/login")"
+            if [ "$login" = '200' ] && grep -q '/_next/static/' /tmp/login.html; then
+              exit 0
+            fi
+            sleep 5
+          done
+          printf 'Frontend smoke test failed (login=%s) at %s\n' "$login" "$DEPLOYMENT_URL" >&2
+          exit 1

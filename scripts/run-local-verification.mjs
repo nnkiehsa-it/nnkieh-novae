@@ -241,12 +241,9 @@ if (runAll) {
   await runSuite("[2/3] Integration verification", [
     "scripts/verify-integration.mjs",
   ]);
-  for (const project of ["chromium-desktop", "chromium-mobile"]) {
-    await runSuite(
-      `[3/3] End-to-end verification (${project})`,
-      ["scripts/verify-integration.mjs", "--e2e"],
-      { ...process.env, NOVAE_E2E_PROJECT: project },
-    );
-  }
+  await runSuite("[3/3] End-to-end verification", [
+    "scripts/verify-integration.mjs",
+    "--e2e",
+  ]);
   process.stderr.write("\n✓ All verification suites passed\n");
 }

@@ -18,11 +18,12 @@ test("Bun is the sole package-management entry point", async () => {
   }
 });
 
-test("local and CI verification share the generated-artifact drift gate", async () => {
+test("local and CI verification share one generated-artifact drift gate", async () => {
   const localVerification = await read("scripts/run-local-verification.mjs");
   const workflow = await read(".github/workflows/verify-and-deploy.yml");
+  assert.match(workflow, /bun run verify:fast/u);
+  assert.doesNotMatch(workflow, /bun run verify:generated/u);
   assert.match(localVerification, /scripts\/verify-generated\.mjs/u);
-  assert.match(workflow, /bun run verify:generated/u);
 });
 
 test("CI cache policy stays bounded", async () => {
