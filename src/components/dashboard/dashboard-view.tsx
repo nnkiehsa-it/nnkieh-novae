@@ -122,7 +122,7 @@ export function DashboardView({ data, error, loading, onRefresh, reveal = false 
                   </div>
                   <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                     <span
-                      className="block h-full origin-left rounded-full bg-foreground animate-[dashboard-bar_500ms_var(--ease-smooth-out)_both]"
+                      className="block h-full origin-left rounded-full bg-foreground animate-[dashboard-bar_var(--motion-emphasis)_var(--ease-arrive)_both]"
                       style={
                         {
                           "--dashboard-bar": count / maxCategory,

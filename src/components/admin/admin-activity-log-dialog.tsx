@@ -87,7 +87,7 @@ export function AdminActivityLogDialog({
   const activity = useAdminActivity(window, open);
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="max-w-3xl gap-4">
+      <DialogContent className="max-w-3xl gap-4" presentation="sheet">
         <DialogHeader>
           <DialogTitle>{t("ui.adminConsole.activityLogTitle")}</DialogTitle>
           <DialogDescription>{t("ui.adminConsole.activityLogDescription")}</DialogDescription>

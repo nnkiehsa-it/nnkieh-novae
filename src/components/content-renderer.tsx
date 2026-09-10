@@ -60,7 +60,7 @@ export function ContentRenderer({
               {image.src ? (
                 <DecodedImage
                   alt={image.alt || fallbackAlt}
-                  className="size-full object-cover transition-transform duration-300 ease-[var(--ease-smooth-out)] group-hover:scale-[1.025]"
+                  className="size-full object-cover transition-transform duration-[var(--motion-content)] ease-[var(--ease-arrive)] group-hover:scale-[1.025]"
                   containerClassName="size-full"
                   height={image.height}
                   fetchPriority="low"

@@ -44,7 +44,7 @@ export function FacilityStatusDialog({
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent>
+      <DialogContent presentation="sheet">
         <DialogHeader>
           <DialogTitle>{translate('ui.facility.statusDialogTitle')}</DialogTitle>
           <DialogDescription>{translate('ui.facility.statusDialogDescription')}</DialogDescription>

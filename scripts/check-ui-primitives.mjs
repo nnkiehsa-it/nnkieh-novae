@@ -81,8 +81,25 @@ const motion = await readFile(path.join(sourceRoot, "styles/motion.css"), "utf8"
 for (const token of ["--background", "--card", "--border", "--radius", "--shadow-control", "--shadow-card", "--shadow-floating"]) {
   if (!globals.includes(token)) errors.push(`src/app/globals.css is missing ${token}`);
 }
-for (const token of ["--motion-micro", "--motion-fast", "--motion-medium", "--motion-emphasis", "--ease-smooth-out"]) {
+for (const token of [
+  "--motion-press",
+  "--motion-control",
+  "--motion-content",
+  "--motion-surface",
+  "--motion-page",
+  "--motion-emphasis",
+  "--ease-arrive",
+  "--ease-depart",
+  "--ease-move",
+  "--ease-page",
+]) {
   if (!motion.includes(token)) errors.push(`src/styles/motion.css is missing ${token}`);
+}
+// Recipes choose a rung of the ladder; they do not invent their own timing.
+const motionRecipes = motion.replace(/^(?::root|\.dark)\s*\{[\s\S]*?^\}/gmu, "");
+for (const [literal, amount] of motionRecipes.matchAll(/(?<![\w.-])(\d+(?:\.\d+)?)m?s(?![\w-])/gu)) {
+  if (Number(amount) === 0) continue;
+  errors.push(`src/styles/motion.css hard-codes the duration ${literal}; name it in the motion ladder`);
 }
 if (!motion.includes("@media (prefers-reduced-motion: reduce)")) errors.push("motion.css must honor prefers-reduced-motion");
 if (!motion.includes("@media (hover: hover) and (pointer: fine)")) errors.push("motion.css must gate hover-only feedback");

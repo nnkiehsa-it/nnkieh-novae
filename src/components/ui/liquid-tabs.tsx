@@ -72,7 +72,7 @@ export function LiquidTabs({
 
           return (
             <TabsPrimitive.Trigger
-              className="t-tab t-tab-label relative z-10 isolate inline-flex h-[1.875rem] shrink-0 items-center justify-center gap-1 rounded-full px-3 font-semibold leading-4 text-muted-foreground outline-none transition-colors duration-[var(--tabs-dur)] ease-[var(--tabs-ease)] focus-visible:ring-2 focus-visible:ring-ring"
+              className="t-tab t-tab-label relative z-10 isolate inline-flex h-[1.875rem] shrink-0 items-center justify-center gap-1 rounded-full px-3 font-semibold leading-4 text-muted-foreground outline-none transition-colors duration-[var(--motion-control)] ease-[var(--ease-move)] focus-visible:ring-2 focus-visible:ring-ring"
               data-control-label=""
               data-displayed-active={displayedActive}
               data-liquid-tab={option.value}
@@ -89,12 +89,7 @@ export function LiquidTabs({
                   className="t-tabs-pill absolute inset-0 z-0 rounded-full"
                   initial={false}
                   layoutId={`liquid-tab-pill-${layoutId}`}
-                  transition={{
-                    type: "spring",
-                    stiffness: 520,
-                    damping: 42,
-                    mass: 0.72,
-                  }}
+                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                 />
               ) : null}
               {option.icon ? (

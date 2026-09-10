@@ -41,7 +41,7 @@ export function ResizeMotion() {
       sizes.set(element, next);
       if (reduced.matches || !previous || !previous.height || !changed(previous, next)) return;
       const style = getComputedStyle(element);
-      const duration = Number.parseFloat(style.getPropertyValue("--resize-dur")) || 180;
+      const duration = Number.parseFloat(style.getPropertyValue("--motion-control")) || 200;
       const resizeState: ActiveResize = {
         frame: null,
         timer: null,

@@ -28,6 +28,7 @@ import { getDefaultIssueRouteFilter } from "@/constants/categories";
 import { LiquidNav, type LiquidNavItem } from "@/components/liquid-nav";
 import { AppNotificationPrompt } from "@/components/app-notification-prompt";
 import { RouteSurface } from "@/components/motion/route-surface";
+import { adoptedParent } from "@/lib/route-hierarchy";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { BrandLockup } from "@/components/ui/brand";
@@ -215,10 +216,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     [categories.facilitiesEnabled, categories.issuesEnabled, issueHref, t, unread],
   );
 
-  const navigationPathname =
-    pathname.startsWith("/admin/") || pathname === "/dashboard"
-      ? "/settings"
-      : pathname;
+  const navigationPathname = adoptedParent(pathname) ?? pathname;
   return (
     <div className="app-shell bg-[var(--surface-stage)] md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
       <AppNotificationPrompt />
@@ -239,14 +237,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="min-w-0 md:col-start-2">
         <div aria-hidden className="app-top-blur" data-visible={scrolled} />
-        <main
-          className={`app-viewport pt-[max(1rem,var(--safe-top))] md:pb-12 md:pt-6 ${
-            showMobileNavigation
-              ? "pb-[calc(var(--mobile-nav-height)+var(--mobile-nav-bottom-gap)+1.4rem)]"
-              : "pb-[max(2rem,var(--safe-bottom))]"
-          }`}
-        >
-          <RouteSurface>{children}</RouteSurface>
+        <main className="app-viewport">
+          <RouteSurface
+            className={`pt-[max(1rem,var(--safe-top))] md:pb-12 md:pt-6 ${
+              showMobileNavigation
+                ? "pb-[calc(var(--mobile-nav-height)+var(--mobile-nav-bottom-gap)+1.4rem)]"
+                : "pb-[max(2rem,var(--safe-bottom))]"
+            }`}
+          >
+            {children}
+          </RouteSurface>
         </main>
 
         <div

@@ -38,14 +38,14 @@ export function ContentTransition({
   const reduced = useReducedMotion();
   const transition = reduced
     ? { duration: 0 }
-    : { duration: 0.18, ease: [0.22, 1, 0.36, 1] as const };
-  const entrance = reduced ? false : { opacity: 0, filter: "blur(1px)" };
-  const exit = reduced ? undefined : { opacity: 0, filter: "blur(1px)" };
+    : { duration: 0.2, ease: [0.4, 0, 0.2, 1] as const };
+  const entrance = reduced ? false : { opacity: 0 };
+  const exit = reduced ? undefined : { opacity: 0 };
 
   return (
     <AnimatePresence initial mode="popLayout">
       <motion.div
-        animate={{ opacity: 1, filter: "blur(0px)" }}
+        animate={{ opacity: 1 }}
         className={cn("t-state-content", className)}
         exit={exit}
         initial={entrance}

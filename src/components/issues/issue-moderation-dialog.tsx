@@ -44,7 +44,7 @@ export function IssueModerationDialog({
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent>
+      <DialogContent presentation="sheet">
         <DialogHeader>
           <DialogTitle>{translate('ui.issue.statusDialogTitle')}</DialogTitle>
           <DialogDescription>{translate('ui.issue.statusDialogDescription')}</DialogDescription>

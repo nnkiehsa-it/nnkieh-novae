@@ -18,16 +18,18 @@ export function StaggerList({
   );
 }
 
+// List entry and exit is an opacity handoff on the --motion-content rung.
+// Blurring or displacing each row made an ordinary re-render read as a reload.
 export function StaggerItem({ className, initial, ...props }: ComponentProps<typeof motion.div>) {
   const reduced = useReducedMotion();
-  const defaultInitial = reduced ? false : { opacity: 0, filter: "blur(1px)" };
+  const defaultInitial = reduced ? false : { opacity: 0 };
   return (
     <motion.div
       className={cn("t-stagger-item", className)}
       initial={initial !== undefined ? initial : defaultInitial}
-      animate={{ opacity: 1, filter: "blur(0px)" }}
-      exit={reduced ? undefined : { opacity: 0, filter: "blur(1px)" }}
-      transition={reduced ? { duration: 0 } : { duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+      animate={{ opacity: 1 }}
+      exit={reduced ? undefined : { opacity: 0 }}
+      transition={reduced ? { duration: 0 } : { duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
       {...props}
     />
   );

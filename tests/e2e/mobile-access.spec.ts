@@ -115,15 +115,26 @@ test.describe('mobile route motion', () => {
     await expect(dock).toBeVisible();
     await page.evaluate(() => {
       const state = window as typeof window & {
+        __novaeMobileDockCaptured?: boolean;
         __novaeMobileDockStayedAboveRoute?: boolean;
         __novaeMobileMaxRoutePages?: number;
       };
+      state.__novaeMobileDockCaptured = false;
       state.__novaeMobileDockStayedAboveRoute = true;
       state.__novaeMobileMaxRoutePages = 0;
       const deadline = performance.now() + 2_000;
+      const pseudoElements = () => document.getAnimations().flatMap((animation) => {
+        const effect = animation.effect as KeyframeEffect & { pseudoElement?: string };
+        return effect?.pseudoElement ? [effect.pseudoElement] : [];
+      });
       const inspect = () => {
+        const transitioning = pseudoElements();
         const navigation = document.querySelector('.app-mobile-nav');
-        if (navigation) {
+        if (transitioning.some((pseudo) => pseudo.includes('app-mobile-nav'))) {
+          // While the page slides, the dock is carried by a snapshot of its
+          // own rather than by the page, which is what keeps it visible.
+          state.__novaeMobileDockCaptured = true;
+        } else if (navigation && !transitioning.some((pseudo) => pseudo.includes('view-transition'))) {
           const box = navigation.getBoundingClientRect();
           const stack = document.elementsFromPoint(
             box.left + box.width / 2,
@@ -153,6 +164,37 @@ test.describe('mobile route motion', () => {
     expect(await page.evaluate(() =>
       (window as typeof window & { __novaeMobileDockStayedAboveRoute?: boolean }).__novaeMobileDockStayedAboveRoute,
     )).toBe(true);
+    expect(await page.evaluate(() =>
+      (window as typeof window & { __novaeMobileDockCaptured?: boolean }).__novaeMobileDockCaptured,
+    )).toBe(true);
+  });
+
+  test('gives a pushed route surface an opaque cover of the whole screen', async ({ page }) => {
+    await suppressInstallPrompt(page);
+    await page.goto('/issues');
+    await expect(page.locator('.route-page')).toBeVisible();
+
+    // A page that pushes in has to hide the one it replaces: anything narrower
+    // than the screen, shorter than the viewport, or transparent leaves the
+    // outgoing page legible beside or beneath it for the whole transition.
+    const cover = await page.evaluate(() => {
+      const surface = document.querySelector('.route-page')!;
+      const box = surface.getBoundingClientRect();
+      return {
+        background: getComputedStyle(surface).backgroundColor,
+        height: box.height,
+        left: box.left,
+        top: box.top,
+        viewportHeight: document.documentElement.clientHeight,
+        viewportWidth: document.documentElement.clientWidth,
+        width: box.width,
+      };
+    });
+    expect(cover.left).toBeLessThanOrEqual(0.5);
+    expect(cover.top).toBeLessThanOrEqual(0.5);
+    expect(cover.width).toBeGreaterThanOrEqual(cover.viewportWidth - 0.5);
+    expect(cover.height).toBeGreaterThanOrEqual(cover.viewportHeight - 0.5);
+    expect(cover.background).not.toMatch(/transparent|, 0\)$/u);
   });
 });
 

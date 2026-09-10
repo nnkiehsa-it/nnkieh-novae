@@ -1,8 +1,15 @@
 "use client";
 
-import { useLayoutEffect, useRef, type ReactNode } from "react";
+import { ViewTransition, useLayoutEffect, useRef, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { compareRoutes } from "@/lib/route-hierarchy";
 import { cn } from "@/lib/utils";
+
+const DIRECTIONS = {
+  deeper: "push",
+  shallower: "pop",
+  unrelated: "none",
+} as const;
 
 export function RouteSurface({
   children,
@@ -12,26 +19,36 @@ export function RouteSurface({
   className?: string;
 }) {
   const pathname = usePathname();
-  const surface = useRef<HTMLDivElement>(null);
+  const previous = useRef(pathname);
+
+  // Direction is derived from the two URLs instead of tagged onto each link, so
+  // every navigation resolves to the same push or pop regardless of what
+  // triggered it. Note that Next deliberately dispatches a history traversal
+  // outside a React Transition to keep Back instant, so a traversal currently
+  // commits with no view transition to animate; the direction it reports is
+  // still correct, and the recipes apply as soon as that changes.
+  //
+  // It is published on the document rather than passed to <ViewTransition>
+  // because the surface that leaves keeps the props it last rendered with,
+  // which predate this navigation. React runs layout effects inside the view
+  // transition's update callback, so the attribute is in place before the
+  // browser captures the new snapshot and starts the animations.
   useLayoutEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const animation = surface.current?.animate([
-      { opacity: 0, transform: "translateY(6px)" },
-      { opacity: 1, transform: "translateY(0)" },
-    ], {
-      duration: 220, easing: "cubic-bezier(0.22, 1, 0.36, 1)",
-    });
-    if (animation) animation.id = "novae-route-enter";
-    return () => animation?.cancel();
+    document.documentElement.dataset.navDirection =
+      DIRECTIONS[compareRoutes(previous.current, pathname)];
+    previous.current = pathname;
   }, [pathname]);
 
   return (
-    <div
-      className={cn("route-page t-route-page-enter", className)}
-      data-route-path={pathname}
-      ref={surface}
+    <ViewTransition
+      default="none"
+      enter="t-route-in"
+      exit="t-route-out"
+      key={pathname}
     >
-      {children}
-    </div>
+      <div className={cn("route-page", className)} data-route-path={pathname}>
+        {children}
+      </div>
+    </ViewTransition>
   );
 }

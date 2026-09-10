@@ -299,6 +299,8 @@ html[data-input-modality="pointer"] :focus-visible {
 }
 
 .app-viewport {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
   min-height: 100svh;
   padding-inline: max(var(--page-gutter), var(--safe-left), var(--safe-right));
@@ -327,7 +329,7 @@ html[data-input-modality="pointer"] :focus-visible {
   backdrop-filter: blur(12px);
   -webkit-mask-image: linear-gradient(to bottom, black 45%, transparent);
   mask-image: linear-gradient(to bottom, black 45%, transparent);
-  transition: opacity var(--motion-quick) var(--ease-smooth-out);
+  transition: opacity var(--motion-control) var(--ease-move);
 }
 
 .app-top-blur[data-visible="true"] {
@@ -346,9 +348,9 @@ html[data-input-modality="pointer"] :focus-visible {
   transform: translateY(1.125rem) scale(0.96);
   visibility: hidden;
   transition:
-    opacity var(--motion-quick) var(--ease-smooth-out),
-    transform var(--motion-fast) var(--ease-smooth-out),
-    visibility 0s linear var(--motion-fast);
+    opacity var(--motion-control) var(--ease-move),
+    transform var(--motion-content) var(--ease-arrive),
+    visibility 0s linear var(--motion-content);
 }
 
 @media (display-mode: standalone) {
@@ -534,6 +536,15 @@ html[data-input-modality="pointer"] :focus-visible {
 @media (max-width: 47.99rem) {
   :root {
     --page-gutter: 1rem;
+  }
+  /* The page gutter belongs to the route surface on a phone: a pushed page has
+     to reach both screen edges, or the page it replaces stays visible beside
+     it for the whole transition. */
+  .app-viewport {
+    padding-inline: 0;
+  }
+  .app-viewport > .route-page {
+    padding-inline: max(var(--page-gutter), var(--safe-left), var(--safe-right));
   }
   body:has(input:focus, textarea:focus, [contenteditable="true"]:focus) .app-mobile-nav {
     opacity: 0;

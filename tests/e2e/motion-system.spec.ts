@@ -1,35 +1,27 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { authStatePath } from './support/paths';
 import { newUserPage } from './support/session';
 
-test('navigation feedback survives the source control and route content transitions smoothly', async ({
-  browser,
-}) => {
-  const { context, page } = await newUserPage(browser, 'ordinary');
-  await page.goto('/issues');
-  await expect(page.locator('.route-page')).toBeVisible();
+function navigationDirection(page: Page) {
+  return page.evaluate(() => document.documentElement.dataset.navDirection);
+}
 
+// Samples the live document across a navigation: how many route surfaces ever
+// coexist, and whether the browser actually ran a view transition for it.
+async function watchRouteChange(page: Page) {
   await page.evaluate(() => {
     const state = window as typeof window & {
       __novaeMaxRoutePages?: number;
-      __novaeSawRouteMotion?: boolean;
       __novaeSawRouteViewTransition?: boolean;
     };
     state.__novaeMaxRoutePages = 0;
-    state.__novaeSawRouteMotion = false;
     state.__novaeSawRouteViewTransition = false;
-    const deadline = performance.now() + 2_000;
+    const deadline = performance.now() + 3_000;
     const inspect = () => {
       state.__novaeMaxRoutePages = Math.max(
         state.__novaeMaxRoutePages ?? 0,
         document.querySelectorAll('.route-page').length,
       );
-      if (
-        document.getAnimations().some((animation) =>
-          animation.id === 'novae-route-enter')
-      ) {
-        state.__novaeSawRouteMotion = true;
-      }
       if (document.getAnimations().some((animation) => {
         const effect = animation.effect as KeyframeEffect & { pseudoElement?: string };
         return effect?.pseudoElement?.includes('view-transition');
@@ -38,30 +30,67 @@ test('navigation feedback survives the source control and route content transiti
     };
     requestAnimationFrame(inspect);
   });
+}
 
+function routeChangeReport(page: Page) {
+  return page.evaluate(() => {
+    const state = window as typeof window & {
+      __novaeMaxRoutePages?: number;
+      __novaeSawRouteViewTransition?: boolean;
+    };
+    return {
+      routeSurfaces: state.__novaeMaxRoutePages,
+      viewTransition: Boolean(state.__novaeSawRouteViewTransition),
+    };
+  });
+}
+
+test('navigation direction follows the information hierarchy in both directions', async ({
+  browser,
+}) => {
+  const { context, page } = await newUserPage(browser, 'ordinary');
+  await page.goto('/issues');
+  await expect(page.locator('.route-page')).toBeVisible();
+  await expect(page.locator('.t-card a[href^="/issues/"]').first()).toBeVisible();
+
+  await watchRouteChange(page);
+  await page.locator('.t-card a[href^="/issues/"]').first().click();
+  await page.waitForURL(/\/issues\/[^/]+\/[^/]+$/u);
+  await expect(page.locator('article h1')).toBeVisible();
+  await expect.poll(() => navigationDirection(page)).toBe('push');
+  const forward = await routeChangeReport(page);
+  expect(forward.routeSurfaces).toBe(1);
+  expect(forward.viewTransition).toBe(true);
+
+  await page.getByRole('button', { name: /^Back to/u }).click();
+  await page.waitForURL(/\/issues\/[^/]+$/u);
+  await expect.poll(() => navigationDirection(page)).toBe('pop');
+
+  // The browser's own Back button carries no navigation intent of its own, so
+  // returning to the detail page has to be recognised as a push all the same.
+  await page.goForward();
+  await page.waitForURL(/\/issues\/[^/]+\/[^/]+$/u);
+  await expect.poll(() => navigationDirection(page)).toBe('push');
+  await page.goBack();
+  await page.waitForURL(/\/issues\/[^/]+$/u);
+  await expect.poll(() => navigationDirection(page)).toBe('pop');
+
+  // Switching primary navigation is a replacement, not a move through the
+  // hierarchy, and must not read as either direction.
   const destination = page.locator('aside a[href="/announcements"]');
   await destination.dispatchEvent('pointerdown', { button: 0, pointerType: 'mouse' });
   await expect(page.locator('.t-navigation-echo')).toBeVisible();
   await destination.click();
   await page.waitForURL(/\/announcements$/u);
-
   await expect(page.locator('.route-page[data-route-path="/announcements"]')).toBeVisible();
   await expect(page.locator('.t-navigation-echo')).toBeVisible();
-  await expect.poll(() => page.evaluate(() =>
-    Boolean((window as typeof window & { __novaeSawRouteMotion?: boolean }).__novaeSawRouteMotion),
-  )).toBe(true);
-  expect(await page.evaluate(() =>
-    (window as typeof window & { __novaeMaxRoutePages?: number }).__novaeMaxRoutePages,
-  )).toBe(1);
-  expect(await page.evaluate(() =>
-    (window as typeof window & { __novaeSawRouteViewTransition?: boolean }).__novaeSawRouteViewTransition,
-  )).toBe(false);
-  const stacking = await page.evaluate(() => ({
-    mobileNavigation: Number.parseInt(getComputedStyle(document.querySelector('.app-mobile-nav')!).zIndex, 10),
-    route: Number.parseInt(getComputedStyle(document.querySelector('.route-page')!).zIndex, 10),
-  }));
-  expect(stacking.mobileNavigation).toBeGreaterThan(stacking.route);
+  await expect.poll(() => navigationDirection(page)).toBe('none');
 
+  await context.close();
+});
+
+test('a detail route replaces its content in one surface', async ({ browser }) => {
+  const { context, page } = await newUserPage(browser, 'ordinary');
   await page.goto('/issues');
   await expect(page.locator('.t-card a[href^="/issues/"]').first()).toBeVisible();
   await page.evaluate(() => {
@@ -86,7 +115,7 @@ test('navigation feedback survives the source control and route content transiti
   await context.close();
 });
 
-test('dropdowns animate their surface and items while reduced motion removes movement', async ({
+test('dropdowns animate as one surface while reduced motion removes movement', async ({
   browser,
 }) => {
   const { context, page } = await newUserPage(browser, 'ordinary');
@@ -100,8 +129,9 @@ test('dropdowns animate their surface and items while reduced motion removes mov
       animation instanceof CSSAnimation ? [animation.animationName] : [],
     ),
   );
-  expect(animationNames).toContain('t-dropdown-in');
-  expect(animationNames).toContain('t-dropdown-item-in');
+  // The menu opens as a single object: its items are carried by the surface
+  // rather than each arriving on its own delay.
+  expect(animationNames).toEqual(['t-dropdown-in']);
   await context.close();
 
   const reducedContext = await browser.newContext({

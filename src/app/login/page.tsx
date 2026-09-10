@@ -137,7 +137,7 @@ export default function LoginPage() {
                 <>
                   <GoogleMark />
                   {t("auth.signInWithGoogle")}
-                  <ArrowRight className="ml-auto transition-transform duration-250 ease-[var(--ease-smooth-out)] group-hover:translate-x-0.5" />
+                  <ArrowRight className="ml-auto transition-transform duration-[var(--motion-control)] ease-[var(--ease-arrive)] group-hover:translate-x-0.5" />
                 </>
               )}
             </Button>

@@ -52,15 +52,24 @@ function DialogContent({
   children,
   showCloseButton = true,
   surface = "floating",
+  presentation = "centered",
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
   surface?: "floating" | "plain";
+  presentation?: "centered" | "sheet";
 }) {
+  const sheet = presentation === "sheet";
+
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
-      <div className="pointer-events-none fixed inset-0 z-50 grid place-items-center p-4">
+      <div
+        className={cn(
+          "pointer-events-none fixed inset-0 z-50 grid items-center justify-items-center p-4",
+          sheet && "max-md:items-end max-md:justify-items-stretch max-md:p-0",
+        )}
+      >
         <DialogPrimitive.Content
           data-slot="dialog-content"
           className={cn(
@@ -68,6 +77,7 @@ function DialogContent({
             surface === "floating"
               ? "surface-floating"
               : "rounded-[var(--radius-xl)] bg-popover",
+            sheet && "t-sheet",
             className,
           )}
           {...props}
@@ -76,7 +86,7 @@ function DialogContent({
           {showCloseButton && (
             <DialogPrimitive.Close
               data-slot="dialog-close"
-              className="absolute top-3 right-3 grid size-8 place-items-center rounded-full text-muted-foreground transition-[background-color,color,transform] duration-150 hover:bg-accent hover:text-foreground active:scale-95 focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:size-4"
+              className="absolute top-3 right-3 grid size-8 place-items-center rounded-full text-muted-foreground transition-[background-color,color] duration-[var(--motion-control)] hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:size-4"
             >
               <XIcon />
               <span className="sr-only">Close</span>

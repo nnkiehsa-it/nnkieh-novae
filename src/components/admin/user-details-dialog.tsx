@@ -60,7 +60,7 @@ export function UserDetailsDialog({
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open={Boolean(user)}>
       {user ? (
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="sm:max-w-xl" presentation="sheet">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <UserRound className="size-4 text-muted-foreground" />

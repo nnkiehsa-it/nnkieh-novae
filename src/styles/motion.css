@@ -1,32 +1,48 @@
+/*
+ * One duration ladder and one easing set. A recipe picks a rung by what the
+ * motion means, never by feel; if an interaction does not fit a rung, the
+ * ladder is wrong, not the recipe.
+ */
 :root {
-  --motion-micro: 90ms;
-  --motion-quick: 180ms;
-  --motion-fast: 280ms;
-  --motion-medium: 380ms;
-  --motion-slow: 460ms;
-  --motion-emphasis: 560ms;
-  --motion-stagger: 45ms;
-  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-assertive: cubic-bezier(0.2, 0.9, 0.3, 1);
-  --motion-blur-sm: 2px;
-  --motion-blur-md: 3px;
-  --motion-distance-xs: 4px;
-  --motion-distance-sm: 8px;
-  --motion-distance-md: 12px;
-  --motion-scale-soft: 0.98;
-  --motion-scale-overlay: 0.96;
+  --motion-press: 110ms; /* the finger is acknowledged */
+  --motion-control: 200ms; /* a small control, icon or indicator settles */
+  --motion-content: 260ms; /* a menu opens, content is replaced */
+  --motion-surface: 320ms; /* a dialog or sheet is presented */
+  --motion-page: 400ms; /* the information hierarchy is entered or left */
+  --motion-emphasis: 460ms; /* a result is confirmed, once */
+
+  /* Leaving is shorter than arriving so what is dismissed never competes with
+     what replaces it. Page navigation is the exception: push and pop move both
+     surfaces together and therefore share --motion-page. */
+  --motion-exit-control: 140ms;
+  --motion-exit-content: 170ms;
+  --motion-exit-surface: 220ms;
+
+  /* Arrivals decelerate, dismissals accelerate, travel between two known
+     positions is symmetric, pages use the iOS navigation curve, and exactly one
+     curve is allowed to overshoot. */
+  --ease-arrive: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-depart: cubic-bezier(0.4, 0, 1, 1);
+  --ease-move: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-page: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-spring: cubic-bezier(0.22, 1.2, 0.36, 1);
+
+  /* Travel. Everything that rises, rises by the same amount. */
+  --motion-lift: 6px;
+  --motion-rise: 12px;
+  --motion-press-scale: 0.98;
+  --motion-surface-scale: 0.97;
+  --motion-page-parallax: 20%;
+  --motion-page-dim: 0.9;
+
+  /* Indeterminate loops. They repeat, so they sit outside the ladder, but they
+     are still named once rather than restated per recipe. */
+  --motion-spin: 800ms;
+  --motion-sweep: 1100ms;
   --pulse-dur: 2200ms;
   --pulse-count: 1;
   --pulse-min: 0.6;
   --skeleton-appear-delay: 0ms;
-  --reveal-dur: 240ms;
-  --reveal-ease: ease-in-out;
-  --resize-dur: 180ms;
-  --resize-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --tabs-dur: 250ms;
-  --tabs-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --like-accent: #f40051;
   --tabs-text-muted: var(--muted-foreground);
   --tabs-text-active: var(--primary-foreground);
@@ -41,20 +57,249 @@
   --shimmer-highlight: #ededed;
 }
 
-.t-panel-reveal {
-  animation: t-panel-reveal var(--motion-slow) var(--ease-smooth-out) both;
+/* Route navigation ------------------------------------------------------- */
+
+::view-transition {
+  pointer-events: none;
 }
 
-@keyframes t-panel-reveal {
+/* The route surface is the push/pop participant, so its snapshot has to be
+   opaque and has to fill the viewport, gutters and all: a transparent, inset or
+   short snapshot leaves the outgoing page legible beside, above or beneath the
+   one arriving. The surface therefore owns the shell's padding rather than
+   sitting inside it. */
+.route-page {
+  width: min(100%, var(--content-max));
+  margin-inline: auto;
+  flex: 1 0 auto;
+  background: var(--surface-stage);
+}
+
+/* An unrelated route — a primary navigation change, or one sibling swapped for
+   another — is a replacement in place, at every width. */
+::view-transition-old(.t-route-out) {
+  animation: t-route-fade-out var(--motion-exit-content) var(--ease-depart) both;
+}
+::view-transition-new(.t-route-in) {
+  animation: t-route-fade-in var(--motion-content) var(--ease-arrive) both;
+}
+@keyframes t-route-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes t-route-fade-in {
   from {
     opacity: 0;
-    transform: translateY(var(--motion-distance-md));
-    filter: blur(var(--motion-blur-sm));
+    transform: translateY(var(--motion-lift));
   }
   to {
     opacity: 1;
     transform: translateY(0);
-    filter: blur(0);
+  }
+}
+
+/* Entering a child route pushes it in from the trailing edge while the parent
+   parallaxes away; leaving it plays the same two animations reversed, so pop is
+   push read backwards rather than a second recipe. Only the mobile shell gets
+   this: on a desktop layout a child route is a replacement, not a place. */
+@media (max-width: 47.99rem) {
+  :root[data-nav-direction="push"]::view-transition-group(.t-route-in),
+  :root[data-nav-direction="pop"]::view-transition-group(.t-route-out) {
+    z-index: 2;
+  }
+  :root[data-nav-direction="push"]::view-transition-group(.t-route-out),
+  :root[data-nav-direction="pop"]::view-transition-group(.t-route-in) {
+    z-index: 1;
+  }
+  :root[data-nav-direction="push"]::view-transition-new(.t-route-in) {
+    animation: t-route-advance var(--motion-page) var(--ease-page) both;
+  }
+  :root[data-nav-direction="push"]::view-transition-old(.t-route-out) {
+    animation: t-route-recede var(--motion-page) var(--ease-page) both;
+  }
+  :root[data-nav-direction="pop"]::view-transition-old(.t-route-out) {
+    animation: t-route-advance var(--motion-page) var(--ease-page) reverse both;
+  }
+  :root[data-nav-direction="pop"]::view-transition-new(.t-route-in) {
+    animation: t-route-recede var(--motion-page) var(--ease-page) reverse both;
+  }
+}
+@keyframes t-route-advance {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes t-route-recede {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: var(--motion-page-dim);
+    transform: translateX(calc(-1 * var(--motion-page-parallax)));
+  }
+}
+
+/* Persistent chrome is captured apart from the page so a sliding surface passes
+   beneath the floating navigation dock instead of blanking it out. The cost is
+   that a named participant leaves the hit-test tree until the transition ends;
+   the dock is worth it, because it is visible on every route that has one. */
+.app-mobile-nav {
+  view-transition-name: app-mobile-nav;
+}
+::view-transition-group(app-mobile-nav) {
+  z-index: 10;
+}
+
+/* Captured apart from the page, the dock has to be told about a theme change
+   explicitly, or it would swap themes ahead of everything around it. */
+html[data-theme-transition="true"]::view-transition-old(app-mobile-nav),
+html[data-theme-transition="true"]::view-transition-old(root) {
+  animation: t-theme-out var(--motion-exit-surface) var(--ease-depart) both;
+}
+html[data-theme-transition="true"]::view-transition-new(app-mobile-nav),
+html[data-theme-transition="true"]::view-transition-new(root) {
+  animation: t-theme-in var(--motion-emphasis) var(--ease-arrive) both;
+}
+@keyframes t-theme-out {
+  to {
+    opacity: 0.35;
+  }
+}
+@keyframes t-theme-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Press ------------------------------------------------------------------ */
+
+/* One press vocabulary. The surface sinks a pixel and gives up two percent:
+   enough to feel connected to the finger, not enough to look squashed. */
+[data-slot="button"],
+[data-slot="switch"],
+.t-tab,
+[data-slot="dropdown-menu-item"],
+[data-slot="select-item"] {
+  touch-action: manipulation;
+}
+
+:is(
+  a[href],
+  button,
+  [role="button"],
+  [role="menuitem"],
+  [role="option"],
+  [role="radio"],
+  [role="checkbox"],
+  [role="tab"],
+  [role="switch"],
+  [data-slot="select-trigger"]
+):not(:disabled, [aria-disabled="true"], [data-disabled]) {
+  transform-origin: center;
+  transition:
+    color var(--motion-control) var(--ease-move),
+    background-color var(--motion-control) var(--ease-move),
+    border-color var(--motion-control) var(--ease-move),
+    box-shadow var(--motion-control) var(--ease-move),
+    opacity var(--motion-control) var(--ease-move),
+    transform var(--motion-control) var(--ease-arrive);
+}
+
+:is(
+  a[href],
+  button,
+  [role="button"],
+  [role="menuitem"],
+  [role="option"],
+  [role="radio"],
+  [role="checkbox"],
+  [role="tab"],
+  [role="switch"],
+  [data-slot="select-trigger"]
+):not(:disabled, [aria-disabled="true"], [data-disabled]):active {
+  transform: translateY(1px) scale(var(--motion-press-scale));
+  transition-duration: var(--motion-press);
+}
+
+/* A card is a large surface, so it takes an even smaller share of the press. */
+.t-card {
+  transform: translateZ(0);
+  transition:
+    background-color var(--motion-control) var(--ease-move),
+    border-color var(--motion-control) var(--ease-move),
+    transform var(--motion-control) var(--ease-arrive);
+}
+.t-card:active {
+  transform: translateY(1px) scale(0.99);
+  transition-duration: var(--motion-press);
+}
+
+.t-input:focus-visible {
+  transform: translateY(-1px);
+}
+
+.t-disclosure-icon {
+  transition: transform var(--motion-control) var(--ease-arrive);
+}
+[data-state="open"] > .t-disclosure-icon,
+[data-state="open"] .t-disclosure-icon {
+  transform: rotate(180deg);
+}
+[data-slot="dropdown-menu-sub-trigger"][data-state="open"] > .t-disclosure-icon {
+  transform: translateX(2px) rotate(90deg);
+}
+
+.t-navigation-echo {
+  border: 1px solid color-mix(in srgb, var(--tint-content) 24%, transparent);
+  background: color-mix(in srgb, var(--tint-content) 9%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--background) 35%, transparent);
+}
+.t-navigation-progress {
+  background: var(--tint-content);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--tint-content) 34%, transparent);
+}
+
+/* Primary navigation acknowledges the tap before the destination commits. It is
+   a selection, not a push, so it settles in place. */
+.t-primary-nav-link > span:first-child {
+  transition: transform var(--motion-control) var(--ease-spring);
+}
+.t-primary-nav-link[data-active="true"] {
+  animation: t-nav-settle var(--motion-control) var(--ease-spring) both;
+}
+.t-primary-nav-link[data-active="true"] > span:first-child {
+  transform: translateY(-1px) scale(1.08);
+}
+@keyframes t-nav-settle {
+  from {
+    transform: scale(0.97);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* Entrances -------------------------------------------------------------- */
+
+.t-panel-reveal {
+  animation: t-panel-reveal var(--motion-content) var(--ease-arrive) both;
+}
+@keyframes t-panel-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(var(--motion-rise));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -67,56 +312,46 @@
 /* Only explicit state containers animate their intrinsic height. */
 [data-resize-motion] {
   align-content: start;
-  transition: height var(--resize-dur) var(--resize-ease);
+  transition: height var(--motion-control) var(--ease-move);
 }
 [data-resize-motion][data-resizing="true"] {
   overflow: clip;
   will-change: height;
 }
 
-/* All physical cards share the same restrained first-frame entrance. */
+/* Cards arrive on opacity alone. Blurring every card on every mount made
+   ordinary scrolling read as a page-wide effect. */
 .t-card-surface {
-  animation: t-card-surface-in var(--motion-fast) var(--ease-smooth-out) both;
+  animation: t-fade-in var(--motion-control) var(--ease-arrive) both;
 }
-@keyframes t-card-surface-in {
+@keyframes t-fade-in {
   from {
     opacity: 0;
-    filter: blur(var(--motion-blur-sm));
   }
   to {
     opacity: 1;
-    filter: blur(0);
   }
 }
 
-/* Notification badge */
-.t-notification-badge {
-  transform-origin: center;
-  transition:
-    transform var(--motion-emphasis) var(--ease-emphasized),
-    opacity var(--motion-slow) var(--ease-emphasized),
-    filter var(--motion-emphasis) var(--ease-emphasized);
+.t-update-stage {
+  animation: t-panel-reveal var(--motion-content) var(--ease-arrive) both;
 }
 
-.t-notification-badge[data-open="false"] {
-  opacity: 0;
-  transform: translate(-8px, 12px) scale(0);
-  filter: blur(var(--motion-blur-sm));
-  transition-duration: var(--motion-quick);
-  transition-timing-function: var(--ease-standard);
-}
+/* Menus and overlays ------------------------------------------------------ */
 
-/* Radix dropdown, popover and select content */
+/* Origin-aware scale only: Radix already anchors the transform origin to the
+   trigger, so the menu grows out of what opened it. No per-item stagger — a
+   menu is one object, and staggering it delayed the item the user aimed at. */
 .t-dropdown[data-state="open"] {
-  animation: t-dropdown-in var(--motion-fast) var(--ease-smooth-out) both;
+  animation: t-dropdown-in var(--motion-content) var(--ease-arrive) both;
 }
 .t-dropdown[data-state="closed"] {
-  animation: t-dropdown-out var(--motion-quick) var(--ease-smooth-out) both;
+  animation: t-dropdown-out var(--motion-exit-content) var(--ease-depart) both;
 }
 @keyframes t-dropdown-in {
   from {
     opacity: 0;
-    transform: translateY(-6px) scale(0.96);
+    transform: scale(var(--motion-surface-scale));
   }
   to {
     opacity: 1;
@@ -130,94 +365,39 @@
   }
   to {
     opacity: 0;
-    transform: translateY(-3px) scale(0.975);
+    transform: scale(var(--motion-surface-scale));
   }
 }
 
-.t-dropdown[data-state="open"] :is(
-  [data-slot="dropdown-menu-item"],
-  [data-slot="dropdown-menu-checkbox-item"],
-  [data-slot="dropdown-menu-radio-item"],
-  [data-slot="select-item"]
-) {
-  animation: t-dropdown-item-in var(--motion-fast) var(--ease-smooth-out) both;
-}
-.t-dropdown[data-state="open"] :is([data-slot="dropdown-menu-item"], [data-slot="select-item"]):nth-child(2) { animation-delay: 24ms; }
-.t-dropdown[data-state="open"] :is([data-slot="dropdown-menu-item"], [data-slot="select-item"]):nth-child(3) { animation-delay: 48ms; }
-.t-dropdown[data-state="open"] :is([data-slot="dropdown-menu-item"], [data-slot="select-item"]):nth-child(4) { animation-delay: 72ms; }
-.t-dropdown[data-state="open"] :is([data-slot="dropdown-menu-item"], [data-slot="select-item"]):nth-child(n + 5) { animation-delay: 90ms; }
-@keyframes t-dropdown-item-in {
-  from {
-    opacity: 0;
-    transform: translateY(5px) scale(0.985);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Dialog */
 .t-overlay[data-state="open"] {
-  animation: t-overlay-in var(--motion-fast) ease-out both;
+  animation: t-fade-in var(--motion-content) var(--ease-arrive) both;
 }
 .t-overlay[data-state="closed"] {
-  animation: t-overlay-out var(--motion-quick) ease-in both;
+  animation: t-fade-out var(--motion-exit-surface) var(--ease-depart) both;
 }
-@keyframes t-overlay-in {
-  from {
-    opacity: 0;
-    backdrop-filter: blur(0);
-  }
-  to {
-    opacity: 1;
-    backdrop-filter: blur(3px);
-  }
-}
-@keyframes t-overlay-out {
+@keyframes t-fade-out {
   from {
     opacity: 1;
-    backdrop-filter: blur(3px);
   }
   to {
     opacity: 0;
-    backdrop-filter: blur(0);
   }
 }
 
 .t-dialog[data-state="open"] {
-  animation: t-dialog-in var(--motion-medium) var(--ease-emphasized) both;
+  animation: t-dialog-in var(--motion-surface) var(--ease-arrive) both;
 }
 .t-dialog[data-state="closed"] {
-  animation: t-dialog-out var(--motion-quick) var(--ease-smooth-out) both;
+  animation: t-dialog-out var(--motion-exit-surface) var(--ease-depart) both;
 }
 @keyframes t-dialog-in {
   from {
     opacity: 0;
-    transform: translateY(18px) scale(0.94);
-    filter: blur(var(--motion-blur-sm));
+    transform: translateY(var(--motion-rise)) scale(var(--motion-surface-scale));
   }
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
-    filter: blur(0);
-  }
-}
-
-.t-dialog[data-state="open"] > * {
-  animation: t-dialog-content-in var(--motion-medium) var(--ease-smooth-out) both;
-}
-.t-dialog[data-state="open"] > :nth-child(2) { animation-delay: 35ms; }
-.t-dialog[data-state="open"] > :nth-child(3) { animation-delay: 70ms; }
-.t-dialog[data-state="open"] > :nth-child(n + 4) { animation-delay: 95ms; }
-@keyframes t-dialog-content-in {
-  from {
-    opacity: 0;
-    transform: translateY(7px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 @keyframes t-dialog-out {
@@ -227,121 +407,193 @@
   }
   to {
     opacity: 0;
-    transform: translateY(8px) scale(0.96);
+    transform: translateY(var(--motion-lift)) scale(var(--motion-surface-scale));
   }
 }
 
-/* Icon swap */
+/* On a phone an action, status or editor overlay is a sheet: it owns the
+   bottom edge, arrives along one axis, and reads as a layer over the page
+   rather than an object floating in front of it. Destructive confirmation
+   keeps the centred alert, because a sheet invites dismissal. */
+@media (max-width: 47.99rem) {
+  [data-slot="dialog-content"].t-sheet {
+    max-width: none;
+    max-height: 88svh;
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+    padding-bottom: max(1.5rem, calc(var(--safe-bottom) + 0.75rem));
+  }
+  .t-sheet[data-state="open"] {
+    animation: t-sheet-in var(--motion-surface) var(--ease-page) both;
+  }
+  .t-sheet[data-state="closed"] {
+    animation: t-sheet-out var(--motion-exit-surface) var(--ease-depart) both;
+  }
+}
+@keyframes t-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes t-sheet-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+.t-tooltip[data-state="delayed-open"],
+.t-tooltip[data-state="instant-open"] {
+  animation: t-dropdown-in var(--motion-control) var(--ease-arrive) both;
+}
+.t-tooltip[data-state="closed"] {
+  animation: t-dropdown-out var(--motion-press) var(--ease-depart) both;
+}
+
+/* Sonner owns stack position in --y; this layer owns the rise and the fade. */
+.t-toast[data-sonner-toast] {
+  min-height: 46px;
+  border-radius: 52px !important;
+  padding: 12px 16px !important;
+  gap: 10px !important;
+  opacity: 0;
+  transform: var(--y) translateY(var(--motion-rise));
+  will-change: transform, opacity;
+  transition:
+    opacity var(--motion-exit-content) var(--ease-depart),
+    transform var(--motion-exit-content) var(--ease-depart),
+    height var(--motion-exit-content) var(--ease-depart) !important;
+}
+.t-toast[data-sonner-toast][data-mounted="true"][data-removed="false"] {
+  opacity: 1;
+  transform: var(--y) translateY(0);
+  transition:
+    opacity var(--motion-content) var(--ease-arrive),
+    transform var(--motion-content) var(--ease-arrive),
+    height var(--motion-content) var(--ease-arrive) !important;
+}
+.t-toast[data-sonner-toast][data-removed="true"][data-swipe-out="false"] {
+  opacity: 0;
+}
+
+/* Notification badge */
+.t-notification-badge {
+  transform-origin: center;
+  transition:
+    transform var(--motion-content) var(--ease-spring),
+    opacity var(--motion-content) var(--ease-arrive);
+}
+.t-notification-badge[data-open="false"] {
+  opacity: 0;
+  transform: scale(0);
+  transition-duration: var(--motion-exit-control);
+  transition-timing-function: var(--ease-depart);
+}
+
+/* Selection and state ----------------------------------------------------- */
+
+.t-tabs {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 48px;
+  background: var(--tabs-bar-bg);
+}
+.t-tab {
+  position: relative;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  height: 30px;
+  padding: 4px 12px;
+  color: var(--tabs-text-muted);
+  cursor: pointer;
+  border-radius: 48px;
+  z-index: 1;
+  transition: color var(--motion-control) var(--ease-move);
+}
+.t-tab[data-displayed-active="true"] {
+  color: var(--tabs-text-active);
+}
+@media (hover: hover) and (pointer: fine) {
+  .t-tab:not([aria-selected="true"]):not([data-displayed-active="true"]):hover {
+    color: var(--foreground);
+  }
+}
+.t-tabs-pill {
+  background: var(--tabs-pill-bg);
+  box-shadow: var(--shadow-control);
+  pointer-events: none;
+}
+.t-tab-label {
+  transition: color var(--motion-control) var(--ease-move);
+}
+
+/* The thumb is a physical object sliding in a track: it may lead its target
+   slightly, but it does not bounce. */
+.t-toggle-thumb {
+  translate: 0 0;
+  will-change: translate;
+  transition:
+    translate var(--motion-control) var(--ease-spring),
+    background-color var(--motion-control) var(--ease-move);
+}
+[data-state="checked"] .t-toggle-thumb {
+  translate: var(--toggle-travel) 0;
+}
+
 .t-icon-swap {
   display: inline-grid;
 }
 .t-icon-swap > * {
   grid-area: 1 / 1;
   transition:
-    opacity var(--motion-fast) ease-in-out,
-    transform var(--motion-fast) ease-in-out,
-    filter var(--motion-fast) ease-in-out;
+    opacity var(--motion-control) var(--ease-move),
+    transform var(--motion-control) var(--ease-arrive);
 }
 .t-icon-swap [data-visible="false"] {
   opacity: 0;
-  transform: scale(0.25);
-  filter: blur(var(--motion-blur-sm));
+  transform: scale(0.8);
 }
 .t-icon-swap [data-visible="true"] {
   opacity: 1;
   transform: scale(1);
-  filter: blur(0);
-}
-
-/* Success and error */
-.t-success-check[data-state="in"] {
-  animation: t-success-in var(--motion-emphasis) var(--ease-emphasized) both;
-}
-.t-success-check[data-state="out"] {
-  opacity: 0;
-}
-.t-success-check path {
-  stroke-dasharray: var(--check-length, 24);
-  stroke-dashoffset: var(--check-length, 24);
-}
-.t-success-check[data-state="in"] path {
-  animation: t-success-draw var(--motion-emphasis) var(--ease-smooth-out)
-    var(--motion-micro) forwards;
-}
-@keyframes t-success-in {
-  from {
-    opacity: 0;
-    transform: translateY(18px) rotate(80deg);
-    filter: blur(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) rotate(0);
-    filter: blur(0);
-  }
-}
-@keyframes t-success-draw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-/* Closed-content notice: reveal the final outcome as a state transition. */
-.t-resolution-notice {
-  animation: t-resolution-notice-in var(--motion-medium) var(--ease-emphasized)
-    both;
-}
-.t-resolution-notice [data-resolution-icon] {
-  animation: t-resolution-icon-in var(--motion-emphasis) var(--ease-emphasized)
-    both;
-}
-@keyframes t-resolution-notice-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-@keyframes t-resolution-icon-in {
-  from {
-    opacity: 0;
-    transform: scale(0.72) rotate(-8deg);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) rotate(0);
-  }
 }
 
 .t-shake[data-error="true"] {
-  animation: t-shake 280ms linear;
+  animation: t-shake var(--motion-content) linear;
 }
 @keyframes t-shake {
   0% {
     transform: translateX(0);
-    animation-timing-function: var(--ease-smooth-out);
+    animation-timing-function: var(--ease-move);
   }
   28.57% {
     transform: translateX(6px);
-    animation-timing-function: var(--ease-smooth-out);
+    animation-timing-function: var(--ease-move);
   }
   57.14% {
     transform: translateX(-6px);
-    animation-timing-function: var(--ease-smooth-out);
+    animation-timing-function: var(--ease-move);
   }
   78.57% {
     transform: translateX(4px);
-    animation-timing-function: var(--ease-smooth-out);
+    animation-timing-function: var(--ease-move);
   }
   100% {
     transform: translateX(0);
   }
 }
 
-/* Skeleton reveal and loading label */
+/* Loading and confirmation ------------------------------------------------ */
+
 .t-skeleton {
   position: relative;
   overflow: hidden;
@@ -400,19 +652,18 @@
   opacity: 0;
 }
 .t-decoded-image[data-image-state="ready"] {
-  animation: t-image-ready var(--motion-fast) var(--ease-smooth-out) both;
-}
-@keyframes t-image-ready {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  animation: t-fade-in var(--motion-control) var(--ease-arrive) both;
 }
 
-/* Transitions.dev — Skeleton loader and reveal */
+/* Skeleton hands off to content on opacity alone, in place. Moving each field
+   into position made a finished load look like a fresh page. */
 .t-skel {
   position: relative;
   display: inline-block;
 }
-.t-skel[data-block="true"] { display: block; }
+.t-skel[data-block="true"] {
+  display: block;
+}
 .t-skel-skeleton,
 .t-skel-content {
   position: absolute;
@@ -422,13 +673,13 @@
   z-index: 1;
   opacity: 1;
   pointer-events: none;
-  transition: opacity var(--reveal-dur) var(--reveal-ease);
+  transition: opacity var(--motion-content) var(--ease-move);
 }
 .t-skel-content {
   z-index: 2;
   position: relative;
   opacity: 0;
-  transition: opacity var(--reveal-dur) var(--reveal-ease);
+  transition: opacity var(--motion-content) var(--ease-move);
 }
 .t-skel.is-revealed .t-skel-skeleton {
   opacity: 0;
@@ -448,8 +699,13 @@
   animation: t-skel-pulse var(--pulse-dur) ease-in-out var(--pulse-count);
 }
 @keyframes t-skel-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: var(--pulse-min); }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: var(--pulse-min);
+  }
 }
 
 .t-shimmer {
@@ -473,7 +729,7 @@
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: t-shimmer 2000ms linear infinite;
+  animation: t-shimmer var(--pulse-dur) linear infinite;
 }
 @keyframes t-shimmer {
   from {
@@ -484,118 +740,6 @@
   }
 }
 
-/* Transitions.dev — Tabs sliding */
-.t-tabs {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 3px;
-  border-radius: 48px;
-  background: var(--tabs-bar-bg);
-}
-.t-tab {
-  position: relative;
-  appearance: none;
-  border: 0;
-  background: transparent;
-  height: 30px;
-  padding: 4px 12px;
-  color: var(--tabs-text-muted);
-  cursor: pointer;
-  border-radius: 48px;
-  z-index: 1;
-  transition: color var(--tabs-dur) var(--tabs-ease);
-}
-.t-tab[data-displayed-active="true"] {
-  color: var(--tabs-text-active);
-}
-@media (hover: hover) and (pointer: fine) {
-  .t-tab:not([aria-selected="true"]):not([data-displayed-active="true"]):hover {
-    color: var(--foreground);
-  }
-}
-
-.t-tabs-pill {
-  background: var(--tabs-pill-bg);
-  box-shadow: var(--shadow-control);
-  pointer-events: none;
-}
-.t-tab-label {
-  transition: color var(--tabs-dur) var(--tabs-ease);
-}
-
-/* Tooltip */
-.t-tooltip[data-state="delayed-open"],
-.t-tooltip[data-state="instant-open"] {
-  animation: t-tooltip-in var(--motion-quick) ease-out both;
-}
-.t-tooltip[data-state="closed"] {
-  animation: t-tooltip-out 50ms ease-out both;
-}
-@keyframes t-tooltip-in {
-  from {
-    opacity: 0;
-    transform: scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-@keyframes t-tooltip-out {
-  from {
-    opacity: 1;
-    transform: scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.98);
-  }
-}
-
-/* Transitions.dev — Toast open / close. Sonner owns stack position in --y;
-   this layer adds the recipe's 16px rise, cross-blur and 0.97 scale. */
-.t-toast[data-sonner-toast] {
-  --toast-open: 350ms;
-  --toast-close: 250ms;
-  --toast-distance: 16px;
-  --toast-blur: 2px;
-  --toast-scale: 0.97;
-  --toast-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  min-height: 46px;
-  border-radius: 52px !important;
-  padding: 12px 16px !important;
-  gap: 10px !important;
-  opacity: 0;
-  transform: var(--y) translateY(var(--toast-distance)) scale(var(--toast-scale));
-  filter: blur(var(--toast-blur));
-  will-change: transform, opacity, filter;
-  transition:
-    opacity var(--toast-close) var(--toast-ease),
-    transform var(--toast-close) var(--toast-ease),
-    filter var(--toast-close) var(--toast-ease),
-    height var(--toast-close) var(--toast-ease) !important;
-}
-.t-toast[data-sonner-toast][data-mounted="true"][data-removed="false"] {
-  opacity: 1;
-  transform: var(--y) translateY(0) scale(1);
-  filter: blur(0);
-  transition:
-    opacity var(--toast-open) var(--toast-ease),
-    transform var(--toast-open) var(--toast-ease),
-    filter var(--toast-open) var(--toast-ease),
-    height var(--toast-open) var(--toast-ease) !important;
-}
-.t-toast[data-sonner-toast][data-removed="true"][data-swipe-out="false"] {
-  opacity: 0;
-  filter: blur(var(--toast-blur));
-}
-
-/* Like / support celebration */
-.t-like {
-  position: relative;
-}
 .t-action-icon {
   display: inline-grid;
   place-items: center;
@@ -612,41 +756,47 @@
   place-items: center;
   line-height: 0;
   vertical-align: middle;
-  animation: t-spinner-orbit 800ms linear infinite;
 }
-
 .t-spinner {
   display: block;
   width: 100%;
   height: 100%;
   transform-origin: 50% 50%;
-  animation: t-spinner-turn 800ms linear infinite;
+  animation: t-spinner-turn var(--motion-spin) linear infinite;
 }
-
 @keyframes t-spinner-turn {
   to {
     transform: rotate(360deg);
   }
 }
 
-@keyframes t-spinner-orbit {
-  0% {
-    transform: translate3d(0, -0.5px, 0);
+.t-progress-track {
+  width: 7.5rem;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--muted);
+}
+.t-progress-track > span {
+  display: block;
+  width: 45%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--foreground);
+  animation: t-progress-sweep var(--motion-sweep) var(--ease-move) infinite;
+  will-change: transform;
+}
+@keyframes t-progress-sweep {
+  from {
+    transform: translateX(-125%);
   }
-  25% {
-    transform: translate3d(0.5px, 0, 0);
-  }
-  50% {
-    transform: translate3d(0, 0.5px, 0);
-  }
-  75% {
-    transform: translate3d(-0.5px, 0, 0);
-  }
-  100% {
-    transform: translate3d(0, -0.5px, 0);
+  to {
+    transform: translateX(300%);
   }
 }
 
+/* Success is one emphasis: the mark scales into place and draws itself. The
+   spinner leaves on opacity so the two do not fight over the same pixels. */
 .t-spinner-check {
   position: relative;
   display: inline-grid;
@@ -671,7 +821,6 @@
   width: 1rem;
   height: 1rem;
 }
-
 .t-spinner-check-loader,
 .t-spinner-check-success {
   display: block;
@@ -679,11 +828,9 @@
   align-self: center;
   justify-self: center;
   transition:
-    opacity var(--motion-quick) var(--ease-smooth-out),
-    transform var(--motion-fast) var(--ease-emphasized),
-    filter var(--motion-fast) var(--ease-smooth-out);
+    opacity var(--motion-control) var(--ease-move),
+    transform var(--motion-control) var(--ease-spring);
 }
-
 .t-spinner-check-success {
   width: 1.25rem;
   height: 1.25rem;
@@ -693,76 +840,73 @@
   stroke-linecap: round;
   stroke-linejoin: round;
   opacity: 0;
-  transform: rotate(-12deg) scale(0.65);
-  filter: blur(var(--motion-blur-sm));
+  transform: scale(0.8);
 }
-
 .t-spinner-check-success path {
   stroke-dasharray: 15;
   stroke-dashoffset: 15;
 }
-
 .t-spinner-check[data-state="complete"] .t-spinner-check-loader {
   opacity: 0;
-  transform: rotate(45deg) scale(0.65);
-  filter: blur(var(--motion-blur-sm));
 }
-
 .t-spinner-check[data-state="complete"] .t-spinner-check-success {
   opacity: 1;
-  transform: rotate(0) scale(1);
-  filter: blur(0);
+  transform: scale(1);
 }
-
 .t-spinner-check[data-state="complete"] .t-spinner-check-success path {
-  animation: t-success-draw var(--motion-fast) var(--ease-smooth-out) both;
+  animation: t-success-draw var(--motion-control) var(--ease-move) both;
 }
 
-.t-update-stage {
-  animation: t-update-stage-in var(--motion-slow) var(--ease-smooth-out) both;
+.t-success-check[data-state="in"] {
+  animation: t-success-in var(--motion-control) var(--ease-spring) both;
 }
-
-@keyframes t-update-stage-in {
+.t-success-check[data-state="out"] {
+  opacity: 0;
+}
+.t-success-check path {
+  stroke-dasharray: var(--check-length, 24);
+  stroke-dashoffset: var(--check-length, 24);
+}
+.t-success-check[data-state="in"] path {
+  animation: t-success-draw var(--motion-content) var(--ease-move) var(--motion-press) forwards;
+}
+@keyframes t-success-in {
   from {
     opacity: 0;
-    transform: translateY(var(--motion-distance-sm)) scale(var(--motion-scale-soft));
-    filter: blur(var(--motion-blur-sm));
+    transform: scale(0.8);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
+    transform: scale(1);
+  }
+}
+@keyframes t-success-draw {
+  to {
+    stroke-dashoffset: 0;
   }
 }
 
-.t-progress-track {
-  width: 7.5rem;
-  height: 2px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--muted);
+/* Closed-content notice: reveal the final outcome as a state transition. */
+.t-resolution-notice {
+  animation: t-panel-reveal var(--motion-content) var(--ease-arrive) both;
+}
+.t-resolution-notice [data-resolution-icon] {
+  animation: t-success-in var(--motion-emphasis) var(--ease-spring) both;
 }
 
-.t-progress-track > span {
-  display: block;
-  width: 45%;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--foreground);
-  animation: t-progress-sweep 1100ms var(--ease-smooth-out) infinite;
-  will-change: transform;
-}
+/* Reactions -------------------------------------------------------------- */
 
-@keyframes t-progress-sweep {
-  from { transform: translateX(-125%); }
-  to { transform: translateX(300%); }
+/* Reactions are deliberately the most expressive thing in the system: they are
+   the one tap that is about delight rather than navigation. */
+.t-like {
+  position: relative;
 }
 .t-like-icon {
   display: grid;
   place-items: center;
   width: 1rem;
   height: 1rem;
-  transition: color var(--motion-quick) var(--ease-smooth-out);
+  transition: color var(--motion-control) var(--ease-move);
 }
 .t-reaction-icon {
   display: block;
@@ -773,7 +917,7 @@
   color: var(--like-accent);
 }
 .t-like[data-accent="heart"][data-celebrating] .t-reaction-icon {
-  animation: t-like-pop var(--motion-medium) var(--ease-emphasized) both;
+  animation: t-like-pop var(--motion-surface) var(--ease-spring) both;
 }
 @keyframes t-like-pop {
   0% {
@@ -791,23 +935,20 @@
 }
 .t-like[data-accent="hand"][data-celebrating] .t-reaction-icon {
   transform-origin: 50% 82%;
-  animation: t-hand-raise 460ms var(--ease-emphasized) both;
+  animation: t-hand-raise var(--motion-emphasis) var(--ease-spring) both;
 }
 @keyframes t-hand-raise {
   0% {
     transform: translateY(2px) rotate(-4deg) scale(0.85);
-    filter: blur(1px);
   }
   42% {
     transform: translateY(-4px) rotate(3deg) scale(1.12);
-    filter: blur(0);
   }
   72% {
     transform: translateY(-1px) rotate(-1deg) scale(1.02);
   }
   100% {
     transform: translateY(0) rotate(0) scale(1);
-    filter: blur(0);
   }
 }
 .t-like-particles {
@@ -826,7 +967,7 @@
   border-radius: 999px;
   background: currentColor;
   color: var(--foreground);
-  animation: t-like-burst var(--pdur) var(--ease-emphasized) var(--pdelay) both;
+  animation: t-like-burst var(--pdur) var(--ease-arrive) var(--pdelay) both;
 }
 .t-like[data-accent="heart"] .t-like-particles i {
   color: var(--like-accent);
@@ -853,174 +994,11 @@
   }
 }
 
-/* Switch */
-.t-toggle-thumb {
-  translate: 0 0;
-  will-change: translate;
-  transition: background-color var(--motion-fast) var(--ease-smooth-out);
-}
-[data-state="checked"] .t-toggle-thumb {
-  translate: var(--toggle-travel) 0;
-}
-[data-state="checked"][data-touched="true"] .t-toggle-thumb {
-  animation: t-toggle-on var(--motion-medium) var(--ease-emphasized) both;
-}
-[data-state="unchecked"][data-touched="true"] .t-toggle-thumb {
-  animation: t-toggle-off var(--motion-medium) var(--ease-emphasized) both;
-}
-@keyframes t-toggle-on {
-  0% {
-    translate: 0 0;
-  }
-  55% {
-    translate: calc(var(--toggle-travel) + 1px) 0;
-  }
-  80%,
-  100% {
-    translate: var(--toggle-travel) 0;
-  }
-}
-@keyframes t-toggle-off {
-  0% {
-    translate: var(--toggle-travel) 0;
-  }
-  55% {
-    translate: -1px 0;
-  }
-  80%,
-  100% {
-    translate: 0 0;
-  }
-}
-
-/* Only explicitly interactive cards receive restrained surface feedback. */
-.t-card {
-  transform: translateZ(0);
-  transition:
-    background-color 200ms var(--ease-smooth-out),
-    border-color 200ms var(--ease-smooth-out),
-    transform 200ms var(--ease-smooth-out);
-}
-.t-card:active {
-  transform: translateY(1px) scale(0.985);
-  transition-duration: var(--motion-micro);
-}
-
-/* A shared press vocabulary makes controls feel responsive across the app. */
-[data-slot="button"],
-[data-slot="switch"],
-.t-tab,
-[data-slot="dropdown-menu-item"],
-[data-slot="select-item"] {
-  touch-action: manipulation;
-}
-
-:is(
-  a[href],
-  button,
-  [role="button"],
-  [role="menuitem"],
-  [role="option"],
-  [role="radio"],
-  [role="checkbox"],
-  [role="tab"],
-  [role="switch"],
-  [data-slot="select-trigger"]
-):not(:disabled, [aria-disabled="true"], [data-disabled]) {
-  transform-origin: center;
-  transition:
-    color var(--motion-quick) var(--ease-smooth-out),
-    background-color var(--motion-quick) var(--ease-smooth-out),
-    border-color var(--motion-quick) var(--ease-smooth-out),
-    box-shadow var(--motion-fast) var(--ease-smooth-out),
-    opacity var(--motion-quick) var(--ease-smooth-out),
-    transform var(--motion-fast) var(--ease-emphasized);
-}
-
-:is(
-  a[href],
-  button,
-  [role="button"],
-  [role="menuitem"],
-  [role="option"],
-  [role="radio"],
-  [role="checkbox"],
-  [role="tab"],
-  [role="switch"],
-  [data-slot="select-trigger"]
-):not(:disabled, [aria-disabled="true"], [data-disabled]):active {
-  transform: translateY(1px) scale(0.955);
-  transition-duration: var(--motion-micro);
-}
-
-.t-input:focus-visible {
-  transform: translateY(-1px) scale(1.003);
-}
-
-.t-disclosure-icon {
-  transition: transform var(--motion-medium) var(--ease-emphasized);
-}
-[data-state="open"] > .t-disclosure-icon,
-[data-state="open"] .t-disclosure-icon {
-  transform: rotate(180deg);
-}
-[data-slot="dropdown-menu-sub-trigger"][data-state="open"] > .t-disclosure-icon {
-  transform: translateX(2px) rotate(90deg);
-}
-
-.t-navigation-echo {
-  border: 1px solid color-mix(in srgb, var(--tint-content) 24%, transparent);
-  background: color-mix(in srgb, var(--tint-content) 9%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--background) 35%, transparent);
-}
-.t-navigation-progress {
-  background: var(--tint-content);
-  box-shadow: 0 0 14px color-mix(in srgb, var(--tint-content) 34%, transparent);
-}
-
-::view-transition {
-  pointer-events: none;
-}
-.t-route-page-enter {
-  position: relative;
-  z-index: 0;
-}
-
-html[data-theme-transition="true"]::view-transition-old(root) {
-  animation: t-theme-out 180ms ease-in both;
-}
-html[data-theme-transition="true"]::view-transition-new(root) {
-  animation: t-theme-in 460ms var(--ease-emphasized) both;
-}
-@keyframes t-theme-out {
-  to { opacity: 0.35; }
-}
-@keyframes t-theme-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+/* Hover is a pointer affordance only. */
 @media (hover: hover) and (pointer: fine) {
   [data-slot="button"]:not(:disabled):hover {
     transform: translateY(-1px);
   }
-}
-
-/* Navigation acknowledges the tap immediately, before the destination commits. */
-.t-primary-nav-link > span:first-child {
-  transition: transform var(--motion-fast) var(--ease-emphasized);
-}
-.t-primary-nav-link[data-active="true"] {
-  animation: t-nav-settle var(--motion-medium) var(--ease-emphasized) both;
-}
-.t-primary-nav-link[data-active="true"] > span:first-child {
-  transform: translateY(-1px) scale(1.12);
-}
-@keyframes t-nav-settle {
-  0% { transform: scale(0.92); }
-  62% { transform: scale(1.035); }
-  100% { transform: scale(1); }
-}
-@media (hover: hover) and (pointer: fine) {
   .t-card:hover {
     background-color: color-mix(in srgb, var(--card) 99%, var(--foreground) 1%);
     border-color: color-mix(in srgb, var(--border) 60%, var(--foreground) 10%);
@@ -1058,6 +1036,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   .t-like-particles i,
   .t-toast,
   .t-dialog,
+  .t-sheet,
   .t-overlay,
   .t-dropdown,
   .t-tooltip {
@@ -1075,6 +1054,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   }
   .t-notification-badge,
   .t-icon-swap > *,
+  .t-toggle-thumb,
   .t-spinner-check-loader,
   .t-spinner-check-success,
   .t-tabs-pill,
@@ -1083,7 +1063,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   .t-card {
     transition: none !important;
     transform: none !important;
-    filter: none !important;
   }
   .t-primary-nav-link,
   .t-primary-nav-link > span:first-child {
