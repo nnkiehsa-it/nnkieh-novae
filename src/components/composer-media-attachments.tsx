@@ -4,7 +4,11 @@ import * as React from "react";
 import { ImagePlus, Trash2 } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
-import { DecodedImage } from "@/components/ui/decoded-image";
+import {
+  ImageLightbox,
+  ImagePreviewGrid,
+  ImagePreviewTile,
+} from "@/components/ui/image-preview";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -24,7 +28,10 @@ export function ComposerMediaAttachments({
 }) {
   const fileRef = React.useRef<HTMLInputElement>(null);
   const { t } = useI18n();
+  const [opened, setOpened] = React.useState<number | null>(null);
   const headingId = "composer-images-heading";
+  // An attachment removed while it is open leaves nothing to look at.
+  const open = opened !== null ? attachments[opened] : undefined;
 
   return (
     <section
@@ -64,39 +71,44 @@ export function ComposerMediaAttachments({
         type="file"
       />
       {attachments.length > 0 ? (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-2">
+        <ImagePreviewGrid>
           {attachments.map((image, index) => (
-            <div
-              className="group relative aspect-[4/3] overflow-hidden rounded-xl border bg-muted"
+            <ImagePreviewTile
+              actions={
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      aria-label={t("ui.common.delete")}
+                      className="absolute right-1.5 top-1.5 bg-card/88 backdrop-blur-sm"
+                      onClick={() => onRemoveImage(index)}
+                      size="icon-xs"
+                      type="button"
+                      variant="outline"
+                    >
+                      <Trash2 />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{t("ui.common.delete")}</TooltipContent>
+                </Tooltip>
+              }
+              alt={t("ui.composer.attachmentPreview")}
+              height={image.height}
               key={image.previewUrl}
-            >
-              <DecodedImage
-                alt={t("ui.composer.attachmentPreview")}
-                className="size-full object-cover"
-                containerClassName="size-full"
-                height={image.height}
-                src={image.previewUrl}
-                width={image.width}
-              />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    aria-label={t("ui.common.delete")}
-                    className={cn("absolute right-1.5 top-1.5 bg-card/88 backdrop-blur-sm")}
-                    onClick={() => onRemoveImage(index)}
-                    size="icon-xs"
-                    type="button"
-                    variant="outline"
-                  >
-                    <Trash2 />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{t("ui.common.delete")}</TooltipContent>
-              </Tooltip>
-            </div>
+              onOpen={() => setOpened(index)}
+              src={image.previewUrl}
+              width={image.width}
+            />
           ))}
-        </div>
+        </ImagePreviewGrid>
       ) : null}
+      <ImageLightbox
+        alt={t("ui.composer.attachmentPreview")}
+        height={open?.height}
+        onOpenChange={(next) => { if (!next) setOpened(null); }}
+        open={Boolean(open)}
+        src={open?.previewUrl}
+        width={open?.width}
+      />
     </section>
   );
 }
