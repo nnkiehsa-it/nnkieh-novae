@@ -471,26 +471,12 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 
 /* Selection and state ----------------------------------------------------- */
 
-.t-tabs {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 3px;
-  border-radius: 48px;
-  background: var(--tabs-bar-bg);
-}
+/* The rail, the pill and the tabs are laid out by the component that renders
+   them. This layer owns only what moves and what changes colour: a stylesheet
+   that also set their height, padding and gap would silently overrule the call
+   site, because these rules sit outside Tailwind's layers and beat every
+   utility the component asks for. */
 .t-tab {
-  position: relative;
-  appearance: none;
-  border: 0;
-  background: transparent;
-  height: 30px;
-  padding: 4px 12px;
-  color: var(--tabs-text-muted);
-  cursor: pointer;
-  border-radius: 48px;
-  z-index: 1;
   transition: color var(--motion-control) var(--ease-move);
 }
 .t-tab[data-displayed-active="true"] {
@@ -502,8 +488,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   }
 }
 .t-tabs-pill {
-  background: var(--tabs-pill-bg);
-  box-shadow: var(--shadow-control);
   pointer-events: none;
 }
 .t-tab-label {
