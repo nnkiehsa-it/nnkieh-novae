@@ -9,8 +9,10 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
+        // A primary action is not painted differently from any other button; emphasis
+        // comes from where it sits, not from a louder surface.
         default:
-          "border-border bg-action text-action-foreground hover:bg-action-hover",
+          "border bg-card hover:bg-accent hover:text-accent-foreground dark:border-input",
         destructive:
           "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40",
         outline:
@@ -26,6 +28,8 @@ const buttonVariants = cva(
         sm: "h-8 gap-1.5 rounded-lg px-3 has-[svg]:px-2.5",
         lg: "h-10 rounded-xl px-6 has-[svg]:px-4",
         icon: "size-9",
+        // Room enough for a label once there is room for one; a square icon until then.
+        adaptive: "size-9 px-0 sm:w-auto sm:px-4 sm:has-[svg]:px-3.5",
         "icon-xs": "size-6 rounded-lg [&_svg:not([class*='size-'])]:size-3",
         "icon-sm": "size-8",
         "icon-lg": "size-10",

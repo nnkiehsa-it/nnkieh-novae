@@ -3,7 +3,7 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowDown, Plus } from "lucide-react";
+import { ArrowDown, CircleCheck, CircleDot, Plus } from "lucide-react";
 import type { IssueSortOption, IssueStatusBucket } from "@/types";
 import { useIssueFeed } from "@/hooks/use-issue-feed";
 import { usePublicProfiles } from "@/hooks/use-public-profiles";
@@ -74,24 +74,25 @@ export default function IssueBoardPage() {
     <div className="space-y-5">
       <PageHeader
         actions={
-          <div className="flex w-full items-center gap-2">
+          <>
             {filter !== "my-proposals" ? (
-              <Button asChild>
-                <Link href={`/issues/${encodeURIComponent(filter)}/new`}>
-                  <Plus />{translate('ui.issue.new')}</Link>
+              <Button asChild className="order-3 ml-auto sm:order-2 sm:ml-0" size="adaptive">
+                <Link aria-label={translate('ui.issue.new')} href={`/issues/${encodeURIComponent(filter)}/new`}>
+                  <Plus /><span className="hidden sm:inline">{translate('ui.issue.new')}</span></Link>
               </Button>
             ) : null}
             <LiquidTabs
-              className="ml-auto"
+              className="order-2 sm:order-3"
               ariaLabel={translate('ui.issue.statusFilter')}
+              compact
               onValueChange={(value) => setBucket(value as IssueStatusBucket)}
               options={[
-                { label: translate('ui.common.active'), value: "active" },
-                { label: translate('ui.common.closed'), value: "closed" },
+                { icon: <CircleDot className="size-3.5" />, label: translate('ui.common.active'), value: "active" },
+                { icon: <CircleCheck className="size-3.5" />, label: translate('ui.common.closed'), value: "closed" },
               ]}
               value={bucket}
             />
-          </div>
+          </>
         }
         title={
           <Select
@@ -117,19 +118,22 @@ export default function IssueBoardPage() {
             </SelectContent>
           </Select>
         }
-      />
-      <FeedToolbar
-        onQueryChange={setQuery}
-        onSearch={setCommittedQuery}
-        onSortChange={(value) => setSort(value as IssueSortOption)}
-        options={[
-          { value: "latest", label: translate('ui.common.latest') },
-          { value: "most-supported", label: translate('ui.issue.mostSupported') },
-          { value: "ending-soon", label: translate('ui.issue.endingSoon') },
-        ]}
-        query={query}
-        searchLabel={translate('ui.issue.searchPlaceholder')}
-        sort={sort}
+        toolbar={
+          <FeedToolbar
+            className="order-4 sm:mt-2 sm:w-full"
+            onQueryChange={setQuery}
+            onSearch={setCommittedQuery}
+            onSortChange={(value) => setSort(value as IssueSortOption)}
+            options={[
+              { value: "latest", label: translate('ui.common.latest') },
+              { value: "most-supported", label: translate('ui.issue.mostSupported') },
+              { value: "ending-soon", label: translate('ui.issue.endingSoon') },
+            ]}
+            query={query}
+            searchLabel={translate('ui.issue.searchPlaceholder')}
+            sort={sort}
+          />
+        }
       />
       <StatusDistribution
         ariaLabel={translate('ui.issue.statusCounts')}

@@ -15,13 +15,41 @@ export function PageHeader({
   className,
   description,
   title,
+  toolbar,
 }: {
   actions?: React.ReactNode;
   className?: string;
   description?: React.ReactNode;
   title: React.ReactNode;
+  /**
+   * Search and sort controls. They join the same wrapping row as the title and the
+   * actions, which lets them sit beside the actions where the screen is narrow and
+   * take a full-width line of their own where it is not.
+   */
+  toolbar?: React.ReactNode;
 }) {
   useLocaleSubscription();
+  const heading = (
+    <div className={cn("min-w-0", toolbar && "order-1 w-full sm:w-auto sm:flex-1")}>
+      <h1 className="text-balance text-2xl font-semibold leading-8 tracking-[-0.035em]">
+        {title}
+      </h1>
+      {description ? (
+        <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+          {description}
+        </p>
+      ) : null}
+    </div>
+  );
+  if (toolbar) {
+    return (
+      <header className={cn("flex flex-wrap items-center gap-x-2 gap-y-3 pb-4", className)}>
+        {heading}
+        {actions}
+        {toolbar}
+      </header>
+    );
+  }
   return (
     <header
       className={cn(
@@ -29,16 +57,7 @@ export function PageHeader({
         className,
       )}
     >
-      <div className="min-w-0">
-        <h1 className="text-balance text-2xl font-semibold leading-8 tracking-[-0.035em]">
-          {title}
-        </h1>
-        {description ? (
-          <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-            {description}
-          </p>
-        ) : null}
-      </div>
+      {heading}
       {actions ? (
         <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:flex-1 sm:justify-end">
           {actions}

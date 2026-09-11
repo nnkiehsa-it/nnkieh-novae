@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { CircleCheck, CircleDot, Plus } from "lucide-react";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { FeedList } from "@/components/ui/feed-list";
@@ -32,18 +32,20 @@ function StableTabs({ kind }: { kind: FeedSkeletonKind }) {
           ? translate("ui.facility.statusFilter")
           : translate("ui.issue.statusFilter")
       }
-      className="ml-auto"
+      className="order-2 sm:order-3"
+      compact
       disabled
       onValueChange={() => undefined}
       options={[
         {
+          icon: <CircleDot className="size-3.5" />,
           label:
             kind === "facility"
               ? translate("ui.status.processing")
               : translate("ui.common.active"),
           value: "active",
         },
-        { label: translate("ui.common.closed"), value: "closed" },
+        { icon: <CircleCheck className="size-3.5" />, label: translate("ui.common.closed"), value: "closed" },
       ]}
       value="active"
     />
@@ -68,14 +70,14 @@ export function ListRouteSkeleton({
       <PageHeader
         actions={
           kind !== "announcement" ? (
-            <div className="flex w-full items-center gap-2">
+            <>
               {showCreate ? (
-                <Button className="opacity-100" disabled>
-                  <Plus />{translate(createKeys[kind])}
+                <Button aria-label={translate(createKeys[kind])} className="order-3 ml-auto opacity-100 sm:order-2 sm:ml-0" disabled size="adaptive">
+                  <Plus /><span className="hidden sm:inline">{translate(createKeys[kind])}</span>
                 </Button>
               ) : null}
               <StableTabs kind={kind} />
-            </div>
+            </>
           ) : showCreate ? (
             <Button className="opacity-100" disabled>
               <Plus />{translate(createKeys[kind])}
@@ -83,14 +85,15 @@ export function ListRouteSkeleton({
           ) : undefined
         }
         title={title || translate(listTitleKeys[kind])}
+        toolbar={filters ? (
+          <FeedToolbar
+            className="order-4 sm:mt-2 sm:w-full"
+            disabled
+            options={[{ value: "latest", label: translate("ui.common.latest") }]}
+            searchLabel={kind === "issue" ? translate("ui.issue.searchPlaceholder") : translate("ui.facility.searchPlaceholder")}
+          />
+        ) : undefined}
       />
-      {filters ? (
-        <FeedToolbar
-          disabled
-          options={[{ value: "latest", label: translate("ui.common.latest") }]}
-          searchLabel={kind === "issue" ? translate("ui.issue.searchPlaceholder") : translate("ui.facility.searchPlaceholder")}
-        />
-      ) : null}
       <FeedList items={[]} kind={kind} loading showProgress={showProgress} />
     </div>
   );

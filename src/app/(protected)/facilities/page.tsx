@@ -2,7 +2,7 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import Link from "next/link";
-import { ArrowDown, Plus } from "lucide-react";
+import { ArrowDown, CircleCheck, CircleDot, Plus } from "lucide-react";
 import type { FacilitySortOption } from "@/types";
 import { useFacilityFeed } from "@/hooks/use-facility-feed";
 import { FACILITY_BUCKET_STATUSES, FACILITY_STATUS_LABELS } from "@/constants/statuses";
@@ -43,27 +43,29 @@ export default function FacilitiesPage() {
     <div className="space-y-5">
       <PageHeader
         actions={
-          <div className="flex w-full items-center gap-2">
-            <Button asChild>
+          <>
+            <Button asChild className="order-3 ml-auto sm:order-2 sm:ml-0" size="adaptive">
               <Link
+                aria-label={translate('ui.facility.new')}
                 href={`/facilities/new?category=${encodeURIComponent(state.category)}`}
               >
-                <Plus />{translate('ui.facility.new')}</Link>
+                <Plus /><span className="hidden sm:inline">{translate('ui.facility.new')}</span></Link>
             </Button>
             <LiquidTabs
-              className="ml-auto"
+              className="order-2 sm:order-3"
               ariaLabel={translate('ui.facility.statusFilter')}
+              compact
               onValueChange={(value) => {
                 state.setBucket(value as "active" | "closed");
                 state.setStatus("");
               }}
               options={[
-                { label: translate('ui.status.processing'), value: "active" },
-                { label: translate('ui.common.closed'), value: "closed" },
+                { icon: <CircleDot className="size-3.5" />, label: translate('ui.status.processing'), value: "active" },
+                { icon: <CircleCheck className="size-3.5" />, label: translate('ui.common.closed'), value: "closed" },
               ]}
               value={state.bucket}
             />
-          </div>
+          </>
         }
         title={
           <Select onValueChange={state.changeCategory} value={state.category}>
@@ -83,18 +85,21 @@ export default function FacilitiesPage() {
             </SelectContent>
           </Select>
         }
-      />
-      <FeedToolbar
-        onQueryChange={state.setQuery}
-        onSearch={state.setCommittedQuery}
-        onSortChange={(value) => state.setSort(value as FacilitySortOption)}
-        options={[
-          { value: "latest", label: translate('ui.common.latest') },
-          { value: "most-affected", label: translate('ui.facility.mostAffected') },
-        ]}
-        query={state.query}
-        searchLabel={translate('ui.facility.searchPlaceholder')}
-        sort={state.sort}
+        toolbar={
+          <FeedToolbar
+            className="order-4 sm:mt-2 sm:w-full"
+            onQueryChange={state.setQuery}
+            onSearch={state.setCommittedQuery}
+            onSortChange={(value) => state.setSort(value as FacilitySortOption)}
+            options={[
+              { value: "latest", label: translate('ui.common.latest') },
+              { value: "most-affected", label: translate('ui.facility.mostAffected') },
+            ]}
+            query={state.query}
+            searchLabel={translate('ui.facility.searchPlaceholder')}
+            sort={state.sort}
+          />
+        }
       />
       <StatusDistribution
         ariaLabel={translate('ui.facility.statusCounts')}

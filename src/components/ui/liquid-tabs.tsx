@@ -10,13 +10,14 @@ import { cn } from "@/lib/utils";
 export interface LiquidTabOption {
   icon?: React.ReactNode;
   label: string;
-  shortLabel?: string;
   value: string;
 }
 
 interface LiquidTabsProps {
   ariaLabel: string;
   className?: string;
+  /** On a mobile layout, spell out only the tab that is selected; the rest are icons. */
+  compact?: boolean;
   disabled?: boolean;
   onValueChange: (value: string) => void;
   options: LiquidTabOption[];
@@ -26,6 +27,7 @@ interface LiquidTabsProps {
 export function LiquidTabs({
   ariaLabel,
   className,
+  compact = false,
   disabled = false,
   onValueChange,
   options,
@@ -101,14 +103,11 @@ export function LiquidTabs({
               <span
                 className={cn(
                   "relative z-10",
-                  option.shortLabel && "hidden sm:inline",
+                  compact && !displayedActive && "hidden sm:inline",
                 )}
               >
                 {option.label}
               </span>
-              {option.shortLabel ? (
-                <span className="relative z-10 sm:hidden">{option.shortLabel}</span>
-              ) : null}
             </TabsPrimitive.Trigger>
           );
         })}
