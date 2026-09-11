@@ -7,7 +7,6 @@ const messages = {
   'image.webpInvalid': '瀏覽器未產生有效圖片；type={type}, size={size}',
   'image.unableToReadImageDimensions': '無法讀取圖片尺寸。',
   'image.theImageUploadIsNotCompletelyCompleted': '圖片上傳未完整完成。',
-  'image.enlargeImageImageAltFallbackalt': '放大圖片：{alt}',
   'image.imagesMustBeConvertedToWebpBeforeUploading': '圖片必須先轉換後才能上傳。',
   'image.thisBrowserCannotHandleImages': '此瀏覽器無法處理圖片。',
   'image.uploadVerificationTimeout': '圖片上傳驗證已逾時，請重新選擇圖片後再試。',

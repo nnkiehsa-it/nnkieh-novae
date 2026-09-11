@@ -7,7 +7,6 @@ const messages = {
   'image.webpInvalid': 'The browser did not produce a valid image; type={type}, size={size}',
   'image.unableToReadImageDimensions': 'Unable to read image dimensions.',
   'image.theImageUploadIsNotCompletelyCompleted': 'The image upload did not finish completely.',
-  'image.enlargeImageImageAltFallbackalt': 'Enlarge image: {alt}',
   'image.imagesMustBeConvertedToWebpBeforeUploading': 'Images must be converted before uploading.',
   'image.thisBrowserCannotHandleImages': 'This browser cannot process images.',
   'image.uploadVerificationTimeout': 'Image upload verification timed out. Select another image and try again.',

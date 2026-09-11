@@ -1,17 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { ImageIcon, ZoomIn } from "lucide-react";
+import { ImageIcon } from "lucide-react";
 import { stripMarkdownImages } from "@/lib/markdown-images";
 import { renderMarkdown } from "@/lib/render-markdown";
 import { useResolvedMarkdown } from "@/hooks/use-resolved-markdown";
 import type { MarkdownImageRecord } from "@/types";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  ImageLightbox,
+  ImagePreviewGrid,
+  ImagePreviewTile,
+} from "@/components/ui/image-preview";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { cn } from "@/lib/utils";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { DecodedImage } from "@/components/ui/decoded-image";
 
 export function ContentRenderer({
   className,
@@ -48,41 +51,26 @@ export function ContentRenderer({
   return (
     <div className={cn("space-y-4", className)}>
       {images.length > 0 ? (
-        <div className="flex snap-x gap-2.5 overflow-x-auto pb-1">
+        <ImagePreviewGrid className="grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))]">
           {images.map((image) => (
-            <button
-              className="group relative aspect-[4/3] w-36 shrink-0 snap-start overflow-hidden rounded-xl border bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring/40 sm:w-44"
+            <ImagePreviewTile
+              alt={image.alt || fallbackAlt}
               disabled={Boolean(image.uploadId && !image.isUploadResolved)}
+              height={image.height}
               key={image.uploadId ?? image.src}
-              onClick={() => void openImage(image)}
-              type="button"
-            >
-              {image.src ? (
-                <DecodedImage
-                  alt={image.alt || fallbackAlt}
-                  className="size-full object-cover transition-transform duration-[var(--motion-control)] ease-[var(--ease-arrive)] group-hover:scale-[1.025]"
-                  containerClassName="size-full"
-                  height={image.height}
-                  fetchPriority="low"
-                  loading="eager"
-                  src={image.src}
-                  width={image.width}
-                />
-              ) : (
-                <span className="grid size-full place-items-center text-muted-foreground">
-                  {image.resolveError ? (
-                    <ImageIcon className="size-5" />
-                  ) : (
-                    <LoadingSpinner className="size-5" />
-                  )}
-                </span>
-              )}
-              <span className="absolute bottom-2 right-2 grid size-7 translate-y-1 place-items-center rounded-full bg-black/60 text-white opacity-0 backdrop-blur-sm transition-[opacity,transform] duration-[var(--motion-control-exit)] group-hover:translate-y-0 group-hover:opacity-100">
-                <ZoomIn className="size-3.5" />
-              </span>
-            </button>
+              onOpen={() => void openImage(image)}
+              placeholder={
+                image.resolveError ? (
+                  <ImageIcon className="size-5" />
+                ) : (
+                  <LoadingSpinner className="size-5" />
+                )
+              }
+              src={image.src}
+              width={image.width}
+            />
           ))}
-        </div>
+        </ImagePreviewGrid>
       ) : null}
       {text ? revealText ? (
         <SkeletonReveal
@@ -105,28 +93,16 @@ export function ContentRenderer({
           dangerouslySetInnerHTML={{ __html: html }}
         />
       ) : null}
-      <Dialog
-        open={Boolean(selected)}
+      <ImageLightbox
+        alt={selected?.alt || fallbackAlt}
+        height={selected?.height}
         onOpenChange={(open) => {
           if (!open) setSelected(null);
         }}
-      >
-        <DialogContent className="max-w-[min(92vw,70rem)] border-0 bg-transparent p-0 shadow-none sm:max-w-[min(92vw,70rem)]">
-          <DialogTitle className="sr-only">
-            {selected?.alt || fallbackAlt}
-          </DialogTitle>
-          {selected ? (
-            <DecodedImage
-              alt={selected.alt || fallbackAlt}
-              className="max-h-[calc(100svh-3rem)] w-full rounded-xl object-contain"
-              containerClassName="min-h-48 w-full place-items-center rounded-xl bg-black/20"
-              height={selected.height}
-              src={selected.fullSrc || selected.src}
-              width={selected.width}
-            />
-          ) : null}
-        </DialogContent>
-      </Dialog>
+        open={Boolean(selected)}
+        src={selected ? selected.fullSrc || selected.src : undefined}
+        width={selected?.width}
+      />
     </div>
   );
 }
