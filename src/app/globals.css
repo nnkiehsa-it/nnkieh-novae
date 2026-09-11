@@ -126,6 +126,7 @@
   --app-fixed-viewport-height: 100svh;
   --mobile-nav-height: 3.875rem;
   --mobile-nav-bottom-gap: 1.125rem;
+  --page-header-top: max(1rem, var(--safe-top));
 }
 
 .dark {
@@ -319,24 +320,35 @@ html[data-input-modality="pointer"] :focus-visible {
   margin-inline: auto;
 }
 
-.app-top-blur {
-  position: fixed;
+.page-header {
+  position: sticky;
+  isolation: isolate;
   z-index: 20;
-  top: 0;
-  right: 0;
-  left: 0;
-  height: calc(var(--safe-top) + 1.25rem);
-  pointer-events: none;
-  opacity: 0;
-  background: color-mix(in srgb, var(--surface-stage) 82%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-mask-image: linear-gradient(to bottom, black 45%, transparent);
-  mask-image: linear-gradient(to bottom, black 45%, transparent);
-  transition: opacity var(--motion-control) var(--ease-move);
+  top: var(--page-header-top);
 }
 
-.app-top-blur[data-visible="true"] {
-  opacity: 1;
+.page-header::before {
+  position: absolute;
+  z-index: -1;
+  top: calc(0px - var(--page-header-top));
+  bottom: -1.25rem;
+  left: 50%;
+  width: 100vw;
+  content: "";
+  pointer-events: none;
+  background: color-mix(in srgb, var(--surface-stage) 82%, transparent);
+  backdrop-filter: blur(12px);
+  transform: translateX(-50%);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    black calc(100% - 1.25rem),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    black calc(100% - 1.25rem),
+    transparent
+  );
 }
 
 .app-mobile-nav {
@@ -558,8 +570,12 @@ html[data-input-modality="pointer"] :focus-visible {
 }
 
 @media (min-width: 48rem) {
-  .app-top-blur {
-    left: 15rem;
+  :root {
+    --page-header-top: 1.5rem;
+  }
+
+  .page-header::before {
+    width: calc(100vw - 15rem);
   }
 }
 

@@ -43,7 +43,7 @@ export function PageHeader({
   );
   if (toolbar) {
     return (
-      <header className={cn("flex flex-wrap items-center gap-x-2 gap-y-3", className)}>
+      <header className={cn("page-header flex flex-wrap items-center gap-x-2 gap-y-3", className)}>
         {heading}
         {actions}
         {toolbar}
@@ -53,7 +53,7 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        "flex flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between",
+        "page-header flex flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between",
         className,
       )}
     >

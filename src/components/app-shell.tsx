@@ -162,18 +162,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const categories = useCategories();
   const unread = useNotificationBadge();
-  const [scrolled, setScrolled] = React.useState(false);
   const issueHref = `/issues/${encodeURIComponent(getDefaultIssueRouteFilter())}`;
   const showMobileNavigation = !isSecondaryMobileRoute(pathname);
 
   React.useEffect(() => rememberCurrentRoute(pathname), [pathname]);
-
-  React.useEffect(() => {
-    const updateScrolled = () => setScrolled(window.scrollY > 8);
-    updateScrolled();
-    window.addEventListener("scroll", updateScrolled, { passive: true });
-    return () => window.removeEventListener("scroll", updateScrolled);
-  }, []);
 
   const navItems = React.useMemo<LiquidNavItem[]>(
     () => [
@@ -236,7 +228,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="min-w-0 md:col-start-2">
-        <div aria-hidden className="app-top-blur" data-visible={scrolled} />
         <main className="app-viewport">
           <RouteSurface
             className={`pt-[max(1rem,var(--safe-top))] md:pb-12 md:pt-6 ${
