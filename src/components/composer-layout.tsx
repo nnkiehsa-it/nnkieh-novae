@@ -43,7 +43,7 @@ export function ComposerLayout({
     <div className="mx-auto max-w-5xl space-y-5">
       <PageHeader
         actions={
-          <Button onClick={onBack} variant="ghost">
+          <Button onClick={onBack} variant="outline">
             <ArrowLeft />
             {translate("ui.common.back")}
           </Button>
