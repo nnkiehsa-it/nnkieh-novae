@@ -120,6 +120,7 @@ export default function IssueBoardPage() {
         }
         toolbar={
           <FeedToolbar
+            appliedQuery={committedQuery}
             className="order-4"
             onQueryChange={setQuery}
             onSearch={setCommittedQuery}

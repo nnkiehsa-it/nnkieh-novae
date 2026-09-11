@@ -87,6 +87,7 @@ export default function FacilitiesPage() {
         }
         toolbar={
           <FeedToolbar
+            appliedQuery={state.committedQuery}
             className="order-4"
             onQueryChange={state.setQuery}
             onSearch={state.setCommittedQuery}

@@ -18,9 +18,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
  * open text input either crowds them or claims a line of its own that stays
  * empty most of the time. Behind its own control the field is full width when it
  * is actually being used, and a dot on the trigger says a query is still applied
- * once the popover closes.
+ * once the popover closes. Submitting leaves the panel open so the next keyword
+ * is one edit away, and clearing stays available while a query is applied even
+ * after the field itself has been emptied.
  */
 export function FeedToolbar({
+  appliedQuery = "",
   className,
   disabled = false,
   onQueryChange,
@@ -31,6 +34,7 @@ export function FeedToolbar({
   searchLabel,
   sort = "latest",
 }: {
+  appliedQuery?: string;
   className?: string;
   disabled?: boolean;
   onQueryChange?: (value: string) => void;
@@ -57,7 +61,7 @@ export function FeedToolbar({
                 type="button"
               >
                 <Search />
-                {query ? (
+                {appliedQuery ? (
                   <span
                     aria-hidden
                     className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-[var(--tint-content)]"
@@ -74,7 +78,6 @@ export function FeedToolbar({
             onSubmit={(event) => {
               event.preventDefault();
               onSearch?.(query.trim());
-              setOpen(false);
             }}
           >
             <div className="relative">
@@ -90,8 +93,8 @@ export function FeedToolbar({
             </div>
             <div className="flex items-center justify-end gap-2">
               <Button
-                disabled={!query}
-                onClick={() => { onQueryChange?.(""); onSearch?.(""); setOpen(false); }}
+                disabled={!query && !appliedQuery}
+                onClick={() => { onQueryChange?.(""); onSearch?.(""); }}
                 size="sm"
                 type="button"
                 variant="ghost"
