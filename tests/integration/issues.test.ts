@@ -113,6 +113,7 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
       .some((issue) => issue.id === publicIssueId),
     false,
   );
+  assert.equal(hiddenList.underReviewCount, 2);
   assert.equal(typeof hiddenList.version, "number");
   const managerList = asRecord(await callAction("listIssues", {
     activeFilter: "public-issues",
@@ -123,6 +124,7 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
   const managerIssue = (managerList.issues as JsonRecord[]).find((issue) => issue.id === publicIssueId);
   assert.ok(managerIssue);
   assert.equal("content" in managerIssue, false);
+  assert.equal(managerList.underReviewCount, 0);
   const searched = asRecord(await callAction("searchIssues", {
     activeFilter: "public-issues",
     pageSize: 20,

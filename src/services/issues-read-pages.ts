@@ -37,7 +37,7 @@ export async function fetchIssuesPageByStatus(
   const pageSize = options?.pageSize ?? TABLE_PAGE_SIZE;
   const cacheKey = createContentCacheKey([
     'issue-list-page',
-    'summary-v2',
+    'summary-v3',
     uid,
     options?.isAdmin ? 'admin' : 'user',
     activeFilter,
@@ -50,7 +50,13 @@ export async function fetchIssuesPageByStatus(
     cursor?.created_at?.getTime() ?? '',
   ]);
   if (!options?.forceRefresh) {
-    const cached = await getCachedContentPersistent<{ cursor: IssueCursor | null; hasMore: boolean; issues: IssueSummary[]; version: number }>(cacheKey);
+    const cached = await getCachedContentPersistent<{
+      cursor: IssueCursor | null;
+      hasMore: boolean;
+      issues: IssueSummary[];
+      underReviewCount: number;
+      version: number;
+    }>(cacheKey);
     if (cached) {
       registerContentVersion('issues', cached.version ?? 1);
       return {
@@ -72,7 +78,13 @@ export async function fetchIssuesPageByStatus(
         statusBucket: IssueStatusBucket;
         uid: string;
       },
-      { cursor: IssueCursor | null; hasMore: boolean; issues: Record<string, unknown>[]; version: number }
+      {
+        cursor: IssueCursor | null;
+        hasMore: boolean;
+        issues: Record<string, unknown>[];
+        underReviewCount: number;
+        version: number;
+      }
     >('listIssues', { signal: options?.signal, timeoutMs: READ_REQUEST_TIMEOUT_MS });
     const result = await fn({
       activeFilter,
@@ -87,6 +99,7 @@ export async function fetchIssuesPageByStatus(
       cursor: normalizeIssueCursor(result.cursor),
       hasMore: result.hasMore,
       issues: withSupportState(normalizeIssueList(result.issues), options?.supportedIssueIds),
+      underReviewCount: result.underReviewCount,
       version: result.version,
     };
     setCachedContentFromRead(cacheGuard, page);

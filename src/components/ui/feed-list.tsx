@@ -45,7 +45,7 @@ export function FeedList<T extends { id: string }>({
   renderItem,
   showProgress = true,
 }: {
-  empty?: { action?: ReactNode; description: string; title: string };
+  empty?: { action?: ReactNode; description: ReactNode; title: string };
   error?: string;
   items: readonly T[];
   kind: FeedKind;
@@ -74,7 +74,7 @@ export function FeedList<T extends { id: string }>({
                 ) : (
                   <FeedCard
                     title={<h2>{error ? t('ui.common.loadFailed') : empty?.title}</h2>}
-                    metadata={<><Inbox className="size-4 shrink-0" /><span className="text-sm leading-6">{error || empty?.description}</span></>}
+                    metadata={<><Inbox className="size-4 shrink-0" /><div className="text-sm leading-6">{error || empty?.description}</div></>}
                     footer={error ? <Button onClick={onRetry} variant="outline"><RefreshCw />{t('ui.common.reload')}</Button> : empty?.action}
                   />
                 )}

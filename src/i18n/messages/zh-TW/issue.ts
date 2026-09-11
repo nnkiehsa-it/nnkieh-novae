@@ -5,6 +5,8 @@ const messages = {
   'issue.admin.title': '管理工具',
   'issue.resultImage': '{title} 的提案結果圖片',
   'issue.review.rejectionReason': '未通過原因',
+  'issue.pendingReviewCount': '目前有 {count} 筆提案正在審核。',
+  'issue.pendingReviewCountHint': '審核完成後會出現在這裡。',
   'issue.review.result': '審核結果',
   'issue.search.limitedResults': '找到 {count} 筆，已優先顯示最相關結果。',
   'issue.search.results': '共 {count} 筆標題結果',

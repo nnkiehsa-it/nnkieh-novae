@@ -52,6 +52,7 @@ interface IssueFeed {
   hasMore: boolean;
   issues: IssueSummary[];
   pageCount: number;
+  underReviewCount: number;
 }
 
 interface IssueFeedViewMemory {
@@ -85,6 +86,7 @@ export function useIssueFeed() {
     hasMore: viewMemory?.feed.hasMore ?? false,
     issues: viewMemory?.feed.issues ?? [],
     pageCount: viewMemory?.feed.pageCount ?? (viewMemory?.feed.issues.length ? 1 : 0),
+    underReviewCount: viewMemory?.feed.underReviewCount ?? 0,
   });
   const [loading, setLoading] = React.useState(!viewMemory);
   const revealFields = useColdDataReveal(coldRead, loading);
@@ -177,7 +179,8 @@ export function useIssueFeed() {
       cursor ? setLoadingMore(true) : setLoading(true);
       setError("");
       try {
-        let result: Omit<IssueFeed, "pageCount">;
+        let result: Omit<IssueFeed, "pageCount" | "underReviewCount">;
+        let underReviewCount = 0;
         if (filter === "my-proposals") {
           result = await fetchUserIssues(session.user.uid, cursor, {
             sort,
@@ -198,7 +201,7 @@ export function useIssueFeed() {
             },
           );
         } else {
-          result = await fetchIssuesPageByStatus(
+          const page = await fetchIssuesPageByStatus(
             session.user.uid,
             filter,
             bucket,
@@ -209,6 +212,8 @@ export function useIssueFeed() {
               supportedIssueIds: supportedIssueIdsRef.current,
             },
           );
+          result = page;
+          underReviewCount = page.underReviewCount;
         }
         if (!requestGuard.isCurrent(requestToken)) return;
         const issues = result.issues.map((issue) =>
@@ -234,6 +239,7 @@ export function useIssueFeed() {
             ),
             issues: cursor ? mergePageById(current.issues, issues) : issues,
             pageCount,
+            underReviewCount,
           };
         });
       } catch (caught) {

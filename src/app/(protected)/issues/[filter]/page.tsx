@@ -50,6 +50,16 @@ export default function IssueBoardPage() {
   );
 
   const categoryOptions = getIssueFilterOptions();
+  // The Worker only counts a review queue an ordinary member may not read, so an
+  // empty page with a count means everything in this category is still under review.
+  const emptyDescription = !loading && feed.underReviewCount > 0 ? (
+    <>
+      {translate('issue.pendingReviewCount', { count: feed.underReviewCount })}
+      <span className="block">{translate('issue.pendingReviewCountHint')}</span>
+    </>
+  ) : committedQuery
+    ? translate('ui.issue.emptySearch', { query: committedQuery })
+    : translate('ui.issue.emptyCategory');
   return (
     <div className="space-y-5">
       <PageHeader
@@ -127,11 +137,7 @@ export default function IssueBoardPage() {
               </Button>
             ) : undefined
           ,
-          description:
-            committedQuery
-              ? translate('ui.issue.emptySearch', { query: committedQuery })
-              : translate('ui.issue.emptyCategory')
-          ,
+          description: emptyDescription,
           title: translate('ui.issue.emptyTitle'),
         }}
         renderItem={(issue) => (

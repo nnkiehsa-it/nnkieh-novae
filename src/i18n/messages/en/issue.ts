@@ -5,6 +5,8 @@ const messages = {
   'issue.admin.title': 'Administrator tools',
   'issue.resultImage': 'Result image for {title}',
   'issue.review.rejectionReason': 'Reason for rejection',
+  'issue.pendingReviewCount': '{count} proposals are currently under review.',
+  'issue.pendingReviewCountHint': 'They will appear here when the review is complete.',
   'issue.review.result': 'Review result',
   'issue.search.limitedResults': '{count} results found. The most relevant matches are shown first.',
   'issue.search.results': '{count} title results',
