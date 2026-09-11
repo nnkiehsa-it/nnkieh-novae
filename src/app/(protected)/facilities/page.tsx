@@ -87,7 +87,7 @@ export default function FacilitiesPage() {
         }
         toolbar={
           <FeedToolbar
-            className="order-4 sm:mt-2 sm:w-full"
+            className="order-4"
             onQueryChange={state.setQuery}
             onSearch={state.setCommittedQuery}
             onSortChange={(value) => state.setSort(value as FacilitySortOption)}

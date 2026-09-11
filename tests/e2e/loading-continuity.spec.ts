@@ -134,12 +134,14 @@ test('feed query, clear, sort, and status changes keep the physical card slot', 
     await expect(frame).toHaveClass(/t-card/u);
     const node = await frame.elementHandle();
 
+    await page.getByRole('button', { name: 'Search titles…' }).last().click();
     const search = page.getByRole('textbox', { name: 'Search titles…' });
     await search.fill(`no matching title ${Date.now()}`);
     await search.press('Enter');
     await expect(page.locator('[data-state-transition="empty"]')).toBeVisible();
     expect(await node!.evaluate((element) => element === document.querySelector('[data-feed-slot="0"]'))).toBe(true);
 
+    await page.getByRole('button', { name: 'Search titles…' }).last().click();
     await page.getByRole('button', { name: 'Clear search' }).click();
     await expect(frame).toHaveClass(/t-card/u);
     await page.getByRole('combobox', { name: 'Sort order' }).click();

@@ -87,7 +87,7 @@ export function ListRouteSkeleton({
         title={title || translate(listTitleKeys[kind])}
         toolbar={filters ? (
           <FeedToolbar
-            className="order-4 sm:mt-2 sm:w-full"
+            className="order-4"
             disabled
             options={[{ value: "latest", label: translate("ui.common.latest") }]}
             searchLabel={kind === "issue" ? translate("ui.issue.searchPlaceholder") : translate("ui.facility.searchPlaceholder")}

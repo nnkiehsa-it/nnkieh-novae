@@ -120,7 +120,7 @@ export default function IssueBoardPage() {
         }
         toolbar={
           <FeedToolbar
-            className="order-4 sm:mt-2 sm:w-full"
+            className="order-4"
             onQueryChange={setQuery}
             onSearch={setCommittedQuery}
             onSortChange={(value) => setSort(value as IssueSortOption)}
