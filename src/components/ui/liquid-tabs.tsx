@@ -61,14 +61,13 @@ export function LiquidTabs({
   );
 
   return (
-    <TabsPrimitive.Root value={value} onValueChange={onValueChange}>
+    // The caller's classes belong on the element it actually lays out, which is the
+    // root; the rail inside keeps its own shape.
+    <TabsPrimitive.Root className={cn("min-w-0 max-w-full", className)} value={value} onValueChange={onValueChange}>
       <TabsPrimitive.List
         aria-label={ariaLabel}
         aria-disabled={disabled}
-        className={cn(
-          "t-tabs relative isolate inline-flex h-9 max-w-full items-center gap-1 overflow-x-auto rounded-full p-[3px]",
-          className,
-        )}
+        className="t-tabs relative isolate inline-flex h-9 max-w-full items-center gap-1 overflow-x-auto rounded-full p-[3px]"
       >
         {options.map((option) => {
           const displayedActive = option.value === displayedValue;
