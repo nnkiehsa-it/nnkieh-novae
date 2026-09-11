@@ -1,15 +1,10 @@
 import { asRecord, asString } from "../shared/http.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
-import { toMs } from "./utils.ts";
+import { countRecord, toMs } from "./utils.ts";
 
 function asCount(value: unknown) {
   const count = Number(value ?? 0);
   return Number.isFinite(count) && count >= 0 ? count : 0;
-}
-
-function categoryCounts(value: unknown) {
-  const source = asRecord(value);
-  return Object.fromEntries(Object.entries(source).map(([categoryId, count]) => [categoryId, asCount(count)]));
 }
 
 export async function getPlatformDashboard(database: BackendDatabase) {
@@ -53,8 +48,8 @@ export async function getPlatformDashboard(database: BackendDatabase) {
 
   return {
     stats: {
-      comments_by_category: categoryCounts(snapshot.comments_by_category),
-      issues_by_category: categoryCounts(snapshot.issues_by_category),
+      comments_by_category: countRecord(snapshot.comments_by_category),
+      issues_by_category: countRecord(snapshot.issues_by_category),
       last_activity_at_ms: toMs(snapshot.last_activity_at),
       total_comments_created: asCount(counters.comments_created),
       total_comments_deleted: asCount(counters.comments_deleted),

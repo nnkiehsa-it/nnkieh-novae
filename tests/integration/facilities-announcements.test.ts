@@ -60,6 +60,8 @@ integrationTest("facility ownership and category-scoped management permissions",
     JSON.stringify({ facilityCategoryId, facilities: list.facilities }),
   );
   assert.equal(typeof list.version, "number");
+  // Every reported case in the category is counted, whatever bucket the page asked for.
+  assert.ok(Number(asRecord(list.statusCounts).pending) >= 1);
 
   const affected = asRecord(await callAction("toggleFacilityAffected", {
     facilityId,

@@ -3,7 +3,7 @@ import { canManageFacilityCategory, requireFacilityCategoryPermission } from "./
 import { getFacilityCategories } from "./categories.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
-import { asNumber, asUuid } from "./utils.ts";
+import { asNumber, asUuid, countRecord } from "./utils.ts";
 import { INPUT_LIMITS, optionalMediaContent, optionalText, requiredText } from "./validation.ts";
 
 const VALID_STATUSES = new Set(["processing", "completed", "unable-to-handle"]);
@@ -130,6 +130,7 @@ export async function listFacilities(payload: JsonRecord, auth: AuthContext, dat
       createdAt: asString(last.created_at),
       affectedCount: asNumber(last.affected_count, 0),
     } : null,
+    statusCounts: countRecord(result.statusCounts),
     version: Math.max(1, Math.round(asNumber(result.version, 1))),
   };
 }

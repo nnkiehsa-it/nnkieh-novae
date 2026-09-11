@@ -145,6 +145,7 @@ export interface FacilityPageResult {
   facilities: FacilitySummary[];
   cursor: FacilityCursor | null;
   hasMore: boolean;
+  statusCounts: Record<FacilityStatus, number>;
   version: number;
 }
 

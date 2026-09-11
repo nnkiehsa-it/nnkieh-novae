@@ -113,7 +113,7 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
       .some((issue) => issue.id === publicIssueId),
     false,
   );
-  assert.equal(hiddenList.underReviewCount, 2);
+  assert.equal(asRecord(hiddenList.statusCounts)["under-review"], 2);
   assert.equal(typeof hiddenList.version, "number");
   const managerList = asRecord(await callAction("listIssues", {
     activeFilter: "public-issues",
@@ -124,7 +124,25 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
   const managerIssue = (managerList.issues as JsonRecord[]).find((issue) => issue.id === publicIssueId);
   assert.ok(managerIssue);
   assert.equal("content" in managerIssue, false);
-  assert.equal(managerList.underReviewCount, 0);
+  // The counts describe the category, so a manager and a member read the same numbers
+  // even though the manager is the only one who can open the proposals behind them.
+  assert.equal(asRecord(managerList.statusCounts)["under-review"], 2);
+
+  const firstPage = asRecord(await callAction("listIssues", {
+    activeFilter: "public-issues",
+    pageSize: 1,
+    sort: "latest",
+    statusBucket: "active",
+  }, publicManager.auth));
+  assert.ok(firstPage.cursor);
+  const secondPage = asRecord(await callAction("listIssues", {
+    activeFilter: "public-issues",
+    cursor: firstPage.cursor,
+    pageSize: 1,
+    sort: "latest",
+    statusBucket: "active",
+  }, publicManager.auth));
+  assert.deepEqual(secondPage.statusCounts, {});
   const searched = asRecord(await callAction("searchIssues", {
     activeFilter: "public-issues",
     pageSize: 20,
@@ -281,6 +299,17 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     status: "processing",
   }, rightsManager.auth));
   assert.equal(asRecord(privateManaged.issue).status, "processing");
+
+  const strangerPrivateList = asRecord(await callAction("listIssues", {
+    activeFilter: "rights-maintenance",
+    pageSize: 20,
+    sort: "latest",
+    statusBucket: "active",
+  }, stranger.auth));
+  assert.deepEqual(strangerPrivateList.issues, []);
+  // A private category still reports how much work it holds: the volume is the point,
+  // and no proposal of it is readable here.
+  assert.equal(asRecord(strangerPrivateList.statusCounts).processing, 1);
 
   const ownerDeleteIssue = await createIssue(owner, "rights-maintenance", "owner-delete");
   await expectActionError(

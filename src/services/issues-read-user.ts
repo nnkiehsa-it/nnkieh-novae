@@ -4,6 +4,7 @@ import { captureContentCacheWriteGuard, createContentCacheKey, getCachedContentP
 import type { IssueCursor, IssueSortOption, IssueStatusBucket, IssueSummary } from '@/types';
 import { normalizeIssueCursor, normalizeIssueSummary, toReadableBackendError, withSupportState } from './issues-core';
 import { registerContentVersion } from '@/services/content-versions';
+import { toIssueStatusCounts, type IssueStatusCounts } from '@/constants/statuses';
 
 function issueCursorPayload(cursor: IssueCursor | null) {
   return cursor ? {
@@ -31,7 +32,7 @@ export async function fetchUserIssues(
   const statusBucket = options?.statusBucket ?? 'active';
   const cacheKey = createContentCacheKey([
     'user-issue-list-page',
-    'summary-v2',
+    'summary-v3',
     uid,
     statusBucket,
     sort,
@@ -42,7 +43,7 @@ export async function fetchUserIssues(
     cursor?.created_at?.getTime() ?? '',
   ]);
   if (!options?.forceRefresh) {
-    const cached = await getCachedContentPersistent<{ cursor: IssueCursor | null; hasMore: boolean; issues: IssueSummary[]; version: number }>(cacheKey);
+    const cached = await getCachedContentPersistent<{ cursor: IssueCursor | null; hasMore: boolean; issues: IssueSummary[]; statusCounts: IssueStatusCounts; version: number }>(cacheKey);
     if (cached) {
       registerContentVersion('issues', cached.version ?? 1);
       return {
@@ -56,7 +57,7 @@ export async function fetchUserIssues(
   try {
     const fn = invokeBackendAction<
       { cursor: ReturnType<typeof issueCursorPayload>; pageSize: number; sort: IssueSortOption; statusBucket: IssueStatusBucket; uid: string },
-      { cursor: IssueCursor | null; hasMore: boolean; issues: Record<string, unknown>[]; version: number }
+      { cursor: IssueCursor | null; hasMore: boolean; issues: Record<string, unknown>[]; statusCounts: Record<string, number>; version: number }
     >('listUserIssues', {
       signal: options?.signal,
       timeoutMs: READ_REQUEST_TIMEOUT_MS,
@@ -67,6 +68,7 @@ export async function fetchUserIssues(
       cursor: normalizeIssueCursor(result.cursor),
       hasMore: result.hasMore,
       issues: withSupportState(issues, options?.supportedIssueIds),
+      statusCounts: toIssueStatusCounts(result.statusCounts),
       version: result.version,
     };
     setCachedContentFromRead(cacheGuard, page);

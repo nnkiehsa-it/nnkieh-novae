@@ -5,6 +5,7 @@ import { invokeBackendAction } from '@/services/backend-action';
 import { captureContentCacheWriteGuard, createContentCacheKey, getCachedContentPersistent, setCachedContentFromRead } from '@/services/content-read-cache';
 import { TABLE_PAGE_SIZE, normalizeIssueCursor, normalizeIssueSummary, toReadableBackendError, withSupportState } from './issues-core';
 import { CONTENT_FEED_PAGE_SIZE } from '@/lib/page-size';
+import { toIssueStatusCounts, type IssueStatusCounts } from '@/constants/statuses';
 import { registerContentVersion } from '@/services/content-versions';
 
 function normalizeIssueList(records: Record<string, unknown>[]) {
@@ -37,7 +38,7 @@ export async function fetchIssuesPageByStatus(
   const pageSize = options?.pageSize ?? TABLE_PAGE_SIZE;
   const cacheKey = createContentCacheKey([
     'issue-list-page',
-    'summary-v3',
+    'summary-v4',
     uid,
     options?.isAdmin ? 'admin' : 'user',
     activeFilter,
@@ -54,7 +55,7 @@ export async function fetchIssuesPageByStatus(
       cursor: IssueCursor | null;
       hasMore: boolean;
       issues: IssueSummary[];
-      underReviewCount: number;
+      statusCounts: IssueStatusCounts;
       version: number;
     }>(cacheKey);
     if (cached) {
@@ -82,7 +83,7 @@ export async function fetchIssuesPageByStatus(
         cursor: IssueCursor | null;
         hasMore: boolean;
         issues: Record<string, unknown>[];
-        underReviewCount: number;
+        statusCounts: Record<string, number>;
         version: number;
       }
     >('listIssues', { signal: options?.signal, timeoutMs: READ_REQUEST_TIMEOUT_MS });
@@ -99,7 +100,7 @@ export async function fetchIssuesPageByStatus(
       cursor: normalizeIssueCursor(result.cursor),
       hasMore: result.hasMore,
       issues: withSupportState(normalizeIssueList(result.issues), options?.supportedIssueIds),
-      underReviewCount: result.underReviewCount,
+      statusCounts: toIssueStatusCounts(result.statusCounts),
       version: result.version,
     };
     setCachedContentFromRead(cacheGuard, page);

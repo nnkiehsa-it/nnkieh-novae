@@ -8,6 +8,7 @@ import type { IssueSortOption, IssueStatusBucket } from "@/types";
 import { useIssueFeed } from "@/hooks/use-issue-feed";
 import { usePublicProfiles } from "@/hooks/use-public-profiles";
 import { getIssueFilterOptions, getIssueSupportGoal, issueAllowsSupport } from "@/constants/categories";
+import { ISSUE_BUCKET_STATUSES, ISSUE_STATUS_LABELS } from "@/constants/statuses";
 import { Button } from "@/components/ui/button";
 import { FeedToolbar } from "@/components/ui/feed-toolbar";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
@@ -20,6 +21,8 @@ import {
 } from "@/components/ui/select";
 import { PageHeader } from "@/components/ui/page-state";
 import { FeedList } from "@/components/ui/feed-list";
+import { StatusDistribution } from "@/components/ui/status-distribution";
+import { statusFillColor, statusTextColor } from "@/components/ui/status-badge";
 import { IssueCard } from "@/components/issues/issue-card";
 
 export default function IssueBoardPage() {
@@ -50,11 +53,18 @@ export default function IssueBoardPage() {
   );
 
   const categoryOptions = getIssueFilterOptions();
-  // The Worker only counts a review queue an ordinary member may not read, so an
-  // empty page with a count means everything in this category is still under review.
-  const emptyDescription = !loading && feed.underReviewCount > 0 ? (
+  const statusSegments = ISSUE_BUCKET_STATUSES[bucket].map((status) => ({
+    color: statusTextColor(status),
+    count: feed.statusCounts[status],
+    fill: statusFillColor(status),
+    key: status,
+    label: translate(ISSUE_STATUS_LABELS[status]),
+  }));
+  // An ordinary member cannot read a review queue, so a page that is empty while the
+  // category still counts proposals under review needs to say where they went.
+  const emptyDescription = !loading && feed.statusCounts['under-review'] > 0 ? (
     <>
-      {translate('issue.pendingReviewCount', { count: feed.underReviewCount })}
+      {translate('issue.pendingReviewCount', { count: feed.statusCounts['under-review'] })}
       <span className="block">{translate('issue.pendingReviewCountHint')}</span>
     </>
   ) : committedQuery
@@ -120,6 +130,11 @@ export default function IssueBoardPage() {
         query={query}
         searchLabel={translate('ui.issue.searchPlaceholder')}
         sort={sort}
+      />
+      <StatusDistribution
+        ariaLabel={translate('ui.issue.statusCounts')}
+        loading={loading}
+        segments={statusSegments}
       />
       <FeedList
         kind="issue"

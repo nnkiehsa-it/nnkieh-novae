@@ -24,6 +24,15 @@ export function asUuid(value: unknown) {
     : "";
 }
 
+export function countRecord(value: unknown) {
+  return Object.fromEntries(
+    Object.entries(asRecord(value)).map(([key, count]) => {
+      const total = Number(count ?? 0);
+      return [key, Number.isFinite(total) && total >= 0 ? total : 0];
+    }),
+  );
+}
+
 export function toMs(value: unknown) {
   if (!value) return null;
   const date = new Date(String(value));

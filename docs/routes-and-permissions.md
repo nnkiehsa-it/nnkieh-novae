@@ -89,4 +89,6 @@ Platform admin 不需要逐一加入 category ID。`canManageIssueCategory` 和 
 | `reviewed-school` | 審核前只給作者與管理方，通過後進入校內可讀流程 |
 | `owner-admin` | 只給作者與具該 category scope 的管理方 |
 
+列表快照另外帶回該 category 每個狀態的**件數**。這個數字是分類層級的聚合，不受 `readAccess` 限制：即使成員讀不到那些提案，他仍會看到「有幾筆在審核中、有幾筆在處理中」。外流的只有數量，提案內容、標題與作者都不在其中。
+
 已完成、不可行、審核拒絕或自動拒絕的提案不再接受留言。`reviewed-school` category 只在 `pending` 或 `processing` 接受留言；其他 category 在 `under-review` 階段關閉留言。

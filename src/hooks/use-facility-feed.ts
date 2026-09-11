@@ -31,6 +31,7 @@ import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 import { toggleReactionState } from "@/lib/reaction-state";
 import { advanceFeedPageCount, canLoadAnotherFeedPage } from "@/lib/feed-page-limit";
+import { toFacilityStatusCounts, type FacilityStatusCounts } from "@/constants/statuses";
 
 const FACILITY_LIST_CACHE_PREFIXES = ["facility-list-page|"] as const;
 
@@ -39,6 +40,7 @@ interface FacilityFeed {
   facilities: FacilitySummary[];
   hasMore: boolean;
   pageCount: number;
+  statusCounts: FacilityStatusCounts;
 }
 
 interface FacilityFeedViewMemory {
@@ -78,6 +80,7 @@ export function useFacilityFeed() {
     facilities: viewMemory?.feed.facilities ?? [],
     hasMore: viewMemory?.feed.hasMore ?? false,
     pageCount: viewMemory?.feed.pageCount ?? (viewMemory?.feed.facilities.length ? 1 : 0),
+    statusCounts: viewMemory?.feed.statusCounts ?? toFacilityStatusCounts({}),
   });
   const [loading, setLoading] = React.useState(!viewMemory);
   const revealFields = useColdDataReveal(coldRead, loading);
@@ -200,6 +203,8 @@ export function useFacilityFeed() {
               ? mergePageById(current.facilities, facilities)
               : facilities,
             pageCount,
+            // The counts describe the whole category; a later page never carries them.
+            statusCounts: cursor ? current.statusCounts : result.statusCounts,
           };
         });
       } catch (caught) {

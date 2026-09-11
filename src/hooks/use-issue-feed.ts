@@ -29,6 +29,7 @@ import {
   patchContentEntity,
 } from "@/lib/content-entity-store";
 import { canContinuePage, mergePageById } from "@/lib/pagination";
+import { toIssueStatusCounts, type IssueStatusCounts } from "@/constants/statuses";
 import { usePagedRequestGuard } from "@/hooks/use-paged-request-guard";
 import { useContentEntityDomainVersion } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
@@ -52,7 +53,7 @@ interface IssueFeed {
   hasMore: boolean;
   issues: IssueSummary[];
   pageCount: number;
-  underReviewCount: number;
+  statusCounts: IssueStatusCounts;
 }
 
 interface IssueFeedViewMemory {
@@ -86,7 +87,7 @@ export function useIssueFeed() {
     hasMore: viewMemory?.feed.hasMore ?? false,
     issues: viewMemory?.feed.issues ?? [],
     pageCount: viewMemory?.feed.pageCount ?? (viewMemory?.feed.issues.length ? 1 : 0),
-    underReviewCount: viewMemory?.feed.underReviewCount ?? 0,
+    statusCounts: viewMemory?.feed.statusCounts ?? toIssueStatusCounts({}),
   });
   const [loading, setLoading] = React.useState(!viewMemory);
   const revealFields = useColdDataReveal(coldRead, loading);
@@ -179,14 +180,18 @@ export function useIssueFeed() {
       cursor ? setLoadingMore(true) : setLoading(true);
       setError("");
       try {
-        let result: Omit<IssueFeed, "pageCount" | "underReviewCount">;
-        let underReviewCount = 0;
+        let result: Omit<IssueFeed, "pageCount" | "statusCounts">;
+        // A later page and a title search both leave the counts alone: they describe
+        // the whole category, not the rows this request happened to return.
+        let statusCounts: IssueStatusCounts | null = null;
         if (filter === "my-proposals") {
-          result = await fetchUserIssues(session.user.uid, cursor, {
+          const page = await fetchUserIssues(session.user.uid, cursor, {
             sort,
             statusBucket: bucket,
             supportedIssueIds: supportedIssueIdsRef.current,
           });
+          result = page;
+          statusCounts = page.statusCounts;
         } else if (committedQuery.trim()) {
           result = await fetchIssuesForTitleSearch(
             session.user.uid,
@@ -213,7 +218,7 @@ export function useIssueFeed() {
             },
           );
           result = page;
-          underReviewCount = page.underReviewCount;
+          statusCounts = page.statusCounts;
         }
         if (!requestGuard.isCurrent(requestToken)) return;
         const issues = result.issues.map((issue) =>
@@ -239,7 +244,7 @@ export function useIssueFeed() {
             ),
             issues: cursor ? mergePageById(current.issues, issues) : issues,
             pageCount,
-            underReviewCount,
+            statusCounts: cursor ? current.statusCounts : statusCounts ?? current.statusCounts,
           };
         });
       } catch (caught) {

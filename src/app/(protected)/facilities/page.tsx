@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowDown, Plus } from "lucide-react";
 import type { FacilitySortOption } from "@/types";
 import { useFacilityFeed } from "@/hooks/use-facility-feed";
+import { FACILITY_BUCKET_STATUSES, FACILITY_STATUS_LABELS } from "@/constants/statuses";
 import { usePublicProfiles } from "@/hooks/use-public-profiles";
 import { Button } from "@/components/ui/button";
 import { FeedToolbar } from "@/components/ui/feed-toolbar";
@@ -21,6 +22,8 @@ import {
 } from "@/components/ui/page-state";
 import { FacilityCard } from "@/components/facilities/facility-card";
 import { FeedList } from "@/components/ui/feed-list";
+import { StatusDistribution } from "@/components/ui/status-distribution";
+import { statusFillColor, statusTextColor } from "@/components/ui/status-badge";
 
 export default function FacilitiesPage() {
   useLocaleSubscription();
@@ -29,6 +32,13 @@ export default function FacilitiesPage() {
     state.feed.facilities.map((facility) => facility.author_uid),
   );
 
+  const statusSegments = FACILITY_BUCKET_STATUSES[state.bucket].map((status) => ({
+    color: statusTextColor(status),
+    count: state.feed.statusCounts[status],
+    fill: statusFillColor(status),
+    key: status,
+    label: translate(FACILITY_STATUS_LABELS[status]),
+  }));
   return (
     <div className="space-y-5">
       <PageHeader
@@ -85,6 +95,11 @@ export default function FacilitiesPage() {
         query={state.query}
         searchLabel={translate('ui.facility.searchPlaceholder')}
         sort={state.sort}
+      />
+      <StatusDistribution
+        ariaLabel={translate('ui.facility.statusCounts')}
+        loading={state.loading}
+        segments={statusSegments}
       />
       <FeedList
         kind="facility"

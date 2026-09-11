@@ -12,6 +12,7 @@ import { toReadableBackendError } from '@/services/issues-core';
 import { captureContentCacheWriteGuard, createContentCacheKey, getCachedContent, getCachedContentPersistent, markContentCachePrefixStale, runCoalescedContentRequest, setCachedContentFromRead } from '@/services/content-read-cache';
 import { READ_REQUEST_TIMEOUT_MS } from '@/lib/request';
 import { registerContentVersion } from '@/services/content-versions';
+import { toFacilityStatusCounts } from '@/constants/statuses';
 
 interface RawFacility {
   id: string;
@@ -67,7 +68,7 @@ export async function listFacilities(input: {
   bucket: 'active' | 'closed'; categoryId: string; query?: string; sort?: FacilitySortOption; status?: FacilityStatus | ''; cursor?: FacilityCursor | null;
 }, options: { forceRefresh?: boolean; signal?: AbortSignal } = {}): Promise<FacilityPageResult> {
   const cacheKey = createContentCacheKey([
-    'facility-list-page', input.categoryId, input.bucket, input.status ?? '', input.sort ?? 'latest', input.query ?? '',
+    'facility-list-page', 'summary-v2', input.categoryId, input.bucket, input.status ?? '', input.sort ?? 'latest', input.query ?? '',
     input.cursor?.id ?? 'first', input.cursor?.createdAt ?? '', input.cursor?.affectedCount ?? '',
   ]);
   const cached = options.forceRefresh ? null : await getCachedContentPersistent<FacilityPageResult>(cacheKey);
@@ -77,11 +78,15 @@ export async function listFacilities(input: {
   }
   const cacheGuard = captureContentCacheWriteGuard(cacheKey);
   try {
-    const fn = invokeBackendAction<typeof input & { pageSize: number }, { facilities: RawFacility[]; cursor: FacilityCursor | null; hasMore: boolean; version: number }>(
+    const fn = invokeBackendAction<typeof input & { pageSize: number }, { facilities: RawFacility[]; cursor: FacilityCursor | null; hasMore: boolean; statusCounts: Record<string, number>; version: number }>(
       'listFacilities', { signal: options.signal, timeoutMs: READ_REQUEST_TIMEOUT_MS },
     );
     const result = await fn({ ...input, pageSize: 20 });
-    const page = { ...result, facilities: result.facilities.map(normalizeSummary) };
+    const page = {
+      ...result,
+      facilities: result.facilities.map(normalizeSummary),
+      statusCounts: toFacilityStatusCounts(result.statusCounts),
+    };
     setCachedContentFromRead(cacheGuard, page);
     registerContentVersion('facilities', result.version);
     return page;
