@@ -53,10 +53,16 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   colorScheme: "light dark",
   initialScale: 1,
+  // The application is a fixed-scale surface: every layout already answers the
+  // screen it is on, and a pinch that scales the page instead only takes the
+  // navigation bar and the composer dock off it.
+  maximumScale: 1,
+  minimumScale: 1,
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f5f7fb" },
     { media: "(prefers-color-scheme: dark)", color: "#0d121b" },
   ],
+  userScalable: false,
   viewportFit: "cover",
   width: "device-width",
 };

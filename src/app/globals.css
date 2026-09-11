@@ -215,7 +215,9 @@
 
 html {
   overscroll-behavior: none;
-  touch-action: manipulation;
+  /* Pan only: no pinch scaling and no double-tap scaling, on the platforms that
+     ignore the viewport's own scale limits as well. */
+  touch-action: pan-x pan-y;
   interpolate-size: allow-keywords;
   background: var(--surface-stage);
   font-synthesis: none;
