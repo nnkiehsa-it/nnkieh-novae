@@ -4,19 +4,10 @@ import * as React from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { usePathname } from "next/navigation";
 import { motionEasing, motionLoopSeconds } from "@/generated/motion-tokens";
-import { timing, timingMs } from "@/lib/motion-timing";
+import { timing } from "@/lib/motion-timing";
 
 // A navigation that never commits must not leave the page looking busy forever.
 const PENDING_LIMIT_MS = 4_000;
-
-interface NavigationEcho {
-  borderRadius: string;
-  height: number;
-  id: number;
-  left: number;
-  top: number;
-  width: number;
-}
 
 function interactiveTarget(target: EventTarget | null) {
   if (!(target instanceof Element)) return null;
@@ -46,20 +37,37 @@ function internalAnchor(target: HTMLElement) {
  * button on top of that gave the same tap two acknowledgements. Only a
  * destination is worth an echo, because only a destination can take a second
  * to appear — which is also what the progress line is for.
+ *
+ * The echo is the destination's own control wearing a state, not a rectangle
+ * drawn over the page where that control happened to be: a copy at page
+ * coordinates is left behind the moment anything scrolls. It starts on the
+ * click, so a touch that turns into a scroll never lights anything up — the
+ * browser has already decided whether a gesture was a tap, and it does not
+ * report one for a scroll.
  */
 export function NavigationFeedback() {
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
-  const [echo, setEcho] = React.useState<NavigationEcho | null>(null);
   const [pending, setPending] = React.useState(false);
-  const sequence = React.useRef(0);
-  const echoTimeout = React.useRef(0);
+  const marked = React.useRef<HTMLElement | null>(null);
   const pendingTimeout = React.useRef(0);
+
+  const release = React.useCallback(() => {
+    marked.current?.removeAttribute("data-navigating");
+    marked.current = null;
+    window.clearTimeout(pendingTimeout.current);
+    setPending(false);
+  }, []);
 
   React.useEffect(() => {
     if (reduceMotion) return;
 
-    const acknowledge = (event: Event) => {
+    const onClick = (event: MouseEvent) => {
+      // A modified click is the browser's to answer: it opens a tab this page
+      // never navigates to.
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+      }
       const target = interactiveTarget(event.target);
       if (!target || !internalAnchor(target)) return;
       if (
@@ -68,52 +76,23 @@ export function NavigationFeedback() {
       ) {
         return;
       }
-      const rect = target.getBoundingClientRect();
-      sequence.current += 1;
-      setEcho({
-        borderRadius: getComputedStyle(target).borderRadius,
-        height: rect.height,
-        id: sequence.current,
-        left: rect.left,
-        top: rect.top,
-        width: rect.width,
-      });
+      release();
+      target.setAttribute("data-navigating", "true");
+      marked.current = target;
       setPending(true);
-      window.clearTimeout(echoTimeout.current);
-      window.clearTimeout(pendingTimeout.current);
-      pendingTimeout.current = window.setTimeout(() => {
-        setPending(false);
-        setEcho(null);
-      }, PENDING_LIMIT_MS);
-    };
-    const onPointerDown = (event: PointerEvent) => acknowledge(event);
-    // A keyboard activation reports no pointer detail, and has no pointerdown
-    // of its own to have already acknowledged it.
-    const onClick = (event: MouseEvent) => {
-      if (event.detail === 0) acknowledge(event);
+      pendingTimeout.current = window.setTimeout(release, PENDING_LIMIT_MS);
     };
 
-    document.addEventListener("pointerdown", onPointerDown, true);
     document.addEventListener("click", onClick, true);
     return () => {
-      window.clearTimeout(echoTimeout.current);
-      window.clearTimeout(pendingTimeout.current);
-      document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("click", onClick, true);
+      release();
     };
-  }, [reduceMotion]);
+  }, [reduceMotion, release]);
 
   React.useEffect(() => {
-    if (reduceMotion) return;
-
-    window.clearTimeout(echoTimeout.current);
-    window.clearTimeout(pendingTimeout.current);
-    setPending(false);
-    echoTimeout.current = window.setTimeout(
-      () => setEcho(null),
-      timingMs("sheet"),
-    );
-  }, [pathname, reduceMotion]);
+    release();
+  }, [pathname, release]);
 
   if (reduceMotion) return null;
 
@@ -136,22 +115,6 @@ export function NavigationFeedback() {
           />
         ) : null}
       </AnimatePresence>
-      {echo ? (
-        <motion.span
-          key={echo.id}
-          className="t-navigation-echo fixed"
-          style={{
-            borderRadius: echo.borderRadius,
-            height: echo.height,
-            left: echo.left,
-            top: echo.top,
-            width: echo.width,
-          }}
-          initial={{ opacity: 0.5, scale: 0.94 }}
-          animate={{ opacity: pending ? 0.28 : 0, scale: pending ? 1.025 : 1.08 }}
-          transition={timing("sheet")}
-        />
-      ) : null}
     </div>
   );
 }

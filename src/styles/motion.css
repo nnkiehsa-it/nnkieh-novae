@@ -232,14 +232,16 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 }
 
 /* Tapping a destination has to be answered before the destination commits,
-   because on the web it may not commit for another second. The echo is that
-   answer, and it belongs to navigation alone: an ordinary button is already
-   answered by the press state above, and echoing it as well doubled the
-   feedback without adding any meaning. */
-.t-navigation-echo {
-  border: 1px solid color-mix(in srgb, var(--tint-content) 24%, transparent);
+   because on the web it may not commit for another second. The state below is
+   that answer, and it belongs to navigation alone: an ordinary button is
+   already answered by the press state above, and echoing it as well doubled
+   the feedback without adding any meaning. It is worn by the control that was
+   tapped, so it travels with the control the page scrolls. */
+[data-navigating="true"] {
   background: color-mix(in srgb, var(--tint-content) 9%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--background) 35%, transparent);
+  /* An inset line rather than a border: a control that grew a border while it
+     waited would move its own contents. */
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tint-content) 24%, transparent);
 }
 .t-navigation-progress {
   background: var(--tint-content);

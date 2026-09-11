@@ -123,12 +123,31 @@ test('navigation direction follows the information hierarchy in both directions'
   // Switching primary navigation is a replacement, not a move through the
   // hierarchy, and must not read as either direction.
   const destination = page.locator('aside a[href="/announcements"]');
+  // Touching a destination is not asking for it: a touch that turns into a
+  // scroll must leave nothing behind, so only the click answers.
   await destination.dispatchEvent('pointerdown', { button: 0, pointerType: 'mouse' });
-  await expect(page.locator('.t-navigation-echo')).toBeVisible();
+  await expect(page.locator('[data-navigating="true"]')).toHaveCount(0);
+  await page.evaluate(() => {
+    const state = window as typeof window & { __novaeAnsweredTap?: boolean };
+    state.__novaeAnsweredTap = false;
+    new MutationObserver(() => {
+      if (document.querySelector('aside a[href="/announcements"][data-navigating="true"]')) {
+        state.__novaeAnsweredTap = true;
+      }
+    }).observe(document.documentElement, {
+      attributeFilter: ['data-navigating'],
+      attributes: true,
+      subtree: true,
+    });
+  });
   await destination.click();
   await page.waitForURL(/\/announcements$/u);
   await expect(page.locator('.route-page[data-route-path="/announcements"]')).toBeVisible();
-  await expect(page.locator('.t-navigation-echo')).toBeVisible();
+  // The destination's own control wore the wait, and gave it up on arrival.
+  expect(await page.evaluate(() => (window as typeof window & {
+    __novaeAnsweredTap?: boolean;
+  }).__novaeAnsweredTap)).toBe(true);
+  await expect(page.locator('[data-navigating="true"]')).toHaveCount(0);
   await expect.poll(() => navigationDirection(page)).toBe('none');
 
   await context.close();
