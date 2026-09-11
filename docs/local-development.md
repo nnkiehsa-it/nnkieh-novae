@@ -48,7 +48,7 @@ bun run test:env
 6. 用 `cloudflare/wrangler.json` 在 local mode 啟動 Worker。
 7. 啟動 Next.js dev server，確認 `/login` 回 `200`，再跑一次登入與 API routing probe。
 
-任一 child process 提早退出時，錯誤會附上對應暫存 log 的尾端。收到 `Ctrl+C` 或 `SIGTERM` 後，runner 會反向停止自己建立的服務；Windows 上若 WSL 與 Docker 原本都沒啟動，清理後也會釋放該 WSL runtime。
+任一 child process 提早退出時，錯誤會附上對應暫存 log 的尾端。`--serve` 會把整個環境放進一個 detached session：`bun run` 在 Ctrl+C 時會直接砍掉自己的 child，收尾根本來不及跑，因此 session 改以「launcher 消失」當作停止訊號。按下 `Ctrl+C` 後 shell prompt 會先回來，session 才反向停止自己建立的服務並把清理訊息印在同一個 terminal；Windows 上若 WSL 與 Docker 原本都沒啟動，清理後也會釋放該 WSL runtime。
 
 ### 本機資料
 

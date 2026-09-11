@@ -1,4 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
+import { once } from "node:events";
 import { createServer } from "node:net";
 import { createWriteStream, readFileSync } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
@@ -6,6 +7,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import process from "node:process";
 import { setTimeout as delay } from "node:timers/promises";
+import { fileURLToPath } from "node:url";
 import {
   disableWindowsWslDockerAutostart,
   isWindowsWslDistroRunning,
@@ -24,6 +26,33 @@ const stressScale = stressIndex >= 0 ? process.argv[stressIndex + 1] : "4";
 if (!/^\d+$/u.test(stressScale) || Number(stressScale) < 2 || Number(stressScale) > 20) {
   throw new Error("--stress-scale must be an integer between 2 and 20.");
 }
+// `bun run` kills this process outright the moment the terminal sends Ctrl+C, so a
+// shutdown handler here never finishes and the services, the PostgreSQL container, and
+// the WSL runtime are all left behind. The interactive environment therefore runs one
+// level deeper in its own process group, where the launcher's death is the stop signal
+// instead of a signal that arrives too late. Terminal output stays inherited, so the
+// shutdown sequence is still visible.
+if (serve && !process.env.NOVAE_SERVE_SESSION) {
+  const session = spawn(
+    process.execPath,
+    [fileURLToPath(import.meta.url), ...process.argv.slice(2)],
+    {
+      cwd: root,
+      detached: true,
+      env: {
+        ...process.env,
+        NOVAE_SERVE_SESSION: "1",
+        // The session reads its stop signal from stdin, so the distribution is chosen
+        // here, while this process still owns the terminal.
+        NOVAE_WSL_DISTRO: (await resolveWindowsWslDistro()) ?? "",
+      },
+      stdio: ["pipe", "inherit", "inherit"],
+    },
+  );
+  const [code] = await once(session, "exit");
+  process.exit(code ?? 0);
+}
+
 const runtimeDatabaseUrl =
   "postgresql://novae_runtime:novae-runtime-local@127.0.0.1:55432/novae";
 const ownerDatabaseUrl =
@@ -427,7 +456,9 @@ try {
       process.stderr.write("✓ End-to-end verification passed\n");
     } else {
       process.stderr.write(`\n[environment] Ready\n  App: ${appUrl}\n  API: ${workerUrl}\n  Auth emulator: http://127.0.0.1:4000/auth\n  Stop: Ctrl+C\n`);
-      await new Promise((resolve) => frontend.once("exit", resolve));
+      process.stdin.resume();
+      await Promise.race([once(frontend, "exit"), once(process.stdin, "end")]);
+      process.stderr.write("\n[integration] stopping the local environment\n");
     }
   }
 } finally {
