@@ -47,67 +47,70 @@ export function ComposerField({
   useLocaleSubscription();
 
   return (
-    <div className="grid min-w-0 gap-5">
-      <div className="grid min-w-0 gap-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="composer-title">{titleLabel}</Label>
-          <span
-            className={cn(
-              "text-xs tabular-nums",
-              title.length > INPUT_LIMITS.title
-                ? "font-medium text-destructive"
-                : "text-muted-foreground",
-            )}
-          >
-            {title.length} / {INPUT_LIMITS.title}
-          </span>
-        </div>
-        <Input
-          disabled={pending}
-          id="composer-title"
-          maxLength={INPUT_LIMITS.title}
-          onChange={(event) => onTitleChange(event.target.value)}
-          placeholder={titlePlaceholder}
-          value={title}
-        />
-      </div>
-      <div className="grid min-w-0 gap-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="composer-content">{contentLabel}</Label>
-          <span
-            className={cn(
-              "text-xs tabular-nums",
-              content.length > INPUT_LIMITS.content
-                ? "font-medium text-destructive"
-                : "text-muted-foreground",
-            )}
-            id="composer-content-count"
-          >
-            {content.length} / {INPUT_LIMITS.content}
-          </span>
-        </div>
-        {pending ? (
-          <div aria-hidden className="novae-markdown-editor is-loading" />
-        ) : (
-          <MarkdownEditor
-            ariaDescribedBy="composer-content-count"
-            ariaLabel={contentLabel}
-            content={content}
-            id="composer-content"
-            maxLength={INPUT_LIMITS.content}
-            onChange={onContentChange}
-            onPickImages={onPickImages}
-            placeholder={placeholder}
+    <div className="grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_17rem]">
+      <div className="grid min-w-0 gap-5">
+        <div className="grid min-w-0 gap-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="composer-title">{titleLabel}</Label>
+            <span
+              className={cn(
+                "text-xs tabular-nums",
+                title.length > INPUT_LIMITS.title
+                  ? "font-medium text-destructive"
+                  : "text-muted-foreground",
+              )}
+            >
+              {title.length} / {INPUT_LIMITS.title}
+            </span>
+          </div>
+          <Input
+            disabled={pending}
+            id="composer-title"
+            maxLength={INPUT_LIMITS.title}
+            onChange={(event) => onTitleChange(event.target.value)}
+            placeholder={titlePlaceholder}
+            value={title}
           />
-        )}
-        {content.length > INPUT_LIMITS.content ? (
-          <p className="text-xs leading-5 text-destructive" role="alert">
-            {translate("markdown.contentTooLong", { count: INPUT_LIMITS.content })}
-          </p>
-        ) : null}
+        </div>
+        <div className="grid min-w-0 gap-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="composer-content">{contentLabel}</Label>
+            <span
+              className={cn(
+                "text-xs tabular-nums",
+                content.length > INPUT_LIMITS.content
+                  ? "font-medium text-destructive"
+                  : "text-muted-foreground",
+              )}
+              id="composer-content-count"
+            >
+              {content.length} / {INPUT_LIMITS.content}
+            </span>
+          </div>
+          {pending ? (
+            <div aria-hidden className="novae-markdown-editor is-loading" />
+          ) : (
+            <MarkdownEditor
+              ariaDescribedBy="composer-content-count"
+              ariaLabel={contentLabel}
+              content={content}
+              id="composer-content"
+              maxLength={INPUT_LIMITS.content}
+              onChange={onContentChange}
+              onPickImages={onPickImages}
+              placeholder={placeholder}
+            />
+          )}
+          {content.length > INPUT_LIMITS.content ? (
+            <p className="text-xs leading-5 text-destructive" role="alert">
+              {translate("markdown.contentTooLong", { count: INPUT_LIMITS.content })}
+            </p>
+          ) : null}
+        </div>
       </div>
       <ComposerMediaAttachments
         attachments={attachments}
+        className="lg:sticky lg:top-4"
         onPickImages={onPickImages}
         onRemoveImage={onRemoveImage}
         uploading={attachmentsUploading}

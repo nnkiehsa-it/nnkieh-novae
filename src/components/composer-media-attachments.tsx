@@ -11,11 +11,13 @@ import { cn } from "@/lib/utils";
 
 export function ComposerMediaAttachments({
   attachments,
+  className,
   onPickImages,
   onRemoveImage,
   uploading,
 }: {
   attachments: Array<{ height: number; previewUrl: string; width: number }>;
+  className?: string;
   onPickImages: (files: FileList | null) => void;
   onRemoveImage: (index: number) => void;
   uploading: boolean;
@@ -27,9 +29,12 @@ export function ComposerMediaAttachments({
   return (
     <section
       aria-labelledby={headingId}
-      className="grid gap-3 rounded-xl border border-dashed bg-muted/20 p-3"
+      className={cn(
+        "grid h-fit gap-3 rounded-xl border border-dashed bg-muted/20 p-3",
+        className,
+      )}
     >
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
           <h3 className="text-sm font-medium" id={headingId}>
             {t("markdown.imageAttachments")}
@@ -59,10 +64,10 @@ export function ComposerMediaAttachments({
         type="file"
       />
       {attachments.length > 0 ? (
-        <div className="flex snap-x gap-2 overflow-x-auto pb-1">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-2">
           {attachments.map((image, index) => (
             <div
-              className="group relative aspect-[4/3] w-32 shrink-0 snap-start overflow-hidden rounded-xl border bg-muted"
+              className="group relative aspect-[4/3] overflow-hidden rounded-xl border bg-muted"
               key={image.previewUrl}
             >
               <DecodedImage
