@@ -43,7 +43,7 @@ export function PageHeader({
   );
   if (toolbar) {
     return (
-      <header className={cn("flex flex-wrap items-center gap-x-2 gap-y-3 pb-4", className)}>
+      <header className={cn("flex flex-wrap items-center gap-x-2 gap-y-3", className)}>
         {heading}
         {actions}
         {toolbar}
