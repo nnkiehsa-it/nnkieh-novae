@@ -1,5 +1,32 @@
 import type { ReactNode } from "react";
 import { CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonBadgeLabel } from "@/components/ui/skeleton-reveal";
+
+/**
+ * The neutral pill a detail header opens with: the kind of thing being read,
+ * before any status colour. A proposal and a facility report name their
+ * category here and an announcement names itself, so all three read as one row.
+ */
+export function DetailBadge({
+  children,
+  reveal = false,
+}: {
+  children: ReactNode;
+  reveal?: boolean;
+}) {
+  return (
+    <span className="inline-grid place-items-center rounded-full bg-card px-2.5 py-1 text-center text-xs font-medium text-muted-foreground shadow-[var(--shadow-control)]">
+      <SkeletonBadgeLabel
+        className="min-w-16"
+        enabled={reveal}
+        skeleton={<Skeleton className="h-3 w-16" />}
+      >
+        {children}
+      </SkeletonBadgeLabel>
+    </span>
+  );
+}
 
 export function DetailCardHeader({
   badges,

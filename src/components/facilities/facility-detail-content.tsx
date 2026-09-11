@@ -8,9 +8,9 @@ import { findFacilityCategory } from "@/hooks/use-categories";
 import { formatDate } from "@/lib/format";
 import { ContentRenderer } from "@/components/content-renderer";
 import { ContentResolutionNotice } from "@/components/content-resolution-notice";
-import { DetailCardHeader, DetailCardBody } from "@/components/ui/detail-card";
+import { DetailBadge, DetailCardHeader, DetailCardBody } from "@/components/ui/detail-card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SkeletonBadgeLabel, SkeletonReveal } from "@/components/ui/skeleton-reveal";
+import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 export function FacilityDetailContent({
@@ -38,16 +38,10 @@ export function FacilityDetailContent({
     <>
       <DetailCardHeader
         badges={<>
-          <span className="inline-grid place-items-center rounded-full bg-card px-2.5 py-1 text-center text-xs font-medium text-muted-foreground shadow-[var(--shadow-control)]">
-            <SkeletonBadgeLabel
-              className="min-w-16"
-              enabled={reveal}
-              skeleton={<Skeleton className="h-3 w-16" />}
-            >
-              {findFacilityCategory(facility.category_id)?.label ||
-                translate("ui.nav.facilities")}
-            </SkeletonBadgeLabel>
-          </span>
+          <DetailBadge reveal={reveal}>
+            {findFacilityCategory(facility.category_id)?.label ||
+              translate("ui.nav.facilities")}
+          </DetailBadge>
           <StatusBadge
             domain="facility"
             revealLabel={reveal}

@@ -423,7 +423,7 @@ const messages = {
   'ui.announcement.delete': 'Delete announcement',
   'ui.announcement.deleteTitle': 'Delete this announcement?',
   'ui.announcement.deleteDescription': 'The announcement and its comments cannot be recovered.',
-  'ui.announcement.campus': 'Campus announcement',
+  'ui.announcement.badge': 'Announcement',
   'ui.announcement.author': 'Announcement author',
   'ui.announcement.admin': 'Platform administrator',
   'ui.announcement.liked': 'Liked',

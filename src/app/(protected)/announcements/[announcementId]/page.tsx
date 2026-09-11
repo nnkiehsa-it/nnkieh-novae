@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { PendingAlertDialogAction } from "@/components/ui/pending-alert-dialog-action";
 import { Button } from "@/components/ui/button";
-import { DetailCardHeader, DetailCardBody } from "@/components/ui/detail-card";
+import { DetailBadge, DetailCardHeader, DetailCardBody } from "@/components/ui/detail-card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -112,9 +112,7 @@ export default function AnnouncementDetailPage() {
       /> : undefined}
       content={announcement ? <>
             <DetailCardHeader
-              badges={<p className="text-[0.8125rem] font-medium text-tint-content">
-                {t("ui.announcement.campus")}
-              </p>}
+              badges={<DetailBadge>{t("ui.announcement.badge")}</DetailBadge>}
               title={<SkeletonReveal as="div" enabled={detail.revealDetail} skeleton={<Skeleton className="h-9 w-3/5" />}><h1 className="text-balance">
                 {announcement.title}
               </h1></SkeletonReveal>}

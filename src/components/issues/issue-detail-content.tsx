@@ -9,13 +9,10 @@ import { getIssueNotice } from "@/lib/issue-notice";
 import { ContentRenderer } from "@/components/content-renderer";
 import { ContentAuthor } from "@/components/content-author";
 import { ContentResolutionNotice } from "@/components/content-resolution-notice";
-import { DetailCardHeader, DetailCardBody } from "@/components/ui/detail-card";
+import { DetailBadge, DetailCardHeader, DetailCardBody } from "@/components/ui/detail-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  SkeletonBadgeLabel,
-  SkeletonReveal,
-} from "@/components/ui/skeleton-reveal";
+import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 
 export function IssueDetailContent({
   issue,
@@ -40,15 +37,9 @@ export function IssueDetailContent({
     <>
       <DetailCardHeader
         badges={<>
-          <span className="inline-grid place-items-center rounded-full bg-card px-2.5 py-1 text-center text-xs font-medium text-muted-foreground shadow-[var(--shadow-control)]">
-            <SkeletonBadgeLabel
-              className="min-w-16"
-              enabled={reveal}
-              skeleton={<Skeleton className="h-3 w-16" />}
-            >
-              {getIssueCategoryLabel(issue.category)}
-            </SkeletonBadgeLabel>
-          </span>
+          <DetailBadge reveal={reveal}>
+            {getIssueCategoryLabel(issue.category)}
+          </DetailBadge>
           <StatusBadge domain="issue" revealLabel={reveal} status={status} />
         </>}
         title={<SkeletonReveal as="div" enabled={reveal} skeleton={<Skeleton className="h-9 w-3/5" />}>

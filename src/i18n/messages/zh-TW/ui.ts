@@ -423,7 +423,7 @@ const messages = {
   'ui.announcement.delete': '刪除公告',
   'ui.announcement.deleteTitle': '刪除這則公告？',
   'ui.announcement.deleteDescription': '公告與其留言將無法復原。',
-  'ui.announcement.campus': '校園公告',
+  'ui.announcement.badge': '公告',
   'ui.announcement.author': '公告作者',
   'ui.announcement.admin': '平台管理員',
   'ui.announcement.liked': '已按讚',
