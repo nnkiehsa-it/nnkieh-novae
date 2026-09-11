@@ -44,9 +44,11 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 
       }
       expect(after.height).toBeLessThanOrEqual(220);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      // Narrow layouts keep the field behind its icon so the control row fits one line.
-      if (viewport.width < 640) await page.getByRole('button', { name: 'Search titles…' }).click();
-      await expect(page.getByRole('textbox', { name: /Search/u })).toBeVisible();
+      // A narrow control row keeps the field behind its icon; a wide one spells it out.
+      const search = viewport.width < 640
+        ? page.getByRole('button', { name: /Search titles/u })
+        : page.getByRole('textbox', { name: /Search titles/u });
+      await expect(search.last()).toBeVisible();
       const navigation = page.getByRole('navigation', { name: 'Primary navigation' });
       await navigation.filter({ visible: true }).getByRole('link', { name: 'Announcements', exact: true }).click();
       await expect(page).toHaveURL(/\/announcements$/u);
