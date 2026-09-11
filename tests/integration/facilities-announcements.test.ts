@@ -60,6 +60,20 @@ integrationTest("facility ownership and category-scoped management permissions",
     JSON.stringify({ facilityCategoryId, facilities: list.facilities }),
   );
   assert.equal(typeof list.version, "number");
+  // A search covers the body and the reporter's name, not only the title and location.
+  for (const query of ["facility content status", "Integration facility-owner"]) {
+    const searched = asRecord(await callAction("listFacilities", {
+      bucket: "active",
+      categoryId: facilityCategoryId,
+      pageSize: 20,
+      query,
+      sort: "latest",
+    }, user.auth));
+    assert.ok(
+      (searched.facilities as Array<Record<string, unknown>>).some((row) => row.id === facilityId),
+      query,
+    );
+  }
   // Every reported case in the category is counted, whatever bucket the page asked for.
   assert.ok(Number(asRecord(list.statusCounts).pending) >= 1);
 

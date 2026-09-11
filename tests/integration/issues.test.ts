@@ -194,6 +194,38 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
   }, owner.auth)).issue);
   assert.equal(reopenedAfterCategoryEnabled.commentsEnabled, true);
 
+  // A search reaches the body, not only the title.
+  const bodyMatch = asRecord(await callAction("searchIssues", {
+    activeFilter: "public-issues",
+    pageSize: 20,
+    sort: "latest",
+    statusBucket: "active",
+    titleQuery: "content public",
+  }, user.auth));
+  assert.ok((bodyMatch.issues as JsonRecord[]).some((issue) => issue.id === publicIssueId));
+  // The author's name is searchable only where the category shows the author.
+  // public-issues hides it, so a member searching that name finds nothing there
+  // while the author still finds their own proposal.
+  const strangerAuthorMatch = asRecord(await callAction("searchIssues", {
+    activeFilter: "public-issues",
+    pageSize: 20,
+    sort: "latest",
+    statusBucket: "active",
+    titleQuery: "Integration issue-owner",
+  }, user.auth));
+  assert.equal(
+    (strangerAuthorMatch.issues as JsonRecord[]).some((issue) => issue.id === publicIssueId),
+    false,
+  );
+  const ownAuthorMatch = asRecord(await callAction("searchIssues", {
+    activeFilter: "public-issues",
+    pageSize: 20,
+    sort: "latest",
+    statusBucket: "active",
+    titleQuery: "Integration issue-owner",
+  }, owner.auth));
+  assert.ok((ownAuthorMatch.issues as JsonRecord[]).some((issue) => issue.id === publicIssueId));
+
   await expectActionError(
     "permission-denied",
     () => callAction("updateIssueResult", {
