@@ -69,7 +69,7 @@ export function PlatformJobProgress() {
                 role="progressbar"
               >
                 <div
-                  className="h-full origin-left rounded-full bg-primary transition-transform duration-500"
+                  className="h-full origin-left rounded-full bg-primary transition-transform duration-[var(--motion-sheet)]"
                   style={{ transform: `scaleX(${percent / 100})` }}
                 />
               </div>

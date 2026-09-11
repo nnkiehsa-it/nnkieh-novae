@@ -1,23 +1,15 @@
 "use client";
 
-import {
-  ArrowLeft,
-  ArrowUp,
-  Plus,
-} from "lucide-react";
+import { Plus } from "lucide-react";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { FeedList } from "@/components/ui/feed-list";
 import { FeedToolbar } from "@/components/ui/feed-toolbar";
 import { DetailLayout } from "@/components/ui/detail-layout";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { PageHeader } from "@/components/ui/page-state";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
 
 export type FeedSkeletonKind = "announcement" | "facility" | "issue";
-export type ComposerSkeletonKind = FeedSkeletonKind;
 
 const listTitleKeys = {
   announcement: "ui.announcement.title",
@@ -106,41 +98,4 @@ export function ListRouteSkeleton({
 
 export function DetailRouteSkeleton({ kind = "issue" }: { kind?: FeedSkeletonKind }) {
   return <DetailLayout kind={kind} loading />;
-}
-
-export function ComposerRouteSkeleton({
-  extraFields = false,
-  kind = "issue",
-}: {
-  extraFields?: boolean;
-  kind?: ComposerSkeletonKind;
-}) {
-  useLocaleSubscription();
-  const titleKey = kind === "announcement" ? "ui.announcement.newTitle" : kind === "facility" ? "ui.facility.newTitle" : "ui.issue.newTitle";
-  const submitKey = kind === "announcement" ? "ui.announcement.publish" : kind === "facility" ? "ui.facility.submit" : "ui.issue.submit";
-  return (
-    <div className="mx-auto max-w-3xl space-y-5" aria-busy="true" aria-label={translate("ui.common.loading")}>
-      <PageHeader
-        actions={
-          <Button onClick={() => window.history.back()} variant="ghost">
-            <ArrowLeft />{translate("ui.common.back")}
-          </Button>
-        }
-        title={translate(titleKey)}
-      />
-      <Card className="py-6">
-        <div className="grid gap-5 px-5 sm:px-7">
-          {extraFields ? (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="grid gap-2 text-sm font-medium">{translate("ui.facility.category")}<Input className="opacity-100" disabled /></label>
-              <label className="grid gap-2 text-sm font-medium">{translate("ui.facility.location")}<Input className="opacity-100" disabled /></label>
-            </div>
-          ) : null}
-          <label className="grid gap-2 text-sm font-medium">{kind === "facility" ? translate("ui.facility.reportTitle") : kind === "announcement" ? translate("ui.announcement.titleLabel") : translate("ui.issue.titleLabel")}<Input className="opacity-100" disabled /></label>
-          <label className="grid gap-2 text-sm font-medium">{kind === "facility" ? translate("ui.facility.problemDescription") : kind === "announcement" ? translate("ui.announcement.contentLabel") : translate("ui.issue.contentLabel")}<Textarea className="min-h-48 opacity-100" disabled /></label>
-          <Button className="ml-auto opacity-100" disabled><ArrowUp />{translate(submitKey)}</Button>
-        </div>
-      </Card>
-    </div>
-  );
 }

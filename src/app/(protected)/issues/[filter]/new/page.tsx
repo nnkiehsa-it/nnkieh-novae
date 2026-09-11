@@ -1,67 +1,45 @@
 "use client";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
-import { ArrowLeft, ArrowUp } from "lucide-react";
 import { useIssueComposer } from "@/hooks/use-entry-composer";
 import { ComposerField } from "@/components/composer-fields";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { BusyLabel, PageHeader } from "@/components/ui/page-state";
+import { ComposerLayout } from "@/components/composer-layout";
 
 export default function IssueComposerPage() {
   useLocaleSubscription();
   const form = useIssueComposer();
-
+  const busy = form.saving || form.images.uploading;
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
-      <PageHeader
-        actions={
-          <Button onClick={form.back} variant="ghost">
-            <ArrowLeft />{translate('ui.common.back')}</Button>
-        }
-        title={translate('ui.issue.new')}
+    <ComposerLayout
+      busy={busy}
+      onBack={form.back}
+      onSubmit={form.submit}
+      submitBusyLabel={translate('ui.issue.submitting')}
+      submitDisabled={
+        !form.config ||
+        !form.title.trim() ||
+        !form.content.trim() ||
+        !form.contentWithinLimit ||
+        busy
+      }
+      submitLabel={translate('ui.issue.submit')}
+      succeeded={form.succeeded}
+      title={translate('ui.issue.new')}
+    >
+      <ComposerField
+        attachments={form.images.images}
+        attachmentsUploading={form.images.uploading}
+        content={form.content}
+        contentLabel={translate('ui.issue.contentLabel')}
+        onContentChange={form.setContent}
+        onPickImages={(files) => void form.images.pick(files)}
+        onRemoveImage={form.images.remove}
+        onTitleChange={form.setTitle}
+        placeholder={translate('ui.issue.contentPlaceholder')}
+        title={form.title}
+        titleLabel={translate('ui.issue.titleLabel')}
+        titlePlaceholder={translate('ui.issue.titlePlaceholder')}
       />
-      <form className="min-w-0" onSubmit={form.submit}>
-        <Card className="-mx-[var(--page-gutter)] min-w-0 rounded-none border-x-0 py-5 sm:mx-0 sm:rounded-xl sm:border-x sm:py-6">
-          <CardContent className="min-w-0 max-w-full px-4 sm:px-7">
-            <ComposerField
-              attachments={form.images.images}
-              attachmentsUploading={form.images.uploading}
-              content={form.content}
-              contentLabel={translate('ui.issue.contentLabel')}
-              onContentChange={form.setContent}
-              onPickImages={(files) => void form.images.pick(files)}
-              onRemoveImage={form.images.remove}
-              onTitleChange={form.setTitle}
-              placeholder={translate('ui.issue.contentPlaceholder')}
-              title={form.title}
-              titleLabel={translate('ui.issue.titleLabel')}
-              titlePlaceholder={translate('ui.issue.titlePlaceholder')}
-            />
-            <div className="mt-6 flex justify-end">
-              <Button
-                disabled={
-                  !form.config ||
-                  !form.title.trim() ||
-                  !form.content.trim() ||
-                  !form.contentWithinLimit ||
-                  form.saving ||
-                  form.images.uploading
-                }
-                type="submit"
-              >
-                {form.saving || form.images.uploading ? null : <ArrowUp />}
-                <BusyLabel
-                  busy={form.saving || form.images.uploading}
-                  busyLabel={translate('ui.issue.submitting')}
-                  label={translate('ui.issue.submit')}
-                  success={form.succeeded}
-                />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </form>
-    </div>
+    </ComposerLayout>
   );
 }

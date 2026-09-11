@@ -33,7 +33,8 @@
 | 只給 E2E 用的執行期 helper | `src/testing/` | 只能由 `e2e-auth-bridge.tsx` 在 emulator 環境下動態 import，不可靜態 import 進產品路徑 |
 | 文案 | `src/i18n/messages/{en,zh-TW}/` | 兩種語言都要加，`check:i18n` 會擋漏譯 |
 | 全域 CSS token、版面 | `src/app/globals.css` | 顏色／圓角／陰影一律用 token，不寫死色碼 |
-| 動畫 token 與 recipe | `src/styles/motion.css` | `:hover` 必須包在 `@media (hover: hover)` 內 |
+| 動畫 recipe | `src/styles/motion.css` | 時長與曲線一律用 ladder token，不寫死；`:hover` 必須包在 `@media (hover: hover)` 內 |
+| 動畫時長與曲線本身 | `config/motion.config.json` | 唯一來源，CSS 與 JS 都從這裡產生；JS 動畫一律透過 `@/lib/motion-timing` 取用 |
 
 ### 後端 `cloudflare/`
 
@@ -62,6 +63,7 @@
 | 改了 | 跑 | 會重寫 |
 |---|---|---|
 | `config/api-errors.config.json` | `bun run generate:all` | `src/generated/api-errors.ts`、`cloudflare/src/backend/shared/api-errors.ts`、`cloudflare/generated/` |
+| `config/motion.config.json` | `bun run generate:all` | `src/generated/motion-ladder.css`、`src/generated/motion-tokens.ts` |
 | `config/backend-actions.config.json` | `bun run generate:all` | `src/services/backend-action-contract.ts`、`cloudflare/src/backend/shared/backend-action-policies.ts` |
 | `config/rate-limits.config.json`、`config/data-retention.config.json` | `bun run generate:all` | 同上對應檔 |
 

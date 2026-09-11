@@ -66,11 +66,7 @@ export function FeedList<T extends { id: string }>({
         return (
           // These keys identify physical card slots. Entity-local state stays
           // keyed inside, while each frame survives loading/empty/data changes.
-          <StaggerItem
-            className="h-full"
-            initial={index < SKELETON_SLOT_COUNT ? false : undefined}
-            key={index}
-          >
+          <StaggerItem className="h-full" key={index}>
             <Card className={cn("group relative h-full gap-0 p-0", pending ? "route-card-skeleton" : item ? "t-card" : undefined)} data-feed-slot={index} data-resize-motion="">
               <ContentTransition identity={contentIdentity}>
                 {item ? <div className="h-full">{renderItem?.(item)}</div> : pending ? (

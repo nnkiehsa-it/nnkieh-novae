@@ -4,6 +4,7 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 import * as React from "react";
 import { RefreshCw } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { timing } from "@/lib/motion-timing";
 import { BrandLockup } from "@/components/ui/brand";
 import { Button } from "@/components/ui/button";
 import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
@@ -222,7 +223,7 @@ export function AppUpdateGate() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+          transition={timing("sheetExit")}
         >
           <div className="t-update-stage flex w-[min(20rem,calc(100%-2rem))] flex-col items-center gap-4 text-center">
             <BrandLockup

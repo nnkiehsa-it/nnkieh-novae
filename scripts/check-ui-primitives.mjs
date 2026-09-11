@@ -23,6 +23,7 @@ async function listFiles(directory) {
 
 const files = await listFiles(sourceRoot);
 const productSources = [];
+const productSourceFiles = [];
 const stylesheets = [];
 for (const file of files) {
   const source = await readFile(file, "utf8");
@@ -32,11 +33,19 @@ for (const file of files) {
     stylesheets.push({ path: relativePath.replaceAll(path.sep, "/"), source });
   } else {
     productSources.push(source);
+    productSourceFiles.push({ path: relativePath.replaceAll(path.sep, "/"), source });
   }
 
   if (/\btransition-all\b/u.test(source)) errors.push(`${relativePath} uses transition-all; name the state-changing properties`);
   if (/shadow-\[(?!var\(--shadow-(?:control|card|floating)\))/u.test(source)) errors.push(`${relativePath} defines an arbitrary shadow outside the elevation tokens`);
   if (/\.vue(?:["']|$)|@vue\/|\bvue-tsc\b|\breka-ui\b/u.test(source)) errors.push(`${relativePath} references the retired Vue frontend`);
+
+  if (!file.endsWith(".css")) {
+    if (/\bduration:\s*[\d.]/u.test(source)) errors.push(`${relativePath} hard-codes an animation duration; take a rung from @/lib/motion-timing`);
+    if (/\bease:\s*\[/u.test(source)) errors.push(`${relativePath} hard-codes an easing curve; take a curve from @/lib/motion-timing`);
+    if (/\btype:\s*["']spring["']/u.test(source)) errors.push(`${relativePath} animates on a spring, which sits outside the motion ladder`);
+    if (/\bduration-\d/u.test(source)) errors.push(`${relativePath} uses a raw Tailwind duration; reference a motion token instead`);
+  }
 
   if (file.endsWith(".css")) {
     const hoverBlocks = [...source.matchAll(/([^{}]+:hover[^{}]*)\{[^{}]*\}/gu)];
@@ -78,23 +87,27 @@ for (const orphan of findOrphanCssClassSelectors(stylesheets, productSources)) {
 
 const globals = await readFile(path.join(sourceRoot, "app/globals.css"), "utf8");
 const motion = await readFile(path.join(sourceRoot, "styles/motion.css"), "utf8");
-for (const token of ["--background", "--card", "--border", "--radius", "--shadow-control", "--shadow-card", "--shadow-floating"]) {
-  if (!globals.includes(token)) errors.push(`src/app/globals.css is missing ${token}`);
-}
-for (const token of [
-  "--motion-press",
-  "--motion-control",
-  "--motion-content",
-  "--motion-surface",
-  "--motion-page",
-  "--motion-emphasis",
-  "--ease-arrive",
-  "--ease-depart",
-  "--ease-move",
-  "--ease-page",
+const ladder = await readFile(path.join(sourceRoot, "generated/motion-ladder.css"), "utf8");
+
+// The --motion-* and --ease-* namespaces belong to config/motion.config.json.
+// Every rung and curve the product names has to be one the generated ladder
+// actually defines, so a retired or mistyped token fails here instead of
+// silently resolving to nothing at runtime.
+const ladderTokens = new Set(
+  [...ladder.matchAll(/(--(?:motion|ease)-[a-z-]+)\s*:/gu)].map(([, token]) => token),
+);
+for (const { path: consumer, source } of [
+  { path: "src/app/globals.css", source: globals },
+  { path: "src/styles/motion.css", source: motion },
+  ...productSourceFiles,
 ]) {
-  if (!motion.includes(token)) errors.push(`src/styles/motion.css is missing ${token}`);
+  for (const [, token] of source.matchAll(/var\((--(?:motion|ease)-[a-z-]+)\)/gu)) {
+    if (!ladderTokens.has(token)) {
+      errors.push(`${consumer} names ${token}, which the motion ladder does not define`);
+    }
+  }
 }
+
 // Recipes choose a rung of the ladder; they do not invent their own timing.
 const motionRecipes = motion.replace(/^(?::root|\.dark)\s*\{[\s\S]*?^\}/gmu, "");
 for (const [literal, amount] of motionRecipes.matchAll(/(?<![\w.-])(\d+(?:\.\d+)?)m?s(?![\w-])/gu)) {

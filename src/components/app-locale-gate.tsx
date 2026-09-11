@@ -2,6 +2,7 @@
 import * as React from "react";
 import { Check, ChevronRight, Languages } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { timing } from "@/lib/motion-timing";
 import { hasStoredLocale, setLocale, useI18n } from "@/i18n";
 import { BrandLockup } from "@/components/ui/brand";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ export function AppLocaleGate({ children }: { children: React.ReactNode }) {
         animate={{ opacity: 1, y: 0 }}
         initial={{ opacity: 0.85, y: 0 }}
         key="localized-app"
-        transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+        transition={timing("controlExit")}
       >
         {children}
       </motion.div>
@@ -31,7 +32,7 @@ export function AppLocaleGate({ children }: { children: React.ReactNode }) {
       className="grid min-h-[100svh] place-items-center bg-[var(--surface-stage)] p-4"
       exit={{ opacity: 0, scale: 0.985, y: -12 }}
       key="locale-gate"
-      transition={{ duration: 0.32, ease: [0.4, 0, 1, 1] }}
+      transition={timing("sheetExit", "depart")}
     >
       <Card className="t-panel-reveal w-full max-w-lg px-6 py-12 sm:px-10">
         <BrandLockup className="justify-center" />

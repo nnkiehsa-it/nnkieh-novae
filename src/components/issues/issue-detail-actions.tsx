@@ -2,6 +2,7 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import { motion } from "motion/react";
+import { timing } from "@/lib/motion-timing";
 import {
   Clock3,
   MoreHorizontal,
@@ -174,7 +175,7 @@ export function getIssueDetailPanels({
                 animate={{ scaleX: supportProgress / 100 }}
                 className="block h-full origin-left rounded-full bg-tint-content"
                 initial={false}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                transition={timing("sheet")}
               />
             </div>
           ) : null}

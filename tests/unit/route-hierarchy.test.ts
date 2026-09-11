@@ -17,6 +17,15 @@ describe("route hierarchy", () => {
     expect(compareRoutes("/settings", "/settings")).toBe("unrelated");
   });
 
+  it("gives the issues doorway no direction of its own", () => {
+    // /issues renders nothing of its own: it picks a default category and
+    // forwards. Reading that forward as a push played a whole child-route
+    // animation on the way to a page the user had already asked for.
+    expect(compareRoutes("/issues", "/issues/public")).toBe("unrelated");
+    expect(compareRoutes("/issues/public", "/issues")).toBe("unrelated");
+    expect(compareRoutes("/announcements", "/issues")).toBe("unrelated");
+  });
+
   it("places the dashboard and administration areas beneath settings", () => {
     expect(adoptedParent("/admin/management")).toBe("/settings");
     expect(adoptedParent("/dashboard")).toBe("/settings");

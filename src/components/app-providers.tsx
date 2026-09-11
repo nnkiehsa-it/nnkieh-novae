@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { MotionConfig } from "motion/react";
+import { timing } from "@/lib/motion-timing";
 import { ThemeProvider } from "next-themes";
 import { SessionProvider } from "@/hooks/use-session";
 import { initializeI18n } from "@/i18n";
@@ -68,7 +69,7 @@ export function AppProviders({
     >
         <MotionConfig
           reducedMotion="user"
-          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          transition={timing("control")}
         >
           <TooltipProvider>
             <TurnstileProvider>

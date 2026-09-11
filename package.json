@@ -16,6 +16,7 @@
   "scripts": {
     "dev": "next dev --webpack",
     "generate:api-errors": "node scripts/generate-api-errors.mjs",
+    "generate:motion": "node scripts/generate-motion.mjs",
     "generate:rate-limits": "node scripts/generate-rate-limits.mjs",
     "generate:data-retention": "node scripts/generate-data-retention.mjs",
     "generate:backend-actions": "node scripts/generate-backend-actions.mjs",

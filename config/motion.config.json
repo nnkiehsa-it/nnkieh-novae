@@ -1,0 +1,32 @@
+{
+  "durations": {
+    "touch": 100,
+    "control": 250,
+    "nav": 350,
+    "sheet": 450,
+    "controlExit": 175,
+    "sheetExit": 300
+  },
+  "easings": {
+    "arrive": [0.22, 1, 0.36, 1],
+    "depart": [0.4, 0, 1, 1],
+    "move": [0.4, 0, 0.2, 1],
+    "nav": [0.32, 0.72, 0, 1],
+    "navReversed": [1, 0, 0.68, 0.28],
+    "bounce": [0.22, 1.2, 0.36, 1]
+  },
+  "travel": {
+    "lift": "6px",
+    "rise": "12px",
+    "pressScale": "0.98",
+    "cardPressScale": "0.99",
+    "surfaceScale": "0.97",
+    "navParallax": "20%",
+    "navDim": "0.9"
+  },
+  "loops": {
+    "spin": 800,
+    "sweep": 1100,
+    "pulse": 2200
+  }
+}

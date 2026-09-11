@@ -1,13 +1,11 @@
 "use client";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
-import { ArrowLeft, ArrowUp } from "lucide-react";
 import { useAnnouncementComposer } from "@/hooks/use-entry-composer";
 import { usePermissionRedirect } from "@/hooks/use-permission-redirect";
 import { ComposerField } from "@/components/composer-fields";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { BusyLabel, ErrorState, PageHeader } from "@/components/ui/page-state";
+import { ComposerLayout } from "@/components/composer-layout";
+import { ErrorState } from "@/components/ui/page-state";
 
 export default function AnnouncementComposerPage() {
   useLocaleSubscription();
@@ -15,55 +13,37 @@ export default function AnnouncementComposerPage() {
   usePermissionRedirect(form.canManage, "/announcements");
   if (!form.canManage)
     return <ErrorState error={translate('ui.announcement.noPublishPermission')} />;
+  const busy = form.saving || form.images.uploading;
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
-      <PageHeader
-        actions={
-          <Button onClick={form.back} variant="ghost">
-            <ArrowLeft />{translate('ui.common.back')}</Button>
-        }
-        title={translate('ui.announcement.newTitle')}
+    <ComposerLayout
+      busy={busy}
+      onBack={form.back}
+      onSubmit={form.submit}
+      submitBusyLabel={translate('ui.announcement.publishing')}
+      submitDisabled={
+        !form.title.trim() ||
+        !form.content.trim() ||
+        !form.contentWithinLimit ||
+        busy
+      }
+      submitLabel={translate('ui.announcement.publish')}
+      succeeded={form.succeeded}
+      title={translate('ui.announcement.newTitle')}
+    >
+      <ComposerField
+        attachments={form.images.images}
+        attachmentsUploading={form.images.uploading}
+        content={form.content}
+        contentLabel={translate('ui.announcement.contentLabel')}
+        onContentChange={form.setContent}
+        onPickImages={(files) => void form.images.pick(files)}
+        onRemoveImage={form.images.remove}
+        onTitleChange={form.setTitle}
+        placeholder={translate('ui.announcement.contentPlaceholder')}
+        title={form.title}
+        titleLabel={translate('ui.announcement.titleLabel')}
+        titlePlaceholder={translate('ui.announcement.titlePlaceholder')}
       />
-      <form className="min-w-0" onSubmit={form.submit}>
-        <Card className="-mx-[var(--page-gutter)] min-w-0 rounded-none border-x-0 py-5 sm:mx-0 sm:rounded-xl sm:border-x sm:py-6">
-          <CardContent className="min-w-0 max-w-full px-4 sm:px-7">
-            <ComposerField
-              attachments={form.images.images}
-              attachmentsUploading={form.images.uploading}
-              content={form.content}
-              contentLabel={translate('ui.announcement.contentLabel')}
-              onContentChange={form.setContent}
-              onPickImages={(files) => void form.images.pick(files)}
-              onRemoveImage={form.images.remove}
-              onTitleChange={form.setTitle}
-              placeholder={translate('ui.announcement.contentPlaceholder')}
-              title={form.title}
-              titleLabel={translate('ui.announcement.titleLabel')}
-              titlePlaceholder={translate('ui.announcement.titlePlaceholder')}
-            />
-            <div className="mt-6 flex justify-end">
-              <Button
-                disabled={
-                  !form.title.trim() ||
-                  !form.content.trim() ||
-                  !form.contentWithinLimit ||
-                  form.saving ||
-                  form.images.uploading
-                }
-                type="submit"
-              >
-                {form.saving || form.images.uploading ? null : <ArrowUp />}
-                <BusyLabel
-                  busy={form.saving || form.images.uploading}
-                  busyLabel={translate('ui.announcement.publishing')}
-                  label={translate('ui.announcement.publish')}
-                  success={form.succeeded}
-                />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </form>
-    </div>
+    </ComposerLayout>
   );
 }

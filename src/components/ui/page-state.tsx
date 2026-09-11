@@ -3,6 +3,7 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import { AlertCircle, Inbox, RefreshCw } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { timing } from "@/lib/motion-timing";
 import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -145,7 +146,7 @@ export function BusyLabel({
           initial={{ opacity: 0, scale: 0.94, y: 5 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.94, y: -5 }}
-          transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+          transition={timing("control")}
         >
           {busy ? (
             <ActionFeedbackIcon

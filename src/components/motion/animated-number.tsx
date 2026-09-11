@@ -1,8 +1,17 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
+import { timing } from "@/lib/motion-timing";
 import { cn } from "@/lib/utils";
 
+/**
+ * A number that changed while the user was looking at it rolls to its new
+ * value: the old one leaves upward, the new one arrives from below.
+ *
+ * The whole value moves as one. Animating each digit on its own delay turned a
+ * count going from 9 to 10 into a small piece of choreography, which is a lot
+ * of attention to spend on a number nobody asked to watch.
+ */
 export function AnimatedNumber({
   className,
   value,
@@ -11,7 +20,6 @@ export function AnimatedNumber({
   value: number | string;
 }) {
   const text = String(value);
-  const reduceMotion = useReducedMotion();
   return (
     <span
       className={cn(
@@ -22,38 +30,15 @@ export function AnimatedNumber({
     >
       <AnimatePresence initial={false} mode="popLayout">
         <motion.span
-          className="inline-flex whitespace-nowrap"
-          key={text}
           aria-hidden
-          exit={reduceMotion ? undefined : { filter: "blur(2px)", opacity: 0, y: -4 }}
-          transition={{ duration: 0.15, ease: "easeInOut" }}
+          animate={{ opacity: 1, y: 0 }}
+          className="inline-flex whitespace-nowrap"
+          exit={{ opacity: 0, y: -8 }}
+          initial={{ opacity: 0, y: 8 }}
+          key={text}
+          transition={timing("control")}
         >
-          {Array.from(text).map((character, index) => {
-            const trailingIndex = Math.max(0, index - (text.length - 2));
-            return (
-              <motion.span
-                className="inline-block"
-                initial={
-                  reduceMotion
-                    ? false
-                    : { filter: "blur(2px)", opacity: 0, y: 8 }
-                }
-                animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
-                key={`${character}-${index}`}
-                transition={
-                  reduceMotion
-                    ? { duration: 0 }
-                    : {
-                        delay: trailingIndex * 0.07,
-                        duration: 0.5,
-              ease: [0.16, 1, 0.3, 1],
-                      }
-                }
-              >
-                {character}
-              </motion.span>
-            );
-          })}
+          {text}
         </motion.span>
       </AnimatePresence>
     </span>
@@ -67,17 +52,16 @@ export function AnimatedText({
   className?: string;
   text: string;
 }) {
-  const reduceMotion = useReducedMotion();
   return (
     <span className={cn("inline-grid overflow-hidden", className)}>
       <AnimatePresence initial={false} mode="popLayout">
         <motion.span
+          animate={{ opacity: 1, y: 0 }}
           className="col-start-1 row-start-1"
+          exit={{ opacity: 0, y: -4 }}
+          initial={{ opacity: 0, y: 4 }}
           key={text}
-          initial={reduceMotion ? false : { filter: "blur(2px)", opacity: 0, y: 4 }}
-          animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
-          exit={reduceMotion ? undefined : { filter: "blur(2px)", opacity: 0, y: -4 }}
-          transition={{ duration: reduceMotion ? 0 : 0.15, ease: "easeInOut" }}
+          transition={timing("control")}
         >
           {text}
         </motion.span>

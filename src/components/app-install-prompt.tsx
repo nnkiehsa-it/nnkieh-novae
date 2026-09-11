@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Copy, Download, ExternalLink, Share2, TriangleAlert } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { timing } from "@/lib/motion-timing";
 import { useAppInstallPrompt } from "@/hooks/use-app-install-prompt";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
@@ -117,7 +118,7 @@ export function AppInstallPrompt() {
             exit={{ opacity: 0, scale: 0.98, x: confirmingDismiss ? 12 : -12 }}
             initial={{ opacity: 0, scale: 0.98, x: confirmingDismiss ? -12 : 12 }}
             key={confirmingDismiss ? "confirm-dismiss" : mode}
-            transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+            transition={timing("sheetExit")}
           >
             <DialogHeader>
               <div className="mb-1 flex size-10 items-center justify-center rounded-xl bg-accent text-foreground">

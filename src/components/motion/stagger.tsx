@@ -1,9 +1,18 @@
 "use client";
 
 import type { ComponentProps, ReactNode } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
+import { timing } from "@/lib/motion-timing";
 import { cn } from "@/lib/utils";
 
+/**
+ * A list whose rows animate only once the list itself is already on screen.
+ *
+ * `initial={false}` is the whole point: the rows a list is born with do not
+ * animate. iOS never animates a table view's first paint, and animating it here
+ * meant every navigation arrived at a page that was still assembling itself,
+ * underneath a route transition that had already delivered it.
+ */
 export function StaggerList({
   children,
   className,
@@ -11,25 +20,26 @@ export function StaggerList({
 }: Omit<ComponentProps<"div">, "children"> & { children: ReactNode }) {
   return (
     <div className={cn("t-stagger-list relative", className)} {...props}>
-      <AnimatePresence>
-        {children}
-      </AnimatePresence>
+      <AnimatePresence initial={false}>{children}</AnimatePresence>
     </div>
   );
 }
 
-// List entry and exit is an opacity handoff on the --motion-content rung.
-// Blurring or displacing each row made an ordinary re-render read as a reload.
-export function StaggerItem({ className, initial, ...props }: ComponentProps<typeof motion.div>) {
-  const reduced = useReducedMotion();
-  const defaultInitial = reduced ? false : { opacity: 0 };
+// Rows added or removed later hand over on opacity alone, on one rung, with no
+// stagger between them: blurring or displacing each row made an ordinary
+// re-render read as a reload, and delaying each row by its index made the row
+// the user was reaching for the last one to arrive.
+export function StaggerItem({
+  className,
+  ...props
+}: ComponentProps<typeof motion.div>) {
   return (
     <motion.div
       className={cn("t-stagger-item", className)}
-      initial={initial !== undefined ? initial : defaultInitial}
+      initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={reduced ? undefined : { opacity: 0 }}
-      transition={reduced ? { duration: 0 } : { duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+      exit={{ opacity: 0 }}
+      transition={timing("control")}
       {...props}
     />
   );

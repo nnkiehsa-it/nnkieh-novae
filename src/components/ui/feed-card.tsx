@@ -54,7 +54,7 @@ export function FeedProgress({ children, value }: { children: ReactNode; value?:
       {children}
       <div className="h-1.5 overflow-hidden rounded-full bg-border">
         {value !== undefined ? (
-          <span className="block h-full origin-left rounded-full bg-tint-content transition-transform duration-[var(--motion-content)] ease-[var(--ease-arrive)]" style={{ transform: `scaleX(${value / 100})` }} />
+          <span className="block h-full origin-left rounded-full bg-tint-content transition-transform duration-[var(--motion-control)] ease-[var(--ease-arrive)]" style={{ transform: `scaleX(${value / 100})` }} />
         ) : null}
       </div>
     </div>

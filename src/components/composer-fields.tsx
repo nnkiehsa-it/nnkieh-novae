@@ -9,6 +9,12 @@ import { cn } from "@/lib/utils";
 
 import { INPUT_LIMITS } from "@/constants/input-limits";
 
+/**
+ * The composer's own fields. `pending` renders the identical structure with the
+ * editor stood down to its loading box, so the route skeleton is this component
+ * rather than a hand-built imitation of it and the two states occupy the same
+ * geometry down to the character counters.
+ */
 export function ComposerField({
   attachments,
   attachmentsUploading,
@@ -18,6 +24,7 @@ export function ComposerField({
   onPickImages,
   onRemoveImage,
   onTitleChange,
+  pending = false,
   placeholder,
   title,
   titleLabel,
@@ -31,6 +38,7 @@ export function ComposerField({
   onPickImages: (files: FileList | null) => void;
   onRemoveImage: (index: number) => void;
   onTitleChange: (value: string) => void;
+  pending?: boolean;
   placeholder: string;
   title: string;
   titleLabel: string;
@@ -55,6 +63,7 @@ export function ComposerField({
           </span>
         </div>
         <Input
+          disabled={pending}
           id="composer-title"
           maxLength={INPUT_LIMITS.title}
           onChange={(event) => onTitleChange(event.target.value)}
@@ -77,16 +86,20 @@ export function ComposerField({
             {content.length} / {INPUT_LIMITS.content}
           </span>
         </div>
-        <MarkdownEditor
-          ariaDescribedBy="composer-content-count"
-          ariaLabel={contentLabel}
-          content={content}
-          id="composer-content"
-          maxLength={INPUT_LIMITS.content}
-          onChange={onContentChange}
-          onPickImages={onPickImages}
-          placeholder={placeholder}
-        />
+        {pending ? (
+          <div aria-hidden className="novae-markdown-editor is-loading" />
+        ) : (
+          <MarkdownEditor
+            ariaDescribedBy="composer-content-count"
+            ariaLabel={contentLabel}
+            content={content}
+            id="composer-content"
+            maxLength={INPUT_LIMITS.content}
+            onChange={onContentChange}
+            onPickImages={onPickImages}
+            placeholder={placeholder}
+          />
+        )}
         {content.length > INPUT_LIMITS.content ? (
           <p className="text-xs leading-5 text-destructive" role="alert">
             {translate("markdown.contentTooLong", { count: INPUT_LIMITS.content })}

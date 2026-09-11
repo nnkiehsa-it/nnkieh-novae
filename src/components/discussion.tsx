@@ -5,6 +5,7 @@ import * as React from "react";
 import { ChevronDown, MessageCircle, X } from "lucide-react";
 import { toast } from "sonner";
 import { AnimatePresence, motion } from "motion/react";
+import { timing } from "@/lib/motion-timing";
 import type { CommentSortOption, DiscussionCommentRecord } from "@/types";
 import { useDiscussionProfiles } from "@/hooks/use-public-profiles";
 import { useSession } from "@/hooks/use-session";
@@ -178,7 +179,7 @@ export function Discussion({
                 initial={{ height: 0, opacity: 0, y: 8 }}
                 animate={{ height: "auto", opacity: 1, y: 0 }}
                 exit={{ height: 0, opacity: 0, y: 8 }}
-                transition={{ type: "spring", stiffness: 380, damping: 36, mass: 0.72 }}
+                transition={timing("control")}
               >
                 <div className="min-w-0 flex-1 text-xs leading-5">
                   {profiles[replyTarget.authorUid] ? (

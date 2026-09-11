@@ -4,6 +4,7 @@ import * as React from "react";
 import { ChevronDown, Reply, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AnimatePresence, motion } from "motion/react";
+import { timing } from "@/lib/motion-timing";
 import { t as translate } from "@/i18n";
 import type { DiscussionCommentRecord, UserPublicProfile } from "@/types";
 import { formatRelativeTime } from "@/lib/format";
@@ -62,7 +63,7 @@ export function CommentThread({
               initial={{ height: 0, opacity: 0, y: -8 }}
               animate={{ height: "auto", opacity: 1, y: 0 }}
               exit={{ height: 0, opacity: 0, y: -6 }}
-              transition={{ type: "spring", stiffness: 360, damping: 36, mass: 0.75 }}
+              transition={timing("control")}
             >
               {comment.replies.map((reply) => (
                 <CommentRow

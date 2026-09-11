@@ -1,45 +1,23 @@
 /*
- * One duration ladder and one easing set. A recipe picks a rung by what the
- * motion means, never by feel; if an interaction does not fit a rung, the
- * ladder is wrong, not the recipe.
+ * The whole motion system, expressed on one ladder.
+ *
+ * The ladder itself is generated into src/generated/motion-ladder.css from
+ * config/motion.config.json, and that same config generates the rungs used by
+ * animations driven from JavaScript, so CSS and Motion cannot drift apart. A
+ * recipe here picks a rung by what the motion means, never by feel; if an
+ * interaction does not fit a rung, the ladder is wrong, not the recipe.
+ *
+ * The pacing is iOS's: a touch is acknowledged in a tenth of a second, a
+ * control settles in a quarter, moving to another place takes a third, and a
+ * layer presented over the current place takes the longest because it travels
+ * the furthest.
+ *
+ * What is deliberately not animated matters as much as what is. Furniture does
+ * not fade in, lists do not stagger, and anything already on screen when a
+ * route arrives is carried by the route transition rather than animating again
+ * underneath it.
  */
 :root {
-  --motion-press: 110ms; /* the finger is acknowledged */
-  --motion-control: 200ms; /* a small control, icon or indicator settles */
-  --motion-content: 260ms; /* a menu opens, content is replaced */
-  --motion-surface: 320ms; /* a dialog or sheet is presented */
-  --motion-page: 400ms; /* the information hierarchy is entered or left */
-  --motion-emphasis: 460ms; /* a result is confirmed, once */
-
-  /* Leaving is shorter than arriving so what is dismissed never competes with
-     what replaces it. Page navigation is the exception: push and pop move both
-     surfaces together and therefore share --motion-page. */
-  --motion-exit-control: 140ms;
-  --motion-exit-content: 170ms;
-  --motion-exit-surface: 220ms;
-
-  /* Arrivals decelerate, dismissals accelerate, travel between two known
-     positions is symmetric, pages use the iOS navigation curve, and exactly one
-     curve is allowed to overshoot. */
-  --ease-arrive: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-depart: cubic-bezier(0.4, 0, 1, 1);
-  --ease-move: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-page: cubic-bezier(0.32, 0.72, 0, 1);
-  --ease-spring: cubic-bezier(0.22, 1.2, 0.36, 1);
-
-  /* Travel. Everything that rises, rises by the same amount. */
-  --motion-lift: 6px;
-  --motion-rise: 12px;
-  --motion-press-scale: 0.98;
-  --motion-surface-scale: 0.97;
-  --motion-page-parallax: 20%;
-  --motion-page-dim: 0.9;
-
-  /* Indeterminate loops. They repeat, so they sit outside the ladder, but they
-     are still named once rather than restated per recipe. */
-  --motion-spin: 800ms;
-  --motion-sweep: 1100ms;
-  --pulse-dur: 2200ms;
   --pulse-count: 1;
   --pulse-min: 0.6;
   --skeleton-appear-delay: 0ms;
@@ -76,33 +54,21 @@
 }
 
 /* An unrelated route — a primary navigation change, or one sibling swapped for
-   another — is a replacement in place, at every width. */
+   another — is a replacement in place, at every width. It crossfades and does
+   not travel: movement would claim a direction this navigation does not have. */
 ::view-transition-old(.t-route-out) {
-  animation: t-route-fade-out var(--motion-exit-content) var(--ease-depart) both;
+  animation: t-fade-out var(--motion-control-exit) var(--ease-depart) both;
 }
 ::view-transition-new(.t-route-in) {
-  animation: t-route-fade-in var(--motion-content) var(--ease-arrive) both;
-}
-@keyframes t-route-fade-out {
-  to {
-    opacity: 0;
-  }
-}
-@keyframes t-route-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(var(--motion-lift));
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  animation: t-fade-in var(--motion-control) var(--ease-arrive) both;
 }
 
 /* Entering a child route pushes it in from the trailing edge while the parent
    parallaxes away; leaving it plays the same two animations reversed, so pop is
-   push read backwards rather than a second recipe. Only the mobile shell gets
-   this: on a desktop layout a child route is a replacement, not a place. */
+   push read backwards rather than a second recipe. Only the geometry is read
+   backwards -- the mirrored curve keeps the pace of going back identical to the
+   pace of going in. Only the mobile shell gets this: on a desktop layout a
+   child route is a replacement, not a place. */
 @media (max-width: 47.99rem) {
   :root[data-nav-direction="push"]::view-transition-group(.t-route-in),
   :root[data-nav-direction="pop"]::view-transition-group(.t-route-out) {
@@ -113,16 +79,18 @@
     z-index: 1;
   }
   :root[data-nav-direction="push"]::view-transition-new(.t-route-in) {
-    animation: t-route-advance var(--motion-page) var(--ease-page) both;
+    animation: t-route-advance var(--motion-nav) var(--ease-nav) both;
   }
   :root[data-nav-direction="push"]::view-transition-old(.t-route-out) {
-    animation: t-route-recede var(--motion-page) var(--ease-page) both;
+    animation: t-route-recede var(--motion-nav) var(--ease-nav) both;
   }
   :root[data-nav-direction="pop"]::view-transition-old(.t-route-out) {
-    animation: t-route-advance var(--motion-page) var(--ease-page) reverse both;
+    animation: t-route-advance var(--motion-nav) var(--ease-nav-reversed)
+      reverse both;
   }
   :root[data-nav-direction="pop"]::view-transition-new(.t-route-in) {
-    animation: t-route-recede var(--motion-page) var(--ease-page) reverse both;
+    animation: t-route-recede var(--motion-nav) var(--ease-nav-reversed)
+      reverse both;
   }
 }
 /* A history traversal never runs inside a React Transition -- Next keeps Back
@@ -153,8 +121,8 @@
     transform: translateX(0);
   }
   to {
-    opacity: var(--motion-page-dim);
-    transform: translateX(calc(-1 * var(--motion-page-parallax)));
+    opacity: var(--motion-nav-dim);
+    transform: translateX(calc(-1 * var(--motion-nav-parallax)));
   }
 }
 
@@ -173,23 +141,15 @@
    explicitly, or it would swap themes ahead of everything around it. */
 html[data-theme-transition="true"]::view-transition-old(app-mobile-nav),
 html[data-theme-transition="true"]::view-transition-old(root) {
-  animation: t-theme-out var(--motion-exit-surface) var(--ease-depart) both;
+  animation: t-theme-out var(--motion-control-exit) var(--ease-depart) both;
 }
 html[data-theme-transition="true"]::view-transition-new(app-mobile-nav),
 html[data-theme-transition="true"]::view-transition-new(root) {
-  animation: t-theme-in var(--motion-emphasis) var(--ease-arrive) both;
+  animation: t-fade-in var(--motion-sheet) var(--ease-arrive) both;
 }
 @keyframes t-theme-out {
   to {
     opacity: 0.35;
-  }
-}
-@keyframes t-theme-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
   }
 }
 
@@ -240,7 +200,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   [data-slot="select-trigger"]
 ):not(:disabled, [aria-disabled="true"], [data-disabled]):active {
   transform: translateY(1px) scale(var(--motion-press-scale));
-  transition-duration: var(--motion-press);
+  transition-duration: var(--motion-touch);
 }
 
 /* A card is a large surface, so it takes an even smaller share of the press. */
@@ -252,8 +212,8 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     transform var(--motion-control) var(--ease-arrive);
 }
 .t-card:active {
-  transform: translateY(1px) scale(0.99);
-  transition-duration: var(--motion-press);
+  transform: translateY(1px) scale(var(--motion-card-press-scale));
+  transition-duration: var(--motion-touch);
 }
 
 .t-input:focus-visible {
@@ -271,6 +231,11 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   transform: translateX(2px) rotate(90deg);
 }
 
+/* Tapping a destination has to be answered before the destination commits,
+   because on the web it may not commit for another second. The echo is that
+   answer, and it belongs to navigation alone: an ordinary button is already
+   answered by the press state above, and echoing it as well doubled the
+   feedback without adding any meaning. */
 .t-navigation-echo {
   border: 1px solid color-mix(in srgb, var(--tint-content) 24%, transparent);
   background: color-mix(in srgb, var(--tint-content) 9%, transparent);
@@ -282,29 +247,23 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 }
 
 /* Primary navigation acknowledges the tap before the destination commits. It is
-   a selection, not a push, so it settles in place. */
+   a selection, not a push, so it settles in place without overshooting: the
+   dock is furniture, and furniture that springs reads as a glitch. */
 .t-primary-nav-link > span:first-child {
-  transition: transform var(--motion-control) var(--ease-spring);
-}
-.t-primary-nav-link[data-active="true"] {
-  animation: t-nav-settle var(--motion-control) var(--ease-spring) both;
+  transition: transform var(--motion-control) var(--ease-arrive);
 }
 .t-primary-nav-link[data-active="true"] > span:first-child {
   transform: translateY(-1px) scale(1.08);
 }
-@keyframes t-nav-settle {
-  from {
-    transform: scale(0.97);
-  }
-  to {
-    transform: scale(1);
-  }
-}
 
 /* Entrances -------------------------------------------------------------- */
 
+/* A panel that is genuinely new on a screen the user is already looking at
+   rises into place. Furniture that merely arrived with its route does not: the
+   route transition already carried it in, and animating it again underneath
+   that is what made an ordinary navigation read as a reload. */
 .t-panel-reveal {
-  animation: t-panel-reveal var(--motion-content) var(--ease-arrive) both;
+  animation: t-panel-reveal var(--motion-control) var(--ease-arrive) both;
 }
 @keyframes t-panel-reveal {
   from {
@@ -333,11 +292,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   will-change: height;
 }
 
-/* Cards arrive on opacity alone. Blurring every card on every mount made
-   ordinary scrolling read as a page-wide effect. */
-.t-card-surface {
-  animation: t-fade-in var(--motion-control) var(--ease-arrive) both;
-}
 @keyframes t-fade-in {
   from {
     opacity: 0;
@@ -346,9 +300,17 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     opacity: 1;
   }
 }
+@keyframes t-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
 
 .t-update-stage {
-  animation: t-panel-reveal var(--motion-content) var(--ease-arrive) both;
+  animation: t-panel-reveal var(--motion-control) var(--ease-arrive) both;
 }
 
 /* Menus and overlays ------------------------------------------------------ */
@@ -357,10 +319,10 @@ html[data-theme-transition="true"]::view-transition-new(root) {
    trigger, so the menu grows out of what opened it. No per-item stagger — a
    menu is one object, and staggering it delayed the item the user aimed at. */
 .t-dropdown[data-state="open"] {
-  animation: t-dropdown-in var(--motion-content) var(--ease-arrive) both;
+  animation: t-dropdown-in var(--motion-control) var(--ease-arrive) both;
 }
 .t-dropdown[data-state="closed"] {
-  animation: t-dropdown-out var(--motion-exit-content) var(--ease-depart) both;
+  animation: t-dropdown-out var(--motion-control-exit) var(--ease-depart) both;
 }
 @keyframes t-dropdown-in {
   from {
@@ -384,25 +346,19 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 }
 
 .t-overlay[data-state="open"] {
-  animation: t-fade-in var(--motion-content) var(--ease-arrive) both;
+  animation: t-fade-in var(--motion-control) var(--ease-arrive) both;
 }
 .t-overlay[data-state="closed"] {
-  animation: t-fade-out var(--motion-exit-surface) var(--ease-depart) both;
-}
-@keyframes t-fade-out {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
+  animation: t-fade-out var(--motion-control-exit) var(--ease-depart) both;
 }
 
+/* A centred alert is the iOS alert: it scales up in place on the control rung,
+   because it interrupts rather than travels. */
 .t-dialog[data-state="open"] {
-  animation: t-dialog-in var(--motion-surface) var(--ease-arrive) both;
+  animation: t-dialog-in var(--motion-control) var(--ease-arrive) both;
 }
 .t-dialog[data-state="closed"] {
-  animation: t-dialog-out var(--motion-exit-surface) var(--ease-depart) both;
+  animation: t-dialog-out var(--motion-control-exit) var(--ease-depart) both;
 }
 @keyframes t-dialog-in {
   from {
@@ -426,9 +382,11 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 }
 
 /* On a phone an action, status or editor overlay is a sheet: it owns the
-   bottom edge, arrives along one axis, and reads as a layer over the page
-   rather than an object floating in front of it. Destructive confirmation
-   keeps the centred alert, because a sheet invites dismissal. */
+   bottom edge, arrives along one axis on the navigation curve, and reads as a
+   layer over the page rather than an object floating in front of it. It travels
+   further than anything else in the system, so it takes the longest rung.
+   Destructive confirmation keeps the centred alert, because a sheet invites
+   dismissal. */
 @media (max-width: 47.99rem) {
   [data-slot="dialog-content"].t-sheet {
     max-width: none;
@@ -438,10 +396,10 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     padding-bottom: max(1.5rem, calc(var(--safe-bottom) + 0.75rem));
   }
   .t-sheet[data-state="open"] {
-    animation: t-sheet-in var(--motion-surface) var(--ease-page) both;
+    animation: t-sheet-in var(--motion-sheet) var(--ease-nav) both;
   }
   .t-sheet[data-state="closed"] {
-    animation: t-sheet-out var(--motion-exit-surface) var(--ease-depart) both;
+    animation: t-sheet-out var(--motion-sheet-exit) var(--ease-depart) both;
   }
 }
 @keyframes t-sheet-in {
@@ -466,7 +424,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   animation: t-dropdown-in var(--motion-control) var(--ease-arrive) both;
 }
 .t-tooltip[data-state="closed"] {
-  animation: t-dropdown-out var(--motion-press) var(--ease-depart) both;
+  animation: t-dropdown-out var(--motion-touch) var(--ease-depart) both;
 }
 
 /* Sonner owns stack position in --y; this layer owns the rise and the fade. */
@@ -479,17 +437,17 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   transform: var(--y) translateY(var(--motion-rise));
   will-change: transform, opacity;
   transition:
-    opacity var(--motion-exit-content) var(--ease-depart),
-    transform var(--motion-exit-content) var(--ease-depart),
-    height var(--motion-exit-content) var(--ease-depart) !important;
+    opacity var(--motion-control-exit) var(--ease-depart),
+    transform var(--motion-control-exit) var(--ease-depart),
+    height var(--motion-control-exit) var(--ease-depart) !important;
 }
 .t-toast[data-sonner-toast][data-mounted="true"][data-removed="false"] {
   opacity: 1;
   transform: var(--y) translateY(0);
   transition:
-    opacity var(--motion-content) var(--ease-arrive),
-    transform var(--motion-content) var(--ease-arrive),
-    height var(--motion-content) var(--ease-arrive) !important;
+    opacity var(--motion-control) var(--ease-arrive),
+    transform var(--motion-control) var(--ease-arrive),
+    height var(--motion-control) var(--ease-arrive) !important;
 }
 .t-toast[data-sonner-toast][data-removed="true"][data-swipe-out="false"] {
   opacity: 0;
@@ -499,13 +457,13 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 .t-notification-badge {
   transform-origin: center;
   transition:
-    transform var(--motion-content) var(--ease-spring),
-    opacity var(--motion-content) var(--ease-arrive);
+    transform var(--motion-control) var(--ease-bounce),
+    opacity var(--motion-control) var(--ease-arrive);
 }
 .t-notification-badge[data-open="false"] {
   opacity: 0;
   transform: scale(0);
-  transition-duration: var(--motion-exit-control);
+  transition-duration: var(--motion-control-exit);
   transition-timing-function: var(--ease-depart);
 }
 
@@ -556,7 +514,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   translate: 0 0;
   will-change: translate;
   transition:
-    translate var(--motion-control) var(--ease-spring),
+    translate var(--motion-control) var(--ease-bounce),
     background-color var(--motion-control) var(--ease-move);
 }
 [data-state="checked"] .t-toggle-thumb {
@@ -582,7 +540,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 }
 
 .t-shake[data-error="true"] {
-  animation: t-shake var(--motion-content) linear;
+  animation: t-shake var(--motion-control) linear;
 }
 @keyframes t-shake {
   0% {
@@ -614,7 +572,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   visibility: hidden;
   animation:
     t-skeleton-show 0s linear var(--skeleton-appear-delay) forwards,
-    t-skeleton-pulse var(--pulse-dur) ease-in-out var(--skeleton-appear-delay) infinite;
+    t-skeleton-pulse var(--motion-pulse) ease-in-out var(--skeleton-appear-delay) infinite;
 }
 .t-skeleton::after {
   content: "";
@@ -627,7 +585,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     color-mix(in srgb, var(--shimmer-highlight) 12%, transparent) 50%,
     transparent 100%
   );
-  animation: t-skeleton-shimmer var(--pulse-dur) ease-in-out var(--skeleton-appear-delay) infinite;
+  animation: t-skeleton-shimmer var(--motion-pulse) ease-in-out var(--skeleton-appear-delay) infinite;
 }
 @keyframes t-skeleton-show {
   to {
@@ -670,7 +628,9 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 }
 
 /* Skeleton hands off to content on opacity alone, in place. Moving each field
-   into position made a finished load look like a fresh page. */
+   into position made a finished load look like a fresh page — which is also why
+   a skeleton has to be built from the component it stands in for, so the two
+   states occupy the same box and the crossfade has nothing to hide. */
 .t-skel {
   position: relative;
   display: inline-block;
@@ -687,13 +647,13 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   z-index: 1;
   opacity: 1;
   pointer-events: none;
-  transition: opacity var(--motion-content) var(--ease-move);
+  transition: opacity var(--motion-control) var(--ease-move);
 }
 .t-skel-content {
   z-index: 2;
   position: relative;
   opacity: 0;
-  transition: opacity var(--motion-content) var(--ease-move);
+  transition: opacity var(--motion-control) var(--ease-move);
 }
 .t-skel.is-revealed .t-skel-skeleton {
   opacity: 0;
@@ -710,7 +670,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   }
 }
 .t-skel-skeleton.is-pulsing > * {
-  animation: t-skel-pulse var(--pulse-dur) ease-in-out var(--pulse-count);
+  animation: t-skel-pulse var(--motion-pulse) ease-in-out var(--pulse-count);
 }
 @keyframes t-skel-pulse {
   0%,
@@ -743,7 +703,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: t-shimmer var(--pulse-dur) linear infinite;
+  animation: t-shimmer var(--motion-pulse) linear infinite;
 }
 @keyframes t-shimmer {
   from {
@@ -843,7 +803,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   justify-self: center;
   transition:
     opacity var(--motion-control) var(--ease-move),
-    transform var(--motion-control) var(--ease-spring);
+    transform var(--motion-control) var(--ease-bounce);
 }
 .t-spinner-check-success {
   width: 1.25rem;
@@ -872,7 +832,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 }
 
 .t-success-check[data-state="in"] {
-  animation: t-success-in var(--motion-control) var(--ease-spring) both;
+  animation: t-success-in var(--motion-control) var(--ease-bounce) both;
 }
 .t-success-check[data-state="out"] {
   opacity: 0;
@@ -882,7 +842,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   stroke-dashoffset: var(--check-length, 24);
 }
 .t-success-check[data-state="in"] path {
-  animation: t-success-draw var(--motion-content) var(--ease-move) var(--motion-press) forwards;
+  animation: t-success-draw var(--motion-control) var(--ease-move) var(--motion-touch) forwards;
 }
 @keyframes t-success-in {
   from {
@@ -902,16 +862,17 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 
 /* Closed-content notice: reveal the final outcome as a state transition. */
 .t-resolution-notice {
-  animation: t-panel-reveal var(--motion-content) var(--ease-arrive) both;
+  animation: t-panel-reveal var(--motion-control) var(--ease-arrive) both;
 }
 .t-resolution-notice [data-resolution-icon] {
-  animation: t-success-in var(--motion-emphasis) var(--ease-spring) both;
+  animation: t-success-in var(--motion-sheet) var(--ease-bounce) both;
 }
 
 /* Reactions -------------------------------------------------------------- */
 
 /* Reactions are deliberately the most expressive thing in the system: they are
-   the one tap that is about delight rather than navigation. */
+   the one tap that is about delight rather than navigation, and the only place
+   the overshoot curve is allowed to read as an overshoot. */
 .t-like {
   position: relative;
 }
@@ -931,7 +892,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   color: var(--like-accent);
 }
 .t-like[data-accent="heart"][data-celebrating] .t-reaction-icon {
-  animation: t-like-pop var(--motion-surface) var(--ease-spring) both;
+  animation: t-like-pop var(--motion-sheet) var(--ease-bounce) both;
 }
 @keyframes t-like-pop {
   0% {
@@ -949,7 +910,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 }
 .t-like[data-accent="hand"][data-celebrating] .t-reaction-icon {
   transform-origin: 50% 82%;
-  animation: t-hand-raise var(--motion-emphasis) var(--ease-spring) both;
+  animation: t-hand-raise var(--motion-sheet) var(--ease-bounce) both;
 }
 @keyframes t-hand-raise {
   0% {
@@ -1083,9 +1044,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     animation: none !important;
     transition: none !important;
     transform: none !important;
-  }
-  .t-card-surface {
-    animation: none !important;
   }
   .t-input,
   .t-disclosure-icon,

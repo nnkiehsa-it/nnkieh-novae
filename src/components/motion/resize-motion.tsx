@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { timingMs } from "@/lib/motion-timing";
 
 interface Size {
   height: number;
@@ -40,8 +41,6 @@ export function ResizeMotion() {
       const previous = sizes.get(element);
       sizes.set(element, next);
       if (reduced.matches || !previous || !previous.height || !changed(previous, next)) return;
-      const style = getComputedStyle(element);
-      const duration = Number.parseFloat(style.getPropertyValue("--motion-control")) || 200;
       const resizeState: ActiveResize = {
         frame: null,
         timer: null,
@@ -59,7 +58,7 @@ export function ResizeMotion() {
         element.style.height = `${next.height}px`;
         resizeState.timer = window.setTimeout(() => {
           if (active.get(element) === resizeState) restore(element, resizeState);
-        }, duration + 50);
+        }, timingMs("control") + 50);
       });
     }
 

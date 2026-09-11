@@ -102,10 +102,7 @@ export default function NotificationsPage() {
                 const notification = state.notifications[index];
                 const rowIdentity = pending ? "loading" : notification ? notification.id : view;
                 return (
-                  <StaggerItem
-                    initial={index < SKELETON_ROWS ? false : undefined}
-                    key={index}
-                  >
+                  <StaggerItem key={index}>
                     <ContentTransition identity={rowIdentity}>
                       {notification ? (
                         <button
@@ -140,7 +137,7 @@ export default function NotificationsPage() {
                               data-open="true"
                             />
                           ) : null}
-                          <ChevronRight className="mt-3 size-4 shrink-0 text-muted-foreground transition-transform duration-250 group-hover:translate-x-0.5" />
+                          <ChevronRight className="mt-3 size-4 shrink-0 text-muted-foreground transition-transform duration-[var(--motion-control)] group-hover:translate-x-0.5" />
                         </button>
                       ) : pending ? (
                         <NotificationRowSkeleton />

@@ -2,6 +2,7 @@
 @import "tailwindcss";
 @import "@heroui/styles";
 @import "tw-animate-css";
+@import "../generated/motion-ladder.css";
 @import "../styles/motion.css";
 
 @custom-variant dark (&:is(.dark *));
@@ -349,8 +350,8 @@ html[data-input-modality="pointer"] :focus-visible {
   visibility: hidden;
   transition:
     opacity var(--motion-control) var(--ease-move),
-    transform var(--motion-content) var(--ease-arrive),
-    visibility 0s linear var(--motion-content);
+    transform var(--motion-control) var(--ease-arrive),
+    visibility 0s linear var(--motion-control);
 }
 
 @media (display-mode: standalone) {

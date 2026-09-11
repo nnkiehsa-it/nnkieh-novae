@@ -20,6 +20,13 @@ function hierarchy(pathname: string): string[] {
   return parent ? [...hierarchy(parent), ...segments] : segments;
 }
 
+// /issues only picks a default category and forwards to it. It is a doorway,
+// not a place, so crossing it has no direction worth animating: without this the
+// forward from /issues to /issues/<category> read as a push into a child route
+// and played the whole navigation animation on the way to somewhere the user
+// had already asked for.
+const FORWARDING_ROUTES: ReadonlySet<string> = new Set(["/issues"]);
+
 export type RouteRelation = "deeper" | "shallower" | "unrelated";
 
 /**
@@ -28,6 +35,7 @@ export type RouteRelation = "deeper" | "shallower" | "unrelated";
  * sibling for another, is neither.
  */
 export function compareRoutes(from: string, to: string): RouteRelation {
+  if (FORWARDING_ROUTES.has(from) || FORWARDING_ROUTES.has(to)) return "unrelated";
   const before = hierarchy(from);
   const after = hierarchy(to);
   const shared = Math.min(before.length, after.length);

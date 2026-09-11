@@ -1,4 +1,4 @@
-import { ComposerRouteSkeleton } from "@/components/ui/route-skeleton";
+import { ComposerRouteSkeleton } from "@/components/composer-route-skeleton";
 
 export default function Loading() {
   return <ComposerRouteSkeleton kind="issue" />;

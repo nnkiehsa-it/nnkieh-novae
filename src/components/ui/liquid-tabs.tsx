@@ -3,6 +3,7 @@
 import * as React from "react";
 import { motion } from "motion/react";
 import { Tabs as TabsPrimitive } from "radix-ui";
+import { timing } from "@/lib/motion-timing";
 
 import { cn } from "@/lib/utils";
 
@@ -89,7 +90,7 @@ export function LiquidTabs({
                   className="t-tabs-pill absolute inset-0 z-0 rounded-full"
                   initial={false}
                   layoutId={`liquid-tab-pill-${layoutId}`}
-                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                  transition={timing("control", "move")}
                 />
               ) : null}
               {option.icon ? (

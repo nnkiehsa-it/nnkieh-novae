@@ -1,7 +1,8 @@
 "use client";
 
 import type { ComponentProps, ReactNode } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
+import { timing } from "@/lib/motion-timing";
 import { cn } from "@/lib/utils";
 
 export function StateTransition({
@@ -26,6 +27,15 @@ export function StateTransition({
   );
 }
 
+/**
+ * Crossfades one state of a container for the next, in place.
+ *
+ * It never animates its own first render. Content that is on screen because its
+ * route just arrived is already being carried by the route transition, and
+ * fading it in again underneath that is what made an ordinary navigation read
+ * as a reload. Only a real change of identity animates: a skeleton handing off
+ * to content, or one entity replacing another in a frame the user is watching.
+ */
 export function ContentTransition({
   children,
   className,
@@ -35,22 +45,15 @@ export function ContentTransition({
   className?: string;
   identity: string;
 }) {
-  const reduced = useReducedMotion();
-  const transition = reduced
-    ? { duration: 0 }
-    : { duration: 0.2, ease: [0.4, 0, 0.2, 1] as const };
-  const entrance = reduced ? false : { opacity: 0 };
-  const exit = reduced ? undefined : { opacity: 0 };
-
   return (
-    <AnimatePresence initial mode="popLayout">
+    <AnimatePresence initial={false} mode="popLayout">
       <motion.div
         animate={{ opacity: 1 }}
         className={cn("t-state-content", className)}
-        exit={exit}
-        initial={entrance}
+        exit={{ opacity: 0 }}
+        initial={{ opacity: 0 }}
         key={identity}
-        transition={transition}
+        transition={timing("control", "move")}
       >
         {children}
       </motion.div>

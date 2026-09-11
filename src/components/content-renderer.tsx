@@ -60,7 +60,7 @@ export function ContentRenderer({
               {image.src ? (
                 <DecodedImage
                   alt={image.alt || fallbackAlt}
-                  className="size-full object-cover transition-transform duration-[var(--motion-content)] ease-[var(--ease-arrive)] group-hover:scale-[1.025]"
+                  className="size-full object-cover transition-transform duration-[var(--motion-control)] ease-[var(--ease-arrive)] group-hover:scale-[1.025]"
                   containerClassName="size-full"
                   height={image.height}
                   fetchPriority="low"
@@ -77,7 +77,7 @@ export function ContentRenderer({
                   )}
                 </span>
               )}
-              <span className="absolute bottom-2 right-2 grid size-7 translate-y-1 place-items-center rounded-full bg-black/60 text-white opacity-0 backdrop-blur-sm transition-[opacity,transform] duration-150 group-hover:translate-y-0 group-hover:opacity-100">
+              <span className="absolute bottom-2 right-2 grid size-7 translate-y-1 place-items-center rounded-full bg-black/60 text-white opacity-0 backdrop-blur-sm transition-[opacity,transform] duration-[var(--motion-control-exit)] group-hover:translate-y-0 group-hover:opacity-100">
                 <ZoomIn className="size-3.5" />
               </span>
             </button>
