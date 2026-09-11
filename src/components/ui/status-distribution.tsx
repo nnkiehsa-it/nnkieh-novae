@@ -36,19 +36,15 @@ export function StatusDistribution({
   if (total === 0) return null;
   return (
     <section aria-label={ariaLabel} className="grid gap-2.5 px-0.5">
-      {/* One state holding everything is not a distribution, and a bar that is all one
-          colour says less than the figure beneath it already does. */}
-      {filled.length > 1 ? (
-        <div aria-hidden className="flex h-1.5 gap-0.5 overflow-hidden rounded-full bg-muted">
-          {filled.map((segment) => (
-            <span
-              className="h-full min-w-1.5 rounded-full transition-[flex-grow] duration-[var(--motion-control)] ease-[var(--ease-move)]"
-              key={segment.key}
-              style={{ backgroundColor: segment.fill, flexGrow: segment.count }}
-            />
-          ))}
-        </div>
-      ) : null}
+      <div aria-hidden className="flex h-1.5 gap-0.5 overflow-hidden rounded-full bg-muted">
+        {filled.map((segment) => (
+          <span
+            className="h-full min-w-1.5 rounded-full transition-[flex-grow] duration-[var(--motion-control)] ease-[var(--ease-move)]"
+            key={segment.key}
+            style={{ backgroundColor: segment.fill, flexGrow: segment.count }}
+          />
+        ))}
+      </div>
       <ul className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
         {segments.map((segment) => (
           <li className="flex items-baseline gap-1.5" key={segment.key}>
