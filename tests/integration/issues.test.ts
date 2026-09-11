@@ -203,9 +203,9 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     titleQuery: "content public",
   }, user.auth));
   assert.ok((bodyMatch.issues as JsonRecord[]).some((issue) => issue.id === publicIssueId));
-  // The author's name is searchable only where the category shows the author.
-  // public-issues hides it, so a member searching that name finds nothing there
-  // while the author still finds their own proposal.
+  // The author's name is searchable exactly for whoever may see the author.
+  // public-issues hides it from members, so a member searching that name finds
+  // nothing there, while the author and the category's manager both do.
   const strangerAuthorMatch = asRecord(await callAction("searchIssues", {
     activeFilter: "public-issues",
     pageSize: 20,
@@ -225,6 +225,14 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     titleQuery: "Integration issue-owner",
   }, owner.auth));
   assert.ok((ownAuthorMatch.issues as JsonRecord[]).some((issue) => issue.id === publicIssueId));
+  const managerAuthorMatch = asRecord(await callAction("searchIssues", {
+    activeFilter: "public-issues",
+    pageSize: 20,
+    sort: "latest",
+    statusBucket: "active",
+    titleQuery: "Integration issue-owner",
+  }, publicManager.auth));
+  assert.ok((managerAuthorMatch.issues as JsonRecord[]).some((issue) => issue.id === publicIssueId));
 
   await expectActionError(
     "permission-denied",
