@@ -8,7 +8,7 @@
  * interaction does not fit a rung, the ladder is wrong, not the recipe.
  *
  * The pacing is iOS's: a touch is acknowledged in a tenth of a second, a
- * control settles in a quarter, moving to another place takes a third, and a
+ * control settles in a quarter, navigation has a longer deceleration, and a
  * layer presented over the current place takes the longest because it travels
  * the furthest.
  *
@@ -51,6 +51,16 @@
   margin-inline: auto;
   flex: 1 0 auto;
   background: var(--surface-stage);
+}
+
+/* Primary tabs use a live surface. A document snapshot would take the dock out
+   of hit testing and discard the next tap while the previous page settles. */
+.route-page[data-route-entry="replace"] {
+  animation: t-route-replace var(--motion-nav) var(--ease-arrive) both;
+}
+@keyframes t-route-replace {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
 }
 
 /* An unrelated route — a primary navigation change, or one sibling swapped for
@@ -126,24 +136,11 @@
   }
 }
 
-/* Persistent chrome is captured apart from the page so a sliding surface passes
-   beneath the floating navigation dock instead of blanking it out. The cost is
-   that a named participant leaves the hit-test tree until the transition ends;
-   the dock is worth it, because it is visible on every route that has one. */
-.app-mobile-nav {
-  view-transition-name: app-mobile-nav;
-}
-::view-transition-group(app-mobile-nav) {
-  z-index: 10;
-}
-
-/* Captured apart from the page, the dock has to be told about a theme change
-   explicitly, or it would swap themes ahead of everything around it. */
-html[data-theme-transition="true"]::view-transition-old(app-mobile-nav),
+/* Navigation stays in the live document so another tap can interrupt a route.
+   Theme changes crossfade the root, including the persistent chrome. */
 html[data-theme-transition="true"]::view-transition-old(root) {
   animation: t-theme-out var(--motion-control-exit) var(--ease-depart) both;
 }
-html[data-theme-transition="true"]::view-transition-new(app-mobile-nav),
 html[data-theme-transition="true"]::view-transition-new(root) {
   animation: t-fade-in var(--motion-sheet) var(--ease-arrive) both;
 }
@@ -211,13 +208,9 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     border-color var(--motion-control) var(--ease-move),
     transform var(--motion-control) var(--ease-arrive);
 }
-.t-card:active {
+.t-card:is(a[href], button, [role="button"]):active {
   transform: translateY(1px) scale(var(--motion-card-press-scale));
   transition-duration: var(--motion-touch);
-}
-
-.t-input:focus-visible {
-  transform: translateY(-1px);
 }
 
 .t-disclosure-icon {
@@ -248,14 +241,33 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   box-shadow: 0 0 14px color-mix(in srgb, var(--tint-content) 34%, transparent);
 }
 
-/* Primary navigation acknowledges the tap before the destination commits. It is
-   a selection, not a push, so it settles in place without overshooting: the
-   dock is furniture, and furniture that springs reads as a glitch. */
-.t-primary-nav-link > span:first-child {
-  transition: transform var(--motion-control) var(--ease-arrive);
+/* Selection follows the committed route. Pending feedback belongs to the last
+   requested Link; the moving selection and icon settle without overshoot. */
+.t-nav-selection,
+.t-nav-pending {
+  pointer-events: none;
 }
-.t-primary-nav-link[data-active="true"] > span:first-child {
-  transform: translateY(-1px) scale(1.08);
+.t-nav-pending {
+  background: var(--surface-active);
+  opacity: 0;
+  transition: opacity var(--motion-control) var(--ease-arrive);
+}
+.t-nav-pending[data-pending="true"] {
+  opacity: 1;
+  transition-delay: var(--motion-touch);
+}
+.t-primary-nav-link[data-liquid-nav-index]:active {
+  transform: none;
+}
+.t-primary-nav-link [data-nav-icon] {
+  transition: transform var(--motion-nav) var(--ease-nav);
+}
+.t-primary-nav-link:active [data-nav-icon] {
+  transform: scale(0.92);
+  transition-duration: var(--motion-touch);
+}
+.t-primary-nav-link[data-active="true"]:not(:active) [data-nav-icon] {
+  transform: translateY(-1px) scale(1.04);
 }
 
 /* Entrances -------------------------------------------------------------- */
@@ -321,7 +333,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
    trigger, so the menu grows out of what opened it. No per-item stagger — a
    menu is one object, and staggering it delayed the item the user aimed at. */
 .t-dropdown[data-state="open"] {
-  animation: t-dropdown-in var(--motion-control) var(--ease-arrive) both;
+  animation: t-dropdown-in var(--motion-nav) var(--ease-arrive) both;
 }
 .t-dropdown[data-state="closed"] {
   animation: t-dropdown-out var(--motion-control-exit) var(--ease-depart) both;
@@ -357,7 +369,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 /* A centred alert is the iOS alert: it scales up in place on the control rung,
    because it interrupts rather than travels. */
 .t-dialog[data-state="open"] {
-  animation: t-dialog-in var(--motion-control) var(--ease-arrive) both;
+  animation: t-dialog-in var(--motion-nav) var(--ease-arrive) both;
 }
 .t-dialog[data-state="closed"] {
   animation: t-dialog-out var(--motion-control-exit) var(--ease-depart) both;
@@ -365,7 +377,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 @keyframes t-dialog-in {
   from {
     opacity: 0;
-    transform: translateY(var(--motion-rise)) scale(var(--motion-surface-scale));
+    transform: scale(var(--motion-surface-scale));
   }
   to {
     opacity: 1;
@@ -379,7 +391,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   }
   to {
     opacity: 0;
-    transform: translateY(var(--motion-lift)) scale(var(--motion-surface-scale));
+    transform: scale(var(--motion-surface-scale));
   }
 }
 
@@ -401,7 +413,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     animation: t-sheet-in var(--motion-sheet) var(--ease-nav) both;
   }
   .t-sheet[data-state="closed"] {
-    animation: t-sheet-out var(--motion-sheet-exit) var(--ease-depart) both;
+    animation: t-sheet-out var(--motion-sheet-exit) var(--ease-nav) both;
   }
 }
 @keyframes t-sheet-in {
@@ -500,7 +512,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   translate: 0 0;
   will-change: translate;
   transition:
-    translate var(--motion-control) var(--ease-bounce),
+    translate var(--motion-nav) var(--ease-nav),
     background-color var(--motion-control) var(--ease-move);
 }
 [data-state="checked"] .t-toggle-thumb {
@@ -957,15 +969,15 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 
 /* Hover is a pointer affordance only. */
 @media (hover: hover) and (pointer: fine) {
-  [data-slot="button"]:not(:disabled):hover {
+  [data-slot="button"]:not(:disabled):not(:active):hover {
     transform: translateY(-1px);
   }
-  .t-card:hover {
+  .t-card:not(:active):hover {
     background-color: color-mix(in srgb, var(--card) 99%, var(--foreground) 1%);
     border-color: color-mix(in srgb, var(--border) 60%, var(--foreground) 10%);
     transform: translateY(-1px);
   }
-  .dark .t-card:hover {
+  .dark .t-card:not(:active):hover {
     background-color: color-mix(in srgb, var(--card) 99.5%, var(--foreground) 0.5%);
     border-color: color-mix(in srgb, var(--border) 60%, var(--foreground) 12%);
     transform: translateY(-1px);
@@ -973,6 +985,9 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .route-page[data-route-entry="replace"] {
+    animation: none;
+  }
   ::view-transition-old(*),
   ::view-transition-new(*),
   ::view-transition-group(*) {
@@ -1026,7 +1041,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     transform: none !important;
   }
   .t-primary-nav-link,
-  .t-primary-nav-link > span:first-child {
+  .t-primary-nav-link [data-nav-icon] {
     animation: none !important;
     transition: none !important;
     transform: none !important;

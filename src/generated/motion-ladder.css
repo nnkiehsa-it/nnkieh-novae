@@ -2,21 +2,21 @@
    Do not edit: change the config and run `bun run generate:all`. */
 :root {
   /* How long. A touch is acknowledged in a tenth of a second, a control
-     settles in a quarter, moving to another place takes a third, and a layer
+     settles in a quarter, navigation has a longer deceleration, and a layer
      presented over the current place takes longest because it travels
      furthest. Leaving is always quicker than arriving. */
   --motion-touch: 100ms;
   --motion-control: 250ms;
-  --motion-nav: 350ms;
-  --motion-sheet: 450ms;
-  --motion-control-exit: 175ms;
-  --motion-sheet-exit: 300ms;
+  --motion-nav: 460ms;
+  --motion-sheet: 560ms;
+  --motion-control-exit: 190ms;
+  --motion-sheet-exit: 380ms;
 
   /* Arrivals decelerate, dismissals accelerate, travel between two known
      positions is symmetric, routes use the iOS navigation curve, and exactly
      one curve is allowed to overshoot. A recipe played in reverse reverses
      its easing too, so the navigation curve is also published mirrored. */
-  --ease-arrive: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-arrive: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-depart: cubic-bezier(0.4, 0, 1, 1);
   --ease-move: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-nav: cubic-bezier(0.32, 0.72, 0, 1);
@@ -24,13 +24,13 @@
   --ease-bounce: cubic-bezier(0.22, 1.2, 0.36, 1);
 
   /* How far. Everything that rises, rises by the same amount. */
-  --motion-lift: 6px;
-  --motion-rise: 12px;
-  --motion-press-scale: 0.98;
-  --motion-card-press-scale: 0.99;
-  --motion-surface-scale: 0.97;
-  --motion-nav-parallax: 20%;
-  --motion-nav-dim: 0.9;
+  --motion-lift: 4px;
+  --motion-rise: 8px;
+  --motion-press-scale: 0.985;
+  --motion-card-press-scale: 0.995;
+  --motion-surface-scale: 0.975;
+  --motion-nav-parallax: 16%;
+  --motion-nav-dim: 0.96;
 
   /* Indeterminate loops. They repeat, so they sit outside the ladder. */
   --motion-spin: 800ms;

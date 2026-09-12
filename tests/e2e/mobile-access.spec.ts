@@ -131,10 +131,10 @@ test.describe('mobile route motion', () => {
         const transitioning = pseudoElements();
         const navigation = document.querySelector('.app-mobile-nav');
         if (transitioning.some((pseudo) => pseudo.includes('app-mobile-nav'))) {
-          // While the page slides, the dock is carried by a snapshot of its
-          // own rather than by the page, which is what keeps it visible.
+          // A captured dock would leave the live links outside hit testing.
           state.__novaeMobileDockCaptured = true;
-        } else if (navigation && !transitioning.some((pseudo) => pseudo.includes('view-transition'))) {
+        }
+        if (navigation) {
           const box = navigation.getBoundingClientRect();
           const stack = document.elementsFromPoint(
             box.left + box.width / 2,
@@ -166,7 +166,7 @@ test.describe('mobile route motion', () => {
     )).toBe(true);
     expect(await page.evaluate(() =>
       (window as typeof window & { __novaeMobileDockCaptured?: boolean }).__novaeMobileDockCaptured,
-    )).toBe(true);
+    )).toBe(false);
   });
 
   test('gives a pushed route surface an opaque cover of the whole screen', async ({ page }) => {

@@ -77,7 +77,7 @@ function renderStylesheet(config) {
     '   Do not edit: change the config and run `bun run generate:all`. */',
     ':root {',
     '  /* How long. A touch is acknowledged in a tenth of a second, a control',
-    '     settles in a quarter, moving to another place takes a third, and a layer',
+    '     settles in a quarter, navigation has a longer deceleration, and a layer',
     '     presented over the current place takes longest because it travels',
     '     furthest. Leaving is always quicker than arriving. */',
   ];

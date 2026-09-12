@@ -391,11 +391,6 @@ html[data-input-modality="pointer"] :focus-visible {
 
 .app-mobile-nav [data-liquid-nav-index] {
   border-radius: 9999px;
-  overflow: hidden;
-}
-
-.t-primary-nav-link[data-active="true"] {
-  transition-duration: 0ms;
 }
 
 .app-mobile-nav [data-liquid-nav-index] > span:last-child {

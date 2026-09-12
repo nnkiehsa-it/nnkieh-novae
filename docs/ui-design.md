@@ -33,6 +33,11 @@ Taste-guided visual overhaul for a daily-use campus application, using the curre
 
 ## App-like loading and motion
 
+- Navigation and selection settle over 460ms; sheets enter over 560ms and leave over 380ms. Immediate press feedback remains 100ms. Control timing and the header blur are unchanged.
+- Primary navigation and segmented controls display their committed route/value. A pending Link has a separate muted treatment. Cancelled touches and modified clicks never change selection.
+- Primary routes reveal in place on the live page; nested mobile routes retain directional view transitions. The dock remains unnamed so its links stay in the hit-test tree. Shared selection movement can be interrupted by another selection.
+- Menus expand from their trigger with a longer deceleration. Centred dialogs scale in place, fields stay fixed on focus, and pressing a nested control does not shrink its surrounding card.
+
 - Route placeholders paint the real shell and real disabled controls before data arrives.
 - Feed and detail placeholders use the same components as loaded content. Only unknown fields become skeletons.
 - Category support capability determines whether a proposal feed placeholder reserves a progress region. Mixed-category personal feeds cannot know every row's shape before the data arrives.

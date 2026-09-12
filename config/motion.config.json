@@ -2,13 +2,13 @@
   "durations": {
     "touch": 100,
     "control": 250,
-    "nav": 350,
-    "sheet": 450,
-    "controlExit": 175,
-    "sheetExit": 300
+    "nav": 460,
+    "sheet": 560,
+    "controlExit": 190,
+    "sheetExit": 380
   },
   "easings": {
-    "arrive": [0.22, 1, 0.36, 1],
+    "arrive": [0.16, 1, 0.3, 1],
     "depart": [0.4, 0, 1, 1],
     "move": [0.4, 0, 0.2, 1],
     "nav": [0.32, 0.72, 0, 1],
@@ -16,13 +16,13 @@
     "bounce": [0.22, 1.2, 0.36, 1]
   },
   "travel": {
-    "lift": "6px",
-    "rise": "12px",
-    "pressScale": "0.98",
-    "cardPressScale": "0.99",
-    "surfaceScale": "0.97",
-    "navParallax": "20%",
-    "navDim": "0.9"
+    "lift": "4px",
+    "rise": "8px",
+    "pressScale": "0.985",
+    "cardPressScale": "0.995",
+    "surfaceScale": "0.975",
+    "navParallax": "16%",
+    "navDim": "0.96"
   },
   "loops": {
     "spin": 800,

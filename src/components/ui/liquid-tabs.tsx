@@ -34,36 +34,15 @@ export function LiquidTabs({
   value,
 }: LiquidTabsProps) {
   const layoutId = React.useId();
-  const [pressedTab, setPressedTab] = React.useState<{
-    fromValue: string;
-    value: string;
-  } | null>(null);
-  const pressedResetRef = React.useRef(0);
-  const displayedValue =
-    pressedTab?.fromValue === value ? pressedTab.value : value;
-
-  React.useEffect(
-    () => () => window.clearTimeout(pressedResetRef.current),
-    [],
-  );
-
-  const acknowledgeTab = React.useCallback(
-    (nextValue: string) => {
-      if (nextValue === displayedValue) return;
-      setPressedTab({ fromValue: value, value: nextValue });
-      window.clearTimeout(pressedResetRef.current);
-      pressedResetRef.current = window.setTimeout(
-        () => setPressedTab(null),
-        1_000,
-      );
-    },
-    [displayedValue, value],
-  );
 
   return (
     // The caller's classes belong on the element it actually lays out, which is the
     // root; the rail inside keeps its own shape.
-    <TabsPrimitive.Root className={cn("min-w-0 max-w-full", className)} value={value} onValueChange={onValueChange}>
+    <TabsPrimitive.Root
+      className={cn("min-w-0 max-w-full", className)}
+      value={value}
+      onValueChange={onValueChange}
+    >
       <TabsPrimitive.List
         aria-label={ariaLabel}
         aria-disabled={disabled}
@@ -73,7 +52,7 @@ export function LiquidTabs({
         className="t-tabs relative isolate inline-flex max-w-full items-center gap-[3px] overflow-x-auto overscroll-x-contain rounded-full bg-[var(--tabs-bar-bg)] p-[3px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {options.map((option) => {
-          const displayedActive = option.value === displayedValue;
+          const displayedActive = option.value === value;
 
           return (
             <TabsPrimitive.Trigger
@@ -83,9 +62,6 @@ export function LiquidTabs({
               data-liquid-tab={option.value}
               disabled={disabled}
               key={option.value}
-              onPointerDown={() => {
-                if (!disabled) acknowledgeTab(option.value);
-              }}
               value={option.value}
             >
               {displayedActive ? (
@@ -94,11 +70,14 @@ export function LiquidTabs({
                   className="t-tabs-pill absolute inset-0 z-0 rounded-full bg-[var(--tabs-pill-bg)] shadow-[var(--shadow-control)]"
                   initial={false}
                   layoutId={`liquid-tab-pill-${layoutId}`}
-                  transition={timing("control", "move")}
+                  transition={timing("nav", "nav")}
                 />
               ) : null}
               {option.icon ? (
-                <span aria-hidden="true" className="relative z-10 inline-flex shrink-0">
+                <span
+                  aria-hidden="true"
+                  className="relative z-10 inline-flex shrink-0"
+                >
                   {option.icon}
                 </span>
               ) : null}
