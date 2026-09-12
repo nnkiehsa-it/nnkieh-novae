@@ -82,7 +82,7 @@
 @media (max-width: 47.99rem) {
   :root[data-nav-direction="push"]::view-transition-group(.t-route-in),
   :root[data-nav-direction="pop"]::view-transition-group(.t-route-out) {
-    z-index: 2;
+    z-index: 3;
   }
   :root[data-nav-direction="push"]::view-transition-group(.t-route-out),
   :root[data-nav-direction="pop"]::view-transition-group(.t-route-in) {
@@ -136,11 +136,33 @@
   }
 }
 
-/* Navigation stays in the live document so another tap can interrupt a route.
-   Theme changes crossfade the root, including the persistent chrome. */
+/* The dock is captured apart from the page, between the two route surfaces: the
+   page that leaves slides off it instead of carrying it away, and the page
+   arriving underneath cannot cover it. That is the whole of a native return —
+   the dock is already in place before the animation ends, with the page being
+   dismissed still on top of it.
+   Its own reveal is turned off while a transition runs. A CSS transition is
+   captured at whatever frame it had reached, so a dock that had just started
+   fading in froze at nothing for the length of the animation and only appeared
+   once the live document came back. The group animates it instead. */
+.app-mobile-nav {
+  view-transition-name: app-mobile-nav;
+}
+html:active-view-transition .app-mobile-nav {
+  transition: none;
+}
+::view-transition-group(app-mobile-nav) {
+  z-index: 2;
+  animation-duration: var(--motion-nav);
+}
+
+/* Captured apart from the page, the dock has to be told about a theme change
+   explicitly, or it would swap themes ahead of everything around it. */
+html[data-theme-transition="true"]::view-transition-old(app-mobile-nav),
 html[data-theme-transition="true"]::view-transition-old(root) {
   animation: t-theme-out var(--motion-control-exit) var(--ease-depart) both;
 }
+html[data-theme-transition="true"]::view-transition-new(app-mobile-nav),
 html[data-theme-transition="true"]::view-transition-new(root) {
   animation: t-fade-in var(--motion-sheet) var(--ease-arrive) both;
 }
