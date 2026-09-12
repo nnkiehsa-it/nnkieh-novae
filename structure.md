@@ -142,7 +142,6 @@ This document is the maintained map of the repository. Read it before broad sear
 ## Verification and delivery
 
 - `tests/e2e/primary-navigation.spec.ts` — real rapid clicks at mobile and desktop widths, cancelled touch selection, delayed navigation feedback, rendered-route agreement, overflow, and reduced motion.
-
 - `tests/e2e/feed-layout.spec.ts` — cold-feed response gating and actual skeleton/content geometry comparisons at 390px and 1440px, plus dense card height, overflow, labelled search, and single-surface navigation assertions.
 - `scripts/check-ui-primitives.mjs` / `css-orphan-selectors.mjs` — reject retired Vue references, `transition-all`, arbitrary elevation, ungated hover, orphaned source CSS class selectors, business imports in UI primitives, direct service imports in pages/components, motion tokens the generated ladder does not define, raw durations or easing curves written into a recipe or a JavaScript transition instead of taken from the ladder, spring transitions, and TypeScript modules over 400 lines (300 lines raises a warning). Generated modules and stylesheets are exempt from the line rule. The PostCSS-backed orphan check ignores keyframe percentages and requires a whole class token in product TS/TSX.
 - `scripts/check-i18n.mjs` — validates catalog parity/shape/interpolation, API error references, direct `t()` references, and hard-coded Han text across React/TSX sources.
@@ -172,8 +171,6 @@ This document is the maintained map of the repository. Read it before broad sear
 - `.github/workflows/reset-database-and-cloudinary.yml` — protected manual disaster-reset flow: after an exact confirmation string, resets the application schemas, reapplies migrations, restores the Worker runtime role, clears Cloudinary resources, and restores the upload preset.
 
 ## Repository documentation
-
-- `docs/frontend-handoff-2026-09-12.md` — user-requested handoff for the Novae/Lexiro frontend work, including uncommitted changes, verification scope, and unresolved browser checks.
 
 - `README.md` — Traditional Chinese project entry with stack badges, product scope, architecture overview, local quick start, operational boundaries, and links to repository-owned documentation.
 - `docs/README.md` — documentation index.
