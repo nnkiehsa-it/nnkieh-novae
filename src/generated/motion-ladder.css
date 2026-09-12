@@ -14,13 +14,11 @@
 
   /* Arrivals decelerate, dismissals accelerate, travel between two known
      positions is symmetric, routes use the iOS navigation curve, and exactly
-     one curve is allowed to overshoot. A recipe played in reverse reverses
-     its easing too, so the navigation curve is also published mirrored. */
+     one curve is allowed to overshoot. */
   --ease-arrive: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-depart: cubic-bezier(0.4, 0, 1, 1);
   --ease-move: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-nav: cubic-bezier(0.32, 0.72, 0, 1);
-  --ease-nav-reversed: cubic-bezier(1, 0, 0.68, 0.28);
   --ease-bounce: cubic-bezier(0.22, 1.2, 0.36, 1);
 
   /* How far. Everything that rises, rises by the same amount. */
@@ -29,8 +27,7 @@
   --motion-press-scale: 0.985;
   --motion-card-press-scale: 0.995;
   --motion-surface-scale: 0.975;
-  --motion-nav-parallax: 16%;
-  --motion-nav-dim: 0.96;
+  --motion-route-travel: 24px;
 
   /* Indeterminate loops. They repeat, so they sit outside the ladder. */
   --motion-spin: 800ms;

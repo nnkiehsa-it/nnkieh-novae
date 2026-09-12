@@ -45,7 +45,6 @@ const cssCurveNames: Record<keyof typeof motionEasing, string> = {
   depart: "--ease-depart",
   move: "--ease-move",
   nav: "--ease-nav",
-  navReversed: "--ease-nav-reversed",
   bounce: "--ease-bounce",
 };
 
@@ -67,17 +66,6 @@ describe("motion ladder", () => {
         motionEasing[curve as keyof typeof motionEasing],
       );
     }
-  });
-
-  // Playing a recipe in reverse reverses its easing too, so the reversed
-  // navigation curve has to be the point reflection of the forward one or a pop
-  // spends its first half barely moving while a push is already arriving.
-  it("publishes the navigation curve mirrored so reversed recipes keep its pace", () => {
-    const [x1, y1, x2, y2] = motionEasing.nav;
-    const mirrored = [1 - x2, 1 - y2, 1 - x1, 1 - y1];
-    motionEasing.navReversed.forEach((point, index) => {
-      expect(point).toBeCloseTo(mirrored[index], 6);
-    });
   });
 
   it("dismisses faster than it presents", () => {

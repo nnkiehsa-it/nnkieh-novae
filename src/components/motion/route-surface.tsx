@@ -1,8 +1,8 @@
 "use client";
 
-import { ViewTransition, useLayoutEffect, useRef, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { compareRoutes, isPrimaryRoute } from "@/lib/route-hierarchy";
+import { compareRoutes } from "@/lib/route-hierarchy";
 import { cn } from "@/lib/utils";
 
 const DIRECTIONS = {
@@ -11,6 +11,21 @@ const DIRECTIONS = {
   unrelated: "none",
 } as const;
 
+/**
+ * The surface every route is painted on.
+ *
+ * Only the page that arrives animates, and it animates in the live document.
+ * Capturing the document instead — a view transition — buys the page being left
+ * a parallax, and costs a full rasterisation of both pages at the moment the
+ * browser is already fetching, rendering and hydrating the route that was asked
+ * for. It also suspends hit testing for the length of the animation, which is
+ * what used to swallow a tap on the dock.
+ *
+ * Direction is derived from the two URLs rather than tagged onto each link, so
+ * every navigation resolves to the same push or pop regardless of what
+ * triggered it: an in-app back control, the browser's Back and Forward buttons,
+ * and the iOS edge swipe all arrive here the same way.
+ */
 export function RouteSurface({
   children,
   className,
@@ -19,57 +34,27 @@ export function RouteSurface({
   className?: string;
 }) {
   const pathname = usePathname();
-  const previous = useRef(pathname);
-  const surface = useRef<HTMLDivElement>(null);
+  // The page that was on screen, kept the way React keeps information from a
+  // previous render: adjusted during this one. The direction has to be on the
+  // element in the same commit that starts its animation — published afterwards
+  // it would retune an animation that had already begun.
+  const [shown, setShown] = useState({ from: "", path: pathname });
+  if (shown.path !== pathname) setShown({ from: shown.path, path: pathname });
+  const direction = shown.from
+    ? DIRECTIONS[compareRoutes(shown.from, pathname)]
+    : null;
 
-  // Direction is derived from the two URLs instead of tagged onto each link, so
-  // every navigation resolves to the same push or pop regardless of what
-  // triggered it. Note that Next deliberately dispatches a history traversal
-  // outside a React Transition to keep Back instant, so a traversal currently
-  // commits with no view transition to animate; the direction it reports is
-  // still correct, and the recipes apply as soon as that changes.
-  //
-  // It is published on the document rather than passed to <ViewTransition>
-  // because the surface that leaves keeps the props it last rendered with,
-  // which predate this navigation. React runs layout effects inside the view
-  // transition's update callback, so the attribute is in place before the
-  // browser captures the new snapshot and starts the animations.
-  useLayoutEffect(() => {
-    const direction = DIRECTIONS[compareRoutes(previous.current, pathname)];
-    document.documentElement.dataset.navDirection = direction;
-    if (
-      surface.current &&
-      previous.current !== pathname &&
-      direction === "none"
-    ) {
-      surface.current.dataset.routeEntry = "replace";
-    }
-    previous.current = pathname;
-  }, [pathname]);
-
-  const content = (
+  return (
+    // The first page of a session has no direction and no entrance: it arrived
+    // with the document, and animating it would make the app look like it was
+    // still assembling itself.
     <div
-      ref={surface}
       key={pathname}
       className={cn("route-page", className)}
+      data-route-direction={direction ?? undefined}
       data-route-path={pathname}
     >
       {children}
     </div>
-  );
-
-  // Primary pages never enter the document snapshot lifecycle: even a disabled
-  // boundary briefly suspends hit testing while React prepares its capture.
-  if (isPrimaryRoute(pathname)) return content;
-
-  return (
-    <ViewTransition
-      default="none"
-      enter="t-route-in"
-      exit="t-route-out"
-      key={pathname}
-    >
-      {content}
-    </ViewTransition>
   );
 }

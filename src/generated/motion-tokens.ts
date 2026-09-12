@@ -17,7 +17,6 @@ export const motionEasing = {
   depart: [0.4, 0, 1, 1],
   move: [0.4, 0, 0.2, 1],
   nav: [0.32, 0.72, 0, 1],
-  navReversed: [1, 0, 0.68, 0.28],
   bounce: [0.22, 1.2, 0.36, 1],
 } as const;
 

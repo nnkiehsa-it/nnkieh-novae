@@ -130,8 +130,9 @@ test.describe('mobile route motion', () => {
       const inspect = () => {
         const transitioning = pseudoElements();
         const navigation = document.querySelector('.app-mobile-nav');
-        if (transitioning.some((pseudo) => pseudo.includes('app-mobile-nav'))) {
-          // A captured dock would leave the live links outside hit testing.
+        if (transitioning.some((pseudo) => pseudo.includes('view-transition'))) {
+          // Nothing is captured for a route change: a snapshot would take the
+          // dock out of hit testing for the length of the animation.
           state.__novaeMobileDockCaptured = true;
         }
         if (navigation) {
@@ -174,9 +175,9 @@ test.describe('mobile route motion', () => {
     await page.goto('/issues');
     await expect(page.locator('.route-page')).toBeVisible();
 
-    // A page that pushes in has to hide the one it replaces: anything narrower
-    // than the screen, shorter than the viewport, or transparent leaves the
-    // outgoing page legible beside or beneath it for the whole transition.
+    // A route surface is what the reveal fades in, so it has to be the whole
+    // screen and opaque: anything narrower, shorter or transparent fades in as
+    // a panel floating on the shell rather than as the page itself.
     const cover = await page.evaluate(() => {
       const surface = document.querySelector('.route-page')!;
       const box = surface.getBoundingClientRect();

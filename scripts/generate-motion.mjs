@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url';
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const DURATIONS = ['touch', 'control', 'nav', 'sheet', 'controlExit', 'sheetExit'];
-const EASINGS = ['arrive', 'depart', 'move', 'nav', 'navReversed', 'bounce'];
-const TRAVEL = ['lift', 'rise', 'pressScale', 'cardPressScale', 'surfaceScale', 'navParallax', 'navDim'];
+const EASINGS = ['arrive', 'depart', 'move', 'nav', 'bounce'];
+const TRAVEL = ['lift', 'rise', 'pressScale', 'cardPressScale', 'surfaceScale', 'routeTravel'];
 const LOOPS = ['spin', 'sweep', 'pulse'];
 
 function assertMilliseconds(value, name) {
@@ -87,8 +87,7 @@ function renderStylesheet(config) {
     '',
     '  /* Arrivals decelerate, dismissals accelerate, travel between two known',
     '     positions is symmetric, routes use the iOS navigation curve, and exactly',
-    '     one curve is allowed to overshoot. A recipe played in reverse reverses',
-    '     its easing too, so the navigation curve is also published mirrored. */',
+    '     one curve is allowed to overshoot. */',
   );
   for (const name of EASINGS)
     lines.push(`  --ease-${kebab(name)}: ${bezier(config.easings[name])};`);

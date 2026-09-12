@@ -41,11 +41,8 @@
   pointer-events: none;
 }
 
-/* The route surface is the push/pop participant, so its snapshot has to be
-   opaque and has to fill the viewport, gutters and all: a transparent, inset or
-   short snapshot leaves the outgoing page legible beside, above or beneath the
-   one arriving. The surface therefore owns the shell's padding rather than
-   sitting inside it. */
+/* The surface every route is painted on. It owns the shell's padding rather
+   than sitting inside it, so a page reaches every screen edge. */
 .route-page {
   width: min(100%, var(--content-max));
   margin-inline: auto;
@@ -53,137 +50,43 @@
   background: var(--surface-stage);
 }
 
-/* Primary tabs use a live surface. A document snapshot would take the dock out
-   of hit testing and discard the next tap while the previous page settles. */
-.route-page[data-route-entry="replace"] {
-  animation: t-route-replace var(--motion-nav) var(--ease-arrive) both;
+/* A route reveal is one animation, on the page that arrives, in the live
+   document.
+   Capturing the document instead buys the page being left a parallax, and costs
+   a full rasterisation of both pages at the moment the browser is already
+   fetching, rendering and hydrating the route that was asked for. That was the
+   stutter. It also put two full-viewport images on screen at once, which is why
+   anything the arriving page did not cover showed the one underneath.
+   Nothing is underneath now, so the travel is short and the fade carries the
+   rest: a page sliding the full width would only uncover an empty background.
+   The direction still reads — a child arrives from the trailing edge, its
+   parent from the leading one — and a route that is neither simply appears. */
+.route-page[data-route-direction] {
+  animation: t-route-enter var(--motion-control) var(--ease-arrive) both;
 }
-@keyframes t-route-replace {
-  from { opacity: 0.6; }
-  to { opacity: 1; }
+.route-page[data-route-direction="push"] {
+  --route-entry-travel: var(--motion-route-travel);
 }
-
-/* An unrelated route — a primary navigation change, or one sibling swapped for
-   another — is a replacement in place, at every width. It crossfades and does
-   not travel: movement would claim a direction this navigation does not have. */
-::view-transition-old(.t-route-out) {
-  animation: t-fade-out var(--motion-control-exit) var(--ease-depart) both;
+.route-page[data-route-direction="pop"] {
+  --route-entry-travel: calc(-1 * var(--motion-route-travel));
 }
-::view-transition-new(.t-route-in) {
-  animation: t-fade-in var(--motion-control) var(--ease-arrive) both;
-}
-
-/* Entering a child route pushes it in from the trailing edge while the parent
-   parallaxes away; leaving it plays the same two animations reversed, so pop is
-   push read backwards rather than a second recipe. Only the geometry is read
-   backwards -- the mirrored curve keeps the pace of going back identical to the
-   pace of going in. Only the mobile shell gets this: on a desktop layout a
-   child route is a replacement, not a place. */
-@media (max-width: 47.99rem) {
-  :root[data-nav-direction="push"]::view-transition-group(.t-route-in),
-  :root[data-nav-direction="pop"]::view-transition-group(.t-route-out) {
-    z-index: 3;
-  }
-  :root[data-nav-direction="push"]::view-transition-group(.t-route-out),
-  :root[data-nav-direction="pop"]::view-transition-group(.t-route-in) {
-    z-index: 1;
-  }
-  :root[data-nav-direction="push"]::view-transition-new(.t-route-in) {
-    animation: t-route-advance var(--motion-nav) var(--ease-nav) both;
-  }
-  :root[data-nav-direction="push"]::view-transition-old(.t-route-out) {
-    animation: t-route-recede var(--motion-nav) var(--ease-nav) both;
-  }
-  :root[data-nav-direction="pop"]::view-transition-old(.t-route-out) {
-    animation: t-route-advance var(--motion-nav) var(--ease-nav-reversed)
-      reverse both;
-  }
-  :root[data-nav-direction="pop"]::view-transition-new(.t-route-in) {
-    animation: t-route-recede var(--motion-nav) var(--ease-nav-reversed)
-      reverse both;
-  }
-
-  /* A destination is rendered live, with no boundary of its own, so that the
-     dock keeps taking taps while it is on screen. It is therefore captured as
-     part of the document root, and root is the half of the recipe it plays:
-     without this the browser cross-fades the entire screen instead, which is
-     both the most expensive thing a transition can do — every pixel blended on
-     every frame — and the wrong reading, a dissolve where a place is being left
-     behind. The other side of root is chrome and background, and holds still. */
-  :root[data-nav-direction="push"]::view-transition-old(root) {
-    animation: t-route-recede var(--motion-nav) var(--ease-nav) both;
-  }
-  :root[data-nav-direction="pop"]::view-transition-new(root) {
-    animation: t-route-recede var(--motion-nav) var(--ease-nav-reversed)
-      reverse both;
-  }
-  :root[data-nav-direction="push"]::view-transition-new(root),
-  :root[data-nav-direction="pop"]::view-transition-old(root) {
-    animation: none;
-  }
-}
-/* A history traversal never runs inside a React Transition -- Next keeps Back
-   instant on purpose -- so the boundary is not there to name the two surfaces
-   for it. While one is in flight the stylesheet names them instead, and gives
-   them the same classes the boundary would have, which is what lets a traversal
-   animate on the recipes above rather than on a second set of its own. */
-:root[data-route-traversal] .route-page[data-route-leaving] {
-  view-transition-name: route-leaving;
-  view-transition-class: t-route-out;
-}
-:root[data-route-traversal] .route-page:not([data-route-leaving]) {
-  view-transition-name: route-arriving;
-  view-transition-class: t-route-in;
-}
-
-@keyframes t-route-advance {
+@keyframes t-route-enter {
   from {
-    transform: translateX(100%);
+    opacity: 0;
+    transform: translateX(var(--route-entry-travel, 0));
   }
   to {
-    transform: translateX(0);
-  }
-}
-@keyframes t-route-recede {
-  from {
     opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: var(--motion-nav-dim);
-    transform: translateX(calc(-1 * var(--motion-nav-parallax)));
+    transform: none;
   }
 }
 
-/* The dock is captured apart from the page so it can sit between the two route
-   surfaces: above the destination underneath it, below the page on top of it.
-   On a return the page being dismissed slides off it, which is the whole of a
-   native return — the dock is in place from the first frame, behind the page
-   that is leaving.
-   It animates nothing. A snapshot freezes a CSS transition at whatever frame it
-   had reached, which is why a dock that had just begun fading in stayed at
-   nothing for the length of the return and only appeared once the live document
-   came back; and a fade of its own is redundant anyway, because a route change
-   already covers it or uncovers it. */
-.app-mobile-nav {
-  view-transition-name: app-mobile-nav;
-}
-::view-transition-group(app-mobile-nav) {
-  z-index: 2;
-}
-::view-transition-group(app-mobile-nav),
-::view-transition-old(app-mobile-nav),
-::view-transition-new(app-mobile-nav) {
-  animation: none;
-}
-
-/* Captured apart from the page, the dock has to be told about a theme change
-   explicitly, or it would swap themes ahead of everything around it. */
-html[data-theme-transition="true"]::view-transition-old(app-mobile-nav),
+/* A theme change is the one thing still worth capturing the document for: it
+   changes every colour on screen at once and nothing else can cross-fade that.
+   Routes do not use this path — they animate in the live document. */
 html[data-theme-transition="true"]::view-transition-old(root) {
   animation: t-theme-out var(--motion-control-exit) var(--ease-depart) both;
 }
-html[data-theme-transition="true"]::view-transition-new(app-mobile-nav),
 html[data-theme-transition="true"]::view-transition-new(root) {
   animation: t-fade-in var(--motion-sheet) var(--ease-arrive) both;
 }
@@ -1037,7 +940,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .route-page[data-route-entry="replace"] {
+  .route-page[data-route-direction] {
     animation: none;
   }
   ::view-transition-old(*),
