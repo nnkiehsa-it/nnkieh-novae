@@ -615,6 +615,17 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   }
 }
 
+/* A wait shorter than a control settle is not worth announcing. An image the
+   browser already holds still reports its load a frame or two after the element
+   that shows it mounts, and a route change remounts every card on the page, so
+   without this an avatar answered each navigation with a spinner that came and
+   went before it could be read. The indicator waits out the rung before it
+   appears; anything that arrives first is never announced at all. */
+.t-wait-indicator {
+  animation: t-fade-in var(--motion-control) var(--ease-arrive)
+    var(--motion-control) both;
+}
+
 /* Images stay hidden until the resource is fully decoded. */
 .t-decoded-image[data-image-state="loading"],
 .t-decoded-image[data-image-state="error"] {
@@ -1016,6 +1027,10 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   .t-dropdown,
   .t-tooltip {
     animation: none !important;
+  }
+  /* The threshold is not motion, so it stays; only the fade goes. */
+  .t-wait-indicator {
+    animation-duration: 0s;
   }
   .t-skel-skeleton,
   .t-skel-content {

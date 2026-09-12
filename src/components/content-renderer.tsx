@@ -63,7 +63,7 @@ export function ContentRenderer({
                 image.resolveError ? (
                   <ImageIcon className="size-5" />
                 ) : (
-                  <LoadingSpinner className="size-5" />
+                  <LoadingSpinner className="t-wait-indicator size-5" />
                 )
               }
               src={image.src}

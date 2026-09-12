@@ -58,7 +58,7 @@ function AvatarImage({
       {status === "loading" ? (
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-muted text-muted-foreground"
+          className="t-wait-indicator pointer-events-none absolute inset-0 z-10 grid place-items-center bg-muted text-muted-foreground"
         >
           <LoadingSpinner className="size-3.5" />
         </span>

@@ -3,7 +3,11 @@
 import * as React from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { usePathname } from "next/navigation";
-import { motionEasing, motionLoopSeconds } from "@/generated/motion-tokens";
+import {
+  motionEasing,
+  motionLoopSeconds,
+  motionSeconds,
+} from "@/generated/motion-tokens";
 import { timing } from "@/lib/motion-timing";
 
 // A navigation that never commits must not leave the page looking busy forever.
@@ -106,7 +110,11 @@ export function NavigationFeedback() {
             animate={{ opacity: 1, scaleX: 0.82 }}
             exit={{ opacity: 0, scaleX: 1, transition: timing("controlExit") }}
             transition={{
-              opacity: timing("controlExit"),
+              // A navigation that commits before a control could settle needs
+              // no announcement: the page is already there. The line holds at
+              // nothing until the wait outlasts that rung, so a prefetched
+              // route never draws one.
+              opacity: { ...timing("controlExit"), delay: motionSeconds.control },
               // The crawl is indeterminate: it paces a wait of unknown length
               // rather than moving a known distance, so it takes a loop rather
               // than a rung of the ladder.

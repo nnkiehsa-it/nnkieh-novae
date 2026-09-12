@@ -62,7 +62,7 @@ export function DecodedImage({
       {state === "loading" ? (
         <span
           aria-hidden
-          className="pointer-events-none col-start-1 row-start-1 grid place-items-center text-muted-foreground"
+          className="t-wait-indicator pointer-events-none col-start-1 row-start-1 grid place-items-center text-muted-foreground"
         >
           <LoadingSpinner className={cn("size-5", indicatorClassName)} />
         </span>
