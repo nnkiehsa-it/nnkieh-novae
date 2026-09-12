@@ -358,14 +358,12 @@ html[data-input-modality="pointer"] :focus-visible {
   bottom: auto;
   left: max(1rem, var(--safe-left));
   height: var(--mobile-nav-height);
+  /* The dock is present or it is not. It belongs to the route, and a route
+     change is already an animation: the page arriving covers it, the page
+     being dismissed slides off it. */
   opacity: 0;
   pointer-events: none;
-  transform: translateY(1.125rem) scale(0.96);
   visibility: hidden;
-  transition:
-    opacity var(--motion-control) var(--ease-move),
-    transform var(--motion-control) var(--ease-arrive),
-    visibility 0s linear var(--motion-control);
 }
 
 @media (display-mode: standalone) {
@@ -384,9 +382,7 @@ html[data-input-modality="pointer"] :focus-visible {
 .app-mobile-nav[data-visible="true"] {
   opacity: 1;
   pointer-events: auto;
-  transform: translateY(0) scale(1);
   visibility: visible;
-  transition-delay: 0s;
 }
 
 .app-mobile-nav [data-liquid-nav-index] {
@@ -559,7 +555,6 @@ html[data-input-modality="pointer"] :focus-visible {
   body:has(input:focus, textarea:focus, [contenteditable="true"]:focus) .app-mobile-nav {
     opacity: 0;
     pointer-events: none;
-    transform: translateY(1.125rem) scale(0.96);
     visibility: hidden;
   }
 }

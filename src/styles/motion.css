@@ -102,6 +102,25 @@
     animation: t-route-recede var(--motion-nav) var(--ease-nav-reversed)
       reverse both;
   }
+
+  /* A destination is rendered live, with no boundary of its own, so that the
+     dock keeps taking taps while it is on screen. It is therefore captured as
+     part of the document root, and root is the half of the recipe it plays:
+     without this the browser cross-fades the entire screen instead, which is
+     both the most expensive thing a transition can do — every pixel blended on
+     every frame — and the wrong reading, a dissolve where a place is being left
+     behind. The other side of root is chrome and background, and holds still. */
+  :root[data-nav-direction="push"]::view-transition-old(root) {
+    animation: t-route-recede var(--motion-nav) var(--ease-nav) both;
+  }
+  :root[data-nav-direction="pop"]::view-transition-new(root) {
+    animation: t-route-recede var(--motion-nav) var(--ease-nav-reversed)
+      reverse both;
+  }
+  :root[data-nav-direction="push"]::view-transition-new(root),
+  :root[data-nav-direction="pop"]::view-transition-old(root) {
+    animation: none;
+  }
 }
 /* A history traversal never runs inside a React Transition -- Next keeps Back
    instant on purpose -- so the boundary is not there to name the two surfaces
@@ -136,24 +155,26 @@
   }
 }
 
-/* The dock is captured apart from the page, between the two route surfaces: the
-   page that leaves slides off it instead of carrying it away, and the page
-   arriving underneath cannot cover it. That is the whole of a native return —
-   the dock is already in place before the animation ends, with the page being
-   dismissed still on top of it.
-   Its own reveal is turned off while a transition runs. A CSS transition is
-   captured at whatever frame it had reached, so a dock that had just started
-   fading in froze at nothing for the length of the animation and only appeared
-   once the live document came back. The group animates it instead. */
+/* The dock is captured apart from the page so it can sit between the two route
+   surfaces: above the destination underneath it, below the page on top of it.
+   On a return the page being dismissed slides off it, which is the whole of a
+   native return — the dock is in place from the first frame, behind the page
+   that is leaving.
+   It animates nothing. A snapshot freezes a CSS transition at whatever frame it
+   had reached, which is why a dock that had just begun fading in stayed at
+   nothing for the length of the return and only appeared once the live document
+   came back; and a fade of its own is redundant anyway, because a route change
+   already covers it or uncovers it. */
 .app-mobile-nav {
   view-transition-name: app-mobile-nav;
 }
-html:active-view-transition .app-mobile-nav {
-  transition: none;
-}
 ::view-transition-group(app-mobile-nav) {
   z-index: 2;
-  animation-duration: var(--motion-nav);
+}
+::view-transition-group(app-mobile-nav),
+::view-transition-old(app-mobile-nav),
+::view-transition-new(app-mobile-nav) {
+  animation: none;
 }
 
 /* Captured apart from the page, the dock has to be told about a theme change
@@ -224,7 +245,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 
 /* A card is a large surface, so it takes an even smaller share of the press. */
 .t-card {
-  transform: translateZ(0);
   transition:
     background-color var(--motion-control) var(--ease-move),
     border-color var(--motion-control) var(--ease-move),
