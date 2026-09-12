@@ -85,7 +85,13 @@ export function LiquidNav({
 
   return (
     <LayoutGroup id={groupId}>
-      <nav
+      {/* Both shells that hold this bar are taken out of the document flow --
+          the sidebar and the floating dock are fixed -- so the moving selection
+          has to be measured against the bar itself. Without a layout root it is
+          measured against the document and arrives offset by the page scroll,
+          which reads as the selection sliding away as the page moves. */}
+      <motion.nav
+        layoutRoot
         aria-label={translate("ui.nav.primary")}
         data-primary-navigation
         className={cn(
@@ -121,7 +127,7 @@ export function LiquidNav({
             </Link>
           );
         })}
-      </nav>
+      </motion.nav>
     </LayoutGroup>
   );
 }
