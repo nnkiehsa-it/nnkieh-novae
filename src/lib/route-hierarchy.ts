@@ -31,14 +31,31 @@ const FORWARDING_ROUTES: ReadonlySet<string> = new Set(["/issues"]);
 
 export type RouteRelation = "deeper" | "shallower" | "unrelated";
 
-/** Primary destinations use live motion so their navigation remains interactive. */
+// The places primary navigation points at. Everything else the shell renders is
+// a place beneath one of them -- a detail, a composer, or an area settings
+// adopted -- so this one table answers both of the questions the shell asks
+// about a route, and the navigation bar only has to supply the labels.
+// An issue feed is a filter of one place rather than a route of its own, which
+// is why every `/issues/<filter>` is the same destination.
+const PRIMARY_ROUTES: ReadonlySet<string> = new Set([
+  "/announcements",
+  "/facilities",
+  "/notifications",
+  "/settings",
+]);
+
+/** A destination primary navigation points at. */
 export function isPrimaryRoute(pathname: string) {
-  return (
-    /^\/issues\/[^/]+$/u.test(pathname) ||
-    ["/announcements", "/facilities", "/notifications", "/settings"].includes(
-      pathname,
-    )
-  );
+  return PRIMARY_ROUTES.has(pathname) || /^\/issues\/[^/]+$/u.test(pathname);
+}
+
+/**
+ * Whether the floating navigation bar belongs on this route: a destination it
+ * points at, or a doorway on the way to one. A doorway keeps it because the bar
+ * would otherwise leave and return within the same navigation.
+ */
+export function showsPrimaryNavigation(pathname: string) {
+  return isPrimaryRoute(pathname) || FORWARDING_ROUTES.has(pathname);
 }
 
 /**

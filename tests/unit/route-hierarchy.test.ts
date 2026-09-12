@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { adoptedParent, compareRoutes } from "@/lib/route-hierarchy";
+import {
+  adoptedParent,
+  compareRoutes,
+  isPrimaryRoute,
+  showsPrimaryNavigation,
+} from "@/lib/route-hierarchy";
 
 describe("route hierarchy", () => {
   it("reads depth from the URL in both directions", () => {
@@ -24,6 +29,31 @@ describe("route hierarchy", () => {
     expect(compareRoutes("/issues", "/issues/public")).toBe("unrelated");
     expect(compareRoutes("/issues/public", "/issues")).toBe("unrelated");
     expect(compareRoutes("/announcements", "/issues")).toBe("unrelated");
+  });
+
+  it("names the destinations primary navigation points at", () => {
+    expect(isPrimaryRoute("/announcements")).toBe(true);
+    expect(isPrimaryRoute("/settings")).toBe(true);
+    // Every issue feed is the same destination under a different filter.
+    expect(isPrimaryRoute("/issues/public")).toBe(true);
+    expect(isPrimaryRoute("/issues/my-proposals")).toBe(true);
+
+    expect(isPrimaryRoute("/issues")).toBe(false);
+    expect(isPrimaryRoute("/issues/public/issue-1")).toBe(false);
+    expect(isPrimaryRoute("/announcements/new")).toBe(false);
+    expect(isPrimaryRoute("/dashboard")).toBe(false);
+    expect(isPrimaryRoute("/admin/management")).toBe(false);
+  });
+
+  it("keeps the navigation bar on destinations and on the doorway to one", () => {
+    expect(showsPrimaryNavigation("/issues")).toBe(true);
+    expect(showsPrimaryNavigation("/issues/my-proposals")).toBe(true);
+    expect(showsPrimaryNavigation("/notifications")).toBe(true);
+
+    expect(showsPrimaryNavigation("/issues/public/new")).toBe(false);
+    expect(showsPrimaryNavigation("/facilities/facility-1")).toBe(false);
+    expect(showsPrimaryNavigation("/dashboard")).toBe(false);
+    expect(showsPrimaryNavigation("/admin/access")).toBe(false);
   });
 
   it("places the dashboard and administration areas beneath settings", () => {

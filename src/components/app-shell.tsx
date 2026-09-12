@@ -28,7 +28,7 @@ import { getDefaultIssueRouteFilter } from "@/constants/categories";
 import { LiquidNav, type LiquidNavItem } from "@/components/liquid-nav";
 import { AppNotificationPrompt } from "@/components/app-notification-prompt";
 import { RouteSurface } from "@/components/motion/route-surface";
-import { adoptedParent } from "@/lib/route-hierarchy";
+import { adoptedParent, showsPrimaryNavigation } from "@/lib/route-hierarchy";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { BrandLockup } from "@/components/ui/brand";
@@ -49,16 +49,6 @@ function NotificationDot({ unread }: { unread: boolean }) {
       className="t-notification-badge absolute -right-1 -top-0.5 size-2 rounded-full bg-destructive ring-2 ring-background"
       data-open={unread}
     />
-  );
-}
-
-function isSecondaryMobileRoute(pathname: string) {
-  if (pathname === "/dashboard" || pathname.startsWith("/admin/")) return true;
-  if (pathname === "/issues/my-proposals") return true;
-  return (
-    /^\/issues\/[^/]+\/(?:new|[^/]+)$/u.test(pathname) ||
-    /^\/facilities\/(?:new|[^/]+)$/u.test(pathname) ||
-    /^\/announcements\/(?:new|[^/]+)$/u.test(pathname)
   );
 }
 
@@ -163,7 +153,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const categories = useCategories();
   const unread = useNotificationBadge();
   const issueHref = `/issues/${encodeURIComponent(getDefaultIssueRouteFilter())}`;
-  const showMobileNavigation = !isSecondaryMobileRoute(pathname);
+  const showMobileNavigation = showsPrimaryNavigation(pathname);
 
   React.useEffect(() => rememberCurrentRoute(pathname), [pathname]);
 
