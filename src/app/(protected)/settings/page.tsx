@@ -1,7 +1,6 @@
 "use client";
 import { t as translate } from "@/i18n";
 
-import * as React from "react";
 import { LogOut } from "lucide-react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -13,7 +12,6 @@ import { SettingsAccountCard } from "@/components/settings/account-card";
 import { AppearanceInstallCards } from "@/components/settings/appearance-install-cards";
 import {
   NotificationCard,
-  type NotificationFeedbackTarget,
   type NotificationOption,
 } from "@/components/settings/notification-card";
 import {
@@ -22,7 +20,9 @@ import {
 } from "@/components/settings/settings-links";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-state";
+import { SaveBar } from "@/components/ui/save-bar";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
+import { useDraft } from "@/hooks/use-draft";
 
 export default function SettingsPage() {
   const session = useSession();
@@ -31,8 +31,10 @@ export default function SettingsPage() {
   const { locale } = useI18n();
   const { resolvedTheme, setTheme, theme } = useTheme();
   const notificationFeedback = useActionFeedback();
-  const [notificationFeedbackTarget, setNotificationFeedbackTarget] =
-    React.useState<NotificationFeedbackTarget | null>(null);
+  const preferences = useDraft({
+    save: async (next) => push.savePreferences(next),
+    source: push.preferences,
+  });
   const user = session.user!;
   const notificationOptions: NotificationOption[] = [
     {
@@ -53,7 +55,6 @@ export default function SettingsPage() {
   ];
 
   async function togglePush(enabled: boolean) {
-    setNotificationFeedbackTarget("device");
     try {
       await notificationFeedback.run(async () => {
         const ok = enabled ? await push.enable() : await push.disable();
@@ -65,29 +66,6 @@ export default function SettingsPage() {
           ? caught.message
           : translate("ui.settings.pushUpdateFailed"),
       );
-    } finally {
-      setNotificationFeedbackTarget(null);
-    }
-  }
-
-  async function setPreference(
-    key: NotificationOption["key"],
-    enabled: boolean,
-  ) {
-    setNotificationFeedbackTarget(key);
-    try {
-      await notificationFeedback.run(async () => {
-        const ok = await push.setPreference(key, enabled);
-        if (!ok) throw new Error(translate("ui.common.updateFailed"));
-      });
-    } catch (caught) {
-      toast.error(
-        caught instanceof Error
-          ? caught.message
-          : translate("ui.common.updateFailed"),
-      );
-    } finally {
-      setNotificationFeedbackTarget(null);
     }
   }
 
@@ -120,20 +98,24 @@ export default function SettingsPage() {
           theme={theme}
         />
         <NotificationCard
+          deviceFeedbackState={notificationFeedback.state}
           enabled={push.enabled}
-          feedbackState={notificationFeedback.state}
-          feedbackTarget={notificationFeedbackTarget}
           loading={push.loading}
           onEnabledChange={(enabled) => void togglePush(enabled)}
-          onPreferenceChange={(key, enabled) => void setPreference(key, enabled)}
+          onPreferenceChange={(key, enabled) =>
+            preferences.update({ [key]: enabled } as Partial<typeof push.preferences>)
+          }
           options={notificationOptions}
           permission={push.permission}
-          preferences={push.preferences}
+          preferences={preferences.value ?? push.preferences}
           supported={push.supported}
         />
         <ManagementLinks
-          canManage={session.can("role.manage")}
-          canViewDashboard={session.can("dashboard.view")}
+          canManage={
+            session.can("role.manage")
+            || session.can("category.manage")
+            || session.can("dashboard.view")
+          }
         />
         <ResourceLinks />
         <Button
@@ -144,6 +126,12 @@ export default function SettingsPage() {
           <LogOut />
           {translate("ui.nav.signOut")}
         </Button>
+        <SaveBar
+          changeCount={preferences.changes.length}
+          onDiscard={preferences.reset}
+          onSave={() => void preferences.submit()}
+          status={preferences.status}
+        />
       </div>
     </div>
   );

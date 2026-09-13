@@ -10,7 +10,6 @@ import {
   getPushNotificationPreference,
   unregisterPushToken,
   updatePushNotificationPreferences,
-  type PersonalPushPreferenceKey,
   type PersonalPushPreferences,
   type PushNotificationPermission,
 } from "@/services/push-notifications";
@@ -178,20 +177,24 @@ export function usePushNotifications() {
     }
   }
 
-  async function setPreference(key: PersonalPushPreferenceKey, value: boolean) {
+  /**
+   * Writes every preference at once, because the reader decides what they want
+   * across the whole group before they ask for it to be kept.
+   */
+  async function savePreferences(next: PersonalPushPreferences) {
     const previous = preferences;
-    setPreferences((current) => ({ ...current, [key]: value }));
+    setPreferences(next);
     setLoading(true);
     setError("");
     try {
       const result = await updatePushNotificationPreferences({
         deviceId: deviceIdRef.current,
         permission,
-        preferences: { [key]: value },
+        preferences: next,
         token: tokenRef.current || undefined,
       });
       setPreferences(result.personalPreferences);
-      return true;
+      return result.personalPreferences;
     } catch (caught) {
       setPreferences(previous);
       setError(
@@ -199,7 +202,7 @@ export function usePushNotifications() {
           ? caught.message
           : "notification.preferencesSaveFailed",
       );
-      return false;
+      throw caught;
     } finally {
       setLoading(false);
     }
@@ -214,7 +217,7 @@ export function usePushNotifications() {
     permission,
     preferences,
     refresh,
-    setPreference,
+    savePreferences,
     supported,
   };
 }
