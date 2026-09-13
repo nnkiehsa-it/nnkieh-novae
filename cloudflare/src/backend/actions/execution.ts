@@ -2,10 +2,11 @@ import type { Json } from "../database/schema.ts";
 import type { AppDatabaseClient } from "../database/client.ts";
 import { resolveDomainEvents } from "../events/domain-events.ts";
 import { hasPermission } from "./auth.ts";
-import { claimBackendActionBusinessLimit } from "./rate-limit.ts";
+import { claimBackendActionBusinessLimit, claimBackendActionBurstLimit } from "./rate-limit.ts";
 import type { BackendActionDefinition } from "./action-registry.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { toApiJson } from "./response.ts";
+import { loadOperationPolicies, withOperationPolicies } from "../shared/operation-policies.ts";
 
 const RESTRICTED_INTERACTION_ACTIONS = new Set([
   "createAnnouncementComment",
@@ -50,12 +51,24 @@ export async function executeBackendAction(
   database: BackendDatabase,
   operationId: string,
 ) {
+  const policies = await loadOperationPolicies(database);
+  return withOperationPolicies(policies.values, () => executeAction(definition, payload, auth, database, operationId));
+}
+
+async function executeAction(
+  definition: BackendActionDefinition,
+  payload: JsonRecord,
+  auth: AuthContext,
+  database: BackendDatabase,
+  operationId: string,
+) {
   if (auth.interactionRestricted && RESTRICTED_INTERACTION_ACTIONS.has(definition.name)) {
     throw new Error("user-muted");
   }
   if (definition.requiredPermission && !hasPermission(auth, definition.requiredPermission)) {
     throw new Error("permission-denied");
   }
+  await claimBackendActionBurstLimit(definition.name, auth.uid);
 
   // Read-only actions execute directly without transaction or operation claiming.
   if (definition.rateLimitGroup === "read" || definition.rateLimitGroup === "upload-resolve") {
@@ -75,6 +88,11 @@ export async function executeBackendAction(
     if (claimError) throw claimError;
     const claim = Array.isArray(claimRows) ? claimRows[0] : null;
     if (!claim) throw new Error("operation-claim-failed");
+    const identity = await tx.table('app_private', 'operations').select('actor_uid,action,response_expired')
+      .eq('operation_id', operationId).single();
+    if (identity.error) throw identity.error;
+    if (identity.data.actor_uid !== auth.uid || identity.data.action !== definition.name) throw new Error('permission-denied');
+    if (identity.data.response_expired) throw new Error('operation-expired');
     if (claim.completed) return claim.response;
     if (!claim.claimed) throw new Error("request-in-progress");
     const { error: contextError } = await tx.call("app_api", "set_operation_context", {

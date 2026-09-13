@@ -6,6 +6,8 @@ import { claimBackendHealthcheckRateLimit } from "./rate-limit.ts";
 import { errorResponse, successResponse } from "./response.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
 import { executeBackendAction } from "./execution.ts";
+import { loadOperationPolicies, withOperationPolicies } from "../shared/operation-policies.ts";
+import { recordOperationalError } from "../shared/operational-telemetry.ts";
 
 export async function handleBackendAction(
   request: Request,
@@ -21,8 +23,9 @@ export async function handleBackendAction(
     if (!action) throw new Error("invalid-action");
 
     if (action === "healthcheck") {
-      await claimBackendHealthcheckRateLimit();
       const data = await handleHealthcheck(request, database);
+      const { values } = await loadOperationPolicies(database);
+      await withOperationPolicies(values, claimBackendHealthcheckRateLimit);
       log.success("backend-action.completed", { action, domain: "system", operationId, status: 200 });
       return successResponse(data, operationId);
     }
@@ -46,6 +49,7 @@ export async function handleBackendAction(
     const fields = { action: action || "unknown", operationId, status, ...(failureId ? { failureId } : {}) };
     if (status >= 500) log.error("backend-action.failed", error, fields);
     else log.warn("backend-action.rejected", fields);
+    await recordOperationalError(database, action, error, status, operationId, failureId);
     return errorResponse(error, operationId, failureId);
   }
 }

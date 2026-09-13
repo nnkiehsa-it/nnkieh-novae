@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { processJobMessage } from "../../cloudflare/src/backend/jobs/consumer.ts";
+import { processJobMessage as processImmediately } from "../../cloudflare/src/backend/jobs/consumer.ts";
 import {
   asRecord,
   callAction,
@@ -12,6 +12,16 @@ import {
 } from "./helpers.ts";
 
 const DAY_MS = 86_400_000;
+
+async function processJobMessage(...args: Parameters<typeof processImmediately>) {
+  try { return await processImmediately(...args); }
+  catch (error) {
+    const seconds = error instanceof Error && 'retryAfterSeconds' in error ? Number(error.retryAfterSeconds) : 0;
+    if (seconds <= 0 || seconds > 60) throw error;
+    await new Promise(resolve => setTimeout(resolve, seconds * 1000 + 20));
+    return processImmediately(...args);
+  }
+}
 
 function requiredEnv(name: string) {
   const value = process.env[name]?.trim();

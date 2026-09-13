@@ -63,9 +63,11 @@ Worker 的 cron 是 `*/30 * * * *`，負責啟動到期支援、retention 與其
 
 Queue producer 與 consumer 都使用相同環境的 queue。Production 預設 `novae-jobs`；development 若沒指定名稱，renderer 使用帶環境尾碼的 queue。Consumer 參數是 batch size 10、batch timeout 5 秒、max retries 5。
 
-資料庫備份 workflow 每天 `18:20 UTC` 檢查一次，只有距離最近備份至少 72 小時才建立新檔。它使用 PostgreSQL 18 `pg_dump` 產生 custom-format backup，先以 `age` 公鑰加密，再連同 SHA-256 checksum 上傳為保存 7 天的 GitHub artifact；repository 只保留最新兩份 Novae backup artifact。也可用 workflow dispatch 強制執行一次。
+資料庫備份 workflow 每天 `18:20 UTC` 檢查一次。`scripts/backup-policy.mjs` 從資料庫讀取管理員設定的間隔、份數與 artifact 保存天數，並驗證範圍；預設維持 72 小時、兩份、7 天。它使用 PostgreSQL 18 `pg_dump` 產生 custom-format backup，以 `age` 公鑰加密後連同 SHA-256 checksum 上傳。也可用 workflow dispatch 強制執行一次。
 
-備份 job 固定使用 `production` Environment，concurrency group 是 `neon-database-backup` 且不取消進行中的工作。Schedule 每天檢查的原因是 GitHub 排程可能延遲；真正 cadence 由 artifact timestamp 的 259,200 秒門檻決定。Manual dispatch 跳過 cadence 判斷，直接建立新備份。
+備份 job 固定使用 `production` Environment，concurrency group 是 `neon-database-backup` 且不取消進行中的工作。實際 cadence 由未到期 artifact 的 timestamp 與管理政策決定；每日檢查的時間格與 GitHub 排程延遲仍可能使備份晚於設定間隔。Manual dispatch 跳過 cadence，但仍驗證政策。讀不到政策會失敗，不偷偷使用舊預設值。
+
+營運頁分別展示 workflow runs 與實際未到期的加密 artifact。Workflow 成功可能只是本次跳過備份；artifact 存在也不是已完成還原演練的證明。下載／解密／還原維持受控維運程序，不把 owner credential 或 age 私鑰放到前端。
 
 備份內容使用 `--no-owner --no-privileges`，方便還原到重新建立的 role 配置。Plaintext `novae.dump` 在 runner 內加密後立刻刪除，只上傳 `.dump.age` 和 `.sha256`。
 

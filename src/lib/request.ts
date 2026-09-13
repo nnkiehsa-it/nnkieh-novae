@@ -1,17 +1,31 @@
 import { isApiErrorCode } from '@/generated/api-errors';
 import { t } from '@/i18n';
 import { ApiRequestError, type ApiErrorResponse } from '@/lib/api-error';
+import { getOperationPolicy } from '@/lib/operation-policies';
 
-const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
-const DEFAULT_RETRY_ATTEMPTS = 3;
 const BASE_RETRY_DELAY_MS = 300;
 const MAX_RETRY_DELAY_MS = 2_000;
-const MAX_AUTOMATIC_RETRY_AFTER_MS = 10_000;
 const RETRYABLE_HTTP_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
 const SAFE_RETRY_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+const writeTimes = new Map<string, number>();
 
-export const READ_REQUEST_TIMEOUT_MS = 5_000;
-export const LONG_REQUEST_TIMEOUT_MS = 30_000;
+export async function waitForWriteCooldown(key: string, cooldown: number, signal?: AbortSignal) {
+  if (signal?.aborted) throw signal.reason;
+  const now = Date.now();
+  const scheduledAt = Math.max(now,(writeTimes.get(key) ?? 0)+cooldown);
+  if(scheduledAt-now > 5000) throw new ApiRequestError({ error: { code:'rate-limit.operation',retryAfterSeconds:Math.max(1,Math.ceil(cooldown/1000)) } });
+  writeTimes.set(key,scheduledAt);
+  for(const [oldKey,time] of writeTimes) if(now-time > 5000) writeTimes.delete(oldKey);
+  if(scheduledAt <= now) return;
+  await new Promise<void>((resolve,reject) => {
+    const timer = window.setTimeout(() => { signal?.removeEventListener('abort',abort); resolve(); },scheduledAt-now);
+    const abort = () => { window.clearTimeout(timer); reject(signal?.reason); };
+    signal?.addEventListener('abort',abort,{once:true});
+  });
+}
+
+export const readRequestTimeoutMs = () => getOperationPolicy('readTimeoutMs');
+export const longRequestTimeoutMs = () => getOperationPolicy('longTimeoutMs');
 
 type RequestFailureCode = 'aborted' | 'http' | 'network' | 'timeout' | 'unknown';
 
@@ -43,7 +57,7 @@ interface RequestOptions {
   label?: string;
   retry?: false | RequestRetryOptions;
   signal?: AbortSignal;
-  timeoutMs?: number;
+  timeoutMs?: number | (() => number);
 }
 
 function abortedFailure(signal: AbortSignal, label: string) {
@@ -134,7 +148,7 @@ export async function withRequestTimeout<T>(
 ): Promise<T> {
   const label = options.label ?? 'common.request';
   const controller = new AbortController();
-  const timeoutMs = options.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
+  const timeoutMs = (typeof options.timeoutMs === 'function' ? options.timeoutMs() : options.timeoutMs) ?? getOperationPolicy('requestTimeoutMs');
 
   const abortFromParent = () => controller.abort(options.signal?.reason);
   if (options.signal?.aborted) throw abortedFailure(options.signal, label);
@@ -180,7 +194,7 @@ export async function safeFetch(
     || (options.retry !== false && options.retry?.allowUnsafe === true);
   const maxAttempts = options.retry === false
     ? 1
-    : Math.max(1, options.retry?.maxAttempts ?? DEFAULT_RETRY_ATTEMPTS);
+    : Math.max(1, options.retry?.maxAttempts ?? getOperationPolicy('retryAttempts'));
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
@@ -209,7 +223,7 @@ export async function safeFetch(
     } catch (error) {
       if (attempt >= maxAttempts || !shouldRetry(error, retrySafe)) throw error;
       const delayMs = retryDelayMs(error, attempt);
-      if (delayMs > MAX_AUTOMATIC_RETRY_AFTER_MS) throw error;
+      if (delayMs > getOperationPolicy('retryAfterMaxMs')) throw error;
       await waitForRetry(delayMs, parentSignal, label);
     }
   }

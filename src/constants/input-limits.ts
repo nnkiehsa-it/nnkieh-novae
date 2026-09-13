@@ -1,7 +1,8 @@
+import { getOperationPolicy } from '@/lib/operation-policies';
 export const INPUT_LIMITS = {
-  title: 30,
-  content: 1_000,
-  comment: 70,
-  facilityLocation: 120,
-  resultContent: 2_000,
+  get title() { return getOperationPolicy('titleLength'); },
+  get content() { return getOperationPolicy('contentLength'); },
+  get comment() { return getOperationPolicy('commentLength'); },
+  get facilityLocation() { return getOperationPolicy('locationLength'); },
+  get resultContent() { return getOperationPolicy('resultLength'); },
 } as const;

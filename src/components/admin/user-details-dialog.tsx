@@ -40,6 +40,8 @@ export function responsibilityLabel(user: AdminUser, t: Translator) {
 }
 
 interface UserDetailsDialogProps {
+  durationHours: number;
+  onDurationHoursChange: (hours: number) => void;
   busy: boolean;
   onClose: () => void;
   onReasonChange: (reason: string) => void;
@@ -49,6 +51,7 @@ interface UserDetailsDialogProps {
 }
 
 export function UserDetailsDialog({
+  durationHours,onDurationHoursChange,
   busy,
   onClose,
   onReasonChange,
@@ -186,6 +189,13 @@ export function UserDetailsDialog({
                   </Button>
                 ))}
               </div>
+              <label className="block space-y-2 text-sm">
+                <span>{t('ui.operations.restrictionHours')}</span>
+                <Input type="number" min={1} max={87600} step={1} value={durationHours} onChange={event => onDurationHoursChange(Number(event.target.value))} />
+              </label>
+              <Button disabled={busy || !Number.isInteger(durationHours) || durationHours < 1 || durationHours > 87600} variant="secondary" onClick={() => onRestrictionChange('custom')}>
+                {t('ui.operations.restrictCustom')}
+              </Button>
             </div>
           )}
         </DialogContent>

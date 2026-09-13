@@ -1,6 +1,6 @@
 "use client";
 
-import { FolderCog, Users } from "lucide-react";
+import { administrationNavigation } from './admin-navigation';
 import { useSearchParams } from "next/navigation";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 import { SecondaryToolbar } from "@/components/detail-toolbar";
@@ -14,33 +14,16 @@ export function AdministrationSkeleton() {
   useLocaleSubscription();
   const session = useSession();
   const search = useSearchParams();
-  const options = [
-    ...(session.can("category.manage")
-      ? [{
-          icon: <FolderCog className="size-3.5" />,
-          label: translate("ui.admin.categories"),
-          value: "categories",
-        }]
-      : []),
-    ...(session.can("role.manage")
-      ? [{
-          icon: <Users className="size-3.5" />,
-          label: translate("ui.admin.access"),
-          value: "members",
-        }]
-      : []),
-  ];
-  const requestedTab = search.get("tab") === "members" ? "members" : "categories";
-  const tab = options.some((option) => option.value === requestedTab)
-    ? requestedTab
-    : options[0]?.value ?? "categories";
+  const { tab,options } = administrationNavigation(search.get('tab'), {
+    admin:session.isAdmin,overview:session.can('dashboard.view'),members:session.can('role.manage'),categories:session.can('category.manage'),
+  },translate);
   return (
-    <div className="space-y-5" aria-busy="true">
+    <div className="mx-auto w-full max-w-6xl space-y-7 pb-8" aria-busy="true">
       <SecondaryToolbar
         backLabel={translate("ui.common.back")}
         onBack={() => window.history.back()}
       />
-      <PageHeader title={translate("ui.admin.title")} />
+      <PageHeader title={translate("ui.admin.title")} description={translate('ui.admin.description')} />
       <LiquidTabs
         ariaLabel={translate("ui.admin.items")}
         disabled
@@ -48,7 +31,7 @@ export function AdministrationSkeleton() {
         options={options}
         value={tab}
       />
-      {tab === "members" ? (
+      {!['members','categories'].includes(tab) ? <Skeleton className="h-48 w-full" /> : tab === "members" ? (
         <div className="space-y-4">
           <Card>
             <p className="text-base font-semibold">{translate("ui.access.scopeStep")}</p>

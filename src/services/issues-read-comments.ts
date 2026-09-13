@@ -4,7 +4,7 @@ import type { CommentCursor } from './comment-cursor';
 import { normalizeCommentCursor } from './comment-cursor';
 import { toReadableBackendError } from './issues-core';
 import type { CommentResponseRecord } from './issues-read-shared';
-import { READ_REQUEST_TIMEOUT_MS } from '@/lib/request';
+import { readRequestTimeoutMs } from '@/lib/request';
 import { getRouteRequestSignal } from '@/lib/route-request';
 import { captureContentCacheWriteGuard, createContentCacheKey, getCachedContentPersistent, setCachedContentFromRead } from '@/services/content-read-cache';
 import { COMMENT_FEED_PAGE_SIZE } from '@/lib/page-size';
@@ -50,7 +50,7 @@ export async function fetchComments(
       { comments: CommentResponseRecord[]; cursor: CommentCursor | null; hasMore: boolean; version: number }
     >('listComments', {
       signal: getCommentRequestSignal(options),
-      timeoutMs: READ_REQUEST_TIMEOUT_MS,
+      timeoutMs: readRequestTimeoutMs,
     });
     const result = await fn({ issueId, cursor, pageSize: COMMENT_FEED_PAGE_SIZE, sort });
 

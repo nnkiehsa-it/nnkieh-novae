@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  MAX_RETAINED_FEED_PAGES,
   advanceFeedPageCount,
   canLoadAnotherFeedPage,
   limitRetainedFeedItems,
 } from "../../src/lib/feed-page-limit";
+import { DEFAULT_OPERATION_POLICIES } from '../../src/generated/operations';
+const MAX_RETAINED_FEED_PAGES = DEFAULT_OPERATION_POLICIES.feedPages;
 
 describe("feed page retention", () => {
   it("resets a new query to its first page", () => {

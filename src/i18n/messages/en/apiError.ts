@@ -15,6 +15,7 @@ const messages = {
   'apiError.methodNotAllowed': 'This request method is not allowed.',
   'apiError.requestTooLarge': 'The submitted content exceeds the size limit.',
   'apiError.requestInProgress': 'This action is already being processed. Please try again later.',
+  'apiError.operationExpired': 'The replay record for this action has expired. Refresh and check the current state before submitting again.',
   'apiError.pushTokenLimitReached': 'The notification device limit has been reached. Remove an old device first.',
   'apiError.invalidAction': 'The requested action is invalid.',
   'apiError.invalidJson': 'The request format is invalid.',

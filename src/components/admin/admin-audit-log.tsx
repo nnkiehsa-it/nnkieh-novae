@@ -10,6 +10,7 @@ import { SkeletonRows } from "@/components/ui/skeleton-rows";
 import { useAdminAudit, type AdminAuditEntry } from "@/hooks/use-admin-console";
 import { useI18n } from "@/i18n";
 import { formatDate } from "@/lib/format";
+import { AdminPagination } from './admin-pagination';
 
 function actionLabel(action: string, t: (key: string) => string) {
   const labels: Record<string, string> = {
@@ -39,7 +40,7 @@ function detailSummary(entry: AdminAuditEntry) {
 
 export function AdminAuditLog() {
   const { t } = useI18n();
-  const { entries, error, load, loading, query, setQuery } = useAdminAudit();
+  const { entries, error, load, loading, query, setQuery, page, hasMore, changePage } = useAdminAudit();
 
   return (
     <div className="space-y-5">
@@ -100,6 +101,7 @@ export function AdminAuditLog() {
           </div>
         )}
       </div>
+      <AdminPagination page={page} hasMore={hasMore} busy={loading} onChange={next => void changePage(next)} />
     </div>
   );
 }

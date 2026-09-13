@@ -1,8 +1,9 @@
 import { BACKEND_ACTION_POLICIES } from "../shared/backend-action-policies.ts";
 import { RATE_LIMITS } from "../shared/rate-limits.ts";
-import { claimFixedWindowRateLimits, utcHourWindow, utcMinuteWindow, utcSecondWindow } from "../shared/business-rate-limit.ts";
+import { claimFixedWindowRateLimits, utcFixedWindow, utcHourWindow, utcMinuteWindow, utcSecondWindow } from "../shared/business-rate-limit.ts";
 import { taipeiDayWindow } from "./utils.ts";
 import type { JsonRecord } from "./types.ts";
+import { operationPolicy } from "../shared/operation-policies.ts";
 
 const extraLimits = {
   announcementCreateDaily: { actionName: "announcement.create", window: taipeiDayWindow, config: RATE_LIMITS.announcementCreateDaily },
@@ -22,6 +23,14 @@ const extraLimits = {
   facilityStatusUpdateHourly: { actionName: "facility.status", window: utcHourWindow, config: RATE_LIMITS.facilityStatusUpdateHourly },
 } as const;
 
+export async function claimBackendActionBurstLimit(action: string, uid: string) {
+  const policy = BACKEND_ACTION_POLICIES[action as keyof typeof BACKEND_ACTION_POLICIES];
+  const keys = { read: 'readBurst', 'general-write': 'writeBurst', 'sensitive-write': 'sensitiveBurst',
+    'admin-write': 'adminBurst', 'upload-write': 'uploadBurst', 'upload-resolve': 'resolveBurst' } as const;
+  await claimFixedWindowRateLimits([{ identifier: uid, actionName: `burst.${policy.group}`,
+    window: utcFixedWindow(10_000), config: { limit: operationPolicy(keys[policy.group]), errorCode: 'rate-limit.operation' } }]);
+}
+
 export async function claimBackendActionBusinessLimit(action: string, payload: JsonRecord, uid: string) {
   const policy = BACKEND_ACTION_POLICIES[action as keyof typeof BACKEND_ACTION_POLICIES];
   if (!policy || !("extraLimit" in policy)) return;
@@ -31,7 +40,7 @@ export async function claimBackendActionBusinessLimit(action: string, payload: J
     : 1;
   await claimFixedWindowRateLimits([{
     actionName: extra.actionName,
-    config: extra.config,
+    config: { ...extra.config, limit: operationPolicy(policy.extraLimit) },
     identifier: uid,
     units,
     window: extra.window(),
@@ -40,7 +49,7 @@ export async function claimBackendActionBusinessLimit(action: string, payload: J
 
 export async function claimBackendHealthcheckRateLimit() {
   await claimFixedWindowRateLimits([
-    { identifier: "global", actionName: "backend.healthcheck.second", window: utcSecondWindow(), config: RATE_LIMITS.backendHealthcheckSecond },
-    { identifier: "global", actionName: "backend.healthcheck", window: utcMinuteWindow(), config: RATE_LIMITS.backendHealthcheckMinute },
+    { identifier: "global", actionName: "backend.healthcheck.second", window: utcSecondWindow(), config: { ...RATE_LIMITS.backendHealthcheckSecond, limit: operationPolicy('backendHealthcheckSecond') } },
+    { identifier: "global", actionName: "backend.healthcheck", window: utcMinuteWindow(), config: { ...RATE_LIMITS.backendHealthcheckMinute, limit: operationPolicy('backendHealthcheckMinute') } },
   ]);
 }

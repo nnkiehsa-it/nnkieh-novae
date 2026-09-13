@@ -22,6 +22,7 @@ import { SkeletonRows } from "@/components/ui/skeleton-rows";
 import { useAdminUsers } from "@/hooks/use-admin-console";
 import { useI18n } from "@/i18n";
 import { formatDate } from "@/lib/format";
+import { AdminPagination } from './admin-pagination';
 
 export function UserManagement() {
   const { t } = useI18n();
@@ -38,6 +39,8 @@ export function UserManagement() {
     setSelected,
     updateRestriction,
     users,
+    page, hasMore, changePage,
+    durationHours,setDurationHours,
   } = useAdminUsers();
   const restrictedCount = useMemo(
     () => users.filter((user) => isUserRestricted(user)).length,
@@ -202,7 +205,10 @@ export function UserManagement() {
         )}
       </div>
 
+      <AdminPagination page={page} hasMore={hasMore} busy={loading} onChange={next => void changePage(next)} />
       <UserDetailsDialog
+        durationHours={durationHours}
+        onDurationHoursChange={setDurationHours}
         busy={busy === selected?.uid}
         onClose={() => {
           setSelected(null);

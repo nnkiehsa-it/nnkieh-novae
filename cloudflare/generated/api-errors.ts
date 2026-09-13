@@ -50,6 +50,10 @@ export const API_ERRORS = {
     "status": 409,
     "messageKey": "apiError.requestInProgress"
   },
+  "operation-expired": {
+    "status": 409,
+    "messageKey": "apiError.operationExpired"
+  },
   "push-token-limit-reached": {
     "status": 409,
     "messageKey": "apiError.pushTokenLimitReached"

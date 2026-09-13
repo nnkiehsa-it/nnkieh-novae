@@ -18,10 +18,19 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Determine whether the three-day backup is due
+      - uses: actions/checkout@v7
+
+      - name: Read administrator backup policy
+        id: policy
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: node scripts/backup-policy.mjs
+
+      - name: Determine whether the backup is due
         id: cadence
         env:
           GH_TOKEN: ${{ github.token }}
+          BACKUP_INTERVAL_HOURS: ${{ steps.policy.outputs.backupIntervalHours }}
         run: |
           if [ "$GITHUB_EVENT_NAME" = 'workflow_dispatch' ]; then
             echo 'run=true' >> "$GITHUB_OUTPUT"
@@ -29,7 +38,7 @@ jobs:
           fi
           latest_created_at="$(
             gh api --paginate "/repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" \
-              --jq '.artifacts[] | select(.name | startswith("novae-neon-")) | .created_at' \
+              --jq '.artifacts[] | select(.expired == false) | select(.name | startswith("novae-neon-")) | .created_at' \
               | sort -r \
               | head -n 1
           )"
@@ -39,15 +48,12 @@ jobs:
           fi
           latest_epoch="$(date --date="$latest_created_at" +%s)"
           current_epoch="$(date -u +%s)"
-          if (( current_epoch - latest_epoch >= 259200 )); then
+          if (( current_epoch - latest_epoch >= BACKUP_INTERVAL_HOURS * 3600 )); then
             echo 'run=true' >> "$GITHUB_OUTPUT"
           else
             echo 'run=false' >> "$GITHUB_OUTPUT"
-            echo "Latest backup is newer than 72 hours: $latest_created_at"
+            echo "Latest backup is within the configured interval: $latest_created_at"
           fi
-
-      - if: steps.cadence.outputs.run == 'true'
-        uses: actions/checkout@v7
 
       - name: Validate backup configuration
         if: steps.cadence.outputs.run == 'true'
@@ -96,19 +102,20 @@ jobs:
             backup/novae.dump.age
             backup/novae.dump.age.sha256
           if-no-files-found: error
-          retention-days: 7
+          retention-days: ${{ steps.policy.outputs.backupRetentionDays }}
 
-      - name: Keep only the latest two database backups
+      - name: Keep the configured number of database backups
         if: steps.cadence.outputs.run == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          BACKUP_COPIES: ${{ steps.policy.outputs.backupCopies }}
         run: |
           mapfile -t artifact_ids < <(
             gh api --paginate "/repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" \
-              --jq '.artifacts[] | select(.name | startswith("novae-neon-")) | [.created_at, (.id | tostring)] | @tsv' \
+              --jq '.artifacts[] | select(.expired == false) | select(.name | startswith("novae-neon-")) | [.created_at, (.id | tostring)] | @tsv' \
               | sort -r \
               | cut -f2
           )
-          for artifact_id in "${artifact_ids[@]:2}"; do
+          for artifact_id in "${artifact_ids[@]:$BACKUP_COPIES}"; do
             gh api --method DELETE "/repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id"
           done

@@ -124,6 +124,11 @@ export interface GeneratedDatabaseTables {
   "event_destinations": {
     "destination": string;
   };
+  "external_cleanup_backlog": {
+    "job_id": string;
+    "payload": GeneratedJson;
+    "created_at": string;
+  };
   "facility_categories": {
     "id": string;
     "label": string;
@@ -235,6 +240,31 @@ export interface GeneratedDatabaseTables {
     "notion_page_id": string;
     "updated_at": string;
   };
+  "operation_policy_history": {
+    "id": number;
+    "actor_uid": string;
+    "revision": number;
+    "before_value": GeneratedJson;
+    "after_value": GeneratedJson;
+    "reason": string;
+    "created_at": string;
+  };
+  "operational_errors": {
+    "bucket": string;
+    "action": string;
+    "code": string;
+    "status": number;
+    "count": number;
+    "first_at": string;
+    "last_at": string;
+    "operation_id": string | null;
+    "failure_id": string | null;
+  };
+  "operational_metrics": {
+    "bucket": string;
+    "database_bytes": number;
+    "measured_at": string;
+  };
   "operations": {
     "operation_id": string;
     "actor_uid": string;
@@ -245,6 +275,7 @@ export interface GeneratedDatabaseTables {
     "created_at": string;
     "updated_at": string;
     "expires_at": string;
+    "response_expired": boolean;
   };
   "permissions": {
     "code": string;
@@ -407,8 +438,8 @@ export const GENERATED_DATABASE_FUNCTION_SIGNATURES = [
   "backend_issue_list_to_json(issue_record app_private.issues, actor_uid text, actor_is_admin boolean, current_user_supported boolean, private_to_owner_categories text[], review_required_categories text[], author_private_categories text[]) -> jsonb",
   "backend_issue_to_json(issue_record app_private.issues, actor_uid text, actor_is_admin boolean, private_to_owner_categories text[], review_required_categories text[], author_private_categories text[]) -> jsonb",
   "backend_list_admin_activity(window_hours integer, before_occurred_at timestamp with time zone, before_key text, page_limit integer) -> jsonb",
-  "backend_list_admin_audit(search_query text, page_limit integer) -> jsonb",
-  "backend_list_admin_users(search_query text, page_limit integer) -> jsonb",
+  "backend_list_admin_audit(search_query text, page_limit integer, page_offset integer) -> jsonb",
+  "backend_list_admin_users(search_query text, page_limit integer, page_offset integer) -> jsonb",
   "backend_list_announcement_comments(announcement_id uuid, cursor_id uuid, cursor_created_at timestamp with time zone) -> jsonb",
   "backend_list_announcement_comments(announcement_id uuid, cursor_id uuid, cursor_created_at timestamp with time zone, page_size integer, sort_name text) -> jsonb",
   "backend_list_announcements(actor_uid text, page_size integer, cursor_id uuid, cursor_published_at timestamp with time zone) -> jsonb",
@@ -451,7 +482,7 @@ export const GENERATED_DATABASE_FUNCTION_SIGNATURES = [
   "backend_update_user_access_scope(actor_uid text, target_uid text, scope_kind text, category_id text, grant_access boolean) -> jsonb",
   "backend_upsert_notification_state(actor_uid text) -> app_private.notification_states",
   "claim_background_jobs(requested_batch_size integer) -> TABLE(id uuid, job_type text, scope_id text, payload jsonb, status text, estimated_rows bigint, processed_rows bigint, affected_rows bigint, batch_size integer, attempt_count integer, last_attempt_id uuid, next_attempt_at timestamp with time zone, locked_at timestamp with time zone, started_at timestamp with time zone, completed_at timestamp with time zone, result jsonb, error_detail jsonb, created_by text, created_at timestamp with time zone, updated_at timestamp with time zone, expires_at timestamp with time zone)",
-  "claim_event_deliveries(target_destination text, batch_size integer) -> TABLE(delivery_id uuid, event_id uuid, operation_id uuid, destination text, attempt_count integer, event_type text, aggregate_type text, aggregate_id text, actor_uid text, occurred_at timestamp with time zone, payload jsonb, aggregate_version integer)",
+  "claim_event_deliveries(target_destination text, batch_size integer) -> TABLE(delivery_id uuid, event_id uuid, operation_id uuid, destination text, attempt_count integer, event_type text, aggregate_type text, aggregate_id text, actor_uid text, occurred_at timestamp with time zone, payload jsonb, aggregate_version integer, last_attempt_id uuid)",
   "claim_operation(operation_id uuid, actor_uid text, action_name text) -> TABLE(claimed boolean, completed boolean, response jsonb)",
   "complete_background_job(job_id uuid, attempt_id uuid, job_result jsonb) -> void",
   "complete_event_delivery(delivery_id uuid, attempt_id uuid) -> void",
@@ -465,6 +496,7 @@ export const GENERATED_DATABASE_FUNCTION_SIGNATURES = [
   "record_domain_event(operation_id uuid, aggregate_type text, aggregate_id text, event_type text, actor_uid text, payload jsonb, destinations text[]) -> uuid",
   "reject_expired_support_issues() -> integer",
   "run_scheduled_maintenance_cleanup() -> jsonb",
+  "save_operation_policies(actor_uid text, expected_revision integer, policy_values jsonb, reason text) -> jsonb",
   "set_operation_context(operation_id uuid) -> void",
 ] as const;
 

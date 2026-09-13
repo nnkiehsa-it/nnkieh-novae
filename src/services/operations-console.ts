@@ -1,0 +1,25 @@
+import { invokeBackendAction } from '@/services/backend-action';
+import type { OperationPolicies } from '@/generated/operations';
+import { longRequestTimeoutMs } from '@/lib/request';
+
+export interface OperationsConsole {
+  hasMore: boolean;
+  cleanupBacklog: Array<{ jobId: string; createdAt: string; payload: unknown }>;
+  sampledAt: string;
+  errors: Array<{ action: string; code: string; status: number; count: number; lastAt: string; operationId: string; failureId: string | null }>;
+  metrics: Array<{ bucket: string; databaseBytes: number; measuredAt: string }>;
+  failedDeliveries: Array<{ id: string; destination: string; eventType: string; operationId: string; errorDetail: unknown }>;
+  databaseBytes: number;
+  settings: { revision: number; values: OperationPolicies };
+  capacity: Array<{ name: string; rows: number; deadRows: number; tableBytes: number; indexBytes: number; totalBytes: number }>;
+  jobs: Array<{ id: string; jobType: string; status: string; attemptCount: number; affectedRows: number; estimatedRows: number; errorDetail: unknown; updatedAt: string }>;
+  deliveries: Array<{ destination: string; status: string; count: number; oldestAt: string }>;
+  history: Array<{ id: number; actorUid: string; revision: number; reason: string; createdAt: string; beforeValue: OperationPolicies; afterValue: OperationPolicies }>;
+}
+export const fetchOperationsConsole = invokeBackendAction<{ page?: number }, OperationsConsole>('getOperationsConsole');
+export const retryOperationalWork = invokeBackendAction<{ kind: 'job' | 'delivery' | 'cleanup'; id: string }, { success: boolean }>('retryOperationalWork');
+export interface ProviderDiagnostic { provider: string; status: 'available' | 'not-configured' | 'unavailable'; checkedAt: string; data?: unknown; error?: string; nextCursor?: string | null; until?: number }
+export const getProviderDiagnostics = invokeBackendAction<{ provider: string; cursor?: string; until?: number; query?: string }, ProviderDiagnostic>('getProviderDiagnostics', { timeoutMs: longRequestTimeoutMs });
+export const saveOperationPolicies = invokeBackendAction<{
+  revision: number; values: OperationPolicies; reason: string;
+}, { revision: number; values: OperationPolicies }>('saveOperationPolicies');

@@ -61,8 +61,13 @@ export async function failNextFcmRequests(count: number) {
 
 export async function drainJobs() {
   for (let attempt = 0; attempt < 20; attempt += 1) {
-    const result = await processJobMessage({ type: "drain" }, testEnvironment);
-    if (!result.backgroundJobs.hasMore && !result.push.hasMore && !result.realtime.hasMore && !result.notion.hasMore && !result.inApp.hasMore) return result;
+    try {
+      const result = await processJobMessage({ type: "drain" }, testEnvironment);
+      if (!result.backgroundJobs.hasMore && !result.push.hasMore && !result.realtime.hasMore && !result.notion.hasMore && !result.inApp.hasMore) return result;
+    } catch (error) {
+      if (!(error instanceof Error) || !('retryAfterSeconds' in error)) throw error;
+      await new Promise(resolve => setTimeout(resolve, Number(error.retryAfterSeconds) * 1000));
+    }
   }
   throw new Error("integration-job-drain-did-not-settle");
 }

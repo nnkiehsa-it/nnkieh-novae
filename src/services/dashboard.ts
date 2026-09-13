@@ -2,7 +2,7 @@ import { invokeBackendAction } from '@/services/backend-action';
 import { toReadableBackendError } from '@/services/issues-core';
 import type { PlatformDashboardData, PlatformDashboardOperations, PlatformDashboardStats } from '@/types';
 import { getRouteRequestSignal } from '@/lib/route-request';
-import { READ_REQUEST_TIMEOUT_MS } from '@/lib/request';
+import { readRequestTimeoutMs } from '@/lib/request';
 import {
   CONTENT_SHORT_CACHE_TTL_MS,
   getCachedContentPersistent,
@@ -89,7 +89,7 @@ async function loadPlatformDashboard(): Promise<PlatformDashboardData> {
   try {
     const fn = invokeBackendAction<Record<string, never>, DashboardResponse>('getPlatformDashboard', {
       signal: getRouteRequestSignal(),
-      timeoutMs: READ_REQUEST_TIMEOUT_MS,
+      timeoutMs: readRequestTimeoutMs,
     });
     const result = await fn({});
     const stats = result.stats;

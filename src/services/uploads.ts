@@ -1,5 +1,5 @@
 import { invokeBackendAction } from '@/services/backend-action';
-import { LONG_REQUEST_TIMEOUT_MS, READ_REQUEST_TIMEOUT_MS, withRequestTimeout } from '@/lib/request';
+import { longRequestTimeoutMs, readRequestTimeoutMs, withRequestTimeout } from '@/lib/request';
 import { toReadableBackendError } from './issues-core';
 import { t } from '@/i18n';
 
@@ -117,7 +117,7 @@ async function uploadToCloudinary(file: File, session: ImageUploadSession) {
     );
     if (!response.ok) throw await createCloudinaryUploadError(response);
     return await response.json() as CloudinaryUploadResponse;
-  }, { label: 'dashboard.imageUpload', timeoutMs: LONG_REQUEST_TIMEOUT_MS });
+  }, { label: 'dashboard.imageUpload', timeoutMs: longRequestTimeoutMs });
 }
 
 export async function createImageUploadPolicies(
@@ -152,7 +152,7 @@ export async function createImageUploadPolicies(
       targetType: ImageUploadTargetType;
       uploads: Array<{ publicId: string; signature: string; uploadId: string; version: number }>;
     }, { uploads: ImageUploadPolicy[] }>('finalizeImageUploads', {
-      timeoutMs: LONG_REQUEST_TIMEOUT_MS,
+      timeoutMs: longRequestTimeoutMs,
     });
     const result = await finalize({
       targetType,
@@ -228,7 +228,7 @@ export async function resolveUploadImageUrls(uploadIds: string[], options: Resol
         thumbnailUrls: Record<string, string>;
       }
     >('resolveUploadImageUrls', {
-      timeoutMs: READ_REQUEST_TIMEOUT_MS,
+      timeoutMs: readRequestTimeoutMs,
     });
     const result = await fn({ uploadIds: unresolvedIds });
     const fetched = result;

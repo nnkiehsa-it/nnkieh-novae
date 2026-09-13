@@ -43,6 +43,7 @@ const GROUPS: Array<{ descriptionKey: string; items: RetentionItem[]; titleKey: 
       { key: "deliveryCompletedDays", unit: "days" },
       { key: "deliveryFailedDays", unit: "days" },
       { key: "operationHours", unit: "hours" },
+      { key: "domainEventDays", unit: "days" },
       { key: "backgroundJobCompletedDays", unit: "days" },
       { key: "backgroundJobFailedDays", unit: "days" },
     ],

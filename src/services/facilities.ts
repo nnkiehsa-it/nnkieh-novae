@@ -10,7 +10,7 @@ import type {
 } from '@/types';
 import { toReadableBackendError } from '@/services/issues-core';
 import { captureContentCacheWriteGuard, createContentCacheKey, getCachedContent, getCachedContentPersistent, markContentCachePrefixStale, runCoalescedContentRequest, setCachedContentFromRead } from '@/services/content-read-cache';
-import { READ_REQUEST_TIMEOUT_MS } from '@/lib/request';
+import { readRequestTimeoutMs } from '@/lib/request';
 import { registerContentVersion } from '@/services/content-versions';
 import { toFacilityStatusCounts } from '@/constants/statuses';
 
@@ -79,7 +79,7 @@ export async function listFacilities(input: {
   const cacheGuard = captureContentCacheWriteGuard(cacheKey);
   try {
     const fn = invokeBackendAction<typeof input & { pageSize: number }, { facilities: RawFacility[]; cursor: FacilityCursor | null; hasMore: boolean; statusCounts: Record<string, number>; version: number }>(
-      'listFacilities', { signal: options.signal, timeoutMs: READ_REQUEST_TIMEOUT_MS },
+      'listFacilities', { signal: options.signal, timeoutMs: readRequestTimeoutMs },
     );
     const result = await fn({ ...input, pageSize: 20 });
     const page = {

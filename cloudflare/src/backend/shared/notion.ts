@@ -1008,6 +1008,6 @@ export async function reconcileNotionPages(database: AppDatabase): Promise<{ arc
 }
 
 export async function markNotionPageDeleted(pageId: string): Promise<void> {
-  if (!notionEnabled()) return;
+  if (!notionEnabled()) throw new Error('notion-not-configured');
   await callNotionAPI(`/pages/${pageId}`, "PATCH", { archived: true });
 }

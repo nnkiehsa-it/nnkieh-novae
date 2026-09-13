@@ -33,9 +33,9 @@ export class BusinessRateLimiter extends DurableObject<Env> {
     `);
   }
 
-  claim(claims: DurableRateLimitClaim[]): DurableRateLimitResult {
+  async claim(claims: DurableRateLimitClaim[]): Promise<DurableRateLimitResult> {
     const now = Date.now();
-    return this.ctx.storage.transactionSync(() => {
+    const result = this.ctx.storage.transactionSync(() => {
       this.ctx.storage.sql.exec("DELETE FROM rate_limits WHERE expires_at <= ?", now);
       const pending: Array<DurableRateLimitClaim & { nextUnits: number }> = [];
       for (const claim of claims) {
@@ -63,5 +63,19 @@ export class BusinessRateLimiter extends DurableObject<Env> {
       }
       return { success: true };
     });
+    await this.scheduleCleanup();
+    return result;
+  }
+
+  private async scheduleCleanup() {
+    const next = this.ctx.storage.sql.exec<{ expiry: number | null }>(
+      'SELECT MIN(expires_at) AS expiry FROM rate_limits',
+    ).one().expiry;
+    if (next !== null) await this.ctx.storage.setAlarm(Math.max(Date.now() + 1000, next));
+  }
+
+  async alarm() {
+    this.ctx.storage.sql.exec('DELETE FROM rate_limits WHERE expires_at <= ?', Date.now());
+    await this.scheduleCleanup();
   }
 }

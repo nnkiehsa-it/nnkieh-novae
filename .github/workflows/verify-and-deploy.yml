@@ -346,6 +346,11 @@ jobs:
 
       - name: Create the ephemeral Worker secrets file
         env:
+          OPERATIONS_CLOUDFLARE_ACCOUNT_ID: ${{ secrets.OPERATIONS_CLOUDFLARE_ACCOUNT_ID }}
+          OPERATIONS_CLOUDFLARE_TOKEN: ${{ secrets.OPERATIONS_CLOUDFLARE_TOKEN }}
+          OPERATIONS_WORKER_NAME: ${{ secrets.OPERATIONS_WORKER_NAME }}
+          OPERATIONS_GITHUB_TOKEN: ${{ secrets.OPERATIONS_GITHUB_TOKEN }}
+          OPERATIONS_GITHUB_REPOSITORY: ${{ secrets.OPERATIONS_GITHUB_REPOSITORY }}
           ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
           ALLOWED_DOMAIN: ${{ secrets.ALLOWED_DOMAIN || secrets.NEXT_PUBLIC_ALLOWED_DOMAIN || secrets.VITE_ALLOWED_DOMAIN }}
           ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
@@ -369,6 +374,11 @@ jobs:
           node --input-type=module <<'NODE'
           import { writeFileSync } from 'node:fs';
           const secrets = {
+            OPERATIONS_CLOUDFLARE_ACCOUNT_ID: process.env.OPERATIONS_CLOUDFLARE_ACCOUNT_ID,
+            OPERATIONS_CLOUDFLARE_TOKEN: process.env.OPERATIONS_CLOUDFLARE_TOKEN,
+            OPERATIONS_WORKER_NAME: process.env.OPERATIONS_WORKER_NAME,
+            OPERATIONS_GITHUB_TOKEN: process.env.OPERATIONS_GITHUB_TOKEN,
+            OPERATIONS_GITHUB_REPOSITORY: process.env.OPERATIONS_GITHUB_REPOSITORY,
             ADMIN_EMAILS: process.env.ADMIN_EMAILS,
             ALLOWED_DOMAIN: process.env.ALLOWED_DOMAIN,
             ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,

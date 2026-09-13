@@ -1,0 +1,128 @@
+{
+"notionArchiveDays": {"value":365,"min":1,"max":3650,"group":"logs"},
+"backupIntervalHours": {"value":72,"min":24,"max":720,"group":"jobs"},
+"backupCopies": {"value":2,"min":2,"max":30,"group":"jobs"},
+"backupRetentionDays": {"value":7,"min":7,"max":90,"group":"jobs"},
+"readBurst": {"value":60,"min":1,"max":60,"group":"rates"},
+"writeBurst": {"value":20,"min":1,"max":20,"group":"rates"},
+"sensitiveBurst": {"value":10,"min":1,"max":10,"group":"rates"},
+"adminBurst": {"value":10,"min":1,"max":10,"group":"rates"},
+"uploadBurst": {"value":6,"min":1,"max":6,"group":"rates"},
+"resolveBurst": {"value":30,"min":1,"max":30,"group":"rates"},
+"viewMemoryMinutes": {"value":30,"min":1,"max":120,"group":"client"},
+"viewMemoryEntries": {"value":100,"min":10,"max":500,"group":"client"},
+"feedPages": {"value":5,"min":1,"max":20,"group":"client"},
+"mediaBrowserSeconds": {"value":60,"min":0,"max":3600,"group":"client"},
+"mediaEdgeSeconds": {"value":60,"min":0,"max":3600,"group":"client"},
+"notionBatchSize": {"value":10,"min":1,"max":100,"group":"jobs"},
+"notificationBatchSize": {"value":20,"min":1,"max":100,"group":"jobs"},
+"realtimeBatchSize": {"value":50,"min":1,"max":100,"group":"jobs"},
+  "jobBatchSize": {
+    "value": 10,
+    "min": 1,
+    "max": 100,
+    "group": "jobs"
+  },
+  "policyBatchSize": {
+    "value": 100,
+    "min": 1,
+    "max": 500,
+    "group": "jobs"
+  },
+  "clientWriteCooldownMs": {
+    "value": 500,
+    "min": 0,
+    "max": 5000,
+    "group": "client"
+  },
+  "requestTimeoutMs": {
+    "value": 15000,
+    "min": 3000,
+    "max": 60000,
+    "group": "client"
+  },
+  "readTimeoutMs": {
+    "value": 5000,
+    "min": 1000,
+    "max": 30000,
+    "group": "client"
+  },
+  "longTimeoutMs": {
+    "value": 30000,
+    "min": 5000,
+    "max": 120000,
+    "group": "client"
+  },
+  "retryAttempts": {
+    "value": 3,
+    "min": 1,
+    "max": 5,
+    "group": "client"
+  },
+  "retryAfterMaxMs": {
+    "value": 10000,
+    "min": 0,
+    "max": 60000,
+    "group": "client"
+  },
+  "realtimeIdleMinutes": {
+    "value": 30,
+    "min": 5,
+    "max": 120,
+    "group": "client"
+  },
+  "realtimeTicketSeconds": {
+    "value": 45,
+    "min": 15,
+    "max": 120,
+    "group": "realtime"
+  },
+  "titleLength": {
+    "value": 30,
+    "min": 1,
+    "max": 200,
+    "group": "content"
+  },
+  "contentLength": {
+    "value": 1000,
+    "min": 1,
+    "max": 10000,
+    "group": "content"
+  },
+  "commentLength": {
+    "value": 70,
+    "min": 1,
+    "max": 2000,
+    "group": "content"
+  },
+  "resultLength": {
+    "value": 2000,
+    "min": 1,
+    "max": 10000,
+    "group": "content"
+  },
+  "locationLength": {
+    "value": 120,
+    "min": 1,
+    "max": 500,
+    "group": "content"
+  },
+  "searchLength": {
+    "value": 120,
+    "min": 1,
+    "max": 500,
+    "group": "content"
+  },
+  "errorRetentionDays": {
+    "value": 14,
+    "min": 1,
+    "max": 365,
+    "group": "logs"
+  },
+  "metricsRetentionDays": {
+    "value": 30,
+    "min": 1,
+    "max": 365,
+    "group": "logs"
+  }
+}

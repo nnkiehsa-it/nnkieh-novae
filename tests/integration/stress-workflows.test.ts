@@ -1,18 +1,36 @@
 import assert from "node:assert/strict";
 import {
   asRecord,
-  callAction,
+  callAction as callActionImmediately,
   expectActionError,
   insertReadyUpload,
   integrationTest,
   refreshActor,
-  saveCategoryDraft,
+  saveCategoryDraft as saveCategoryDraftImmediately,
   seedActor,
   database,
 } from "./helpers.ts";
 
 type Actor = Awaited<ReturnType<typeof seedActor>>;
 type RecordValue = Record<string, unknown>;
+
+// Stress workflows respect live short-window throttling; quota tests assert rejection separately.
+async function callAction(...args: Parameters<typeof callActionImmediately>) {
+  return retryBurst(() => callActionImmediately(...args));
+}
+async function saveCategoryDraft(...args: Parameters<typeof saveCategoryDraftImmediately>) {
+  return retryBurst(() => saveCategoryDraftImmediately(...args));
+}
+async function retryBurst<T>(run: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt += 1) {
+    try { return await run(); }
+    catch (error) {
+      const seconds = error instanceof Error && 'retryAfterSeconds' in error ? Number(error.retryAfterSeconds) : 0;
+      if (attempt >= 10 || seconds <= 0 || seconds > 10) throw error;
+      await new Promise(resolve => setTimeout(resolve, seconds * 1000 + 20));
+    }
+  }
+}
 
 const stressScale = Math.min(20, Math.max(2, Number(process.env.NOVAE_STRESS_SCALE ?? 4)));
 const runId = crypto.randomUUID().slice(0, 8);

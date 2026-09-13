@@ -13,6 +13,7 @@ export const DATA_RETENTION = {
   "deliveryCompletedDays": 3,
   "deliveryFailedDays": 14,
   "operationHours": 24,
+  "domainEventDays": 30,
   "inactivePushTokensDays": 60,
   "pushTokenConfirmationDays": 7,
   "inactiveAvatarsEnabled": true,

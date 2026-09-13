@@ -1,4 +1,4 @@
-import { READ_REQUEST_TIMEOUT_MS } from '@/lib/request';
+import { readRequestTimeoutMs } from '@/lib/request';
 import { invokeBackendAction } from '@/services/backend-action';
 import { captureContentCacheWriteGuard, createContentCacheKey, getCachedContentPersistent, setCachedContentFromRead } from '@/services/content-read-cache';
 import type { IssueCursor, IssueSortOption, IssueStatusBucket, IssueSummary } from '@/types';
@@ -60,7 +60,7 @@ export async function fetchUserIssues(
       { cursor: IssueCursor | null; hasMore: boolean; issues: Record<string, unknown>[]; statusCounts: Record<string, number>; version: number }
     >('listUserIssues', {
       signal: options?.signal,
-      timeoutMs: READ_REQUEST_TIMEOUT_MS,
+      timeoutMs: readRequestTimeoutMs,
     });
     const result = await fn({ cursor: issueCursorPayload(cursor), pageSize, sort, statusBucket, uid });
     const issues = result.issues.map((issue) => normalizeIssueSummary(String(issue.id ?? ''), issue));

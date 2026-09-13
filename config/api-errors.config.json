@@ -11,6 +11,7 @@
   "method-not-allowed": { "status": 405, "messageKey": "apiError.methodNotAllowed" },
   "request-too-large": { "status": 413, "messageKey": "apiError.requestTooLarge" },
   "request-in-progress": { "status": 409, "messageKey": "apiError.requestInProgress" },
+  "operation-expired": { "status": 409, "messageKey": "apiError.operationExpired" },
   "push-token-limit-reached": { "status": 409, "messageKey": "apiError.pushTokenLimitReached" },
   "invalid-action": { "status": 400, "messageKey": "apiError.invalidAction" },
   "invalid-json": { "status": 400, "messageKey": "apiError.invalidJson" },

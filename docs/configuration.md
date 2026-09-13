@@ -104,6 +104,22 @@ Notion 完全不使用時，三個值全部留空。只要提供 `NOTION_TOKEN` 
 
 Cloudinary 三個值是 backend deployment 必填，因為圖片 session、authenticated delivery、webhook 與 deletion recovery 都依賴它。部署流程會用這組 credential idempotently 建立專案要求的 upload preset。
 
+### 營運面板的選用 server-side 診斷
+
+下列值只放 GitHub Environment secrets／Worker secrets，不放任何 `NEXT_PUBLIC_*`。部署 workflow 會傳給 Worker；缺值時畫面顯示「尚未設定」，不顯示零用量或健康。
+
+| 名稱 | 用途 |
+| --- | --- |
+| `OPERATIONS_CLOUDFLARE_ACCOUNT_ID` | 要讀取的 Cloudflare account |
+| `OPERATIONS_CLOUDFLARE_TOKEN` | 限定該 account 的 Analytics Read；若要查 Worker 紀錄，另需 Workers Observability Write |
+| `OPERATIONS_WORKER_NAME` | 紀錄與指標所屬的精確 Worker 名稱 |
+| `OPERATIONS_GITHUB_TOKEN` | 限定該 repo、Actions Read 的 fine-grained token；不需要程式碼寫入權 |
+| `OPERATIONS_GITHUB_REPOSITORY` | `owner/repository`，用來查備份 workflow 與加密 artifact |
+
+Cloudinary usage 使用既有 server credentials。Cloudflare 紀錄查詢固定限制至指定 Worker，回傳追蹤中繼資料、不轉送 request body／credential。查詢 API 權限名稱雖含 Write，這個整合以 `dry: true` 查詢、不修改 Worker 設定。[Cloudflare API 定義](https://developers.cloudflare.com/api/resources/workers/subresources/observability/subresources/telemetry/methods/query/)。
+
+這些 token 是外部服務初次授權，不是日常營運設定。連線完成後，用量、紀錄、失敗、重試與 runtime 政策都在 App 裡管理。供應商方案、token scope 與真實資料仍需在實際部署後驗證，mock／本機測試不能取代。
+
 ## Vercel 與備份
 
 | 名稱 | 儲存位置 | 用途 |

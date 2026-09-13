@@ -1,4 +1,5 @@
 import { handleDashboardAction } from "./dashboard.ts";
+import { handleOperationsAction } from "./operations.ts";
 import { handleUserAction } from "./users.ts";
 import { handleUploadAction } from "./uploads.ts";
 import { handleIssueAction } from "./issues.ts";
@@ -65,6 +66,11 @@ function action(
 }
 
 export const backendActionDefinitions = [
+  action("getRuntimePolicies", "category", "read", handleOperationsAction),
+  action("getProviderDiagnostics", "dashboard", "read", handleOperationsAction, { requiredPermission: "dashboard.view" }),
+  action("retryOperationalWork", "dashboard", "admin-write", handleOperationsAction, { requiredPermission: "role.manage" }),
+  action("getOperationsConsole", "dashboard", "read", handleOperationsAction, { requiredPermission: "dashboard.view" }),
+  action("saveOperationPolicies", "category", "admin-write", handleOperationsAction, { requiredPermission: "category.manage" }),
   action("getCategoryCatalog", "category", "read", handleCategoryAction),
   action("getCategoryManagement", "category", "read", handleCategoryAction, { requiredPermission: "category.manage" }),
   action("estimateCategoryPolicyChanges", "category", "read", handleCategoryAction, { requiredPermission: "category.manage" }),

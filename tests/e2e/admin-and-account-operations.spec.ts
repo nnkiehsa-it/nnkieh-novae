@@ -44,6 +44,29 @@ test('platform settings save traverses impact estimation and canonical write', a
   await admin.context.close();
 });
 
+test('operations console is usable on phone and desktop and saves an audited policy revision', async ({ browser }, testInfo) => {
+  test.setTimeout(120_000);
+  const admin = await newUserPage(browser,'admin');
+  for(const width of [390,1440]) {
+    await admin.page.setViewportSize({width,height:900});
+    await admin.page.goto('/admin/management?tab=operations');
+    await expect(admin.page.getByRole('heading',{name:'Operations',exact:true})).toBeVisible();
+    await expect(admin.page.getByText('Database storage',{exact:false})).toBeVisible();
+    await expect.poll(()=>admin.page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+    await admin.page.screenshot({path:testInfo.outputPath(`operations-${width}.png`)});
+    await admin.page.getByText('Client requests and throttling',{exact:true}).click();
+    await admin.page.getByLabel('Client Write Cooldown Ms',{exact:true}).scrollIntoViewIfNeeded();
+    await expect(admin.page.getByLabel('Client Write Cooldown Ms',{exact:true})).toHaveValue('500');
+    await admin.page.screenshot({path:testInfo.outputPath(`operations-settings-${width}.png`)});
+  }
+  await admin.page.getByPlaceholder('Reason for change (required)').fill('E2E operational policy audit');
+  await expectBackendAction(admin.page,'saveOperationPolicies',async()=>{
+    await admin.page.getByRole('button',{name:'Save all changes',exact:true}).click();
+  });
+  await expect(admin.page.getByText('E2E operational policy audit',{exact:false})).toBeVisible();
+  await admin.context.close();
+});
+
 test('notification visit and every personal preference issue canonical writes', async ({ browser }) => {
   test.setTimeout(120_000);
   const member = await newUserPage(browser, 'other');

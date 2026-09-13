@@ -19,7 +19,6 @@ import {
   advanceFeedPageCount,
   canLoadAnotherFeedPage,
   limitRetainedFeedItems,
-  MAX_RETAINED_FEED_PAGES,
 } from "@/lib/feed-page-limit";
 import { NOTIFICATION_FEED_PAGE_SIZE } from "@/lib/page-size";
 import { notificationTargetPath } from "@/lib/notification-target";
@@ -159,13 +158,13 @@ export function useNotificationsPage() {
     [activeSources, pages],
   );
   const hasMore = activeSources.some(
-    (source) => more[source] && cursors[source] && pageCounts[source] < MAX_RETAINED_FEED_PAGES,
+    (source) => cursors[source] && canLoadAnotherFeedPage(pageCounts[source],more[source]),
   );
 
   const loadMore = React.useCallback(async () => {
     if (!session.user || loadingMore) return;
     const requests = activeSources.flatMap((source) =>
-      more[source] && cursors[source] && pageCounts[source] < MAX_RETAINED_FEED_PAGES
+      cursors[source] && canLoadAnotherFeedPage(pageCounts[source],more[source])
         ? [{ cursor: cursors[source], source }]
         : [],
     );

@@ -13,6 +13,7 @@ const generationScripts = [
   "generate-api-errors.mjs",
   "generate-motion.mjs",
   "generate-rate-limits.mjs",
+  "generate-operations.mjs",
   "generate-data-retention.mjs",
   "generate-backend-actions.mjs",
   "generate-harmonyos-subset.mjs",

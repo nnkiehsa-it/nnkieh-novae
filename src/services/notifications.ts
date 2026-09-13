@@ -8,7 +8,7 @@ import type {
   NotificationType,
 } from '@/types';
 import { invokeBackendAction } from '@/services/backend-action';
-import { READ_REQUEST_TIMEOUT_MS } from '@/lib/request';
+import { readRequestTimeoutMs } from '@/lib/request';
 import {
   normalizeDate,
   normalizeStatus,
@@ -174,7 +174,7 @@ export async function fetchNotificationSourcePages(
     const fn = invokeBackendAction<
       { requests: Array<{ cursor: NotificationCursor; pageSize: number; source: NotificationSource }>; uid: string },
       { pages: Partial<Record<NotificationSource, Record<string, unknown>>> }
-    >('listNotificationPages', { signal, timeoutMs: READ_REQUEST_TIMEOUT_MS });
+    >('listNotificationPages', { signal, timeoutMs: readRequestTimeoutMs });
     const result = await fn({
       requests: requests.map((request) => ({ ...request, pageSize: NOTIFICATION_FEED_PAGE_SIZE })),
       uid,
@@ -233,7 +233,7 @@ async function getNotificationReadState(uid: string): Promise<NotificationReadSt
   if (cached) return cached;
   const cacheGuard = captureContentCacheWriteGuard(NOTIFICATION_STATE_CACHE_KEY);
   const fn = invokeBackendAction<{ uid: string }, { state: Record<string, unknown> }>('getNotificationReadState', {
-    timeoutMs: READ_REQUEST_TIMEOUT_MS,
+    timeoutMs: readRequestTimeoutMs,
   });
   const result = await fn({ uid });
   const state = normalizeNotificationReadState(result.state);
@@ -249,7 +249,7 @@ export async function fetchNotificationSnapshot(
   const fn = invokeBackendAction<
     { sources: NotificationSource[]; uid: string },
     { openedAt: string; pages: Partial<Record<NotificationSource, Record<string, unknown>>>; state: Record<string, unknown> }
-  >('getNotificationSnapshot', { signal, timeoutMs: READ_REQUEST_TIMEOUT_MS });
+  >('getNotificationSnapshot', { signal, timeoutMs: readRequestTimeoutMs });
   const result = await fn({ sources, uid });
   return {
     pages: Object.fromEntries(sources.map((source) => {
@@ -282,7 +282,7 @@ export async function fetchNotificationUnreadHint() {
   if (cached) return cached.value;
   const cacheGuard = captureContentCacheWriteGuard(NOTIFICATION_UNREAD_CACHE_KEY);
   const fn = invokeBackendAction<Record<string, never>, { hasUnread: boolean }>('getNotificationUnreadHint', {
-    timeoutMs: READ_REQUEST_TIMEOUT_MS,
+    timeoutMs: readRequestTimeoutMs,
   });
   const value = (await fn({})).hasUnread;
   setCachedContentFromRead(cacheGuard, { value });

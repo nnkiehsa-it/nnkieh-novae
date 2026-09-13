@@ -1,4 +1,9 @@
 {
+  "getRuntimePolicies": { "group": "read" },
+  "getProviderDiagnostics": { "group": "read" },
+  "retryOperationalWork": { "group": "admin-write", "extraLimit": "destructiveWriteHourly" },
+  "getOperationsConsole": { "group": "read" },
+  "saveOperationPolicies": { "group": "admin-write", "extraLimit": "roleWriteHourly" },
   "cacheUserAvatar": { "group": "sensitive-write", "extraLimit": "avatarCacheDaily" },
   "completeInitialSetup": { "group": "admin-write", "extraLimit": "roleWriteHourly" },
   "createAnnouncement": { "group": "admin-write", "extraLimit": "announcementCreateDaily" },
@@ -44,7 +49,7 @@
   "listPlatformJobs": { "group": "read" },
   "listRoleAssignments": { "group": "read" },
   "listUserIssues": { "group": "read" },
-  "markNotificationsOpened": { "group": "general-write" },
+  "markNotificationsOpened": { "group": "general-write", "extraLimit": "preferenceWriteHourly" },
   "moderateIssueStatus": { "group": "admin-write", "extraLimit": "moderationWriteHourly" },
   "registerPushToken": { "group": "sensitive-write", "extraLimit": "pushTokenWriteHourly" },
   "removeSupport": { "group": "sensitive-write", "extraLimit": "supportToggleHourly" },

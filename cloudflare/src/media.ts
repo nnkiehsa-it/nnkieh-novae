@@ -1,4 +1,5 @@
 import type { Env } from './types';
+import { mediaPolicies } from './media-policies';
 
 type MediaVariant = 'avatar' | 'full' | 'thumbnail';
 
@@ -10,8 +11,6 @@ interface MediaPayload {
   version: 2;
 }
 
-const MEDIA_CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
-const PUBLIC_BROWSER_CACHE_TTL_SECONDS = 365 * 24 * 60 * 60;
 const TOKEN_PATTERN = /^([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)$/u;
 const PUBLIC_ID_PATTERN = /^[A-Za-z0-9_./-]{1,500}$/u;
 const RATE_LIMIT_KEY_PATTERN = /^[A-Za-z0-9_-]{43}$/u;
@@ -79,21 +78,21 @@ async function cloudinarySourceUrl(publicId: string, env: Env) {
   return `${baseUrl}/image/authenticated/s--${signature}--/${encodedPublicId}.webp`;
 }
 
-async function mediaCacheKey(publicId: string, variant: MediaVariant) {
+async function mediaCacheKey(publicId: string, variant: MediaVariant, revision: number) {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(publicId));
   return new Request(
-    `https://novae-media-cache.invalid/${toUrlSafeBase64(new Uint8Array(digest))}/${variant}`,
+    `https://novae-media-cache.invalid/policy-${revision}/${toUrlSafeBase64(new Uint8Array(digest))}/${variant}`,
   );
 }
 
-function browserResponse(response: Response, payload: MediaPayload, cacheStatus: 'hit' | 'miss') {
+function browserResponse(response: Response, payload: MediaPayload, cacheStatus: 'hit' | 'miss', browserSeconds: number) {
   const headers = new Headers(response.headers);
   headers.delete('set-cookie');
   headers.set(
     'cache-control',
     payload.private
       ? 'private, no-store'
-      : `public, max-age=${PUBLIC_BROWSER_CACHE_TTL_SECONDS}, immutable`,
+      : `public, max-age=${browserSeconds}, must-revalidate`,
   );
   headers.set('cross-origin-resource-policy', 'cross-origin');
   headers.set('x-content-type-options', 'nosniff');
@@ -129,10 +128,11 @@ export async function handleMedia(request: Request, env: Env, token: string, raw
   }
 
   const workerCache = (caches as CacheStorage & { default?: Cache }).default;
-  const cacheKey = await mediaCacheKey(payload.publicId, variant);
+  const { revision, values } = await mediaPolicies(env);
+  const cacheKey = await mediaCacheKey(payload.publicId, variant, revision);
   const cached = await workerCache?.match(cacheKey).catch(() => undefined);
   if (cached) {
-    const response = browserResponse(cached, payload, 'hit');
+    const response = browserResponse(cached, payload, 'hit', values.mediaBrowserSeconds);
     return request.method === 'HEAD' ? new Response(null, response) : response;
   }
 
@@ -143,13 +143,13 @@ export async function handleMedia(request: Request, env: Env, token: string, raw
   if (!upstream.ok) return new Response(null, { status: upstream.status });
   const cacheHeaders = new Headers(upstream.headers);
   cacheHeaders.delete('set-cookie');
-  cacheHeaders.set('cache-control', `public, max-age=${MEDIA_CACHE_TTL_SECONDS}`);
+  cacheHeaders.set('cache-control', `public, max-age=${values.mediaEdgeSeconds}`);
   const cacheable = new Response(upstream.clone().body, {
     headers: cacheHeaders,
     status: upstream.status,
     statusText: upstream.statusText,
   });
   await workerCache?.put(cacheKey, cacheable).catch(() => undefined);
-  const response = browserResponse(upstream, payload, 'miss');
+  const response = browserResponse(upstream, payload, 'miss', values.mediaBrowserSeconds);
   return request.method === 'HEAD' ? new Response(null, response) : response;
 }

@@ -1,5 +1,5 @@
 import { invokeBackendAction } from '@/services/backend-action';
-import { READ_REQUEST_TIMEOUT_MS } from '@/lib/request';
+import { readRequestTimeoutMs } from '@/lib/request';
 import { toReadableBackendError } from './issues-core';
 import {
   createContentCacheKey,
@@ -54,7 +54,7 @@ export async function fetchUserPublicProfiles(uids: string[]) {
     const fetched = await runCoalescedContentRequest(requestKey, async () => {
       const fn = invokeBackendAction<{ uids: string[] }, { profiles: Record<string, UserPublicProfile> }>(
         'getUserPublicProfiles',
-        { timeoutMs: READ_REQUEST_TIMEOUT_MS },
+        { timeoutMs: readRequestTimeoutMs },
       );
       return (await fn({ uids: missingUids })).profiles;
     });

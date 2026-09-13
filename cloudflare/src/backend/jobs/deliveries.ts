@@ -1,10 +1,11 @@
 import type { Env } from "../../types";
-import type { AppDatabaseClient } from "../database/client.ts";
+import type { AppDatabaseClient, DatabaseResult } from "../database/client.ts";
 import { isInvalidFcmTokenError, sendFcmMessage } from "../shared/fcm.ts";
 import { asRecord, asString } from "../shared/http.ts";
 import { syncDomainEventToNotion } from "../shared/notion.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
 import type { RealtimeDelivery } from "../../durable/realtime-hub.ts";
+import { loadOperationPolicies } from '../shared/operation-policies';
 
 export interface EventDeliveryItem {
   delivery_id: string;
@@ -12,6 +13,7 @@ export interface EventDeliveryItem {
   operation_id: string;
   destination: string;
   attempt_count: number;
+  last_attempt_id: string;
   event_type: string;
   aggregate_type: string;
   aggregate_id: string;
@@ -22,6 +24,19 @@ export interface EventDeliveryItem {
 }
 
 const NOTIFICATION_ID_NAMESPACE = "52c06670-c364-4c0f-82d9-8f18bb9f311e";
+async function checked<T>(query: PromiseLike<DatabaseResult<T>>) {
+  const result = await query;
+  if (result.error) throw result.error;
+  return result;
+}
+async function settleDelivery(database: AppDatabaseClient, state: 'complete' | 'fail',
+  args: { delivery_id: string; attempt_id: string; error_info?: { message: string } }) {
+  if (state === 'complete') {
+    await database.query('select app_api.complete_event_delivery($1,$2)', [args.delivery_id,args.attempt_id]);
+  } else {
+    await database.query('select app_api.fail_event_delivery($1,$2,$3::jsonb)', [args.delivery_id,args.attempt_id,JSON.stringify(args.error_info)]);
+  }
+}
 const ISSUE_STATUS_LABELS: Record<string, string> = {
   "auto-rejected": "未通過",
   completed: "已完成",
@@ -239,17 +254,17 @@ async function resolveRecipients(
       : "user_issue_category_assignments";
     let query = database.table("app_private", table).select("uid").eq("category_id", categoryId);
     if (isFacility) query = query.eq("notify_on_created", true);
-    const { data } = await query;
+    const { data } = await checked(query);
     const uids: string[] = (data ?? []).map((row: any) => asString(row.uid)).filter((uid: string) => Boolean(uid && uid !== actor_uid));
     return [...new Set(uids)];
   }
 
   if (event_type === "facility.status_changed") {
     const authorUid = asString(payload.author_uid);
-    const { data } = await database
+    const { data } = await checked(database
       .table("app_private", "facility_report_affected_users")
       .select("uid")
-      .eq("facility_id", aggregate_id);
+      .eq("facility_id", aggregate_id));
     const affectedUids: string[] = [authorUid, ...(data ?? []).map((row: any) => asString(row.uid))].filter(Boolean);
     return [...new Set(affectedUids)];
   }
@@ -257,12 +272,12 @@ async function resolveRecipients(
   if (event_type === "issue.status_changed" || event_type === "support.goal_met" || event_type === "issue.deleted") {
     let authorUid = asString(payload.author_uid);
     if (!authorUid) {
-      const { data } = await database.table("app_private", "issues").select("author_uid").eq("id", aggregate_id).maybeSingle();
+      const { data } = await checked(database.table("app_private", "issues").select("author_uid").eq("id", aggregate_id).maybeSingle());
       authorUid = asString(data?.author_uid);
     }
     let supporterUids: string[] = [];
     if (event_type !== "issue.deleted") {
-      const { data } = await database.table("app_private", "supports").select("uid").eq("issue_id", aggregate_id);
+      const { data } = await checked(database.table("app_private", "supports").select("uid").eq("issue_id", aggregate_id));
       supporterUids = (data ?? []).map((row: any) => asString(row.uid)).filter(Boolean);
     }
     return [...new Set([authorUid, ...supporterUids].filter(Boolean))].filter(
@@ -274,11 +289,11 @@ async function resolveRecipients(
     const parentCommentId = asString(payload.parent_comment_id);
     let parentAuthorUid = asString(payload.parent_author_uid);
     if (!parentAuthorUid && parentCommentId) {
-      const { data } = await database.table("app_private", "comments").select("author_uid").eq("id", parentCommentId).maybeSingle();
+      const { data } = await checked(database.table("app_private", "comments").select("author_uid").eq("id", parentCommentId).maybeSingle());
       parentAuthorUid = asString(data?.author_uid);
     }
     if (parentAuthorUid && parentAuthorUid !== actor_uid) return [parentAuthorUid];
-    const { data } = await database.table("app_private", "issues").select("author_uid").eq("id", aggregate_id).maybeSingle();
+    const { data } = await checked(database.table("app_private", "issues").select("author_uid").eq("id", aggregate_id).maybeSingle());
     const issueAuthorUid = asString(data?.author_uid);
     return issueAuthorUid && issueAuthorUid !== actor_uid ? [issueAuthorUid] : [];
   }
@@ -287,11 +302,11 @@ async function resolveRecipients(
     const parentCommentId = asString(payload.parent_comment_id);
     let parentAuthorUid = asString(payload.parent_author_uid);
     if (!parentAuthorUid && parentCommentId) {
-      const { data } = await database.table("app_private", "announcement_comments").select("author_uid").eq("id", parentCommentId).maybeSingle();
+      const { data } = await checked(database.table("app_private", "announcement_comments").select("author_uid").eq("id", parentCommentId).maybeSingle());
       parentAuthorUid = asString(data?.author_uid);
     }
     if (parentAuthorUid && parentAuthorUid !== actor_uid) return [parentAuthorUid];
-    const { data } = await database.table("app_private", "announcements").select("author_uid").eq("id", aggregate_id).maybeSingle();
+    const { data } = await checked(database.table("app_private", "announcements").select("author_uid").eq("id", aggregate_id).maybeSingle());
     const annAuthorUid = asString(data?.author_uid);
     return annAuthorUid && annAuthorUid !== actor_uid ? [annAuthorUid] : [];
   }
@@ -300,17 +315,24 @@ async function resolveRecipients(
 }
 
 export async function processNotionDeliveries(database: AppDatabaseClient) {
+  const policies = (await loadOperationPolicies(database)).values;
+  const batchSize = policies.notionBatchSize;
   const log = createFunctionLogger("processNotionDeliveries");
   const { data, error } = await database.call("app_api", "claim_event_deliveries", {
     target_destination: "notion",
-    batch_size: 10,
+    batch_size: batchSize,
   });
   if (error) throw error;
   const items = (data ?? []) as EventDeliveryItem[];
 
   for (const item of items) {
-    const attemptId = crypto.randomUUID();
+    const attemptId = item.last_attempt_id;
     try {
+      if (!['issue','facility','announcement'].includes(item.aggregate_type)
+        && Date.parse(item.occurred_at) < Date.now() - policies.notionArchiveDays * 86400000) {
+        await settleDelivery(database,'complete',{ delivery_id:item.delivery_id,attempt_id:attemptId });
+        continue;
+      }
       await syncDomainEventToNotion(database, {
         event_id: item.event_id,
         event_type: item.event_type,
@@ -320,7 +342,7 @@ export async function processNotionDeliveries(database: AppDatabaseClient) {
         occurred_at: item.occurred_at,
         payload: item.payload,
       });
-      await database.call("app_api", "complete_event_delivery", {
+      await settleDelivery(database, 'complete', {
         delivery_id: item.delivery_id,
         attempt_id: attemptId,
       });
@@ -332,7 +354,7 @@ export async function processNotionDeliveries(database: AppDatabaseClient) {
         attemptId,
         eventType: item.event_type,
       });
-      await database.call("app_api", "fail_event_delivery", {
+      await settleDelivery(database, 'fail', {
         delivery_id: item.delivery_id,
         attempt_id: attemptId,
         error_info: { message },
@@ -340,20 +362,21 @@ export async function processNotionDeliveries(database: AppDatabaseClient) {
     }
   }
 
-  return { hasMore: items.length === 10, processedCount: items.length };
+  return { hasMore: items.length === batchSize, processedCount: items.length };
 }
 
 export async function processInAppDeliveries(database: AppDatabaseClient, env: Env) {
+  const batchSize = (await loadOperationPolicies(database)).values.notificationBatchSize;
   const log = createFunctionLogger("processInAppDeliveries");
   const { data, error } = await database.call("app_api", "claim_event_deliveries", {
     target_destination: "in_app",
-    batch_size: 20,
+    batch_size: batchSize,
   });
   if (error) throw error;
   const items = (data ?? []) as EventDeliveryItem[];
 
   for (const item of items) {
-    const attemptId = crypto.randomUUID();
+    const attemptId = item.last_attempt_id;
     try {
       const base = resolveNotificationPayload(item);
       const realtimeNotifications: RealtimeDelivery[] = [];
@@ -361,10 +384,10 @@ export async function processInAppDeliveries(database: AppDatabaseClient, env: E
         if (base.source === "broadcast") {
           const id = await deterministicNotificationId(item.event_id, "broadcast");
           const notification = { ...base, recipient_uid: null, origin: "live" as const, created_at: item.occurred_at, id };
-          await database.table("app_private", "notifications").upsert([notification], {
+          await checked(database.table("app_private", "notifications").upsert([notification], {
             ignoreDuplicates: true,
             onConflict: "id",
-          });
+          }));
           realtimeNotifications.push({
             event: "notification_insert",
             id,
@@ -383,10 +406,10 @@ export async function processInAppDeliveries(database: AppDatabaseClient, env: E
                 id: await deterministicNotificationId(item.event_id, recipientUid),
               })),
             );
-            await database.table("app_private", "notifications").upsert(notifications, {
+            await checked(database.table("app_private", "notifications").upsert(notifications, {
               ignoreDuplicates: true,
               onConflict: "id",
-            });
+            }));
             realtimeNotifications.push(...notifications.map((notification) => ({
               event: "notification_insert",
               id: notification.id,
@@ -399,7 +422,7 @@ export async function processInAppDeliveries(database: AppDatabaseClient, env: E
       if (realtimeNotifications.length > 0) {
         await env.REALTIME.getByName("global").publish(realtimeNotifications);
       }
-      await database.call("app_api", "complete_event_delivery", {
+      await settleDelivery(database, 'complete', {
         delivery_id: item.delivery_id,
         attempt_id: attemptId,
       });
@@ -410,7 +433,7 @@ export async function processInAppDeliveries(database: AppDatabaseClient, env: E
         eventId: item.event_id,
         attemptId,
       });
-      await database.call("app_api", "fail_event_delivery", {
+      await settleDelivery(database, 'fail', {
         delivery_id: item.delivery_id,
         attempt_id: attemptId,
         error_info: { message },
@@ -418,20 +441,21 @@ export async function processInAppDeliveries(database: AppDatabaseClient, env: E
     }
   }
 
-  return { hasMore: items.length === 20, processedCount: items.length };
+  return { hasMore: items.length === batchSize, processedCount: items.length };
 }
 
 export async function processPushDeliveries(database: AppDatabaseClient) {
+  const batchSize = (await loadOperationPolicies(database)).values.notificationBatchSize;
   const log = createFunctionLogger("processPushDeliveries");
   const { data, error } = await database.call("app_api", "claim_event_deliveries", {
     target_destination: "push",
-    batch_size: 20,
+    batch_size: batchSize,
   });
   if (error) throw error;
   const items = (data ?? []) as EventDeliveryItem[];
 
   for (const item of items) {
-    const attemptId = crypto.randomUUID();
+    const attemptId = item.last_attempt_id;
     try {
       const notification = resolveNotificationPayload(item);
       if (notification) {
@@ -454,7 +478,7 @@ export async function processPushDeliveries(database: AppDatabaseClient) {
             let prefQuery = database.table("app_private", "notification_states").select(`uid,${prefColumn}`);
             if (recipients.length === 1) prefQuery = prefQuery.eq("uid", recipients[0]);
             else prefQuery = prefQuery.in("uid", recipients);
-            const { data: prefRows } = await prefQuery;
+            const { data: prefRows } = await checked(prefQuery);
             const disabledUids = new Set(
               (prefRows ?? []).filter((r: any) => r[prefColumn] === false).map((r: any) => asString(r.uid)),
             );
@@ -473,7 +497,7 @@ export async function processPushDeliveries(database: AppDatabaseClient) {
               .range(offset, offset + 199);
             if (eligibleRecipients.length === 1) query = query.eq("uid", eligibleRecipients[0]);
             else if (eligibleRecipients.length > 1) query = query.in("uid", eligibleRecipients);
-            const { data: tokenRows } = await query;
+            const { data: tokenRows } = await checked(query);
             for (const row of tokenRows ?? []) {
               const token = asString(row.token);
               if (!token || seenTokens.has(token)) continue;
@@ -521,7 +545,7 @@ export async function processPushDeliveries(database: AppDatabaseClient) {
             });
           } catch (err) {
             if (isInvalidFcmTokenError(err)) {
-              await database.table("app_private", "push_tokens").delete().eq("token", tokenRow.token);
+              await checked(database.table("app_private", "push_tokens").delete().eq("token", tokenRow.token));
             } else {
               throw err;
             }
@@ -529,7 +553,7 @@ export async function processPushDeliveries(database: AppDatabaseClient) {
         }
       }
 
-      await database.call("app_api", "complete_event_delivery", {
+      await settleDelivery(database, 'complete', {
         delivery_id: item.delivery_id,
         attempt_id: attemptId,
       });
@@ -540,7 +564,7 @@ export async function processPushDeliveries(database: AppDatabaseClient) {
         eventId: item.event_id,
         attemptId,
       });
-      await database.call("app_api", "fail_event_delivery", {
+      await settleDelivery(database, 'fail', {
         delivery_id: item.delivery_id,
         attempt_id: attemptId,
         error_info: { message },
@@ -548,7 +572,7 @@ export async function processPushDeliveries(database: AppDatabaseClient) {
     }
   }
 
-  return { hasMore: items.length === 20, processedCount: items.length };
+  return { hasMore: items.length === batchSize, processedCount: items.length };
 }
 
 function contentEventType(eventType: string) {
@@ -650,10 +674,11 @@ async function realtimeDeliveriesForItem(
 }
 
 export async function processRealtimeDeliveries(database: AppDatabaseClient, env: Env) {
+  const batchSize = (await loadOperationPolicies(database)).values.realtimeBatchSize;
   const log = createFunctionLogger("processRealtimeDeliveries");
   const { data, error } = await database.call("app_api", "claim_event_deliveries", {
     target_destination: "realtime",
-    batch_size: 50,
+    batch_size: batchSize,
   });
   if (error) throw error;
   const items = (data ?? []) as EventDeliveryItem[];
@@ -661,12 +686,12 @@ export async function processRealtimeDeliveries(database: AppDatabaseClient, env
 
   const deliveries = await Promise.all(items.map((item) => realtimeDeliveriesForItem(database, item)))
     .then((groups) => groups.flat());
-  const attemptIds = new Map(items.map((item) => [item.delivery_id, crypto.randomUUID()]));
+  const attemptIds = new Map(items.map((item) => [item.delivery_id, item.last_attempt_id]));
 
   try {
     await env.REALTIME.getByName("global").publish(deliveries);
     for (const item of items) {
-      await database.call("app_api", "complete_event_delivery", {
+      await settleDelivery(database, 'complete', {
         delivery_id: item.delivery_id,
         attempt_id: attemptIds.get(item.delivery_id)!,
       });
@@ -681,7 +706,7 @@ export async function processRealtimeDeliveries(database: AppDatabaseClient, env
         eventId: item.event_id,
         eventType: item.event_type,
       });
-      await database.call("app_api", "fail_event_delivery", {
+      await settleDelivery(database, 'fail', {
         delivery_id: item.delivery_id,
         attempt_id: attemptId,
         error_info: { message },
@@ -689,5 +714,5 @@ export async function processRealtimeDeliveries(database: AppDatabaseClient, env
     }
   }
 
-  return { hasMore: items.length === 50, processedCount: items.length };
+  return { hasMore: items.length === batchSize, processedCount: items.length };
 }

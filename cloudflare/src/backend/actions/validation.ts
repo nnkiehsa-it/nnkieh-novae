@@ -1,16 +1,17 @@
 import { asString } from "../shared/http.ts";
+import { operationPolicy } from "../shared/operation-policies.ts";
 
 export const INPUT_LIMITS = {
-  title: 30,
-  content: 1_000,
-  contentStorage: 5_000,
-  comment: 70,
-  commentStorage: 2_000,
-  issueResult: 2_000,
-  facilityLocation: 120,
-  facilityResult: 2_000,
+  get title() { return operationPolicy('titleLength'); },
+  get content() { return operationPolicy('contentLength'); },
+  get contentStorage() { return operationPolicy('contentLength') + 4000; },
+  get comment() { return operationPolicy('commentLength'); },
+  get commentStorage() { return operationPolicy('commentLength') + 2000; },
+  get issueResult() { return operationPolicy('resultLength'); },
+  get facilityLocation() { return operationPolicy('locationLength'); },
+  get facilityResult() { return operationPolicy('resultLength'); },
   rejectionReason: 500,
-  search: 120,
+  get search() { return operationPolicy('searchLength'); },
 } as const;
 
 const MARKDOWN_IMAGE_PATTERN = /!\[[^\]]*\]\(\S+?(?:\s+["'][^"']*["'])?\)/gu;

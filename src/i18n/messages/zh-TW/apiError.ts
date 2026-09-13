@@ -15,6 +15,7 @@ const messages = {
   'apiError.methodNotAllowed': '請求方法不正確。',
   'apiError.requestTooLarge': '送出的內容超過限制。',
   'apiError.requestInProgress': '操作處理中，請稍後再試。',
+  'apiError.operationExpired': '這筆操作的重播紀錄已到期。請重新整理並確認目前狀態，勿直接重送。',
   'apiError.pushTokenLimitReached': '通知裝置數量已達上限，請先移除舊裝置。',
   'apiError.invalidAction': '請求的操作不正確。',
   'apiError.invalidJson': '請求格式不正確。',

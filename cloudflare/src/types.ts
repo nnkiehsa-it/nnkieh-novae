@@ -3,6 +3,11 @@ import type { RealtimeHub } from "./durable/realtime-hub";
 import type { JobMessage } from "./backend/jobs/consumer";
 
 export interface Env {
+  OPERATIONS_CLOUDFLARE_ACCOUNT_ID?: string;
+  OPERATIONS_CLOUDFLARE_TOKEN?: string;
+  OPERATIONS_WORKER_NAME?: string;
+  OPERATIONS_GITHUB_TOKEN?: string;
+  OPERATIONS_GITHUB_REPOSITORY?: string;
   ADMIN_EMAILS: string;
   ADMIN_WRITE_RATE_LIMITER: RateLimitBinding;
   ALLOWED_DOMAIN: string;

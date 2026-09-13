@@ -75,14 +75,14 @@ const checks = [
     id: "canonical-retention-settings",
     subsystem: "database",
     severity: "Critical",
-    populationSql: `select generate_series(1, 28)::text sample_id`,
+    populationSql: `select generate_series(1, 29)::text sample_id`,
     anomalySql: `
       with expected(key) as (values
         ('closedIssuesEnabled'), ('closedIssuesDays'),
         ('closedFacilitiesEnabled'), ('closedFacilitiesDays'),
         ('announcementsEnabled'), ('announcementsDays'),
         ('notificationsEnabled'), ('notificationsDays'),
-        ('deliveryCompletedDays'), ('deliveryFailedDays'), ('operationHours'),
+        ('deliveryCompletedDays'), ('deliveryFailedDays'), ('operationHours'), ('domainEventDays'),
         ('inactivePushTokensDays'), ('pushTokenConfirmationDays'),
         ('inactiveAvatarsEnabled'), ('inactiveAvatarsDays'),
         ('inactiveProfilePiiEnabled'), ('inactiveProfilePiiDays'),

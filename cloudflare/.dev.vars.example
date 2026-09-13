@@ -14,3 +14,10 @@ MEDIA_SIGNING_SECRET=replace-with-at-least-32-random-bytes
 PUBLIC_API_URL=http://localhost:8787
 REALTIME_TICKET_SECRET=replace-with-at-least-32-random-bytes
 TURNSTILE_SECRET_KEY=replace-me
+
+# Optional server-only diagnostics; absent credentials appear as unconfigured.
+OPERATIONS_CLOUDFLARE_ACCOUNT_ID=
+OPERATIONS_CLOUDFLARE_TOKEN=
+OPERATIONS_WORKER_NAME=
+OPERATIONS_GITHUB_TOKEN=
+OPERATIONS_GITHUB_REPOSITORY=

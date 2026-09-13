@@ -2,7 +2,7 @@ import { asRecord, asString } from "../shared/http.ts";
 import { requirePermission } from "./auth.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 
-const RESTRICTION_MODES = new Set(["clear", "7d", "30d", "permanent"]);
+const RESTRICTION_MODES = new Set(["clear", "7d", "30d", "permanent", "custom"]);
 
 export async function handleUserAdminAction(
   action: string,
@@ -37,12 +37,15 @@ export async function handleUserAdminAction(
   }
 
   requirePermission(auth, "role.manage");
+  const page = payload.page ?? 0;
+  if (!Number.isInteger(page) || Number(page) < 0 || Number(page) > 1_000_000) throw new Error('validation-invalid');
 
   if (action === "listAdminUsers") {
     const query = asString(payload.query).trim().slice(0, 120);
     const { data, error } = await database.call("app_api", "backend_list_admin_users", {
       search_query: query,
       page_limit: 80,
+      page_offset: Number(page) * 80,
     });
     if (error) throw error;
     return data;
@@ -54,6 +57,19 @@ export async function handleUserAdminAction(
     const reason = asString(payload.reason).trim();
     if (!uid || !RESTRICTION_MODES.has(mode)) throw new Error("validation-required");
     if (mode !== "clear" && !reason) throw new Error("validation-required");
+    if (mode === 'custom') {
+      const hours = payload.durationHours;
+      if (!Number.isInteger(hours) || Number(hours) < 1 || Number(hours) > 87600 || reason.length > 500) throw new Error('validation-invalid');
+      if (uid === auth.uid) throw new Error('permission-denied');
+      const target = await database.query(`select p.uid from app_private.user_profiles p where p.uid=$1
+        and not exists(select 1 from app_private.user_role_assignments r where r.uid=p.uid and r.role_code='platform-admin') for update`,[uid]);
+      if (!target.rows.length) throw new Error('permission-denied');
+      const updated = await database.query(`insert into app_private.user_restrictions(uid,restricted_until,restricted_permanently,reason,updated_by)
+        values($1,now()+make_interval(hours=>$2::integer),false,$3,$4)
+        on conflict(uid) do update set restricted_until=excluded.restricted_until,restricted_permanently=false,
+          reason=excluded.reason,updated_by=excluded.updated_by,updated_at=now() returning restricted_until`,[uid,hours,reason,auth.uid]);
+      return { success: true, uid, restrictedUntil: updated.rows[0].restricted_until, restrictedPermanently: false };
+    }
 
     const { data, error } = await database.call("app_api", "backend_set_user_restriction", {
       actor_uid: auth.uid,
@@ -70,6 +86,7 @@ export async function handleUserAdminAction(
     const { data, error } = await database.call("app_api", "backend_list_admin_audit", {
       search_query: query,
       page_limit: 100,
+      page_offset: Number(page) * 100,
     });
     if (error) throw error;
     return data;

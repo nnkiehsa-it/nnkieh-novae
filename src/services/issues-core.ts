@@ -1,6 +1,6 @@
 import type { IssueRecord } from '@/types';
 import { invokeBackendAction } from '@/services/backend-action';
-import { READ_REQUEST_TIMEOUT_MS, RequestFailure } from '@/lib/request';
+import { readRequestTimeoutMs, RequestFailure } from '@/lib/request';
 import { createContentCacheKey, getCachedContent, getCachedContentPersistent, runCoalescedContentRequest, setCachedContentFromRead } from '@/services/content-read-cache';
 import {
   STATUS_BUCKETS,
@@ -41,7 +41,7 @@ export async function fetchIssueRecordById(
 
   return runCoalescedContentRequest(cacheKey, async (cacheGuard) => { try {
     const fn = invokeBackendAction<{ issueId: string }, { issue: Record<string, unknown> }>('getIssue', {
-      timeoutMs: READ_REQUEST_TIMEOUT_MS,
+      timeoutMs: readRequestTimeoutMs,
     });
     const result = await fn({ issueId });
     const issue = normalizeIssueRecord(String(result.issue.id ?? issueId), result.issue);

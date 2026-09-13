@@ -351,6 +351,8 @@ export function resolveDomainEvents(
       });
       break;
     }
+    case "retryOperationalWork":
+    case "saveOperationPolicies":
     case "savePlatformSettings": {
       events.push({
         aggregateType: "platform",

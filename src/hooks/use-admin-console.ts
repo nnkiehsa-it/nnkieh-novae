@@ -99,18 +99,25 @@ export function useAdminOverview(window: AdminOverviewWindow) {
 export function useAdminUsers() {
   const { t } = useI18n();
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [activeQuery, setActiveQuery] = useState('');
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<AdminUser | null>(null);
   const [reason, setReason] = useState("");
+  const [durationHours,setDurationHours] = useState(24);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
 
-  const load = useCallback(async (value: string) => {
+  const load = useCallback(async (value: string, nextPage = 0) => {
     setLoading(true);
     setError("");
     try {
-      const result = await listAdminUsers(value);
+      const result = await listAdminUsers(value, nextPage);
+      setPage(nextPage);
+      setHasMore(result.truncated);
+      setActiveQuery(value);
       setUsers(result.users);
       setSelected((current) => current
         ? result.users.find((user) => user.uid === current.uid) ?? null
@@ -133,7 +140,7 @@ export function useAdminUsers() {
     }
     setBusy(user.uid);
     try {
-      await setUserRestriction(user.uid, mode, mode === "clear" ? "" : reason);
+      await setUserRestriction(user.uid, mode, mode === "clear" ? "" : reason, durationHours);
       toast.success(mode === "clear"
         ? t("ui.adminConsole.restrictionCleared")
         : t("ui.adminConsole.restrictionSet"));
@@ -144,9 +151,11 @@ export function useAdminUsers() {
     } finally {
       setBusy("");
     }
-  }, [load, query, reason, t]);
+  }, [load, query, reason, durationHours, t]);
 
   return {
+    page, hasMore, changePage: (next: number) => load(activeQuery,next),
+    durationHours,setDurationHours,
     busy,
     error,
     load,
@@ -165,15 +174,21 @@ export function useAdminUsers() {
 export function useAdminAudit() {
   const { t } = useI18n();
   const [entries, setEntries] = useState<AdminAuditEntry[]>([]);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [activeQuery, setActiveQuery] = useState('');
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const load = useCallback(async (value: string) => {
+  const load = useCallback(async (value: string, nextPage = 0) => {
     setLoading(true);
     setError("");
     try {
-      const result = await listAdminAudit(value);
+      const result = await listAdminAudit(value,nextPage);
+      setPage(nextPage);
+      setHasMore(result.truncated);
+      setActiveQuery(value);
       setEntries(result.entries);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("ui.adminConsole.loadAuditFailed"));
@@ -186,5 +201,5 @@ export function useAdminAudit() {
     void load("");
   }, [load]);
 
-  return { entries, error, load, loading, query, setQuery };
+  return { entries, error, load, loading, query, setQuery, page, hasMore, changePage: (next: number) => load(activeQuery,next) };
 }

@@ -104,6 +104,7 @@ interface NotificationStateRow {
 }
 
 interface OperationRow {
+  response_expired: boolean;
   operation_id: string;
   actor_uid: string;
   action: string;
@@ -368,8 +369,8 @@ export interface AppApiFunctions {
     issues_enabled: boolean;
   }, Json>;
   backend_get_access_context: AppFunction<{ actor_uid: string }, Json>;
-  backend_list_admin_users: AppFunction<{ search_query: string; page_limit: number }, Json>;
-  backend_list_admin_audit: AppFunction<{ search_query: string; page_limit: number }, Json>;
+  backend_list_admin_users: AppFunction<{ search_query: string; page_limit: number; page_offset?: number }, Json>;
+  backend_list_admin_audit: AppFunction<{ search_query: string; page_limit: number; page_offset?: number }, Json>;
   backend_list_admin_activity: AppFunction<{
     window_hours: number;
     before_occurred_at: string | null;
@@ -731,6 +732,8 @@ export interface AppApiFunctions {
   claim_event_deliveries: AppFunction<{ target_destination: string; batch_size?: number }, Array<{
     delivery_id: string;
     event_id: string;
+    operation_id: string;
+    last_attempt_id: string;
     destination: string;
     attempt_count: number;
     event_type: string;

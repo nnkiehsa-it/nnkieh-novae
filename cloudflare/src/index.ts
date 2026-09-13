@@ -238,7 +238,14 @@ export default {
           message.ack();
         } catch (error) {
           log.error("queue-message.failed", error, { messageId: message.id });
-          message.retry();
+          const retryAfter = error instanceof Error && 'retryAfterSeconds' in error
+            ? Number(error.retryAfterSeconds) : 0;
+          if (retryAfter > 0) {
+            await env.JOBS.send(message.body, { delaySeconds: Math.min(43200, Math.ceil(retryAfter)) });
+            message.ack();
+          } else {
+            message.retry();
+          }
         }
       }
     });

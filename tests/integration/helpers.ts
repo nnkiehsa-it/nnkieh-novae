@@ -16,6 +16,7 @@ import type {
 import type { Env } from "../../cloudflare/src/types.ts";
 import type { DurableRateLimitClaim } from "../../cloudflare/src/durable/business-rate-limiter.ts";
 import { DATA_RETENTION } from "../../cloudflare/src/backend/shared/data-retention.ts";
+import { DEFAULT_OPERATION_POLICIES } from "../../cloudflare/generated/operations";
 
 function requiredEnv(name: string) {
   const value = process.env[name]?.trim();
@@ -144,6 +145,9 @@ beforeEach(async () => {
     ["data_retention_settings", JSON.stringify(DATA_RETENTION)],
   );
   await ownerDatabase.query(bootstrapSql);
+  await ownerDatabase.query("insert into app_private.runtime_settings(key,value,updated_at) values($1,$2,now())", [
+    "operations_settings", JSON.stringify({ revision: 1, values: DEFAULT_OPERATION_POLICIES }),
+  ]);
   await ownerDatabase.query(contentVersionIdentitySql);
   await ownerDatabase.query(integrationSeedSql);
   businessLimits.clear();

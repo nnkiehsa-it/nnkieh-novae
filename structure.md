@@ -104,6 +104,14 @@ This document is the maintained map of the repository. Read it before broad sear
 
 ## Data, domain, and infrastructure
 
+- `config/operations.config.json` / `scripts/generate-operations.mjs` — operational policy bounds and generated frontend/Worker contracts; quota defaults are sourced from rate-limits config.
+- `cloudflare/src/backend/shared/operation-policies.ts` — strict runtime policy loading, validation and request-scoped policy context.
+- `cloudflare/src/backend/shared/operational-telemetry.ts` — bounded daily error aggregation without request bodies or credentials.
+- `cloudflare/src/backend/shared/provider-diagnostics.ts` / `src/hooks/use-provider-diagnostics.ts` / `src/components/admin/provider-diagnostics.tsx` — administrator-only provider diagnostics using server-side credentials, with explicit unavailable and unconfigured states.
+- `cloudflare/src/backend/actions/operations.ts` — platform-admin capacity, job, delivery, policy and policy-history management.
+- `src/lib/operation-policies.ts` / `src/services/operations-console.ts` / `src/hooks/use-operations-console.ts` / `src/components/admin/operations-console.tsx` — runtime client policies and the operational administration surface.
+- `database/migrations/0022_runtime_operations.sql` — revisioned operations settings, audited changes, daily error aggregates and capacity samples.
+
 - `src/services/` — frontend boundary for the Cloudflare Workers API, activity-aware native WebSocket realtime transport, uploads, Firebase-backed sessions, backend actions, and the session-seeded runtime push-confirmation interval. Every API operation creates one UUID sent as `X-Novae-Operation-Id`; request/response cursors use camelCase UTC ISO timestamps. Realtime closes after 30 idle minutes, suppresses reconnects until activity or foreground return, then deduplicates subscriber resync. Every verified Firebase session synchronizes its backend profile and reconciles `ADMIN_EMAILS` before access bootstrap; Firebase token validation warms during Turnstile execution but is consumed only after unchanged Siteverify succeeds. Every browser API request obtains an App Check token through the shared security helper, and no browser database client exists.
 - `src/lib/motion-timing.ts` — the one way an animation driven from JavaScript names a duration or a curve; it hands back rungs of the generated ladder so Motion and the stylesheet stay in step.
 - `src/lib/` — framework-independent request, Firebase/App Check, Google identity, in-app browser and PWA-install contracts, bounded persistent and memory caching, Markdown, image, route, formatting, pagination, and active domain utilities. `vditor-i18n.ts` maps the localized application catalog to Vditor's toolbar contract. Obsolete Vue-era route-name, touch interception, caret/table editor, and `motion-v` compatibility helpers are intentionally removed rather than excluded from checks.
@@ -115,12 +123,12 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/lib/content-entity-store.ts` and `src/hooks/use-content-entity.ts` — normalized user-scoped content entities shared by lists, details, mutations, and realtime; explicit issue/announcement summary types omit full bodies and cannot satisfy or overwrite authoritative detail reads, while field revisions prevent older requests from replacing newer optimistic, server-confirmed, or realtime patches. A remote content-version mismatch clears the affected domain before its authoritative reload.
 - `src/lib/reaction-state.ts` — shared pure optimistic reaction state transition used by proposal support, facility affected, and announcement like flows so immediate counts and rollback snapshots follow one rule.
 - `src/lib/view-memory-cache.ts` — bounded 30-minute, user-scoped LRU snapshots for primary list/query UI, pagination and dashboard state; hooks repaint cached views synchronously, refresh through existing services, and clear snapshots with the active session.
-- `src/lib/feed-page-limit.ts` — shared five-page retention ceiling for content and notification feeds so long browsing sessions keep bounded React state and DOM size.
+- `src/lib/feed-page-limit.ts` — runtime-configured retained-page ceiling for content and notification feeds so long browsing sessions keep bounded React state and DOM size.
 - `src/lib/category-management-state.ts` — pure category-draft construction, identity validation, and default-preserving removal used by the management hook.
 - `src/lib/platform-job-events.ts` — tiny same-tab refresh signal shared by settings mutations and the observable background-job panel.
 - `src/lib/supported-issue-memory.ts` — non-reactive session-scoped support memory used by issue reads and optimistic reactions, keeping support toggles out of the global session render path.
 - `src/lib/notification-target.ts` — pure direct notification-to-route resolution used for intent prefetch and immediate navigation without a preliminary content fetch.
-- `src/lib/realtime-idle.ts` — shared 30-minute inactivity policy used by the realtime transport to bound idle WebSocket lifetime.
+- `src/lib/realtime-idle.ts` — shared runtime inactivity policy used by the realtime transport to bound idle WebSocket lifetime.
 - `src/constants/` — generated/static application, category, status, retention, API error, and rate-limit constants.
 - `src/types/` — shared frontend/domain types.
 - `src/i18n/` — reactive React i18n store and paired `en` / `zh-TW` domain catalogs. `ui.ts` contains the rebuilt interface language; only explicit user choices persist the locale locally.
@@ -140,6 +148,25 @@ This document is the maintained map of the repository. Read it before broad sear
 - `config/` — source JSON for generated contracts, categories, limits, retention, and the motion ladder.
 
 ## Verification and delivery
+
+- `database/migrations/0024_content_safety_ceilings.sql` — database storage ceilings above the admin-configurable Worker and frontend product limits.
+- `database/migrations/0025_consumer_fencing.sql` — database-assigned claim tokens prevent late job and delivery consumers from overwriting newer attempts, including manual retries.
+- `database/migrations/0026_external_cleanup_backlog.sql` — retains compact identifiers for unresolved external deletions after verbose failed-job logs expire, with administrator retry.
+- `database/migrations/0027_extended_runtime_policies.sql` / `cloudflare/src/media-policies.ts` — runtime per-user burst limits, bounded frontend/media cache policies and delivery batch settings; media policy reads are coalesced for one minute.
+- `database/migrations/0028_admin_pagination.sql` / `src/components/admin/admin-pagination.tsx` — bounded administrator user/audit pages and shared page controls, replacing inaccessible truncated lists.
+- `src/components/admin/admin-navigation.tsx` — shared permission-matched administration tabs and selected-tab resolution for the page and route skeleton.
+- `database/migrations/0029_archive_and_backup_policies.sql` / `scripts/backup-policy.mjs` — durable Notion archive cleanup and administrator-controlled encrypted-backup cadence, artifact lifetime and copy count; the existing daily scheduler reads validated database policy.
+
+- `database/migrations/0023_policy_batch_state.sql` — durable policy-batch progress, multi-batch lifecycle constraints, retry state and persisted batch failures.
+
+- `database/migrations/0021_event_retention.sql` — bounded domain-event expiry allowing unreferenced operations to expire without breaking idempotent responses.
+
+- `tests/integration/operations-console.test.ts` — verifies administration operational workflows through the production background consumer and real PostgreSQL state.
+- `tests/integration/durable-rate-limits.test.ts` — real workerd/SQLite Durable Object tests for concurrent quotas, shared-IP UID isolation, atomic rejection and idle expiry alarms.
+- `tests/unit/write-cooldown.test.ts` — verifies bounded frontend write spacing and cancellation without dropping ordinary rapid interactions.
+- `tests/integration/provider-diagnostics.test.ts` — provider-contract tests for backup artifact pagination and safe Worker log projection; these are not live provider acceptance tests.
+
+- `database/migrations/0020_operational_job_execution.sql` — separates external background-job claims from transactional policy batches and schedules current retention cleanup.
 
 - `tests/e2e/primary-navigation.spec.ts` — real rapid clicks at mobile and desktop widths, cancelled touch selection, delayed navigation feedback, rendered-route agreement, overflow, and reduced motion.
 - `tests/e2e/feed-layout.spec.ts` — cold-feed response gating and actual skeleton/content geometry comparisons at 390px and 1440px, plus dense card height, overflow, labelled search, and single-surface navigation assertions.
@@ -167,10 +194,12 @@ This document is the maintained map of the repository. Read it before broad sear
 - `tests/e2e/` — Playwright bootstrap plus authenticated desktop/mobile workflows, action-response correlation assertions, category/scope combinations, multi-scope revocation isolation, content reactions/comments/results/deletion, account restriction, platform settings, notifications, upload lifecycle coverage, and browser-level route/dropdown/reduced-motion animation verification, including single-page route stacking and single-card detail state replacement.
 - `scripts/wsl.mjs`, `scripts/database.mjs`, `scripts/verify-integration.mjs` — automatic single-distro WSL selection (interactive selection when several are installed), root-owned on-demand Docker lifecycle with systemd autostart disabled and a readiness probe that waits for the daemon to accept connections before any container work, non-restarting local PostgreSQL ownership, and failure/Ctrl+C-safe teardown of every local verification service; a distro started solely for verification is terminated afterward to release memory.
 - `.github/workflows/verify-and-deploy.yml` — the single verification and delivery gate for pull requests, direct `main`/`dev` pushes, and scoped manual dispatch; Node 24 plus Bun 1.4 run fast checks and affected backend verification alongside two isolated browser-E2E shards, then both backend and Vercel deployment jobs wait for every relevant verification and start together. Browser verification retains its Firebase Emulator / Next compiler cache, while the frontend deploy job keeps the Vercel build output and dependencies on one runner.
-- `.github/workflows/backup-database.yml` — daily cadence check that creates a PostgreSQL 18 logical dump only when the newest backup is at least 72 hours old, encrypts it with age, verifies it with a checksum, and prunes GitHub artifacts to the latest two; plaintext never leaves the runner.
+- `.github/workflows/backup-database.yml` — daily cadence check that reads the administrator's interval, copy count and artifact lifetime (initially 72 hours, two copies, seven days), creates a PostgreSQL 18 logical dump, encrypts it with age, creates a checksum, and prunes expired/excess backup artifacts; plaintext never leaves the runner.
 - `.github/workflows/reset-database-and-cloudinary.yml` — protected manual disaster-reset flow: after an exact confirmation string, resets the application schemas, reapplies migrations, restores the Worker runtime role, clears Cloudinary resources, and restores the upload preset.
 
 ## Repository documentation
+
+- `暫存.md` — user-requested temporary implementation and verification tracker for the administration operations console.
 
 - `README.md` — Traditional Chinese project entry with stack badges, product scope, architecture overview, local quick start, operational boundaries, and links to repository-owned documentation.
 - `docs/README.md` — documentation index.

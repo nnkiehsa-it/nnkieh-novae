@@ -1,5 +1,4 @@
-const VIEW_MEMORY_TTL_MS = 30 * 60 * 1_000;
-const MAX_VIEW_MEMORY_ENTRIES = 100;
+import { getOperationPolicy } from './operation-policies';
 
 interface ViewMemoryEntry<T> {
   dependencies: readonly string[];
@@ -20,7 +19,7 @@ export function getViewMemory<T>(
   const cacheKey = scopedKey(scope, key);
   const entry = entries.get(cacheKey);
   if (!entry) return null;
-  if (Date.now() - entry.updatedAt >= VIEW_MEMORY_TTL_MS) return null;
+  if (Date.now() - entry.updatedAt >= getOperationPolicy('viewMemoryMinutes') * 60_000) return null;
   return entry.value as T;
 }
 
@@ -33,12 +32,12 @@ export function setViewMemory<T>(
   const cacheKey = scopedKey(scope, key);
   const now = Date.now();
   for (const [existingKey, entry] of entries) {
-    if (now - entry.updatedAt >= VIEW_MEMORY_TTL_MS)
+    if (now - entry.updatedAt >= getOperationPolicy('viewMemoryMinutes') * 60_000)
       entries.delete(existingKey);
   }
   entries.delete(cacheKey);
   entries.set(cacheKey, { dependencies, updatedAt: now, value });
-  while (entries.size > MAX_VIEW_MEMORY_ENTRIES) {
+  while (entries.size > getOperationPolicy('viewMemoryEntries')) {
     const oldest = entries.keys().next().value;
     if (typeof oldest !== "string") break;
     entries.delete(oldest);

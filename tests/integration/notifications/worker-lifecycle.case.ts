@@ -44,16 +44,16 @@ integrationTest("worker database lifecycles and maintenance RPC", async () => {
       status: "pending",
     });
   if (deletionInsertError) throw deletionInsertError;
-  let deletionJob: { id: string; scope_id: string } | undefined;
+  let deletionJob: { id: string; scope_id: string; last_attempt_id: string } | undefined;
   for (let batch = 0; batch < 10 && !deletionJob; batch += 1) {
     const { data: deletionJobs, error: deletionClaimError } = await database
       .call("app_api", "claim_background_jobs", { requested_batch_size: 1 });
     if (deletionClaimError) throw deletionClaimError;
-    deletionJob = ((deletionJobs ?? []) as Array<{ id: string; scope_id: string }>)
+    deletionJob = ((deletionJobs ?? []) as Array<{ id: string; scope_id: string; last_attempt_id: string }>)
       .find((job) => job.scope_id === deletionTarget);
   }
   assert.ok(deletionJob);
-  const attemptId = crypto.randomUUID();
+  const attemptId = deletionJob.last_attempt_id;
   const { error: deletionCompleteError } = await database.call("app_api", "complete_background_job", {
     attempt_id: attemptId,
     job_id: deletionJob.id,
@@ -93,11 +93,11 @@ integrationTest("worker database lifecycles and maintenance RPC", async () => {
   const { data: claimedDeliveries, error: deliveryClaimError } = await database
     .call("app_api", "claim_event_deliveries", { target_destination: "notion", batch_size: 1 });
   if (deliveryClaimError) throw deliveryClaimError;
-  const claimedDelivery = ((claimedDeliveries ?? []) as Array<{ delivery_id: string }>)
+  const claimedDelivery = ((claimedDeliveries ?? []) as Array<{ delivery_id: string; last_attempt_id: string }>)
     .find((delivery) => delivery.delivery_id === deliveryId);
   assert.ok(claimedDelivery);
 
-  const deliveryAttemptId = crypto.randomUUID();
+  const deliveryAttemptId = claimedDelivery.last_attempt_id;
   const { error: deliveryFailError } = await database.call("app_api", "fail_event_delivery", {
     attempt_id: deliveryAttemptId,
     delivery_id: deliveryId,

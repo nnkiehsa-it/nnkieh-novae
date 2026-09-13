@@ -58,7 +58,9 @@ const runtimeDatabaseUrl =
 const ownerDatabaseUrl =
   "postgresql://novae:novae-local@127.0.0.1:55432/novae";
 const workerUrl = "http://127.0.0.1:8787";
-const appUrl = "http://127.0.0.1:3000";
+const appPort = Number(process.env.NOVAE_TEST_APP_PORT || 3000);
+if (!Number.isInteger(appPort) || appPort < 1024 || appPort > 65535) throw new Error('Invalid NOVAE_TEST_APP_PORT');
+const appUrl = `http://127.0.0.1:${appPort}`;
 const bun = process.platform === "win32" ? "bun.exe" : "bun";
 const npx = process.platform === "win32"
   ? {
@@ -244,7 +246,7 @@ process.once("SIGTERM", async () => {
   process.exit(143);
 });
 
-const requiredServicePorts = new Set([3000, 4000, 4400, 4500, 8787, 9099]);
+const requiredServicePorts = new Set(serve || e2e ? [appPort, 4000, 4400, 4500, 8787, 9099] : [8787]);
 const occupiedServicePids = windowsListenerPids(requiredServicePorts);
 if (occupiedServicePids.length > 0) {
   throw new Error(
@@ -327,7 +329,7 @@ try {
 
   const workerVariables = {
     ALLOWED_DOMAIN: "integration.invalid",
-    ALLOWED_ORIGINS: `${appUrl},http://localhost:3000`,
+    ALLOWED_ORIGINS: `${appUrl},http://localhost:${appPort}`,
     ADMIN_EMAILS: "admin@integration.invalid",
     CLOUDINARY_API_BASE_URL: externalProviderUrl,
     CLOUDINARY_API_KEY: "integration-api-key",
@@ -425,6 +427,7 @@ try {
       NEXT_PUBLIC_LOCAL_DEV_AUTH_EMAIL: "admin@integration.invalid",
       NOVAE_AUTH_EMULATOR_URL: "http://127.0.0.1:9099",
       NOVAE_E2E_BASE_URL: appUrl,
+      NOVAE_LOCAL_APP_ORIGIN: appUrl,
       NOVAE_LOCAL_GATEWAY_URL: workerUrl,
     };
     if (e2e) {
@@ -433,9 +436,9 @@ try {
     const frontend = start(
       "next",
       bun,
-      e2e ? ["run", "start", "--", "-H", "0.0.0.0", "-p", "3000"] : ["run", "dev", "--", "-H", "0.0.0.0", "-p", "3000"],
+      e2e ? ["run", "start", "--", "-H", "0.0.0.0", "-p", String(appPort)] : ["run", "dev", "--", "-H", "0.0.0.0", "-p", String(appPort)],
       frontendEnvironment,
-      [3000],
+      [appPort],
     );
     const frontendEntry = children.at(-1);
     await waitFor(

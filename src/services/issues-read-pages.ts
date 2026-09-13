@@ -1,6 +1,6 @@
 import type { IssueCursor, IssueFilter, IssueSortOption, IssueStatusBucket, IssueSummary } from '@/types';
 import { buildTitleSearchTokens, normalizeSearchText } from '@/lib/search';
-import { READ_REQUEST_TIMEOUT_MS } from '@/lib/request';
+import { readRequestTimeoutMs } from '@/lib/request';
 import { invokeBackendAction } from '@/services/backend-action';
 import { captureContentCacheWriteGuard, createContentCacheKey, getCachedContentPersistent, setCachedContentFromRead } from '@/services/content-read-cache';
 import { TABLE_PAGE_SIZE, normalizeIssueCursor, normalizeIssueSummary, toReadableBackendError, withSupportState } from './issues-core';
@@ -86,7 +86,7 @@ export async function fetchIssuesPageByStatus(
         statusCounts: Record<string, number>;
         version: number;
       }
-    >('listIssues', { signal: options?.signal, timeoutMs: READ_REQUEST_TIMEOUT_MS });
+    >('listIssues', { signal: options?.signal, timeoutMs: readRequestTimeoutMs });
     const result = await fn({
       activeFilter,
       cursor: issueCursorPayload(cursor),
@@ -184,7 +184,7 @@ export async function fetchIssuesForTitleSearch(
         uid: string;
       },
       { cursor: IssueCursor | null; hasMore: boolean; issues: Record<string, unknown>[]; limited: boolean; version: number }
-    >('searchIssues', { signal: options?.signal, timeoutMs: READ_REQUEST_TIMEOUT_MS });
+    >('searchIssues', { signal: options?.signal, timeoutMs: readRequestTimeoutMs });
     const result = await fn({
       activeFilter,
       cursor: issueCursorPayload(options?.cursor ?? null),

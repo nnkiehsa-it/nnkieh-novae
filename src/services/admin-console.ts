@@ -2,7 +2,7 @@ import { invokeBackendAction } from '@/services/backend-action';
 import type { RoleCode } from '@/services/session-role';
 
 export type AdminOverviewWindow = '24h' | '7d' | '30d';
-export type RestrictionMode = 'clear' | '7d' | '30d' | 'permanent';
+export type RestrictionMode = 'clear' | '7d' | '30d' | 'permanent' | 'custom';
 
 interface AdminUserWire {
   uid: string;
@@ -127,11 +127,11 @@ export async function listAdminActivity(
   return { ...result, entries: result.entries.map(normalizeActivity) };
 }
 
-export async function listAdminUsers(query = '') {
+export async function listAdminUsers(query = '', page = 0) {
   const result = await invokeBackendAction<
-    { query: string },
+    { query: string; page: number },
     { truncated: boolean; users: AdminUserWire[] }
-  >('listAdminUsers')({ query: query.trim() });
+  >('listAdminUsers')({ query: query.trim(), page });
 
   return {
     truncated: result.truncated,
@@ -159,9 +159,10 @@ export async function setUserRestriction(
   uid: string,
   mode: RestrictionMode,
   reason: string,
+  durationHours?: number,
 ) {
   return await invokeBackendAction<
-    { uid: string; mode: RestrictionMode; reason: string },
+    { uid: string; mode: RestrictionMode; reason: string; durationHours?: number },
     {
       success: boolean;
       uid: string;
@@ -172,17 +173,18 @@ export async function setUserRestriction(
     uid,
     mode,
     reason: reason.trim(),
+    ...(mode === 'custom' ? { durationHours } : {}),
   });
 }
 
-export async function listAdminAudit(query = '') {
+export async function listAdminAudit(query = '', page = 0) {
   const result = await invokeBackendAction<
-    { query: string },
+    { query: string; page: number },
     {
       truncated: boolean;
       entries: Array<Omit<AdminAuditEntry, 'createdAt'> & { createdAt: string }>;
     }
-  >('listAdminAudit')({ query: query.trim() });
+  >('listAdminAudit')({ query: query.trim(), page });
 
   return {
     truncated: result.truncated,

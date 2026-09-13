@@ -2,7 +2,7 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { ChartNoAxesCombined, FileClock, FolderCog, Shield, Users } from "lucide-react";
+import { administrationNavigation } from '@/components/admin/admin-navigation';
 import { useSession } from "@/hooks/use-session";
 import { usePermissionRedirect } from "@/hooks/use-permission-redirect";
 import { CategoryManagement } from "@/components/admin/category-management";
@@ -10,6 +10,7 @@ import { AccessManagement } from "@/components/admin/access-management";
 import { AdminAuditLog } from "@/components/admin/admin-audit-log";
 import { AdminOverview } from "@/components/admin/admin-overview";
 import { UserManagement } from "@/components/admin/user-management";
+import { OperationsConsole } from "@/components/admin/operations-console";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
 import { ContentTransition, StateTransition } from "@/components/motion/state-transition";
 import { ErrorState, PageHeader } from "@/components/ui/page-state";
@@ -26,29 +27,9 @@ export default function AdministrationPage() {
   const canViewOverview = session.can("dashboard.view");
   const canManage = canManageMembers || canManageCategories || canViewOverview;
   usePermissionRedirect(canManage);
-  const requested = search.get("tab");
-  const requestedTab =
-    requested === "users"
-      || requested === "members"
-      || requested === "categories"
-      || requested === "audit"
-      || requested === "overview"
-      ? requested
-      : "overview";
-  const tab =
-    requestedTab === "overview" && canViewOverview
-      ? "overview"
-      : requestedTab === "users" && canManageMembers
-        ? "users"
-        : requestedTab === "members" && canManageMembers
-          ? "members"
-          : requestedTab === "audit" && canManageMembers
-            ? "audit"
-            : canManageCategories
-              ? "categories"
-              : canManageMembers
-                ? "users"
-                : "overview";
+  const { tab,options } = administrationNavigation(search.get('tab'), {
+    admin:session.isAdmin,overview:canViewOverview,members:canManageMembers,categories:canManageCategories,
+  },translate);
   if (!canManage)
     return <ErrorState error={translate('ui.admin.noPermission')} />;
   return (
@@ -67,55 +48,13 @@ export default function AdministrationPage() {
           onValueChange={(value) =>
             router.replace(`/admin/management?tab=${value}`)
           }
-          options={[
-          ...(canViewOverview
-            ? [
-                {
-                  icon: <ChartNoAxesCombined className="size-3.5" />,
-                  label: translate('ui.adminConsole.overviewTab'),
-                  value: "overview",
-                },
-              ]
-            : []),
-          ...(canManageMembers
-            ? [
-                {
-                  icon: <Shield className="size-3.5" />,
-                  label: translate('ui.adminConsole.usersTab'),
-                  value: "users",
-                },
-              ]
-            : []),
-          ...(session.can("category.manage")
-            ? [
-                {
-                  icon: <FolderCog className="size-3.5" />,
-                  label: translate('ui.admin.categories'),
-                  value: "categories",
-                },
-              ]
-            : []),
-          ...(session.can("role.manage")
-            ? [
-                {
-                  icon: <Users className="size-3.5" />,
-                  label: translate('ui.admin.access'),
-                  value: "members",
-                },
-                {
-                  icon: <FileClock className="size-3.5" />,
-                  label: translate('ui.adminConsole.auditTab'),
-                  value: "audit",
-                },
-              ]
-            : []),
-          ]}
+          options={options}
           value={tab}
         />
       </div>
       <StateTransition className="min-w-0" data-admin-content identity={tab}>
         <ContentTransition identity={tab}>
-          {tab === "overview" ? (
+          {tab === "operations" ? <OperationsConsole /> : tab === "overview" ? (
             <AdminOverview />
           ) : tab === "users" ? (
             <UserManagement />

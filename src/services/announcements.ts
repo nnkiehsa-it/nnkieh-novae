@@ -6,7 +6,7 @@ import type {
   CommentSortOption,
 } from '@/types';
 import { invokeBackendAction } from '@/services/backend-action';
-import { READ_REQUEST_TIMEOUT_MS, RequestFailure } from '@/lib/request';
+import { readRequestTimeoutMs, RequestFailure } from '@/lib/request';
 import {
   captureContentCacheWriteGuard,
   createContentCacheKey,
@@ -111,7 +111,7 @@ export async function fetchAnnouncementsPage(
     const fn = invokeBackendAction<
       { cursor: AnnouncementCursor; pageSize: number },
       { announcements: Record<string, unknown>[]; cursor: AnnouncementCursor; hasMore: boolean; version: number }
-    >('listAnnouncements', { signal: options.signal, timeoutMs: READ_REQUEST_TIMEOUT_MS });
+    >('listAnnouncements', { signal: options.signal, timeoutMs: readRequestTimeoutMs });
     const result = await fn({ cursor, pageSize });
     const page = {
       announcements: result.announcements.map(normalizeAnnouncementSummary),
@@ -142,7 +142,7 @@ export async function fetchAnnouncementRecordById(
     const fn = invokeBackendAction<
       { announcementId: string },
       { announcement: Record<string, unknown> }
-    >('getAnnouncement', { timeoutMs: READ_REQUEST_TIMEOUT_MS });
+    >('getAnnouncement', { timeoutMs: readRequestTimeoutMs });
     const result = await fn({ announcementId });
     const announcement = normalizeAnnouncementRecord(result.announcement);
     setCachedContentFromRead(cacheGuard, announcement);
@@ -217,7 +217,7 @@ export async function fetchAnnouncementComments(
     { comments: Array<Record<string, unknown>>; cursor: CommentCursor; hasMore: boolean; version: number }
   >('listAnnouncementComments', {
     signal: 'signal' in options ? options.signal ?? undefined : undefined,
-    timeoutMs: READ_REQUEST_TIMEOUT_MS,
+    timeoutMs: readRequestTimeoutMs,
   });
   const result = await fn({ announcementId, cursor, pageSize: COMMENT_FEED_PAGE_SIZE, sort });
   const page = {
