@@ -6,7 +6,7 @@ export async function handleOperationsAction(action: string, payload: JsonRecord
   if (action === 'getRuntimePolicies') return loadOperationPolicies(database);
   if (!auth.isAdmin) throw new Error('permission-denied');
   if (action === 'getProviderDiagnostics') {
-    if (!['cloudinary','cloudflare','logs','backups'].includes(String(payload.provider))) throw new Error('validation-invalid');
+    if (!['cloudinary','cloudflare','logs'].includes(String(payload.provider))) throw new Error('validation-invalid');
     if (payload.cursor !== undefined && (typeof payload.cursor !== 'string' || payload.cursor.length > 300)) throw new Error('validation-invalid');
     if (payload.query !== undefined && (typeof payload.query !== 'string' || payload.query.length > 200)) throw new Error('validation-invalid');
     if (payload.until !== undefined && (typeof payload.until !== 'number' || !Number.isSafeInteger(payload.until) || payload.until < 86400000 || payload.until > Date.now()+60000)) throw new Error('validation-invalid');

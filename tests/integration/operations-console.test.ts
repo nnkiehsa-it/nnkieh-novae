@@ -30,12 +30,13 @@ integrationTest('operations settings enforce administrator access, revision conf
   const snapshot = asRecord(await callAction('getOperationsConsole', {}, admin.auth));
   assert.ok(Number(snapshot.databaseBytes) > 0);
   assert.ok(Array.isArray(snapshot.capacity));
-  const diagnostics = asRecord(await callAction('getProviderDiagnostics', { provider: 'backups' }, admin.auth));
+  const diagnostics = asRecord(await callAction('getProviderDiagnostics', { provider: 'cloudflare' }, admin.auth));
   assert.equal(diagnostics.status, 'not-configured');
-  await assert.rejects(() => callAction('getProviderDiagnostics', { provider: 'backups' }, user.auth), /permission-denied/);
+  await assert.rejects(() => callAction('getProviderDiagnostics', { provider: 'cloudflare' }, user.auth), /permission-denied/);
   await assert.rejects(() => callAction('getOperationsConsole', {}, user.auth), /permission-denied/);
   const runtime = asRecord(await callAction('getRuntimePolicies', {}, user.auth));
   assert.equal(runtime.revision, 1);
+  assert.equal('backupIntervalHours' in asRecord(runtime.values), false);
   const update = { revision: 1, reason: 'Verify quota', values: { ...DEFAULT_OPERATION_POLICIES, preferenceWriteHourly: 1 } };
   await assert.rejects(() => callAction('saveOperationPolicies', update, user.auth), /permission-denied/);
   const saved = asRecord(await callAction('saveOperationPolicies', update, admin.auth));

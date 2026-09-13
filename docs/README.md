@@ -12,7 +12,7 @@
 | [執行期政策與限制](runtime-policies.md) | 業務與 Cloudflare rate limit、圖片限制、完整 retention defaults |
 | [設定參考](configuration.md) | 設定存放位置、required values、格式、Cloudflare bindings 與變更後驗證 |
 | [本機開發](local-development.md) | 完整啟動順序、固定 port、資料庫指令、generated artifacts 與常見失敗 |
-| [部署與維運](deployment-and-operations.md) | Workflow path、部署 gate、smoke test、cron、Queue、加密備份與災難重設 |
+| [部署與維運](deployment-and-operations.md) | Workflow path、部署 gate、smoke test、cron、Queue、Neon 資料庫復原與災難重設 |
 | [測試與驗證](testing.md) | 14 階段 local verification、integration / E2E / stress、CI path selection |
 
 程式責任的逐目錄索引另見根目錄的 [`structure.md`](../structure.md)。

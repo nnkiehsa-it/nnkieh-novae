@@ -13,7 +13,6 @@ export function validateOperationPolicies(value: unknown): OperationPolicies {
     const number = input[key];
     if (typeof number !== 'number' || !Number.isInteger(number) || number < spec.min || number > spec.max) throw new Error('validation-invalid');
   }
-  if (Number(input.backupIntervalHours) * Number(input.backupCopies) > Number(input.backupRetentionDays) * 24) throw new Error('validation-invalid');
   return input as OperationPolicies;
 }
 

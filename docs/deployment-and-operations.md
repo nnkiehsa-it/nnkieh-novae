@@ -63,19 +63,13 @@ Worker 的 cron 是 `*/30 * * * *`，負責啟動到期支援、retention 與其
 
 Queue producer 與 consumer 都使用相同環境的 queue。Production 預設 `novae-jobs`；development 若沒指定名稱，renderer 使用帶環境尾碼的 queue。Consumer 參數是 batch size 10、batch timeout 5 秒、max retries 5。
 
-資料庫備份 workflow 每天 `18:20 UTC` 檢查一次。`scripts/backup-policy.mjs` 從資料庫讀取管理員設定的間隔、份數與 artifact 保存天數，並驗證範圍；預設維持 72 小時、兩份、7 天。它使用 PostgreSQL 18 `pg_dump` 產生 custom-format backup，以 `age` 公鑰加密後連同 SHA-256 checksum 上傳。也可用 workflow dispatch 強制執行一次。
-
-備份 job 固定使用 `production` Environment，concurrency group 是 `neon-database-backup` 且不取消進行中的工作。實際 cadence 由未到期 artifact 的 timestamp 與管理政策決定；每日檢查的時間格與 GitHub 排程延遲仍可能使備份晚於設定間隔。Manual dispatch 跳過 cadence，但仍驗證政策。讀不到政策會失敗，不偷偷使用舊預設值。
-
-營運頁分別展示 workflow runs 與實際未到期的加密 artifact。Workflow 成功可能只是本次跳過備份；artifact 存在也不是已完成還原演練的證明。下載／解密／還原維持受控維運程序，不把 owner credential 或 age 私鑰放到前端。
-
-備份內容使用 `--no-owner --no-privileges`，方便還原到重新建立的 role 配置。Plaintext `novae.dump` 在 runner 內加密後立刻刪除，只上傳 `.dump.age` 和 `.sha256`。
+資料庫復原使用 Neon 原生 Backup & Restore。Neon Free 方案包含最多 6 小時或 1 GB 變更量的即時還原歷史，以及 1 個手動快照；排程快照不適用於 Free。實際保留窗與可用功能依 Neon 專案方案為準。從 Neon Console 的 Backup & Restore 預覽並選擇還原時間；還原會替換所選 branch 的資料，執行前需確認 branch 與時間點。這是同一個 Neon 帳戶內的復原能力，不是異地副本。
 
 ## 災難重設
 
 `Reset Database and Cloudinary` 是手動、破壞性 workflow，只有輸入完全相符的 `RESET_DATABASE_AND_CLOUDINARY` 才會繼續。它會刪除 `app_api`、`app_private` 與 `public` schema，重新套用 migration、恢復 runtime role、清空 Cloudinary resources，再重建 upload preset。
 
-這個 workflow 不會還原備份。需要復原資料時，應先下載加密 backup artifact、驗證 `.sha256`，以持有的 age private key 解密，再使用相容的 PostgreSQL 工具還原。
+資料庫復原透過 Neon Backup & Restore 完成；受保護重設 workflow 不會還原資料庫。
 
 重設流程依 branch 選 `production` 或 `development` Environment，且同一 ref 不允許並行。它會永久刪 application schema 和 Cloudinary asset；這是唯一內建的完整資料清除入口。
 

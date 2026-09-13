@@ -155,7 +155,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `database/migrations/0027_extended_runtime_policies.sql` / `cloudflare/src/media-policies.ts` — runtime per-user burst limits, bounded frontend/media cache policies and delivery batch settings; media policy reads are coalesced for one minute.
 - `database/migrations/0028_admin_pagination.sql` / `src/components/admin/admin-pagination.tsx` — bounded administrator user/audit pages and shared page controls, replacing inaccessible truncated lists.
 - `src/components/admin/admin-navigation.tsx` — shared permission-matched administration tabs and selected-tab resolution for the page and route skeleton.
-- `database/migrations/0029_archive_and_backup_policies.sql` / `scripts/backup-policy.mjs` — durable Notion archive cleanup and administrator-controlled encrypted-backup cadence, artifact lifetime and copy count; the existing daily scheduler reads validated database policy.
+- `database/migrations/0029_archive_and_backup_policies.sql` / `database/migrations/0030_remove_github_database_backups.sql` — 0029 introduced Notion archive cleanup and GitHub backup policies; 0030 removes the retired backup policy values and history after moving database recovery to Neon's native restore window.
 
 - `database/migrations/0023_policy_batch_state.sql` — durable policy-batch progress, multi-batch lifecycle constraints, retry state and persisted batch failures.
 
@@ -164,7 +164,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `tests/integration/operations-console.test.ts` — verifies administration operational workflows through the production background consumer and real PostgreSQL state.
 - `tests/integration/durable-rate-limits.test.ts` — real workerd/SQLite Durable Object tests for concurrent quotas, shared-IP UID isolation, atomic rejection and idle expiry alarms.
 - `tests/unit/write-cooldown.test.ts` — verifies bounded frontend write spacing and cancellation without dropping ordinary rapid interactions.
-- `tests/integration/provider-diagnostics.test.ts` — provider-contract tests for backup artifact pagination and safe Worker log projection; these are not live provider acceptance tests.
+- `tests/integration/provider-diagnostics.test.ts` — provider-contract tests for safe Worker log projection; these are not live provider acceptance tests.
 
 - `database/migrations/0020_operational_job_execution.sql` — separates external background-job claims from transactional policy batches and schedules current retention cleanup.
 
@@ -194,7 +194,6 @@ This document is the maintained map of the repository. Read it before broad sear
 - `tests/e2e/` — Playwright bootstrap plus authenticated desktop/mobile workflows, action-response correlation assertions, category/scope combinations, multi-scope revocation isolation, content reactions/comments/results/deletion, account restriction, platform settings, notifications, upload lifecycle coverage, and browser-level route/dropdown/reduced-motion animation verification, including single-page route stacking and single-card detail state replacement.
 - `scripts/wsl.mjs`, `scripts/database.mjs`, `scripts/verify-integration.mjs` — automatic single-distro WSL selection (interactive selection when several are installed), root-owned on-demand Docker lifecycle with systemd autostart disabled and a readiness probe that waits for the daemon to accept connections before any container work, non-restarting local PostgreSQL ownership, and failure/Ctrl+C-safe teardown of every local verification service; a distro started solely for verification is terminated afterward to release memory.
 - `.github/workflows/verify-and-deploy.yml` — the single verification and delivery gate for pull requests, direct `main`/`dev` pushes, and scoped manual dispatch; Node 24 plus Bun 1.4 run fast checks and affected backend verification alongside two isolated browser-E2E shards, then both backend and Vercel deployment jobs wait for every relevant verification and start together. Browser verification retains its Firebase Emulator / Next compiler cache, while the frontend deploy job keeps the Vercel build output and dependencies on one runner.
-- `.github/workflows/backup-database.yml` — daily cadence check that reads the administrator's interval, copy count and artifact lifetime (initially 72 hours, two copies, seven days), creates a PostgreSQL 18 logical dump, encrypts it with age, creates a checksum, and prunes expired/excess backup artifacts; plaintext never leaves the runner.
 - `.github/workflows/reset-database-and-cloudinary.yml` — protected manual disaster-reset flow: after an exact confirmation string, resets the application schemas, reapplies migrations, restores the Worker runtime role, clears Cloudinary resources, and restores the upload preset.
 
 ## Repository documentation
@@ -208,11 +207,11 @@ This document is the maintained map of the repository. Read it before broad sear
 - `docs/routes-and-permissions.md` — complete application route map, role and permission codes, category scopes, backend authorization order, restricted-user behavior, and issue visibility rules.
 - `docs/architecture.md` — browser, Worker, PostgreSQL, Queue, Durable Object, Firebase, Cloudinary, and Notion boundaries plus write/event flow.
 - `docs/local-development.md` — prerequisites, the complete emulator environment, manual frontend work, local database commands, and generated artifacts.
-- `docs/configuration.md` — frontend, Worker, database, Cloudflare, provider, Vercel, and backup environment-variable reference.
+- `docs/configuration.md` — frontend, Worker, database, Cloudflare, provider, and Vercel environment-variable reference.
 - `docs/backend-and-data.md` — public Worker routes, generated action registry, database permissions, forward migrations, domain events, jobs, retention, and generated database contracts.
 - `docs/events-realtime-and-media.md` — domain-event destinations, Queue behavior, realtime topics and cache invalidation, notification/Push flow, and signed Cloudinary upload/delivery lifecycle.
 - `docs/runtime-policies.md` — exact business and Cloudflare ingress limits, image-processing constraints, and initial runtime retention settings.
-- `docs/deployment-and-operations.md` — branch-to-environment mapping, gated backend/frontend deployment, maintenance, encrypted backups, and destructive reset behavior.
+- `docs/deployment-and-operations.md` — branch-to-environment mapping, gated backend/frontend deployment, Neon database recovery, maintenance, and destructive reset behavior.
 - `docs/testing.md` — local, integration, browser, stress, and full verification commands plus test-suite ownership.
 - `PRODUCT.md` — product purpose, users, features, and explicitly approved runtime migration.
 - `AGENTS.md` — the operating contract for any agent editing this repository: absolute rules, where each kind of file belongs, dependency direction, split thresholds, where each kind of test belongs, and the verification commands. Read it before `structure.md`.

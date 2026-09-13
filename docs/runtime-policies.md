@@ -1,6 +1,6 @@
 # 執行期政策與限制
 
-下表是新環境的初始值，不代表目前部署值。產品配額、內容／快取／工作／備份政策以資料庫 `operations_settings` 為準，可由「系統管理 → 營運」調整；`config/operations.config.json` 定義可調範圍，`config/rate-limits.config.json` 提供配額初值。Retention 與圖片設定另有既有管理頁。Cloudflare native bindings 保留資源安全硬上限。
+下表是新環境的初始值，不代表目前部署值。產品配額、內容／快取／工作政策以資料庫 `operations_settings` 為準，可由「系統管理 → 營運」調整；`config/operations.config.json` 定義可調範圍，`config/rate-limits.config.json` 提供配額初值。Retention 與圖片設定另有既有管理頁。Cloudflare native bindings 保留資源安全硬上限。
 
 ## 業務操作配額
 
@@ -96,7 +96,6 @@ Notion 非內容事件預設 365 天封存，`notionArchiveDays` 可調；內容
 | 工作 | 外部 job、policy、Notion、通知、realtime 每批量；Worker run 每秒／分鐘配額 |
 | 紀錄 | 每日錯誤聚合保存天數、DB 容量日樣本保存天數；設定歷史使用 `adminAuditDays` |
 | 媒體 | Browser 與 edge cache 秒數，預設各 60 秒、最多 3,600 秒；私有圖片仍 `private, no-store` |
-| 備份 | 間隔小時、artifact 天數、份數；每日排程讀資料庫政策，保留期須涵蓋「間隔 × 份數」 |
 
 公開媒體不再回傳一年 `immutable`。媒體政策最多一分鐘刷新一次，edge key 包含政策 revision，避免降低期限後仍使用舊長效快取。先前已下載或已存進瀏覽器的副本無法收回。
 

@@ -51,28 +51,6 @@ export async function providerDiagnostics(provider: string, options: { cursor?: 
       if (data.errors) throw new Error('provider-query-rejected');
       return { provider, status: 'available', checkedAt, data: data.data };
     }
-    if (provider === 'backups') {
-      const token = optionalEnv('OPERATIONS_GITHUB_TOKEN');
-      const repository = optionalEnv('OPERATIONS_GITHUB_REPOSITORY');
-      if (!token || !repository) return { provider, status: 'not-configured', checkedAt };
-      if (!/^[\w.-]+\/[\w.-]+$/.test(repository)) throw new Error('invalid-repository');
-      const data = await json(`https://api.github.com/repos/${repository}/actions/workflows/backup-database.yml/runs?per_page=20`,
-        { authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'User-Agent': 'Novae-Operations' });
-      const runs = data.workflow_runs as Array<Record<string, unknown>>;
-      const page = options.cursor ? Number(options.cursor) : 1;
-      if (!Number.isSafeInteger(page) || page < 1 || page > 100000) throw new Error('invalid-artifact-page');
-      const artifacts = await json(`https://api.github.com/repos/${repository}/actions/artifacts?per_page=100&page=${page}`,
-        { authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'User-Agent': 'Novae-Operations' });
-      const backups = (artifacts.artifacts as Array<Record<string, unknown>>)
-        .filter(artifact => String(artifact.name).startsWith('novae-neon-') && artifact.expired === false)
-        .map(artifact => ({ id: artifact.id, name: artifact.name, bytes: artifact.size_in_bytes,
-          createdAt: artifact.created_at, expiresAt: artifact.expires_at, digest: artifact.digest }));
-      return { provider, status: 'available', checkedAt,
-        nextCursor: page * 100 < Number(artifacts.total_count) ? String(page + 1) : null,
-        data: { artifactPage: page, repositoryArtifactCount: artifacts.total_count, artifacts: backups, runs: runs.map(run => ({
-        id: run.id, status: run.status, conclusion: run.conclusion, createdAt: run.created_at, url: run.html_url,
-      })), note: 'Workflow success alone does not prove a backup was created. Artifacts are encrypted backup candidates; restoration is not verified here.' } };
-    }
     throw new Error('invalid-provider');
   } catch (error) {
     return { provider, status: 'unavailable', checkedAt, error: error instanceof Error ? error.message : 'provider-unavailable' };

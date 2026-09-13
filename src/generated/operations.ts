@@ -6,24 +6,6 @@ export const OPERATION_POLICIES = {
     "max": 3650,
     "group": "logs"
   },
-  "backupIntervalHours": {
-    "value": 72,
-    "min": 24,
-    "max": 720,
-    "group": "jobs"
-  },
-  "backupCopies": {
-    "value": 2,
-    "min": 2,
-    "max": 30,
-    "group": "jobs"
-  },
-  "backupRetentionDays": {
-    "value": 7,
-    "min": 7,
-    "max": 90,
-    "group": "jobs"
-  },
   "readBurst": {
     "value": 60,
     "min": 1,

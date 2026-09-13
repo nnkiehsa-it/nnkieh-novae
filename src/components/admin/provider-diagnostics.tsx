@@ -12,7 +12,7 @@ export function ProviderDiagnostics() {
     <h3 className="font-semibold">{t('ui.operations.providers')}</h3>
     <p className="text-sm text-muted-foreground">{t('ui.operations.providerHelp')}</p>
     {state.error ? <p role="alert" className="text-sm text-destructive">{state.error}</p> : null}
-    {['cloudinary','cloudflare','logs','backups'].map(provider => <div className="space-y-2 border-b pb-3" key={provider}>
+    {['cloudinary','cloudflare','logs'].map(provider => <div className="space-y-2 border-b pb-3" key={provider}>
       <div className="flex items-center justify-between gap-3"><h4 className="font-medium">{t(`ui.operations.provider.${provider}`)}</h4>
         <Button disabled={Boolean(state.pending)} onClick={() => void state.load(provider)} variant="secondary">{t(state.pending === provider ? 'ui.common.loadingMore' : 'ui.adminConsole.refresh')}</Button></div>
       {provider === 'logs' ? <><p className="text-sm text-muted-foreground">{t('ui.operations.logsHelp')}</p><Input value={state.query} maxLength={200} aria-label={t('ui.operations.logSearch')} placeholder={t('ui.operations.logSearch')} onChange={event => state.setQuery(event.target.value)} /></> : null}
