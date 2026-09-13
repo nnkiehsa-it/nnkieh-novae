@@ -7,20 +7,25 @@ async function setFeatureSwitches(
   issuesEnabled: boolean,
   facilitiesEnabled: boolean,
 ) {
-  await page.goto('/admin/management?tab=categories');
+  await page.goto('/admin/content');
   const issues = page.getByRole('switch', { name: 'Proposal feature' });
   await expect(issues).toBeVisible();
-  if (await issues.isChecked() !== issuesEnabled) await issues.click();
+  const issuesChanged = await issues.isChecked() !== issuesEnabled;
+  if (issuesChanged) await issues.click();
 
   await page.getByRole('tab', { name: 'Facilities' }).click();
   const facilities = page.getByRole('switch', { name: 'Facility reports' });
   await expect(facilities).toBeVisible();
-  if (await facilities.isChecked() !== facilitiesEnabled) await facilities.click();
+  const facilitiesChanged = await facilities.isChecked() !== facilitiesEnabled;
+  if (facilitiesChanged) await facilities.click();
 
-  const save = page.getByRole('button', { name: 'Save all changes' });
-  await expectBackendAction(page, 'saveCategoryManagement', async () => save.click());
-  await expect(save.locator('[data-state="complete"]')).toBeVisible();
-  await expect(save).toBeEnabled();
+  // There is nothing to save when the screen already reads the way it should,
+  // and the save bar is absent exactly then.
+  if (!issuesChanged && !facilitiesChanged) return;
+  await expectBackendAction(page, 'saveCategoryManagement', async () => {
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+  });
+  await expect(page.getByText('unsaved changes')).toHaveCount(0);
 }
 
 test('all four proposal and facility feature combinations update navigation and direct routes', async ({

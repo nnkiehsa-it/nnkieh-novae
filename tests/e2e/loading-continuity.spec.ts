@@ -239,7 +239,7 @@ test('dashboard error retry retains unknown metrics until data arrives', async (
     await route.continue();
   });
   try {
-    await page.goto('/dashboard');
+    await page.goto('/admin');
     await expect.poll(() => attempts).toBe(1);
     const surface = page.locator('[data-dashboard-surface]');
     const node = await surface.elementHandle();
@@ -254,17 +254,31 @@ test('dashboard error retry retains unknown metrics until data arrives', async (
   }
 });
 
-test('administration tabs retain one content wrapper while changing domains', async ({ browser }) => {
+test('every administration area loads through a skeleton of its own shape', async ({ browser }) => {
   const { context, page } = await newUserPage(browser, 'admin');
   try {
-    await page.goto('/admin/management?tab=overview');
+    for (const area of ['content', 'platform', 'people', 'audit', 'system', 'policies']) {
+      await page.goto(`/admin/${area}`);
+      await expect(page.getByRole('main').getByRole('heading').first()).toBeVisible();
+      await expect.poll(() =>
+        page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      ).toBe(true);
+    }
+  } finally {
+    await context.close();
+  }
+});
+
+test('switching a view inside an area keeps one content wrapper', async ({ browser }) => {
+  const { context, page } = await newUserPage(browser, 'admin');
+  try {
+    await page.goto('/admin/people');
     const content = page.locator('[data-admin-content]');
     await expect(content).toBeVisible();
     const node = await content.elementHandle();
-    for (const tab of ['overview', 'users', 'categories', 'members', 'audit']) {
-      await page.locator(`[data-liquid-tab="${tab}"]`).click();
-      await expect(page.locator(`[data-liquid-tab="${tab}"][data-displayed-active="true"]`)).toBeVisible();
-      await expect(content).toBeVisible();
+    for (const view of ['accounts', 'scopes', 'accounts']) {
+      await page.locator(`[data-liquid-tab="${view}"]`).click();
+      await expect(page.locator(`[data-liquid-tab="${view}"][data-displayed-active="true"]`)).toBeVisible();
       expect(await node!.evaluate((element) => element === document.querySelector('[data-admin-content]'))).toBe(true);
     }
   } finally {

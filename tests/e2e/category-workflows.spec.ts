@@ -16,18 +16,19 @@ async function createCategory(
   }).click();
   const editor = page
     .getByRole('group')
-    .filter({ has: page.getByRole('textbox', { name: 'Name' }) })
+    .filter({ has: page.getByRole('textbox', { name: 'Name', exact: true }) })
     .last();
-  await editor.getByRole('textbox', { name: 'Name' }).fill(label);
+  await editor.getByRole('textbox', { name: 'Name', exact: true }).fill(label);
   await editor.getByRole('textbox', { name: 'Identifier' }).fill(id);
   await expect(page.getByRole('group', { name: label })).toBeVisible();
 }
 
 async function saveCategories(page: Page) {
-  const save = page.getByRole('button', { name: 'Save all changes' });
-  await expectBackendAction(page, 'saveCategoryManagement', async () => save.click());
-  await expect(save.locator('[data-state="complete"]')).toBeVisible();
-  await expect(save).toBeEnabled();
+  await expect(page.getByText('unsaved changes')).toBeVisible();
+  await expectBackendAction(page, 'saveCategoryManagement', async () => {
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+  });
+  await expect(page.getByText('unsaved changes')).toHaveCount(0);
 }
 
 async function deleteCategory(page: Page, label: string) {
@@ -46,7 +47,7 @@ test('proposal and facility categories create, rename, surface, and delete atomi
 }) => {
   test.setTimeout(150_000);
   const admin = await newUserPage(browser, 'admin');
-  await admin.page.goto('/admin/management?tab=categories');
+  await admin.page.goto('/admin/content');
 
   await createCategory(
     admin.page,
@@ -63,7 +64,7 @@ test('proposal and facility categories create, rename, surface, and delete atomi
     .toBeVisible();
   await ordinary.context.close();
 
-  await admin.page.goto('/admin/management?tab=categories');
+  await admin.page.goto('/admin/content');
   await admin.page
     .getByRole('group', { name: 'E2E Temporary Proposal' })
     .getByRole('textbox', { name: 'Name' })
@@ -77,7 +78,7 @@ test('proposal and facility categories create, rename, surface, and delete atomi
   await expect(ordinary.page.getByRole('option', { name: 'E2E Temporary Proposal' })).toHaveCount(0);
   await ordinary.context.close();
 
-  await admin.page.goto('/admin/management?tab=categories');
+  await admin.page.goto('/admin/content');
   await deleteCategory(admin.page, 'E2E Renamed Proposal');
   await saveCategories(admin.page);
 
@@ -95,7 +96,7 @@ test('proposal and facility categories create, rename, surface, and delete atomi
   await expect(ordinary.page.getByRole('option', { name: 'E2E Temporary Facility' })).toBeVisible();
   await ordinary.context.close();
 
-  await admin.page.goto('/admin/management?tab=categories');
+  await admin.page.goto('/admin/content');
   await admin.page.getByRole('tab', { name: 'Facilities' }).click();
   await deleteCategory(admin.page, 'E2E Temporary Facility');
   await saveCategories(admin.page);

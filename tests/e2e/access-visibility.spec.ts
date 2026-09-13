@@ -104,25 +104,26 @@ test('announcement and administration entry points reject unassigned users', asy
   }
 
   const ordinary = await newUserPage(browser, 'ordinary');
-  await ordinary.page.goto('/admin/management');
-  await expect(ordinary.page).not.toHaveURL(/\/admin\/management/u);
-  await ordinary.page.goto('/dashboard');
-  await expect(ordinary.page).not.toHaveURL(/\/dashboard/u);
+  await ordinary.page.goto('/admin');
+  await expect(ordinary.page).not.toHaveURL(/\/admin/u);
   await ordinary.context.close();
 
+  // A scoped manager reaches administration, but only the areas they own.
   for (const user of ['issueManager', 'facilityManager', 'announcementManager'] as const) {
     const scopedManager = await newUserPage(browser, user);
-    await scopedManager.page.goto('/admin/management');
-    await expect(scopedManager.page).not.toHaveURL(/\/admin\/management/u);
-    await scopedManager.page.goto('/dashboard');
-    await expect(scopedManager.page).not.toHaveURL(/\/dashboard/u);
+    await scopedManager.page.goto('/admin/policies');
+    await expect(scopedManager.page).not.toHaveURL(/\/admin\/policies/u);
+    await scopedManager.page.goto('/admin/system');
+    await expect(scopedManager.page).not.toHaveURL(/\/admin\/system/u);
     await scopedManager.context.close();
   }
 
   const admin = await newUserPage(browser, 'admin');
-  await admin.page.goto('/admin/management');
-  await expect(admin.page.getByRole('heading', { name: 'Platform management' })).toBeVisible();
-  await admin.page.goto('/dashboard');
-  await expect(admin.page).toHaveURL(/\/dashboard/u);
+  await admin.page.goto('/admin');
+  await expect(admin.page.getByRole('heading', { name: 'Administration' })).toBeVisible();
+  for (const area of ['content', 'platform', 'people', 'audit', 'system', 'policies']) {
+    await admin.page.goto(`/admin/${area}`);
+    await expect(admin.page).toHaveURL(new RegExp(`/admin/${area}$`, 'u'));
+  }
   await admin.context.close();
 });

@@ -13,12 +13,11 @@ const scopeButton = {
 } as const;
 
 export async function openAccessManagement(page: Page) {
-  await page.goto('/admin/management?tab=members');
-  await expect(page.getByRole('heading', { name: 'Platform management' })).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Member access' })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  );
+  await page.goto('/admin/people');
+  await expect(page.getByRole('heading', { name: 'People and access' })).toBeVisible();
+  const byArea = page.getByRole('tab', { name: 'By area' });
+  await byArea.click();
+  await expect(byArea).toHaveAttribute('aria-selected', 'true');
 }
 
 export async function selectScope(page: Page, scope: Scope) {
@@ -42,14 +41,16 @@ export async function setMemberAccess(
   const lookup = page.getByPlaceholder('Enter a campus email, name, or UID');
   await lookup.fill(email);
   await page.getByRole('button', { name: 'Search' }).click();
-  const candidate = page.getByRole('group', { name: email }).last();
-  await expect(candidate).toBeVisible();
-  const action = candidate.getByRole('button', {
-    name: grant ? 'Grant access' : 'Revoke',
+  // Granting and revoking edit the draft; only Save reaches the backend.
+  const row = page
+    .getByRole('button', {
+      name: new RegExp(`${email}[^]*${grant ? 'Grant access' : 'Revoke'}`, 'u'),
+    })
+    .last();
+  await expect(row).toBeVisible();
+  await row.click();
+  await expectBackendAction(page, 'setUserAccessScope', async () => {
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
   });
-  await expect(action).toBeVisible();
-  await expectBackendAction(page, 'setUserAccessScope', async () => action.click());
-  await expect(
-    candidate.getByRole('button', { name: grant ? 'Revoke' : 'Grant access' }),
-  ).toBeVisible();
+  await expect(page.getByText('unsaved changes')).toHaveCount(0);
 }

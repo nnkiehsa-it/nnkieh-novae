@@ -8,19 +8,24 @@ import { newUserPage } from './support/session';
 test('platform admin can restrict and restore an ordinary account', async ({ browser }) => {
   test.setTimeout(120_000);
   const admin = await newUserPage(browser, 'admin');
-  await admin.page.goto('/admin/management?tab=users');
+  await admin.page.goto('/admin/people');
   const search = admin.page.getByPlaceholder('Search name, campus email, or UID');
   await search.fill(E2E_USERS.other);
   await admin.page.getByRole('button', { name: 'Search' }).click();
-  await admin.page.getByText(E2E_USERS.other).click();
+  // Searching narrows the list to what was typed, rather than reloading it as it was.
+  await expect(
+    admin.page.getByRole('main').getByText('@integration.invalid').filter({ visible: true }),
+  ).toHaveCount(1);
+  await admin.page.getByText(E2E_USERS.other).filter({ visible: true }).click();
+  await admin.page.getByRole('radio', { name: '7 days' }).click();
   await admin.page.getByPlaceholder('Restriction reason (required)').fill('E2E reversible restriction');
   await expectBackendAction(admin.page, 'setUserRestriction', async () => {
-    await admin.page.getByRole('button', { name: '7 days' }).click();
+    await admin.page.getByRole('button', { name: 'Restrict this account' }).click();
   });
   await admin.page.reload();
   await admin.page.getByPlaceholder('Search name, campus email, or UID').fill(E2E_USERS.other);
   await admin.page.getByRole('button', { name: 'Search' }).click();
-  await admin.page.getByText(E2E_USERS.other).click();
+  await admin.page.getByText(E2E_USERS.other).filter({ visible: true }).click();
   await expect(admin.page.getByText('Interactions currently restricted')).toBeVisible();
   await expectBackendAction(admin.page, 'setUserRestriction', async () => {
     await admin.page.getByRole('button', { name: 'Clear restriction' }).click();
@@ -32,14 +37,21 @@ test('platform admin can restrict and restore an ordinary account', async ({ bro
 test('platform settings save traverses impact estimation and canonical write', async ({ browser }) => {
   test.setTimeout(120_000);
   const admin = await newUserPage(browser, 'admin');
-  await admin.page.goto('/admin/management?tab=categories');
-  await admin.page.getByRole('tab', { name: 'Platform settings' }).click();
+  await admin.page.goto('/admin/platform');
   await expect(admin.page.getByText('Image uploads')).toBeVisible();
+  // Nothing is submittable until something has actually been changed.
+  await expect(admin.page.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0);
+  const commentImages = admin.page.getByLabel('Images per comment', { exact: true });
+  await commentImages.fill(String(Number(await commentImages.inputValue()) === 1 ? 2 : 1));
+  await commentImages.blur();
+  await expect(admin.page.getByText('1 unsaved changes')).toBeVisible();
   await expectBackendAction(admin.page, 'savePlatformSettings', async () => {
-    await admin.page.getByRole('button', { name: 'Save all changes' }).click();
-    const impactDialog = admin.page.getByRole('alertdialog');
-    await expect(impactDialog).toBeVisible();
-    await impactDialog.getByRole('button', { name: 'Save and queue' }).click();
+    await admin.page.getByRole('button', { name: 'Save', exact: true }).click();
+    // The write is only issued once the estimated impact has been accepted.
+    await admin.page
+      .getByRole('alertdialog')
+      .getByRole('button', { name: 'Save and start' })
+      .click();
   });
   await admin.context.close();
 });
@@ -49,19 +61,23 @@ test('operations console is usable on phone and desktop and saves an audited pol
   const admin = await newUserPage(browser,'admin');
   for(const width of [390,1440]) {
     await admin.page.setViewportSize({width,height:900});
-    await admin.page.goto('/admin/management?tab=operations');
-    await expect(admin.page.getByRole('heading',{name:'Operations',exact:true})).toBeVisible();
-    await expect(admin.page.getByText('Database storage',{exact:false})).toBeVisible();
+    await admin.page.goto('/admin/system');
+    await expect(admin.page.getByRole('heading',{name:'System',exact:true})).toBeVisible();
+    await expect(admin.page.getByRole('heading',{name:'Database storage'})).toBeVisible();
     await expect.poll(()=>admin.page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
-    await admin.page.screenshot({path:testInfo.outputPath(`operations-${width}.png`)});
-    await admin.page.getByText('Client requests and throttling',{exact:true}).click();
+    await admin.page.screenshot({path:testInfo.outputPath(`system-${width}.png`)});
+    await admin.page.goto('/admin/policies');
+    await expect.poll(()=>admin.page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
     await admin.page.getByLabel('Client Write Cooldown Ms',{exact:true}).scrollIntoViewIfNeeded();
     await expect(admin.page.getByLabel('Client Write Cooldown Ms',{exact:true})).toHaveValue('500');
-    await admin.page.screenshot({path:testInfo.outputPath(`operations-settings-${width}.png`)});
+    await admin.page.screenshot({path:testInfo.outputPath(`policies-${width}.png`)});
   }
+  const cooldown = admin.page.getByLabel('Client Write Cooldown Ms',{exact:true});
+  await cooldown.fill('600');
+  await cooldown.blur();
   await admin.page.getByPlaceholder('Reason for change (required)').fill('E2E operational policy audit');
   await expectBackendAction(admin.page,'saveOperationPolicies',async()=>{
-    await admin.page.getByRole('button',{name:'Save all changes',exact:true}).click();
+    await admin.page.getByRole('button',{name:'Save',exact:true}).click();
   });
   await expect(admin.page.getByText('E2E operational policy audit',{exact:false})).toBeVisible();
   await admin.context.close();
@@ -74,18 +90,24 @@ test('notification visit and every personal preference issue canonical writes', 
     await member.page.goto('/notifications');
   });
   await member.page.goto('/settings');
-  for (const label of [
-    'Comment notifications',
-    'Proposal updates',
-    'Facility updates',
-  ]) {
-    const row = member.page.getByText(label, { exact: true }).locator('xpath=ancestor::label');
-    const toggle = row.getByRole('switch');
-    const initial = await toggle.getAttribute('data-state');
-    await expectBackendAction(member.page, 'updatePushNotificationPreferences', async () => toggle.click());
-    await expect(toggle).toHaveAttribute('data-state', initial === 'checked' ? 'unchecked' : 'checked');
-    await expectBackendAction(member.page, 'updatePushNotificationPreferences', async () => toggle.click());
-    await expect(toggle).toHaveAttribute('data-state', initial!);
+  const labels = ['Comment notifications', 'Proposal updates', 'Facility updates'];
+  const before: Record<string, string | null> = {};
+  for (const label of labels) {
+    const toggle = member.page.getByRole('switch', { exact: true, name: label });
+    before[label] = await toggle.getAttribute('data-state');
+    await toggle.click();
+  }
+  // Toggling changes nothing until the screen is saved, and then it is one write.
+  await expect(member.page.getByText('3 unsaved changes')).toBeVisible();
+  await expectBackendAction(member.page, 'updatePushNotificationPreferences', async () => {
+    await member.page.getByRole('button', { name: 'Save', exact: true }).click();
+  });
+  for (const label of labels) {
+    const toggle = member.page.getByRole('switch', { exact: true, name: label });
+    await expect(toggle).toHaveAttribute(
+      'data-state',
+      before[label] === 'checked' ? 'unchecked' : 'checked',
+    );
   }
   await member.context.close();
 });
@@ -110,11 +132,11 @@ test('failed provider deletion can be retried from the operational UI', async ({
   );
   try {
     const admin = await newUserPage(browser, 'admin');
-    await admin.page.goto('/admin/management?tab=overview');
-    const entry = admin.page.getByText(targetId).locator('xpath=ancestor::div[contains(@class,"space-y-2")]');
+    await admin.page.goto('/admin/system');
+    const entry = admin.page.getByRole('button', { name: new RegExp(targetId, 'u') });
     await expect(entry).toBeVisible();
     await expectBackendAction(admin.page, 'retryDeletionJob', async () => {
-      await entry.getByRole('button', { name: 'Retry' }).click();
+      await entry.click();
     });
     await expect(admin.page.getByText(targetId)).toHaveCount(0);
     await admin.context.close();
