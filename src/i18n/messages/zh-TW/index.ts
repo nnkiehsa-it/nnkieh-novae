@@ -1,5 +1,5 @@
 import access from './access';
-import adminCenter from './adminCenter';
+import admin from './admin';
 import account from './account';
 import announcement from './announcement';
 import apiError from './apiError';
@@ -9,7 +9,6 @@ import categoryAdmin from './categoryAdmin';
 import comments from './comments';
 import common from './common';
 import config from './config';
-import dashboard from './dashboard';
 import facility from './facility';
 import image from './image';
 import issue from './issue';
@@ -26,7 +25,7 @@ import ui from './ui';
 
 const messages = {
   ...access,
-  ...adminCenter,
+  ...admin,
   ...account,
   ...announcement,
   ...apiError,
@@ -36,7 +35,6 @@ const messages = {
   ...comments,
   ...common,
   ...config,
-  ...dashboard,
   ...facility,
   ...image,
   ...issue,

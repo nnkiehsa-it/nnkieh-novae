@@ -4,14 +4,16 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useCategories } from "@/hooks/use-categories";
 import { useSession } from "@/hooks/use-session";
+import { allowedAdminRoutes, canEnterAdministration } from "@/lib/admin-routes";
 
 export function useRoutePreload() {
   const router = useRouter();
   const session = useSession();
   const categories = useCategories();
+  const isAdmin = session.isAdmin;
+  const canManageCategories = session.can("category.manage");
+  const canManageRoles = session.can("role.manage");
   const canViewDashboard = session.can("dashboard.view");
-  const canManageAdministration =
-    session.can("role.manage") || session.can("category.manage");
   const facilityCategory = categories.facilityCategories[0]?.id || "";
   const issueCategory = categories.issueCategories[0]?.id || "my-proposals";
 
@@ -26,14 +28,20 @@ export function useRoutePreload() {
 
   React.useEffect(() => {
     if (!session.initialized || !session.user) return;
-    if (canViewDashboard) router.prefetch("/dashboard");
-    if (canManageAdministration) {
-      router.prefetch("/admin/management?tab=categories");
-      router.prefetch("/admin/management?tab=members");
-    }
+    const access = {
+      admin: isAdmin,
+      categories: canManageCategories,
+      members: canManageRoles,
+      overview: canViewDashboard,
+    };
+    if (!canEnterAdministration(access)) return;
+    router.prefetch("/admin");
+    allowedAdminRoutes(access).forEach((route) => router.prefetch(route.href));
   }, [
-    canManageAdministration,
+    canManageCategories,
+    canManageRoles,
     canViewDashboard,
+    isAdmin,
     router,
     session.initialized,
     session.user,

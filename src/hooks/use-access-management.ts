@@ -2,8 +2,10 @@
 
 import * as React from "react";
 import { toast } from "sonner";
+
 import { useI18n } from "@/i18n";
 import { useCategories } from "@/hooks/use-categories";
+import { useDraft } from "@/hooks/use-draft";
 import {
   listScopeMembers,
   lookupAccessMember,
@@ -11,14 +13,34 @@ import {
   type AccessScope,
   type AccessUser,
 } from "@/services/access";
-import { ACTION_SUCCESS_HOLD_MS } from "@/hooks/use-action-feedback";
 
 export type { AccessScope, AccessUser };
 
+interface ScopeMembers {
+  uids: string[];
+}
+
+/**
+ * Who manages one area.
+ *
+ * Granting and revoking used to happen the instant a row was pressed, one
+ * request per person. Here the screen holds the whole membership as a draft and
+ * one save reconciles it, so a mis-click costs nothing and the audit trail
+ * reflects a decision rather than a sequence of second thoughts.
+ */
 export function useAccessManagement() {
   const categories = useCategories();
   const { t } = useI18n();
   const [kind, setKind] = React.useState<AccessScope["kind"]>("issue");
+  const [categoryId, setCategoryId] = React.useState("");
+  const [known, setKnown] = React.useState<AccessUser[]>([]);
+  const [stored, setStored] = React.useState<ScopeMembers | null>(null);
+  const [candidate, setCandidate] = React.useState<AccessUser | null>(null);
+  const [query, setQuery] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+  const [searching, setSearching] = React.useState(false);
+  const [error, setError] = React.useState("");
+
   const options = React.useMemo(
     () =>
       kind === "issue"
@@ -28,15 +50,7 @@ export function useAccessManagement() {
           : [],
     [categories.activeFacilityCategories, categories.activeIssueCategories, kind],
   );
-  const [categoryId, setCategoryId] = React.useState("");
-  const [members, setMembers] = React.useState<AccessUser[]>([]);
-  const [candidate, setCandidate] = React.useState<AccessUser | null>(null);
-  const [query, setQuery] = React.useState("");
-  const [loading, setLoading] = React.useState(false);
-  const [searching, setSearching] = React.useState(false);
-  const [savingUid, setSavingUid] = React.useState("");
-  const [successUid, setSuccessUid] = React.useState("");
-  const [error, setError] = React.useState("");
+
   const scope = React.useMemo<AccessScope | null>(
     () =>
       kind === "announcement"
@@ -59,13 +73,16 @@ export function useAccessManagement() {
 
   const load = React.useCallback(async () => {
     if (!scope) {
-      setMembers([]);
+      setKnown([]);
+      setStored(null);
       return;
     }
     setLoading(true);
     setError("");
     try {
-      setMembers((await listScopeMembers(scope)).users);
+      const members = (await listScopeMembers(scope)).users;
+      setKnown(members);
+      setStored({ uids: members.map((member) => member.uid) });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
     } finally {
@@ -77,77 +94,68 @@ export function useAccessManagement() {
     void load();
   }, [load]);
 
+  const draft = useDraft<ScopeMembers>({
+    save: async (value) => {
+      if (!scope) return value;
+      const before = new Set(stored?.uids ?? []);
+      const after = new Set(value.uids);
+      const granted = value.uids.filter((uid) => !before.has(uid));
+      const revoked = [...before].filter((uid) => !after.has(uid));
+      for (const uid of granted) await setUserAccessScope(uid, scope, true);
+      for (const uid of revoked) await setUserAccessScope(uid, scope, false);
+      const next = { uids: value.uids };
+      setStored(next);
+      return next;
+    },
+    source: stored,
+  });
+
   async function search() {
     if (!query.trim()) return;
     setSearching(true);
     setCandidate(null);
     try {
-      setCandidate((await lookupAccessMember(query.trim())).users[0] ?? null);
+      const found = (await lookupAccessMember(query.trim())).users[0] ?? null;
+      setCandidate(found);
+      if (found)
+        setKnown((current) =>
+          current.some((member) => member.uid === found.uid) ? current : [...current, found],
+        );
     } catch (caught) {
-      toast.error(
-        caught instanceof Error ? caught.message : t("ui.access.searchFailed"),
-      );
+      toast.error(caught instanceof Error ? caught.message : t("ui.access.searchFailed"));
     } finally {
       setSearching(false);
     }
   }
 
-  function hasScope(user: AccessUser) {
-    if (kind === "announcement") return user.roles.includes("announcement-manager");
-    if (kind === "issue") return user.managedIssueCategoryIds.includes(categoryId);
-    return user.managedFacilityCategoryIds.includes(categoryId);
-  }
-
-  async function save(user: AccessUser, grant: boolean) {
-    if (!scope) return;
-    setSavingUid(user.uid);
-    setSuccessUid("");
-    try {
-      const result = await setUserAccessScope(user.uid, scope, grant);
-      const updated = { ...user, ...result };
-      setMembers((current) =>
-        grant
-          ? current.some((member) => member.uid === user.uid)
-            ? current.map((member) => (member.uid === user.uid ? updated : member))
-            : [...current, updated]
-          : current.filter((member) => member.uid !== user.uid),
-      );
-      setCandidate((current) =>
-        current?.uid === user.uid ? { ...current, ...result } : current,
-      );
-      setSuccessUid(user.uid);
-      await new Promise<void>((resolve) =>
-        window.setTimeout(resolve, ACTION_SUCCESS_HOLD_MS),
-      );
-    } catch (caught) {
-      toast.error(
-        caught instanceof Error ? caught.message : t("ui.access.updateFailed"),
-      );
-    } finally {
-      setSavingUid("");
-      setSuccessUid("");
-    }
-  }
+  const memberUids = draft.value?.uids ?? [];
 
   return {
     candidate,
     categoryId,
+    draft,
     error,
-    hasScope,
+    grant: (uid: string) =>
+      draft.update((current) =>
+        current.uids.includes(uid) ? current : { uids: [...current.uids, uid] },
+      ),
+    hasScope: (uid: string) => memberUids.includes(uid),
     kind,
+    known,
     load,
     loading,
-    members,
+    members: memberUids
+      .map((uid) => known.find((member) => member.uid === uid))
+      .filter((member): member is AccessUser => member !== undefined),
     options,
     query,
-    save,
-    savingUid,
-    successUid,
+    revoke: (uid: string) =>
+      draft.update((current) => ({ uids: current.uids.filter((entry) => entry !== uid) })),
+    scope,
     search,
     searching,
     setCategoryId,
     setKind,
     setQuery,
-    scope,
   };
 }

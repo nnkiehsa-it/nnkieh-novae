@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { toast } from "sonner";
-import { useActionFeedback } from "@/hooks/use-action-feedback";
-import { seedImageUploadSettings } from "@/hooks/use-categories";
+
 import { useI18n } from "@/i18n";
+import { seedImageUploadSettings } from "@/hooks/use-categories";
+import { useDraft } from "@/hooks/use-draft";
 import {
   estimateRetentionCleanup,
   getCategoryManagement,
@@ -14,22 +14,25 @@ import { markSessionBootstrapStale } from "@/services/session-bootstrap";
 import { notifyPlatformJobsChanged } from "@/lib/platform-job-events";
 import type { PlatformSettings } from "@/types/categories";
 
+function isPositive(value: unknown) {
+  return typeof value === "boolean" || (Number.isFinite(value) && Number(value) > 0);
+}
+
 export function usePlatformSettings() {
   const { t } = useI18n();
-  const feedback = useActionFeedback();
-  const [settings, setSettings] = React.useState<PlatformSettings | null>(null);
+  const [stored, setStored] = React.useState<PlatformSettings | null>(null);
   const [error, setError] = React.useState("");
-  const [pendingSettings, setPendingSettings] = React.useState<PlatformSettings | null>(null);
-  const [impactDetails, setImpactDetails] = React.useState<Record<string, number>>({});
-  const [totalEstimatedRows, setTotalEstimatedRows] = React.useState(0);
+  const [loading, setLoading] = React.useState(true);
 
   const load = React.useCallback(async () => {
+    setLoading(true);
     setError("");
     try {
-      const management = await getCategoryManagement();
-      setSettings(management.platformSettings);
+      setStored((await getCategoryManagement()).platformSettings);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("common.loadFailed"));
+    } finally {
+      setLoading(false);
     }
   }, [t]);
 
@@ -37,83 +40,22 @@ export function usePlatformSettings() {
     void load();
   }, [load]);
 
-  const valid = React.useMemo(() => {
-    if (!settings) return false;
-    const image = settings.imageUploads;
-    const retention = settings.retention;
-    return Object.values(retention).every((value) => typeof value === "boolean" || (Number.isFinite(value) && value > 0)) && [
-      image.announcementMaxImages,
-      image.commentMaxImages,
-      image.facilityMaxImages,
-      image.issueMaxImages,
-      image.maxDimension,
-      image.maxUploadKilobytes,
-      image.webpQuality,
-    ].every((value) => Number.isFinite(value) && value > 0);
-  }, [settings]);
-
-  async function persist(nextSettings: PlatformSettings) {
-    try {
-      const saved = await feedback.run(() => savePlatformSettings(nextSettings));
-      setSettings({ imageUploads: saved.imageUploads, retention: saved.retention });
+  const draft = useDraft<PlatformSettings>({
+    estimate: (value) => estimateRetentionCleanup(value),
+    save: async (value) => {
+      const saved = await savePlatformSettings(value);
+      const next = { imageUploads: saved.imageUploads, retention: saved.retention };
+      setStored(next);
       seedImageUploadSettings(saved.imageUploads);
       markSessionBootstrapStale();
       notifyPlatformJobsChanged();
-    } catch (caught) {
-      toast.error(caught instanceof Error ? caught.message : t("common.saveFailed"));
-    }
-  }
+      return next;
+    },
+    source: stored,
+    validate: (value) =>
+      Object.values(value.retention).every(isPositive)
+      && Object.values(value.imageUploads).every(isPositive),
+  });
 
-  async function save() {
-    if (!settings || !valid || feedback.busy) return;
-    try {
-      const impact = await estimateRetentionCleanup(settings);
-      if (impact.totalEstimatedRows > 0) {
-        setPendingSettings(settings);
-        setImpactDetails(impact.details);
-        setTotalEstimatedRows(impact.totalEstimatedRows);
-        return;
-      }
-      await persist(settings);
-    } catch (caught) {
-      toast.error(caught instanceof Error ? caught.message : t("common.saveFailed"));
-    }
-  }
-
-  async function confirmSave() {
-    const nextSettings = pendingSettings;
-    setPendingSettings(null);
-    if (nextSettings) await persist(nextSettings);
-  }
-
-  function updateImage<K extends keyof PlatformSettings["imageUploads"]>(key: K, value: number) {
-    setSettings((current) => current ? {
-      ...current,
-      imageUploads: { ...current.imageUploads, [key]: value },
-    } : current);
-  }
-
-  function updateRetention(key: keyof PlatformSettings["retention"], value: boolean | number) {
-    setSettings((current) => current ? {
-      ...current,
-      retention: { ...current.retention, [key]: value } as PlatformSettings["retention"],
-    } : current);
-  }
-
-  return {
-    cancelSave: () => setPendingSettings(null),
-    confirmSave,
-    error,
-    feedbackState: feedback.state,
-    impactDetails,
-    impactOpen: pendingSettings !== null,
-    load,
-    save,
-    saving: feedback.busy,
-    settings,
-    totalEstimatedRows,
-    updateImage,
-    updateRetention,
-    valid,
-  };
+  return { draft, error, load, loading };
 }

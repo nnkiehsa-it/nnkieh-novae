@@ -8,7 +8,6 @@ import {
   Bell,
   Blocks,
   ChevronDown,
-  Gauge,
   LogOut,
   Megaphone,
   Moon,
@@ -118,16 +117,10 @@ function AccountMenu({ compact = false }: { compact?: boolean }) {
           <Link href="/settings">
             <Settings />{translate('ui.nav.settings')}</Link>
         </DropdownMenuItem>
-        {session.can("dashboard.view") ? (
+        {session.can("dashboard.view") || session.can("role.manage") || session.can("category.manage") ? (
           <DropdownMenuItem asChild>
-            <Link href="/dashboard">
-              <Gauge />{translate('ui.nav.dashboard')}</Link>
-          </DropdownMenuItem>
-        ) : null}
-        {session.can("role.manage") ? (
-          <DropdownMenuItem asChild>
-            <Link href="/admin/management">
-              <ShieldCheck />{translate('ui.nav.management')}</Link>
+            <Link href="/admin">
+              <ShieldCheck />{translate('admin.title')}</Link>
           </DropdownMenuItem>
         ) : null}
         <DropdownMenuItem onSelect={changeTheme}>

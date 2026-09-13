@@ -1,21 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { toast } from "sonner";
+
 import { useI18n } from "@/i18n";
 import { useCategories } from "@/hooks/use-categories";
-import { useActionFeedback } from "@/hooks/use-action-feedback";
+import { useDraft } from "@/hooks/use-draft";
 import {
   estimateCategoryPolicyChanges,
   getCategoryManagement,
   saveCategoryManagement,
   type CategoryManagementInput,
 } from "@/services/categories";
-import type {
-  FacilityCategoryConfig,
-  IssueCategoryConfig,
-  PolicyImpactEstimate,
-} from "@/types/categories";
 import {
   hasValidCategoryIdentity,
   newFacilityCategory,
@@ -23,196 +18,197 @@ import {
   removeCategory,
 } from "@/lib/category-management-state";
 import { notifyPlatformJobsChanged } from "@/lib/platform-job-events";
+import type { FacilityCategoryConfig, IssueCategoryConfig } from "@/types/categories";
+
+export type { CategoryManagementInput } from "@/services/categories";
+
+function withSortOrder<T>(items: T[]) {
+  return items.map((item, sortOrder) => ({ ...item, sortOrder }));
+}
 
 export function useCategoryManagement() {
   const categories = useCategories();
   const { t } = useI18n();
-  const [kind, setKind] = React.useState("issue");
-  const [issues, setIssues] = React.useState<IssueCategoryConfig[]>([]);
-  const [facilities, setFacilities] = React.useState<FacilityCategoryConfig[]>([]);
-  const [persistedIssues, setPersistedIssues] = React.useState<Set<string>>(new Set());
-  const [persistedFacilities, setPersistedFacilities] = React.useState<Set<string>>(
-    new Set(),
-  );
-  const [deletedIssues, setDeletedIssues] = React.useState<string[]>([]);
-  const [deletedFacilities, setDeletedFacilities] = React.useState<string[]>([]);
-  const [issuesEnabled, setIssuesEnabled] = React.useState(true);
-  const [facilitiesEnabled, setFacilitiesEnabled] = React.useState(true);
-  const [announcementComments, setAnnouncementComments] = React.useState(true);
-  const [loading, setLoading] = React.useState(true);
-  const feedback = useActionFeedback();
+  const [stored, setStored] = React.useState<CategoryManagementInput | null>(null);
+  const [persisted, setPersisted] = React.useState<ReadonlySet<string>>(new Set());
   const [error, setError] = React.useState("");
-  const [pendingSave, setPendingSave] = React.useState<CategoryManagementInput | null>(null);
-  const [impactEstimates, setImpactEstimates] = React.useState<PolicyImpactEstimate[]>([]);
-  const [totalEstimatedRows, setTotalEstimatedRows] = React.useState(0);
+  const [loading, setLoading] = React.useState(true);
 
-  const valid = React.useMemo(() => {
-    const issuesValid =
-      !issuesEnabled ||
-      (hasValidCategoryIdentity(issues) &&
-        issues.some((item) => item.isDefault) &&
-        issues.every(
-          (item) =>
-            !item.supportEnabled ||
-            (Number(item.supportGoal) > 0 && Number(item.supportDeadlineDays) > 0),
-        ));
-    const facilitiesValid =
-      !facilitiesEnabled ||
-      (hasValidCategoryIdentity(facilities) &&
-        facilities.some((item) => item.isDefault));
-    return issuesValid && facilitiesValid;
-  }, [facilities, facilitiesEnabled, issues, issuesEnabled]);
+  const adopt = React.useCallback(
+    (result: {
+      facilityCategories: FacilityCategoryConfig[];
+      features: {
+        announcementCommentsEnabled: boolean;
+        facilitiesEnabled: boolean;
+        issuesEnabled: boolean;
+      };
+      issueCategories: IssueCategoryConfig[];
+    }) => {
+      setStored({
+        announcementCommentsEnabled: result.features.announcementCommentsEnabled,
+        deletedFacilityCategoryIds: [],
+        deletedIssueCategoryIds: [],
+        facilitiesEnabled: result.features.facilitiesEnabled,
+        facilityCategories: result.facilityCategories,
+        issueCategories: result.issueCategories,
+        issuesEnabled: result.features.issuesEnabled,
+      });
+      setPersisted(
+        new Set([
+          ...result.issueCategories.map((item) => item.id),
+          ...result.facilityCategories.map((item) => item.id),
+        ]),
+      );
+    },
+    [],
+  );
 
   const load = React.useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const result = await getCategoryManagement();
-      setIssues(result.issueCategories);
-      setFacilities(result.facilityCategories);
-      setPersistedIssues(new Set(result.issueCategories.map((item) => item.id)));
-      setPersistedFacilities(
-        new Set(result.facilityCategories.map((item) => item.id)),
-      );
-      setIssuesEnabled(result.features.issuesEnabled);
-      setFacilitiesEnabled(result.features.facilitiesEnabled);
-      setAnnouncementComments(result.features.announcementCommentsEnabled);
-      setDeletedIssues([]);
-      setDeletedFacilities([]);
+      adopt(await getCategoryManagement());
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("common.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [adopt, t]);
 
   React.useEffect(() => {
     void load();
   }, [load]);
 
-  function deleteIssue(index: number) {
-    const item = issues[index];
-    if (item?.id && persistedIssues.has(item.id))
-      setDeletedIssues((current) => [...current, item.id]);
-    setIssues((current) => removeCategory(current, index));
-  }
-
-  function deleteFacility(index: number) {
-    const item = facilities[index];
-    if (item?.id && persistedFacilities.has(item.id))
-      setDeletedFacilities((current) => [...current, item.id]);
-    setFacilities((current) => removeCategory(current, index));
-  }
-
-  const createInput = React.useCallback((): CategoryManagementInput => ({
-    announcementCommentsEnabled: announcementComments,
-    deletedFacilityCategoryIds: deletedFacilities,
-    deletedIssueCategoryIds: deletedIssues,
-    facilitiesEnabled,
-    facilityCategories: facilities.map((item, sortOrder) => ({ ...item, sortOrder })),
-    issueCategories: issues.map((item, sortOrder) => ({ ...item, sortOrder })),
-    issuesEnabled,
-  }), [
-    announcementComments,
-    deletedFacilities,
-    deletedIssues,
-    facilities,
-    facilitiesEnabled,
-    issues,
-    issuesEnabled,
-  ]);
-
-  async function persist(input: CategoryManagementInput) {
-    try {
-      const result = await feedback.run(() => saveCategoryManagement(input));
-      setIssues(result.issueCategories);
-      setFacilities(result.facilityCategories);
-      setPersistedIssues(new Set(result.issueCategories.map((item) => item.id)));
-      setPersistedFacilities(
-        new Set(result.facilityCategories.map((item) => item.id)),
+  const draft = useDraft<CategoryManagementInput>({
+    estimate: async (value) => {
+      const impact = await estimateCategoryPolicyChanges(value);
+      return {
+        details: Object.fromEntries(
+          impact.estimates.map((entry) => [
+            `${entry.jobType}:${entry.scopeId}`,
+            entry.estimatedRows,
+          ]),
+        ),
+        totalEstimatedRows: impact.totalEstimatedRows,
+      };
+    },
+    save: async (value) => {
+      const result = await saveCategoryManagement({
+        ...value,
+        facilityCategories: withSortOrder(value.facilityCategories),
+        issueCategories: withSortOrder(value.issueCategories),
+      });
+      const next: CategoryManagementInput = {
+        ...value,
+        deletedFacilityCategoryIds: [],
+        deletedIssueCategoryIds: [],
+        facilityCategories: result.facilityCategories,
+        issueCategories: result.issueCategories,
+      };
+      setStored(next);
+      setPersisted(
+        new Set([
+          ...result.issueCategories.map((item) => item.id),
+          ...result.facilityCategories.map((item) => item.id),
+        ]),
       );
-      setDeletedIssues([]);
-      setDeletedFacilities([]);
       await categories.refresh();
       notifyPlatformJobsChanged();
-    } catch (caught) {
-      toast.error(caught instanceof Error ? caught.message : t("common.saveFailed"));
-    }
-  }
+      return next;
+    },
+    source: stored,
+    validate: (value) =>
+      (!value.issuesEnabled
+        || (hasValidCategoryIdentity(value.issueCategories)
+          && value.issueCategories.some((item) => item.isDefault)
+          && value.issueCategories.every(
+            (item) =>
+              !item.supportEnabled
+              || (Number(item.supportGoal) > 0 && Number(item.supportDeadlineDays) > 0),
+          )))
+      && (!value.facilitiesEnabled
+        || (hasValidCategoryIdentity(value.facilityCategories)
+          && value.facilityCategories.some((item) => item.isDefault))),
+  });
 
-  async function save() {
-    if (!valid || feedback.busy) return;
-    const input = createInput();
-    try {
-      const impact = await estimateCategoryPolicyChanges(input);
-      if (impact.totalEstimatedRows > 0) {
-        setPendingSave(input);
-        setImpactEstimates(impact.estimates);
-        setTotalEstimatedRows(impact.totalEstimatedRows);
-        return;
-      }
-      await persist(input);
-    } catch (caught) {
-      toast.error(caught instanceof Error ? caught.message : t("common.saveFailed"));
-    }
-  }
-
-  async function confirmSave() {
-    const input = pendingSave;
-    setPendingSave(null);
-    if (input) await persist(input);
-  }
+  const value = draft.value;
 
   return {
-    addFacility: () => setFacilities((current) => [...current, newFacilityCategory(current.length)]),
-    addIssue: () => setIssues((current) => [...current, newIssueCategory(current.length)]),
-    announcementComments,
-    deleteFacility,
-    deleteIssue,
+    addFacility: () =>
+      draft.update((current) => ({
+        ...current,
+        facilityCategories: [
+          ...current.facilityCategories,
+          newFacilityCategory(current.facilityCategories.length),
+        ],
+      })),
+    addIssue: () =>
+      draft.update((current) => ({
+        ...current,
+        issueCategories: [
+          ...current.issueCategories,
+          newIssueCategory(current.issueCategories.length),
+        ],
+      })),
+    deleteFacility: (index: number) =>
+      draft.update((current) => {
+        const target = current.facilityCategories[index];
+        return {
+          ...current,
+          deletedFacilityCategoryIds:
+            target && persisted.has(target.id)
+              ? [...current.deletedFacilityCategoryIds, target.id]
+              : current.deletedFacilityCategoryIds,
+          facilityCategories: removeCategory(current.facilityCategories, index),
+        };
+      }),
+    deleteIssue: (index: number) =>
+      draft.update((current) => {
+        const target = current.issueCategories[index];
+        return {
+          ...current,
+          deletedIssueCategoryIds:
+            target && persisted.has(target.id)
+              ? [...current.deletedIssueCategoryIds, target.id]
+              : current.deletedIssueCategoryIds,
+          issueCategories: removeCategory(current.issueCategories, index),
+        };
+      }),
+    draft,
     error,
-    facilities,
-    facilitiesEnabled,
-    issues,
-    issuesEnabled,
-    impactEstimates,
-    impactOpen: pendingSave !== null,
-    kind,
     load,
     loading,
-    persistedFacilities,
-    persistedIssues,
-    save,
-    confirmSave,
-    cancelSave: () => setPendingSave(null),
-    feedbackState: feedback.state,
-    saving: feedback.busy,
-    setAnnouncementComments,
+    persisted,
     setDefaultFacility: (index: number) =>
-      setFacilities((current) =>
-        current.map((entry, currentIndex) => ({
+      draft.update((current) => ({
+        ...current,
+        facilityCategories: current.facilityCategories.map((entry, at) => ({
           ...entry,
-          isDefault: currentIndex === index,
+          isDefault: at === index,
         })),
-      ),
+      })),
     setDefaultIssue: (index: number) =>
-      setIssues((current) =>
-        current.map((entry, currentIndex) => ({
+      draft.update((current) => ({
+        ...current,
+        issueCategories: current.issueCategories.map((entry, at) => ({
           ...entry,
-          isDefault: currentIndex === index,
+          isDefault: at === index,
         })),
-      ),
-    setFacilitiesEnabled,
-    setIssuesEnabled,
-    setKind,
-    totalEstimatedRows,
+      })),
     updateFacility: (index: number, next: FacilityCategoryConfig) =>
-      setFacilities((current) =>
-        current.map((entry, currentIndex) => (currentIndex === index ? next : entry)),
-      ),
+      draft.update((current) => ({
+        ...current,
+        facilityCategories: current.facilityCategories.map((entry, at) =>
+          at === index ? next : entry,
+        ),
+      })),
     updateIssue: (index: number, next: IssueCategoryConfig) =>
-      setIssues((current) =>
-        current.map((entry, currentIndex) => (currentIndex === index ? next : entry)),
-      ),
-    valid,
+      draft.update((current) => ({
+        ...current,
+        issueCategories: current.issueCategories.map((entry, at) =>
+          at === index ? next : entry,
+        ),
+      })),
+    value,
   };
 }

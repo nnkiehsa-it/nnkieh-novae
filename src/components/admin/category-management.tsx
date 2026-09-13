@@ -1,151 +1,160 @@
 "use client";
-import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
-import { Plus, Save } from "lucide-react";
-import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
+import * as React from "react";
+import { Plus } from "lucide-react";
+
+import { useI18n } from "@/i18n";
 import { useCategoryManagement } from "@/hooks/use-category-management";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { AdminListSkeleton } from "@/components/admin/admin-list-skeleton";
+import { ApplyReviewDialog } from "@/components/admin/apply-review-dialog";
+import { CategoryEditor } from "@/components/admin/category-editors";
+import { ContentTransition, StateTransition } from "@/components/motion/state-transition";
+import { ListActionRow, ListSection } from "@/components/ui/list";
+import { ListSwitchRow } from "@/components/ui/list-controls";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
-import { ErrorStateContent } from "@/components/ui/page-state";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  CategoryFeatureHeader,
-  FacilityCategoryEditor,
-  IssueCategoryEditor,
-} from "@/components/admin/category-editors";
-import { PlatformSettings } from "@/components/admin/platform-settings";
-import { PlatformJobProgress } from "@/components/admin/platform-job-progress";
-import { PolicyImpactDialog } from "@/components/admin/policy-impact-dialog";
+import { ErrorState } from "@/components/ui/page-state";
+import { SaveBar } from "@/components/ui/save-bar";
+
+const CHANGE_LABELS: Record<string, string> = {
+  announcementCommentsEnabled: "ui.admin.announcementComments",
+  deletedFacilityCategoryIds: "admin.changeRemovedFacilities",
+  deletedIssueCategoryIds: "admin.changeRemovedIssues",
+  facilitiesEnabled: "ui.admin.facilityFeature",
+  facilityCategories: "ui.nav.facilities",
+  issueCategories: "ui.nav.issues",
+  issuesEnabled: "ui.admin.issueFeature",
+};
 
 export function CategoryManagement() {
-  useLocaleSubscription();
+  const { t } = useI18n();
   const state = useCategoryManagement();
+  const [kind, setKind] = React.useState("issue");
+  useUnsavedChanges(state.draft.changes.length, state.draft.reset);
+  const value = state.value;
+
+  if (state.error) return <ErrorState error={state.error} onRetry={() => void state.load()} />;
+  if (state.loading || !value) return <AdminListSkeleton groups={2} rows={5} />;
 
   return (
-    <section className="space-y-6">
+    <div className="space-y-6">
       <LiquidTabs
-        ariaLabel={translate('ui.admin.contentType')}
-        disabled={state.loading}
-        onValueChange={state.setKind}
+        ariaLabel={t("ui.admin.contentType")}
+        onValueChange={setKind}
         options={[
-          { label: translate('ui.nav.issues'), value: "issue" },
-          { label: translate('ui.nav.facilities'), value: "facility" },
-          { label: translate('ui.nav.announcements'), value: "announcement" },
-          { label: translate('ui.admin.platformSettings'), value: "platform" },
+          { label: t("ui.nav.issues"), value: "issue" },
+          { label: t("ui.nav.facilities"), value: "facility" },
+          { label: t("ui.nav.announcements"), value: "announcement" },
         ]}
-        value={state.kind}
+        value={kind}
       />
-      <Card className={state.kind === "platform" ? "hidden" : "gap-0 py-0"} aria-busy={state.loading}>
-      {state.error ? <ErrorStateContent error={state.error} onRetry={() => void state.load()} /> : state.loading ? <CategoryEditorPlaceholder /> : <>
-      {state.kind === "issue" ? (
-        <>
-          <CategoryFeatureHeader
-            enabled={state.issuesEnabled}
-            onChange={state.setIssuesEnabled}
-            title={translate('ui.admin.issueFeature')}
-          />
-          <CardContent className="grid gap-0 px-5 py-6 sm:px-7">
-            {state.issues.map((item, index) => (
-              <IssueCategoryEditor
-                identifierLocked={state.persistedIssues.has(item.id)}
-                index={index}
-                item={item}
-                key={`${item.id}-${index}`}
-                onChange={(next) => state.updateIssue(index, next)}
-                onDefault={() => state.setDefaultIssue(index)}
-                onDelete={() => state.deleteIssue(index)}
-              />
-            ))}
-            <Button
-              className="mt-5"
-              disabled={!state.issuesEnabled}
-              onClick={state.addIssue}
-              variant="ghost"
-            >
-              <Plus />{translate('ui.admin.addIssueCategory')}</Button>
-          </CardContent>
-        </>
-      ) : null}
-      {state.kind === "facility" ? (
-        <>
-          <CategoryFeatureHeader
-            enabled={state.facilitiesEnabled}
-            onChange={state.setFacilitiesEnabled}
-            title={translate('ui.admin.facilityFeature')}
-          />
-          <CardContent className="grid gap-0 px-5 py-6 sm:px-7">
-            {state.facilities.map((item, index) => (
-              <FacilityCategoryEditor
-                identifierLocked={state.persistedFacilities.has(item.id)}
-                index={index}
-                item={item}
-                key={`${item.id}-${index}`}
-                onChange={(next) => state.updateFacility(index, next)}
-                onDefault={() => state.setDefaultFacility(index)}
-                onDelete={() => state.deleteFacility(index)}
-              />
-            ))}
-            <Button
-              className="mt-5"
-              disabled={!state.facilitiesEnabled}
-              onClick={state.addFacility}
-              variant="ghost"
-            >
-              <Plus />{translate('ui.admin.addFacilityCategory')}</Button>
-          </CardContent>
-        </>
-      ) : null}
-      {state.kind === "announcement" ? (
-        <>
-          <CategoryFeatureHeader
-            description={translate('ui.admin.announcementCommentsDescription')}
-            enabled={state.announcementComments}
-            onChange={state.setAnnouncementComments}
-            title={translate('ui.admin.announcementComments')}
-          />
-        </>
-      ) : null}
-      </>}
-      </Card>
-      {state.kind === "platform" ? <PlatformSettings /> : null}
-      {state.kind !== "platform" ? <div className="flex justify-end pt-5">
-        <Button disabled={state.loading || !state.valid || state.saving} onClick={() => void state.save()}>
-          {state.saving ? (
-            <ActionFeedbackIcon
-              className="bg-transparent [&>svg]:size-5"
-              size="md"
-              state={state.feedbackState === "success" ? "success" : "loading"}
-            />
-          ) : <Save />}{translate('ui.admin.saveAll')}</Button>
-      </div> : null}
-      <PlatformJobProgress />
-      <PolicyImpactDialog
-        estimates={state.impactEstimates}
-        onCancel={state.cancelSave}
-        onConfirm={() => void state.confirmSave()}
-        open={state.impactOpen}
-        totalEstimatedRows={state.totalEstimatedRows}
-      />
-    </section>
-  );
-}
 
-function CategoryEditorPlaceholder() {
-  return (
-    <>
-        <div className="flex items-center justify-between px-5 py-4 sm:px-7">
-          <span className="text-sm font-semibold">{translate("ui.admin.issueFeature")}</span>
-          <Skeleton className="h-5 w-8 rounded-full" />
-        </div>
-        <CardContent className="grid gap-3 py-4">
-          {Array.from({ length: 3 }, (_, index) => (
-            <Skeleton className="h-24 rounded-xl" key={index} />
-          ))}
-          <Button className="opacity-100" disabled variant="ghost">
-            <Plus />{translate("ui.admin.addIssueCategory")}
-          </Button>
-        </CardContent>
-    </>
+      <StateTransition className="min-w-0" data-admin-content identity={kind}>
+        <ContentTransition identity={kind}>
+          {kind === "issue" ? (
+            <div className="space-y-6">
+              <ListSection footer={t("ui.admin.navDescription")}>
+                <ListSwitchRow
+                  checked={value.issuesEnabled}
+                  label={t("ui.admin.issueFeature")}
+                  name={t("ui.admin.issueFeature")}
+                  onCheckedChange={(next) => state.draft.update({ issuesEnabled: next })}
+                />
+              </ListSection>
+              {value.issueCategories.map((item, index) => (
+                <CategoryEditor
+                  identifierLocked={state.persisted.has(item.id)}
+                  index={index}
+                  item={item}
+                  key={`issue-${index}`}
+                  kind="issue"
+                  onChange={(next) => state.updateIssue(index, next)}
+                  onDefault={() => state.setDefaultIssue(index)}
+                  onDelete={() => state.deleteIssue(index)}
+                />
+              ))}
+              <ListSection>
+                <ListActionRow
+                  disabled={!value.issuesEnabled}
+                  icon={Plus}
+                  label={t("ui.admin.addIssueCategory")}
+                  onClick={state.addIssue}
+                  tone="brand"
+                />
+              </ListSection>
+            </div>
+          ) : null}
+
+          {kind === "facility" ? (
+            <div className="space-y-6">
+              <ListSection footer={t("ui.admin.navDescription")}>
+                <ListSwitchRow
+                  checked={value.facilitiesEnabled}
+                  label={t("ui.admin.facilityFeature")}
+                  name={t("ui.admin.facilityFeature")}
+                  onCheckedChange={(next) => state.draft.update({ facilitiesEnabled: next })}
+                />
+              </ListSection>
+              {value.facilityCategories.map((item, index) => (
+                <CategoryEditor
+                  identifierLocked={state.persisted.has(item.id)}
+                  index={index}
+                  item={item}
+                  key={`facility-${index}`}
+                  kind="facility"
+                  onChange={(next) => state.updateFacility(index, next)}
+                  onDefault={() => state.setDefaultFacility(index)}
+                  onDelete={() => state.deleteFacility(index)}
+                />
+              ))}
+              <ListSection>
+                <ListActionRow
+                  disabled={!value.facilitiesEnabled}
+                  icon={Plus}
+                  label={t("ui.admin.addFacilityCategory")}
+                  onClick={state.addFacility}
+                  tone="brand"
+                />
+              </ListSection>
+            </div>
+          ) : null}
+
+          {kind === "announcement" ? (
+            <ListSection footer={t("ui.admin.announcementCommentsDescription")}>
+              <ListSwitchRow
+                checked={value.announcementCommentsEnabled}
+                label={t("ui.admin.announcementComments")}
+                name={t("ui.admin.announcementComments")}
+                onCheckedChange={(next) =>
+                  state.draft.update({ announcementCommentsEnabled: next })
+                }
+              />
+            </ListSection>
+          ) : null}
+        </ContentTransition>
+      </StateTransition>
+
+      <SaveBar
+        changeCount={state.draft.changes.length}
+        disabled={!state.draft.valid}
+        onDiscard={state.draft.reset}
+        onSave={() => void state.draft.submit()}
+        status={state.draft.status}
+      />
+      <ApplyReviewDialog
+        changes={state.draft.changes}
+        describeChange={(key) => t(CHANGE_LABELS[key] ?? key)}
+        describeImpact={(key) => {
+          const [jobType, scope] = key.split(":");
+          return jobType === "announcement-comments"
+            ? t("ui.admin.announcementCommentPolicy")
+            : t("ui.admin.issueCommentPolicy", { scope });
+        }}
+        impact={state.draft.impact}
+        onCancel={state.draft.cancel}
+        onConfirm={() => void state.draft.confirm()}
+        open={state.draft.impact !== null}
+      />
+    </div>
   );
 }

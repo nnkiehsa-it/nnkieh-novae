@@ -1,57 +1,119 @@
 "use client";
 
-import { Save } from "lucide-react";
-import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
+import type * as React from "react";
+
+import { useI18n } from "@/i18n";
 import { usePlatformSettings } from "@/hooks/use-platform-settings";
-import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
-import { Button } from "@/components/ui/button";
-import { CardContent } from "@/components/ui/card";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { ApplyReviewDialog } from "@/components/admin/apply-review-dialog";
+import {
+  IMAGE_FIELDS,
+  describeSettingKey,
+} from "@/components/admin/platform-setting-fields";
+import { RETENTION_GROUPS, retentionLabelKey } from "@/components/admin/retention-groups";
+import { ListSection } from "@/components/ui/list";
+import { ListNumberRow, ListSwitchRow } from "@/components/ui/list-controls";
 import { ErrorState } from "@/components/ui/page-state";
-import { Card } from "@/components/ui/card";
-import { RATE_LIMITS } from "@/generated/rate-limits";
-import { PlatformNumberSetting } from "@/components/admin/platform-number-setting";
-import { RetentionSettingsFields } from "@/components/admin/retention-settings-fields";
-import { RetentionImpactDialog } from "@/components/admin/retention-impact-dialog";
+import { SaveBar } from "@/components/ui/save-bar";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { DataRetentionSettings } from "@/types/categories";
 
 export function PlatformSettings() {
-  useLocaleSubscription();
-  const state = usePlatformSettings();
-  const imageUploads = state.settings?.imageUploads;
-  const retention = state.settings?.retention;
+  const { t } = useI18n();
+  const { draft, error, load, loading } = usePlatformSettings();
+  useUnsavedChanges(draft.changes.length, draft.reset);
+  const value = draft.value;
+
+  if (error) return <ErrorState error={error} onRetry={() => void load()} />;
+  if (loading || !value) return <SettingsPlaceholder />;
+
+  const setRetention = (key: DataRetentionSettings extends never ? never : keyof DataRetentionSettings, next: boolean | number) =>
+    draft.update((current) => ({
+      ...current,
+      retention: { ...current.retention, [key]: next } as DataRetentionSettings,
+    }));
+
   return (
-    <section className="space-y-6">
-      {state.error ? <ErrorState error={state.error} onRetry={() => void state.load()} /> : null}
-      <RetentionSettingsFields onChange={state.updateRetention} retention={retention} />
-      <Card className="gap-0 py-0">
-        <CardContent className="grid gap-5 px-5 py-6 sm:px-7">
-          <div>
-            <h2 className="text-sm font-semibold">{translate("ui.admin.imageUploads")}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{translate("ui.admin.imageUploadsDescription")}</p>
-          </div>
-          <div className="grid gap-4">
-            <PlatformNumberSetting label={translate("ui.admin.issueImageLimit")} max={20} onChange={(value) => state.updateImage("issueMaxImages", value)} value={imageUploads?.issueMaxImages} />
-            <PlatformNumberSetting label={translate("ui.admin.facilityImageLimit")} max={20} onChange={(value) => state.updateImage("facilityMaxImages", value)} value={imageUploads?.facilityMaxImages} />
-            <PlatformNumberSetting label={translate("ui.admin.announcementImageLimit")} max={20} onChange={(value) => state.updateImage("announcementMaxImages", value)} value={imageUploads?.announcementMaxImages} />
-            <PlatformNumberSetting label={translate("ui.admin.commentImageLimit")} max={20} onChange={(value) => state.updateImage("commentMaxImages", value)} value={imageUploads?.commentMaxImages} />
-            <PlatformNumberSetting label={translate("ui.admin.imageUploadKilobytes")} max={RATE_LIMITS.imageCompression.maxPlatformUploadKilobytes} min={100} onChange={(value) => state.updateImage("maxUploadKilobytes", value)} value={imageUploads?.maxUploadKilobytes} />
-            <PlatformNumberSetting label={translate("ui.admin.imageMaxDimension")} max={8000} min={256} onChange={(value) => state.updateImage("maxDimension", value)} value={imageUploads?.maxDimension} />
-            <PlatformNumberSetting label={translate("ui.admin.imageWebpQuality")} max={0.95} min={0.4} onChange={(value) => state.updateImage("webpQuality", value)} step={0.01} value={imageUploads?.webpQuality} />
-          </div>
-        </CardContent>
-      </Card>
-      <div className="flex justify-end pt-5">
-        <Button disabled={!state.settings || !state.valid || state.saving} onClick={() => void state.save()}>
-          {state.saving ? <ActionFeedbackIcon className="bg-transparent [&>svg]:size-5" size="md" state={state.feedbackState === "success" ? "success" : "loading"} /> : <Save />}
-          {translate("ui.admin.saveAll")}
-        </Button>
-      </div>
-      <RetentionImpactDialog
-        details={state.impactDetails}
-        onCancel={state.cancelSave}
-        onConfirm={() => void state.confirmSave()}
-        open={state.impactOpen}
-        totalEstimatedRows={state.totalEstimatedRows}
+    <div className="space-y-6">
+      {RETENTION_GROUPS.map((group) => (
+        <ListSection footer={t(group.descriptionKey)} header={t(group.titleKey)} key={group.titleKey}>
+          {group.items.flatMap((item) => {
+            const enableKey = item.enableKey;
+            const enabled = enableKey ? value.retention[enableKey] === true : true;
+            return [
+              enableKey ? (
+                <ListSwitchRow
+                  checked={enabled}
+                  key={enableKey}
+                  label={t(retentionLabelKey(enableKey))}
+                  name={t(retentionLabelKey(enableKey))}
+                  onCheckedChange={(next) => setRetention(enableKey, next)}
+                />
+              ) : null,
+              enabled ? (
+                <ListNumberRow
+                  key={item.key}
+                  label={t(retentionLabelKey(item.key))}
+                  max={item.unit === "hours" ? 87_600 : 3_650}
+                  onChange={(next) => setRetention(item.key, next)}
+                  unit={t(item.unit === "hours" ? "admin.unitHours" : "admin.unitDays")}
+                  value={value.retention[item.key] as number}
+                />
+              ) : null,
+            ];
+          })}
+        </ListSection>
+      ))}
+
+      <ListSection
+        footer={t("ui.admin.imageUploadsDescription")}
+        header={t("ui.admin.imageUploads")}
+      >
+        {IMAGE_FIELDS.map((field) => (
+          <ListNumberRow
+            key={field.key}
+            label={t(field.labelKey)}
+            max={field.max}
+            min={field.min}
+            onChange={(next) =>
+              draft.update((current) => ({
+                ...current,
+                imageUploads: { ...current.imageUploads, [field.key]: next },
+              }))
+            }
+            step={field.step ?? 1}
+            unit={field.unitKey ? t(field.unitKey) : undefined}
+            value={value.imageUploads[field.key]}
+          />
+        ))}
+      </ListSection>
+
+      <SaveBar
+        changeCount={draft.changes.length}
+        disabled={!draft.valid}
+        onDiscard={draft.reset}
+        onSave={() => void draft.submit()}
+        status={draft.status}
       />
-    </section>
+      <ApplyReviewDialog
+        changes={draft.changes}
+        describeChange={(key) => t(describeSettingKey(key))}
+        describeImpact={(key) => t(`ui.admin.retentionImpact.${key}`)}
+        impact={draft.impact}
+        onCancel={draft.cancel}
+        onConfirm={() => void draft.confirm()}
+        open={draft.impact !== null}
+      />
+    </div>
+  );
+}
+
+export function SettingsPlaceholder(): React.ReactElement {
+  return (
+    <div aria-busy="true" className="space-y-6">
+      {[0, 1, 2].map((index) => (
+        <Skeleton className="h-56 w-full rounded-xl" key={index} />
+      ))}
+    </div>
   );
 }

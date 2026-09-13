@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { ShieldOff, UserRound } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { ListSection } from "@/components/ui/list";
+import { ListChoiceRow, ListInputRow, ListNumberRow } from "@/components/ui/list-controls";
 import type { AdminUser, RestrictionMode } from "@/hooks/use-admin-console";
 import { useI18n, type TranslationParams } from "@/i18n";
 import { formatDate } from "@/lib/format";
@@ -40,10 +42,10 @@ export function responsibilityLabel(user: AdminUser, t: Translator) {
 }
 
 interface UserDetailsDialogProps {
-  durationHours: number;
-  onDurationHoursChange: (hours: number) => void;
   busy: boolean;
+  durationHours: number;
   onClose: () => void;
+  onDurationHoursChange: (hours: number) => void;
   onReasonChange: (reason: string) => void;
   onRestrictionChange: (mode: RestrictionMode) => void;
   reason: string;
@@ -51,9 +53,10 @@ interface UserDetailsDialogProps {
 }
 
 export function UserDetailsDialog({
-  durationHours,onDurationHoursChange,
   busy,
+  durationHours,
   onClose,
+  onDurationHoursChange,
   onReasonChange,
   onRestrictionChange,
   reason,
@@ -157,49 +160,104 @@ export function UserDetailsDialog({
               </div>
             </div>
           ) : (
-            <div className="space-y-3 rounded-xl border p-4">
-              <div>
-                <p className="text-sm font-medium">
-                  {t("ui.adminConsole.restrictionTitle")}
-                </p>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  {t("ui.adminConsole.restrictionDescription")}
-                </p>
-              </div>
-              <Input
-                maxLength={500}
-                onChange={(event) => onReasonChange(event.target.value)}
-                placeholder={t("ui.adminConsole.restrictionReasonPlaceholder")}
-                value={reason}
-              />
-              <div className="flex flex-wrap gap-2">
-                {([
-                  ["7d", t("ui.adminConsole.restriction7d")],
-                  ["30d", t("ui.adminConsole.restriction30d")],
-                  ["permanent", t("ui.adminConsole.restrictionPermanent")],
-                ] as Array<[RestrictionMode, string]>).map(([mode, label]) => (
-                  <Button
-                    disabled={busy}
-                    key={mode}
-                    onClick={() => onRestrictionChange(mode)}
-                    size="sm"
-                    variant={mode === "permanent" ? "destructive" : "secondary"}
-                  >
-                    {label}
-                  </Button>
-                ))}
-              </div>
-              <label className="block space-y-2 text-sm">
-                <span>{t('ui.operations.restrictionHours')}</span>
-                <Input type="number" min={1} max={87600} step={1} value={durationHours} onChange={event => onDurationHoursChange(Number(event.target.value))} />
-              </label>
-              <Button disabled={busy || !Number.isInteger(durationHours) || durationHours < 1 || durationHours > 87600} variant="secondary" onClick={() => onRestrictionChange('custom')}>
-                {t('ui.operations.restrictCustom')}
-              </Button>
-            </div>
+            <RestrictionForm
+              busy={busy}
+              durationHours={durationHours}
+              onDurationHoursChange={onDurationHoursChange}
+              onReasonChange={onReasonChange}
+              onRestrict={onRestrictionChange}
+              reason={reason}
+            />
           )}
         </DialogContent>
       ) : null}
     </Dialog>
+  );
+}
+
+/**
+ * Restricting an account is one decision, made once.
+ *
+ * It used to be five buttons, each of which restricted the account the moment
+ * it was pressed -- so the length of a restriction was chosen by whichever
+ * button the pointer landed on. Here the duration is selected, the reason is
+ * written, and one control at the bottom carries it out.
+ */
+function RestrictionForm({
+  busy,
+  durationHours,
+  onDurationHoursChange,
+  onReasonChange,
+  onRestrict,
+  reason,
+}: {
+  busy: boolean;
+  durationHours: number;
+  onDurationHoursChange: (hours: number) => void;
+  onReasonChange: (reason: string) => void;
+  onRestrict: (mode: RestrictionMode) => void;
+  reason: string;
+}) {
+  const { t } = useI18n();
+  const [mode, setMode] = React.useState<RestrictionMode>("7d");
+  const customValid =
+    Number.isInteger(durationHours) && durationHours >= 1 && durationHours <= 87_600;
+  const ready = reason.trim().length > 0 && (mode !== "custom" || customValid);
+
+  return (
+    <form
+      className="space-y-4"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (ready && !busy) onRestrict(mode);
+      }}
+    >
+      <ListSection
+        footer={t("ui.adminConsole.restrictionDescription")}
+        header={t("ui.adminConsole.restrictionTitle")}
+      >
+        {(
+          [
+            ["7d", t("ui.adminConsole.restriction7d")],
+            ["30d", t("ui.adminConsole.restriction30d")],
+            ["custom", t("ui.operations.restrictCustom")],
+            ["permanent", t("ui.adminConsole.restrictionPermanent")],
+          ] as Array<[RestrictionMode, string]>
+        ).map(([value, label]) => (
+          <ListChoiceRow
+            key={value}
+            label={label}
+            onSelect={() => setMode(value)}
+            selected={mode === value}
+            tone={value === "permanent" ? "destructive" : "default"}
+          />
+        ))}
+        {mode === "custom" ? (
+          <ListNumberRow
+            label={t("ui.operations.restrictionHours")}
+            max={87_600}
+            min={1}
+            onChange={onDurationHoursChange}
+            unit={t("admin.unitHours")}
+            value={durationHours}
+          />
+        ) : null}
+        <ListInputRow
+          label={t("ui.adminConsole.restrictionReasonPlaceholder")}
+          maxLength={500}
+          onChange={onReasonChange}
+          placeholder={t("ui.adminConsole.restrictionReasonPlaceholder")}
+          value={reason}
+        />
+      </ListSection>
+      <Button
+        className="w-full"
+        disabled={busy || !ready}
+        type="submit"
+        variant={mode === "permanent" ? "destructive" : "default"}
+      >
+        {t("ui.adminConsole.restrictionApply")}
+      </Button>
+    </form>
   );
 }

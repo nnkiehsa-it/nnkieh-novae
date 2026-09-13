@@ -1,246 +1,146 @@
 "use client";
-import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
-import * as React from "react";
-import {
-  Search,
-  ShieldCheck,
-  Trash2,
-  UserPlus,
-} from "lucide-react";
-import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import {
-  type AccessScope,
-  type AccessUser,
-  useAccessManagement,
-} from "@/hooks/use-access-management";
+import { Search, ShieldCheck, Trash2, UserPlus } from "lucide-react";
+
+import { useI18n } from "@/i18n";
+import { useAccessManagement, type AccessScope, type AccessUser } from "@/hooks/use-access-management";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Card } from "@/components/ui/card";
-import {
-  EmptyStateContent,
-  EmptyState,
-  ErrorStateContent,
-} from "@/components/ui/page-state";
-import { SkeletonRows } from "@/components/ui/skeleton-rows";
 import { Input } from "@/components/ui/input";
+import { ListActionRow, ListCustomRow, ListRow, ListSection } from "@/components/ui/list";
+import { ListPicker } from "@/components/ui/list-controls";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ErrorState } from "@/components/ui/page-state";
+import { SaveBar } from "@/components/ui/save-bar";
+import { SkeletonRows } from "@/components/ui/skeleton-rows";
 
 export function AccessManagement() {
-  useLocaleSubscription();
-  const {
-    candidate,
-    categoryId,
-    error,
-    hasScope,
-    kind,
-    load,
-    loading,
-    members,
-    options,
-    query,
-    save,
-    savingUid,
-    successUid,
-    search,
-    searching,
-    setCategoryId,
-    setKind,
-    setQuery,
-    scope,
-  } = useAccessManagement();
+  const { t } = useI18n();
+  const state = useAccessManagement();
+  useUnsavedChanges(state.draft.changes.length, state.draft.reset);
+
   return (
-    <section className="space-y-6">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">{translate('ui.access.scopeStep')}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-5 pb-6 sm:grid-cols-[minmax(0,1.25fr)_minmax(15rem,0.75fr)] sm:items-end">
+    <div className="space-y-6">
+      <ListSection footer={t("ui.access.scopeStep")}>
+        <ListCustomRow>
           <LiquidTabs
-            ariaLabel={translate('ui.access.scopeType')}
-            onValueChange={(value) => setKind(value as AccessScope["kind"])}
+            ariaLabel={t("ui.access.scopeType")}
+            onValueChange={(value) => state.setKind(value as AccessScope["kind"])}
             options={[
-              { label: translate('ui.access.issueCategory'), value: "issue" },
-              { label: translate('ui.access.facilityCategory'), value: "facility" },
-              { label: translate('ui.access.announcementManagement'), value: "announcement" },
+              { label: t("ui.access.issueCategory"), value: "issue" },
+              { label: t("ui.access.facilityCategory"), value: "facility" },
+              { label: t("ui.access.announcementManagement"), value: "announcement" },
             ]}
-            value={kind}
+            value={state.kind}
           />
-          {kind !== "announcement" ? (
-            <Select onValueChange={setCategoryId} value={categoryId}>
-              <SelectTrigger>
-                <SelectValue placeholder={translate('ui.access.selectCategory')} />
-              </SelectTrigger>
-              <SelectContent>
-                {options.map((option) => (
-                  <SelectItem key={option.id} value={option.id}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : <div className="hidden sm:block" />}
-        </CardContent>
-      </Card>
-      {scope ? (
-        <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
-          <Card className="gap-0 py-0">
-            <CardHeader className="py-4">
-              <CardTitle className="text-base">{translate('ui.access.currentStep')}</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {loading && !members.length ? (
-                <SkeletonRows rows={2} />
-              ) : error ? (
-                <div className="p-4">
-                  <ErrorStateContent error={error} onRetry={() => void load()} />
-                </div>
-              ) : members.length === 0 ? (
-                <div className="p-4">
-                  <EmptyStateContent
-                    description={translate('ui.access.noneDescription')}
-                    title={translate('ui.access.noneTitle')}
-                  />
-                </div>
-              ) : (
-                <div className="divide-y">
-                  {members.map((member) => (
-                    <MemberRow
-                      action={
-                        <Button
-                          disabled={Boolean(savingUid)}
-                          onClick={() => void save(member, false)}
-                          size="sm"
-                          variant="outline"
-                        >
-                          {savingUid === member.uid ? (
-                            <ActionFeedbackIcon
-                              className="bg-transparent [&>svg]:size-5"
-                              size="md"
-                              state={successUid === member.uid ? "success" : "loading"}
-                            />
-                          ) : (
-                            <Trash2 />
-                          )}{translate('ui.access.revoke')}</Button>
-                      }
-                      key={member.uid}
-                      member={member}
-                    />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{translate('ui.access.searchStep')}</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              <div className="flex gap-2">
-                <div className="relative flex-1">
+        </ListCustomRow>
+        {state.kind === "announcement" ? null : (
+          <ListPicker
+            label={t("ui.access.selectCategory")}
+            onChange={state.setCategoryId}
+            options={state.options.map((option) => ({
+              label: option.label,
+              value: option.id,
+            }))}
+            placeholder={t("ui.access.selectCategory")}
+            value={state.categoryId}
+          />
+        )}
+      </ListSection>
+
+      {state.error ? <ErrorState error={state.error} onRetry={() => void state.load()} /> : null}
+
+      {state.scope ? (
+        <>
+          <ListSection header={t("ui.access.currentStep")}>
+            {state.loading && state.members.length === 0 ? (
+              <SkeletonRows rows={2} />
+            ) : state.members.length === 0 ? (
+              <ListRow
+                detail={t("ui.access.noneDescription")}
+                label={t("ui.access.noneTitle")}
+              />
+            ) : (
+              state.members.map((member) => (
+                <ListActionRow
+                  detail={member.email ?? member.uid}
+                  icon={Trash2}
+                  key={member.uid}
+                  label={<MemberName user={member} />}
+                  onClick={() => state.revoke(member.uid)}
+                  tone="destructive"
+                  value={t("ui.access.revoke")}
+                />
+              ))
+            )}
+          </ListSection>
+
+          <ListSection footer={t("ui.access.searchHint")} header={t("ui.access.searchStep")}>
+            <ListCustomRow>
+              <form
+                className="flex w-full gap-2"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void state.search();
+                }}
+              >
+                <div className="relative min-w-0 flex-1">
                   <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     className="pl-9"
-                    onChange={(event) => setQuery(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") void search();
-                    }}
-                    placeholder={translate('ui.access.searchPlaceholder')}
-                    value={query}
+                    onChange={(event) => state.setQuery(event.target.value)}
+                    placeholder={t("ui.access.searchPlaceholder")}
+                    value={state.query}
                   />
                 </div>
-                <Button
-                  disabled={!query.trim() || searching}
-                  onClick={() => void search()}
-                  variant="outline"
-                >
-                  {searching ? (
-                    <LoadingSpinner />
-                  ) : (
-                    <Search />
-                  )}{translate('ui.common.search')}</Button>
-              </div>
-              {candidate ? (
-                <MemberRow
-                  action={
-                    <Button
-                      disabled={Boolean(savingUid)}
-                      onClick={() => void save(candidate, !hasScope(candidate))}
-                      size="sm"
-                      variant={hasScope(candidate) ? "outline" : "default"}
-                    >
-                      {savingUid === candidate.uid ? (
-                        <ActionFeedbackIcon
-                          className="bg-transparent [&>svg]:size-5"
-                          size="md"
-                          state={successUid === candidate.uid ? "success" : "loading"}
-                        />
-                      ) : hasScope(candidate) ? (
-                        <Trash2 />
-                      ) : (
-                        <UserPlus />
-                      )}
-                      {hasScope(candidate) ? translate('ui.access.revoke') : translate('ui.access.grant')}
-                    </Button>
-                  }
-                  member={candidate}
+                <Button disabled={state.searching} type="submit" variant="secondary">
+                  {state.searching ? <LoadingSpinner /> : t("ui.common.search")}
+                </Button>
+              </form>
+            </ListCustomRow>
+            {state.candidate ? (
+              state.hasScope(state.candidate.uid) ? (
+                <ListRow
+                  detail={state.candidate.email ?? state.candidate.uid}
+                  icon={ShieldCheck}
+                  label={<MemberName user={state.candidate} />}
+                  value={t("ui.access.granted")}
                 />
               ) : (
-                <div className="rounded-xl border border-dashed p-5 text-center text-sm text-muted-foreground">{translate('ui.access.searchHint')}</div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      ) : (
-        <EmptyState
-          description={translate('ui.access.selectDescription')}
-          title={translate('ui.access.selectTitle')}
-        />
-      )}
-    </section>
+                <ListActionRow
+                  detail={state.candidate.email ?? state.candidate.uid}
+                  icon={UserPlus}
+                  label={<MemberName user={state.candidate} />}
+                  onClick={() => state.candidate && state.grant(state.candidate.uid)}
+                  tone="brand"
+                  value={t("ui.access.grant")}
+                />
+              )
+            ) : null}
+          </ListSection>
+        </>
+      ) : null}
+
+      <SaveBar
+        changeCount={state.draft.changes.length}
+        onDiscard={state.draft.reset}
+        onSave={() => void state.draft.submit()}
+        status={state.draft.status}
+      />
+    </div>
   );
 }
 
-function MemberRow({
-  action,
-  member,
-}: {
-  action: React.ReactNode;
-  member: AccessUser;
-}) {
-  const name = member.name || member.email || member.uid;
+function MemberName({ user }: { user: AccessUser }) {
   return (
-    <div
-      aria-label={member.email || name}
-      className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 sm:p-5"
-      role="group"
-    >
-      <Avatar className="size-9">
-        <AvatarImage alt={name} src={member.photoUrl ?? undefined} />
-        <AvatarFallback>{name.slice(0, 1)}</AvatarFallback>
+    <span className="flex items-center gap-2">
+      <Avatar className="size-6">
+        <AvatarImage src={user.photoUrl ?? undefined} />
+        <AvatarFallback>{user.name.slice(0, 1)}</AvatarFallback>
       </Avatar>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{name}</p>
-        <p className="truncate text-xs text-muted-foreground">
-          {member.email || member.uid}
-        </p>
-      </div>
-      <span className="hidden items-center gap-1 text-xs text-muted-foreground sm:inline-flex">
-        <ShieldCheck className="size-3.5" />
-        <span>{member.roles.length +
-            member.managedIssueCategoryIds.length +
-            member.managedFacilityCategoryIds.length}{" "}{translate('ui.access.scopeCount')}</span>
-      </span>
-      {action}
-    </div>
+      {user.name}
+    </span>
   );
 }
