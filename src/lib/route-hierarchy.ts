@@ -1,12 +1,9 @@
-// Settings owns the dashboard and administration areas even though their URLs
-// do not sit beneath /settings, so the one place that knows it is here: both
-// navigation highlighting and navigation direction read it from this table.
+// Settings owns the administration area even though its URLs do not sit beneath
+// /settings, so the one place that knows it is here: both navigation
+// highlighting and navigation direction read it from this table.
 const ADOPTED_PARENTS: ReadonlyArray<
   readonly [prefix: string, parent: string]
-> = [
-  ["/dashboard", "/settings"],
-  ["/admin", "/settings"],
-];
+> = [["/admin", "/settings"]];
 
 /** The route that owns `pathname` when its URL does not say so itself. */
 export function adoptedParent(pathname: string): string | null {

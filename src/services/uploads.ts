@@ -117,7 +117,7 @@ async function uploadToCloudinary(file: File, session: ImageUploadSession) {
     );
     if (!response.ok) throw await createCloudinaryUploadError(response);
     return await response.json() as CloudinaryUploadResponse;
-  }, { label: 'dashboard.imageUpload', timeoutMs: longRequestTimeoutMs });
+  }, { label: 'request.imageUpload', timeoutMs: longRequestTimeoutMs });
 }
 
 export async function createImageUploadPolicies(

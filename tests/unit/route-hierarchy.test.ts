@@ -41,8 +41,8 @@ describe("route hierarchy", () => {
     expect(isPrimaryRoute("/issues")).toBe(false);
     expect(isPrimaryRoute("/issues/public/issue-1")).toBe(false);
     expect(isPrimaryRoute("/announcements/new")).toBe(false);
-    expect(isPrimaryRoute("/dashboard")).toBe(false);
-    expect(isPrimaryRoute("/admin/management")).toBe(false);
+    expect(isPrimaryRoute("/admin")).toBe(false);
+    expect(isPrimaryRoute("/admin/people")).toBe(false);
   });
 
   it("keeps the navigation bar on destinations and on the doorway to one", () => {
@@ -52,20 +52,20 @@ describe("route hierarchy", () => {
 
     expect(showsPrimaryNavigation("/issues/public/new")).toBe(false);
     expect(showsPrimaryNavigation("/facilities/facility-1")).toBe(false);
-    expect(showsPrimaryNavigation("/dashboard")).toBe(false);
-    expect(showsPrimaryNavigation("/admin/access")).toBe(false);
+    expect(showsPrimaryNavigation("/admin")).toBe(false);
+    expect(showsPrimaryNavigation("/admin/people")).toBe(false);
   });
 
-  it("places the dashboard and administration areas beneath settings", () => {
-    expect(adoptedParent("/admin/management")).toBe("/settings");
-    expect(adoptedParent("/dashboard")).toBe("/settings");
+  it("places the administration area beneath settings", () => {
+    expect(adoptedParent("/admin")).toBe("/settings");
+    expect(adoptedParent("/admin/people")).toBe("/settings");
     expect(adoptedParent("/settings")).toBeNull();
     expect(adoptedParent("/announcements")).toBeNull();
 
-    expect(compareRoutes("/settings", "/dashboard")).toBe("deeper");
-    expect(compareRoutes("/dashboard", "/settings")).toBe("shallower");
-    expect(compareRoutes("/settings", "/admin/management")).toBe("deeper");
-    expect(compareRoutes("/admin/access", "/settings")).toBe("shallower");
-    expect(compareRoutes("/dashboard", "/admin/management")).toBe("unrelated");
+    expect(compareRoutes("/settings", "/admin")).toBe("deeper");
+    expect(compareRoutes("/admin", "/settings")).toBe("shallower");
+    expect(compareRoutes("/admin", "/admin/people")).toBe("deeper");
+    expect(compareRoutes("/admin/people", "/admin")).toBe("shallower");
+    expect(compareRoutes("/admin/people", "/admin/audit")).toBe("unrelated");
   });
 });
