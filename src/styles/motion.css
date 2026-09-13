@@ -922,10 +922,65 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   }
 }
 
+/* The save bar arrives from the edge it is pinned to, because it is a thing
+   that was not there a moment ago rather than a thing that faded into being. */
+@keyframes t-save-bar-in {
+  from {
+    opacity: 0;
+    transform: translateY(120%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.t-save-bar {
+  animation: t-save-bar-in var(--motion-sheet) var(--ease-arrive) both;
+}
+
+/* A row in a grouped list is a card that gave up its border. It answers a press
+   with tint rather than travel: a row that moved would tear the hairlines it
+   shares with its neighbours.
+
+   The tint is painted by a layer that reaches past the row on both sides and is
+   rounded at its corners. It is a layer rather than the row's own background
+   because the hairlines are drawn on the row itself, and a row wide enough to
+   give the tint its bleed would carry its rule out past the edge of the list. */
+.t-row {
+  position: relative;
+  isolation: isolate;
+  transition: color var(--motion-control) var(--ease-move);
+}
+.t-row::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset-block: 1px;
+  inset-inline: calc(-1 * var(--row-bleed, 0.625rem));
+  border-radius: var(--radius-md);
+  background: transparent;
+  pointer-events: none;
+  transition: background-color var(--motion-control) var(--ease-move);
+}
+.t-row:active::before {
+  background: var(--surface-active);
+  transition-duration: var(--motion-touch);
+}
+/* A selected row is tinted through the same bleeding layer as a pressed one, so
+   it reaches the card's edges and its rounded corners. Painted as the row's own
+   background it stopped at the card's gutter, and the corners read as
+   unselected while the middle of the row read as selected. */
+.t-row[data-selected="true"]::before {
+  background: var(--surface-selected);
+}
+
 /* Hover is a pointer affordance only. */
 @media (hover: hover) and (pointer: fine) {
   [data-slot="button"]:not(:disabled):not(:active):hover {
     transform: translateY(-1px);
+  }
+  .t-row:not(:active):not([data-selected="true"]):hover::before {
+    background: var(--surface-hover);
   }
   .t-card:not(:active):hover {
     background-color: color-mix(in srgb, var(--card) 99%, var(--foreground) 1%);
@@ -978,8 +1033,13 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     animation-duration: 0s;
   }
   .t-skel-skeleton,
-  .t-skel-content {
+  .t-skel-content,
+  .t-row,
+  .t-row::before {
     transition: none !important;
+  }
+  .t-save-bar {
+    animation: none !important;
   }
   .t-skel-skeleton.is-pulsing > * {
     animation: none !important;

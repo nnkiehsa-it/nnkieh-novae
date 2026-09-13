@@ -110,6 +110,10 @@
   --surface-inset: #edf2f8;
   --surface-hover: rgb(21 87 213 / 5%);
   --surface-active: rgb(21 87 213 / 10%);
+  --surface-selected: var(--tint-surface);
+  --rule: rgb(16 24 40 / 7%);
+  --row-gutter: 1.25rem;
+  --row-padding-block: 0.875rem;
   --backdrop: rgb(16 24 40 / 32%);
   --radius: 0.75rem;
   --shadow-control: 0 1px 2px rgb(16 40 80 / 4%);
@@ -185,6 +189,8 @@
   --surface-inset: #1a2534;
   --surface-hover: rgb(93 143 240 / 8%);
   --surface-active: rgb(93 143 240 / 14%);
+  --surface-selected: var(--tint-surface);
+  --rule: rgb(226 235 247 / 9%);
   --backdrop: rgb(5 10 20 / 68%);
   --shadow-control: 0 1px 2px rgb(5 10 20 / 20%);
   --shadow-card: 0 2px 5px rgb(5 10 20 / 18%);
@@ -436,6 +442,22 @@ html[data-input-modality="pointer"] :focus-visible {
   box-shadow: var(--shadow-floating);
 }
 
+/* The grouped list. A card owns the gutter and the rows never add one, so every
+   row's text starts on the same line and the hairlines between them stop short
+   of the card's edge the way a phone's settings list does. */
+.rule-card {
+  --row-bleed: var(--row-gutter);
+  overflow: clip;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--card);
+  padding-inline: var(--row-gutter);
+  box-shadow: var(--shadow-card);
+}
+.rule-list > * + * {
+  border-top: 1px solid var(--rule);
+}
+
 .text-balance {
   text-wrap: balance;
 }
@@ -542,6 +564,7 @@ html[data-input-modality="pointer"] :focus-visible {
 @media (max-width: 47.99rem) {
   :root {
     --page-gutter: 1rem;
+    --row-gutter: 1rem;
   }
   /* The page gutter belongs to the route surface on a phone: a pushed page has
      to reach both screen edges, or the page it replaces stays visible beside
