@@ -40,7 +40,7 @@ export function SystemCapacity({ snapshot }: { snapshot: Partial<OperationsConso
         {metrics.slice(0, 5).map((row) => (
           <ListRow
             key={row.bucket}
-            label={row.bucket.slice(0, 10)}
+            label={row.bucket}
             value={mebibytes(row.databaseBytes)}
           />
         ))}

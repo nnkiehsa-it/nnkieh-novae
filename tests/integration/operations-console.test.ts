@@ -29,9 +29,13 @@ integrationTest('operations settings enforce administrator access, revision conf
   const admin = await seedActor('operations-admin', { roles: ['platform-admin'] });
   const user = await seedActor('operations-user');
   const other = await seedActor('operations-other');
+  await underPolicies(() => runMaintenance(database));
   const snapshot = asRecord(await callAction('getOperationsConsole', {}, admin.auth));
   assert.ok(Number(snapshot.databaseBytes) > 0);
   assert.ok(Array.isArray(snapshot.capacity));
+  const metrics = snapshot.metrics as Array<{ bucket: unknown; databaseBytes: unknown }>;
+  assert.match(String(metrics[0].bucket), /^\d{4}-\d{2}-\d{2}$/u);
+  assert.ok(Number(metrics[0].databaseBytes) > 0);
   const diagnostics = asRecord(await callAction('getProviderDiagnostics', { provider: 'cloudflare' }, admin.auth));
   assert.equal(diagnostics.status, 'not-configured');
   await assert.rejects(() => callAction('getProviderDiagnostics', { provider: 'cloudflare' }, user.auth), /permission-denied/);

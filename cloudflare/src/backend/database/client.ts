@@ -2,7 +2,11 @@ import { Pool, types as postgresTypes } from "pg";
 import type { Env } from "../../types";
 import type { AppApiFunctions } from "./schema";
 
+// Dates and timestamps travel as the text PostgreSQL wrote them. The driver's
+// own `Date` objects carry no own properties, so the API JSON they turn into is
+// an empty object rather than the string every reader expects.
 postgresTypes.setTypeParser(20, (value) => Number(value));
+postgresTypes.setTypeParser(1082, (value) => value);
 postgresTypes.setTypeParser(1114, (value) => value);
 postgresTypes.setTypeParser(1184, (value) => value);
 
