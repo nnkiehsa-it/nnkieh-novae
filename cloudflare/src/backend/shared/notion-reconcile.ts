@@ -43,7 +43,7 @@ async function archiveManagedNotionPages(): Promise<number> {
     };
     for (const page of response.results ?? []) {
       if (!page.id) throw new Error("notion-managed-page-id-missing");
-      await callNotionAPI(`/pages/${page.id}`, "PATCH", { archived: true });
+      await callNotionAPI(`/pages/${page.id}`, "PATCH", { in_trash: true });
       archived += 1;
     }
     startCursor = response.has_more ? response.next_cursor ?? undefined : undefined;

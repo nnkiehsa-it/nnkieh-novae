@@ -190,5 +190,5 @@ export async function getOrCreateNotionPage(
 }
 export async function markNotionPageDeleted(pageId: string): Promise<void> {
   if (!notionEnabled()) throw new Error('notion-not-configured');
-  await callNotionAPI(`/pages/${pageId}`, "PATCH", { archived: true });
+  await callNotionAPI(`/pages/${pageId}`, "PATCH", { in_trash: true });
 }

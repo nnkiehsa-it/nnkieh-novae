@@ -7,9 +7,12 @@ import {
   ownerQuery,
   seedActor,
   tableRowCount,
+  testEnvironment,
   underPolicies,
 } from "./helpers.ts";
 import { appendTimelineBlockWithDeduplication } from "../../cloudflare/src/backend/shared/notion-api.ts";
+import { markNotionPageDeleted } from "../../cloudflare/src/backend/shared/notion-page.ts";
+import { withRuntimeEnvironment } from "../../cloudflare/src/backend/shared/env.ts";
 import { processInAppDeliveries } from "../../cloudflare/src/backend/jobs/notification-deliveries.ts";
 import { processRealtimeDeliveries } from "../../cloudflare/src/backend/jobs/realtime-deliveries.ts";
 import type { Env } from "../../cloudflare/src/types.ts";
@@ -194,4 +197,24 @@ integrationTest("realtime deliveries use subscriber topics and carry operation a
     assert.equal(Number(delivery.payload.aggregateRevision) >= 1, true);
     assert.equal(Number(delivery.payload.domainRevision) >= 1, true);
   }
+});
+
+integrationTest("A deleted record's Notion page lands in the trash", async () => {
+  const baseUrl = process.env.NOTION_API_BASE_URL;
+  assert.ok(baseUrl);
+  const page = await fetch(`${baseUrl}/v1/pages`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ properties: {} }),
+  }).then((response) => response.json()) as { id: string };
+
+  await withRuntimeEnvironment(
+    { ...testEnvironment, NOTION_ENABLED: "true" } as Env,
+    () => markNotionPageDeleted(page.id),
+  );
+
+  const state = await fetch(`${baseUrl}/__requests`).then((response) => response.json()) as {
+    notionPages: Record<string, { in_trash?: boolean }>;
+  };
+  assert.equal(state.notionPages[page.id]?.in_trash, true);
 });

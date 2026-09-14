@@ -110,7 +110,7 @@ const server = createServer(async (request, response) => {
         const matching = [];
         for (const [id, page] of notionPages.entries()) {
           const novaeId = page.properties?.["Novae ID"]?.rich_text?.[0]?.text?.content;
-          if (page.archived !== true && ((equals && novaeId === equals) || (requiresNovaeId && novaeId))) {
+          if (page.in_trash !== true && ((equals && novaeId === equals) || (requiresNovaeId && novaeId))) {
             matching.push({ id, ...page });
           }
         }
@@ -147,9 +147,18 @@ const server = createServer(async (request, response) => {
         const body = await readBody(request);
         requests.push({ body, method: "PATCH", path: pathname });
         const pageId = notionSubpath.split("/")[2];
+        if ("archived" in body) {
+          send(response, 400, {
+            code: "validation_error",
+            message: "body.archived should be not present, instead was `" + body.archived + "`.",
+            object: "error",
+            status: 400,
+          });
+          return;
+        }
         const existing = notionPages.get(pageId) || { id: pageId, object: "page", properties: {} };
         existing.properties = { ...existing.properties, ...(body.properties || {}) };
-        if (typeof body.archived === "boolean") existing.archived = body.archived;
+        if (typeof body.in_trash === "boolean") existing.in_trash = body.in_trash;
         notionPages.set(pageId, existing);
         send(response, 200, existing);
         return;
