@@ -1,20 +1,42 @@
 "use client";
 
+import { RefreshCw } from "lucide-react";
+
 import {
   DIAGNOSTIC_PROVIDERS,
   useProviderDiagnostics,
+  type DiagnosticProvider,
+  type ProviderDiagnostic,
 } from "@/hooks/use-provider-diagnostics";
 import { useI18n } from "@/i18n";
+import {
+  CloudinaryReport,
+  WorkerLogReport,
+  WorkerMetricsReport,
+} from "@/components/admin/provider-readings";
+import { Button } from "@/components/ui/button";
 import { Disclosure } from "@/components/ui/disclosure";
 import { Input } from "@/components/ui/input";
 import { ListActionRow, ListCustomRow, ListRow, ListSection } from "@/components/ui/list";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { SkeletonRows } from "@/components/ui/skeleton-rows";
+import { formatDate } from "@/lib/format";
+
+function Report({ provider, result }: { provider: DiagnosticProvider; result: ProviderDiagnostic }) {
+  if (result.status !== "available") return null;
+  if (provider === "cloudinary") return <CloudinaryReport data={result.data} />;
+  if (provider === "cloudflare") return <WorkerMetricsReport data={result.data} />;
+  return <WorkerLogReport data={result.data} />;
+}
 
 /**
- * Whether the outside services answer, asked one at a time.
+ * Whether the outside services answer, and what they said.
  *
- * Each provider is a group: the control that asks it, what it said, and — only
- * if it sent a body back — the body, behind a disclosure that opens and closes
- * on the same curve as everything else rather than snapping.
+ * The answer used to be printed as the JSON it arrived in, which meant reading
+ * a byte count out of a nested counter and a day of traffic out of four levels
+ * of GraphQL envelope. Each provider now says its figures in the same rows the
+ * rest of administration uses, and the response it arrived in stays one
+ * disclosure away for the cases where the figures are not the question.
  */
 export function ProviderDiagnostics() {
   const state = useProviderDiagnostics();
@@ -29,8 +51,23 @@ export function ProviderDiagnostics() {
       ) : null}
       {DIAGNOSTIC_PROVIDERS.map((provider) => {
         const result = state.results[provider];
+        const busy = state.busy(provider);
         return (
-          <ListSection header={t(`ui.operations.provider.${provider}`)} key={provider}>
+          <ListSection
+            header={t(`ui.operations.provider.${provider}`)}
+            headerAction={
+              <Button
+                aria-label={t("ui.adminConsole.refresh")}
+                disabled={busy}
+                onClick={() => void state.load(provider)}
+                size="icon-sm"
+                variant="ghost"
+              >
+                {busy ? <LoadingSpinner /> : <RefreshCw className="size-4" />}
+              </Button>
+            }
+            key={provider}
+          >
             {provider === "logs" ? (
               <ListCustomRow>
                 <Input
@@ -42,22 +79,28 @@ export function ProviderDiagnostics() {
                 />
               </ListCustomRow>
             ) : null}
-            <ListActionRow
-              busy={state.busy(provider)}
-              label={t("ui.adminConsole.refresh")}
-              onClick={() => void state.load(provider)}
-            />
-            {result ? (
+
+            {!result ? (
+              <SkeletonRows rows={2} />
+            ) : result.status === "available" ? (
+              <ListRow
+                label={t("ui.operations.checkedAt")}
+                value={formatDate(new Date(result.checkedAt))}
+              />
+            ) : (
               <ListRow
                 label={t(
                   `ui.operations.providerStatus.${
                     result.status === "not-configured" ? "notConfigured" : result.status
                   }`,
                 )}
-                tone={result.error ? "destructive" : "default"}
+                tone={result.status === "unavailable" ? "destructive" : "default"}
                 value={result.error}
               />
-            ) : null}
+            )}
+
+            {result ? <Report provider={provider} result={result} /> : null}
+
             {result?.data ? (
               <Disclosure label={t("ui.operations.providerDetails")}>
                 <pre className="overflow-x-auto whitespace-pre-wrap break-all pb-3 text-xs">
@@ -65,9 +108,10 @@ export function ProviderDiagnostics() {
                 </pre>
               </Disclosure>
             ) : null}
+
             {result?.nextCursor ? (
               <ListActionRow
-                busy={state.busy(provider)}
+                busy={busy}
                 label={t("ui.operations.nextPage")}
                 onClick={() => void state.load(provider, true)}
               />

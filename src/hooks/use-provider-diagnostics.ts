@@ -8,6 +8,8 @@ import {
   type ProviderDiagnostic,
 } from "@/services/operations-console";
 
+export type { ProviderDiagnostic } from "@/services/operations-console";
+
 export const DIAGNOSTIC_PROVIDERS = ["cloudinary", "cloudflare", "logs"] as const;
 
 export type DiagnosticProvider = (typeof DIAGNOSTIC_PROVIDERS)[number];
