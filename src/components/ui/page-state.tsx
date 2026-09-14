@@ -13,13 +13,11 @@ import { cn } from "@/lib/utils";
 export function PageHeader({
   actions,
   className,
-  description,
   title,
   toolbar,
 }: {
   actions?: React.ReactNode;
   className?: string;
-  description?: React.ReactNode;
   title: React.ReactNode;
   /**
    * Search and sort controls. They join the same wrapping row as the title and the
@@ -34,11 +32,6 @@ export function PageHeader({
       <h1 className="text-balance text-2xl font-semibold leading-8 tracking-[-0.035em]">
         {title}
       </h1>
-      {description ? (
-        <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-          {description}
-        </p>
-      ) : null}
     </div>
   );
   if (toolbar) {

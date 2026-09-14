@@ -37,7 +37,6 @@ export function DataList<T>({
   page,
   query,
   renderCell,
-  rowAction,
   rowKey,
   rows,
   searchPlaceholder,
@@ -57,7 +56,6 @@ export function DataList<T>({
   page: number;
   query?: string;
   renderCell: (row: T, key: string) => React.ReactNode;
-  rowAction?: (row: T) => React.ReactNode;
   rowKey: (row: T) => string;
   rows: T[];
   searchPlaceholder?: string;
@@ -97,7 +95,6 @@ export function DataList<T>({
           {columns.map((column) => (
             <span key={column.key}>{column.label}</span>
           ))}
-          {rowAction ? <span /> : null}
         </div>
 
         {error && rows.length === 0 ? (
@@ -130,11 +127,6 @@ export function DataList<T>({
                       {primary ? renderCell(row, primary.key) : null}
                     </div>
                   )}
-                  {rowAction ? (
-                    <span className="lg:col-start-[-2] lg:row-start-1 lg:justify-self-end">
-                      {rowAction(row)}
-                    </span>
-                  ) : null}
                 </div>
                 <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2 lg:contents">
                   {secondary.map((column) => (

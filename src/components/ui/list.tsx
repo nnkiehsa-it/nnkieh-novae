@@ -25,15 +25,12 @@ import { cn } from "@/lib/utils";
 export function ListSection({
   children,
   className,
-  footer,
   groupName,
   header,
   headerAction,
 }: {
   children: React.ReactNode;
   className?: string;
-  /** The sentence under the group, saying what changing it does. */
-  footer?: React.ReactNode;
   /**
    * Names the group as one object when the rows describe a single thing rather
    * than a related set, so it can be addressed as a whole.
@@ -60,9 +57,6 @@ export function ListSection({
         </div>
       ) : null}
       <div className="rule-card rule-list">{children}</div>
-      {footer ? (
-        <p className="mt-2 px-1 text-xs leading-5 text-muted-foreground">{footer}</p>
-      ) : null}
     </section>
   );
 }
