@@ -922,22 +922,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   }
 }
 
-/* The save bar arrives from the edge it is pinned to, because it is a thing
-   that was not there a moment ago rather than a thing that faded into being. */
-@keyframes t-save-bar-in {
-  from {
-    opacity: 0;
-    transform: translateY(120%);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.t-save-bar {
-  animation: t-save-bar-in var(--motion-sheet) var(--ease-arrive) both;
-}
-
 /* A row in a grouped list is a card that gave up its border. It answers a press
    with tint rather than travel: a row that moved would tear the hairlines it
    shares with its neighbours.
@@ -1037,9 +1021,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   .t-row,
   .t-row::before {
     transition: none !important;
-  }
-  .t-save-bar {
-    animation: none !important;
   }
   .t-skel-skeleton.is-pulsing > * {
     animation: none !important;

@@ -220,7 +220,6 @@ const messages = {
   'ui.admin.issueCommentPolicy': '提案留言 · {scope}',
   'ui.admin.queueBackgroundChange': '儲存並排程',
   'ui.admin.backgroundChanges': '背景變更',
-  'ui.admin.backgroundChangesHelp': '大量政策更新會分批執行，避免管理請求被長交易卡住。',
   'ui.admin.backgroundProgress': '已處理 {processed} 筆，預估共 {estimated} 筆',
   'ui.admin.backgroundResult': '已更新 {count} 筆資料',
   'ui.admin.backgroundProgressLabel': '背景更新進度',

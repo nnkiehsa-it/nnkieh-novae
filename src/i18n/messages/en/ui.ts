@@ -220,7 +220,6 @@ const messages = {
   'ui.admin.issueCommentPolicy': 'Proposal comments · {scope}',
   'ui.admin.queueBackgroundChange': 'Save and queue',
   'ui.admin.backgroundChanges': 'Background changes',
-  'ui.admin.backgroundChangesHelp': 'Large policy updates run in bounded batches so requests stay responsive.',
   'ui.admin.backgroundProgress': '{processed} of about {estimated} records processed',
   'ui.admin.backgroundResult': '{count} records updated',
   'ui.admin.backgroundProgressLabel': 'Background update progress',
