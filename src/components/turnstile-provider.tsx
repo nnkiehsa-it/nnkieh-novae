@@ -237,13 +237,15 @@ export function TurnstileProvider({
   return (
     <TurnstileContext.Provider value={value}>
       {children}
-      <div className="t-turnstile-gate" data-state={gate}>
+      {/* The gate is in the page at all times so the widget can keep running
+          out of sight, so it only claims to be a dialog while it is one. */}
+      <div aria-hidden={gate !== "open"} className="t-turnstile-gate" data-state={gate}>
         <div
-          aria-labelledby="turnstile-gate-title"
-          aria-modal="true"
+          aria-labelledby={gate === "open" ? "turnstile-gate-title" : undefined}
+          aria-modal={gate === "open" ? true : undefined}
           className="t-turnstile-card t-dialog"
           data-state={gate}
-          role="dialog"
+          role={gate === "open" ? "dialog" : undefined}
         >
           <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-[var(--tint-content)]">
             <ShieldCheck className="size-5" aria-hidden />
