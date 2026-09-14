@@ -6,24 +6,17 @@ import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { useRememberedState } from "@/hooks/use-remembered-state";
 import {
-  listDeletionJobs,
-  retryDeletionJob,
-  type DeletionJob,
-} from "@/services/admin-console";
-import {
   fetchOperationsConsole,
   queueNotionArchiveRebuild,
   retryOperationalWork,
   type OperationsConsole,
 } from "@/services/operations-console";
 
-export type { DeletionJob } from "@/services/admin-console";
 export type { OperationsConsole } from "@/services/operations-console";
 
-export type RetryKind = "cleanup" | "delivery" | "job" | "media";
+export type RetryKind = "cleanup" | "delivery" | "job";
 
 interface SystemReading {
-  mediaFailures: DeletionJob[];
   page: number;
   snapshot: Partial<OperationsConsole> | null;
 }
@@ -42,7 +35,6 @@ interface SystemReading {
 export function useSystemConsole() {
   const { t } = useI18n();
   const { cold, remember, value } = useRememberedState<SystemReading>("admin-system", {
-    mediaFailures: [],
     page: 0,
     snapshot: null,
   });
@@ -56,17 +48,14 @@ export function useSystemConsole() {
       setLoading(true);
       setError("");
       try {
-        const [console_, media] = await Promise.all([
-          fetchOperationsConsole({ page: nextPage }, {
-            onPanel: (panel) => remember((current) => ({
-              ...current,
-              page: nextPage,
-              snapshot: { ...current.snapshot, ...panel },
-            })),
-          }),
-          listDeletionJobs(),
-        ]);
-        remember({ mediaFailures: media, page: nextPage, snapshot: console_ });
+        const console_ = await fetchOperationsConsole({ page: nextPage }, {
+          onPanel: (panel) => remember((current) => ({
+            ...current,
+            page: nextPage,
+            snapshot: { ...current.snapshot, ...panel },
+          })),
+        });
+        remember({ page: nextPage, snapshot: console_ });
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : String(caught));
       } finally {
@@ -84,28 +73,20 @@ export function useSystemConsole() {
     async (kind: RetryKind, id: string) => {
       setRetrying(id);
       try {
-        if (kind === "media") {
-          await retryDeletionJob(id);
-          remember((current) => ({
-            ...current,
-            mediaFailures: current.mediaFailures.filter((entry) => entry.id !== id),
-          }));
-        } else {
-          await retryOperationalWork({ id, kind });
-          remember((current) => ({
-            ...current,
-            snapshot: current.snapshot && {
-              ...current.snapshot,
-              cleanupBacklog: current.snapshot.cleanupBacklog?.filter(
-                (entry) => entry.jobId !== id,
-              ),
-              failedDeliveries: current.snapshot.failedDeliveries?.filter(
-                (entry) => entry.id !== id,
-              ),
-              jobs: current.snapshot.jobs?.filter((entry) => entry.id !== id),
-            },
-          }));
-        }
+        await retryOperationalWork({ id, kind });
+        remember((current) => ({
+          ...current,
+          snapshot: current.snapshot && {
+            ...current.snapshot,
+            cleanupBacklog: current.snapshot.cleanupBacklog?.filter(
+              (entry) => entry.jobId !== id,
+            ),
+            failedDeliveries: current.snapshot.failedDeliveries?.filter(
+              (entry) => entry.id !== id,
+            ),
+            jobs: current.snapshot.jobs?.filter((entry) => entry.id !== id),
+          },
+        }));
         toast.success(t("admin.retryQueued"));
       } catch (caught) {
         toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
@@ -135,7 +116,6 @@ export function useSystemConsole() {
     error,
     load,
     loading,
-    mediaFailures: value.mediaFailures,
     page: value.page,
     rebuildNotion,
     rebuildingNotion,

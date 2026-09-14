@@ -22,7 +22,7 @@ Novae 的寫入不會直接從 request handler 呼叫四五個外部服務。Act
 | setup、feature、category、platform setting、user scope / restriction | Notion、Realtime |
 | `admin.audit_recorded` | Notion |
 | 通知已讀、avatar 更新 | Realtime |
-| Push token、upload、deletion retry | 不送外部 destination，仍保留 operation 一致性 |
+| Push token 與 upload | 不送外部 destination，仍保留 operation 一致性 |
 
 Admin write 的稽核資料也在原 transaction 中寫入 `admin_audit_log`，接著產生 `admin.audit_recorded`。Audit detail 會排除 `content` 和 `resultContent`，避免把完整內容複製進管理稽核 payload。
 
@@ -94,4 +94,4 @@ sequenceDiagram
 
 內容內只保存 `srp-upload://{uploadId}`，不保存可長期公開的 Cloudinary URL。顯示圖片時，Worker 驗證 viewer scope 後簽發 full / thumbnail URL；client 會在到期前 60 秒停止沿用 cache。Cloudinary webhook 也必須通過 provider signature，才會更新 upload lifecycle。
 
-建立內容失敗時，composer 會請後端清理由這次操作上傳的圖片。實際刪除若失敗，工作會進 deletion job；具權限的管理員可在 dashboard 查詢並重試。
+建立內容失敗時，composer 會請後端清理由這次操作上傳的圖片。實際刪除若失敗，工作會進 deletion job，和其他背景工作一起出現在 operations console，平台總管理員可在那裡重試。外部目標已經不存在時，刪除視為完成，不再重排。

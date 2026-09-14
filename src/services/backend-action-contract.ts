@@ -123,9 +123,6 @@ export const BACKEND_ACTION_POLICIES = {
   "listComments": {
     "group": "read"
   },
-  "listDeletionJobs": {
-    "group": "read"
-  },
   "listFacilities": {
     "group": "read"
   },
@@ -167,9 +164,6 @@ export const BACKEND_ACTION_POLICIES = {
   },
   "resolveUploadImageUrls": {
     "group": "upload-resolve"
-  },
-  "retryDeletionJob": {
-    "group": "admin-write"
   },
   "searchIssues": {
     "group": "read"
@@ -254,7 +248,6 @@ export const BACKEND_ACTION_NAMES = [
   'listAnnouncementComments',
   'listAnnouncements',
   'listComments',
-  'listDeletionJobs',
   'listFacilities',
   'listIssues',
   'listAdminAudit',
@@ -269,7 +262,6 @@ export const BACKEND_ACTION_NAMES = [
   'registerPushToken',
   'removeSupport',
   'resolveUploadImageUrls',
-  'retryDeletionJob',
   'searchIssues',
   'saveCategoryManagement',
   'savePlatformSettings',

@@ -24,7 +24,6 @@ const messages = {
   'admin.retry': '重試',
   'admin.retryQueued': '已重新排入佇列。',
   'admin.jobAttempts': '嘗試 {attempts} 次 · {id}',
-  'admin.mediaFailureDetail': '{target} · 嘗試 {attempts} 次 · {updatedAt}',
   'admin.deliveryHealthHeader': '投遞',
   'admin.showAllTables': '全部 {count} 張',
   'admin.tableRows': '{rows} 列 · {dead} 列待清',

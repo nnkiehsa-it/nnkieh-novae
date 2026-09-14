@@ -21,7 +21,7 @@
 | `preferenceWriteHourly` | 60 | 每小時 / UID | 個人偏好與通知已讀 |
 | `moderationWriteHourly` | 120 | 每小時 / UID | 提案審核與結果 |
 | `roleWriteHourly` | 120 | 每小時 / UID | 角色、scope、category 與平台設定 |
-| `destructiveWriteHourly` | 30 | 每小時 / UID | 刪除與 deletion retry |
+| `destructiveWriteHourly` | 30 | 每小時 / UID | 刪除與運維重試 |
 
 Healthcheck 另限每分鐘 12 次、每秒 2 次；Worker background run 也是每分鐘 30 次、每秒 2 次。這兩組是 Worker 內的業務限制。
 

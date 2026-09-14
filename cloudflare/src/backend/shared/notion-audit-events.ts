@@ -26,7 +26,6 @@ const ACTION_LABELS: Record<string, string> = {
   deleteUploadedImages: "刪除圖片",
   moderateIssueStatus: "審核或更新提案狀態",
   rebuildNotionArchive: "重建 Notion 封存",
-  retryDeletionJob: "重試媒體刪除",
   retryOperationalWork: "重試系統工作",
   saveCategoryManagement: "更新分類設定",
   saveOperationPolicies: "更新系統執行政策",

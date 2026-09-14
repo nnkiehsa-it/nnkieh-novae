@@ -27,7 +27,7 @@ import { ErrorState } from "@/components/ui/page-state";
 export function SystemConsole() {
   const { t } = useI18n();
   const [view, setView] = React.useState("failures");
-  const { error, load, loading, mediaFailures, page, rebuildNotion, rebuildingNotion, retry, retrying, snapshot } =
+  const { error, load, loading, page, rebuildNotion, rebuildingNotion, retry, retrying, snapshot } =
     useSystemConsole();
 
   if (error && !snapshot) return <ErrorState error={error} onRetry={() => void load()} />;
@@ -66,7 +66,6 @@ export function SystemConsole() {
                 onRebuild={() => void rebuildNotion()}
               />
               <SystemQueue
-                mediaFailures={mediaFailures}
                 onRetry={retry}
                 retrying={retrying}
                 snapshot={snapshot}

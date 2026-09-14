@@ -72,26 +72,6 @@ export interface AdminAuditEntry {
   createdAt: Date;
 }
 
-interface DeletionJobWire {
-  id: string;
-  targetType: string;
-  targetId: string;
-  cloudinaryPublicId: string | null;
-  status: string;
-  attemptCount: number;
-  nextAttemptAt: string;
-  failureId: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface DeletionJob extends Omit<DeletionJobWire, 'createdAt' | 'failureId' | 'nextAttemptAt' | 'updatedAt'> {
-  createdAt: Date;
-  errorTraceId: string | null;
-  nextAttemptAt: Date;
-  updatedAt: Date;
-}
-
 function toDate(value: string | null) {
   return value ? new Date(value) : null;
 }
@@ -195,22 +175,3 @@ export async function listAdminAudit(query = '', page = 0) {
   };
 }
 
-export async function listDeletionJobs() {
-  const result = await invokeBackendAction<Record<string, never>, { entries: DeletionJobWire[] }>(
-    'listDeletionJobs',
-  )({});
-  return result.entries.map(({ createdAt, failureId, nextAttemptAt, updatedAt, ...entry }) => ({
-    ...entry,
-    createdAt: new Date(createdAt),
-    errorTraceId: failureId,
-    nextAttemptAt: new Date(nextAttemptAt),
-    updatedAt: new Date(updatedAt),
-  }));
-}
-
-export async function retryDeletionJob(jobId: string) {
-  return await invokeBackendAction<
-    { jobId: string },
-    { id: string; queuedAt: string; status: 'pending' }
-  >('retryDeletionJob')({ jobId });
-}

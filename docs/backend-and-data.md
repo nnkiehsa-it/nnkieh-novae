@@ -54,7 +54,7 @@ Read action 若未帶 operation ID，Worker 會建立一個只用於 trace 的 U
 - 通知頁、未讀狀態與 Push token
 - 圖片 upload session、finalization、URL resolution 與刪除
 - 分類、功能、scope、使用者限制、平台設定與 admin dashboard
-- retention impact estimate、background job 與 failed media deletion recovery
+- retention impact estimate 與 background job
 
 新增 action 時要先更新 source config 和 generator 產物，再在 `tests/integration/` 加入具 assertion 的成功與拒絕案例。涉及 role 或 scope 時至少覆蓋 allowed、denied 與跨 scope。
 
@@ -72,7 +72,7 @@ Read action 若未帶 operation ID，Worker 會建立一個只用於 trace 的 U
 | Facility | `listFacilities`, `getFacility` | `createFacility`, `toggleFacilityAffected`, `updateFacilityStatus`, `deleteFacility` | Facility writes 在 domain rule 檢查 owner 或 facility scope |
 | Announcement | `listAnnouncements`, `getAnnouncement`, `listAnnouncementComments` | `createAnnouncement`, `deleteAnnouncement`, `setAnnouncementLike`, `createAnnouncementComment`, `deleteAnnouncementComment` | Create/delete 要 `announcement.manage`；互動與留言刪除走 domain rule |
 | Notification | `listNotificationPages`, `getNotificationSnapshot`, `getNotificationReadState`, `getNotificationUnreadHint`, `getPushNotificationPreference` | `markNotificationsOpened`, `registerPushToken`, `unregisterPushToken`, `updatePushNotificationPreferences` | 只允許操作自己的 read state、device 與 token |
-| Dashboard / recovery | `getPlatformDashboard`, `listDeletionJobs` | `retryDeletionJob` | Reads 要 `dashboard.view`；retry 要 `role.manage` |
+| Dashboard | `getPlatformDashboard` | — | 要 `dashboard.view` |
 
 Action rate-limit group 分成 `read`、`general-write`、`sensitive-write`、`admin-write`、`upload-write`、`upload-resolve`。詳細數值見[執行期政策與限制](runtime-policies.md)。
 
@@ -137,6 +137,7 @@ Migration 依 filename 排序，每個檔案各自包一個 transaction。
 | `0015_z_quiesce_legacy_projection_triggers.sql` | 停止舊 projection trigger，準備一致性切換 |
 | `0015_zz_bootstrap_runtime_role.sql` | 在 fresh / populated cluster 建立 no-login runtime role shell |
 | `0016_system_data_consistency.sql` | Atomic operation、domain event、unified delivery、background job、aggregate revision、counter invariant 與舊表退場 |
+| `0036_retire_deletion_job_console.sql` | 退場只讀 deletion job 的列表與重試 RPC，改由 operations console 的 background job 面板負責 |
 
 `verify:integration` 不是只測 fresh database。它會另外建一套 populated pre-0016 database，再一路升到目前 migration，驗證既有資料能通過一致性切換。
 

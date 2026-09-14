@@ -676,10 +676,6 @@ export interface AppApiFunctions {
     issue_updates_enabled: boolean;
     permission: string;
   }, Json>;
-  backend_list_deletion_jobs: AppFunction<{
-    actor_uid: string;
-    page_limit?: number;
-  }, Json>;
   backend_estimate_category_policy_changes: AppFunction<{
     actor_uid: string;
     announcement_comments_enabled: boolean;
@@ -701,10 +697,6 @@ export interface AppApiFunctions {
   }, Json>;
   backend_process_platform_job_batch: AppFunction<{
     batch_size?: number;
-  }, Json>;
-  backend_retry_deletion_job: AppFunction<{
-    actor_uid: string;
-    job_id: string;
   }, Json>;
   backend_set_announcement_like: AppFunction<{
     actor_uid: string;

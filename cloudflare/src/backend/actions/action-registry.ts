@@ -147,12 +147,6 @@ export const backendActionDefinitions = [
   action("getPlatformDashboard", "dashboard", "read", handleDashboardAction, {
     requiredPermission: "dashboard.view",
   }),
-  action("listDeletionJobs", "dashboard", "read", handleDashboardAction, {
-    requiredPermission: "dashboard.view",
-  }),
-  action("retryDeletionJob", "dashboard", "admin-write", handleDashboardAction, {
-    requiredPermission: "role.manage",
-  }),
 ] as const satisfies readonly BackendActionDefinition[];
 
 const backendActionDefinitionMap = new Map(

@@ -51,8 +51,8 @@ Session bootstrap 回傳 role、permission，以及可管理的 category ID。
 | `facility.manage` | 管理設施回報；實際案件仍要符合 facility category scope |
 | `announcement.manage` | 發布、刪除公告 |
 | `category.manage` | 讀寫 category、feature、retention、影響估算與 platform job |
-| `role.manage` | 搜尋使用者、調整限制、設定 category scope、看角色稽核與重試 deletion job |
-| `dashboard.view` | Dashboard、管理 overview、activity 與 deletion job 列表 |
+| `role.manage` | 搜尋使用者、調整限制、設定 category scope、看角色稽核 |
+| `dashboard.view` | Dashboard、管理 overview 與 activity |
 
 Platform admin 不需要逐一加入 category ID。`canManageIssueCategory` 和 `canManageFacilityCategory` 先看是否含 `platform-admin`，否則要求目標 category ID 出現在 session bootstrap 回傳的 managed list。
 

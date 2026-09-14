@@ -1,11 +1,7 @@
 "use client";
 
 import { useI18n } from "@/i18n";
-import type {
-  DeletionJob,
-  OperationsConsole,
-  RetryKind,
-} from "@/hooks/use-system-console";
+import type { OperationsConsole, RetryKind } from "@/hooks/use-system-console";
 import { ListActionRow, ListRow, ListSection } from "@/components/ui/list";
 import { AdminListSkeleton } from "@/components/admin/admin-list-skeleton";
 import { formatDate } from "@/lib/format";
@@ -35,12 +31,10 @@ const DESTINATION_LABELS: Record<string, string> = {
  * for it to be tried again.
  */
 export function SystemQueue({
-  mediaFailures,
   onRetry,
   retrying,
   snapshot,
 }: {
-  mediaFailures: DeletionJob[];
   onRetry: (kind: RetryKind, id: string) => void;
   retrying: string;
   snapshot: Partial<OperationsConsole>;
@@ -59,7 +53,6 @@ export function SystemQueue({
     && stuck.length === 0
     && failedDeliveries?.length === 0
     && cleanupBacklog?.length === 0
-    && mediaFailures.length === 0
     && errors?.length === 0;
 
   return (
@@ -73,7 +66,7 @@ export function SystemQueue({
         </ListSection>
       ) : null}
 
-      {stuck.length > 0 || (cleanupBacklog?.length ?? 0) > 0 || mediaFailures.length > 0 ? (
+      {stuck.length > 0 || (cleanupBacklog?.length ?? 0) > 0 ? (
         <ListSection header={t("admin.queueFailedHeader")}>
           {stuck.map((job) => (
             <ListActionRow
@@ -93,21 +86,6 @@ export function SystemQueue({
               key={entry.jobId}
               label={t("ui.operations.cleanupBacklog")}
               onClick={() => onRetry("cleanup", entry.jobId)}
-              tone="destructive"
-              value={t("admin.retry")}
-            />
-          ))}
-          {mediaFailures.map((entry) => (
-            <ListActionRow
-              busy={retrying === entry.id}
-              detail={t("admin.mediaFailureDetail", {
-                attempts: entry.attemptCount,
-                target: entry.targetId,
-                updatedAt: formatDate(entry.updatedAt),
-              })}
-              key={entry.id}
-              label={t("ui.adminConsole.mediaDeletionFailures")}
-              onClick={() => onRetry("media", entry.id)}
               tone="destructive"
               value={t("admin.retry")}
             />

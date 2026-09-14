@@ -141,9 +141,6 @@ export const BACKEND_ACTION_POLICIES = {
   "listComments": {
     "group": "read"
   },
-  "listDeletionJobs": {
-    "group": "read"
-  },
   "listFacilities": {
     "group": "read"
   },
@@ -189,10 +186,6 @@ export const BACKEND_ACTION_POLICIES = {
   },
   "resolveUploadImageUrls": {
     "group": "upload-resolve"
-  },
-  "retryDeletionJob": {
-    "group": "admin-write",
-    "extraLimit": "destructiveWriteHourly"
   },
   "searchIssues": {
     "group": "read"

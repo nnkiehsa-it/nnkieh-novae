@@ -16,6 +16,8 @@ export const DOMAIN_EVENT_TYPES = [
   "category.managed", "category.updated", "platform.settings_updated", "system.setup_completed",
   "system.features_updated", "user.restricted", "user.role_changed", "user.access_scoped",
   "user.avatar_updated", "notification.marked_opened", "push_token.updated", "upload.mutated",
+  // Recorded by the retired media-deletion console. Nothing announces it now,
+  // and the events that carry it still point at this registry.
   "deletion_job.retried",
 ] as const;
 

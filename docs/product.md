@@ -74,7 +74,7 @@ Feed 可依最新、最多附議、即將截止排序；`my-proposals` 是獨立
 
 ## 管理範圍
 
-管理介面包括分類與功能開關、category-scoped access、使用者限制、平台資料保留設定、失敗媒體刪除重試、背景工作進度、稽核紀錄與 dashboard。前端隱藏按鈕只是呈現行為，真正的允許或拒絕由 Worker action 與資料庫函式判斷。
+管理介面包括分類與功能開關、category-scoped access、使用者限制、平台資料保留設定、背景工作進度與重試、稽核紀錄與 dashboard。前端隱藏按鈕只是呈現行為，真正的允許或拒絕由 Worker action 與資料庫函式判斷。
 
 Dashboard 的統計包含使用者、提案、留言、附議新增／移除與刪除計數，也會顯示 Notion backlog、failed delivery、failed Push、stuck upload、cleanup backlog、最近失敗與上次 scheduled maintenance。這些讀取要求 `dashboard.view`。
 

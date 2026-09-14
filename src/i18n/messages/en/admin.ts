@@ -24,7 +24,6 @@ const messages = {
   'admin.retry': 'Retry',
   'admin.retryQueued': 'Queued for another attempt.',
   'admin.jobAttempts': '{attempts} attempts · {id}',
-  'admin.mediaFailureDetail': '{target} · {attempts} attempts · {updatedAt}',
   'admin.deliveryHealthHeader': 'Deliveries',
   'admin.showAllTables': 'All {count}',
   'admin.tableRows': '{rows} rows · {dead} dead',

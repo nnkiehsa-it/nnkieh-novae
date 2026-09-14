@@ -115,17 +115,6 @@ export function platformEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | n
       });
       break;
     }
-    case "retryDeletionJob": {
-      const jobId = String(payload.jobId ?? "");
-      events.push({
-        aggregateType: "job",
-        aggregateId: jobId,
-        eventType: "deletion_job.retried",
-        destinations: [],
-        payload: { job_id: jobId, actor_uid: actorUid },
-      });
-      break;
-    }
     default:
       return null;
   }

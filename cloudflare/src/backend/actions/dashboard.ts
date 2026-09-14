@@ -101,25 +101,5 @@ export async function handleDashboardAction(
 ) {
   if (action === "getPlatformDashboard") return await getPlatformDashboard(database);
 
-  if (action === "listDeletionJobs") {
-    const { data, error } = await database.call("app_api", "backend_list_deletion_jobs", {
-      actor_uid: auth.uid,
-      page_limit: 50,
-    });
-    if (error) throw error;
-    return asRecord(data);
-  }
-
-  if (action === "retryDeletionJob") {
-    const jobId = asString(payload.jobId).trim();
-    if (!jobId) throw new Error("validation-required");
-    const { data, error } = await database.call("app_api", "backend_retry_deletion_job", {
-      actor_uid: auth.uid,
-      job_id: jobId,
-    });
-    if (error) throw error;
-    return asRecord(data);
-  }
-
   throw new Error("invalid-action");
 }
