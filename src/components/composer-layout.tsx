@@ -42,8 +42,10 @@ export function ComposerLayout({
   useLocaleSubscription();
   return (
     <div className="mx-auto max-w-5xl space-y-5">
-      <SecondaryToolbar backLabel={translate("ui.common.back")} onBack={onBack} />
-      <PageHeader title={title} />
+      <PageHeader
+        lead={<SecondaryToolbar backLabel={translate("ui.common.back")} onBack={onBack} />}
+        title={title}
+      />
       <form className="min-w-0" onSubmit={onSubmit}>
         <Card className="min-w-0 py-5 sm:py-6">
           <CardContent className="grid min-w-0 max-w-full gap-5 px-4 sm:px-6">

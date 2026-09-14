@@ -13,11 +13,20 @@ import { cn } from "@/lib/utils";
 export function PageHeader({
   actions,
   className,
+  lead,
   title,
   toolbar,
 }: {
   actions?: React.ReactNode;
   className?: string;
+  /**
+   * A row that belongs above the title -- in practice the back control of a
+   * subpage. It rides inside the header rather than above it because the header
+   * is sticky and draws a blurred veil over whatever scrolls behind it: a back
+   * control left outside slid under that veil and faded out while still
+   * answering taps.
+   */
+  lead?: React.ReactNode;
   title: React.ReactNode;
   /**
    * Search and sort controls. They join the same wrapping row as the title and the
@@ -43,20 +52,26 @@ export function PageHeader({
       </header>
     );
   }
-  return (
-    <header
-      className={cn(
-        "page-header flex flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between",
-        className,
-      )}
-    >
+  const titleRow = (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       {heading}
       {actions ? (
         <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:flex-1 sm:justify-end">
           {actions}
         </div>
       ) : null}
-    </header>
+    </div>
+  );
+  if (lead) {
+    return (
+      <header className={cn("page-header space-y-4 pb-4", className)}>
+        {lead}
+        {titleRow}
+      </header>
+    );
+  }
+  return (
+    <header className={cn("page-header pb-4", className)}>{titleRow}</header>
   );
 }
 

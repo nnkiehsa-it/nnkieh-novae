@@ -261,6 +261,11 @@ test.describe('platform administrator on mobile', () => {
     // The index leads on to each area, and each area leads back.
     await page.getByRole('link', { name: /Content and categories/u }).click();
     await page.waitForURL(/\/admin\/content$/u);
+    // The way back rides inside the sticky header, so no amount of scrolling
+    // slides it under the header's own blurred veil -- where it used to fade
+    // out while still answering taps.
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await expect(page.getByRole('button', { name: 'Back' })).toBeInViewport();
     await page.getByRole('button', { name: 'Back' }).click();
     await page.waitForURL(/\/admin$/u);
     await page.getByRole('button', { name: 'Back' }).click();

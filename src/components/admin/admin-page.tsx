@@ -30,12 +30,16 @@ export function AdminPage({
   const router = useRouter();
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 pb-8">
-      <SecondaryToolbar
-        actions={actions}
-        backLabel={translate("ui.common.back")}
-        onBack={() => returnToPreviousInAppRoute(router, back)}
+      <PageHeader
+        lead={
+          <SecondaryToolbar
+            actions={actions}
+            backLabel={translate("ui.common.back")}
+            onBack={() => returnToPreviousInAppRoute(router, back)}
+          />
+        }
+        title={title}
       />
-      <PageHeader title={title} />
       {children}
     </div>
   );
