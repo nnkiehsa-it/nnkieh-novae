@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import { errorEnvelope, errorResponse } from "../../cloudflare/src/backend/actions/response.ts";
+import { errorEnvelope, errorResponse, successEnvelope } from "../../cloudflare/src/backend/actions/response.ts";
+import { readOperationPolicies } from "../../cloudflare/src/backend/shared/operation-policies.ts";
 import { claimFixedWindowRateLimit, RateLimitError, utcHourWindow } from "../../cloudflare/src/backend/shared/business-rate-limit.ts";
-import { integrationTest } from "./helpers.ts";
+import { database, integrationTest, underPolicies } from "./helpers.ts";
 
 integrationTest("API errors expose stable codes without backend-localized messages", async () => {
   const envelope = errorEnvelope(new Error("title-required"), "request-123");
@@ -43,4 +44,13 @@ integrationTest("Durable Object business limits allow the configured quota and r
     () => claimFixedWindowRateLimit(identifier, "integration.issue-create", utcHourWindow(), config),
     (error: unknown) => error instanceof RateLimitError && error.message === "rate-limit.issue-create",
   );
+});
+
+integrationTest("A successful answer names the settings revision it was produced under", async () => {
+  const [envelope, stored] = await underPolicies(async () => [
+    successEnvelope({ ok: true }, "request-policy-revision"),
+    await readOperationPolicies(database),
+  ] as const);
+  assert.equal(envelope.policyRevision, stored.revision);
+  assert.equal(envelope.success, true);
 });

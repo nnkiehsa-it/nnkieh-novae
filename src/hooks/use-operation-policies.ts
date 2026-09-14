@@ -55,7 +55,7 @@ export function useOperationPolicies() {
     requireReason: true,
     save: async (values, reason) => {
       const saved = await saveOperationPolicies({ reason, revision, values });
-      setOperationPolicies(saved.values);
+      setOperationPolicies(saved);
       remember((current) => ({
         history: current?.history ?? [],
         revision: saved.revision,

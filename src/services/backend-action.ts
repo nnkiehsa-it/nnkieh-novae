@@ -5,25 +5,28 @@ import { auth } from '@/lib/firebase';
 import { apiGatewayUrl } from '@/lib/api-gateway';
 import { ApiRequestError, type ApiErrorResponse } from '@/lib/api-error';
 import { backendSecurityHeaders } from '@/lib/backend-security';
-import { setOperationPolicies, getOperationPolicy } from '@/lib/operation-policies';
-import type { OperationPolicies } from '@/generated/operations';
+import { setOperationPolicies, getOperationPolicy, operationPolicyRevision, type PolicySnapshot } from '@/lib/operation-policies';
 
-let policyCheck: { uid: string; at: number; pending?: Promise<void> } | null = null;
+/**
+ * The settings change a few times a year, so nothing goes looking for them.
+ * Every successful response says which revision the Worker answered with, and
+ * only a revision this client has not seen costs a request — which is why
+ * there is no poll here: one would spend a full Worker invocation a minute per
+ * signed-in tab to learn that nothing had changed.
+ */
+let policyRefresh: Promise<void> | null = null;
 
-export async function refreshRuntimePolicies(uid: string) {
-  if (policyCheck?.uid === uid && policyCheck.pending) return policyCheck.pending;
-  if (policyCheck?.uid === uid && Date.now() - policyCheck.at < 60_000) return;
-  const check = { uid, at: 0, pending: undefined as Promise<void> | undefined };
-  policyCheck = check;
-  check.pending = invokeBackendAction<Record<string, never>, { values: OperationPolicies }>('getRuntimePolicies')({})
-    .then(result => { setOperationPolicies(result.values); check.at = Date.now(); })
-    .finally(() => { check.pending = undefined; });
-  return check.pending;
+function refreshRuntimePolicies() {
+  policyRefresh ??= invokeBackendAction<Record<string, never>, PolicySnapshot>('getRuntimePolicies')({})
+    .then(snapshot => { setOperationPolicies(snapshot); })
+    .finally(() => { policyRefresh = null; });
+  return policyRefresh;
 }
 
 interface BackendActionSuccessEnvelope<TResponse> {
   data: TResponse;
   operationId: string;
+  policyRevision: number;
   success: true;
 }
 
@@ -48,7 +51,6 @@ export function invokeBackendAction<TRequest = Record<string, unknown>, TRespons
     const operationId = options.operationId || crypto.randomUUID();
 
     const requestUid = auth?.currentUser?.uid ?? '';
-    if (requestUid && name !== 'getRuntimePolicies' && name !== 'getSessionBootstrap') await refreshRuntimePolicies(requestUid);
     if (isWrite) {
       await waitForWriteCooldown(`${requestUid}:${name}`,getOperationPolicy('clientWriteCooldownMs'),options.signal);
     }
@@ -99,8 +101,9 @@ export function invokeBackendAction<TRequest = Record<string, unknown>, TRespons
     }
 
     if (name === 'getSessionBootstrap') {
-      const data = envelope.data as { runtimePolicies: { values: OperationPolicies } };
-      setOperationPolicies(data.runtimePolicies.values);
+      setOperationPolicies((envelope.data as { runtimePolicies: PolicySnapshot }).runtimePolicies);
+    } else if (name !== 'getRuntimePolicies' && envelope.policyRevision !== operationPolicyRevision()) {
+      void refreshRuntimePolicies().catch(() => undefined);
     }
     return envelope.data;
   };

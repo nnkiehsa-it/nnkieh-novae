@@ -1,5 +1,6 @@
 import { errorStatus, publicErrorBody } from "../shared/http.ts";
 import type { ApiErrorCode } from "../shared/api-errors.ts";
+import { operationPolicies } from "../shared/operation-policies.ts";
 
 export interface ApiErrorBody {
   code: ApiErrorCode;
@@ -11,6 +12,7 @@ export interface ApiErrorBody {
 export interface ApiSuccessEnvelope<TData> {
   data: TData;
   operationId: string;
+  policyRevision: number;
   success: true;
 }
 
@@ -51,8 +53,13 @@ export function toApiJson(value: unknown): unknown {
   return result;
 }
 
+/**
+ * Every answer carries the revision of the settings it was produced under, so
+ * a client learns that they changed from the traffic it was making anyway
+ * instead of asking on a timer.
+ */
 export function successEnvelope<TData>(data: TData, operationId: string): ApiSuccessEnvelope<TData> {
-  return { data: toApiJson(data) as TData, operationId, success: true };
+  return { data: toApiJson(data) as TData, operationId, policyRevision: operationPolicies().revision, success: true };
 }
 
 export function errorEnvelope(error: unknown, operationId: string, failureId?: string): ApiErrorEnvelope {
