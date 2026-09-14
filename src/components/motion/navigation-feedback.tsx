@@ -8,30 +8,15 @@ import {
   motionLoopSeconds,
   motionSeconds,
 } from "@/generated/motion-tokens";
+import {
+  interactiveTarget,
+  internalAnchor,
+  isDisabledTarget,
+} from "@/lib/interactive-target";
 import { timing } from "@/lib/motion-timing";
 
 // A navigation that never commits must not leave the page looking busy forever.
 const PENDING_LIMIT_MS = 4_000;
-
-function interactiveTarget(target: EventTarget | null) {
-  if (!(target instanceof Element)) return null;
-  return target.closest<HTMLElement>(
-    "a[href], button, [role='button'], [role='menuitem'], [role='option'], [role='radio'], [role='checkbox'], [role='tab'], [role='switch'], [data-slot='select-trigger']",
-  );
-}
-
-function internalAnchor(target: HTMLElement) {
-  const anchor = target.closest<HTMLAnchorElement>("a[href]");
-  if (!anchor || anchor.target === "_blank" || anchor.hasAttribute("download")) {
-    return null;
-  }
-  const url = new URL(anchor.href, window.location.href);
-  if (url.origin !== window.location.origin) return null;
-  if (`${url.pathname}${url.search}${url.hash}` === `${location.pathname}${location.search}${location.hash}`) {
-    return null;
-  }
-  return anchor;
-}
 
 /**
  * The answer to a tap whose result has not arrived yet.
@@ -74,12 +59,7 @@ export function NavigationFeedback() {
       }
       const target = interactiveTarget(event.target);
       if (!target || target.closest("[data-primary-navigation]") || !internalAnchor(target)) return;
-      if (
-        target.matches(":disabled, [aria-disabled='true'], [data-disabled]") ||
-        target.closest(":disabled, [aria-disabled='true'], [data-disabled]")
-      ) {
-        return;
-      }
+      if (isDisabledTarget(target)) return;
       release();
       target.setAttribute("data-navigating", "true");
       marked.current = target;

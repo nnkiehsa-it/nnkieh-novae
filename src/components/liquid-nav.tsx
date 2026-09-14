@@ -2,7 +2,6 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import Link, { useLinkStatus } from "next/link";
-import { useRouter } from "next/navigation";
 import * as React from "react";
 import { motion } from "motion/react";
 import { timing } from "@/lib/motion-timing";
@@ -120,7 +119,6 @@ export function LiquidNav({
   vertical?: boolean;
 }) {
   useLocaleSubscription();
-  const router = useRouter();
   const navRef = React.useRef<HTMLElement>(null);
   const activeIndex = items.findIndex(
     (item) =>
@@ -177,8 +175,6 @@ export function LiquidNav({
             data-active={active}
             href={item.href}
             key={item.href}
-            onFocus={() => router.prefetch(item.href)}
-            onPointerEnter={() => router.prefetch(item.href)}
           >
             <NavigationContents item={item} vertical={vertical} />
           </Link>
