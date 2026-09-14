@@ -55,12 +55,21 @@ const messages = {
   'auth.pwaStepOpenFromHome': 'When installation finishes, reopen Novae from its Home Screen icon.',
   'auth.pwaInstall': 'Install app',
   'auth.pwaCopyUrl': 'Copy URL',
-  'auth.pwaOpenBrowser': 'Open in browser',
   'auth.pwaLater': 'Not now',
   'auth.pwaDismissConfirmTitle': 'Install Novae later?',
   'auth.pwaDismissConfirmDescription': 'Mobile notifications require the Novae PWA to be installed. If you skip installation now, notifications will remain unavailable until you install it later.',
   'auth.pwaDismissGoBack': 'Back to install',
   'auth.pwaDismissConfirm': 'Still not now',
+  'auth.pwaAlreadyInstalledNote': 'Already installed? There is no need to install it again — open Novae from its Home Screen icon.',
+  'auth.pwaShareExitTitle': 'Where do you want to continue?',
+  'auth.pwaShareExitDescription': 'You opened this page in a browser from a shared link. Before you browse further, tell us whether Novae is already on this phone.',
+  'auth.pwaShareExitInstalled': 'Already installed',
+  'auth.pwaShareExitNotInstalled': 'Not installed yet',
+  'auth.pwaShareExitContinue': 'Stay in the browser',
+  'auth.pwaOpenFromHomeTitle': 'Open Novae from the Home Screen',
+  'auth.pwaOpenFromHomeDescription': 'A browser cannot switch to an installed app for you. Open Novae from the Home Screen yourself; you will still be signed in.',
+  'auth.pwaStepLeaveBrowser': 'Leave the browser and go back to the Home Screen.',
+  'auth.pwaDone': 'Got it',
 } as const;
 
 export default messages;

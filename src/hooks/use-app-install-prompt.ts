@@ -22,6 +22,8 @@ import {
   readSessionStorage,
   writeSessionStorage,
 } from "@/lib/browser-storage";
+import { useShareEntry } from "@/hooks/use-share-entry";
+import { clearShareEntryMarker } from "@/lib/share";
 
 export type AppInstallPromptMode =
   | "in-app-browser"
@@ -55,6 +57,7 @@ export function useAppInstallPrompt() {
   const [dismissed, setDismissed] = useState(true);
   const [isPrompting, setIsPrompting] = useState(false);
   const [reason, setReason] = useState<AppInstallPromptReason>("default");
+  const shareEntry = useShareEntry();
 
   const handleBeforeInstallPrompt = useCallback((event: Event) => {
     if (isStandaloneMode()) return;
@@ -75,7 +78,7 @@ export function useAppInstallPrompt() {
       navigator.maxTouchPoints,
     )) return;
     const requestedReason = (event as CustomEvent<AppInstallPromptRequestDetail>).detail?.reason;
-    setReason(requestedReason === "notifications" ? "notifications" : "default");
+    setReason(requestedReason ?? "default");
     setDismissed(false);
   }, []);
 
@@ -88,7 +91,17 @@ export function useAppInstallPrompt() {
     setIsAndroid(isAndroidDevice(userAgent));
     setDismissed(hasDismissedPrompt());
     setHydrated(true);
+    clearShareEntryMarker();
   }, []);
+
+  // A messaging app's own browser cannot complete a Google sign-in, so the
+  // reader is handed to the system browser the moment they land rather than
+  // being asked to read an instruction first. Only the apps that offer no way
+  // out programmatically fall through to the dialog.
+  useEffect(() => {
+    if (!hydrated || isStandaloneMode()) return;
+    tryRedirectToExternalBrowser(navigator.userAgent);
+  }, [hydrated]);
 
   useEffect(() => {
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -108,14 +121,28 @@ export function useAppInstallPrompt() {
       || isStandaloneMode()
       || !isMobilePwaRequiredPlatform(navigator.userAgent, navigator.platform, navigator.maxTouchPoints)
     ) return null;
-    if (iosBrowserGuide) return "ios-open-safari";
+    // Someone who followed a shared link came for the page, not for Novae.
+    // Getting them out of an in-app browser is still the only way they can
+    // sign in and read it; everything about installing waits until they ask
+    // for more of the app than the one page they were sent.
     if (browserName) return "in-app-browser";
+    if (shareEntry && reason === "default") return null;
+    if (iosBrowserGuide) return "ios-open-safari";
     if (isAndroid || (deferredPrompt && isTouchPrimaryDevice())) return "native-install";
     if (isIosSafari(navigator.userAgent, navigator.platform, navigator.maxTouchPoints)) {
       return "ios-install";
     }
     return null;
-  }, [browserName, deferredPrompt, dismissed, hydrated, iosBrowserGuide, isAndroid, reason]);
+  }, [
+    browserName,
+    deferredPrompt,
+    dismissed,
+    hydrated,
+    iosBrowserGuide,
+    isAndroid,
+    reason,
+    shareEntry,
+  ]);
 
   const dismiss = useCallback(() => {
     setDismissed(true);
@@ -146,21 +173,15 @@ export function useAppInstallPrompt() {
     }
   }, [isPrompting]);
 
-  const openExternalBrowser = useCallback(() => {
-    return tryRedirectToExternalBrowser(navigator.userAgent);
-  }, []);
-
   return {
     browserName,
     canInstallNatively: deferredPrompt !== null,
     copyInstallUrl,
     dismiss,
     iosBrowserGuide,
-    isAndroid,
     isPrompting,
     mode,
     open: mode !== null,
-    openExternalBrowser,
     promptInstall,
     reason,
   };

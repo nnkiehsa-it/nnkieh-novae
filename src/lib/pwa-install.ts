@@ -8,7 +8,7 @@ export function isTouchPrimaryDevice() {
 }
 
 export type IosBrowserGuide = 'Chrome' | 'Google';
-export type AppInstallPromptReason = 'default' | 'notifications';
+export type AppInstallPromptReason = 'default' | 'notifications' | 'share-exit';
 
 export const APP_INSTALL_PROMPT_DISMISSED_KEY = 'novae:app-install-prompt-dismissed';
 export const REQUEST_APP_INSTALL_PROMPT_EVENT = 'novae:request-app-install-prompt';

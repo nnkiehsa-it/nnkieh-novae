@@ -1,28 +1,52 @@
 "use client";
 
-import { useState } from "react";
-import { Copy, Download, ExternalLink, Share2, TriangleAlert } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import { timing } from "@/lib/motion-timing";
+import { useEffect, useState, type ReactNode } from "react";
+import { Copy, Download, Home, Share2, TriangleAlert } from "lucide-react";
+import { AnimatePresence } from "motion/react";
 import { useAppInstallPrompt } from "@/hooks/use-app-install-prompt";
+import { resolveShareExit } from "@/hooks/share-entry-store";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { PromptStep } from "@/components/app-install/prompt-step";
+
+type PromptView = "ask" | "home" | "guide" | "dismiss";
+
+interface PromptStepContent {
+  actions: ReactNode;
+  description: string;
+  icon: ReactNode;
+  note?: string;
+  steps: string[];
+  title: string;
+}
 
 export function AppInstallPrompt() {
   const prompt = useAppInstallPrompt();
   const { t } = useI18n();
+  const [view, setView] = useState<PromptView>("guide");
+  const [direction, setDirection] = useState<1 | -1>(1);
   const mode = prompt.mode;
-  const [confirmingDismiss, setConfirmingDismiss] = useState(false);
+  const sharedExit = prompt.reason === "share-exit";
+
+  // A reader who asked to leave a shared page is asked where they want to
+  // carry on before anything is explained to them about installing.
+  useEffect(() => {
+    setDirection(1);
+    setView(prompt.reason === "share-exit" ? "ask" : "guide");
+  }, [prompt.reason]);
 
   if (!mode) return null;
+
+  const go = (next: PromptView, nextDirection: 1 | -1 = 1) => {
+    setDirection(nextDirection);
+    setView(next);
+  };
+
+  const finish = (proceed: boolean) => {
+    if (sharedExit) resolveShareExit(proceed);
+    prompt.dismiss();
+  };
 
   const browserLabel = prompt.browserName
     ?? (prompt.iosBrowserGuide === "Google" ? "Google App" : "Chrome");
@@ -38,11 +62,7 @@ export function AppInstallPrompt() {
   if (mode === "in-app-browser") {
     title = t("auth.pwaInAppTitle");
     description = t("auth.pwaInAppDescription", { browser: browserLabel });
-    steps = [
-      t("auth.pwaStepOpenMenu"),
-      t("auth.pwaStepOpenBrowser"),
-      t("auth.pwaStepInstall"),
-    ];
+    steps = [t("auth.pwaStepOpenMenu"), t("auth.pwaStepOpenBrowser")];
     icon = <TriangleAlert className="size-5" aria-hidden />;
   } else if (mode === "ios-open-safari") {
     title = t("auth.pwaOpenSafariTitle");
@@ -53,7 +73,7 @@ export function AppInstallPrompt() {
       t("auth.pwaStepShare"),
       t("auth.pwaStepAddHome"),
     ];
-    icon = <ExternalLink className="size-5" aria-hidden />;
+    icon = <Share2 className="size-5" aria-hidden />;
   } else if (mode === "ios-install") {
     title = t("auth.pwaIosInstallTitle");
     description = t("auth.pwaIosInstallDescription");
@@ -71,116 +91,127 @@ export function AppInstallPrompt() {
       : [t("auth.pwaStepOpenMenu"), t("auth.pwaStepInstall"), t("auth.pwaStepOpenFromHome")];
   }
 
+  const installsNatively = mode === "native-install" && prompt.canInstallNatively;
+
   const handlePrimaryAction = async () => {
-    if (mode === "native-install" && prompt.canInstallNatively) {
+    if (installsNatively) {
       await prompt.promptInstall();
       return;
     }
-    if (mode === "in-app-browser" && prompt.isAndroid) {
-      if (prompt.openExternalBrowser()) return;
-    }
-    if (mode === "in-app-browser" || mode === "ios-open-safari") {
-      await prompt.copyInstallUrl();
-    }
+    await prompt.copyInstallUrl();
   };
 
-  const hasPrimaryAction =
-    (mode === "native-install" && prompt.canInstallNatively)
+  const hasPrimaryAction = installsNatively
     || mode === "in-app-browser"
     || mode === "ios-open-safari";
 
-  const primaryLabel = mode === "native-install"
-    ? t("auth.pwaInstall")
-    : mode === "in-app-browser" && prompt.isAndroid
-      ? t("auth.pwaOpenBrowser")
-      : t("auth.pwaCopyUrl");
-
-  const handleDismiss = () => {
-    setConfirmingDismiss(false);
-    prompt.dismiss();
+  let step: PromptStepContent = {
+    actions: (
+      <>
+        {sharedExit ? (
+          <Button variant="outline" onClick={() => finish(true)} disabled={prompt.isPrompting}>
+            {t("auth.pwaShareExitContinue")}
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            onClick={() => go("dismiss")}
+            disabled={prompt.isPrompting}
+          >
+            {t("auth.pwaLater")}
+          </Button>
+        )}
+        {hasPrimaryAction ? (
+          <Button onClick={() => void handlePrimaryAction()} disabled={prompt.isPrompting}>
+            {installsNatively ? <Download className="size-4" /> : <Copy className="size-4" />}
+            {installsNatively ? t("auth.pwaInstall") : t("auth.pwaCopyUrl")}
+          </Button>
+        ) : null}
+      </>
+    ),
+    description: `${description}${notificationsNote ? ` ${notificationsNote}` : ""}`,
+    icon,
+    note: t("auth.pwaAlreadyInstalledNote"),
+    steps,
+    title,
   };
 
-  const dialogTitle = confirmingDismiss ? t("auth.pwaDismissConfirmTitle") : title;
-  const dialogDescription = confirmingDismiss
-    ? t("auth.pwaDismissConfirmDescription")
-    : `${description}${notificationsNote ? ` ${notificationsNote}` : ""}`;
-  const dialogIcon = confirmingDismiss
-    ? <TriangleAlert className="size-5" aria-hidden />
-    : icon;
+  if (view === "ask") {
+    step = {
+      actions: (
+        <>
+          <Button variant="ghost" onClick={() => finish(true)}>
+            {t("auth.pwaShareExitContinue")}
+          </Button>
+          <Button variant="outline" onClick={() => go("guide")}>
+            {t("auth.pwaShareExitNotInstalled")}
+          </Button>
+          <Button onClick={() => go("home")}>
+            {t("auth.pwaShareExitInstalled")}
+          </Button>
+        </>
+      ),
+      description: t("auth.pwaShareExitDescription"),
+      icon: <Home className="size-5" aria-hidden />,
+      steps: [],
+      title: t("auth.pwaShareExitTitle"),
+    };
+  } else if (view === "home") {
+    step = {
+      actions: (
+        <>
+          <Button
+            variant="outline"
+            onClick={() => void prompt.copyInstallUrl()}
+            disabled={prompt.isPrompting}
+          >
+            <Copy className="size-4" />
+            {t("auth.pwaCopyUrl")}
+          </Button>
+          <Button onClick={() => finish(false)} disabled={prompt.isPrompting}>
+            {t("auth.pwaDone")}
+          </Button>
+        </>
+      ),
+      description: t("auth.pwaOpenFromHomeDescription"),
+      icon: <Home className="size-5" aria-hidden />,
+      steps: [t("auth.pwaStepLeaveBrowser"), t("auth.pwaStepOpenFromHome")],
+      title: t("auth.pwaOpenFromHomeTitle"),
+    };
+  } else if (view === "dismiss") {
+    step = {
+      actions: (
+        <>
+          <Button variant="ghost" onClick={() => finish(false)} disabled={prompt.isPrompting}>
+            {t("auth.pwaDismissConfirm")}
+          </Button>
+          <Button onClick={() => go("guide", -1)} disabled={prompt.isPrompting}>
+            <Download className="size-4" />
+            {t("auth.pwaDismissGoBack")}
+          </Button>
+        </>
+      ),
+      description: t("auth.pwaDismissConfirmDescription"),
+      icon: <TriangleAlert className="size-5" aria-hidden />,
+      steps: [],
+      title: t("auth.pwaDismissConfirmTitle"),
+    };
+  }
 
   return (
     <Dialog open={prompt.open}>
       <DialogContent showCloseButton={false}>
-        <AnimatePresence initial={false} mode="wait">
-          <motion.div
-            animate={{ opacity: 1, scale: 1, x: 0 }}
-            className="grid gap-5"
-            exit={{ opacity: 0, scale: 0.98, x: confirmingDismiss ? 12 : -12 }}
-            initial={{ opacity: 0, scale: 0.98, x: confirmingDismiss ? -12 : 12 }}
-            key={confirmingDismiss ? "confirm-dismiss" : mode}
-            transition={timing("sheetExit")}
-          >
-            <DialogHeader>
-              <div className="mb-1 flex size-10 items-center justify-center rounded-xl bg-accent text-foreground">
-                {dialogIcon}
-              </div>
-              <DialogTitle>{dialogTitle}</DialogTitle>
-              <DialogDescription>{dialogDescription}</DialogDescription>
-            </DialogHeader>
-
-            {!confirmingDismiss ? (
-              <ol className="space-y-3">
-                {steps.map((step, index) => (
-                  <li className="flex gap-3 text-sm leading-6" key={step}>
-                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold">
-                      {index + 1}
-                    </span>
-                    <span>{step}</span>
-                  </li>
-                ))}
-              </ol>
-            ) : null}
-
-            <DialogFooter>
-              {confirmingDismiss ? (
-                <>
-                  <Button variant="ghost" onClick={handleDismiss} disabled={prompt.isPrompting}>
-                    {t("auth.pwaDismissConfirm")}
-                  </Button>
-                  <Button onClick={() => setConfirmingDismiss(false)} disabled={prompt.isPrompting}>
-                    <Download className="size-4" />
-                    {t("auth.pwaDismissGoBack")}
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => setConfirmingDismiss(true)}
-                    disabled={prompt.isPrompting}
-                  >
-                    {t("auth.pwaLater")}
-                  </Button>
-                  {mode === "in-app-browser" && prompt.isAndroid ? (
-                    <Button
-                      variant="outline"
-                      onClick={() => void prompt.copyInstallUrl()}
-                      disabled={prompt.isPrompting}
-                    >
-                      <Copy className="size-4" />
-                      {t("auth.pwaCopyUrl")}
-                    </Button>
-                  ) : null}
-                  {hasPrimaryAction ? (
-                    <Button onClick={() => void handlePrimaryAction()} disabled={prompt.isPrompting}>
-                      {mode === "native-install" ? <Download className="size-4" /> : <ExternalLink className="size-4" />}
-                      {primaryLabel}
-                    </Button>
-                  ) : null}
-                </>
-              )}
-            </DialogFooter>
-          </motion.div>
+        <AnimatePresence custom={direction} initial={false} mode="wait">
+          <PromptStep
+            actions={step.actions}
+            description={step.description}
+            direction={direction}
+            icon={step.icon}
+            key={view === "guide" ? mode : view}
+            note={step.note}
+            steps={step.steps}
+            title={step.title}
+          />
         </AnimatePresence>
       </DialogContent>
     </Dialog>

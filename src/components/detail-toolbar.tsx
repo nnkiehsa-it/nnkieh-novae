@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { ArrowLeft, Share2 } from "lucide-react";
+import { useShareExitGuard } from "@/hooks/use-share-entry";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -14,6 +15,9 @@ export function SecondaryToolbar({
   backLabel: string;
   onBack: () => void;
 }) {
+  // A reader who arrived on a shared link is leaving the one page they were
+  // sent, so this is where Novae finally asks how they want to carry on.
+  const guardBack = useShareExitGuard();
   return (
     <div className="flex h-9 items-center justify-between gap-3">
       <Tooltip>
@@ -21,7 +25,7 @@ export function SecondaryToolbar({
           <Button
             aria-label={backLabel}
             className="size-11 md:size-9"
-            onClick={onBack}
+            onClick={() => guardBack(onBack)}
             size="icon"
             variant="ghost"
           >

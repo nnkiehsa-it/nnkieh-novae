@@ -55,12 +55,21 @@ const messages = {
   'auth.pwaStepOpenFromHome': '完成後從主畫面的 Novae 圖示重新開啟。',
   'auth.pwaInstall': '安裝 App',
   'auth.pwaCopyUrl': '複製網址',
-  'auth.pwaOpenBrowser': '用瀏覽器開啟',
   'auth.pwaLater': '稍後再說',
   'auth.pwaDismissConfirmTitle': '真的要稍後再安裝嗎？',
   'auth.pwaDismissConfirmDescription': 'Novae 的手機通知功能需要安裝 PWA 才能啟用。現在略過的話，你將暫時無法開啟通知；之後仍可再回來安裝。',
   'auth.pwaDismissGoBack': '返回安裝',
   'auth.pwaDismissConfirm': '仍然稍後',
+  'auth.pwaAlreadyInstalledNote': '已經安裝過了？不用再裝一次，直接從主畫面的 Novae 圖示開啟即可。',
+  'auth.pwaShareExitTitle': '要在哪裡繼續使用 Novae？',
+  'auth.pwaShareExitDescription': '你是從分享的連結在瀏覽器開啟這一頁的。要瀏覽其他內容之前，先確認你手機上有沒有 Novae。',
+  'auth.pwaShareExitInstalled': '我已經安裝了',
+  'auth.pwaShareExitNotInstalled': '還沒有安裝',
+  'auth.pwaShareExitContinue': '繼續用瀏覽器',
+  'auth.pwaOpenFromHomeTitle': '從主畫面開啟 Novae',
+  'auth.pwaOpenFromHomeDescription': '瀏覽器沒辦法直接幫你切換到已安裝的 Novae，請自己回到主畫面開啟，登入狀態會留著。',
+  'auth.pwaStepLeaveBrowser': '離開瀏覽器，回到手機主畫面。',
+  'auth.pwaDone': '知道了',
 } as const;
 
 export default messages;
