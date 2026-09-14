@@ -37,6 +37,10 @@ function Report({ provider, result }: { provider: DiagnosticProvider; result: Pr
  * of GraphQL envelope. Each provider now says its figures in the same rows the
  * rest of administration uses, and the response it arrived in stays one
  * disclosure away for the cases where the figures are not the question.
+ *
+ * The two providers that report standing figures answer as the panel opens.
+ * The log stream is a search, so it waits for one rather than spending a query
+ * on a day of unfiltered events nobody asked for.
  */
 export function ProviderDiagnostics() {
   const state = useProviderDiagnostics();
@@ -70,18 +74,30 @@ export function ProviderDiagnostics() {
           >
             {provider === "logs" ? (
               <ListCustomRow>
-                <Input
-                  aria-label={t("ui.operations.logSearch")}
-                  maxLength={200}
-                  onChange={(event) => state.setQuery(event.target.value)}
-                  placeholder={t("ui.operations.logSearch")}
-                  value={state.query}
-                />
+                <form
+                  className="flex w-full min-w-0 gap-2"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void state.load("logs");
+                  }}
+                >
+                  <Input
+                    aria-label={t("ui.operations.logSearch")}
+                    className="min-w-0 flex-1"
+                    maxLength={200}
+                    onChange={(event) => state.setQuery(event.target.value)}
+                    placeholder={t("ui.operations.logSearch")}
+                    value={state.query}
+                  />
+                  <Button disabled={busy} type="submit" variant="secondary">
+                    {busy ? <LoadingSpinner /> : t("ui.common.search")}
+                  </Button>
+                </form>
               </ListCustomRow>
             ) : null}
 
             {!result ? (
-              <SkeletonRows rows={2} />
+              busy ? <SkeletonRows rows={2} /> : null
             ) : result.status === "available" ? (
               <ListRow
                 label={t("ui.operations.checkedAt")}

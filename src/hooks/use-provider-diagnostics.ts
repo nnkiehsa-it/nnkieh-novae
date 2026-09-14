@@ -14,6 +14,16 @@ export const DIAGNOSTIC_PROVIDERS = ["cloudinary", "cloudflare", "logs"] as cons
 
 export type DiagnosticProvider = (typeof DIAGNOSTIC_PROVIDERS)[number];
 
+/**
+ * The providers that answer as soon as the panel is opened.
+ *
+ * Cloudinary and the Worker report standing figures — a plan and a day of
+ * traffic — which is what the reader came for. The log stream is a search: an
+ * unasked-for search of the last day costs a query against a hundred events to
+ * show something nobody requested, so it waits to be asked.
+ */
+const READ_ON_ARRIVAL: readonly DiagnosticProvider[] = ["cloudinary", "cloudflare"];
+
 interface DiagnosticsReading {
   activeQuery: string;
   results: Partial<Record<DiagnosticProvider, ProviderDiagnostic>>;
@@ -24,7 +34,8 @@ interface DiagnosticsReading {
  *
  * The panel used to be empty until each provider was asked by hand, and it
  * emptied itself again as soon as the reader looked at another view. It asks
- * every provider once now, keeps the answers, and re-asks only on request.
+ * the reporting providers once now, keeps the answers, and re-asks only on
+ * request.
  */
 export function useProviderDiagnostics() {
   const { cold, remember, value } = useRememberedState<DiagnosticsReading>(
@@ -63,7 +74,7 @@ export function useProviderDiagnostics() {
 
   useEffect(() => {
     if (!cold) return;
-    for (const provider of DIAGNOSTIC_PROVIDERS) void load(provider);
+    for (const provider of READ_ON_ARRIVAL) void load(provider);
   }, [cold, load]);
 
   return {
