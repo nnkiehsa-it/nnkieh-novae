@@ -49,6 +49,30 @@ test('proposal controls follow ownership, category scope, and platform administr
   }
 });
 
+test('supporter identities stay with the author, the category manager, and the administrator', async ({
+  browser,
+}) => {
+  const content = await readContentState();
+  for (const [user, visible] of [
+    ['ordinary', true],
+    ['other', false],
+    ['issueManager', true],
+    ['admin', true],
+  ] as const) {
+    const { context, page } = await newUserPage(browser, user);
+    await page.goto(content.proposalA);
+    await expect(page.getByText('Support progress')).toBeVisible();
+    const supporters = page.getByRole('region', { name: 'Supporters' });
+    if (visible) {
+      // The author counts as the first supporter, so their name is always listed.
+      await expect(supporters.getByText('ordinary', { exact: true })).toBeVisible();
+    } else {
+      await expect(supporters).toHaveCount(0);
+    }
+    await context.close();
+  }
+});
+
 test('facility controls follow ownership, category scope, and platform administration', async ({
   browser,
 }) => {

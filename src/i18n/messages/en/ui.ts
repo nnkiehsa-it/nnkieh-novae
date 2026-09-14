@@ -483,6 +483,7 @@ const messages = {
   'ui.issue.deleteTitle': 'Delete this proposal?',
   'ui.issue.deleteDescription': 'This cannot be undone, and related content will no longer be available.',
   'ui.issue.supportProgress': 'Support progress',
+  'ui.issue.supporters': 'Supporters',
   'ui.issue.supportEndsOn': 'Ends {date}',
   'ui.issue.cancelSupport': 'Remove support',
   'ui.issue.ownSupport': 'Supported (your proposal)',

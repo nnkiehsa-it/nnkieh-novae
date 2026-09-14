@@ -19,6 +19,7 @@ import {
   deleteIssue,
   fetchComments,
   fetchIssueRecordById,
+  fetchIssueSupporters,
   peekIssueRecordById,
   removeSupport,
   toggleSupport,
@@ -65,6 +66,11 @@ export function useIssueDetail() {
       ? getCachedUserPublicProfiles([currentIssue.author_uid])[currentIssue.author_uid] ?? null
       : null,
   );
+  const [supporters, setSupporters] = React.useState<
+    Awaited<ReturnType<typeof fetchIssueSupporters>>
+  >([]);
+  const [supportersLoading, setSupportersLoading] = React.useState(false);
+  const [supportersError, setSupportersError] = React.useState("");
   const [coldRead] = React.useState(() => !currentIssue);
   const [loading, setLoading] = React.useState(!currentIssue);
   const revealDetail = useColdDataReveal(coldRead, loading);
@@ -128,6 +134,33 @@ export function useIssueDetail() {
   useContentInvalidationRefresh(issueCachePrefixes, () => {
     if (!deletingRef.current) return loadIssue(true);
   });
+
+  const canViewSupporters = Boolean(
+    currentIssue?.support_enabled
+      && (currentIssue.isOwnIssue || session.canManageIssueCategory(currentIssue.category)),
+  );
+  const loadSupporters = React.useCallback(async () => {
+    if (!canViewSupporters) {
+      setSupporters([]);
+      setSupportersError("");
+      setSupportersLoading(false);
+      return;
+    }
+    setSupportersLoading(true);
+    setSupportersError("");
+    try {
+      setSupporters(await fetchIssueSupporters(issueId));
+    } catch (caught) {
+      setSupportersError(
+        caught instanceof Error ? caught.message : t("ui.common.loadFailed"),
+      );
+    } finally {
+      setSupportersLoading(false);
+    }
+  }, [canViewSupporters, issueId, t]);
+  React.useEffect(() => {
+    void loadSupporters();
+  }, [loadSupporters, currentIssue?.support_count]);
 
   const commentsAvailable = Boolean(
     currentIssue &&
@@ -220,6 +253,7 @@ export function useIssueDetail() {
         },
       );
       rememberSupportedIssue(currentIssue.id, result.supported);
+      if (canViewSupporters) void loadSupporters();
     } catch {
       patchContentEntity<IssueRecord>(
         session.user?.uid,
@@ -326,6 +360,11 @@ export function useIssueDetail() {
     canManageIssue: currentIssue
       ? session.canManageIssueCategory(currentIssue.category)
       : false,
+    canViewSupporters,
+    loadSupporters,
+    supporters,
+    supportersError,
+    supportersLoading,
     support,
     supportOpen: Boolean(
       currentIssue?.support_enabled &&

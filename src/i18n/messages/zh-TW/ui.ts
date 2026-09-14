@@ -483,6 +483,7 @@ const messages = {
   'ui.issue.deleteTitle': '刪除這個提案？',
   'ui.issue.deleteDescription': '刪除後無法復原，相關內容也將無法查看。',
   'ui.issue.supportProgress': '附議進度',
+  'ui.issue.supporters': '附議者',
   'ui.issue.supportEndsOn': '{date}截止',
   'ui.issue.cancelSupport': '取消附議',
   'ui.issue.ownSupport': '已附議（你的提案）',

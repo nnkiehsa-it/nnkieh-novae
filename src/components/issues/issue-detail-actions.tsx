@@ -3,7 +3,7 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import { motion } from "motion/react";
 import { timing } from "@/lib/motion-timing";
-import { Clock3, ShieldCheck, Hand } from "lucide-react";
+import { Clock3, ShieldCheck, Hand, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import type { IssueRecord } from "@/types";
 import type { getIssueOperationTimeItems } from "@/lib/issue-timeline";
@@ -13,6 +13,8 @@ import { AnimatedNumber } from "@/components/motion/animated-number";
 import { LikeActionButton } from "@/components/motion/like-action-button";
 import { DetailToolbar } from "@/components/detail-toolbar";
 import { DetailActionsMenu } from "@/components/detail-actions-menu";
+import { PersonIdentity } from "@/components/content-author";
+import { Button } from "@/components/ui/button";
 import type { DetailPanel } from "@/components/ui/detail-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
@@ -92,20 +94,30 @@ export function IssueDetailToolbar({
 
 export function getIssueDetailPanels({
   burst,
+  canViewSupporters,
   issue,
+  onReloadSupporters,
   onSupport,
   reveal,
   supportOpen,
   supportProgress,
+  supporters,
+  supportersError,
+  supportersLoading,
   supporting,
   timeline,
 }: {
   burst: number;
+  canViewSupporters: boolean;
   issue: IssueRecord;
+  onReloadSupporters: () => void;
   onSupport: () => void;
   reveal: boolean;
   supportOpen: boolean;
   supportProgress: number;
+  supporters: Array<{ uid: string; displayName: string; photoUrl: string | null }>;
+  supportersError: string;
+  supportersLoading: boolean;
   supporting: boolean;
   timeline: ReturnType<typeof getIssueOperationTimeItems>;
 }) {
@@ -148,6 +160,47 @@ export function getIssueDetailPanels({
               onClick={onSupport}
             />
           </div>
+          {canViewSupporters ? (
+            <section
+              aria-label={translate("ui.issue.supporters")}
+              className="border-t border-border pt-4"
+            >
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                {translate("ui.issue.supporters")}
+              </p>
+              {supportersLoading && supporters.length === 0 ? (
+                <div className="space-y-3" aria-busy="true">
+                  {Array.from({ length: 2 }, (_, index) => (
+                    <div className="flex items-center gap-2.5" key={index}>
+                      <Skeleton className="size-8 rounded-full" />
+                      <Skeleton className="h-4 w-24" />
+                    </div>
+                  ))}
+                </div>
+              ) : supportersError ? (
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs text-muted-foreground">
+                    {translate("ui.common.loadFailed")}
+                  </span>
+                  <Button onClick={onReloadSupporters} size="sm" variant="ghost">
+                    <RefreshCw />
+                    {translate("ui.common.reload")}
+                  </Button>
+                </div>
+              ) : (
+                <div className="rule-list">
+                  {supporters.map((supporter) => (
+                    <div className="flex min-h-11 items-center py-2.5" key={supporter.uid}>
+                      <PersonIdentity
+                        name={supporter.displayName}
+                        photoUrl={supporter.photoUrl}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          ) : null}
   </div> });
   panels.push({ key: "timeline", content: <>
         <div className="flex items-center gap-2">

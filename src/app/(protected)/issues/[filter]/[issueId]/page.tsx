@@ -62,7 +62,21 @@ export default function IssueDetailPage() {
               />
             </div>
           ) : null}
-      panels={issue ? getIssueDetailPanels({ burst: detail.burst, issue, onSupport: () => void detail.support(), reveal: detail.revealDetail, supportOpen: detail.supportOpen, supportProgress: detail.supportProgress, supporting: detail.supporting, timeline: detail.timeline }) : undefined}
+      panels={issue ? getIssueDetailPanels({
+        burst: detail.burst,
+        canViewSupporters: detail.canViewSupporters,
+        issue,
+        onReloadSupporters: () => void detail.loadSupporters(),
+        onSupport: () => void detail.support(),
+        reveal: detail.revealDetail,
+        supportOpen: detail.supportOpen,
+        supportProgress: detail.supportProgress,
+        supporters: detail.supporters,
+        supportersError: detail.supportersError,
+        supportersLoading: detail.supportersLoading,
+        supporting: detail.supporting,
+        timeline: detail.timeline,
+      }) : undefined}
       after={issue && detail.canManageIssue ? (
         <IssueModerationDialog
           issue={issue}
