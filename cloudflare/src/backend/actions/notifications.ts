@@ -2,6 +2,7 @@ import { asRecord, asString } from "../shared/http.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { asNumber, readCursor, readCursorDate, asUuid } from "./utils.ts";
 import { requiredText } from "./validation.ts";
+import { settledSegments } from "./segments.ts";
 
 const PUSH_TOKEN_LIMITS = {
   deviceId: 160,
@@ -9,6 +10,47 @@ const PUSH_TOKEN_LIMITS = {
   token: 4096,
   userAgent: 512,
 } as const;
+
+async function* getNotificationSnapshot(
+  payload: JsonRecord,
+  auth: AuthContext,
+  database: BackendDatabase,
+) {
+  const requestedSources = Array.isArray(payload.sources)
+    ? payload.sources.map((source) => readNotificationSource({ source }))
+      .filter((source, index, items) => items.indexOf(source) === index)
+    : ["broadcast", "user"];
+  const sources = requestedSources.filter((source) => source !== "admin" || auth.isAdmin);
+  const pages = Promise.all(sources.map(async (source) => {
+    const { data, error } = await database.call("app_api", "backend_list_notifications", {
+      actor_uid: auth.uid,
+      actor_is_admin: auth.isAdmin,
+      notification_source: source,
+      page_size: 30,
+      cursor_id: null,
+      cursor_created_at: null,
+    });
+    if (error) throw error;
+    return [source, data] as const;
+  })).then((entries) => Object.fromEntries(entries));
+  const openedAt = new Date().toISOString();
+  const state = Promise.all([
+    database.call("app_api", "backend_get_notification_read_state", {
+      actor_uid: auth.uid,
+    }),
+    database.call("app_api", "backend_mark_notifications_opened", {
+      actor_uid: auth.uid,
+      opened_at: openedAt,
+    }),
+  ]).then(([stateResult, openedResult]) => {
+    if (stateResult.error) throw stateResult.error;
+    if (openedResult.error) throw openedResult.error;
+    return stateResult.data;
+  });
+
+  yield { data: openedAt, key: "openedAt" };
+  yield* settledSegments({ pages, state });
+}
 
 export function isNotificationAction(action: string) {
   return action === "listNotificationPages"
@@ -51,40 +93,7 @@ export async function handleNotificationAction(
   database: BackendDatabase,
 ) {
   if (action === "getNotificationSnapshot") {
-    const requestedSources = Array.isArray(payload.sources)
-      ? payload.sources.map((source) => readNotificationSource({ source }))
-        .filter((source, index, items) => items.indexOf(source) === index)
-      : ["broadcast", "user"];
-    const sources = requestedSources.filter((source) => source !== "admin" || auth.isAdmin);
-    const [pageEntries, stateResult] = await Promise.all([
-      Promise.all(sources.map(async (source) => {
-        const { data, error } = await database.call("app_api", "backend_list_notifications", {
-          actor_uid: auth.uid,
-          actor_is_admin: auth.isAdmin,
-          notification_source: source,
-          page_size: 30,
-          cursor_id: null,
-          cursor_created_at: null,
-        });
-        if (error) throw error;
-        return [source, data] as const;
-      })),
-      database.call("app_api", "backend_get_notification_read_state", {
-        actor_uid: auth.uid,
-      }),
-    ]);
-    if (stateResult.error) throw stateResult.error;
-    const openedAt = new Date().toISOString();
-    const openedResult = await database.call("app_api", "backend_mark_notifications_opened", {
-      actor_uid: auth.uid,
-      opened_at: openedAt,
-    });
-    if (openedResult.error) throw openedResult.error;
-    return {
-      openedAt,
-      pages: Object.fromEntries(pageEntries),
-      state: stateResult.data,
-    };
+    return getNotificationSnapshot(payload, auth, database);
   }
 
   if (action === "listNotificationPages") {

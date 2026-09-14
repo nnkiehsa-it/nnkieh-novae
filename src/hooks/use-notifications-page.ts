@@ -8,9 +8,9 @@ import { useSession } from "@/hooks/use-session";
 import {
   fetchNotificationSnapshot,
   fetchNotificationSourcePages,
-  markNotificationsOpened,
   subscribeNotificationSource,
   type NotificationCursor,
+  type NotificationSourcePage,
 } from "@/services/notifications";
 import type { NotificationRecord, NotificationSource } from "@/types";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
@@ -62,41 +62,35 @@ export function useNotificationsPage() {
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
 
+  const applyPages = React.useCallback((next: Record<NotificationSource, NotificationSourcePage>) => {
+    setPages((current) => ({
+      ...current,
+      ...Object.fromEntries(activeSources.map((source) => [source, next[source].notifications])),
+    }));
+    setCursors((current) => ({
+      ...current,
+      ...Object.fromEntries(activeSources.map((source) => [source, next[source].cursor])),
+    }));
+    setMore((current) => ({
+      ...current,
+      ...Object.fromEntries(activeSources.map((source) => [source, next[source].hasMore])),
+    }));
+    setPageCounts((current) => ({
+      ...current,
+      ...Object.fromEntries(activeSources.map((source) => [source, 1])),
+    }));
+  }, [activeSources]);
+
   const load = React.useCallback(async () => {
     if (!session.user) return;
     if (coldRead) setLoading(true);
     setError("");
     try {
-      const snapshot = await fetchNotificationSnapshot(
+      await fetchNotificationSnapshot(
         activeSources,
         session.user.uid,
+        { onPages: applyPages },
       );
-      setPages((current) => ({
-        ...current,
-        ...Object.fromEntries(
-          activeSources.map((source) => [
-            source,
-            snapshot.pages[source].notifications,
-          ]),
-        ),
-      }));
-      setCursors((current) => ({
-        ...current,
-        ...Object.fromEntries(
-          activeSources.map((source) => [source, snapshot.pages[source].cursor]),
-        ),
-      }));
-      setMore((current) => ({
-        ...current,
-        ...Object.fromEntries(
-          activeSources.map((source) => [source, snapshot.pages[source].hasMore]),
-        ),
-      }));
-      setPageCounts((current) => ({
-        ...current,
-        ...Object.fromEntries(activeSources.map((source) => [source, 1])),
-      }));
-      await markNotificationsOpened().catch(() => undefined);
     } catch (caught) {
       setError(
         caught instanceof Error ? caught.message : t("notification.loadFailed"),
@@ -104,7 +98,7 @@ export function useNotificationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeSources, coldRead, session.user, t]);
+  }, [activeSources, applyPages, coldRead, session.user, t]);
 
   React.useEffect(() => {
     void load();

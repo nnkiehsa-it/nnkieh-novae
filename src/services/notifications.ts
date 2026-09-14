@@ -244,16 +244,14 @@ async function getNotificationReadState(uid: string): Promise<NotificationReadSt
 export async function fetchNotificationSnapshot(
   sources: NotificationSource[],
   uid: string,
-  signal?: AbortSignal,
+  options: {
+    onPages?: (pages: Record<NotificationSource, NotificationSourcePage>) => void;
+    signal?: AbortSignal;
+  } = {},
 ) {
-  const fn = invokeBackendAction<
-    { sources: NotificationSource[]; uid: string },
-    { openedAt: string; pages: Partial<Record<NotificationSource, Record<string, unknown>>>; state: Record<string, unknown> }
-  >('getNotificationSnapshot', { signal, timeoutMs: readRequestTimeoutMs });
-  const result = await fn({ sources, uid });
-  return {
-    pages: Object.fromEntries(sources.map((source) => {
-      const page = result.pages[source] ?? {};
+  const normalizePages = (value: Partial<Record<NotificationSource, Record<string, unknown>>>) =>
+    Object.fromEntries(sources.map((source) => {
+      const page = value[source] ?? {};
       const notifications = Array.isArray(page.notifications) ? page.notifications : [];
       return [source, {
         cursor: normalizeNotificationCursor(page.cursor),
@@ -263,7 +261,20 @@ export async function fetchNotificationSnapshot(
           notification as Record<string, unknown>,
         )),
       } satisfies NotificationSourcePage];
-    })) as Record<NotificationSource, NotificationSourcePage>,
+    })) as Record<NotificationSource, NotificationSourcePage>;
+  const fn = invokeBackendAction<
+    { sources: NotificationSource[]; uid: string },
+    { openedAt: string; pages: Partial<Record<NotificationSource, Record<string, unknown>>>; state: Record<string, unknown> }
+  >('getNotificationSnapshot', {
+    onSegment: (key, data) => {
+      if (key === 'pages') options.onPages?.(normalizePages(data as Partial<Record<NotificationSource, Record<string, unknown>>>));
+    },
+    signal: options.signal,
+    timeoutMs: readRequestTimeoutMs,
+  });
+  const result = await fn({ sources, uid });
+  return {
+    pages: normalizePages(result.pages),
     openedAtMs: Date.parse(result.openedAt),
     state: normalizeNotificationReadState(result.state),
   };
