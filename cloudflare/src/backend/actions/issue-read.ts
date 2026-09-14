@@ -1,4 +1,5 @@
 import { asString } from "../shared/http.ts";
+import { createMediaDeliveryUrl } from "../shared/media-delivery.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { issueCategoryPolicyLists } from "./category-catalog.ts";
 import {
@@ -9,7 +10,7 @@ import {
 } from "./utils.ts";
 import { INPUT_LIMITS, optionalText } from "./validation.ts";
 import { canManageIssueCategory } from "./auth.ts";
-import { selectIssueCategory } from "./issue-shared.ts";
+import { selectIssue, selectIssueCategory } from "./issue-shared.ts";
 
 function readSort(payload: JsonRecord) {
   const sort = asString(payload.sort);
@@ -127,9 +128,61 @@ async function listUserIssues(
   return compactIssueListResult(data);
 }
 
+interface IssueSupporterRow {
+  avatar_public_id: string | null;
+  display_name: string | null;
+  implicit: boolean;
+  photo_url: string | null;
+  uid: string;
+}
+
+async function listIssueSupporters(
+  payload: JsonRecord,
+  auth: AuthContext,
+  database: BackendDatabase,
+) {
+  const issueId = asUuid(payload.issueId);
+  if (!issueId) throw new Error("not-found");
+  const issue = await selectIssue(database, issueId);
+  if (
+    !auth.isAdmin
+    && !canManageIssueCategory(auth, issue.category)
+    && issue.author_uid !== auth.uid
+  ) throw new Error("permission-denied");
+  if (!issue.support_enabled) return { supporters: [] };
+
+  const { rows } = await database.sql<IssueSupporterRow>`
+    with supporter_ids as (
+      select ${issue.author_uid}::text as uid, true as implicit, null::timestamptz as supported_at
+      union all
+      select support.uid, false, support.created_at
+      from app_private.supports support
+      where support.issue_id = ${issueId}
+    )
+    select supporter.uid, supporter.implicit, profile.display_name,
+      profile.avatar_public_id, profile.photo_url
+    from supporter_ids supporter
+    left join app_private.user_profiles profile on profile.uid = supporter.uid
+    order by supporter.implicit desc, supporter.supported_at asc nulls first, supporter.uid`;
+
+  const supporters = await Promise.all(rows.map(async (supporter) => {
+    const media = supporter.avatar_public_id
+      ? await createMediaDeliveryUrl(supporter.avatar_public_id, "avatar", false, auth.uid)
+      : null;
+    return {
+      uid: supporter.uid,
+      displayName: supporter.display_name || supporter.uid,
+      photoUrl: media?.url ?? supporter.photo_url ?? null,
+      isAuthor: supporter.implicit,
+    };
+  }));
+  return { supporters };
+}
+
 export function isIssueReadAction(action: string) {
   return action === "getIssue"
     || action === "listIssues"
+    || action === "listIssueSupporters"
     || action === "searchIssues"
     || action === "listUserIssues";
 }
@@ -141,6 +194,7 @@ export async function handleIssueReadAction(
   database: BackendDatabase,
 ) {
   if (action === "getIssue") return getIssue(payload, auth, database);
+  if (action === "listIssueSupporters") return listIssueSupporters(payload, auth, database);
   if (action === "listIssues" || action === "searchIssues") return listIssues(action, payload, auth, database);
   if (action === "listUserIssues") return listUserIssues(payload, auth, database);
   throw new Error("invalid-action");

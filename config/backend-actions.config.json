@@ -42,6 +42,7 @@
   "listComments": { "group": "read" },
   "listFacilities": { "group": "read" },
   "listIssues": { "group": "read" },
+  "listIssueSupporters": { "group": "read" },
   "listAdminAudit": { "group": "read" },
   "listAdminActivity": { "group": "read" },
   "listAdminUsers": { "group": "read" },

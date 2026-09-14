@@ -106,6 +106,7 @@ export const backendActionDefinitions = [
 
   action("getIssue", "issue", "read", issueHandler),
   action("listIssues", "issue", "read", issueHandler),
+  action("listIssueSupporters", "issue", "read", issueHandler),
   action("searchIssues", "issue", "read", issueHandler),
   action("listUserIssues", "issue", "read", issueHandler),
   action("createIssue", "issue", "sensitive-write", issueHandler),

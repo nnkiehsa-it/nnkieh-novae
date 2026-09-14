@@ -147,6 +147,9 @@ export const BACKEND_ACTION_POLICIES = {
   "listIssues": {
     "group": "read"
   },
+  "listIssueSupporters": {
+    "group": "read"
+  },
   "listAdminAudit": {
     "group": "read"
   },

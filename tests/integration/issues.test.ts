@@ -261,6 +261,25 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
   // The author's own support is part of the count, so a second supporter makes
   // two and withdrawing leaves the author's one behind rather than zero.
   assert.equal(supported.supportCount, 2);
+  const supporterLists = await Promise.all([
+    callAction("listIssueSupporters", { issueId: publicIssueId }, owner.auth),
+    callAction("listIssueSupporters", { issueId: publicIssueId }, publicManager.auth),
+    callAction("listIssueSupporters", { issueId: publicIssueId }, admin.auth),
+  ]);
+  for (const response of supporterLists) {
+    const supporters = asRecord(response).supporters as Array<Record<string, unknown>>;
+    assert.deepEqual(supporters.map((entry) => entry.uid), [owner.auth.uid, user.auth.uid]);
+    assert.equal(supporters[0]?.isAuthor, true);
+    assert.equal(supporters[1]?.isAuthor, false);
+  }
+  await expectActionError(
+    "permission-denied",
+    () => callAction("listIssueSupporters", { issueId: publicIssueId }, user.auth),
+  );
+  await expectActionError(
+    "permission-denied",
+    () => callAction("listIssueSupporters", { issueId: publicIssueId }, rightsManager.auth),
+  );
   const removed = asRecord(await callAction("removeSupport", {
     issueId: publicIssueId,
   }, user.auth));

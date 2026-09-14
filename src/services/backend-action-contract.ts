@@ -129,6 +129,9 @@ export const BACKEND_ACTION_POLICIES = {
   "listIssues": {
     "group": "read"
   },
+  "listIssueSupporters": {
+    "group": "read"
+  },
   "listAdminAudit": {
     "group": "read"
   },
@@ -250,6 +253,7 @@ export const BACKEND_ACTION_NAMES = [
   'listComments',
   'listFacilities',
   'listIssues',
+  'listIssueSupporters',
   'listAdminAudit',
   'listAdminActivity',
   'listAdminUsers',
