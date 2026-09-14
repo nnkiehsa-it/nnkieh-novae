@@ -33,22 +33,14 @@ async function* getNotificationSnapshot(
     if (error) throw error;
     return [source, data] as const;
   })).then((entries) => Object.fromEntries(entries));
-  const openedAt = new Date().toISOString();
-  const state = Promise.all([
-    database.call("app_api", "backend_get_notification_read_state", {
-      actor_uid: auth.uid,
-    }),
-    database.call("app_api", "backend_mark_notifications_opened", {
-      actor_uid: auth.uid,
-      opened_at: openedAt,
-    }),
-  ]).then(([stateResult, openedResult]) => {
+  const state = database.call("app_api", "backend_get_notification_read_state", {
+    actor_uid: auth.uid,
+  }).then((stateResult) => {
     if (stateResult.error) throw stateResult.error;
-    if (openedResult.error) throw openedResult.error;
     return stateResult.data;
   });
 
-  yield { data: openedAt, key: "openedAt" };
+  yield { data: new Date().toISOString(), key: "openedAt" };
   yield* settledSegments({ pages, state });
 }
 

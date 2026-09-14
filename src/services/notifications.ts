@@ -275,7 +275,6 @@ export async function fetchNotificationSnapshot(
   const result = await fn({ sources, uid });
   return {
     pages: normalizePages(result.pages),
-    openedAtMs: Date.parse(result.openedAt),
     state: normalizeNotificationReadState(result.state),
   };
 }

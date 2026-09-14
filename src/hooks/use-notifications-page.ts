@@ -8,6 +8,7 @@ import { useSession } from "@/hooks/use-session";
 import {
   fetchNotificationSnapshot,
   fetchNotificationSourcePages,
+  markNotificationsOpened,
   subscribeNotificationSource,
   type NotificationCursor,
   type NotificationSourcePage,
@@ -91,6 +92,7 @@ export function useNotificationsPage() {
         session.user.uid,
         { onPages: applyPages },
       );
+      await markNotificationsOpened().catch(() => undefined);
     } catch (caught) {
       setError(
         caught instanceof Error ? caught.message : t("notification.loadFailed"),
