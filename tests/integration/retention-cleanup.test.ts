@@ -3,6 +3,7 @@ import { processJobMessage as processImmediately } from "../../cloudflare/src/ba
 import {
   asRecord,
   callAction,
+  insertRows,
   integrationTest,
   processPlatformJobs,
   seedActor,
@@ -47,12 +48,12 @@ integrationTest("configured retention cleanup removes every expired data class a
   const avatarOwner = await seedActor(`retention-avatar-${runId}`);
   const staleAvatarOwner = await seedActor(`retention-stale-avatar-${runId}`);
 
-  const { data: issueCategories, error: issueCategoryError } = await database.table("app_private", "issue_categories").select("id").eq("is_active", true).order("sort_order");
-  if (issueCategoryError) throw issueCategoryError;
-  const { data: facilityCategories, error: facilityCategoryError } = await database.table("app_private", "facility_categories").select("id").eq("is_active", true).order("sort_order");
-  if (facilityCategoryError) throw facilityCategoryError;
-  const issueCategoryIds = (issueCategories ?? []).map((row) => String(row.id));
-  const facilityCategoryId = String(facilityCategories?.[0]?.id ?? "");
+  const { rows: issueCategories } = await database.sql<{ id: string }>`
+    select id from app_private.issue_categories where is_active = true order by sort_order`;
+  const { rows: facilityCategories } = await database.sql<{ id: string }>`
+    select id from app_private.facility_categories where is_active = true order by sort_order`;
+  const issueCategoryIds = issueCategories.map((row) => row.id);
+  const facilityCategoryId = facilityCategories[0]?.id ?? "";
   assert.ok(issueCategoryIds.length > 0);
   assert.ok(facilityCategoryId);
 
@@ -63,11 +64,8 @@ integrationTest("configured retention cleanup removes every expired data class a
       title: `Retention ${label} issue`,
     }, owner.auth));
     const id = String(asRecord(created.issue).id);
-    const { error } = await database.table("app_private", "issues").update({
-      closed_at: closedAt,
-      status: "completed",
-    }).eq("id", id);
-    if (error) throw error;
+    await database.sql`update app_private.issues
+      set closed_at = ${closedAt}, status = 'completed' where id = ${id}`;
     return id;
   };
   const createClosedFacility = async (label: string, closedAt: string) => {
@@ -78,11 +76,8 @@ integrationTest("configured retention cleanup removes every expired data class a
       title: `Retention ${label} facility`,
     }, owner.auth));
     const id = String(asRecord(created.facility).id);
-    const { error } = await database.table("app_private", "facility_reports").update({
-      closed_at: closedAt,
-      status: "completed",
-    }).eq("id", id);
-    if (error) throw error;
+    await database.sql`update app_private.facility_reports
+      set closed_at = ${closedAt}, status = 'completed' where id = ${id}`;
     return id;
   };
 
@@ -93,20 +88,18 @@ integrationTest("configured retention cleanup removes every expired data class a
 
   const expiredAnnouncementId = crypto.randomUUID();
   const recentAnnouncementId = crypto.randomUUID();
-  const { error: announcementError } = await database.table("app_private", "announcements").insert([
+  await insertRows("announcements", [
     { author_uid: admin.auth.uid, content: "Expired retention announcement", id: expiredAnnouncementId, published_at: expiredAt, title: "Expired announcement" },
     { author_uid: admin.auth.uid, content: "Recent retention announcement", id: recentAnnouncementId, published_at: recentAt, title: "Recent announcement" },
   ]);
-  if (announcementError) throw announcementError;
-  const { error: notionError } = await database.table("app_private", "notion_pages").insert([
+  await insertRows("notion_pages", [
     { notion_page_id: `notion-issue-${runId}`, target_id: expiredIssueId, target_type: "issue" },
     { notion_page_id: `notion-facility-${runId}`, target_id: expiredFacilityId, target_type: "facility" },
   ]);
-  if (notionError) throw notionError;
 
   const expiredNotificationId = crypto.randomUUID();
   const recentNotificationId = crypto.randomUUID();
-  const { error: notificationError } = await database.table("app_private", "notifications").insert([
+  await insertRows("notifications", [
     {
       created_at: expiredAt,
       expires_at: futureAt,
@@ -130,10 +123,9 @@ integrationTest("configured retention cleanup removes every expired data class a
       type: "integration_retention",
     },
   ]);
-  if (notificationError) throw notificationError;
 
   const operationIds = { expired: crypto.randomUUID(), recent: crypto.randomUUID() };
-  const { error: opError } = await database.table("app_private", "operations").insert([
+  await insertRows("operations", [
     {
       operation_id: operationIds.expired,
       action: "createIssue",
@@ -155,10 +147,9 @@ integrationTest("configured retention cleanup removes every expired data class a
       updated_at: recentAt,
     },
   ]);
-  if (opError) throw opError;
 
   const eventIds = { expired: crypto.randomUUID(), recent: crypto.randomUUID() };
-  const { error: eventError } = await database.table("app_private", "domain_events").insert([
+  await insertRows("domain_events", [
     {
       actor_uid: owner.auth.uid,
       aggregate_id: `expired-${runId}`,
@@ -180,7 +171,6 @@ integrationTest("configured retention cleanup removes every expired data class a
       payload: { retention_cleanup: true },
     },
   ]);
-  if (eventError) throw eventError;
 
   const deliveryIds = {
     expiredCompleted: crypto.randomUUID(),
@@ -188,7 +178,7 @@ integrationTest("configured retention cleanup removes every expired data class a
     recentCompleted: crypto.randomUUID(),
     recentFailed: crypto.randomUUID(),
   };
-  const { error: deliveryError } = await database.table("app_private", "event_deliveries").insert([
+  await insertRows("event_deliveries", [
     {
       attempt_count: 1,
       created_at: expiredAt,
@@ -238,15 +228,13 @@ integrationTest("configured retention cleanup removes every expired data class a
       updated_at: recentAt,
     },
   ]);
-  if (deliveryError) throw deliveryError;
 
   const tokenDevices = { denied: `denied-${runId}`, expired: `expired-${runId}`, recent: `recent-${runId}` };
-  const { error: tokenError } = await database.table("app_private", "push_tokens").insert([
+  await insertRows("push_tokens", [
     { device_id: tokenDevices.expired, last_confirmed_at: expiredAt, permission: "granted", platform: "integration", token: `expired-${runId}`, uid: owner.auth.uid, updated_at: recentAt, user_agent: "retention" },
     { device_id: tokenDevices.denied, last_confirmed_at: recentAt, permission: "denied", platform: "integration", token: `denied-${runId}`, uid: owner.auth.uid, updated_at: recentAt, user_agent: "retention" },
     { device_id: tokenDevices.recent, last_confirmed_at: recentAt, permission: "granted", platform: "integration", token: `recent-${runId}`, uid: owner.auth.uid, updated_at: expiredAt, user_agent: "retention" },
   ]);
-  if (tokenError) throw tokenError;
 
   const bgJobIds = {
     expiredCompleted: crypto.randomUUID(),
@@ -254,7 +242,7 @@ integrationTest("configured retention cleanup removes every expired data class a
     recentCompleted: crypto.randomUUID(),
     recentFailed: crypto.randomUUID(),
   };
-  const { error: bgJobError } = await database.table("app_private", "background_jobs").insert([
+  await insertRows("background_jobs", [
     {
       attempt_count: 1,
       created_at: expiredAt,
@@ -306,78 +294,64 @@ integrationTest("configured retention cleanup removes every expired data class a
       updated_at: recentAt,
     },
   ]);
-  if (bgJobError) throw bgJobError;
 
   const auditUids = { expired: `audit-expired-${runId}`, recent: `audit-recent-${runId}` };
-  const { error: auditError } = await database.table("app_private", "role_assignment_audit").insert([
+  await insertRows("role_assignment_audit", [
     { actor_uid: admin.auth.uid, created_at: expiredAt, operation: "grant", role_code: "announcement-manager", uid: auditUids.expired },
     { actor_uid: admin.auth.uid, created_at: recentAt, operation: "grant", role_code: "announcement-manager", uid: auditUids.recent },
   ]);
-  if (auditError) throw auditError;
   const adminAuditTargets = {
     expired: `admin-audit-expired-${runId}`,
     recent: `admin-audit-recent-${runId}`,
   };
-  const { error: adminAuditError } = await database.table("app_private", "admin_audit_log").insert([
+  await insertRows("admin_audit_log", [
     { action: "retention-test", actor_uid: admin.auth.uid, created_at: expiredAt, domain: "test", target_id: adminAuditTargets.expired },
     { action: "retention-test", actor_uid: admin.auth.uid, created_at: recentAt, domain: "test", target_id: adminAuditTargets.recent },
   ]);
-  if (adminAuditError) throw adminAuditError;
-  const { data: expiredAdminAudit, error: expiredAdminAuditError } = await database
-    .table("app_private", "admin_audit_log")
-    .select("id")
-    .eq("target_id", adminAuditTargets.expired)
-    .single();
-  if (expiredAdminAuditError) throw expiredAdminAuditError;
+  const expiredAdminAudit = await database.sqlOne<{ id: number }>`
+    select id from app_private.admin_audit_log
+    where target_id = ${adminAuditTargets.expired}`;
   const orphanedNotionTargets = {
     admin: String(expiredAdminAudit.id),
     announcement: expiredAnnouncementId,
   };
-  const { error: orphanedNotionError } = await database.table("app_private", "notion_pages").insert([
+  await insertRows("notion_pages", [
     { notion_page_id: `notion-admin-${runId}`, target_id: orphanedNotionTargets.admin, target_type: "admin-audit" },
     { notion_page_id: `notion-announcement-${runId}`, target_id: orphanedNotionTargets.announcement, target_type: "announcement" },
   ]);
-  if (orphanedNotionError) throw orphanedNotionError;
 
   const categoryAuditTargets = { expired: `category-expired-${runId}`, recent: `category-recent-${runId}` };
-  const { error: categoryAuditError } = await database.table("app_private", "category_configuration_audit").insert([
+  await insertRows("category_configuration_audit", [
     { actor_uid: admin.auth.uid, category_id: categoryAuditTargets.expired, created_at: expiredAt, domain: "issue", operation: "update" },
     { actor_uid: admin.auth.uid, category_id: categoryAuditTargets.recent, created_at: recentAt, domain: "issue", operation: "update" },
   ]);
-  if (categoryAuditError) throw categoryAuditError;
 
   const accessAuditTargets = { expired: `access-expired-${runId}`, recent: `access-recent-${runId}` };
-  const { error: accessAuditError } = await database.table("app_private", "access_assignment_audit").insert([
+  await insertRows("access_assignment_audit", [
     { actor_uid: admin.auth.uid, after_value: {}, before_value: {}, created_at: expiredAt, target_uid: accessAuditTargets.expired },
     { actor_uid: admin.auth.uid, after_value: {}, before_value: {}, created_at: recentAt, target_uid: accessAuditTargets.recent },
   ]);
-  if (accessAuditError) throw accessAuditError;
 
   const staleAvatarPublicId = `srp/avatars/${staleAvatarOwner.auth.uid}_stale`;
   const referencedAvatarPublicId = `srp/avatars/${owner.auth.uid}_referenced`;
-  const { error: staleProfilesError } = await database.table("app_private", "user_profiles").update({
-    avatar_hash: "stale-avatar-hash",
-    avatar_public_id: staleAvatarPublicId,
-    avatar_source_url: "https://example.test/stale-avatar",
-    cached_photo_url: "https://example.test/stale-avatar-cache",
-    last_seen_at: expiredAt,
-    photo_url: "https://example.test/stale-avatar-source",
-  }).eq("uid", staleAvatarOwner.auth.uid);
-  if (staleProfilesError) throw staleProfilesError;
-  const { error: referencedProfileError } = await database.table("app_private", "user_profiles").update({
-    avatar_public_id: referencedAvatarPublicId,
-    last_seen_at: expiredAt,
-  }).eq("uid", owner.auth.uid);
-  if (referencedProfileError) throw referencedProfileError;
-  const { error: staleAdminError } = await database.table("app_private", "user_profiles")
-    .update({ last_seen_at: expiredAt }).eq("uid", admin.auth.uid);
-  if (staleAdminError) throw staleAdminError;
+  await database.sql`update app_private.user_profiles set
+    avatar_hash = 'stale-avatar-hash',
+    avatar_public_id = ${staleAvatarPublicId},
+    avatar_source_url = 'https://example.test/stale-avatar',
+    cached_photo_url = 'https://example.test/stale-avatar-cache',
+    last_seen_at = ${expiredAt},
+    photo_url = 'https://example.test/stale-avatar-source'
+    where uid = ${staleAvatarOwner.auth.uid}`;
+  await database.sql`update app_private.user_profiles
+    set avatar_public_id = ${referencedAvatarPublicId}, last_seen_at = ${expiredAt}
+    where uid = ${owner.auth.uid}`;
+  await database.sql`update app_private.user_profiles
+    set last_seen_at = ${expiredAt} where uid = ${admin.auth.uid}`;
 
-  const { error: restrictionError } = await database.table("app_private", "user_restrictions").insert([
+  await insertRows("user_restrictions", [
     { reason: "expired retention restriction", restricted_until: expiredAt, uid: staleAvatarOwner.auth.uid, updated_by: admin.auth.uid },
     { reason: "recent retention restriction", restricted_until: futureAt, uid: owner.auth.uid, updated_by: admin.auth.uid },
   ]);
-  if (restrictionError) throw restrictionError;
 
   const uploadIds = {
     attached: crypto.randomUUID(),
@@ -397,14 +371,13 @@ integrationTest("configured retention cleanup removes every expired data class a
     updated_at: timestamp,
     visibility: "authenticated",
   });
-  const { error: uploadError } = await database.table("app_private", "uploads").insert([
+  await insertRows("uploads", [
     upload(uploadIds.pending, "pending", expiredAt),
     upload(uploadIds.readyUnattached, "ready", expiredAt),
     upload(uploadIds.failed, "failed", expiredAt),
     upload(uploadIds.recentPending, "pending", recentAt),
     upload(uploadIds.attached, "ready", recentAt, true),
   ]);
-  if (uploadError) throw uploadError;
 
   const management = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
   const platformSettings = asRecord(management.platformSettings);
@@ -467,30 +440,28 @@ integrationTest("configured retention cleanup removes every expired data class a
   assert.notEqual(adminProfile?.email, null, "assigned administrators must not be PII-minimized automatically");
   await expectPresent("background_jobs", "scope_id", staleAvatarOwner.auth.uid);
 
-  const { data: retentionEvents, error: retentionEventError } = await database.table("app_private", "domain_events").select("event_type,payload,aggregate_id")
-    .in("aggregate_id", [expiredIssueId, expiredFacilityId]);
-  if (retentionEventError) throw retentionEventError;
-  const scheduledDeletionEvents = (retentionEvents ?? []).filter((event: any) =>
+  const { rows: retentionEvents } = await database.sql<{ event_type: string; payload: unknown }>`
+    select event_type, payload, aggregate_id from app_private.domain_events
+    where aggregate_id = any(${[expiredIssueId, expiredFacilityId]})`;
+  const scheduledDeletionEvents = retentionEvents.filter((event) =>
     asRecord(event.payload).retention_cleanup === true
   );
   assert.equal(scheduledDeletionEvents.length, 2);
   assert.deepEqual(
-    new Set(scheduledDeletionEvents.map((event: any) => event.event_type)),
+    new Set(scheduledDeletionEvents.map((event) => event.event_type)),
     new Set(["issue.deleted", "facility.deleted"]),
   );
-  const { count: retentionNotificationCount, error: retentionNotificationError } = await database
-    .table("app_private", "notifications").select("id", { count: "exact", head: true })
-    .in("target_id", [expiredIssueId, expiredFacilityId]);
-  if (retentionNotificationError) throw retentionNotificationError;
-  assert.equal(retentionNotificationCount, 0, "scheduled retention deletion must not notify users");
+  const retentionNotifications = await database.sqlOne<{ count: number }>`
+    select count(*)::bigint as count from app_private.notifications
+    where target_id = any(${[expiredIssueId, expiredFacilityId]})`;
+  assert.equal(Number(retentionNotifications.count), 0, "scheduled retention deletion must not notify users");
 
   const staleUploadIds = [uploadIds.pending, uploadIds.readyUnattached, uploadIds.failed];
   const currentAvatarPublicId = `srp/avatars/${avatarOwner.auth.uid}_current`;
   const oldAvatarPublicId = `srp/avatars/${owner.auth.uid}_old`;
-  const { error: avatarProfileError } = await database.table("app_private", "user_profiles")
-    .update({ avatar_public_id: currentAvatarPublicId }).eq("uid", avatarOwner.auth.uid);
-  if (avatarProfileError) throw avatarProfileError;
-  const { error: avatarJobsError } = await database.table("app_private", "background_jobs").insert([
+  await database.sql`update app_private.user_profiles
+    set avatar_public_id = ${currentAvatarPublicId} where uid = ${avatarOwner.auth.uid}`;
+  await insertRows("background_jobs", [
     {
       attempt_count: 0,
       id: crypto.randomUUID(),
@@ -516,7 +487,6 @@ integrationTest("configured retention cleanup removes every expired data class a
       status: "pending",
     },
   ]);
-  if (avatarJobsError) throw avatarJobsError;
   const deletionTargetIds = [
     ...staleUploadIds,
     avatarOwner.auth.uid,
@@ -526,16 +496,17 @@ integrationTest("configured retention cleanup removes every expired data class a
   let completedUploadJobs: Array<{ status: string; target_id: string }> = [];
   for (let attempt = 0; attempt < 20; attempt += 1) {
     await processJobMessage({ type: "drain" }, testEnvironment);
-    const { data, error } = await database.table("app_private", "background_jobs")
-      .select("status,scope_id").in("scope_id", deletionTargetIds);
-    if (error) throw error;
-    completedUploadJobs = (data ?? []).map((job: any) => ({ status: job.status, target_id: job.scope_id }));
+    const { rows } = await database.sql<{ scope_id: string; status: string }>`
+      select status, scope_id from app_private.background_jobs
+      where scope_id = any(${deletionTargetIds})`;
+    completedUploadJobs = rows.map((job) => ({ status: job.status, target_id: job.scope_id }));
     if (completedUploadJobs.length === deletionTargetIds.length
       && completedUploadJobs.every((job) => job.status === "completed")) break;
   }
   if (!completedUploadJobs.every((job) => job.status === "completed")) {
     console.log("[DEBUG completedUploadJobs]", JSON.stringify(completedUploadJobs));
-    const { data: allPending } = await database.table("app_private", "background_jobs").select("*").in("scope_id", deletionTargetIds);
+    const { rows: allPending } = await database.sql`
+      select * from app_private.background_jobs where scope_id = any(${deletionTargetIds})`;
     console.log("[DEBUG allPending]", JSON.stringify(allPending));
   }
   assert.equal(completedUploadJobs.length, deletionTargetIds.length);
@@ -557,20 +528,21 @@ integrationTest("configured retention cleanup removes every expired data class a
 
   const maintenance = await processJobMessage({ type: "maintenance" }, testEnvironment);
   assert.ok(maintenance.backgroundJobs.processedCount >= 0);
-  const { count: postWorkerDeletionNotificationCount, error: postWorkerNotificationError } = await database
-    .table("app_private", "notifications").select("id", { count: "exact", head: true })
-    .eq("target_id", expiredIssueId)
-    .eq("type", "issue_deleted");
-  if (postWorkerNotificationError) throw postWorkerNotificationError;
-  assert.equal(postWorkerDeletionNotificationCount, 0, "retention deletion must stay silent after outbox processing");
+  const postWorkerDeletionNotifications = await database.sqlOne<{ count: number }>`
+    select count(*)::bigint as count from app_private.notifications
+    where target_id = ${expiredIssueId} and type = 'issue_deleted'`;
+  assert.equal(
+    Number(postWorkerDeletionNotifications.count),
+    0,
+    "retention deletion must stay silent after outbox processing",
+  );
   let retainedNotionMappings: number | null = null;
   for (let attempt = 0; attempt < 10; attempt += 1) {
-    const { count, error: retainedNotionMappingError } = await database
-      .table("app_private", "notion_pages").select("target_id", { count: "exact", head: true })
-      .in("target_id", [expiredIssueId, expiredFacilityId]);
-    if (retainedNotionMappingError) throw retainedNotionMappingError;
-    retainedNotionMappings = count ?? null;
-    if (count === 0) break;
+    const mappings = await database.sqlOne<{ count: number }>`
+      select count(*)::bigint as count from app_private.notion_pages
+      where target_id = any(${[expiredIssueId, expiredFacilityId]})`;
+    retainedNotionMappings = Number(mappings.count);
+    if (retainedNotionMappings === 0) break;
     await processJobMessage({ type: "drain" }, testEnvironment);
   }
   assert.equal(retainedNotionMappings, 0, "retention cleanup should forget local Notion mappings");
@@ -595,10 +567,9 @@ integrationTest("closed-content retention can be disabled without disabling othe
   const expiredAt = new Date(Date.now() - 4_000 * DAY_MS).toISOString();
   const admin = await seedActor(`retention-disabled-admin-${runId}`, { roles: ["platform-admin"] });
   const owner = await seedActor(`retention-disabled-owner-${runId}`);
-  const { data: categories, error: categoryError } = await database.table("app_private", "issue_categories")
-    .select("id").eq("is_active", true).order("sort_order").limit(1);
-  if (categoryError) throw categoryError;
-  const category = String(categories?.[0]?.id ?? "");
+  const { rows: categories } = await database.sql<{ id: string }>`
+    select id from app_private.issue_categories where is_active = true order by sort_order limit 1`;
+  const category = categories[0]?.id ?? "";
   assert.ok(category);
   const created = asRecord(await callAction("createIssue", {
     category,
@@ -606,9 +577,8 @@ integrationTest("closed-content retention can be disabled without disabling othe
     title: "Retention disabled",
   }, owner.auth));
   const issueId = String(asRecord(created.issue).id);
-  const { error: closeError } = await database.table("app_private", "issues")
-    .update({ closed_at: expiredAt, status: "completed" }).eq("id", issueId);
-  if (closeError) throw closeError;
+  await database.sql`update app_private.issues
+    set closed_at = ${expiredAt}, status = 'completed' where id = ${issueId}`;
   const management = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
   const platformSettings = asRecord(management.platformSettings);
   await callAction("savePlatformSettings", {

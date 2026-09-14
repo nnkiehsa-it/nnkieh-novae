@@ -2,13 +2,14 @@ import assert from "node:assert/strict";
 import {
   asRecord,
   callAction,
+  database,
   expectActionError,
   insertReadyUpload,
+  insertRows,
   integrationTest,
   refreshActor,
   saveCategoryDraft,
   seedActor,
-  database,
   tableRow,
 } from "../helpers.ts";
 
@@ -54,9 +55,11 @@ integrationTest("category deletion removes category and all associated resources
       sortOrder: 99,
     }],
   });
-  const { error: archiveAttemptError } = await database.table("app_private", "issue_categories")
-    .update({ is_active: false }).eq("id", "temp-cat-to-delete");
-  assert.ok(archiveAttemptError, "database must reject attempts to archive a retained category");
+  await assert.rejects(
+    () => database.sql`update app_private.issue_categories
+      set is_active = false where id = 'temp-cat-to-delete'`,
+    "database must reject attempts to archive a retained category",
+  );
   assert.equal((await tableRow("issue_categories", "id", "temp-cat-to-delete"))?.is_active, true);
 
   // 3. User tries to delete temporary category - expect permission-denied
@@ -86,7 +89,7 @@ integrationTest("category deletion removes category and all associated resources
     issueId: String(issueId),
   }, supporter.auth);
   const notificationId = crypto.randomUUID();
-  const { error: notificationError } = await database.table("app_private", "notifications").insert({
+  await insertRows("notifications", [{
     id: notificationId,
     recipient_uid: user.auth.uid,
     source: "user",
@@ -94,8 +97,7 @@ integrationTest("category deletion removes category and all associated resources
     target_type: "issue",
     title: "分類刪除測試通知",
     type: "issue.updated",
-  });
-  if (notificationError) throw notificationError;
+  }]);
 
   assert.ok(await tableRow("comments", "id", commentId));
   assert.ok(await tableRow("supports", "issue_id", String(issueId)));
@@ -122,25 +124,21 @@ integrationTest("category deletion removes category and all associated resources
   assert.ok(await tableRow("background_jobs", "scope_id", upload.id));
 
   // 8. Verify domain event is recorded
-  const { data: eventRows, error: eventError } = await database
-    .table("app_private", "domain_events")
-    .select("*")
-    .eq("aggregate_id", String(issueId))
-    .eq("event_type", "issue.deleted");
-  if (eventError) throw eventError;
+  const { rows: eventRows } = await database.sql`
+    select * from app_private.domain_events
+    where aggregate_id = ${String(issueId)} and event_type = 'issue.deleted'`;
 
   assert.equal(eventRows.length, 1);
-  const eventRow = eventRows[0];
-  assert.ok(eventRow);
-  assert.equal(asRecord(eventRow).event_type, "issue.deleted");
+  assert.equal(asRecord(eventRows[0]).event_type, "issue.deleted");
 
   await expectActionError("not-found", () => saveCategoryDraft(admin.auth, {
     deletedIssueCategoryIds: ["temp-cat-to-delete"],
   }));
 
-  const { data: deletionAudit, error: deletionAuditError } = await database.table("app_private", "category_configuration_audit").select("domain,category_id,operation,actor_uid")
-    .eq("category_id", "temp-cat-to-delete").eq("operation", "delete");
-  if (deletionAuditError) throw deletionAuditError;
+  const { rows: deletionAudit } = await database.sql<{ actor_uid: string }>`
+    select domain, category_id, operation, actor_uid
+    from app_private.category_configuration_audit
+    where category_id = 'temp-cat-to-delete' and operation = 'delete'`;
   assert.equal(deletionAudit.length, 1);
   assert.equal(deletionAudit[0]?.actor_uid, admin.auth.uid);
 
@@ -164,7 +162,7 @@ integrationTest("category deletion removes category and all associated resources
     facilityId,
   }, supporter.auth);
   const facilityNotificationId = crypto.randomUUID();
-  const { error: facilityNotificationError } = await database.table("app_private", "notifications").insert({
+  await insertRows("notifications", [{
     id: facilityNotificationId,
     recipient_uid: user.auth.uid,
     source: "user",
@@ -172,8 +170,7 @@ integrationTest("category deletion removes category and all associated resources
     target_type: "facility",
     title: "設備分類刪除測試通知",
     type: "facility.updated",
-  });
-  if (facilityNotificationError) throw facilityNotificationError;
+  }]);
   assert.ok(await tableRow("facility_report_affected_users", "facility_id", facilityId));
 
   const facilityDelete = asRecord(await saveCategoryDraft(admin.auth, {
@@ -186,7 +183,8 @@ integrationTest("category deletion removes category and all associated resources
   assert.equal(await tableRow("notifications", "id", facilityNotificationId), null);
   assert.ok(await tableRow("background_jobs", "scope_id", facilityUpload.id));
 
-  const { data: facilityEvents, error: facilityEventError } = await database.table("app_private", "domain_events").select("event_type").eq("aggregate_id", facilityId).eq("event_type", "facility.deleted");
-  if (facilityEventError) throw facilityEventError;
+  const { rows: facilityEvents } = await database.sql`
+    select event_type from app_private.domain_events
+    where aggregate_id = ${facilityId} and event_type = 'facility.deleted'`;
   assert.equal(facilityEvents.length, 1);
 });

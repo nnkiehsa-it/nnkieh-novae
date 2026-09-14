@@ -179,11 +179,11 @@ integrationTest("announcement.manage, likes, comments, and ownership", async () 
   }, user.auth, likeOperationId));
   assert.equal(repeatedLike.liked, true);
   assert.equal(repeatedLike.likeCount, liked.likeCount);
-  const { count: likeOperationWrites, error: likeOpError } = await database
-    .table("app_private", "operations").select("operation_id", { count: "exact", head: true })
-    .eq("actor_uid", user.auth.uid).eq("action", "setAnnouncementLike").eq("operation_id", likeOperationId);
-  if (likeOpError) throw likeOpError;
-  assert.equal(likeOperationWrites, 1);
+  const likeOperationWrites = await database.sqlOne<{ count: number }>`
+    select count(*)::bigint as count from app_private.operations
+    where actor_uid = ${user.auth.uid} and action = 'setAnnouncementLike'
+      and operation_id = ${likeOperationId}`;
+  assert.equal(Number(likeOperationWrites.count), 1);
   const unliked = asRecord(await callAction("setAnnouncementLike", {
     announcementId,
     liked: false,

@@ -186,6 +186,13 @@ export function operationId(_label?: string) {
   return crypto.randomUUID();
 }
 
+const IDENTIFIER_PATTERN = /^[a-z_][a-z0-9_]*$/u;
+
+function identifier(name: string) {
+  if (!IDENTIFIER_PATTERN.test(name)) throw new Error(`invalid-identifier: ${name}`);
+  return `"${name}"`;
+}
+
 export async function ownerQuery(sql: string) {
   return await ownerDatabase.query(sql);
 }
@@ -205,45 +212,33 @@ export async function seedActor(
     photoUrl: null,
     uid,
   };
-  const { error: profileError } = await database
-    .table("app_private", "user_profiles")
-    .insert({
-      display_name: identity.name,
-      email: identity.email,
-      photo_url: null,
-      uid,
-    });
-  if (profileError) throw profileError;
+  await insertRows("user_profiles", [{
+    display_name: identity.name,
+    email: identity.email,
+    photo_url: null,
+    uid,
+  }]);
 
   if (options.roles?.length) {
-    const { error } = await database
-      .table("app_private", "user_role_assignments")
-      .insert(options.roles.map((role_code) => ({
-        granted_by: uid,
-        role_code,
-        uid,
-      })));
-    if (error) throw error;
+    await insertRows("user_role_assignments", options.roles.map((role_code) => ({
+      granted_by: uid,
+      role_code,
+      uid,
+    })));
   }
   if (options.categoryIds?.length) {
-    const { error } = await database
-      .table("app_private", "user_issue_category_assignments")
-      .insert(options.categoryIds.map((category_id) => ({
-        category_id,
-        granted_by: uid,
-        uid,
-      })));
-    if (error) throw error;
+    await insertRows("user_issue_category_assignments", options.categoryIds.map((category_id) => ({
+      category_id,
+      granted_by: uid,
+      uid,
+    })));
   }
   if (options.facilityCategoryIds?.length) {
-    const { error } = await database
-      .table("app_private", "user_facility_category_assignments")
-      .insert(options.facilityCategoryIds.map((category_id) => ({
-        category_id,
-        granted_by: uid,
-        uid,
-      })));
-    if (error) throw error;
+    await insertRows("user_facility_category_assignments", options.facilityCategoryIds.map((category_id) => ({
+      category_id,
+      granted_by: uid,
+      uid,
+    })));
   }
 
   return {
@@ -361,7 +356,7 @@ export async function processPlatformJobs(batchSize = 100) {
 export async function insertReadyUpload(ownerUid: string, label: string) {
   const id = crypto.randomUUID();
   const cloudinaryPublicId = `srp/${ownerUid}/${label}-${id}`;
-  const { error } = await database.table("app_private", "uploads").insert({
+  await insertRows("uploads", [{
     cloudinary_public_id: cloudinaryPublicId,
     content_type: "image/webp",
     height: 64,
@@ -371,23 +366,49 @@ export async function insertReadyUpload(ownerUid: string, label: string) {
     status: "ready",
     visibility: "authenticated",
     width: 64,
-  });
-  if (error) throw error;
+  }]);
   return { cloudinaryPublicId, id };
 }
 
-export async function tableRow(
-  table: Parameters<AppDatabaseClient["table"]>[1],
-  column: string,
-  value: string,
-) {
-  const { data, error } = await database
-    .table("app_private", table)
-    .select("*")
-    .eq(column, value)
-    .maybeSingle();
-  if (error) throw error;
-  return data as JsonRecord | null;
+/** One row of a table, by any column — the shape a retention case asserts on. */
+export async function tableRow(table: string, column: string, value: string) {
+  const { rows } = await database.query<JsonRecord>(
+    `select * from app_private.${identifier(table)} where ${identifier(column)} = $1`,
+    [value],
+  );
+  if (rows.length > 1) throw new Error(`${table}.${column}=${value} matched ${rows.length} rows`);
+  return rows[0] ?? null;
+}
+
+/** How many rows a table holds for one column value. */
+export async function tableRowCount(table: string, column: string, value: string) {
+  const { rows } = await database.query<{ count: number }>(
+    `select count(*)::bigint as count from app_private.${identifier(table)} where ${identifier(column)} = $1`,
+    [value],
+  );
+  return Number(rows[0].count);
+}
+
+/**
+ * Seeds rows straight into a table.
+ *
+ * A case writes the columns it cares about and leaves the rest to their
+ * defaults, which is why the columns come from the objects rather than from a
+ * list written out here.
+ */
+export async function insertRows(table: string, rows: JsonRecord[]) {
+  if (rows.length === 0) return;
+  const columns = [...new Set(rows.flatMap((row) => Object.keys(row)))];
+  const values: unknown[] = [];
+  const tuples = rows.map((row) => `(${columns.map((column) => {
+    values.push(row[column] ?? null);
+    return `$${values.length}`;
+  }).join(", ")})`);
+  await database.query(
+    `insert into app_private.${identifier(table)} (${columns.map(identifier).join(", ")})
+     values ${tuples.join(", ")}`,
+    values,
+  );
 }
 
 /** Runs work the way the Worker runs it: under the stored policies. */

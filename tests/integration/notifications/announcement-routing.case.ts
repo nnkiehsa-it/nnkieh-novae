@@ -39,28 +39,27 @@ integrationTest("announcement and nested comment notifications cover broadcast, 
   }, replier.auth));
   const replyCommentId = String(asRecord(reply.comment).id);
 
+  const announcementNotifications = async () => await database.sql<{
+    comment_id: string | null; recipient_uid: string | null; source: string; type: string;
+  }>`select comment_id, recipient_uid, source, type from app_private.notifications
+     where target_id = ${announcementId}`;
+
   for (let attempt = 0; attempt < 15; attempt += 1) {
-    const { data, error } = await database.table("app_private", "notifications")
-      .select("comment_id,recipient_uid,source,type")
-      .eq("target_id", announcementId);
-    if (error) throw error;
-    if ((data ?? []).some((row) => row.type === "announcement_created")
-      && (data ?? []).some((row) => row.comment_id === rootCommentId)
-      && (data ?? []).some((row) => row.comment_id === replyCommentId)) break;
+    const { rows } = await announcementNotifications();
+    if (rows.some((row) => row.type === "announcement_created")
+      && rows.some((row) => row.comment_id === rootCommentId)
+      && rows.some((row) => row.comment_id === replyCommentId)) break;
     await drainJobs();
   }
 
-  const { data: rows, error: rowError } = await database.table("app_private", "notifications")
-    .select("comment_id,recipient_uid,source,type")
-    .eq("target_id", announcementId);
-  if (rowError) throw rowError;
-  const broadcast = (rows ?? []).find((row) => row.type === "announcement_created");
+  const { rows } = await announcementNotifications();
+  const broadcast = rows.find((row) => row.type === "announcement_created");
   assert.equal(broadcast?.source, "broadcast");
   assert.equal(broadcast?.recipient_uid, null);
-  assert.ok((rows ?? []).some((row) =>
+  assert.ok(rows.some((row) =>
     row.comment_id === rootCommentId && row.recipient_uid === manager.auth.uid
   ));
-  assert.ok((rows ?? []).some((row) =>
+  assert.ok(rows.some((row) =>
     row.comment_id === replyCommentId && row.recipient_uid === commenter.auth.uid
   ));
 

@@ -47,9 +47,8 @@ integrationTest("notification state, push preferences, and dashboard permissions
     userAgent: "Node integration test",
   }, user.auth));
   assert.equal(registered.deviceEnabled, true);
-  const { data: registeredToken, error: registeredTokenError } = await database.table("app_private", "push_tokens")
-    .select("last_confirmed_at,uid").eq("token", token).single();
-  if (registeredTokenError) throw registeredTokenError;
+  const registeredToken = await database.sqlOne<{ last_confirmed_at: string; uid: string }>`
+    select last_confirmed_at, uid from app_private.push_tokens where token = ${token}`;
   assert.equal(registeredToken.uid, user.auth.uid);
   assert.ok(Date.parse(registeredToken.last_confirmed_at) > Date.now() - 60_000);
   const updated = asRecord(await callAction("updatePushNotificationPreferences", {
@@ -84,9 +83,8 @@ integrationTest("notification state, push preferences, and dashboard permissions
     token,
     userAgent: "Shared device integration test",
   }, admin.auth);
-  const { data: reassignedTokens, error: reassignedTokenError } = await database.table("app_private", "push_tokens")
-    .select("device_id,uid").eq("token", token);
-  if (reassignedTokenError) throw reassignedTokenError;
+  const { rows: reassignedTokens } = await database.sql`
+    select device_id, uid from app_private.push_tokens where token = ${token}`;
   assert.deepEqual(reassignedTokens, [{ device_id: adminDeviceId, uid: admin.auth.uid }]);
   await callAction("unregisterPushToken", {
     deviceId: adminDeviceId,

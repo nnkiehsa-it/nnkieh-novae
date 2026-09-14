@@ -9,6 +9,7 @@ import {
   saveCategoryDraft,
   seedActor,
   database,
+  insertRows,
   testEnvironment,
 } from "../helpers.ts";
 
@@ -72,4 +73,4 @@ export async function drainJobs() {
   throw new Error("integration-job-drain-did-not-settle");
 }
 
-export { assert, asRecord, callAction, expectActionError, integrationTest, operationId, saveCategoryDraft, seedActor, database };
+export { assert, asRecord, callAction, expectActionError, insertRows, integrationTest, operationId, saveCategoryDraft, seedActor, database };

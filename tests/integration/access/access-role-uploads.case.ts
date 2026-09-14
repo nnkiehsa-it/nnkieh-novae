@@ -159,23 +159,18 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   target = await refreshActor(target);
   assert.ok(target.auth.permissions.includes("announcement.manage"), "invalid writes must roll back without changing roles");
 
-  const { error: optOutError } = await database.table("app_private", "user_facility_category_assignments")
-    .update({ notify_on_created: false })
-    .eq("uid", target.auth.uid)
-    .eq("category_id", "general");
-  if (optOutError) throw optOutError;
+  await database.sql`update app_private.user_facility_category_assignments
+    set notify_on_created = false
+    where uid = ${target.auth.uid} and category_id = 'general'`;
   await callAction("setUserAccessScope", {
     categoryId: "general",
     grant: true,
     scopeKind: "facility",
     uid: target.auth.uid,
   }, admin.auth);
-  const { data: facilityOptOut, error: facilityOptOutReadError } = await database.table("app_private", "user_facility_category_assignments")
-    .select("notify_on_created")
-    .eq("uid", target.auth.uid)
-    .eq("category_id", "general")
-    .single();
-  if (facilityOptOutReadError) throw facilityOptOutReadError;
+  const facilityOptOut = await database.sqlOne<{ notify_on_created: boolean }>`
+    select notify_on_created from app_private.user_facility_category_assignments
+    where uid = ${target.auth.uid} and category_id = 'general'`;
   assert.equal(facilityOptOut.notify_on_created, false, "an existing notification opt-out must survive access updates");
 
   const concurrentTarget = await seedActor("access-concurrent-target");
@@ -197,9 +192,9 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   assert.deepEqual(refreshedConcurrentTarget.auth.managedIssueCategoryIds, ["public-issues"]);
   assert.deepEqual(refreshedConcurrentTarget.auth.managedFacilityCategoryIds, ["general"]);
 
-  const { data: accessAudit, error: accessAuditError } = await database.table("app_private", "access_assignment_audit").select("actor_uid,target_uid,before_value,after_value")
-    .eq("target_uid", target.auth.uid);
-  if (accessAuditError) throw accessAuditError;
+  const { rows: accessAudit } = await database.sql<{ actor_uid: string }>`
+    select actor_uid, target_uid, before_value, after_value
+    from app_private.access_assignment_audit where target_uid = ${target.auth.uid}`;
   assert.equal(accessAudit.length, 3);
   assert.ok(accessAudit.every((entry) => entry.actor_uid === admin.auth.uid));
 
@@ -210,14 +205,11 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
     admin_emails: [admin.identity.email, configuredAdmin.identity.email],
   });
   if (reconcileError) throw reconcileError;
-  const configuredAdminRole = await database.table("app_private", "user_role_assignments")
-    .select("uid").eq("uid", configuredAdmin.auth.uid).eq("role_code", "platform-admin").maybeSingle();
-  const staleAdminRole = await database.table("app_private", "user_role_assignments")
-    .select("uid").eq("uid", staleAdmin.auth.uid).eq("role_code", "platform-admin").maybeSingle();
-  if (configuredAdminRole.error) throw configuredAdminRole.error;
-  if (staleAdminRole.error) throw staleAdminRole.error;
-  assert.equal(configuredAdminRole.data?.uid, configuredAdmin.auth.uid);
-  assert.equal(staleAdminRole.data, null);
+  const platformAdminRole = async (uid: string) => await database.sqlMaybe<{ uid: string }>`
+    select uid from app_private.user_role_assignments
+    where uid = ${uid} and role_code = 'platform-admin'`;
+  assert.equal((await platformAdminRole(configuredAdmin.auth.uid))?.uid, configuredAdmin.auth.uid);
+  assert.equal(await platformAdminRole(staleAdmin.auth.uid), null);
 
   const avatar = asRecord(await callAction("cacheUserAvatar", {}, user.auth));
   assert.equal(avatar.photoUrl, null);
@@ -234,9 +226,8 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   assert.equal(publicProfile.version, 1);
 
   const renamedDisplayName = `${user.auth.name} renamed`;
-  const { error: renameError } = await database.table("app_private", "user_profiles")
-    .update({ display_name: renamedDisplayName }).eq("uid", user.auth.uid);
-  if (renameError) throw renameError;
+  await database.sql`update app_private.user_profiles
+    set display_name = ${renamedDisplayName} where uid = ${user.auth.uid}`;
   const refreshedProfiles = asRecord(await callAction(
     "getUserPublicProfiles",
     { uids: [user.auth.uid] },
@@ -248,9 +239,9 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
 
   const previousAvatarPublicId = `srp/avatars/${user.auth.uid}_previous`;
   const nextAvatarPublicId = `srp/avatars/${user.auth.uid}_next`;
-  const { error: seedAvatarError } = await database.table("app_private", "user_profiles")
-    .update({ avatar_public_id: previousAvatarPublicId, avatar_version: 1 }).eq("uid", user.auth.uid);
-  if (seedAvatarError) throw seedAvatarError;
+  await database.sql`update app_private.user_profiles
+    set avatar_public_id = ${previousAvatarPublicId}, avatar_version = 1
+    where uid = ${user.auth.uid}`;
   const { error: commitAvatarError } = await database.call("app_api", "backend_commit_user_avatar", {
     actor_uid: user.auth.uid,
     next_avatar_hash: "integration-avatar-hash",
@@ -263,13 +254,11 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   if (commitAvatarError) throw commitAvatarError;
   const committedAvatarProfile = await tableRow("user_profiles", "uid", user.auth.uid);
   assert.equal(committedAvatarProfile?.avatar_public_id, nextAvatarPublicId);
-  const { data: previousAvatarJobs, error: previousAvatarJobsError } = await database
-    .table("app_private", "background_jobs").select("payload,job_type")
-    .eq("scope_id", user.auth.uid)
-    .eq("job_type", "deletion");
-  if (previousAvatarJobsError) throw previousAvatarJobsError;
-  assert.equal(previousAvatarJobs?.length, 1);
-  assert.equal(asRecord(previousAvatarJobs?.[0]?.payload).cloudinary_public_id, previousAvatarPublicId);
+  const { rows: previousAvatarJobs } = await database.sql<{ payload: unknown }>`
+    select payload, job_type from app_private.background_jobs
+    where scope_id = ${user.auth.uid} and job_type = 'deletion'`;
+  assert.equal(previousAvatarJobs.length, 1);
+  assert.equal(asRecord(previousAvatarJobs[0].payload).cloudinary_public_id, previousAvatarPublicId);
 
   for (const [table, removedColumn] of [
     ["issues", "author_name"],
@@ -279,8 +268,11 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
     ["facility_reports", "author_name"],
     ["notifications", "actor_photo_url"],
   ] as const) {
-    const { error } = await database.table("app_private", table).select(removedColumn).limit(1);
-    assert.equal(error?.code, "42703", `${table}.${removedColumn} must be removed`);
+    await assert.rejects(
+      () => database.query(`select ${removedColumn} from app_private.${table} limit 1`),
+      (error: unknown) => (error as { code?: string }).code === "42703",
+      `${table}.${removedColumn} must be removed`,
+    );
   }
 
   const uploadResult = asRecord(await callAction("createImageUploadSessions", {
@@ -296,10 +288,7 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   assert.match(String(session.signature), /^[a-f0-9]{40}$/u);
   const uploadId = String(session.uploadId);
 
-  const { error: readyError } = await database.table("app_private", "uploads")
-    .update({ status: "ready" })
-    .eq("id", uploadId);
-  if (readyError) throw readyError;
+  await database.sql`update app_private.uploads set status = 'ready' where id = ${uploadId}`;
   const finalized = asRecord(await callAction("finalizeImageUploads", {
     targetType: "issue",
     uploads: [{ uploadId }],

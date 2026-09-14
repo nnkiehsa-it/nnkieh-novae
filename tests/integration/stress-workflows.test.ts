@@ -56,18 +56,15 @@ integrationTest("100-user registration and session-bootstrap burst", async () =>
   });
 
   await Promise.all(identities.map(async (identity) => {
-    const { error: conflictError } = await database.table("app_private", "user_profiles")
-      .update({ email: null })
-      .eq("email", identity.email)
-      .neq("uid", identity.uid);
-    if (conflictError) throw conflictError;
-    const { error: profileError } = await database.table("app_private", "user_profiles").upsert({
-      display_name: identity.name,
-      email: identity.email,
-      photo_url: identity.photoUrl,
-      uid: identity.uid,
-    }, { onConflict: "uid" });
-    if (profileError) throw profileError;
+    await database.sql`update app_private.user_profiles set email = null
+      where email = ${identity.email} and uid <> ${identity.uid}`;
+    await database.sql`
+      insert into app_private.user_profiles (display_name, email, photo_url, uid)
+      values (${identity.name}, ${identity.email}, ${identity.photoUrl}, ${identity.uid})
+      on conflict (uid) do update set
+        display_name = excluded.display_name,
+        email = excluded.email,
+        photo_url = excluded.photo_url`;
     const { error: adminSyncError } = await database.call(
       "app_api",
       "backend_reconcile_platform_admins",
@@ -396,11 +393,9 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
     deletedIssueCategoryIds: [issueCategoryId],
   });
   const [issueCategoryRow, facilityCategoryRow] = await Promise.all([
-    database.table("app_private", "issue_categories").select("id").eq("id", issueCategoryId).maybeSingle(),
-    database.table("app_private", "facility_categories").select("id").eq("id", facilityCategoryId).maybeSingle(),
+    database.sqlMaybe`select id from app_private.issue_categories where id = ${issueCategoryId}`,
+    database.sqlMaybe`select id from app_private.facility_categories where id = ${facilityCategoryId}`,
   ]);
-  if (issueCategoryRow.error) throw issueCategoryRow.error;
-  if (facilityCategoryRow.error) throw facilityCategoryRow.error;
-  assert.equal(issueCategoryRow.data, null);
-  assert.equal(facilityCategoryRow.data, null);
+  assert.equal(issueCategoryRow, null);
+  assert.equal(facilityCategoryRow, null);
 });

@@ -2,13 +2,14 @@ import assert from "node:assert/strict";
 import {
   asRecord,
   callAction,
+  database,
   expectActionError,
   insertReadyUpload,
+  insertRows,
   integrationTest,
   refreshActor,
   saveCategoryDraft,
   seedActor,
-  database,
   tableRow,
 } from "../helpers.ts";
 
@@ -88,17 +89,11 @@ integrationTest("runtime category setup and management enforce platform permissi
   });
   const platformSettings = asRecord(management.platformSettings);
   assert.equal("maxSourceMegabytes" in asRecord(platformSettings.imageUploads), false);
-  const { data: retainedAnnouncement, error: retainedAnnouncementError } = await database
-    .table("app_private", "announcements")
-    .insert({
-      author_uid: admin.auth.uid,
-      content: "Retention batch integration test",
-      published_at: new Date(Date.now() - 2 * 86_400_000).toISOString(),
-      title: "Retention batch",
-    })
-    .select("id")
-    .single();
-  if (retainedAnnouncementError) throw retainedAnnouncementError;
+  const retainedAnnouncement = await database.sqlOne<{ id: string }>`
+    insert into app_private.announcements (author_uid, content, published_at, title)
+    values (${admin.auth.uid}, 'Retention batch integration test',
+      ${new Date(Date.now() - 2 * 86_400_000).toISOString()}, 'Retention batch')
+    returning id`;
   const nextPlatformSettings = {
     imageUploads: {
       ...asRecord(platformSettings.imageUploads),
@@ -131,45 +126,33 @@ integrationTest("runtime category setup and management enforce platform permissi
   assert.equal(asRecord(updatedSettings.retention).closedIssuesEnabled, false);
   assert.ok(String(updatedSettings.jobId));
   const runtimeDeadlineId = crypto.randomUUID();
-  const { data: runtimeNotification, error: runtimeNotificationError } = await database
-    .table("app_private", "notifications")
-    .insert({
-      id: runtimeDeadlineId,
-      recipient_uid: user.auth.uid,
-      source: "user",
-      target_id: runtimeDeadlineId,
-      target_type: "issue",
-      title: "Runtime retention deadline",
-      type: "retention_runtime",
-    })
-    .select("created_at,expires_at")
-    .single();
-  if (runtimeNotificationError) throw runtimeNotificationError;
+  const runtimeNotification = await database.sqlOne<{ created_at: string; expires_at: string }>`
+    insert into app_private.notifications
+      (id, recipient_uid, source, target_id, target_type, title, type)
+    values (${runtimeDeadlineId}, ${user.auth.uid}, 'user', ${runtimeDeadlineId}, 'issue',
+      'Runtime retention deadline', 'retention_runtime')
+    returning created_at, expires_at`;
   const notificationLifetimeDays = (
     new Date(runtimeNotification.expires_at).getTime() - new Date(runtimeNotification.created_at).getTime()
   ) / 86_400_000;
   assert.ok(Math.abs(notificationLifetimeDays - 9) < 0.001, "new rows must use the saved retention immediately");
   const independentAuditAt = new Date(Date.now() - 3 * 86_400_000).toISOString();
   const independentRoleAuditUid = `retention-role-${crypto.randomUUID()}`;
-  const { error: independentRoleAuditError } = await database.table("app_private", "role_assignment_audit")
-    .insert({
-      actor_uid: admin.auth.uid,
-      created_at: independentAuditAt,
-      operation: "grant",
-      role_code: "announcement-manager",
-      uid: independentRoleAuditUid,
-    });
-  if (independentRoleAuditError) throw independentRoleAuditError;
+  await insertRows("role_assignment_audit", [{
+    actor_uid: admin.auth.uid,
+    created_at: independentAuditAt,
+    operation: "grant",
+    role_code: "announcement-manager",
+    uid: independentRoleAuditUid,
+  }]);
   const independentAdminAuditTarget = `retention-admin-${crypto.randomUUID()}`;
-  const { error: independentAdminAuditError } = await database.table("app_private", "admin_audit_log")
-    .insert({
-      action: "retention-independent",
-      actor_uid: admin.auth.uid,
-      created_at: independentAuditAt,
-      domain: "platform",
-      target_id: independentAdminAuditTarget,
-    });
-  if (independentAdminAuditError) throw independentAdminAuditError;
+  await insertRows("admin_audit_log", [{
+    action: "retention-independent",
+    actor_uid: admin.auth.uid,
+    created_at: independentAuditAt,
+    domain: "platform",
+    target_id: independentAdminAuditTarget,
+  }]);
   assert.ok(await tableRow("announcements", "id", retainedAnnouncement.id));
   for (let index = 0; index < 20; index += 1) {
     const { data: batch, error: batchError } = await database.call(
@@ -266,16 +249,10 @@ integrationTest("runtime category setup and management enforce platform permissi
       sortOrder: index,
     };
   });
-  const { data: policyAnnouncement, error: policyAnnouncementError } = await database
-    .table("app_private", "announcements")
-    .insert({
-      author_uid: admin.auth.uid,
-      content: "Background policy integration test",
-      title: "Background policy",
-    })
-    .select("id")
-    .single();
-  if (policyAnnouncementError) throw policyAnnouncementError;
+  const policyAnnouncement = await database.sqlOne<{ id: string }>`
+    insert into app_private.announcements (author_uid, content, title)
+    values (${admin.auth.uid}, 'Background policy integration test', 'Background policy')
+    returning id`;
   const impact = asRecord(await callAction("estimateCategoryPolicyChanges", {
     announcementCommentsEnabled: false,
     deletedIssueCategoryIds: [],

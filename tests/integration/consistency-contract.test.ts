@@ -2,24 +2,18 @@ import assert from "node:assert/strict";
 import {
   asRecord,
   callAction,
-  underPolicies,
   database,
   integrationTest,
   ownerQuery,
   seedActor,
+  tableRowCount,
+  underPolicies,
 } from "./helpers.ts";
 import { appendTimelineBlockWithDeduplication } from "../../cloudflare/src/backend/shared/notion-api.ts";
 import { processInAppDeliveries } from "../../cloudflare/src/backend/jobs/notification-deliveries.ts";
 import { processRealtimeDeliveries } from "../../cloudflare/src/backend/jobs/realtime-deliveries.ts";
 import type { Env } from "../../cloudflare/src/types.ts";
 import type { RealtimeDelivery } from "../../cloudflare/src/durable/realtime-hub.ts";
-
-async function rowCount(table: "admin_audit_log" | "domain_events" | "issues" | "operations", column: string, value: string) {
-  const { count, error } = await database.table("app_private", table)
-    .select(column, { count: "exact", head: true }).eq(column, value);
-  if (error) throw error;
-  return count ?? 0;
-}
 
 function assertCanonicalApiJson(value: unknown, path = "data") {
   if (Array.isArray(value)) {
@@ -75,9 +69,9 @@ async function expectRollback(
       drop function if exists app_private.${functionName}();
     `);
   }
-  assert.equal(await rowCount("operations", "operation_id", operationId), 0);
-  assert.equal(await rowCount("domain_events", "operation_id", operationId), 0);
-  assert.equal(await rowCount("admin_audit_log", "operation_id", operationId), 0);
+  assert.equal(await tableRowCount("operations", "operation_id", operationId), 0);
+  assert.equal(await tableRowCount("domain_events", "operation_id", operationId), 0);
+  assert.equal(await tableRowCount("admin_audit_log", "operation_id", operationId), 0);
   return marker;
 }
 
@@ -90,7 +84,7 @@ integrationTest("write transaction fault injection never leaves a partial commit
       content: `fault-${stage}-${operationId}`,
       title: `Fault ${stage}`,
     }, actor.auth, operationId));
-    assert.equal(await rowCount("issues", "content", marker), 0);
+    assert.equal(await tableRowCount("issues", "content", marker), 0);
   }
 
   const admin = await seedActor("transaction-audit", { roles: ["platform-admin"] });
@@ -115,9 +109,9 @@ integrationTest("concurrent retries with one operationId commit exactly one resu
     callAction("createIssue", payload, actor.auth, operationId),
   ]);
   assert.deepEqual(second, first);
-  assert.equal(await rowCount("operations", "operation_id", operationId), 1);
-  assert.equal(await rowCount("domain_events", "operation_id", operationId), 1);
-  assert.equal(await rowCount("issues", "title", payload.title), 1);
+  assert.equal(await tableRowCount("operations", "operation_id", operationId), 1);
+  assert.equal(await tableRowCount("domain_events", "operation_id", operationId), 1);
+  assert.equal(await tableRowCount("issues", "title", payload.title), 1);
   assert.equal(asRecord(asRecord(first).issue).id, asRecord(asRecord(second).issue).id);
   assertCanonicalApiJson(first);
 });

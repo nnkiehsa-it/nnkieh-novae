@@ -25,8 +25,8 @@ describe("AppDatabaseClient", () => {
     };
 
     await Promise.all([
-      database.table("app_private", "user_profiles").select("uid").limit(1),
-      database.table("app_private", "user_profiles").select("uid").limit(1),
+      database.sql`select uid from app_private.user_profiles limit 1`,
+      database.sql`select uid from app_private.user_profiles limit 1`,
     ]);
     await database.close();
 

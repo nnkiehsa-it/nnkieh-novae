@@ -48,22 +48,17 @@ integrationTest("new proposal and facility notifications are personal to categor
       },
     }, managers[index].auth);
   }
-  const { error: disableFacilityNotificationError } = await database.table("app_private", "user_facility_category_assignments")
-    .update({ notify_on_created: false })
-    .eq("uid", managers.at(-1)!.auth.uid)
-    .eq("category_id", facilityCategoryId);
-  if (disableFacilityNotificationError) throw disableFacilityNotificationError;
+  await database.sql`update app_private.user_facility_category_assignments
+    set notify_on_created = false
+    where uid = ${managers.at(-1)!.auth.uid} and category_id = ${facilityCategoryId}`;
   await callAction("setUserAccessScope", {
     grant: true,
     scopeKind: "announcement",
     uid: managers.at(-1)!.auth.uid,
   }, admin.auth);
-  const { data: preservedOptOut, error: preservedOptOutError } = await database.table("app_private", "user_facility_category_assignments")
-    .select("notify_on_created")
-    .eq("uid", managers.at(-1)!.auth.uid)
-    .eq("category_id", facilityCategoryId)
-    .single();
-  if (preservedOptOutError) throw preservedOptOutError;
+  const preservedOptOut = await database.sqlOne<{ notify_on_created: boolean }>`
+    select notify_on_created from app_private.user_facility_category_assignments
+    where uid = ${managers.at(-1)!.auth.uid} and category_id = ${facilityCategoryId}`;
   assert.equal(preservedOptOut.notify_on_created, false);
   await resetFcmRequests();
   const issueAuthor = await seedActor(`category-notification-issue-author-${crypto.randomUUID()}`);
@@ -82,21 +77,21 @@ integrationTest("new proposal and facility notifications are personal to categor
   const issueId = String(asRecord(issueResult.issue).id);
   const facilityId = String(asRecord(facilityResult.facility).id);
 
+  const contentNotifications = async () => await database.sql<{
+    recipient_uid: string | null; source: string; target_id: string; type: string;
+  }>`select recipient_uid, source, target_id, type from app_private.notifications
+     where target_id = any(${[issueId, facilityId]})`;
+
   for (let attempt = 0; attempt < 15; attempt += 1) {
-    const { data, error } = await database.table("app_private", "notifications")
-      .select("recipient_uid,source,target_id,type").in("target_id", [issueId, facilityId]);
-    if (error) throw error;
-    if ((data ?? []).length >= managers.length * 2) break;
+    const { rows } = await contentNotifications();
+    if (rows.length >= managers.length * 2) break;
     await drainJobs();
   }
 
-  const { data: notifications, error: notificationError } = await database.table("app_private", "notifications")
-    .select("recipient_uid,source,target_id,type")
-    .in("target_id", [issueId, facilityId]);
-  if (notificationError) throw notificationError;
+  const { rows: notifications } = await contentNotifications();
   const managerUids = new Set(managers.map((manager) => manager.auth.uid));
-  const issueNotifications = (notifications ?? []).filter((row) => row.target_id === issueId);
-  const facilityNotifications = (notifications ?? []).filter((row) => row.target_id === facilityId);
+  const issueNotifications = notifications.filter((row) => row.target_id === issueId);
+  const facilityNotifications = notifications.filter((row) => row.target_id === facilityId);
   assert.equal(issueNotifications.length, managerUids.size);
   assert.equal(facilityNotifications.length, managerUids.size - 1);
   for (const notification of [...issueNotifications, ...facilityNotifications]) {

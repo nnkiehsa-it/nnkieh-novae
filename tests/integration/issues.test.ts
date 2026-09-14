@@ -86,9 +86,10 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
   )).issue);
   assert.equal(reopenedAfterCategoryCycle.commentsEnabled, true);
 
-  const immutableSnapshotWrite = await database.table("app_private", "issues")
-    .update({ read_access: "school" }).eq("id", publicIssueId);
-  assert.match(immutableSnapshotWrite.error?.message ?? "", /immutable-category-policy/u);
+  await assert.rejects(
+    () => database.sql`update app_private.issues set read_access = 'school' where id = ${publicIssueId}`,
+    /immutable-category-policy/u,
+  );
 
   const ownerRead = asRecord(await callAction(
     "getIssue",

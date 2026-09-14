@@ -32,12 +32,11 @@ integrationTest("a proposal's status change tells its author what changed", asyn
 
   let notification: Record<string, unknown> | undefined;
   for (let attempt = 0; attempt < 15; attempt += 1) {
-    const { data, error } = await database.table("app_private", "notifications")
-      .select("body_preview,issue_category,new_status,old_status,recipient_uid,title,type")
-      .eq("target_id", issueId)
-      .eq("type", "issue_status_changed");
-    if (error) throw error;
-    notification = (data ?? []).find((row) => row.recipient_uid === author.auth.uid);
+    const { rows } = await database.sql`
+      select body_preview, issue_category, new_status, old_status, recipient_uid, title, type
+      from app_private.notifications
+      where target_id = ${issueId} and type = 'issue_status_changed'`;
+    notification = rows.find((row) => row.recipient_uid === author.auth.uid);
     if (notification) break;
     await drainJobs();
   }

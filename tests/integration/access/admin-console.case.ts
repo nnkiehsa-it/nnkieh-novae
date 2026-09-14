@@ -15,24 +15,16 @@ integrationTest("admin console restriction and overview actions", async () => {
   const user = await seedActor("console-user");
   const target = await seedActor("console-target");
 
-  const { data: deletionJob, error: deletionJobError } = await database
-    .table("app_private", "background_jobs")
-    .insert({
-      attempt_count: 8,
-      error_detail: { code: "integration-failure" },
-      job_type: "deletion",
-      last_attempt_id: crypto.randomUUID(),
-      payload: {
+  const deletionJob = await database.sqlOne<{ id: string }>`
+    insert into app_private.background_jobs
+      (attempt_count, error_detail, job_type, last_attempt_id, payload, scope_id, status)
+    values (8, ${{ code: "integration-failure" }}, 'deletion', ${crypto.randomUUID()},
+      ${{
         cloudinary_public_id: `integration/deletion-${crypto.randomUUID()}`,
         target_id: target.auth.uid,
         target_type: "avatar",
-      },
-      scope_id: target.auth.uid,
-      status: "failed",
-    })
-    .select("id")
-    .single();
-  if (deletionJobError) throw deletionJobError;
+      }}, ${target.auth.uid}, 'failed')
+    returning id`;
 
   await expectActionError(
     "permission-denied",
@@ -90,12 +82,10 @@ integrationTest("admin console restriction and overview actions", async () => {
     jobId: deletionJob.id,
   }, admin.auth));
   assert.equal(retriedDeletion.status, "pending");
-  const { data: queuedDeletion, error: queuedDeletionError } = await database
-    .table("app_private", "background_jobs")
-    .select("attempt_count,last_attempt_id,status")
-    .eq("id", deletionJob.id)
-    .single();
-  if (queuedDeletionError) throw queuedDeletionError;
+  const queuedDeletion = await database.sqlOne<{
+    attempt_count: number; last_attempt_id: string | null; status: string;
+  }>`select attempt_count, last_attempt_id, status from app_private.background_jobs
+     where id = ${deletionJob.id}`;
   assert.equal(queuedDeletion.status, "pending");
   assert.equal(queuedDeletion.attempt_count, 0);
   assert.equal(queuedDeletion.last_attempt_id, null);
@@ -187,20 +177,15 @@ integrationTest("admin console restriction and overview actions", async () => {
     true,
   );
 
-  const { data: queuedAuditEvents, error: queuedAuditError } = await database
-    .table("app_private", "domain_events")
-    .select("payload")
-    .eq("event_type", "admin.audit_recorded");
-  if (queuedAuditError) throw queuedAuditError;
-  assert.ok((queuedAuditEvents ?? []).filter(
-    (event: any) => asRecord(event.payload).target_id === target.auth.uid,
+  const { rows: queuedAuditEvents } = await database.sql<{ payload: unknown }>`
+    select payload from app_private.domain_events where event_type = 'admin.audit_recorded'`;
+  assert.ok(queuedAuditEvents.filter(
+    (event) => asRecord(event.payload).target_id === target.auth.uid,
   ).length >= 2);
 
   const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000).toISOString();
-  const { error: ageAuditError } = await database.table("app_private", "admin_audit_log")
-    .update({ created_at: twoDaysAgo })
-    .eq("target_id", target.auth.uid);
-  if (ageAuditError) throw ageAuditError;
+  await database.sql`update app_private.admin_audit_log
+    set created_at = ${twoDaysAgo} where target_id = ${target.auth.uid}`;
 
   const overview = asRecord(await callAction(
     "getAdminOverview",
