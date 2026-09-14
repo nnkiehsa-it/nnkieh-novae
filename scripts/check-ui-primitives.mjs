@@ -4,11 +4,30 @@ import { findOrphanCssClassSelectors } from "./css-orphan-selectors.mjs";
 
 const root = process.cwd();
 const sourceRoot = path.join(root, "src");
+const workerRoot = path.join(root, "cloudflare", "src");
 const errors = [];
 const warnings = [];
 const moduleLineReviewThreshold = 300;
 const moduleLineLimit = 400;
-const generatedModules = new Set(["src/services/backend-action-contract.ts"]);
+// Files that are one contract rather than one responsibility, so the line
+// rules do not apply: generated output, and the hand-written row types that
+// mirror the migrated schema table for table.
+const generatedModules = new Set([
+  "src/services/backend-action-contract.ts",
+  "cloudflare/src/backend/database/schema.generated.ts",
+  "cloudflare/src/backend/database/schema.ts",
+]);
+
+function checkModuleLength(relativePath, source) {
+  const posixPath = relativePath.replaceAll(path.sep, "/");
+  if (generatedModules.has(posixPath)) return;
+  const lineCount = source.split(/\r?\n/u).length;
+  if (lineCount > moduleLineLimit) {
+    errors.push(`${relativePath} has ${lineCount} lines, over the ${moduleLineLimit}-line limit; split its responsibilities`);
+  } else if (lineCount > moduleLineReviewThreshold) {
+    warnings.push(`warning: ${relativePath} has ${lineCount} lines; confirm it carries a single responsibility`);
+  }
+}
 
 async function listFiles(directory) {
   const files = [];
@@ -69,14 +88,14 @@ for (const file of files) {
     errors.push(`${relativePath} accesses a service directly; move the flow into a domain hook`);
   }
 
-  if (!file.endsWith(".css") && !generatedModules.has(relativePath.replaceAll(path.sep, "/"))) {
-    const lineCount = source.split(/\r?\n/u).length;
-    if (lineCount > moduleLineLimit) {
-      errors.push(`${relativePath} has ${lineCount} lines, over the ${moduleLineLimit}-line limit; split its responsibilities`);
-    } else if (lineCount > moduleLineReviewThreshold) {
-      warnings.push(`warning: ${relativePath} has ${lineCount} lines; confirm it carries a single responsibility`);
-    }
-  }
+  if (!file.endsWith(".css")) checkModuleLength(relativePath, source);
+}
+
+// The Worker is held to the same module size as the frontend: a backend file
+// that grows past the limit is carrying more than one responsibility too.
+const workerFiles = await listFiles(workerRoot);
+for (const file of workerFiles) {
+  checkModuleLength(path.relative(root, file), await readFile(file, "utf8"));
 }
 
 for (const orphan of findOrphanCssClassSelectors(stylesheets, productSources)) {
@@ -124,4 +143,6 @@ if (errors.length) {
 
 if (warnings.length) console.log([...new Set(warnings)].sort().join("\n"));
 
-console.log(`UI architecture check passed: ${files.length} frontend source files.`);
+console.log(
+  `UI architecture check passed: ${files.length} frontend source files, ${workerFiles.length} Worker source files.`,
+);
