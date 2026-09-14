@@ -4,24 +4,27 @@ import { hasPermission } from "./auth.ts";
 import { validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
 import { asNumber, asUuid, readCursor, readCursorDate } from "./utils.ts";
 import { INPUT_LIMITS, requiredMediaContent } from "./validation.ts";
-import { attachContentVersion, loadContentVersion } from "./content-versions.ts";
+import { loadContentVersion } from "./content-versions.ts";
 import type { Selected } from "../database/schema.ts";
+import { settledSegments } from "./segments.ts";
 
-async function listAnnouncementComments(payload: JsonRecord, database: BackendDatabase) {
+function listAnnouncementComments(payload: JsonRecord, database: BackendDatabase) {
   const announcementId = asUuid(payload.announcementId);
   if (!announcementId) throw new Error("not-found");
   const cursor = readCursor(payload);
-  const version = await loadContentVersion(database, "announcements");
+  const version = loadContentVersion(database, "announcements");
   const sortName = asString(payload.sort) === "oldest" ? "oldest" : "newest";
-  const { data, error } = await database.call("app_api", "backend_list_announcement_comments", {
+  const page = database.call("app_api", "backend_list_announcement_comments", {
     announcement_id: announcementId,
     cursor_id: asUuid(cursor.id) || null,
     cursor_created_at: readCursorDate(cursor, "createdAt") || null,
     page_size: Math.min(Math.max(Math.round(asNumber(payload.pageSize, 30)), 1), 30),
     sort_name: sortName,
+  }).then(({ data, error }) => {
+    if (error) throw error;
+    return data;
   });
-  if (error) throw error;
-  return attachContentVersion(data, version);
+  return settledSegments({ version }, page);
 }
 
 async function createAnnouncementComment(payload: JsonRecord, auth: AuthContext, database: BackendDatabase) {

@@ -10,13 +10,20 @@ import type { ActionSegment } from "./types.ts";
  */
 export async function* settledSegments(
   sources: Record<string, PromiseLike<unknown>>,
+  whole?: PromiseLike<unknown>,
 ): AsyncGenerator<ActionSegment> {
-  const pending = new Map(
-    Object.entries(sources).map(([key, source]) => [key, source.then((data) => ({ data, key }))]),
-  );
+  const pending = new Map<symbol, PromiseLike<{ id: symbol; segment: ActionSegment }>>();
+  for (const [key, source] of Object.entries(sources)) {
+    const id = Symbol(key);
+    pending.set(id, source.then((data) => ({ id, segment: { data, key } })));
+  }
+  if (whole) {
+    const id = Symbol("whole");
+    pending.set(id, whole.then((data) => ({ id, segment: { data } })));
+  }
   while (pending.size > 0) {
     const settled = await Promise.race(pending.values());
-    pending.delete(settled.key);
-    yield settled;
+    pending.delete(settled.id);
+    yield settled.segment;
   }
 }

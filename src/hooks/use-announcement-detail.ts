@@ -115,15 +115,16 @@ export function useAnnouncementDetail() {
     async (forceRefresh = false) => {
       setCommentsLoading(true);
       try {
-        const result = await fetchAnnouncementComments(
+        await fetchAnnouncementComments(
           params.announcementId,
           undefined,
           commentSort,
-          { cacheScope: session.user?.uid, forceRefresh },
+          {
+            cacheScope: session.user?.uid,
+            forceRefresh,
+            onPage: (page) => { setComments(page.comments); setCommentCursor(page.cursor); setCommentsHaveMore(page.hasMore); },
+          },
         );
-        setComments(result.comments);
-        setCommentCursor(result.cursor);
-        setCommentsHaveMore(result.hasMore);
       } catch {
         // The announcement remains available when its discussion cannot load.
       } finally {

@@ -193,7 +193,12 @@ export async function fetchAnnouncementComments(
   announcementId: string,
   cursor?: CommentCursor,
   sort: CommentSortOption = 'newest',
-  options: { cacheScope?: string; forceRefresh?: boolean; signal?: AbortSignal | null } = {},
+  options: {
+    cacheScope?: string;
+    forceRefresh?: boolean;
+    onPage?: (page: { comments: AnnouncementCommentRecord[]; cursor: CommentCursor; hasMore: boolean }) => void;
+    signal?: AbortSignal | null;
+  } = {},
 ) {
   const cacheKey = createContentCacheKey([
     'announcement-comments-page',
@@ -207,6 +212,7 @@ export async function fetchAnnouncementComments(
     const cached = await getCachedContentPersistent<{ comments: AnnouncementCommentRecord[]; cursor: CommentCursor; hasMore: boolean; version: number }>(cacheKey);
     if (cached) {
       registerContentVersion('announcements', cached.version);
+      options.onPage?.(cached);
       return cached;
     }
   }
@@ -216,6 +222,15 @@ export async function fetchAnnouncementComments(
     { announcementId: string; cursor?: CommentCursor; pageSize: number; sort: CommentSortOption },
     { comments: Array<Record<string, unknown>>; cursor: CommentCursor; hasMore: boolean; version: number }
   >('listAnnouncementComments', {
+    onSegment: (key, data) => {
+      if (key !== undefined) return;
+      const result = data as { comments: Array<Record<string, unknown>>; cursor: CommentCursor; hasMore: boolean };
+      options.onPage?.({
+        comments: result.comments.map(normalizeAnnouncementComment),
+        cursor: normalizeCommentCursor(result.cursor),
+        hasMore: result.hasMore,
+      });
+    },
     signal: 'signal' in options ? options.signal ?? undefined : undefined,
     timeoutMs: readRequestTimeoutMs,
   });
