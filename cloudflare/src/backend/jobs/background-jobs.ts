@@ -19,6 +19,7 @@ export interface BackgroundJobItem {
   status: string;
   attempt_count: number;
   last_attempt_id: string;
+  result: Record<string, unknown> | null;
 }
 
 /**
@@ -32,7 +33,10 @@ export interface BackgroundJobItem {
  * and returns the job to the queue at its cursor rather than starting over.
  */
 async function advanceNotionRebuild(database: AppDatabaseClient, job: BackgroundJobItem) {
-  const cursor = (job.payload.cursor as NotionRebuildCursor | null | undefined) ?? null;
+  // A job's payload is what it was asked to do and never changes, so where the
+  // rebuild has got to is kept beside its progress in the job's own result,
+  // which the completion overwrites with the finished account of the work.
+  const cursor = (job.result?.cursor as NotionRebuildCursor | null | undefined) ?? null;
   if (!cursor) {
     const total = await countNotionRebuildTargets(database);
     await database.sql`update app_private.background_jobs
@@ -42,11 +46,9 @@ async function advanceNotionRebuild(database: AppDatabaseClient, job: Background
     cursor,
     limit: operationPolicy("notionBatchSize"),
   });
-  const payload = JSON.stringify({ ...job.payload, cursor: pass.cursor });
   if (pass.done) {
     await database.sql`update app_private.background_jobs
-      set processed_rows = processed_rows + ${pass.written}, payload = ${payload}::jsonb,
-        updated_at = now() where id = ${job.id}`;
+      set processed_rows = processed_rows + ${pass.written}, updated_at = now() where id = ${job.id}`;
     return pass;
   }
   // The pass succeeded, so it does not spend one of the job's attempts: the
@@ -54,7 +56,7 @@ async function advanceNotionRebuild(database: AppDatabaseClient, job: Background
   await database.sql`update app_private.background_jobs
     set status = 'pending', attempt_count = 0, locked_at = null, last_attempt_id = null,
       next_attempt_at = now(), processed_rows = processed_rows + ${pass.written},
-      payload = ${payload}::jsonb, updated_at = now()
+      result = ${JSON.stringify({ cursor: pass.cursor })}::jsonb, updated_at = now()
     where id = ${job.id} and status = 'processing' and last_attempt_id = ${job.last_attempt_id}`;
   return pass;
 }

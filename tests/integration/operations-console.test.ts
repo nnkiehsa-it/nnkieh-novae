@@ -181,11 +181,11 @@ integrationTest('Notion rebuild writes every page again, leaves existing pages a
   // The rebuild states the archive from the canonical record, so every queue it
   // supersedes is emptied rather than delivered on top of it.
   assert.equal(await waitingDeliveries(), 0);
-  const rebuild = await database.query<{ estimated_rows: number; processed_rows: number; status: string }>(
-    `select status, estimated_rows::integer, processed_rows::integer from app_private.background_jobs
+  const rebuild = await database.query<{ error_detail: unknown; estimated_rows: number; processed_rows: number; status: string }>(
+    `select status, error_detail, estimated_rows::integer, processed_rows::integer from app_private.background_jobs
      where job_type='notion_reconcile' order by created_at desc limit 1`,
   );
-  assert.equal(rebuild.rows[0].status, 'completed');
+  assert.equal(rebuild.rows[0].status, 'completed', JSON.stringify(rebuild.rows[0].error_detail));
   assert.ok(rebuild.rows[0].estimated_rows > 0);
   assert.equal(rebuild.rows[0].processed_rows, rebuild.rows[0].estimated_rows);
 
