@@ -39,7 +39,7 @@ Read action 若未帶 operation ID，Worker 會建立一個只用於 trace 的 U
 
 ### 非 action endpoint
 
-`/v1/auth/login-check` 和 `/v1/auth/session-check` 先套登入 IP rate limit，再驗證 Turnstile action `auth_login` 或 `auth_restore`。`/v1/auth/sync` 才驗 Firebase / App Check，並限制 profile sync 頻率。
+`/v1/auth/login-check` 和 `/v1/auth/session-check` 先套登入 IP rate limit，再驗證 Turnstile action `auth_login` 或 `auth_restore`。兩者的後端驗證一樣嚴格，差別只在前端呈現：`auth_login` 一律顯示 widget，`auth_restore` 以 interaction-only 靜默執行，只有 Cloudflare 判定需要真人時才顯示。`/v1/auth/sync` 才驗 Firebase / App Check，並限制 profile sync 頻率。
 
 `GET /v1/media/...` 和 `HEAD /v1/media/...` 是唯二不是 POST 的資料入口。其他未知路徑回 `not-found`，錯誤 method 回 `method-not-allowed`；合法 CORS preflight 回 `204`。
 

@@ -248,6 +248,46 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* The security check a restored session sometimes has to pass. It runs out of
+   sight, and only becomes a surface when Cloudflare decides it wants a person;
+   signing in is the one place the check is always shown, in the page itself. */
+.t-turnstile-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* The widget has to stay laid out while it runs silently — Turnstile cannot
+   render into a container the browser is not drawing — so the gate is only
+   ever made transparent, never taken out of the page. */
+.t-turnstile-gate[data-state="open"],
+.t-turnstile-gate[data-state="closed"] {
+  background: var(--backdrop);
+  backdrop-filter: blur(3px);
+  opacity: 1;
+}
+
+.t-turnstile-gate[data-state="open"] {
+  pointer-events: auto;
+}
+
+.t-turnstile-card {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 22rem;
+  padding: 1.75rem;
+  text-align: center;
+  border-radius: var(--radius-xl);
+  background: var(--popover);
+}
+
 .app-start-surface {
   box-sizing: border-box;
   min-height: 100vh;

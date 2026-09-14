@@ -35,6 +35,7 @@ const messages = {
   'auth.serviceUnavailable': 'The service is temporarily unavailable. Please try again later.',
   'auth.schoolVerificationFailed': 'This account could not pass school identity verification.',
   'auth.systemBrowserRequired': 'This browser cannot reliably complete Google sign-in. Open Novae in Safari, Chrome, or your system browser.',
+  'auth.securityCheckPrompt': 'Complete the check below so we know it is really you.',
   'auth.pwaInAppTitle': 'Open Novae in your system browser',
   'auth.pwaInAppDescription': 'Novae is open inside the {browser} in-app browser. Google sign-in and security checks may not return reliably here.',
   'auth.pwaOpenSafariTitle': 'Open Novae in Safari first',

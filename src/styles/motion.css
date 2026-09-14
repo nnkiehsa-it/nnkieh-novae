@@ -325,6 +325,13 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   animation: t-fade-out var(--motion-control-exit) var(--ease-depart) both;
 }
 
+.t-turnstile-gate[data-state="open"] {
+  animation: t-fade-in var(--motion-control) var(--ease-arrive) both;
+}
+.t-turnstile-gate[data-state="closed"] {
+  animation: t-fade-out var(--motion-control-exit) var(--ease-depart) both;
+}
+
 /* A centred alert is the iOS alert: it scales up in place on the control rung,
    because it interrupts rather than travels. */
 .t-dialog[data-state="open"] {

@@ -12,17 +12,21 @@ import {
   type ReactNode,
 } from "react";
 import { t } from "@/i18n";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { timingMs } from "@/lib/motion-timing";
 
 const siteKey = String(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "").trim();
 const SCRIPT_READY_TIMEOUT_MS = 30_000;
 const CHALLENGE_TIMEOUT_MS = 5 * 60_000;
+
+/**
+ * How far the gate has come out of hiding.
+ *
+ * A restored session is checked silently: the widget runs inside a container
+ * that costs the reader nothing, and only Cloudflare deciding it wants a human
+ * brings the surface out. Signing in is the exception — there the check is
+ * shown in place, every time, because nothing may happen before it passes.
+ */
+type GateState = "idle" | "silent" | "open" | "closed";
 
 interface TurnstileApi {
   execute: (widgetId: string) => void;
@@ -31,7 +35,8 @@ interface TurnstileApi {
     container: HTMLElement,
     options: {
       action: string;
-      appearance: "always";
+      appearance: "always" | "interaction-only";
+      "before-interactive-callback": () => void;
       "error-callback": (errorCode?: string) => boolean | void;
       "expired-callback": () => void;
       "refresh-expired": "auto";
@@ -80,6 +85,7 @@ export function TurnstileProvider({
   children: ReactNode;
 }) {
   const [challenge, setChallenge] = useState<PendingChallenge | null>(null);
+  const [gate, setGate] = useState<GateState>("idle");
   const [dialogHost, setDialogHost] = useState<HTMLDivElement | null>(null);
   const [inlineHost, setInlineHost] = useState<HTMLDivElement | null>(null);
   const pendingRequest = useRef<Promise<string | null> | null>(null);
@@ -115,12 +121,16 @@ export function TurnstileProvider({
       return;
     }
 
+    const silent = challenge.presentation === "dialog";
+    if (silent) setGate("silent");
+
     let widgetId = "";
     let settled = false;
     const finish = (callback: () => void, keepWidget = false) => {
       if (settled) return;
       settled = true;
       window.clearTimeout(timeout);
+      if (silent) setGate((current) => current === "open" ? "closed" : "idle");
       if (widgetId && !keepWidget) turnstile.remove?.(widgetId);
       if (!keepWidget) {
         setChallenge((current) => current === challenge ? null : current);
@@ -134,7 +144,10 @@ export function TurnstileProvider({
     try {
       widgetId = turnstile.render(container, {
         action: challenge.action,
-        appearance: "always",
+        appearance: silent ? "interaction-only" : "always",
+        "before-interactive-callback": () => {
+          if (silent) setGate("open");
+        },
         "error-callback": (errorCode) => {
           if (process.env.NODE_ENV === "development") {
             console.debug("[Turnstile] challenge rejected", errorCode || "unknown");
@@ -184,6 +197,13 @@ export function TurnstileProvider({
     };
   }, [challenge, dialogHost, inlineHost]);
 
+  // The surface has to finish leaving before it stops existing.
+  useEffect(() => {
+    if (gate !== "closed") return;
+    const settle = window.setTimeout(() => setGate("idle"), timingMs("controlExit"));
+    return () => window.clearTimeout(settle);
+  }, [gate]);
+
   const requestToken = useCallback(async (
     action: string,
     options?: { presentation?: "dialog" | "inline" },
@@ -217,34 +237,26 @@ export function TurnstileProvider({
   return (
     <TurnstileContext.Provider value={value}>
       {children}
-      <Dialog
-        open={challenge?.presentation === "dialog"}
-        onOpenChange={() => undefined}
-      >
-        <DialogContent
-          className="max-w-sm gap-5 border-0 ring-0 shadow-none"
-          showCloseButton={false}
-          surface="plain"
-          onEscapeKeyDown={(event) => event.preventDefault()}
-          onPointerDownOutside={(event) => event.preventDefault()}
+      <div className="t-turnstile-gate" data-state={gate}>
+        <div
+          aria-labelledby="turnstile-gate-title"
+          aria-modal="true"
+          className="t-turnstile-card t-dialog"
+          data-state={gate}
+          role="dialog"
         >
-          <DialogHeader className="items-center text-center sm:items-center sm:text-center">
-            <div className="mb-1 flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-[var(--tint-content)]">
-              <ShieldCheck className="size-5" aria-hidden />
-            </div>
-            <DialogTitle>{t("auth.loginVerification")}</DialogTitle>
-            <DialogDescription>
-              {t("auth.signingIn")}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex min-h-[65px] w-full items-center justify-center overflow-hidden">
-            <div
-              ref={setDialogHost}
-              className="min-h-[65px] w-[300px] max-w-full"
-            />
+          <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-[var(--tint-content)]">
+            <ShieldCheck className="size-5" aria-hidden />
           </div>
-        </DialogContent>
-      </Dialog>
+          <h2 className="text-lg font-semibold" id="turnstile-gate-title">
+            {t("auth.loginVerification")}
+          </h2>
+          <p className="text-sm text-muted-foreground">{t("auth.securityCheckPrompt")}</p>
+          <div className="flex min-h-[65px] w-full items-center justify-center overflow-hidden">
+            <div ref={setDialogHost} className="min-h-[65px] w-[300px] max-w-full" />
+          </div>
+        </div>
+      </div>
     </TurnstileContext.Provider>
   );
 }

@@ -35,6 +35,7 @@ const messages = {
   'auth.serviceUnavailable': '服務暫時無法使用，請稍後再試。',
   'auth.schoolVerificationFailed': '目前登入帳號無法通過校內身分驗證。',
   'auth.systemBrowserRequired': '目前瀏覽器無法可靠完成 Google 登入，請改用 Safari、Chrome 或系統預設瀏覽器開啟。',
+  'auth.securityCheckPrompt': '請完成下方驗證，確認這是本人操作。',
   'auth.pwaInAppTitle': '請改用系統瀏覽器開啟',
   'auth.pwaInAppDescription': '目前正在 {browser} 的內建瀏覽器中開啟。Google 登入與安全驗證可能無法正常返回 Novae。',
   'auth.pwaOpenSafariTitle': '請先用 Safari 開啟',
