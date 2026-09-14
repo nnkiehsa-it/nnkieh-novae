@@ -34,6 +34,7 @@ function cssBezier(token: string) {
 const cssRungNames: Record<keyof typeof motionSeconds, string> = {
   touch: "--motion-touch",
   control: "--motion-control",
+  reveal: "--motion-reveal",
   nav: "--motion-nav",
   sheet: "--motion-sheet",
   controlExit: "--motion-control-exit",
@@ -72,7 +73,8 @@ describe("motion ladder", () => {
     expect(motionSeconds.controlExit).toBeLessThan(motionSeconds.control);
     expect(motionSeconds.sheetExit).toBeLessThan(motionSeconds.sheet);
     expect(motionSeconds.touch).toBeLessThan(motionSeconds.control);
-    expect(motionSeconds.control).toBeLessThan(motionSeconds.nav);
+    expect(motionSeconds.control).toBeLessThan(motionSeconds.reveal);
+    expect(motionSeconds.reveal).toBeLessThan(motionSeconds.nav);
     expect(motionSeconds.nav).toBeLessThan(motionSeconds.sheet);
   });
 });
