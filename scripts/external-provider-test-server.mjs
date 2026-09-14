@@ -160,7 +160,25 @@ const server = createServer(async (request, response) => {
           });
           return;
         }
-        const existing = notionPages.get(pageId) || { id: pageId, object: "page", properties: {} };
+        if (!notionPages.has(pageId)) {
+          send(response, 404, {
+            code: "object_not_found",
+            message: "Could not find page with ID: " + pageId + ".",
+            object: "error",
+            status: 404,
+          });
+          return;
+        }
+        const existing = notionPages.get(pageId);
+        if (existing.in_trash === true) {
+          send(response, 400, {
+            code: "validation_error",
+            message: "Can't update a page that is archived. You must unarchive the page before updating.",
+            object: "error",
+            status: 400,
+          });
+          return;
+        }
         existing.properties = { ...existing.properties, ...(body.properties || {}) };
         if (typeof body.in_trash === "boolean") existing.in_trash = body.in_trash;
         notionPages.set(pageId, existing);

@@ -217,4 +217,14 @@ integrationTest("A deleted record's Notion page lands in the trash", async () =>
     notionPages: Record<string, { in_trash?: boolean }>;
   };
   assert.equal(state.notionPages[page.id]?.in_trash, true);
+
+  // Asking twice, and asking for a page that was never written, both ask for a
+  // state Notion is already in, so neither is work left to retry.
+  await withRuntimeEnvironment(
+    { ...testEnvironment, NOTION_ENABLED: "true" } as Env,
+    async () => {
+      await markNotionPageDeleted(page.id);
+      await markNotionPageDeleted(crypto.randomUUID());
+    },
+  );
 });

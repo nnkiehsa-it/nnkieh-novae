@@ -24,6 +24,29 @@ export function notionBaseUrl(): string {
   const base = optionalEnv("NOTION_API_BASE_URL") || "https://api.notion.com";
   return base.replace(/\/+$/u, "");
 }
+/** A refusal from Notion, with the code it named, so a caller can read it. */
+export class NotionApiError extends Error {
+  constructor(readonly status: number, readonly code: string, body: string) {
+    super(`Notion API error (${status}): ${body}`);
+    this.name = "NotionApiError";
+  }
+}
+
+/**
+ * Whether Notion refused because the page a request names is no longer there:
+ * deleted outright, or already in the trash and no longer writable.
+ */
+export function notionPageGone(error: unknown): boolean {
+  if (!(error instanceof NotionApiError)) return false;
+  if (error.status === 404 || error.code === "object_not_found") return true;
+  return error.status === 400 && /archiv|trash/iu.test(error.message);
+}
+
+/** Notion names its refusals in a `code` field; an outage page names nothing. */
+function notionErrorCode(body: string): string {
+  return /"code"\s*:\s*"([a-z_]+)"/u.exec(body)?.[1] ?? "";
+}
+
 export async function callNotionAPI(path: string, method: string, body?: unknown): Promise<unknown> {
   const base = notionBaseUrl();
   const url = path.startsWith("http") ? path : `${base}/v1${path}`;
@@ -38,7 +61,8 @@ export async function callNotionAPI(path: string, method: string, body?: unknown
     signal: AbortSignal.timeout(15_000),
   });
   if (!response.ok) {
-    throw new Error(`Notion API error (${response.status}): ${await response.text()}`);
+    const failure = await response.text();
+    throw new NotionApiError(response.status, notionErrorCode(failure), failure);
   }
   const text = await response.text();
   return text ? JSON.parse(text) : {};

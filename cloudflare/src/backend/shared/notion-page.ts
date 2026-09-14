@@ -9,6 +9,7 @@ import {
   getBlockPlainText,
   getDataSourceId,
   notionEnabled,
+  notionPageGone,
   richTextProperty,
   splitNotionText,
   uploadImageToNotion,
@@ -201,7 +202,18 @@ export async function getMappedNotionPage(
     where target_type = ${targetType} and target_id = ${targetId}`;
   return mapped?.notion_page_id ?? null;
 }
+/**
+ * Puts a page in Notion's trash.
+ *
+ * A page that is already gone — trashed by hand, or never written — is the
+ * state this asks for, so Notion refusing to touch it is the answer we wanted
+ * rather than work to try again.
+ */
 export async function markNotionPageDeleted(pageId: string): Promise<void> {
   if (!notionEnabled()) throw new Error('notion-not-configured');
-  await callNotionAPI(`/pages/${pageId}`, "PATCH", { in_trash: true });
+  try {
+    await callNotionAPI(`/pages/${pageId}`, "PATCH", { in_trash: true });
+  } catch (error) {
+    if (!notionPageGone(error)) throw error;
+  }
 }
