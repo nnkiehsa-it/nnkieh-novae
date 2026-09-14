@@ -8,8 +8,6 @@ import {
   internalHref,
   isDisabledTarget,
 } from "@/lib/interactive-target";
-import { preloadContentRoute } from "@/services/content-preload";
-import { useSession } from "@/hooks/use-session";
 
 // A pointer crossing a list on its way somewhere else passes over every card in
 // it. Waiting this long before believing a hover filters those out; it is short
@@ -17,26 +15,24 @@ import { useSession } from "@/hooks/use-session";
 const HOVER_INTENT_MS = 80;
 
 /**
- * Start the navigation before the tap finishes.
+ * Fetch the page before the tap finishes.
  *
  * A pointer resting on a destination, or pressed on one, has already said where
  * it is going: a mouse dwells on a card before the click, the focus ring lands
  * on a link before Enter, and a finger is down for something like a tenth of a
  * second before the browser is willing to call it a tap. Each of those warms
- * the route's code and, for a detail route, the record it will show, so the
- * click has only to render something already in memory.
+ * the route, so the click has only to render a page the browser already holds.
  *
- * The cost is requests for destinations that are never opened. That is the
- * trade this app wants: a warmed route that goes unused costs one cached read,
- * while a cold one costs the user a wait every single time.
+ * The page is all that is warmed. What the page then shows it asks the backend
+ * for itself, once it is on screen and its skeleton is standing in for the
+ * answer — a record fetched ahead of a navigation that never happens is a
+ * request nobody needed.
  */
 export function useIntentPrefetch() {
   const router = useRouter();
-  const session = useSession();
-  const scope = session.user?.uid;
 
   React.useEffect(() => {
-    // A destination is warmed once: everything behind it is cached, so asking
+    // A destination is warmed once: the router holds what it fetched, so asking
     // again would only repeat work that has already been done.
     const warmed = new Set<string>();
     let dwell = 0;
@@ -50,7 +46,6 @@ export function useIntentPrefetch() {
       if (warmed.has(href)) return;
       warmed.add(href);
       router.prefetch(href);
-      void preloadContentRoute(new URL(anchor.href, window.location.href).pathname, scope);
     };
 
     // Hover is the mouse's intent, and only once it has stayed put. A press and
@@ -79,5 +74,5 @@ export function useIntentPrefetch() {
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("focusin", onFocusIn, true);
     };
-  }, [router, scope]);
+  }, [router]);
 }

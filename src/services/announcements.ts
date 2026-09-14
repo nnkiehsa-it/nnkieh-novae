@@ -13,7 +13,6 @@ import {
   getCachedContent,
   getCachedContentPersistent,
   markContentCachePrefixStale,
-  runCoalescedContentRequest,
   setCachedContentFromRead,
 } from '@/services/content-read-cache';
 import { normalizeDate, toReadableBackendError } from '@/services/issues-core';
@@ -137,21 +136,21 @@ export async function fetchAnnouncementRecordById(
     const cached = await getCachedContentPersistent<AnnouncementRecord>(cacheKey);
     if (cached) return cached;
   }
-  return runCoalescedContentRequest(cacheKey, async (cacheGuard) => {
-    try {
-      const fn = invokeBackendAction<
-        { announcementId: string },
-        { announcement: Record<string, unknown> }
-      >('getAnnouncement', { timeoutMs: readRequestTimeoutMs });
-      const result = await fn({ announcementId });
-      const announcement = normalizeAnnouncementRecord(result.announcement);
-      setCachedContentFromRead(cacheGuard, announcement);
-      return announcement;
-    } catch (error) {
-      if (error instanceof RequestFailure) throw error;
-      throw new Error('announcement.thisAnnouncementCannotBeFound', { cause: error });
-    }
-  });
+  const cacheGuard = captureContentCacheWriteGuard(cacheKey);
+
+  try {
+    const fn = invokeBackendAction<
+      { announcementId: string },
+      { announcement: Record<string, unknown> }
+    >('getAnnouncement', { timeoutMs: readRequestTimeoutMs });
+    const result = await fn({ announcementId });
+    const announcement = normalizeAnnouncementRecord(result.announcement);
+    setCachedContentFromRead(cacheGuard, announcement);
+    return announcement;
+  } catch (error) {
+    if (error instanceof RequestFailure) throw error;
+    throw new Error('announcement.thisAnnouncementCannotBeFound', { cause: error });
+  }
 }
 
 export function peekAnnouncementRecordById(

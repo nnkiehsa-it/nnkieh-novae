@@ -134,8 +134,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/lib/platform-job-events.ts` — tiny same-tab refresh signal shared by settings mutations and the observable background-job panel.
 - `src/lib/supported-issue-memory.ts` — non-reactive session-scoped support memory used by issue reads and optimistic reactions, keeping support toggles out of the global session render path.
 - `src/lib/notification-target.ts` — pure direct notification-to-route resolution used for intent prefetch and immediate navigation without a preliminary content fetch.
-- `src/lib/content-route.ts` / `src/lib/interactive-target.ts` — the pure reading of a URL into the record a detail route is about, and the pure reading of an event into the control and internal link it landed on. Navigation feedback and intent prefetch ask the same questions, so they ask them in one place.
-- `src/services/content-preload.ts` — fetches the record behind a detail route ahead of the navigation, through the same cached, coalesced reads the page itself uses, so warming costs the request the page would have made rather than an extra one.
+- `src/lib/interactive-target.ts` — the pure reading of an event into the control and internal link it landed on. Navigation feedback and intent prefetch ask the same question, so they ask it in one place.
 - `src/lib/realtime-idle.ts` — shared runtime inactivity policy used by the realtime transport to bound idle WebSocket lifetime.
 - `src/constants/` — generated/static application, category, status, retention, API error, and rate-limit constants.
 - `src/types/` — shared frontend/domain types.

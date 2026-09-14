@@ -21,11 +21,10 @@
 :root {
   --pulse-count: 1;
   --pulse-min: 0.6;
-  /* A wait shorter than an acknowledged touch is not a wait: showing a
-     skeleton for it replaces content with placeholders for two frames and
-     reads as a flicker, which is more likely now that a route's record is
-     usually fetched before the tap that asks for it. The placeholder still
-     holds its space from the first frame — only its paint waits. */
+  /* A wait shorter than an acknowledged touch is not a wait: a read the cache
+     answers returns within a frame or two, and painting placeholders for it
+     reads as a flicker rather than as loading. The placeholder still holds its
+     space from the first frame — only its paint waits. */
   --skeleton-appear-delay: var(--motion-touch);
   --like-accent: #f40051;
   --tabs-text-muted: var(--muted-foreground);
