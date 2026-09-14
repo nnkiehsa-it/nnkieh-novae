@@ -24,6 +24,8 @@ import type { PlatformDashboardData } from "@/types";
  * as one undifferentiated feed that answered none of the four figures above it.
  * Each figure opens onto its own share of it instead — out of the reading the
  * screen already holds, so asking what the number is made of costs nothing.
+ * That reading has a ceiling, so a drawer says when it is showing only the most
+ * recent part of what its figure counts.
  */
 export function OverviewMetrics({
   activity,
@@ -92,6 +94,11 @@ export function OverviewMetrics({
             <Disclosure key={label} label={label} value={figure}>
               <div className="rule-list">
                 <AdminActivityRows entries={happened} showKind={false} />
+                {count !== undefined && happened.length < count ? (
+                  <ListCustomRow className="text-xs text-muted-foreground">
+                    {t("ui.adminConsole.activityShown", { shown: happened.length })}
+                  </ListCustomRow>
+                ) : null}
               </div>
             </Disclosure>
           );

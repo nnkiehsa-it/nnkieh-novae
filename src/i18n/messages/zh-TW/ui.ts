@@ -315,6 +315,7 @@ const messages = {
   'ui.adminConsole.newFacilities': '新設備案件',
   'ui.adminConsole.period': '這段期間',
   'ui.adminConsole.noRecentActivity': '目前沒有近期活動。',
+  'ui.adminConsole.activityShown': '只列出最近 {shown} 筆',
   'ui.adminConsole.viewAllActivity': '查看這段期間的全部活動',
   'ui.adminConsole.activityLogTitle': '完整活動記錄',
   'ui.adminConsole.loadActivityFailed': '載入活動記錄失敗',

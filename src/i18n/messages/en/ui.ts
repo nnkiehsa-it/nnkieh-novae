@@ -315,6 +315,7 @@ const messages = {
   'ui.adminConsole.newFacilities': 'New facility reports',
   'ui.adminConsole.period': 'Selected period',
   'ui.adminConsole.noRecentActivity': 'No recent activity.',
+  'ui.adminConsole.activityShown': 'Showing the {shown} most recent',
   'ui.adminConsole.viewAllActivity': 'View all activity in this period',
   'ui.adminConsole.activityLogTitle': 'Complete activity log',
   'ui.adminConsole.loadActivityFailed': 'Failed to load the activity log',
