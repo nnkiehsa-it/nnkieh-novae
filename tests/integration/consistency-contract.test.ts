@@ -9,7 +9,8 @@ import {
   seedActor,
 } from "./helpers.ts";
 import { appendTimelineBlockWithDeduplication } from "../../cloudflare/src/backend/shared/notion-api.ts";
-import { processInAppDeliveries, processRealtimeDeliveries } from "../../cloudflare/src/backend/jobs/deliveries.ts";
+import { processInAppDeliveries } from "../../cloudflare/src/backend/jobs/notification-deliveries.ts";
+import { processRealtimeDeliveries } from "../../cloudflare/src/backend/jobs/realtime-deliveries.ts";
 import type { Env } from "../../cloudflare/src/types.ts";
 import type { RealtimeDelivery } from "../../cloudflare/src/durable/realtime-hub.ts";
 

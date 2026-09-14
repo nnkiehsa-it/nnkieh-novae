@@ -3,7 +3,7 @@ import { processBackgroundJobs } from "../../cloudflare/src/backend/jobs/backgro
 import { asRecord, underPolicies, database, integrationTest, seedActor, callAction, testEnvironment } from "./helpers.ts";
 import { DEFAULT_OPERATION_POLICIES } from '../../cloudflare/generated/operations';
 import { runMaintenance } from '../../cloudflare/src/backend/jobs/maintenance';
-import { processInAppDeliveries } from '../../cloudflare/src/backend/jobs/deliveries';
+import { processInAppDeliveries } from '../../cloudflare/src/backend/jobs/notification-deliveries';
 import { AppDatabaseClient } from '../../cloudflare/src/backend/database/client';
 
 integrationTest("production background consumer executes retention batches and preserves fresh notifications", async () => {

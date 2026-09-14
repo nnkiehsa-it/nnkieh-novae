@@ -8,7 +8,9 @@ const workerEntryModules = [
   "cloudflare/src/backend/actions/handler.ts",
   "cloudflare/src/backend/sync-user.ts",
   "cloudflare/src/backend/cloudinary-webhook.ts",
-  "cloudflare/src/backend/jobs/deliveries.ts",
+  "cloudflare/src/backend/jobs/notion-deliveries.ts",
+  "cloudflare/src/backend/jobs/notification-deliveries.ts",
+  "cloudflare/src/backend/jobs/realtime-deliveries.ts",
   "cloudflare/src/backend/jobs/background-jobs.ts",
   "cloudflare/src/backend/jobs/maintenance.ts",
 ];
