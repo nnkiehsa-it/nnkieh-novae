@@ -37,7 +37,7 @@ export function announcementEvents(outcome: WriteOutcome): ResolvedDomainEvent[]
         aggregateType: "announcement",
         aggregateId: announcementId,
         eventType: "announcement.liked",
-        destinations: ["realtime"],
+        destinations: ["notion", "realtime"],
         payload: {
           announcement_id: announcementId,
           actor_uid: actorUid,

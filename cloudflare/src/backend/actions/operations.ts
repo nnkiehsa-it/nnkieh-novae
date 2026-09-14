@@ -2,6 +2,7 @@ import { forgetOperationPolicies, readOperationPolicies, validateOperationPolici
 import { settledSegments } from './segments.ts';
 import type { AuthContext, BackendDatabase, JsonRecord } from './types';
 import { providerDiagnostics } from '../shared/provider-diagnostics';
+import { notionEnabled } from '../shared/notion-api';
 
 export async function handleOperationsAction(action: string, payload: JsonRecord, auth: AuthContext, database: BackendDatabase) {
   if (action === 'getRuntimePolicies') return readOperationPolicies(database);
@@ -12,6 +13,25 @@ export async function handleOperationsAction(action: string, payload: JsonRecord
     if (payload.query !== undefined && (typeof payload.query !== 'string' || payload.query.length > 200)) throw new Error('validation-invalid');
     if (payload.until !== undefined && (typeof payload.until !== 'number' || !Number.isSafeInteger(payload.until) || payload.until < 86400000 || payload.until > Date.now()+60000)) throw new Error('validation-invalid');
     return providerDiagnostics(String(payload.provider),{ cursor: payload.cursor as string | undefined, query: payload.query as string | undefined, until: payload.until as number | undefined });
+  }
+  if (action === 'rebuildNotionArchive') {
+    if (!notionEnabled()) throw new Error('service-not-configured');
+    const queued = await database.sqlOne<{ already_queued: boolean; id: string }>`
+      with existing as (
+        select id from app_private.background_jobs
+        where job_type = 'notion_reconcile' and status in ('pending', 'processing')
+        order by created_at desc limit 1
+      ), inserted as (
+        insert into app_private.background_jobs (job_type, scope_id, payload, created_by)
+        select 'notion_reconcile', 'global', ${JSON.stringify({ schemaVersion: 2 })}::jsonb, ${auth.uid}
+        where not exists (select 1 from existing)
+        returning id
+      )
+      select id, false as already_queued from inserted
+      union all
+      select id, true as already_queued from existing
+      limit 1`;
+    return { alreadyQueued: queued.already_queued, jobId: queued.id, success: true };
   }
   if (action === 'retryOperationalWork') {
     if (typeof payload.id !== 'string' || !/^[0-9a-f-]{36}$/i.test(payload.id)) throw new Error('validation-invalid');

@@ -68,6 +68,7 @@ function action(
 export const backendActionDefinitions = [
   action("getRuntimePolicies", "category", "read", handleOperationsAction),
   action("getProviderDiagnostics", "dashboard", "read", handleOperationsAction, { requiredPermission: "dashboard.view" }),
+  action("rebuildNotionArchive", "dashboard", "admin-write", handleOperationsAction, { requiredPermission: "role.manage" }),
   action("retryOperationalWork", "dashboard", "admin-write", handleOperationsAction, { requiredPermission: "role.manage" }),
   action("getOperationsConsole", "dashboard", "read", handleOperationsAction, { requiredPermission: "dashboard.view" }),
   action("saveOperationPolicies", "category", "admin-write", handleOperationsAction, { requiredPermission: "category.manage" }),

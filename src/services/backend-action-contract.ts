@@ -6,6 +6,9 @@ export const BACKEND_ACTION_POLICIES = {
   "getProviderDiagnostics": {
     "group": "read"
   },
+  "rebuildNotionArchive": {
+    "group": "admin-write"
+  },
   "retryOperationalWork": {
     "group": "admin-write"
   },
@@ -212,6 +215,7 @@ export const BACKEND_ACTION_POLICIES = {
 export const BACKEND_ACTION_NAMES = [
   'getRuntimePolicies',
   'getProviderDiagnostics',
+  'rebuildNotionArchive',
   'retryOperationalWork',
   'getOperationsConsole',
   'saveOperationPolicies',

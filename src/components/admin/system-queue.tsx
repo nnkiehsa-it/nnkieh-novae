@@ -10,6 +10,26 @@ import { ListActionRow, ListRow, ListSection } from "@/components/ui/list";
 import { AdminListSkeleton } from "@/components/admin/admin-list-skeleton";
 import { formatDate } from "@/lib/format";
 
+const JOB_LABELS: Record<string, string> = {
+  category_policy: "ui.operations.job.categoryPolicy",
+  deletion: "ui.operations.job.deletion",
+  notion_reconcile: "ui.operations.job.notionRebuild",
+  retention_cleanup: "ui.operations.job.retentionCleanup",
+};
+const STATUS_LABELS: Record<string, string> = {
+  completed: "ui.operations.status.completed",
+  failed: "ui.operations.status.failed",
+  pending: "ui.operations.status.pending",
+  processing: "ui.operations.status.processing",
+  superseded: "ui.operations.status.superseded",
+};
+const DESTINATION_LABELS: Record<string, string> = {
+  in_app: "ui.operations.destination.inApp",
+  notion: "ui.operations.destination.notion",
+  push: "ui.operations.destination.push",
+  realtime: "ui.operations.destination.realtime",
+};
+
 /**
  * The failure surface: work that did not finish, and the one control that asks
  * for it to be tried again.
@@ -26,6 +46,9 @@ export function SystemQueue({
   snapshot: Partial<OperationsConsole>;
 }) {
   const { t } = useI18n();
+  const jobLabel = (value: string) => JOB_LABELS[value] ? t(JOB_LABELS[value]) : value;
+  const statusLabel = (value: string) => STATUS_LABELS[value] ? t(STATUS_LABELS[value]) : value;
+  const destinationLabel = (value: string) => DESTINATION_LABELS[value] ? t(DESTINATION_LABELS[value]) : value;
   const { cleanupBacklog, deliveries, errors, failedDeliveries, jobs } = snapshot;
   const stuck = jobs?.filter((job) => job.status === "failed") ?? [];
   const running = jobs?.filter((job) => job.status !== "failed") ?? [];
@@ -57,7 +80,7 @@ export function SystemQueue({
               busy={retrying === job.id}
               detail={t("admin.jobAttempts", { attempts: job.attemptCount, id: job.id })}
               key={job.id}
-              label={job.jobType}
+              label={jobLabel(job.jobType)}
               onClick={() => onRetry("job", job.id)}
               tone="destructive"
               value={t("admin.retry")}
@@ -99,7 +122,7 @@ export function SystemQueue({
               busy={retrying === entry.id}
               detail={`${entry.eventType} · ${entry.operationId}`}
               key={entry.id}
-              label={entry.destination}
+              label={destinationLabel(entry.destination)}
               onClick={() => onRetry("delivery", entry.id)}
               tone="destructive"
               value={t("admin.retry")}
@@ -112,9 +135,9 @@ export function SystemQueue({
         <ListSection header={t("ui.operations.jobs")}>
           {running.map((job) => (
             <ListRow
-              detail={`${job.status} · ${job.affectedRows} / ${job.estimatedRows}`}
+              detail={`${statusLabel(job.status)} · ${job.affectedRows} / ${job.estimatedRows}`}
               key={job.id}
-              label={job.jobType}
+              label={jobLabel(job.jobType)}
             />
           ))}
         </ListSection>
@@ -125,8 +148,8 @@ export function SystemQueue({
           {(deliveries ?? []).map((row) => (
             <ListRow
               key={`${row.destination}:${row.status}`}
-              label={row.destination}
-              detail={row.status}
+              label={destinationLabel(row.destination)}
+              detail={statusLabel(row.status)}
               value={row.count}
             />
           ))}

@@ -5,6 +5,8 @@ import { DEFAULT_OPERATION_POLICIES } from '../../cloudflare/generated/operation
 import { runMaintenance } from '../../cloudflare/src/backend/jobs/maintenance';
 import { processInAppDeliveries } from '../../cloudflare/src/backend/jobs/notification-deliveries';
 import { AppDatabaseClient } from '../../cloudflare/src/backend/database/client';
+import { withRuntimeEnvironment } from '../../cloudflare/src/backend/shared/env';
+import type { Env } from '../../cloudflare/src/types';
 
 integrationTest("production background consumer executes retention batches and preserves fresh notifications", async () => {
   const oldId = crypto.randomUUID();
@@ -62,6 +64,121 @@ integrationTest('only administrators may retry failed operational work', async (
   const job = await database.query<{ status: string }>('select status from app_private.background_jobs where id=$1', [id]);
   assert.equal(job.rows[0].status,'pending');
   await assert.rejects(() => callAction('retryOperationalWork', { kind: 'job', id }, admin.auth), /validation-invalid/);
+});
+
+integrationTest('only administrators may queue one configured Notion archive rebuild', async () => {
+  const admin = await seedActor('notion-rebuild-admin', { roles: ['platform-admin'] });
+  const member = await seedActor('notion-rebuild-member');
+  await assert.rejects(() => callAction('rebuildNotionArchive', {}, member.auth), /permission-denied/);
+  await assert.rejects(() => callAction('rebuildNotionArchive', {}, admin.auth), /service-not-configured/);
+
+  const enabledEnvironment = { ...testEnvironment, NOTION_ENABLED: 'true' } as Env;
+  const first = asRecord(await withRuntimeEnvironment(
+    enabledEnvironment,
+    () => callAction('rebuildNotionArchive', {}, admin.auth),
+  ));
+  const second = asRecord(await withRuntimeEnvironment(
+    enabledEnvironment,
+    () => callAction('rebuildNotionArchive', {}, admin.auth),
+  ));
+  assert.equal(first.success, true);
+  assert.equal(first.alreadyQueued, false);
+  assert.equal(second.alreadyQueued, true);
+  assert.equal(second.jobId, first.jobId);
+  const jobs = await database.query<{ count: number }>(
+    `select count(*)::integer as count from app_private.background_jobs
+     where job_type='notion_reconcile' and status in ('pending','processing')`,
+  );
+  assert.equal(jobs.rows[0].count, 1);
+});
+
+integrationTest('Notion rebuild archives old pages and recreates complete Chinese records', async () => {
+  const baseUrl = process.env.NOTION_API_BASE_URL;
+  assert.ok(baseUrl);
+  await fetch(`${baseUrl}/__requests`, { method: 'DELETE' });
+  const enabledEnvironment = { ...testEnvironment, NOTION_ENABLED: 'true' } as Env;
+  const admin = await seedActor('notion-content-admin', { roles: ['platform-admin'] });
+  const member = await seedActor('notion-content-member');
+
+  const issueResult = asRecord(await callAction('createIssue', {
+    category: 'public-issues',
+    content: '需要完整保留的提案內容',
+    title: 'Notion 完整提案',
+  }, member.auth));
+  const issueId = String(asRecord(issueResult.issue).id);
+  await callAction('moderateIssueStatus', { issueId, status: 'pending' }, admin.auth);
+  await callAction('createComment', { content: '重建後仍存在的提案留言', issueId }, member.auth);
+  await callAction('createFacility', {
+    categoryId: 'general',
+    content: '設備案件內容',
+    location: '教學大樓三樓',
+    title: '投影機故障',
+  }, member.auth);
+  await callAction('createAnnouncement', {
+    content: '公告完整內容',
+    title: 'Notion 完整公告',
+  }, admin.auth);
+
+  const stalePages = await Promise.all(Array.from({ length: 101 }, async (_, index) =>
+    await fetch(`${baseUrl}/v1/pages`, {
+      body: JSON.stringify({
+        parent: { data_source_id: 'mock-notion-datasource-id', type: 'data_source_id' },
+        properties: { 'Novae ID': { rich_text: [{ text: { content: `stale:${index}` } }] } },
+      }),
+      headers: { 'content-type': 'application/json' },
+      method: 'POST',
+    }).then((response) => response.json()) as { id: string },
+  ));
+
+  await withRuntimeEnvironment(enabledEnvironment, async () => {
+    await callAction('rebuildNotionArchive', {}, admin.auth);
+    await underPolicies(() => processBackgroundJobs(database));
+  });
+
+  type NotionTestProperty = {
+    date?: { start?: string } | null;
+    number?: number | null;
+    rich_text?: Array<{ text?: { content?: string } }>;
+    select?: { name?: string };
+    title?: Array<{ text?: { content?: string } }>;
+  };
+  const state = await fetch(`${baseUrl}/__requests`).then((response) => response.json()) as {
+    notionPageBlocks: Record<string, Array<Record<string, unknown>>>;
+    notionPages: Record<string, { in_trash?: boolean; properties: Record<string, NotionTestProperty> }>;
+  };
+  assert.ok(stalePages.every((page) => state.notionPages[page.id].in_trash === true));
+  const activePages = Object.entries(state.notionPages).filter(([, page]) => page.in_trash !== true);
+  const issuePageEntry = activePages.find(([, page]) =>
+    page.properties['Novae ID']?.rich_text?.[0]?.text?.content === `issue:${issueId}`);
+  assert.ok(issuePageEntry);
+  assert.equal(issuePageEntry[1].properties['狀態'].select?.name, '未回覆');
+  assert.ok(issuePageEntry[1].properties['建立時間'].date?.start);
+  assert.ok(issuePageEntry[1].properties['審核通過時間'].date?.start);
+  assert.ok(issuePageEntry[1].properties['附議截止時間'].date?.start);
+  assert.equal(issuePageEntry[1].properties['附議門檻'].number, 50);
+  assert.ok(JSON.stringify(state.notionPageBlocks[issuePageEntry[0]]).includes('重建後仍存在的提案留言'));
+
+  const announcement = activePages.find(([, page]) =>
+    page.properties['名稱']?.title?.[0]?.text?.content === 'Notion 完整公告')?.[1];
+  assert.ok(announcement);
+  assert.equal(announcement.properties['狀態'].select?.name, '已發布');
+  assert.ok(announcement.properties['發布時間'].date?.start);
+  assert.equal(announcement.properties['按讚數'].number, 0);
+
+  const facility = activePages.find(([, page]) =>
+    page.properties['名稱']?.title?.[0]?.text?.content === '投影機故障')?.[1];
+  assert.ok(facility);
+  assert.equal(facility.properties['狀態'].select?.name, '待受理');
+  assert.equal(facility.properties['地點'].rich_text?.[0]?.text?.content, '教學大樓三樓');
+  assert.ok(facility.properties['建立時間'].date?.start);
+
+  const operation = activePages.find(([, page]) =>
+    page.properties['操作類型']?.rich_text?.[0]?.text?.content === '重建 Notion 封存')?.[1];
+  assert.ok(operation);
+  assert.equal(operation.properties['分類'].select?.name, '系統維運');
+  assert.equal(operation.properties['狀態'].select?.name, '已記錄');
+  assert.equal(operation.properties['操作領域'].rich_text?.[0]?.text?.content, '系統維運');
+  assert.ok(!JSON.stringify(operation).includes('rebuildNotionArchive'));
 });
 
 integrationTest("production background consumer applies announcement policy to existing content", async () => {

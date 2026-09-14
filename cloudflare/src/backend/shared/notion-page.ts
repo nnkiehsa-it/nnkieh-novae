@@ -9,6 +9,7 @@ import {
   getBlockPlainText,
   getDataSourceId,
   notionEnabled,
+  richTextProperty,
   splitNotionText,
   uploadImageToNotion,
 } from "./notion-api.ts";
@@ -27,12 +28,13 @@ const STATUS_LABELS: Record<string, string> = {
   pending: "未回覆",
   "under-review": "待審核",
   processing: "處理中",
-  "auto-rejected": "未通過",
+  "auto-rejected": "未達附議門檻",
   "review-rejected": "審核未通過",
   infeasible: "無法實行",
   completed: "已完成",
   已刪除: "已刪除",
-  發布: "發布",
+  已發布: "已發布",
+  已記錄: "已記錄",
   "unable-to-handle": "無法處理",
 };
 const FACILITY_STATUS_LABELS: Record<string, string> = {
@@ -48,7 +50,7 @@ export function translateFacilityStatus(status: string): string {
   return FACILITY_STATUS_LABELS[status] ?? status;
 }
 export async function translateCategory(database: AppDatabase, targetType: string, category: string): Promise<string> {
-  if (category === "公告") return "公告";
+  if (category === "公告" || category === "系統維運") return category;
   const found = targetType === "facility"
     ? await database.sqlMaybe<Selected<"facility_categories", "label">>`
       select label from app_private.facility_categories where id = ${category}`
@@ -140,42 +142,43 @@ export async function getOrCreateNotionPage(
   const mapped = await database.sqlMaybe<Selected<"notion_pages", "notion_page_id">>`
     select notion_page_id from app_private.notion_pages
     where target_type = ${targetType} and target_id = ${targetId}`;
-  if (mapped?.notion_page_id) return mapped.notion_page_id;
-
   const categoryLabel = await translateCategory(database, targetType, category);
   const statusLabel = translateStatus(status);
   await Promise.all([
     ensureSelectOption("分類", categoryLabel),
     ensureSelectOption("狀態", statusLabel),
+    ensureRichTextProperty("作者"),
     countProperty ? ensureRichTextProperty(countProperty) : Promise.resolve(),
     ensureRichTextProperty("Novae ID"),
   ]);
 
   const dataSourceId = await getDataSourceId();
-  const existingRemote = (await callNotionAPI(`/data_sources/${dataSourceId}/query`, "POST", {
-    filter: { property: "Novae ID", rich_text: { equals: externalId } },
-    page_size: 1,
-  })) as { results?: Array<{ id?: string }> };
-
-  let pageId = existingRemote.results?.[0]?.id;
+  let pageId = mapped?.notion_page_id;
   if (!pageId) {
-    const properties: Record<string, unknown> = {
-      名稱: { title: [{ text: { content: title.slice(0, 2000) } }] },
-      分類: { select: { name: categoryLabel } },
-      狀態: { select: { name: statusLabel } },
-      作者: { rich_text: [{ text: { content: authorName.slice(0, 2000) } }] },
-      "Novae ID": { rich_text: [{ text: { content: externalId } }] },
-    };
-    if (countProperty) {
-      properties[countProperty] = {
-        rich_text: [{ text: { content: supportLabel(supportCount, supportGoal) } }],
-      };
-    }
+    const existingRemote = (await callNotionAPI(`/data_sources/${dataSourceId}/query`, "POST", {
+      filter: { property: "Novae ID", rich_text: { equals: externalId } },
+      page_size: 1,
+    })) as { results?: Array<{ id?: string }> };
+    pageId = existingRemote.results?.[0]?.id;
+  }
+
+  const properties: Record<string, unknown> = {
+    名稱: { title: [{ text: { content: title.slice(0, 2000) } }] },
+    分類: { select: { name: categoryLabel } },
+    狀態: { select: { name: statusLabel } },
+    作者: richTextProperty(authorName),
+    "Novae ID": richTextProperty(externalId),
+  };
+  if (countProperty) properties[countProperty] = richTextProperty(supportLabel(supportCount, supportGoal));
+
+  if (!pageId) {
     const result = (await callNotionAPI("/pages", "POST", {
       parent: { type: "data_source_id", data_source_id: dataSourceId },
       properties,
     })) as { id?: string };
     pageId = result?.id;
+  } else {
+    await callNotionAPI(`/pages/${pageId}`, "PATCH", { properties });
   }
 
   if (!pageId) throw new Error("Notion page creation did not return an ID");
@@ -187,6 +190,16 @@ export async function getOrCreateNotionPage(
     do update set notion_page_id = excluded.notion_page_id, updated_at = excluded.updated_at`;
 
   return pageId;
+}
+export async function getMappedNotionPage(
+  database: AppDatabase,
+  targetType: string,
+  targetId: string,
+): Promise<string | null> {
+  const mapped = await database.sqlMaybe<Selected<"notion_pages", "notion_page_id">>`
+    select notion_page_id from app_private.notion_pages
+    where target_type = ${targetType} and target_id = ${targetId}`;
+  return mapped?.notion_page_id ?? null;
 }
 export async function markNotionPageDeleted(pageId: string): Promise<void> {
   if (!notionEnabled()) throw new Error('notion-not-configured');

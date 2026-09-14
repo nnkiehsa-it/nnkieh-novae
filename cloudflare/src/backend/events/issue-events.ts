@@ -93,7 +93,7 @@ export function issueEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | null
         aggregateType: "issue",
         aggregateId: issueId,
         eventType: "support.toggled",
-        destinations: ["realtime"],
+        destinations: ["notion", "realtime"],
         payload: { issue_id: issueId, supporter_uid: actorUid, supported: false },
       });
       break;

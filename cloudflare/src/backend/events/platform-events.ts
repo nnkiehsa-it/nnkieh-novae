@@ -5,6 +5,8 @@ export function platformEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | n
   const { action, payload, actorUid } = outcome;
   const events: ResolvedDomainEvent[] = [];
   switch (action) {
+    case "rebuildNotionArchive":
+      return [];
     case "markNotificationsOpened": {
       events.push({
         aggregateType: "user",
@@ -32,7 +34,7 @@ export function platformEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | n
         aggregateType: "system",
         aggregateId: "global",
         eventType: "system.setup_completed",
-        destinations: ["notion", "realtime"],
+        destinations: ["realtime"],
         payload: { actor_uid: actorUid },
       });
       break;
@@ -42,7 +44,7 @@ export function platformEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | n
         aggregateType: "system",
         aggregateId: "global",
         eventType: "system.features_updated",
-        destinations: ["notion", "realtime"],
+        destinations: ["realtime"],
         payload: { actor_uid: actorUid },
       });
       break;
@@ -52,7 +54,7 @@ export function platformEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | n
         aggregateType: "category",
         aggregateId: "global",
         eventType: "category.managed",
-        destinations: ["notion", "realtime"],
+        destinations: ["realtime"],
         payload: { actor_uid: actorUid },
       });
       break;
@@ -64,7 +66,7 @@ export function platformEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | n
         aggregateType: "platform",
         aggregateId: "global",
         eventType: "platform.settings_updated",
-        destinations: ["notion", "realtime"],
+        destinations: ["realtime"],
         payload: { actor_uid: actorUid },
       });
       break;
@@ -75,7 +77,7 @@ export function platformEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | n
         aggregateType: "user",
         aggregateId: targetUid,
         eventType: "user.restricted",
-        destinations: ["notion", "realtime"],
+        destinations: ["realtime"],
         payload: { target_uid: targetUid, actor_uid: actorUid },
       });
       break;
@@ -86,7 +88,7 @@ export function platformEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | n
         aggregateType: "user",
         aggregateId: targetUid,
         eventType: "user.access_scoped",
-        destinations: ["notion", "realtime"],
+        destinations: ["realtime"],
         payload: { target_uid: targetUid, actor_uid: actorUid },
       });
       break;

@@ -52,7 +52,7 @@ export function IssueCard({
               {issue.canViewAuthor && issue.author_uid ? (
                 <span aria-hidden>·</span>
               ) : null}
-              <SkeletonReveal enabled={reveal} skeleton={<Skeleton className="h-3 w-12" />}><span className="shrink-0">{formatRelativeTime(issue.created_at)}</span></SkeletonReveal>
+              <SkeletonReveal enabled={reveal} skeleton={<Skeleton className="h-3 w-12" />}><span className="shrink-0">{formatRelativeTime(issue.review_approved_at ?? issue.created_at)}</span></SkeletonReveal>
         </>
       }
       title={<SkeletonReveal as="div" enabled={reveal} skeleton={<Skeleton className="h-7 w-3/5" />}><h2 className="truncate">{issue.title}</h2></SkeletonReveal>}

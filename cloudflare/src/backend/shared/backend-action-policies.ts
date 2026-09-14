@@ -6,6 +6,10 @@ export const BACKEND_ACTION_POLICIES = {
   "getProviderDiagnostics": {
     "group": "read"
   },
+  "rebuildNotionArchive": {
+    "group": "admin-write",
+    "extraLimit": "destructiveWriteHourly"
+  },
   "retryOperationalWork": {
     "group": "admin-write",
     "extraLimit": "destructiveWriteHourly"

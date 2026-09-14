@@ -9,6 +9,7 @@ import { AdminListSkeleton } from "@/components/admin/admin-list-skeleton";
 import { ProviderDiagnostics } from "@/components/admin/provider-diagnostics";
 import { SystemCapacity } from "@/components/admin/system-capacity";
 import { SystemQueue } from "@/components/admin/system-queue";
+import { NotionRebuildAction } from "@/components/admin/notion-rebuild-action";
 import { ContentTransition, StateTransition } from "@/components/motion/state-transition";
 import { Button } from "@/components/ui/button";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
@@ -26,7 +27,7 @@ import { ErrorState } from "@/components/ui/page-state";
 export function SystemConsole() {
   const { t } = useI18n();
   const [view, setView] = React.useState("failures");
-  const { error, load, loading, mediaFailures, page, retry, retrying, snapshot } =
+  const { error, load, loading, mediaFailures, page, rebuildNotion, rebuildingNotion, retry, retrying, snapshot } =
     useSystemConsole();
 
   if (error && !snapshot) return <ErrorState error={error} onRetry={() => void load()} />;
@@ -60,6 +61,10 @@ export function SystemConsole() {
         <ContentTransition identity={view}>
           {view === "failures" ? (
             <div className="space-y-6">
+              <NotionRebuildAction
+                busy={rebuildingNotion}
+                onRebuild={() => void rebuildNotion()}
+              />
               <SystemQueue
                 mediaFailures={mediaFailures}
                 onRetry={retry}

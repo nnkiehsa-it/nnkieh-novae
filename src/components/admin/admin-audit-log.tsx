@@ -16,6 +16,7 @@ import { useI18n } from "@/i18n";
 import { formatDate } from "@/lib/format";
 
 const ACTION_LABELS: Record<string, string> = {
+  rebuildNotionArchive: "ui.adminConsole.actionRebuildNotion",
   createAnnouncement: "ui.adminConsole.actionCreateAnnouncement",
   deleteAnnouncement: "ui.adminConsole.actionDeleteAnnouncement",
   deleteFacility: "ui.adminConsole.actionDeleteFacility",
@@ -28,6 +29,35 @@ const ACTION_LABELS: Record<string, string> = {
   setUserRestriction: "ui.adminConsole.actionSetRestriction",
   updateFacilityStatus: "ui.adminConsole.actionUpdateFacility",
   updateIssueResult: "ui.adminConsole.actionUpdateIssue",
+};
+
+const DETAIL_LABELS: Record<string, string> = {
+  announcementCommentsEnabled: "ui.adminConsole.detailAnnouncementComments",
+  announcementId: "ui.adminConsole.detailAnnouncementId",
+  categoryId: "ui.adminConsole.detailCategoryId",
+  commentId: "ui.adminConsole.detailCommentId",
+  durationHours: "ui.adminConsole.detailDurationHours",
+  facilitiesEnabled: "ui.adminConsole.detailFacilitiesEnabled",
+  facilityCategories: "ui.adminConsole.detailFacilityCategories",
+  facilityId: "ui.adminConsole.detailFacilityId",
+  id: "ui.adminConsole.detailJobId",
+  imageSettings: "ui.adminConsole.detailImageSettings",
+  issueCategories: "ui.adminConsole.detailIssueCategories",
+  issueId: "ui.adminConsole.detailIssueId",
+  issuesEnabled: "ui.adminConsole.detailIssuesEnabled",
+  kind: "ui.adminConsole.detailJobKind",
+  mode: "ui.adminConsole.detailMode",
+  nextStatus: "ui.adminConsole.detailNextStatus",
+  reason: "ui.adminConsole.detailReason",
+  responseDeadlineAt: "ui.adminConsole.detailResponseDeadline",
+  retentionConfig: "ui.adminConsole.detailRetentionConfig",
+  reviewRejectionReason: "ui.adminConsole.detailReviewReason",
+  revision: "ui.adminConsole.detailRevision",
+  status: "ui.adminConsole.detailStatus",
+  supportDeadlineAt: "ui.adminConsole.detailSupportDeadline",
+  targetUid: "ui.adminConsole.detailUserId",
+  uid: "ui.adminConsole.detailUserId",
+  values: "ui.adminConsole.detailSettings",
 };
 
 /**
@@ -117,6 +147,12 @@ function AuditEntrySheet({
   const fields = Object.entries(record.detail).filter(
     ([, value]) => value !== null && value !== undefined && value !== "",
   );
+  const fieldValue = (value: unknown) => {
+    if (typeof value === "boolean") return t(value ? "ui.common.enabled" : "ui.common.disabled");
+    if (Array.isArray(value)) return value.length <= 5 ? value.join("、") : t("ui.adminConsole.detailItemCount", { count: value.length });
+    if (value && typeof value === "object") return t("ui.adminConsole.detailItemCount", { count: Object.keys(value).length });
+    return String(value);
+  };
 
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open={Boolean(entry)}>
@@ -139,8 +175,8 @@ function AuditEntrySheet({
             fields.map(([key, value]) => (
               <ListRow
                 key={key}
-                label={<span className="font-mono text-xs">{key}</span>}
-                value={<span className="break-all">{String(value)}</span>}
+                label={DETAIL_LABELS[key] ? t(DETAIL_LABELS[key]) : t("ui.adminConsole.detailOther")}
+                value={<span className="break-all">{fieldValue(value)}</span>}
               />
             ))
           )}

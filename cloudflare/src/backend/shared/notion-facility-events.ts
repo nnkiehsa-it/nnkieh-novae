@@ -3,126 +3,128 @@ import {
   callNotionAPI,
   dateProperty,
   ensureDateProperty,
+  ensureNumberProperty,
   ensureRichTextProperty,
   ensureSelectOption,
+  numberProperty,
   richTextProperty,
 } from "./notion-api.ts";
 import {
   appendCreationTimeline,
+  getMappedNotionPage,
   getOrCreateNotionPage,
   resolveDisplayName,
   translateFacilityStatus,
 } from "./notion-page.ts";
 import type { NotionDomainEvent, NotionEventDatabase } from "./notion-event.ts";
 import type { Selected } from "../database/schema.ts";
-import { syncSystemEventToNotion } from "./notion-system-events.ts";
 
-/** What a facility report does to its Notion page. */
+type FacilityNotionRecord = Selected<
+  "facility_reports",
+  "id" | "title" | "content" | "location" | "status" | "author_uid" | "affected_count"
+  | "category_id" | "created_at" | "started_at" | "closed_at" | "result_content"
+>;
 
+async function readFacility(database: NotionEventDatabase, facilityId: string) {
+  return database.sqlMaybe<FacilityNotionRecord>`select id, title, content, location, status, author_uid,
+    affected_count, category_id, created_at, started_at, closed_at, result_content
+    from app_private.facility_reports where id = ${facilityId}`;
+}
+
+async function ensureFacilityPage(database: NotionEventDatabase, facility: FacilityNotionRecord) {
+  const status = translateFacilityStatus(facility.status);
+  const pageId = await getOrCreateNotionPage(
+    database,
+    "facility",
+    facility.id,
+    facility.title,
+    facility.category_id,
+    status,
+    await resolveDisplayName(database, facility.author_uid),
+    facility.affected_count,
+    null,
+    "遇到人數",
+  );
+  if (!pageId) throw new Error("notion-facility-page-missing");
+  await Promise.all([
+    ensureDateProperty("建立時間"),
+    ensureDateProperty("開始處理時間"),
+    ensureDateProperty("結案時間"),
+    ensureNumberProperty("受影響人數"),
+    ensureRichTextProperty("地點"),
+    ensureRichTextProperty("處理結果"),
+    ensureSelectOption("狀態", status),
+  ]);
+  await callNotionAPI(`/pages/${pageId}`, "PATCH", {
+    properties: {
+      狀態: { select: { name: status } },
+      建立時間: dateProperty(facility.created_at),
+      開始處理時間: dateProperty(facility.started_at),
+      結案時間: dateProperty(facility.closed_at),
+      地點: richTextProperty(facility.location),
+      處理結果: richTextProperty(facility.result_content),
+      遇到人數: richTextProperty(facility.affected_count),
+      受影響人數: numberProperty(facility.affected_count),
+    },
+  });
+  return pageId;
+}
+
+export async function rebuildFacilityNotionPage(database: NotionEventDatabase, facilityId: string) {
+  const facility = await readFacility(database, facilityId);
+  if (!facility) throw new Error("notion-facility-source-missing");
+  const pageId = await ensureFacilityPage(database, facility);
+  await appendCreationTimeline(
+    database,
+    pageId,
+    `rebuild:facility:${facility.id}`,
+    `【設備案件內容】${facility.title}（地點：${facility.location}）`,
+    facility.content,
+  );
+  return pageId;
+}
+
+/** Keeps a facility page's status, counts, dates and result complete. */
 export async function syncFacilityEventToNotion(
   database: NotionEventDatabase,
   event: NotionDomainEvent,
 ): Promise<void> {
-  const { event_id, event_type, aggregate_id, actor_uid, payload } = event;
+  const { event_id, event_type, aggregate_id } = event;
+  if (event_type === "facility.deleted") {
+    const pageId = await getMappedNotionPage(database, "facility", aggregate_id);
+    if (!pageId) return;
+    await ensureSelectOption("狀態", "已刪除");
+    await callNotionAPI(`/pages/${pageId}`, "PATCH", {
+      properties: { 狀態: { select: { name: "已刪除" } } },
+    });
+    await appendTimelineBlockWithDeduplication(pageId, event_id, "【設備案件刪除】此案件已自 Novae 刪除");
+    return;
+  }
+
+  const facility = await readFacility(database, aggregate_id);
+  if (!facility) throw new Error("notion-facility-source-missing");
+  const pageId = await ensureFacilityPage(database, facility);
   switch (event_type) {
-    case "facility.created": {
-      const facility = await database.sqlMaybe<Selected<
-        "facility_reports",
-        "title" | "content" | "location" | "status" | "author_uid" | "affected_count" | "category_id" | "created_at"
-      >>`select title, content, location, status, author_uid, affected_count, category_id, created_at
-        from app_private.facility_reports where id = ${aggregate_id}`;
-      const authorName = await resolveDisplayName(database, facility?.author_uid ?? actor_uid);
-      const title = String(facility?.title ?? payload.title ?? "未命名設備報修");
-      const pageId = await getOrCreateNotionPage(
-        database,
-        "facility",
-        aggregate_id,
-        title,
-        String(facility?.category_id ?? payload.category_id ?? "設備"),
-        translateFacilityStatus(String(facility?.status ?? "pending")),
-        authorName,
-        facility?.affected_count ?? 1,
-        null,
-        "遇到人數",
-      );
-      if (!pageId) return;
-
-      await ensureRichTextProperty("地點");
-      await ensureDateProperty("建立時間");
-      await callNotionAPI(`/pages/${pageId}`, "PATCH", {
-        properties: {
-          地點: richTextProperty(facility?.location),
-          建立時間: dateProperty(facility?.created_at),
-        },
-      });
-
+    case "facility.created":
       await appendCreationTimeline(
         database,
         pageId,
         event_id,
-        `【報修建立】${title} (地點: ${String(facility?.location ?? "")})`,
-        String(facility?.content ?? ""),
+        `【設備案件建立】${facility.title}（地點：${facility.location}）`,
+        facility.content,
       );
-      break;
-    }
-
-    case "facility.status_changed": {
-      const facility = await database.sqlMaybe<Selected<
-        "facility_reports",
-        "title" | "category_id" | "status" | "author_uid" | "affected_count" | "closed_at" | "result_content"
-      >>`select title, category_id, status, author_uid, affected_count, closed_at, result_content
-        from app_private.facility_reports where id = ${aggregate_id}`;
-      const statusLabel = translateFacilityStatus(String(facility?.status ?? payload.new_status ?? "pending"));
-      const pageId = await getOrCreateNotionPage(
-        database,
-        "facility",
-        aggregate_id,
-        String(facility?.title ?? "設備"),
-        String(facility?.category_id ?? "設備"),
-        statusLabel,
-        await resolveDisplayName(database, facility?.author_uid),
-        facility?.affected_count,
-        null,
-        "遇到人數",
-      );
-      if (!pageId) return;
-
-      await ensureSelectOption("狀態", statusLabel);
-      await callNotionAPI(`/pages/${pageId}`, "PATCH", {
-        properties: {
-          狀態: { select: { name: statusLabel } },
-          結案時間: dateProperty(facility?.closed_at),
-        },
-      });
-
+      return;
+    case "facility.status_changed":
       await appendTimelineBlockWithDeduplication(
         pageId,
         event_id,
-        `【狀態變更】${statusLabel}`,
-        facility?.result_content ? `處理說明：${facility.result_content}` : undefined,
+        `【狀態變更】${translateFacilityStatus(facility.status)}`,
+        facility.result_content ? `處理結果：${facility.result_content}` : undefined,
       );
-      break;
-    }
-
-    case "facility.deleted": {
-      const pageId = await getOrCreateNotionPage(
-        database, "facility", aggregate_id, "設備", "設備", "已刪除", "使用者",
-      );
-      if (!pageId) return;
-      await ensureSelectOption("狀態", "已刪除");
-      await callNotionAPI(`/pages/${pageId}`, "PATCH", {
-        properties: { 狀態: { select: { name: "已刪除" } } },
-      });
-      await appendTimelineBlockWithDeduplication(
-        pageId,
-        event_id,
-        "【報修刪除】此設備報修已自 Novae 刪除",
-      );
-      break;
-    }
-
+      return;
+    case "facility.affected_toggled":
+      return;
     default:
-      await syncSystemEventToNotion(database, event);
-      break;
+      throw new Error(`unsupported-notion-facility-event:${event_type}`);
   }
 }

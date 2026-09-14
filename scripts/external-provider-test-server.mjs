@@ -59,7 +59,11 @@ const server = createServer(async (request, response) => {
       return;
     }
     if (pathname === "/__requests" && request.method === "GET") {
-      send(response, 200, { requests, notionPages: Object.fromEntries(notionPages) });
+      send(response, 200, {
+        requests,
+        notionPageBlocks: Object.fromEntries(notionPageBlocks),
+        notionPages: Object.fromEntries(notionPages),
+      });
       return;
     }
 

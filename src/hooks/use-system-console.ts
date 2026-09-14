@@ -12,6 +12,7 @@ import {
 } from "@/services/admin-console";
 import {
   fetchOperationsConsole,
+  queueNotionArchiveRebuild,
   retryOperationalWork,
   type OperationsConsole,
 } from "@/services/operations-console";
@@ -48,6 +49,7 @@ export function useSystemConsole() {
   const [error, setError] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [retrying, setRetrying] = React.useState("");
+  const [rebuildingNotion, setRebuildingNotion] = React.useState(false);
 
   const load = React.useCallback(
     async (nextPage = 0) => {
@@ -114,12 +116,29 @@ export function useSystemConsole() {
     [remember, t],
   );
 
+  const rebuildNotion = React.useCallback(async () => {
+    setRebuildingNotion(true);
+    try {
+      const result = await queueNotionArchiveRebuild({});
+      toast.success(t(result.alreadyQueued
+        ? "ui.operations.notionRebuildAlreadyQueued"
+        : "ui.operations.notionRebuildQueued"));
+      await load(0);
+    } catch (caught) {
+      toast.error(caught instanceof Error ? caught.message : t("ui.operations.notionRebuildFailed"));
+    } finally {
+      setRebuildingNotion(false);
+    }
+  }, [load, t]);
+
   return {
     error,
     load,
     loading,
     mediaFailures: value.mediaFailures,
     page: value.page,
+    rebuildNotion,
+    rebuildingNotion,
     retry,
     retrying,
     snapshot: value.snapshot,

@@ -43,7 +43,7 @@ export function facilityEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | n
         aggregateType: "facility",
         aggregateId: facilityId,
         eventType: "facility.affected_toggled",
-        destinations: ["realtime"],
+        destinations: ["notion", "realtime"],
         payload: { facility_id: facilityId, actor_uid: actorUid },
       });
       break;

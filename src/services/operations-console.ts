@@ -32,6 +32,11 @@ export function fetchOperationsConsole(
   })(payload);
 }
 export const retryOperationalWork = invokeBackendAction<{ kind: 'job' | 'delivery' | 'cleanup'; id: string }, { success: boolean }>('retryOperationalWork');
+export const queueNotionArchiveRebuild = invokeBackendAction<Record<string, never>, {
+  alreadyQueued: boolean;
+  jobId: string;
+  success: boolean;
+}>('rebuildNotionArchive');
 export interface ProviderDiagnostic { provider: string; status: 'available' | 'not-configured' | 'unavailable'; checkedAt: string; data?: unknown; error?: string; nextCursor?: string | null; until?: number }
 export const getProviderDiagnostics = invokeBackendAction<{ provider: string; cursor?: string; until?: number; query?: string }, ProviderDiagnostic>('getProviderDiagnostics', { timeoutMs: longRequestTimeoutMs });
 export const saveOperationPolicies = invokeBackendAction<{
