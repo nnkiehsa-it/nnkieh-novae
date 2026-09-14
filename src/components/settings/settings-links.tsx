@@ -10,7 +10,6 @@ export function ManagementLinks({ canManage }: { canManage: boolean }) {
   return (
     <ListSection header={translate("ui.settings.adminTools")}>
       <ListNavRow
-        detail={translate("admin.description")}
         href="/admin"
         icon={ShieldCheck}
         label={translate("admin.title")}
@@ -24,21 +23,18 @@ export function ResourceLinks() {
   return (
     <ListSection header={translate("ui.settings.resources")}>
       <ListNavRow
-        detail={translate("ui.settings.websiteDescription")}
         external
         href="https://tavricccc.github.io/novae-website/"
         icon={ExternalLink}
         label={translate("ui.settings.website")}
       />
       <ListNavRow
-        detail={translate("ui.settings.sourceDescription")}
         external
         href="https://github.com/tavricccc/novae"
         icon={Github}
         label="GitHub"
       />
       <ListActionRow
-        detail={translate("ui.settings.restartDescription")}
         icon={RefreshCcw}
         label={translate("ui.settings.restart")}
         onClick={() => window.location.reload()}

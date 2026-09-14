@@ -1,15 +1,14 @@
 "use client";
 import { t as translate } from "@/i18n";
 
-import { LogOut } from "lucide-react";
-import { useTheme } from "next-themes";
 import { toast } from "sonner";
+import { useTheme } from "next-themes";
 import { useSession } from "@/hooks/use-session";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { usePwaInstall } from "@/hooks/use-pwa-install";
 import { setLocale, useI18n } from "@/i18n";
-import { SettingsAccountCard } from "@/components/settings/account-card";
-import { AppearanceInstallCards } from "@/components/settings/appearance-install-cards";
+import { SettingsAccountSection } from "@/components/settings/account-section";
+import { AppearanceSection } from "@/components/settings/appearance-section";
 import {
   NotificationCard,
   type NotificationOption,
@@ -18,7 +17,7 @@ import {
   ManagementLinks,
   ResourceLinks,
 } from "@/components/settings/settings-links";
-import { Button } from "@/components/ui/button";
+import { ListActionRow, ListSection } from "@/components/ui/list";
 import { PageHeader } from "@/components/ui/page-state";
 import { SaveBar } from "@/components/ui/save-bar";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
@@ -29,7 +28,7 @@ export default function SettingsPage() {
   const push = usePushNotifications();
   const pwa = usePwaInstall();
   const { locale } = useI18n();
-  const { resolvedTheme, setTheme, theme } = useTheme();
+  const { setTheme, theme } = useTheme();
   const notificationFeedback = useActionFeedback();
   const preferences = useDraft({
     save: async (next) => push.savePreferences(next),
@@ -37,21 +36,9 @@ export default function SettingsPage() {
   });
   const user = session.user!;
   const notificationOptions: NotificationOption[] = [
-    {
-      description: translate("ui.settings.commentDescription"),
-      key: "comments",
-      label: translate("ui.settings.commentLabel"),
-    },
-    {
-      description: translate("ui.settings.issueDescription"),
-      key: "issueUpdates",
-      label: translate("ui.settings.issueLabel"),
-    },
-    {
-      description: translate("ui.settings.facilityDescription"),
-      key: "facilityUpdates",
-      label: translate("ui.settings.facilityLabel"),
-    },
+    { key: "comments", label: translate("ui.settings.commentLabel") },
+    { key: "issueUpdates", label: translate("ui.settings.issueLabel") },
+    { key: "facilityUpdates", label: translate("ui.settings.facilityLabel") },
   ];
 
   async function togglePush(enabled: boolean) {
@@ -73,7 +60,7 @@ export default function SettingsPage() {
     <div className="w-full space-y-5">
       <PageHeader title={translate("ui.nav.settings")} />
       <div className="space-y-5">
-        <SettingsAccountCard
+        <SettingsAccountSection
           customPhotoUrl={session.customPhotoUrl}
           onCopyUid={() =>
             void navigator.clipboard
@@ -83,7 +70,7 @@ export default function SettingsPage() {
           onSwitchAccount={() => void session.login({ selectAccount: true })}
           user={user}
         />
-        <AppearanceInstallCards
+        <AppearanceSection
           canInstall={pwa.canInstall}
           installed={pwa.installed}
           locale={locale}
@@ -94,7 +81,6 @@ export default function SettingsPage() {
           }
           onLocaleChange={setLocale}
           onThemeChange={setTheme}
-          resolvedTheme={resolvedTheme}
           theme={theme}
         />
         <NotificationCard
@@ -118,14 +104,13 @@ export default function SettingsPage() {
           }
         />
         <ResourceLinks />
-        <Button
-          className="w-full"
-          onClick={() => void session.logout()}
-          variant="outline"
-        >
-          <LogOut />
-          {translate("ui.nav.signOut")}
-        </Button>
+        <ListSection>
+          <ListActionRow
+            label={translate("ui.nav.signOut")}
+            onClick={() => void session.logout()}
+            tone="destructive"
+          />
+        </ListSection>
         <SaveBar
           changeCount={preferences.changes.length}
           onDiscard={preferences.reset}

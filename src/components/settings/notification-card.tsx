@@ -10,7 +10,6 @@ import { ListCustomRow, ListSection, RowInner } from "@/components/ui/list";
 import { ListSwitchRow } from "@/components/ui/list-controls";
 
 export interface NotificationOption {
-  description: string;
   key: PersonalPushPreferenceKey;
   label: string;
 }
@@ -45,7 +44,6 @@ export function NotificationCard({
         : translate("ui.settings.pushUnsupported");
   return (
     <ListSection
-      footer={translate("ui.settings.pushPreferencesHelp")}
       header={translate("ui.settings.push")}
     >
       {/* Turning the device on has to happen in the click that asked for it:
@@ -87,7 +85,6 @@ export function NotificationCard({
       {options.map((option) => (
         <ListSwitchRow
           checked={preferences[option.key]}
-          detail={option.description}
           key={option.key}
           label={option.label}
           name={option.label}
