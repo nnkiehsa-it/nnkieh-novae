@@ -1,11 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  realtimeHeartbeatInterval,
   realtimeIdleRemaining,
-} from "@/lib/realtime-idle";
+} from "@/lib/realtime-timing";
 const REALTIME_IDLE_TIMEOUT_MS = 30 * 60 * 1000;
 
-describe("realtime idle policy", () => {
+describe("realtime timing policy", () => {
+  it("pings well inside the idle window so a silent connection is noticed", () => {
+    expect(realtimeHeartbeatInterval()).toBe(30_000);
+    expect(realtimeHeartbeatInterval()).toBeLessThan(realtimeIdleRemaining(0, 0));
+  });
+
   it("uses a thirty-minute inactivity window", () => {
     expect(realtimeIdleRemaining(0,0)).toBe(30 * 60 * 1_000);
   });

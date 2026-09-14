@@ -3,7 +3,8 @@ import { apiGatewayUrl } from '@/lib/api-gateway';
 import { auth } from '@/lib/firebase';
 import { withRequestTimeout } from '@/lib/request';
 import { backendSecurityHeaders } from '@/lib/backend-security';
-import { realtimeIdleRemaining } from '@/lib/realtime-idle';
+import { realtimeIdleRemaining } from '@/lib/realtime-timing';
+import { noteHeartbeatResponse, startHeartbeat, stopHeartbeat } from '@/services/realtime-heartbeat';
 
 interface RealtimeTicketEnvelope {
   data?: {
@@ -84,6 +85,7 @@ function closeSocket() {
   window.clearTimeout(reconnectTimer);
   reconnectTimer = 0;
   connecting = false;
+  stopHeartbeat();
   const activeSocket = socket;
   socket = null;
   if (activeSocket && activeSocket.readyState < WebSocket.CLOSING) activeSocket.close(1000, 'idle');
@@ -210,9 +212,14 @@ async function connectRealtime() {
         resyncCallbacks.forEach((callback) => callback());
       }
       connectedBefore = true;
+      startHeartbeat(nextSocket, () => socket === nextSocket);
     };
     nextSocket.onmessage = (event) => {
-      if (typeof event.data !== 'string' || event.data === 'pong') return;
+      if (typeof event.data !== 'string') return;
+      if (event.data === 'pong') {
+        noteHeartbeatResponse();
+        return;
+      }
       let message: RealtimeMessage | null = null;
       try {
         message = normalizeMessage(JSON.parse(event.data) as unknown);
@@ -230,6 +237,7 @@ async function connectRealtime() {
     nextSocket.onclose = () => {
       if (socket !== nextSocket) return;
       socket = null;
+      stopHeartbeat();
       if (shouldConnect()) {
         notifyError(new Error('notification-realtime-unavailable'));
         scheduleReconnect();

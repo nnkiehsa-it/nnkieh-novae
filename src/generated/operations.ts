@@ -144,6 +144,12 @@ export const OPERATION_POLICIES = {
     "max": 120,
     "group": "client"
   },
+  "realtimeHeartbeatSeconds": {
+    "value": 30,
+    "min": 10,
+    "max": 120,
+    "group": "client"
+  },
   "realtimeTicketSeconds": {
     "value": 45,
     "min": 15,

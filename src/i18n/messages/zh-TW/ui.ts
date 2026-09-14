@@ -77,6 +77,7 @@ const messages = {
   "ui.operations.policy.longTimeoutMs": "長請求逾時（毫秒）",
   "ui.operations.policy.retryAttempts": "自動重試總次數",
   "ui.operations.policy.retryAfterMaxMs": "自動等待上限（毫秒）",
+  "ui.operations.policy.realtimeHeartbeatSeconds": "連線心跳（秒）",
   "ui.operations.policy.realtimeIdleMinutes": "閒置斷線（分鐘）",
   "ui.operations.policy.realtimeTicketSeconds": "連線憑證有效期（秒）",
   "ui.operations.policy.titleLength": "標題長度",

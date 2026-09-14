@@ -25,7 +25,28 @@ function ticketFromRequest(request: Request) {
   return protocols.find((value) => value !== REALTIME_PROTOCOL) ?? "";
 }
 
+/**
+ * A close code the runtime accepts on an outgoing close frame. The codes a
+ * peer can report — 1005 (no status), 1006 (no close frame, the abnormal
+ * disconnect) and 1015 — may never be sent back out, so a disconnect that
+ * reports one is completed as an ordinary close.
+ */
+function sendableCloseCode(code: number) {
+  if (code === 1005 || code === 1006 || code === 1015) return 1000;
+  return code >= 1000 && code <= 4999 ? code : 1000;
+}
+
 export class RealtimeHub extends DurableObject<Env> {
+  constructor(ctx: DurableObjectState, env: Env) {
+    super(ctx, env);
+    /**
+     * The client heartbeats to keep the connection from being dropped in
+     * silence. Answering it here means the runtime replies on its own: the
+     * object stays hibernated and a ping costs no CPU time.
+     */
+    ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
+  }
+
   async fetch(request: Request) {
     if (request.headers.get("upgrade")?.toLowerCase() !== "websocket") {
       return new Response("WebSocket upgrade required", { status: 426 });
@@ -81,12 +102,8 @@ export class RealtimeHub extends DurableObject<Env> {
     return { delivered };
   }
 
-  webSocketMessage(socket: WebSocket, message: ArrayBuffer | string) {
-    if (message === "ping") socket.send("pong");
-  }
-
   webSocketClose(socket: WebSocket, code: number, reason: string, wasClean: boolean) {
-    socket.close(code, reason || (wasClean ? "closed" : "disconnected"));
+    socket.close(sendableCloseCode(code), reason || (wasClean ? "closed" : "disconnected"));
   }
 
   webSocketError(socket: WebSocket) {

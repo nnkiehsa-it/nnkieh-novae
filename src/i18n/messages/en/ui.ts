@@ -77,6 +77,7 @@ const messages = {
   "ui.operations.policy.longTimeoutMs": "Long Timeout Ms",
   "ui.operations.policy.retryAttempts": "Retry Attempts",
   "ui.operations.policy.retryAfterMaxMs": "Retry After Max Ms",
+  "ui.operations.policy.realtimeHeartbeatSeconds": "Realtime Heartbeat Seconds",
   "ui.operations.policy.realtimeIdleMinutes": "Realtime Idle Minutes",
   "ui.operations.policy.realtimeTicketSeconds": "Realtime Ticket Seconds",
   "ui.operations.policy.titleLength": "Title Length",
