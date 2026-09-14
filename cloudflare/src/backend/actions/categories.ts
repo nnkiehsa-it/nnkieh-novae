@@ -6,6 +6,7 @@ import {
   loadPlatformSettings,
   platformSettingsFromInput,
 } from "../shared/platform-settings.ts";
+import type { Row, Selected } from "../database/schema.ts";
 
 const CATEGORY_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 const READ_ACCESS_VALUES = new Set(["school", "reviewed-school", "owner-admin"]);
@@ -126,36 +127,32 @@ async function announcementCommentsSetting(payload: JsonRecord, database: Backen
   if (typeof payload.announcementCommentsEnabled === "boolean") {
     return payload.announcementCommentsEnabled;
   }
-  const { data, error } = await database.table("app_private", "system_setup")
-    .select("announcement_comments_enabled").eq("singleton", true).single();
-  if (error) throw error;
-  return data.announcement_comments_enabled !== false;
+  const setup = await database.sqlOne<Selected<"system_setup", "announcement_comments_enabled">>`
+    select announcement_comments_enabled from app_private.system_setup where singleton = true`;
+  return setup.announcement_comments_enabled !== false;
 }
 
 export async function getIssueCategories(database: BackendDatabase, includeInactive = false): Promise<RuntimeIssueCategory[]> {
-  let query = database.table("app_private", "issue_categories").select("*")
-    .order("sort_order", { ascending: true }).order("created_at", { ascending: true });
-  if (!includeInactive) query = query.eq("is_active", true);
-  const { data, error } = await query;
-  if (error) throw error;
-  return (data ?? []).map((row: any) => issueCategoryResponse(row));
+  const { rows } = await database.sql<Row<"issue_categories">>`
+    select * from app_private.issue_categories
+    where ${includeInactive}::boolean or is_active = true
+    order by sort_order, created_at`;
+  return rows.map((row) => issueCategoryResponse(row));
 }
 
 export async function getFacilityCategories(database: BackendDatabase, includeInactive = false): Promise<RuntimeFacilityCategory[]> {
-  let query = database.table("app_private", "facility_categories").select("*")
-    .order("sort_order", { ascending: true }).order("created_at", { ascending: true });
-  if (!includeInactive) query = query.eq("is_active", true);
-  const { data, error } = await query;
-  if (error) throw error;
-  return (data ?? []).map((row: any) => facilityCategoryResponse(row));
+  const { rows } = await database.sql<Row<"facility_categories">>`
+    select * from app_private.facility_categories
+    where ${includeInactive}::boolean or is_active = true
+    order by sort_order, created_at`;
+  return rows.map((row) => facilityCategoryResponse(row));
 }
 
 export async function getIssueCategory(database: BackendDatabase, categoryId: string) {
-  const { data, error } = await database.table("app_private", "issue_categories")
-    .select("*").eq("id", categoryId).eq("is_active", true).maybeSingle();
-  if (error) throw error;
-  if (!data) throw new Error("invalid-issue-category");
-  return issueCategoryResponse(data);
+  const category = await database.sqlMaybe<Row<"issue_categories">>`
+    select * from app_private.issue_categories where id = ${categoryId} and is_active = true`;
+  if (!category) throw new Error("invalid-issue-category");
+  return issueCategoryResponse(category);
 }
 
 export async function issueCategoryPolicyLists(database: BackendDatabase) {
@@ -169,23 +166,22 @@ export async function issueCategoryPolicyLists(database: BackendDatabase) {
 }
 
 export async function loadCategoryCatalog(database: BackendDatabase, includeInactive: boolean) {
-  const [issueCategories, facilityCategories, setupResult, platformSettings] = await Promise.all([
+  const [issueCategories, facilityCategories, setup, platformSettings] = await Promise.all([
     getIssueCategories(database, includeInactive),
     getFacilityCategories(database, includeInactive),
-    database.table("app_private", "system_setup")
-      .select("issues_enabled,facilities_enabled,announcement_comments_enabled")
-      .eq("singleton", true).single(),
+    database.sqlOne<Selected<"system_setup", "issues_enabled" | "facilities_enabled" | "announcement_comments_enabled">>`
+      select issues_enabled, facilities_enabled, announcement_comments_enabled
+      from app_private.system_setup where singleton = true`,
     loadPlatformSettings(database),
   ]);
-  if (setupResult.error) throw setupResult.error;
   return {
     issueCategories,
     facilityCategories,
     imageUploads: platformSettings.imageUploads,
     features: {
-      announcementCommentsEnabled: setupResult.data.announcement_comments_enabled !== false,
-      facilitiesEnabled: setupResult.data.facilities_enabled !== false,
-      issuesEnabled: setupResult.data.issues_enabled !== false,
+      announcementCommentsEnabled: setup.announcement_comments_enabled !== false,
+      facilitiesEnabled: setup.facilities_enabled !== false,
+      issuesEnabled: setup.issues_enabled !== false,
     },
   };
 }
@@ -315,8 +311,8 @@ export async function handleCategoryAction(
   if (action === "completeInitialSetup") {
     if (!auth.isAdmin) throw new Error("permission-denied");
     if (auth.setupCompleted) return { success: true, setupCompleted: true, alreadyCompleted: true };
-    const { data: setupState, error: setupStateError } = await database.table("app_private", "system_setup").select("completed_at").eq("singleton", true).maybeSingle();
-    if (setupStateError) throw setupStateError;
+    const setupState = await database.sqlMaybe<Selected<"system_setup", "completed_at">>`
+      select completed_at from app_private.system_setup where singleton = true`;
     if (setupState?.completed_at) return { success: true, setupCompleted: true, alreadyCompleted: true };
     const rawIssueCategories = Array.isArray(payload.issueCategories) ? payload.issueCategories : [];
     const rawFacilityCategories = Array.isArray(payload.facilityCategories) ? payload.facilityCategories : [];

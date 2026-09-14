@@ -7,6 +7,7 @@ import { asString } from "../shared/http.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { handleUserAccessAction } from "./user-access.ts";
 import { handleUserAdminAction } from "./user-admin.ts";
+import type { Selected } from "../database/schema.ts";
 
 const AVATAR_REVALIDATE_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
@@ -63,12 +64,13 @@ export async function handleUserAction(
       || !parsedSourceUrl.hostname.toLowerCase().endsWith(".googleusercontent.com")
     ) throw new Error("validation-invalid");
 
-    const { data: existing, error: existingError } = await database
-      .table("app_private", "user_profiles")
-      .select("avatar_checked_at,avatar_hash,avatar_public_id,avatar_source_url,avatar_version,cached_photo_url")
-      .eq("uid", auth.uid)
-      .maybeSingle();
-    if (existingError) throw existingError;
+    const existing = await database.sqlMaybe<Selected<
+      "user_profiles",
+      "avatar_checked_at" | "avatar_hash" | "avatar_public_id" | "avatar_source_url"
+      | "avatar_version" | "cached_photo_url"
+    >>`select avatar_checked_at, avatar_hash, avatar_public_id, avatar_source_url,
+        avatar_version, cached_photo_url
+      from app_private.user_profiles where uid = ${auth.uid}`;
     const checkedAt = Date.parse(asString(existing?.avatar_checked_at));
     if (
       existing?.avatar_source_url === sourceUrl
@@ -98,15 +100,17 @@ export async function handleUserAction(
     if (imageBuffer.byteLength > 5 * 1024 * 1024) throw new Error("validation-invalid");
     const avatarHash = await sha256Hex(imageBuffer);
     if (existing?.avatar_hash === avatarHash && existing.cached_photo_url && existing.avatar_public_id) {
-      const { error } = await database.table("app_private", "user_profiles").upsert({
-        uid: auth.uid,
-        avatar_source_url: sourceUrl,
-        avatar_checked_at: new Date().toISOString(),
-        display_name: auth.name,
-        photo_url: sourceUrl,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "uid" });
-      if (error) throw error;
+      const revalidatedAt = new Date().toISOString();
+      await database.sql`
+        insert into app_private.user_profiles
+          (uid, avatar_source_url, avatar_checked_at, display_name, photo_url, updated_at)
+        values (${auth.uid}, ${sourceUrl}, ${revalidatedAt}, ${auth.name}, ${sourceUrl}, ${revalidatedAt})
+        on conflict (uid) do update set
+          avatar_source_url = excluded.avatar_source_url,
+          avatar_checked_at = excluded.avatar_checked_at,
+          display_name = excluded.display_name,
+          photo_url = excluded.photo_url,
+          updated_at = excluded.updated_at`;
       const media = await createMediaDeliveryUrl(existing.avatar_public_id, "avatar", false, auth.uid);
       return { photoUrl: media.url };
     }
@@ -132,10 +136,11 @@ export async function handleUserAction(
   }
 
   const uids = Array.isArray(payload.uids) ? payload.uids.map((uid) => asString(uid)).filter(Boolean).slice(0, 50) : [];
-  const { data, error } = await database.table("app_private", "user_profiles")
-    .select("uid,display_name,avatar_public_id,photo_url,profile_version").in("uid", uids);
-  if (error) throw error;
-  const profiles = await Promise.all((data ?? []).map(async (profile: any) => {
+  const { rows } = await database.sql<Selected<
+    "user_profiles", "uid" | "display_name" | "avatar_public_id" | "photo_url" | "profile_version"
+  >>`select uid, display_name, avatar_public_id, photo_url, profile_version
+     from app_private.user_profiles where uid = any(${uids})`;
+  const profiles = await Promise.all(rows.map(async (profile) => {
     const media = profile.avatar_public_id
       ? await createMediaDeliveryUrl(profile.avatar_public_id, "avatar", false, auth.uid)
       : null;

@@ -276,14 +276,16 @@ interface ContentVersionRow {
 /**
  * The columns one statement selects, checked against the generated schema.
  *
- * `Selected<"issues", "id" | "title">` is the row shape of
+ * `Row<"issues">` is a whole row and `Selected<"issues", "id" | "title">` is the row shape of
  * `select id, title from app_private.issues`, so a column that is renamed or
  * dropped by a migration fails the build at the statement that reads it.
  */
+export type Row<TName extends keyof AppPrivateTables> = AppPrivateTables[TName]["Row"];
+
 export type Selected<
   TName extends keyof AppPrivateTables,
-  TColumn extends keyof AppPrivateTables[TName]["Row"],
-> = Pick<AppPrivateTables[TName]["Row"], TColumn>;
+  TColumn extends keyof Row<TName>,
+> = Pick<Row<TName>, TColumn>;
 
 export interface AppPrivateTables {
   announcement_comments: Table<AnnouncementCommentRow>;

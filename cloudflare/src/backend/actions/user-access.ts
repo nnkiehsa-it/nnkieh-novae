@@ -2,6 +2,7 @@ import { asString } from "../shared/http.ts";
 import { createMediaDeliveryUrl } from "../shared/media-delivery.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { requirePermission } from "./auth.ts";
+import type { Selected } from "../database/schema.ts";
 
 const ACCESS_LIST_LIMIT = 100;
 const ACCESS_SCOPE_KINDS = new Set(["announcement", "facility", "issue"]);
@@ -23,17 +24,19 @@ function readAccessScope(payload: JsonRecord): AccessScopeSelector | null {
 }
 
 async function scopedAccessUids(scope: AccessScopeSelector, database: BackendDatabase) {
-  const query = scope.kind === "announcement"
-    ? database.table("app_private", "user_role_assignments")
-      .select("uid").eq("role_code", "announcement-manager").limit(ACCESS_LIST_LIMIT + 1)
+  const limit = ACCESS_LIST_LIMIT + 1;
+  const { rows } = scope.kind === "announcement"
+    ? await database.sql<Selected<"user_role_assignments", "uid">>`
+      select uid from app_private.user_role_assignments
+      where role_code = 'announcement-manager' limit ${limit}`
     : scope.kind === "issue"
-    ? database.table("app_private", "user_issue_category_assignments")
-      .select("uid").eq("category_id", scope.categoryId).limit(ACCESS_LIST_LIMIT + 1)
-    : database.table("app_private", "user_facility_category_assignments")
-      .select("uid").eq("category_id", scope.categoryId).limit(ACCESS_LIST_LIMIT + 1);
-  const { data, error } = await query;
-  if (error) throw error;
-  const uids: string[] = [...new Set((data ?? []).map((row: any) => asString(row.uid)))];
+    ? await database.sql<Selected<"user_issue_category_assignments", "uid">>`
+      select uid from app_private.user_issue_category_assignments
+      where category_id = ${scope.categoryId} limit ${limit}`
+    : await database.sql<Selected<"user_facility_category_assignments", "uid">>`
+      select uid from app_private.user_facility_category_assignments
+      where category_id = ${scope.categoryId} limit ${limit}`;
+  const uids = [...new Set(rows.map((row) => row.uid))];
   return { truncated: uids.length > ACCESS_LIST_LIMIT, uids: uids.slice(0, ACCESS_LIST_LIMIT) };
 }
 
@@ -43,31 +46,30 @@ async function accessUsersForUids(
   viewerUid: string,
 ) {
   if (uids.length === 0) return [];
-  const { data: profiles, error: profileError } = await database.table("app_private", "user_profiles")
-    .select("uid,email,display_name,avatar_public_id,photo_url").in("uid", uids)
-    .order("display_name", { ascending: true });
-  if (profileError) throw profileError;
-  const [roleResult, issueResult, facilityResult] = await Promise.all([
-    database.table("app_private", "user_role_assignments").select("uid,role_code").in("uid", uids),
-    database.table("app_private", "user_issue_category_assignments").select("uid,category_id").in("uid", uids),
-    database.table("app_private", "user_facility_category_assignments").select("uid,category_id").in("uid", uids),
+  const [{ rows: profiles }, { rows: roleRows }, { rows: issueRows }, { rows: facilityRows }] = await Promise.all([
+    database.sql<Selected<"user_profiles", "uid" | "email" | "display_name" | "avatar_public_id" | "photo_url">>`
+      select uid, email, display_name, avatar_public_id, photo_url from app_private.user_profiles
+      where uid = any(${uids}) order by display_name`,
+    database.sql<Selected<"user_role_assignments", "uid" | "role_code">>`
+      select uid, role_code from app_private.user_role_assignments where uid = any(${uids})`,
+    database.sql<Selected<"user_issue_category_assignments", "uid" | "category_id">>`
+      select uid, category_id from app_private.user_issue_category_assignments where uid = any(${uids})`,
+    database.sql<Selected<"user_facility_category_assignments", "uid" | "category_id">>`
+      select uid, category_id from app_private.user_facility_category_assignments where uid = any(${uids})`,
   ]);
-  if (roleResult.error) throw roleResult.error;
-  if (issueResult.error) throw issueResult.error;
-  if (facilityResult.error) throw facilityResult.error;
   const roles = new Map<string, string[]>();
   const issueCategories = new Map<string, string[]>();
   const facilityCategories = new Map<string, string[]>();
-  for (const assignment of roleResult.data ?? []) {
+  for (const assignment of roleRows) {
     roles.set(assignment.uid, [...(roles.get(assignment.uid) ?? []), assignment.role_code]);
   }
-  for (const assignment of issueResult.data ?? []) {
+  for (const assignment of issueRows) {
     issueCategories.set(assignment.uid, [...(issueCategories.get(assignment.uid) ?? []), assignment.category_id]);
   }
-  for (const assignment of facilityResult.data ?? []) {
+  for (const assignment of facilityRows) {
     facilityCategories.set(assignment.uid, [...(facilityCategories.get(assignment.uid) ?? []), assignment.category_id]);
   }
-  return await Promise.all((profiles ?? []).map(async (profile: any) => {
+  return await Promise.all(profiles.map(async (profile) => {
     const media = profile.avatar_public_id
       ? await createMediaDeliveryUrl(profile.avatar_public_id, "avatar", false, viewerUid)
       : null;
@@ -98,11 +100,12 @@ export async function handleUserAccessAction(
     let uids: string[] = [];
     if (rawQuery) {
       const query = rawQuery.includes("@") ? rawQuery.toLowerCase() : rawQuery;
-      let profileQuery = database.table("app_private", "user_profiles").select("uid").limit(1);
-      profileQuery = query.includes("@") ? profileQuery.eq("email", query) : profileQuery.eq("uid", query);
-      const { data, error } = await profileQuery;
-      if (error) throw error;
-      uids = (data ?? []).map((profile: any) => asString(profile.uid));
+      const { rows } = query.includes("@")
+        ? await database.sql<Selected<"user_profiles", "uid">>`
+          select uid from app_private.user_profiles where email = ${query} limit 1`
+        : await database.sql<Selected<"user_profiles", "uid">>`
+          select uid from app_private.user_profiles where uid = ${query} limit 1`;
+      uids = rows.map((profile) => profile.uid);
     } else if (scope) {
       const scoped = await scopedAccessUids(scope, database);
       truncated = scoped.truncated;

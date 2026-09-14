@@ -1,4 +1,4 @@
-import type { Json } from "../database/schema.ts";
+import type { Json, Selected } from "../database/schema.ts";
 import type { AppDatabaseClient } from "../database/client.ts";
 import { resolveDomainEvents } from "../events/domain-events.ts";
 import { hasPermission } from "./auth.ts";
@@ -76,11 +76,11 @@ export async function executeBackendAction(
     if (claimError) throw claimError;
     const claim = Array.isArray(claimRows) ? claimRows[0] : null;
     if (!claim) throw new Error("operation-claim-failed");
-    const identity = await tx.table('app_private', 'operations').select('actor_uid,action,response_expired')
-      .eq('operation_id', operationId).single();
-    if (identity.error) throw identity.error;
-    if (identity.data.actor_uid !== auth.uid || identity.data.action !== definition.name) throw new Error('permission-denied');
-    if (identity.data.response_expired) throw new Error('operation-expired');
+    const identity = await tx.sqlOne<Selected<'operations', 'actor_uid' | 'action' | 'response_expired'>>`
+      select actor_uid, action, response_expired from app_private.operations
+      where operation_id = ${operationId}`;
+    if (identity.actor_uid !== auth.uid || identity.action !== definition.name) throw new Error('permission-denied');
+    if (identity.response_expired) throw new Error('operation-expired');
     if (claim.completed) return claim.response;
     if (!claim.claimed) throw new Error("request-in-progress");
     const { error: contextError } = await tx.call("app_api", "set_operation_context", {
@@ -98,24 +98,11 @@ export async function executeBackendAction(
     if (definition.rateLimitGroup === "admin-write") {
       const targetId = auditTarget(payload);
       const detail = auditDetail(payload);
-      let auditId = operationId;
-      const { data: auditRow, error: auditError } = await tx
-        .table("app_private", "admin_audit_log")
-        .insert({
-          operation_id: operationId,
-          actor_uid: auth.uid,
-          action: definition.name,
-          domain: definition.domain,
-          target_id: targetId,
-          detail,
-        })
-        .select("id")
-        .single();
-      if (auditError) throw auditError;
-
-      if (auditRow && typeof auditRow === "object" && "id" in auditRow) {
-        auditId = String((auditRow as { id: number }).id);
-      }
+      const auditRow = await tx.sqlOne<Selected<"admin_audit_log", "id">>`
+        insert into app_private.admin_audit_log (operation_id, actor_uid, action, domain, target_id, detail)
+        values (${operationId}, ${auth.uid}, ${definition.name}, ${definition.domain}, ${targetId}, ${detail})
+        returning id`;
+      const auditId = String(auditRow.id);
 
       const { error: auditEventError } = await tx
         .call("app_api", "record_domain_event", {

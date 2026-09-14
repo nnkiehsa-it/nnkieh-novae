@@ -1,4 +1,5 @@
 import type { BackendDatabase, JsonRecord } from "./types.ts";
+import type { Selected } from "../database/schema.ts";
 
 export type ContentVersionDomain = "issues" | "announcements" | "facilities";
 export type ContentVersions = Record<ContentVersionDomain, number>;
@@ -10,12 +11,10 @@ const EMPTY_VERSIONS: ContentVersions = {
 };
 
 export async function loadContentVersions(database: BackendDatabase): Promise<ContentVersions> {
-  const { data, error } = await database
-    .table("app_private", "content_versions")
-    .select("domain,version");
-  if (error) throw error;
+  const { rows } = await database.sql<Selected<"content_versions", "domain" | "version">>`
+    select domain, version from app_private.content_versions`;
   const versions = { ...EMPTY_VERSIONS };
-  for (const row of data ?? []) {
+  for (const row of rows) {
     const domain = String(row.domain);
     if (domain === "announcements" || domain === "facilities" || domain === "issues") {
       versions[domain] = Math.max(1, Number(row.version));

@@ -4,6 +4,7 @@ import { issueCategoryPolicyLists } from "./categories.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { asUuid } from "./utils.ts";
 import { INPUT_LIMITS, optionalText } from "./validation.ts";
+import type { Row } from "../database/schema.ts";
 
 const VALID_STATUSES = new Set([
   "under-review", "pending", "processing", "auto-rejected",
@@ -22,8 +23,8 @@ async function issuePolicyParams(database: BackendDatabase, auth: AuthContext, a
 }
 
 async function readIssueForAdmin(database: BackendDatabase, issueId: string, auth: AuthContext) {
-  const { data: storedIssue, error: storedIssueError } = await database.table("app_private", "issues").select("*").eq("id", issueId).maybeSingle();
-  if (storedIssueError) throw storedIssueError;
+  const storedIssue = await database.sqlMaybe<Row<"issues">>`
+    select * from app_private.issues where id = ${issueId}`;
   if (!storedIssue) throw new Error("not-found");
   requireIssueCategoryPermission(auth, storedIssue.category);
   return asRecord(storedIssue);

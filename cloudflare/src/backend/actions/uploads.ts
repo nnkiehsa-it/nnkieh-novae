@@ -18,6 +18,10 @@ import {
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { asNumber } from "./utils.ts";
 import { canReadIssue } from "./issue-shared.ts";
+import type { Selected } from "../database/schema.ts";
+
+/** What a finished upload tells the caller: where the image lives and how big it is. */
+type FinalizedUpload = Selected<"uploads", "id" | "cloudinary_public_id" | "height" | "width">;
 
 const MARKDOWN_UPLOAD_ID_PATTERN = /srp-upload:\/\/([0-9a-fA-F-]{36})/gu;
 const MARKDOWN_IMAGE_SOURCE_PATTERN = /!\[[^\]]*\]\((\S+?)(?:\s+["'][^"']*["'])?\)/gu;
@@ -48,11 +52,11 @@ async function assertMarkdownUploadsAttachable(
   const maxImages = maxImagesForTarget(imageUploads, targetType);
   if (uploadIds.length > maxImages) throw new Error("validation-too-many");
 
-  const { data: attachable, error: attachableError } = await database.table("app_private", "uploads")
-    .select("id,owner_uid,status,attached_target_type,attached_target_id")
-    .in("id", uploadIds);
-  if (attachableError) throw attachableError;
-  const validIds = new Set((attachable ?? []).filter((upload: any) =>
+  const { rows: attachable } = await database.sql<Selected<
+    "uploads", "id" | "owner_uid" | "status" | "attached_target_type" | "attached_target_id"
+  >>`select id, owner_uid, status, attached_target_type, attached_target_id
+     from app_private.uploads where id = any(${uploadIds})`;
+  const validIds = new Set(attachable.filter((upload) =>
     (upload.status === "ready" || upload.status === "attached")
     && (targetId
       ? (
@@ -60,7 +64,7 @@ async function assertMarkdownUploadsAttachable(
         || (upload.owner_uid === ownerUid && !upload.attached_target_id)
       )
       : upload.owner_uid === ownerUid && !upload.attached_target_id)
-  ).map((upload: any) => upload.id));
+  ).map((upload) => upload.id));
   if (validIds.size !== uploadIds.length) throw new Error("validation-invalid");
 }
 
@@ -92,10 +96,9 @@ async function resolveUploadAccessBatch(
   }
   const commentToIssue = new Map<string, string>();
   if (commentIds.size > 0) {
-    const { data, error } = await database.table("app_private", "comments")
-      .select("id,issue_id").in("id", [...commentIds]);
-    if (error) throw error;
-    for (const comment of data ?? []) {
+    const { rows } = await database.sql<Selected<"comments", "id" | "issue_id">>`
+      select id, issue_id from app_private.comments where id = any(${[...commentIds]})`;
+    for (const comment of rows) {
       commentToIssue.set(String(comment.id), String(comment.issue_id));
       issueIds.add(String(comment.issue_id));
     }
@@ -105,15 +108,16 @@ async function resolveUploadAccessBatch(
     .map((upload) => asString(upload.attached_target_id)).filter(Boolean);
   const availableFacilities = new Set<string>();
   if (facilityIds.length > 0) {
-    const { data, error } = await database.table("app_private", "facility_reports").select("id").in("id", facilityIds);
-    if (error) throw error;
-    for (const facility of data ?? []) availableFacilities.add(String(facility.id));
+    const { rows } = await database.sql<Selected<"facility_reports", "id">>`
+      select id from app_private.facility_reports where id = any(${facilityIds})`;
+    for (const facility of rows) availableFacilities.add(facility.id);
   }
   if (issueIds.size > 0) {
-    const { data, error } = await database.table("app_private", "issues")
-      .select("id,category,status,author_uid,read_access,author_visible").in("id", [...issueIds]);
-    if (error) throw error;
-    for (const issue of data ?? []) issues.set(String(issue.id), issue as JsonRecord);
+    const { rows } = await database.sql<Selected<
+      "issues", "id" | "category" | "status" | "author_uid" | "read_access" | "author_visible"
+    >>`select id, category, status, author_uid, read_access, author_visible
+       from app_private.issues where id = any(${[...issueIds]})`;
+    for (const issue of rows) issues.set(issue.id, issue as unknown as JsonRecord);
   }
   return new Map(uploads.map((upload) => {
     const targetType = asString(upload.attached_target_type);
@@ -221,14 +225,11 @@ export async function handleUploadAction(
       ? [...new Set(payload.storagePaths.map((path) => asString(path)).filter(Boolean))].slice(0, 50)
       : [];
     if (storagePaths.length === 0) return { deleted: 0, success: true };
-    const { data, error } = await database.table("app_private", "uploads")
-      .select("id,cloudinary_public_id")
-      .eq("owner_uid", auth.uid)
-      .in("cloudinary_public_id", storagePaths);
-    if (error) throw error;
-    const uploads = data ?? [];
+    const { rows: uploads } = await database.sql<Selected<"uploads", "id" | "cloudinary_public_id">>`
+      select id, cloudinary_public_id from app_private.uploads
+      where owner_uid = ${auth.uid} and cloudinary_public_id = any(${storagePaths})`;
     if (uploads.length > 0) {
-      for (const upload of uploads as Array<{ cloudinary_public_id: string; id: string }>) {
+      for (const upload of uploads) {
         const { error: jobError } = await database.call("app_api", "enqueue_background_job", {
           job_type: "deletion",
           scope_id: upload.id,
@@ -241,9 +242,8 @@ export async function handleUploadAction(
         });
         if (jobError) throw jobError;
       }
-      const { error: deleteError } = await database.table("app_private", "uploads")
-        .delete().in("id", uploads.map((upload: any) => upload.id));
-      if (deleteError) throw deleteError;
+      await database.sql`delete from app_private.uploads
+        where id = any(${uploads.map((upload) => upload.id)})`;
     }
     return { deleted: uploads.length, success: true };
   }
@@ -266,18 +266,12 @@ export async function handleUploadAction(
       type: "authenticated",
       upload_preset: CLOUDINARY_IMAGE_UPLOAD_PRESET,
     };
-    const { error } = await database.table("app_private", "uploads").insert({
-      id: uploadId,
-      owner_uid: auth.uid,
-      cloudinary_public_id: `${folder}/${publicId}`,
-      status: "pending",
-      visibility: "authenticated",
-      width: Math.round(asNumber(payload.width, 0)),
-      height: Math.round(asNumber(payload.height, 0)),
-      size_bytes: Math.round(asNumber(payload.size, 0)),
-      content_type: asString(payload.contentType, "image/webp"),
-    });
-    if (error) throw error;
+    await database.sql`
+      insert into app_private.uploads
+        (id, owner_uid, cloudinary_public_id, status, visibility, width, height, size_bytes, content_type)
+      values (${uploadId}, ${auth.uid}, ${`${folder}/${publicId}`}, 'pending', 'authenticated',
+        ${Math.round(asNumber(payload.width, 0))}, ${Math.round(asNumber(payload.height, 0))},
+        ${Math.round(asNumber(payload.size, 0))}, ${asString(payload.contentType, "image/webp")})`;
     return {
       apiKey: requireEnv("CLOUDINARY_API_KEY"),
       allowedFormats: params.allowed_formats,
@@ -298,16 +292,14 @@ export async function handleUploadAction(
 
   if (action === "internal:finalize-upload") {
     const uploadId = asString(payload.uploadId);
-    const { data: upload, error: uploadError } = await database.table("app_private", "uploads")
-      .select("id,owner_uid,cloudinary_public_id,status,width,height,size_bytes")
-      .eq("id", uploadId)
-      .eq("owner_uid", auth.uid)
-      .maybeSingle();
-    if (uploadError) throw uploadError;
+    const upload = await database.sqlMaybe<Selected<
+      "uploads", "id" | "owner_uid" | "cloudinary_public_id" | "status" | "width" | "height" | "size_bytes"
+    >>`select id, owner_uid, cloudinary_public_id, status, width, height, size_bytes
+       from app_private.uploads where id = ${uploadId} and owner_uid = ${auth.uid}`;
     if (!upload) throw new Error("not-found");
     if (upload.status === "failed") throw new Error("upload-validation-failed");
 
-    let data = upload as JsonRecord;
+    let data: FinalizedUpload = upload;
     if (upload.status !== "ready") {
       const responsePublicId = asString(payload.publicId);
       const responseSignature = asString(payload.signature);
@@ -333,32 +325,15 @@ export async function handleUploadAction(
         && height <= imageUploads.maxDimension;
       if (!validAsset) throw new Error("upload-validation-failed");
 
-      const { data: finalized, error: finalizeError } = await database.table("app_private", "uploads")
-        .update({
-          height,
-          size_bytes: bytes,
-          status: "ready",
-          updated_at: new Date().toISOString(),
-          width,
-        })
-        .eq("id", uploadId)
-        .eq("owner_uid", auth.uid)
-        .eq("status", "pending")
-        .select("id,cloudinary_public_id,height,width")
-        .maybeSingle();
-      if (finalizeError) throw finalizeError;
-      if (finalized) {
-        data = finalized as JsonRecord;
-      } else {
-        const { data: webhookFinalized, error: webhookError } = await database.table("app_private", "uploads")
-          .select("id,cloudinary_public_id,height,width")
-          .eq("id", uploadId)
-          .eq("owner_uid", auth.uid)
-          .eq("status", "ready")
-          .single();
-        if (webhookError) throw webhookError;
-        data = webhookFinalized as JsonRecord;
-      }
+      const finalized = await database.sqlMaybe<FinalizedUpload>`
+        update app_private.uploads
+        set height = ${height}, size_bytes = ${bytes}, status = 'ready',
+          updated_at = ${new Date().toISOString()}, width = ${width}
+        where id = ${uploadId} and owner_uid = ${auth.uid} and status = 'pending'
+        returning id, cloudinary_public_id, height, width`;
+      data = finalized ?? await database.sqlOne<FinalizedUpload>`
+        select id, cloudinary_public_id, height, width from app_private.uploads
+        where id = ${uploadId} and owner_uid = ${auth.uid} and status = 'ready'`;
     }
     return {
       height: Number(data.height ?? 0),
@@ -369,13 +344,13 @@ export async function handleUploadAction(
   }
 
   const uploadIds = Array.isArray(payload.uploadIds) ? payload.uploadIds.map((id) => asString(id)).filter(Boolean).slice(0, 50) : [];
-  const { data, error } = await database.table("app_private", "uploads")
-    .select("id,owner_uid,cloudinary_public_id,attached_target_type,attached_target_id")
-    .in("id", uploadIds)
-    .in("status", ["ready", "attached"]);
-  if (error) throw error;
-  const accessByUploadId = await resolveUploadAccessBatch((data ?? []) as JsonRecord[], auth, database);
-  const resolved = await Promise.all((data ?? []).map(async (upload: any) => {
+  const { rows: deliverable } = await database.sql<Selected<
+    "uploads", "id" | "owner_uid" | "cloudinary_public_id" | "attached_target_type" | "attached_target_id"
+  >>`select id, owner_uid, cloudinary_public_id, attached_target_type, attached_target_id
+     from app_private.uploads
+     where id = any(${uploadIds}) and status = any(${["ready", "attached"]})`;
+  const accessByUploadId = await resolveUploadAccessBatch(deliverable as unknown as JsonRecord[], auth, database);
+  const resolved = await Promise.all(deliverable.map(async (upload) => {
     const access = accessByUploadId.get(upload.id) ?? { allowed: false, privateDelivery: true };
     if (!access.allowed || !upload.cloudinary_public_id) return null;
     return {

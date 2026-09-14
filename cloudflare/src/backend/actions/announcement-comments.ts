@@ -5,6 +5,7 @@ import { validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
 import { asNumber, asUuid, readCursor, readCursorDate } from "./utils.ts";
 import { INPUT_LIMITS, requiredMediaContent } from "./validation.ts";
 import { attachContentVersion, loadContentVersion } from "./content-versions.ts";
+import type { Selected } from "../database/schema.ts";
 
 async function listAnnouncementComments(payload: JsonRecord, database: BackendDatabase) {
   const announcementId = asUuid(payload.announcementId);
@@ -26,14 +27,12 @@ async function listAnnouncementComments(payload: JsonRecord, database: BackendDa
 async function createAnnouncementComment(payload: JsonRecord, auth: AuthContext, database: BackendDatabase) {
   const announcementId = asUuid(payload.announcementId);
   if (!announcementId) throw new Error("not-found");
-  const [{ data: announcement, error: announcementError }, { data: setup, error: setupError }] = await Promise.all([
-    database.table("app_private", "announcements")
-      .select("comments_enabled").eq("id", announcementId).maybeSingle(),
-    database.table("app_private", "system_setup")
-      .select("announcement_comments_enabled").eq("singleton", true).single(),
+  const [announcement, setup] = await Promise.all([
+    database.sqlMaybe<Selected<"announcements", "comments_enabled">>`
+      select comments_enabled from app_private.announcements where id = ${announcementId}`,
+    database.sqlOne<Selected<"system_setup", "announcement_comments_enabled">>`
+      select announcement_comments_enabled from app_private.system_setup where singleton = true`,
   ]);
-  if (announcementError) throw announcementError;
-  if (setupError) throw setupError;
   if (!announcement) throw new Error("not-found");
   if (announcement.comments_enabled === false || setup.announcement_comments_enabled === false) {
     throw new Error("comments-disabled");

@@ -1,6 +1,7 @@
 import { asRecord, asString } from "../shared/http.ts";
 import { requirePermission } from "./auth.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
+import type { Selected } from "../database/schema.ts";
 
 const RESTRICTION_MODES = new Set(["clear", "7d", "30d", "permanent", "custom"]);
 
@@ -61,14 +62,20 @@ export async function handleUserAdminAction(
       const hours = payload.durationHours;
       if (!Number.isInteger(hours) || Number(hours) < 1 || Number(hours) > 87600 || reason.length > 500) throw new Error('validation-invalid');
       if (uid === auth.uid) throw new Error('permission-denied');
-      const target = await database.query(`select p.uid from app_private.user_profiles p where p.uid=$1
-        and not exists(select 1 from app_private.user_role_assignments r where r.uid=p.uid and r.role_code='platform-admin') for update`,[uid]);
-      if (!target.rows.length) throw new Error('permission-denied');
-      const updated = await database.query(`insert into app_private.user_restrictions(uid,restricted_until,restricted_permanently,reason,updated_by)
-        values($1,now()+make_interval(hours=>$2::integer),false,$3,$4)
-        on conflict(uid) do update set restricted_until=excluded.restricted_until,restricted_permanently=false,
-          reason=excluded.reason,updated_by=excluded.updated_by,updated_at=now() returning restricted_until`,[uid,hours,reason,auth.uid]);
-      return { success: true, uid, restrictedUntil: updated.rows[0].restricted_until, restrictedPermanently: false };
+      const target = await database.sqlMaybe<Selected<'user_profiles', 'uid'>>`
+        select p.uid from app_private.user_profiles p where p.uid = ${uid}
+          and not exists(select 1 from app_private.user_role_assignments r
+          where r.uid = p.uid and r.role_code = 'platform-admin') for update`;
+      if (!target) throw new Error('permission-denied');
+      const updated = await database.sqlOne<Selected<'user_restrictions', 'restricted_until'>>`
+        insert into app_private.user_restrictions
+          (uid, restricted_until, restricted_permanently, reason, updated_by)
+        values (${uid}, now() + make_interval(hours => ${hours}::integer), false, ${reason}, ${auth.uid})
+        on conflict (uid) do update set restricted_until = excluded.restricted_until,
+          restricted_permanently = false, reason = excluded.reason,
+          updated_by = excluded.updated_by, updated_at = now()
+        returning restricted_until`;
+      return { success: true, uid, restrictedUntil: updated.restricted_until, restrictedPermanently: false };
     }
 
     const { data, error } = await database.call("app_api", "backend_set_user_restriction", {

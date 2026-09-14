@@ -2,6 +2,7 @@ import { asString } from "../shared/http.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { toMs } from "./utils.ts";
 import { canManageIssueCategory } from "./auth.ts";
+import type { Row, Selected } from "../database/schema.ts";
 
 export function issueToResponse(issue: JsonRecord): JsonRecord {
   return {
@@ -57,23 +58,15 @@ export function commentCursor(comment: JsonRecord) {
 }
 
 export async function selectIssue(database: BackendDatabase, issueId: string) {
-  const { data, error } = await database
-    .table("app_private", "issues")
-    .select("*")
-    .eq("id", issueId)
-    .maybeSingle();
-  if (error) throw error;
-  if (!data) throw new Error("not-found");
-  return data;
+  const issue = await database.sqlMaybe<Row<"issues">>`
+    select * from app_private.issues where id = ${issueId}`;
+  if (!issue) throw new Error("not-found");
+  return issue;
 }
 
 export async function selectIssueCategory(database: BackendDatabase, issueId: string) {
-  const { data, error } = await database
-    .table("app_private", "issues")
-    .select("category")
-    .eq("id", issueId)
-    .maybeSingle();
-  if (error) throw error;
-  if (!data) throw new Error("not-found");
-  return data.category;
+  const issue = await database.sqlMaybe<Selected<"issues", "category">>`
+    select category from app_private.issues where id = ${issueId}`;
+  if (!issue) throw new Error("not-found");
+  return issue.category;
 }

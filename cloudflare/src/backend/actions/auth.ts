@@ -96,10 +96,6 @@ export async function handleHealthcheck(request: Request, database: BackendDatab
   requireEnv("PUBLIC_API_URL");
   requireEnv("MEDIA_SIGNING_SECRET");
 
-  const { error } = await database
-    .table("app_private", "roles")
-    .select("code")
-    .limit(1);
-  if (error) throw error;
+  await database.sql`select code from app_private.roles limit 1`;
   return { ok: true };
 }

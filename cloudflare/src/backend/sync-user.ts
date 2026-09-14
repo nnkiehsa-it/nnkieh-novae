@@ -21,20 +21,18 @@ export async function handleSyncUser(user: FirebaseAuthContext, database: AppDat
   try {
     await claimFixedWindowRateLimit(user.uid, "auth.sync", utcHourWindow(), { ...RATE_LIMITS.loginSyncHourly, limit: operationPolicy('loginSyncHourly') });
 
-    const { error: conflictError } = await database.table("app_private", "user_profiles")
-      .update({ email: null })
-      .eq("email", user.email.toLowerCase())
-      .neq("uid", user.uid);
-    if (conflictError) throw conflictError;
+    const email = user.email.toLowerCase();
+    await database.sql`update app_private.user_profiles set email = null
+      where email = ${email} and uid <> ${user.uid}`;
 
-    const { error: profileError } = await database.table("app_private", "user_profiles").upsert({
-      uid: user.uid,
-      email: user.email.toLowerCase(),
-      display_name: user.name,
-      photo_url: user.photoUrl,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "uid" });
-    if (profileError) throw profileError;
+    await database.sql`
+      insert into app_private.user_profiles (uid, email, display_name, photo_url, updated_at)
+      values (${user.uid}, ${email}, ${user.name}, ${user.photoUrl}, ${new Date().toISOString()})
+      on conflict (uid) do update set
+        email = excluded.email,
+        display_name = excluded.display_name,
+        photo_url = excluded.photo_url,
+        updated_at = excluded.updated_at`;
     const { error: adminSyncError } = await database.call("app_api", "backend_reconcile_platform_admins", {
       actor_uid: user.uid,
       admin_emails: adminEmails(),

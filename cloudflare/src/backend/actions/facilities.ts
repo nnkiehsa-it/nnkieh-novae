@@ -5,6 +5,7 @@ import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
 import { asNumber, asUuid, countRecord } from "./utils.ts";
 import { INPUT_LIMITS, optionalMediaContent, optionalText, requiredText } from "./validation.ts";
+import type { Selected } from "../database/schema.ts";
 
 const VALID_STATUSES = new Set(["processing", "completed", "unable-to-handle"]);
 
@@ -16,11 +17,10 @@ function policy(auth: AuthContext, categoryId: string) {
 }
 
 async function selectFacilityCategory(database: BackendDatabase, facilityId: string) {
-  const { data, error } = await database.table("app_private", "facility_reports")
-    .select("category_id").eq("id", facilityId).maybeSingle();
-  if (error) throw error;
-  if (!data) throw new Error("not-found");
-  return data.category_id;
+  const facility = await database.sqlMaybe<Selected<"facility_reports", "category_id">>`
+    select category_id from app_private.facility_reports where id = ${facilityId}`;
+  if (!facility) throw new Error("not-found");
+  return facility.category_id;
 }
 
 export async function handleFacilityAction(

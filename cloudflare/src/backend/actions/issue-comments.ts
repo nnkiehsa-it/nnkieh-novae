@@ -7,6 +7,7 @@ import { INPUT_LIMITS, requiredMediaContent } from "./validation.ts";
 import { canManageIssueCategory } from "./auth.ts";
 import { selectIssue } from "./issue-shared.ts";
 import { attachContentVersion, loadContentVersion } from "./content-versions.ts";
+import type { Selected } from "../database/schema.ts";
 
 async function issueCommentPolicyParams(database: BackendDatabase, auth: AuthContext, actorCanManage: boolean) {
   const policy = await issueCategoryPolicyLists(database);
@@ -67,8 +68,8 @@ async function createComment(payload: JsonRecord, auth: AuthContext, database: B
 async function deleteComment(payload: JsonRecord, auth: AuthContext, database: BackendDatabase) {
   const commentId = asUuid(payload.commentId);
   if (!commentId) return { success: true };
-  const { data: comment, error: commentError } = await database.table("app_private", "comments").select("issue_id").eq("id", commentId).maybeSingle();
-  if (commentError) throw commentError;
+  const comment = await database.sqlMaybe<Selected<"comments", "issue_id">>`
+    select issue_id from app_private.comments where id = ${commentId}`;
   if (!comment) return { success: true };
   const issue = await selectIssue(database, comment.issue_id);
   const { error } = await database.call("app_api", "backend_delete_issue_comment", {

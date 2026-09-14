@@ -32,17 +32,13 @@ export async function handleCloudinaryWebhook(body: Uint8Array, database: AppDat
       && height <= imageUploads.maxDimension;
 
     await database.transaction(async (tx) => {
-      const { error } = await tx.table("app_private", "uploads")
-        .update({
-          status: validAsset ? "ready" : "failed",
-          size_bytes: Number.isFinite(bytes) ? bytes : null,
-          width: Number.isFinite(width) ? width : null,
-          height: Number.isFinite(height) ? height : null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("cloudinary_public_id", publicId)
-        .eq("status", "pending");
-      if (error) throw error;
+      await tx.sql`update app_private.uploads set
+        status = ${validAsset ? "ready" : "failed"},
+        size_bytes = ${Number.isFinite(bytes) ? bytes : null},
+        width = ${Number.isFinite(width) ? width : null},
+        height = ${Number.isFinite(height) ? height : null},
+        updated_at = ${new Date().toISOString()}
+        where cloudinary_public_id = ${publicId} and status = 'pending'`;
 
       if (!validAsset) {
         const { error: deletionError } = await tx.call("app_api", "enqueue_background_job", {
