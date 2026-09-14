@@ -1,27 +1,20 @@
 "use client";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
-import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import type { IssueRecord, IssueStatus } from "@/types";
 import { useIssueModeration } from "@/hooks/use-issue-moderation";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { DecisionSheet, type DecisionOption } from "@/components/ui/decision-sheet";
+
+const REVIEW_OPTION_KEYS: ReadonlyArray<[IssueStatus, string]> = [
+  ["pending", "ui.issue.approve"],
+  ["review-rejected", "ui.issue.reject"],
+];
+
+const PROGRESS_OPTION_KEYS: ReadonlyArray<[IssueStatus, string]> = [
+  ["processing", "ui.status.processing"],
+  ["completed", "ui.status.completed"],
+  ["infeasible", "ui.status.infeasible"],
+];
 
 export function IssueModerationDialog({
   issue,
@@ -42,75 +35,53 @@ export function IssueModerationDialog({
     open,
   });
 
+  // A proposal that was turned away at review is still at review: the outcomes
+  // it can take are the review outcomes, so approving it later is one tap
+  // rather than a state the screen cannot express.
+  const reviewing = issue.status === "under-review" || issue.status === "review-rejected";
+  const options: DecisionOption[] = (
+    reviewing ? REVIEW_OPTION_KEYS : PROGRESS_OPTION_KEYS
+  ).map(([value, labelKey]) => ({
+    label: translate(labelKey),
+    tone: value === "review-rejected" ? "destructive" : "default",
+    value,
+  }));
+
+  const rejecting = state.status === "review-rejected";
+  const concluding = state.status === "completed" || state.status === "infeasible";
+
   return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent presentation="sheet">
-        <DialogHeader>
-          <DialogTitle>{translate('ui.issue.statusDialogTitle')}</DialogTitle>
-          <DialogDescription>{translate('ui.issue.statusDialogDescription')}</DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="issue-status">{translate('ui.common.status')}</Label>
-            <Select
-              onValueChange={(value) => state.setStatus(value as IssueStatus)}
-              value={state.status}
-            >
-              <SelectTrigger id="issue-status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {issue.status === "under-review" ? (
-                  <>
-                    <SelectItem value="pending">{translate('ui.issue.approve')}</SelectItem>
-                    <SelectItem value="review-rejected">{translate('ui.issue.reject')}</SelectItem>
-                  </>
-                ) : (
-                  <>
-                    <SelectItem value="processing">{translate('ui.status.processing')}</SelectItem>
-                    <SelectItem value="completed">{translate('ui.status.completed')}</SelectItem>
-                    <SelectItem value="infeasible">{translate('ui.status.infeasible')}</SelectItem>
-                  </>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-          {state.status === "review-rejected" ? (
-            <div className="grid gap-2">
-              <Label htmlFor="issue-rejection-reason">{translate('ui.issue.rejectReason')}</Label>
-              <Textarea
-                id="issue-rejection-reason"
-                onChange={(event) => state.setReason(event.target.value)}
-                placeholder={translate('ui.issue.rejectPlaceholder')}
-                value={state.reason}
-              />
-            </div>
-          ) : null}
-          {state.status === "completed" || state.status === "infeasible" ? (
-            <div className="grid gap-2">
-              <Label htmlFor="issue-result">{translate('ui.common.result')}</Label>
-              <Textarea
-                className="min-h-28"
-                id="issue-result"
-                onChange={(event) => state.setResult(event.target.value)}
-                placeholder={translate('ui.issue.resultPlaceholder')}
-                value={state.result}
-              />
-            </div>
-          ) : null}
-        </div>
-        <DialogFooter>
-          <Button onClick={() => onOpenChange(false)} variant="outline">{translate('ui.common.cancel')}</Button>
-          <Button disabled={state.saving} onClick={() => void state.save()}>
-            {state.saving ? (
-              <ActionFeedbackIcon
-                className="bg-transparent [&>svg]:size-5"
-                size="md"
-                state={state.feedbackState === "success" ? "success" : "loading"}
-              />
-            ) : null}{translate('ui.common.submit')}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <DecisionSheet
+      busy={state.saving}
+      feedback={state.feedbackState}
+      note={
+        rejecting
+          ? {
+              label: translate("ui.issue.rejectReason"),
+              onChange: state.setReason,
+              placeholder: translate("ui.issue.rejectPlaceholder"),
+              required: true,
+              value: state.reason,
+            }
+          : concluding
+            ? {
+                label: translate("ui.common.result"),
+                onChange: state.setResult,
+                placeholder: translate("ui.issue.resultPlaceholder"),
+                required: true,
+                value: state.result,
+              }
+            : undefined
+      }
+      onOpenChange={onOpenChange}
+      onSubmit={() => void state.save()}
+      onValueChange={(value) => state.setStatus(value as IssueStatus)}
+      open={open}
+      options={options}
+      sectionHeader={translate("ui.common.status")}
+      submitLabel={translate("ui.common.submit")}
+      title={translate("ui.issue.statusDialogTitle")}
+      value={state.status}
+    />
   );
 }

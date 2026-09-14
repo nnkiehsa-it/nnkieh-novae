@@ -461,7 +461,6 @@ const messages = {
   'ui.issue.author': 'Author',
   'ui.issue.resultAlt': '{title} outcome',
   'ui.issue.statusDialogTitle': 'Manage proposal status',
-  'ui.issue.statusDialogDescription': 'Status changes are reflected in the proposal list and notifications.',
   'ui.issue.approve': 'Approve',
   'ui.issue.reject': 'Reject',
   'ui.issue.rejectReason': 'Reason for rejection',

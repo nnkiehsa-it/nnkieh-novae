@@ -1,9 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ShieldOff, UserRound } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,8 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ListSection } from "@/components/ui/list";
-import { ListChoiceRow, ListInputRow, ListNumberRow } from "@/components/ui/list-controls";
+import { DecisionForm, type DecisionOption } from "@/components/ui/decision-sheet";
+import { ListActionRow, ListRow, ListSection } from "@/components/ui/list";
+import { ListNumberRow } from "@/components/ui/list-controls";
 import type { AdminUser, RestrictionMode } from "@/hooks/use-admin-console";
 import { useI18n, type TranslationParams } from "@/i18n";
 import { formatDate } from "@/lib/format";
@@ -41,6 +40,14 @@ export function responsibilityLabel(user: AdminUser, t: Translator) {
   return labels.length > 0 ? labels.join(" · ") : "—";
 }
 
+function statusLabel(user: AdminUser, t: Translator) {
+  if (!isUserRestricted(user)) return t("ui.adminConsole.normal");
+  if (user.restrictedPermanently) return t("ui.adminConsole.permanentRestriction");
+  return user.restrictedUntil
+    ? t("ui.adminConsole.restrictedUntil", { date: formatDate(user.restrictedUntil) })
+    : t("ui.adminConsole.restricted");
+}
+
 interface UserDetailsDialogProps {
   busy: boolean;
   durationHours: number;
@@ -52,6 +59,13 @@ interface UserDetailsDialogProps {
   user: AdminUser | null;
 }
 
+/**
+ * One member, read and acted on in the same sheet.
+ *
+ * The selected user is held for as long as the sheet is on screen, including
+ * the frames it spends leaving: unmounting it with the selection is what used
+ * to make the sheet vanish instead of sliding back down.
+ */
 export function UserDetailsDialog({
   busy,
   durationHours,
@@ -63,127 +77,64 @@ export function UserDetailsDialog({
   user,
 }: UserDetailsDialogProps) {
   const { t } = useI18n();
+  const [shown, setShown] = React.useState<AdminUser | null>(user);
+  if (user && user !== shown) setShown(user);
+  const subject = user ?? shown;
+  if (!subject) return null;
+
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open={Boolean(user)}>
-      {user ? (
-        <DialogContent className="sm:max-w-xl" presentation="sheet">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <UserRound className="size-4 text-muted-foreground" />
-              {user.name}
-            </DialogTitle>
-            <DialogDescription>{user.email ?? user.uid}</DialogDescription>
-          </DialogHeader>
+      <DialogContent className="sm:max-w-xl" presentation="sheet">
+        <DialogHeader>
+          <DialogTitle>{subject.name}</DialogTitle>
+          <DialogDescription>{subject.email ?? subject.uid}</DialogDescription>
+        </DialogHeader>
 
-          <div className="divide-y rounded-xl border">
-            {[
-              ["Email", user.email ?? "—"],
-              ["UID", user.uid],
-              [t("ui.adminConsole.registeredAtColumn"), formatDate(user.createdAt)],
-              [
-                t("ui.adminConsole.accountStatus"),
-                isUserRestricted(user)
-                  ? user.restrictedPermanently
-                    ? t("ui.adminConsole.permanentRestriction")
-                    : user.restrictedUntil
-                      ? t("ui.adminConsole.restrictedUntil", { date: formatDate(user.restrictedUntil) })
-                      : t("ui.adminConsole.restricted")
-                  : t("ui.adminConsole.normal"),
-              ],
-              [t("ui.adminConsole.scopeColumn"), responsibilityLabel(user, t)],
-            ].map(([label, value]) => (
-              <div className="grid grid-cols-[7rem_1fr] gap-4 px-4 py-3 text-sm" key={label}>
-                <span className="text-muted-foreground">{label}</span>
-                <span className="break-all">{value}</span>
-              </div>
-            ))}
-          </div>
+        <ListSection>
+          <ListRow label="UID" value={<span className="font-mono text-xs">{subject.uid}</span>} />
+          <ListRow
+            label={t("ui.adminConsole.registeredAtColumn")}
+            value={formatDate(subject.createdAt)}
+          />
+          <ListRow label={t("ui.adminConsole.accountStatus")} value={statusLabel(subject, t)} />
+          <ListRow
+            label={t("ui.adminConsole.scopeColumn")}
+            value={responsibilityLabel(subject, t)}
+          />
+        </ListSection>
 
-          <div>
-            <p className="mb-2 text-xs font-medium text-muted-foreground">
-              {t("ui.adminConsole.permissions")}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {user.roles.length === 0
-                && user.managedIssueCategoryIds.length === 0
-                && user.managedFacilityCategoryIds.length === 0 ? (
-                  <span className="text-sm text-muted-foreground">
-                    {t("ui.adminConsole.noPermissions")}
-                  </span>
-                ) : (
-                  <>
-                    {user.roles.map((role) => (
-                      <span className="rounded-full bg-muted px-2.5 py-1 text-xs" key={role}>
-                        {role}
-                      </span>
-                    ))}
-                    {user.managedIssueCategoryIds.map((id) => (
-                      <span className="rounded-full bg-muted px-2.5 py-1 text-xs" key={`issue-${id}`}>
-                        {t("ui.adminConsole.issueTag", { id })}
-                      </span>
-                    ))}
-                    {user.managedFacilityCategoryIds.map((id) => (
-                      <span className="rounded-full bg-muted px-2.5 py-1 text-xs" key={`facility-${id}`}>
-                        {t("ui.adminConsole.facilityTag", { id })}
-                      </span>
-                    ))}
-                  </>
-                )}
-            </div>
-          </div>
-
-          {user.roles.includes("platform-admin") ? (
-            <div className="rounded-xl border bg-muted/35 p-4 text-sm text-muted-foreground">
-              {t("ui.adminConsole.platformAdminRestrictionNotice")}
-            </div>
-          ) : isUserRestricted(user) ? (
-            <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4">
-              <div className="flex items-start gap-3">
-                <ShieldOff className="mt-0.5 size-4 text-destructive" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">
-                    {t("ui.adminConsole.restrictionActiveTitle")}
-                  </p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    {user.restrictionReason || t("ui.adminConsole.noRestrictionReason")}
-                  </p>
-                  <Button
-                    className="mt-3"
-                    disabled={busy}
-                    onClick={() => onRestrictionChange("clear")}
-                    size="sm"
-                    variant="outline"
-                  >
-                    {t("ui.adminConsole.clearRestriction")}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <RestrictionForm
-              busy={busy}
-              durationHours={durationHours}
-              onDurationHoursChange={onDurationHoursChange}
-              onReasonChange={onReasonChange}
-              onRestrict={onRestrictionChange}
-              reason={reason}
+        {subject.roles.includes("platform-admin") ? (
+          <ListSection>
+            <ListRow label={t("ui.adminConsole.platformAdminRestrictionNotice")} />
+          </ListSection>
+        ) : isUserRestricted(subject) ? (
+          <ListSection header={t("ui.adminConsole.restrictionActiveTitle")}>
+            <ListRow
+              label={subject.restrictionReason || t("ui.adminConsole.noRestrictionReason")}
             />
-          )}
-        </DialogContent>
-      ) : null}
+            <ListActionRow
+              busy={busy}
+              label={t("ui.adminConsole.clearRestriction")}
+              onClick={() => onRestrictionChange("clear")}
+              tone="destructive"
+            />
+          </ListSection>
+        ) : (
+          <RestrictionDecision
+            busy={busy}
+            durationHours={durationHours}
+            onDurationHoursChange={onDurationHoursChange}
+            onReasonChange={onReasonChange}
+            onRestrict={onRestrictionChange}
+            reason={reason}
+          />
+        )}
+      </DialogContent>
     </Dialog>
   );
 }
 
-/**
- * Restricting an account is one decision, made once.
- *
- * It used to be five buttons, each of which restricted the account the moment
- * it was pressed -- so the length of a restriction was chosen by whichever
- * button the pointer landed on. Here the duration is selected, the reason is
- * written, and one control at the bottom carries it out.
- */
-function RestrictionForm({
+function RestrictionDecision({
   busy,
   durationHours,
   onDurationHoursChange,
@@ -202,62 +153,44 @@ function RestrictionForm({
   const [mode, setMode] = React.useState<RestrictionMode>("7d");
   const customValid =
     Number.isInteger(durationHours) && durationHours >= 1 && durationHours <= 87_600;
-  const ready = reason.trim().length > 0 && (mode !== "custom" || customValid);
+  const options: DecisionOption[] = [
+    { label: t("ui.adminConsole.restriction7d"), value: "7d" },
+    { label: t("ui.adminConsole.restriction30d"), value: "30d" },
+    { label: t("ui.operations.restrictCustom"), value: "custom" },
+    {
+      label: t("ui.adminConsole.restrictionPermanent"),
+      tone: "destructive",
+      value: "permanent",
+    },
+  ];
 
   return (
-    <form
-      className="space-y-4"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (ready && !busy) onRestrict(mode);
+    <DecisionForm
+      busy={busy}
+      note={{
+        label: t("ui.adminConsole.restrictionReasonPlaceholder"),
+        onChange: onReasonChange,
+        required: true,
+        value: reason,
       }}
+      onSubmit={() => onRestrict(mode)}
+      onValueChange={(value) => setMode(value as RestrictionMode)}
+      options={options}
+      sectionHeader={t("ui.adminConsole.restrictionTitle")}
+      submitLabel={t("ui.adminConsole.restrictionApply")}
+      submittable={mode !== "custom" || customValid}
+      value={mode}
     >
-      <ListSection
-        footer={t("ui.adminConsole.restrictionDescription")}
-        header={t("ui.adminConsole.restrictionTitle")}
-      >
-        {(
-          [
-            ["7d", t("ui.adminConsole.restriction7d")],
-            ["30d", t("ui.adminConsole.restriction30d")],
-            ["custom", t("ui.operations.restrictCustom")],
-            ["permanent", t("ui.adminConsole.restrictionPermanent")],
-          ] as Array<[RestrictionMode, string]>
-        ).map(([value, label]) => (
-          <ListChoiceRow
-            key={value}
-            label={label}
-            onSelect={() => setMode(value)}
-            selected={mode === value}
-            tone={value === "permanent" ? "destructive" : "default"}
-          />
-        ))}
-        {mode === "custom" ? (
-          <ListNumberRow
-            label={t("ui.operations.restrictionHours")}
-            max={87_600}
-            min={1}
-            onChange={onDurationHoursChange}
-            unit={t("admin.unitHours")}
-            value={durationHours}
-          />
-        ) : null}
-        <ListInputRow
-          label={t("ui.adminConsole.restrictionReasonPlaceholder")}
-          maxLength={500}
-          onChange={onReasonChange}
-          placeholder={t("ui.adminConsole.restrictionReasonPlaceholder")}
-          value={reason}
+      {mode === "custom" ? (
+        <ListNumberRow
+          label={t("ui.operations.restrictionHours")}
+          max={87_600}
+          min={1}
+          onChange={onDurationHoursChange}
+          unit={t("admin.unitHours")}
+          value={durationHours}
         />
-      </ListSection>
-      <Button
-        className="w-full"
-        disabled={busy || !ready}
-        type="submit"
-        variant={mode === "permanent" ? "destructive" : "default"}
-      >
-        {t("ui.adminConsole.restrictionApply")}
-      </Button>
-    </form>
+      ) : null}
+    </DecisionForm>
   );
 }

@@ -78,8 +78,7 @@ test('proposal covers support, threaded comments, deletion, and terminal outcome
   const manager = await newUserPage(browser, 'issueManager');
   await manager.page.goto(proposalUrl);
   await chooseMoreAction(manager.page, 'Manage status');
-  await manager.page.getByRole('combobox', { name: 'Status' }).click();
-  await manager.page.getByRole('option', { name: 'Completed' }).click();
+  await manager.page.getByRole('radio', { name: 'Completed' }).click();
   const outcome = `Proposal outcome ${Date.now()}`;
   await manager.page.getByPlaceholder('Explain the outcome or why the proposal is not feasible…').fill(outcome);
   await expectBackendActions(manager.page, ['moderateIssueStatus', 'updateIssueResult'], async () => {
@@ -110,14 +109,14 @@ test('facility covers affected reaction and terminal outcome write', async ({ br
   const manager = await newUserPage(browser, 'facilityManager');
   await manager.page.goto(facilityUrl);
   await chooseMoreAction(manager.page, 'Update status');
-  await manager.page.getByRole('combobox', { name: 'Status' }).click();
-  await manager.page.getByRole('option', { name: 'Completed' }).click();
+  await manager.page.getByRole('radio', { name: 'Completed' }).click();
   const outcome = `Facility outcome ${Date.now()}`;
   await manager.page.getByPlaceholder('Describe the outcome…').fill(outcome);
   await expectBackendAction(manager.page, 'updateFacilityStatus', async () => {
     await manager.page.getByRole('button', { name: 'Submit' }).click();
   });
-  await expect(manager.page.getByText('Completed', { exact: true })).toBeVisible();
+  await expect(manager.page.getByRole('dialog')).toHaveCount(0);
+  await expect(manager.page.getByText('Completed', { exact: true }).first()).toBeVisible();
   await expect(manager.page.getByText(outcome)).toBeVisible();
   await deleteFromMoreActions(manager.page, 'Delete report');
   await manager.context.close();

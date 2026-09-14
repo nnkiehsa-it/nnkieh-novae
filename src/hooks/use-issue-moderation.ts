@@ -27,7 +27,7 @@ export function useIssueModeration({
   React.useEffect(() => {
     if (!open) return;
     setStatus(
-      issue.status === "under-review"
+      issue.status === "under-review" || issue.status === "review-rejected"
         ? "pending"
         : issue.status === "pending"
           ? "processing"

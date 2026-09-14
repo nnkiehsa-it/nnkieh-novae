@@ -461,7 +461,6 @@ const messages = {
   'ui.issue.author': '作者',
   'ui.issue.resultAlt': '{title} 處理結果',
   'ui.issue.statusDialogTitle': '管理提案狀態',
-  'ui.issue.statusDialogDescription': '狀態變更會同步到提案列表與通知。',
   'ui.issue.approve': '通過審核',
   'ui.issue.reject': '不通過審核',
   'ui.issue.rejectReason': '不通過原因',

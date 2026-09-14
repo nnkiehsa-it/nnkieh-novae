@@ -1,27 +1,16 @@
 "use client";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
-import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import type { FacilityRecord, FacilityStatus } from "@/types";
 import { useFacilityStatus } from "@/hooks/use-facility-status";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { DecisionSheet, type DecisionOption } from "@/components/ui/decision-sheet";
+
+const OPTION_KEYS: ReadonlyArray<[FacilityStatus, string]> = [
+  ["pending", "ui.status.pending"],
+  ["processing", "ui.status.processing"],
+  ["completed", "ui.status.completed"],
+  ["unable-to-handle", "ui.status.unable"],
+];
 
 export function FacilityStatusDialog({
   facility,
@@ -42,56 +31,37 @@ export function FacilityStatusDialog({
     open,
   });
 
+  const options: DecisionOption[] = OPTION_KEYS.map(([value, labelKey]) => ({
+    label: translate(labelKey),
+    value,
+  }));
+
+  const concluding = state.status === "completed" || state.status === "unable-to-handle";
+
   return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent presentation="sheet">
-        <DialogHeader>
-          <DialogTitle>{translate('ui.facility.statusDialogTitle')}</DialogTitle>
-          <DialogDescription>{translate('ui.facility.statusDialogDescription')}</DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="facility-status">{translate('ui.common.status')}</Label>
-            <Select
-              onValueChange={(value) => state.setStatus(value as FacilityStatus)}
-              value={state.status}
-            >
-              <SelectTrigger id="facility-status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">{translate('ui.status.pending')}</SelectItem>
-                <SelectItem value="processing">{translate('ui.status.processing')}</SelectItem>
-                <SelectItem value="completed">{translate('ui.status.completed')}</SelectItem>
-                <SelectItem value="unable-to-handle">{translate('ui.status.unable')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {state.status === "completed" || state.status === "unable-to-handle" ? (
-            <div className="grid gap-2">
-              <Label htmlFor="facility-result">{translate('ui.common.result')}</Label>
-              <Textarea
-                className="min-h-28"
-                id="facility-result"
-                onChange={(event) => state.setResult(event.target.value)}
-                placeholder={translate('ui.facility.resultPlaceholder')}
-                value={state.result}
-              />
-            </div>
-          ) : null}
-        </div>
-        <DialogFooter>
-          <Button onClick={() => onOpenChange(false)} variant="outline">{translate('ui.common.cancel')}</Button>
-          <Button disabled={state.saving} onClick={() => void state.save()}>
-            {state.saving ? (
-              <ActionFeedbackIcon
-                className="bg-transparent [&>svg]:size-5"
-                size="md"
-                state={state.feedbackState === "success" ? "success" : "loading"}
-              />
-            ) : null}{translate('ui.common.submit')}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <DecisionSheet
+      busy={state.saving}
+      feedback={state.feedbackState}
+      note={
+        concluding
+          ? {
+              label: translate("ui.common.result"),
+              onChange: state.setResult,
+              placeholder: translate("ui.facility.resultPlaceholder"),
+              required: true,
+              value: state.result,
+            }
+          : undefined
+      }
+      onOpenChange={onOpenChange}
+      onSubmit={() => void state.save()}
+      onValueChange={(value) => state.setStatus(value as FacilityStatus)}
+      open={open}
+      options={options}
+      sectionHeader={translate("ui.common.status")}
+      submitLabel={translate("ui.common.submit")}
+      title={translate("ui.facility.statusDialogTitle")}
+      value={state.status}
+    />
   );
 }

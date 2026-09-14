@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 /** On or off. The whole row is the label, so the switch never stands alone. */
@@ -219,6 +220,38 @@ export function ListNumberRow({
           <span className="w-8 text-xs text-muted-foreground">{unit}</span>
         ) : null}
       </span>
+    </label>
+  );
+}
+
+/**
+ * A sentence rather than a value: the one row that stacks, because what is
+ * written here is prose and has to be read back at the width it was typed.
+ */
+export function ListNoteRow({
+  label,
+  maxLength,
+  onChange,
+  placeholder,
+  value,
+}: {
+  label: string;
+  maxLength?: number;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  value: string;
+}) {
+  return (
+    <label className={cn(rowClass, "flex-col items-stretch gap-2")}>
+      <span className="text-[0.9375rem] leading-6">{label}</span>
+      <Textarea
+        aria-label={label}
+        className="min-h-24"
+        maxLength={maxLength}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder ?? label}
+        value={value}
+      />
     </label>
   );
 }
