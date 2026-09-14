@@ -1,26 +1,17 @@
 "use client";
 
-import { MoreHorizontal } from "lucide-react";
-
 import {
   isUserRestricted,
   responsibilityLabel,
   UserDetailsDialog,
 } from "@/components/admin/user-details-dialog";
-import { Button } from "@/components/ui/button";
 import { DataList } from "@/components/ui/data-list";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useAdminUsers } from "@/hooks/use-admin-console";
 import { useI18n } from "@/i18n";
 import { formatDate } from "@/lib/format";
 import type { AdminUser } from "@/hooks/use-admin-console";
 
-const GRID = "minmax(10rem,1.4fr) 6rem 7.5rem 7.5rem minmax(7rem,1fr) 2.5rem";
+const GRID = "minmax(10rem,1.4fr) 6rem 7.5rem 7.5rem minmax(7rem,1fr)";
 
 export function UserManagement() {
   const { t } = useI18n();
@@ -82,24 +73,6 @@ export function UserManagement() {
           if (key === "registered") return formatDate(user.createdAt);
           return responsibilityLabel(user, t);
         }}
-        rowAction={(user) => (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                aria-label={t("ui.common.moreActions")}
-                size="icon-sm"
-                variant="ghost"
-              >
-                <MoreHorizontal className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => state.setSelected(user)}>
-                {t("ui.adminConsole.viewDetails")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
         rowKey={(user) => user.uid}
         rows={state.users}
         searchPlaceholder={t("ui.adminConsole.userSearchPlaceholder")}

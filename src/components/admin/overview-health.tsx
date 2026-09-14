@@ -16,9 +16,10 @@ const statusTint = {
 /**
  * Whether the platform is currently keeping up.
  *
- * The counters name the problem; the row underneath goes to the one screen that
- * can do something about it. They used to be three separate readings on three
- * screens, none of which led anywhere.
+ * A counter at zero is not a reading, it is the absence of one, so a platform
+ * with nothing wrong says so in a single row instead of spending five rows
+ * saying nothing five times. Whatever is not zero names itself, and the row
+ * underneath goes to the one screen that can do something about it.
  */
 export function OverviewHealth({
   canOpenSystem,
@@ -35,8 +36,10 @@ export function OverviewHealth({
     { label: t("ui.dashboard.failedPush"), value: operations?.failed_push_delivery_count },
     { label: t("ui.dashboard.cleanup"), value: operations?.cleanup_backlog_count },
     { label: t("ui.dashboard.stuckUploads"), value: operations?.stuck_upload_count },
-  ];
+  ].filter((counter) => counter.value === undefined || counter.value > 0);
   const failures = operations?.recent_failures ?? [];
+  const settled = Boolean(operations);
+  const clear = settled && counters.length === 0 && failures.length === 0;
 
   return (
     <ListSection
@@ -55,26 +58,23 @@ export function OverviewHealth({
         </span>
       }
     >
-      {counters.map((counter) => (
-        <ListRow
-          key={counter.label}
-          label={counter.label}
-          value={
-            counter.value === undefined ? (
-              <Skeleton className="h-5 w-8" />
-            ) : (
-              <span className="tabular-nums">{counter.value}</span>
-            )
-          }
-        />
-      ))}
-      {operations && failures.length === 0 ? (
-        <ListRow
-          icon={CheckCircle2}
-          label={t("ui.dashboard.noFailures")}
-          tone="default"
-        />
-      ) : null}
+      {clear ? (
+        <ListRow icon={CheckCircle2} label={t("ui.dashboard.noFailures")} />
+      ) : (
+        counters.map((counter) => (
+          <ListRow
+            key={counter.label}
+            label={counter.label}
+            value={
+              counter.value === undefined ? (
+                <Skeleton className="h-5 w-8" />
+              ) : (
+                <span className="tabular-nums">{counter.value}</span>
+              )
+            }
+          />
+        ))
+      )}
       {failures.slice(0, 3).map((failure) => (
         <ListRow
           detail={t("ui.dashboard.trace", { id: failure.failure_id })}
@@ -86,12 +86,7 @@ export function OverviewHealth({
         />
       ))}
       {canOpenSystem ? (
-        <ListNavRow
-          href="/admin/system"
-          icon={AlertTriangle}
-          label={t("admin.systemTitle")}
-          detail={t("admin.systemDetail")}
-        />
+        <ListNavRow href="/admin/system" icon={AlertTriangle} label={t("admin.systemTitle")} />
       ) : null}
     </ListSection>
   );

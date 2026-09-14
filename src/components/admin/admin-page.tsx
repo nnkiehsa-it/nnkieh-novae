@@ -18,14 +18,12 @@ export function AdminPage({
   actions,
   back = "/admin",
   children,
-  description,
   title,
 }: {
   actions?: React.ReactNode;
   /** Where the back control goes when there is no in-app history to return to. */
   back?: string;
   children: React.ReactNode;
-  description?: React.ReactNode;
   title: string;
 }) {
   useLocaleSubscription();
@@ -37,7 +35,7 @@ export function AdminPage({
         backLabel={translate("ui.common.back")}
         onBack={() => returnToPreviousInAppRoute(router, back)}
       />
-      <PageHeader description={description} title={title} />
+      <PageHeader title={title} />
       {children}
     </div>
   );

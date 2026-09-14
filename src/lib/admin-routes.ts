@@ -9,7 +9,6 @@ export type AdminGroup = "content" | "people" | "system";
 
 export interface AdminRoute {
   allowed: (access: AdminAccess) => boolean;
-  detailKey: string;
   group: AdminGroup;
   href: string;
   labelKey: string;
@@ -30,42 +29,36 @@ export interface AdminRoute {
 export const ADMIN_ROUTES: readonly AdminRoute[] = [
   {
     allowed: (access) => access.categories,
-    detailKey: "admin.contentDetail",
     group: "content",
     href: "/admin/content",
     labelKey: "admin.contentTitle",
   },
   {
     allowed: (access) => access.categories,
-    detailKey: "admin.platformDetail",
     group: "content",
     href: "/admin/platform",
     labelKey: "admin.platformTitle",
   },
   {
     allowed: (access) => access.members,
-    detailKey: "admin.peopleDetail",
     group: "people",
     href: "/admin/people",
     labelKey: "admin.peopleTitle",
   },
   {
     allowed: (access) => access.members,
-    detailKey: "admin.auditDetail",
     group: "people",
     href: "/admin/audit",
     labelKey: "admin.auditTitle",
   },
   {
     allowed: (access) => access.admin,
-    detailKey: "admin.systemDetail",
     group: "system",
     href: "/admin/system",
     labelKey: "admin.systemTitle",
   },
   {
     allowed: (access) => access.admin,
-    detailKey: "admin.policiesDetail",
     group: "system",
     href: "/admin/policies",
     labelKey: "admin.policiesTitle",

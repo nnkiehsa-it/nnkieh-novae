@@ -11,7 +11,7 @@ export default function Page() {
   const session = useSession();
   usePermissionRedirect(session.isAdmin, "/admin");
   return (
-    <AdminPage description={translate("admin.policiesDetail")} title={translate("admin.policiesTitle")}>
+    <AdminPage title={translate("admin.policiesTitle")}>
       <PolicySettings />
     </AdminPage>
   );

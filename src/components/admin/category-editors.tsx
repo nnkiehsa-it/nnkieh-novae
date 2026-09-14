@@ -4,7 +4,7 @@ import { Trash2 } from "lucide-react";
 
 import { useI18n } from "@/i18n";
 import { CategoryDeleteAction } from "@/components/admin/category-delete-action";
-import { ListSection } from "@/components/ui/list";
+import { ListRowGroup, ListSection } from "@/components/ui/list";
 import {
   ListChoiceRow,
   ListInputRow,
@@ -25,33 +25,27 @@ function isIssue(item: AnyCategory): item is IssueCategoryConfig {
  *
  * Issues and facilities used to be two editors that differed only in how much
  * they showed; they are one editor now, and the extra issue decisions simply
- * appear when the category is an issue category.
+ * appear when the category is an issue category. It names nothing: it is opened
+ * from a row that already said which category this is.
  */
 export function CategoryEditor({
   identifierLocked,
-  index,
   item,
-  kind,
   onChange,
   onDefault,
   onDelete,
 }: {
   identifierLocked: boolean;
-  index: number;
   item: AnyCategory;
-  kind: "facility" | "issue";
   onChange: (item: never) => void;
   onDefault: () => void;
   onDelete: () => void;
 }) {
   const { t } = useI18n();
   const change = onChange as (next: AnyCategory) => void;
-  const label =
-    item.label
-    || `${t(kind === "issue" ? "ui.access.issueCategory" : "ui.access.facilityCategory")} ${index + 1}`;
 
   return (
-    <ListSection groupName={label} header={label}>
+    <ListSection>
       <ListInputRow
         label={t("ui.common.name")}
         onChange={(next) => change({ ...item, label: next })}
@@ -66,7 +60,6 @@ export function CategoryEditor({
         value={item.id}
       />
       <ListChoiceRow
-        detail={t("ui.admin.setDefaultOrder", { order: index + 1 })}
         label={t("ui.admin.defaultCategory")}
         onSelect={onDefault}
         selected={item.isDefault}
@@ -104,21 +97,19 @@ export function CategoryEditor({
             name={t("ui.admin.enableSupport")}
             onCheckedChange={(next) => change({ ...item, supportEnabled: next })}
           />
-          {item.supportEnabled ? (
-            <>
-              <ListNumberRow
-                label={t("ui.admin.supportGoal")}
-                onChange={(next) => change({ ...item, supportGoal: next || null })}
-                value={item.supportGoal ?? undefined}
-              />
-              <ListNumberRow
-                label={t("ui.admin.supportDays")}
-                onChange={(next) => change({ ...item, supportDeadlineDays: next || null })}
-                unit={t("admin.unitDays")}
-                value={item.supportDeadlineDays ?? undefined}
-              />
-            </>
-          ) : null}
+          <ListRowGroup show={item.supportEnabled}>
+            <ListNumberRow
+              label={t("ui.admin.supportGoal")}
+              onChange={(next) => change({ ...item, supportGoal: next || null })}
+              value={item.supportGoal ?? undefined}
+            />
+            <ListNumberRow
+              label={t("ui.admin.supportDays")}
+              onChange={(next) => change({ ...item, supportDeadlineDays: next || null })}
+              unit={t("admin.unitDays")}
+              value={item.supportDeadlineDays ?? undefined}
+            />
+          </ListRowGroup>
         </>
       ) : null}
 

@@ -11,7 +11,7 @@ export default function Page() {
   const session = useSession();
   usePermissionRedirect(session.can("category.manage"), "/admin");
   return (
-    <AdminPage description={translate("admin.contentDetail")} title={translate("admin.contentTitle")}>
+    <AdminPage title={translate("admin.contentTitle")}>
       <CategoryManagement />
     </AdminPage>
   );

@@ -12,7 +12,6 @@ export default function AdministrationPage() {
   return (
     <AdminPage
       back="/settings"
-      description={translate("admin.description")}
       title={translate("admin.title")}
     >
       <AdminOverview access={adminAccessOf(session)} />

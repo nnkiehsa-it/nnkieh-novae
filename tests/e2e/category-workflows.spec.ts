@@ -2,6 +2,19 @@ import { expect, test, type Page } from '@playwright/test';
 import { newUserPage } from './support/session';
 import { expectBackendAction } from './support/backend-action';
 
+/** A category is a row; its decisions open in a sheet of their own. */
+async function openCategory(page: Page, name: string) {
+  await page.getByRole('button', { name, exact: true }).click();
+  const sheet = page.getByRole('dialog');
+  await expect(sheet).toBeVisible();
+  return sheet;
+}
+
+async function closeCategory(page: Page) {
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+}
+
 async function createCategory(
   page: Page,
   kind: 'facility' | 'issue',
@@ -14,13 +27,15 @@ async function createCategory(
   await page.getByRole('button', {
     name: kind === 'issue' ? 'Add proposal category' : 'Add facility category',
   }).click();
-  const editor = page
-    .getByRole('group')
-    .filter({ has: page.getByRole('textbox', { name: 'Name', exact: true }) })
-    .last();
-  await editor.getByRole('textbox', { name: 'Name', exact: true }).fill(label);
-  await editor.getByRole('textbox', { name: 'Identifier' }).fill(id);
-  await expect(page.getByRole('group', { name: label })).toBeVisible();
+  const placeholder =
+    kind === 'issue' ? /^Proposal category \d+$/u : /^Facility category \d+$/u;
+  await page.getByRole('button', { name: placeholder }).last().click();
+  const sheet = page.getByRole('dialog');
+  await expect(sheet).toBeVisible();
+  await sheet.getByRole('textbox', { name: 'Name', exact: true }).fill(label);
+  await sheet.getByRole('textbox', { name: 'Identifier' }).fill(id);
+  await closeCategory(page);
+  await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
 }
 
 async function saveCategories(page: Page) {
@@ -32,14 +47,13 @@ async function saveCategories(page: Page) {
 }
 
 async function deleteCategory(page: Page, label: string) {
-  await page
-    .getByRole('group', { name: label })
-    .getByRole('button', { name: 'Delete category' })
-    .click();
+  const sheet = await openCategory(page, label);
+  await sheet.getByRole('button', { name: 'Delete category' }).click();
   await page
     .getByRole('alertdialog')
     .getByRole('button', { name: 'Confirm delete' })
     .click();
+  await expect(page.getByRole('button', { name: label, exact: true })).toHaveCount(0);
 }
 
 test('proposal and facility categories create, rename, surface, and delete atomically', async ({
@@ -65,10 +79,9 @@ test('proposal and facility categories create, rename, surface, and delete atomi
   await ordinary.context.close();
 
   await admin.page.goto('/admin/content');
-  await admin.page
-    .getByRole('group', { name: 'E2E Temporary Proposal' })
-    .getByRole('textbox', { name: 'Name' })
-    .fill('E2E Renamed Proposal');
+  const renaming = await openCategory(admin.page, 'E2E Temporary Proposal');
+  await renaming.getByRole('textbox', { name: 'Name', exact: true }).fill('E2E Renamed Proposal');
+  await closeCategory(admin.page);
   await saveCategories(admin.page);
 
   ordinary = await newUserPage(browser, 'ordinary');

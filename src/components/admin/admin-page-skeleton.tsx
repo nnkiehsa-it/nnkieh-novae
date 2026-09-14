@@ -16,7 +16,6 @@ export function AdminPageSkeleton({ children }: { children: ReactNode }) {
       </div>
       <div className="pb-4">
         <Skeleton className="h-8 w-56" />
-        <Skeleton className="mt-2 h-4 w-80" />
       </div>
       {children}
     </div>

@@ -11,7 +11,7 @@ export default function Page() {
   const session = useSession();
   usePermissionRedirect(session.isAdmin, "/admin");
   return (
-    <AdminPage description={translate("admin.systemDetail")} title={translate("admin.systemTitle")}>
+    <AdminPage title={translate("admin.systemTitle")}>
       <SystemConsole />
     </AdminPage>
   );

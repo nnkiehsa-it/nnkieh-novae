@@ -2,7 +2,9 @@
 
 import { useI18n } from "@/i18n";
 import { AnimatedNumber } from "@/components/motion/animated-number";
+import { ListCustomRow, ListRow, ListSection } from "@/components/ui/list";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusDistribution } from "@/components/ui/status-distribution";
 import { getIssueCategoryLabel } from "@/constants/categories";
 import type { AdminOverviewData } from "@/hooks/use-admin-overview";
 import type { PlatformDashboardData } from "@/types";
@@ -12,7 +14,9 @@ import type { PlatformDashboardData } from "@/types";
  *
  * They sit on a plain ruled band rather than in four separate cards: four cards
  * make four objects out of one reading, and a reading is easier to compare when
- * the numbers share a baseline.
+ * the numbers share a baseline. Everything below the headline is an ordinary
+ * label-and-figure row, because that is what the rest of administration uses to
+ * say the same kind of thing.
  */
 export function OverviewMetrics({
   activity,
@@ -60,71 +64,53 @@ export function OverviewMetrics({
         ))}
       </div>
 
-      <div>
-        <div className="mb-2 flex items-baseline justify-between gap-3 px-1">
-          <h2 className="text-xs font-medium uppercase tracking-[0.04em] text-muted-foreground">
-            {t("ui.adminConsole.period")}
-          </h2>
-          <span className="text-xs text-muted-foreground">{period}</span>
-        </div>
-        <div className="rule-card grid gap-x-6 py-1 sm:grid-cols-2">
-          {inPeriod.map(([label, value]) => (
-            <div className="flex min-h-[3.25rem] items-center gap-3" key={label}>
-              <span className="min-w-0 flex-1 text-[0.9375rem]">{label}</span>
-              {value === undefined ? (
-                <Skeleton className="h-6 w-10" />
+      <ListSection header={t("ui.adminConsole.period")} headerAction={
+        <span className="text-xs text-muted-foreground">{period}</span>
+      }>
+        {inPeriod.map(([label, value]) => (
+          <ListRow
+            key={label}
+            label={label}
+            value={
+              value === undefined ? (
+                <Skeleton className="h-5 w-10" />
               ) : (
-                <AnimatedNumber className="text-lg font-semibold tabular-nums" value={value} />
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+                <AnimatedNumber className="font-semibold tabular-nums" value={value} />
+              )
+            }
+          />
+        ))}
+      </ListSection>
     </div>
   );
 }
 
-/** Where the issues actually are, as a share of the whole. */
+/**
+ * Where the issues actually are, as a share of the whole — drawn by the same
+ * component the proposal feed uses for its statuses, rather than by a second
+ * bar chart that only administration knows about.
+ */
 export function OverviewDistribution({ platform }: { platform: PlatformDashboardData | null }) {
   const { t } = useI18n();
   const byCategory = platform?.stats.issues_by_category;
   const entries = Object.entries(byCategory ?? {}).toSorted((left, right) => right[1] - left[1]);
-  const largest = Math.max(1, ...entries.map(([, count]) => count));
+  const segments = entries.map(([category, count], index) => ({
+    color: "var(--tint-content)",
+    count,
+    fill: `color-mix(in oklab, var(--tint-content) ${Math.max(30, 100 - index * 16)}%, var(--muted))`,
+    key: category,
+    label: getIssueCategoryLabel(category),
+  }));
 
   return (
-    <div>
-      <h2 className="mb-2 px-1 text-xs font-medium uppercase tracking-[0.04em] text-muted-foreground">
-        {t("ui.dashboard.categoryDistribution")}
-      </h2>
-      <div className="rule-card py-4">
-        {!byCategory ? (
-          <div className="space-y-3">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-4/5" />
-            <Skeleton className="h-8 w-3/5" />
-          </div>
-        ) : (
-          entries.map(([category, count], index) => (
-            <div className="py-2" key={category}>
-              <div className="mb-1.5 flex items-center justify-between gap-3 text-sm">
-                <span className="truncate">{getIssueCategoryLabel(category)}</span>
-                <AnimatedNumber className="font-medium tabular-nums" value={count} />
-              </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                <span
-                  className="block h-full origin-left rounded-full bg-foreground animate-[dashboard-bar_var(--motion-sheet)_var(--ease-arrive)_both]"
-                  style={
-                    {
-                      "--dashboard-bar": count / largest,
-                      animationDelay: `${index * 40}ms`,
-                    } as React.CSSProperties
-                  }
-                />
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
+    <ListSection header={t("ui.dashboard.categoryDistribution")}>
+      <ListCustomRow>
+        <StatusDistribution
+          ariaLabel={t("ui.dashboard.categoryDistribution")}
+          loading={!byCategory}
+          segments={segments}
+        />
+      </ListCustomRow>
+    </ListSection>
   );
 }

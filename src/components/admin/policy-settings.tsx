@@ -51,7 +51,6 @@ export function PolicySettings() {
       {/* A runtime policy change is audited, so it asks for the sentence that
           will appear beside it rather than letting the record say nothing. */}
       <ListSection
-        footer={t("ui.operations.policyHelp")}
         header={t("admin.policyRevision", { revision })}
       >
         <ListInputRow

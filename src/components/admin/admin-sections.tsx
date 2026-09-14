@@ -59,7 +59,6 @@ export function AdminSections({ access }: { access: AdminAccess }) {
           <ListSection header={translate(groupLabelKeys[group])} key={group}>
             {inGroup.map((route) => (
               <ListNavRow
-                detail={translate(route.detailKey)}
                 href={route.href}
                 icon={icons[route.href]}
                 key={route.href}

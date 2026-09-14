@@ -4,8 +4,10 @@ import Link from "next/link";
 import { ArrowUpRight, ChevronRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type * as React from "react";
+import { AnimatePresence, motion } from "motion/react";
 
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { timing } from "@/lib/motion-timing";
 import { cn } from "@/lib/utils";
 
 /**
@@ -222,4 +224,36 @@ export function ListCustomRow({
   className?: string;
 }) {
   return <div className={cn(rowClass, "flex-wrap", className)}>{children}</div>;
+}
+
+/**
+ * Rows a decision above them brings into the list.
+ *
+ * A setting that reveals further settings used to swap them into the document
+ * with nothing in between, so the rows under it jumped down on the way in and
+ * jumped back up on the way out. They travel through their own height in both
+ * directions instead, and keep the list's hairlines while they do.
+ */
+export function ListRowGroup({
+  children,
+  show,
+}: {
+  children: React.ReactNode;
+  show: boolean;
+}) {
+  return (
+    <AnimatePresence initial={false}>
+      {show ? (
+        <motion.div
+          animate={{ height: "auto", opacity: 1 }}
+          className="overflow-hidden"
+          exit={{ height: 0, opacity: 0 }}
+          initial={{ height: 0, opacity: 0 }}
+          transition={timing("control")}
+        >
+          <div className="rule-list">{children}</div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+  );
 }

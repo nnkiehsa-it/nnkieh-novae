@@ -18,12 +18,10 @@ export function retentionLabelKey(key: string) {
  * behind, what the audit trail owes, and what an abandoned upload costs.
  */
 export const RETENTION_GROUPS: ReadonlyArray<{
-  descriptionKey: string;
   items: RetentionItem[];
   titleKey: string;
 }> = [
   {
-    descriptionKey: "ui.admin.retentionContentHelp",
     items: [
       { enableKey: "closedIssuesEnabled", key: "closedIssuesDays", unit: "days" },
       { enableKey: "closedFacilitiesEnabled", key: "closedFacilitiesDays", unit: "days" },
@@ -33,7 +31,6 @@ export const RETENTION_GROUPS: ReadonlyArray<{
     titleKey: "ui.admin.retentionContent",
   },
   {
-    descriptionKey: "ui.admin.retentionPrivacyHelp",
     items: [
       { enableKey: "inactiveAvatarsEnabled", key: "inactiveAvatarsDays", unit: "days" },
       { enableKey: "inactiveProfilePiiEnabled", key: "inactiveProfilePiiDays", unit: "days" },
@@ -44,7 +41,6 @@ export const RETENTION_GROUPS: ReadonlyArray<{
     titleKey: "ui.admin.retentionPrivacy",
   },
   {
-    descriptionKey: "ui.admin.retentionOperationsHelp",
     items: [
       { key: "deliveryCompletedDays", unit: "days" },
       { key: "deliveryFailedDays", unit: "days" },
@@ -56,7 +52,6 @@ export const RETENTION_GROUPS: ReadonlyArray<{
     titleKey: "ui.admin.retentionOperations",
   },
   {
-    descriptionKey: "ui.admin.retentionAuditHelp",
     items: [
       { key: "roleAssignmentAuditDays", unit: "days" },
       { key: "adminAuditDays", unit: "days" },
@@ -66,7 +61,6 @@ export const RETENTION_GROUPS: ReadonlyArray<{
     titleKey: "ui.admin.retentionAudit",
   },
   {
-    descriptionKey: "ui.admin.retentionUploadsHelp",
     items: [
       { key: "pendingUploadHours", unit: "hours" },
       { key: "unattachedUploadHours", unit: "hours" },

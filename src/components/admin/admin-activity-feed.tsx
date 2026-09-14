@@ -84,7 +84,7 @@ export function AdminActivityFeed() {
         options={WINDOWS.map((entry) => ({ label: t(entry.labelKey), value: entry.value }))}
         value={period}
       />
-      <ListSection footer={t("ui.adminConsole.activityLogDescription")}>
+      <ListSection>
         {activity.entries.length > 0 ? (
           <AdminActivityRows entries={activity.entries} />
         ) : (

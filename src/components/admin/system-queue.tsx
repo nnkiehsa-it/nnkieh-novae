@@ -38,12 +38,12 @@ export function SystemQueue({
     <div className="space-y-6">
       {nothingWrong ? (
         <ListSection header={t("admin.queueHeader")}>
-          <ListRow detail={t("admin.queueClearDetail")} label={t("admin.queueClear")} />
+          <ListRow label={t("admin.queueClear")} />
         </ListSection>
       ) : null}
 
       {stuck.length > 0 || snapshot.cleanupBacklog.length > 0 || mediaFailures.length > 0 ? (
-        <ListSection footer={t("admin.retryHelp")} header={t("admin.queueFailedHeader")}>
+        <ListSection header={t("admin.queueFailedHeader")}>
           {stuck.map((job) => (
             <ListActionRow
               busy={retrying === job.id}
@@ -126,7 +126,7 @@ export function SystemQueue({
       ) : null}
 
       {snapshot.errors.length > 0 ? (
-        <ListSection footer={t("admin.errorsHelp")} header={t("ui.operations.errors")}>
+        <ListSection header={t("ui.operations.errors")}>
           {snapshot.errors.map((entry) => (
             <ListRow
               detail={`${entry.failureId || entry.operationId} · ${formatDate(new Date(entry.lastAt))}`}

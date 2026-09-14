@@ -11,7 +11,7 @@ import {
   describeSettingKey,
 } from "@/components/admin/platform-setting-fields";
 import { RETENTION_GROUPS, retentionLabelKey } from "@/components/admin/retention-groups";
-import { ListSection } from "@/components/ui/list";
+import { ListRowGroup, ListSection } from "@/components/ui/list";
 import { ListNumberRow, ListSwitchRow } from "@/components/ui/list-controls";
 import { ErrorState } from "@/components/ui/page-state";
 import { SaveBar } from "@/components/ui/save-bar";
@@ -36,7 +36,7 @@ export function PlatformSettings() {
   return (
     <div className="space-y-6">
       {RETENTION_GROUPS.map((group) => (
-        <ListSection footer={t(group.descriptionKey)} header={t(group.titleKey)} key={group.titleKey}>
+        <ListSection header={t(group.titleKey)} key={group.titleKey}>
           {group.items.flatMap((item) => {
             const enableKey = item.enableKey;
             const enabled = enableKey ? value.retention[enableKey] === true : true;
@@ -50,23 +50,21 @@ export function PlatformSettings() {
                   onCheckedChange={(next) => setRetention(enableKey, next)}
                 />
               ) : null,
-              enabled ? (
+              <ListRowGroup key={item.key} show={enabled}>
                 <ListNumberRow
-                  key={item.key}
                   label={t(retentionLabelKey(item.key))}
                   max={item.unit === "hours" ? 87_600 : 3_650}
                   onChange={(next) => setRetention(item.key, next)}
                   unit={t(item.unit === "hours" ? "admin.unitHours" : "admin.unitDays")}
                   value={value.retention[item.key] as number}
                 />
-              ) : null,
+              </ListRowGroup>,
             ];
           })}
         </ListSection>
       ))}
 
       <ListSection
-        footer={t("ui.admin.imageUploadsDescription")}
         header={t("ui.admin.imageUploads")}
       >
         {IMAGE_FIELDS.map((field) => (

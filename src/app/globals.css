@@ -552,15 +552,6 @@ html[data-input-modality="pointer"] :focus-visible {
   font-weight: 600;
 }
 
-@keyframes dashboard-bar {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(var(--dashboard-bar));
-  }
-}
-
 @media (max-width: 47.99rem) {
   :root {
     --page-gutter: 1rem;

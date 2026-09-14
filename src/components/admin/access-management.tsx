@@ -23,7 +23,7 @@ export function AccessManagement() {
 
   return (
     <div className="space-y-6">
-      <ListSection footer={t("ui.access.scopeStep")}>
+      <ListSection header={t("ui.access.scopeStep")}>
         <ListCustomRow>
           <LiquidTabs
             ariaLabel={t("ui.access.scopeType")}
@@ -58,10 +58,7 @@ export function AccessManagement() {
             {state.loading && state.members.length === 0 ? (
               <SkeletonRows rows={2} />
             ) : state.members.length === 0 ? (
-              <ListRow
-                detail={t("ui.access.noneDescription")}
-                label={t("ui.access.noneTitle")}
-              />
+              <ListRow label={t("ui.access.noneTitle")} />
             ) : (
               state.members.map((member) => (
                 <ListActionRow
@@ -77,7 +74,7 @@ export function AccessManagement() {
             )}
           </ListSection>
 
-          <ListSection footer={t("ui.access.searchHint")} header={t("ui.access.searchStep")}>
+          <ListSection header={t("ui.access.searchStep")}>
             <ListCustomRow>
               <form
                 className="flex w-full gap-2"

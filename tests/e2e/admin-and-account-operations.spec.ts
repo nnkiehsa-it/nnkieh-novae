@@ -63,9 +63,13 @@ test('operations console is usable on phone and desktop and saves an audited pol
     await admin.page.setViewportSize({width,height:900});
     await admin.page.goto('/admin/system');
     await expect(admin.page.getByRole('heading',{name:'System',exact:true})).toBeVisible();
-    await expect(admin.page.getByRole('heading',{name:'Database storage'})).toBeVisible();
     await expect.poll(()=>admin.page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
     await admin.page.screenshot({path:testInfo.outputPath(`system-${width}.png`)});
+    // Capacity is a view of its own, and it carries the widest rows on the screen.
+    await admin.page.getByRole('tab',{name:'Capacity'}).click();
+    await expect(admin.page.getByRole('heading',{name:'Database storage'})).toBeVisible();
+    await expect.poll(()=>admin.page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+    await admin.page.screenshot({path:testInfo.outputPath(`system-capacity-${width}.png`)});
     await admin.page.goto('/admin/policies');
     await expect.poll(()=>admin.page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
     await admin.page.getByLabel('Client Write Cooldown Ms',{exact:true}).scrollIntoViewIfNeeded();
