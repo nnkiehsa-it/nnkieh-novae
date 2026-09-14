@@ -21,7 +21,12 @@
 :root {
   --pulse-count: 1;
   --pulse-min: 0.6;
-  --skeleton-appear-delay: 0ms;
+  /* A wait shorter than an acknowledged touch is not a wait: showing a
+     skeleton for it replaces content with placeholders for two frames and
+     reads as a flicker, which is more likely now that a route's record is
+     usually fetched before the tap that asks for it. The placeholder still
+     holds its space from the first frame — only its paint waits. */
+  --skeleton-appear-delay: var(--motion-touch);
   --like-accent: #f40051;
   --tabs-text-muted: var(--muted-foreground);
   --tabs-text-active: var(--primary-foreground);
