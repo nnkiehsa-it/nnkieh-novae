@@ -1,7 +1,6 @@
 import { asRecord, asString } from "../shared/http.ts";
 import { canManageIssueCategory, requireIssueCategoryPermission } from "./auth.ts";
 import { issueCategoryPolicyLists } from "./categories.ts";
-import { issueToReadableResponse } from "./issue-shared.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { asUuid } from "./utils.ts";
 import { INPUT_LIMITS, optionalText } from "./validation.ts";
@@ -68,7 +67,7 @@ export async function moderateIssueStatus(payload: JsonRecord, auth: AuthContext
     ...await issuePolicyParams(database, auth, canManageIssueCategory(auth, category)),
   });
   if (error) throw error;
-  return { issue: data };
+  return { issue: data, previousStatus: oldStatus };
 }
 
 export async function updateIssueResult(payload: JsonRecord, auth: AuthContext, database: BackendDatabase) {

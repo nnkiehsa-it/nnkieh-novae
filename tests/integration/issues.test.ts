@@ -257,10 +257,14 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     issueId: publicIssueId,
   }, user.auth));
   assert.equal(supported.supported, true);
+  // The author's own support is part of the count, so a second supporter makes
+  // two and withdrawing leaves the author's one behind rather than zero.
+  assert.equal(supported.supportCount, 2);
   const removed = asRecord(await callAction("removeSupport", {
     issueId: publicIssueId,
   }, user.auth));
   assert.equal(removed.supported, false);
+  assert.equal(removed.supportCount, 1);
 
   const commentWrite = asRecord(await callAction("createComment", {
     content: "Integration issue comment",

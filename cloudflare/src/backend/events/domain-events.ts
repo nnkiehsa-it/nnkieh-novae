@@ -65,10 +65,12 @@ export function resolveDomainEvents(
         destinations: ["notion", "in_app", "push", "realtime"],
         payload: {
           issue_id: issueId,
-          new_status: String(res.status ?? payload.nextStatus ?? ""),
-          author_uid: String(res.authorUid ?? ""),
-          title: String(res.title ?? ""),
-          read_access: String(res.readAccess ?? "owner-admin"),
+          new_status: String(resIssue.status ?? payload.status ?? ""),
+          old_status: String(res.previousStatus ?? ""),
+          author_uid: String(resIssue.authorUid ?? ""),
+          title: String(resIssue.title ?? ""),
+          issue_category: String(resIssue.category ?? ""),
+          read_access: String(resIssue.readAccess ?? "owner-admin"),
         },
       });
       break;
@@ -96,7 +98,12 @@ export function resolveDomainEvents(
           aggregateId: issueId,
           eventType: "support.goal_met",
           destinations: ["notion", "in_app", "push", "realtime"],
-          payload: { issue_id: issueId, supporter_uid: actorUid },
+          payload: {
+            issue_id: issueId,
+            supporter_uid: actorUid,
+            title: String(res.title ?? ""),
+            issue_category: String(res.issue_category ?? ""),
+          },
         });
       } else {
         events.push({
@@ -138,6 +145,7 @@ export function resolveDomainEvents(
           issue_category: String(res.issueCategory ?? ""),
           supporter_uids: Array.isArray(res.supporterUids) ? res.supporterUids : [],
           title: String(res.title ?? ""),
+          new_status: String(res.status ?? ""),
           read_access: String(res.readAccess ?? "owner-admin"),
         },
       });
@@ -157,6 +165,7 @@ export function resolveDomainEvents(
           parent_comment_id: String(resComment.parent_comment_id ?? resComment.parentCommentId ?? payload.parentCommentId ?? ""),
           content: String(resComment.content ?? payload.content ?? ""),
           author_uid: actorUid,
+          issue_category: String(res.issueCategory ?? ""),
         },
       });
       break;

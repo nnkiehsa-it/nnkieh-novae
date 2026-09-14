@@ -61,7 +61,7 @@ async function createComment(payload: JsonRecord, auth: AuthContext, database: B
     ...await issueCommentPolicyParams(database, auth, canManageIssueCategory(auth, asString(issue.category))),
   });
   if (error) throw error;
-  return { comment: asRecord(data) };
+  return { comment: asRecord(data), issueCategory: asString(issue.category) };
 }
 
 async function deleteComment(payload: JsonRecord, auth: AuthContext, database: BackendDatabase) {

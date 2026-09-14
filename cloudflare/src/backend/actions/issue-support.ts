@@ -36,5 +36,12 @@ export async function updateSupport(action: string, payload: JsonRecord, auth: A
     .single();
   if (toggleError) throw toggleError;
   const toggleResult = result as { goal_met: boolean; support_count: number; supported: boolean };
-  return { success: true, supported: toggleResult.supported, support_count: toggleResult.support_count };
+  return {
+    success: true,
+    supported: toggleResult.supported,
+    support_count: toggleResult.support_count,
+    goal_met: toggleResult.goal_met,
+    title: asString(issue.title),
+    issue_category: asString(issue.category),
+  };
 }

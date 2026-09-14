@@ -141,7 +141,7 @@ const checks = [
     severity: "High",
     populationSql: `select 'issue:'||id sample_id from app_private.issues union all select 'facility:'||id from app_private.facility_reports union all select 'announcement:'||id from app_private.announcements`,
     anomalySql: `
-      select 'issue:'||i.id sample_id from app_private.issues i where i.support_count <> (select count(*) from app_private.supports s where s.issue_id=i.id) or i.support_count < 0 union all
+      select 'issue:'||i.id sample_id from app_private.issues i where i.support_count <> (case when i.support_enabled then 1 else 0 end) + (select count(*) from app_private.supports s where s.issue_id=i.id) or i.support_count < 0 union all
       select 'facility:'||f.id from app_private.facility_reports f where f.affected_count <> 1 + (select count(*) from app_private.facility_report_affected_users u where u.facility_id=f.id) or f.affected_count < 1 union all
       select 'announcement:'||a.id from app_private.announcements a where a.like_count <> (select count(*) from app_private.announcement_likes l where l.announcement_id=a.id) or a.comment_count <> (select count(*) from app_private.announcement_comments c where c.announcement_id=a.id) or a.like_count < 0 or a.comment_count < 0
     `,
