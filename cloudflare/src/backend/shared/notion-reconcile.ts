@@ -15,6 +15,7 @@ import {
   translateFacilityStatus,
 } from "./notion-page.ts";
 import type { AppDatabaseClient } from "../database/client.ts";
+import type { Selected } from "../database/schema.ts";
 
 type AppDatabase = AppDatabaseClient;
 
@@ -54,15 +55,15 @@ export async function reconcileNotionPages(database: AppDatabase): Promise<{ arc
   if (!notionEnabled()) return { archived: 0, reconciled: 0 };
   let reconciled = 0;
   const archived = await archiveManagedNotionPages();
-  const { error: mappingError } = await database.table("app_private", "notion_pages").delete();
-  if (mappingError) throw mappingError;
+  await database.sql`delete from app_private.notion_pages`;
 
-  const { data: issues, error: issueError } = await database
-    .table("app_private", "issues")
-    .select("id,title,content,category,status,author_uid,support_count,support_goal");
-  if (issueError) throw issueError;
+  const { rows: issues } = await database.sql<Selected<
+    "issues",
+    "id" | "title" | "content" | "category" | "status" | "author_uid" | "support_count" | "support_goal"
+  >>`select id, title, content, category, status, author_uid, support_count, support_goal
+     from app_private.issues`;
 
-  for (const issue of issues ?? []) {
+  for (const issue of issues) {
     const authorName = await resolveDisplayName(database, issue.author_uid);
     const pageId = await getOrCreateNotionPage(
       database,
@@ -86,12 +87,13 @@ export async function reconcileNotionPages(database: AppDatabase): Promise<{ arc
     reconciled += 1;
   }
 
-  const { data: facilities, error: facilityError } = await database
-    .table("app_private", "facility_reports")
-    .select("id,title,content,location,category_id,status,author_uid,affected_count");
-  if (facilityError) throw facilityError;
+  const { rows: facilities } = await database.sql<Selected<
+    "facility_reports",
+    "id" | "title" | "content" | "location" | "category_id" | "status" | "author_uid" | "affected_count"
+  >>`select id, title, content, location, category_id, status, author_uid, affected_count
+     from app_private.facility_reports`;
 
-  for (const facility of facilities ?? []) {
+  for (const facility of facilities) {
     const authorName = await resolveDisplayName(database, facility.author_uid);
     const pageId = await getOrCreateNotionPage(
       database,
@@ -116,11 +118,10 @@ export async function reconcileNotionPages(database: AppDatabase): Promise<{ arc
     reconciled += 1;
   }
 
-  const { data: announcements, error: announcementError } = await database
-    .table("app_private", "announcements")
-    .select("id,title,content,author_uid,published_at");
-  if (announcementError) throw announcementError;
-  for (const announcement of announcements ?? []) {
+  const { rows: announcements } = await database.sql<Selected<
+    "announcements", "id" | "title" | "content" | "author_uid" | "published_at"
+  >>`select id, title, content, author_uid, published_at from app_private.announcements`;
+  for (const announcement of announcements) {
     const pageId = await getOrCreateNotionPage(
       database,
       "announcement",
@@ -144,11 +145,10 @@ export async function reconcileNotionPages(database: AppDatabase): Promise<{ arc
     reconciled += 1;
   }
 
-  const { data: audits, error: auditError } = await database
-    .table("app_private", "admin_audit_log")
-    .select("id,actor_uid,action,domain,target_id,detail,created_at");
-  if (auditError) throw auditError;
-  for (const audit of audits ?? []) {
+  const { rows: audits } = await database.sql<Selected<
+    "admin_audit_log", "id" | "actor_uid" | "action" | "domain" | "target_id" | "detail" | "created_at"
+  >>`select id, actor_uid, action, domain, target_id, detail, created_at from app_private.admin_audit_log`;
+  for (const audit of audits) {
     const pageId = await getOrCreateNotionPage(
       database,
       "admin-audit",

@@ -273,6 +273,18 @@ interface ContentVersionRow {
   updated_at: string;
 }
 
+/**
+ * The columns one statement selects, checked against the generated schema.
+ *
+ * `Selected<"issues", "id" | "title">` is the row shape of
+ * `select id, title from app_private.issues`, so a column that is renamed or
+ * dropped by a migration fails the build at the statement that reads it.
+ */
+export type Selected<
+  TName extends keyof AppPrivateTables,
+  TColumn extends keyof AppPrivateTables[TName]["Row"],
+> = Pick<AppPrivateTables[TName]["Row"], TColumn>;
+
 export interface AppPrivateTables {
   announcement_comments: Table<AnnouncementCommentRow>;
   announcement_likes: Table<{ announcement_id: string; uid: string; created_at: string }>;

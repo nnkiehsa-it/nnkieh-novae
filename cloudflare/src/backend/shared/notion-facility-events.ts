@@ -14,6 +14,7 @@ import {
   translateFacilityStatus,
 } from "./notion-page.ts";
 import type { NotionDomainEvent, NotionEventDatabase } from "./notion-event.ts";
+import type { Selected } from "../database/schema.ts";
 import { syncSystemEventToNotion } from "./notion-system-events.ts";
 
 /** What a facility report does to its Notion page. */
@@ -25,11 +26,11 @@ export async function syncFacilityEventToNotion(
   const { event_id, event_type, aggregate_id, actor_uid, payload } = event;
   switch (event_type) {
     case "facility.created": {
-      const { data: facility } = await database
-        .table("app_private", "facility_reports")
-        .select("title,content,location,status,author_uid,affected_count,category_id,created_at")
-        .eq("id", aggregate_id)
-        .maybeSingle();
+      const facility = await database.sqlMaybe<Selected<
+        "facility_reports",
+        "title" | "content" | "location" | "status" | "author_uid" | "affected_count" | "category_id" | "created_at"
+      >>`select title, content, location, status, author_uid, affected_count, category_id, created_at
+        from app_private.facility_reports where id = ${aggregate_id}`;
       const authorName = await resolveDisplayName(database, facility?.author_uid ?? actor_uid);
       const title = String(facility?.title ?? payload.title ?? "未命名設備報修");
       const pageId = await getOrCreateNotionPage(
@@ -66,11 +67,11 @@ export async function syncFacilityEventToNotion(
     }
 
     case "facility.status_changed": {
-      const { data: facility } = await database
-        .table("app_private", "facility_reports")
-        .select("title,category_id,status,author_uid,affected_count,closed_at,result_content")
-        .eq("id", aggregate_id)
-        .maybeSingle();
+      const facility = await database.sqlMaybe<Selected<
+        "facility_reports",
+        "title" | "category_id" | "status" | "author_uid" | "affected_count" | "closed_at" | "result_content"
+      >>`select title, category_id, status, author_uid, affected_count, closed_at, result_content
+        from app_private.facility_reports where id = ${aggregate_id}`;
       const statusLabel = translateFacilityStatus(String(facility?.status ?? payload.new_status ?? "pending"));
       const pageId = await getOrCreateNotionPage(
         database,

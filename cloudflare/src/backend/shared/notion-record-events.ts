@@ -13,6 +13,7 @@ import {
   resolveDisplayName,
 } from "./notion-page.ts";
 import type { NotionDomainEvent, NotionEventDatabase } from "./notion-event.ts";
+import type { Selected } from "../database/schema.ts";
 import { syncSystemEventToNotion } from "./notion-system-events.ts";
 
 /** Announcements, the administration audit, and anything else worth recording. */
@@ -23,11 +24,10 @@ export async function syncRecordEventToNotion(
   const { event_id, event_type, aggregate_type, aggregate_id, actor_uid, payload } = event;
   switch (event_type) {
     case "announcement.created": {
-      const { data: announcement } = await database
-        .table("app_private", "announcements")
-        .select("title,content,author_uid,published_at")
-        .eq("id", aggregate_id)
-        .maybeSingle();
+      const announcement = await database.sqlMaybe<
+        Selected<"announcements", "title" | "content" | "author_uid" | "published_at">
+      >`select title, content, author_uid, published_at
+        from app_private.announcements where id = ${aggregate_id}`;
       const title = String(announcement?.title ?? payload.title ?? "未命名公告");
       const authorName = await resolveDisplayName(database, announcement?.author_uid ?? actor_uid);
       const pageId = await getOrCreateNotionPage(

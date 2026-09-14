@@ -1,4 +1,5 @@
 import type { AppDatabaseClient } from "../database/client.ts";
+import type { Selected } from "../database/schema.ts";
 import {
   appendTimelineBlockWithDeduplication,
   callNotionAPI,
@@ -48,14 +49,12 @@ export function translateFacilityStatus(status: string): string {
 }
 export async function translateCategory(database: AppDatabase, targetType: string, category: string): Promise<string> {
   if (category === "公告") return "公告";
-  const table = targetType === "facility" ? "facility_categories" : "issue_categories";
-  const { data, error } = await database
-    .table("app_private", table)
-    .select("label")
-    .eq("id", category)
-    .maybeSingle();
-  if (error) throw error;
-  return String(data?.label ?? category);
+  const found = targetType === "facility"
+    ? await database.sqlMaybe<Selected<"facility_categories", "label">>`
+      select label from app_private.facility_categories where id = ${category}`
+    : await database.sqlMaybe<Selected<"issue_categories", "label">>`
+      select label from app_private.issue_categories where id = ${category}`;
+  return found?.label ?? category;
 }
 export function supportLabel(supportCount: unknown, supportGoal: unknown): string {
   const count = typeof supportCount === "number" ? supportCount : Number(supportCount ?? 0);
@@ -67,13 +66,9 @@ export function supportLabel(supportCount: unknown, supportGoal: unknown): strin
 export async function resolveDisplayName(database: AppDatabase, uid: unknown) {
   const normalizedUid = typeof uid === "string" ? uid : "";
   if (!normalizedUid) return "使用者";
-  const { data, error } = await database
-    .table("app_private", "user_profiles")
-    .select("display_name")
-    .eq("uid", normalizedUid)
-    .maybeSingle();
-  if (error) throw error;
-  return String(data?.display_name ?? normalizedUid);
+  const profile = await database.sqlMaybe<Selected<"user_profiles", "display_name">>`
+    select display_name from app_private.user_profiles where uid = ${normalizedUid}`;
+  return profile?.display_name ?? normalizedUid;
 }
 export async function appendCreationTimeline(
   database: AppDatabase,
@@ -94,12 +89,9 @@ export async function appendCreationTimeline(
     .map((match) => match[1]);
   const notionUploadIds: string[] = [];
   if (uploadIds.length > 0) {
-    const { data: uploads, error } = await database
-      .table("app_private", "uploads")
-      .select("id,cloudinary_public_id")
-      .in("id", [...new Set(uploadIds)]);
-    if (error) throw error;
-    for (const upload of uploads ?? []) {
+    const { rows: uploads } = await database.sql<Selected<"uploads", "id" | "cloudinary_public_id">>`
+      select id, cloudinary_public_id from app_private.uploads where id = any(${[...new Set(uploadIds)]})`;
+    for (const upload of uploads) {
       if (!upload.cloudinary_public_id) throw new Error("notion-image-public-id-missing");
       notionUploadIds.push(await uploadImageToNotion(
         String(upload.cloudinary_public_id),
@@ -145,17 +137,10 @@ export async function getOrCreateNotionPage(
   countProperty: string | null = "附議數",
 ): Promise<string | null> {
   const externalId = `${targetType}:${targetId}`;
-  const { data, error } = await database
-    .table("app_private", "notion_pages")
-    .select("notion_page_id")
-    .eq("target_type", targetType)
-    .eq("target_id", targetId)
-    .maybeSingle();
-  if (error) throw error;
-
-  if (data?.notion_page_id) {
-    return String(data.notion_page_id);
-  }
+  const mapped = await database.sqlMaybe<Selected<"notion_pages", "notion_page_id">>`
+    select notion_page_id from app_private.notion_pages
+    where target_type = ${targetType} and target_id = ${targetId}`;
+  if (mapped?.notion_page_id) return mapped.notion_page_id;
 
   const categoryLabel = await translateCategory(database, targetType, category);
   const statusLabel = translateStatus(status);
@@ -195,17 +180,11 @@ export async function getOrCreateNotionPage(
 
   if (!pageId) throw new Error("Notion page creation did not return an ID");
 
-  await database
-    .table("app_private", "notion_pages")
-    .upsert(
-      {
-        target_type: targetType,
-        target_id: targetId,
-        notion_page_id: pageId,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "target_type,target_id" },
-    );
+  await database.sql`
+    insert into app_private.notion_pages (target_type, target_id, notion_page_id, updated_at)
+    values (${targetType}, ${targetId}, ${pageId}, ${new Date().toISOString()})
+    on conflict (target_type, target_id)
+    do update set notion_page_id = excluded.notion_page_id, updated_at = excluded.updated_at`;
 
   return pageId;
 }

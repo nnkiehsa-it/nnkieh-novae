@@ -16,6 +16,7 @@ import {
   translateStatus,
 } from "./notion-page.ts";
 import type { NotionDomainEvent, NotionEventDatabase } from "./notion-event.ts";
+import type { Selected } from "../database/schema.ts";
 import { syncSystemEventToNotion } from "./notion-system-events.ts";
 
 /** What a proposal does to its Notion page: created, moved, answered, supported, deleted. */
@@ -27,11 +28,11 @@ export async function syncIssueEventToNotion(
   const { event_id, event_type, aggregate_id, actor_uid, payload } = event;
   switch (event_type) {
     case "issue.created": {
-      const { data: issue } = await database
-        .table("app_private", "issues")
-        .select("title,content,category,status,author_uid,support_count,support_goal,created_at")
-        .eq("id", aggregate_id)
-        .maybeSingle();
+      const issue = await database.sqlMaybe<Selected<
+        "issues",
+        "title" | "content" | "category" | "status" | "author_uid" | "support_count" | "support_goal" | "created_at"
+      >>`select title, content, category, status, author_uid, support_count, support_goal, created_at
+        from app_private.issues where id = ${aggregate_id}`;
       const authorName = await resolveDisplayName(database, issue?.author_uid ?? actor_uid);
       const title = String(issue?.title ?? payload.title ?? "未命名提案");
       const category = String(issue?.category ?? payload.category ?? "公共議題");
@@ -60,11 +61,13 @@ export async function syncIssueEventToNotion(
     }
 
     case "issue.status_changed": {
-      const { data: issue } = await database
-        .table("app_private", "issues")
-        .select("title,category,status,author_uid,support_count,support_goal,closed_at,result_content,review_rejection_reason")
-        .eq("id", aggregate_id)
-        .maybeSingle();
+      const issue = await database.sqlMaybe<Selected<
+        "issues",
+        "title" | "category" | "status" | "author_uid" | "support_count" | "support_goal" | "closed_at"
+        | "result_content" | "review_rejection_reason"
+      >>`select title, category, status, author_uid, support_count, support_goal, closed_at,
+          result_content, review_rejection_reason
+        from app_private.issues where id = ${aggregate_id}`;
       const newStatus = String(issue?.status ?? payload.new_status ?? "pending");
       const authorName = await resolveDisplayName(database, issue?.author_uid);
       const pageId = await getOrCreateNotionPage(
@@ -120,11 +123,10 @@ export async function syncIssueEventToNotion(
 
     case "support.goal_met":
     case "support.toggled": {
-      const { data: issue } = await database
-        .table("app_private", "issues")
-        .select("title,category,status,author_uid,support_count,support_goal")
-        .eq("id", aggregate_id)
-        .maybeSingle();
+      const issue = await database.sqlMaybe<Selected<
+        "issues", "title" | "category" | "status" | "author_uid" | "support_count" | "support_goal"
+      >>`select title, category, status, author_uid, support_count, support_goal
+        from app_private.issues where id = ${aggregate_id}`;
       const pageId = await getOrCreateNotionPage(
         database,
         "issue",

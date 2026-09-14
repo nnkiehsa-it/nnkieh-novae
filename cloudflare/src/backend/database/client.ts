@@ -25,6 +25,11 @@ export type DatabaseResult<T> =
   | { count?: number | null; data: T; error: null }
   | { count?: null; data: null; error: DatabaseError };
 
+export interface SqlResult<TRow> {
+  rowCount: number;
+  rows: TRow[];
+}
+
 type Filter =
   | { column: string; operator: "=" | "<>" | "<" | "<=" | ">" | ">="; value: unknown }
   | { column: string; operator: "in"; value: unknown[] }
@@ -64,6 +69,15 @@ function quoteIdentifier(identifier: string) {
 function selectedColumns(columns: string) {
   if (columns.trim() === "*") return "*";
   return columns.split(",").map((column) => quoteIdentifier(column.trim())).join(", ");
+}
+
+/** Every interpolation becomes a bound parameter; nothing is ever spliced into the statement text. */
+function statementText(fragments: TemplateStringsArray, values: unknown[]) {
+  let text = fragments[0];
+  for (let index = 0; index < values.length; index += 1) {
+    text += `$${index + 1}${fragments[index + 1]}`;
+  }
+  return text;
 }
 
 function databaseError(error: unknown): DatabaseError {
@@ -350,6 +364,21 @@ class FunctionQuery<TReturn> implements PromiseLike<DatabaseResult<TReturn>> {
 }
 
 export interface DatabaseSession {
+  /** Tagged template for statements: `` sql<Row>`select … where id = ${id}` ``. Rejects on database errors. */
+  sql<TRow extends object = Record<string, unknown>>(
+    fragments: TemplateStringsArray,
+    ...values: unknown[]
+  ): Promise<SqlResult<TRow>>;
+  /** Same as `sql`, but requires exactly one row and returns it. */
+  sqlOne<TRow extends object = Record<string, unknown>>(
+    fragments: TemplateStringsArray,
+    ...values: unknown[]
+  ): Promise<TRow>;
+  /** Same as `sql`, but allows zero rows and rejects on more than one. */
+  sqlMaybe<TRow extends object = Record<string, unknown>>(
+    fragments: TemplateStringsArray,
+    ...values: unknown[]
+  ): Promise<TRow | null>;
   table<TName extends TableName>(schema: "app_private", table: TName): TableQuery<TName>;
   call<TName extends FunctionName>(
     schema: "app_api",
@@ -366,6 +395,32 @@ export class AppDatabaseSession implements DatabaseSession {
       values?: unknown[],
     ) => Promise<{ rows: TRow[]; rowCount?: number | null }>,
   ) {}
+
+  async sql<TRow extends object = Record<string, unknown>>(
+    fragments: TemplateStringsArray,
+    ...values: unknown[]
+  ): Promise<SqlResult<TRow>> {
+    const result = await this.runQuery(statementText(fragments, values), values);
+    return { rowCount: result.rowCount ?? result.rows.length, rows: result.rows as unknown as TRow[] };
+  }
+
+  async sqlOne<TRow extends object = Record<string, unknown>>(
+    fragments: TemplateStringsArray,
+    ...values: unknown[]
+  ): Promise<TRow> {
+    const { rows } = await this.sql<TRow>(fragments, ...values);
+    if (rows.length !== 1) throw Object.assign(new Error("not-found"), { code: "ROW_NOT_FOUND" });
+    return rows[0];
+  }
+
+  async sqlMaybe<TRow extends object = Record<string, unknown>>(
+    fragments: TemplateStringsArray,
+    ...values: unknown[]
+  ): Promise<TRow | null> {
+    const { rows } = await this.sql<TRow>(fragments, ...values);
+    if (rows.length > 1) throw Object.assign(new Error("multiple-rows"), { code: "MULTIPLE_ROWS" });
+    return rows[0] ?? null;
+  }
 
   table<TName extends TableName>(schema: "app_private", table: TName) {
     if (schema !== "app_private") throw new Error("invalid-database-schema");
@@ -418,6 +473,18 @@ export class AppDatabaseClient implements DatabaseSession {
       max: DATABASE_QUERY_CONCURRENCY,
     });
     this.session = new AppDatabaseSession(this.query.bind(this));
+  }
+
+  sql<TRow extends object = Record<string, unknown>>(fragments: TemplateStringsArray, ...values: unknown[]) {
+    return this.session.sql<TRow>(fragments, ...values);
+  }
+
+  sqlOne<TRow extends object = Record<string, unknown>>(fragments: TemplateStringsArray, ...values: unknown[]) {
+    return this.session.sqlOne<TRow>(fragments, ...values);
+  }
+
+  sqlMaybe<TRow extends object = Record<string, unknown>>(fragments: TemplateStringsArray, ...values: unknown[]) {
+    return this.session.sqlMaybe<TRow>(fragments, ...values);
   }
 
   table<TName extends TableName>(schema: "app_private", table: TName) {

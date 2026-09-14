@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { OPERATION_POLICIES, type OperationPolicies } from '../../../generated/operations';
 import type { DatabaseSession } from '../database/client';
+import type { Selected } from '../database/schema';
 
 const activePolicies = new AsyncLocalStorage<PolicySnapshot>();
 export interface PolicySnapshot { revision: number; values: OperationPolicies }
@@ -30,10 +31,9 @@ export function validateOperationPolicies(value: unknown): OperationPolicies {
 
 /** The stored settings, as they are right now. */
 export async function readOperationPolicies(database: DatabaseSession): Promise<PolicySnapshot> {
-  const { data, error } = await database.table('app_private', 'runtime_settings')
-    .select('value').eq('key', 'operations_settings').single();
-  if (error) throw error;
-  const stored = JSON.parse(data.value) as PolicySnapshot;
+  const setting = await database.sqlOne<Selected<'runtime_settings', 'value'>>`
+    select value from app_private.runtime_settings where key = 'operations_settings'`;
+  const stored = JSON.parse(setting.value) as PolicySnapshot;
   return { revision: stored.revision, values: validateOperationPolicies(stored.values) };
 }
 
