@@ -1,6 +1,6 @@
 import { asString } from "../shared/http.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
-import { issueCategoryPolicyLists } from "./categories.ts";
+import { issueCategoryPolicyLists } from "./category-catalog.ts";
 import {
   asNumber,
   asUuid,

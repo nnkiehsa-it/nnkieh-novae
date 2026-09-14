@@ -6,31 +6,10 @@ import {
   loadPlatformSettings,
   platformSettingsFromInput,
 } from "../shared/platform-settings.ts";
-import type { Row, Selected } from "../database/schema.ts";
+import type { Selected } from "../database/schema.ts";
+import { loadCategoryCatalog, READ_ACCESS_VALUES } from "./category-catalog.ts";
 
 const CATEGORY_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
-const READ_ACCESS_VALUES = new Set(["school", "reviewed-school", "owner-admin"]);
-
-export interface RuntimeIssueCategory {
-  authorVisible: boolean;
-  commentsEnabled: boolean;
-  id: string;
-  isDefault: boolean;
-  label: string;
-  readAccess: "owner-admin" | "reviewed-school" | "school";
-  responseDeadlineDays: number | null;
-  sortOrder: number;
-  supportDeadlineDays: number | null;
-  supportEnabled: boolean;
-  supportGoal: number | null;
-}
-
-export interface RuntimeFacilityCategory {
-  id: string;
-  isDefault: boolean;
-  label: string;
-  sortOrder: number;
-}
 
 function nullablePositiveInteger(value: unknown) {
   if (value === null || value === undefined || value === "") return null;
@@ -96,33 +75,6 @@ function assertCategoryCollection(categories: Array<{ id: string; isDefault: boo
   }
 }
 
-function issueCategoryResponse(row: Record<string, unknown>): RuntimeIssueCategory {
-  return {
-    authorVisible: row.author_visible === true,
-    commentsEnabled: row.comments_enabled !== false,
-    id: asString(row.id),
-    isDefault: row.is_default === true,
-    label: asString(row.label),
-    readAccess: READ_ACCESS_VALUES.has(asString(row.read_access))
-      ? asString(row.read_access) as RuntimeIssueCategory["readAccess"]
-      : "owner-admin",
-    responseDeadlineDays: typeof row.response_deadline_days === "number" ? row.response_deadline_days : null,
-    sortOrder: asNumber(row.sort_order, 0),
-    supportDeadlineDays: typeof row.support_deadline_days === "number" ? row.support_deadline_days : null,
-    supportEnabled: row.support_enabled === true,
-    supportGoal: typeof row.support_goal === "number" ? row.support_goal : null,
-  };
-}
-
-function facilityCategoryResponse(row: Record<string, unknown>): RuntimeFacilityCategory {
-  return {
-    id: asString(row.id),
-    isDefault: row.is_default === true,
-    label: asString(row.label),
-    sortOrder: asNumber(row.sort_order, 0),
-  };
-}
-
 async function announcementCommentsSetting(payload: JsonRecord, database: BackendDatabase) {
   if (typeof payload.announcementCommentsEnabled === "boolean") {
     return payload.announcementCommentsEnabled;
@@ -130,60 +82,6 @@ async function announcementCommentsSetting(payload: JsonRecord, database: Backen
   const setup = await database.sqlOne<Selected<"system_setup", "announcement_comments_enabled">>`
     select announcement_comments_enabled from app_private.system_setup where singleton = true`;
   return setup.announcement_comments_enabled !== false;
-}
-
-export async function getIssueCategories(database: BackendDatabase, includeInactive = false): Promise<RuntimeIssueCategory[]> {
-  const { rows } = await database.sql<Row<"issue_categories">>`
-    select * from app_private.issue_categories
-    where ${includeInactive}::boolean or is_active = true
-    order by sort_order, created_at`;
-  return rows.map((row) => issueCategoryResponse(row));
-}
-
-export async function getFacilityCategories(database: BackendDatabase, includeInactive = false): Promise<RuntimeFacilityCategory[]> {
-  const { rows } = await database.sql<Row<"facility_categories">>`
-    select * from app_private.facility_categories
-    where ${includeInactive}::boolean or is_active = true
-    order by sort_order, created_at`;
-  return rows.map((row) => facilityCategoryResponse(row));
-}
-
-export async function getIssueCategory(database: BackendDatabase, categoryId: string) {
-  const category = await database.sqlMaybe<Row<"issue_categories">>`
-    select * from app_private.issue_categories where id = ${categoryId} and is_active = true`;
-  if (!category) throw new Error("invalid-issue-category");
-  return issueCategoryResponse(category);
-}
-
-export async function issueCategoryPolicyLists(database: BackendDatabase) {
-  const categories = await getIssueCategories(database, true);
-  return {
-    authorPrivateCategoryIds: categories.filter((category) => !category.authorVisible).map((category) => category.id),
-    privateToOwnerCategoryIds: categories.filter((category) => category.readAccess === "owner-admin").map((category) => category.id),
-    publicCommentCategoryIds: categories.filter((category) => category.readAccess !== "owner-admin").map((category) => category.id),
-    reviewRequiredCategoryIds: categories.filter((category) => category.readAccess === "reviewed-school").map((category) => category.id),
-  };
-}
-
-export async function loadCategoryCatalog(database: BackendDatabase, includeInactive: boolean) {
-  const [issueCategories, facilityCategories, setup, platformSettings] = await Promise.all([
-    getIssueCategories(database, includeInactive),
-    getFacilityCategories(database, includeInactive),
-    database.sqlOne<Selected<"system_setup", "issues_enabled" | "facilities_enabled" | "announcement_comments_enabled">>`
-      select issues_enabled, facilities_enabled, announcement_comments_enabled
-      from app_private.system_setup where singleton = true`,
-    loadPlatformSettings(database),
-  ]);
-  return {
-    issueCategories,
-    facilityCategories,
-    imageUploads: platformSettings.imageUploads,
-    features: {
-      announcementCommentsEnabled: setup.announcement_comments_enabled !== false,
-      facilitiesEnabled: setup.facilities_enabled !== false,
-      issuesEnabled: setup.issues_enabled !== false,
-    },
-  };
 }
 
 export async function handleCategoryAction(

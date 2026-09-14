@@ -1,6 +1,6 @@
 import { asRecord, asString } from "../shared/http.ts";
 import { canManageFacilityCategory, requireFacilityCategoryPermission } from "./auth.ts";
-import { getFacilityCategories } from "./categories.ts";
+import { getFacilityCategories } from "./category-catalog.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
 import { asNumber, asUuid, countRecord } from "./utils.ts";

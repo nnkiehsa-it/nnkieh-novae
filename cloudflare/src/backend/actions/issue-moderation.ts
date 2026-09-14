@@ -1,6 +1,6 @@
 import { asRecord, asString } from "../shared/http.ts";
 import { canManageIssueCategory, requireIssueCategoryPermission } from "./auth.ts";
-import { issueCategoryPolicyLists } from "./categories.ts";
+import { issueCategoryPolicyLists } from "./category-catalog.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { asUuid } from "./utils.ts";
 import { INPUT_LIMITS, optionalText } from "./validation.ts";

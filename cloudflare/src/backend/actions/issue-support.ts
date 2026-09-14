@@ -1,6 +1,6 @@
 import { asRecord, asString } from "../shared/http.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
-import { issueCategoryPolicyLists } from "./categories.ts";
+import { issueCategoryPolicyLists } from "./category-catalog.ts";
 import { asUuid } from "./utils.ts";
 import { canManageIssueCategory } from "./auth.ts";
 import { selectIssue } from "./issue-shared.ts";

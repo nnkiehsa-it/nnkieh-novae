@@ -1,6 +1,6 @@
 import { asString } from "../shared/http.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
-import { getIssueCategory, issueCategoryPolicyLists } from "./categories.ts";
+import { getIssueCategory, issueCategoryPolicyLists } from "./category-catalog.ts";
 import { validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
 import { INPUT_LIMITS, requiredMediaContent, requiredText } from "./validation.ts";
 
