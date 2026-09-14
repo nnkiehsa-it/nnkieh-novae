@@ -5,7 +5,8 @@ import { asRecord, asString } from "../shared/http.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
 import { operationPolicy } from '../shared/operation-policies.ts';
 import type { RealtimeDelivery } from "../../durable/realtime-hub.ts";
-import { checked, settleDelivery, type EventDeliveryItem } from "./delivery-attempt.ts";
+import type { Selected } from "../database/schema.ts";
+import { settleDelivery, type EventDeliveryItem } from "./delivery-attempt.ts";
 import { resolveRecipients } from "./delivery-recipients.ts";
 import {
   deterministicNotificationId,
@@ -14,6 +15,25 @@ import {
   notificationRealtimePayload,
   resolveNotificationPayload,
 } from "./notification-content.ts";
+
+/**
+ * Writes a batch of notifications, ignoring any this event already produced.
+ *
+ * The rows are heterogeneous — a comment carries a comment id, a status change
+ * carries the statuses it moved between — so they arrive as JSON and take their
+ * column types from the table itself. Columns no row mentions are left to their
+ * defaults by naming the ones that are written.
+ */
+async function storeNotifications(database: AppDatabaseClient, notifications: Record<string, unknown>[]) {
+  await database.sql`
+    insert into app_private.notifications (
+      id, source, recipient_uid, type, target_type, target_id, comment_id, title,
+      actor_uid, body_preview, issue_category, old_status, new_status, created_at, origin)
+    select id, source, recipient_uid, type, target_type, target_id, comment_id, title,
+      actor_uid, body_preview, issue_category, old_status, new_status, created_at, origin
+    from jsonb_populate_recordset(null::app_private.notifications, ${JSON.stringify(notifications)}::jsonb)
+    on conflict (id) do nothing`;
+}
 
 /** Writing a notification down, and pushing it to the devices that want it. */
 export async function processInAppDeliveries(database: AppDatabaseClient, env: Env) {
@@ -35,10 +55,7 @@ export async function processInAppDeliveries(database: AppDatabaseClient, env: E
         if (base.source === "broadcast") {
           const id = await deterministicNotificationId(item.event_id, "broadcast");
           const notification = { ...base, recipient_uid: null, origin: "live" as const, created_at: item.occurred_at, id };
-          await checked(database.table("app_private", "notifications").upsert([notification], {
-            ignoreDuplicates: true,
-            onConflict: "id",
-          }));
+          await storeNotifications(database, [notification]);
           realtimeNotifications.push({
             event: "notification_insert",
             id,
@@ -57,10 +74,7 @@ export async function processInAppDeliveries(database: AppDatabaseClient, env: E
                 id: await deterministicNotificationId(item.event_id, recipientUid),
               })),
             );
-            await checked(database.table("app_private", "notifications").upsert(notifications, {
-              ignoreDuplicates: true,
-              onConflict: "id",
-            }));
+            await storeNotifications(database, notifications);
             realtimeNotifications.push(...notifications.map((notification) => ({
               event: "notification_insert",
               id: notification.id,
@@ -125,12 +139,13 @@ export async function processPushDeliveries(database: AppDatabaseClient) {
             ? "push_issue_updates_enabled"
             : null;
           if (prefColumn) {
-            let prefQuery = database.table("app_private", "notification_states").select(`uid,${prefColumn}`);
-            if (recipients.length === 1) prefQuery = prefQuery.eq("uid", recipients[0]);
-            else prefQuery = prefQuery.in("uid", recipients);
-            const { data: prefRows } = await checked(prefQuery);
+            const { rows: preferences } = await database.sql<Selected<
+              "notification_states",
+              "uid" | "push_comments_enabled" | "push_facility_updates_enabled" | "push_issue_updates_enabled"
+            >>`select uid, push_comments_enabled, push_facility_updates_enabled, push_issue_updates_enabled
+               from app_private.notification_states where uid = any(${recipients})`;
             const disabledUids = new Set(
-              (prefRows ?? []).filter((r: any) => r[prefColumn] === false).map((r: any) => asString(r.uid)),
+              preferences.filter((preference) => preference[prefColumn] === false).map((preference) => preference.uid),
             );
             eligibleRecipients = recipients.filter((uid) => !disabledUids.has(uid));
           }
@@ -139,22 +154,18 @@ export async function processPushDeliveries(database: AppDatabaseClient) {
         const tokens: Array<{ token: string; uid: string }> = [];
         const seenTokens = new Set<string>();
         if (eligibleRecipients.length > 0 || broadcast) {
+          const everyDevice = eligibleRecipients.length === 0;
           for (let offset = 0; ; offset += 200) {
-            let query = database.table("app_private", "push_tokens")
-              .select("uid,token")
-              .order("uid", { ascending: true })
-              .order("device_id", { ascending: true })
-              .range(offset, offset + 199);
-            if (eligibleRecipients.length === 1) query = query.eq("uid", eligibleRecipients[0]);
-            else if (eligibleRecipients.length > 1) query = query.in("uid", eligibleRecipients);
-            const { data: tokenRows } = await checked(query);
-            for (const row of tokenRows ?? []) {
-              const token = asString(row.token);
-              if (!token || seenTokens.has(token)) continue;
-              seenTokens.add(token);
-              tokens.push({ token, uid: asString(row.uid) });
+            const { rows: tokenRows } = await database.sql<Selected<"push_tokens", "uid" | "token">>`
+              select uid, token from app_private.push_tokens
+              where ${everyDevice}::boolean or uid = any(${eligibleRecipients})
+              order by uid, device_id limit 200 offset ${offset}`;
+            for (const row of tokenRows) {
+              if (!row.token || seenTokens.has(row.token)) continue;
+              seenTokens.add(row.token);
+              tokens.push({ token: row.token, uid: row.uid });
             }
-            if ((tokenRows ?? []).length < 200) break;
+            if (tokenRows.length < 200) break;
           }
         }
 
@@ -195,7 +206,7 @@ export async function processPushDeliveries(database: AppDatabaseClient) {
             });
           } catch (err) {
             if (isInvalidFcmTokenError(err)) {
-              await checked(database.table("app_private", "push_tokens").delete().eq("token", tokenRow.token));
+              await database.sql`delete from app_private.push_tokens where token = ${tokenRow.token}`;
             } else {
               throw err;
             }

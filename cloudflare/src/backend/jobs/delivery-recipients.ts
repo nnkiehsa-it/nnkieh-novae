@@ -1,6 +1,7 @@
 import { asString } from "../shared/http.ts";
 import type { AppDatabaseClient } from "../database/client.ts";
-import { checked, type EventDeliveryItem } from "./delivery-attempt.ts";
+import type { EventDeliveryItem } from "./delivery-attempt.ts";
+import type { Selected } from "../database/schema.ts";
 
 /**
  * Who hears about an event.
@@ -19,36 +20,34 @@ export async function resolveRecipients(
   if (event_type === "issue.created" || event_type === "facility.created") {
     const isFacility = event_type === "facility.created";
     const categoryId = asString(payload[isFacility ? "category_id" : "category"]);
-    const table = isFacility
-      ? "user_facility_category_assignments"
-      : "user_issue_category_assignments";
-    let query = database.table("app_private", table).select("uid").eq("category_id", categoryId);
-    if (isFacility) query = query.eq("notify_on_created", true);
-    const { data } = await checked(query);
-    const uids: string[] = (data ?? []).map((row: any) => asString(row.uid)).filter((uid: string) => Boolean(uid && uid !== actor_uid));
-    return [...new Set(uids)];
+    const { rows } = isFacility
+      ? await database.sql<Selected<"user_facility_category_assignments", "uid">>`
+        select uid from app_private.user_facility_category_assignments
+        where category_id = ${categoryId} and notify_on_created = true`
+      : await database.sql<Selected<"user_issue_category_assignments", "uid">>`
+        select uid from app_private.user_issue_category_assignments where category_id = ${categoryId}`;
+    return [...new Set(rows.map((row) => row.uid).filter((uid) => Boolean(uid) && uid !== actor_uid))];
   }
 
   if (event_type === "facility.status_changed") {
     const authorUid = asString(payload.author_uid);
-    const { data } = await checked(database
-      .table("app_private", "facility_report_affected_users")
-      .select("uid")
-      .eq("facility_id", aggregate_id));
-    const affectedUids: string[] = [authorUid, ...(data ?? []).map((row: any) => asString(row.uid))].filter(Boolean);
-    return [...new Set(affectedUids)];
+    const { rows } = await database.sql<Selected<"facility_report_affected_users", "uid">>`
+      select uid from app_private.facility_report_affected_users where facility_id = ${aggregate_id}`;
+    return [...new Set([authorUid, ...rows.map((row) => row.uid)].filter(Boolean))];
   }
 
   if (event_type === "issue.status_changed" || event_type === "support.goal_met" || event_type === "issue.deleted") {
     let authorUid = asString(payload.author_uid);
     if (!authorUid) {
-      const { data } = await checked(database.table("app_private", "issues").select("author_uid").eq("id", aggregate_id).maybeSingle());
-      authorUid = asString(data?.author_uid);
+      const issue = await database.sqlMaybe<Selected<"issues", "author_uid">>`
+        select author_uid from app_private.issues where id = ${aggregate_id}`;
+      authorUid = asString(issue?.author_uid);
     }
     let supporterUids: string[] = [];
     if (event_type !== "issue.deleted") {
-      const { data } = await checked(database.table("app_private", "supports").select("uid").eq("issue_id", aggregate_id));
-      supporterUids = (data ?? []).map((row: any) => asString(row.uid)).filter(Boolean);
+      const { rows } = await database.sql<Selected<"supports", "uid">>`
+        select uid from app_private.supports where issue_id = ${aggregate_id}`;
+      supporterUids = rows.map((row) => row.uid).filter(Boolean);
     }
     return [...new Set([authorUid, ...supporterUids].filter(Boolean))].filter(
       (uid) => event_type === "support.goal_met" || uid !== actor_uid,
@@ -59,12 +58,14 @@ export async function resolveRecipients(
     const parentCommentId = asString(payload.parent_comment_id);
     let parentAuthorUid = asString(payload.parent_author_uid);
     if (!parentAuthorUid && parentCommentId) {
-      const { data } = await checked(database.table("app_private", "comments").select("author_uid").eq("id", parentCommentId).maybeSingle());
-      parentAuthorUid = asString(data?.author_uid);
+      const comment = await database.sqlMaybe<Selected<"comments", "author_uid">>`
+        select author_uid from app_private.comments where id = ${parentCommentId}`;
+      parentAuthorUid = asString(comment?.author_uid);
     }
     if (parentAuthorUid && parentAuthorUid !== actor_uid) return [parentAuthorUid];
-    const { data } = await checked(database.table("app_private", "issues").select("author_uid").eq("id", aggregate_id).maybeSingle());
-    const issueAuthorUid = asString(data?.author_uid);
+    const issue = await database.sqlMaybe<Selected<"issues", "author_uid">>`
+      select author_uid from app_private.issues where id = ${aggregate_id}`;
+    const issueAuthorUid = asString(issue?.author_uid);
     return issueAuthorUid && issueAuthorUid !== actor_uid ? [issueAuthorUid] : [];
   }
 
@@ -72,12 +73,14 @@ export async function resolveRecipients(
     const parentCommentId = asString(payload.parent_comment_id);
     let parentAuthorUid = asString(payload.parent_author_uid);
     if (!parentAuthorUid && parentCommentId) {
-      const { data } = await checked(database.table("app_private", "announcement_comments").select("author_uid").eq("id", parentCommentId).maybeSingle());
-      parentAuthorUid = asString(data?.author_uid);
+      const comment = await database.sqlMaybe<Selected<"announcement_comments", "author_uid">>`
+        select author_uid from app_private.announcement_comments where id = ${parentCommentId}`;
+      parentAuthorUid = asString(comment?.author_uid);
     }
     if (parentAuthorUid && parentAuthorUid !== actor_uid) return [parentAuthorUid];
-    const { data } = await checked(database.table("app_private", "announcements").select("author_uid").eq("id", aggregate_id).maybeSingle());
-    const annAuthorUid = asString(data?.author_uid);
+    const announcement = await database.sqlMaybe<Selected<"announcements", "author_uid">>`
+      select author_uid from app_private.announcements where id = ${aggregate_id}`;
+    const annAuthorUid = asString(announcement?.author_uid);
     return annAuthorUid && annAuthorUid !== actor_uid ? [annAuthorUid] : [];
   }
 

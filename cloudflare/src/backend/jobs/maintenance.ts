@@ -5,16 +5,20 @@ import { operationPolicy } from "../shared/operation-policies.ts";
 
 export async function runMaintenance(database: AppDatabaseClient) {
   const log = createFunctionLogger("maintenanceCleanup");
-  await database.query(`delete from app_private.notion_pages where (target_type,target_id) in (
-    select target_type,target_id from app_private.notion_pages
-    where target_type not in ('issue','facility','announcement') and updated_at < now()-make_interval(days=>$1::integer)
-    order by updated_at limit 100)`,[operationPolicy('notionArchiveDays')]);
-  await database.query(`delete from app_private.operation_policy_history where created_at < now() - make_interval(days =>
-    (app_private.runtime_retention_config()->>'adminAuditDays')::integer)`);
-  await database.query('delete from app_private.operational_errors where bucket < current_date - $1::integer', [operationPolicy('errorRetentionDays')]);
-  await database.query('delete from app_private.operational_metrics where bucket < current_date - $1::integer', [operationPolicy('metricsRetentionDays')]);
-  await database.query(`insert into app_private.operational_metrics(database_bytes) values(pg_database_size(current_database()))
-    on conflict(bucket) do update set database_bytes=excluded.database_bytes,measured_at=now()`);
+  await database.sql`delete from app_private.notion_pages where (target_type, target_id) in (
+    select target_type, target_id from app_private.notion_pages
+    where target_type not in ('issue', 'facility', 'announcement')
+      and updated_at < now() - make_interval(days => ${operationPolicy('notionArchiveDays')}::integer)
+    order by updated_at limit 100)`;
+  await database.sql`delete from app_private.operation_policy_history where created_at < now() - make_interval(days =>
+    (app_private.runtime_retention_config()->>'adminAuditDays')::integer)`;
+  await database.sql`delete from app_private.operational_errors
+    where bucket < current_date - ${operationPolicy('errorRetentionDays')}::integer`;
+  await database.sql`delete from app_private.operational_metrics
+    where bucket < current_date - ${operationPolicy('metricsRetentionDays')}::integer`;
+  await database.sql`insert into app_private.operational_metrics (database_bytes)
+    values (pg_database_size(current_database()))
+    on conflict (bucket) do update set database_bytes = excluded.database_bytes, measured_at = now()`;
   const { data: expiredSupportCount, error: supportError } = await database.call(
     "app_api",
     "reject_expired_support_issues",

@@ -4,7 +4,8 @@ import { asRecord, asString } from "../shared/http.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
 import { operationPolicy } from '../shared/operation-policies.ts';
 import type { RealtimeDelivery } from "../../durable/realtime-hub.ts";
-import { checked, settleDelivery, type EventDeliveryItem } from "./delivery-attempt.ts";
+import type { Selected } from "../database/schema.ts";
+import { settleDelivery, type EventDeliveryItem } from "./delivery-attempt.ts";
 import { notificationRealtimePayload } from "./notification-content.ts";
 
 /** Telling the open sockets what changed, so a reader does not have to ask. */
@@ -23,11 +24,13 @@ async function realtimeDeliveriesForItem(
   item: EventDeliveryItem,
 ): Promise<RealtimeDelivery[]> {
   if (item.event_type === "notification.marked_opened") {
-    const { data, error } = await database.table("app_private", "notification_states")
-      .select("admin_opened_at,broadcast_opened_at,user_opened_at,push_comments_enabled,push_facility_updates_enabled,push_issue_updates_enabled")
-      .eq("uid", item.aggregate_id)
-      .maybeSingle();
-    if (error) throw error;
+    const data = await database.sqlMaybe<Selected<
+      "notification_states",
+      "admin_opened_at" | "broadcast_opened_at" | "user_opened_at" | "push_comments_enabled"
+      | "push_facility_updates_enabled" | "push_issue_updates_enabled"
+    >>`select admin_opened_at, broadcast_opened_at, user_opened_at, push_comments_enabled,
+        push_facility_updates_enabled, push_issue_updates_enabled
+      from app_private.notification_states where uid = ${item.aggregate_id}`;
     return [{
       event: "notification_state_changed",
       id: item.event_id,
@@ -54,9 +57,8 @@ async function realtimeDeliveriesForItem(
     : item.aggregate_type === "facility"
     ? "facilities"
     : "announcements";
-  const { data: versionRow, error: versionError } = await database.table("app_private", "content_versions")
-    .select("version").eq("domain", domain).maybeSingle();
-  if (versionError) throw versionError;
+  const versionRow = await database.sqlMaybe<Selected<"content_versions", "version">>`
+    select version from app_private.content_versions where domain = ${domain}`;
   const realtimePayload: Record<string, unknown> = {
     aggregateRevision: item.aggregate_version,
     category: asString(payload.category || payload.issue_category || payload.category_id) || null,
@@ -83,11 +85,8 @@ async function realtimeDeliveriesForItem(
     let authorUid = asString(payload.author_uid);
     let status = asString(payload.new_status);
     if ((!readAccess || !authorUid || !status) && item.event_type !== "issue.deleted") {
-      const { data, error } = await database.table("app_private", "issues")
-        .select("author_uid,read_access,status")
-        .eq("id", item.aggregate_id)
-        .maybeSingle();
-      if (error) throw error;
+      const data = await database.sqlMaybe<Selected<"issues", "author_uid" | "read_access" | "status">>`
+        select author_uid, read_access, status from app_private.issues where id = ${item.aggregate_id}`;
       readAccess ||= asString(data?.read_access);
       authorUid ||= asString(data?.author_uid);
       status ||= asString(data?.status);

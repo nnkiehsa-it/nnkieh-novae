@@ -188,7 +188,7 @@ integrationTest('notification persistence failure leaves delivery failed instead
   await callAction('createAnnouncement',{title:'Notification fault',content:'Notification fault content'},admin.auth);
   class FailingNotificationDatabase extends AppDatabaseClient {
     override query<T extends Record<string,unknown>>(sql: string,values: unknown[] = []) {
-      if (sql.startsWith('INSERT INTO "app_private"."notifications"')) return Promise.reject(new Error('simulated-notification-storage-failure'));
+      if (/insert into app_private\.notifications/i.test(sql)) return Promise.reject(new Error('simulated-notification-storage-failure'));
       return super.query<T>(sql,values);
     }
   }

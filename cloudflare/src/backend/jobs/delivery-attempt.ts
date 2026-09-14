@@ -1,4 +1,4 @@
-import type { AppDatabaseClient, DatabaseResult } from "../database/client.ts";
+import type { AppDatabaseClient } from "../database/client.ts";
 
 /** One claimed delivery: an event, and how many times it has been tried. */
 export interface EventDeliveryItem {
@@ -16,16 +16,12 @@ export interface EventDeliveryItem {
   payload: Record<string, unknown>;
   aggregate_version: number;
 }
-export async function checked<T>(query: PromiseLike<DatabaseResult<T>>) {
-  const result = await query;
-  if (result.error) throw result.error;
-  return result;
-}
 export async function settleDelivery(database: AppDatabaseClient, state: 'complete' | 'fail',
   args: { delivery_id: string; attempt_id: string; error_info?: { message: string } }) {
   if (state === 'complete') {
-    await database.query('select app_api.complete_event_delivery($1,$2)', [args.delivery_id,args.attempt_id]);
+    await database.sql`select app_api.complete_event_delivery(${args.delivery_id}, ${args.attempt_id})`;
   } else {
-    await database.query('select app_api.fail_event_delivery($1,$2,$3::jsonb)', [args.delivery_id,args.attempt_id,JSON.stringify(args.error_info)]);
+    await database.sql`select app_api.fail_event_delivery(
+      ${args.delivery_id}, ${args.attempt_id}, ${JSON.stringify(args.error_info)}::jsonb)`;
   }
 }

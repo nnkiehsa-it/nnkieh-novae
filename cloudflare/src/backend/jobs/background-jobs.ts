@@ -5,7 +5,7 @@ import { reconcileNotionPages } from "../shared/notion-reconcile.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
 import { asRecord, asString } from "../shared/http.ts";
 import { operationPolicy } from "../shared/operation-policies.ts";
-import type { Json } from "../database/schema.ts";
+import type { Json, Selected } from "../database/schema.ts";
 
 export interface BackgroundJobItem {
   id: string;
@@ -48,12 +48,8 @@ export async function processBackgroundJobs(database: AppDatabaseClient) {
         if (cloudinaryPublicId) {
           let isCurrentAvatar = false;
           if (targetType === "avatar") {
-            const { data: profile, error: profileError } = await database
-              .table("app_private", "user_profiles")
-              .select("avatar_public_id")
-              .eq("uid", targetId)
-              .maybeSingle();
-            if (profileError) throw profileError;
+            const profile = await database.sqlMaybe<Selected<"user_profiles", "avatar_public_id">>`
+              select avatar_public_id from app_private.user_profiles where uid = ${targetId}`;
             isCurrentAvatar = profile?.avatar_public_id === cloudinaryPublicId;
           }
           if (!isCurrentAvatar) {
@@ -63,12 +59,8 @@ export async function processBackgroundJobs(database: AppDatabaseClient) {
 
         if (notionPageId) {
           await markNotionPageDeleted(notionPageId);
-          const { error: mappingError } = await database
-            .table("app_private", "notion_pages")
-            .delete()
-            .eq("target_type", targetType)
-            .eq("target_id", targetId);
-          if (mappingError) throw mappingError;
+          await database.sql`delete from app_private.notion_pages
+            where target_type = ${targetType} and target_id = ${targetId}`;
         }
       } else if (job.job_type === "notion_reconcile") {
         const reconcileRes = await reconcileNotionPages(database);
@@ -99,10 +91,10 @@ export async function processBackgroundJobs(database: AppDatabaseClient) {
     }
   }
 
-  const { data: remainingPolicies, error: remainingError } = await database.table("app_private", "background_jobs")
-    .select("id").in("job_type", ["retention_cleanup", "category_policy"])
-    .in("status", ["pending", "processing"]).limit(1);
-  if (remainingError) throw remainingError;
+  const { rows: remainingPolicies } = await database.sql<Selected<"background_jobs", "id">>`
+    select id from app_private.background_jobs
+    where job_type = any(${["retention_cleanup", "category_policy"]})
+      and status = any(${["pending", "processing"]}) limit 1`;
   return {
     hasMore: jobs.length === operationPolicy('jobBatchSize') || remainingPolicies.length > 0,
     processedCount: jobs.length,
