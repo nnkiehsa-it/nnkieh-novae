@@ -83,7 +83,7 @@ export async function handleUserAction(
 
 
     const imageResponse = await fetch(sourceUrl, {
-      redirect: "error",
+      redirect: "manual",
       signal: AbortSignal.timeout(8_000),
     });
     if (!imageResponse.ok) {
