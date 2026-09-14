@@ -61,6 +61,7 @@ const messages = {
   'auth.pwaDismissGoBack': 'Back to install',
   'auth.pwaDismissConfirm': 'Still not now',
   'auth.pwaAlreadyInstalledNote': 'Already installed? There is no need to install it again — open Novae from its Home Screen icon.',
+  'auth.pwaInAppAskDescription': 'You are inside the {browser} in-app browser, where Google sign-in cannot complete. First, tell us whether Novae is already on this phone.',
   'auth.pwaShareExitTitle': 'Where do you want to continue?',
   'auth.pwaShareExitDescription': 'You opened this page in a browser from a shared link. Before you browse further, tell us whether Novae is already on this phone.',
   'auth.pwaShareExitInstalled': 'Already installed',

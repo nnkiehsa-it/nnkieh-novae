@@ -3,7 +3,10 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Copy, Download, Home, Share2, TriangleAlert } from "lucide-react";
 import { AnimatePresence } from "motion/react";
-import { useAppInstallPrompt } from "@/hooks/use-app-install-prompt";
+import {
+  useAppInstallPrompt,
+  type AppInstallPromptMode,
+} from "@/hooks/use-app-install-prompt";
 import { resolveShareExit } from "@/hooks/share-entry-store";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
@@ -26,15 +29,25 @@ export function AppInstallPrompt() {
   const { t } = useI18n();
   const [view, setView] = useState<PromptView>("guide");
   const [direction, setDirection] = useState<1 | -1>(1);
-  const mode = prompt.mode;
+  // The dialog has to survive its own closing animation, so the last thing it
+  // was saying stays on screen until Radix has finished taking it away.
+  const [shownMode, setShownMode] = useState<AppInstallPromptMode | null>(null);
+  if (prompt.mode && prompt.mode !== shownMode) setShownMode(prompt.mode);
+  const mode = prompt.mode ?? shownMode;
   const sharedExit = prompt.reason === "share-exit";
+  const trapped = mode === "in-app-browser";
 
-  // A reader who asked to leave a shared page is asked where they want to
-  // carry on before anything is explained to them about installing.
+  // Both readers who get this far are here by accident: one asked to leave the
+  // single page they were sent, the other is held inside an app's own browser.
+  // Neither is told to install anything before being asked whether they
+  // already have.
   useEffect(() => {
+    if (!prompt.mode) return;
     setDirection(1);
-    setView(prompt.reason === "share-exit" ? "ask" : "guide");
-  }, [prompt.reason]);
+    setView(prompt.reason === "share-exit" || prompt.mode === "in-app-browser"
+      ? "ask"
+      : "guide");
+  }, [prompt.mode, prompt.reason]);
 
   if (!mode) return null;
 
@@ -140,9 +153,11 @@ export function AppInstallPrompt() {
     step = {
       actions: (
         <>
-          <Button variant="ghost" onClick={() => finish(true)}>
-            {t("auth.pwaShareExitContinue")}
-          </Button>
+          {trapped ? null : (
+            <Button variant="ghost" onClick={() => finish(true)}>
+              {t("auth.pwaShareExitContinue")}
+            </Button>
+          )}
           <Button variant="outline" onClick={() => go("guide")}>
             {t("auth.pwaShareExitNotInstalled")}
           </Button>
@@ -151,7 +166,9 @@ export function AppInstallPrompt() {
           </Button>
         </>
       ),
-      description: t("auth.pwaShareExitDescription"),
+      description: trapped
+        ? t("auth.pwaInAppAskDescription", { browser: browserLabel })
+        : t("auth.pwaShareExitDescription"),
       icon: <Home className="size-5" aria-hidden />,
       steps: [],
       title: t("auth.pwaShareExitTitle"),

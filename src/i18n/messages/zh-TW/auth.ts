@@ -61,6 +61,7 @@ const messages = {
   'auth.pwaDismissGoBack': '返回安裝',
   'auth.pwaDismissConfirm': '仍然稍後',
   'auth.pwaAlreadyInstalledNote': '已經安裝過了？不用再裝一次，直接從主畫面的 Novae 圖示開啟即可。',
+  'auth.pwaInAppAskDescription': '目前在 {browser} 的內建瀏覽器中，這裡無法完成 Google 登入。先確認你手機上有沒有 Novae。',
   'auth.pwaShareExitTitle': '要在哪裡繼續使用 Novae？',
   'auth.pwaShareExitDescription': '你是從分享的連結在瀏覽器開啟這一頁的。要瀏覽其他內容之前，先確認你手機上有沒有 Novae。',
   'auth.pwaShareExitInstalled': '我已經安裝了',
