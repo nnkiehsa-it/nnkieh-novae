@@ -2,11 +2,13 @@
    Do not edit: change the config and run `bun run generate:all`. */
 :root {
   /* How long. A touch is acknowledged in a tenth of a second, a control
-     settles in a quarter, navigation has a longer deceleration, and a layer
+     settles in a quarter, something genuinely new takes long enough to be
+     read as arriving, navigation has a longer deceleration, and a layer
      presented over the current place takes longest because it travels
      furthest. Leaving is always quicker than arriving. */
   --motion-touch: 100ms;
   --motion-control: 250ms;
+  --motion-reveal: 400ms;
   --motion-nav: 460ms;
   --motion-sheet: 560ms;
   --motion-control-exit: 190ms;
@@ -27,7 +29,7 @@
   --motion-press-scale: 0.985;
   --motion-card-press-scale: 0.995;
   --motion-surface-scale: 0.975;
-  --motion-route-travel: 24px;
+  --motion-route-travel: 32px;
 
   /* Indeterminate loops. They repeat, so they sit outside the ladder. */
   --motion-spin: 800ms;

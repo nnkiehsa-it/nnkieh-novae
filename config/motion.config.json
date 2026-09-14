@@ -2,6 +2,7 @@
   "durations": {
     "touch": 100,
     "control": 250,
+    "reveal": 400,
     "nav": 460,
     "sheet": 560,
     "controlExit": 190,
@@ -20,7 +21,7 @@
     "pressScale": "0.985",
     "cardPressScale": "0.995",
     "surfaceScale": "0.975",
-    "routeTravel": "24px"
+    "routeTravel": "32px"
   },
   "loops": {
     "spin": 800,

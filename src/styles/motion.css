@@ -8,9 +8,10 @@
  * interaction does not fit a rung, the ladder is wrong, not the recipe.
  *
  * The pacing is iOS's: a touch is acknowledged in a tenth of a second, a
- * control settles in a quarter, navigation has a longer deceleration, and a
- * layer presented over the current place takes the longest because it travels
- * the furthest.
+ * control settles in a quarter, something genuinely new — a route, a panel, a
+ * toast, content replacing its own skeleton — takes long enough to be read as
+ * arriving, navigation has a longer deceleration, and a layer presented over
+ * the current place takes the longest because it travels the furthest.
  *
  * What is deliberately not animated matters as much as what is. Furniture does
  * not fade in, lists do not stagger, and anything already on screen when a
@@ -57,12 +58,15 @@
    fetching, rendering and hydrating the route that was asked for. That was the
    stutter. It also put two full-viewport images on screen at once, which is why
    anything the arriving page did not cover showed the one underneath.
-   Nothing is underneath now, so the travel is short and the fade carries the
-   rest: a page sliding the full width would only uncover an empty background.
+   Nothing is underneath now, so the travel is a fraction of the screen rather
+   than the whole of it: a page sliding the full width would only uncover an
+   empty background. It is paced as an arrival rather than as a control, on the
+   navigation curve, because a route change is the largest thing that happens in
+   the app and the quarter-second it used to take read as a cut.
    The direction still reads — a child arrives from the trailing edge, its
    parent from the leading one — and a route that is neither simply appears. */
 .route-page[data-route-direction] {
-  animation: t-route-enter var(--motion-control) var(--ease-arrive) both;
+  animation: t-route-enter var(--motion-reveal) var(--ease-nav) both;
 }
 .route-page[data-route-direction="push"] {
   --route-entry-travel: var(--motion-route-travel);
@@ -70,10 +74,17 @@
 .route-page[data-route-direction="pop"] {
   --route-entry-travel: calc(-1 * var(--motion-route-travel));
 }
+/* The slide is the whole animation; the fade only covers its first third. A
+   page that faded for as long as it travelled spent most of the navigation
+   being read through, which is what made a longer, calmer push look washed out
+   rather than deliberate. */
 @keyframes t-route-enter {
   from {
     opacity: 0;
     transform: translateX(var(--route-entry-travel, 0));
+  }
+  35% {
+    opacity: 1;
   }
   to {
     opacity: 1;
@@ -221,7 +232,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
    route transition already carried it in, and animating it again underneath
    that is what made an ordinary navigation read as a reload. */
 .t-panel-reveal {
-  animation: t-panel-reveal var(--motion-control) var(--ease-arrive) both;
+  animation: t-panel-reveal var(--motion-reveal) var(--ease-arrive) both;
 }
 @keyframes t-panel-reveal {
   from {
@@ -268,7 +279,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 }
 
 .t-update-stage {
-  animation: t-panel-reveal var(--motion-control) var(--ease-arrive) both;
+  animation: t-panel-reveal var(--motion-reveal) var(--ease-arrive) both;
 }
 
 /* Menus and overlays ------------------------------------------------------ */
@@ -403,9 +414,9 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   opacity: 1;
   transform: var(--y) translateY(0);
   transition:
-    opacity var(--motion-control) var(--ease-arrive),
-    transform var(--motion-control) var(--ease-arrive),
-    height var(--motion-control) var(--ease-arrive) !important;
+    opacity var(--motion-reveal) var(--ease-arrive),
+    transform var(--motion-reveal) var(--ease-arrive),
+    height var(--motion-reveal) var(--ease-arrive) !important;
 }
 .t-toast[data-sonner-toast][data-removed="true"][data-swipe-out="false"] {
   opacity: 0;
@@ -600,13 +611,13 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   z-index: 1;
   opacity: 1;
   pointer-events: none;
-  transition: opacity var(--motion-control) var(--ease-move);
+  transition: opacity var(--motion-reveal) var(--ease-move);
 }
 .t-skel-content {
   z-index: 2;
   position: relative;
   opacity: 0;
-  transition: opacity var(--motion-control) var(--ease-move);
+  transition: opacity var(--motion-reveal) var(--ease-move);
 }
 .t-skel.is-revealed .t-skel-skeleton {
   opacity: 0;
@@ -815,7 +826,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 
 /* Closed-content notice: reveal the final outcome as a state transition. */
 .t-resolution-notice {
-  animation: t-panel-reveal var(--motion-control) var(--ease-arrive) both;
+  animation: t-panel-reveal var(--motion-reveal) var(--ease-arrive) both;
 }
 .t-resolution-notice [data-resolution-icon] {
   animation: t-success-in var(--motion-sheet) var(--ease-bounce) both;
