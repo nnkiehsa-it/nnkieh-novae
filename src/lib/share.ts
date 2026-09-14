@@ -1,5 +1,43 @@
+import { detectInAppBrowser } from "@/lib/in-app-browser";
+
+/**
+ * Marks a link as one that left Novae and came back through somebody else.
+ *
+ * A reader who arrives this way is in a plain browser tab rather than the
+ * installed app, and the first thing they want is the page they were sent —
+ * not an invitation to install anything.
+ */
+export const SHARE_ENTRY_PARAM = "shared";
+
+function buildShareUrl(href: string) {
+  const url = new URL(href);
+  url.searchParams.set(SHARE_ENTRY_PARAM, "1");
+  return url.toString();
+}
+
+export function hasShareEntryMarker() {
+  return new URL(window.location.href).searchParams.has(SHARE_ENTRY_PARAM);
+}
+
+/**
+ * Takes the marker back out of the address bar once it has been read, so that
+ * what the reader sees and re-shares is the plain page address.
+ *
+ * Inside a messaging app's own browser the marker is left in place: that tab
+ * cannot sign in, so the URL is about to be handed to the system browser and
+ * has to carry the marker with it. The address is only rewritten after
+ * hydration, when the page and the server agree on what the query string was.
+ */
+export function clearShareEntryMarker() {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has(SHARE_ENTRY_PARAM)) return;
+  if (detectInAppBrowser(navigator.userAgent)) return;
+  url.searchParams.delete(SHARE_ENTRY_PARAM);
+  window.history.replaceState(window.history.state, "", url.toString());
+}
+
 export async function shareCurrentPage(title: string) {
-  const url = window.location.href;
+  const url = buildShareUrl(window.location.href);
   if (typeof navigator.share === "function") {
     try {
       await navigator.share({ title, url });
