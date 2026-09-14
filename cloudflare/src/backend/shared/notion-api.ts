@@ -47,10 +47,36 @@ function notionErrorCode(body: string): string {
   return /"code"\s*:\s*"([a-z_]+)"/u.exec(body)?.[1] ?? "";
 }
 
+/**
+ * Notion accepts roughly three requests a second and refuses everything above
+ * that, so every call made by this isolate starts a fixed gap after the one
+ * before it instead of all of them leaving at once. A rebuild writes hundreds
+ * of pages in a row; unpaced, it spent most of its attempts being refused.
+ */
+const NOTION_REQUEST_SPACING_MS = 350;
+const NOTION_REFUSAL_RETRIES = 5;
+let notionTurn: Promise<void> = Promise.resolve();
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Takes the next turn on the wire, releasing the one after it a gap later. */
+async function pacedFetch(url: string, init: RequestInit): Promise<Response> {
+  const ready = notionTurn;
+  let release = () => {};
+  notionTurn = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await ready;
+  setTimeout(release, NOTION_REQUEST_SPACING_MS);
+  return fetch(url, init);
+}
+
 export async function callNotionAPI(path: string, method: string, body?: unknown): Promise<unknown> {
   const base = notionBaseUrl();
   const url = path.startsWith("http") ? path : `${base}/v1${path}`;
-  const response = await fetch(url, {
+  const init: RequestInit = {
     method,
     headers: {
       Authorization: `Bearer ${requireEnv("NOTION_TOKEN")}`,
@@ -59,13 +85,25 @@ export async function callNotionAPI(path: string, method: string, body?: unknown
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,
     signal: AbortSignal.timeout(15_000),
-  });
-  if (!response.ok) {
-    const failure = await response.text();
-    throw new NotionApiError(response.status, notionErrorCode(failure), failure);
+  };
+  for (let attempt = 0; ; attempt += 1) {
+    const response = await pacedFetch(url, init);
+    if (!response.ok) {
+      const failure = await response.text();
+      // A refusal for going too fast names how long to wait, and waiting is the
+      // whole answer to it -- it is not a failure of the work being done.
+      if (response.status === 429 && attempt < NOTION_REFUSAL_RETRIES) {
+        const namedWait = Number(response.headers.get("Retry-After"));
+        await sleep(Number.isFinite(namedWait) && namedWait > 0
+          ? namedWait * 1000
+          : NOTION_REQUEST_SPACING_MS * (attempt + 2));
+        continue;
+      }
+      throw new NotionApiError(response.status, notionErrorCode(failure), failure);
+    }
+    const text = await response.text();
+    return text ? JSON.parse(text) : {};
   }
-  const text = await response.text();
-  return text ? JSON.parse(text) : {};
 }
 export async function getDataSourceId(): Promise<string> {
   if (discoveredDataSourceId) return discoveredDataSourceId;

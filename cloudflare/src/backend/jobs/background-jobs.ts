@@ -1,7 +1,11 @@
 import type { AppDatabaseClient } from "../database/client.ts";
 import { deleteCloudinaryAsset } from "../shared/cloudinary.ts";
 import { markNotionPageDeleted } from "../shared/notion-page.ts";
-import { reconcileNotionPages } from "../shared/notion-reconcile.ts";
+import {
+  countNotionRebuildTargets,
+  reconcileNotionPages,
+  type NotionRebuildCursor,
+} from "../shared/notion-reconcile.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
 import { asRecord, asString } from "../shared/http.ts";
 import { operationPolicy } from "../shared/operation-policies.ts";
@@ -15,6 +19,44 @@ export interface BackgroundJobItem {
   status: string;
   attempt_count: number;
   last_attempt_id: string;
+}
+
+/**
+ * Carries one pass of a Notion rebuild, and hands the job back if there is
+ * more.
+ *
+ * A complete rebuild writes every proposal, facility, announcement and recorded
+ * operation, which is more work than one paced run at Notion's request rate can
+ * finish. Each pass writes a bounded number of pages, records how far it got on
+ * the job itself -- which is what the operations screen reads as progress --
+ * and returns the job to the queue at its cursor rather than starting over.
+ */
+async function advanceNotionRebuild(database: AppDatabaseClient, job: BackgroundJobItem) {
+  const cursor = (job.payload.cursor as NotionRebuildCursor | null | undefined) ?? null;
+  if (!cursor) {
+    const total = await countNotionRebuildTargets(database);
+    await database.sql`update app_private.background_jobs
+      set estimated_rows = ${total}, processed_rows = 0, updated_at = now() where id = ${job.id}`;
+  }
+  const pass = await reconcileNotionPages(database, {
+    cursor,
+    limit: operationPolicy("notionBatchSize"),
+  });
+  const payload = JSON.stringify({ ...job.payload, cursor: pass.cursor });
+  if (pass.done) {
+    await database.sql`update app_private.background_jobs
+      set processed_rows = processed_rows + ${pass.written}, payload = ${payload}::jsonb,
+        updated_at = now() where id = ${job.id}`;
+    return pass;
+  }
+  // The pass succeeded, so it does not spend one of the job's attempts: the
+  // job goes back to the queue at its cursor with its attempts cleared.
+  await database.sql`update app_private.background_jobs
+    set status = 'pending', attempt_count = 0, locked_at = null, last_attempt_id = null,
+      next_attempt_at = now(), processed_rows = processed_rows + ${pass.written},
+      payload = ${payload}::jsonb, updated_at = now()
+    where id = ${job.id} and status = 'processing' and last_attempt_id = ${job.last_attempt_id}`;
+  return pass;
 }
 
 export async function processBackgroundJobs(database: AppDatabaseClient) {
@@ -32,6 +74,7 @@ export async function processBackgroundJobs(database: AppDatabaseClient) {
   });
   if (error) throw error;
   const jobs = (data ?? []) as BackgroundJobItem[];
+  let resumed = 0;
 
   for (const job of jobs) {
     const attemptId = job.last_attempt_id;
@@ -63,8 +106,12 @@ export async function processBackgroundJobs(database: AppDatabaseClient) {
             where target_type = ${targetType} and target_id = ${targetId}`;
         }
       } else if (job.job_type === "notion_reconcile") {
-        const reconcileRes = await reconcileNotionPages(database);
-        jobResult = { ...jobResult, ...reconcileRes };
+        const pass = await advanceNotionRebuild(database, job);
+        if (!pass.done) {
+          resumed += 1;
+          continue;
+        }
+        jobResult = { ...jobResult, pages: pass.written };
       } else {
         throw new Error("unsupported-background-job");
       }
@@ -96,7 +143,7 @@ export async function processBackgroundJobs(database: AppDatabaseClient) {
     where job_type = any(${["retention_cleanup", "category_policy"]})
       and status = any(${["pending", "processing"]}) limit 1`;
   return {
-    hasMore: jobs.length === operationPolicy('jobBatchSize') || remainingPolicies.length > 0,
+    hasMore: resumed > 0 || jobs.length === operationPolicy('jobBatchSize') || remainingPolicies.length > 0,
     processedCount: jobs.length,
     policy: policyResult,
   };

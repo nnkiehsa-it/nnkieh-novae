@@ -70,6 +70,36 @@ integrationTest('only administrators may retry failed operational work', async (
   await assert.rejects(() => callAction('retryOperationalWork', { kind: 'job', id }, admin.auth), /validation-invalid/);
 });
 
+integrationTest('one retry covers every kind of failed work, and only for administrators', async () => {
+  const admin = await seedActor('retry-all-admin', { roles: ['platform-admin'] });
+  const member = await seedActor('retry-all-member');
+  const firstJob = crypto.randomUUID();
+  const secondJob = crypto.randomUUID();
+  const backlogJob = crypto.randomUUID();
+  for (const id of [firstJob, secondJob]) {
+    await database.query(`insert into app_private.background_jobs(id,job_type,status,attempt_count,last_attempt_id,error_detail)
+      values($1,'deletion','failed',3,$2,'{"message":"cloudinary refused"}'::jsonb)`, [id, crypto.randomUUID()]);
+  }
+  await database.query(`insert into app_private.external_cleanup_backlog(job_id,payload)
+    values($1,'{"cloudinary_public_id":"orphan"}'::jsonb)`, [backlogJob]);
+
+  await assert.rejects(() => callAction('retryOperationalWork', { kind: 'all' }, member.auth), /permission-denied/);
+  const result = asRecord(await callAction('retryOperationalWork', { kind: 'all' }, admin.auth));
+  assert.equal(result.success, true);
+  assert.equal(result.jobs, 2);
+  assert.equal(result.cleanup, 1);
+  assert.equal(Number(result.retried) >= 3, true);
+
+  const pending = await database.query<{ count: number }>(
+    `select count(*)::integer as count from app_private.background_jobs
+     where id = any($1) and status='pending' and attempt_count=0`, [[firstJob, secondJob, backlogJob]]);
+  assert.equal(pending.rows[0].count, 3);
+  assert.equal((await database.query<{ count: number }>(
+    'select count(*)::integer as count from app_private.external_cleanup_backlog')).rows[0].count, 0);
+  assert.equal((await database.query<{ count: number }>(
+    `select count(*)::integer as count from app_private.background_jobs where status='failed'`)).rows[0].count, 0);
+});
+
 integrationTest('only administrators may queue one configured Notion archive rebuild', async () => {
   const admin = await seedActor('notion-rebuild-admin', { roles: ['platform-admin'] });
   const member = await seedActor('notion-rebuild-member');
@@ -96,7 +126,7 @@ integrationTest('only administrators may queue one configured Notion archive reb
   assert.equal(jobs.rows[0].count, 1);
 });
 
-integrationTest('Notion rebuild archives old pages and recreates complete Chinese records', async () => {
+integrationTest('Notion rebuild writes every page again, leaves existing pages alone, and resumes across passes', async () => {
   const baseUrl = process.env.NOTION_API_BASE_URL;
   assert.ok(baseUrl);
   await fetch(`${baseUrl}/__requests`, { method: 'DELETE' });
@@ -134,20 +164,30 @@ integrationTest('Notion rebuild archives old pages and recreates complete Chines
     }).then((response) => response.json()) as { id: string },
   ));
 
-  const waitingNotionDeliveries = async () => (await database.query<{ count: number }>(
+  const waitingDeliveries = async () => (await database.query<{ count: number }>(
     `select count(*)::integer as count from app_private.event_deliveries
-     where destination='notion' and status in ('pending','failed')`,
+     where status in ('pending','failed')`,
   )).rows[0].count;
-  assert.ok(await waitingNotionDeliveries() > 0);
+  assert.ok(await waitingDeliveries() > 0);
 
+  let passes = 0;
   await withRuntimeEnvironment(enabledEnvironment, async () => {
     await callAction('rebuildNotionArchive', {}, admin.auth);
-    await underPolicies(() => processBackgroundJobs(database));
+    for (; passes < 20; passes += 1) {
+      if (!(await underPolicies(() => processBackgroundJobs(database))).hasMore) break;
+    }
   });
 
-  // The rebuild wrote every page from the canonical record, so nothing the
-  // queue was still holding is left to deliver on top of it.
-  assert.equal(await waitingNotionDeliveries(), 0);
+  // The rebuild states the archive from the canonical record, so every queue it
+  // supersedes is emptied rather than delivered on top of it.
+  assert.equal(await waitingDeliveries(), 0);
+  const rebuild = await database.query<{ estimated_rows: number; processed_rows: number; status: string }>(
+    `select status, estimated_rows::integer, processed_rows::integer from app_private.background_jobs
+     where job_type='notion_reconcile' order by created_at desc limit 1`,
+  );
+  assert.equal(rebuild.rows[0].status, 'completed');
+  assert.ok(rebuild.rows[0].estimated_rows > 0);
+  assert.equal(rebuild.rows[0].processed_rows, rebuild.rows[0].estimated_rows);
 
   type NotionTestProperty = {
     date?: { start?: string } | null;
@@ -160,8 +200,11 @@ integrationTest('Notion rebuild archives old pages and recreates complete Chines
     notionPageBlocks: Record<string, Array<Record<string, unknown>>>;
     notionPages: Record<string, { in_trash?: boolean; properties: Record<string, NotionTestProperty> }>;
   };
-  assert.ok(stalePages.every((page) => state.notionPages[page.id].in_trash === true));
-  const activePages = Object.entries(state.notionPages).filter(([, page]) => page.in_trash !== true);
+  // Removing what the workspace already holds is the administrator's own
+  // decision: the rebuild only writes.
+  assert.ok(stalePages.every((page) => state.notionPages[page.id].in_trash !== true));
+  const staleIds = new Set(stalePages.map((page) => page.id));
+  const activePages = Object.entries(state.notionPages).filter(([id]) => !staleIds.has(id));
   const issuePageEntry = activePages.find(([, page]) =>
     page.properties['Novae ID']?.rich_text?.[0]?.text?.content === `issue:${issueId}`);
   assert.ok(issuePageEntry);

@@ -34,6 +34,7 @@ export async function handleOperationsAction(action: string, payload: JsonRecord
     return { alreadyQueued: queued.already_queued, jobId: queued.id, success: true };
   }
   if (action === 'retryOperationalWork') {
+    if (payload.kind === 'all') return retryEverythingFailed(auth.uid, database);
     if (typeof payload.id !== 'string' || !/^[0-9a-f-]{36}$/i.test(payload.id)) throw new Error('validation-invalid');
     if (payload.kind === 'cleanup') {
       const restored = await database.sql`with source as (
@@ -119,4 +120,32 @@ function operationsConsole(offset: number, database: BackendDatabase) {
     sampledAt: Promise.resolve(new Date().toISOString()),
     settings: readOperationPolicies(database),
   });
+}
+
+/**
+ * Everything that failed, asked to run again at once.
+ *
+ * Retrying was one row at a time, so recovering from an outage meant as many
+ * admin writes as there were failures and the administrator ran into their own
+ * rate limit before reaching the end of the list. The same recovery is one
+ * write now, and it covers all three kinds of stopped work.
+ */
+async function retryEverythingFailed(uid: string, database: BackendDatabase) {
+  const jobs = await database.sql`update app_private.background_jobs set status = 'pending', attempt_count = 0,
+    locked_at = null, last_attempt_id = null, next_attempt_at = now(), updated_at = now()
+    where status = 'failed' returning id`;
+  const deliveries = await database.sql`update app_private.event_deliveries set status = 'pending', attempt_count = 0,
+    locked_at = null, last_attempt_id = null, next_attempt_at = now(), updated_at = now()
+    where status = 'failed' returning id`;
+  const cleanup = await database.sql`with source as (
+    delete from app_private.external_cleanup_backlog returning *
+  ) insert into app_private.background_jobs (id, job_type, payload, created_by)
+    select job_id, 'deletion', payload, ${uid} from source returning id`;
+  return {
+    cleanup: cleanup.rows.length,
+    deliveries: deliveries.rows.length,
+    jobs: jobs.rows.length,
+    retried: jobs.rows.length + deliveries.rows.length + cleanup.rows.length,
+    success: true,
+  };
 }
