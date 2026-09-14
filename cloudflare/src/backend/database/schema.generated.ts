@@ -78,6 +78,21 @@ export interface GeneratedDatabaseTables {
     "after_value": GeneratedJson | null;
     "created_at": string;
   };
+  "claimable_event_deliveries": {
+    "id": string | null;
+    "event_id": string | null;
+    "destination": string | null;
+    "status": string | null;
+    "attempt_count": number | null;
+    "last_attempt_id": string | null;
+    "next_attempt_at": string | null;
+    "locked_at": string | null;
+    "completed_at": string | null;
+    "error_detail": GeneratedJson | null;
+    "created_at": string | null;
+    "updated_at": string | null;
+    "expires_at": string | null;
+  };
   "comments": {
     "id": string;
     "issue_id": string;
@@ -493,6 +508,7 @@ export const GENERATED_DATABASE_FUNCTION_SIGNATURES = [
   "fail_operation(operation_id uuid, error_detail jsonb) -> void",
   "get_admin_overview(window_hours integer) -> jsonb",
   "get_platform_dashboard_snapshot() -> jsonb",
+  "pending_delivery_destinations() -> text[]",
   "record_domain_event(operation_id uuid, aggregate_type text, aggregate_id text, event_type text, actor_uid text, payload jsonb, destinations text[]) -> uuid",
   "reject_expired_support_issues() -> integer",
   "run_scheduled_maintenance_cleanup() -> jsonb",

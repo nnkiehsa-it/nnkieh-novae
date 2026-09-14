@@ -25,6 +25,15 @@ export async function processJobMessage(message: JobMessage, env: Env) {
   }
 }
 
+/** Which destinations have something waiting, asked once for all of them. */
+async function pendingDestinations(database: AppDatabaseClient) {
+  const { data, error } = await database.call("app_api", "pending_delivery_destinations", {});
+  if (error) throw error;
+  return new Set((data ?? []) as string[]);
+}
+
+const NOTHING_DELIVERED = { hasMore: false, processedCount: 0 };
+
 /** One bounded pass over everything the queue has to carry. */
 async function sweep(message: JobMessage, database: AppDatabaseClient, env: Env) {
     await claimFixedWindowRateLimits([
@@ -35,10 +44,11 @@ async function sweep(message: JobMessage, database: AppDatabaseClient, env: Env)
       await runMaintenance(database);
     }
 
-    const notion = await processNotionDeliveries(database);
-    const inApp = await processInAppDeliveries(database, env);
-    const push = await processPushDeliveries(database);
-    const realtime = await processRealtimeDeliveries(database, env);
+    const pending = await pendingDestinations(database);
+    const notion = pending.has("notion") ? await processNotionDeliveries(database) : NOTHING_DELIVERED;
+    const inApp = pending.has("in_app") ? await processInAppDeliveries(database, env) : NOTHING_DELIVERED;
+    const push = pending.has("push") ? await processPushDeliveries(database) : NOTHING_DELIVERED;
+    const realtime = pending.has("realtime") ? await processRealtimeDeliveries(database, env) : NOTHING_DELIVERED;
     const backgroundJobs = await processBackgroundJobs(database);
 
     const hasMore =

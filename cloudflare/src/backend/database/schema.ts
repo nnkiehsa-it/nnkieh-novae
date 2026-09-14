@@ -743,6 +743,7 @@ export interface AppApiFunctions {
     payload?: Json;
     destinations?: string[];
   }, string>;
+  pending_delivery_destinations: AppFunction<Record<string, never>, string[]>;
   claim_event_deliveries: AppFunction<{ target_destination: string; batch_size?: number }, Array<{
     delivery_id: string;
     event_id: string;
