@@ -43,6 +43,7 @@ integrationTest("admin console restriction and overview actions", async () => {
   assert.equal(Number.isNaN(Date.parse(String(listedTarget.createdAt))), false);
   assert.equal("createdAtMs" in listedTarget, false);
   assert.equal("restrictedUntilMs" in listedTarget, false);
+  assert.equal("photoUrl" in listedTarget, true);
   const adminUsers = asRecord(await callAction(
     "listAdminUsers",
     { query: admin.auth.uid },

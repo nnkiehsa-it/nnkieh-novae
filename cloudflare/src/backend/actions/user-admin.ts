@@ -1,9 +1,36 @@
 import { asRecord, asString } from "../shared/http.ts";
+import { createMediaDeliveryUrl } from "../shared/media-delivery.ts";
 import { requirePermission } from "./auth.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import type { Selected } from "../database/schema.ts";
 
 const RESTRICTION_MODES = new Set(["clear", "7d", "30d", "permanent", "custom"]);
+
+async function withAdminUserAvatars(
+  data: unknown,
+  viewerUid: string,
+  database: BackendDatabase,
+) {
+  const result = asRecord(data);
+  const users = Array.isArray(result.users) ? result.users.map(asRecord) : [];
+  const uids = users.map((user) => asString(user.uid)).filter(Boolean);
+  if (uids.length === 0) return { ...result, users };
+  const { rows } = await database.sql<Selected<
+    "user_profiles", "uid" | "avatar_public_id" | "photo_url"
+  >>`select uid, avatar_public_id, photo_url from app_private.user_profiles where uid = any(${uids})`;
+  const profiles = new Map(rows.map((profile) => [profile.uid, profile]));
+  return {
+    ...result,
+    users: await Promise.all(users.map(async (user) => {
+      const uid = asString(user.uid);
+      const profile = profiles.get(uid);
+      const media = profile?.avatar_public_id
+        ? await createMediaDeliveryUrl(profile.avatar_public_id, "avatar", false, viewerUid)
+        : null;
+      return { ...user, photoUrl: media?.url ?? profile?.photo_url ?? null };
+    })),
+  };
+}
 
 export async function handleUserAdminAction(
   action: string,
@@ -49,7 +76,7 @@ export async function handleUserAdminAction(
       page_offset: Number(page) * 80,
     });
     if (error) throw error;
-    return data;
+    return await withAdminUserAvatars(data, auth.uid, database);
   }
 
   if (action === "setUserRestriction") {

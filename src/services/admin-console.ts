@@ -8,6 +8,7 @@ interface AdminUserWire {
   uid: string;
   email: string | null;
   name: string;
+  photoUrl: string | null;
   createdAt: string;
   lastSeenAt: string | null;
   restrictedUntil: string | null;
@@ -22,6 +23,7 @@ export interface AdminUser {
   uid: string;
   email: string | null;
   name: string;
+  photoUrl: string | null;
   createdAt: Date;
   lastSeenAt: Date | null;
   restrictedUntil: Date | null;
@@ -119,6 +121,7 @@ export async function listAdminUsers(query = '', page = 0) {
       uid: user.uid,
       email: user.email,
       name: user.name,
+      photoUrl: user.photoUrl,
       createdAt: new Date(user.createdAt),
       lastSeenAt: toDate(user.lastSeenAt),
       restrictedUntil: toDate(user.restrictedUntil),
