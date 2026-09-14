@@ -1,6 +1,7 @@
 import type { AppDatabaseClient } from "../database/client.ts";
 import { deleteCloudinaryAsset } from "../shared/cloudinary.ts";
-import { markNotionPageDeleted, reconcileNotionPages } from "../shared/notion.ts";
+import { markNotionPageDeleted } from "../shared/notion-page.ts";
+import { reconcileNotionPages } from "../shared/notion-reconcile.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
 import { asRecord, asString } from "../shared/http.ts";
 import { operationPolicy } from "../shared/operation-policies.ts";

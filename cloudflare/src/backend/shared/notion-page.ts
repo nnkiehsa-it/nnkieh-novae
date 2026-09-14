@@ -1,0 +1,215 @@
+import type { AppDatabaseClient } from "../database/client.ts";
+import {
+  appendTimelineBlockWithDeduplication,
+  callNotionAPI,
+  ensureRichTextProperty,
+  ensureSelectOption,
+  fetchAllBlockChildren,
+  getBlockPlainText,
+  getDataSourceId,
+  notionEnabled,
+  splitNotionText,
+  uploadImageToNotion,
+} from "./notion-api.ts";
+
+/**
+ * The page a piece of Novae has in Notion.
+ *
+ * One proposal, facility report, announcement or audit entry is one page, found
+ * or created by the identifier Novae writes into it, and its first timeline
+ * entry carries the body and the images the body refers to. The words a reader
+ * sees on that page are Novae's own vocabulary translated into the labels the
+ * Notion database uses.
+ */
+type AppDatabase = AppDatabaseClient;
+const STATUS_LABELS: Record<string, string> = {
+  pending: "未回覆",
+  "under-review": "待審核",
+  processing: "處理中",
+  "auto-rejected": "未通過",
+  "review-rejected": "審核未通過",
+  infeasible: "無法實行",
+  completed: "已完成",
+  已刪除: "已刪除",
+  發布: "發布",
+  "unable-to-handle": "無法處理",
+};
+const FACILITY_STATUS_LABELS: Record<string, string> = {
+  pending: "待受理",
+  processing: "處理中",
+  completed: "已完成",
+  "unable-to-handle": "無法處理",
+};
+export function translateStatus(status: string): string {
+  return STATUS_LABELS[status] ?? status;
+}
+export function translateFacilityStatus(status: string): string {
+  return FACILITY_STATUS_LABELS[status] ?? status;
+}
+export async function translateCategory(database: AppDatabase, targetType: string, category: string): Promise<string> {
+  if (category === "公告") return "公告";
+  const table = targetType === "facility" ? "facility_categories" : "issue_categories";
+  const { data, error } = await database
+    .table("app_private", table)
+    .select("label")
+    .eq("id", category)
+    .maybeSingle();
+  if (error) throw error;
+  return String(data?.label ?? category);
+}
+export function supportLabel(supportCount: unknown, supportGoal: unknown): string {
+  const count = typeof supportCount === "number" ? supportCount : Number(supportCount ?? 0);
+  const goal = typeof supportGoal === "number" ? supportGoal : Number(supportGoal ?? 0);
+  if (!Number.isFinite(count)) return "0";
+  if (!Number.isFinite(goal) || goal <= 0) return String(count);
+  return `${count}/${goal}`;
+}
+export async function resolveDisplayName(database: AppDatabase, uid: unknown) {
+  const normalizedUid = typeof uid === "string" ? uid : "";
+  if (!normalizedUid) return "使用者";
+  const { data, error } = await database
+    .table("app_private", "user_profiles")
+    .select("display_name")
+    .eq("uid", normalizedUid)
+    .maybeSingle();
+  if (error) throw error;
+  return String(data?.display_name ?? normalizedUid);
+}
+export async function appendCreationTimeline(
+  database: AppDatabase,
+  pageId: string,
+  eventId: string,
+  summary: string,
+  content: string,
+): Promise<void> {
+  const marker = `[eventId: ${eventId}]`;
+  const existing = (await fetchAllBlockChildren(pageId))
+    .filter((block) => getBlockPlainText(block).includes(marker));
+  if (existing.length > 0) {
+    await appendTimelineBlockWithDeduplication(pageId, eventId, summary, content);
+    return;
+  }
+
+  const uploadIds = [...content.matchAll(/srp-upload:\/\/([0-9a-fA-F-]{36})/gu)]
+    .map((match) => match[1]);
+  const notionUploadIds: string[] = [];
+  if (uploadIds.length > 0) {
+    const { data: uploads, error } = await database
+      .table("app_private", "uploads")
+      .select("id,cloudinary_public_id")
+      .in("id", [...new Set(uploadIds)]);
+    if (error) throw error;
+    for (const upload of uploads ?? []) {
+      if (!upload.cloudinary_public_id) throw new Error("notion-image-public-id-missing");
+      notionUploadIds.push(await uploadImageToNotion(
+        String(upload.cloudinary_public_id),
+        `${upload.id}.webp`,
+      ));
+    }
+  }
+
+  const textBlocks = splitNotionText(content).map((chunk) => ({
+    object: "block",
+    type: "paragraph",
+    paragraph: { rich_text: [{ type: "text", text: { content: chunk } }] },
+  }));
+  await callNotionAPI(`/blocks/${pageId}/children`, "PATCH", {
+    children: [
+      {
+        object: "block",
+        type: "paragraph",
+        paragraph: { rich_text: [{ type: "text", text: { content: `${marker} ${summary}`.slice(0, 2000) } }] },
+      },
+      ...textBlocks,
+      ...notionUploadIds.map((id) => ({
+        object: "block",
+        type: "image",
+        image: { type: "file_upload", file_upload: { id } },
+      })),
+    ],
+  });
+  const verified = (await fetchAllBlockChildren(pageId))
+    .filter((block) => getBlockPlainText(block).includes(marker));
+  if (verified.length !== 1) throw new Error("notion-creation-marker-verification-failed");
+}
+export async function getOrCreateNotionPage(
+  database: AppDatabase,
+  targetType: string,
+  targetId: string,
+  title: string,
+  category: string,
+  status: string,
+  authorName: string,
+  supportCount?: unknown,
+  supportGoal?: unknown,
+  countProperty: string | null = "附議數",
+): Promise<string | null> {
+  const externalId = `${targetType}:${targetId}`;
+  const { data, error } = await database
+    .table("app_private", "notion_pages")
+    .select("notion_page_id")
+    .eq("target_type", targetType)
+    .eq("target_id", targetId)
+    .maybeSingle();
+  if (error) throw error;
+
+  if (data?.notion_page_id) {
+    return String(data.notion_page_id);
+  }
+
+  const categoryLabel = await translateCategory(database, targetType, category);
+  const statusLabel = translateStatus(status);
+  await Promise.all([
+    ensureSelectOption("分類", categoryLabel),
+    ensureSelectOption("狀態", statusLabel),
+    countProperty ? ensureRichTextProperty(countProperty) : Promise.resolve(),
+    ensureRichTextProperty("Novae ID"),
+  ]);
+
+  const dataSourceId = await getDataSourceId();
+  const existingRemote = (await callNotionAPI(`/data_sources/${dataSourceId}/query`, "POST", {
+    filter: { property: "Novae ID", rich_text: { equals: externalId } },
+    page_size: 1,
+  })) as { results?: Array<{ id?: string }> };
+
+  let pageId = existingRemote.results?.[0]?.id;
+  if (!pageId) {
+    const properties: Record<string, unknown> = {
+      名稱: { title: [{ text: { content: title.slice(0, 2000) } }] },
+      分類: { select: { name: categoryLabel } },
+      狀態: { select: { name: statusLabel } },
+      作者: { rich_text: [{ text: { content: authorName.slice(0, 2000) } }] },
+      "Novae ID": { rich_text: [{ text: { content: externalId } }] },
+    };
+    if (countProperty) {
+      properties[countProperty] = {
+        rich_text: [{ text: { content: supportLabel(supportCount, supportGoal) } }],
+      };
+    }
+    const result = (await callNotionAPI("/pages", "POST", {
+      parent: { type: "data_source_id", data_source_id: dataSourceId },
+      properties,
+    })) as { id?: string };
+    pageId = result?.id;
+  }
+
+  if (!pageId) throw new Error("Notion page creation did not return an ID");
+
+  await database
+    .table("app_private", "notion_pages")
+    .upsert(
+      {
+        target_type: targetType,
+        target_id: targetId,
+        notion_page_id: pageId,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "target_type,target_id" },
+    );
+
+  return pageId;
+}
+export async function markNotionPageDeleted(pageId: string): Promise<void> {
+  if (!notionEnabled()) throw new Error('notion-not-configured');
+  await callNotionAPI(`/pages/${pageId}`, "PATCH", { archived: true });
+}

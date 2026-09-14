@@ -2,7 +2,7 @@ import type { Env } from "../../types";
 import type { AppDatabaseClient, DatabaseResult } from "../database/client.ts";
 import { isInvalidFcmTokenError, sendFcmMessage } from "../shared/fcm.ts";
 import { asRecord, asString } from "../shared/http.ts";
-import { syncDomainEventToNotion } from "../shared/notion.ts";
+import { syncDomainEventToNotion } from "../shared/notion-sync.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
 import type { RealtimeDelivery } from "../../durable/realtime-hub.ts";
 import { operationPolicy } from '../shared/operation-policies.ts';

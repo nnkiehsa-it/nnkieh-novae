@@ -8,7 +8,7 @@ import {
   ownerQuery,
   seedActor,
 } from "./helpers.ts";
-import { appendTimelineBlockWithDeduplication } from "../../cloudflare/src/backend/shared/notion.ts";
+import { appendTimelineBlockWithDeduplication } from "../../cloudflare/src/backend/shared/notion-api.ts";
 import { processInAppDeliveries, processRealtimeDeliveries } from "../../cloudflare/src/backend/jobs/deliveries.ts";
 import type { Env } from "../../cloudflare/src/types.ts";
 import type { RealtimeDelivery } from "../../cloudflare/src/durable/realtime-hub.ts";
