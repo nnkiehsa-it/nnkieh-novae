@@ -4,7 +4,7 @@ import {
   writeSessionStorage,
 } from "@/lib/browser-storage";
 import { isMobilePwaRequiredPlatform, isStandaloneMode } from "@/lib/pwa-install";
-import { hasShareEntryMarker } from "@/lib/share";
+import { hasShareEntryMarker, looksLikeSharedArrival } from "@/lib/share";
 
 const SHARE_ENTRY_KEY = "novae:share-entry";
 
@@ -26,7 +26,7 @@ function publish() {
  */
 function initialise() {
   if (typeof window === "undefined") return;
-  const marked = hasShareEntryMarker();
+  const marked = hasShareEntryMarker() || looksLikeSharedArrival();
   if (
     isStandaloneMode()
     || !isMobilePwaRequiredPlatform(

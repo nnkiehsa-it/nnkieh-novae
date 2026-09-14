@@ -19,6 +19,30 @@ export function hasShareEntryMarker() {
   return new URL(window.location.href).searchParams.has(SHARE_ENTRY_PARAM);
 }
 
+// The three routes a share button exists on. A composer shares the shape of a
+// detail URL without being one, so it is named out rather than matched.
+const SHARED_ROUTE_PATTERN =
+  /^\/(?:announcements|facilities)\/(?!new$)[^/]+$|^\/issues\/[^/]+\/(?!new$)[^/]+$/u;
+
+/** A page a share button exists on. */
+export function isSharedRoute(pathname: string) {
+  return SHARED_ROUTE_PATTERN.test(pathname);
+}
+
+/**
+ * Whether this load looks like somebody else's link even though it carries no
+ * marker, which is every link shared before the marker existed.
+ *
+ * Two things have to be true at once: the tab opened straight onto a page that
+ * can be shared, and it has no history of its own, so nothing in Novae led here
+ * — the reader was sent. A bookmark saved on a detail page reads the same way,
+ * and is answered the same way, which costs that reader one question they can
+ * decline.
+ */
+export function looksLikeSharedArrival() {
+  return window.history.length <= 1 && isSharedRoute(window.location.pathname);
+}
+
 /**
  * Takes the marker back out of the address bar once it has been read, so that
  * what the reader sees and re-shares is the plain page address.
