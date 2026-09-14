@@ -9,18 +9,22 @@ export async function getSessionBootstrap(
   auth: AuthContext,
   database: BackendDatabase,
 ) {
-  const { data, error } = await database.call("app_api", "backend_get_session_bootstrap_snapshot", {
+  // Neither read needs the other, and a Worker invocation is billed for the
+  // whole wait, so they leave together.
+  const [{ data, error }, platformSettings] = await Promise.all([
+    database.call("app_api", "backend_get_session_bootstrap_snapshot", {
       actor_email: auth.email,
       actor_is_admin: auth.isAdmin,
       actor_name: auth.name,
       actor_photo_url: auth.photoUrl,
       actor_uid: auth.uid,
       record_visit: asBoolean(payload.recordVisit, false),
-    });
+    }),
+    loadPlatformSettings(database),
+  ]);
   if (error) throw error;
   const snapshot = asRecord(data);
   const catalog = asRecord(snapshot.catalog);
-  const platformSettings = await loadPlatformSettings(database);
 
   return {
     runtimePolicies: operationPolicies(),
