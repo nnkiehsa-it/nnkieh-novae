@@ -55,9 +55,11 @@ test('proposal covers support, threaded comments, deletion, and terminal outcome
     });
   });
   await member.page.getByRole('button', { name: 'Share proposal' }).click();
+  // A shared link carries the marker that tells the tab it opens in that it
+  // arrived from somebody else rather than from Novae itself.
   await expect.poll(() => member.page.evaluate(
     () => (window as typeof window & { __sharedUrl?: string }).__sharedUrl,
-  )).toBe(proposalUrl);
+  )).toBe(`${proposalUrl}?shared=1`);
   const support = member.page.getByRole('button', { name: /Support this proposal|Remove support/u });
   const initialSupport = await support.getAttribute('aria-pressed');
   await expectBackendAction(member.page, initialSupport === 'true' ? 'removeSupport' : 'toggleSupport', async () => support.click());

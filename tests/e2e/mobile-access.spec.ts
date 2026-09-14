@@ -272,3 +272,25 @@ test.describe('platform administrator on mobile', () => {
     await expect(page).toHaveURL(/\/settings$/u);
   });
 });
+
+test.describe('a link somebody shared', () => {
+  test.use({ storageState: authStatePath('ordinary') });
+
+  test('reads on its own and asks about the app only on the way out', async ({ page }) => {
+    const content = await readContentState();
+    await page.goto(`${content.proposalA}?shared=1`);
+    const back = page.getByRole('button', { name: 'Back to proposals' });
+    await expect(back).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    await back.click();
+    const prompt = page.getByRole('dialog');
+    await expect(prompt).toBeVisible();
+    await expect(prompt.getByRole('button', { name: 'Already installed' })).toBeVisible();
+    await expect(prompt.getByRole('button', { name: 'Not installed yet' })).toBeVisible();
+
+    await prompt.getByRole('button', { name: 'Stay in the browser' }).click();
+    await expect(page).toHaveURL(/\/issues\/[^/]+$/u);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+});
