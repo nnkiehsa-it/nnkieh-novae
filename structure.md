@@ -175,6 +175,8 @@ This document is the maintained map of the repository. Read it before broad sear
 - `database/migrations/0029_archive_and_backup_policies.sql` / `database/migrations/0030_remove_github_database_backups.sql` — 0029 introduced Notion archive cleanup and GitHub backup policies; 0030 removes the retired backup policy values and history after moving database recovery to Neon's native restore window.
 - `database/migrations/0031_author_support_is_counted.sql` — the author's own support belongs to a proposal's count: the support toggle reads the count the projection trigger writes instead of overwriting it with the bare supporter rows, drifted counts are repaired, and deletion carries the proposal's read access and status out of the transaction so a deleted proposal reaches the audience the live one had.
 - `database/migrations/0032_overview_activity_limit.sql` — the overview reads a hundred recent activities rather than fourteen, because each figure for the period now opens onto its own share of them; the drawer says so when a figure still counts more than the reading can show.
+- `database/migrations/0033_pending_delivery_probe.sql` — exposes the destinations with claimable event deliveries so a queue sweep asks once what actually needs work before claiming destination batches.
+- `database/migrations/0034_realtime_heartbeat_policy.sql` — adds the configurable realtime heartbeat interval to existing stored operation-policy snapshots.
 
 - `database/migrations/0023_policy_batch_state.sql` — durable policy-batch progress, multi-batch lifecycle constraints, retry state and persisted batch failures.
 
