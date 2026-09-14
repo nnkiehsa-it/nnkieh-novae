@@ -12,6 +12,7 @@ import {
   fetchCurrentUserRole,
   seedSessionAccess,
   type PermissionCode,
+  type SessionAccess,
   type RoleCode,
 } from "@/services/session-role";
 import {
@@ -170,9 +171,24 @@ async function refreshVerifiedSession(
       await ensureBackendProfile(user);
       if (!current()) return;
     }
+    const applyAccess = (access: SessionAccess) => {
+      patch({
+        managedFacilityCategoryIds: access.managedFacilityCategoryIds,
+        managedIssueCategoryIds: access.managedIssueCategoryIds,
+        permissions: access.permissions,
+        roles: access.roles,
+        setupCompleted: access.setupCompleted,
+        userRole: access.role,
+      });
+    };
     try {
       const bootstrap = await fetchSessionBootstrap({
         force: true,
+        // Who the visitor is arrives before the catalog does, and the shell is
+        // drawn from it, so it is applied the moment it lands.
+        onAccess: (access) => {
+          if (current()) applyAccess(seedSessionAccess(access));
+        },
         recordVisit: shouldRecordPlatformVisit(),
       });
       if (!current()) return;
@@ -182,28 +198,14 @@ async function refreshVerifiedSession(
       seedNotificationUnreadHint(bootstrap.notificationUnread.hasUnread);
       if (bootstrap.visitRecorded)
         writeLocalStorage(VISIT_RECORDED_AT_KEY, String(Date.now()));
-      patch({
-        managedFacilityCategoryIds: access.managedFacilityCategoryIds,
-        managedIssueCategoryIds: access.managedIssueCategoryIds,
-        permissions: access.permissions,
-        roles: access.roles,
-        setupCompleted: access.setupCompleted,
-        userRole: access.role,
-      });
+      applyAccess(access);
     } catch (bootstrapError) {
       sessionDebug("bootstrap fallback", bootstrapError);
       await ensureContentVersionsFresh().catch(() => undefined);
       if (!current()) return;
       const access = await fetchCurrentUserRole(true, { useBootstrap: false });
       if (!current()) return;
-      patch({
-        managedFacilityCategoryIds: access.managedFacilityCategoryIds,
-        managedIssueCategoryIds: access.managedIssueCategoryIds,
-        permissions: access.permissions,
-        roles: access.roles,
-        setupCompleted: access.setupCompleted,
-        userRole: access.role,
-      });
+      applyAccess(access);
       await ensureCategoryCatalog().catch(() => undefined);
     }
   } catch (error) {

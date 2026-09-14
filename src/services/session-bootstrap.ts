@@ -25,6 +25,21 @@ export interface SessionBootstrapResult {
   visitRecorded: boolean;
 }
 
+function normalizeAccess(access: Partial<SessionAccess> | undefined): SessionAccess {
+  return {
+    role: access?.role === 'admin' ? 'admin' : 'user',
+    roles: Array.isArray(access?.roles) ? access.roles : [],
+    permissions: Array.isArray(access?.permissions) ? access.permissions : [],
+    managedIssueCategoryIds: Array.isArray(access?.managedIssueCategoryIds)
+      ? access.managedIssueCategoryIds
+      : [],
+    managedFacilityCategoryIds: Array.isArray(access?.managedFacilityCategoryIds)
+      ? access.managedFacilityCategoryIds
+      : [],
+    setupCompleted: access?.setupCompleted === true,
+  };
+}
+
 const SESSION_BOOTSTRAP_CACHE_KEY = 'session-bootstrap-v1';
 let pendingRecordVisit = false;
 
@@ -32,8 +47,14 @@ export function markSessionBootstrapStale() {
   markContentCachePrefixStale(SESSION_BOOTSTRAP_CACHE_KEY);
 }
 
+/**
+ * What the session starts on. Who the visitor is and what they may do leaves
+ * the Worker before either of its reads does, so `onAccess` is called with it
+ * while the catalog is still arriving and the shell can be drawn against it.
+ */
 export async function fetchSessionBootstrap(options: {
   force?: boolean;
+  onAccess?: (access: SessionAccess) => void;
   recordVisit?: boolean;
 } = {}): Promise<SessionBootstrapResult> {
   const force = options.force === true;
@@ -60,22 +81,15 @@ export async function fetchSessionBootstrap(options: {
     const result = await invokeBackendAction<
       { recordVisit?: boolean },
       SessionBootstrapResult
-    >('getSessionBootstrap')({
+    >('getSessionBootstrap', {
+      onSegment: (key, data) => {
+        if (key === 'access') options.onAccess?.(normalizeAccess(data as Partial<SessionAccess>));
+      },
+    })({
       ...(shouldRecordVisit ? { recordVisit: true } : {}),
     });
     const normalized: SessionBootstrapResult = {
-      access: {
-        role: result.access?.role === 'admin' ? 'admin' : 'user',
-        roles: Array.isArray(result.access?.roles) ? result.access.roles : [],
-        permissions: Array.isArray(result.access?.permissions) ? result.access.permissions : [],
-        managedIssueCategoryIds: Array.isArray(result.access?.managedIssueCategoryIds)
-          ? result.access.managedIssueCategoryIds
-          : [],
-        managedFacilityCategoryIds: Array.isArray(result.access?.managedFacilityCategoryIds)
-          ? result.access.managedFacilityCategoryIds
-          : [],
-        setupCompleted: result.access?.setupCompleted === true,
-      },
+      access: normalizeAccess(result.access),
       catalog: {
         features: {
           announcementCommentsEnabled: result.catalog?.features?.announcementCommentsEnabled !== false,

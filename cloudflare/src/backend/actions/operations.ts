@@ -1,4 +1,5 @@
 import { forgetOperationPolicies, readOperationPolicies, validateOperationPolicies } from '../shared/operation-policies';
+import { settledSegments } from './segments.ts';
 import type { AuthContext, BackendDatabase, JsonRecord } from './types';
 import { providerDiagnostics } from '../shared/provider-diagnostics';
 
@@ -45,37 +46,57 @@ export async function handleOperationsAction(action: string, payload: JsonRecord
   if (action === 'getOperationsConsole') {
     const page = payload.page ?? 0;
     if (!Number.isInteger(page) || Number(page) < 0 || Number(page) > 1_000_000) throw new Error('validation-invalid');
-    const offset = Number(page) * 100;
-    const [settings, capacity, jobs, deliveries, history, errors, metrics, failedDeliveries, cleanupBacklog, size] = await Promise.all([
-      readOperationPolicies(database),
-      database.sql`select relname as name, n_live_tup as rows, n_dead_tup as dead_rows,
-        pg_table_size(relid) as table_bytes, pg_indexes_size(relid) as index_bytes,
-        pg_total_relation_size(relid) as total_bytes, last_autovacuum, last_autoanalyze
-        from pg_stat_user_tables where schemaname = 'app_private'
-        order by pg_total_relation_size(relid) desc`,
-      database.sql`select id, job_type, status, attempt_count, processed_rows, affected_rows,
-        estimated_rows, next_attempt_at, started_at, completed_at, updated_at, last_attempt_id, error_detail
-        from app_private.background_jobs order by created_at desc, id desc limit 101 offset ${offset}`,
-      database.sql`select destination, status, count(*)::bigint as count, min(created_at) as oldest_at
-        from app_private.event_deliveries group by destination, status`,
-      database.sql`select id, actor_uid, revision, reason, before_value, after_value, created_at
-        from app_private.operation_policy_history order by id desc limit 101 offset ${offset}`,
-      database.sql`select * from app_private.operational_errors
-        order by last_at desc, action, code, status limit 101 offset ${offset}`,
-      database.sql`select * from app_private.operational_metrics order by bucket desc limit 365`,
-      database.sql`select d.id, d.destination, d.attempt_count, d.error_detail, d.last_attempt_id,
-        e.event_type, e.aggregate_id, e.operation_id from app_private.event_deliveries d
-        join app_private.domain_events e on e.event_id = d.event_id where d.status = 'failed'
-        order by d.updated_at desc, d.id desc limit 101 offset ${offset}`,
-      database.sql`select job_id, created_at, payload from app_private.external_cleanup_backlog
-        order by created_at, job_id limit 101 offset ${offset}`,
-      database.sqlOne<{ bytes: number }>`select pg_database_size(current_database()) as bytes`,
-    ]);
-    return { settings, capacity: capacity.rows, databaseBytes: size.bytes,
-      jobs: jobs.rows.slice(0,100), deliveries: deliveries.rows, history: history.rows.slice(0,100), errors: errors.rows.slice(0,100),
-      metrics: metrics.rows, failedDeliveries: failedDeliveries.rows.slice(0,100), cleanupBacklog: cleanupBacklog.rows.slice(0,100),
-      hasMore: [jobs,history,errors,failedDeliveries,cleanupBacklog].some(result => result.rows.length > 100),
-      sampledAt: new Date().toISOString() };
+    return operationsConsole(Number(page) * 100, database);
   }
   throw new Error('invalid-action');
+}
+
+/**
+ * The operations console, sent one reading at a time.
+ *
+ * Ten readings, none of which needs another: the screen used to wait for the
+ * slowest before it could show any of them, and now each panel fills in as its
+ * own reading lands.
+ */
+function operationsConsole(offset: number, database: BackendDatabase) {
+  const paged = {
+    cleanupBacklog: database.sql`select job_id, created_at, payload from app_private.external_cleanup_backlog
+      order by created_at, job_id limit 101 offset ${offset}`,
+    errors: database.sql`select * from app_private.operational_errors
+      order by last_at desc, action, code, status limit 101 offset ${offset}`,
+    failedDeliveries: database.sql`select d.id, d.destination, d.attempt_count, d.error_detail, d.last_attempt_id,
+      e.event_type, e.aggregate_id, e.operation_id from app_private.event_deliveries d
+      join app_private.domain_events e on e.event_id = d.event_id where d.status = 'failed'
+      order by d.updated_at desc, d.id desc limit 101 offset ${offset}`,
+    history: database.sql`select id, actor_uid, revision, reason, before_value, after_value, created_at
+      from app_private.operation_policy_history order by id desc limit 101 offset ${offset}`,
+    jobs: database.sql`select id, job_type, status, attempt_count, processed_rows, affected_rows,
+      estimated_rows, next_attempt_at, started_at, completed_at, updated_at, last_attempt_id, error_detail
+      from app_private.background_jobs order by created_at desc, id desc limit 101 offset ${offset}`,
+  };
+  const capacity = database.sql`select relname as name, n_live_tup as rows, n_dead_tup as dead_rows,
+    pg_table_size(relid) as table_bytes, pg_indexes_size(relid) as index_bytes,
+    pg_total_relation_size(relid) as total_bytes, last_autovacuum, last_autoanalyze
+    from pg_stat_user_tables where schemaname = 'app_private'
+    order by pg_total_relation_size(relid) desc`;
+  const deliveries = database.sql`select destination, status, count(*)::bigint as count, min(created_at) as oldest_at
+    from app_private.event_deliveries group by destination, status`;
+  const metrics = database.sql`select * from app_private.operational_metrics order by bucket desc limit 365`;
+  const size = database.sqlOne<{ bytes: number }>`select pg_database_size(current_database()) as bytes`;
+  const firstHundred = (page: typeof paged[keyof typeof paged]) => page.then((result) => result.rows.slice(0, 100));
+
+  return settledSegments({
+    capacity: capacity.then((result) => result.rows),
+    cleanupBacklog: firstHundred(paged.cleanupBacklog),
+    databaseBytes: size.then((result) => result.bytes),
+    deliveries: deliveries.then((result) => result.rows),
+    errors: firstHundred(paged.errors),
+    failedDeliveries: firstHundred(paged.failedDeliveries),
+    hasMore: Promise.all(Object.values(paged)).then((results) => results.some((result) => result.rows.length > 100)),
+    history: firstHundred(paged.history),
+    jobs: firstHundred(paged.jobs),
+    metrics: metrics.then((result) => result.rows),
+    sampledAt: Promise.resolve(new Date().toISOString()),
+    settings: readOperationPolicies(database),
+  });
 }

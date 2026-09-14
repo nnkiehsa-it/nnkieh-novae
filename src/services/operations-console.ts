@@ -16,7 +16,21 @@ export interface OperationsConsole {
   deliveries: Array<{ destination: string; status: string; count: number; oldestAt: string }>;
   history: Array<{ id: number; actorUid: string; revision: number; reason: string; createdAt: string; beforeValue: OperationPolicies; afterValue: OperationPolicies }>;
 }
-export const fetchOperationsConsole = invokeBackendAction<{ page?: number }, OperationsConsole>('getOperationsConsole');
+/**
+ * The console's ten readings. None of them needs another, so the Worker sends
+ * each as it lands and `onPanel` is called with that one reading rather than
+ * the screen waiting for the slowest.
+ */
+export function fetchOperationsConsole(
+  payload: { page?: number },
+  options: { onPanel?: (panel: Partial<OperationsConsole>) => void } = {},
+) {
+  return invokeBackendAction<{ page?: number }, OperationsConsole>('getOperationsConsole', {
+    onSegment: (key, data) => {
+      if (key) options.onPanel?.({ [key]: data } as Partial<OperationsConsole>);
+    },
+  })(payload);
+}
 export const retryOperationalWork = invokeBackendAction<{ kind: 'job' | 'delivery' | 'cleanup'; id: string }, { success: boolean }>('retryOperationalWork');
 export interface ProviderDiagnostic { provider: string; status: 'available' | 'not-configured' | 'unavailable'; checkedAt: string; data?: unknown; error?: string; nextCursor?: string | null; until?: number }
 export const getProviderDiagnostics = invokeBackendAction<{ provider: string; cursor?: string; until?: number; query?: string }, ProviderDiagnostic>('getProviderDiagnostics', { timeoutMs: longRequestTimeoutMs });

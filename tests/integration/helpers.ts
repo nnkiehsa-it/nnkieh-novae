@@ -6,7 +6,7 @@ import { afterAll, beforeEach, test } from "vitest";
 import { AppDatabaseClient } from "../../cloudflare/src/backend/database/client.ts";
 import { getBackendActionDefinition } from "../../cloudflare/src/backend/actions/action-registry.ts";
 import { resolveAuthContext } from "../../cloudflare/src/backend/actions/auth.ts";
-import { executeBackendAction } from "../../cloudflare/src/backend/actions/execution.ts";
+import { collectActionSegments, executeBackendActionSegments } from "../../cloudflare/src/backend/actions/execution.ts";
 import { withRuntimeEnvironment } from "../../cloudflare/src/backend/shared/env.ts";
 import { forgetOperationPolicies, withOperationPolicies } from "../../cloudflare/src/backend/shared/operation-policies.ts";
 import type {
@@ -263,8 +263,11 @@ export async function callAction(
   const definition = getBackendActionDefinition(actionName);
   assert.ok(definition, `Missing backend action definition: ${actionName}`);
   const opId = operationId || crypto.randomUUID();
+  // The finished answer, the way a caller reading the response stream sees it.
   return await underPolicies(() =>
-    executeBackendAction(definition, payload, auth, database as BackendDatabase, opId));
+    collectActionSegments(
+      executeBackendActionSegments(definition, payload, auth, database as BackendDatabase, opId),
+    ));
 }
 
 export async function expectActionError(

@@ -34,7 +34,25 @@ export function useOperationPolicies() {
     setBusy(true);
     setError("");
     try {
-      const snapshot = await fetchOperationsConsole({ page: 0 });
+      // The settings and their history are two of the console's ten readings.
+      // The screen is the settings, so it is drawn as soon as they land rather
+      // than after the readings it does not show.
+      const snapshot = await fetchOperationsConsole({ page: 0 }, {
+        onPanel: (panel) => {
+          if (panel.settings) {
+            const settings = panel.settings;
+            remember((current) => ({
+              history: current?.history ?? [],
+              revision: settings.revision,
+              values: settings.values,
+            }));
+          }
+          if (panel.history) {
+            const history = panel.history;
+            remember((current) => (current ? { ...current, history } : current));
+          }
+        },
+      });
       remember({
         history: snapshot.history,
         revision: snapshot.settings.revision,

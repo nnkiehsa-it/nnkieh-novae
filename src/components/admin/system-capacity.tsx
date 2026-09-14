@@ -3,6 +3,7 @@
 import { useI18n } from "@/i18n";
 import type { OperationsConsole } from "@/hooks/use-system-console";
 import { Disclosure } from "@/components/ui/disclosure";
+import { AdminListSkeleton } from "@/components/admin/admin-list-skeleton";
 import { ListRow, ListSection } from "@/components/ui/list";
 
 function mebibytes(value: number) {
@@ -21,20 +22,22 @@ function TableRow({ row }: { row: OperationsConsole["capacity"][number] }) {
 }
 
 /** How much room the database is taking, and where it is going. */
-export function SystemCapacity({ snapshot }: { snapshot: OperationsConsole }) {
+export function SystemCapacity({ snapshot }: { snapshot: Partial<OperationsConsole> }) {
   const { t } = useI18n();
-  const ranked = snapshot.capacity.toSorted((left, right) => right.totalBytes - left.totalBytes);
-  const shown = ranked.slice(0, 6);
-  const rest = ranked.slice(6);
+  const { capacity, databaseBytes, metrics } = snapshot;
+  const ranked = capacity?.toSorted((left, right) => right.totalBytes - left.totalBytes);
+  const shown = ranked?.slice(0, 6) ?? [];
+  const rest = ranked?.slice(6) ?? [];
 
   return (
     <div className="space-y-6">
+      {databaseBytes === undefined || !metrics ? <AdminListSkeleton groups={1} rows={3} /> : (
       <ListSection header={t("ui.operations.storage")}>
         <ListRow
           label={t("ui.operations.storage")}
-          value={mebibytes(snapshot.databaseBytes)}
+          value={mebibytes(databaseBytes)}
         />
-        {snapshot.metrics.slice(0, 5).map((row) => (
+        {metrics.slice(0, 5).map((row) => (
           <ListRow
             key={row.bucket}
             label={row.bucket.slice(0, 10)}
@@ -42,7 +45,9 @@ export function SystemCapacity({ snapshot }: { snapshot: OperationsConsole }) {
           />
         ))}
       </ListSection>
+      )}
 
+      {ranked ? (
       <ListSection header={t("ui.operations.table")}>
         {shown.map((row) => (
           <TableRow key={row.name} row={row} />
@@ -57,6 +62,7 @@ export function SystemCapacity({ snapshot }: { snapshot: OperationsConsole }) {
           </Disclosure>
         ) : null}
       </ListSection>
+      ) : <AdminListSkeleton groups={1} rows={4} />}
     </div>
   );
 }

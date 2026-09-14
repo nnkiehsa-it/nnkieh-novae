@@ -85,9 +85,8 @@ export const backendActionDefinitions = [
     versions: await loadContentVersions(database),
   })),
 
-  action("getSessionBootstrap", "user", "read", async (_action, payload, auth, database) => {
-    return await getSessionBootstrap(payload, auth, database);
-  }),
+  action("getSessionBootstrap", "user", "read", async (_action, payload, auth, database) =>
+    getSessionBootstrap(payload, auth, database)),
   action("getCurrentUserRole", "user", "read", userHandler),
   action("listRoleAssignments", "user", "read", userHandler, { requiredPermission: "role.manage" }),
   action("listAdminUsers", "user", "read", userHandler, { requiredPermission: "role.manage" }),

@@ -24,7 +24,7 @@ export type RetryKind = "cleanup" | "delivery" | "job" | "media";
 interface SystemReading {
   mediaFailures: DeletionJob[];
   page: number;
-  snapshot: OperationsConsole | null;
+  snapshot: Partial<OperationsConsole> | null;
 }
 
 /**
@@ -35,7 +35,8 @@ interface SystemReading {
  * leaves the rest of the screen alone, because re-reading the whole console to
  * learn that one entry is gone is how the expanded rows and the scroll position
  * used to disappear. The reading itself is kept, so returning to the screen
- * shows what it last said instead of asking again.
+ * shows what it last said instead of asking again. The ten readings behind it
+ * arrive one at a time, and each panel fills in as its own lands.
  */
 export function useSystemConsole() {
   const { t } = useI18n();
@@ -54,7 +55,13 @@ export function useSystemConsole() {
       setError("");
       try {
         const [console_, media] = await Promise.all([
-          fetchOperationsConsole({ page: nextPage }),
+          fetchOperationsConsole({ page: nextPage }, {
+            onPanel: (panel) => remember((current) => ({
+              ...current,
+              page: nextPage,
+              snapshot: { ...current.snapshot, ...panel },
+            })),
+          }),
           listDeletionJobs(),
         ]);
         remember({ mediaFailures: media, page: nextPage, snapshot: console_ });
@@ -87,13 +94,13 @@ export function useSystemConsole() {
             ...current,
             snapshot: current.snapshot && {
               ...current.snapshot,
-              cleanupBacklog: current.snapshot.cleanupBacklog.filter(
+              cleanupBacklog: current.snapshot.cleanupBacklog?.filter(
                 (entry) => entry.jobId !== id,
               ),
-              failedDeliveries: current.snapshot.failedDeliveries.filter(
+              failedDeliveries: current.snapshot.failedDeliveries?.filter(
                 (entry) => entry.id !== id,
               ),
-              jobs: current.snapshot.jobs.filter((entry) => entry.id !== id),
+              jobs: current.snapshot.jobs?.filter((entry) => entry.id !== id),
             },
           }));
         }

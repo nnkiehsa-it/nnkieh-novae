@@ -7,6 +7,7 @@ import type {
   RetryKind,
 } from "@/hooks/use-system-console";
 import { ListActionRow, ListRow, ListSection } from "@/components/ui/list";
+import { AdminListSkeleton } from "@/components/admin/admin-list-skeleton";
 import { formatDate } from "@/lib/format";
 
 /**
@@ -22,27 +23,34 @@ export function SystemQueue({
   mediaFailures: DeletionJob[];
   onRetry: (kind: RetryKind, id: string) => void;
   retrying: string;
-  snapshot: OperationsConsole;
+  snapshot: Partial<OperationsConsole>;
 }) {
   const { t } = useI18n();
-  const stuck = snapshot.jobs.filter((job) => job.status === "failed");
-  const running = snapshot.jobs.filter((job) => job.status !== "failed");
+  const { cleanupBacklog, deliveries, errors, failedDeliveries, jobs } = snapshot;
+  const stuck = jobs?.filter((job) => job.status === "failed") ?? [];
+  const running = jobs?.filter((job) => job.status !== "failed") ?? [];
+  // "Nothing is wrong" is a claim about every reading, so it waits for them.
+  const everythingRead = Boolean(jobs && failedDeliveries && cleanupBacklog && errors);
   const nothingWrong =
-    stuck.length === 0
-    && snapshot.failedDeliveries.length === 0
-    && snapshot.cleanupBacklog.length === 0
+    everythingRead
+    && stuck.length === 0
+    && failedDeliveries?.length === 0
+    && cleanupBacklog?.length === 0
     && mediaFailures.length === 0
-    && snapshot.errors.length === 0;
+    && errors?.length === 0;
 
   return (
     <div className="space-y-6">
+      {jobs && failedDeliveries && cleanupBacklog && errors ? null : (
+        <AdminListSkeleton groups={1} rows={3} />
+      )}
       {nothingWrong ? (
         <ListSection header={t("admin.queueHeader")}>
           <ListRow label={t("admin.queueClear")} />
         </ListSection>
       ) : null}
 
-      {stuck.length > 0 || snapshot.cleanupBacklog.length > 0 || mediaFailures.length > 0 ? (
+      {stuck.length > 0 || (cleanupBacklog?.length ?? 0) > 0 || mediaFailures.length > 0 ? (
         <ListSection header={t("admin.queueFailedHeader")}>
           {stuck.map((job) => (
             <ListActionRow
@@ -55,7 +63,7 @@ export function SystemQueue({
               value={t("admin.retry")}
             />
           ))}
-          {snapshot.cleanupBacklog.map((entry) => (
+          {(cleanupBacklog ?? []).map((entry) => (
             <ListActionRow
               busy={retrying === entry.jobId}
               detail={entry.jobId}
@@ -84,9 +92,9 @@ export function SystemQueue({
         </ListSection>
       ) : null}
 
-      {snapshot.failedDeliveries.length > 0 ? (
+      {(failedDeliveries?.length ?? 0) > 0 ? (
         <ListSection header={t("ui.operations.deliveries")}>
-          {snapshot.failedDeliveries.map((entry) => (
+          {(failedDeliveries ?? []).map((entry) => (
             <ListActionRow
               busy={retrying === entry.id}
               detail={`${entry.eventType} · ${entry.operationId}`}
@@ -112,9 +120,9 @@ export function SystemQueue({
         </ListSection>
       ) : null}
 
-      {snapshot.deliveries.length > 0 ? (
+      {(deliveries?.length ?? 0) > 0 ? (
         <ListSection header={t("admin.deliveryHealthHeader")}>
-          {snapshot.deliveries.map((row) => (
+          {(deliveries ?? []).map((row) => (
             <ListRow
               key={`${row.destination}:${row.status}`}
               label={row.destination}
@@ -125,9 +133,9 @@ export function SystemQueue({
         </ListSection>
       ) : null}
 
-      {snapshot.errors.length > 0 ? (
+      {(errors?.length ?? 0) > 0 ? (
         <ListSection header={t("ui.operations.errors")}>
-          {snapshot.errors.map((entry) => (
+          {(errors ?? []).map((entry) => (
             <ListRow
               detail={`${entry.failureId || entry.operationId} · ${formatDate(new Date(entry.lastAt))}`}
               key={`${entry.action}:${entry.code}:${entry.lastAt}`}
