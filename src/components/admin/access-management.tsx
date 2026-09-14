@@ -65,7 +65,9 @@ export function AccessManagement() {
                   action={
                     <RowAction
                       icon={Trash2}
-                      label={t("ui.access.revoke")}
+                      label={t("ui.access.revokeMember", {
+                        name: member.email ?? member.uid,
+                      })}
                       onClick={() => state.revoke(member.uid)}
                       tone="destructive"
                     />
@@ -114,7 +116,9 @@ export function AccessManagement() {
                   action={
                     <RowAction
                       icon={UserPlus}
-                      label={t("ui.access.grant")}
+                      label={t("ui.access.grantMember", {
+                        name: state.candidate.email ?? state.candidate.uid,
+                      })}
                       onClick={() => state.candidate && state.grant(state.candidate.uid)}
                       tone="brand"
                     />

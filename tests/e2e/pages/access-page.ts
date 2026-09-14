@@ -42,13 +42,14 @@ export async function setMemberAccess(
   await lookup.fill(email);
   await page.getByRole('button', { name: 'Search' }).click();
   // Granting and revoking edit the draft; only Save reaches the backend.
-  const row = page
+  // Only the glyph at the end of the row writes, and it names who it is about.
+  const control = page
     .getByRole('button', {
-      name: new RegExp(`${email}[^]*${grant ? 'Grant access' : 'Revoke'}`, 'u'),
+      name: grant ? `Grant access to ${email}` : `Revoke access from ${email}`,
     })
     .last();
-  await expect(row).toBeVisible();
-  await row.click();
+  await expect(control).toBeVisible();
+  await control.click();
   await expectBackendAction(page, 'setUserAccessScope', async () => {
     await page.getByRole('button', { name: 'Save', exact: true }).click();
   });

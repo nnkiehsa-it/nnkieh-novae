@@ -444,6 +444,8 @@ const messages = {
   'ui.access.searchStep': '3. Find and assign a member',
   'ui.access.searchPlaceholder': 'Enter a campus email, name, or UID',
   'ui.access.grant': 'Grant access',
+  'ui.access.grantMember': 'Grant access to {name}',
+  'ui.access.revokeMember': 'Revoke access from {name}',
   'ui.access.granted': 'Already has access',
   'ui.access.selectTitle': 'Choose a responsibility scope',
   'ui.access.selectDescription': 'Choose a category before viewing and managing its owners.',

@@ -444,6 +444,8 @@ const messages = {
   'ui.access.searchStep': '3. 尋找並指派成員',
   'ui.access.searchPlaceholder': '輸入校內信箱、姓名或 UID',
   'ui.access.grant': '授予權限',
+  'ui.access.grantMember': '授予 {name} 權限',
+  'ui.access.revokeMember': '撤銷 {name} 的權限',
   'ui.access.granted': '已有權限',
   'ui.access.selectTitle': '選擇責任範圍',
   'ui.access.selectDescription': '先選擇一個分類，才能查看與管理負責人。',
