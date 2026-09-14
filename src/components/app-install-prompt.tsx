@@ -35,18 +35,15 @@ export function AppInstallPrompt() {
   if (prompt.mode && prompt.mode !== shownMode) setShownMode(prompt.mode);
   const mode = prompt.mode ?? shownMode;
   const sharedExit = prompt.reason === "share-exit";
-  const trapped = mode === "in-app-browser";
 
-  // Both readers who get this far are here by accident: one asked to leave the
-  // single page they were sent, the other is held inside an app's own browser.
-  // Neither is told to install anything before being asked whether they
-  // already have.
+  // Asking a reader held inside an app's own browser whether they have Novae
+  // installed leads nowhere: an installed app opens at its own start page, not
+  // at the link they were sent. The only answer worth giving them is the one
+  // that gets them to a browser, so they are given it directly.
   useEffect(() => {
     if (!prompt.mode) return;
     setDirection(1);
-    setView(prompt.reason === "share-exit" || prompt.mode === "in-app-browser"
-      ? "ask"
-      : "guide");
+    setView(prompt.reason === "share-exit" ? "ask" : "guide");
   }, [prompt.mode, prompt.reason]);
 
   if (!mode) return null;
@@ -121,7 +118,10 @@ export function AppInstallPrompt() {
   let step: PromptStepContent = {
     actions: (
       <>
-        {sharedExit ? (
+        {/* An app's own browser cannot sign in at all, so there is nothing to
+            put off until later: the only way on from here is a real browser,
+            and the automatic handoff is not guaranteed to have worked. */}
+        {mode === "in-app-browser" ? null : sharedExit ? (
           <Button variant="outline" onClick={() => finish(true)} disabled={prompt.isPrompting}>
             {t("auth.pwaShareExitContinue")}
           </Button>
@@ -144,7 +144,7 @@ export function AppInstallPrompt() {
     ),
     description: `${description}${notificationsNote ? ` ${notificationsNote}` : ""}`,
     icon,
-    note: t("auth.pwaAlreadyInstalledNote"),
+    note: mode === "in-app-browser" ? undefined : t("auth.pwaAlreadyInstalledNote"),
     steps,
     title,
   };
@@ -153,11 +153,9 @@ export function AppInstallPrompt() {
     step = {
       actions: (
         <>
-          {trapped ? null : (
-            <Button variant="ghost" onClick={() => finish(true)}>
-              {t("auth.pwaShareExitContinue")}
-            </Button>
-          )}
+          <Button variant="ghost" onClick={() => finish(true)}>
+            {t("auth.pwaShareExitContinue")}
+          </Button>
           <Button variant="outline" onClick={() => go("guide")}>
             {t("auth.pwaShareExitNotInstalled")}
           </Button>
@@ -166,9 +164,7 @@ export function AppInstallPrompt() {
           </Button>
         </>
       ),
-      description: trapped
-        ? t("auth.pwaInAppAskDescription", { browser: browserLabel })
-        : t("auth.pwaShareExitDescription"),
+      description: t("auth.pwaShareExitDescription"),
       icon: <Home className="size-5" aria-hidden />,
       steps: [],
       title: t("auth.pwaShareExitTitle"),
