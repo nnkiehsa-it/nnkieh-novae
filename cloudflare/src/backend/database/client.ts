@@ -10,15 +10,16 @@ type FunctionName = keyof AppApiFunctions & string;
 type FunctionArgs<TName extends FunctionName> = AppApiFunctions[TName]["Args"];
 type FunctionReturn<TName extends FunctionName> = AppApiFunctions[TName]["Returns"];
 
-export interface DatabaseError extends Error {
+interface DatabaseError extends Error {
   code?: string;
   detail?: string;
   hint?: string;
 }
 
-export type DatabaseResult<T> =
-  | { count?: number | null; data: T; error: null }
-  | { count?: null; data: null; error: DatabaseError };
+/** What `call()` answers with: the function's return value, or why it failed. */
+type DatabaseResult<T> =
+  | { data: T; error: null }
+  | { data: null; error: DatabaseError };
 
 export interface SqlResult<TRow> {
   rowCount: number;
