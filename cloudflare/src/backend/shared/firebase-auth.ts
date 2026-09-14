@@ -106,28 +106,6 @@ export async function lookupFirebaseUser(idToken: string) {
   return asRecord(users[0]);
 }
 
-export async function requireEligibleFirebaseUser(request: Request): Promise<FirebaseAuthContext> {
-  const idToken = requireAuthHeader(request);
-  const claims = decodeJwtPayload(idToken);
-  const firebaseUser = await lookupFirebaseUser(idToken);
-  const uid = asString(firebaseUser.localId, asString(claims.sub));
-  if (!uid) throw new Error("unauthenticated");
-
-  const email = asString(firebaseUser.email, asString(claims.email)).toLowerCase();
-  const allowedDomain = requireEnv("ALLOWED_DOMAIN").toLowerCase();
-  if (firebaseUser.emailVerified !== true || !email.endsWith(`@${allowedDomain}`)) {
-    throw new Error("permission-denied");
-  }
-
-  return {
-    customAttributes: asString(firebaseUser.customAttributes, "{}"),
-    email,
-    name: asString(firebaseUser.displayName, asString(claims.name, email || uid)),
-    photoUrl: asString(firebaseUser.photoUrl, asString(claims.picture)) || null,
-    uid,
-  };
-}
-
 const firebaseKeys = createRemoteJWKSet(
   new URL("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"),
 );

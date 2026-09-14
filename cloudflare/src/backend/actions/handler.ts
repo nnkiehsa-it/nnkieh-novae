@@ -1,6 +1,7 @@
 import type { AppDatabaseClient } from "../database/client.ts";
 import { asRecord, asString, errorStatus } from "../shared/http.ts";
-import { handleHealthcheck, requireAuth } from "./auth.ts";
+import { handleHealthcheck } from "./auth.ts";
+import { resolveAuthContext } from "./auth.ts";
 import { getBackendActionDefinition } from "./action-registry.ts";
 import { claimBackendHealthcheckRateLimit } from "./rate-limit.ts";
 import { errorResponse, successResponse } from "./response.ts";
@@ -8,12 +9,14 @@ import { createFunctionLogger } from "../shared/observability.ts";
 import { executeBackendAction } from "./execution.ts";
 import { loadOperationPolicies, withOperationPolicies } from "../shared/operation-policies.ts";
 import { recordOperationalError } from "../shared/operational-telemetry.ts";
+import type { FirebaseAuthContext } from "../shared/firebase-auth.ts";
 
 export async function handleBackendAction(
   request: Request,
   body: Record<string, unknown>,
   operationId: string,
   database: AppDatabaseClient,
+  firebaseUser: FirebaseAuthContext | null,
   invocationId?: string,
 ) {
   const log = createFunctionLogger("backendAction", { invocationId, operationId });
@@ -32,7 +35,8 @@ export async function handleBackendAction(
 
     const definition = getBackendActionDefinition(action);
     if (!definition) throw new Error("invalid-action");
-    const auth = await requireAuth(database, request);
+    if (!firebaseUser) throw new Error("unauthenticated");
+    const auth = await resolveAuthContext(database, firebaseUser);
     const data = await executeBackendAction(definition, payload, auth, database, operationId);
     if (definition.rateLimitGroup !== "read" && definition.rateLimitGroup !== "upload-resolve") {
       log.success("backend-action.completed", {

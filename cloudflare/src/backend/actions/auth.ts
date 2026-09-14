@@ -1,5 +1,4 @@
 import { requireEnv } from "../shared/env.ts";
-import { requireVerifiedFirebaseUser } from "../shared/firebase-auth.ts";
 import type { AuthContext, BackendDatabase, PermissionCode } from "./types.ts";
 
 interface AuthIdentity {
@@ -55,10 +54,6 @@ export async function resolveAuthContext(
     setupCompleted: access.setupCompleted === true,
     uid: firebaseUser.uid,
   };
-}
-
-export async function requireAuth(database: BackendDatabase, request: Request): Promise<AuthContext> {
-  return await resolveAuthContext(database, await requireVerifiedFirebaseUser(request));
 }
 
 export function canManageIssueCategory(auth: AuthContext, categoryId: string) {

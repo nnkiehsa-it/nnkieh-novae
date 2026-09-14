@@ -1,6 +1,6 @@
 import type { AppDatabaseClient } from "./database/client.ts";
 import { requireEnv } from "./shared/env.ts";
-import { requireEligibleFirebaseUser } from "./shared/firebase-auth.ts";
+import type { FirebaseAuthContext } from "./shared/firebase-auth.ts";
 import { errorStatus, publicErrorBody } from "./shared/http.ts";
 import { createFunctionLogger } from "./shared/observability.ts";
 import { RATE_LIMITS } from "./shared/rate-limits.ts";
@@ -16,10 +16,9 @@ function adminEmails() {
   return [...new Set(emails)];
 }
 
-export async function handleSyncUser(request: Request, database: AppDatabaseClient) {
+export async function handleSyncUser(user: FirebaseAuthContext, database: AppDatabaseClient) {
   const log = createFunctionLogger("syncUser");
   try {
-    const user = await requireEligibleFirebaseUser(request);
     const { values } = await loadOperationPolicies(database);
     await claimFixedWindowRateLimit(user.uid, "auth.sync", utcHourWindow(), { ...RATE_LIMITS.loginSyncHourly, limit: values.loginSyncHourly });
 

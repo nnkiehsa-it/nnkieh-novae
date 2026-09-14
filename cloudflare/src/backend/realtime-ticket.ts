@@ -1,7 +1,7 @@
 import { SignJWT } from "jose";
 import type { AppDatabaseClient } from "./database/client.ts";
 import { resolveAuthContext } from "./actions/auth.ts";
-import { requireVerifiedFirebaseUser } from "./shared/firebase-auth.ts";
+import type { FirebaseAuthContext } from "./shared/firebase-auth.ts";
 import { requireEnv } from "./shared/env.ts";
 import { loadOperationPolicies } from "./shared/operation-policies.ts";
 
@@ -11,8 +11,7 @@ function websocketUrl() {
   return url.toString();
 }
 
-export async function createRealtimeTicket(request: Request, database: AppDatabaseClient) {
-  const firebaseUser = await requireVerifiedFirebaseUser(request);
+export async function createRealtimeTicket(firebaseUser: FirebaseAuthContext, database: AppDatabaseClient) {
   const auth = await resolveAuthContext(database, firebaseUser);
   const topics = [
     "content:school",

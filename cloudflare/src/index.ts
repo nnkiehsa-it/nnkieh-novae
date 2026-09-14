@@ -1,5 +1,6 @@
-import { requireFirebaseUid } from "./auth";
 import { requireFirebaseAppCheck } from "./app-check";
+import { requireVerifiedFirebaseUser } from "./backend/shared/firebase-auth";
+import type { FirebaseAuthContext } from "./backend/shared/firebase-auth";
 import {
   apiErrorResponse,
   corsHeaders,
@@ -40,14 +41,14 @@ function clientIp(request: Request) {
   return request.headers.get("cf-connecting-ip")?.trim() || "unknown";
 }
 
-async function requireBrowserUid(
+async function requireBrowserUser(
   request: Request,
   env: Env,
   rateLimitCode: "rate-limit.login-sync" | "rate-limit.operation" | "rate-limit.read",
-) {
+): Promise<FirebaseAuthContext> {
   try {
     await requireFirebaseAppCheck(request, env);
-    return await requireFirebaseUid(request, env);
+    return await requireVerifiedFirebaseUser(request);
   } catch (error) {
     await claimInvalidAuthenticationIngress(env, clientIp(request), rateLimitCode);
     throw error;
@@ -103,14 +104,15 @@ async function handleAction(
     return apiErrorResponse(request, env, operationId, isWriteAction && !request.headers.get("x-novae-operation-id") ? "validation-required" : "validation-invalid");
   }
 
+  let firebaseUser: FirebaseAuthContext | null = null;
   if (action !== "healthcheck") {
-    const uid = await requireBrowserUid(request, env, "rate-limit.operation");
-    await claimActionRateLimit(env, uid, action);
+    firebaseUser = await requireBrowserUser(request, env, "rate-limit.operation");
+    await claimActionRateLimit(env, firebaseUser.uid, action);
   }
 
   const database = await createDatabaseClient(env);
   try {
-    const response = await handleBackendAction(request, body, operationId, database, invocationId);
+    const response = await handleBackendAction(request, body, operationId, database, firebaseUser, invocationId);
     if (response.ok && policy?.group !== "read") ctx.waitUntil(env.JOBS.send({ type: "drain" }));
     return addCors(response, request, env);
   } finally {
@@ -122,11 +124,11 @@ async function handleSync(request: Request, env: Env, operationId: string) {
   if (!isAllowedBrowserRequest(request, env)) return apiErrorResponse(request, env, operationId, "origin-denied");
   const body = await readBody(request);
   parseJsonRecord(body);
-  const uid = await requireBrowserUid(request, env, "rate-limit.login-sync");
-  await claimSyncUser(env, uid);
+  const user = await requireBrowserUser(request, env, "rate-limit.login-sync");
+  await claimSyncUser(env, user.uid);
   const database = await createDatabaseClient(env);
   try {
-    return addCors(await handleSyncUser(request, database), request, env);
+    return addCors(await handleSyncUser(user, database), request, env);
   } finally {
     await database.close();
   }
@@ -148,11 +150,11 @@ async function handleSessionCheck(request: Request, env: Env, operationId: strin
 
 async function handleRealtimeTicket(request: Request, env: Env, operationId: string) {
   if (!isAllowedBrowserRequest(request, env)) return apiErrorResponse(request, env, operationId, "origin-denied");
-  const uid = await requireBrowserUid(request, env, "rate-limit.read");
-  await claimRealtimeTicketRateLimit(env, uid);
+  const user = await requireBrowserUser(request, env, "rate-limit.read");
+  await claimRealtimeTicketRateLimit(env, user.uid);
   const database = await createDatabaseClient(env);
   try {
-    return jsonResponse(request, env, { data: await createRealtimeTicket(request, database), success: true });
+    return jsonResponse(request, env, { data: await createRealtimeTicket(user, database), success: true });
   } finally {
     await database.close();
   }
