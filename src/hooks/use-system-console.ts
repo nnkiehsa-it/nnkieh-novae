@@ -97,6 +97,27 @@ export function useSystemConsole() {
     [remember, t],
   );
 
+  /**
+   * Everything that failed, asked for again in one write.
+   *
+   * Row by row this was one admin write per failure, and an outage that left a
+   * page of them behind ran the administrator into their own rate limit before
+   * the list was clear. The whole reading is taken again afterwards, because
+   * this changes every panel on the screen rather than one row of one.
+   */
+  const retryAll = React.useCallback(async () => {
+    setRetrying("all");
+    try {
+      const result = await retryOperationalWork({ kind: "all" });
+      toast.success(t("admin.retryAllQueued", { count: result.retried ?? 0 }));
+      await load(value.page);
+    } catch (caught) {
+      toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
+    } finally {
+      setRetrying("");
+    }
+  }, [load, t, value.page]);
+
   const rebuildNotion = React.useCallback(async () => {
     setRebuildingNotion(true);
     try {
@@ -120,6 +141,7 @@ export function useSystemConsole() {
     rebuildNotion,
     rebuildingNotion,
     retry,
+    retryAll,
     retrying,
     snapshot: value.snapshot,
   };

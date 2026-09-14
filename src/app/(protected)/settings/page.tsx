@@ -1,6 +1,7 @@
 "use client";
 import { t as translate } from "@/i18n";
 
+import { LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { useSession } from "@/hooks/use-session";
@@ -17,7 +18,7 @@ import {
   ManagementLinks,
   ResourceLinks,
 } from "@/components/settings/settings-links";
-import { ListActionRow, ListSection } from "@/components/ui/list";
+import { ListMutationRow, ListSection, RowAction } from "@/components/ui/list";
 import { PageHeader } from "@/components/ui/page-state";
 import { SaveBar } from "@/components/ui/save-bar";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
@@ -105,9 +106,16 @@ export default function SettingsPage() {
         />
         <ResourceLinks />
         <ListSection>
-          <ListActionRow
+          <ListMutationRow
+            action={
+              <RowAction
+                icon={LogOut}
+                label={translate("ui.nav.signOut")}
+                onClick={() => void session.logout()}
+                tone="destructive"
+              />
+            }
             label={translate("ui.nav.signOut")}
-            onClick={() => void session.logout()}
             tone="destructive"
           />
         </ListSection>

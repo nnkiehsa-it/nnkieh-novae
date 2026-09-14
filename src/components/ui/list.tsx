@@ -6,6 +6,7 @@ import type { LucideIcon } from "lucide-react";
 import type * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 
+import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { timing } from "@/lib/motion-timing";
 import { cn } from "@/lib/utils";
@@ -111,8 +112,11 @@ export function RowInner({
   );
 }
 
-export const rowClass =
-  "t-row flex w-full min-h-[3.25rem] items-center gap-3 py-[var(--row-padding-block)] text-left";
+/** The metrics every row keeps, whether or not the whole of it is a target. */
+const rowMetrics =
+  "flex w-full min-h-[3.25rem] items-center gap-3 py-[var(--row-padding-block)] text-left";
+
+export const rowClass = cn("t-row", rowMetrics);
 
 /** A row that only reports: a label, and what it is set to. */
 export function ListRow({
@@ -206,6 +210,87 @@ export function ListActionRow({
         trailing={busy ? <LoadingSpinner className="shrink-0" /> : null}
       />
     </button>
+  );
+}
+
+/**
+ * The one control on a row that changes something.
+ *
+ * A row whose whole width was the target read the same as a row that only
+ * reports, and the word "retry" at its end was a label rather than something to
+ * aim at -- so a list of failures was a list of accidents waiting to happen.
+ * Anything that writes is this control instead: a glyph with its own edge,
+ * which is the only part of the row that acts.
+ */
+export function RowAction({
+  busy,
+  disabled,
+  icon: Icon,
+  label,
+  onClick,
+  tone = "default",
+}: {
+  busy?: boolean;
+  disabled?: boolean;
+  icon: LucideIcon;
+  /** Says what the glyph does, for a reader who cannot see it or hover it. */
+  label: string;
+  onClick: () => void;
+  tone?: "default" | "destructive" | "brand";
+}) {
+  return (
+    <Button
+      aria-busy={busy}
+      aria-label={label}
+      className={cn("shrink-0", toneClass[tone])}
+      disabled={disabled || busy}
+      onClick={onClick}
+      size="icon"
+      title={label}
+      type="button"
+      variant="outline"
+    >
+      {busy ? <LoadingSpinner /> : <Icon aria-hidden />}
+    </Button>
+  );
+}
+
+/**
+ * A row that reports, and carries the control that changes it.
+ *
+ * The row itself may open what it is about -- the whole record, where a list
+ * can only show two lines of it -- and that is the only thing tapping the row
+ * does. Writing is the trailing control's alone.
+ */
+export function ListMutationRow({
+  action,
+  onOpen,
+  openLabel,
+  ...content
+}: RowContent & {
+  action: React.ReactNode;
+  onOpen?: () => void;
+  openLabel?: string;
+}) {
+  const inner = <RowInner {...content} />;
+  return (
+    <div className={cn(rowMetrics, "gap-2")}>
+      {onOpen ? (
+        <button
+          aria-label={openLabel}
+          className="t-row flex min-w-0 flex-1 items-center gap-3 text-left"
+          data-lead="true"
+          onClick={onOpen}
+          type="button"
+        >
+          {inner}
+          <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+        </button>
+      ) : (
+        <div className="flex min-w-0 flex-1 items-center gap-3">{inner}</div>
+      )}
+      {action}
+    </div>
   );
 }
 

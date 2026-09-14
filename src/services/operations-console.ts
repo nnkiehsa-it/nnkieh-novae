@@ -8,11 +8,11 @@ export interface OperationsConsole {
   sampledAt: string;
   errors: Array<{ action: string; code: string; status: number; count: number; lastAt: string; operationId: string; failureId: string | null }>;
   metrics: Array<{ bucket: string; databaseBytes: number; measuredAt: string }>;
-  failedDeliveries: Array<{ id: string; destination: string; eventType: string; operationId: string; errorDetail: unknown }>;
+  failedDeliveries: Array<{ id: string; destination: string; eventType: string; operationId: string; attemptCount: number; lastAttemptId: string | null; errorDetail: unknown }>;
   databaseBytes: number;
   settings: { revision: number; values: OperationPolicies };
   capacity: Array<{ name: string; rows: number; deadRows: number; tableBytes: number; indexBytes: number; totalBytes: number }>;
-  jobs: Array<{ id: string; jobType: string; status: string; attemptCount: number; affectedRows: number; estimatedRows: number; errorDetail: unknown; updatedAt: string }>;
+  jobs: Array<{ id: string; jobType: string; status: string; attemptCount: number; affectedRows: number; estimatedRows: number; processedRows: number; lastAttemptId: string | null; errorDetail: unknown; updatedAt: string }>;
   deliveries: Array<{ destination: string; status: string; count: number; oldestAt: string }>;
   history: Array<{ id: number; actorUid: string; revision: number; reason: string; createdAt: string; beforeValue: OperationPolicies; afterValue: OperationPolicies }>;
 }
@@ -31,7 +31,10 @@ export function fetchOperationsConsole(
     },
   })(payload);
 }
-export const retryOperationalWork = invokeBackendAction<{ kind: 'job' | 'delivery' | 'cleanup'; id: string }, { success: boolean }>('retryOperationalWork');
+export const retryOperationalWork = invokeBackendAction<
+  { kind: 'job' | 'delivery' | 'cleanup' | 'all'; id?: string },
+  { success: boolean; retried?: number }
+>('retryOperationalWork');
 export const queueNotionArchiveRebuild = invokeBackendAction<Record<string, never>, {
   alreadyQueued: boolean;
   jobId: string;

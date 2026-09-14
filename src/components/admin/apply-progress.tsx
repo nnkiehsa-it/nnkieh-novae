@@ -7,6 +7,7 @@ import { usePlatformJobs } from "@/hooks/use-platform-jobs";
 import { useI18n } from "@/i18n";
 import { timing } from "@/lib/motion-timing";
 import { ListCustomRow, ListSection } from "@/components/ui/list";
+import { ProgressBar } from "@/components/ui/progress-bar";
 
 function percentOf(job: { estimatedRows: number; processedRows: number; status: string }) {
   if (job.status === "completed") return 100;
@@ -59,7 +60,7 @@ export function ApplyProgress() {
                   ? CheckCircle2
                   : LoaderCircle;
             return (
-              <ListCustomRow className="!flex-col !items-stretch gap-2.5" key={job.id}>
+              <ListCustomRow className="flex-col items-stretch gap-2.5" key={job.id}>
                 <div className="flex items-center gap-3">
                   <Icon
                     className={job.status === "processing" ? "size-4 animate-spin" : "size-4"}
@@ -85,19 +86,10 @@ export function ApplyProgress() {
                   </div>
                   <span className="font-mono text-xs tabular-nums">{percent}%</span>
                 </div>
-                <div
-                  aria-label={t("ui.admin.backgroundProgressLabel")}
-                  aria-valuemax={100}
-                  aria-valuemin={0}
-                  aria-valuenow={percent}
-                  className="h-1.5 overflow-hidden rounded-full bg-muted"
-                  role="progressbar"
-                >
-                  <div
-                    className="h-full origin-left rounded-full bg-primary transition-transform duration-[var(--motion-sheet)]"
-                    style={{ transform: `scaleX(${percent / 100})` }}
-                  />
-                </div>
+                <ProgressBar
+                  label={t("ui.admin.backgroundProgressLabel")}
+                  percent={percent}
+                />
               </ListCustomRow>
             );
           })

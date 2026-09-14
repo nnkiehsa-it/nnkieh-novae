@@ -8,7 +8,7 @@ import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ListActionRow, ListCustomRow, ListRow, ListSection } from "@/components/ui/list";
+import { ListCustomRow, ListMutationRow, ListRow, ListSection, RowAction } from "@/components/ui/list";
 import { ListPicker } from "@/components/ui/list-controls";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -61,14 +61,18 @@ export function AccessManagement() {
               <ListRow label={t("ui.access.noneTitle")} />
             ) : (
               state.members.map((member) => (
-                <ListActionRow
+                <ListMutationRow
+                  action={
+                    <RowAction
+                      icon={Trash2}
+                      label={t("ui.access.revoke")}
+                      onClick={() => state.revoke(member.uid)}
+                      tone="destructive"
+                    />
+                  }
                   detail={member.email ?? member.uid}
-                  icon={Trash2}
                   key={member.uid}
                   label={<MemberName user={member} />}
-                  onClick={() => state.revoke(member.uid)}
-                  tone="destructive"
-                  value={t("ui.access.revoke")}
                 />
               ))
             )}
@@ -106,13 +110,17 @@ export function AccessManagement() {
                   value={t("ui.access.granted")}
                 />
               ) : (
-                <ListActionRow
+                <ListMutationRow
+                  action={
+                    <RowAction
+                      icon={UserPlus}
+                      label={t("ui.access.grant")}
+                      onClick={() => state.candidate && state.grant(state.candidate.uid)}
+                      tone="brand"
+                    />
+                  }
                   detail={state.candidate.email ?? state.candidate.uid}
-                  icon={UserPlus}
                   label={<MemberName user={state.candidate} />}
-                  onClick={() => state.candidate && state.grant(state.candidate.uid)}
-                  tone="brand"
-                  value={t("ui.access.grant")}
                 />
               )
             ) : null}

@@ -137,12 +137,16 @@ test('failed provider deletion can be retried from the operational UI', async ({
   try {
     const admin = await newUserPage(browser, 'admin');
     await admin.page.goto('/admin/system');
-    const entry = admin.page.getByRole('button', { name: new RegExp(jobId, 'u') });
-    await expect(entry).toBeVisible();
+    // The failure names what went wrong, and opens onto the whole record.
+    const failure = admin.page.getByText('E2E seeded provider failure').first();
+    await expect(failure).toBeVisible();
+    await failure.click();
+    const details = admin.page.getByRole('dialog');
+    await expect(details.getByText(jobId)).toBeVisible();
     await expectBackendAction(admin.page, 'retryOperationalWork', async () => {
-      await entry.click();
+      await details.getByRole('button', { name: 'Retry', exact: true }).click();
     });
-    await expect(admin.page.getByText(jobId)).toHaveCount(0);
+    await expect(admin.page.getByText('E2E seeded provider failure')).toHaveCount(0);
     await admin.context.close();
   } finally {
     await database.query('delete from app_private.background_jobs where id = $1', [jobId]);

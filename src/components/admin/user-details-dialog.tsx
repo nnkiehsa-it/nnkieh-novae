@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { ShieldOff } from "lucide-react";
 
 import {
   Dialog,
@@ -10,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { DecisionForm, type DecisionOption } from "@/components/ui/decision-sheet";
-import { ListActionRow, ListRow, ListSection } from "@/components/ui/list";
+import { ListMutationRow, ListRow, ListSection, RowAction } from "@/components/ui/list";
 import { ListNumberRow } from "@/components/ui/list-controls";
 import type { AdminUser, RestrictionMode } from "@/hooks/use-admin-console";
 import { useI18n, type TranslationParams } from "@/i18n";
@@ -120,11 +121,17 @@ export function UserDetailsDialog({
             <ListRow
               label={subject.restrictionReason || t("ui.adminConsole.noRestrictionReason")}
             />
-            <ListActionRow
-              busy={busy}
+            <ListMutationRow
+              action={
+                <RowAction
+                  busy={busy}
+                  icon={ShieldOff}
+                  label={t("ui.adminConsole.clearRestriction")}
+                  onClick={() => onRestrictionChange("clear")}
+                  tone="destructive"
+                />
+              }
               label={t("ui.adminConsole.clearRestriction")}
-              onClick={() => onRestrictionChange("clear")}
-              tone="destructive"
             />
           </ListSection>
         ) : (

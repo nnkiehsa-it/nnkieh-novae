@@ -968,6 +968,12 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   pointer-events: none;
   transition: background-color var(--motion-control) var(--ease-move);
 }
+/* Half a row: where a row reports on one side and acts on the other, the
+   pressed and hovered layer belongs to the reporting half, so it reaches the
+   card's leading edge and stops before the control. */
+.t-row[data-lead="true"]::before {
+  inset-inline-end: 0;
+}
 .t-row:active::before {
   background: var(--surface-active);
   transition-duration: var(--motion-touch);
