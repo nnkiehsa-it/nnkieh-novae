@@ -49,11 +49,9 @@ export async function expectBackendAction(
   const responsePromise = page.waitForResponse((response) => matchesAction(response, action));
   await run();
   const response = await responsePromise;
-  const text = await response.text();
-  expect(response.status(), `${action} response: ${text}`).toBe(200);
-  const answer = readActionStream(text);
-  expect(answer.operationId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u);
-  return answer;
+  expect(response.status(), `${action} response`).toBe(200);
+  expect(response.request().headers()['x-novae-operation-id'])
+    .toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u);
 }
 
 export async function expectBackendActions(
@@ -68,8 +66,8 @@ export async function expectBackendActions(
   for (const [index, responsePromise] of responses.entries()) {
     const action = actions[index]!;
     const response = await responsePromise;
-    const text = await response.text();
-    expect(response.status(), `${action} response: ${text}`).toBe(200);
-    expect(readActionStream(text).operationId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u);
+    expect(response.status(), `${action} response`).toBe(200);
+    expect(response.request().headers()['x-novae-operation-id'])
+      .toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u);
   }
 }
