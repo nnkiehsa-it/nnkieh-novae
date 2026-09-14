@@ -16,6 +16,10 @@ test('platform admin can restrict and restore an ordinary account', async ({ bro
   await expect(
     admin.page.getByRole('main').getByText('@integration.invalid').filter({ visible: true }),
   ).toHaveCount(1);
+  // Every person row states the account's standing, not only the restricted ones.
+  await expect(
+    admin.page.getByRole('main').getByText('Normal', { exact: true }),
+  ).toBeVisible();
   await admin.page.getByText(E2E_USERS.other).filter({ visible: true }).click();
   await admin.page.getByRole('radio', { name: '7 days' }).click();
   await admin.page.getByPlaceholder('Restriction reason (required)').fill('E2E reversible restriction');

@@ -5,6 +5,7 @@ import {
   responsibilityLabel,
   UserDetailsDialog,
 } from "@/components/admin/user-details-dialog";
+import { PersonIdentity } from "@/components/content-author";
 import { RecordList } from "@/components/ui/record-list";
 import { useAdminUsers } from "@/hooks/use-admin-console";
 import { useI18n, type TranslationParams } from "@/i18n";
@@ -37,34 +38,40 @@ function PersonRow({
   const administrator = user.roles.includes("platform-admin");
   const restricted = !administrator && isUserRestricted(user);
   const responsibility = responsibilityLabel(user, t);
+  const status = administrator
+    ? t("ui.adminConsole.platformAdmin")
+    : restricted
+      ? t("ui.adminConsole.restricted")
+      : t("ui.adminConsole.normal");
+  const activity = user.lastSeenAt
+    ? formatRelativeTime(user.lastSeenAt)
+    : t("ui.adminConsole.neverSeen");
+  const detail = [responsibility === "—" ? "" : responsibility, activity].filter(Boolean).join(" · ");
 
   return (
     <button
-      className="t-row flex min-w-0 flex-col gap-0.5 py-[var(--row-padding-block)] text-left"
+      className="t-row grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-[var(--row-padding-block)] text-left"
       data-selected={selected}
       onClick={() => onSelect(user)}
       type="button"
     >
-      <span className="flex min-w-0 items-center gap-2">
-        <span className="truncate text-sm font-medium">{user.name}</span>
-        {administrator || restricted ? (
-          <span
-            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-              restricted ? "bg-destructive/10 text-destructive" : "bg-tint text-tint-foreground"
-            }`}
-          >
-            {restricted ? t("ui.adminConsole.restricted") : t("ui.adminConsole.platformAdmin")}
-          </span>
-        ) : null}
-        <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-          {user.lastSeenAt ? formatRelativeTime(user.lastSeenAt) : t("ui.adminConsole.neverSeen")}
-        </span>
+      <PersonIdentity name={user.name} photoUrl={user.photoUrl} />
+      <span
+        className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+          restricted
+            ? "bg-destructive/10 text-destructive"
+            : administrator
+              ? "bg-tint text-tint-foreground"
+              : "bg-muted text-muted-foreground"
+        }`}
+      >
+        {status}
       </span>
-      <span className="flex min-w-0 items-center gap-3 text-xs text-muted-foreground">
-        <span className="truncate">{user.email ?? user.uid}</span>
-        {responsibility === "—" ? null : (
-          <span className="ml-auto max-w-[50%] truncate">{responsibility}</span>
-        )}
+      <span className="min-w-0 truncate pl-10 text-xs text-muted-foreground">
+        {user.email ?? user.uid}
+      </span>
+      <span className="max-w-44 truncate text-right text-xs text-muted-foreground sm:max-w-64">
+        {detail}
       </span>
     </button>
   );
