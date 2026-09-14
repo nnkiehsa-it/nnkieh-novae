@@ -42,18 +42,25 @@ const labelKeys: Record<string, string> = {
   registration: "ui.adminConsole.activityRegistration",
 };
 
-/** Activity as plain rows, so the group around them draws the hairlines. */
+/**
+ * Activity as plain rows, so the group around them draws the hairlines.
+ *
+ * A row says what kind of thing it is only where that is in question. Inside a
+ * group that is already one kind, repeating it on every row says nothing.
+ */
 export function AdminActivityRows({
   entries,
+  showKind = true,
 }: {
   entries: AdminOverviewData["recentActivity"];
+  showKind?: boolean;
 }) {
   const { t } = useI18n();
   return (
     <>
       {entries.map((item, index) => (
         <ListRow
-          detail={t(labelKeys[item.kind] ?? "ui.adminConsole.activityPlatform")}
+          detail={showKind ? t(labelKeys[item.kind] ?? "ui.adminConsole.activityPlatform") : undefined}
           icon={icons[item.kind] ?? Activity}
           key={`${item.kind}-${item.target_id}-${item.occurred_at}-${index}`}
           label={item.title || "—"}

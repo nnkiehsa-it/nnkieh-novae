@@ -314,7 +314,6 @@ const messages = {
   'ui.adminConsole.newComments': 'New comments',
   'ui.adminConsole.newFacilities': 'New facility reports',
   'ui.adminConsole.period': 'Selected period',
-  'ui.adminConsole.recentActivity': 'Recent activity',
   'ui.adminConsole.recentActivityScope': 'Latest 14 items in the selected period',
   'ui.adminConsole.noRecentActivity': 'No recent activity.',
   'ui.adminConsole.viewAllActivity': 'View all activity in this period',

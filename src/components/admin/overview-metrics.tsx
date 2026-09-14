@@ -1,8 +1,10 @@
 "use client";
 
 import { useI18n } from "@/i18n";
+import { AdminActivityRows } from "@/components/admin/admin-activity-feed";
 import { AnimatedNumber } from "@/components/motion/animated-number";
-import { ListCustomRow, ListRow, ListSection } from "@/components/ui/list";
+import { Disclosure } from "@/components/ui/disclosure";
+import { ListCustomRow, ListNavRow, ListRow, ListSection } from "@/components/ui/list";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusDistribution } from "@/components/ui/status-distribution";
 import { getIssueCategoryLabel } from "@/constants/categories";
@@ -17,12 +19,20 @@ import type { PlatformDashboardData } from "@/types";
  * the numbers share a baseline. Everything below the headline is an ordinary
  * label-and-figure row, because that is what the rest of administration uses to
  * say the same kind of thing.
+ *
+ * What happened during the period used to be listed a second time underneath,
+ * as one undifferentiated feed that answered none of the four figures above it.
+ * Each figure opens onto its own share of it instead — out of the reading the
+ * screen already holds, so asking what the number is made of costs nothing.
  */
 export function OverviewMetrics({
   activity,
+  canOpenActivity,
   period,
 }: {
   activity: AdminOverviewData | null;
+  /** Whether this reader may open the full record of what happened. */
+  canOpenActivity: boolean;
   period: string;
 }) {
   const { t } = useI18n();
@@ -33,10 +43,10 @@ export function OverviewMetrics({
     [t("ui.adminConsole.active30d"), activity?.activeUsers30d],
   ] as const;
   const inPeriod = [
-    [t("ui.adminConsole.newRegistrations"), activity?.newUsers],
-    [t("ui.adminConsole.newIssues"), activity?.newIssues],
-    [t("ui.adminConsole.newComments"), activity?.newComments],
-    [t("ui.adminConsole.newFacilities"), activity?.newFacilities],
+    { count: activity?.newUsers, kind: "registration", label: t("ui.adminConsole.newRegistrations") },
+    { count: activity?.newIssues, kind: "issue", label: t("ui.adminConsole.newIssues") },
+    { count: activity?.newComments, kind: "comment", label: t("ui.adminConsole.newComments") },
+    { count: activity?.newFacilities, kind: "facility", label: t("ui.adminConsole.newFacilities") },
   ] as const;
 
   return (
@@ -67,19 +77,28 @@ export function OverviewMetrics({
       <ListSection header={t("ui.adminConsole.period")} headerAction={
         <span className="text-xs text-muted-foreground">{period}</span>
       }>
-        {inPeriod.map(([label, value]) => (
-          <ListRow
-            key={label}
-            label={label}
-            value={
-              value === undefined ? (
-                <Skeleton className="h-5 w-10" />
-              ) : (
-                <AnimatedNumber className="font-semibold tabular-nums" value={value} />
-              )
-            }
-          />
-        ))}
+        {inPeriod.map(({ count, kind, label }) => {
+          const figure =
+            count === undefined ? (
+              <Skeleton className="h-5 w-10" />
+            ) : (
+              <AnimatedNumber className="font-semibold tabular-nums" value={count} />
+            );
+          const happened = (activity?.recentActivity ?? []).filter(
+            (entry) => entry.kind === kind,
+          );
+          if (happened.length === 0) return <ListRow key={label} label={label} value={figure} />;
+          return (
+            <Disclosure key={label} label={label} value={figure}>
+              <div className="rule-list">
+                <AdminActivityRows entries={happened} showKind={false} />
+              </div>
+            </Disclosure>
+          );
+        })}
+        {canOpenActivity ? (
+          <ListNavRow href="/admin/audit" label={t("ui.adminConsole.viewAllActivity")} />
+        ) : null}
       </ListSection>
     </div>
   );

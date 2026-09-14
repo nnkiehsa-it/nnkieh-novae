@@ -5,16 +5,13 @@ import { RefreshCw } from "lucide-react";
 
 import { useI18n } from "@/i18n";
 import { useAdminOverview, type AdminOverviewWindow } from "@/hooks/use-admin-overview";
-import { AdminActivityRows } from "@/components/admin/admin-activity-feed";
 import { AdminSections } from "@/components/admin/admin-sections";
 import { OverviewDistribution, OverviewMetrics } from "@/components/admin/overview-metrics";
 import { OverviewHealth } from "@/components/admin/overview-health";
 import { Button } from "@/components/ui/button";
-import { ListNavRow, ListSection } from "@/components/ui/list";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ErrorState } from "@/components/ui/page-state";
-import { Skeleton } from "@/components/ui/skeleton";
 import type { AdminAccess } from "@/lib/admin-routes";
 
 const WINDOWS: ReadonlyArray<{ labelKey: string; value: AdminOverviewWindow }> = [
@@ -56,23 +53,13 @@ export function AdminOverview({ access }: { access: AdminAccess }) {
 
           {error ? <ErrorState error={error} onRetry={() => void load(true)} /> : null}
 
-          <OverviewMetrics activity={activity} period={periodLabel} />
+          <OverviewMetrics
+            activity={activity}
+            canOpenActivity={access.members}
+            period={periodLabel}
+          />
           <OverviewDistribution platform={platform} />
           <OverviewHealth canOpenSystem={access.admin} platform={platform} />
-
-          <ListSection header={t("ui.adminConsole.recentActivity")}>
-            {!activity ? (
-              <div className="space-y-3 py-3">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-            ) : (
-              <AdminActivityRows entries={activity.recentActivity.slice(0, 5)} />
-            )}
-            {access.members ? (
-              <ListNavRow href="/admin/audit" label={t("ui.adminConsole.viewAllActivity")} />
-            ) : null}
-          </ListSection>
         </>
       ) : null}
 

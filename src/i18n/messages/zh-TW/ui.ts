@@ -314,7 +314,6 @@ const messages = {
   'ui.adminConsole.newComments': '新留言',
   'ui.adminConsole.newFacilities': '新設備案件',
   'ui.adminConsole.period': '這段期間',
-  'ui.adminConsole.recentActivity': '近期活動',
   'ui.adminConsole.recentActivityScope': '顯示所選期間內最新 14 筆',
   'ui.adminConsole.noRecentActivity': '目前沒有近期活動。',
   'ui.adminConsole.viewAllActivity': '查看這段期間的全部活動',
