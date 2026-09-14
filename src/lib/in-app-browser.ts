@@ -1,3 +1,5 @@
+import { SHARE_ENTRY_PARAM, isSharedRoute } from '@/constants/share';
+
 export type InAppBrowserName =
   | 'LINE'
   | 'Facebook'
@@ -31,7 +33,13 @@ export function tryRedirectToExternalBrowser(userAgent: string): boolean {
   const browser = detectInAppBrowser(userAgent);
   if (!browser) return false;
 
+  // Nothing reaches one of these browsers except through a link somebody sent,
+  // so the address handed to the real browser says so, whether or not the link
+  // itself was marked.
   const currentUrl = new URL(window.location.href);
+  if (isSharedRoute(currentUrl.pathname)) {
+    currentUrl.searchParams.set(SHARE_ENTRY_PARAM, '1');
+  }
 
   if (browser === 'LINE') {
     if (!currentUrl.searchParams.has('openExternalBrowser')) {
@@ -54,7 +62,7 @@ export function tryRedirectToExternalBrowser(userAgent: string): boolean {
   const scheme = currentUrl.protocol.replace(':', '');
 
   if (redirectState !== 'chrome_fallback') {
-    const fallbackUrl = new URL(window.location.href);
+    const fallbackUrl = new URL(currentUrl);
     fallbackUrl.searchParams.set('intent_redirected', 'chrome_fallback');
     window.location.href =
       `intent://${host}${pathname}${search}${hash}`
@@ -63,7 +71,7 @@ export function tryRedirectToExternalBrowser(userAgent: string): boolean {
     return true;
   }
 
-  const fallbackUrl = new URL(window.location.href);
+  const fallbackUrl = new URL(currentUrl);
   fallbackUrl.searchParams.set('intent_redirected', 'final_fallback');
   window.location.href =
     `intent://${host}${pathname}${search}${hash}`

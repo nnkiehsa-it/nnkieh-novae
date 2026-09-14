@@ -23,7 +23,7 @@ import {
   writeSessionStorage,
 } from "@/lib/browser-storage";
 import { useShareEntry } from "@/hooks/use-share-entry";
-import { clearShareEntryMarker } from "@/lib/share";
+import { settleShareEntryMarker, shareHandoffUrl } from "@/lib/share";
 
 export type AppInstallPromptMode =
   | "in-app-browser"
@@ -91,7 +91,7 @@ export function useAppInstallPrompt() {
     setIsAndroid(isAndroidDevice(userAgent));
     setDismissed(hasDismissedPrompt());
     setHydrated(true);
-    clearShareEntryMarker();
+    settleShareEntryMarker();
   }, []);
 
   // A messaging app's own browser cannot complete a Google sign-in, so the
@@ -167,7 +167,7 @@ export function useAppInstallPrompt() {
     if (isPrompting) return;
     setIsPrompting(true);
     try {
-      await navigator.clipboard?.writeText(window.location.href);
+      await navigator.clipboard?.writeText(shareHandoffUrl());
     } finally {
       setIsPrompting(false);
     }
