@@ -41,6 +41,12 @@ async function archiveManagedNotionPages(): Promise<number> {
  */
 export async function reconcileNotionPages(database: AppDatabase) {
   if (!notionEnabled()) throw new Error("notion-not-configured");
+  // Every Notion delivery still waiting describes a page this pass is about to
+  // write again from the canonical record, so the rebuild replaces the queue
+  // rather than running behind it. Deliveries a consumer already holds settle
+  // on their own claim.
+  await database.sql`delete from app_private.event_deliveries
+    where destination = 'notion' and status in ('pending', 'failed')`;
   const archived = await archiveManagedNotionPages();
   await database.sql`delete from app_private.notion_pages`;
 

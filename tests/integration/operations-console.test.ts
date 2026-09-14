@@ -134,10 +134,20 @@ integrationTest('Notion rebuild archives old pages and recreates complete Chines
     }).then((response) => response.json()) as { id: string },
   ));
 
+  const waitingNotionDeliveries = async () => (await database.query<{ count: number }>(
+    `select count(*)::integer as count from app_private.event_deliveries
+     where destination='notion' and status in ('pending','failed')`,
+  )).rows[0].count;
+  assert.ok(await waitingNotionDeliveries() > 0);
+
   await withRuntimeEnvironment(enabledEnvironment, async () => {
     await callAction('rebuildNotionArchive', {}, admin.auth);
     await underPolicies(() => processBackgroundJobs(database));
   });
+
+  // The rebuild wrote every page from the canonical record, so nothing the
+  // queue was still holding is left to deliver on top of it.
+  assert.equal(await waitingNotionDeliveries(), 0);
 
   type NotionTestProperty = {
     date?: { start?: string } | null;
