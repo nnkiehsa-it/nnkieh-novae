@@ -498,6 +498,30 @@ html[data-input-modality="pointer"] :focus-visible {
   border-top: 1px solid var(--rule);
 }
 
+/* The same grouped list, read two abreast. A person is a short record, and a
+   column of them left most of a wide card empty while the list ran off the
+   bottom of the screen; on anything wider than a phone the card carries two
+   records side by side instead. The hairline belongs to the line of records
+   rather than to the record, so only the first line goes without one. */
+.rule-grid {
+  display: grid;
+}
+.rule-grid > * {
+  border-top: 1px solid var(--rule);
+}
+.rule-grid > :first-child {
+  border-top: 0;
+}
+@media (min-width: 640px) {
+  .rule-grid {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 1.5rem;
+  }
+  .rule-grid > :nth-child(2) {
+    border-top: 0;
+  }
+}
+
 .text-balance {
   text-wrap: balance;
 }

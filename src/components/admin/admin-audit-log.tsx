@@ -9,13 +9,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { DataList } from "@/components/ui/data-list";
+import { RecordList } from "@/components/ui/record-list";
 import { ListRow, ListSection } from "@/components/ui/list";
 import { useAdminAudit, type AdminAuditEntry } from "@/hooks/use-admin-console";
 import { useI18n } from "@/i18n";
 import { formatDate } from "@/lib/format";
-
-const GRID = "9rem 10rem 11rem minmax(10rem,1fr)";
 
 const ACTION_LABELS: Record<string, string> = {
   createAnnouncement: "ui.adminConsole.actionCreateAnnouncement",
@@ -32,6 +30,14 @@ const ACTION_LABELS: Record<string, string> = {
   updateIssueResult: "ui.adminConsole.actionUpdateIssue",
 };
 
+/**
+ * One recorded action, in the two lines it takes to say it.
+ *
+ * What was done and when is the first line; who did it and to what is the
+ * second. As four columns it became four labelled fields stacked on top of one
+ * another on every screen narrower than a desktop, and a cut-off target
+ * identifier on the desktop.
+ */
 export function AdminAuditLog() {
   const { t } = useI18n();
   const state = useAdminAudit();
@@ -41,35 +47,44 @@ export function AdminAuditLog() {
 
   return (
     <>
-      <DataList<AdminAuditEntry>
-        columns={[
-          { key: "time", label: t("ui.adminConsole.timeColumn") },
-          { key: "actor", label: t("ui.adminConsole.adminColumn") },
-          { key: "action", label: t("ui.adminConsole.actionColumn") },
-          { key: "target", label: t("ui.adminConsole.targetColumn") },
-        ]}
+      <RecordList
+        count={state.entries.length}
         emptyLabel={t("ui.adminConsole.noAudit")}
         error={state.error}
-        grid={GRID}
         hasMore={state.hasMore}
         loading={state.loading}
         onPageChange={(page) => void state.changePage(page)}
         onQueryChange={state.setQuery}
-        onRowSelect={setSelected}
         onSearch={() => void state.load(state.query)}
         page={state.page}
         query={state.query}
-        renderCell={(entry, key) => {
-          if (key === "time")
-            return <span className="text-xs text-muted-foreground">{formatDate(entry.createdAt)}</span>;
-          if (key === "actor") return entry.actorName;
-          if (key === "action") return <span className="font-medium">{actionLabel(entry)}</span>;
-          return <span className="text-muted-foreground">{entry.targetId ?? "—"}</span>;
-        }}
-        rowKey={(entry) => String(entry.id)}
-        rows={state.entries}
         searchPlaceholder={t("ui.adminConsole.auditSearchPlaceholder")}
-      />
+      >
+        <div className="rule-list px-[var(--row-gutter)]">
+          {state.entries.map((entry) => (
+            <button
+              className="t-row flex w-full min-w-0 flex-col gap-0.5 py-[var(--row-padding-block)] text-left"
+              data-selected={selected?.id === entry.id}
+              key={entry.id}
+              onClick={() => setSelected(entry)}
+              type="button"
+            >
+              <span className="flex min-w-0 items-center gap-3">
+                <span className="truncate text-sm font-medium">{actionLabel(entry)}</span>
+                <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                  {formatDate(entry.createdAt)}
+                </span>
+              </span>
+              <span className="flex min-w-0 items-center gap-3 text-xs text-muted-foreground">
+                <span className="shrink-0">{entry.actorName}</span>
+                {entry.targetId ? (
+                  <span className="ml-auto truncate font-mono">{entry.targetId}</span>
+                ) : null}
+              </span>
+            </button>
+          ))}
+        </div>
+      </RecordList>
       <AuditEntrySheet
         actionLabel={actionLabel}
         entry={selected}

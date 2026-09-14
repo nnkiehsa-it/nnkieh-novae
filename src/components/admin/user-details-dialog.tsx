@@ -96,6 +96,14 @@ export function UserDetailsDialog({
             label={t("ui.adminConsole.registeredAtColumn")}
             value={formatDate(subject.createdAt)}
           />
+          <ListRow
+            label={t("ui.adminConsole.lastSeenColumn")}
+            value={
+              subject.lastSeenAt
+                ? formatDate(subject.lastSeenAt)
+                : t("ui.adminConsole.neverSeen")
+            }
+          />
           <ListRow label={t("ui.adminConsole.accountStatus")} value={statusLabel(subject, t)} />
           <ListRow
             label={t("ui.adminConsole.scopeColumn")}
