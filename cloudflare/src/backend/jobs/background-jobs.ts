@@ -3,7 +3,7 @@ import { deleteCloudinaryAsset } from "../shared/cloudinary.ts";
 import { markNotionPageDeleted, reconcileNotionPages } from "../shared/notion.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
 import { asRecord, asString } from "../shared/http.ts";
-import { loadOperationPolicies } from "../shared/operation-policies.ts";
+import type { OperationPolicies } from "../../../generated/operations";
 import type { Json } from "../database/schema.ts";
 
 export interface BackgroundJobItem {
@@ -16,9 +16,8 @@ export interface BackgroundJobItem {
   last_attempt_id: string;
 }
 
-export async function processBackgroundJobs(database: AppDatabaseClient) {
+export async function processBackgroundJobs(database: AppDatabaseClient, policies: OperationPolicies) {
   const log = createFunctionLogger("processBackgroundJobs");
-  const { values: policies } = await loadOperationPolicies(database);
   const { data: policyResult, error: policyError } = await database.call(
     "app_api", "backend_process_platform_job_batch", { batch_size: policies.policyBatchSize },
   );

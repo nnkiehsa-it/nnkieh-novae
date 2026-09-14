@@ -24,14 +24,14 @@ export async function processJobMessage(message: JobMessage, env: Env) {
       { identifier: 'background-workers', actionName: 'worker.minute', window: utcMinuteWindow(), config: { ...RATE_LIMITS.workerRunMinute, limit: values.workerRunMinute } },
     ]);
     if (message.type === "maintenance") {
-      await runMaintenance(database);
+      await runMaintenance(database, values);
     }
 
-    const notion = await processNotionDeliveries(database);
-    const inApp = await processInAppDeliveries(database, env);
-    const push = await processPushDeliveries(database);
-    const realtime = await processRealtimeDeliveries(database, env);
-    const backgroundJobs = await processBackgroundJobs(database);
+    const notion = await processNotionDeliveries(database, values);
+    const inApp = await processInAppDeliveries(database, env, values);
+    const push = await processPushDeliveries(database, values);
+    const realtime = await processRealtimeDeliveries(database, env, values);
+    const backgroundJobs = await processBackgroundJobs(database, values);
 
     const hasMore =
       notion.hasMore ||

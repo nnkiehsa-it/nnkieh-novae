@@ -1,11 +1,10 @@
 import type { AppDatabaseClient } from "../database/client.ts";
 import { asRecord } from "../shared/http.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
-import { loadOperationPolicies } from "../shared/operation-policies.ts";
+import type { OperationPolicies } from "../../../generated/operations";
 
-export async function runMaintenance(database: AppDatabaseClient) {
+export async function runMaintenance(database: AppDatabaseClient, values: OperationPolicies) {
   const log = createFunctionLogger("maintenanceCleanup");
-  const { values } = await loadOperationPolicies(database);
   await database.query(`delete from app_private.notion_pages where (target_type,target_id) in (
     select target_type,target_id from app_private.notion_pages
     where target_type not in ('issue','facility','announcement') and updated_at < now()-make_interval(days=>$1::integer)

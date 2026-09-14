@@ -232,20 +232,23 @@ export default {
   async queue(batch: MessageBatch<JobMessage>, env: Env) {
     await withRuntimeEnvironment(env, async () => {
       const log = createFunctionLogger("queueConsumer");
-      for (const message of batch.messages) {
-        try {
-          await processJobMessage(message.body, env);
-          message.ack();
-        } catch (error) {
-          log.error("queue-message.failed", error, { messageId: message.id });
-          const retryAfter = error instanceof Error && 'retryAfterSeconds' in error
-            ? Number(error.retryAfterSeconds) : 0;
-          if (retryAfter > 0) {
-            await env.JOBS.send(message.body, { delaySeconds: Math.min(43200, Math.ceil(retryAfter)) });
-            message.ack();
-          } else {
-            message.retry();
-          }
+      // Every message in a batch asks for the same bounded sweep, and maintenance
+      // runs that sweep too, so the whole batch collapses into a single run.
+      const work: JobMessage = batch.messages.some((message) => message.body.type === "maintenance")
+        ? { type: "maintenance" }
+        : { type: "drain" };
+      try {
+        await processJobMessage(work, env);
+        batch.ackAll();
+      } catch (error) {
+        log.error("queue-batch.failed", error, { messageCount: batch.messages.length });
+        const retryAfter = error instanceof Error && 'retryAfterSeconds' in error
+          ? Number(error.retryAfterSeconds) : 0;
+        if (retryAfter > 0) {
+          await env.JOBS.send(work, { delaySeconds: Math.min(43200, Math.ceil(retryAfter)) });
+          batch.ackAll();
+        } else {
+          batch.retryAll();
         }
       }
     });

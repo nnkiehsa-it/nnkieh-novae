@@ -5,7 +5,7 @@ import { asRecord, asString } from "../shared/http.ts";
 import { syncDomainEventToNotion } from "../shared/notion.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
 import type { RealtimeDelivery } from "../../durable/realtime-hub.ts";
-import { loadOperationPolicies } from '../shared/operation-policies';
+import type { OperationPolicies } from '../../../generated/operations';
 
 export interface EventDeliveryItem {
   delivery_id: string;
@@ -314,8 +314,7 @@ async function resolveRecipients(
   return [];
 }
 
-export async function processNotionDeliveries(database: AppDatabaseClient) {
-  const policies = (await loadOperationPolicies(database)).values;
+export async function processNotionDeliveries(database: AppDatabaseClient, policies: OperationPolicies) {
   const batchSize = policies.notionBatchSize;
   const log = createFunctionLogger("processNotionDeliveries");
   const { data, error } = await database.call("app_api", "claim_event_deliveries", {
@@ -365,8 +364,8 @@ export async function processNotionDeliveries(database: AppDatabaseClient) {
   return { hasMore: items.length === batchSize, processedCount: items.length };
 }
 
-export async function processInAppDeliveries(database: AppDatabaseClient, env: Env) {
-  const batchSize = (await loadOperationPolicies(database)).values.notificationBatchSize;
+export async function processInAppDeliveries(database: AppDatabaseClient, env: Env, policies: OperationPolicies) {
+  const batchSize = policies.notificationBatchSize;
   const log = createFunctionLogger("processInAppDeliveries");
   const { data, error } = await database.call("app_api", "claim_event_deliveries", {
     target_destination: "in_app",
@@ -444,8 +443,8 @@ export async function processInAppDeliveries(database: AppDatabaseClient, env: E
   return { hasMore: items.length === batchSize, processedCount: items.length };
 }
 
-export async function processPushDeliveries(database: AppDatabaseClient) {
-  const batchSize = (await loadOperationPolicies(database)).values.notificationBatchSize;
+export async function processPushDeliveries(database: AppDatabaseClient, policies: OperationPolicies) {
+  const batchSize = policies.notificationBatchSize;
   const log = createFunctionLogger("processPushDeliveries");
   const { data, error } = await database.call("app_api", "claim_event_deliveries", {
     target_destination: "push",
@@ -673,8 +672,8 @@ async function realtimeDeliveriesForItem(
   }));
 }
 
-export async function processRealtimeDeliveries(database: AppDatabaseClient, env: Env) {
-  const batchSize = (await loadOperationPolicies(database)).values.realtimeBatchSize;
+export async function processRealtimeDeliveries(database: AppDatabaseClient, env: Env, policies: OperationPolicies) {
+  const batchSize = policies.realtimeBatchSize;
   const log = createFunctionLogger("processRealtimeDeliveries");
   const { data, error } = await database.call("app_api", "claim_event_deliveries", {
     target_destination: "realtime",

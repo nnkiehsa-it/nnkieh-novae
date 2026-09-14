@@ -8,6 +8,7 @@ import { getBackendActionDefinition } from "../../cloudflare/src/backend/actions
 import { resolveAuthContext } from "../../cloudflare/src/backend/actions/auth.ts";
 import { executeBackendAction } from "../../cloudflare/src/backend/actions/execution.ts";
 import { withRuntimeEnvironment } from "../../cloudflare/src/backend/shared/env.ts";
+import { loadOperationPolicies } from "../../cloudflare/src/backend/shared/operation-policies.ts";
 import type {
   AuthContext,
   BackendDatabase,
@@ -385,4 +386,8 @@ export async function tableRow(
     .maybeSingle();
   if (error) throw error;
   return data as JsonRecord | null;
+}
+
+export async function currentPolicies() {
+  return (await loadOperationPolicies(database as BackendDatabase)).values;
 }
