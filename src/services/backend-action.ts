@@ -6,6 +6,7 @@ import { apiGatewayUrl } from '@/lib/api-gateway';
 import { ApiRequestError, type ApiErrorResponse } from '@/lib/api-error';
 import { backendSecurityHeaders } from '@/lib/backend-security';
 import { setOperationPolicies, getOperationPolicy, operationPolicyRevision, type PolicySnapshot } from '@/lib/operation-policies';
+import { readNdjson } from '@/lib/ndjson';
 
 /**
  * The settings change a few times a year, so nothing goes looking for them.
@@ -23,25 +24,61 @@ function refreshRuntimePolicies() {
   return policyRefresh;
 }
 
-interface BackendActionSuccessEnvelope<TResponse> {
-  data: TResponse;
+/**
+ * One line of an answer in flight: the action names the operation it is
+ * answering, sends each piece of the answer as it is ready, and says when it
+ * is finished — or, if it failed after the first piece had already left, says
+ * so on the line where an HTTP status can no longer be used.
+ */
+type BackendActionLine =
+  | { operationId: string; policyRevision: number; type: 'start' }
+  | { data: unknown; key?: string; type: 'part' }
+  | { type: 'end' }
+  | { error: ApiErrorResponse['error']; type: 'error' };
+
+interface StreamedAnswer {
   operationId: string;
   policyRevision: number;
-  success: true;
+  result: unknown;
 }
 
-interface BackendActionErrorEnvelope extends ApiErrorResponse {
-  operationId: string;
-  success: false;
+async function readAnswer(
+  body: ReadableStream<Uint8Array>,
+  onSegment?: (key: string | undefined, data: unknown) => void,
+): Promise<StreamedAnswer> {
+  let start: { operationId: string; policyRevision: number } | null = null;
+  let finished = false;
+  let whole: unknown;
+  let fields: Record<string, unknown> | undefined;
+  for await (const line of readNdjson(body)) {
+    const entry = line as BackendActionLine;
+    if (entry.type === 'start') {
+      start = { operationId: entry.operationId, policyRevision: entry.policyRevision };
+    } else if (entry.type === 'part') {
+      if (entry.key === undefined) whole = entry.data;
+      else (fields ??= {})[entry.key] = entry.data;
+      onSegment?.(entry.key, entry.data);
+    } else if (entry.type === 'error') {
+      throw new ApiRequestError({ error: entry.error, operationId: start?.operationId });
+    } else if (entry.type === 'end') {
+      finished = true;
+    }
+  }
+  if (!start || !finished) throw new Error('common.theServiceDidNotReturnAnyData');
+  const assembled = fields
+    ? { ...(whole && typeof whole === 'object' && !Array.isArray(whole) ? whole as Record<string, unknown> : {}), ...fields }
+    : whole;
+  return { ...start, result: assembled };
 }
-
-type BackendActionEnvelope<TResponse> =
-  | BackendActionSuccessEnvelope<TResponse>
-  | BackendActionErrorEnvelope;
 
 export function invokeBackendAction<TRequest = Record<string, unknown>, TResponse = unknown>(
   name: BackendActionName,
-  options: { signal?: AbortSignal; timeoutMs?: number | (() => number); operationId?: string } = {},
+  options: {
+    onSegment?: (key: string | undefined, data: unknown) => void;
+    operationId?: string;
+    signal?: AbortSignal;
+    timeoutMs?: number | (() => number);
+  } = {},
 ) {
   return async (initialPayload: TRequest): Promise<TResponse> => {
     const policy = BACKEND_ACTION_POLICIES[name];
@@ -84,27 +121,15 @@ export function invokeBackendAction<TRequest = Record<string, unknown>, TRespons
     if (auth?.currentUser?.uid !== requestUid) {
       throw new Error('auth.loginStatusChangedPreviousResponseIgnored');
     }
+    if (!response.body) throw new Error('common.theServiceDidNotReturnAnyData');
 
-    let envelope: BackendActionEnvelope<TResponse> | null = null;
-    try {
-      envelope = await response.json() as BackendActionEnvelope<TResponse>;
-    } catch {
-      // JSON parse error handled below
-    }
-
-    if (!envelope) {
-      throw new Error('common.theServiceDidNotReturnAnyData');
-    }
-
-    if (envelope.success !== true) {
-      throw new ApiRequestError(envelope);
-    }
+    const answer = await readAnswer(response.body, options.onSegment);
 
     if (name === 'getSessionBootstrap') {
-      setOperationPolicies((envelope.data as { runtimePolicies: PolicySnapshot }).runtimePolicies);
-    } else if (name !== 'getRuntimePolicies' && envelope.policyRevision !== operationPolicyRevision()) {
+      setOperationPolicies((answer.result as { runtimePolicies: PolicySnapshot }).runtimePolicies);
+    } else if (name !== 'getRuntimePolicies' && answer.policyRevision !== operationPolicyRevision()) {
       void refreshRuntimePolicies().catch(() => undefined);
     }
-    return envelope.data;
+    return answer.result as TResponse;
   };
 }

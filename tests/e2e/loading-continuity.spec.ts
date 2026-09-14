@@ -4,6 +4,7 @@ import { expect, test, type Browser, type BrowserContext } from '@playwright/tes
 import { authStatePath } from './support/paths';
 import { readContentState } from './support/content-state';
 import { newUserPage } from './support/session';
+import { actionStreamBody, readActionStream } from './support/backend-action';
 
 function failedActionBody() {
   return JSON.stringify({
@@ -29,9 +30,16 @@ test('empty feed keeps its original card while content enters and the frame resi
     if (route.request().postDataJSON()?.action !== 'listIssues') return route.continue();
     started = true;
     const response = await route.fetch();
-    const body = await response.json();
+    const answer = readActionStream(await response.text());
     await hold;
-    await route.fulfill({ response, json: { ...body, data: { ...body.data, issues: [], hasMore: false, cursor: null } } });
+    await route.fulfill({
+      body: actionStreamBody({
+        data: { ...answer.data, cursor: null, hasMore: false, issues: [] },
+        operationId: answer.operationId,
+      }),
+      contentType: 'application/x-ndjson',
+      status: 200,
+    });
   });
   try {
     await page.goto('/issues/proposal-a');

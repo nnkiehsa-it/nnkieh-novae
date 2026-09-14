@@ -31,6 +31,22 @@ async function jsonRequest(url, init) {
   return body;
 }
 
+/** One action answer, read back from the newline-delimited stream it arrives in. */
+async function actionRequest(url, init) {
+  const response = await fetch(url, init);
+  const text = await response.text();
+  assert.equal(response.ok, true, `${url} returned ${response.status}: ${text}`);
+  const lines = text.split("\n").filter((line) => line.trim()).map((line) => JSON.parse(line));
+  assert.equal(lines.at(0)?.type, "start", `${url} did not start an answer: ${text}`);
+  assert.equal(lines.at(-1)?.type, "end", `${url} did not finish its answer: ${text}`);
+  let data = {};
+  for (const line of lines) {
+    if (line.type !== "part") continue;
+    data = line.key === undefined ? line.data : { ...data, [line.key]: line.data };
+  }
+  return data;
+}
+
 function tokenClaims(token) {
   const encodedPayload = String(token).split(".")[1];
   assert.ok(encodedPayload, "Auth emulator did not return a JWT payload.");
@@ -80,7 +96,7 @@ const refreshedClaims = tokenClaims(refreshed.id_token);
 assert.equal(refreshedClaims.aud, projectId);
 assert.equal(refreshedClaims.email, adminEmail);
 
-const access = await jsonRequest(`${gatewayBaseUrl}/v1/actions`, {
+const access = await actionRequest(`${gatewayBaseUrl}/v1/actions`, {
   method: "POST",
   headers: {
     Authorization: `Bearer ${refreshed.id_token}`,
@@ -89,9 +105,8 @@ const access = await jsonRequest(`${gatewayBaseUrl}/v1/actions`, {
   },
   body: JSON.stringify({ action: "getCurrentUserRole", payload: {} }),
 });
-assert.equal(access.success, true);
-assert.equal(access.data.role, "admin");
-assert.ok(access.data.roles.includes("platform-admin"));
-assert.equal(access.data.setupCompleted, true);
+assert.equal(access.role, "admin");
+assert.ok(access.roles.includes("platform-admin"));
+assert.equal(access.setupCompleted, true);
 
 console.log("[environment] Auth emulator login and setup routing probe passed");

@@ -113,12 +113,16 @@ async function handleAction(
 
   const database = await createDatabaseClient(env);
   try {
-    const response = await withOperationPolicies(database, () =>
+    const { done, response } = await withOperationPolicies(database, () =>
       handleBackendAction(request, body, operationId, database, firebaseUser, invocationId));
     if (response.ok && policy?.group !== "read") ctx.waitUntil(env.JOBS.send({ type: "drain" }));
+    // The answer is still being written when this returns, and the pieces
+    // still to come are read from this connection, so it closes with them.
+    ctx.waitUntil(done.finally(() => database.close()));
     return addCors(response, request, env);
-  } finally {
+  } catch (error) {
     await database.close();
+    throw error;
   }
 }
 

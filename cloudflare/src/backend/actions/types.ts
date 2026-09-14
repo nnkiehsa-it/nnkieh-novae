@@ -1,6 +1,16 @@
 import type { DatabaseSession } from "../database/client.ts";
 
 export type BackendDatabase = DatabaseSession;
+
+/**
+ * One piece of an answer. A `key` names the field it fills in on the result;
+ * a segment without one is the whole result, which is what an action that has
+ * nothing to divide produces.
+ */
+export interface ActionSegment { data: unknown; key?: string }
+
+/** What an action hands back: a finished answer, or one arriving in pieces. */
+export type ActionResult = unknown | AsyncIterable<ActionSegment>;
 export type JsonRecord = Record<string, unknown>;
 export type PermissionCode =
   | "announcement.manage"

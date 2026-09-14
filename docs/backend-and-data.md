@@ -35,7 +35,7 @@ origin: https://school.example
 
 Read action 若未帶 operation ID，Worker 會建立一個只用於 trace 的 UUID。Write action 必須由 client 提供合法 UUID；缺值回 `validation-required`，格式錯誤回 `validation-invalid`。
 
-成功 response 使用 `{ success: true, data, operationId }`。拒絕與錯誤使用 canonical error code；5xx 另外回 `failureId`。所有 action response 都加 `cache-control: no-store`。
+成功 response 是 newline-delimited JSON（`application/x-ndjson`）：第一行 `{ type: "start", operationId, policyRevision }`，接著每有一段答案就送一行 `{ type: "part", key?, data }`，最後 `{ type: "end" }`。`key` 指的是答案物件上的一個欄位，沒有 `key` 的 part 就是整份答案；沒有東西可以分段的 action 只會送一個 part。第一段產生之前失敗的請求仍然是一般的 error response，帶自己的 HTTP status；第一段送出後才失敗的，會以最後一行 `{ type: "error", error }` 表達。拒絕與錯誤使用 canonical error code；5xx 另外回 `failureId`。所有 action response 都加 `cache-control: no-store`。
 
 ### 非 action endpoint
 

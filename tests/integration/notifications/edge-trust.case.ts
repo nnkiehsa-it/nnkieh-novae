@@ -60,6 +60,18 @@ integrationTest("real Worker HTTP boundaries reject missing origin, auth, and si
   });
   assert.equal(healthcheck.status, 403);
 
+  const answered = await post("/v1/actions", { action: "healthcheck", payload: {} }, {
+    origin: allowedOrigin,
+    "x-healthcheck-secret": "integration-healthcheck-secret",
+  });
+  assert.equal(answered.status, 200);
+  assert.equal(answered.headers.get("content-type"), "application/x-ndjson");
+  const lines = (await answered.text()).split("\n").filter((line) => line.trim())
+    .map((line) => JSON.parse(line) as { type: string; data?: unknown });
+  assert.equal(lines.at(0)?.type, "start");
+  assert.equal(lines.at(-1)?.type, "end");
+  assert.ok(lines.some((line) => line.type === "part"));
+
   const preflight = await fetch(`${workerUrl}/v1/actions`, {
     headers: { origin: allowedOrigin },
     method: "OPTIONS",

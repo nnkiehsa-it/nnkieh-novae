@@ -4,7 +4,7 @@ import { resolveDomainEvents } from "../events/domain-events.ts";
 import { hasPermission } from "./auth.ts";
 import { claimBackendActionBusinessLimit, claimBackendActionBurstLimit } from "./rate-limit.ts";
 import type { BackendActionDefinition } from "./action-registry.ts";
-import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
+import type { ActionSegment, AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { toApiJson } from "./response.ts";
 
 const RESTRICTED_INTERACTION_ACTIONS = new Set([
@@ -60,7 +60,10 @@ export async function executeBackendAction(
 
   // Read-only actions execute directly without transaction or operation claiming.
   if (definition.rateLimitGroup === "read" || definition.rateLimitGroup === "upload-resolve") {
-    return toApiJson(await definition.handler(definition.name, payload, auth, database));
+    const result = await definition.handler(definition.name, payload, auth, database);
+    // An action that answers in pieces hands back the pieces themselves; they
+    // are converted one at a time as they are sent.
+    return isSegmentStream(result) ? result : toApiJson(result);
   }
 
   // All write actions execute within a single dedicated PostgreSQL transaction
@@ -151,4 +154,43 @@ export async function executeBackendAction(
 
     return apiResult;
   });
+}
+
+function isSegmentStream(value: unknown): value is AsyncIterable<ActionSegment> {
+  return Boolean(value)
+    && typeof value === "object"
+    && typeof (value as AsyncIterable<ActionSegment>)[Symbol.asyncIterator] === "function";
+}
+
+/**
+ * One action's answer as it is sent: the pieces of an action that has them,
+ * and a single piece for everything else.
+ */
+export async function* executeBackendActionSegments(
+  definition: BackendActionDefinition,
+  payload: JsonRecord,
+  auth: AuthContext,
+  database: BackendDatabase,
+  operationId: string,
+): AsyncGenerator<ActionSegment> {
+  const result = await executeBackendAction(definition, payload, auth, database, operationId);
+  if (!isSegmentStream(result)) {
+    yield { data: result };
+    return;
+  }
+  for await (const segment of result) {
+    yield { data: toApiJson(segment.data), key: segment.key };
+  }
+}
+
+/** The finished answer the pieces add up to. */
+export async function collectActionSegments(segments: AsyncIterable<ActionSegment>) {
+  let whole: unknown;
+  let fields: JsonRecord | undefined;
+  for await (const segment of segments) {
+    if (segment.key === undefined) whole = segment.data;
+    else (fields ??= {})[segment.key] = segment.data;
+  }
+  if (!fields) return whole;
+  return { ...(whole && typeof whole === "object" && !Array.isArray(whole) ? whole as JsonRecord : {}), ...fields };
 }
