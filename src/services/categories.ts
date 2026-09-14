@@ -36,8 +36,14 @@ export interface PlatformJob {
   completedAt: string | null;
 }
 
-export async function getCategoryCatalog() {
-  return await invokeBackendAction<Record<string, never>, CategoryCatalog>('getCategoryCatalog')({});
+export async function getCategoryCatalog(
+  options: { onCatalog?: (catalog: Partial<CategoryCatalog>) => void } = {},
+) {
+  return await invokeBackendAction<Record<string, never>, CategoryCatalog>('getCategoryCatalog', {
+    onSegment: (key, data) => {
+      if (key) options.onCatalog?.({ [key]: data } as Partial<CategoryCatalog>);
+    },
+  })({});
 }
 
 export async function getCategoryManagement() {

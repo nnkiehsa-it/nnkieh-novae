@@ -80,6 +80,26 @@ function replaceCatalog(next: {
   emit();
 }
 
+function mergeCatalog(next: Partial<{
+  features: PlatformFeatures;
+  issueCategories: IssueCategoryConfig[];
+  facilityCategories: FacilityCategoryConfig[];
+  imageUploads: ImageUploadSettings;
+}>) {
+  state = {
+    ...state,
+    ...(next.facilityCategories
+      ? { facilityCategories: [...next.facilityCategories].sort((a, b) => a.sortOrder - b.sortOrder) }
+      : {}),
+    ...(next.features ? { features: { ...next.features } } : {}),
+    ...(next.imageUploads ? { imageUploads: { ...next.imageUploads } } : {}),
+    ...(next.issueCategories
+      ? { issueCategories: [...next.issueCategories].sort((a, b) => a.sortOrder - b.sortOrder) }
+      : {}),
+  };
+  emit();
+}
+
 export function seedCategoryCatalog(next: {
   features: PlatformFeatures;
   issueCategories: IssueCategoryConfig[];
@@ -110,7 +130,9 @@ export async function ensureCategoryCatalog(force = false) {
           // Fall through to the dedicated catalog action.
         }
       }
-      replaceCatalog(await getCategoryCatalog());
+      await getCategoryCatalog({ onCatalog: mergeCatalog });
+      state = { ...state, loaded: true };
+      emit();
     } catch (error) {
       state = {
         ...state,

@@ -7,7 +7,8 @@ import {
   platformSettingsFromInput,
 } from "../shared/platform-settings.ts";
 import type { Selected } from "../database/schema.ts";
-import { loadCategoryCatalog, READ_ACCESS_VALUES } from "./category-catalog.ts";
+import { categoryCatalogSegments, loadCategoryCatalog, READ_ACCESS_VALUES } from "./category-catalog.ts";
+import { settledSegments } from "./segments.ts";
 
 const CATEGORY_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 
@@ -91,7 +92,10 @@ export async function handleCategoryAction(
   database: BackendDatabase,
 ) {
   if (action === "getCategoryCatalog") {
-    return { ...await loadCategoryCatalog(database, true), setupCompleted: auth.setupCompleted };
+    return (async function* () {
+      yield { data: auth.setupCompleted, key: "setupCompleted" };
+      yield* settledSegments(categoryCatalogSegments(database, true));
+    })();
   }
   if (action === "getCategoryManagement") {
     requirePermission(auth, "category.manage");

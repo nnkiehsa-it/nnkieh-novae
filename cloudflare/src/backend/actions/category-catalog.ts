@@ -95,23 +95,35 @@ export async function issueCategoryPolicyLists(database: BackendDatabase) {
   };
 }
 
-export async function loadCategoryCatalog(database: BackendDatabase, includeInactive: boolean) {
-  const [issueCategories, facilityCategories, setup, platformSettings] = await Promise.all([
-    getIssueCategories(database, includeInactive),
-    getFacilityCategories(database, includeInactive),
-    database.sqlOne<Selected<"system_setup", "issues_enabled" | "facilities_enabled" | "announcement_comments_enabled">>`
+export function categoryCatalogSegments(database: BackendDatabase, includeInactive: boolean) {
+  const setup = database.sqlOne<Selected<"system_setup", "issues_enabled" | "facilities_enabled" | "announcement_comments_enabled">>`
       select issues_enabled, facilities_enabled, announcement_comments_enabled
-      from app_private.system_setup where singleton = true`,
-    loadPlatformSettings(database),
+      from app_private.system_setup where singleton = true`;
+  const platformSettings = loadPlatformSettings(database);
+  return {
+    facilityCategories: getFacilityCategories(database, includeInactive),
+    features: setup.then((value) => ({
+      announcementCommentsEnabled: value.announcement_comments_enabled !== false,
+      facilitiesEnabled: value.facilities_enabled !== false,
+      issuesEnabled: value.issues_enabled !== false,
+    })),
+    imageUploads: platformSettings.then((settings) => settings.imageUploads),
+    issueCategories: getIssueCategories(database, includeInactive),
+  };
+}
+
+export async function loadCategoryCatalog(database: BackendDatabase, includeInactive: boolean) {
+  const reads = categoryCatalogSegments(database, includeInactive);
+  const [issueCategories, facilityCategories, features, imageUploads] = await Promise.all([
+    reads.issueCategories,
+    reads.facilityCategories,
+    reads.features,
+    reads.imageUploads,
   ]);
   return {
     issueCategories,
     facilityCategories,
-    imageUploads: platformSettings.imageUploads,
-    features: {
-      announcementCommentsEnabled: setup.announcement_comments_enabled !== false,
-      facilitiesEnabled: setup.facilities_enabled !== false,
-      issuesEnabled: setup.issues_enabled !== false,
-    },
+    imageUploads,
+    features,
   };
 }
