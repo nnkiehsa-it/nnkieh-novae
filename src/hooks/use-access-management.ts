@@ -98,8 +98,9 @@ export function useAccessManagement() {
     setBusy(true);
     setError("");
     try {
-      const members = (await listScopeMembers(scope)).users;
-      remember({ known: members, uids: members.map((member) => member.uid) });
+      await listScopeMembers(scope, {
+        onUsers: (members) => remember({ known: members, uids: members.map((member) => member.uid) }),
+      });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
     } finally {
@@ -131,16 +132,17 @@ export function useAccessManagement() {
     setSearching(true);
     setCandidate(null);
     try {
-      const found = (await lookupAccessMember(query.trim())).users[0] ?? null;
-      setCandidate(found);
-      if (found)
-        remember((current) => ({
-          known:
-            current && current.known.some((member) => member.uid === found.uid)
-              ? current.known
-              : [...(current?.known ?? []), found],
-          uids: current?.uids ?? [],
-        }));
+      await lookupAccessMember(query.trim(), {
+        onUsers: (users) => {
+          const found = users[0] ?? null;
+          setCandidate(found);
+          if (!found) return;
+          remember((current) => ({
+            known: [...(current?.known ?? []).filter((member) => member.uid !== found.uid), found],
+            uids: current?.uids ?? [],
+          }));
+        },
+      });
     } catch (caught) {
       toast.error(caught instanceof Error ? caught.message : t("ui.access.searchFailed"));
     } finally {

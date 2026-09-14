@@ -27,24 +27,38 @@ function withoutPlatformAdmins(result: AccessUserList): AccessUserList {
   };
 }
 
-export async function listScopeMembers(scope: AccessScope) {
-  const fn = invokeBackendAction<
-    { categoryId?: string; query: string; scopeKind: AccessScope['kind'] },
-    AccessUserList
-  >('listRoleAssignments');
-  return withoutPlatformAdmins(await fn({
+async function listAccessUsers(
+  payload: { categoryId?: string; query: string; scopeKind?: AccessScope['kind'] },
+  options: { onUsers?: (users: AccessUser[]) => void } = {},
+) {
+  let streamed: AccessUserList = { truncated: false, users: [] };
+  const fn = invokeBackendAction<typeof payload, AccessUserList>('listRoleAssignments', {
+    onSegment: (key, data) => {
+      if (key === 'truncated') streamed = { ...streamed, truncated: data === true };
+      if (key !== 'users') return;
+      streamed = withoutPlatformAdmins({ ...streamed, users: data as AccessUser[] });
+      options.onUsers?.(streamed.users);
+    },
+  });
+  return withoutPlatformAdmins(await fn(payload));
+}
+
+export async function listScopeMembers(
+  scope: AccessScope,
+  options: { onUsers?: (users: AccessUser[]) => void } = {},
+) {
+  return await listAccessUsers({
     categoryId: 'categoryId' in scope ? scope.categoryId : undefined,
     query: '',
     scopeKind: scope.kind,
-  }));
+  }, options);
 }
 
-export async function lookupAccessMember(query: string) {
-  const fn = invokeBackendAction<
-    { query: string },
-    AccessUserList
-  >('listRoleAssignments');
-  return withoutPlatformAdmins(await fn({ query: query.trim() }));
+export async function lookupAccessMember(
+  query: string,
+  options: { onUsers?: (users: AccessUser[]) => void } = {},
+) {
+  return await listAccessUsers({ query: query.trim() }, options);
 }
 
 export async function setUserAccessScope(

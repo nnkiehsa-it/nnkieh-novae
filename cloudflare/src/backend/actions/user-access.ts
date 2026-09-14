@@ -3,6 +3,7 @@ import { createMediaDeliveryUrl } from "../shared/media-delivery.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { requirePermission } from "./auth.ts";
 import type { Selected } from "../database/schema.ts";
+import { settledSegments } from "./segments.ts";
 
 const ACCESS_LIST_LIMIT = 100;
 const ACCESS_SCOPE_KINDS = new Set(["announcement", "facility", "issue"]);
@@ -40,49 +41,69 @@ async function scopedAccessUids(scope: AccessScopeSelector, database: BackendDat
   return { truncated: uids.length > ACCESS_LIST_LIMIT, uids: uids.slice(0, ACCESS_LIST_LIMIT) };
 }
 
-async function accessUsersForUids(
+async function* accessUsersForUids(
   uids: string[],
   database: BackendDatabase,
   viewerUid: string,
 ) {
-  if (uids.length === 0) return [];
-  const [{ rows: profiles }, { rows: roleRows }, { rows: issueRows }, { rows: facilityRows }] = await Promise.all([
-    database.sql<Selected<"user_profiles", "uid" | "email" | "display_name" | "avatar_public_id" | "photo_url">>`
+  if (uids.length === 0) {
+    yield { data: [], key: "users" };
+    return;
+  }
+  const profiles = database.sql<Selected<"user_profiles", "uid" | "email" | "display_name" | "avatar_public_id" | "photo_url">>`
       select uid, email, display_name, avatar_public_id, photo_url from app_private.user_profiles
-      where uid = any(${uids}) order by display_name`,
-    database.sql<Selected<"user_role_assignments", "uid" | "role_code">>`
-      select uid, role_code from app_private.user_role_assignments where uid = any(${uids})`,
-    database.sql<Selected<"user_issue_category_assignments", "uid" | "category_id">>`
-      select uid, category_id from app_private.user_issue_category_assignments where uid = any(${uids})`,
-    database.sql<Selected<"user_facility_category_assignments", "uid" | "category_id">>`
-      select uid, category_id from app_private.user_facility_category_assignments where uid = any(${uids})`,
-  ]);
-  const roles = new Map<string, string[]>();
-  const issueCategories = new Map<string, string[]>();
-  const facilityCategories = new Map<string, string[]>();
-  for (const assignment of roleRows) {
-    roles.set(assignment.uid, [...(roles.get(assignment.uid) ?? []), assignment.role_code]);
-  }
-  for (const assignment of issueRows) {
-    issueCategories.set(assignment.uid, [...(issueCategories.get(assignment.uid) ?? []), assignment.category_id]);
-  }
-  for (const assignment of facilityRows) {
-    facilityCategories.set(assignment.uid, [...(facilityCategories.get(assignment.uid) ?? []), assignment.category_id]);
-  }
-  return await Promise.all(profiles.map(async (profile) => {
-    const media = profile.avatar_public_id
-      ? await createMediaDeliveryUrl(profile.avatar_public_id, "avatar", false, viewerUid)
-      : null;
-    return {
+      where uid = any(${uids}) order by display_name`
+    .then(({ rows }) => Promise.all(rows.map(async (profile) => {
+      const media = profile.avatar_public_id
+        ? await createMediaDeliveryUrl(profile.avatar_public_id, "avatar", false, viewerUid)
+        : null;
+      return { ...profile, resolvedPhotoUrl: media?.url ?? profile.photo_url ?? null };
+    })));
+  const roleAssignments = database.sql<Selected<"user_role_assignments", "uid" | "role_code">>`
+    select uid, role_code from app_private.user_role_assignments where uid = any(${uids})`
+    .then(({ rows }) => rows);
+  const issueAssignments = database.sql<Selected<"user_issue_category_assignments", "uid" | "category_id">>`
+    select uid, category_id from app_private.user_issue_category_assignments where uid = any(${uids})`
+    .then(({ rows }) => rows);
+  const facilityAssignments = database.sql<Selected<"user_facility_category_assignments", "uid" | "category_id">>`
+    select uid, category_id from app_private.user_facility_category_assignments where uid = any(${uids})`
+    .then(({ rows }) => rows);
+
+  let profileRows: Awaited<typeof profiles> | undefined;
+  let roleRows: Awaited<typeof roleAssignments> | undefined;
+  let issueRows: Awaited<typeof issueAssignments> = [];
+  let facilityRows: Awaited<typeof facilityAssignments> = [];
+  for await (const segment of settledSegments({ profiles, roleAssignments, issueAssignments, facilityAssignments })) {
+    if (segment.key === "profiles") profileRows = segment.data as Awaited<typeof profiles>;
+    if (segment.key === "roleAssignments") roleRows = segment.data as Awaited<typeof roleAssignments>;
+    if (segment.key === "issueAssignments") issueRows = segment.data as Awaited<typeof issueAssignments>;
+    if (segment.key === "facilityAssignments") facilityRows = segment.data as Awaited<typeof facilityAssignments>;
+    if (!profileRows || !roleRows) continue;
+
+    const roles = new Map<string, string[]>();
+    const issueCategories = new Map<string, string[]>();
+    const facilityCategories = new Map<string, string[]>();
+    for (const assignment of roleRows) {
+      roles.set(assignment.uid, [...(roles.get(assignment.uid) ?? []), assignment.role_code]);
+    }
+    for (const assignment of issueRows) {
+      issueCategories.set(assignment.uid, [...(issueCategories.get(assignment.uid) ?? []), assignment.category_id]);
+    }
+    for (const assignment of facilityRows) {
+      facilityCategories.set(assignment.uid, [...(facilityCategories.get(assignment.uid) ?? []), assignment.category_id]);
+    }
+    yield { data: profileRows
+      .filter((profile) => !(roles.get(profile.uid) ?? []).includes("platform-admin"))
+      .map((profile) => ({
       uid: profile.uid,
       email: profile.email ?? null,
       name: profile.display_name ?? profile.email ?? profile.uid,
-      photoUrl: media?.url ?? profile.photo_url ?? null,
+      photoUrl: profile.resolvedPhotoUrl,
       roles: roles.get(profile.uid) ?? [],
       managedIssueCategoryIds: issueCategories.get(profile.uid) ?? [],
       managedFacilityCategoryIds: facilityCategories.get(profile.uid) ?? [],
-    };
-  }));
+      })), key: "users" };
+  }
 }
 
 export async function handleUserAccessAction(
@@ -111,8 +132,10 @@ export async function handleUserAccessAction(
       truncated = scoped.truncated;
       uids = scoped.uids;
     }
-    const users = await accessUsersForUids(uids, database, auth.uid);
-    return { truncated, users: users.filter((user: any) => !user.roles.includes("platform-admin")) };
+    return (async function* () {
+      yield { data: truncated, key: "truncated" };
+      yield* accessUsersForUids(uids, database, auth.uid);
+    })();
   }
 
   if (action === "setUserAccessScope") {
