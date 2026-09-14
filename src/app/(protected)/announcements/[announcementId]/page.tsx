@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Heart, MoreHorizontal, Trash2 } from "lucide-react";
+import { Heart } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { useAnnouncementDetail } from "@/hooks/use-announcement-detail";
@@ -15,26 +15,8 @@ import { AnimatedNumber } from "@/components/motion/animated-number";
 import { LikeActionButton } from "@/components/motion/like-action-button";
 import { DetailLayout } from "@/components/ui/detail-layout";
 import { DetailToolbar } from "@/components/detail-toolbar";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { PendingAlertDialogAction } from "@/components/ui/pending-alert-dialog-action";
-import { Button } from "@/components/ui/button";
+import { DetailActionsMenu } from "@/components/detail-actions-menu";
 import { DetailBadge, DetailCardHeader, DetailCardBody } from "@/components/ui/detail-card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 
@@ -53,48 +35,15 @@ export default function AnnouncementDetailPage() {
       toolbar={announcement ? <DetailToolbar
         actions={
           detail.canManage ? (
-            <DropdownMenu>
-              <Tooltip>
-                <DropdownMenuTrigger asChild>
-                  <TooltipTrigger asChild>
-                    <Button aria-label={t("ui.common.moreActions")} size="icon" variant="ghost">
-                      <MoreHorizontal />
-                    </Button>
-                  </TooltipTrigger>
-                </DropdownMenuTrigger>
-                <TooltipContent>{t("ui.common.moreActions")}</TooltipContent>
-              </Tooltip>
-              <DropdownMenuContent align="end">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <DropdownMenuItem
-                      className="text-destructive"
-                      onSelect={(event) => event.preventDefault()}
-                    >
-                      <Trash2 />
-                      {t("ui.announcement.delete")}
-                    </DropdownMenuItem>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>{t("ui.announcement.deleteTitle")}</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {t("ui.announcement.deleteDescription")}
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>{t("ui.common.cancel")}</AlertDialogCancel>
-                      <PendingAlertDialogAction
-                        onConfirm={() => void detail.remove()}
-                        state={detail.deleteFeedbackState}
-                      >
-                        {t("ui.common.confirmDelete")}
-                      </PendingAlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <DetailActionsMenu
+              remove={{
+                description: t("ui.announcement.deleteDescription"),
+                label: t("ui.announcement.delete"),
+                onConfirm: () => void detail.remove(),
+                state: detail.deleteFeedbackState,
+                title: t("ui.announcement.deleteTitle"),
+              }}
+            />
           ) : null
         }
         backLabel={t("ui.announcement.back")}

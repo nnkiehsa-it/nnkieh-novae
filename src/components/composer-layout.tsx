@@ -2,7 +2,8 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import type { FormEvent, ReactNode } from "react";
-import { ArrowLeft, ArrowUp } from "lucide-react";
+import { ArrowUp } from "lucide-react";
+import { SecondaryToolbar } from "@/components/detail-toolbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BusyLabel, PageHeader } from "@/components/ui/page-state";
@@ -41,15 +42,8 @@ export function ComposerLayout({
   useLocaleSubscription();
   return (
     <div className="mx-auto max-w-5xl space-y-5">
-      <PageHeader
-        actions={
-          <Button onClick={onBack} variant="outline">
-            <ArrowLeft />
-            {translate("ui.common.back")}
-          </Button>
-        }
-        title={title}
-      />
+      <SecondaryToolbar backLabel={translate("ui.common.back")} onBack={onBack} />
+      <PageHeader title={title} />
       <form className="min-w-0" onSubmit={onSubmit}>
         <Card className="min-w-0 py-5 sm:py-6">
           <CardContent className="grid min-w-0 max-w-full gap-5 px-4 sm:px-6">

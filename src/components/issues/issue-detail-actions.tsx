@@ -3,13 +3,7 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import { motion } from "motion/react";
 import { timing } from "@/lib/motion-timing";
-import {
-  Clock3,
-  MoreHorizontal,
-  ShieldCheck,
-  Hand,
-  Trash2,
-} from "lucide-react";
+import { Clock3, ShieldCheck, Hand } from "lucide-react";
 import { toast } from "sonner";
 import type { IssueRecord } from "@/types";
 import type { getIssueOperationTimeItems } from "@/lib/issue-timeline";
@@ -18,30 +12,11 @@ import { shareCurrentPage } from "@/lib/share";
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { LikeActionButton } from "@/components/motion/like-action-button";
 import { DetailToolbar } from "@/components/detail-toolbar";
-import { Button } from "@/components/ui/button";
+import { DetailActionsMenu } from "@/components/detail-actions-menu";
 import type { DetailPanel } from "@/components/ui/detail-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { PendingAlertDialogAction } from "@/components/ui/pending-alert-dialog-action";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 export function IssueDetailToolbar({
   authorVisible,
@@ -78,52 +53,26 @@ export function IssueDetailToolbar({
                 />
               </label>
             ) : null}
-            <DropdownMenu>
-              <Tooltip>
-                <DropdownMenuTrigger asChild>
-                  <TooltipTrigger asChild>
-                    <Button
-                      aria-label={translate('ui.common.moreActions')}
-                      className="size-11 md:size-9"
-                      size="icon"
-                      variant="ghost"
-                    >
-                      <MoreHorizontal />
-                    </Button>
-                  </TooltipTrigger>
-                </DropdownMenuTrigger>
-                <TooltipContent>{translate('ui.common.moreActions')}</TooltipContent>
-              </Tooltip>
-              <DropdownMenuContent align="end">
-                {canManage ? (
-                  <DropdownMenuItem onSelect={onManage}>
-                    <ShieldCheck />{translate('ui.issue.manageStatus')}</DropdownMenuItem>
-                ) : null}
-                {canManage ? <DropdownMenuSeparator /> : null}
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <DropdownMenuItem
-                      className="text-destructive"
-                      onSelect={(event) => event.preventDefault()}
-                    >
-                      <Trash2 />{translate('ui.issue.delete')}</DropdownMenuItem>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>{translate('ui.issue.deleteTitle')}</AlertDialogTitle>
-                      <AlertDialogDescription>{translate('ui.issue.deleteDescription')}</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>{translate('ui.common.cancel')}</AlertDialogCancel>
-                      <PendingAlertDialogAction
-                        onConfirm={onDelete}
-                        state={deleteFeedbackState}
-                      >{translate('ui.common.confirmDelete')}</PendingAlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <DetailActionsMenu
+              items={
+                canManage
+                  ? [
+                      {
+                        icon: ShieldCheck,
+                        label: translate('ui.issue.manageStatus'),
+                        onSelect: onManage,
+                      },
+                    ]
+                  : []
+              }
+              remove={{
+                description: translate('ui.issue.deleteDescription'),
+                label: translate('ui.issue.delete'),
+                onConfirm: onDelete,
+                state: deleteFeedbackState,
+                title: translate('ui.issue.deleteTitle'),
+              }}
+            />
           </>
         ) : null
       }
