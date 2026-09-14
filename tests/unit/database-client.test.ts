@@ -8,7 +8,7 @@ interface TestPool {
 }
 
 describe("AppDatabaseClient", () => {
-  it("allows independent queries to overlap", async () => {
+  it("keeps independent queries on one sequential request connection", async () => {
     const database = new AppDatabaseClient("postgresql://unused");
     const pool = (database as unknown as { pool: TestPool }).pool;
     let activeQueries = 0;
@@ -30,6 +30,6 @@ describe("AppDatabaseClient", () => {
     ]);
     await database.close();
 
-    expect(peakQueries).toBe(2);
+    expect(peakQueries).toBe(1);
   });
 });

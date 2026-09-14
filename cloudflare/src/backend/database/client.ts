@@ -49,7 +49,7 @@ const JSON_FUNCTION_ARGUMENTS = new Map<string, Set<string>>([
 ]);
 
 const IDENTIFIER_PATTERN = /^[a-z_][a-z0-9_]*$/u;
-const DATABASE_QUERY_CONCURRENCY = 4;
+const DATABASE_QUERY_CONCURRENCY = 1;
 
 function quoteIdentifier(identifier: string) {
   if (!IDENTIFIER_PATTERN.test(identifier)) throw new Error("invalid-database-identifier");
@@ -181,6 +181,7 @@ export class AppDatabaseClient implements DatabaseSession {
   private connected = false;
   private closed = false;
   private connecting: Promise<void> | null = null;
+  private queryTail: Promise<unknown> = Promise.resolve();
   private readonly pool: Pool;
   private readonly session: DatabaseSession;
 
@@ -265,7 +266,11 @@ export class AppDatabaseClient implements DatabaseSession {
    * caller assembles. Everything the Worker itself runs goes through `sql`.
    */
   query<TRow extends Record<string, unknown>>(sql: string, values: unknown[] = []) {
-    return this.connect().then(() => this.pool.query<TRow>(sql, values));
+    const query = this.queryTail
+      .then(() => this.connect())
+      .then(() => this.pool.query<TRow>(sql, values));
+    this.queryTail = query.then(() => undefined, () => undefined);
+    return query;
   }
 }
 
