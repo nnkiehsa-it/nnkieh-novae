@@ -502,7 +502,9 @@ html[data-input-modality="pointer"] :focus-visible {
    column of them left most of a wide card empty while the list ran off the
    bottom of the screen; on anything wider than a phone the card carries two
    records side by side instead. The hairline belongs to the line of records
-   rather than to the record, so only the first line goes without one. */
+   rather than to the record, so only the first line goes without one, and a
+   second hairline stands between the columns so two records reading across do
+   not run together into one. */
 .rule-grid {
   display: grid;
 }
@@ -515,7 +517,13 @@ html[data-input-modality="pointer"] :focus-visible {
 @media (min-width: 640px) {
   .rule-grid {
     grid-template-columns: 1fr 1fr;
-    column-gap: 1.5rem;
+  }
+  .rule-grid > :nth-child(odd) {
+    padding-right: 1.25rem;
+  }
+  .rule-grid > :nth-child(even) {
+    padding-left: 1.25rem;
+    border-left: 1px solid var(--rule);
   }
   .rule-grid > :nth-child(2) {
     border-top: 0;
