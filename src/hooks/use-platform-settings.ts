@@ -5,6 +5,7 @@ import * as React from "react";
 import { useI18n } from "@/i18n";
 import { seedImageUploadSettings } from "@/hooks/use-categories";
 import { useDraft } from "@/hooks/use-draft";
+import { useRememberedState } from "@/hooks/use-remembered-state";
 import {
   estimateRetentionCleanup,
   getCategoryManagement,
@@ -20,21 +21,22 @@ function isPositive(value: unknown) {
 
 export function usePlatformSettings() {
   const { t } = useI18n();
-  const [stored, setStored] = React.useState<PlatformSettings | null>(null);
+  const { remember: setStored, value: stored } =
+    useRememberedState<PlatformSettings | null>("admin-platform-settings", null);
   const [error, setError] = React.useState("");
-  const [loading, setLoading] = React.useState(true);
+  const [reading, setReading] = React.useState(false);
 
   const load = React.useCallback(async () => {
-    setLoading(true);
+    setReading(true);
     setError("");
     try {
       setStored((await getCategoryManagement()).platformSettings);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("common.loadFailed"));
     } finally {
-      setLoading(false);
+      setReading(false);
     }
-  }, [t]);
+  }, [setStored, t]);
 
   React.useEffect(() => {
     void load();
@@ -57,5 +59,5 @@ export function usePlatformSettings() {
       && Object.values(value.imageUploads).every(isPositive),
   });
 
-  return { draft, error, load, loading };
+  return { draft, error, load, loading: stored === null && reading };
 }

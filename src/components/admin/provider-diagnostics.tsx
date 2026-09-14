@@ -1,12 +1,13 @@
 "use client";
 
-import { useProviderDiagnostics } from "@/hooks/use-provider-diagnostics";
+import {
+  DIAGNOSTIC_PROVIDERS,
+  useProviderDiagnostics,
+} from "@/hooks/use-provider-diagnostics";
 import { useI18n } from "@/i18n";
 import { Disclosure } from "@/components/ui/disclosure";
 import { Input } from "@/components/ui/input";
 import { ListActionRow, ListCustomRow, ListRow, ListSection } from "@/components/ui/list";
-
-const PROVIDERS = ["cloudinary", "cloudflare", "logs"] as const;
 
 /**
  * Whether the outside services answer, asked one at a time.
@@ -26,7 +27,7 @@ export function ProviderDiagnostics() {
           <ListRow label={<span role="alert">{state.error}</span>} tone="destructive" />
         </ListSection>
       ) : null}
-      {PROVIDERS.map((provider) => {
+      {DIAGNOSTIC_PROVIDERS.map((provider) => {
         const result = state.results[provider];
         return (
           <ListSection header={t(`ui.operations.provider.${provider}`)} key={provider}>
@@ -42,7 +43,7 @@ export function ProviderDiagnostics() {
               </ListCustomRow>
             ) : null}
             <ListActionRow
-              busy={state.pending === provider}
+              busy={state.busy(provider)}
               label={t("ui.adminConsole.refresh")}
               onClick={() => void state.load(provider)}
             />
@@ -66,7 +67,7 @@ export function ProviderDiagnostics() {
             ) : null}
             {result?.nextCursor ? (
               <ListActionRow
-                busy={state.pending === provider}
+                busy={state.busy(provider)}
                 label={t("ui.operations.nextPage")}
                 onClick={() => void state.load(provider, true)}
               />

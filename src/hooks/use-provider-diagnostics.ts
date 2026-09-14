@@ -1,24 +1,75 @@
 "use client";
-import { useState } from 'react';
-import { getProviderDiagnostics, type ProviderDiagnostic } from '@/services/operations-console';
 
+import { useCallback, useEffect, useState } from "react";
+
+import { useRememberedState } from "@/hooks/use-remembered-state";
+import {
+  getProviderDiagnostics,
+  type ProviderDiagnostic,
+} from "@/services/operations-console";
+
+export const DIAGNOSTIC_PROVIDERS = ["cloudinary", "cloudflare", "logs"] as const;
+
+export type DiagnosticProvider = (typeof DIAGNOSTIC_PROVIDERS)[number];
+
+interface DiagnosticsReading {
+  activeQuery: string;
+  results: Partial<Record<DiagnosticProvider, ProviderDiagnostic>>;
+}
+
+/**
+ * What the outside services last said.
+ *
+ * The panel used to be empty until each provider was asked by hand, and it
+ * emptied itself again as soon as the reader looked at another view. It asks
+ * every provider once now, keeps the answers, and re-asks only on request.
+ */
 export function useProviderDiagnostics() {
-  const [results, setResults] = useState<Record<string, ProviderDiagnostic>>({});
-  const [pending, setPending] = useState('');
-  const [error, setError] = useState('');
-  const [query,setQuery] = useState('');
-  const [activeQuery,setActiveQuery] = useState('');
-  async function load(provider: string, next = false) {
-    setPending(provider); setError('');
-    try {
-      const result = await getProviderDiagnostics({ provider,
-        ...(provider === 'logs' ? { query: next ? activeQuery : query } : {}),
-        ...(next && results[provider]?.nextCursor ? { cursor: results[provider].nextCursor!, until: results[provider].until } : {}) });
-      if (provider === 'logs' && !next) setActiveQuery(query);
-      setResults(current => ({ ...current, [provider]: result }));
-    }
-    catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
-    finally { setPending(''); }
-  }
-  return { results, pending, error, load, query,setQuery };
+  const { cold, remember, value } = useRememberedState<DiagnosticsReading>(
+    "admin-providers",
+    { activeQuery: "", results: {} },
+  );
+  const [query, setQuery] = useState(value.activeQuery);
+  const [pending, setPending] = useState<readonly string[]>([]);
+  const [error, setError] = useState("");
+
+  const load = useCallback(
+    async (provider: DiagnosticProvider, next = false) => {
+      const previous = value.results[provider];
+      setPending((current) => [...current, provider]);
+      setError("");
+      try {
+        const result = await getProviderDiagnostics({
+          provider,
+          ...(provider === "logs" ? { query: next ? value.activeQuery : query } : {}),
+          ...(next && previous?.nextCursor
+            ? { cursor: previous.nextCursor, until: previous.until }
+            : {}),
+        });
+        remember((current) => ({
+          activeQuery: provider === "logs" && !next ? query : current.activeQuery,
+          results: { ...current.results, [provider]: result },
+        }));
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : String(caught));
+      } finally {
+        setPending((current) => current.filter((entry) => entry !== provider));
+      }
+    },
+    [query, remember, value],
+  );
+
+  useEffect(() => {
+    if (!cold) return;
+    for (const provider of DIAGNOSTIC_PROVIDERS) void load(provider);
+  }, [cold, load]);
+
+  return {
+    busy: (provider: DiagnosticProvider) => pending.includes(provider),
+    error,
+    load,
+    query,
+    results: value.results,
+    setQuery,
+  };
 }

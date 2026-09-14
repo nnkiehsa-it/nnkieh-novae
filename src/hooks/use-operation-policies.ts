@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { useDraft } from "@/hooks/use-draft";
+import { useRememberedState } from "@/hooks/use-remembered-state";
 import { setOperationPolicies } from "@/lib/operation-policies";
 import {
   fetchOperationsConsole,
@@ -13,27 +14,38 @@ import type { OperationPolicies } from "@/generated/operations";
 
 export type { OperationsConsole } from "@/services/operations-console";
 
+interface PolicyReading {
+  history: OperationsConsole["history"];
+  revision: number;
+  values: OperationPolicies;
+}
+
 export function useOperationPolicies() {
-  const [stored, setStored] = React.useState<OperationPolicies | null>(null);
-  const [revision, setRevision] = React.useState(0);
-  const [history, setHistory] = React.useState<OperationsConsole["history"]>([]);
+  const { remember, value: reading } = useRememberedState<PolicyReading | null>(
+    "admin-policies",
+    null,
+  );
   const [error, setError] = React.useState("");
-  const [loading, setLoading] = React.useState(true);
+  const [busy, setBusy] = React.useState(false);
+  const stored = reading?.values ?? null;
+  const revision = reading?.revision ?? 0;
 
   const load = React.useCallback(async () => {
-    setLoading(true);
+    setBusy(true);
     setError("");
     try {
       const snapshot = await fetchOperationsConsole({ page: 0 });
-      setStored(snapshot.settings.values);
-      setRevision(snapshot.settings.revision);
-      setHistory(snapshot.history);
+      remember({
+        history: snapshot.history,
+        revision: snapshot.settings.revision,
+        values: snapshot.settings.values,
+      });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
-  }, []);
+  }, [remember]);
 
   React.useEffect(() => {
     void load();
@@ -44,8 +56,11 @@ export function useOperationPolicies() {
     save: async (values, reason) => {
       const saved = await saveOperationPolicies({ reason, revision, values });
       setOperationPolicies(saved.values);
-      setRevision(saved.revision);
-      setStored(saved.values);
+      remember((current) => ({
+        history: current?.history ?? [],
+        revision: saved.revision,
+        values: saved.values,
+      }));
       // Only the history is re-read, and only because the server owns the actor
       // and the timestamp on the entry just written. Nothing else on the screen
       // is thrown away to learn it.
@@ -55,5 +70,12 @@ export function useOperationPolicies() {
     source: stored,
   });
 
-  return { draft, error, history, load, loading, revision };
+  return {
+    draft,
+    error,
+    history: reading?.history ?? [],
+    load,
+    loading: reading === null && busy,
+    revision,
+  };
 }

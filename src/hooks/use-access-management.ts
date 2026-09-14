@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { useCategories } from "@/hooks/use-categories";
 import { useDraft } from "@/hooks/use-draft";
+import { useRememberedState } from "@/hooks/use-remembered-state";
 import {
   listScopeMembers,
   lookupAccessMember,
@@ -18,6 +19,19 @@ export type { AccessScope, AccessUser };
 
 interface ScopeMembers {
   uids: string[];
+}
+
+interface ScopeReading {
+  /** Everyone the screen can name, including people found by searching. */
+  known: AccessUser[];
+  uids: string[];
+}
+
+function scopeKey(scope: AccessScope | null) {
+  if (!scope) return "admin-access:none";
+  return scope.kind === "announcement"
+    ? "admin-access:announcement"
+    : `admin-access:${scope.kind}:${scope.categoryId}`;
 }
 
 /**
@@ -33,11 +47,9 @@ export function useAccessManagement() {
   const { t } = useI18n();
   const [kind, setKind] = React.useState<AccessScope["kind"]>("issue");
   const [categoryId, setCategoryId] = React.useState("");
-  const [known, setKnown] = React.useState<AccessUser[]>([]);
-  const [stored, setStored] = React.useState<ScopeMembers | null>(null);
   const [candidate, setCandidate] = React.useState<AccessUser | null>(null);
   const [query, setQuery] = React.useState("");
-  const [loading, setLoading] = React.useState(false);
+  const [busy, setBusy] = React.useState(false);
   const [searching, setSearching] = React.useState(false);
   const [error, setError] = React.useState("");
 
@@ -61,6 +73,16 @@ export function useAccessManagement() {
     [categoryId, kind],
   );
 
+  const { remember, value: reading } = useRememberedState<ScopeReading | null>(
+    scopeKey(scope),
+    null,
+  );
+  const known = reading?.known ?? [];
+  const stored = React.useMemo<ScopeMembers | null>(
+    () => (reading ? { uids: reading.uids } : null),
+    [reading],
+  );
+
   React.useEffect(() => {
     setCategoryId("");
     setCandidate(null);
@@ -72,23 +94,18 @@ export function useAccessManagement() {
   }, [categoryId, options]);
 
   const load = React.useCallback(async () => {
-    if (!scope) {
-      setKnown([]);
-      setStored(null);
-      return;
-    }
-    setLoading(true);
+    if (!scope) return;
+    setBusy(true);
     setError("");
     try {
       const members = (await listScopeMembers(scope)).users;
-      setKnown(members);
-      setStored({ uids: members.map((member) => member.uid) });
+      remember({ known: members, uids: members.map((member) => member.uid) });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
-  }, [scope, t]);
+  }, [remember, scope, t]);
 
   React.useEffect(() => {
     void load();
@@ -103,9 +120,8 @@ export function useAccessManagement() {
       const revoked = [...before].filter((uid) => !after.has(uid));
       for (const uid of granted) await setUserAccessScope(uid, scope, true);
       for (const uid of revoked) await setUserAccessScope(uid, scope, false);
-      const next = { uids: value.uids };
-      setStored(next);
-      return next;
+      remember((current) => ({ known: current?.known ?? [], uids: value.uids }));
+      return { uids: value.uids };
     },
     source: stored,
   });
@@ -118,9 +134,13 @@ export function useAccessManagement() {
       const found = (await lookupAccessMember(query.trim())).users[0] ?? null;
       setCandidate(found);
       if (found)
-        setKnown((current) =>
-          current.some((member) => member.uid === found.uid) ? current : [...current, found],
-        );
+        remember((current) => ({
+          known:
+            current && current.known.some((member) => member.uid === found.uid)
+              ? current.known
+              : [...(current?.known ?? []), found],
+          uids: current?.uids ?? [],
+        }));
     } catch (caught) {
       toast.error(caught instanceof Error ? caught.message : t("ui.access.searchFailed"));
     } finally {
@@ -143,7 +163,7 @@ export function useAccessManagement() {
     kind,
     known,
     load,
-    loading,
+    loading: reading === null && busy,
     members: memberUids
       .map((uid) => known.find((member) => member.uid === uid))
       .filter((member): member is AccessUser => member !== undefined),

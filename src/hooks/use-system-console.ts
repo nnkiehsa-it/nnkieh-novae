@@ -4,6 +4,7 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { useI18n } from "@/i18n";
+import { useRememberedState } from "@/hooks/use-remembered-state";
 import {
   listDeletionJobs,
   retryDeletionJob,
@@ -20,6 +21,12 @@ export type { OperationsConsole } from "@/services/operations-console";
 
 export type RetryKind = "cleanup" | "delivery" | "job" | "media";
 
+interface SystemReading {
+  mediaFailures: DeletionJob[];
+  page: number;
+  snapshot: OperationsConsole | null;
+}
+
 /**
  * Everything the platform is currently failing to finish, in one place.
  *
@@ -27,38 +34,42 @@ export type RetryKind = "cleanup" | "delivery" | "job" | "media";
  * what happens afterwards. Here a retry removes the row it belongs to and
  * leaves the rest of the screen alone, because re-reading the whole console to
  * learn that one entry is gone is how the expanded rows and the scroll position
- * used to disappear.
+ * used to disappear. The reading itself is kept, so returning to the screen
+ * shows what it last said instead of asking again.
  */
 export function useSystemConsole() {
   const { t } = useI18n();
-  const [snapshot, setSnapshot] = React.useState<OperationsConsole | null>(null);
-  const [mediaFailures, setMediaFailures] = React.useState<DeletionJob[]>([]);
-  const [page, setPage] = React.useState(0);
+  const { cold, remember, value } = useRememberedState<SystemReading>("admin-system", {
+    mediaFailures: [],
+    page: 0,
+    snapshot: null,
+  });
   const [error, setError] = React.useState("");
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(false);
   const [retrying, setRetrying] = React.useState("");
 
-  const load = React.useCallback(async (nextPage = 0) => {
-    setLoading(true);
-    setError("");
-    try {
-      const [console_, media] = await Promise.all([
-        fetchOperationsConsole({ page: nextPage }),
-        listDeletionJobs(),
-      ]);
-      setSnapshot(console_);
-      setMediaFailures(media);
-      setPage(nextPage);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const load = React.useCallback(
+    async (nextPage = 0) => {
+      setLoading(true);
+      setError("");
+      try {
+        const [console_, media] = await Promise.all([
+          fetchOperationsConsole({ page: nextPage }),
+          listDeletionJobs(),
+        ]);
+        remember({ mediaFailures: media, page: nextPage, snapshot: console_ });
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : String(caught));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [remember],
+  );
 
   React.useEffect(() => {
-    void load();
-  }, [load]);
+    if (cold) void load();
+  }, [cold, load]);
 
   const retry = React.useCallback(
     async (kind: RetryKind, id: string) => {
@@ -66,19 +77,25 @@ export function useSystemConsole() {
       try {
         if (kind === "media") {
           await retryDeletionJob(id);
-          setMediaFailures((current) => current.filter((entry) => entry.id !== id));
+          remember((current) => ({
+            ...current,
+            mediaFailures: current.mediaFailures.filter((entry) => entry.id !== id),
+          }));
         } else {
           await retryOperationalWork({ id, kind });
-          setSnapshot((current) =>
-            current
-              ? {
-                  ...current,
-                  cleanupBacklog: current.cleanupBacklog.filter((entry) => entry.jobId !== id),
-                  failedDeliveries: current.failedDeliveries.filter((entry) => entry.id !== id),
-                  jobs: current.jobs.filter((entry) => entry.id !== id),
-                }
-              : current,
-          );
+          remember((current) => ({
+            ...current,
+            snapshot: current.snapshot && {
+              ...current.snapshot,
+              cleanupBacklog: current.snapshot.cleanupBacklog.filter(
+                (entry) => entry.jobId !== id,
+              ),
+              failedDeliveries: current.snapshot.failedDeliveries.filter(
+                (entry) => entry.id !== id,
+              ),
+              jobs: current.snapshot.jobs.filter((entry) => entry.id !== id),
+            },
+          }));
         }
         toast.success(t("admin.retryQueued"));
       } catch (caught) {
@@ -87,8 +104,17 @@ export function useSystemConsole() {
         setRetrying("");
       }
     },
-    [t],
+    [remember, t],
   );
 
-  return { error, load, loading, mediaFailures, page, retry, retrying, snapshot };
+  return {
+    error,
+    load,
+    loading,
+    mediaFailures: value.mediaFailures,
+    page: value.page,
+    retry,
+    retrying,
+    snapshot: value.snapshot,
+  };
 }

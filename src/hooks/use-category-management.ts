@@ -5,6 +5,7 @@ import * as React from "react";
 import { useI18n } from "@/i18n";
 import { useCategories } from "@/hooks/use-categories";
 import { useDraft } from "@/hooks/use-draft";
+import { useRememberedState } from "@/hooks/use-remembered-state";
 import {
   estimateCategoryPolicyChanges,
   getCategoryManagement,
@@ -22,6 +23,12 @@ import type { FacilityCategoryConfig, IssueCategoryConfig } from "@/types/catego
 
 export type { CategoryManagementInput } from "@/services/categories";
 
+interface CategoryReading {
+  /** The identifiers the backend already holds, which may no longer be renamed. */
+  persisted: string[];
+  stored: CategoryManagementInput;
+}
+
 function withSortOrder<T>(items: T[]) {
   return items.map((item, sortOrder) => ({ ...item, sortOrder }));
 }
@@ -29,10 +36,14 @@ function withSortOrder<T>(items: T[]) {
 export function useCategoryManagement() {
   const categories = useCategories();
   const { t } = useI18n();
-  const [stored, setStored] = React.useState<CategoryManagementInput | null>(null);
-  const [persisted, setPersisted] = React.useState<ReadonlySet<string>>(new Set());
+  const { remember, value: reading } = useRememberedState<CategoryReading | null>(
+    "admin-categories",
+    null,
+  );
   const [error, setError] = React.useState("");
-  const [loading, setLoading] = React.useState(true);
+  const [busy, setBusy] = React.useState(false);
+  const stored = reading?.stored ?? null;
+  const persisted = React.useMemo(() => new Set(reading?.persisted ?? []), [reading]);
 
   const adopt = React.useCallback(
     (result: {
@@ -44,34 +55,34 @@ export function useCategoryManagement() {
       };
       issueCategories: IssueCategoryConfig[];
     }) => {
-      setStored({
-        announcementCommentsEnabled: result.features.announcementCommentsEnabled,
-        deletedFacilityCategoryIds: [],
-        deletedIssueCategoryIds: [],
-        facilitiesEnabled: result.features.facilitiesEnabled,
-        facilityCategories: result.facilityCategories,
-        issueCategories: result.issueCategories,
-        issuesEnabled: result.features.issuesEnabled,
-      });
-      setPersisted(
-        new Set([
+      remember({
+        persisted: [
           ...result.issueCategories.map((item) => item.id),
           ...result.facilityCategories.map((item) => item.id),
-        ]),
-      );
+        ],
+        stored: {
+          announcementCommentsEnabled: result.features.announcementCommentsEnabled,
+          deletedFacilityCategoryIds: [],
+          deletedIssueCategoryIds: [],
+          facilitiesEnabled: result.features.facilitiesEnabled,
+          facilityCategories: result.facilityCategories,
+          issueCategories: result.issueCategories,
+          issuesEnabled: result.features.issuesEnabled,
+        },
+      });
     },
-    [],
+    [remember],
   );
 
   const load = React.useCallback(async () => {
-    setLoading(true);
+    setBusy(true);
     setError("");
     try {
       adopt(await getCategoryManagement());
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("common.loadFailed"));
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   }, [adopt, t]);
 
@@ -105,13 +116,13 @@ export function useCategoryManagement() {
         facilityCategories: result.facilityCategories,
         issueCategories: result.issueCategories,
       };
-      setStored(next);
-      setPersisted(
-        new Set([
+      remember({
+        persisted: [
           ...result.issueCategories.map((item) => item.id),
           ...result.facilityCategories.map((item) => item.id),
-        ]),
-      );
+        ],
+        stored: next,
+      });
       await categories.refresh();
       notifyPlatformJobsChanged();
       return next;
@@ -177,7 +188,7 @@ export function useCategoryManagement() {
     draft,
     error,
     load,
-    loading,
+    loading: reading === null && busy,
     persisted,
     setDefaultFacility: (index: number) =>
       draft.update((current) => ({

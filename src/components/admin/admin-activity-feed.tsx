@@ -74,7 +74,7 @@ const WINDOWS: ReadonlyArray<{ labelKey: string; value: AdminOverviewWindow }> =
 export function AdminActivityFeed() {
   const { t } = useI18n();
   const [period, setPeriod] = React.useState<AdminOverviewWindow>("24h");
-  const activity = useAdminActivity(period, true);
+  const activity = useAdminActivity(period);
 
   return (
     <div className="space-y-5">

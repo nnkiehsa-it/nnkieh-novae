@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { useI18n } from "@/i18n";
+import { useRememberedState } from "@/hooks/use-remembered-state";
 import { useSession } from "@/hooks/use-session";
 import {
   fetchAdminOverview,
@@ -22,17 +23,21 @@ export type { AdminOverviewData, AdminOverviewWindow } from "@/services/admin-co
  * the admin one re-read the whole dashboard on every mount -- bypassing its own
  * short-lived cache -- only to add four counters together. Here the dashboard is
  * read once through that cache, and changing the reporting window re-reads only
- * the window that changed.
+ * the window that changed -- and only the first time that window is asked for,
+ * because a window already read stays on screen until the reader refreshes it.
  */
 export function useAdminOverview(period: AdminOverviewWindow) {
   const session = useSession();
   const { t } = useI18n();
-  const [activity, setActivity] = React.useState<AdminOverviewData | null>(null);
+  const { cold, remember, value: activity } = useRememberedState<AdminOverviewData | null>(
+    `admin-overview:${period}`,
+    null,
+  );
   const [platform, setPlatform] = React.useState<PlatformDashboardData | null>(() =>
     getViewMemory<PlatformDashboardData>(session.user?.uid, "dashboard"),
   );
   const [error, setError] = React.useState("");
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(false);
 
   const load = React.useCallback(
     async (forceRefresh = false) => {
@@ -43,7 +48,7 @@ export function useAdminOverview(period: AdminOverviewWindow) {
           fetchAdminOverview(period),
           fetchPlatformDashboard({ forceRefresh }),
         ]);
-        setActivity(nextActivity);
+        remember(nextActivity);
         setPlatform(nextPlatform);
       } catch (caught) {
         setError(
@@ -53,12 +58,13 @@ export function useAdminOverview(period: AdminOverviewWindow) {
         setLoading(false);
       }
     },
-    [period, t],
+    [period, remember, t],
   );
 
+  const unread = cold || !platform;
   React.useEffect(() => {
-    void load();
-  }, [load]);
+    if (unread) void load();
+  }, [load, unread]);
 
   React.useEffect(() => {
     if (platform) setViewMemory(session.user?.uid, "dashboard", platform);
