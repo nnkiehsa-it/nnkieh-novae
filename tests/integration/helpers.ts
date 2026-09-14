@@ -8,7 +8,7 @@ import { getBackendActionDefinition } from "../../cloudflare/src/backend/actions
 import { resolveAuthContext } from "../../cloudflare/src/backend/actions/auth.ts";
 import { executeBackendAction } from "../../cloudflare/src/backend/actions/execution.ts";
 import { withRuntimeEnvironment } from "../../cloudflare/src/backend/shared/env.ts";
-import { loadOperationPolicies } from "../../cloudflare/src/backend/shared/operation-policies.ts";
+import { forgetOperationPolicies, withOperationPolicies } from "../../cloudflare/src/backend/shared/operation-policies.ts";
 import type {
   AuthContext,
   BackendDatabase,
@@ -152,6 +152,7 @@ beforeEach(async () => {
   await ownerDatabase.query(contentVersionIdentitySql);
   await ownerDatabase.query(integrationSeedSql);
   businessLimits.clear();
+  forgetOperationPolicies();
 });
 
 afterAll(async () => {
@@ -267,7 +268,8 @@ export async function callAction(
   const definition = getBackendActionDefinition(actionName);
   assert.ok(definition, `Missing backend action definition: ${actionName}`);
   const opId = operationId || crypto.randomUUID();
-  return await executeBackendAction(definition, payload, auth, database as BackendDatabase, opId);
+  return await underPolicies(() =>
+    executeBackendAction(definition, payload, auth, database as BackendDatabase, opId));
 }
 
 export async function expectActionError(
@@ -388,6 +390,7 @@ export async function tableRow(
   return data as JsonRecord | null;
 }
 
-export async function currentPolicies() {
-  return (await loadOperationPolicies(database as BackendDatabase)).values;
+/** Runs work the way the Worker runs it: under the stored policies. */
+export function underPolicies<T>(run: () => Promise<T>) {
+  return withOperationPolicies(database as BackendDatabase, run);
 }

@@ -6,7 +6,6 @@ import { claimBackendActionBusinessLimit, claimBackendActionBurstLimit } from ".
 import type { BackendActionDefinition } from "./action-registry.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { toApiJson } from "./response.ts";
-import { loadOperationPolicies, withOperationPolicies } from "../shared/operation-policies.ts";
 
 const RESTRICTED_INTERACTION_ACTIONS = new Set([
   "createAnnouncementComment",
@@ -45,17 +44,6 @@ function auditDetail(payload: JsonRecord) {
 }
 
 export async function executeBackendAction(
-  definition: BackendActionDefinition,
-  payload: JsonRecord,
-  auth: AuthContext,
-  database: BackendDatabase,
-  operationId: string,
-) {
-  const policies = await loadOperationPolicies(database);
-  return withOperationPolicies(policies.values, () => executeAction(definition, payload, auth, database, operationId));
-}
-
-async function executeAction(
   definition: BackendActionDefinition,
   payload: JsonRecord,
   auth: AuthContext,

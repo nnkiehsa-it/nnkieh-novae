@@ -2,8 +2,20 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { OPERATION_POLICIES, type OperationPolicies } from '../../../generated/operations';
 import type { DatabaseSession } from '../database/client';
 
-const activePolicies = new AsyncLocalStorage<OperationPolicies>();
+const activePolicies = new AsyncLocalStorage<PolicySnapshot>();
 export interface PolicySnapshot { revision: number; values: OperationPolicies }
+
+/**
+ * How long an isolate may answer from the settings it has already read.
+ *
+ * Every entry point needs the policies, and reading them cost one round trip
+ * per request even though they change a few times a year. An isolate reads
+ * them once a minute instead; a saved change reaches the rest of the world
+ * within that minute, and the console that edits them always reads afresh so
+ * it can never write against a revision it did not see.
+ */
+const POLICY_READ_MAX_AGE_MS = 60_000;
+let reading: { expiresAt: number; pending: Promise<PolicySnapshot> } | undefined;
 
 export function validateOperationPolicies(value: unknown): OperationPolicies {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('validation-invalid');
@@ -16,7 +28,8 @@ export function validateOperationPolicies(value: unknown): OperationPolicies {
   return input as OperationPolicies;
 }
 
-export async function loadOperationPolicies(database: DatabaseSession): Promise<PolicySnapshot> {
+/** The stored settings, as they are right now. */
+export async function readOperationPolicies(database: DatabaseSession): Promise<PolicySnapshot> {
   const { data, error } = await database.table('app_private', 'runtime_settings')
     .select('value').eq('key', 'operations_settings').single();
   if (error) throw error;
@@ -24,12 +37,36 @@ export async function loadOperationPolicies(database: DatabaseSession): Promise<
   return { revision: stored.revision, values: validateOperationPolicies(stored.values) };
 }
 
-export function withOperationPolicies<T>(policies: OperationPolicies, callback: () => T) {
-  return activePolicies.run(policies, callback);
+function cachedOperationPolicies(database: DatabaseSession): Promise<PolicySnapshot> {
+  if (!reading || reading.expiresAt <= Date.now()) {
+    const entry = { expiresAt: Date.now() + POLICY_READ_MAX_AGE_MS, pending: readOperationPolicies(database) };
+    reading = entry;
+    entry.pending.catch(() => { if (reading === entry) reading = undefined; });
+  }
+  return reading.pending;
+}
+
+/** Forgets the read, so the next one sees a change this isolate just made. */
+export function forgetOperationPolicies() {
+  reading = undefined;
+}
+
+/**
+ * Runs the work with the policies in force, which is how everything under it
+ * reads one: `operationPolicy('commentLength')` rather than a value threaded
+ * through every call between here and there.
+ */
+export async function withOperationPolicies<T>(database: DatabaseSession, callback: () => Promise<T>): Promise<T> {
+  const snapshot = await cachedOperationPolicies(database);
+  return activePolicies.run(snapshot, callback);
 }
 
 export function operationPolicy(key: keyof OperationPolicies) {
-  const policies = activePolicies.getStore();
-  if (!policies) throw new Error('operation-policies-not-loaded');
-  return policies[key];
+  return operationPolicies().values[key];
+}
+
+export function operationPolicies(): PolicySnapshot {
+  const snapshot = activePolicies.getStore();
+  if (!snapshot) throw new Error('operation-policies-not-loaded');
+  return snapshot;
 }

@@ -5,7 +5,7 @@ import { errorStatus, publicErrorBody } from "./shared/http.ts";
 import { createFunctionLogger } from "./shared/observability.ts";
 import { RATE_LIMITS } from "./shared/rate-limits.ts";
 import { claimFixedWindowRateLimit, utcHourWindow } from "./shared/business-rate-limit.ts";
-import { loadOperationPolicies } from "./shared/operation-policies.ts";
+import { operationPolicy } from "./shared/operation-policies.ts";
 
 function adminEmails() {
   const emails = requireEnv("ADMIN_EMAILS")
@@ -19,8 +19,7 @@ function adminEmails() {
 export async function handleSyncUser(user: FirebaseAuthContext, database: AppDatabaseClient) {
   const log = createFunctionLogger("syncUser");
   try {
-    const { values } = await loadOperationPolicies(database);
-    await claimFixedWindowRateLimit(user.uid, "auth.sync", utcHourWindow(), { ...RATE_LIMITS.loginSyncHourly, limit: values.loginSyncHourly });
+    await claimFixedWindowRateLimit(user.uid, "auth.sync", utcHourWindow(), { ...RATE_LIMITS.loginSyncHourly, limit: operationPolicy('loginSyncHourly') });
 
     const { error: conflictError } = await database.table("app_private", "user_profiles")
       .update({ email: null })

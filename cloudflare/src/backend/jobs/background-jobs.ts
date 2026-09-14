@@ -3,7 +3,7 @@ import { deleteCloudinaryAsset } from "../shared/cloudinary.ts";
 import { markNotionPageDeleted, reconcileNotionPages } from "../shared/notion.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
 import { asRecord, asString } from "../shared/http.ts";
-import type { OperationPolicies } from "../../../generated/operations";
+import { operationPolicy } from "../shared/operation-policies.ts";
 import type { Json } from "../database/schema.ts";
 
 export interface BackgroundJobItem {
@@ -16,10 +16,10 @@ export interface BackgroundJobItem {
   last_attempt_id: string;
 }
 
-export async function processBackgroundJobs(database: AppDatabaseClient, policies: OperationPolicies) {
+export async function processBackgroundJobs(database: AppDatabaseClient) {
   const log = createFunctionLogger("processBackgroundJobs");
   const { data: policyResult, error: policyError } = await database.call(
-    "app_api", "backend_process_platform_job_batch", { batch_size: policies.policyBatchSize },
+    "app_api", "backend_process_platform_job_batch", { batch_size: operationPolicy('policyBatchSize') },
   );
   if (policyError) {
     log.error("policy-batch.failed", policyError);
@@ -27,7 +27,7 @@ export async function processBackgroundJobs(database: AppDatabaseClient, policie
   }
   if (asRecord(policyResult).failed === true) log.warn('policy-batch.failed', { jobId: asString(asRecord(policyResult).jobId) });
   const { data, error } = await database.call("app_api", "claim_background_jobs", {
-    requested_batch_size: policies.jobBatchSize,
+    requested_batch_size: operationPolicy('jobBatchSize'),
   });
   if (error) throw error;
   const jobs = (data ?? []) as BackgroundJobItem[];
@@ -103,7 +103,7 @@ export async function processBackgroundJobs(database: AppDatabaseClient, policie
     .in("status", ["pending", "processing"]).limit(1);
   if (remainingError) throw remainingError;
   return {
-    hasMore: jobs.length === policies.jobBatchSize || remainingPolicies.length > 0,
+    hasMore: jobs.length === operationPolicy('jobBatchSize') || remainingPolicies.length > 0,
     processedCount: jobs.length,
     policy: policyResult,
   };

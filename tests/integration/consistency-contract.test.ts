@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {
   asRecord,
   callAction,
-  currentPolicies,
+  underPolicies,
   database,
   integrationTest,
   ownerQuery,
@@ -184,8 +184,8 @@ integrationTest("realtime deliveries use subscriber topics and carry operation a
     },
   } as unknown as Env;
 
-  await processInAppDeliveries(database, env, await currentPolicies());
-  await processRealtimeDeliveries(database, env, await currentPolicies());
+  await underPolicies(() => processInAppDeliveries(database, env));
+  await underPolicies(() => processRealtimeDeliveries(database, env));
   const contentDeliveries = published.filter((delivery) => delivery.event === "content_changed");
   assert.deepEqual(
     contentDeliveries.map((delivery) => delivery.topic).sort(),

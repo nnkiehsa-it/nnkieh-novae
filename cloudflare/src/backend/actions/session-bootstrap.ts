@@ -2,7 +2,7 @@ import { asRecord } from "../shared/http.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { asBoolean } from "./utils.ts";
 import { loadPlatformSettings } from "../shared/platform-settings.ts";
-import { loadOperationPolicies } from "../shared/operation-policies.ts";
+import { operationPolicies } from "../shared/operation-policies.ts";
 
 export async function getSessionBootstrap(
   payload: JsonRecord,
@@ -23,7 +23,7 @@ export async function getSessionBootstrap(
   const platformSettings = await loadPlatformSettings(database);
 
   return {
-    runtimePolicies: await loadOperationPolicies(database),
+    runtimePolicies: operationPolicies(),
     access: {
       role: auth.roles.includes("platform-admin") ? "admin" : "user",
       roles: auth.roles,

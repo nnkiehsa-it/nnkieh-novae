@@ -7,7 +7,6 @@ import { claimBackendHealthcheckRateLimit } from "./rate-limit.ts";
 import { errorResponse, successResponse } from "./response.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
 import { executeBackendAction } from "./execution.ts";
-import { loadOperationPolicies, withOperationPolicies } from "../shared/operation-policies.ts";
 import { recordOperationalError } from "../shared/operational-telemetry.ts";
 import type { FirebaseAuthContext } from "../shared/firebase-auth.ts";
 
@@ -27,8 +26,7 @@ export async function handleBackendAction(
 
     if (action === "healthcheck") {
       const data = await handleHealthcheck(request, database);
-      const { values } = await loadOperationPolicies(database);
-      await withOperationPolicies(values, claimBackendHealthcheckRateLimit);
+      await claimBackendHealthcheckRateLimit();
       log.success("backend-action.completed", { action, domain: "system", operationId, status: 200 });
       return successResponse(data, operationId);
     }

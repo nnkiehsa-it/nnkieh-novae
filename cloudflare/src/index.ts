@@ -29,6 +29,7 @@ import { handleSyncUser } from "./backend/sync-user";
 import { handleCloudinaryWebhook } from "./backend/cloudinary-webhook";
 import { createRealtimeTicket } from "./backend/realtime-ticket";
 import { withRuntimeEnvironment } from "./backend/shared/env";
+import { withOperationPolicies } from "./backend/shared/operation-policies";
 import { processJobMessage, type JobMessage } from "./backend/jobs/consumer";
 import { BusinessRateLimiter } from "./durable/business-rate-limiter";
 import { RealtimeHub } from "./durable/realtime-hub";
@@ -112,7 +113,8 @@ async function handleAction(
 
   const database = await createDatabaseClient(env);
   try {
-    const response = await handleBackendAction(request, body, operationId, database, firebaseUser, invocationId);
+    const response = await withOperationPolicies(database, () =>
+      handleBackendAction(request, body, operationId, database, firebaseUser, invocationId));
     if (response.ok && policy?.group !== "read") ctx.waitUntil(env.JOBS.send({ type: "drain" }));
     return addCors(response, request, env);
   } finally {
@@ -128,7 +130,7 @@ async function handleSync(request: Request, env: Env, operationId: string) {
   await claimSyncUser(env, user.uid);
   const database = await createDatabaseClient(env);
   try {
-    return addCors(await handleSyncUser(user, database), request, env);
+    return addCors(await withOperationPolicies(database, () => handleSyncUser(user, database)), request, env);
   } finally {
     await database.close();
   }
@@ -154,7 +156,8 @@ async function handleRealtimeTicket(request: Request, env: Env, operationId: str
   await claimRealtimeTicketRateLimit(env, user.uid);
   const database = await createDatabaseClient(env);
   try {
-    return jsonResponse(request, env, { data: await createRealtimeTicket(user, database), success: true });
+    const ticket = await withOperationPolicies(database, () => createRealtimeTicket(user, database));
+    return jsonResponse(request, env, { data: ticket, success: true });
   } finally {
     await database.close();
   }

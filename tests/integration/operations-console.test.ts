@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { processBackgroundJobs } from "../../cloudflare/src/backend/jobs/background-jobs.ts";
-import { asRecord, currentPolicies, database, integrationTest, seedActor, callAction, testEnvironment } from "./helpers.ts";
+import { asRecord, underPolicies, database, integrationTest, seedActor, callAction, testEnvironment } from "./helpers.ts";
 import { DEFAULT_OPERATION_POLICIES } from '../../cloudflare/generated/operations';
 import { runMaintenance } from '../../cloudflare/src/backend/jobs/maintenance';
 import { processInAppDeliveries } from '../../cloudflare/src/backend/jobs/deliveries';
@@ -16,7 +16,7 @@ integrationTest("production background consumer executes retention batches and p
   [oldId, freshId, crypto.randomUUID()]);
   const { error } = await database.call("app_api", "run_scheduled_maintenance_cleanup");
   if (error) throw error;
-  await processBackgroundJobs(database, await currentPolicies());
+  await underPolicies(() => processBackgroundJobs(database));
   const rows = await database.query<{ id: string }>("select id from app_private.notifications where id = any($1::uuid[])", [[oldId, freshId]]);
   assert.deepEqual(rows.rows.map(row => row.id), [freshId]);
   const jobs = await database.query<{ affected_rows: number; status: string }>("select affected_rows,status from app_private.background_jobs where job_type='retention_cleanup'");
@@ -70,7 +70,7 @@ integrationTest("production background consumer applies announcement policy to e
   const announcement = asRecord(result.announcement);
   await callAction('savePlatformFeatures', { issuesEnabled: true, facilitiesEnabled: true, announcementCommentsEnabled: false }, admin.auth);
   for (let batch = 0; batch < 10; batch += 1) {
-    if (!(await processBackgroundJobs(database, await currentPolicies())).hasMore) break;
+    if (!(await underPolicies(() => processBackgroundJobs(database))).hasMore) break;
   }
   const content = await database.query<{ comments_enabled: boolean }>("select comments_enabled from app_private.announcements where id=$1", [announcement.id]);
   assert.equal(content.rows[0]?.comments_enabled, false);
@@ -119,7 +119,7 @@ integrationTest('expired unreferenced domain events release operation storage wh
   await database.query(`insert into app_private.domain_events(event_id,operation_id,event_type,aggregate_type,aggregate_id,actor_uid,occurred_at)
     values($1,$2,'issue.created','issue','expired','retention-test',now()-interval '40 days')`,[event,operation]);
   await database.query('select app_api.run_scheduled_maintenance_cleanup()');
-  for(let i=0;i<10;i++) if(!(await processBackgroundJobs(database, await currentPolicies())).hasMore) break;
+  for(let i=0;i<10;i++) if(!(await underPolicies(() => processBackgroundJobs(database))).hasMore) break;
   assert.equal((await database.query('select event_id from app_private.domain_events where event_id=$1',[event])).rows.length,0);
   assert.equal((await database.query('select operation_id from app_private.operations where operation_id=$1',[operation])).rows.length,0);
 });
@@ -156,11 +156,11 @@ integrationTest('Notion metadata expiry queues external archival and disabled No
   const pageId = crypto.randomUUID();
   await database.query(`insert into app_private.notion_pages(target_type,target_id,notion_page_id,updated_at)
     values('system-log','old-event',$1,now()-interval '400 days')`,[pageId]);
-  await runMaintenance(database, await currentPolicies());
+  await underPolicies(() => runMaintenance(database));
   assert.equal((await database.query('select target_id from app_private.notion_pages where notion_page_id=$1',[pageId])).rows.length,0);
   const queued = await database.query<{id:string}>(`select id from app_private.background_jobs where payload->>'notion_page_id'=$1`,[pageId]);
   assert.equal(queued.rows.length,1);
-  await processBackgroundJobs(database, await currentPolicies());
+  await underPolicies(() => processBackgroundJobs(database));
   const result = await database.query<{status:string;error_detail:unknown}>('select status,error_detail from app_private.background_jobs where id=$1',[queued.rows[0].id]);
   assert.equal(result.rows[0].status,'failed');
   assert.ok(JSON.stringify(result.rows[0].error_detail).includes('notion-not-configured'));
@@ -175,7 +175,7 @@ integrationTest('expired replay bodies are compacted without deleting audit iden
   await callAction('createAnnouncement',input,admin.auth,id);
   await database.query(`update app_private.operations set expires_at=now()-interval '1 day' where operation_id=$1`,[id]);
   await database.query('select app_api.run_scheduled_maintenance_cleanup()');
-  for(let i=0;i<10;i++) if(!(await processBackgroundJobs(database, await currentPolicies())).hasMore) break;
+  for(let i=0;i<10;i++) if(!(await underPolicies(() => processBackgroundJobs(database))).hasMore) break;
   const row = await database.query<{response:unknown;response_expired:boolean}>('select response,response_expired from app_private.operations where operation_id=$1',[id]);
   assert.equal(row.rows[0].response,null);
   assert.equal(row.rows[0].response_expired,true);
@@ -193,7 +193,7 @@ integrationTest('notification persistence failure leaves delivery failed instead
     }
   }
   const failing = new FailingNotificationDatabase(String(testEnvironment.DATABASE_URL));
-  try { await processInAppDeliveries(failing,testEnvironment, await currentPolicies()); }
+  try { await underPolicies(() => processInAppDeliveries(failing,testEnvironment)); }
   finally { await failing.close(); }
   const rows = await database.query<{status:string;error_detail:unknown}>(`select status,error_detail from app_private.event_deliveries where destination='in_app'`);
   assert.ok(rows.rows.length > 0);

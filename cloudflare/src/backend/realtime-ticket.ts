@@ -3,7 +3,7 @@ import type { AppDatabaseClient } from "./database/client.ts";
 import { resolveAuthContext } from "./actions/auth.ts";
 import type { FirebaseAuthContext } from "./shared/firebase-auth.ts";
 import { requireEnv } from "./shared/env.ts";
-import { loadOperationPolicies } from "./shared/operation-policies.ts";
+import { operationPolicy } from "./shared/operation-policies.ts";
 
 function websocketUrl() {
   const url = new URL("/v1/realtime", requireEnv("PUBLIC_API_URL"));
@@ -22,8 +22,7 @@ export async function createRealtimeTicket(firebaseUser: FirebaseAuthContext, da
     ...(auth.isAdmin ? ["notifications:admin"] : []),
   ];
   const issuedAt = Math.floor(Date.now() / 1000);
-  const { values } = await loadOperationPolicies(database);
-  const expiresAt = issuedAt + values.realtimeTicketSeconds;
+  const expiresAt = issuedAt + operationPolicy('realtimeTicketSeconds');
   const ticket = await new SignJWT({ topics })
     .setProtectedHeader({ alg: "HS256", typ: "JWT" })
     .setIssuer("novae-api")

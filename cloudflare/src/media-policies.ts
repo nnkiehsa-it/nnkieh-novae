@@ -1,18 +1,16 @@
 import type { Env } from './types';
 import { createDatabaseClient } from './backend/database/client';
-import { loadOperationPolicies } from './backend/shared/operation-policies';
+import { operationPolicies, withOperationPolicies } from './backend/shared/operation-policies';
 
-let cached: { expiresAt: number; pending: ReturnType<typeof read> } | undefined;
-async function read(env: Env) {
+/**
+ * The policies a signed media request runs under.
+ *
+ * Media is the one entry point with no database work of its own, so it opens a
+ * connection for the settings alone; the shared read means it only does that
+ * when nothing in this isolate has read them in the last minute.
+ */
+export async function mediaPolicies(env: Env) {
   const database = await createDatabaseClient(env);
-  try { return await loadOperationPolicies(database); }
+  try { return await withOperationPolicies(database, async () => operationPolicies()); }
   finally { await database.close(); }
-}
-export function mediaPolicies(env: Env) {
-  if (!cached || cached.expiresAt <= Date.now()) {
-    const entry = { expiresAt: Date.now() + 60_000, pending: read(env) };
-    cached = entry;
-    entry.pending.catch(() => { if (cached === entry) cached = undefined; });
-  }
-  return cached.pending;
 }

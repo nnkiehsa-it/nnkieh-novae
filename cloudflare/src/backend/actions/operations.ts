@@ -1,9 +1,9 @@
-import { loadOperationPolicies, validateOperationPolicies } from '../shared/operation-policies';
+import { forgetOperationPolicies, readOperationPolicies, validateOperationPolicies } from '../shared/operation-policies';
 import type { AuthContext, BackendDatabase, JsonRecord } from './types';
 import { providerDiagnostics } from '../shared/provider-diagnostics';
 
 export async function handleOperationsAction(action: string, payload: JsonRecord, auth: AuthContext, database: BackendDatabase) {
-  if (action === 'getRuntimePolicies') return loadOperationPolicies(database);
+  if (action === 'getRuntimePolicies') return readOperationPolicies(database);
   if (!auth.isAdmin) throw new Error('permission-denied');
   if (action === 'getProviderDiagnostics') {
     if (!['cloudinary','cloudflare','logs'].includes(String(payload.provider))) throw new Error('validation-invalid');
@@ -37,6 +37,7 @@ export async function handleOperationsAction(action: string, payload: JsonRecord
       'select app_api.save_operation_policies($1,$2,$3::jsonb,$4) as value',
       [auth.uid, payload.revision, JSON.stringify(values), payload.reason],
     );
+    forgetOperationPolicies();
     return result.rows[0].value;
   }
   if (action === 'getOperationsConsole') {
@@ -44,7 +45,7 @@ export async function handleOperationsAction(action: string, payload: JsonRecord
     if (!Number.isInteger(page) || Number(page) < 0 || Number(page) > 1_000_000) throw new Error('validation-invalid');
     const offset = [Number(page) * 100];
     const [settings, capacity, jobs, deliveries, history, errors, metrics, failedDeliveries, cleanupBacklog] = await Promise.all([
-      loadOperationPolicies(database),
+      readOperationPolicies(database),
       database.query(`select relname as name, n_live_tup as rows, n_dead_tup as dead_rows,
         pg_table_size(relid) as table_bytes, pg_indexes_size(relid) as index_bytes,
         pg_total_relation_size(relid) as total_bytes, last_autovacuum, last_autoanalyze
