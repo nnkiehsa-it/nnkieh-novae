@@ -74,7 +74,7 @@ test('navigation direction follows the information hierarchy in both directions'
     't-route-enter',
   );
 
-  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await page.goBack();
   await page.waitForURL(/\/issues\/[^/]+$/u);
   await expect.poll(() => navigationDirection(page)).toBe('pop');
   // Next dispatches a history traversal outside a React Transition so that Back
@@ -238,7 +238,7 @@ test('a cancelled sheet drag settles in place without replaying its arrival', as
 });
 
 test('nested sheets keep every previous layer visible in the stack', async ({ browser }) => {
-  const { context, page } = await newUserPage(browser, 'admin');
+  const { context, page } = await newUserPage(browser, 'ordinary');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/issues');
   const card = page.locator('.t-card a[href^="/issues/"]').first();
@@ -247,11 +247,11 @@ test('nested sheets keep every previous layer visible in the stack', async ({ br
   await page.waitForURL(/\/issues\/[^/]+\/[^/]+$/u);
   const detail = page.getByRole('dialog').first();
   await expect(detail).toBeVisible();
-  const moreActions = detail.getByRole('button', { name: 'More actions' });
-  await expect(moreActions).toBeVisible();
-  await moreActions.click();
+  const commentSort = detail.getByRole('button', { name: 'Comment order' });
+  await expect(commentSort).toBeVisible();
+  await commentSort.click();
 
-  const sheets = page.getByRole('dialog');
+  const sheets = page.locator('[data-slot="dialog-content"].t-sheet');
   await expect(sheets).toHaveCount(2);
   const actions = sheets.last();
   await expect(actions).toBeVisible();
