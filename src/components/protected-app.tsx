@@ -37,7 +37,16 @@ export function ProtectedApp({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const session = useSession();
   const { initialized, loading, roleLoading, setupCompleted, user } = session;
+  const [hasRetainedSession, setHasRetainedSession] = React.useState(false);
   useContentRealtime(pathname, Boolean(user && setupCompleted));
+
+  React.useEffect(() => {
+    if (!user) {
+      setHasRetainedSession(false);
+      return;
+    }
+    if (!loading && !roleLoading) setHasRetainedSession(true);
+  }, [loading, roleLoading, user]);
 
   React.useEffect(() => {
     if (!initialized || loading || roleLoading) return;
@@ -61,10 +70,13 @@ export function ProtectedApp({ children }: { children: React.ReactNode }) {
     user,
   ]);
 
-  if (!initialized || loading || roleLoading)
+  const waitingForFirstSession = !hasRetainedSession && (
+    !initialized || loading || roleLoading
+  );
+  if (waitingForFirstSession)
     return <AppStartupScreen />;
   if (!user) return <AppStartupScreen />;
-  if (!setupCompleted && pathname !== "/setup")
+  if (!setupCompleted && pathname !== "/setup" && !hasRetainedSession)
     return <AppStartupScreen />;
   if (setupCompleted && pathname === "/setup") return <AppStartupScreen />;
   if (pathname === "/setup")

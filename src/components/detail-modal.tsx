@@ -39,7 +39,10 @@ export function useRecordOverlayLabel() {
 export function DetailModal({ children, label }: { children: ReactNode; label: string }) {
   const router = useRouter();
   const [open, setOpen] = React.useState(true);
+  const closing = React.useRef(false);
   const close = React.useCallback(() => {
+    if (closing.current) return;
+    closing.current = true;
     setOpen(false);
     window.setTimeout(() => router.back(), timingMs("sheetExit"));
   }, [router]);
@@ -51,7 +54,7 @@ export function DetailModal({ children, label }: { children: ReactNode; label: s
       }}
       open={open}
     >
-      <DialogContent className="t-sheet-filled" presentation="sheet">
+      <DialogContent className="t-sheet-filled" presentation="sheet" showCloseButton={false}>
         <DialogTitle className="sr-only">{label}</DialogTitle>
         <RecordOverlay.Provider value={{ close, label }}>{children}</RecordOverlay.Provider>
       </DialogContent>

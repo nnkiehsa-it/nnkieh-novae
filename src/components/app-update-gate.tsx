@@ -40,6 +40,7 @@ export function AppUpdateGate() {
   const [reloading, setReloading] = React.useState(false);
   const [updateComplete, setUpdateComplete] = React.useState(false);
   const [promptVisible, setPromptVisible] = React.useState(false);
+  const [sheetOpen, setSheetOpen] = React.useState(false);
   const lastCheckedAt = React.useRef(0);
   const checking = React.useRef(false);
   const reloadInFlight = React.useRef(false);
@@ -88,7 +89,22 @@ export function AppUpdateGate() {
   }, [check]);
 
   React.useEffect(() => {
-    if (!availableVersion || verifying) return;
+    const syncSheetState = () => setSheetOpen(Boolean(
+      document.querySelector('[data-slot="dialog-content"].t-sheet[data-state="open"]'),
+    ));
+    syncSheetState();
+    const observer = new MutationObserver(syncSheetState);
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["data-state"],
+      childList: true,
+      subtree: true,
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  React.useEffect(() => {
+    if (!availableVersion || verifying || sheetOpen) return;
     if (!canAutoReload(availableVersion)) {
       setPromptVisible(true);
       return;
@@ -96,7 +112,7 @@ export function AppUpdateGate() {
     void reload({ automatic: true });
     // The first unseen version automatically reloads once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [availableVersion, verifying]);
+  }, [availableVersion, sheetOpen, verifying]);
 
   function readReloadCount(version: string) {
     try {
