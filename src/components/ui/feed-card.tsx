@@ -42,7 +42,15 @@ export function FeedCard({
         </div>
       ) : null}
       {href ? (
-        <Link aria-label={label} className="absolute inset-0 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring" href={href} />
+        // Opening a record is a sheet travelling up the screen, and it can only
+        // start once the route behind it is in hand. A tap is far too late to
+        // begin asking: on a phone there is no hover to read intent from, so
+        // the press and the arrival would be separated by a round trip and the
+        // sheet would answer late. Each card on screen therefore holds its own
+        // record's route ready, so the tap has only to play the animation.
+        // The route only -- what the record says is still asked for afterwards,
+        // from inside the sheet, with its skeleton standing in for the answer.
+        <Link aria-label={label} className="absolute inset-0 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring" href={href} prefetch />
       ) : null}
     </div>
   );
