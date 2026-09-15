@@ -12,6 +12,7 @@ import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 import type { FeedKind } from "@/components/ui/feed-list";
 import { cn } from "@/lib/utils";
 import { useCloseRecord } from "@/components/detail-modal";
+import { sheetCloseButtonClass } from "@/components/ui/sheet";
 
 export interface DetailPanel { key: string; content: ReactNode; className?: string }
 
@@ -68,10 +69,10 @@ export function DetailLayout({
       <header className="detail-header">
         {toolbar || <div className="flex h-9 items-center justify-end gap-1">
           <Button aria-label={t('common.share')} disabled size="icon" variant="ghost"><Share2 /></Button>
-          {closeRecord ? <Button aria-label={t('common.close')} onClick={closeRecord} size="icon" variant="ghost"><X /></Button> : null}
+          {closeRecord ? <Button aria-label={t('common.close')} className={sheetCloseButtonClass} onClick={closeRecord} size="icon" variant="ghost"><X /></Button> : null}
         </div>}
       </header>
-      <StateTransition className="space-y-5 pt-3" identity={loading ? "loading" : error ? "error" : "content"}>
+      <StateTransition className="space-y-5 pt-2" identity={loading ? "loading" : error ? "error" : "content"}>
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
           <article className="min-w-0 space-y-4">
             <Card className="gap-0 overflow-hidden py-0" data-detail-card="content" aria-busy={loading}>

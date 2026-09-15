@@ -258,6 +258,13 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Modal scroll locking must not invent a scrollbar gutter. Scrollbars are
+   already hidden globally, and that compensation shifts fixed navigation. */
+body[data-scroll-locked] {
+  margin-right: 0 !important;
+  padding-right: 0 !important;
+}
+
 /* The security check a restored session sometimes has to pass. It runs out of
    sight, and only becomes a surface when Cloudflare decides it wants a person;
    signing in is the one place the check is always shown, in the page itself. */
@@ -415,7 +422,7 @@ html[data-input-modality="pointer"] :focus-visible {
   z-index: -1;
   top: calc(0px - var(--header-top, var(--page-header-top)));
   right: var(--header-bleed, calc((100% - 100vw) / 2));
-  bottom: -0.5rem;
+  bottom: -0.25rem;
   left: var(--header-bleed, calc((100% - 100vw) / 2));
   content: "";
   pointer-events: none;
@@ -425,16 +432,8 @@ html[data-input-modality="pointer"] :focus-visible {
     transparent
   );
   backdrop-filter: blur(12px);
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    black calc(100% - 0.5rem),
-    transparent
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    black calc(100% - 0.5rem),
-    transparent
-  );
+  -webkit-mask-image: linear-gradient(to bottom, black 62%, rgb(0 0 0 / 72%) 76%, rgb(0 0 0 / 28%) 90%, transparent);
+  mask-image: linear-gradient(to bottom, black 62%, rgb(0 0 0 / 72%) 76%, rgb(0 0 0 / 28%) 90%, transparent);
 }
 
 /* A record opened over its list is read inside a sheet, so the sheet is what
@@ -467,20 +466,20 @@ html[data-input-modality="pointer"] :focus-visible {
   box-sizing: content-box;
   isolation: isolate;
   margin: calc(-1 * var(--dialog-pad)) calc(-1 * var(--dialog-pad)) 0;
-  padding: var(--dialog-pad) var(--dialog-pad) 0.5rem;
+  padding: var(--dialog-pad) var(--dialog-pad) 0.25rem;
 }
 
 [data-slot="dialog-content"] [data-slot="dialog-header"]::before,
 [data-slot="alert-dialog-content"] [data-slot="alert-dialog-header"]::before {
   position: absolute;
   z-index: -1;
-  inset: 0 0 -0.5rem;
+  inset: 0 0 -0.25rem;
   content: "";
   pointer-events: none;
   background: color-mix(in srgb, var(--popover) 82%, transparent);
   backdrop-filter: blur(12px);
-  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 0.5rem), transparent);
-  mask-image: linear-gradient(to bottom, black calc(100% - 0.5rem), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, black 62%, rgb(0 0 0 / 72%) 76%, rgb(0 0 0 / 28%) 90%, transparent);
+  mask-image: linear-gradient(to bottom, black 62%, rgb(0 0 0 / 72%) 76%, rgb(0 0 0 / 28%) 90%, transparent);
 }
 
 .t-sheet [data-slot="dialog-header"] > div {
