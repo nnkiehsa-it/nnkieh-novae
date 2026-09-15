@@ -64,7 +64,7 @@ test('supporter identities stay with the author, the category manager, and the a
     await page.goto(content.proposalA);
     await expect(page.getByText('Support progress')).toBeVisible();
     const open = page.getByRole('button', { name: 'Supporters' });
-    const supporters = page.getByRole('region', { name: 'Supporters' });
+    const supporters = page.getByRole('dialog', { name: 'Supporters' });
     if (!visible) {
       await expect(open).toHaveCount(0);
       await context.close();

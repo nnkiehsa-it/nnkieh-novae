@@ -1,9 +1,19 @@
 import { expect, type Page } from '@playwright/test';
 import { expectBackendAction } from '../support/backend-action';
 
+/**
+ * One of the further actions, wherever it is: the same actions are a menu
+ * beside the control on a pointer and a sheet of rows on a phone.
+ */
+function moreAction(page: Page, name: string | RegExp) {
+  return page
+    .getByRole('menuitem', { name })
+    .or(page.getByRole('dialog').getByRole('button', { name }));
+}
+
 export async function chooseMoreAction(page: Page, name: string | RegExp) {
   await page.getByRole('button', { name: 'More actions' }).click();
-  await page.getByRole('menuitem', { name }).click();
+  await moreAction(page, name).click();
 }
 
 export async function expectMoreActions(
@@ -19,10 +29,10 @@ export async function expectMoreActions(
   await expect(trigger).toBeVisible();
   await trigger.click();
   for (const name of present) {
-    await expect(page.getByRole('menuitem', { name })).toBeVisible();
+    await expect(moreAction(page, name)).toBeVisible();
   }
   for (const name of absent) {
-    await expect(page.getByRole('menuitem', { name })).toHaveCount(0);
+    await expect(moreAction(page, name)).toHaveCount(0);
   }
   await page.keyboard.press('Escape');
 }

@@ -53,12 +53,15 @@ test('navigation direction follows the information hierarchy in both directions'
   const { context, page } = await newUserPage(browser, 'ordinary');
   await page.goto('/issues');
   await expect(page.locator('.route-page')).toBeVisible();
-  await expect(page.locator('.t-card a[href^="/issues/"]').first()).toBeVisible();
+  // A record is shown over the list it is in rather than instead of it, so the
+  // move that goes deeper in the hierarchy is the one that replaces the page:
+  // writing a proposal rather than reading one.
+  const compose = page.getByRole('link', { name: 'New proposal' });
+  await expect(compose).toBeVisible();
 
   await watchRouteChange(page);
-  await page.locator('.t-card a[href^="/issues/"]').first().click();
-  await page.waitForURL(/\/issues\/[^/]+\/[^/]+$/u);
-  await expect(page.locator('article h1')).toBeVisible();
+  await compose.click();
+  await page.waitForURL(/\/issues\/[^/]+\/new$/u);
   await expect.poll(() => navigationDirection(page)).toBe('push');
   const forward = await routeChangeReport(page);
   expect(forward.routeSurfaces).toBe(1);
@@ -71,7 +74,7 @@ test('navigation direction follows the information hierarchy in both directions'
     't-route-enter',
   );
 
-  await page.getByRole('button', { name: /^Back to/u }).click();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.waitForURL(/\/issues\/[^/]+$/u);
   await expect.poll(() => navigationDirection(page)).toBe('pop');
   // Next dispatches a history traversal outside a React Transition so that Back
@@ -86,7 +89,7 @@ test('navigation direction follows the information hierarchy in both directions'
   // The browser's own Back button carries no navigation intent of its own, so
   // returning to the detail page has to be recognised as a push all the same.
   await page.goForward();
-  await page.waitForURL(/\/issues\/[^/]+\/[^/]+$/u);
+  await page.waitForURL(/\/issues\/[^/]+\/new$/u);
   await expect.poll(() => navigationDirection(page)).toBe('push');
   await page.goBack();
   await page.waitForURL(/\/issues\/[^/]+$/u);
@@ -110,10 +113,14 @@ test('navigation direction follows the information hierarchy in both directions'
   await context.close();
 });
 
-test('a detail route replaces its content in one surface', async ({ browser }) => {
+test('a record replaces its content in one surface, over the list it came from', async ({
+  browser,
+}) => {
   const { context, page } = await newUserPage(browser, 'ordinary');
   await page.goto('/issues');
-  await expect(page.locator('.t-card a[href^="/issues/"]').first()).toBeVisible();
+  const card = page.locator('.t-card a[href^="/issues/"]').first();
+  await expect(card).toBeVisible();
+  const feed = await page.locator('.route-page').getAttribute('data-route-path');
   await page.evaluate(() => {
     const state = window as typeof window & { __novaeMaxStateSurfaces?: number };
     state.__novaeMaxStateSurfaces = 0;
@@ -121,18 +128,29 @@ test('a detail route replaces its content in one surface', async ({ browser }) =
     const inspect = () => {
       state.__novaeMaxStateSurfaces = Math.max(
         state.__novaeMaxStateSurfaces ?? 0,
-        document.querySelectorAll('.route-page > [data-state-transition]').length,
+        document.querySelectorAll('[data-slot="dialog-content"] > [data-state-transition]').length,
       );
       if (performance.now() < deadline) requestAnimationFrame(inspect);
     };
     requestAnimationFrame(inspect);
   });
-  await page.locator('.t-card a[href^="/issues/"]').first().click();
+  await card.click();
   await page.waitForURL(/\/issues\/[^/]+\/[^/]+$/u);
-  await expect(page.locator('article h1')).toBeVisible();
+  const record = page.getByRole('dialog');
+  await expect(record.locator('article h1')).toBeVisible();
+  // One surface inside the record, never two stacked while it arrives.
   expect(await page.evaluate(() =>
     (window as typeof window & { __novaeMaxStateSurfaces?: number }).__novaeMaxStateSurfaces,
   )).toBe(1);
+  // The page underneath is still the list: same surface, same element, and the
+  // address in the bar is the record's own so it can still be sent to somebody.
+  await expect(page.locator('.route-page')).toHaveCount(1);
+  await expect(page.locator('.route-page')).toHaveAttribute('data-route-path', feed ?? '');
+
+  await page.getByRole('button', { name: /^Back to/u }).click();
+  await page.waitForURL(/\/issues\/[^/]+$/u);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(card).toBeVisible();
   await context.close();
 });
 
