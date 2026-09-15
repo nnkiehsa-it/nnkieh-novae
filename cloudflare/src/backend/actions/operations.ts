@@ -31,7 +31,8 @@ export async function handleOperationsAction(action: string, payload: JsonRecord
       union all
       select id, true as already_queued from existing
       limit 1`;
-    return { alreadyQueued: queued.already_queued, jobId: queued.id, success: true };
+    const cleared = queued.already_queued ? null : await clearSupersededNotionWork(queued.id, database);
+    return { alreadyQueued: queued.already_queued, cleared, jobId: queued.id, success: true };
   }
   if (action === 'retryOperationalWork') {
     if (payload.kind === 'all') return retryEverythingFailed(auth.uid, database);
@@ -70,6 +71,35 @@ export async function handleOperationsAction(action: string, payload: JsonRecord
     return operationsConsole(Number(page) * 100, database);
   }
   throw new Error('invalid-action');
+}
+
+/**
+ * Everything about the old archive, cleared the moment a rebuild is asked for.
+ *
+ * A rebuild states the archive from the canonical record, so a Notion delivery
+ * still waiting describes a page this job writes again anyway, a failed one
+ * describes a page it is about to replace, and the mappings name the pages an
+ * administrator removed by hand before asking for this. Earlier rebuilds are
+ * cleared with them: a rebuild that stopped is superseded by this one, and
+ * leaving its failure on the operations screen meant the screen reported a
+ * problem that no longer existed and could never be retried away.
+ *
+ * This happens when the administrator asks rather than when the job is first
+ * claimed, so the screen they are looking at is right immediately instead of
+ * at the next sweep. Only Notion's queue is touched: a push or in-app
+ * notification still waiting has nothing to do with the archive.
+ */
+async function clearSupersededNotionWork(jobId: string, database: BackendDatabase) {
+  const deliveries = await database.sql`delete from app_private.event_deliveries
+    where destination = 'notion' and status in ('pending', 'failed') returning id`;
+  const jobs = await database.sql`delete from app_private.background_jobs
+    where job_type = 'notion_reconcile' and id <> ${jobId}::uuid returning id`;
+  const mappings = await database.sql`delete from app_private.notion_pages returning target_id`;
+  return {
+    deliveries: deliveries.rows.length,
+    jobs: jobs.rows.length,
+    mappings: mappings.rows.length,
+  };
 }
 
 /**

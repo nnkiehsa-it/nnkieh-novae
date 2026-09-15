@@ -100,28 +100,75 @@ integrationTest('one retry covers every kind of failed work, and only for admini
     `select count(*)::integer as count from app_private.background_jobs where status='failed'`)).rows[0].count, 0);
 });
 
-integrationTest('only administrators may queue one configured Notion archive rebuild', async () => {
+integrationTest('queueing a Notion rebuild clears what it supersedes and nothing else', async () => {
   const admin = await seedActor('notion-rebuild-admin', { roles: ['platform-admin'] });
   const member = await seedActor('notion-rebuild-member');
   await assert.rejects(() => callAction('rebuildNotionArchive', {}, member.auth), /permission-denied/);
   await assert.rejects(() => callAction('rebuildNotionArchive', {}, admin.auth), /service-not-configured/);
+
+  // The residue an administrator sees on the operations screen before they ask
+  // for a rebuild: a rebuild that failed, Notion deliveries waiting and failed
+  // behind it, and a page mapping for a page they removed by hand.
+  await callAction('createIssue', {
+    category: 'public-issues',
+    content: '重建前的提案內容',
+    title: '重建前的提案',
+  }, member.auth);
+  await database.query(
+    `update app_private.event_deliveries
+     set status='failed', last_attempt_id=gen_random_uuid(),
+       error_detail='{"message":"Too many subrequests"}'::jsonb
+     where destination='notion' and status='pending'`);
+  const staleRebuild = crypto.randomUUID();
+  await database.query(`insert into app_private.background_jobs(id,job_type,status,attempt_count,last_attempt_id,error_detail)
+    values($1,'notion_reconcile','failed',3,$2,'{"message":"Too many subrequests"}'::jsonb)`,
+  [staleRebuild, crypto.randomUUID()]);
+  await database.query(`insert into app_private.notion_pages(target_type,target_id,notion_page_id)
+    values('issue',$1,'stale-notion-page')`, [crypto.randomUUID()]);
+
+  const waitingIds = async (where: string) => (await database.query<{ id: string }>(
+    `select id from app_private.event_deliveries
+     where status in ('pending','failed') and ${where}`,
+  )).rows.map((row) => row.id);
+  const supersededNotion = await waitingIds(`destination='notion'`);
+  const untouchedOthers = await waitingIds(`destination <> 'notion'`);
+  assert.ok(supersededNotion.length > 0);
 
   const enabledEnvironment = { ...testEnvironment, NOTION_ENABLED: 'true' } as Env;
   const first = asRecord(await withRuntimeEnvironment(
     enabledEnvironment,
     () => callAction('rebuildNotionArchive', {}, admin.auth),
   ));
+  assert.equal(first.success, true);
+  assert.equal(first.alreadyQueued, false);
+  const cleared = asRecord(first.cleared);
+  assert.equal(cleared.deliveries, supersededNotion.length);
+  assert.equal(cleared.jobs, 1);
+  assert.ok(Number(cleared.mappings) >= 1);
+
+  // Cleared when the administrator asks, not when the job first runs -- and
+  // only Notion's queue: a push or in-app notification still waiting has
+  // nothing to do with the archive. What the request itself records afterwards
+  // is new work rather than residue.
+  const remainingNotion = await waitingIds(`destination='notion'`);
+  assert.deepEqual(remainingNotion.filter((id) => supersededNotion.includes(id)), []);
+  assert.deepEqual(await waitingIds(`destination <> 'notion'`), untouchedOthers);
+  assert.equal((await database.query<{ count: number }>(
+    'select count(*)::integer as count from app_private.background_jobs where id=$1', [staleRebuild],
+  )).rows[0].count, 0);
+  assert.equal((await database.query<{ count: number }>(
+    'select count(*)::integer as count from app_private.notion_pages')).rows[0].count, 0);
+
   const second = asRecord(await withRuntimeEnvironment(
     enabledEnvironment,
     () => callAction('rebuildNotionArchive', {}, admin.auth),
   ));
-  assert.equal(first.success, true);
-  assert.equal(first.alreadyQueued, false);
   assert.equal(second.alreadyQueued, true);
   assert.equal(second.jobId, first.jobId);
+  assert.equal(second.cleared, null);
   const jobs = await database.query<{ count: number }>(
     `select count(*)::integer as count from app_private.background_jobs
-     where job_type='notion_reconcile' and status in ('pending','processing')`,
+     where job_type='notion_reconcile'`,
   );
   assert.equal(jobs.rows[0].count, 1);
 });
@@ -164,11 +211,12 @@ integrationTest('Notion rebuild writes every page again, leaves existing pages a
     }).then((response) => response.json()) as { id: string },
   ));
 
-  const waitingDeliveries = async () => (await database.query<{ count: number }>(
-    `select count(*)::integer as count from app_private.event_deliveries
-     where status in ('pending','failed')`,
-  )).rows[0].count;
-  assert.ok(await waitingDeliveries() > 0);
+  const waitingNotionDeliveries = async () => (await database.query<{ id: string }>(
+    `select id from app_private.event_deliveries
+     where destination='notion' and status in ('pending','failed')`,
+  )).rows.map((row) => row.id);
+  const supersededDeliveries = await waitingNotionDeliveries();
+  assert.ok(supersededDeliveries.length > 0);
 
   let passes = 0;
   await withRuntimeEnvironment(enabledEnvironment, async () => {
@@ -178,9 +226,11 @@ integrationTest('Notion rebuild writes every page again, leaves existing pages a
     }
   });
 
-  // The rebuild states the archive from the canonical record, so every queue it
-  // supersedes is emptied rather than delivered on top of it.
-  assert.equal(await waitingDeliveries(), 0);
+  // The rebuild states the archive from the canonical record, so Notion's queue
+  // is emptied rather than delivered on top of it. What the request itself
+  // records afterwards is new work, not residue.
+  const stillWaiting = await waitingNotionDeliveries();
+  assert.deepEqual(stillWaiting.filter((id) => supersededDeliveries.includes(id)), []);
   const rebuild = await database.query<{ error_detail: unknown; estimated_rows: number; processed_rows: number; status: string }>(
     `select status, error_detail, estimated_rows::integer, processed_rows::integer from app_private.background_jobs
      where job_type='notion_reconcile' order by created_at desc limit 1`,

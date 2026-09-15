@@ -16,6 +16,19 @@ export type { OperationsConsole } from "@/services/operations-console";
 
 export type RetryKind = "cleanup" | "delivery" | "job";
 
+/**
+ * How often a screen with work in flight asks again.
+ *
+ * The administration surfaces do not refresh themselves, with one exception:
+ * progress on work this administrator just queued is feedback on their own
+ * action, and a rebuild that takes many passes was otherwise frozen at whatever
+ * the screen happened to read when they pressed the button.
+ */
+const PROGRESS_POLL_MS = 4000;
+
+const isRunning = (job: { status: string }) =>
+  job.status === "pending" || job.status === "processing";
+
 interface SystemReading {
   page: number;
   snapshot: Partial<OperationsConsole> | null;
@@ -43,31 +56,49 @@ export function useSystemConsole() {
   const [retrying, setRetrying] = React.useState("");
   const [rebuildingNotion, setRebuildingNotion] = React.useState(false);
 
+  const read = React.useCallback(
+    async (nextPage: number) => {
+      const console_ = await fetchOperationsConsole({ page: nextPage }, {
+        onPanel: (panel) => remember((current) => ({
+          ...current,
+          page: nextPage,
+          snapshot: { ...current.snapshot, ...panel },
+        })),
+      });
+      remember({ page: nextPage, snapshot: console_ });
+    },
+    [remember],
+  );
+
   const load = React.useCallback(
     async (nextPage = 0) => {
       setLoading(true);
       setError("");
       try {
-        const console_ = await fetchOperationsConsole({ page: nextPage }, {
-          onPanel: (panel) => remember((current) => ({
-            ...current,
-            page: nextPage,
-            snapshot: { ...current.snapshot, ...panel },
-          })),
-        });
-        remember({ page: nextPage, snapshot: console_ });
+        await read(nextPage);
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : String(caught));
       } finally {
         setLoading(false);
       }
     },
-    [remember],
+    [read],
   );
 
   React.useEffect(() => {
     if (cold) void load();
   }, [cold, load]);
+
+  const working = (value.snapshot?.jobs ?? []).some(isRunning);
+  React.useEffect(() => {
+    if (!working) return undefined;
+    // Silently, and without the spinner: this is the screen keeping itself
+    // honest, not the reader asking it a question.
+    const timer = window.setInterval(() => {
+      void read(value.page).catch(() => undefined);
+    }, PROGRESS_POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [read, value.page, working]);
 
   const retry = React.useCallback(
     async (kind: RetryKind, id: string) => {
@@ -122,9 +153,12 @@ export function useSystemConsole() {
     setRebuildingNotion(true);
     try {
       const result = await queueNotionArchiveRebuild({});
-      toast.success(t(result.alreadyQueued
-        ? "ui.operations.notionRebuildAlreadyQueued"
-        : "ui.operations.notionRebuildQueued"));
+      const cleared = result.cleared;
+      toast.success(result.alreadyQueued || !cleared
+        ? t("ui.operations.notionRebuildAlreadyQueued")
+        : t("ui.operations.notionRebuildQueued", {
+          cleared: cleared.deliveries + cleared.jobs + cleared.mappings,
+        }));
       await load(0);
     } catch (caught) {
       toast.error(caught instanceof Error ? caught.message : t("ui.operations.notionRebuildFailed"));
@@ -137,6 +171,9 @@ export function useSystemConsole() {
     error,
     load,
     loading,
+    notionJob: (value.snapshot?.jobs ?? []).find(
+      (job) => job.jobType === "notion_reconcile" && isRunning(job),
+    ) ?? null,
     page: value.page,
     rebuildNotion,
     rebuildingNotion,
