@@ -306,6 +306,29 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     status: "pending",
   }, publicManager.auth);
 
+  const goalIssue = await createIssue(owner, "public-issues", "support-goal");
+  const goalIssueId = String(goalIssue.id);
+  await callAction("moderateIssueStatus", {
+    issueId: goalIssueId,
+    status: "pending",
+  }, publicManager.auth);
+  await database.sql`
+    update app_private.issues
+    set support_goal = 2, response_deadline_days = 7
+    where id = ${goalIssueId}
+  `;
+  const goalSupport = asRecord(await callAction("toggleSupport", {
+    issueId: goalIssueId,
+  }, user.auth));
+  assert.equal(goalSupport.supported, true);
+  assert.equal(goalSupport.supportCount, 2);
+  assert.equal(goalSupport.goalMet, true);
+  const goalIssueAfterSupport = asRecord(asRecord(await callAction("getIssue", {
+    issueId: goalIssueId,
+  }, owner.auth)).issue);
+  assert.equal(goalIssueAfterSupport.status, "processing");
+  assert.ok(goalIssueAfterSupport.responseDeadlineAt);
+
   const commentWrite = asRecord(await callAction("createComment", {
     content: "Integration issue comment",
     issueId: publicIssueId,
