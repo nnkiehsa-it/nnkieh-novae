@@ -180,6 +180,8 @@ test('a cancelled sheet drag settles in place without replaying its arrival', as
   await sheet.evaluate(async (element) => {
     await Promise.all(element.getAnimations().map((animation) => animation.finished.catch(() => undefined)));
   });
+  await expect(sheet).toHaveAttribute('data-sheet-drag-interacted', 'true');
+  await expect(sheet).toHaveCSS('animation-name', 'none');
 
   const box = await dragRegion.boundingBox();
   expect(box).not.toBeNull();

@@ -155,7 +155,10 @@ function DialogContent({
           data-sheet-settling={settling || undefined}
           data-sheet-dismissing={dismissing || undefined}
           className={cn(
-            "t-dialog pointer-events-auto relative grid max-h-[90svh] w-full min-w-0 max-w-[min(92vw,88rem)] gap-5 overflow-x-clip overflow-y-auto p-(--dialog-pad) outline-none [--dialog-pad:1.5rem] sm:[--dialog-pad:1.75rem] [&>*]:min-w-0",
+            "t-dialog pointer-events-auto relative grid w-full min-w-0 gap-5 overflow-x-clip overflow-y-auto p-(--dialog-pad) outline-none [--dialog-pad:1.5rem] sm:[--dialog-pad:1.75rem] [&>*]:min-w-0",
+            sheet
+              ? "max-h-[calc(100svh-2rem)] max-w-[min(calc(100vw-2rem),88rem)] md:h-[calc(100svh-2rem)]"
+              : "max-h-[min(86svh,46rem)] max-w-2xl",
             surface === "floating"
               ? "surface-floating"
               : "rounded-[var(--radius-xl)] bg-popover",
@@ -167,6 +170,12 @@ function DialogContent({
           onPointerDown={beginSheetDrag}
           onPointerMove={moveSheetDrag}
           onPointerUp={endSheetDrag}
+          onAnimationEnd={(event) => {
+            // Arrival is one-shot. Once the sheet has landed, later drag/scroll
+            // state changes must never make the open animation eligible again.
+            if (sheet && event.animationName === "t-sheet-in") setDragInteracted(true);
+            props.onAnimationEnd?.(event);
+          }}
         >
           {children}
           {showCloseButton && (
