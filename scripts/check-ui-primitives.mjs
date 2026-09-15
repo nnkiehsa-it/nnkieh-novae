@@ -64,6 +64,12 @@ for (const file of files) {
     if (/\bease:\s*\[/u.test(source)) errors.push(`${relativePath} hard-codes an easing curve; take a curve from @/lib/motion-timing`);
     if (/\btype:\s*["']spring["']/u.test(source)) errors.push(`${relativePath} animates on a spring, which sits outside the motion ladder`);
     if (/\bduration-\d/u.test(source)) errors.push(`${relativePath} uses a raw Tailwind duration; reference a motion token instead`);
+    if (
+      /presentation=["']sheet["']/u.test(source) &&
+      relativePath.replaceAll(path.sep, "/") !== "src/components/ui/sheet.tsx"
+    ) {
+      errors.push(`${relativePath} bypasses the shared Sheet primitive`);
+    }
   }
 
   if (file.endsWith(".css")) {

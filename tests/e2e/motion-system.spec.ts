@@ -171,6 +171,10 @@ test('a cancelled sheet drag settles in place without replaying its arrival', as
   const { context, page } = await newUserPage(browser, 'ordinary');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/issues');
+  const mobileNavigation = page.locator('.app-mobile-nav[data-visible="true"]');
+  await expect(mobileNavigation).toBeVisible();
+  const navigationBefore = await mobileNavigation.boundingBox();
+  expect(navigationBefore).not.toBeNull();
   await page.locator('.t-card a[href^="/issues/"]').first().click();
   await page.waitForURL(/\/issues\/[^/]+\/[^/]+$/u);
 
@@ -180,6 +184,34 @@ test('a cancelled sheet drag settles in place without replaying its arrival', as
   await sheet.evaluate(async (element) => {
     await Promise.all(element.getAnimations().map((animation) => animation.finished.catch(() => undefined)));
   });
+  const navigationAfter = await mobileNavigation.boundingBox();
+  expect(navigationAfter).not.toBeNull();
+  expect(navigationAfter!.x).toBeCloseTo(navigationBefore!.x, 1);
+  expect(navigationAfter!.y).toBeCloseTo(navigationBefore!.y, 1);
+  expect(navigationAfter!.width).toBeCloseTo(navigationBefore!.width, 1);
+  expect(navigationAfter!.height).toBeCloseTo(navigationBefore!.height, 1);
+
+  const sheetMetrics = await sheet.evaluate((element) => {
+    const style = getComputedStyle(element);
+    const box = element.getBoundingClientRect();
+    const frame = element.parentElement?.getBoundingClientRect();
+    return {
+      height: box.height,
+      availableHeight: frame ? frame.bottom - box.top : box.height,
+      paddingLeft: Number.parseFloat(style.paddingLeft),
+      paddingRight: Number.parseFloat(style.paddingRight),
+    };
+  });
+  const pagePadding = await page.locator('.route-page').evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      left: Number.parseFloat(style.paddingLeft),
+      right: Number.parseFloat(style.paddingRight),
+    };
+  });
+  expect(sheetMetrics.height).toBeCloseTo(sheetMetrics.availableHeight, 1);
+  expect(sheetMetrics.paddingLeft).toBeCloseTo(pagePadding.left, 1);
+  expect(sheetMetrics.paddingRight).toBeCloseTo(pagePadding.right, 1);
   await expect(sheet).toHaveAttribute('data-sheet-drag-interacted', 'true');
   await expect(sheet).toHaveCSS('animation-name', 'none');
 
