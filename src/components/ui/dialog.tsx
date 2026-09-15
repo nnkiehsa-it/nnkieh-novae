@@ -134,7 +134,7 @@ function DialogContent({
   // A sheet is a layer over the page, so the page reads as a layer: it becomes
   // one screen-sized card and is pushed back behind the sheet. What that costs
   // is the two figures the card is rebuilt from, taken before it moves.
-  React.useEffect(() => (sheet ? holdStageBehind() : undefined), [sheet]);
+  React.useLayoutEffect(() => (sheet ? holdStageBehind() : undefined), [sheet]);
 
   return (
     <DialogPortal data-slot="dialog-portal">
