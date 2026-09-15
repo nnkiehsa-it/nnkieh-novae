@@ -77,6 +77,8 @@ for (const kind of ['proposalA', 'facilityA', 'announcement'] as const) {
       const frame = page.locator('[data-detail-card="content"]');
       await expect(frame).toBeVisible();
       const node = await frame.elementHandle();
+      await expect(page.getByRole('button', { name: 'Share' })).toBeVisible();
+      await expect(page.getByRole('button', { name: /^Back/u })).toHaveCount(0);
       release();
       await expect(frame.getByRole('heading', { level: 1 })).toBeVisible();
       expect(await node!.evaluate((element) => element === document.querySelector('[data-detail-card="content"]'))).toBe(true);

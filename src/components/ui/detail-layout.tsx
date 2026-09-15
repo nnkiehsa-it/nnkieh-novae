@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { ArrowLeft, Clock3, Hand, Heart, RefreshCw } from "lucide-react";
+import { Clock3, Hand, Heart, RefreshCw, Share2, X } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { ContentTransition, StateTransition } from "@/components/motion/state-tr
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 import type { FeedKind } from "@/components/ui/feed-list";
 import { cn } from "@/lib/utils";
+import { useCloseRecord } from "@/components/detail-modal";
 
 export interface DetailPanel { key: string; content: ReactNode; className?: string }
 
@@ -45,13 +46,14 @@ export function DetailLayout({
   toolbar?: ReactNode;
 }) {
   const { t } = useI18n();
+  const closeRecord = useCloseRecord();
   const Reaction = kind === "announcement" ? Heart : Hand;
   const pendingPanels: DetailPanel[] = [{ key: "reaction", content: <>
     <div className="flex min-h-5 items-center justify-between gap-3"><Skeleton className="h-4 w-24" /><Skeleton className="h-5 w-14" /></div>
     {kind === "issue" ? <Skeleton className="h-2 w-full" /> : null}
     <Button className="mx-auto opacity-100" disabled size="icon-lg" variant="ghost"><Reaction /></Button>
   </> }];
-  if (kind === "issue") pendingPanels.push({ key: "timeline", content: <>
+  if (kind === "issue") pendingPanels.push({ key: "timeline", className: "gap-5", content: <>
     <div className="flex items-center gap-2"><Clock3 className="size-4" /><p className="text-sm font-medium">{t('ui.issue.timeline')}</p></div>
     <div className="space-y-3">{Array.from({ length: 3 }, (_, index) => <div className="space-y-1.5" key={index}><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-28" /></div>)}</div>
   </> });
@@ -64,7 +66,10 @@ export function DetailLayout({
           transition clips itself while it animates its height, which a sticky
           header inside it would be caught by. */}
       <header className="detail-header">
-        {toolbar || <div className="flex h-9 items-center"><Button aria-label={t('ui.common.back')} onClick={() => window.history.back()} size="icon" variant="ghost"><ArrowLeft /></Button></div>}
+        {toolbar || <div className="flex h-9 items-center justify-end gap-1">
+          <Button aria-label={t('common.share')} disabled size="icon" variant="ghost"><Share2 /></Button>
+          {closeRecord ? <Button aria-label={t('common.close')} onClick={closeRecord} size="icon" variant="ghost"><X /></Button> : null}
+        </div>}
       </header>
       <StateTransition className="space-y-5 pt-3" identity={loading ? "loading" : error ? "error" : "content"}>
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
