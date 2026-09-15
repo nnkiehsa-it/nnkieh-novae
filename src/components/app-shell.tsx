@@ -2,6 +2,7 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import {
   Bell,
@@ -28,6 +29,12 @@ import { LiquidNav, type LiquidNavItem } from "@/components/liquid-nav";
 import { AppNotificationPrompt } from "@/components/app-notification-prompt";
 import { RouteSurface } from "@/components/motion/route-surface";
 import { adoptedParent, showsPrimaryNavigation } from "@/lib/route-hierarchy";
+
+function MobileNavigationPortal({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+  return mounted ? createPortal(children, document.body) : null;
+}
 import { useSurfaceRoute } from "@/hooks/use-surface-route";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -227,18 +234,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </RouteSurface>
         </main>
 
-        <div
-          aria-hidden={!showMobileNavigation}
-          className="app-mobile-nav fixed z-30 mx-auto max-w-md rounded-full border bg-card px-3 py-1.5 shadow-[var(--shadow-floating)] md:hidden"
-          data-visible={showMobileNavigation}
-          inert={!showMobileNavigation}
-        >
-          <LiquidNav
-            className="mx-auto h-12"
-            items={navItems}
-            pathname={navigationPathname}
-          />
-        </div>
+        <MobileNavigationPortal>
+          <div
+            aria-hidden={!showMobileNavigation}
+            className="app-mobile-nav fixed z-30 mx-auto max-w-md rounded-full border bg-card px-3 py-1.5 shadow-[var(--shadow-floating)] md:hidden"
+            data-visible={showMobileNavigation}
+            inert={!showMobileNavigation}
+          >
+            <LiquidNav
+              className="mx-auto h-12"
+              items={navItems}
+              pathname={navigationPathname}
+            />
+          </div>
+        </MobileNavigationPortal>
       </div>
     </div>
   );
