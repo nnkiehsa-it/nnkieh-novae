@@ -1,5 +1,4 @@
 import {
-  appendTimelineBlockWithDeduplication,
   callNotionAPI,
   dateProperty,
   ensureDateProperty,
@@ -7,8 +6,9 @@ import {
   ensureSelectOption,
   numberProperty,
 } from "./notion-api.ts";
+import { writeNotionTimeline, type NotionTimelineEntry } from "./notion-timeline.ts";
 import {
-  appendCreationTimeline,
+  contentTimelineEntry,
   getMappedNotionPage,
   getOrCreateNotionPage,
   resolveDisplayName,
@@ -56,46 +56,42 @@ async function ensureAnnouncementPage(database: NotionEventDatabase, announcemen
   return pageId;
 }
 
-async function appendAnnouncementComment(
+async function commentEntry(
   database: NotionEventDatabase,
-  pageId: string,
-  marker: string,
+  eventId: string,
   authorUid: string,
   content: string,
-) {
-  await appendTimelineBlockWithDeduplication(
-    pageId,
-    marker,
-    `【公告留言】${await resolveDisplayName(database, authorUid)}`,
-    content,
-  );
+): Promise<NotionTimelineEntry> {
+  return {
+    details: content,
+    eventId,
+    summary: `【公告留言】${await resolveDisplayName(database, authorUid)}`,
+  };
 }
 
 export async function rebuildAnnouncementNotionPage(database: NotionEventDatabase, announcementId: string) {
   const announcement = await readAnnouncement(database, announcementId);
   if (!announcement) throw new Error("notion-announcement-source-missing");
   const pageId = await ensureAnnouncementPage(database, announcement);
-  await appendCreationTimeline(
-    database,
-    pageId,
-    `rebuild:announcement:${announcement.id}`,
-    `【公告內容】${announcement.title}`,
-    announcement.content,
-  );
   const { rows: comments } = await database.sql<Selected<
     "announcement_comments",
     "id" | "author_uid" | "content" | "created_at"
   >>`select id, author_uid, content, created_at from app_private.announcement_comments
     where announcement_id = ${announcement.id} order by created_at, id`;
-  for (const comment of comments) {
-    await appendAnnouncementComment(
+  await writeNotionTimeline(pageId, [
+    contentTimelineEntry(
       database,
-      pageId,
+      `rebuild:announcement:${announcement.id}`,
+      `【公告內容】${announcement.title}`,
+      announcement.content,
+    ),
+    ...await Promise.all(comments.map((comment) => commentEntry(
+      database,
       `rebuild:announcement-comment:${comment.id}`,
       comment.author_uid,
       comment.content,
-    );
-  }
+    ))),
+  ]);
   return pageId;
 }
 
@@ -116,7 +112,9 @@ export async function syncRecordEventToNotion(
     await callNotionAPI(`/pages/${pageId}`, "PATCH", {
       properties: { 狀態: { select: { name: "已刪除" } } },
     });
-    await appendTimelineBlockWithDeduplication(pageId, event_id, "【公告刪除】此公告已自 Novae 刪除");
+    await writeNotionTimeline(pageId, [
+      { eventId: event_id, summary: "【公告刪除】此公告已自 Novae 刪除" },
+    ]);
     return;
   }
 
@@ -126,15 +124,21 @@ export async function syncRecordEventToNotion(
   switch (event_type) {
     case "announcement.created":
     case "announcement.updated":
-      await appendCreationTimeline(database, pageId, event_id, `【公告發布】${announcement.title}`, announcement.content);
+      await writeNotionTimeline(pageId, [contentTimelineEntry(
+        database, event_id, `【公告發布】${announcement.title}`, announcement.content,
+      )]);
       return;
     case "announcement.liked":
       return;
     case "announcement.comment_created":
-      await appendAnnouncementComment(database, pageId, event_id, actor_uid, String(payload.content ?? ""));
+      await writeNotionTimeline(pageId, [
+        await commentEntry(database, event_id, actor_uid, String(payload.content ?? "")),
+      ]);
       return;
     case "announcement.comment_deleted":
-      await appendTimelineBlockWithDeduplication(pageId, event_id, "【公告留言刪除】一則留言已自 Novae 刪除");
+      await writeNotionTimeline(pageId, [
+        { eventId: event_id, summary: "【公告留言刪除】一則留言已自 Novae 刪除" },
+      ]);
       return;
     default:
       throw new Error(`unsupported-notion-record-event:${event_type}`);

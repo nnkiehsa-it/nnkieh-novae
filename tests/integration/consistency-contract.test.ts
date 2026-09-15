@@ -10,7 +10,7 @@ import {
   testEnvironment,
   underPolicies,
 } from "./helpers.ts";
-import { appendTimelineBlockWithDeduplication } from "../../cloudflare/src/backend/shared/notion-api.ts";
+import { writeNotionTimeline } from "../../cloudflare/src/backend/shared/notion-timeline.ts";
 import { markNotionPageDeleted } from "../../cloudflare/src/backend/shared/notion-page.ts";
 import { withRuntimeEnvironment } from "../../cloudflare/src/backend/shared/env.ts";
 import { processInAppDeliveries } from "../../cloudflare/src/backend/jobs/notification-deliveries.ts";
@@ -119,7 +119,7 @@ integrationTest("concurrent retries with one operationId commit exactly one resu
   assertCanonicalApiJson(first);
 });
 
-integrationTest("Notion timeline pagination, retry deduplication, and duplicate repair converge", async () => {
+integrationTest("Notion timeline writes past the pagination boundary, once per entry, in batches", async () => {
   const baseUrl = process.env.NOTION_API_BASE_URL;
   assert.ok(baseUrl);
   const pageResponse = await fetch(`${baseUrl}/v1/pages`, {
@@ -136,8 +136,10 @@ integrationTest("Notion timeline pagination, retry deduplication, and duplicate 
     type: "paragraph",
     paragraph: { rich_text: [{ type: "text", text: { content } }] },
   });
+  // The entry the page already carries sits past Notion's first page of
+  // children, so finding it at all means the whole page was read.
   const seededBlocks = Array.from({ length: 101 }, (_, index) => paragraph(`history-${index}`));
-  seededBlocks.push(paragraph(`${marker} first`), paragraph(`${marker} duplicate`));
+  seededBlocks.push(paragraph(`${marker} first`));
   const seedResponse = await fetch(`${baseUrl}/v1/blocks/${page.id}/children`, {
     method: "PATCH",
     headers: { "content-type": "application/json" },
@@ -145,20 +147,37 @@ integrationTest("Notion timeline pagination, retry deduplication, and duplicate 
   });
   assert.equal(seedResponse.ok, true);
 
-  await appendTimelineBlockWithDeduplication(page.id, eventId, "must not append again");
-  await appendTimelineBlockWithDeduplication(page.id, eventId, "must remain idempotent");
-  const repairedResponse = await fetch(`${baseUrl}/v1/blocks/${page.id}/children?page_size=100`);
-  const repairedFirstPage = await repairedResponse.json() as { next_cursor: string | null; results: unknown[] };
-  const repairedSecondPage = await fetch(
-    `${baseUrl}/v1/blocks/${page.id}/children?page_size=100&start_cursor=${repairedFirstPage.next_cursor}`,
-  ).then((response) => response.json()) as { results: Array<Record<string, unknown>> };
-  const allBlocks = [...repairedFirstPage.results, ...repairedSecondPage.results] as Array<Record<string, unknown>>;
-  const matching = allBlocks.filter((block) => JSON.stringify(block).includes(marker));
-  assert.equal(matching.length, 1);
+  const readAllBlocks = async () => {
+    const blocks: Array<Record<string, unknown>> = [];
+    let cursor: string | null = null;
+    for (;;) {
+      const url = `${baseUrl}/v1/blocks/${page.id}/children?page_size=100${cursor ? `&start_cursor=${cursor}` : ""}`;
+      const body = await fetch(url).then((response) => response.json()) as {
+        next_cursor: string | null;
+        results: Array<Record<string, unknown>>;
+      };
+      blocks.push(...body.results);
+      if (!body.next_cursor) return blocks;
+      cursor = body.next_cursor;
+    }
+  };
+  const countMatching = (blocks: Array<Record<string, unknown>>, text: string) =>
+    blocks.filter((block) => JSON.stringify(block).includes(text)).length;
 
-  const newEventId = crypto.randomUUID();
-  await appendTimelineBlockWithDeduplication(page.id, newEventId, "append and verify");
-  await appendTimelineBlockWithDeduplication(page.id, newEventId, "retry after ack loss");
+  await writeNotionTimeline(page.id, [{ eventId, summary: "must not append again" }]);
+  await writeNotionTimeline(page.id, [{ eventId, summary: "must remain idempotent" }]);
+  assert.equal(countMatching(await readAllBlocks(), marker), 1);
+
+  // More entries than one append accepts, and every one of them retried after
+  // an acknowledgement that never arrived.
+  const batch = Array.from({ length: 150 }, () => crypto.randomUUID())
+    .map((id) => ({ eventId: id, summary: `batched ${id}` }));
+  await writeNotionTimeline(page.id, batch);
+  await writeNotionTimeline(page.id, batch);
+  const finalBlocks = await readAllBlocks();
+  for (const entry of batch) {
+    assert.equal(countMatching(finalBlocks, `[eventId: ${entry.eventId}]`), 1);
+  }
 });
 
 integrationTest("realtime deliveries use subscriber topics and carry operation and revision correlation", async () => {

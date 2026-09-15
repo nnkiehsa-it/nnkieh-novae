@@ -59,14 +59,28 @@ let notionTurn: Promise<void> = Promise.resolve();
 let requestsMade = 0;
 
 /**
- * Every request Notion work has made, read as a difference between two moments.
- * A Worker invocation may make only so many, and work that writes a page at a
- * time cannot tell how many it is about to need -- one proposal costs a request
- * for its page, one for each image and three for every comment on it -- so work
- * that can stop and resume reads this before starting another piece.
+ * What this Worker invocation has spent of its outgoing-request allowance.
+ *
+ * Work that writes a record at a time cannot tell how many requests the next
+ * record will need -- a proposal costs a request for its page, one for each
+ * image and one for every hundred blocks of discussion -- so work that can stop
+ * and resume reads this before starting another one.
  */
 export function notionRequestsMade(): number {
   return requestsMade;
+}
+
+/**
+ * Starts the count again for a new Worker invocation.
+ *
+ * The allowance belongs to one invocation, but this module lives as long as the
+ * isolate behind it, so a counter that only ever grew said nothing about what
+ * the invocation now running had spent. A sweep begins by clearing it, and
+ * everything the sweep does afterwards -- the deliveries it carries as much as
+ * the rebuild it advances -- is counted against the same allowance.
+ */
+export function beginNotionInvocation(): void {
+  requestsMade = 0;
 }
 
 function countedFetch(url: string, init: RequestInit): Promise<Response> {
@@ -220,54 +234,6 @@ export async function fetchAllBlockChildren(pageId: string): Promise<NotionBlock
     startCursor = response.next_cursor ?? undefined;
   }
   return blocks;
-}
-export async function appendTimelineBlockWithDeduplication(
-  pageId: string,
-  eventId: string,
-  summary: string,
-  details?: string,
-): Promise<void> {
-  const marker = `[eventId: ${eventId}]`;
-  const matchingBlocks = (await fetchAllBlockChildren(pageId))
-    .filter((block) => getBlockPlainText(block).includes(marker));
-
-  if (matchingBlocks.length === 1) {
-    return;
-  }
-
-  if (matchingBlocks.length > 1) {
-    for (const duplicate of matchingBlocks.slice(1)) {
-      await callNotionAPI(`/blocks/${duplicate.id}`, "DELETE");
-    }
-    const repaired = (await fetchAllBlockChildren(pageId))
-      .filter((block) => getBlockPlainText(block).includes(marker));
-    if (repaired.length !== 1) throw new Error("notion-event-marker-repair-failed");
-    return;
-  }
-
-  const textContent = `${marker} ${summary}${details ? `\n${details}` : ""}`;
-  const newBlock = {
-    object: "block",
-    type: "paragraph",
-    paragraph: {
-      rich_text: [{ type: "text", text: { content: textContent.slice(0, 2000) } }],
-    },
-  };
-
-  await callNotionAPI(`/blocks/${pageId}/children`, "PATCH", {
-    children: [newBlock],
-  });
-  const verified = (await fetchAllBlockChildren(pageId))
-    .filter((block) => getBlockPlainText(block).includes(marker));
-  if (verified.length === 0) throw new Error("notion-event-marker-missing");
-  for (const duplicate of verified.slice(1)) {
-    await callNotionAPI(`/blocks/${duplicate.id}`, "DELETE");
-  }
-  if (verified.length > 1) {
-    const repaired = (await fetchAllBlockChildren(pageId))
-      .filter((block) => getBlockPlainText(block).includes(marker));
-    if (repaired.length !== 1) throw new Error("notion-event-marker-repair-failed");
-  }
 }
 export async function uploadImageToNotion(publicId: string, filename: string): Promise<string> {
   const delivery = await createMediaDeliveryUrl(publicId, "full", true, "notion-sync");

@@ -1,11 +1,11 @@
 import {
-  appendTimelineBlockWithDeduplication,
   callNotionAPI,
   dateProperty,
   ensureDateProperty,
   ensureRichTextProperty,
   richTextProperty,
 } from "./notion-api.ts";
+import { writeNotionTimeline } from "./notion-timeline.ts";
 import {
   getOrCreateNotionPage,
   resolveDisplayName,
@@ -144,8 +144,10 @@ export async function rebuildAuditNotionPage(database: NotionEventDatabase, audi
       詳細資料: richTextProperty(detail),
     },
   });
-  await appendTimelineBlockWithDeduplication(
-    pageId, `audit:${audit.id}`, `【系統維運】${action}，操作人：${actor}`, detail,
-  );
+  await writeNotionTimeline(pageId, [{
+    details: detail,
+    eventId: `audit:${audit.id}`,
+    summary: `【系統維運】${action}，操作人：${actor}`,
+  }]);
   return pageId;
 }

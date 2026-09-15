@@ -1,5 +1,4 @@
 import {
-  appendTimelineBlockWithDeduplication,
   callNotionAPI,
   dateProperty,
   ensureDateProperty,
@@ -9,8 +8,9 @@ import {
   numberProperty,
   richTextProperty,
 } from "./notion-api.ts";
+import { writeNotionTimeline } from "./notion-timeline.ts";
 import {
-  appendCreationTimeline,
+  contentTimelineEntry,
   getMappedNotionPage,
   getOrCreateNotionPage,
   resolveDisplayName,
@@ -74,13 +74,12 @@ export async function rebuildFacilityNotionPage(database: NotionEventDatabase, f
   const facility = await readFacility(database, facilityId);
   if (!facility) throw new Error("notion-facility-source-missing");
   const pageId = await ensureFacilityPage(database, facility);
-  await appendCreationTimeline(
+  await writeNotionTimeline(pageId, [contentTimelineEntry(
     database,
-    pageId,
     `rebuild:facility:${facility.id}`,
     `【設備案件內容】${facility.title}（地點：${facility.location}）`,
     facility.content,
-  );
+  )]);
   return pageId;
 }
 
@@ -97,7 +96,9 @@ export async function syncFacilityEventToNotion(
     await callNotionAPI(`/pages/${pageId}`, "PATCH", {
       properties: { 狀態: { select: { name: "已刪除" } } },
     });
-    await appendTimelineBlockWithDeduplication(pageId, event_id, "【設備案件刪除】此案件已自 Novae 刪除");
+    await writeNotionTimeline(pageId, [
+      { eventId: event_id, summary: "【設備案件刪除】此案件已自 Novae 刪除" },
+    ]);
     return;
   }
 
@@ -106,21 +107,19 @@ export async function syncFacilityEventToNotion(
   const pageId = await ensureFacilityPage(database, facility);
   switch (event_type) {
     case "facility.created":
-      await appendCreationTimeline(
+      await writeNotionTimeline(pageId, [contentTimelineEntry(
         database,
-        pageId,
         event_id,
         `【設備案件建立】${facility.title}（地點：${facility.location}）`,
         facility.content,
-      );
+      )]);
       return;
     case "facility.status_changed":
-      await appendTimelineBlockWithDeduplication(
-        pageId,
-        event_id,
-        `【狀態變更】${translateFacilityStatus(facility.status)}`,
-        facility.result_content ? `處理結果：${facility.result_content}` : undefined,
-      );
+      await writeNotionTimeline(pageId, [{
+        details: facility.result_content ? `處理結果：${facility.result_content}` : undefined,
+        eventId: event_id,
+        summary: `【狀態變更】${translateFacilityStatus(facility.status)}`,
+      }]);
       return;
     case "facility.affected_toggled":
       return;

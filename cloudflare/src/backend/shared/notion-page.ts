@@ -1,19 +1,16 @@
 import type { AppDatabaseClient } from "../database/client.ts";
 import type { Selected } from "../database/schema.ts";
 import {
-  appendTimelineBlockWithDeduplication,
   callNotionAPI,
   ensureRichTextProperty,
   ensureSelectOption,
-  fetchAllBlockChildren,
-  getBlockPlainText,
   getDataSourceId,
   notionEnabled,
   notionPageGone,
   richTextProperty,
-  splitNotionText,
   uploadImageToNotion,
 } from "./notion-api.ts";
+import type { NotionTimelineEntry } from "./notion-timeline.ts";
 
 /**
  * The page a piece of Novae has in Notion.
@@ -73,59 +70,43 @@ export async function resolveDisplayName(database: AppDatabase, uid: unknown) {
     select display_name from app_private.user_profiles where uid = ${normalizedUid}`;
   return profile?.display_name ?? normalizedUid;
 }
-export async function appendCreationTimeline(
+/**
+ * A record's own body as a timeline entry: the text, and the pictures the text
+ * refers to.
+ *
+ * The body names its images by upload id, which has to be turned into a file
+ * Notion holds before a block can point at one. That costs a request per
+ * image, so it happens only when the page turns out not to carry this entry
+ * already.
+ */
+export function contentTimelineEntry(
   database: AppDatabase,
-  pageId: string,
   eventId: string,
   summary: string,
   content: string,
-): Promise<void> {
-  const marker = `[eventId: ${eventId}]`;
-  const existing = (await fetchAllBlockChildren(pageId))
-    .filter((block) => getBlockPlainText(block).includes(marker));
-  if (existing.length > 0) {
-    await appendTimelineBlockWithDeduplication(pageId, eventId, summary, content);
-    return;
-  }
-
-  const uploadIds = [...content.matchAll(/srp-upload:\/\/([0-9a-fA-F-]{36})/gu)]
-    .map((match) => match[1]);
-  const notionUploadIds: string[] = [];
-  if (uploadIds.length > 0) {
-    const { rows: uploads } = await database.sql<Selected<"uploads", "id" | "cloudinary_public_id">>`
-      select id, cloudinary_public_id from app_private.uploads where id = any(${[...new Set(uploadIds)]})`;
-    for (const upload of uploads) {
-      if (!upload.cloudinary_public_id) throw new Error("notion-image-public-id-missing");
-      notionUploadIds.push(await uploadImageToNotion(
-        String(upload.cloudinary_public_id),
-        `${upload.id}.webp`,
-      ));
-    }
-  }
-
-  const textBlocks = splitNotionText(content).map((chunk) => ({
-    object: "block",
-    type: "paragraph",
-    paragraph: { rich_text: [{ type: "text", text: { content: chunk } }] },
-  }));
-  await callNotionAPI(`/blocks/${pageId}/children`, "PATCH", {
-    children: [
-      {
-        object: "block",
-        type: "paragraph",
-        paragraph: { rich_text: [{ type: "text", text: { content: `${marker} ${summary}`.slice(0, 2000) } }] },
-      },
-      ...textBlocks,
-      ...notionUploadIds.map((id) => ({
-        object: "block",
-        type: "image",
-        image: { type: "file_upload", file_upload: { id } },
-      })),
-    ],
-  });
-  const verified = (await fetchAllBlockChildren(pageId))
-    .filter((block) => getBlockPlainText(block).includes(marker));
-  if (verified.length !== 1) throw new Error("notion-creation-marker-verification-failed");
+): NotionTimelineEntry {
+  return {
+    details: content,
+    eventId,
+    images: async () => {
+      const uploadIds = [...new Set(
+        [...content.matchAll(/srp-upload:\/\/([0-9a-fA-F-]{36})/gu)].map((match) => match[1]),
+      )];
+      if (uploadIds.length === 0) return [];
+      const { rows } = await database.sql<Selected<"uploads", "id" | "cloudinary_public_id">>`
+        select id, cloudinary_public_id from app_private.uploads where id = any(${uploadIds})`;
+      const notionUploadIds: string[] = [];
+      for (const upload of rows) {
+        if (!upload.cloudinary_public_id) throw new Error("notion-image-public-id-missing");
+        notionUploadIds.push(await uploadImageToNotion(
+          String(upload.cloudinary_public_id),
+          `${upload.id}.webp`,
+        ));
+      }
+      return notionUploadIds;
+    },
+    summary,
+  };
 }
 export async function getOrCreateNotionPage(
   database: AppDatabase,

@@ -1,5 +1,4 @@
 import {
-  appendTimelineBlockWithDeduplication,
   callNotionAPI,
   dateProperty,
   ensureDateProperty,
@@ -9,8 +8,9 @@ import {
   numberProperty,
   richTextProperty,
 } from "./notion-api.ts";
+import { writeNotionTimeline, type NotionTimelineEntry } from "./notion-timeline.ts";
 import {
-  appendCreationTimeline,
+  contentTimelineEntry,
   getMappedNotionPage,
   getOrCreateNotionPage,
   resolveDisplayName,
@@ -81,46 +81,42 @@ async function ensureIssuePage(database: NotionEventDatabase, issue: IssueNotion
   return pageId;
 }
 
-async function appendIssueComment(
+async function commentEntry(
   database: NotionEventDatabase,
-  pageId: string,
-  marker: string,
+  eventId: string,
   authorUid: string,
   content: string,
-) {
-  await appendTimelineBlockWithDeduplication(
-    pageId,
-    marker,
-    `【提案留言】${await resolveDisplayName(database, authorUid)}`,
-    content,
-  );
+): Promise<NotionTimelineEntry> {
+  return {
+    details: content,
+    eventId,
+    summary: `【提案留言】${await resolveDisplayName(database, authorUid)}`,
+  };
 }
 
 export async function rebuildIssueNotionPage(database: NotionEventDatabase, issueId: string) {
   const issue = await readIssue(database, issueId);
   if (!issue) throw new Error("notion-issue-source-missing");
   const pageId = await ensureIssuePage(database, issue);
-  await appendCreationTimeline(
-    database,
-    pageId,
-    `rebuild:issue:${issue.id}`,
-    `【提案內容】${issue.title}`,
-    issue.content,
-  );
   const { rows: comments } = await database.sql<Selected<
     "comments",
     "id" | "author_uid" | "content" | "created_at"
   >>`select id, author_uid, content, created_at from app_private.comments
     where issue_id = ${issue.id} order by created_at, id`;
-  for (const comment of comments) {
-    await appendIssueComment(
+  await writeNotionTimeline(pageId, [
+    contentTimelineEntry(
       database,
-      pageId,
+      `rebuild:issue:${issue.id}`,
+      `【提案內容】${issue.title}`,
+      issue.content,
+    ),
+    ...await Promise.all(comments.map((comment) => commentEntry(
+      database,
       `rebuild:issue-comment:${comment.id}`,
       comment.author_uid,
       comment.content,
-    );
-  }
+    ))),
+  ]);
   return pageId;
 }
 
@@ -137,7 +133,9 @@ export async function syncIssueEventToNotion(
     await callNotionAPI(`/pages/${pageId}`, "PATCH", {
       properties: { 狀態: { select: { name: "已刪除" } } },
     });
-    await appendTimelineBlockWithDeduplication(pageId, event_id, "【提案刪除】此提案已自 Novae 刪除");
+    await writeNotionTimeline(pageId, [
+      { eventId: event_id, summary: "【提案刪除】此提案已自 Novae 刪除" },
+    ]);
     return;
   }
 
@@ -147,7 +145,9 @@ export async function syncIssueEventToNotion(
 
   switch (event_type) {
     case "issue.created":
-      await appendCreationTimeline(database, pageId, event_id, `【提案建立】${issue.title}`, issue.content);
+      await writeNotionTimeline(pageId, [contentTimelineEntry(
+        database, event_id, `【提案建立】${issue.title}`, issue.content,
+      )]);
       return;
     case "issue.status_changed": {
       const status = translateStatus(issue.status);
@@ -156,30 +156,33 @@ export async function syncIssueEventToNotion(
         : issue.result_content
           ? `處理結果：${issue.result_content}`
           : undefined;
-      await appendTimelineBlockWithDeduplication(pageId, event_id, `【狀態變更】${status}`, details);
+      await writeNotionTimeline(pageId, [{ details, eventId: event_id, summary: `【狀態變更】${status}` }]);
       return;
     }
     case "issue.result_updated":
-      await appendTimelineBlockWithDeduplication(pageId, event_id, "【提案結果更新】", issue.result_content ?? undefined);
+      await writeNotionTimeline(pageId, [{
+        details: issue.result_content ?? undefined,
+        eventId: event_id,
+        summary: "【提案結果更新】",
+      }]);
       return;
     case "support.goal_met":
-      await appendTimelineBlockWithDeduplication(
-        pageId,
-        event_id,
-        `【附議達標】目前附議數：${supportLabel(issue.support_count, issue.support_goal)}`,
-      );
+      await writeNotionTimeline(pageId, [{
+        eventId: event_id,
+        summary: `【附議達標】目前附議數：${supportLabel(issue.support_count, issue.support_goal)}`,
+      }]);
       return;
     case "support.toggled":
       return;
     case "issue.comment_created":
-      await appendIssueComment(database, pageId, event_id, actor_uid, String(payload.content ?? ""));
+      await writeNotionTimeline(pageId, [
+        await commentEntry(database, event_id, actor_uid, String(payload.content ?? "")),
+      ]);
       return;
     case "issue.comment_deleted":
-      await appendTimelineBlockWithDeduplication(
-        pageId,
-        event_id,
-        "【提案留言刪除】一則留言已自 Novae 刪除",
-      );
+      await writeNotionTimeline(pageId, [
+        { eventId: event_id, summary: "【提案留言刪除】一則留言已自 Novae 刪除" },
+      ]);
       return;
     default:
       throw new Error(`unsupported-notion-issue-event:${event_type}`);
