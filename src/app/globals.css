@@ -134,6 +134,11 @@
   --mobile-nav-height: 3.875rem;
   --mobile-nav-bottom-gap: 1.125rem;
   --page-header-top: max(1rem, var(--safe-top));
+  /* How far below the top of the screen a sheet stops. The page behind it
+     settles at `--safe-top` plus a tenth of an inch, so this leaves a
+     finger's width of that card showing above the sheet and no more: enough
+     to read as a page underneath, not enough to read as a gap. */
+  --sheet-inset-top: calc(var(--safe-top) + 1.625rem);
 }
 
 .dark {

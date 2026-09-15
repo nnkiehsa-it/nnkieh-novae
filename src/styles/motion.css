@@ -370,10 +370,16 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 @media (max-width: 47.99rem) {
   [data-slot="dialog-content"].t-sheet {
     max-width: none;
-    max-height: 88svh;
+    max-height: calc(100svh - var(--sheet-inset-top));
     border-end-start-radius: 0;
     border-end-end-radius: 0;
     padding-bottom: max(1.5rem, calc(var(--safe-bottom) + 0.75rem));
+  }
+  /* A sheet that is a record rather than a question takes the whole height it
+     is allowed, however much it has to say: it is the screen the reader is on
+     for as long as it is up, and a screen that stops halfway is a leftover. */
+  [data-slot="dialog-content"].t-sheet-filled {
+    height: calc(100svh - var(--sheet-inset-top));
   }
   .t-sheet[data-state="open"] {
     animation: t-sheet-in var(--motion-sheet) var(--ease-nav) both;
