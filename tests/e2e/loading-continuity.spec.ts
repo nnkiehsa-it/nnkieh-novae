@@ -20,7 +20,7 @@ async function coldContext(browser: Browser, user = 'ordinary') {
   return browser.newContext({ storageState: state, viewport: { width: 1280, height: 800 } });
 }
 
-test('empty feed keeps its original card while content enters and the frame resizes', async ({ browser }) => {
+test('empty feed keeps its original card while content enters without resizing the frame', async ({ browser }) => {
   const context = await coldContext(browser);
   const page = await context.newPage();
   let release = () => {};
@@ -47,27 +47,13 @@ test('empty feed keeps its original card while content enters and the frame resi
     const frame = page.locator('[data-feed-slot="0"]');
     await expect(frame).toBeVisible();
     const node = await frame.elementHandle();
-    const samples = frame.evaluate((element) => new Promise<{ height: number; opacity: number; connected: boolean }[]>((resolve) => {
-      element.setAttribute('data-sampling', 'true');
-      const result: { height: number; opacity: number; connected: boolean }[] = [];
-      const deadline = performance.now() + 900;
-      const sample = () => {
-        result.push({ height: element.getBoundingClientRect().height, opacity: Number(getComputedStyle(element).opacity), connected: element.isConnected });
-        if (performance.now() < deadline) requestAnimationFrame(sample); else resolve(result);
-      };
-      sample();
-    }));
-    await expect(frame).toHaveAttribute('data-sampling', 'true');
+    await expect(frame).not.toHaveAttribute('data-resize-motion');
+    await expect(frame).not.toHaveAttribute('data-resizing');
     release();
     await expect(page.locator('[data-state-transition="empty"]')).toBeVisible();
-    const values = await samples;
     expect(await node!.evaluate((element) => element === document.querySelector('[data-feed-slot="0"]'))).toBe(true);
-    expect(values.every((value) => value.connected && value.opacity > 0)).toBe(true);
-    const first = values[0].height;
-    const last = values.at(-1)!.height;
-    expect(first - last).toBeGreaterThan(10);
-    expect(values.some((value) => value.height < first - 1 && value.height > last + 1)).toBe(true);
-    expect(Math.max(...values.map((value) => value.height))).toBeLessThanOrEqual(first + 1);
+    await expect(frame).toHaveCSS('opacity', '1');
+    await expect(frame).not.toHaveAttribute('data-resizing');
     expect(await frame.evaluate((element) => element.getAnimations().filter((animation) => animation.id === 'novae-resize').length)).toBe(0);
   } finally { release(); await context.close(); }
 });

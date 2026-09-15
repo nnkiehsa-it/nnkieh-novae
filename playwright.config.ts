@@ -11,13 +11,14 @@ const readOnlyDesktopTests = [
 const configuredWorkers = Number.parseInt(process.env.NOVAE_E2E_WORKERS ?? "", 10);
 const workers = Number.isFinite(configuredWorkers) && configuredWorkers > 0
   ? configuredWorkers
-  : process.env.CI
-    ? 4
-    : undefined;
+  : 4;
 
 export default defineConfig({
   expect: {
-    timeout: 10_000,
+    // Protected routes can spend a few seconds in the real session/bootstrap
+    // path when the integration suite runs several browsers at once. Individual
+    // UI assertions should start after that work rather than racing a 10s cap.
+    timeout: 30_000,
   },
   forbidOnly: Boolean(process.env.CI),
   fullyParallel: false,

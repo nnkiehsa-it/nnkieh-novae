@@ -171,11 +171,13 @@ test('a cancelled sheet drag settles in place without replaying its arrival', as
   const { context, page } = await newUserPage(browser, 'ordinary');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/issues');
+  const card = page.locator('.t-card a[href^="/issues/"]').first();
+  await expect(card).toBeVisible();
   const mobileNavigation = page.locator('.app-mobile-nav[data-visible="true"]');
   await expect(mobileNavigation).toBeVisible();
   const navigationBefore = await mobileNavigation.boundingBox();
   expect(navigationBefore).not.toBeNull();
-  await page.locator('.t-card a[href^="/issues/"]').first().click();
+  await card.click();
   await page.waitForURL(/\/issues\/[^/]+\/[^/]+$/u);
 
   const sheet = page.getByRole('dialog');
