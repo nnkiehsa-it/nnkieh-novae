@@ -74,9 +74,15 @@ export function AppProviders({
           <TooltipProvider>
             <TurnstileProvider>
               <SessionProvider>
-                <Suspense fallback={null}>
-                  {i18nReady ? children : <div className="app-start-surface" />}
-                </Suspense>
+                {/* Everything a sheet pushes back sits in here; a sheet
+                    itself is portalled to the body, outside it. */}
+                <div className="t-stage">
+                  <div className="t-stage-content">
+                    <Suspense fallback={null}>
+                      {i18nReady ? children : <div className="app-start-surface" />}
+                    </Suspense>
+                  </div>
+                </div>
               </SessionProvider>
               <NavigationFeedback />
               <ResizeMotion />

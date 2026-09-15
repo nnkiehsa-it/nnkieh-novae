@@ -107,6 +107,9 @@
   --selection-fg: var(--primary-foreground);
   --notification-accent: var(--tint-content);
   --surface-stage: #f5f7fb;
+  /* What is behind the page once a sheet pushes it back: the dark a screen
+     sits on, taken from the theme's own ink rather than from a flat black. */
+  --surface-behind: color-mix(in oklab, var(--foreground) 88%, black);
   --surface-inset: #edf2f8;
   --surface-hover: rgb(21 87 213 / 5%);
   --surface-active: rgb(21 87 213 / 10%);
@@ -186,6 +189,7 @@
   --selection-fg: var(--primary-foreground);
   --notification-accent: var(--tint-content);
   --surface-stage: #0d121b;
+  --surface-behind: color-mix(in oklab, var(--surface-stage) 45%, black);
   --surface-inset: #1a2534;
   --surface-hover: rgb(93 143 240 / 8%);
   --surface-active: rgb(93 143 240 / 14%);
@@ -240,6 +244,7 @@ body {
   overscroll-behavior: none;
   background: var(--surface-stage);
   color: var(--foreground);
+  transition: background-color var(--motion-sheet) var(--ease-nav);
   font-family:
     "HarmonyOS Sans TC", var(--font-inter), "PingFang TC", "Microsoft JhengHei",
     ui-sans-serif, system-ui, sans-serif;

@@ -5,6 +5,7 @@ import { XIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
+import { holdStageBehind } from "@/lib/stage-depth";
 import { Button } from "@/components/ui/button";
 
 function Dialog({
@@ -60,6 +61,11 @@ function DialogContent({
   presentation?: "centered" | "sheet";
 }) {
   const sheet = presentation === "sheet";
+
+  // A sheet is a layer over the page, so the page reads as a layer: it becomes
+  // one screen-sized card and is pushed back behind the sheet. What that costs
+  // is the two figures the card is rebuilt from, taken before it moves.
+  React.useEffect(() => (sheet ? holdStageBehind() : undefined), [sheet]);
 
   return (
     <DialogPortal data-slot="dialog-portal">

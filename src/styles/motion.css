@@ -382,6 +382,45 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     animation: t-sheet-out var(--motion-sheet-exit) var(--ease-nav) both;
   }
 }
+/* The page behind a sheet, pushed back ------------------------------------ */
+
+/* A sheet is a layer over the page, and a layer over something reads as a
+   layer only if the something is underneath it: on a phone the page becomes
+   one screen-sized card, rounds its corners at the corners of the screen and
+   settles back a step while the sheet is up. To be that card it has to stop
+   being a tall scrolling document for as long as the sheet is there, which is
+   what the two figures written on the root are for -- the scroll it was at,
+   which the content is lifted by, and the height it had, which the document
+   keeps so the reader is still where they were when the sheet leaves.
+
+   Everything pinned to the bottom of the page is pinned to the bottom of the
+   card while this lasts, and travels back with it, because the card is the
+   whole screen rather than the whole document. */
+@media (max-width: 47.99rem) {
+  .t-stage {
+    transform-origin: 50% 0;
+    transition:
+      transform var(--motion-sheet) var(--ease-nav),
+      border-radius var(--motion-sheet) var(--ease-nav);
+  }
+  body:has([data-slot="dialog-content"].t-sheet) {
+    height: var(--stage-height);
+    background: var(--surface-behind);
+  }
+  body:has([data-slot="dialog-content"].t-sheet) .t-stage {
+    position: fixed;
+    inset: 0;
+    overflow: clip;
+  }
+  body:has([data-slot="dialog-content"].t-sheet) .t-stage-content {
+    margin-top: calc(-1 * var(--stage-scroll));
+  }
+  body:has([data-slot="dialog-content"].t-sheet[data-state="open"]) .t-stage {
+    border-radius: var(--radius-3xl);
+    transform: translateY(calc(var(--safe-top) + 0.625rem)) scale(0.92);
+  }
+}
+
 @keyframes t-sheet-in {
   from {
     transform: translateY(100%);
@@ -1082,6 +1121,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   .t-tabs-pill,
   .t-tab-label,
   .t-toast,
+  .t-stage,
   .t-card {
     transition: none !important;
     transform: none !important;
