@@ -17,6 +17,8 @@ import {
 import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
 
+export const sheetCloseButtonClass = "size-11 shrink-0 md:size-9";
+
 /**
  * The one sheet surface used throughout the product.
  *
@@ -48,7 +50,10 @@ function SheetContent({
 
   return (
     <DialogContent
-      className={cn("gap-3", className)}
+      className={cn(
+        "gap-2",
+        className,
+      )}
       presentation="sheet"
       showCloseButton={false}
       {...props}
@@ -58,7 +63,10 @@ function SheetContent({
         <SheetClose asChild>
           <Button
             aria-label={t("common.close")}
-            className="absolute right-(--dialog-pad) top-(--dialog-pad) z-30 size-11 md:size-9"
+            className={cn(
+              "absolute right-(--dialog-pad) top-(--dialog-pad) z-30",
+              sheetCloseButtonClass,
+            )}
             size="icon"
             variant="ghost"
           >

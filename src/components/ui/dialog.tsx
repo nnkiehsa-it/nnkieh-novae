@@ -163,10 +163,10 @@ function DialogContent({
           data-sheet-settling={settling || undefined}
           data-sheet-dismissing={dismissing || undefined}
           className={cn(
-            "t-dialog pointer-events-auto relative grid w-full min-w-0 content-start gap-5 overflow-x-clip overflow-y-auto p-(--dialog-pad) outline-none [--dialog-pad:1.5rem] sm:[--dialog-pad:1.75rem] [&>*]:min-w-0",
+            "t-dialog pointer-events-auto relative grid w-full min-w-0 content-start gap-5 overflow-x-clip overflow-y-auto p-(--dialog-pad) outline-none [&>*]:min-w-0",
             sheet
-              ? "max-h-[calc(100svh-2rem)] max-w-[min(calc(100vw-2rem),88rem)] md:h-[calc(100svh-2rem)]"
-              : "max-h-[min(86svh,46rem)] max-w-lg",
+              ? "h-[calc(100svh-2rem)] max-h-[calc(100svh-2rem)] max-w-[min(calc(100vw-2rem),88rem)] [--dialog-pad:var(--page-gutter)]"
+              : "max-h-[min(86svh,46rem)] max-w-lg [--dialog-pad:1.5rem] sm:[--dialog-pad:1.75rem]",
             surface === "floating"
               ? "surface-floating"
               : "rounded-[var(--radius-xl)] bg-popover",
