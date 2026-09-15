@@ -259,8 +259,21 @@ test('nested sheets keep every previous layer visible in the stack', async ({ br
   await expect(actions).toBeVisible();
   await expect(detail).toHaveAttribute('data-sheet-depth-behind', '1');
   await expect(actions).toHaveAttribute('data-sheet-depth-behind', '0');
+  await expect(detail).toHaveAttribute('data-sheet-stack-index', '0');
+  await expect(actions).toHaveAttribute('data-sheet-stack-index', '1');
   const detailTransform = await detail.evaluate((element) => getComputedStyle(element).transform);
   expect(detailTransform).not.toBe('none');
+  const detailBox = await detail.boundingBox();
+  const actionsBox = await actions.boundingBox();
+  expect(detailBox).not.toBeNull();
+  expect(actionsBox).not.toBeNull();
+  expect(actionsBox!.height).toBeLessThan(detailBox!.height);
+
+  await actions.getByRole('button', { name: /Close|關閉/u }).click();
+  await expect(sheets).toHaveCount(1);
+  await commentSort.click();
+  await expect(sheets).toHaveCount(2);
+  await expect(sheets.last()).toHaveCSS('animation-name', 't-sheet-in');
   await context.close();
 });
 

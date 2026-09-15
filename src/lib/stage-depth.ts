@@ -16,17 +16,37 @@ let held = 0;
 const sheets: HTMLElement[] = [];
 
 function publishDepth() {
-  document.documentElement.dataset.sheetDepth = String(held);
+  document.documentElement.dataset.sheetDepth = String(sheets.length);
   sheets.forEach((sheet, index) => {
     const depth = sheets.length - index - 1;
+    const previousDepth = Number(sheet.dataset.sheetDepthBehind ?? depth);
     sheet.dataset.sheetDepthBehind = String(depth);
+    sheet.dataset.sheetStackIndex = String(index);
+    sheet.dataset.sheetStackMotion = depth > previousDepth ? "push" : depth < previousDepth ? "pop" : "idle";
     sheet.style.setProperty("--sheet-depth-behind", String(Math.min(depth, 5)));
+    sheet.style.setProperty("--sheet-stack-index", String(Math.min(index, 5)));
+    sheet.style.setProperty("--sheet-stack-inset", `${Math.min(index, 5) * 13}px`);
   });
+}
+
+/**
+ * Take a departing sheet out of the visible stack before it unmounts. Sheets
+ * behind it can then animate back one rung while the departing sheet runs its
+ * own exit animation. The stage hold remains until unmount so scroll geometry
+ * does not jump during the exit.
+ */
+export function beginSheetClose(sheet?: HTMLElement | null) {
+  if (!sheet) return;
+  const index = sheets.indexOf(sheet);
+  if (index < 0) return;
+  sheets.splice(index, 1);
+  publishDepth();
 }
 
 /** Holds the page still for one sheet. Answers with the release. */
 export function holdStageBehind(sheet?: HTMLElement | null) {
   const root = document.documentElement;
+  let released = false;
   held += 1;
   if (sheet) sheets.push(sheet);
   publishDepth();
@@ -35,6 +55,8 @@ export function holdStageBehind(sheet?: HTMLElement | null) {
     root.style.setProperty("--stage-height", `${root.scrollHeight}px`);
   }
   return () => {
+    if (released) return;
+    released = true;
     held -= 1;
     if (sheet) {
       const index = sheets.indexOf(sheet);

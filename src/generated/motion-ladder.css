@@ -12,7 +12,7 @@
   --motion-nav: 460ms;
   --motion-sheet: 560ms;
   --motion-control-exit: 190ms;
-  --motion-sheet-exit: 460ms;
+  --motion-sheet-exit: 520ms;
 
   /* Arrivals decelerate, dismissals accelerate, travel between two known
      positions is symmetric, routes use the iOS navigation curve, and exactly
@@ -21,6 +21,7 @@
   --ease-depart: cubic-bezier(0.4, 0, 1, 1);
   --ease-move: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-nav: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-nav-depart: cubic-bezier(1, 0, 0.68, 0.28);
   --ease-bounce: cubic-bezier(0.22, 1.2, 0.36, 1);
 
   /* How far. Everything that rises, rises by the same amount. */

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const DURATIONS = ['touch', 'control', 'reveal', 'nav', 'sheet', 'controlExit', 'sheetExit'];
-const EASINGS = ['arrive', 'depart', 'move', 'nav', 'bounce'];
+const EASINGS = ['arrive', 'depart', 'move', 'nav', 'navDepart', 'bounce'];
 const TRAVEL = ['lift', 'rise', 'pressScale', 'cardPressScale', 'surfaceScale', 'routeTravel'];
 const LOOPS = ['spin', 'sweep', 'pulse'];
 

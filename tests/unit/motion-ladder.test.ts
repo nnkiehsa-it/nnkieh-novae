@@ -46,6 +46,7 @@ const cssCurveNames: Record<keyof typeof motionEasing, string> = {
   depart: "--ease-depart",
   move: "--ease-move",
   nav: "--ease-nav",
+  navDepart: "--ease-nav-depart",
   bounce: "--ease-bounce",
 };
 
@@ -76,5 +77,13 @@ describe("motion ladder", () => {
     expect(motionSeconds.control).toBeLessThan(motionSeconds.reveal);
     expect(motionSeconds.reveal).toBeLessThan(motionSeconds.nav);
     expect(motionSeconds.nav).toBeLessThan(motionSeconds.sheet);
+  });
+
+  it("reverses the navigation curve for dismissals", () => {
+    const [x1, y1, x2, y2] = motionEasing.nav;
+    const reversed = [1 - x2, 1 - y2, 1 - x1, 1 - y1];
+    motionEasing.navDepart.forEach((point, index) => {
+      expect(point).toBeCloseTo(reversed[index]!, 8);
+    });
   });
 });

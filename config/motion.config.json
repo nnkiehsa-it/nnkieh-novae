@@ -6,13 +6,14 @@
     "nav": 460,
     "sheet": 560,
     "controlExit": 190,
-    "sheetExit": 460
+    "sheetExit": 520
   },
   "easings": {
     "arrive": [0.16, 1, 0.3, 1],
     "depart": [0.4, 0, 1, 1],
     "move": [0.4, 0, 0.2, 1],
     "nav": [0.32, 0.72, 0, 1],
+    "navDepart": [1, 0, 0.68, 0.28],
     "bounce": [0.22, 1.2, 0.36, 1]
   },
   "travel": {

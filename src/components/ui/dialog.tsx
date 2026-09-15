@@ -6,7 +6,7 @@ import { Dialog as DialogPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
 import { timingMs } from "@/lib/motion-timing";
-import { holdStageBehind } from "@/lib/stage-depth";
+import { beginSheetClose, holdStageBehind } from "@/lib/stage-depth";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n";
 
@@ -165,7 +165,7 @@ function DialogContent({
           className={cn(
             "t-dialog pointer-events-auto relative grid w-full min-w-0 content-start gap-5 overflow-x-clip overflow-y-auto p-(--dialog-pad) outline-none [&>*]:min-w-0",
             sheet
-              ? "h-[calc(100svh-2rem)] max-h-[calc(100svh-2rem)] max-w-[min(calc(100vw-2rem),88rem)] [--dialog-pad:var(--page-gutter)]"
+              ? "max-w-[min(calc(100vw-2rem),88rem)] [--dialog-pad:var(--page-gutter)] md:h-[calc(100svh-2rem)] md:max-h-[calc(100svh-2rem)]"
               : "max-h-[min(86svh,46rem)] max-w-lg [--dialog-pad:1.5rem] sm:[--dialog-pad:1.75rem]",
             surface === "floating"
               ? "surface-floating"
@@ -174,6 +174,15 @@ function DialogContent({
             className,
           )}
           {...props}
+          onOpenAutoFocus={(event) => {
+            if (sheet) {
+              setDragInteracted(false);
+              setDismissing(false);
+              setSettling(false);
+              dragRef.current = null;
+            }
+            props.onOpenAutoFocus?.(event);
+          }}
           onPointerCancel={cancelSheetDrag}
           onPointerDown={beginSheetDrag}
           onPointerMove={moveSheetDrag}
@@ -182,7 +191,25 @@ function DialogContent({
             // Arrival is one-shot. Once the sheet has landed, later drag/scroll
             // state changes must never make the open animation eligible again.
             if (sheet && event.animationName === "t-sheet-in") setDragInteracted(true);
+            if (
+              sheet &&
+              (event.animationName === "t-sheet-out" || event.animationName === "t-sheet-dismiss")
+            ) {
+              setDragInteracted(false);
+              setDismissing(false);
+              setSettling(false);
+              dragRef.current = null;
+            }
             props.onAnimationEnd?.(event);
+          }}
+          onAnimationStart={(event) => {
+            if (
+              sheet &&
+              (event.animationName === "t-sheet-out" || event.animationName === "t-sheet-dismiss")
+            ) {
+              beginSheetClose(contentRef.current);
+            }
+            props.onAnimationStart?.(event);
           }}
         >
           {children}
