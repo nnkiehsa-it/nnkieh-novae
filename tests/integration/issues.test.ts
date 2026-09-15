@@ -306,17 +306,25 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     status: "pending",
   }, publicManager.auth);
 
+  // The goal and the response window are frozen onto a proposal as it is
+  // created, so they are set on the category first and restored afterwards.
+  await saveCategoryDraft(admin.auth, {
+    upsertIssueCategories: [{
+      ...originalPublicCategory,
+      responseDeadlineDays: 7,
+      supportGoal: 2,
+    }],
+  });
   const goalIssue = await createIssue(owner, "public-issues", "support-goal");
   const goalIssueId = String(goalIssue.id);
+  assert.equal(goalIssue.supportGoal, 2);
+  await saveCategoryDraft(admin.auth, {
+    upsertIssueCategories: [originalPublicCategory],
+  });
   await callAction("moderateIssueStatus", {
     issueId: goalIssueId,
     status: "pending",
   }, publicManager.auth);
-  await database.sql`
-    update app_private.issues
-    set support_goal = 2, response_deadline_days = 7
-    where id = ${goalIssueId}
-  `;
   const goalSupport = asRecord(await callAction("toggleSupport", {
     issueId: goalIssueId,
   }, user.auth));
