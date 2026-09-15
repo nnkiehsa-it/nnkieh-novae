@@ -24,8 +24,11 @@ export function SecondaryToolbar({
   // changing underneath it. It is the same step back through history either way.
   const closeRecord = useCloseRecord();
   return (
-    <div className="flex h-9 items-center justify-between gap-3">
-      <Tooltip>
+    <div
+      className={`t-sheet-drag-region flex h-9 items-center gap-3 ${closeRecord ? "justify-end pr-9" : "justify-between"}`}
+      data-sheet-drag-region=""
+    >
+      {!closeRecord ? <Tooltip>
         <TooltipTrigger asChild>
           <Button
             aria-label={backLabel}
@@ -38,7 +41,7 @@ export function SecondaryToolbar({
           </Button>
         </TooltipTrigger>
         <TooltipContent>{backLabel}</TooltipContent>
-      </Tooltip>
+      </Tooltip> : null}
       <div className="flex items-center gap-1">{actions}</div>
     </div>
   );

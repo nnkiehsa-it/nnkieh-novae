@@ -414,27 +414,8 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   .t-sheet[data-state="closed"][data-sheet-dismissing="true"] {
     animation: t-sheet-dismiss var(--motion-sheet-exit) var(--ease-nav) both;
   }
-  .t-sheet-drag-handle {
-    position: absolute;
-    z-index: 1;
-    top: 0.375rem;
-    left: 50%;
-    width: 4.5rem;
-    height: 2rem;
-    margin-left: -2.25rem;
-    border: 0;
-    background: transparent;
+  .t-sheet-drag-region {
     touch-action: none;
-  }
-  .t-sheet-drag-handle::before {
-    content: "";
-    display: block;
-    width: 2.25rem;
-    height: 0.25rem;
-    margin: auto;
-    border-radius: 999px;
-    background: var(--muted-foreground);
-    opacity: 0.42;
   }
 }
 /* The page behind a sheet, pushed back ------------------------------------ */

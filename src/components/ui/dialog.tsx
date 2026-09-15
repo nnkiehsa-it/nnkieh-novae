@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { timingMs } from "@/lib/motion-timing";
 import { holdStageBehind } from "@/lib/stage-depth";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/i18n";
 
 function Dialog({
   ...props
@@ -64,11 +65,10 @@ function DialogContent({
   presentation?: "centered" | "sheet";
 }) {
   const sheet = presentation === "sheet";
+  const { t } = useI18n();
   const contentRef = React.useRef<HTMLDivElement>(null);
   const dragRef = React.useRef<{ startedAt: number; startedY: number } | null>(null);
   const settleTimerRef = React.useRef<number | null>(null);
-  const allowCloseClickRef = React.useRef(false);
-  const blockCloseClickRef = React.useRef(false);
   const [dragging, setDragging] = React.useState(false);
   const [settling, setSettling] = React.useState(false);
   const [dismissing, setDismissing] = React.useState(false);
@@ -86,23 +86,26 @@ function DialogContent({
     settleTimerRef.current = window.setTimeout(() => setSettling(false), timingMs("control"));
   }, []);
 
-  const beginSheetDrag = React.useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-    if (event.pointerType === "mouse") return;
+  const beginSheetDrag = React.useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!sheet || !window.matchMedia("(max-width: 47.99rem)").matches) return;
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target?.closest("[data-sheet-drag-region]")
+      || target.closest("button,a,input,textarea,select,[role='button']")) return;
     if (settleTimerRef.current !== null) window.clearTimeout(settleTimerRef.current);
     setSettling(false);
     setDragging(true);
     dragRef.current = { startedAt: performance.now(), startedY: event.clientY };
     event.currentTarget.setPointerCapture(event.pointerId);
-  }, []);
+  }, [sheet]);
 
-  const moveSheetDrag = React.useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+  const moveSheetDrag = React.useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     const drag = dragRef.current;
     const content = contentRef.current;
     if (!drag || !content) return;
     content.style.setProperty("--sheet-drag-y", `${Math.max(0, event.clientY - drag.startedY)}px`);
   }, []);
 
-  const endSheetDrag = React.useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+  const endSheetDrag = React.useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     const drag = dragRef.current;
     const content = contentRef.current;
     if (!drag || !content) return;
@@ -116,11 +119,9 @@ function DialogContent({
       setDragging(false);
       setDismissing(true);
       content.style.setProperty("--sheet-dismiss-from", `${distance}px`);
-      allowCloseClickRef.current = true;
-      event.currentTarget.click();
+      content.querySelector<HTMLElement>("[data-slot='dialog-close']")?.click();
       return;
     }
-    blockCloseClickRef.current = distance > 8;
     resetSheetPosition();
   }, [resetSheetPosition]);
 
@@ -158,39 +159,19 @@ function DialogContent({
             className,
           )}
           {...props}
+          onPointerCancel={cancelSheetDrag}
+          onPointerDown={beginSheetDrag}
+          onPointerMove={moveSheetDrag}
+          onPointerUp={endSheetDrag}
         >
-          {sheet && (
-            <DialogPrimitive.Close asChild>
-              <button
-                aria-label="Close sheet"
-                className="t-sheet-drag-handle"
-                data-slot="sheet-drag-handle"
-                onClick={(event) => {
-                  if (allowCloseClickRef.current) {
-                    allowCloseClickRef.current = false;
-                    return;
-                  }
-                  if (blockCloseClickRef.current) {
-                    blockCloseClickRef.current = false;
-                    event.preventDefault();
-                  }
-                }}
-                onPointerCancel={cancelSheetDrag}
-                onPointerDown={beginSheetDrag}
-                onPointerMove={moveSheetDrag}
-                onPointerUp={endSheetDrag}
-                type="button"
-              />
-            </DialogPrimitive.Close>
-          )}
           {children}
-          {showCloseButton && (
+          {(showCloseButton || sheet) && (
             <DialogPrimitive.Close
               data-slot="dialog-close"
               className="absolute top-3 right-3 grid size-8 place-items-center rounded-full text-muted-foreground transition-[background-color,color] duration-[var(--motion-control)] hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:size-4"
             >
               <XIcon />
-              <span className="sr-only">Close</span>
+              <span className="sr-only">{t("common.close")}</span>
             </DialogPrimitive.Close>
           )}
         </DialogPrimitive.Content>
@@ -202,8 +183,9 @@ function DialogContent({
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
+      data-sheet-drag-region=""
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
+      className={cn("t-sheet-drag-region flex flex-col gap-2 text-center sm:text-left", className)}
       {...props}
     />
   );
