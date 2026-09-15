@@ -9,7 +9,7 @@ export const motionSeconds = {
   nav: 0.46,
   sheet: 0.56,
   controlExit: 0.19,
-  sheetExit: 0.38,
+  sheetExit: 0.46,
 } as const;
 
 /** The sanctioned easing curves as cubic-bezier control points. */

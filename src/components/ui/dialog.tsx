@@ -5,6 +5,7 @@ import { XIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
+import { timingMs } from "@/lib/motion-timing";
 import { holdStageBehind } from "@/lib/stage-depth";
 import { Button } from "@/components/ui/button";
 
@@ -34,13 +35,15 @@ function DialogClose({
 
 function DialogOverlay({
   className,
+  sheet = false,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+}: React.ComponentProps<typeof DialogPrimitive.Overlay> & { sheet?: boolean }) {
   return (
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
         "t-overlay fixed inset-0 z-50 bg-[var(--backdrop)] backdrop-blur-[3px]",
+        sheet && "t-sheet-overlay",
         className,
       )}
       {...props}
@@ -61,6 +64,70 @@ function DialogContent({
   presentation?: "centered" | "sheet";
 }) {
   const sheet = presentation === "sheet";
+  const contentRef = React.useRef<HTMLDivElement>(null);
+  const dragRef = React.useRef<{ startedAt: number; startedY: number } | null>(null);
+  const settleTimerRef = React.useRef<number | null>(null);
+  const allowCloseClickRef = React.useRef(false);
+  const blockCloseClickRef = React.useRef(false);
+  const [dragging, setDragging] = React.useState(false);
+  const [settling, setSettling] = React.useState(false);
+  const [dismissing, setDismissing] = React.useState(false);
+
+  React.useEffect(() => () => {
+    if (settleTimerRef.current !== null) window.clearTimeout(settleTimerRef.current);
+  }, []);
+
+  const resetSheetPosition = React.useCallback(() => {
+    const content = contentRef.current;
+    if (!content) return;
+    setDragging(false);
+    setSettling(true);
+    window.requestAnimationFrame(() => content.style.removeProperty("--sheet-drag-y"));
+    settleTimerRef.current = window.setTimeout(() => setSettling(false), timingMs("control"));
+  }, []);
+
+  const beginSheetDrag = React.useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+    if (event.pointerType === "mouse") return;
+    if (settleTimerRef.current !== null) window.clearTimeout(settleTimerRef.current);
+    setSettling(false);
+    setDragging(true);
+    dragRef.current = { startedAt: performance.now(), startedY: event.clientY };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }, []);
+
+  const moveSheetDrag = React.useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    const content = contentRef.current;
+    if (!drag || !content) return;
+    content.style.setProperty("--sheet-drag-y", `${Math.max(0, event.clientY - drag.startedY)}px`);
+  }, []);
+
+  const endSheetDrag = React.useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    const content = contentRef.current;
+    if (!drag || !content) return;
+    dragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    const distance = Math.max(0, event.clientY - drag.startedY);
+    const velocity = distance / Math.max(1, performance.now() - drag.startedAt);
+    if (distance >= Math.min(window.innerHeight * 0.22, 160) || velocity >= 0.65) {
+      setDragging(false);
+      setDismissing(true);
+      content.style.setProperty("--sheet-dismiss-from", `${distance}px`);
+      allowCloseClickRef.current = true;
+      event.currentTarget.click();
+      return;
+    }
+    blockCloseClickRef.current = distance > 8;
+    resetSheetPosition();
+  }, [resetSheetPosition]);
+
+  const cancelSheetDrag = React.useCallback(() => {
+    dragRef.current = null;
+    resetSheetPosition();
+  }, [resetSheetPosition]);
 
   // A sheet is a layer over the page, so the page reads as a layer: it becomes
   // one screen-sized card and is pushed back behind the sheet. What that costs
@@ -69,7 +136,7 @@ function DialogContent({
 
   return (
     <DialogPortal data-slot="dialog-portal">
-      <DialogOverlay />
+      <DialogOverlay sheet={sheet} />
       <div
         className={cn(
           "pointer-events-none fixed inset-0 z-50 grid items-center justify-items-center p-4",
@@ -77,7 +144,11 @@ function DialogContent({
         )}
       >
         <DialogPrimitive.Content
+          ref={contentRef}
           data-slot="dialog-content"
+          data-sheet-dragging={dragging || undefined}
+          data-sheet-settling={settling || undefined}
+          data-sheet-dismissing={dismissing || undefined}
           className={cn(
             "t-dialog pointer-events-auto relative grid max-h-[90svh] w-full min-w-0 max-w-[min(92vw,88rem)] gap-5 overflow-x-clip overflow-y-auto p-(--dialog-pad) outline-none [--dialog-pad:1.5rem] sm:[--dialog-pad:1.75rem] [&>*]:min-w-0",
             surface === "floating"
@@ -88,6 +159,30 @@ function DialogContent({
           )}
           {...props}
         >
+          {sheet && (
+            <DialogPrimitive.Close asChild>
+              <button
+                aria-label="Close sheet"
+                className="t-sheet-drag-handle"
+                data-slot="sheet-drag-handle"
+                onClick={(event) => {
+                  if (allowCloseClickRef.current) {
+                    allowCloseClickRef.current = false;
+                    return;
+                  }
+                  if (blockCloseClickRef.current) {
+                    blockCloseClickRef.current = false;
+                    event.preventDefault();
+                  }
+                }}
+                onPointerCancel={cancelSheetDrag}
+                onPointerDown={beginSheetDrag}
+                onPointerMove={moveSheetDrag}
+                onPointerUp={endSheetDrag}
+                type="button"
+              />
+            </DialogPrimitive.Close>
+          )}
           {children}
           {showCloseButton && (
             <DialogPrimitive.Close
