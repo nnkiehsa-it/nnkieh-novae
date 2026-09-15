@@ -27,15 +27,6 @@
      space from the first frame — only its paint waits. */
   --skeleton-appear-delay: var(--motion-touch);
   --like-accent: #f40051;
-  /* The mark a supporter leaves on a proposal. A raised hand is somebody
-     backing what somebody else asked for, so it is warm rather than the
-     platform's own blue, and it is carried as a light fill with a deep reading
-     of the same hue on it -- a supported proposal should be unmistakable at a
-     glance without turning into a dark block in the middle of the page. */
-  --support-accent: #f08c00;
-  --support-surface: color-mix(in srgb, var(--support-accent) 32%, var(--card));
-  --support-surface-hover: color-mix(in srgb, var(--support-accent) 42%, var(--card));
-  --support-content: color-mix(in oklab, var(--support-accent) 68%, var(--foreground));
   --tabs-text-muted: var(--muted-foreground);
   --tabs-text-active: var(--primary-foreground);
   --tabs-bar-bg: color-mix(in srgb, var(--secondary) 78%, var(--card));
@@ -47,12 +38,6 @@
 .dark {
   --shimmer-base: #797979;
   --shimmer-highlight: #ededed;
-  /* On a dark ground the same hue has to carry itself: the fill stays low so
-     it does not glow, and the hue itself is the reading. */
-  --support-accent: #ffb454;
-  --support-surface: color-mix(in srgb, var(--support-accent) 26%, var(--card));
-  --support-surface-hover: color-mix(in srgb, var(--support-accent) 36%, var(--card));
-  --support-content: var(--support-accent);
 }
 
 /* Route navigation ------------------------------------------------------- */
@@ -883,18 +868,19 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 }
 /* Supported and not supported used to differ only by the button's resting
    surface, which is the same grey the rest of the page is made of, so the two
-   states read as one. The resting state keeps that surface; having supported is
-   the proposal's own colour. */
+   states read as one. The resting state keeps that surface; having supported
+   wears the platform's own tint -- the colour the bar above it already fills
+   with as the support gathers, which is what says the two are the same act. */
 .t-like[data-accent="hand"][data-liked="true"] {
-  background: var(--support-surface);
-  color: var(--support-content);
+  background: var(--tint-surface);
+  color: var(--tint-content);
 }
 .t-like[data-accent="hand"][data-liked="true"] .t-like-icon {
-  color: var(--support-content);
+  color: var(--tint-content);
 }
 @media (hover: hover) {
   .t-like[data-accent="hand"][data-liked="true"]:hover:not(:disabled) {
-    background: var(--support-surface-hover);
+    background: var(--tint-surface-hover);
   }
 }
 .t-like[data-accent="heart"][data-celebrating] .t-reaction-icon {
@@ -957,7 +943,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   transform: translate(1px, -5px);
 }
 .t-like[data-accent="hand"] .t-like-particles i {
-  color: var(--support-content);
+  color: var(--tint-content);
   width: calc(2.5px * var(--psize));
   height: calc(2.5px * var(--psize));
 }
