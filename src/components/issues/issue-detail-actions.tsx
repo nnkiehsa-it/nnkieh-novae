@@ -123,7 +123,8 @@ export function getIssueDetailPanels({
   timeline: ReturnType<typeof getIssueOperationTimeItems>;
 }) {
   const panels: DetailPanel[] = [];
-  if (issue.support_enabled) panels.push({ key: "reaction", content: <div className="grid gap-4">
+  if (issue.support_enabled) panels.push({ key: "reaction", className: "gap-0 overflow-hidden p-0", content: <>
+          <div className="grid gap-4 p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
             <p className="text-sm font-medium">{translate('ui.issue.supportProgress')}</p>
             <SkeletonReveal enabled={reveal} skeleton={<Skeleton className="h-5 w-14" />}><p className="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums">
@@ -162,8 +163,9 @@ export function getIssueDetailPanels({
               onClick={onSupport}
             />
           </div>
+          </div>
           {canViewSupporters ? (
-            <div className="border-t border-border">
+            <div className="border-t border-border px-5">
               <SheetRow
                 label={translate("ui.issue.supporters")}
                 onOpenChange={(open) => { if (open) onLoadSupporters(); }}
@@ -203,7 +205,7 @@ export function getIssueDetailPanels({
               </SheetRow>
             </div>
           ) : null}
-  </div> });
+  </> });
   panels.push({ key: "timeline", content: <>
         <div className="flex items-center gap-2">
           <Clock3 className="size-4 text-muted-foreground" />

@@ -10,8 +10,9 @@ import { DetailCardHeader, DetailCardBody } from "@/components/ui/detail-card";
 import { ContentTransition, StateTransition } from "@/components/motion/state-transition";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 import type { FeedKind } from "@/components/ui/feed-list";
+import { cn } from "@/lib/utils";
 
-export interface DetailPanel { key: string; content: ReactNode }
+export interface DetailPanel { key: string; content: ReactNode; className?: string }
 
 function DetailPlaceholder({ kind }: { kind: FeedKind }) {
   return <>
@@ -65,7 +66,7 @@ export function DetailLayout({
       <header className="detail-header">
         {toolbar || <div className="flex h-9 items-center"><Button aria-label={t('ui.common.back')} onClick={() => window.history.back()} size="icon" variant="ghost"><ArrowLeft /></Button></div>}
       </header>
-      <StateTransition className="space-y-5 pt-5" identity={loading ? "loading" : error ? "error" : "content"}>
+      <StateTransition className="space-y-5 pt-3" identity={loading ? "loading" : error ? "error" : "content"}>
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
           <article className="min-w-0 space-y-4">
             <Card className="gap-0 overflow-hidden py-0" data-detail-card="content" aria-busy={loading}>
@@ -79,7 +80,7 @@ export function DetailLayout({
             <StaggerList className="space-y-3">
               {(error ? [] : panels ?? pendingPanels).map((panel) => (
                 <StaggerItem key={panel.key}>
-                  <Card className="gap-4 p-5" data-detail-card={panel.key}>
+                  <Card className={cn("gap-4 p-5", panel.className)} data-detail-card={panel.key}>
                     <ContentTransition identity={loading ? "loading" : "content"}>{panel.content}</ContentTransition>
                   </Card>
                 </StaggerItem>
