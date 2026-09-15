@@ -213,7 +213,7 @@ export function AppInstallPrompt() {
 
   return (
     <Dialog open={prompt.open}>
-      <DialogContent showCloseButton={false}>
+      <DialogContent presentation="sheet" showCloseButton={false}>
         <AnimatePresence custom={direction} initial={false} mode="wait">
           <PromptStep
             actions={step.actions}

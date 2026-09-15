@@ -37,7 +37,7 @@ export function AppNotificationPrompt() {
       }}
       open={prompt.open}
     >
-      <DialogContent showCloseButton={false}>
+      <DialogContent presentation="sheet" showCloseButton={false}>
         <DialogHeader>
           <div className="mb-1 flex size-10 items-center justify-center rounded-xl bg-accent text-foreground">
             <Bell className="size-5" aria-hidden />
