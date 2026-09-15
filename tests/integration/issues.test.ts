@@ -286,6 +286,26 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
   assert.equal(removed.supported, false);
   assert.equal(removed.supportCount, 1);
 
+  // Reaching the threshold moves a proposal on to being worked on, and that is
+  // not a cap: it stays open to support until its deadline.
+  await callAction("moderateIssueStatus", {
+    issueId: publicIssueId,
+    status: "processing",
+  }, publicManager.auth);
+  const supportedWhileProcessing = asRecord(await callAction("toggleSupport", {
+    issueId: publicIssueId,
+  }, user.auth));
+  assert.equal(supportedWhileProcessing.supported, true);
+  assert.equal(supportedWhileProcessing.supportCount, 2);
+  const withdrawnWhileProcessing = asRecord(await callAction("removeSupport", {
+    issueId: publicIssueId,
+  }, user.auth));
+  assert.equal(withdrawnWhileProcessing.supportCount, 1);
+  await callAction("moderateIssueStatus", {
+    issueId: publicIssueId,
+    status: "pending",
+  }, publicManager.auth);
+
   const commentWrite = asRecord(await callAction("createComment", {
     content: "Integration issue comment",
     issueId: publicIssueId,

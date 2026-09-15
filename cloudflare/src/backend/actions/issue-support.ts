@@ -20,8 +20,12 @@ export async function updateSupport(action: string, payload: JsonRecord, auth: A
   });
   if (issueError) throw issueError;
   const issue = asRecord(issueData);
+  // Reaching the threshold is not a cap on how many people may ask for
+  // something: a proposal that has moved on to being worked on stays open to
+  // support, and only its deadline closes it.
+  const status = asString(issue.status);
   if (
-    asString(issue.status) !== "pending"
+    (status !== "pending" && status !== "processing")
     || issue.supportEnabled !== true
     || (typeof issue.supportDeadlineAt === "string" && Date.parse(issue.supportDeadlineAt) <= Date.now())
     || (action !== "removeSupport" && (issue.isOwnIssue === true || storedIssue.author_uid === auth.uid))
