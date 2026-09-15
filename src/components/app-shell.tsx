@@ -2,7 +2,6 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import * as React from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Bell,
@@ -32,14 +31,7 @@ import { adoptedParent, showsPrimaryNavigation } from "@/lib/route-hierarchy";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { BrandLockup } from "@/components/ui/brand";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ActionMenu, type ActionMenuItem } from "@/components/ui/action-menu";
 
 function NotificationDot({ unread }: { unread: boolean }) {
   useLocaleSubscription();
@@ -75,9 +67,44 @@ function AccountMenu({ compact = false }: { compact?: boolean }) {
       delete document.documentElement.dataset.themeTransition;
     });
   }, [resolvedTheme, setTheme]);
+  const items: ActionMenuItem[] = [
+    {
+      href: "/settings",
+      icon: Settings,
+      key: "settings",
+      label: translate('ui.nav.settings'),
+    },
+    ...(session.can("dashboard.view") || session.can("role.manage") || session.can("category.manage")
+      ? [{
+          href: "/admin",
+          icon: ShieldCheck,
+          key: "admin",
+          label: translate('admin.title'),
+        }]
+      : []),
+    {
+      icon: resolvedTheme === "dark" ? Sun : Moon,
+      key: "theme",
+      label: resolvedTheme === "dark"
+        ? translate('ui.nav.lightMode')
+        : translate('ui.nav.darkMode'),
+      onSelect: changeTheme,
+    },
+    {
+      icon: LogOut,
+      key: "sign-out",
+      label: translate('ui.nav.signOut'),
+      onSelect: () => void session.logout(),
+    },
+  ];
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+    <ActionMenu
+      className="w-60"
+      description={session.user?.email ?? undefined}
+      items={items}
+      title={name}
+      trigger={
         <Button
           aria-label={compact ? translate('ui.nav.accountMenu') : undefined}
           className={
@@ -105,37 +132,8 @@ function AccountMenu({ compact = false }: { compact?: boolean }) {
             </>
           )}
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-60">
-        <DropdownMenuLabel className="font-normal">
-          <span className="block truncate text-sm font-medium">{name}</span>
-          <span className="block truncate text-xs text-muted-foreground">
-            {session.user?.email}
-          </span>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/settings">
-            <Settings />{translate('ui.nav.settings')}</Link>
-        </DropdownMenuItem>
-        {session.can("dashboard.view") || session.can("role.manage") || session.can("category.manage") ? (
-          <DropdownMenuItem asChild>
-            <Link href="/admin">
-              <ShieldCheck />{translate('admin.title')}</Link>
-          </DropdownMenuItem>
-        ) : null}
-        <DropdownMenuItem onSelect={changeTheme}>
-          <span className="t-icon-swap">
-            <Sun data-visible={resolvedTheme === "dark"} />
-            <Moon data-visible={resolvedTheme !== "dark"} />
-          </span>
-          {resolvedTheme === "dark" ? translate('ui.nav.lightMode') : translate('ui.nav.darkMode')}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => void session.logout()}>
-          <LogOut />{translate('ui.nav.signOut')}</DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      }
+    />
   );
 }
 

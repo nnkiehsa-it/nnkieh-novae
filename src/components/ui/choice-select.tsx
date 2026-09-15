@@ -35,7 +35,8 @@ function subscribeCompact(onChange: () => void) {
   return () => query.removeEventListener("change", onChange);
 }
 
-function useCompactViewport() {
+/** Whether this screen is narrow enough that a menu should be a sheet. */
+export function useCompactViewport() {
   return React.useSyncExternalStore(
     subscribeCompact,
     () => window.matchMedia(COMPACT_VIEWPORT).matches,

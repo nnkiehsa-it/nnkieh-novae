@@ -524,24 +524,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   translate: var(--toggle-travel) 0;
 }
 
-.t-icon-swap {
-  display: inline-grid;
-}
-.t-icon-swap > * {
-  grid-area: 1 / 1;
-  transition:
-    opacity var(--motion-control) var(--ease-move),
-    transform var(--motion-control) var(--ease-arrive);
-}
-.t-icon-swap [data-visible="false"] {
-  opacity: 0;
-  transform: scale(0.8);
-}
-.t-icon-swap [data-visible="true"] {
-  opacity: 1;
-  transform: scale(1);
-}
-
 .t-shake[data-error="true"] {
   animation: t-shake var(--motion-control) linear;
 }
@@ -1114,7 +1096,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     visibility: visible;
   }
   .t-notification-badge,
-  .t-icon-swap > *,
   .t-toggle-thumb,
   .t-spinner-check-loader,
   .t-spinner-check-success,
