@@ -65,7 +65,7 @@ export function DetailLayout({
       <header className="detail-header">
         {toolbar || <div className="flex h-9 items-center"><Button aria-label={t('ui.common.back')} onClick={() => window.history.back()} size="icon" variant="ghost"><ArrowLeft /></Button></div>}
       </header>
-      <StateTransition className="space-y-5 pt-7" identity={loading ? "loading" : error ? "error" : "content"}>
+      <StateTransition className="space-y-5 pt-5" identity={loading ? "loading" : error ? "error" : "content"}>
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
           <article className="min-w-0 space-y-4">
             <Card className="gap-0 overflow-hidden py-0" data-detail-card="content" aria-busy={loading}>

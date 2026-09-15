@@ -452,7 +452,7 @@ html[data-input-modality="pointer"] :focus-visible {
   --header-bleed: 0px;
   top: calc(-1 * var(--dialog-pad));
   margin: calc(-1 * var(--dialog-pad)) calc(-1 * var(--dialog-pad)) 0;
-  padding: var(--dialog-pad) var(--dialog-pad) 1rem;
+  padding: var(--dialog-pad);
 }
 
 /* A dialog's heading is its operational anchor. It stays readable while a long
