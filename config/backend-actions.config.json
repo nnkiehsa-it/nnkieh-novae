@@ -2,6 +2,8 @@
   "getRuntimePolicies": { "group": "read" },
   "getProviderDiagnostics": { "group": "read" },
   "rebuildNotionArchive": { "group": "admin-write", "extraLimit": "destructiveWriteHourly" },
+  "clearOperationalErrors": { "group": "admin-write", "extraLimit": "destructiveWriteHourly" },
+  "clearScheduledWork": { "group": "admin-write", "extraLimit": "destructiveWriteHourly" },
   "retryOperationalWork": { "group": "admin-write", "extraLimit": "destructiveWriteHourly" },
   "getOperationsConsole": { "group": "read" },
   "saveOperationPolicies": { "group": "admin-write", "extraLimit": "roleWriteHourly" },

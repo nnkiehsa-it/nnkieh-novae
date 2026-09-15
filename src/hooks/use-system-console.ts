@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { useRememberedState } from "@/hooks/use-remembered-state";
 import {
+  clearOperationalErrors,
+  clearScheduledWork,
   fetchOperationsConsole,
   queueNotionArchiveRebuild,
   retryOperationalWork,
@@ -54,6 +56,7 @@ export function useSystemConsole() {
   const [error, setError] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [retrying, setRetrying] = React.useState("");
+  const [clearing, setClearing] = React.useState<"errors" | "schedules" | "">("");
   const [rebuildingNotion, setRebuildingNotion] = React.useState(false);
 
   const read = React.useCallback(
@@ -149,6 +152,32 @@ export function useSystemConsole() {
     }
   }, [load, t, value.page]);
 
+  const clearErrors = React.useCallback(async () => {
+    setClearing("errors");
+    try {
+      const result = await clearOperationalErrors({});
+      toast.success(t("admin.clearErrorsDone", { count: result.cleared }));
+      await load(value.page);
+    } catch (caught) {
+      toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
+    } finally {
+      setClearing("");
+    }
+  }, [load, t, value.page]);
+
+  const clearSchedules = React.useCallback(async () => {
+    setClearing("schedules");
+    try {
+      const result = await clearScheduledWork({});
+      toast.success(t("admin.clearSchedulesDone", { count: result.cleared }));
+      await load(value.page);
+    } catch (caught) {
+      toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
+    } finally {
+      setClearing("");
+    }
+  }, [load, t, value.page]);
+
   const rebuildNotion = React.useCallback(async () => {
     setRebuildingNotion(true);
     try {
@@ -166,6 +195,9 @@ export function useSystemConsole() {
   }, [load, t]);
 
   return {
+    clearErrors,
+    clearSchedules,
+    clearing,
     error,
     load,
     loading,

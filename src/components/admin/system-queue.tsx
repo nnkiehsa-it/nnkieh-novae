@@ -2,7 +2,18 @@
 
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ListRestart } from "lucide-react";
+import { Eraser, ListRestart, ListX } from "lucide-react";
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import { useI18n } from "@/i18n";
 import type { OperationsConsole, RetryKind } from "@/hooks/use-system-console";
@@ -41,11 +52,17 @@ function percentOf(job: { estimatedRows: number; processedRows: number }) {
  * allowance before it reached the end of the list.
  */
 export function SystemQueue({
+  clearing,
+  onClearErrors,
+  onClearSchedules,
   onRetry,
   onRetryAll,
   retrying,
   snapshot,
 }: {
+  clearing: "errors" | "schedules" | "";
+  onClearErrors: () => void;
+  onClearSchedules: () => void;
   onRetry: (kind: RetryKind, id: string) => void;
   onRetryAll: () => void;
   retrying: string;
@@ -53,6 +70,7 @@ export function SystemQueue({
 }) {
   const { t } = useI18n();
   const [opened, setOpened] = React.useState<FailureItem | null>(null);
+  const [clearKind, setClearKind] = React.useState<"errors" | "schedules" | null>(null);
   const { cleanupBacklog, deliveries, errors, failedDeliveries, jobs } = snapshot;
   const failures = failureItems(snapshot, t);
   const recorded = errorItems(snapshot, t);
@@ -63,6 +81,15 @@ export function SystemQueue({
   );
   // "Nothing is wrong" is a claim about every reading, so it waits for them.
   const everythingRead = Boolean(jobs && failedDeliveries && cleanupBacklog && errors);
+  const clearTitle = clearKind === "errors"
+    ? t("admin.clearErrorsTitle")
+    : t("admin.clearSchedulesTitle");
+  const clearDescription = clearKind === "errors"
+    ? t("admin.clearErrorsDescription")
+    : t("admin.clearSchedulesDescription");
+  const clearLabel = clearKind === "errors"
+    ? t("admin.clearErrors")
+    : t("admin.clearSchedules");
 
   return (
     <div className="space-y-6">
@@ -147,7 +174,55 @@ export function SystemQueue({
             </ListSection>
           </Panel>
         ) : null}
+
+        {everythingRead ? (
+          <Panel key="clear-actions">
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button
+                disabled={Boolean(clearing)}
+                onClick={() => setClearKind("schedules")}
+                size="sm"
+                variant="destructive"
+              >
+                {clearing === "schedules" ? <LoadingSpinner /> : <ListX aria-hidden />}
+                {t("admin.clearSchedules")}
+              </Button>
+              <Button
+                disabled={Boolean(clearing)}
+                onClick={() => setClearKind("errors")}
+                size="sm"
+                variant="destructive"
+              >
+                {clearing === "errors" ? <LoadingSpinner /> : <Eraser aria-hidden />}
+                {t("admin.clearErrors")}
+              </Button>
+            </div>
+          </Panel>
+        ) : null}
       </AnimatePresence>
+
+      <AlertDialog onOpenChange={(open) => !open && setClearKind(null)} open={clearKind !== null}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{clearTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{clearDescription}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("ui.common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                const kind = clearKind;
+                setClearKind(null);
+                if (kind === "errors") onClearErrors();
+                if (kind === "schedules") onClearSchedules();
+              }}
+            >
+              {clearLabel}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <FailureDetailSheet
         busy={Boolean(retrying)}

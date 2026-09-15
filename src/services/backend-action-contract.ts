@@ -9,6 +9,12 @@ export const BACKEND_ACTION_POLICIES = {
   "rebuildNotionArchive": {
     "group": "admin-write"
   },
+  "clearOperationalErrors": {
+    "group": "admin-write"
+  },
+  "clearScheduledWork": {
+    "group": "admin-write"
+  },
   "retryOperationalWork": {
     "group": "admin-write"
   },
@@ -219,6 +225,8 @@ export const BACKEND_ACTION_NAMES = [
   'getRuntimePolicies',
   'getProviderDiagnostics',
   'rebuildNotionArchive',
+  'clearOperationalErrors',
+  'clearScheduledWork',
   'retryOperationalWork',
   'getOperationsConsole',
   'saveOperationPolicies',

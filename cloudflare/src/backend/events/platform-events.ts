@@ -5,6 +5,8 @@ export function platformEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | n
   const { action, payload, actorUid } = outcome;
   const events: ResolvedDomainEvent[] = [];
   switch (action) {
+    case "clearOperationalErrors":
+    case "clearScheduledWork":
     case "rebuildNotionArchive":
       return [];
     case "markNotificationsOpened": {

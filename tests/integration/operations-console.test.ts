@@ -510,3 +510,49 @@ integrationTest('a Notion rebuild replaces every legacy active rebuild before st
     where job_type='notion_reconcile' and status in ('pending','processing')`);
   assert.deepEqual(activeAfterSecond.rows.map((row) => row.id), [secondJobId]);
 });
+
+integrationTest('administrators can clear Worker error records and scheduled background work', async () => {
+  const admin = await seedActor('operations-clear-admin', { roles: ['platform-admin'] });
+  const member = await seedActor('operations-clear-member');
+  await database.query(`insert into app_private.operational_errors(action,code,status,operation_id) values
+    ('legacy-one','internal',500,$1),('legacy-two','internal',500,$2)`,
+    [crypto.randomUUID(), crypto.randomUUID()]);
+
+  await assert.rejects(() => callAction('clearOperationalErrors', {}, member.auth), /permission-denied/);
+  const errors = asRecord(await callAction('clearOperationalErrors', {}, admin.auth));
+  assert.ok(Number(errors.cleared) >= 2);
+  assert.equal((await database.query<{ count: number }>(
+    'select count(*)::integer as count from app_private.operational_errors',
+  )).rows[0].count, 0);
+
+  const pending = crypto.randomUUID();
+  const failed = crypto.randomUUID();
+  const completed = crypto.randomUUID();
+  const backlog = crypto.randomUUID();
+  await database.query(`insert into app_private.background_jobs
+    (id,job_type,status,attempt_count,last_attempt_id,error_detail,completed_at,payload)
+    values
+      ($1,'notion_reconcile','pending',0,null,null,null,'{}'::jsonb),
+      ($2,'deletion','failed',3,gen_random_uuid(),'{"message":"failed"}'::jsonb,null,'{}'::jsonb),
+      ($3,'deletion','completed',1,gen_random_uuid(),null,now(),'{}'::jsonb)`,
+    [pending, failed, completed]);
+  await database.query(`insert into app_private.external_cleanup_backlog(job_id,payload)
+    values($1,'{"cloudinary_public_id":"old"}'::jsonb)`, [backlog]);
+
+  await assert.rejects(() => callAction('clearScheduledWork', {}, member.auth), /permission-denied/);
+  const schedules = asRecord(await callAction('clearScheduledWork', {}, admin.auth));
+  assert.equal(schedules.jobs, 2);
+  assert.equal(schedules.cleanup, 1);
+  assert.equal(schedules.cleared, 3);
+  const statuses = await database.query<{ id: string; status: string }>(
+    'select id,status from app_private.background_jobs where id = any($1::uuid[]) order by id',
+    [[pending, failed, completed]],
+  );
+  const byId = new Map(statuses.rows.map((row) => [row.id, row.status]));
+  assert.equal(byId.get(pending), 'superseded');
+  assert.equal(byId.get(failed), 'superseded');
+  assert.equal(byId.get(completed), 'completed');
+  assert.equal((await database.query<{ count: number }>(
+    'select count(*)::integer as count from app_private.external_cleanup_backlog',
+  )).rows[0].count, 0);
+});

@@ -16,6 +16,8 @@ import type { NotionEventDatabase } from "./notion-event.ts";
 import type { Selected } from "../database/schema.ts";
 
 const ACTION_LABELS: Record<string, string> = {
+  clearOperationalErrors: "清除系統錯誤紀錄",
+  clearScheduledWork: "清除背景工作排程",
   completeInitialSetup: "完成平台初始設定",
   createAnnouncement: "發布公告",
   deleteAnnouncement: "刪除公告",

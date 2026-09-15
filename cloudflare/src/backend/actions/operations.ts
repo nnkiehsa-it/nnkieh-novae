@@ -25,6 +25,22 @@ export async function handleOperationsAction(action: string, payload: JsonRecord
       returning id`;
     return { cleared, jobId: queued.id, success: true };
   }
+  if (action === 'clearOperationalErrors') {
+    const errors = await database.sql`delete from app_private.operational_errors returning bucket`;
+    return { cleared: errors.rows.length, success: true };
+  }
+  if (action === 'clearScheduledWork') {
+    const jobs = await database.sql`update app_private.background_jobs
+      set status = 'superseded', locked_at = null, updated_at = now()
+      where status in ('pending', 'processing', 'failed') returning id`;
+    const cleanup = await database.sql`delete from app_private.external_cleanup_backlog returning job_id`;
+    return {
+      cleanup: cleanup.rows.length,
+      cleared: jobs.rows.length + cleanup.rows.length,
+      jobs: jobs.rows.length,
+      success: true,
+    };
+  }
   if (action === 'retryOperationalWork') {
     if (payload.kind === 'all') return retryEverythingFailed(auth.uid, database);
     if (typeof payload.id !== 'string' || !/^[0-9a-f-]{36}$/i.test(payload.id)) throw new Error('validation-invalid');

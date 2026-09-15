@@ -27,8 +27,10 @@ import { ErrorState } from "@/components/ui/page-state";
 export function SystemConsole() {
   const { t } = useI18n();
   const [view, setView] = React.useState("failures");
-  const { error, load, loading, notionJob, page, rebuildNotion, rebuildingNotion, retry, retryAll, retrying, snapshot } =
-    useSystemConsole();
+  const {
+    clearErrors, clearSchedules, clearing, error, load, loading, notionJob, page, rebuildNotion,
+    rebuildingNotion, retry, retryAll, retrying, snapshot,
+  } = useSystemConsole();
 
   if (error && !snapshot) return <ErrorState error={error} onRetry={() => void load()} />;
   if (!snapshot) return <AdminListSkeleton groups={3} rows={4} />;
@@ -67,6 +69,9 @@ export function SystemConsole() {
                 onRebuild={() => void rebuildNotion()}
               />
               <SystemQueue
+                clearing={clearing}
+                onClearErrors={() => void clearErrors()}
+                onClearSchedules={() => void clearSchedules()}
                 onRetry={retry}
                 onRetryAll={() => void retryAll()}
                 retrying={retrying}

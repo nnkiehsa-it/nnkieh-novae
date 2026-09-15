@@ -16,6 +16,8 @@ import { useI18n } from "@/i18n";
 import { formatDate } from "@/lib/format";
 
 const ACTION_LABELS: Record<string, string> = {
+  clearOperationalErrors: "ui.adminConsole.actionClearOperationalErrors",
+  clearScheduledWork: "ui.adminConsole.actionClearScheduledWork",
   rebuildNotionArchive: "ui.adminConsole.actionRebuildNotion",
   createAnnouncement: "ui.adminConsole.actionCreateAnnouncement",
   deleteAnnouncement: "ui.adminConsole.actionDeleteAnnouncement",

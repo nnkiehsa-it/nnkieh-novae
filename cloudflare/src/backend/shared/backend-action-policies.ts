@@ -10,6 +10,14 @@ export const BACKEND_ACTION_POLICIES = {
     "group": "admin-write",
     "extraLimit": "destructiveWriteHourly"
   },
+  "clearOperationalErrors": {
+    "group": "admin-write",
+    "extraLimit": "destructiveWriteHourly"
+  },
+  "clearScheduledWork": {
+    "group": "admin-write",
+    "extraLimit": "destructiveWriteHourly"
+  },
   "retryOperationalWork": {
     "group": "admin-write",
     "extraLimit": "destructiveWriteHourly"

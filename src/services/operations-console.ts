@@ -31,6 +31,16 @@ export function fetchOperationsConsole(
     },
   })(payload);
 }
+export const clearOperationalErrors = invokeBackendAction<Record<string, never>, {
+  cleared: number;
+  success: boolean;
+}>('clearOperationalErrors');
+export const clearScheduledWork = invokeBackendAction<Record<string, never>, {
+  cleanup: number;
+  cleared: number;
+  jobs: number;
+  success: boolean;
+}>('clearScheduledWork');
 export const retryOperationalWork = invokeBackendAction<
   { kind: 'job' | 'delivery' | 'cleanup' | 'all'; id?: string },
   { success: boolean; retried?: number }
