@@ -16,8 +16,13 @@ import {
 export interface NotionTimelineEntry {
   details?: string;
   eventId: string;
-  images?: () => Promise<string[]>;
+  images?: () => Promise<NotionTimelineImage[]>;
   summary: string;
+}
+
+export interface NotionTimelineImage {
+  key: string;
+  upload: () => Promise<string>;
 }
 
 const TIMELINE_MARKER = /\[eventId: ([^\]]+)\]/u;
@@ -32,17 +37,27 @@ function paragraphBlock(content: string) {
   };
 }
 
-async function timelineBlocks(entry: NotionTimelineEntry) {
-  const images = entry.images ? await entry.images() : [];
+function timelineBlocks(entry: NotionTimelineEntry, marker = entry.eventId) {
   return [
-    paragraphBlock(`[eventId: ${entry.eventId}] ${entry.summary}`),
+    paragraphBlock(`[eventId: ${marker}] ${entry.summary}`),
     ...splitNotionText(entry.details ?? "").map(paragraphBlock),
-    ...images.map((id) => ({
-      object: "block",
-      type: "image",
-      image: { type: "file_upload", file_upload: { id } },
-    })),
   ];
+}
+
+function imageBlock(id: string) {
+  return {
+    object: "block",
+    type: "image",
+    image: { type: "file_upload", file_upload: { id } },
+  };
+}
+
+async function appendBlocks(pageId: string, children: unknown[]) {
+  for (let offset = 0; offset < children.length; offset += APPEND_BATCH) {
+    await callNotionAPI(`/blocks/${pageId}/children`, "PATCH", {
+      children: children.slice(offset, offset + APPEND_BATCH),
+    });
+  }
 }
 
 /**
@@ -67,14 +82,39 @@ export async function writeNotionTimeline(
     const found = TIMELINE_MARKER.exec(getBlockPlainText(block));
     if (found) present.add(found[1]);
   }
-  const children: unknown[] = [];
+  let children: unknown[] = [];
+  const flush = async () => {
+    if (children.length === 0) return;
+    await appendBlocks(pageId, children);
+    children = [];
+  };
   for (const entry of entries) {
     if (present.has(entry.eventId)) continue;
-    children.push(...(await timelineBlocks(entry)));
+    if (!entry.images) {
+      children.push(...timelineBlocks(entry));
+      continue;
+    }
+
+    // A file upload costs several outgoing requests. Checkpoint the text and
+    // every image separately so a budget boundary can resume inside one record
+    // instead of re-uploading its first images forever.
+    await flush();
+    const images = await entry.images();
+    const textMarker = `${entry.eventId}:text`;
+    if (!present.has(textMarker)) {
+      await appendBlocks(pageId, timelineBlocks(entry, textMarker));
+      present.add(textMarker);
+    }
+    for (const image of images) {
+      const imageMarker = `${entry.eventId}:image:${image.key}`;
+      if (present.has(imageMarker)) continue;
+      const id = await image.upload();
+      await appendBlocks(pageId, [
+        paragraphBlock(`[eventId: ${imageMarker}] ${entry.summary} · 圖片`),
+        imageBlock(id),
+      ]);
+      present.add(imageMarker);
+    }
   }
-  for (let offset = 0; offset < children.length; offset += APPEND_BATCH) {
-    await callNotionAPI(`/blocks/${pageId}/children`, "PATCH", {
-      children: children.slice(offset, offset + APPEND_BATCH),
-    });
-  }
+  await flush();
 }

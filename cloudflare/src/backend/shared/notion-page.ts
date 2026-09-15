@@ -95,15 +95,18 @@ export function contentTimelineEntry(
       if (uploadIds.length === 0) return [];
       const { rows } = await database.sql<Selected<"uploads", "id" | "cloudinary_public_id">>`
         select id, cloudinary_public_id from app_private.uploads where id = any(${uploadIds})`;
-      const notionUploadIds: string[] = [];
-      for (const upload of rows) {
-        if (!upload.cloudinary_public_id) throw new Error("notion-image-public-id-missing");
-        notionUploadIds.push(await uploadImageToNotion(
-          String(upload.cloudinary_public_id),
-          `${upload.id}.webp`,
-        ));
-      }
-      return notionUploadIds;
+      const byId = new Map(rows.map((upload) => [String(upload.id), upload]));
+      return uploadIds.map((uploadId) => {
+        const upload = byId.get(uploadId);
+        if (!upload?.cloudinary_public_id) throw new Error("notion-image-public-id-missing");
+        return {
+          key: uploadId,
+          upload: () => uploadImageToNotion(
+            String(upload.cloudinary_public_id),
+            `${upload.id}.webp`,
+          ),
+        };
+      });
     },
     summary,
   };
