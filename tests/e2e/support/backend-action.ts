@@ -1,5 +1,20 @@
 import { expect, type Page, type Response } from '@playwright/test';
-import type { BackendActionName } from '../../../src/services/backend-action-contract';
+import { BACKEND_ACTION_POLICIES, type BackendActionName } from '../../../src/services/backend-action-contract';
+
+const operationIdPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
+
+/**
+ * A correlation id travels with a write, and only with a write -- a read is not
+ * an operation anybody follows through the log -- so this is what the product
+ * sends rather than what every request happens to carry.
+ */
+function expectAnswered(response: Response, action: BackendActionName) {
+  expect(response.status(), `${action} response`).toBe(200);
+  const group = BACKEND_ACTION_POLICIES[action].group;
+  if (group === 'read' || group === 'upload-resolve') return;
+  expect(response.request().headers()['x-novae-operation-id']).toMatch(operationIdPattern);
+}
 
 function matchesAction(response: Response, action: BackendActionName) {
   if (!response.url().endsWith('/v1/actions') || response.request().method() !== 'POST') {
@@ -49,9 +64,7 @@ export async function expectBackendAction(
   const responsePromise = page.waitForResponse((response) => matchesAction(response, action));
   await run();
   const response = await responsePromise;
-  expect(response.status(), `${action} response`).toBe(200);
-  expect(response.request().headers()['x-novae-operation-id'])
-    .toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u);
+  expectAnswered(response, action);
 }
 
 export async function expectBackendActions(
@@ -66,8 +79,6 @@ export async function expectBackendActions(
   for (const [index, responsePromise] of responses.entries()) {
     const action = actions[index]!;
     const response = await responsePromise;
-    expect(response.status(), `${action} response`).toBe(200);
-    expect(response.request().headers()['x-novae-operation-id'])
-      .toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u);
+    expectAnswered(response, action);
   }
 }
