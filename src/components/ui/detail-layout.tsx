@@ -55,7 +55,7 @@ export function DetailLayout({
     <div className="space-y-3">{Array.from({ length: 3 }, (_, index) => <div className="space-y-1.5" key={index}><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-28" /></div>)}</div>
   </> });
   return (
-    <div className={dock ? "detail-with-discussion-composer space-y-7" : "space-y-7"}>
+    <div className={dock ? "detail-with-discussion-composer" : undefined}>
       {/* The controls of a record stay where they are while the record travels
           under them, the way the controls of a list do. They ride outside the
           state transition because they are the one part of the screen that does
@@ -65,7 +65,7 @@ export function DetailLayout({
       <header className="detail-header">
         {toolbar || <div className="flex h-9 items-center"><Button aria-label={t('ui.common.back')} onClick={() => window.history.back()} size="icon" variant="ghost"><ArrowLeft /></Button></div>}
       </header>
-      <StateTransition className="space-y-5" identity={loading ? "loading" : error ? "error" : "content"}>
+      <StateTransition className="space-y-5 pt-7" identity={loading ? "loading" : error ? "error" : "content"}>
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
           <article className="min-w-0 space-y-4">
             <Card className="gap-0 overflow-hidden py-0" data-detail-card="content" aria-busy={loading}>
