@@ -16,7 +16,8 @@ import type { PlatformDashboardData } from "@/types";
  *
  * They sit on a plain ruled band rather than in four separate cards: four cards
  * make four objects out of one reading, and a reading is easier to compare when
- * the numbers share a baseline. Everything below the headline is an ordinary
+ * the numbers share a baseline. Two to a row is the narrowest the band goes --
+ * one figure per row turned four comparable numbers into a column to scroll. Everything below the headline is an ordinary
  * label-and-figure row, because that is what the rest of administration uses to
  * say the same kind of thing.
  *
@@ -53,13 +54,14 @@ export function OverviewMetrics({
 
   return (
     <div className="space-y-6">
-      <div className="grid border-y sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 border-y lg:grid-cols-4">
         {headline.map(([label, value], index) => (
           <div
             className={[
               "px-1 py-5 sm:px-5",
-              index > 0 ? "sm:border-l" : "",
-              index === 2 ? "sm:border-l-0 lg:border-l" : "",
+              index % 2 === 1 ? "border-l" : "",
+              index === 2 ? "lg:border-l" : "",
+              index > 1 ? "border-t lg:border-t-0" : "",
             ].join(" ")}
             key={label}
           >
