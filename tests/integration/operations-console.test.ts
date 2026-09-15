@@ -140,7 +140,6 @@ integrationTest('queueing a Notion rebuild clears what it supersedes and nothing
     () => callAction('rebuildNotionArchive', {}, admin.auth),
   ));
   assert.equal(first.success, true);
-  assert.equal(first.alreadyQueued, false);
   const cleared = asRecord(first.cleared);
   assert.equal(cleared.deliveries, supersededNotion.length);
   assert.equal(cleared.jobs, 1);
@@ -153,9 +152,9 @@ integrationTest('queueing a Notion rebuild clears what it supersedes and nothing
   const remainingNotion = await waitingIds(`destination='notion'`);
   assert.deepEqual(remainingNotion.filter((id) => supersededNotion.includes(id)), []);
   assert.deepEqual(await waitingIds(`destination <> 'notion'`), untouchedOthers);
-  assert.equal((await database.query<{ count: number }>(
-    'select count(*)::integer as count from app_private.background_jobs where id=$1', [staleRebuild],
-  )).rows[0].count, 0);
+  assert.equal((await database.query<{ status: string }>(
+    'select status from app_private.background_jobs where id=$1', [staleRebuild],
+  )).rows[0].status, 'superseded');
   assert.equal((await database.query<{ count: number }>(
     'select count(*)::integer as count from app_private.notion_pages')).rows[0].count, 0);
 
@@ -163,12 +162,13 @@ integrationTest('queueing a Notion rebuild clears what it supersedes and nothing
     enabledEnvironment,
     () => callAction('rebuildNotionArchive', {}, admin.auth),
   ));
-  assert.equal(second.alreadyQueued, true);
-  assert.equal(second.jobId, first.jobId);
-  assert.equal(second.cleared, null);
+  assert.notEqual(second.jobId, first.jobId);
+  assert.equal((await database.query<{ status: string }>(
+    'select status from app_private.background_jobs where id=$1', [first.jobId],
+  )).rows[0].status, 'superseded');
   const jobs = await database.query<{ count: number }>(
     `select count(*)::integer as count from app_private.background_jobs
-     where job_type='notion_reconcile'`,
+     where job_type='notion_reconcile' and status in ('pending','processing')`,
   );
   assert.equal(jobs.rows[0].count, 1);
 });
@@ -423,4 +423,90 @@ integrationTest('notification persistence failure leaves delivery failed instead
   assert.ok(rows.rows.length > 0);
   assert.ok(rows.rows.every(row=>row.status==='failed'));
   assert.ok(rows.rows.some(row=>JSON.stringify(row.error_detail).includes('simulated-notification-storage-failure')));
+});
+
+integrationTest('a Notion rebuild replaces every legacy active rebuild before starting fresh', async () => {
+  const admin = await seedActor('notion-replace-admin', { roles: ['platform-admin'] });
+  const member = await seedActor('notion-replace-member');
+  const enabledEnvironment = { ...testEnvironment, NOTION_ENABLED: 'true' } as Env;
+
+  await assert.rejects(
+    () => withRuntimeEnvironment(enabledEnvironment, () => callAction('rebuildNotionArchive', {}, member.auth)),
+    /permission-denied/,
+  );
+
+  await callAction('createIssue', {
+    category: 'public-issues',
+    content: 'legacy notion delivery',
+    title: 'legacy notion delivery',
+  }, member.auth);
+  await database.query(`update app_private.event_deliveries
+    set status='failed', last_attempt_id=gen_random_uuid(), error_detail='{"message":"legacy notion failure"}'::jsonb
+    where destination='notion' and status='pending'`);
+
+  const failedRebuild = crypto.randomUUID();
+  const pendingRebuild = crypto.randomUUID();
+  const processingRebuild = crypto.randomUUID();
+  const notionDeletion = crypto.randomUUID();
+  const cloudDeletion = crypto.randomUUID();
+  const notionBacklog = crypto.randomUUID();
+  const cloudBacklog = crypto.randomUUID();
+  await database.query(`insert into app_private.background_jobs
+    (id,job_type,status,attempt_count,last_attempt_id,locked_at,error_detail,payload)
+    values
+      ($1,'notion_reconcile','failed',3,gen_random_uuid(),null,'{"message":"legacy"}'::jsonb,'{}'::jsonb),
+      ($2,'notion_reconcile','pending',0,null,null,null,'{}'::jsonb),
+      ($3,'notion_reconcile','processing',1,gen_random_uuid(),now(),null,'{}'::jsonb),
+      ($4,'deletion','failed',3,gen_random_uuid(),null,'{"message":"notion delete failed"}'::jsonb,'{"notion_page_id":"old-page","target_type":"issue","target_id":"old"}'::jsonb),
+      ($5,'deletion','failed',3,gen_random_uuid(),null,'{"message":"cloud delete failed"}'::jsonb,'{"cloudinary_public_id":"keep-me","target_type":"upload","target_id":"old"}'::jsonb)`,
+    [failedRebuild, pendingRebuild, processingRebuild, notionDeletion, cloudDeletion]);
+  await database.query(`insert into app_private.external_cleanup_backlog(job_id,payload) values
+    ($1,'{"notion_page_id":"old-page","target_type":"issue","target_id":"old"}'::jsonb),
+    ($2,'{"cloudinary_public_id":"keep-me","target_type":"upload","target_id":"old"}'::jsonb)`,
+    [notionBacklog, cloudBacklog]);
+  await database.query(`insert into app_private.notion_pages(target_type,target_id,notion_page_id)
+    values('issue',$1,'legacy-page')`, [crypto.randomUUID()]);
+
+  const first = asRecord(await withRuntimeEnvironment(
+    enabledEnvironment,
+    () => callAction('rebuildNotionArchive', {}, admin.auth),
+  ));
+  const cleared = asRecord(first.cleared);
+  assert.equal(cleared.jobs, 4);
+  assert.equal(cleared.cleanup, 1);
+  assert.ok(Number(cleared.deliveries) > 0);
+  assert.equal(cleared.mappings, 1);
+
+  const oldJobs = await database.query<{ id: string; status: string }>(
+    'select id,status from app_private.background_jobs where id = any($1::uuid[]) order by id',
+    [[failedRebuild, pendingRebuild, processingRebuild, notionDeletion]],
+  );
+  assert.equal(oldJobs.rows.length, 4);
+  assert.ok(oldJobs.rows.every((job) => job.status === 'superseded'));
+  assert.equal((await database.query<{ status: string }>(
+    'select status from app_private.background_jobs where id=$1', [cloudDeletion],
+  )).rows[0].status, 'failed');
+  assert.deepEqual((await database.query<{ job_id: string }>(
+    'select job_id from app_private.external_cleanup_backlog order by job_id',
+  )).rows.map((row) => row.job_id), [cloudBacklog]);
+
+  const firstJobId = String(first.jobId);
+  const activeAfterFirst = await database.query<{ id: string }>(`
+    select id from app_private.background_jobs
+    where job_type='notion_reconcile' and status in ('pending','processing')`);
+  assert.deepEqual(activeAfterFirst.rows.map((row) => row.id), [firstJobId]);
+
+  const second = asRecord(await withRuntimeEnvironment(
+    enabledEnvironment,
+    () => callAction('rebuildNotionArchive', {}, admin.auth),
+  ));
+  const secondJobId = String(second.jobId);
+  assert.notEqual(secondJobId, firstJobId);
+  assert.equal((await database.query<{ status: string }>(
+    'select status from app_private.background_jobs where id=$1', [firstJobId],
+  )).rows[0].status, 'superseded');
+  const activeAfterSecond = await database.query<{ id: string }>(`
+    select id from app_private.background_jobs
+    where job_type='notion_reconcile' and status in ('pending','processing')`);
+  assert.deepEqual(activeAfterSecond.rows.map((row) => row.id), [secondJobId]);
 });

@@ -28,7 +28,6 @@ const messages = {
   'ui.operations.notionRebuildTitle': '完整重建 Notion 封存？',
   'ui.operations.notionRebuildConfirm': '資料庫裡的每一筆都會依目前內容重新寫一次：內容、狀態、時間、留言與系統維運紀錄。舊的 Notion 同步佇列、失敗紀錄與上一次的重建都會一併清掉，其他通知佇列不受影響。既有頁面不會被刪除，要換掉的舊頁面請自行先刪。這項工作會在背景分批執行，進度會顯示在這一列。',
   'ui.operations.notionRebuildQueued': '已排程完整重建 Notion 封存，並清掉 {cleared} 筆舊佇列與紀錄',
-  'ui.operations.notionRebuildAlreadyQueued': 'Notion 完整重建已在等待或執行中',
   'ui.operations.notionRebuildFailed': '無法排程 Notion 完整重建',
   'ui.operations.job.categoryPolicy': '分類政策更新',
   'ui.operations.job.deletion': '外部資料刪除',

@@ -48,7 +48,6 @@ export function NotionRebuildAction({
           action={
             <RowAction
               busy={busy}
-              disabled={Boolean(job)}
               icon={DatabaseBackup}
               label={t("ui.operations.notionRebuildAction")}
               onClick={() => setOpen(true)}

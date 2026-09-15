@@ -28,7 +28,6 @@ const messages = {
   'ui.operations.notionRebuildTitle': 'Rebuild the complete Notion archive?',
   'ui.operations.notionRebuildConfirm': 'Everything the database holds is written again from its current content: text, statuses, dates, comments, and system-operation records. The old Notion queue, its failures, and any earlier rebuild are cleared with it; other notification queues are untouched. Nothing already in the workspace is removed -- delete the pages this replaces yourself first. This runs in the background, a batch at a time, and reports its progress on this row.',
   'ui.operations.notionRebuildQueued': 'Complete Notion archive rebuild queued; {cleared} superseded queue entries and records cleared',
-  'ui.operations.notionRebuildAlreadyQueued': 'A complete Notion rebuild is already queued or running',
   'ui.operations.notionRebuildFailed': 'Could not queue the complete Notion rebuild',
   'ui.operations.job.categoryPolicy': 'Category policy update',
   'ui.operations.job.deletion': 'External data deletion',

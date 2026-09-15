@@ -36,9 +36,7 @@ export const retryOperationalWork = invokeBackendAction<
   { success: boolean; retried?: number }
 >('retryOperationalWork');
 export const queueNotionArchiveRebuild = invokeBackendAction<Record<string, never>, {
-  alreadyQueued: boolean;
-  /** What the request swept away, or null when a rebuild was already running. */
-  cleared: { deliveries: number; jobs: number; mappings: number } | null;
+  cleared: { cleanup: number; deliveries: number; jobs: number; mappings: number };
   jobId: string;
   success: boolean;
 }>('rebuildNotionArchive');

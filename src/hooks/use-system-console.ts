@@ -154,11 +154,9 @@ export function useSystemConsole() {
     try {
       const result = await queueNotionArchiveRebuild({});
       const cleared = result.cleared;
-      toast.success(result.alreadyQueued || !cleared
-        ? t("ui.operations.notionRebuildAlreadyQueued")
-        : t("ui.operations.notionRebuildQueued", {
-          cleared: cleared.deliveries + cleared.jobs + cleared.mappings,
-        }));
+      toast.success(t("ui.operations.notionRebuildQueued", {
+        cleared: cleared.cleanup + cleared.deliveries + cleared.jobs + cleared.mappings,
+      }));
       await load(0);
     } catch (caught) {
       toast.error(caught instanceof Error ? caught.message : t("ui.operations.notionRebuildFailed"));

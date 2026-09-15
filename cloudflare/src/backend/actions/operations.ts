@@ -16,23 +16,14 @@ export async function handleOperationsAction(action: string, payload: JsonRecord
   }
   if (action === 'rebuildNotionArchive') {
     if (!notionEnabled()) throw new Error('service-not-configured');
-    const queued = await database.sqlOne<{ already_queued: boolean; id: string }>`
-      with existing as (
-        select id from app_private.background_jobs
-        where job_type = 'notion_reconcile' and status in ('pending', 'processing')
-        order by created_at desc limit 1
-      ), inserted as (
-        insert into app_private.background_jobs (job_type, scope_id, payload, created_by)
-        select 'notion_reconcile', 'global', ${JSON.stringify({ schemaVersion: 2 })}::jsonb, ${auth.uid}
-        where not exists (select 1 from existing)
-        returning id
-      )
-      select id, false as already_queued from inserted
-      union all
-      select id, true as already_queued from existing
-      limit 1`;
-    const cleared = queued.already_queued ? null : await clearSupersededNotionWork(queued.id, database);
-    return { alreadyQueued: queued.already_queued, cleared, jobId: queued.id, success: true };
+    // Two administrators asking at the same instant still leave exactly one fresh rebuild.
+    await database.sql`select pg_advisory_xact_lock(hashtext('novae:notion-rebuild'))`;
+    const cleared = await clearSupersededNotionWork(database);
+    const queued = await database.sqlOne<{ id: string }>`
+      insert into app_private.background_jobs (job_type, scope_id, payload, created_by)
+      values ('notion_reconcile', 'global', ${JSON.stringify({ schemaVersion: 2 })}::jsonb, ${auth.uid})
+      returning id`;
+    return { cleared, jobId: queued.id, success: true };
   }
   if (action === 'retryOperationalWork') {
     if (payload.kind === 'all') return retryEverythingFailed(auth.uid, database);
@@ -74,30 +65,35 @@ export async function handleOperationsAction(action: string, payload: JsonRecord
 }
 
 /**
- * Everything about the old archive, cleared the moment a rebuild is asked for.
+ * Everything the new archive replaces, retired before its fresh job is queued.
  *
- * A rebuild states the archive from the canonical record, so a Notion delivery
- * still waiting describes a page this job writes again anyway, a failed one
- * describes a page it is about to replace, and the mappings name the pages an
- * administrator removed by hand before asking for this. Earlier rebuilds are
- * cleared with them: a rebuild that stopped is superseded by this one, and
- * leaving its failure on the operations screen meant the screen reported a
- * problem that no longer existed and could never be retried away.
- *
- * This happens when the administrator asks rather than when the job is first
- * claimed, so the screen they are looking at is right immediately instead of
- * at the next sweep. Only Notion's queue is touched: a push or in-app
- * notification still waiting has nothing to do with the archive.
+ * Rebuilds are replacement operations, not retries. Waiting, running and failed
+ * Notion deliveries describe pages this rebuild writes again. Previous rebuild
+ * jobs and Notion-only deletion work are fenced as superseded, so an in-flight
+ * legacy worker cannot write its status back after the new rebuild starts.
+ * Cloudinary deletion work and every non-Notion delivery remain untouched.
  */
-async function clearSupersededNotionWork(jobId: string, database: BackendDatabase) {
+async function clearSupersededNotionWork(database: BackendDatabase) {
   const deliveries = await database.sql`delete from app_private.event_deliveries
-    where destination = 'notion' and status in ('pending', 'failed') returning id`;
-  const jobs = await database.sql`delete from app_private.background_jobs
-    where job_type = 'notion_reconcile' and id <> ${jobId}::uuid returning id`;
+    where destination = 'notion' and status in ('pending', 'processing', 'failed') returning id`;
+  const rebuildJobs = await database.sql`update app_private.background_jobs
+    set status = 'superseded', locked_at = null, updated_at = now()
+    where job_type = 'notion_reconcile' and status in ('pending', 'processing', 'failed') returning id`;
+  const deletionJobs = await database.sql`update app_private.background_jobs
+    set status = 'superseded', locked_at = null, updated_at = now()
+    where job_type = 'deletion' and status in ('pending', 'processing', 'failed')
+      and nullif(payload->>'notion_page_id', '') is not null
+      and nullif(payload->>'cloudinary_public_id', '') is null
+    returning id`;
+  const cleanup = await database.sql`delete from app_private.external_cleanup_backlog
+    where nullif(payload->>'notion_page_id', '') is not null
+      and nullif(payload->>'cloudinary_public_id', '') is null
+    returning job_id`;
   const mappings = await database.sql`delete from app_private.notion_pages returning target_id`;
   return {
+    cleanup: cleanup.rows.length,
     deliveries: deliveries.rows.length,
-    jobs: jobs.rows.length,
+    jobs: rebuildJobs.rows.length + deletionJobs.rows.length,
     mappings: mappings.rows.length,
   };
 }
