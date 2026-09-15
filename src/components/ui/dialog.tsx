@@ -67,12 +67,7 @@ function DialogContent({
   const sheet = presentation === "sheet";
   const { t } = useI18n();
   const contentRef = React.useRef<HTMLDivElement>(null);
-  const dragRef = React.useRef<{
-    startedAt: number;
-    startedOnClose: boolean;
-    startedY: number;
-  } | null>(null);
-  const suppressCloseClickRef = React.useRef(false);
+  const dragRef = React.useRef<{ startedAt: number; startedY: number } | null>(null);
   const settleTimerRef = React.useRef<number | null>(null);
   const [dragging, setDragging] = React.useState(false);
   const [settling, setSettling] = React.useState(false);
@@ -94,19 +89,13 @@ function DialogContent({
   const beginSheetDrag = React.useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (!sheet || !window.matchMedia("(max-width: 47.99rem)").matches) return;
     const target = event.target instanceof Element ? event.target : null;
-    const closeControl = target?.closest("[data-slot='dialog-close']");
     const dragRegion = target?.closest("[data-sheet-drag-region],.detail-header");
     const interactiveControl = target?.closest("button,a,input,textarea,select,[role='button']");
-    if (!(dragRegion || closeControl) || (interactiveControl && !closeControl)) return;
+    if (!dragRegion || interactiveControl) return;
     if (settleTimerRef.current !== null) window.clearTimeout(settleTimerRef.current);
     setSettling(false);
     setDragging(true);
-    suppressCloseClickRef.current = false;
-    dragRef.current = {
-      startedAt: performance.now(),
-      startedOnClose: Boolean(closeControl),
-      startedY: event.clientY,
-    };
+    dragRef.current = { startedAt: performance.now(), startedY: event.clientY };
     event.currentTarget.setPointerCapture(event.pointerId);
   }, [sheet]);
 
@@ -134,7 +123,6 @@ function DialogContent({
       content.querySelector<HTMLElement>("[data-slot='dialog-close']")?.click();
       return;
     }
-    if (drag.startedOnClose && distance >= 8) suppressCloseClickRef.current = true;
     resetSheetPosition();
   }, [resetSheetPosition]);
 
@@ -181,13 +169,7 @@ function DialogContent({
           {(showCloseButton || sheet) && (
             <DialogPrimitive.Close
               data-slot="dialog-close"
-              className="absolute top-3 right-3 z-2 grid size-8 place-items-center rounded-full text-muted-foreground transition-[background-color,color] duration-[var(--motion-control)] hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:size-4"
-              onClick={(event) => {
-                if (!suppressCloseClickRef.current) return;
-                suppressCloseClickRef.current = false;
-                event.preventDefault();
-                event.stopPropagation();
-              }}
+              className="absolute top-3 right-3 z-2 grid size-8 place-items-center rounded-full bg-muted text-muted-foreground transition-[background-color,color] duration-[var(--motion-control)] hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:size-4"
             >
               <XIcon />
               <span className="sr-only">{t("common.close")}</span>
