@@ -67,6 +67,7 @@ function DialogContent({
   const sheet = presentation === "sheet";
   const { t } = useI18n();
   const contentRef = React.useRef<HTMLDivElement>(null);
+  const releaseStageRef = React.useRef<(() => void) | null>(null);
   const dragRef = React.useRef<{ startedAt: number; startedY: number } | null>(null);
   const settleTimerRef = React.useRef<number | null>(null);
   const [dragging, setDragging] = React.useState(false);
@@ -133,13 +134,17 @@ function DialogContent({
     resetSheetPosition();
   }, [resetSheetPosition]);
 
-  // A sheet is a layer over the page, so the page reads as a layer: it becomes
-  // one screen-sized card and is pushed back behind the sheet. What that costs
-  // is the two figures the card is rebuilt from, taken before it moves.
-  React.useLayoutEffect(
-    () => (sheet ? holdStageBehind(contentRef.current) : undefined),
-    [sheet],
-  );
+  const setContentRef = React.useCallback((node: HTMLDivElement | null) => {
+    releaseStageRef.current?.();
+    releaseStageRef.current = null;
+    contentRef.current = node;
+    if (sheet && node) releaseStageRef.current = holdStageBehind(node);
+  }, [sheet]);
+
+  React.useEffect(() => () => {
+    releaseStageRef.current?.();
+    releaseStageRef.current = null;
+  }, []);
 
   return (
     <DialogPortal data-slot="dialog-portal">
@@ -151,7 +156,7 @@ function DialogContent({
         )}
       >
         <DialogPrimitive.Content
-          ref={contentRef}
+          ref={setContentRef}
           data-slot="dialog-content"
           data-sheet-dragging={dragging || undefined}
           data-sheet-drag-interacted={dragInteracted || undefined}

@@ -245,9 +245,11 @@ test('nested sheets keep every previous layer visible in the stack', async ({ br
   await expect(card).toBeVisible();
   await card.click();
   await page.waitForURL(/\/issues\/[^/]+\/[^/]+$/u);
-  const detail = page.getByRole('dialog').first();
+  const detail = page
+    .locator('[data-slot="dialog-content"].t-sheet')
+    .filter({ has: page.locator('article h1') });
   await expect(detail).toBeVisible();
-  const commentSort = detail.getByRole('button', { name: 'Comment order' });
+  const commentSort = detail.getByRole('button', { name: /Comment order|Newest first/u });
   await expect(commentSort).toBeVisible();
   await commentSort.click();
 
