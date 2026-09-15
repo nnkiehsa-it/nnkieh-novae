@@ -128,7 +128,12 @@ test('a record replaces its content in one surface, over the list it came from',
     const inspect = () => {
       state.__novaeMaxStateSurfaces = Math.max(
         state.__novaeMaxStateSurfaces ?? 0,
-        document.querySelectorAll('[data-slot="dialog-content"] [data-state-transition]').length,
+        // The record's own surface, not the ones nested inside it: the
+        // discussion carries a surface of its own, and what this is watching
+        // for is a second copy of the record stacked on the first.
+        [...document.querySelectorAll('[data-slot="dialog-content"] [data-state-transition]')]
+          .filter((surface) => !surface.parentElement?.closest('[data-state-transition]'))
+          .length,
       );
       if (performance.now() < deadline) requestAnimationFrame(inspect);
     };
