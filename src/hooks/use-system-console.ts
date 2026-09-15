@@ -183,6 +183,30 @@ export function useSystemConsole() {
     try {
       const result = await queueNotionArchiveRebuild({});
       const cleared = result.cleared;
+      // The console refreshes one panel at a time. Without an immediate jobs
+      // replacement, the previous reading stays on screen until the jobs panel
+      // happens to arrive, which made superseded deletion work look as if it
+      // were the rebuild itself. Seed the one job this action just created; the
+      // streamed jobs panel will replace it with the real progress moments later.
+      remember((current) => ({
+        ...current,
+        page: 0,
+        snapshot: current.snapshot && {
+          ...current.snapshot,
+          jobs: [{
+            affectedRows: 0,
+            attemptCount: 0,
+            errorDetail: null,
+            estimatedRows: 0,
+            id: result.jobId,
+            jobType: "notion_reconcile",
+            lastAttemptId: null,
+            processedRows: 0,
+            status: "pending",
+            updatedAt: new Date().toISOString(),
+          }],
+        },
+      }));
       toast.success(t("ui.operations.notionRebuildQueued", {
         cleared: cleared.cleanup + cleared.deliveries + cleared.jobs + cleared.mappings,
       }));
@@ -192,7 +216,7 @@ export function useSystemConsole() {
     } finally {
       setRebuildingNotion(false);
     }
-  }, [load, t]);
+  }, [load, remember, t]);
 
   return {
     clearErrors,
