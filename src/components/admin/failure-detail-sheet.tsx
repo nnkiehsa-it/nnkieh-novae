@@ -4,12 +4,12 @@ import * as React from "react";
 import { RotateCcw } from "lucide-react";
 
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ListRow, ListSection } from "@/components/ui/list";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -43,12 +43,12 @@ export function FailureDetailSheet({
   if (!record) return null;
 
   return (
-    <Dialog onOpenChange={(open) => !open && onClose()} open={Boolean(item)}>
-      <DialogContent presentation="sheet">
-        <DialogHeader>
-          <DialogTitle>{record.label}</DialogTitle>
-          <DialogDescription>{t("admin.failureDetailTitle")}</DialogDescription>
-        </DialogHeader>
+    <Sheet onOpenChange={(open) => !open && onClose()} open={Boolean(item)}>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>{record.label}</SheetTitle>
+          <SheetDescription>{t("admin.failureDetailTitle")}</SheetDescription>
+        </SheetHeader>
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
           <p className="text-xs font-medium uppercase tracking-[0.04em] text-muted-foreground">
             {t("admin.failureMessage")}
@@ -80,7 +80,7 @@ export function FailureDetailSheet({
             {t("admin.retry")}
           </Button>
         ) : null}
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

@@ -3,12 +3,12 @@
 import * as React from "react";
 
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { RecordList } from "@/components/ui/record-list";
 import { ListRow, ListSection } from "@/components/ui/list";
 import { useAdminAudit, type AdminAuditEntry } from "@/hooks/use-admin-console";
@@ -158,12 +158,12 @@ function AuditEntrySheet({
   };
 
   return (
-    <Dialog onOpenChange={(open) => !open && onClose()} open={Boolean(entry)}>
-      <DialogContent presentation="sheet">
-        <DialogHeader>
-          <DialogTitle>{actionLabel(record)}</DialogTitle>
-          <DialogDescription>{formatDate(record.createdAt)}</DialogDescription>
-        </DialogHeader>
+    <Sheet onOpenChange={(open) => !open && onClose()} open={Boolean(entry)}>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>{actionLabel(record)}</SheetTitle>
+          <SheetDescription>{formatDate(record.createdAt)}</SheetDescription>
+        </SheetHeader>
         <ListSection>
           <ListRow label={t("ui.adminConsole.adminColumn")} value={record.actorName} />
           <ListRow
@@ -184,7 +184,7 @@ function AuditEntrySheet({
             ))
           )}
         </ListSection>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

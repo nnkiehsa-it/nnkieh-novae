@@ -3,7 +3,7 @@
 import * as React from "react";
 import { ShieldOff } from "lucide-react";
 
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ListMutationRow, ListRow, ListSection, RowAction } from "@/components/ui/list";
 import { AccountAccessRuleFields, type AccountAccessRuleDraft } from "@/components/admin/account-access-rule-fields";
@@ -49,9 +49,9 @@ export function UserDetailsDialog({ busy, onClose, onRestrictionChange, user }: 
   });
 
   return (
-    <Dialog onOpenChange={(open) => !open && onClose()} open={Boolean(user)}>
-      <DialogContent presentation="sheet">
-        <DialogHeader><DialogTitle>{subject.name}</DialogTitle><DialogDescription>{subject.email ?? subject.uid}</DialogDescription></DialogHeader>
+    <Sheet onOpenChange={(open) => !open && onClose()} open={Boolean(user)}>
+      <SheetContent>
+        <SheetHeader><SheetTitle>{subject.name}</SheetTitle><SheetDescription>{subject.email ?? subject.uid}</SheetDescription></SheetHeader>
         <ListSection>
           <ListRow label="UID" value={<span className="font-mono text-xs">{subject.uid}</span>} />
           <ListRow label={t("ui.adminConsole.registeredAtColumn")} value={formatDate(subject.createdAt)} />
@@ -67,7 +67,7 @@ export function UserDetailsDialog({ busy, onClose, onRestrictionChange, user }: 
           <AccountAccessRuleFields draft={draft} onChange={updateDraft} />
           <div className="flex justify-end p-[var(--row-padding-block)]"><Button disabled={busy || !draft.message.trim()} onClick={submit}>{t("ui.accountAccess.apply")}</Button></div>
         </ListSection> : <ListSection><ListRow label={t("ui.adminConsole.platformAdminRestrictionNotice")} /></ListSection>}
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

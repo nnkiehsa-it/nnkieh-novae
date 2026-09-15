@@ -375,18 +375,14 @@ html[data-theme-transition="true"]::view-transition-new(root) {
      without browser chrome. Sizing the top edge one way and the bottom edge the
      other is what left the sheet short of where it was asked to stop. */
   [data-slot="dialog-content"].t-sheet {
+    --dialog-pad: max(var(--page-gutter), var(--safe-left), var(--safe-right));
     max-width: none;
+    height: calc(100% - var(--sheet-inset-top));
     max-height: calc(100% - var(--sheet-inset-top));
     border-end-start-radius: 0;
     border-end-end-radius: 0;
     padding-top: 1rem;
     padding-bottom: max(1.5rem, calc(var(--safe-bottom) + 0.75rem));
-  }
-  /* A sheet that is a record rather than a question takes the whole height it
-     is allowed, however much it has to say: it is the screen the reader is on
-     for as long as it is up, and a screen that stops halfway is a leftover. */
-  [data-slot="dialog-content"].t-sheet-filled {
-    height: calc(100% - var(--sheet-inset-top));
   }
   .t-sheet[data-state="open"] {
     animation: t-sheet-in var(--motion-sheet) var(--ease-nav) both;

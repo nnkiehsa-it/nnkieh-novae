@@ -415,7 +415,7 @@ html[data-input-modality="pointer"] :focus-visible {
   z-index: -1;
   top: calc(0px - var(--header-top, var(--page-header-top)));
   right: var(--header-bleed, calc((100% - 100vw) / 2));
-  bottom: -1.25rem;
+  bottom: -0.5rem;
   left: var(--header-bleed, calc((100% - 100vw) / 2));
   content: "";
   pointer-events: none;
@@ -427,12 +427,12 @@ html[data-input-modality="pointer"] :focus-visible {
   backdrop-filter: blur(12px);
   -webkit-mask-image: linear-gradient(
     to bottom,
-    black calc(100% - 1.25rem),
+    black calc(100% - 0.5rem),
     transparent
   );
   mask-image: linear-gradient(
     to bottom,
-    black calc(100% - 1.25rem),
+    black calc(100% - 0.5rem),
     transparent
   );
 }
@@ -467,20 +467,24 @@ html[data-input-modality="pointer"] :focus-visible {
   box-sizing: content-box;
   isolation: isolate;
   margin: calc(-1 * var(--dialog-pad)) calc(-1 * var(--dialog-pad)) 0;
-  padding: var(--dialog-pad) var(--dialog-pad) 1rem;
+  padding: var(--dialog-pad) var(--dialog-pad) 0.5rem;
 }
 
 [data-slot="dialog-content"] [data-slot="dialog-header"]::before,
 [data-slot="alert-dialog-content"] [data-slot="alert-dialog-header"]::before {
   position: absolute;
   z-index: -1;
-  inset: 0 0 -1.25rem;
+  inset: 0 0 -0.5rem;
   content: "";
   pointer-events: none;
   background: color-mix(in srgb, var(--popover) 82%, transparent);
   backdrop-filter: blur(12px);
-  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 1.25rem), transparent);
-  mask-image: linear-gradient(to bottom, black calc(100% - 1.25rem), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 0.5rem), transparent);
+  mask-image: linear-gradient(to bottom, black calc(100% - 0.5rem), transparent);
+}
+
+.t-sheet [data-slot="dialog-header"] > div {
+  padding-right: 3rem;
 }
 
 .app-mobile-nav {

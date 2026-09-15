@@ -4,7 +4,7 @@ import * as React from "react";
 import { Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ListMutationRow, ListRow, ListSection, RowAction } from "@/components/ui/list";
 import { AccountAccessRuleFields, type AccountAccessRuleDraft } from "@/components/admin/account-access-rule-fields";
 import { ErrorState } from "@/components/ui/page-state";
@@ -26,12 +26,12 @@ function PrefixRuleDialog({ busy, onClose, onSave, rule }: {
   const [durationHours, setDurationHours] = React.useState(24);
   const [message, setMessage] = React.useState(rule?.message ?? "");
   const open = rule !== undefined;
-  return <Dialog onOpenChange={(next) => !next && onClose()} open={open}>
-    <DialogContent presentation="sheet">
-      <DialogHeader>
-        <DialogTitle>{rule ? t("ui.accountAccess.editPrefix") : t("ui.accountAccess.addPrefix")}</DialogTitle>
-        <DialogDescription>{t("ui.accountAccess.prefixDescription")}</DialogDescription>
-      </DialogHeader>
+  return <Sheet onOpenChange={(next) => !next && onClose()} open={open}>
+    <SheetContent>
+      <SheetHeader>
+        <SheetTitle>{rule ? t("ui.accountAccess.editPrefix") : t("ui.accountAccess.addPrefix")}</SheetTitle>
+        <SheetDescription>{t("ui.accountAccess.prefixDescription")}</SheetDescription>
+      </SheetHeader>
       <ListSection>
         <AccountAccessRuleFields
           draft={{ duration, durationHours, message, preset } satisfies AccountAccessRuleDraft}
@@ -47,8 +47,8 @@ function PrefixRuleDialog({ busy, onClose, onSave, rule }: {
         />
       </ListSection>
       <div className="flex justify-end"><Button disabled={busy || !targetValue.trim() || !message.trim()} onClick={() => void onSave({ duration, ...(duration === "custom" ? { durationHours } : {}), message, preset, targetType: "email_prefix", targetValue }).then(onClose)}>{t("ui.accountAccess.apply")}</Button></div>
-    </DialogContent>
-  </Dialog>;
+    </SheetContent>
+  </Sheet>;
 }
 
 export function AccountAccessRules() {

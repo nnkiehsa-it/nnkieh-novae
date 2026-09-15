@@ -4,12 +4,12 @@ import * as React from "react";
 import type { LucideIcon } from "lucide-react";
 
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -105,12 +105,12 @@ export function ActionMenu({
   return (
     <>
       {described(React.cloneElement(trigger, { onClick: () => setOpen(true) }))}
-      <Dialog onOpenChange={setOpen} open={open}>
-        <DialogContent presentation="sheet">
-          <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
-            {description ? <DialogDescription>{description}</DialogDescription> : null}
-          </DialogHeader>
+      <Sheet onOpenChange={setOpen} open={open}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>{title}</SheetTitle>
+            {description ? <SheetDescription>{description}</SheetDescription> : null}
+          </SheetHeader>
           <ListSection>
             {items.map((item) =>
               item.href ? (
@@ -136,8 +136,8 @@ export function ActionMenu({
               ),
             )}
           </ListSection>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }

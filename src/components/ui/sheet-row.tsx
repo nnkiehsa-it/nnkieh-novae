@@ -3,11 +3,11 @@
 import * as React from "react";
 
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { ListNavRow } from "@/components/ui/list";
 
 /**
@@ -42,14 +42,14 @@ export function SheetRow({
   return (
     <>
       <ListNavRow label={label} onClick={() => change(true)} value={value} />
-      <Dialog onOpenChange={change} open={open}>
-        <DialogContent presentation="sheet">
-          <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
-          </DialogHeader>
+      <Sheet onOpenChange={change} open={open}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>{title}</SheetTitle>
+          </SheetHeader>
           {children}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }

@@ -8,13 +8,13 @@ import { useI18n } from "@/i18n";
 import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 export function AppNotificationPrompt() {
   const session = useSession();
@@ -31,23 +31,23 @@ export function AppNotificationPrompt() {
   };
 
   return (
-    <Dialog
+    <Sheet
       onOpenChange={(open) => {
         if (!open && !prompt.isPrompting) prompt.dismiss();
       }}
       open={prompt.open}
     >
-      <DialogContent presentation="sheet" showCloseButton={false}>
-        <DialogHeader>
+      <SheetContent showCloseButton={false}>
+        <SheetHeader>
           <div className="mb-1 flex size-10 items-center justify-center rounded-xl bg-accent text-foreground">
             <Bell className="size-5" aria-hidden />
           </div>
-          <DialogTitle>{t("notification.promptTitle")}</DialogTitle>
-          <DialogDescription>
+          <SheetTitle>{t("notification.promptTitle")}</SheetTitle>
+          <SheetDescription>
             {t("notification.promptDescription")}
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
+          </SheetDescription>
+        </SheetHeader>
+        <SheetFooter>
           <Button
             disabled={prompt.isPrompting}
             onClick={prompt.dismiss}
@@ -70,8 +70,8 @@ export function AppNotificationPrompt() {
             )}
             {t("notification.promptEnable")}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

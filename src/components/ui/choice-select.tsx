@@ -4,11 +4,11 @@ import * as React from "react";
 import { ChevronDownIcon } from "lucide-react";
 
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { ListSection, rowClass } from "@/components/ui/list";
 import { ListChoiceRow } from "@/components/ui/list-controls";
 import {
@@ -120,11 +120,11 @@ export function ChoiceSelect({
         {content}
         <ChevronDownIcon className="t-disclosure-icon size-4 opacity-50" />
       </button>
-      <Dialog onOpenChange={setOpen} open={open}>
-        <DialogContent presentation="sheet">
-          <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
-          </DialogHeader>
+      <Sheet onOpenChange={setOpen} open={open}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>{title}</SheetTitle>
+          </SheetHeader>
           <ListSection groupName={title}>
             {options.map((option) => (
               <ListChoiceRow
@@ -139,8 +139,8 @@ export function ChoiceSelect({
               />
             ))}
           </ListSection>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }

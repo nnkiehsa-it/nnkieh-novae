@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { timingMs } from "@/lib/motion-timing";
 
 /**
@@ -48,16 +48,16 @@ export function DetailModal({ children, label }: { children: ReactNode; label: s
   }, [router]);
 
   return (
-    <Dialog
+    <Sheet
       onOpenChange={(next) => {
         if (!next) close();
       }}
       open={open}
     >
-      <DialogContent className="t-sheet-filled" presentation="sheet" showCloseButton={false}>
-        <DialogTitle className="sr-only">{label}</DialogTitle>
+      <SheetContent showCloseButton={false}>
+        <SheetTitle className="sr-only">{label}</SheetTitle>
         <RecordOverlay.Provider value={{ close, label }}>{children}</RecordOverlay.Provider>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

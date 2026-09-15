@@ -11,11 +11,11 @@ import { ApplyReviewDialog } from "@/components/admin/apply-review-dialog";
 import { CategoryEditor } from "@/components/admin/category-editors";
 import { ContentTransition, StateTransition } from "@/components/motion/state-transition";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { ListActionRow, ListNavRow, ListSection } from "@/components/ui/list";
 import { ListSwitchRow } from "@/components/ui/list-controls";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
@@ -152,13 +152,13 @@ export function CategoryManagement() {
         </ContentTransition>
       </StateTransition>
 
-      <Dialog onOpenChange={(open) => !open && setEditing(null)} open={editing !== null}>
-        <DialogContent presentation="sheet">
-          <DialogHeader>
-            <DialogTitle>
+      <Sheet onOpenChange={(open) => !open && setEditing(null)} open={editing !== null}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>
               {editingItem ? nameOf(editingItem, activeIndex ?? 0) : ""}
-            </DialogTitle>
-          </DialogHeader>
+            </SheetTitle>
+          </SheetHeader>
           {area && editingItem && activeIndex !== null ? (
             <CategoryEditor
               identifierLocked={state.persisted.has(editingItem.id)}
@@ -171,8 +171,8 @@ export function CategoryManagement() {
               }}
             />
           ) : null}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
       <SaveBar
         changeCount={state.draft.changes.length}

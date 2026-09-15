@@ -6,11 +6,11 @@ import { useI18n as useLocaleSubscription } from "@/i18n";
 import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { ListSection } from "@/components/ui/list";
 import { ListChoiceRow, ListNoteRow } from "@/components/ui/list-controls";
 
@@ -136,13 +136,13 @@ export function DecisionSheet({
   title: string;
 }) {
   return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent presentation="sheet">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-        </DialogHeader>
+    <Sheet onOpenChange={onOpenChange} open={open}>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>{title}</SheetTitle>
+        </SheetHeader>
         <DecisionForm {...decision} />
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
