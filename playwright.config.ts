@@ -1,5 +1,20 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const readOnlyDesktopTests = [
+  /access-visibility\.spec\.ts/,
+  /feed-layout\.spec\.ts/,
+  /loading-continuity\.spec\.ts/,
+  /motion-system\.spec\.ts/,
+  /primary-navigation\.spec\.ts/,
+];
+
+const configuredWorkers = Number.parseInt(process.env.NOVAE_E2E_WORKERS ?? "", 10);
+const workers = Number.isFinite(configuredWorkers) && configuredWorkers > 0
+  ? configuredWorkers
+  : process.env.CI
+    ? 4
+    : undefined;
+
 export default defineConfig({
   expect: {
     timeout: 10_000,
@@ -19,24 +34,41 @@ export default defineConfig({
     trace: "retain-on-failure",
     video: "retain-on-failure",
   },
-  workers: 1,
+  // Read-only journeys can fan out. Tests that mutate shared accounts, access
+  // scopes, categories, feature switches, or platform settings stay serialized
+  // in the stateful project below.
+  workers,
   projects: [
     {
       name: "bootstrap",
       testMatch: /bootstrap\.setup\.ts/,
       use: { ...devices["Desktop Chrome"] },
+      workers: 1,
     },
     {
       dependencies: ["bootstrap"],
-      name: "chromium-desktop",
-      testIgnore: [/bootstrap\.setup\.ts/, /mobile-access\.spec\.ts/],
+      name: "chromium-desktop-readonly",
+      testMatch: readOnlyDesktopTests,
       use: { ...devices["Desktop Chrome"] },
     },
     {
       dependencies: ["bootstrap"],
-      name: "chromium-mobile",
+      name: "chromium-mobile-readonly",
       testMatch: /mobile-access\.spec\.ts/,
       use: { ...devices["Pixel 7"] },
+    },
+    {
+      // New desktop specs intentionally default to this serialized bucket until
+      // they are reviewed and explicitly promoted to the read-only list above.
+      dependencies: ["chromium-desktop-readonly", "chromium-mobile-readonly"],
+      name: "chromium-stateful",
+      testIgnore: [
+        /bootstrap\.setup\.ts/,
+        /mobile-access\.spec\.ts/,
+        ...readOnlyDesktopTests,
+      ],
+      use: { ...devices["Desktop Chrome"] },
+      workers: 1,
     },
   ],
 });

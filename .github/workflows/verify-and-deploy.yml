@@ -14,6 +14,7 @@ on:
       - 'bun.lock'
       - 'components.json'
       - 'next.config.mjs'
+      - 'playwright.config.ts'
       - 'postcss.config.mjs'
       - 'tsconfig*.json'
       - 'vercel.json'
@@ -35,6 +36,7 @@ on:
       - 'bun.lock'
       - 'components.json'
       - 'next.config.mjs'
+      - 'playwright.config.ts'
       - 'postcss.config.mjs'
       - 'tsconfig*.json'
       - 'vercel.json'
@@ -99,7 +101,7 @@ jobs:
             if printf '%s\n' "$files" | grep -Eq '^(cloudflare/|database/|config/|tests/integration/|scripts/(configure-|database\.mjs|external-provider-test-server\.mjs|render-worker-config\.mjs|verify-integration\.mjs|generate-(api-errors|backend-actions|data-retention|rate-limits|all)\.mjs)|(package\.json|bun\.lock)$|tsconfig\.integration\.json$|vitest\.integration\.config\.ts$)'; then
               backend=true
             fi
-            if printf '%s\n' "$files" | grep -Eq '^(src/|config/|public/|tests/e2e/|(package\.json|bun\.lock|components\.json|next\.config\.mjs|postcss\.config\.mjs|tsconfig[^/]*\.json|vercel\.json)$|scripts/(check-build-budget|generate-(all|api-errors|backend-actions|data-retention|harmonyos-subset|rate-limits))\.mjs)'; then
+            if printf '%s\n' "$files" | grep -Eq '^(src/|config/|public/|tests/e2e/|(package\.json|bun\.lock|components\.json|next\.config\.mjs|playwright\.config\.ts|postcss\.config\.mjs|tsconfig[^/]*\.json|vercel\.json)$|scripts/(check-build-budget|generate-(all|api-errors|backend-actions|data-retention|harmonyos-subset|rate-limits))\.mjs)'; then
               browser=true
             fi
           fi
@@ -127,7 +129,7 @@ jobs:
         run: bun run verify:fast
 
   backend_verify:
-    needs: [changes, fast]
+    needs: changes
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -154,7 +156,7 @@ jobs:
         run: bun run verify:integration
 
   browser_verify:
-    needs: [changes, fast]
+    needs: changes
     if: needs.changes.outputs.browser == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -182,6 +184,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node24-next-browser-${{ hashFiles('bun.lock', 'next.config.mjs') }}-
             ${{ runner.os }}-node24-next-browser-
+
+      - name: Restore Playwright browser cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('bun.lock') }}
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
