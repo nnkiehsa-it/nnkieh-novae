@@ -13,17 +13,34 @@
  * page keeps so the scroll position is still there when the sheet leaves.
  */
 let held = 0;
+const sheets: HTMLElement[] = [];
+
+function publishDepth() {
+  document.documentElement.dataset.sheetDepth = String(held);
+  sheets.forEach((sheet, index) => {
+    const depth = sheets.length - index - 1;
+    sheet.dataset.sheetDepthBehind = String(depth);
+    sheet.style.setProperty("--sheet-depth-behind", String(Math.min(depth, 5)));
+  });
+}
 
 /** Holds the page still for one sheet. Answers with the release. */
-export function holdStageBehind() {
+export function holdStageBehind(sheet?: HTMLElement | null) {
   const root = document.documentElement;
   held += 1;
+  if (sheet) sheets.push(sheet);
+  publishDepth();
   if (held === 1) {
     root.style.setProperty("--stage-scroll", `${window.scrollY}px`);
     root.style.setProperty("--stage-height", `${root.scrollHeight}px`);
   }
   return () => {
     held -= 1;
+    if (sheet) {
+      const index = sheets.indexOf(sheet);
+      if (index >= 0) sheets.splice(index, 1);
+    }
+    publishDepth();
     if (held > 0) return;
     root.style.removeProperty("--stage-scroll");
     root.style.removeProperty("--stage-height");

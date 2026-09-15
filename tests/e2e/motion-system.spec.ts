@@ -202,6 +202,7 @@ test('a cancelled sheet drag settles in place without replaying its arrival', as
       availableHeight: frame ? frame.bottom - box.top : box.height,
       paddingLeft: Number.parseFloat(style.paddingLeft),
       paddingRight: Number.parseFloat(style.paddingRight),
+      alignContent: style.alignContent,
     };
   });
   const pagePadding = await page.locator('.route-page').evaluate((element) => {
@@ -214,6 +215,7 @@ test('a cancelled sheet drag settles in place without replaying its arrival', as
   expect(sheetMetrics.height).toBeCloseTo(sheetMetrics.availableHeight, 1);
   expect(sheetMetrics.paddingLeft).toBeCloseTo(pagePadding.left, 1);
   expect(sheetMetrics.paddingRight).toBeCloseTo(pagePadding.right, 1);
+  expect(sheetMetrics.alignContent).toBe('flex-start');
   await expect(sheet).toHaveAttribute('data-sheet-drag-interacted', 'true');
   await expect(sheet).toHaveCSS('animation-name', 'none');
 
@@ -232,6 +234,31 @@ test('a cancelled sheet drag settles in place without replaying its arrival', as
   await expect(sheet).toHaveAttribute('data-sheet-drag-interacted', 'true');
   await expect(sheet).not.toHaveAttribute('data-sheet-settling', 'true');
   await expect(sheet).toHaveCSS('animation-name', 'none');
+  await context.close();
+});
+
+test('nested sheets keep every previous layer visible in the stack', async ({ browser }) => {
+  const { context, page } = await newUserPage(browser, 'admin');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/issues');
+  const card = page.locator('.t-card a[href^="/issues/"]').first();
+  await expect(card).toBeVisible();
+  await card.click();
+  await page.waitForURL(/\/issues\/[^/]+\/[^/]+$/u);
+  const detail = page.getByRole('dialog').first();
+  await expect(detail).toBeVisible();
+  const moreActions = detail.getByRole('button', { name: 'More actions' });
+  await expect(moreActions).toBeVisible();
+  await moreActions.click();
+
+  const sheets = page.getByRole('dialog');
+  await expect(sheets).toHaveCount(2);
+  const actions = sheets.last();
+  await expect(actions).toBeVisible();
+  await expect(detail).toHaveAttribute('data-sheet-depth-behind', '1');
+  await expect(actions).toHaveAttribute('data-sheet-depth-behind', '0');
+  const detailTransform = await detail.evaluate((element) => getComputedStyle(element).transform);
+  expect(detailTransform).not.toBe('none');
   await context.close();
 });
 

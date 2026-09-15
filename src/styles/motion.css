@@ -394,6 +394,15 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   .t-sheet[data-state="open"][data-sheet-drag-interacted="true"] {
     animation: none;
   }
+  /* Every open sheet remains a visible card in the stack. The newest one stays
+     full size; older sheets step upward and inward one rung at a time, like the
+     native iOS sheet stack, rather than disappearing behind the newest portal. */
+  .t-sheet[data-state="open"][data-sheet-drag-interacted="true"][data-sheet-depth-behind]:not([data-sheet-depth-behind="0"]) {
+    transform:
+      translateY(calc(-0.65rem * var(--sheet-depth-behind)))
+      scale(calc(1 - 0.035 * var(--sheet-depth-behind)));
+    transition: transform var(--motion-sheet) var(--ease-nav);
+  }
   .t-sheet[data-state="closed"] {
     animation: t-sheet-out var(--motion-sheet-exit) var(--ease-nav) both;
   }
