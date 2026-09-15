@@ -66,7 +66,7 @@ export default function IssueDetailPage() {
         burst: detail.burst,
         canViewSupporters: detail.canViewSupporters,
         issue,
-        onReloadSupporters: () => void detail.loadSupporters(),
+        onLoadSupporters: () => void detail.loadSupporters(),
         onSupport: () => void detail.support(),
         reveal: detail.revealDetail,
         supportOpen: detail.supportOpen,

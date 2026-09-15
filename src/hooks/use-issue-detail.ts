@@ -139,13 +139,11 @@ export function useIssueDetail() {
     currentIssue?.support_enabled
       && (currentIssue.isOwnIssue || session.canManageIssueCategory(currentIssue.category)),
   );
+  // Nobody pays for the identity read until they ask who the supporters are.
+  const supportersAsked = React.useRef(false);
   const loadSupporters = React.useCallback(async () => {
-    if (!canViewSupporters) {
-      setSupporters([]);
-      setSupportersError("");
-      setSupportersLoading(false);
-      return;
-    }
+    if (!canViewSupporters) return;
+    supportersAsked.current = true;
     setSupportersLoading(true);
     setSupportersError("");
     try {
@@ -158,9 +156,6 @@ export function useIssueDetail() {
       setSupportersLoading(false);
     }
   }, [canViewSupporters, issueId, t]);
-  React.useEffect(() => {
-    void loadSupporters();
-  }, [loadSupporters, currentIssue?.support_count]);
 
   const commentsAvailable = Boolean(
     currentIssue &&
@@ -253,7 +248,7 @@ export function useIssueDetail() {
         },
       );
       rememberSupportedIssue(currentIssue.id, result.supported);
-      if (canViewSupporters) void loadSupporters();
+      if (supportersAsked.current) void loadSupporters();
     } catch {
       patchContentEntity<IssueRecord>(
         session.user?.uid,

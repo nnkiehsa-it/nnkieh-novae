@@ -21,11 +21,14 @@ export function Disclosure({
   children,
   defaultOpen = false,
   label,
+  onOpenChange,
   value,
 }: {
   children: React.ReactNode;
   defaultOpen?: boolean;
   label: React.ReactNode;
+  /** Told each time the row turns, so content can be fetched only once asked for. */
+  onOpenChange?: (open: boolean) => void;
   /** What the row reports while it is closed. */
   value?: React.ReactNode;
 }) {
@@ -35,7 +38,10 @@ export function Disclosure({
       <button
         aria-expanded={open}
         className={cn(rowClass, "w-full")}
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => {
+          setOpen(!open);
+          onOpenChange?.(!open);
+        }}
         type="button"
       >
         <span className="min-w-0 flex-1 text-[0.9375rem] leading-6">{label}</span>

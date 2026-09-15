@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { expectBackendAction } from './support/backend-action';
 import { readContentState } from './support/content-state';
 import { newUserPage } from './support/session';
 import { expectMoreActions } from './pages/content-pages';
@@ -62,13 +63,20 @@ test('supporter identities stay with the author, the category manager, and the a
     const { context, page } = await newUserPage(browser, user);
     await page.goto(content.proposalA);
     await expect(page.getByText('Support progress')).toBeVisible();
+    const open = page.getByRole('button', { name: 'Supporters' });
     const supporters = page.getByRole('region', { name: 'Supporters' });
-    if (visible) {
-      // The author counts as the first supporter, so their name is always listed.
-      await expect(supporters.getByText('ordinary', { exact: true })).toBeVisible();
-    } else {
-      await expect(supporters).toHaveCount(0);
+    if (!visible) {
+      await expect(open).toHaveCount(0);
+      await context.close();
+      continue;
     }
+    // Nothing about who supported is read until the row is actually opened.
+    await expect(supporters).toHaveCount(0);
+    await expectBackendAction(page, 'listIssueSupporters', async () => {
+      await open.click();
+    });
+    // The author counts as the first supporter, so their name is always listed.
+    await expect(supporters.getByText('ordinary', { exact: true })).toBeVisible();
     await context.close();
   }
 });
