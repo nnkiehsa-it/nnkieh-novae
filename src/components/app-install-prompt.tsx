@@ -10,7 +10,7 @@ import {
 import { resolveShareExit } from "@/hooks/share-entry-store";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PromptStep } from "@/components/app-install/prompt-step";
 
 type PromptView = "ask" | "home" | "guide" | "dismiss";
@@ -212,8 +212,8 @@ export function AppInstallPrompt() {
   }
 
   return (
-    <Sheet open={prompt.open}>
-      <SheetContent showCloseButton={false}>
+    <Dialog open={prompt.open}>
+      <DialogContent showCloseButton={false}>
         <AnimatePresence custom={direction} initial={false} mode="wait">
           <PromptStep
             actions={step.actions}
@@ -226,7 +226,7 @@ export function AppInstallPrompt() {
             title={step.title}
           />
         </AnimatePresence>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

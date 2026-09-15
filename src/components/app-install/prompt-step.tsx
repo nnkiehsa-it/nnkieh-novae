@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { motion } from "motion/react";
 import { timing } from "@/lib/motion-timing";
-import { SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 /**
  * One screen of the install conversation.
@@ -48,13 +48,13 @@ export function PromptStep({
       transition={timing("sheetExit")}
       variants={stepVariants}
     >
-      <SheetHeader>
+      <DialogHeader>
         <div className="mb-1 flex size-10 items-center justify-center rounded-xl bg-accent text-foreground">
           {icon}
         </div>
-        <SheetTitle>{title}</SheetTitle>
-        <SheetDescription>{description}</SheetDescription>
-      </SheetHeader>
+        <DialogTitle>{title}</DialogTitle>
+        <DialogDescription>{description}</DialogDescription>
+      </DialogHeader>
 
       {steps?.length ? (
         <ol className="space-y-3">
@@ -75,7 +75,7 @@ export function PromptStep({
         </p>
       ) : null}
 
-      <SheetFooter>{actions}</SheetFooter>
+      <DialogFooter>{actions}</DialogFooter>
     </motion.div>
   );
 }
