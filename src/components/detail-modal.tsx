@@ -47,7 +47,7 @@ export function DetailModal({ children, label }: { children: ReactNode; label: s
       }}
       open={open}
     >
-      <DialogContent className="t-sheet-filled sm:max-w-4xl" presentation="sheet" showCloseButton={false}>
+      <DialogContent className="t-sheet-filled" presentation="sheet" showCloseButton={false}>
         <DialogTitle className="sr-only">{label}</DialogTitle>
         <CloseRecord.Provider value={close}>{children}</CloseRecord.Provider>
       </DialogContent>

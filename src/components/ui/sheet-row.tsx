@@ -43,7 +43,7 @@ export function SheetRow({
     <>
       <ListNavRow label={label} onClick={() => change(true)} value={value} />
       <Dialog onOpenChange={change} open={open}>
-        <DialogContent className="sm:max-w-2xl" presentation="sheet">
+        <DialogContent presentation="sheet">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>

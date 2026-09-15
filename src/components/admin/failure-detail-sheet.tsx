@@ -44,7 +44,7 @@ export function FailureDetailSheet({
 
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open={Boolean(item)}>
-      <DialogContent className="sm:max-w-2xl" presentation="sheet">
+      <DialogContent presentation="sheet">
         <DialogHeader>
           <DialogTitle>{record.label}</DialogTitle>
           <DialogDescription>{t("admin.failureDetailTitle")}</DialogDescription>

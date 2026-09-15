@@ -85,7 +85,7 @@ export function UserDetailsDialog({
 
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open={Boolean(user)}>
-      <DialogContent className="sm:max-w-2xl" presentation="sheet">
+      <DialogContent presentation="sheet">
         <DialogHeader>
           <DialogTitle>{subject.name}</DialogTitle>
           <DialogDescription>{subject.email ?? subject.uid}</DialogDescription>

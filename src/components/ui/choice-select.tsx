@@ -121,7 +121,7 @@ export function ChoiceSelect({
         <ChevronDownIcon className="t-disclosure-icon size-4 opacity-50" />
       </button>
       <Dialog onOpenChange={setOpen} open={open}>
-        <DialogContent className="sm:max-w-2xl" presentation="sheet">
+        <DialogContent presentation="sheet">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
