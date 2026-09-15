@@ -3,6 +3,8 @@
 import { useI18n } from "@/i18n";
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { ListCustomRow, ListNavRow, ListRow, ListSection } from "@/components/ui/list";
+import { SheetRow } from "@/components/ui/sheet-row";
+import { ActivityBreakdown } from "@/components/admin/activity-breakdown";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusDistribution } from "@/components/ui/status-distribution";
 import { getIssueCategoryLabel } from "@/constants/categories";
@@ -41,6 +43,7 @@ export function OverviewMetrics({
   period: AdminOverviewWindow;
 }) {
   const { t } = useI18n();
+  const periodLabel = t(adminOverviewWindowLabelKey(period));
   const headline = [
     [t("ui.adminConsole.registeredUsers"), activity?.totalUsers],
     [t("ui.adminConsole.active24h"), activity?.activeUsers24h],
@@ -67,9 +70,7 @@ export function OverviewMetrics({
       </div>
 
       <ListSection header={t("ui.adminConsole.period")} headerAction={
-        <span className="text-xs text-muted-foreground">
-          {t(adminOverviewWindowLabelKey(period))}
-        </span>
+        <span className="text-xs text-muted-foreground">{periodLabel}</span>
       }>
         {ADMIN_PERIOD_FIGURES.map(({ countKey, kind, labelKey }) => {
           const count = activity?.[countKey];
@@ -82,12 +83,15 @@ export function OverviewMetrics({
             );
           if (!count) return <ListRow key={kind} label={label} value={figure} />;
           return (
-            <ListNavRow
-              href={`/admin/activity/${kind}?window=${period}`}
-              key={kind}
-              label={label}
-              value={figure}
-            />
+            <SheetRow key={kind} label={label} title={label} value={figure}>
+              <ActivityBreakdown
+                count={count}
+                entries={(activity?.recentActivity ?? []).filter(
+                  (entry) => entry.kind === kind,
+                )}
+                period={periodLabel}
+              />
+            </SheetRow>
           );
         })}
         {canOpenActivity ? (
