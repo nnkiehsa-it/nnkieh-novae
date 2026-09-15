@@ -263,11 +263,19 @@ test('nested sheets keep every previous layer visible in the stack', async ({ br
   await expect(actions).toHaveAttribute('data-sheet-stack-index', '1');
   const detailTransform = await detail.evaluate((element) => getComputedStyle(element).transform);
   expect(detailTransform).not.toBe('none');
-  const detailBox = await detail.boundingBox();
-  const actionsBox = await actions.boundingBox();
-  expect(detailBox).not.toBeNull();
-  expect(actionsBox).not.toBeNull();
-  expect(actionsBox!.height).toBeLessThan(detailBox!.height);
+  const [detailLayout, actionsLayout] = await Promise.all([
+    detail.evaluate((element) => ({
+      height: Number.parseFloat(getComputedStyle(element).height),
+      stackInset: getComputedStyle(element).getPropertyValue('--sheet-stack-inset').trim(),
+    })),
+    actions.evaluate((element) => ({
+      height: Number.parseFloat(getComputedStyle(element).height),
+      stackInset: getComputedStyle(element).getPropertyValue('--sheet-stack-inset').trim(),
+    })),
+  ]);
+  expect(detailLayout.stackInset).toBe('0px');
+  expect(actionsLayout.stackInset).toBe('13px');
+  expect(actionsLayout.height).toBeLessThan(detailLayout.height);
 
   await actions.getByRole('button', { name: /Close|關閉/u }).click();
   await expect(sheets).toHaveCount(1);
