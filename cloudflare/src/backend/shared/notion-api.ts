@@ -59,20 +59,16 @@ let notionTurn: Promise<void> = Promise.resolve();
 let requestsMade = 0;
 
 /**
- * How many requests Notion work has made, counted from the first one this
- * isolate made and read as a difference between two moments.
- *
- * A Worker invocation may make a bounded number of outgoing requests, and work
- * that writes a page at a time cannot tell how many it is about to need: one
- * proposal costs a request for its page, one for each image, and three for
- * every comment on it. Work that can stop and resume reads this before it
- * starts another piece, rather than being cut off in the middle of one.
+ * Every request Notion work has made, read as a difference between two moments.
+ * A Worker invocation may make only so many, and work that writes a page at a
+ * time cannot tell how many it is about to need -- one proposal costs a request
+ * for its page, one for each image and three for every comment on it -- so work
+ * that can stop and resume reads this before starting another piece.
  */
 export function notionRequestsMade(): number {
   return requestsMade;
 }
 
-/** Every request Notion work makes, counted, wherever it is made from. */
 function countedFetch(url: string, init: RequestInit): Promise<Response> {
   requestsMade += 1;
   return fetch(url, init);
