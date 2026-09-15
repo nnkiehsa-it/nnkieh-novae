@@ -26,7 +26,7 @@ export function SecondaryToolbar({
   const overlayLabel = useRecordOverlayLabel();
   return (
     <div
-      className={`t-sheet-drag-region flex h-9 items-center gap-3 ${closeRecord ? "justify-between pr-9" : "justify-between"}`}
+      className={`t-sheet-drag-region flex h-9 items-center justify-between gap-3 ${closeRecord ? "pr-9" : ""}`}
       data-sheet-drag-region=""
     >
       {!closeRecord ? <Tooltip>
@@ -43,8 +43,8 @@ export function SecondaryToolbar({
         </TooltipTrigger>
         <TooltipContent>{backLabel}</TooltipContent>
       </Tooltip> : null}
-      {overlayLabel ? <span className="min-w-0 flex-1 truncate text-base font-semibold">{overlayLabel}</span> : null}
-      <div className="ml-auto flex items-center gap-1">{actions}</div>
+      {overlayLabel ? <span className="min-w-0 flex-1 truncate text-left text-lg leading-none font-semibold">{overlayLabel}</span> : null}
+      <div className="ml-auto flex shrink-0 items-center gap-1">{actions}</div>
     </div>
   );
 }

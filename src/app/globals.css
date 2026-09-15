@@ -447,12 +447,12 @@ html[data-input-modality="pointer"] :focus-visible {
   --header-veil: var(--popover);
 }
 
-@media (max-width: 47.99rem) {
-  [data-slot="dialog-content"].t-sheet .detail-header {
-    top: calc(-1 * var(--dialog-pad));
-    margin: calc(-1 * var(--dialog-pad)) calc(-1 * var(--dialog-pad)) 0;
-    padding: var(--dialog-pad) var(--dialog-pad) 1rem;
-  }
+[data-slot="dialog-content"].t-sheet .detail-header {
+  --header-top: 0px;
+  --header-bleed: 0px;
+  top: calc(-1 * var(--dialog-pad));
+  margin: calc(-1 * var(--dialog-pad)) calc(-1 * var(--dialog-pad)) 0;
+  padding: var(--dialog-pad) var(--dialog-pad) 1rem;
 }
 
 /* A dialog's heading is its operational anchor. It stays readable while a long
@@ -464,6 +464,7 @@ html[data-input-modality="pointer"] :focus-visible {
   position: sticky;
   z-index: 20;
   top: calc(-1 * var(--dialog-pad));
+  box-sizing: content-box;
   isolation: isolate;
   margin: calc(-1 * var(--dialog-pad)) calc(-1 * var(--dialog-pad)) 0;
   padding: var(--dialog-pad) var(--dialog-pad) 1rem;

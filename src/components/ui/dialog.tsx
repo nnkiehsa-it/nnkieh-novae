@@ -169,7 +169,7 @@ function DialogContent({
           {(showCloseButton || sheet) && (
             <DialogPrimitive.Close
               data-slot="dialog-close"
-              className="absolute top-3 right-3 z-2 grid size-8 place-items-center rounded-full bg-muted text-muted-foreground transition-[background-color,color] duration-[var(--motion-control)] hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:size-4"
+              className="absolute top-3 right-3 z-30 grid size-8 place-items-center rounded-full bg-muted text-muted-foreground transition-[background-color,color] duration-[var(--motion-control)] hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:size-4"
             >
               <XIcon />
               <span className="sr-only">{t("common.close")}</span>
@@ -181,14 +181,18 @@ function DialogContent({
   );
 }
 
-function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
+function DialogHeader({ className, children, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-sheet-drag-region=""
       data-slot="dialog-header"
-      className={cn("t-sheet-drag-region flex flex-col gap-2 text-center sm:text-left", className)}
+      className={cn("t-sheet-drag-region text-left", className)}
       {...props}
-    />
+    >
+      <div className="flex min-h-9 flex-col justify-center gap-2 pr-10">
+        {children}
+      </div>
+    </div>
   );
 }
 
