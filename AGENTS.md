@@ -37,6 +37,8 @@
 | 動畫 recipe | `src/styles/motion.css` | 時長與曲線一律用 ladder token，不寫死；`:hover` 必須包在 `@media (hover: hover)` 內 |
 | 動畫時長與曲線本身 | `config/motion.config.json` | 唯一來源，CSS 與 JS 都從這裡產生；JS 動畫一律透過 `@/lib/motion-timing` 取用 |
 
+每個 `<Link>` 都要加 `prefetch`。預設值對動態路由只會預抓到 loading 邊界，按下去還要等一趟往返，抽屜與轉場就會慢半拍；`prefetch` 是整條路由都先抓好。預抓的只有路由，**不要**順手預抓後端資料——頁面先進去，骨架撐著等它自己要。
+
 ### 後端 `cloudflare/`
 
 | 要寫的東西 | 放這裡 |

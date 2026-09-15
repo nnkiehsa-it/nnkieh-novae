@@ -175,6 +175,7 @@ export function LiquidNav({
             data-active={active}
             href={item.href}
             key={item.href}
+            prefetch
           >
             <NavigationContents item={item} vertical={vertical} />
           </Link>

@@ -128,7 +128,7 @@ test('a record replaces its content in one surface, over the list it came from',
     const inspect = () => {
       state.__novaeMaxStateSurfaces = Math.max(
         state.__novaeMaxStateSurfaces ?? 0,
-        document.querySelectorAll('[data-slot="dialog-content"] > [data-state-transition]').length,
+        document.querySelectorAll('[data-slot="dialog-content"] [data-state-transition]').length,
       );
       if (performance.now() < deadline) requestAnimationFrame(inspect);
     };

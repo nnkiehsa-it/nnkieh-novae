@@ -24,7 +24,7 @@ export default function AnnouncementsPage() {
         actions={
           feed.canManage ? (
             <Button asChild>
-              <Link href="/announcements/new">
+              <Link href="/announcements/new" prefetch>
                 <Plus />{translate('ui.announcement.new')}</Link>
             </Button>
           ) : null
@@ -41,7 +41,7 @@ export default function AnnouncementsPage() {
           action:
             feed.canManage ? (
               <Button asChild variant="outline">
-                <Link href="/announcements/new">
+                <Link href="/announcements/new" prefetch>
                   <Plus />{translate('ui.announcement.createFirst')}</Link>
               </Button>
             ) : undefined

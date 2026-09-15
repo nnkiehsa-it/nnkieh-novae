@@ -42,6 +42,7 @@ export default function FacilitiesPage() {
               <Link
                 aria-label={translate('ui.facility.new')}
                 href={`/facilities/new?category=${encodeURIComponent(state.category)}`}
+                prefetch
               >
                 <Plus /><span className="hidden sm:inline">{translate('ui.facility.new')}</span></Link>
             </Button>
@@ -108,6 +109,7 @@ export default function FacilitiesPage() {
             <Button asChild variant="outline">
               <Link
                 href={`/facilities/new?category=${encodeURIComponent(state.category)}`}
+                prefetch
               >
                 <Plus />{translate('ui.facility.createFirst')}</Link>
             </Button>

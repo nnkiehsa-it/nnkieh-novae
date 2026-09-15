@@ -59,6 +59,7 @@ export function BrandLockup({
         className,
       )}
       href={href}
+      prefetch
     >
       {content}
     </Link>
