@@ -41,7 +41,11 @@ export async function handleBackendAction(
     const fields = { action: action || "unknown", operationId, status, ...(failureId ? { failureId } : {}) };
     if (status >= 500) log.error("backend-action.failed", error, fields);
     else log.warn("backend-action.rejected", fields);
-    await recordOperationalError(database, action, error, status, operationId, failureId);
+    // A refusal for asking too often is the platform answering as it was
+    // configured to, not work waiting for an administrator. Counting it put the
+    // one thing nobody can act on at the top of the failure screen.
+    if (status !== 429)
+      await recordOperationalError(database, action, error, status, operationId, failureId);
     return { error, failureId, status };
   };
 

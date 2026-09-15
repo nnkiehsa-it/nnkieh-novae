@@ -56,6 +56,27 @@ function notionErrorCode(body: string): string {
 const NOTION_REQUEST_SPACING_MS = 350;
 const NOTION_REFUSAL_RETRIES = 5;
 let notionTurn: Promise<void> = Promise.resolve();
+let requestsMade = 0;
+
+/**
+ * How many requests Notion work has made, counted from the first one this
+ * isolate made and read as a difference between two moments.
+ *
+ * A Worker invocation may make a bounded number of outgoing requests, and work
+ * that writes a page at a time cannot tell how many it is about to need: one
+ * proposal costs a request for its page, one for each image, and three for
+ * every comment on it. Work that can stop and resume reads this before it
+ * starts another piece, rather than being cut off in the middle of one.
+ */
+export function notionRequestsMade(): number {
+  return requestsMade;
+}
+
+/** Every request Notion work makes, counted, wherever it is made from. */
+function countedFetch(url: string, init: RequestInit): Promise<Response> {
+  requestsMade += 1;
+  return fetch(url, init);
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -70,7 +91,7 @@ async function pacedFetch(url: string, init: RequestInit): Promise<Response> {
   });
   await ready;
   setTimeout(release, NOTION_REQUEST_SPACING_MS);
-  return fetch(url, init);
+  return countedFetch(url, init);
 }
 
 export async function callNotionAPI(path: string, method: string, body?: unknown): Promise<unknown> {
@@ -254,7 +275,7 @@ export async function appendTimelineBlockWithDeduplication(
 }
 export async function uploadImageToNotion(publicId: string, filename: string): Promise<string> {
   const delivery = await createMediaDeliveryUrl(publicId, "full", true, "notion-sync");
-  const imageResponse = await fetch(delivery.url);
+  const imageResponse = await countedFetch(delivery.url, {});
   if (!imageResponse.ok) throw new Error(`failed-to-fetch-image: ${imageResponse.status}`);
   const imageData = await imageResponse.arrayBuffer();
 
@@ -264,7 +285,7 @@ export async function uploadImageToNotion(publicId: string, filename: string): P
   })) as { id: string; upload_url?: string };
 
   if (fileUpload.upload_url) {
-    const uploadRes = await fetch(fileUpload.upload_url, {
+    const uploadRes = await countedFetch(fileUpload.upload_url, {
       method: "POST",
       body: imageData,
       headers: { "Content-Type": "image/webp" },

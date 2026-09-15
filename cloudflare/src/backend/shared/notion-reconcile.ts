@@ -1,4 +1,4 @@
-import { notionEnabled } from "./notion-api.ts";
+import { notionEnabled, notionRequestsMade } from "./notion-api.ts";
 import { rebuildFacilityNotionPage } from "./notion-facility-events.ts";
 import { rebuildIssueNotionPage } from "./notion-issue-events.ts";
 import {
@@ -11,6 +11,19 @@ import type { Selected } from "../database/schema.ts";
 type AppDatabase = AppDatabaseClient;
 
 const FIRST_UUID = "00000000-0000-0000-0000-000000000000";
+
+/**
+ * How many requests one pass may make.
+ *
+ * A Worker invocation may make a thousand outgoing requests, and the sweep that
+ * carries a rebuild is also delivering everything else that is waiting. A pass
+ * counted only the pages it wrote, and a page is not a fixed price -- a
+ * proposal with a long discussion costs dozens of requests -- so a rebuild of a
+ * busy archive ran past the allowance and was refused outright with "Too many
+ * subrequests", failing the job instead of pausing it. A pass stops at the page
+ * boundary where this budget runs out and comes back for the rest.
+ */
+const REBUILD_REQUEST_BUDGET = 500;
 
 /** Where a rebuild had got to when its pass ran out of room. */
 export interface NotionRebuildCursor {
@@ -94,8 +107,9 @@ async function clearSupersededWork(database: AppDatabase) {
  * pages carry their current metadata and surviving discussion, and every
  * administrator write becomes its own Chinese system-operation page.
  *
- * One pass writes at most `limit` pages and returns where it stopped, so the
- * job that owns it can report progress and come back for the rest.
+ * One pass writes at most `limit` pages -- fewer when its request budget runs
+ * out first -- and returns where it stopped, so the job that owns it can report
+ * progress and come back for the rest.
  */
 export async function reconcileNotionPages(
   database: AppDatabase,
@@ -106,19 +120,22 @@ export async function reconcileNotionPages(
 
   let cursor = options.cursor ?? { after: STAGES[0].first, stage: STAGES[0].key };
   let written = 0;
+  const spentBefore = notionRequestsMade();
+  const budgetSpent = () => notionRequestsMade() - spentBefore >= REBUILD_REQUEST_BUDGET;
   for (const stage of STAGES.slice(STAGES.findIndex((entry) => entry.key === cursor.stage))) {
     let after = cursor.stage === stage.key ? cursor.after : stage.first;
-    while (written < options.limit) {
+    while (written < options.limit && !budgetSpent()) {
       const { rows } = await stage.page(database, after, options.limit - written);
       if (rows.length === 0) break;
       for (const row of rows) {
         await stage.write(database, String(row.id));
         after = String(row.id);
         written += 1;
+        if (budgetSpent()) break;
       }
     }
     cursor = { after, stage: stage.key };
-    if (written >= options.limit) return { cursor, done: false, written };
+    if (written >= options.limit || budgetSpent()) return { cursor, done: false, written };
   }
   return { cursor: null, done: true, written };
 }
