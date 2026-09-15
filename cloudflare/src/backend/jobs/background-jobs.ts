@@ -59,7 +59,10 @@ async function advanceNotionRebuild(database: AppDatabaseClient, job: Background
   return pass;
 }
 
-export async function processBackgroundJobs(database: AppDatabaseClient) {
+export async function processBackgroundJobs(
+  database: AppDatabaseClient,
+  options: { batchSize?: number } = {},
+) {
   const log = createFunctionLogger("processBackgroundJobs");
   const { data: policyResult, error: policyError } = await database.call(
     "app_api", "backend_process_platform_job_batch", { batch_size: operationPolicy('policyBatchSize') },
@@ -69,8 +72,9 @@ export async function processBackgroundJobs(database: AppDatabaseClient) {
     throw policyError;
   }
   if (asRecord(policyResult).failed === true) log.warn('policy-batch.failed', { jobId: asString(asRecord(policyResult).jobId) });
+  const batchSize = options.batchSize ?? operationPolicy('jobBatchSize');
   const { data, error } = await database.call("app_api", "claim_background_jobs", {
-    requested_batch_size: operationPolicy('jobBatchSize'),
+    requested_batch_size: batchSize,
   });
   if (error) throw error;
   const jobs = (data ?? []) as BackgroundJobItem[];
@@ -143,7 +147,7 @@ export async function processBackgroundJobs(database: AppDatabaseClient) {
     where job_type = any(${["retention_cleanup", "category_policy"]})
       and status = any(${["pending", "processing"]}) limit 1`;
   return {
-    hasMore: resumed > 0 || jobs.length === operationPolicy('jobBatchSize') || remainingPolicies.length > 0,
+    hasMore: resumed > 0 || jobs.length === batchSize || remainingPolicies.length > 0,
     processedCount: jobs.length,
     policy: policyResult,
   };

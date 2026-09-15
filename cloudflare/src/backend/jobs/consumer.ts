@@ -8,6 +8,7 @@ import { processRealtimeDeliveries } from "./realtime-deliveries.ts";
 import { processBackgroundJobs } from "./background-jobs.ts";
 import { operationPolicy, withOperationPolicies } from "../shared/operation-policies.ts";
 import { beginNotionInvocation } from "../shared/notion-api.ts";
+import { REBUILD_REQUEST_BUDGET } from "../shared/notion-reconcile.ts";
 import { claimFixedWindowRateLimits, utcMinuteWindow, utcSecondWindow } from "../shared/business-rate-limit.ts";
 import { RATE_LIMITS } from "../shared/rate-limits.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
@@ -47,6 +48,26 @@ async function sweep(message: JobMessage, database: AppDatabaseClient, env: Env)
     ]);
     if (message.type === "maintenance") {
       await runMaintenance(database);
+    }
+
+    // A full Notion rebuild owns this queue invocation. Workers Free only has
+    // 50 external subrequests per invocation; mixing a rebuild with push,
+    // realtime and ordinary Notion delivery made otherwise-resumable work hit
+    // the platform ceiling before its cursor could be saved.
+    const activeRebuild = await database.sqlMaybe<{ id: string }>`select id
+      from app_private.background_jobs where job_type = 'notion_reconcile'
+        and status = any(${["pending", "processing"]}) order by created_at limit 1`;
+    if (activeRebuild) {
+      beginNotionInvocation(REBUILD_REQUEST_BUDGET);
+      const backgroundJobs = await processBackgroundJobs(database, { batchSize: 1 });
+      if (backgroundJobs.hasMore) await env.JOBS.send({ type: "drain" });
+      return {
+        backgroundJobs,
+        inApp: NOTHING_DELIVERED,
+        notion: NOTHING_DELIVERED,
+        push: NOTHING_DELIVERED,
+        realtime: NOTHING_DELIVERED,
+      };
     }
 
     const pending = await pendingDestinations(database);
