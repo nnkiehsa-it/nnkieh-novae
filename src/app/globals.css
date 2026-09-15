@@ -376,25 +376,40 @@ html[data-input-modality="pointer"] :focus-visible {
   margin-inline: auto;
 }
 
-.page-header {
+/* The controls at the top of a screen stay where they are while the reading
+   travels underneath them, behind a band of the surface that blurs what passes
+   and fades out along its lower edge rather than ending on a line.
+
+   Three things differ between the screens that wear it, and they are the three
+   properties: how far down the screen the band holds, how far sideways it
+   reaches past the column it is in, and which surface it is a veil over. A list
+   holds below the status bar, bleeds to the edges of the window and veils the
+   stage; a record inside a sheet holds at the top of the sheet, bleeds to the
+   sheet's own padding and veils the sheet. */
+.page-header,
+.detail-header {
   position: sticky;
   isolation: isolate;
   z-index: 20;
-  top: var(--page-header-top);
+  top: var(--header-top, var(--page-header-top));
 }
 
-.page-header::before {
+.page-header::before,
+.detail-header::before {
   position: absolute;
   z-index: -1;
-  top: calc(0px - var(--page-header-top));
+  top: calc(0px - var(--header-top, var(--page-header-top)));
+  right: var(--header-bleed, calc((100% - 100vw) / 2));
   bottom: -1.25rem;
-  left: 50%;
-  width: 100vw;
+  left: var(--header-bleed, calc((100% - 100vw) / 2));
   content: "";
   pointer-events: none;
-  background: color-mix(in srgb, var(--surface-stage) 82%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--header-veil, var(--surface-stage)) 82%,
+    transparent
+  );
   backdrop-filter: blur(12px);
-  transform: translateX(-50%);
   -webkit-mask-image: linear-gradient(
     to bottom,
     black calc(100% - 1.25rem),
@@ -405,6 +420,16 @@ html[data-input-modality="pointer"] :focus-visible {
     black calc(100% - 1.25rem),
     transparent
   );
+}
+
+/* A record opened over its list is read inside a sheet, so the sheet is what
+   its controls hold on to and what they are a veil over: they stop at the top
+   of the scroll rather than below the status bar, and the band reaches out to
+   the sheet's padding rather than to the window. */
+[data-slot="dialog-content"] .detail-header {
+  --header-top: var(--dialog-pad);
+  --header-bleed: calc(0px - var(--dialog-pad));
+  --header-veil: var(--popover);
 }
 
 .app-mobile-nav {
