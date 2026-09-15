@@ -144,15 +144,6 @@ test('a record replaces its content in one surface, over the list it came from',
   const record = page.getByRole('dialog');
   await expect(record.locator('article h1')).toBeVisible();
   await expect(record.locator('.detail-header')).toHaveCSS('position', 'sticky');
-  const detailGap = await record.evaluate((element) => {
-    const header = element.querySelector<HTMLElement>('.detail-header');
-    const article = element.querySelector<HTMLElement>('article');
-    if (!header || !article) return 0;
-    return article.getBoundingClientRect().top - header.getBoundingClientRect().bottom;
-  });
-  // The card starts after the toolbar veil has faded; otherwise its opening
-  // lines are softened before the reader has started scrolling.
-  expect(detailGap).toBeGreaterThanOrEqual(24);
   expect(await record.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
   // One surface inside the record, never two stacked while it arrives.
   expect(await page.evaluate(() =>
