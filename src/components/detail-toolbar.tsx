@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { ArrowLeft, Share2 } from "lucide-react";
 import { useShareExitGuard } from "@/hooks/use-share-entry";
-import { useCloseRecord } from "@/components/detail-modal";
+import { useCloseRecord, useRecordOverlayLabel } from "@/components/detail-modal";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -23,9 +23,10 @@ export function SecondaryToolbar({
   // that it travels back off the screen instead of being cut off by the route
   // changing underneath it. It is the same step back through history either way.
   const closeRecord = useCloseRecord();
+  const overlayLabel = useRecordOverlayLabel();
   return (
     <div
-      className={`t-sheet-drag-region flex h-9 items-center gap-3 ${closeRecord ? "justify-end pr-9" : "justify-between"}`}
+      className={`t-sheet-drag-region flex h-9 items-center gap-3 ${closeRecord ? "justify-between pr-9" : "justify-between"}`}
       data-sheet-drag-region=""
     >
       {!closeRecord ? <Tooltip>
@@ -42,7 +43,8 @@ export function SecondaryToolbar({
         </TooltipTrigger>
         <TooltipContent>{backLabel}</TooltipContent>
       </Tooltip> : null}
-      <div className="flex items-center gap-1">{actions}</div>
+      {overlayLabel ? <span className="min-w-0 flex-1 truncate text-base font-semibold">{overlayLabel}</span> : null}
+      <div className="ml-auto flex items-center gap-1">{actions}</div>
     </div>
   );
 }

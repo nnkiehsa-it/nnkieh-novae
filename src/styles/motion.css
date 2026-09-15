@@ -414,15 +414,9 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   .t-sheet[data-state="closed"][data-sheet-dismissing="true"] {
     animation: t-sheet-dismiss var(--motion-sheet-exit) var(--ease-nav) both;
   }
-  .t-sheet-drag-region {
+  .t-sheet-drag-region,
+  .t-sheet .detail-header {
     touch-action: none;
-  }
-  .t-sheet-drag-cap {
-    position: absolute;
-    z-index: 1;
-    inset-block-start: 0;
-    inset-inline: 0;
-    height: var(--dialog-pad);
   }
 }
 /* The page behind a sheet, pushed back ------------------------------------ */

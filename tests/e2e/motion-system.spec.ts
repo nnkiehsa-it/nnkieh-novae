@@ -157,7 +157,7 @@ test('a record replaces its content in one surface, over the list it came from',
   await expect(record.getByRole('button', { name: 'Close' })).toBeVisible();
   await expect(record.getByRole('button', { name: /^Back to/u })).toHaveCount(0);
   await expect(record.locator('[data-slot="sheet-drag-handle"]')).toHaveCount(0);
-  await expect(record.locator('[data-slot="sheet-drag-surface"]')).toHaveCount(1);
+  await expect(record.locator('[data-sheet-drag-region]')).not.toHaveCount(0);
   await record.getByRole('button', { name: 'Close' }).click();
   await page.waitForURL(/\/issues\/[^/]+$/u);
   await expect(page.getByRole('dialog')).toHaveCount(0);

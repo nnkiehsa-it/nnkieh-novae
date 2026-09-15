@@ -22,14 +22,18 @@ import { timingMs } from "@/lib/motion-timing";
  * back out: the route is what mounts this, so changing it first would take the
  * sheet off the screen between two frames.
  */
-const CloseRecord = React.createContext<(() => void) | null>(null);
+const RecordOverlay = React.createContext<{ close: () => void; label: string } | null>(null);
 
 /**
  * How to put this record away, for the controls inside it. A record shown as a
  * whole page has no such thing: its back control goes back.
  */
 export function useCloseRecord() {
-  return React.useContext(CloseRecord);
+  return React.useContext(RecordOverlay)?.close ?? null;
+}
+
+export function useRecordOverlayLabel() {
+  return React.useContext(RecordOverlay)?.label ?? null;
 }
 
 export function DetailModal({ children, label }: { children: ReactNode; label: string }) {
@@ -49,7 +53,7 @@ export function DetailModal({ children, label }: { children: ReactNode; label: s
     >
       <DialogContent className="t-sheet-filled" presentation="sheet">
         <DialogTitle className="sr-only">{label}</DialogTitle>
-        <CloseRecord.Provider value={close}>{children}</CloseRecord.Provider>
+        <RecordOverlay.Provider value={{ close, label }}>{children}</RecordOverlay.Provider>
       </DialogContent>
     </Dialog>
   );
