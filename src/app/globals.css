@@ -344,6 +344,21 @@ html[data-input-modality="pointer"] :focus-visible {
   outline: none;
 }
 
+/* A dialog is a bounded reading surface. Long trace IDs and raw provider replies
+   must wrap inside it rather than contributing a grid minimum that widens the
+   entire layer past the viewport. */
+[data-slot="dialog-content"],
+[data-slot="alert-dialog-content"] {
+  min-width: 0;
+  overflow-x: clip;
+}
+
+[data-slot="dialog-content"] > *,
+[data-slot="alert-dialog-content"] > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
 @media (hover: none), (pointer: coarse) {
   :focus-visible,
   :focus-within {
@@ -430,6 +445,33 @@ html[data-input-modality="pointer"] :focus-visible {
   --header-top: var(--dialog-pad);
   --header-bleed: calc(0px - var(--dialog-pad));
   --header-veil: var(--popover);
+}
+
+/* A dialog's heading is its operational anchor. It stays readable while a long
+   record moves behind the same soft veil as a detail toolbar, on both sheets
+   and desktop popups. The content starts below the veil's fade rather than
+   immediately inside it. */
+[data-slot="dialog-content"] [data-slot="dialog-header"],
+[data-slot="alert-dialog-content"] [data-slot="alert-dialog-header"] {
+  position: sticky;
+  z-index: 20;
+  top: calc(-1 * var(--dialog-pad));
+  isolation: isolate;
+  margin: calc(-1 * var(--dialog-pad)) calc(-1 * var(--dialog-pad)) 0;
+  padding: var(--dialog-pad) var(--dialog-pad) 1rem;
+}
+
+[data-slot="dialog-content"] [data-slot="dialog-header"]::before,
+[data-slot="alert-dialog-content"] [data-slot="alert-dialog-header"]::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 -1.25rem;
+  content: "";
+  pointer-events: none;
+  background: color-mix(in srgb, var(--popover) 82%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 1.25rem), transparent);
+  mask-image: linear-gradient(to bottom, black calc(100% - 1.25rem), transparent);
 }
 
 .app-mobile-nav {

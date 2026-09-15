@@ -79,7 +79,7 @@ function DialogContent({
         <DialogPrimitive.Content
           data-slot="dialog-content"
           className={cn(
-            "t-dialog pointer-events-auto relative grid max-h-[min(86svh,46rem)] w-full max-w-lg gap-5 overflow-y-auto p-(--dialog-pad) outline-none [--dialog-pad:1.5rem] sm:[--dialog-pad:1.75rem]",
+            "t-dialog pointer-events-auto relative grid max-h-[min(86svh,46rem)] w-full min-w-0 max-w-2xl gap-5 overflow-x-clip overflow-y-auto p-(--dialog-pad) outline-none [--dialog-pad:1.5rem] sm:[--dialog-pad:1.75rem] [&>*]:min-w-0",
             surface === "floating"
               ? "surface-floating"
               : "rounded-[var(--radius-xl)] bg-popover",
