@@ -5,13 +5,6 @@ import * as React from "react";
 
 import { Input } from "@/components/ui/input";
 import { RowInner, rowClass, type RowContent } from "@/components/ui/list";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -98,44 +91,6 @@ export function ListChoiceRow({
 }
 
 /** A value chosen from a menu, wearing the row rather than a bordered box. */
-export function ListPicker({
-  disabled,
-  label,
-  onChange,
-  options,
-  placeholder,
-  value,
-}: {
-  disabled?: boolean;
-  label: string;
-  onChange: (value: string) => void;
-  options: Array<{ label: string; value: string }>;
-  placeholder?: string;
-  value: string;
-}) {
-  return (
-    <Select disabled={disabled} onValueChange={onChange} value={value}>
-      <SelectTrigger
-        aria-label={label}
-        className={cn(
-          rowClass,
-          "h-auto justify-between rounded-none border-0 bg-transparent px-0 shadow-none focus-visible:border-transparent focus-visible:ring-0",
-        )}
-      >
-        <span className="min-w-0 flex-1 text-left text-[0.9375rem] leading-6">{label}</span>
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        {options.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-}
-
 /** A typed value that sits on the naming line instead of under it. */
 export function ListInputRow({
   disabled,

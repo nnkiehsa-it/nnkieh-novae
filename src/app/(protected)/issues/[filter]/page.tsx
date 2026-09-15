@@ -12,18 +12,12 @@ import { ISSUE_BUCKET_STATUSES, ISSUE_STATUS_LABELS } from "@/constants/statuses
 import { Button } from "@/components/ui/button";
 import { FeedToolbar } from "@/components/ui/feed-toolbar";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { PageHeader } from "@/components/ui/page-state";
 import { FeedList } from "@/components/ui/feed-list";
 import { StatusDistribution } from "@/components/ui/status-distribution";
 import { statusFillColor, statusTextColor } from "@/components/ui/status-badge";
 import { IssueCard } from "@/components/issues/issue-card";
+import { ChoiceSelect } from "@/components/ui/choice-select";
 
 export default function IssueBoardPage() {
   useLocaleSubscription();
@@ -95,28 +89,20 @@ export default function IssueBoardPage() {
           </>
         }
         title={
-          <Select
+          <ChoiceSelect
+            ariaLabel={translate('ui.access.selectCategory')}
+            className="h-auto max-w-full border-0 bg-transparent p-0 text-2xl font-semibold leading-8 shadow-none"
+            controlLabel="heading"
             onValueChange={(value) =>
               router.push(`/issues/${encodeURIComponent(value)}`)
             }
+            options={[
+              ...categoryOptions,
+              { label: translate('ui.issue.mine'), value: "my-proposals" },
+            ]}
+            title={translate('ui.access.selectCategory')}
             value={filter}
-          >
-            <SelectTrigger
-              aria-label={translate('ui.access.selectCategory')}
-              data-control-label="heading"
-              className="h-auto max-w-full border-0 bg-transparent p-0 text-2xl font-semibold leading-8 shadow-none"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent align="start">
-              {categoryOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-              <SelectItem value="my-proposals">{translate('ui.issue.mine')}</SelectItem>
-            </SelectContent>
-          </Select>
+          />
         }
         toolbar={
           <FeedToolbar

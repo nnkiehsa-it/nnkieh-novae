@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ChoiceSelect } from "@/components/ui/choice-select";
 
 /**
  * One search/sort control pair for every feed, at every width.
@@ -104,15 +104,21 @@ export function FeedToolbar({
           </form>
         </PopoverContent>
       </Popover>
-      <Select disabled={disabled} onValueChange={onSortChange} value={sort}>
-        <SelectTrigger aria-label={t('ui.common.sort')} className="size-9 shrink-0 justify-center gap-0 px-0 [&_.t-disclosure-icon]:hidden disabled:opacity-100 sm:w-36 sm:justify-between sm:gap-2 sm:px-3 sm:[&_.t-disclosure-icon]:block">
-          <SlidersHorizontal className="shrink-0 sm:hidden" />
-          <span className="hidden sm:inline"><SelectValue /></span>
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
-        </SelectContent>
-      </Select>
+      <ChoiceSelect
+        ariaLabel={t('ui.common.sort')}
+        className="size-9 shrink-0 justify-center gap-0 px-0 [&_.t-disclosure-icon]:hidden disabled:opacity-100 sm:w-36 sm:justify-between sm:gap-2 sm:px-3 sm:[&_.t-disclosure-icon]:block"
+        disabled={disabled}
+        onValueChange={(value) => onSortChange?.(value)}
+        options={options}
+        title={t('ui.common.sort')}
+        trigger={(selected) => (
+          <>
+            <SlidersHorizontal className="shrink-0 sm:hidden" />
+            <span className="hidden sm:inline">{selected?.label}</span>
+          </>
+        )}
+        value={sort}
+      />
     </div>
   );
 }

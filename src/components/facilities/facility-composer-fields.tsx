@@ -4,15 +4,9 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 import { MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { INPUT_LIMITS } from "@/constants/input-limits";
 import { cn } from "@/lib/utils";
+import { ChoiceSelect } from "@/components/ui/choice-select";
 
 /**
  * The category and location a facility report needs on top of the shared
@@ -39,22 +33,14 @@ export function FacilityComposerFields({
     <div className="grid gap-4 sm:grid-cols-2">
       <div className="grid gap-2">
         <Label>{translate("ui.access.facilityCategory")}</Label>
-        <Select
+        <ChoiceSelect
+          ariaLabel={translate("ui.access.facilityCategory")}
           disabled={pending}
           onValueChange={onCategoryChange}
+          options={categories.map((option) => ({ label: option.label, value: option.id }))}
+          title={translate("ui.access.facilityCategory")}
           value={category}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((option) => (
-              <SelectItem key={option.id} value={option.id}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        />
       </div>
       <div className="grid gap-2">
         <div className="flex items-center justify-between">

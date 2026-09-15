@@ -11,7 +11,6 @@ import { useDiscussionProfiles } from "@/hooks/use-public-profiles";
 import { useSession } from "@/hooks/use-session";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 import { ContentTransition, StateTransition } from "@/components/motion/state-transition";
 import { CommentComposer } from "@/components/comments/comment-composer";
@@ -20,6 +19,7 @@ import { useActionFeedback } from "@/hooks/use-action-feedback";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonRows } from "@/components/ui/skeleton-rows";
+import { ChoiceSelect } from "@/components/ui/choice-select";
 
 interface ReplyTarget {
   authorUid: string;
@@ -110,18 +110,17 @@ export function Discussion({
           <MessageCircle className="size-4 text-muted-foreground" />
           <h2 className="font-semibold" id="discussion-title">{translate("ui.discussion.title")}</h2>
           <span className="text-sm tabular-nums text-muted-foreground">{comments.length}</span>
-          <Select onValueChange={(value) => onSortChange(value as CommentSortOption)} value={sort}>
-            <SelectTrigger
-              aria-label={translate("ui.discussion.sort")}
-              className="ml-auto h-8 w-auto min-w-28 gap-1.5 px-2.5"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent align="end">
-              <SelectItem value="newest">{translate("ui.discussion.newest")}</SelectItem>
-              <SelectItem value="oldest">{translate("ui.discussion.oldest")}</SelectItem>
-            </SelectContent>
-          </Select>
+          <ChoiceSelect
+            ariaLabel={translate("ui.discussion.sort")}
+            className="ml-auto h-8 w-auto min-w-28 gap-1.5 px-2.5"
+            onValueChange={(value) => onSortChange(value as CommentSortOption)}
+            options={[
+              { label: translate("ui.discussion.newest"), value: "newest" },
+              { label: translate("ui.discussion.oldest"), value: "oldest" },
+            ]}
+            title={translate("ui.discussion.sort")}
+            value={sort}
+          />
         </div>
 
         <StateTransition identity={view}>

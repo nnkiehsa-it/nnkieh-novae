@@ -11,19 +11,13 @@ import { Button } from "@/components/ui/button";
 import { FeedToolbar } from "@/components/ui/feed-toolbar";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   PageHeader,
 } from "@/components/ui/page-state";
 import { FacilityCard } from "@/components/facilities/facility-card";
 import { FeedList } from "@/components/ui/feed-list";
 import { StatusDistribution } from "@/components/ui/status-distribution";
 import { statusFillColor, statusTextColor } from "@/components/ui/status-badge";
+import { ChoiceSelect } from "@/components/ui/choice-select";
 
 export default function FacilitiesPage() {
   useLocaleSubscription();
@@ -68,22 +62,18 @@ export default function FacilitiesPage() {
           </>
         }
         title={
-          <Select onValueChange={state.changeCategory} value={state.category}>
-            <SelectTrigger
-              aria-label={translate('ui.access.selectCategory')}
-              data-control-label="heading"
-              className="h-auto max-w-full border-0 bg-transparent p-0 text-2xl font-semibold leading-8 shadow-none"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent align="start">
-              {state.categories.map((option) => (
-                <SelectItem key={option.id} value={option.id}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <ChoiceSelect
+            ariaLabel={translate('ui.access.selectCategory')}
+            className="h-auto max-w-full border-0 bg-transparent p-0 text-2xl font-semibold leading-8 shadow-none"
+            controlLabel="heading"
+            onValueChange={state.changeCategory}
+            options={state.categories.map((option) => ({
+              label: option.label,
+              value: option.id,
+            }))}
+            title={translate('ui.access.selectCategory')}
+            value={state.category}
+          />
         }
         toolbar={
           <FeedToolbar

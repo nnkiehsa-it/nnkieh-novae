@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ListCustomRow, ListMutationRow, ListRow, ListSection, RowAction } from "@/components/ui/list";
-import { ListPicker } from "@/components/ui/list-controls";
+import { ListPicker } from "@/components/ui/choice-select";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ErrorState } from "@/components/ui/page-state";

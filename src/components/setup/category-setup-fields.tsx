@@ -12,15 +12,9 @@ import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ChoiceSelect } from "@/components/ui/choice-select";
 
 interface CategorySetupPanelProps {
   children: React.ReactNode;
@@ -194,24 +188,22 @@ export function IssueDraftEditor({
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="grid gap-1.5">
           <Label>{translate('ui.admin.readAccess')}</Label>
-          <Select
+          <ChoiceSelect
+            ariaLabel={translate('ui.admin.readAccess')}
             onValueChange={(value) =>
               onChange({
                 ...draft,
                 readAccess: value as IssueCategoryDraft["readAccess"],
               })
             }
+            options={[
+              { label: translate('ui.admin.schoolVisible'), value: "school" },
+              { label: translate('ui.admin.reviewedVisible'), value: "reviewed-school" },
+              { label: translate('ui.admin.ownerAdminOnly'), value: "owner-admin" },
+            ]}
+            title={translate('ui.admin.readAccess')}
             value={draft.readAccess}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="school">{translate('ui.admin.schoolVisible')}</SelectItem>
-              <SelectItem value="reviewed-school">{translate('ui.admin.reviewedVisible')}</SelectItem>
-              <SelectItem value="owner-admin">{translate('ui.admin.ownerAdminOnly')}</SelectItem>
-            </SelectContent>
-          </Select>
+          />
         </div>
         <ToggleField
           checked={draft.authorVisible === true}

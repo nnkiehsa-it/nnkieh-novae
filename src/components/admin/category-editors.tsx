@@ -9,9 +9,9 @@ import {
   ListChoiceRow,
   ListInputRow,
   ListNumberRow,
-  ListPicker,
   ListSwitchRow,
 } from "@/components/ui/list-controls";
+import { ListPicker } from "@/components/ui/choice-select";
 import type { FacilityCategoryConfig, IssueCategoryConfig } from "@/types/categories";
 
 type AnyCategory = FacilityCategoryConfig | IssueCategoryConfig;

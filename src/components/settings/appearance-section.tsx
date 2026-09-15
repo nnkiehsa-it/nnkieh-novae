@@ -3,7 +3,7 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import type { AppLocale } from "@/i18n";
 import { ListActionRow, ListSection } from "@/components/ui/list";
-import { ListPicker } from "@/components/ui/list-controls";
+import { ListPicker } from "@/components/ui/choice-select";
 
 /**
  * How the app looks and reads, and whether it is installed.
