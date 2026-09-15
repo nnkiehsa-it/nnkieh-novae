@@ -153,7 +153,7 @@ export function CategoryManagement() {
       </StateTransition>
 
       <Dialog onOpenChange={(open) => !open && setEditing(null)} open={editing !== null}>
-        <DialogContent className="sm:max-w-xl" presentation="sheet">
+        <DialogContent className="sm:max-w-2xl" presentation="sheet">
           <DialogHeader>
             <DialogTitle>
               {editingItem ? nameOf(editingItem, activeIndex ?? 0) : ""}

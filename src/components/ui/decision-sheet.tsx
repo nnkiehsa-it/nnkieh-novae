@@ -137,7 +137,7 @@ export function DecisionSheet({
 }) {
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="sm:max-w-xl" presentation="sheet">
+      <DialogContent className="sm:max-w-2xl" presentation="sheet">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>

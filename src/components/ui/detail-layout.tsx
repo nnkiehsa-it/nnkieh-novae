@@ -55,7 +55,7 @@ export function DetailLayout({
     <div className="space-y-3">{Array.from({ length: 3 }, (_, index) => <div className="space-y-1.5" key={index}><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-28" /></div>)}</div>
   </> });
   return (
-    <div className={dock ? "detail-with-discussion-composer space-y-5" : "space-y-5"}>
+    <div className={dock ? "detail-with-discussion-composer space-y-7" : "space-y-7"}>
       {/* The controls of a record stay where they are while the record travels
           under them, the way the controls of a list do. They ride outside the
           state transition because they are the one part of the screen that does

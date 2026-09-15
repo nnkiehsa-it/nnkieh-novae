@@ -156,7 +156,7 @@ function AuditEntrySheet({
 
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open={Boolean(entry)}>
-      <DialogContent className="sm:max-w-xl" presentation="sheet">
+      <DialogContent className="sm:max-w-2xl" presentation="sheet">
         <DialogHeader>
           <DialogTitle>{actionLabel(record)}</DialogTitle>
           <DialogDescription>{formatDate(record.createdAt)}</DialogDescription>

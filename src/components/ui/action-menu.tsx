@@ -106,7 +106,7 @@ export function ActionMenu({
     <>
       {described(React.cloneElement(trigger, { onClick: () => setOpen(true) }))}
       <Dialog onOpenChange={setOpen} open={open}>
-        <DialogContent className="sm:max-w-xl" presentation="sheet">
+        <DialogContent className="sm:max-w-2xl" presentation="sheet">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             {description ? <DialogDescription>{description}</DialogDescription> : null}

@@ -147,6 +147,13 @@ test('failed provider deletion can be retried from the operational UI', async ({
     await failure.click();
     const details = admin.page.getByRole('dialog');
     await expect(details.getByText(jobId)).toBeVisible();
+    await expect(details.locator('[data-slot="dialog-header"]')).toHaveCSS('position', 'sticky');
+    const dialogMetrics = await details.evaluate((element) => ({
+      fits: element.scrollWidth <= element.clientWidth,
+      width: element.getBoundingClientRect().width,
+    }));
+    expect(dialogMetrics.fits).toBe(true);
+    expect(dialogMetrics.width).toBeGreaterThanOrEqual(640);
     await expectBackendAction(admin.page, 'retryOperationalWork', async () => {
       await details.getByRole('button', { name: 'Retry', exact: true }).click();
     });

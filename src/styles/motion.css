@@ -300,7 +300,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 @keyframes t-dropdown-in {
   from {
     opacity: 0;
-    transform: scale(var(--motion-surface-scale));
+    transform: translateY(var(--motion-rise)) scale(var(--motion-surface-scale));
   }
   to {
     opacity: 1;
@@ -314,7 +314,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   }
   to {
     opacity: 0;
-    transform: scale(var(--motion-surface-scale));
+    transform: translateY(var(--motion-rise)) scale(var(--motion-surface-scale));
   }
 }
 
@@ -343,7 +343,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 @keyframes t-dialog-in {
   from {
     opacity: 0;
-    transform: scale(var(--motion-surface-scale));
+    transform: translateY(var(--motion-rise)) scale(var(--motion-surface-scale));
   }
   to {
     opacity: 1;
@@ -357,7 +357,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   }
   to {
     opacity: 0;
-    transform: scale(var(--motion-surface-scale));
+    transform: translateY(var(--motion-rise)) scale(var(--motion-surface-scale));
   }
 }
 
