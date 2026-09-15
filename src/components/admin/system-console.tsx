@@ -27,7 +27,7 @@ import { ErrorState } from "@/components/ui/page-state";
 export function SystemConsole() {
   const { t } = useI18n();
   const [view, setView] = React.useState("failures");
-  const { error, load, loading, page, rebuildNotion, rebuildingNotion, retry, retryAll, retrying, snapshot } =
+  const { error, load, loading, notionJob, page, rebuildNotion, rebuildingNotion, retry, retryAll, retrying, snapshot } =
     useSystemConsole();
 
   if (error && !snapshot) return <ErrorState error={error} onRetry={() => void load()} />;
@@ -63,6 +63,7 @@ export function SystemConsole() {
             <div className="space-y-6">
               <NotionRebuildAction
                 busy={rebuildingNotion}
+                job={notionJob}
                 onRebuild={() => void rebuildNotion()}
               />
               <SystemQueue
