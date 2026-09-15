@@ -65,6 +65,15 @@ interface TurnstileContextValue {
     options?: { presentation?: "dialog" | "inline" },
   ) => Promise<string | null>;
   setInlineHost: (host: HTMLDivElement | null) => void;
+  /**
+   * Whether a check is running right now.
+   *
+   * A check lives in an iframe that holds all of its own state, so anything
+   * that navigates the document throws it away mid-answer and the visitor is
+   * left looking at a page with no check on it and no way to sign in. Whatever
+   * can navigate the document has to be able to ask.
+   */
+  verifying: boolean;
 }
 
 interface PendingChallenge {
@@ -77,6 +86,7 @@ interface PendingChallenge {
 const TurnstileContext = createContext<TurnstileContextValue>({
   requestToken: async () => null,
   setInlineHost: () => undefined,
+  verifying: false,
 });
 
 export function TurnstileProvider({
@@ -87,6 +97,7 @@ export function TurnstileProvider({
   const [challenge, setChallenge] = useState<PendingChallenge | null>(null);
   const [gate, setGate] = useState<GateState>("idle");
   const [dialogHost, setDialogHost] = useState<HTMLDivElement | null>(null);
+  const [verifying, setVerifying] = useState(false);
   const [inlineHost, setInlineHost] = useState<HTMLDivElement | null>(null);
   const pendingRequest = useRef<Promise<string | null> | null>(null);
 
@@ -223,16 +234,18 @@ export function TurnstileProvider({
       });
     })();
     pendingRequest.current = request;
+    setVerifying(true);
     try {
       return await request;
     } finally {
       pendingRequest.current = null;
+      setVerifying(false);
     }
   }, [waitUntilReady]);
 
   const value = useMemo(
-    () => ({ requestToken, setInlineHost }),
-    [requestToken],
+    () => ({ requestToken, setInlineHost, verifying }),
+    [requestToken, verifying],
   );
   return (
     <TurnstileContext.Provider value={value}>

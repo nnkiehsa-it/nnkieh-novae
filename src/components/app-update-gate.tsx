@@ -9,6 +9,7 @@ import { BrandLockup } from "@/components/ui/brand";
 import { Button } from "@/components/ui/button";
 import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import { raceWithAbort } from "@/lib/abort-signal";
+import { useTurnstile } from "@/components/turnstile-provider";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +31,11 @@ const UPDATE_SUCCESS_HOLD_MS = 500;
 
 export function AppUpdateGate() {
   useLocaleSubscription();
+  // A security check lives in an iframe that holds all of its own state, so
+  // reloading the document while one is on screen throws the check away: the
+  // visitor is left on a sign-in page with no check on it and no way past it.
+  // A new version can wait for the few seconds an answer takes.
+  const { verifying } = useTurnstile();
   const [availableVersion, setAvailableVersion] = React.useState("");
   const [reloading, setReloading] = React.useState(false);
   const [updateComplete, setUpdateComplete] = React.useState(false);
@@ -82,7 +88,7 @@ export function AppUpdateGate() {
   }, [check]);
 
   React.useEffect(() => {
-    if (!availableVersion) return;
+    if (!availableVersion || verifying) return;
     if (!canAutoReload(availableVersion)) {
       setPromptVisible(true);
       return;
@@ -90,7 +96,7 @@ export function AppUpdateGate() {
     void reload({ automatic: true });
     // The first unseen version automatically reloads once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [availableVersion]);
+  }, [availableVersion, verifying]);
 
   function readReloadCount(version: string) {
     try {
@@ -203,7 +209,7 @@ export function AppUpdateGate() {
 
   return (
     <>
-      <Dialog open={promptVisible && !reloading}>
+      <Dialog open={promptVisible && !reloading && !verifying}>
         <DialogContent showCloseButton={false}>
           <DialogHeader>
             <DialogTitle>{translate('ui.update.title')}</DialogTitle>
