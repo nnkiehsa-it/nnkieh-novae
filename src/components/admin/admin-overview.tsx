@@ -4,7 +4,11 @@ import * as React from "react";
 import { RefreshCw } from "lucide-react";
 
 import { useI18n } from "@/i18n";
-import { useAdminOverview, type AdminOverviewWindow } from "@/hooks/use-admin-overview";
+import {
+  ADMIN_OVERVIEW_WINDOWS,
+  type AdminOverviewWindow,
+} from "@/constants/admin-activity";
+import { useAdminOverview } from "@/hooks/use-admin-overview";
 import { AdminSections } from "@/components/admin/admin-sections";
 import { OverviewDistribution, OverviewMetrics } from "@/components/admin/overview-metrics";
 import { OverviewHealth } from "@/components/admin/overview-health";
@@ -14,17 +18,10 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ErrorState } from "@/components/ui/page-state";
 import type { AdminAccess } from "@/lib/admin-routes";
 
-const WINDOWS: ReadonlyArray<{ labelKey: string; value: AdminOverviewWindow }> = [
-  { labelKey: "ui.adminConsole.window24h", value: "24h" },
-  { labelKey: "ui.adminConsole.window7d", value: "7d" },
-  { labelKey: "ui.adminConsole.window30d", value: "30d" },
-];
-
 export function AdminOverview({ access }: { access: AdminAccess }) {
   const { t } = useI18n();
   const [period, setPeriod] = React.useState<AdminOverviewWindow>("24h");
   const { activity, error, load, loading, platform } = useAdminOverview(period);
-  const periodLabel = t(WINDOWS.find((entry) => entry.value === period)?.labelKey ?? "");
 
   return (
     <div className="space-y-7" data-dashboard-surface>
@@ -34,7 +31,7 @@ export function AdminOverview({ access }: { access: AdminAccess }) {
             <LiquidTabs
               ariaLabel={t("ui.adminConsole.period")}
               onValueChange={(value) => setPeriod(value as AdminOverviewWindow)}
-              options={WINDOWS.map((entry) => ({
+              options={ADMIN_OVERVIEW_WINDOWS.map((entry) => ({
                 label: t(entry.labelKey),
                 value: entry.value,
               }))}
@@ -56,7 +53,7 @@ export function AdminOverview({ access }: { access: AdminAccess }) {
           <OverviewMetrics
             activity={activity}
             canOpenActivity={access.members}
-            period={periodLabel}
+            period={period}
           />
           <OverviewDistribution platform={platform} />
           <OverviewHealth canOpenSystem={access.admin} platform={platform} />

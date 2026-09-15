@@ -27,7 +27,7 @@ export function StatusDistribution({
   const total = filled.reduce((sum, segment) => sum + segment.count, 0);
   if (loading && total === 0) {
     return (
-      <div className="grid gap-2.5 px-0.5">
+      <div className="grid w-full min-w-0 gap-2.5 px-0.5">
         <Skeleton className="h-1.5 w-full rounded-full" />
         <Skeleton className="h-3.5 w-48" />
       </div>
@@ -35,7 +35,7 @@ export function StatusDistribution({
   }
   if (total === 0) return null;
   return (
-    <section aria-label={ariaLabel} className="grid gap-2.5 px-0.5">
+    <section aria-label={ariaLabel} className="grid w-full min-w-0 gap-2.5 px-0.5">
       <div aria-hidden className="flex h-1.5 gap-0.5 overflow-hidden rounded-full bg-muted">
         {filled.map((segment) => (
           <span

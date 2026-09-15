@@ -1,7 +1,8 @@
+import type { AdminOverviewWindow } from '@/constants/admin-activity';
 import { invokeBackendAction } from '@/services/backend-action';
 import type { RoleCode } from '@/services/session-role';
 
-export type AdminOverviewWindow = '24h' | '7d' | '30d';
+export type { AdminOverviewWindow };
 export type RestrictionMode = 'clear' | '7d' | '30d' | 'permanent' | 'custom';
 
 interface AdminUserWire {

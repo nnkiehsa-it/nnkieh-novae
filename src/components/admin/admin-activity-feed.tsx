@@ -17,10 +17,10 @@ import { ListRow, ListSection } from "@/components/ui/list";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import {
-  useAdminActivity,
-  type AdminOverviewData,
+  ADMIN_OVERVIEW_WINDOWS,
   type AdminOverviewWindow,
-} from "@/hooks/use-admin-console";
+} from "@/constants/admin-activity";
+import { useAdminActivity, type AdminOverviewData } from "@/hooks/use-admin-console";
 import { useI18n } from "@/i18n";
 import { formatDate } from "@/lib/format";
 
@@ -71,12 +71,6 @@ export function AdminActivityRows({
   );
 }
 
-const WINDOWS: ReadonlyArray<{ labelKey: string; value: AdminOverviewWindow }> = [
-  { labelKey: "ui.adminConsole.window24h", value: "24h" },
-  { labelKey: "ui.adminConsole.window7d", value: "7d" },
-  { labelKey: "ui.adminConsole.window30d", value: "30d" },
-];
-
 /** The full activity record, which used to be reachable only through a dialog. */
 export function AdminActivityFeed() {
   const { t } = useI18n();
@@ -88,7 +82,10 @@ export function AdminActivityFeed() {
       <LiquidTabs
         ariaLabel={t("ui.adminConsole.period")}
         onValueChange={(value) => setPeriod(value as AdminOverviewWindow)}
-        options={WINDOWS.map((entry) => ({ label: t(entry.labelKey), value: entry.value }))}
+        options={ADMIN_OVERVIEW_WINDOWS.map((entry) => ({
+          label: t(entry.labelKey),
+          value: entry.value,
+        }))}
         value={period}
       />
       <ListSection>

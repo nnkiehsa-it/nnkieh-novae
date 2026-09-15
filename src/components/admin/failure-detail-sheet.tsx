@@ -60,13 +60,17 @@ export function FailureDetailSheet({
         <ListSection header={t("admin.failureRecord")}>
           {record.fields.map((field) => (
             <ListRow
+              // An identifier is longer than the room a value has at the end of
+              // a row, and it cannot be broken at a word, so it is read on its
+              // own line underneath instead of pushing the row off the screen.
+              detail={
+                field.mono ? (
+                  <span className="break-all font-mono">{field.value}</span>
+                ) : undefined
+              }
               key={field.label}
               label={field.label}
-              value={
-                <span className={field.mono ? "break-all font-mono text-xs" : "break-words"}>
-                  {field.value}
-                </span>
-              }
+              value={field.mono ? undefined : field.value}
             />
           ))}
         </ListSection>
