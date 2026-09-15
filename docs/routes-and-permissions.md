@@ -69,15 +69,15 @@ Platform admin 不需要逐一加入 category ID。`canManageIssueCategory` 和 
 
 前端即使手動呼叫隱藏的 action，也會走完整檢查。資料庫 runtime role 本身沒有 DDL 權限，不能繞過 RPC 去改 schema 或 role。
 
-## 使用者限制
+## 帳號存取規則
 
-受限制帳號仍能登入和讀取獲准內容，但下列互動會在 action execution 階段回傳 `user-muted`：
+`role.manage` 管理員可以針對已註冊 UID，或學校信箱 `@` 前的帳號前綴建立持續性規則。個別 UID 優先於前綴；多個前綴命中時採最長者。規則可設 7 天、30 天、自訂時數或永久：
 
-- 建立提案、設施回報、一般留言或公告留言
-- 附議、設施受影響標記、公告按讚
-- 建立或 finalize 圖片 upload session
+- `read_only`：可讀取與調整個人通知設定，但不能建立、刪除、留言、上傳或反應。
+- `reaction_only`：在唯讀能力之外，可附議／取消、公告按讚／取消，以及標記／取消「我也遇到」。
+- `blocked`：任何受保護請求都拒絕；`/v1/auth/sync` 在建立新 profile 前先拒絕並回傳管理員設定的純文字訊息。
 
-平台管理員不能在管理介面被設為互動限制。平台管理員名單若要調整，修改部署環境的 `ADMIN_EMAILS`，下一次後端 profile reconciliation 會套用結果。
+拒絕的參與寫入回傳 `account-restricted` 與公開原因。分類管理員原有的權限與 scope 操作保留。平台管理員仍只由 `ADMIN_EMAILS` 決定且不受存取規則影響。
 
 ## 提案 category 的資料可見性
 

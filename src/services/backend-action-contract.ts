@@ -186,7 +186,13 @@ export const BACKEND_ACTION_POLICIES = {
   "setUserAccessScope": {
     "group": "admin-write"
   },
-  "setUserRestriction": {
+  "listAccountAccessRules": {
+    "group": "read"
+  },
+  "saveAccountAccessRule": {
+    "group": "admin-write"
+  },
+  "deleteAccountAccessRule": {
     "group": "admin-write"
   },
   "toggleFacilityAffected": {
@@ -272,7 +278,9 @@ export const BACKEND_ACTION_NAMES = [
   'savePlatformFeatures',
   'setAnnouncementLike',
   'setUserAccessScope',
-  'setUserRestriction',
+  'listAccountAccessRules',
+  'saveAccountAccessRule',
+  'deleteAccountAccessRule',
   'toggleFacilityAffected',
   'toggleSupport',
   'unregisterPushToken',

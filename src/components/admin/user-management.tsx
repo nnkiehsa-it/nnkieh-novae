@@ -110,17 +110,12 @@ export function UserManagement() {
       </RecordList>
       <UserDetailsDialog
         busy={state.busy === state.selected?.uid}
-        durationHours={state.durationHours}
         onClose={() => {
           state.setSelected(null);
-          state.setReason("");
         }}
-        onDurationHoursChange={state.setDurationHours}
-        onReasonChange={state.setReason}
-        onRestrictionChange={(mode) =>
-          state.selected && void state.updateRestriction(state.selected, mode)
+        onRestrictionChange={(input) =>
+          state.selected && void state.updateRestriction(state.selected, input)
         }
-        reason={state.reason}
         user={state.selected}
       />
     </>

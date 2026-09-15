@@ -360,11 +360,11 @@ integrationTest('administrator user pages and custom restriction duration are en
   assert.equal((second.users as unknown[]).length,21);
   assert.equal(second.truncated,false);
   const start = Date.now();
-  const result = asRecord(await callAction('setUserRestriction',{uid:member.auth.uid,mode:'custom',durationHours:2,reason:'Custom duration test'},admin.auth));
-  const delta = Date.parse(String(result.restrictedUntil))-start;
+  const result = asRecord(await callAction('saveAccountAccessRule',{targetType:'uid',targetValue:member.auth.uid,preset:'read_only',duration:'custom',durationHours:2,message:'Custom duration test'},admin.auth));
+  const delta = Date.parse(String(result.expiresAt))-start;
   assert.ok(delta >= 7200000 && delta < 7210000);
-  await assert.rejects(()=>callAction('setUserRestriction',{uid:member.auth.uid,mode:'custom',durationHours:0,reason:'Invalid'},admin.auth),/validation-invalid/);
-  await assert.rejects(()=>callAction('setUserRestriction',{uid:admin.auth.uid,mode:'custom',durationHours:2,reason:'Denied'},admin.auth),/permission-denied/);
+  await assert.rejects(()=>callAction('saveAccountAccessRule',{targetType:'uid',targetValue:member.auth.uid,preset:'read_only',duration:'custom',durationHours:0,message:'Invalid'},admin.auth),/validation-invalid/);
+  await assert.rejects(()=>callAction('saveAccountAccessRule',{targetType:'uid',targetValue:admin.auth.uid,preset:'blocked',duration:'custom',durationHours:2,message:'Denied'},admin.auth),/permission-denied/);
 });
 
 integrationTest('runtime content limits apply below the wider database safety ceilings', async () => {

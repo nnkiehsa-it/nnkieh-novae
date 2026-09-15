@@ -208,6 +208,9 @@ async function refreshVerifiedSession(
         writeLocalStorage(VISIT_RECORDED_AT_KEY, String(Date.now()));
       applyAccess(access);
     } catch (bootstrapError) {
+      if (bootstrapError instanceof ApiRequestError && bootstrapError.code === "account-restricted") {
+        throw bootstrapError;
+      }
       sessionDebug("bootstrap fallback", bootstrapError);
       await ensureContentVersionsFresh().catch(() => undefined);
       if (!current()) return;
@@ -219,6 +222,10 @@ async function refreshVerifiedSession(
   } catch (error) {
     if (!current()) return;
     sessionDebug("session verification failed", error);
+    if (error instanceof ApiRequestError && error.code === "account-restricted") {
+      await rejectUser(error.restrictionMessage || error.message);
+      return;
+    }
     patch({
       error: error instanceof ApiRequestError && error.code === "app-check-failed"
         ? "auth.appCheckFailed"

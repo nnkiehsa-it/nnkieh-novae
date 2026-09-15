@@ -21,9 +21,10 @@ export type PermissionCode =
   | "role.manage";
 
 export interface AuthContext {
+  accessPreset: "read_only" | "reaction_only" | null;
+  accessRestrictionMessage: string;
   email: string;
   isAdmin: boolean;
-  interactionRestricted: boolean;
   managedIssueCategoryIds: string[];
   managedFacilityCategoryIds: string[];
   permissions: PermissionCode[];

@@ -71,8 +71,20 @@ export function platformEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | n
       });
       break;
     }
-    case "setUserRestriction": {
-      const targetUid = String(payload.targetUid ?? payload.uid ?? "");
+    case "saveAccountAccessRule":
+    case "deleteAccountAccessRule": {
+      const targetType = String(payload.targetType ?? "");
+      const targetUid = targetType === "uid" ? String(payload.targetValue ?? "") : "";
+      if (!targetUid) {
+        events.push({
+          aggregateType: "platform",
+          aggregateId: "global",
+          eventType: "platform.settings_updated",
+          destinations: ["realtime"],
+          payload: { actor_uid: actorUid },
+        });
+        break;
+      }
       events.push({
         aggregateType: "user",
         aggregateId: targetUid,

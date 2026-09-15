@@ -4,24 +4,25 @@ import { resolveDomainEvents } from "../events/domain-events.ts";
 import { hasPermission } from "./auth.ts";
 import { claimBackendActionBusinessLimit, claimBackendActionBurstLimit } from "./rate-limit.ts";
 import type { BackendActionDefinition } from "./action-registry.ts";
+import { AccountAccessError } from "../shared/account-access.ts";
 import type { ActionSegment, AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { toApiJson } from "./response.ts";
 
-const RESTRICTED_INTERACTION_ACTIONS = new Set([
-  "createAnnouncementComment",
-  "createComment",
-  "createFacility",
-  "createImageUploadSessions",
-  "createIssue",
-  "finalizeImageUploads",
-  "setAnnouncementLike",
-  "toggleFacilityAffected",
-  "toggleSupport",
-]);
+function canManageRestrictedParticipation(definition: BackendActionDefinition, auth: AuthContext) {
+  if (definition.name === "deleteAnnouncement" || definition.name === "deleteAnnouncementComment") {
+    return hasPermission(auth, "announcement.manage");
+  }
+  if (definition.name === "deleteFacility") return hasPermission(auth, "facility.manage");
+  if (definition.name === "deleteIssue" || definition.name === "deleteComment") {
+    return hasPermission(auth, "proposal.manage");
+  }
+  return false;
+}
 
 function auditTarget(payload: JsonRecord) {
   const candidates = [
     payload.uid,
+    payload.targetValue,
     payload.id,
     payload.categoryId,
     payload.issueId,
@@ -50,8 +51,14 @@ export async function executeBackendAction(
   database: BackendDatabase,
   operationId: string,
 ) {
-  if (auth.interactionRestricted && RESTRICTED_INTERACTION_ACTIONS.has(definition.name)) {
-    throw new Error("user-muted");
+  const restrictedParticipation = definition.accessClass === "participation"
+    && !canManageRestrictedParticipation(definition, auth);
+  const restrictedReaction = definition.accessClass === "reaction";
+  if (
+    (auth.accessPreset === "read_only" && (restrictedParticipation || restrictedReaction))
+    || (auth.accessPreset === "reaction_only" && restrictedParticipation)
+  ) {
+    throw new AccountAccessError(auth.accessRestrictionMessage);
   }
   if (definition.requiredPermission && !hasPermission(auth, definition.requiredPermission)) {
     throw new Error("permission-denied");

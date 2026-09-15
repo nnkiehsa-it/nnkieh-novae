@@ -3,7 +3,25 @@ import { invokeBackendAction } from '@/services/backend-action';
 import type { RoleCode } from '@/services/session-role';
 
 export type { AdminOverviewWindow };
-export type RestrictionMode = 'clear' | '7d' | '30d' | 'permanent' | 'custom';
+export type AccountAccessPreset = 'read_only' | 'reaction_only' | 'blocked';
+export type AccountAccessDuration = '7d' | '30d' | 'custom' | 'permanent';
+export type AccountAccessTargetType = 'uid' | 'email_prefix';
+
+export interface AccountAccessRule {
+  expiresAt: Date | null;
+  matchCount: number;
+  message: string;
+  permanent: boolean;
+  preset: AccountAccessPreset;
+  targetType: AccountAccessTargetType;
+  targetValue: string;
+  updatedAt: Date;
+}
+
+interface AccountAccessRuleWire extends Omit<AccountAccessRule, 'expiresAt' | 'updatedAt'> {
+  expiresAt: string | null;
+  updatedAt: string;
+}
 
 interface AdminUserWire {
   uid: string;
@@ -12,9 +30,7 @@ interface AdminUserWire {
   photoUrl: string | null;
   createdAt: string;
   lastSeenAt: string | null;
-  restrictedUntil: string | null;
-  restrictedPermanently: boolean;
-  restrictionReason: string;
+  accessRule: AccountAccessRuleWire | null;
   roles: RoleCode[];
   managedIssueCategoryIds: string[];
   managedFacilityCategoryIds: string[];
@@ -27,9 +43,7 @@ export interface AdminUser {
   photoUrl: string | null;
   createdAt: Date;
   lastSeenAt: Date | null;
-  restrictedUntil: Date | null;
-  restrictedPermanently: boolean;
-  restrictionReason: string;
+  accessRule: AccountAccessRule | null;
   roles: RoleCode[];
   managedIssueCategoryIds: string[];
   managedFacilityCategoryIds: string[];
@@ -125,9 +139,7 @@ export async function listAdminUsers(query = '', page = 0) {
       photoUrl: user.photoUrl,
       createdAt: new Date(user.createdAt),
       lastSeenAt: toDate(user.lastSeenAt),
-      restrictedUntil: toDate(user.restrictedUntil),
-      restrictedPermanently: user.restrictedPermanently,
-      restrictionReason: user.restrictionReason,
+      accessRule: user.accessRule ? normalizeAccessRule(user.accessRule) : null,
       roles: Array.isArray(user.roles) ? user.roles : [],
       managedIssueCategoryIds: Array.isArray(user.managedIssueCategoryIds)
         ? user.managedIssueCategoryIds
@@ -139,26 +151,43 @@ export async function listAdminUsers(query = '', page = 0) {
   };
 }
 
-export async function setUserRestriction(
-  uid: string,
-  mode: RestrictionMode,
-  reason: string,
-  durationHours?: number,
+function normalizeAccessRule(rule: AccountAccessRuleWire): AccountAccessRule {
+  return {
+    ...rule,
+    expiresAt: toDate(rule.expiresAt),
+    updatedAt: new Date(rule.updatedAt),
+  };
+}
+
+export async function listAccountAccessRules() {
+  const result = await invokeBackendAction<Record<string, never>, { rules: AccountAccessRuleWire[] }>(
+    'listAccountAccessRules',
+  )({});
+  return result.rules.map(normalizeAccessRule);
+}
+
+export async function saveAccountAccessRule(input: {
+  duration: AccountAccessDuration;
+  durationHours?: number;
+  message: string;
+  preset: AccountAccessPreset;
+  targetType: AccountAccessTargetType;
+  targetValue: string;
+}) {
+  return await invokeBackendAction<
+    typeof input,
+    { success: boolean }
+  >('saveAccountAccessRule')({ ...input, message: input.message.trim(), targetValue: input.targetValue.trim() });
+}
+
+export async function deleteAccountAccessRule(
+  targetType: AccountAccessTargetType,
+  targetValue: string,
 ) {
   return await invokeBackendAction<
-    { uid: string; mode: RestrictionMode; reason: string; durationHours?: number },
-    {
-      success: boolean;
-      uid: string;
-      restrictedUntil: string | null;
-      restrictedPermanently: boolean;
-    }
-  >('setUserRestriction')({
-    uid,
-    mode,
-    reason: reason.trim(),
-    ...(mode === 'custom' ? { durationHours } : {}),
-  });
+    { targetType: AccountAccessTargetType; targetValue: string },
+    { success: boolean }
+  >('deleteAccountAccessRule')({ targetType, targetValue });
 }
 
 export async function listAdminAudit(query = '', page = 0) {
@@ -178,4 +207,3 @@ export async function listAdminAudit(query = '', page = 0) {
     })),
   };
 }
-

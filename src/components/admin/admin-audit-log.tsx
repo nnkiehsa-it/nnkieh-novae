@@ -26,7 +26,8 @@ const ACTION_LABELS: Record<string, string> = {
   savePlatformFeatures: "ui.adminConsole.actionSaveFeatures",
   savePlatformSettings: "ui.adminConsole.actionSaveSettings",
   setUserAccessScope: "ui.adminConsole.actionSetAccess",
-  setUserRestriction: "ui.adminConsole.actionSetRestriction",
+  saveAccountAccessRule: "ui.adminConsole.actionSetRestriction",
+  deleteAccountAccessRule: "ui.adminConsole.actionSetRestriction",
   updateFacilityStatus: "ui.adminConsole.actionUpdateFacility",
   updateIssueResult: "ui.adminConsole.actionUpdateIssue",
 };

@@ -1,5 +1,6 @@
 import { requireEnv } from "../shared/env.ts";
 import type { AuthContext, BackendDatabase, PermissionCode } from "./types.ts";
+import { AccountAccessError, resolveAccountAccessRule } from "../shared/account-access.ts";
 
 interface AuthIdentity {
   email: string;
@@ -21,6 +22,8 @@ export async function resolveAuthContext(
     ? access.roles.filter((role): role is string => typeof role === "string")
     : [];
   const isPlatformAdmin = roles.includes("platform-admin");
+  const accessRule = isPlatformAdmin ? null : await resolveAccountAccessRule(database, firebaseUser);
+  if (accessRule?.preset === "blocked") throw new AccountAccessError(accessRule.message);
   const managedIssueCategoryIds = isPlatformAdmin
     ? []
     : Array.isArray(access.managedIssueCategoryIds)
@@ -42,9 +45,10 @@ export async function resolveAuthContext(
   }
 
   return {
+    accessPreset: accessRule?.preset ?? null,
+    accessRestrictionMessage: accessRule?.message ?? "",
     email: firebaseUser.email,
     isAdmin: isPlatformAdmin,
-    interactionRestricted: access.interactionRestricted === true,
     managedFacilityCategoryIds,
     managedIssueCategoryIds,
     name: firebaseUser.name,

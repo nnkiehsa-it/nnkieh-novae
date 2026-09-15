@@ -6,6 +6,7 @@ import { createFunctionLogger } from "./shared/observability.ts";
 import { RATE_LIMITS } from "./shared/rate-limits.ts";
 import { claimFixedWindowRateLimit, utcHourWindow } from "./shared/business-rate-limit.ts";
 import { operationPolicy } from "./shared/operation-policies.ts";
+import { AccountAccessError, resolveAccountAccessRule } from "./shared/account-access.ts";
 
 function adminEmails() {
   const emails = requireEnv("ADMIN_EMAILS")
@@ -22,6 +23,10 @@ export async function handleSyncUser(user: FirebaseAuthContext, database: AppDat
     await claimFixedWindowRateLimit(user.uid, "auth.sync", utcHourWindow(), { ...RATE_LIMITS.loginSyncHourly, limit: operationPolicy('loginSyncHourly') });
 
     const email = user.email.toLowerCase();
+    if (!adminEmails().includes(email)) {
+      const accessRule = await resolveAccountAccessRule(database, { email, uid: user.uid });
+      if (accessRule?.preset === "blocked") throw new AccountAccessError(accessRule.message);
+    }
     await database.sql`update app_private.user_profiles set email = null
       where email = ${email} and uid <> ${user.uid}`;
 

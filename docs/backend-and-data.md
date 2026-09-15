@@ -66,7 +66,7 @@ Read action 若未帶 operation ID，Worker 會建立一個只用於 trace 的 U
 | --- | --- | --- | --- |
 | Category / platform | `getCategoryCatalog`, `getCategoryManagement`, `estimateCategoryPolicyChanges`, `estimateRetentionCleanup`, `listPlatformJobs` | `savePlatformSettings`, `saveCategoryManagement`, `savePlatformFeatures`, `completeInitialSetup` | Management reads/writes 要 `category.manage`；首次 setup 由 domain rule 驗 platform admin |
 | Session / user | `getSessionBootstrap`, `getCurrentUserRole`, `getUserPublicProfiles` | `cacheUserAvatar` | 登入使用者；公開 profile 仍按允許欄位投影 |
-| Access / audit | `listRoleAssignments`, `listAdminUsers`, `listAdminAudit`, `listAdminActivity`, `getAdminOverview` | `setUserRestriction`, `setUserAccessScope` | 前三類管理清單與 writes 要 `role.manage`；activity / overview 要 `dashboard.view` |
+| Access / audit | `listRoleAssignments`, `listAdminUsers`, `listAccountAccessRules`, `listAdminAudit`, `listAdminActivity`, `getAdminOverview` | `saveAccountAccessRule`, `deleteAccountAccessRule`, `setUserAccessScope` | 存取規則、scope 與管理清單要 `role.manage`；activity / overview 要 `dashboard.view` |
 | Upload | `resolveUploadImageUrls` | `createImageUploadSessions`, `finalizeImageUploads`, `deleteUploadedImages` | 登入 + viewer / owner / lifecycle domain rule |
 | Issue | `getIssue`, `listIssues`, `searchIssues`, `listUserIssues`, `listComments` | `createIssue`, `moderateIssueStatus`, `updateIssueResult`, `toggleSupport`, `removeSupport`, `deleteIssue`, `createComment`, `deleteComment` | Moderation / result 要 `proposal.manage`；其餘由 author、category、status、restriction rule 決定 |
 | Facility | `listFacilities`, `getFacility` | `createFacility`, `toggleFacilityAffected`, `updateFacilityStatus`, `deleteFacility` | Facility writes 在 domain rule 檢查 owner 或 facility scope |

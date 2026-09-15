@@ -5,6 +5,7 @@ import * as React from "react";
 import { useI18n } from "@/i18n";
 import { AccessManagement } from "@/components/admin/access-management";
 import { UserManagement } from "@/components/admin/user-management";
+import { AccountAccessRules } from "@/components/admin/account-access-rules";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
 import { ContentTransition, StateTransition } from "@/components/motion/state-transition";
 
@@ -23,12 +24,13 @@ export function PeopleConsole() {
         options={[
           { label: t("admin.peopleByAccount"), value: "accounts" },
           { label: t("admin.peopleByScope"), value: "scopes" },
+          { label: t("ui.accountAccess.rulesTab"), value: "restrictions" },
         ]}
         value={view}
       />
       <StateTransition className="min-w-0" data-admin-content identity={view}>
         <ContentTransition identity={view}>
-          {view === "accounts" ? <UserManagement /> : <AccessManagement />}
+          {view === "accounts" ? <UserManagement /> : view === "scopes" ? <AccessManagement /> : <AccountAccessRules />}
         </ContentTransition>
       </StateTransition>
     </div>

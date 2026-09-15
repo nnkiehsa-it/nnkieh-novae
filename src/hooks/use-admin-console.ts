@@ -9,13 +9,17 @@ import {
   listAdminAudit,
   listAdminActivity,
   listAdminUsers,
-  setUserRestriction,
+  listAccountAccessRules,
+  saveAccountAccessRule,
+  deleteAccountAccessRule,
   type AdminAuditEntry,
   type AdminActivityCursor,
   type AdminOverviewData,
   type AdminOverviewWindow,
   type AdminUser,
-  type RestrictionMode,
+  type AccountAccessDuration,
+  type AccountAccessPreset,
+  type AccountAccessRule,
 } from "@/services/admin-console";
 
 export type {
@@ -23,7 +27,9 @@ export type {
   AdminOverviewData,
   AdminOverviewWindow,
   AdminUser,
-  RestrictionMode,
+  AccountAccessDuration,
+  AccountAccessPreset,
+  AccountAccessRule,
 } from "@/services/admin-console";
 
 interface PagedReading<T> {
@@ -147,24 +153,23 @@ export function useAdminUsers() {
     "ui.adminConsole.loadUsersFailed",
   );
   const [selectedUid, setSelectedUid] = useState("");
-  const [reason, setReason] = useState("");
-  const [durationHours, setDurationHours] = useState(24);
   const [busy, setBusy] = useState("");
   const selected = list.rows.find((user) => user.uid === selectedUid) ?? null;
 
   const updateRestriction = useCallback(
-    async (user: AdminUser, mode: RestrictionMode) => {
-      if (mode !== "clear" && !reason.trim()) {
-        toast.error(t("ui.adminConsole.reasonRequired"));
-        return;
-      }
+    async (user: AdminUser, input: {
+      duration: AccountAccessDuration;
+      durationHours?: number;
+      message: string;
+      preset: AccountAccessPreset;
+    } | null) => {
       setBusy(user.uid);
       try {
-        await setUserRestriction(user.uid, mode, mode === "clear" ? "" : reason, durationHours);
-        toast.success(mode === "clear"
+        if (input) await saveAccountAccessRule({ ...input, targetType: "uid", targetValue: user.uid });
+        else await deleteAccountAccessRule("uid", user.uid);
+        toast.success(input === null
           ? t("ui.adminConsole.restrictionCleared")
           : t("ui.adminConsole.restrictionSet"));
-        setReason("");
         await list.load(list.query);
       } catch (caught) {
         toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
@@ -172,21 +177,63 @@ export function useAdminUsers() {
         setBusy("");
       }
     },
-    [durationHours, list, reason, t],
+    [list, t],
   );
 
   return {
     ...list,
     busy,
-    durationHours,
-    reason,
     selected,
-    setDurationHours,
-    setReason,
     setSelected: (user: AdminUser | null) => setSelectedUid(user?.uid ?? ""),
     updateRestriction,
     users: list.rows,
   };
+}
+
+export function useAccountAccessRules() {
+  const { t } = useI18n();
+  const { cold, remember, value } = useRememberedState<AccountAccessRule[]>("account-access-rules", []);
+  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState("");
+  const [error, setError] = useState("");
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      remember(await listAccountAccessRules());
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
+    } finally {
+      setLoading(false);
+    }
+  }, [remember, t]);
+  useEffect(() => { if (cold) void load(); }, [cold, load]);
+  const save = useCallback(async (input: Parameters<typeof saveAccountAccessRule>[0]) => {
+    setBusy(input.targetValue);
+    try {
+      await saveAccountAccessRule(input);
+      toast.success(t("ui.adminConsole.restrictionSet"));
+      await load();
+    } catch (caught) {
+      toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
+      throw caught;
+    } finally {
+      setBusy("");
+    }
+  }, [load, t]);
+  const remove = useCallback(async (rule: AccountAccessRule) => {
+    setBusy(rule.targetValue);
+    try {
+      await deleteAccountAccessRule(rule.targetType, rule.targetValue);
+      toast.success(t("ui.adminConsole.restrictionCleared"));
+      await load();
+    } catch (caught) {
+      toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
+    } finally {
+      setBusy("");
+    }
+  }, [load, t]);
+  return { busy, error, load, loading, remove, rules: value, save };
 }
 
 export function useAdminAudit() {

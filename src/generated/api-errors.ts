@@ -26,9 +26,9 @@ export const API_ERRORS = {
     "status": 403,
     "messageKey": "apiError.permissionDenied"
   },
-  "user-muted": {
+  "account-restricted": {
     "status": 403,
-    "messageKey": "apiError.userMuted"
+    "messageKey": "apiError.accountRestricted"
   },
   "origin-denied": {
     "status": 403,

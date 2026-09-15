@@ -30,7 +30,10 @@ export type BackendActionDomain =
   | "upload"
   | "user";
 
+export type AccountAccessClass = "read" | "personal" | "reaction" | "participation" | "admin";
+
 export interface BackendActionDefinition {
+  accessClass: AccountAccessClass;
   domain: BackendActionDomain;
   name: string;
   rateLimitGroup: BackendActionRateLimitGroup;
@@ -54,9 +57,32 @@ function action(
   domain: BackendActionDomain,
   rateLimitGroup: BackendActionRateLimitGroup,
   handler: BackendActionDefinition["handler"],
-  options: Pick<BackendActionDefinition, "requiredPermission"> = {},
+  options: Partial<Pick<BackendActionDefinition, "accessClass" | "requiredPermission">> = {},
 ): BackendActionDefinition {
+  const reactionActions = new Set([
+    "removeSupport",
+    "setAnnouncementLike",
+    "toggleFacilityAffected",
+    "toggleSupport",
+  ]);
+  const personalActions = new Set([
+    "cacheUserAvatar",
+    "markNotificationsOpened",
+    "registerPushToken",
+    "unregisterPushToken",
+    "updatePushNotificationPreferences",
+  ]);
+  const accessClass: AccountAccessClass = options.accessClass ?? (rateLimitGroup === "read" || rateLimitGroup === "upload-resolve"
+    ? "read"
+    : reactionActions.has(name)
+    ? "reaction"
+    : personalActions.has(name)
+    ? "personal"
+    : rateLimitGroup === "admin-write" && options.requiredPermission
+    ? "admin"
+    : "participation");
   return {
+    accessClass,
     domain,
     handler,
     name,
@@ -94,7 +120,9 @@ export const backendActionDefinitions = [
   action("listAdminAudit", "user", "read", userHandler, { requiredPermission: "role.manage" }),
   action("listAdminActivity", "user", "read", userHandler, { requiredPermission: "dashboard.view" }),
   action("getAdminOverview", "user", "read", userHandler, { requiredPermission: "dashboard.view" }),
-  action("setUserRestriction", "user", "admin-write", userHandler, { requiredPermission: "role.manage" }),
+  action("listAccountAccessRules", "user", "read", userHandler, { requiredPermission: "role.manage" }),
+  action("saveAccountAccessRule", "user", "admin-write", userHandler, { requiredPermission: "role.manage" }),
+  action("deleteAccountAccessRule", "user", "admin-write", userHandler, { requiredPermission: "role.manage" }),
   action("setUserAccessScope", "user", "admin-write", userHandler, { requiredPermission: "role.manage" }),
   action("cacheUserAvatar", "user", "sensitive-write", userHandler),
   action("getUserPublicProfiles", "user", "read", userHandler),
@@ -123,7 +151,7 @@ export const backendActionDefinitions = [
   action("getFacility", "facility", "read", handleFacilityAction),
   action("createFacility", "facility", "sensitive-write", handleFacilityAction),
   action("toggleFacilityAffected", "facility", "sensitive-write", handleFacilityAction),
-  action("updateFacilityStatus", "facility", "admin-write", handleFacilityAction),
+  action("updateFacilityStatus", "facility", "admin-write", handleFacilityAction, { accessClass: "admin" }),
   action("deleteFacility", "facility", "admin-write", handleFacilityAction),
 
   action("listAnnouncements", "announcement", "read", announcementHandler),

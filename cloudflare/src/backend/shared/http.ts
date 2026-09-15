@@ -153,7 +153,12 @@ export function publicErrorBody(error: unknown, failureId?: string) {
     ? Math.max(1, Math.ceil(error.retryAfterSeconds))
     : undefined;
   const code = publicErrorCode(error);
+  const publicMessage = error && typeof error === "object" && "publicMessage" in error
+    && typeof error.publicMessage === "string"
+    ? error.publicMessage.trim().slice(0, 500)
+    : undefined;
   const result: { code: ApiErrorCode; message?: string; failureId?: string; retryAfterSeconds?: number } = { code };
+  if (code === "account-restricted" && publicMessage) result.message = publicMessage;
   if (failureId) result.failureId = failureId;
   if (retryAfterSeconds) result.retryAfterSeconds = retryAfterSeconds;
   return result;

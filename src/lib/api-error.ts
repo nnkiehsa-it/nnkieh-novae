@@ -29,6 +29,7 @@ export class ApiRequestError extends Error {
   readonly operationId?: string;
   readonly failureId?: string;
   readonly retryAfterSeconds?: number;
+  readonly restrictionMessage?: string;
   readonly status: number;
 
   constructor(response: ApiErrorResponse, options: ApiRequestErrorOptions = {}) {
@@ -42,7 +43,14 @@ export class ApiRequestError extends Error {
       : undefined;
     const retryAfterSeconds = normalizeRetryAfterSeconds(response.error?.retryAfterSeconds)
       ?? normalizeRetryAfterSeconds(options.retryAfterSeconds);
-    const localizedMessage = t(messageKey);
+    const restrictionMessage = code === 'account-restricted'
+      && typeof response.error?.message === 'string'
+      && response.error.message.trim()
+      ? response.error.message.trim().slice(0, 500)
+      : undefined;
+    const localizedMessage = restrictionMessage
+      ? t('apiError.restrictedOperation', { reason: restrictionMessage })
+      : t(messageKey);
     const message = retryAfterSeconds
       ? t('common.retryAfterSeconds', { message: localizedMessage, seconds: retryAfterSeconds })
       : localizedMessage;
@@ -54,6 +62,7 @@ export class ApiRequestError extends Error {
     this.operationId = operationId;
     this.failureId = failureId;
     this.retryAfterSeconds = retryAfterSeconds;
+    this.restrictionMessage = restrictionMessage;
     this.status = API_ERRORS[code].status;
   }
 }

@@ -21,20 +21,19 @@ test('platform admin can restrict and restore an ordinary account', async ({ bro
     admin.page.getByRole('main').getByText('Normal', { exact: true }),
   ).toBeVisible();
   await admin.page.getByText(E2E_USERS.other).filter({ visible: true }).click();
-  await admin.page.getByRole('radio', { name: '7 days' }).click();
-  await admin.page.getByPlaceholder('Restriction reason (required)').fill('E2E reversible restriction');
-  await expectBackendAction(admin.page, 'setUserRestriction', async () => {
-    await admin.page.getByRole('button', { name: 'Restrict this account' }).click();
+  await admin.page.getByLabel('Restriction reason / displayed message').fill('E2E reversible restriction');
+  await expectBackendAction(admin.page, 'saveAccountAccessRule', async () => {
+    await admin.page.getByRole('button', { name: 'Apply rule' }).click();
   });
   await admin.page.reload();
   await admin.page.getByPlaceholder('Search name, campus email, or UID').fill(E2E_USERS.other);
   await admin.page.getByRole('button', { name: 'Search' }).click();
   await admin.page.getByText(E2E_USERS.other).filter({ visible: true }).click();
-  await expect(admin.page.getByText('Interactions currently restricted')).toBeVisible();
-  await expectBackendAction(admin.page, 'setUserRestriction', async () => {
+  await expect(admin.page.getByText('Effective rule')).toBeVisible();
+  await expectBackendAction(admin.page, 'deleteAccountAccessRule', async () => {
     await admin.page.getByRole('button', { name: 'Clear restriction' }).click();
   });
-  await expect(admin.page.getByPlaceholder('Restriction reason (required)')).toBeVisible();
+  await expect(admin.page.getByLabel('Restriction reason / displayed message')).toBeVisible();
   await admin.context.close();
 });
 

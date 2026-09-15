@@ -213,7 +213,14 @@ export const BACKEND_ACTION_POLICIES = {
     "group": "admin-write",
     "extraLimit": "roleWriteHourly"
   },
-  "setUserRestriction": {
+  "listAccountAccessRules": {
+    "group": "read"
+  },
+  "saveAccountAccessRule": {
+    "group": "admin-write",
+    "extraLimit": "moderationWriteHourly"
+  },
+  "deleteAccountAccessRule": {
     "group": "admin-write",
     "extraLimit": "moderationWriteHourly"
   },

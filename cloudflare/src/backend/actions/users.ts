@@ -16,7 +16,9 @@ export function isUserAction(action: string) {
     || action === "listRoleAssignments"
     || action === "setUserAccessScope"
     || action === "listAdminUsers"
-    || action === "setUserRestriction"
+    || action === "listAccountAccessRules"
+    || action === "saveAccountAccessRule"
+    || action === "deleteAccountAccessRule"
     || action === "listAdminAudit"
     || action === "listAdminActivity"
     || action === "getAdminOverview"
@@ -47,7 +49,9 @@ export async function handleUserAction(
 
   if (
     action === "listAdminUsers"
-    || action === "setUserRestriction"
+    || action === "listAccountAccessRules"
+    || action === "saveAccountAccessRule"
+    || action === "deleteAccountAccessRule"
     || action === "listAdminAudit"
     || action === "listAdminActivity"
     || action === "getAdminOverview"

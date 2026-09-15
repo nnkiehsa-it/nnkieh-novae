@@ -223,6 +223,8 @@ interface UserProfileRow {
 
 interface UserRestrictionRow {
   uid: string;
+  target_type: string;
+  preset: string;
   restricted_until: string | null;
   restricted_permanently: boolean;
   reason: string | null;
@@ -390,12 +392,6 @@ export interface AppApiFunctions {
     before_occurred_at: string | null;
     before_key: string | null;
     page_limit: number;
-  }, Json>;
-  backend_set_user_restriction: AppFunction<{
-    actor_uid: string;
-    target_uid: string;
-    restriction_mode: string;
-    reason: string;
   }, Json>;
   get_admin_overview: AppFunction<{ window_hours: number }, Json>;
   backend_get_session_bootstrap_snapshot: AppFunction<{

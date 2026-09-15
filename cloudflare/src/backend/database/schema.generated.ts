@@ -406,6 +406,8 @@ export interface GeneratedDatabaseTables {
     "updated_by": string;
     "created_at": string;
     "updated_at": string;
+    "target_type": string;
+    "preset": string;
   };
   "user_role_assignments": {
     "uid": string;
@@ -482,7 +484,6 @@ export const GENERATED_DATABASE_FUNCTION_SIGNATURES = [
   "backend_save_category_management(actor_uid text, issue_categories jsonb, facility_categories jsonb, deleted_issue_category_ids text[], deleted_facility_category_ids text[], issues_enabled boolean, facilities_enabled boolean, announcement_comments_enabled boolean) -> jsonb",
   "backend_save_platform_settings(actor_uid text, image_settings jsonb, retention_config jsonb) -> jsonb",
   "backend_set_announcement_like(announcement_id uuid, actor_uid text, liked boolean) -> jsonb",
-  "backend_set_user_restriction(actor_uid text, target_uid text, restriction_mode text, reason text) -> jsonb",
   "backend_toggle_facility_affected(facility_id uuid, actor_uid text) -> jsonb",
   "backend_toggle_support(issue_id uuid, actor_uid text, remove_support boolean, response_deadline_days integer) -> TABLE(supported boolean, support_count integer, goal_met boolean)",
   "backend_unregister_push_token(actor_uid text, device_id text, permission text) -> jsonb",
