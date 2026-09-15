@@ -6,6 +6,8 @@ import { runMaintenance } from '../../cloudflare/src/backend/jobs/maintenance';
 import { processInAppDeliveries } from '../../cloudflare/src/backend/jobs/notification-deliveries';
 import { AppDatabaseClient } from '../../cloudflare/src/backend/database/client';
 import { withRuntimeEnvironment } from '../../cloudflare/src/backend/shared/env';
+import { beginNotionInvocation } from '../../cloudflare/src/backend/shared/notion-api';
+import { REBUILD_REQUEST_BUDGET } from '../../cloudflare/src/backend/shared/notion-reconcile';
 import type { Env } from '../../cloudflare/src/types';
 
 integrationTest("production background consumer executes retention batches and preserves fresh notifications", async () => {
@@ -222,6 +224,7 @@ integrationTest('Notion rebuild writes every page again, leaves existing pages a
   await withRuntimeEnvironment(enabledEnvironment, async () => {
     await callAction('rebuildNotionArchive', {}, admin.auth);
     for (; passes < 20; passes += 1) {
+      beginNotionInvocation(REBUILD_REQUEST_BUDGET);
       if (!(await underPolicies(() => processBackgroundJobs(database))).hasMore) break;
     }
   });
