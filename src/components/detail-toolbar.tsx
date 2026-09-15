@@ -1,7 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { ArrowLeft, Share2 } from "lucide-react";
+import { ArrowLeft, Share2, X } from "lucide-react";
+import { useI18n } from "@/i18n";
 import { useShareExitGuard } from "@/hooks/use-share-entry";
 import { useCloseRecord, useRecordOverlayLabel } from "@/components/detail-modal";
 import { Button } from "@/components/ui/button";
@@ -24,9 +25,10 @@ export function SecondaryToolbar({
   // changing underneath it. It is the same step back through history either way.
   const closeRecord = useCloseRecord();
   const overlayLabel = useRecordOverlayLabel();
+  const { t } = useI18n();
   return (
     <div
-      className={`t-sheet-drag-region flex h-9 items-center justify-between gap-3 ${closeRecord ? "pr-9" : ""}`}
+      className="t-sheet-drag-region flex h-9 items-center justify-between gap-3"
       data-sheet-drag-region=""
     >
       {!closeRecord ? <Tooltip>
@@ -44,7 +46,24 @@ export function SecondaryToolbar({
         <TooltipContent>{backLabel}</TooltipContent>
       </Tooltip> : null}
       {overlayLabel ? <span className="min-w-0 flex-1 truncate text-left text-lg leading-none font-semibold">{overlayLabel}</span> : null}
-      <div className="ml-auto flex shrink-0 items-center gap-1">{actions}</div>
+      <div className="ml-auto flex shrink-0 items-center gap-1">
+        {actions}
+        {closeRecord ? <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              aria-label={t("common.close")}
+              className="size-11 md:size-9"
+              data-slot="dialog-close"
+              onClick={closeRecord}
+              size="icon"
+              variant="ghost"
+            >
+              <X />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{t("common.close")}</TooltipContent>
+        </Tooltip> : null}
+      </div>
     </div>
   );
 }
