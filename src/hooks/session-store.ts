@@ -4,6 +4,7 @@ import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { sessionDebug } from "@/lib/session-debug";
 import { readLocalStorage, writeLocalStorage } from "@/lib/browser-storage";
+import { readCachedAvatar, writeCachedAvatar } from "@/lib/avatar-cache";
 import { clearContentEntityScope } from "@/lib/content-entity-store";
 import { clearViewMemoryScope } from "@/lib/view-memory-cache";
 import { clearSupportedIssueMemory } from "@/lib/supported-issue-memory";
@@ -146,10 +147,17 @@ async function rejectUser(reason: string) {
 }
 
 async function loadAvatar(photoUrl: string, uid: string) {
+  const cached = readCachedAvatar(uid, photoUrl);
+  if (cached) {
+    patch({ customPhotoUrl: cached });
+    return;
+  }
   try {
     const storedPhotoUrl = await cacheUserAvatar(photoUrl);
-    if (state.user?.uid === uid && storedPhotoUrl)
+    if (state.user?.uid === uid && storedPhotoUrl) {
+      writeCachedAvatar(uid, photoUrl, storedPhotoUrl);
       patch({ customPhotoUrl: storedPhotoUrl });
+    }
   } catch {
     // Avatar persistence is optional and must not block session bootstrap.
   }

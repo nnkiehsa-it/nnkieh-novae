@@ -241,7 +241,7 @@ export const OPERATION_POLICIES = {
     "group": "rates"
   },
   "avatarCacheDaily": {
-    "value": 10,
+    "value": 30,
     "min": 1,
     "max": 100000,
     "group": "rates"

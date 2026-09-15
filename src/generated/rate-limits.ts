@@ -27,7 +27,7 @@ export const RATE_LIMITS = {
     "errorCode": "rate-limit.login-sync"
   },
   "avatarCacheDaily": {
-    "limit": 10,
+    "limit": 30,
     "errorCode": "rate-limit.avatar-update"
   },
   "supportToggleHourly": {
