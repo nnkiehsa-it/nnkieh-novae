@@ -57,6 +57,14 @@ const NOTION_REQUEST_SPACING_MS = 350;
 const NOTION_REFUSAL_RETRIES = 5;
 let notionTurn: Promise<void> = Promise.resolve();
 let requestsMade = 0;
+let invocationRequestLimit = Number.POSITIVE_INFINITY;
+
+export class NotionInvocationBudgetExceeded extends Error {
+  constructor() {
+    super("notion-invocation-request-budget-exhausted");
+    this.name = "NotionInvocationBudgetExceeded";
+  }
+}
 
 /**
  * What this Worker invocation has spent of its outgoing-request allowance.
@@ -79,11 +87,13 @@ export function notionRequestsMade(): number {
  * everything the sweep does afterwards -- the deliveries it carries as much as
  * the rebuild it advances -- is counted against the same allowance.
  */
-export function beginNotionInvocation(): void {
+export function beginNotionInvocation(requestLimit = Number.POSITIVE_INFINITY): void {
   requestsMade = 0;
+  invocationRequestLimit = requestLimit;
 }
 
 function countedFetch(url: string, init: RequestInit): Promise<Response> {
+  if (requestsMade >= invocationRequestLimit) throw new NotionInvocationBudgetExceeded();
   requestsMade += 1;
   return fetch(url, init);
 }

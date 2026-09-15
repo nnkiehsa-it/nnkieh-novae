@@ -1,4 +1,8 @@
-import { notionEnabled, notionRequestsMade } from "./notion-api.ts";
+import {
+  NotionInvocationBudgetExceeded,
+  notionEnabled,
+  notionRequestsMade,
+} from "./notion-api.ts";
 import { rebuildFacilityNotionPage } from "./notion-facility-events.ts";
 import { rebuildIssueNotionPage } from "./notion-issue-events.ts";
 import {
@@ -16,16 +20,12 @@ const FIRST_UUID = "00000000-0000-0000-0000-000000000000";
  * How much of one Worker invocation's outgoing-request allowance a rebuild may
  * spend.
  *
- * An invocation may make a thousand requests, and the sweep carrying a rebuild
- * is also delivering everything else that is waiting -- which is why this is
- * read against everything the invocation has spent rather than against the
- * rebuild alone. A pass counted only the pages it wrote, and a page is not a
- * fixed price, so a rebuild of a busy archive ran past the allowance and was
- * refused outright with "Too many subrequests", failing the job instead of
- * pausing it. What is left over is headroom for the record the pass is in the
- * middle of when the budget runs out.
+ * Workers Free allows 50 external subrequests per invocation. A rebuild owns
+ * its queue invocation and stops at forty, leaving headroom for platform work
+ * around it. The HTTP boundary enforces the same ceiling, so an unexpectedly
+ * expensive record pauses cleanly instead of being killed by Cloudflare.
  */
-const REBUILD_REQUEST_BUDGET = 500;
+export const REBUILD_REQUEST_BUDGET = 40;
 
 /** How many records one query reads ahead; the budget decides when to stop. */
 const REBUILD_PAGE_SIZE = 50;
@@ -117,7 +117,14 @@ export async function reconcileNotionPages(
       const { rows } = await stage.page(database, after, REBUILD_PAGE_SIZE);
       if (rows.length === 0) break;
       for (const row of rows) {
-        await stage.write(database, String(row.id));
+        try {
+          await stage.write(database, String(row.id));
+        } catch (error) {
+          if (error instanceof NotionInvocationBudgetExceeded) {
+            return { cursor: { after, stage: stage.key }, done: false, written };
+          }
+          throw error;
+        }
         after = String(row.id);
         written += 1;
         if (budgetSpent()) break;
