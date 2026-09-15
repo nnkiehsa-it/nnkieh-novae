@@ -7,6 +7,9 @@
  */
 export const SHARE_ENTRY_PARAM = "shared";
 
+/** Where sign-in carries the page a reader asked for before they had an account. */
+export const SHARE_REDIRECT_PARAM = "redirect";
+
 // The three routes a share button exists on. A composer shares the shape of a
 // detail URL without being one, so it is named out rather than matched.
 const SHARED_ROUTE_PATTERN =
@@ -23,4 +26,22 @@ const SHARED_ROUTE_PATTERN =
  */
 export function isSharedRoute(pathname: string) {
   return SHARED_ROUTE_PATTERN.test(pathname);
+}
+
+/**
+ * The page a load is about: the address itself, or -- when signing in is
+ * holding the reader at the door -- the page it is holding them for.
+ *
+ * A reader who is not signed in never sees the address they were sent. Novae
+ * answers with the sign-in page and carries the page they asked for in
+ * `redirect`, so by the time anything reads the address, the one thing that
+ * says they were sent a single proposal is that parameter.
+ */
+export function sharedDestinationPath(href: string) {
+  const url = new URL(href);
+  const requested = url.searchParams.get(SHARE_REDIRECT_PARAM);
+  if (requested?.startsWith("/") && !requested.startsWith("//")) {
+    return new URL(requested, url.origin).pathname;
+  }
+  return url.pathname;
 }

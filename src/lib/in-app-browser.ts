@@ -1,4 +1,4 @@
-import { SHARE_ENTRY_PARAM, isSharedRoute } from '@/constants/share';
+import { SHARE_ENTRY_PARAM, isSharedRoute, sharedDestinationPath } from '@/constants/share';
 
 export type InAppBrowserName =
   | 'LINE'
@@ -37,7 +37,7 @@ export function tryRedirectToExternalBrowser(userAgent: string): boolean {
   // so the address handed to the real browser says so, whether or not the link
   // itself was marked.
   const currentUrl = new URL(window.location.href);
-  if (isSharedRoute(currentUrl.pathname)) {
+  if (isSharedRoute(sharedDestinationPath(currentUrl.href))) {
     currentUrl.searchParams.set(SHARE_ENTRY_PARAM, '1');
   }
 

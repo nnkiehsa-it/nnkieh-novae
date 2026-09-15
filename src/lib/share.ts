@@ -1,4 +1,4 @@
-import { SHARE_ENTRY_PARAM, isSharedRoute } from "@/constants/share";
+import { SHARE_ENTRY_PARAM, isSharedRoute, sharedDestinationPath } from "@/constants/share";
 import { detectInAppBrowser } from "@/lib/in-app-browser";
 
 /**
@@ -18,14 +18,15 @@ function buildShareUrl(href: string) {
  * Whether this load is somebody else's link to one piece of content.
  *
  * Either the link says so, or it has the shape of one: the tab opened straight
- * onto a page that can be sent on its own and has no history of its own, so
- * nothing in Novae led here — the reader was sent. That second test is what
- * catches every link shared before links were marked. A bookmark saved on a
- * detail page reads the same way, and is answered the same way, which costs
- * that reader one question they can decline.
+ * onto a page that can be sent on its own — or onto the sign-in page holding
+ * that page for them — and has no history of its own, so nothing in Novae led
+ * here: the reader was sent. That second test is what catches every link
+ * shared before links were marked. A bookmark saved on a detail page reads the
+ * same way, and is answered the same way, which costs that reader one question
+ * they can decline.
  */
 export function arrivedFromSharedLink() {
-  if (!isSharedRoute(window.location.pathname)) return false;
+  if (!isSharedRoute(sharedDestinationPath(window.location.href))) return false;
   return new URL(window.location.href).searchParams.has(SHARE_ENTRY_PARAM)
     || window.history.length <= 1;
 }
@@ -44,7 +45,7 @@ export function arrivedFromSharedLink() {
 export function settleShareEntryMarker() {
   const url = new URL(window.location.href);
   const marked = url.searchParams.has(SHARE_ENTRY_PARAM);
-  if (detectInAppBrowser(navigator.userAgent) && isSharedRoute(url.pathname)) {
+  if (detectInAppBrowser(navigator.userAgent) && isSharedRoute(sharedDestinationPath(url.href))) {
     if (marked) return;
     url.searchParams.set(SHARE_ENTRY_PARAM, "1");
   } else {
