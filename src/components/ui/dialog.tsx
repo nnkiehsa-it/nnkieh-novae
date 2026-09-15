@@ -164,11 +164,19 @@ function DialogContent({
           onPointerMove={moveSheetDrag}
           onPointerUp={endSheetDrag}
         >
+          {sheet ? (
+            <div
+              aria-hidden="true"
+              className="t-sheet-drag-cap"
+              data-sheet-drag-region=""
+              data-slot="sheet-drag-surface"
+            />
+          ) : null}
           {children}
           {(showCloseButton || sheet) && (
             <DialogPrimitive.Close
               data-slot="dialog-close"
-              className="absolute top-3 right-3 grid size-8 place-items-center rounded-full text-muted-foreground transition-[background-color,color] duration-[var(--motion-control)] hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:size-4"
+              className="absolute top-3 right-3 z-2 grid size-8 place-items-center rounded-full text-muted-foreground transition-[background-color,color] duration-[var(--motion-control)] hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:size-4"
             >
               <XIcon />
               <span className="sr-only">{t("common.close")}</span>
