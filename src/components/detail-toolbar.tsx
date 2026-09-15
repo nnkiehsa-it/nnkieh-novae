@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { ArrowLeft, Share2 } from "lucide-react";
 import { useShareExitGuard } from "@/hooks/use-share-entry";
+import { useCloseRecord } from "@/components/detail-modal";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -18,6 +19,10 @@ export function SecondaryToolbar({
   // A reader who arrived on a shared link is leaving the one page they were
   // sent, so this is where Novae finally asks how they want to carry on.
   const guardBack = useShareExitGuard();
+  // A record shown over the list it came from is put away rather than left, so
+  // that it travels back off the screen instead of being cut off by the route
+  // changing underneath it. It is the same step back through history either way.
+  const closeRecord = useCloseRecord();
   return (
     <div className="flex h-9 items-center justify-between gap-3">
       <Tooltip>
@@ -25,7 +30,7 @@ export function SecondaryToolbar({
           <Button
             aria-label={backLabel}
             className="size-11 md:size-9"
-            onClick={() => guardBack(onBack)}
+            onClick={() => guardBack(closeRecord ?? onBack)}
             size="icon"
             variant="ghost"
           >

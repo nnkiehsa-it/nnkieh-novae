@@ -1,6 +1,18 @@
 import type { ReactNode } from "react";
 import { FeatureRouteGuard } from "@/components/feature-route-guard";
 
-export default function FacilitiesLayout({ children }: { children: ReactNode }) {
-  return <FeatureRouteGuard feature="facilities">{children}</FeatureRouteGuard>;
+/** The list, and whatever is shown over it, behind the one feature gate. */
+export default function FacilitiesLayout({
+  children,
+  modal,
+}: {
+  children: ReactNode;
+  modal: ReactNode;
+}) {
+  return (
+    <FeatureRouteGuard feature="facilities">
+      {children}
+      {modal}
+    </FeatureRouteGuard>
+  );
 }
