@@ -1,7 +1,7 @@
 "use client";
 
 import { useI18n } from "@/i18n";
-import { Disclosure } from "@/components/ui/disclosure";
+import { SheetRow } from "@/components/ui/sheet-row";
 import { ListRow, ListSection } from "@/components/ui/list";
 import { formatDate } from "@/lib/format";
 import type { OperationPolicyKey } from "@/generated/operations";
@@ -23,7 +23,7 @@ export function PolicyHistory({ entries }: { entries: OperationsConsole["history
           (key) => entry.beforeValue[key] !== entry.afterValue[key],
         );
         return (
-          <Disclosure
+          <SheetRow
             key={entry.id}
             label={
               <>
@@ -34,23 +34,29 @@ export function PolicyHistory({ entries }: { entries: OperationsConsole["history
                 </span>
               </>
             }
+            title={entry.reason}
             value={t("admin.policyChangedCount", { count: changed.length })}
           >
-            <div className="pb-2">
+            <ListSection
+              header={`${t("admin.policyRevision", { revision: entry.revision })} · ${formatDate(new Date(entry.createdAt))}`}
+            >
               {changed.map((key) => (
-                <p className="flex gap-3 py-1 text-sm" key={key}>
-                  <span className="min-w-0 flex-1">{t(`ui.operations.policy.${key}`)}</span>
-                  <span className="shrink-0 tabular-nums text-muted-foreground">
-                    {entry.beforeValue[key]}
-                    <span aria-hidden className="px-1.5">
-                      →
+                <ListRow
+                  key={key}
+                  label={t(`ui.operations.policy.${key}`)}
+                  value={
+                    <span className="tabular-nums">
+                      {entry.beforeValue[key]}
+                      <span aria-hidden className="px-1.5">
+                        →
+                      </span>
+                      <span className="font-medium text-foreground">{entry.afterValue[key]}</span>
                     </span>
-                    <span className="font-medium text-foreground">{entry.afterValue[key]}</span>
-                  </span>
-                </p>
+                  }
+                />
               ))}
-            </div>
-          </Disclosure>
+            </ListSection>
+          </SheetRow>
         );
       })}
     </ListSection>

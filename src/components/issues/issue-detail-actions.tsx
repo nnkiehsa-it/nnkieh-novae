@@ -15,7 +15,7 @@ import { DetailToolbar } from "@/components/detail-toolbar";
 import { DetailActionsMenu } from "@/components/detail-actions-menu";
 import { PersonIdentity } from "@/components/content-author";
 import { Button } from "@/components/ui/button";
-import { Disclosure } from "@/components/ui/disclosure";
+import { SheetRow } from "@/components/ui/sheet-row";
 import type { DetailPanel } from "@/components/ui/detail-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
@@ -164,44 +164,43 @@ export function getIssueDetailPanels({
           </div>
           {canViewSupporters ? (
             <div className="border-t border-border">
-              <Disclosure
+              <SheetRow
                 label={translate("ui.issue.supporters")}
                 onOpenChange={(open) => { if (open) onLoadSupporters(); }}
+                title={translate("ui.issue.supporters")}
               >
-                <section aria-label={translate("ui.issue.supporters")} className="pb-1">
-                  {supportersLoading ? (
-                    <div aria-busy="true" className="rule-list">
-                      {Array.from({ length: 2 }, (_, index) => (
-                        <div className="flex min-h-11 items-center gap-2.5 py-2.5" key={index}>
-                          <Skeleton className="size-8 rounded-full" />
-                          <Skeleton className="h-4 w-24" />
-                        </div>
-                      ))}
-                    </div>
-                  ) : supportersError ? (
-                    <div className="flex min-h-11 items-center justify-between gap-3 py-2.5">
-                      <span className="text-xs text-muted-foreground">
-                        {translate("ui.common.loadFailed")}
-                      </span>
-                      <Button onClick={onLoadSupporters} size="sm" variant="ghost">
-                        <RefreshCw />
-                        {translate("ui.common.reload")}
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="rule-list">
-                      {supporters.map((supporter) => (
-                        <div className="flex min-h-11 items-center py-2.5" key={supporter.uid}>
-                          <PersonIdentity
-                            name={supporter.displayName}
-                            photoUrl={supporter.photoUrl}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </section>
-              </Disclosure>
+                {supportersLoading ? (
+                  <div aria-busy="true" className="rule-list">
+                    {Array.from({ length: 4 }, (_, index) => (
+                      <div className="flex min-h-11 items-center gap-2.5 py-2.5" key={index}>
+                        <Skeleton className="size-8 rounded-full" />
+                        <Skeleton className="h-4 w-24" />
+                      </div>
+                    ))}
+                  </div>
+                ) : supportersError ? (
+                  <div className="flex min-h-11 items-center justify-between gap-3 py-2.5">
+                    <span className="text-xs text-muted-foreground">
+                      {translate("ui.common.loadFailed")}
+                    </span>
+                    <Button onClick={onLoadSupporters} size="sm" variant="ghost">
+                      <RefreshCw />
+                      {translate("ui.common.reload")}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="rule-list">
+                    {supporters.map((supporter) => (
+                      <div className="flex min-h-11 items-center py-2.5" key={supporter.uid}>
+                        <PersonIdentity
+                          name={supporter.displayName}
+                          photoUrl={supporter.photoUrl}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </SheetRow>
             </div>
           ) : null}
   </div> });

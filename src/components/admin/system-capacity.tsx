@@ -2,7 +2,7 @@
 
 import { useI18n } from "@/i18n";
 import type { OperationsConsole } from "@/hooks/use-system-console";
-import { Disclosure } from "@/components/ui/disclosure";
+import { SheetRow } from "@/components/ui/sheet-row";
 import { AdminListSkeleton } from "@/components/admin/admin-list-skeleton";
 import { ListRow, ListSection } from "@/components/ui/list";
 
@@ -53,13 +53,16 @@ export function SystemCapacity({ snapshot }: { snapshot: Partial<OperationsConso
           <TableRow key={row.name} row={row} />
         ))}
         {rest.length > 0 ? (
-          <Disclosure label={t("admin.showAllTables", { count: ranked.length })}>
-            <div className="rule-list">
-              {rest.map((row) => (
+          <SheetRow
+            label={t("admin.showAllTables", { count: ranked.length })}
+            title={t("ui.operations.table")}
+          >
+            <ListSection>
+              {ranked.map((row) => (
                 <TableRow key={row.name} row={row} />
               ))}
-            </div>
-          </Disclosure>
+            </ListSection>
+          </SheetRow>
         ) : null}
       </ListSection>
       ) : <AdminListSkeleton groups={1} rows={4} />}

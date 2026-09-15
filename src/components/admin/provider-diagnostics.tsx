@@ -15,7 +15,7 @@ import {
   WorkerMetricsReport,
 } from "@/components/admin/provider-readings";
 import { Button } from "@/components/ui/button";
-import { Disclosure } from "@/components/ui/disclosure";
+import { SheetRow } from "@/components/ui/sheet-row";
 import { Input } from "@/components/ui/input";
 import { ListActionRow, ListCustomRow, ListRow, ListSection } from "@/components/ui/list";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -35,8 +35,8 @@ function Report({ provider, result }: { provider: DiagnosticProvider; result: Pr
  * The answer used to be printed as the JSON it arrived in, which meant reading
  * a byte count out of a nested counter and a day of traffic out of four levels
  * of GraphQL envelope. Each provider now says its figures in the same rows the
- * rest of administration uses, and the response it arrived in stays one
- * disclosure away for the cases where the figures are not the question.
+ * rest of administration uses, and the response it arrived in is one row away,
+ * in a sheet, for the cases where the figures are not the question.
  *
  * The two providers that report standing figures answer as the panel opens.
  * The log stream is a search, so it waits for one rather than spending a query
@@ -118,11 +118,14 @@ export function ProviderDiagnostics() {
             {result ? <Report provider={provider} result={result} /> : null}
 
             {result?.data ? (
-              <Disclosure label={t("ui.operations.providerDetails")}>
-                <pre className="overflow-x-auto whitespace-pre-wrap break-all pb-3 text-xs">
+              <SheetRow
+                label={t("ui.operations.providerDetails")}
+                title={t("ui.operations.providerDetails")}
+              >
+                <pre className="overflow-x-auto whitespace-pre-wrap break-all text-xs">
                   {JSON.stringify(result.data, null, 2)}
                 </pre>
-              </Disclosure>
+              </SheetRow>
             ) : null}
 
             {result?.nextCursor ? (
