@@ -18,7 +18,7 @@ import {
   ManagementLinks,
   ResourceLinks,
 } from "@/components/settings/settings-links";
-import { ListMutationRow, ListSection, RowAction } from "@/components/ui/list";
+import { ListActionRow, ListSection } from "@/components/ui/list";
 import { PageHeader } from "@/components/ui/page-state";
 import { SaveBar } from "@/components/ui/save-bar";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
@@ -106,16 +106,10 @@ export default function SettingsPage() {
         />
         <ResourceLinks />
         <ListSection>
-          <ListMutationRow
-            action={
-              <RowAction
-                icon={LogOut}
-                label={translate("ui.nav.signOut")}
-                onClick={() => void session.logout()}
-                tone="destructive"
-              />
-            }
+          <ListActionRow
+            icon={LogOut}
             label={translate("ui.nav.signOut")}
+            onClick={() => void session.logout()}
             tone="destructive"
           />
         </ListSection>

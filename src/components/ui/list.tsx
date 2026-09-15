@@ -219,8 +219,10 @@ export function ListActionRow({
  * A row whose whole width was the target read the same as a row that only
  * reports, and the word "retry" at its end was a label rather than something to
  * aim at -- so a list of failures was a list of accidents waiting to happen.
- * Anything that writes is this control instead: a glyph with its own edge,
- * which is the only part of the row that acts.
+ * Where a row reports something, what writes is this control instead: a glyph
+ * with its own edge, which is the only part of the row that acts. A row that is
+ * nothing but the action -- signing out -- stays a `ListActionRow`, because
+ * there is no reading beside it to mistake the tap for.
  */
 export function RowAction({
   busy,
