@@ -72,6 +72,7 @@ function DialogContent({
   const [dragging, setDragging] = React.useState(false);
   const [settling, setSettling] = React.useState(false);
   const [dismissing, setDismissing] = React.useState(false);
+  const [dragInteracted, setDragInteracted] = React.useState(false);
 
   React.useEffect(() => () => {
     if (settleTimerRef.current !== null) window.clearTimeout(settleTimerRef.current);
@@ -94,6 +95,7 @@ function DialogContent({
     if (!dragRegion || interactiveControl) return;
     if (settleTimerRef.current !== null) window.clearTimeout(settleTimerRef.current);
     setSettling(false);
+    setDragInteracted(true);
     setDragging(true);
     dragRef.current = { startedAt: performance.now(), startedY: event.clientY };
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -149,6 +151,7 @@ function DialogContent({
           ref={contentRef}
           data-slot="dialog-content"
           data-sheet-dragging={dragging || undefined}
+          data-sheet-drag-interacted={dragInteracted || undefined}
           data-sheet-settling={settling || undefined}
           data-sheet-dismissing={dismissing || undefined}
           className={cn(

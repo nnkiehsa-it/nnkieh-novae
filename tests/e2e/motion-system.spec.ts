@@ -165,6 +165,40 @@ test('a record replaces its content in one surface, over the list it came from',
   await context.close();
 });
 
+test('a cancelled sheet drag settles in place without replaying its arrival', async ({
+  browser,
+}) => {
+  const { context, page } = await newUserPage(browser, 'ordinary');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/issues');
+  await page.locator('.t-card a[href^="/issues/"]').first().click();
+  await page.waitForURL(/\/issues\/[^/]+\/[^/]+$/u);
+
+  const sheet = page.getByRole('dialog');
+  const dragRegion = sheet.locator('[data-sheet-drag-region]').first();
+  await expect(dragRegion).toBeVisible();
+  await sheet.evaluate(async (element) => {
+    await Promise.all(element.getAnimations().map((animation) => animation.finished.catch(() => undefined)));
+  });
+
+  const box = await dragRegion.boundingBox();
+  expect(box).not.toBeNull();
+  const x = box!.x + box!.width / 2;
+  const y = box!.y + box!.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.waitForTimeout(120);
+  await page.mouse.move(x, y + 36, { steps: 4 });
+  await page.waitForTimeout(120);
+  await page.mouse.up();
+
+  await expect(sheet).toBeVisible();
+  await expect(sheet).toHaveAttribute('data-sheet-drag-interacted', 'true');
+  await expect(sheet).not.toHaveAttribute('data-sheet-settling', 'true');
+  await expect(sheet).toHaveCSS('animation-name', 'none');
+  await context.close();
+});
+
 test('dropdowns animate as one surface while reduced motion removes movement', async ({
   browser,
 }) => {

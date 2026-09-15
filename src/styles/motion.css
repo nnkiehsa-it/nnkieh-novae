@@ -390,6 +390,13 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   .t-sheet[data-state="open"] {
     animation: t-sheet-in var(--motion-sheet) var(--ease-nav) both;
   }
+  /* Dragging temporarily owns the transform. Once that interaction has happened,
+     restoring the ordinary open rule would restart `t-sheet-in` from the bottom
+     after every cancelled drag. The sheet is already here, so its arrival is
+     finished for the rest of this mount. */
+  .t-sheet[data-state="open"][data-sheet-drag-interacted="true"] {
+    animation: none;
+  }
   .t-sheet[data-state="closed"] {
     animation: t-sheet-out var(--motion-sheet-exit) var(--ease-nav) both;
   }
