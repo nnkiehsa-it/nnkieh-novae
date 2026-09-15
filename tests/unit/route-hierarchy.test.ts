@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  adoptedParent,
-  compareRoutes,
-  isPrimaryRoute,
-  showsPrimaryNavigation,
-} from "@/lib/route-hierarchy";
+import { adoptedParent, compareRoutes, isPrimaryRoute, opensOverRoute, showsPrimaryNavigation } from "@/lib/route-hierarchy";
 
 describe("route hierarchy", () => {
   it("reads depth from the URL in both directions", () => {
@@ -67,5 +62,21 @@ describe("route hierarchy", () => {
     expect(compareRoutes("/admin", "/admin/people")).toBe("deeper");
     expect(compareRoutes("/admin/people", "/admin")).toBe("shallower");
     expect(compareRoutes("/admin/people", "/admin/audit")).toBe("unrelated");
+  });
+});
+
+describe("a record opened over the list it is in", () => {
+  it("recognises the records a list shows", () => {
+    expect(opensOverRoute("/issues/school", "/issues/school/abc")).toBe(true);
+    expect(opensOverRoute("/announcements", "/announcements/abc")).toBe(true);
+    expect(opensOverRoute("/facilities", "/facilities/abc")).toBe(true);
+  });
+
+  it("is not a composer, another list, or a record of a different list", () => {
+    expect(opensOverRoute("/issues/school", "/issues/school/new")).toBe(false);
+    expect(opensOverRoute("/issues/school", "/issues/other/abc")).toBe(false);
+    expect(opensOverRoute("/announcements", "/facilities/abc")).toBe(false);
+    expect(opensOverRoute("/settings", "/announcements/abc")).toBe(false);
+    expect(opensOverRoute("/announcements", "/announcements")).toBe(false);
   });
 });

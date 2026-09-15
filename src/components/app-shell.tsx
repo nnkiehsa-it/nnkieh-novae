@@ -28,6 +28,7 @@ import { LiquidNav, type LiquidNavItem } from "@/components/liquid-nav";
 import { AppNotificationPrompt } from "@/components/app-notification-prompt";
 import { RouteSurface } from "@/components/motion/route-surface";
 import { adoptedParent, showsPrimaryNavigation } from "@/lib/route-hierarchy";
+import { useSurfaceRoute } from "@/hooks/use-surface-route";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { BrandLockup } from "@/components/ui/brand";
@@ -143,10 +144,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   usePushTokenHeartbeat();
   const { t } = useLocaleSubscription();
   const pathname = usePathname();
+  // A record opened over the list it is in is still that list as far as the
+  // shell is concerned: the bar keeps pointing where it pointed.
+  const { surface } = useSurfaceRoute();
   const categories = useCategories();
   const unread = useNotificationBadge();
   const issueHref = `/issues/${encodeURIComponent(getDefaultIssueRouteFilter())}`;
-  const showMobileNavigation = showsPrimaryNavigation(pathname);
+  const showMobileNavigation = showsPrimaryNavigation(surface);
 
   React.useEffect(() => rememberCurrentRoute(pathname), [pathname]);
 
@@ -191,7 +195,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     [categories.facilitiesEnabled, categories.issuesEnabled, issueHref, t, unread],
   );
 
-  const navigationPathname = adoptedParent(pathname) ?? pathname;
+  const navigationPathname = adoptedParent(surface) ?? surface;
   return (
     <div className="app-shell bg-[var(--surface-stage)] md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
       <AppNotificationPrompt />

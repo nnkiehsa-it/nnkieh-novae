@@ -1,3 +1,5 @@
+import { isRecordRoute } from "@/lib/route-hierarchy";
+
 /**
  * The mark a link carries when it reached the reader through somebody else.
  *
@@ -10,11 +12,6 @@ export const SHARE_ENTRY_PARAM = "shared";
 /** Where sign-in carries the page a reader asked for before they had an account. */
 export const SHARE_REDIRECT_PARAM = "redirect";
 
-// The three routes a share button exists on. A composer shares the shape of a
-// detail URL without being one, so it is named out rather than matched.
-const SHARED_ROUTE_PATTERN =
-  /^\/(?:announcements|facilities)\/(?!new$)[^/]+$|^\/issues\/[^/]+\/(?!new$)[^/]+$/u;
-
 /**
  * A page that is one piece of content, and so can be sent to somebody on its
  * own.
@@ -25,7 +22,7 @@ const SHARED_ROUTE_PATTERN =
  * content earns the shorter path, because that reader came for one page.
  */
 export function isSharedRoute(pathname: string) {
-  return SHARED_ROUTE_PATTERN.test(pathname);
+  return isRecordRoute(pathname);
 }
 
 /**

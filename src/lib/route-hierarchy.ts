@@ -73,3 +73,26 @@ export function compareRoutes(from: string, to: string): RouteRelation {
   if (before.length > after.length) return "shallower";
   return "unrelated";
 }
+
+// The three routes that are one record: a proposal, a facility report or an
+// announcement. A composer shares the shape of one without being one, so it is
+// named out rather than matched.
+const RECORD_ROUTE_PATTERN =
+  /^\/(?:announcements|facilities)\/(?!new$)[^/]+$|^\/issues\/[^/]+\/(?!new$)[^/]+$/u;
+
+/** A page that is one piece of content, and so can be sent to somebody alone. */
+export function isRecordRoute(pathname: string) {
+  return RECORD_ROUTE_PATTERN.test(pathname);
+}
+
+/**
+ * Whether `to` is one of the records `from` already lists.
+ *
+ * Such a record is shown over the list rather than instead of it, so the page
+ * underneath is still the list: it keeps its scroll, the pages it has loaded
+ * and the navigation that points at it. The shell reads this to know that an
+ * address it has never seen before is not a new page.
+ */
+export function opensOverRoute(from: string, to: string) {
+  return isRecordRoute(to) && to.slice(0, to.lastIndexOf("/")) === from;
+}
