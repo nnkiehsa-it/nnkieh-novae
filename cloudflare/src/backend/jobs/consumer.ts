@@ -7,6 +7,7 @@ import { processInAppDeliveries, processPushDeliveries } from "./notification-de
 import { processRealtimeDeliveries } from "./realtime-deliveries.ts";
 import { processBackgroundJobs } from "./background-jobs.ts";
 import { operationPolicy, withOperationPolicies } from "../shared/operation-policies.ts";
+import { beginNotionInvocation } from "../shared/notion-api.ts";
 import { claimFixedWindowRateLimits, utcMinuteWindow, utcSecondWindow } from "../shared/business-rate-limit.ts";
 import { RATE_LIMITS } from "../shared/rate-limits.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
@@ -36,6 +37,10 @@ const NOTHING_DELIVERED = { hasMore: false, processedCount: 0 };
 
 /** One bounded pass over everything the queue has to carry. */
 async function sweep(message: JobMessage, database: AppDatabaseClient, env: Env) {
+    // Everything this sweep sends to Notion is spending one invocation's
+    // allowance, and the rebuild pacing itself against that allowance has to be
+    // told when a new one begins.
+    beginNotionInvocation();
     await claimFixedWindowRateLimits([
       { identifier: 'background-workers', actionName: 'worker.second', window: utcSecondWindow(), config: { ...RATE_LIMITS.workerRunSecond, limit: operationPolicy('workerRunSecond') } },
       { identifier: 'background-workers', actionName: 'worker.minute', window: utcMinuteWindow(), config: { ...RATE_LIMITS.workerRunMinute, limit: operationPolicy('workerRunMinute') } },

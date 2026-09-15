@@ -28,9 +28,10 @@ export interface BackgroundJobItem {
  *
  * A complete rebuild writes every proposal, facility, announcement and recorded
  * operation, which is more work than one paced run at Notion's request rate can
- * finish. Each pass writes a bounded number of pages, records how far it got on
- * the job itself -- which is what the operations screen reads as progress --
- * and returns the job to the queue at its cursor rather than starting over.
+ * finish. Each pass writes until its share of the invocation's request
+ * allowance is spent, records how far it got on the job itself -- which is what
+ * the operations screen reads as progress -- and returns the job to the queue at
+ * its cursor rather than starting over.
  */
 async function advanceNotionRebuild(database: AppDatabaseClient, job: BackgroundJobItem) {
   // A job's payload is what it was asked to do and never changes, so where the
@@ -42,10 +43,7 @@ async function advanceNotionRebuild(database: AppDatabaseClient, job: Background
     await database.sql`update app_private.background_jobs
       set estimated_rows = ${total}, processed_rows = 0, updated_at = now() where id = ${job.id}`;
   }
-  const pass = await reconcileNotionPages(database, {
-    cursor,
-    limit: operationPolicy("notionBatchSize"),
-  });
+  const pass = await reconcileNotionPages(database, { cursor });
   if (pass.done) {
     await database.sql`update app_private.background_jobs
       set processed_rows = processed_rows + ${pass.written}, updated_at = now() where id = ${job.id}`;

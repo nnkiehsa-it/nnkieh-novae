@@ -13,17 +13,22 @@ type AppDatabase = AppDatabaseClient;
 const FIRST_UUID = "00000000-0000-0000-0000-000000000000";
 
 /**
- * How many requests one pass may make.
+ * How much of one Worker invocation's outgoing-request allowance a rebuild may
+ * spend.
  *
- * A Worker invocation may make a thousand outgoing requests, and the sweep that
- * carries a rebuild is also delivering everything else that is waiting. A pass
- * counted only the pages it wrote, and a page is not a fixed price -- a
- * proposal with a long discussion costs dozens of requests -- so a rebuild of a
- * busy archive ran past the allowance and was refused outright with "Too many
- * subrequests", failing the job instead of pausing it. A pass stops at the page
- * boundary where this budget runs out and comes back for the rest.
+ * An invocation may make a thousand requests, and the sweep carrying a rebuild
+ * is also delivering everything else that is waiting -- which is why this is
+ * read against everything the invocation has spent rather than against the
+ * rebuild alone. A pass counted only the pages it wrote, and a page is not a
+ * fixed price, so a rebuild of a busy archive ran past the allowance and was
+ * refused outright with "Too many subrequests", failing the job instead of
+ * pausing it. What is left over is headroom for the record the pass is in the
+ * middle of when the budget runs out.
  */
 const REBUILD_REQUEST_BUDGET = 500;
+
+/** How many records one query reads ahead; the budget decides when to stop. */
+const REBUILD_PAGE_SIZE = 50;
 
 /** Where a rebuild had got to when its pass ran out of room. */
 export interface NotionRebuildCursor {
@@ -84,20 +89,6 @@ export async function countNotionRebuildTargets(database: AppDatabase) {
 }
 
 /**
- * Empties every queue the rebuild is about to make obsolete.
- *
- * A rebuild states the archive from the canonical record, so everything still
- * waiting to be delivered describes a page this pass writes again anyway, and
- * every failed delivery describes one it is about to replace. The mappings go
- * with them: the pages they name are the ones an administrator removed by hand
- * before asking for this.
- */
-async function clearSupersededWork(database: AppDatabase) {
-  await database.sql`delete from app_private.event_deliveries where status in ('pending', 'failed')`;
-  await database.sql`delete from app_private.notion_pages`;
-}
-
-/**
  * Rebuilds the Notion archive from canonical PostgreSQL records, a pass at a
  * time.
  *
@@ -107,25 +98,23 @@ async function clearSupersededWork(database: AppDatabase) {
  * pages carry their current metadata and surviving discussion, and every
  * administrator write becomes its own Chinese system-operation page.
  *
- * One pass writes at most `limit` pages -- fewer when its request budget runs
- * out first -- and returns where it stopped, so the job that owns it can report
- * progress and come back for the rest.
+ * One pass writes until its request budget runs out and returns where it
+ * stopped, so the job that owns it can report progress and come back for the
+ * rest.
  */
 export async function reconcileNotionPages(
   database: AppDatabase,
-  options: { cursor: NotionRebuildCursor | null; limit: number },
+  options: { cursor: NotionRebuildCursor | null },
 ) {
   if (!notionEnabled()) throw new Error("notion-not-configured");
-  if (!options.cursor) await clearSupersededWork(database);
 
   let cursor = options.cursor ?? { after: STAGES[0].first, stage: STAGES[0].key };
   let written = 0;
-  const spentBefore = notionRequestsMade();
-  const budgetSpent = () => notionRequestsMade() - spentBefore >= REBUILD_REQUEST_BUDGET;
+  const budgetSpent = () => notionRequestsMade() >= REBUILD_REQUEST_BUDGET;
   for (const stage of STAGES.slice(STAGES.findIndex((entry) => entry.key === cursor.stage))) {
     let after = cursor.stage === stage.key ? cursor.after : stage.first;
-    while (written < options.limit && !budgetSpent()) {
-      const { rows } = await stage.page(database, after, options.limit - written);
+    while (!budgetSpent()) {
+      const { rows } = await stage.page(database, after, REBUILD_PAGE_SIZE);
       if (rows.length === 0) break;
       for (const row of rows) {
         await stage.write(database, String(row.id));
@@ -135,7 +124,7 @@ export async function reconcileNotionPages(
       }
     }
     cursor = { after, stage: stage.key };
-    if (written >= options.limit || budgetSpent()) return { cursor, done: false, written };
+    if (budgetSpent()) return { cursor, done: false, written };
   }
   return { cursor: null, done: true, written };
 }
