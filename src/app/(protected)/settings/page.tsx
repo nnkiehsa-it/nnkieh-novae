@@ -1,7 +1,7 @@
 "use client";
 import { t as translate } from "@/i18n";
 
-import { LogOut } from "lucide-react";
+import { LogOut, UserRoundCog } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { useSession } from "@/hooks/use-session";
@@ -68,7 +68,6 @@ export default function SettingsPage() {
               .writeText(user.uid)
               .then(() => toast.success(translate("ui.settings.uidCopied")))
           }
-          onSwitchAccount={() => void session.login({ selectAccount: true })}
           user={user}
         />
         <AppearanceSection
@@ -106,6 +105,11 @@ export default function SettingsPage() {
         />
         <ResourceLinks />
         <ListSection>
+          <ListActionRow
+            icon={UserRoundCog}
+            label={translate("ui.settings.switchAccount")}
+            onClick={() => void session.login({ selectAccount: true })}
+          />
           <ListActionRow
             icon={LogOut}
             label={translate("ui.nav.signOut")}

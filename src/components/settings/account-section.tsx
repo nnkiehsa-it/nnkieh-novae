@@ -13,12 +13,10 @@ import { ListActionRow, ListCustomRow, ListSection } from "@/components/ui/list"
 export function SettingsAccountSection({
   customPhotoUrl,
   onCopyUid,
-  onSwitchAccount,
   user,
 }: {
   customPhotoUrl: string | null;
   onCopyUid: () => void;
-  onSwitchAccount: () => void;
   user: User;
 }) {
   useLocaleSubscription();
@@ -35,10 +33,6 @@ export function SettingsAccountSection({
           <span className="block truncate text-xs text-muted-foreground">{user.email}</span>
         </span>
       </ListCustomRow>
-      <ListActionRow
-        label={translate("ui.settings.switchAccount")}
-        onClick={onSwitchAccount}
-      />
       <ListActionRow
         label="UID"
         onClick={onCopyUid}
