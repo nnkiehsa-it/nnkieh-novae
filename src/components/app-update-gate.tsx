@@ -9,6 +9,7 @@ import { BrandLockup } from "@/components/ui/brand";
 import { Button } from "@/components/ui/button";
 import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import { raceWithAbort } from "@/lib/abort-signal";
+import { readLocalStorage, writeLocalStorage } from "@/lib/browser-storage";
 import { useTurnstile } from "@/components/turnstile-provider";
 import {
   Dialog,
@@ -22,6 +23,8 @@ import {
 const currentVersion = process.env.NEXT_PUBLIC_APP_VERSION || "development";
 const AUTO_RELOAD_KEY = "novae:auto-update-reloaded-version";
 const AUTO_RELOAD_COUNT_KEY = "novae:auto-update-reloaded-count";
+const LAST_VERSION_CHECK_KEY = "novae:last-version-check-at";
+const VERSION_CHECK_INTERVAL_MS = 30 * 60_000;
 const VERSION_CHECK_TIMEOUT_MS = 2_000;
 const SERVICE_WORKER_PREPARE_TIMEOUT_MS = 2_000;
 const RELOAD_NAVIGATION_RETRY_MS = 4_000;
@@ -46,9 +49,24 @@ export function AppUpdateGate() {
   const reloadInFlight = React.useRef(false);
 
   const check = React.useCallback(async () => {
-    if (checking.current || Date.now() - lastCheckedAt.current < 60_000) return;
+    const now = Date.now();
+    const storedCheckedAt = Number.parseInt(
+      readLocalStorage(LAST_VERSION_CHECK_KEY) ?? "0",
+      10,
+    );
+    const latestCheckedAt = Math.max(
+      lastCheckedAt.current,
+      Number.isFinite(storedCheckedAt) ? storedCheckedAt : 0,
+    );
+    if (
+      checking.current ||
+      now - latestCheckedAt < VERSION_CHECK_INTERVAL_MS
+    ) {
+      return;
+    }
     checking.current = true;
-    lastCheckedAt.current = Date.now();
+    lastCheckedAt.current = now;
+    writeLocalStorage(LAST_VERSION_CHECK_KEY, String(now));
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), VERSION_CHECK_TIMEOUT_MS);
     try {
@@ -72,10 +90,11 @@ export function AppUpdateGate() {
     void check();
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") void check();
-    }, 5 * 60_000);
+    }, VERSION_CHECK_INTERVAL_MS);
     const online = () => void check();
     const resume = () => {
-      if (Date.now() - lastCheckedAt.current >= 5 * 60_000) void check();
+      if (Date.now() - lastCheckedAt.current >= VERSION_CHECK_INTERVAL_MS)
+        void check();
     };
     window.addEventListener("online", online);
     window.addEventListener("pageshow", resume);
