@@ -396,7 +396,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     animation: t-sheet-in var(--motion-sheet) var(--ease-nav) both;
   }
   .t-sheet-motion-frame[data-sheet-lifecycle-closing="true"] {
-    animation: t-sheet-out var(--motion-sheet-exit) var(--ease-depart) both;
+    animation: t-sheet-out var(--motion-sheet-exit) var(--ease-nav) both;
     pointer-events: none;
   }
   /* Every open sheet remains a visible card in the stack. Each newer sheet is
@@ -412,7 +412,8 @@ html[data-theme-transition="true"]::view-transition-new(root) {
       max-height var(--motion-sheet) var(--ease-nav);
   }
   .t-sheet[data-state="open"][data-sheet-stack-motion="pop"] {
-    transition-timing-function: var(--ease-nav-depart);
+    transition-duration: var(--motion-sheet-exit);
+    transition-timing-function: var(--ease-nav);
   }
   .t-sheet[data-sheet-lifecycle-closing="true"] {
     pointer-events: none;
@@ -423,10 +424,10 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   }
   .t-sheet-overlay[data-state="closed"] {
     animation-duration: var(--motion-sheet-exit);
-    animation-timing-function: var(--ease-depart);
+    animation-timing-function: var(--ease-nav);
   }
   .t-sheet-overlay[data-sheet-lifecycle-closing="true"] {
-    animation: t-fade-out var(--motion-sheet-exit) var(--ease-depart) both;
+    animation: t-fade-out var(--motion-sheet-exit) var(--ease-nav) both;
     pointer-events: none;
   }
   .t-sheet-motion-frame[data-sheet-dragging="true"] {
@@ -483,7 +484,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   }
   body:has([data-slot="dialog-content"].t-sheet[data-state="closed"]) .t-stage {
     transition-duration: var(--motion-sheet-exit);
-    transition-timing-function: var(--ease-depart);
+    transition-timing-function: var(--ease-nav);
   }
 }
 
