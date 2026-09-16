@@ -6,6 +6,7 @@ const readOnlyDesktopTests = [
   /loading-continuity\.spec\.ts/,
   /motion-system\.spec\.ts/,
   /primary-navigation\.spec\.ts/,
+  /record-surfaces\.spec\.ts/,
 ];
 
 const configuredWorkers = Number.parseInt(process.env.NOVAE_E2E_WORKERS ?? "", 10);
