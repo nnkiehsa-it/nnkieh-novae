@@ -348,7 +348,18 @@ test('nested sheets keep every previous layer visible in the stack', async ({ br
   await expect(actions).toBeVisible();
   const actionsHeader = actions.locator('[data-slot="dialog-header"]');
   await expect(actionsHeader).toHaveCSS('position', 'sticky');
-  await expect(actionsHeader.getByRole('button', { name: /Close|關閉/u })).toHaveCount(1);
+  const actionsClose = actionsHeader.getByRole('button', { name: /Close|關閉/u });
+  await expect(actionsClose).toHaveCount(1);
+  await expect(actionsClose).toHaveCSS('position', 'absolute');
+  const [titleBox, closeBox] = await Promise.all([
+    actionsHeader.locator('[data-slot="dialog-title"]').boundingBox(),
+    actionsClose.boundingBox(),
+  ]);
+  expect(titleBox).not.toBeNull();
+  expect(closeBox).not.toBeNull();
+  expect(Math.abs(
+    titleBox!.y + titleBox!.height / 2 - (closeBox!.y + closeBox!.height / 2),
+  )).toBeLessThanOrEqual(1);
   const actionsFrame = actions.locator('..');
   await actionsFrame.evaluate(async (element) => {
     await Promise.all(element.getAnimations().map((animation) => animation.finished.catch(() => undefined)));

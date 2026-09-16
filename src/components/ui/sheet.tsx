@@ -195,7 +195,7 @@ function SheetHeader({
   return (
     <DialogHeader className={className} data-sheet-drag-region="" {...props}>
       {children}
-      <SheetCloseButton className="absolute right-(--dialog-pad) top-(--dialog-pad) z-30" />
+      <SheetCloseButton className="absolute right-(--dialog-pad) top-0 z-30" />
     </DialogHeader>
   );
 }

@@ -488,14 +488,20 @@ html[data-input-modality="pointer"] :focus-visible {
   mask-image: linear-gradient(to bottom, black 62%, rgb(0 0 0 / 72%) 76%, rgb(0 0 0 / 28%) 90%, transparent);
 }
 
-[data-slot="dialog-content"] [data-slot="dialog-header"] > *,
-[data-slot="alert-dialog-content"] [data-slot="alert-dialog-header"] > * {
+[data-slot="dialog-content"] [data-slot="dialog-header"] > :not([data-slot="dialog-close"]),
+[data-slot="alert-dialog-content"] [data-slot="alert-dialog-header"] > :not([data-slot="dialog-close"]) {
   position: relative;
   z-index: 1;
 }
 
 .t-sheet [data-slot="dialog-header"] > div {
   padding-right: 3rem;
+}
+
+@media (max-width: 47.99rem) {
+  .t-sheet [data-slot="dialog-header"] > div {
+    min-height: 2.75rem;
+  }
 }
 
 .app-mobile-nav {
