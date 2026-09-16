@@ -493,7 +493,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     border-radius: var(--radius-3xl);
     transform: translateY(calc(var(--safe-top) + 0.625rem)) scale(0.92);
   }
-  body:has([data-slot="dialog-content"].t-sheet[data-state="closed"]) .t-stage {
+  body:has([data-slot="dialog-content"].t-sheet:is([data-state="closed"], [data-sheet-lifecycle-closing="true"])) .t-stage {
     transition-duration: var(--motion-sheet-exit);
     transition-timing-function: var(--ease-nav);
   }
