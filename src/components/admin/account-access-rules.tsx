@@ -26,6 +26,16 @@ function PrefixRuleDialog({ busy, onClose, onSave, rule }: {
   const [durationHours, setDurationHours] = React.useState(24);
   const [message, setMessage] = React.useState(rule?.message ?? "");
   const open = rule !== undefined;
+
+  React.useLayoutEffect(() => {
+    if (rule === undefined) return;
+    setTargetValue(rule?.targetValue ?? "");
+    setPreset(rule?.preset ?? "read_only");
+    setDuration(rule?.permanent ? "permanent" : "7d");
+    setDurationHours(24);
+    setMessage(rule?.message ?? "");
+  }, [rule]);
+
   return <Sheet onOpenChange={(next) => !next && onClose()} open={open}>
     <SheetContent>
       <SheetHeader>
@@ -69,6 +79,6 @@ export function AccountAccessRules() {
       />)}
       {!state.loading && state.rules.every((rule) => rule.targetType !== "email_prefix") ? <ListRow label={t("ui.accountAccess.noPrefixRules")} /> : null}
     </ListSection>
-    <PrefixRuleDialog busy={Boolean(state.busy)} key={editing?.targetValue ?? (editing === null ? "new" : "closed")} onClose={() => setEditing(undefined)} onSave={state.save} rule={editing} />
+    <PrefixRuleDialog busy={Boolean(state.busy)} onClose={() => setEditing(undefined)} onSave={state.save} rule={editing} />
   </>;
 }

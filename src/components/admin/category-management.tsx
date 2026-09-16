@@ -48,10 +48,11 @@ export function CategoryManagement() {
   const state = useCategoryManagement();
   const [kind, setKind] = React.useState("issue");
   const [editing, setEditing] = React.useState<number | null>(null);
-  // The sheet has to keep drawing the category it is closing on, or it
-  // disappears instead of sliding back down.
-  const [lastEditing, setLastEditing] = React.useState<number | null>(null);
-  if (editing !== null && editing !== lastEditing) setLastEditing(editing);
+  const [retainedEditing, setRetainedEditing] = React.useState<{
+    index: number;
+    item: AnyCategory;
+    kind: string;
+  } | null>(null);
   useUnsavedChanges(state.draft.changes.length, state.draft.reset);
   const value = state.value;
 
@@ -85,8 +86,12 @@ export function CategoryManagement() {
     },
   } as const;
   const area = kind === "facility" ? areas.facility : kind === "issue" ? areas.issue : null;
-  const activeIndex = editing ?? lastEditing;
-  const editingItem = area && activeIndex !== null ? area.items[activeIndex] : undefined;
+  const activeIndex = editing ?? (retainedEditing?.kind === kind ? retainedEditing.index : null);
+  const editingItem = editing !== null && area
+    ? area.items[editing]
+    : retainedEditing?.kind === kind
+      ? retainedEditing.item
+      : undefined;
   const nameOf = (item: AnyCategory, index: number) =>
     item.label || `${area?.placeholder ?? ""} ${index + 1}`;
 
@@ -96,7 +101,7 @@ export function CategoryManagement() {
         ariaLabel={t("ui.admin.contentType")}
         onValueChange={(next) => {
           setEditing(null);
-          setLastEditing(null);
+          setRetainedEditing(null);
           setKind(next);
         }}
         options={[
@@ -124,7 +129,10 @@ export function CategoryManagement() {
                   <ListNavRow
                     key={`${kind}-${index}`}
                     label={nameOf(item, index)}
-                    onClick={() => setEditing(index)}
+                    onClick={() => {
+                      setRetainedEditing({ index, item, kind });
+                      setEditing(index);
+                    }}
                     value={item.isDefault ? t("ui.admin.defaultCategory") : undefined}
                   />
                 ))}
