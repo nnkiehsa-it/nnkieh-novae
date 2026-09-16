@@ -8,6 +8,7 @@ import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { HeaderBackdrop } from "@/components/ui/header-backdrop";
 import { cn } from "@/lib/utils";
 
 export function PageHeader({
@@ -46,6 +47,7 @@ export function PageHeader({
   if (toolbar) {
     return (
       <header className={cn("page-header flex flex-wrap items-center gap-x-2 gap-y-3", className)}>
+        <HeaderBackdrop />
         {heading}
         {actions}
         {toolbar}
@@ -64,14 +66,15 @@ export function PageHeader({
   );
   if (lead) {
     return (
-      <header className={cn("page-header space-y-4 pb-4", className)}>
+      <header className={cn("page-header flex flex-col gap-4 pb-4", className)}>
+        <HeaderBackdrop />
         {lead}
         {titleRow}
       </header>
     );
   }
   return (
-    <header className={cn("page-header pb-4", className)}>{titleRow}</header>
+    <header className={cn("page-header pb-4", className)}><HeaderBackdrop />{titleRow}</header>
   );
 }
 

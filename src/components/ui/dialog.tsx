@@ -5,6 +5,7 @@ import { XIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 
 import { Button } from "@/components/ui/button";
+import { HeaderBackdrop } from "@/components/ui/header-backdrop";
 import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
 
@@ -99,6 +100,7 @@ function DialogHeader({ className, children, ...props }: React.ComponentProps<"d
       className={cn("text-left", className)}
       {...props}
     >
+      <HeaderBackdrop />
       <div className="flex min-h-9 flex-col justify-center gap-2 pr-10">
         {children}
       </div>

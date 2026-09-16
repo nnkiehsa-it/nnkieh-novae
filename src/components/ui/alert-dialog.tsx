@@ -5,6 +5,7 @@ import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { HeaderBackdrop } from "@/components/ui/header-backdrop";
 
 function AlertDialog({
   ...props
@@ -70,6 +71,7 @@ function AlertDialogContent({
 }
 
 function AlertDialogHeader({
+  children,
   className,
   ...props
 }: React.ComponentProps<"div">) {
@@ -81,7 +83,10 @@ function AlertDialogHeader({
         className,
       )}
       {...props}
-    />
+    >
+      <HeaderBackdrop />
+      {children}
+    </div>
   );
 }
 
