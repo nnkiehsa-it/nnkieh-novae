@@ -422,40 +422,18 @@ html[data-input-modality="pointer"] :focus-visible {
   z-index: -1;
   top: calc(0px - var(--header-top, var(--page-header-top)));
   right: var(--header-bleed, calc((100% - 100vw) / 2));
-  bottom: -0.625rem;
+  bottom: -0.25rem;
   left: var(--header-bleed, calc((100% - 100vw) / 2));
   content: "";
   pointer-events: none;
   background: color-mix(
     in srgb,
-    var(--header-veil, var(--surface-stage)) 72%,
+    var(--header-veil, var(--surface-stage)) 82%,
     transparent
   );
-  -webkit-backdrop-filter: blur(18px) saturate(1.12);
-  backdrop-filter: blur(18px) saturate(1.12);
-  -webkit-mask-image: linear-gradient(to bottom, black 54%, rgb(0 0 0 / 88%) 68%, rgb(0 0 0 / 48%) 84%, transparent);
-  mask-image: linear-gradient(to bottom, black 54%, rgb(0 0 0 / 88%) 68%, rgb(0 0 0 / 48%) 84%, transparent);
-}
-
-.page-header::after,
-.detail-header::after {
-  position: absolute;
-  z-index: -2;
-  top: 42%;
-  right: var(--header-bleed, calc((100% - 100vw) / 2));
-  bottom: -1rem;
-  left: var(--header-bleed, calc((100% - 100vw) / 2));
-  content: "";
-  pointer-events: none;
-  background: color-mix(
-    in srgb,
-    var(--header-veil, var(--surface-stage)) 30%,
-    transparent
-  );
-  -webkit-backdrop-filter: blur(8px) saturate(1.06);
-  backdrop-filter: blur(8px) saturate(1.06);
-  -webkit-mask-image: linear-gradient(to bottom, black, rgb(0 0 0 / 58%) 50%, transparent 92%);
-  mask-image: linear-gradient(to bottom, black, rgb(0 0 0 / 58%) 50%, transparent 92%);
+  backdrop-filter: blur(12px);
+  -webkit-mask-image: linear-gradient(to bottom, black 62%, rgb(0 0 0 / 72%) 76%, rgb(0 0 0 / 28%) 90%, transparent);
+  mask-image: linear-gradient(to bottom, black 62%, rgb(0 0 0 / 72%) 76%, rgb(0 0 0 / 28%) 90%, transparent);
 }
 
 /* A record opened over its list is read inside a sheet, so the sheet is what
@@ -488,35 +466,20 @@ html[data-input-modality="pointer"] :focus-visible {
   box-sizing: content-box;
   isolation: isolate;
   margin: calc(-1 * var(--dialog-pad)) calc(-1 * var(--dialog-pad)) 0;
-  padding: var(--dialog-pad) var(--dialog-pad) 0.625rem;
+  padding: var(--dialog-pad) var(--dialog-pad) 0.25rem;
 }
 
 [data-slot="dialog-content"] [data-slot="dialog-header"]::before,
 [data-slot="alert-dialog-content"] [data-slot="alert-dialog-header"]::before {
   position: absolute;
   z-index: -1;
-  inset: 0 0 -0.625rem;
+  inset: 0 0 -0.25rem;
   content: "";
   pointer-events: none;
-  background: color-mix(in srgb, var(--popover) 72%, transparent);
-  -webkit-backdrop-filter: blur(18px) saturate(1.12);
-  backdrop-filter: blur(18px) saturate(1.12);
-  -webkit-mask-image: linear-gradient(to bottom, black 54%, rgb(0 0 0 / 88%) 68%, rgb(0 0 0 / 48%) 84%, transparent);
-  mask-image: linear-gradient(to bottom, black 54%, rgb(0 0 0 / 88%) 68%, rgb(0 0 0 / 48%) 84%, transparent);
-}
-
-[data-slot="dialog-content"] [data-slot="dialog-header"]::after,
-[data-slot="alert-dialog-content"] [data-slot="alert-dialog-header"]::after {
-  position: absolute;
-  z-index: -2;
-  inset: 42% 0 -1rem;
-  content: "";
-  pointer-events: none;
-  background: color-mix(in srgb, var(--popover) 30%, transparent);
-  -webkit-backdrop-filter: blur(8px) saturate(1.06);
-  backdrop-filter: blur(8px) saturate(1.06);
-  -webkit-mask-image: linear-gradient(to bottom, black, rgb(0 0 0 / 58%) 50%, transparent 92%);
-  mask-image: linear-gradient(to bottom, black, rgb(0 0 0 / 58%) 50%, transparent 92%);
+  background: color-mix(in srgb, var(--popover) 82%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-mask-image: linear-gradient(to bottom, black 62%, rgb(0 0 0 / 72%) 76%, rgb(0 0 0 / 28%) 90%, transparent);
+  mask-image: linear-gradient(to bottom, black 62%, rgb(0 0 0 / 72%) 76%, rgb(0 0 0 / 28%) 90%, transparent);
 }
 
 .t-sheet [data-slot="dialog-header"] > div {
@@ -776,8 +739,7 @@ html[data-input-modality="pointer"] :focus-visible {
     --page-header-top: 1.5rem;
   }
 
-  .page-header::before,
-  .page-header::after {
+  .page-header::before {
     width: calc(100vw - 15rem);
   }
 }
