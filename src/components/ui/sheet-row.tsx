@@ -43,11 +43,13 @@ export function SheetRow({
     <>
       <ListNavRow label={label} onClick={() => change(true)} value={value} />
       <Sheet onOpenChange={change} open={open}>
-        <SheetContent>
+        <SheetContent className="grid-rows-[auto_minmax(0,1fr)] overflow-hidden">
           <SheetHeader>
             <SheetTitle>{title}</SheetTitle>
           </SheetHeader>
-          {children}
+          <div className="min-h-0 overflow-y-auto overscroll-contain pb-[max(0.25rem,var(--safe-bottom))]">
+            {children}
+          </div>
         </SheetContent>
       </Sheet>
     </>
