@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 
 import {
@@ -88,16 +89,29 @@ export function ActionMenu({
               <DropdownMenuSeparator />
             </>
           ) : null}
-          {items.map((item) => (
-            <DropdownMenuItem
-              className={cn(item.tone === "destructive" && "text-destructive")}
-              key={item.key}
-              onSelect={item.onSelect}
-            >
-              <item.icon />
-              {item.label}
-            </DropdownMenuItem>
-          ))}
+          {items.map((item) =>
+            item.href ? (
+              <DropdownMenuItem
+                asChild
+                className={cn(item.tone === "destructive" && "text-destructive")}
+                key={item.key}
+              >
+                <Link href={item.href}>
+                  <item.icon />
+                  {item.label}
+                </Link>
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                className={cn(item.tone === "destructive" && "text-destructive")}
+                key={item.key}
+                onSelect={item.onSelect}
+              >
+                <item.icon />
+                {item.label}
+              </DropdownMenuItem>
+            ),
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     );

@@ -165,7 +165,7 @@ export function getIssueDetailPanels({
           </div>
           </div>
           {canViewSupporters ? (
-            <div className="border-t border-border">
+            <div className="border-t border-border px-[var(--row-gutter)]">
               <SheetRow
                 label={translate("ui.issue.supporters")}
                 onOpenChange={(open) => { if (open) onLoadSupporters(); }}

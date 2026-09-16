@@ -159,3 +159,18 @@ test('announcement and administration entry points reject unassigned users', asy
   }
   await admin.context.close();
 });
+
+test('desktop account menu administration item is a real navigation link', async ({ browser }) => {
+  const admin = await newUserPage(browser, 'admin');
+  await admin.page.setViewportSize({ width: 1280, height: 900 });
+  await admin.page.goto('/issues');
+
+  const accountButton = admin.page.locator('aside button').last();
+  await accountButton.click();
+  const administration = admin.page.getByRole('menuitem', { name: /Administration|平台管理/u });
+  await expect(administration).toHaveAttribute('href', '/admin');
+  await administration.click();
+  await expect(admin.page).toHaveURL(/\/admin$/u);
+
+  await admin.context.close();
+});
