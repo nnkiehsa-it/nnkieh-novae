@@ -143,10 +143,10 @@ export function SheetSurface({
         data-sheet-lifecycle-closing={sheetClosing || undefined}
         data-sheet-suppress-entrance={suppressEntrance || undefined}
       />
-      <div className="pointer-events-none fixed inset-0 z-50 grid items-center justify-items-center p-4 max-md:items-end max-md:justify-items-stretch max-md:p-0">
+      <div className="pointer-events-none fixed inset-0 z-50 grid min-h-0 grid-rows-[minmax(0,1fr)] items-center justify-items-center p-4 max-md:items-end max-md:justify-items-stretch max-md:p-0">
         <div
           ref={motionFrameRef}
-          className="t-sheet-motion-frame pointer-events-none grid h-full w-full items-end justify-items-stretch md:contents"
+          className="t-sheet-motion-frame pointer-events-none grid h-full min-h-0 w-full grid-rows-[minmax(0,1fr)] items-end justify-items-stretch md:contents"
           data-sheet-arrived={arrived || undefined}
           data-sheet-dismissing={dismissing || undefined}
           data-sheet-dragging={dragging || undefined}

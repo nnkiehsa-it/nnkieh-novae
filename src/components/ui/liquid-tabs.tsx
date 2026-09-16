@@ -54,7 +54,7 @@ export function LiquidTabs({
           // The rail has no height of its own: it is as tall as the tabs inside
           // it plus its own padding. A fixed height here can only disagree with
           // the tabs, and the rail then reserves a scrollbar for the difference.
-          className="t-tabs relative isolate inline-flex max-w-full items-center gap-[3px] overflow-x-auto overscroll-x-contain rounded-full bg-[var(--tabs-bar-bg)] p-[3px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="t-tabs relative isolate inline-flex max-w-full items-center gap-[3px] overflow-x-auto rounded-full bg-[var(--tabs-bar-bg)] p-[3px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {options.map((option) => {
             const displayedActive = option.value === value;

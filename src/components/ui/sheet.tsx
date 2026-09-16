@@ -208,7 +208,7 @@ function SheetContent({
 
   return (
     <SheetSurface
-      className={cn("grid-rows-[auto_minmax(0,1fr)] gap-2 overflow-hidden", className)}
+      className={cn("min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-2 overflow-hidden", className)}
       onSheetExitComplete={lifecycle?.completeClose}
       sheetClosing={Boolean(lifecycle?.closing)}
       {...props}
@@ -221,7 +221,7 @@ function SheetContent({
 function SheetBody({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn("min-h-0 overflow-y-auto overscroll-contain pb-1", className)}
+      className={cn("min-h-0 overflow-y-auto pb-1", className)}
       data-slot="sheet-body"
       {...props}
     />

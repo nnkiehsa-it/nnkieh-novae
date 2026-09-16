@@ -223,6 +223,9 @@
 
 * {
   scrollbar-width: none;
+  /* Every scroll container owns its boundary: no chaining or rubber-banding,
+     including portalled sheets, menus, editors and horizontal tab lists. */
+  overscroll-behavior: none;
 }
 
 *::-webkit-scrollbar {
@@ -232,7 +235,6 @@
 }
 
 html {
-  overscroll-behavior: none;
   /* Pan only: no pinch scaling and no double-tap scaling, on the platforms that
      ignore the viewport's own scale limits as well. */
   touch-action: pan-x pan-y;
@@ -248,7 +250,6 @@ body {
   min-height: 100svh;
   margin: 0;
   overflow-x: clip;
-  overscroll-behavior: none;
   background: var(--surface-stage);
   color: var(--foreground);
   transition: background-color var(--motion-sheet) var(--ease-nav);
