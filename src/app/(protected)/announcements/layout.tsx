@@ -9,15 +9,15 @@ import type { ReactNode } from "react";
  */
 export default function AnnouncementsLayout({
   children,
-  modal,
+  sheet,
 }: {
   children: ReactNode;
-  modal: ReactNode;
+  sheet: ReactNode;
 }) {
   return (
     <>
       {children}
-      {modal}
+      {sheet}
     </>
   );
 }

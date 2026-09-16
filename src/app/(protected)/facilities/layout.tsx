@@ -4,15 +4,15 @@ import { FeatureRouteGuard } from "@/components/feature-route-guard";
 /** The list, and whatever is shown over it, behind the one feature gate. */
 export default function FacilitiesLayout({
   children,
-  modal,
+  sheet,
 }: {
   children: ReactNode;
-  modal: ReactNode;
+  sheet: ReactNode;
 }) {
   return (
     <FeatureRouteGuard feature="facilities">
       {children}
-      {modal}
+      {sheet}
     </FeatureRouteGuard>
   );
 }

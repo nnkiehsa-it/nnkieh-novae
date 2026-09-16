@@ -3,8 +3,8 @@
 import {
   isUserRestricted,
   responsibilityLabel,
-  UserDetailsDialog,
-} from "@/components/admin/user-details-dialog";
+  UserDetailsSheet,
+} from "@/components/admin/user-details-sheet";
 import { PersonIdentity } from "@/components/content-author";
 import { RecordList } from "@/components/ui/record-list";
 import { useAdminUsers } from "@/hooks/use-admin-console";
@@ -108,7 +108,7 @@ export function UserManagement() {
           ))}
         </div>
       </RecordList>
-      <UserDetailsDialog
+      <UserDetailsSheet
         busy={state.busy === state.selected?.uid}
         onClose={() => {
           state.setSelected(null);

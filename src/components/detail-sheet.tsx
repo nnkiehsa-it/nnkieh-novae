@@ -36,7 +36,7 @@ function RecordSheetContext({ children, label }: { children: ReactNode; label: s
   return <RecordOverlay.Provider value={{ close, label }}>{children}</RecordOverlay.Provider>;
 }
 
-export function DetailModal({ children, label }: { children: ReactNode; label: string }) {
+export function DetailSheet({ children, label }: { children: ReactNode; label: string }) {
   const router = useRouter();
   const [open, setOpen] = React.useState(true);
 

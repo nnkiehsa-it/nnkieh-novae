@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { ArrowLeft, Share2 } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { useShareExitGuard } from "@/hooks/use-share-entry";
-import { useCloseRecord, useRecordOverlayLabel } from "@/components/detail-modal";
+import { useCloseRecord, useRecordOverlayLabel } from "@/components/detail-sheet";
 import { Button } from "@/components/ui/button";
 import { SheetCloseButton } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";

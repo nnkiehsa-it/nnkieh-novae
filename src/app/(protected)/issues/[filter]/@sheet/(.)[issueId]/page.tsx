@@ -2,13 +2,13 @@
 
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 import { IssueDetail } from "@/components/issues/issue-detail";
-import { DetailModal } from "@/components/detail-modal";
+import { DetailSheet } from "@/components/detail-sheet";
 
 export default function Page() {
   useLocaleSubscription();
   return (
-    <DetailModal label={translate("ui.nav.issues")}>
+    <DetailSheet label={translate("ui.nav.issues")}>
       <IssueDetail />
-    </DetailModal>
+    </DetailSheet>
   );
 }

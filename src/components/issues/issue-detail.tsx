@@ -9,7 +9,7 @@ import {
   IssueDetailToolbar,
 } from "@/components/issues/issue-detail-actions";
 import { IssueDetailContent } from "@/components/issues/issue-detail-content";
-import { IssueModerationDialog } from "@/components/issues/issue-moderation-dialog";
+import { IssueModerationSheet } from "@/components/issues/issue-moderation-sheet";
 import { DetailLayout } from "@/components/ui/detail-layout";
 
 export function IssueDetail() {
@@ -78,7 +78,7 @@ export function IssueDetail() {
         timeline: detail.timeline,
       }) : undefined}
       after={issue && detail.canManageIssue ? (
-        <IssueModerationDialog
+        <IssueModerationSheet
           issue={issue}
           onOpenChange={detail.setModerationOpen}
           onUpdated={detail.setIssue}

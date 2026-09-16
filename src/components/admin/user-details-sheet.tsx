@@ -27,7 +27,7 @@ export function responsibilityLabel(user: AdminUser, t: Translator) {
   return labels.length > 0 ? labels.join(" · ") : "—";
 }
 
-export function UserDetailsDialog({ busy, onClose, onRestrictionChange, user }: {
+export function UserDetailsSheet({ busy, onClose, onRestrictionChange, user }: {
   busy: boolean;
   onClose: () => void;
   onRestrictionChange: (input: Omit<AccountAccessRuleDraft, "durationHours"> & { durationHours?: number } | null) => void;

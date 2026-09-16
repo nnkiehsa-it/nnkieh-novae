@@ -16,7 +16,7 @@ const PROGRESS_OPTION_KEYS: ReadonlyArray<[IssueStatus, string]> = [
   ["infeasible", "ui.status.infeasible"],
 ];
 
-export function IssueModerationDialog({
+export function IssueModerationSheet({
   issue,
   onOpenChange,
   onUpdated,

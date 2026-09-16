@@ -11,7 +11,7 @@ import { ContentTransition, StateTransition } from "@/components/motion/state-tr
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 import type { FeedKind } from "@/components/ui/feed-list";
 import { cn } from "@/lib/utils";
-import { useCloseRecord } from "@/components/detail-modal";
+import { useCloseRecord } from "@/components/detail-sheet";
 import { sheetCloseButtonClass } from "@/components/ui/sheet";
 
 export interface DetailPanel { key: string; content: ReactNode; className?: string }

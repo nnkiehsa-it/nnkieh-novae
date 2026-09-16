@@ -10,7 +10,7 @@ import { LikeActionButton } from "@/components/motion/like-action-button";
 import { DetailLayout } from "@/components/ui/detail-layout";
 import { DetailToolbar } from "@/components/detail-toolbar";
 import { DetailActionsMenu } from "@/components/detail-actions-menu";
-import { FacilityStatusDialog } from "@/components/facilities/facility-status-dialog";
+import { FacilityStatusSheet } from "@/components/facilities/facility-status-sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { shareCurrentPage } from "@/lib/share";
@@ -93,7 +93,7 @@ export function FacilityDetail() {
             </div>
             </div>
       }] : undefined}
-      after={facility ? <FacilityStatusDialog
+      after={facility ? <FacilityStatusSheet
         facility={facility}
         onOpenChange={detail.setStatusOpen}
         onUpdated={detail.setFacility}

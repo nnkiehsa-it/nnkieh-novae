@@ -3,15 +3,15 @@ import type { ReactNode } from "react";
 /** The feed, and whatever is shown over it. */
 export default function IssueFeedLayout({
   children,
-  modal,
+  sheet,
 }: {
   children: ReactNode;
-  modal: ReactNode;
+  sheet: ReactNode;
 }) {
   return (
     <>
       {children}
-      {modal}
+      {sheet}
     </>
   );
 }

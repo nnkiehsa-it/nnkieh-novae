@@ -12,7 +12,7 @@ const OPTION_KEYS: ReadonlyArray<[FacilityStatus, string]> = [
   ["unable-to-handle", "ui.status.unable"],
 ];
 
-export function FacilityStatusDialog({
+export function FacilityStatusSheet({
   facility,
   onOpenChange,
   onUpdated,

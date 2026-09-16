@@ -13,7 +13,7 @@ import { useI18n } from "@/i18n";
 import { formatDate } from "@/lib/format";
 import { ACCOUNT_ACCESS_PRESET_KEYS } from "@/constants/account-access";
 
-function PrefixRuleDialog({ busy, onClose, onSave, rule }: {
+function PrefixRuleSheet({ busy, onClose, onSave, rule }: {
   busy: boolean;
   onClose: () => void;
   onSave: (input: { duration: AccountAccessDuration; durationHours?: number; message: string; preset: AccountAccessPreset; targetType: "email_prefix"; targetValue: string }) => Promise<void>;
@@ -79,6 +79,6 @@ export function AccountAccessRules() {
       />)}
       {!state.loading && state.rules.every((rule) => rule.targetType !== "email_prefix") ? <ListRow label={t("ui.accountAccess.noPrefixRules")} /> : null}
     </ListSection>
-    <PrefixRuleDialog busy={Boolean(state.busy)} onClose={() => setEditing(undefined)} onSave={state.save} rule={editing} />
+    <PrefixRuleSheet busy={Boolean(state.busy)} onClose={() => setEditing(undefined)} onSave={state.save} rule={editing} />
   </>;
 }
