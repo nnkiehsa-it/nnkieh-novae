@@ -1,11 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { ArrowLeft, Share2, X } from "lucide-react";
+import { ArrowLeft, Share2 } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { useShareExitGuard } from "@/hooks/use-share-entry";
 import { useCloseRecord, useRecordOverlayLabel } from "@/components/detail-modal";
 import { Button } from "@/components/ui/button";
+import { SheetCloseButton } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function SecondaryToolbar({
@@ -50,16 +51,7 @@ export function SecondaryToolbar({
         {actions}
         {closeRecord ? <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              aria-label={t("common.close")}
-              className="size-11 md:size-9"
-              data-slot="dialog-close"
-              onClick={closeRecord}
-              size="icon"
-              variant="ghost"
-            >
-              <X />
-            </Button>
+            <SheetCloseButton />
           </TooltipTrigger>
           <TooltipContent>{t("common.close")}</TooltipContent>
         </Tooltip> : null}

@@ -216,9 +216,28 @@ test('a record replaces its content in one surface, over the list it came from',
   await expect(record.getByRole('button', { name: /^Back to/u })).toHaveCount(0);
   await expect(record.locator('[data-slot="sheet-drag-handle"]')).toHaveCount(0);
   await expect(record.locator('[data-sheet-drag-region]')).not.toHaveCount(0);
+  const recordFrame = record.locator('..');
+  await recordFrame.evaluate(async (element) => {
+    await Promise.all(element.getAnimations().map((animation) => animation.finished.catch(() => undefined)));
+  });
+  await expect(recordFrame).toHaveAttribute('data-sheet-arrived', 'true');
+  await watchSheetExit(record, 'record-detail');
+  const beforeClose = await record.boundingBox();
+  expect(beforeClose).not.toBeNull();
   await record.getByRole('button', { name: 'Close' }).click();
+  await expect(record).toHaveAttribute('data-sheet-lifecycle-closing', 'true');
+  await expect(recordFrame).toHaveAttribute('data-sheet-lifecycle-closing', 'true');
+  await expect(recordFrame).toHaveCSS('animation-name', 't-sheet-out');
+  await page.waitForTimeout(120);
+  const duringClose = await record.boundingBox();
+  expect(duringClose).not.toBeNull();
+  expect(duringClose!.y).toBeGreaterThan(beforeClose!.y);
   await page.waitForURL(/\/issues\/[^/]+$/u);
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect.poll(async () => {
+    const report = await sheetExitReport(page, 'record-detail');
+    return report.maxTop - report.startTop;
+  }).toBeGreaterThan(120);
   await expect(card).toBeVisible();
   await context.close();
 });
@@ -326,6 +345,9 @@ test('nested sheets keep every previous layer visible in the stack', async ({ br
   await expect(sheets).toHaveCount(2);
   const actions = sheets.last();
   await expect(actions).toBeVisible();
+  const actionsHeader = actions.locator('[data-slot="dialog-header"]');
+  await expect(actionsHeader).toHaveCSS('position', 'sticky');
+  await expect(actionsHeader.getByRole('button', { name: /Close|關閉/u })).toHaveCount(1);
   const actionsFrame = actions.locator('..');
   await actionsFrame.evaluate(async (element) => {
     await Promise.all(element.getAnimations().map((animation) => animation.finished.catch(() => undefined)));

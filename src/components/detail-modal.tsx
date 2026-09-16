@@ -4,30 +4,24 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { timingMs } from "@/lib/motion-timing";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  useSheetClose,
+} from "@/components/ui/sheet";
 
 /**
  * A record shown over the list it was opened from.
  *
  * The address is the record's own, so it can be sent to somebody, opened from a
- * notification, reloaded or bookmarked — and all of those arrive at the whole
- * page instead, because the route this stands in for is a real one. What this
- * saves is the journey: the list underneath keeps its scroll and everything it
- * had loaded, and the record arrives as a layer over it rather than as a new
- * screen the reader has to come back from.
- *
- * Closing is a step back through history, which is what makes the browser's own
- * Back close it too. Leaving the address for last is what lets the sheet travel
- * back out: the route is what mounts this, so changing it first would take the
- * sheet off the screen between two frames.
+ * notification, reloaded or bookmarked. Direct arrivals render the whole page;
+ * intercepted navigation keeps the list underneath and presents the record as
+ * the same shared sheet used everywhere else.
  */
 const RecordOverlay = React.createContext<{ close: () => void; label: string } | null>(null);
 
-/**
- * How to put this record away, for the controls inside it. A record shown as a
- * whole page has no such thing: its back control goes back.
- */
+/** How controls inside a record put away an intercepted record sheet. */
 export function useCloseRecord() {
   return React.useContext(RecordOverlay)?.close ?? null;
 }
@@ -36,27 +30,27 @@ export function useRecordOverlayLabel() {
   return React.useContext(RecordOverlay)?.label ?? null;
 }
 
+function RecordSheetContext({ children, label }: { children: ReactNode; label: string }) {
+  const close = useSheetClose();
+  if (!close) return children;
+  return <RecordOverlay.Provider value={{ close, label }}>{children}</RecordOverlay.Provider>;
+}
+
 export function DetailModal({ children, label }: { children: ReactNode; label: string }) {
   const router = useRouter();
   const [open, setOpen] = React.useState(true);
-  const closing = React.useRef(false);
-  const close = React.useCallback(() => {
-    if (closing.current) return;
-    closing.current = true;
-    setOpen(false);
-    window.setTimeout(() => router.back(), timingMs("sheetExit"));
-  }, [router]);
 
   return (
     <Sheet
       onOpenChange={(next) => {
-        if (!next) close();
+        setOpen(next);
+        if (!next) router.back();
       }}
       open={open}
     >
-      <SheetContent showCloseButton={false}>
+      <SheetContent>
         <SheetTitle className="sr-only">{label}</SheetTitle>
-        <RecordOverlay.Provider value={{ close, label }}>{children}</RecordOverlay.Provider>
+        <RecordSheetContext label={label}>{children}</RecordSheetContext>
       </SheetContent>
     </Sheet>
   );
