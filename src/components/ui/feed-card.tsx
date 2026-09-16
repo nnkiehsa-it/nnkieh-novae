@@ -42,12 +42,10 @@ export function FeedCard({
         </div>
       ) : null}
       {href ? (
-        // Opening a record is a sheet travelling up the screen, and it cannot
-        // start until the route behind it is in hand. On a phone there is no
-        // hover to read intent from, so a card holds its own record's route
-        // ready from the moment it is on screen, leaving the tap nothing to do
-        // but play the animation.
-        <Link aria-label={label} className="absolute inset-0 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring" href={href} prefetch />
+        // Detail navigation answers the click with a local sheet immediately;
+        // the route is deliberately not prefetched just because this card was
+        // visible. Content can arrive after the physical response has begun.
+        <Link aria-label={label} className="absolute inset-0 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring" href={href} prefetch={false} />
       ) : null}
     </div>
   );

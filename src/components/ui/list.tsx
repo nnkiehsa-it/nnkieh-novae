@@ -167,7 +167,7 @@ export function ListNavRow({
         {inner}
       </a>
     ) : (
-      <Link className={className} href={href} prefetch>
+      <Link className={className} href={href} prefetch={false}>
         {inner}
       </Link>
     );

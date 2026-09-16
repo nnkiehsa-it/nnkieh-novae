@@ -23,8 +23,8 @@ export interface AdminRoute {
  * different permission and so cannot. Splitting them is what lets a screen have
  * exactly one Save.
  *
- * This table holds no JSX so that route preloading can read it without a hook
- * reaching into a component.
+ * This table holds no JSX so permission-aware navigation can read it without a
+ * hook reaching into a component.
  */
 export const ADMIN_ROUTES: readonly AdminRoute[] = [
   {

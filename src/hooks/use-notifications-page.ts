@@ -217,10 +217,5 @@ export function useNotificationsPage() {
     [router, t],
   );
 
-  const preload = React.useCallback((notification: NotificationRecord) => {
-    const target = notificationTargetPath(notification);
-    if (target) router.prefetch(target);
-  }, [router]);
-
-  return { error, hasMore, load, loadMore, loading, loadingMore, notifications, open, preload, revealFields };
+  return { error, hasMore, load, loadMore, loading, loadingMore, notifications, open, revealFields };
 }

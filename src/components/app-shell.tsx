@@ -19,8 +19,6 @@ import {
 import { useTheme } from "next-themes";
 import { useCategories } from "@/hooks/use-categories";
 import { useNotificationBadge } from "@/hooks/use-notification-badge";
-import { useIntentPrefetch } from "@/hooks/use-intent-prefetch";
-import { useRoutePreload } from "@/hooks/use-route-preload";
 import { usePushTokenHeartbeat } from "@/hooks/use-push-token-heartbeat";
 import { rememberCurrentRoute } from "@/lib/navigation-memory";
 import { useSession } from "@/hooks/use-session";
@@ -146,8 +144,6 @@ function AccountMenu({ compact = false }: { compact?: boolean }) {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  useRoutePreload();
-  useIntentPrefetch();
   usePushTokenHeartbeat();
   const { t } = useLocaleSubscription();
   const pathname = usePathname();

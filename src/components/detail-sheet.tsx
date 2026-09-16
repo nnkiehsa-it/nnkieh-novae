@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
+import { useOptimisticDetailHandoff } from "@/components/optimistic-detail-navigation";
 
 import {
   Sheet,
@@ -39,7 +40,10 @@ function RecordSheetContext({ children, label }: { children: ReactNode; label: s
 
 export function DetailSheet({ children, label }: { children: ReactNode; label: string }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = React.useState(true);
+  const optimisticHandoff = useOptimisticDetailHandoff(pathname);
+  const [suppressEntrance] = React.useState(optimisticHandoff);
 
   return (
     <Sheet
@@ -49,7 +53,10 @@ export function DetailSheet({ children, label }: { children: ReactNode; label: s
       }}
       open={open}
     >
-      <SheetContent className="grid-rows-[minmax(0,1fr)]">
+      <SheetContent
+        className="grid-rows-[minmax(0,1fr)]"
+        suppressEntrance={suppressEntrance}
+      >
         <SheetBody className="pb-0">
           <SheetTitle className="sr-only">{label}</SheetTitle>
           <RecordSheetContext label={label}>{children}</RecordSheetContext>

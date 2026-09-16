@@ -15,6 +15,7 @@ import { AppInstallPrompt } from "@/components/app-install-prompt";
 import { ResizeMotion } from "@/components/motion/resize-motion";
 import { NavigationFeedback } from "@/components/motion/navigation-feedback";
 import { ensureFirebaseAppCheck } from "@/lib/firebase-app-check";
+import { OptimisticDetailNavigationProvider } from "@/components/optimistic-detail-navigation";
 
 export function AppProviders({
   children,
@@ -74,15 +75,17 @@ export function AppProviders({
           <TooltipProvider>
             <TurnstileProvider>
               <SessionProvider>
-                {/* Everything a sheet pushes back sits in here; a sheet
-                    itself is portalled to the body, outside it. */}
-                <div className="t-stage">
-                  <div className="t-stage-content">
-                    <Suspense fallback={null}>
-                      {i18nReady ? children : <div className="app-start-surface" />}
-                    </Suspense>
+                <OptimisticDetailNavigationProvider>
+                  {/* Everything a sheet pushes back sits in here; a sheet
+                      itself is portalled to the body, outside it. */}
+                  <div className="t-stage">
+                    <div className="t-stage-content">
+                      <Suspense fallback={null}>
+                        {i18nReady ? children : <div className="app-start-surface" />}
+                      </Suspense>
+                    </div>
                   </div>
-                </div>
+                </OptimisticDetailNavigationProvider>
               </SessionProvider>
               <NavigationFeedback />
               <ResizeMotion />

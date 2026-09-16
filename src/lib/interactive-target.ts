@@ -1,10 +1,9 @@
 /**
  * What a pointer is actually on.
  *
- * Two features need the same answer to that question — the feedback a tap on a
- * destination wears while the route is on its way, and the prefetch that starts
- * before the tap — so the reading of the DOM lives once, here, rather than
- * twice in two components that would drift apart.
+ * Navigation feedback and optimistic detail presentation need the same answer
+ * to that question, so the reading of the DOM lives once here rather than in
+ * two components that would drift apart.
  */
 const INTERACTIVE_SELECTOR =
   "a[href], button, [role='button'], [role='menuitem'], [role='option'], [role='radio'], [role='checkbox'], [role='tab'], [role='switch'], [data-slot='select-trigger']";

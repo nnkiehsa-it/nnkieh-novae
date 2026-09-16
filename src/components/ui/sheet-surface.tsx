@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 export type SheetSurfaceProps = React.ComponentProps<typeof DialogPrimitive.Content> & {
   onSheetExitComplete?: () => void;
   sheetClosing?: boolean;
+  suppressEntrance?: boolean;
   surface?: "floating" | "plain";
 };
 
@@ -26,6 +27,7 @@ export function SheetSurface({
   className,
   onSheetExitComplete,
   sheetClosing = false,
+  suppressEntrance = false,
   surface = "floating",
   ...props
 }: SheetSurfaceProps) {
@@ -37,7 +39,7 @@ export function SheetSurface({
   const [dragging, setDragging] = React.useState(false);
   const [settling, setSettling] = React.useState(false);
   const [dismissing, setDismissing] = React.useState(false);
-  const [arrived, setArrived] = React.useState(false);
+  const [arrived, setArrived] = React.useState(suppressEntrance);
 
   React.useEffect(() => () => {
     if (settleTimerRef.current !== null) window.clearTimeout(settleTimerRef.current);
@@ -139,6 +141,7 @@ export function SheetSurface({
       <DialogOverlay
         className="t-sheet-overlay"
         data-sheet-lifecycle-closing={sheetClosing || undefined}
+        data-sheet-suppress-entrance={suppressEntrance || undefined}
       />
       <div className="pointer-events-none fixed inset-0 z-50 grid items-center justify-items-center p-4 max-md:items-end max-md:justify-items-stretch max-md:p-0">
         <div
@@ -149,6 +152,7 @@ export function SheetSurface({
           data-sheet-dragging={dragging || undefined}
           data-sheet-motion-frame=""
           data-sheet-settling={settling || undefined}
+          data-sheet-suppress-entrance={suppressEntrance || undefined}
           onAnimationEnd={(event) => {
             if (event.currentTarget !== event.target) return;
             if (event.animationName === "t-sheet-in") {
@@ -171,6 +175,7 @@ export function SheetSurface({
             data-sheet-dragging={dragging || undefined}
             data-sheet-settling={settling || undefined}
             data-sheet-dismissing={dismissing || undefined}
+            data-sheet-suppress-entrance={suppressEntrance || undefined}
             className={cn(
               "t-dialog t-sheet pointer-events-auto relative grid w-full min-w-0 content-start gap-5 overflow-x-clip overflow-y-auto p-(--dialog-pad) outline-none [&>*]:min-w-0",
               "max-w-[min(calc(100vw-2rem),88rem)] [--dialog-pad:var(--page-gutter)] md:h-[calc(100svh-2rem)] md:max-h-[calc(100svh-2rem)]",
@@ -181,7 +186,7 @@ export function SheetSurface({
             )}
             {...props}
             onOpenAutoFocus={(event) => {
-              setArrived(false);
+              setArrived(suppressEntrance);
               setDismissing(false);
               setSettling(false);
               dragRef.current = null;

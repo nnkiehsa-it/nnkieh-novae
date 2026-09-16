@@ -89,8 +89,6 @@ export default function NotificationsPage() {
                         <button
                           className={`${rowClass} items-start`}
                           onClick={() => void state.open(notification)}
-                          onFocus={() => state.preload(notification)}
-                          onPointerEnter={() => state.preload(notification)}
                           type="button"
                         >
                           <RowInner

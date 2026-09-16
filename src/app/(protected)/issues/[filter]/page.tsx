@@ -71,7 +71,7 @@ export default function IssueBoardPage() {
           <>
             {filter !== "my-proposals" ? (
               <Button asChild className="order-3 ml-auto sm:order-2 sm:ml-0" size="adaptive">
-                <Link aria-label={translate('ui.issue.new')} href={`/issues/${encodeURIComponent(filter)}/new`} prefetch>
+                <Link aria-label={translate('ui.issue.new')} href={`/issues/${encodeURIComponent(filter)}/new`} prefetch={false}>
                   <Plus /><span className="hidden sm:inline">{translate('ui.issue.new')}</span></Link>
               </Button>
             ) : null}
@@ -138,7 +138,7 @@ export default function IssueBoardPage() {
           action:
             filter !== "my-proposals" ? (
               <Button asChild variant="outline">
-                <Link href={`/issues/${encodeURIComponent(filter)}/new`} prefetch>
+                <Link href={`/issues/${encodeURIComponent(filter)}/new`} prefetch={false}>
                   <Plus />{translate('ui.issue.createFirst')}</Link>
               </Button>
             ) : undefined

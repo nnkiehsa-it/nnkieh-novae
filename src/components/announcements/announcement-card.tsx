@@ -62,7 +62,7 @@ export function AnnouncementCard({
                 <Link
                   aria-label={translate('comments.viewComments')}
                   href={`/announcements/${announcement.id}#discussion-title`}
-                  prefetch
+                  prefetch={false}
                 >
                   <MessageCircle />
                   <AnimatedNumber value={announcement.comment_count} />

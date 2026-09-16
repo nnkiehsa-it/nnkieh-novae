@@ -243,6 +243,57 @@ test('a record replaces its content in one surface, over the list it came from',
   await context.close();
 });
 
+test('a record sheet starts before its intercepted route arrives', async ({ browser }) => {
+  const context = await browser.newContext({
+    serviceWorkers: 'block',
+    storageState: authStatePath('ordinary'),
+  });
+  const page = await context.newPage();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/issues');
+  const card = page.locator('.t-card a[href^="/issues/"]').first();
+  await expect(card).toBeVisible();
+  const href = await card.getAttribute('href');
+  expect(href).toBeTruthy();
+
+  let releaseRoute!: () => void;
+  const heldRoute = new Promise<void>((resolve) => {
+    releaseRoute = resolve;
+  });
+  let routeStarted = false;
+  await page.route('**/*', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const headers = request.headers();
+    if (
+      url.pathname === href &&
+      (url.searchParams.has('_rsc') || headers.rsc === '1')
+    ) {
+      routeStarted = true;
+      await heldRoute;
+    }
+    await route.continue();
+  });
+
+  await page.waitForTimeout(150);
+  expect(routeStarted).toBe(false);
+
+  const click = card.click();
+  await expect.poll(() => routeStarted).toBe(true);
+  const optimisticSheet = page.locator('[data-sheet-surface]');
+  await expect(optimisticSheet).toHaveCount(1);
+  await expect(optimisticSheet).toBeVisible();
+
+  releaseRoute();
+  await click;
+  await page.waitForURL(/\/issues\/[^/]+\/[^/]+$/u);
+  const routedSheet = page.getByRole('dialog');
+  await expect(routedSheet.locator('article h1')).toBeVisible();
+  await expect(page.locator('[data-sheet-surface]')).toHaveCount(1);
+
+  await context.close();
+});
+
 test('a cancelled sheet drag settles in place without replaying its arrival', async ({
   browser,
 }) => {

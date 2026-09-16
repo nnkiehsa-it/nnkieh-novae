@@ -337,6 +337,10 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 .t-dialog[data-state="open"] {
   animation: t-dialog-in var(--motion-nav) var(--ease-arrive) both;
 }
+.t-sheet[data-sheet-suppress-entrance="true"][data-state="open"],
+.t-sheet-overlay[data-sheet-suppress-entrance="true"][data-state="open"] {
+  animation: none;
+}
 .t-dialog[data-state="closed"] {
   animation: t-dialog-out var(--motion-control-exit) var(--ease-depart) both;
 }
