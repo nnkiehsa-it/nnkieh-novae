@@ -1,5 +1,9 @@
 "use client";
 
+import type { ReactNode } from "react";
+import Link from "next/link";
+import { toast } from "sonner";
+
 import {
   ArrowDown,
   CheckCircle2,
@@ -13,6 +17,7 @@ import type { LucideIcon } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { useNotificationsPage } from "@/hooks/use-notifications-page";
 import { formatDate } from "@/lib/format";
+import { notificationTargetPath } from "@/lib/notification-target";
 import type { NotificationRecord } from "@/types";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 import { ContentTransition, StateTransition } from "@/components/motion/state-transition";
@@ -47,6 +52,17 @@ function notificationIcon(notification: NotificationRecord): LucideIcon {
 }
 
 const SKELETON_ROWS = 5;
+
+function NotificationTarget({ children, notification }: { children: ReactNode; notification: NotificationRecord }) {
+  const { t } = useI18n();
+  const target = notificationTargetPath(notification);
+  const className = `${rowClass} items-start`;
+  return target ? (
+    <Link className={className} href={target} prefetch={false} scroll={false}>{children}</Link>
+  ) : (
+    <button className={className} onClick={() => toast.info(t("ui.notification.issueGone"))} type="button">{children}</button>
+  );
+}
 
 export default function NotificationsPage() {
   const { t } = useI18n();
@@ -86,11 +102,7 @@ export default function NotificationsPage() {
                   <StaggerItem key={index}>
                     <ContentTransition identity={rowIdentity}>
                       {notification ? (
-                        <button
-                          className={`${rowClass} items-start`}
-                          onClick={() => void state.open(notification)}
-                          type="button"
-                        >
+                        <NotificationTarget notification={notification}>
                           <RowInner
                             detail={
                               <SkeletonReveal
@@ -131,7 +143,7 @@ export default function NotificationsPage() {
                               </span>
                             }
                           />
-                        </button>
+                        </NotificationTarget>
                       ) : pending ? (
                         <NotificationRowSkeleton />
                       ) : null}

@@ -4,6 +4,8 @@ import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useOptimisticDetailHandoff } from "@/components/optimistic-detail-navigation";
+import { useI18n } from "@/i18n";
+import { recordListPath } from "@/lib/route-hierarchy";
 
 import {
   Sheet,
@@ -14,12 +16,9 @@ import {
 } from "@/components/ui/sheet";
 
 /**
- * A record shown over the list it was opened from.
- *
- * The address is the record's own, so it can be sent to somebody, opened from a
- * notification, reloaded or bookmarked. Direct arrivals render the whole page;
- * intercepted navigation keeps the list underneath and presents the record as
- * the same shared sheet used everywhere else.
+ * One record presentation for every entry point. Intercepted navigation keeps
+ * its source page mounted; a direct URL uses the same sheet and closes to the
+ * record's list, never to an unrelated browser-history entry.
  */
 const RecordOverlay = React.createContext<{ close: () => void; label: string } | null>(null);
 
@@ -38,7 +37,11 @@ function RecordSheetContext({ children, label }: { children: ReactNode; label: s
   return <RecordOverlay.Provider value={{ close, label }}>{children}</RecordOverlay.Provider>;
 }
 
-export function DetailSheet({ children, label }: { children: ReactNode; label: string }) {
+export function DetailSheet({ children, label, returnTo }: {
+  children: ReactNode;
+  label: string;
+  returnTo?: string;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = React.useState(true);
@@ -49,7 +52,10 @@ export function DetailSheet({ children, label }: { children: ReactNode; label: s
     <Sheet
       onOpenChange={(next) => {
         setOpen(next);
-        if (!next) router.back();
+        if (!next) {
+          if (returnTo) router.replace(returnTo, { scroll: false });
+          else router.back();
+        }
       }}
       open={open}
     >
@@ -63,5 +69,19 @@ export function DetailSheet({ children, label }: { children: ReactNode; label: s
         </SheetBody>
       </SheetContent>
     </Sheet>
+  );
+}
+
+/** A route layout retains the sheet while its loading boundary resolves. */
+export function DirectDetailSheet({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const { t } = useI18n();
+  const label = pathname.startsWith("/issues/") ? "ui.nav.issues"
+    : pathname.startsWith("/facilities/") ? "ui.nav.facilities"
+      : "ui.nav.announcements";
+  return (
+    <DetailSheet label={t(label)} returnTo={recordListPath(pathname)}>
+      {children}
+    </DetailSheet>
   );
 }

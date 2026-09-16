@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { useSession } from "@/hooks/use-session";
@@ -22,7 +21,6 @@ import {
   limitRetainedFeedItems,
 } from "@/lib/feed-page-limit";
 import { NOTIFICATION_FEED_PAGE_SIZE } from "@/lib/page-size";
-import { notificationTargetPath } from "@/lib/notification-target";
 
 const sourceOrder: NotificationSource[] = ["broadcast", "admin", "user"];
 const sourceRecord = <T,>(value: () => T): Record<NotificationSource, T> => ({
@@ -32,7 +30,6 @@ const sourceRecord = <T,>(value: () => T): Record<NotificationSource, T> => ({
 });
 
 export function useNotificationsPage() {
-  const router = useRouter();
   const session = useSession();
   const { t } = useI18n();
   const activeSources = React.useMemo<NotificationSource[]>(
@@ -205,17 +202,5 @@ export function useNotificationsPage() {
     }
   }, [activeSources, cursors, loadingMore, more, pageCounts, session.user, t]);
 
-  const open = React.useCallback(
-    (notification: NotificationRecord) => {
-      const target = notificationTargetPath(notification);
-      if (!target) {
-        toast.info(t("ui.notification.issueGone"));
-        return;
-      }
-      router.push(target);
-    },
-    [router, t],
-  );
-
-  return { error, hasMore, load, loadMore, loading, loadingMore, notifications, open, revealFields };
+  return { error, hasMore, load, loadMore, loading, loadingMore, notifications, revealFields };
 }

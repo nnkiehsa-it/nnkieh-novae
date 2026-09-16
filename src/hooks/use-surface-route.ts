@@ -3,7 +3,7 @@
 import * as React from "react";
 import { usePathname } from "next/navigation";
 
-import { compareRoutes, opensOverRoute } from "@/lib/route-hierarchy";
+import { compareRoutes, opensOverRoute, recordListPath } from "@/lib/route-hierarchy";
 
 const DIRECTIONS = {
   deeper: "push",
@@ -38,7 +38,7 @@ export function useSurfaceRoute() {
     direction: RouteDirection | null;
     path: string;
     surface: string;
-  }>({ direction: null, path: pathname, surface: pathname });
+  }>({ direction: null, path: pathname, surface: recordListPath(pathname) });
 
   if (shown.path !== pathname) {
     const surface = opensOverRoute(shown.surface, pathname) ? shown.surface : pathname;

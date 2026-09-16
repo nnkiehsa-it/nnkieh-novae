@@ -85,14 +85,13 @@ export function isRecordRoute(pathname: string) {
   return RECORD_ROUTE_PATTERN.test(pathname);
 }
 
-/**
- * Whether `to` is one of the records `from` already lists.
- *
- * Such a record is shown over the list rather than instead of it, so the page
- * underneath is still the list: it keeps its scroll, the pages it has loaded
- * and the navigation that points at it. The shell reads this to know that an
- * address it has never seen before is not a new page.
- */
+/** The list a direct record URL closes to. Non-record routes keep their identity. */
+export function recordListPath(pathname: string) {
+  return isRecordRoute(pathname) ? pathname.slice(0, pathname.lastIndexOf("/")) : pathname;
+}
+
+/** The protected shell intercepts records from any of its pages, not only feeds. */
 export function opensOverRoute(from: string, to: string) {
-  return isRecordRoute(to) && to.slice(0, to.lastIndexOf("/")) === from;
+  return from !== to && isRecordRoute(to)
+    && /^\/(?:issues|facilities|announcements|notifications|settings|admin)(?:\/|$)/u.test(from);
 }

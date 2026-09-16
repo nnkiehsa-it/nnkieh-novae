@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adoptedParent, compareRoutes, isPrimaryRoute, opensOverRoute, showsPrimaryNavigation } from "@/lib/route-hierarchy";
+import { adoptedParent, compareRoutes, isPrimaryRoute, opensOverRoute, recordListPath, showsPrimaryNavigation } from "@/lib/route-hierarchy";
 
 describe("route hierarchy", () => {
   it("reads depth from the URL in both directions", () => {
@@ -65,18 +65,34 @@ describe("route hierarchy", () => {
   });
 });
 
-describe("a record opened over the list it is in", () => {
+describe("a record opened over its source page", () => {
   it("recognises the records a list shows", () => {
     expect(opensOverRoute("/issues/school", "/issues/school/abc")).toBe(true);
     expect(opensOverRoute("/announcements", "/announcements/abc")).toBe(true);
     expect(opensOverRoute("/facilities", "/facilities/abc")).toBe(true);
   });
 
-  it("is not a composer, another list, or a record of a different list", () => {
+  it("opens records from notifications, administration and other feeds", () => {
+    expect(opensOverRoute("/notifications", "/issues/school/abc")).toBe(true);
+    expect(opensOverRoute("/notifications", "/facilities/abc")).toBe(true);
+    expect(opensOverRoute("/notifications", "/announcements/abc")).toBe(true);
+    expect(opensOverRoute("/admin", "/issues/school/abc")).toBe(true);
+    expect(opensOverRoute("/issues/school", "/issues/other/abc")).toBe(true);
+    expect(opensOverRoute("/announcements", "/facilities/abc")).toBe(true);
+    expect(opensOverRoute("/settings", "/announcements/abc")).toBe(true);
+  });
+
+  it("does not intercept composers, feeds, or arrivals from outside the protected shell", () => {
     expect(opensOverRoute("/issues/school", "/issues/school/new")).toBe(false);
-    expect(opensOverRoute("/issues/school", "/issues/other/abc")).toBe(false);
-    expect(opensOverRoute("/announcements", "/facilities/abc")).toBe(false);
-    expect(opensOverRoute("/settings", "/announcements/abc")).toBe(false);
     expect(opensOverRoute("/announcements", "/announcements")).toBe(false);
+    expect(opensOverRoute("/login", "/announcements/abc")).toBe(false);
+    expect(opensOverRoute("/announcements/abc", "/announcements/abc")).toBe(false);
+  });
+
+  it("gives direct record arrivals a deterministic owning list", () => {
+    expect(recordListPath("/issues/school/abc")).toBe("/issues/school");
+    expect(recordListPath("/announcements/abc")).toBe("/announcements");
+    expect(recordListPath("/facilities/abc")).toBe("/facilities");
+    expect(recordListPath("/announcements/new")).toBe("/announcements/new");
   });
 });
