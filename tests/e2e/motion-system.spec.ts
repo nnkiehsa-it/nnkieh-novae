@@ -175,6 +175,7 @@ test('a record replaces its content in one surface, over the list it came from',
   browser,
 }) => {
   const { context, page } = await newUserPage(browser, 'ordinary');
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/issues');
   const card = page.locator('.t-card a[href^="/issues/"]').first();
   await expect(card).toBeVisible();

@@ -158,21 +158,25 @@ function useSheetClose() {
 
 function SheetCloseButton({
   className,
+  onClick,
   ...props
-}: Omit<React.ComponentProps<typeof Button>, "onClick" | "size" | "type" | "variant">) {
+}: Omit<React.ComponentProps<typeof Button>, "size" | "type" | "variant">) {
   const { t } = useI18n();
   const close = useSheetClose();
   if (!close) return null;
   return (
     <Button
+      {...props}
       aria-label={t("common.close")}
       className={cn(sheetCloseButtonClass, className)}
       data-slot="dialog-close"
-      onClick={close}
+      onClick={(event) => {
+        onClick?.(event);
+        if (!event.defaultPrevented) close();
+      }}
       size="icon"
       type="button"
       variant="ghost"
-      {...props}
     >
       <X />
       <span className="sr-only">{t("common.close")}</span>
