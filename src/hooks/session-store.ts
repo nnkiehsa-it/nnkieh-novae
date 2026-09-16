@@ -63,6 +63,7 @@ export interface SessionState {
   restoringSession: boolean;
   roles: RoleCode[];
   setupCompleted: boolean;
+  startupPhase: "session" | "security" | "account" | "content" | "ready";
   user: User | null;
   userRole: "admin" | "user";
 }
@@ -82,6 +83,7 @@ export const initialSessionState: SessionState = {
   restoringSession: false,
   roles: [],
   setupCompleted: false,
+  startupPhase: "session",
   user: null,
   userRole: "user",
 };
@@ -175,6 +177,7 @@ async function refreshVerifiedSession(
     const tokenValidation = await tokenValidationPromise;
     if (!current()) return;
     if (!tokenValidation.ok) return await rejectUser(tokenValidation.reason);
+    patch({ startupPhase: "content" });
     if (syncProfile) {
       await ensureBackendProfile(user);
       if (!current()) return;
@@ -233,7 +236,7 @@ async function refreshVerifiedSession(
     });
   } finally {
     if (current()) {
-      patch({ roleLoading: false });
+      patch({ roleLoading: false, startupPhase: "ready" });
     }
   }
 }
@@ -258,6 +261,7 @@ function acceptUser(
     roleLoading: true,
     roles: [],
     setupCompleted: false,
+    startupPhase: "account",
     user,
     userRole: "user",
   });
@@ -286,7 +290,7 @@ export function initializeSession(
   onAuthStateChanged(
     auth,
     async (user) => {
-      patch({ authChecking: false, error: "", loading: true });
+      patch({ authChecking: false, error: "", loading: true, startupPhase: "session" });
       if (!user) {
         verificationSerial += 1;
         clearActiveSessionData();
@@ -308,7 +312,7 @@ export function initializeSession(
       void tokenValidationPromise.catch(() => undefined);
       const freshLogin = consumePreparedLoginEntrance();
       if (!freshLogin) {
-        patch({ restoringSession: true });
+        patch({ restoringSession: true, startupPhase: "security" });
         const restorationError = await verifyRestoredSession({
           requestTurnstileToken,
         });
@@ -317,7 +321,7 @@ export function initializeSession(
           patch({ appReady: true, initialized: true, loading: false, restoringSession: false });
           return;
         }
-        patch({ restoringSession: false });
+        patch({ restoringSession: false, startupPhase: "account" });
       }
       acceptUser(user, tokenValidationPromise, freshLogin);
     },

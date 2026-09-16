@@ -46,6 +46,7 @@ export default function LoginPage() {
     restoringSession,
     roleLoading,
     setupCompleted,
+    startupPhase,
     user,
   } = session;
   const { t } = useI18n();
@@ -84,7 +85,7 @@ export default function LoginPage() {
     user,
   ]);
 
-  if (restoringSession) return <AppStartupScreen />;
+  if (restoringSession || (user && roleLoading)) return <AppStartupScreen phase={startupPhase} />;
 
   return (
     <RouteSurface>

@@ -107,7 +107,7 @@ export default async function RootLayout({
           <Script
             nonce={nonce}
             src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-            strategy="beforeInteractive"
+            strategy="afterInteractive"
           />
         ) : null}
       </body>
