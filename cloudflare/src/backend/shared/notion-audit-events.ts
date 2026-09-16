@@ -74,7 +74,6 @@ const DETAIL_LABELS: Record<string, string> = {
   preset: "存取模式",
   targetType: "規則類型",
   targetValue: "規則目標",
-  responseDeadlineAt: "回覆期限",
   retentionConfig: "資料保留設定",
   reviewRejectionReason: "審核未通過原因",
   revision: "設定版本",

@@ -55,7 +55,6 @@ function issueCategoryInput(value: unknown, sortOrder: number) {
     authorVisible,
     commentsEnabled: asBoolean(record.commentsEnabled, true),
     readAccess,
-    responseDeadlineDays: nullablePositiveInteger(record.responseDeadlineDays),
     sortOrder,
     supportDeadlineDays: supportEnabled ? nullablePositiveInteger(record.supportDeadlineDays) : null,
     supportEnabled,

@@ -24,14 +24,14 @@ type IssueNotionRecord = Selected<
   "issues",
   "id" | "title" | "content" | "category" | "status" | "author_uid"
   | "support_count" | "support_goal" | "created_at" | "review_approved_at"
-  | "support_deadline_at" | "support_met_at" | "response_deadline_at" | "closed_at"
+  | "support_deadline_at" | "support_met_at" | "closed_at"
   | "review_rejection_reason" | "result_content"
 >;
 
 async function readIssue(database: NotionEventDatabase, issueId: string) {
   return database.sqlMaybe<IssueNotionRecord>`select id, title, content, category, status, author_uid,
     support_count, support_goal, created_at, review_approved_at, support_deadline_at,
-    support_met_at, response_deadline_at, closed_at, review_rejection_reason, result_content
+    support_met_at, closed_at, review_rejection_reason, result_content
     from app_private.issues where id = ${issueId}`;
 }
 
@@ -54,7 +54,6 @@ async function ensureIssuePage(database: NotionEventDatabase, issue: IssueNotion
     ensureDateProperty("審核通過時間"),
     ensureDateProperty("附議截止時間"),
     ensureDateProperty("附議達標時間"),
-    ensureDateProperty("回覆期限"),
     ensureDateProperty("結案時間"),
     ensureNumberProperty("附議數量"),
     ensureNumberProperty("附議門檻"),
@@ -69,7 +68,6 @@ async function ensureIssuePage(database: NotionEventDatabase, issue: IssueNotion
       審核通過時間: dateProperty(issue.review_approved_at),
       附議截止時間: dateProperty(issue.support_deadline_at),
       附議達標時間: dateProperty(issue.support_met_at),
-      回覆期限: dateProperty(issue.response_deadline_at),
       結案時間: dateProperty(issue.closed_at),
       附議數: richTextProperty(supportLabel(issue.support_count, issue.support_goal)),
       附議數量: numberProperty(issue.support_count),

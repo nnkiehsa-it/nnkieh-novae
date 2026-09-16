@@ -60,12 +60,12 @@ integrationTest("runtime category setup and management enforce platform permissi
       {
         id: "public-issues", label: "公共議題", readAccess: "reviewed-school",
         authorVisible: false, supportEnabled: true, supportGoal: 50, supportDeadlineDays: 14,
-        responseDeadlineDays: 7, commentsEnabled: true,
+        commentsEnabled: true,
       },
       {
         id: "rights-maintenance", label: "學生權益", readAccess: "owner-admin",
         authorVisible: true, supportEnabled: false, supportGoal: null, supportDeadlineDays: null,
-        responseDeadlineDays: 7, commentsEnabled: true,
+        commentsEnabled: true,
       },
     ],
     facilitiesEnabled: false,

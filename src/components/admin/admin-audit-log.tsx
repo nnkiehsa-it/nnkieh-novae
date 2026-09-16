@@ -53,7 +53,6 @@ const DETAIL_LABELS: Record<string, string> = {
   mode: "ui.adminConsole.detailMode",
   nextStatus: "ui.adminConsole.detailNextStatus",
   reason: "ui.adminConsole.detailReason",
-  responseDeadlineAt: "ui.adminConsole.detailResponseDeadline",
   retentionConfig: "ui.adminConsole.detailRetentionConfig",
   reviewRejectionReason: "ui.adminConsole.detailReviewReason",
   revision: "ui.adminConsole.detailRevision",

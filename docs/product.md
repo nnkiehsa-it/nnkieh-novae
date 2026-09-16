@@ -12,7 +12,7 @@ Novae 服務同一學校網域內的三類使用者：
 
 ### 公共提案與權益案件
 
-提案分類決定可見性、作者是否匿名、附議門檻與時限、管理回覆期限，以及是否開放留言。列表和詳細頁共用 normalized entity store；附議先在畫面上更新，失敗時會還原。提案結案後顯示管理方的處理結果。
+提案分類決定可見性、作者是否匿名、附議門檻與時限，以及是否開放留言。列表和詳細頁共用 normalized entity store；附議先在畫面上更新，失敗時會還原。提案結案後顯示管理方的處理結果。
 
 提案狀態由後端控制，前端認得下列七種值：
 
@@ -26,7 +26,7 @@ Novae 服務同一學校網域內的三類使用者：
 | `infeasible` | 管理方判定無法執行，需附處理結果 |
 | `completed` | 已完成並提供結果 |
 
-Feed 可依最新、最多附議、即將截止排序；`my-proposals` 是獨立 route filter，不是 category。若 category 開啟附議，回覆期限從達標時計算；沒有附議流程時則從建立時間算起。
+Feed 可依最新、最多附議、即將截止排序；`my-proposals` 是獨立 route filter，不是 category。開啟附議的分類依附議期限收集支持，達標後進入處理流程。
 
 ### 設施回報
 
@@ -61,7 +61,6 @@ Feed 可依最新、最多附議、即將截止排序；`my-proposals` 是獨立
 - `readAccess`：`school`、`reviewed-school` 或 `owner-admin`
 - `authorVisible`：公開畫面是否顯示作者；後端仍保存真實 UID
 - `supportEnabled`、`supportGoal`、`supportDeadlineDays`
-- `responseDeadlineDays`
 - `commentsEnabled`
 
 設施 category 只負責 ID、label、排序與預設值；案件管理 scope 同樣以 category ID 指派。

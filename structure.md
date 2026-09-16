@@ -190,6 +190,9 @@ This document is the maintained map of the repository. Read it before broad sear
 - `database/migrations/0038_forget_rate_limit_refusals.sql` — drops the rate-limit refusals the failure screen used to count, now that the worker no longer records them.
 - `database/migrations/0039_account_access_rules.sql` — expands account restrictions into UID or email-local-part prefix rules with read-only, reaction-only, and login-blocked presets while preserving existing restrictions as UID read-only rules.
 - `database/migrations/0040_fix_support_goal_deadline.sql` — qualifies the support-goal response deadline parameter so the threshold-crossing update cannot conflict with the identically named issue column.
+- `database/migrations/0041_remove_response_deadlines.sql` — removes response-deadline columns, RPC arguments, policy snapshots and JSON fields without changing support deadlines or access rules; replaces affected live functions and revokes public execution on recreated write functions. Historical migrations are preserved for upgrades.
+- `tests/integration/retired-response-deadlines.test.ts` — checks the migrated database no longer exposes deadline columns/arguments, and recreated write functions remain private with explicit Worker execution grants.
+- `tests/e2e/record-surfaces.spec.ts` — read-only browser regressions for notification history, direct/reloaded record sheets, long supporter-list boundaries, header backdrop coverage, global overscroll and consistent row feedback at phone/desktop sizes.
 
 - `database/migrations/0023_policy_batch_state.sql` — durable policy-batch progress, multi-batch lifecycle constraints, retry state and persisted batch failures.
 

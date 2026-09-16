@@ -407,7 +407,6 @@ const messages = {
   'ui.adminConsole.detailNextStatus': 'New status',
   'ui.adminConsole.detailOther': 'Other data',
   'ui.adminConsole.detailReason': 'Reason',
-  'ui.adminConsole.detailResponseDeadline': 'Response deadline',
   'ui.adminConsole.detailRetentionConfig': 'Retention settings',
   'ui.adminConsole.detailReviewReason': 'Review rejection reason',
   'ui.adminConsole.detailRevision': 'Settings revision',

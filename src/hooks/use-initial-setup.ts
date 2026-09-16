@@ -21,7 +21,6 @@ const newIssue = (isDefault = false): IssueCategoryDraft => ({
   isDefault,
   label: "",
   readAccess: "school",
-  responseDeadlineDays: null,
   supportDeadlineDays: null,
   supportEnabled: false,
   supportGoal: null,

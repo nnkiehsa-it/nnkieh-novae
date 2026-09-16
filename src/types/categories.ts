@@ -8,7 +8,6 @@ export interface IssueCategoryConfig {
   supportEnabled: boolean;
   supportGoal: number | null;
   supportDeadlineDays: number | null;
-  responseDeadlineDays: number | null;
   commentsEnabled: boolean;
   isDefault: boolean;
   sortOrder: number;
@@ -75,7 +74,6 @@ export interface IssueCategoryDraft {
   supportEnabled: boolean | null;
   supportGoal: number | null;
   supportDeadlineDays: number | null;
-  responseDeadlineDays: number | null;
   commentsEnabled: boolean;
   isDefault: boolean;
 }

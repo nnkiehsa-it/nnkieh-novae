@@ -49,7 +49,6 @@ integrationTest("category deletion removes category and all associated resources
       supportEnabled: true,
       supportGoal: 10,
       supportDeadlineDays: 30,
-      responseDeadlineDays: null,
       commentsEnabled: true,
       isDefault: false,
       sortOrder: 99,

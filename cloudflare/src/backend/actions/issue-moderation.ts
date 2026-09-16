@@ -42,7 +42,6 @@ export async function moderateIssueStatus(payload: JsonRecord, auth: AuthContext
   const now = new Date();
   let reviewApprovedAt = typeof oldIssue.review_approved_at === "string" ? oldIssue.review_approved_at : null;
   let supportDeadlineAt = typeof oldIssue.support_deadline_at === "string" ? oldIssue.support_deadline_at : null;
-  let responseDeadlineAt: string | null = null;
   if (nextStatus === "pending" && oldIssue.support_enabled === true) {
     if (oldIssue.read_access === "reviewed-school" && (oldStatus === "under-review" || oldStatus === "review-rejected")) {
       reviewApprovedAt = now.toISOString();
@@ -55,16 +54,12 @@ export async function moderateIssueStatus(payload: JsonRecord, auth: AuthContext
     reviewApprovedAt = null;
     supportDeadlineAt = null;
   }
-  if (nextStatus === "processing" && typeof oldIssue.response_deadline_days === "number") {
-    responseDeadlineAt = new Date(now.getTime() + oldIssue.response_deadline_days * 24 * 60 * 60 * 1000).toISOString();
-  }
   const { data, error } = await database.call("app_api", "backend_moderate_issue_status", {
     issue_id: issueId,
     next_status: nextStatus,
     review_rejection_reason: optionalText(payload.reason, "reason", INPUT_LIMITS.rejectionReason) || null,
     review_approved_at: reviewApprovedAt,
     support_deadline_at: supportDeadlineAt,
-    response_deadline_at: responseDeadlineAt,
     ...await issuePolicyParams(database, auth, canManageIssueCategory(auth, category)),
   });
   if (error) throw error;

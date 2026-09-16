@@ -407,7 +407,6 @@ const messages = {
   'ui.adminConsole.detailNextStatus': '新狀態',
   'ui.adminConsole.detailOther': '其他資料',
   'ui.adminConsole.detailReason': '原因',
-  'ui.adminConsole.detailResponseDeadline': '回覆期限',
   'ui.adminConsole.detailRetentionConfig': '資料保留設定',
   'ui.adminConsole.detailReviewReason': '審核未通過原因',
   'ui.adminConsole.detailRevision': '設定版本',

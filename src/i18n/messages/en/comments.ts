@@ -42,7 +42,6 @@ const messages = {
   'comments.imageProcessing': 'Processing image…',
   'comments.shareYourThoughts': 'Write a comment…',
   'comments.offline': 'You are offline. Restore your connection and try again.',
-  'comments.replyDeadline': 'Reply deadline',
   'comments.replySent': 'Reply sent',
   'comments.failedToPostComment': 'Unable to post comment.',
   'comments.currentAvatar': 'Current avatar',

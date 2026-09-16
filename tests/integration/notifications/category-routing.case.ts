@@ -12,7 +12,6 @@ integrationTest("new proposal and facility notifications are personal to categor
       isDefault: false,
       label: "通知測試提案",
       readAccess: "school",
-      responseDeadlineDays: null,
       sortOrder: 20_000,
       supportDeadlineDays: null,
       supportEnabled: false,

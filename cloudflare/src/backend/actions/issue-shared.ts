@@ -10,7 +10,6 @@ export function issueToResponse(issue: JsonRecord): JsonRecord {
     created_at_ms: toMs(issue.created_at),
     closed_at_ms: toMs(issue.closed_at),
     support_deadline_at_ms: toMs(issue.support_deadline_at),
-    response_deadline_at_ms: toMs(issue.response_deadline_at),
     review_approved_at_ms: toMs(issue.review_approved_at),
     support_met_at_ms: toMs(issue.support_met_at),
   };

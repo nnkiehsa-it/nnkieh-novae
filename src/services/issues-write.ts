@@ -29,7 +29,6 @@ interface IssueResponseRecord {
   createdAt: string | null;
   closedAt: string | null;
   supportDeadlineAt: string | null;
-  responseDeadlineAt: string | null;
   reviewApprovedAt: string | null;
   resultContent?: string | null;
   supportMetAt: string | null;
@@ -65,7 +64,6 @@ function normalizeIssueResponse(issue: IssueResponseRecord): IssueRecord {
     created_at: dateFromApi(issue.createdAt),
     closed_at: dateFromApi(issue.closedAt),
     support_deadline_at: dateFromApi(issue.supportDeadlineAt),
-    response_deadline_at: dateFromApi(issue.responseDeadlineAt),
     review_approved_at: dateFromApi(issue.reviewApprovedAt),
     result_content: issue.resultContent ?? undefined,
     support_met_at: dateFromApi(issue.supportMetAt),

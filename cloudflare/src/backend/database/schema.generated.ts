@@ -185,7 +185,6 @@ export interface GeneratedDatabaseTables {
     "support_enabled": boolean;
     "support_goal": number | null;
     "support_deadline_days": number | null;
-    "response_deadline_days": number | null;
     "comments_enabled": boolean;
     "is_active": boolean;
     "is_default": boolean;
@@ -206,7 +205,6 @@ export interface GeneratedDatabaseTables {
     "support_enabled": boolean;
     "support_goal": number | null;
     "support_deadline_at": string | null;
-    "response_deadline_at": string | null;
     "support_met_at": string | null;
     "review_rejection_reason": string | null;
     "title_search": string;
@@ -218,7 +216,6 @@ export interface GeneratedDatabaseTables {
     "read_access": string;
     "author_visible": boolean;
     "support_deadline_days": number | null;
-    "response_deadline_days": number | null;
     "revision": number;
   };
   "notification_states": {
@@ -433,7 +430,7 @@ export const GENERATED_DATABASE_FUNCTION_SIGNATURES = [
   "backend_create_announcement(actor_uid text, announcement_title text, announcement_content text) -> jsonb",
   "backend_create_announcement_comment(announcement_id uuid, parent_comment_id uuid, actor_uid text, comment_content text) -> jsonb",
   "backend_create_facility(actor_uid text, facility_title text, facility_location text, facility_content text, facility_category text) -> jsonb",
-  "backend_create_issue(actor_uid text, issue_title text, issue_content text, issue_category text, issue_status text, support_enabled boolean, support_goal integer, support_deadline_at timestamp with time zone, response_deadline_at timestamp with time zone, author_is_private boolean, actor_is_admin boolean, private_to_owner_categories text[], review_required_categories text[], author_private_categories text[]) -> jsonb",
+  "backend_create_issue(actor_uid text, issue_title text, issue_content text, issue_category text, issue_status text, support_enabled boolean, support_goal integer, support_deadline_at timestamp with time zone, author_is_private boolean, actor_is_admin boolean, private_to_owner_categories text[], review_required_categories text[], author_private_categories text[]) -> jsonb",
   "backend_create_issue_comment(issue_id uuid, parent_comment_id uuid, actor_uid text, actor_is_admin boolean, comment_content text, private_to_owner_categories text[], review_required_categories text[], public_comment_categories text[]) -> jsonb",
   "backend_delete_announcement(announcement_id uuid) -> jsonb",
   "backend_delete_announcement_comment(comment_id uuid, actor_uid text, actor_is_admin boolean) -> jsonb",
@@ -473,7 +470,7 @@ export const GENERATED_DATABASE_FUNCTION_SIGNATURES = [
   "backend_list_user_issues(actor_uid text, actor_is_admin boolean, status_bucket text, sort_name text, page_size integer, cursor_id uuid, cursor_created_at timestamp with time zone, cursor_sort_date timestamp with time zone, cursor_sort_number integer, private_to_owner_categories text[], review_required_categories text[], author_private_categories text[]) -> jsonb",
   "backend_list_user_issues_snapshot(actor_uid text, actor_is_admin boolean, status_bucket text, sort_name text, page_size integer, cursor_id uuid, cursor_created_at timestamp with time zone, cursor_sort_date timestamp with time zone, cursor_sort_number integer) -> jsonb",
   "backend_mark_notifications_opened(actor_uid text, opened_at timestamp with time zone) -> jsonb",
-  "backend_moderate_issue_status(issue_id uuid, actor_uid text, actor_is_admin boolean, next_status text, review_rejection_reason text, support_deadline_at timestamp with time zone, response_deadline_at timestamp with time zone, review_approved_at timestamp with time zone, private_to_owner_categories text[], review_required_categories text[], author_private_categories text[]) -> jsonb",
+  "backend_moderate_issue_status(issue_id uuid, actor_uid text, actor_is_admin boolean, next_status text, review_rejection_reason text, support_deadline_at timestamp with time zone, review_approved_at timestamp with time zone, private_to_owner_categories text[], review_required_categories text[], author_private_categories text[]) -> jsonb",
   "backend_notification_state_to_json(state_record app_private.notification_states) -> jsonb",
   "backend_notification_to_json(notification_record app_private.notifications, opened_at timestamp with time zone) -> jsonb",
   "backend_process_platform_job_batch(batch_size integer) -> jsonb",
@@ -485,7 +482,7 @@ export const GENERATED_DATABASE_FUNCTION_SIGNATURES = [
   "backend_save_platform_settings(actor_uid text, image_settings jsonb, retention_config jsonb) -> jsonb",
   "backend_set_announcement_like(announcement_id uuid, actor_uid text, liked boolean) -> jsonb",
   "backend_toggle_facility_affected(facility_id uuid, actor_uid text) -> jsonb",
-  "backend_toggle_support(issue_id uuid, actor_uid text, remove_support boolean, response_deadline_days integer) -> TABLE(supported boolean, support_count integer, goal_met boolean)",
+  "backend_toggle_support(issue_id uuid, actor_uid text, remove_support boolean) -> TABLE(supported boolean, support_count integer, goal_met boolean)",
   "backend_unregister_push_token(actor_uid text, device_id text, permission text) -> jsonb",
   "backend_update_facility_status(facility_id uuid, actor_uid text, actor_can_manage boolean, next_status text, result_content text) -> jsonb",
   "backend_update_issue_result(issue_id uuid, actor_uid text, actor_is_admin boolean, result_content text, private_to_owner_categories text[], review_required_categories text[], author_private_categories text[]) -> jsonb",

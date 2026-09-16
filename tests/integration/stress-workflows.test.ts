@@ -175,7 +175,6 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
       isDefault: false,
       label: `壓測提案 ${runId}`,
       readAccess: "school",
-      responseDeadlineDays: 7,
       sortOrder: 10_000,
       supportDeadlineDays: 14,
       supportEnabled: true,

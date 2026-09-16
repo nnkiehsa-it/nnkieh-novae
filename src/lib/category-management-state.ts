@@ -9,7 +9,6 @@ export const newIssueCategory = (sortOrder: number): IssueCategoryConfig => ({
   isDefault: sortOrder === 0,
   label: "",
   readAccess: "school",
-  responseDeadlineDays: null,
   sortOrder,
   supportDeadlineDays: null,
   supportEnabled: false,

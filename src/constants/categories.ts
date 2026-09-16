@@ -92,22 +92,6 @@ export function issueCategoryAllowsComments(
   return findIssueCategory(category)?.commentsEnabled === true;
 }
 
-export function getIssueResponseDeadlineDays(
-  category: string | null | undefined,
-) {
-  return findIssueCategory(category)?.responseDeadlineDays ?? null;
-}
-
-export function getIssueResponseDeadlineStart(
-  category: string | null | undefined,
-) {
-  const config = findIssueCategory(category);
-  if (!config?.responseDeadlineDays) return "none" as const;
-  return config.supportEnabled
-    ? ("support-met" as const)
-    : ("created" as const);
-}
-
 export function issueAllowsCommentsForStatus(
   readAccess: IssueReadAccess,
   status: IssueStatus,

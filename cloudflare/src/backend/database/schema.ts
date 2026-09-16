@@ -24,7 +24,6 @@ interface IssueRow {
   content: string;
   closed_at: string | null;
   created_at: string;
-  response_deadline_at: string | null;
   result_content: string | null;
   review_approved_at: string | null;
   review_rejection_reason: string | null;
@@ -35,7 +34,6 @@ interface IssueRow {
   support_deadline_days: number | null;
   support_enabled: boolean;
   support_goal: number | null;
-  response_deadline_days: number | null;
   support_met_at: string | null;
   title: string;
   title_search: string;
@@ -297,7 +295,7 @@ export interface AppPrivateTables {
   issue_categories: Table<{
     id: string; label: string; read_access: string; author_visible: boolean;
     support_enabled: boolean; support_goal: number | null; support_deadline_days: number | null;
-    response_deadline_days: number | null; comments_enabled: boolean; is_active: boolean;
+    comments_enabled: boolean; is_active: boolean;
     is_default: boolean; sort_order: number; created_by: string; created_at: string; updated_at: string;
   }>;
   facility_categories: Table<{
@@ -484,7 +482,6 @@ export interface AppApiFunctions {
     issue_status: string;
     issue_title: string;
     private_to_owner_categories: string[];
-    response_deadline_at: string | null;
     review_required_categories: string[];
     support_deadline_at: string | null;
     support_enabled: boolean;
@@ -635,7 +632,6 @@ export interface AppApiFunctions {
     issue_id: string;
     next_status: string;
     private_to_owner_categories: string[];
-    response_deadline_at: string | null;
     review_approved_at: string | null;
     review_rejection_reason: string | null;
     review_required_categories: string[];
@@ -712,7 +708,6 @@ export interface AppApiFunctions {
     actor_uid: string;
     issue_id: string;
     remove_support: boolean;
-    response_deadline_days: number | null;
   }, Array<{ goal_met: boolean; support_count: number; supported: boolean }>>;
   claim_operation: AppFunction<{ operation_id: string; actor_uid: string; action_name: string }, Array<{
     claimed: boolean;

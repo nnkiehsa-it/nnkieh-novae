@@ -56,7 +56,6 @@ const messages = {
   'categoryAdmin.commentsAvailabilityScope': '關閉時此分類所有提案皆暫停新留言；重新開啟後，手動關閉或已結案的提案仍維持關閉。',
   'categoryAdmin.supportGoal': '附議門檻',
   'categoryAdmin.supportDeadline': '附議期限（天）',
-  'categoryAdmin.responseDeadline': '回覆期限（天，可留空）',
   'categoryAdmin.policyNoticeTitle': '隱私規則於分類建立後永久固定',
   'categoryAdmin.policyNoticeDescription': '閱讀範圍與作者顯示規則建立後不可修改。分類留言開關即時限制所有提案，但保留單筆關閉狀態；附議與期限調整僅影響之後的新提案。',
   'categoryAdmin.loadFailed': '無法載入分類設定',

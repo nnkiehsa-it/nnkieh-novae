@@ -35,7 +35,6 @@ export async function updateSupport(action: string, payload: JsonRecord, auth: A
       issue_id: issueId,
       actor_uid: auth.uid,
       remove_support: action === "removeSupport",
-      response_deadline_days: storedIssue.response_deadline_days,
     })
     .single();
   if (toggleError) throw toggleError;

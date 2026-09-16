@@ -78,7 +78,6 @@ export function getIssueOperationTimeItems(issue: IssueRecord): RawIssueTimeItem
     { label: 'issue.approvalTime', shortLabel: 'issue.approved', value: issue.review_approved_at },
     { label: 'issue.supportDeadlineLabel', shortLabel: 'issue.supportDeadline', value: issue.support_deadline_at },
     { label: 'issue.timeToReachTheStandard', shortLabel: 'issue.meetTheStandard', value: issue.support_met_at },
-    { label: 'comments.replyDeadline', shortLabel: 'comments.replyDeadline', value: issue.response_deadline_at },
     { label: 'issue.caseClosingTime', shortLabel: 'issue.closeTheCase', value: issue.closed_at },
   ];
 

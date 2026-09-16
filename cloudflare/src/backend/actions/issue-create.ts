@@ -24,9 +24,6 @@ export async function createIssue(payload: JsonRecord, auth: AuthContext, databa
   const supportDeadlineAt = !requiresReview && categoryConfig.supportEnabled && categoryConfig.supportDeadlineDays !== null
     ? new Date(now.getTime() + categoryConfig.supportDeadlineDays * 24 * 60 * 60 * 1000).toISOString()
     : null;
-  const responseDeadlineAt = !categoryConfig.supportEnabled && categoryConfig.responseDeadlineDays !== null
-    ? new Date(now.getTime() + categoryConfig.responseDeadlineDays * 24 * 60 * 60 * 1000).toISOString()
-    : null;
   const { data, error } = await database.call("app_api", "backend_create_issue", {
     actor_uid: auth.uid,
     issue_title: title,
@@ -36,7 +33,6 @@ export async function createIssue(payload: JsonRecord, auth: AuthContext, databa
     support_enabled: categoryConfig.supportEnabled,
     support_goal: categoryConfig.supportGoal,
     support_deadline_at: supportDeadlineAt,
-    response_deadline_at: responseDeadlineAt,
     author_is_private: !categoryConfig.authorVisible,
     actor_is_admin: false,
     private_to_owner_categories: policyLists.privateToOwnerCategoryIds,

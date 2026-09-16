@@ -306,12 +306,11 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     status: "pending",
   }, publicManager.auth);
 
-  // The goal and the response window are frozen onto a proposal as it is
-  // created, so they are set on the category first and restored afterwards.
+  // The support goal is frozen onto a proposal at creation, so change its
+  // category default first and restore it before crossing the threshold.
   await saveCategoryDraft(admin.auth, {
     upsertIssueCategories: [{
       ...originalPublicCategory,
-      responseDeadlineDays: 7,
       supportGoal: 2,
     }],
   });
@@ -335,7 +334,9 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     issueId: goalIssueId,
   }, owner.auth)).issue);
   assert.equal(goalIssueAfterSupport.status, "processing");
-  assert.ok(goalIssueAfterSupport.responseDeadlineAt);
+  assert.equal(Object.hasOwn(goalIssueAfterSupport, "responseDeadlineAt"), false);
+  assert.ok(goalIssueAfterSupport.supportMetAt);
+  assert.ok(goalIssueAfterSupport.supportDeadlineAt);
 
   const commentWrite = asRecord(await callAction("createComment", {
     content: "Integration issue comment",

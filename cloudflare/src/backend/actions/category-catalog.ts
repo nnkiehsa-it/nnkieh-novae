@@ -21,7 +21,6 @@ export interface RuntimeIssueCategory {
   isDefault: boolean;
   label: string;
   readAccess: "owner-admin" | "reviewed-school" | "school";
-  responseDeadlineDays: number | null;
   sortOrder: number;
   supportDeadlineDays: number | null;
   supportEnabled: boolean;
@@ -45,7 +44,6 @@ function issueCategoryResponse(row: Record<string, unknown>): RuntimeIssueCatego
     readAccess: READ_ACCESS_VALUES.has(asString(row.read_access))
       ? asString(row.read_access) as RuntimeIssueCategory["readAccess"]
       : "owner-admin",
-    responseDeadlineDays: typeof row.response_deadline_days === "number" ? row.response_deadline_days : null,
     sortOrder: asNumber(row.sort_order, 0),
     supportDeadlineDays: typeof row.support_deadline_days === "number" ? row.support_deadline_days : null,
     supportEnabled: row.support_enabled === true,

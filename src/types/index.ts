@@ -41,7 +41,6 @@ export interface IssueSummary {
   support_enabled: boolean;
   support_goal: number | null;
   support_deadline_at: Date | null;
-  response_deadline_at: Date | null;
   review_approved_at: Date | null;
   result_content?: string;
   support_met_at: Date | null;

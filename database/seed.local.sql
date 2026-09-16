@@ -2,16 +2,16 @@
 
 insert into app_private.issue_categories (
   id, label, read_access, author_visible, support_enabled,
-  support_goal, support_deadline_days, response_deadline_days,
+  support_goal, support_deadline_days,
   comments_enabled, is_active, is_default, sort_order, created_by
 ) values
-  ('public-issues', '校園提案', 'reviewed-school', false, true, 50, 14, 7,
+  ('public-issues', '校園提案', 'reviewed-school', false, true, 50, 14,
    true, true, true, 0, 'local-seed'),
-  ('rights-maintenance', '權益維護', 'owner-admin', true, false, null, null, 7,
+  ('rights-maintenance', '權益維護', 'owner-admin', true, false, null, null,
    true, true, false, 1, 'local-seed'),
-  ('proposal-a', 'Proposal A', 'school', true, true, 5, 14, 7,
+  ('proposal-a', 'Proposal A', 'school', true, true, 5, 14,
    true, true, false, 2, 'local-seed'),
-  ('proposal-b', 'Proposal B', 'school', true, true, 5, 14, 7,
+  ('proposal-b', 'Proposal B', 'school', true, true, 5, 14,
    true, true, false, 3, 'local-seed')
 on conflict (id) do update set
   label = excluded.label,

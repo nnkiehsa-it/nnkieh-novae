@@ -56,7 +56,6 @@ const messages = {
   'categoryAdmin.commentsAvailabilityScope': 'Turning this off pauses new comments for every proposal in this category. When reopened, manually closed or completed proposals stay closed.',
   'categoryAdmin.supportGoal': 'Support goal',
   'categoryAdmin.supportDeadline': 'Support deadline (days)',
-  'categoryAdmin.responseDeadline': 'Response deadline (days, optional)',
   'categoryAdmin.policyNoticeTitle': 'Privacy rules are fixed when a category is created',
   'categoryAdmin.policyNoticeDescription': 'Read access and author visibility cannot be changed later. Category comment availability applies immediately while preserving per-proposal closes; support and deadline changes apply only to future proposals.',
   'categoryAdmin.loadFailed': 'Unable to load category settings',

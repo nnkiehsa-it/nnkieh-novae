@@ -42,7 +42,6 @@ const messages = {
   'comments.imageProcessing': '圖片處理中…',
   'comments.shareYourThoughts': '輸入留言內容…',
   'comments.offline': '目前已離線，請恢復連線後再試。',
-  'comments.replyDeadline': '回覆期限',
   'comments.replySent': '回覆已送出',
   'comments.failedToPostComment': '留言送出失敗。',
   'comments.currentAvatar': '目前頭像',

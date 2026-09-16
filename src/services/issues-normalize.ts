@@ -78,9 +78,6 @@ export function normalizeIssueSummary(id: string, data: Record<string, unknown>)
     support_deadline_at: normalizeDate(
       data.supportDeadlineAt
     ),
-    response_deadline_at: normalizeDate(
-      data.responseDeadlineAt
-    ),
     review_approved_at: normalizeDate(data.reviewApprovedAt),
     result_content: typeof data.resultContent === 'string'
       ? data.resultContent

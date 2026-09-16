@@ -12,7 +12,6 @@ integrationTest("a proposal's status change tells its author what changed", asyn
       isDefault: false,
       label: "狀態通知測試",
       readAccess: "school",
-      responseDeadlineDays: null,
       sortOrder: 20_100,
       supportDeadlineDays: null,
       supportEnabled: false,
