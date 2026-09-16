@@ -190,11 +190,8 @@ html[data-theme-transition="true"]::view-transition-new(root) {
    already answered by the press state above, and echoing it as well doubled
    the feedback without adding any meaning. It is worn by the control that was
    tapped, so it travels with the control the page scrolls. */
-[data-navigating="true"] {
-  background: color-mix(in srgb, var(--tint-content) 9%, transparent);
-  /* An inset line rather than a border: a control that grew a border while it
-     waited would move its own contents. */
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tint-content) 24%, transparent);
+[data-navigating="true"]:not(.t-row) {
+  background: var(--surface-active);
 }
 .t-navigation-progress {
   background: var(--tint-content);
@@ -1095,7 +1092,8 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 .t-row[data-lead="true"]::before {
   inset-inline-end: 0;
 }
-.t-row:active::before {
+.t-row:active::before,
+.t-row[data-navigating="true"]::before {
   background: var(--surface-active);
   transition-duration: var(--motion-touch);
 }
@@ -1112,7 +1110,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   [data-slot="button"]:not(:disabled):not(:active):hover {
     transform: translateY(-1px);
   }
-  .t-row:not(:active):not([data-selected="true"]):hover::before {
+  .t-row:not(:active):not([data-selected="true"]):not([data-navigating="true"]):hover::before {
     background: var(--surface-hover);
   }
   .t-card:not(:active):hover {
