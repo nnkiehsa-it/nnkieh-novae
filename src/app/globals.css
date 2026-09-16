@@ -421,7 +421,7 @@ html[data-input-modality="pointer"] :focus-visible {
 .page-header::before,
 .detail-header::before {
   position: absolute;
-  z-index: 0;
+  z-index: -1;
   top: calc(0px - var(--header-top, var(--page-header-top)));
   right: var(--header-bleed, calc((100% - 100vw) / 2));
   bottom: -0.25rem;
@@ -433,7 +433,10 @@ html[data-input-modality="pointer"] :focus-visible {
     var(--header-veil, var(--surface-stage)) 82%,
     transparent
   );
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
+  transform: translateZ(0);
+  will-change: backdrop-filter;
   -webkit-mask-image: linear-gradient(to bottom, black 62%, rgb(0 0 0 / 72%) 76%, rgb(0 0 0 / 28%) 90%, transparent);
   mask-image: linear-gradient(to bottom, black 62%, rgb(0 0 0 / 72%) 76%, rgb(0 0 0 / 28%) 90%, transparent);
 }
@@ -480,12 +483,15 @@ html[data-input-modality="pointer"] :focus-visible {
 [data-slot="dialog-content"] [data-slot="dialog-header"]::before,
 [data-slot="alert-dialog-content"] [data-slot="alert-dialog-header"]::before {
   position: absolute;
-  z-index: 0;
+  z-index: -1;
   inset: 0 0 -0.25rem;
   content: "";
   pointer-events: none;
   background: color-mix(in srgb, var(--popover) 82%, transparent);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
+  transform: translateZ(0);
+  will-change: backdrop-filter;
   -webkit-mask-image: linear-gradient(to bottom, black 62%, rgb(0 0 0 / 72%) 76%, rgb(0 0 0 / 28%) 90%, transparent);
   mask-image: linear-gradient(to bottom, black 62%, rgb(0 0 0 / 72%) 76%, rgb(0 0 0 / 28%) 90%, transparent);
 }
