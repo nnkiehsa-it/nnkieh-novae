@@ -6,6 +6,7 @@ import type { LucideIcon } from "lucide-react";
 
 import {
   Sheet,
+  SheetBody,
   SheetContent,
   SheetDescription,
   SheetHeader,
@@ -125,7 +126,8 @@ export function ActionMenu({
             <SheetTitle>{title}</SheetTitle>
             {description ? <SheetDescription>{description}</SheetDescription> : null}
           </SheetHeader>
-          <ListSection>
+          <SheetBody>
+            <ListSection>
             {items.map((item) =>
               item.href ? (
                 <ListNavRow
@@ -149,7 +151,8 @@ export function ActionMenu({
                 />
               ),
             )}
-          </ListSection>
+            </ListSection>
+          </SheetBody>
         </SheetContent>
       </Sheet>
     </>

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { ShieldOff } from "lucide-react";
 
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetBody, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ListMutationRow, ListRow, ListSection, RowAction } from "@/components/ui/list";
 import { AccountAccessRuleFields, type AccountAccessRuleDraft } from "@/components/admin/account-access-rule-fields";
@@ -52,12 +52,14 @@ export function UserDetailsSheet({ busy, onClose, onRestrictionChange, user }: {
     <Sheet onOpenChange={(open) => !open && onClose()} open={Boolean(user)}>
       <SheetContent>
         <SheetHeader><SheetTitle>{subject.name}</SheetTitle><SheetDescription>{subject.email ?? subject.uid}</SheetDescription></SheetHeader>
-        <ListSection>
+        <SheetBody>
+          <div className="grid gap-5">
+            <ListSection>
           <ListRow label="UID" value={<span className="font-mono text-xs">{subject.uid}</span>} />
           <ListRow label={t("ui.adminConsole.registeredAtColumn")} value={formatDate(subject.createdAt)} />
           <ListRow label={t("ui.adminConsole.accountStatus")} value={rule ? t(ACCOUNT_ACCESS_PRESET_KEYS[rule.preset]) : t("ui.adminConsole.normal")} />
           <ListRow label={t("ui.adminConsole.scopeColumn")} value={responsibilityLabel(subject, t)} />
-        </ListSection>
+            </ListSection>
         {rule ? <ListSection header={t("ui.accountAccess.effectiveRule")}>
           <ListRow label={rule.message} value={rule.permanent ? t("ui.accountAccess.duration.permanent") : rule.expiresAt ? formatDate(rule.expiresAt) : ""} />
           <ListRow label={t("ui.accountAccess.ruleSource")} value={rule.targetType === "uid" ? t("ui.accountAccess.source.uid") : `${rule.targetValue}*`} />
@@ -67,6 +69,8 @@ export function UserDetailsSheet({ busy, onClose, onRestrictionChange, user }: {
           <AccountAccessRuleFields draft={draft} onChange={updateDraft} />
           <div className="flex justify-end p-[var(--row-padding-block)]"><Button disabled={busy || !draft.message.trim()} onClick={submit}>{t("ui.accountAccess.apply")}</Button></div>
         </ListSection> : <ListSection><ListRow label={t("ui.adminConsole.platformAdminRestrictionNotice")} /></ListSection>}
+          </div>
+        </SheetBody>
       </SheetContent>
     </Sheet>
   );

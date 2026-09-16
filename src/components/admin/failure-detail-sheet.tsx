@@ -5,6 +5,7 @@ import { RotateCcw } from "lucide-react";
 
 import {
   Sheet,
+  SheetBody,
   SheetContent,
   SheetDescription,
   SheetHeader,
@@ -49,7 +50,9 @@ export function FailureDetailSheet({
           <SheetTitle>{record.label}</SheetTitle>
           <SheetDescription>{t("admin.failureDetailTitle")}</SheetDescription>
         </SheetHeader>
-        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
+        <SheetBody>
+          <div className="grid gap-5">
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
           <p className="text-xs font-medium uppercase tracking-[0.04em] text-muted-foreground">
             {t("admin.failureMessage")}
           </p>
@@ -74,12 +77,14 @@ export function FailureDetailSheet({
             />
           ))}
         </ListSection>
-        {record.retryable ? (
+            {record.retryable ? (
           <Button disabled={busy} onClick={() => onRetry(record)} variant="outline">
             {busy ? <LoadingSpinner /> : <RotateCcw aria-hidden />}
             {t("admin.retry")}
           </Button>
-        ) : null}
+            ) : null}
+          </div>
+        </SheetBody>
       </SheetContent>
     </Sheet>
   );

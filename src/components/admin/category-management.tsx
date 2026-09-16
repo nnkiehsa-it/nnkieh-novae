@@ -12,6 +12,7 @@ import { CategoryEditor } from "@/components/admin/category-editors";
 import { ContentTransition, StateTransition } from "@/components/motion/state-transition";
 import {
   Sheet,
+  SheetBody,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -167,7 +168,8 @@ export function CategoryManagement() {
               {editingItem ? nameOf(editingItem, activeIndex ?? 0) : ""}
             </SheetTitle>
           </SheetHeader>
-          {area && editingItem && activeIndex !== null ? (
+          <SheetBody>
+            {area && editingItem && activeIndex !== null ? (
             <CategoryEditor
               identifierLocked={state.persisted.has(editingItem.id)}
               item={editingItem}
@@ -178,7 +180,8 @@ export function CategoryManagement() {
                 setEditing(null);
               }}
             />
-          ) : null}
+            ) : null}
+          </SheetBody>
         </SheetContent>
       </Sheet>
 

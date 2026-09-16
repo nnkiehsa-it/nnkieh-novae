@@ -4,6 +4,7 @@ import * as React from "react";
 
 import {
   Sheet,
+  SheetBody,
   SheetContent,
   SheetDescription,
   SheetHeader,
@@ -164,13 +165,15 @@ function AuditEntrySheet({
           <SheetTitle>{actionLabel(record)}</SheetTitle>
           <SheetDescription>{formatDate(record.createdAt)}</SheetDescription>
         </SheetHeader>
-        <ListSection>
+        <SheetBody>
+          <div className="grid gap-5">
+            <ListSection>
           <ListRow label={t("ui.adminConsole.adminColumn")} value={record.actorName} />
           <ListRow
             label={t("ui.adminConsole.targetColumn")}
             value={<span className="font-mono text-xs">{record.targetId ?? "—"}</span>}
           />
-        </ListSection>
+            </ListSection>
         <ListSection header={t("ui.adminConsole.detailColumn")}>
           {fields.length === 0 ? (
             <ListRow label="—" />
@@ -183,7 +186,9 @@ function AuditEntrySheet({
               />
             ))
           )}
-        </ListSection>
+            </ListSection>
+          </div>
+        </SheetBody>
       </SheetContent>
     </Sheet>
   );

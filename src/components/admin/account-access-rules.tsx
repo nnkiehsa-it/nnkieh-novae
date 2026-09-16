@@ -4,7 +4,7 @@ import * as React from "react";
 import { Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetBody, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ListMutationRow, ListRow, ListSection, RowAction } from "@/components/ui/list";
 import { AccountAccessRuleFields, type AccountAccessRuleDraft } from "@/components/admin/account-access-rule-fields";
 import { ErrorState } from "@/components/ui/page-state";
@@ -42,7 +42,9 @@ function PrefixRuleSheet({ busy, onClose, onSave, rule }: {
         <SheetTitle>{rule ? t("ui.accountAccess.editPrefix") : t("ui.accountAccess.addPrefix")}</SheetTitle>
         <SheetDescription>{t("ui.accountAccess.prefixDescription")}</SheetDescription>
       </SheetHeader>
-      <ListSection>
+      <SheetBody>
+        <div className="grid gap-5">
+          <ListSection>
         <AccountAccessRuleFields
           draft={{ duration, durationHours, message, preset } satisfies AccountAccessRuleDraft}
           onChange={(next) => {
@@ -55,8 +57,10 @@ function PrefixRuleSheet({ busy, onClose, onSave, rule }: {
           targetDisabled={Boolean(rule)}
           targetValue={targetValue}
         />
-      </ListSection>
+          </ListSection>
       <div className="flex justify-end"><Button disabled={busy || !targetValue.trim() || !message.trim()} onClick={() => void onSave({ duration, ...(duration === "custom" ? { durationHours } : {}), message, preset, targetType: "email_prefix", targetValue }).then(onClose)}>{t("ui.accountAccess.apply")}</Button></div>
+        </div>
+      </SheetBody>
     </SheetContent>
   </Sheet>;
 }

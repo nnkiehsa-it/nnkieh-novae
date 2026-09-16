@@ -5,6 +5,7 @@ import { ChevronDownIcon } from "lucide-react";
 
 import {
   Sheet,
+  SheetBody,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -125,7 +126,8 @@ export function ChoiceSelect({
           <SheetHeader>
             <SheetTitle>{title}</SheetTitle>
           </SheetHeader>
-          <ListSection groupName={title}>
+          <SheetBody>
+            <ListSection groupName={title}>
             {options.map((option) => (
               <ListChoiceRow
                 disabled={option.disabled}
@@ -138,7 +140,8 @@ export function ChoiceSelect({
                 selected={option.value === value}
               />
             ))}
-          </ListSection>
+            </ListSection>
+          </SheetBody>
         </SheetContent>
       </Sheet>
     </>

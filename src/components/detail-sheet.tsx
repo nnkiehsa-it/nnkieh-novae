@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 
 import {
   Sheet,
+  SheetBody,
   SheetContent,
   SheetTitle,
   useSheetClose,
@@ -48,9 +49,11 @@ export function DetailSheet({ children, label }: { children: ReactNode; label: s
       }}
       open={open}
     >
-      <SheetContent>
-        <SheetTitle className="sr-only">{label}</SheetTitle>
-        <RecordSheetContext label={label}>{children}</RecordSheetContext>
+      <SheetContent className="grid-rows-[minmax(0,1fr)]">
+        <SheetBody className="pb-0">
+          <SheetTitle className="sr-only">{label}</SheetTitle>
+          <RecordSheetContext label={label}>{children}</RecordSheetContext>
+        </SheetBody>
       </SheetContent>
     </Sheet>
   );

@@ -4,6 +4,7 @@ import * as React from "react";
 
 import {
   Sheet,
+  SheetBody,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -43,13 +44,13 @@ export function SheetRow({
     <>
       <ListNavRow label={label} onClick={() => change(true)} value={value} />
       <Sheet onOpenChange={change} open={open}>
-        <SheetContent className="grid-rows-[auto_minmax(0,1fr)] overflow-hidden">
+        <SheetContent>
           <SheetHeader>
             <SheetTitle>{title}</SheetTitle>
           </SheetHeader>
-          <div className="min-h-0 overflow-y-auto overscroll-contain pb-[max(0.25rem,var(--safe-bottom))]">
+          <SheetBody>
             {children}
-          </div>
+          </SheetBody>
         </SheetContent>
       </Sheet>
     </>

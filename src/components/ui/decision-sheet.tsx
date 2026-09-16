@@ -7,6 +7,7 @@ import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
+  SheetBody,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -141,7 +142,9 @@ export function DecisionSheet({
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
         </SheetHeader>
-        <DecisionForm {...decision} />
+        <SheetBody>
+          <DecisionForm {...decision} />
+        </SheetBody>
       </SheetContent>
     </Sheet>
   );
