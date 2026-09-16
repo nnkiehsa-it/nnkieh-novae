@@ -793,8 +793,10 @@ html[data-input-modality="pointer"] :focus-visible {
     --page-header-top: 1.5rem;
   }
 
-  .page-header::before {
-    width: calc(100vw - 15rem);
+  .page-header {
+    /* The desktop reading area starts after the sidebar. Extending to the
+       whole viewport from this offset column paints past the right edge. */
+    --header-bleed: calc((100% - (100vw - 15rem)) / 2);
   }
 }
 
