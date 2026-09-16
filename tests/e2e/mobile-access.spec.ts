@@ -209,9 +209,10 @@ test.describe('proposal manager on mobile', () => {
     await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible();
     await expectMobileInteractionBaseline(page);
     await page.goto(content.proposalA);
-    await expect(page.getByRole('button', { name: 'Back to proposals' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Proposals', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Close', exact: true })).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toHaveCount(0);
-    await expectTouchTarget(page, 'Back to proposals');
+    await expectTouchTarget(page, 'Close');
     await expectTouchTarget(page, /Support this proposal|Remove support/u);
     await expectMoreActions(page, ['Manage status', 'Delete proposal']);
     await page.goto(content.proposalB);
@@ -279,9 +280,9 @@ test.describe('a link somebody shared', () => {
   test('reads on its own and asks about the app only on the way out', async ({ page }) => {
     const content = await readContentState();
     await page.goto(`${content.proposalA}?shared=1`);
-    const back = page.getByRole('button', { name: 'Back to proposals' });
+    const back = page.getByRole('button', { name: 'Close', exact: true });
     await expect(back).toBeVisible();
-    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: 'Proposals', exact: true })).toBeVisible();
 
     await back.click();
     const prompt = page.getByRole('dialog');

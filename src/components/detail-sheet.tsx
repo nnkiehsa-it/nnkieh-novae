@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { useOptimisticDetailHandoff } from "@/components/optimistic-detail-navigation";
 import { useI18n } from "@/i18n";
 import { recordListPath } from "@/lib/route-hierarchy";
+import { useShareExitGuard } from "@/hooks/use-share-entry";
 
 import {
   Sheet,
@@ -43,6 +44,7 @@ export function DetailSheet({ children, label, returnTo }: {
   returnTo?: string;
 }) {
   const router = useRouter();
+  const guardClose = useShareExitGuard();
   const pathname = usePathname();
   const [open, setOpen] = React.useState(true);
   const optimisticHandoff = useOptimisticDetailHandoff(pathname);
@@ -50,6 +52,7 @@ export function DetailSheet({ children, label, returnTo }: {
 
   return (
     <Sheet
+      onCloseRequest={guardClose}
       onOpenChange={(next) => {
         setOpen(next);
         if (!next) {

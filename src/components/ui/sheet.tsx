@@ -36,10 +36,11 @@ const SheetLifecycle = React.createContext<SheetLifecycleValue | null>(null);
  */
 function Sheet({
   defaultOpen,
+  onCloseRequest,
   onOpenChange,
   open,
   ...props
-}: React.ComponentProps<typeof Dialog>) {
+}: React.ComponentProps<typeof Dialog> & { onCloseRequest?: (close: () => void) => void }) {
   const controlled = open !== undefined;
   const [internalOpen, setInternalOpen] = React.useState(defaultOpen ?? false);
   const sourceOpen = controlled ? Boolean(open) : internalOpen;
@@ -103,8 +104,10 @@ function Sheet({
 
   const requestClose = React.useCallback(() => {
     if (pendingCloseRef.current) return;
-    beginClose(true);
-  }, [beginClose]);
+    const close = () => beginClose(true);
+    if (onCloseRequest) onCloseRequest(close);
+    else close();
+  }, [beginClose, onCloseRequest]);
 
   // Controlled sheets can also be closed from feature state, not only through
   // Radix. Treat that falling edge as the same retained exit rather than making
