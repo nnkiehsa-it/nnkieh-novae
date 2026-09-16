@@ -361,6 +361,17 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   }
 }
 
+@media (min-width: 48rem) {
+  .t-sheet[data-sheet-lifecycle-closing="true"] {
+    animation: t-dialog-out var(--motion-control-exit) var(--ease-depart) both;
+    pointer-events: none;
+  }
+  .t-sheet-overlay[data-sheet-lifecycle-closing="true"] {
+    animation: t-fade-out var(--motion-control-exit) var(--ease-depart) both;
+    pointer-events: none;
+  }
+}
+
 /* On a phone an action, status or editor overlay is a sheet: it owns the
    bottom edge, arrives along one axis on the navigation curve, and reads as a
    layer over the page rather than an object floating in front of it. It travels

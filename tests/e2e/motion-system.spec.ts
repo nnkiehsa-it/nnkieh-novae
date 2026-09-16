@@ -448,6 +448,23 @@ test('controlled record-backed sheets keep their exit surface mounted', async ({
   await admin.context.close();
 });
 
+test('desktop sheet popups animate out before they unmount', async ({ browser }) => {
+  const admin = await newUserPage(browser, 'admin');
+  await admin.page.setViewportSize({ width: 1280, height: 900 });
+  await admin.page.goto('/admin/people');
+  await admin.page.getByRole('tab', { name: /Access rules|限制規則/u }).click();
+  await admin.page.getByRole('button', { name: /Add prefix rule|新增前綴規則/u }).click();
+
+  const popup = admin.page.locator('[data-sheet-surface]').last();
+  await expect(popup).toBeVisible();
+  await popup.getByRole('button', { name: /Close|關閉/u }).click();
+  await expect(popup).toHaveAttribute('data-sheet-lifecycle-closing', 'true');
+  await expect(popup).toHaveCSS('animation-name', 't-dialog-out');
+  await expect(popup).toHaveCount(0);
+
+  await admin.context.close();
+});
+
 test('dropdowns animate as one surface while reduced motion removes movement', async ({
   browser,
 }) => {

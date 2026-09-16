@@ -191,7 +191,17 @@ export function SheetSurface({
             onPointerDown={beginSheetDrag}
             onPointerMove={moveSheetDrag}
             onPointerUp={endSheetDrag}
-            onAnimationEnd={props.onAnimationEnd}
+            onAnimationEnd={(event) => {
+              props.onAnimationEnd?.(event);
+              if (event.currentTarget !== event.target) return;
+              if (
+                sheetClosing &&
+                window.matchMedia("(min-width: 48rem)").matches &&
+                event.animationName === "t-dialog-out"
+              ) {
+                onSheetExitComplete?.();
+              }
+            }}
             onAnimationStart={props.onAnimationStart}
           >
             {children}

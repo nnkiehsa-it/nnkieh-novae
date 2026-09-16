@@ -75,7 +75,7 @@ function Sheet({
     if (notifyParent) onOpenChange?.(false);
   }, [clearFallback, controlled, onOpenChange]);
 
-  const beginMobileClose = React.useCallback((notifyParent: boolean) => {
+  const beginClose = React.useCallback((notifyParent: boolean) => {
     if (pendingCloseRef.current) {
       notifyParentRef.current ||= notifyParent;
       return;
@@ -93,20 +93,18 @@ function Sheet({
     // cancels CSS animation events from leaving an invisible sheet mounted.
     fallbackTimerRef.current = window.setTimeout(
       completeClose,
-      timingMs("sheetExit") + 80,
+      timingMs(
+        window.matchMedia("(max-width: 47.99rem)").matches
+          ? "sheetExit"
+          : "controlExit",
+      ) + 80,
     );
   }, [completeClose]);
 
   const requestClose = React.useCallback(() => {
     if (pendingCloseRef.current) return;
-    if (!window.matchMedia("(max-width: 47.99rem)").matches) {
-      setPresent(false);
-      if (!controlled) setInternalOpen(false);
-      onOpenChange?.(false);
-      return;
-    }
-    beginMobileClose(true);
-  }, [beginMobileClose, controlled, onOpenChange]);
+    beginClose(true);
+  }, [beginClose]);
 
   // Controlled sheets can also be closed from feature state, not only through
   // Radix. Treat that falling edge as the same retained exit rather than making
@@ -124,12 +122,8 @@ function Sheet({
     }
 
     if (!previousSourceOpen || !present || pendingCloseRef.current) return;
-    if (window.matchMedia("(max-width: 47.99rem)").matches) {
-      beginMobileClose(false);
-      return;
-    }
-    setPresent(false);
-  }, [beginMobileClose, cancelClose, present, sourceOpen]);
+    beginClose(false);
+  }, [beginClose, cancelClose, present, sourceOpen]);
 
   React.useEffect(() => () => clearFallback(), [clearFallback]);
 
