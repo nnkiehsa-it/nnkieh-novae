@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { authStatePath } from './support/paths';
 import { newUserPage } from './support/session';
 
@@ -45,6 +45,64 @@ function routeChangeReport(page: Page) {
       viewTransition: Boolean(state.__novaeSawRouteViewTransition),
     };
   });
+}
+
+async function watchSheetExit(sheet: Locator, key: string) {
+  await sheet.evaluate((element, reportKey) => {
+    type ExitReport = {
+      animations: string[];
+      states: string[];
+      startTop: number;
+      maxTop: number;
+    };
+    const state = window as typeof window & {
+      __novaeSheetExitReports?: Record<string, ExitReport>;
+    };
+    state.__novaeSheetExitReports ??= {};
+    const startTop = element.getBoundingClientRect().top;
+    const report = {
+      animations: [] as string[],
+      states: [(element as HTMLElement).dataset.state ?? ''],
+      startTop,
+      maxTop: startTop,
+    };
+    state.__novaeSheetExitReports[reportKey] = report;
+    const motionFrame = element.parentElement;
+    motionFrame?.addEventListener('animationstart', (event) => {
+      report.animations.push((event as AnimationEvent).animationName);
+    });
+    new MutationObserver(() => {
+      report.states.push((element as HTMLElement).dataset.state ?? '');
+    }).observe(element, { attributeFilter: ['data-state'], attributes: true });
+    const deadline = performance.now() + 1_200;
+    const sample = () => {
+      if (element.isConnected) {
+        report.maxTop = Math.max(report.maxTop, element.getBoundingClientRect().top);
+      }
+      if (performance.now() < deadline) requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+  }, key);
+}
+
+function sheetExitReport(page: Page, key: string) {
+  return page.evaluate((reportKey) => {
+    type ExitReport = {
+      animations: string[];
+      states: string[];
+      startTop: number;
+      maxTop: number;
+    };
+    const state = window as typeof window & {
+      __novaeSheetExitReports?: Record<string, ExitReport>;
+    };
+    return state.__novaeSheetExitReports?.[reportKey] ?? {
+      animations: [],
+      states: [],
+      startTop: 0,
+      maxTop: 0,
+    };
+  }, key);
 }
 
 test('navigation direction follows the information hierarchy in both directions', async ({
@@ -181,11 +239,13 @@ test('a cancelled sheet drag settles in place without replaying its arrival', as
   await page.waitForURL(/\/issues\/[^/]+\/[^/]+$/u);
 
   const sheet = page.getByRole('dialog');
+  const motionFrame = sheet.locator('..');
   const dragRegion = sheet.locator('[data-sheet-drag-region]').first();
   await expect(dragRegion).toBeVisible();
-  await sheet.evaluate(async (element) => {
+  await motionFrame.evaluate(async (element) => {
     await Promise.all(element.getAnimations().map((animation) => animation.finished.catch(() => undefined)));
   });
+  await expect(motionFrame).toHaveAttribute('data-sheet-arrived', 'true');
   const navigationAfter = await mobileNavigation.boundingBox();
   expect(navigationAfter).not.toBeNull();
   expect(navigationAfter!.x).toBeCloseTo(navigationBefore!.x, 1);
@@ -216,8 +276,14 @@ test('a cancelled sheet drag settles in place without replaying its arrival', as
   expect(sheetMetrics.paddingLeft).toBeCloseTo(pagePadding.left, 1);
   expect(sheetMetrics.paddingRight).toBeCloseTo(pagePadding.right, 1);
   expect(sheetMetrics.alignContent).toBe('flex-start');
-  await expect(sheet).toHaveAttribute('data-sheet-drag-interacted', 'true');
-  await expect(sheet).toHaveCSS('animation-name', 'none');
+  await motionFrame.evaluate((element) => {
+    element.setAttribute('data-test-sheet-arrival-restarts', '0');
+    element.addEventListener('animationstart', (event) => {
+      if (event.animationName !== 't-sheet-in') return;
+      const count = Number(element.getAttribute('data-test-sheet-arrival-restarts') ?? '0');
+      element.setAttribute('data-test-sheet-arrival-restarts', String(count + 1));
+    });
+  });
 
   const box = await dragRegion.boundingBox();
   expect(box).not.toBeNull();
@@ -231,9 +297,12 @@ test('a cancelled sheet drag settles in place without replaying its arrival', as
   await page.mouse.up();
 
   await expect(sheet).toBeVisible();
-  await expect(sheet).toHaveAttribute('data-sheet-drag-interacted', 'true');
   await expect(sheet).not.toHaveAttribute('data-sheet-settling', 'true');
-  await expect(sheet).toHaveCSS('animation-name', 'none');
+  const postDragAnimations = await motionFrame.evaluate((element) =>
+    element.getAnimations().filter((animation) => animation.playState === 'running').length,
+  );
+  expect(postDragAnimations).toBe(0);
+  await expect(motionFrame).toHaveAttribute('data-test-sheet-arrival-restarts', '0');
   await context.close();
 });
 
@@ -257,6 +326,11 @@ test('nested sheets keep every previous layer visible in the stack', async ({ br
   await expect(sheets).toHaveCount(2);
   const actions = sheets.last();
   await expect(actions).toBeVisible();
+  const actionsFrame = actions.locator('..');
+  await actionsFrame.evaluate(async (element) => {
+    await Promise.all(element.getAnimations().map((animation) => animation.finished.catch(() => undefined)));
+  });
+  await expect(actionsFrame).toHaveAttribute('data-sheet-arrived', 'true');
   await expect(detail).toHaveAttribute('data-sheet-depth-behind', '1');
   await expect(actions).toHaveAttribute('data-sheet-depth-behind', '0');
   await expect(detail).toHaveAttribute('data-sheet-stack-index', '0');
@@ -277,12 +351,67 @@ test('nested sheets keep every previous layer visible in the stack', async ({ br
   expect(actionsLayout.stackInset).toBe('13px');
   expect(actionsLayout.height).toBeLessThan(detailLayout.height);
 
+  await watchSheetExit(actions, 'nested-actions');
+  const beforeClose = await actions.boundingBox();
+  expect(beforeClose).not.toBeNull();
   await actions.getByRole('button', { name: /Close|關閉/u }).click();
+  await expect(actions).toHaveAttribute('data-sheet-lifecycle-closing', 'true');
+  await expect(actionsFrame).toHaveAttribute('data-sheet-lifecycle-closing', 'true');
+  await expect(actionsFrame).toHaveCSS('animation-name', 't-sheet-out');
+  await page.waitForTimeout(120);
+  const duringClose = await actions.boundingBox();
+  expect(duringClose).not.toBeNull();
+  expect(duringClose!.y).toBeGreaterThan(beforeClose!.y);
   await expect(sheets).toHaveCount(1);
+  await expect.poll(async () => {
+    const report = await sheetExitReport(page, 'nested-actions');
+    return report.maxTop - report.startTop;
+  }).toBeGreaterThan(120);
+  expect((await sheetExitReport(page, 'nested-actions')).maxTop -
+    (await sheetExitReport(page, 'nested-actions')).startTop).toBeGreaterThan(120);
   await commentSort.click();
   await expect(sheets).toHaveCount(2);
-  await expect(sheets.last()).toHaveCSS('animation-name', 't-sheet-in');
+  const reopenedFrame = sheets.last().locator('..');
+  await expect.poll(async () => reopenedFrame.evaluate((element) =>
+    element.getAnimations().some((animation) =>
+      animation instanceof CSSAnimation && animation.animationName === 't-sheet-in',
+    ),
+  )).toBe(true);
   await context.close();
+});
+
+test('controlled record-backed sheets keep their exit surface mounted', async ({ browser }) => {
+  const admin = await newUserPage(browser, 'admin');
+  await admin.page.setViewportSize({ width: 390, height: 844 });
+  await admin.page.goto('/admin/people');
+  await admin.page.getByRole('tab', { name: /Access rules|限制規則/u }).click();
+  await admin.page.getByRole('button', { name: /Add prefix rule|新增前綴規則/u }).click();
+
+  const sheet = admin.page.locator('[data-slot="dialog-content"].t-sheet').last();
+  await expect(sheet).toBeVisible();
+  const motionFrame = sheet.locator('..');
+  await motionFrame.evaluate(async (element) => {
+    await Promise.all(element.getAnimations().map((animation) => animation.finished.catch(() => undefined)));
+  });
+  await expect(motionFrame).toHaveAttribute('data-sheet-arrived', 'true');
+  await watchSheetExit(sheet, 'prefix-rule');
+  const beforeClose = await sheet.boundingBox();
+  expect(beforeClose).not.toBeNull();
+  await sheet.getByRole('button', { name: /Close|關閉/u }).click();
+  await expect(sheet).toHaveAttribute('data-sheet-lifecycle-closing', 'true');
+  await expect(motionFrame).toHaveAttribute('data-sheet-lifecycle-closing', 'true');
+  await expect(motionFrame).toHaveCSS('animation-name', 't-sheet-out');
+  await admin.page.waitForTimeout(120);
+  const duringClose = await sheet.boundingBox();
+  expect(duringClose).not.toBeNull();
+  expect(duringClose!.y).toBeGreaterThan(beforeClose!.y);
+  await expect(sheet).toHaveCount(0);
+  await expect.poll(async () => {
+    const report = await sheetExitReport(admin.page, 'prefix-rule');
+    return report.maxTop - report.startTop;
+  }).toBeGreaterThan(120);
+
+  await admin.context.close();
 });
 
 test('dropdowns animate as one surface while reduced motion removes movement', async ({

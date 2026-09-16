@@ -385,20 +385,24 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     padding-bottom: max(1.5rem, calc(var(--safe-bottom) + 0.75rem));
     transform-origin: 50% 0;
   }
-  .t-sheet[data-state="open"] {
+  .t-sheet[data-state="open"],
+  .t-sheet[data-state="closed"] {
+    animation: none;
+  }
+  .t-sheet-motion-frame {
+    translate: 0 0;
+  }
+  .t-sheet-motion-frame:not([data-sheet-arrived="true"]):not([data-sheet-lifecycle-closing="true"]):not([data-sheet-dragging="true"]) {
     animation: t-sheet-in var(--motion-sheet) var(--ease-nav) both;
   }
-  /* Dragging temporarily owns the transform. Once that interaction has happened,
-     restoring the ordinary open rule would restart `t-sheet-in` from the bottom
-     after every cancelled drag. The sheet is already here, so its arrival is
-     finished for the rest of this mount. */
-  .t-sheet[data-state="open"][data-sheet-drag-interacted="true"] {
-    animation: none;
+  .t-sheet-motion-frame[data-sheet-lifecycle-closing="true"] {
+    animation: t-sheet-out var(--motion-sheet-exit) var(--ease-depart) both;
+    pointer-events: none;
   }
   /* Every open sheet remains a visible card in the stack. Each newer sheet is
      slightly shorter, while older sheets step upward and inward one rung at a
      time, so every level keeps a readable top edge like the native iOS stack. */
-  .t-sheet[data-state="open"][data-sheet-drag-interacted="true"][data-sheet-depth-behind]:not([data-sheet-depth-behind="0"]) {
+  .t-sheet[data-state="open"][data-sheet-depth-behind]:not([data-sheet-depth-behind="0"]) {
     transform:
       translateY(calc(-0.65rem * var(--sheet-depth-behind)))
       scale(calc(1 - 0.035 * var(--sheet-depth-behind)));
@@ -407,11 +411,11 @@ html[data-theme-transition="true"]::view-transition-new(root) {
       height var(--motion-sheet) var(--ease-nav),
       max-height var(--motion-sheet) var(--ease-nav);
   }
-  .t-sheet[data-state="open"][data-sheet-drag-interacted="true"][data-sheet-stack-motion="pop"] {
+  .t-sheet[data-state="open"][data-sheet-stack-motion="pop"] {
     transition-timing-function: var(--ease-nav-depart);
   }
-  .t-sheet[data-state="closed"] {
-    animation: t-sheet-out var(--motion-sheet-exit) var(--ease-nav-depart) both;
+  .t-sheet[data-sheet-lifecycle-closing="true"] {
+    pointer-events: none;
   }
   .t-sheet-overlay[data-state="open"] {
     animation-duration: var(--motion-sheet);
@@ -419,20 +423,21 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   }
   .t-sheet-overlay[data-state="closed"] {
     animation-duration: var(--motion-sheet-exit);
-    animation-timing-function: var(--ease-nav-depart);
+    animation-timing-function: var(--ease-depart);
   }
-  .t-sheet[data-sheet-dragging="true"] {
+  .t-sheet-overlay[data-sheet-lifecycle-closing="true"] {
+    animation: t-fade-out var(--motion-sheet-exit) var(--ease-depart) both;
+    pointer-events: none;
+  }
+  .t-sheet-motion-frame[data-sheet-dragging="true"] {
     animation: none;
-    transform: translateY(var(--sheet-drag-y, 0));
-    will-change: transform;
+    translate: 0 var(--sheet-drag-y, 0);
+    will-change: translate;
   }
-  .t-sheet[data-sheet-settling="true"] {
+  .t-sheet-motion-frame[data-sheet-settling="true"] {
     animation: none;
-    transform: translateY(0);
-    transition: transform var(--motion-control) var(--ease-nav);
-  }
-  .t-sheet[data-state="closed"][data-sheet-dismissing="true"] {
-    animation: t-sheet-dismiss var(--motion-sheet-exit) var(--ease-nav-depart) both;
+    translate: 0 0;
+    transition: translate var(--motion-control) var(--ease-nav);
   }
   .t-sheet-drag-region,
   .t-sheet .detail-header {
@@ -478,32 +483,24 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   }
   body:has([data-slot="dialog-content"].t-sheet[data-state="closed"]) .t-stage {
     transition-duration: var(--motion-sheet-exit);
-    transition-timing-function: var(--ease-nav-depart);
+    transition-timing-function: var(--ease-depart);
   }
 }
 
 @keyframes t-sheet-in {
   from {
-    transform: translateY(100%);
+    translate: 0 100%;
   }
   to {
-    transform: translateY(0);
+    translate: 0 0;
   }
 }
 @keyframes t-sheet-out {
   from {
-    transform: translateY(0);
+    translate: 0 var(--sheet-dismiss-from, 0px);
   }
   to {
-    transform: translateY(100%);
-  }
-}
-@keyframes t-sheet-dismiss {
-  from {
-    transform: translateY(var(--sheet-dismiss-from));
-  }
-  to {
-    transform: translateY(100%);
+    translate: 0 100%;
   }
 }
 

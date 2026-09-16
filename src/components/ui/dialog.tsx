@@ -37,11 +37,16 @@ function DialogClose({
 function DialogOverlay({
   className,
   sheet = false,
+  sheetClosing = false,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Overlay> & { sheet?: boolean }) {
+}: React.ComponentProps<typeof DialogPrimitive.Overlay> & {
+  sheet?: boolean;
+  sheetClosing?: boolean;
+}) {
   return (
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
+      data-sheet-lifecycle-closing={sheetClosing || undefined}
       className={cn(
         "t-overlay fixed inset-0 z-50 bg-[var(--backdrop)] backdrop-blur-[3px]",
         sheet && "t-sheet-overlay",
@@ -55,36 +60,41 @@ function DialogOverlay({
 function DialogContent({
   className,
   children,
+  onSheetExitComplete,
   showCloseButton = true,
+  sheetClosing = false,
   surface = "floating",
   presentation = "centered",
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
+  onSheetExitComplete?: () => void;
   showCloseButton?: boolean;
+  sheetClosing?: boolean;
   surface?: "floating" | "plain";
   presentation?: "centered" | "sheet";
 }) {
   const sheet = presentation === "sheet";
   const { t } = useI18n();
   const contentRef = React.useRef<HTMLDivElement>(null);
+  const motionFrameRef = React.useRef<HTMLDivElement>(null);
   const releaseStageRef = React.useRef<(() => void) | null>(null);
   const dragRef = React.useRef<{ startedAt: number; startedY: number } | null>(null);
   const settleTimerRef = React.useRef<number | null>(null);
   const [dragging, setDragging] = React.useState(false);
   const [settling, setSettling] = React.useState(false);
   const [dismissing, setDismissing] = React.useState(false);
-  const [dragInteracted, setDragInteracted] = React.useState(false);
+  const [arrived, setArrived] = React.useState(false);
 
   React.useEffect(() => () => {
     if (settleTimerRef.current !== null) window.clearTimeout(settleTimerRef.current);
   }, []);
 
   const resetSheetPosition = React.useCallback(() => {
-    const content = contentRef.current;
-    if (!content) return;
+    const frame = motionFrameRef.current;
+    if (!frame) return;
     setDragging(false);
     setSettling(true);
-    window.requestAnimationFrame(() => content.style.removeProperty("--sheet-drag-y"));
+    window.requestAnimationFrame(() => frame.style.removeProperty("--sheet-drag-y"));
     settleTimerRef.current = window.setTimeout(() => setSettling(false), timingMs("control"));
   }, []);
 
@@ -96,7 +106,6 @@ function DialogContent({
     if (!dragRegion || interactiveControl) return;
     if (settleTimerRef.current !== null) window.clearTimeout(settleTimerRef.current);
     setSettling(false);
-    setDragInteracted(true);
     setDragging(true);
     dragRef.current = { startedAt: performance.now(), startedY: event.clientY };
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -104,15 +113,15 @@ function DialogContent({
 
   const moveSheetDrag = React.useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     const drag = dragRef.current;
-    const content = contentRef.current;
-    if (!drag || !content) return;
-    content.style.setProperty("--sheet-drag-y", `${Math.max(0, event.clientY - drag.startedY)}px`);
+    const frame = motionFrameRef.current;
+    if (!drag || !frame) return;
+    frame.style.setProperty("--sheet-drag-y", `${Math.max(0, event.clientY - drag.startedY)}px`);
   }, []);
 
   const endSheetDrag = React.useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     const drag = dragRef.current;
-    const content = contentRef.current;
-    if (!drag || !content) return;
+    const frame = motionFrameRef.current;
+    if (!drag || !frame) return;
     dragRef.current = null;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
@@ -122,8 +131,8 @@ function DialogContent({
     if (distance >= Math.min(window.innerHeight * 0.22, 160) || velocity >= 0.65) {
       setDragging(false);
       setDismissing(true);
-      content.style.setProperty("--sheet-dismiss-from", `${distance}px`);
-      content.querySelector<HTMLElement>("[data-slot='dialog-close']")?.click();
+      frame.style.setProperty("--sheet-dismiss-from", `${distance}px`);
+      contentRef.current?.querySelector<HTMLElement>("[data-slot='dialog-close']")?.click();
       return;
     }
     resetSheetPosition();
@@ -146,83 +155,104 @@ function DialogContent({
     releaseStageRef.current = null;
   }, []);
 
+  React.useLayoutEffect(() => {
+    if (!sheet || !sheetClosing) return;
+    const frame = motionFrameRef.current;
+    const content = contentRef.current;
+    if (!frame || !content) return;
+
+    // The motion frame owns vertical travel. Freeze the exact pixel offset that
+    // is on screen before replacing arrival/drag motion with the departure, so
+    // closing during an unfinished entrance never jumps back to the top first.
+    const currentTop = Math.max(0, frame.getBoundingClientRect().top);
+    frame.style.setProperty("--sheet-dismiss-from", `${currentTop}px`);
+    for (const animation of frame.getAnimations()) animation.cancel();
+    beginSheetClose(content);
+    frame.dataset.sheetLifecycleClosing = "true";
+  }, [sheet, sheetClosing]);
+
   return (
     <DialogPortal data-slot="dialog-portal">
-      <DialogOverlay sheet={sheet} />
+      <DialogOverlay sheet={sheet} sheetClosing={sheetClosing} />
       <div
         className={cn(
           "pointer-events-none fixed inset-0 z-50 grid items-center justify-items-center p-4",
           sheet && "max-md:items-end max-md:justify-items-stretch max-md:p-0",
         )}
       >
-        <DialogPrimitive.Content
-          ref={setContentRef}
-          data-slot="dialog-content"
-          data-sheet-dragging={dragging || undefined}
-          data-sheet-drag-interacted={dragInteracted || undefined}
-          data-sheet-settling={settling || undefined}
-          data-sheet-dismissing={dismissing || undefined}
+        <div
+          ref={motionFrameRef}
           className={cn(
-            "t-dialog pointer-events-auto relative grid w-full min-w-0 content-start gap-5 overflow-x-clip overflow-y-auto p-(--dialog-pad) outline-none [&>*]:min-w-0",
             sheet
-              ? "max-w-[min(calc(100vw-2rem),88rem)] [--dialog-pad:var(--page-gutter)] md:h-[calc(100svh-2rem)] md:max-h-[calc(100svh-2rem)]"
-              : "max-h-[min(86svh,46rem)] max-w-lg [--dialog-pad:1.5rem] sm:[--dialog-pad:1.75rem]",
-            surface === "floating"
-              ? "surface-floating"
-              : "rounded-[var(--radius-xl)] bg-popover",
-            sheet && "t-sheet",
-            className,
+              ? "t-sheet-motion-frame pointer-events-none grid h-full w-full items-end justify-items-stretch md:contents"
+              : "contents",
           )}
-          {...props}
-          onOpenAutoFocus={(event) => {
-            if (sheet) {
-              setDragInteracted(false);
-              setDismissing(false);
-              setSettling(false);
-              dragRef.current = null;
-            }
-            props.onOpenAutoFocus?.(event);
-          }}
-          onPointerCancel={cancelSheetDrag}
-          onPointerDown={beginSheetDrag}
-          onPointerMove={moveSheetDrag}
-          onPointerUp={endSheetDrag}
+          data-sheet-arrived={arrived || undefined}
+          data-sheet-dismissing={dismissing || undefined}
+          data-sheet-dragging={dragging || undefined}
+          data-sheet-motion-frame={sheet || undefined}
+          data-sheet-settling={settling || undefined}
           onAnimationEnd={(event) => {
-            // Arrival is one-shot. Once the sheet has landed, later drag/scroll
-            // state changes must never make the open animation eligible again.
-            if (sheet && event.animationName === "t-sheet-in") setDragInteracted(true);
-            if (
-              sheet &&
-              (event.animationName === "t-sheet-out" || event.animationName === "t-sheet-dismiss")
-            ) {
-              setDragInteracted(false);
+            if (!sheet || event.currentTarget !== event.target) return;
+            if (event.animationName === "t-sheet-in") {
+              setArrived(true);
+              return;
+            }
+            if (event.animationName === "t-sheet-out") {
               setDismissing(false);
               setSettling(false);
               dragRef.current = null;
+              onSheetExitComplete?.();
             }
-            props.onAnimationEnd?.(event);
-          }}
-          onAnimationStart={(event) => {
-            if (
-              sheet &&
-              (event.animationName === "t-sheet-out" || event.animationName === "t-sheet-dismiss")
-            ) {
-              beginSheetClose(contentRef.current);
-            }
-            props.onAnimationStart?.(event);
           }}
         >
-          {children}
-          {showCloseButton && (
-            <DialogPrimitive.Close
-              data-slot="dialog-close"
-              className="absolute top-3 right-3 z-30 grid size-8 place-items-center rounded-full bg-muted text-muted-foreground transition-[background-color,color] duration-[var(--motion-control)] hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:size-4"
-            >
-              <XIcon />
-              <span className="sr-only">{t("common.close")}</span>
-            </DialogPrimitive.Close>
-          )}
-        </DialogPrimitive.Content>
+          <DialogPrimitive.Content
+            ref={setContentRef}
+            data-slot="dialog-content"
+            data-sheet-lifecycle-closing={sheetClosing || undefined}
+            data-sheet-dragging={dragging || undefined}
+            data-sheet-settling={settling || undefined}
+            data-sheet-dismissing={dismissing || undefined}
+            className={cn(
+              "t-dialog pointer-events-auto relative grid w-full min-w-0 content-start gap-5 overflow-x-clip overflow-y-auto p-(--dialog-pad) outline-none [&>*]:min-w-0",
+              sheet
+                ? "max-w-[min(calc(100vw-2rem),88rem)] [--dialog-pad:var(--page-gutter)] md:h-[calc(100svh-2rem)] md:max-h-[calc(100svh-2rem)]"
+                : "max-h-[min(86svh,46rem)] max-w-lg [--dialog-pad:1.5rem] sm:[--dialog-pad:1.75rem]",
+              surface === "floating"
+                ? "surface-floating"
+                : "rounded-[var(--radius-xl)] bg-popover",
+              sheet && "t-sheet",
+              className,
+            )}
+            {...props}
+            onOpenAutoFocus={(event) => {
+              if (sheet) {
+                setArrived(false);
+                setDismissing(false);
+                setSettling(false);
+                dragRef.current = null;
+              }
+              props.onOpenAutoFocus?.(event);
+            }}
+            onPointerCancel={cancelSheetDrag}
+            onPointerDown={beginSheetDrag}
+            onPointerMove={moveSheetDrag}
+            onPointerUp={endSheetDrag}
+            onAnimationEnd={props.onAnimationEnd}
+            onAnimationStart={props.onAnimationStart}
+          >
+            {children}
+            {showCloseButton && (
+              <DialogPrimitive.Close
+                data-slot="dialog-close"
+                className="absolute top-3 right-3 z-30 grid size-8 place-items-center rounded-full bg-muted text-muted-foreground transition-[background-color,color] duration-[var(--motion-control)] hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:size-4"
+              >
+                <XIcon />
+                <span className="sr-only">{t("common.close")}</span>
+              </DialogPrimitive.Close>
+            )}
+          </DialogPrimitive.Content>
+        </div>
       </div>
     </DialogPortal>
   );
