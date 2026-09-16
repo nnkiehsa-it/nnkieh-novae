@@ -14,6 +14,13 @@ const workers = Number.isFinite(configuredWorkers) && configuredWorkers > 0
   ? configuredWorkers
   : 4;
 
+// Run the focused presentation regressions on another installed engine without
+// changing the default CI browser requirements or repeating stateful tests.
+const surfaceBrowser = process.env.NOVAE_E2E_SURFACE_BROWSER;
+if (surfaceBrowser && !["chromium", "firefox", "webkit"].includes(surfaceBrowser)) {
+  throw new Error("NOVAE_E2E_SURFACE_BROWSER must be chromium, firefox or webkit.");
+}
+
 export default defineConfig({
   expect: {
     // Protected routes can spend a few seconds in the real session/bootstrap
@@ -47,7 +54,12 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
       workers: 1,
     },
-    {
+    ...(surfaceBrowser ? [{
+      name: `surfaces-${surfaceBrowser}`,
+      dependencies: ["bootstrap"],
+      testMatch: /record-surfaces\.spec\.ts/,
+      use: { browserName: surfaceBrowser as "chromium" | "firefox" | "webkit" },
+    }] : [{
       dependencies: ["bootstrap"],
       name: "chromium-desktop-readonly",
       testMatch: readOnlyDesktopTests,
@@ -71,6 +83,6 @@ export default defineConfig({
       ],
       use: { ...devices["Desktop Chrome"] },
       workers: 1,
-    },
+    }]),
   ],
 });
