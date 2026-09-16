@@ -334,14 +334,14 @@ test('nested sheets keep every previous layer visible in the stack', async ({ br
   await card.click();
   await page.waitForURL(/\/issues\/[^/]+\/[^/]+$/u);
   const detail = page
-    .locator('[data-slot="dialog-content"].t-sheet')
+    .locator('[data-sheet-surface]')
     .filter({ has: page.locator('article h1') });
   await expect(detail).toBeVisible();
   const commentSort = detail.getByRole('button', { name: /Comment order|Newest first/u });
   await expect(commentSort).toBeVisible();
   await commentSort.click();
 
-  const sheets = page.locator('[data-slot="dialog-content"].t-sheet');
+  const sheets = page.locator('[data-sheet-surface]');
   await expect(sheets).toHaveCount(2);
   const actions = sheets.last();
   await expect(actions).toBeVisible();
@@ -409,7 +409,7 @@ test('controlled record-backed sheets keep their exit surface mounted', async ({
   await admin.page.getByRole('tab', { name: /Access rules|限制規則/u }).click();
   await admin.page.getByRole('button', { name: /Add prefix rule|新增前綴規則/u }).click();
 
-  const sheet = admin.page.locator('[data-slot="dialog-content"].t-sheet').last();
+  const sheet = admin.page.locator('[data-sheet-surface]').last();
   await expect(sheet).toBeVisible();
   const motionFrame = sheet.locator('..');
   await motionFrame.evaluate(async (element) => {

@@ -439,7 +439,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     translate: 0 0;
     transition: translate var(--motion-control) var(--ease-nav);
   }
-  .t-sheet-drag-region,
+  [data-sheet-drag-region],
   .t-sheet .detail-header {
     touch-action: none;
   }

@@ -6,14 +6,11 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogClose,
-  DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
+import { SheetSurface } from "@/components/ui/sheet-surface";
 import { useI18n } from "@/i18n";
 import { timingMs } from "@/lib/motion-timing";
 import { cn } from "@/lib/utils";
@@ -183,11 +180,8 @@ function SheetCloseButton({
   );
 }
 
-const SheetClose = DialogClose;
 const SheetDescription = DialogDescription;
-const SheetFooter = DialogFooter;
 const SheetTitle = DialogTitle;
-const SheetTrigger = DialogTrigger;
 
 function SheetHeader({
   children,
@@ -195,7 +189,7 @@ function SheetHeader({
   ...props
 }: React.ComponentProps<typeof DialogHeader>) {
   return (
-    <DialogHeader className={className} {...props}>
+    <DialogHeader className={className} data-sheet-drag-region="" {...props}>
       {children}
       <SheetCloseButton className="absolute right-(--dialog-pad) top-(--dialog-pad) z-30" />
     </DialogHeader>
@@ -203,52 +197,35 @@ function SheetHeader({
 }
 
 type SheetContentProps = Omit<
-  React.ComponentProps<typeof DialogContent>,
-  "presentation" | "showCloseButton"
+  React.ComponentProps<typeof SheetSurface>,
+  "onSheetExitComplete" | "sheetClosing"
 >;
 
 function SheetContent({
   children,
   className,
-  onAnimationEnd,
   ...props
 }: SheetContentProps) {
   const lifecycle = React.useContext(SheetLifecycle);
 
   return (
-    <DialogContent
+    <SheetSurface
       className={cn("gap-2", className)}
       onSheetExitComplete={lifecycle?.completeClose}
-      presentation="sheet"
       sheetClosing={Boolean(lifecycle?.closing)}
-      showCloseButton={false}
       {...props}
-      onAnimationEnd={(event) => {
-        onAnimationEnd?.(event);
-        if (event.currentTarget !== event.target) return;
-        if (
-          event.animationName === "t-sheet-out" ||
-          event.animationName === "t-sheet-dismiss" ||
-          event.animationName === "t-dialog-out"
-        ) {
-          lifecycle?.completeClose();
-        }
-      }}
     >
       {children}
-    </DialogContent>
+    </SheetSurface>
   );
 }
 
 export {
   Sheet,
-  SheetClose,
   SheetCloseButton,
   SheetContent,
   SheetDescription,
-  SheetFooter,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
   useSheetClose,
 };

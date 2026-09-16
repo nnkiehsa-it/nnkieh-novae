@@ -29,7 +29,7 @@ export function SecondaryToolbar({
   const { t } = useI18n();
   return (
     <div
-      className="t-sheet-drag-region flex h-9 items-center justify-between gap-3"
+      className="flex h-9 items-center justify-between gap-3"
       data-sheet-drag-region=""
     >
       {!closeRecord ? <Tooltip>

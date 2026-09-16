@@ -90,7 +90,7 @@ export function AppUpdateGate() {
 
   React.useEffect(() => {
     const syncSheetState = () => setSheetOpen(Boolean(
-      document.querySelector('[data-slot="dialog-content"].t-sheet[data-state="open"]'),
+      document.querySelector('[data-sheet-surface][data-state="open"]'),
     ));
     syncSheetState();
     const observer = new MutationObserver(syncSheetState);

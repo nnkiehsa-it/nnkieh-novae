@@ -47,6 +47,7 @@ const stylesheets = [];
 for (const file of files) {
   const source = await readFile(file, "utf8");
   const relativePath = path.relative(root, file);
+  const posixRelativePath = relativePath.replaceAll(path.sep, "/");
 
   if (file.endsWith(".css")) {
     stylesheets.push({ path: relativePath.replaceAll(path.sep, "/"), source });
@@ -66,9 +67,35 @@ for (const file of files) {
     if (/\bduration-\d/u.test(source)) errors.push(`${relativePath} uses a raw Tailwind duration; reference a motion token instead`);
     if (
       /presentation=["']sheet["']/u.test(source) &&
-      relativePath.replaceAll(path.sep, "/") !== "src/components/ui/sheet.tsx"
+      posixRelativePath !== "src/components/ui/sheet.tsx"
     ) {
       errors.push(`${relativePath} bypasses the shared Sheet primitive`);
+    }
+    if (
+      /\bt-sheet(?:-|\b)/u.test(source) &&
+      ![
+        "src/components/ui/dialog.tsx",
+        "src/components/ui/sheet.tsx",
+        "src/components/ui/sheet-surface.tsx",
+      ].includes(posixRelativePath)
+    ) {
+      errors.push(`${relativePath} reaches into Sheet implementation classes; use the shared Sheet API`);
+    }
+    if (
+      /data-slot=["']dialog-close["']/u.test(source) &&
+      ![
+        "src/components/ui/dialog.tsx",
+        "src/components/ui/sheet.tsx",
+        "src/components/ui/sheet-surface.tsx",
+      ].includes(posixRelativePath)
+    ) {
+      errors.push(`${relativePath} defines its own Sheet/Dialog close control; use the shared primitive`);
+    }
+    if (
+      /@\/components\/ui\/sheet-surface/u.test(source) &&
+      posixRelativePath !== "src/components/ui/sheet.tsx"
+    ) {
+      errors.push(`${relativePath} imports the internal Sheet surface; use @/components/ui/sheet`);
     }
   }
 
