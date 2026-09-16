@@ -143,14 +143,16 @@
 
 .dark {
   color-scheme: dark;
-  --background: #0d121b;
-  --foreground: #edf3fb;
-  --card: #131b27;
-  --card-foreground: #edf3fb;
-  --popover: #1a2534;
-  --popover-foreground: #edf3fb;
+  /* AMOLED dark keeps the stage truly black. Raised surfaces stay neutral,
+     not blue-grey; the product accent is the only chromatic UI tint. */
+  --background: #000000;
+  --foreground: #f5f7fb;
+  --card: #0a0a0b;
+  --card-foreground: #f5f7fb;
+  --popover: #101012;
+  --popover-foreground: #f5f7fb;
   --accent: #5d8ff0;
-  --accent-foreground: #0d121b;
+  --accent-foreground: #050505;
   --tint-content: var(--accent);
   --tint-surface: color-mix(in srgb, var(--accent) 13%, var(--card));
   --tint-surface-hover: color-mix(in srgb, var(--accent) 20%, var(--card));
@@ -158,23 +160,23 @@
   --primary: color-mix(in oklab, var(--accent) 88%, var(--card));
   --primary-foreground: var(--accent-foreground);
   --primary-hover: color-mix(in oklab, var(--primary) 94%, var(--foreground));
-  --secondary: #1a2534;
-  --secondary-foreground: #e0e8f5;
+  --secondary: #171719;
+  --secondary-foreground: #e5e7eb;
   --secondary-hover: color-mix(in oklab, var(--secondary) 92%, var(--secondary-foreground) 8%);
-  --muted: #1a2534;
-  --muted-foreground: #9cabbf;
-  --interaction: #233146;
-  --interaction-foreground: #edf3fb;
+  --muted: #171719;
+  --muted-foreground: #9ca3af;
+  --interaction: #202023;
+  --interaction-foreground: #f5f7fb;
   --destructive: #e05a5a;
-  --destructive-foreground: #190707;
+  --destructive-foreground: #090909;
   --success: #59b987;
   --warning: #d5a554;
   --status-review-bg: #452e00;
   --status-review-fg: #fef3c7;
-  --status-pending-bg: #3a3a3c;
-  --status-pending-fg: #e5e5ea;
-  --status-processing-bg: #18375d;
-  --status-processing-fg: #e0f2fe;
+  --status-pending-bg: #242426;
+  --status-pending-fg: #e5e5e7;
+  --status-processing-bg: color-mix(in srgb, var(--accent) 25%, black);
+  --status-processing-fg: color-mix(in srgb, var(--accent) 55%, white);
   --status-completed-bg: #144221;
   --status-completed-fg: #dcfce7;
   --status-auto-rejected-bg: #4d181b;
@@ -183,8 +185,8 @@
   --status-rejected-fg: #fee2e2;
   --status-infeasible-bg: #401e1e;
   --status-infeasible-fg: #f5dcdc;
-  --border: rgb(226 235 247 / 12%);
-  --input: #60728b;
+  --border: rgb(255 255 255 / 12%);
+  --input: #666b73;
   --ring: var(--tint-content);
   --focus: var(--tint-content);
   --nav-active-bg: var(--tint-surface);
@@ -193,18 +195,18 @@
   --selection-bg: var(--primary);
   --selection-fg: var(--primary-foreground);
   --notification-accent: var(--tint-content);
-  --surface-stage: #0d121b;
-  --surface-behind: color-mix(in oklab, var(--surface-stage) 45%, black);
-  --surface-inset: #1a2534;
+  --surface-stage: #000000;
+  --surface-behind: #000000;
+  --surface-inset: #171719;
   --surface-hover: rgb(93 143 240 / 8%);
   --surface-active: rgb(93 143 240 / 14%);
   --surface-selected: var(--tint-surface);
-  --rule: rgb(226 235 247 / 9%);
-  --backdrop: rgb(5 10 20 / 68%);
-  --shadow-control: 0 1px 2px rgb(5 10 20 / 20%);
-  --shadow-card: 0 2px 5px rgb(5 10 20 / 18%);
+  --rule: rgb(255 255 255 / 9%);
+  --backdrop: rgb(0 0 0 / 72%);
+  --shadow-control: 0 1px 2px rgb(0 0 0 / 28%);
+  --shadow-card: 0 2px 5px rgb(0 0 0 / 26%);
   --shadow-floating:
-    0 18px 48px rgb(5 10 20 / 38%), 0 3px 10px rgb(5 10 20 / 28%);
+    0 18px 48px rgb(0 0 0 / 48%), 0 3px 10px rgb(0 0 0 / 34%);
 }
 
 
