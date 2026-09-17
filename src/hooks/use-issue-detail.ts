@@ -249,7 +249,7 @@ export function useIssueDetail() {
       );
       rememberSupportedIssue(currentIssue.id, result.supported);
       if (supportersAsked.current) void loadSupporters();
-    } catch {
+    } catch (caught) {
       patchContentEntity<IssueRecord>(
         session.user?.uid,
         "issue",
@@ -260,7 +260,7 @@ export function useIssueDetail() {
         },
       );
       rememberSupportedIssue(currentIssue.id, previous.active);
-      toast.error(t("ui.issue.supportFailed"));
+      toast.error(caught instanceof Error ? caught.message : t("ui.issue.supportFailed"));
     } finally {
       supportingRef.current = false;
       setSupporting(false);

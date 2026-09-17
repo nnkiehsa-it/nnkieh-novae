@@ -90,6 +90,7 @@ export const initialSessionState: SessionState = {
 let state: SessionState = initialSessionState;
 let booted = false;
 let verificationSerial = 0;
+let pendingAuthRejection = "";
 
 function emit() {
   listeners.forEach((listener) => listener());
@@ -143,6 +144,7 @@ function resetAccess(next: Partial<SessionState> = {}) {
 
 async function rejectUser(reason: string) {
   verificationSerial += 1;
+  pendingAuthRejection = reason;
   clearActiveSessionData();
   resetAccess({ error: reason, user: null });
   if (auth) await signOut(auth).catch(() => undefined);
@@ -290,12 +292,15 @@ export function initializeSession(
   onAuthStateChanged(
     auth,
     async (user) => {
-      patch({ authChecking: false, error: "", loading: true, startupPhase: "session" });
+      const authEventError = user ? "" : pendingAuthRejection;
+      pendingAuthRejection = "";
+      patch({ authChecking: false, error: authEventError, loading: true, startupPhase: "session" });
       if (!user) {
         verificationSerial += 1;
         clearActiveSessionData();
         resetAccess({
           appReady: true,
+          error: authEventError,
           initialized: true,
           loading: false,
           user: null,

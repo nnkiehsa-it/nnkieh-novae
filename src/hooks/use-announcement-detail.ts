@@ -179,7 +179,7 @@ export function useAnnouncementDetail() {
           like_count: result.like_count,
         },
       );
-    } catch {
+    } catch (caught) {
       patchContentEntity<AnnouncementRecord>(
         session.user?.uid,
         "announcement",
@@ -189,7 +189,7 @@ export function useAnnouncementDetail() {
           like_count: previous.count,
         },
       );
-      toast.error(t("ui.announcement.likeFailed"));
+      toast.error(caught instanceof Error ? caught.message : t("ui.announcement.likeFailed"));
     } finally {
       likingRef.current = false;
       setLiking(false);

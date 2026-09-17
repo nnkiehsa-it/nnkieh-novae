@@ -88,9 +88,9 @@ export default function LoginPage() {
   if (restoringSession || (user && roleLoading)) return <AppStartupScreen phase={startupPhase} />;
 
   return (
-    <RouteSurface>
-      <main className="relative grid min-h-[100svh] overflow-hidden bg-[var(--surface-stage)] lg:grid-cols-[1.08fr_.92fr]">
-      <section className="relative hidden min-h-[100svh] overflow-hidden border-r bg-secondary/50 p-12 lg:grid lg:place-items-center">
+    <RouteSurface className="!w-full">
+      <main className="relative grid min-h-dvh overflow-hidden bg-[var(--surface-stage)] lg:grid-cols-[1.08fr_.92fr]">
+      <section className="relative hidden min-h-dvh overflow-hidden border-r bg-secondary/50 p-12 lg:grid lg:place-items-center">
         <BrandLockup className="t-panel-reveal absolute top-12 left-12" />
         <div className="t-stagger-list grid w-full max-w-lg gap-5 pt-16">
           <h1 className="t-stagger-item max-w-lg text-4xl font-semibold leading-[1.15] tracking-[-0.045em] text-tint-content text-balance">
@@ -103,7 +103,7 @@ export default function LoginPage() {
         </div>
       </section>
 
-      <section className="flex min-h-[100svh] items-center justify-center px-4 py-12 sm:px-8">
+      <section className="flex min-h-dvh items-center justify-center px-4 py-12 sm:px-8">
         <div className="t-panel-reveal w-full max-w-sm pt-6">
           <div className="mb-6 space-y-4">
             <BrandLockup className="lg:hidden" />
@@ -145,7 +145,7 @@ export default function LoginPage() {
           </div>
           {session.error || verificationError ? (
             <p
-              className="t-shake mt-3 rounded-lg bg-destructive/8 p-3 text-sm leading-5 text-destructive"
+              className="t-shake mt-3 break-words rounded-lg bg-destructive/8 p-3 text-sm leading-5 text-destructive"
               data-error="true"
             >
               {t(session.error || verificationError)}

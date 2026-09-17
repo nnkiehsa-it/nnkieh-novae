@@ -119,7 +119,7 @@ export function useFacilityDetail() {
           currentUserAffected: result.affected,
         },
       );
-    } catch {
+    } catch (caught) {
       patchContentEntity<FacilityRecord>(
         session.user?.uid,
         "facility",
@@ -129,7 +129,7 @@ export function useFacilityDetail() {
           currentUserAffected: previous.active,
         },
       );
-      toast.error(t("ui.facility.affectedFailed"));
+      toast.error(caught instanceof Error ? caught.message : t("ui.facility.affectedFailed"));
     } finally {
       affectingRef.current = false;
       setAffecting(false);

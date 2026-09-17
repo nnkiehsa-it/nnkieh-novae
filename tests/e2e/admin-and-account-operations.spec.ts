@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { Client } from 'pg';
 import { E2E_USERS } from './support/accounts';
 import { expectBackendAction } from './support/backend-action';
+import { readContentState } from './support/content-state';
 import { newUserPage } from './support/session';
 
 test('platform admin can restrict and restore an ordinary account', async ({ browser }) => {
@@ -35,6 +36,89 @@ test('platform admin can restrict and restore an ordinary account', async ({ bro
   });
   await expect(admin.page.getByLabel('Restriction reason / displayed message')).toBeVisible();
   await admin.context.close();
+});
+
+test('account restrictions show the configured message for denied actions and blocked login', async ({ browser }) => {
+  test.setTimeout(120_000);
+  const database = new Client({ connectionString: process.env.DATABASE_OWNER_URL });
+  await database.connect();
+  const [{ rows: targetRows }, { rows: adminRows }] = await Promise.all([
+    database.query<{ uid: string }>('select uid from app_private.user_profiles where email = $1', [E2E_USERS.other]),
+    database.query<{ uid: string }>('select uid from app_private.user_profiles where email = $1', [E2E_USERS.admin]),
+  ]);
+  const targetUid = targetRows[0]?.uid;
+  const adminUid = adminRows[0]?.uid;
+  expect(targetUid).toBeTruthy();
+  expect(adminUid).toBeTruthy();
+  const actionMessage = 'E2E read-only message';
+  const blockedMessage = 'E2E blocked login message';
+
+  try {
+    await database.query(
+      `insert into app_private.user_restrictions
+        (uid, target_type, preset, restricted_permanently, restricted_until, reason, updated_by)
+       values ($1, 'uid', 'read_only', true, null, $2, $3)
+       on conflict (target_type, uid) do update set
+         preset = excluded.preset,
+         restricted_permanently = excluded.restricted_permanently,
+         restricted_until = excluded.restricted_until,
+         reason = excluded.reason,
+         updated_by = excluded.updated_by,
+         updated_at = now()`,
+      [targetUid, actionMessage, adminUid],
+    );
+
+    const content = await readContentState();
+    const restricted = await newUserPage(browser, 'other');
+    await restricted.page.goto(content.proposalA);
+    await restricted.page.getByRole('button', { name: /Support this proposal|Remove support/u }).click();
+    await expect(restricted.page.getByText(actionMessage, { exact: false })).toBeVisible();
+    await restricted.context.close();
+
+    await database.query(
+      `update app_private.user_restrictions
+       set preset = 'blocked', reason = $2, updated_at = now()
+       where target_type = 'uid' and uid = $1`,
+      [targetUid, blockedMessage],
+    );
+    const blocked = await newUserPage(browser, 'other');
+    await blocked.page.goto('/issues');
+    await expect(blocked.page).toHaveURL(/\/login/u, { timeout: 20_000 });
+    await expect(blocked.page.getByText(blockedMessage, { exact: true })).toBeVisible();
+    await blocked.context.close();
+  } finally {
+    await database.query(
+      `delete from app_private.user_restrictions
+       where target_type = 'uid' and uid = $1`,
+      [targetUid],
+    );
+    await database.end();
+  }
+});
+
+test('login fills the desktop viewport edge to edge', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+  const page = await context.newPage();
+  await page.goto('/login');
+  await expect(page.getByRole('heading', { name: 'Sign in with a school account' })).toBeVisible();
+  const geometry = await page.locator('main').evaluate((main) => {
+    const leftPanel = main.firstElementChild;
+    const mainRect = main.getBoundingClientRect();
+    const leftRect = leftPanel?.getBoundingClientRect();
+    return {
+      leftPanelBottom: leftRect?.bottom ?? 0,
+      leftPanelLeft: leftRect?.left ?? -1,
+      mainLeft: mainRect.left,
+      mainRight: mainRect.right,
+      viewportHeight: window.innerHeight,
+      viewportWidth: window.innerWidth,
+    };
+  });
+  expect(geometry.mainLeft).toBe(0);
+  expect(geometry.mainRight).toBe(geometry.viewportWidth);
+  expect(geometry.leftPanelLeft).toBe(0);
+  expect(geometry.leftPanelBottom).toBeGreaterThanOrEqual(geometry.viewportHeight);
+  await context.close();
 });
 
 test('platform settings save traverses impact estimation and canonical write', async ({ browser }) => {

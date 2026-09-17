@@ -142,7 +142,7 @@ export function useFacilityFeed() {
           currentUserAffected: result.affected,
         },
       );
-    } catch {
+    } catch (caught) {
       patchContentEntity<FacilitySummary>(
         session.user?.uid,
         "facility",
@@ -152,7 +152,7 @@ export function useFacilityFeed() {
           currentUserAffected: previous.active,
         },
       );
-      toast.error(t("ui.facility.affectedFailed"));
+      toast.error(caught instanceof Error ? caught.message : t("ui.facility.affectedFailed"));
     } finally {
       affectingRef.current = null;
       setAffectingId(null);

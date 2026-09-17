@@ -149,13 +149,13 @@ export function useIssueFeed() {
         support_count: result.support_count,
       });
       setSupportedIssue(issueId, result.supported);
-    } catch {
+    } catch (caught) {
       patchContentEntity<IssueSummary>(session.user?.uid, "issue", issueId, {
         currentUserSupported: previous.active,
         support_count: previous.count,
       });
       setSupportedIssue(issueId, previous.active);
-      toast.error(t("ui.issue.supportFailed"));
+      toast.error(caught instanceof Error ? caught.message : t("ui.issue.supportFailed"));
     } finally {
       supportingRef.current = null;
       setSupportingId(null);
