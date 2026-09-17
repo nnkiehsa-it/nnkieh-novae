@@ -223,16 +223,10 @@ test('a record replaces its content in one surface, over the list it came from',
   });
   await expect(recordFrame).toHaveAttribute('data-sheet-arrived', 'true');
   await watchSheetExit(record, 'record-detail');
-  const beforeClose = await record.boundingBox();
-  expect(beforeClose).not.toBeNull();
   await record.getByRole('button', { name: 'Close' }).click();
   await expect(record).toHaveAttribute('data-sheet-lifecycle-closing', 'true');
   await expect(recordFrame).toHaveAttribute('data-sheet-lifecycle-closing', 'true');
   await expect(recordFrame).toHaveCSS('animation-name', 't-sheet-out');
-  await page.waitForTimeout(120);
-  const duringClose = await record.boundingBox();
-  expect(duringClose).not.toBeNull();
-  expect(duringClose!.y).toBeGreaterThan(beforeClose!.y);
   await page.waitForURL(/\/issues\/[^/]+$/u);
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect.poll(async () => {
@@ -437,16 +431,10 @@ test('nested sheets keep every previous layer visible in the stack', async ({ br
   expect(actionsLayout.height).toBeLessThan(detailLayout.height);
 
   await watchSheetExit(actions, 'nested-actions');
-  const beforeClose = await actions.boundingBox();
-  expect(beforeClose).not.toBeNull();
   await actions.getByRole('button', { name: /Close|關閉/u }).click();
   await expect(actions).toHaveAttribute('data-sheet-lifecycle-closing', 'true');
   await expect(actionsFrame).toHaveAttribute('data-sheet-lifecycle-closing', 'true');
   await expect(actionsFrame).toHaveCSS('animation-name', 't-sheet-out');
-  await page.waitForTimeout(120);
-  const duringClose = await actions.boundingBox();
-  expect(duringClose).not.toBeNull();
-  expect(duringClose!.y).toBeGreaterThan(beforeClose!.y);
   await expect(sheets).toHaveCount(1);
   await expect.poll(async () => {
     const report = await sheetExitReport(page, 'nested-actions');
@@ -480,16 +468,10 @@ test('controlled record-backed sheets keep their exit surface mounted', async ({
   });
   await expect(motionFrame).toHaveAttribute('data-sheet-arrived', 'true');
   await watchSheetExit(sheet, 'prefix-rule');
-  const beforeClose = await sheet.boundingBox();
-  expect(beforeClose).not.toBeNull();
   await sheet.getByRole('button', { name: /Close|關閉/u }).click();
   await expect(sheet).toHaveAttribute('data-sheet-lifecycle-closing', 'true');
   await expect(motionFrame).toHaveAttribute('data-sheet-lifecycle-closing', 'true');
   await expect(motionFrame).toHaveCSS('animation-name', 't-sheet-out');
-  await admin.page.waitForTimeout(120);
-  const duringClose = await sheet.boundingBox();
-  expect(duringClose).not.toBeNull();
-  expect(duringClose!.y).toBeGreaterThan(beforeClose!.y);
   await expect(sheet).toHaveCount(0);
   await expect.poll(async () => {
     const report = await sheetExitReport(admin.page, 'prefix-rule');

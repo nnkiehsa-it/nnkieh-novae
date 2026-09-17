@@ -52,9 +52,10 @@ async function expectMobileInteractionBaseline(page: Page) {
 async function expectTouchTarget(page: Page, name: string | RegExp) {
   const control = page.getByRole('button', { name });
   await expect(control).toBeVisible();
-  const box = await control.boundingBox();
-  expect(Math.round(box?.width ?? 0)).toBeGreaterThanOrEqual(44);
-  expect(Math.round(box?.height ?? 0)).toBeGreaterThanOrEqual(44);
+  await expect.poll(async () => {
+    const box = await control.boundingBox();
+    return Math.round(Math.min(box?.width ?? 0, box?.height ?? 0));
+  }).toBeGreaterThanOrEqual(44);
 }
 
 test.describe('mobile route motion', () => {

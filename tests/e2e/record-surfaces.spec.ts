@@ -244,6 +244,9 @@ test("pending row feedback uses the full-width pressed surface, not an inset fra
     await page.route("**/admin/people?*", async (route) => { await hold; await route.continue(); });
     await row.click();
     await expect(row).toHaveAttribute("data-navigating", "true");
+    await expect.poll(() => row.evaluate((node) =>
+      getComputedStyle(node, "::before").backgroundColor,
+    )).not.toBe("rgba(0, 0, 0, 0)");
     const paint = await row.evaluate((node) => ({
       shadow: getComputedStyle(node).boxShadow,
       background: getComputedStyle(node).backgroundColor,
