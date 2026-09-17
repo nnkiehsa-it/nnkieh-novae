@@ -98,6 +98,9 @@ export const BACKEND_ACTION_POLICIES = {
   "getAnnouncement": {
     "group": "read"
   },
+  "getAnnouncementUnreadHint": {
+    "group": "read"
+  },
   "getCategoryCatalog": {
     "group": "read"
   },
@@ -185,6 +188,9 @@ export const BACKEND_ACTION_POLICIES = {
   "markNotificationsOpened": {
     "group": "general-write",
     "extraLimit": "preferenceWriteHourly"
+  },
+  "markAnnouncementsOpened": {
+    "group": "general-write"
   },
   "moderateIssueStatus": {
     "group": "admin-write",

@@ -78,6 +78,9 @@ export const BACKEND_ACTION_POLICIES = {
   "getAnnouncement": {
     "group": "read"
   },
+  "getAnnouncementUnreadHint": {
+    "group": "read"
+  },
   "getCategoryCatalog": {
     "group": "read"
   },
@@ -165,6 +168,9 @@ export const BACKEND_ACTION_POLICIES = {
   "markNotificationsOpened": {
     "group": "general-write"
   },
+  "markAnnouncementsOpened": {
+    "group": "general-write"
+  },
   "moderateIssueStatus": {
     "group": "admin-write"
   },
@@ -248,6 +254,7 @@ export const BACKEND_ACTION_NAMES = [
   'estimateRetentionCleanup',
   'finalizeImageUploads',
   'getAnnouncement',
+  'getAnnouncementUnreadHint',
   'getCategoryCatalog',
   'getCategoryManagement',
   'getContentVersions',
@@ -277,6 +284,7 @@ export const BACKEND_ACTION_NAMES = [
   'listRoleAssignments',
   'listUserIssues',
   'markNotificationsOpened',
+  'markAnnouncementsOpened',
   'moderateIssueStatus',
   'registerPushToken',
   'removeSupport',

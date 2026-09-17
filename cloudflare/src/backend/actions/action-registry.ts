@@ -67,6 +67,7 @@ function action(
   ]);
   const personalActions = new Set([
     "cacheUserAvatar",
+    "markAnnouncementsOpened",
     "markNotificationsOpened",
     "registerPushToken",
     "updatePlatformAdminNotificationPreferences",
@@ -157,6 +158,8 @@ export const backendActionDefinitions = [
 
   action("listAnnouncements", "announcement", "read", announcementHandler),
   action("getAnnouncement", "announcement", "read", announcementHandler),
+  action("getAnnouncementUnreadHint", "announcement", "read", announcementHandler),
+  action("markAnnouncementsOpened", "announcement", "general-write", announcementHandler),
   action("createAnnouncement", "announcement", "admin-write", announcementHandler, { requiredPermission: "announcement.manage" }),
   action("deleteAnnouncement", "announcement", "admin-write", announcementHandler, { requiredPermission: "announcement.manage" }),
   action("setAnnouncementLike", "announcement", "sensitive-write", announcementHandler),

@@ -9,6 +9,7 @@ export function platformEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | n
     case "clearScheduledWork":
     case "rebuildNotionArchive":
       return [];
+    case "markAnnouncementsOpened":
     case "markNotificationsOpened": {
       events.push({
         aggregateType: "user",

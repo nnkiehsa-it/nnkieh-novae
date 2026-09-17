@@ -9,6 +9,7 @@ import {
   setAnnouncementLike,
   type AnnouncementCursor,
 } from "@/services/announcements";
+import { markAnnouncementsOpened } from "@/services/announcement-notice";
 import type { AnnouncementSummary } from "@/types";
 import {
   beginContentEntityRead,
@@ -154,6 +155,9 @@ export function useAnnouncementFeed() {
           nextPageCount,
           canContinuePage(nextCursor, result.cursor, result.hasMore),
         ));
+        if (!nextCursor && result.snapshotAt) {
+          void markAnnouncementsOpened(result.snapshotAt).catch(() => undefined);
+        }
       } catch (caught) {
         if (requestGuard.isCurrent(requestToken))
           setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));

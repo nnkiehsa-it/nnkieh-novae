@@ -18,6 +18,7 @@ import { StatusDistribution } from "@/components/ui/status-distribution";
 import { statusFillColor, statusTextColor } from "@/components/ui/status-badge";
 import { IssueCard } from "@/components/issues/issue-card";
 import { ChoiceSelect } from "@/components/ui/choice-select";
+import { AnnouncementNotice } from "@/components/announcements/announcement-notice";
 
 export default function IssueBoardPage() {
   useLocaleSubscription();
@@ -104,6 +105,7 @@ export default function IssueBoardPage() {
             value={filter}
           />
         }
+        titleAction={<AnnouncementNotice />}
         toolbar={
           <FeedToolbar
             appliedQuery={committedQuery}

@@ -64,6 +64,7 @@ export interface NotificationSourcePage {
 
 export interface NotificationReadState {
   admin: Date | null;
+  announcement: Date | null;
   broadcast: Date | null;
   user: Date | null;
 }
@@ -324,6 +325,7 @@ export function subscribeNotificationBadge(
 function normalizeNotificationReadState(data: Record<string, unknown>): NotificationReadState {
   return {
     admin: normalizeDate(data.adminOpenedAt),
+    announcement: normalizeDate(data.announcementOpenedAt),
     broadcast: normalizeDate(data.broadcastOpenedAt),
     user: normalizeDate(data.userOpenedAt),
   };

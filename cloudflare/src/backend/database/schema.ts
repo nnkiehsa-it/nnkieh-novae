@@ -92,6 +92,7 @@ interface NotificationRow {
 
 interface NotificationStateRow {
   uid: string;
+  announcement_opened_at: string;
   broadcast_opened_at: string | null;
   admin_opened_at: string | null;
   user_opened_at: string | null;
@@ -407,6 +408,7 @@ export interface AppApiFunctions {
     record_visit: boolean;
   }, Json>;
   backend_get_notification_unread_hint: AppFunction<{ actor_is_admin: boolean; actor_uid: string }, Json>;
+  backend_get_announcement_unread_hint: AppFunction<{ actor_uid: string }, Json>;
   backend_create_facility: AppFunction<{
     actor_uid: string;
     facility_title: string; facility_location: string; facility_content: string; facility_category: string;
@@ -630,6 +632,10 @@ export interface AppApiFunctions {
   backend_mark_notifications_opened: AppFunction<{
     actor_uid: string;
     opened_at: string;
+  }, Json>;
+  backend_mark_announcements_opened: AppFunction<{
+    actor_uid: string;
+    opened_through: string;
   }, Json>;
   backend_moderate_issue_status: AppFunction<{
     actor_is_admin: boolean;

@@ -82,6 +82,9 @@
   --destructive-foreground: #ffffff;
   --success: #23865a;
   --warning: #9a6413;
+  --announcement-notice-bg: #fef3c7;
+  --announcement-notice-fg: #854d0e;
+  --announcement-notice-hover: #fde9a5;
   --status-review-bg: #fef3c7;
   --status-review-fg: #92400e;
   --status-pending-bg: #f2f2f7;
@@ -171,6 +174,9 @@
   --destructive-foreground: #090909;
   --success: #59b987;
   --warning: #d5a554;
+  --announcement-notice-bg: #3b2f0b;
+  --announcement-notice-fg: #fde68a;
+  --announcement-notice-hover: #4a3a0c;
   --status-review-bg: #452e00;
   --status-review-fg: #fef3c7;
   --status-pending-bg: #242426;

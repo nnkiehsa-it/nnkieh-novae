@@ -543,6 +543,8 @@ const messages = {
   'ui.announcement.title': '公告',
   'ui.announcement.description': '查看校園最新消息、重要通知與後續討論。',
   'ui.announcement.new': '新增公告',
+  'ui.announcement.noticeLabel': '新公告',
+  'ui.announcement.noticeShort': '新公告',
   'ui.announcement.createFirst': '發布第一則公告',
   'ui.announcement.emptyTitle': '目前沒有公告',
   'ui.announcement.emptyDescription': '新的校園公告會顯示在這裡。',

@@ -24,6 +24,13 @@ import { registerContentVersion } from '@/services/content-versions';
 const ANNOUNCEMENT_LIMIT = 10;
 const ANNOUNCEMENT_LIST_CACHE_PREFIX = 'announcement-list-page|';
 export type AnnouncementCursor = { id: string; publishedAt: string } | null;
+export type AnnouncementPage = {
+  announcements: AnnouncementSummary[];
+  cursor: AnnouncementCursor;
+  hasMore: boolean;
+  snapshotAt: string | null;
+  version: number;
+};
 
 function dateFromMs(value: unknown) {
   return typeof value === 'number' ? new Date(value) : normalizeDate(value);
@@ -92,14 +99,14 @@ export async function fetchAnnouncementsPage(
 ) {
   const cacheKey = createContentCacheKey([
     'announcement-list-page',
-    'summary-v2',
+    'summary-v3',
     options.cacheScope ?? 'default',
     pageSize,
     cursor?.id ?? 'first',
     cursor?.publishedAt ?? '',
   ]);
   if (!options.forceRefresh) {
-    const cached = await getCachedContentPersistent<{ announcements: AnnouncementSummary[]; cursor: AnnouncementCursor; hasMore: boolean; version: number }>(cacheKey);
+    const cached = await getCachedContentPersistent<AnnouncementPage>(cacheKey);
     if (cached) {
       registerContentVersion('announcements', cached.version);
       return cached;
@@ -110,13 +117,16 @@ export async function fetchAnnouncementsPage(
   try {
     const fn = invokeBackendAction<
       { cursor: AnnouncementCursor; pageSize: number },
-      { announcements: Record<string, unknown>[]; cursor: AnnouncementCursor; hasMore: boolean; version: number }
+      { announcements: Record<string, unknown>[]; cursor: AnnouncementCursor; hasMore: boolean; snapshotAt: unknown; version: number }
     >('listAnnouncements', { signal: options.signal, timeoutMs: readRequestTimeoutMs });
     const result = await fn({ cursor, pageSize });
     const page = {
       announcements: result.announcements.map(normalizeAnnouncementSummary),
       cursor: normalizeAnnouncementCursor(result.cursor),
       hasMore: result.hasMore,
+      snapshotAt: typeof result.snapshotAt === "string"
+        ? result.snapshotAt
+        : normalizeDate(result.snapshotAt)?.toISOString() ?? null,
       version: result.version,
     };
     setCachedContentFromRead(cacheGuard, page);

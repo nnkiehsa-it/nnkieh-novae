@@ -18,6 +18,7 @@ import { FeedList } from "@/components/ui/feed-list";
 import { StatusDistribution } from "@/components/ui/status-distribution";
 import { statusFillColor, statusTextColor } from "@/components/ui/status-badge";
 import { ChoiceSelect } from "@/components/ui/choice-select";
+import { AnnouncementNotice } from "@/components/announcements/announcement-notice";
 
 export default function FacilitiesPage() {
   useLocaleSubscription();
@@ -76,6 +77,7 @@ export default function FacilitiesPage() {
             value={state.category}
           />
         }
+        titleAction={<AnnouncementNotice />}
         toolbar={
           <FeedToolbar
             appliedQuery={state.committedQuery}

@@ -16,6 +16,7 @@ export function PageHeader({
   className,
   lead,
   title,
+  titleAction,
   toolbar,
 }: {
   actions?: React.ReactNode;
@@ -29,6 +30,7 @@ export function PageHeader({
    */
   lead?: React.ReactNode;
   title: React.ReactNode;
+  titleAction?: React.ReactNode;
   /**
    * Search and sort controls. They join the same wrapping row as the title and the
    * actions, which lets them sit beside the actions where the screen is narrow and
@@ -38,17 +40,27 @@ export function PageHeader({
 }) {
   useLocaleSubscription();
   const heading = (
-    <div className={cn("min-w-0", toolbar && "order-1 w-full sm:w-auto sm:flex-1")}>
+    <div className="min-w-0 flex-1">
       <h1 className="text-balance text-2xl font-semibold leading-8 tracking-[-0.035em]">
         {title}
       </h1>
+    </div>
+  );
+  const headingRow = titleAction ? (
+    <div className={cn("flex min-w-0 items-center justify-between gap-3", toolbar && "order-1 w-full sm:w-auto sm:flex-1")}>
+      {heading}
+      <div className="shrink-0">{titleAction}</div>
+    </div>
+  ) : (
+    <div className={cn("min-w-0", toolbar && "order-1 w-full sm:w-auto sm:flex-1")}>
+      {heading}
     </div>
   );
   if (toolbar) {
     return (
       <header className={cn("page-header flex flex-wrap items-center gap-x-2 gap-y-3", className)}>
         <HeaderBackdrop progressive />
-        {heading}
+        {headingRow}
         {actions}
         {toolbar}
       </header>
@@ -56,7 +68,7 @@ export function PageHeader({
   }
   const titleRow = (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      {heading}
+      {headingRow}
       {actions ? (
         <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:flex-1 sm:justify-end">
           {actions}

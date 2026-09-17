@@ -224,6 +224,7 @@ export interface GeneratedDatabaseTables {
     "admin_opened_at": string | null;
     "user_opened_at": string | null;
     "updated_at": string;
+    "announcement_opened_at": string;
   };
   "notifications": {
     "id": string;
@@ -448,6 +449,7 @@ export const GENERATED_DATABASE_FUNCTION_SIGNATURES = [
   "backend_estimate_retention_cleanup(actor_uid text, retention_config jsonb) -> jsonb",
   "backend_get_access_context(actor_uid text) -> jsonb",
   "backend_get_announcement(announcement_id uuid, actor_uid text) -> jsonb",
+  "backend_get_announcement_unread_hint(actor_uid text) -> jsonb",
   "backend_get_facility(facility_id uuid, actor_uid text, actor_can_manage boolean) -> jsonb",
   "backend_get_issue(issue_id uuid, actor_uid text, actor_is_admin boolean, private_to_owner_categories text[], review_required_categories text[], author_private_categories text[]) -> jsonb",
   "backend_get_notification_read_state(actor_uid text) -> jsonb",
@@ -474,6 +476,7 @@ export const GENERATED_DATABASE_FUNCTION_SIGNATURES = [
   "backend_list_user_issues(actor_uid text, actor_is_admin boolean, sort_name text, page_size integer, cursor_id uuid, cursor_created_at timestamp with time zone, cursor_sort_date timestamp with time zone, cursor_sort_number integer, private_to_owner_categories text[], review_required_categories text[], author_private_categories text[]) -> jsonb",
   "backend_list_user_issues(actor_uid text, actor_is_admin boolean, status_bucket text, sort_name text, page_size integer, cursor_id uuid, cursor_created_at timestamp with time zone, cursor_sort_date timestamp with time zone, cursor_sort_number integer, private_to_owner_categories text[], review_required_categories text[], author_private_categories text[]) -> jsonb",
   "backend_list_user_issues_snapshot(actor_uid text, actor_is_admin boolean, status_bucket text, sort_name text, page_size integer, cursor_id uuid, cursor_created_at timestamp with time zone, cursor_sort_date timestamp with time zone, cursor_sort_number integer) -> jsonb",
+  "backend_mark_announcements_opened(actor_uid text, opened_through timestamp with time zone) -> jsonb",
   "backend_mark_notifications_opened(actor_uid text, opened_at timestamp with time zone) -> jsonb",
   "backend_moderate_issue_status(issue_id uuid, actor_uid text, actor_is_admin boolean, next_status text, review_rejection_reason text, support_deadline_at timestamp with time zone, review_approved_at timestamp with time zone, private_to_owner_categories text[], review_required_categories text[], author_private_categories text[]) -> jsonb",
   "backend_notification_state_to_json(state_record app_private.notification_states) -> jsonb",

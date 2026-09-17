@@ -543,6 +543,8 @@ const messages = {
   'ui.announcement.title': 'Announcements',
   'ui.announcement.description': 'See the latest campus news, important notices, and discussions.',
   'ui.announcement.new': 'New announcement',
+  'ui.announcement.noticeLabel': 'New announcement',
+  'ui.announcement.noticeShort': 'New',
   'ui.announcement.createFirst': 'Publish the first announcement',
   'ui.announcement.emptyTitle': 'No announcements yet',
   'ui.announcement.emptyDescription': 'New campus announcements will appear here.',

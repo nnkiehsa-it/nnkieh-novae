@@ -17,6 +17,7 @@ import type { AnnouncementRecord, IssueRecord } from '@/types';
 
 interface RealtimeSubscriber {
   callback: (event: ContentRealtimeEvent) => void;
+  onResync?: () => void;
 }
 
 const realtimeSubscribers = new Map<number, RealtimeSubscriber>();
@@ -186,7 +187,10 @@ function ensureContentTopics() {
   const key = topics.join('|');
   if (contentSubscriptionKey === key && contentUnsubscribers.length > 0) return;
   disconnectContentTopics();
-  const onResync = () => void ensureContentVersionsFresh({ notify: true });
+  const onResync = () => {
+    void ensureContentVersionsFresh({ notify: true });
+    realtimeSubscribers.forEach((subscriber) => subscriber.onResync?.());
+  };
   contentUnsubscribers = topics.map((topic) => subscribeRealtimeTopic(
     topic,
     'content_changed',
@@ -211,10 +215,11 @@ export function stopContentRealtimeSession() {
 export function subscribeContentRealtimeEvents(
   channelScope: string,
   callback: (event: ContentRealtimeEvent) => void,
+  onResync?: () => void,
 ) {
   void channelScope;
   const subscriberId = realtimeSubscriberSerial += 1;
-  realtimeSubscribers.set(subscriberId, { callback });
+  realtimeSubscribers.set(subscriberId, { callback, onResync });
   ensureContentTopics();
   return () => {
     realtimeSubscribers.delete(subscriberId);

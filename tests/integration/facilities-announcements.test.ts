@@ -139,6 +139,10 @@ integrationTest("announcement.manage, likes, comments, and ownership", async () 
   const user = await seedActor("announcement-user");
   const stranger = await seedActor("announcement-stranger");
   assert.deepEqual(manager.auth.permissions, ["announcement.manage"]);
+  assert.equal(
+    asRecord(await callAction("getAnnouncementUnreadHint", {}, user.auth)).hasUnread,
+    false,
+  );
 
   await expectActionError(
     "permission-denied",
@@ -161,6 +165,39 @@ integrationTest("announcement.manage, likes, comments, and ownership", async () 
   assert.ok(listedAnnouncement);
   assert.equal("content" in listedAnnouncement, false);
   assert.equal(typeof list.version, "number");
+  assert.ok(Date.parse(String(list.snapshotAt)) > 0);
+  assert.equal(
+    asRecord(await callAction("getAnnouncementUnreadHint", {}, user.auth)).hasUnread,
+    true,
+  );
+  assert.equal(
+    asRecord(await callAction("getAnnouncementUnreadHint", {}, stranger.auth)).hasUnread,
+    true,
+  );
+  const opened = asRecord(await callAction("markAnnouncementsOpened", {
+    openedThrough: list.snapshotAt,
+  }, user.auth));
+  assert.equal(opened.success, true);
+  assert.equal(
+    asRecord(await callAction("getAnnouncementUnreadHint", {}, user.auth)).hasUnread,
+    false,
+  );
+  assert.equal(
+    asRecord(await callAction("getAnnouncementUnreadHint", {}, stranger.auth)).hasUnread,
+    true,
+  );
+
+  await callAction("createAnnouncement", {
+    content: "Announcement created after the first list snapshot",
+    title: "Later announcement",
+  }, manager.auth);
+  await callAction("markAnnouncementsOpened", {
+    openedThrough: list.snapshotAt,
+  }, user.auth);
+  assert.equal(
+    asRecord(await callAction("getAnnouncementUnreadHint", {}, user.auth)).hasUnread,
+    true,
+  );
   const read = asRecord(await callAction("getAnnouncement", {
     announcementId,
   }, user.auth));

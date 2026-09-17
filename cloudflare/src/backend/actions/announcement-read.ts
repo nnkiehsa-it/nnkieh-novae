@@ -5,14 +5,16 @@ import { asNumber, asUuid, readCursor, readCursorDate } from "./utils.ts";
 function compactAnnouncementListResult(data: unknown): JsonRecord {
   const result = asRecord(data);
   if (!Array.isArray(result.announcements)) return result;
+  const announcements = result.announcements.map((value) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+    const announcement = { ...(value as JsonRecord) };
+    delete announcement.content;
+    return announcement;
+  });
   return {
     ...result,
-    announcements: result.announcements.map((value) => {
-      if (!value || typeof value !== "object" || Array.isArray(value)) return value;
-      const announcement = { ...(value as JsonRecord) };
-      delete announcement.content;
-      return announcement;
-    }),
+    announcements,
+    snapshotAt: result.snapshotAt ?? null,
   };
 }
 
@@ -41,7 +43,9 @@ async function getAnnouncement(payload: JsonRecord, auth: AuthContext, database:
 }
 
 export function isAnnouncementReadAction(action: string) {
-  return action === "listAnnouncements" || action === "getAnnouncement";
+  return action === "listAnnouncements"
+    || action === "getAnnouncement"
+    || action === "getAnnouncementUnreadHint";
 }
 
 export async function handleAnnouncementReadAction(
@@ -52,5 +56,12 @@ export async function handleAnnouncementReadAction(
 ) {
   if (action === "listAnnouncements") return listAnnouncements(payload, auth, database);
   if (action === "getAnnouncement") return getAnnouncement(payload, auth, database);
+  if (action === "getAnnouncementUnreadHint") {
+    const { data, error } = await database.call("app_api", "backend_get_announcement_unread_hint", {
+      actor_uid: auth.uid,
+    });
+    if (error) throw error;
+    return data;
+  }
   throw new Error("invalid-action");
 }

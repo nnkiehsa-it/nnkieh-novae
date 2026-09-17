@@ -155,3 +155,22 @@ test('announcement covers like, threaded comments, deletion, and manager removal
   await deleteFromMoreActions(remover.page, 'Delete announcement');
   await remover.context.close();
 });
+
+test('announcement notice recovers announcements published while the member was offline', async ({ browser }) => {
+  const manager = await newUserPage(browser, 'announcementManager');
+  await createAnnouncement(manager.page, `Notice ${Date.now().toString().slice(-8)}`);
+  await manager.context.close();
+
+  const member = await newUserPage(browser, 'ordinary');
+  await member.page.setViewportSize({ height: 844, width: 390 });
+  await member.page.goto('/issues/public-issues');
+  const notice = member.page.getByRole('link', { name: 'New announcement' });
+  await expect(notice).toBeVisible();
+  await expectBackendAction(member.page, 'markAnnouncementsOpened', async () => {
+    await notice.click();
+  });
+  await expect(member.page).toHaveURL(/\/announcements$/u);
+  await member.page.goto('/facilities');
+  await expect(member.page.getByRole('link', { name: 'New announcement' })).toHaveCount(0);
+  await member.context.close();
+});
