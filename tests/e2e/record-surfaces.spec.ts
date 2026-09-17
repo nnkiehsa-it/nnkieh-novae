@@ -56,7 +56,29 @@ for (const width of [390, 1440]) {
         await expect(record.locator("article h1")).toContainText("E2E");
         await expect(source).toHaveAttribute("data-route-path", "/notifications");
         expect(await sourceNode!.evaluate((node) => node === document.querySelector(".route-page"))).toBe(true);
-        await record.locator(".detail-header").getByRole("button", { name: "Close", exact: true }).click();
+        const close = record.locator(".detail-header").getByRole("button", { name: "Close", exact: true });
+        if (width === 390 && kind === "proposalA") {
+          const before = await page.evaluate(() => {
+            const stage = document.querySelector<HTMLElement>(".t-stage")!;
+            const frame = document.querySelector<HTMLElement>("[data-sheet-motion-frame]")!;
+            return {
+              scale: new DOMMatrixReadOnly(getComputedStyle(stage).transform).a,
+              sheetTop: frame.getBoundingClientRect().top,
+            };
+          });
+          await close.click();
+          await expect(record).toHaveAttribute("data-sheet-lifecycle-closing", "true");
+          await expect.poll(() => page.evaluate((start) => {
+            const stage = document.querySelector<HTMLElement>(".t-stage")!;
+            const frame = document.querySelector<HTMLElement>("[data-sheet-motion-frame]")!;
+            return {
+              sheetMovingDown: frame.getBoundingClientRect().top > start.sheetTop + 2,
+              stageReturning: new DOMMatrixReadOnly(getComputedStyle(stage).transform).a > start.scale + 0.005,
+            };
+          }, before)).toEqual({ sheetMovingDown: true, stageReturning: true });
+        } else {
+          await close.click();
+        }
         await expect(page).toHaveURL(/\/notifications$/u);
         await expect(page.locator("[data-sheet-surface]")).toHaveCount(0);
         await expect.poll(() => page.evaluate((expected) => Math.abs(scrollY - expected), scroll)).toBeLessThanOrEqual(1);
