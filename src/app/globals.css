@@ -490,6 +490,85 @@ html[data-input-modality="pointer"] :focus-visible {
   mask-image: linear-gradient(to bottom, black calc(100% - var(--header-fade)), transparent);
 }
 
+/* The installed iOS app already owns the status-bar edge treatment. Page
+   headers therefore paint from their own box instead of extending their
+   backdrop to the physical top of the screen. Three overlapping bands reduce
+   the blur radius through the tail while the solid part still covers every
+   title, toolbar and action measured by the header itself. */
+.page-header > .header-backdrop[data-progressive="true"] {
+  --header-fade: 3rem;
+  top: 0;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--header-veil, var(--surface-stage)) 82%, transparent) 0,
+    color-mix(in srgb, var(--header-veil, var(--surface-stage)) 82%, transparent)
+      calc(100% - var(--header-fade)),
+    transparent
+  );
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.page-header > .header-backdrop[data-progressive="true"] > span {
+  position: absolute;
+  inset: 0;
+}
+
+.page-header > .header-backdrop [data-blur-step="strong"] {
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    black 0,
+    black calc(100% - 2rem),
+    transparent calc(100% - 1.25rem)
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    black 0,
+    black calc(100% - 2rem),
+    transparent calc(100% - 1.25rem)
+  );
+}
+
+.page-header > .header-backdrop [data-blur-step="medium"] {
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent calc(100% - 2.5rem),
+    black calc(100% - 1.875rem),
+    black calc(100% - 1.125rem),
+    transparent calc(100% - 0.5rem)
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent calc(100% - 2.5rem),
+    black calc(100% - 1.875rem),
+    black calc(100% - 1.125rem),
+    transparent calc(100% - 0.5rem)
+  );
+}
+
+.page-header > .header-backdrop [data-blur-step="soft"] {
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent calc(100% - 1.5rem),
+    black calc(100% - 0.75rem),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent calc(100% - 1.5rem),
+    black calc(100% - 0.75rem),
+    transparent 100%
+  );
+}
+
 .page-header > :not(.header-backdrop),
 .detail-header > :not(.header-backdrop) {
   position: relative;

@@ -47,7 +47,7 @@ export function PageHeader({
   if (toolbar) {
     return (
       <header className={cn("page-header flex flex-wrap items-center gap-x-2 gap-y-3", className)}>
-        <HeaderBackdrop />
+        <HeaderBackdrop progressive />
         {heading}
         {actions}
         {toolbar}
@@ -67,14 +67,14 @@ export function PageHeader({
   if (lead) {
     return (
       <header className={cn("page-header flex flex-col gap-4 pb-4", className)}>
-        <HeaderBackdrop />
+        <HeaderBackdrop progressive />
         {lead}
         {titleRow}
       </header>
     );
   }
   return (
-    <header className={cn("page-header pb-4", className)}><HeaderBackdrop />{titleRow}</header>
+    <header className={cn("page-header pb-4", className)}><HeaderBackdrop progressive />{titleRow}</header>
   );
 }
 

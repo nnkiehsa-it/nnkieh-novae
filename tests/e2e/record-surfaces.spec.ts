@@ -188,8 +188,14 @@ for (const width of [390, 1440]) {
         const header = page.locator(".page-header");
         const title = header.locator("h1");
         const backdrop = header.locator('[data-slot="header-backdrop"]');
+        const blurSteps = backdrop.locator("[data-blur-step]");
         await expect(title).toBeVisible();
-        await expect(backdrop).toHaveCSS("backdrop-filter", "blur(12px)");
+        await expect(backdrop).toHaveAttribute("data-progressive", "true");
+        await expect(backdrop).toHaveCSS("backdrop-filter", "none");
+        await expect(blurSteps).toHaveCount(3);
+        await expect(blurSteps.nth(0)).toHaveCSS("backdrop-filter", "blur(12px)");
+        await expect(blurSteps.nth(1)).toHaveCSS("backdrop-filter", "blur(6px)");
+        await expect(blurSteps.nth(2)).toHaveCSS("backdrop-filter", "blur(2px)");
         await expect(backdrop).toHaveCSS("z-index", "0");
         await expect(backdrop).toHaveCSS("pointer-events", "none");
         await expect.poll(() => backdrop.evaluate((node) => {
@@ -207,19 +213,32 @@ for (const width of [390, 1440]) {
         }))).toEqual({ extent: 0, position: 0 });
         const geometry = await header.evaluate((node) => {
           const veil = node.querySelector<HTMLElement>('[data-slot="header-backdrop"]')!;
-          const heading = node.querySelector("h1")!;
+          const foreground = [...node.children].filter((child) =>
+            !(child instanceof HTMLElement && child.dataset.slot === "header-backdrop")
+          );
           const v = veil.getBoundingClientRect();
-          const h = heading.getBoundingClientRect();
+          const boxes = foreground.map((child) => child.getBoundingClientRect());
+          const headerBox = node.getBoundingClientRect();
           const filters: string[] = [];
-          for (let current: Element | null = heading; current; current = current.parentElement) {
+          const backdropFilters: string[] = [];
+          for (let current: Element | null = node.querySelector("h1"); current; current = current.parentElement) {
             filters.push(getComputedStyle(current).filter);
+            backdropFilters.push(getComputedStyle(current).backdropFilter);
             if (current === node) break;
           }
-          return { veilTop: v.top, titleTop: h.top, solidBottom: v.bottom - parseFloat(getComputedStyle(veil).getPropertyValue("--header-fade")) * parseFloat(getComputedStyle(document.documentElement).fontSize), titleBottom: h.bottom, filters };
+          return {
+            veilTop: v.top,
+            headerTop: headerBox.top,
+            solidBottom: v.bottom - parseFloat(getComputedStyle(veil).getPropertyValue("--header-fade")) * parseFloat(getComputedStyle(document.documentElement).fontSize),
+            foregroundBottom: Math.max(...boxes.map((box) => box.bottom)),
+            filters,
+            backdropFilters,
+          };
         });
-        expect(geometry.veilTop).toBeLessThanOrEqual(geometry.titleTop);
-        expect(geometry.solidBottom).toBeGreaterThanOrEqual(geometry.titleBottom);
+        expect(geometry.veilTop).toBe(geometry.headerTop);
+        expect(geometry.solidBottom).toBeGreaterThanOrEqual(geometry.foregroundBottom);
         expect(geometry.filters.every((value) => value === "none")).toBe(true);
+        expect(geometry.backdropFilters.every((value) => value === "none")).toBe(true);
         expect(await page.evaluate(() =>
           !CSS.supports("overscroll-behavior", "none")
           || [...document.querySelectorAll("*")].every((node) => {
