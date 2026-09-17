@@ -221,7 +221,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div className="min-w-0 md:col-start-2">
+      <div className="app-main-column min-w-0 md:col-start-2">
         <main className="app-viewport">
           <RouteSurface
             className={`pt-[max(1rem,var(--safe-top))] md:pb-12 md:pt-6 ${

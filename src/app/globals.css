@@ -238,6 +238,7 @@ html {
   /* Pan only: no pinch scaling and no double-tap scaling, on the platforms that
      ignore the viewport's own scale limits as well. */
   touch-action: pan-x pan-y;
+  overflow-x: clip;
   interpolate-size: allow-keywords;
   background: var(--surface-stage);
   font-synthesis: none;
@@ -245,7 +246,7 @@ html {
 }
 
 body {
-  min-width: 20rem;
+  min-width: min(20rem, 100%);
   min-height: 100vh;
   min-height: 100svh;
   margin: 0;
@@ -436,6 +437,13 @@ html[data-input-modality="pointer"] :focus-visible {
   min-height: 100svh;
 }
 
+/* Header veils size themselves against the actual application column rather
+   than `100vw`. WebKit can reserve a scrollbar gutter even while the scrollbar
+   is visually hidden, making viewport units wider than the drawable page. */
+.app-main-column {
+  container-type: inline-size;
+}
+
 .route-page {
   width: min(100%, var(--content-max));
   margin-inline: auto;
@@ -464,9 +472,9 @@ html[data-input-modality="pointer"] :focus-visible {
   position: absolute;
   z-index: 0;
   top: calc(0px - var(--header-top, var(--page-header-top)));
-  right: var(--header-bleed, calc((100% - 100vw) / 2));
+  right: var(--header-bleed, calc((100% - 100cqw) / 2));
   bottom: calc(-1 * var(--header-fade));
-  left: var(--header-bleed, calc((100% - 100vw) / 2));
+  left: var(--header-bleed, calc((100% - 100cqw) / 2));
   pointer-events: none;
   background: color-mix(
     in srgb,
@@ -791,12 +799,6 @@ html[data-input-modality="pointer"] :focus-visible {
 @media (min-width: 48rem) {
   :root {
     --page-header-top: 1.5rem;
-  }
-
-  .page-header {
-    /* The desktop reading area starts after the sidebar. Extending to the
-       whole viewport from this offset column paints past the right edge. */
-    --header-bleed: calc((100% - (100vw - 15rem)) / 2);
   }
 }
 
