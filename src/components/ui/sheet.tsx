@@ -224,7 +224,7 @@ function SheetContent({
 function SheetBody({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn("min-h-0 overflow-y-auto pb-1", className)}
+      className={cn("min-h-0 overflow-x-clip overflow-y-auto", className)}
       data-slot="sheet-body"
       {...props}
     />

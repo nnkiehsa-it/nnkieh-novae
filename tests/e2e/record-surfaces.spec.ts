@@ -120,6 +120,19 @@ for (const width of [390, 1440]) {
         !CSS.supports("overscroll-behavior", "none")
         || getComputedStyle(node).overscrollBehaviorY === "none"
       )).toBe(true);
+      const horizontalBoundary = await body.evaluate((node) => {
+        node.scrollLeft = 100;
+        return {
+          bodyPaddingBottom: getComputedStyle(node).paddingBottom,
+          overflowX: getComputedStyle(node).overflowX,
+          scrollLeft: node.scrollLeft,
+          sheetPaddingBottom: getComputedStyle(node.closest('[data-sheet-surface]')!).paddingBottom,
+        };
+      });
+      expect(["clip", "hidden"]).toContain(horizontalBoundary.overflowX);
+      expect(horizontalBoundary.scrollLeft).toBe(0);
+      expect(horizontalBoundary.bodyPaddingBottom).toBe("0px");
+      expect(horizontalBoundary.sheetPaddingBottom).toBe(width === 390 ? "16px" : "24px");
       const size = await body.evaluate((node) => ({ client: node.clientHeight, scroll: node.scrollHeight }));
       expect(size.client).toBeGreaterThan(0);
       expect(size.scroll).toBeGreaterThan(size.client);

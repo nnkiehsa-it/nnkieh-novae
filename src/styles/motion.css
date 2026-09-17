@@ -394,7 +394,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     border-end-start-radius: 0;
     border-end-end-radius: 0;
     padding-top: 1rem;
-    padding-bottom: max(1.5rem, calc(var(--safe-bottom) + 0.75rem));
+    padding-bottom: max(var(--page-gutter), var(--safe-bottom));
     transform-origin: 50% 0;
   }
   .t-sheet[data-state="open"],
