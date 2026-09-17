@@ -117,7 +117,7 @@ test('facility covers affected reaction and terminal outcome write', async ({ br
   await expectBackendAction(manager.page, 'updateFacilityStatus', async () => {
     await manager.page.getByRole('button', { name: 'Submit' }).click();
   });
-  await expect(manager.page.getByRole('dialog')).toHaveCount(0);
+  await expect(manager.page.getByRole('dialog', { name: 'Update facility status' })).toHaveCount(0);
   await expect(manager.page.getByText('Completed', { exact: true }).first()).toBeVisible();
   await expect(manager.page.getByText(outcome)).toBeVisible();
   await deleteFromMoreActions(manager.page, 'Delete report');
