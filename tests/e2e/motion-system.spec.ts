@@ -399,6 +399,11 @@ test('nested sheets keep every previous layer visible in the stack', async ({ br
   await expect(actions).toBeVisible();
   const actionsHeader = actions.locator('[data-slot="dialog-header"]');
   await expect(actionsHeader).toHaveCSS('position', 'sticky');
+  const actionsFrame = actions.locator('..');
+  await actionsFrame.evaluate(async (element) => {
+    await Promise.all(element.getAnimations().map((animation) => animation.finished.catch(() => undefined)));
+  });
+  await expect(actionsFrame).toHaveAttribute('data-sheet-arrived', 'true');
   const actionsClose = actionsHeader.getByRole('button', { name: /Close|關閉/u });
   await expect(actionsClose).toHaveCount(1);
   await expect(actionsClose).toHaveCSS('position', 'absolute');
@@ -411,11 +416,6 @@ test('nested sheets keep every previous layer visible in the stack', async ({ br
   expect(Math.abs(
     titleBox!.y + titleBox!.height / 2 - (closeBox!.y + closeBox!.height / 2),
   )).toBeLessThanOrEqual(1);
-  const actionsFrame = actions.locator('..');
-  await actionsFrame.evaluate(async (element) => {
-    await Promise.all(element.getAnimations().map((animation) => animation.finished.catch(() => undefined)));
-  });
-  await expect(actionsFrame).toHaveAttribute('data-sheet-arrived', 'true');
   await expect(detail).toHaveAttribute('data-sheet-depth-behind', '1');
   await expect(actions).toHaveAttribute('data-sheet-depth-behind', '0');
   await expect(detail).toHaveAttribute('data-sheet-stack-index', '0');

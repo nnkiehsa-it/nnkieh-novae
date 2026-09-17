@@ -41,6 +41,7 @@ for (const width of [390, 1440]) {
         await page.goto("/notifications");
         const source = page.locator(".route-page");
         await expect(page.locator("[data-notification-surface]")).toHaveAttribute("aria-busy", "false");
+        await expect(page.locator('[data-notification-surface] [data-resizing="true"]')).toHaveCount(0);
         const link = source.locator(`a[href="${pathname}"]`).first();
         await expect(link).toBeVisible();
         await link.scrollIntoViewIfNeeded();
