@@ -179,11 +179,23 @@ for (const width of [390, 1440]) {
     } finally { await context.close(); }
   });
 
-  test(`header blur covers the complete title without filtering foreground at ${width}px`, async ({ browser }) => {
+  test(`header blur covers foreground without reaching following content at ${width}px`, async ({ browser }) => {
     const context = await browser.newContext({ storageState: authStatePath("admin"), viewport: { width, height: 844 } });
     const page = await context.newPage();
     try {
-      for (const path of ["/admin", "/admin/platform", "/admin/people", "/settings"]) {
+      for (const path of [
+        "/issues/public-issues",
+        "/facilities",
+        "/announcements",
+        "/notifications",
+        "/settings",
+        "/issues/public-issues/new",
+        "/facilities/new?category=general",
+        "/announcements/new",
+        "/admin",
+        "/admin/platform",
+        "/admin/people",
+      ]) {
         await page.goto(path);
         const header = page.locator(".page-header");
         const title = header.locator("h1");
@@ -219,6 +231,7 @@ for (const width of [390, 1440]) {
           const v = veil.getBoundingClientRect();
           const boxes = foreground.map((child) => child.getBoundingClientRect());
           const headerBox = node.getBoundingClientRect();
+          const nextBox = node.nextElementSibling?.getBoundingClientRect();
           const filters: string[] = [];
           const backdropFilters: string[] = [];
           for (let current: Element | null = node.querySelector("h1"); current; current = current.parentElement) {
@@ -231,12 +244,19 @@ for (const width of [390, 1440]) {
             headerTop: headerBox.top,
             solidBottom: v.bottom - parseFloat(getComputedStyle(veil).getPropertyValue("--header-fade")) * parseFloat(getComputedStyle(document.documentElement).fontSize),
             foregroundBottom: Math.max(...boxes.map((box) => box.bottom)),
+            headerHeight: headerBox.height,
+            tail: v.bottom - headerBox.bottom,
+            nextGap: nextBox ? nextBox.top - headerBox.bottom : null,
+            nextOverlap: nextBox ? v.bottom - nextBox.top : null,
             filters,
             backdropFilters,
           };
         });
         expect(geometry.veilTop).toBe(geometry.headerTop);
         expect(geometry.solidBottom).toBeGreaterThanOrEqual(geometry.foregroundBottom);
+        expect(geometry.nextGap).not.toBeNull();
+        expect(geometry.nextGap!).toBeGreaterThanOrEqual(20);
+        expect(geometry.nextOverlap!).toBeLessThanOrEqual(-4);
         expect(geometry.filters.every((value) => value === "none")).toBe(true);
         expect(geometry.backdropFilters.every((value) => value === "none")).toBe(true);
         expect(await page.evaluate(() =>
