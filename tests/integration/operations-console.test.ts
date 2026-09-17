@@ -55,8 +55,16 @@ integrationTest('operations settings enforce administrator access, revision conf
   const independent = asRecord(await callAction('markNotificationsOpened', {}, other.auth));
   assert.ok(independent.openedAt);
   const rejectedId = crypto.randomUUID();
-  await callAction('updatePushNotificationPreferences', { preferences: { comments: true } }, admin.auth, rejectedId);
-  await assert.rejects(() => callAction('updatePushNotificationPreferences', { preferences: { comments: false } }, other.auth, rejectedId), /permission-denied/);
+  await callAction('updatePlatformAdminNotificationPreferences', { preferences: {
+    commentNotifications: true,
+    facilityNotifications: false,
+    issueNotifications: false,
+  } }, admin.auth, rejectedId);
+  await assert.rejects(() => callAction('updatePlatformAdminNotificationPreferences', { preferences: {
+    commentNotifications: false,
+    facilityNotifications: false,
+    issueNotifications: false,
+  } }, other.auth, rejectedId), /permission-denied/);
 });
 
 integrationTest('only administrators may retry failed operational work', async () => {

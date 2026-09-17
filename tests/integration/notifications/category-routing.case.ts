@@ -1,4 +1,5 @@
 import { asRecord, assert, callAction, database, drainJobs, integrationTest, notificationStressScale, readFcmRequests, resetFcmRequests, saveCategoryDraft, seedActor } from "./support.ts";
+import { resolveRecipients } from "../../../cloudflare/src/backend/jobs/delivery-recipients.ts";
 
 integrationTest("new proposal and facility notifications are personal to category managers", async () => {
   const admin = await seedActor(`category-notification-admin-${crypto.randomUUID()}`, { roles: ["platform-admin"] });
@@ -37,16 +38,57 @@ integrationTest("new proposal and facility notifications are personal to categor
       token: `category-notification-token-${index}`,
       userAgent: "Category notification integration test",
     }, managers[index].auth);
-    await callAction("updatePushNotificationPreferences", {
-      deviceId: `category-notification-device-${index}`,
-      permission: "granted",
-      preferences: {
-        comments: true,
-        facilityUpdates: index % 3 !== 1,
-        issueUpdates: index % 3 !== 2,
-      },
-    }, managers[index].auth);
   }
+  await database.sql`insert into app_private.user_issue_category_assignments(uid, category_id, granted_by)
+    values (${admin.auth.uid}, ${issueCategoryId}, ${admin.auth.uid})`;
+  await database.sql`insert into app_private.user_facility_category_assignments(uid, category_id, granted_by)
+    values (${admin.auth.uid}, ${facilityCategoryId}, ${admin.auth.uid})`;
+  await callAction("registerPushToken", {
+    deviceId: "category-notification-admin-device",
+    permission: "granted",
+    platform: "integration",
+    token: "category-notification-admin-token",
+    userAgent: "Category notification integration test",
+  }, admin.auth);
+  const defaultRecipients = await resolveRecipients(database, {
+    aggregate_id: crypto.randomUUID(),
+    aggregate_type: "issue",
+    aggregate_version: 1,
+    actor_uid: "unrelated-actor",
+    attempt_count: 1,
+    delivery_id: crypto.randomUUID(),
+    destination: "in_app",
+    event_id: crypto.randomUUID(),
+    event_type: "issue.created",
+    last_attempt_id: crypto.randomUUID(),
+    occurred_at: new Date().toISOString(),
+    operation_id: crypto.randomUUID(),
+    payload: { category: issueCategoryId },
+  });
+  assert.ok(!defaultRecipients.includes(admin.auth.uid));
+  await callAction("updatePlatformAdminNotificationPreferences", {
+    preferences: {
+      commentNotifications: false,
+      facilityNotifications: true,
+      issueNotifications: true,
+    },
+  }, admin.auth);
+  const goalRecipients = await resolveRecipients(database, {
+    aggregate_id: crypto.randomUUID(),
+    aggregate_type: "issue",
+    aggregate_version: 1,
+    actor_uid: "threshold-supporter",
+    attempt_count: 1,
+    delivery_id: crypto.randomUUID(),
+    destination: "in_app",
+    event_id: crypto.randomUUID(),
+    event_type: "support.goal_met",
+    last_attempt_id: crypto.randomUUID(),
+    occurred_at: new Date().toISOString(),
+    operation_id: crypto.randomUUID(),
+    payload: {},
+  });
+  assert.ok(goalRecipients.includes(admin.auth.uid));
   await database.sql`update app_private.user_facility_category_assignments
     set notify_on_created = false
     where uid = ${managers.at(-1)!.auth.uid} and category_id = ${facilityCategoryId}`;
@@ -91,13 +133,16 @@ integrationTest("new proposal and facility notifications are personal to categor
   const managerUids = new Set(managers.map((manager) => manager.auth.uid));
   const issueNotifications = notifications.filter((row) => row.target_id === issueId);
   const facilityNotifications = notifications.filter((row) => row.target_id === facilityId);
-  assert.equal(issueNotifications.length, managerUids.size);
-  assert.equal(facilityNotifications.length, managerUids.size - 1);
-  for (const notification of [...issueNotifications, ...facilityNotifications]) {
+  assert.equal(issueNotifications.length, managerUids.size + 1);
+  assert.equal(facilityNotifications.length, managerUids.size);
+  for (const notification of [...issueNotifications, ...facilityNotifications].filter(
+    (notification) => notification.recipient_uid !== admin.auth.uid,
+  )) {
     assert.equal(notification.source, "user");
     assert.ok(managerUids.has(String(notification.recipient_uid)));
-    assert.notEqual(notification.recipient_uid, admin.auth.uid);
   }
+  assert.ok(issueNotifications.some((row) => row.recipient_uid === admin.auth.uid));
+  assert.ok(facilityNotifications.some((row) => row.recipient_uid === admin.auth.uid));
   assert.ok(issueNotifications.every((row) => row.type === "issue_created"));
   assert.ok(facilityNotifications.every((row) => row.type === "facility_report_created"));
   assert.ok(!facilityNotifications.some((row) => row.recipient_uid === managers.at(-1)!.auth.uid));
@@ -111,16 +156,20 @@ integrationTest("new proposal and facility notifications are personal to categor
   const facilityPushTokens = new Set(pushRequests
     .filter((message) => message?.data?.target_id === facilityId)
     .map((message) => message?.token));
-  assert.deepEqual(issuePushTokens, new Set(managers
+  assert.deepEqual(issuePushTokens, new Set([
+    ...managers.map((_, index) => `category-notification-token-${index}`),
+    "category-notification-admin-token",
+  ]));
+  assert.deepEqual(facilityPushTokens, new Set([
+    ...managers
     .map((_, index) => index)
-    .filter((index) => index % 3 !== 2)
-    .map((index) => `category-notification-token-${index}`)));
-  assert.deepEqual(facilityPushTokens, new Set(managers
-    .map((_, index) => index)
-    .filter((index) => index !== managers.length - 1 && index % 3 !== 1)
-    .map((index) => `category-notification-token-${index}`)));
+    .filter((index) => index !== managers.length - 1)
+    .map((index) => `category-notification-token-${index}`),
+    "category-notification-admin-token",
+  ]));
   assert.ok(pushRequests.some((message) =>
     message?.data?.link === `/issues/${issueCategoryId}/${issueId}`
   ));
   assert.ok(pushRequests.some((message) => message?.data?.link === `/facilities/${facilityId}`));
+
 });

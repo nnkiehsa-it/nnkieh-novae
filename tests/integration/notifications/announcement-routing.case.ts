@@ -15,11 +15,6 @@ integrationTest("announcement and nested comment notifications cover broadcast, 
       userAgent: "Announcement notification integration test",
     }, actor.auth);
   }
-  await callAction("updatePushNotificationPreferences", {
-    deviceId: "announcement-notification-device-0",
-    permission: "granted",
-    preferences: { comments: false, facilityUpdates: true, issueUpdates: true },
-  }, manager.auth);
   await resetFcmRequests();
 
   const created = asRecord(await callAction("createAnnouncement", {
@@ -69,7 +64,7 @@ integrationTest("announcement and nested comment notifications cover broadcast, 
     && message.data?.target_id === announcementId
     && message.data?.link === `/announcements/${announcementId}`
   ));
-  assert.ok(!messages.some((message) =>
+  assert.ok(messages.some((message) =>
     message?.token === "announcement-notification-token-0"
     && message.data?.comment_id === rootCommentId
   ));

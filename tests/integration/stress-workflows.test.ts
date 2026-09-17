@@ -135,22 +135,12 @@ async function exerciseNotifications(actor: Actor, index: number) {
     userAgent: "Novae integration stress test",
   }, actor.auth));
   assert.equal(registered.deviceEnabled, true);
-  const preference = asRecord(await callAction("updatePushNotificationPreferences", {
-    deviceId,
-    permission: "granted",
-    preferences: {
-      comments: index % 2 === 0,
-      facilityUpdates: index % 3 === 0,
-      issueUpdates: index % 4 !== 0,
-    },
-  }, actor.auth));
-  assert.equal(typeof asRecord(preference.personalPreferences).comments, "boolean");
   assert.equal(asRecord(await callAction("markNotificationsOpened", {}, actor.auth)).success, true);
-  const unregistered = asRecord(await callAction("unregisterPushToken", {
+  const preference = asRecord(await callAction("getPushNotificationPreference", {
     deviceId,
-    permission: index % 2 === 0 ? "default" : "denied",
+    permission: index % 2 === 0 ? "default" : "granted",
   }, actor.auth));
-  assert.equal(unregistered.deviceEnabled, false);
+  assert.equal(preference.deviceEnabled, true);
 }
 
 integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, async () => {

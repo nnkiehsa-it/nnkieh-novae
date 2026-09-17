@@ -90,33 +90,33 @@ test('operations console is usable on phone and desktop and saves an audited pol
   await admin.context.close();
 });
 
-test('notification visit and every personal preference issue canonical writes', async ({ browser }) => {
+test('notification visit and platform-admin preferences issue one canonical write', async ({ browser }) => {
   test.setTimeout(120_000);
-  const member = await newUserPage(browser, 'other');
-  await expectBackendAction(member.page, 'markNotificationsOpened', async () => {
-    await member.page.goto('/notifications');
+  const admin = await newUserPage(browser, 'admin');
+  await expectBackendAction(admin.page, 'markNotificationsOpened', async () => {
+    await admin.page.goto('/notifications');
   });
-  await member.page.goto('/settings');
+  await admin.page.goto('/settings');
   const labels = ['Comment notifications', 'Proposal updates', 'Facility updates'];
   const before: Record<string, string | null> = {};
   for (const label of labels) {
-    const toggle = member.page.getByRole('switch', { exact: true, name: label });
+    const toggle = admin.page.getByRole('switch', { exact: true, name: label });
     before[label] = await toggle.getAttribute('data-state');
     await toggle.click();
   }
   // Toggling changes nothing until the screen is saved, and then it is one write.
-  await expect(member.page.getByText('3 unsaved changes')).toBeVisible();
-  await expectBackendAction(member.page, 'updatePushNotificationPreferences', async () => {
-    await member.page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(admin.page.getByText('3 unsaved changes')).toBeVisible();
+  await expectBackendAction(admin.page, 'updatePlatformAdminNotificationPreferences', async () => {
+    await admin.page.getByRole('button', { name: 'Save', exact: true }).click();
   });
   for (const label of labels) {
-    const toggle = member.page.getByRole('switch', { exact: true, name: label });
+    const toggle = admin.page.getByRole('switch', { exact: true, name: label });
     await expect(toggle).toHaveAttribute(
       'data-state',
       before[label] === 'checked' ? 'unchecked' : 'checked',
     );
   }
-  await member.context.close();
+  await admin.context.close();
 });
 
 test('failed provider deletion can be retried from the operational UI', async ({ browser }) => {

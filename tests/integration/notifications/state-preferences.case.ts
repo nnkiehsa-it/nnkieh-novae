@@ -1,6 +1,6 @@
 import { asRecord, assert, callAction, database, expectActionError, integrationTest, seedActor } from "./support.ts";
 
-integrationTest("notification state, push preferences, and dashboard permissions", async () => {
+integrationTest("notification state, mandatory push, admin preferences, and dashboard permissions", async () => {
   const admin = await seedActor("notification-admin", { roles: ["platform-admin"] });
   const user = await seedActor("notification-user");
 
@@ -51,22 +51,40 @@ integrationTest("notification state, push preferences, and dashboard permissions
     select last_confirmed_at, uid from app_private.push_tokens where token = ${token}`;
   assert.equal(registeredToken.uid, user.auth.uid);
   assert.ok(Date.parse(registeredToken.last_confirmed_at) > Date.now() - 60_000);
-  const updated = asRecord(await callAction("updatePushNotificationPreferences", {
-    deviceId,
-    permission: "granted",
+  assert.ok(!("personalPreferences" in registered));
+
+  await expectActionError(
+    "permission-denied",
+    () => callAction("getPlatformAdminNotificationPreferences", {}, user.auth),
+  );
+  const initialAdminPreferences = asRecord(await callAction(
+    "getPlatformAdminNotificationPreferences",
+    {},
+    admin.auth,
+  ));
+  assert.deepEqual(initialAdminPreferences, {
+    commentNotifications: false,
+    facilityNotifications: false,
+    issueNotifications: false,
+  });
+  const updated = asRecord(await callAction("updatePlatformAdminNotificationPreferences", {
     preferences: {
-      comments: false,
-      facilityUpdates: false,
-      issueUpdates: true,
+      commentNotifications: true,
+      facilityNotifications: false,
+      issueNotifications: true,
     },
-  }, user.auth));
-  assert.equal(asRecord(updated.personalPreferences).comments, false);
-  assert.equal(asRecord(updated.personalPreferences).facilityUpdates, false);
-  const unregistered = asRecord(await callAction("unregisterPushToken", {
-    deviceId,
-    permission: "denied",
-  }, user.auth));
-  assert.equal(unregistered.deviceEnabled, false);
+  }, admin.auth));
+  assert.deepEqual(updated, {
+    commentNotifications: true,
+    facilityNotifications: false,
+    issueNotifications: true,
+  });
+  await expectActionError(
+    "permission-denied",
+    () => callAction("updatePlatformAdminNotificationPreferences", {
+      preferences: updated,
+    }, user.auth),
+  );
 
   const adminDeviceId = `integration-admin-device-${crypto.randomUUID()}`;
   await callAction("registerPushToken", {
@@ -86,10 +104,11 @@ integrationTest("notification state, push preferences, and dashboard permissions
   const { rows: reassignedTokens } = await database.sql`
     select device_id, uid from app_private.push_tokens where token = ${token}`;
   assert.deepEqual(reassignedTokens, [{ device_id: adminDeviceId, uid: admin.auth.uid }]);
-  await callAction("unregisterPushToken", {
+  const adminPush = asRecord(await callAction("getPushNotificationPreference", {
     deviceId: adminDeviceId,
-    permission: "denied",
-  }, admin.auth);
+    permission: "granted",
+  }, admin.auth));
+  assert.equal(adminPush.deviceEnabled, true);
 
   await expectActionError(
     "permission-denied",
