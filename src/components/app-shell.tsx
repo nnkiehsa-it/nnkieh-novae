@@ -224,7 +224,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="app-main-column min-w-0 md:col-start-2">
         <main className="app-viewport">
           <RouteSurface
-            className={`pt-[max(1rem,var(--safe-top))] md:pb-12 md:pt-6 ${
+            className={`pt-[var(--page-header-top)] md:pb-12 ${
               showMobileNavigation
                 ? "pb-[calc(var(--mobile-nav-height)+var(--mobile-nav-bottom-gap)+1.4rem)]"
                 : "pb-[max(2rem,var(--safe-bottom))]"
