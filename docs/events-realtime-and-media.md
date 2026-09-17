@@ -61,13 +61,9 @@ Support count、announcement like count 和 comment count 若帶有較新的 agg
 
 通知頁合併三種 source：`broadcast`、`admin`、`user`。Cursor 使用 `{ createdAt, id }`，各 source 分頁後由 hook 合併；列表同樣受五頁 retention ceiling 約束。未讀 hint 另有兩分鐘短 cache，realtime insert 或 read-state event 會讓它失效。
 
-個人 Push preference 包含：
+一般帳號沒有可關閉的個人通知類型。Push token 以 device ID 管理；登入 shell 會做 heartbeat，client 將確認頻率限制為七天。共用裝置若換帳號，後端會重新指派 token。啟用後應用程式不提供關閉入口；若瀏覽器或作業系統撤銷 permission，失效 token 會在 FCM 拒絕後清除。
 
-- `comments`
-- `issueUpdates`
-- `facilityUpdates`
-
-Push token 以 device ID 管理。登入 shell 會做 heartbeat；client 將確認頻率限制為七天。共用裝置若換帳號，後端會重新指派 token。手機瀏覽器若尚未安裝 PWA，設定頁先走安裝引導；通知 permission 一旦被系統拒絕，只能到瀏覽器或作業系統設定重新開啟。
+平台管理員另有 `issueNotifications`、`facilityNotifications`、`commentNotifications` 三個預設關閉的個人偏好。收件者解析會先依事件關係找出一般收件者，再用這組偏好排除未訂閱的平台管理員並加入已訂閱的平台管理員；結果同時供站內通知與 Push 使用。手機瀏覽器若尚未安裝 PWA，設定頁仍先走安裝引導。
 
 ## 圖片處理與 Cloudinary
 

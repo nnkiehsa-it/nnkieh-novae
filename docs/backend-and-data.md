@@ -71,7 +71,7 @@ Read action 若未帶 operation ID，Worker 會建立一個只用於 trace 的 U
 | Issue | `getIssue`, `listIssues`, `searchIssues`, `listUserIssues`, `listComments` | `createIssue`, `moderateIssueStatus`, `updateIssueResult`, `toggleSupport`, `removeSupport`, `deleteIssue`, `createComment`, `deleteComment` | Moderation / result 要 `proposal.manage`；其餘由 author、category、status、restriction rule 決定 |
 | Facility | `listFacilities`, `getFacility` | `createFacility`, `toggleFacilityAffected`, `updateFacilityStatus`, `deleteFacility` | Facility writes 在 domain rule 檢查 owner 或 facility scope |
 | Announcement | `listAnnouncements`, `getAnnouncement`, `listAnnouncementComments` | `createAnnouncement`, `deleteAnnouncement`, `setAnnouncementLike`, `createAnnouncementComment`, `deleteAnnouncementComment` | Create/delete 要 `announcement.manage`；互動與留言刪除走 domain rule |
-| Notification | `listNotificationPages`, `getNotificationSnapshot`, `getNotificationReadState`, `getNotificationUnreadHint`, `getPushNotificationPreference` | `markNotificationsOpened`, `registerPushToken`, `unregisterPushToken`, `updatePushNotificationPreferences` | 只允許操作自己的 read state、device 與 token |
+| Notification | `listNotificationPages`, `getNotificationSnapshot`, `getNotificationReadState`, `getNotificationUnreadHint`, `getPushNotificationPreference`, `getPlatformAdminNotificationPreferences` | `markNotificationsOpened`, `registerPushToken`, `updatePlatformAdminNotificationPreferences` | 一般帳號只能開啟自己的 device token；平台管理員偏好另驗 `platform-admin` 身分 |
 | Dashboard | `getPlatformDashboard` | — | 要 `dashboard.view` |
 
 Action rate-limit group 分成 `read`、`general-write`、`sensitive-write`、`admin-write`、`upload-write`、`upload-resolve`。詳細數值見[執行期政策與限制](runtime-policies.md)。

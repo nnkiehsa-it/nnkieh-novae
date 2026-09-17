@@ -42,7 +42,7 @@ Feed 可依最新、最多附議、即將截止排序；`my-proposals` 是獨立
 
 通知來源包含 domain event 對應的站內訊息與 Firebase Cloud Messaging。通知點擊會直接解析到目標 route，由目的頁自行載入 authoritative data，不先做額外 lookup。
 
-通知 feed 會合併全校 broadcast、管理員通知、個人通知；每個來源維持自己的 cursor。使用者可以分別關閉留言、提案進度、設施進度的個人 Push，但站內通知仍由事件規則建立。
+通知 feed 會合併全校 broadcast、管理員通知、個人通知；每個來源維持自己的 cursor。一般使用者啟用 Push 後，所有適用通知都會送達且不能從應用程式關閉。平台管理員可在自己的設定中分別選擇是否接收提案、設施與留言通知；同一偏好同時控制站內通知與 Push。
 
 ## 可設定項目
 

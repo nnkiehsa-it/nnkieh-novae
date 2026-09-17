@@ -73,7 +73,7 @@ Platform admin 不需要逐一加入 category ID。`canManageIssueCategory` 和 
 
 `role.manage` 管理員可以針對已註冊 UID，或學校信箱 `@` 前的帳號前綴建立持續性規則。個別 UID 優先於前綴；多個前綴命中時採最長者。規則可設 7 天、30 天、自訂時數或永久：
 
-- `read_only`：可讀取與調整個人通知設定，但不能建立、刪除、留言、上傳或反應。
+- `read_only`：可讀取通知並開啟裝置 Push，但不能建立、刪除、留言、上傳或反應。
 - `reaction_only`：在唯讀能力之外，可附議／取消、公告按讚／取消，以及標記／取消「我也遇到」。
 - `blocked`：任何受保護請求都拒絕；`/v1/auth/sync` 在建立新 profile 前先拒絕並回傳管理員設定的純文字訊息。
 
