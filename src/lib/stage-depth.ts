@@ -14,6 +14,8 @@
  */
 let held = 0;
 const sheets: HTMLElement[] = [];
+let notifyPendingNavigationCommit: ((pathname: string) => void) | null = null;
+let notifyPendingFocusRestore: (() => void) | null = null;
 
 function publishDepth() {
   document.documentElement.dataset.sheetDepth = String(sheets.length);
@@ -44,15 +46,20 @@ export function beginSheetClose(sheet?: HTMLElement | null) {
 }
 
 /** Holds the page still for one sheet. Answers with the release. */
-export function holdStageBehind(sheet?: HTMLElement | null) {
+export function holdStageBehind(sheet?: HTMLElement | null, sourceScrollY?: number) {
   const root = document.documentElement;
   let released = false;
   held += 1;
   if (sheet) sheets.push(sheet);
   publishDepth();
   if (held === 1) {
-    root.style.setProperty("--stage-scroll", `${window.scrollY}px`);
-    root.style.setProperty("--stage-height", `${root.scrollHeight}px`);
+    // Inserting the sheet must not fix the stage before these reads. WebKit
+    // clamps scrollY as soon as the tall page leaves the document flow.
+    const scroll = sourceScrollY ?? window.scrollY;
+    const height = root.scrollHeight;
+    root.style.setProperty("--stage-scroll", `${scroll}px`);
+    root.style.setProperty("--stage-height", `${height}px`);
+    root.dataset.stageHeld = "true";
   }
   return () => {
     if (released) return;
@@ -64,7 +71,81 @@ export function holdStageBehind(sheet?: HTMLElement | null) {
     }
     publishDepth();
     if (held > 0) return;
+    delete root.dataset.stageHeld;
     root.style.removeProperty("--stage-scroll");
     root.style.removeProperty("--stage-height");
   };
+}
+
+/** The source-page position captured before the first sheet fixed the stage. */
+export function heldStageScrollY() {
+  const value = Number.parseFloat(
+    document.documentElement.style.getPropertyValue("--stage-scroll"),
+  );
+  return Number.isFinite(value) ? value : window.scrollY;
+}
+
+/**
+ * Traverse out of an intercepted sheet without letting browser history, focus
+ * restoration, and the fixed-stage release compete over the source position.
+ */
+export function restoreHeldStageAfterNavigation(navigate: () => void) {
+  const root = document.documentElement;
+  const sourcePathname = window.location.pathname;
+  const scrollX = window.scrollX;
+  const scrollY = heldStageScrollY();
+  const previousRestoration = window.history.scrollRestoration;
+  let navigated = false;
+  let routeCommitted = false;
+  let focusRestored = false;
+
+  window.history.scrollRestoration = "manual";
+
+  const observer = new MutationObserver(() => restoreWhenReady());
+  const restoreWhenReady = () => {
+    if (
+      !navigated
+      || !routeCommitted
+      || !focusRestored
+      || root.dataset.stageHeld === "true"
+      || document.body.hasAttribute("data-scroll-locked")
+    ) return;
+    observer.disconnect();
+    notifyPendingNavigationCommit = null;
+    notifyPendingFocusRestore = null;
+    window.requestAnimationFrame(() => {
+      window.scrollTo(scrollX, scrollY);
+      window.requestAnimationFrame(() => {
+        window.scrollTo(scrollX, scrollY);
+        window.history.scrollRestoration = previousRestoration;
+      });
+    });
+  };
+
+  observer.observe(root, { attributeFilter: ["data-stage-held"] });
+  observer.observe(document.body, { attributeFilter: ["data-scroll-locked"] });
+  notifyPendingNavigationCommit = (pathname) => {
+    if (pathname === sourcePathname) return;
+    routeCommitted = true;
+    restoreWhenReady();
+  };
+  notifyPendingFocusRestore = () => {
+    focusRestored = true;
+    restoreWhenReady();
+  };
+  window.addEventListener("popstate", () => {
+    navigated = true;
+    restoreWhenReady();
+  }, { once: true });
+  navigate();
+}
+
+/** Publishes the pathname only after React has committed the routed shell. */
+export function publishStageNavigationCommit(pathname: string) {
+  notifyPendingNavigationCommit?.(pathname);
+}
+
+/** Publishes that the dialog primitive has finished returning focus. */
+export function publishStageFocusRestore() {
+  notifyPendingFocusRestore?.();
 }

@@ -5,8 +5,12 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useOptimisticDetailHandoff } from "@/components/optimistic-detail-navigation";
 import { useI18n } from "@/i18n";
-import { recordListPath } from "@/lib/route-hierarchy";
 import { useShareExitGuard } from "@/hooks/use-share-entry";
+import { recordListPath } from "@/lib/route-hierarchy";
+import {
+  heldStageScrollY,
+  restoreHeldStageAfterNavigation,
+} from "@/lib/stage-depth";
 
 import {
   Sheet,
@@ -47,6 +51,7 @@ export function DetailSheet({ children, label, returnTo }: {
   const guardClose = useShareExitGuard();
   const pathname = usePathname();
   const [open, setOpen] = React.useState(true);
+  const [sourceScrollY] = React.useState(() => heldStageScrollY());
   const optimisticHandoff = useOptimisticDetailHandoff(pathname);
   const [suppressEntrance] = React.useState(optimisticHandoff);
 
@@ -56,14 +61,18 @@ export function DetailSheet({ children, label, returnTo }: {
       onOpenChange={(next) => {
         setOpen(next);
         if (!next) {
-          if (returnTo) router.replace(returnTo, { scroll: false });
-          else router.back();
+          if (returnTo) {
+            router.replace(returnTo, { scroll: false });
+          } else {
+            restoreHeldStageAfterNavigation(() => router.back());
+          }
         }
       }}
       open={open}
     >
       <SheetContent
         className="grid-rows-[minmax(0,1fr)]"
+        stageScrollY={sourceScrollY}
         suppressEntrance={suppressEntrance}
       >
         <SheetBody className="pb-0">

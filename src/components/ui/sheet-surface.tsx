@@ -5,12 +5,17 @@ import { Dialog as DialogPrimitive } from "radix-ui";
 
 import { DialogOverlay, DialogPortal } from "@/components/ui/dialog";
 import { timingMs } from "@/lib/motion-timing";
-import { beginSheetClose, holdStageBehind } from "@/lib/stage-depth";
+import {
+  beginSheetClose,
+  holdStageBehind,
+  publishStageFocusRestore,
+} from "@/lib/stage-depth";
 import { cn } from "@/lib/utils";
 
 export type SheetSurfaceProps = React.ComponentProps<typeof DialogPrimitive.Content> & {
   onSheetExitComplete?: () => void;
   sheetClosing?: boolean;
+  stageScrollY?: number;
   suppressEntrance?: boolean;
   surface?: "floating" | "plain";
 };
@@ -27,12 +32,14 @@ export function SheetSurface({
   className,
   onSheetExitComplete,
   sheetClosing = false,
+  stageScrollY,
   suppressEntrance = false,
   surface = "floating",
   ...props
 }: SheetSurfaceProps) {
   const contentRef = React.useRef<HTMLDivElement>(null);
   const motionFrameRef = React.useRef<HTMLDivElement>(null);
+  const returnFocusRef = React.useRef<HTMLElement | null>(null);
   const releaseStageRef = React.useRef<(() => void) | null>(null);
   const dragRef = React.useRef<{ startedAt: number; startedY: number } | null>(null);
   const settleTimerRef = React.useRef<number | null>(null);
@@ -113,8 +120,8 @@ export function SheetSurface({
     releaseStageRef.current?.();
     releaseStageRef.current = null;
     contentRef.current = node;
-    if (node) releaseStageRef.current = holdStageBehind(node);
-  }, []);
+    if (node) releaseStageRef.current = holdStageBehind(node, stageScrollY);
+  }, [stageScrollY]);
 
   React.useEffect(() => () => {
     releaseStageRef.current?.();
@@ -177,7 +184,7 @@ export function SheetSurface({
             data-sheet-dismissing={dismissing || undefined}
             data-sheet-suppress-entrance={suppressEntrance || undefined}
             className={cn(
-              "t-dialog t-sheet pointer-events-auto relative grid w-full min-w-0 content-start gap-5 overflow-x-clip overflow-y-auto p-(--dialog-pad) outline-none [&>*]:min-w-0",
+              "t-dialog t-sheet pointer-events-auto relative grid w-full min-w-0 content-start gap-5 overflow-hidden p-(--dialog-pad) outline-none [&>*]:min-w-0",
               "max-w-[min(calc(100vw-2rem),88rem)] [--dialog-pad:var(--page-gutter)] md:h-[calc(100svh-2rem)] md:max-h-[calc(100svh-2rem)]",
               surface === "floating"
                 ? "surface-floating"
@@ -186,11 +193,25 @@ export function SheetSurface({
             )}
             {...props}
             onOpenAutoFocus={(event) => {
+              returnFocusRef.current = document.activeElement instanceof HTMLElement
+                ? document.activeElement
+                : null;
               setArrived(suppressEntrance);
               setDismissing(false);
               setSettling(false);
               dragRef.current = null;
               props.onOpenAutoFocus?.(event);
+            }}
+            onCloseAutoFocus={(event) => {
+              props.onCloseAutoFocus?.(event);
+              if (!event.defaultPrevented) {
+                event.preventDefault();
+                if (document.documentElement.dataset.inputModality === "keyboard") {
+                  returnFocusRef.current?.focus({ preventScroll: true });
+                }
+              }
+              returnFocusRef.current = null;
+              window.requestAnimationFrame(publishStageFocusRestore);
             }}
             onPointerCancel={cancelSheetDrag}
             onPointerDown={beginSheetDrag}

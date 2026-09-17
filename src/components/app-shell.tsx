@@ -21,6 +21,7 @@ import { useCategories } from "@/hooks/use-categories";
 import { useNotificationBadge } from "@/hooks/use-notification-badge";
 import { usePushTokenHeartbeat } from "@/hooks/use-push-token-heartbeat";
 import { rememberCurrentRoute } from "@/lib/navigation-memory";
+import { publishStageNavigationCommit } from "@/lib/stage-depth";
 import { useSession } from "@/hooks/use-session";
 import { getDefaultIssueRouteFilter } from "@/constants/categories";
 import { LiquidNav, type LiquidNavItem } from "@/components/liquid-nav";
@@ -155,7 +156,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const issueHref = `/issues/${encodeURIComponent(getDefaultIssueRouteFilter())}`;
   const showMobileNavigation = showsPrimaryNavigation(surface);
 
-  React.useEffect(() => rememberCurrentRoute(pathname), [pathname]);
+  React.useEffect(() => {
+    rememberCurrentRoute(pathname);
+    publishStageNavigationCommit(pathname);
+  }, [pathname]);
 
   const navItems = React.useMemo<LiquidNavItem[]>(
     () => [

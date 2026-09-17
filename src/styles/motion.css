@@ -478,16 +478,16 @@ html[data-theme-transition="true"]::view-transition-new(root) {
       transform var(--motion-sheet) var(--ease-nav),
       border-radius var(--motion-sheet) var(--ease-nav);
   }
-  body:has([data-slot="dialog-content"].t-sheet) {
+  html[data-stage-held="true"] body {
     height: var(--stage-height);
     background: var(--surface-behind);
   }
-  body:has([data-slot="dialog-content"].t-sheet) .t-stage {
+  html[data-stage-held="true"] .t-stage {
     position: fixed;
     inset: 0;
     overflow: clip;
   }
-  body:has([data-slot="dialog-content"].t-sheet) .t-stage-content {
+  html[data-stage-held="true"] .t-stage-content {
     margin-top: calc(-1 * var(--stage-scroll));
   }
   body:has([data-slot="dialog-content"].t-sheet[data-state="open"]) .t-stage {

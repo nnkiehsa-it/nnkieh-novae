@@ -20,6 +20,7 @@ import { opensOverRoute } from "@/lib/route-hierarchy";
 interface PendingDetailNavigation {
   pathname: string;
   sourcePathname: string;
+  sourceScrollY: number;
 }
 
 interface OptimisticDetailNavigationValue {
@@ -41,6 +42,21 @@ export function OptimisticDetailNavigationProvider({
   );
 
   React.useEffect(() => {
+    let pointerSource: { anchor: HTMLAnchorElement; scrollY: number } | null = null;
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = interactiveTarget(event.target);
+      const anchor = target && !isDisabledTarget(target) ? internalAnchor(target) : null;
+      if (!anchor) {
+        pointerSource = null;
+        return;
+      }
+      const destination = new URL(anchor.href, window.location.href);
+      pointerSource = opensOverRoute(pathname, destination.pathname)
+        ? { anchor, scrollY: window.scrollY }
+        : null;
+    };
+
     const onClick = (event: MouseEvent) => {
       if (
         event.button !== 0 ||
@@ -57,17 +73,26 @@ export function OptimisticDetailNavigationProvider({
       if (!anchor) return;
       const destination = new URL(anchor.href, window.location.href);
       if (!opensOverRoute(pathname, destination.pathname)) return;
+      const sourceScrollY = pointerSource?.anchor === anchor
+        ? pointerSource.scrollY
+        : window.scrollY;
+      pointerSource = null;
 
       flushSync(() => {
         setPending({
           pathname: destination.pathname,
           sourcePathname: pathname,
+          sourceScrollY,
         });
       });
     };
 
+    document.addEventListener("pointerdown", onPointerDown, true);
     document.addEventListener("click", onClick, true);
-    return () => document.removeEventListener("click", onClick, true);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown, true);
+      document.removeEventListener("click", onClick, true);
+    };
   }, [pathname]);
 
   React.useEffect(() => {
@@ -99,7 +124,10 @@ export function OptimisticDetailNavigationProvider({
       {children}
       {pending ? (
         <Sheet open onOpenChange={() => undefined}>
-          <SheetContent className="grid-rows-[minmax(0,1fr)]">
+          <SheetContent
+            className="grid-rows-[minmax(0,1fr)]"
+            stageScrollY={pending.sourceScrollY}
+          >
             <SheetBody className="pb-0">
               <SheetTitle className="sr-only">Novae</SheetTitle>
             </SheetBody>
