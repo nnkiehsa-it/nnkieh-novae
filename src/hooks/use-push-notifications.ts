@@ -7,51 +7,42 @@ import {
   shouldInstallPwaBeforePush,
 } from "@/lib/pwa-install";
 import {
+  getPlatformAdminNotificationPreferences,
   getPushNotificationPreference,
-  unregisterPushToken,
-  updatePushNotificationPreferences,
-  type PersonalPushPreferences,
+  updatePlatformAdminNotificationPreferences,
+  type PlatformAdminNotificationPreferences,
   type PushNotificationPermission,
 } from "@/services/push-notifications";
 import {
   confirmCurrentPushToken,
   enableCurrentDevicePushNotifications,
-  forgetPushTokenConfirmation,
-  getCurrentPushToken,
   getPushDeviceId,
 } from "@/services/push-token-registration";
 import { useSession } from "@/hooks/use-session";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 
 export type {
-  PersonalPushPreferenceKey,
-  PersonalPushPreferences,
+  PlatformAdminNotificationPreferenceKey,
+  PlatformAdminNotificationPreferences,
   PushNotificationPermission,
 } from "@/services/push-notifications";
-
-const defaultPreferences: PersonalPushPreferences = {
-  comments: true,
-  facilityUpdates: true,
-  issueUpdates: true,
-};
 
 export function usePushNotifications() {
   const session = useSession();
   const viewMemory = getViewMemory<{
     enabled: boolean;
     permission: PushNotificationPermission;
-    preferences: PersonalPushPreferences;
+    adminPreferences: PlatformAdminNotificationPreferences | null;
     supported: boolean;
   }>(session.user?.uid, "push-settings");
   const [enabled, setEnabled] = React.useState(viewMemory?.enabled ?? false);
   const [supported, setSupported] = React.useState(viewMemory?.supported ?? false);
   const [permission, setPermission] =
     React.useState<PushNotificationPermission>(viewMemory?.permission ?? "default");
-  const [preferences, setPreferences] =
-    React.useState<PersonalPushPreferences>(viewMemory?.preferences ?? defaultPreferences);
+  const [adminPreferences, setAdminPreferences] =
+    React.useState<PlatformAdminNotificationPreferences | null>(viewMemory?.adminPreferences ?? null);
   const [loading, setLoading] = React.useState(!viewMemory);
   const [error, setError] = React.useState("");
-  const tokenRef = React.useRef("");
   const deviceIdRef = React.useRef("");
 
   React.useEffect(() => {
@@ -80,12 +71,13 @@ export function usePushNotifications() {
       if (currentPermission === "granted") {
         const confirmed = await confirmCurrentPushToken(session.user.uid);
         if (confirmed) {
-          tokenRef.current = confirmed.token;
           result = confirmed.preference;
         }
       }
       setEnabled(result.deviceEnabled && currentPermission === "granted");
-      setPreferences(result.personalPreferences);
+      setAdminPreferences(
+        session.isAdmin ? await getPlatformAdminNotificationPreferences() : null,
+      );
     } catch (caught) {
       setError(
         caught instanceof Error
@@ -95,7 +87,7 @@ export function usePushNotifications() {
     } finally {
       setLoading(false);
     }
-  }, [session.user]);
+  }, [session.isAdmin, session.user]);
 
   React.useEffect(() => {
     void refresh();
@@ -106,10 +98,10 @@ export function usePushNotifications() {
     setViewMemory(
       session.user?.uid,
       "push-settings",
-      { enabled, permission, preferences, supported },
+      { adminPreferences, enabled, permission, supported },
       ["push-notification-preference|"],
     );
-  }, [enabled, loading, permission, preferences, session.user?.uid, supported]);
+  }, [adminPreferences, enabled, loading, permission, session.user?.uid, supported]);
 
   async function enable() {
     if (!session.user) return false;
@@ -130,9 +122,7 @@ export function usePushNotifications() {
       const result = await enableCurrentDevicePushNotifications(session.user.uid);
       setPermission(result.permission);
       if (!result.registration) return false;
-      tokenRef.current = result.registration.token;
       setEnabled(result.registration.preference.deviceEnabled);
-      setPreferences(result.registration.preference.personalPreferences);
       return true;
     } catch (caught) {
       setError(
@@ -146,78 +136,21 @@ export function usePushNotifications() {
     }
   }
 
-  async function disable() {
-    setLoading(true);
-    setError("");
-    try {
-      const current = await getCurrentPushToken();
-      if (current) {
-        tokenRef.current ||= current.token;
-        await current.bundle.sdk.deleteToken(current.bundle.messaging).catch(() => undefined);
-      }
-      const result = await unregisterPushToken({
-        deviceId: deviceIdRef.current,
-        permission,
-        token: tokenRef.current || undefined,
-      });
-      tokenRef.current = "";
-      forgetPushTokenConfirmation();
-      setEnabled(false);
-      setPreferences(result.personalPreferences);
-      return true;
-    } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "notification.pushSetupFailed",
-      );
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  /**
-   * Writes every preference at once, because the reader decides what they want
-   * across the whole group before they ask for it to be kept.
-   */
-  async function savePreferences(next: PersonalPushPreferences) {
-    const previous = preferences;
-    setPreferences(next);
-    setLoading(true);
-    setError("");
-    try {
-      const result = await updatePushNotificationPreferences({
-        deviceId: deviceIdRef.current,
-        permission,
-        preferences: next,
-        token: tokenRef.current || undefined,
-      });
-      setPreferences(result.personalPreferences);
-      return result.personalPreferences;
-    } catch (caught) {
-      setPreferences(previous);
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "notification.preferencesSaveFailed",
-      );
-      throw caught;
-    } finally {
-      setLoading(false);
-    }
+  async function saveAdminPreferences(next: PlatformAdminNotificationPreferences) {
+    const result = await updatePlatformAdminNotificationPreferences(next);
+    setAdminPreferences(result);
+    return result;
   }
 
   return {
-    disable,
+    adminPreferences,
     enable,
     enabled,
     error,
     loading,
     permission,
-    preferences,
     refresh,
-    savePreferences,
+    saveAdminPreferences,
     supported,
   };
 }

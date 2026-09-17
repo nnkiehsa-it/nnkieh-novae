@@ -18,7 +18,6 @@ const messages = {
   'settings.copyUid': '複製 UID',
   'settings.accountInformation': '帳號資訊',
   'settings.nameNotSet': '未設定名稱',
-  'settings.pushPreferencesDescription': '重要動態會依照下方偏好送達此裝置。',
   'settings.mine': '我的',
   'settings.switchAccount': '切換帳號',
   'settings.documentation': '說明文件',

@@ -51,9 +51,9 @@ export function isNotificationAction(action: string) {
     || action === "getNotificationUnreadHint"
     || action === "markNotificationsOpened"
     || action === "getPushNotificationPreference"
+    || action === "getPlatformAdminNotificationPreferences"
     || action === "registerPushToken"
-    || action === "unregisterPushToken"
-    || action === "updatePushNotificationPreferences";
+    || action === "updatePlatformAdminNotificationPreferences";
 }
 
 function readNotificationSource(payload: JsonRecord) {
@@ -151,26 +151,23 @@ export async function handleNotificationAction(
     return data;
   }
 
-  if (action === "unregisterPushToken") {
-    const deviceId = requiredText(payload.deviceId, "deviceId", PUSH_TOKEN_LIMITS.deviceId);
-    const { data, error } = await database.call("app_api", "backend_unregister_push_token", {
+  if (action === "updatePlatformAdminNotificationPreferences") {
+    if (!auth.isAdmin) throw new Error("permission-denied");
+    const preferences = asRecord(payload.preferences);
+    const { data, error } = await database.call("app_api", "backend_update_platform_admin_notification_preferences", {
       actor_uid: auth.uid,
-      device_id: deviceId,
-      permission: readPermission(payload),
+      comment_notifications_enabled: preferences.commentNotifications === true,
+      facility_notifications_enabled: preferences.facilityNotifications === true,
+      issue_notifications_enabled: preferences.issueNotifications === true,
     });
     if (error) throw error;
     return data;
   }
 
-  if (action === "updatePushNotificationPreferences") {
-    const preferences = asRecord(payload.preferences);
-    const { data, error } = await database.call("app_api", "backend_update_push_notification_preferences", {
+  if (action === "getPlatformAdminNotificationPreferences") {
+    if (!auth.isAdmin) throw new Error("permission-denied");
+    const { data, error } = await database.call("app_api", "backend_get_platform_admin_notification_preferences", {
       actor_uid: auth.uid,
-      comments_enabled: preferences.comments !== false,
-      issue_updates_enabled: preferences.issueUpdates !== false,
-      facility_updates_enabled: preferences.facilityUpdates !== false,
-      device_id: readDeviceId(payload),
-      permission: readPermission(payload),
     });
     if (error) throw error;
     return data;

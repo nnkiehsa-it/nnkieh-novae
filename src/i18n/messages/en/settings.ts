@@ -18,7 +18,6 @@ const messages = {
   'settings.copyUid': 'Copy UID',
   'settings.accountInformation': 'Account information',
   'settings.nameNotSet': 'Name not set',
-  'settings.pushPreferencesDescription': 'Important updates are delivered to this device according to the preferences below.',
   'settings.mine': 'Mine',
   'settings.switchAccount': 'Switch account',
   'settings.documentation': 'Documentation',

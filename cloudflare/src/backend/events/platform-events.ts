@@ -20,8 +20,7 @@ export function platformEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | n
       break;
     }
     case "registerPushToken":
-    case "unregisterPushToken":
-    case "updatePushNotificationPreferences": {
+    case "updatePlatformAdminNotificationPreferences": {
       events.push({
         aggregateType: "user",
         aggregateId: actorUid,

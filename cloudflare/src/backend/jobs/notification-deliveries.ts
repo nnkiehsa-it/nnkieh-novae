@@ -11,7 +11,6 @@ import { resolveRecipients } from "./delivery-recipients.ts";
 import {
   deterministicNotificationId,
   isCommentNotificationType,
-  isIssueUpdateNotificationType,
   notificationRealtimePayload,
   resolveNotificationPayload,
 } from "./notification-content.ts";
@@ -128,37 +127,14 @@ export async function processPushDeliveries(database: AppDatabaseClient) {
         const notificationType = asString(notification.type);
         const broadcast = recipients.length === 0 && source === "broadcast" && notificationType === "announcement_created";
 
-        let eligibleRecipients = recipients;
-        if (recipients.length > 0) {
-          const isComment = isCommentNotificationType(notificationType);
-          const prefColumn = isComment
-            ? "push_comments_enabled"
-            : item.aggregate_type === "facility"
-            ? "push_facility_updates_enabled"
-            : item.aggregate_type === "issue"
-            ? "push_issue_updates_enabled"
-            : null;
-          if (prefColumn) {
-            const { rows: preferences } = await database.sql<Selected<
-              "notification_states",
-              "uid" | "push_comments_enabled" | "push_facility_updates_enabled" | "push_issue_updates_enabled"
-            >>`select uid, push_comments_enabled, push_facility_updates_enabled, push_issue_updates_enabled
-               from app_private.notification_states where uid = any(${recipients})`;
-            const disabledUids = new Set(
-              preferences.filter((preference) => preference[prefColumn] === false).map((preference) => preference.uid),
-            );
-            eligibleRecipients = recipients.filter((uid) => !disabledUids.has(uid));
-          }
-        }
-
         const tokens: Array<{ token: string; uid: string }> = [];
         const seenTokens = new Set<string>();
-        if (eligibleRecipients.length > 0 || broadcast) {
-          const everyDevice = eligibleRecipients.length === 0;
+        if (recipients.length > 0 || broadcast) {
+          const everyDevice = recipients.length === 0;
           for (let offset = 0; ; offset += 200) {
             const { rows: tokenRows } = await database.sql<Selected<"push_tokens", "uid" | "token">>`
               select uid, token from app_private.push_tokens
-              where ${everyDevice}::boolean or uid = any(${eligibleRecipients})
+              where ${everyDevice}::boolean or uid = any(${recipients})
               order by uid, device_id limit 200 offset ${offset}`;
             for (const row of tokenRows) {
               if (!row.token || seenTokens.has(row.token)) continue;

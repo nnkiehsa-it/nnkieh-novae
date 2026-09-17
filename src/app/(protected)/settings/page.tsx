@@ -12,6 +12,7 @@ import { SettingsAccountSection } from "@/components/settings/account-section";
 import { AppearanceSection } from "@/components/settings/appearance-section";
 import {
   NotificationCard,
+  PlatformAdminNotificationCard,
   type NotificationOption,
 } from "@/components/settings/notification-card";
 import {
@@ -23,6 +24,7 @@ import { PageHeader } from "@/components/ui/page-state";
 import { SaveBar } from "@/components/ui/save-bar";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
 import { useDraft } from "@/hooks/use-draft";
+import type { PlatformAdminNotificationPreferences } from "@/hooks/use-push-notifications";
 
 export default function SettingsPage() {
   const session = useSession();
@@ -31,21 +33,21 @@ export default function SettingsPage() {
   const { locale } = useI18n();
   const { setTheme, theme } = useTheme();
   const notificationFeedback = useActionFeedback();
-  const preferences = useDraft({
-    save: async (next) => push.savePreferences(next),
-    source: push.preferences,
+  const adminPreferences = useDraft<PlatformAdminNotificationPreferences>({
+    save: async (next) => push.saveAdminPreferences(next),
+    source: push.adminPreferences,
   });
   const user = session.user!;
   const notificationOptions: NotificationOption[] = [
-    { key: "comments", label: translate("ui.settings.commentLabel") },
-    { key: "issueUpdates", label: translate("ui.settings.issueLabel") },
-    { key: "facilityUpdates", label: translate("ui.settings.facilityLabel") },
+    { key: "commentNotifications", label: translate("ui.settings.commentLabel") },
+    { key: "issueNotifications", label: translate("ui.settings.issueLabel") },
+    { key: "facilityNotifications", label: translate("ui.settings.facilityLabel") },
   ];
 
   async function togglePush(enabled: boolean) {
     try {
       await notificationFeedback.run(async () => {
-        const ok = enabled ? await push.enable() : await push.disable();
+        const ok = enabled && await push.enable();
         if (!ok) throw new Error(translate("ui.settings.pushUpdateFailed"));
       });
     } catch (caught) {
@@ -83,19 +85,23 @@ export default function SettingsPage() {
           onThemeChange={setTheme}
           theme={theme}
         />
-        <NotificationCard
-          deviceFeedbackState={notificationFeedback.state}
-          enabled={push.enabled}
-          loading={push.loading}
-          onEnabledChange={(enabled) => void togglePush(enabled)}
-          onPreferenceChange={(key, enabled) =>
-            preferences.update({ [key]: enabled } as Partial<typeof push.preferences>)
-          }
-          options={notificationOptions}
-          permission={push.permission}
-          preferences={preferences.value ?? push.preferences}
-          supported={push.supported}
-        />
+        {!push.enabled && (
+          <NotificationCard
+            deviceFeedbackState={notificationFeedback.state}
+            enabled={false}
+            loading={push.loading}
+            onEnabledChange={(enabled) => void togglePush(enabled)}
+            permission={push.permission}
+            supported={push.supported}
+          />
+        )}
+        {session.isAdmin && adminPreferences.value && (
+          <PlatformAdminNotificationCard
+            onPreferenceChange={(key, enabled) => adminPreferences.update({ [key]: enabled })}
+            options={notificationOptions}
+            preferences={adminPreferences.value}
+          />
+        )}
         <ManagementLinks
           canManage={
             session.can("role.manage")
@@ -118,10 +124,10 @@ export default function SettingsPage() {
           />
         </ListSection>
         <SaveBar
-          changeCount={preferences.changes.length}
-          onDiscard={preferences.reset}
-          onSave={() => void preferences.submit()}
-          status={preferences.status}
+          changeCount={adminPreferences.changes.length}
+          onDiscard={adminPreferences.reset}
+          onSave={() => void adminPreferences.submit()}
+          status={adminPreferences.status}
         />
       </div>
     </div>

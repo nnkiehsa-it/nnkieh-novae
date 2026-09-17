@@ -117,6 +117,9 @@ export const BACKEND_ACTION_POLICIES = {
   "getPushNotificationPreference": {
     "group": "read"
   },
+  "getPlatformAdminNotificationPreferences": {
+    "group": "read"
+  },
   "getUserPublicProfiles": {
     "group": "read"
   },
@@ -207,17 +210,14 @@ export const BACKEND_ACTION_POLICIES = {
   "toggleSupport": {
     "group": "sensitive-write"
   },
-  "unregisterPushToken": {
-    "group": "sensitive-write"
+  "updatePlatformAdminNotificationPreferences": {
+    "group": "general-write"
   },
   "updateFacilityStatus": {
     "group": "admin-write"
   },
   "updateIssueResult": {
     "group": "admin-write"
-  },
-  "updatePushNotificationPreferences": {
-    "group": "general-write"
   }
 } as const;
 
@@ -261,6 +261,7 @@ export const BACKEND_ACTION_NAMES = [
   'getNotificationUnreadHint',
   'getPlatformDashboard',
   'getPushNotificationPreference',
+  'getPlatformAdminNotificationPreferences',
   'getUserPublicProfiles',
   'listAnnouncementComments',
   'listAnnouncements',
@@ -291,10 +292,9 @@ export const BACKEND_ACTION_NAMES = [
   'deleteAccountAccessRule',
   'toggleFacilityAffected',
   'toggleSupport',
-  'unregisterPushToken',
+  'updatePlatformAdminNotificationPreferences',
   'updateFacilityStatus',
   'updateIssueResult',
-  'updatePushNotificationPreferences',
 ] as const;
 
 export type BackendActionName = typeof BACKEND_ACTION_NAMES[number];

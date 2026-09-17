@@ -12,18 +12,19 @@ import { toReadableBackendError } from './issues-core';
 const PUSH_PREFERENCE_CACHE_PREFIX = 'push-notification-preference|';
 
 export type PushNotificationPermission = NotificationPermission | 'unsupported';
-export type PersonalPushPreferenceKey = 'comments' | 'facilityUpdates' | 'issueUpdates';
+export type PlatformAdminNotificationPreferenceKey =
+  | 'commentNotifications'
+  | 'facilityNotifications'
+  | 'issueNotifications';
 
-export interface PersonalPushPreferences {
-  comments: boolean;
-  issueUpdates: boolean;
-  facilityUpdates: boolean;
-}
+export type PlatformAdminNotificationPreferences = Record<
+  PlatformAdminNotificationPreferenceKey,
+  boolean
+>;
 
 export interface PushNotificationPreference {
   deviceEnabled: boolean;
   enabled: boolean;
-  personalPreferences: PersonalPushPreferences;
   permission: PushNotificationPermission;
   tokenCount: number;
 }
@@ -40,19 +41,6 @@ interface RegisterPushTokenPayload {
   platform: string;
   token: string;
   userAgent: string;
-}
-
-interface UnregisterPushTokenPayload {
-  deviceId: string;
-  permission?: PushNotificationPermission;
-  token?: string;
-}
-
-interface UpdatePushNotificationPreferencesPayload {
-  deviceId: string;
-  permission?: PushNotificationPermission;
-  preferences: Partial<PersonalPushPreferences>;
-  token?: string;
 }
 
 export async function getPushNotificationPreference(payload: GetPushNotificationPreferencePayload = {}) {
@@ -89,23 +77,26 @@ export async function registerPushToken(payload: RegisterPushTokenPayload) {
   }
 }
 
-export async function unregisterPushToken(payload: UnregisterPushTokenPayload) {
+export async function getPlatformAdminNotificationPreferences() {
   try {
-    const fn = invokeBackendAction<UnregisterPushTokenPayload, PushNotificationPreference>('unregisterPushToken');
-    const result = await fn(payload);
-    markContentCachePrefixStale(PUSH_PREFERENCE_CACHE_PREFIX);
-    return result;
+    const fn = invokeBackendAction<Record<string, never>, PlatformAdminNotificationPreferences>(
+      'getPlatformAdminNotificationPreferences',
+    );
+    return await fn({});
   } catch (error) {
     throw toReadableBackendError(error);
   }
 }
 
-export async function updatePushNotificationPreferences(payload: UpdatePushNotificationPreferencesPayload) {
+export async function updatePlatformAdminNotificationPreferences(
+  preferences: PlatformAdminNotificationPreferences,
+) {
   try {
-    const fn = invokeBackendAction<UpdatePushNotificationPreferencesPayload, PushNotificationPreference>('updatePushNotificationPreferences');
-    const result = await fn(payload);
-    markContentCachePrefixStale(PUSH_PREFERENCE_CACHE_PREFIX);
-    return result;
+    const fn = invokeBackendAction<
+      { preferences: PlatformAdminNotificationPreferences },
+      PlatformAdminNotificationPreferences
+    >('updatePlatformAdminNotificationPreferences');
+    return await fn({ preferences });
   } catch (error) {
     throw toReadableBackendError(error);
   }

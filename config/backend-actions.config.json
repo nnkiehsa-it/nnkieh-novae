@@ -38,6 +38,7 @@
   "getNotificationUnreadHint": { "group": "read" },
   "getPlatformDashboard": { "group": "read" },
   "getPushNotificationPreference": { "group": "read" },
+  "getPlatformAdminNotificationPreferences": { "group": "read" },
   "getUserPublicProfiles": { "group": "read" },
   "listAnnouncementComments": { "group": "read" },
   "listAnnouncements": { "group": "read" },
@@ -68,8 +69,7 @@
   "deleteAccountAccessRule": { "group": "admin-write", "extraLimit": "moderationWriteHourly" },
   "toggleFacilityAffected": { "group": "sensitive-write", "extraLimit": "facilityAffectedToggleHourly" },
   "toggleSupport": { "group": "sensitive-write", "extraLimit": "supportToggleHourly" },
-  "unregisterPushToken": { "group": "sensitive-write", "extraLimit": "pushTokenWriteHourly" },
+  "updatePlatformAdminNotificationPreferences": { "group": "general-write", "extraLimit": "preferenceWriteHourly" },
   "updateFacilityStatus": { "group": "admin-write", "extraLimit": "facilityStatusUpdateHourly" },
-  "updateIssueResult": { "group": "admin-write", "extraLimit": "moderationWriteHourly" },
-  "updatePushNotificationPreferences": { "group": "general-write", "extraLimit": "preferenceWriteHourly" }
+  "updateIssueResult": { "group": "admin-write", "extraLimit": "moderationWriteHourly" }
 }

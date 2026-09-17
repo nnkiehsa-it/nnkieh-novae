@@ -5,7 +5,6 @@ import { firebaseVapidKey } from "@/lib/firebase";
 import { loadFirebaseMessaging } from "@/lib/firebase-messaging";
 import {
   readLocalStorage,
-  removeLocalStorage,
   writeLocalStorage,
 } from "@/lib/browser-storage";
 import {
@@ -30,12 +29,6 @@ export function getPushDeviceId() {
   const value = crypto.randomUUID();
   writeLocalStorage(DEVICE_KEY, value);
   return value;
-}
-
-export function forgetPushTokenConfirmation() {
-  removeLocalStorage(CONFIRMED_AT_KEY);
-  removeLocalStorage(CONFIRMED_TOKEN_KEY);
-  removeLocalStorage(CONFIRMED_UID_KEY);
 }
 
 function shouldConfirm(uid: string, token: string, force: boolean) {

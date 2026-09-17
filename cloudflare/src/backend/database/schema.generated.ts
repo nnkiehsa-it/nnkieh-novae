@@ -223,10 +223,7 @@ export interface GeneratedDatabaseTables {
     "broadcast_opened_at": string | null;
     "admin_opened_at": string | null;
     "user_opened_at": string | null;
-    "push_comments_enabled": boolean;
-    "push_issue_updates_enabled": boolean;
     "updated_at": string;
-    "push_facility_updates_enabled": boolean;
   };
   "notifications": {
     "id": string;
@@ -292,6 +289,13 @@ export interface GeneratedDatabaseTables {
   "permissions": {
     "code": string;
     "label": string;
+  };
+  "platform_admin_notification_preferences": {
+    "uid": string;
+    "issue_notifications_enabled": boolean;
+    "facility_notifications_enabled": boolean;
+    "comment_notifications_enabled": boolean;
+    "updated_at": string;
   };
   "platform_category_counters": {
     "category": string;
@@ -448,6 +452,7 @@ export const GENERATED_DATABASE_FUNCTION_SIGNATURES = [
   "backend_get_issue(issue_id uuid, actor_uid text, actor_is_admin boolean, private_to_owner_categories text[], review_required_categories text[], author_private_categories text[]) -> jsonb",
   "backend_get_notification_read_state(actor_uid text) -> jsonb",
   "backend_get_notification_unread_hint(actor_uid text, actor_is_admin boolean) -> jsonb",
+  "backend_get_platform_admin_notification_preferences(actor_uid text) -> jsonb",
   "backend_get_session_bootstrap_snapshot(actor_uid text, actor_is_admin boolean, actor_email text, actor_name text, actor_photo_url text, record_visit boolean) -> jsonb",
   "backend_issue_list_to_json(issue_record app_private.issues, actor_uid text, actor_is_admin boolean, current_user_supported boolean, private_to_owner_categories text[], review_required_categories text[], author_private_categories text[]) -> jsonb",
   "backend_issue_to_json(issue_record app_private.issues, actor_uid text, actor_is_admin boolean, private_to_owner_categories text[], review_required_categories text[], author_private_categories text[]) -> jsonb",
@@ -473,6 +478,7 @@ export const GENERATED_DATABASE_FUNCTION_SIGNATURES = [
   "backend_moderate_issue_status(issue_id uuid, actor_uid text, actor_is_admin boolean, next_status text, review_rejection_reason text, support_deadline_at timestamp with time zone, review_approved_at timestamp with time zone, private_to_owner_categories text[], review_required_categories text[], author_private_categories text[]) -> jsonb",
   "backend_notification_state_to_json(state_record app_private.notification_states) -> jsonb",
   "backend_notification_to_json(notification_record app_private.notifications, opened_at timestamp with time zone) -> jsonb",
+  "backend_platform_admin_notification_recipients(notification_kind text) -> jsonb",
   "backend_process_platform_job_batch(batch_size integer) -> jsonb",
   "backend_push_notification_preference(actor_uid text, device_id text, permission text) -> jsonb",
   "backend_reconcile_platform_admins(actor_uid text, admin_emails text[]) -> jsonb",
@@ -483,13 +489,11 @@ export const GENERATED_DATABASE_FUNCTION_SIGNATURES = [
   "backend_set_announcement_like(announcement_id uuid, actor_uid text, liked boolean) -> jsonb",
   "backend_toggle_facility_affected(facility_id uuid, actor_uid text) -> jsonb",
   "backend_toggle_support(issue_id uuid, actor_uid text, remove_support boolean) -> TABLE(supported boolean, support_count integer, goal_met boolean)",
-  "backend_unregister_push_token(actor_uid text, device_id text, permission text) -> jsonb",
   "backend_update_facility_status(facility_id uuid, actor_uid text, actor_can_manage boolean, next_status text, result_content text) -> jsonb",
   "backend_update_issue_result(issue_id uuid, actor_uid text, actor_is_admin boolean, result_content text, private_to_owner_categories text[], review_required_categories text[], author_private_categories text[]) -> jsonb",
+  "backend_update_platform_admin_notification_preferences(actor_uid text, issue_notifications_enabled boolean, facility_notifications_enabled boolean, comment_notifications_enabled boolean) -> jsonb",
   "backend_update_platform_features(actor_uid text, issues_enabled boolean, facilities_enabled boolean) -> jsonb",
   "backend_update_platform_features(actor_uid text, issues_enabled boolean, facilities_enabled boolean, announcement_comments_enabled boolean) -> jsonb",
-  "backend_update_push_notification_preferences(actor_uid text, comments_enabled boolean, issue_updates_enabled boolean, device_id text, permission text) -> jsonb",
-  "backend_update_push_notification_preferences(actor_uid text, comments_enabled boolean, issue_updates_enabled boolean, facility_updates_enabled boolean, device_id text, permission text) -> jsonb",
   "backend_update_user_access_scope(actor_uid text, target_uid text, scope_kind text, category_id text, grant_access boolean) -> jsonb",
   "backend_upsert_notification_state(actor_uid text) -> app_private.notification_states",
   "claim_background_jobs(requested_batch_size integer) -> TABLE(id uuid, job_type text, scope_id text, payload jsonb, status text, estimated_rows bigint, processed_rows bigint, affected_rows bigint, batch_size integer, attempt_count integer, last_attempt_id uuid, next_attempt_at timestamp with time zone, locked_at timestamp with time zone, started_at timestamp with time zone, completed_at timestamp with time zone, result jsonb, error_detail jsonb, created_by text, created_at timestamp with time zone, updated_at timestamp with time zone, expires_at timestamp with time zone)",

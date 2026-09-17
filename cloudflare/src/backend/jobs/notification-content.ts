@@ -31,15 +31,6 @@ function preview(value: unknown) {
 export function isCommentNotificationType(type: string) {
   return type === "issue_comment_created" || type === "announcement_comment_created";
 }
-export function isIssueUpdateNotificationType(type: string) {
-  return (
-    type === "issue_created" ||
-    type === "issue_status_changed" ||
-    type === "facility_status_changed" ||
-    type === "issue_deleted" ||
-    type === "support_goal_met"
-  );
-}
 function uuidToBytes(uuid: string) {
   return Uint8Array.from(
     uuid.replace(/-/gu, "").match(/.{2}/gu)?.map((byte) => parseInt(byte, 16)) ?? [],

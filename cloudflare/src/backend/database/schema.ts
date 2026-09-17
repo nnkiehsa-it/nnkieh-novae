@@ -95,9 +95,14 @@ interface NotificationStateRow {
   broadcast_opened_at: string | null;
   admin_opened_at: string | null;
   user_opened_at: string | null;
-  push_comments_enabled: boolean;
-  push_issue_updates_enabled: boolean;
-  push_facility_updates_enabled: boolean;
+  updated_at: string;
+}
+
+interface PlatformAdminNotificationPreferenceRow {
+  uid: string;
+  issue_notifications_enabled: boolean;
+  facility_notifications_enabled: boolean;
+  comment_notifications_enabled: boolean;
   updated_at: string;
 }
 
@@ -312,6 +317,7 @@ export interface AppPrivateTables {
   issues: Table<IssueRow>;
   notion_pages: Table<NotionPageRow>;
   notification_states: Table<NotificationStateRow>;
+  platform_admin_notification_preferences: Table<PlatformAdminNotificationPreferenceRow>;
   notifications: Table<NotificationRow>;
   runtime_settings: Table<{ key: string; value: string; updated_at: string }>;
   push_tokens: Table<PushTokenRow>;
@@ -655,18 +661,17 @@ export interface AppApiFunctions {
     token: string;
     user_agent: string;
   }, Json>;
-  backend_unregister_push_token: AppFunction<{
+  backend_get_platform_admin_notification_preferences: AppFunction<{
     actor_uid: string;
-    device_id: string;
-    permission: string;
   }, Json>;
-  backend_update_push_notification_preferences: AppFunction<{
+  backend_platform_admin_notification_recipients: AppFunction<{
+    notification_kind: string;
+  }, Json>;
+  backend_update_platform_admin_notification_preferences: AppFunction<{
     actor_uid: string;
-    comments_enabled: boolean;
-    device_id: string;
-    facility_updates_enabled: boolean;
-    issue_updates_enabled: boolean;
-    permission: string;
+    comment_notifications_enabled: boolean;
+    facility_notifications_enabled: boolean;
+    issue_notifications_enabled: boolean;
   }, Json>;
   backend_estimate_category_policy_changes: AppFunction<{
     actor_uid: string;

@@ -1,4 +1,4 @@
-import { asString } from "../shared/http.ts";
+import { asRecord, asString } from "../shared/http.ts";
 import type { AppDatabaseClient } from "../database/client.ts";
 import type { EventDeliveryItem } from "./delivery-attempt.ts";
 import type { Selected } from "../database/schema.ts";
@@ -17,6 +17,32 @@ export async function resolveRecipients(
 ): Promise<string[]> {
   const { event_type, aggregate_id, actor_uid, payload } = item;
 
+  const applyPlatformAdminPreference = async (recipients: string[]) => {
+    const uniqueRecipients = [...new Set(recipients.filter(Boolean))];
+    const notificationKind = event_type === "issue.comment_created" || event_type === "announcement.comment_created"
+      ? "comment"
+      : event_type.startsWith("facility.") ? "facility" : "issue";
+    const { data, error } = await database.call(
+      "app_api",
+      "backend_platform_admin_notification_recipients",
+      { notification_kind: notificationKind },
+    );
+    if (error) throw error;
+    const preference = asRecord(data);
+    const adminUids = Array.isArray(preference.adminUids)
+      ? preference.adminUids.map((uid) => asString(uid)).filter(Boolean)
+      : [];
+    const enabledAdmins = (Array.isArray(preference.enabledUids) ? preference.enabledUids : [])
+      .map((uid) => asString(uid))
+      .filter(Boolean)
+      .filter((uid) => event_type === "support.goal_met" || uid !== actor_uid);
+    const disabledAdmins = new Set(adminUids.filter((uid) => !enabledAdmins.includes(uid)));
+    return [...new Set([
+      ...uniqueRecipients.filter((uid) => !disabledAdmins.has(uid)),
+      ...enabledAdmins,
+    ])];
+  };
+
   if (event_type === "issue.created" || event_type === "facility.created") {
     const isFacility = event_type === "facility.created";
     const categoryId = asString(payload[isFacility ? "category_id" : "category"]);
@@ -26,14 +52,16 @@ export async function resolveRecipients(
         where category_id = ${categoryId} and notify_on_created = true`
       : await database.sql<Selected<"user_issue_category_assignments", "uid">>`
         select uid from app_private.user_issue_category_assignments where category_id = ${categoryId}`;
-    return [...new Set(rows.map((row) => row.uid).filter((uid) => Boolean(uid) && uid !== actor_uid))];
+    return await applyPlatformAdminPreference(
+      rows.map((row) => row.uid).filter((uid) => Boolean(uid) && uid !== actor_uid),
+    );
   }
 
   if (event_type === "facility.status_changed") {
     const authorUid = asString(payload.author_uid);
     const { rows } = await database.sql<Selected<"facility_report_affected_users", "uid">>`
       select uid from app_private.facility_report_affected_users where facility_id = ${aggregate_id}`;
-    return [...new Set([authorUid, ...rows.map((row) => row.uid)].filter(Boolean))];
+    return await applyPlatformAdminPreference([authorUid, ...rows.map((row) => row.uid)]);
   }
 
   if (event_type === "issue.status_changed" || event_type === "support.goal_met" || event_type === "issue.deleted") {
@@ -49,8 +77,10 @@ export async function resolveRecipients(
         select uid from app_private.supports where issue_id = ${aggregate_id}`;
       supporterUids = rows.map((row) => row.uid).filter(Boolean);
     }
-    return [...new Set([authorUid, ...supporterUids].filter(Boolean))].filter(
-      (uid) => event_type === "support.goal_met" || uid !== actor_uid,
+    return await applyPlatformAdminPreference(
+      [authorUid, ...supporterUids].filter(
+        (uid) => event_type === "support.goal_met" || uid !== actor_uid,
+      ),
     );
   }
 
@@ -62,11 +92,15 @@ export async function resolveRecipients(
         select author_uid from app_private.comments where id = ${parentCommentId}`;
       parentAuthorUid = asString(comment?.author_uid);
     }
-    if (parentAuthorUid && parentAuthorUid !== actor_uid) return [parentAuthorUid];
+    if (parentAuthorUid && parentAuthorUid !== actor_uid) {
+      return await applyPlatformAdminPreference([parentAuthorUid]);
+    }
     const issue = await database.sqlMaybe<Selected<"issues", "author_uid">>`
       select author_uid from app_private.issues where id = ${aggregate_id}`;
     const issueAuthorUid = asString(issue?.author_uid);
-    return issueAuthorUid && issueAuthorUid !== actor_uid ? [issueAuthorUid] : [];
+    return await applyPlatformAdminPreference(
+      issueAuthorUid && issueAuthorUid !== actor_uid ? [issueAuthorUid] : [],
+    );
   }
 
   if (event_type === "announcement.comment_created") {
@@ -77,11 +111,15 @@ export async function resolveRecipients(
         select author_uid from app_private.announcement_comments where id = ${parentCommentId}`;
       parentAuthorUid = asString(comment?.author_uid);
     }
-    if (parentAuthorUid && parentAuthorUid !== actor_uid) return [parentAuthorUid];
+    if (parentAuthorUid && parentAuthorUid !== actor_uid) {
+      return await applyPlatformAdminPreference([parentAuthorUid]);
+    }
     const announcement = await database.sqlMaybe<Selected<"announcements", "author_uid">>`
       select author_uid from app_private.announcements where id = ${aggregate_id}`;
     const annAuthorUid = asString(announcement?.author_uid);
-    return annAuthorUid && annAuthorUid !== actor_uid ? [annAuthorUid] : [];
+    return await applyPlatformAdminPreference(
+      annAuthorUid && annAuthorUid !== actor_uid ? [annAuthorUid] : [],
+    );
   }
 
   return [];

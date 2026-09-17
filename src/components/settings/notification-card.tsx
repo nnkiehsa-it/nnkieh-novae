@@ -2,7 +2,8 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import type {
-  PersonalPushPreferenceKey,
+  PlatformAdminNotificationPreferenceKey,
+  PlatformAdminNotificationPreferences,
   PushNotificationPermission,
 } from "@/hooks/use-push-notifications";
 import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
@@ -10,7 +11,7 @@ import { ListCustomRow, ListSection, RowInner } from "@/components/ui/list";
 import { ListSwitchRow } from "@/components/ui/list-controls";
 
 export interface NotificationOption {
-  key: PersonalPushPreferenceKey;
+  key: PlatformAdminNotificationPreferenceKey;
   label: string;
 }
 
@@ -19,20 +20,14 @@ export function NotificationCard({
   enabled,
   loading,
   onEnabledChange,
-  onPreferenceChange,
-  options,
   permission,
-  preferences,
   supported,
 }: {
   deviceFeedbackState: "idle" | "loading" | "success";
   enabled: boolean;
   loading: boolean;
   onEnabledChange: (enabled: boolean) => void;
-  onPreferenceChange: (key: PersonalPushPreferenceKey, enabled: boolean) => void;
-  options: NotificationOption[];
   permission: PushNotificationPermission;
-  preferences: Record<PersonalPushPreferenceKey, boolean>;
   supported: boolean;
 }) {
   useLocaleSubscription();
@@ -82,6 +77,22 @@ export function NotificationCard({
           />
         </ListCustomRow>
       )}
+    </ListSection>
+  );
+}
+
+export function PlatformAdminNotificationCard({
+  onPreferenceChange,
+  options,
+  preferences,
+}: {
+  onPreferenceChange: (key: PlatformAdminNotificationPreferenceKey, enabled: boolean) => void;
+  options: NotificationOption[];
+  preferences: PlatformAdminNotificationPreferences;
+}) {
+  useLocaleSubscription();
+  return (
+    <ListSection header={translate("ui.settings.platformAdminNotifications")}>
       {options.map((option) => (
         <ListSwitchRow
           checked={preferences[option.key]}

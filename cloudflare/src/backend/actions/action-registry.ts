@@ -69,8 +69,7 @@ function action(
     "cacheUserAvatar",
     "markNotificationsOpened",
     "registerPushToken",
-    "unregisterPushToken",
-    "updatePushNotificationPreferences",
+    "updatePlatformAdminNotificationPreferences",
   ]);
   const accessClass: AccountAccessClass = options.accessClass ?? (rateLimitGroup === "read" || rateLimitGroup === "upload-resolve"
     ? "read"
@@ -171,9 +170,9 @@ export const backendActionDefinitions = [
   action("getNotificationUnreadHint", "notification", "read", notificationHandler),
   action("markNotificationsOpened", "notification", "general-write", notificationHandler),
   action("getPushNotificationPreference", "notification", "read", notificationHandler),
+  action("getPlatformAdminNotificationPreferences", "notification", "read", notificationHandler),
   action("registerPushToken", "notification", "sensitive-write", notificationHandler),
-  action("unregisterPushToken", "notification", "sensitive-write", notificationHandler),
-  action("updatePushNotificationPreferences", "notification", "general-write", notificationHandler),
+  action("updatePlatformAdminNotificationPreferences", "notification", "general-write", notificationHandler),
 
   action("getPlatformDashboard", "dashboard", "read", handleDashboardAction, {
     requiredPermission: "dashboard.view",

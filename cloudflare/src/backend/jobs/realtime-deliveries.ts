@@ -26,10 +26,8 @@ async function realtimeDeliveriesForItem(
   if (item.event_type === "notification.marked_opened") {
     const data = await database.sqlMaybe<Selected<
       "notification_states",
-      "admin_opened_at" | "broadcast_opened_at" | "user_opened_at" | "push_comments_enabled"
-      | "push_facility_updates_enabled" | "push_issue_updates_enabled"
-    >>`select admin_opened_at, broadcast_opened_at, user_opened_at, push_comments_enabled,
-        push_facility_updates_enabled, push_issue_updates_enabled
+      "admin_opened_at" | "broadcast_opened_at" | "user_opened_at"
+    >>`select admin_opened_at, broadcast_opened_at, user_opened_at
       from app_private.notification_states where uid = ${item.aggregate_id}`;
     return [{
       event: "notification_state_changed",
@@ -37,9 +35,6 @@ async function realtimeDeliveriesForItem(
       payload: {
         adminOpenedAt: data?.admin_opened_at ?? null,
         broadcastOpenedAt: data?.broadcast_opened_at ?? null,
-        pushCommentsEnabled: data?.push_comments_enabled !== false,
-        pushFacilityUpdatesEnabled: data?.push_facility_updates_enabled !== false,
-        pushIssueUpdatesEnabled: data?.push_issue_updates_enabled !== false,
         userOpenedAt: data?.user_opened_at ?? null,
       },
       topic: `notification-state:${item.aggregate_id}`,

@@ -137,6 +137,9 @@ export const BACKEND_ACTION_POLICIES = {
   "getPushNotificationPreference": {
     "group": "read"
   },
+  "getPlatformAdminNotificationPreferences": {
+    "group": "read"
+  },
   "getUserPublicProfiles": {
     "group": "read"
   },
@@ -240,9 +243,9 @@ export const BACKEND_ACTION_POLICIES = {
     "group": "sensitive-write",
     "extraLimit": "supportToggleHourly"
   },
-  "unregisterPushToken": {
-    "group": "sensitive-write",
-    "extraLimit": "pushTokenWriteHourly"
+  "updatePlatformAdminNotificationPreferences": {
+    "group": "general-write",
+    "extraLimit": "preferenceWriteHourly"
   },
   "updateFacilityStatus": {
     "group": "admin-write",
@@ -251,10 +254,6 @@ export const BACKEND_ACTION_POLICIES = {
   "updateIssueResult": {
     "group": "admin-write",
     "extraLimit": "moderationWriteHourly"
-  },
-  "updatePushNotificationPreferences": {
-    "group": "general-write",
-    "extraLimit": "preferenceWriteHourly"
   }
 } as const;
 

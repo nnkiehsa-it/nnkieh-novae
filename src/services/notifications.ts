@@ -15,7 +15,6 @@ import {
   toReadableBackendError,
 } from './issues-core';
 import { NOTIFICATION_FEED_PAGE_SIZE } from '@/lib/page-size';
-import type { PersonalPushPreferences } from '@/services/push-notifications';
 import {
   CONTENT_SHORT_CACHE_TTL_MS,
   captureContentCacheWriteGuard,
@@ -66,7 +65,6 @@ export interface NotificationSourcePage {
 export interface NotificationReadState {
   admin: Date | null;
   broadcast: Date | null;
-  personalPreferences: PersonalPushPreferences;
   user: Date | null;
 }
 
@@ -327,11 +325,6 @@ function normalizeNotificationReadState(data: Record<string, unknown>): Notifica
   return {
     admin: normalizeDate(data.adminOpenedAt),
     broadcast: normalizeDate(data.broadcastOpenedAt),
-    personalPreferences: {
-      comments: data.pushCommentsEnabled !== false,
-      issueUpdates: data.pushIssueUpdatesEnabled !== false,
-      facilityUpdates: data.pushFacilityUpdatesEnabled !== false,
-    },
     user: normalizeDate(data.userOpenedAt),
   };
 }
