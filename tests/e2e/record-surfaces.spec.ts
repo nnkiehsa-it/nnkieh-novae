@@ -66,6 +66,7 @@ for (const width of [390, 1440]) {
               sheetTop: frame.getBoundingClientRect().top,
             };
           });
+          await expect(page.locator('[data-slot="dialog-overlay"]')).toHaveCSS("backdrop-filter", "none");
           await close.click();
           await expect(record).toHaveAttribute("data-sheet-lifecycle-closing", "true");
           await expect.poll(() => page.evaluate((start) => {
