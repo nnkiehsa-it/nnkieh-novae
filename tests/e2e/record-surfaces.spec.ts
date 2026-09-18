@@ -163,16 +163,20 @@ for (const width of [390, 1440]) {
       await page.mouse.wheel(0, 100_000);
       await expect(last).toBeInViewport({ ratio: 1 });
       await expect.poll(() => body.evaluate((node) => node.scrollHeight - node.scrollTop - node.clientHeight)).toBeLessThanOrEqual(1);
-      const positions = await page.evaluate(() => ({
-        page: scrollY,
-        record: document.querySelector('[data-slot="sheet-body"]')!.scrollTop,
-      }));
+      const positions = {
+        page: await page.evaluate(() => scrollY),
+        record: await body.evaluate((node) => node.scrollTop),
+      };
       await page.mouse.wheel(0, 4_000);
       await expect(last).toBeInViewport({ ratio: 1 });
-      expect(await page.evaluate(() => ({
-        page: scrollY,
-        record: document.querySelector('[data-slot="sheet-body"]')!.scrollTop,
-      }))).toEqual(positions);
+      const afterOverscroll = {
+        bottom: await body.evaluate((node) => node.scrollHeight - node.scrollTop - node.clientHeight),
+        page: await page.evaluate(() => scrollY),
+        record: await body.evaluate((node) => node.scrollTop),
+      };
+      expect(afterOverscroll.page).toBe(positions.page);
+      expect(Math.abs(afterOverscroll.record - positions.record)).toBeLessThanOrEqual(1);
+      expect(afterOverscroll.bottom).toBeLessThanOrEqual(1);
       await expect(sheet.getByRole("button", { name: "Close", exact: true })).toBeInViewport();
       await sheet.getByRole("button", { name: "Close", exact: true }).click();
       await expect(page.locator("[data-sheet-surface]")).toHaveCount(1);

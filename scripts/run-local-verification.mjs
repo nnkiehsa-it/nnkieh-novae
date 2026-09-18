@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { accessSync, constants } from "node:fs";
+import { accessSync, constants, rmSync } from "node:fs";
 import process from "node:process";
 import { clearInterval, setInterval } from "node:timers";
 import { URL } from "node:url";
@@ -22,6 +22,18 @@ const maxCapturedCharacters = 4_000_000;
 const verificationBuildEnvironment = {
   NOVAE_NEXT_DIST_DIR: ".next-verify",
 };
+
+// Route types are generated artifacts, but TypeScript reads them before the
+// production build below has a chance to replace them. Removed routes otherwise
+// survive indefinitely and make a clean source tree fail against stale files.
+for (const path of [
+  ".next/types",
+  ".next/dev/types",
+  ".next-verify/types",
+  ".next-verify/dev/types",
+]) {
+  rmSync(path, { force: true, recursive: true });
+}
 
 function executable(name) {
   const suffix = process.platform === "win32" ? ".cmd" : "";
@@ -90,7 +102,7 @@ const selectedSteps =
 let completed = 0;
 let progressTimer;
 
-if (runAll) process.stderr.write("[1/3] Local verification\n");
+if (runAll) process.stderr.write("[1/5] Local verification\n");
 
 function formatProgress(label) {
   const width = 20;
@@ -238,12 +250,28 @@ async function runSuite(label, args, environment = process.env) {
 }
 
 if (runAll) {
-  await runSuite("[2/3] Integration verification", [
+  await runSuite("[2/5] Integration verification", [
     "scripts/verify-integration.mjs",
   ]);
-  await runSuite("[3/3] End-to-end verification", [
+  await runSuite("[3/5] Desktop end-to-end verification", [
     "scripts/verify-integration.mjs",
     "--e2e",
+    "--project",
+    "chromium-desktop-readonly",
+  ]);
+  await runSuite("[4/5] Mobile end-to-end verification", [
+    "scripts/verify-integration.mjs",
+    "--e2e",
+    "--skip-build",
+    "--project",
+    "chromium-mobile-readonly",
+  ]);
+  await runSuite("[5/5] Stateful end-to-end verification", [
+    "scripts/verify-integration.mjs",
+    "--e2e",
+    "--skip-build",
+    "--project",
+    "chromium-stateful",
   ]);
   process.stderr.write("\n✓ All verification suites passed\n");
 }

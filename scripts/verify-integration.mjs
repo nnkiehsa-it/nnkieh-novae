@@ -1,13 +1,15 @@
 import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
 import { createServer } from "node:net";
-import { createWriteStream, readFileSync } from "node:fs";
+import { createWriteStream, existsSync, readFileSync } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import process from "node:process";
+import { clearInterval, setInterval } from "node:timers";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
+import pg from "pg";
 import {
   disableWindowsWslDockerAutostart,
   isWindowsWslDistroRunning,
@@ -21,11 +23,29 @@ import {
 const root = process.cwd();
 const e2e = process.argv.includes("--e2e");
 const serve = process.argv.includes("--serve");
+const skipBuild = process.argv.includes("--skip-build");
+const projectIndex = process.argv.indexOf("--project");
+const e2eProject = projectIndex >= 0 ? process.argv[projectIndex + 1] : null;
+const e2eProjects = new Set([
+  "chromium-desktop-readonly",
+  "chromium-mobile-readonly",
+  "chromium-stateful",
+]);
+if (e2eProject && !e2eProjects.has(e2eProject)) {
+  throw new Error(`Unsupported E2E project: ${e2eProject}.`);
+}
+if ((projectIndex >= 0 && !e2eProject) || (!e2e && (skipBuild || e2eProject))) {
+  throw new Error("--project and --skip-build require --e2e.");
+}
 const stressIndex = process.argv.indexOf("--stress-scale");
 const stressScale = stressIndex >= 0 ? process.argv[stressIndex + 1] : "4";
 if (!/^\d+$/u.test(stressScale) || Number(stressScale) < 2 || Number(stressScale) > 20) {
   throw new Error("--stress-scale must be an integer between 2 and 20.");
 }
+const configuredActionRunners = Number.parseInt(process.env.NOVAE_ACTION_TEST_RUNNERS ?? "3", 10);
+const actionTestRunners = Number.isSafeInteger(configuredActionRunners)
+  ? Math.min(4, Math.max(1, configuredActionRunners))
+  : 3;
 // `bun run` kills this process outright the moment the terminal sends Ctrl+C, so a
 // shutdown handler here never finishes and the services, the PostgreSQL container, and
 // the WSL runtime are all left behind. The interactive environment therefore runs one
@@ -57,6 +77,8 @@ const runtimeDatabaseUrl =
   "postgresql://novae_runtime:novae-runtime-local@127.0.0.1:55432/novae";
 const ownerDatabaseUrl =
   "postgresql://novae:novae-local@127.0.0.1:55432/novae";
+const adminDatabaseUrl =
+  "postgresql://novae:novae-local@127.0.0.1:55432/postgres";
 const workerUrl = "http://127.0.0.1:8787";
 const appPort = Number(process.env.NOVAE_TEST_APP_PORT || 3000);
 if (!Number.isInteger(appPort) || appPort < 1024 || appPort > 65535) throw new Error('Invalid NOVAE_TEST_APP_PORT');
@@ -77,6 +99,43 @@ let cleanupPromise;
 let windowsWslDistro = null;
 let windowsWslWasRunning = false;
 let windowsDockerWasActive = false;
+const runnerDatabaseNames = [];
+
+async function recreateRunnerDatabases(count) {
+  const client = new pg.Client({ connectionString: adminDatabaseUrl });
+  await client.connect();
+  try {
+    for (let index = 1; index <= count; index += 1) {
+      const name = `novae_actions_${index}`;
+      await client.query(
+        "select pg_terminate_backend(pid) from pg_stat_activity where datname = $1 and pid <> pg_backend_pid()",
+        [name],
+      );
+      await client.query(`drop database if exists ${name}`);
+      await client.query(`create database ${name} template novae`);
+      runnerDatabaseNames.push(name);
+    }
+  } finally {
+    await client.end();
+  }
+}
+
+async function dropRunnerDatabases() {
+  if (runnerDatabaseNames.length === 0) return;
+  const client = new pg.Client({ connectionString: adminDatabaseUrl });
+  await client.connect();
+  try {
+    for (const name of runnerDatabaseNames.splice(0)) {
+      await client.query(
+        "select pg_terminate_backend(pid) from pg_stat_activity where datname = $1 and pid <> pg_backend_pid()",
+        [name],
+      );
+      await client.query(`drop database if exists ${name}`);
+    }
+  } finally {
+    await client.end();
+  }
+}
 
 function run(label, command, args, environment = {}) {
   process.stderr.write(`[integration] ${label}\n`);
@@ -89,6 +148,88 @@ function run(label, command, args, environment = {}) {
   if (result.status !== 0) {
     throw new Error(`${label} failed with exit code ${result.status ?? 1}.`);
   }
+}
+
+async function databaseHealthSnapshot() {
+  const client = new pg.Client({ connectionString: ownerDatabaseUrl, connectionTimeoutMillis: 2_000 });
+  await client.connect();
+  try {
+    const result = await client.query(`
+      select state, wait_event_type, wait_event, count(*)::int as count
+      from pg_stat_activity
+      where datname = current_database()
+      group by state, wait_event_type, wait_event
+      order by count(*) desc
+    `);
+    return result.rows;
+  } finally {
+    await client.end();
+  }
+}
+
+async function probeWorkerDatabase() {
+  const response = await fetch(`${workerUrl}/v1/actions`, {
+    body: JSON.stringify({ action: "healthcheck", payload: {} }),
+    headers: {
+      "content-type": "application/json",
+      origin: appUrl,
+      "x-healthcheck-secret": "integration-healthcheck-secret",
+    },
+    method: "POST",
+    signal: AbortSignal.timeout(5_000),
+  });
+  const body = await response.text();
+  if (!response.ok || !body.includes('"type":"end"')) {
+    throw new Error(`Worker healthcheck returned ${response.status}: ${body.slice(0, 500)}`);
+  }
+}
+
+async function runBrowserJourneys(label, args, environment) {
+  process.stderr.write(`[integration] ${label}\n`);
+  const child = spawn(bun, ["run", "test:e2e:runner", "--", ...args], {
+    cwd: root,
+    env: { ...process.env, ...environment },
+    stdio: "inherit",
+  });
+  let consecutiveFailures = 0;
+  let healthFailure = null;
+  let probing = false;
+  const timer = setInterval(async () => {
+    if (probing || child.exitCode !== null) return;
+    probing = true;
+    try {
+      await probeWorkerDatabase();
+      consecutiveFailures = 0;
+    } catch (error) {
+      consecutiveFailures += 1;
+      if (consecutiveFailures >= 3 && !healthFailure) {
+        let database = [];
+        try {
+          database = await databaseHealthSnapshot();
+        } catch (snapshotError) {
+          database = [{ snapshotError: String(snapshotError) }];
+        }
+        healthFailure = new Error(
+          `E2E service health failed three times: ${String(error)}\nPostgreSQL activity: ${JSON.stringify(database)}`,
+        );
+        if (process.platform === "win32") {
+          spawnSync("taskkill.exe", ["/PID", String(child.pid), "/T", "/F"], { stdio: "ignore" });
+        } else {
+          child.kill("SIGTERM");
+        }
+      }
+    } finally {
+      probing = false;
+    }
+  }, 15_000);
+  timer.unref();
+  const status = await new Promise((resolve, reject) => {
+    child.once("error", reject);
+    child.once("close", resolve);
+  });
+  clearInterval(timer);
+  if (healthFailure) throw healthFailure;
+  if (status !== 0) throw new Error(`${label} failed with exit code ${status ?? 1}.`);
 }
 
 function start(label, command, args, environment = {}, ports = []) {
@@ -175,6 +316,11 @@ async function stopChild(entry) {
 async function performCleanup() {
   let cleanupError;
   for (const entry of [...children].reverse()) await stopChild(entry);
+  try {
+    await dropRunnerDatabases();
+  } catch (error) {
+    cleanupError ??= error;
+  }
   if (process.platform === "win32") {
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const listenerPids = windowsListenerPids(ownedPorts);
@@ -256,8 +402,6 @@ if (occupiedServicePids.length > 0) {
 
 try {
   await keepWindowsWslRunning();
-  const externalProviderPort = await findAvailablePort();
-  const externalProviderUrl = `http://127.0.0.1:${externalProviderPort}`;
   run("reset PostgreSQL and apply migrations", process.execPath, [
     "scripts/database.mjs",
     "reset-local",
@@ -281,32 +425,41 @@ try {
     },
   );
 
-  const provider = start(
-    "external-provider",
-    process.execPath,
-    ["scripts/external-provider-test-server.mjs"],
-    { NOVAE_EXTERNAL_PROVIDER_TEST_PORT: String(externalProviderPort) },
-    [externalProviderPort],
-  );
-  const providerEntry = children.at(-1);
-  await waitFor(
-    "external provider",
-    `${externalProviderUrl}/__requests`,
-    (response) => response.status === 200,
-    provider,
-    providerEntry.logPath,
-  );
-  run(
-    "configure Cloudinary upload preset",
-    process.execPath,
-    ["scripts/configure-cloudinary.mjs"],
-    {
-      CLOUDINARY_API_BASE_URL: externalProviderUrl,
-      CLOUDINARY_API_KEY: "integration-api-key",
-      CLOUDINARY_API_SECRET: "integration-api-secret",
-      CLOUDINARY_CLOUD_NAME: "integration-cloud",
-    },
-  );
+  if (!serve && !e2e) await recreateRunnerDatabases(actionTestRunners);
+
+  async function startExternalProvider(label) {
+    const port = await findAvailablePort();
+    const url = `http://127.0.0.1:${port}`;
+    const provider = start(
+      label,
+      process.execPath,
+      ["scripts/external-provider-test-server.mjs"],
+      { NOVAE_EXTERNAL_PROVIDER_TEST_PORT: String(port) },
+      [port],
+    );
+    const providerEntry = children.at(-1);
+    await waitFor(label, `${url}/__requests`, (response) => response.status === 200, provider, providerEntry.logPath);
+    run(
+      `configure Cloudinary upload preset for ${label}`,
+      process.execPath,
+      ["scripts/configure-cloudinary.mjs"],
+      {
+        CLOUDINARY_API_BASE_URL: url,
+        CLOUDINARY_API_KEY: "integration-api-key",
+        CLOUDINARY_API_SECRET: "integration-api-secret",
+        CLOUDINARY_CLOUD_NAME: "integration-cloud",
+      },
+    );
+    return url;
+  }
+
+  const externalProviderUrl = await startExternalProvider("external-provider");
+  const actionProviderUrls = [externalProviderUrl];
+  if (!serve && !e2e) {
+    for (let index = 2; index <= actionTestRunners; index += 1) {
+      actionProviderUrls.push(await startExternalProvider(`external-provider-${index}`));
+    }
+  }
 
   let firebase;
   if (serve || e2e) {
@@ -390,12 +543,40 @@ try {
   };
 
   if (!serve && !e2e) {
-    run(
-      "backend actions, permissions, jobs, realtime persistence, and Worker boundaries",
-      process.execPath,
-      [vitestCli, "run", "--config", "vitest.integration.config.ts"],
-      integrationEnvironment,
-    );
+    process.stderr.write(`[integration] backend actions across ${actionTestRunners} isolated runners\n`);
+    const results = await Promise.all(Array.from({ length: actionTestRunners }, (_, index) => {
+      const databaseName = runnerDatabaseNames[index];
+      const providerUrl = actionProviderUrls[index];
+      const environment = {
+        ...process.env,
+        ...integrationEnvironment,
+        CLOUDINARY_API_BASE_URL: providerUrl,
+        CLOUDINARY_DELIVERY_BASE_URL: providerUrl,
+        DATABASE_URL: `postgresql://novae_runtime:novae-runtime-local@127.0.0.1:55432/${databaseName}`,
+        DATABASE_OWNER_URL: `postgresql://novae:novae-local@127.0.0.1:55432/${databaseName}`,
+        FCM_EMULATOR_URL: providerUrl,
+        NOTION_API_BASE_URL: providerUrl,
+      };
+      return new Promise((resolve, reject) => {
+        const child = spawn(
+          process.execPath,
+          [
+            vitestCli,
+            "run",
+            "--config",
+            "vitest.integration.config.ts",
+            `--shard=${index + 1}/${actionTestRunners}`,
+          ],
+          { cwd: root, env: environment, stdio: "inherit" },
+        );
+        child.once("error", reject);
+        child.once("close", (status) => resolve(status ?? 1));
+      });
+    }));
+    const failedRunner = results.findIndex((status) => status !== 0);
+    if (failedRunner >= 0) {
+      throw new Error(`Backend action runner ${failedRunner + 1} failed with exit code ${results[failedRunner]}.`);
+    }
     run(
       "system data consistency verification",
       process.execPath,
@@ -430,8 +611,10 @@ try {
       NOVAE_LOCAL_APP_ORIGIN: appUrl,
       NOVAE_LOCAL_GATEWAY_URL: workerUrl,
     };
-    if (e2e) {
+    if (e2e && !skipBuild) {
       run("build production frontend", bun, ["run", "build:deploy"], frontendEnvironment);
+    } else if (e2e && !existsSync(join(root, ".next", "BUILD_ID"))) {
+      throw new Error("--skip-build requires an existing production .next build.");
     }
     const frontend = start(
       "next",
@@ -450,12 +633,24 @@ try {
     );
     run("Firebase login and API routing probe", process.execPath, ["scripts/check-local-auth-emulator.mjs"], frontendEnvironment);
     if (e2e) {
-      run(
-        "Playwright browser journeys",
-        bun,
-        ["run", "test:e2e:runner"],
-        frontendEnvironment,
-      );
+      if (e2eProject === "chromium-stateful") {
+        await runBrowserJourneys(
+          "Playwright account and content bootstrap",
+          ["--project=bootstrap"],
+          frontendEnvironment,
+        );
+        await runBrowserJourneys(
+          "Playwright stateful browser journeys",
+          [`--project=${e2eProject}`, "--no-deps"],
+          frontendEnvironment,
+        );
+      } else {
+        await runBrowserJourneys(
+          `Playwright ${e2eProject ?? "browser"} journeys`,
+          e2eProject ? [`--project=${e2eProject}`] : [],
+          frontendEnvironment,
+        );
+      }
       process.stderr.write("✓ End-to-end verification passed\n");
     } else {
       process.stderr.write(`\n[environment] Ready\n  App: ${appUrl}\n  API: ${workerUrl}\n  Auth emulator: http://127.0.0.1:4000/auth\n  Stop: Ctrl+C\n`);
