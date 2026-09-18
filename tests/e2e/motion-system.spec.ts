@@ -8,45 +8,6 @@ function navigationDirection(page: Page) {
   );
 }
 
-// Samples the live document across a navigation: how many route surfaces ever
-// coexist, and whether the browser actually ran a view transition for it.
-async function watchRouteChange(page: Page) {
-  await page.evaluate(() => {
-    const state = window as typeof window & {
-      __novaeMaxRoutePages?: number;
-      __novaeSawRouteViewTransition?: boolean;
-    };
-    state.__novaeMaxRoutePages = 0;
-    state.__novaeSawRouteViewTransition = false;
-    const deadline = performance.now() + 3_000;
-    const inspect = () => {
-      state.__novaeMaxRoutePages = Math.max(
-        state.__novaeMaxRoutePages ?? 0,
-        document.querySelectorAll('.route-page').length,
-      );
-      if (document.getAnimations().some((animation) => {
-        const effect = animation.effect as KeyframeEffect & { pseudoElement?: string };
-        return effect?.pseudoElement?.includes('view-transition');
-      })) state.__novaeSawRouteViewTransition = true;
-      if (performance.now() < deadline) requestAnimationFrame(inspect);
-    };
-    requestAnimationFrame(inspect);
-  });
-}
-
-function routeChangeReport(page: Page) {
-  return page.evaluate(() => {
-    const state = window as typeof window & {
-      __novaeMaxRoutePages?: number;
-      __novaeSawRouteViewTransition?: boolean;
-    };
-    return {
-      routeSurfaces: state.__novaeMaxRoutePages,
-      viewTransition: Boolean(state.__novaeSawRouteViewTransition),
-    };
-  });
-}
-
 async function watchSheetExit(sheet: Locator, key: string) {
   await sheet.evaluate((element, reportKey) => {
     type ExitReport = {
@@ -105,55 +66,33 @@ function sheetExitReport(page: Page, key: string) {
   }, key);
 }
 
-test('navigation direction follows the information hierarchy in both directions', async ({
+test('the issue composer opens over its feed while primary navigation replaces the page', async ({
   browser,
 }) => {
   const { context, page } = await newUserPage(browser, 'ordinary');
   await page.goto('/issues');
   await expect(page.locator('.route-page')).toBeVisible();
-  // A record is shown over the list it is in rather than instead of it, so the
-  // move that goes deeper in the hierarchy is the one that replaces the page:
-  // writing a proposal rather than reading one.
+  const feed = await page.locator('.route-page').getAttribute('data-route-path');
   const compose = page.getByRole('link', { name: 'New proposal' });
   await expect(compose).toBeVisible();
 
-  await watchRouteChange(page);
   await compose.click();
   await page.waitForURL(/\/issues\/[^/]+\/compose\/new$/u);
-  await expect(page.getByRole('textbox', { name: 'Proposal title' })).toBeVisible();
-  await expect(page.locator('[data-sheet-surface]')).toHaveCount(0);
-  await expect.poll(() => navigationDirection(page)).toBe('push');
-  const forward = await routeChangeReport(page);
-  expect(forward.routeSurfaces).toBe(1);
-  // The page arriving is revealed in the live document. Capturing it instead
-  // rasterises both pages while the browser is still fetching and rendering the
-  // route that was asked for, and suspends hit testing for the whole animation.
-  expect(forward.viewTransition).toBe(false);
-  await expect(page.locator('.route-page')).toHaveCSS(
-    'animation-name',
-    't-route-enter',
-  );
+  const composer = page.getByRole('dialog');
+  await expect(composer.getByRole('textbox', { name: 'Proposal title' })).toBeVisible();
+  await expect(page.locator('[data-sheet-surface]')).toHaveCount(1);
+  await expect(page.locator('.route-page')).toHaveAttribute('data-route-path', feed ?? '');
 
-  await page.goBack();
+  await composer.getByRole('button', { name: 'Close' }).click();
   await page.waitForURL(/\/issues\/[^/]+$/u);
-  await expect.poll(() => navigationDirection(page)).toBe('pop');
-  // Next dispatches a history traversal outside a React Transition so that Back
-  // stays instant. The reveal belongs to the page that arrives, so a traversal
-  // animates on exactly the same recipe as any other navigation and needs no
-  // transition of its own.
-  await expect(page.locator('.route-page')).toHaveCSS(
-    'animation-name',
-    't-route-enter',
-  );
+  await expect(composer).toHaveCount(0);
 
-  // The browser's own Back button carries no navigation intent of its own, so
-  // returning to the detail page has to be recognised as a push all the same.
   await page.goForward();
   await page.waitForURL(/\/issues\/[^/]+\/compose\/new$/u);
-  await expect.poll(() => navigationDirection(page)).toBe('push');
+  await expect(page.getByRole('dialog').getByRole('textbox', { name: 'Proposal title' })).toBeVisible();
   await page.goBack();
   await page.waitForURL(/\/issues\/[^/]+$/u);
-  await expect.poll(() => navigationDirection(page)).toBe('pop');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 
   // Switching primary navigation is a replacement, not a move through the
   // hierarchy, and must not read as either direction.

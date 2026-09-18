@@ -12,7 +12,7 @@ import { ContentTransition, StateTransition } from "@/components/motion/state-tr
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 import type { FeedKind } from "@/components/ui/feed-list";
 import { cn } from "@/lib/utils";
-import { useCloseRecord } from "@/components/detail-sheet";
+import { useCloseRouteOverlay } from "@/components/detail-sheet";
 import { sheetCloseButtonClass } from "@/components/ui/sheet";
 
 export interface DetailPanel { key: string; content: ReactNode; className?: string }
@@ -48,7 +48,7 @@ export function DetailLayout({
   toolbar?: ReactNode;
 }) {
   const { t } = useI18n();
-  const closeRecord = useCloseRecord();
+  const closeRecord = useCloseRouteOverlay();
   const Reaction = kind === "announcement" ? Heart : Hand;
   const pendingPanels: DetailPanel[] = [{ key: "reaction", content: <>
     <div className="flex min-h-5 items-center justify-between gap-3"><Skeleton className="h-4 w-24" /><Skeleton className="h-5 w-14" /></div>

@@ -21,30 +21,31 @@ import {
 } from "@/components/ui/sheet";
 
 /**
- * One record presentation for every entry point. Intercepted navigation keeps
- * its source page mounted; a direct URL uses the same sheet and closes to the
- * record's list, never to an unrelated browser-history entry.
+ * One retained route sheet for records and the proposal composer. Intercepted
+ * navigation keeps its source page mounted; a direct record URL uses the same
+ * sheet and closes to its list, never to unrelated browser history.
  */
-const RecordOverlay = React.createContext<{ close: () => void; label: string } | null>(null);
+const RouteOverlay = React.createContext<{ close: () => void; label: string | null } | null>(null);
 
-/** How controls inside a record put away an intercepted record sheet. */
-export function useCloseRecord() {
-  return React.useContext(RecordOverlay)?.close ?? null;
+/** How controls inside intercepted content put away their route sheet. */
+export function useCloseRouteOverlay() {
+  return React.useContext(RouteOverlay)?.close ?? null;
 }
 
-export function useRecordOverlayLabel() {
-  return React.useContext(RecordOverlay)?.label ?? null;
+export function useRouteOverlayLabel() {
+  return React.useContext(RouteOverlay)?.label ?? null;
 }
 
-function RecordSheetContext({ children, label }: { children: ReactNode; label: string }) {
+function RouteSheetContext({ children, label }: { children: ReactNode; label: string | null }) {
   const close = useSheetClose();
   if (!close) return children;
-  return <RecordOverlay.Provider value={{ close, label }}>{children}</RecordOverlay.Provider>;
+  return <RouteOverlay.Provider value={{ close, label }}>{children}</RouteOverlay.Provider>;
 }
 
-export function DetailSheet({ children, label, returnTo }: {
+export function DetailSheet({ children, label, overlayLabel = label, returnTo }: {
   children: ReactNode;
   label: string;
+  overlayLabel?: string | null;
   returnTo?: string;
 }) {
   const router = useRouter();
@@ -77,7 +78,7 @@ export function DetailSheet({ children, label, returnTo }: {
       >
         <SheetBody className="pb-0">
           <SheetTitle className="sr-only">{label}</SheetTitle>
-          <RecordSheetContext label={label}>{children}</RecordSheetContext>
+          <RouteSheetContext label={overlayLabel}>{children}</RouteSheetContext>
         </SheetBody>
       </SheetContent>
     </Sheet>

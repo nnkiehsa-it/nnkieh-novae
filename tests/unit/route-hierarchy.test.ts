@@ -65,7 +65,7 @@ describe("route hierarchy", () => {
   });
 });
 
-describe("a record opened over its source page", () => {
+describe("content opened over its source page", () => {
   it("recognises the records a list shows", () => {
     expect(opensOverRoute("/issues/school", "/issues/school/abc")).toBe(true);
     expect(opensOverRoute("/announcements", "/announcements/abc")).toBe(true);
@@ -82,8 +82,11 @@ describe("a record opened over its source page", () => {
     expect(opensOverRoute("/settings", "/announcements/abc")).toBe(true);
   });
 
-  it("does not intercept composers, feeds, or arrivals from outside the protected shell", () => {
-    expect(opensOverRoute("/issues/school", "/issues/school/compose/new")).toBe(false);
+  it("opens the issue composer over its feed", () => {
+    expect(opensOverRoute("/issues/school", "/issues/school/compose/new")).toBe(true);
+  });
+
+  it("does not intercept feeds or arrivals from outside the protected shell", () => {
     expect(opensOverRoute("/announcements", "/announcements")).toBe(false);
     expect(opensOverRoute("/login", "/announcements/abc")).toBe(false);
     expect(opensOverRoute("/announcements/abc", "/announcements/abc")).toBe(false);

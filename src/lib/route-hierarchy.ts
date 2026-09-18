@@ -85,6 +85,10 @@ export function isRecordRoute(pathname: string) {
   return RECORD_ROUTE_PATTERN.test(pathname);
 }
 
+function isIssueComposerRoute(pathname: string) {
+  return /^\/issues\/[^/]+\/compose\/new$/u.test(pathname);
+}
+
 /** The list a direct record URL closes to. Non-record routes keep their identity. */
 export function recordListPath(pathname: string) {
   return isRecordRoute(pathname) ? pathname.slice(0, pathname.lastIndexOf("/")) : pathname;
@@ -92,6 +96,6 @@ export function recordListPath(pathname: string) {
 
 /** The protected shell intercepts records from any of its pages, not only feeds. */
 export function opensOverRoute(from: string, to: string) {
-  return from !== to && isRecordRoute(to)
+  return from !== to && (isRecordRoute(to) || isIssueComposerRoute(to))
     && /^\/(?:issues|facilities|announcements|notifications|settings|admin)(?:\/|$)/u.test(from);
 }
