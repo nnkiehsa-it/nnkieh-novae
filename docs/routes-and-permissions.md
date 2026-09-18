@@ -13,7 +13,7 @@
 | `/setup` | 語言與初始 category 設定 | 未完成 setup；只有平台管理員可編輯，其他人看到等待狀態 |
 | `/issues` | 提案入口 | 依 catalog 轉到預設 category；沒有預設值時轉到 `/issues/my-proposals` |
 | `/issues/[filter]` | category feed 或「我的提案」 | `issues` feature 必須開啟 |
-| `/issues/[filter]/new` | 新增提案 | category 規則、互動限制與後端驗證 |
+| `/issues/[filter]/compose/new` | 新增提案 | category 規則、互動限制與後端驗證 |
 | `/issues/[filter]/[issueId]` | 提案內容、附議、留言與處理結果 | 可見性與 category scope 由後端判斷 |
 | `/facilities` | 設施回報列表 | `facilities` feature 必須開啟 |
 | `/facilities/new` | 新增設施回報 | 互動限制與後端驗證 |

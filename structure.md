@@ -25,7 +25,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `public/novae-constellation.webp` — original website brand artwork, reused on the desktop login surface with reserved image dimensions.
 - `src/app/(protected)/layout.tsx` — authenticated application guard and shared shell boundary, including the single `@sheet` parallel slot for records opened from any protected page. `@sheet/(.)issues/[filter]/[issueId]`, `(.)facilities/[facilityId]` and `(.)announcements/[announcementId]` replace the feed-local interception slots. `default.tsx` and `[...dismissed]/page.tsx` clear the slot on direct arrivals and navigation away. Each direct record route's `layout.tsx` mounts `DirectDetailSheet`, retaining the same sheet around its loading boundary and closing to the owning list.
 - `src/app/(protected)/setup/` — admin-only idempotent category setup with completion recovery in `use-initial-setup`; first-visit language selection happens through the shared locale gate before any route.
-- `src/app/(protected)/issues/` — feature-guarded issue redirect, feed, composer, and detail routes.
+- `src/app/(protected)/issues/` — feature-guarded issue redirect, feed, detail routes, and the `/issues/[filter]/compose/new` composer route whose four-segment shape stays outside the intercepted record URL.
 - `src/app/(protected)/facilities/` — feature-guarded facility feed, composer, and detail routes.
 - `src/app/(protected)/announcements/` — announcement feed, composer, and detail routes.
 - `src/app/(protected)/notifications/` — merged broadcast/admin/user notification presentation with a route-loading shell and no hover-triggered destination prefetch.
