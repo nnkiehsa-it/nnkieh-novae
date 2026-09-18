@@ -54,6 +54,9 @@ const JSON_FUNCTION_ARGUMENTS = new Map<string, Set<string>>([
 
 const IDENTIFIER_PATTERN = /^[a-z_][a-z0-9_]*$/u;
 const DATABASE_QUERY_CONCURRENCY = 1;
+const DATABASE_CONNECTION_TIMEOUT_MS = 15_000;
+const DATABASE_IDLE_TIMEOUT_MS = 5_000;
+const DATABASE_QUERY_TIMEOUT_MS = 60_000;
 
 function quoteIdentifier(identifier: string) {
   if (!IDENTIFIER_PATTERN.test(identifier)) throw new Error("invalid-database-identifier");
@@ -190,7 +193,14 @@ export class AppDatabaseClient implements DatabaseSession {
   private readonly session: DatabaseSession;
 
   constructor(connectionString: string) {
-    this.pool = new Pool({ connectionString, max: DATABASE_QUERY_CONCURRENCY });
+    this.pool = new Pool({
+      connectionString,
+      connectionTimeoutMillis: DATABASE_CONNECTION_TIMEOUT_MS,
+      idleTimeoutMillis: DATABASE_IDLE_TIMEOUT_MS,
+      max: DATABASE_QUERY_CONCURRENCY,
+      query_timeout: DATABASE_QUERY_TIMEOUT_MS,
+      statement_timeout: DATABASE_QUERY_TIMEOUT_MS,
+    });
     this.session = new AppDatabaseSession(this.query.bind(this));
   }
 

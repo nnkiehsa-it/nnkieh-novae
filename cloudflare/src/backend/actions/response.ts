@@ -107,21 +107,45 @@ export function streamingResponse(
   rest: AsyncIterator<ActionSegment>,
   operationId: string,
   onFailure: (error: unknown) => Promise<ApiErrorBody>,
+  signal?: AbortSignal,
 ) {
   const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
   const writer = writable.getWriter();
+  let rejectAbort: ((reason?: unknown) => void) | null = null;
+  const aborted = new Promise<never>((_, reject) => {
+    rejectAbort = reject;
+  });
+  const stop = () => {
+    rejectAbort?.(signal?.reason ?? new Error("request-aborted"));
+    void rest.return?.();
+    void writer.abort(signal?.reason).catch(() => undefined);
+  };
+  signal?.addEventListener("abort", stop, { once: true });
   const pump = (async () => {
-    await writer.write(streamLine({ operationId, policyRevision: operationPolicies().revision, type: "start" }));
-    await writer.write(streamLine({ data: first.data, key: first.key, type: "part" }));
     try {
-      for (let next = await rest.next(); !next.done; next = await rest.next()) {
+      await writer.write(streamLine({ operationId, policyRevision: operationPolicies().revision, type: "start" }));
+      await writer.write(streamLine({ data: first.data, key: first.key, type: "part" }));
+      for (
+        let next = await Promise.race([rest.next(), aborted]);
+        !next.done;
+        next = await Promise.race([rest.next(), aborted])
+      ) {
         await writer.write(streamLine({ data: next.value.data, key: next.value.key, type: "part" }));
       }
       await writer.write(streamLine({ type: "end" }));
     } catch (error) {
-      await writer.write(streamLine({ error: await onFailure(error), type: "error" }));
+      if (!signal?.aborted) {
+        await writer.write(streamLine({ error: await onFailure(error), type: "error" }));
+      }
+    } finally {
+      signal?.removeEventListener("abort", stop);
+      if (rest.return) {
+        if (signal?.aborted) void rest.return().catch(() => undefined);
+        else await rest.return().catch(() => undefined);
+      }
+      if (signal?.aborted) await writer.abort(signal.reason).catch(() => undefined);
+      else await writer.close().catch(() => undefined);
     }
-    await writer.close();
   })();
   return { response: new Response(readable, { headers: { "content-type": "application/x-ndjson" } }), pump };
 }

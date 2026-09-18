@@ -79,6 +79,7 @@ export async function handleBackendAction(
       segments,
       operationId,
       async (error) => publicErrorBody(error, (await recordFailure(error)).failureId),
+      request.signal,
     );
     return { done: pump, response };
   } catch (error) {
