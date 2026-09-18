@@ -6,7 +6,7 @@ import { newUserPage } from './support/session';
 test('composer upload creates, finalizes, and rolls back provider resources', async ({ browser }) => {
   test.setTimeout(150_000);
   const member = await newUserPage(browser, 'ordinary');
-  await member.page.goto('/issues/proposal-a/new');
+  await member.page.goto('/issues/proposal-a/compose/new');
   const title = `Upload ${Date.now().toString().slice(-8)}`;
   await member.page.getByRole('textbox', { name: 'Proposal title' }).fill(title);
   await member.page.getByRole('textbox', { name: 'Proposal content' }).fill('The image is removed before submission.');

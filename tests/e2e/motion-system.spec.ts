@@ -119,7 +119,9 @@ test('navigation direction follows the information hierarchy in both directions'
 
   await watchRouteChange(page);
   await compose.click();
-  await page.waitForURL(/\/issues\/[^/]+\/new$/u);
+  await page.waitForURL(/\/issues\/[^/]+\/compose\/new$/u);
+  await expect(page.getByRole('textbox', { name: 'Proposal title' })).toBeVisible();
+  await expect(page.locator('[data-sheet-surface]')).toHaveCount(0);
   await expect.poll(() => navigationDirection(page)).toBe('push');
   const forward = await routeChangeReport(page);
   expect(forward.routeSurfaces).toBe(1);
@@ -147,7 +149,7 @@ test('navigation direction follows the information hierarchy in both directions'
   // The browser's own Back button carries no navigation intent of its own, so
   // returning to the detail page has to be recognised as a push all the same.
   await page.goForward();
-  await page.waitForURL(/\/issues\/[^/]+\/new$/u);
+  await page.waitForURL(/\/issues\/[^/]+\/compose\/new$/u);
   await expect.poll(() => navigationDirection(page)).toBe('push');
   await page.goBack();
   await page.waitForURL(/\/issues\/[^/]+$/u);

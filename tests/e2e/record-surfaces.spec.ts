@@ -189,7 +189,7 @@ for (const width of [390, 1440]) {
         "/announcements",
         "/notifications",
         "/settings",
-        "/issues/public-issues/new",
+        "/issues/public-issues/compose/new",
         "/facilities/new?category=general",
         "/announcements/new",
         "/admin",

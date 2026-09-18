@@ -63,7 +63,7 @@ test.describe('mobile route motion', () => {
 
   test('keeps wide editor tables and their controls inside the composer', async ({ page }) => {
     await suppressInstallPrompt(page);
-    await page.goto('/issues/proposal-a/new');
+    await page.goto('/issues/proposal-a/compose/new');
 
     const editor = page.locator('.novae-markdown-editor');
     const textbox = page.getByRole('textbox', { name: 'Proposal content' });

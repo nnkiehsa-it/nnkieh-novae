@@ -57,7 +57,7 @@ export async function createProposal(
   categoryId: string,
   title: string,
 ) {
-  await page.goto(`/issues/${categoryId}/new`);
+  await page.goto(`/issues/${categoryId}/compose/new`);
   await page.getByRole('textbox', { name: 'Proposal title' }).fill(title);
   await page.getByRole('textbox', { name: 'Proposal content' }).fill(`${title} details`);
   await expectBackendAction(page, 'createIssue', async () => {

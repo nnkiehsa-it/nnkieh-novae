@@ -14,7 +14,7 @@ describe("shared arrival detection", () => {
     expect(isSharedRoute("/facilities/new")).toBe(false);
     expect(isSharedRoute("/issues")).toBe(false);
     expect(isSharedRoute("/issues/proposal-a")).toBe(false);
-    expect(isSharedRoute("/issues/proposal-a/new")).toBe(false);
+    expect(isSharedRoute("/issues/proposal-a/compose/new")).toBe(false);
     expect(isSharedRoute("/settings")).toBe(false);
     expect(isSharedRoute("/admin/people")).toBe(false);
     expect(isSharedRoute("/issues/proposal-a/abc/extra")).toBe(false);

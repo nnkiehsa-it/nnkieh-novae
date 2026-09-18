@@ -45,7 +45,7 @@ describe("route hierarchy", () => {
     expect(showsPrimaryNavigation("/issues/my-proposals")).toBe(true);
     expect(showsPrimaryNavigation("/notifications")).toBe(true);
 
-    expect(showsPrimaryNavigation("/issues/public/new")).toBe(false);
+    expect(showsPrimaryNavigation("/issues/public/compose/new")).toBe(false);
     expect(showsPrimaryNavigation("/facilities/facility-1")).toBe(false);
     expect(showsPrimaryNavigation("/admin")).toBe(false);
     expect(showsPrimaryNavigation("/admin/people")).toBe(false);
@@ -83,7 +83,7 @@ describe("a record opened over its source page", () => {
   });
 
   it("does not intercept composers, feeds, or arrivals from outside the protected shell", () => {
-    expect(opensOverRoute("/issues/school", "/issues/school/new")).toBe(false);
+    expect(opensOverRoute("/issues/school", "/issues/school/compose/new")).toBe(false);
     expect(opensOverRoute("/announcements", "/announcements")).toBe(false);
     expect(opensOverRoute("/login", "/announcements/abc")).toBe(false);
     expect(opensOverRoute("/announcements/abc", "/announcements/abc")).toBe(false);
