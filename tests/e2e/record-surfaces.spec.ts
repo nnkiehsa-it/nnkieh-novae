@@ -209,7 +209,7 @@ for (const width of [390, 1440]) {
         await expect(title).toBeVisible();
         await expect(backdrop).toHaveAttribute("data-progressive", "true");
         await expect(backdrop).toHaveCSS("backdrop-filter", "none");
-        await expect(shield).toHaveCSS("backdrop-filter", "blur(4px)");
+        await expect(shield).toHaveCSS("backdrop-filter", "none");
         await expect(blurSteps).toHaveCount(3);
         await expect(blurSteps.nth(0)).toHaveCSS("backdrop-filter", "blur(12px)");
         await expect(blurSteps.nth(1)).toHaveCSS("backdrop-filter", "blur(6px)");
@@ -267,6 +267,7 @@ for (const width of [390, 1440]) {
           const box = node.getBoundingClientRect();
           return {
             background: getComputedStyle(node).backgroundColor,
+            stageBackground: getComputedStyle(document.documentElement).backgroundColor,
             mask: getComputedStyle(node).maskImage,
             bottom: box.bottom,
             top: box.top,
@@ -274,8 +275,8 @@ for (const width of [390, 1440]) {
         });
         expect(shieldGeometry.top).toBeLessThanOrEqual(0);
         expect(shieldGeometry.bottom).toBe(geometry.headerTop);
-        expect(shieldGeometry.background).toBe("rgba(0, 0, 0, 0)");
-        expect(shieldGeometry.mask).not.toBe("none");
+        expect(shieldGeometry.background).toBe(shieldGeometry.stageBackground);
+        expect(shieldGeometry.mask).toBe("none");
         expect(geometry.filters.every((value) => value === "none")).toBe(true);
         expect(geometry.backdropFilters.every((value) => value === "none")).toBe(true);
         expect(await page.evaluate(() =>
