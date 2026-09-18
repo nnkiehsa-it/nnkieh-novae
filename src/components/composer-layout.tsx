@@ -3,9 +3,11 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import type { FormEvent, ReactNode } from "react";
 import { ArrowUp } from "lucide-react";
+import { useCloseRouteOverlay } from "@/components/detail-sheet";
 import { SecondaryToolbar } from "@/components/detail-toolbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { HeaderBackdrop } from "@/components/ui/header-backdrop";
 import { BusyLabel, PageHeader } from "@/components/ui/page-state";
 
 /**
@@ -40,30 +42,50 @@ export function ComposerLayout({
   title: string;
 }) {
   useLocaleSubscription();
+  const closeRouteOverlay = useCloseRouteOverlay();
+  const toolbar = (
+    <SecondaryToolbar backLabel={translate("ui.common.back")} onBack={onBack} />
+  );
+  const form = (
+    <form className="min-w-0" onSubmit={onSubmit}>
+      <Card className="min-w-0 py-5 sm:py-6">
+        <CardContent className="grid min-w-0 max-w-full gap-5 px-4 sm:px-6">
+          {children}
+          <div className="flex justify-end">
+            <Button disabled={submitDisabled} type="submit">
+              {busy ? null : <ArrowUp />}
+              <BusyLabel
+                busy={busy}
+                busyLabel={submitBusyLabel}
+                label={submitLabel}
+                success={succeeded}
+              />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </form>
+  );
+
+  if (closeRouteOverlay) {
+    return (
+      <div>
+        <header className="detail-header">
+          <HeaderBackdrop />
+          {toolbar}
+        </header>
+        <div className="pt-2">{form}</div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-5xl space-y-5">
       <PageHeader
-        lead={<SecondaryToolbar backLabel={translate("ui.common.back")} onBack={onBack} />}
+        lead={toolbar}
         title={title}
       />
-      <form className="min-w-0" onSubmit={onSubmit}>
-        <Card className="min-w-0 py-5 sm:py-6">
-          <CardContent className="grid min-w-0 max-w-full gap-5 px-4 sm:px-6">
-            {children}
-            <div className="flex justify-end">
-              <Button disabled={submitDisabled} type="submit">
-                {busy ? null : <ArrowUp />}
-                <BusyLabel
-                  busy={busy}
-                  busyLabel={submitBusyLabel}
-                  label={submitLabel}
-                  success={succeeded}
-                />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </form>
+      {form}
     </div>
   );
 }

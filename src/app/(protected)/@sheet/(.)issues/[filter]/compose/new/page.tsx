@@ -10,7 +10,7 @@ export default function Page() {
 
   return (
     <FeatureRouteGuard feature="issues">
-      <DetailSheet label={t("ui.issue.new")} overlayLabel={null}>
+      <DetailSheet label={t("ui.issue.new")}>
         <IssueComposer />
       </DetailSheet>
     </FeatureRouteGuard>
