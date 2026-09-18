@@ -71,6 +71,7 @@ test('the issue composer opens over its feed while primary navigation replaces t
 }) => {
   const { context, page } = await newUserPage(browser, 'ordinary');
   await page.goto('/issues');
+  await page.waitForURL(/\/issues\/[^/]+$/u);
   await expect(page.locator('.route-page')).toBeVisible();
   const feed = await page.locator('.route-page').getAttribute('data-route-path');
   const compose = page.getByRole('link', { name: 'New proposal' });
