@@ -522,16 +522,22 @@ html[data-input-modality="pointer"] :focus-visible {
   inset: 0;
 }
 
-/* Scrolling content must not appear in the clearance above a sticky header.
-   This real paint layer covers exactly that externally measured distance but
-   deliberately carries no backdrop filter; the three blur bands still begin
-   at the header's own top edge. */
+/* Scrolling content must not appear sharp in the clearance above a sticky
+   header, but that clearance must not become a second painted surface either.
+   Keep it fully transparent and only fade in a light backdrop blur as it nears
+   the header. On older iOS this softens content that actually passes behind the
+   safe-area gap; on iOS versions that already treat the status-bar edge, the
+   near-zero mask at the physical top avoids stacking another strong blur there. */
 .page-header > .header-backdrop[data-progressive="true"] > [data-header-shield] {
   top: calc(-1 * var(--header-top, var(--page-header-top)));
   right: 0;
   bottom: 100%;
   left: 0;
-  background: var(--header-veil, var(--surface-stage));
+  background: transparent;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, transparent 18%, black 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, transparent 18%, black 100%);
 }
 
 .page-header > .header-backdrop [data-blur-step="strong"] {
