@@ -52,6 +52,7 @@ function issueCategoryInput(value: unknown, sortOrder: number) {
   const supportEnabled = asBoolean(record.supportEnabled);
   return {
     ...identity,
+    authorDeleteEnabled: asBoolean(record.authorDeleteEnabled),
     authorVisible,
     commentsEnabled: asBoolean(record.commentsEnabled, true),
     readAccess,
@@ -63,7 +64,12 @@ function issueCategoryInput(value: unknown, sortOrder: number) {
 }
 
 function facilityCategoryInput(value: unknown, sortOrder: number) {
-  return { ...categoryIdentity(asRecord(value)), sortOrder };
+  const record = asRecord(value);
+  return {
+    ...categoryIdentity(record),
+    authorDeleteEnabled: asBoolean(record.authorDeleteEnabled),
+    sortOrder,
+  };
 }
 
 function assertCategoryCollection(categories: Array<{ id: string; isDefault: boolean }>) {

@@ -241,9 +241,9 @@ test.describe('ordinary owner on mobile', () => {
     await suppressInstallPrompt(page);
     const content = await readContentState();
     await page.goto(content.proposalA);
-    await expectMoreActions(page, ['Delete proposal'], ['Manage status']);
+    await expectMoreActions(page, [], ['Manage status', 'Delete proposal']);
     await page.goto(content.facilityB);
-    await expectMoreActions(page, ['Delete report'], ['Update status']);
+    await expectMoreActions(page, [], ['Update status', 'Delete report']);
   });
 });
 

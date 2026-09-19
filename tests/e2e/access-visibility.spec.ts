@@ -10,8 +10,8 @@ test('proposal controls follow ownership, category scope, and platform administr
   const content = await readContentState();
   const cases = [
     {
-      absent: ['Manage status'],
-      present: ['Delete proposal'],
+      absent: ['Manage status', 'Delete proposal'],
+      present: [],
       url: content.proposalA,
       user: 'ordinary',
     },
@@ -86,7 +86,7 @@ test('facility controls follow ownership, category scope, and platform administr
 }) => {
   const content = await readContentState();
   const cases = [
-    { delete: true, manage: false, url: content.facilityA, user: 'ordinary' },
+    { delete: false, manage: false, url: content.facilityA, user: 'ordinary' },
     { delete: false, manage: false, url: content.facilityA, user: 'other' },
     { delete: true, manage: true, url: content.facilityA, user: 'facilityManager' },
     { delete: false, manage: false, url: content.facilityB, user: 'facilityManager' },

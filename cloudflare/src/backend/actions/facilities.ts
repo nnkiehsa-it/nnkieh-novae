@@ -1,6 +1,6 @@
 import { asRecord, asString } from "../shared/http.ts";
 import { canManageFacilityCategory, requireFacilityCategoryPermission } from "./auth.ts";
-import { getFacilityCategories } from "./category-catalog.ts";
+import { getFacilityCategories, getFacilityCategory } from "./category-catalog.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
 import { asNumber, asUuid, countRecord } from "./utils.ts";
@@ -59,7 +59,15 @@ export async function handleFacilityAction(
       ...policy(auth, categoryId),
     });
     if (error) throw error;
-    return { facility: data };
+    const facility = asRecord(data);
+    return {
+      facility: {
+        ...facility,
+        canDeleteFacility: canManageFacilityCategory(auth, categoryId)
+          || (asString(facility.author_uid) === auth.uid
+            && (await getFacilityCategory(database, categoryId)).authorDeleteEnabled),
+      },
+    };
   }
 
   if (action === "toggleFacilityAffected") {
@@ -87,9 +95,12 @@ export async function handleFacilityAction(
   }
 
   if (action === "deleteFacility") {
+    const category = await getFacilityCategory(database, categoryId);
     const { data, error } = await database.call("app_api", "backend_delete_facility", {
       facility_id: facilityId,
-      ...policy(auth, categoryId),
+      actor_uid: auth.uid,
+      actor_can_manage: canManageFacilityCategory(auth, categoryId),
+      author_delete_enabled: category.authorDeleteEnabled,
     });
     if (error) throw error;
     return asRecord(data);

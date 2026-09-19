@@ -319,6 +319,8 @@ const messages = {
   'ui.admin.reviewedVisible': '審核後全校可見',
   'ui.admin.ownerAdminOnly': '僅作者與管理員',
   'ui.admin.showAuthor': '顯示作者',
+  'ui.admin.allowIssueAuthorDelete': '允許提案人刪除自己的提案',
+  'ui.admin.allowFacilityAuthorDelete': '允許回報人刪除自己的設備案件',
   'ui.admin.allowComments': '允許留言',
   'ui.admin.enableSupport': '啟用附議',
   'ui.admin.supportGoal': '附議門檻',

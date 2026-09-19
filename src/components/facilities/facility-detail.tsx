@@ -28,7 +28,7 @@ export function FacilityDetail() {
       onRetry={() => void detail.load(true)}
       toolbar={facility ? <DetailToolbar
         actions={
-          facility.isOwnFacility || facility.canManageFacility ? (
+          facility.canDeleteFacility || facility.canManageFacility ? (
             <DetailActionsMenu
               items={
                 facility.canManageFacility

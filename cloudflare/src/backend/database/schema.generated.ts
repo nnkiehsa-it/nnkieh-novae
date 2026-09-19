@@ -153,6 +153,7 @@ export interface GeneratedDatabaseTables {
     "created_by": string;
     "created_at": string;
     "updated_at": string;
+    "author_delete_enabled": boolean;
   };
   "facility_report_affected_users": {
     "facility_id": string;
@@ -192,6 +193,7 @@ export interface GeneratedDatabaseTables {
     "created_by": string;
     "created_at": string;
     "updated_at": string;
+    "author_delete_enabled": boolean;
   };
   "issues": {
     "id": string;
@@ -439,12 +441,12 @@ export const GENERATED_DATABASE_FUNCTION_SIGNATURES = [
   "backend_create_issue_comment(issue_id uuid, parent_comment_id uuid, actor_uid text, actor_is_admin boolean, comment_content text, private_to_owner_categories text[], review_required_categories text[], public_comment_categories text[]) -> jsonb",
   "backend_delete_announcement(announcement_id uuid) -> jsonb",
   "backend_delete_announcement_comment(comment_id uuid, actor_uid text, actor_is_admin boolean) -> jsonb",
-  "backend_delete_facility(facility_id uuid, actor_uid text, actor_can_manage boolean) -> jsonb",
+  "backend_delete_facility(facility_id uuid, actor_uid text, actor_can_manage boolean, author_delete_enabled boolean) -> jsonb",
   "backend_delete_facility_category(category_id text, actor_uid text) -> jsonb",
   "backend_delete_issue(issue_id uuid, actor_uid text, actor_is_admin boolean) -> void",
   "backend_delete_issue_category(category_id text, actor_uid text) -> jsonb",
   "backend_delete_issue_comment(comment_id uuid, actor_uid text, actor_is_admin boolean) -> jsonb",
-  "backend_delete_issue_with_upload_targets(issue_id uuid, actor_uid text, actor_is_admin boolean) -> jsonb",
+  "backend_delete_issue_with_upload_targets(issue_id uuid, actor_uid text, actor_can_manage boolean, author_delete_enabled boolean) -> jsonb",
   "backend_estimate_category_policy_changes(actor_uid text, issue_categories jsonb, deleted_issue_category_ids text[], announcement_comments_enabled boolean) -> jsonb",
   "backend_estimate_retention_cleanup(actor_uid text, retention_config jsonb) -> jsonb",
   "backend_get_access_context(actor_uid text) -> jsonb",

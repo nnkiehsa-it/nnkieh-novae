@@ -1,7 +1,7 @@
 import { asString } from "../shared/http.ts";
 import { createMediaDeliveryUrl } from "../shared/media-delivery.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
-import { issueCategoryPolicyLists } from "./category-catalog.ts";
+import { getIssueCategory, issueCategoryPolicyLists } from "./category-catalog.ts";
 import {
   asNumber,
   asUuid,
@@ -10,7 +10,7 @@ import {
 } from "./utils.ts";
 import { INPUT_LIMITS, optionalText } from "./validation.ts";
 import { canManageIssueCategory } from "./auth.ts";
-import { selectIssue, selectIssueCategory } from "./issue-shared.ts";
+import { selectIssue } from "./issue-shared.ts";
 
 function readSort(payload: JsonRecord) {
   const sort = asString(payload.sort);
@@ -54,11 +54,14 @@ async function getIssue(
 ) {
   const issueId = asUuid(payload.issueId);
   if (!issueId) throw new Error("not-found");
-  const [category, policyParams] = await Promise.all([
-    selectIssueCategory(database, issueId),
+  const [storedIssue, policyParams] = await Promise.all([
+    selectIssue(database, issueId),
     issueReadPolicyParams(database, auth),
   ]);
-  const actorCanManage = canManageIssueCategory(auth, category);
+  const category = await getIssueCategory(database, storedIssue.category);
+  const actorCanManage = canManageIssueCategory(auth, category.id);
+  const canDeleteIssue = actorCanManage
+    || (storedIssue.author_uid === auth.uid && category.authorDeleteEnabled);
 
   const { data, error } = await database.call("app_api", "backend_get_issue", {
     issue_id: issueId,
@@ -68,7 +71,7 @@ async function getIssue(
   if (error) throw error;
   return {
     issue: data && typeof data === "object" && !Array.isArray(data)
-      ? { ...(data as JsonRecord), canManageIssue: actorCanManage }
+      ? { ...(data as JsonRecord), canDeleteIssue, canManageIssue: actorCanManage }
       : data,
   };
 }

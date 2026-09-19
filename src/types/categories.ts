@@ -1,6 +1,7 @@
 export type IssueReadAccess = 'school' | 'reviewed-school' | 'owner-admin';
 
 export interface IssueCategoryConfig {
+  authorDeleteEnabled: boolean;
   id: string;
   label: string;
   readAccess: IssueReadAccess;
@@ -14,6 +15,7 @@ export interface IssueCategoryConfig {
 }
 
 export interface FacilityCategoryConfig {
+  authorDeleteEnabled: boolean;
   id: string;
   label: string;
   isDefault: boolean;
@@ -67,6 +69,7 @@ export interface PlatformFeatures {
 }
 
 export interface IssueCategoryDraft {
+  authorDeleteEnabled?: boolean;
   id: string;
   label: string;
   readAccess: IssueReadAccess | '';
@@ -79,6 +82,7 @@ export interface IssueCategoryDraft {
 }
 
 export interface FacilityCategoryDraft {
+  authorDeleteEnabled?: boolean;
   id: string;
   isDefault: boolean;
   label: string;

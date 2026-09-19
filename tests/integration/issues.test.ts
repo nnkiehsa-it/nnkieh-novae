@@ -427,6 +427,11 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
   // and no proposal of it is readable here.
   assert.equal(asRecord(strangerPrivateList.statusCounts).processing, 1);
 
+  const managerDeleteIssue = await createIssue(owner, "rights-maintenance", "manager-delete");
+  await callAction("deleteIssue", {
+    issueId: String(managerDeleteIssue.id),
+  }, rightsManager.auth);
+
   const ownerDeleteIssue = await createIssue(owner, "rights-maintenance", "owner-delete");
   await expectActionError(
     "permission-denied",
@@ -434,6 +439,26 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
       issueId: String(ownerDeleteIssue.id),
     }, stranger.auth),
   );
+  const ownerDeleteBeforePolicy = asRecord(await callAction("getIssue", {
+    issueId: String(ownerDeleteIssue.id),
+  }, owner.auth));
+  assert.equal(asRecord(ownerDeleteBeforePolicy.issue).canDeleteIssue, false);
+  await expectActionError(
+    "permission-denied",
+    () => callAction("deleteIssue", {
+      issueId: String(ownerDeleteIssue.id),
+    }, owner.auth),
+  );
+  const deletionManagement = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
+  const rightsCategory = asRecord((deletionManagement.issueCategories as unknown[])
+    .find((category) => asRecord(category).id === "rights-maintenance"));
+  await saveCategoryDraft(admin.auth, {
+    upsertIssueCategories: [{ ...rightsCategory, authorDeleteEnabled: true }],
+  });
+  const ownerDeleteAfterPolicy = asRecord(await callAction("getIssue", {
+    issueId: String(ownerDeleteIssue.id),
+  }, owner.auth));
+  assert.equal(asRecord(ownerDeleteAfterPolicy.issue).canDeleteIssue, true);
   await callAction("deleteIssue", {
     issueId: String(ownerDeleteIssue.id),
   }, owner.auth);

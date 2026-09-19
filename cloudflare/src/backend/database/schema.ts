@@ -437,7 +437,12 @@ export interface AppApiFunctions {
   backend_update_facility_status: AppFunction<{
     facility_id: string; actor_uid: string; actor_can_manage: boolean; next_status: string; result_content: string | null;
   }, Json>;
-  backend_delete_facility: AppFunction<{ facility_id: string; actor_uid: string; actor_can_manage: boolean }, Json>;
+  backend_delete_facility: AppFunction<{
+    facility_id: string;
+    actor_uid: string;
+    actor_can_manage: boolean;
+    author_delete_enabled: boolean;
+  }, Json>;
   backend_announcement_to_json: AppFunction<{
     actor_uid: string;
     announcement_record: AnnouncementRow;
@@ -507,8 +512,9 @@ export interface AppApiFunctions {
     comment_id: string;
   }, Json>;
   backend_delete_issue_with_upload_targets: AppFunction<{
-    actor_is_admin: boolean;
+    actor_can_manage: boolean;
     actor_uid: string;
+    author_delete_enabled: boolean;
     issue_id: string;
   }, Json>;
   backend_get_issue: AppFunction<{

@@ -319,6 +319,8 @@ const messages = {
   'ui.admin.reviewedVisible': 'School-wide after review',
   'ui.admin.ownerAdminOnly': 'Author and admins only',
   'ui.admin.showAuthor': 'Show author',
+  'ui.admin.allowIssueAuthorDelete': 'Allow authors to delete their own proposals',
+  'ui.admin.allowFacilityAuthorDelete': 'Allow reporters to delete their own facility reports',
   'ui.admin.allowComments': 'Allow comments',
   'ui.admin.enableSupport': 'Enable support',
   'ui.admin.supportGoal': 'Support goal',

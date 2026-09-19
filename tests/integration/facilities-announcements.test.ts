@@ -34,6 +34,7 @@ integrationTest("facility details are optional", async () => {
 });
 
 integrationTest("facility ownership and category-scoped management permissions", async () => {
+  const admin = await seedActor("facility-policy-admin", { roles: ["platform-admin"] });
   const owner = await seedActor("facility-owner");
   const user = await seedActor("facility-user");
 
@@ -126,6 +127,26 @@ integrationTest("facility ownership and category-scoped management permissions",
       facilityId: ownerDeleteId,
     }, user.auth),
   );
+  const ownerDeleteBeforePolicy = asRecord(await callAction("getFacility", {
+    facilityId: ownerDeleteId,
+  }, owner.auth));
+  assert.equal(asRecord(ownerDeleteBeforePolicy.facility).canDeleteFacility, false);
+  await expectActionError(
+    "permission-denied",
+    () => callAction("deleteFacility", {
+      facilityId: ownerDeleteId,
+    }, owner.auth),
+  );
+  const deletionManagement = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
+  const facilityCategory = asRecord((deletionManagement.facilityCategories as unknown[])
+    .find((category) => asRecord(category).id === facilityCategoryId));
+  await saveCategoryDraft(admin.auth, {
+    upsertFacilityCategories: [{ ...facilityCategory, authorDeleteEnabled: true }],
+  });
+  const ownerDeleteAfterPolicy = asRecord(await callAction("getFacility", {
+    facilityId: ownerDeleteId,
+  }, owner.auth));
+  assert.equal(asRecord(ownerDeleteAfterPolicy.facility).canDeleteFacility, true);
   await callAction("deleteFacility", {
     facilityId: ownerDeleteId,
   }, owner.auth);

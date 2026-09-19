@@ -43,6 +43,9 @@ export function CategoryEditor({
 }) {
   const { t } = useI18n();
   const change = onChange as (next: AnyCategory) => void;
+  const authorDeleteLabel = isIssue(item)
+    ? t("ui.admin.allowIssueAuthorDelete")
+    : t("ui.admin.allowFacilityAuthorDelete");
 
   return (
     <ListSection>
@@ -63,6 +66,12 @@ export function CategoryEditor({
         label={t("ui.admin.defaultCategory")}
         onSelect={onDefault}
         selected={item.isDefault}
+      />
+      <ListSwitchRow
+        checked={item.authorDeleteEnabled}
+        label={authorDeleteLabel}
+        name={authorDeleteLabel}
+        onCheckedChange={(next) => change({ ...item, authorDeleteEnabled: next })}
       />
 
       {isIssue(item) ? (

@@ -47,6 +47,7 @@ export interface IssueSummary {
   review_rejection_reason?: string;
   currentUserSupported?: boolean;
   isOwnIssue: boolean;
+  canDeleteIssue: boolean;
   canManageIssue: boolean;
   canViewAuthor: boolean;
   deleting?: boolean;
@@ -115,6 +116,7 @@ export interface FacilitySummary {
   updated_at: Date | null;
   author_uid: string;
   isOwnFacility: boolean;
+  canDeleteFacility: boolean;
   currentUserAffected: boolean;
   canManageFacility: boolean;
   deleting?: boolean;

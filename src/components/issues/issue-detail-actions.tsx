@@ -44,7 +44,7 @@ export function IssueDetailToolbar({
   return (
     <DetailToolbar
       actions={
-        issue.isOwnIssue || canManage ? (
+        issue.canDeleteIssue || canManage ? (
           <>
             {canManage && issue.canViewAuthor ? (
               <label className="flex h-11 shrink-0 cursor-pointer items-center gap-2 px-2 text-xs font-medium text-muted-foreground md:h-9">

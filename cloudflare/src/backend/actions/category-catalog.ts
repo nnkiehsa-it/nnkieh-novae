@@ -15,6 +15,7 @@ import type { Row, Selected } from "../database/schema.ts";
 export const READ_ACCESS_VALUES = new Set(["school", "reviewed-school", "owner-admin"]);
 
 export interface RuntimeIssueCategory {
+  authorDeleteEnabled: boolean;
   authorVisible: boolean;
   commentsEnabled: boolean;
   id: string;
@@ -28,6 +29,7 @@ export interface RuntimeIssueCategory {
 }
 
 export interface RuntimeFacilityCategory {
+  authorDeleteEnabled: boolean;
   id: string;
   isDefault: boolean;
   label: string;
@@ -36,6 +38,7 @@ export interface RuntimeFacilityCategory {
 
 function issueCategoryResponse(row: Record<string, unknown>): RuntimeIssueCategory {
   return {
+    authorDeleteEnabled: row.author_delete_enabled === true,
     authorVisible: row.author_visible === true,
     commentsEnabled: row.comments_enabled !== false,
     id: asString(row.id),
@@ -53,6 +56,7 @@ function issueCategoryResponse(row: Record<string, unknown>): RuntimeIssueCatego
 
 function facilityCategoryResponse(row: Record<string, unknown>): RuntimeFacilityCategory {
   return {
+    authorDeleteEnabled: row.author_delete_enabled === true,
     id: asString(row.id),
     isDefault: row.is_default === true,
     label: asString(row.label),
@@ -74,6 +78,13 @@ export async function getFacilityCategories(database: BackendDatabase, includeIn
     where ${includeInactive}::boolean or is_active = true
     order by sort_order, created_at`;
   return rows.map((row) => facilityCategoryResponse(row));
+}
+
+export async function getFacilityCategory(database: BackendDatabase, categoryId: string) {
+  const category = await database.sqlMaybe<Row<"facility_categories">>`
+    select * from app_private.facility_categories where id = ${categoryId} and is_active = true`;
+  if (!category) throw new Error("invalid-facility-category");
+  return facilityCategoryResponse(category);
 }
 
 export async function getIssueCategory(database: BackendDatabase, categoryId: string) {

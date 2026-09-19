@@ -23,6 +23,7 @@ interface RawFacility {
   affectedCount: number;
   authorUid: string;
   isOwnFacility: boolean;
+  canDeleteFacility?: boolean;
   currentUserAffected: boolean;
   canManageFacility: boolean;
   content?: string;
@@ -47,6 +48,7 @@ function normalizeFacility(value: RawFacility): FacilityRecord {
     affected_count: value.affectedCount,
     author_uid: value.authorUid,
     isOwnFacility: value.isOwnFacility,
+    canDeleteFacility: value.canDeleteFacility === true,
     currentUserAffected: value.currentUserAffected,
     canManageFacility: value.canManageFacility,
     content: value.content ?? '',

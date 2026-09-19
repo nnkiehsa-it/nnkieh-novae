@@ -3,6 +3,7 @@ import type { FacilityCategoryConfig, IssueCategoryConfig } from "@/types/catego
 const CATEGORY_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 
 export const newIssueCategory = (sortOrder: number): IssueCategoryConfig => ({
+  authorDeleteEnabled: false,
   authorVisible: true,
   commentsEnabled: true,
   id: "",
@@ -16,6 +17,7 @@ export const newIssueCategory = (sortOrder: number): IssueCategoryConfig => ({
 });
 
 export const newFacilityCategory = (sortOrder: number): FacilityCategoryConfig => ({
+  authorDeleteEnabled: false,
   id: "",
   isDefault: sortOrder === 0,
   label: "",

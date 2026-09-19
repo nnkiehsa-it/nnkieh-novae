@@ -35,6 +35,7 @@ interface IssueResponseRecord {
   reviewRejectionReason?: string;
   currentUserSupported?: boolean;
   isOwnIssue?: boolean;
+  canDeleteIssue?: boolean;
   canManageIssue?: boolean;
   canViewAuthor?: boolean;
   authorUid?: string | null;
@@ -70,6 +71,7 @@ function normalizeIssueResponse(issue: IssueResponseRecord): IssueRecord {
     review_rejection_reason: issue.reviewRejectionReason,
     currentUserSupported: issue.currentUserSupported,
     isOwnIssue: issue.isOwnIssue,
+    canDeleteIssue: issue.canDeleteIssue,
     canManageIssue: issue.canManageIssue,
     canViewAuthor: issue.canViewAuthor,
     author_uid: issue.authorUid,

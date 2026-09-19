@@ -90,6 +90,7 @@ export function normalizeIssueSummary(id: string, data: Record<string, unknown>)
       : undefined,
     currentUserSupported: data.currentUserSupported === true || (isOwnIssue && supportEnabled),
     isOwnIssue,
+    canDeleteIssue: data.canDeleteIssue === true,
     canManageIssue: data.canManageIssue === true,
     canViewAuthor: data.canViewAuthor === true,
     deleting: data.deleting === true,
