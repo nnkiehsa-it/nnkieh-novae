@@ -21,6 +21,12 @@ test('composer upload creates, finalizes, and rolls back provider resources', as
     await member.page.getByRole('button', { name: 'Submit proposal' }).click();
   });
   await expect(member.page.getByRole('heading', { name: title })).toBeVisible();
-  await deleteFromMoreActions(member.page, 'Delete proposal');
+  const issueUrl = member.page.url();
   await member.context.close();
+
+  const admin = await newUserPage(browser, 'admin');
+  await admin.page.goto(issueUrl);
+  await expect(admin.page.getByRole('heading', { name: title })).toBeVisible();
+  await deleteFromMoreActions(admin.page, 'Delete proposal');
+  await admin.context.close();
 });
