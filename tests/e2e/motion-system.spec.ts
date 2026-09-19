@@ -29,9 +29,12 @@ async function watchSheetExit(sheet: Locator, key: string) {
     };
     state.__novaeSheetExitReports[reportKey] = report;
     const motionFrame = element.parentElement;
-    motionFrame?.addEventListener('animationstart', (event) => {
-      report.animations.push((event as AnimationEvent).animationName);
-    });
+    const recordAnimation = (event: Event) => {
+      const name = (event as AnimationEvent).animationName;
+      if (!report.animations.includes(name)) report.animations.push(name);
+    };
+    element.addEventListener('animationstart', recordAnimation);
+    motionFrame?.addEventListener('animationstart', recordAnimation);
     new MutationObserver(() => {
       report.states.push((element as HTMLElement).dataset.state ?? '');
     }).observe(element, { attributeFilter: ['data-state'], attributes: true });
