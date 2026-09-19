@@ -435,11 +435,12 @@ test('desktop sheet popups animate out before they unmount', async ({ browser })
 
   const popup = admin.page.locator('[data-sheet-surface]').last();
   await expect(popup).toBeVisible();
-  await watchSheetExit(popup, 'desktop-popup');
+  await popup.evaluate(async (element) => {
+    await Promise.all(element.getAnimations().map((animation) => animation.finished.catch(() => undefined)));
+  });
   await popup.getByRole('button', { name: /Close|關閉/u }).click();
   await expect(popup).toHaveAttribute('data-sheet-lifecycle-closing', 'true');
-  await expect.poll(async () => (await sheetExitReport(admin.page, 'desktop-popup')).animations)
-    .toContain('t-dialog-out');
+  await expect(popup).toHaveCSS('animation-name', 't-dialog-out');
   await expect(popup).toHaveCount(0);
 
   await admin.context.close();
