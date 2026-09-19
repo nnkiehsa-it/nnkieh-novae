@@ -9,7 +9,7 @@ export function HeaderBackdrop({ progressive = false }: { progressive?: boolean 
     >
       {progressive ? (
         <>
-          <span data-header-shield="" />
+          <span data-status-bar-backdrop="" />
           <span data-blur-step="strong" />
           <span data-blur-step="medium" />
           <span data-blur-step="soft" />

@@ -496,11 +496,9 @@ html[data-input-modality="pointer"] :focus-visible {
   mask-image: linear-gradient(to bottom, black calc(100% - var(--header-fade)), transparent);
 }
 
-/* The installed iOS app already owns the status-bar edge treatment. Page
-   headers therefore paint from their own box instead of extending their
-   backdrop to the physical top of the screen. Three overlapping bands reduce
-   the blur radius through the tail while the solid part still covers every
-   title, toolbar and action measured by the header itself. */
+/* The title band and the status-bar band are separate surfaces. The title's
+   three overlapping bands are measured from the header box; the status-bar
+   band owns only the clearance above it, which differs between iOS versions. */
 .page-header > .header-backdrop[data-progressive="true"] {
   --header-fade: 1rem;
   top: 0;
@@ -522,18 +520,23 @@ html[data-input-modality="pointer"] :focus-visible {
   inset: 0;
 }
 
-/* The iOS status edge is already visually close to the page surface once its
-   own treatment is applied. Paint the clearance with the actual stage color
-   instead of trying to reproduce that blur ourselves; the page-header's
-   progressive 12/6/2px blur still begins at the header box below it. */
-.page-header > .header-backdrop[data-progressive="true"] > [data-header-shield] {
-  top: calc(-1 * var(--header-top, var(--page-header-top)));
+/* This is deliberately not one of the title's progressive steps: its extent
+   comes from the safe-area clearance, while the title begins at the header
+   box. Keeping the layers independent prevents an iOS status-bar change from
+   changing the title blur geometry. */
+.page-header > .header-backdrop[data-progressive="true"] > [data-status-bar-backdrop] {
+  --status-bar-height: var(--header-top, var(--page-header-top));
+  top: calc(-1 * var(--status-bar-height));
   right: 0;
   bottom: 100%;
   left: 0;
-  background: var(--surface-stage);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+  background: color-mix(
+    in srgb,
+    var(--header-veil, var(--surface-stage)) 82%,
+    transparent
+  );
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   -webkit-mask-image: none;
   mask-image: none;
 }

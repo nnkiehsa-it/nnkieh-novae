@@ -204,12 +204,12 @@ for (const width of [390, 1440]) {
         const header = page.locator(".page-header");
         const title = header.locator("h1");
         const backdrop = header.locator('[data-slot="header-backdrop"]');
-        const shield = backdrop.locator("[data-header-shield]");
+        const statusBarBackdrop = backdrop.locator("[data-status-bar-backdrop]");
         const blurSteps = backdrop.locator("[data-blur-step]");
         await expect(title).toBeVisible();
         await expect(backdrop).toHaveAttribute("data-progressive", "true");
         await expect(backdrop).toHaveCSS("backdrop-filter", "none");
-        await expect(shield).toHaveCSS("backdrop-filter", "none");
+        await expect(statusBarBackdrop).toHaveCSS("backdrop-filter", "blur(12px)");
         await expect(blurSteps).toHaveCount(3);
         await expect(blurSteps.nth(0)).toHaveCSS("backdrop-filter", "blur(12px)");
         await expect(blurSteps.nth(1)).toHaveCSS("backdrop-filter", "blur(6px)");
@@ -263,7 +263,7 @@ for (const width of [390, 1440]) {
         expect(geometry.nextGap).not.toBeNull();
         expect(geometry.nextGap!).toBeGreaterThanOrEqual(20);
         expect(geometry.nextOverlap!).toBeLessThanOrEqual(-4);
-        const shieldGeometry = await shield.evaluate((node) => {
+        const statusBarGeometry = await statusBarBackdrop.evaluate((node) => {
           const box = node.getBoundingClientRect();
           return {
             background: getComputedStyle(node).backgroundColor,
@@ -273,10 +273,10 @@ for (const width of [390, 1440]) {
             top: box.top,
           };
         });
-        expect(shieldGeometry.top).toBeLessThanOrEqual(0);
-        expect(shieldGeometry.bottom).toBe(geometry.headerTop);
-        expect(shieldGeometry.background).toBe(shieldGeometry.stageBackground);
-        expect(shieldGeometry.mask).toBe("none");
+        expect(statusBarGeometry.top).toBeLessThanOrEqual(0);
+        expect(statusBarGeometry.bottom).toBe(geometry.headerTop);
+        expect(statusBarGeometry.background).not.toBe(statusBarGeometry.stageBackground);
+        expect(statusBarGeometry.mask).toBe("none");
         expect(geometry.filters.every((value) => value === "none")).toBe(true);
         expect(geometry.backdropFilters.every((value) => value === "none")).toBe(true);
         expect(await page.evaluate(() =>
