@@ -498,15 +498,22 @@ html[data-input-modality="pointer"] :focus-visible {
 
 /* The title band and the status-bar band are separate surfaces. The title's
    three overlapping bands are measured from the header box; the status-bar
-   band owns only the clearance above it, which differs between iOS versions. */
+   band owns only the clearance above it, which differs between iOS versions.
+   Both surfaces intentionally consume the same strong-glass recipe so iOS 26
+   and iOS 27 render the status-bar clearance and header top consistently. */
 .page-header > .header-backdrop[data-progressive="true"] {
   --header-fade: 1rem;
+  --header-glass-fill: color-mix(
+    in srgb,
+    var(--header-veil, var(--surface-stage)) 82%,
+    transparent
+  );
+  --header-blur-strong: 12px;
   top: 0;
   background: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--header-veil, var(--surface-stage)) 82%, transparent) 0,
-    color-mix(in srgb, var(--header-veil, var(--surface-stage)) 82%, transparent)
-      calc(100% - var(--header-fade)),
+    var(--header-glass-fill) 0,
+    var(--header-glass-fill) calc(100% - var(--header-fade)),
     transparent
   );
   -webkit-backdrop-filter: none;
@@ -520,30 +527,25 @@ html[data-input-modality="pointer"] :focus-visible {
   inset: 0;
 }
 
-/* This is deliberately not one of the title's progressive steps: its extent
-   comes from the safe-area clearance, while the title begins at the header
-   box. Keeping the layers independent prevents an iOS status-bar change from
-   changing the title blur geometry. */
+/* Its geometry remains independent because the safe-area clearance changes
+   between iOS versions; visually it uses the exact same fill and strong blur
+   as the top of the progressive header. */
 .page-header > .header-backdrop[data-progressive="true"] > [data-status-bar-backdrop] {
   --status-bar-height: var(--header-top, var(--page-header-top));
   top: calc(-1 * var(--status-bar-height));
   right: 0;
   bottom: 100%;
   left: 0;
-  background: color-mix(
-    in srgb,
-    var(--header-veil, var(--surface-stage)) 82%,
-    transparent
-  );
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  background: var(--header-glass-fill);
+  -webkit-backdrop-filter: blur(var(--header-blur-strong));
+  backdrop-filter: blur(var(--header-blur-strong));
   -webkit-mask-image: none;
   mask-image: none;
 }
 
 .page-header > .header-backdrop [data-blur-step="strong"] {
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(var(--header-blur-strong));
+  backdrop-filter: blur(var(--header-blur-strong));
   -webkit-mask-image: linear-gradient(
     to bottom,
     black 0,
