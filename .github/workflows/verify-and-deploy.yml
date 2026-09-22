@@ -19,6 +19,8 @@ on:
       - 'tsconfig*.json'
       - 'vercel.json'
       - 'vitest.integration.config.ts'
+      - 'vitest.config.ts'
+      - 'eslint.config.js'
       - '.github/workflows/**'
   push:
     branches:
@@ -41,6 +43,8 @@ on:
       - 'tsconfig*.json'
       - 'vercel.json'
       - 'vitest.integration.config.ts'
+      - 'vitest.config.ts'
+      - 'eslint.config.js'
       - '.github/workflows/**'
   workflow_dispatch:
     inputs:
@@ -56,7 +60,7 @@ on:
 
 concurrency:
   group: verify-deploy-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   actions: read
@@ -442,13 +446,13 @@ jobs:
           exit 1
 
   deploy_frontend:
-    needs: [changes, fast, backend_verify, browser_verify]
+    needs: [changes, fast, backend_verify, browser_verify, deploy_backend]
     if: >-
       always() &&
       needs.fast.result == 'success' &&
       needs.browser_verify.result == 'success' &&
       needs.changes.outputs.browser == 'true' &&
-      (needs.changes.outputs.backend != 'true' || needs.backend_verify.result == 'success') &&
+      (needs.changes.outputs.backend != 'true' || needs.deploy_backend.result == 'success') &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
