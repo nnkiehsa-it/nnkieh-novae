@@ -10,6 +10,8 @@ interface MediaDeliveryPayload {
   version: 2;
 }
 
+// Public tokens use expiresAt=0. The cache hint must still be an ISO-serializable date.
+const PUBLIC_MEDIA_CACHE_EXPIRY_MS = Date.parse("9999-12-31T23:59:59.000Z");
 const PRIVATE_MEDIA_LIFETIME_SECONDS = 15 * 60;
 const PRIVATE_MEDIA_EXPIRY_BUCKET_SECONDS = 5 * 60;
 
@@ -78,7 +80,7 @@ export async function createMediaDeliveryUrl(
   const signature = await signPayload(encodedPayload);
   const workerUrl = requireEnv("PUBLIC_API_URL").replace(/\/+$/u, "");
   return {
-    expiresAtMs: expiresAt ? expiresAt * 1000 : Number.MAX_SAFE_INTEGER,
+    expiresAtMs: expiresAt ? expiresAt * 1000 : PUBLIC_MEDIA_CACHE_EXPIRY_MS,
     url: `${workerUrl}/v1/media/${encodedPayload}.${signature}/${variant}`,
   };
 }

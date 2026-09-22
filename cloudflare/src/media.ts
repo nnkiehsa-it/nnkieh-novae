@@ -33,6 +33,12 @@ async function verifyMediaToken(token: string, secret: string) {
   const match = token.match(TOKEN_PATTERN);
   if (!match) return null;
   const [, encodedPayload, encodedSignature] = match;
+  let signature: Uint8Array;
+  try {
+    signature = fromUrlSafeBase64(encodedSignature);
+  } catch {
+    return null;
+  }
   const key = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(secret),
@@ -43,7 +49,7 @@ async function verifyMediaToken(token: string, secret: string) {
   const valid = await crypto.subtle.verify(
     'HMAC',
     key,
-    fromUrlSafeBase64(encodedSignature),
+    signature,
     new TextEncoder().encode(`novae-media-v2.${encodedPayload}`),
   ).catch(() => false);
   if (!valid) return null;

@@ -36,6 +36,12 @@ integrationTest("real Worker HTTP boundaries reject missing origin, auth, and si
   });
   assert.equal(unauthenticated.status, 401);
 
+  // Image resolution is a read: it must reach authentication without a write operation ID.
+  const resolveWithoutOperationId = await post("/v1/actions", {
+    action: "resolveUploadImageUrls", payload: { uploadIds: [] },
+  }, { origin: allowedOrigin });
+  assert.equal(resolveWithoutOperationId.status, 401);
+
   const syncUser = await post("/v1/auth/sync", {}, {
     origin: allowedOrigin,
   });

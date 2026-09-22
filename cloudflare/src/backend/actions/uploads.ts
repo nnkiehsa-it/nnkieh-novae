@@ -54,7 +54,7 @@ async function assertMarkdownUploadsAttachable(
   const { rows: attachable } = await database.sql<Selected<
     "uploads", "id" | "owner_uid" | "status" | "attached_target_type" | "attached_target_id"
   >>`select id, owner_uid, status, attached_target_type, attached_target_id
-     from app_private.uploads where id = any(${uploadIds})`;
+     from app_private.uploads where id = any(${uploadIds}) order by id for update`;
   const validIds = new Set(attachable.filter((upload) =>
     (upload.status === "ready" || upload.status === "attached")
     && (targetId
@@ -151,9 +151,14 @@ export async function handleUploadAction(
       ? [...new Set(payload.storagePaths.map((path) => asString(path)).filter(Boolean))].slice(0, 50)
       : [];
     if (storagePaths.length === 0) return { deleted: 0, success: true };
+    // Delete and return the eligible rows atomically, before enqueueing their cleanup.
+    // Attachment validation locks the same rows, so a concurrent attach cannot race this check.
     const { rows: uploads } = await database.sql<Selected<"uploads", "id" | "cloudinary_public_id">>`
-      select id, cloudinary_public_id from app_private.uploads
-      where owner_uid = ${auth.uid} and cloudinary_public_id = any(${storagePaths})`;
+      delete from app_private.uploads
+      where owner_uid = ${auth.uid} and cloudinary_public_id = any(${storagePaths})
+        and attached_target_id is null and attached_target_type is null
+        and status in ('pending', 'ready', 'failed')
+      returning id, cloudinary_public_id`;
     if (uploads.length > 0) {
       for (const upload of uploads) {
         const { error: jobError } = await database.call("app_api", "enqueue_background_job", {
@@ -168,8 +173,6 @@ export async function handleUploadAction(
         });
         if (jobError) throw jobError;
       }
-      await database.sql`delete from app_private.uploads
-        where id = any(${uploads.map((upload) => upload.id)})`;
     }
     return { deleted: uploads.length, success: true };
   }

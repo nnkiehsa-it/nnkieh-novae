@@ -98,7 +98,7 @@ async function handleAction(
   }
 
   const policy = BACKEND_ACTION_POLICIES[action as keyof typeof BACKEND_ACTION_POLICIES];
-  const isWriteAction = action !== "healthcheck" && policy?.group !== "read";
+  const isWriteAction = action !== "healthcheck" && policy?.group !== "read" && policy?.group !== "upload-resolve";
   const { operationId, valid } = resolveOperationId(request, isWriteAction);
 
   if (!valid) {
@@ -115,7 +115,7 @@ async function handleAction(
   try {
     const { done, response } = await withOperationPolicies(database, () =>
       handleBackendAction(request, body, operationId, database, firebaseUser, invocationId));
-    if (response.ok && policy?.group !== "read") ctx.waitUntil(env.JOBS.send({ type: "drain" }));
+    if (response.ok && isWriteAction) ctx.waitUntil(env.JOBS.send({ type: "drain" }));
     // The answer is still being written when this returns, and the pieces
     // still to come are read from this connection, so it closes with them.
     ctx.waitUntil(done.finally(() => database.close()));

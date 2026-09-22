@@ -9,6 +9,7 @@ import { validateTurnstileResult } from "../../cloudflare/src/turnstile";
 import { createMediaDeliveryUrl } from "../../cloudflare/src/backend/shared/media-delivery";
 import { withRuntimeEnvironment } from "../../cloudflare/src/backend/shared/env";
 import type { Env } from "../../cloudflare/src/types";
+import { handleMedia } from "../../cloudflare/src/media";
 
 function securityEnvironment(overrides: Partial<Env> = {}) {
   return {
@@ -29,6 +30,11 @@ function decodeMediaPayload(url: string) {
 }
 
 describe("security boundaries", () => {
+  it("rejects malformed media base64 with a controlled response", async () => {
+    const env = securityEnvironment({ MEDIA_INVALID_IP_RATE_LIMITER: { limit: async () => ({ success: true }) } });
+    const response = await handleMedia(new Request("https://api.school.example/v1/media/A.A/full"), env, "A.A", "full");
+    expect(response.status).toBe(404);
+  });
   it("allows a 100-person shared-network login burst before IP throttling", () => {
     const loginLimiter = workerConfig.ratelimits.find(
       (binding) => binding.name === "LOGIN_IP_RATE_LIMITER",
@@ -114,5 +120,7 @@ describe("security boundaries", () => {
     expect(firstPayload.rateLimitKey).not.toBe(secondPayload.rateLimitKey);
     expect(first.url).not.toContain("school-user-a");
     expect(firstPayload.version).toBe(2);
+    expect(firstPayload.expiresAt).toBe(0);
+    expect(new Date(first.expiresAtMs).toISOString()).toBe("9999-12-31T23:59:59.000Z");
   });
 });
