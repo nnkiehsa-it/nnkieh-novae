@@ -47,14 +47,16 @@ on conflict (uid, role_code) do nothing;
 
 insert into app_private.issues (
   id, author_uid, title, content, status, category,
-  support_enabled, support_goal
+  support_enabled, support_goal, support_count
 ) values (
   '00000000-0000-4000-8000-000000000001', 'novae-e2e-ordinary',
   '圖書館延長開放時間', '希望考試期間延長圖書館開放時間，方便同學安排自習。',
-  'pending', 'public-issues', true, 5
+  'pending', 'public-issues', true, 5, 1
 )
 on conflict (id) do update set
-  title = excluded.title, content = excluded.content, status = excluded.status;
+  title = excluded.title, content = excluded.content, status = excluded.status,
+  support_count = (case when issues.support_enabled then 1 else 0 end)
+    + (select count(*) from app_private.supports where issue_id = issues.id);
 
 insert into app_private.facility_reports (
   id, author_uid, title, title_search, location, content, status, category_id
