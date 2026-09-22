@@ -83,10 +83,19 @@ try {
     if (!result.rows[0]?.legacy_realtime_removed || Number(result.rows[0]?.revision) < 1) {
       throw new Error("Populated 0016 upgrade did not reach the canonical schema.");
     }
+    for (const name of migrationNames.slice(consistencyIndex + 1)) {
+      await executeMigration(database, name);
+    }
+    const preserved = await database.query(`select title, content from app_private.issues
+      where category = 'migration-regression'`);
+    if (preserved.rows.length !== 1 || preserved.rows[0].title !== "Existing issue"
+      || preserved.rows[0].content !== "Existing authoritative content") {
+      throw new Error("Forward migrations did not preserve the existing proposal.");
+    }
   } finally {
     await database.end();
   }
-  console.info("Populated pre-0016 database upgrade passed.");
+  console.info(`Populated database upgrade passed through ${migrationNames.at(-1)}.`);
 } finally {
   await admin.query(
     "select pg_terminate_backend(pid) from pg_stat_activity where datname = $1 and pid <> pg_backend_pid()",

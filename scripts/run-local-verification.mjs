@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { accessSync, constants, rmSync } from "node:fs";
 import process from "node:process";
 import { clearInterval, setInterval } from "node:timers";
-import { URL } from "node:url";
+import { fileURLToPath, URL } from "node:url";
 
 const runAll = process.argv.includes("--all");
 const suite = process.argv.includes("--unit-only")
@@ -36,19 +36,17 @@ for (const path of [
 }
 
 function executable(name) {
-  const suffix = process.platform === "win32" ? ".cmd" : "";
-  const localPath = new URL(
-    `../node_modules/.bin/${name}${suffix}`,
-    import.meta.url,
-  );
-  try {
-    accessSync(localPath, constants.X_OK);
-    return decodeURIComponent(
-      localPath.pathname.replace(/^\/([A-Za-z]:)/u, "$1"),
-    );
-  } catch {
-    return name;
+  const suffixes = process.platform === "win32" ? [".exe", ".cmd"] : [""];
+  for (const suffix of suffixes) {
+    const localPath = new URL(`../node_modules/.bin/${name}${suffix}`, import.meta.url);
+    try {
+      accessSync(localPath, constants.X_OK);
+      return fileURLToPath(localPath);
+    } catch {
+      // Bun installs .exe shims on Windows; npm installs .cmd shims.
+    }
   }
+  return name;
 }
 
 const node = process.execPath;
@@ -74,7 +72,7 @@ const steps = {
     ],
   ],
   tests: [
-    ["unit tests", executable("vitest"), ["run"]],
+    ["unit tests", executable("vitest"), ["run"], { NODE_ENV: "test" }],
     ["architecture tests", node, ["--test", "tests/architecture.test.mjs"]],
     ["tooling policy tests", node, ["--test", "tests/tooling.test.mjs"]],
   ],
@@ -102,7 +100,7 @@ const selectedSteps =
 let completed = 0;
 let progressTimer;
 
-if (runAll) process.stderr.write("[1/5] Local verification\n");
+if (runAll) process.stderr.write("[1/3] Local verification\n");
 
 function formatProgress(label) {
   const width = 20;
@@ -250,28 +248,12 @@ async function runSuite(label, args, environment = process.env) {
 }
 
 if (runAll) {
-  await runSuite("[2/5] Integration verification", [
+  await runSuite("[2/3] Integration verification", [
     "scripts/verify-integration.mjs",
   ]);
-  await runSuite("[3/5] Desktop end-to-end verification", [
+  await runSuite("[3/3] Desktop, mobile and stateful end-to-end verification", [
     "scripts/verify-integration.mjs",
     "--e2e",
-    "--project",
-    "chromium-desktop-readonly",
-  ]);
-  await runSuite("[4/5] Mobile end-to-end verification", [
-    "scripts/verify-integration.mjs",
-    "--e2e",
-    "--skip-build",
-    "--project",
-    "chromium-mobile-readonly",
-  ]);
-  await runSuite("[5/5] Stateful end-to-end verification", [
-    "scripts/verify-integration.mjs",
-    "--e2e",
-    "--skip-build",
-    "--project",
-    "chromium-stateful",
   ]);
   process.stderr.write("\n✓ All verification suites passed\n");
 }
