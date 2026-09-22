@@ -496,23 +496,26 @@ html[data-input-modality="pointer"] :focus-visible {
   mask-image: linear-gradient(to bottom, black calc(100% - var(--header-fade)), transparent);
 }
 
-/* The title band and the status-bar band are separate surfaces. The title's
-   three overlapping bands are measured from the header box; the status-bar
-   band owns only the clearance above it, which differs between iOS versions.
-   Both surfaces intentionally consume the same strong-glass recipe so iOS 26
-   and iOS 27 render the status-bar clearance and header top consistently. */
+/* The title band and the status-bar band remain separate surfaces because
+   WebKit has changed how filtered layers are clipped around the safe area.
+   Their shared edge is deliberately opaque: two independent backdrop filters
+   can sample different scrolling pixels and can therefore never be guaranteed
+   to meet invisibly. The title then eases from that stable edge into glass. */
 .page-header > .header-backdrop[data-progressive="true"] {
   --header-fade: 1rem;
+  --header-solid-fill: var(--header-veil, var(--surface-stage));
   --header-glass-fill: color-mix(
     in srgb,
-    var(--header-veil, var(--surface-stage)) 82%,
+    var(--header-solid-fill) 82%,
     transparent
   );
   --header-blur-strong: 12px;
   top: 0;
   background: linear-gradient(
     to bottom,
-    var(--header-glass-fill) 0,
+    var(--header-solid-fill) 0,
+    var(--header-solid-fill) 15%,
+    var(--header-glass-fill) 55%,
     var(--header-glass-fill) calc(100% - var(--header-fade)),
     transparent
   );
@@ -527,18 +530,18 @@ html[data-input-modality="pointer"] :focus-visible {
   inset: 0;
 }
 
-/* Its geometry remains independent because the safe-area clearance changes
-   between iOS versions; visually it uses the exact same fill and strong blur
-   as the top of the progressive header. */
+/* The safe-area clearance keeps its own geometry for iOS compatibility, but
+   uses a solid fill instead of a second live blur. It meets the solid first
+   portion of the title gradient, so moving content cannot expose a seam. */
 .page-header > .header-backdrop[data-progressive="true"] > [data-status-bar-backdrop] {
   --status-bar-height: var(--header-top, var(--page-header-top));
   top: calc(-1 * var(--status-bar-height));
   right: 0;
   bottom: 100%;
   left: 0;
-  background: var(--header-glass-fill);
-  -webkit-backdrop-filter: blur(var(--header-blur-strong));
-  backdrop-filter: blur(var(--header-blur-strong));
+  background: var(--header-solid-fill);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   -webkit-mask-image: none;
   mask-image: none;
 }

@@ -209,7 +209,7 @@ for (const width of [390, 1440]) {
         await expect(title).toBeVisible();
         await expect(backdrop).toHaveAttribute("data-progressive", "true");
         await expect(backdrop).toHaveCSS("backdrop-filter", "none");
-        await expect(statusBarBackdrop).toHaveCSS("backdrop-filter", "blur(12px)");
+        await expect(statusBarBackdrop).toHaveCSS("backdrop-filter", "none");
         await expect(blurSteps).toHaveCount(3);
         await expect(blurSteps.nth(0)).toHaveCSS("backdrop-filter", "blur(12px)");
         await expect(blurSteps.nth(1)).toHaveCSS("backdrop-filter", "blur(6px)");
@@ -275,7 +275,7 @@ for (const width of [390, 1440]) {
         });
         expect(statusBarGeometry.top).toBeLessThanOrEqual(0);
         expect(statusBarGeometry.bottom).toBe(geometry.headerTop);
-        expect(statusBarGeometry.background).not.toBe(statusBarGeometry.stageBackground);
+        expect(statusBarGeometry.background).toBe(statusBarGeometry.stageBackground);
         expect(statusBarGeometry.mask).toBe("none");
         expect(geometry.filters.every((value) => value === "none")).toBe(true);
         expect(geometry.backdropFilters.every((value) => value === "none")).toBe(true);
