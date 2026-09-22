@@ -147,6 +147,8 @@ export async function callNotionAPI(path: string, method: string, body?: unknown
   }
 }
 export async function getDataSourceId(): Promise<string> {
+  const configured = optionalEnv("NOTION_DATA_SOURCE_ID");
+  if (configured) return configured;
   if (discoveredDataSourceId) return discoveredDataSourceId;
   discoveredDataSourceId = (async () => {
     const databaseId = requireEnv("NOTION_DATABASE_ID");
@@ -156,7 +158,11 @@ export async function getDataSourceId(): Promise<string> {
     const firstId = db.data_sources?.[0]?.id;
     if (!firstId) throw new Error("notion-data-source-missing");
     return firstId;
-  })();
+  })().catch((error: unknown) => {
+    // A transient discovery failure must not poison every subsequent job in this isolate.
+    discoveredDataSourceId = undefined;
+    throw error;
+  });
   return discoveredDataSourceId;
 }
 export function richTextProperty(value: unknown) {
