@@ -10,6 +10,7 @@ export interface RealtimeDelivery {
 }
 
 interface RealtimeAttachment {
+  expiresAtMs: number;
   topics: string[];
   uid: string;
 }
@@ -56,25 +57,29 @@ export class RealtimeHub extends DurableObject<Env> {
 
     let uid = "";
     let topics: string[] = [];
+    let expiresAtMs = 0;
     try {
       const { payload } = await jwtVerify(
         ticket,
         new TextEncoder().encode(this.env.REALTIME_TICKET_SECRET),
-        { audience: "novae-realtime", issuer: "novae-api" },
+        { algorithms: ["HS256"], audience: "novae-realtime", issuer: "novae-api" },
       );
       uid = typeof payload.sub === "string" ? payload.sub : "";
+      expiresAtMs = typeof payload.exp === "number" ? payload.exp * 1000 : 0;
       topics = Array.isArray(payload.topics)
         ? payload.topics.filter((topic): topic is string => typeof topic === "string").slice(0, 8)
         : [];
     } catch {
       return new Response("Unauthorized", { status: 401 });
     }
-    if (!uid || topics.length === 0) return new Response("Unauthorized", { status: 401 });
+    if (!uid || topics.length === 0 || !Number.isFinite(expiresAtMs) || expiresAtMs <= Date.now()) {
+      return new Response("Unauthorized", { status: 401 });
+    }
 
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
     this.ctx.acceptWebSocket(server);
-    server.serializeAttachment({ topics, uid } satisfies RealtimeAttachment);
+    server.serializeAttachment({ expiresAtMs, topics, uid } satisfies RealtimeAttachment);
     server.send(JSON.stringify({ event: "ready" }));
     return new Response(null, {
       status: 101,
@@ -87,7 +92,11 @@ export class RealtimeHub extends DurableObject<Env> {
     let delivered = 0;
     for (const socket of this.ctx.getWebSockets()) {
       const attachment = socket.deserializeAttachment() as RealtimeAttachment | null;
-      if (!attachment) continue;
+      if (!attachment || !Number.isFinite(attachment.expiresAtMs) || attachment.expiresAtMs <= Date.now()) {
+        // Check on delivery, including after hibernation. Reconnection obtains current permissions.
+        socket.close(1008, "ticket-expired");
+        continue;
+      }
       for (const event of events) {
         if (!attachment.topics.includes(event.topic)) continue;
         try {
