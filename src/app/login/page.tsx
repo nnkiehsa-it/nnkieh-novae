@@ -12,6 +12,7 @@ import { BusyLabel } from "@/components/ui/page-state";
 import { TurnstileInlineHost } from "@/components/turnstile-provider";
 import { AppStartupScreen } from "@/components/protected-app";
 import { RouteSurface } from "@/components/motion/route-surface";
+import { sameOriginUrl } from "@/lib/same-origin-url";
 
 function GoogleMark() {
   return (
@@ -72,9 +73,7 @@ export default function LoginPage() {
     router.replace(
       !setupCompleted
         ? "/setup"
-        : requested?.startsWith("/") && !requested.startsWith("//")
-          ? requested
-          : "/issues",
+        : sameOriginUrl(requested, window.location.origin, "/issues"),
     );
   }, [
     router,

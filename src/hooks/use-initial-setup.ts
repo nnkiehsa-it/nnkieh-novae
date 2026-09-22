@@ -102,7 +102,7 @@ export function useInitialSetup() {
         return issuesEnabled
           ? `/issues/${encodeURIComponent(defaultIssueCategory || "my-proposals")}`
           : facilitiesEnabled
-            ? `/facilities/${encodeURIComponent(defaultFacilityCategory || "all")}`
+            ? `/facilities?category=${encodeURIComponent(defaultFacilityCategory || "all")}`
             : "/announcements";
       });
       setConfirming(false);
