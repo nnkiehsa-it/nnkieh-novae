@@ -45,12 +45,14 @@ interface StreamedAnswer {
 async function readAnswer(
   body: ReadableStream<Uint8Array>,
   onSegment?: (key: string | undefined, data: unknown) => void,
+  assertCurrentSession: () => void = () => {},
 ): Promise<StreamedAnswer> {
   let start: { operationId: string; policyRevision: number } | null = null;
   let finished = false;
   let whole: unknown;
   let fields: Record<string, unknown> | undefined;
   for await (const line of readNdjson(body)) {
+    assertCurrentSession();
     const entry = line as BackendActionLine;
     if (entry.type === 'start') {
       start = { operationId: entry.operationId, policyRevision: entry.policyRevision };
@@ -87,7 +89,13 @@ export function invokeBackendAction<TRequest = Record<string, unknown>, TRespons
       ?? getOperationPolicy(isWrite ? 'requestTimeoutMs' : 'readTimeoutMs');
     const operationId = options.operationId || crypto.randomUUID();
 
-    const requestUid = auth?.currentUser?.uid ?? '';
+    const requestUser = auth?.currentUser;
+    const requestUid = requestUser?.uid ?? '';
+    const assertCurrentSession = () => {
+      if (!requestUser || auth?.currentUser !== requestUser) {
+        throw new Error('auth.loginStatusChangedPreviousResponseIgnored');
+      }
+    };
     if (isWrite) {
       await waitForWriteCooldown(`${requestUid}:${name}`,getOperationPolicy('clientWriteCooldownMs'),options.signal);
     }
@@ -103,6 +111,7 @@ export function invokeBackendAction<TRequest = Record<string, unknown>, TRespons
       timeoutMs,
     });
 
+    assertCurrentSession();
     const response = await safeFetch(apiGatewayUrl('/v1/actions'), {
       method: 'POST',
       body: JSON.stringify({ action: name, payload: initialPayload }),
@@ -118,12 +127,16 @@ export function invokeBackendAction<TRequest = Record<string, unknown>, TRespons
       timeoutMs,
     });
 
-    if (auth?.currentUser?.uid !== requestUid) {
-      throw new Error('auth.loginStatusChangedPreviousResponseIgnored');
+    try {
+      assertCurrentSession();
+    } catch (error) {
+      await response.body?.cancel().catch(() => undefined);
+      throw error;
     }
     if (!response.body) throw new Error('common.theServiceDidNotReturnAnyData');
 
-    const answer = await readAnswer(response.body, options.onSegment);
+    const answer = await readAnswer(response.body, options.onSegment, assertCurrentSession);
+    assertCurrentSession();
 
     if (name === 'getSessionBootstrap') {
       setOperationPolicies((answer.result as { runtimePolicies: PolicySnapshot }).runtimePolicies);

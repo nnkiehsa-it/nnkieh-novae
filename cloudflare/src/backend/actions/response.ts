@@ -115,35 +115,48 @@ export function streamingResponse(
   const aborted = new Promise<never>((_, reject) => {
     rejectAbort = reject;
   });
+  let disconnected = false;
+  const disconnect = (reason: unknown) => {
+    disconnected = true;
+    rejectAbort?.(reason);
+  };
+  // Cloudflare can cancel the response without aborting Request.signal.
+  void aborted.catch(() => undefined);
+  void writer.closed.catch(disconnect);
   const stop = () => {
-    rejectAbort?.(signal?.reason ?? new Error("request-aborted"));
-    void rest.return?.();
+    disconnect(signal?.reason ?? new Error("request-aborted"));
     void writer.abort(signal?.reason).catch(() => undefined);
   };
+  const write = async (line: ApiStreamLine) => {
+    const bytes = streamLine(line);
+    try { await writer.write(bytes); }
+    catch (error) { disconnect(error); throw error; }
+  };
   signal?.addEventListener("abort", stop, { once: true });
+  if (signal?.aborted) stop();
   const pump = (async () => {
     try {
-      await writer.write(streamLine({ operationId, policyRevision: operationPolicies().revision, type: "start" }));
-      await writer.write(streamLine({ data: first.data, key: first.key, type: "part" }));
+      await write({ operationId, policyRevision: operationPolicies().revision, type: "start" });
+      await write({ data: first.data, key: first.key, type: "part" });
       for (
         let next = await Promise.race([rest.next(), aborted]);
         !next.done;
         next = await Promise.race([rest.next(), aborted])
       ) {
-        await writer.write(streamLine({ data: next.value.data, key: next.value.key, type: "part" }));
+        await write({ data: next.value.data, key: next.value.key, type: "part" });
       }
-      await writer.write(streamLine({ type: "end" }));
+      await write({ type: "end" });
     } catch (error) {
-      if (!signal?.aborted) {
-        await writer.write(streamLine({ error: await onFailure(error), type: "error" }));
+      if (!disconnected) {
+        await write({ error: await onFailure(error), type: "error" }).catch(() => undefined);
       }
     } finally {
       signal?.removeEventListener("abort", stop);
       if (rest.return) {
-        if (signal?.aborted) void rest.return().catch(() => undefined);
+        if (disconnected) void rest.return().catch(() => undefined);
         else await rest.return().catch(() => undefined);
       }
-      if (signal?.aborted) await writer.abort(signal.reason).catch(() => undefined);
+      if (disconnected) await writer.abort(signal?.reason).catch(() => undefined);
       else await writer.close().catch(() => undefined);
     }
   })();

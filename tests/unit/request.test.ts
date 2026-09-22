@@ -56,6 +56,31 @@ describe("request timeout", () => {
   });
 });
 
+describe("streamed response lifetime", () => {
+  afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
+
+  it.each(["abort", "timeout"])("keeps %s active after headers", async (kind) => {
+    vi.useFakeTimers();
+    const cancel = vi.fn();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(new ReadableStream({ cancel }))));
+    const parent = new AbortController();
+    const response = await safeFetch("/stream", {}, { signal: parent.signal, timeoutMs: 100, retry: false });
+    const failure = expect(response.text()).rejects.toMatchObject({ code: kind === "abort" ? "aborted" : "timeout" });
+    if (kind === "abort") parent.abort();
+    else await vi.advanceTimersByTimeAsync(100);
+    await failure;
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+
+  it("cleans up after the body has been consumed", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("complete")));
+    const response = await safeFetch("/stream", {}, { timeoutMs: 100, retry: false });
+    expect(await response.text()).toBe("complete");
+    expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
 describe("safeFetch retries", () => {
   afterEach(() => {
     vi.useRealTimers();

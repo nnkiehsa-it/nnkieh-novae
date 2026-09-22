@@ -166,8 +166,57 @@ export async function withRequestTimeout<T>(
     );
   });
 
+  let streaming = false;
+  const cleanup = () => {
+    window.clearTimeout(timeoutId);
+    options.signal?.removeEventListener('abort', abortFromParent);
+  };
   try {
-    return await Promise.race([operation(controller.signal), aborted]);
+    const result = await Promise.race([operation(controller.signal), aborted]);
+    if (result instanceof Response && result.body) {
+      const reader = result.body.getReader();
+      let settled = false;
+      let onAbort: () => void;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        controller.signal.removeEventListener('abort', onAbort);
+      };
+      const body = new ReadableStream<Uint8Array>({
+        start(stream) {
+          onAbort = () => {
+            if (settled) return;
+            stream.error(abortedFailure(controller.signal, label));
+            finish();
+            void reader.cancel(controller.signal.reason).catch(() => undefined);
+          };
+          controller.signal.addEventListener('abort', onAbort, { once: true });
+          if (controller.signal.aborted) onAbort();
+        },
+        async pull(stream) {
+          try {
+            const chunk = await reader.read();
+            if (settled) return;
+            if (chunk.done) { finish(); stream.close(); reader.releaseLock(); }
+            else stream.enqueue(chunk.value);
+          } catch (error) {
+            if (!settled) { finish(); stream.error(error); }
+          }
+        },
+        async cancel(reason) {
+          finish();
+          await reader.cancel(reason);
+        },
+      });
+      streaming = true;
+      return new Response(body, {
+        headers: result.headers,
+        status: result.status,
+        statusText: result.statusText,
+      }) as T;
+    }
+    return result;
   } catch (error) {
     if (error instanceof RequestFailure || error instanceof ApiRequestError) throw error;
     if (controller.signal.aborted) throw abortedFailure(controller.signal, label);
@@ -177,8 +226,7 @@ export async function withRequestTimeout<T>(
       'network',
     );
   } finally {
-    window.clearTimeout(timeoutId);
-    options.signal?.removeEventListener('abort', abortFromParent);
+    if (!streaming) cleanup();
   }
 }
 
