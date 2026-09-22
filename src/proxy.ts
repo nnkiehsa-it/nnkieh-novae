@@ -11,6 +11,10 @@ function createContentSecurityPolicy(nonce: string) {
     process.env.NODE_ENV === "development" || isolatedLocalAuth
       ? " http://127.0.0.1:* http://localhost:* ws://127.0.0.1:* ws://localhost:*"
       : "";
+  const localImages =
+    process.env.NODE_ENV === "development" || isolatedLocalAuth
+      ? " http://127.0.0.1:* http://localhost:*"
+      : "";
   const webAssemblyScripts = " 'wasm-unsafe-eval'";
   const developmentScripts =
     process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : "";
@@ -20,7 +24,7 @@ function createContentSecurityPolicy(nonce: string) {
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${webAssemblyScripts}${developmentScripts} https://accounts.google.com https://apis.google.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://challenges.cloudflare.com/ https://unpkg.com`,
     "style-src 'self' 'unsafe-inline' https://unpkg.com",
     "font-src 'self' data:",
-    "img-src 'self' data: blob: https:",
+    `img-src 'self' data: blob: https:${localImages}`,
     `connect-src 'self' https: wss:${localConnections}`,
     "frame-src https:",
     "worker-src 'self' blob:",
