@@ -21,6 +21,7 @@ export function platformEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | n
       break;
     }
     case "registerPushToken":
+    case "unregisterPushToken":
     case "updatePlatformAdminNotificationPreferences": {
       events.push({
         aggregateType: "user",

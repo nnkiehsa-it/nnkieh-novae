@@ -16,6 +16,7 @@ import { withRequestTimeout } from "@/lib/request";
 import { sessionDebug } from "@/lib/session-debug";
 import { detectInAppBrowser } from "@/lib/in-app-browser";
 import { apiGatewayUrl, hasApiGatewayConfig } from "@/lib/api-gateway";
+import { revokeCurrentDevicePush } from "@/services/push-token-registration";
 
 
 const LOGIN_ATTEMPT_KEY = "novae-login-attempts";
@@ -258,6 +259,8 @@ export async function loginWithGoogle(
 export async function logoutFromFirebase() {
   if (!auth) return;
   const firebaseAuth = auth;
+  // Silence the service worker before contacting the backend; offline logout must still be private.
+  await revokeCurrentDevicePush().catch((error) => sessionDebug("push revocation failed", error));
   await withRequestTimeout(() => signOut(firebaseAuth), {
     label: "auth.signOutLabel",
   });

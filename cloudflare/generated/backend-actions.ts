@@ -200,6 +200,9 @@ export const BACKEND_ACTION_POLICIES = {
     "group": "sensitive-write",
     "extraLimit": "pushTokenWriteHourly"
   },
+  "unregisterPushToken": {
+    "group": "sensitive-write"
+  },
   "removeSupport": {
     "group": "sensitive-write",
     "extraLimit": "supportToggleHourly"

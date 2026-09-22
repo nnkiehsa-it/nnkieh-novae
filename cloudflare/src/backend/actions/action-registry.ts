@@ -70,6 +70,7 @@ function action(
     "markAnnouncementsOpened",
     "markNotificationsOpened",
     "registerPushToken",
+    "unregisterPushToken",
     "updatePlatformAdminNotificationPreferences",
   ]);
   const accessClass: AccountAccessClass = options.accessClass ?? (rateLimitGroup === "read" || rateLimitGroup === "upload-resolve"
@@ -175,6 +176,7 @@ export const backendActionDefinitions = [
   action("getPushNotificationPreference", "notification", "read", notificationHandler),
   action("getPlatformAdminNotificationPreferences", "notification", "read", notificationHandler),
   action("registerPushToken", "notification", "sensitive-write", notificationHandler),
+  action("unregisterPushToken", "notification", "sensitive-write", notificationHandler),
   action("updatePlatformAdminNotificationPreferences", "notification", "general-write", notificationHandler),
 
   action("getPlatformDashboard", "dashboard", "read", handleDashboardAction, {

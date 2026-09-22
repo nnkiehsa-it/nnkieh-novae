@@ -1,7 +1,8 @@
 import "client-only";
 
 import { ensureFirebaseAppCheck } from "@/lib/firebase-app-check";
-import { firebaseVapidKey } from "@/lib/firebase";
+import { auth, firebaseVapidKey } from "@/lib/firebase";
+import { setPushSession } from "@/lib/push-session";
 import { loadFirebaseMessaging } from "@/lib/firebase-messaging";
 import {
   readLocalStorage,
@@ -9,6 +10,7 @@ import {
 } from "@/lib/browser-storage";
 import {
   registerPushToken,
+  unregisterPushToken,
   type PushNotificationPreference,
 } from "@/services/push-notifications";
 import { getPushTokenConfirmationIntervalMs } from "@/services/runtime-settings";
@@ -22,6 +24,17 @@ type PushTokenConfirmation = {
   token: string;
 } | null;
 const pendingConfirmations = new Map<string, Promise<PushTokenConfirmation>>();
+let registrationRevision = 0;
+
+export async function revokeCurrentDevicePush() {
+  registrationRevision += 1;
+  await setPushSession(null).catch(() => undefined);
+  const deviceId = readLocalStorage(DEVICE_KEY);
+  writeLocalStorage(CONFIRMED_UID_KEY, "");
+  writeLocalStorage(CONFIRMED_TOKEN_KEY, "");
+  writeLocalStorage(CONFIRMED_AT_KEY, "");
+  if (deviceId) await unregisterPushToken(deviceId);
+}
 
 export function getPushDeviceId() {
   const stored = readLocalStorage(DEVICE_KEY);
@@ -70,10 +83,16 @@ export function confirmCurrentPushToken(
   const pending = pendingConfirmations.get(uid);
   if (pending) return pending;
 
+  const revision = registrationRevision;
+  const currentSession = () => registrationRevision === revision && auth?.currentUser?.uid === uid;
   const confirmation = (async () => {
     try {
       const current = await getCurrentPushToken();
-      if (!current || !shouldConfirm(uid, current.token, force)) return null;
+      if (!current || !currentSession()) return null;
+      if (!shouldConfirm(uid, current.token, force)) {
+        await setPushSession(uid);
+        return null;
+      }
       const preference = await registerPushToken({
         deviceId: getPushDeviceId(),
         permission: "granted",
@@ -81,6 +100,8 @@ export function confirmCurrentPushToken(
         token: current.token,
         userAgent: navigator.userAgent,
       });
+      if (!currentSession()) return null;
+      await setPushSession(uid);
       rememberConfirmation(uid, current.token);
       return { preference, token: current.token };
     } finally {

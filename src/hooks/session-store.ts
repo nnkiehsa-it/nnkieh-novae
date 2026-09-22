@@ -3,6 +3,7 @@
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { sessionDebug } from "@/lib/session-debug";
+import { setPushSession } from "@/lib/push-session";
 import { readLocalStorage, writeLocalStorage } from "@/lib/browser-storage";
 import { readCachedAvatar, writeCachedAvatar } from "@/lib/avatar-cache";
 import { clearContentEntityScope } from "@/lib/content-entity-store";
@@ -118,6 +119,7 @@ function shouldRecordPlatformVisit() {
 }
 
 function clearActiveSessionData() {
+  void setPushSession(null).catch(() => undefined);
   clearContentEntityScope(state.user?.uid);
   clearViewMemoryScope(state.user?.uid);
   clearSupportedIssueMemory();

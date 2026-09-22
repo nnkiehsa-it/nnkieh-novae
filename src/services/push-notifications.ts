@@ -77,6 +77,13 @@ export async function registerPushToken(payload: RegisterPushTokenPayload) {
   }
 }
 
+export async function unregisterPushToken(deviceId: string) {
+  await invokeBackendAction<{ deviceId: string }, { success: boolean }>("unregisterPushToken", {
+    timeoutMs: 5_000,
+  })({ deviceId });
+  markContentCachePrefixStale(PUSH_PREFERENCE_CACHE_PREFIX);
+}
+
 export async function getPlatformAdminNotificationPreferences() {
   try {
     const fn = invokeBackendAction<Record<string, never>, PlatformAdminNotificationPreferences>(

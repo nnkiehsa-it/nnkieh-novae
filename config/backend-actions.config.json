@@ -58,6 +58,7 @@
   "markAnnouncementsOpened": { "group": "general-write" },
   "moderateIssueStatus": { "group": "admin-write", "extraLimit": "moderationWriteHourly" },
   "registerPushToken": { "group": "sensitive-write", "extraLimit": "pushTokenWriteHourly" },
+  "unregisterPushToken": { "group": "sensitive-write" },
   "removeSupport": { "group": "sensitive-write", "extraLimit": "supportToggleHourly" },
   "resolveUploadImageUrls": { "group": "upload-resolve" },
   "searchIssues": { "group": "read" },

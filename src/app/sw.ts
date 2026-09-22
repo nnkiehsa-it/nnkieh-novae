@@ -2,7 +2,9 @@
 
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { Serwist } from "serwist";
+import { NetworkOnly, Serwist } from "serwist";
+import { canDisplayPushFor } from "@/lib/push-session";
+import { sameOriginUrl } from "@/lib/same-origin-url";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -21,23 +23,14 @@ const firebaseConfig = {
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "",
 };
 
-function normalizeNotificationLink(value: unknown) {
-  const fallback = new URL("/", self.location.origin).href;
-  if (typeof value !== "string" || !value.trim()) return fallback;
-  try {
-    return new URL(value, self.location.origin).href;
-  } catch {
-    return fallback;
-  }
-}
-
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const payload = event.notification.data as
     | { FCM_MSG?: { data?: { link?: unknown } }; link?: unknown }
     | undefined;
-  const link = normalizeNotificationLink(
+  const link = sameOriginUrl(
     payload?.link ?? payload?.FCM_MSG?.data?.link,
+    self.location.origin,
   );
   event.waitUntil(
     (async () => {
@@ -62,8 +55,8 @@ if (
     .then(([firebaseApp, firebaseMessaging]) => {
       const firebase = firebaseApp.initializeApp(firebaseConfig);
       const messaging = firebaseMessaging.getMessaging(firebase);
-      firebaseMessaging.onBackgroundMessage(messaging, (payload) => {
-        if (payload.notification) return;
+      firebaseMessaging.onBackgroundMessage(messaging, async (payload) => {
+        if (payload.notification || !await canDisplayPushFor(payload.data?.recipient_uid)) return;
         return self.registration.showNotification(
           payload.data?.title ?? "Novae",
           {
@@ -85,7 +78,18 @@ const serwist = new Serwist({
     const value = typeof entry === "string" ? entry : entry.url;
     return !new URL(value, self.location.origin).pathname.endsWith(".woff2");
   }),
-  runtimeCaching: defaultCache,
+  // CacheStorage does not honor HTTP no-store. In particular, signed private
+  // media must reach the Worker again so it can enforce token expiry.
+  runtimeCaching: [
+    {
+      matcher: ({ url }) => url.pathname.startsWith("/v1/") && (
+        url.origin === self.location.origin
+        || url.origin === new URL(process.env.NEXT_PUBLIC_API_BASE_URL || self.location.origin, self.location.origin).origin
+      ),
+      handler: new NetworkOnly(),
+    },
+    ...defaultCache,
+  ],
   skipWaiting: true,
 });
 

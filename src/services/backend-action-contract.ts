@@ -177,6 +177,9 @@ export const BACKEND_ACTION_POLICIES = {
   "registerPushToken": {
     "group": "sensitive-write"
   },
+  "unregisterPushToken": {
+    "group": "sensitive-write"
+  },
   "removeSupport": {
     "group": "sensitive-write"
   },
@@ -287,6 +290,7 @@ export const BACKEND_ACTION_NAMES = [
   'markAnnouncementsOpened',
   'moderateIssueStatus',
   'registerPushToken',
+  'unregisterPushToken',
   'removeSupport',
   'resolveUploadImageUrls',
   'searchIssues',

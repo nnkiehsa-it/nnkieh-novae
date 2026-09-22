@@ -53,6 +53,7 @@ export function isNotificationAction(action: string) {
     || action === "getPushNotificationPreference"
     || action === "getPlatformAdminNotificationPreferences"
     || action === "registerPushToken"
+    || action === "unregisterPushToken"
     || action === "updatePlatformAdminNotificationPreferences";
 }
 
@@ -134,6 +135,12 @@ export async function handleNotificationAction(
     });
     if (error) throw error;
     return data;
+  }
+
+  if (action === "unregisterPushToken") {
+    const deviceId = requiredText(payload.deviceId, "deviceId", PUSH_TOKEN_LIMITS.deviceId);
+    await database.sql`delete from app_private.push_tokens where uid = ${auth.uid} and device_id = ${deviceId}`;
+    return { success: true };
   }
 
   if (action === "registerPushToken") {
