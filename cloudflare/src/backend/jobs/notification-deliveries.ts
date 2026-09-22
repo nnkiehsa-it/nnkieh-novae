@@ -174,11 +174,20 @@ export async function processPushDeliveries(database: AppDatabaseClient) {
           tab: isComment ? "comments" : "details",
         };
 
+        const { rows: receipts } = await database.sql<{ token_hash: string }>`
+          select token_hash from app_private.push_delivery_receipts where delivery_id = ${item.delivery_id}`;
+        const delivered = new Set(receipts.map((receipt) => receipt.token_hash));
         for (const tokenRow of tokens) {
+          const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(tokenRow.token));
+          const tokenHash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+          if (delivered.has(tokenHash)) continue;
+          const active = await database.sqlMaybe<{ id: string }>`select id from app_private.event_deliveries
+            where id = ${item.delivery_id} and last_attempt_id = ${attemptId} and status = 'processing'`;
+          if (!active) break;
           try {
             await sendFcmMessage({
               token: tokenRow.token,
-              data: topicData,
+              data: { ...topicData, recipient_uid: tokenRow.uid },
             });
           } catch (err) {
             if (isInvalidFcmTokenError(err)) {
@@ -187,6 +196,10 @@ export async function processPushDeliveries(database: AppDatabaseClient) {
               throw err;
             }
           }
+          // A crash between FCM accepting and this commit can still duplicate a message;
+          // ordinary retries must not resend devices whose success was persisted.
+          await database.sql`insert into app_private.push_delivery_receipts (delivery_id, token_hash)
+            values (${item.delivery_id}, ${tokenHash}) on conflict do nothing`;
         }
       }
 

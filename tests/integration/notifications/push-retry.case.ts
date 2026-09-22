@@ -47,7 +47,6 @@ integrationTest("transient FCM failures persist and retry without losing the pus
     destination: "push",
     event_id: eventId,
     id: deliveryId,
-    next_attempt_at: new Date().toISOString(),
     status: "pending",
   }]);
 
@@ -60,7 +59,7 @@ integrationTest("transient FCM failures persist and retry without losing the pus
   assert.equal(failedDelivery.attempt_count, 1);
 
   await database.sql`update app_private.event_deliveries
-    set next_attempt_at = ${new Date().toISOString()} where id = ${deliveryId}`;
+    set next_attempt_at = now() where id = ${deliveryId}`;
   await drainJobs();
   const completedDelivery = await deliveryState();
   assert.equal(completedDelivery.status, "completed");

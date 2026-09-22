@@ -310,6 +310,10 @@ export interface GeneratedDatabaseTables {
     "value": number;
     "updated_at": string;
   };
+  "push_delivery_receipts": {
+    "delivery_id": string;
+    "token_hash": string;
+  };
   "push_tokens": {
     "uid": string;
     "device_id": string;
