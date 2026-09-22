@@ -1,5 +1,5 @@
 import type { AppDatabaseClient } from "./database/client.ts";
-import { requireEnv } from "./shared/env.ts";
+import { platformAdminEmails } from "./shared/platform-admin.ts";
 import type { FirebaseAuthContext } from "./shared/firebase-auth.ts";
 import { errorStatus, publicErrorBody } from "./shared/http.ts";
 import { createFunctionLogger } from "./shared/observability.ts";
@@ -8,22 +8,13 @@ import { claimFixedWindowRateLimit, utcHourWindow } from "./shared/business-rate
 import { operationPolicy } from "./shared/operation-policies.ts";
 import { AccountAccessError, resolveAccountAccessRule } from "./shared/account-access.ts";
 
-function adminEmails() {
-  const emails = requireEnv("ADMIN_EMAILS")
-    .split(",")
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean);
-  if (emails.length === 0) throw new Error("service-not-configured");
-  return [...new Set(emails)];
-}
-
 export async function handleSyncUser(user: FirebaseAuthContext, database: AppDatabaseClient) {
   const log = createFunctionLogger("syncUser");
   try {
     await claimFixedWindowRateLimit(user.uid, "auth.sync", utcHourWindow(), { ...RATE_LIMITS.loginSyncHourly, limit: operationPolicy('loginSyncHourly') });
 
     const email = user.email.toLowerCase();
-    if (!adminEmails().includes(email)) {
+    if (!platformAdminEmails().includes(email)) {
       const accessRule = await resolveAccountAccessRule(database, { email, uid: user.uid });
       if (accessRule?.preset === "blocked") throw new AccountAccessError(accessRule.message);
     }
@@ -40,7 +31,7 @@ export async function handleSyncUser(user: FirebaseAuthContext, database: AppDat
         updated_at = excluded.updated_at`;
     const { error: adminSyncError } = await database.call("app_api", "backend_reconcile_platform_admins", {
       actor_uid: user.uid,
-      admin_emails: adminEmails(),
+      admin_emails: platformAdminEmails(),
     });
     if (adminSyncError) throw adminSyncError;
 

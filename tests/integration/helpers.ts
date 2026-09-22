@@ -151,6 +151,7 @@ beforeEach(async () => {
   ]);
   await ownerDatabase.query(contentVersionIdentitySql);
   await ownerDatabase.query(integrationSeedSql);
+  testEnvironment.ADMIN_EMAILS = "admin@integration.invalid";
   businessLimits.clear();
   forgetOperationPolicies();
 });
@@ -219,6 +220,9 @@ export async function seedActor(
     uid,
   }]);
 
+  if (options.roles?.includes("platform-admin")) {
+    testEnvironment.ADMIN_EMAILS += `,${identity.email}`;
+  }
   if (options.roles?.length) {
     await insertRows("user_role_assignments", options.roles.map((role_code) => ({
       granted_by: uid,

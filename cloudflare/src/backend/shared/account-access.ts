@@ -72,7 +72,7 @@ export async function resolveAccountAccessRule(
       from app_private.user_restrictions
       where (restricted_permanently or restricted_until > now())
         and ((target_type = 'uid' and uid = ${identity.uid})
-          or (target_type = 'email_prefix' and ${localPart} like uid || '%'))
+          or (target_type = 'email_prefix' and starts_with(${localPart}, uid)))
       order by case when target_type = 'uid' then 0 else 1 end,
         char_length(uid) desc
       limit 1`;

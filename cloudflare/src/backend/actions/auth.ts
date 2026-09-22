@@ -1,4 +1,5 @@
 import { requireEnv } from "../shared/env.ts";
+import { platformAdminEmails } from "../shared/platform-admin.ts";
 import type { AuthContext, BackendDatabase, PermissionCode } from "./types.ts";
 import { AccountAccessError, resolveAccountAccessRule } from "../shared/account-access.ts";
 
@@ -13,15 +14,30 @@ export async function resolveAuthContext(
   database: BackendDatabase,
   firebaseUser: AuthIdentity,
 ): Promise<AuthContext> {
-  const { data, error } = await database.call("app_api", "backend_get_access_context", { actor_uid: firebaseUser.uid });
-  if (error) throw error;
-  const access = data && typeof data === "object" && !Array.isArray(data)
-    ? data as Record<string, unknown>
-    : {};
+  const loadAccess = async () => {
+    const { data, error } = await database.call("app_api", "backend_get_access_context", { actor_uid: firebaseUser.uid });
+    if (error) throw error;
+    return data && typeof data === "object" && !Array.isArray(data)
+      ? data as Record<string, unknown> : {};
+  };
+  let access = await loadAccess();
+  const adminEmails = platformAdminEmails();
+  const isPlatformAdmin = adminEmails.includes(firebaseUser.email.trim().toLowerCase());
+  if ((Array.isArray(access.roles) && access.roles.includes("platform-admin")) !== isPlatformAdmin) {
+    // Reconcile before loading permissions: SQL authorization also uses these assignments.
+    const { error } = await database.call("app_api", "backend_reconcile_platform_admins", {
+      actor_uid: firebaseUser.uid,
+      admin_emails: adminEmails,
+    });
+    if (error) throw error;
+    access = await loadAccess();
+    if ((Array.isArray(access.roles) && access.roles.includes("platform-admin")) !== isPlatformAdmin) {
+      throw new Error("permission-denied");
+    }
+  }
   const roles = Array.isArray(access.roles)
     ? access.roles.filter((role): role is string => typeof role === "string")
     : [];
-  const isPlatformAdmin = roles.includes("platform-admin");
   const accessRule = isPlatformAdmin ? null : await resolveAccountAccessRule(database, firebaseUser);
   if (accessRule?.preset === "blocked") throw new AccountAccessError(accessRule.message);
   const managedIssueCategoryIds = isPlatformAdmin
