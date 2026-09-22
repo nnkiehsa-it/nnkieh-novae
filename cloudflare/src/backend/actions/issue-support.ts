@@ -8,7 +8,7 @@ import { selectIssue } from "./issue-shared.ts";
 export async function updateSupport(action: string, payload: JsonRecord, auth: AuthContext, database: BackendDatabase) {
   const issueId = asUuid(payload.issueId);
   if (!issueId) throw new Error("not-found");
-  const storedIssue = await selectIssue(database, issueId);
+  const storedIssue = await selectIssue(database, issueId, true);
   const policy = await issueCategoryPolicyLists(database);
   const { data: issueData, error: issueError } = await database.call("app_api", "backend_get_issue", {
     issue_id: issueId,

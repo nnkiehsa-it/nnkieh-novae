@@ -138,7 +138,8 @@ export function issueEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | null
     }
     case "deleteComment": {
       const commentId = String(payload.commentId ?? "");
-      const issueId = String(payload.issueId ?? "");
+      const issueId = String(res.issueId ?? "");
+      if (!issueId) break;
       events.push({
         aggregateType: "issue",
         aggregateId: issueId,

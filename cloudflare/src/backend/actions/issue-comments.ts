@@ -42,7 +42,7 @@ async function listComments(payload: JsonRecord, auth: AuthContext, database: Ba
 async function createComment(payload: JsonRecord, auth: AuthContext, database: BackendDatabase) {
   const issueId = asUuid(payload.issueId);
   if (!issueId) throw new Error("not-found");
-  const issue = await selectIssue(database, issueId);
+  const issue = await selectIssue(database, issueId, true);
   if (
     issue.comments_enabled === false
     || ["completed", "infeasible", "review-rejected", "auto-rejected"].includes(asString(issue.status))
@@ -78,7 +78,7 @@ async function deleteComment(payload: JsonRecord, auth: AuthContext, database: B
     actor_is_admin: canManageIssueCategory(auth, asString(issue.category)),
   });
   if (error) throw error;
-  return { success: true };
+  return { success: true, issueId: comment.issue_id };
 }
 
 export function isIssueCommentAction(action: string) {

@@ -24,7 +24,7 @@ async function issuePolicyParams(database: BackendDatabase, auth: AuthContext, a
 
 async function readIssueForAdmin(database: BackendDatabase, issueId: string, auth: AuthContext) {
   const storedIssue = await database.sqlMaybe<Row<"issues">>`
-    select * from app_private.issues where id = ${issueId}`;
+    select * from app_private.issues where id = ${issueId} for update`;
   if (!storedIssue) throw new Error("not-found");
   requireIssueCategoryPermission(auth, storedIssue.category);
   return asRecord(storedIssue);

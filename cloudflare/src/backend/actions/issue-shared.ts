@@ -56,9 +56,10 @@ export function commentCursor(comment: JsonRecord) {
   return { id: comment.id, createdAtMs: comment.created_at_ms };
 }
 
-export async function selectIssue(database: BackendDatabase, issueId: string) {
-  const issue = await database.sqlMaybe<Row<"issues">>`
-    select * from app_private.issues where id = ${issueId}`;
+export async function selectIssue(database: BackendDatabase, issueId: string, lock = false) {
+  const issue = lock
+    ? await database.sqlMaybe<Row<"issues">>`select * from app_private.issues where id = ${issueId} for update`
+    : await database.sqlMaybe<Row<"issues">>`select * from app_private.issues where id = ${issueId}`;
   if (!issue) throw new Error("not-found");
   return issue;
 }
