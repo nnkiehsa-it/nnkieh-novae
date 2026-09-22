@@ -92,10 +92,13 @@ export function useDraft<T>({
     setError("");
     try {
       const stored = await save(next, reason.trim());
-      setSession({ baseline: stored, value: stored });
-      setReason("");
+      setSession((current) => ({
+        baseline: stored,
+        value: current.value === next ? stored : current.value,
+      }));
+      setReason((current) => current === reason ? "" : current);
       setStatus("saved");
-      window.setTimeout(() => setStatus("clean"), ACTION_SUCCESS_HOLD_MS);
+      window.setTimeout(() => setStatus((current) => current === "saved" ? "clean" : current), ACTION_SUCCESS_HOLD_MS);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
       setStatus("failed");
@@ -142,7 +145,7 @@ export function useDraft<T>({
       setStatus("clean");
     },
     setReason,
-    status: status === "clean" && dirty ? "dirty" : status,
+    status: (status === "clean" || status === "saved") && dirty ? "dirty" : status,
     submit,
     update: (patch) =>
       setSession((current) => {
