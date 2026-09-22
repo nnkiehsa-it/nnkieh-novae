@@ -71,7 +71,8 @@ export async function resolveRecipients(
         select author_uid from app_private.issues where id = ${aggregate_id}`;
       authorUid = asString(issue?.author_uid);
     }
-    let supporterUids: string[] = [];
+    let supporterUids: string[] = event_type === "issue.deleted" && Array.isArray(payload.supporter_uids)
+      ? payload.supporter_uids.map((uid) => asString(uid)).filter(Boolean) : [];
     if (event_type !== "issue.deleted") {
       const { rows } = await database.sql<Selected<"supports", "uid">>`
         select uid from app_private.supports where issue_id = ${aggregate_id}`;

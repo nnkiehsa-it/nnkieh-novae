@@ -6,7 +6,6 @@ import { operationPolicy } from '../shared/operation-policies.ts';
 import type { RealtimeDelivery } from "../../durable/realtime-hub.ts";
 import type { Selected } from "../database/schema.ts";
 import { settleDelivery, type EventDeliveryItem } from "./delivery-attempt.ts";
-import { notificationRealtimePayload } from "./notification-content.ts";
 
 /** Telling the open sockets what changed, so a reader does not have to ask. */
 function contentEventType(eventType: string) {
@@ -80,16 +79,25 @@ async function realtimeDeliveriesForItem(
     let readAccess = asString(payload.read_access);
     let authorUid = asString(payload.author_uid);
     let status = asString(payload.new_status);
-    if ((!readAccess || !authorUid || !status) && item.event_type !== "issue.deleted") {
-      const data = await database.sqlMaybe<Selected<"issues", "author_uid" | "read_access" | "status">>`
-        select author_uid, read_access, status from app_private.issues where id = ${item.aggregate_id}`;
-      readAccess ||= asString(data?.read_access);
-      authorUid ||= asString(data?.author_uid);
-      status ||= asString(data?.status);
+    let category = asString(payload.category || payload.issue_category);
+    if (item.event_type !== "issue.deleted") {
+      const data = await database.sqlMaybe<Selected<"issues", "author_uid" | "read_access" | "status" | "category">>`
+        select author_uid, read_access, status, category from app_private.issues where id = ${item.aggregate_id}`;
+      // A queued event may predate a privacy change; the comment author is not the issue owner.
+      if (!data) return [];
+      readAccess = asString(data.read_access);
+      authorUid = asString(data.author_uid);
+      status = asString(data.status);
+      category = asString(data.category);
     }
-    const privateIssue = readAccess === "owner-admin"
+    const privateIssue = !readAccess || readAccess === "owner-admin"
       || (readAccess === "reviewed-school" && (status === "under-review" || status === "review-rejected"));
-    if (privateIssue) topics = ["content:admin", ...(authorUid ? [`content:user:${authorUid}`] : [])];
+    if (privateIssue) {
+      const { rows: managers } = await database.sql<Selected<"user_issue_category_assignments", "uid">>`
+        select uid from app_private.user_issue_category_assignments where category_id = ${category}`;
+      topics = [...new Set(["content:admin", ...[authorUid, ...managers.map((manager) => manager.uid)]
+        .filter(Boolean).map((uid) => `content:user:${uid}`)])];
+    }
   }
 
   return topics.map((topic) => ({
