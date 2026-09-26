@@ -72,6 +72,12 @@ export const OPERATION_POLICIES = {
     "max": 3600,
     "group": "client"
   },
+  "avatarRevalidateHours": {
+    "value": 24,
+    "min": 1,
+    "max": 168,
+    "group": "client"
+  },
   "notionBatchSize": {
     "value": 10,
     "min": 1,

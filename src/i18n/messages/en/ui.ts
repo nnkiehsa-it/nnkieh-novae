@@ -100,6 +100,7 @@ const messages = {
   "ui.operations.policy.realtimeHeartbeatSeconds": "Realtime Heartbeat Seconds",
   "ui.operations.policy.realtimeIdleMinutes": "Realtime Idle Minutes",
   "ui.operations.policy.realtimeTicketSeconds": "Realtime Ticket Seconds",
+  "ui.operations.policy.avatarRevalidateHours": "Avatar refresh interval (hours)",
   "ui.operations.policy.titleLength": "Title Length",
   "ui.operations.policy.contentLength": "Content Length",
   "ui.operations.policy.commentLength": "Comment Length",

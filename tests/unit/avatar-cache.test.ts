@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { readCachedAvatar, writeCachedAvatar } from "@/lib/avatar-cache";
+import { setOperationPolicies } from "@/lib/operation-policies";
+import { DEFAULT_OPERATION_POLICIES } from "@/generated/operations";
 
 const UID = "user-1";
 const SOURCE = "https://lh3.googleusercontent.com/a/photo";
@@ -10,6 +12,7 @@ describe("cached avatar", () => {
   beforeEach(() => {
     localStorage.clear();
     vi.useRealTimers();
+    setOperationPolicies({ revision: 0, values: { ...DEFAULT_OPERATION_POLICIES } });
   });
 
   it("answers the same account and source without asking again", () => {
@@ -29,6 +32,17 @@ describe("cached avatar", () => {
     vi.advanceTimersByTime(24 * 60 * 60 * 1_000 - 1);
     expect(readCachedAvatar(UID, SOURCE)).toBe(DELIVERED);
     vi.advanceTimersByTime(2);
+    expect(readCachedAvatar(UID, SOURCE)).toBeNull();
+  });
+
+  it("uses the current refresh interval instead of the former fixed day", () => {
+    vi.useFakeTimers();
+    writeCachedAvatar(UID, SOURCE, DELIVERED);
+    setOperationPolicies({
+      revision: 2,
+      values: { ...DEFAULT_OPERATION_POLICIES, avatarRevalidateHours: 2 },
+    });
+    vi.advanceTimersByTime(2 * 60 * 60 * 1_000 + 1);
     expect(readCachedAvatar(UID, SOURCE)).toBeNull();
   });
 

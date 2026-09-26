@@ -3,13 +3,12 @@ import {
   uploadCloudinaryAuthenticatedImage,
 } from "../shared/cloudinary.ts";
 import { createMediaDeliveryUrl } from "../shared/media-delivery.ts";
+import { operationPolicy } from "../shared/operation-policies.ts";
 import { asString } from "../shared/http.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { handleUserAccessAction } from "./user-access.ts";
 import { handleUserAdminAction } from "./user-admin.ts";
 import type { Selected } from "../database/schema.ts";
-
-const AVATAR_REVALIDATE_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 export function isUserAction(action: string) {
   return action === "getCurrentUserRole"
@@ -81,7 +80,7 @@ export async function handleUserAction(
       && existing.cached_photo_url
       && existing.avatar_public_id
       && Number.isFinite(checkedAt)
-      && Date.now() - checkedAt < AVATAR_REVALIDATE_INTERVAL_MS
+      && Date.now() - checkedAt < operationPolicy("avatarRevalidateHours") * 60 * 60 * 1000
     ) {
       const media = await createMediaDeliveryUrl(existing.avatar_public_id, "avatar", false, auth.uid);
       return { photoUrl: media.url };

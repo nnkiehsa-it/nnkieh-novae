@@ -1,12 +1,7 @@
 import { readLocalStorage, writeLocalStorage } from "@/lib/browser-storage";
+import { getOperationPolicy } from "@/lib/operation-policies";
 
 const AVATAR_CACHE_KEY = "novae:avatar";
-/**
- * The worker re-reads a Google avatar once a day and answers from its own copy
- * in between, so asking it again within the same day can only produce the
- * answer already held here.
- */
-const AVATAR_CACHE_INTERVAL_MS = 24 * 60 * 60 * 1_000;
 
 interface CachedAvatar {
   cachedAt: number;
@@ -33,7 +28,7 @@ export function readCachedAvatar(uid: string, sourceUrl: string): string | null 
     return null;
   }
   if (cached.uid !== uid || cached.sourceUrl !== sourceUrl) return null;
-  if (!(Date.now() - cached.cachedAt < AVATAR_CACHE_INTERVAL_MS)) return null;
+  if (!(Date.now() - cached.cachedAt < getOperationPolicy("avatarRevalidateHours") * 60 * 60 * 1_000)) return null;
   return cached.photoUrl || null;
 }
 

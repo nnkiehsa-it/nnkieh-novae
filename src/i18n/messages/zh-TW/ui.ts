@@ -100,6 +100,7 @@ const messages = {
   "ui.operations.policy.realtimeHeartbeatSeconds": "連線心跳（秒）",
   "ui.operations.policy.realtimeIdleMinutes": "閒置斷線（分鐘）",
   "ui.operations.policy.realtimeTicketSeconds": "連線憑證有效期（秒）",
+  "ui.operations.policy.avatarRevalidateHours": "頭像重新檢查間隔（小時）",
   "ui.operations.policy.titleLength": "標題長度",
   "ui.operations.policy.contentLength": "內文長度",
   "ui.operations.policy.commentLength": "留言長度",
