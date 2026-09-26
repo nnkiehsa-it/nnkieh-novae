@@ -160,7 +160,7 @@ test('operations console is usable on phone and desktop and saves an audited pol
     await admin.page.screenshot({path:testInfo.outputPath(`system-capacity-${width}.png`)});
     await admin.page.goto('/admin/policies');
     await expect.poll(()=>admin.page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
-    await admin.page.getByRole('tab', { name: 'Advanced settings' }).click();
+    await admin.page.getByRole('tab', { name: 'Advanced' }).click();
     await admin.page.getByText('Client requests and throttling', { exact: true }).click();
     await admin.page.getByLabel('Client Write Cooldown Ms',{exact:true}).scrollIntoViewIfNeeded();
     await expect(admin.page.getByLabel('Client Write Cooldown Ms',{exact:true})).toHaveValue('500');
