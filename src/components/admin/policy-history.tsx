@@ -8,16 +8,20 @@ import type { OperationPolicyKey } from "@/generated/operations";
 import type { OperationsConsole } from "@/hooks/use-operation-policies";
 
 /** What was changed, by whom, and why -- one revision at a time. */
-export function PolicyHistory({ entries }: { entries: OperationsConsole["history"] }) {
+export function PolicyHistory({ entries, showHeader = true }: {
+  entries: OperationsConsole["history"];
+  showHeader?: boolean;
+}) {
   const { t } = useI18n();
+  const header = showHeader ? t("ui.operations.history") : undefined;
   if (entries.length === 0)
     return (
-      <ListSection header={t("ui.operations.history")}>
+      <ListSection header={header}>
         <ListRow label={t("ui.operations.empty")} />
       </ListSection>
     );
   return (
-    <ListSection header={t("ui.operations.history")}>
+    <ListSection header={header}>
       {entries.map((entry) => {
         const changed = (Object.keys(entry.afterValue) as OperationPolicyKey[]).filter(
           (key) => entry.beforeValue[key] !== entry.afterValue[key],

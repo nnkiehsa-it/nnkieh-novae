@@ -125,9 +125,10 @@ test('platform settings save traverses impact estimation and canonical write', a
   test.setTimeout(120_000);
   const admin = await newUserPage(browser, 'admin');
   await admin.page.goto('/admin/platform');
-  await expect(admin.page.getByText('Image uploads')).toBeVisible();
+  await expect(admin.page.getByRole('tab', { name: 'Data retention' })).toBeVisible();
   // Nothing is submittable until something has actually been changed.
   await expect(admin.page.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0);
+  await admin.page.getByRole('tab', { name: 'Image uploads' }).click();
   const commentImages = admin.page.getByLabel('Images per comment', { exact: true });
   await commentImages.fill(String(Number(await commentImages.inputValue()) === 1 ? 2 : 1));
   await commentImages.blur();
@@ -159,6 +160,8 @@ test('operations console is usable on phone and desktop and saves an audited pol
     await admin.page.screenshot({path:testInfo.outputPath(`system-capacity-${width}.png`)});
     await admin.page.goto('/admin/policies');
     await expect.poll(()=>admin.page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+    await admin.page.getByRole('tab', { name: 'Advanced settings' }).click();
+    await admin.page.getByText('Client requests and throttling', { exact: true }).click();
     await admin.page.getByLabel('Client Write Cooldown Ms',{exact:true}).scrollIntoViewIfNeeded();
     await expect(admin.page.getByLabel('Client Write Cooldown Ms',{exact:true})).toHaveValue('500');
     await admin.page.screenshot({path:testInfo.outputPath(`policies-${width}.png`)});
@@ -170,6 +173,7 @@ test('operations console is usable on phone and desktop and saves an audited pol
   await expectBackendAction(admin.page,'saveOperationPolicies',async()=>{
     await admin.page.getByRole('button',{name:'Save',exact:true}).click();
   });
+  await admin.page.getByText('Policy history', { exact: true }).click();
   await expect(admin.page.getByText('E2E operational policy audit',{exact:false})).toBeVisible();
   await admin.context.close();
 });

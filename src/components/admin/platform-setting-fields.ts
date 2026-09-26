@@ -11,11 +11,14 @@ export interface ImageField {
   unitKey?: string;
 }
 
-export const IMAGE_FIELDS: readonly ImageField[] = [
+export const IMAGE_COUNT_FIELDS: readonly ImageField[] = [
   { key: "issueMaxImages", labelKey: "ui.admin.issueImageLimit", max: 20, min: 1 },
   { key: "facilityMaxImages", labelKey: "ui.admin.facilityImageLimit", max: 20, min: 1 },
   { key: "announcementMaxImages", labelKey: "ui.admin.announcementImageLimit", max: 20, min: 1 },
   { key: "commentMaxImages", labelKey: "ui.admin.commentImageLimit", max: 20, min: 1 },
+];
+
+export const IMAGE_PROCESSING_FIELDS: readonly ImageField[] = [
   {
     key: "maxUploadKilobytes",
     labelKey: "ui.admin.imageUploadKilobytes",
@@ -32,6 +35,8 @@ export const IMAGE_FIELDS: readonly ImageField[] = [
   },
   { key: "webpQuality", labelKey: "ui.admin.imageWebpQuality", max: 0.95, min: 0.4, step: 0.01 },
 ];
+
+export const IMAGE_FIELDS: readonly ImageField[] = [...IMAGE_COUNT_FIELDS, ...IMAGE_PROCESSING_FIELDS];
 
 /** Turns a draft's `group.field` key back into the label the reader saw. */
 export function describeSettingKey(key: string) {
