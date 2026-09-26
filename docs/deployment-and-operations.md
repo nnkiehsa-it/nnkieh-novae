@@ -57,12 +57,6 @@ Origin 使用 `ALLOWED_ORIGINS` 的第一個值。任一條件一直不成立，
 
 若 diff 沒碰 `cloudflare/`、`database/`、`config/` 或 backend generator / renderer，frontend publish 不會等待 backend deployment job。
 
-## Official website on GitHub Pages
-
-`website/` 是獨立的 Vite 靜態網站，與 Vercel Next.js App 分開建置。`.github/workflows/deploy-official-website.yml` 只在 `main` 的 `website/**` 或該 workflow 變更時執行，也可手動啟動。它執行雙語內容檢查、以 `/novae/` 為 base 建置，將 `website/dist/` 發布到 GitHub Pages。網站的 GitHub 與文件連結指向本 repo；未設定或猜測 Vercel App 網址。
-
-首次發布前，需在本 repo 的 Settings → Pages 將 Source 設為 GitHub Actions。單靠本機 build 不會讓網站上線。App 的 Vercel workflow、路由和登入流程不受網站部署影響。
-
 ## 排程工作
 
 Worker 的 cron 是 `*/30 * * * *`，負責啟動到期支援、retention 與其他 maintenance 工作；大量異動會切成 Queue batch。

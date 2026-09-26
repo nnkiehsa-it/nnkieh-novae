@@ -96,8 +96,6 @@ bun run verify:all          # local + integration + Playwright E2E
 
 ## 文件
 
-本 repo 的 `website/` 是獨立的官方靜態網站，由 GitHub Pages 發布；Next.js 應用程式仍由 Vercel 部署，原有路由不變。網站的開發與建置方式見 [website/README.md](website/README.md)。
-
 - [文件索引](docs/README.md)
 - [產品與使用流程](docs/product.md)
 - [路由、角色與權限](docs/routes-and-permissions.md)
