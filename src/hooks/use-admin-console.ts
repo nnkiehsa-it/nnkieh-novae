@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 
 import { useRememberedState } from "@/hooks/use-remembered-state";
+import { useAdminReading } from "@/hooks/use-admin-reading";
 import {
   listAdminAudit,
   listAdminActivity,
@@ -51,7 +52,6 @@ function usePagedAdminList<T>(
   fetchPage: (query: string, page: number) => Promise<{ hasMore: boolean; rows: T[] }>,
   failureKey: string,
 ) {
-  const { t } = useI18n();
   const { cold, remember, value } = useRememberedState<PagedReading<T>>(key, {
     activeQuery: "",
     hasMore: false,
@@ -59,28 +59,21 @@ function usePagedAdminList<T>(
     rows: [],
   });
   const [query, setQuery] = useState(value.activeQuery);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const { error, loading, read } = useAdminReading(key, failureKey);
 
   const load = useCallback(
-    async (nextQuery: string, nextPage = 0) => {
-      setLoading(true);
-      setError("");
-      try {
-        const result = await fetchPage(nextQuery, nextPage);
+    (nextQuery: string, nextPage = 0) => read(
+      () => fetchPage(nextQuery, nextPage),
+      (result) => {
         remember({
           activeQuery: nextQuery,
           hasMore: result.hasMore,
           page: nextPage,
           rows: result.rows,
         });
-      } catch (caught) {
-        setError(caught instanceof Error ? caught.message : t(failureKey));
-      } finally {
-        setLoading(false);
-      }
-    },
-    [failureKey, fetchPage, remember, t],
+      },
+    ),
+    [fetchPage, read, remember],
   );
 
   useEffect(() => {
@@ -111,31 +104,23 @@ async function fetchAuditPage(query: string, page: number) {
 }
 
 export function useAdminActivity(window: AdminOverviewWindow) {
-  const { t } = useI18n();
   const { cold, remember, value } = useRememberedState<{
     cursor: AdminActivityCursor | null;
     entries: AdminOverviewData["recentActivity"];
   }>(`admin-activity:${window}`, { cursor: null, entries: [] });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const { error, loading, read } = useAdminReading(`admin-activity:${window}`, "ui.adminConsole.loadActivityFailed");
 
   const load = useCallback(
-    async (nextCursor: AdminActivityCursor | null = null) => {
-      setLoading(true);
-      setError("");
-      try {
-        const result = await listAdminActivity(window, nextCursor);
+    (nextCursor: AdminActivityCursor | null = null) => read(
+      () => listAdminActivity(window, nextCursor),
+      (result) => {
         remember((current) => ({
           cursor: result.nextCursor,
           entries: nextCursor ? [...current.entries, ...result.entries] : result.entries,
         }));
-      } catch (caught) {
-        setError(caught instanceof Error ? caught.message : t("ui.adminConsole.loadActivityFailed"));
-      } finally {
-        setLoading(false);
-      }
-    },
-    [remember, t, window],
+      },
+    ),
+    [read, remember, window],
   );
 
   useEffect(() => {
@@ -193,20 +178,9 @@ export function useAdminUsers() {
 export function useAccountAccessRules() {
   const { t } = useI18n();
   const { cold, remember, value } = useRememberedState<AccountAccessRule[]>("account-access-rules", []);
-  const [loading, setLoading] = useState(false);
+  const { error, loading, read } = useAdminReading("account-access-rules", "ui.common.loadFailed");
   const [busy, setBusy] = useState("");
-  const [error, setError] = useState("");
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      remember(await listAccountAccessRules());
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
-    } finally {
-      setLoading(false);
-    }
-  }, [remember, t]);
+  const load = useCallback(() => read(listAccountAccessRules, remember), [read, remember]);
   useEffect(() => { if (cold) void load(); }, [cold, load]);
   const save = useCallback(async (input: Parameters<typeof saveAccountAccessRule>[0]) => {
     setBusy(input.targetValue);

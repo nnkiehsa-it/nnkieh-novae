@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { useI18n } from "@/i18n";
+import { useAdminReading } from "@/hooks/use-admin-reading";
 import { useRememberedState } from "@/hooks/use-remembered-state";
 import { useSession } from "@/hooks/use-session";
 import {
@@ -28,7 +28,6 @@ export type { AdminOverviewData, AdminOverviewWindow } from "@/services/admin-co
  */
 export function useAdminOverview(period: AdminOverviewWindow) {
   const session = useSession();
-  const { t } = useI18n();
   const { cold, remember, value: activity } = useRememberedState<AdminOverviewData | null>(
     `admin-overview:${period}`,
     null,
@@ -36,29 +35,20 @@ export function useAdminOverview(period: AdminOverviewWindow) {
   const [platform, setPlatform] = React.useState<PlatformDashboardData | null>(() =>
     getViewMemory<PlatformDashboardData>(session.user?.uid, "dashboard"),
   );
-  const [error, setError] = React.useState("");
-  const [loading, setLoading] = React.useState(false);
+  const { error, loading, read } = useAdminReading(`admin-overview:${period}`, "ui.adminConsole.loadOverviewFailed");
 
   const load = React.useCallback(
-    async (forceRefresh = false) => {
-      setLoading(true);
-      setError("");
-      try {
-        const [nextActivity, nextPlatform] = await Promise.all([
+    (forceRefresh = false) => read(
+      () => Promise.all([
           fetchAdminOverview(period),
           fetchPlatformDashboard({ forceRefresh }),
-        ]);
+      ]),
+      ([nextActivity, nextPlatform]) => {
         remember(nextActivity);
         setPlatform(nextPlatform);
-      } catch (caught) {
-        setError(
-          caught instanceof Error ? caught.message : t("ui.adminConsole.loadOverviewFailed"),
-        );
-      } finally {
-        setLoading(false);
-      }
-    },
-    [period, remember, t],
+      },
+    ),
+    [period, read, remember],
   );
 
   const unread = cold || !platform;

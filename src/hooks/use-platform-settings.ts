@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { useI18n } from "@/i18n";
+import { useAdminReading } from "@/hooks/use-admin-reading";
 import { seedImageUploadSettings } from "@/hooks/use-categories";
 import { useDraft } from "@/hooks/use-draft";
 import { useRememberedState } from "@/hooks/use-remembered-state";
@@ -20,23 +20,14 @@ function isPositive(value: unknown) {
 }
 
 export function usePlatformSettings() {
-  const { t } = useI18n();
   const { remember: setStored, value: stored } =
     useRememberedState<PlatformSettings | null>("admin-platform-settings", null);
-  const [error, setError] = React.useState("");
-  const [reading, setReading] = React.useState(false);
+  const { error, loading: reading, read } = useAdminReading("admin-platform-settings", "common.loadFailed");
 
-  const load = React.useCallback(async () => {
-    setReading(true);
-    setError("");
-    try {
-      setStored((await getCategoryManagement()).platformSettings);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("common.loadFailed"));
-    } finally {
-      setReading(false);
-    }
-  }, [setStored, t]);
+  const load = React.useCallback(
+    () => read(getCategoryManagement, (result) => setStored(result.platformSettings)),
+    [read, setStored],
+  );
 
   React.useEffect(() => {
     void load();

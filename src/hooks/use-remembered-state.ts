@@ -36,7 +36,7 @@ export function useRememberedState<T>(key: string, fallback: T) {
 
   const remember = React.useCallback(
     (update: T | ((current: T) => T)) => {
-      setState((previous) => ({
+      setState((previous) => previous.key !== key || previous.scope !== scope ? previous : ({
         cold: false,
         key,
         scope,

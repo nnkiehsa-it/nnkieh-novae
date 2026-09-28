@@ -6,6 +6,41 @@ import { expectBackendAction } from './support/backend-action';
 import { readContentState } from './support/content-state';
 import { newUserPage } from './support/session';
 
+test('a late overview failure cannot replace the selected reporting period', async ({ browser }) => {
+  const { page, context } = await newUserPage(browser, 'admin');
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  let requested = false;
+  await page.route('**/v1/actions', async (route) => {
+    const body = route.request().postDataJSON();
+    if (body?.action !== 'getAdminOverview' || body?.payload?.window !== '7d') {
+      await route.continue();
+      return;
+    }
+    requested = true;
+    await held;
+    await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: { code: 'upstream-unavailable', message: 'Late previous period failure' } }) });
+  });
+  try {
+    await page.goto('/admin');
+    await expect(page.getByRole('button', { name: 'Refresh', exact: true })).toBeEnabled();
+    await page.getByRole('tab', { name: '7 days', exact: true }).click();
+    await expect.poll(() => requested).toBe(true);
+    await page.getByRole('tab', { name: '30 days', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Refresh', exact: true })).toBeEnabled();
+    const completed = page.waitForResponse((response) => {
+      const body = response.request().postDataJSON();
+      return body?.action === 'getAdminOverview' && body?.payload?.window === '7d';
+    });
+    release();
+    await (await completed).finished();
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    await expect(page.getByRole('tab', { name: '30 days', exact: true })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByText('Late previous period failure')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Refresh', exact: true })).toBeEnabled();
+  } finally { release(); await context.close(); }
+});
+
 test('platform admin can restrict and restore an ordinary account', async ({ browser }) => {
   test.setTimeout(120_000);
   const admin = await newUserPage(browser, 'admin');
