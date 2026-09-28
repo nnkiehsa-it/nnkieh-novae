@@ -21,11 +21,14 @@ import {
 } from "./wsl.mjs";
 
 const root = process.cwd();
-const e2e = process.argv.includes("--e2e");
-const serve = process.argv.includes("--serve");
-const skipBuild = process.argv.includes("--skip-build");
-const projectIndex = process.argv.indexOf("--project");
-const e2eProject = projectIndex >= 0 ? process.argv[projectIndex + 1] : null;
+const separator = process.argv.indexOf("--");
+const runnerArgs = process.argv.slice(2, separator < 0 ? undefined : separator);
+const browserArgs = separator < 0 ? [] : process.argv.slice(separator + 1);
+const e2e = runnerArgs.includes("--e2e");
+const serve = runnerArgs.includes("--serve");
+const skipBuild = runnerArgs.includes("--skip-build");
+const projectIndex = runnerArgs.indexOf("--project");
+const e2eProject = projectIndex >= 0 ? runnerArgs[projectIndex + 1] : null;
 const e2eProjects = new Set([
   "chromium-desktop-readonly",
   "chromium-mobile-readonly",
@@ -34,11 +37,11 @@ const e2eProjects = new Set([
 if (e2eProject && !e2eProjects.has(e2eProject)) {
   throw new Error(`Unsupported E2E project: ${e2eProject}.`);
 }
-if ((projectIndex >= 0 && !e2eProject) || (!e2e && (skipBuild || e2eProject))) {
-  throw new Error("--project and --skip-build require --e2e.");
+if ((projectIndex >= 0 && !e2eProject) || (!e2e && (skipBuild || e2eProject || browserArgs.length > 0))) {
+  throw new Error("--project, --skip-build and browser arguments after -- require --e2e.");
 }
-const stressIndex = process.argv.indexOf("--stress-scale");
-const stressScale = stressIndex >= 0 ? process.argv[stressIndex + 1] : "4";
+const stressIndex = runnerArgs.indexOf("--stress-scale");
+const stressScale = stressIndex >= 0 ? runnerArgs[stressIndex + 1] : "4";
 if (!/^\d+$/u.test(stressScale) || Number(stressScale) < 2 || Number(stressScale) > 20) {
   throw new Error("--stress-scale must be an integer between 2 and 20.");
 }
@@ -671,13 +674,13 @@ try {
         );
         await runBrowserJourneys(
           "Playwright stateful browser journeys",
-          [`--project=${e2eProject}`, "--no-deps"],
+          [`--project=${e2eProject}`, "--no-deps", ...browserArgs],
           frontendEnvironment,
         );
       } else {
         await runBrowserJourneys(
           `Playwright ${e2eProject ?? "browser"} journeys`,
-          e2eProject ? [`--project=${e2eProject}`] : [],
+          [...(e2eProject ? [`--project=${e2eProject}`] : []), ...browserArgs],
           frontendEnvironment,
         );
       }
