@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { authStatePath } from "./support/paths";
 
-for (const width of [390, 1440]) {
+for (const width of [390, 768, 1024, 1440]) {
   test(`primary navigation accepts rapid clicks and follows the rendered page at ${width}px`, async ({
     browser,
   }) => {
@@ -11,6 +11,7 @@ for (const width of [390, 1440]) {
       reducedMotion: "no-preference",
     });
     const page = await context.newPage();
+    await page.addInitScript(() => localStorage.setItem('theme', 'system'));
     await page.goto("/announcements");
     const nav = page.locator("[data-primary-navigation]:visible");
     await nav.waitFor();
@@ -106,6 +107,13 @@ for (const width of [390, 1440]) {
       "animation-name",
       "none",
     );
+    for (const colorScheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme });
+      if (colorScheme === "dark") await expect(page.locator("html")).toHaveClass(/dark/u);
+      else await expect(page.locator("html")).not.toHaveClass(/dark/u);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await expect(nav.locator('a[href="/settings"]')).toBeInViewport();
+    }
     await context.close();
   });
 }
