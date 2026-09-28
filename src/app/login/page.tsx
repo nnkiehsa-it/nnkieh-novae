@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import "@/styles/login.css";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, RefreshCw } from "lucide-react";
 import { useSession } from "@/hooks/use-session";
@@ -9,7 +9,6 @@ import { useLoginEntrance } from "@/hooks/use-login-entrance";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { BrandLockup } from "@/components/ui/brand";
-import { LoginStory } from "@/components/login/login-story";
 import { BusyLabel } from "@/components/ui/page-state";
 import { TurnstileInlineHost } from "@/components/turnstile-provider";
 import { AppStartupScreen } from "@/components/protected-app";
@@ -79,16 +78,27 @@ export default function LoginPage() {
 
   return (
     <RouteSurface className="!w-full">
-      <main className="login-page">
-        <header className="login-header t-panel-reveal"><BrandLockup /></header>
-        <div className="login-layout">
-          <LoginStory />
-          <section className="login-form t-panel-reveal" aria-labelledby="login-form-title">
+      <main className="relative grid min-h-dvh overflow-hidden bg-[var(--surface-stage)] lg:grid-cols-[1.08fr_.92fr]">
+      <section className="relative hidden min-h-dvh overflow-hidden border-r bg-secondary/50 p-12 lg:grid lg:place-items-center">
+        <BrandLockup className="t-panel-reveal absolute top-12 left-12" />
+        <div className="t-stagger-list grid w-full max-w-lg gap-5 pt-16">
+          <h1 className="t-stagger-item max-w-lg text-4xl font-semibold leading-[1.15] tracking-[-0.045em] text-tint-content text-balance">
+            {t("ui.login.heading")}
+          </h1>
+          <p className="t-stagger-item max-w-md text-sm leading-7 text-muted-foreground">
+            {t("ui.login.subheading")}
+          </p>
+          <Image alt="" className="t-stagger-item max-h-[35svh] w-auto justify-self-end object-contain" height={360} src="/novae-constellation.webp" width={240} />
+        </div>
+      </section>
+      <section className="flex min-h-dvh items-center justify-center px-4 py-12 sm:px-8">
+        <div className="t-panel-reveal w-full max-w-sm pt-6">
           <div className="mb-6 space-y-4">
+            <BrandLockup className="lg:hidden" />
             <div>
-              <h2 className="text-2xl font-semibold tracking-[-0.03em]" id="login-form-title">
+              <h1 className="text-2xl font-semibold tracking-[-0.03em]">
                 {t("auth.signInWithASchoolAccount")}
-              </h2>
+              </h1>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 {t("auth.useYour")}{" "}
                 <strong className="font-medium text-foreground">
@@ -134,8 +144,8 @@ export default function LoginPage() {
             </p>
           ) : null}
           <p className="mt-5 text-center text-xs leading-5 text-muted-foreground">{t('ui.login.terms')}</p>
-          </section>
         </div>
+      </section>
       </main>
     </RouteSurface>
   );
