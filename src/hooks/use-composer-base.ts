@@ -7,7 +7,6 @@ import { useImageAttachments } from "@/hooks/use-image-attachments";
 import { useComposerDraft } from "@/hooks/use-composer-draft";
 import { useSession } from "@/hooks/use-session";
 import { deleteUploadedImages } from "@/services/uploads";
-import { ACTION_SUCCESS_HOLD_MS } from "@/hooks/use-action-feedback";
 import { INPUT_LIMITS } from "@/constants/input-limits";
 
 export function useComposerBase(targetType: "announcement" | "facility" | "issue", scope: string = targetType) {
@@ -39,7 +38,6 @@ export function useComposerBase(targetType: "announcement" | "facility" | "issue
       draft.clear();
       images.clear();
       setSucceeded(true);
-      await new Promise<void>((resolve) => window.setTimeout(resolve, ACTION_SUCCESS_HOLD_MS));
       navigate(href);
     } catch (caught) {
       if (!committed && uploaded.length > 0) {
