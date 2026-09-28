@@ -23,7 +23,7 @@ const messages = {
   'auth.schoolGoogleAccount': '校內 Google 帳號',
   'auth.designateAnOnCampusDomain': '校內網域',
   'auth.configuredSchoolDomain': '指定校內網域',
-  'auth.initializationFailed': '無法啟動登入，請重新登入後再試。',
+  'auth.initializationFailed': '帳號資料載入失敗，請確認網路後重試。',
   'auth.signOutLabel': '登出',
   'auth.slowSignInStatus': '登入狀態載入時間較長，已先開啟應用程式。',
   'auth.loginStatusCheckTimedOutPleaseReload': '登入狀態檢查逾時，請重新載入。',

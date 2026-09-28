@@ -5,6 +5,28 @@ import { withRuntimeEnvironment } from '../../cloudflare/src/backend/shared/env'
 import { createMediaDeliveryUrl } from '../../cloudflare/src/backend/shared/media-delivery';
 import type { Env } from '../../cloudflare/src/types';
 
+test('a failed startup retries in place without falling through to setup', async ({ browser }) => {
+  const { context, page } = await newUserPage(browser, 'ordinary');
+  let attempts = 0;
+  let granularReads = 0;
+  await page.route('**/v1/actions', async (route) => {
+    const action = route.request().postDataJSON()?.action;
+    if (action === 'getCurrentUserRole') granularReads += 1;
+    if (action === 'getSessionBootstrap' && attempts++ === 0) {
+      await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: { code: 'upstream-unavailable' } }) });
+    } else await route.continue();
+  });
+  try {
+    await page.goto('/announcements');
+    await expect(page.getByRole('alert').filter({ hasText: 'Unable to load your account' })).toBeVisible();
+    expect(new URL(page.url()).pathname).toBe('/announcements');
+    expect(granularReads).toBe(0);
+    await page.getByRole('button', { name: 'Retry', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Announcements', exact: true })).toBeVisible();
+    expect(attempts).toBe(2);
+  } finally { await context.close(); }
+});
+
 test('a failed login preparation can be retried without reloading the page', async ({ browser }) => {
   const context = await browser.newContext();
   const page = await context.newPage();

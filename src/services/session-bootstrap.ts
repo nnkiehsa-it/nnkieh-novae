@@ -1,7 +1,5 @@
 import { invokeBackendAction } from '@/services/backend-action';
 import type { CategoryCatalog } from '@/types/categories';
-import { RATE_LIMITS } from '@/generated/rate-limits';
-import { DATA_RETENTION } from '@/generated/data-retention';
 import type { SessionAccess } from '@/services/session-role';
 import { seedRuntimeSettings } from '@/services/runtime-settings';
 import {
@@ -9,7 +7,6 @@ import {
   getCachedContentPersistent,
   markContentCachePrefixStale,
   runCoalescedContentRequest,
-  setCachedContent,
   setCachedContentFromRead,
 } from '@/services/content-read-cache';
 
@@ -89,49 +86,11 @@ export async function fetchSessionBootstrap(options: {
       ...(shouldRecordVisit ? { recordVisit: true } : {}),
     });
     const normalized: SessionBootstrapResult = {
+      ...result,
       access: normalizeAccess(result.access),
-      catalog: {
-        features: {
-          announcementCommentsEnabled: result.catalog?.features?.announcementCommentsEnabled !== false,
-          facilitiesEnabled: result.catalog?.features?.facilitiesEnabled !== false,
-          issuesEnabled: result.catalog?.features?.issuesEnabled !== false,
-        },
-        imageUploads: result.catalog?.imageUploads ?? {
-          announcementMaxImages: RATE_LIMITS.imageUploads.announcementMaxImages,
-          commentMaxImages: RATE_LIMITS.imageUploads.commentMaxImages,
-          facilityMaxImages: RATE_LIMITS.imageUploads.facilityMaxImages,
-          issueMaxImages: RATE_LIMITS.imageUploads.issueMaxImages,
-          maxDimension: RATE_LIMITS.imageCompression.maxDimension,
-          maxUploadKilobytes: RATE_LIMITS.imageCompression.maxUploadKilobytes,
-          webpQuality: RATE_LIMITS.imageCompression.webpQuality,
-        },
-        issueCategories: Array.isArray(result.catalog?.issueCategories)
-          ? result.catalog.issueCategories
-          : [],
-        facilityCategories: Array.isArray(result.catalog?.facilityCategories)
-          ? result.catalog.facilityCategories
-          : [],
-        setupCompleted: result.catalog?.setupCompleted === true
-          || result.access?.setupCompleted === true,
-      },
-      notificationUnread: {
-        hasUnread: result.notificationUnread?.hasUnread === true,
-      },
-      runtime: {
-        pushTokenConfirmationDays: Number(
-          result.runtime?.pushTokenConfirmationDays ?? DATA_RETENTION.pushTokenConfirmationDays,
-        ),
-      },
-      versions: {
-        announcements: Number(result.versions?.announcements ?? 1),
-        facilities: Number(result.versions?.facilities ?? 1),
-        issues: Number(result.versions?.issues ?? 1),
-      },
-      visitRecorded: result.visitRecorded === true,
     };
     seedRuntimeSettings(normalized.runtime);
-    if (!shouldRecordVisit) setCachedContentFromRead(cacheGuard, { ...normalized, visitRecorded: false });
-    else setCachedContent(SESSION_BOOTSTRAP_CACHE_KEY, { ...normalized, visitRecorded: false });
+    setCachedContentFromRead(cacheGuard, { ...normalized, visitRecorded: false });
     return normalized;
   });
 }

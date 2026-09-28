@@ -49,6 +49,7 @@ export default function LoginPage() {
     restoringSession,
     roleLoading,
     setupCompleted,
+    startupError,
     startupPhase,
     user,
   } = session;
@@ -56,7 +57,7 @@ export default function LoginPage() {
   const entrance = useLoginEntrance(initialized && !user, prepareLogin);
 
   React.useEffect(() => {
-    if (!initialized || !user || roleLoading) return;
+    if (!initialized || !user || roleLoading || startupError) return;
     const requested = search.get("redirect");
     router.replace(
       !setupCompleted
@@ -69,9 +70,11 @@ export default function LoginPage() {
     initialized,
     roleLoading,
     setupCompleted,
+    startupError,
     user,
   ]);
 
+  if (startupError) return <AppStartupScreen phase={startupPhase} error={startupError} onRetry={session.retryStartup} onSignOut={session.logout} />;
   if (restoringSession || (user && roleLoading)) return <AppStartupScreen phase={startupPhase} />;
 
   return (

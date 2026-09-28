@@ -23,7 +23,7 @@ const messages = {
   'auth.schoolGoogleAccount': 'School Google account',
   'auth.designateAnOnCampusDomain': 'School domain',
   'auth.configuredSchoolDomain': 'Configured school domain',
-  'auth.initializationFailed': 'Unable to start sign-in. Sign in again and try once more.',
+  'auth.initializationFailed': 'Unable to load your account. Check your connection and try again.',
   'auth.signOutLabel': 'Sign out',
   'auth.slowSignInStatus': 'Sign-in is taking longer than expected. The app has opened while it continues loading.',
   'auth.loginStatusCheckTimedOutPleaseReload': 'Sign-in status check timed out. Please reload.',

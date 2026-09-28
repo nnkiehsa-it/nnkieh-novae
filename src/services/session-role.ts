@@ -50,9 +50,7 @@ export function seedSessionAccess(access: SessionAccess) {
 
 export async function fetchCurrentUserRole(
   force = false,
-  options: { useBootstrap?: boolean } = {},
 ): Promise<SessionAccess> {
-  const useBootstrap = options.useBootstrap !== false;
   if (force) {
     markContentCachePrefixStale(SESSION_ACCESS_CACHE_KEY);
     markSessionBootstrapStale();
@@ -71,13 +69,9 @@ export async function fetchCurrentUserRole(
 
   // Prefer the combined bootstrap so cold starts share one Edge invocation with
   // catalog / versions / unread (see session-bootstrap).
-  if (!force && useBootstrap) {
-    try {
-      const bootstrap = await fetchSessionBootstrap();
-      return seedSessionAccess(bootstrap.access);
-    } catch {
-      // Fall through to the granular role action.
-    }
+  if (!force) {
+    const bootstrap = await fetchSessionBootstrap();
+    return seedSessionAccess(bootstrap.access);
   }
 
   return runCoalescedContentRequest(SESSION_ACCESS_CACHE_KEY, async (cacheGuard) => {

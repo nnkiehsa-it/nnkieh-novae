@@ -12,11 +12,8 @@ import { clearComposerDrafts } from "@/lib/composer-draft";
 import { clearSupportedIssueMemory } from "@/lib/supported-issue-memory";
 import { ensureBackendProfile } from "@/services/backend-auth";
 import {
-  fetchCurrentUserRole,
   seedSessionAccess,
-  type PermissionCode,
   type SessionAccess,
-  type RoleCode,
 } from "@/services/session-role";
 import {
   applyContentVersionsSnapshot,
@@ -35,7 +32,6 @@ import { cacheUserAvatar } from "@/services/users-write";
 import { seedNotificationUnreadHint } from "@/services/notifications";
 import {
   clearCategoryCatalog,
-  ensureCategoryCatalog,
   seedCategoryCatalog,
 } from "@/hooks/use-categories";
 import {
@@ -48,78 +44,19 @@ import {
   validateUserAgainstToken,
   type ValidationResult,
 } from "@/services/session-validation";
+import { state, patch, type SessionState } from "@/hooks/session-state";
+export { getSessionState, initialSessionState, patch, subscribe, type SessionState, type StartupPhase } from "@/hooks/session-state";
+
 const VISIT_RECORD_INTERVAL_MS = 24 * 60 * 60 * 1_000;
 const VISIT_RECORDED_AT_KEY = "novae:platform-visit-recorded-at";
-
-export type StartupPhase =
-  | "session"
-  | "security"
-  | "account"
-  | "profile"
-  | "access"
-  | "content"
-  | "ready";
-
-export interface SessionState {
-  appReady: boolean;
-  authChecking: boolean;
-  customPhotoUrl: string | null;
-  error: string;
-  initialized: boolean;
-  loading: boolean;
-  managedFacilityCategoryIds: string[];
-  managedIssueCategoryIds: string[];
-  permissions: PermissionCode[];
-  roleLoading: boolean;
-  restoringSession: boolean;
-  roles: RoleCode[];
-  setupCompleted: boolean;
-  startupPhase: StartupPhase;
-  user: User | null;
-  userRole: "admin" | "user";
-}
-
-const listeners = new Set<() => void>();
-export const initialSessionState: SessionState = {
-  appReady: false,
-  authChecking: true,
-  customPhotoUrl: null,
-  error: "",
-  initialized: false,
-  loading: true,
-  managedFacilityCategoryIds: [],
-  managedIssueCategoryIds: [],
-  permissions: [],
-  roleLoading: false,
-  restoringSession: false,
-  roles: [],
-  setupCompleted: false,
-  startupPhase: "session",
-  user: null,
-  userRole: "user",
-};
-let state: SessionState = initialSessionState;
 let booted = false;
 let verificationSerial = 0;
 let pendingAuthRejection = "";
+let needsProfileSync = false;
 
-function emit() {
-  listeners.forEach((listener) => listener());
-}
-
-export function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}
-
-export function patch(next: Partial<SessionState>) {
-  state = { ...state, ...next };
-  emit();
-}
-
-function shouldRecordPlatformVisit() {
+function shouldRecordPlatformVisit(uid: string) {
   const recordedAt = Number.parseInt(
-    readLocalStorage(VISIT_RECORDED_AT_KEY) || "0",
+    readLocalStorage(`${VISIT_RECORDED_AT_KEY}:${uid}`) || "0",
     10,
   );
   return !(
@@ -150,6 +87,7 @@ function resetAccess(next: Partial<SessionState> = {}) {
     roleLoading: false,
     roles: [],
     setupCompleted: false,
+    startupError: "",
     userRole: "user",
     ...next,
   });
@@ -159,7 +97,7 @@ async function rejectUser(reason: string) {
   verificationSerial += 1;
   pendingAuthRejection = reason;
   clearActiveSessionData();
-  resetAccess({ error: reason, user: null });
+  resetAccess({ error: reason, user: null, appReady: true, initialized: true, loading: false, restoringSession: false });
   if (auth) await signOut(auth).catch(() => undefined);
 }
 
@@ -187,7 +125,7 @@ async function refreshVerifiedSession(
   syncProfile: boolean,
 ) {
   const current = () =>
-    verificationId === verificationSerial && state.user?.uid === user.uid;
+    verificationId === verificationSerial && state.user?.uid === user.uid && auth?.currentUser === user;
   try {
     const tokenValidation = await tokenValidationPromise;
     if (!current()) return;
@@ -196,6 +134,7 @@ async function refreshVerifiedSession(
     if (syncProfile) {
       await ensureBackendProfile(user);
       if (!current()) return;
+      needsProfileSync = false;
       patch({ startupPhase: "access" });
     }
     const applyAccess = (access: SessionAccess) => {
@@ -209,36 +148,22 @@ async function refreshVerifiedSession(
         userRole: access.role,
       });
     };
-    try {
-      const bootstrap = await fetchSessionBootstrap({
-        force: true,
-        // Who the visitor is arrives before the catalog does, and the shell is
-        // drawn from it, so it is applied the moment it lands.
-        onAccess: (access) => {
-          if (current()) applyAccess(seedSessionAccess(access));
-        },
-        recordVisit: shouldRecordPlatformVisit(),
-      });
-      if (!current()) return;
-      const access = seedSessionAccess(bootstrap.access);
-      seedCategoryCatalog(bootstrap.catalog);
-      applyContentVersionsSnapshot(bootstrap.versions);
-      seedNotificationUnreadHint(bootstrap.notificationUnread.hasUnread);
-      if (bootstrap.visitRecorded)
-        writeLocalStorage(VISIT_RECORDED_AT_KEY, String(Date.now()));
-      applyAccess(access);
-    } catch (bootstrapError) {
-      if (bootstrapError instanceof ApiRequestError && bootstrapError.code === "account-restricted") {
-        throw bootstrapError;
-      }
-      sessionDebug("bootstrap fallback", bootstrapError);
-      await ensureContentVersionsFresh().catch(() => undefined);
-      if (!current()) return;
-      const access = await fetchCurrentUserRole(true, { useBootstrap: false });
-      if (!current()) return;
-      applyAccess(access);
-      await ensureCategoryCatalog().catch(() => undefined);
-    }
+    const bootstrap = await fetchSessionBootstrap({
+      force: true,
+      // Permissions arrive first; keep their UI state ready while the catalog loads.
+      onAccess: (access) => {
+        if (current()) applyAccess(seedSessionAccess(access));
+      },
+      recordVisit: shouldRecordPlatformVisit(user.uid),
+    });
+    if (!current()) return;
+    const access = seedSessionAccess(bootstrap.access);
+    seedCategoryCatalog(bootstrap.catalog);
+    applyContentVersionsSnapshot(bootstrap.versions);
+    seedNotificationUnreadHint(bootstrap.notificationUnread.hasUnread);
+    if (bootstrap.visitRecorded)
+      writeLocalStorage(`${VISIT_RECORDED_AT_KEY}:${user.uid}`, String(Date.now()));
+    applyAccess(access);
   } catch (error) {
     if (!current()) return;
     sessionDebug("session verification failed", error);
@@ -247,7 +172,7 @@ async function refreshVerifiedSession(
       return;
     }
     patch({
-      error: error instanceof ApiRequestError && error.code === "app-check-failed"
+      startupError: error instanceof ApiRequestError && error.code === "app-check-failed"
         ? "auth.appCheckFailed"
         : "auth.initializationFailed",
     });
@@ -264,6 +189,7 @@ function acceptUser(
   syncProfile: boolean,
 ) {
   const verificationId = ++verificationSerial;
+  needsProfileSync = syncProfile;
   setContentCacheScope(user.uid);
   clearContentReadMemoryCache();
   patch({
@@ -278,12 +204,21 @@ function acceptUser(
     roleLoading: true,
     roles: [],
     setupCompleted: false,
+    startupError: "",
     startupPhase: "account",
     user,
     userRole: "user",
   });
   if (user.photoURL) void loadAvatar(user.photoURL, user.uid);
   void refreshVerifiedSession(user, verificationId, tokenValidationPromise, syncProfile);
+}
+
+export async function retrySessionStartup() {
+  const user = state.user;
+  if (!user || state.roleLoading) return;
+  const verificationId = ++verificationSerial;
+  patch({ roleLoading: true, startupError: "", startupPhase: "account" });
+  await refreshVerifiedSession(user, verificationId, validateUserAgainstToken(user), needsProfileSync);
 }
 
 export function initializeSession(
@@ -307,11 +242,13 @@ export function initializeSession(
   onAuthStateChanged(
     auth,
     async (user) => {
+      if (auth?.currentUser !== user) return;
+      const authEvent = ++verificationSerial;
+      if (state.user && user && state.user.uid !== user.uid) clearActiveSessionData();
       const authEventError = user ? "" : pendingAuthRejection;
       pendingAuthRejection = "";
-      patch({ authChecking: false, error: authEventError, loading: true, startupPhase: "session" });
+      patch({ authChecking: false, error: authEventError, loading: true, restoringSession: false, startupError: "", startupPhase: "session" });
       if (!user) {
-        verificationSerial += 1;
         clearActiveSessionData();
         resetAccess({
           appReady: true,
@@ -325,7 +262,6 @@ export function initializeSession(
       const validation = validateBasicUser(user);
       if (!validation.ok) {
         await rejectUser(validation.reason);
-        patch({ appReady: true, initialized: true, loading: false });
         return;
       }
       const tokenValidationPromise = validateUserAgainstToken(user);
@@ -336,9 +272,9 @@ export function initializeSession(
         const restorationError = await verifyRestoredSession({
           requestTurnstileToken,
         });
+        if (authEvent !== verificationSerial || auth?.currentUser !== user) return;
         if (restorationError) {
           await rejectUser(restorationError);
-          patch({ appReady: true, initialized: true, loading: false, restoringSession: false });
           return;
         }
         patch({ restoringSession: false, startupPhase: "account" });
@@ -362,8 +298,4 @@ export function initializeSession(
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") resync();
   });
-}
-
-export function getSessionState() {
-  return state;
 }

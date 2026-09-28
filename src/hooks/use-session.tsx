@@ -27,6 +27,7 @@ import {
   getSessionState,
   initialSessionState,
   initializeSession,
+  retrySessionStartup,
   patch,
   subscribe,
 } from "@/hooks/session-store";
@@ -98,6 +99,7 @@ export function useSession() {
   const refreshSessionAccess = useCallback(async () => {
     if (!snapshot.user) return;
     const access = await fetchCurrentUserRole(true);
+    if (getSessionState().user !== snapshot.user) return;
     patch({
       managedFacilityCategoryIds: access.managedFacilityCategoryIds,
       managedIssueCategoryIds: access.managedIssueCategoryIds,
@@ -124,5 +126,6 @@ export function useSession() {
     prepareLogin,
     logout,
     refreshSessionAccess,
+    retryStartup: retrySessionStartup,
   };
 }
