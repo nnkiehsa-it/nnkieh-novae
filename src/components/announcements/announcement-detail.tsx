@@ -85,6 +85,8 @@ export function AnnouncementDetail() {
             key={`announcement:${announcement.id}`}
             targetKey={`announcement:${announcement.id}`}
             comments={detail.comments}
+            error={detail.commentsError}
+            onRetry={detail.reloadComments}
             sort={detail.commentSort}
             enabled={detail.commentsEnabled}
             hasMore={detail.commentsHaveMore}

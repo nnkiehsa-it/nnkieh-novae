@@ -35,6 +35,7 @@ function getReplyExcerpt(content: string) {
 export function Discussion({
   comments,
   enabled = true,
+  error,
   hasMore = false,
   loading,
   loadingMore = false,
@@ -42,11 +43,13 @@ export function Discussion({
   onDelete,
   onLoadMore,
   onSortChange,
+  onRetry,
   sort,
   targetKey,
 }: {
   comments: DiscussionCommentRecord[];
   enabled?: boolean;
+  error?: string;
   hasMore?: boolean;
   loading: boolean;
   loadingMore?: boolean;
@@ -54,6 +57,7 @@ export function Discussion({
   onDelete: (commentId: string) => Promise<void>;
   onLoadMore?: () => Promise<void>;
   onSortChange: (sort: CommentSortOption) => void;
+  onRetry?: () => Promise<void>;
   sort: CommentSortOption;
   targetKey: string;
 }) {
@@ -87,12 +91,13 @@ export function Discussion({
   }, [enabled]);
 
   return (
-    <section aria-labelledby="discussion-title">
+    <section aria-labelledby="discussion-title" aria-busy={loading || loadingMore}>
       <Card className="gap-0 overflow-hidden py-0">
         <div className="flex items-center gap-2 px-5 py-4 sm:px-7">
           <MessageCircle className="size-4 text-muted-foreground" />
           <h2 className="font-semibold" id="discussion-title">{translate("ui.discussion.title")}</h2>
           <span className="text-sm tabular-nums text-muted-foreground">{comments.length}</span>
+          {loading && comments.length > 0 ? <LoadingSpinner /> : null}
           <ChoiceSelect
             ariaLabel={translate("ui.discussion.sort")}
             className="ml-auto h-8 w-auto min-w-28 gap-1.5 px-2.5"
@@ -105,6 +110,13 @@ export function Discussion({
             value={sort}
           />
         </div>
+
+        {error ? (
+          <div className="flex items-center justify-between gap-3 bg-destructive/8 px-5 py-3 sm:px-7">
+            <p role="alert" className="text-sm text-destructive">{error}</p>
+            {onRetry ? <Button disabled={loading || loadingMore} onClick={() => void onRetry()} size="sm">{translate("common.retry")}</Button> : null}
+          </div>
+        ) : null}
 
         <StateTransition identity={view}>
           <ContentTransition identity={view}>

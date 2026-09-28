@@ -12,7 +12,7 @@ import { useSession } from "@/hooks/use-session";
 import { rememberSupportedIssue } from "@/lib/supported-issue-memory";
 import { getDerivedIssueStatus, getSupportProgressPercent } from "@/lib/issue-status";
 import { getIssueOperationTimeItems } from "@/lib/issue-timeline";
-import type { CommentCursor } from "@/services/comment-cursor";
+import { useCommentFeed, type CommentPageRequest } from "@/hooks/use-comment-feed";
 import {
   createComment,
   deleteComment,
@@ -28,7 +28,7 @@ import {
   fetchUserPublicProfiles,
   getCachedUserPublicProfiles,
 } from "@/services/users-read";
-import type { CommentRecord, CommentSortOption, IssueRecord, UserPublicProfile } from "@/types";
+import type { CommentRecord, IssueRecord, UserPublicProfile } from "@/types";
 import {
   beginContentEntityRead,
   getDetailContentEntity,
@@ -57,10 +57,6 @@ export function useIssueDetail() {
     "detail",
   );
   const currentIssue = storedIssue ?? peekIssueRecordById(issueId, session.user?.uid);
-  const [comments, setComments] = React.useState<CommentRecord[]>([]);
-  const [commentSort, setCommentSort] = React.useState<CommentSortOption>("newest");
-  const [commentCursor, setCommentCursor] = React.useState<CommentCursor>(null);
-  const [commentsHaveMore, setCommentsHaveMore] = React.useState(false);
   const [profile, setProfile] = React.useState<UserPublicProfile | null>(() =>
     currentIssue?.author_uid
       ? getCachedUserPublicProfiles([currentIssue.author_uid])[currentIssue.author_uid] ?? null
@@ -74,8 +70,6 @@ export function useIssueDetail() {
   const [coldRead] = React.useState(() => !currentIssue);
   const [loading, setLoading] = React.useState(!currentIssue);
   const revealDetail = useColdDataReveal(coldRead, loading);
-  const [commentsLoading, setCommentsLoading] = React.useState(true);
-  const [commentsLoadingMore, setCommentsLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
   const [supporting, setSupporting] = React.useState(false);
   const supportingRef = React.useRef(false);
@@ -168,51 +162,16 @@ export function useIssueDetail() {
       currentIssue.status !== "under-review" &&
       currentIssue.status !== "review-rejected",
   );
-  const loadComments = React.useCallback(
-    async (forceRefresh = false) => {
-      if (!commentsReadable) {
-        setCommentsLoading(false);
-        return;
-      }
-      setCommentsLoading(true);
-      try {
-        const result = await fetchComments(issueId, null, commentSort, {
-          cacheScope: session.user?.uid,
-          forceRefresh,
-        });
-        setComments(result.comments);
-        setCommentCursor(result.cursor);
-        setCommentsHaveMore(result.hasMore);
-      } finally {
-        setCommentsLoading(false);
-      }
-    },
-    [commentSort, commentsReadable, issueId, session.user?.uid],
+  const fetchCommentPage = React.useCallback(
+    ({ cursor, sort, forceRefresh }: CommentPageRequest<CommentRecord>) =>
+      fetchComments(issueId, cursor, sort, { cacheScope: session.user?.uid, forceRefresh }),
+    [issueId, session.user?.uid],
   );
-
-  React.useEffect(() => {
-    void loadComments();
-  }, [loadComments]);
-
-  async function loadMoreComments() {
-    if (!commentsHaveMore || !commentCursor || commentsLoadingMore) return;
-    setCommentsLoadingMore(true);
-    try {
-      const result = await fetchComments(issueId, commentCursor, commentSort, {
-        cacheScope: session.user?.uid,
-      });
-      setComments((current) => [
-        ...current,
-        ...result.comments.filter(
-          (comment) => !current.some((existing) => existing.id === comment.id),
-        ),
-      ]);
-      setCommentCursor(result.cursor);
-      setCommentsHaveMore(result.hasMore);
-    } finally {
-      setCommentsLoadingMore(false);
-    }
-  }
+  const commentFeed = useCommentFeed({
+    enabled: commentsReadable,
+    targetKey: `${session.user?.uid}|issue:${issueId}`,
+    fetchPage: fetchCommentPage,
+  });
 
   async function support() {
     if (!currentIssue || currentIssue.isOwnIssue || supportingRef.current) return;
@@ -296,12 +255,12 @@ export function useIssueDetail() {
 
   async function createIssueComment(content: string, parentCommentId: string | null) {
     await createComment(issueId, { content }, parentCommentId);
-    await loadComments(true);
+    await commentFeed.load(true);
   }
 
   async function removeIssueComment(commentId: string) {
     await deleteComment(commentId);
-    await loadComments(true);
+    await commentFeed.load(true);
   }
 
   const commentsEnabled = Boolean(
@@ -321,14 +280,16 @@ export function useIssueDetail() {
         "/issues",
       ),
     burst,
-    comments,
-    commentSort,
+    comments: commentFeed.comments,
+    commentSort: commentFeed.sort,
     commentsAvailable,
     commentsEnabled,
-    commentsHaveMore,
+    commentsHaveMore: commentFeed.hasMore,
     commentsHighlighted: search.get("tab") === "comments",
-    commentsLoading,
-    commentsLoadingMore,
+    commentsLoading: commentFeed.loading,
+    commentsLoadingMore: commentFeed.loadingMore,
+    commentsError: commentFeed.error,
+    reloadComments: () => commentFeed.load(true),
     createIssueComment,
     deleteFeedbackState: deleteFeedback.state,
     error,
@@ -336,7 +297,7 @@ export function useIssueDetail() {
     loadIssue,
     loading,
     revealDetail,
-    loadMoreComments,
+    loadMoreComments: commentFeed.loadMore,
     moderationOpen,
     profile,
     remove,
@@ -349,7 +310,7 @@ export function useIssueDetail() {
         next,
       );
     },
-    setCommentSort,
+    setCommentSort: commentFeed.setSort,
     setModerationOpen,
     status: currentIssue ? getDerivedIssueStatus(currentIssue) : null,
     canManageIssue: currentIssue

@@ -52,6 +52,8 @@ export function IssueDetail() {
                 key={`issue:${issue.id}`}
                 targetKey={`issue:${issue.id}`}
                 comments={detail.comments}
+                error={detail.commentsError}
+                onRetry={detail.reloadComments}
                 sort={detail.commentSort}
                 enabled={detail.commentsEnabled}
                 hasMore={detail.commentsHaveMore}

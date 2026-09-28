@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { useCategories } from "@/hooks/use-categories";
 import { useSession } from "@/hooks/use-session";
-import type { CommentCursor } from "@/services/comment-cursor";
+import { useCommentFeed, type CommentPageRequest } from "@/hooks/use-comment-feed";
 import {
   createAnnouncementComment,
   deleteAnnouncement,
@@ -23,7 +23,6 @@ import {
 import type {
   AnnouncementCommentRecord,
   AnnouncementRecord,
-  CommentSortOption,
   UserPublicProfile,
 } from "@/types";
 import {
@@ -54,10 +53,6 @@ export function useAnnouncementDetail() {
     params.announcementId,
     session.user?.uid,
   );
-  const [comments, setComments] = React.useState<AnnouncementCommentRecord[]>([]);
-  const [commentSort, setCommentSort] = React.useState<CommentSortOption>("newest");
-  const [commentCursor, setCommentCursor] = React.useState<CommentCursor>(null);
-  const [commentsHaveMore, setCommentsHaveMore] = React.useState(false);
   const [profile, setProfile] = React.useState<UserPublicProfile | null>(() =>
     currentAnnouncement?.author_uid
       ? getCachedUserPublicProfiles([currentAnnouncement.author_uid])[currentAnnouncement.author_uid] ?? null
@@ -66,8 +61,6 @@ export function useAnnouncementDetail() {
   const [coldRead] = React.useState(() => !currentAnnouncement);
   const [loading, setLoading] = React.useState(!currentAnnouncement);
   const revealDetail = useColdDataReveal(coldRead, loading);
-  const [commentsLoading, setCommentsLoading] = React.useState(true);
-  const [commentsLoadingMore, setCommentsLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
   const [liking, setLiking] = React.useState(false);
   const likingRef = React.useRef(false);
@@ -111,32 +104,23 @@ export function useAnnouncementDetail() {
     [params.announcementId, session.user?.uid, t],
   );
 
-  const loadComments = React.useCallback(
-    async (forceRefresh = false) => {
-      setCommentsLoading(true);
-      try {
-        await fetchAnnouncementComments(
-          params.announcementId,
-          undefined,
-          commentSort,
-          {
-            cacheScope: session.user?.uid,
-            forceRefresh,
-            onPage: (page) => { setComments(page.comments); setCommentCursor(page.cursor); setCommentsHaveMore(page.hasMore); },
-          },
-        );
-      } catch {
-        // The announcement remains available when its discussion cannot load.
-      } finally {
-        setCommentsLoading(false);
-      }
-    },
-    [commentSort, params.announcementId, session.user?.uid],
+  const commentsEnabled = Boolean(currentAnnouncement?.comments_enabled) && categories.announcementCommentsEnabled;
+  const fetchCommentPage = React.useCallback(
+    ({ cursor, sort, forceRefresh, onPage }: CommentPageRequest<AnnouncementCommentRecord>) =>
+      fetchAnnouncementComments(params.announcementId, cursor, sort, {
+        cacheScope: session.user?.uid, forceRefresh, onPage,
+      }),
+    [params.announcementId, session.user?.uid],
   );
+  const commentFeed = useCommentFeed({
+    enabled: categories.announcementCommentsEnabled && currentAnnouncement?.comments_enabled !== false,
+    targetKey: `${session.user?.uid}|announcement:${params.announcementId}`,
+    fetchPage: fetchCommentPage,
+  });
 
   React.useEffect(() => {
-    void Promise.all([load(), loadComments()]);
-  }, [load, loadComments]);
+    void load();
+  }, [load]);
 
   const announcementCachePrefixes = React.useMemo(
     () => [`announcement-detail|${params.announcementId}|`],
@@ -224,20 +208,7 @@ export function useAnnouncementDetail() {
   }
 
   async function createComment(content: string, parentId: string | null) {
-    await createAnnouncementComment(params.announcementId, content, parentId);
-    await loadComments(true);
-    if (currentAnnouncement)
-      patchContentEntity<AnnouncementRecord>(
-        session.user?.uid,
-        "announcement",
-        currentAnnouncement.id,
-        { comment_count: currentAnnouncement.comment_count + 1 },
-      );
-  }
-
-  async function removeComment(commentId: string) {
-    const result = await deleteAnnouncementComment(commentId);
-    await loadComments(true);
+    const result = await createAnnouncementComment(params.announcementId, content, parentId);
     if (currentAnnouncement)
       patchContentEntity<AnnouncementRecord>(
         session.user?.uid,
@@ -245,43 +216,33 @@ export function useAnnouncementDetail() {
         currentAnnouncement.id,
         { comment_count: result.comment_count },
       );
+    await commentFeed.load(true);
   }
 
-  async function loadMoreComments() {
-    if (!commentsHaveMore || !commentCursor || commentsLoadingMore) return;
-    setCommentsLoadingMore(true);
-    try {
-      const result = await fetchAnnouncementComments(
-        params.announcementId,
-        commentCursor,
-        commentSort,
-        { cacheScope: session.user?.uid },
+  async function removeComment(commentId: string) {
+    const result = await deleteAnnouncementComment(commentId);
+    if (currentAnnouncement)
+      patchContentEntity<AnnouncementRecord>(
+        session.user?.uid,
+        "announcement",
+        currentAnnouncement.id,
+        { comment_count: result.comment_count },
       );
-      setComments((current) => [
-        ...current,
-        ...result.comments.filter(
-          (comment) => !current.some((existing) => existing.id === comment.id),
-        ),
-      ]);
-      setCommentCursor(result.cursor);
-      setCommentsHaveMore(result.hasMore);
-    } finally {
-      setCommentsLoadingMore(false);
-    }
+    await commentFeed.load(true);
   }
 
   return {
     announcement: currentAnnouncement,
     burst,
     canManage: session.can("announcement.manage"),
-    comments,
-    commentSort,
-    commentsEnabled:
-      Boolean(currentAnnouncement?.comments_enabled) &&
-      categories.announcementCommentsEnabled,
-    commentsHaveMore,
-    commentsLoading,
-    commentsLoadingMore,
+    comments: commentFeed.comments,
+    commentSort: commentFeed.sort,
+    commentsEnabled,
+    commentsHaveMore: commentFeed.hasMore,
+    commentsLoading: commentFeed.loading,
+    commentsLoadingMore: commentFeed.loadingMore,
+    commentsError: commentFeed.error,
+    reloadComments: () => commentFeed.load(true),
     createComment,
     deleteFeedbackState: deleteFeedback.state,
     error,
@@ -290,9 +251,9 @@ export function useAnnouncementDetail() {
     load,
     loading,
     revealDetail,
-    loadMoreComments,
+    loadMoreComments: commentFeed.loadMore,
     profile,
-    setCommentSort,
+    setCommentSort: commentFeed.setSort,
     remove,
     removeComment,
   };

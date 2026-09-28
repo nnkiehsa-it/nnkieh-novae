@@ -55,6 +55,43 @@ test.describe.serial("shareable feeds and isolated discussion drafts", () => {
     }
   });
 
+  test('a late comment order response cannot replace the currently selected order', async ({ browser }) => {
+    const context = await browser.newContext({ serviceWorkers: 'block', storageState: authenticated });
+    const page = await context.newPage();
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => { release = resolve; });
+    let oldestRequested = false;
+    await page.route('**/v1/actions', async (route) => {
+      const body = route.request().postDataJSON();
+      if (body?.action !== 'listAnnouncementComments' || body?.payload?.sort !== 'oldest') {
+        await route.continue();
+        return;
+      }
+      const response = await route.fetch();
+      oldestRequested = true;
+      await held;
+      await route.fulfill({ response });
+    });
+    try {
+      await page.goto(announcementUrl);
+      const rows = page.locator('[data-comment-id]');
+      await expect(rows.first()).toContainText(secondComment);
+      await choose(page, 'Comment order', 'Oldest first');
+      await expect.poll(() => oldestRequested).toBe(true);
+      await choose(page, 'Comment order', 'Newest first');
+      await expect(page.locator('section[aria-labelledby="discussion-title"]')).toHaveAttribute('aria-busy', 'false');
+      const completed = page.waitForResponse((response) => {
+        const body = response.request().postDataJSON();
+        return body?.action === 'listAnnouncementComments' && body?.payload?.sort === 'oldest';
+      });
+      release();
+      await (await completed).finished();
+      await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+      await expect(rows.first()).toContainText(secondComment);
+      await expect(choice(page, 'Comment order')).toContainText('Newest first');
+    } finally { release(); await context.close(); }
+  });
+
   for (const width of [390, 1440]) {
     const size = width === 390 ? "mobile" : "desktop";
     test(`facility filters survive history, sharing and reload on ${size}`, async ({ browser }) => {
