@@ -17,6 +17,8 @@ const messages = {
   'auth.securityCheckFailed': '安全驗證未完成，請再試一次。若持續失敗，請改用系統瀏覽器。',
   'auth.connectionFailed': '登入連線失敗，請確認網路狀態後再試。',
   'auth.signingIn': '登入中…',
+  'auth.preparingSignIn': '正在準備登入…',
+  'auth.retryVerification': '重新驗證',
   'auth.pleaseUseTheDesignatedSchoolAccountToLogIn': '請使用指定的校內帳號登入。',
   'auth.schoolGoogleAccount': '校內 Google 帳號',
   'auth.designateAnOnCampusDomain': '校內網域',

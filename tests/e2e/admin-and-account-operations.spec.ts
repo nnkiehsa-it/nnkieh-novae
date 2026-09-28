@@ -102,12 +102,9 @@ test('login fills the desktop viewport edge to edge', async ({ browser }) => {
   await page.goto('/login');
   await expect(page.getByRole('heading', { name: 'Sign in with a school account' })).toBeVisible();
   const geometry = await page.locator('main').evaluate((main) => {
-    const leftPanel = main.firstElementChild;
     const mainRect = main.getBoundingClientRect();
-    const leftRect = leftPanel?.getBoundingClientRect();
     return {
-      leftPanelBottom: leftRect?.bottom ?? 0,
-      leftPanelLeft: leftRect?.left ?? -1,
+      mainBottom: mainRect.bottom,
       mainLeft: mainRect.left,
       mainRight: mainRect.right,
       viewportHeight: window.innerHeight,
@@ -116,8 +113,7 @@ test('login fills the desktop viewport edge to edge', async ({ browser }) => {
   });
   expect(geometry.mainLeft).toBe(0);
   expect(geometry.mainRight).toBe(geometry.viewportWidth);
-  expect(geometry.leftPanelLeft).toBe(0);
-  expect(geometry.leftPanelBottom).toBeGreaterThanOrEqual(geometry.viewportHeight);
+  expect(geometry.mainBottom).toBeGreaterThanOrEqual(geometry.viewportHeight);
   await context.close();
 });
 

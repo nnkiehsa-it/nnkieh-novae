@@ -16,13 +16,16 @@ This document is the maintained map of the repository. Read it before broad sear
 - `next.config.mjs` — public environment injection, static security headers, image hosts, and Serwist integration.
 - `next-env.d.ts` — ignored framework-generated type references; Next.js regenerates the file for the active development or isolated verification output directory.
 - `components.json` — shadcn/ui aliases and Tailwind 4 configuration.
-- `public/` — brand identity assets (`logo.svg`, `logo.png`, `favicon.ico`, `apple-touch-icon-180x180.png`, `maskable-icon-512x512.png`, `pwa-*.png`), constellation login artwork, and compiled service worker runtime.
+- `public/` — brand identity assets (`logo.svg`, `logo.png`, `favicon.ico`, `apple-touch-icon-180x180.png`, `maskable-icon-512x512.png`, `pwa-*.png`) and compiled service worker runtime.
 - `vercel.json` — Vercel Next.js framework configuration with an explicit frozen Bun install command for CLI and hosted builds.
 
 ## App Router
 
 - `src/app/login/` — focused Google sign-in presentation with the website's blue brand statement and desktop constellation image; the mobile authentication path stays compact.
-- `public/novae-constellation.webp` — original website brand artwork, reused on the desktop login surface with reserved image dimensions.
+- `config/brand.svg` / `scripts/generate-brand-assets.mjs` — vector N speech mark and reproducible logo, favicon, and PWA icon generation.
+- `src/components/login/login-story.tsx` / `src/styles/login.css` — responsive campus login story and reduced-motion-aware illustration, isolated from session control.
+- `src/hooks/use-login-entrance.ts` — login preparation, immediate pending state, and in-place verification retry.
+- `src/hooks/use-comment-feed.ts` — shared discussion sorting, pagination, read errors and request generations; late responses cannot replace newer selections.
 - `src/app/(protected)/layout.tsx` — authenticated application guard and shared shell boundary, including the single `@sheet` parallel slot for records and the issue composer opened from protected pages. `@sheet/(.)issues/[filter]/[issueId]`, `@sheet/(.)issues/[filter]/compose/new`, `(.)facilities/[facilityId]` and `(.)announcements/[announcementId]` own the intercepted presentations. `default.tsx` and `[...dismissed]/page.tsx` clear the slot on direct arrivals and navigation away. Each direct record route's `layout.tsx` mounts `DirectDetailSheet`, retaining the same sheet around its loading boundary and closing to the owning list.
 - `src/app/(protected)/setup/` — admin-only idempotent category setup with completion recovery in `use-initial-setup`; first-visit language selection happens through the shared locale gate before any route.
 - `src/app/(protected)/issues/` — feature-guarded issue redirect, feed, detail routes, and the `/issues/[filter]/compose/new` composer route whose four-segment shape stays outside the intercepted record URL.

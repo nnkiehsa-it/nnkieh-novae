@@ -5,6 +5,34 @@ import { withRuntimeEnvironment } from '../../cloudflare/src/backend/shared/env'
 import { createMediaDeliveryUrl } from '../../cloudflare/src/backend/shared/media-delivery';
 import type { Env } from '../../cloudflare/src/types';
 
+test('a failed login preparation can be retried without reloading the page', async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  try {
+    await page.addInitScript(() => {
+      localStorage.setItem('novae:locale', 'en');
+      sessionStorage.setItem('novae:app-install-prompt-dismissed', '1');
+      // Fail the real entrance check before it touches a Google popup.
+      Object.defineProperty(navigator, 'userAgent', { configurable: true, value: 'Instagram' });
+    });
+    await page.goto('/login');
+    const retry = page.getByRole('button', { name: 'Retry verification' });
+    await expect(retry).toBeEnabled();
+    await expect(page.getByRole('main').getByRole('alert')).toContainText('system browser');
+    await retry.click();
+    await expect(retry).toBeEnabled();
+    await page.evaluate(() => { Reflect.deleteProperty(navigator, 'userAgent'); });
+    await retry.click();
+    await expect(page.getByRole('button', { name: 'Sign in with Google' })).toBeEnabled();
+    await expect(page.getByRole('main').getByRole('alert')).toHaveCount(0);
+    for (const width of [390, 1280]) {
+      await page.setViewportSize({ width, height: 800 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      await expect(page.getByRole('button', { name: 'Sign in with Google' })).toBeInViewport();
+    }
+  } finally { await context.close(); }
+});
+
 test('logout revokes the current device and removes the service-worker push session', async ({ browser }) => {
   const { page, context } = await newUserPage(browser, 'ordinary');
   try {

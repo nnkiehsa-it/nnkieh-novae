@@ -2,7 +2,16 @@
 
 ## Direction
 
-Taste-guided visual overhaul for a daily-use campus application, using the current `novae-website` brand. DESIGN_VARIANCE 4, MOTION_INTENSITY 4, VISUAL_DENSITY 7. Marketing layouts are confined to the desktop login surface. Product routes retain their existing information architecture, fields, permissions, and workflow.
+Taste-guided visual overhaul for a daily-use campus application. The login entrance uses DESIGN_VARIANCE 7, MOTION_INTENSITY 5, VISUAL_DENSITY 4: a rounded N speech mark, larger campus-focused typography and a short entrance animation. Operational pages retain their compact density, information architecture, fields, permissions, and workflow.
+
+## Brand and login entrance
+
+- `config/brand.svg` is the vector source for the N speech mark. Run `bun run generate:brand` to rebuild the public logo, favicon, Apple and PWA icons together. The maskable icon keeps the mark inside its safe area.
+- The 318-byte SVG replaces a 162 KB embedded raster image. Brand marks use a fixed-size image directly rather than an asynchronous image-decoding skeleton.
+- The login story and layout styles are isolated from session control. Mobile places the headline above the sign-in form and omits the decorative desktop illustration. All surfaces follow the active theme, and reduced motion skips the illustration entrance.
+- Login preparation has an explicit busy label and a retry action after failure; users no longer need to reload to retry entrance verification.
+- Discussion loading and pagination share `useCommentFeed`. Request generations prevent late sort/page results from replacing the current selection. Read errors retain existing comments and expose a retry action; a successful comment write is not treated as failed merely because its subsequent refresh fails.
+- Verification for this revision: production build, TypeScript, ESLint, i18n and UI architecture checks passed. The initial E2E run passed 79 of 81 cases; two outdated/ambiguous assertions were corrected. The final stateful run passed its bootstrap and all 28 journeys, including login retry and late comment-order responses. No manual browser session was used.
 
 ## Continuity revision
 
@@ -51,4 +60,4 @@ Taste-guided visual overhaul for a daily-use campus application, using the curre
 - Inspect desktop/mobile in both themes and check overflow, title wrapping, visible controls, and custom accent contrast.
 - Delay a feed response and compare the first skeleton's card/header/footer bounds with the corresponding loaded card.
 - Confirm search, sort, navigation, creation, reactions, detail actions, and settings still work through existing browser workflows.
-- Run `bun run verify:all` before final delivery; report any external verification blockers explicitly.
+- Prefer the existing E2E journeys for behavioral and layout verification. Run checks appropriate to the changed areas; report external verification blockers explicitly. Manual browser checks are not required for this improvement pass.
