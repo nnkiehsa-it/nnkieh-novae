@@ -1,7 +1,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
 import { createServer } from "node:net";
-import { createWriteStream, existsSync, readFileSync } from "node:fs";
+import { closeSync, existsSync, openSync, readFileSync } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -241,16 +241,20 @@ async function runBrowserJourneys(label, args, environment) {
 
 function start(label, command, args, environment = {}, ports = []) {
   const logPath = join(tempDirectory, `${label.replace(/[^a-z0-9]+/giu, "-")}.log`);
-  const log = createWriteStream(logPath, { flags: "a" });
-  const child = spawn(command, args, {
-    cwd: root,
-    detached: process.platform !== "win32",
-    env: { ...process.env, ...environment },
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  child.stdout.pipe(log);
-  child.stderr.pipe(log);
-  children.push({ child, label, log, logPath });
+  const log = openSync(logPath, "a");
+  let child;
+  try {
+    // Services must keep writing even while a synchronous verification step runs.
+    child = spawn(command, args, {
+      cwd: root,
+      detached: process.platform !== "win32",
+      env: { ...process.env, ...environment },
+      stdio: ["ignore", log, log],
+    });
+  } finally {
+    closeSync(log);
+  }
+  children.push({ child, label, logPath });
   for (const port of ports) ownedPorts.add(port);
   return child;
 }
@@ -364,7 +368,6 @@ async function performCleanup() {
       cleanupError = new Error(`Local verification processes did not stop: ${remainingPids.join(", ")}.`);
     }
   }
-  for (const entry of children) entry.log.end();
   if (process.platform === "win32" && windowsWslDistro) {
     const stopped = spawnSync(process.execPath, ["scripts/database.mjs", "stop-local"], {
       cwd: root,
@@ -397,15 +400,23 @@ function cleanup() {
 }
 
 async function waitFor(label, url, expected, child, logPath, init = {}) {
+  const startedAt = Date.now();
+  process.stderr.write(`[integration] waiting for ${label}: ${url}\n  Log: ${logPath}\n`);
   for (let attempt = 0; attempt < 120; attempt += 1) {
     if (child.exitCode !== null) {
       throw new Error(`${label} exited early.\n${readFileSync(logPath, "utf8").slice(-8000)}`);
     }
     try {
       const response = await fetch(url, { ...init, signal: AbortSignal.timeout(2_000) });
-      if (expected(response)) return;
+      if (expected(response)) {
+        process.stderr.write(`[integration] ${label} ready (${Math.round((Date.now() - startedAt) / 1000)}s)\n`);
+        return;
+      }
     } catch {
       // Service is still starting.
+    }
+    if ((attempt + 1) % 20 === 0) {
+      process.stderr.write(`[integration] still waiting for ${label} (${Math.round((Date.now() - startedAt) / 1000)}s)\n`);
     }
     await delay(500);
   }
