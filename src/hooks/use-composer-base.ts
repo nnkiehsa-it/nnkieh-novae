@@ -45,7 +45,8 @@ export function useComposerBase(targetType: "announcement" | "facility" | "issue
       }
       toast.error(caught instanceof Error ? caught.message : fallbackMessage);
     } finally {
-      submitting.current = false;
+      // A completed composer is consumed even while its destination is still loading.
+      if (!committed) submitting.current = false;
       setSaving(false);
     }
   }

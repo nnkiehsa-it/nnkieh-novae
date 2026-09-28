@@ -50,7 +50,7 @@ afterEach(async () => {
   sessionStorage.clear();
 });
 
-it("blocks same-event duplicate submissions until creation and success feedback finish", async () => {
+it("navigates immediately after creation and keeps the completed composer locked", async () => {
   const work = deferred<string>();
   const create = vi.fn(() => work.promise);
   const navigate = vi.fn();
@@ -61,10 +61,11 @@ it("blocks same-event duplicate submissions until creation and success feedback 
   expect(state.saving).toBe(true);
   await act(async () => { work.resolve("/issues/example"); });
   expect(state.succeeded).toBe(true);
+  expect(navigate).toHaveBeenCalledWith("/issues/example");
   expect(readComposerDraft(draftKey)).toBeNull();
   await act(async () => { void state.withUploads(create, navigate, "failed"); });
   expect(create).toHaveBeenCalledTimes(1);
-  await act(async () => { await vi.runAllTimersAsync(); await pending; });
+  await act(async () => { await pending; });
   expect(navigate).toHaveBeenCalledWith("/issues/example");
   expect(state.saving).toBe(false);
   expect(deleteUploadedImages).not.toHaveBeenCalled();
