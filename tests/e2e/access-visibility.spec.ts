@@ -165,7 +165,7 @@ test('desktop account menu administration item is a real navigation link', async
   await admin.page.setViewportSize({ width: 1280, height: 900 });
   await admin.page.goto('/issues');
 
-  const accountButton = admin.page.locator('aside button').last();
+  const accountButton = admin.page.getByRole('button', { name: /Account menu|帳號選單/u });
   await accountButton.click();
   const administration = admin.page.getByRole('menuitem', { name: /Administration|平台管理/u });
   await expect(administration).toHaveAttribute('href', '/admin');

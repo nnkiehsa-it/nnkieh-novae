@@ -100,7 +100,7 @@ test('the issue composer opens over its feed while primary navigation replaces t
 
   // Switching primary navigation is a replacement, not a move through the
   // hierarchy, and must not read as either direction.
-  const destination = page.locator('aside a[href="/announcements"]');
+  const destination = page.locator('[data-primary-navigation]:visible a[href="/announcements"]');
   // Touching a destination is not asking for it: a touch that turns into a
   // scroll must leave nothing behind, so only the click answers.
   await destination.dispatchEvent('pointerdown', { button: 0, pointerType: 'mouse' });

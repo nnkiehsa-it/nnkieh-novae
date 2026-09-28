@@ -137,6 +137,7 @@
   --mobile-nav-height: 3.875rem;
   --mobile-nav-bottom-gap: 1.125rem;
   --page-header-top: max(1rem, var(--safe-top));
+  --desktop-nav-height: 4.5rem;
   /* How far below the top of the screen a sheet stops. The page behind it
      settles at `--safe-top` plus a tenth of an inch, so this leaves a
      finger's width of that card showing above the sheet and no more: enough
@@ -710,7 +711,7 @@ html[data-input-modality="pointer"] :focus-visible {
 
 @media (min-width: 48rem) {
   .discussion-composer-dock {
-    left: calc(15rem + max(var(--page-gutter), var(--safe-left)));
+    left: max(var(--page-gutter), var(--safe-left));
     right: max(var(--page-gutter), var(--safe-right));
   }
 }
@@ -885,6 +886,15 @@ html[data-input-modality="pointer"] :focus-visible {
 }
 
 @media (min-width: 48rem) {
+  .app-main-column {
+    padding-top: var(--desktop-nav-height);
+  }
+  .app-viewport {
+    min-height: calc(100svh - var(--desktop-nav-height));
+  }
+  .app-main-column .page-header {
+    --header-top: calc(var(--desktop-nav-height) + var(--page-header-top));
+  }
   :root {
     --page-header-top: 1.5rem;
   }

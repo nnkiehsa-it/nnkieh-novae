@@ -15,6 +15,8 @@ Taste-guided visual overhaul for a daily-use campus application. The login entra
 
 ## Continuity revision
 
+- Desktop navigation uses a 72px top bar instead of a permanent sidebar. The content column and discussion composer use the full centered width; sticky page headings clear the bar. Tablet controls keep accessible labels while showing compact icons, and the mobile dock remains unchanged.
+- The account trigger is a single avatar; identity, appearance, administration and sign-out remain together in its menu. The brand link follows the first enabled content area.
 - LiquidTabs use a soft neutral rail for inactive options and a restrained brand fill only on the selected pill. Custom color selection and persistence are removed.
 - Feed titles use 18px type and a 28px line height.
 - `FeedList` retains physical card frames across pending, populated, empty, and error states. `DetailLayout` does the same for the content and sidebar cards.
