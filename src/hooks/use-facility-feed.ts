@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { useSession } from "@/hooks/use-session";
 import {
@@ -30,7 +29,7 @@ import { useContentEntityDomainVersion } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
-import { toggleReactionState } from "@/lib/reaction-state";
+import { useOptimisticReaction } from "@/hooks/use-optimistic-reaction";
 import { advanceFeedPageCount, canLoadAnotherFeedPage } from "@/lib/feed-page-limit";
 import { toFacilityStatusCounts, type FacilityStatusCounts } from "@/constants/statuses";
 
@@ -82,9 +81,7 @@ export function useFacilityFeed() {
   const revealFields = useColdDataReveal(coldRead, loading);
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
-  const [affectingId, setAffectingId] = React.useState<string | null>(null);
-  const affectingRef = React.useRef<string | null>(null);
-  const [affectBurstById, setAffectBurstById] = React.useState<Record<string, number>>({});
+  const reaction = useOptimisticReaction(session.user?.uid, "facility");
   const requestGuard = usePagedRequestGuard();
   const entityVersion = useContentEntityDomainVersion(session.user?.uid, "facility");
   const queryKey = [
@@ -97,7 +94,6 @@ export function useFacilityFeed() {
   ].join("|");
 
   async function toggleAffected(facilityId: string) {
-    if (affectingRef.current) return;
     const facility =
       getContentEntity<FacilitySummary>(
         session.user?.uid,
@@ -105,54 +101,18 @@ export function useFacilityFeed() {
         facilityId,
       ) ?? feed.facilities.find((item) => item.id === facilityId);
     if (!facility) return;
-    const previous = {
-      active: facility.currentUserAffected,
-      count: facility.affected_count,
-    };
-    const optimistic = toggleReactionState(previous);
-    affectingRef.current = facilityId;
-    setAffectingId(facilityId);
-    patchContentEntity<FacilitySummary>(
-      session.user?.uid,
-      "facility",
-      facilityId,
-      {
-        affected_count: optimistic.count,
-        currentUserAffected: optimistic.active,
+    return reaction.run({
+      id: facilityId,
+      previous: { active: facility.currentUserAffected, count: facility.affected_count },
+      apply: ({ active, count }, pending) => patchContentEntity<FacilitySummary>(session.user?.uid, "facility", facilityId, {
+        affected_count: count, currentUserAffected: active,
+      }, { pending }),
+      request: async () => {
+        const result = await toggleFacilityAffected(facilityId);
+        return { active: result.affected, count: result.affected_count };
       },
-    );
-    if (optimistic.active) {
-      setAffectBurstById((current) => ({
-        ...current,
-        [facilityId]: (current[facilityId] ?? 0) + 1,
-      }));
-    }
-    try {
-      const result = await toggleFacilityAffected(facilityId);
-      patchContentEntity<FacilitySummary>(
-        session.user?.uid,
-        "facility",
-        facilityId,
-        {
-          affected_count: result.affected_count,
-          currentUserAffected: result.affected,
-        },
-      );
-    } catch (caught) {
-      patchContentEntity<FacilitySummary>(
-        session.user?.uid,
-        "facility",
-        facilityId,
-        {
-          affected_count: previous.count,
-          currentUserAffected: previous.active,
-        },
-      );
-      toast.error(caught instanceof Error ? caught.message : t("ui.facility.affectedFailed"));
-    } finally {
-      affectingRef.current = null;
-      setAffectingId(null);
-    }
+      errorMessage: t("ui.facility.affectedFailed"),
+    });
   }
 
   const load = React.useCallback(
@@ -261,8 +221,8 @@ export function useFacilityFeed() {
 
   return {
     bucket,
-    affectBurstById,
-    affectingId,
+    affectBurstById: reaction.burstById,
+    isAffecting: reaction.isBusy,
     categories: categories.activeFacilityCategories,
     category,
     changeCategory: (value: string) => {

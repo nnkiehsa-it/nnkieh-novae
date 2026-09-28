@@ -125,7 +125,7 @@ export default function FacilitiesPage() {
         }}
         renderItem={(facility) => (
               <FacilityCard
-                affecting={state.affectingId === facility.id}
+                affecting={state.isAffecting(facility.id)}
                 burst={state.affectBurstById[facility.id] ?? 0}
                 facility={facility}
                 onToggleAffected={() => void state.toggleAffected(facility.id)}

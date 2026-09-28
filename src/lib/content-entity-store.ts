@@ -27,6 +27,7 @@ interface StoreEntry<T> {
   localRevision: number;
   serverRevision: number;
   value: T;
+  pendingPatch?: Partial<T>;
 }
 
 const summaryEntries = new Map<string, StoreEntry<SummaryEntity>>();
@@ -87,6 +88,7 @@ export function mergeContentEntityRead<T extends ContentEntity>(
 ): T {
   const key = entityKey(scope, domain, incoming.id);
   const incomingServerRevision = getEntityRevision(incoming);
+  const pendingPatch = detailEntries.get(key)?.pendingPatch ?? summaryEntries.get(key)?.pendingPatch;
 
   if (completeness === "detail") {
     const current = detailEntries.get(key);
@@ -99,11 +101,12 @@ export function mergeContentEntityRead<T extends ContentEntity>(
         return current.value as unknown as T;
       }
     }
-    const nextValue = { ...(current?.value ?? {}), ...incoming } as unknown as DetailEntity;
+    const nextValue = { ...(current?.value ?? {}), ...incoming, ...pendingPatch } as unknown as DetailEntity;
     detailEntries.set(key, {
       localRevision: readRevision,
       serverRevision: incomingServerRevision,
       value: nextValue,
+      pendingPatch,
     });
   } else {
     // Summary completeness — saved strictly in summary store
@@ -117,16 +120,17 @@ export function mergeContentEntityRead<T extends ContentEntity>(
         return current.value as unknown as T;
       }
     }
-    const nextValue = { ...(current?.value ?? {}), ...incoming } as unknown as SummaryEntity;
+    const nextValue = { ...(current?.value ?? {}), ...incoming, ...pendingPatch } as unknown as SummaryEntity;
     summaryEntries.set(key, {
       localRevision: readRevision,
       serverRevision: incomingServerRevision,
       value: nextValue,
+      pendingPatch,
     });
   }
 
   notify(scope, domain, incoming.id);
-  return incoming;
+  return (completeness === "detail" ? detailEntries.get(key)!.value : summaryEntries.get(key)!.value) as T;
 }
 
 export function patchContentEntity<T extends ContentEntity>(
@@ -134,7 +138,7 @@ export function patchContentEntity<T extends ContentEntity>(
   domain: ContentEntityDomain,
   id: string,
   patch: Partial<T>,
-  options: { completeness?: ContentEntityCompleteness | "both"; serverRevision?: number } = {},
+  options: { completeness?: ContentEntityCompleteness | "both"; serverRevision?: number; pending?: boolean } = {},
 ) {
   const key = entityKey(scope, domain, id);
   const currentDetail = detailEntries.get(key);
@@ -147,25 +151,32 @@ export function patchContentEntity<T extends ContentEntity>(
   const serverRevision = options.serverRevision ?? 0;
 
   if (currentDetail && completeness !== "summary" && (serverRevision <= 0 || currentDetail.serverRevision <= serverRevision)) {
-    const value = { ...currentDetail.value, ...patch } as DetailEntity;
+    const value = { ...currentDetail.value, ...patch, ...(options.pending === undefined ? currentDetail.pendingPatch : {}) } as DetailEntity;
     detailEntries.set(key, {
       localRevision: nextRev,
       serverRevision: Math.max(currentDetail.serverRevision, serverRevision),
       value,
+      pendingPatch: options.pending === true ? patch : options.pending === false ? undefined : currentDetail.pendingPatch,
     });
   }
 
   if (currentSummary && completeness !== "detail" && (serverRevision <= 0 || currentSummary.serverRevision <= serverRevision)) {
-    const value = { ...currentSummary.value, ...patch } as SummaryEntity;
+    const value = { ...currentSummary.value, ...patch, ...(options.pending === undefined ? currentSummary.pendingPatch : {}) } as SummaryEntity;
     summaryEntries.set(key, {
       localRevision: nextRev,
       serverRevision: Math.max(currentSummary.serverRevision, serverRevision),
       value,
+      pendingPatch: options.pending === true ? patch : options.pending === false ? undefined : currentSummary.pendingPatch,
     });
   }
 
   notify(scope, domain, id);
   return (currentDetail?.value ?? currentSummary?.value) as T;
+}
+
+export function hasPendingContentEntityMutation(scope: string | undefined, domain: ContentEntityDomain, id: string) {
+  const key = entityKey(scope, domain, id);
+  return Boolean(detailEntries.get(key)?.pendingPatch || summaryEntries.get(key)?.pendingPatch);
 }
 
 export function removeContentEntity(

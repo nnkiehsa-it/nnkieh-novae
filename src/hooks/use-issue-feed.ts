@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import {
   findIssueCategory,
@@ -37,7 +36,7 @@ import { useContentEntityDomainVersion } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
-import { toggleReactionState } from "@/lib/reaction-state";
+import { useOptimisticReaction } from "@/hooks/use-optimistic-reaction";
 import { advanceFeedPageCount, canLoadAnotherFeedPage } from "@/lib/feed-page-limit";
 import {
   getSupportedIssueIdsSnapshot,
@@ -95,9 +94,7 @@ export function useIssueFeed() {
   const revealFields = useColdDataReveal(coldRead, loading);
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
-  const [supportingId, setSupportingId] = React.useState<string | null>(null);
-  const supportingRef = React.useRef<string | null>(null);
-  const [supportBurstById, setSupportBurstById] = React.useState<Record<string, number>>({});
+  const reaction = useOptimisticReaction(session.user?.uid, "issue");
   const supportedIssueIdsRef = React.useRef(getSupportedIssueIdsSnapshot());
   const requestGuard = usePagedRequestGuard();
   const entityVersion = useContentEntityDomainVersion(session.user?.uid, "issue");
@@ -119,49 +116,23 @@ export function useIssueFeed() {
   }
 
   async function support(issueId: string) {
-    if (supportingRef.current) return;
     const issue =
       getContentEntity<IssueSummary>(session.user?.uid, "issue", issueId) ??
       feed.issues.find((item) => item.id === issueId);
     if (!issue || issue.isOwnIssue) return;
-    const previous = {
-      active: issue.currentUserSupported === true,
-      count: issue.support_count,
-    };
-    const optimistic = toggleReactionState(previous);
-    supportingRef.current = issueId;
-    setSupportingId(issueId);
-    patchContentEntity<IssueSummary>(session.user?.uid, "issue", issueId, {
-      currentUserSupported: optimistic.active,
-      support_count: optimistic.count,
+    return reaction.run({
+      id: issueId,
+      previous: { active: issue.currentUserSupported === true, count: issue.support_count },
+      apply: ({ active, count }, pending) => {
+        patchContentEntity<IssueSummary>(session.user?.uid, "issue", issueId, { currentUserSupported: active, support_count: count }, { pending });
+        setSupportedIssue(issueId, active);
+      },
+      request: async (active) => {
+        const result = active ? await toggleSupport(issueId) : await removeSupport(issueId);
+        return { active: result.supported, count: result.support_count };
+      },
+      errorMessage: t("ui.issue.supportFailed"),
     });
-    setSupportedIssue(issueId, optimistic.active);
-    if (optimistic.active) {
-      setSupportBurstById((current) => ({
-        ...current,
-        [issueId]: (current[issueId] ?? 0) + 1,
-      }));
-    }
-    try {
-      const result = previous.active
-        ? await removeSupport(issueId)
-        : await toggleSupport(issueId);
-      patchContentEntity<IssueSummary>(session.user?.uid, "issue", issueId, {
-        currentUserSupported: result.supported,
-        support_count: result.support_count,
-      });
-      setSupportedIssue(issueId, result.supported);
-    } catch (caught) {
-      patchContentEntity<IssueSummary>(session.user?.uid, "issue", issueId, {
-        currentUserSupported: previous.active,
-        support_count: previous.count,
-      });
-      setSupportedIssue(issueId, previous.active);
-      toast.error(caught instanceof Error ? caught.message : t("ui.issue.supportFailed"));
-    } finally {
-      supportingRef.current = null;
-      setSupportingId(null);
-    }
   }
 
   React.useEffect(() => {
@@ -320,7 +291,7 @@ export function useIssueFeed() {
     setSort: (value: IssueSortOption) => updateParams({ sort: value === "latest" ? null : value }),
     sort,
     support,
-    supportBurstById,
-    supportingId,
+    supportBurstById: reaction.burstById,
+    isSupporting: reaction.isBusy,
   };
 }

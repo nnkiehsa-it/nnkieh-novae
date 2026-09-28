@@ -53,7 +53,7 @@ export default function AnnouncementsPage() {
               <AnnouncementCard
                 announcement={announcement}
                 burst={feed.likeBurstById[announcement.id] ?? 0}
-                liking={feed.likingId === announcement.id}
+                liking={feed.isLiking(announcement.id)}
                 onLike={() => void feed.like(announcement.id)}
                 profile={profiles[announcement.author_uid]}
                 reveal={feed.revealFields}

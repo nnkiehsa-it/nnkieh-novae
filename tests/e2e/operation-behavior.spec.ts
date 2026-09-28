@@ -132,6 +132,30 @@ test('announcement covers like, threaded comments, deletion, and manager removal
   await manager.context.close();
 
   const member = await newUserPage(browser, 'other');
+  await member.page.goto('/announcements');
+  const feedLikes = member.page.getByRole('button', { name: /Like announcement|Liked/u });
+  await expect(feedLikes.nth(1)).toBeVisible();
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  let holding = false;
+  await member.page.route('**/v1/actions', async (route) => {
+    if (route.request().postDataJSON()?.action === 'setAnnouncementLike' && !holding) {
+      holding = true;
+      await held;
+    }
+    await route.continue();
+  });
+  try {
+    const secondPressed = await feedLikes.nth(1).getAttribute('aria-pressed');
+    await feedLikes.first().click();
+    await expect.poll(() => holding).toBe(true);
+    await feedLikes.nth(1).click();
+    await expect(feedLikes.nth(1)).toHaveAttribute('aria-pressed', secondPressed === 'true' ? 'false' : 'true');
+    await expect(feedLikes.nth(1)).toHaveAttribute('aria-busy', 'false');
+    await expect(feedLikes.first()).toHaveAttribute('aria-busy', 'true');
+  } finally { release(); }
+  await expect(feedLikes.first()).toHaveAttribute('aria-busy', 'false');
+  await member.page.unroute('**/v1/actions');
   await member.page.goto(announcementUrl);
   const like = member.page.getByRole('button', { name: /Like announcement|Liked/u });
   const initialLike = await like.getAttribute('aria-pressed');

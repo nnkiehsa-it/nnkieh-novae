@@ -44,6 +44,8 @@ Taste-guided visual overhaul for a daily-use campus application. The login entra
 
 ## App-like loading and motion
 
+- Success feedback lingers visually without delaying navigation, saved-data updates, or the next action. A repeated call while the same operation is running shares its promise; composer submission no longer adds a fixed one-second pause.
+- Proposal support, facility markers and announcement likes share an optimistic-reaction hook. Pending state belongs to each record, so different rows remain interactive. Pending reaction fields survive background reads and list/detail transitions until the server confirms or rejects the write.
 - Navigation and selection settle over 460ms; sheets enter over 560ms and leave over 380ms. Immediate press feedback remains 100ms. Control timing and the header blur are unchanged.
 - Primary navigation and segmented controls display their committed route/value. A pending Link has a separate muted treatment. Cancelled touches and modified clicks never change selection.
 - Every route reveals in the live page: one animation on the page that arrives, a short directional travel with a fade. Nothing is captured, so the dock stays in the hit-test tree and no page is rasterised twice while the next one is still loading. Shared selection movement can be interrupted by another selection.

@@ -40,7 +40,7 @@ import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-
 import { useActionFeedback } from "@/hooks/use-action-feedback";
 import { returnToPreviousRoute } from "@/lib/navigation-memory";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
-import { toggleReactionState } from "@/lib/reaction-state";
+import { useOptimisticReaction } from "@/hooks/use-optimistic-reaction";
 
 export function useIssueDetail() {
   const params = useParams<{ filter: string; issueId: string }>();
@@ -71,9 +71,7 @@ export function useIssueDetail() {
   const [loading, setLoading] = React.useState(!currentIssue);
   const revealDetail = useColdDataReveal(coldRead, loading);
   const [error, setError] = React.useState("");
-  const [supporting, setSupporting] = React.useState(false);
-  const supportingRef = React.useRef(false);
-  const [burst, setBurst] = React.useState(0);
+  const reaction = useOptimisticReaction(session.user?.uid, "issue");
   const [moderationOpen, setModerationOpen] = React.useState(false);
   const deleteFeedback = useActionFeedback();
   const deletingRef = React.useRef(false);
@@ -174,56 +172,21 @@ export function useIssueDetail() {
   });
 
   async function support() {
-    if (!currentIssue || currentIssue.isOwnIssue || supportingRef.current) return;
-    const previous = {
-      active: currentIssue.currentUserSupported === true,
-      count: currentIssue.support_count,
-    };
-    const optimistic = toggleReactionState(previous);
-    supportingRef.current = true;
-    setSupporting(true);
-    patchContentEntity<IssueRecord>(
-      session.user?.uid,
-      "issue",
-      currentIssue.id,
-      {
-        currentUserSupported: optimistic.active,
-        support_count: optimistic.count,
+    if (!currentIssue || currentIssue.isOwnIssue) return;
+    return reaction.run({
+      id: currentIssue.id,
+      previous: { active: currentIssue.currentUserSupported === true, count: currentIssue.support_count },
+      apply: ({ active, count }, pending) => {
+        patchContentEntity<IssueRecord>(session.user?.uid, "issue", currentIssue.id, { currentUserSupported: active, support_count: count }, { pending });
+        rememberSupportedIssue(currentIssue.id, active);
       },
-    );
-    rememberSupportedIssue(currentIssue.id, optimistic.active);
-    if (optimistic.active) setBurst((value) => value + 1);
-    try {
-      const result = previous.active
-        ? await removeSupport(currentIssue.id)
-        : await toggleSupport(currentIssue.id);
-      patchContentEntity<IssueRecord>(
-        session.user?.uid,
-        "issue",
-        currentIssue.id,
-        {
-          currentUserSupported: result.supported,
-          support_count: result.support_count,
-        },
-      );
-      rememberSupportedIssue(currentIssue.id, result.supported);
-      if (supportersAsked.current) void loadSupporters();
-    } catch (caught) {
-      patchContentEntity<IssueRecord>(
-        session.user?.uid,
-        "issue",
-        currentIssue.id,
-        {
-          currentUserSupported: previous.active,
-          support_count: previous.count,
-        },
-      );
-      rememberSupportedIssue(currentIssue.id, previous.active);
-      toast.error(caught instanceof Error ? caught.message : t("ui.issue.supportFailed"));
-    } finally {
-      supportingRef.current = false;
-      setSupporting(false);
-    }
+      request: async (active) => {
+        const result = active ? await toggleSupport(currentIssue.id) : await removeSupport(currentIssue.id);
+        return { active: result.supported, count: result.support_count };
+      },
+      onSuccess: () => { if (supportersAsked.current) void loadSupporters(); },
+      errorMessage: t("ui.issue.supportFailed"),
+    });
   }
 
   async function remove() {
@@ -279,7 +242,7 @@ export function useIssueDetail() {
         `/issues/${encodeURIComponent(filter)}`,
         "/issues",
       ),
-    burst,
+    burst: reaction.burstById[issueId] ?? 0,
     comments: commentFeed.comments,
     commentSort: commentFeed.sort,
     commentsAvailable,
@@ -334,7 +297,7 @@ export function useIssueDetail() {
           currentIssue.support_goal,
         )
       : 0,
-    supporting,
+    supporting: reaction.isBusy(issueId),
     timeline: currentIssue ? getIssueOperationTimeItems(currentIssue) : [],
   };
 }

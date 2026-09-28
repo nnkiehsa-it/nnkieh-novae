@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { useSession } from "@/hooks/use-session";
 import {
@@ -24,7 +23,7 @@ import { useContentEntityDomainVersion } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
-import { toggleReactionState } from "@/lib/reaction-state";
+import { useOptimisticReaction } from "@/hooks/use-optimistic-reaction";
 import { advanceFeedPageCount, canLoadAnotherFeedPage } from "@/lib/feed-page-limit";
 
 const ANNOUNCEMENT_LIST_CACHE_PREFIXES = ["announcement-list-page|"] as const;
@@ -50,9 +49,7 @@ export function useAnnouncementFeed() {
   const revealFields = useColdDataReveal(coldRead, loading);
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState("");
-  const [likingId, setLikingId] = React.useState<string | null>(null);
-  const likingRef = React.useRef<string | null>(null);
-  const [likeBurstById, setLikeBurstById] = React.useState<Record<string, number>>({});
+  const reaction = useOptimisticReaction(session.user?.uid, "announcement");
   const requestGuard = usePagedRequestGuard();
   const entityVersion = useContentEntityDomainVersion(
     session.user?.uid,
@@ -61,7 +58,6 @@ export function useAnnouncementFeed() {
   const queryKey = session.user?.uid ?? "anonymous";
 
   async function like(announcementId: string) {
-    if (likingRef.current) return;
     const announcement =
       getContentEntity<AnnouncementSummary>(
         session.user?.uid,
@@ -69,57 +65,18 @@ export function useAnnouncementFeed() {
         announcementId,
       ) ?? items.find((item) => item.id === announcementId);
     if (!announcement) return;
-    const previous = {
-      active: announcement.currentUserLiked,
-      count: announcement.like_count,
-    };
-    const optimistic = toggleReactionState(previous);
-    likingRef.current = announcementId;
-    setLikingId(announcementId);
-    patchContentEntity<AnnouncementSummary>(
-      session.user?.uid,
-      "announcement",
-      announcementId,
-      {
-        currentUserLiked: optimistic.active,
-        like_count: optimistic.count,
+    return reaction.run({
+      id: announcementId,
+      previous: { active: announcement.currentUserLiked, count: announcement.like_count },
+      apply: ({ active, count }, pending) => patchContentEntity<AnnouncementSummary>(session.user?.uid, "announcement", announcementId, {
+        currentUserLiked: active, like_count: count,
+      }, { pending }),
+      request: async (active) => {
+        const result = await setAnnouncementLike(announcementId, active);
+        return { active: result.liked, count: result.like_count };
       },
-    );
-    if (optimistic.active) {
-      setLikeBurstById((current) => ({
-        ...current,
-        [announcementId]: (current[announcementId] ?? 0) + 1,
-      }));
-    }
-    try {
-      const result = await setAnnouncementLike(
-        announcementId,
-        optimistic.active,
-      );
-      patchContentEntity<AnnouncementSummary>(
-        session.user?.uid,
-        "announcement",
-        announcementId,
-        {
-          currentUserLiked: result.liked,
-          like_count: result.like_count,
-        },
-      );
-    } catch (caught) {
-      patchContentEntity<AnnouncementSummary>(
-        session.user?.uid,
-        "announcement",
-        announcementId,
-        {
-          currentUserLiked: previous.active,
-          like_count: previous.count,
-        },
-      );
-      toast.error(caught instanceof Error ? caught.message : t("ui.announcement.likeFailed"));
-    } finally {
-      likingRef.current = null;
-      setLikingId(null);
-    }
+      errorMessage: t("ui.announcement.likeFailed"),
+    });
   }
 
   const load = React.useCallback(
@@ -207,8 +164,8 @@ export function useAnnouncementFeed() {
     hasMore,
     items: synchronizedItems,
     like,
-    likeBurstById,
-    likingId,
+    likeBurstById: reaction.burstById,
+    isLiking: reaction.isBusy,
     load,
     loading,
     loadingMore,

@@ -35,7 +35,7 @@ import { useContentEntity } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
-import { toggleReactionState } from "@/lib/reaction-state";
+import { useOptimisticReaction } from "@/hooks/use-optimistic-reaction";
 
 export function useAnnouncementDetail() {
   const params = useParams<{ announcementId: string }>();
@@ -62,9 +62,7 @@ export function useAnnouncementDetail() {
   const [loading, setLoading] = React.useState(!currentAnnouncement);
   const revealDetail = useColdDataReveal(coldRead, loading);
   const [error, setError] = React.useState("");
-  const [liking, setLiking] = React.useState(false);
-  const likingRef = React.useRef(false);
-  const [burst, setBurst] = React.useState(0);
+  const reaction = useOptimisticReaction(session.user?.uid, "announcement");
   const deleteFeedback = useActionFeedback();
   const deletingRef = React.useRef(false);
 
@@ -131,53 +129,19 @@ export function useAnnouncementDetail() {
   });
 
   async function like() {
-    if (!currentAnnouncement || likingRef.current) return;
-    const previous = {
-      active: currentAnnouncement.currentUserLiked,
-      count: currentAnnouncement.like_count,
-    };
-    const optimistic = toggleReactionState(previous);
-    likingRef.current = true;
-    setLiking(true);
-    patchContentEntity<AnnouncementRecord>(
-      session.user?.uid,
-      "announcement",
-      currentAnnouncement.id,
-      {
-        currentUserLiked: optimistic.active,
-        like_count: optimistic.count,
+    if (!currentAnnouncement) return;
+    return reaction.run({
+      id: currentAnnouncement.id,
+      previous: { active: currentAnnouncement.currentUserLiked, count: currentAnnouncement.like_count },
+      apply: ({ active, count }, pending) => patchContentEntity<AnnouncementRecord>(session.user?.uid, "announcement", currentAnnouncement.id, {
+        currentUserLiked: active, like_count: count,
+      }, { pending }),
+      request: async (active) => {
+        const result = await setAnnouncementLike(currentAnnouncement.id, active);
+        return { active: result.liked, count: result.like_count };
       },
-    );
-    if (optimistic.active) setBurst((value) => value + 1);
-    try {
-      const result = await setAnnouncementLike(
-        currentAnnouncement.id,
-        optimistic.active,
-      );
-      patchContentEntity<AnnouncementRecord>(
-        session.user?.uid,
-        "announcement",
-        currentAnnouncement.id,
-        {
-          currentUserLiked: result.liked,
-          like_count: result.like_count,
-        },
-      );
-    } catch (caught) {
-      patchContentEntity<AnnouncementRecord>(
-        session.user?.uid,
-        "announcement",
-        currentAnnouncement.id,
-        {
-          currentUserLiked: previous.active,
-          like_count: previous.count,
-        },
-      );
-      toast.error(caught instanceof Error ? caught.message : t("ui.announcement.likeFailed"));
-    } finally {
-      likingRef.current = false;
-      setLiking(false);
-    }
+      errorMessage: t("ui.announcement.likeFailed"),
+    });
   }
 
   async function remove() {
@@ -233,7 +197,7 @@ export function useAnnouncementDetail() {
 
   return {
     announcement: currentAnnouncement,
-    burst,
+    burst: reaction.burstById[params.announcementId] ?? 0,
     canManage: session.can("announcement.manage"),
     comments: commentFeed.comments,
     commentSort: commentFeed.sort,
@@ -247,7 +211,7 @@ export function useAnnouncementDetail() {
     deleteFeedbackState: deleteFeedback.state,
     error,
     like,
-    liking,
+    liking: reaction.isBusy(params.announcementId),
     load,
     loading,
     revealDetail,

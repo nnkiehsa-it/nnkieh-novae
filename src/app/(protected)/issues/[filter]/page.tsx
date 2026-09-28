@@ -41,7 +41,7 @@ export default function IssueBoardPage() {
     sort,
     support,
     supportBurstById,
-    supportingId,
+    isSupporting,
   } = useIssueFeed();
   const profiles = usePublicProfiles(
     feed.issues.map((issue) => issue.author_uid),
@@ -156,7 +156,7 @@ export default function IssueBoardPage() {
                 onSupport={() => void support(issue.id)}
                 profile={issue.author_uid ? profiles[issue.author_uid] : undefined}
                 reveal={revealFields}
-                supporting={supportingId === issue.id}
+                supporting={isSupporting(issue.id)}
               />
         )}
       />

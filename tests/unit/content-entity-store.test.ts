@@ -6,6 +6,7 @@ import {
   getContentEntity,
   getDetailContentEntity,
   getSummaryContentEntity,
+  hasPendingContentEntityMutation,
   mergeContentEntityRead,
   patchContentEntity,
   removeContentEntity,
@@ -22,6 +23,23 @@ function issue(id: string, title: string, supported = false) {
 }
 
 describe("content entity store", () => {
+  it("keeps pending reactions across background reads and list-to-detail navigation", () => {
+    const scope = "pending-reaction";
+    mergeContentEntityRead(scope, "issue", issue("one", "List"), beginContentEntityRead(), "summary");
+    patchContentEntity<IssueSummary>(scope, "issue", "one", { currentUserSupported: true, support_count: 4 }, { pending: true });
+    const detail = mergeContentEntityRead(scope, "issue", { ...issue("one", "Fresh title"), content: "New body" }, beginContentEntityRead());
+    expect(detail).toMatchObject({ title: "Fresh title", currentUserSupported: true, support_count: 4 });
+    expect(hasPendingContentEntityMutation(scope, "issue", "one")).toBe(true);
+    patchContentEntity<IssueRecord>(scope, "issue", "one", { title: "Changed title", currentUserSupported: false });
+    expect(getDetailContentEntity<IssueRecord>(scope, "issue", "one")?.currentUserSupported).toBe(true);
+    patchContentEntity<IssueRecord>(scope, "issue", "one", { currentUserSupported: true, support_count: 5 }, { pending: false });
+    expect(hasPendingContentEntityMutation(scope, "issue", "one")).toBe(false);
+    expect(getSummaryContentEntity<IssueSummary>(scope, "issue", "one")?.support_count).toBe(5);
+    const refreshed = mergeContentEntityRead(scope, "issue", issue("one", "Confirmed title", false), beginContentEntityRead(), "summary");
+    expect(refreshed.currentUserSupported).toBe(false);
+    clearContentEntityScope(scope);
+  });
+
   it("clears one content domain without retaining reset database entities", () => {
     const scope = "entity-domain-reset";
     mergeContentEntityRead(scope, "issue", issue("old", "Old proposal"), beginContentEntityRead());

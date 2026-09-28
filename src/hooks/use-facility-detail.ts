@@ -23,7 +23,7 @@ import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-
 import { useActionFeedback } from "@/hooks/use-action-feedback";
 import { returnToPreviousRoute } from "@/lib/navigation-memory";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
-import { toggleReactionState } from "@/lib/reaction-state";
+import { useOptimisticReaction } from "@/hooks/use-optimistic-reaction";
 
 export function useFacilityDetail() {
   const params = useParams<{ facilityId: string }>();
@@ -42,9 +42,7 @@ export function useFacilityDetail() {
   const [loading, setLoading] = React.useState(!currentFacility);
   const revealDetail = useColdDataReveal(coldRead, loading);
   const [error, setError] = React.useState("");
-  const [affecting, setAffecting] = React.useState(false);
-  const affectingRef = React.useRef(false);
-  const [burst, setBurst] = React.useState(0);
+  const reaction = useOptimisticReaction(session.user?.uid, "facility");
   const [statusOpen, setStatusOpen] = React.useState(false);
   const deleteFeedback = useActionFeedback();
   const deletingRef = React.useRef(false);
@@ -90,50 +88,19 @@ export function useFacilityDetail() {
   });
 
   async function toggleAffected() {
-    if (!currentFacility || affectingRef.current) return;
-    const previous = {
-      active: currentFacility.currentUserAffected,
-      count: currentFacility.affected_count,
-    };
-    const optimistic = toggleReactionState(previous);
-    affectingRef.current = true;
-    setAffecting(true);
-    patchContentEntity<FacilityRecord>(
-      session.user?.uid,
-      "facility",
-      currentFacility.id,
-      {
-        affected_count: optimistic.count,
-        currentUserAffected: optimistic.active,
+    if (!currentFacility) return;
+    return reaction.run({
+      id: currentFacility.id,
+      previous: { active: currentFacility.currentUserAffected, count: currentFacility.affected_count },
+      apply: ({ active, count }, pending) => patchContentEntity<FacilityRecord>(session.user?.uid, "facility", currentFacility.id, {
+        affected_count: count, currentUserAffected: active,
+      }, { pending }),
+      request: async () => {
+        const result = await toggleFacilityAffected(currentFacility.id);
+        return { active: result.affected, count: result.affected_count };
       },
-    );
-    if (optimistic.active) setBurst((value) => value + 1);
-    try {
-      const result = await toggleFacilityAffected(currentFacility.id);
-      patchContentEntity<FacilityRecord>(
-        session.user?.uid,
-        "facility",
-        currentFacility.id,
-        {
-          affected_count: result.affected_count,
-          currentUserAffected: result.affected,
-        },
-      );
-    } catch (caught) {
-      patchContentEntity<FacilityRecord>(
-        session.user?.uid,
-        "facility",
-        currentFacility.id,
-        {
-          affected_count: previous.count,
-          currentUserAffected: previous.active,
-        },
-      );
-      toast.error(caught instanceof Error ? caught.message : t("ui.facility.affectedFailed"));
-    } finally {
-      affectingRef.current = false;
-      setAffecting(false);
-    }
+      errorMessage: t("ui.facility.affectedFailed"),
+    });
   }
 
   async function remove() {
@@ -168,7 +135,7 @@ export function useFacilityDetail() {
   }
 
   return {
-    affecting,
+    affecting: reaction.isBusy(params.facilityId),
     back: () => {
       if (currentFacility)
         returnToPreviousRoute(
@@ -177,7 +144,7 @@ export function useFacilityDetail() {
           "/facilities",
         );
     },
-    burst,
+    burst: reaction.burstById[params.facilityId] ?? 0,
     deleteFeedbackState: deleteFeedback.state,
     error,
     facility: currentFacility,
