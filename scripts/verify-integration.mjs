@@ -52,8 +52,8 @@ const actionTestRunners = Number.isSafeInteger(configuredActionRunners)
 // Package-manager launchers may terminate this process before its Ctrl+C cleanup
 // finishes, leaving services, PostgreSQL, or WSL behind. The interactive environment
 // therefore runs one level deeper in its own process group, where the launcher's death
-// is the stop signal instead of a signal that arrives too late. Terminal output stays
-// inherited, so the shutdown sequence is still visible.
+// is the stop signal instead of a signal that arrives too late. Relay output through
+// pipes: detached Windows processes cannot inherit an interactive console handle.
 if (serve && !process.env.NOVAE_SERVE_SESSION) {
   const session = spawn(
     process.execPath,
@@ -68,10 +68,12 @@ if (serve && !process.env.NOVAE_SERVE_SESSION) {
         // here, while this process still owns the terminal.
         NOVAE_WSL_DISTRO: (await resolveWindowsWslDistro()) ?? "",
       },
-      stdio: ["pipe", "inherit", "inherit"],
+      stdio: ["pipe", "pipe", "pipe"],
     },
   );
-  const [code] = await once(session, "exit");
+  session.stdout.pipe(process.stdout, { end: false });
+  session.stderr.pipe(process.stderr, { end: false });
+  const [code] = await once(session, "close");
   process.exit(code ?? 0);
 }
 
