@@ -25,17 +25,17 @@ interface ImageUploadPolicy {
 
 interface ImageUploadSession {
   apiKey: string;
-  allowedFormats?: string;
+  allowedFormats: string;
   cloudName: string;
-  folder?: string;
-  maxFileSize?: string;
-  overwrite?: string;
-  notificationUrl?: string;
+  folder: string;
+  maxFileSize: string;
+  overwrite: string;
+  notificationUrl: string;
   publicId: string;
   signature: string;
   timestamp: number;
-  type?: string;
-  uploadPreset?: string;
+  type: string;
+  uploadPreset: string;
   uploadUrl: string;
   uploadId: string;
 }
@@ -102,13 +102,13 @@ async function uploadToCloudinary(file: File, session: ImageUploadSession) {
   body.set('timestamp', String(session.timestamp));
   body.set('public_id', session.publicId);
   body.set('signature', session.signature);
-  if (session.allowedFormats) body.set('allowed_formats', session.allowedFormats);
-  if (session.folder) body.set('folder', session.folder);
-  if (session.maxFileSize) body.set('max_file_size', session.maxFileSize);
-  if (session.overwrite) body.set('overwrite', session.overwrite);
-  if (session.notificationUrl) body.set('notification_url', session.notificationUrl);
-  if (session.type) body.set('type', session.type);
-  if (session.uploadPreset) body.set('upload_preset', session.uploadPreset);
+  body.set('allowed_formats', session.allowedFormats);
+  body.set('folder', session.folder);
+  body.set('max_file_size', session.maxFileSize);
+  body.set('overwrite', session.overwrite);
+  body.set('notification_url', session.notificationUrl);
+  body.set('type', session.type);
+  body.set('upload_preset', session.uploadPreset);
 
   return await withRequestTimeout(async (signal) => {
     const response = await fetch(
@@ -129,12 +129,13 @@ export async function createImageUploadPolicies(
     throw new Error('image.imagesMustBeConvertedToWebpBeforeUploading');
   }
 
+  let sessions: ImageUploadSession[] = [];
   try {
     const createSession = invokeBackendAction<
       { images: Array<{ contentType: string; height: number; size: number; width: number }>; targetType: ImageUploadTargetType },
       { sessions: ImageUploadSession[] }
     >('createImageUploadSessions');
-    const { sessions } = await createSession({
+    const created = await createSession({
       images: inputs.map(({ file, height, width }) => ({
         contentType: file.type,
         height,
@@ -143,10 +144,14 @@ export async function createImageUploadPolicies(
       })),
       targetType,
     });
+    sessions = created.sessions;
     if (sessions.length !== inputs.length) throw new Error('image.theImageUploadJobIsNotSetUpCompletely');
-    const uploadResponses = await Promise.all(
+    const results = await Promise.allSettled(
       inputs.map(({ file }, index) => uploadToCloudinary(file, sessions[index]!)),
     );
+    const failure = results.find((result) => result.status === 'rejected');
+    if (failure) throw failure.reason;
+    const uploadResponses = results.filter((result) => result.status === 'fulfilled').map((result) => result.value);
 
     const finalize = invokeBackendAction<{
       targetType: ImageUploadTargetType;
@@ -165,6 +170,8 @@ export async function createImageUploadPolicies(
     });
     return result.uploads;
   } catch (error) {
+    // Wait for the batch to settle before scheduling deletion, so slower files cannot recreate cleaned-up assets.
+    await deleteUploadedImages(sessions.map((session) => `${session.folder}/${session.publicId}`)).catch(() => undefined);
     throw toReadableUploadError(error);
   }
 }

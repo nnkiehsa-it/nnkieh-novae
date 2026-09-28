@@ -36,6 +36,7 @@ export function ComposerMediaAttachments({
   return (
     <section
       aria-labelledby={headingId}
+      aria-busy={uploading}
       className={cn(
         "grid h-fit gap-3 rounded-xl border border-dashed bg-muted/20 p-3",
         className,
@@ -80,6 +81,7 @@ export function ComposerMediaAttachments({
                     <Button
                       aria-label={t("ui.common.delete")}
                       className="absolute right-1.5 top-1.5 bg-card/88 backdrop-blur-sm"
+                      disabled={uploading}
                       onClick={() => onRemoveImage(index)}
                       size="icon-xs"
                       type="button"
