@@ -13,14 +13,14 @@ export function BrandMark({
     <span
       aria-hidden
       className={cn(
-        "grid size-12 aspect-square shrink-0 place-items-center",
+        "grid size-12 aspect-square shrink-0 place-items-center overflow-hidden rounded-xl bg-white p-2.5 shadow-[var(--shadow-control)] dark:bg-black",
         className,
       )}
     >
       <Image
         alt=""
         className={cn(
-          "block size-full aspect-square object-contain",
+          "block size-full aspect-square object-contain dark:invert",
           imageClassName,
         )}
         src="/logo.svg"
@@ -44,7 +44,7 @@ export function BrandLockup({
   const content = (
     <>
       <BrandMark className={markClassName} />
-      <span className="text-xl font-bold tracking-[-0.055em]">Novae</span>
+      <span className="text-base font-semibold">Novae</span>
     </>
   );
 

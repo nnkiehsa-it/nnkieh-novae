@@ -6,22 +6,21 @@ const source = new URL("../config/brand.svg", import.meta.url);
 const publicDir = new URL("../public/", import.meta.url);
 const svg = await readFile(source);
 await copyFile(source, new URL("logo.svg", publicDir));
-await writeFile(new URL("logo.png", publicDir), await sharp(svg).resize(512, 512).png().toBuffer());
+await writeFile(new URL("logo.png", publicDir), await sharp(svg).resize(512, 512, { fit: "contain", background: "transparent" }).png().toBuffer());
 
-for (const [name, size, inset] of [
-  ["pwa-64x64.png", 64, 4],
-  ["pwa-192x192.png", 192, 12],
-  ["pwa-512x512.png", 512, 32],
-  ["apple-touch-icon-180x180.png", 180, 16],
-  ["maskable-icon-512x512.png", 512, 80],
+for (const [name, size, opaque] of [
+  ["pwa-64x64.png", 64, false],
+  ["pwa-192x192.png", 192, false],
+  ["pwa-512x512.png", 512, false],
+  ["apple-touch-icon-180x180.png", 180, true],
+  ["maskable-icon-512x512.png", 512, true],
 ]) {
-  const mark = await sharp(svg).resize(size - inset * 2).png().toBuffer();
-  const png = await sharp({ create: { width: size, height: size, channels: 4, background: "#f5f7fb" } })
-    .composite([{ input: mark, left: inset, top: inset }]).png().toBuffer();
-  await writeFile(new URL(name, publicDir), png);
+  const mark = sharp(svg).resize(size, size, { fit: "contain", background: "transparent" });
+  if (opaque) mark.flatten({ background: "#ffffff" });
+  await writeFile(new URL(name, publicDir), await mark.png().toBuffer());
 }
 
-const png = await sharp(svg).resize(32, 32).png().toBuffer();
+const png = await sharp(svg).resize(32, 32, { fit: "contain", background: "transparent" }).png().toBuffer();
 const header = Buffer.alloc(22);
 header.writeUInt16LE(1, 2); // ICO type
 header.writeUInt16LE(1, 4); // One PNG image
