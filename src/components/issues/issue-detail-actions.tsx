@@ -206,7 +206,7 @@ export function getIssueDetailPanels({
             </div>
           ) : null}
   </> });
-  panels.push({ key: "timeline", className: "gap-5", content: <>
+  panels.push({ key: "timeline", content: <div className="grid gap-5">
         <div className="flex items-center gap-2">
           <Clock3 className="size-4 text-muted-foreground" />
           <p className="text-sm font-medium">{translate('ui.issue.timeline')}</p>
@@ -234,6 +234,6 @@ export function getIssueDetailPanels({
             </div>
           ))}
         </div>
-  </> });
+  </div> });
   return panels;
 }

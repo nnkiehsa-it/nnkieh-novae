@@ -169,6 +169,7 @@ test.describe.serial("shareable feeds and isolated discussion drafts", () => {
         const replyInput = page.getByRole("textbox", { name: "Enter a reply", exact: true });
         const dock = page.locator(".discussion-composer-dock");
         await rootInput.fill(rootText);
+        await expect(dock.getByText('Draft saved in this tab.', { exact: true })).toHaveCount(0);
         await page.reload();
         await expect(rootInput).toHaveValue(rootText);
         await expect(dock.getByRole("status")).toHaveText("Comment draft restored.");

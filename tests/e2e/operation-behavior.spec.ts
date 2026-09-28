@@ -69,6 +69,15 @@ test('proposal covers support, threaded comments, deletion, and terminal outcome
 
   const rootComment = `Proposal root ${Date.now()}`;
   const reply = `Proposal reply ${Date.now()}`;
+  await expect(member.page.locator('#discussion-title')).toHaveCSS('font-size', '14px');
+  expect(await member.page.locator('[data-detail-card="timeline"]').evaluate((timeline) => {
+    const discussion = document.querySelector('section[aria-labelledby="discussion-title"]')!;
+    const content = timeline.querySelector('.grid.gap-5')!;
+    return {
+      discussionFollows: Boolean(timeline.compareDocumentPosition(discussion) & Node.DOCUMENT_POSITION_FOLLOWING),
+      headingGap: getComputedStyle(content).rowGap,
+    };
+  })).toEqual({ discussionFollows: true, headingGap: '20px' });
   await createComment(member.page, rootComment, 'createComment');
   await replyToComment(member.page, reply, 'createComment');
   await deleteOwnComment(member.page, reply, 'deleteComment');

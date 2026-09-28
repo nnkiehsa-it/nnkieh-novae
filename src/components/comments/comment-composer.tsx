@@ -84,10 +84,9 @@ export function CommentComposer({
       </div>
       {content.length > 0 ? (
         <div className="flex items-start justify-between gap-3 px-3">
-          {draftStatus ? (
+          {draftStatus && draftStatus !== "saved" ? (
             <span className="min-w-0 text-[11px] text-muted-foreground" role="status">
-              {translate(draftStatus === "restored" ? "comments.draftRestored"
-                : draftStatus === "saved" ? "comments.draftSaved" : "comments.draftUnavailable")}
+              {translate(draftStatus === "restored" ? "comments.draftRestored" : "comments.draftUnavailable")}
             </span>
           ) : null}
           <span

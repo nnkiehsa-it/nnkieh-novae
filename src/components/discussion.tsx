@@ -2,7 +2,7 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import * as React from "react";
-import { ChevronDown, MessageCircle, X } from "lucide-react";
+import { ChevronDown, MessageCircle, SlidersHorizontal, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { timing } from "@/lib/motion-timing";
 import type { CommentSortOption, DiscussionCommentRecord } from "@/types";
@@ -95,18 +95,19 @@ export function Discussion({
       <Card className="gap-0 overflow-hidden py-0">
         <div className="flex items-center gap-2 px-5 py-4 sm:px-7">
           <MessageCircle className="size-4 text-muted-foreground" />
-          <h2 className="font-semibold" id="discussion-title">{translate("ui.discussion.title")}</h2>
+          <h2 className="text-sm font-medium" id="discussion-title">{translate("ui.discussion.title")}</h2>
           <span className="text-sm tabular-nums text-muted-foreground">{comments.length}</span>
           {loading && comments.length > 0 ? <LoadingSpinner /> : null}
           <ChoiceSelect
             ariaLabel={translate("ui.discussion.sort")}
-            className="ml-auto h-8 w-auto min-w-28 gap-1.5 px-2.5"
+            className="ml-auto size-9 shrink-0 justify-center gap-0 px-0 [&_.t-disclosure-icon]:hidden"
             onValueChange={(value) => onSortChange(value as CommentSortOption)}
             options={[
               { label: translate("ui.discussion.newest"), value: "newest" },
               { label: translate("ui.discussion.oldest"), value: "oldest" },
             ]}
             title={translate("ui.discussion.sort")}
+            trigger={(selected) => <><SlidersHorizontal aria-hidden className="size-4" /><span className="sr-only">{selected?.label}</span></>}
             value={sort}
           />
         </div>

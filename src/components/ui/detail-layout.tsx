@@ -55,10 +55,10 @@ export function DetailLayout({
     {kind === "issue" ? <Skeleton className="h-2 w-full" /> : null}
     <Button className="mx-auto opacity-100" disabled size="icon-lg" variant="ghost"><Reaction /></Button>
   </> }];
-  if (kind === "issue") pendingPanels.push({ key: "timeline", className: "gap-5", content: <>
+  if (kind === "issue") pendingPanels.push({ key: "timeline", content: <div className="grid gap-5">
     <div className="flex items-center gap-2"><Clock3 className="size-4" /><p className="text-sm font-medium">{t('ui.issue.timeline')}</p></div>
     <div className="space-y-3">{Array.from({ length: 3 }, (_, index) => <div className="space-y-1.5" key={index}><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-28" /></div>)}</div>
-  </> });
+  </div> });
   return (
     <div className={dock ? "detail-with-discussion-composer" : undefined}>
       {/* The controls of a record stay where they are while the record travels
@@ -82,7 +82,6 @@ export function DetailLayout({
                 {loading ? <DetailPlaceholder kind={kind} /> : error ? <div className="space-y-4 p-5"><h1 className="text-xl font-semibold">{t('ui.common.loadFailed')}</h1><p className="text-sm text-muted-foreground">{error}</p><Button onClick={onRetry} variant="outline"><RefreshCw />{t('ui.common.reload')}</Button></div> : content}
               </ContentTransition>
             </Card>
-            {discussion}
           </article>
           <aside className="lg:sticky lg:top-6">
             <StaggerList className="space-y-3">
@@ -96,6 +95,7 @@ export function DetailLayout({
             </StaggerList>
           </aside>
         </div>
+        {discussion}
         {after}
       </StateTransition>
     </div>
