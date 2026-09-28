@@ -51,6 +51,7 @@
         "miniflare": "5.20260908.0-alpha",
         "postcss": "8.5.28",
         "serwist": "9.5.12",
+        "sharp": "0.35.4",
         "tailwindcss": "4.3.3",
         "typescript": "7.0.2",
         "vitest": "4.1.10",

@@ -1,6 +1,5 @@
 import Link from "next/link";
-
-import { DecodedImage } from "@/components/ui/decoded-image";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 export function BrandMark({
@@ -14,19 +13,20 @@ export function BrandMark({
     <span
       aria-hidden
       className={cn(
-        "grid size-12 aspect-square shrink-0 place-items-center overflow-hidden rounded-xl bg-white p-2 shadow-[var(--shadow-control)] dark:bg-black",
+        "grid size-12 aspect-square shrink-0 place-items-center",
         className,
       )}
     >
-      <DecodedImage
+      <Image
         alt=""
         className={cn(
           "block size-full aspect-square object-contain",
           imageClassName,
         )}
-        containerClassName="size-full"
-        indicatorClassName="size-4"
         src="/logo.svg"
+        width={48}
+        height={48}
+        loading="eager"
       />
     </span>
   );
@@ -44,7 +44,7 @@ export function BrandLockup({
   const content = (
     <>
       <BrandMark className={markClassName} />
-      <span className="text-base font-semibold">Novae</span>
+      <span className="text-xl font-bold tracking-[-0.055em]">Novae</span>
     </>
   );
 

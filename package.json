@@ -16,6 +16,7 @@
   "scripts": {
     "dev": "next dev --webpack",
     "generate:api-errors": "node scripts/generate-api-errors.mjs",
+    "generate:brand": "node scripts/generate-brand-assets.mjs",
     "generate:motion": "node scripts/generate-motion.mjs",
     "generate:rate-limits": "node scripts/generate-rate-limits.mjs",
     "generate:data-retention": "node scripts/generate-data-retention.mjs",
@@ -106,6 +107,7 @@
     "miniflare": "5.20260908.0-alpha",
     "postcss": "8.5.28",
     "serwist": "9.5.12",
+    "sharp": "0.35.4",
     "tailwindcss": "4.3.3",
     "typescript": "7.0.2",
     "vitest": "4.1.10",
