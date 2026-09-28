@@ -56,8 +56,9 @@ const nextConfig = {
       static: 1800,
     },
   },
-  webpack(config, { isServer }) {
-    if (!isServer) {
+  webpack(config, { dev, isServer }) {
+    // Keep Next's development chunk graph intact for route compilation and HMR.
+    if (!dev && !isServer) {
       config.optimization = config.optimization || {};
       config.optimization.splitChunks = config.optimization.splitChunks || {};
       const existingCacheGroups =

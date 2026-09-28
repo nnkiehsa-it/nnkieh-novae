@@ -13,15 +13,9 @@ export function E2eAuthBridge() {
     if (!e2eAuthAvailable) return;
     let active = true;
     void import("@/testing/e2e-auth")
-      .then(async ({ signInForE2e }) => {
+      .then(({ signInForE2e }) => {
         if (!active) return;
         window.__NOVAE_E2E__ = { signIn: signInForE2e };
-        if (process.env.NEXT_PUBLIC_LOCAL_DEV_AUTH === "true") {
-          await signInForE2e(
-            process.env.NEXT_PUBLIC_LOCAL_DEV_AUTH_EMAIL ||
-              "admin@integration.invalid",
-          );
-        }
       })
       .catch(() => {
         if (process.env.NODE_ENV === "development") {

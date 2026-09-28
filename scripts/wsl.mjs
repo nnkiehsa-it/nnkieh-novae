@@ -16,7 +16,7 @@ function decodeWslOutput(value) {
 }
 
 function listDistros(args) {
-  const result = spawnSync("wsl.exe", args, { stdio: ["ignore", "pipe", "pipe"] });
+  const result = spawnSync("wsl.exe", args, { stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
   if (result.error) throw result.error;
   if (result.status !== 0) {
     throw new Error(decodeWslOutput(result.stderr).trim() || "Could not list WSL distributions.");
@@ -32,7 +32,7 @@ function runInWindowsWsl(name, args, { allowFailure = false } = {}) {
   const result = spawnSync(
     "wsl.exe",
     ["-d", name, "-u", "root", "--", ...args],
-    { stdio: ["ignore", "pipe", "pipe"] },
+    { stdio: ["ignore", "pipe", "pipe"], windowsHide: true },
   );
   if (result.error) throw result.error;
   if (!allowFailure && result.status !== 0) {
@@ -58,7 +58,7 @@ export function isWindowsWslDistroRunning(name) {
 
 export function terminateWindowsWslDistro(name) {
   if (process.platform !== "win32") return;
-  const result = spawnSync("wsl.exe", ["--terminate", name], { stdio: ["ignore", "pipe", "pipe"] });
+  const result = spawnSync("wsl.exe", ["--terminate", name], { stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
   if (result.error) throw result.error;
   if (result.status !== 0) {
     throw new Error(decodeWslOutput(result.stderr).trim() || `Could not terminate the ${name} WSL distribution.`);

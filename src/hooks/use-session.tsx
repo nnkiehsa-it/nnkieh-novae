@@ -35,7 +35,7 @@ import { useTurnstile } from "@/components/turnstile-provider";
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const { requestToken } = useTurnstile();
-  useEffect(() => initializeSession(requestToken), [requestToken]);
+  useEffect(() => { void initializeSession(requestToken); }, [requestToken]);
   return children;
 }
 

@@ -221,7 +221,7 @@ export async function retrySessionStartup() {
   await refreshVerifiedSession(user, verificationId, validateUserAgainstToken(user), needsProfileSync);
 }
 
-export function initializeSession(
+export async function initializeSession(
   requestTurnstileToken?: (
     action: string,
     options?: { presentation?: "dialog" | "inline" },
@@ -238,6 +238,18 @@ export function initializeSession(
       loading: false,
     });
     return;
+  }
+  // Local auto-login replaces a restored Firebase User, even for the same UID.
+  // Finish it before observing auth so bootstrap never races that replacement.
+  if (process.env.NEXT_PUBLIC_LOCAL_DEV_AUTH === "true") {
+    try {
+      const { signInForE2e } = await import("@/testing/e2e-auth");
+      await signInForE2e(process.env.NEXT_PUBLIC_LOCAL_DEV_AUTH_EMAIL || "admin@integration.invalid");
+    } catch (error) {
+      sessionDebug("local auto-login failed", error);
+      patch({ appReady: true, initialized: true, loading: false, error: "auth.serviceUnavailable" });
+      return;
+    }
   }
   onAuthStateChanged(
     auth,

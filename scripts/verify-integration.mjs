@@ -26,6 +26,8 @@ const runnerArgs = process.argv.slice(2, separator < 0 ? undefined : separator);
 const browserArgs = separator < 0 ? [] : process.argv.slice(separator + 1);
 const e2e = runnerArgs.includes("--e2e");
 const serve = runnerArgs.includes("--serve");
+const checkStartup = runnerArgs.includes("--check-startup");
+if (checkStartup && !serve) throw new Error("--check-startup requires --serve.");
 const skipBuild = runnerArgs.includes("--skip-build");
 const projectIndex = runnerArgs.indexOf("--project");
 const e2eProject = projectIndex >= 0 ? runnerArgs[projectIndex + 1] : null;
@@ -60,6 +62,7 @@ if (serve && !process.env.NOVAE_SERVE_SESSION) {
     [fileURLToPath(import.meta.url), ...process.argv.slice(2)],
     {
       cwd: root,
+      windowsHide: true,
       detached: true,
       env: {
         ...process.env,
@@ -150,6 +153,7 @@ function run(label, command, args, environment = {}) {
   process.stderr.write(`[integration] ${label}\n`);
   const result = spawnSync(command, args, {
     cwd: root,
+    windowsHide: true,
     env: { ...process.env, ...environment },
     stdio: "inherit",
   });
@@ -197,6 +201,7 @@ async function runBrowserJourneys(label, args, environment) {
   process.stderr.write(`[integration] ${label}\n`);
   const child = spawn(process.execPath, [playwrightCli, "test", ...args], {
     cwd: root,
+    windowsHide: true,
     env: { ...process.env, ...environment },
     stdio: "inherit",
   });
@@ -222,7 +227,7 @@ async function runBrowserJourneys(label, args, environment) {
           `E2E service health failed three times: ${String(error)}\nPostgreSQL activity: ${JSON.stringify(database)}`,
         );
         if (process.platform === "win32") {
-          spawnSync("taskkill.exe", ["/PID", String(child.pid), "/T", "/F"], { stdio: "ignore" });
+          spawnSync("taskkill.exe", ["/PID", String(child.pid), "/T", "/F"], { stdio: "ignore", windowsHide: true });
         } else {
           child.kill("SIGTERM");
         }
@@ -249,6 +254,7 @@ function start(label, command, args, environment = {}, ports = []) {
     // Services must keep writing even while a synchronous verification step runs.
     child = spawn(command, args, {
       cwd: root,
+      windowsHide: true,
       detached: process.platform !== "win32",
       env: { ...process.env, ...environment },
       stdio: ["ignore", log, log],
@@ -320,7 +326,7 @@ async function keepWindowsWslRunning() {
 
 function windowsListenerPids(ports) {
   if (process.platform !== "win32") return [];
-  const result = spawnSync("netstat.exe", ["-ano", "-p", "tcp"], { encoding: "utf8" });
+  const result = spawnSync("netstat.exe", ["-ano", "-p", "tcp"], { encoding: "utf8", windowsHide: true });
   if (result.error) throw result.error;
   const pids = new Set();
   for (const line of result.stdout.split(/\r?\n/u)) {
@@ -338,7 +344,7 @@ function windowsListenerPids(ports) {
 async function stopChild(entry) {
   if (entry.child.exitCode !== null) return;
   if (process.platform === "win32") {
-    spawnSync("taskkill.exe", ["/PID", String(entry.child.pid), "/T", "/F"], { stdio: "ignore" });
+    spawnSync("taskkill.exe", ["/PID", String(entry.child.pid), "/T", "/F"], { stdio: "ignore", windowsHide: true });
   } else {
     try {
       process.kill(-entry.child.pid, "SIGTERM");
@@ -361,7 +367,7 @@ async function performCleanup() {
       const listenerPids = windowsListenerPids(ownedPorts);
       if (listenerPids.length === 0) break;
       for (const pid of listenerPids) {
-        spawnSync("taskkill.exe", ["/PID", String(pid), "/T", "/F"], { stdio: "ignore" });
+        spawnSync("taskkill.exe", ["/PID", String(pid), "/T", "/F"], { stdio: "ignore", windowsHide: true });
       }
       await delay(100);
     }
@@ -373,6 +379,7 @@ async function performCleanup() {
   if (process.platform === "win32" && windowsWslDistro) {
     const stopped = spawnSync(process.execPath, ["scripts/database.mjs", "stop-local"], {
       cwd: root,
+      windowsHide: true,
       env: {
         ...process.env,
         NOVAE_KEEP_DOCKER_RUNNING: "1",
@@ -610,7 +617,7 @@ try {
             "vitest.integration.config.ts",
             `--shard=${index + 1}/${actionTestRunners}`,
           ],
-          { cwd: root, env: environment, stdio: "inherit" },
+          { cwd: root, windowsHide: true, env: environment, stdio: "inherit" },
         );
         child.once("error", reject);
         child.once("close", (status) => resolve(status ?? 1));
@@ -698,6 +705,12 @@ try {
         );
       }
       process.stderr.write("✓ End-to-end verification passed\n");
+    } else if (checkStartup) {
+      await runBrowserJourneys(
+        "Playwright local development startup",
+        ["--project=chromium-stateful", "--no-deps", "tests/e2e/local-startup.spec.ts"],
+        frontendEnvironment,
+      );
     } else {
       process.stderr.write(`\n[environment] Ready\n  App: ${appUrl}\n  API: ${workerUrl}\n  Auth emulator: http://127.0.0.1:4000/auth\n  Stop: Ctrl+C\n`);
       process.stdin.resume();

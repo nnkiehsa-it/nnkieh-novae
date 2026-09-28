@@ -55,6 +55,7 @@ function docker(args, { allowFailure = false, quiet = false } = {}) {
   const invocation = dockerInvocation(args);
   const result = spawnSync(invocation.command, invocation.args, {
     cwd: root,
+    windowsHide: true,
     encoding: "utf8",
     stdio: quiet ? "pipe" : "inherit",
   });
