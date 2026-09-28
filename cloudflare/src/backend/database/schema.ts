@@ -650,6 +650,7 @@ export interface AppApiFunctions {
     author_private_categories: string[];
     issue_id: string;
     next_status: string;
+    result_content: string | null;
     private_to_owner_categories: string[];
     review_approved_at: string | null;
     review_rejection_reason: string | null;

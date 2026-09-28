@@ -16,7 +16,6 @@ describe("E2E permission and operation coverage", () => {
       "createComment",
       "deleteComment",
       "moderateIssueStatus",
-      "updateIssueResult",
       "deleteIssue",
       "createFacility",
       "toggleFacilityAffected",

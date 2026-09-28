@@ -3,7 +3,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
-import { moderateIssueStatus, updateIssueResult } from "@/services/issues";
+import { moderateIssueStatus } from "@/services/issues";
 import type { IssueRecord, IssueStatus } from "@/types";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
 
@@ -44,18 +44,10 @@ export function useIssueModeration({
     )
       return;
     try {
-      const updated = await feedback.run(async () => {
-        let next = await moderateIssueStatus(
-          issue.id,
-          status,
-          status === "review-rejected" ? reason.trim() : undefined,
-        );
-        if (status === "completed" || status === "infeasible")
-          next = await updateIssueResult(issue.id, result.trim());
-        else if (status === "processing" && issue.result_content)
-          next = await updateIssueResult(issue.id, "");
-        return next;
-      });
+      const updated = await feedback.run(() => moderateIssueStatus(issue.id, status, {
+        reason: status === "review-rejected" ? reason.trim() : undefined,
+        resultContent: status === "completed" || status === "infeasible" ? result.trim() : undefined,
+      }));
       onUpdated(updated);
       onClose();
     } catch (caught) {

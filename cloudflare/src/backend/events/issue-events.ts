@@ -1,5 +1,13 @@
 import type { ResolvedDomainEvent, WriteOutcome } from "./domain-events.ts";
 
+function resultUpdated(issueId: string, content: string): ResolvedDomainEvent {
+  return {
+    aggregateType: "issue", aggregateId: issueId, eventType: "issue.result_updated",
+    destinations: ["notion", "realtime"],
+    payload: { issue_id: issueId, result_content: content },
+  };
+}
+
 /** What a proposal, its support and its comments announce. */
 export function issueEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | null {
   const { action, payload, actorUid, res, resIssue, resComment } = outcome;
@@ -24,7 +32,7 @@ export function issueEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | null
     }
     case "moderateIssueStatus": {
       const issueId = String(payload.issueId ?? "");
-      events.push({
+      if (res.previousStatus !== resIssue.status) events.push({
         aggregateType: "issue",
         aggregateId: issueId,
         eventType: "issue.status_changed",
@@ -39,20 +47,12 @@ export function issueEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | null
           read_access: String(resIssue.readAccess ?? "owner-admin"),
         },
       });
+      if (res.resultChanged) events.push(resultUpdated(issueId, String(resIssue.resultContent ?? "")));
       break;
     }
     case "updateIssueResult": {
       const issueId = String(payload.issueId ?? "");
-      events.push({
-        aggregateType: "issue",
-        aggregateId: issueId,
-        eventType: "issue.result_updated",
-        destinations: ["notion", "realtime"],
-        payload: {
-          issue_id: issueId,
-          result_content: String(payload.resultContent ?? ""),
-        },
-      });
+      events.push(resultUpdated(issueId, String(payload.resultContent ?? "")));
       break;
     }
     case "toggleSupport": {

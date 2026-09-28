@@ -83,7 +83,7 @@ test('proposal covers support, threaded comments, deletion, and terminal outcome
   await manager.page.getByRole('radio', { name: 'Completed' }).click();
   const outcome = `Proposal outcome ${Date.now()}`;
   await manager.page.getByPlaceholder('Explain the outcome or why the proposal is not feasible…').fill(outcome);
-  await expectBackendActions(manager.page, ['moderateIssueStatus', 'updateIssueResult'], async () => {
+  await expectBackendActions(manager.page, ['moderateIssueStatus'], async () => {
     await manager.page.getByRole('button', { name: 'Submit' }).click();
   });
   await expect(manager.page.getByText('Completed', { exact: true }).first()).toBeVisible();

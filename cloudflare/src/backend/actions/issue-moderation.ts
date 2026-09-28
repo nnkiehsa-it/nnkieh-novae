@@ -3,7 +3,7 @@ import { canManageIssueCategory, requireIssueCategoryPermission } from "./auth.t
 import { issueCategoryPolicyLists } from "./category-catalog.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { asUuid } from "./utils.ts";
-import { INPUT_LIMITS, optionalText } from "./validation.ts";
+import { INPUT_LIMITS, optionalText, requiredText } from "./validation.ts";
 import type { Row } from "../database/schema.ts";
 
 const VALID_STATUSES = new Set([
@@ -36,8 +36,10 @@ export async function moderateIssueStatus(payload: JsonRecord, auth: AuthContext
   const oldIssue = await readIssueForAdmin(database, issueId, auth);
   const nextStatus = asString(payload.status, "pending");
   if (!VALID_STATUSES.has(nextStatus)) throw new Error("invalid-status");
+  const resultContent = nextStatus === "completed" || nextStatus === "infeasible"
+    ? requiredText(payload.resultContent, "issue-result", INPUT_LIMITS.issueResult)
+    : null;
   const category = asString(oldIssue.category);
-  requireIssueCategoryPermission(auth, category);
   const oldStatus = asString(oldIssue.status);
   const now = new Date();
   let reviewApprovedAt = typeof oldIssue.review_approved_at === "string" ? oldIssue.review_approved_at : null;
@@ -57,13 +59,18 @@ export async function moderateIssueStatus(payload: JsonRecord, auth: AuthContext
   const { data, error } = await database.call("app_api", "backend_moderate_issue_status", {
     issue_id: issueId,
     next_status: nextStatus,
+    result_content: resultContent,
     review_rejection_reason: optionalText(payload.reason, "reason", INPUT_LIMITS.rejectionReason) || null,
     review_approved_at: reviewApprovedAt,
     support_deadline_at: supportDeadlineAt,
     ...await issuePolicyParams(database, auth, canManageIssueCategory(auth, category)),
   });
   if (error) throw error;
-  return { issue: data, previousStatus: oldStatus };
+  return {
+    issue: data,
+    previousStatus: oldStatus,
+    resultChanged: (asRecord(data).resultContent ?? null) !== (oldIssue.result_content ?? null),
+  };
 }
 
 export async function updateIssueResult(payload: JsonRecord, auth: AuthContext, database: BackendDatabase) {
@@ -71,7 +78,9 @@ export async function updateIssueResult(payload: JsonRecord, auth: AuthContext, 
   if (!issueId) throw new Error("not-found");
   const oldIssue = await readIssueForAdmin(database, issueId, auth);
   const category = asString(oldIssue.category);
-  const resultContent = optionalText(payload.resultContent, "issue-result", INPUT_LIMITS.issueResult).trim();
+  const resultContent = oldIssue.status === "completed" || oldIssue.status === "infeasible"
+    ? requiredText(payload.resultContent, "issue-result", INPUT_LIMITS.issueResult)
+    : optionalText(payload.resultContent, "issue-result", INPUT_LIMITS.issueResult);
   const { data, error } = await database.call("app_api", "backend_update_issue_result", {
     issue_id: issueId,
     result_content: resultContent || null,

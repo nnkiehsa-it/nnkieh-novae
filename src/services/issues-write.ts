@@ -124,13 +124,17 @@ export async function createIssue(
   }
 }
 
-export async function moderateIssueStatus(issueId: string, status: IssueStatus, reason?: string) {
+export async function moderateIssueStatus(
+  issueId: string,
+  status: IssueStatus,
+  details: { reason?: string; resultContent?: string } = {},
+) {
   try {
     const fn = invokeBackendAction<
-      { issueId: string; status: IssueStatus; reason?: string },
+      { issueId: string; status: IssueStatus; reason?: string; resultContent?: string },
       { issue: IssueResponseRecord }
     >('moderateIssueStatus');
-    const result = await fn({ issueId, status, reason });
+    const result = await fn({ issueId, status, ...details });
     invalidateIssueCache(issueId);
     return normalizeIssueResponse(result.issue);
   } catch (error) {

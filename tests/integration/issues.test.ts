@@ -7,6 +7,7 @@ import {
   saveCategoryDraft,
   seedActor,
   database,
+  tableRow,
 } from "./helpers.ts";
 
 async function createIssue(
@@ -414,11 +415,26 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     commentId: String(asRecord(managedCommentWrite.comment).id),
   }, publicManager.auth);
 
+  const beforeConclusion = await tableRow("issues", "id", publicIssueId);
+  await expectActionError("issue-result-required", () => callAction("moderateIssueStatus", {
+    issueId: publicIssueId, status: "completed",
+  }, publicManager.auth));
+  assert.equal((await tableRow("issues", "id", publicIssueId))?.status, beforeConclusion?.status);
   const completedIssue = asRecord(await callAction("moderateIssueStatus", {
     issueId: publicIssueId,
     status: "completed",
+    resultContent: "Completed with a resolution in the same write",
   }, publicManager.auth));
+  assert.equal(asRecord(completedIssue.issue).resultContent, "Completed with a resolution in the same write");
   assert.equal(asRecord(completedIssue.issue).commentsEnabled, false);
+  const editOperationId = crypto.randomUUID();
+  const editedConclusion = asRecord(await callAction("moderateIssueStatus", {
+    issueId: publicIssueId, status: "completed", resultContent: "Clarified resolution",
+  }, publicManager.auth, editOperationId));
+  assert.equal(asRecord(editedConclusion.issue).closedAt, asRecord(completedIssue.issue).closedAt);
+  const editedEvents = await database.sql<{ event_type: string }>`select event_type from app_private.domain_events
+    where operation_id = ${editOperationId} and aggregate_type = 'issue'`;
+  assert.deepEqual(editedEvents.rows.map((row) => row.event_type), ["issue.result_updated"]);
   await expectActionError(
     "comments-disabled",
     () => callAction("createComment", {
