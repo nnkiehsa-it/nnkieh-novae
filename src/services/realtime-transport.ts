@@ -1,28 +1,9 @@
-import { getFirebaseIdToken } from '@/lib/auth-token';
-import { apiGatewayUrl } from '@/lib/api-gateway';
 import { auth } from '@/lib/firebase';
-import { withRequestTimeout } from '@/lib/request';
-import { backendSecurityHeaders } from '@/lib/backend-security';
 import { realtimeIdleRemaining } from '@/lib/realtime-timing';
 import { noteHeartbeatResponse, startHeartbeat, stopHeartbeat } from '@/services/realtime-heartbeat';
 import { createRealtimeTabCoordinator } from '@/services/realtime-tab-coordinator';
 import { getCachedSessionRole } from '@/services/session-role';
-
-interface RealtimeTicketEnvelope {
-  data?: {
-    expiresAtMs?: number;
-    ticket?: string;
-    url?: string;
-  };
-  success?: boolean;
-}
-
-interface RealtimeMessage {
-  event: string;
-  id: string;
-  payload: Record<string, unknown>;
-  topic: string;
-}
+import { normalizeMessage, requestRealtimeTicket, type RealtimeMessage } from '@/services/realtime-protocol';
 
 interface RealtimeListener {
   event: string;
@@ -39,6 +20,7 @@ const deliveredIdOrder: string[] = [];
 let listenerSerial = 0;
 let socket: WebSocket | null = null;
 let connecting = false;
+let connectionController: AbortController | null = null;
 let reconnectAttempt = 0;
 let reconnectTimer = 0;
 let connectedBefore = false;
@@ -114,6 +96,8 @@ function scheduleReconnect() {
 
 function closeSocket() {
   connectionGeneration += 1;
+  connectionController?.abort();
+  connectionController = null;
   window.clearTimeout(reconnectTimer);
   reconnectTimer = 0;
   connecting = false;
@@ -199,55 +183,15 @@ function stopActivityTracking() {
   document.removeEventListener('visibilitychange', handleVisibilityChange);
 }
 
-function normalizeMessage(value: unknown): RealtimeMessage | null {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
-  const record = value as Record<string, unknown>;
-  if (
-    typeof record.event !== 'string'
-    || typeof record.id !== 'string'
-    || typeof record.topic !== 'string'
-    || !record.payload
-    || typeof record.payload !== 'object'
-    || Array.isArray(record.payload)
-  ) return null;
-  return {
-    event: record.event,
-    id: record.id,
-    payload: record.payload as Record<string, unknown>,
-    topic: record.topic,
-  };
-}
-
-async function requestRealtimeTicket(uid: string) {
-  const token = await getFirebaseIdToken();
-  if (!token || auth?.currentUser?.uid !== uid) throw new Error('unauthenticated');
-  return withRequestTimeout(async (signal) => {
-    const response = await fetch(apiGatewayUrl('/v1/realtime/ticket'), {
-      method: 'POST',
-      headers: {
-        ...(await backendSecurityHeaders(token)),
-        'Content-Type': 'application/json',
-      },
-      body: '{}',
-      signal,
-    });
-    const envelope = await response.json().catch(() => null) as RealtimeTicketEnvelope | null;
-    const ticket = envelope?.data?.ticket;
-    const url = envelope?.data?.url;
-    if (!response.ok || envelope?.success !== true || !ticket || !url) {
-      throw new Error('notification-realtime-unavailable');
-    }
-    return { ticket, url };
-  }, { label: 'notification.realtimeConnection' });
-}
-
 async function connectRealtime() {
   const uid = auth?.currentUser?.uid;
   if (!uid || !isLeader || !shouldConnect() || socket || connecting) return;
   const generation = connectionGeneration;
+  const controller = new AbortController();
+  connectionController = controller;
   connecting = true;
   try {
-    const { ticket, url } = await requestRealtimeTicket(uid);
+    const { ticket, url } = await requestRealtimeTicket(uid, controller.signal);
     if (generation !== connectionGeneration || currentScope() !== coordinatorScope
       || auth?.currentUser?.uid !== uid || !isLeader || !shouldConnect()) return;
     const nextSocket = new WebSocket(url, [REALTIME_PROTOCOL, ticket]);
@@ -297,7 +241,10 @@ async function connectRealtime() {
     notifyError(error instanceof Error ? error : new Error('notification-realtime-unavailable'));
     scheduleReconnect();
   } finally {
-    if (generation === connectionGeneration) connecting = false;
+    if (generation === connectionGeneration) {
+      connecting = false;
+      connectionController = null;
+    }
   }
 }
 

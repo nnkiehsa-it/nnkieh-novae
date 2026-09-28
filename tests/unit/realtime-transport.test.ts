@@ -5,7 +5,7 @@ vi.mock('@/lib/firebase', () => ({ auth: { get currentUser() { return state.user
 vi.mock('@/lib/auth-token', () => ({ getFirebaseIdToken: async () => 'private-token' }));
 vi.mock('@/lib/backend-security', () => ({ backendSecurityHeaders: async () => ({}) }));
 vi.mock('@/lib/api-gateway', () => ({ apiGatewayUrl: (url: string) => url }));
-vi.mock('@/lib/request', () => ({ withRequestTimeout: (work: (signal: AbortSignal) => unknown) => work(new AbortController().signal) }));
+vi.mock('@/lib/request', () => ({ withRequestTimeout: (work: (signal: AbortSignal) => unknown, options: { signal?: AbortSignal }) => work(options.signal ?? new AbortController().signal) }));
 vi.mock('@/services/session-role', () => ({ getCachedSessionRole: () => state.role }));
 vi.mock('@/services/realtime-heartbeat', () => ({ startHeartbeat: vi.fn(), stopHeartbeat: vi.fn(), noteHeartbeatResponse: vi.fn() }));
 
@@ -38,12 +38,18 @@ afterEach(() => {
 });
 it('invalidates pending ticket requests across session restarts', async () => {
   const pending: Array<(value: ReturnType<typeof ticketResponse>) => void> = [];
-  vi.stubGlobal('fetch', vi.fn(() => new Promise((resolve) => pending.push(resolve))));
+  const signals: AbortSignal[] = [];
+  vi.stubGlobal('fetch', vi.fn((_url: string, options: RequestInit) => {
+    signals.push(options.signal as AbortSignal);
+    return new Promise((resolve) => pending.push(resolve));
+  }));
   const transport = await import('@/services/realtime-transport');
   transport.startRealtimeSession(); await settle();
   transport.stopRealtimeSession(); transport.startRealtimeSession();
   cleanup = transport.stopRealtimeSession;
   await settle(); expect(pending).toHaveLength(2);
+  expect(signals[0].aborted).toBe(true);
+  expect(signals[1].aborted).toBe(false);
   pending[0](ticketResponse()); await settle();
   expect(FakeSocket.instances).toHaveLength(0);
   pending[1](ticketResponse()); await settle();

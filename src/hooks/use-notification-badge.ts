@@ -12,19 +12,24 @@ export function useNotificationBadge() {
   const [unread, setUnread] = React.useState(false);
 
   React.useEffect(() => {
+    let active = true;
+    let revision = 0;
+    setUnread(false);
     if (!session.user) return;
     const refresh = () => {
+      const requestRevision = ++revision;
       void fetchNotificationUnreadHint()
-        .then(setUnread)
+        .then((value) => { if (active && revision === requestRevision) setUnread(value); })
         .catch(() => undefined);
     };
     refresh();
-    return subscribeNotificationBadge(
+    const unsubscribe = subscribeNotificationBadge(
       session.user.uid,
       session.isAdmin,
-      () => setUnread(true),
+      () => { revision += 1; setUnread(true); },
       refresh,
     );
+    return () => { active = false; unsubscribe(); };
   }, [session.isAdmin, session.user]);
 
   return unread;

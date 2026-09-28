@@ -1,22 +1,16 @@
 import { subscribeRealtimeTopic } from '@/services/realtime-transport';
-import { isIssueCategory } from '@/constants/categories';
 import type {
-  IssueStatus,
   NotificationRecord,
   NotificationSource,
-  NotificationTargetType,
-  NotificationType,
 } from '@/types';
 import { invokeBackendAction } from '@/services/backend-action';
 import { readRequestTimeoutMs } from '@/lib/request';
-import {
-  normalizeDate,
-  normalizeStatus,
-  toReadableBackendError,
-} from './issues-core';
+import { toReadableBackendError } from './issues-core';
 import { NOTIFICATION_FEED_PAGE_SIZE } from '@/lib/page-size';
-import { normalizeNotificationCursor, type NotificationCursor } from './notification-cursor';
+import type { NotificationCursor } from './notification-cursor';
 export type { NotificationCursor } from './notification-cursor';
+import { normalizeNotificationRecord, normalizeNotificationPage, normalizeNotificationReadState, type NotificationReadState, type NotificationSourcePage } from './notification-records';
+export type { NotificationReadState, NotificationSourcePage } from './notification-records';
 import {
   CONTENT_SHORT_CACHE_TTL_MS,
   captureContentCacheWriteGuard,
@@ -55,72 +49,6 @@ function subscribeNotificationBroadcast(
     }
     callback({ payload });
   }, { onError, onResync });
-}
-
-export interface NotificationSourcePage {
-  cursor: NotificationCursor;
-  hasMore: boolean;
-  notifications: NotificationRecord[];
-}
-
-export interface NotificationReadState {
-  admin: Date | null;
-  announcement: Date | null;
-  broadcast: Date | null;
-  user: Date | null;
-}
-
-function normalizeNotificationType(value: unknown): NotificationType {
-  if (
-    value === 'announcement_created'
-    || value === 'announcement_comment_created'
-    || value === 'facility_status_changed'
-    || value === 'facility_report_created'
-    || value === 'issue_created'
-    || value === 'issue_comment_created'
-    || value === 'issue_status_changed'
-    || value === 'support_goal_met'
-    || value === 'issue_deleted'
-  ) {
-    return value;
-  }
-  return 'issue_comment_created';
-}
-
-function normalizeTargetType(value: unknown): NotificationTargetType {
-  return value === 'announcement' || value === 'facility' ? value : 'issue';
-}
-
-function normalizeNullableString(value: unknown) {
-  return typeof value === 'string' && value.length > 0 ? value : null;
-}
-
-function normalizeOptionalStatus(value: unknown): IssueStatus | import('@/types').FacilityStatus | undefined {
-  if (value === 'unable-to-handle') return value;
-  return typeof value === 'string' ? normalizeStatus(value) : undefined;
-}
-
-function normalizeNotificationRecord(
-  source: NotificationSource,
-  data: Record<string, unknown>,
-): NotificationRecord {
-  const id = String(data.id ?? '');
-  return {
-    id: `${source}:${id}`,
-    source,
-    type: normalizeNotificationType(data.type),
-    target_type: normalizeTargetType(data.targetType),
-    target_id: String(data.targetId ?? ''),
-    comment_id: normalizeNullableString(data.commentId),
-    title: String(data.title ?? ''),
-    actor_uid: normalizeNullableString(data.actorUid),
-    body_preview: normalizeNullableString(data.bodyPreview),
-    issue_category: isIssueCategory(data.issueCategory) ? data.issueCategory : null,
-    old_status: normalizeOptionalStatus(data.oldStatus),
-    new_status: normalizeOptionalStatus(data.newStatus),
-    is_read: Boolean(data.isRead),
-    created_at: normalizeDate(data.createdAt),
-  };
 }
 
 export function subscribeNotificationSource(
@@ -174,15 +102,7 @@ export async function fetchNotificationSourcePages(
     const pages = Object.fromEntries(requests.flatMap(({ source }) => {
       const page = result.pages[source];
       if (!page) return [];
-      const notifications = Array.isArray(page.notifications) ? page.notifications : [];
-      return [[source, {
-        cursor: normalizeNotificationCursor(page.cursor),
-        hasMore: page.hasMore === true,
-        notifications: notifications.map((notification) => normalizeNotificationRecord(
-          source,
-          notification as Record<string, unknown>,
-        )),
-      } satisfies NotificationSourcePage]];
+      return [[source, normalizeNotificationPage(source, page)]];
     })) as Partial<Record<NotificationSource, NotificationSourcePage>>;
     setCachedContentFromRead(cacheGuard, pages);
     return pages;
@@ -199,22 +119,26 @@ export function subscribeNotificationReadState(
   onResync?: () => void,
 ) {
   const channelName = `notification-state:${uid}`;
+  let active = true;
+  let revision = 0;
   const loadInitialState = () => {
+    const requestRevision = revision;
     void getNotificationReadState(uid)
-      .then(callback)
-      .catch((error) => onError?.(toReadableBackendError(error)));
+      .then((state) => { if (active && requestRevision === revision) callback(state); })
+      .catch((error) => { if (active && requestRevision === revision) onError?.(toReadableBackendError(error)); });
   };
   const unsubscribe = subscribeNotificationBroadcast(
     channelName,
     'notification_state_changed',
     (message) => {
+      revision += 1;
       callback(normalizeNotificationReadState(message.payload as Record<string, unknown>));
     },
     onError,
     onResync,
   );
   if (loadInitial) loadInitialState();
-  return unsubscribe;
+  return () => { active = false; unsubscribe(); };
 }
 
 async function getNotificationReadState(uid: string): Promise<NotificationReadState> {
@@ -242,18 +166,7 @@ export async function fetchNotificationSnapshot(
   } = {},
 ) {
   const normalizePages = (value: Partial<Record<NotificationSource, Record<string, unknown>>>) =>
-    Object.fromEntries(sources.map((source) => {
-      const page = value[source] ?? {};
-      const notifications = Array.isArray(page.notifications) ? page.notifications : [];
-      return [source, {
-        cursor: normalizeNotificationCursor(page.cursor),
-        hasMore: page.hasMore === true,
-        notifications: notifications.map((notification) => normalizeNotificationRecord(
-          source,
-          notification as Record<string, unknown>,
-        )),
-      } satisfies NotificationSourcePage];
-    })) as Record<NotificationSource, NotificationSourcePage>;
+    Object.fromEntries(sources.map((source) => [source, normalizeNotificationPage(source, value[source] ?? {})])) as Record<NotificationSource, NotificationSourcePage>;
   const fn = invokeBackendAction<
     { sources: NotificationSource[]; uid: string },
     { openedAt: string; pages: Partial<Record<NotificationSource, Record<string, unknown>>>; state: Record<string, unknown> }
@@ -313,15 +226,6 @@ export function subscribeNotificationBadge(
     onResync ?? onStateChanged,
   ));
   return () => { unsubscribers.forEach((unsubscribe) => unsubscribe()); };
-}
-
-function normalizeNotificationReadState(data: Record<string, unknown>): NotificationReadState {
-  return {
-    admin: normalizeDate(data.adminOpenedAt),
-    announcement: normalizeDate(data.announcementOpenedAt),
-    broadcast: normalizeDate(data.broadcastOpenedAt),
-    user: normalizeDate(data.userOpenedAt),
-  };
 }
 
 export async function markNotificationsOpened() {
