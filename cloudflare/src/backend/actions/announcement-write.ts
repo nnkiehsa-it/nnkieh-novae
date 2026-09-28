@@ -3,7 +3,7 @@ import { requirePermission } from "./auth.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import {
   validateMarkdownUploadsBeforeCreate,
-} from "./uploads.ts";
+} from "./upload-markdown.ts";
 import { asBoolean, asUuid } from "./utils.ts";
 import { INPUT_LIMITS, requiredMediaContent, requiredText } from "./validation.ts";
 

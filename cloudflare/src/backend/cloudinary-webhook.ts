@@ -1,7 +1,8 @@
 import type { AppDatabaseClient } from "./database/client.ts";
 import { errorStatus, publicErrorBody } from "./shared/http.ts";
 import { createFunctionLogger } from "./shared/observability.ts";
-import { loadPlatformSettings, maxUploadBytes } from "./shared/platform-settings.ts";
+import { loadImageUploadSettings } from "./shared/platform-settings.ts";
+import { readCloudinaryImage } from "./shared/image-upload-validation.ts";
 
 export async function handleCloudinaryWebhook(body: Uint8Array, database: AppDatabaseClient) {
   const log = createFunctionLogger("cloudinaryWebhook");
@@ -14,33 +15,23 @@ export async function handleCloudinaryWebhook(body: Uint8Array, database: AppDat
     }
     const publicId = String(payload.public_id ?? "");
     if (!publicId) throw new Error("validation-required");
-    const format = String(payload.format ?? "").toLowerCase();
-    const resourceType = String(payload.resource_type ?? "");
-    const deliveryType = String(payload.type ?? "");
-    const bytes = Number(payload.bytes ?? 0);
-    const width = Number(payload.width ?? 0);
-    const height = Number(payload.height ?? 0);
-    const { imageUploads } = await loadPlatformSettings(database);
-    const validAsset = format === "webp"
-      && resourceType === "image"
-      && deliveryType === "authenticated"
-      && bytes > 0
-      && bytes <= maxUploadBytes(imageUploads)
-      && width > 0
-      && height > 0
-      && width <= imageUploads.maxDimension
-      && height <= imageUploads.maxDimension;
+    const settings = await loadImageUploadSettings(database);
+    const { bytes, width, height, valid: validAsset } = readCloudinaryImage(payload, settings);
 
-    await database.transaction(async (tx) => {
-      await tx.sql`update app_private.uploads set
+    const orphaned = await database.transaction(async (tx) => {
+      const updated = await tx.sql`update app_private.uploads set
         status = ${validAsset ? "ready" : "failed"},
-        size_bytes = ${Number.isFinite(bytes) ? bytes : null},
-        width = ${Number.isFinite(width) ? width : null},
-        height = ${Number.isFinite(height) ? height : null},
+        size_bytes = ${Number.isSafeInteger(bytes) && bytes >= 0 ? bytes : null},
+        width = ${Number.isSafeInteger(width) && width >= 0 ? width : null},
+        height = ${Number.isSafeInteger(height) && height >= 0 ? height : null},
         updated_at = ${new Date().toISOString()}
-        where cloudinary_public_id = ${publicId} and status = 'pending'`;
+        where cloudinary_public_id = ${publicId} and status = 'pending' returning id`;
+      const tracked = updated.rows.length > 0 || Boolean(await tx.sqlMaybe`
+        select id from app_private.uploads where cloudinary_public_id = ${publicId}`);
+      // A canceled or failed batch can be cleaned up before the provider finishes uploading.
+      const orphaned = !tracked && publicId.startsWith("srp/");
 
-      if (!validAsset) {
+      if (!validAsset || orphaned) {
         const { error: deletionError } = await tx.call("app_api", "enqueue_background_job", {
           job_type: "deletion",
           scope_id: publicId,
@@ -53,10 +44,11 @@ export async function handleCloudinaryWebhook(body: Uint8Array, database: AppDat
         });
         if (deletionError) throw deletionError;
       }
+      return orphaned;
     });
 
     log.success("media-webhook.completed", {
-      assetStatus: validAsset ? "ready" : "rejected",
+      assetStatus: orphaned ? "removed" : validAsset ? "ready" : "rejected",
       status: 200,
     });
     return Response.json({ ok: true });

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { handleCloudinaryWebhook } from "../../../cloudflare/src/backend/cloudinary-webhook.ts";
 import {
   asRecord,
   callAction,
@@ -309,9 +310,24 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   ));
   assert.equal(asRecord(hidden.errors)[uploadId], "not-found");
 
+  const publicId = `${session.folder}/${session.publicId}`;
+  const webhook = new TextEncoder().encode(JSON.stringify({
+    public_id: publicId, format: "webp", resource_type: "image", type: "authenticated",
+    bytes: 256, width: 64, height: 64,
+  }));
+  assert.equal((await handleCloudinaryWebhook(webhook, database)).status, 200);
+  const beforeDeletion = await database.sql`
+    select id from app_private.background_jobs where payload->>'cloudinary_public_id' = ${publicId}`;
+  assert.equal(beforeDeletion.rows.length, 0, "a repeated webhook must retain a tracked upload");
+
   const deleted = asRecord(await callAction("deleteUploadedImages", {
-    storagePaths: [String(session.folder) + "/" + String(session.publicId)],
+    storagePaths: [publicId],
   }, user.auth));
   assert.equal(deleted.deleted, 1);
   assert.equal(await tableRow("uploads", "id", uploadId), null);
+  assert.equal((await handleCloudinaryWebhook(webhook, database)).status, 200);
+  const lateCleanup = await database.sql`
+    select id from app_private.background_jobs
+    where payload->>'cloudinary_public_id' = ${publicId} and created_by = 'cloudinary-webhook'`;
+  assert.equal(lateCleanup.rows.length, 1, "a late upload must schedule cleanup after its batch was removed");
 });

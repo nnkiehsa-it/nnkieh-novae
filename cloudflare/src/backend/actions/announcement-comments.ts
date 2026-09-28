@@ -1,7 +1,7 @@
 import { asRecord, asString } from "../shared/http.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { hasPermission } from "./auth.ts";
-import { validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
+import { validateMarkdownUploadsBeforeCreate } from "./upload-markdown.ts";
 import { asNumber, asUuid, readCursor, readCursorDate } from "./utils.ts";
 import { INPUT_LIMITS, requiredMediaContent } from "./validation.ts";
 import { loadContentVersion } from "./content-versions.ts";

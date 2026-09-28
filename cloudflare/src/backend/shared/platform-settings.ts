@@ -130,6 +130,12 @@ export async function loadPlatformSettings(database: DatabaseSession): Promise<P
   };
 }
 
+export async function loadImageUploadSettings(database: DatabaseSession): Promise<ImageUploadSettings> {
+  const row = await database.sqlMaybe<Selected<"runtime_settings", "value">>`
+    select value from app_private.runtime_settings where key = ${IMAGE_UPLOADS_KEY}`;
+  return normalizeImageUploads(parseStoredValue(row?.value));
+}
+
 export function maxImagesForTarget(settings: ImageUploadSettings, targetType: UploadTargetType) {
   if (targetType === "issue") return settings.issueMaxImages;
   if (targetType === "facility") return settings.facilityMaxImages;

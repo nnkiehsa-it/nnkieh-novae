@@ -90,4 +90,8 @@ sequenceDiagram
 
 內容內只保存 `srp-upload://{uploadId}`，不保存可長期公開的 Cloudinary URL。顯示圖片時，Worker 驗證 viewer scope 後簽發 full / thumbnail URL；client 會在到期前 60 秒停止沿用 cache。Cloudinary webhook 也必須通過 provider signature，才會更新 upload lifecycle。
 
-建立內容失敗時，composer 會請後端清理由這次操作上傳的圖片。實際刪除若失敗，工作會進 deletion job，和其他背景工作一起出現在 operations console，平台總管理員可在那裡重試。外部目標已經不存在時，刪除視為完成，不再重排。
+一批圖片共用一次圖片政策讀取；建立 session 使用一筆批次 insert，完成上傳時也一次讀取該批紀錄。Markdown 附件驗證、session 生命週期、圖片存取授權各自放在獨立模組。
+
+任一圖片上傳或完成驗證失敗時，client 會等同批請求結束，再請後端清理整批未附加圖片。Worker 的完成驗證也會等待全部操作結束才回復交易，避免其他圖片仍在使用已釋放的資料庫連線。編輯器保留已選取的預覽與文字，使用者可直接重試；處理期間不能移除正在送出的附件。
+
+建立內容失敗時，composer 同樣會請後端清理由這次操作上傳的圖片。刪除 upload 紀錄與建立 deletion job 在同一個交易完成；晚到的 Cloudinary webhook 若找不到對應的 Novae 紀錄，會再次排程清理，已存在的 ready／attached 紀錄則保留。實際刪除若失敗，工作會和其他背景工作一起出現在 operations console，平台總管理員可在那裡重試。外部目標已經不存在時，刪除視為完成，不再重排。

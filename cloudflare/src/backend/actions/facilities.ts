@@ -2,7 +2,7 @@ import { asRecord, asString } from "../shared/http.ts";
 import { canManageFacilityCategory, requireFacilityCategoryPermission } from "./auth.ts";
 import { getFacilityCategories, getFacilityCategory } from "./category-catalog.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
-import { validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
+import { validateMarkdownUploadsBeforeCreate } from "./upload-markdown.ts";
 import { asNumber, asUuid, countRecord } from "./utils.ts";
 import { INPUT_LIMITS, optionalMediaContent, optionalText, requiredText } from "./validation.ts";
 import type { Selected } from "../database/schema.ts";

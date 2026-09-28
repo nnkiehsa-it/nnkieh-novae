@@ -1,7 +1,7 @@
 import { asString } from "../shared/http.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { getIssueCategory, issueCategoryPolicyLists } from "./category-catalog.ts";
-import { validateMarkdownUploadsBeforeCreate } from "./uploads.ts";
+import { validateMarkdownUploadsBeforeCreate } from "./upload-markdown.ts";
 import { INPUT_LIMITS, requiredMediaContent, requiredText } from "./validation.ts";
 
 export async function createIssue(payload: JsonRecord, auth: AuthContext, database: BackendDatabase) {
