@@ -1,4 +1,9 @@
 const messages = {
+  'admin.allowContentImages': '允許內文上傳圖片',
+  'admin.allowCommentImages': '允許留言上傳圖片',
+  'admin.contentImageLimit': '每篇最多圖片張數',
+  'admin.imagePolicyHelp': '圖片規則只影響之後新增的圖片，已發布的圖片仍會保留。尺寸與壓縮可至平台設定調整。',
+  'admin.imagePolicyLocation': '圖片上傳開關與張數請至「內容與分類」分別設定。這裡的處理設定適用於整個平台。',
   'admin.title': '平台管理',
   'admin.overviewTitle': '總覽',
   'admin.contentTitle': '內容與分類',

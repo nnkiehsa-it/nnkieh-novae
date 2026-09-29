@@ -36,6 +36,8 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 const DETAIL_LABELS: Record<string, string> = {
+  announcementMaxImages: "ui.admin.announcementImageLimit",
+  announcementCommentMaxImages: "ui.admin.commentImageLimit",
   announcementCommentsEnabled: "ui.adminConsole.detailAnnouncementComments",
   announcementId: "ui.adminConsole.detailAnnouncementId",
   categoryId: "ui.adminConsole.detailCategoryId",

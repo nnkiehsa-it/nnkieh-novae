@@ -12,6 +12,8 @@ import type {
 } from '@/types/categories';
 
 export interface CategoryManagementInput {
+  announcementMaxImages: number;
+  announcementCommentMaxImages: number;
   announcementCommentsEnabled: boolean;
   deletedFacilityCategoryIds: string[];
   deletedIssueCategoryIds: string[];

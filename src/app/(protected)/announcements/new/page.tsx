@@ -33,6 +33,7 @@ export default function AnnouncementComposerPage() {
     >
       <ComposerField
         attachments={form.images.images}
+        maxImages={form.images.maxImages}
         attachmentsUploading={form.images.uploading}
         content={form.content}
         contentLabel={translate('ui.announcement.contentLabel')}

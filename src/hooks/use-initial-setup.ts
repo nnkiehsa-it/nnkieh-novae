@@ -13,9 +13,12 @@ import type {
 } from "@/types/categories";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
 import { useForegroundPoll } from "@/hooks/use-foreground-poll";
+import { RATE_LIMITS } from "@/generated/rate-limits";
 
 const categoryPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 const newIssue = (isDefault = false): IssueCategoryDraft => ({
+  maxImages: RATE_LIMITS.imageUploads.issueMaxImages,
+  commentMaxImages: RATE_LIMITS.imageUploads.commentMaxImages,
   authorVisible: true,
   commentsEnabled: true,
   id: "",
@@ -27,6 +30,7 @@ const newIssue = (isDefault = false): IssueCategoryDraft => ({
   supportGoal: null,
 });
 const newFacility = (isDefault = false): FacilityCategoryDraft => ({
+  maxImages: RATE_LIMITS.imageUploads.facilityMaxImages,
   id: "",
   isDefault,
   label: "",

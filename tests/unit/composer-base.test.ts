@@ -10,9 +10,10 @@ const images = vi.hoisted(() => ({
   clear: vi.fn(),
   uploadAndAppend: vi.fn(),
   uploading: false,
+  withinLimit: true,
 }));
 vi.mock("@/hooks/use-image-attachments", () => ({ useImageAttachments: () => images }));
-vi.mock("@/hooks/use-categories", () => ({ useCategories: () => ({ imageUploads: {} }) }));
+vi.mock("@/hooks/use-categories", () => ({ useCategories: () => ({ imageUploads: {}, issueCategories: [] }) }));
 vi.mock("@/hooks/use-session", () => ({ useSession: () => ({ user: { uid: "member" } }) }));
 vi.mock("@/services/uploads", () => ({ deleteUploadedImages: vi.fn(async () => undefined) }));
 vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));

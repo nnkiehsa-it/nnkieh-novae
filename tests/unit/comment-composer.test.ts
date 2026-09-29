@@ -18,6 +18,7 @@ const submit = vi.fn(async () => undefined);
 async function render(content = "中文留言", busy = false) {
   await act(async () => root.render(createElement(CommentComposer, {
     busy, content, onChange: vi.fn(), onSubmit: submit,
+    images: { images: [], maxImages: 0, withinLimit: true, uploading: false, clear: vi.fn(), pick: vi.fn(), remove: vi.fn(), uploadAndAppend: vi.fn() },
   })));
 }
 

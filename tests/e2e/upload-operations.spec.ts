@@ -50,6 +50,27 @@ test('composer upload creates, finalizes, and rolls back provider resources', as
   });
   await expect(member.page.getByRole('heading', { name: title })).toBeVisible();
   const issueUrl = member.page.url();
+
+  // The comment picker sits immediately before Send, and image-only comments render as media.
+  const addImage = member.page.getByRole('button', { name: 'Add image', exact: true });
+  await expect(addImage).toBeVisible();
+  await member.page.getByRole('region', { name: 'Discussion' }).locator('input[type=file]').setInputFiles('public/pwa-64x64.png');
+  await expect(member.page.getByAltText('Attachment preview')).toHaveCount(1);
+  const send = member.page.getByRole('button', { name: 'Post', exact: true });
+  await expect(send).toBeEnabled();
+  await expectBackendActions(member.page, ['createImageUploadSessions', 'finalizeImageUploads', 'createComment'], async () => {
+    await send.click();
+  });
+  const comment = member.page.locator('[data-comment-id]').first();
+  await expect(comment.locator('img')).toHaveCount(1);
+  await expect(comment).not.toContainText('srp-upload://');
+  await comment.getByRole('button', { name: 'Reply', exact: true }).click();
+  await member.page.getByRole('region', { name: 'Discussion' }).locator('input[type=file]').setInputFiles('public/pwa-192x192.png');
+  await expect(member.page.getByAltText('Attachment preview')).toHaveCount(1);
+  await expectBackendActions(member.page, ['createImageUploadSessions', 'finalizeImageUploads', 'createComment'], async () => {
+    await member.page.getByRole('button', { name: 'Reply', exact: true }).last().click();
+  });
+  await expect(member.page.locator('[data-comment-id]')).toHaveCount(2);
   await member.context.close();
 
   const admin = await newUserPage(browser, 'admin');

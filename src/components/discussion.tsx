@@ -19,6 +19,8 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonRows } from "@/components/ui/skeleton-rows";
 import { ChoiceSelect } from "@/components/ui/choice-select";
+import { useCategories } from "@/hooks/use-categories";
+import { stripMarkdownImages } from "@/lib/markdown-images";
 
 interface ReplyTarget {
   authorUid: string;
@@ -27,7 +29,8 @@ interface ReplyTarget {
 }
 
 function getReplyExcerpt(content: string) {
-  const characters = Array.from(content.trim().replace(/\s+/gu, " "));
+  const characters = Array.from(stripMarkdownImages(content).trim().replace(/\s+/gu, " "));
+  if (characters.length === 0) return translate("markdown.imageAttachments");
   const excerpt = characters.slice(0, 20).join("");
   return characters.length > 20 ? `${excerpt}…` : excerpt;
 }
@@ -46,6 +49,7 @@ export function Discussion({
   onRetry,
   sort,
   targetKey,
+  categoryId,
 }: {
   comments: DiscussionCommentRecord[];
   enabled?: boolean;
@@ -60,11 +64,18 @@ export function Discussion({
   onRetry?: () => Promise<void>;
   sort: CommentSortOption;
   targetKey: string;
+  categoryId?: string;
 }) {
   useLocaleSubscription();
   const session = useSession();
   const [replyTarget, setReplyTarget] = React.useState<ReplyTarget | null>(null);
-  const composer = useDiscussionComposer(session.user?.uid, targetKey, replyTarget?.parentCommentId ?? null, onCreate);
+  const categories = useCategories();
+  const [target, scopeId] = targetKey.split(":");
+  const maxImages = target === "announcement" ? categories.features.announcementCommentMaxImages
+    : categories.issueCategories.find((item) => item.id === categoryId)?.commentMaxImages ?? 0;
+  const composer = useDiscussionComposer(session.user?.uid, targetKey, replyTarget?.parentCommentId ?? null, onCreate, {
+    targetType: target === "announcement" ? "announcement_comment" : "comment", scopeId, maxImages,
+  });
   const profiles = useDiscussionProfiles(comments);
   const composerDockRef = React.useRef<HTMLDivElement>(null);
   const view = !enabled ? "disabled" : loading && !comments.length ? "loading" : "content";
@@ -136,6 +147,7 @@ export function Discussion({
                       currentUid={session.user?.uid}
                       onDelete={onDelete}
                       onReply={(target, parentCommentId) => {
+                        if (composer.busy || !enabled) return;
                         setReplyTarget({
                           authorUid: target.author_uid,
                           content: target.content,
@@ -189,6 +201,7 @@ export function Discussion({
                   aria-label={translate("ui.common.cancel")}
                   className="shrink-0"
                   onClick={() => {
+                    if (composer.busy) return;
                     setReplyTarget(null);
                   }}
                   size="icon-xs"
@@ -200,6 +213,7 @@ export function Discussion({
             ) : null}
             </AnimatePresence>
             <CommentComposer
+              images={composer.images}
               busy={composer.busy}
               content={composer.content}
               draftStatus={composer.status}

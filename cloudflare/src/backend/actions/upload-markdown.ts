@@ -19,7 +19,7 @@ async function validateMarkdownUploads(
   const uploadIds = [...new Set([...content.matchAll(UPLOAD_ID)].map((match) => match[1]).filter(Boolean))];
   if (uploadIds.length === 0) return;
   const maxImages = await loadImageLimit(database, targetType, scopeId);
-  if (sources.length > maxImages) throw new Error("validation-too-many");
+  if (Math.max(sources.length, uploadIds.length) > maxImages) throw new Error("validation-too-many");
 
   const { rows } = await database.sql<Selected<
     "uploads", "id" | "owner_uid" | "status" | "attached_target_type" | "attached_target_id"

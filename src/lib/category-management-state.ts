@@ -1,8 +1,11 @@
 import type { FacilityCategoryConfig, IssueCategoryConfig } from "@/types/categories";
+import { RATE_LIMITS } from "@/generated/rate-limits";
 
 const CATEGORY_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 
 export const newIssueCategory = (sortOrder: number): IssueCategoryConfig => ({
+  maxImages: RATE_LIMITS.imageUploads.issueMaxImages,
+  commentMaxImages: RATE_LIMITS.imageUploads.commentMaxImages,
   authorDeleteEnabled: false,
   authorVisible: true,
   commentsEnabled: true,
@@ -17,6 +20,7 @@ export const newIssueCategory = (sortOrder: number): IssueCategoryConfig => ({
 });
 
 export const newFacilityCategory = (sortOrder: number): FacilityCategoryConfig => ({
+  maxImages: RATE_LIMITS.imageUploads.facilityMaxImages,
   authorDeleteEnabled: false,
   id: "",
   isDefault: sortOrder === 0,

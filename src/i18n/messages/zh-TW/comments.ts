@@ -1,5 +1,5 @@
 const messages = {
-  'comments.draftRestored': '已恢復此留言草稿。',
+  'comments.draftRestored': '已恢復留言文字，圖片請重新選取。',
   'comments.draftUnavailable': '無法儲存草稿，送出前請保持此頁開啟。',
   'comments.error': '錯誤：{message}',
   'comments.imageLimit': '每則留言最多 {count} 張圖片',

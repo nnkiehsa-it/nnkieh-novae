@@ -7,16 +7,24 @@ import { useComposerDraft } from "@/hooks/use-composer-draft";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
 import { readComposerDraft, removeComposerDraft } from "@/lib/composer-draft";
 import { INPUT_LIMITS } from "@/constants/input-limits";
+import { useImageAttachments } from "@/hooks/use-image-attachments";
+import { useCategories } from "@/hooks/use-categories";
+import { deleteUploadedImages, type ImageUploadTargetType } from "@/services/uploads";
 
 export function useDiscussionComposer(
   uid: string | undefined,
   targetKey: string,
   parentCommentId: string | null,
   onCreate: (content: string, parentCommentId: string | null) => Promise<void>,
+  media: { targetType: ImageUploadTargetType; scopeId: string; maxImages: number },
 ) {
   const { t } = useI18n();
   const draft = useComposerDraft(uid, `discussion:${JSON.stringify([targetKey, parentCommentId])}`);
   const feedback = useActionFeedback();
+  const categories = useCategories();
+  const images = useImageAttachments(media.targetType, categories.imageUploads, media.maxImages, media.scopeId);
+  const clearImages = images.clear;
+  useLayoutEffect(() => { clearImages(); }, [clearImages, draft.key]);
   const submitting = useRef(false);
   const latest = useRef({ key: draft.key, content: draft.value.content });
   useLayoutEffect(() => {
@@ -26,11 +34,18 @@ export function useDiscussionComposer(
   async function submit() {
     const content = draft.value.content;
     const key = draft.key;
-    if (submitting.current || !content.trim() || content.length > INPUT_LIMITS.comment) return;
+    if (submitting.current || images.uploading || !images.withinLimit
+      || (!content.trim() && images.images.length === 0) || content.length > INPUT_LIMITS.comment) return;
     submitting.current = true;
+    let uploaded: Awaited<ReturnType<typeof images.uploadAndAppend>>["uploaded"] = [];
+    let committed = false;
     try {
       await feedback.run(async () => {
-        await onCreate(content.trim(), parentCommentId);
+        const result = await images.uploadAndAppend(content);
+        uploaded = result.uploaded;
+        await onCreate(result.content, parentCommentId);
+        committed = true;
+        if (latest.current.key === key) images.clear();
         const persisted = key ? readComposerDraft(key) : null;
         // A remounted composer or a new edit may already own this storage entry.
         if (persisted && persisted.content !== content) return;
@@ -38,6 +53,7 @@ export function useDiscussionComposer(
         else if (key && latest.current.key !== key) removeComposerDraft(key);
       });
     } catch (error) {
+      if (!committed && uploaded.length) await deleteUploadedImages(uploaded.map((image) => image.storagePath)).catch(() => undefined);
       toast.error(error instanceof Error ? error.message : t("ui.discussion.submitFailed"));
     } finally {
       submitting.current = false;
@@ -45,7 +61,8 @@ export function useDiscussionComposer(
   }
 
   return {
-    busy: feedback.busy,
+    busy: feedback.busy || images.uploading,
+    images,
     content: draft.value.content,
     feedbackState: feedback.state,
     status: draft.restored ? "restored" as const : draft.saved ? "saved" as const : "unavailable" as const,

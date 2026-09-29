@@ -18,6 +18,7 @@ import { INPUT_LIMITS } from "@/constants/input-limits";
 export function ComposerField({
   attachments,
   attachmentsUploading,
+  maxImages = 0,
   content,
   contentLabel,
   onContentChange,
@@ -32,6 +33,7 @@ export function ComposerField({
 }: {
   attachments: Array<{ height: number; previewUrl: string; width: number }>;
   attachmentsUploading: boolean;
+  maxImages?: number;
   content: string;
   contentLabel: string;
   onContentChange: (value: string) => void;
@@ -47,7 +49,7 @@ export function ComposerField({
   useLocaleSubscription();
 
   return (
-    <div className="grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_17rem]">
+    <div className={cn("grid min-w-0 items-start gap-5", (maxImages > 0 || attachments.length > 0) && "lg:grid-cols-[minmax(0,1fr)_17rem]")}>
       <div className="grid min-w-0 gap-5">
         <div className="grid min-w-0 gap-2">
           <div className="flex items-center justify-between">
@@ -97,7 +99,7 @@ export function ComposerField({
               id="composer-content"
               maxLength={INPUT_LIMITS.content}
               onChange={onContentChange}
-              onPickImages={onPickImages}
+              onPickImages={maxImages > 0 ? onPickImages : undefined}
               placeholder={placeholder}
             />
           )}
@@ -108,13 +110,14 @@ export function ComposerField({
           ) : null}
         </div>
       </div>
-      <ComposerMediaAttachments
+      {maxImages > 0 || attachments.length > 0 ? <ComposerMediaAttachments
+        maxImages={maxImages}
         attachments={attachments}
         className="lg:sticky lg:top-4"
         onPickImages={onPickImages}
         onRemoveImage={onRemoveImage}
         uploading={attachmentsUploading}
-      />
+      /> : null}
     </div>
   );
 }

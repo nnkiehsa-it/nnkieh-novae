@@ -7,7 +7,6 @@ import { usePlatformSettings } from "@/hooks/use-platform-settings";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { ApplyReviewDialog } from "@/components/admin/apply-review-dialog";
 import {
-  IMAGE_COUNT_FIELDS,
   IMAGE_PROCESSING_FIELDS,
   describeSettingKey,
 } from "@/components/admin/platform-setting-fields";
@@ -84,12 +83,8 @@ export function PlatformSettings() {
         </div>
       ) : (
         <div className="space-y-4">
-          <ListSection header={t("admin.settingsImageCounts")}>
-            <ImageFields fields={IMAGE_COUNT_FIELDS} settings={value.imageUploads} update={(key, next) =>
-              draft.update((current) => ({ ...current, imageUploads: { ...current.imageUploads, [key]: next } }))
-            } />
-          </ListSection>
-          <SettingsGroup title={t("admin.settingsImageProcessing")}>
+          <p className="text-sm text-muted-foreground">{t("admin.imagePolicyLocation")}</p>
+          <SettingsGroup defaultOpen title={t("admin.settingsImageProcessing")}>
             <ListSection>
               <ImageFields fields={IMAGE_PROCESSING_FIELDS} settings={value.imageUploads} update={(key, next) =>
                 draft.update((current) => ({ ...current, imageUploads: { ...current.imageUploads, [key]: next } }))
@@ -124,7 +119,7 @@ function ImageFields({
   settings,
   update,
 }: {
-  fields: typeof IMAGE_COUNT_FIELDS;
+  fields: typeof IMAGE_PROCESSING_FIELDS;
   settings: ImageUploadSettings;
   update: (key: keyof ImageUploadSettings, value: number) => void;
 }) {

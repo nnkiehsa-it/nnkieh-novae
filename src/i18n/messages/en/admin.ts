@@ -1,4 +1,9 @@
 const messages = {
+  'admin.allowContentImages': 'Allow images in posts',
+  'admin.allowCommentImages': 'Allow images in comments',
+  'admin.contentImageLimit': 'Images per post',
+  'admin.imagePolicyHelp': 'These rules apply to new images. Published images remain available. Size and compression are managed in Platform settings.',
+  'admin.imagePolicyLocation': 'Set upload permissions and image counts in Content & categories. Processing settings here apply across the platform.',
   'admin.title': 'Administration',
   'admin.overviewTitle': 'Overview',
   'admin.contentTitle': 'Content and categories',

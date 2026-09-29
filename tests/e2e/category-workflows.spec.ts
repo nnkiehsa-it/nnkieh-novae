@@ -69,6 +69,10 @@ test('proposal and facility categories create, rename, surface, and delete atomi
     'E2E Temporary Proposal',
     'e2e-temp-proposal',
   );
+  const images = await openCategory(admin.page, 'E2E Temporary Proposal');
+  await images.getByRole('switch', { name: 'Allow images in posts' }).click();
+  await images.getByRole('spinbutton', { name: 'Images per comment' }).fill('3');
+  await closeCategory(admin.page);
   await saveCategories(admin.page);
 
   let ordinary = await newUserPage(browser, 'ordinary');
@@ -78,8 +82,16 @@ test('proposal and facility categories create, rename, surface, and delete atomi
     .toBeVisible();
   await ordinary.context.close();
 
+  ordinary = await newUserPage(browser, 'ordinary');
+  await ordinary.page.goto('/issues/e2e-temp-proposal/compose/new');
+  await expect(ordinary.page.getByRole('textbox', { name: 'Proposal title' })).toBeVisible();
+  await expect(ordinary.page.getByRole('button', { name: 'Add image', exact: true })).toHaveCount(0);
+  await ordinary.context.close();
+
   await admin.page.goto('/admin/content');
   const renaming = await openCategory(admin.page, 'E2E Temporary Proposal');
+  await expect(renaming.getByRole('switch', { name: 'Allow images in posts' })).not.toBeChecked();
+  await expect(renaming.getByRole('spinbutton', { name: 'Images per comment' })).toHaveValue('3');
   await renaming.getByRole('textbox', { name: 'Name', exact: true }).fill('E2E Renamed Proposal');
   await closeCategory(admin.page);
   await saveCategories(admin.page);

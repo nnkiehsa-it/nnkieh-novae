@@ -19,17 +19,21 @@ export function ComposerMediaAttachments({
   onPickImages,
   onRemoveImage,
   uploading,
+  maxImages,
+  compact = false,
 }: {
   attachments: Array<{ height: number; previewUrl: string; width: number }>;
   className?: string;
   onPickImages: (files: FileList | null) => void;
   onRemoveImage: (index: number) => void;
   uploading: boolean;
+  maxImages: number;
+  compact?: boolean;
 }) {
   const fileRef = React.useRef<HTMLInputElement>(null);
   const { t } = useI18n();
   const [opened, setOpened] = React.useState<number | null>(null);
-  const headingId = "composer-images-heading";
+  const headingId = React.useId();
   // An attachment removed while it is open leaves nothing to look at.
   const open = opened !== null ? attachments[opened] : undefined;
 
@@ -38,19 +42,19 @@ export function ComposerMediaAttachments({
       aria-labelledby={headingId}
       aria-busy={uploading}
       className={cn(
-        "grid h-fit gap-3 rounded-xl border border-dashed bg-muted/20 p-3",
+        compact ? "grid h-fit gap-2 px-2 pb-1" : "grid h-fit gap-3 rounded-xl border border-dashed bg-muted/20 p-3",
         className,
       )}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
           <h3 className="text-sm font-medium" id={headingId}>
-            {t("markdown.imageAttachments")}
+              {t("markdown.imageAttachments")} · {attachments.length} / {maxImages}
           </h3>
         </div>
-        <Button
+        {!compact && maxImages > 0 ? <Button
           className="shrink-0"
-          disabled={uploading}
+          disabled={uploading || attachments.length >= maxImages}
           onClick={() => fileRef.current?.click()}
           size="sm"
           type="button"
@@ -58,9 +62,9 @@ export function ComposerMediaAttachments({
         >
           {uploading ? <LoadingSpinner /> : <ImagePlus />}
           {uploading ? t("markdown.processingImages") : t("ui.composer.addImage")}
-        </Button>
+        </Button> : null}
       </div>
-      <input
+      {!compact ? <input
         ref={fileRef}
         accept="image/*"
         className="sr-only"
@@ -70,9 +74,10 @@ export function ComposerMediaAttachments({
           event.target.value = "";
         }}
         type="file"
-      />
+      /> : null}
+      {attachments.length > maxImages ? <p className="text-xs text-destructive" role="alert">{t("upload.imageLimit", { count: maxImages })}</p> : null}
       {attachments.length > 0 ? (
-        <ImagePreviewGrid>
+        <ImagePreviewGrid className={compact ? "grid-cols-[repeat(auto-fill,minmax(4rem,1fr))] max-h-40 overflow-y-auto" : undefined}>
           {attachments.map((image, index) => (
             <ImagePreviewTile
               actions={

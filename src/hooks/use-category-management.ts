@@ -49,6 +49,8 @@ export function useCategoryManagement() {
     (result: {
       facilityCategories: FacilityCategoryConfig[];
       features: {
+        announcementMaxImages: number;
+        announcementCommentMaxImages: number;
         announcementCommentsEnabled: boolean;
         facilitiesEnabled: boolean;
         issuesEnabled: boolean;
@@ -61,6 +63,8 @@ export function useCategoryManagement() {
           ...result.facilityCategories.map((item) => item.id),
         ],
         stored: {
+          announcementMaxImages: result.features.announcementMaxImages,
+          announcementCommentMaxImages: result.features.announcementCommentMaxImages,
           announcementCommentsEnabled: result.features.announcementCommentsEnabled,
           deletedFacilityCategoryIds: [],
           deletedIssueCategoryIds: [],
@@ -129,6 +133,11 @@ export function useCategoryManagement() {
     },
     source: stored,
     validate: (value) =>
+      [value.announcementMaxImages, value.announcementCommentMaxImages,
+        ...value.issueCategories.flatMap((item) => [item.maxImages, item.commentMaxImages]),
+        ...value.facilityCategories.map((item) => item.maxImages)]
+        .every((limit) => Number.isInteger(limit) && limit >= 0 && limit <= 20)
+      &&
       (!value.issuesEnabled
         || (hasValidCategoryIdentity(value.issueCategories)
           && value.issueCategories.some((item) => item.isDefault)

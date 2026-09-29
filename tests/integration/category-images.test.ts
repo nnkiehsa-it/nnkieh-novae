@@ -25,6 +25,7 @@ integrationTest("category image limits apply to sessions, actual comment parents
   }
   const upload = await insertReadyUpload(member.auth.uid, "category-policy");
   await assert.rejects(() => callAction("createIssue", { category: "proposal-a", title: "Disabled images", content: markdown(upload.id) }, member.auth), /validation-too-many/);
+  await assert.rejects(() => callAction("createIssue", { category: "proposal-a", title: "Hidden upload reference", content: `srp-upload://${upload.id}` }, member.auth), /validation-too-many/);
   await assert.rejects(() => callAction("createFacility", { categoryId: "general", title: "Disabled images", location: "Room", content: markdown(upload.id) }, member.auth), /validation-too-many/);
   await assert.rejects(() => callAction("createAnnouncement", { title: "Disabled images", content: markdown(upload.id) }, admin.auth), /validation-too-many/);
   const parent = asRecord(asRecord(await callAction("createIssue", { category: "proposal-a", title: "Text allowed", content: "Body" }, member.auth)).issue);
@@ -39,10 +40,11 @@ integrationTest("category image limits apply to sessions, actual comment parents
   assert.equal((await tableRow("uploads", "id", upload.id))?.attached_target_id, comment.id);
 
   // A ready upload cannot bypass a subsequently disabled policy, including finalization.
-  const pending = await insertReadyUpload(member.auth.uid, "changed-policy");
+  const lateMember = await seedActor("media-after-policy-change");
+  const pending = await insertReadyUpload(lateMember.auth.uid, "changed-policy");
   await saveCategoryDraft(admin.auth, { upsertIssueCategories: [{ id: "proposal-b", commentMaxImages: 0 }] });
-  await assert.rejects(() => callAction("finalizeImageUploads", { targetType: "comment", scopeId: allowed.id, uploads: [{ uploadId: pending.id }] }, member.auth), /validation-too-many/);
-  await assert.rejects(() => callAction("createComment", { issueId: allowed.id, content: markdown(pending.id) }, member.auth), /validation-too-many/);
+  await assert.rejects(() => callAction("finalizeImageUploads", { targetType: "comment", scopeId: allowed.id, uploads: [{ uploadId: pending.id }] }, lateMember.auth), /validation-too-many/);
+  await assert.rejects(() => callAction("createComment", { issueId: allowed.id, content: markdown(pending.id) }, lateMember.auth), /validation-too-many/);
   assert.equal((await tableRow("uploads", "id", upload.id))?.attached_target_id, comment.id, "existing media stays attached");
 });
 

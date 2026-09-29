@@ -8,12 +8,16 @@ import { composerDraftKey, readComposerDraft } from "@/lib/composer-draft";
 const translate = vi.hoisted(() => (key: string) => key);
 vi.mock("@/i18n", () => ({ useI18n: () => ({ t: translate }) }));
 vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
+vi.mock("@/hooks/use-categories", () => ({ useCategories: () => ({ imageUploads: {
+  maxDimension: 2000, maxUploadKilobytes: 800, webpQuality: 0.82,
+} }) }));
+vi.mock("@/services/uploads", () => ({ createImageUploadPolicies: vi.fn(), deleteUploadedImages: vi.fn() }));
 
 let state: ReturnType<typeof useDiscussionComposer>;
 let root: Root;
 let create: ReturnType<typeof vi.fn<(content: string, parent: string | null) => Promise<void>>>;
 function Probe({ uid, target, parent }: { uid: string; target: string; parent: string | null }) {
-  const current = useDiscussionComposer(uid, target, parent, create);
+  const current = useDiscussionComposer(uid, target, parent, create, { targetType: "comment", scopeId: "one", maxImages: 1 });
   useLayoutEffect(() => { state = current; });
   return null;
 }

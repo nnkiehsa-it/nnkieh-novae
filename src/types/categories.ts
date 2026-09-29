@@ -1,6 +1,8 @@
 export type IssueReadAccess = 'school' | 'reviewed-school' | 'owner-admin';
 
 export interface IssueCategoryConfig {
+  maxImages: number;
+  commentMaxImages: number;
   authorDeleteEnabled: boolean;
   id: string;
   label: string;
@@ -15,6 +17,7 @@ export interface IssueCategoryConfig {
 }
 
 export interface FacilityCategoryConfig {
+  maxImages: number;
   authorDeleteEnabled: boolean;
   id: string;
   label: string;
@@ -33,10 +36,6 @@ export interface CategoryCatalog {
 }
 
 export interface ImageUploadSettings {
-  announcementMaxImages: number;
-  commentMaxImages: number;
-  facilityMaxImages: number;
-  issueMaxImages: number;
   maxDimension: number;
   maxUploadKilobytes: number;
   webpQuality: number;
@@ -63,12 +62,16 @@ export interface CategoryManagementCatalog extends CategoryCatalog {
 }
 
 export interface PlatformFeatures {
+  announcementMaxImages: number;
+  announcementCommentMaxImages: number;
   announcementCommentsEnabled: boolean;
   facilitiesEnabled: boolean;
   issuesEnabled: boolean;
 }
 
 export interface IssueCategoryDraft {
+  maxImages: number;
+  commentMaxImages: number;
   authorDeleteEnabled?: boolean;
   id: string;
   label: string;
@@ -82,6 +85,7 @@ export interface IssueCategoryDraft {
 }
 
 export interface FacilityCategoryDraft {
+  maxImages: number;
   authorDeleteEnabled?: boolean;
   id: string;
   isDefault: boolean;

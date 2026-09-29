@@ -51,6 +51,7 @@ export function IssueDetail() {
               <Discussion
                 key={`issue:${issue.id}`}
                 targetKey={`issue:${issue.id}`}
+                categoryId={issue.category}
                 comments={detail.comments}
                 error={detail.commentsError}
                 onRetry={detail.reloadComments}

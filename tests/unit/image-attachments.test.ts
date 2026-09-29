@@ -14,8 +14,7 @@ vi.mock("@/i18n", () => ({ useI18n: () => ({ t: (key: string) => key }) }));
 vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 
 const settings = {
-  announcementMaxImages: 1, commentMaxImages: 1, facilityMaxImages: 1,
-  issueMaxImages: 1, maxDimension: 1024, maxUploadKilobytes: 512, webpQuality: 80,
+  maxDimension: 1024, maxUploadKilobytes: 512, webpQuality: 0.8,
 };
 const file = new File(["image"], "test.webp", { type: "image/webp" });
 const processed = { file, height: 100, width: 100 };
@@ -39,7 +38,7 @@ beforeEach(async () => {
   });
   vi.mocked(processImageForUpload).mockResolvedValue(processed);
   root = createRoot(document.createElement("div"));
-  function Probe() { attachments = useImageAttachments("issue", settings); return null; }
+  function Probe() { attachments = useImageAttachments("issue", settings, 1, "one"); return null; }
   await act(async () => root.render(createElement(Probe)));
 });
 
@@ -102,7 +101,7 @@ it("reports processing failures and permits retry", async () => {
 
 it("releases partial batch previews when cleared during the next image", async () => {
   function Probe() {
-    attachments = useImageAttachments("issue", { ...settings, issueMaxImages: 2 });
+    attachments = useImageAttachments("issue", settings, 2, "one");
     return null;
   }
   await act(async () => root.render(createElement(Probe)));
@@ -137,4 +136,20 @@ it("checks upload results against the submitted snapshot when selection changes"
     work.resolve([{ height: 100, width: 100, storagePath: "path", uploadId: "id" }]);
     expect(await pending).toMatchObject({ content: "body\n\n![image|100x100](srp-upload://id)" });
   });
+});
+
+it("preserves the selection but blocks sending when the active category disables images", async () => {
+  function Probe({ limit }: { limit: number }) {
+    attachments = useImageAttachments("facility", settings, limit, "room");
+    return null;
+  }
+  await act(async () => root.render(createElement(Probe, { limit: 2 })));
+  await act(async () => attachments.pick(files));
+  await act(async () => root.render(createElement(Probe, { limit: 0 })));
+  expect(attachments.images).toHaveLength(1);
+  expect(attachments.withinLimit).toBe(false);
+  await expect(attachments.uploadAndAppend("body")).rejects.toThrow("upload.imageLimit");
+  expect(createImageUploadPolicies).not.toHaveBeenCalled();
+  await act(async () => attachments.remove(0));
+  expect(attachments.withinLimit).toBe(true);
 });

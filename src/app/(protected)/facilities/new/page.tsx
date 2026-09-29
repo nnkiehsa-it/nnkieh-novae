@@ -38,6 +38,7 @@ export default function FacilityComposerPage() {
       />
       <ComposerField
         attachments={form.images.images}
+        maxImages={form.images.maxImages}
         attachmentsUploading={form.images.uploading}
         content={form.content}
         contentLabel={translate('ui.facility.problemDescription')}

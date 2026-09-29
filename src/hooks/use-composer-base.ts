@@ -9,14 +9,22 @@ import { useSession } from "@/hooks/use-session";
 import { deleteUploadedImages } from "@/services/uploads";
 import { INPUT_LIMITS } from "@/constants/input-limits";
 
-export function useComposerBase(targetType: "announcement" | "facility" | "issue", scope: string = targetType) {
+export function useComposerBase(targetType: "announcement" | "facility" | "issue", scope: string = targetType, requestedCategory = "") {
   const session = useSession();
   const draft = useComposerDraft(session.user?.uid, scope);
   const [saving, setSaving] = React.useState(false);
   const [succeeded, setSucceeded] = React.useState(false);
   const submitting = React.useRef(false);
   const categories = useCategories();
-  const images = useImageAttachments(targetType, categories.imageUploads);
+  const categoryId = targetType === "facility"
+    ? (categories.facilityCategories.find((item) => item.id === draft.value.category)?.id
+      ?? categories.facilityCategories.find((item) => item.id === requestedCategory)?.id
+      ?? categories.facilityCategories.find((item) => item.isDefault)?.id ?? "")
+    : requestedCategory;
+  const maxImages = targetType === "announcement" ? categories.features.announcementMaxImages
+    : (targetType === "issue" ? categories.issueCategories : categories.facilityCategories)
+      .find((item) => item.id === categoryId)?.maxImages ?? 0;
+  const images = useImageAttachments(targetType, categories.imageUploads, maxImages, categoryId);
   const { title, content } = draft.value;
 
   async function withUploads(
@@ -24,7 +32,7 @@ export function useComposerBase(targetType: "announcement" | "facility" | "issue
     navigate: (href: string) => void,
     fallbackMessage: string,
   ) {
-    if (submitting.current || images.uploading) return;
+    if (submitting.current || images.uploading || !images.withinLimit) return;
     submitting.current = true;
     setSaving(true);
     setSucceeded(false);
@@ -53,7 +61,8 @@ export function useComposerBase(targetType: "announcement" | "facility" | "issue
 
   return {
     title, content, draft, images, saving, succeeded, withUploads,
-    contentWithinLimit: content.length <= INPUT_LIMITS.content,
+    categoryId,
+    contentWithinLimit: content.length <= INPUT_LIMITS.content && images.withinLimit,
     setTitle: (value: string) => draft.update({ title: value }),
     setContent: (value: string) => draft.update({ content: value }),
   };

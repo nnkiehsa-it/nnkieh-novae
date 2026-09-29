@@ -9,6 +9,7 @@ import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { AdminListSkeleton } from "@/components/admin/admin-list-skeleton";
 import { ApplyReviewDialog } from "@/components/admin/apply-review-dialog";
 import { CategoryEditor } from "@/components/admin/category-editors";
+import { ImagePolicyFields } from "@/components/admin/image-policy-fields";
 import { ContentTransition, StateTransition } from "@/components/motion/state-transition";
 import {
   Sheet,
@@ -25,6 +26,8 @@ import { SaveBar } from "@/components/ui/save-bar";
 import type { FacilityCategoryConfig, IssueCategoryConfig } from "@/types/categories";
 
 const CHANGE_LABELS: Record<string, string> = {
+  announcementMaxImages: "ui.admin.announcementImageLimit",
+  announcementCommentMaxImages: "ui.admin.commentImageLimit",
   announcementCommentsEnabled: "ui.admin.announcementComments",
   deletedFacilityCategoryIds: "admin.changeRemovedFacilities",
   deletedIssueCategoryIds: "admin.changeRemovedIssues",
@@ -156,10 +159,15 @@ export function CategoryManagement() {
                   state.draft.update({ announcementCommentsEnabled: next })
                 }
               />
+              <ImagePolicyFields value={value.announcementMaxImages}
+                onChange={(next) => state.draft.update({ announcementMaxImages: next })} />
+              {value.announcementCommentsEnabled ? <ImagePolicyFields comments value={value.announcementCommentMaxImages}
+                onChange={(next) => state.draft.update({ announcementCommentMaxImages: next })} /> : null}
             </ListSection>
           )}
         </ContentTransition>
       </StateTransition>
+      <p className="text-sm leading-6 text-muted-foreground">{t("admin.imagePolicyHelp")}</p>
 
       <Sheet onOpenChange={(open) => !open && setEditing(null)} open={editing !== null}>
         <SheetContent>
@@ -171,6 +179,7 @@ export function CategoryManagement() {
           <SheetBody>
             {area && editingItem && activeIndex !== null ? (
             <CategoryEditor
+              key={`${kind}:${activeIndex}`}
               identifierLocked={state.persisted.has(editingItem.id)}
               item={editingItem}
               onChange={(next) => area.onUpdate(activeIndex, next)}

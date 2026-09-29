@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ContentRenderer } from "@/components/content-renderer";
 
 export function CommentThread({
   comment,
@@ -117,7 +118,7 @@ function CommentRow({
             ) : <Skeleton className="h-4 w-16 shrink-0" />}
             <p className="shrink-0 text-[0.8125rem] text-muted-foreground">{formatRelativeTime(comment.created_at)}</p>
           </div>
-          <p className="mt-1 whitespace-pre-wrap break-words text-[0.9375rem] leading-6 text-foreground/88">{comment.content}</p>
+          <ContentRenderer className="mt-1" content={comment.content} fallbackAlt={translate("comments.commentAttachmentPreview")} plainText />
           <div className="mt-1.5 flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger asChild>

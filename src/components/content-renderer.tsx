@@ -21,11 +21,13 @@ export function ContentRenderer({
   content,
   fallbackAlt,
   revealText = false,
+  plainText = false,
 }: {
   className?: string;
   content: string;
   fallbackAlt: string;
   revealText?: boolean;
+  plainText?: boolean;
 }) {
   const [selected, setSelected] = React.useState<MarkdownImageRecord | null>(
     null,
@@ -72,7 +74,7 @@ export function ContentRenderer({
           ))}
         </ImagePreviewGrid>
       ) : null}
-      {text ? revealText ? (
+      {text ? plainText ? <p className="whitespace-pre-wrap break-words text-[0.9375rem] leading-6 text-foreground/88">{text}</p> : revealText ? (
         <SkeletonReveal
           as="div"
           skeleton={

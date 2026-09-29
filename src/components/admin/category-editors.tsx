@@ -4,6 +4,7 @@ import { Trash2 } from "lucide-react";
 
 import { useI18n } from "@/i18n";
 import { CategoryDeleteAction } from "@/components/admin/category-delete-action";
+import { ImagePolicyFields } from "@/components/admin/image-policy-fields";
 import { ListRowGroup, ListSection } from "@/components/ui/list";
 import {
   ListChoiceRow,
@@ -120,6 +121,11 @@ export function CategoryEditor({
             />
           </ListRowGroup>
         </>
+      ) : null}
+
+      <ImagePolicyFields value={item.maxImages} onChange={(next) => change({ ...item, maxImages: next })} />
+      {isIssue(item) && item.commentsEnabled ? (
+        <ImagePolicyFields comments value={item.commentMaxImages} onChange={(next) => change({ ...item, commentMaxImages: next })} />
       ) : null}
 
       <CategoryDeleteAction

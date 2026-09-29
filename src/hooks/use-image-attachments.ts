@@ -29,14 +29,9 @@ interface UploadedImage {
 export function useImageAttachments(
   targetType: ImageUploadTargetType,
   settings: ImageUploadSettings,
+  maxImages: number,
+  scopeId = "",
 ) {
-  const maxImages = targetType === "issue"
-    ? settings.issueMaxImages
-    : targetType === "facility"
-      ? settings.facilityMaxImages
-      : targetType === "announcement"
-        ? settings.announcementMaxImages
-        : settings.commentMaxImages;
   const { t } = useI18n();
   const [images, setImages] = React.useState<PreparedImage[]>([]);
   const [uploading, setUploading] = React.useState(false);
@@ -117,6 +112,7 @@ export function useImageAttachments(
 
   const uploadAndAppend = React.useCallback(async (content: string) => {
     const selectedImages = imagesRef.current;
+    if (selectedImages.length > maxImages) throw new Error(t("upload.imageLimit", { count: maxImages }));
     if (selectedImages.length === 0)
       return { content: content.trim(), uploaded: [] as UploadedImage[] };
     setUploading(true);
@@ -129,6 +125,7 @@ export function useImageAttachments(
           width,
         })),
         targetType,
+        scopeId,
       );
       uploaded = policies.map(({ height, storagePath, uploadId, width }) => ({
         height,
@@ -156,7 +153,8 @@ export function useImageAttachments(
     } finally {
       setUploading(false);
     }
-  }, [targetType]);
+  }, [maxImages, scopeId, t, targetType]);
 
-  return { clear, images, pick, remove, uploadAndAppend, uploading: preparing || uploading };
+  return { clear, images, maxImages, pick, remove, uploadAndAppend, uploading: preparing || uploading,
+    withinLimit: images.length <= maxImages };
 }

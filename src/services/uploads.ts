@@ -123,6 +123,7 @@ async function uploadToCloudinary(file: File, session: ImageUploadSession) {
 export async function createImageUploadPolicies(
   inputs: ImageUploadInput[],
   targetType: ImageUploadTargetType,
+  scopeId: string,
 ): Promise<ImageUploadPolicy[]> {
   if (inputs.length === 0) return [];
   if (inputs.some(({ file }) => file.type !== 'image/webp')) {
@@ -132,7 +133,7 @@ export async function createImageUploadPolicies(
   let sessions: ImageUploadSession[] = [];
   try {
     const createSession = invokeBackendAction<
-      { images: Array<{ contentType: string; height: number; size: number; width: number }>; targetType: ImageUploadTargetType },
+      { images: Array<{ contentType: string; height: number; size: number; width: number }>; targetType: ImageUploadTargetType; scopeId: string },
       { sessions: ImageUploadSession[] }
     >('createImageUploadSessions');
     const created = await createSession({
@@ -143,6 +144,7 @@ export async function createImageUploadPolicies(
         width,
       })),
       targetType,
+      scopeId,
     });
     sessions = created.sessions;
     if (sessions.length !== inputs.length) throw new Error('image.theImageUploadJobIsNotSetUpCompletely');
@@ -155,12 +157,14 @@ export async function createImageUploadPolicies(
 
     const finalize = invokeBackendAction<{
       targetType: ImageUploadTargetType;
+      scopeId: string;
       uploads: Array<{ publicId: string; signature: string; uploadId: string; version: number }>;
     }, { uploads: ImageUploadPolicy[] }>('finalizeImageUploads', {
       timeoutMs: longRequestTimeoutMs,
     });
     const result = await finalize({
       targetType,
+      scopeId,
       uploads: uploadResponses.map((response, index) => ({
         publicId: response.public_id ?? '',
         signature: response.signature ?? '',

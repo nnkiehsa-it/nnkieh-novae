@@ -4,9 +4,7 @@ import * as React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useI18n } from "@/i18n";
 import {
-  findFacilityCategory,
   findIssueCategory,
-  getDefaultFacilityCategoryId,
   useCategories,
 } from "@/hooks/use-categories";
 import { useComposerBase } from "@/hooks/use-composer-base";
@@ -60,7 +58,7 @@ export function useIssueComposer() {
   const { t } = useI18n();
   const session = useSession();
   const category = decodeURIComponent(params.filter);
-  const form = useComposerBase("issue", `issue:${category}`);
+  const form = useComposerBase("issue", `issue:${category}`, category);
   const config = findIssueCategory(category);
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -91,10 +89,8 @@ export function useFacilityComposer() {
   const categories = useCategories();
   const { t } = useI18n();
   const session = useSession();
-  const form = useComposerBase("facility");
-  const requested = search.get("category");
-  const category = findFacilityCategory(form.draft.value.category)?.id
-    ?? (requested && findFacilityCategory(requested) ? requested : getDefaultFacilityCategoryId());
+  const form = useComposerBase("facility", "facility", search.get("category") ?? "");
+  const category = form.categoryId;
   const location = form.draft.value.location;
   const setCategory = (value: string) => form.draft.update({ category: value });
   const setLocation = (value: string) => form.draft.update({ location: value, category });

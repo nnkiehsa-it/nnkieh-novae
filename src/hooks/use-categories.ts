@@ -22,16 +22,14 @@ interface CategoryState {
 }
 
 const defaultFeatures: PlatformFeatures = {
+  announcementMaxImages: RATE_LIMITS.imageUploads.announcementMaxImages,
+  announcementCommentMaxImages: RATE_LIMITS.imageUploads.commentMaxImages,
   announcementCommentsEnabled: true,
   facilitiesEnabled: true,
   issuesEnabled: true,
 };
 
 const defaultImageUploads: ImageUploadSettings = {
-  announcementMaxImages: RATE_LIMITS.imageUploads.announcementMaxImages,
-  commentMaxImages: RATE_LIMITS.imageUploads.commentMaxImages,
-  facilityMaxImages: RATE_LIMITS.imageUploads.facilityMaxImages,
-  issueMaxImages: RATE_LIMITS.imageUploads.issueMaxImages,
   maxDimension: RATE_LIMITS.imageCompression.maxDimension,
   maxUploadKilobytes: RATE_LIMITS.imageCompression.maxUploadKilobytes,
   webpQuality: RATE_LIMITS.imageCompression.webpQuality,
