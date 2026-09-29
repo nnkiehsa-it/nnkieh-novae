@@ -25,10 +25,10 @@ interface SelectionFrame {
 
 function NavigationContents({
   item,
-  desktop,
+  vertical,
 }: {
   item: LiquidNavItem;
-  desktop: boolean;
+  vertical: boolean;
 }) {
   const { pending } = useLinkStatus();
   return (
@@ -44,8 +44,8 @@ function NavigationContents({
       </span>
       <span
         className={cn(
-          "relative z-10 min-w-0 truncate",
-          desktop ? "sr-only lg:not-sr-only lg:relative lg:truncate" : "w-full text-center",
+          "relative z-10 w-full min-w-0 truncate",
+          vertical ? "text-left" : "text-center",
         )}
       >
         {item.label}
@@ -111,12 +111,12 @@ export function LiquidNav({
   className,
   items,
   pathname,
-  desktop = false,
+  vertical = false,
 }: {
   className?: string;
   items: LiquidNavItem[];
   pathname: string;
-  desktop?: boolean;
+  vertical?: boolean;
 }) {
   useLocaleSubscription();
   const navRef = React.useRef<HTMLElement>(null);
@@ -137,7 +137,8 @@ export function LiquidNav({
       aria-label={translate("ui.nav.primary")}
       data-primary-navigation
       className={cn(
-        "relative isolate flex items-stretch",
+        "relative isolate",
+        vertical ? "grid gap-1" : "flex items-stretch",
         className,
       )}
       ref={navRef}
@@ -165,8 +166,8 @@ export function LiquidNav({
             aria-current={active ? "page" : undefined}
             className={cn(
               "t-primary-nav-link relative flex min-h-10 min-w-0 items-center rounded-[0.625rem] text-sm font-medium text-muted-foreground outline-none transition-[color,transform] duration-[var(--motion-control)] ease-[var(--ease-move)] hover:bg-[var(--surface-hover)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40",
-              desktop
-                ? "flex-1 justify-center gap-2 px-3 text-[0.8125rem]"
+              vertical
+                ? "gap-3 px-3"
                 : "flex-1 flex-col justify-center gap-1 px-1 py-1.5 text-[0.6875rem]",
               active && "text-[var(--nav-active-fg)]",
             )}
@@ -176,7 +177,7 @@ export function LiquidNav({
             key={item.href}
             prefetch
           >
-            <NavigationContents item={item} desktop={desktop} />
+            <NavigationContents item={item} vertical={vertical} />
           </Link>
         );
       })}

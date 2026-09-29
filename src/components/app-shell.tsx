@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import {
   Bell,
   Blocks,
+  ChevronDown,
   LogOut,
   Megaphone,
   Moon,
@@ -50,7 +51,7 @@ function NotificationDot({ unread }: { unread: boolean }) {
   );
 }
 
-function AccountMenu() {
+function AccountMenu({ compact = false }: { compact?: boolean }) {
   const session = useSession();
   const { resolvedTheme, setTheme } = useTheme();
   const photo = session.customPhotoUrl || session.user?.photoURL || undefined;
@@ -113,13 +114,30 @@ function AccountMenu() {
       trigger={
         <Button
           aria-label={translate('ui.nav.accountMenu')}
-          className="size-11 rounded-full p-0"
+          className={
+            compact
+              ? "size-9 rounded-full p-0"
+              : "h-auto w-full justify-start gap-2.5 rounded-xl p-2 text-left"
+          }
           variant="ghost"
         >
           <Avatar className="size-8">
             <AvatarImage alt={name} src={photo} />
             <AvatarFallback>{name.slice(0, 1).toUpperCase()}</AvatarFallback>
           </Avatar>
+          {compact ? null : (
+            <>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium">
+                  {name}
+                </span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  {session.user?.email}
+                </span>
+              </span>
+              <ChevronDown className="t-disclosure-icon size-3.5 text-muted-foreground" />
+            </>
+          )}
         </Button>
       }
     />
@@ -187,22 +205,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const navigationPathname = adoptedParent(surface) ?? surface;
   return (
-    <div className="app-shell bg-[var(--surface-stage)]">
+    <div className="app-shell bg-[var(--surface-stage)] md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
       <AppNotificationPrompt />
-      <header className="app-desktop-header fixed inset-x-0 top-0 z-30 hidden h-[var(--desktop-nav-height)] border-b border-border/60 bg-[var(--surface-stage)] md:block">
-        <div className="mx-auto flex h-full max-w-[84rem] items-center justify-between gap-6 px-[var(--page-gutter)]">
-          <BrandLockup href={homeHref} markClassName="size-10" />
-          <LiquidNav
-            className="h-11 max-w-3xl flex-1"
-            items={navItems}
-            pathname={navigationPathname}
-            desktop
-          />
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-card p-3 md:flex">
+        <div className="mb-4 border-b px-3 pb-5 pt-3">
+          <BrandLockup href={homeHref} />
+        </div>
+        <LiquidNav
+          className="flex-1 content-start"
+          items={navItems}
+          pathname={navigationPathname}
+          vertical
+        />
+        <div className="mt-auto border-t pt-2">
           <AccountMenu />
         </div>
-      </header>
+      </aside>
 
-      <div className="app-main-column min-w-0">
+      <div className="app-main-column min-w-0 md:col-start-2">
         <main className="app-viewport">
           <RouteSurface
             className={`pt-[var(--page-header-top)] md:pb-12 ${
