@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { availableParallelism } from "node:os";
 
 const readOnlyDesktopTests = [
   /access-visibility\.spec\.ts/,
@@ -12,7 +13,7 @@ const readOnlyDesktopTests = [
 const configuredWorkers = Number.parseInt(process.env.NOVAE_E2E_WORKERS ?? "", 10);
 const workers = Number.isFinite(configuredWorkers) && configuredWorkers > 0
   ? configuredWorkers
-  : 4;
+  : Math.min(8, availableParallelism());
 
 // Run the focused presentation regressions on another installed engine without
 // changing the default CI browser requirements or repeating stateful tests.
@@ -62,12 +63,14 @@ export default defineConfig({
     }] : [{
       dependencies: ["bootstrap"],
       name: "chromium-desktop-readonly",
+      fullyParallel: true,
       testMatch: readOnlyDesktopTests,
       use: { ...devices["Desktop Chrome"] },
     },
     {
       dependencies: ["bootstrap"],
       name: "chromium-mobile-readonly",
+      fullyParallel: true,
       testMatch: /mobile-access\.spec\.ts/,
       use: { ...devices["Pixel 7"] },
     },

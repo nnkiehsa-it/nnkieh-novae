@@ -12,7 +12,12 @@ export class RateLimitError extends Error {
   }
 }
 
-async function claim(binding: RateLimitBinding, key: string, code: ApiErrorCode, retryAfterSeconds: number) {
+export function rateLimitsDisabled(env: Env) {
+  return env.LOCAL_TEST_MODE === 'true' && env.LOCAL_TEST_DISABLE_RATE_LIMITS === 'true';
+}
+
+async function claim(env: Env, binding: RateLimitBinding, key: string, code: ApiErrorCode, retryAfterSeconds: number) {
+  if (rateLimitsDisabled(env)) return;
   const result = await binding.limit({ key });
   if (!result.success) throw new RateLimitError(code, retryAfterSeconds);
 }
@@ -41,11 +46,12 @@ export async function claimInvalidAuthenticationIngress(
   ip: string,
   code: ApiErrorCode,
 ) {
-  await claim(env.INVALID_AUTH_IP_RATE_LIMITER, `invalid-auth:${ip}`, code, 60);
+  await claim(env, env.INVALID_AUTH_IP_RATE_LIMITER, `invalid-auth:${ip}`, code, 60);
 }
 
 export async function claimLoginIngress(env: Env, ip: string) {
   await claim(
+    env,
     env.LOGIN_IP_RATE_LIMITER,
     await opaqueRateLimitKey('auth-login', ip),
     'rate-limit.login-sync',
@@ -58,6 +64,7 @@ export async function claimActionRateLimit(env: Env, uid: string, action: string
   if (!policy) throw new Error('invalid-action');
   const group = actionGroups[policy.group];
   await claim(
+    env,
     env[group.binding] as RateLimitBinding,
     await opaqueRateLimitKey(policy.group, uid),
     group.errorCode,
@@ -67,6 +74,7 @@ export async function claimActionRateLimit(env: Env, uid: string, action: string
 
 export async function claimSyncUser(env: Env, uid: string) {
   await claim(
+    env,
     env.SYNC_USER_RATE_LIMITER,
     await opaqueRateLimitKey('auth-sync', uid),
     'rate-limit.login-sync',
@@ -76,6 +84,7 @@ export async function claimSyncUser(env: Env, uid: string) {
 
 export async function claimRealtimeTicketRateLimit(env: Env, uid: string) {
   await claim(
+    env,
     env.READ_RATE_LIMITER,
     await opaqueRateLimitKey('realtime-ticket', uid),
     'rate-limit.read',
@@ -85,7 +94,7 @@ export async function claimRealtimeTicketRateLimit(env: Env, uid: string) {
 
 export async function claimCloudinaryIngress(env: Env, ip: string) {
   await Promise.all([
-    claim(env.WEBHOOK_IP_RATE_LIMITER, `ip:${ip}`, 'rate-limit.image-sync', 60),
-    claim(env.WEBHOOK_GLOBAL_RATE_LIMITER, 'global', 'rate-limit.image-sync', 60),
+    claim(env, env.WEBHOOK_IP_RATE_LIMITER, `ip:${ip}`, 'rate-limit.image-sync', 60),
+    claim(env, env.WEBHOOK_GLOBAL_RATE_LIMITER, 'global', 'rate-limit.image-sync', 60),
   ]);
 }

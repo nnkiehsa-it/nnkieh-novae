@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import workerConfig from "../../cloudflare/wrangler.json" with { type: "json" };
 import {
   requireFirebaseAppCheck,
@@ -8,6 +8,7 @@ import { claimActionRateLimit, claimLoginIngress } from "../../cloudflare/src/ra
 import { validateTurnstileResult } from "../../cloudflare/src/turnstile";
 import { createMediaDeliveryUrl } from "../../cloudflare/src/backend/shared/media-delivery";
 import { withRuntimeEnvironment } from "../../cloudflare/src/backend/shared/env";
+import { claimFixedWindowRateLimits, utcMinuteWindow } from "../../cloudflare/src/backend/shared/business-rate-limit";
 import type { Env } from "../../cloudflare/src/types";
 import { handleMedia } from "../../cloudflare/src/media";
 
@@ -30,6 +31,23 @@ function decodeMediaPayload(url: string) {
 }
 
 describe("security boundaries", () => {
+  it("bypasses native and business quotas only when local testing explicitly disables them", async () => {
+    const limit = vi.fn(async () => ({ success: false }));
+    const env = securityEnvironment({
+      LOCAL_TEST_DISABLE_RATE_LIMITS: "true",
+      READ_RATE_LIMITER: { limit },
+    });
+    await expect(claimActionRateLimit(env, "student", "getContentVersions"))
+      .rejects.toThrow("rate-limit.read");
+    limit.mockClear();
+    env.LOCAL_TEST_MODE = "true";
+    await claimActionRateLimit(env, "student", "getContentVersions");
+    await withRuntimeEnvironment(env, () => claimFixedWindowRateLimits([{
+      identifier: "student", actionName: "test", window: utcMinuteWindow(),
+      config: { errorCode: "rate-limit.operation", limit: 1 },
+    }]));
+    expect(limit).not.toHaveBeenCalled();
+  });
   it("rejects malformed media base64 with a controlled response", async () => {
     const env = securityEnvironment({ MEDIA_INVALID_IP_RATE_LIMITER: { limit: async () => ({ success: true }) } });
     const response = await handleMedia(new Request("https://api.school.example/v1/media/A.A/full"), env, "A.A", "full");

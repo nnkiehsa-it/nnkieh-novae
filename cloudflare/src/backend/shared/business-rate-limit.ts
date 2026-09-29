@@ -1,6 +1,7 @@
 import type { ApiErrorCode } from "./api-errors.ts";
 import { currentEnvironment } from "./env.ts";
 import type { DurableRateLimitClaim } from "../../durable/business-rate-limiter";
+import { rateLimitsDisabled } from "../../rate-limit";
 
 interface RateLimitWindow {
   expiresAt: Date;
@@ -59,6 +60,7 @@ export async function claimFixedWindowRateLimitUnits(
 
 export async function claimFixedWindowRateLimits(claims: RateLimitClaim[]) {
   if (claims.length === 0) return;
+  if (rateLimitsDisabled(currentEnvironment())) return;
   const groups = Map.groupBy(claims, (claim) => claim.identifier);
   for (const [identifier, group] of groups) {
     const durableClaims: DurableRateLimitClaim[] = group.map((claim) => ({

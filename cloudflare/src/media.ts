@@ -1,5 +1,6 @@
 import type { Env } from './types';
 import { mediaPolicies } from './media-policies';
+import { rateLimitsDisabled } from './rate-limit';
 
 type MediaVariant = 'avatar' | 'full' | 'thumbnail';
 
@@ -123,14 +124,17 @@ export async function handleMedia(request: Request, env: Env, token: string, raw
   const variant = VARIANTS.has(rawVariant as MediaVariant) ? rawVariant as MediaVariant : null;
   const payload = await verifyMediaToken(token, env.MEDIA_SIGNING_SECRET);
   if (!variant || !payload) {
+    if (rateLimitsDisabled(env)) return new Response(null, { status: 404 });
     const invalidLimit = await env.MEDIA_INVALID_IP_RATE_LIMITER.limit({ key: `invalid-media:${clientIp}` });
     return invalidLimit.success
       ? new Response(null, { status: 404 })
       : new Response(null, { status: 429, headers: { 'retry-after': '60' } });
   }
-  const rateLimit = await env.MEDIA_USER_RATE_LIMITER.limit({ key: payload.rateLimitKey });
-  if (!rateLimit.success) {
-    return new Response(null, { status: 429, headers: { 'retry-after': '60' } });
+  if (!rateLimitsDisabled(env)) {
+    const rateLimit = await env.MEDIA_USER_RATE_LIMITER.limit({ key: payload.rateLimitKey });
+    if (!rateLimit.success) {
+      return new Response(null, { status: 429, headers: { 'retry-after': '60' } });
+    }
   }
 
   const workerCache = (caches as CacheStorage & { default?: Cache }).default;

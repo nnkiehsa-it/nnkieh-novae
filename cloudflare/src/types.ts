@@ -30,6 +30,7 @@ export interface Env {
   JOBS: Queue<JobMessage>;
   LOGIN_IP_RATE_LIMITER: RateLimitBinding;
   LOCAL_TEST_MODE?: string;
+  LOCAL_TEST_DISABLE_RATE_LIMITS?: string;
   MEDIA_INVALID_IP_RATE_LIMITER: RateLimitBinding;
   MEDIA_SIGNING_SECRET: string;
   MEDIA_USER_RATE_LIMITER: RateLimitBinding;

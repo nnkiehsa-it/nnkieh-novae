@@ -47,7 +47,7 @@ const stressScale = stressIndex >= 0 ? runnerArgs[stressIndex + 1] : "4";
 if (!/^\d+$/u.test(stressScale) || Number(stressScale) < 2 || Number(stressScale) > 20) {
   throw new Error("--stress-scale must be an integer between 2 and 20.");
 }
-const configuredActionRunners = Number.parseInt(process.env.NOVAE_ACTION_TEST_RUNNERS ?? "3", 10);
+const configuredActionRunners = Number.parseInt(process.env.NOVAE_ACTION_TEST_RUNNERS ?? "4", 10);
 const actionTestRunners = Number.isSafeInteger(configuredActionRunners)
   ? Math.min(4, Math.max(1, configuredActionRunners))
   : 3;
@@ -548,6 +548,7 @@ try {
     GOOGLE_SERVICE_ACCOUNT_JSON: "not-used-with-emulator",
     HEALTHCHECK_SECRET: "integration-healthcheck-secret",
     LOCAL_TEST_MODE: "true",
+    LOCAL_TEST_DISABLE_RATE_LIMITS: serve || e2e ? "true" : "false",
     MEDIA_SIGNING_SECRET: "integration-media-signing-secret-that-is-long-enough",
     NOTION_API_BASE_URL: externalProviderUrl,
     NOTION_DATABASE_ID: "mock-database-id",
