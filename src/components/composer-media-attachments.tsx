@@ -39,14 +39,15 @@ export function ComposerMediaAttachments({
 
   return (
     <section
-      aria-labelledby={headingId}
+      aria-label={compact ? t("markdown.imageAttachments") : undefined}
+      aria-labelledby={compact ? undefined : headingId}
       aria-busy={uploading}
       className={cn(
-        compact ? "grid h-fit gap-2 px-2 pb-1" : "grid h-fit gap-3 rounded-xl border border-dashed bg-muted/20 p-3",
+        compact ? "grid h-fit gap-2 px-2" : "grid h-fit gap-3 rounded-xl border border-dashed bg-muted/20 p-3",
         className,
       )}
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      {!compact ? <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
           <h3 className="text-sm font-medium" id={headingId}>
               {t("markdown.imageAttachments")} · {attachments.length} / {maxImages}
@@ -63,7 +64,7 @@ export function ComposerMediaAttachments({
           {uploading ? <LoadingSpinner /> : <ImagePlus />}
           {uploading ? t("markdown.processingImages") : t("ui.composer.addImage")}
         </Button> : null}
-      </div>
+      </div> : null}
       {!compact ? <input
         ref={fileRef}
         accept="image/*"
