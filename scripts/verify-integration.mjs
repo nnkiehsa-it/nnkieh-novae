@@ -331,7 +331,8 @@ function windowsListenerPids(ports) {
   const pids = new Set();
   for (const line of result.stdout.split(/\r?\n/u)) {
     const fields = line.trim().split(/\s+/u);
-    if (fields[0] !== "TCP" || fields.length < 5) continue;
+    // Closed connections can retain a departed PID in FIN_WAIT_2; only listeners own a service port.
+    if (fields[0] !== "TCP" || fields.length < 5 || fields[3] !== "LISTENING") continue;
     const portMatch = fields[1].match(/:(\d+)$/u);
     const pid = Number(fields.at(-1));
     if (portMatch && ports.has(Number(portMatch[1])) && Number.isSafeInteger(pid) && pid > 0) {
