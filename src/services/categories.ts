@@ -1,4 +1,5 @@
 import { invokeBackendAction } from '@/services/backend-action';
+import { markSessionBootstrapStale } from '@/services/session-bootstrap';
 import type {
   CategoryCatalog,
   CategoryManagementCatalog,
@@ -62,12 +63,16 @@ export async function completeInitialSetup(input: {
   return await action(input);
 }
 
-export async function savePlatformFeatures(features: PlatformFeatures) {
+type PlatformFeatureSwitches = Pick<PlatformFeatures, 'announcementCommentsEnabled' | 'facilitiesEnabled' | 'issuesEnabled'>;
+
+export async function savePlatformFeatures(features: PlatformFeatureSwitches) {
   const action = invokeBackendAction<
-    PlatformFeatures,
-    PlatformFeatures & { success: boolean }
+    PlatformFeatureSwitches,
+    PlatformFeatureSwitches & { success: boolean }
   >('savePlatformFeatures');
-  return await action(features);
+  const result = await action(features);
+  markSessionBootstrapStale();
+  return result;
 }
 
 export async function saveCategoryManagement(input: CategoryManagementInput) {
@@ -75,7 +80,9 @@ export async function saveCategoryManagement(input: CategoryManagementInput) {
     typeof input,
     CategoryCatalog & { success: boolean }
   >('saveCategoryManagement');
-  return await action(input);
+  const result = await action(input);
+  markSessionBootstrapStale();
+  return result;
 }
 
 export async function estimateCategoryPolicyChanges(input: CategoryManagementInput) {

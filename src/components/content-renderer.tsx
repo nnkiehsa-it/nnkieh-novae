@@ -35,7 +35,7 @@ export function ContentRenderer({
   const { expiresAtByUploadId, images, refresh, resolvedContent } =
     useResolvedMarkdown(content);
   const text = stripMarkdownImages(resolvedContent);
-  const html = React.useMemo(() => renderMarkdown(text), [text]);
+  const html = React.useMemo(() => plainText ? "" : renderMarkdown(text), [plainText, text]);
 
   const openImage = React.useCallback(
     async (image: MarkdownImageRecord) => {

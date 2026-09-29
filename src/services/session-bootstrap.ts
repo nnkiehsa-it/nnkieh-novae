@@ -37,7 +37,7 @@ function normalizeAccess(access: Partial<SessionAccess> | undefined): SessionAcc
   };
 }
 
-const SESSION_BOOTSTRAP_CACHE_KEY = 'session-bootstrap-v1';
+const SESSION_BOOTSTRAP_CACHE_KEY = 'session-bootstrap-v2';
 let pendingRecordVisit = false;
 
 export function markSessionBootstrapStale() {
