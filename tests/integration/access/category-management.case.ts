@@ -22,6 +22,7 @@ integrationTest("runtime category setup and management enforce platform permissi
   assert.ok((catalog.facilityCategories as unknown[]).length >= 1);
   assert.deepEqual(asRecord(catalog.features), {
     announcementCommentsEnabled: true,
+    announcementMaxImages: 10, announcementCommentMaxImages: 1,
     facilitiesEnabled: true,
     issuesEnabled: true,
   });
@@ -29,6 +30,7 @@ integrationTest("runtime category setup and management enforce platform permissi
   await expectActionError("permission-denied", () => callAction("listPlatformJobs", {}, user.auth));
   await expectActionError("permission-denied", () => callAction("estimateCategoryPolicyChanges", {
     announcementCommentsEnabled: false,
+    announcementMaxImages: 10, announcementCommentMaxImages: 1,
     deletedIssueCategoryIds: [],
     issueCategories: [],
   }, user.auth));
@@ -42,6 +44,7 @@ integrationTest("runtime category setup and management enforce platform permissi
   }, user.auth));
   await expectActionError("permission-denied", () => callAction("savePlatformFeatures", {
     announcementCommentsEnabled: true,
+    announcementMaxImages: 10, announcementCommentMaxImages: 1,
     facilitiesEnabled: false, issuesEnabled: false,
   }, user.auth));
   await expectActionError("permission-denied", () => callAction("savePlatformSettings", {
@@ -60,12 +63,12 @@ integrationTest("runtime category setup and management enforce platform permissi
       {
         id: "public-issues", label: "公共議題", readAccess: "reviewed-school",
         authorVisible: false, supportEnabled: true, supportGoal: 50, supportDeadlineDays: 14,
-        commentsEnabled: true,
+        commentsEnabled: true, maxImages: 3, commentMaxImages: 1,
       },
       {
         id: "rights-maintenance", label: "學生權益", readAccess: "owner-admin",
         authorVisible: true, supportEnabled: false, supportGoal: null, supportDeadlineDays: null,
-        commentsEnabled: true,
+        commentsEnabled: true, maxImages: 3, commentMaxImages: 1,
       },
     ],
     facilitiesEnabled: false,
@@ -84,6 +87,7 @@ integrationTest("runtime category setup and management enforce platform permissi
   const management = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
   assert.deepEqual(asRecord(management.features), {
     announcementCommentsEnabled: true,
+    announcementMaxImages: 10, announcementCommentMaxImages: 1,
     facilitiesEnabled: false,
     issuesEnabled: true,
   });
@@ -97,7 +101,7 @@ integrationTest("runtime category setup and management enforce platform permissi
   const nextPlatformSettings = {
     imageUploads: {
       ...asRecord(platformSettings.imageUploads),
-      issueMaxImages: 3,
+      maxDimension: 1800,
     },
     retention: {
       ...asRecord(platformSettings.retention),
@@ -122,7 +126,7 @@ integrationTest("runtime category setup and management enforce platform permissi
   const updatedSettings = asRecord(await callAction("savePlatformSettings", {
     ...nextPlatformSettings,
   }, admin.auth));
-  assert.equal(asRecord(updatedSettings.imageUploads).issueMaxImages, 3);
+  assert.equal(asRecord(updatedSettings.imageUploads).maxDimension, 1800);
   assert.equal(asRecord(updatedSettings.retention).closedIssuesEnabled, false);
   assert.ok(String(updatedSettings.jobId));
   const runtimeDeadlineId = crypto.randomUUID();
@@ -167,18 +171,19 @@ integrationTest("runtime category setup and management enforce platform permissi
   assert.ok(await tableRow("role_assignment_audit", "uid", independentRoleAuditUid));
   assert.equal(await tableRow("admin_audit_log", "target_id", independentAdminAuditTarget), null);
   const catalogWithImageSettings = asRecord(await callAction("getCategoryCatalog", {}, user.auth));
-  assert.equal(asRecord(catalogWithImageSettings.imageUploads).issueMaxImages, 3);
+  assert.equal(asRecord(catalogWithImageSettings.imageUploads).maxDimension, 1800);
+  assert.equal("issueMaxImages" in asRecord(catalogWithImageSettings.imageUploads), false);
   const uploadMetadata = Array.from({ length: 3 }, () => ({
     contentType: "image/webp", height: 64, size: 256, width: 64,
   }));
   const uploadSessions = asRecord(await callAction("createImageUploadSessions", {
     images: uploadMetadata,
-    targetType: "issue",
+    targetType: "issue", scopeId: "public-issues",
   }, user.auth));
   assert.equal((uploadSessions.sessions as unknown[]).length, 3);
   await expectActionError("validation-too-many", () => callAction("createImageUploadSessions", {
     images: [...uploadMetadata, uploadMetadata[0]],
-    targetType: "issue",
+    targetType: "issue", scopeId: "public-issues",
   }, user.auth));
   const sessionPaths = (uploadSessions.sessions as unknown[]).map((value) => {
     const session = asRecord(value);
@@ -206,6 +211,7 @@ integrationTest("runtime category setup and management enforce platform permissi
   }));
   await expectActionError("permission-denied", () => callAction("saveCategoryManagement", {
     announcementCommentsEnabled: true,
+    announcementMaxImages: 10, announcementCommentMaxImages: 1,
     deletedFacilityCategoryIds: [],
     deletedIssueCategoryIds: [],
     facilitiesEnabled: false,
@@ -228,6 +234,7 @@ integrationTest("runtime category setup and management enforce platform permissi
   const updatedCatalog = asRecord(await callAction("getCategoryCatalog", {}, user.auth));
   assert.deepEqual(asRecord(updatedCatalog.features), {
     announcementCommentsEnabled: true,
+    announcementMaxImages: 10, announcementCommentMaxImages: 1,
     facilitiesEnabled: true,
     issuesEnabled: true,
   });
@@ -255,12 +262,14 @@ integrationTest("runtime category setup and management enforce platform permissi
     returning id`;
   const impact = asRecord(await callAction("estimateCategoryPolicyChanges", {
     announcementCommentsEnabled: false,
+    announcementMaxImages: 10, announcementCommentMaxImages: 1,
     deletedIssueCategoryIds: [],
     issueCategories: managedIssues,
   }, admin.auth));
   assert.ok(Number(impact.totalEstimatedRows) >= 1);
   await expectActionError("permission-denied", () => callAction("saveCategoryManagement", {
     announcementCommentsEnabled: true,
+    announcementMaxImages: 10, announcementCommentMaxImages: 1,
     deletedFacilityCategoryIds: [],
     deletedIssueCategoryIds: [],
     facilitiesEnabled: true,
@@ -270,6 +279,7 @@ integrationTest("runtime category setup and management enforce platform permissi
   }, user.auth));
   await expectActionError("validation-required", () => callAction("saveCategoryManagement", {
     announcementCommentsEnabled: true,
+    announcementMaxImages: 10, announcementCommentMaxImages: 1,
     deletedFacilityCategoryIds: [],
     deletedIssueCategoryIds: [],
     facilitiesEnabled: true,
@@ -279,6 +289,7 @@ integrationTest("runtime category setup and management enforce platform permissi
   }, admin.auth));
   const atomicSave = asRecord(await callAction("saveCategoryManagement", {
     announcementCommentsEnabled: false,
+    announcementMaxImages: 10, announcementCommentMaxImages: 1,
     deletedFacilityCategoryIds: [],
     deletedIssueCategoryIds: [],
     facilitiesEnabled: true,
@@ -321,6 +332,7 @@ integrationTest("runtime category setup and management enforce platform permissi
   assert.ok(Number(completedAnnouncementJob?.affectedRows) >= 1);
   assert.deepEqual(asRecord(atomicSave.features), {
     announcementCommentsEnabled: false,
+    announcementMaxImages: 10, announcementCommentMaxImages: 1,
     facilitiesEnabled: true,
     issuesEnabled: true,
   });

@@ -370,6 +370,8 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
       assert.equal(saved.facilitiesEnabled, facilitiesEnabled);
       const featureCatalog = asRecord(await callAction("getCategoryCatalog", {}, ordinaryUsers[0].auth));
       assert.deepEqual(asRecord(featureCatalog.features), {
+        announcementMaxImages: 10,
+        announcementCommentMaxImages: 1,
         announcementCommentsEnabled: true,
         facilitiesEnabled,
         issuesEnabled,

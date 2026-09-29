@@ -1,4 +1,5 @@
-import { loadImageUploadSettings, maxImagesForTarget, type UploadTargetType } from "../shared/platform-settings.ts";
+import type { UploadTargetType } from "../shared/platform-settings.ts";
+import { loadImageLimit } from "./upload-policy.ts";
 import type { Selected } from "../database/schema.ts";
 import type { BackendDatabase } from "./types.ts";
 
@@ -11,13 +12,14 @@ async function validateMarkdownUploads(
   content: string,
   targetType: UploadTargetType,
   targetId: string | null,
+  scopeId: string,
 ) {
   const sources = [...content.matchAll(IMAGE_SOURCE)].map((match) => match[1]);
   if (sources.some((source) => !source?.startsWith("srp-upload://"))) throw new Error("validation-invalid");
   const uploadIds = [...new Set([...content.matchAll(UPLOAD_ID)].map((match) => match[1]).filter(Boolean))];
   if (uploadIds.length === 0) return;
-  const settings = await loadImageUploadSettings(database);
-  if (uploadIds.length > maxImagesForTarget(settings, targetType)) throw new Error("validation-too-many");
+  const maxImages = await loadImageLimit(database, targetType, scopeId);
+  if (sources.length > maxImages) throw new Error("validation-too-many");
 
   const { rows } = await database.sql<Selected<
     "uploads", "id" | "owner_uid" | "status" | "attached_target_type" | "attached_target_id"
@@ -34,13 +36,13 @@ async function validateMarkdownUploads(
 }
 
 export function validateMarkdownUploadsBeforeCreate(
-  database: BackendDatabase, ownerUid: string, content: string, targetType: UploadTargetType,
+  database: BackendDatabase, ownerUid: string, content: string, targetType: UploadTargetType, scopeId = "",
 ) {
-  return validateMarkdownUploads(database, ownerUid, content, targetType, null);
+  return validateMarkdownUploads(database, ownerUid, content, targetType, null, scopeId);
 }
 
 export function validateMarkdownUploadsBeforeUpdate(
-  database: BackendDatabase, ownerUid: string, content: string, targetType: UploadTargetType, targetId: string,
+  database: BackendDatabase, ownerUid: string, content: string, targetType: UploadTargetType, targetId: string, scopeId: string,
 ) {
-  return validateMarkdownUploads(database, ownerUid, content, targetType, targetId);
+  return validateMarkdownUploads(database, ownerUid, content, targetType, targetId, scopeId);
 }

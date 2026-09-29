@@ -12,6 +12,13 @@ import { settledSegments } from "./segments.ts";
 
 const CATEGORY_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 
+function imageLimit(value: unknown) {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > 20) {
+    throw new Error("validation-required");
+  }
+  return value;
+}
+
 function nullablePositiveInteger(value: unknown) {
   if (value === null || value === undefined || value === "") return null;
   const number = Math.round(asNumber(value, 0));
@@ -52,6 +59,8 @@ function issueCategoryInput(value: unknown, sortOrder: number) {
   const supportEnabled = asBoolean(record.supportEnabled);
   return {
     ...identity,
+    maxImages: imageLimit(record.maxImages),
+    commentMaxImages: imageLimit(record.commentMaxImages),
     authorDeleteEnabled: asBoolean(record.authorDeleteEnabled),
     authorVisible,
     commentsEnabled: asBoolean(record.commentsEnabled, true),
@@ -67,6 +76,7 @@ function facilityCategoryInput(value: unknown, sortOrder: number) {
   const record = asRecord(value);
   return {
     ...categoryIdentity(record),
+    maxImages: imageLimit(record.maxImages),
     authorDeleteEnabled: asBoolean(record.authorDeleteEnabled),
     sortOrder,
   };
@@ -201,6 +211,12 @@ export async function handleCategoryAction(
       issues_enabled: issuesEnabled,
     });
     if (saveError) throw saveError;
+    const { error: imageError } = await database.call("app_api", "backend_save_announcement_image_policy", {
+      actor_uid: auth.uid,
+      max_images: imageLimit(payload.announcementMaxImages),
+      comment_max_images: imageLimit(payload.announcementCommentMaxImages),
+    });
+    if (imageError) throw imageError;
     return { ...await loadCategoryCatalog(database, true), success: true };
   }
   if (action === "savePlatformFeatures") {

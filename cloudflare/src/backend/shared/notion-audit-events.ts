@@ -51,6 +51,8 @@ const DOMAIN_LABELS: Record<string, string> = {
 };
 
 const DETAIL_LABELS: Record<string, string> = {
+  announcementMaxImages: "公告圖片上限",
+  announcementCommentMaxImages: "公告留言圖片上限",
   announcementCommentsEnabled: "公告留言",
   announcementId: "公告 ID",
   categoryId: "分類 ID",

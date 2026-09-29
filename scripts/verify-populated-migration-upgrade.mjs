@@ -84,7 +84,20 @@ try {
       throw new Error("Populated 0016 upgrade did not reach the canonical schema.");
     }
     for (const name of migrationNames.slice(consistencyIndex + 1)) {
+      if (name === "0053_category_image_policies.sql") {
+        await database.query(`update app_private.runtime_settings set value =
+          (value::jsonb || '{"issueMaxImages":7,"facilityMaxImages":5,"announcementMaxImages":9,"commentMaxImages":4}'::jsonb)::text
+          where key='image_upload_settings'`);
+      }
       await executeMigration(database, name);
+    }
+    const imagePolicy = await database.query(`select max_images,comment_max_images
+      from app_private.issue_categories where id='migration-regression'`);
+    const announcementPolicy = await database.query(`select announcement_max_images,announcement_comment_max_images
+      from app_private.system_setup where singleton`);
+    if (imagePolicy.rows[0]?.max_images !== 7 || imagePolicy.rows[0]?.comment_max_images !== 4
+      || announcementPolicy.rows[0]?.announcement_max_images !== 9 || announcementPolicy.rows[0]?.announcement_comment_max_images !== 4) {
+      throw new Error("Category image migration did not preserve customized limits.");
     }
     const preserved = await database.query(`select title, content from app_private.issues
       where category = 'migration-regression'`);

@@ -5,14 +5,9 @@ import type { Selected } from "../database/schema.ts";
 
 const IMAGE_UPLOADS_KEY = "image_upload_settings";
 const RETENTION_KEY = "data_retention_settings";
-const MAX_IMAGES = 20;
 const MAX_RETENTION_DAYS = 3650;
 
 export interface ImageUploadSettings {
-  announcementMaxImages: number;
-  commentMaxImages: number;
-  facilityMaxImages: number;
-  issueMaxImages: number;
   maxDimension: number;
   maxUploadKilobytes: number;
   webpQuality: number;
@@ -31,10 +26,6 @@ export interface PlatformSettings {
 export type UploadTargetType = "announcement" | "announcement_comment" | "comment" | "facility" | "issue";
 
 const defaultImageUploads: ImageUploadSettings = {
-  announcementMaxImages: RATE_LIMITS.imageUploads.announcementMaxImages,
-  commentMaxImages: RATE_LIMITS.imageUploads.commentMaxImages,
-  facilityMaxImages: RATE_LIMITS.imageUploads.facilityMaxImages,
-  issueMaxImages: RATE_LIMITS.imageUploads.issueMaxImages,
   maxDimension: RATE_LIMITS.imageCompression.maxDimension,
   maxUploadKilobytes: RATE_LIMITS.imageCompression.maxUploadKilobytes,
   webpQuality: RATE_LIMITS.imageCompression.webpQuality,
@@ -74,10 +65,6 @@ function parseStoredValue(value: string | null | undefined) {
 function normalizeImageUploads(value: unknown): ImageUploadSettings {
   const settings = record(value);
   return {
-    announcementMaxImages: positiveInteger(settings.announcementMaxImages, defaultImageUploads.announcementMaxImages, 1, MAX_IMAGES),
-    commentMaxImages: positiveInteger(settings.commentMaxImages, defaultImageUploads.commentMaxImages, 1, MAX_IMAGES),
-    facilityMaxImages: positiveInteger(settings.facilityMaxImages, defaultImageUploads.facilityMaxImages, 1, MAX_IMAGES),
-    issueMaxImages: positiveInteger(settings.issueMaxImages, defaultImageUploads.issueMaxImages, 1, MAX_IMAGES),
     maxDimension: positiveInteger(settings.maxDimension, defaultImageUploads.maxDimension, 256, 8000),
     maxUploadKilobytes: positiveInteger(
       settings.maxUploadKilobytes,
@@ -134,13 +121,6 @@ export async function loadImageUploadSettings(database: DatabaseSession): Promis
   const row = await database.sqlMaybe<Selected<"runtime_settings", "value">>`
     select value from app_private.runtime_settings where key = ${IMAGE_UPLOADS_KEY}`;
   return normalizeImageUploads(parseStoredValue(row?.value));
-}
-
-export function maxImagesForTarget(settings: ImageUploadSettings, targetType: UploadTargetType) {
-  if (targetType === "issue") return settings.issueMaxImages;
-  if (targetType === "facility") return settings.facilityMaxImages;
-  if (targetType === "announcement") return settings.announcementMaxImages;
-  return settings.commentMaxImages;
 }
 
 export function maxUploadBytes(settings: ImageUploadSettings) {

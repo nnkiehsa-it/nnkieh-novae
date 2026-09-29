@@ -36,7 +36,7 @@ export async function handleFacilityAction(
     const categoryId = asString(payload.categoryId);
     const categories = await getFacilityCategories(database);
     if (!categories.some((category) => category.id === categoryId)) throw new Error("invalid-facility-category");
-    await validateMarkdownUploadsBeforeCreate(database, auth.uid, content, "facility");
+    await validateMarkdownUploadsBeforeCreate(database, auth.uid, content, "facility", categoryId);
     const { data, error } = await database.call("app_api", "backend_create_facility", {
       actor_uid: auth.uid,
       facility_title: title,

@@ -299,12 +299,14 @@ export interface AppPrivateTables {
   announcements: Table<AnnouncementRow>;
   comments: Table<CommentRow>;
   issue_categories: Table<{
+    max_images: number; comment_max_images: number;
     id: string; label: string; read_access: string; author_visible: boolean;
     support_enabled: boolean; support_goal: number | null; support_deadline_days: number | null;
     comments_enabled: boolean; is_active: boolean;
     is_default: boolean; sort_order: number; created_by: string; created_at: string; updated_at: string;
   }>;
   facility_categories: Table<{
+    max_images: number;
     id: string; label: string; is_active: boolean; is_default: boolean;
     sort_order: number; created_by: string; created_at: string; updated_at: string;
   }>;
@@ -344,6 +346,7 @@ export interface AppPrivateTables {
     id: number; actor_uid: string; target_uid: string; before_value: Json; after_value: Json; created_at: string;
   }>;
   system_setup: Table<{
+    announcement_max_images: number; announcement_comment_max_images: number;
     singleton: boolean; completed_at: string | null; completed_by: string | null;
     announcement_comments_enabled: boolean;
     issues_enabled: boolean; facilities_enabled: boolean; updated_at: string;
@@ -362,6 +365,9 @@ type AssertDatabaseCoverage<T extends Record<GeneratedTableCoverage, true>> = T;
 export type DatabaseSchemaDriftGuard = AssertDatabaseCoverage<DatabaseColumnCoverage>;
 
 export interface AppApiFunctions {
+  backend_save_announcement_image_policy: AppFunction<{
+    actor_uid: string; max_images: number; comment_max_images: number;
+  }, null>;
   backend_commit_user_avatar: AppFunction<{
     actor_uid: string;
     next_avatar_hash: string;

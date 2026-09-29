@@ -300,6 +300,8 @@ export async function saveCategoryDraft(
   auth: AuthContext,
   options: {
     announcementCommentsEnabled?: boolean;
+    announcementMaxImages?: number;
+    announcementCommentMaxImages?: number;
     deletedFacilityCategoryIds?: string[];
     deletedIssueCategoryIds?: string[];
     facilitiesEnabled?: boolean;
@@ -319,11 +321,15 @@ export async function saveCategoryDraft(
       }),
     );
     for (const id of deletedIds) byId.delete(id);
-    for (const category of additions) byId.set(String(category.id), category);
+    for (const category of additions) byId.set(String(category.id), {
+      maxImages: 2, commentMaxImages: 1, ...byId.get(String(category.id)), ...category,
+    });
     return [...byId.values()].map((category, sortOrder) => ({ ...category, sortOrder }));
   };
   const features = asRecord(current.features);
   const result = await callAction("saveCategoryManagement", {
+    announcementMaxImages: options.announcementMaxImages ?? features.announcementMaxImages,
+    announcementCommentMaxImages: options.announcementCommentMaxImages ?? features.announcementCommentMaxImages,
     announcementCommentsEnabled: options.announcementCommentsEnabled
       ?? Boolean(features.announcementCommentsEnabled),
     deletedFacilityCategoryIds: [...deletedFacilityIds],

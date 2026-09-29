@@ -13,7 +13,7 @@ export async function createIssue(payload: JsonRecord, auth: AuthContext, databa
     INPUT_LIMITS.contentStorage,
   );
   const category = asString(payload.category);
-  await validateMarkdownUploadsBeforeCreate(database, auth.uid, content, "issue");
+  await validateMarkdownUploadsBeforeCreate(database, auth.uid, content, "issue", category);
 
   const [categoryConfig, policyLists] = await Promise.all([
     getIssueCategory(database, category),

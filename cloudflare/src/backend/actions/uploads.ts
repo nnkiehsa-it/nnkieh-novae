@@ -1,5 +1,6 @@
 import { asRecord, asString } from "../shared/http.ts";
-import { loadImageUploadSettings, maxImagesForTarget, type UploadTargetType } from "../shared/platform-settings.ts";
+import { loadImageUploadSettings, type UploadTargetType } from "../shared/platform-settings.ts";
+import { loadImageLimit } from "./upload-policy.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { resolveUploadImageUrls } from "./upload-delivery.ts";
 import { createUploadSessions, deleteUploadSessions, finalizeUploadSessions } from "./upload-sessions.ts";
@@ -23,7 +24,8 @@ export async function handleUploadAction(action: string, payload: JsonRecord, au
   const input = action === "createImageUploadSessions" ? payload.images : payload.uploads;
   const items = Array.isArray(input) ? input.map(asRecord) : [];
   if (items.length === 0) throw new Error("validation-required");
-  if (items.length > maxImagesForTarget(settings, targetType)) throw new Error("validation-too-many");
+  const maxImages = await loadImageLimit(database, targetType, asString(payload.scopeId));
+  if (items.length > maxImages) throw new Error("validation-too-many");
   return action === "createImageUploadSessions"
     ? { sessions: await createUploadSessions(items, auth, database, settings) }
     : { uploads: await finalizeUploadSessions(items, auth, database, settings) };

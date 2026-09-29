@@ -154,6 +154,7 @@ export interface GeneratedDatabaseTables {
     "created_at": string;
     "updated_at": string;
     "author_delete_enabled": boolean;
+    "max_images": number;
   };
   "facility_report_affected_users": {
     "facility_id": string;
@@ -194,6 +195,8 @@ export interface GeneratedDatabaseTables {
     "created_at": string;
     "updated_at": string;
     "author_delete_enabled": boolean;
+    "max_images": number;
+    "comment_max_images": number;
   };
   "issues": {
     "id": string;
@@ -360,6 +363,8 @@ export interface GeneratedDatabaseTables {
     "issues_enabled": boolean;
     "facilities_enabled": boolean;
     "announcement_comments_enabled": boolean;
+    "announcement_max_images": number;
+    "announcement_comment_max_images": number;
   };
   "uploads": {
     "id": string;
@@ -494,6 +499,7 @@ export const GENERATED_DATABASE_FUNCTION_SIGNATURES = [
   "backend_push_notification_preference(actor_uid text, device_id text, permission text) -> jsonb",
   "backend_reconcile_platform_admins(actor_uid text, admin_emails text[]) -> jsonb",
   "backend_register_push_token(actor_uid text, device_id text, token text, permission text, platform text, user_agent text) -> jsonb",
+  "backend_save_announcement_image_policy(actor_uid text, max_images integer, comment_max_images integer) -> void",
   "backend_save_category_management(actor_uid text, issue_categories jsonb, facility_categories jsonb, deleted_issue_category_ids text[], deleted_facility_category_ids text[], issues_enabled boolean, facilities_enabled boolean) -> jsonb",
   "backend_save_category_management(actor_uid text, issue_categories jsonb, facility_categories jsonb, deleted_issue_category_ids text[], deleted_facility_category_ids text[], issues_enabled boolean, facilities_enabled boolean, announcement_comments_enabled boolean) -> jsonb",
   "backend_save_platform_settings(actor_uid text, image_settings jsonb, retention_config jsonb) -> jsonb",

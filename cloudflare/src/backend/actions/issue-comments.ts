@@ -58,7 +58,7 @@ async function createComment(payload: JsonRecord, auth: AuthContext, database: B
   );
   const parentCommentId = asUuid(payload.parentCommentId) || null;
   const [, policyParams] = await Promise.all([
-    validateMarkdownUploadsBeforeCreate(database, auth.uid, content, "comment"),
+    validateMarkdownUploadsBeforeCreate(database, auth.uid, content, "comment", issueId),
     issueCommentPolicyParams(database, auth, canManageIssueCategory(auth, asString(issue.category))),
   ]);
   const { data, error } = await database.call("app_api", "backend_create_issue_comment", {

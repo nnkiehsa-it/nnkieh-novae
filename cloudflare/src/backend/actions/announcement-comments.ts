@@ -47,7 +47,7 @@ async function createAnnouncementComment(payload: JsonRecord, auth: AuthContext,
     INPUT_LIMITS.commentStorage,
   );
   const parentCommentId = asUuid(payload.parentCommentId) || null;
-  await validateMarkdownUploadsBeforeCreate(database, auth.uid, content, "announcement_comment");
+  await validateMarkdownUploadsBeforeCreate(database, auth.uid, content, "announcement_comment", announcementId);
   const { data, error } = await database.call("app_api", "backend_create_announcement_comment", {
     announcement_id: announcementId,
     parent_comment_id: parentCommentId,

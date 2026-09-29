@@ -15,6 +15,8 @@ import type { Row, Selected } from "../database/schema.ts";
 export const READ_ACCESS_VALUES = new Set(["school", "reviewed-school", "owner-admin"]);
 
 export interface RuntimeIssueCategory {
+  maxImages: number;
+  commentMaxImages: number;
   authorDeleteEnabled: boolean;
   authorVisible: boolean;
   commentsEnabled: boolean;
@@ -29,6 +31,7 @@ export interface RuntimeIssueCategory {
 }
 
 export interface RuntimeFacilityCategory {
+  maxImages: number;
   authorDeleteEnabled: boolean;
   id: string;
   isDefault: boolean;
@@ -38,6 +41,8 @@ export interface RuntimeFacilityCategory {
 
 function issueCategoryResponse(row: Record<string, unknown>): RuntimeIssueCategory {
   return {
+    maxImages: row.max_images as number,
+    commentMaxImages: row.comment_max_images as number,
     authorDeleteEnabled: row.author_delete_enabled === true,
     authorVisible: row.author_visible === true,
     commentsEnabled: row.comments_enabled !== false,
@@ -56,6 +61,7 @@ function issueCategoryResponse(row: Record<string, unknown>): RuntimeIssueCatego
 
 function facilityCategoryResponse(row: Record<string, unknown>): RuntimeFacilityCategory {
   return {
+    maxImages: row.max_images as number,
     authorDeleteEnabled: row.author_delete_enabled === true,
     id: asString(row.id),
     isDefault: row.is_default === true,
@@ -109,13 +115,15 @@ export async function issueCategoryPolicyLists(database: BackendDatabase) {
 }
 
 export function categoryCatalogSegments(database: BackendDatabase, includeInactive: boolean) {
-  const setup = database.sqlOne<Selected<"system_setup", "issues_enabled" | "facilities_enabled" | "announcement_comments_enabled">>`
-      select issues_enabled, facilities_enabled, announcement_comments_enabled
+  const setup = database.sqlOne<Selected<"system_setup", "issues_enabled" | "facilities_enabled" | "announcement_comments_enabled" | "announcement_max_images" | "announcement_comment_max_images">>`
+      select issues_enabled, facilities_enabled, announcement_comments_enabled, announcement_max_images, announcement_comment_max_images
       from app_private.system_setup where singleton = true`;
   const platformSettings = loadPlatformSettings(database);
   return {
     facilityCategories: getFacilityCategories(database, includeInactive),
     features: setup.then((value) => ({
+      announcementMaxImages: value.announcement_max_images,
+      announcementCommentMaxImages: value.announcement_comment_max_images,
       announcementCommentsEnabled: value.announcement_comments_enabled !== false,
       facilitiesEnabled: value.facilities_enabled !== false,
       issuesEnabled: value.issues_enabled !== false,
