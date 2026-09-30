@@ -49,7 +49,7 @@ export function FeedToolbar({
   const { t } = useI18n();
   const [open, setOpen] = React.useState(false);
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div className={cn("flex items-center gap-2 sm:ml-auto", className)}>
       <Popover onOpenChange={setOpen} open={open}>
         <Tooltip>
           <PopoverTrigger asChild>
