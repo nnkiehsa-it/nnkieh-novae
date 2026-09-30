@@ -25,7 +25,7 @@ function AnimatedFeedControl({ children }: { children: ReactNode }) {
   return (
     <motion.div
       animate={{ width }}
-      className="h-8 shrink-0 overflow-hidden rounded-sm focus-within:ring-2 focus-within:ring-ring"
+      className="h-11 shrink-0 overflow-hidden focus-within:ring-2 focus-within:ring-ring"
       initial={false}
       transition={reducedMotion ? { duration: 0 } : timing("nav", "nav")}
     >
@@ -53,10 +53,10 @@ export function FeedNavigation({ label, options, value, onChange }: {
   value: string;
   onChange: (value: string) => void;
 }) {
-  const controlClass = "t-tab t-tab-label inline-flex h-8 shrink-0 items-center justify-center gap-1.5 px-3 font-semibold leading-4 outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  const controlClass = "t-tab t-tab-label inline-flex h-11 shrink-0 items-center justify-center gap-2 px-4 font-semibold leading-5 outline-none focus-visible:ring-2 focus-visible:ring-ring";
   return (
     <nav aria-label={label} className="min-w-0 max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <div className="inline-flex items-center gap-1">
+      <div className="inline-flex items-center gap-2">
         {options.map((option) => {
           const active = option.value === value;
           const className = cn(controlClass, styles.control, active

@@ -1,7 +1,9 @@
-/* ChoiceSelect's size selectors otherwise override the tab's height. */
+/* Primary navigation has more weight and space than the status filters below. */
+.control,
 .control[data-size] {
-  height: 2rem;
-  padding-block: 0;
+  height: 2.75rem;
+  padding: 0.625rem 1rem;
+  font-size: 1rem;
 }
 
 /* Select triggers normally mute SVGs; feed icons follow the tab's state. */
