@@ -53,8 +53,8 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 
       await expect(page.getByRole('textbox', { name: /Search titles/u })).toBeVisible();
       await page.keyboard.press('Escape');
       const navigation = page.getByRole('navigation', { name: 'Primary navigation' });
-      await navigation.filter({ visible: true }).getByRole('link', { name: 'Announcements', exact: true }).click();
-      await expect(page).toHaveURL(/\/announcements$/u);
+      await navigation.filter({ visible: true }).getByRole('link', { name: 'Home', exact: true }).click();
+      await expect(page).toHaveURL(/\/home$/u);
       await expect(page.locator('.route-page')).toHaveCount(1);
     } finally {
       release();
