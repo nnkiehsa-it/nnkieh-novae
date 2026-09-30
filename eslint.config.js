@@ -44,6 +44,8 @@ export default [
     ignores: [
       ".next/**",
       ".next-verify/**",
+      ".next-local-dev/**",
+      ".next-local-preview/**",
       ".vercel/**",
       "**/dist/**",
       "temp/**",

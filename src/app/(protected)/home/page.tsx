@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import { HomeFeed } from "@/components/home/home-feed";
+import { HomeOverview } from "@/components/home/home-overview";
 
 export default function HomePage() {
-  return <Suspense><HomeFeed /></Suspense>;
+  return <Suspense><HomeOverview /></Suspense>;
 }

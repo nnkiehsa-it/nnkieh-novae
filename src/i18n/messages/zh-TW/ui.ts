@@ -187,6 +187,8 @@ const messages = {
   'ui.nav.announcements': '公告',
   'ui.nav.home': '首頁',
   'ui.nav.feed': '列表',
+  'ui.home.statistics': '使用統計',
+  'ui.home.quickLinks': '快速前往',
   'ui.nav.notifications': '通知',
   'ui.nav.settings': '設定',
   'ui.nav.dashboard': '平台儀表板',

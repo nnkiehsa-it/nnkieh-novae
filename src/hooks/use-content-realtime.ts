@@ -7,7 +7,7 @@ import {
   stopContentRealtimeSession,
 } from "@/services/realtime-events";
 
-const CONTENT_REALTIME_ROUTE = /^\/(?:home|issues|facilities|announcements)(?:\/|$)/u;
+const CONTENT_REALTIME_ROUTE = /^\/(?:home|feed|issues|facilities|announcements)(?:\/|$)/u;
 const contentRealtimeEnabled =
   process.env.NEXT_PUBLIC_CONTENT_REALTIME_ENABLED !== "false";
 

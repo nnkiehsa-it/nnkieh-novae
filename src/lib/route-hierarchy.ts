@@ -36,6 +36,7 @@ export type RouteRelation = "deeper" | "shallower" | "unrelated";
 // is why every `/issues/<filter>` is the same destination.
 const PRIMARY_ROUTES: ReadonlySet<string> = new Set([
   "/home",
+  "/feed",
   "/announcements",
   "/facilities",
   "/notifications",
@@ -98,5 +99,5 @@ export function recordListPath(pathname: string) {
 /** The protected shell intercepts records from any of its pages, not only feeds. */
 export function opensOverRoute(from: string, to: string) {
   return from !== to && (isRecordRoute(to) || isIssueComposerRoute(to))
-    && /^\/(?:home|issues|facilities|announcements|notifications|settings|admin)(?:\/|$)/u.test(from);
+    && /^\/(?:home|feed|issues|facilities|announcements|notifications|settings|admin)(?:\/|$)/u.test(from);
 }

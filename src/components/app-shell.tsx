@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import {
   Bell,
+  House,
   List,
   ChevronDown,
   LogOut,
@@ -160,6 +161,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     () => [
       {
         href: homeHref,
+        icon: <House className="size-[1.125rem]" />,
+        label: t('ui.nav.home'),
+      },
+      {
+        href: "/feed",
         icon: <List className="size-[1.125rem]" />,
         label: t('ui.nav.feed'),
       },
@@ -179,7 +185,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 
   const navigationPathname = /^\/(?:issues|facilities|announcements)(?:\/|$)/u.test(surface)
-    ? homeHref : adoptedParent(surface) ?? surface;
+    ? "/feed" : adoptedParent(surface) ?? surface;
   return (
     <div className="app-shell bg-[var(--surface-stage)] md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
       <AppNotificationPrompt />
