@@ -50,32 +50,39 @@ test('all four feature combinations update the guided home, feed tabs and direct
       await expect(nav.locator('a[href="/home"]')).toBeVisible();
       await expect(nav.locator('a[href="/feed"]')).toBeVisible();
       await expect(ordinary.page.locator('[data-dashboard-surface]')).toHaveCount(0);
-      await expect(ordinary.page.getByRole('link', { name: 'Explore proposals', exact: true }))
+      const entries = ordinary.page.getByRole('navigation', { name: 'Feed', exact: true });
+      await expect(entries.getByRole('link', { name: /^Proposals /u }))
         .toHaveCount(combination.issues ? 1 : 0);
-      await expect(ordinary.page.getByRole('link', { name: /^Explore facility reports/u }))
+      await expect(entries.getByRole('link', { name: /^Campus facilities /u }))
         .toHaveCount(combination.facilities ? 1 : 0);
       await expect(ordinary.page.getByRole('link', { name: 'Share an idea', exact: true }))
-        .toHaveCount(combination.issues ? 1 : 0);
+        .toHaveCount(0);
       await expect(ordinary.page.getByRole('link', { name: 'Report a facility problem', exact: true }))
-        .toHaveCount(!combination.issues && combination.facilities ? 1 : 0);
-      await expect(ordinary.page.getByRole('link', { name: /^Read the latest announcements/u }))
+        .toHaveCount(0);
+      await expect(entries.getByRole('link', { name: /^Latest announcements /u }))
         .toHaveAttribute('href', '/feed?view=announcements');
+      const activity = ordinary.page.getByRole('group', { name: 'Overall activity', exact: true });
+      await expect(activity).toHaveCount(combination.issues || combination.facilities ? 1 : 0);
+      await expect(activity.locator('a[href="/feed"]')).toHaveCount(combination.issues ? 1 : 0);
+      await expect(activity.locator('a[href="/feed?view=facilities"]')).toHaveCount(combination.facilities ? 1 : 0);
 
       await admin.page.goto('/home');
       await expect(admin.page.locator('[data-dashboard-surface]')).toHaveCount(0);
-      const primaryLabel = combination.issues ? 'Explore proposals'
-        : combination.facilities ? 'Explore facility reports' : 'Read the latest announcements';
-      await expect(admin.page.getByRole('link', { name: primaryLabel, exact: true })).toBeVisible();
+      await expect(admin.page.getByRole('heading', { name: 'Novae', exact: true })).toBeVisible();
+      await expect(admin.page.getByRole('navigation', { name: 'Feed', exact: true })
+        .getByRole('link', { name: /^Latest announcements /u })).toBeVisible();
 
       await ordinary.page.goto('/feed');
-      await expect(ordinary.page.getByRole('tab', { name: 'Proposals', exact: true }))
+      const feedNavigation = ordinary.page.getByRole('navigation', { name: 'Feed', exact: true });
+      await expect(feedNavigation.getByRole('combobox', { name: 'Proposals: Choose category', exact: true }))
         .toHaveCount(combination.issues ? 1 : 0);
-      await expect(ordinary.page.getByRole('tab', { name: 'Facilities', exact: true }))
+      await expect(feedNavigation.getByRole('button', { name: 'Facilities', exact: true }))
         .toHaveCount(combination.facilities ? 1 : 0);
-      await expect(ordinary.page.getByRole('tab', { name: 'Announcements', exact: true })).toBeVisible();
-      await expect(ordinary.page.getByRole('tab', {
-        name: combination.issues ? 'Proposals' : 'Announcements', exact: true,
-      })).toHaveAttribute('aria-selected', 'true');
+      await expect(feedNavigation.getByRole('button', { name: 'Announcements', exact: true })).toBeVisible();
+      const currentFeed = combination.issues
+        ? feedNavigation.getByRole('combobox', { name: 'Proposals: Choose category', exact: true })
+        : feedNavigation.getByRole('button', { name: 'Announcements', exact: true });
+      await expect(currentFeed).toHaveAttribute('aria-current', 'page');
 
       if (!combination.issues) {
         await ordinary.page.goto('/issues/proposal-a');

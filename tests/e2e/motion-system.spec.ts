@@ -328,9 +328,15 @@ test('nested sheets keep every previous layer visible in the stack', async ({ br
     .locator('[data-sheet-surface]')
     .filter({ has: page.locator('article h1') });
   await expect(detail).toBeVisible();
-  const commentSort = detail.getByRole('button', { name: /Comment order|Newest first/u });
+  const commentSort = detail.getByRole('combobox', { name: 'Comment order', exact: true });
   await expect(commentSort).toBeVisible();
   await commentSort.click();
+  await expect(page.getByRole('listbox', { name: 'Comment order', exact: true })).toBeVisible();
+  await expect(page.locator('[data-sheet-surface]')).toHaveCount(1);
+  await page.getByRole('option', { name: 'Oldest first', exact: true }).click();
+  await expect(commentSort).toContainText('Oldest first');
+  const supporters = detail.getByRole('button', { name: /^Supporters/u });
+  await supporters.click();
 
   const sheets = page.locator('[data-sheet-surface]');
   await expect(sheets).toHaveCount(2);
@@ -387,7 +393,7 @@ test('nested sheets keep every previous layer visible in the stack', async ({ br
   }).toBeGreaterThan(120);
   expect((await sheetExitReport(page, 'nested-actions')).maxTop -
     (await sheetExitReport(page, 'nested-actions')).startTop).toBeGreaterThan(120);
-  await commentSort.click();
+  await supporters.click();
   await expect(sheets).toHaveCount(2);
   const reopenedFrame = sheets.last().locator('..');
   await expect.poll(async () => reopenedFrame.evaluate((element) =>
