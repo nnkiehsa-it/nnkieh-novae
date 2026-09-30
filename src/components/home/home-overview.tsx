@@ -2,17 +2,15 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Blocks, Megaphone, Plus, Wrench } from "lucide-react";
+import { ArrowRight, Blocks, Megaphone, Wrench } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { useCategories } from "@/hooks/use-categories";
-import { getDefaultIssueRouteFilter } from "@/constants/categories";
 import { PageHeader } from "@/components/ui/page-state";
 import { Button } from "@/components/ui/button";
 
 export function HomeOverview() {
   const { t } = useI18n();
   const categories = useCategories();
-  const proposalHref = `/issues/${encodeURIComponent(getDefaultIssueRouteFilter())}/compose/new`;
   const supportsEnabled = categories.activeIssueCategories.some((category) => category.supportEnabled);
   const titleKey = categories.issuesEnabled ? "ui.home.startTitle"
     : categories.facilitiesEnabled ? "ui.home.reportTitle" : "ui.home.announcementsTitle";
@@ -21,12 +19,10 @@ export function HomeOverview() {
     : categories.facilitiesEnabled ? "ui.home.reportIntro" : "ui.home.announcementsIntro";
   const primaryHref = categories.issuesEnabled ? "/feed"
     : categories.facilitiesEnabled ? "/feed?view=facilities" : "/feed?view=announcements";
-  const primaryLabel = categories.issuesEnabled ? "ui.home.browseProposals"
-    : categories.facilitiesEnabled ? "ui.home.facilities" : "ui.home.readAnnouncements";
   const showOtherWays = categories.issuesEnabled || categories.facilitiesEnabled;
   return (
     <div className="space-y-6">
-      <PageHeader title={t("ui.nav.home")} />
+      <PageHeader title="Novae" />
       <div className={`grid gap-8 pb-4 md:gap-12 md:pt-5 ${showOtherWays ? "md:grid-cols-[minmax(0,1.2fr)_minmax(16rem,0.8fr)]" : "max-w-2xl"}`}>
         <section className="space-y-5">
           <div className="flex max-w-lg items-start gap-4">
@@ -38,11 +34,8 @@ export function HomeOverview() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button asChild size="lg">
-              <Link href={primaryHref} prefetch={false}>{categories.issuesEnabled ? <Blocks /> : categories.facilitiesEnabled ? <Wrench /> : <Megaphone />}{t(primaryLabel)}</Link>
+              <Link href={primaryHref} prefetch={false}>{categories.issuesEnabled ? <Blocks /> : categories.facilitiesEnabled ? <Wrench /> : <Megaphone />}{t("ui.home.browseProposals")}</Link>
             </Button>
-            {showOtherWays ? <Button asChild variant="ghost">
-              <Link href={categories.issuesEnabled ? proposalHref : "/facilities/new"} prefetch={false}><Plus />{t(categories.issuesEnabled ? "ui.home.propose" : "ui.home.report")}</Link>
-            </Button> : null}
           </div>
         </section>
         {showOtherWays ? <section aria-label={t("ui.home.otherWays")} className="divide-y border-y">

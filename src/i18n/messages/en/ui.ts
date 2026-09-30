@@ -195,7 +195,7 @@ const messages = {
   'ui.home.announcementsTitle': 'Catch up on campus news.',
   'ui.home.announcementsIntro': 'Start with the latest announcements for school notices, events and updates.',
   'ui.home.propose': 'Share an idea',
-  'ui.home.browseProposals': 'Explore proposals',
+  'ui.home.browseProposals': 'Go to feed',
   'ui.home.facilities': 'Explore facility reports',
   'ui.home.otherWays': 'More ways to participate',
   'ui.home.report': 'Report a facility problem',

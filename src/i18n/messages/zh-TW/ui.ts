@@ -195,7 +195,7 @@ const messages = {
   'ui.home.announcementsTitle': '看看校園的新消息。',
   'ui.home.announcementsIntro': '從最新公告開始，掌握校內通知、活動與更新。',
   'ui.home.propose': '提出想法',
-  'ui.home.browseProposals': '看看提案',
+  'ui.home.browseProposals': '前往列表',
   'ui.home.facilities': '看看設備狀況',
   'ui.home.otherWays': '其他參與方式',
   'ui.home.report': '回報設備問題',
