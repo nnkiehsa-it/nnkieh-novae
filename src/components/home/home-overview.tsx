@@ -6,6 +6,7 @@ import { useI18n } from "@/i18n";
 import { useCategories } from "@/hooks/use-categories";
 import { PageHeader } from "@/components/ui/page-state";
 import { HomeEntryGrid, type HomeEntry } from "./home-entry-grid";
+import { HomeStatusOverview } from "./home-status-overview";
 
 export function HomeOverview() {
   const { t } = useI18n();
@@ -48,6 +49,7 @@ export function HomeOverview() {
           </div>
         </section>
         <HomeEntryGrid entries={entries} label={t("ui.nav.feed")} />
+        <HomeStatusOverview />
       </div>
     </div>
   );

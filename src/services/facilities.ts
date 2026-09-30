@@ -68,10 +68,12 @@ function normalizeSummary(value: RawFacility): FacilitySummary {
 
 export async function listFacilities(input: {
   bucket: 'active' | 'closed'; categoryId: string; query?: string; sort?: FacilitySortOption; status?: FacilityStatus | ''; cursor?: FacilityCursor | null;
-}, options: { forceRefresh?: boolean; signal?: AbortSignal } = {}): Promise<FacilityPageResult> {
+}, options: { forceRefresh?: boolean; signal?: AbortSignal; pageSize?: number } = {}): Promise<FacilityPageResult> {
+  const pageSize = options.pageSize ?? 20;
   const cacheKey = createContentCacheKey([
     'facility-list-page', 'summary-v2', input.categoryId, input.bucket, input.status ?? '', input.sort ?? 'latest', input.query ?? '',
     input.cursor?.id ?? 'first', input.cursor?.createdAt ?? '', input.cursor?.affectedCount ?? '',
+    pageSize,
   ]);
   const cached = options.forceRefresh ? null : await getCachedContentPersistent<FacilityPageResult>(cacheKey);
   if (cached) {
@@ -83,7 +85,7 @@ export async function listFacilities(input: {
     const fn = invokeBackendAction<typeof input & { pageSize: number }, { facilities: RawFacility[]; cursor: FacilityCursor | null; hasMore: boolean; statusCounts: Record<string, number>; version: number }>(
       'listFacilities', { signal: options.signal, timeoutMs: readRequestTimeoutMs },
     );
-    const result = await fn({ ...input, pageSize: 20 });
+    const result = await fn({ ...input, pageSize });
     const page = {
       ...result,
       facilities: result.facilities.map(normalizeSummary),
