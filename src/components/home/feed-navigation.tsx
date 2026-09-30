@@ -24,10 +24,11 @@ function AnimatedFeedControl({ children }: { children: ReactNode }) {
 
   return (
     <motion.div
-      animate={{ width }}
+      animate={reducedMotion ? undefined : { width }}
+      style={reducedMotion ? { width } : undefined}
       className={cn(styles.frame, "h-10 shrink-0 overflow-hidden rounded-full focus-within:ring-2 focus-within:ring-ring")}
       initial={false}
-      transition={reducedMotion ? { duration: 0 } : timing("nav", "nav")}
+      transition={timing("nav", "nav")}
     >
       <div ref={contentRef} className="w-max">{children}</div>
     </motion.div>

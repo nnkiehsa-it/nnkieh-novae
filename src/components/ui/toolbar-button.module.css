@@ -7,9 +7,11 @@
   box-shadow: none;
 }
 
-.control:hover {
-  background: var(--tint-surface);
-  color: var(--tint-content);
+@media (hover: hover) and (pointer: fine) {
+  .control:hover {
+    background: var(--tint-surface);
+    color: var(--tint-content);
+  }
 }
 
 .control svg {
