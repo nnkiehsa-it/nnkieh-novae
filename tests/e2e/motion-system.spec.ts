@@ -317,7 +317,7 @@ test('a cancelled sheet drag settles in place without replaying its arrival', as
 });
 
 test('nested sheets keep every previous layer visible in the stack', async ({ browser }) => {
-  const { context, page } = await newUserPage(browser, 'ordinary');
+  const { context, page } = await newUserPage(browser, 'admin');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/issues');
   const card = page.locator('.t-card a[href^="/issues/"]').first();
@@ -335,8 +335,8 @@ test('nested sheets keep every previous layer visible in the stack', async ({ br
   await expect(page.locator('[data-sheet-surface]')).toHaveCount(1);
   await page.getByRole('option', { name: 'Oldest first', exact: true }).click();
   await expect(commentSort).toContainText('Oldest first');
-  const supporters = detail.getByRole('button', { name: /^Supporters/u });
-  await supporters.click();
+  const actionsTrigger = detail.getByRole('button', { name: 'More actions', exact: true });
+  await actionsTrigger.click();
 
   const sheets = page.locator('[data-sheet-surface]');
   await expect(sheets).toHaveCount(2);
@@ -393,7 +393,7 @@ test('nested sheets keep every previous layer visible in the stack', async ({ br
   }).toBeGreaterThan(120);
   expect((await sheetExitReport(page, 'nested-actions')).maxTop -
     (await sheetExitReport(page, 'nested-actions')).startTop).toBeGreaterThan(120);
-  await supporters.click();
+  await actionsTrigger.click();
   await expect(sheets).toHaveCount(2);
   const reopenedFrame = sheets.last().locator('..');
   await expect.poll(async () => reopenedFrame.evaluate((element) =>
