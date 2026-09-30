@@ -32,3 +32,13 @@ test("CI cache policy stays bounded", async () => {
   assert.match(workflow, /path: ~\/\.cache\/firebase\/emulators/u);
   assert.doesNotMatch(workflow, /path: (?:node_modules|\.next\s*$)/mu);
 });
+
+test("deployed builds disable local authentication and smoke-test primary entry routes", async () => {
+  const workflow = await read(".github/workflows/verify-and-deploy.yml");
+  const build = workflow.split("- name: Build Project Artifacts")[1].split("- name: Deploy Project Artifacts")[0];
+  assert.match(build, /NEXT_PUBLIC_LOCAL_DEV_AUTH: 'false'/u);
+  assert.match(build, /NEXT_PUBLIC_LOCAL_TEST_ORIGIN: ''/u);
+  assert.match(build, /NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_URL: ''/u);
+  assert.match(build, /NOVAE_LOCAL_TEST_PREVIEW: 'false'/u);
+  assert.match(workflow, /for route in login home feed/u);
+});

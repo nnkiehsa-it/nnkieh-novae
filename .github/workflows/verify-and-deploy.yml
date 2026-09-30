@@ -536,6 +536,10 @@ jobs:
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          NEXT_PUBLIC_LOCAL_DEV_AUTH: 'false'
+          NEXT_PUBLIC_LOCAL_TEST_ORIGIN: ''
+          NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_URL: ''
+          NOVAE_LOCAL_TEST_PREVIEW: 'false'
           NEXT_PUBLIC_SCHOOL_NAME: ${{ secrets.NEXT_PUBLIC_SCHOOL_NAME || secrets.VITE_SCHOOL_NAME }}
           NEXT_PUBLIC_ALLOWED_DOMAIN: ${{ secrets.NEXT_PUBLIC_ALLOWED_DOMAIN || secrets.VITE_ALLOWED_DOMAIN }}
           NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY || secrets.VITE_FIREBASE_API_KEY }}
@@ -563,12 +567,18 @@ jobs:
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
         run: |
-          for attempt in $(seq 1 12); do
-            login="$(curl -sS -L -o /tmp/login.html -w '%{http_code}' "${DEPLOYMENT_URL%/}/login")"
-            if [ "$login" = '200' ] && grep -q '/_next/static/' /tmp/login.html; then
-              exit 0
+          for route in login home feed; do
+            ready=false
+            for attempt in $(seq 1 12); do
+              status="$(curl -sS -L -o /tmp/frontend.html -w '%{http_code}' "${DEPLOYMENT_URL%/}/$route")"
+              if [ "$status" = '200' ] && grep -q '/_next/static/' /tmp/frontend.html; then
+                ready=true
+                break
+              fi
+              sleep 5
+            done
+            if [ "$ready" != 'true' ]; then
+              printf 'Frontend smoke test failed (%s=%s) at %s\n' "$route" "$status" "$DEPLOYMENT_URL" >&2
+              exit 1
             fi
-            sleep 5
           done
-          printf 'Frontend smoke test failed (login=%s) at %s\n' "$login" "$DEPLOYMENT_URL" >&2
-          exit 1

@@ -31,6 +31,10 @@ for (const path of [
   ".next/dev/types",
   ".next-verify/types",
   ".next-verify/dev/types",
+  ".next-local-dev/types",
+  ".next-local-dev/dev/types",
+  ".next-local-preview/types",
+  ".next-local-preview/dev/types",
 ]) {
   rmSync(path, { force: true, recursive: true });
 }
