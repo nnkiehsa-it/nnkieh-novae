@@ -16,7 +16,7 @@ integrationTest('real SQLite Durable Object enforces concurrent UID quotas, atom
         return Response.json(request.method === 'GET' ? await object.inspect() : await object.claim(await request.json()));
       } }` } });
   const runtime = new Miniflare({ cf: false, workers: [{ config: {
-    name: 'rate-test', type: 'worker', compatibilityDate: '2025-09-01',
+    name: 'rate-test', compatibilityDate: '2025-09-01',
     manifest: { mainModule: 'index.js', modules: { 'index.js': { type: 'esm', contents: bundle.outputFiles[0].text } } },
     exports: { TestLimiter: { type: 'durable-object', storage: 'sqlite' } },
     env: { RATE: { type: 'durable-object', worker: 'rate-test', exportName: 'TestLimiter' } },

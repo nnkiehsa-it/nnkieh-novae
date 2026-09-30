@@ -108,13 +108,13 @@
     "eslint": "9.39.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "jsdom": "30.0.1",
-    "miniflare": "5.20260908.0-alpha",
+    "miniflare": "5.20260926.1-alpha",
     "postcss": "8.5.28",
     "serwist": "9.5.12",
     "sharp": "0.35.4",
     "tailwindcss": "4.3.3",
     "typescript": "7.0.2",
-    "vitest": "4.1.10",
-    "wrangler": "^4.130.0"
+    "vitest": "4.1.11",
+    "wrangler": "^4.144.0"
   }
 }

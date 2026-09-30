@@ -14,7 +14,7 @@ integrationTest("hibernatable sockets cannot receive events after ticket expiry"
       return hub.fetch(request);
     } };` } });
   const runtime = new Miniflare({ cf: false, workers: [{ config: {
-    name: "realtime-test", type: "worker", compatibilityDate: "2025-09-01",
+    name: "realtime-test", compatibilityDate: "2025-09-01",
     manifest: { mainModule: "index.js", modules: { "index.js": { type: "esm", contents: bundle.outputFiles[0].text } } },
     exports: { RealtimeHub: { type: "durable-object", storage: "sqlite" } },
     env: { HUB: { type: "durable-object", worker: "realtime-test", exportName: "RealtimeHub" }, REALTIME_TICKET_SECRET: { type: "text", value: secret } },
