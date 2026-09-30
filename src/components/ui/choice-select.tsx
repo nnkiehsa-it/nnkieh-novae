@@ -1,23 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDownIcon } from "lucide-react";
-
-import {
-  Sheet,
-  SheetBody,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { ListSection, rowClass } from "@/components/ui/list";
-import { ListChoiceRow } from "@/components/ui/list-controls";
+import { rowClass } from "@/components/ui/list";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  selectTriggerClass,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +16,7 @@ export interface ChoiceOption {
   value: string;
 }
 
-/** The width at which a menu stops being a menu, matching the sheet's own. */
+/** Shared compact breakpoint for responsive action menus. */
 const COMPACT_VIEWPORT = "(max-width: 47.99rem)";
 
 function subscribeCompact(onChange: () => void) {
@@ -36,7 +25,7 @@ function subscribeCompact(onChange: () => void) {
   return () => query.removeEventListener("change", onChange);
 }
 
-/** Whether this screen is narrow enough that a menu should be a sheet. */
+/** Whether the screen uses compact layouts. */
 export function useCompactViewport() {
   return React.useSyncExternalStore(
     subscribeCompact,
@@ -45,16 +34,7 @@ export function useCompactViewport() {
   );
 }
 
-/**
- * One choice out of a few, asked in the shape the screen calls for.
- *
- * A menu that opens beside its control is a pointer's idea of a choice: on a
- * phone it lands wherever there is room, its rows are the size of a mouse
- * target rather than a thumb, and a long list is a tiny scrolling box. The same
- * choice on a phone is a sheet from the bottom edge, with the options as the
- * same rows the rest of the product asks questions with, and the page settling
- * back behind it. The trigger is the same object either way.
- */
+/** One selection dropdown at every viewport size. */
 export function ChoiceSelect({
   ariaCurrent,
   ariaLabel,
@@ -77,19 +57,16 @@ export function ChoiceSelect({
   onValueChange: (value: string) => void;
   options: readonly ChoiceOption[];
   size?: "sm" | "default";
-  /** What the sheet calls the choice it is asking for. */
+  /** Accessible label for the dropdown's options. */
   title: string;
   /** What the trigger shows. The chosen option's label, unless said otherwise. */
   trigger?: (selected: ChoiceOption | undefined) => React.ReactNode;
   value: string;
 }) {
-  const compact = useCompactViewport();
-  const [open, setOpen] = React.useState(false);
   const selected = options.find((option) => option.value === value);
   const content = trigger ? trigger(selected) : selected?.label;
 
-  if (!compact)
-    return (
+  return (
       <Select disabled={disabled} onValueChange={onValueChange} value={value}>
         <SelectTrigger
           aria-current={ariaCurrent}
@@ -101,9 +78,9 @@ export function ChoiceSelect({
         >
           {content}
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent aria-label={title}>
           {options.map((option) => (
-            <SelectItem disabled={option.disabled} key={option.value} value={option.value}>
+            <SelectItem className="min-h-11 sm:min-h-9" disabled={option.disabled} key={option.value} value={option.value}>
               {option.label}
             </SelectItem>
           ))}
@@ -111,47 +88,6 @@ export function ChoiceSelect({
       </Select>
     );
 
-  return (
-    <>
-      <button
-        aria-current={ariaCurrent}
-        aria-label={ariaLabel}
-        data-displayed-active={ariaCurrent === "page"}
-        className={cn(selectTriggerClass, size === "sm" ? "h-9" : "h-10", className)}
-        data-control-label={controlLabel}
-        data-size={size}
-        disabled={disabled}
-        onClick={() => setOpen(true)}
-        type="button"
-      >
-        {content}
-        <ChevronDownIcon className="t-disclosure-icon size-4 opacity-50" />
-      </button>
-      <Sheet onOpenChange={setOpen} open={open}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>{title}</SheetTitle>
-          </SheetHeader>
-          <SheetBody>
-            <ListSection groupName={title}>
-            {options.map((option) => (
-              <ListChoiceRow
-                disabled={option.disabled}
-                key={option.value}
-                label={option.label}
-                onSelect={() => {
-                  onValueChange(option.value);
-                  setOpen(false);
-                }}
-                selected={option.value === value}
-              />
-            ))}
-            </ListSection>
-          </SheetBody>
-        </SheetContent>
-      </Sheet>
-    </>
-  );
 }
 
 /**
