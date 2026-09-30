@@ -40,7 +40,7 @@ export default function FacilityFeed({ headerHost }: { headerHost?: HTMLElement 
         portalHost={headerHost}
         actions={
           <>
-            <Button asChild className="order-3 ml-auto sm:order-2 sm:ml-0" size="adaptive">
+            <Button asChild className="order-3 ml-auto sm:order-2 sm:ml-0" size="adaptive" variant="ghost">
               <Link
                 aria-label={translate('ui.facility.new')}
                 href={`/facilities/new?category=${encodeURIComponent(state.category)}`}

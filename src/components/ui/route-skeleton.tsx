@@ -72,14 +72,14 @@ export function ListRouteSkeleton({
           kind !== "announcement" ? (
             <>
               {showCreate ? (
-                <Button aria-label={translate(createKeys[kind])} className="order-3 ml-auto opacity-100 sm:order-2 sm:ml-0" disabled size="adaptive">
+                <Button aria-label={translate(createKeys[kind])} className="order-3 ml-auto opacity-100 sm:order-2 sm:ml-0" disabled size="adaptive" variant="ghost">
                   <Plus /><span className="hidden sm:inline">{translate(createKeys[kind])}</span>
                 </Button>
               ) : null}
               <StableTabs kind={kind} />
             </>
           ) : showCreate ? (
-            <Button className="opacity-100" disabled>
+            <Button className="opacity-100" disabled variant="ghost">
               <Plus />{translate(createKeys[kind])}
             </Button>
           ) : undefined

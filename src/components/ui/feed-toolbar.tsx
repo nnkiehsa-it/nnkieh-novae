@@ -59,6 +59,7 @@ export function FeedToolbar({
                 disabled={disabled}
                 size="icon"
                 type="button"
+                variant="ghost"
               >
                 <Search />
                 {appliedQuery ? (
@@ -106,7 +107,7 @@ export function FeedToolbar({
       </Popover>
       <ChoiceSelect
         ariaLabel={t('ui.common.sort')}
-        className="size-9 shrink-0 justify-center gap-0 px-0 [&_.t-disclosure-icon]:hidden disabled:opacity-100 sm:w-36 sm:justify-between sm:gap-2 sm:px-3 sm:[&_.t-disclosure-icon]:block"
+        className="size-9 shrink-0 justify-center gap-0 border-0 bg-transparent px-0 shadow-none hover:bg-[var(--tint-surface)] [&_.t-disclosure-icon]:hidden disabled:opacity-100 sm:w-36 sm:justify-between sm:gap-2 sm:px-3 sm:[&_.t-disclosure-icon]:block"
         disabled={disabled}
         onValueChange={(value) => onSortChange?.(value)}
         options={options}

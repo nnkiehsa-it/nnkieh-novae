@@ -24,7 +24,7 @@ export default function AnnouncementFeed({ headerHost }: { headerHost?: HTMLElem
         portalHost={headerHost}
         actions={
           feed.canManage ? (
-            <Button asChild>
+            <Button asChild variant="ghost">
               <Link href="/announcements/new" prefetch={false}>
                 <Plus />{translate('ui.announcement.new')}</Link>
             </Button>
