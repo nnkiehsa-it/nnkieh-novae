@@ -2,6 +2,8 @@ node_modules/
 dist/
 .next/
 .next-verify/
+.next-local-dev/
+.next-local-preview/
 .novae-generate.lock/
 *.tsbuildinfo
 next-env.d.ts

@@ -28,6 +28,8 @@
 
 ### 手機本機預覽
 
+手機分享使用 `node scripts/verify-integration.mjs --serve --preview`。此模式先建置，再用 `next start` 提供 production 預覽，停用測試 service worker；產物放在 `.next-local-preview`。一般 `--serve` 的開發產物放在 `.next-local-dev`，兩者都與正式建置的 `.next` 分離，避免共享產物與遠端熱更新打斷載入。
+
 測試環境支援 `NOVAE_TEST_PUBLIC_ORIGIN=https://<device>.<tailnet>.ts.net`，只接受 `--serve` 與 Tailscale HTTPS 裝置網址。Tailscale Serve 將 443 代理至前端連接埠、8443 至本機 Worker 8787、9443 至 Auth emulator 9099。手機須連同一個 tailnet；預覽自動登入種子測試管理員，不使用正式資料。停用代理時分別執行 `tailscale serve --https=443 off`、`--https=8443 off`、`--https=9443 off`。
 
 `docs/improvement-audit.md` 是 2026-09-29 的完成紀錄。其中「導覽與畫面」與「品牌與介面」寫的是桌面頂部導覽；目前 `app-shell.tsx` 明確使用固定側欄，因此該兩處不能用來描述現在的桌面配置。手機抽屜的描述也不等於現在 `AppShell` 的三項底部導覽。此文件保留舊報告作為歷史紀錄，沒有回寫或重新背書其中的驗證數字。

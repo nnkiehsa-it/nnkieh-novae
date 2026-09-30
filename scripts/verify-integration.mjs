@@ -26,6 +26,8 @@ const runnerArgs = process.argv.slice(2, separator < 0 ? undefined : separator);
 const browserArgs = separator < 0 ? [] : process.argv.slice(separator + 1);
 const e2e = runnerArgs.includes("--e2e");
 const serve = runnerArgs.includes("--serve");
+const preview = runnerArgs.includes("--preview");
+if (preview && !serve) throw new Error("--preview requires --serve.");
 const checkStartup = runnerArgs.includes("--check-startup");
 if (checkStartup && !serve) throw new Error("--check-startup requires --serve.");
 const skipBuild = runnerArgs.includes("--skip-build");
@@ -655,6 +657,8 @@ try {
       NEXT_PUBLIC_API_BASE_URL: publicWorkerUrl,
       NEXT_PUBLIC_LOCAL_TEST_ORIGIN: publicTestOrigin,
       NOVAE_TEST_PUBLIC_ORIGIN: publicTestOrigin,
+      ...(serve ? { NOVAE_NEXT_DIST_DIR: preview ? ".next-local-preview" : ".next-local-dev" } : {}),
+      NOVAE_LOCAL_TEST_PREVIEW: preview ? "true" : "false",
       NEXT_PUBLIC_CONTENT_REALTIME_ENABLED: e2e ? "false" : "true",
       NEXT_PUBLIC_FIREBASE_API_KEY: "integration-web-api-key",
       NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED: "false",
@@ -671,12 +675,12 @@ try {
       NOVAE_LOCAL_APP_ORIGIN: appUrl,
       NOVAE_LOCAL_GATEWAY_URL: workerUrl,
     };
-    if (e2e && !skipBuild) {
+    if ((e2e && !skipBuild) || preview) {
       run("build production frontend", process.execPath, [nextCli, "build", "--webpack"], frontendEnvironment);
     } else if (e2e && !existsSync(join(root, ".next", "BUILD_ID"))) {
       throw new Error("--skip-build requires an existing production .next build.");
     }
-    const frontendArgs = e2e
+    const frontendArgs = e2e || preview
       ? [nextCli, "start", "-H", "0.0.0.0", "-p", String(appPort)]
       : [nextCli, "dev", "--webpack", "-H", "0.0.0.0", "-p", String(appPort)];
     const frontend = start(

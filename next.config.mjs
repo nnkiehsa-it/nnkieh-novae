@@ -39,7 +39,7 @@ const publicEnvironment = {
 };
 
 const withSerwist = withSerwistInit({
-  disable: process.env.NODE_ENV === "development",
+  disable: process.env.NODE_ENV === "development" || process.env.NOVAE_LOCAL_TEST_PREVIEW === "true",
   register: true,
   swDest: "public/sw.js",
   swSrc: "src/app/sw.ts",
