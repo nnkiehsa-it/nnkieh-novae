@@ -5,6 +5,7 @@ dist/
 .next-local-dev/
 .next-local-preview/
 .novae-generate.lock/
+.novae-phone-preview/
 *.tsbuildinfo
 next-env.d.ts
 public/sw.js
@@ -42,7 +43,10 @@ test-results/
 tests/e2e/.auth/
 
 # Local AI / agent tooling and prompts
-/.agents/
+/.agents/*
+!/.agents/skills/
+/.agents/skills/*
+!/.agents/skills/novae-phone-preview/
 /.codex/
 /.claude/
 /.gemini/

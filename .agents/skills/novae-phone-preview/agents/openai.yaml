@@ -1,0 +1,4 @@
+interface:
+  display_name: "Novae 手機預覽"
+  short_description: "透過 Tailscale 開啟 Novae 本機 production 預覽，提供手機測試與停止清理"
+  default_prompt: "用 $novae-phone-preview 幫我開啟 Novae 的手機測試網址。"

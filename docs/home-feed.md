@@ -28,7 +28,9 @@
 
 ### 手機本機預覽
 
-手機分享使用 `node scripts/verify-integration.mjs --serve --preview`。此模式先建置，再用 `next start` 提供 production 預覽，停用測試 service worker；產物放在 `.next-local-preview`。一般 `--serve` 的開發產物放在 `.next-local-dev`，兩者都與正式建置的 `.next` 分離，避免共享產物與遠端熱更新打斷載入。
+手機分享用 `bun run preview:phone`，狀態／探測／停止分別用 `preview:phone:status`、`preview:phone:verify`、`preview:phone:stop`。腳本自動取得 Tailscale 裝置網址並在背景運行；日誌與狀態放在 `.novae-phone-preview/`。專案 skill 位於 `.agents/skills/novae-phone-preview/SKILL.md`，可用 `$novae-phone-preview` 呼叫。需要新版本時停止再啟動。
+
+底層使用 `node scripts/verify-integration.mjs --serve --preview`，先建置，再用 `next start` 提供 production 預覽，停用測試 service worker；產物放在 `.next-local-preview`。一般 `--serve` 的開發產物放在 `.next-local-dev`，兩者都與正式建置的 `.next` 分離，避免共享產物與遠端熱更新打斷載入。
 
 測試環境支援 `NOVAE_TEST_PUBLIC_ORIGIN=https://<device>.<tailnet>.ts.net`，只接受 `--serve` 與 Tailscale HTTPS 裝置網址。Tailscale Serve 將 443 代理至前端連接埠、8443 至本機 Worker 8787、9443 至 Auth emulator 9099。手機須連同一個 tailnet；預覽自動登入種子測試管理員，不使用正式資料。停用代理時分別執行 `tailscale serve --https=443 off`、`--https=8443 off`、`--https=9443 off`。
 
