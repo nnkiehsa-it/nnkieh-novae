@@ -32,5 +32,5 @@ export async function completeInitialSetup(page: Page) {
   await expectBackendAction(page, 'completeInitialSetup', async () => {
     await page.getByRole('dialog').getByRole('button', { name: 'Confirm setup' }).click();
   });
-  await expect(page).toHaveURL(/\/issues\/proposal-a/u, { timeout: 20_000 });
+  await expect(page).toHaveURL(/\/home$/u, { timeout: 20_000 });
 }

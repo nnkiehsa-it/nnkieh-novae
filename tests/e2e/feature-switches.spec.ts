@@ -52,13 +52,13 @@ test('all four feature combinations update the guided home, feed tabs and direct
       await expect(ordinary.page.locator('[data-dashboard-surface]')).toHaveCount(0);
       await expect(ordinary.page.getByRole('link', { name: 'Explore proposals', exact: true }))
         .toHaveCount(combination.issues ? 1 : 0);
-      await expect(ordinary.page.getByRole('link', { name: 'Explore facility reports', exact: true }))
+      await expect(ordinary.page.getByRole('link', { name: /^Explore facility reports/u }))
         .toHaveCount(combination.facilities ? 1 : 0);
       await expect(ordinary.page.getByRole('link', { name: 'Share an idea', exact: true }))
         .toHaveCount(combination.issues ? 1 : 0);
       await expect(ordinary.page.getByRole('link', { name: 'Report a facility problem', exact: true }))
         .toHaveCount(!combination.issues && combination.facilities ? 1 : 0);
-      await expect(ordinary.page.getByRole('link', { name: 'Read the latest announcements', exact: true }))
+      await expect(ordinary.page.getByRole('link', { name: /^Read the latest announcements/u }))
         .toHaveAttribute('href', '/feed?view=announcements');
 
       await admin.page.goto('/home');

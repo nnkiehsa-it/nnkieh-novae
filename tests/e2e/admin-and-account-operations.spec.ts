@@ -160,9 +160,9 @@ test('platform settings save traverses impact estimation and canonical write', a
   // Nothing is submittable until something has actually been changed.
   await expect(admin.page.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0);
   await admin.page.getByRole('tab', { name: 'Image uploads' }).click();
-  const commentImages = admin.page.getByLabel('Images per comment', { exact: true });
-  await commentImages.fill(String(Number(await commentImages.inputValue()) === 1 ? 2 : 1));
-  await commentImages.blur();
+  const imageDimension = admin.page.getByLabel('Maximum image dimension (px)', { exact: true });
+  await imageDimension.fill(String(Number(await imageDimension.inputValue()) === 1600 ? 1601 : 1600));
+  await imageDimension.blur();
   await expect(admin.page.getByText('1 unsaved changes')).toBeVisible();
   await expectBackendAction(admin.page, 'savePlatformSettings', async () => {
     await admin.page.getByRole('button', { name: 'Save', exact: true }).click();

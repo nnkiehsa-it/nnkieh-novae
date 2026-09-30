@@ -101,7 +101,7 @@ test('a backslash redirect cannot send a signed-in user to another origin', asyn
   try {
     await page.route('**://evil.invalid/**', (route) => route.abort());
     await page.goto(`/login?redirect=${encodeURIComponent('/\\evil.invalid')}`);
-    await expect(page).toHaveURL(/\/issues(?:\/|\?|$)/u);
+    await expect(page).toHaveURL(/\/home$/u);
     expect(new URL(page.url()).origin).toBe(new URL(process.env.NOVAE_E2E_BASE_URL ?? 'http://127.0.0.1:3000').origin);
   } finally { await context.close(); }
 });

@@ -172,7 +172,7 @@ test.describe.serial("shareable feeds and isolated discussion drafts", () => {
         await expect(dock.getByText('Draft saved in this tab.', { exact: true })).toHaveCount(0);
         await page.reload();
         await expect(rootInput).toHaveValue(rootText);
-        await expect(dock.getByRole("status")).toHaveText("Comment draft restored.");
+        await expect(dock.getByRole("status")).toHaveText("Comment text restored. Please select images again.");
 
         await commentRow(page, firstComment).getByRole("button", { name: "Reply", exact: true }).click();
         await expect(replyInput).toHaveValue("");
@@ -190,7 +190,7 @@ test.describe.serial("shareable feeds and isolated discussion drafts", () => {
         await commentRow(page, secondComment).getByRole("button", { name: "Reply", exact: true }).click();
         await expect(replyInput).toHaveValue(secondText);
         await expect(dock.locator('[data-update-defer="true"]')).toBeVisible();
-        await expect(dock.getByRole("status")).toHaveText("Comment draft restored.");
+        await expect(dock.getByRole("status")).toHaveText("Comment text restored. Please select images again.");
         // The assertions above verify the fixed composer. WebKit on Windows
         // can stall while scrolling this nested sheet for an element capture;
         // retain the test runner's trace instead of adding that capture here.
