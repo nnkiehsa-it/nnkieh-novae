@@ -9,3 +9,15 @@
   color: inherit;
   opacity: 1;
 }
+.control {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.control[aria-current="page"][data-displayed-active="true"] {
+  border-bottom-color: var(--tint-content);
+  color: var(--tint-content);
+}

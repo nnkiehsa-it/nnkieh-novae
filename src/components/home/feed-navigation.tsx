@@ -25,7 +25,7 @@ function AnimatedFeedControl({ children }: { children: ReactNode }) {
   return (
     <motion.div
       animate={{ width }}
-      className="h-8 shrink-0 overflow-hidden rounded-full focus-within:ring-2 focus-within:ring-ring"
+      className="h-8 shrink-0 overflow-hidden rounded-sm focus-within:ring-2 focus-within:ring-ring"
       initial={false}
       transition={reducedMotion ? { duration: 0 } : timing("nav", "nav")}
     >
@@ -53,14 +53,14 @@ export function FeedNavigation({ label, options, value, onChange }: {
   value: string;
   onChange: (value: string) => void;
 }) {
-  const controlClass = "t-tab t-tab-label inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-full border-0 px-3 font-semibold leading-4 outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  const controlClass = "t-tab t-tab-label inline-flex h-8 shrink-0 items-center justify-center gap-1.5 px-3 font-semibold leading-4 outline-none focus-visible:ring-2 focus-visible:ring-ring";
   return (
     <nav aria-label={label} className="min-w-0 max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <div className="t-tabs inline-flex items-center gap-[3px] rounded-full bg-[var(--tabs-bar-bg)] p-[3px]">
+      <div className="inline-flex items-center gap-1">
         {options.map((option) => {
           const active = option.value === value;
           const className = cn(controlClass, styles.control, active
-            ? "bg-[var(--tabs-pill-bg)] text-[var(--tabs-text-active)] shadow-[var(--shadow-control)]"
+            ? "text-[var(--tint-content)]"
             : "bg-transparent text-[var(--tabs-text-muted)]");
           const icon = <span aria-hidden="true" className="inline-flex shrink-0">{option.icon}</span>;
           return <AnimatedFeedControl key={option.value}>{active && option.category ? (
