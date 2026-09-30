@@ -13,7 +13,7 @@ description: "透過 Tailscale 啟動、查詢或停止 Novae 本機手機預覽
 
 以 `bun run preview:phone:status` 查詢，`phase: ready` 且 `running: true` 才代表建置與登入探測已完成。建置中可讀 `.novae-phone-preview/preview.log`；不要頻繁輪詢。接著執行 `bun run preview:phone:verify`，驗證實際 HTTPS 首頁、模擬登入與 API。將輸出的 `/home` 網址給使用者，提醒手機須連同一個 tailnet、電腦須保持開機。
 
-HTTP 探測不代表 UI 已驗證。第一次啟動、程式變更或使用者回報問題時，用受控瀏覽器開啟**輸出的 Tailscale 網址**，確認實際手機寬度、資料顯示、分頁與詳情返回，並讀取 console warning/error。若瀏覽器無法操作，明確說明缺少這項驗證，不以登入 probe 代替。
+HTTP 探測不代表 UI 已驗證。需要 UI 驗證時，用受控瀏覽器開啟**輸出的 Tailscale 網址**，確認首頁引導、手機寬度、列表切換與詳情返回，並讀取 console warning/error。尊重使用者指定的驗證範圍；若使用者自行測試動畫，只完成必要建置及伺服器啟動，不追加動畫或截圖檢查。若瀏覽器無法操作，明確說明缺少這項驗證，不以登入 probe 代替。
 
 ## 停止或重開
 
