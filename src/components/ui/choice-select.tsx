@@ -56,6 +56,7 @@ export function useCompactViewport() {
  * back behind it. The trigger is the same object either way.
  */
 export function ChoiceSelect({
+  ariaCurrent,
   ariaLabel,
   className,
   controlLabel = "",
@@ -67,6 +68,7 @@ export function ChoiceSelect({
   trigger,
   value,
 }: {
+  ariaCurrent?: "page";
   ariaLabel: string;
   className?: string;
   /** How the trigger is typed: a control by default, or a page's own heading. */
@@ -90,7 +92,9 @@ export function ChoiceSelect({
     return (
       <Select disabled={disabled} onValueChange={onValueChange} value={value}>
         <SelectTrigger
+          aria-current={ariaCurrent}
           aria-label={ariaLabel}
+          data-displayed-active={ariaCurrent === "page"}
           className={className}
           data-control-label={controlLabel}
           size={size}
@@ -110,7 +114,9 @@ export function ChoiceSelect({
   return (
     <>
       <button
+        aria-current={ariaCurrent}
         aria-label={ariaLabel}
+        data-displayed-active={ariaCurrent === "page"}
         className={cn(selectTriggerClass, size === "sm" ? "h-9" : "h-10", className)}
         data-control-label={controlLabel}
         data-size={size}

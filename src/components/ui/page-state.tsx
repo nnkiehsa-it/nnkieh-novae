@@ -31,7 +31,7 @@ export function PageHeader({
    * answering taps.
    */
   lead?: React.ReactNode;
-  title: React.ReactNode;
+  title?: React.ReactNode;
   titleAction?: React.ReactNode;
   /**
    * Search and sort controls. They join the same wrapping row as the title and the
@@ -56,7 +56,7 @@ export function PageHeader({
       </h1>
     </div>
   );
-  const headingRow = titleAction ? (
+  const headingRow = title == null ? null : titleAction ? (
     <div className={cn("flex min-w-0 items-center justify-between gap-3", toolbar && "order-1 w-full sm:w-auto sm:flex-1")}>
       {heading}
       <div className="shrink-0">{titleAction}</div>
@@ -66,6 +66,7 @@ export function PageHeader({
       {heading}
     </div>
   );
+  if (title == null && !actions && !toolbar && !lead) return null;
   if (toolbar) {
     return render(
       <Header className={cn(!embedded && "page-header", "flex flex-wrap items-center gap-x-2 gap-y-3", className)}>

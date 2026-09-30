@@ -64,7 +64,7 @@ export default function FacilityFeed({ headerHost }: { headerHost?: HTMLElement 
             />
           </>
         }
-        title={
+        title={headerHost !== undefined ? null :
           <ChoiceSelect
             ariaLabel={translate('ui.access.selectCategory')}
             className="h-auto max-w-full border-0 bg-transparent p-0 text-2xl font-semibold leading-8 shadow-none"
@@ -78,7 +78,7 @@ export default function FacilityFeed({ headerHost }: { headerHost?: HTMLElement 
             value={state.category}
           />
         }
-        titleAction={<AnnouncementNotice />}
+        titleAction={headerHost === undefined ? <AnnouncementNotice /> : undefined}
         toolbar={
           <FeedToolbar
             appliedQuery={state.committedQuery}

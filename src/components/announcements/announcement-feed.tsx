@@ -30,7 +30,7 @@ export default function AnnouncementFeed({ headerHost }: { headerHost?: HTMLElem
             </Button>
           ) : null
         }
-        title={translate('ui.nav.announcements')}
+        title={headerHost === undefined ? translate('ui.nav.announcements') : undefined}
       />
       <FeedList
         kind="announcement"

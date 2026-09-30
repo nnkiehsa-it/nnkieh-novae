@@ -20,10 +20,9 @@ import { IssueCard } from "@/components/issues/issue-card";
 import { ChoiceSelect } from "@/components/ui/choice-select";
 import { AnnouncementNotice } from "@/components/announcements/announcement-notice";
 
-export default function IssueFeed({ headerHost, selectedFilter, onFilterChange }: {
+export default function IssueFeed({ headerHost, selectedFilter }: {
   headerHost?: HTMLElement | null;
   selectedFilter?: string;
-  onFilterChange?: (value: string) => void;
 } = {}) {
   useLocaleSubscription();
   const router = useRouter();
@@ -94,13 +93,13 @@ export default function IssueFeed({ headerHost, selectedFilter, onFilterChange }
             />
           </>
         }
-        title={
+        title={headerHost !== undefined ? null :
           <ChoiceSelect
             ariaLabel={translate('ui.access.selectCategory')}
             className="h-auto max-w-full border-0 bg-transparent p-0 text-2xl font-semibold leading-8 shadow-none"
             controlLabel="heading"
             onValueChange={(value) =>
-              onFilterChange ? onFilterChange(value) : router.push(`/issues/${encodeURIComponent(value)}`)
+              router.push(`/issues/${encodeURIComponent(value)}`)
             }
             options={[
               ...categoryOptions,
@@ -110,7 +109,7 @@ export default function IssueFeed({ headerHost, selectedFilter, onFilterChange }
             value={filter}
           />
         }
-        titleAction={<AnnouncementNotice />}
+        titleAction={headerHost === undefined ? <AnnouncementNotice /> : undefined}
         toolbar={
           <FeedToolbar
             appliedQuery={committedQuery}
