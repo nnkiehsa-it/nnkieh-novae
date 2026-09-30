@@ -1,9 +1,9 @@
 /* Primary navigation has more weight and space than the status filters below. */
 .control,
 .control[data-size] {
-  height: 2.75rem;
-  padding: 0.625rem 1rem;
-  font-size: 1rem;
+  height: 2.5rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.9375rem;
 }
 
 /* Select triggers normally mute SVGs; feed icons follow the tab's state. */
@@ -13,13 +13,16 @@
 }
 .control {
   border: 0;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
+  border-radius: 999px;
   background: transparent;
   box-shadow: none;
 }
 
 .control[aria-current="page"][data-displayed-active="true"] {
-  border-bottom-color: var(--tint-content);
-  color: var(--tint-content);
+  background: var(--tabs-pill-bg);
+  color: var(--tabs-text-active);
+}
+
+.frame:has([aria-current="page"]) {
+  box-shadow: var(--shadow-control);
 }
