@@ -1,14 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChoiceSelect } from "@/components/ui/choice-select";
+import { SortControl } from "@/components/ui/sort-control";
 
 /**
  * One search/sort control pair for every feed, at every width.
@@ -105,19 +105,11 @@ export function FeedToolbar({
           </form>
         </PopoverContent>
       </Popover>
-      <ChoiceSelect
-        ariaLabel={t('ui.common.sort')}
-        className="size-9 shrink-0 justify-center gap-0 border-0 bg-transparent px-0 shadow-none hover:bg-[var(--tint-surface)] [&_.t-disclosure-icon]:hidden disabled:opacity-100 sm:w-36 sm:justify-between sm:gap-2 sm:px-3 sm:[&_.t-disclosure-icon]:block"
+      <SortControl
+        label={t('ui.common.sort')}
         disabled={disabled}
-        onValueChange={(value) => onSortChange?.(value)}
+        onChange={(value) => onSortChange?.(value)}
         options={options}
-        title={t('ui.common.sort')}
-        trigger={(selected) => (
-          <>
-            <SlidersHorizontal className="shrink-0 sm:hidden" />
-            <span className="hidden sm:inline">{selected?.label}</span>
-          </>
-        )}
         value={sort}
       />
     </div>

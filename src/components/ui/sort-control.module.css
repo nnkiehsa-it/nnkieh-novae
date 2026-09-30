@@ -1,0 +1,12 @@
+.control[data-size] {
+  height: 2.25rem;
+}
+
+.control:hover {
+  background: var(--tint-surface);
+  color: var(--tint-content);
+}
+
+.control svg {
+  color: inherit;
+}

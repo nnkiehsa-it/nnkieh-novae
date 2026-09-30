@@ -2,7 +2,7 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import * as React from "react";
-import { ChevronDown, MessageCircle, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, MessageCircle, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { timing } from "@/lib/motion-timing";
 import type { CommentSortOption, DiscussionCommentRecord } from "@/types";
@@ -18,7 +18,7 @@ import { useDiscussionComposer } from "@/hooks/use-discussion-composer";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonRows } from "@/components/ui/skeleton-rows";
-import { ChoiceSelect } from "@/components/ui/choice-select";
+import { SortControl } from "@/components/ui/sort-control";
 import { useCategories } from "@/hooks/use-categories";
 import { stripMarkdownImages } from "@/lib/markdown-images";
 
@@ -109,16 +109,15 @@ export function Discussion({
           <h2 className="text-sm font-medium" id="discussion-title">{translate("ui.discussion.title")}</h2>
           <span className="text-sm tabular-nums text-muted-foreground">{comments.length}</span>
           {loading && comments.length > 0 ? <LoadingSpinner /> : null}
-          <ChoiceSelect
-            ariaLabel={translate("ui.discussion.sort")}
-            className="ml-auto size-9 shrink-0 justify-center gap-0 px-0 [&_.t-disclosure-icon]:hidden"
-            onValueChange={(value) => onSortChange(value as CommentSortOption)}
+          <SortControl
+            label={translate("ui.discussion.sort")}
+            className="ml-auto"
+            iconOnly
+            onChange={(value) => onSortChange(value as CommentSortOption)}
             options={[
               { label: translate("ui.discussion.newest"), value: "newest" },
               { label: translate("ui.discussion.oldest"), value: "oldest" },
             ]}
-            title={translate("ui.discussion.sort")}
-            trigger={(selected) => <><SlidersHorizontal aria-hidden className="size-4" /><span className="sr-only">{selected?.label}</span></>}
             value={sort}
           />
         </div>
