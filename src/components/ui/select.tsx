@@ -116,7 +116,7 @@ function SelectItem({
       data-slot="select-item"
       data-control-label=""
       className={cn(
-        "relative flex min-h-9 w-full cursor-default items-center gap-2 rounded-lg py-1.5 pr-8 pl-2.5 whitespace-nowrap outline-hidden select-none transition-[background-color,color,transform] duration-[var(--motion-control)] ease-[var(--ease-move)] focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "relative flex min-h-8 w-full cursor-default items-center gap-2 rounded-lg py-1 pr-8 pl-2.5 whitespace-nowrap outline-hidden select-none transition-[background-color,color,transform] duration-[var(--motion-control)] ease-[var(--ease-move)] focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className,
       )}
       {...props}

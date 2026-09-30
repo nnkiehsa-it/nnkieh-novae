@@ -80,7 +80,7 @@ export function ChoiceSelect({
         </SelectTrigger>
         <SelectContent aria-label={title}>
           {options.map((option) => (
-            <SelectItem className="min-h-11 sm:min-h-9" disabled={option.disabled} key={option.value} value={option.value}>
+            <SelectItem disabled={option.disabled} key={option.value} value={option.value}>
               {option.label}
             </SelectItem>
           ))}
