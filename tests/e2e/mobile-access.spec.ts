@@ -157,9 +157,9 @@ test.describe('mobile route motion', () => {
       requestAnimationFrame(inspect);
     });
 
-    await dock.locator('a[href="/announcements"]').click();
-    await page.waitForURL(/\/announcements$/u);
-    await expect(page.locator('.route-page[data-route-path="/announcements"]')).toBeVisible();
+    await dock.locator('a[href="/home"]').click();
+    await page.waitForURL(/\/home$/u);
+    await expect(page.locator('.route-page[data-route-path="/home"]')).toBeVisible();
     expect(await page.evaluate(() =>
       (window as typeof window & { __novaeMobileMaxRoutePages?: number }).__novaeMobileMaxRoutePages,
     )).toBe(1);

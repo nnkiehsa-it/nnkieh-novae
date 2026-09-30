@@ -100,15 +100,15 @@ test('the issue composer opens over its feed while primary navigation replaces t
 
   // Switching primary navigation is a replacement, not a move through the
   // hierarchy, and must not read as either direction.
-  const destination = page.locator('[data-primary-navigation]:visible a[href="/announcements"]');
+  const destination = page.locator('[data-primary-navigation]:visible a[href="/home"]');
   // Touching a destination is not asking for it: a touch that turns into a
   // scroll must leave nothing behind, so only the click answers.
   await destination.dispatchEvent('pointerdown', { button: 0, pointerType: 'mouse' });
   await expect(page.locator('[data-navigating="true"]')).toHaveCount(0);
   await expect(destination).not.toHaveAttribute('aria-current', 'page');
   await destination.click();
-  await page.waitForURL(/\/announcements$/u);
-  await expect(page.locator('.route-page[data-route-path="/announcements"]')).toBeVisible();
+  await page.waitForURL(/\/home$/u);
+  await expect(page.locator('.route-page[data-route-path="/home"]')).toBeVisible();
   await expect(destination).toHaveAttribute('aria-current', 'page');
   await expect(page.locator('[data-navigating="true"]')).toHaveCount(0);
   await expect.poll(() => navigationDirection(page)).toBe('none');

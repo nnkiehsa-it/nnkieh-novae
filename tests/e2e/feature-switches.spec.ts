@@ -28,7 +28,7 @@ async function setFeatureSwitches(
   await expect(page.getByText('unsaved changes')).toHaveCount(0);
 }
 
-test('all four proposal and facility feature combinations update navigation and direct routes', async ({
+test('all four feature combinations update the guided home, feed tabs and direct routes', async ({
   browser,
 }) => {
   test.setTimeout(150_000);
@@ -45,10 +45,37 @@ test('all four proposal and facility feature combinations update navigation and 
       await setFeatureSwitches(admin.page, combination.issues, combination.facilities);
       const ordinary = await newUserPage(browser, 'ordinary');
       await ordinary.page.goto('/');
-      await expect(ordinary.page.getByRole('link', { name: 'Proposals', exact: true }))
+      await expect(ordinary.page).toHaveURL(/\/home$/u);
+      const nav = ordinary.page.locator('[data-primary-navigation]:visible');
+      await expect(nav.locator('a[href="/home"]')).toBeVisible();
+      await expect(nav.locator('a[href="/feed"]')).toBeVisible();
+      await expect(ordinary.page.locator('[data-dashboard-surface]')).toHaveCount(0);
+      await expect(ordinary.page.getByRole('link', { name: 'Explore proposals', exact: true }))
         .toHaveCount(combination.issues ? 1 : 0);
-      await expect(ordinary.page.getByRole('link', { name: 'Facilities', exact: true }))
+      await expect(ordinary.page.getByRole('link', { name: 'Explore facility reports', exact: true }))
         .toHaveCount(combination.facilities ? 1 : 0);
+      await expect(ordinary.page.getByRole('link', { name: 'Share an idea', exact: true }))
+        .toHaveCount(combination.issues ? 1 : 0);
+      await expect(ordinary.page.getByRole('link', { name: 'Report a facility problem', exact: true }))
+        .toHaveCount(!combination.issues && combination.facilities ? 1 : 0);
+      await expect(ordinary.page.getByRole('link', { name: 'Read the latest announcements', exact: true }))
+        .toHaveAttribute('href', '/feed?view=announcements');
+
+      await admin.page.goto('/home');
+      await expect(admin.page.locator('[data-dashboard-surface]')).toHaveCount(0);
+      const primaryLabel = combination.issues ? 'Explore proposals'
+        : combination.facilities ? 'Explore facility reports' : 'Read the latest announcements';
+      await expect(admin.page.getByRole('link', { name: primaryLabel, exact: true })).toBeVisible();
+
+      await ordinary.page.goto('/feed');
+      await expect(ordinary.page.getByRole('tab', { name: 'Proposals', exact: true }))
+        .toHaveCount(combination.issues ? 1 : 0);
+      await expect(ordinary.page.getByRole('tab', { name: 'Facilities', exact: true }))
+        .toHaveCount(combination.facilities ? 1 : 0);
+      await expect(ordinary.page.getByRole('tab', { name: 'Announcements', exact: true })).toBeVisible();
+      await expect(ordinary.page.getByRole('tab', {
+        name: combination.issues ? 'Proposals' : 'Announcements', exact: true,
+      })).toHaveAttribute('aria-selected', 'true');
 
       if (!combination.issues) {
         await ordinary.page.goto('/issues/proposal-a');

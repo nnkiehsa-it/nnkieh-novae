@@ -12,7 +12,7 @@ for (const width of [390, 768, 1024, 1440]) {
     });
     const page = await context.newPage();
     await page.addInitScript(() => localStorage.setItem('theme', 'system'));
-    await page.goto("/announcements");
+    await page.goto("/feed");
     const nav = page.locator("[data-primary-navigation]:visible");
     await nav.waitFor();
     await page.evaluate(() => {
@@ -24,7 +24,7 @@ for (const width of [390, 768, 1024, 1440]) {
         return start(...args);
       };
     });
-    const paths = ["/notifications", "/settings", "/announcements"];
+    const paths = ["/notifications", "/settings", "/feed"];
     for (const href of paths) {
       await nav.locator(`a[href="${href}"]`).click();
       await expect(page.locator(".route-page")).toHaveAttribute(
@@ -40,7 +40,7 @@ for (const width of [390, 768, 1024, 1440]) {
     await notification.dispatchEvent("pointercancel", { pointerType: "touch" });
     await expect(nav.locator('[aria-current="page"]')).toHaveAttribute(
       "href",
-      "/announcements",
+      "/feed",
     );
     const points = new Map<string, { x: number; y: number }>();
     for (const href of paths) {
@@ -137,7 +137,7 @@ test("a pending destination never claims to be the displayed page", async ({
     await route.continue();
   });
   try {
-    await page.goto("/announcements");
+    await page.goto("/feed");
     const nav = page.locator("[data-primary-navigation]:visible");
     await nav.locator('a[href="/settings"]').click();
     await expect.poll(() => interceptedSettingsRequests).toBeGreaterThan(0);
@@ -146,11 +146,11 @@ test("a pending destination never claims to be the displayed page", async ({
     ).toHaveAttribute("data-pending", "true");
     await expect(nav.locator('[aria-current="page"]')).toHaveAttribute(
       "href",
-      "/announcements",
+      "/feed",
     );
     await expect(page.locator(".route-page")).toHaveAttribute(
       "data-route-path",
-      "/announcements",
+      "/feed",
     );
     release();
     await expect(page.locator(".route-page")).toHaveAttribute(

@@ -8,6 +8,7 @@ import { useI18n } from "@/i18n";
 import { findIssueCategory, useCategories } from "@/hooks/use-categories";
 import { getDefaultIssueRouteFilter } from "@/constants/categories";
 import { useFeedUrlState } from "@/hooks/use-feed-url-state";
+import { timing } from "@/lib/motion-timing";
 import AnnouncementFeed from "@/components/announcements/announcement-feed";
 import FacilityFeed from "@/components/facilities/facility-feed";
 import IssueFeed from "@/components/issues/issue-feed";
@@ -57,7 +58,7 @@ export function HomeFeed() {
       key={`${view}|${view === "issues" ? filter : ""}`}
       initial={reducedMotion ? false : { opacity: 0.55 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.18, ease: "easeOut" }}
+      transition={timing("control")}
     >
       {view === "issues" ? (
         <IssueFeed headerHost={headerHost} selectedFilter={filter} onFilterChange={(category) => updateParams({ category, q: null, bucket: null, sort: null })} />
