@@ -8,6 +8,7 @@ import { useFacilityFeed } from "@/hooks/use-facility-feed";
 import { FACILITY_BUCKET_STATUSES, FACILITY_STATUS_LABELS } from "@/constants/statuses";
 import { usePublicProfiles } from "@/hooks/use-public-profiles";
 import { Button } from "@/components/ui/button";
+import { ToolbarButton } from "@/components/ui/toolbar-button";
 import { FeedToolbar } from "@/components/ui/feed-toolbar";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
 import {
@@ -40,14 +41,14 @@ export default function FacilityFeed({ headerHost }: { headerHost?: HTMLElement 
         portalHost={headerHost}
         actions={
           <>
-            <Button asChild className="order-3 ml-auto sm:order-2 sm:ml-0" size="adaptive" variant="ghost">
+            <ToolbarButton asChild className="order-3 ml-auto sm:order-2 sm:ml-0" size="adaptive">
               <Link
                 aria-label={translate('ui.facility.new')}
                 href={`/facilities/new?category=${encodeURIComponent(state.category)}`}
                 prefetch={false}
               >
                 <Plus /><span className="hidden sm:inline">{translate('ui.facility.new')}</span></Link>
-            </Button>
+            </ToolbarButton>
             <LiquidTabs
               className="order-2 sm:order-3"
               ariaLabel={translate('ui.facility.statusFilter')}

@@ -1,5 +1,10 @@
+.control,
 .control[data-size] {
   height: 2.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  box-shadow: none;
 }
 
 .control:hover {

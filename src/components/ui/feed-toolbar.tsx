@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SortControl } from "@/components/ui/sort-control";
+import { ToolbarButton } from "@/components/ui/toolbar-button";
 
 /**
  * One search/sort control pair for every feed, at every width.
@@ -53,13 +54,12 @@ export function FeedToolbar({
         <Tooltip>
           <PopoverTrigger asChild>
             <TooltipTrigger asChild>
-              <Button
+              <ToolbarButton
                 aria-label={searchLabel}
                 className="relative"
                 disabled={disabled}
                 size="icon"
                 type="button"
-                variant="ghost"
               >
                 <Search />
                 {appliedQuery ? (
@@ -68,7 +68,7 @@ export function FeedToolbar({
                     className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-[var(--tint-content)]"
                   />
                 ) : null}
-              </Button>
+              </ToolbarButton>
             </TooltipTrigger>
           </PopoverTrigger>
           <TooltipContent>{searchLabel}</TooltipContent>

@@ -10,6 +10,7 @@ import { usePublicProfiles } from "@/hooks/use-public-profiles";
 import { getIssueFilterOptions, getIssueSupportGoal, issueAllowsSupport } from "@/constants/categories";
 import { ISSUE_BUCKET_STATUSES, ISSUE_STATUS_LABELS } from "@/constants/statuses";
 import { Button } from "@/components/ui/button";
+import { ToolbarButton } from "@/components/ui/toolbar-button";
 import { FeedToolbar } from "@/components/ui/feed-toolbar";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
 import { PageHeader } from "@/components/ui/page-state";
@@ -75,10 +76,10 @@ export default function IssueFeed({ headerHost, selectedFilter }: {
         actions={
           <>
             {filter !== "my-proposals" ? (
-              <Button asChild className="order-3 ml-auto sm:order-2 sm:ml-0" size="adaptive" variant="ghost">
+              <ToolbarButton asChild className="order-3 ml-auto sm:order-2 sm:ml-0" size="adaptive">
                 <Link aria-label={translate('ui.issue.new')} href={`/issues/${encodeURIComponent(filter)}/compose/new`} prefetch={false}>
                   <Plus /><span className="hidden sm:inline">{translate('ui.issue.new')}</span></Link>
-              </Button>
+              </ToolbarButton>
             ) : null}
             <LiquidTabs
               className="order-2 sm:order-3"

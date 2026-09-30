@@ -2,7 +2,7 @@
 
 import { CircleCheck, CircleDot, Plus } from "lucide-react";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
-import { Button } from "@/components/ui/button";
+import { ToolbarButton } from "@/components/ui/toolbar-button";
 import { FeedList } from "@/components/ui/feed-list";
 import { FeedToolbar } from "@/components/ui/feed-toolbar";
 import { DetailLayout } from "@/components/ui/detail-layout";
@@ -72,16 +72,16 @@ export function ListRouteSkeleton({
           kind !== "announcement" ? (
             <>
               {showCreate ? (
-                <Button aria-label={translate(createKeys[kind])} className="order-3 ml-auto opacity-100 sm:order-2 sm:ml-0" disabled size="adaptive" variant="ghost">
+                <ToolbarButton aria-label={translate(createKeys[kind])} className="order-3 ml-auto opacity-100 sm:order-2 sm:ml-0" disabled size="adaptive">
                   <Plus /><span className="hidden sm:inline">{translate(createKeys[kind])}</span>
-                </Button>
+                </ToolbarButton>
               ) : null}
               <StableTabs kind={kind} />
             </>
           ) : showCreate ? (
-            <Button className="opacity-100" disabled variant="ghost">
+            <ToolbarButton className="opacity-100" disabled size="default">
               <Plus />{translate(createKeys[kind])}
-            </Button>
+            </ToolbarButton>
           ) : undefined
         }
         title={title || translate(listTitleKeys[kind])}
