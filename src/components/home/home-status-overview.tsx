@@ -7,12 +7,9 @@ import { useCategories } from "@/hooks/use-categories";
 import { useHomeStatusCounts } from "@/hooks/use-home-status-counts";
 import { ISSUE_BUCKET_STATUSES, FACILITY_BUCKET_STATUSES, ISSUE_STATUS_LABELS, FACILITY_STATUS_LABELS } from "@/constants/statuses";
 import { ListSection } from "@/components/ui/list";
-import { StatusDistribution, type StatusSegment } from "@/components/ui/status-distribution";
+import { StatusDistribution } from "@/components/ui/status-distribution";
+import { statusFillColor, statusTextColor } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
-
-function segment(key: string, label: string, count: number, strength: number): StatusSegment {
-  return { key, label, count, color: "var(--tint-content)", fill: `color-mix(in srgb, var(--tint-content) ${strength}%, var(--card))` };
-}
 
 export function HomeStatusOverview() {
   const { t } = useI18n();
@@ -23,15 +20,19 @@ export function HomeStatusOverview() {
     ...(issuesEnabled ? [{
       key: "issues", label: t("ui.nav.issues"), href: "/feed", icon: MessageCircle,
       segments: [
-        ...ISSUE_BUCKET_STATUSES.active.map((status, index) => segment(status, t(ISSUE_STATUS_LABELS[status]), counts.issues[status], [35, 60, 100][index])),
-        segment("closed", t("ui.common.closed"), ISSUE_BUCKET_STATUSES.closed.reduce((total, status) => total + counts.issues[status], 0), 20),
+        ...[...ISSUE_BUCKET_STATUSES.active, ...ISSUE_BUCKET_STATUSES.closed].map((status) => ({
+          key: status, label: t(ISSUE_STATUS_LABELS[status]), count: counts.issues[status],
+          color: statusTextColor(status), fill: statusFillColor(status),
+        })),
       ],
     }] : []),
     ...(facilitiesEnabled ? [{
       key: "facilities", label: t("ui.home.facilitiesTitle"), href: "/feed?view=facilities", icon: Wrench,
       segments: [
-        ...FACILITY_BUCKET_STATUSES.active.map((status, index) => segment(status, t(FACILITY_STATUS_LABELS[status]), counts.facilities[status], [60, 100][index])),
-        segment("closed", t("ui.common.closed"), FACILITY_BUCKET_STATUSES.closed.reduce((total, status) => total + counts.facilities[status], 0), 20),
+        ...[...FACILITY_BUCKET_STATUSES.active, ...FACILITY_BUCKET_STATUSES.closed].map((status) => ({
+          key: status, label: t(FACILITY_STATUS_LABELS[status]), count: counts.facilities[status],
+          color: statusTextColor(status), fill: statusFillColor(status),
+        })),
       ],
     }] : []),
   ];
