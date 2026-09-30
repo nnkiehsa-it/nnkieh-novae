@@ -26,7 +26,9 @@
 
 ## 本次驗證
 
-首頁新增 `HomeOverview`、`HomeStatistics`、`HomeProposals` 三個元件。既有使用人数、活躍度、期間活動與提案分類分布移到首頁，僅在 `dashboard.view` 許可時掛載；活動明細仍依原有 `role.manage` 權限。個人提案進行中／已結案計數沿用自己的提案 API，並連到相應列表篩選。所有人都有依功能開關顯示的快速入口。維運健康與管理工具保留在管理區，不放寬後端資料權限。
+首頁 `HomeOverview` 是所有角色一致的產品引導入口，不載入使用統計或個人計數。依 `issuesEnabled`／`facilitiesEnabled` 切換主題文字與主操作：優先提出想法，其次回報設備問題，兩者皆關閉時引導查看公告。其他入口只顯示啟用中的功能，不留空區塊。統計、活躍度、期間活動、分布與維運資訊已移回管理區，仍依既有權限讀取。
+
+插圖 `public/home-start.webp` 為內建 imagegen 生成的黑色手繪線稿，透明背景，使用 CSS invert 適應深色主題。檔案約 20KB；提示詞保留於 `docs/assets/home-start.md`。
 
 依使用者要求，首頁這批只做必要型別檢查與測試伺服器的 production 建置，不追加動畫驗證。
 

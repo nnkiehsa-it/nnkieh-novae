@@ -1,29 +1,69 @@
 "use client";
 
-import { Blocks, Megaphone, Wrench } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
+import { ArrowRight, Megaphone, Plus, Wrench } from "lucide-react";
 import { useI18n } from "@/i18n";
-import { useSession } from "@/hooks/use-session";
 import { useCategories } from "@/hooks/use-categories";
+import { getDefaultIssueRouteFilter } from "@/constants/categories";
 import { PageHeader } from "@/components/ui/page-state";
-import { ListNavRow, ListSection } from "@/components/ui/list";
-import { HomeStatistics } from "./home-statistics";
-import { HomeProposals } from "./home-proposals";
+import { Button } from "@/components/ui/button";
 
 export function HomeOverview() {
   const { t } = useI18n();
-  const session = useSession();
   const categories = useCategories();
+  const proposalHref = `/issues/${encodeURIComponent(getDefaultIssueRouteFilter())}/compose/new`;
+  const titleKey = categories.issuesEnabled ? "ui.home.startTitle"
+    : categories.facilitiesEnabled ? "ui.home.reportTitle" : "ui.home.announcementsTitle";
+  const descriptionKey = categories.issuesEnabled
+    ? categories.facilitiesEnabled ? "ui.home.startDescription" : "ui.home.ideaDescription"
+    : categories.facilitiesEnabled ? "ui.home.reportIntro" : "ui.home.announcementsIntro";
+  const primaryHref = categories.issuesEnabled ? proposalHref
+    : categories.facilitiesEnabled ? "/facilities/new" : "/feed?view=announcements";
+  const primaryLabel = categories.issuesEnabled ? "ui.home.propose"
+    : categories.facilitiesEnabled ? "ui.home.report" : "ui.home.readAnnouncements";
+  const showOtherWays = categories.issuesEnabled || categories.facilitiesEnabled;
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <PageHeader title={t("ui.nav.home")} />
-      {session.can("dashboard.view") ? <HomeStatistics canOpenActivity={session.can("role.manage")} /> : null}
-      <div className="grid gap-5 lg:grid-cols-2">
-        {categories.issuesEnabled ? <HomeProposals /> : null}
-        <ListSection header={t("ui.home.quickLinks")}>
-          {categories.issuesEnabled ? <ListNavRow href="/feed" icon={Blocks} label={t("ui.nav.issues")} /> : null}
-          <ListNavRow href="/feed?view=announcements" icon={Megaphone} label={t("ui.nav.announcements")} />
-          {categories.facilitiesEnabled ? <ListNavRow href="/feed?view=facilities" icon={Wrench} label={t("ui.nav.facilities")} /> : null}
-        </ListSection>
+      <div className={`grid gap-8 pb-4 md:gap-12 md:pt-5 ${showOtherWays ? "md:grid-cols-[minmax(0,1.2fr)_minmax(16rem,0.8fr)]" : "max-w-2xl"}`}>
+        <section className="space-y-5">
+          <div className="flex max-w-lg items-start gap-4">
+            <div className="min-w-0 flex-1 space-y-3">
+              <h2 className="text-balance text-[1.75rem] font-semibold leading-tight tracking-[-0.035em] sm:text-3xl">{t(titleKey)}</h2>
+              <p className="text-sm leading-6 text-muted-foreground">{t(descriptionKey)}</p>
+            </div>
+            <Image alt="" aria-hidden src="/home-start.webp" width={384} height={384} sizes="(max-width: 639px) 96px, 128px" loading="eager" className="h-auto w-24 shrink-0 dark:invert sm:w-32" />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button asChild size="lg">
+              <Link href={primaryHref} prefetch={false}>{categories.issuesEnabled ? <Plus /> : categories.facilitiesEnabled ? <Wrench /> : <Megaphone />}{t(primaryLabel)}</Link>
+            </Button>
+            {showOtherWays ? <Button asChild variant="ghost">
+              <Link href="/feed" prefetch={false}>{t("ui.home.browse")}<ArrowRight /></Link>
+            </Button> : null}
+          </div>
+        </section>
+        {showOtherWays ? <section aria-label={t("ui.home.otherWays")} className="divide-y border-y">
+          {categories.issuesEnabled && categories.facilitiesEnabled ? <Link href="/facilities/new" prefetch={false}
+            className="group flex items-start gap-3 py-5 outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <Wrench className="mt-1 size-5 shrink-0 text-[var(--tint-content)]" />
+            <span className="min-w-0 flex-1 space-y-1">
+              <span className="block text-base font-semibold">{t("ui.home.report")}</span>
+              <span className="block text-sm leading-6 text-muted-foreground">{t("ui.home.reportDescription")}</span>
+            </span>
+            <ArrowRight className="mt-1 size-4 shrink-0 transition-transform group-hover:translate-x-1" />
+          </Link> : null}
+          <Link href="/feed?view=announcements" prefetch={false}
+            className="group flex items-start gap-3 py-5 outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <Megaphone className="mt-1 size-5 shrink-0 text-[var(--tint-content)]" />
+            <span className="min-w-0 flex-1 space-y-1">
+              <span className="block text-base font-semibold">{t("ui.home.readAnnouncements")}</span>
+              <span className="block text-sm leading-6 text-muted-foreground">{t("ui.home.announcementsDescription")}</span>
+            </span>
+            <ArrowRight className="mt-1 size-4 shrink-0 transition-transform group-hover:translate-x-1" />
+          </Link>
+        </section> : null}
       </div>
     </div>
   );
