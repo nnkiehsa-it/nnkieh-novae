@@ -1,0 +1,10 @@
+/* ChoiceSelect's size selectors otherwise override the tab's height. */
+.control[data-size] {
+  height: 2rem;
+  padding-block: 0;
+}
+
+/* Select triggers normally mute SVGs; feed icons follow the tab's state. */
+.control svg {
+  color: inherit;
+}
