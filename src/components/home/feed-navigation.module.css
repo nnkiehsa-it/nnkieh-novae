@@ -7,4 +7,5 @@
 /* Select triggers normally mute SVGs; feed icons follow the tab's state. */
 .control svg {
   color: inherit;
+  opacity: 1;
 }
