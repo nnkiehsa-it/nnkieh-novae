@@ -60,6 +60,7 @@ export function PageHeader({
     return (
       <header className={cn("page-header flex flex-wrap items-center gap-x-2 gap-y-3", className)}>
         <HeaderBackdrop progressive />
+        {lead ? <div className="order-first w-full">{lead}</div> : null}
         {headingRow}
         {actions}
         {toolbar}

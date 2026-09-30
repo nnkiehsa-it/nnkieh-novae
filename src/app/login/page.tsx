@@ -61,7 +61,7 @@ export default function LoginPage() {
     router.replace(
       !setupCompleted
         ? "/setup"
-        : sameOriginUrl(requested, window.location.origin, "/issues"),
+        : sameOriginUrl(requested, window.location.origin, "/home"),
     );
   }, [
     router,

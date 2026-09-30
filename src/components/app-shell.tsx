@@ -6,24 +6,20 @@ import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import {
   Bell,
-  Blocks,
+  House,
   ChevronDown,
   LogOut,
-  Megaphone,
   Moon,
   Settings,
   ShieldCheck,
   Sun,
-  Wrench,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useCategories } from "@/hooks/use-categories";
 import { useNotificationBadge } from "@/hooks/use-notification-badge";
 import { usePushTokenHeartbeat } from "@/hooks/use-push-token-heartbeat";
 import { rememberCurrentRoute } from "@/lib/navigation-memory";
 import { publishStageNavigationCommit } from "@/lib/stage-depth";
 import { useSession } from "@/hooks/use-session";
-import { getDefaultIssueRouteFilter } from "@/constants/categories";
 import { LiquidNav, type LiquidNavItem } from "@/components/liquid-nav";
 import { AppNotificationPrompt } from "@/components/app-notification-prompt";
 import { RouteSurface } from "@/components/motion/route-surface";
@@ -151,10 +147,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // A record opened over the list it is in is still that list as far as the
   // shell is concerned: the bar keeps pointing where it pointed.
   const { surface } = useSurfaceRoute();
-  const categories = useCategories();
   const unread = useNotificationBadge();
-  const issueHref = `/issues/${encodeURIComponent(getDefaultIssueRouteFilter())}`;
-  const homeHref = categories.issuesEnabled ? issueHref : categories.facilitiesEnabled ? "/facilities" : "/announcements";
+  const homeHref = "/home";
   const showMobileNavigation = showsPrimaryNavigation(surface);
 
   React.useEffect(() => {
@@ -164,29 +158,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const navItems = React.useMemo<LiquidNavItem[]>(
     () => [
-      ...(categories.issuesEnabled
-        ? [
-            {
-              activePathPrefix: "/issues",
-              href: issueHref,
-              icon: <Blocks className="size-[1.125rem]" />,
-              label: t('ui.nav.issues'),
-            },
-          ]
-        : []),
-      ...(categories.facilitiesEnabled
-        ? [
-            {
-              href: "/facilities",
-              icon: <Wrench className="size-[1.125rem]" />,
-              label: t('ui.nav.facilities'),
-            },
-          ]
-        : []),
       {
-        href: "/announcements",
-        icon: <Megaphone className="size-[1.125rem]" />,
-        label: t('ui.nav.announcements'),
+        href: homeHref,
+        icon: <House className="size-[1.125rem]" />,
+        label: t('ui.nav.home'),
       },
       {
         href: "/notifications",
@@ -200,10 +175,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         label: t('ui.nav.settings'),
       },
     ],
-    [categories.facilitiesEnabled, categories.issuesEnabled, issueHref, t, unread],
+    [t, unread],
   );
 
-  const navigationPathname = adoptedParent(surface) ?? surface;
+  const navigationPathname = /^\/(?:issues|facilities|announcements)(?:\/|$)/u.test(surface)
+    ? homeHref : adoptedParent(surface) ?? surface;
   return (
     <div className="app-shell bg-[var(--surface-stage)] md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
       <AppNotificationPrompt />

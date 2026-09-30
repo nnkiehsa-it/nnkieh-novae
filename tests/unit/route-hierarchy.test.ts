@@ -27,6 +27,7 @@ describe("route hierarchy", () => {
   });
 
   it("names the destinations primary navigation points at", () => {
+    expect(isPrimaryRoute("/home")).toBe(true);
     expect(isPrimaryRoute("/announcements")).toBe(true);
     expect(isPrimaryRoute("/settings")).toBe(true);
     // Every issue feed is the same destination under a different filter.
@@ -73,6 +74,9 @@ describe("content opened over its source page", () => {
   });
 
   it("opens records from notifications, administration and other feeds", () => {
+    expect(opensOverRoute("/home", "/issues/school/abc")).toBe(true);
+    expect(opensOverRoute("/home", "/facilities/abc")).toBe(true);
+    expect(opensOverRoute("/home", "/announcements/abc")).toBe(true);
     expect(opensOverRoute("/notifications", "/issues/school/abc")).toBe(true);
     expect(opensOverRoute("/notifications", "/facilities/abc")).toBe(true);
     expect(opensOverRoute("/notifications", "/announcements/abc")).toBe(true);

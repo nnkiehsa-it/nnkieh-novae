@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 export function usePermissionRedirect(
   allowed: boolean,
-  fallback = "/issues",
+  fallback = "/home",
 ) {
   const router = useRouter();
 

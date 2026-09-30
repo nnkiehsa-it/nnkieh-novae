@@ -65,13 +65,13 @@ interface IssueFeedViewMemory {
   sort: IssueSortOption;
 }
 
-export function useIssueFeed() {
+export function useIssueFeed(selectedFilter?: string) {
   const params = useParams<{ filter: string }>();
   const router = useRouter();
   const session = useSession();
   const categories = useCategories();
   const { t } = useI18n();
-  const filter = decodeURIComponent(params.filter);
+  const filter = selectedFilter ?? decodeURIComponent(params.filter);
   const { params: searchParams, committedQuery, query, setCommittedQuery, setQuery, updateParams } = useFeedUrlState();
   const { bucket, sort } = readIssueFeedFilters(searchParams);
   const remembered = getViewMemory<IssueFeedViewMemory>(

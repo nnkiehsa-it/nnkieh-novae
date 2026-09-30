@@ -185,6 +185,7 @@ const messages = {
   'ui.nav.issues': '提案',
   'ui.nav.facilities': '設備',
   'ui.nav.announcements': '公告',
+  'ui.nav.home': '首頁',
   'ui.nav.notifications': '通知',
   'ui.nav.settings': '設定',
   'ui.nav.dashboard': '平台儀表板',

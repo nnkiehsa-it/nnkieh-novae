@@ -115,7 +115,7 @@ export function ProtectedApp({ children }: { children: React.ReactNode }) {
       return;
     }
     if (setupCompleted && pathname === "/setup")
-      router.replace("/issues");
+      router.replace("/home");
   }, [
     initialized,
     loading,

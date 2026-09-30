@@ -62,7 +62,7 @@ export function useInitialSetup() {
   );
 
   React.useEffect(() => {
-    if (setupCompleted && !submittingRef.current) router.replace("/issues");
+    if (setupCompleted && !submittingRef.current) router.replace("/home");
   }, [router, setupCompleted]);
 
   const valid = React.useMemo(() => {
@@ -114,7 +114,7 @@ export function useInitialSetup() {
       router.replace(destination);
     } catch (caught) {
       const access = await refreshSessionAccess().catch(() => undefined);
-      if (access?.setupCompleted) router.replace("/issues");
+      if (access?.setupCompleted) router.replace("/home");
       else toast.error(t(caught instanceof Error ? caught.message : "common.saveFailed"));
     } finally {
       submittingRef.current = false;

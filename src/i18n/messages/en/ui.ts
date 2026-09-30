@@ -185,6 +185,7 @@ const messages = {
   'ui.nav.issues': 'Proposals',
   'ui.nav.facilities': 'Facilities',
   'ui.nav.announcements': 'Announcements',
+  'ui.nav.home': 'Home',
   'ui.nav.notifications': 'Notifications',
   'ui.nav.settings': 'Settings',
   'ui.nav.dashboard': 'Platform dashboard',

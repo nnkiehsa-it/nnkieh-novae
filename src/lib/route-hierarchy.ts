@@ -35,6 +35,7 @@ export type RouteRelation = "deeper" | "shallower" | "unrelated";
 // An issue feed is a filter of one place rather than a route of its own, which
 // is why every `/issues/<filter>` is the same destination.
 const PRIMARY_ROUTES: ReadonlySet<string> = new Set([
+  "/home",
   "/announcements",
   "/facilities",
   "/notifications",
@@ -97,5 +98,5 @@ export function recordListPath(pathname: string) {
 /** The protected shell intercepts records from any of its pages, not only feeds. */
 export function opensOverRoute(from: string, to: string) {
   return from !== to && (isRecordRoute(to) || isIssueComposerRoute(to))
-    && /^\/(?:issues|facilities|announcements|notifications|settings|admin)(?:\/|$)/u.test(from);
+    && /^\/(?:home|issues|facilities|announcements|notifications|settings|admin)(?:\/|$)/u.test(from);
 }
