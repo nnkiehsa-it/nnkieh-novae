@@ -3,6 +3,7 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import { AlertCircle, Inbox, RefreshCw } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { createPortal } from "react-dom";
 import { timing } from "@/lib/motion-timing";
 import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ export function PageHeader({
   title,
   titleAction,
   toolbar,
+  portalHost,
 }: {
   actions?: React.ReactNode;
   className?: string;
@@ -37,8 +39,16 @@ export function PageHeader({
    * take a full-width line of their own where it is not.
    */
   toolbar?: React.ReactNode;
+  /** A persistent feed shell owns the sticky header while its contents change. */
+  portalHost?: HTMLElement | null;
 }) {
   useLocaleSubscription();
+  const embedded = portalHost !== undefined;
+  const Header = embedded ? "div" : "header";
+  const backdrop = embedded ? null : <HeaderBackdrop progressive />;
+  const render = (content: React.ReactNode) => embedded
+    ? portalHost ? createPortal(content, portalHost) : null
+    : content;
   const heading = (
     <div className="min-w-0 flex-1">
       <h1 className="text-balance text-2xl font-semibold leading-8 tracking-[-0.035em]">
@@ -57,14 +67,14 @@ export function PageHeader({
     </div>
   );
   if (toolbar) {
-    return (
-      <header className={cn("page-header flex flex-wrap items-center gap-x-2 gap-y-3", className)}>
-        <HeaderBackdrop progressive />
+    return render(
+      <Header className={cn(!embedded && "page-header", "flex flex-wrap items-center gap-x-2 gap-y-3", className)}>
+        {backdrop}
         {lead ? <div className="order-first w-full">{lead}</div> : null}
         {headingRow}
         {actions}
         {toolbar}
-      </header>
+      </Header>
     );
   }
   const titleRow = (
@@ -78,16 +88,16 @@ export function PageHeader({
     </div>
   );
   if (lead) {
-    return (
-      <header className={cn("page-header flex flex-col gap-4 pb-4", className)}>
-        <HeaderBackdrop progressive />
+    return render(
+      <Header className={cn(!embedded && "page-header pb-4", "flex flex-col gap-4", className)}>
+        {backdrop}
         {lead}
         {titleRow}
-      </header>
+      </Header>
     );
   }
-  return (
-    <header className={cn("page-header pb-4", className)}><HeaderBackdrop progressive />{titleRow}</header>
+  return render(
+    <Header className={cn(!embedded && "page-header pb-4", className)}>{backdrop}{titleRow}</Header>
   );
 }
 

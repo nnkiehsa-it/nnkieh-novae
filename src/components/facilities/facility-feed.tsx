@@ -20,7 +20,7 @@ import { statusFillColor, statusTextColor } from "@/components/ui/status-badge";
 import { ChoiceSelect } from "@/components/ui/choice-select";
 import { AnnouncementNotice } from "@/components/announcements/announcement-notice";
 
-export default function FacilityFeed({ lead }: { lead?: React.ReactNode } = {}) {
+export default function FacilityFeed({ headerHost }: { headerHost?: HTMLElement | null } = {}) {
   useLocaleSubscription();
   const state = useFacilityFeed();
   const profiles = usePublicProfiles(
@@ -37,7 +37,7 @@ export default function FacilityFeed({ lead }: { lead?: React.ReactNode } = {}) 
   return (
     <div className="space-y-5">
       <PageHeader
-        lead={lead}
+        portalHost={headerHost}
         actions={
           <>
             <Button asChild className="order-3 ml-auto sm:order-2 sm:ml-0" size="adaptive">

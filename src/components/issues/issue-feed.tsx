@@ -20,8 +20,8 @@ import { IssueCard } from "@/components/issues/issue-card";
 import { ChoiceSelect } from "@/components/ui/choice-select";
 import { AnnouncementNotice } from "@/components/announcements/announcement-notice";
 
-export default function IssueFeed({ lead, selectedFilter, onFilterChange }: {
-  lead?: React.ReactNode;
+export default function IssueFeed({ headerHost, selectedFilter, onFilterChange }: {
+  headerHost?: HTMLElement | null;
   selectedFilter?: string;
   onFilterChange?: (value: string) => void;
 } = {}) {
@@ -72,7 +72,7 @@ export default function IssueFeed({ lead, selectedFilter, onFilterChange }: {
   return (
     <div className="space-y-5">
       <PageHeader
-        lead={lead}
+        portalHost={headerHost}
         actions={
           <>
             {filter !== "my-proposals" ? (

@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import {
   Bell,
-  House,
+  List,
   ChevronDown,
   LogOut,
   Moon,
@@ -160,8 +160,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     () => [
       {
         href: homeHref,
-        icon: <House className="size-[1.125rem]" />,
-        label: t('ui.nav.home'),
+        icon: <List className="size-[1.125rem]" />,
+        label: t('ui.nav.feed'),
       },
       {
         href: "/notifications",

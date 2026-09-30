@@ -12,7 +12,7 @@ import {
 import { AnnouncementCard } from "@/components/announcements/announcement-card";
 import { FeedList } from "@/components/ui/feed-list";
 
-export default function AnnouncementFeed({ lead }: { lead?: React.ReactNode } = {}) {
+export default function AnnouncementFeed({ headerHost }: { headerHost?: HTMLElement | null } = {}) {
   useLocaleSubscription();
   const feed = useAnnouncementFeed();
   const profiles = usePublicProfiles(
@@ -21,7 +21,7 @@ export default function AnnouncementFeed({ lead }: { lead?: React.ReactNode } = 
   return (
     <div className="space-y-5">
       <PageHeader
-        lead={lead}
+        portalHost={headerHost}
         actions={
           feed.canManage ? (
             <Button asChild>
