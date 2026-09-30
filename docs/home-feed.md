@@ -26,6 +26,10 @@
 
 ## 舊改善報告的適用範圍
 
+### 手機本機預覽
+
+測試環境支援 `NOVAE_TEST_PUBLIC_ORIGIN=https://<device>.<tailnet>.ts.net`，只接受 `--serve` 與 Tailscale HTTPS 裝置網址。Tailscale Serve 將 443 代理至前端連接埠、8443 至本機 Worker 8787、9443 至 Auth emulator 9099。手機須連同一個 tailnet；預覽自動登入種子測試管理員，不使用正式資料。停用代理時分別執行 `tailscale serve --https=443 off`、`--https=8443 off`、`--https=9443 off`。
+
 `docs/improvement-audit.md` 是 2026-09-29 的完成紀錄。其中「導覽與畫面」與「品牌與介面」寫的是桌面頂部導覽；目前 `app-shell.tsx` 明確使用固定側欄，因此該兩處不能用來描述現在的桌面配置。手機抽屜的描述也不等於現在 `AppShell` 的三項底部導覽。此文件保留舊報告作為歷史紀錄，沒有回寫或重新背書其中的驗證數字。
 
 舊報告對共用 hook、entity store、pending／樂觀更新、重試與草稿等方向，和首頁重用既有 feed 的做法一致；但舊有 235 項單元測試、85 項 E2E 及後端 65 項整合測試是該批修改的紀錄，不能當成本次首頁整合已通過的證據。實際測試與部署結果應以本次執行輸出為準。

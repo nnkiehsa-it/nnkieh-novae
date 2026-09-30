@@ -12,6 +12,11 @@ const emulatorUrl = String(
 const localEmulator = /^http:\/\/(?:127\.0\.0\.1|localhost):9099\/?$/u.test(
   emulatorUrl,
 );
+const privateTestOrigin = process.env.NEXT_PUBLIC_LOCAL_TEST_ORIGIN || "";
+const privateTestEmulator = process.env.NEXT_PUBLIC_LOCAL_DEV_AUTH === "true"
+  && /^https:\/\/[a-z0-9-]+\.tail[a-z0-9]+\.ts\.net$/u.test(privateTestOrigin)
+  && typeof window !== "undefined" && window.location.origin === privateTestOrigin
+  && emulatorUrl === `${privateTestOrigin}:9443`;
 
 function fakeGoogleIdToken(email: string) {
   const encode = (value: unknown) =>
@@ -30,7 +35,7 @@ function fakeGoogleIdToken(email: string) {
 export async function signInForE2e(email: string) {
   const normalizedEmail = email.trim().toLowerCase();
   if (
-    !localEmulator ||
+    (!localEmulator && !privateTestEmulator) ||
     allowedDomain !== "integration.invalid"
   ) {
     throw new Error(

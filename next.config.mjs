@@ -10,6 +10,7 @@ const appVersion =
 const publicEnvironment = {
   NEXT_PUBLIC_ALLOWED_DOMAIN: process.env.NEXT_PUBLIC_ALLOWED_DOMAIN || "",
   NEXT_PUBLIC_LOCAL_DEV_AUTH: process.env.NEXT_PUBLIC_LOCAL_DEV_AUTH || "false",
+  NEXT_PUBLIC_LOCAL_TEST_ORIGIN: process.env.NEXT_PUBLIC_LOCAL_TEST_ORIGIN || "",
   NEXT_PUBLIC_LOCAL_DEV_AUTH_EMAIL:
     process.env.NEXT_PUBLIC_LOCAL_DEV_AUTH_EMAIL || "admin@integration.invalid",
   NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || "",
@@ -46,7 +47,7 @@ const withSerwist = withSerwistInit({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  allowedDevOrigins: ["127.0.0.1"],
+  allowedDevOrigins: ["127.0.0.1", ...(process.env.NOVAE_TEST_PUBLIC_ORIGIN ? [new URL(process.env.NOVAE_TEST_PUBLIC_ORIGIN).hostname] : [])],
   distDir: process.env.NOVAE_NEXT_DIST_DIR || ".next",
   env: publicEnvironment,
   experimental: {

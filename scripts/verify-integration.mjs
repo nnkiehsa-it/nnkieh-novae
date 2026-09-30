@@ -90,6 +90,12 @@ const workerUrl = "http://127.0.0.1:8787";
 const appPort = Number(process.env.NOVAE_TEST_APP_PORT || 3000);
 if (!Number.isInteger(appPort) || appPort < 1024 || appPort > 65535) throw new Error('Invalid NOVAE_TEST_APP_PORT');
 const appUrl = `http://127.0.0.1:${appPort}`;
+const publicTestOrigin = process.env.NOVAE_TEST_PUBLIC_ORIGIN || "";
+if (publicTestOrigin && (!serve || !/^https:\/\/[a-z0-9-]+\.tail[a-z0-9]+\.ts\.net$/u.test(publicTestOrigin))) {
+  throw new Error("NOVAE_TEST_PUBLIC_ORIGIN requires --serve and an HTTPS Tailscale device origin.");
+}
+const publicWorkerUrl = publicTestOrigin ? `${publicTestOrigin}:8443` : workerUrl;
+const publicAuthUrl = publicTestOrigin ? `${publicTestOrigin}:9443` : "http://127.0.0.1:9099";
 const integrationLockPort = Number(process.env.NOVAE_INTEGRATION_LOCK_PORT || 46987);
 if (!Number.isInteger(integrationLockPort) || integrationLockPort < 1024 || integrationLockPort > 65535) {
   throw new Error("Invalid NOVAE_INTEGRATION_LOCK_PORT");
@@ -533,7 +539,7 @@ try {
 
   const workerVariables = {
     ALLOWED_DOMAIN: "integration.invalid",
-    ALLOWED_ORIGINS: `${appUrl},http://localhost:${appPort}`,
+    ALLOWED_ORIGINS: [appUrl, `http://localhost:${appPort}`, publicTestOrigin].filter(Boolean).join(","),
     ADMIN_EMAILS: "admin@integration.invalid",
     CLOUDINARY_API_BASE_URL: externalProviderUrl,
     CLOUDINARY_API_KEY: "integration-api-key",
@@ -554,7 +560,7 @@ try {
     NOTION_API_BASE_URL: externalProviderUrl,
     NOTION_DATABASE_ID: "mock-database-id",
     NOTION_TOKEN: "mock-notion-token",
-    PUBLIC_API_URL: workerUrl,
+    PUBLIC_API_URL: publicWorkerUrl,
     REALTIME_TICKET_SECRET: "integration-realtime-ticket-secret-that-is-long-enough",
     TURNSTILE_SECRET_KEY: "integration-turnstile-secret",
   };
@@ -646,13 +652,15 @@ try {
     const frontendEnvironment = {
       ...integrationEnvironment,
       NEXT_PUBLIC_ALLOWED_DOMAIN: "integration.invalid",
-      NEXT_PUBLIC_API_BASE_URL: workerUrl,
+      NEXT_PUBLIC_API_BASE_URL: publicWorkerUrl,
+      NEXT_PUBLIC_LOCAL_TEST_ORIGIN: publicTestOrigin,
+      NOVAE_TEST_PUBLIC_ORIGIN: publicTestOrigin,
       NEXT_PUBLIC_CONTENT_REALTIME_ENABLED: e2e ? "false" : "true",
       NEXT_PUBLIC_FIREBASE_API_KEY: "integration-web-api-key",
       NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED: "false",
       NEXT_PUBLIC_FIREBASE_APP_ID: "1:123456789:web:local",
       NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "integration-project.firebaseapp.com",
-      NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_URL: "http://127.0.0.1:9099",
+      NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_URL: publicAuthUrl,
       NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "123456789",
       NEXT_PUBLIC_FIREBASE_PROJECT_ID: "integration-project",
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: "",
@@ -714,7 +722,7 @@ try {
         frontendEnvironment,
       );
     } else {
-      process.stderr.write(`\n[environment] Ready\n  App: ${appUrl}\n  API: ${workerUrl}\n  Auth emulator: http://127.0.0.1:4000/auth\n  Stop: Ctrl+C\n`);
+      process.stderr.write(`\n[environment] Ready\n  App: ${publicTestOrigin || appUrl}\n  API: ${publicWorkerUrl}\n  Auth emulator: ${publicAuthUrl}\n  Stop: Ctrl+C\n`);
       process.stdin.resume();
       await Promise.race([once(frontend, "exit"), once(process.stdin, "end")]);
       process.stderr.write("\n[integration] stopping the local environment\n");
