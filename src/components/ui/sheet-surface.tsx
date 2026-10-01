@@ -187,8 +187,8 @@ export function SheetSurface({
               "t-dialog t-sheet pointer-events-auto relative grid w-full min-w-0 content-start gap-5 overflow-hidden p-(--dialog-pad) outline-none [&>*]:min-w-0",
               "max-w-[min(calc(100vw-2rem),88rem)] [--dialog-pad:var(--page-gutter)] md:h-[calc(100svh-2rem)] md:max-h-[calc(100svh-2rem)]",
               surface === "floating"
-                ? "surface-floating"
-                : "rounded-[var(--radius-xl)] bg-popover",
+                ? "rounded-[var(--radius-xl)] bg-[var(--surface-stage)] shadow-[var(--shadow-floating)]"
+                : "rounded-[var(--radius-xl)] bg-[var(--surface-stage)]",
               className,
             )}
             {...props}

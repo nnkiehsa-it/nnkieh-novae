@@ -47,7 +47,7 @@ export function AnnouncementCard({
             active={announcement.currentUserLiked === true}
             burst={burst}
             busy={liking}
-            className="z-10 ml-auto"
+            className="z-10 ml-auto h-8 px-1.5"
             count={announcement.like_count}
             icon={Heart}
             inactiveVariant="ghost"
@@ -58,7 +58,7 @@ export function AnnouncementCard({
           />
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button asChild className="relative z-10" size="sm" variant="ghost">
+              <Button asChild className="relative z-10 h-8 px-1.5" size="sm" variant="ghost">
                 <Link
                   aria-label={translate('comments.viewComments')}
                   href={`/announcements/${announcement.id}#discussion-title`}

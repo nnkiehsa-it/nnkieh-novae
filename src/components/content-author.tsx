@@ -12,12 +12,12 @@ export function PersonIdentity({
   size?: "default" | "sm" | "lg";
 }) {
   return (
-    <span className="inline-flex min-w-0 items-center gap-2.5">
+    <span className={`inline-flex min-w-0 items-center ${size === "sm" ? "gap-1.5" : "gap-2.5"}`}>
       <Avatar size={size}>
         <AvatarImage alt={name} src={photoUrl ?? undefined} />
         <AvatarFallback>{name.slice(0, 1).toUpperCase()}</AvatarFallback>
       </Avatar>
-      <span className="truncate text-sm font-medium">{name}</span>
+      <span className={`truncate font-medium ${size === "sm" ? "text-xs" : "text-sm"}`}>{name}</span>
     </span>
   );
 }

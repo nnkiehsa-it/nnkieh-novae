@@ -23,21 +23,21 @@ export function FeedCard({
   title: ReactNode;
 }) {
   return (
-    <div className="flex h-full flex-col gap-4 px-5 py-4">
+    <div className="flex h-full flex-col gap-2.5 px-4 py-3.5">
       <div data-slot="feed-card-header" className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="min-h-7 text-lg font-semibold leading-7 tracking-[-0.025em]">
             {title}
           </div>
-          <div className="mt-2 flex min-h-6 min-w-0 items-center gap-2 text-xs text-muted-foreground">
+          <div className="mt-1 flex min-h-6 min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
             {metadata}
           </div>
         </div>
-        {href || pending ? <ArrowUpRight aria-hidden className="mt-1 size-4 shrink-0 text-muted-foreground" /> : null}
+        {href || pending ? <ArrowUpRight aria-hidden className="mt-1.5 size-4 shrink-0 text-muted-foreground" /> : null}
       </div>
       {children}
       {footer ? (
-        <div data-slot="feed-card-footer" className="mt-auto flex min-h-10 flex-wrap items-center gap-2 pt-2">
+        <div data-slot="feed-card-footer" className="mt-auto flex min-h-8 items-center gap-1.5">
           {footer}
         </div>
       ) : null}
@@ -53,7 +53,7 @@ export function FeedCard({
 
 export function FeedProgress({ children, value }: { children: ReactNode; value?: number }) {
   return (
-    <div className="space-y-2 rounded-lg bg-secondary px-4 py-3">
+    <div className="-mx-2 space-y-1.5 rounded-lg bg-secondary px-2 py-2.5">
       {children}
       <div className="h-1.5 overflow-hidden rounded-full bg-border">
         {value !== undefined ? (

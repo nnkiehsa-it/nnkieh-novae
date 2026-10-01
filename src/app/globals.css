@@ -625,6 +625,11 @@ html[data-input-modality="pointer"] :focus-visible {
   z-index: 1;
 }
 
+[data-sheet-surface] .detail-header,
+[data-sheet-surface] [data-slot="dialog-header"] {
+  --header-veil: var(--surface-stage);
+}
+
 .t-sheet [data-slot="dialog-header"] > div {
   padding-right: 3rem;
 }
@@ -865,7 +870,7 @@ html[data-input-modality="pointer"] :focus-visible {
 @media (max-width: 47.99rem) {
   :root {
     --page-gutter: 1rem;
-    --row-gutter: 1.25rem;
+    --row-gutter: 1rem;
   }
   /* The page gutter belongs to the route surface on a phone: a pushed page has
      to reach both screen edges, or the page it replaces stays visible beside

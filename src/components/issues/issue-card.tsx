@@ -64,7 +64,7 @@ export function IssueCard({
               active={issue.currentUserSupported === true}
               burst={burst}
               busy={supporting}
-              className="z-10 ml-auto"
+              className="z-10 ml-auto h-8 px-1.5"
               count={issue.support_count}
               disabled={
                 issue.isOwnIssue ||

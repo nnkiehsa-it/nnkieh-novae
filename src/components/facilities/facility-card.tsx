@@ -41,17 +41,17 @@ export function FacilityCard({
       footer={
         <>
           <StatusBadge domain="facility" revealLabel={reveal} status={facility.status} />
-          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-            <MapPin className="size-3.5" />
-            <SkeletonReveal className="min-w-24" enabled={reveal} skeleton={<Skeleton className="h-4 w-24" />}>
-              <span>{facility.location}</span>
+          <span className="inline-flex min-w-0 flex-1 items-center gap-1 text-xs text-muted-foreground">
+            <MapPin className="size-3.5 shrink-0" />
+            <SkeletonReveal className="min-w-0" enabled={reveal} skeleton={<Skeleton className="h-4 w-24" />}>
+              <span className="block truncate">{facility.location}</span>
             </SkeletonReveal>
           </span>
           <LikeActionButton
             active={facility.currentUserAffected === true}
             burst={burst}
             busy={affecting}
-            className="z-10 ml-auto"
+            className="z-10 ml-auto h-8 px-1.5"
             count={facility.affected_count}
             disabled={["completed", "unable-to-handle"].includes(facility.status)}
             icon={Hand}
