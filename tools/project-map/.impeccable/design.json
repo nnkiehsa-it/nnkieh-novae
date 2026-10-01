@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-01T16:45:56Z",
+  "title": "Design System: Novae 程式流程地圖",
+  "extensions": {
+    "shadows": [
+      { "name": "mobile-drawer", "value": "8px 0 24px #24344a24" }
+    ],
+    "motion": [
+      { "name": "control-state", "value": "background-color .12s, border-color .12s" },
+      { "name": "source-highlight", "value": "highlight-in .3s ease-out" }
+    ],
+    "breakpoints": [
+      { "name": "compact-desktop", "value": "1150px" },
+      { "name": "bottom-inspector", "value": "900px" },
+      { "name": "mobile-drawer", "value": "600px" }
+    ]
+  }
+}
