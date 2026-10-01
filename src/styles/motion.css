@@ -28,9 +28,9 @@
   --skeleton-appear-delay: var(--motion-touch);
   --like-accent: #f40051;
   --tabs-text-muted: var(--muted-foreground);
-  --tabs-text-active: var(--primary-foreground);
+  --tabs-text-active: var(--foreground);
   --tabs-bar-bg: color-mix(in srgb, var(--secondary) 78%, var(--card));
-  --tabs-pill-bg: var(--primary);
+  --tabs-pill-bg: var(--card);
   --shimmer-base: #7c7c7c;
   --shimmer-highlight: #0d0d0d;
 }

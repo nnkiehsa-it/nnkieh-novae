@@ -1,28 +1,30 @@
-/* Primary navigation has more weight and space than the status filters below. */
-.control,
-.control[data-size] {
-  height: 2.5rem;
-  padding: 0.625rem 0.875rem;
-  font-size: 0.9375rem;
+/* Match Lexiro's vocabulary-set workspace tabs. */
+.navigation :global(.t-tabs) {
+  display: flex;
+  width: 100%;
+  gap: 0.125rem;
+  border-radius: 1.5rem;
+  background: var(--surface-inset);
+  overflow: hidden;
 }
 
-/* Select triggers normally mute SVGs; feed icons follow the tab's state. */
-.control svg {
-  color: inherit;
-  opacity: 1;
-}
-.control {
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  box-shadow: none;
-}
-
-.control[aria-current="page"][data-displayed-active="true"] {
-  background: var(--tabs-pill-bg);
-  color: var(--tabs-text-active);
+.navigation :global(.t-tab) {
+  flex: 1;
+  min-width: 0;
+  min-height: 2.75rem;
+  height: auto;
+  border-radius: 1.3125rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
 }
 
-.frame:has([aria-current="page"]) {
-  box-shadow: var(--shadow-control);
+.navigation :global(.t-tabs-pill) {
+  border-radius: 1.3125rem;
+}
+
+@media (min-width: 48rem) {
+  .navigation :global(.t-tabs) {
+    max-width: 25rem;
+  }
 }

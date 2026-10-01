@@ -2,7 +2,6 @@
 
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { Blocks, Megaphone, Wrench } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useI18n } from "@/i18n";
 import { findFacilityCategory, findIssueCategory, getDefaultFacilityCategoryId, useCategories } from "@/hooks/use-categories";
@@ -15,6 +14,7 @@ import IssueFeed from "@/components/issues/issue-feed";
 import { FeedNavigation } from "./feed-navigation";
 import { AnnouncementNotice } from "@/components/announcements/announcement-notice";
 import { HeaderBackdrop } from "@/components/ui/header-backdrop";
+import { ChoiceSelect } from "@/components/ui/choice-select";
 import styles from "./home-feed.module.css";
 
 export function HomeFeed() {
@@ -42,19 +42,9 @@ export function HomeFeed() {
         updateParams({ view: value === defaultView ? null : value, category: null, q: null, bucket: null, sort: null, status: null });
       }}
       options={[
-        ...(categories.issuesEnabled ? [{ value: "issues", label: t("ui.nav.issues"), icon: <Blocks className="size-4" />, category: {
-          value: filter,
-          label: t("ui.access.selectCategory"),
-          options: [...getIssueFilterOptions(), { value: "my-proposals", label: t("ui.issue.mine") }],
-          onChange: changeCategory,
-        } }] : []),
-        { value: "announcements", label: t("ui.nav.announcements"), icon: <Megaphone className="size-4" /> },
-        ...(categories.facilitiesEnabled ? [{ value: "facilities", label: t("ui.nav.facilities"), icon: <Wrench className="size-4" />, category: {
-          value: facilityCategory,
-          label: t("ui.access.selectCategory"),
-          options: categories.activeFacilityCategories.map((category) => ({ value: category.id, label: category.label })),
-          onChange: changeCategory,
-        } }] : []),
+        ...(categories.issuesEnabled ? [{ value: "issues", label: t("ui.nav.issues") }] : []),
+        { value: "announcements", label: t("ui.nav.announcements") },
+        ...(categories.facilitiesEnabled ? [{ value: "facilities", label: t("ui.nav.facilities") }] : []),
       ]}
       value={view}
     />
@@ -62,14 +52,28 @@ export function HomeFeed() {
 
   return (
     <div className="space-y-4">
-      <h1 className="sr-only">{t("ui.nav.feed")}</h1>
       <header className={`page-header ${styles.header}`}>
         <HeaderBackdrop progressive />
-        <div className="flex min-w-0 items-center justify-between gap-2">
-          {navigation}
+        <div className="flex min-w-0 items-center justify-between gap-3">
+          <h1 className="text-2xl font-semibold leading-8 tracking-[-0.035em]">{t("ui.nav.feed")}</h1>
           <AnnouncementNotice />
         </div>
-        <div ref={setHeaderHost} />
+        {navigation}
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
+          {view !== "announcements" ? (
+            <ChoiceSelect
+              ariaLabel={t("ui.access.selectCategory")}
+              className="max-w-full shrink-0 sm:max-w-56"
+              onValueChange={changeCategory}
+              options={view === "issues"
+                ? [...getIssueFilterOptions(), { value: "my-proposals", label: t("ui.issue.mine") }]
+                : categories.activeFacilityCategories.map((category) => ({ value: category.id, label: category.label }))}
+              title={t("ui.access.selectCategory")}
+              value={view === "issues" ? filter : facilityCategory}
+            />
+          ) : null}
+          <div className="min-w-0 flex-1 basis-full sm:basis-auto" ref={setHeaderHost} />
+        </div>
       </header>
       <motion.div
       key={`${view}|${view === "issues" ? filter : ""}`}
