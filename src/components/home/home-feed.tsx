@@ -34,6 +34,18 @@ export function HomeFeed() {
   const facilityCategory = requestedFilter && findFacilityCategory(requestedFilter)
     ? requestedFilter : getDefaultFacilityCategoryId();
   const changeCategory = (category: string) => updateParams({ category, q: null, bucket: null, sort: null, status: null });
+  const categoryControl = (
+    <ChoiceSelect
+      ariaLabel={t("ui.access.selectCategory")}
+      className="min-w-0 max-w-full flex-1 sm:max-w-56 sm:flex-none"
+      onValueChange={changeCategory}
+      options={view === "issues"
+        ? [...getIssueFilterOptions(), { value: "my-proposals", label: t("ui.issue.mine") }]
+        : categories.activeFacilityCategories.map((category) => ({ value: category.id, label: category.label }))}
+      title={t("ui.access.selectCategory")}
+      value={view === "issues" ? filter : facilityCategory}
+    />
+  );
   const navigation = (
     <FeedNavigation
       label={t("ui.nav.feed")}
@@ -56,24 +68,12 @@ export function HomeFeed() {
         <HeaderBackdrop progressive />
         <div className="flex min-w-0 items-center justify-between gap-3">
           <h1 className="text-2xl font-semibold leading-8 tracking-[-0.035em]">{t("ui.nav.feed")}</h1>
-          <AnnouncementNotice />
+          <div className="flex shrink-0 items-center gap-2">
+            <div ref={setHeaderHost} />
+            <AnnouncementNotice />
+          </div>
         </div>
         {navigation}
-        <div className="flex min-w-0 flex-wrap items-center gap-3">
-          {view !== "announcements" ? (
-            <ChoiceSelect
-              ariaLabel={t("ui.access.selectCategory")}
-              className="max-w-full shrink-0 sm:max-w-56"
-              onValueChange={changeCategory}
-              options={view === "issues"
-                ? [...getIssueFilterOptions(), { value: "my-proposals", label: t("ui.issue.mine") }]
-                : categories.activeFacilityCategories.map((category) => ({ value: category.id, label: category.label }))}
-              title={t("ui.access.selectCategory")}
-              value={view === "issues" ? filter : facilityCategory}
-            />
-          ) : null}
-          <div className="min-w-0 flex-1 basis-full sm:basis-auto" ref={setHeaderHost} />
-        </div>
       </header>
       <motion.div
       key={`${view}|${view === "issues" ? filter : ""}`}
@@ -82,9 +82,9 @@ export function HomeFeed() {
       transition={timing("control")}
     >
       {view === "issues" ? (
-        <IssueFeed headerHost={headerHost} selectedFilter={filter} />
+        <IssueFeed filterControl={categoryControl} headerHost={headerHost} selectedFilter={filter} />
       ) : view === "facilities" ? (
-        <FacilityFeed headerHost={headerHost} />
+        <FacilityFeed filterControl={categoryControl} headerHost={headerHost} />
       ) : (
         <AnnouncementFeed headerHost={headerHost} />
       )}

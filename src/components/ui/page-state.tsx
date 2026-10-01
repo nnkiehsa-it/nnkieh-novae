@@ -49,6 +49,9 @@ export function PageHeader({
   const render = (content: React.ReactNode) => embedded
     ? portalHost ? createPortal(content, portalHost) : null
     : content;
+  if (embedded) {
+    return render(<div className="flex items-center gap-2">{toolbar}{actions}</div>);
+  }
   const heading = (
     <div className="min-w-0 flex-1">
       <h1 className="text-balance text-2xl font-semibold leading-8 tracking-[-0.035em]">

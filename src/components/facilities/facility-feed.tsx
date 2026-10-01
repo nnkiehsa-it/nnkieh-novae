@@ -18,7 +18,10 @@ import { FeedList } from "@/components/ui/feed-list";
 import { ChoiceSelect } from "@/components/ui/choice-select";
 import { AnnouncementNotice } from "@/components/announcements/announcement-notice";
 
-export default function FacilityFeed({ headerHost }: { headerHost?: HTMLElement | null } = {}) {
+export default function FacilityFeed({ filterControl, headerHost }: {
+  filterControl?: React.ReactNode;
+  headerHost?: HTMLElement | null;
+} = {}) {
   useLocaleSubscription();
   const state = useFacilityFeed();
   const profiles = usePublicProfiles(
@@ -31,28 +34,14 @@ export default function FacilityFeed({ headerHost }: { headerHost?: HTMLElement 
         portalHost={headerHost}
         actions={
           <>
-            <ToolbarButton asChild className="order-3 ml-auto sm:order-2 sm:ml-0" size="adaptive">
+            <ToolbarButton asChild size={headerHost !== undefined ? "icon" : "adaptive"}>
               <Link
                 aria-label={translate('ui.facility.new')}
                 href={`/facilities/new?category=${encodeURIComponent(state.category)}`}
                 prefetch={false}
               >
-                <Plus /><span className="hidden sm:inline">{translate('ui.facility.new')}</span></Link>
+                <Plus />{headerHost === undefined ? <span className="hidden sm:inline">{translate('ui.facility.new')}</span> : null}</Link>
             </ToolbarButton>
-            <LiquidTabs
-              className="order-2 sm:order-3"
-              ariaLabel={translate('ui.facility.statusFilter')}
-              compact
-              onValueChange={(value) => {
-                state.setBucket(value as "active" | "closed");
-                state.setStatus("");
-              }}
-              options={[
-                { icon: <CircleDot className="size-3.5" />, label: translate('ui.status.processing'), value: "active" },
-                { icon: <CircleCheck className="size-3.5" />, label: translate('ui.common.closed'), value: "closed" },
-              ]}
-              value={state.bucket}
-            />
           </>
         }
         title={headerHost !== undefined ? null :
@@ -73,7 +62,7 @@ export default function FacilityFeed({ headerHost }: { headerHost?: HTMLElement 
         toolbar={
           <FeedToolbar
             appliedQuery={state.committedQuery}
-            className="order-4"
+            className={headerHost === undefined ? "order-4" : undefined}
             onQueryChange={state.setQuery}
             onSearch={state.setCommittedQuery}
             onSortChange={(value) => state.setSort(value as FacilitySortOption)}
@@ -87,6 +76,21 @@ export default function FacilityFeed({ headerHost }: { headerHost?: HTMLElement 
           />
         }
       />
+      <div className="flex min-w-0 items-center justify-between gap-3">
+        {filterControl}
+        <LiquidTabs
+          ariaLabel={translate('ui.facility.statusFilter')}
+          onValueChange={(value) => {
+            state.setBucket(value as "active" | "closed");
+            state.setStatus("");
+          }}
+          options={[
+            { icon: <CircleDot className="size-3.5" />, label: translate('ui.status.processing'), value: "active" },
+            { icon: <CircleCheck className="size-3.5" />, label: translate('ui.common.closed'), value: "closed" },
+          ]}
+          value={state.bucket}
+        />
+      </div>
       <FeedList
         kind="facility"
         items={state.feed.facilities}

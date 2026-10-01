@@ -18,7 +18,8 @@ import { IssueCard } from "@/components/issues/issue-card";
 import { ChoiceSelect } from "@/components/ui/choice-select";
 import { AnnouncementNotice } from "@/components/announcements/announcement-notice";
 
-export default function IssueFeed({ headerHost, selectedFilter }: {
+export default function IssueFeed({ filterControl, headerHost, selectedFilter }: {
+  filterControl?: React.ReactNode;
   headerHost?: HTMLElement | null;
   selectedFilter?: string;
 } = {}) {
@@ -66,22 +67,11 @@ export default function IssueFeed({ headerHost, selectedFilter }: {
         actions={
           <>
             {filter !== "my-proposals" ? (
-              <ToolbarButton asChild className="order-3 ml-auto sm:order-2 sm:ml-0" size="adaptive">
+              <ToolbarButton asChild size={headerHost !== undefined ? "icon" : "adaptive"}>
                 <Link aria-label={translate('ui.issue.new')} href={`/issues/${encodeURIComponent(filter)}/compose/new`} prefetch={false}>
-                  <Plus /><span className="hidden sm:inline">{translate('ui.issue.new')}</span></Link>
+                  <Plus />{headerHost === undefined ? <span className="hidden sm:inline">{translate('ui.issue.new')}</span> : null}</Link>
               </ToolbarButton>
             ) : null}
-            <LiquidTabs
-              className="order-2 sm:order-3"
-              ariaLabel={translate('ui.issue.statusFilter')}
-              compact
-              onValueChange={(value) => setBucket(value as IssueStatusBucket)}
-              options={[
-                { icon: <CircleDot className="size-3.5" />, label: translate('ui.common.active'), value: "active" },
-                { icon: <CircleCheck className="size-3.5" />, label: translate('ui.common.closed'), value: "closed" },
-              ]}
-              value={bucket}
-            />
           </>
         }
         title={headerHost !== undefined ? null :
@@ -104,7 +94,7 @@ export default function IssueFeed({ headerHost, selectedFilter }: {
         toolbar={
           <FeedToolbar
             appliedQuery={committedQuery}
-            className="order-4"
+            className={headerHost === undefined ? "order-4" : undefined}
             onQueryChange={setQuery}
             onSearch={setCommittedQuery}
             onSortChange={(value) => setSort(value as IssueSortOption)}
@@ -119,6 +109,18 @@ export default function IssueFeed({ headerHost, selectedFilter }: {
           />
         }
       />
+      <div className="flex min-w-0 items-center justify-between gap-3">
+        {filterControl}
+        <LiquidTabs
+          ariaLabel={translate('ui.issue.statusFilter')}
+          onValueChange={(value) => setBucket(value as IssueStatusBucket)}
+          options={[
+            { icon: <CircleDot className="size-3.5" />, label: translate('ui.common.active'), value: "active" },
+            { icon: <CircleCheck className="size-3.5" />, label: translate('ui.common.closed'), value: "closed" },
+          ]}
+          value={bucket}
+        />
+      </div>
       <FeedList
         kind="issue"
         items={feed.issues}
