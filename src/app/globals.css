@@ -741,6 +741,11 @@ html[data-input-modality="pointer"] :focus-visible {
   border-top: 1px solid var(--rule);
 }
 
+/* A short, single-row group needs less curvature than a content card. */
+.rule-card:has(> .t-row:only-child) {
+  border-radius: var(--radius-lg);
+}
+
 /* The same grouped list, read two abreast. A person is a short record, and a
    column of them left most of a wide card empty while the list ran off the
    bottom of the screen; on anything wider than a phone the card carries two

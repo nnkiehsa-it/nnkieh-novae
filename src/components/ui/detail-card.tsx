@@ -16,7 +16,7 @@ export function DetailBadge({
   reveal?: boolean;
 }) {
   return (
-    <span className="inline-grid place-items-center rounded-full bg-card px-2.5 py-1 text-center text-xs font-medium text-muted-foreground shadow-[var(--shadow-control)]">
+    <span className="inline-grid place-items-center rounded-full bg-secondary px-2.5 py-1 text-center text-xs font-medium text-muted-foreground">
       <SkeletonBadgeLabel
         className="min-w-16"
         enabled={reveal}
@@ -38,7 +38,7 @@ export function DetailCardHeader({
   title: ReactNode;
 }) {
   return (
-    <div className="bg-background/60 px-5 py-5 sm:px-6">
+    <div className="px-5 py-5">
       <div className="flex min-h-6 flex-wrap items-center gap-2">{badges}</div>
       <div className="mt-3 min-h-9 text-2xl font-semibold leading-9 tracking-[-0.035em] sm:text-[1.625rem]">{title}</div>
       <div className="mt-3 flex min-h-6 flex-wrap items-center gap-x-3 gap-y-2 text-[0.8125rem] text-muted-foreground">{metadata}</div>
@@ -47,5 +47,5 @@ export function DetailCardHeader({
 }
 
 export function DetailCardBody({ children }: { children: ReactNode }) {
-  return <CardContent className="py-5 sm:px-6">{children}</CardContent>;
+  return <CardContent className="px-5 pb-5 pt-0 sm:px-5">{children}</CardContent>;
 }
