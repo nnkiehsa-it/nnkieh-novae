@@ -53,9 +53,24 @@ export function IssueSupportPanel({
           />
         </div>
       ) : null}
-      <div className="flex items-center gap-3">
+      <div className="grid gap-3">
+        <div className="flex justify-center">
+          <LikeActionButton
+            active={issue.currentUserSupported === true}
+            burst={burst}
+            busy={supporting}
+            className="size-11"
+            disabled={issue.isOwnIssue || !supportOpen}
+            icon={Hand}
+            inactiveVariant="secondary"
+            label={issue.isOwnIssue ? t("ui.issue.ownSupport")
+              : issue.currentUserSupported ? t("ui.issue.cancelSupport")
+              : supportOpen ? t("ui.issue.support") : t("ui.issue.supportClosed")}
+            onClick={onSupport}
+          />
+        </div>
         {canViewSupporters ? (
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0">
             <SheetRow
               label={t("ui.issue.supporters")}
               onOpenChange={(open) => { if (open) onLoadSupporters(); }}
@@ -89,19 +104,6 @@ export function IssueSupportPanel({
             </SheetRow>
           </div>
         ) : null}
-        <LikeActionButton
-          active={issue.currentUserSupported === true}
-          burst={burst}
-          busy={supporting}
-          className="ml-auto size-11"
-          disabled={issue.isOwnIssue || !supportOpen}
-          icon={Hand}
-          inactiveVariant="secondary"
-          label={issue.isOwnIssue ? t("ui.issue.ownSupport")
-            : issue.currentUserSupported ? t("ui.issue.cancelSupport")
-            : supportOpen ? t("ui.issue.support") : t("ui.issue.supportClosed")}
-          onClick={onSupport}
-        />
       </div>
     </div>
   );
