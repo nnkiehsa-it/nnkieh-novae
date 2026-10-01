@@ -42,13 +42,13 @@
     ui-sans-serif, system-ui, sans-serif;
   --font-mono:
     var(--font-roboto-mono), ui-monospace, SFMono-Regular, Consolas, monospace;
-  --radius-xs: calc(var(--radius) * 0.5);
-  --radius-sm: calc(var(--radius) * 0.75);
-  --radius-md: calc(var(--radius) * 0.875);
+  --radius-xs: 0.5rem;
+  --radius-sm: 0.75rem;
+  --radius-md: 1rem;
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.333);
-  --radius-2xl: calc(var(--radius) * 1.667);
-  --radius-3xl: calc(var(--radius) * 2);
+  --radius-xl: 1.75rem;
+  --radius-2xl: 2rem;
+  --radius-3xl: 2.5rem;
 }
 
 :root {
@@ -118,10 +118,10 @@
   --surface-active: rgb(21 87 213 / 10%);
   --surface-selected: var(--tint-surface);
   --rule: rgb(16 24 40 / 7%);
-  --row-gutter: 1.25rem;
-  --row-padding-block: 0.875rem;
+  --row-gutter: 1.5rem;
+  --row-padding-block: 1.125rem;
   --backdrop: rgb(16 24 40 / 32%);
-  --radius: 0.75rem;
+  --radius: 1.25rem;
   --shadow-control: 0 1px 2px rgb(16 40 80 / 4%);
   --shadow-card: 0 2px 5px rgb(16 40 80 / 3%);
   --shadow-floating:
@@ -727,10 +727,10 @@ html[data-input-modality="pointer"] :focus-visible {
 .rule-card {
   --row-bleed: var(--row-gutter);
   overflow: clip;
-  border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   background: var(--card);
   padding-inline: var(--row-gutter);
+  padding-block: 0.25rem;
   box-shadow: var(--shadow-card);
 }
 .rule-list > * + * {
