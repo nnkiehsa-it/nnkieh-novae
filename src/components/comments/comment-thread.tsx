@@ -43,7 +43,7 @@ export function CommentThread({
     <div className="transition-colors hover:bg-muted/20">
       <CommentRow comment={comment} currentUid={currentUid} onDelete={onDelete} onReply={() => onReply(comment, comment.id)} profile={profile} />
       {comment.replies.length > 0 ? (
-        <div className="relative ml-4 border-l border-border/80 pb-2 pl-7 sm:ml-5 sm:pl-9">
+        <div className="relative ml-4 pb-2 pl-7 sm:ml-5 sm:pl-9">
           <button
             aria-expanded={expanded}
             className="mb-1 inline-flex min-h-8 items-center gap-2 rounded-lg px-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
