@@ -5,7 +5,7 @@ import { MessageCircle, Megaphone, Wrench } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { useCategories } from "@/hooks/use-categories";
 import { PageHeader } from "@/components/ui/page-state";
-import { HomeEntryGrid, type HomeEntry } from "./home-entry-grid";
+import { HomeEntryList, type HomeEntry } from "./home-entry-list";
 import { HomeStatusOverview } from "./home-status-overview";
 
 export function HomeOverview() {
@@ -19,19 +19,16 @@ export function HomeOverview() {
     ...(categories.issuesEnabled ? [{
       href: "/feed",
       title: t("ui.nav.issues"),
-      description: t(supportsEnabled ? "ui.home.proposalsDescription" : "ui.home.ideasDescription"),
       icon: MessageCircle,
     }] : []),
     ...(categories.facilitiesEnabled ? [{
       href: "/feed?view=facilities",
       title: t("ui.home.facilitiesTitle"),
-      description: t("ui.home.reportDescription"),
       icon: Wrench,
     }] : []),
     {
       href: "/feed?view=announcements",
       title: t("ui.home.latestAnnouncements"),
-      description: t("ui.home.announcementsDescription"),
       icon: Megaphone,
     },
   ];
@@ -48,7 +45,7 @@ export function HomeOverview() {
             <Image alt="" aria-hidden src="/home-start.webp" width={384} height={384} sizes="(max-width: 639px) 96px, 128px" loading="eager" className="h-auto w-24 shrink-0 dark:invert sm:w-32" />
           </div>
         </section>
-        <HomeEntryGrid entries={entries} label={t("ui.nav.feed")} />
+        <HomeEntryList entries={entries} label={t("ui.nav.feed")} />
         <HomeStatusOverview />
       </div>
     </div>

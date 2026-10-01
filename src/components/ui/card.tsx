@@ -1,5 +1,4 @@
 import * as React from "react";
-import Link from "next/link";
 import { Card as HeroCard } from "@heroui/react";
 
 import { cn } from "@/lib/utils";
@@ -8,17 +7,6 @@ export function getCardClassName(className?: string) {
   return cn(
     "flex flex-col gap-6 rounded-xl bg-card px-0 py-6 text-card-foreground shadow-[var(--shadow-card)]",
     className,
-  );
-}
-
-/** A whole-card destination uses the same surface as every other card. */
-export function CardLink({ className, ...props }: React.ComponentProps<typeof Link>) {
-  return (
-    <Link
-      data-slot="card"
-      className={getCardClassName(cn("outline-none transition-[background-color,box-shadow] duration-[var(--motion-control)] hover:bg-[var(--tint-surface)] focus-visible:ring-2 focus-visible:ring-ring", className))}
-      {...props}
-    />
   );
 }
 
