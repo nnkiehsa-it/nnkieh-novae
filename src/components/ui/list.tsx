@@ -114,7 +114,7 @@ export function RowInner({
 
 /** The metrics every row keeps, whether or not the whole of it is a target. */
 const rowMetrics =
-  "flex w-full min-h-[3.25rem] items-center gap-3 py-[var(--row-padding-block)] text-left";
+  "flex w-full min-h-12 items-center gap-3 py-[var(--row-padding-block)] text-left";
 
 export const rowClass = cn("t-row", rowMetrics);
 

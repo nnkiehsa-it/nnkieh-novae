@@ -23,7 +23,7 @@ export function FeedCard({
   title: ReactNode;
 }) {
   return (
-    <div className="flex h-full flex-col gap-4 p-5">
+    <div className="flex h-full flex-col gap-4 px-5 py-4">
       <div data-slot="feed-card-header" className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="min-h-7 text-lg font-semibold leading-7 tracking-[-0.025em]">

@@ -17,7 +17,7 @@ export function HomeEntryList({ entries, label }: { entries: HomeEntry[]; label:
       <ListSection>
         {entries.map(({ href, title, icon: Icon }) => (
           <Link
-            className={cn(rowClass, "group gap-3 py-5 outline-none focus-visible:ring-2 focus-visible:ring-ring")}
+            className={cn(rowClass, "group gap-3 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring")}
             href={href}
             key={href}
             prefetch={false}

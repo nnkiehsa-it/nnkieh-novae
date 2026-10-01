@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 export function getCardClassName(className?: string) {
   return cn(
-    "flex flex-col gap-6 rounded-xl bg-card px-0 py-6 text-card-foreground shadow-[var(--shadow-card)]",
+    "flex flex-col gap-6 rounded-xl bg-card px-0 py-5 text-card-foreground shadow-[var(--shadow-card)]",
     className,
   );
 }
