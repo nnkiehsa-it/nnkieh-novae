@@ -64,7 +64,7 @@ export function ChoiceSelect({
   value: string;
 }) {
   const selected = options.find((option) => option.value === value);
-  const content = trigger ? trigger(selected) : selected?.label;
+  const content = trigger ? trigger(selected) : <span className="min-w-0 truncate">{selected?.label}</span>;
 
   return (
       <Select disabled={disabled} onValueChange={onValueChange} value={value}>

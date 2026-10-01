@@ -1,12 +1,24 @@
 import * as React from "react";
+import Link from "next/link";
 import { Card as HeroCard } from "@heroui/react";
 
 import { cn } from "@/lib/utils";
 
 export function getCardClassName(className?: string) {
   return cn(
-    "flex flex-col gap-5 rounded-xl border bg-card px-0 py-5 text-card-foreground shadow-[var(--shadow-card)]",
+    "flex flex-col gap-6 rounded-xl bg-card px-0 py-6 text-card-foreground shadow-[var(--shadow-card)]",
     className,
+  );
+}
+
+/** A whole-card destination uses the same surface as every other card. */
+export function CardLink({ className, ...props }: React.ComponentProps<typeof Link>) {
+  return (
+    <Link
+      data-slot="card"
+      className={getCardClassName(cn("outline-none transition-[background-color,box-shadow] duration-[var(--motion-control)] hover:bg-[var(--tint-surface)] focus-visible:ring-2 focus-visible:ring-ring", className))}
+      {...props}
+    />
   );
 }
 
@@ -31,7 +43,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-header"
       className={cn(
-        "@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-5 has-data-[slot=card-action]:grid-cols-[1fr_auto] sm:px-7",
+        "@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] sm:px-7",
         className,
       )}
       {...props}
@@ -76,7 +88,7 @@ function CardContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-content"
-      className={cn("px-5 sm:px-7", className)}
+      className={cn("px-6 sm:px-7", className)}
       {...props}
     />
   );
@@ -87,7 +99,7 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-footer"
       className={cn(
-        "flex items-center px-5 [.border-t]:pt-6 sm:px-7",
+        "flex items-center px-6 [.border-t]:pt-6 sm:px-7",
         className,
       )}
       {...props}

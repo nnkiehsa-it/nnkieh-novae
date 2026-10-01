@@ -69,7 +69,7 @@ function DialogContent({
           data-slot="dialog-content"
           className={cn(
             "t-dialog pointer-events-auto relative grid w-full min-w-0 content-start gap-5 overflow-x-clip overflow-y-auto p-(--dialog-pad) outline-none [&>*]:min-w-0",
-            "max-h-[min(86svh,46rem)] max-w-lg [--dialog-pad:1.5rem] sm:[--dialog-pad:1.75rem]",
+            "max-h-[min(86svh,46rem)] max-w-lg [--dialog-pad:1.75rem] sm:[--dialog-pad:2rem]",
             surface === "floating"
               ? "surface-floating"
               : "rounded-[var(--radius-xl)] bg-popover",

@@ -58,7 +58,7 @@ export function ApplyReviewDialog({
               : t("admin.reviewDescription", { count: changes.length })}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="max-h-64 overflow-y-auto rounded-xl border bg-[var(--surface-inset)]">
+        <div className="max-h-64 overflow-y-auto rounded-xl bg-[var(--surface-inset)]">
           {changes.map((change) => (
             <div className="flex items-center gap-3 border-b px-4 py-2.5 last:border-b-0" key={change.key}>
               <span className="min-w-0 flex-1 text-sm">{describeChange(change.key)}</span>
@@ -71,7 +71,7 @@ export function ApplyReviewDialog({
           ))}
         </div>
         {affected.length > 0 ? (
-          <div className="rounded-xl border bg-[var(--surface-inset)]">
+          <div className="rounded-xl bg-[var(--surface-inset)]">
             {affected.map(([key, count]) => (
               <div className="flex items-center gap-3 border-b px-4 py-2.5 last:border-b-0" key={key}>
                 <span className="min-w-0 flex-1 text-sm">

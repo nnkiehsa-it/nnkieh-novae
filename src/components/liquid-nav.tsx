@@ -165,7 +165,7 @@ export function LiquidNav({
           <Link
             aria-current={active ? "page" : undefined}
             className={cn(
-              "t-primary-nav-link relative flex min-h-10 min-w-0 items-center rounded-[0.625rem] text-sm font-medium text-muted-foreground outline-none transition-[color,transform] duration-[var(--motion-control)] ease-[var(--ease-move)] hover:bg-[var(--surface-hover)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40",
+              "t-primary-nav-link relative flex min-h-10 min-w-0 items-center rounded-full text-sm font-medium text-muted-foreground outline-none transition-[color,transform] duration-[var(--motion-control)] ease-[var(--ease-move)] hover:bg-[var(--surface-hover)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40",
               vertical
                 ? "gap-3 px-3"
                 : "flex-1 flex-col justify-center gap-1 px-1 py-1.5 text-[0.6875rem]",

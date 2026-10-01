@@ -76,7 +76,7 @@ export function FacilityDraftEditor({
   const identifierId = `setup-facility-${index}-identifier`;
 
   return (
-    <div className="grid gap-4 rounded-xl border bg-[var(--surface-inset)] p-5 sm:grid-cols-[1fr_1fr_auto] sm:items-end sm:p-6">
+    <div className="grid gap-4 rounded-xl bg-[var(--surface-inset)] p-6 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
       <div className="grid gap-1.5">
         <Label htmlFor={nameId}>{translate('ui.setup.categoryName')}</Label>
         <Input
@@ -140,7 +140,7 @@ export function IssueDraftEditor({
   const identifierId = `setup-issue-${index}-identifier`;
 
   return (
-    <div className="grid gap-5 rounded-xl border bg-[var(--surface-inset)] p-5 sm:p-6">
+    <div className="grid gap-5 rounded-xl bg-[var(--surface-inset)] p-6">
       <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
         <div className="grid gap-1.5">
           <Label htmlFor={nameId}>{translate('ui.setup.categoryName')}</Label>
@@ -274,7 +274,7 @@ function ToggleField({
   onCheckedChange: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex min-h-9 items-center justify-between gap-3 rounded-lg border bg-card px-3 text-sm">
+    <label className="flex min-h-11 items-center justify-between gap-3 rounded-full bg-card px-5 text-sm">
       <span>{label}</span>
       <Switch checked={checked} onCheckedChange={onCheckedChange} />
     </label>

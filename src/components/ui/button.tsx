@@ -5,7 +5,7 @@ import { Slot } from "radix-ui";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl font-medium whitespace-nowrap shadow-[var(--shadow-card)] outline-none transition-[background-color,color,border-color,box-shadow,opacity,transform] duration-[var(--motion-control)] ease-[var(--ease-move)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-45 disabled:shadow-none aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full font-medium whitespace-nowrap shadow-[var(--shadow-card)] outline-none transition-[background-color,color,border-color,box-shadow,opacity,transform] duration-[var(--motion-control)] ease-[var(--ease-move)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-45 disabled:shadow-none aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -23,14 +23,14 @@ const buttonVariants = cva(
         link: "text-[var(--tint-content)] underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-9 px-4 py-2 has-[svg]:px-3.5",
-        xs: "h-6 gap-1 rounded-lg px-2 has-[svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-8 gap-1.5 rounded-lg px-3 has-[svg]:px-2.5",
-        lg: "h-10 rounded-xl px-6 has-[svg]:px-4",
+        default: "h-11 px-5 py-2 has-[svg]:px-4",
+        xs: "h-6 gap-1 px-2.5 has-[svg]:px-2 [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-9 gap-1.5 px-3.5 has-[svg]:px-3",
+        lg: "h-12 px-7 has-[svg]:px-5",
         icon: "size-9",
         // Room enough for a label once there is room for one; a square icon until then.
         adaptive: "size-9 px-0 sm:w-auto sm:px-4 sm:has-[svg]:px-3.5",
-        "icon-xs": "size-6 rounded-lg [&_svg:not([class*='size-'])]:size-3",
+        "icon-xs": "size-6 [&_svg:not([class*='size-'])]:size-3",
         "icon-sm": "size-8",
         "icon-lg": "size-10",
       },

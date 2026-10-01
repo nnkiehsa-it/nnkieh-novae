@@ -58,7 +58,7 @@ export function ImagePreviewTile({
 }) {
   const { t } = useI18n();
   return (
-    <div className="group relative aspect-square overflow-hidden rounded-xl border bg-muted/40">
+    <div className="group relative aspect-square overflow-hidden rounded-xl bg-muted/40">
       <button
         aria-label={t("media.zoom", { alt })}
         className="absolute inset-0 grid place-items-center p-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring/40"

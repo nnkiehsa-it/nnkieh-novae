@@ -23,7 +23,7 @@ export function FeedCard({
   title: ReactNode;
 }) {
   return (
-    <div className="flex h-full flex-col gap-3 p-4">
+    <div className="flex h-full flex-col gap-4 p-5">
       <div data-slot="feed-card-header" className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="min-h-7 text-lg font-semibold leading-7 tracking-[-0.025em]">
@@ -53,7 +53,7 @@ export function FeedCard({
 
 export function FeedProgress({ children, value }: { children: ReactNode; value?: number }) {
   return (
-    <div className="space-y-1.5 rounded-lg bg-secondary px-3 py-2">
+    <div className="space-y-2 rounded-lg bg-secondary px-4 py-3">
       {children}
       <div className="h-1.5 overflow-hidden rounded-full bg-border">
         {value !== undefined ? (

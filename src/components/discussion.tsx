@@ -176,7 +176,7 @@ export function Discussion({
 
       {enabled ? (
         <div className="discussion-composer-dock" ref={composerDockRef}>
-          <div className="mx-auto w-full max-w-2xl rounded-[2rem] border bg-background p-2 shadow-[var(--shadow-floating)]">
+          <div className="mx-auto w-full max-w-2xl rounded-2xl bg-background p-2 shadow-[var(--shadow-floating)]">
             <AnimatePresence initial={false}>
             {replyTarget ? (
               <motion.div

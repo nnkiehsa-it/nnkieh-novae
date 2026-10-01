@@ -26,7 +26,7 @@ function SelectValue({
 
 /** The trigger's own look, so a phone's own version of it can wear the same. */
 export const selectTriggerClass =
-  "flex w-fit items-center justify-between gap-2 rounded-xl border border-border bg-card px-3.5 py-2 whitespace-nowrap shadow-[var(--shadow-control)] transition-[background-color,color,border-color,box-shadow,transform] duration-[var(--motion-control)] ease-[var(--ease-move)] outline-none hover:border-foreground/12 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-border aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-[placeholder]:text-muted-foreground data-[size=default]:h-10 data-[size=sm]:h-9 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground";
+  "flex w-fit items-center justify-between gap-2 rounded-full border-0 bg-card px-5 py-2 whitespace-nowrap shadow-[var(--shadow-control)] transition-[background-color,color,border-color,box-shadow,transform] duration-[var(--motion-control)] ease-[var(--ease-move)] outline-none hover:border-foreground/12 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-border aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-[placeholder]:text-muted-foreground data-[size=default]:h-11 data-[size=sm]:h-9 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground";
 
 function SelectTrigger({
   className,
@@ -68,7 +68,7 @@ function SelectContent({
         collisionPadding={16}
         data-slot="select-content"
         className={cn(
-          "t-dropdown relative z-50 max-h-(--radix-select-content-available-height) w-max max-w-[calc(100vw-2rem)] min-w-36 origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-xl border bg-popover text-popover-foreground shadow-[var(--shadow-floating)] sm:min-w-[var(--radix-select-trigger-width)]",
+          "t-dropdown relative z-50 max-h-(--radix-select-content-available-height) w-max max-w-[calc(100vw-2rem)] min-w-36 origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-xl bg-popover text-popover-foreground shadow-[var(--shadow-floating)] sm:min-w-[var(--radix-select-trigger-width)]",
           position === "popper" &&
             "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
           className,
@@ -80,7 +80,7 @@ function SelectContent({
         <SelectScrollUpButton />
         <SelectPrimitive.Viewport
           className={cn(
-            "p-1.5",
+            "p-2",
             position === "popper" &&
               "w-full max-w-full min-w-0 scroll-my-1 sm:min-w-[var(--radix-select-trigger-width)]",
           )}
@@ -116,7 +116,7 @@ function SelectItem({
       data-slot="select-item"
       data-control-label=""
       className={cn(
-        "relative flex min-h-8 w-full cursor-default items-center gap-2 rounded-lg py-1 pr-8 pl-2.5 whitespace-nowrap outline-hidden select-none transition-[background-color,color,transform] duration-[var(--motion-control)] ease-[var(--ease-move)] focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "relative flex min-h-11 w-full cursor-default items-center gap-2 rounded-lg py-2.5 pr-10 pl-4 whitespace-nowrap outline-hidden select-none transition-[background-color,color,transform] duration-[var(--motion-control)] ease-[var(--ease-move)] focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className,
       )}
       {...props}

@@ -35,7 +35,7 @@ function PopoverContent({
         data-slot="popover-content"
         sideOffset={sideOffset}
         className={cn(
-          "t-dropdown z-50 w-72 max-w-[calc(100vw-2rem)] origin-(--radix-popover-content-transform-origin) rounded-xl border bg-popover p-3 text-popover-foreground shadow-[var(--shadow-floating)] outline-none",
+          "t-dropdown z-50 w-72 max-w-[calc(100vw-2rem)] origin-(--radix-popover-content-transform-origin) rounded-xl bg-popover p-4 text-popover-foreground shadow-[var(--shadow-floating)] outline-none",
           className,
         )}
         {...props}

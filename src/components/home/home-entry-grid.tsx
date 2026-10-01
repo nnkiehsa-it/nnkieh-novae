@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { CardLink } from "@/components/ui/card";
 import { ArrowRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,9 +17,9 @@ export function HomeEntryGrid({ entries, label }: { entries: HomeEntry[]; label:
       {entries.map(({ href, title, description, icon: Icon }, index) => {
         const wide = entries.length === 1 || (entries.length % 2 === 1 && index === entries.length - 1);
         return (
-          <Link
+          <CardLink
             className={cn(
-              "group grid gap-3 rounded-xl bg-card p-4 shadow-[var(--shadow-card)] outline-none transition-[background-color,box-shadow] duration-[var(--motion-control)] hover:bg-[var(--tint-surface)] focus-visible:ring-2 focus-visible:ring-ring",
+              "group grid gap-3 p-5",
               wide ? "col-span-full grid-cols-[2.25rem_minmax(0,1fr)_1rem] items-center" : "grid-cols-[minmax(0,1fr)_1rem] items-start",
             )}
             href={href}
@@ -36,7 +36,7 @@ export function HomeEntryGrid({ entries, label }: { entries: HomeEntry[]; label:
             <span aria-hidden="true" className={cn("self-center text-[var(--tint-content)]", wide ? "order-3" : "order-2")}>
               <ArrowRight className="size-4 transition-transform duration-[var(--motion-control)] group-hover:translate-x-0.5 motion-reduce:transition-none" />
             </span>
-          </Link>
+          </CardLink>
         );
       })}
     </nav>

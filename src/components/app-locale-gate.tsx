@@ -50,7 +50,7 @@ export function AppLocaleGate({ children }: { children: React.ReactNode }) {
             ] as const
           ).map(([value, label]) => (
             <button
-              className="t-card flex min-h-16 items-center gap-4 rounded-xl border bg-card px-5 text-left shadow-[var(--shadow-card)]"
+              className="t-card flex min-h-16 items-center gap-4 rounded-xl bg-card px-6 text-left shadow-[var(--shadow-card)]"
               key={value}
               onClick={() => setLocale(value)}
               type="button"
