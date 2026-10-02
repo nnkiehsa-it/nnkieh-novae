@@ -36,7 +36,7 @@ const messages = {
   "admin.summary.capacity": "Inspect database, external service and queue usage.",
   "admin.summary.providers": "Query external service health and diagnostic records.",
   "admin.summary.actions": "Trace who changed settings, when, and the actual changes.",
-  "admin.summary.activity": "Review account and content activity by time and account.",
+  "admin.summary.activity": "Review account and content activity by period and load earlier records.",
   "admin.overviewStatistics": "Activity and operations",
   "admin.summary.statistics": "Inspect registrations, content activity, category distribution and work needing attention.",
   "admin.auditItem": "Item {index}",

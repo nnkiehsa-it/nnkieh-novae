@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { ListRow, ListSection } from "@/components/ui/list";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ErrorState } from "@/components/ui/page-state";
 import {
   ADMIN_OVERVIEW_WINDOWS,
   type AdminOverviewWindow,
@@ -88,7 +89,7 @@ export function AdminActivityFeed() {
         }))}
         value={period}
       />
-      <ListSection>
+      {activity.entries.length > 0 || !activity.error ? <ListSection>
         {activity.entries.length > 0 ? (
           <AdminActivityRows entries={activity.entries} />
         ) : (
@@ -96,12 +97,17 @@ export function AdminActivityFeed() {
             label={
               activity.loading
                 ? t("ui.common.loadingMore")
-                : activity.error || t("ui.adminConsole.noRecentActivity")
+                : t("ui.adminConsole.noRecentActivity")
             }
           />
         )}
-      </ListSection>
-      {activity.cursor ? (
+      </ListSection> : null}
+      {activity.error ? (
+        <div role="alert">
+          <ErrorState error={activity.error} onRetry={() => void activity.load(activity.cursor)} />
+        </div>
+      ) : null}
+      {activity.cursor && !activity.error ? (
         <div className="flex justify-center">
           <Button
             disabled={activity.loading}

@@ -36,7 +36,7 @@ const messages = {
   "admin.summary.capacity": "查看資料庫、外部服務和工作佇列的使用量。",
   "admin.summary.providers": "查詢外部服務狀態與診斷紀錄。",
   "admin.summary.actions": "追查誰在何時修改設定，以及實際變更內容。",
-  "admin.summary.activity": "查閱帳號與內容活動，可依時間與帳號篩選。",
+  "admin.summary.activity": "依時間範圍查閱帳號與內容活動，並載入較早紀錄。",
   "admin.overviewStatistics": "活動與運行狀態",
   "admin.summary.statistics": "查看註冊與內容活動、分類分布，以及需要處理的工作。",
   "admin.auditItem": "第 {index} 項",
