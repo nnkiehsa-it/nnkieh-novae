@@ -11,6 +11,7 @@ import { actions, flows, groups, categorySettings, policyDescriptions, retention
 import { architectureFlows } from './architecture.mjs';
 import { modelDescriptions, makeModelFlows, makeModelOverview } from './models.mjs';
 import { makeSettingFlows, retentionBehavior, retentionTitles } from './settings.mjs';
+import { narrateFlow } from './narration.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../..');
@@ -235,11 +236,15 @@ const ordinaryFlows=[...flows,...specialFlows,...actionFlows].map(f=>{
   const section=administrator&&f.domain==='user'?'帳號與權限':administrator&&f.domain==='category'?'內容、平台與政策':f.group==='先看全貌'?'共用讀取':automatic?'排程、事件與時間條件':f.group;
   return {...f,section,group:automatic?'自動化與時間':administrator?'管理員操作':'使用者操作',kind:f.kind||'sequence'};
 });
-const allFlows = [...architectureFlows,makeModelOverview(models),...makeModelFlows(models),...ordinaryFlows,...makeSettingFlows(settings,ref),...triggerFlows];
+const allFlows = [...architectureFlows,makeModelOverview(models),...makeModelFlows(models),...ordinaryFlows,...makeSettingFlows(settings,ref),...triggerFlows].map(narrateFlow);
 const allIds = new Set(allFlows.map(f=>f.id));
 if (allIds.size !== allFlows.length) throw new Error('重複流程ID');
 for (const f of allFlows) {
-  for (const edge of f.edges) if (!f.nodes[edge.from]||!f.nodes[edge.to]) throw new Error('連線節點不存在：'+f.id);
+  for (const edge of f.edges) {
+    if (!f.nodes[edge.from]||!f.nodes[edge.to]) throw new Error('連線節點不存在：'+f.id);
+    if (edge.to!==edge.from+1) throw new Error('仍有跨卡片或折返的連線：'+f.id);
+    if (!edge.label||edge.label==='接著') throw new Error('缺資料／動作連線說明：'+f.id);
+  }
   for (const n of f.nodes) for (const r of n.refs) if (!sources[r.path]||r.line<1||r.line>sources[r.path].text.split('\n').length) throw new Error('原碼位置不存在：'+f.id+' / '+r.path+':'+r.line);
 }
 for (const setting of settings) if (!allIds.has(setting.target)) throw new Error('無法連結設定流程：' + setting.key);

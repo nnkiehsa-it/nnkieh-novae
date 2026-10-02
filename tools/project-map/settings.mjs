@@ -55,7 +55,9 @@ export function makeSettingFlows(settings, ref) {
         make('自己與其他人的畫面',operation?'自己收到正式 policy response 即 setOperationPolicies；其他 browser 在成功 API response 見新 policyRevision 才拉。Worker 其他 isolate 最長快取 60 秒；進行中 request 保持原 snapshot。':retention?'自己採正式設定與 revision、更新圖片 store、標 bootstrap stale；有 job 才通知進度讀取。背景 DB 套用與外部刪除要分別追蹤；其他開啟編輯器不會自動重寫草稿。':scope||rule?'自己按正式 canonical 回應更新；其他人下一次後端授權讀新規則，但既有 session 按鈕未必立即更新。':preference?'下一次 delivery 收件者解析用新偏好；已傳送站內／Push 無法撤回。':'自己種入正式 catalog；目前 category/platform/user 的部分 realtime destination 不產出訊息，其他人可能需重新讀 session/catalog。','browser',[ref('src/services/backend-action.ts'),ref('cloudflare/src/backend/jobs/realtime-deliveries.ts')]),
       ];
     }
-    const labels = ['草稿／修改','估算／驗證','提交','套用／排程','時間條件','回到畫面'];
+    const labels = deploy
+      ? ['配置檔／secret 的變更 → 生成、驗證與部署','新的 build／環境配置 → 執行環境','新的管理員名單／供應商／平台設定 → 後續請求']
+      : ['欄位草稿＋baseline revision → 估算／驗證','確認的設定 JSON＋revision＋必要原因 → save action','正式設定、revision、audit、必要 job → 同交易儲存','已儲存的新值／cleanupScopes → 判斷影響與套用','當前值／快照／批次狀態 → 依本設定時機生效','正式值、revision、catalog、job 結果 → 自己更新／他人再讀'];
     return {id:'setting:'+s.key,title:'修改'+s.title,group:'管理員改設定',section:operation?'運行政策 · '+groupLabels[s.policyGroup]:retention?'平台保留 · '+behavior.section:s.section,kind:'sequence',setting:s.key,relatedAction:target,summary:s.effect,notes:[s.timing, '程式初值不代表正式 DB 目前值；這份地圖不執行任何設定寫入。'],nodes,edges:nodes.slice(1).map((_,i)=>({from:i,to:i+1,label:labels[i],async:i===3}))};
   });
 }

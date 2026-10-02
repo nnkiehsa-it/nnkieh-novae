@@ -58,7 +58,7 @@ export function makeModelFlows(models) {
       {title:m.name, text:m.purpose, layer:'database', x:360,y:0,refs:m.refs,model:m.name},
       ...m.related.map((related,i)=>({title:related,text:models.find(x=>x.name===related).purpose,layer:'database',x:(i%3)*360,y:260+Math.floor(i/3)*240,refs:models.find(x=>x.name===related).refs,model:related})),
     ],
-    edges: m.related.map((related,i)=>({from:0,to:i+1,label:m.foreignKeys.find(k=>k.target===related)?.label || '程式關聯',relation:true})),
+    edges: m.related.map((related,i)=>({from:0,to:i+1,label:modelConnection(m,related),relation:true})),
   }));
 }
 
@@ -72,6 +72,27 @@ export function makeModelOverview(models) {
   ];
   return {id:'data-models',title:'資料模型：整體關係',group:'資料模型',kind:'topology',summary:'左側可逐張檢視所有表與 view 的完整欄位；此圖先顯示五類資料的責任。',notes:['實體 FK 與邏輯關聯會分開標示；Firebase Auth、Cloudinary 與 DO 儲存不在 PostgreSQL schema 中。'],
     nodes:sections.map(([section,title,text],i)=>({title,text,layer:'database',x:(i%3)*370,y:Math.floor(i/3)*270,refs:[{path:'cloudflare/src/backend/database/schema.generated.ts',line:4}],details:[{title:'所含資料模型',text:models.filter(m=>m.group===section).map(m=>m.name).join('、')},{title:'閱讀方式',text:'在左側「資料模型」選表；點中央卡片後，右側列出用途、身份鍵、完整欄位與時間條件。'}]})),
-    edges:[edge(0,1,'UID / scope'),edge(1,2,'target / recipient'),edge(1,3,'寫入 → event'),edge(3,2,'delivery / deletion'),edge(4,1,'policy / revision'),edge(4,3,'retention / audit')]};
+    edges:[edge(0,1,'UID、角色、分類 scope → 決定內容存取'),edge(1,2,'內容 target ID、作者／收件者 UID → 圖片與通知'),edge(1,3,'內容變更＋operationId → domain event／工作'),edge(3,2,'event／job payload → 通知投遞／媒體刪除'),edge(4,1,'分類 policy／runtime setting／revision → 內容規則'),edge(4,3,'保留政策＋到期時間 → job；變更 → audit')]};
 }
 const edge = (from,to,label)=>({from,to,label,relation:true});
+
+function modelConnection(model,related) {
+  const fk=model.foreignKeys.find(k=>k.target===related);
+  if(fk) return '外鍵對照：'+fk.label;
+  if(model.name==='user_restrictions')return '以 UID 或 Email 字首比對帳號，排除正式管理員';
+  if(model.name==='user_profiles')return '以 profile UID／Email 解析角色、範圍或有效限制';
+  if(related==='user_profiles')return model.columns.filter(c=>/uid$/.test(c.name)).map(c=>c.name).join('／')+' → user_profiles.uid，解析帳號資料';
+  if(model.name==='uploads'||related==='uploads')return 'srp-upload ID、attached_target_type／id、Cloudinary public_id → 圖片關聯或清理';
+  if(model.name==='notifications'&&related==='domain_events')return 'event_id＋recipient → 推導通知 ID；occurred_at → 通知時間';
+  if(model.name==='runtime_settings')return '設定 JSON、revision、保留／批次政策 → 正式設定、歷史或工作';
+  if(related==='background_jobs'||model.name==='background_jobs'||related==='external_cleanup_backlog')return 'job ID、scope、provider 識別碼、payload → 排程、執行或保留清理責任';
+  if(model.name==='claimable_event_deliveries')return '同一 delivery 的狀態、next_attempt_at、鎖期限 → view 可領取結果';
+  const byGroup={
+    '身分與權限':'UID、role code、category ID、scope before／after → 授權與稽核關聯',
+    '內容':'作者 UID、分類／內容 ID、反應／留言紀錄 → 內容關聯與計數',
+    '媒體與通知':'通知／delivery ID、收件者 UID、裝置或 token hash → 通知與裝置關聯',
+    '交易與工作':'operation／event／delivery／job ID、target type／ID → 工作來源與生命週期',
+    '設定與觀測':'設定／分類／domain key、revision、before／after、operation ID → 規則、版本或觀測資料',
+  };
+  return byGroup[model.group];
+}
