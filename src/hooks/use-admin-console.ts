@@ -81,11 +81,13 @@ function usePagedAdminList<T>(
     ),
     [fetchPage, read, remember],
   );
+  const loadCurrent = useRef(load);
+  useEffect(() => { loadCurrent.current = load; }, [load]);
 
   useEffect(() => {
     setQuery(current.current.activeQuery);
-    void load(current.current.activeQuery, current.current.page);
-  }, [load]);
+    void loadCurrent.current(current.current.activeQuery, current.current.page);
+  }, [isActive]);
 
   const updateRows = useCallback((update: (rows: T[]) => T[]) => {
     remember((previous) => ({ ...previous, rows: update(previous.rows) }));

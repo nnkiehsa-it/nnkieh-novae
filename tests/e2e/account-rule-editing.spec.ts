@@ -27,8 +27,10 @@ test('restriction editors keep deadlines, preserve failed drafts, and expose rem
     return review;
   };
   const openUser = async (email: string) => {
-    await page.getByPlaceholder('Search name, campus email, or UID').fill(email);
-    await page.getByRole('button', { name: 'Search', exact: true }).click();
+    const search = page.getByPlaceholder('Search name, campus email, or UID');
+    await search.fill(email);
+    await expectBackendAction(page, 'listAdminUsers', () => page.getByRole('button', { name: 'Search', exact: true }).click());
+    await expect(search).toHaveValue(email);
     await page.getByRole('main').getByText(email, { exact: true }).click();
     return page.getByRole('dialog');
   };
@@ -76,6 +78,7 @@ test('restriction editors keep deadlines, preserve failed drafts, and expose rem
     await page.getByRole('button', { name: 'Discard draft and reload latest rules', exact: true }).click();
     await expect(page.getByLabel('Restriction reason / displayed message')).toHaveValue('Another administrator');
     await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
 
     await page.goto('/admin/people');
     let sheet = await openUser(E2E_USERS.other);
@@ -93,6 +96,7 @@ test('restriction editors keep deadlines, preserve failed drafts, and expose rem
     await expect(sheet.getByLabel('Restriction reason / displayed message')).toHaveValue('');
     await sheet.getByLabel('Restriction reason / displayed message').fill('Unsaved account-specific draft');
     await sheet.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
     sheet = await openUser(E2E_USERS.ordinary);
     await expect(sheet.getByLabel('Restriction reason / displayed message')).toHaveValue('');
     await expect(sheet.getByLabel('Duration', { exact: true })).toContainText('7 days');
