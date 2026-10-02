@@ -59,6 +59,7 @@ test("scope drafts stay with their area, review real members, and save one atomi
     });
     expect(writes).toHaveLength(1);
     expect(writes[0].payload.changes).toHaveLength(2);
+    await expect(page.getByText("2 unsaved changes", { exact: true })).toHaveCount(0);
     await page.goto("/admin/audit");
     await page.getByRole("textbox").fill("saveScopeMembers");
     await page.getByRole("button", { name: "Search", exact: true }).click();

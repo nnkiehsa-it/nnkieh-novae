@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useI18n } from "@/i18n";
 import { useCategories } from "@/hooks/use-categories";
+import { useSession } from "@/hooks/use-session";
 import { useRememberedState } from "@/hooks/use-remembered-state";
 import { getUnsavedChanges } from "@/hooks/unsaved-changes-store";
 import { ScopeAccessEditor } from "@/components/admin/scope-access-editor";
@@ -22,11 +23,17 @@ interface Target {
 export function AccessManagement() {
   const { t } = useI18n();
   const categories = useCategories();
+  const { user } = useSession();
   const { remember, value: target } = useRememberedState<Target>("admin-access-target", { kind: "issue", issueId: "", facilityId: "" });
   const [pending, setPending] = React.useState<Target | null>(null);
   const options = target.kind === "issue" ? categories.activeIssueCategories : target.kind === "facility" ? categories.activeFacilityCategories : [];
   const requestedId = target.kind === "issue" ? target.issueId : target.facilityId;
   const categoryId = requestedId || (options.length === 1 ? options[0]!.id : "");
+  React.useEffect(() => {
+    if (target.kind !== "announcement" && !requestedId && options.length === 1) {
+      remember({ ...target, [target.kind === "issue" ? "issueId" : "facilityId"]: options[0]!.id });
+    }
+  }, [options, remember, requestedId, target]);
   const scope = React.useMemo<AccessScope | null>(() => target.kind === "announcement" ? { kind: target.kind }
     : categoryId ? { kind: target.kind, categoryId } : null, [categoryId, target.kind]);
   const change = (next: Target) => {
@@ -48,7 +55,7 @@ export function AccessManagement() {
       placeholder={t("ui.access.selectCategory")} value={categoryId} /> : null}
   </ListSection>;
   return <>
-    <ScopeAccessEditor key={accessScopeKey(scope)} scope={scope} selector={selector} />
+    <ScopeAccessEditor key={`${user?.uid}:${accessScopeKey(scope)}`} scope={scope} selector={selector} />
     <AlertDialog open={pending !== null} onOpenChange={(open) => !open && setPending(null)}>
       <AlertDialogContent>
         <AlertDialogHeader><AlertDialogTitle>{t("admin.leaveTitle")}</AlertDialogTitle>
