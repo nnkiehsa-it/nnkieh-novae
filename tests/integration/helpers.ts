@@ -280,7 +280,7 @@ export async function callAction(
     && auth.permissions.includes("role.manage")) {
     const [rule] = await loadAccountAccessRules(database, {
       targetType: payload.targetType as "uid" | "email_prefix",
-      targetValue: String(payload.targetValue).trim().toLowerCase(),
+      targetValue: payload.targetType === "email_prefix" ? String(payload.targetValue).trim().toLowerCase() : String(payload.targetValue).trim(),
     });
     payload = { ...payload, revision: rule?.revision ?? null };
   }

@@ -59,6 +59,22 @@ integrationTest("administrative rules preserve exact deadlines and return the ef
   assert.equal(prefixRemoved.deleted, true);
 });
 
+integrationTest("expired cleanup and user pagination distinguish rules with the same target value", async () => {
+  const admin = await seedActor("composite-admin", { roles: ["platform-admin"] });
+  await insertRows("user_profiles", [{ uid: "same-value", email: "same-value@integration.invalid", display_name: "Same value" }]);
+  await insertRows("user_restrictions", [
+    { uid: "same-value", target_type: "uid", preset: "read_only", reason: "Expired individual", updated_by: admin.auth.uid, restricted_permanently: false, restricted_until: "2020-01-01T00:00:00Z" },
+    { uid: "same-value", target_type: "email_prefix", preset: "blocked", reason: "Permanent prefix", updated_by: admin.auth.uid, restricted_permanently: true },
+  ]);
+  const list = asRecord(await callAction("listAdminUsers", { query: "same-value" }, admin.auth));
+  assert.equal((list.users as unknown[]).length, 1);
+  assert.equal(asRecord(asRecord((list.users as unknown[])[0]).accessRule).targetType, "email_prefix");
+  await database.sql`select app_private.run_retention_cleanup_core_batch(app_private.runtime_retention_config()
+    || jsonb_build_object('cleanupScopes', '["restrictions"]'::jsonb), 100)`;
+  const { rows } = await database.sql`select target_type from app_private.user_restrictions where uid='same-value'`;
+  assert.deepEqual(rows, [{ target_type: "email_prefix" }]);
+});
+
 integrationTest("email prefixes treat percent and underscore literally", async () => {
   const admin = await seedActor("prefix-admin", { roles: ["platform-admin"] });
   for (const prefix of ["%", "audit_"]) {
