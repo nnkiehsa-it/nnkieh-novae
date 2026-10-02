@@ -125,6 +125,7 @@ export default function SettingsPage() {
         </ListSection>
         <SaveBar
           changeCount={adminPreferences.changes.length}
+          error={adminPreferences.error}
           onDiscard={adminPreferences.reset}
           onSave={() => void adminPreferences.submit()}
           status={adminPreferences.status}

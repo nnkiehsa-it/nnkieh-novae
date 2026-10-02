@@ -51,6 +51,7 @@ export function CategoryManagement() {
   const { t } = useI18n();
   const state = useCategoryManagement();
   const [kind, setKind] = React.useState("issue");
+  const [reviewing, setReviewing] = React.useState(false);
   const [editing, setEditing] = React.useState<number | null>(null);
   const [retainedEditing, setRetainedEditing] = React.useState<{
     index: number;
@@ -98,6 +99,9 @@ export function CategoryManagement() {
       : undefined;
   const nameOf = (item: AnyCategory, index: number) =>
     item.label || `${area?.placeholder ?? ""} ${index + 1}`;
+  const savedItem = kind === "issue"
+    ? state.draft.baseline?.issueCategories.find((item) => item.id === editingItem?.id)
+    : state.draft.baseline?.facilityCategories.find((item) => item.id === editingItem?.id);
 
   return (
     <div className="space-y-6">
@@ -184,6 +188,9 @@ export function CategoryManagement() {
               item={editingItem}
               onChange={(next) => area.onUpdate(activeIndex, next)}
               onDefault={() => area.onSetDefault(activeIndex)}
+              onRestore={savedItem ? () => area.onUpdate(activeIndex, {
+                ...savedItem, isDefault: editingItem.isDefault, sortOrder: editingItem.sortOrder,
+              } as never) : undefined}
               onDelete={() => {
                 area.onDelete(activeIndex);
                 setEditing(null);
@@ -197,8 +204,10 @@ export function CategoryManagement() {
       <SaveBar
         changeCount={state.draft.changes.length}
         disabled={!state.draft.valid}
+        error={state.draft.error}
         onDiscard={state.draft.reset}
         onSave={() => void state.draft.submit()}
+        onReview={() => setReviewing(true)}
         status={state.draft.status}
       />
       <ApplyReviewDialog
@@ -211,9 +220,9 @@ export function CategoryManagement() {
             : t("ui.admin.issueCommentPolicy", { scope });
         }}
         impact={state.draft.impact}
-        onCancel={state.draft.cancel}
-        onConfirm={() => void state.draft.confirm()}
-        open={state.draft.impact !== null}
+        onCancel={() => { setReviewing(false); state.draft.cancel(); }}
+        onConfirm={() => { setReviewing(false); void (state.draft.impact ? state.draft.confirm() : state.draft.submit()); }}
+        open={reviewing || state.draft.impact !== null}
       />
     </div>
   );

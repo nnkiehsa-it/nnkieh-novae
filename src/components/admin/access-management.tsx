@@ -134,6 +134,7 @@ export function AccessManagement() {
 
       <SaveBar
         changeCount={state.draft.changes.length}
+        error={state.draft.error}
         onDiscard={state.draft.reset}
         onSave={() => void state.draft.submit()}
         status={state.draft.status}

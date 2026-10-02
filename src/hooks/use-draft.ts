@@ -3,7 +3,7 @@
 import * as React from "react";
 
 import { ACTION_SUCCESS_HOLD_MS } from "@/hooks/use-action-feedback";
-import { diffDraft, type DraftChange } from "@/lib/draft-diff";
+import { diffDraft, rebaseDraft, type DraftChange } from "@/lib/draft-diff";
 import type { DraftStatus } from "@/types/draft";
 
 export interface DraftImpact {
@@ -101,7 +101,7 @@ export function useDraft<T>({
       const stored = await save(next, savedReason.trim(), baseline);
       setSession((current) => ({
         baseline: stored,
-        value: current.value === next ? stored : current.value,
+        value: current.value === null ? null : rebaseDraft(next, current.value, stored),
       }));
       setReason((current) => current === savedReason ? "" : current);
       setStatus("saved");

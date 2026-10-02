@@ -11,6 +11,9 @@ import {
   describeSettingKey,
 } from "@/components/admin/platform-setting-fields";
 import { SettingsGroup } from "@/components/admin/settings-group";
+import { SettingPresets } from "@/components/admin/setting-presets";
+import { DEFAULT_IMAGE_SETTINGS, IMAGE_PRESETS, RETENTION_PRESETS } from "@/lib/admin-setting-presets";
+import { DATA_RETENTION } from "@/generated/data-retention";
 import { RETENTION_GROUPS, retentionLabelKey } from "@/components/admin/retention-groups";
 import { ListRowGroup, ListSection } from "@/components/ui/list";
 import { ListNumberRow, ListSwitchRow } from "@/components/ui/list-controls";
@@ -24,6 +27,7 @@ export function PlatformSettings() {
   const { t } = useI18n();
   const { draft, error, load, loading } = usePlatformSettings();
   const [area, setArea] = React.useState("retention");
+  const [reviewing, setReviewing] = React.useState(false);
   useUnsavedChanges(draft.changes.length, draft.reset);
   const value = draft.value;
 
@@ -50,6 +54,9 @@ export function PlatformSettings() {
 
       {area === "retention" ? (
         <div className="space-y-4">
+          <SettingPresets current={value.retention} presets={RETENTION_PRESETS}
+            onApply={(retention) => draft.update((current) => ({ ...current, retention }))}
+            onRestore={() => draft.update((current) => ({ ...current, retention: draft.baseline!.retention }))} />
           {RETENTION_GROUPS.map((group, index) => (
             <SettingsGroup defaultOpen={index === 0} key={group.titleKey} title={t(group.titleKey)}>
               <ListSection>
@@ -71,6 +78,7 @@ export function PlatformSettings() {
                         label={t(retentionLabelKey(item.key))}
                         max={item.unit === "hours" ? 87_600 : 3_650}
                         onChange={(next) => setRetention(item.key, next)}
+                        onReset={() => setRetention(item.key, DATA_RETENTION[item.key])}
                         unit={t(item.unit === "hours" ? "admin.unitHours" : "admin.unitDays")}
                         value={value.retention[item.key] as number}
                       />
@@ -84,6 +92,9 @@ export function PlatformSettings() {
       ) : (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">{t("admin.imagePolicyLocation")}</p>
+          <SettingPresets current={value.imageUploads} presets={IMAGE_PRESETS}
+            onApply={(imageUploads) => draft.update((current) => ({ ...current, imageUploads }))}
+            onRestore={() => draft.update((current) => ({ ...current, imageUploads: draft.baseline!.imageUploads }))} />
           <SettingsGroup defaultOpen title={t("admin.settingsImageProcessing")}>
             <ListSection>
               <ImageFields fields={IMAGE_PROCESSING_FIELDS} settings={value.imageUploads} update={(key, next) =>
@@ -97,8 +108,10 @@ export function PlatformSettings() {
       <SaveBar
         changeCount={draft.changes.length}
         disabled={!draft.valid}
+        error={draft.error}
         onDiscard={draft.reset}
         onSave={() => void draft.submit()}
+        onReview={() => setReviewing(true)}
         status={draft.status}
       />
       <ApplyReviewDialog
@@ -106,9 +119,9 @@ export function PlatformSettings() {
         describeChange={(key) => t(describeSettingKey(key))}
         describeImpact={(key) => t(`ui.admin.retentionImpact.${key}`)}
         impact={draft.impact}
-        onCancel={draft.cancel}
-        onConfirm={() => void draft.confirm()}
-        open={draft.impact !== null}
+        onCancel={() => { setReviewing(false); draft.cancel(); }}
+        onConfirm={() => { setReviewing(false); void (draft.impact ? draft.confirm() : draft.submit()); }}
+        open={reviewing || draft.impact !== null}
       />
     </div>
   );
@@ -131,6 +144,7 @@ function ImageFields({
       max={field.max}
       min={field.min}
       onChange={(next) => update(field.key, next)}
+      onReset={() => update(field.key, DEFAULT_IMAGE_SETTINGS[field.key])}
       step={field.step ?? 1}
       unit={field.unitKey ? t(field.unitKey) : undefined}
       value={settings[field.key]}

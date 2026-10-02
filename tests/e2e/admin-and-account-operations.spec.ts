@@ -175,6 +175,39 @@ test('platform settings save traverses impact estimation and canonical write', a
   await admin.context.close();
 });
 
+test('setting presets remain drafts, restore one area, and show reviewable changes', async ({ browser }) => {
+  const admin = await newUserPage(browser, 'admin');
+  const writes: string[] = [];
+  admin.page.on('request', (request) => {
+    if (!request.url().endsWith('/v1/actions') || request.method() !== 'POST') return;
+    const action = request.postDataJSON()?.action;
+    if (action === 'savePlatformSettings') writes.push(action);
+  });
+  await admin.page.goto('/admin/platform');
+  await admin.page.getByRole('tab', { name: 'Image uploads', exact: true }).click();
+  const dimension = admin.page.getByLabel('Maximum image dimension (px)', { exact: true });
+  const original = await dimension.inputValue();
+  await admin.page.getByText('Quick settings', { exact: true }).click();
+  await admin.page.getByRole('button', { name: /Detailed images/u }).click();
+  await expect(dimension).toHaveValue('3000');
+  await admin.page.getByRole('button', { name: 'Restore saved settings in this section', exact: true }).click();
+  await expect(dimension).toHaveValue(original);
+  await admin.page.getByRole('button', { name: /Detailed images/u }).click();
+  await admin.page.getByRole('tab', { name: 'Data retention', exact: true }).click();
+  await admin.page.getByText('Quick settings', { exact: true }).click();
+  await admin.page.getByRole('button', { name: /^Compact/u }).click();
+  await admin.page.getByRole('button', { name: 'Restore saved settings in this section', exact: true }).click();
+  await admin.page.getByRole('tab', { name: 'Image uploads', exact: true }).click();
+  await expect(dimension).toHaveValue('3000');
+  await admin.page.getByRole('button', { name: 'Review changes', exact: true }).click();
+  await expect(admin.page.getByRole('alertdialog').getByText('Maximum image dimension (px)', { exact: true })).toBeVisible();
+  await admin.page.getByRole('alertdialog').getByRole('button', { name: 'Cancel', exact: true }).click();
+  await admin.page.getByRole('button', { name: 'Discard', exact: true }).click();
+  await expect(dimension).toHaveValue(original);
+  expect(writes).toEqual([]);
+  await admin.context.close();
+});
+
 test('operations console is usable on phone and desktop and saves an audited policy revision', async ({ browser }, testInfo) => {
   test.setTimeout(120_000);
   const admin = await newUserPage(browser,'admin');
@@ -191,8 +224,7 @@ test('operations console is usable on phone and desktop and saves an audited pol
     await admin.page.screenshot({path:testInfo.outputPath(`system-capacity-${width}.png`)});
     await admin.page.goto('/admin/policies');
     await expect.poll(()=>admin.page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
-    await admin.page.getByRole('tab', { name: 'Advanced' }).click();
-    await admin.page.getByText('Client requests and throttling', { exact: true }).click();
+    await admin.page.getByRole('tab', { name: 'Client', exact: true }).click();
     await admin.page.getByLabel('Client Write Cooldown Ms',{exact:true}).scrollIntoViewIfNeeded();
     await expect(admin.page.getByLabel('Client Write Cooldown Ms',{exact:true})).toHaveValue('500');
     await admin.page.screenshot({path:testInfo.outputPath(`policies-${width}.png`)});

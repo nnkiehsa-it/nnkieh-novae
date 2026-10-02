@@ -12,6 +12,7 @@ import {
   type OperationsConsole,
 } from "@/services/operations-console";
 import type { OperationPolicies } from "@/generated/operations";
+import { validOperationSettings } from "@/lib/admin-setting-presets";
 
 export type { OperationsConsole } from "@/services/operations-console";
 
@@ -62,6 +63,7 @@ export function useOperationPolicies() {
       return saved;
     },
     source: stored,
+    validate: (value) => validOperationSettings(value.values),
   });
 
   return {

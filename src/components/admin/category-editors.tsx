@@ -5,6 +5,8 @@ import { Trash2 } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { CategoryDeleteAction } from "@/components/admin/category-delete-action";
 import { ImagePolicyFields } from "@/components/admin/image-policy-fields";
+import { SettingPresets } from "@/components/admin/setting-presets";
+import { FACILITY_PRESETS, ISSUE_PRESETS } from "@/lib/admin-setting-presets";
 import { ListRowGroup, ListSection } from "@/components/ui/list";
 import {
   ListChoiceRow,
@@ -35,12 +37,14 @@ export function CategoryEditor({
   onChange,
   onDefault,
   onDelete,
+  onRestore,
 }: {
   identifierLocked: boolean;
   item: AnyCategory;
   onChange: (item: never) => void;
   onDefault: () => void;
   onDelete: () => void;
+  onRestore?: () => void;
 }) {
   const { t } = useI18n();
   const change = onChange as (next: AnyCategory) => void;
@@ -49,7 +53,15 @@ export function CategoryEditor({
     : t("ui.admin.allowFacilityAuthorDelete");
 
   return (
-    <ListSection>
+    <div className="space-y-6">
+      {isIssue(item) ? (
+        <SettingPresets current={item} presets={ISSUE_PRESETS} onRestore={onRestore}
+          onApply={(rules) => change({ ...item, ...rules })} />
+      ) : (
+        <SettingPresets current={item} presets={FACILITY_PRESETS} onRestore={onRestore}
+          onApply={(rules) => change({ ...item, ...rules })} />
+      )}
+    <ListSection header={t("admin.categoryIdentity")}>
       <ListInputRow
         label={t("ui.common.name")}
         onChange={(next) => change({ ...item, label: next })}
@@ -68,19 +80,14 @@ export function CategoryEditor({
         onSelect={onDefault}
         selected={item.isDefault}
       />
-      <ListSwitchRow
-        checked={item.authorDeleteEnabled}
-        label={authorDeleteLabel}
-        name={authorDeleteLabel}
-        onCheckedChange={(next) => change({ ...item, authorDeleteEnabled: next })}
-      />
+    </ListSection>
 
       {isIssue(item) ? (
-        <>
+        <ListSection header={t("admin.categoryVisibility")}>
           <ListPicker
             label={t("ui.admin.readAccess")}
             onChange={(next) =>
-              change({ ...item, readAccess: next as IssueCategoryConfig["readAccess"] })
+              change({ ...item, readAccess: next as IssueCategoryConfig["readAccess"], authorVisible: next === "owner-admin" ? true : item.authorVisible })
             }
             options={[
               { label: t("ui.admin.schoolVisible"), value: "school" },
@@ -91,10 +98,15 @@ export function CategoryEditor({
           />
           <ListSwitchRow
             checked={item.authorVisible}
+            disabled={item.readAccess === "owner-admin"}
             label={t("ui.admin.showAuthor")}
             name={t("ui.admin.showAuthor")}
             onCheckedChange={(next) => change({ ...item, authorVisible: next })}
           />
+        </ListSection>
+      ) : null}
+      {isIssue(item) ? (
+        <ListSection header={t("admin.categoryParticipation")}>
           <ListSwitchRow
             checked={item.commentsEnabled}
             label={t("ui.admin.allowComments")}
@@ -120,14 +132,23 @@ export function CategoryEditor({
               value={item.supportDeadlineDays ?? undefined}
             />
           </ListRowGroup>
-        </>
+        </ListSection>
       ) : null}
 
+    <ListSection header={t("ui.admin.imageUploads")}>
       <ImagePolicyFields value={item.maxImages} onChange={(next) => change({ ...item, maxImages: next })} />
       {isIssue(item) && item.commentsEnabled ? (
         <ImagePolicyFields comments value={item.commentMaxImages} onChange={(next) => change({ ...item, commentMaxImages: next })} />
       ) : null}
+    </ListSection>
 
+    <ListSection header={t("admin.categoryManagement")}>
+      <ListSwitchRow
+        checked={item.authorDeleteEnabled}
+        label={authorDeleteLabel}
+        name={authorDeleteLabel}
+        onCheckedChange={(next) => change({ ...item, authorDeleteEnabled: next })}
+      />
       <CategoryDeleteAction
         disabled={item.isDefault}
         icon={Trash2}
@@ -136,5 +157,6 @@ export function CategoryEditor({
         persisted={identifierLocked}
       />
     </ListSection>
+    </div>
   );
 }

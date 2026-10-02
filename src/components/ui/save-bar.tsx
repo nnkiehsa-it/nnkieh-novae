@@ -26,6 +26,7 @@ export function SaveBar({
   changeCount,
   className,
   disabled = false,
+  error,
   onDiscard,
   onReview,
   onSave,
@@ -34,6 +35,7 @@ export function SaveBar({
   changeCount: number;
   className?: string;
   disabled?: boolean;
+  error?: string;
   onDiscard: () => void;
   /** Opens the before-and-after list, where there is one worth reading. */
   onReview?: () => void;
@@ -60,6 +62,7 @@ export function SaveBar({
       role="status"
       transition={timing("sheet")}
     >
+      {error ? <p className="w-full text-sm text-destructive" role="alert">{error}</p> : null}
       <span className="min-w-0 flex-1 text-sm">
         {saved
           ? translate("ui.common.saveBarSaved")

@@ -43,3 +43,14 @@ export function diffDraft<T>(before: T, after: T): DraftChange[] {
   }
   return changes;
 }
+
+/** Keep only edits made during the write, over the server's normalized result. */
+export function rebaseDraft<T>(submitted: T, edited: T, stored: T): T {
+  const next = { ...stored } as Record<string, unknown>;
+  for (const change of diffDraft(submitted, edited)) {
+    const [key, nested] = change.key.split(".");
+    if (nested) next[key] = { ...(next[key] as Record<string, unknown>), [nested]: change.after };
+    else next[key] = change.after;
+  }
+  return next as T;
+}

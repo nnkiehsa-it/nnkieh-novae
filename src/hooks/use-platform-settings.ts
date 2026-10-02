@@ -14,10 +14,7 @@ import {
 import { markSessionBootstrapStale } from "@/services/session-bootstrap";
 import { notifyPlatformJobsChanged } from "@/lib/platform-job-events";
 import type { PlatformSettings } from "@/types/categories";
-
-function isPositive(value: unknown) {
-  return typeof value === "boolean" || (Number.isFinite(value) && Number(value) > 0);
-}
+import { validPlatformSettings } from "@/lib/admin-setting-presets";
 
 export function usePlatformSettings() {
   const { remember: setStored, value: stored } =
@@ -45,9 +42,7 @@ export function usePlatformSettings() {
       return next;
     },
     source: stored,
-    validate: (value) =>
-      Object.values(value.retention).every(isPositive)
-      && Object.values(value.imageUploads).every(isPositive),
+    validate: validPlatformSettings,
   });
 
   return { draft, error, load, loading: stored === null && reading };

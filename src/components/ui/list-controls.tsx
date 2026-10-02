@@ -1,7 +1,9 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, RotateCcw } from "lucide-react";
 import * as React from "react";
+import { useI18n } from "@/i18n";
+import { Button } from "@/components/ui/button";
 
 import { Input } from "@/components/ui/input";
 import { RowInner, rowClass, type RowContent } from "@/components/ui/list";
@@ -131,32 +133,35 @@ export function ListInputRow({
  * being typed, so deleting a digit on the way to another one is allowed.
  */
 export function ListNumberRow({
+  disabled = false,
   label,
   max,
   min = 1,
   onChange,
+  onReset,
   step = 1,
   unit,
   value,
 }: {
+  disabled?: boolean;
   label: string;
   max?: number;
   min?: number;
   onChange: (value: number) => void;
+  onReset?: () => void;
   step?: number;
   unit?: React.ReactNode;
   value?: number;
 }) {
-  const pending = value === undefined;
+  const { t } = useI18n();
   return (
     <label className={cn(rowClass, "gap-4")}>
       <span className="min-w-0 flex-1 text-[0.9375rem] leading-6">{label}</span>
       <span className="flex shrink-0 items-center gap-2">
         <Input
-          aria-busy={pending}
           aria-label={label}
           className="h-9 w-24 text-right tabular-nums"
-          disabled={pending}
+          disabled={disabled}
           inputMode="numeric"
           max={max}
           min={min}
@@ -173,6 +178,12 @@ export function ListNumberRow({
         />
         {unit ? (
           <span className="w-8 text-xs text-muted-foreground">{unit}</span>
+        ) : null}
+        {onReset ? (
+          <Button aria-label={t("admin.resetField", { field: label })} disabled={disabled}
+            onClick={(event) => { event.preventDefault(); onReset(); }} size="icon-sm" type="button" variant="ghost">
+            <RotateCcw aria-hidden className="size-3.5" />
+          </Button>
         ) : null}
       </span>
     </label>
