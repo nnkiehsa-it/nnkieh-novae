@@ -61,6 +61,8 @@ test('restriction editors keep deadlines, preserve failed drafts, and expose rem
     await expect(page.getByLabel('Restriction reason / displayed message')).toHaveValue('Changed prefix message');
     expect(await deadline()).toBe(originalDeadline);
     await page.setViewportSize({ width: 390, height: 900 });
+    await expect(page.locator('[data-sheet-motion-frame]')).toHaveAttribute('data-sheet-arrived', 'true');
+    await page.getByRole('dialog').getByRole('alert').scrollIntoViewIfNeeded();
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath('prefix-rule-failure-390.png') });
     failSave = false;

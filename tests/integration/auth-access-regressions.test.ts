@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { asRecord, callAction, database, expectActionError, insertRows, integrationTest, refreshActor, seedActor, testEnvironment } from "./helpers.ts";
+import { asRecord, callAction, database, expectActionError, insertRows, integrationTest, ownerQuery, refreshActor, seedActor, testEnvironment } from "./helpers.ts";
 import { resolveAccountAccessRule } from "../../cloudflare/src/backend/shared/account-access.ts";
 
 integrationTest("revoking ADMIN_EMAILS removes cached DB authority before the next action", async () => {
@@ -21,10 +21,13 @@ integrationTest("administrative rules preserve exact deadlines and return the ef
   await database.query("update app_private.user_profiles set email=$1 where uid=$2", ["Audit_user@integration.invalid", member.auth.uid]);
   await insertRows("user_profiles", [{ uid: "wildcard-unrelated", display_name: "Unrelated", email: "auditXuser@integration.invalid" }]);
   await database.query("update app_private.user_profiles set email=$1 where uid=$2", ["audit_admin@integration.invalid", admin.auth.uid]);
+  testEnvironment.ADMIN_EMAILS += ",audit_admin@integration.invalid,audit_new-admin@integration.invalid";
+  await insertRows("user_profiles", [{ uid: "newly-configured-admin", display_name: "New admin", email: "audit_new-admin@integration.invalid" }]);
   const input = { targetType: "email_prefix", targetValue: "AUDIT_", preset: "read_only", duration: "custom", durationHours: 3, message: "Original", revision: null };
   const preview = asRecord(await callAction("previewAccountAccessRule", input, admin.auth));
   assert.equal(preview.matchingCount, 1);
   assert.equal(preview.targetValue, "audit_");
+  await expectActionError("permission-denied", () => callAction("saveAccountAccessRule", { targetType: "uid", targetValue: "newly-configured-admin", preset: "blocked", duration: "permanent", message: "Denied" }, admin.auth));
   const first = asRecord(asRecord(await callAction("saveAccountAccessRule", input, admin.auth)).rule);
   assert.equal(first.matchCount, 1);
   assert.equal(first.permanent, false);
@@ -55,6 +58,10 @@ integrationTest("administrative rules preserve exact deadlines and return the ef
   assert.equal(asRecord(removed.effectiveRule).targetType, "email_prefix");
   const adminList = asRecord(await callAction("listAdminUsers", { query: admin.auth.uid }, admin.auth));
   assert.equal(asRecord((adminList.users as unknown[])[0]).accessRule, null);
+  const newAdminList = asRecord(await callAction("listAdminUsers", { query: "newly-configured-admin" }, admin.auth));
+  const newAdmin = asRecord((newAdminList.users as unknown[])[0]);
+  assert.deepEqual(newAdmin.roles, ["platform-admin"]);
+  assert.equal(newAdmin.accessRule, null);
   const prefixRemoved = asRecord(await callAction("deleteAccountAccessRule", { targetType: "email_prefix", targetValue: "AUDIT_", revision: kept.revision }, admin.auth));
   assert.equal(prefixRemoved.deleted, true);
 });
@@ -76,8 +83,8 @@ integrationTest("expired cleanup and user pagination distinguish rules with the 
   await insertRows("user_restrictions", [{ uid: "same-value", target_type: "uid", preset: "read_only", reason: "Renewing rule", updated_by: admin.auth.uid, restricted_permanently: false, restricted_until: "2020-01-01T00:00:00Z" }]);
   await database.transaction(async (tx) => {
     await tx.sql`select uid from app_private.user_restrictions where target_type='uid' and uid='same-value' for update`;
-    await database.sql`select app_private.run_retention_cleanup_core_batch(app_private.runtime_retention_config()
-      || jsonb_build_object('cleanupScopes', '["restrictions"]'::jsonb), 100)`;
+    await ownerQuery(`select app_private.run_retention_cleanup_core_batch(app_private.runtime_retention_config()
+      || jsonb_build_object('cleanupScopes', '["restrictions"]'::jsonb), 100)`);
     assert.equal((await tx.sql`select uid from app_private.user_restrictions where target_type='uid' and uid='same-value'`).rows.length, 1);
     await tx.sql`update app_private.user_restrictions set restricted_until=now()+interval '7 days' where target_type='uid' and uid='same-value'`;
   });

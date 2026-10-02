@@ -1,5 +1,6 @@
 import { asRecord, asString } from "../shared/http.ts";
 import { createMediaDeliveryUrl } from "../shared/media-delivery.ts";
+import { platformAdminEmails } from "../shared/platform-admin.ts";
 import { requirePermission } from "./auth.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import type { Selected } from "../database/schema.ts";
@@ -80,15 +81,19 @@ export async function handleUserAdminAction(
     });
     if (error) throw error;
     const withAvatars = await withAdminUserAvatars(data, auth.uid, database);
+    const administratorEmails = new Set(platformAdminEmails());
     const rules = await loadAccountAccessRules(database, { userUids: withAvatars.users.map((user) => asString(asRecord(user).uid)) });
     return {
       ...withAvatars,
       users: withAvatars.users.map((entry) => {
         const user = asRecord(entry);
+        const administrator = administratorEmails.has(asString(user.email).trim().toLowerCase());
+        const assigned = Array.isArray(user.roles) ? user.roles.filter((role) => role !== "platform-admin") : [];
         return {
           ...user,
+          roles: administrator ? [...assigned, "platform-admin"] : assigned,
           accessRuleRevision: rules.find((rule) => rule.targetType === "uid" && rule.targetValue === user.uid)?.revision ?? null,
-          accessRule: Array.isArray(user.roles) && user.roles.includes("platform-admin") ? null : selectAccountAccessRule(rules.filter((rule) => rule.active), {
+          accessRule: administrator ? null : selectAccountAccessRule(rules.filter((rule) => rule.active), {
             email: asString(user.email),
             uid: asString(user.uid),
           }),

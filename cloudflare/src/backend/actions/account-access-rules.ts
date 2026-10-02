@@ -1,4 +1,5 @@
 import { asString } from "../shared/http.ts";
+import { platformAdminEmails } from "../shared/platform-admin.ts";
 import { selectAccountAccessRule, type AccountAccessPreset, type AccountAccessTargetType } from "../shared/account-access.ts";
 import type { Selected } from "../database/schema.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
@@ -30,7 +31,7 @@ export async function loadAccountAccessRules(database: BackendDatabase, filter: 
       coalesce(r.restricted_permanently or r.restricted_until > statement_timestamp(), false) as active,
       md5(to_jsonb(r)::text) as revision,
       (select count(*)::integer from app_private.user_profiles p
-        where not exists(select 1 from app_private.user_role_assignments a where a.uid = p.uid and a.role_code = 'platform-admin')
+        where not (lower(btrim(coalesce(p.email, ''))) = any(${platformAdminEmails()}::text[]))
           and ((r.target_type = 'uid' and p.uid = r.uid)
             or (r.target_type = 'email_prefix' and starts_with(lower(split_part(coalesce(p.email, ''), '@', 1)), r.uid)))) as match_count
     from app_private.user_restrictions r
@@ -69,13 +70,13 @@ export async function handleAccountAccessRuleAction(action: string, payload: Jso
     validateRuleInput(payload, Boolean(before));
     const count = await database.sqlOne<{ count: number }>`select count(*)::integer as count from app_private.user_profiles p
       where starts_with(lower(split_part(coalesce(p.email, ''), '@', 1)), ${target.value})
-        and not exists(select 1 from app_private.user_role_assignments a where a.uid = p.uid and a.role_code = 'platform-admin')`;
+        and not (lower(btrim(coalesce(p.email, ''))) = any(${platformAdminEmails()}::text[]))`;
     return { matchingCount: count.count, targetValue: target.value };
   }
   let profile: { uid: string; email: string | null; administrator: boolean } | null = null;
   if (target.type === "uid") {
     profile = await database.sqlMaybe<{ uid: string; email: string | null; administrator: boolean }>`
-      select p.uid, p.email, exists(select 1 from app_private.user_role_assignments a where a.uid = p.uid and a.role_code = 'platform-admin') as administrator
+      select p.uid, p.email, coalesce(lower(btrim(p.email)) = any(${platformAdminEmails()}::text[]), false) as administrator
       from app_private.user_profiles p where p.uid = ${target.value} for update`;
   }
   let deleted = false;
