@@ -27,10 +27,14 @@ async function storeNotifications(database: AppDatabaseClient, notifications: Re
   await database.sql`
     insert into app_private.notifications (
       id, source, recipient_uid, type, target_type, target_id, comment_id, title,
-      actor_uid, body_preview, issue_category, old_status, new_status, created_at, origin)
+      actor_uid, body_preview, issue_category, old_status, new_status, created_at, origin, expires_at)
     select id, source, recipient_uid, type, target_type, target_id, comment_id, title,
-      actor_uid, body_preview, issue_category, old_status, new_status, created_at, origin
+      actor_uid, body_preview, issue_category, old_status, new_status, created_at, origin,
+      case when app_private.retention_boolean(settings.config, 'notificationsEnabled')
+        then created_at + make_interval(days => app_private.retention_integer(settings.config, 'notificationsDays'))
+        else 'infinity'::timestamptz end
     from jsonb_populate_recordset(null::app_private.notifications, ${JSON.stringify(notifications)}::jsonb)
+    cross join (select app_private.runtime_retention_config() as config) settings
     on conflict (id) do nothing`;
 }
 

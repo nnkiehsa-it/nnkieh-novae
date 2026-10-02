@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { Client } from 'pg';
 import { E2E_USERS } from './support/accounts';
-import { expectBackendAction, readActionStream } from './support/backend-action';
+import { expectBackendAction } from './support/backend-action';
 import { readContentState } from './support/content-state';
 import { newUserPage } from './support/session';
 
@@ -251,13 +251,13 @@ test('disabling notification cleanup confirms retention updates rather than dele
       await review.getByRole('button', { name: 'Save and start', exact: true }).click();
     });
     await expect(enabled).not.toBeChecked();
+    await database.query('select app_api.backend_process_platform_job_batch(100)');
     await database.query('delete from app_private.notifications where id=$1', [id]);
     await enabled.click();
+    await admin.page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(review.getByText(/update the retention expiry/u)).toBeVisible();
     await expectBackendAction(admin.page, 'savePlatformSettings', async () => {
-      const estimate = admin.page.waitForResponse((response) => response.request().postDataJSON()?.action === 'estimateRetentionCleanup');
-      await admin.page.getByRole('button', { name: 'Save', exact: true }).click();
-      const { data } = readActionStream(await (await estimate).text());
-      if (Number(data.totalEstimatedRows) > 0) await review.getByRole('button', { name: 'Save and start', exact: true }).click();
+      await review.getByRole('button', { name: 'Save and start', exact: true }).click();
     });
   } finally {
     await database.query('delete from app_private.notifications where id=$1', [id]);

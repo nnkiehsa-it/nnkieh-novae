@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { asRecord, callAction, database, integrationTest, processPlatformJobs, seedActor } from "./helpers";
+import { asRecord, callAction, database, integrationTest, processPlatformJobs, seedActor, testEnvironment, underPolicies } from "./helpers";
+import { processInAppDeliveries } from "../../cloudflare/src/backend/jobs/notification-deliveries";
 
 integrationTest("disabling cleanup reports expiry updates, supersedes failed policies and preserves unrelated data", async () => {
   const admin = await seedActor("retention-disable-admin", { roles: ["platform-admin"] });
@@ -23,10 +24,15 @@ integrationTest("disabling cleanup reports expiry updates, supersedes failed pol
   assert.equal(saved.totalDeletedRows, 0);
   assert.ok(saved.jobId);
   assert.equal((await database.sqlOne<{ status: string }>`select status from app_private.background_jobs where id=${failedId}`).status, "superseded");
+  const followup = { ...input, retention: { ...input.retention, closedFacilitiesEnabled: false } };
+  const pendingImpact = asRecord(await callAction("estimateRetentionCleanup", followup, admin.auth));
+  assert.equal(pendingImpact.totalDeletedRows, 0);
+  assert.ok(Number(pendingImpact.totalUpdatedRows) >= 1);
+  assert.ok(asRecord(await callAction("savePlatformSettings", followup, admin.auth)).jobId);
   await processPlatformJobs(1);
   assert.equal((await database.sqlOne<{ expiry: string }>`select expires_at::text as expiry from app_private.notifications where id=${notificationId}`).expiry, "infinity");
   assert.equal((await database.sqlOne<{ count: number }>`select count(*)::integer as count from app_private.announcements where id=${announcementId}`).count, 1);
-  const imageOnly = { ...input, imageUploads: { ...asRecord(settings.imageUploads), maxDimension: 1800 } };
+  const imageOnly = { ...followup, imageUploads: { ...asRecord(settings.imageUploads), maxDimension: 1800 } };
   const noImpact = asRecord(await callAction("estimateRetentionCleanup", imageOnly, admin.auth));
   assert.equal(noImpact.totalEstimatedRows, 0);
   assert.equal(asRecord(await callAction("savePlatformSettings", imageOnly, admin.auth)).jobId, null);
@@ -46,4 +52,15 @@ integrationTest("extending notification retention preserves expired rows before 
   await callAction("savePlatformSettings", input, admin.auth);
   await processPlatformJobs(1);
   assert.equal((await database.sqlOne<{ retained: boolean }>`select expires_at > now() as retained from app_private.notifications where id=${id}`).retained, true);
+});
+
+integrationTest("notification delivery derives expiry from the committed event timestamp", async () => {
+  const admin = await seedActor("retention-delivery-admin", { roles: ["platform-admin"] });
+  const created = asRecord(await callAction("createAnnouncement", { title: "Delayed announcement", content: "Delayed delivery" }, admin.auth));
+  const announcementId = String(asRecord(created.announcement).id);
+  await underPolicies(() => processInAppDeliveries(database, testEnvironment));
+  const notification = await database.sqlOne<{ correct: boolean }>`select expires_at = created_at + make_interval(
+    days => app_private.retention_integer(app_private.runtime_retention_config(), 'notificationsDays')) as correct
+    from app_private.notifications where target_id=${announcementId}`;
+  assert.equal(notification.correct, true);
 });
