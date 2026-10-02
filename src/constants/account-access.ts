@@ -1,5 +1,5 @@
 export const ACCOUNT_ACCESS_PRESETS = ["read_only", "reaction_only", "blocked"] as const;
-export const ACCOUNT_ACCESS_DURATIONS = ["7d", "30d", "custom", "permanent"] as const;
+export const ACCOUNT_ACCESS_DURATIONS = ["keep", "7d", "30d", "custom", "permanent"] as const;
 
 export const ACCOUNT_ACCESS_PRESET_KEYS = {
   blocked: "ui.accountAccess.preset.blocked",
@@ -8,6 +8,7 @@ export const ACCOUNT_ACCESS_PRESET_KEYS = {
 } as const;
 
 export const ACCOUNT_ACCESS_DURATION_KEYS = {
+  keep: "ui.accountAccess.duration.keep",
   "30d": "ui.accountAccess.duration.thirtyDays",
   "7d": "ui.accountAccess.duration.sevenDays",
   custom: "ui.accountAccess.duration.custom",

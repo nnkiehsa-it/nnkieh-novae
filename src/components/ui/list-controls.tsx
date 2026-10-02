@@ -195,12 +195,14 @@ export function ListNumberRow({
  * written here is prose and has to be read back at the width it was typed.
  */
 export function ListNoteRow({
+  disabled,
   label,
   maxLength,
   onChange,
   placeholder,
   value,
 }: {
+  disabled?: boolean;
   label: string;
   maxLength?: number;
   onChange: (value: string) => void;
@@ -212,6 +214,7 @@ export function ListNoteRow({
       <span className="text-[0.9375rem] leading-6">{label}</span>
       <Textarea
         aria-label={label}
+        disabled={disabled}
         className="min-h-24"
         maxLength={maxLength}
         onChange={(event) => onChange(event.target.value)}

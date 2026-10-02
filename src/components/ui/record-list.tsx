@@ -23,6 +23,7 @@ import { SkeletonRows } from "@/components/ui/skeleton-rows";
 export function RecordList({
   children,
   count,
+  disabled = false,
   emptyLabel,
   error,
   hasMore,
@@ -38,6 +39,7 @@ export function RecordList({
   children: React.ReactNode;
   /** How many records `children` draws; it decides which state the card shows. */
   count: number;
+  disabled?: boolean;
   emptyLabel: string;
   error?: string;
   hasMore: boolean;
@@ -58,7 +60,7 @@ export function RecordList({
         className="flex gap-2"
         onSubmit={(event) => {
           event.preventDefault();
-          onSearch();
+          if (!disabled && !loading) onSearch();
         }}
       >
         <div className="relative min-w-0 flex-1">
@@ -66,18 +68,19 @@ export function RecordList({
           <Input
             aria-label={searchPlaceholder}
             className="pl-9 pr-10"
+            disabled={disabled}
             onChange={(event) => onQueryChange(event.target.value)}
             placeholder={searchPlaceholder}
             value={query}
           />
           {query && onReset ? (
             <Button aria-label={translate("admin.resetSearch")} className="absolute right-1 top-1/2 -translate-y-1/2"
-              disabled={loading} onClick={onReset} size="icon-sm" type="button" variant="ghost">
+              disabled={loading || disabled} onClick={onReset} size="icon-sm" type="button" variant="ghost">
               <X aria-hidden className="size-4" />
             </Button>
           ) : null}
         </div>
-        <Button disabled={loading} type="submit" variant="secondary">
+        <Button disabled={loading || disabled} type="submit" variant="secondary">
           {loading ? <LoadingSpinner /> : translate("ui.common.search")}
         </Button>
       </form>
@@ -85,7 +88,7 @@ export function RecordList({
       {error && count > 0 ? (
         <div className="flex items-center gap-3" role="alert">
           <p className="min-w-0 flex-1 text-sm text-destructive">{error}</p>
-          <Button disabled={loading} onClick={onSearch} size="sm" variant="secondary">{translate("common.retry")}</Button>
+          <Button disabled={loading || disabled} onClick={onSearch} size="sm" variant="secondary">{translate("common.retry")}</Button>
         </div>
       ) : null}
 
@@ -108,7 +111,7 @@ export function RecordList({
         className="flex items-center justify-between gap-3"
       >
         <Button
-          disabled={loading || page === 0}
+          disabled={loading || disabled || page === 0}
           onClick={() => onPageChange(page - 1)}
           variant="secondary"
         >
@@ -118,7 +121,7 @@ export function RecordList({
           {page + 1}
         </span>
         <Button
-          disabled={loading || !hasMore}
+          disabled={loading || disabled || !hasMore}
           onClick={() => onPageChange(page + 1)}
           variant="secondary"
         >

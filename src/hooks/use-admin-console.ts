@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 
 import { useRememberedState } from "@/hooks/use-remembered-state";
 import { useAdminReading } from "@/hooks/use-admin-reading";
+import { useAdminMutation } from "@/hooks/use-admin-mutation";
 import {
   listAdminAudit,
   listAdminActivity,
@@ -18,9 +19,8 @@ import {
   type AdminOverviewData,
   type AdminOverviewWindow,
   type AdminUser,
-  type AccountAccessDuration,
-  type AccountAccessPreset,
   type AccountAccessRule,
+  type AccountAccessRuleInput,
 } from "@/services/admin-console";
 
 export type {
@@ -31,7 +31,11 @@ export type {
   AccountAccessDuration,
   AccountAccessPreset,
   AccountAccessRule,
+  AccountAccessRuleInput,
+  AccountAccessTargetType,
 } from "@/services/admin-console";
+
+export type AccountAccessMutation = Awaited<ReturnType<typeof saveAccountAccessRule>>;
 
 interface PagedReading<T> {
   activeQuery: string;
@@ -45,21 +49,23 @@ interface PagedReading<T> {
  *
  * Users and the audit log are the same reading over two tables, and they are
  * remembered the same way: the page that was last read stays on screen, and the
- * backend is asked again only when the reader searches, pages, or refreshes.
+ * backend refreshes it when the view opens, searches, pages, or refreshes.
  */
 function usePagedAdminList<T>(
   key: string,
   fetchPage: (query: string, page: number) => Promise<{ hasMore: boolean; rows: T[] }>,
   failureKey: string,
 ) {
-  const { cold, remember, value } = useRememberedState<PagedReading<T>>(key, {
+  const { remember, value } = useRememberedState<PagedReading<T>>(key, {
     activeQuery: "",
     hasMore: false,
     page: 0,
     rows: [],
   });
   const [query, setQuery] = useState(value.activeQuery);
-  const { error, loading, read } = useAdminReading(key, failureKey);
+  const { error, invalidate, isActive, loading, read } = useAdminReading(key, failureKey);
+  const current = useRef(value);
+  useEffect(() => { current.current = value; }, [value]);
 
   const load = useCallback(
     (nextQuery: string, nextPage = 0) => read(
@@ -77,20 +83,29 @@ function usePagedAdminList<T>(
   );
 
   useEffect(() => {
-    if (cold) void load("");
-  }, [cold, load]);
+    setQuery(current.current.activeQuery);
+    void load(current.current.activeQuery, current.current.page);
+  }, [load]);
+
+  const updateRows = useCallback((update: (rows: T[]) => T[]) => {
+    remember((previous) => ({ ...previous, rows: update(previous.rows) }));
+  }, [remember]);
 
   return {
     changePage: (next: number) => load(value.activeQuery, next),
     error,
     hasMore: value.hasMore,
+    invalidate,
+    isActive,
     load,
     loading,
     page: value.page,
     query,
     resetSearch: () => { setQuery(""); return load(""); },
     rows: value.rows,
+    refresh: () => load(value.activeQuery, value.page),
     setQuery,
+    updateRows,
   };
 }
 
@@ -139,36 +154,26 @@ export function useAdminUsers() {
     "ui.adminConsole.loadUsersFailed",
   );
   const [selectedUid, setSelectedUid] = useState("");
-  const [busy, setBusy] = useState("");
+  const mutation = useAdminMutation(list);
   const selected = list.rows.find((user) => user.uid === selectedUid) ?? null;
 
   const updateRestriction = useCallback(
-    async (user: AdminUser, input: {
-      duration: AccountAccessDuration;
-      durationHours?: number;
-      message: string;
-      preset: AccountAccessPreset;
-    } | null) => {
-      setBusy(user.uid);
-      try {
-        if (input) await saveAccountAccessRule({ ...input, targetType: "uid", targetValue: user.uid });
-        else await deleteAccountAccessRule("uid", user.uid);
-        toast.success(input === null
-          ? t("ui.adminConsole.restrictionCleared")
-          : t("ui.adminConsole.restrictionSet"));
-        await list.changePage(list.page);
-      } catch (caught) {
-        toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
-      } finally {
-        setBusy("");
-      }
-    },
-    [list, t],
+    (user: AdminUser, input: AccountAccessRuleInput | null) => mutation.run(user.uid,
+      () => input ? saveAccountAccessRule(input) : deleteAccountAccessRule("uid", user.uid, user.accessRuleRevision),
+      (result) => {
+        list.updateRows((rows) => rows.map((row) => row.uid === user.uid
+          ? { ...row, accessRule: result.effectiveRule, accessRuleRevision: result.revision } : row));
+        toast.success(t(input ? "ui.accountAccess.saved" : result.effectiveRule
+          ? "ui.accountAccess.individualRemovedPrefixRemains" : "ui.adminConsole.restrictionCleared"));
+      }),
+    [list, mutation, t],
   );
 
   return {
     ...list,
-    busy,
+    busy: mutation.busy,
+    mutationError: mutation.error,
+    refresh: () => { mutation.clearError(); return list.refresh(); },
     selected,
     setSelected: (user: AdminUser | null) => setSelectedUid(user?.uid ?? ""),
     updateRestriction,
@@ -178,37 +183,29 @@ export function useAdminUsers() {
 
 export function useAccountAccessRules() {
   const { t } = useI18n();
-  const { cold, remember, value } = useRememberedState<AccountAccessRule[]>("account-access-rules", []);
-  const { error, loading, read } = useAdminReading("account-access-rules", "ui.common.loadFailed");
-  const [busy, setBusy] = useState("");
-  const load = useCallback(() => read(listAccountAccessRules, remember), [read, remember]);
-  useEffect(() => { if (cold) void load(); }, [cold, load]);
-  const save = useCallback(async (input: Parameters<typeof saveAccountAccessRule>[0]) => {
-    setBusy(input.targetValue);
+  const { remember, value } = useRememberedState<AccountAccessRule[]>("account-access-rules", []);
+  const reading = useAdminReading("account-access-rules", "ui.common.loadFailed");
+  const { error, loading, read } = reading;
+  const mutation = useAdminMutation(reading);
+  const { clearError } = mutation;
+  const load = useCallback(() => { clearError(); return read(listAccountAccessRules, remember); }, [clearError, read, remember]);
+  useEffect(() => { void load(); }, [load]);
+  const apply = useCallback((result: Awaited<ReturnType<typeof saveAccountAccessRule>>) => {
+    remember((current) => {
+      const rest = current.filter((rule) => rule.targetType !== result.targetType || rule.targetValue !== result.targetValue);
+      return result.rule ? [...rest, result.rule].sort((a, b) => a.targetValue.localeCompare(b.targetValue)) : rest;
+    });
+  }, [remember]);
+  const save = (input: AccountAccessRuleInput) => mutation.run(input.targetValue,
+    () => saveAccountAccessRule(input), (result) => { apply(result); toast.success(t("ui.accountAccess.saved")); });
+  const remove = async (rule: AccountAccessRule) => {
     try {
-      await saveAccountAccessRule(input);
-      toast.success(t("ui.adminConsole.restrictionSet"));
-      await load();
-    } catch (caught) {
-      toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
-      throw caught;
-    } finally {
-      setBusy("");
-    }
-  }, [load, t]);
-  const remove = useCallback(async (rule: AccountAccessRule) => {
-    setBusy(rule.targetValue);
-    try {
-      await deleteAccountAccessRule(rule.targetType, rule.targetValue);
-      toast.success(t("ui.adminConsole.restrictionCleared"));
-      await load();
-    } catch (caught) {
-      toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
-    } finally {
-      setBusy("");
-    }
-  }, [load, t]);
-  return { busy, error, load, loading, remove, rules: value, save };
+      return await mutation.run(rule.targetValue,
+        () => deleteAccountAccessRule(rule.targetType, rule.targetValue, rule.revision),
+        (result) => { apply(result); toast.success(t("ui.accountAccess.removed")); });
+    } catch { return null; }
+  };
+  return { busy: mutation.busy, error, load, loading, mutationError: mutation.error, remove, rules: value, save };
 }
 
 export function useAdminAudit() {

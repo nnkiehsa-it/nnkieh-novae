@@ -4,9 +4,9 @@ import * as React from "react";
 import { ShieldOff } from "lucide-react";
 
 import { Sheet, SheetBody, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
 import { ListMutationRow, ListRow, ListSection, RowAction } from "@/components/ui/list";
-import { AccountAccessRuleFields, type AccountAccessRuleDraft } from "@/components/admin/account-access-rule-fields";
+import { AccountAccessEditor } from "@/components/admin/account-access-editor";
+import type { AccountAccessRuleInput, AccountAccessMutation } from "@/hooks/use-admin-console";
 import type { AdminUser } from "@/hooks/use-admin-console";
 import { useI18n, type TranslationParams } from "@/i18n";
 import { formatDate } from "@/lib/format";
@@ -27,26 +27,20 @@ export function responsibilityLabel(user: AdminUser, t: Translator) {
   return labels.length > 0 ? labels.join(" · ") : "—";
 }
 
-export function UserDetailsSheet({ busy, onClose, onRestrictionChange, user }: {
+export function UserDetailsSheet({ busy, error, onClose, onReload, onRestrictionChange, user }: {
   busy: boolean;
+  error: string;
   onClose: () => void;
-  onRestrictionChange: (input: Omit<AccountAccessRuleDraft, "durationHours"> & { durationHours?: number } | null) => void;
+  onReload: () => Promise<void>;
+  onRestrictionChange: (input: AccountAccessRuleInput | null) => Promise<AccountAccessMutation | null>;
   user: AdminUser | null;
 }) {
   const { t } = useI18n();
   const [shown, setShown] = React.useState<AdminUser | null>(user);
-  const [draft, setDraft] = React.useState<AccountAccessRuleDraft>({ duration: "7d", durationHours: 24, message: "", preset: "read_only" });
   if (user && user !== shown) setShown(user);
   const subject = user ?? shown;
   if (!subject) return null;
   const rule = subject.accessRule;
-  const updateDraft = (next: Partial<AccountAccessRuleDraft>) => setDraft((current) => ({ ...current, ...next }));
-  const submit = () => onRestrictionChange({
-    duration: draft.duration,
-    ...(draft.duration === "custom" ? { durationHours: draft.durationHours } : {}),
-    message: draft.message,
-    preset: draft.preset,
-  });
 
   return (
     <Sheet onOpenChange={(open) => !open && onClose()} open={Boolean(user)}>
@@ -63,12 +57,14 @@ export function UserDetailsSheet({ busy, onClose, onRestrictionChange, user }: {
         {rule ? <ListSection header={t("ui.accountAccess.effectiveRule")}>
           <ListRow label={rule.message} value={rule.permanent ? t("ui.accountAccess.duration.permanent") : rule.expiresAt ? formatDate(rule.expiresAt) : ""} />
           <ListRow label={t("ui.accountAccess.ruleSource")} value={rule.targetType === "uid" ? t("ui.accountAccess.source.uid") : `${rule.targetValue}*`} />
-          {rule.targetType === "uid" ? <ListMutationRow action={<RowAction busy={busy} icon={ShieldOff} label={t("ui.adminConsole.clearRestriction")} onClick={() => onRestrictionChange(null)} tone="destructive" />} label={t("ui.adminConsole.clearRestriction")} /> : null}
+          {rule.targetType === "uid" ? <ListMutationRow action={<RowAction busy={busy} icon={ShieldOff} label={t("ui.adminConsole.clearRestriction")} onClick={() => void onRestrictionChange(null).catch(() => {})} tone="destructive" />} label={t("ui.adminConsole.clearRestriction")} /> : null}
         </ListSection> : null}
-        {!subject.roles.includes("platform-admin") ? <ListSection header={rule?.targetType === "uid" ? t("ui.accountAccess.replaceRule") : t("ui.accountAccess.addOverride")}>
-          <AccountAccessRuleFields draft={draft} onChange={updateDraft} />
-          <div className="flex justify-end p-[var(--row-padding-block)]"><Button disabled={busy || !draft.message.trim()} onClick={submit}>{t("ui.accountAccess.apply")}</Button></div>
-        </ListSection> : <ListSection><ListRow label={t("ui.adminConsole.platformAdminRestrictionNotice")} /></ListSection>}
+        {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
+        {!subject.roles.includes("platform-admin") ? <>
+          <h2 className="text-xs font-medium text-muted-foreground">{t(rule?.targetType === "uid" ? "ui.accountAccess.replaceRule" : "ui.accountAccess.addOverride")}</h2>
+          <AccountAccessEditor busy={busy} key={subject.uid} onReload={onReload} onSave={onRestrictionChange}
+            revision={subject.accessRuleRevision} rule={rule?.targetType === "uid" ? rule : null} targetType="uid" targetValue={subject.uid} />
+        </> : <ListSection><ListRow label={t("ui.adminConsole.platformAdminRestrictionNotice")} /></ListSection>}
           </div>
         </SheetBody>
       </SheetContent>

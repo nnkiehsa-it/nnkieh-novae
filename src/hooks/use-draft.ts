@@ -7,6 +7,7 @@ import { diffDraft, rebaseDraft, type DraftChange } from "@/lib/draft-diff";
 import type { DraftStatus } from "@/types/draft";
 
 export interface DraftImpact {
+  confirmationRequired?: boolean;
   details: Record<string, number>;
   updatedDetails?: Record<string, number>;
   totalDeletedRows?: number;
@@ -129,7 +130,7 @@ export function useDraft<T>({
         setStatus("dirty");
         return;
       }
-      if (estimated && estimated.totalEstimatedRows > 0) {
+      if (estimated && (estimated.totalEstimatedRows > 0 || estimated.confirmationRequired)) {
         setReview({ impact: estimated, value, reason, baseline: session.baseline });
         setStatus("dirty");
         return;

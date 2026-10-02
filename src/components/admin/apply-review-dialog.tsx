@@ -28,6 +28,8 @@ import type { DraftImpact } from "@/hooks/use-draft";
 export function ApplyReviewDialog({
   changes,
   describeChange,
+  description,
+  confirmLabel,
   impact,
   describeImpact,
   formatChangeValue,
@@ -37,6 +39,8 @@ export function ApplyReviewDialog({
 }: {
   changes: DraftChange[];
   describeChange: (key: string) => React.ReactNode;
+  description?: React.ReactNode;
+  confirmLabel?: string;
   /** Estimated rows the change will disturb, keyed the way the backend reports. */
   impact?: DraftImpact | null;
   describeImpact?: (key: string) => React.ReactNode;
@@ -58,11 +62,11 @@ export function ApplyReviewDialog({
           </AlertDialogMedia>
           <AlertDialogTitle>{t("admin.reviewTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
-            {retention && impact.totalDeletedRows! > 0
+            {description ?? (retention && impact.totalDeletedRows! > 0
               ? t("admin.reviewImpactDescription", { count: impact.totalDeletedRows! })
               : impact && impact.totalEstimatedRows > 0
                 ? t(retention ? "admin.reviewExpiryDescription" : "admin.reviewUpdateDescription", { count: impact.totalUpdatedRows ?? impact.totalEstimatedRows })
-              : t("admin.reviewDescription", { count: changes.length })}
+              : t("admin.reviewDescription", { count: changes.length }))}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="max-h-64 overflow-y-auto rounded-xl bg-[var(--surface-inset)]">
@@ -105,7 +109,7 @@ export function ApplyReviewDialog({
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onCancel}>{t("common.cancel")}</AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm}>
-            {t(impact && impact.totalEstimatedRows > 0 ? "admin.reviewQueue" : "ui.common.save")}
+            {confirmLabel ?? t(impact && impact.totalEstimatedRows > 0 ? "admin.reviewQueue" : "ui.common.save")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

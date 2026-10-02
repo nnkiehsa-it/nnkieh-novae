@@ -25,11 +25,13 @@ type Translator = (key: string, params?: TranslationParams) => string;
  * the height it was.
  */
 function PersonRow({
+  disabled,
   onSelect,
   selected,
   t,
   user,
 }: {
+  disabled: boolean;
   onSelect: (user: AdminUser) => void;
   selected: boolean;
   t: Translator;
@@ -52,6 +54,7 @@ function PersonRow({
     <button
       className="t-row grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-[var(--row-padding-block)] text-left"
       data-selected={selected}
+      disabled={disabled}
       onClick={() => onSelect(user)}
       type="button"
     >
@@ -84,6 +87,7 @@ export function UserManagement() {
   return (
     <>
       <RecordList
+        disabled={Boolean(state.busy)}
         count={state.users.length}
         emptyLabel={t("ui.adminConsole.noUsers")}
         error={state.error}
@@ -100,6 +104,7 @@ export function UserManagement() {
         <div className="rule-grid px-[var(--row-gutter)]">
           {state.users.map((user) => (
             <PersonRow
+              disabled={Boolean(state.busy)}
               key={user.uid}
               onSelect={state.setSelected}
               selected={state.selected?.uid === user.uid}
@@ -110,12 +115,14 @@ export function UserManagement() {
         </div>
       </RecordList>
       <UserDetailsSheet
-        busy={state.busy === state.selected?.uid}
+        busy={Boolean(state.busy)}
+        error={state.mutationError}
+        onReload={state.refresh}
         onClose={() => {
           state.setSelected(null);
         }}
         onRestrictionChange={(input) =>
-          state.selected && void state.updateRestriction(state.selected, input)
+          state.selected ? state.updateRestriction(state.selected, input) : Promise.resolve(null)
         }
         user={state.selected}
       />

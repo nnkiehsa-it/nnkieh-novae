@@ -210,6 +210,9 @@ export const BACKEND_ACTION_POLICIES = {
   "listAccountAccessRules": {
     "group": "read"
   },
+  "previewAccountAccessRule": {
+    "group": "read"
+  },
   "saveAccountAccessRule": {
     "group": "admin-write"
   },
@@ -304,6 +307,7 @@ export const BACKEND_ACTION_NAMES = [
   'setUserAccessScope',
   'saveScopeMembers',
   'listAccountAccessRules',
+  'previewAccountAccessRule',
   'saveAccountAccessRule',
   'deleteAccountAccessRule',
   'toggleFacilityAffected',

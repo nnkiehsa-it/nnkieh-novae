@@ -4,15 +4,17 @@ import type { RoleCode } from '@/services/session-role';
 
 export type { AdminOverviewWindow };
 export type AccountAccessPreset = 'read_only' | 'reaction_only' | 'blocked';
-export type AccountAccessDuration = '7d' | '30d' | 'custom' | 'permanent';
+export type AccountAccessDuration = 'keep' | '7d' | '30d' | 'custom' | 'permanent';
 export type AccountAccessTargetType = 'uid' | 'email_prefix';
 
 export interface AccountAccessRule {
+  active: boolean;
   expiresAt: Date | null;
   matchCount: number;
   message: string;
   permanent: boolean;
   preset: AccountAccessPreset;
+  revision: string;
   targetType: AccountAccessTargetType;
   targetValue: string;
   updatedAt: Date;
@@ -31,6 +33,7 @@ interface AdminUserWire {
   createdAt: string;
   lastSeenAt: string | null;
   accessRule: AccountAccessRuleWire | null;
+  accessRuleRevision: string | null;
   roles: RoleCode[];
   managedIssueCategoryIds: string[];
   managedFacilityCategoryIds: string[];
@@ -44,6 +47,7 @@ export interface AdminUser {
   createdAt: Date;
   lastSeenAt: Date | null;
   accessRule: AccountAccessRule | null;
+  accessRuleRevision: string | null;
   roles: RoleCode[];
   managedIssueCategoryIds: string[];
   managedFacilityCategoryIds: string[];
@@ -140,6 +144,7 @@ export async function listAdminUsers(query = '', page = 0) {
       createdAt: new Date(user.createdAt),
       lastSeenAt: toDate(user.lastSeenAt),
       accessRule: user.accessRule ? normalizeAccessRule(user.accessRule) : null,
+      accessRuleRevision: user.accessRuleRevision,
       roles: Array.isArray(user.roles) ? user.roles : [],
       managedIssueCategoryIds: Array.isArray(user.managedIssueCategoryIds)
         ? user.managedIssueCategoryIds
@@ -166,28 +171,57 @@ export async function listAccountAccessRules() {
   return result.rules.map(normalizeAccessRule);
 }
 
-export async function saveAccountAccessRule(input: {
+export interface AccountAccessRuleInput {
   duration: AccountAccessDuration;
   durationHours?: number;
   message: string;
   preset: AccountAccessPreset;
+  revision: string | null;
   targetType: AccountAccessTargetType;
   targetValue: string;
-}) {
-  return await invokeBackendAction<
+}
+
+export async function previewAccountAccessRule(input: AccountAccessRuleInput) {
+  return invokeBackendAction<AccountAccessRuleInput, { matchingCount: number; targetValue: string }>(
+    'previewAccountAccessRule',
+  )(input);
+}
+
+export async function saveAccountAccessRule(input: AccountAccessRuleInput) {
+  const saved = await invokeBackendAction<
     typeof input,
-    { success: boolean }
+    AccountAccessMutationWire
   >('saveAccountAccessRule')({ ...input, message: input.message.trim(), targetValue: input.targetValue.trim() });
+  return normalizeAccessMutation(saved);
 }
 
 export async function deleteAccountAccessRule(
   targetType: AccountAccessTargetType,
   targetValue: string,
+  revision: string | null,
 ) {
-  return await invokeBackendAction<
-    { targetType: AccountAccessTargetType; targetValue: string },
-    { success: boolean }
-  >('deleteAccountAccessRule')({ targetType, targetValue });
+  const saved = await invokeBackendAction<
+    { targetType: AccountAccessTargetType; targetValue: string; revision: string | null },
+    AccountAccessMutationWire
+  >('deleteAccountAccessRule')({ targetType, targetValue, revision });
+  return normalizeAccessMutation(saved);
+}
+
+interface AccountAccessMutationWire {
+  deleted: boolean;
+  effectiveRule: AccountAccessRuleWire | null;
+  revision: string | null;
+  rule: AccountAccessRuleWire | null;
+  success: boolean;
+  targetType: AccountAccessTargetType;
+  targetValue: string;
+}
+
+function normalizeAccessMutation(result: AccountAccessMutationWire) {
+  return { ...result,
+    effectiveRule: result.effectiveRule ? normalizeAccessRule(result.effectiveRule) : null,
+    rule: result.rule ? normalizeAccessRule(result.rule) : null,
+  };
 }
 
 export async function listAdminAudit(query = '', page = 0) {
