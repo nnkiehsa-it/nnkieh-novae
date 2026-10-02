@@ -69,6 +69,7 @@
   "setUserAccessScope": { "group": "admin-write", "extraLimit": "roleWriteHourly" },
   "saveScopeMembers": { "group": "admin-write", "extraLimit": "roleWriteHourly", "unitsPath": "payload.changes" },
   "listAccountAccessRules": { "group": "read" },
+  "previewAccountAccessRule": { "group": "read" },
   "saveAccountAccessRule": { "group": "admin-write", "extraLimit": "moderationWriteHourly" },
   "deleteAccountAccessRule": { "group": "admin-write", "extraLimit": "moderationWriteHourly" },
   "toggleFacilityAffected": { "group": "sensitive-write", "extraLimit": "facilityAffectedToggleHourly" },

@@ -17,6 +17,7 @@ export function isUserAction(action: string) {
     || action === "saveScopeMembers"
     || action === "listAdminUsers"
     || action === "listAccountAccessRules"
+    || action === "previewAccountAccessRule"
     || action === "saveAccountAccessRule"
     || action === "deleteAccountAccessRule"
     || action === "listAdminAudit"
@@ -50,6 +51,7 @@ export async function handleUserAction(
   if (
     action === "listAdminUsers"
     || action === "listAccountAccessRules"
+    || action === "previewAccountAccessRule"
     || action === "saveAccountAccessRule"
     || action === "deleteAccountAccessRule"
     || action === "listAdminAudit"

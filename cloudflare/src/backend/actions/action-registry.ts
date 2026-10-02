@@ -124,6 +124,7 @@ export const backendActionDefinitions = [
   action("listAdminActivity", "user", "read", userHandler, { requiredPermission: "dashboard.view" }),
   action("getAdminOverview", "user", "read", userHandler, { requiredPermission: "dashboard.view" }),
   action("listAccountAccessRules", "user", "read", userHandler, { requiredPermission: "role.manage" }),
+  action("previewAccountAccessRule", "user", "read", userHandler, { requiredPermission: "role.manage" }),
   action("saveAccountAccessRule", "user", "admin-write", userHandler, { requiredPermission: "role.manage" }),
   action("deleteAccountAccessRule", "user", "admin-write", userHandler, { requiredPermission: "role.manage" }),
   action("setUserAccessScope", "user", "admin-write", userHandler, { requiredPermission: "role.manage" }),

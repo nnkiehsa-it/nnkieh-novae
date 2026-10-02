@@ -241,6 +241,9 @@ export const BACKEND_ACTION_POLICIES = {
   "listAccountAccessRules": {
     "group": "read"
   },
+  "previewAccountAccessRule": {
+    "group": "read"
+  },
   "saveAccountAccessRule": {
     "group": "admin-write",
     "extraLimit": "moderationWriteHourly"

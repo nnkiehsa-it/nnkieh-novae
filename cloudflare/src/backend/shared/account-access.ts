@@ -26,8 +26,8 @@ function emailLocalPart(email: string) {
   return email.slice(0, email.lastIndexOf("@")).trim().toLowerCase();
 }
 
-export function selectAccountAccessRule(
-  rules: AccountAccessRule[],
+export function selectAccountAccessRule<T extends AccountAccessRule>(
+  rules: T[],
   identity: { email: string; uid: string },
 ) {
   const exact = rules.find(

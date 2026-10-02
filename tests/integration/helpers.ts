@@ -6,6 +6,7 @@ import { afterAll, beforeEach, test } from "vitest";
 import { AppDatabaseClient } from "../../cloudflare/src/backend/database/client.ts";
 import { getBackendActionDefinition } from "../../cloudflare/src/backend/actions/action-registry.ts";
 import { loadCategoryManagement } from "../../cloudflare/src/backend/actions/category-catalog.ts";
+import { loadAccountAccessRules } from "../../cloudflare/src/backend/actions/account-access-rules.ts";
 import { resolveAuthContext } from "../../cloudflare/src/backend/actions/auth.ts";
 import { collectActionSegments, executeBackendActionSegments } from "../../cloudflare/src/backend/actions/execution.ts";
 import { withRuntimeEnvironment } from "../../cloudflare/src/backend/shared/env.ts";
@@ -275,6 +276,14 @@ export async function callAction(
     payload = { ...payload, revision: actionName.includes("Category") ? management.categoryRevision : management.platformRevision };
   }
   const opId = operationId || crypto.randomUUID();
+  if (payload.revision === undefined && ["saveAccountAccessRule", "deleteAccountAccessRule", "previewAccountAccessRule"].includes(actionName)
+    && auth.permissions.includes("role.manage")) {
+    const [rule] = await loadAccountAccessRules(database, {
+      targetType: payload.targetType as "uid" | "email_prefix",
+      targetValue: String(payload.targetValue).trim().toLowerCase(),
+    });
+    payload = { ...payload, revision: rule?.revision ?? null };
+  }
   // The finished answer, the way a caller reading the response stream sees it.
   return await underPolicies(() =>
     collectActionSegments(

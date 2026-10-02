@@ -4,16 +4,10 @@ import { requirePermission } from "./auth.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import type { Selected } from "../database/schema.ts";
 import {
-  listActiveAccountAccessRules,
   selectAccountAccessRule,
-  type AccountAccessPreset,
-  type AccountAccessTargetType,
 } from "../shared/account-access.ts";
+import { handleAccountAccessRuleAction, loadAccountAccessRules } from "./account-access-rules.ts";
 
-const ACCESS_PRESETS = new Set<AccountAccessPreset>(["read_only", "reaction_only", "blocked"]);
-const ACCESS_TARGET_TYPES = new Set<AccountAccessTargetType>(["uid", "email_prefix"]);
-const ACCESS_DURATIONS = new Set(["7d", "30d", "custom", "permanent"]);
-const EMAIL_PREFIX_PATTERN = /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+$/u;
 
 async function withAdminUserAvatars(
   data: unknown,
@@ -86,14 +80,15 @@ export async function handleUserAdminAction(
     });
     if (error) throw error;
     const withAvatars = await withAdminUserAvatars(data, auth.uid, database);
-    const rules = await listActiveAccountAccessRules(database);
+    const rules = await loadAccountAccessRules(database, { userUids: withAvatars.users.map((user) => asString(asRecord(user).uid)) });
     return {
       ...withAvatars,
       users: withAvatars.users.map((entry) => {
         const user = asRecord(entry);
         return {
           ...user,
-          accessRule: selectAccountAccessRule(rules, {
+          accessRuleRevision: rules.find((rule) => rule.targetType === "uid" && rule.targetValue === user.uid)?.revision ?? null,
+          accessRule: Array.isArray(user.roles) && user.roles.includes("platform-admin") ? null : selectAccountAccessRule(rules.filter((rule) => rule.active), {
             email: asString(user.email),
             uid: asString(user.uid),
           }),
@@ -103,78 +98,10 @@ export async function handleUserAdminAction(
   }
 
   if (action === "listAccountAccessRules") {
-    const { rows } = await database.sql<Selected<
-      "user_restrictions",
-      "uid" | "target_type" | "preset" | "reason" | "restricted_until" | "restricted_permanently" | "updated_at"
-    >>`select uid, target_type, preset, reason, restricted_until, restricted_permanently, updated_at
-        from app_private.user_restrictions order by target_type, uid`;
-    const rules = await Promise.all(rows.map(async (row) => {
-      const matchCount = row.target_type === "email_prefix"
-        ? (await database.sqlOne<{ count: number }>`select count(*)::integer count
-            from app_private.user_profiles
-            where lower(split_part(coalesce(email, ''), '@', 1)) like ${row.uid + "%"}`).count
-        : 1;
-      return {
-        expiresAt: row.restricted_until,
-        matchCount,
-        message: row.reason ?? "",
-        permanent: row.restricted_permanently,
-        preset: row.preset,
-        targetType: row.target_type,
-        targetValue: row.uid,
-        updatedAt: row.updated_at,
-      };
-    }));
-    return { rules };
+    return handleAccountAccessRuleAction(action, payload, auth, database);
   }
-
-  if (action === "saveAccountAccessRule") {
-    const targetType = asString(payload.targetType) as AccountAccessTargetType;
-    const preset = asString(payload.preset) as AccountAccessPreset;
-    const duration = asString(payload.duration);
-    const message = asString(payload.message).trim();
-    let targetValue = asString(payload.targetValue).trim();
-    if (!ACCESS_TARGET_TYPES.has(targetType) || !ACCESS_PRESETS.has(preset)
-      || !ACCESS_DURATIONS.has(duration) || !message) throw new Error("validation-required");
-    if (message.length > 500) throw new Error("validation-invalid");
-    if (targetType === "email_prefix") {
-      targetValue = targetValue.toLowerCase();
-      if (targetValue.length > 64 || !EMAIL_PREFIX_PATTERN.test(targetValue)) throw new Error("validation-invalid");
-    } else {
-      if (!targetValue || targetValue === auth.uid) throw new Error("permission-denied");
-      const target = await database.sqlMaybe<Selected<"user_profiles", "uid">>`
-        select p.uid from app_private.user_profiles p where p.uid = ${targetValue}
-          and not exists(select 1 from app_private.user_role_assignments r
-          where r.uid = p.uid and r.role_code = 'platform-admin') for update`;
-      if (!target) throw new Error("permission-denied");
-    }
-    const hours = duration === "custom" ? payload.durationHours : undefined;
-    if (duration === "custom" && (!Number.isInteger(hours) || Number(hours) < 1 || Number(hours) > 87_600)) {
-      throw new Error("validation-invalid");
-    }
-    const durationHours = duration === "7d" ? 168 : duration === "30d" ? 720 : Number(hours ?? 0);
-    const permanent = duration === "permanent";
-    const updated = await database.sqlOne<Selected<"user_restrictions", "restricted_until">>`
-      insert into app_private.user_restrictions
-        (uid, target_type, preset, restricted_until, restricted_permanently, reason, updated_by)
-      values (${targetValue}, ${targetType}, ${preset},
-        ${permanent ? null : new Date(Date.now() + durationHours * 3_600_000).toISOString()},
-        ${permanent}, ${message}, ${auth.uid})
-      on conflict (target_type, uid) do update set preset = excluded.preset,
-        restricted_until = excluded.restricted_until,
-        restricted_permanently = excluded.restricted_permanently,
-        reason = excluded.reason, updated_by = excluded.updated_by, updated_at = now()
-      returning restricted_until`;
-    return { expiresAt: updated.restricted_until, preset, success: true, targetType, targetValue };
-  }
-
-  if (action === "deleteAccountAccessRule") {
-    const targetType = asString(payload.targetType) as AccountAccessTargetType;
-    const targetValue = asString(payload.targetValue).trim();
-    if (!ACCESS_TARGET_TYPES.has(targetType) || !targetValue) throw new Error("validation-required");
-    await database.sql`delete from app_private.user_restrictions
-      where target_type = ${targetType} and uid = ${targetValue}`;
-    return { success: true, targetType, targetValue };
+  if (action === "saveAccountAccessRule" || action === "deleteAccountAccessRule" || action === "previewAccountAccessRule") {
+    return handleAccountAccessRuleAction(action, payload, auth, database);
   }
 
   if (action === "listAdminAudit") {
