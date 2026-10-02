@@ -1,4 +1,5 @@
 const messages = {
+  "admin.removeIndividualRuleDescription": "This removes the individual account rule. Matching email-prefix rules will still apply.",
   "admin.retentionPresetsTitle": "Retention presets",
   "admin.retentionPresetScope": "These presets reset all retention periods and automatic cleanup switches. Review the changes before saving.",
   "admin.categoryPrivacyLocked": "Visibility and author display are fixed after creation. Comments, support, images and other rules remain editable.",
@@ -65,7 +66,7 @@ const messages = {
   "admin.unitMinutes": "Min",
   "admin.unitCharacters": "Chars",
   "admin.quickSettings": "Quick settings",
-  "admin.presetHelp": "Applying a preset changes the draft. Review the fields before saving. Restore this section to return to its saved settings.",
+  "admin.presetHelp": "Applying a preset changes the draft. Review the settings and changes before saving. Restore this section to return to its saved settings.",
   "admin.presetMatching": "Current settings",
   "admin.presetStandard": "Standard (recommended)",
   "admin.presetCompact": "Compact",

@@ -1,4 +1,5 @@
 const messages = {
+  "admin.removeIndividualRuleDescription": "會移除這個帳號的個別存取規則。符合的 Email 前綴規則仍會生效。",
   "admin.retentionPresetsTitle": "整體資料保留檔位",
   "admin.retentionPresetScope": "這裡的檔位會重置所有資料保留期限與自動清理開關。套用後請檢查變更摘要，再儲存。",
   "admin.categoryPrivacyLocked": "分類建立後，可見性與作者顯示方式固定；留言、附議與圖片等其他規則仍可調整。",

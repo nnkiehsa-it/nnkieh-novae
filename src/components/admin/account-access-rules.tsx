@@ -10,6 +10,7 @@ import { ApplyReviewDialog } from "@/components/admin/apply-review-dialog";
 import { ErrorState } from "@/components/ui/page-state";
 import { useAccountAccessRules, type AccountAccessRule } from "@/hooks/use-admin-console";
 import { useI18n } from "@/i18n";
+import { useAdminDraftExit } from "@/hooks/use-admin-draft-exit";
 import { formatDate } from "@/lib/format";
 import { ACCOUNT_ACCESS_PRESET_KEYS } from "@/constants/account-access";
 
@@ -20,6 +21,7 @@ export function AccountAccessRules() {
   const [removing, setRemoving] = React.useState<AccountAccessRule | null>(null);
   const rule = state.rules.find((item) => item.targetType === "email_prefix" && item.targetValue === editing) ?? null;
   const disabled = Boolean(state.busy) || state.loading;
+  const exit = useAdminDraftExit("account-access-email_prefix", Boolean(state.busy), () => setEditing(undefined));
   if (state.error && state.rules.length === 0) return <ErrorState error={state.error} onRetry={() => void state.load()} />;
   return <>
     <div className="flex justify-end gap-2">
@@ -37,7 +39,7 @@ export function AccountAccessRules() {
       />)}
       {!state.loading && !state.error && state.rules.every((item) => item.targetType !== "email_prefix") ? <ListRow label={t("ui.accountAccess.noPrefixRules")} /> : null}
     </ListSection>
-    <Sheet onOpenChange={(open) => !open && setEditing(undefined)} open={editing !== undefined}>
+    <Sheet onOpenChange={(open) => !open && exit.requestClose()} open={editing !== undefined}>
       <SheetContent>
         <SheetHeader><SheetTitle>{editing === null ? t("ui.accountAccess.addPrefix") : t("ui.accountAccess.editPrefix")}</SheetTitle><SheetDescription>{t("ui.accountAccess.prefixDescription")}</SheetDescription></SheetHeader>
         <SheetBody><div className="grid gap-5">
@@ -47,6 +49,7 @@ export function AccountAccessRules() {
         </div></SheetBody>
       </SheetContent>
     </Sheet>
+    {exit.prompt}
     <ApplyReviewDialog changes={removing ? [{ key: "prefix", before: `${removing.targetValue}*`, after: null }] : []}
       describeChange={() => t("ui.accountAccess.prefixLabel")} description={t("ui.accountAccess.removePrefixDescription")}
       confirmLabel={t("ui.accountAccess.deleteRule")} onCancel={() => setRemoving(null)}

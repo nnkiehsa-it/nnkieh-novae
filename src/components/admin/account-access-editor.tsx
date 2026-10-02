@@ -17,7 +17,7 @@ export function AccountAccessEditor({ busy, missing = false, onReload, onSave, o
 } & AccountAccessDraftOptions) {
   const { t } = useI18n();
   const draft = useAccountAccessDraft({ onSave, onSaved, revision, rule, targetType, targetValue });
-  useUnsavedChanges(draft.changes.length, draft.reset);
+  useUnsavedChanges(draft.changes.length, draft.reset, `account-access-${targetType}`);
   if (!draft.value) return null;
   const value = draft.value;
   const saving = busy || draft.status === "saving";

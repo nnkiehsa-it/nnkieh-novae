@@ -72,9 +72,9 @@ test('platform admin can restrict and restore an ordinary account', async ({ bro
   await admin.page.getByRole('button', { name: 'Search', exact: true }).click();
   await admin.page.getByText(E2E_USERS.other).filter({ visible: true }).click();
   await expect(admin.page.getByText('Effective rule')).toBeVisible();
-  await expectBackendAction(admin.page, 'deleteAccountAccessRule', async () => {
-    await admin.page.getByRole('button', { name: 'Clear restriction' }).click();
-  });
+  await admin.page.getByRole('button', { name: 'Clear restriction', exact: true }).click();
+  await expectBackendAction(admin.page, 'deleteAccountAccessRule', () =>
+    admin.page.getByRole('alertdialog').getByRole('button', { name: 'Clear restriction', exact: true }).click());
   await expect(admin.page.getByLabel('Restriction reason / displayed message')).toBeVisible();
   await admin.context.close();
 });

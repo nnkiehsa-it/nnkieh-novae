@@ -6,6 +6,8 @@ import { ShieldOff } from "lucide-react";
 import { Sheet, SheetBody, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ListMutationRow, ListRow, ListSection, RowAction } from "@/components/ui/list";
 import { AccountAccessEditor } from "@/components/admin/account-access-editor";
+import { ApplyReviewDialog } from "@/components/admin/apply-review-dialog";
+import { useAdminDraftExit } from "@/hooks/use-admin-draft-exit";
 import type { AccountAccessRuleInput, AccountAccessMutation } from "@/hooks/use-admin-console";
 import type { AdminUser } from "@/hooks/use-admin-console";
 import { useI18n, type TranslationParams } from "@/i18n";
@@ -37,13 +39,15 @@ export function UserDetailsSheet({ busy, error, onClose, onReload, onRestriction
 }) {
   const { t } = useI18n();
   const [shown, setShown] = React.useState<AdminUser | null>(user);
+  const [removing, setRemoving] = React.useState(false);
+  const exit = useAdminDraftExit("account-access-uid", busy, onClose);
   if (user && user !== shown) setShown(user);
   const subject = user ?? shown;
   if (!subject) return null;
   const rule = subject.accessRule;
 
   return (
-    <Sheet onOpenChange={(open) => !open && onClose()} open={Boolean(user)}>
+    <><Sheet onOpenChange={(open) => !open && exit.requestClose()} open={Boolean(user)}>
       <SheetContent>
         <SheetHeader><SheetTitle>{subject.name}</SheetTitle><SheetDescription>{subject.email ?? subject.uid}</SheetDescription></SheetHeader>
         <SheetBody>
@@ -57,7 +61,7 @@ export function UserDetailsSheet({ busy, error, onClose, onReload, onRestriction
         {rule ? <ListSection header={t("ui.accountAccess.effectiveRule")}>
           <ListRow label={rule.message} value={rule.permanent ? t("ui.accountAccess.duration.permanent") : rule.expiresAt ? formatDate(rule.expiresAt) : ""} />
           <ListRow label={t("ui.accountAccess.ruleSource")} value={rule.targetType === "uid" ? t("ui.accountAccess.source.uid") : `${rule.targetValue}*`} />
-          {rule.targetType === "uid" ? <ListMutationRow action={<RowAction busy={busy} icon={ShieldOff} label={t("ui.adminConsole.clearRestriction")} onClick={() => void onRestrictionChange(null).catch(() => {})} tone="destructive" />} label={t("ui.adminConsole.clearRestriction")} /> : null}
+          {rule.targetType === "uid" ? <ListMutationRow action={<RowAction busy={busy} icon={ShieldOff} label={t("ui.adminConsole.clearRestriction")} onClick={() => setRemoving(true)} tone="destructive" />} label={t("ui.adminConsole.clearRestriction")} /> : null}
         </ListSection> : null}
         {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
         {!subject.roles.includes("platform-admin") ? <>
@@ -69,5 +73,11 @@ export function UserDetailsSheet({ busy, error, onClose, onReload, onRestriction
         </SheetBody>
       </SheetContent>
     </Sheet>
+    {exit.prompt}
+    <ApplyReviewDialog open={removing} changes={rule ? [{ key: "rule", before: t(ACCOUNT_ACCESS_PRESET_KEYS[rule.preset]), after: null }] : []}
+      describeChange={() => subject.email ?? subject.uid} description={t("admin.removeIndividualRuleDescription")}
+      confirmLabel={t("ui.adminConsole.clearRestriction")} onCancel={() => setRemoving(false)}
+      onConfirm={() => { setRemoving(false); void onRestrictionChange(null).catch(() => {}); }} />
+    </>
   );
 }
