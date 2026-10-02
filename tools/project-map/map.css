@@ -57,7 +57,8 @@ summary .count { float: right; color: var(--muted); font-size: 11px; font-weight
 #connections { position: absolute; left: 0; top: 0; overflow: visible; }
 .connection { fill: none; stroke: #8c9cab; stroke-width: 1.5; }
 .connection.async { stroke-dasharray: 6 5; }
-.edge-label { fill: var(--muted); font-size: 11px; text-anchor: middle; paint-order: stroke; stroke: var(--ground); stroke-width: 6px; stroke-linejoin: round; }
+.edge-label { fill: var(--muted); font-size: 11px; paint-order: stroke; stroke: var(--ground); stroke-width: 6px; stroke-linejoin: round; }
+.path-label { position: absolute; width: 276px; color: var(--muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
 .node { position: absolute; width: 276px; height: 176px; padding: var(--space-4); text-align: left; border-radius: var(--card-radius); background: var(--paper); border: 1px solid #c5d0dc; display: flex; flex-direction: column; gap: var(--space-2); cursor: pointer; }
 .node:hover:not(:disabled) { border-color: var(--accent); color: var(--ink); background: var(--paper); }
 .node.selected { border: 2px solid var(--accent); padding: 15px; background: var(--wash); }

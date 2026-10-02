@@ -70,9 +70,11 @@ $('nav-tree').onclick=event=>{
 };
 
 function positions() {
-  return state.flow.nodes.map((_,i)=>{
-    if(window.innerWidth<=640) return {x:0,y:i*250};
-    return {x:i*370,y:0};
+  let sectionGap=0;
+  return state.flow.nodes.map((node,i)=>{
+    if(i>0&&node.pathStart)sectionGap+=100;
+    if(window.innerWidth<=640) return {x:0,y:i*316+sectionGap};
+    return {x:i*456+sectionGap,y:0};
   });
 }
 function dimensions() {
@@ -81,39 +83,28 @@ function dimensions() {
 }
 function edgeMarkup(edge,points) {
   const a=points[edge.from],b=points[edge.to];
-  const ac={x:a.x+cardSize.width/2,y:a.y+cardSize.height/2};
-  const bc={x:b.x+cardSize.width/2,y:b.y+cardSize.height/2};
-  let start,end,d;
-  if(Math.abs(edge.to-edge.from)>1) {
-    // 關係圖的跨節點連線繞過卡片；操作順序本身仍只有向右／向下。
-    const lane=window.innerWidth<=640?28+((edge.from+edge.to)%4)*8:56+((edge.from+edge.to)%4)*28;
-    if(window.innerWidth<=640) {
-      start={x:a.x+cardSize.width,y:ac.y};end={x:b.x+cardSize.width,y:bc.y};
-      d=`M${start.x},${start.y} C${start.x+lane},${start.y} ${end.x+lane},${end.y} ${end.x},${end.y}`;
-    } else {
-      start={x:ac.x,y:a.y+cardSize.height};end={x:bc.x,y:b.y+cardSize.height};
-      d=`M${start.x},${start.y} C${start.x},${start.y+lane} ${end.x},${end.y+lane} ${end.x},${end.y}`;
-    }
-  } else if (Math.abs(bc.x-ac.x)>Math.abs(bc.y-ac.y)) {
-    const direction=bc.x>ac.x?1:-1;
-    start={x:ac.x+direction*cardSize.width/2,y:ac.y};
-    end={x:bc.x-direction*cardSize.width/2,y:bc.y};
-    const bend=Math.max(38,Math.abs(end.x-start.x)/2);
-    d=`M${start.x},${start.y} C${start.x+direction*bend},${start.y} ${end.x-direction*bend},${end.y} ${end.x},${end.y}`;
-  } else {
-    const direction=bc.y>ac.y?1:-1;
-    start={x:ac.x,y:ac.y+direction*cardSize.height/2};
-    end={x:bc.x,y:bc.y-direction*cardSize.height/2};
-    const bend=Math.max(38,Math.abs(end.y-start.y)/2);
-    d=`M${start.x},${start.y} C${start.x},${start.y+direction*bend} ${end.x},${end.y-direction*bend} ${end.x},${end.y}`;
+  const mobile=window.innerWidth<=640;
+  const start=mobile?{x:a.x+cardSize.width/2,y:a.y+cardSize.height}:{x:a.x+cardSize.width,y:a.y+cardSize.height/2};
+  const end=mobile?{x:b.x+cardSize.width/2,y:b.y}:{x:b.x,y:b.y+cardSize.height/2};
+  const lines=wrapLabel(edge.label,mobile?10:14);
+  const labelX=mobile?start.x+14:(start.x+end.x)/2;
+  const labelY=mobile?(start.y+end.y)/2-(lines.length-1)*7:start.y-12-(lines.length-1)*14;
+  const spans=lines.map((line,i)=>'<tspan x="'+labelX+'" y="'+(labelY+i*14)+'">'+esc(line)+'</tspan>').join('');
+  return '<path class="connection'+(edge.async?' async':'')+'" d="M'+start.x+','+start.y+' L'+end.x+','+end.y+'" marker-end="url(#arrow)"/><text class="edge-label" text-anchor="'+(mobile?'start':'middle')+'"><title>'+esc(edge.label)+'</title>'+spans+'</text>';
+}
+function wrapLabel(text,width) {
+  const lines=[];let line='',units=0;
+  for(const character of text) {
+    const size=/[\x00-\x7f]/.test(character) ? 0.55 : 1;
+    if(units+size>width&&line){lines.push(line.trim());line='';units=0;}
+    line+=character;units+=size;
   }
-  const labelX=window.innerWidth<=640&&Math.abs(edge.to-edge.from)>1?cardSize.width-24:(start.x+end.x)/2;
-  const labelY=(start.y+end.y)/2-8;
-  return '<path class="connection'+(edge.async?' async':'')+'" d="'+d+'" marker-end="url(#arrow)"/><text class="edge-label" x="'+labelX+'" y="'+labelY+'">'+esc(edge.label)+'</text>';
+  if(line)lines.push(line.trim());
+  return lines;
 }
 function renderGraph() {
   const points=positions(),size=dimensions();
-  $('cards').innerHTML=state.flow.nodes.map((n,i)=>'<button class="node" data-node="'+i+'" style="left:'+points[i].x+'px;top:'+points[i].y+'px" aria-pressed="false" aria-label="'+esc((state.flow.kind==='topology'?'節點 ':'步驟 ')+(i+1)+'：'+n.title)+'"><span class="node-meta">'+(state.flow.kind==='topology'?'':'<span>'+(i+1)+'</span>')+'<span class="layer '+n.layer+'">'+layerLabels[n.layer]+'</span></span><span class="node-title">'+esc(n.title)+'</span><span class="node-text">'+esc(n.text)+'</span></button>').join('');
+  $('cards').innerHTML=state.flow.nodes.map((n,i)=>(n.pathStart?'<div class="path-label" style="left:'+points[i].x+'px;top:'+(points[i].y-48)+'px">'+esc(n.pathTitle)+'</div>':'')+'<button class="node" data-node="'+i+'" style="left:'+points[i].x+'px;top:'+points[i].y+'px" aria-pressed="false" aria-label="'+esc('步驟 '+(i+1)+'：'+n.title)+'"><span class="node-meta"><span>'+(i+1)+'</span><span class="layer '+n.layer+'">'+layerLabels[n.layer]+'</span></span><span class="node-title">'+esc(n.title)+'</span><span class="node-text">'+esc(n.text)+'</span></button>').join('');
   $('connections').setAttribute('width',size.width);
   $('connections').setAttribute('height',size.height);
   $('connections').innerHTML='<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="#8c9cab"/></marker></defs>'+state.flow.edges.map(e=>edgeMarkup(e,points)).join('');
@@ -178,7 +169,7 @@ function sourceLinks(refs) {
 }
 function renderInspector() {
   const index=state.selected,n=state.flow.nodes[index];
-  $('inspector-context').textContent=state.flow.title+' · '+(state.flow.kind==='topology'?'節點':'步驟')+' '+(index+1);
+  $('inspector-context').textContent=state.flow.title+(n.pathTitle?' · '+n.pathTitle:'')+' · 步驟 '+(index+1);
   let html='<h2>'+esc(n.title)+'</h2><p>'+esc(n.text)+'</p>';
   if (n.code) html+='<pre class="sql-snippet">'+esc(n.code)+'</pre>';
   if (state.flow.setting) {
