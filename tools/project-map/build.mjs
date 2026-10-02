@@ -8,14 +8,17 @@ import { createHash } from 'node:crypto';
 import { Script } from 'node:vm';
 import { parse as babelParse } from '@babel/parser';
 import { actions, flows, groups, categorySettings, policyDescriptions, retentionDescriptions, triggerDescriptions } from './content.mjs';
+import { architectureFlows } from './architecture.mjs';
+import { modelDescriptions, makeModelFlows, makeModelOverview } from './models.mjs';
+import { makeSettingFlows, retentionBehavior } from './settings.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../..');
 const read = p => fs.readFileSync(path.join(root, p), 'utf8');
 const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
 const output = path.resolve(process.argv[2] || path.join(process.env.USERPROFILE, 'Desktop/Novae-程式流程地圖.html'));
-const sourcePaths = git('ls-files', 'src', 'cloudflare/src', 'cloudflare/generated', 'config', 'database/migrations', 'scripts', '.github/workflows', 'next.config.mjs', 'package.json')
-  .split('\n').filter(p => /\.(?:ts|tsx|mjs|json|sql|yml|css|cjs)$/.test(p));
+const sourcePaths = git('ls-files', 'src', 'cloudflare/src', 'cloudflare/generated', 'config', 'database/migrations', 'scripts', '.github/workflows', 'next.config.mjs', 'package.json', 'README.md', 'docs/architecture.md', 'docs/backend-and-data.md', 'docs/admin-console-review.md', 'docs/product.md')
+  .split('\n').filter(p => /\.(?:ts|tsx|mjs|json|sql|yml|css|cjs|md)$/.test(p));
 // 僅已追蹤程式／設定；不讀 .env、credential、DB、使用者資料或 seed。
 const sources = Object.fromEntries(sourcePaths.map(p => [p, { text: read(p), sha256: createHash('sha256').update(read(p)).digest('hex') }]));
 const wrangler = JSON.parse(read('cloudflare/wrangler.json'));
@@ -28,8 +31,13 @@ const ref = (p, anchor) => {
 };
 const registryPath = 'cloudflare/src/backend/actions/action-registry.ts';
 const registry = read(registryPath);
-const definitions = [...registry.matchAll(/action\("([^"]+)",\s*"([^"]+)",\s*"([^"]+)"[^\n]*/g)]
-  .map(m => ({ id: m[1], domain: m[2], rateGroup: m[3], permission: /requiredPermission: "([^"]+)"/.exec(m[0])?.[1], line: registry.slice(0, m.index).split('\n').length }));
+const definitions = [];
+visit(parse(registryPath), candidate => {
+  if (candidate.type !== 'CallExpression' || candidate.callee.name !== 'action' || candidate.arguments[0]?.type !== 'StringLiteral') return;
+  const [id,domain,rateGroup,,options] = candidate.arguments;
+  const permission = options?.properties.find(p=>p.key?.name==='requiredPermission')?.value.value;
+  definitions.push({id:id.value,domain:domain.value,rateGroup:rateGroup.value,permission,line:candidate.loc.start.line});
+});
 const policies = JSON.parse(read('config/backend-actions.config.json'));
 if (definitions.length !== Object.keys(policies).length) throw new Error('action registry 與 config 數量不一致');
 for (const d of definitions) if (!actions[d.id] || !policies[d.id]) throw new Error('尚未解說 action：' + d.id);
@@ -90,12 +98,10 @@ const actionFlows = definitions.map(d => {
   }
   return { ...a, ...d, id: d.id, summary: a.logic, timing: a.timing, nodes, refs: undefined, edges: nodes.slice(1).map((_, i) => ({ from: i, to: i + 1, label: i === 6 ? '提交後非同步' : '接著', async: i === 6 })), notes: [a.timing, ...(events.some(e => e.destinations.includes('realtime')) && ['platform', 'category', 'user'].includes(d.domain) ? ['注意：platform／category／user 的部分事件雖設 realtime destination，現有 consumer 沒有對應訊息；看「管理設定：立即、快照、批次與重新載入」。'] : [])] };
 });
-for (const f of flows) {
-  f.nodes.forEach(n => n.refs = n.refs.map(p => ref(p)));
-  f.edges = f.nodes.slice(1).map((_, i) => ({ from: i, to: i + 1, label: '接著', async: f.nodes[i + 1].layer === 'async' }));
+for (const f of [...flows,...architectureFlows]) {
+  f.nodes.forEach(n => n.refs = n.refs.map(p => typeof p === 'string' ? ref(p) : p));
+  f.edges ??= f.nodes.slice(1).map((_, i) => ({ from: i, to: i + 1, label: '接著', async: f.nodes[i + 1].layer === 'async' }));
 }
-// overview 在回應與 Queue 之間是分岔，不讓讀者誤以為 browser 送 Queue。
-flows[0].edges = [ [0,1,'操作'],[1,2,'I/O'],[2,3,'HTTPS'],[3,4,'授權後查/寫'],[4,5,'同transaction'],[5,6,'提交後回應'],[5,7,'write成功喚醒',true],[7,8,'claim工作',true],[8,9,'訊號與通知',true],[9,2,'必要時再讀'] ].map(([from,to,label,async=false])=>({from,to,label,async}));
 // 對其他操作圖，原response與Queue也是由交易分岔。
 for (const f of actionFlows) if (f.nodes.length === 8) f.edges[f.edges.length - 1] = { from: 5, to: 7, label: '交易提交後', async: true };
 
@@ -105,11 +111,11 @@ const settings = categorySettings.map(([key,title,store,effect,timing,target])=>
 for (const [key, spec] of Object.entries(operationSpecs)) {
   if (!policyDescriptions[key]) throw new Error('缺政策解說：' + key);
   const matches = sourcePaths.filter(p => !p.includes('/generated/') && !p.endsWith('.sql') && sources[p].text.includes(key));
-  settings.push({ key, title: policyDescriptions[key], store: 'runtime_settings.operations_settings', effect: policyDescriptions[key], timing: spec.group === 'client' ? 'Worker snapshot最多60秒；browser在下一次成功回應遇到新revision後重新整理，後續讀取／計時使用新值' : spec.group === 'logs' ? 'Worker政策snapshot更新後，下一次maintenance執行清理' : spec.group === 'jobs' ? 'Worker政策snapshot更新後，下一次Queue sweep採新batch大小' : 'Worker isolate最多60秒重新整理；已執行request使用原snapshot，後續操作使用新值', initial: spec.value, range: spec.min + '–' + spec.max, target: 'saveOperationPolicies', section: '營運政策 · ' + spec.group, refs: matches.slice(0, 5).map(p => ref(p, key)) });
+  settings.push({ key, title: policyDescriptions[key], store: 'runtime_settings.operations_settings', effect: policyDescriptions[key], timing: spec.group === 'client' ? 'Worker snapshot最多60秒；browser在下一次成功回應遇到新revision後重新整理，後續讀取／計時使用新值' : spec.group === 'logs' ? 'Worker政策snapshot更新後，下一次maintenance執行清理' : spec.group === 'jobs' ? 'Worker政策snapshot更新後，下一次Queue sweep採新batch大小' : 'Worker isolate最多60秒重新整理；已執行request使用原snapshot，後續操作使用新值', initial: spec.value, range: spec.min + '–' + spec.max, target: 'saveOperationPolicies', section: '營運政策 · ' + spec.group, policyGroup:spec.group, refs: [ref('config/operations.config.json','"'+key+'"'),...matches.slice(0, 5).map(p => ref(p, key))] });
 }
 for (const [key, initial] of Object.entries(JSON.parse(read('config/data-retention.config.json')))) {
   if (!retentionDescriptions[key]) throw new Error('缺retention解說：' + key);
-  settings.push({ key, title: retentionDescriptions[key], store:'runtime_settings.data_retention_settings', effect:retentionDescriptions[key], timing: key === 'pushTokenConfirmationDays' ? 'browser下次bootstrap種入runtime；後續heartbeat判斷' : '儲存後排retention_cleanup；既有到期欄位分批重算，新紀錄在建立／完成／失敗時以當時政策設expires_at；job完成與外部刪除分開', initial, range:typeof initial === 'boolean' ? '開／關' : key.endsWith('Hours') ? '1–87600小時' : '1–3650天', target:'retention',section:'資料保留', refs:[ref('config/data-retention.config.json', '"'+key+'"')] });
+  settings.push({ key, title: retentionDescriptions[key], store:'runtime_settings.data_retention_settings', effect:retentionDescriptions[key], timing:retentionBehavior(key).timing, initial, range:typeof initial === 'boolean' ? '開／關' : key.endsWith('Hours') ? '1–87600小時' : '1–3650天', target:'savePlatformSettings',section:'資料保留', refs:[ref('config/data-retention.config.json', '"'+key+'"'),ref('database/migrations/0054_scoped_retention_policy_changes.sql','retention_change_scopes'),ref('database/migrations/0055_notification_expiry_event_time.sql')] });
 }
 for (const item of settings.filter(s=>!s.refs.length)) {
   const action = actions[item.target];
@@ -122,6 +128,48 @@ for (const item of settings.filter(s=>!s.refs.length)) {
     item.refs = [...new Map(target.nodes.flatMap(n=>n.refs).map(r=>[r.path,r])).values()].slice(0,4);
   }
 }
+for (const s of settings) {
+  if (s.target==='auth-login'||s.target==='cron') s.section='部署配置';
+  else if (s.target==='saveScopeMembers'||s.target==='saveAccountAccessRule') s.section='帳號與權限';
+  else if (s.target==='updatePlatformAdminNotificationPreferences') s.section='管理員個人偏好';
+  else if (s.target==='savePlatformSettings' && s.store!=='runtime_settings.data_retention_settings') s.section='平台圖片設定';
+  else if (s.store!=='runtime_settings.operations_settings' && s.store!=='runtime_settings.data_retention_settings') s.section='內容與分類';
+}
+
+// 生成契約涵蓋所有現存表與 view；不能以舊 baseline 的已退役表當成現在模型。
+const modelPath='cloudflare/src/backend/database/schema.generated.ts';
+const schemaAst=parse(modelPath);
+const schemaInterface=schemaAst.program.body.find(n=>n.type==='ExportNamedDeclaration'&&n.declaration?.id?.name==='GeneratedDatabaseTables').declaration;
+const models=schemaInterface.body.body.map(p=>{
+  const name=p.key.value, description=modelDescriptions[name];
+  if (!description) throw new Error('缺資料模型解說：'+name);
+  const columns=p.typeAnnotation.typeAnnotation.members.map(c=>({name:c.key.value,type:sources[modelPath].text.slice(c.typeAnnotation.typeAnnotation.start,c.typeAnnotation.typeAnnotation.end)}));
+  return {name,...description,columns,foreignKeys:[],refs:[ref(modelPath,'"'+name+'":')]};
+});
+for (const name of Object.keys(modelDescriptions)) if (!models.some(m=>m.name===name)) throw new Error('已移除的資料模型：'+name);
+const identifiers='[\\w".]+';
+const foreignKeys=new Map();
+for (const p of sourcePaths.filter(p=>p.endsWith('.sql')).sort()) {
+  const sql=sources[p].text;
+  const tableStatements=new RegExp('(?:CREATE\\s+TABLE(?:\\s+IF\\s+NOT\\s+EXISTS)?|ALTER\\s+TABLE(?:\\s+ONLY)?)\\s+('+identifiers+')([\\s\\S]*?);','gi');
+  for (const statement of sql.matchAll(tableStatements)) {
+    const table=statement[1].replaceAll('"','').split('.').at(-1),body=statement[2];
+    for (const drop of body.matchAll(/DROP\s+CONSTRAINT\s+(?:IF\s+EXISTS\s+)?([\w"]+)/gi)) foreignKeys.delete(table+'.'+drop[1].replaceAll('"',''));
+    const pattern=new RegExp('(?:CONSTRAINT\\s+([\\w"]+)\\s+)?FOREIGN\\s+KEY\\s*\\(([^)]+)\\)\\s+REFERENCES\\s+('+identifiers+')\\s*\\(([^)]+)\\)(?:\\s+ON\\s+DELETE\\s+(CASCADE|RESTRICT|SET\\s+NULL|NO\\s+ACTION))?','gi');
+    for (const fk of body.matchAll(pattern)) {
+      const target=fk[3].replaceAll('"','').split('.').at(-1),column=fk[2].replaceAll('"',''),targetColumn=fk[4].replaceAll('"','');
+      foreignKeys.set(table+'.'+(fk[1]?.replaceAll('"','')||column),{table,target,column,targetColumn,delete:fk[5]||'SQL 預設',refs:[ref(p,fk[0])],label:column+' → '+target+'.'+targetColumn});
+    }
+  }
+}
+for (const fk of foreignKeys.values()) {
+  const source=models.find(m=>m.name===fk.table),target=models.find(m=>m.name===fk.target);
+  if (!source||!target||!source.columns.some(c=>c.name===fk.column)) continue;
+  source.foreignKeys.push(fk);
+  target.foreignKeys.push({...fk,target:fk.table,label:fk.table+'.'+fk.column+' → '+fk.targetColumn});
+  source.refs.push(...fk.refs);
+}
+for (const m of models) for (const related of m.related) if (!models.some(other=>other.name===related)) throw new Error('資料模型關聯不存在：'+m.name+' → '+related);
 // 以 migration 的 CREATE/DROP 次序重建現存 triggers；舊 baseline 中退役的觸發器不列為現在存在。
 const triggerMap = new Map();
 const functionRefs = new Map();
@@ -134,7 +182,7 @@ for (const p of sourcePaths.filter(p=>p.endsWith('.sql')).sort()) {
   for (const match of text.matchAll(pattern)) {
     const unquote=s=>s.replaceAll('"','');
     if (match[4]) triggerMap.delete(unquote(match[5])+'.'+unquote(match[4]));
-    else { const name=unquote(match[1]),table=unquote(match[2]),func=unquote(match[3]);triggerMap.set(table+'.'+name,{name,table,func,description:triggerDescriptions[func.split('.').at(-1)]||'見觸發函式原碼；在來源標示的row/statement時點執行',refs:[ref(p,match[0])]}); }
+    else { const name=unquote(match[1]),table=unquote(match[2]),func=unquote(match[3]);triggerMap.set(table+'.'+name,{name,table,func,definition:match[0],description:triggerDescriptions[func.split('.').at(-1)]||'見觸發函式原碼；在來源標示的row/statement時點執行',refs:[ref(p,match[0])]}); }
   }
   // DROP TABLE 也會一併移除其 triggers；0016 退役舊 deletion_jobs 等表。
   for (const match of text.matchAll(/DROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?((?:"?\w+"?\.)?"?\w+"?)/gi)) {
@@ -169,19 +217,24 @@ const specialFlows = [
   {id:'healthcheck',title:'部署健康檢查與錯誤自動聚合',group:'管理觀測',summary:'沒有Firebase使用者的healthcheck仍須secret；應用失敗自動留下可查紀錄。',nodes:[node('healthcheck請求','POST /v1/actions action=healthcheck；Origin允許；X-Healthcheck-Secret必須匹配HEALTHCHECK_SECRET。','worker',[ref('cloudflare/src/backend/actions/auth.ts','handleHealthcheck')]),node('檢查必需配置與DB','requireEnv檢查Firebase/Turnstile/domain/admin/media等；SELECT roles；全域second/minute配額。只證明這次檢查透過，不代表所有供應商正常。','database',[ref('cloudflare/src/backend/actions/auth.ts','requireEnv("FIREBASE_WEB_API_KEY")')]),node('一般action失敗','handler記status/code/operationId；5xx產生failureId；recordOperationalError按日聚合；429是正常配額拒絕，不納入聚合。串流已送第一段後仍可送error line。','worker',[ref('cloudflare/src/backend/actions/handler.ts','recordFailure'),ref('cloudflare/src/backend/shared/operational-telemetry.ts')]),node('管理員檢視／維護','getOperationsConsole讀errors、metrics、job/delivery失敗；清聚合不會清外部logs；maintenance依errorRetentionDays/metricsRetentionDays清舊桶。','browser',[ref('cloudflare/src/backend/actions/operations.ts'),ref('cloudflare/src/backend/jobs/maintenance.ts')])],notes:[],edges:[{from:0,to:1,label:'healthcheck'}, {from:2,to:3,label:'失敗觀測'}]},
   {id:'notion-auto',title:'Notion 同步、節流與續跑',group:'時間與自動',summary:'Notion啟用且有token/database設定才出站；不替代主要DB。',nodes:[node('Notion delivery','事件有 notion destination 才 claim。NOTION_ENABLED=false 或缺 token/database 時 sync 直接返回，delivery 仍標 completed，表示此通道跳過，不代表外部已有副本。非內容事件超過 notionArchiveDays 也直接完成並跳過。','async',[ref('cloudflare/src/backend/jobs/notion-deliveries.ts')]),node('API節流與重試','同isolate出站間隔350ms；429/5xx退避與Retry-After；真正每次fetch才開始15秒timeout，最多5次refusal retries。','async',[ref('cloudflare/src/backend/shared/notion-api.ts')]),node('同步或重建','對映notion_pages；事件更新對應page與timeline。reconcile分段訪問issue/facility/announcement/operation，request budget用完存cursor，下次drain接續。','database',[ref('cloudflare/src/backend/shared/notion-reconcile.ts'),ref('cloudflare/src/backend/jobs/background-jobs.ts')]),node('封存與失敗責任','內容刪除／mapping保留到期排archive；provider未配置不能宣稱完成archive；deletion到期失敗轉cleanup backlog，需retry。','async',[ref('cloudflare/src/backend/jobs/background-jobs.ts'),ref('database/migrations/0029_archive_and_backup_policies.sql')])],notes:['repo預設NOTION_ENABLED=false；這份HTML沒有執行任何外部同步。'],edges:[{from:0,to:1,label:'出站'}, {from:1,to:2,label:'更新/續跑'}, {from:2,to:3,label:'生命週期'}]},
 ];
-const allFlows = [...flows,...specialFlows,...actionFlows];
+const triggerFlows=[...triggerMap.values()].map(t=>({id:'trigger:'+t.table+'.'+t.name,title:t.name,group:'自動化與時間',section:'資料庫 Trigger · '+t.table.split('.').at(-1),kind:'sequence',summary:t.description,notes:['此清單依 migration CREATE/DROP 順序重建；未查部署端是否已套齊。'],nodes:[node('SQL 寫入 '+t.table,'使用者／管理員 action、Queue 工作或 migration 的 SQL 達到 trigger 條件時觸發；不是獨立 cron。','database',t.refs),{...node('觸發時點與條件',t.definition,'database',t.refs),code:t.definition},node('執行 '+t.func,t.description+'。點下方來源可讀最新函式實作；同交易內執行，發生例外原 SQL 一起回滾。','database',t.refs),node('提交後可見的影響',t.description+'；若排了背景工作，交易提交只表示責任已記錄，外部工作另由 Queue 處理。','database',t.refs)],edges:[{from:0,to:1,label:'SQL 條件'},{from:1,to:2,label:'同步觸發'},{from:2,to:3,label:'同一交易'}]}));
+const ordinaryFlows=[...flows,...specialFlows,...actionFlows].map(f=>{
+  const administrator=Boolean(f.permission)||['管理設定','管理觀測'].includes(f.group);
+  return {...f,section:f.group==='先看全貌'?'共用讀取':f.group,group:f.group==='時間與自動'?'自動化與時間':administrator?'管理員操作':'使用者操作',kind:f.kind||'sequence'};
+});
+const allFlows = [...architectureFlows,makeModelOverview(models),...makeModelFlows(models),...ordinaryFlows,...makeSettingFlows(settings,ref),...triggerFlows];
 const allIds = new Set(allFlows.map(f=>f.id));
 if (allIds.size !== allFlows.length) throw new Error('重複流程ID');
 for (const setting of settings) if (!allIds.has(setting.target)) throw new Error('無法連結設定流程：' + setting.key);
 const data = {
-  meta:{repo:root.replaceAll('\\','/'),head:git('rev-parse','HEAD'),date:new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Taipei',dateStyle:'short',timeStyle:'medium'}).format(new Date()),scope:'目前程式快照；非正式環境設定、非外部服務實測',actionCount:definitions.length,flowCount:allFlows.length,sourceCount:Object.keys(sources).length,triggerCount:triggerMap.size,regenerate:'node tools/project-map/build.mjs'},
-  groups,flows:allFlows,settings,triggers:[...triggerMap.values()],timers,routes,endpoints,sources,
+  meta:{repo:root.replaceAll('\\','/'),head:git('rev-parse','HEAD'),dirty:Boolean(git('status','--porcelain')),date:new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Taipei',dateStyle:'short',timeStyle:'medium'}).format(new Date()),scope:'目前程式快照；非正式環境設定、非外部服務實測',actionCount:definitions.length,flowCount:allFlows.length,modelCount:models.length,sourceCount:Object.keys(sources).length,triggerCount:triggerMap.size,regenerate:'node tools/project-map/build.mjs'},
+  groups,flows:allFlows,settings,models,triggers:[...triggerMap.values()],timers,routes,endpoints,sources,
 };
 const template = fs.readFileSync(path.join(here,'template.html'),'utf8');
 const serialized=JSON.stringify(data).replaceAll('<','\\u003c').replaceAll('\u2028','\\u2028').replaceAll('\u2029','\\u2029');
 fs.mkdirSync(path.dirname(output),{recursive:true});
-const html = template.replace('/*__PROJECT_DATA__*/', () => serialized);
+const html = template.replace('/*__PROJECT_DATA__*/', () => serialized).replace('/*__MAP_CSS__*/',()=>fs.readFileSync(path.join(here,'map.css'),'utf8')).replace('/*__MAP_JS__*/',()=>fs.readFileSync(path.join(here,'map.js'),'utf8'));
 const inlineScript = html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>'));
 new Script(inlineScript, { filename: 'project-map-inline.js' });
 fs.writeFileSync(output,html,'utf8');
-console.log(JSON.stringify({output,actions:definitions.length,flows:allFlows.length,settings:settings.length,triggers:triggerMap.size,sources:Object.keys(sources).length,timerAnchors:timers.length,bytes:fs.statSync(output).size,head:data.meta.head},null,2));
+console.log(JSON.stringify({output,actions:definitions.length,flows:allFlows.length,settings:settings.length,models:models.length,triggers:triggerMap.size,sources:Object.keys(sources).length,timerAnchors:timers.length,bytes:fs.statSync(output).size,head:data.meta.head},null,2));

@@ -2,7 +2,7 @@
 const A = 'cloudflare/src/backend/actions/';
 const S = 'src/services/';
 const H = 'src/hooks/';
-export const groups = ['先看全貌', '登入與個人', '提案', '設施', '公告', '通知', '圖片', '管理設定', '管理觀測', '時間與自動'];
+export const groups = ['程式架構', '資料模型', '使用者操作', '管理員操作', '管理員改設定', '自動化與時間', '原碼與盤點'];
 export const actions = {};
 function add(group, handler, entries) {
   for (const [id, title, entry, logic, db, effect = '', timing = '每次操作當下執行'] of entries)
@@ -13,8 +13,9 @@ add('登入與個人', 'session-bootstrap.ts', [
 ]);
 add('登入與個人', 'user-access.ts', [
   ['getCurrentUserRole','重新確認我的角色與範圍','session-role → users','後端重新查平台管理員、permission 與分類 scope；按鈕顯示依此結果。','user_role_assignments、user_issue_category_assignments、user_facility_category_assignments、system_setup','更新 SessionAccess。既有畫面角色不等於每次請求的後端權限。'],
-  ['listRoleAssignments','檢視角色／管理範圍名單','access-management → access','要求 role.manage，讀取角色與分類管理指派。','user_role_assignments、分類 scope assignments','回到管理成員介面。'],
+  ['listRoleAssignments','檢視／搜尋負責範圍成員','scope-access-editor → use-scope-access → access','要求 role.manage；按公告／提案分類／設施分類讀完整名單及成員 revision，沒有 100 人截斷。查人時以 UID 或正規化 Email 精確查詢；正式 ADMIN_EMAILS 決定管理員身分。','user_role_assignments、分類 scope assignments、user_profiles；access-user-profiles 用單一 SQL 讀個人資料與所有範圍','名單建立 browser 草稿 baseline；搜尋只讀，不會授權。'],
   ['setUserAccessScope','指派或撤銷分類管理範圍','use-access-management → access','要求 role.manage。提案 scope、設施 scope、公告管理各自處理；platform-admin 由 ADMIN_EMAILS 決定。','user_role_assignments、分類 assignments、access_assignment_audit','user.access_scoped → realtime delivery；管理寫入另記 admin.audit_recorded。','DB 提交後，下一個後端請求使用新範圍；其他已開啟畫面的 session 需重新讀取'],
+  ['saveScopeMembers','儲存整批負責範圍成員','scope-access-editor → use-scope-access → access','點加入／撤銷先改本機草稿，儲存才送 changes + baseline revision。後端按 scope 取得 advisory lock、比對完整成員 revision，再依 UID 排序鎖住變更帳號，整批授予／撤銷；任一非法目標或衝突整筆 rollback。正式管理員不能被指派；已移出 ADMIN_EMAILS 的舊管理員在此交易撤銷舊角色。','user_profiles、user_role_assignments、user_issue_category_assignments、user_facility_category_assignments、role_assignment_audit、access_assignment_audit','回傳正式完整名單、新 revision、changedUids。只對實際改變成員記 user.access_scoped；自己草稿以正式回應重建。','DB 提交後下一次授權採新 scope；舊頁面需重新讀 session。0059 只鎖被編輯帳號，不鎖全體角色'],
   ['getUserPublicProfiles','解析作者名稱與頭像','use-public-profiles → users-read','批次讀取 UID 對應的公開 profile；頭像簽發媒體 URL。是否提供 UID 已先在內容可見性層決定。','user_profiles','以 profile_version／avatar_version 更新作者呈現。','前端 profile cache 24 小時；可強制重新整理'],
   ['cacheUserAvatar','重新快取 Google 頭像','session-store → users-write','比對來源與 checked_at；必要時 Worker 取得 Google 頭像，寫入 Cloudinary authenticated asset，再提交 profile；舊資產排刪除工作。','user_profiles、background_jobs','user.avatar_updated → realtime；此事件目前沒有對應 content message。','avatarRevalidateHours 預設 24 小時；每日配額初值 30'],
 ]);
@@ -24,10 +25,11 @@ add('管理觀測', 'user-admin.ts', [
   ['listAdminActivity','檢視近期活動明細','use-admin-overview → admin-console','dashboard.view；時間窗選 24h、7d、30d，帶 occurredAt/key 遊標。','管理活動／domain events 與稽核聚合','活動明細與下一頁。','以查詢當下 now() 計算回溯時間窗'],
   ['getAdminOverview','檢視活動總覽','use-admin-overview → admin-console','dashboard.view；取得時間窗的統計、活動與健康狀態。','平台 counters、活動與運維資料','總覽圖表與數字。','24 小時／7 天／30 天，以後端時間計算'],
 ]);
-add('管理設定', 'user-admin.ts', [
-  ['listAccountAccessRules','檢視帳號限制規則','use-admin-console → admin-console','role.manage；回傳 UID／信箱字首規則、截止時間、公開訊息與命中數。','user_restrictions、user_profiles','列表包含已過期紀錄；實際授權只取有效規則。'],
-  ['saveAccountAccessRule','新增／更新唯讀、僅反應、封鎖規則','use-admin-console → admin-console','UID 優先；字首取最長命中。可設 7 天、30 天、自訂 1–87600 小時或永久；不能限制平台管理員，個別 UID 不能選自己。','user_restrictions','UID → user.restricted；字首 → platform.settings_updated。下一次 resolveAuthContext 重新檢查。','截止時間 = Worker 現在 + 時數；到期的下一個後端請求自動不再命中，不需等待 cron'],
-  ['deleteAccountAccessRule','移除帳號限制','use-admin-console → admin-console','按 targetType + targetValue 刪除精確規則；另一條字首規則仍可能命中。','user_restrictions','DB 提交後下一次授權重新解析。'],
+add('管理設定', 'account-access-rules.ts', [
+  ['listAccountAccessRules','檢視帳號限制規則','account-access-rules／account-access-editor → admin-console','role.manage；回傳 UID／Email 字首規則、active、截止時間、訊息、排除正式管理員的命中數及每列 revision。列表包含已過期紀錄，授權只取仍有效規則。','user_restrictions、user_profiles','規則 revision 是 md5(to_jsonb(row)::text)，新規則 baseline revision=null。'],
+  ['previewAccountAccessRule','預覽 Email 字首限制會命中誰','account-access-rule-fields → admin-console','只接受 email_prefix；驗字首、預設、期限與訊息，並比對現存規則 revision。計算符合字首且不在 ADMIN_EMAILS 的人數；不取得寫入鎖、不改規則。','user_restrictions、user_profiles','供管理員檢視本次限制範圍；估算後仍可能有新帳號或別人改規則。'],
+  ['saveAccountAccessRule','新增／更新唯讀、僅反應、封鎖規則','account-access-editor → use-account-access-editor → admin-console','UID 優先，Email 字首取最長有效命中。按 targetType+targetValue 上鎖、檢查 row revision，衝突回 configuration-changed。可保持原期限、7 天、30 天、自訂 1–87600 小時或永久；不能限制正式管理員，UID 不能是自己。','user_restrictions：複合鍵 (target_type, uid)；同交易回讀 rule、effectiveRule 與新 revision','UID → user.restricted；字首 → platform.settings_updated。成功畫面使用正式回應，保留期限不會延長舊截止時間。','新期限 = PostgreSQL statement_timestamp() + 時數；永久為 null。到期後下一個後端請求不再命中，無須等待 cron'],
+  ['deleteAccountAccessRule','確認並移除精確帳號限制','account-access-editor／user-details-sheet → admin-console','確認後送 targetType+targetValue+revision；同規則 advisory lock 與 FOR UPDATE，衝突拒絕。只刪此複合鍵；移除 UID 規則後 Email 字首規則仍可能限制該人。','user_restrictions；回傳 deleted、正式 rule/effectiveRule/revision','自己畫面按 canonical effectiveRule 更新；DB 提交後下一次授權重新解析。'],
 ]);
 add('提案', 'issue-read.ts', [
   ['listIssues','瀏覽、排序、篩選提案','use-issue-feed → issues-read-pages','分類、active/closed、狀態、latest/most-supported/ending-soon 與 cursor；套用 owner-admin、reviewed-school 的資料可見性。','issues、supports、content_versions','回傳列表、分頁、version 與分類層級 statusCounts；狀態件數不受內容可見性限制。'],
@@ -99,19 +101,19 @@ add('圖片', 'uploads.ts', [
 ]);
 add('管理設定', 'categories.ts', [
   ['getCategoryCatalog','讀取分類、功能與圖片規則','use-categories → categories','分段回傳 setup、issueCategories、facilityCategories、features、imageUploads；目前 state.loaded 會阻止自動重讀。','system_setup、issue_categories、facility_categories、runtime_settings','導覽、路由守門、發文與圖片欄位依這份 browser catalog。'],
-  ['getCategoryManagement','開啟分類／平台設定','use-category-management → categories','category.manage；取完整 catalog + image/retention settings，作編輯初始值。','分類、system_setup、runtime_settings','產生可編輯 draft；未存前僅在 browser。'],
-  ['estimateCategoryPolicyChanges','預覽留言政策的影響筆數','use-category-management → categories','儲存前估算要變更多少既有提案／公告的 comments_enabled；這一步不修改資料。','issues、announcements、category policy','確認畫面顯示批次數；刪除分類另有 UI 確認。'],
-  ['saveCategoryManagement','儲存分類、預設、圖片上限與功能','use-category-management → categories','category.manage；ID 穩定，readAccess/authorVisible 已存在就不可改；支援 label、排序、預設、附議規則、留言、作者刪除、0–20 圖片。刪分類會刪內容與 scope。','issue_categories、facility_categories、system_setup、category_configuration_audit；comments 觸發 category_policy job','自己 browser 更新 catalog；category.managed 註冊 realtime，但現有 realtime consumer 不產生 platform message。','新提案 snapshot 新附議規則；舊篇不變。留言舊篇由批次更新；圖片與刪除權限在後端下一次操作查當前值'],
+  ['getCategoryManagement','開啟分類／平台設定','use-category-management／use-platform-settings → categories','category.manage；取完整 catalog、image/retention settings 與 categoryRevision/platformRevision 雜湊。','分類、system_setup、runtime_settings','正式 baseline 建立草稿；修改中的草稿不被晚到的刷新覆蓋。'],
+  ['estimateCategoryPolicyChanges','預覽留言政策的影響筆數','use-category-management → categories','檢查 baseline categoryRevision，儲存前估算既有提案／公告 comments_enabled 的影響；只讀。','issues、announcements、category policy','確認畫面顯示批次數；草稿在估算期間又改了就捨棄此估算。'],
+  ['saveCategoryManagement','儲存分類、預設、圖片上限與功能','use-category-management → categories','category.manage；鎖 system_setup singleton、核對 categoryRevision。嚴格驗 booleans/陣列；啟用附議時 goal 與 deadlineDays 必須為正整數；既有 readAccess/authorVisible 固定，owner-admin 強制顯示作者。支援 label、排序、預設、留言、作者刪除、0–20 圖片；刪分類連帶刪內容及 scope。','issue_categories、facility_categories、system_setup、category_configuration_audit；comments 觸發 category_policy job','回傳正式完整 catalog 與新 revision；自己 browser 更新 catalog，其他開啟畫面目前沒有完整 platform realtime 訊息。衝突保留草稿待重讀。','新提案 snapshot 新附議規則，舊篇不變；留言舊篇分批；圖片與刪除权在下一次操作查當前值'],
   ['savePlatformFeatures','儲存提案／設施／公告留言開關','use-category-management → categories','category.manage；system_setup 更新；關閉功能影響 route guard；公告留言觸發 policy job。','system_setup、category_configuration_audit、background_jobs','system.features_updated 註冊 realtime；其他已開頁面無完整自動 catalog 同步。','DB 提交先改設定；自己的 catalog refresh；舊公告 flag 等背景批次；他人畫面可能要重新載入'],
-  ['savePlatformSettings','儲存圖片壓縮與資料保留','use-platform-settings → categories','先 estimateRetentionCleanup，再確認儲存；驗證全套 settings，在同 transaction 更新 runtime_settings 並排 retention job。','runtime_settings(image_upload_settings/data_retention_settings)、background_jobs、audit','Queue 分批更新到期欄位／刪過期內容與技術紀錄；自己的頁面更新圖片 settings。','新的上傳請求讀新政策；既有資料清理完成要看 job 狀態；不等於按儲存就全部刪完'],
-  ['estimateRetentionCleanup','預覽資料清理筆數','use-platform-settings → categories','category.manage；按候選 retention config 算受影響內容、PII、upload、event 等；只估算。','各內容表、技術表、user_profiles','供使用者確認。估算與正式執行之間資料仍可能增加。'],
+  ['savePlatformSettings','儲存圖片壓縮與資料保留','use-platform-settings → categories','先帶 platformRevision 估算，再確認本次值；交易取得平台 advisory lock、重比 revision。0054 只為縮短／新啟用的規則選 cleanupScopes；通知放寬／關閉也重算 expires_at。只改圖片不觸發無關清理；operation/delivery/job 生命周期 TTL 用於未來的建立或狀態轉換。','runtime_settings(image_upload_settings/data_retention_settings)、background_jobs、category_configuration_audit；保留值改變時 supersede 舊未完成 retention job','有實際待刪／待更新筆數才建 job，回傳正式 settings、revision、jobId 及刪除/更新統計；自己種入圖片政策並標 session bootstrap stale。','圖片下一次操作生效；通知 expiry 與收緊規則靠批次。job 完成不等於 Cloudinary／Notion 外部刪除完成'],
+  ['estimateRetentionCleanup','預覽本次保留變更的刪除與更新','use-platform-settings → categories','核對 platformRevision；只估算本次變更 cleanupScopes。分開 totalDeletedRows、totalUpdatedRows、updatedDetails 與 totalEstimatedRows；不是掃所有已過期技術資料。','各內容表、技術表、user_profiles；0054 retention_change_scopes / retention_cleanup_estimate','只讀並供確認；TTL 未來規則可以零既有影響。估算和儲存之間資料仍可能增加。'],
   ['listPlatformJobs','追蹤設定套用進度','use-platform-jobs → categories','category.manage；讀 pending/processing/failed 與近期 job，回 estimated/processed/affected/status。','background_jobs','完成後重新整理設定或內容，失敗保留錯誤與 retry。','1、2、3、5、8、15 秒梯度；隱藏／離線暫停，恢復立即讀取'],
   ['completeInitialSetup','完成全校首次設定','use-initial-setup → categories','僅平台管理員；開啟的功能至少一個分類，後端鎖 singleton，重複完成不重新建立。','system_setup、issue_categories、facility_categories、category_configuration_audit','system.setup_completed 註冊 realtime；管理員自己強制重新整理 session/catalog；等待者靠輪詢。','一般等待者 3 秒開始、倍增至 30 秒；設定完成後匯入主程式'],
 ]);
 add('管理觀測', 'operations.ts', [
   ['getRuntimePolicies','取得目前營運政策','backend-action → getRuntimePolicies','直接讀 operations_settings 最新 revision + values，回給前端。','runtime_settings','setOperationPolicies；一般 API 回應帶 policyRevision，有差異才自動要求重新整理。'],
   ['getProviderDiagnostics','檢視供應商診斷','use-provider-diagnostics → operations-console','dashboard.view + 平台管理員；provider 只接受 cloudinary/cloudflare/logs，Worker 用 secret 查實際供應商。','外部供應商 API 與 logs','前端分頁／搜尋顯示當次 sampledAt；無設定不可視為健康。'],
-  ['getOperationsConsole','檢視系統、政策歷史與工作','use-system-console／use-operation-policies → operations-console','dashboard.view + 平台管理員；十種獨立讀值以 NDJSON 分段回；progressOnly 僅讀 jobs。','background_jobs、event_deliveries、domain_events、external_cleanup_backlog、errors、metrics、policy_history、pg_stat','面板各自先出現；每頁最多 100 筆，progress 讀取不重讀容量／歷史。'],
+  ['getOperationsConsole','檢視系統、政策歷史與工作','use-system-console／use-operation-policies → operations-console','dashboard.view + 平台管理員；policiesOnly 只讀政策和歷史、progressOnly 只讀 jobs、queueOnly 只讀工作/投遞/清理/錯誤，不重讀容量；三者互斥。systemOnly 讀容量與診斷但不帶政策。其他片段依 NDJSON 先出現。','background_jobs、event_deliveries、domain_events、external_cleanup_backlog、operational_errors、metrics、policy_history、pg_stat','分頁及 hasMore 分開；重新開容量頁會完整刷新，不把舊 queueOnly 快取當作完整狀態。寫成功後刷新失敗不改稱寫失敗。'],
   ['saveOperationPolicies','儲存營運政策與原因','use-operation-policies → operations-console','category.manage + 平台管理員；驗 values 範圍及 expected revision，過期 revision 拒絕；寫設定、歷史、清自己 isolate 快取。','runtime_settings.operations_settings、operation_policy_history','自己 browser 立即 setOperationPolicies；其他成功 API 回應發現新 revision 才重新整理。','其他 Worker isolate 最長 60 秒快取；進行中的 request 保持原 snapshot；不是背景每分鐘 polling'],
   ['retryOperationalWork','重試失敗的工作／delivery／外部清理','use-system-console → operations-console','role.manage + 平台管理員；kind job/delivery/cleanup/all；重設 attempt、pending、next_attempt_at，cleanup backlog 還原 deletion job。','background_jobs、event_deliveries、external_cleanup_backlog','成功 write 發 drain，從 Queue 再做實際工作；不用在管理按鈕裡執行外部 API。'],
   ['clearOperationalErrors','清除錯誤聚合紀錄','use-system-console → operations-console','role.manage + 平台管理員；只刪 operational_errors。','operational_errors','清空聚合畫面；不重試失敗、不改內容，也不清外部 Cloudflare logs。'],
@@ -128,18 +130,6 @@ add('登入與個人', 'content-versions.ts', [
 const n = (title, text, layer, refs = []) => ({ title, text, layer, refs });
 const flow = (id, title, group, summary, nodes, notes = []) => ({ id, title, group, summary, nodes, notes });
 export const flows = [
-  flow('overview','全貌：一次操作跨過哪些地方','先看全貌','先認清責任邊界，再從左側挑一個操作。實線是當次流程，虛線是交易提交後的非同步分支。',[
-    n('使用者操作','點開、搜尋、發文、附議；管理員則編輯分類、權限、政策。','browser',['src/app/(protected)/layout.tsx']),
-    n('React 畫面與 hook','page 組畫面、component 接事件；hook 管狀態、草稿、取消請求、optimistic 與提交。','browser',[H+'use-entry-composer.ts',H+'use-optimistic-reaction.ts']),
-    n('Service I/O 邊界','使用 Firebase ID token + App Check；寫入用 UUID operationId；POST /v1/actions。回應是 NDJSON start/part/end。','browser',[S+'backend-action.ts']),
-    n('Worker 安全與授權','Origin → App Check/ID token → native ingress → DB auth/restriction/permission → UID burst；寫入再 claim operation + 產品配額。','worker',['cloudflare/src/index.ts',A+'execution.ts']),
-    n('PostgreSQL 是真實資料','Worker 經 Hyperdrive/pg；read 直接 RPC/SQL，write 在一個 transaction；app_private 資料 + app_api 函式與 triggers。','database',['cloudflare/src/backend/database/client.ts',A+'execution.ts']),
-    n('交易中的結果與事件','寫內容、管理 audit、domain_events、event_deliveries、complete_operation 一起提交；任何失敗整筆 rollback。','database',[A+'execution.ts']),
-    n('原發起畫面更新','收到最終 response 及分段資料；更新快取、entity、草稿／導頁；不必等外部通知送完。','browser',[S+'backend-action.ts',H+'use-entry-composer.ts']),
-    n('Queue 喚醒背景工作','write 成功／Cloudinary webhook／cron 送 drain 或 maintenance；同批訊息合併為一次 bounded sweep。','async',['cloudflare/src/index.ts','cloudflare/src/backend/jobs/consumer.ts']),
-    n('四種 delivery','Notion（可選）、站內通知（DB）、FCM Push、RealtimeHub DO；每種 independently claim/complete/fail，可重試。','async',['cloudflare/src/backend/jobs/notification-deliveries.ts','cloudflare/src/backend/jobs/realtime-deliveries.ts']),
-    n('別人的畫面收到提示','socket 更新可 patch 的 count，其餘使快取失效 → 再讀 Worker；Push 點選也重新讀目標。Realtime 不是完整資料副本。','browser',[S+'realtime-events.ts','src/app/sw.ts']),
-  ],['這是目前 checkout 的程式快照，未連正式 DB 讀設定。所有數值稱初值；實際部署可能不同。','Notion 不當主資料庫，Durable Object 不儲存完整提案；瀏覽器不直連 Neon。','Next.js frontend 在 Vercel；API/Queue/DO/cron 在 Cloudflare；Neon 儲存真實資料。']),
   flow('auth-login','登入、恢復登入、換帳號與登出','登入與個人','新登入與恢復既有 Firebase session 是兩條不同的路。',[
     n('登入入口','先選語言，Turnstile Managed challenge → login-check；Google Identity token → Firebase credential 登入。','browser',[S+'session-auth.ts','src/lib/google-identity.ts']),
     n('Firebase auth observer','onAuthStateChanged；驗學校網域／token。恢復舊 session 改走 auth_restore Turnstile + session-check。','browser',[H+'session-store.ts',S+'session-validation.ts']),
@@ -182,7 +172,7 @@ export const flows = [
     n('domain event 記在交易內','event + 每種 destination 的 delivery 狀態一起儲存；一般 support/like 沒有 in_app/push。','database',['cloudflare/src/backend/events/domain-events.ts']),
     n('claim delivery','Queue 查到期 pending/failed，SKIP LOCKED + 新 attempt UUID；過期 processing 可接手；最多 8 次 DB attempt。','async',['database/migrations/0033_pending_delivery_probe.sql','database/migrations/0025_consumer_fencing.sql']),
     n('動態解析收件者','建立→category managers；狀態→作者/支持者/affected；reply→parent 作者。排除操作者（goal_met 除外）；平台管理員按偏好加入。','database',['cloudflare/src/backend/jobs/delivery-recipients.ts']),
-    n('站內通知','eventId + recipient 建 deterministic ID，ON CONFLICT DO NOTHING；公告建立 broadcast；存通知後 publish notification_insert。','database',['cloudflare/src/backend/jobs/notification-deliveries.ts']),
+    n('站內通知與事件時間','eventId + recipient 建 deterministic ID，ON CONFLICT DO NOTHING；公告建立 broadcast。created_at 用事件 occurred_at，expires_at=事件時間+當時 notificationsDays；延遲投遞不延長保存。停用保留時用 infinity；存通知後 publish notification_insert。','database',['cloudflare/src/backend/jobs/notification-deliveries.ts','database/migrations/0055_notification_expiry_event_time.sql']),
     n('FCM Push','取 devices，token hash receipt 去重成功裝置；失效 token 刪除；Provider 成功後 receipt 儲存。','async',['cloudflare/src/backend/jobs/notification-deliveries.ts']),
     n('裝置顯示與點選','前景 messaging／SW 背景 showNotification；UID session gate 避免換帳號顯示舊 Push；點選 route 再讀權威內容。','browser',['src/app/sw.ts','src/lib/push-session.ts','src/lib/notification-target.ts']),
     n('完成／失敗','complete/fail 必須匹配 attempt_id；失敗設 next_attempt_at，cron／新 drain 再試。FCM 接受後若 receipt 前崩潰仍可能重複推播。','async',['database/migrations/0025_consumer_fencing.sql']),
@@ -212,8 +202,8 @@ export const flows = [
     n('結果可查','processed_rows、affected_rows、狀態、attempt、result/errors 進 DB；管理頁讀取進度；剩更多工作送 drain。','async',['cloudflare/src/backend/jobs/background-jobs.ts']),
   ]),
   flow('retention','保留期限與自動資料清理','時間與自動','保留政策不是倒數計時器；到期資料由 Queue 的批次工作刪除／匿名化。',[
-    n('政策來源','data_retention_settings；管理儲存先估算與確認，新 maintenance 也讀當時政策排 job。各欄位初值見「設定」分頁。','database',[A+'categories.ts','cloudflare/src/backend/shared/platform-settings.ts']),
-    n('內容期限','closed issue/facility 按 closed_at；公告按 published_at；通知按 created_at 更新 expires_at。enable=false 保留對應內容。','database',['database/migrations/0016_system_data_consistency.sql']),
+    n('政策來源與兩種排程','data_retention_settings；管理儲存只為本次收緊規則選 cleanupScopes，通知改期限／停用也重算 expiry；maintenance 排完整政策，清理正常隨時間到期的資料。各欄位在左側「管理員改設定」。','database',[A+'categories.ts','database/migrations/0054_scoped_retention_policy_changes.sql','cloudflare/src/backend/jobs/maintenance.ts']),
+    n('內容期限與通知修復','closed issue/facility 按 closed_at；公告按 published_at；通知按事件時間 created_at 更新 expires_at。enable=false 保留對應內容；通知改 infinity。0055 修復既有通知期限，未完成修復會接到下一份替代 job。','database',['database/migrations/0054_scoped_retention_policy_changes.sql','database/migrations/0055_notification_expiry_event_time.sql']),
     n('技術資料期限','delivery/job 按 expires_at；domain_event 到期且無 delivery 才刪；operation response 到期清空，受 FK 引用身份列保留。','database',['database/migrations/0021_event_retention.sql','database/migrations/0027_extended_runtime_policies.sql']),
     n('身份資料條件','inactive profile/avatar 除最後活動截止外，必須沒有相關內容才清 PII/avatar；不等於刪 Firebase Auth 帳號。','database',['database/migrations/0016_system_data_consistency.sql','database/migrations/0015_retention_runtime_authority.sql']),
     n('外部刪除責任','刪內容／upload→deletion job；刪 Notion mapping→archive job；到期失敗 deletion 轉 cleanup backlog，識別碼留下供重試。','async',['database/migrations/0026_external_cleanup_backlog.sql','database/migrations/0029_archive_and_backup_policies.sql']),
@@ -252,12 +242,12 @@ export const flows = [
     n('設定變更觸發批次','system_setup announcement_comments / issue_categories comments/is_active 變更 enqueue policy job；新的同scope政策取代舊待套用工作。','database',['database/migrations/0013_observable_policy_jobs.sql','database/migrations/0016_system_data_consistency.sql']),
     n('domain event 由Worker 明確記錄','0016 移除舊 outbox/realtime/audit projection triggers；一般寫入事件在 execution.ts resolveDomainEvents 記錄；不能看到舊 baseline trigger就當現在存在。','worker',[A+'execution.ts','database/migrations/0016_system_data_consistency.sql']),
   ]),
-  flow('settings-timing','管理設定：立即、快照、批次與重新載入','管理設定','各設定不是相同的生效方式；下面「設定」分頁逐欄列出來源、初值、影響與時機。',[
-    n('只是編輯draft','表單変更未儲存只在browser；重設還原source；useDraft 追蹤未存，避免更新重新載入。','browser',[H+'use-draft.ts']),
-    n('估算／確認再儲存','分類留言／retention 等先read影響估算；save action經permission與transaction，admin audit儲存變更。','worker',[H+'use-category-management.ts',H+'use-platform-settings.ts']),
+  flow('settings-timing','編輯、預覽、確認、衝突與草稿保留','管理設定','開關、檔位、還原都是草稿操作；正式寫入、背景套用與其他人重新讀取有各自時點。',[
+    n('編輯與檔位只改草稿','摘要→選區域→編輯；欄位、檔位、區域還原都改 browser draft。同管理頁切分類／回摘要保留，未存數量可辨識；關編輯器或返回檢查草稿。儲存中禁止丟棄與切換，程式更新等待完成。','browser',[H+'use-draft.ts',H+'use-unsaved-changes.tsx','src/components/admin/admin-sections.tsx']),
+    n('估算鎖定本次值','分类留言／保留先 estimate；草稿在估算中改了就不套舊結果。確認保存 review.value + review.baseline；取消只關確認。版本衝突保留草稿，需重讀正式值並重新確認。','worker',[H+'use-draft.ts',H+'use-category-management.ts',H+'use-platform-settings.ts']),
     n('立即讀當前設定','作者刪除、圖片數/尺寸、scope、限制：後端下一次請求讀DB；既有附著圖片不被降低上限回收。','database',[A+'upload-policy.ts',A+'auth.ts']),
     n('新提案才儲存快照','supportEnabled/Goal/DeadlineDays 只改新提案；舊篇snapshot不回寫；readAccess/authorVisible已有分類不可改。','database',['database/migrations/0053_category_image_policies.sql','database/migrations/0041_remove_response_deadlines.sql']),
-    n('既有內容靠批次','留言 flag 與retention 由category_policy/retention_cleanup逐批處理；看進度completed才代表該批套用完。','async',['database/migrations/0023_policy_batch_state.sql']),
+    n('既有內容靠具範圍的批次','留言 flag 由 category_policy；保留只處理 cleanupScopes。收緊／啟用才立即排既有清理，放寬不恢復已刪內容；通知 expiry 例外會重新算。operation/job/delivery TTL 留給未來生命周期。','async',['database/migrations/0054_scoped_retention_policy_changes.sql','database/migrations/0055_notification_expiry_event_time.sql']),
     n('政策快取與browser','operations Worker isolate ≤60秒；client發現成功回應新revision才拉。其他人的catalog/角色目前沒有完整platform realtime message；必要時重新載入。','browser',['cloudflare/src/backend/shared/operation-policies.ts',S+'backend-action.ts','cloudflare/src/backend/jobs/realtime-deliveries.ts']),
   ]),
 ];
@@ -274,7 +264,7 @@ export const categorySettings = [
   ['maxImages / commentMaxImages','分類內文／留言圖片上限','issue_categories / facility_categories','0–20，0關閉新上傳；建立session、finalize、內容attach三段驗證；舊圖仍可讀','下一次後端操作；前端需catalog更新','saveCategoryManagement'],
   ['announcementMaxImages / announcementCommentMaxImages','公告內文／留言圖片上限','system_setup','0–20；獨立於提案/設施，舊圖不受降低上限清理','下一次後端圖片／內容請求','saveCategoryManagement'],
   ['maxDimension / maxUploadKilobytes / webpQuality','共用圖片壓縮','runtime_settings.image_upload_settings','初值2000px/800KB/.82；上限8000px/5000KB、quality .4–.95；browser 壓縮與Worker驗証','新請求讀DB；已開他人編輯器可能要refresh','savePlatformSettings'],
-  ['角色與category scope','成員權限','user_role_assignments / assignments','proposal-manager、general-affairs、announcement-manager；platform-admin來自環境ADMIN_EMAILS','DB提交後下一次授權；browser session重新讀才改按鈕','setUserAccessScope'],
+  ['角色與category scope','成員權限','user_role_assignments / assignments','加入／撤銷先成為草稿，儲存 saveScopeMembers 整批交易；platform-admin來自正式 ADMIN_EMAILS，0059 同交易調整被編輯帳號的舊管理員角色','DB提交後下一次授權；browser session重新讀才改按鈕','saveScopeMembers'],
   ['targetType / targetValue / preset / duration / message','帳號存取限制','user_restrictions','UID先、最長字首；read_only/reaction_only/blocked；到期自然解除（紀錄稍後清）','下一次授權檢查；永久無deadline','saveAccountAccessRule'],
   ['issueNotifications / facilityNotifications / commentNotifications','我的管理員通知偏好','platform_admin_notification_preferences','平台管理員個人的站內+Push偏好，初值false；不改一般成員','下一次delivery收件者解析','updatePlatformAdminNotificationPreferences'],
   ['ADMIN_EMAILS / ALLOWED_ORIGINS / SCHOOL_DOMAIN / secrets','部署環境','Worker secret / env','平台管理員、學校網域、Origin、供應商憑證；不是runtime表單','部署環境更新；ADMIN_EMAILS於登入sync/auth reconciliation使用','auth-login'],
