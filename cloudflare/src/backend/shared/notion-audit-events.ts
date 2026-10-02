@@ -34,6 +34,7 @@ const ACTION_LABELS: Record<string, string> = {
   savePlatformFeatures: "更新平台功能",
   savePlatformSettings: "更新平台設定",
   setUserAccessScope: "更新成員負責範圍",
+  saveScopeMembers: "更新範圍管理員",
   saveAccountAccessRule: "儲存成員存取規則",
   deleteAccountAccessRule: "刪除成員存取規則",
   updateFacilityStatus: "更新設備案件狀態",

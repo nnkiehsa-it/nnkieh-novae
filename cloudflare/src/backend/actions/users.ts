@@ -14,6 +14,7 @@ export function isUserAction(action: string) {
   return action === "getCurrentUserRole"
     || action === "listRoleAssignments"
     || action === "setUserAccessScope"
+    || action === "saveScopeMembers"
     || action === "listAdminUsers"
     || action === "listAccountAccessRules"
     || action === "saveAccountAccessRule"
@@ -42,7 +43,7 @@ export async function handleUserAction(
     };
   }
 
-  if (action === "listRoleAssignments" || action === "setUserAccessScope") {
+  if (action === "listRoleAssignments" || action === "setUserAccessScope" || action === "saveScopeMembers") {
     return await handleUserAccessAction(action, payload, auth, database);
   }
 

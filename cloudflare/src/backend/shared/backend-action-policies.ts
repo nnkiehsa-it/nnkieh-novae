@@ -233,6 +233,11 @@ export const BACKEND_ACTION_POLICIES = {
     "group": "admin-write",
     "extraLimit": "roleWriteHourly"
   },
+  "saveScopeMembers": {
+    "group": "admin-write",
+    "extraLimit": "roleWriteHourly",
+    "unitsPath": "payload.changes"
+  },
   "listAccountAccessRules": {
     "group": "read"
   },

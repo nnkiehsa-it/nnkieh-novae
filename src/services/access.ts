@@ -16,13 +16,19 @@ export type AccessScope =
   | { kind: 'facility' | 'issue'; categoryId: string };
 
 interface AccessUserList {
+  revision: string;
   truncated: boolean;
   users: AccessUser[];
 }
 
+export function accessScopeKey(scope: AccessScope | null) {
+  if (!scope) return "admin-access:none";
+  return scope.kind === "announcement" ? "admin-access:announcement" : `admin-access:${scope.kind}:${scope.categoryId}`;
+}
+
 function withoutPlatformAdmins(result: AccessUserList): AccessUserList {
   return {
-    truncated: result.truncated,
+    ...result,
     users: result.users.filter((user) => !user.roles.includes('platform-admin')),
   };
 }
@@ -31,10 +37,11 @@ async function listAccessUsers(
   payload: { categoryId?: string; query: string; scopeKind?: AccessScope['kind'] },
   options: { onUsers?: (users: AccessUser[]) => void } = {},
 ) {
-  let streamed: AccessUserList = { truncated: false, users: [] };
+  let streamed: AccessUserList = { revision: "", truncated: false, users: [] };
   const fn = invokeBackendAction<typeof payload, AccessUserList>('listRoleAssignments', {
     onSegment: (key, data) => {
       if (key === 'truncated') streamed = { ...streamed, truncated: data === true };
+      if (key === 'revision') streamed = { ...streamed, revision: data as string };
       if (key !== 'users') return;
       streamed = withoutPlatformAdmins({ ...streamed, users: data as AccessUser[] });
       options.onUsers?.(streamed.users);
@@ -75,5 +82,15 @@ export async function setUserAccessScope(
     grant,
     scopeKind: scope.kind,
     uid,
+  });
+}
+
+export async function saveScopeMembers(scope: AccessScope, changes: Array<{ uid: string; grant: boolean }>, revision: string) {
+  return invokeBackendAction<
+    { categoryId?: string; changes: typeof changes; revision: string; scopeKind: AccessScope['kind'] },
+    { changedUids: string[]; revision: string; success: boolean; users: AccessUser[] }
+  >('saveScopeMembers')({
+    categoryId: 'categoryId' in scope ? scope.categoryId : undefined,
+    changes, revision, scopeKind: scope.kind,
   });
 }

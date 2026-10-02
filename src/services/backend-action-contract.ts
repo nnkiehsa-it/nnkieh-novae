@@ -204,6 +204,9 @@ export const BACKEND_ACTION_POLICIES = {
   "setUserAccessScope": {
     "group": "admin-write"
   },
+  "saveScopeMembers": {
+    "group": "admin-write"
+  },
   "listAccountAccessRules": {
     "group": "read"
   },
@@ -299,6 +302,7 @@ export const BACKEND_ACTION_NAMES = [
   'savePlatformFeatures',
   'setAnnouncementLike',
   'setUserAccessScope',
+  'saveScopeMembers',
   'listAccountAccessRules',
   'saveAccountAccessRule',
   'deleteAccountAccessRule',

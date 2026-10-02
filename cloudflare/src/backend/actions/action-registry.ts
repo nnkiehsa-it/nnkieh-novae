@@ -127,6 +127,7 @@ export const backendActionDefinitions = [
   action("saveAccountAccessRule", "user", "admin-write", userHandler, { requiredPermission: "role.manage" }),
   action("deleteAccountAccessRule", "user", "admin-write", userHandler, { requiredPermission: "role.manage" }),
   action("setUserAccessScope", "user", "admin-write", userHandler, { requiredPermission: "role.manage" }),
+  action("saveScopeMembers", "user", "admin-write", userHandler, { requiredPermission: "role.manage" }),
   action("cacheUserAvatar", "user", "sensitive-write", userHandler),
   action("getUserPublicProfiles", "user", "read", userHandler),
 

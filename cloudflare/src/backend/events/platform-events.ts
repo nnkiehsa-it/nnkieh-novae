@@ -2,7 +2,7 @@ import type { ResolvedDomainEvent, WriteOutcome } from "./domain-events.ts";
 
 /** What the platform itself announces: its settings, access, uploads and accounts. */
 export function platformEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | null {
-  const { action, payload, actorUid } = outcome;
+  const { action, payload, actorUid, res } = outcome;
   const events: ResolvedDomainEvent[] = [];
   switch (action) {
     case "clearOperationalErrors":
@@ -106,6 +106,15 @@ export function platformEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | n
         destinations: ["realtime"],
         payload: { target_uid: targetUid, actor_uid: actorUid },
       });
+      break;
+    }
+    case "saveScopeMembers": {
+      for (const targetUid of res.changedUids as string[]) {
+        events.push({
+          aggregateType: "user", aggregateId: targetUid, eventType: "user.access_scoped",
+          destinations: ["realtime"], payload: { target_uid: targetUid, actor_uid: actorUid },
+        });
+      }
       break;
     }
     case "createImageUploadSessions":

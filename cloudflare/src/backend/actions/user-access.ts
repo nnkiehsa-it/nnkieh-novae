@@ -5,7 +5,6 @@ import { requirePermission } from "./auth.ts";
 import type { Selected } from "../database/schema.ts";
 import { settledSegments } from "./segments.ts";
 
-const ACCESS_LIST_LIMIT = 100;
 const ACCESS_SCOPE_KINDS = new Set(["announcement", "facility", "issue"]);
 
 interface AccessScopeSelector {
@@ -25,20 +24,34 @@ function readAccessScope(payload: JsonRecord): AccessScopeSelector | null {
 }
 
 async function scopedAccessUids(scope: AccessScopeSelector, database: BackendDatabase) {
-  const limit = ACCESS_LIST_LIMIT + 1;
-  const { rows } = scope.kind === "announcement"
-    ? await database.sql<Selected<"user_role_assignments", "uid">>`
-      select uid from app_private.user_role_assignments
-      where role_code = 'announcement-manager' limit ${limit}`
+  type Membership = { revision: string; uids: string[] };
+  return scope.kind === "announcement"
+    ? await database.sqlOne<Membership>`
+      select coalesce(array_agg(uid order by uid), array[]::text[]) as uids,
+        md5(coalesce(jsonb_agg(uid order by uid), '[]'::jsonb)::text) as revision
+      from app_private.user_role_assignments where role_code = 'announcement-manager'`
     : scope.kind === "issue"
-    ? await database.sql<Selected<"user_issue_category_assignments", "uid">>`
-      select uid from app_private.user_issue_category_assignments
-      where category_id = ${scope.categoryId} limit ${limit}`
-    : await database.sql<Selected<"user_facility_category_assignments", "uid">>`
-      select uid from app_private.user_facility_category_assignments
-      where category_id = ${scope.categoryId} limit ${limit}`;
-  const uids = [...new Set(rows.map((row) => row.uid))];
-  return { truncated: uids.length > ACCESS_LIST_LIMIT, uids: uids.slice(0, ACCESS_LIST_LIMIT) };
+    ? await database.sqlOne<Membership>`
+      select coalesce(array_agg(uid order by uid), array[]::text[]) as uids,
+        md5(coalesce(jsonb_agg(uid order by uid), '[]'::jsonb)::text) as revision
+      from app_private.user_issue_category_assignments where category_id = ${scope.categoryId}`
+    : await database.sqlOne<Membership>`
+      select coalesce(array_agg(uid order by uid), array[]::text[]) as uids,
+        md5(coalesce(jsonb_agg(uid order by uid), '[]'::jsonb)::text) as revision
+      from app_private.user_facility_category_assignments where category_id = ${scope.categoryId}`;
+}
+
+async function lockScope(scope: AccessScopeSelector, database: BackendDatabase) {
+  await database.sql`select pg_advisory_xact_lock(hashtext(${`novae:access:${scope.kind}:${scope.categoryId}`}))`;
+}
+
+async function updateScopeMember(uid: string, scope: AccessScopeSelector, grant: boolean, auth: AuthContext, database: BackendDatabase) {
+  const { data, error } = await database.call("app_api", "backend_update_user_access_scope", {
+    actor_uid: auth.uid, target_uid: uid, scope_kind: scope.kind,
+    category_id: scope.categoryId || null, grant_access: grant,
+  });
+  if (error) throw error;
+  return data;
 }
 
 async function* accessUsersForUids(
@@ -117,7 +130,7 @@ export async function handleUserAccessAction(
     const rawQuery = asString(payload.query).trim();
     const scope = readAccessScope(payload);
     if (!rawQuery && !scope) throw new Error("validation-required");
-    let truncated = false;
+    let revision = "";
     let uids: string[] = [];
     if (rawQuery) {
       const query = rawQuery.includes("@") ? rawQuery.toLowerCase() : rawQuery;
@@ -129,11 +142,12 @@ export async function handleUserAccessAction(
       uids = rows.map((profile) => profile.uid);
     } else if (scope) {
       const scoped = await scopedAccessUids(scope, database);
-      truncated = scoped.truncated;
+      revision = scoped.revision;
       uids = scoped.uids;
     }
     return (async function* () {
-      yield { data: truncated, key: "truncated" };
+      yield { data: false, key: "truncated" };
+      yield { data: revision, key: "revision" };
       yield* accessUsersForUids(uids, database, auth.uid);
     })();
   }
@@ -144,15 +158,36 @@ export async function handleUserAccessAction(
     if (!uid || !scope || typeof payload.grant !== "boolean") {
       throw new Error("validation-required");
     }
-    const { data, error } = await database.call("app_api", "backend_update_user_access_scope", {
-      actor_uid: auth.uid,
-      target_uid: uid,
-      scope_kind: scope.kind,
-      category_id: scope.categoryId || null,
-      grant_access: payload.grant,
+    await lockScope(scope, database);
+    return updateScopeMember(uid, scope, payload.grant, auth, database);
+  }
+
+  if (action === "saveScopeMembers") {
+    const scope = readAccessScope(payload);
+    if (!scope || typeof payload.revision !== "string" || !/^[a-f0-9]{32}$/u.test(payload.revision)
+      || !Array.isArray(payload.changes) || payload.changes.length === 0) throw new Error("validation-required");
+    const changes = payload.changes.map((value) => {
+      const change = value as { uid?: unknown; grant?: unknown } | null;
+      if (!change || typeof change.uid !== "string" || !change.uid.trim() || typeof change.grant !== "boolean") throw new Error("validation-required");
+      return { uid: change.uid.trim(), grant: change.grant };
     });
-    if (error) throw error;
-    return data;
+    if (new Set(changes.map((change) => change.uid)).size !== changes.length) throw new Error("validation-required");
+    await lockScope(scope, database);
+    const before = await scopedAccessUids(scope, database);
+    if (before.revision !== payload.revision) throw new Error("configuration-changed");
+    const beforeUids = new Set(before.uids);
+    const changed = changes.filter((change) => beforeUids.has(change.uid) !== change.grant);
+    // Overlapping batches in different scopes lock their shared accounts in the
+    // same order. The action transaction rolls back every change on any failure.
+    await database.sql`select uid from app_private.user_profiles
+      where uid = any(${changed.map((change) => change.uid)}) order by uid for update`;
+    for (const change of changed) await updateScopeMember(change.uid, scope, change.grant, auth, database);
+    const after = await scopedAccessUids(scope, database);
+    let users: unknown[] = [];
+    for await (const segment of accessUsersForUids(after.uids, database, auth.uid)) {
+      if (segment.key === "users") users = segment.data as unknown[];
+    }
+    return { changedUids: changed.map((change) => change.uid), revision: after.revision, success: true, users };
   }
 
   throw new Error("invalid-action");
