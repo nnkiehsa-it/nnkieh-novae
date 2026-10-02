@@ -4,7 +4,7 @@ import * as React from "react";
 import { useI18n } from "@/i18n";
 import { useCategories } from "@/hooks/use-categories";
 import { useSession } from "@/hooks/use-session";
-import { useRememberedState } from "@/hooks/use-remembered-state";
+import { useAccessTarget } from "@/hooks/use-access-target";
 import { getUnsavedChanges } from "@/hooks/unsaved-changes-store";
 import { ScopeAccessEditor } from "@/components/admin/scope-access-editor";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -24,7 +24,7 @@ export function AccessManagement() {
   const { t } = useI18n();
   const { activeFacilityCategories, activeIssueCategories } = useCategories();
   const { user } = useSession();
-  const { remember, value: target } = useRememberedState<Target>("admin-access-target", { kind: "issue", issueId: "", facilityId: "" });
+  const [target, remember] = useAccessTarget();
   const [pending, setPending] = React.useState<Target | null>(null);
   const options = React.useMemo(() => target.kind === "issue" ? activeIssueCategories : target.kind === "facility" ? activeFacilityCategories : [],
     [activeFacilityCategories, activeIssueCategories, target.kind]);
@@ -32,7 +32,7 @@ export function AccessManagement() {
   const categoryId = requestedId || (options.length === 1 ? options[0]!.id : "");
   React.useEffect(() => {
     if (target.kind !== "announcement" && !requestedId && options.length === 1) {
-      remember({ ...target, [target.kind === "issue" ? "issueId" : "facilityId"]: options[0]!.id });
+      remember({ ...target, [target.kind === "issue" ? "issueId" : "facilityId"]: options[0]!.id }, true);
     }
   }, [options, remember, requestedId, target]);
   const scope = React.useMemo<AccessScope | null>(() => target.kind === "announcement" ? { kind: target.kind }

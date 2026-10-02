@@ -60,6 +60,8 @@ test("scope drafts stay with their area, review real members, and save one atomi
     expect(writes).toHaveLength(1);
     expect(writes[0].payload.changes).toHaveLength(2);
     await expect(page.getByText("2 unsaved changes", { exact: true })).toHaveCount(0);
+    await expect(page).toHaveURL(/issueCategory=/u);
+    const targetUrl = page.url();
     await page.goto("/admin/audit");
     await page.getByRole("textbox").fill("saveScopeMembers");
     await page.getByRole("button", { name: "Search", exact: true }).click();
@@ -73,7 +75,7 @@ test("scope drafts stay with their area, review real members, and save one atomi
     await expect(audit.getByText(/\[object Object\]/u)).toHaveCount(0);
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath("scope-audit-390.png") });
-    await page.goto("/admin/people?view=scopes");
+    await page.goto(targetUrl);
     await expect(page.getByRole("combobox")).toContainText("Proposal A");
     for (const email of [E2E_USERS.other, E2E_USERS.ordinary]) {
       await page.getByRole("button", { name: `Revoke access from ${email}`, exact: true }).click();
