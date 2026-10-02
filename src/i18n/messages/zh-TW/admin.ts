@@ -1,4 +1,5 @@
 const messages = {
+  "admin.supportIntegerHelp": "附議門檻與天數都必須是大於 0 的整數。小數或未填寫的值無法儲存。",
   "admin.categoryOrder": "分類順序",
   "admin.changeAddedCategory": "新增分類",
   "admin.changeRemovedCategory": "刪除分類",

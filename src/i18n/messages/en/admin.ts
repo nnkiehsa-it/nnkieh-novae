@@ -1,4 +1,5 @@
 const messages = {
+  "admin.supportIntegerHelp": "The support goal and period must be positive whole numbers. Decimal or empty values cannot be saved.",
   "admin.categoryOrder": "Category order",
   "admin.changeAddedCategory": "Added category",
   "admin.changeRemovedCategory": "Removed category",

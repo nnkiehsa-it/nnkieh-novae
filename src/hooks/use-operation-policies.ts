@@ -27,7 +27,7 @@ export function useOperationPolicies() {
     "admin-policies",
     null,
   );
-  const { error, loading: busy, read } = useAdminReading("admin-policies", "common.loadFailed");
+  const { error, invalidate, isActive, loading: busy, read } = useAdminReading("admin-policies", "common.loadFailed");
   const stored = React.useMemo(() => reading ? {
     revision: reading.revision, values: reading.values,
   } : null, [reading]);
@@ -51,7 +51,9 @@ export function useOperationPolicies() {
   const draft = useDraft<OperationsConsole["settings"]>({
     requireReason: true,
     save: async (value, reason, baseline) => {
+      invalidate();
       const saved = await saveOperationPolicies({ reason, revision: baseline.revision, values: value.values });
+      if (!isActive()) return saved;
       setOperationPolicies(saved);
       remember((current) => ({
         history: current?.history ?? [],

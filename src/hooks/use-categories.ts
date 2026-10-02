@@ -47,6 +47,8 @@ const initialCategoryState: CategoryState = {
 };
 let state: CategoryState = initialCategoryState;
 let loadPromise: Promise<void> | null = null;
+let catalogVersion = 0;
+let imageSettingsVersion = 0;
 
 function emit() {
   listeners.forEach((listener) => listener());
@@ -65,6 +67,7 @@ function replaceCatalog(next: {
 }) {
   state = {
     ...state,
+    error: "",
     facilityCategories: [...next.facilityCategories].sort(
       (a, b) => a.sortOrder - b.sortOrder,
     ),
@@ -74,6 +77,7 @@ function replaceCatalog(next: {
       (a, b) => a.sortOrder - b.sortOrder,
     ),
     loaded: true,
+    loading: false,
   };
   emit();
 }
@@ -104,10 +108,13 @@ export function seedCategoryCatalog(next: {
   facilityCategories: FacilityCategoryConfig[];
   imageUploads: ImageUploadSettings;
 }) {
+  catalogVersion += 1;
+  imageSettingsVersion += 1;
   replaceCatalog(next);
 }
 
 export function seedImageUploadSettings(imageUploads: ImageUploadSettings) {
+  imageSettingsVersion += 1;
   state = { ...state, imageUploads: { ...imageUploads } };
   emit();
 }
@@ -117,21 +124,33 @@ export async function ensureCategoryCatalog(force = false) {
   if (!force && loadPromise) return await loadPromise;
   state = { ...state, error: "", loading: true };
   emit();
-  loadPromise = (async () => {
+  const version = ++catalogVersion;
+  const imageVersion = imageSettingsVersion;
+  const current = () => version === catalogVersion;
+  let request!: Promise<void>;
+  request = (async () => {
     try {
       if (!force) {
         try {
           const bootstrap = await fetchSessionBootstrap();
-          replaceCatalog(bootstrap.catalog);
+          if (current()) replaceCatalog({
+            ...bootstrap.catalog,
+            imageUploads: imageVersion === imageSettingsVersion ? bootstrap.catalog.imageUploads : state.imageUploads,
+          });
           return;
         } catch {
           // Fall through to the dedicated catalog action.
         }
       }
-      await getCategoryCatalog({ onCatalog: mergeCatalog });
-      state = { ...state, loaded: true };
-      emit();
+      await getCategoryCatalog({ onCatalog: (panel) => {
+        if (current()) mergeCatalog(imageVersion === imageSettingsVersion ? panel : { ...panel, imageUploads: undefined });
+      } });
+      if (current()) {
+        state = { ...state, loaded: true };
+        emit();
+      }
     } catch (error) {
+      if (!current()) return;
       state = {
         ...state,
         error: error instanceof Error ? error.message : "common.loadFailed",
@@ -139,15 +158,20 @@ export async function ensureCategoryCatalog(force = false) {
       emit();
       throw error;
     } finally {
-      state = { ...state, loading: false };
-      loadPromise = null;
-      emit();
+      if (current()) {
+        state = { ...state, loading: false };
+        emit();
+      }
+      if (loadPromise === request) loadPromise = null;
     }
   })();
-  return await loadPromise;
+  loadPromise = request;
+  return await request;
 }
 
 export function clearCategoryCatalog() {
+  catalogVersion += 1;
+  imageSettingsVersion += 1;
   state = {
     error: "",
     facilityCategories: [],

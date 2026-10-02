@@ -2,8 +2,8 @@
 
 import * as React from "react";
 
-import { useI18n } from "@/i18n";
-import { useCategories } from "@/hooks/use-categories";
+import { useAdminReading } from "@/hooks/use-admin-reading";
+import { seedCategoryCatalog } from "@/hooks/use-categories";
 import { useDraft } from "@/hooks/use-draft";
 import { useRememberedState } from "@/hooks/use-remembered-state";
 import {
@@ -17,6 +17,7 @@ import {
   newFacilityCategory,
   newIssueCategory,
   removeCategory,
+  validSupportCount,
 } from "@/lib/category-management-state";
 import { notifyPlatformJobsChanged } from "@/lib/platform-job-events";
 import type { FacilityCategoryConfig, IssueCategoryConfig } from "@/types/categories";
@@ -34,14 +35,11 @@ function withSortOrder<T>(items: T[]) {
 }
 
 export function useCategoryManagement() {
-  const categories = useCategories();
-  const { t } = useI18n();
   const { remember, value: reading } = useRememberedState<CategoryReading | null>(
     "admin-categories",
     null,
   );
-  const [error, setError] = React.useState("");
-  const [busy, setBusy] = React.useState(false);
+  const { error, invalidate, isActive, loading: busy, read } = useAdminReading("admin-categories", "common.loadFailed");
   const stored = reading?.stored ?? null;
   const persisted = React.useMemo(() => new Set(reading?.persisted ?? []), [reading]);
 
@@ -78,17 +76,7 @@ export function useCategoryManagement() {
     [remember],
   );
 
-  const load = React.useCallback(async () => {
-    setBusy(true);
-    setError("");
-    try {
-      adopt(await getCategoryManagement());
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("common.loadFailed"));
-    } finally {
-      setBusy(false);
-    }
-  }, [adopt, t]);
+  const load = React.useCallback(() => read(getCategoryManagement, adopt), [adopt, read]);
 
   React.useEffect(() => {
     void load();
@@ -108,6 +96,7 @@ export function useCategoryManagement() {
       };
     },
     save: async (value) => {
+      invalidate();
       const result = await saveCategoryManagement({
         ...value,
         facilityCategories: withSortOrder(value.facilityCategories),
@@ -115,11 +104,13 @@ export function useCategoryManagement() {
       });
       const next: CategoryManagementInput = {
         ...value,
+        ...result.features,
         deletedFacilityCategoryIds: [],
         deletedIssueCategoryIds: [],
         facilityCategories: result.facilityCategories,
         issueCategories: result.issueCategories,
       };
+      if (!isActive()) return next;
       remember({
         persisted: [
           ...result.issueCategories.map((item) => item.id),
@@ -127,7 +118,7 @@ export function useCategoryManagement() {
         ],
         stored: next,
       });
-      await categories.refresh();
+      seedCategoryCatalog(result);
       notifyPlatformJobsChanged();
       return next;
     },
@@ -138,17 +129,17 @@ export function useCategoryManagement() {
         ...value.facilityCategories.map((item) => item.maxImages)]
         .every((limit) => Number.isInteger(limit) && limit >= 0 && limit <= 20)
       &&
-      (!value.issuesEnabled
+      ((!value.issuesEnabled && value.issueCategories.length === 0)
         || (hasValidCategoryIdentity(value.issueCategories)
-          && value.issueCategories.some((item) => item.isDefault)
+          && value.issueCategories.filter((item) => item.isDefault).length === 1
           && value.issueCategories.every(
             (item) =>
               !item.supportEnabled
-              || (Number(item.supportGoal) > 0 && Number(item.supportDeadlineDays) > 0),
+              || (validSupportCount(item.supportGoal) && validSupportCount(item.supportDeadlineDays)),
           )))
-      && (!value.facilitiesEnabled
+      && ((!value.facilitiesEnabled && value.facilityCategories.length === 0)
         || (hasValidCategoryIdentity(value.facilityCategories)
-          && value.facilityCategories.some((item) => item.isDefault))),
+          && value.facilityCategories.filter((item) => item.isDefault).length === 1)),
   });
 
   const value = draft.value;

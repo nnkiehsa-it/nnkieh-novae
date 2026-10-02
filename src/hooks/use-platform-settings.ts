@@ -19,7 +19,7 @@ import { validPlatformSettings } from "@/lib/admin-setting-presets";
 export function usePlatformSettings() {
   const { remember: setStored, value: stored } =
     useRememberedState<PlatformSettings | null>("admin-platform-settings", null);
-  const { error, loading: reading, read } = useAdminReading("admin-platform-settings", "common.loadFailed");
+  const { error, invalidate, isActive, loading: reading, read } = useAdminReading("admin-platform-settings", "common.loadFailed");
 
   const load = React.useCallback(
     () => read(getCategoryManagement, (result) => setStored(result.platformSettings)),
@@ -33,8 +33,10 @@ export function usePlatformSettings() {
   const draft = useDraft<PlatformSettings>({
     estimate: (value) => estimateRetentionCleanup(value),
     save: async (value) => {
+      invalidate();
       const saved = await savePlatformSettings(value);
       const next = { imageUploads: saved.imageUploads, retention: saved.retention };
+      if (!isActive()) return next;
       setStored(next);
       seedImageUploadSettings(saved.imageUploads);
       markSessionBootstrapStale();

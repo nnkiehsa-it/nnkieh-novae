@@ -256,6 +256,20 @@ integrationTest("runtime category setup and management enforce platform permissi
       sortOrder: index,
     };
   });
+  for (const supportGoal of [1.5, null, "30", 2_147_483_648]) {
+    await expectActionError("validation-required", () => callAction("saveCategoryManagement", {
+      ...asRecord(managed.features),
+      deletedFacilityCategoryIds: [], deletedIssueCategoryIds: [],
+      facilityCategories: managedFacilities,
+      issueCategories: managedIssues.map((category) => ({ ...category, supportEnabled: true, supportGoal, supportDeadlineDays: 14 })),
+    }, admin.auth));
+  }
+  await expectActionError("validation-required", () => callAction("estimateCategoryPolicyChanges", {
+    ...asRecord(managed.features), deletedIssueCategoryIds: [],
+    issueCategories: managedIssues.map((category) => ({ ...category, supportEnabled: true, supportGoal: 30, supportDeadlineDays: 2.5 })),
+  }, admin.auth));
+  const afterRejected = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
+  assert.deepEqual(afterRejected.issueCategories, managed.issueCategories, "invalid input must not change any category");
   const policyAnnouncement = await database.sqlOne<{ id: string }>`
     insert into app_private.announcements (author_uid, content, title)
     values (${admin.auth.uid}, 'Background policy integration test', 'Background policy')

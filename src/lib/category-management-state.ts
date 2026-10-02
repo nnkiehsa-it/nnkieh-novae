@@ -45,5 +45,9 @@ export function hasValidCategoryIdentity(values: Array<{ id: string; label: stri
   const ids = values.map((item) => item.id.trim());
   return values.length > 0
     && new Set(ids).size === ids.length
-    && values.every((item) => CATEGORY_PATTERN.test(item.id.trim()) && Boolean(item.label.trim()));
+    && values.every((item) => CATEGORY_PATTERN.test(item.id.trim()) && item.label.trim().length >= 1 && item.label.trim().length <= 40);
+}
+
+export function validSupportCount(value: number | null) {
+  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 2_147_483_647;
 }

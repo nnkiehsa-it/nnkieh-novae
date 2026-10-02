@@ -64,6 +64,7 @@ export function CategoryEditor({
     <ListSection header={t("admin.categoryIdentity")}>
       <ListInputRow
         label={t("ui.common.name")}
+        maxLength={40}
         onChange={(next) => change({ ...item, label: next })}
         value={item.label}
       />
@@ -122,15 +123,18 @@ export function CategoryEditor({
           <ListRowGroup show={item.supportEnabled}>
             <ListNumberRow
               label={t("ui.admin.supportGoal")}
+              max={2_147_483_647}
               onChange={(next) => change({ ...item, supportGoal: next || null })}
               value={item.supportGoal ?? undefined}
             />
             <ListNumberRow
               label={t("ui.admin.supportDays")}
+              max={2_147_483_647}
               onChange={(next) => change({ ...item, supportDeadlineDays: next || null })}
               unit={t("admin.unitDays")}
               value={item.supportDeadlineDays ?? undefined}
             />
+            <p className="px-4 py-2 text-sm leading-6 text-muted-foreground">{t("admin.supportIntegerHelp")}</p>
           </ListRowGroup>
         </ListSection>
       ) : null}

@@ -1,6 +1,6 @@
 import { asRecord, asString } from "../shared/http.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
-import { asBoolean, asNumber } from "./utils.ts";
+import { asBoolean } from "./utils.ts";
 import { requirePermission } from "./auth.ts";
 import {
   loadPlatformSettings,
@@ -19,11 +19,11 @@ function imageLimit(value: unknown) {
   return value;
 }
 
-function nullablePositiveInteger(value: unknown) {
-  if (value === null || value === undefined || value === "") return null;
-  const number = Math.round(asNumber(value, 0));
-  if (number < 1) throw new Error("validation-required");
-  return number;
+function positiveInteger(value: unknown) {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 1 || value > 2_147_483_647) {
+    throw new Error("validation-required");
+  }
+  return value;
 }
 
 function deletedCategoryIds(value: unknown) {
@@ -66,9 +66,9 @@ function issueCategoryInput(value: unknown, sortOrder: number) {
     commentsEnabled: asBoolean(record.commentsEnabled, true),
     readAccess,
     sortOrder,
-    supportDeadlineDays: supportEnabled ? nullablePositiveInteger(record.supportDeadlineDays) : null,
+    supportDeadlineDays: supportEnabled ? positiveInteger(record.supportDeadlineDays) : null,
     supportEnabled,
-    supportGoal: supportEnabled ? nullablePositiveInteger(record.supportGoal) : null,
+    supportGoal: supportEnabled ? positiveInteger(record.supportGoal) : null,
   };
 }
 
