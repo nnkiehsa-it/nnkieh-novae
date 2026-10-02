@@ -3,6 +3,7 @@ import { availableParallelism } from "node:os";
 
 const readOnlyDesktopTests = [
   /access-visibility\.spec\.ts/,
+  /admin-workspace\.spec\.ts/,
   /feed-layout\.spec\.ts/,
   /loading-continuity\.spec\.ts/,
   /motion-system\.spec\.ts/,
