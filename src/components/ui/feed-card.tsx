@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
 // One geometry for resolved feeds, route placeholders, and empty states.
-export const feedGridClassName = "grid gap-4 lg:grid-cols-2 lg:items-stretch";
+export const feedGridClassName = "grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch";
 
 export function FeedCard({
   children,
@@ -23,7 +23,7 @@ export function FeedCard({
   title: ReactNode;
 }) {
   return (
-    <div className="flex h-full flex-col gap-3 px-4 py-4">
+    <div className="flex h-full min-w-0 flex-col gap-3 px-4 py-4">
       <div data-slot="feed-card-header" className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="min-h-7 text-lg font-semibold leading-7 tracking-[-0.025em]">
@@ -37,7 +37,7 @@ export function FeedCard({
       </div>
       {children}
       {footer ? (
-        <div data-slot="feed-card-footer" className="mt-auto flex min-h-8 items-center gap-2">
+        <div data-slot="feed-card-footer" className="mt-auto flex min-h-8 flex-wrap items-center gap-2">
           {footer}
         </div>
       ) : null}
