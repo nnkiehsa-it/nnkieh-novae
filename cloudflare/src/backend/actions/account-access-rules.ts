@@ -58,7 +58,10 @@ export async function handleAccountAccessRuleAction(action: string, payload: Jso
   if (action === "listAccountAccessRules") return { rules: await loadAccountAccessRules(database) };
   const target = targetFromInput(payload);
   if (payload.revision !== null && (typeof payload.revision !== "string" || !/^[a-f0-9]{32}$/u.test(payload.revision))) throw new Error("validation-required");
-  if (action !== "previewAccountAccessRule") await database.sql`select pg_advisory_xact_lock(hashtext(${`novae:account-rule:${target.type}:${target.value}`}))`;
+  if (action !== "previewAccountAccessRule") {
+    await database.sql`select pg_advisory_xact_lock(hashtext(${`novae:account-rule:${target.type}:${target.value}`}))`;
+    await database.sql`select uid from app_private.user_restrictions where target_type=${target.type} and uid=${target.value} for update`;
+  }
   const [before] = await loadAccountAccessRules(database, { targetType: target.type, targetValue: target.value });
   if ((before?.revision ?? null) !== payload.revision) throw new Error("configuration-changed");
   if (action === "previewAccountAccessRule") {

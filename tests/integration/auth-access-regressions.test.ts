@@ -73,6 +73,17 @@ integrationTest("expired cleanup and user pagination distinguish rules with the 
     || jsonb_build_object('cleanupScopes', '["restrictions"]'::jsonb), 100)`;
   const { rows } = await database.sql`select target_type from app_private.user_restrictions where uid='same-value'`;
   assert.deepEqual(rows, [{ target_type: "email_prefix" }]);
+  await insertRows("user_restrictions", [{ uid: "same-value", target_type: "uid", preset: "read_only", reason: "Renewing rule", updated_by: admin.auth.uid, restricted_permanently: false, restricted_until: "2020-01-01T00:00:00Z" }]);
+  await database.transaction(async (tx) => {
+    await tx.sql`select uid from app_private.user_restrictions where target_type='uid' and uid='same-value' for update`;
+    await database.sql`select app_private.run_retention_cleanup_core_batch(app_private.runtime_retention_config()
+      || jsonb_build_object('cleanupScopes', '["restrictions"]'::jsonb), 100)`;
+    assert.equal((await tx.sql`select uid from app_private.user_restrictions where target_type='uid' and uid='same-value'`).rows.length, 1);
+    await tx.sql`update app_private.user_restrictions set restricted_until=now()+interval '7 days' where target_type='uid' and uid='same-value'`;
+  });
+  await database.sql`select app_private.run_retention_cleanup_core_batch(app_private.runtime_retention_config()
+    || jsonb_build_object('cleanupScopes', '["restrictions"]'::jsonb), 100)`;
+  assert.equal((await database.sql`select uid from app_private.user_restrictions where uid='same-value'`).rows.length, 2);
 });
 
 integrationTest("email prefixes treat percent and underscore literally", async () => {
