@@ -2,11 +2,12 @@
 
 import * as React from "react";
 
+import { useAdminReading } from "@/hooks/use-admin-reading";
 import { useDraft } from "@/hooks/use-draft";
 import { useRememberedState } from "@/hooks/use-remembered-state";
 import { setOperationPolicies } from "@/lib/operation-policies";
 import {
-  fetchOperationsConsole,
+  fetchOperationSettings,
   saveOperationPolicies,
   type OperationsConsole,
 } from "@/services/operations-console";
@@ -25,65 +26,40 @@ export function useOperationPolicies() {
     "admin-policies",
     null,
   );
-  const [error, setError] = React.useState("");
-  const [busy, setBusy] = React.useState(false);
-  const stored = reading?.values ?? null;
+  const { error, loading: busy, read } = useAdminReading("admin-policies", "common.loadFailed");
+  const stored = React.useMemo(() => reading ? {
+    revision: reading.revision, values: reading.values,
+  } : null, [reading]);
   const revision = reading?.revision ?? 0;
 
-  const load = React.useCallback(async () => {
-    setBusy(true);
-    setError("");
-    try {
-      // The settings and their history are two of the console's ten readings.
-      // The screen is the settings, so it is drawn as soon as they land rather
-      // than after the readings it does not show.
-      const snapshot = await fetchOperationsConsole({ page: 0 }, {
-        onPanel: (panel) => {
-          if (panel.settings) {
-            const settings = panel.settings;
-            remember((current) => ({
-              history: current?.history ?? [],
-              revision: settings.revision,
-              values: settings.values,
-            }));
-          }
-          if (panel.history) {
-            const history = panel.history;
-            remember((current) => (current ? { ...current, history } : current));
-          }
-        },
-      });
+  const load = React.useCallback(() => read(
+    () => fetchOperationSettings({ policiesOnly: true }),
+    (snapshot) => {
       remember({
         history: snapshot.history,
         revision: snapshot.settings.revision,
         values: snapshot.settings.values,
       });
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
-    } finally {
-      setBusy(false);
-    }
-  }, [remember]);
+    },
+  ), [read, remember]);
 
   React.useEffect(() => {
     void load();
   }, [load]);
 
-  const draft = useDraft<OperationPolicies>({
+  const draft = useDraft<OperationsConsole["settings"]>({
     requireReason: true,
-    save: async (values, reason) => {
-      const saved = await saveOperationPolicies({ reason, revision, values });
+    save: async (value, reason, baseline) => {
+      const saved = await saveOperationPolicies({ reason, revision: baseline.revision, values: value.values });
       setOperationPolicies(saved);
       remember((current) => ({
         history: current?.history ?? [],
         revision: saved.revision,
         values: saved.values,
       }));
-      // Only the history is re-read, and only because the server owns the actor
-      // and the timestamp on the entry just written. Nothing else on the screen
-      // is thrown away to learn it.
+      // Re-read the server-owned policy history without querying system diagnostics.
       void load();
-      return saved.values;
+      return saved;
     },
     source: stored,
   });

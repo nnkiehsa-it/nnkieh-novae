@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { handleOperationsAction } from '../../cloudflare/src/backend/actions/operations';
 import type { AuthContext, BackendDatabase } from '../../cloudflare/src/backend/actions/types';
+import { DEFAULT_OPERATION_POLICIES } from '../../cloudflare/generated/operations';
 
 describe('operations progress', () => {
   it('reads only the jobs page, without capacity, history or diagnostic queries', async () => {
@@ -20,5 +21,20 @@ describe('operations progress', () => {
       { isAdmin: false } as AuthContext, { sql } as unknown as BackendDatabase))
       .rejects.toThrow('permission-denied');
     expect(sql).not.toHaveBeenCalled();
+  });
+
+  it('reads policies and history without running any system-monitoring queries', async () => {
+    const settings = { revision: 3, values: DEFAULT_OPERATION_POLICIES };
+    const sqlOne = vi.fn().mockResolvedValue({ value: JSON.stringify(settings) });
+    const sql = vi.fn().mockResolvedValue({ rows: [{ id: 1, revision: 3 }] });
+    const result = await handleOperationsAction('getOperationsConsole', { policiesOnly: true },
+      { isAdmin: true } as AuthContext, { sql, sqlOne } as unknown as BackendDatabase);
+    expect(result).toEqual({ settings, history: [{ id: 1, revision: 3 }] });
+    expect(sqlOne).toHaveBeenCalledTimes(1);
+    expect(sql).toHaveBeenCalledTimes(1);
+    expect(sql.mock.calls[0][0].join('')).toContain('operation_policy_history');
+    await expect(handleOperationsAction('getOperationsConsole', { policiesOnly: true },
+      { isAdmin: false } as AuthContext, { sql, sqlOne } as unknown as BackendDatabase))
+      .rejects.toThrow('permission-denied');
   });
 });

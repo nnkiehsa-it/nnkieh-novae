@@ -75,6 +75,14 @@ export async function handleOperationsAction(action: string, payload: JsonRecord
   if (action === 'getOperationsConsole') {
     const page = payload.page ?? 0;
     if (!Number.isInteger(page) || Number(page) < 0 || Number(page) > 1_000_000) throw new Error('validation-invalid');
+    if (payload.policiesOnly === true) {
+      if (payload.progressOnly === true) throw new Error('validation-invalid');
+      const [settings, history] = await Promise.all([
+        readOperationPolicies(database),
+        operationHistory(Number(page) * 100, database),
+      ]);
+      return { settings, history: history.rows.slice(0, 100) };
+    }
     if (payload.progressOnly === true) {
       const jobs = await operationsJobs(Number(page) * 100, database);
       return { jobs: jobs.rows.slice(0, 100) };
@@ -131,6 +139,11 @@ function operationsJobs(offset: number, database: BackendDatabase) {
     from app_private.background_jobs order by created_at desc, id desc limit 101 offset ${offset}`;
 }
 
+function operationHistory(offset: number, database: BackendDatabase) {
+  return database.sql`select id, actor_uid, revision, reason, before_value, after_value, created_at
+    from app_private.operation_policy_history order by id desc limit 101 offset ${offset}`;
+}
+
 function operationsConsole(offset: number, database: BackendDatabase) {
   const paged = {
     cleanupBacklog: database.sql`select job_id, created_at, payload from app_private.external_cleanup_backlog
@@ -141,8 +154,7 @@ function operationsConsole(offset: number, database: BackendDatabase) {
       e.event_type, e.aggregate_id, e.operation_id from app_private.event_deliveries d
       join app_private.domain_events e on e.event_id = d.event_id where d.status = 'failed'
       order by d.updated_at desc, d.id desc limit 101 offset ${offset}`,
-    history: database.sql`select id, actor_uid, revision, reason, before_value, after_value, created_at
-      from app_private.operation_policy_history order by id desc limit 101 offset ${offset}`,
+    history: operationHistory(offset, database),
     jobs: operationsJobs(offset, database),
   };
   const capacity = database.sql`select relname as name, n_live_tup as rows, n_dead_tup as dead_rows,

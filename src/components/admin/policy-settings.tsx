@@ -22,7 +22,7 @@ export function PolicySettings() {
   const { draft, error, history, load, loading, revision } = useOperationPolicies();
   const [area, setArea] = React.useState("content");
   useUnsavedChanges(draft.changes.length, draft.reset);
-  const value = draft.value;
+  const value = draft.value?.values;
 
   if (error) return <ErrorState error={error} onRetry={() => void load()} />;
   if (loading || !value)
@@ -52,14 +52,14 @@ export function PolicySettings() {
           {GROUPS.filter((group) => group !== "content" && group !== "rates").map((group) => (
             <SettingsGroup key={group} title={t(`ui.operations.group.${group}`)}>
               <ListSection>
-                <PolicyRows group={group} onChange={(key, next) => draft.update({ [key]: next })} value={value} />
+                <PolicyRows group={group} onChange={(key, next) => draft.update((current) => ({ ...current, values: { ...current.values, [key]: next } }))} value={value} />
               </ListSection>
             </SettingsGroup>
           ))}
         </div>
       ) : (
         <ListSection header={t(`ui.operations.group.${area}`)}>
-          <PolicyRows group={area} onChange={(key, next) => draft.update({ [key]: next })} value={value} />
+          <PolicyRows group={area} onChange={(key, next) => draft.update((current) => ({ ...current, values: { ...current.values, [key]: next } }))} value={value} />
         </ListSection>
       )}
 

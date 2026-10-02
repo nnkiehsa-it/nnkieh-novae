@@ -12,6 +12,7 @@ export interface DraftImpact {
 }
 
 export interface Draft<T> {
+  baseline: T | null;
   cancel: () => void;
   changes: DraftChange[];
   confirm: () => Promise<void>;
@@ -54,7 +55,7 @@ export function useDraft<T>({
   /** A surface that refuses to save without a written reason. */
   requireReason?: boolean;
   /** Performs the write and resolves with what was actually stored. */
-  save: (value: T, reason: string) => Promise<T>;
+  save: (value: T, reason: string, baseline: T) => Promise<T>;
   /** The stored value. A new one restarts the draft, unless it is being edited. */
   source: T | null;
   validate?: (value: T) => boolean;
@@ -66,7 +67,13 @@ export function useDraft<T>({
   const [status, setStatus] = React.useState<DraftStatus>("clean");
   const [error, setError] = React.useState("");
   const [reason, setReason] = React.useState("");
-  const [impact, setImpact] = React.useState<DraftImpact | null>(null);
+  const [review, setReview] = React.useState<{
+    impact: DraftImpact; value: T; reason: string; baseline: T;
+  } | null>(null);
+  const busy = React.useRef(false);
+  const edits = React.useRef(0);
+  const successTimer = React.useRef<number | undefined>(undefined);
+  React.useEffect(() => () => window.clearTimeout(successTimer.current), []);
 
   // A newly loaded value replaces the draft only while there is nothing to
   // lose. A refresh that lands mid-edit used to take back what had just been
@@ -87,18 +94,19 @@ export function useDraft<T>({
     && (validate ? validate(value) : true)
     && (!requireReason || reason.trim().length > 0);
 
-  async function persist(next: T) {
+  async function persist(next: T, savedReason: string, baseline: T) {
     setStatus("saving");
     setError("");
     try {
-      const stored = await save(next, reason.trim());
+      const stored = await save(next, savedReason.trim(), baseline);
       setSession((current) => ({
         baseline: stored,
         value: current.value === next ? stored : current.value,
       }));
-      setReason((current) => current === reason ? "" : current);
+      setReason((current) => current === savedReason ? "" : current);
       setStatus("saved");
-      window.setTimeout(() => setStatus((current) => current === "saved" ? "clean" : current), ACTION_SUCCESS_HOLD_MS);
+      window.clearTimeout(successTimer.current);
+      successTimer.current = window.setTimeout(() => setStatus((current) => current === "saved" ? "clean" : current), ACTION_SUCCESS_HOLD_MS);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
       setStatus("failed");
@@ -106,48 +114,63 @@ export function useDraft<T>({
   }
 
   async function submit() {
-    if (value === null || !valid || status === "saving") return;
-    if (!estimate) {
-      await persist(value);
-      return;
-    }
+    if (value === null || session.baseline === null || !dirty || !valid || busy.current) return;
+    busy.current = true;
+    const edit = edits.current;
+    setReview(null);
+    setError("");
     setStatus("saving");
     try {
-      const estimated = await estimate(value);
-      if (estimated && estimated.totalEstimatedRows > 0) {
-        setImpact(estimated);
+      const estimated = estimate ? await estimate(value) : null;
+      if (edit !== edits.current) {
         setStatus("dirty");
         return;
       }
+      if (estimated && estimated.totalEstimatedRows > 0) {
+        setReview({ impact: estimated, value, reason, baseline: session.baseline });
+        setStatus("dirty");
+        return;
+      }
+      await persist(value, reason, session.baseline);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
       setStatus("failed");
-      return;
+    } finally {
+      busy.current = false;
     }
-    await persist(value);
   }
 
   return {
-    cancel: () => setImpact(null),
+    baseline: session.baseline,
+    cancel: () => setReview(null),
     changes,
     confirm: async () => {
-      setImpact(null);
-      if (value !== null) await persist(value);
+      if (!review || busy.current) return;
+      busy.current = true;
+      setReview(null);
+      try { await persist(review.value, review.reason, review.baseline); }
+      finally { busy.current = false; }
     },
     dirty,
     error,
-    impact,
+    impact: review?.impact ?? null,
     reason,
     reset: () => {
-      setSession((current) => ({ baseline: current.baseline, value: current.baseline }));
+      edits.current += 1;
+      setReview(null);
+      setSession((current) => ({ ...current, value: current.baseline }));
       setReason("");
       setError("");
       setStatus("clean");
     },
-    setReason,
+    setReason: (next) => { edits.current += 1; setReview(null); setReason(next); },
     status: (status === "clean" || status === "saved") && dirty ? "dirty" : status,
     submit,
-    update: (patch) =>
+    update: (patch) => {
+      edits.current += 1;
+      setReview(null);
+      setError("");
+      if (!busy.current) setStatus("clean");
       setSession((current) => {
         if (current.value === null) return current;
         return {
@@ -157,7 +180,8 @@ export function useDraft<T>({
               ? (patch as (value: T) => T)(current.value)
               : { ...current.value, ...patch },
         };
-      }),
+      });
+    },
     valid,
     value,
   };

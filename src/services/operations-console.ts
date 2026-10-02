@@ -38,6 +38,10 @@ export function fetchOperationsProgress(page: number) {
     Pick<OperationsConsole, 'jobs'>
   >('getOperationsConsole')({ page, progressOnly: true });
 }
+
+export const fetchOperationSettings = invokeBackendAction<
+  { policiesOnly: true }, Pick<OperationsConsole, 'settings' | 'history'>
+>('getOperationsConsole');
 export const clearOperationalErrors = invokeBackendAction<Record<string, never>, {
   cleared: number;
   success: boolean;
