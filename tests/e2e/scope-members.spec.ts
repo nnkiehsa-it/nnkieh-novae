@@ -50,8 +50,10 @@ test("scope drafts stay with their area, review real members, and save one atomi
     await expect(review.getByText(E2E_USERS.other, { exact: false })).toBeVisible();
     await expect(review.getByText(E2E_USERS.ordinary, { exact: false })).toBeVisible();
     await page.setViewportSize({ width: 1440, height: 900 });
+    await expect(review).toHaveCSS("opacity", "1");
     await page.screenshot({ path: testInfo.outputPath("scope-review-1440.png") });
     await page.setViewportSize({ width: 390, height: 900 });
+    await expect(review).toHaveCSS("opacity", "1");
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath("scope-review-390.png") });
     await expectBackendAction(page, "saveScopeMembers", async () => {
@@ -83,6 +85,19 @@ test("scope drafts stay with their area, review real members, and save one atomi
     await expectBackendAction(page, "saveScopeMembers", async () => {
       await page.getByRole("button", { name: "Save", exact: true }).click();
     });
+  } finally {
+    await admin.context.close();
+  }
+});
+
+test("an unavailable scope reports an error instead of an empty ownership claim", async ({ browser }) => {
+  const admin = await newUserPage(browser, "admin");
+  try {
+    await admin.page.goto("/admin/people?view=scopes&issueCategory=deleted-category");
+    await expect(admin.page.getByText("The proposal category is invalid.", { exact: false })).toBeVisible();
+    await expect(admin.page.getByText("No owner assigned", { exact: true })).toHaveCount(0);
+    await expect(admin.page.getByRole("button", { name: "Search", exact: true })).toBeDisabled();
+    await expect(admin.page.getByRole("button", { name: "Save", exact: true })).toHaveCount(0);
   } finally {
     await admin.context.close();
   }

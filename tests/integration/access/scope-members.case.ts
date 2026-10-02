@@ -6,6 +6,8 @@ integrationTest("scope member batches commit together, reject stale drafts, and 
   const first = await seedActor("scope-batch-first");
   const second = await seedActor("scope-batch-second");
   const scope = { scopeKind: "issue", categoryId: "public-issues" };
+  await expectActionError("invalid-issue-category", () => callAction("listRoleAssignments", { scopeKind: "issue", categoryId: "deleted-category", query: "" }, admin.auth));
+  await expectActionError("validation-invalid", () => callAction("listRoleAssignments", { scopeKind: "announcement", categoryId: "public-issues", query: "" }, admin.auth));
   const before = asRecord(await callAction("listRoleAssignments", { ...scope, query: "" }, admin.auth));
   const write = { ...scope, revision: before.revision, changes: [{ uid: first.auth.uid, grant: true }, { uid: second.auth.uid, grant: true }] };
   await expectActionError("permission-denied", () => callAction("saveScopeMembers", write, first.auth));

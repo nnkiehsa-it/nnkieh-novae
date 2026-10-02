@@ -20,25 +20,30 @@ function readAccessScope(payload: JsonRecord): AccessScopeSelector | null {
   if ((scopeKind === "issue" || scopeKind === "facility") && !categoryId) {
     throw new Error("validation-required");
   }
+  if (scopeKind === "announcement" && categoryId) throw new Error("validation-invalid");
   return { categoryId, kind: scopeKind as AccessScopeSelector["kind"] };
 }
 
 async function scopedAccessUids(scope: AccessScopeSelector, database: BackendDatabase) {
-  type Membership = { revision: string; uids: string[] };
-  return scope.kind === "announcement"
+  type Membership = { scope_valid: boolean; revision: string; uids: string[] };
+  const membership = scope.kind === "announcement"
     ? await database.sqlOne<Membership>`
-      select coalesce(array_agg(uid order by uid), array[]::text[]) as uids,
+      select true as scope_valid, coalesce(array_agg(uid order by uid), array[]::text[]) as uids,
         md5(coalesce(jsonb_agg(uid order by uid), '[]'::jsonb)::text) as revision
       from app_private.user_role_assignments where role_code = 'announcement-manager'`
     : scope.kind === "issue"
     ? await database.sqlOne<Membership>`
-      select coalesce(array_agg(uid order by uid), array[]::text[]) as uids,
+      select exists(select 1 from app_private.issue_categories where id = ${scope.categoryId} and is_active) as scope_valid,
+        coalesce(array_agg(uid order by uid), array[]::text[]) as uids,
         md5(coalesce(jsonb_agg(uid order by uid), '[]'::jsonb)::text) as revision
       from app_private.user_issue_category_assignments where category_id = ${scope.categoryId}`
     : await database.sqlOne<Membership>`
-      select coalesce(array_agg(uid order by uid), array[]::text[]) as uids,
+      select exists(select 1 from app_private.facility_categories where id = ${scope.categoryId} and is_active) as scope_valid,
+        coalesce(array_agg(uid order by uid), array[]::text[]) as uids,
         md5(coalesce(jsonb_agg(uid order by uid), '[]'::jsonb)::text) as revision
       from app_private.user_facility_category_assignments where category_id = ${scope.categoryId}`;
+  if (!membership.scope_valid) throw new Error(scope.kind === "issue" ? "invalid-issue-category" : "invalid-facility-category");
+  return { revision: membership.revision, uids: membership.uids };
 }
 
 async function lockScope(scope: AccessScopeSelector, database: BackendDatabase) {

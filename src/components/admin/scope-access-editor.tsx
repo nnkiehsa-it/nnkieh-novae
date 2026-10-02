@@ -30,7 +30,7 @@ export function ScopeAccessEditor({ scope, selector }: { scope: AccessScope | nu
     {state.error ? <ErrorState error={state.error} onRetry={() => void state.load()} /> : null}
     {scope ? <fieldset className="space-y-6" disabled={saving}>
       <ListSection header={t("ui.access.currentStep")}>
-        {state.loading && !state.draft.value ? <SkeletonRows rows={2} /> : state.members.length === 0 ? (
+        {!state.draft.value ? state.error ? null : <SkeletonRows rows={2} /> : state.members.length === 0 ? (
           <ListRow label={t("ui.access.noneTitle")} />
         ) : state.members.map((member) => <ListMutationRow
           action={<RowAction icon={Trash2} label={t("ui.access.revokeMember", { name: member.email ?? member.uid })}
