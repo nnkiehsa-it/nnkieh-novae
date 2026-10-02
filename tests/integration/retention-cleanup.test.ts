@@ -385,6 +385,7 @@ integrationTest("configured retention cleanup removes every expired data class a
     imageUploads: asRecord(platformSettings.imageUploads),
     retention: asRecord(platformSettings.retention),
   }, admin.auth);
+  await database.call('app_api', 'run_scheduled_maintenance_cleanup');
   await processPlatformJobs(500);
 
   await expectRemoved("issues", "id", expiredIssueId);
@@ -589,6 +590,7 @@ integrationTest("closed-content retention can be disabled without disabling othe
       closedIssuesEnabled: false,
     },
   }, admin.auth);
+  await database.call('app_api', 'run_scheduled_maintenance_cleanup');
   await processPlatformJobs();
   await expectPresent("issues", "id", issueId);
   await callAction("savePlatformSettings", {

@@ -105,7 +105,7 @@ export async function listPlatformJobs() {
 export async function savePlatformSettings(settings: PlatformSettings) {
   const action = invokeBackendAction<
     PlatformSettings,
-    PlatformSettings & { estimatedRows: number; jobId: string; success: boolean }
+    PlatformSettings & { estimatedRows: number; jobId: string | null; success: boolean }
   >('savePlatformSettings');
   return await action(settings);
 }
@@ -113,6 +113,6 @@ export async function savePlatformSettings(settings: PlatformSettings) {
 export async function estimateRetentionCleanup(settings: PlatformSettings) {
   return await invokeBackendAction<
     PlatformSettings,
-    { details: Record<string, number>; totalEstimatedRows: number }
+    { details: Record<string, number>; updatedDetails: Record<string, number>; totalDeletedRows: number; totalUpdatedRows: number; totalEstimatedRows: number }
   >('estimateRetentionCleanup')(settings);
 }

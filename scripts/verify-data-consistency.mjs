@@ -189,6 +189,31 @@ const checks = [
     anomalySql: `select id::text sample_id from app_private.background_jobs where job_type not in ('deletion','retention_cleanup','notion_reconcile','category_policy') or attempt_count < 0 or processed_rows < 0 or affected_rows < 0 or updated_at < created_at or (status='processing' and locked_at is not null and locked_at < now()-interval '10 minutes') or (status='completed' and completed_at is null) or (status='failed' and error_detail is null)`,
   },
   {
+    id: "active-retention-policy-snapshot",
+    subsystem: "jobs",
+    severity: "High",
+    populationSql: `select id::text sample_id from app_private.background_jobs where job_type='retention_cleanup' and status in ('pending','processing','failed')`,
+    anomalySql: `select id::text sample_id from app_private.background_jobs
+      where job_type='retention_cleanup' and status in ('pending','processing','failed')
+        and (payload - 'policyType' - 'cleanupScopes') is distinct from app_private.runtime_retention_config()`,
+  },
+  {
+    id: "notification-retention-expiry",
+    subsystem: "notifications",
+    severity: "High",
+    populationSql: `select id::text sample_id from app_private.notifications`,
+    anomalySql: `select n.id::text sample_id from app_private.notifications n
+      where expires_at is distinct from case
+        when app_private.retention_boolean(app_private.runtime_retention_config(), 'notificationsEnabled')
+        then created_at + make_interval(days => app_private.retention_integer(app_private.runtime_retention_config(), 'notificationsDays'))
+        else 'infinity'::timestamptz end
+      and not exists(select 1 from app_private.background_jobs j
+        where j.job_type='retention_cleanup' and j.status in ('pending','processing','failed')
+          and j.attempt_count < 8
+          and app_private.retention_scope_enabled(j.payload, 'notificationExpiry')
+          and (j.payload - 'policyType' - 'cleanupScopes') = app_private.runtime_retention_config())`,
+  },
+  {
     id: "notification-recipients",
     subsystem: "notifications",
     severity: "High",

@@ -1,4 +1,12 @@
 const messages = {
+  "admin.categoryOrder": "Category order",
+  "admin.changeAddedCategory": "Added category",
+  "admin.changeRemovedCategory": "Removed category",
+  "admin.retentionLifecycleHelp": "Operation, delivery, and background-job lifetimes apply when records are created or completed. Scheduled maintenance follows each stored expiry. Event retention also applies to existing events.",
+  "admin.auditSavePolicies": "Updated runtime policies",
+  "admin.auditRetryWork": "Retried background work",
+  "admin.reviewExpiryDescription": "This will update the retention expiry of about {count} notifications in the background.",
+  "admin.reviewUpdateDescription": "This will update the settings of about {count} existing records in the background.",
   "admin.resetSearch": "Clear search and show all records",
   "admin.policyClient": "Client",
   "admin.policyJobs": "Background jobs",

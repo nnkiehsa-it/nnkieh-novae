@@ -8,6 +8,9 @@ import type { DraftStatus } from "@/types/draft";
 
 export interface DraftImpact {
   details: Record<string, number>;
+  updatedDetails?: Record<string, number>;
+  totalDeletedRows?: number;
+  totalUpdatedRows?: number;
   totalEstimatedRows: number;
 }
 

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useI18n } from "@/i18n";
 import type { DraftChange } from "@/lib/draft-diff";
+import type { DraftImpact } from "@/hooks/use-draft";
 
 /**
  * The last thing shown before a change is made.
@@ -29,6 +30,7 @@ export function ApplyReviewDialog({
   describeChange,
   impact,
   describeImpact,
+  formatChangeValue,
   onCancel,
   onConfirm,
   open,
@@ -36,14 +38,17 @@ export function ApplyReviewDialog({
   changes: DraftChange[];
   describeChange: (key: string) => React.ReactNode;
   /** Estimated rows the change will disturb, keyed the way the backend reports. */
-  impact?: { details: Record<string, number>; totalEstimatedRows: number } | null;
+  impact?: DraftImpact | null;
   describeImpact?: (key: string) => React.ReactNode;
+  formatChangeValue?: (change: DraftChange, value: unknown) => React.ReactNode;
   onCancel: () => void;
   onConfirm: () => void;
   open: boolean;
 }) {
   const { t } = useI18n();
   const affected = Object.entries(impact?.details ?? {}).filter(([, count]) => count > 0);
+  const updated = Object.entries(impact?.updatedDetails ?? {}).filter(([, count]) => count > 0);
+  const retention = impact?.totalDeletedRows !== undefined;
   return (
     <AlertDialog onOpenChange={(next) => !next && onCancel()} open={open}>
       <AlertDialogContent>
@@ -53,23 +58,28 @@ export function ApplyReviewDialog({
           </AlertDialogMedia>
           <AlertDialogTitle>{t("admin.reviewTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
-            {impact && impact.totalEstimatedRows > 0
-              ? t("admin.reviewImpactDescription", { count: impact.totalEstimatedRows })
+            {retention && impact.totalDeletedRows! > 0
+              ? t("admin.reviewImpactDescription", { count: impact.totalDeletedRows! })
+              : impact && impact.totalEstimatedRows > 0
+                ? t(retention ? "admin.reviewExpiryDescription" : "admin.reviewUpdateDescription", { count: impact.totalUpdatedRows ?? impact.totalEstimatedRows })
               : t("admin.reviewDescription", { count: changes.length })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="max-h-64 overflow-y-auto rounded-xl bg-[var(--surface-inset)]">
           {changes.map((change) => (
-            <div className="flex items-center gap-3 border-b px-4 py-2.5 last:border-b-0" key={change.key}>
+            <div className="grid grid-cols-1 gap-1 border-b px-4 py-2.5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-3" key={change.key}>
               <span className="min-w-0 flex-1 text-sm">{describeChange(change.key)}</span>
-              <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
-                {formatValue(change.before, t)}
+              <span className="min-w-0 max-w-full break-words text-sm tabular-nums text-muted-foreground">
+                {formatChangeValue?.(change, change.before) ?? formatValue(change.before, t)}
                 <span aria-hidden className="px-1.5">→</span>
-                <span className="font-medium text-foreground">{formatValue(change.after, t)}</span>
+                <span className="font-medium text-foreground">{formatChangeValue?.(change, change.after) ?? formatValue(change.after, t)}</span>
               </span>
             </div>
           ))}
         </div>
+        {retention && impact.totalDeletedRows! > 0 && (impact.totalUpdatedRows ?? 0) > 0 ? (
+          <p className="text-sm leading-6 text-muted-foreground">{t("admin.reviewExpiryDescription", { count: impact.totalUpdatedRows! })}</p>
+        ) : null}
         {affected.length > 0 ? (
           <div className="rounded-xl bg-[var(--surface-inset)]">
             {affected.map(([key, count]) => (
@@ -82,10 +92,20 @@ export function ApplyReviewDialog({
             ))}
           </div>
         ) : null}
+        {updated.length > 0 ? (
+          <div className="rounded-xl bg-[var(--surface-inset)]">
+            {updated.map(([key, count]) => (
+              <div className="flex items-center gap-3 border-b px-4 py-2.5 last:border-b-0" key={key}>
+                <span className="min-w-0 flex-1 text-sm">{describeImpact ? describeImpact(key) : key}</span>
+                <span className="text-sm font-semibold tabular-nums">{count}</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onCancel}>{t("common.cancel")}</AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm}>
-            {t(affected.length > 0 ? "admin.reviewQueue" : "ui.common.save")}
+            {t(impact && impact.totalEstimatedRows > 0 ? "admin.reviewQueue" : "ui.common.save")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

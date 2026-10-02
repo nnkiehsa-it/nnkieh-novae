@@ -718,6 +718,12 @@ try {
           frontendEnvironment,
         );
       }
+      run(
+        "populated E2E data consistency verification",
+        process.execPath,
+        ["scripts/verify-data-consistency.mjs"],
+        integrationEnvironment,
+      );
       process.stderr.write("✓ End-to-end verification passed\n");
     } else if (checkStartup) {
       await runBrowserJourneys(

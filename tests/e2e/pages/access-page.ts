@@ -40,7 +40,7 @@ export async function setMemberAccess(
   await selectScope(page, scope);
   const lookup = page.getByPlaceholder('Enter a campus email, name, or UID');
   await lookup.fill(email);
-  await page.getByRole('button', { name: 'Search' }).click();
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
   // Granting and revoking edit the draft; only Save reaches the backend.
   // Only the glyph at the end of the row writes, and it names who it is about.
   const control = page

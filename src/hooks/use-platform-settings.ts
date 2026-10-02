@@ -38,7 +38,7 @@ export function usePlatformSettings() {
       setStored(next);
       seedImageUploadSettings(saved.imageUploads);
       markSessionBootstrapStale();
-      notifyPlatformJobsChanged();
+      if (saved.jobId !== null) notifyPlatformJobsChanged();
       return next;
     },
     source: stored,

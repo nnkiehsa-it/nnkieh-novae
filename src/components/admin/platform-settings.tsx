@@ -60,6 +60,9 @@ export function PlatformSettings() {
             onRestore={() => draft.update((current) => ({ ...current, retention: draft.baseline!.retention }))} />
           {RETENTION_GROUPS.map((group, index) => (
             <SettingsGroup defaultOpen={index === 0} key={group.titleKey} title={t(group.titleKey)}>
+              {group.titleKey === "ui.admin.retentionOperations" ? (
+                <p className="mb-3 text-sm leading-6 text-muted-foreground">{t("admin.retentionLifecycleHelp")}</p>
+              ) : null}
               <ListSection>
                 {group.items.flatMap((item) => {
                   const enableKey = item.enableKey;

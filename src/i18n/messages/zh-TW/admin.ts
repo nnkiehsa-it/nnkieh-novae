@@ -1,4 +1,12 @@
 const messages = {
+  "admin.categoryOrder": "分類順序",
+  "admin.changeAddedCategory": "新增分類",
+  "admin.changeRemovedCategory": "刪除分類",
+  "admin.retentionLifecycleHelp": "操作、投遞與背景工作的期限會在紀錄建立或完成時套用；排定維護依各筆到期日清理。事件保留期限也會套用至既有事件。",
+  "admin.auditSavePolicies": "更新運行政策",
+  "admin.auditRetryWork": "重試背景工作",
+  "admin.reviewExpiryDescription": "會在背景更新約 {count} 則通知的保留期限。",
+  "admin.reviewUpdateDescription": "會在背景更新約 {count} 筆既有內容的設定。",
   "admin.resetSearch": "清除搜尋並顯示全部紀錄",
   "admin.policyClient": "用戶端",
   "admin.policyJobs": "背景工作",

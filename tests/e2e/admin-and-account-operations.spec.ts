@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { Client } from 'pg';
 import { E2E_USERS } from './support/accounts';
-import { expectBackendAction } from './support/backend-action';
+import { expectBackendAction, readActionStream } from './support/backend-action';
 import { readContentState } from './support/content-state';
 import { newUserPage } from './support/session';
 
@@ -47,7 +47,7 @@ test('platform admin can restrict and restore an ordinary account', async ({ bro
   await admin.page.goto('/admin/people');
   const search = admin.page.getByPlaceholder('Search name, campus email, or UID');
   await search.fill(E2E_USERS.other);
-  await admin.page.getByRole('button', { name: 'Search' }).click();
+  await admin.page.getByRole('button', { name: 'Search', exact: true }).click();
   // Searching narrows the list to what was typed, rather than reloading it as it was.
   await expect(
     admin.page.getByRole('main').getByText('@integration.invalid').filter({ visible: true }),
@@ -68,7 +68,7 @@ test('platform admin can restrict and restore an ordinary account', async ({ bro
   });
   await admin.page.reload();
   await admin.page.getByPlaceholder('Search name, campus email, or UID').fill(E2E_USERS.other);
-  await admin.page.getByRole('button', { name: 'Search' }).click();
+  await admin.page.getByRole('button', { name: 'Search', exact: true }).click();
   await admin.page.getByText(E2E_USERS.other).filter({ visible: true }).click();
   await expect(admin.page.getByText('Effective rule')).toBeVisible();
   await expectBackendAction(admin.page, 'deleteAccountAccessRule', async () => {
@@ -179,7 +179,7 @@ test('login fills the desktop viewport edge to edge', async ({ browser }) => {
   await context.close();
 });
 
-test('platform settings save traverses impact estimation and canonical write', async ({ browser }) => {
+test('image settings save estimates no cleanup and issues only the canonical write', async ({ browser }) => {
   test.setTimeout(120_000);
   const admin = await newUserPage(browser, 'admin');
   await admin.page.goto('/admin/platform');
@@ -193,12 +193,8 @@ test('platform settings save traverses impact estimation and canonical write', a
   await expect(admin.page.getByText('1 unsaved changes')).toBeVisible();
   await expectBackendAction(admin.page, 'savePlatformSettings', async () => {
     await admin.page.getByRole('button', { name: 'Save', exact: true }).click();
-    // The write is only issued once the estimated impact has been accepted.
-    await admin.page
-      .getByRole('alertdialog')
-      .getByRole('button', { name: 'Save and start' })
-      .click();
   });
+  await expect(admin.page.getByRole('alertdialog')).toHaveCount(0);
   await admin.context.close();
 });
 
@@ -233,6 +229,41 @@ test('setting presets remain drafts, restore one area, and show reviewable chang
   await expect(dimension).toHaveValue(original);
   expect(writes).toEqual([]);
   await admin.context.close();
+});
+
+test('disabling notification cleanup confirms retention updates rather than deletion', async ({ browser }) => {
+  const admin = await newUserPage(browser, 'admin');
+  const database = new Client({ connectionString: process.env.DATABASE_OWNER_URL });
+  await database.connect();
+  const id = randomUUID();
+  try {
+    await database.query(`insert into app_private.notifications(id,source,type,target_type,target_id,title,created_at,expires_at)
+      values ($1::uuid,'broadcast','retention-test','announcement',$2,'Retain this notification',now()-interval '40 days',now()-interval '10 days')`, [id, id]);
+    await admin.page.goto('/admin/platform');
+    const enabled = admin.page.getByRole('switch', { name: 'Automatically delete old notifications', exact: true });
+    await expect(enabled).toBeChecked();
+    await enabled.click();
+    await admin.page.getByRole('button', { name: 'Save', exact: true }).click();
+    const review = admin.page.getByRole('alertdialog');
+    await expect(review.getByText(/update the retention expiry/u)).toBeVisible();
+    await expect(review.getByText(/remove .* stored records/u)).toHaveCount(0);
+    await expectBackendAction(admin.page, 'savePlatformSettings', async () => {
+      await review.getByRole('button', { name: 'Save and start', exact: true }).click();
+    });
+    await expect(enabled).not.toBeChecked();
+    await database.query('delete from app_private.notifications where id=$1', [id]);
+    await enabled.click();
+    await expectBackendAction(admin.page, 'savePlatformSettings', async () => {
+      const estimate = admin.page.waitForResponse((response) => response.request().postDataJSON()?.action === 'estimateRetentionCleanup');
+      await admin.page.getByRole('button', { name: 'Save', exact: true }).click();
+      const { data } = readActionStream(await (await estimate).text());
+      if (Number(data.totalEstimatedRows) > 0) await review.getByRole('button', { name: 'Save and start', exact: true }).click();
+    });
+  } finally {
+    await database.query('delete from app_private.notifications where id=$1', [id]);
+    await database.end();
+    await admin.context.close();
+  }
 });
 
 test('operations console is usable on phone and desktop and saves an audited policy revision', async ({ browser }, testInfo) => {
