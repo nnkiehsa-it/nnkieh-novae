@@ -5,6 +5,7 @@ import pg from "pg";
 import { afterAll, beforeEach, test } from "vitest";
 import { AppDatabaseClient } from "../../cloudflare/src/backend/database/client.ts";
 import { getBackendActionDefinition } from "../../cloudflare/src/backend/actions/action-registry.ts";
+import { loadCategoryManagement } from "../../cloudflare/src/backend/actions/category-catalog.ts";
 import { resolveAuthContext } from "../../cloudflare/src/backend/actions/auth.ts";
 import { collectActionSegments, executeBackendActionSegments } from "../../cloudflare/src/backend/actions/execution.ts";
 import { withRuntimeEnvironment } from "../../cloudflare/src/backend/shared/env.ts";
@@ -266,6 +267,13 @@ export async function callAction(
 ) {
   const definition = getBackendActionDefinition(actionName);
   assert.ok(definition, `Missing backend action definition: ${actionName}`);
+  // Prepare a fixture baseline without spending the actor's API read quota.
+  // Explicit revisions keep stale-draft tests on the real API contract.
+  if (payload.revision === undefined && ["savePlatformSettings", "estimateRetentionCleanup", "saveCategoryManagement", "estimateCategoryPolicyChanges"].includes(actionName)
+    && auth.permissions.includes("category.manage")) {
+    const management = await loadCategoryManagement(database);
+    payload = { ...payload, revision: actionName.includes("Category") ? management.categoryRevision : management.platformRevision };
+  }
   const opId = operationId || crypto.randomUUID();
   // The finished answer, the way a caller reading the response stream sees it.
   return await underPolicies(() =>

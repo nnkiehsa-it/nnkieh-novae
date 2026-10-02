@@ -50,6 +50,10 @@ export const API_ERRORS = {
     "status": 409,
     "messageKey": "apiError.requestInProgress"
   },
+  "configuration-changed": {
+    "status": 409,
+    "messageKey": "apiError.configurationChanged"
+  },
   "operation-expired": {
     "status": 409,
     "messageKey": "apiError.operationExpired"

@@ -54,7 +54,7 @@ export function useDraft<T>({
   validate,
 }: {
   /** Runs before the write; anything it reports has to be confirmed first. */
-  estimate?: (value: T) => Promise<DraftImpact | null>;
+  estimate?: (value: T, baseline: T) => Promise<DraftImpact | null>;
   /** A surface that refuses to save without a written reason. */
   requireReason?: boolean;
   /** Performs the write and resolves with what was actually stored. */
@@ -124,7 +124,7 @@ export function useDraft<T>({
     setError("");
     setStatus("saving");
     try {
-      const estimated = estimate ? await estimate(value) : null;
+      const estimated = estimate ? await estimate(value, session.baseline) : null;
       if (edit !== edits.current) {
         setStatus("dirty");
         return;

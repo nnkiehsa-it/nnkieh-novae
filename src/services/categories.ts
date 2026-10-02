@@ -75,24 +75,25 @@ export async function savePlatformFeatures(features: PlatformFeatureSwitches) {
   return result;
 }
 
-export async function saveCategoryManagement(input: CategoryManagementInput) {
+export async function saveCategoryManagement(input: CategoryManagementInput, revision: string) {
   const action = invokeBackendAction<
-    typeof input,
-    CategoryCatalog & { success: boolean }
+    CategoryManagementInput & { revision: string },
+    CategoryManagementCatalog & { success: boolean }
   >('saveCategoryManagement');
-  const result = await action(input);
+  const result = await action({ ...input, revision });
   markSessionBootstrapStale();
   return result;
 }
 
-export async function estimateCategoryPolicyChanges(input: CategoryManagementInput) {
+export async function estimateCategoryPolicyChanges(input: CategoryManagementInput, revision: string) {
   return await invokeBackendAction<
-    Pick<CategoryManagementInput, 'announcementCommentsEnabled' | 'deletedIssueCategoryIds' | 'issueCategories'>,
+    Pick<CategoryManagementInput, 'announcementCommentsEnabled' | 'deletedIssueCategoryIds' | 'issueCategories'> & { revision: string },
     { estimates: PolicyImpactEstimate[]; totalEstimatedRows: number }
   >('estimateCategoryPolicyChanges')({
     announcementCommentsEnabled: input.announcementCommentsEnabled,
     deletedIssueCategoryIds: input.deletedIssueCategoryIds,
     issueCategories: input.issueCategories,
+    revision,
   });
 }
 
@@ -102,17 +103,17 @@ export async function listPlatformJobs() {
   )({});
 }
 
-export async function savePlatformSettings(settings: PlatformSettings) {
+export async function savePlatformSettings(settings: PlatformSettings, revision: string) {
   const action = invokeBackendAction<
-    PlatformSettings,
-    PlatformSettings & { estimatedRows: number; jobId: string | null; success: boolean }
+    PlatformSettings & { revision: string },
+    PlatformSettings & { estimatedRows: number; jobId: string | null; revision: string; success: boolean }
   >('savePlatformSettings');
-  return await action(settings);
+  return await action({ ...settings, revision });
 }
 
-export async function estimateRetentionCleanup(settings: PlatformSettings) {
+export async function estimateRetentionCleanup(settings: PlatformSettings, revision: string) {
   return await invokeBackendAction<
-    PlatformSettings,
+    PlatformSettings & { revision: string },
     { details: Record<string, number>; updatedDetails: Record<string, number>; totalDeletedRows: number; totalUpdatedRows: number; totalEstimatedRows: number }
-  >('estimateRetentionCleanup')(settings);
+  >('estimateRetentionCleanup')({ ...settings, revision });
 }

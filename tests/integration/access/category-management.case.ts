@@ -256,19 +256,20 @@ integrationTest("runtime category setup and management enforce platform permissi
       sortOrder: index,
     };
   });
+  const validator = await seedActor("support-validator", { roles: ["platform-admin"] });
   for (const supportGoal of [1.5, null, "30", 2_147_483_648]) {
     await expectActionError("validation-required", () => callAction("saveCategoryManagement", {
       ...asRecord(managed.features),
       deletedFacilityCategoryIds: [], deletedIssueCategoryIds: [],
       facilityCategories: managedFacilities,
       issueCategories: managedIssues.map((category) => ({ ...category, supportEnabled: true, supportGoal, supportDeadlineDays: 14 })),
-    }, admin.auth));
+    }, validator.auth));
   }
   await expectActionError("validation-required", () => callAction("estimateCategoryPolicyChanges", {
     ...asRecord(managed.features), deletedIssueCategoryIds: [],
     issueCategories: managedIssues.map((category) => ({ ...category, supportEnabled: true, supportGoal: 30, supportDeadlineDays: 2.5 })),
-  }, admin.auth));
-  const afterRejected = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
+  }, validator.auth));
+  const afterRejected = asRecord(await callAction("getCategoryManagement", {}, validator.auth));
   assert.deepEqual(afterRejected.issueCategories, managed.issueCategories, "invalid input must not change any category");
   const policyAnnouncement = await database.sqlOne<{ id: string }>`
     insert into app_private.announcements (author_uid, content, title)
@@ -367,4 +368,41 @@ integrationTest("runtime category setup and management enforce platform permissi
     "公共議題-原子",
   );
   await saveCategoryDraft(admin.auth, { announcementCommentsEnabled: true });
+});
+
+integrationTest("management snapshots reject stale estimates and writes without overwriting current settings", async () => {
+  const admin = await seedActor("snapshot-admin", { roles: ["platform-admin"] });
+  const initial = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
+  const platform = asRecord(initial.platformSettings);
+  const platformDraft = {
+    ...platform, imageUploads: { ...asRecord(platform.imageUploads), maxDimension: 3000 },
+    revision: initial.platformRevision,
+  };
+  const savedPlatform = asRecord(await callAction("savePlatformSettings", platformDraft, admin.auth));
+  assert.notEqual(savedPlatform.revision, initial.platformRevision);
+  assert.equal(savedPlatform.jobId, null, "image processing changes do not queue cleanup");
+  for (const action of ["estimateRetentionCleanup", "savePlatformSettings"]) {
+    await expectActionError("configuration-changed", () => callAction(action, platformDraft, admin.auth));
+  }
+  const current = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
+  assert.equal(asRecord(asRecord(current.platformSettings).imageUploads).maxDimension, 3000);
+  assert.equal(current.platformRevision, savedPlatform.revision);
+  assert.equal(current.categoryRevision, initial.categoryRevision, "processing settings have their own conflict scope");
+
+  const categoryDraft = {
+    ...asRecord(initial.features), deletedFacilityCategoryIds: [], deletedIssueCategoryIds: [],
+    facilityCategories: initial.facilityCategories,
+    issueCategories: (initial.issueCategories as unknown[]).map((value, index) => ({ ...asRecord(value), label: index === 0 ? "已更新分類" : asRecord(value).label })),
+    revision: initial.categoryRevision,
+  };
+  const savedCategory = asRecord(await callAction("saveCategoryManagement", categoryDraft, admin.auth));
+  assert.notEqual(savedCategory.categoryRevision, initial.categoryRevision);
+  for (const action of ["estimateCategoryPolicyChanges", "saveCategoryManagement"]) {
+    await expectActionError("configuration-changed", () => callAction(action, categoryDraft, admin.auth));
+  }
+  const afterRejected = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
+  assert.deepEqual(afterRejected.issueCategories, savedCategory.issueCategories);
+  assert.deepEqual(afterRejected.features, savedCategory.features);
+  assert.deepEqual(afterRejected.platformSettings, savedCategory.platformSettings);
+  assert.equal(afterRejected.platformRevision, savedPlatform.revision);
 });

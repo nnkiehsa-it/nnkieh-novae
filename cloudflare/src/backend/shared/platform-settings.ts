@@ -110,6 +110,10 @@ export function platformSettingsFromInput(value: unknown): PlatformSettings {
 export async function loadPlatformSettings(database: DatabaseSession): Promise<PlatformSettings> {
   const { rows } = await database.sql<Selected<"runtime_settings", "key" | "value">>`
     select key, value from app_private.runtime_settings where key = any(${[IMAGE_UPLOADS_KEY, RETENTION_KEY]})`;
+  return platformSettingsFromStoredRows(rows);
+}
+
+export function platformSettingsFromStoredRows(rows: Selected<"runtime_settings", "key" | "value">[]): PlatformSettings {
   const values = new Map(rows.map((entry) => [entry.key, entry.value]));
   return {
     imageUploads: normalizeImageUploads(parseStoredValue(typeof values.get(IMAGE_UPLOADS_KEY) === "string" ? values.get(IMAGE_UPLOADS_KEY) : null)),

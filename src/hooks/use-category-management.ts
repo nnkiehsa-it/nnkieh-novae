@@ -27,7 +27,7 @@ export type { CategoryManagementInput } from "@/services/categories";
 interface CategoryReading {
   /** The identifiers the backend already holds, which may no longer be renamed. */
   persisted: string[];
-  stored: CategoryManagementInput;
+  stored: CategoryManagementInput & { revision: string };
 }
 
 function withSortOrder<T>(items: T[]) {
@@ -45,6 +45,7 @@ export function useCategoryManagement() {
 
   const adopt = React.useCallback(
     (result: {
+      categoryRevision: string;
       facilityCategories: FacilityCategoryConfig[];
       features: {
         announcementMaxImages: number;
@@ -61,6 +62,7 @@ export function useCategoryManagement() {
           ...result.facilityCategories.map((item) => item.id),
         ],
         stored: {
+          revision: result.categoryRevision,
           announcementMaxImages: result.features.announcementMaxImages,
           announcementCommentMaxImages: result.features.announcementCommentMaxImages,
           announcementCommentsEnabled: result.features.announcementCommentsEnabled,
@@ -82,9 +84,9 @@ export function useCategoryManagement() {
     void load();
   }, [load]);
 
-  const draft = useDraft<CategoryManagementInput>({
-    estimate: async (value) => {
-      const impact = await estimateCategoryPolicyChanges(value);
+  const draft = useDraft<CategoryReading["stored"]>({
+    estimate: async (value, baseline) => {
+      const impact = await estimateCategoryPolicyChanges(value, baseline.revision);
       return {
         details: Object.fromEntries(
           impact.estimates.map((entry) => [
@@ -95,16 +97,17 @@ export function useCategoryManagement() {
         totalEstimatedRows: impact.totalEstimatedRows,
       };
     },
-    save: async (value) => {
+    save: async (value, _reason, baseline) => {
       invalidate();
       const result = await saveCategoryManagement({
         ...value,
         facilityCategories: withSortOrder(value.facilityCategories),
         issueCategories: withSortOrder(value.issueCategories),
-      });
-      const next: CategoryManagementInput = {
+      }, baseline.revision);
+      const next: CategoryReading["stored"] = {
         ...value,
         ...result.features,
+        revision: result.categoryRevision,
         deletedFacilityCategoryIds: [],
         deletedIssueCategoryIds: [],
         facilityCategories: result.facilityCategories,

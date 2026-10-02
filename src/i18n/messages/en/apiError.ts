@@ -1,4 +1,5 @@
 const messages = {
+  'apiError.configurationChanged': 'These settings changed in another operation. Your changes were not saved. Discard the draft and reload before editing again.',
   'apiError.appCheckFailed': 'The app security check failed. Refresh the page and try again.',
   'apiError.turnstileFailed': 'The security check failed. Please try again.',
   'apiError.invalidFacilityCategory': 'This facility-report category does not exist.',

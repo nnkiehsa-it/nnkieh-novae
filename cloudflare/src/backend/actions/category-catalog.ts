@@ -1,7 +1,7 @@
 import { asString } from "../shared/http.ts";
 import type { BackendDatabase } from "./types.ts";
 import { asBoolean, asNumber } from "./utils.ts";
-import { loadPlatformSettings } from "../shared/platform-settings.ts";
+import { loadPlatformSettings, platformSettingsFromStoredRows } from "../shared/platform-settings.ts";
 import type { Row, Selected } from "../database/schema.ts";
 
 /**
@@ -146,5 +146,47 @@ export async function loadCategoryCatalog(database: BackendDatabase, includeInac
     facilityCategories,
     imageUploads,
     features,
+  };
+}
+
+/** Management data and version tokens come from one PostgreSQL statement snapshot. */
+export async function loadCategoryManagement(database: BackendDatabase) {
+  const snapshot = await database.sqlOne<{
+    setup: Row<"system_setup">;
+    issues: Row<"issue_categories">[];
+    facilities: Row<"facility_categories">[];
+    settings: Selected<"runtime_settings", "key" | "value">[];
+    category_revision: string;
+    platform_revision: string;
+  }>`
+    with configuration as (
+      select to_jsonb(setup) as setup,
+        coalesce((select jsonb_agg(to_jsonb(category) order by sort_order, created_at, id)
+          from app_private.issue_categories category), '[]'::jsonb) as issues,
+        coalesce((select jsonb_agg(to_jsonb(category) order by sort_order, created_at, id)
+          from app_private.facility_categories category), '[]'::jsonb) as facilities,
+        coalesce((select jsonb_agg(jsonb_build_object('key', key, 'value', value) order by key)
+          from app_private.runtime_settings where key in ('image_upload_settings', 'data_retention_settings')), '[]'::jsonb) as settings
+      from app_private.system_setup setup where singleton = true
+    )
+    select *, md5(jsonb_build_object('setup', setup, 'issues', issues, 'facilities', facilities)::text) as category_revision,
+      md5(settings::text) as platform_revision
+    from configuration`;
+  const platformSettings = platformSettingsFromStoredRows(snapshot.settings);
+  return {
+    categoryRevision: snapshot.category_revision,
+    platformRevision: snapshot.platform_revision,
+    platformSettings,
+    issueCategories: snapshot.issues.map((row) => issueCategoryResponse(row)),
+    facilityCategories: snapshot.facilities.map((row) => facilityCategoryResponse(row)),
+    imageUploads: platformSettings.imageUploads,
+    features: {
+      announcementMaxImages: snapshot.setup.announcement_max_images,
+      announcementCommentMaxImages: snapshot.setup.announcement_comment_max_images,
+      announcementCommentsEnabled: snapshot.setup.announcement_comments_enabled !== false,
+      facilitiesEnabled: snapshot.setup.facilities_enabled !== false,
+      issuesEnabled: snapshot.setup.issues_enabled !== false,
+    },
+    setupCompleted: snapshot.setup.completed_at !== null,
   };
 }

@@ -67,7 +67,7 @@ integrationTest('operations settings enforce administrator access, revision conf
   await assert.rejects(() => callAction('saveOperationPolicies', update, user.auth), /permission-denied/);
   const saved = asRecord(await callAction('saveOperationPolicies', update, admin.auth));
   assert.equal(saved.revision, 2);
-  await assert.rejects(() => callAction('saveOperationPolicies', update, admin.auth), /request-in-progress/);
+  await assert.rejects(() => callAction('saveOperationPolicies', update, admin.auth), /configuration-changed/);
   await callAction('markNotificationsOpened', {}, user.auth);
   await assert.rejects(() => callAction('markNotificationsOpened', {}, user.auth), /rate-limit.operation/);
   const independent = asRecord(await callAction('markNotificationsOpened', {}, other.auth));

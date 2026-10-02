@@ -3,14 +3,18 @@ import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { asBoolean } from "./utils.ts";
 import { requirePermission } from "./auth.ts";
 import {
-  loadPlatformSettings,
   platformSettingsFromInput,
 } from "../shared/platform-settings.ts";
 import type { Selected } from "../database/schema.ts";
-import { categoryCatalogSegments, loadCategoryCatalog, READ_ACCESS_VALUES } from "./category-catalog.ts";
+import { categoryCatalogSegments, loadCategoryManagement, READ_ACCESS_VALUES } from "./category-catalog.ts";
 import { settledSegments } from "./segments.ts";
 
 const CATEGORY_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
+
+function assertRevision(requested: unknown, stored: string) {
+  if (typeof requested !== "string" || !/^[a-f0-9]{32}$/u.test(requested)) throw new Error("validation-required");
+  if (requested !== stored) throw new Error("configuration-changed");
+}
 
 function imageLimit(value: unknown) {
   if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > 20) {
@@ -114,14 +118,11 @@ export async function handleCategoryAction(
   }
   if (action === "getCategoryManagement") {
     requirePermission(auth, "category.manage");
-    return {
-      ...await loadCategoryCatalog(database, true),
-      platformSettings: await loadPlatformSettings(database),
-      setupCompleted: auth.setupCompleted,
-    };
+    return loadCategoryManagement(database);
   }
   if (action === "estimateCategoryPolicyChanges") {
     requirePermission(auth, "category.manage");
+    assertRevision(payload.revision, (await loadCategoryManagement(database)).categoryRevision);
     const rawIssueCategories = Array.isArray(payload.issueCategories) ? payload.issueCategories : [];
     const issueCategories = rawIssueCategories.map((value, index) => ({
       ...issueCategoryInput(value, index),
@@ -148,17 +149,20 @@ export async function handleCategoryAction(
   if (action === "savePlatformSettings") {
     requirePermission(auth, "category.manage");
     const settings = platformSettingsFromInput(payload);
+    await database.sql`select pg_advisory_xact_lock(hashtext('novae:platform-settings'))`;
+    assertRevision(payload.revision, (await loadCategoryManagement(database)).platformRevision);
     const { data, error } = await database.call("app_api", "backend_save_platform_settings", {
       actor_uid: auth.uid,
       image_settings: { ...settings.imageUploads },
       retention_config: { ...settings.retention },
     });
     if (error) throw error;
-    return { ...settings, ...asRecord(data), success: true };
+    return { ...settings, ...asRecord(data), revision: (await loadCategoryManagement(database)).platformRevision, success: true };
   }
   if (action === "estimateRetentionCleanup") {
     requirePermission(auth, "category.manage");
     const settings = platformSettingsFromInput(payload);
+    assertRevision(payload.revision, (await loadCategoryManagement(database)).platformRevision);
     const { data, error } = await database.call("app_api", "backend_estimate_retention_cleanup", {
       actor_uid: auth.uid,
       retention_config: { ...settings.retention },
@@ -200,6 +204,9 @@ export async function handleCategoryAction(
     ) {
       throw new Error("validation-required");
     }
+    // Every category write uses this row lock, including feature and image-policy writes.
+    await database.sql`select singleton from app_private.system_setup where singleton = true for update`;
+    assertRevision(payload.revision, (await loadCategoryManagement(database)).categoryRevision);
     const { error: saveError } = await database.call("app_api", "backend_save_category_management", {
       actor_uid: auth.uid,
       announcement_comments_enabled: announcementCommentsEnabled,
@@ -217,7 +224,7 @@ export async function handleCategoryAction(
       comment_max_images: imageLimit(payload.announcementCommentMaxImages),
     });
     if (imageError) throw imageError;
-    return { ...await loadCategoryCatalog(database, true), success: true };
+    return { ...await loadCategoryManagement(database), success: true };
   }
   if (action === "savePlatformFeatures") {
     requirePermission(auth, "category.manage");

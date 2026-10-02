@@ -29,6 +29,7 @@ export function SaveBar({
   error,
   onDiscard,
   onReview,
+  onReload,
   onSave,
   status,
 }: {
@@ -39,6 +40,7 @@ export function SaveBar({
   onDiscard: () => void;
   /** Opens the before-and-after list, where there is one worth reading. */
   onReview?: () => void;
+  onReload?: () => void;
   onSave: () => void;
   status: DraftStatus;
 }) {
@@ -63,6 +65,11 @@ export function SaveBar({
       transition={timing("sheet")}
     >
       {error ? <p className="w-full text-sm text-destructive" role="alert">{error}</p> : null}
+      {error && onReload ? (
+        <Button disabled={saving} onClick={onReload} size="sm" variant="secondary">
+          {translate("admin.reloadSettings")}
+        </Button>
+      ) : null}
       <span className="min-w-0 flex-1 text-sm">
         {saved
           ? translate("ui.common.saveBarSaved")

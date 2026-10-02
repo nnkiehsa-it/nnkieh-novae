@@ -199,6 +199,7 @@ export function CategoryManagement() {
         disabled={!state.draft.valid}
         error={state.draft.error}
         onDiscard={state.draft.reset}
+        onReload={() => { state.draft.reset(); void state.load(); }}
         onSave={() => void state.draft.submit()}
         onReview={() => setReviewing(true)}
         status={state.draft.status}

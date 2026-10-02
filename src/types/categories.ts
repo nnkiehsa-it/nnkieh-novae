@@ -58,6 +58,8 @@ export interface PolicyImpactEstimate {
 }
 
 export interface CategoryManagementCatalog extends CategoryCatalog {
+  categoryRevision: string;
+  platformRevision: string;
   platformSettings: PlatformSettings;
 }
 

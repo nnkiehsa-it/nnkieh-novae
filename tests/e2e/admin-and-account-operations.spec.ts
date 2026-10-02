@@ -231,6 +231,41 @@ test('setting presets remain drafts, restore one area, and show reviewable chang
   await admin.context.close();
 });
 
+test('a stale settings tab keeps its draft, reports the conflict, and reloads the canonical value', async ({ browser }, testInfo) => {
+  const admin = await newUserPage(browser, 'admin');
+  const stale = await admin.context.newPage();
+  await stale.setViewportSize({ width: 390, height: 900 });
+  try {
+    await admin.page.goto('/admin/platform?view=images');
+    await stale.goto('/admin/platform?view=images');
+    const field = 'Maximum image dimension (px)';
+    const current = admin.page.getByLabel(field, { exact: true });
+    const previous = stale.getByLabel(field, { exact: true });
+    await expect(current).toBeVisible();
+    await expect(previous).toHaveValue(await current.inputValue());
+    const savedValue = String(Number(await current.inputValue()) === 1700 ? 1701 : 1700);
+    await current.fill(savedValue);
+    await current.blur();
+    await previous.fill('1702');
+    await previous.blur();
+    await expectBackendAction(admin.page, 'savePlatformSettings', async () => {
+      await admin.page.getByRole('button', { name: 'Save', exact: true }).click();
+    });
+    await stale.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(stale.getByRole('alert')).toHaveText('These settings changed in another operation. Your changes were not saved. Discard the draft and reload before editing again.');
+    await expect(previous).toHaveValue('1702');
+    await expect.poll(() => stale.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await stale.screenshot({ path: testInfo.outputPath('settings-conflict-390.png') });
+    await expectBackendAction(stale, 'getCategoryManagement', async () => {
+      await stale.getByRole('button', { name: 'Discard draft and reload', exact: true }).click();
+    });
+    await expect(previous).toHaveValue(savedValue);
+    await expect(stale.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0);
+  } finally {
+    await admin.context.close();
+  }
+});
+
 test('disabling notification cleanup confirms retention updates rather than deletion', async ({ browser }) => {
   const admin = await newUserPage(browser, 'admin');
   const database = new Client({ connectionString: process.env.DATABASE_OWNER_URL });

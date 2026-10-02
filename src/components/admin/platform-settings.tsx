@@ -114,6 +114,7 @@ export function PlatformSettings() {
         disabled={!draft.valid}
         error={draft.error}
         onDiscard={draft.reset}
+        onReload={() => { draft.reset(); void load(); }}
         onSave={() => void draft.submit()}
         onReview={() => setReviewing(true)}
         status={draft.status}

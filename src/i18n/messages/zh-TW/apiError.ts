@@ -1,4 +1,5 @@
 const messages = {
+  'apiError.configurationChanged': '設定已由其他操作更新，這次尚未儲存。請捨棄草稿並重新載入，再確認要修改的內容。',
   'apiError.appCheckFailed': '應用程式安全驗證失敗，請重新整理頁面後再試。',
   'apiError.turnstileFailed': '安全驗證失敗，請再試一次。',
   'apiError.invalidFacilityCategory': '這個設備分類不存在。',

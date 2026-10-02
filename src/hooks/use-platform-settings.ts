@@ -18,11 +18,11 @@ import { validPlatformSettings } from "@/lib/admin-setting-presets";
 
 export function usePlatformSettings() {
   const { remember: setStored, value: stored } =
-    useRememberedState<PlatformSettings | null>("admin-platform-settings", null);
+    useRememberedState<(PlatformSettings & { revision: string }) | null>("admin-platform-settings", null);
   const { error, invalidate, isActive, loading: reading, read } = useAdminReading("admin-platform-settings", "common.loadFailed");
 
   const load = React.useCallback(
-    () => read(getCategoryManagement, (result) => setStored(result.platformSettings)),
+    () => read(getCategoryManagement, (result) => setStored({ ...result.platformSettings, revision: result.platformRevision })),
     [read, setStored],
   );
 
@@ -30,12 +30,12 @@ export function usePlatformSettings() {
     void load();
   }, [load]);
 
-  const draft = useDraft<PlatformSettings>({
-    estimate: (value) => estimateRetentionCleanup(value),
-    save: async (value) => {
+  const draft = useDraft<PlatformSettings & { revision: string }>({
+    estimate: (value, baseline) => estimateRetentionCleanup(value, baseline.revision),
+    save: async (value, _reason, baseline) => {
       invalidate();
-      const saved = await savePlatformSettings(value);
-      const next = { imageUploads: saved.imageUploads, retention: saved.retention };
+      const saved = await savePlatformSettings(value, baseline.revision);
+      const next = { imageUploads: saved.imageUploads, retention: saved.retention, revision: saved.revision };
       if (!isActive()) return next;
       setStored(next);
       seedImageUploadSettings(saved.imageUploads);
