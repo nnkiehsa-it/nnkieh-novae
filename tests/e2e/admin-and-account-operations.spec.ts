@@ -285,6 +285,10 @@ test('operations console is usable on phone and desktop and saves an audited pol
     await admin.page.getByRole('tab', { name: 'Client', exact: true }).click();
     await admin.page.getByLabel('Client Write Cooldown Ms',{exact:true}).scrollIntoViewIfNeeded();
     await expect(admin.page.getByLabel('Client Write Cooldown Ms',{exact:true})).toHaveValue('500');
+    await expect.poll(() => admin.page.locator('[data-liquid-tab="client"] .t-tabs-pill').evaluate((pill) => {
+      const trigger = pill.parentElement!;
+      return Math.abs(pill.getBoundingClientRect().left - trigger.getBoundingClientRect().left);
+    })).toBeLessThan(1);
     await admin.page.screenshot({path:testInfo.outputPath(`policies-${width}.png`)});
   }
   const cooldown = admin.page.getByLabel('Client Write Cooldown Ms',{exact:true});
