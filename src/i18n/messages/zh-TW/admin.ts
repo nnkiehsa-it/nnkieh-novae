@@ -1,4 +1,7 @@
 const messages = {
+  "admin.retentionPresetsTitle": "整體資料保留檔位",
+  "admin.retentionPresetScope": "這裡的檔位會重置所有資料保留期限與自動清理開關。套用後請檢查變更摘要，再儲存。",
+  "admin.categoryPrivacyLocked": "分類建立後，可見性與作者顯示方式固定；留言、附議與圖片等其他規則仍可調整。",
   "admin.sectionSummary": "分類摘要",
   "admin.backToSummary": "返回分類摘要",
   "admin.sectionChanges": "{count} 項未儲存",
@@ -62,7 +65,7 @@ const messages = {
   "admin.unitMinutes": "分鐘",
   "admin.unitCharacters": "字",
   "admin.quickSettings": "快速設定",
-  "admin.presetHelp": "套用只會修改草稿。確認下方欄位後再儲存；還原此區可回到儲存前的設定。",
+  "admin.presetHelp": "套用只會修改草稿。檢查設定與變更摘要後再儲存；還原此區可回到儲存前的設定。",
   "admin.presetMatching": "目前設定",
   "admin.presetStandard": "標準（推薦）",
   "admin.presetCompact": "節省空間",

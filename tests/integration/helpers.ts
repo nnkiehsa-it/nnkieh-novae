@@ -339,7 +339,7 @@ export async function saveCategoryDraft(
     );
     for (const id of deletedIds) byId.delete(id);
     for (const category of additions) byId.set(String(category.id), {
-      maxImages: 2, commentMaxImages: 1, ...byId.get(String(category.id)), ...category,
+      maxImages: 2, commentMaxImages: 1, authorDeleteEnabled: false, ...byId.get(String(category.id)), ...category,
     });
     return [...byId.values()].map((category, sortOrder) => ({ ...category, sortOrder }));
   };

@@ -55,7 +55,8 @@ export function CategoryEditor({
   return (
     <div className="space-y-6">
       {isIssue(item) ? (
-        <SettingPresets current={item} presets={ISSUE_PRESETS} onRestore={onRestore}
+        <SettingPresets current={item} presets={identifierLocked ? ISSUE_PRESETS.filter((preset) =>
+          preset.values.readAccess === item.readAccess && preset.values.authorVisible === item.authorVisible) : ISSUE_PRESETS} onRestore={onRestore}
           onApply={(rules) => change({ ...item, ...rules })} />
       ) : (
         <SettingPresets current={item} presets={FACILITY_PRESETS} onRestore={onRestore}
@@ -86,6 +87,7 @@ export function CategoryEditor({
       {isIssue(item) ? (
         <ListSection header={t("admin.categoryVisibility")}>
           <ListPicker
+            disabled={identifierLocked}
             label={t("ui.admin.readAccess")}
             onChange={(next) =>
               change({ ...item, readAccess: next as IssueCategoryConfig["readAccess"], authorVisible: next === "owner-admin" ? true : item.authorVisible })
@@ -99,11 +101,12 @@ export function CategoryEditor({
           />
           <ListSwitchRow
             checked={item.authorVisible}
-            disabled={item.readAccess === "owner-admin"}
+            disabled={identifierLocked || item.readAccess === "owner-admin"}
             label={t("ui.admin.showAuthor")}
             name={t("ui.admin.showAuthor")}
             onCheckedChange={(next) => change({ ...item, authorVisible: next })}
           />
+          {identifierLocked ? <p className="py-3 text-sm leading-6 text-muted-foreground">{t("admin.categoryPrivacyLocked")}</p> : null}
         </ListSection>
       ) : null}
       {isIssue(item) ? (

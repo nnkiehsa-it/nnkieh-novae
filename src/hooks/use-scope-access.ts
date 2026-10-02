@@ -23,19 +23,23 @@ export function useScopeAccess(scope: AccessScope | null) {
   const membership = useAdminReading(key, "ui.common.loadFailed");
   const { read: readMembers } = membership;
   const lookup = useAdminReading(`${key}:lookup`, "ui.access.searchFailed");
+  const { invalidate: invalidateLookup } = lookup;
   const [candidate, setCandidate] = React.useState<AccessUser | null>(null);
   const [query, setQuery] = React.useState("");
   const [searched, setSearched] = React.useState(false);
   const stored = React.useMemo(() => reading ? { revision: reading.revision, uids: reading.uids } : null, [reading]);
 
   const load = React.useCallback(() => {
+    invalidateLookup();
+    setCandidate(null);
+    setSearched(false);
     if (!scope) return Promise.resolve();
     return readMembers(() => listScopeMembers(scope), (result) => remember((current) => ({
       known: [...new Map([...(current?.known ?? []), ...result.users].map((user) => [user.uid, user])).values()],
       revision: result.revision,
       uids: result.users.map((user) => user.uid),
     })));
-  }, [readMembers, remember, scope]);
+  }, [invalidateLookup, readMembers, remember, scope]);
   React.useEffect(() => { void load(); }, [load]);
 
   const draft = useDraft<ScopeMembers>({

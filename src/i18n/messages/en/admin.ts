@@ -1,4 +1,7 @@
 const messages = {
+  "admin.retentionPresetsTitle": "Retention presets",
+  "admin.retentionPresetScope": "These presets reset all retention periods and automatic cleanup switches. Review the changes before saving.",
+  "admin.categoryPrivacyLocked": "Visibility and author display are fixed after creation. Comments, support, images and other rules remain editable.",
   "admin.sectionSummary": "Section summary",
   "admin.backToSummary": "Back to section summary",
   "admin.sectionChanges": "{count} unsaved",

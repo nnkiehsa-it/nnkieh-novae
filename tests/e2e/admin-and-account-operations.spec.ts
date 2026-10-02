@@ -217,7 +217,7 @@ test('setting presets remain drafts, restore one area, and show reviewable chang
   await admin.page.getByRole('button', { name: 'Restore saved settings in this section', exact: true }).click();
   await expect(dimension).toHaveValue(original);
   await admin.page.getByRole('button', { name: /Detailed images/u }).click();
-  await selectAdminSection(admin.page, 'Quick settings');
+  await selectAdminSection(admin.page, 'Retention presets');
   await admin.page.getByRole('button', { name: 'Quick settings', exact: true }).click();
   await admin.page.getByRole('button', { name: /^Compact/u }).click();
   await admin.page.getByRole('button', { name: 'Restore saved settings in this section', exact: true }).click();

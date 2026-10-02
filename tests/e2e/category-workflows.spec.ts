@@ -89,6 +89,8 @@ test('proposal and facility categories create, rename, surface, and delete atomi
 
   await admin.page.goto('/admin/content?view=issue');
   const renaming = await openCategory(admin.page, 'E2E Temporary Proposal');
+  await expect(renaming.getByRole('combobox')).toBeDisabled();
+  await expect(renaming.getByRole('switch', { name: 'Show author' })).toBeDisabled();
   await expect(renaming.getByRole('switch', { name: 'Allow images in posts' })).not.toBeChecked();
   await expect(renaming.getByRole('spinbutton', { name: 'Images per comment' })).toHaveValue('3');
   await renaming.getByRole('textbox', { name: 'Name', exact: true }).fill('E2E Renamed Proposal');

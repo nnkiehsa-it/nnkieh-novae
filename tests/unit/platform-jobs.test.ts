@@ -1,4 +1,4 @@
-import { act, createElement } from "react";
+import { act, createElement, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { usePlatformJobs } from "@/hooks/use-platform-jobs";
@@ -6,19 +6,26 @@ import { listPlatformJobs } from "@/services/categories";
 import { notifyPlatformJobsChanged } from "@/lib/platform-job-events";
 
 vi.mock("@/services/categories", () => ({ listPlatformJobs: vi.fn() }));
+const session = vi.hoisted(() => ({ uid: "first-admin" }));
+vi.mock("@/hooks/use-session", () => ({ useSession: () => ({ user: { uid: session.uid } }) }));
 vi.mock("@/i18n", () => {
   const t = (key: string) => key;
   return { useI18n: () => ({ t }) };
 });
 let root: Root;
 let state: ReturnType<typeof usePlatformJobs>;
+function Probe() {
+  const reading = usePlatformJobs();
+  useEffect(() => { state = reading; }, [reading]);
+  return null;
+}
 beforeEach(async () => {
+  session.uid = "first-admin";
   vi.useFakeTimers();
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
   vi.spyOn(navigator, "onLine", "get").mockReturnValue(true);
   root = createRoot(document.createElement("div"));
-  function Probe() { state = usePlatformJobs(); return null; }
   await act(async () => root.render(createElement(Probe)));
 });
 afterEach(async () => {
@@ -53,4 +60,15 @@ it("does not issue reads while offline", async () => {
   await act(async () => notifyPlatformJobsChanged());
   await act(async () => vi.advanceTimersByTimeAsync(5_000));
   expect(listPlatformJobs).not.toHaveBeenCalled();
+});
+
+it("ignores a progress response belonging to the previous administrator", async () => {
+  let reject!: (reason: Error) => void;
+  vi.mocked(listPlatformJobs).mockReturnValue(new Promise((_resolve, failed) => { reject = failed; }));
+  await act(async () => notifyPlatformJobsChanged());
+  await act(async () => { session.uid = "next-admin"; root.render(createElement(Probe)); });
+  await act(async () => reject(new Error("previous account failure")));
+  expect(state.error).toBe("");
+  expect(state.entries).toEqual([]);
+  expect(state.watching).toBe(false);
 });

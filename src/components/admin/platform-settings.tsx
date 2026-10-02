@@ -48,7 +48,7 @@ export function PlatformSettings() {
         areas={[
           ...RETENTION_GROUPS.map((group) => ({ value: group.value, label: t(group.titleKey), detail: t(group.detailKey),
             changeCount: draft.changes.filter((change) => group.items.some((item) => change.key === `retention.${item.key}` || change.key === `retention.${item.enableKey}`)).length })),
-          { label: t("admin.quickSettings"), value: "retention", detail: t("admin.summary.retention") },
+          { label: t("admin.retentionPresetsTitle"), value: "retention", detail: t("admin.summary.retention") },
           { label: t("ui.admin.imageUploads"), value: "images", detail: t("admin.summary.images"), changeCount: draft.changes.filter((change) => change.key.startsWith("imageUploads.")).length },
         ]}
         value={area}
@@ -56,9 +56,9 @@ export function PlatformSettings() {
 
       {area !== "overview" && area !== "images" ? (
         <div className="space-y-4">
-          {area === "retention" ? <SettingPresets current={value.retention} presets={RETENTION_PRESETS}
+          {area === "retention" ? <><p className="text-sm leading-6 text-muted-foreground">{t("admin.retentionPresetScope")}</p><SettingPresets current={value.retention} presets={RETENTION_PRESETS}
             onApply={(retention) => draft.update((current) => ({ ...current, retention }))}
-            onRestore={() => draft.update((current) => ({ ...current, retention: draft.baseline!.retention }))} /> : null}
+            onRestore={() => draft.update((current) => ({ ...current, retention: draft.baseline!.retention }))} /></> : null}
           {RETENTION_GROUPS.filter((group) => group.value === area).map((group) => (
             <div className="space-y-4" key={group.value}>
               {group.titleKey === "ui.admin.retentionOperations" ? (

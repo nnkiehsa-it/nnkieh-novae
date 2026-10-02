@@ -17,6 +17,7 @@ import { RATE_LIMITS } from "@/generated/rate-limits";
 
 const categoryPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 const newIssue = (isDefault = false): IssueCategoryDraft => ({
+  authorDeleteEnabled: false,
   maxImages: RATE_LIMITS.imageUploads.issueMaxImages,
   commentMaxImages: RATE_LIMITS.imageUploads.commentMaxImages,
   authorVisible: true,
@@ -30,6 +31,7 @@ const newIssue = (isDefault = false): IssueCategoryDraft => ({
   supportGoal: null,
 });
 const newFacility = (isDefault = false): FacilityCategoryDraft => ({
+  authorDeleteEnabled: false,
   maxImages: RATE_LIMITS.imageUploads.facilityMaxImages,
   id: "",
   isDefault,

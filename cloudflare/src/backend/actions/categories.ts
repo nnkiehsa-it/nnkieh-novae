@@ -1,6 +1,5 @@
 import { asRecord, asString } from "../shared/http.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
-import { asBoolean } from "./utils.ts";
 import { requirePermission } from "./auth.ts";
 import {
   platformSettingsFromInput,
@@ -10,6 +9,16 @@ import { categoryCatalogSegments, loadCategoryManagement, READ_ACCESS_VALUES } f
 import { settledSegments } from "./segments.ts";
 
 const CATEGORY_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
+
+function booleanSetting(value: unknown) {
+  if (typeof value !== "boolean") throw new Error("validation-required");
+  return value;
+}
+
+function categoryArray(value: unknown) {
+  if (!Array.isArray(value)) throw new Error("validation-required");
+  return value;
+}
 
 function assertRevision(requested: unknown, stored: string) {
   if (typeof requested !== "string" || !/^[a-f0-9]{32}$/u.test(requested)) throw new Error("validation-required");
@@ -56,18 +65,16 @@ function issueCategoryInput(value: unknown, sortOrder: number) {
   const identity = categoryIdentity(record);
   const readAccess = asString(record.readAccess);
   if (!READ_ACCESS_VALUES.has(readAccess)) throw new Error("validation-required");
-  if (readAccess !== "owner-admin" && typeof record.authorVisible !== "boolean") {
-    throw new Error("validation-required");
-  }
-  const authorVisible = readAccess === "owner-admin" ? true : asBoolean(record.authorVisible);
-  const supportEnabled = asBoolean(record.supportEnabled);
+  const requestedAuthorVisible = booleanSetting(record.authorVisible);
+  const authorVisible = readAccess === "owner-admin" ? true : requestedAuthorVisible;
+  const supportEnabled = booleanSetting(record.supportEnabled);
   return {
     ...identity,
     maxImages: imageLimit(record.maxImages),
     commentMaxImages: imageLimit(record.commentMaxImages),
-    authorDeleteEnabled: asBoolean(record.authorDeleteEnabled),
+    authorDeleteEnabled: booleanSetting(record.authorDeleteEnabled),
     authorVisible,
-    commentsEnabled: asBoolean(record.commentsEnabled, true),
+    commentsEnabled: booleanSetting(record.commentsEnabled),
     readAccess,
     sortOrder,
     supportDeadlineDays: supportEnabled ? positiveInteger(record.supportDeadlineDays) : null,
@@ -81,7 +88,7 @@ function facilityCategoryInput(value: unknown, sortOrder: number) {
   return {
     ...categoryIdentity(record),
     maxImages: imageLimit(record.maxImages),
-    authorDeleteEnabled: asBoolean(record.authorDeleteEnabled),
+    authorDeleteEnabled: booleanSetting(record.authorDeleteEnabled),
     sortOrder,
   };
 }
@@ -93,15 +100,6 @@ function assertCategoryCollection(categories: Array<{ id: string; isDefault: boo
   if (categories.length > 0 && categories.filter((category) => category.isDefault).length !== 1) {
     throw new Error("validation-required");
   }
-}
-
-async function announcementCommentsSetting(payload: JsonRecord, database: BackendDatabase) {
-  if (typeof payload.announcementCommentsEnabled === "boolean") {
-    return payload.announcementCommentsEnabled;
-  }
-  const setup = await database.sqlOne<Selected<"system_setup", "announcement_comments_enabled">>`
-    select announcement_comments_enabled from app_private.system_setup where singleton = true`;
-  return setup.announcement_comments_enabled !== false;
 }
 
 export async function handleCategoryAction(
@@ -123,14 +121,14 @@ export async function handleCategoryAction(
   if (action === "estimateCategoryPolicyChanges") {
     requirePermission(auth, "category.manage");
     assertRevision(payload.revision, (await loadCategoryManagement(database)).categoryRevision);
-    const rawIssueCategories = Array.isArray(payload.issueCategories) ? payload.issueCategories : [];
+    const rawIssueCategories = categoryArray(payload.issueCategories);
     const issueCategories = rawIssueCategories.map((value, index) => ({
       ...issueCategoryInput(value, index),
-      isDefault: asBoolean(asRecord(value).isDefault),
+      isDefault: booleanSetting(asRecord(value).isDefault),
     }));
     const { data, error } = await database.call("app_api", "backend_estimate_category_policy_changes", {
       actor_uid: auth.uid,
-      announcement_comments_enabled: await announcementCommentsSetting(payload, database),
+      announcement_comments_enabled: booleanSetting(payload.announcementCommentsEnabled),
       deleted_issue_category_ids: deletedCategoryIds(payload.deletedIssueCategoryIds),
       issue_categories: issueCategories,
     });
@@ -172,25 +170,25 @@ export async function handleCategoryAction(
   }
   if (action === "saveCategoryManagement") {
     requirePermission(auth, "category.manage");
-    const rawIssueCategories = Array.isArray(payload.issueCategories) ? payload.issueCategories : [];
-    const rawFacilityCategories = Array.isArray(payload.facilityCategories) ? payload.facilityCategories : [];
+    const rawIssueCategories = categoryArray(payload.issueCategories);
+    const rawFacilityCategories = categoryArray(payload.facilityCategories);
     const deletedIssueIds = deletedCategoryIds(payload.deletedIssueCategoryIds);
     const deletedFacilityIds = deletedCategoryIds(payload.deletedFacilityCategoryIds);
-    const issuesEnabled = asBoolean(payload.issuesEnabled, true);
-    const facilitiesEnabled = asBoolean(payload.facilitiesEnabled, true);
-    const announcementCommentsEnabled = await announcementCommentsSetting(payload, database);
+    const issuesEnabled = booleanSetting(payload.issuesEnabled);
+    const facilitiesEnabled = booleanSetting(payload.facilitiesEnabled);
+    const announcementCommentsEnabled = booleanSetting(payload.announcementCommentsEnabled);
     const issueCategories = rawIssueCategories.map((value, index) => {
       const requested = asRecord(value);
       return {
         ...issueCategoryInput(requested, index),
-        isDefault: asBoolean(requested.isDefault),
+        isDefault: booleanSetting(requested.isDefault),
       };
     });
     const facilityCategories = rawFacilityCategories.map((value, index) => {
       const requested = asRecord(value);
       return {
         ...facilityCategoryInput(requested, index),
-        isDefault: asBoolean(requested.isDefault),
+        isDefault: booleanSetting(requested.isDefault),
       };
     });
     if ((issuesEnabled && issueCategories.length === 0) || (facilitiesEnabled && facilityCategories.length === 0)) {
@@ -228,12 +226,12 @@ export async function handleCategoryAction(
   }
   if (action === "savePlatformFeatures") {
     requirePermission(auth, "category.manage");
-    const announcementCommentsEnabled = await announcementCommentsSetting(payload, database);
+    const announcementCommentsEnabled = booleanSetting(payload.announcementCommentsEnabled);
     const { data, error } = await database.call("app_api", "backend_update_platform_features", {
       actor_uid: auth.uid,
       announcement_comments_enabled: announcementCommentsEnabled,
-      facilities_enabled: asBoolean(payload.facilitiesEnabled, true),
-      issues_enabled: asBoolean(payload.issuesEnabled, true),
+      facilities_enabled: booleanSetting(payload.facilitiesEnabled),
+      issues_enabled: booleanSetting(payload.issuesEnabled),
     });
     if (error) throw error;
     return asRecord(data);
@@ -244,20 +242,20 @@ export async function handleCategoryAction(
     const setupState = await database.sqlMaybe<Selected<"system_setup", "completed_at">>`
       select completed_at from app_private.system_setup where singleton = true`;
     if (setupState?.completed_at) return { success: true, setupCompleted: true, alreadyCompleted: true };
-    const rawIssueCategories = Array.isArray(payload.issueCategories) ? payload.issueCategories : [];
-    const rawFacilityCategories = Array.isArray(payload.facilityCategories) ? payload.facilityCategories : [];
-    const issuesEnabled = asBoolean(payload.issuesEnabled, true);
-    const facilitiesEnabled = asBoolean(payload.facilitiesEnabled, true);
+    const rawIssueCategories = categoryArray(payload.issueCategories);
+    const rawFacilityCategories = categoryArray(payload.facilityCategories);
+    const issuesEnabled = booleanSetting(payload.issuesEnabled);
+    const facilitiesEnabled = booleanSetting(payload.facilitiesEnabled);
     const issueCategories = issuesEnabled
       ? rawIssueCategories.map((value, index) => ({
         ...issueCategoryInput(value, index),
-        isDefault: asBoolean(asRecord(value).isDefault, index === 0),
+        isDefault: booleanSetting(asRecord(value).isDefault),
       }))
       : [];
     const facilityCategories = facilitiesEnabled
       ? rawFacilityCategories.map((value, index) => ({
         ...facilityCategoryInput(value, index),
-        isDefault: asBoolean(asRecord(value).isDefault, index === 0),
+        isDefault: booleanSetting(asRecord(value).isDefault),
       }))
       : [];
     if ((issuesEnabled && issueCategories.length < 1) || (facilitiesEnabled && facilityCategories.length < 1)) {

@@ -1,9 +1,9 @@
 import { asString } from "../shared/http.ts";
-import { createMediaDeliveryUrl } from "../shared/media-delivery.ts";
+import { platformAdminEmails } from "../shared/platform-admin.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { requirePermission } from "./auth.ts";
 import type { Selected } from "../database/schema.ts";
-import { settledSegments } from "./segments.ts";
+import { accessUsersForUids } from "./access-user-profiles.ts";
 
 const ACCESS_SCOPE_KINDS = new Set(["announcement", "facility", "issue"]);
 
@@ -51,78 +51,15 @@ async function lockScope(scope: AccessScopeSelector, database: BackendDatabase) 
 }
 
 async function updateScopeMember(uid: string, scope: AccessScopeSelector, grant: boolean, auth: AuthContext, database: BackendDatabase) {
+  const target = await database.sqlOne<{ configured_admin: boolean }>`
+    select app_api.backend_reconcile_scope_target_admin(${auth.uid}, ${uid}, ${platformAdminEmails()}) as configured_admin`;
+  if (target.configured_admin) throw new Error("permission-denied");
   const { data, error } = await database.call("app_api", "backend_update_user_access_scope", {
     actor_uid: auth.uid, target_uid: uid, scope_kind: scope.kind,
     category_id: scope.categoryId || null, grant_access: grant,
   });
   if (error) throw error;
   return data;
-}
-
-async function* accessUsersForUids(
-  uids: string[],
-  database: BackendDatabase,
-  viewerUid: string,
-  excludePlatformAdmins = true,
-) {
-  if (uids.length === 0) {
-    yield { data: [], key: "users" };
-    return;
-  }
-  const profiles = database.sql<Selected<"user_profiles", "uid" | "email" | "display_name" | "avatar_public_id" | "photo_url">>`
-      select uid, email, display_name, avatar_public_id, photo_url from app_private.user_profiles
-      where uid = any(${uids}) order by display_name`
-    .then(({ rows }) => Promise.all(rows.map(async (profile) => {
-      const media = profile.avatar_public_id
-        ? await createMediaDeliveryUrl(profile.avatar_public_id, "avatar", false, viewerUid)
-        : null;
-      return { ...profile, resolvedPhotoUrl: media?.url ?? profile.photo_url ?? null };
-    })));
-  const roleAssignments = database.sql<Selected<"user_role_assignments", "uid" | "role_code">>`
-    select uid, role_code from app_private.user_role_assignments where uid = any(${uids})`
-    .then(({ rows }) => rows);
-  const issueAssignments = database.sql<Selected<"user_issue_category_assignments", "uid" | "category_id">>`
-    select uid, category_id from app_private.user_issue_category_assignments where uid = any(${uids})`
-    .then(({ rows }) => rows);
-  const facilityAssignments = database.sql<Selected<"user_facility_category_assignments", "uid" | "category_id">>`
-    select uid, category_id from app_private.user_facility_category_assignments where uid = any(${uids})`
-    .then(({ rows }) => rows);
-
-  let profileRows: Awaited<typeof profiles> | undefined;
-  let roleRows: Awaited<typeof roleAssignments> | undefined;
-  let issueRows: Awaited<typeof issueAssignments> = [];
-  let facilityRows: Awaited<typeof facilityAssignments> = [];
-  for await (const segment of settledSegments({ profiles, roleAssignments, issueAssignments, facilityAssignments })) {
-    if (segment.key === "profiles") profileRows = segment.data as Awaited<typeof profiles>;
-    if (segment.key === "roleAssignments") roleRows = segment.data as Awaited<typeof roleAssignments>;
-    if (segment.key === "issueAssignments") issueRows = segment.data as Awaited<typeof issueAssignments>;
-    if (segment.key === "facilityAssignments") facilityRows = segment.data as Awaited<typeof facilityAssignments>;
-    if (!profileRows || !roleRows) continue;
-
-    const roles = new Map<string, string[]>();
-    const issueCategories = new Map<string, string[]>();
-    const facilityCategories = new Map<string, string[]>();
-    for (const assignment of roleRows) {
-      roles.set(assignment.uid, [...(roles.get(assignment.uid) ?? []), assignment.role_code]);
-    }
-    for (const assignment of issueRows) {
-      issueCategories.set(assignment.uid, [...(issueCategories.get(assignment.uid) ?? []), assignment.category_id]);
-    }
-    for (const assignment of facilityRows) {
-      facilityCategories.set(assignment.uid, [...(facilityCategories.get(assignment.uid) ?? []), assignment.category_id]);
-    }
-    yield { data: profileRows
-      .filter((profile) => !excludePlatformAdmins || !(roles.get(profile.uid) ?? []).includes("platform-admin"))
-      .map((profile) => ({
-      uid: profile.uid,
-      email: profile.email ?? null,
-      name: profile.display_name ?? profile.email ?? profile.uid,
-      photoUrl: profile.resolvedPhotoUrl,
-      roles: roles.get(profile.uid) ?? [],
-      managedIssueCategoryIds: issueCategories.get(profile.uid) ?? [],
-      managedFacilityCategoryIds: facilityCategories.get(profile.uid) ?? [],
-      })), key: "users" };
-  }
 }
 
 export async function handleUserAccessAction(
@@ -142,7 +79,7 @@ export async function handleUserAccessAction(
       const query = rawQuery.includes("@") ? rawQuery.toLowerCase() : rawQuery;
       const { rows } = query.includes("@")
         ? await database.sql<Selected<"user_profiles", "uid">>`
-          select uid from app_private.user_profiles where email = ${query} limit 1`
+          select uid from app_private.user_profiles where lower(btrim(email)) = ${query} limit 1`
         : await database.sql<Selected<"user_profiles", "uid">>`
           select uid from app_private.user_profiles where uid = ${query} limit 1`;
       uids = rows.map((profile) => profile.uid);
@@ -154,7 +91,7 @@ export async function handleUserAccessAction(
     return (async function* () {
       yield { data: false, key: "truncated" };
       yield { data: revision, key: "revision" };
-      yield* accessUsersForUids(uids, database, auth.uid, !rawQuery);
+      yield { data: await accessUsersForUids(uids, database, auth.uid, !rawQuery), key: "users" };
     })();
   }
 
@@ -189,10 +126,7 @@ export async function handleUserAccessAction(
       where uid = any(${changed.map((change) => change.uid)}) order by uid for update`;
     for (const change of changed) await updateScopeMember(change.uid, scope, change.grant, auth, database);
     const after = await scopedAccessUids(scope, database);
-    let users: unknown[] = [];
-    for await (const segment of accessUsersForUids(after.uids, database, auth.uid)) {
-      if (segment.key === "users") users = segment.data as unknown[];
-    }
+    const users = await accessUsersForUids(after.uids, database, auth.uid);
     return { changedUids: changed.map((change) => change.uid), revision: after.revision, success: true, users };
   }
 

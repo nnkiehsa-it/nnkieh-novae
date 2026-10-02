@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { asRecord, callAction, database, expectActionError, insertRows, integrationTest, seedActor } from "../helpers.ts";
+import { asRecord, callAction, database, expectActionError, insertRows, integrationTest, seedActor, testEnvironment } from "../helpers.ts";
 
 integrationTest("scope member batches commit together, reject stale drafts, and announce each changed account", async () => {
   const admin = await seedActor("scope-batch-admin", { roles: ["platform-admin"] });
@@ -41,4 +41,33 @@ integrationTest("scope membership reads do not silently drop the 101st administr
   assert.equal(members.truncated, false);
   assert.equal((members.users as unknown[]).length, 101);
   assert.match(String(members.revision), /^[a-f0-9]{32}$/u);
+});
+
+integrationTest("scope access follows configured administrator identities before the target logs in again", async () => {
+  const admin = await seedActor("scope-identity-admin", { roles: ["platform-admin"] });
+  const promoted = await seedActor("scope-promoted");
+  const former = await seedActor("scope-former-admin", { roles: ["platform-admin"] });
+  testEnvironment.ADMIN_EMAILS = testEnvironment.ADMIN_EMAILS.split(",").filter((email) => email !== former.identity.email).join(",")
+    + `,${promoted.identity.email}`;
+  await database.sql`update app_private.user_profiles set email = ${promoted.identity.email.toUpperCase()} where uid = ${promoted.auth.uid}`;
+  const promotedLookup = asRecord(await callAction("listRoleAssignments", { query: ` ${promoted.identity.email} ` }, admin.auth));
+  assert.deepEqual((promotedLookup.users as Array<{ roles: string[] }>)[0].roles, ["platform-admin"]);
+  await expectActionError("permission-denied", () => callAction("setUserAccessScope", {
+    uid: promoted.auth.uid, scopeKind: "issue", categoryId: "public-issues", grant: true,
+  }, admin.auth));
+  const formerLookup = asRecord(await callAction("listRoleAssignments", { query: former.identity.email }, admin.auth));
+  assert.deepEqual((formerLookup.users as Array<{ roles: string[] }>)[0].roles, []);
+  const scope = { scopeKind: "issue", categoryId: "public-issues" };
+  const before = asRecord(await callAction("listRoleAssignments", { ...scope, query: "" }, admin.auth));
+  const saved = asRecord(await callAction("saveScopeMembers", {
+    ...scope, revision: before.revision, changes: [{ uid: former.auth.uid, grant: true }],
+  }, admin.auth));
+  assert.deepEqual((saved.users as Array<{ uid: string; roles: string[]; managedIssueCategoryIds: string[] }>), [{
+    ...(formerLookup.users as object[])[0], managedIssueCategoryIds: ["public-issues"],
+  }]);
+  const roles = await database.sql`select role_code from app_private.user_role_assignments where uid = ${former.auth.uid}`;
+  assert.equal(roles.rows.length, 0);
+  const audit = await database.sql`select uid from app_private.role_assignment_audit
+    where uid = ${former.auth.uid} and role_code = 'platform-admin' and operation = 'revoke'`;
+  assert.equal(audit.rows.length, 1);
 });

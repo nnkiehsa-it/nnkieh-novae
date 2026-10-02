@@ -61,12 +61,12 @@ integrationTest("runtime category setup and management enforce platform permissi
   const setup = asRecord(await callAction("completeInitialSetup", {
     issueCategories: [
       {
-        id: "public-issues", label: "公共議題", readAccess: "reviewed-school",
+        id: "public-issues", label: "公共議題", readAccess: "reviewed-school", authorDeleteEnabled: false, isDefault: true,
         authorVisible: false, supportEnabled: true, supportGoal: 50, supportDeadlineDays: 14,
         commentsEnabled: true, maxImages: 3, commentMaxImages: 1,
       },
       {
-        id: "rights-maintenance", label: "學生權益", readAccess: "owner-admin",
+        id: "rights-maintenance", label: "學生權益", readAccess: "owner-admin", authorDeleteEnabled: false, isDefault: false,
         authorVisible: true, supportEnabled: false, supportGoal: null, supportDeadlineDays: null,
         commentsEnabled: true, maxImages: 3, commentMaxImages: 1,
       },
@@ -388,6 +388,22 @@ integrationTest("management snapshots reject stale estimates and writes without 
   assert.equal(asRecord(asRecord(current.platformSettings).imageUploads).maxDimension, 3000);
   assert.equal(current.platformRevision, savedPlatform.revision);
   assert.equal(current.categoryRevision, initial.categoryRevision, "processing settings have their own conflict scope");
+
+  const validDraft = {
+    ...asRecord(initial.features), deletedFacilityCategoryIds: [], deletedIssueCategoryIds: [],
+    facilityCategories: initial.facilityCategories, issueCategories: initial.issueCategories, revision: initial.categoryRevision,
+  };
+  const contractAdmin = await seedActor("typed-setting-validator", { roles: ["platform-admin"] });
+  for (const key of ["issuesEnabled", "facilitiesEnabled", "announcementCommentsEnabled"]) {
+    await expectActionError("validation-required", () => callAction("saveCategoryManagement", { ...validDraft, [key]: "false" }, contractAdmin.auth));
+  }
+  for (const key of ["authorVisible", "commentsEnabled", "supportEnabled", "authorDeleteEnabled", "isDefault"]) {
+    await expectActionError("validation-required", () => callAction("saveCategoryManagement", {
+      ...validDraft, issueCategories: (initial.issueCategories as unknown[]).map((category) => ({ ...asRecord(category), [key]: "false" })),
+    }, contractAdmin.auth));
+  }
+  await expectActionError("validation-required", () => callAction("saveCategoryManagement", { ...validDraft, issueCategories: null }, contractAdmin.auth));
+  assert.equal(asRecord(await callAction("getCategoryManagement", {}, admin.auth)).categoryRevision, initial.categoryRevision);
 
   const categoryDraft = {
     ...asRecord(initial.features), deletedFacilityCategoryIds: [], deletedIssueCategoryIds: [],

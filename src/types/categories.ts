@@ -74,7 +74,7 @@ export interface PlatformFeatures {
 export interface IssueCategoryDraft {
   maxImages: number;
   commentMaxImages: number;
-  authorDeleteEnabled?: boolean;
+  authorDeleteEnabled: boolean;
   id: string;
   label: string;
   readAccess: IssueReadAccess | '';
@@ -88,7 +88,7 @@ export interface IssueCategoryDraft {
 
 export interface FacilityCategoryDraft {
   maxImages: number;
-  authorDeleteEnabled?: boolean;
+  authorDeleteEnabled: boolean;
   id: string;
   isDefault: boolean;
   label: string;

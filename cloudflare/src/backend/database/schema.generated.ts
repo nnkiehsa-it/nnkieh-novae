@@ -498,6 +498,7 @@ export const GENERATED_DATABASE_FUNCTION_SIGNATURES = [
   "backend_process_platform_job_batch(batch_size integer) -> jsonb",
   "backend_push_notification_preference(actor_uid text, device_id text, permission text) -> jsonb",
   "backend_reconcile_platform_admins(actor_uid text, admin_emails text[]) -> jsonb",
+  "backend_reconcile_scope_target_admin(actor_uid text, target_uid text, admin_emails text[]) -> boolean",
   "backend_register_push_token(actor_uid text, device_id text, token text, permission text, platform text, user_agent text) -> jsonb",
   "backend_save_announcement_image_policy(actor_uid text, max_images integer, comment_max_images integer) -> void",
   "backend_save_category_management(actor_uid text, issue_categories jsonb, facility_categories jsonb, deleted_issue_category_ids text[], deleted_facility_category_ids text[], issues_enabled boolean, facilities_enabled boolean) -> jsonb",

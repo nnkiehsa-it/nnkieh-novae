@@ -3,7 +3,7 @@
 import * as React from "react";
 
 import { listPlatformJobs, type PlatformJob } from "@/services/categories";
-import { useI18n } from "@/i18n";
+import { useAdminReading } from "@/hooks/use-admin-reading";
 import { nextPollDelay } from "@/lib/poll-schedule";
 import { subscribePlatformJobsChanged } from "@/lib/platform-job-events";
 
@@ -18,29 +18,30 @@ const ACTIVE_STATUSES = new Set<PlatformJob["status"]>(["pending", "processing"]
  * progress bar they cannot see.
  */
 export function usePlatformJobs() {
-  const { t } = useI18n();
+  const { error, read } = useAdminReading("platform-jobs", "ui.admin.backgroundJobsLoadFailed");
   const [entries, setEntries] = React.useState<PlatformJob[]>([]);
-  const [error, setError] = React.useState("");
   const [watching, setWatching] = React.useState(false);
   const pendingRead = React.useRef<Promise<PlatformJob[] | null> | null>(null);
+  React.useEffect(() => {
+    setEntries([]);
+    setWatching(false);
+    pendingRead.current = null;
+  }, [read]);
 
   const load = React.useCallback(async () => {
     if (pendingRead.current) return pendingRead.current;
     const pending = (async () => {
-      try {
-        const result = (await listPlatformJobs()).entries;
-        setEntries(result);
-        setError("");
-        return result;
-      } catch (caught) {
-        setError(caught instanceof Error ? caught.message : t("ui.admin.backgroundJobsLoadFailed"));
-        // A failed read says nothing about whether the work has finished.
-        return null;
-      }
-    })().finally(() => { pendingRead.current = null; });
+      let result: PlatformJob[] | null = null;
+      await read(async () => (await listPlatformJobs()).entries, (entries) => {
+        result = entries;
+        setEntries(entries);
+      });
+      // A failed or obsolete read says nothing about whether work has finished.
+      return result;
+    })().finally(() => { if (pendingRead.current === pending) pendingRead.current = null; });
     pendingRead.current = pending;
     return pending;
-  }, [t]);
+  }, [read]);
 
   // Nothing is read until a save on this screen queues something. An admin
   // simply looking at a settings page should not be polling because somebody
