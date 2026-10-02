@@ -64,13 +64,17 @@ export function SaveBar({
       role="status"
       transition={timing("sheet")}
     >
-      {error ? <p className="w-full text-sm text-destructive" role="alert">{error}</p> : null}
-      {error && onReload ? (
-        <Button disabled={saving} onClick={onReload} size="sm" variant="secondary">
-          {translate("admin.reloadSettings")}
-        </Button>
+      {error ? (
+        <div className="w-full space-y-2">
+          <p className="text-sm text-destructive" role="alert">{error}</p>
+          {onReload ? (
+            <Button disabled={saving} onClick={onReload} size="sm" variant="secondary">
+              {translate("admin.reloadSettings")}
+            </Button>
+          ) : null}
+        </div>
       ) : null}
-      <span className="min-w-0 flex-1 text-sm">
+      <span className="min-w-28 flex-1 text-sm">
         {saved
           ? translate("ui.common.saveBarSaved")
           : translate("ui.common.saveBarPending", { count: changeCount })}

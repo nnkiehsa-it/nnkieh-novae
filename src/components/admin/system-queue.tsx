@@ -117,7 +117,7 @@ export function SystemQueue({
                   variant="outline"
                 >
                   {retrying === RETRY_ALL ? <LoadingSpinner /> : <ListRestart aria-hidden />}
-                  {t("admin.retryAll", { count: failures.length })}
+                  {t("admin.retryAll")}
                 </Button>
               }
             >

@@ -252,7 +252,7 @@ test('a stale settings tab keeps its draft, reports the conflict, and reloads th
       await admin.page.getByRole('button', { name: 'Save', exact: true }).click();
     });
     await stale.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(stale.getByRole('alert')).toHaveText('These settings changed in another operation. Your changes were not saved. Discard the draft and reload before editing again.');
+    await expect(stale.getByRole('alert').filter({ hasText: 'These settings changed in another operation.' })).toContainText('These settings changed in another operation. Your changes were not saved. Discard the draft and reload before editing again.');
     await expect(previous).toHaveValue('1702');
     await expect.poll(() => stale.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await stale.screenshot({ path: testInfo.outputPath('settings-conflict-390.png') });

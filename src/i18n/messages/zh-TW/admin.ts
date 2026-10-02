@@ -93,7 +93,7 @@ const messages = {
   'admin.queueFailedHeader': '需要處理',
   'admin.retry': '重試',
   'admin.retryQueued': '已重新排入佇列。',
-  'admin.retryAll': '全部重試 {count} 項',
+  'admin.retryAll': '重試所有失敗工作',
   'admin.retryAllQueued': '已將 {count} 項工作重新排入佇列。',
   'admin.clearSchedules': '清除所有排程',
   'admin.clearSchedulesTitle': '清除所有背景工作排程？',

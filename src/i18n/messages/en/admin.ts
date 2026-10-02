@@ -93,7 +93,7 @@ const messages = {
   'admin.queueFailedHeader': 'Needs attention',
   'admin.retry': 'Retry',
   'admin.retryQueued': 'Queued for another attempt.',
-  'admin.retryAll': 'Retry all {count}',
+  'admin.retryAll': 'Retry all failed work',
   'admin.retryAllQueued': '{count} pieces of work queued for another attempt.',
   'admin.clearSchedules': 'Clear all schedules',
   'admin.clearSchedulesTitle': 'Clear all background-work schedules?',
