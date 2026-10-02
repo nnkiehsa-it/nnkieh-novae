@@ -29,10 +29,12 @@ import { statusLabel } from "@/components/admin/system-failures";
  */
 export function NotionRebuildAction({
   busy,
+  disabled,
   job,
   onRebuild,
 }: {
   busy: boolean;
+  disabled: boolean;
   job: OperationsConsole["jobs"][number] | null;
   onRebuild: () => void;
 }) {
@@ -48,6 +50,7 @@ export function NotionRebuildAction({
           action={
             <RowAction
               busy={busy}
+              disabled={disabled}
               icon={DatabaseBackup}
               label={t("ui.operations.notionRebuildAction")}
               onClick={() => setOpen(true)}
@@ -70,7 +73,7 @@ export function NotionRebuildAction({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("ui.common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={onRebuild}>{t("ui.operations.notionRebuildAction")}</AlertDialogAction>
+            <AlertDialogAction disabled={disabled} onClick={onRebuild}>{t("ui.operations.notionRebuildAction")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

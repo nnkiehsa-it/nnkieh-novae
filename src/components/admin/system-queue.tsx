@@ -52,6 +52,7 @@ function percentOf(job: { estimatedRows: number; processedRows: number }) {
  * allowance before it reached the end of the list.
  */
 export function SystemQueue({
+  busy,
   clearing,
   onClearErrors,
   onClearSchedules,
@@ -60,6 +61,7 @@ export function SystemQueue({
   retrying,
   snapshot,
 }: {
+  busy: boolean;
   clearing: "errors" | "schedules" | "";
   onClearErrors: () => void;
   onClearSchedules: () => void;
@@ -109,7 +111,7 @@ export function SystemQueue({
               header={t("admin.queueFailedHeader")}
               headerAction={
                 <Button
-                  disabled={Boolean(retrying)}
+                  disabled={busy}
                   onClick={onRetryAll}
                   size="sm"
                   variant="outline"
@@ -122,6 +124,7 @@ export function SystemQueue({
               <AnimatePresence initial={false}>
                 {failures.map((item) => (
                   <FailureRow
+                    disabled={busy}
                     item={item}
                     key={item.kind + ":" + item.id}
                     onOpen={() => setOpened(item)}
@@ -179,7 +182,7 @@ export function SystemQueue({
           <Panel key="clear-actions">
             <div className="flex flex-wrap justify-end gap-2">
               <Button
-                disabled={Boolean(clearing)}
+                disabled={busy}
                 onClick={() => setClearKind("schedules")}
                 size="sm"
                 variant="destructive"
@@ -188,7 +191,7 @@ export function SystemQueue({
                 {t("admin.clearSchedules")}
               </Button>
               <Button
-                disabled={Boolean(clearing)}
+                disabled={busy}
                 onClick={() => setClearKind("errors")}
                 size="sm"
                 variant="destructive"
@@ -210,6 +213,7 @@ export function SystemQueue({
           <AlertDialogFooter>
             <AlertDialogCancel>{t("ui.common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
+              disabled={busy}
               variant="destructive"
               onClick={() => {
                 const kind = clearKind;
@@ -225,7 +229,7 @@ export function SystemQueue({
       </AlertDialog>
 
       <FailureDetailSheet
-        busy={Boolean(retrying)}
+        busy={busy}
         item={opened}
         onClose={() => setOpened(null)}
         onRetry={(item) => {

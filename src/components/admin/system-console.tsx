@@ -28,7 +28,7 @@ export function SystemConsole() {
   const { t } = useI18n();
   const [view, setView] = useAdminView(["failures", "capacity", "providers"] as const);
   const {
-    clearErrors, clearSchedules, clearing, error, load, loading, notionJob, page, rebuildNotion,
+    busy, clearErrors, clearSchedules, clearing, error, load, loading, notionJob, page, rebuildNotion,
     rebuildingNotion, retry, retryAll, retrying, snapshot,
   } = useSystemConsole();
 
@@ -50,7 +50,7 @@ export function SystemConsole() {
         />
         <Button
           aria-label={t("ui.adminConsole.refresh")}
-          disabled={loading}
+          disabled={loading || busy}
           onClick={() => void load(page)}
           size="icon-sm"
           variant="ghost"
@@ -67,10 +67,12 @@ export function SystemConsole() {
             <div className="space-y-6">
               <NotionRebuildAction
                 busy={rebuildingNotion}
+                disabled={busy || loading}
                 job={notionJob}
                 onRebuild={() => void rebuildNotion()}
               />
               <SystemQueue
+                busy={busy || loading}
                 clearing={clearing}
                 onClearErrors={() => void clearErrors()}
                 onClearSchedules={() => void clearSchedules()}
@@ -84,7 +86,7 @@ export function SystemConsole() {
                 className="flex items-center justify-between gap-3"
               >
                 <Button
-                  disabled={loading || page === 0}
+                  disabled={loading || busy || page === 0}
                   onClick={() => void load(page - 1)}
                   variant="secondary"
                 >
@@ -94,7 +96,7 @@ export function SystemConsole() {
                   {page + 1}
                 </span>
                 <Button
-                  disabled={loading || !snapshot.hasMore}
+                  disabled={loading || busy || !snapshot.hasMore}
                   onClick={() => void load(page + 1)}
                   variant="secondary"
                 >

@@ -11,14 +11,13 @@ import {
   clearOperationalErrors,
   clearScheduledWork,
   fetchOperationsConsole,
-  fetchOperationsProgress,
+  fetchOperationsQueue,
   queueNotionArchiveRebuild,
   retryOperationalWork,
   type OperationsConsole,
 } from "@/services/operations-console";
 
 export type { OperationsConsole } from "@/services/operations-console";
-
 export type RetryKind = "cleanup" | "delivery" | "job";
 
 const isRunning = (job: { status: string }) =>
@@ -29,47 +28,53 @@ interface SystemReading {
   snapshot: Partial<OperationsConsole> | null;
 }
 
-/**
- * Everything the platform is currently failing to finish, in one place.
- *
- * Retries used to live in three unrelated screens, each with its own idea of
- * what happens afterwards. Here a retry removes the row it belongs to and
- * leaves the rest of the screen alone, because re-reading the whole console to
- * learn that one entry is gone is how the expanded rows and the scroll position
- * used to disappear. The reading itself is kept, so returning to the screen
- * shows what it last said instead of asking again. The ten readings behind it
- * arrive one at a time, and each panel fills in as its own lands.
- */
+type Mutation =
+  | { type: "retry"; id: string }
+  | { type: "clear"; kind: "errors" | "schedules" }
+  | { type: "rebuild" };
+
+/** Reads and writes share a fence, so old polls cannot undo an administrator's action. */
 export function useSystemConsole() {
   const { t } = useI18n();
   const { cold, remember, value } = useRememberedState<SystemReading>("admin-system", {
     page: 0,
     snapshot: null,
   });
-  const { error, loading, read: readRequest } = useAdminReading("admin-system", "common.loadFailed");
-  const [retrying, setRetrying] = React.useState("");
-  const [clearing, setClearing] = React.useState<"errors" | "schedules" | "">("");
-  const [rebuildingNotion, setRebuildingNotion] = React.useState(false);
-  const readingVersion = React.useRef(0);
+  const { capture, error, invalidate, isActive, loading, read: readRequest } = useAdminReading("admin-system", "common.loadFailed");
+  const [mutation, setMutation] = React.useState<Mutation | null>(null);
+  const [pollError, setPollError] = React.useState("");
+  const mutationOwner = React.useRef<object | null>(null);
+  const latestPage = React.useRef(value.page);
+  React.useEffect(() => { latestPage.current = value.page; }, [value.page]);
+
+  React.useEffect(() => {
+    mutationOwner.current = null;
+    setMutation(null);
+    setPollError("");
+  }, [isActive]);
 
   const read = React.useCallback(
-    (nextPage: number) => {
-      readingVersion.current += 1;
-      return readRequest(
-        (active) => fetchOperationsConsole({ page: nextPage, systemOnly: true }, {
-          onPanel: (panel) => {
-            if (!active()) return;
-            remember((current) => ({ ...current, page: nextPage, snapshot: { ...current.snapshot, ...panel } }));
-          },
-        }),
-        (snapshot) => remember({ page: nextPage, snapshot }),
-      );
-    },
+    (nextPage: number, queueOnly = false) => readRequest(
+      (active) => {
+        setPollError("");
+        return queueOnly
+          ? fetchOperationsQueue({ page: nextPage, queueOnly: true })
+          : fetchOperationsConsole({ page: nextPage, systemOnly: true }, {
+            onPanel: (panel) => {
+              if (active()) remember((current) => ({ ...current, page: nextPage, snapshot: { ...current.snapshot, ...panel } }));
+            },
+          });
+      },
+      (snapshot) => remember((current) => ({
+        page: nextPage,
+        snapshot: queueOnly ? { ...current.snapshot, ...snapshot } : snapshot,
+      })),
+    ),
     [readRequest, remember],
   );
 
   const load = React.useCallback(
-    (nextPage = 0) => read(nextPage),
+    (nextPage = 0) => mutationOwner.current ? Promise.resolve() : read(nextPage),
     [read],
   );
 
@@ -77,138 +82,104 @@ export function useSystemConsole() {
     if (cold) void load();
   }, [cold, load]);
 
-  const working = (value.snapshot?.jobs ?? []).some(isRunning);
+  const working = (value.snapshot?.jobs ?? []).some(isRunning)
+    || (value.snapshot?.deliveries ?? []).some((delivery) => isRunning(delivery) && delivery.count > 0);
   useForegroundPoll(async () => {
-    const version = readingVersion.current;
-    const { jobs } = await fetchOperationsProgress(value.page);
-    // An explicit refresh owns its result even if an earlier poll finishes later.
-    if (version !== readingVersion.current) return;
-    remember((current) => current.page !== value.page ? current : {
-      ...current,
-      snapshot: current.snapshot && { ...current.snapshot, jobs },
-    });
-  }, working && !loading, { initialDelayMs: 4000 });
+    if (mutationOwner.current) return;
+    const current = capture();
+    try {
+      const snapshot = await fetchOperationsQueue({ page: value.page, queueOnly: true });
+      if (!current() || mutationOwner.current) return;
+      setPollError("");
+      remember((reading) => reading.page !== value.page ? reading : {
+        ...reading,
+        snapshot: { ...reading.snapshot, ...snapshot },
+      });
+    } catch (caught) {
+      if (current() && !mutationOwner.current) setPollError(caught instanceof Error ? caught.message : t("common.loadFailed"));
+      throw caught;
+    }
+  }, working && !loading && !mutation, { initialDelayMs: 4000 });
 
-  const retry = React.useCallback(
-    async (kind: RetryKind, id: string) => {
-      setRetrying(id);
-      try {
-        await retryOperationalWork({ id, kind });
-        remember((current) => ({
-          ...current,
-          snapshot: current.snapshot && {
-            ...current.snapshot,
-            cleanupBacklog: current.snapshot.cleanupBacklog?.filter(
-              (entry) => entry.jobId !== id,
-            ),
-            failedDeliveries: current.snapshot.failedDeliveries?.filter(
-              (entry) => entry.id !== id,
-            ),
-            jobs: current.snapshot.jobs?.filter((entry) => entry.id !== id),
-          },
-        }));
-        toast.success(t("admin.retryQueued"));
-      } catch (caught) {
-        toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
-      } finally {
-        setRetrying("");
-      }
-    },
-    [remember, t],
+  const mutate = React.useCallback(async <T,>(
+    next: Mutation,
+    work: () => Promise<T>,
+    completed: (result: T) => void,
+    nextPage?: number,
+  ) => {
+    if (mutationOwner.current || !isActive()) return;
+    const owner = {};
+    mutationOwner.current = owner;
+    const current = () => isActive() && mutationOwner.current === owner;
+    invalidate();
+    setMutation(next);
+    try {
+      const result = await work();
+      if (!current()) return;
+      completed(result);
+      // Refresh canonical queue rows, counts and pagination together. Capacity
+      // stays on screen without rerunning its expensive diagnostic queries.
+      await read(nextPage ?? latestPage.current, true);
+    } catch (caught) {
+      if (current()) toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
+    } finally {
+      if (current()) setMutation(null);
+      if (mutationOwner.current === owner) mutationOwner.current = null;
+    }
+  }, [invalidate, isActive, read, t]);
+
+  const retry = (kind: RetryKind, id: string) => mutate(
+    { type: "retry", id },
+    () => retryOperationalWork({ id, kind }),
+    () => toast.success(t("admin.retryQueued")),
   );
 
-  /**
-   * Everything that failed, asked for again in one write.
-   *
-   * Row by row this was one admin write per failure, and an outage that left a
-   * page of them behind ran the administrator into their own rate limit before
-   * the list was clear. The whole reading is taken again afterwards, because
-   * this changes every panel on the screen rather than one row of one.
-   */
-  const retryAll = React.useCallback(async () => {
-    setRetrying("all");
-    try {
-      const result = await retryOperationalWork({ kind: "all" });
-      toast.success(t("admin.retryAllQueued", { count: result.retried ?? 0 }));
-      await load(value.page);
-    } catch (caught) {
-      toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
-    } finally {
-      setRetrying("");
-    }
-  }, [load, t, value.page]);
+  const retryAll = () => mutate(
+    { type: "retry", id: "all" },
+    () => retryOperationalWork({ kind: "all" }),
+    (result) => toast.success(t("admin.retryAllQueued", { count: result.retried ?? 0 })),
+  );
 
-  const clearErrors = React.useCallback(async () => {
-    setClearing("errors");
-    try {
-      const result = await clearOperationalErrors({});
-      toast.success(t("admin.clearErrorsDone", { count: result.cleared }));
-      await load(value.page);
-    } catch (caught) {
-      toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
-    } finally {
-      setClearing("");
-    }
-  }, [load, t, value.page]);
+  const clearErrors = () => mutate(
+    { type: "clear", kind: "errors" },
+    () => clearOperationalErrors({}),
+    (result) => toast.success(t("admin.clearErrorsDone", { count: result.cleared })),
+  );
 
-  const clearSchedules = React.useCallback(async () => {
-    setClearing("schedules");
-    try {
-      const result = await clearScheduledWork({});
-      toast.success(t("admin.clearSchedulesDone", { count: result.cleared }));
-      await load(value.page);
-    } catch (caught) {
-      toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
-    } finally {
-      setClearing("");
-    }
-  }, [load, t, value.page]);
+  const clearSchedules = () => mutate(
+    { type: "clear", kind: "schedules" },
+    () => clearScheduledWork({}),
+    (result) => toast.success(t("admin.clearSchedulesDone", { count: result.cleared })),
+  );
 
-  const rebuildNotion = React.useCallback(async () => {
-    setRebuildingNotion(true);
-    try {
-      const result = await queueNotionArchiveRebuild({});
-      const cleared = result.cleared;
-      // The console refreshes one panel at a time. Without an immediate jobs
-      // replacement, the previous reading stays on screen until the jobs panel
-      // happens to arrive, which made superseded deletion work look as if it
-      // were the rebuild itself. Seed the one job this action just created; the
-      // streamed jobs panel will replace it with the real progress moments later.
+  const rebuildNotion = () => mutate(
+    { type: "rebuild" },
+    () => queueNotionArchiveRebuild({}),
+    (result) => {
+      // Replace superseded jobs immediately while the canonical queue is read.
       remember((current) => ({
-        ...current,
         page: 0,
-        snapshot: current.snapshot && {
+        snapshot: {
           ...current.snapshot,
           jobs: [{
-            affectedRows: 0,
-            attemptCount: 0,
-            errorDetail: null,
-            estimatedRows: 0,
-            id: result.jobId,
-            jobType: "notion_reconcile",
-            lastAttemptId: null,
-            processedRows: 0,
-            status: "pending",
-            updatedAt: new Date().toISOString(),
+            affectedRows: 0, attemptCount: 0, errorDetail: null, estimatedRows: 0,
+            id: result.jobId, jobType: "notion_reconcile", lastAttemptId: null,
+            processedRows: 0, status: "pending", updatedAt: new Date().toISOString(),
           }],
         },
       }));
-      toast.success(t("ui.operations.notionRebuildQueued", {
-        cleared: cleared.cleanup + cleared.deliveries + cleared.jobs + cleared.mappings,
-      }));
-      await load(0);
-    } catch (caught) {
-      toast.error(caught instanceof Error ? caught.message : t("ui.operations.notionRebuildFailed"));
-    } finally {
-      setRebuildingNotion(false);
-    }
-  }, [load, remember, t]);
+      const { cleanup, deliveries, jobs, mappings } = result.cleared;
+      toast.success(t("ui.operations.notionRebuildQueued", { cleared: cleanup + deliveries + jobs + mappings }));
+    },
+    0,
+  );
 
   return {
+    busy: mutation !== null,
     clearErrors,
     clearSchedules,
-    clearing,
-    error,
+    clearing: mutation?.type === "clear" ? mutation.kind : "" as const,
+    error: error || pollError,
     load,
     loading,
     notionJob: (value.snapshot?.jobs ?? []).find(
@@ -216,10 +187,10 @@ export function useSystemConsole() {
     ) ?? null,
     page: value.page,
     rebuildNotion,
-    rebuildingNotion,
+    rebuildingNotion: mutation?.type === "rebuild",
     retry,
     retryAll,
-    retrying,
+    retrying: mutation?.type === "retry" ? mutation.id : "",
     snapshot: value.snapshot,
   };
 }

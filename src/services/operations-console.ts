@@ -17,9 +17,7 @@ export interface OperationsConsole {
   history: Array<{ id: number; actorUid: string; revision: number; reason: string; createdAt: string; beforeValue: OperationPolicies; afterValue: OperationPolicies }>;
 }
 /**
- * The console's ten readings. None of them needs another, so the Worker sends
- * each as it lands and `onPanel` is called with that one reading rather than
- * the screen waiting for the slowest.
+ * System panels arrive independently; policy reads use their own request.
  */
 export function fetchOperationsConsole(
   payload: { page?: number; systemOnly: true },
@@ -38,6 +36,11 @@ export function fetchOperationsProgress(page: number) {
     Pick<OperationsConsole, 'jobs'>
   >('getOperationsConsole')({ page, progressOnly: true });
 }
+
+export const fetchOperationsQueue = invokeBackendAction<
+  { page: number; queueOnly: true },
+  Pick<OperationsConsole, 'cleanupBacklog' | 'deliveries' | 'errors' | 'failedDeliveries' | 'hasMore' | 'jobs' | 'sampledAt'>
+>('getOperationsConsole');
 
 export const fetchOperationSettings = invokeBackendAction<
   { policiesOnly: true }, Pick<OperationsConsole, 'settings' | 'history'>

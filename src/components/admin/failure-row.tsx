@@ -18,11 +18,13 @@ import { timing } from "@/lib/motion-timing";
  * failure queued it instead.
  */
 export function FailureRow({
+  disabled,
   item,
   onOpen,
   onRetry,
   retrying,
 }: {
+  disabled?: boolean;
   item: FailureItem;
   onOpen: () => void;
   onRetry: () => void;
@@ -42,6 +44,7 @@ export function FailureRow({
           item.retryable ? (
             <RowAction
               busy={retrying}
+              disabled={disabled}
               icon={RotateCcw}
               label={t("admin.retry")}
               onClick={onRetry}

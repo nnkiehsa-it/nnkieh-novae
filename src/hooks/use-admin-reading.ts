@@ -37,5 +37,15 @@ export function useAdminReading(key: string, failureKey: string) {
     }
   }, [failureKey, scope, t]);
 
-  return { error, loading, read };
+  const isActive = React.useCallback(() => active.current === scope, [scope]);
+  const capture = React.useCallback(() => {
+    const request = revision.current;
+    return () => active.current === scope && request === revision.current;
+  }, [scope]);
+  const invalidate = React.useCallback(() => {
+    revision.current += 1;
+    setLoading(false);
+  }, []);
+
+  return { capture, error, invalidate, isActive, loading, read };
 }

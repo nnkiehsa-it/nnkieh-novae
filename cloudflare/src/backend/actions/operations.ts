@@ -75,8 +75,10 @@ export async function handleOperationsAction(action: string, payload: JsonRecord
   if (action === 'getOperationsConsole') {
     const page = payload.page ?? 0;
     if (!Number.isInteger(page) || Number(page) < 0 || Number(page) > 1_000_000) throw new Error('validation-invalid');
+    if ([payload.policiesOnly, payload.progressOnly, payload.queueOnly].filter((mode) => mode === true).length > 1) {
+      throw new Error('validation-invalid');
+    }
     if (payload.policiesOnly === true) {
-      if (payload.progressOnly === true) throw new Error('validation-invalid');
       const [settings, history] = await Promise.all([
         readOperationPolicies(database),
         operationHistory(Number(page) * 100, database),
@@ -87,7 +89,7 @@ export async function handleOperationsAction(action: string, payload: JsonRecord
       const jobs = await operationsJobs(Number(page) * 100, database);
       return { jobs: jobs.rows.slice(0, 100) };
     }
-    return operationsConsole(Number(page) * 100, database, payload.systemOnly !== true);
+    return operationsConsole(Number(page) * 100, database, payload.systemOnly !== true && payload.queueOnly !== true, payload.queueOnly === true);
   }
   throw new Error('invalid-action');
 }
@@ -129,9 +131,8 @@ async function clearSupersededNotionWork(database: BackendDatabase) {
 /**
  * The operations console, sent one reading at a time.
  *
- * Ten readings, none of which needs another: the screen used to wait for the
- * slowest before it could show any of them, and now each panel fills in as its
- * own reading lands.
+ * Queue refreshes omit capacity and policy queries. Each requested panel is
+ * streamed as its query finishes.
  */
 function operationsJobs(offset: number, database: BackendDatabase) {
   return database.sql`select id, job_type, status, attempt_count, processed_rows, affected_rows,
@@ -144,7 +145,7 @@ function operationHistory(offset: number, database: BackendDatabase) {
     from app_private.operation_policy_history order by id desc limit 101 offset ${offset}`;
 }
 
-function operationsConsole(offset: number, database: BackendDatabase, includePolicies: boolean) {
+function operationsConsole(offset: number, database: BackendDatabase, includePolicies: boolean, queueOnly: boolean) {
   const paged = {
     cleanupBacklog: database.sql`select job_id, created_at, payload from app_private.external_cleanup_backlog
       order by created_at, job_id limit 101 offset ${offset}`,
@@ -157,28 +158,28 @@ function operationsConsole(offset: number, database: BackendDatabase, includePol
     ...(includePolicies ? { history: operationHistory(offset, database) } : {}),
     jobs: operationsJobs(offset, database),
   };
-  const capacity = database.sql`select relname as name, n_live_tup as rows, n_dead_tup as dead_rows,
-    pg_table_size(relid) as table_bytes, pg_indexes_size(relid) as index_bytes,
-    pg_total_relation_size(relid) as total_bytes, last_autovacuum, last_autoanalyze
-    from pg_stat_user_tables where schemaname = 'app_private'
-    order by pg_total_relation_size(relid) desc`;
   const deliveries = database.sql`select destination, status, count(*)::bigint as count, min(created_at) as oldest_at
     from app_private.event_deliveries group by destination, status`;
-  const metrics = database.sql`select * from app_private.operational_metrics order by bucket desc limit 365`;
-  const size = database.sqlOne<{ bytes: number }>`select pg_database_size(current_database()) as bytes`;
+  const diagnostics: Record<string, PromiseLike<unknown>> = queueOnly ? {} : {
+    capacity: database.sql`select relname as name, n_live_tup as rows, n_dead_tup as dead_rows,
+      pg_table_size(relid) as table_bytes, pg_indexes_size(relid) as index_bytes,
+      pg_total_relation_size(relid) as total_bytes, last_autovacuum, last_autoanalyze
+      from pg_stat_user_tables where schemaname = 'app_private'
+      order by pg_total_relation_size(relid) desc`.then((result) => result.rows),
+    metrics: database.sql`select * from app_private.operational_metrics order by bucket desc limit 365`.then((result) => result.rows),
+    databaseBytes: database.sqlOne<{ bytes: number }>`select pg_database_size(current_database()) as bytes`.then((result) => result.bytes),
+  };
   const firstHundred = (page: NonNullable<typeof paged[keyof typeof paged]>) => page.then((result) => result.rows.slice(0, 100));
 
   return settledSegments({
-    capacity: capacity.then((result) => result.rows),
+    ...diagnostics,
     cleanupBacklog: firstHundred(paged.cleanupBacklog),
-    databaseBytes: size.then((result) => result.bytes),
     deliveries: deliveries.then((result) => result.rows),
     errors: firstHundred(paged.errors),
     failedDeliveries: firstHundred(paged.failedDeliveries),
     hasMore: Promise.all(Object.values(paged)).then((results) => results.some((result) => result.rows.length > 100)),
     ...(paged.history ? { history: firstHundred(paged.history) } : {}),
     jobs: firstHundred(paged.jobs),
-    metrics: metrics.then((result) => result.rows),
     sampledAt: Promise.resolve(new Date().toISOString()),
     ...(includePolicies ? { settings: readOperationPolicies(database) } : {}),
   });

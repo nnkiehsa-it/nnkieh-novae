@@ -23,6 +23,21 @@ describe('operations progress', () => {
     expect(sql).not.toHaveBeenCalled();
   });
 
+  it('refreshes the complete queue without capacity or policy queries', async () => {
+    const sql = vi.fn().mockResolvedValue({ rows: [] });
+    const sqlOne = vi.fn();
+    const result = await handleOperationsAction('getOperationsConsole', { page: 2, queueOnly: true },
+      { isAdmin: true } as AuthContext, { sql, sqlOne } as unknown as BackendDatabase);
+    const panels: Record<string, unknown> = {};
+    for await (const panel of result as AsyncIterable<{ key: string; data: unknown }>) panels[panel.key] = panel.data;
+    expect(Object.keys(panels).sort()).toEqual(['cleanupBacklog', 'deliveries', 'errors', 'failedDeliveries', 'hasMore', 'jobs', 'sampledAt']);
+    expect(sql).toHaveBeenCalledTimes(5);
+    expect(sqlOne).not.toHaveBeenCalled();
+    expect(sql.mock.calls.map(([query]) => query.join('')).join(' ')).not.toMatch(/pg_stat|operational_metrics|operation_policy/);
+    await expect(handleOperationsAction('getOperationsConsole', { queueOnly: true },
+      { isAdmin: false } as AuthContext, { sql } as unknown as BackendDatabase)).rejects.toThrow('permission-denied');
+  });
+
   it('reads policies and history without running any system-monitoring queries', async () => {
     const settings = { revision: 3, values: DEFAULT_OPERATION_POLICIES };
     const sqlOne = vi.fn().mockResolvedValue({ value: JSON.stringify(settings) });
