@@ -6,6 +6,8 @@ interface UnsavedChanges {
 const empty: UnsavedChanges = { count: 0, discard: () => undefined };
 
 let current = empty;
+const legacyOwner = Symbol("legacy-draft");
+const drafts = new Map<symbol, UnsavedChanges & { group?: string }>();
 const listeners = new Set<() => void>();
 
 function publish() {
@@ -15,17 +17,26 @@ function publish() {
 /**
  * What the screen would lose if the reader left right now.
  *
- * One screen owns one draft, so one value is enough. It lives outside React so
+ * A screen can retain several visited editors. Each draft registers separately so
  * that the guard in the administration shell and the screen that holds the
  * draft do not have to be related to each other.
  */
-export function setUnsavedChanges(next: UnsavedChanges | null) {
-  current = next && next.count > 0 ? next : empty;
+export function setUnsavedChanges(next: UnsavedChanges | null, owner = legacyOwner, group?: string) {
+  if (next && next.count > 0) drafts.set(owner, { ...next, group });
+  else drafts.delete(owner);
+  current = summarize([...drafts.values()]);
   publish();
 }
 
-export function getUnsavedChanges() {
-  return current;
+export function getUnsavedChanges(group?: string) {
+  return group === undefined ? current : summarize([...drafts.values()].filter((draft) => draft.group === group));
+}
+
+function summarize(entries: UnsavedChanges[]): UnsavedChanges {
+  return entries.length === 0 ? empty : {
+    count: entries.reduce((total, draft) => total + draft.count, 0),
+    discard: () => { for (const draft of entries) draft.discard(); },
+  };
 }
 
 export function subscribeUnsavedChanges(listener: () => void) {

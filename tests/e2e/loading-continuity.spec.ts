@@ -235,7 +235,7 @@ test('dashboard error retry retains unknown metrics until data arrives', async (
     await route.continue();
   });
   try {
-    await page.goto('/admin');
+    await page.goto('/admin?view=statistics');
     await expect.poll(() => attempts).toBe(1);
     const surface = page.locator('[data-dashboard-surface]');
     const node = await surface.elementHandle();
@@ -268,13 +268,14 @@ test('every administration area loads through a skeleton of its own shape', asyn
 test('switching a view inside an area keeps one content wrapper', async ({ browser }) => {
   const { context, page } = await newUserPage(browser, 'admin');
   try {
-    await page.goto('/admin/people');
+    await page.goto('/admin/people?view=accounts');
     const content = page.locator('[data-admin-content]');
     await expect(content).toBeVisible();
     const node = await content.elementHandle();
-    for (const view of ['accounts', 'scopes', 'accounts']) {
-      await page.locator(`[data-liquid-tab="${view}"]`).click();
-      await expect(page.locator(`[data-liquid-tab="${view}"][data-displayed-active="true"]`)).toBeVisible();
+    for (const label of ['By area', 'By account']) {
+      await page.getByRole('button', { name: 'Back to section summary', exact: true }).click();
+      await page.getByRole('button').filter({ has: page.getByText(label, { exact: true }) }).click();
+      await expect(page.getByRole('heading', { level: 2, name: label, exact: true })).toBeVisible();
       expect(await node!.evaluate((element) => element === document.querySelector('[data-admin-content]'))).toBe(true);
     }
   } finally {

@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sheet";
 import { ListActionRow, ListNavRow, ListSection } from "@/components/ui/list";
 import { ListSwitchRow } from "@/components/ui/list-controls";
-import { LiquidTabs } from "@/components/ui/liquid-tabs";
+import { AdminAreaNavigation } from "@/components/admin/admin-area-navigation";
 import { ErrorState } from "@/components/ui/page-state";
 import { SaveBar } from "@/components/ui/save-bar";
 import type { FacilityCategoryConfig, IssueCategoryConfig } from "@/types/categories";
@@ -40,7 +40,7 @@ type AnyCategory = FacilityCategoryConfig | IssueCategoryConfig;
 export function CategoryManagement() {
   const { t } = useI18n();
   const state = useCategoryManagement();
-  const [kind, setKind] = useAdminView(["issue", "facility", "announcement"] as const);
+  const [kind, setKind] = useAdminView(["overview", "issue", "facility", "announcement"] as const);
   const [reviewing, setReviewing] = React.useState(false);
   const [editing, setEditing] = React.useState<number | null>(null);
   const [retainedEditing, setRetainedEditing] = React.useState<{
@@ -98,22 +98,21 @@ export function CategoryManagement() {
 
   return (
     <div className="space-y-6">
-      <LiquidTabs
-        ariaLabel={t("ui.admin.contentType")}
-        onValueChange={(next) => {
+      <AdminAreaNavigation
+        onSelect={(next) => {
           setEditing(null);
           setRetainedEditing(null);
           setKind(next);
         }}
-        options={[
-          { label: t("ui.nav.issues"), value: "issue" },
-          { label: t("ui.nav.facilities"), value: "facility" },
-          { label: t("ui.nav.announcements"), value: "announcement" },
+        areas={[
+          { label: t("ui.nav.issues"), value: "issue", detail: t("admin.summary.issue"), changeCount: changes.filter((change) => change.key.startsWith("issue") || change.key === "issuesEnabled").length },
+          { label: t("ui.nav.facilities"), value: "facility", detail: t("admin.summary.facility"), changeCount: changes.filter((change) => change.key.startsWith("facility") || change.key === "facilitiesEnabled").length },
+          { label: t("ui.nav.announcements"), value: "announcement", detail: t("admin.summary.announcement"), changeCount: changes.filter((change) => change.key.startsWith("announcement")).length },
         ]}
         value={kind}
       />
 
-      <StateTransition className="min-w-0" data-admin-content identity={kind}>
+      {kind !== "overview" ? <><StateTransition className="min-w-0" data-admin-content identity={kind}>
         <ContentTransition identity={kind}>
           {area ? (
             <div className="space-y-6">
@@ -164,7 +163,7 @@ export function CategoryManagement() {
           )}
         </ContentTransition>
       </StateTransition>
-      <p className="text-sm leading-6 text-muted-foreground">{t("admin.imagePolicyHelp")}</p>
+      <p className="text-sm leading-6 text-muted-foreground">{t("admin.imagePolicyHelp")}</p></> : null}
 
       <Sheet onOpenChange={(open) => !open && setEditing(null)} open={editing !== null}>
         <SheetContent>

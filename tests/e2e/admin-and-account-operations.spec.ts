@@ -5,6 +5,7 @@ import { E2E_USERS } from './support/accounts';
 import { expectBackendAction } from './support/backend-action';
 import { readContentState } from './support/content-state';
 import { newUserPage } from './support/session';
+import { selectAdminSection } from './pages/admin-page';
 
 test('a late overview failure cannot replace the selected reporting period', async ({ browser }) => {
   const { page, context } = await newUserPage(browser, 'admin');
@@ -22,7 +23,7 @@ test('a late overview failure cannot replace the selected reporting period', asy
     await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: { code: 'upstream-unavailable', message: 'Late previous period failure' } }) });
   });
   try {
-    await page.goto('/admin');
+    await page.goto('/admin?view=statistics');
     await expect(page.getByRole('button', { name: 'Refresh', exact: true })).toBeEnabled();
     await page.getByRole('tab', { name: '7 days', exact: true }).click();
     await expect.poll(() => requested).toBe(true);
@@ -44,7 +45,7 @@ test('a late overview failure cannot replace the selected reporting period', asy
 test('platform admin can restrict and restore an ordinary account', async ({ browser }) => {
   test.setTimeout(120_000);
   const admin = await newUserPage(browser, 'admin');
-  await admin.page.goto('/admin/people');
+  await admin.page.goto('/admin/people?view=accounts');
   const search = admin.page.getByPlaceholder('Search name, campus email, or UID');
   await search.fill(E2E_USERS.other);
   await admin.page.getByRole('button', { name: 'Search', exact: true }).click();
@@ -89,14 +90,14 @@ test('admin views support direct links, reload and browser history', async ({ br
     ['/admin/policies', 'jobs', 'Background jobs'],
   ]) {
     await admin.page.goto(`${route}?view=${next}`);
-    await expect(admin.page.getByRole('tab', { name: label, exact: true })).toHaveAttribute('aria-selected', 'true');
+    await expect(admin.page.getByRole('main').getByRole('heading', { level: 2, name: label, exact: true })).toBeVisible();
   }
   await admin.page.reload();
-  await expect(admin.page.getByRole('tab', { name: 'Background jobs', exact: true })).toHaveAttribute('aria-selected', 'true');
-  await admin.page.getByRole('tab', { name: 'Content', exact: true }).click();
+  await expect(admin.page.getByRole('heading', { level: 2, name: 'Background jobs', exact: true })).toBeVisible();
+  await admin.page.getByRole('button', { name: 'Back to section summary', exact: true }).click();
   await expect(admin.page).toHaveURL(/\/admin\/policies$/u);
   await admin.page.goBack();
-  await expect(admin.page.getByRole('tab', { name: 'Background jobs', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(admin.page.getByRole('heading', { level: 2, name: 'Background jobs', exact: true })).toBeVisible();
   await admin.context.close();
 });
 
@@ -183,10 +184,10 @@ test('image settings save estimates no cleanup and issues only the canonical wri
   test.setTimeout(120_000);
   const admin = await newUserPage(browser, 'admin');
   await admin.page.goto('/admin/platform');
-  await expect(admin.page.getByRole('tab', { name: 'Data retention' })).toBeVisible();
+  await expect(admin.page.getByRole('group', { name: 'Section summary' })).toBeVisible();
   // Nothing is submittable until something has actually been changed.
   await expect(admin.page.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0);
-  await admin.page.getByRole('tab', { name: 'Image uploads' }).click();
+  await selectAdminSection(admin.page, 'Image uploads');
   const imageDimension = admin.page.getByLabel('Maximum image dimension (px)', { exact: true });
   await imageDimension.fill(String(Number(await imageDimension.inputValue()) === 1600 ? 1601 : 1600));
   await imageDimension.blur();
@@ -207,7 +208,7 @@ test('setting presets remain drafts, restore one area, and show reviewable chang
     if (action === 'savePlatformSettings') writes.push(action);
   });
   await admin.page.goto('/admin/platform');
-  await admin.page.getByRole('tab', { name: 'Image uploads', exact: true }).click();
+  await selectAdminSection(admin.page, 'Image uploads');
   const dimension = admin.page.getByLabel('Maximum image dimension (px)', { exact: true });
   const original = await dimension.inputValue();
   await admin.page.getByText('Quick settings', { exact: true }).click();
@@ -216,11 +217,11 @@ test('setting presets remain drafts, restore one area, and show reviewable chang
   await admin.page.getByRole('button', { name: 'Restore saved settings in this section', exact: true }).click();
   await expect(dimension).toHaveValue(original);
   await admin.page.getByRole('button', { name: /Detailed images/u }).click();
-  await admin.page.getByRole('tab', { name: 'Data retention', exact: true }).click();
-  await admin.page.getByText('Quick settings', { exact: true }).click();
+  await selectAdminSection(admin.page, 'Quick settings');
+  await admin.page.getByRole('button', { name: 'Quick settings', exact: true }).click();
   await admin.page.getByRole('button', { name: /^Compact/u }).click();
   await admin.page.getByRole('button', { name: 'Restore saved settings in this section', exact: true }).click();
-  await admin.page.getByRole('tab', { name: 'Image uploads', exact: true }).click();
+  await selectAdminSection(admin.page, 'Image uploads');
   await expect(dimension).toHaveValue('3000');
   await admin.page.getByRole('button', { name: 'Review changes', exact: true }).click();
   await expect(admin.page.getByRole('alertdialog').getByText('Maximum image dimension (px)', { exact: true })).toBeVisible();
@@ -274,7 +275,7 @@ test('disabling notification cleanup confirms retention updates rather than dele
   try {
     await database.query(`insert into app_private.notifications(id,source,type,target_type,target_id,title,created_at,expires_at)
       values ($1::uuid,'broadcast','retention-test','announcement',$2,'Retain this notification',now()-interval '40 days',now()-interval '10 days')`, [id, id]);
-    await admin.page.goto('/admin/platform');
+    await admin.page.goto('/admin/platform?view=retention-content');
     const enabled = admin.page.getByRole('switch', { name: 'Automatically delete old notifications', exact: true });
     await expect(enabled).toBeChecked();
     await enabled.click();
@@ -306,24 +307,21 @@ test('operations console is usable on phone and desktop and saves an audited pol
   const admin = await newUserPage(browser,'admin');
   for(const width of [390,1440]) {
     await admin.page.setViewportSize({width,height:900});
-    await admin.page.goto('/admin/system');
+    await admin.page.goto('/admin/system?view=failures');
     await expect(admin.page.getByRole('heading',{name:'System',exact:true})).toBeVisible();
     await expect.poll(()=>admin.page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
     await admin.page.screenshot({path:testInfo.outputPath(`system-${width}.png`)});
     // Capacity is a view of its own, and it carries the widest rows on the screen.
-    await admin.page.getByRole('tab',{name:'Capacity'}).click();
+    await selectAdminSection(admin.page, 'Capacity');
     await expect(admin.page.getByRole('heading',{name:'Database storage'})).toBeVisible();
     await expect.poll(()=>admin.page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
     await admin.page.screenshot({path:testInfo.outputPath(`system-capacity-${width}.png`)});
     await admin.page.goto('/admin/policies');
     await expect.poll(()=>admin.page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
-    await admin.page.getByRole('tab', { name: 'Client', exact: true }).click();
+    await selectAdminSection(admin.page, 'Client');
     await admin.page.getByLabel('Client Write Cooldown Ms',{exact:true}).scrollIntoViewIfNeeded();
     await expect(admin.page.getByLabel('Client Write Cooldown Ms',{exact:true})).toHaveValue('500');
-    await expect.poll(() => admin.page.locator('[data-liquid-tab="client"] .t-tabs-pill').evaluate((pill) => {
-      const trigger = pill.parentElement!;
-      return Math.abs(pill.getBoundingClientRect().left - trigger.getBoundingClientRect().left);
-    })).toBeLessThan(1);
+    await expect(admin.page.getByRole('button', { name: 'Back to section summary', exact: true })).toBeVisible();
     await admin.page.screenshot({path:testInfo.outputPath(`policies-${width}.png`)});
   }
   const cooldown = admin.page.getByLabel('Client Write Cooldown Ms',{exact:true});
@@ -387,7 +385,7 @@ test('failed provider deletion can be retried from the operational UI', async ({
   );
   try {
     const admin = await newUserPage(browser, 'admin');
-    await admin.page.goto('/admin/system');
+    await admin.page.goto('/admin/system?view=failures');
     // The failure names what went wrong, and opens onto the whole record.
     const failure = admin.page.getByText('E2E seeded provider failure').first();
     await expect(failure).toBeVisible();

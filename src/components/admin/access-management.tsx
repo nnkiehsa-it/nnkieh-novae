@@ -38,7 +38,7 @@ export function AccessManagement() {
   const scope = React.useMemo<AccessScope | null>(() => target.kind === "announcement" ? { kind: target.kind }
     : categoryId ? { kind: target.kind, categoryId } : null, [categoryId, target.kind]);
   const change = (next: Target) => {
-    if (getUnsavedChanges().count > 0) setPending(next);
+    if (getUnsavedChanges("scope-members").count > 0) setPending(next);
     else remember(next);
   };
   const selector = <ListSection header={t("ui.access.scopeStep")}>
@@ -60,10 +60,10 @@ export function AccessManagement() {
     <AlertDialog open={pending !== null} onOpenChange={(open) => !open && setPending(null)}>
       <AlertDialogContent>
         <AlertDialogHeader><AlertDialogTitle>{t("admin.leaveTitle")}</AlertDialogTitle>
-          <AlertDialogDescription>{t("admin.leaveMessage", { count: getUnsavedChanges().count })}</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogDescription>{t("admin.leaveMessage", { count: getUnsavedChanges("scope-members").count })}</AlertDialogDescription></AlertDialogHeader>
         <AlertDialogFooter><AlertDialogCancel>{t("admin.leaveStay")}</AlertDialogCancel>
           <AlertDialogAction onClick={() => {
-            getUnsavedChanges().discard();
+            getUnsavedChanges("scope-members").discard();
             if (pending) remember(pending);
             setPending(null);
           }}>{t("admin.leaveDiscard")}</AlertDialogAction></AlertDialogFooter>

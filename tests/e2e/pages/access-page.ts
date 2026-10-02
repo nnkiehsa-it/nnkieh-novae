@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { expectBackendAction } from '../support/backend-action';
+import { selectAdminSection } from './admin-page';
 
 type Scope =
   | { kind: 'announcement' }
@@ -15,9 +16,7 @@ const scopeButton = {
 export async function openAccessManagement(page: Page) {
   await page.goto('/admin/people');
   await expect(page.getByRole('heading', { name: 'People and access' })).toBeVisible();
-  const byArea = page.getByRole('tab', { name: 'By area' });
-  await byArea.click();
-  await expect(byArea).toHaveAttribute('aria-selected', 'true');
+  await selectAdminSection(page, 'By area');
 }
 
 export async function selectScope(page: Page, scope: Scope) {

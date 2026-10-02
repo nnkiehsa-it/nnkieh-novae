@@ -1,19 +1,20 @@
 import { expect, test, type Page } from '@playwright/test';
 import { newUserPage } from './support/session';
 import { expectBackendAction } from './support/backend-action';
+import { selectAdminSection } from './pages/admin-page';
 
 async function setFeatureSwitches(
   page: Page,
   issuesEnabled: boolean,
   facilitiesEnabled: boolean,
 ) {
-  await page.goto('/admin/content');
+  await page.goto('/admin/content?view=issue');
   const issues = page.getByRole('switch', { name: 'Proposal feature' });
   await expect(issues).toBeVisible();
   const issuesChanged = await issues.isChecked() !== issuesEnabled;
   if (issuesChanged) await issues.click();
 
-  await page.getByRole('tab', { name: 'Facilities' }).click();
+  await selectAdminSection(page, 'Facilities');
   const facilities = page.getByRole('switch', { name: 'Facility reports' });
   await expect(facilities).toBeVisible();
   const facilitiesChanged = await facilities.isChecked() !== facilitiesEnabled;

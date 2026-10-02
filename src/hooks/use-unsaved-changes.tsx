@@ -21,16 +21,17 @@ import {
 } from "@/hooks/unsaved-changes-store";
 
 /** Declares what this screen would lose, for as long as it is on screen. */
-export function useUnsavedChanges(count: number, discard: () => void) {
+export function useUnsavedChanges(count: number, discard: () => void, group?: string) {
+  const [owner] = React.useState(() => Symbol("draft"));
   const discardRef = React.useRef(discard);
   React.useEffect(() => {
     discardRef.current = discard;
   });
 
   React.useEffect(() => {
-    setUnsavedChanges({ count, discard: () => discardRef.current() });
-    return () => setUnsavedChanges(null);
-  }, [count]);
+    setUnsavedChanges({ count, discard: () => discardRef.current() }, owner, group);
+    return () => setUnsavedChanges(null, owner);
+  }, [count, group, owner]);
 
   React.useEffect(() => {
     if (count === 0) return;
@@ -91,7 +92,6 @@ export function UnsavedChangesGuard() {
             onClick={() => {
               const target = pending;
               unsaved.discard();
-              setUnsavedChanges(null);
               setPending(null);
               if (target) router.push(target);
             }}

@@ -9,6 +9,8 @@ import {
 } from "@/constants/admin-activity";
 import { useAdminOverview } from "@/hooks/use-admin-overview";
 import { AdminSections } from "@/components/admin/admin-sections";
+import { AdminAreaNavigation } from "@/components/admin/admin-area-navigation";
+import { ListNavRow, ListSection } from "@/components/ui/list";
 import { OverviewDistribution, OverviewMetrics } from "@/components/admin/overview-metrics";
 import { OverviewHealth } from "@/components/admin/overview-health";
 import { Button } from "@/components/ui/button";
@@ -18,7 +20,21 @@ import { ErrorState } from "@/components/ui/page-state";
 import type { AdminAccess } from "@/lib/admin-routes";
 
 export function AdminOverview({ access }: { access: AdminAccess }) {
-  return access.overview ? <AdminOverviewReading access={access} /> : <AdminSections access={access} />;
+  const { t } = useI18n();
+  const [view, setView] = useAdminView(["overview", "statistics"] as const);
+  if (view === "statistics" && access.overview) return <div className="space-y-6">
+    <AdminAreaNavigation value={view} onSelect={setView} areas={[{
+      value: "statistics", label: t("admin.overviewStatistics"), detail: t("admin.summary.statistics"),
+    }]} />
+    <AdminOverviewReading access={access} />
+  </div>;
+  return <div className="space-y-6">
+    <AdminSections access={access} />
+    {access.overview ? <ListSection>
+      <ListNavRow label={t("admin.overviewStatistics")} detail={t("admin.summary.statistics")}
+        onClick={() => setView("statistics")} />
+    </ListSection> : null}
+  </div>;
 }
 
 function AdminOverviewReading({ access }: { access: AdminAccess }) {
@@ -63,7 +79,6 @@ function AdminOverviewReading({ access }: { access: AdminAccess }) {
         </>
       ) : null}
 
-      <AdminSections access={access} />
     </div>
   );
 }

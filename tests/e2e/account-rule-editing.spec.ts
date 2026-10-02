@@ -82,7 +82,7 @@ test('restriction editors keep deadlines, preserve failed drafts, and expose rem
     await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
-    await page.goto('/admin/people');
+    await page.goto('/admin/people?view=accounts');
     let sheet = await openUser(E2E_USERS.other);
     await expect(sheet.getByText('other*', { exact: true })).toBeVisible();
     await sheet.getByLabel('Duration', { exact: true }).click();

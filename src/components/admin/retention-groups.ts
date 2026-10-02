@@ -20,6 +20,8 @@ export function retentionLabelKey(key: string) {
 export const RETENTION_GROUPS: ReadonlyArray<{
   items: RetentionItem[];
   titleKey: string;
+  value: string;
+  detailKey: string;
 }> = [
   {
     items: [
@@ -29,6 +31,7 @@ export const RETENTION_GROUPS: ReadonlyArray<{
       { enableKey: "notificationsEnabled", key: "notificationsDays", unit: "days" },
     ],
     titleKey: "ui.admin.retentionContent",
+    value: "retention-content", detailKey: "admin.summary.retentionContent",
   },
   {
     items: [
@@ -39,6 +42,7 @@ export const RETENTION_GROUPS: ReadonlyArray<{
       { key: "pushTokenConfirmationDays", unit: "days" },
     ],
     titleKey: "ui.admin.retentionPrivacy",
+    value: "retention-privacy", detailKey: "admin.summary.retentionPrivacy",
   },
   {
     items: [
@@ -50,6 +54,7 @@ export const RETENTION_GROUPS: ReadonlyArray<{
       { key: "backgroundJobFailedDays", unit: "days" },
     ],
     titleKey: "ui.admin.retentionOperations",
+    value: "retention-operations", detailKey: "admin.summary.retentionOperations",
   },
   {
     items: [
@@ -59,6 +64,7 @@ export const RETENTION_GROUPS: ReadonlyArray<{
       { key: "accessAssignmentAuditDays", unit: "days" },
     ],
     titleKey: "ui.admin.retentionAudit",
+    value: "retention-audit", detailKey: "admin.summary.retentionAudit",
   },
   {
     items: [
@@ -67,5 +73,6 @@ export const RETENTION_GROUPS: ReadonlyArray<{
       { key: "failedUploadHours", unit: "hours" },
     ],
     titleKey: "ui.admin.retentionUploads",
+    value: "retention-uploads", detailKey: "admin.summary.retentionUploads",
   },
 ];

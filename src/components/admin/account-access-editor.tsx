@@ -6,6 +6,7 @@ import { AccountAccessRuleFields } from "@/components/admin/account-access-rule-
 import { ApplyReviewDialog } from "@/components/admin/apply-review-dialog";
 import { useAccountAccessDraft, type AccountAccessDraftOptions } from "@/hooks/use-account-access-draft";
 import { useI18n } from "@/i18n";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { formatDate } from "@/lib/format";
 import { ACCOUNT_ACCESS_DURATION_KEYS, ACCOUNT_ACCESS_PRESET_KEYS } from "@/constants/account-access";
 
@@ -16,6 +17,7 @@ export function AccountAccessEditor({ busy, missing = false, onReload, onSave, o
 } & AccountAccessDraftOptions) {
   const { t } = useI18n();
   const draft = useAccountAccessDraft({ onSave, onSaved, revision, rule, targetType, targetValue });
+  useUnsavedChanges(draft.changes.length, draft.reset);
   if (!draft.value) return null;
   const value = draft.value;
   const saving = busy || draft.status === "saving";

@@ -13,7 +13,7 @@ import { SettingPresets } from "@/components/admin/setting-presets";
 import { POLICY_GROUPS, policyGroupValues, policyPresets } from "@/lib/admin-setting-presets";
 import { ListSection } from "@/components/ui/list";
 import { ListInputRow, ListNumberRow } from "@/components/ui/list-controls";
-import { LiquidTabs } from "@/components/ui/liquid-tabs";
+import { AdminAreaNavigation } from "@/components/admin/admin-area-navigation";
 import { ErrorState } from "@/components/ui/page-state";
 import { SaveBar } from "@/components/ui/save-bar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,7 +27,7 @@ const GROUP_LABELS = {
 export function PolicySettings() {
   const { t } = useI18n();
   const { draft, error, history, load, loading, revision } = useOperationPolicies();
-  const [area, setArea] = useAdminView(POLICY_GROUPS);
+  const [area, setArea] = useAdminView(["overview", ...POLICY_GROUPS] as const);
   const [reviewing, setReviewing] = React.useState(false);
   useUnsavedChanges(draft.changes.length, draft.reset);
   const value = draft.value?.values;
@@ -44,19 +44,21 @@ export function PolicySettings() {
 
   return (
     <div className="space-y-6">
-      <LiquidTabs
-        ariaLabel={t("admin.policyArea")}
-        onValueChange={setArea}
-        options={POLICY_GROUPS.map((group) => ({ label: t(GROUP_LABELS[group]), value: group }))}
+      <AdminAreaNavigation
+        onSelect={setArea}
+        areas={POLICY_GROUPS.map((group) => ({ label: t(GROUP_LABELS[group]), value: group,
+          detail: t(`admin.summary.policy${group[0].toUpperCase()}${group.slice(1)}`),
+          changeCount: draft.changes.filter((change) => OPERATION_POLICIES[change.key.replace(/^values\./u, "") as OperationPolicyKey].group === group).length }))}
         value={area}
       />
 
-      <SettingPresets current={policyGroupValues(value, area)} presets={policyPresets(area)}
+      {area !== "overview" ? <><SettingPresets current={policyGroupValues(value, area)} presets={policyPresets(area)}
         onApply={(values) => draft.update((current) => ({ ...current, values: { ...current.values, ...values } }))}
         onRestore={() => draft.update((current) => ({ ...current, values: { ...current.values, ...policyGroupValues(draft.baseline!.values, area) } }))} />
       <ListSection header={t(`ui.operations.group.${area}`)}>
           <PolicyRows group={area} onChange={(key, next) => draft.update((current) => ({ ...current, values: { ...current.values, [key]: next } }))} value={value} />
       </ListSection>
+      </> : null}
 
       {/* A runtime policy change is audited, so it asks for the sentence that
           will appear beside it rather than letting the record say nothing. */}

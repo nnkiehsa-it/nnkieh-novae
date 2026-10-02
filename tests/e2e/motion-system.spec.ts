@@ -407,8 +407,7 @@ test('nested sheets keep every previous layer visible in the stack', async ({ br
 test('controlled record-backed sheets keep their exit surface mounted', async ({ browser }) => {
   const admin = await newUserPage(browser, 'admin');
   await admin.page.setViewportSize({ width: 390, height: 844 });
-  await admin.page.goto('/admin/people');
-  await admin.page.getByRole('tab', { name: /Access rules|限制規則/u }).click();
+  await admin.page.goto('/admin/people?view=restrictions');
   await admin.page.getByRole('button', { name: /Add prefix rule|新增前綴規則/u }).click();
 
   const sheet = admin.page.locator('[data-sheet-surface]').last();
@@ -435,8 +434,7 @@ test('controlled record-backed sheets keep their exit surface mounted', async ({
 test('desktop sheet popups animate out before they unmount', async ({ browser }) => {
   const admin = await newUserPage(browser, 'admin');
   await admin.page.setViewportSize({ width: 1280, height: 900 });
-  await admin.page.goto('/admin/people');
-  await admin.page.getByRole('tab', { name: /Access rules|限制規則/u }).click();
+  await admin.page.goto('/admin/people?view=restrictions');
   await admin.page.getByRole('button', { name: /Add prefix rule|新增前綴規則/u }).click();
 
   const popup = admin.page.locator('[data-sheet-surface]').last();

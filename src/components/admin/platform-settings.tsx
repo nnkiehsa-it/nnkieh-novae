@@ -16,9 +16,9 @@ import { SettingPresets } from "@/components/admin/setting-presets";
 import { DEFAULT_IMAGE_SETTINGS, IMAGE_PRESETS, RETENTION_PRESETS } from "@/lib/admin-setting-presets";
 import { DATA_RETENTION } from "@/generated/data-retention";
 import { RETENTION_GROUPS, retentionLabelKey } from "@/components/admin/retention-groups";
-import { ListRowGroup, ListSection } from "@/components/ui/list";
+import { ListActionRow, ListRowGroup, ListSection } from "@/components/ui/list";
 import { ListNumberRow, ListSwitchRow } from "@/components/ui/list-controls";
-import { LiquidTabs } from "@/components/ui/liquid-tabs";
+import { AdminAreaNavigation } from "@/components/admin/admin-area-navigation";
 import { ErrorState } from "@/components/ui/page-state";
 import { SaveBar } from "@/components/ui/save-bar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,7 +27,7 @@ import type { DataRetentionSettings, ImageUploadSettings } from "@/types/categor
 export function PlatformSettings() {
   const { t } = useI18n();
   const { draft, error, load, loading } = usePlatformSettings();
-  const [area, setArea] = useAdminView(["retention", "images"] as const);
+  const [area, setArea] = useAdminView(["overview", "retention", "images", ...RETENTION_GROUPS.map((group) => group.value)]);
   const [reviewing, setReviewing] = React.useState(false);
   useUnsavedChanges(draft.changes.length, draft.reset);
   const value = draft.value;
@@ -43,23 +43,24 @@ export function PlatformSettings() {
 
   return (
     <div className="space-y-6">
-      <LiquidTabs
-        ariaLabel={t("admin.settingsArea")}
-        onValueChange={setArea}
-        options={[
-          { label: t("admin.settingsRetention"), value: "retention" },
-          { label: t("ui.admin.imageUploads"), value: "images" },
+      <AdminAreaNavigation
+        onSelect={setArea}
+        areas={[
+          ...RETENTION_GROUPS.map((group) => ({ value: group.value, label: t(group.titleKey), detail: t(group.detailKey),
+            changeCount: draft.changes.filter((change) => group.items.some((item) => change.key === `retention.${item.key}` || change.key === `retention.${item.enableKey}`)).length })),
+          { label: t("admin.quickSettings"), value: "retention", detail: t("admin.summary.retention") },
+          { label: t("ui.admin.imageUploads"), value: "images", detail: t("admin.summary.images"), changeCount: draft.changes.filter((change) => change.key.startsWith("imageUploads.")).length },
         ]}
         value={area}
       />
 
-      {area === "retention" ? (
+      {area !== "overview" && area !== "images" ? (
         <div className="space-y-4">
-          <SettingPresets current={value.retention} presets={RETENTION_PRESETS}
+          {area === "retention" ? <SettingPresets current={value.retention} presets={RETENTION_PRESETS}
             onApply={(retention) => draft.update((current) => ({ ...current, retention }))}
-            onRestore={() => draft.update((current) => ({ ...current, retention: draft.baseline!.retention }))} />
-          {RETENTION_GROUPS.map((group, index) => (
-            <SettingsGroup defaultOpen={index === 0} key={group.titleKey} title={t(group.titleKey)}>
+            onRestore={() => draft.update((current) => ({ ...current, retention: draft.baseline!.retention }))} /> : null}
+          {RETENTION_GROUPS.filter((group) => group.value === area).map((group) => (
+            <div className="space-y-4" key={group.value}>
               {group.titleKey === "ui.admin.retentionOperations" ? (
                 <p className="mb-3 text-sm leading-6 text-muted-foreground">{t("admin.retentionLifecycleHelp")}</p>
               ) : null}
@@ -90,10 +91,14 @@ export function PlatformSettings() {
                   ];
                 })}
               </ListSection>
-            </SettingsGroup>
+              <ListSection><ListActionRow label={t("admin.restoreSection")} onClick={() => draft.update((current) => ({
+                ...current, retention: { ...current.retention, ...Object.fromEntries(group.items.flatMap((item) =>
+                  [item.key, ...(item.enableKey ? [item.enableKey] : [])].map((key) => [key, draft.baseline!.retention[key]]))) },
+              }))} /></ListSection>
+            </div>
           ))}
         </div>
-      ) : (
+      ) : area === "images" ? (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">{t("admin.imagePolicyLocation")}</p>
           <SettingPresets current={value.imageUploads} presets={IMAGE_PRESETS}
@@ -107,7 +112,7 @@ export function PlatformSettings() {
             </ListSection>
           </SettingsGroup>
         </div>
-      )}
+      ) : null}
 
       <SaveBar
         changeCount={draft.changes.length}

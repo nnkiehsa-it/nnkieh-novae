@@ -12,7 +12,7 @@ import { SystemQueue } from "@/components/admin/system-queue";
 import { NotionRebuildAction } from "@/components/admin/notion-rebuild-action";
 import { ContentTransition, StateTransition } from "@/components/motion/state-transition";
 import { Button } from "@/components/ui/button";
-import { LiquidTabs } from "@/components/ui/liquid-tabs";
+import { AdminAreaNavigation } from "@/components/admin/admin-area-navigation";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ErrorState } from "@/components/ui/page-state";
 
@@ -26,7 +26,19 @@ import { ErrorState } from "@/components/ui/page-state";
  */
 export function SystemConsole() {
   const { t } = useI18n();
-  const [view, setView] = useAdminView(["failures", "capacity", "providers"] as const);
+  const [view, setView] = useAdminView(["overview", "failures", "capacity", "providers"] as const);
+  return <div className="space-y-6">
+    <AdminAreaNavigation value={view} onSelect={setView} areas={[
+      { value: "failures", label: t("admin.systemViewFailures"), detail: t("admin.summary.failures") },
+      { value: "capacity", label: t("admin.systemViewCapacity"), detail: t("admin.summary.capacity") },
+      { value: "providers", label: t("admin.systemViewProviders"), detail: t("admin.summary.providers") },
+    ]} />
+    {view === "providers" ? <ProviderDiagnostics /> : view !== "overview" ? <SystemReading view={view} /> : null}
+  </div>;
+}
+
+function SystemReading({ view }: { view: "failures" | "capacity" }) {
+  const { t } = useI18n();
   const {
     busy, clearErrors, clearSchedules, clearing, error, load, loading, notionJob, page, rebuildNotion,
     rebuildingNotion, retry, retryAll, retrying, snapshot,
@@ -38,16 +50,6 @@ export function SystemConsole() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <LiquidTabs
-          ariaLabel={t("admin.systemTitle")}
-          onValueChange={setView}
-          options={[
-            { label: t("admin.systemViewFailures"), value: "failures" },
-            { label: t("admin.systemViewCapacity"), value: "capacity" },
-            { label: t("admin.systemViewProviders"), value: "providers" },
-          ]}
-          value={view}
-        />
         <Button
           aria-label={t("ui.adminConsole.refresh")}
           disabled={loading || busy}
@@ -104,10 +106,8 @@ export function SystemConsole() {
                 </Button>
               </nav>
             </div>
-          ) : view === "capacity" ? (
-            <SystemCapacity snapshot={snapshot} />
           ) : (
-            <ProviderDiagnostics />
+            <SystemCapacity snapshot={snapshot} />
           )}
         </ContentTransition>
       </StateTransition>

@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { newUserPage } from './support/session';
 import { expectBackendAction } from './support/backend-action';
+import { selectAdminSection } from './pages/admin-page';
 
 /** A category is a row; its decisions open in a sheet of their own. */
 async function openCategory(page: Page, name: string) {
@@ -21,9 +22,7 @@ async function createCategory(
   label: string,
   id: string,
 ) {
-  await page.getByRole('tab', {
-    name: kind === 'issue' ? 'Proposals' : 'Facilities',
-  }).click();
+  await selectAdminSection(page, kind === 'issue' ? 'Proposals' : 'Facilities');
   await page.getByRole('button', {
     name: kind === 'issue' ? 'Add proposal category' : 'Add facility category',
   }).click();
@@ -61,7 +60,7 @@ test('proposal and facility categories create, rename, surface, and delete atomi
 }) => {
   test.setTimeout(150_000);
   const admin = await newUserPage(browser, 'admin');
-  await admin.page.goto('/admin/content');
+  await admin.page.goto('/admin/content?view=issue');
 
   await createCategory(
     admin.page,
@@ -88,7 +87,7 @@ test('proposal and facility categories create, rename, surface, and delete atomi
   await expect(ordinary.page.getByRole('button', { name: 'Add image', exact: true })).toHaveCount(0);
   await ordinary.context.close();
 
-  await admin.page.goto('/admin/content');
+  await admin.page.goto('/admin/content?view=issue');
   const renaming = await openCategory(admin.page, 'E2E Temporary Proposal');
   await expect(renaming.getByRole('switch', { name: 'Allow images in posts' })).not.toBeChecked();
   await expect(renaming.getByRole('spinbutton', { name: 'Images per comment' })).toHaveValue('3');
@@ -103,7 +102,7 @@ test('proposal and facility categories create, rename, surface, and delete atomi
   await expect(ordinary.page.getByRole('option', { name: 'E2E Temporary Proposal' })).toHaveCount(0);
   await ordinary.context.close();
 
-  await admin.page.goto('/admin/content');
+  await admin.page.goto('/admin/content?view=issue');
   await deleteCategory(admin.page, 'E2E Renamed Proposal');
   await saveCategories(admin.page);
 
@@ -122,7 +121,7 @@ test('proposal and facility categories create, rename, surface, and delete atomi
   await ordinary.context.close();
 
   await admin.page.goto('/admin/content');
-  await admin.page.getByRole('tab', { name: 'Facilities' }).click();
+  await selectAdminSection(admin.page, 'Facilities');
   await deleteCategory(admin.page, 'E2E Temporary Facility');
   await saveCategories(admin.page);
 

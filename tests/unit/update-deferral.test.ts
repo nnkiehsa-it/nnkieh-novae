@@ -2,7 +2,7 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { hasUpdateDeferral, useUpdateDeferral } from "@/hooks/use-update-deferral";
-import { setUnsavedChanges } from "@/hooks/unsaved-changes-store";
+import { getUnsavedChanges, setUnsavedChanges } from "@/hooks/unsaved-changes-store";
 
 let root: Root;
 let state = false;
@@ -60,4 +60,26 @@ it("preserves the sheet safeguard and defers offline or background reloads", asy
   vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
   await act(async () => document.dispatchEvent(new Event("visibilitychange")));
   expect(state).toBe(false);
+});
+
+it("retains other editors' drafts when one editor resets or unmounts", async () => {
+  const scope = Symbol("scope"), account = Symbol("account");
+  const discardScope = vi.fn(), discardAccount = vi.fn();
+  try {
+    await act(async () => {
+      setUnsavedChanges({ count: 2, discard: discardScope }, scope, "scope-members");
+      setUnsavedChanges({ count: 1, discard: discardAccount }, account);
+    });
+    expect(getUnsavedChanges().count).toBe(3);
+    getUnsavedChanges("scope-members").discard();
+    expect(discardScope).toHaveBeenCalledOnce();
+    expect(discardAccount).not.toHaveBeenCalled();
+    await act(async () => setUnsavedChanges(null, scope));
+    expect(getUnsavedChanges().count).toBe(1);
+    expect(state).toBe(true);
+    getUnsavedChanges().discard();
+    expect(discardAccount).toHaveBeenCalledOnce();
+  } finally {
+    await act(async () => { setUnsavedChanges(null, scope); setUnsavedChanges(null, account); });
+  }
 });
