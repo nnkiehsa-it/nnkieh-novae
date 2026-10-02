@@ -1,6 +1,6 @@
 # Novae
 
-![Next.js 16.3](https://img.shields.io/badge/Next.js-16.3-000000?logo=nextdotjs&logoColor=white)
+![Next.js 16.3.6](https://img.shields.io/badge/Next.js-16.3.6-000000?logo=nextdotjs&logoColor=white)
 ![React 19.2](https://img.shields.io/badge/React-19.2-61DAFB?logo=react&logoColor=111827)
 ![TypeScript 7](https://img.shields.io/badge/TypeScript-7-3178C6?logo=typescript&logoColor=white)
 ![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)
@@ -65,7 +65,7 @@ flowchart LR
 | 非同步與即時 | Cloudflare Queues、Durable Objects | Event delivery、背景批次、WebSocket、業務 rate limit |
 | 資料庫 | Neon PostgreSQL 17、`pg` | 交易、RPC、RBAC、稽核與資料保留 |
 | 媒體與整合 | Cloudinary、Notion API（選用） | 簽名圖片與營運紀錄副本 |
-| 工具與測試 | Bun 1.4、Vitest 4、Playwright 1.62、ESLint 9 | 產物生成、靜態檢查、整合與瀏覽器測試 |
+| 工具與測試 | Bun 1.4、Vitest 4、Playwright 1.63、ESLint 9 | 產物生成、靜態檢查、整合與瀏覽器測試 |
 
 Novae 沒有接入生成式 AI 模型；目前的自動化集中在事件投遞、資料維護與部署驗證。
 
@@ -107,6 +107,13 @@ bun run verify:all          # local + integration + Playwright E2E
 - [本機開發](docs/local-development.md)
 - [部署與維運](docs/deployment-and-operations.md)
 - [測試與驗證](docs/testing.md)
+- [一般成員與管理員操作手冊](docs/admin-guide/README.md)
+- [首頁與內容列表](docs/home-feed.md)
+- [介面設計](docs/ui-design.md)
+- [文件與程式地圖維護](docs/documentation-maintenance.md)
+- [離線程式流程地圖產生器](tools/project-map/README.md)
+
+程式地圖把架構、資料模型、每個 action、設定生效時機和自動觸發拆成可逐步閱讀的流程，並內嵌原碼快照。執行 `node tools/project-map/build.mjs` 會產生桌面的 `Novae-程式流程地圖.html`，可離線開啟。它描述目前 checkout，正式環境的政策值仍須從管理介面確認。
 
 ## 現行邊界
 

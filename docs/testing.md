@@ -84,7 +84,7 @@ Verify and Deploy 先用 git diff 判斷是否需要額外 job：
 | `deploy_backend` | push / manual 且 backend 受影響 | forward migration、runtime role、Worker / Queue / provider 設定與 smoke test |
 | `deploy_frontend` | push / manual 且 browser 受影響 | 驗證 Vercel secrets，在同一 runner 建立並直接發布 prebuilt output；必要時等待 backend deploy |
 
-Backend 與 browser verify job 都等 fast 成功後才執行；frontend deploy job 由 dependency 保證新前端不會先於新 backend，並在同一 runner 保留 Vercel build 的 `.next` / `node_modules` 狀態直到 publish 完成。`workflow_dispatch` 可選 `all`、`backend` 或 `frontend`。單純改 docs 不在 workflow path filter 內，不會消耗完整 CI stack。
+`fast`、`backend_verify` 與 `browser_verify` 都只依賴 `changes`，符合範圍時平行執行。部署等所有相關驗證成功；同次有 backend 變更時，frontend 再等 backend 部署成功。Vercel build 的 `.next`／`node_modules` 保留在同一 runner 直到 publish。`workflow_dispatch` 可選 `all`、`backend` 或 `frontend`。README、docs 與 `tools/project-map/` 單獨變更不在 workflow path filter 內。
 
 ## 測試目錄
 

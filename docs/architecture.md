@@ -138,6 +138,14 @@ Read action 與 upload URL resolution 不 claim operation，也不開 mutation t
 
 更完整的 role、permission、route guard 與 restricted-user 行為見[路由、角色與權限](routes-and-permissions.md)。
 
+## 草稿、管理修改與版本
+
+提案、設施、公告及留言的文字草稿以帳號和內容身份隔離，保存在 sessionStorage；圖片不保存。送出成功才清理對應草稿，失敗保留輸入。細節見[產品流程](product.md)。
+
+管理編輯以讀取時的 revision 為 baseline。分類、平台、政策與 scope 儲存由後端核對版本，成功回 canonical state，衝突保留草稿供重新讀取／確認。`saveScopeMembers` 將整批授權與撤銷放在同一交易；帳號規則用 `target_type + uid` 複合鍵，避免帳號前綴與 UID 的同字串互相覆盖。
+
+管理畫面切換區域會保留各區草稿，執行儲存時鎖住會改變閱讀／修改範圍的導覽。容量等系統觀測資料重開時重新讀取，分頁失敗保留現有紀錄與重試游標。這些流程的模組對應見 `structure.md` 與[管理面板檢查](admin-console-review.md)。
+
 ## Realtime 與快取
 
 通知保持全域 realtime；提案、設施與公告只在對應 route family 訂閱。瀏覽器共用一條 socket，閒置 30 分鐘後關閉，重新活動或回到前景才重連並去重 resync。列表最多保留五頁，persistent cache 有期限、筆數與容量上限；遠端 content version 改變時會清除受影響 domain 再重新載入。
@@ -148,7 +156,7 @@ Realtime 只傳變更訊號與可安全 patch 的 count，不取代 authoritativ
 
 `src/app/sw.ts` 由 Serwist 編譯成 `public/sw.js`。Development mode 關閉 Serwist；production 才註冊 service worker。WOFF2 字型 shard 不放進 install-time precache，瀏覽器依 unicode range 正常載入。
 
-`version.json` 和 `sw.js` 都設為 no-cache。App update gate 會輪詢版本、在有限時間內要求更新，失敗時保留重新載入路徑。Viewport 使用 stable small-viewport 和 standalone PWA 規則；mobile navigation 會避開 safe area 與鍵盤，discussion composer 的底部空間由 CSS safe area 加上 ResizeObserver 實測高度決定。
+`version.json` 和 `sw.js` 都設為 no-cache。App update gate 輪詢版本，發文、留言、未儲存管理設定與開啟的詳情面板會延後自動重載；離線也不強制刷新。更新失敗保留重新載入路徑。Viewport 使用 stable small-viewport 和 standalone PWA 規則；mobile navigation 避開 safe area 與鍵盤，discussion composer 的底部空間由 CSS safe area 加上 ResizeObserver 實測高度決定。
 
 ## 部署拓撲
 

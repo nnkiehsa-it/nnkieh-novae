@@ -26,9 +26,11 @@ Novae 的寫入不會直接從 request handler 呼叫四五個外部服務。Act
 
 Admin write 的稽核資料也在原 transaction 中寫入 `admin_audit_log`，接著產生 `admin.audit_recorded`。Audit detail 會排除 `content` 和 `resultContent`，避免把完整內容複製進管理稽核 payload。
 
+表列的是 event 宣告的 destination。平台、分類與使用者事件雖宣告 `realtime`，目前 consumer 並非每種都有對應的 WebSocket message；設定儲存以 canonical response 更新發起端，其他端依版本與重新讀取取得新狀態。
+
 ## Queue 與背景工作
 
-Worker 的 Queue consumer 逐筆處理 message；成功就 `ack()`，發生錯誤則 `retry()`。Wrangler 設定一次最多收 10 筆、最多等 5 秒，單筆最多重試 5 次。
+Worker 將同一 Queue batch 的維護訊號合成一次 bounded sweep；成功後確認該批 message，失敗則重試。Wrangler 設定一次最多收 10 筆、最多等 5 秒，最多重試 5 次。Delivery 與 job 的 claim／fencing token 由 PostgreSQL 管理。
 
 Queue message 分成 delivery drain、maintenance 與可觀察的 background job。全域 category policy 或 retention 異動先估算影響，確認後切成有上限的批次；進度、成功或失敗結果寫回 PostgreSQL，管理頁可以查。Cron 每 30 分鐘只送出 maintenance message，不在 scheduled handler 裡直接跑長 transaction。
 

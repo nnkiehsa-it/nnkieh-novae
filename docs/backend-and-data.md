@@ -12,7 +12,7 @@
 | `POST /v1/auth/sync` | 新登入後建立或同步 profile |
 | `POST /v1/realtime/ticket` | 簽發短效 WebSocket ticket |
 | `GET /v1/realtime` | Durable Object WebSocket upgrade |
-| `GET /v1/media/:token/:variant` | 驗證簽名後代理 authenticated Cloudinary asset |
+| `GET /v1/media/:token/:variant`、`HEAD` | 驗證簽名後代理 authenticated Cloudinary asset |
 | `POST /v1/webhooks/cloudinary` | Cloudinary webhook 驗證與 upload lifecycle 更新 |
 
 Browser request 必須符合 Origin policy。一般 API 還會驗證 Firebase ID token 與 App Check；首次 profile 建立使用 Turnstile。Action request 帶一個 UUID `X-Novae-Operation-Id`，後端以同一 ID 串起 response、log、transaction 與 event delivery。
@@ -66,13 +66,17 @@ Read action 若未帶 operation ID，Worker 會建立一個只用於 trace 的 U
 | --- | --- | --- | --- |
 | Category / platform | `getCategoryCatalog`, `getCategoryManagement`, `estimateCategoryPolicyChanges`, `estimateRetentionCleanup`, `listPlatformJobs` | `savePlatformSettings`, `saveCategoryManagement`, `savePlatformFeatures`, `completeInitialSetup` | Management reads/writes 要 `category.manage`；首次 setup 由 domain rule 驗 platform admin |
 | Session / user | `getSessionBootstrap`, `getCurrentUserRole`, `getUserPublicProfiles` | `cacheUserAvatar` | 登入使用者；公開 profile 仍按允許欄位投影 |
-| Access / audit | `listRoleAssignments`, `listAdminUsers`, `listAccountAccessRules`, `listAdminAudit`, `listAdminActivity`, `getAdminOverview` | `saveAccountAccessRule`, `deleteAccountAccessRule`, `setUserAccessScope` | 存取規則、scope 與管理清單要 `role.manage`；activity / overview 要 `dashboard.view` |
+| Access / audit | `listRoleAssignments`, `listAdminUsers`, `listAccountAccessRules`, `previewAccountAccessRule`, `listAdminAudit`, `listAdminActivity`, `getAdminOverview` | `saveAccountAccessRule`, `deleteAccountAccessRule`, `setUserAccessScope`, `saveScopeMembers` | 存取規則、scope 與管理清單要 `role.manage`；activity / overview 要 `dashboard.view` |
 | Upload | `resolveUploadImageUrls` | `createImageUploadSessions`, `finalizeImageUploads`, `deleteUploadedImages` | 登入 + viewer / owner / lifecycle domain rule |
-| Issue | `getIssue`, `listIssues`, `searchIssues`, `listUserIssues`, `listComments` | `createIssue`, `moderateIssueStatus`, `updateIssueResult`, `toggleSupport`, `removeSupport`, `deleteIssue`, `createComment`, `deleteComment` | Moderation / result 要 `proposal.manage`；其餘由 author、category、status、restriction rule 決定 |
+| Issue | `getIssue`, `listIssues`, `listIssueSupporters`, `searchIssues`, `listUserIssues`, `listComments` | `createIssue`, `moderateIssueStatus`, `updateIssueResult`, `toggleSupport`, `removeSupport`, `deleteIssue`, `createComment`, `deleteComment` | Moderation / result 要 `proposal.manage`；其餘由 author、category、status、restriction rule 決定 |
 | Facility | `listFacilities`, `getFacility` | `createFacility`, `toggleFacilityAffected`, `updateFacilityStatus`, `deleteFacility` | Facility writes 在 domain rule 檢查 owner 或 facility scope |
-| Announcement | `listAnnouncements`, `getAnnouncement`, `listAnnouncementComments` | `createAnnouncement`, `deleteAnnouncement`, `setAnnouncementLike`, `createAnnouncementComment`, `deleteAnnouncementComment` | Create/delete 要 `announcement.manage`；互動與留言刪除走 domain rule |
-| Notification | `listNotificationPages`, `getNotificationSnapshot`, `getNotificationReadState`, `getNotificationUnreadHint`, `getPushNotificationPreference`, `getPlatformAdminNotificationPreferences` | `markNotificationsOpened`, `registerPushToken`, `updatePlatformAdminNotificationPreferences` | 一般帳號只能開啟自己的 device token；平台管理員偏好另驗 `platform-admin` 身分 |
+| Announcement | `listAnnouncements`, `getAnnouncement`, `getAnnouncementUnreadHint`, `listAnnouncementComments` | `markAnnouncementsOpened`, `createAnnouncement`, `deleteAnnouncement`, `setAnnouncementLike`, `createAnnouncementComment`, `deleteAnnouncementComment` | Create/delete 要 `announcement.manage`；互動與留言刪除走 domain rule |
+| Notification | `listNotificationPages`, `getNotificationSnapshot`, `getNotificationReadState`, `getNotificationUnreadHint`, `getPushNotificationPreference`, `getPlatformAdminNotificationPreferences` | `markNotificationsOpened`, `registerPushToken`, `unregisterPushToken`, `updatePlatformAdminNotificationPreferences` | token 操作受後端生命週期規則限制；一般介面只有啟用入口，平台管理員偏好另驗 `platform-admin` 身分 |
 | Dashboard | `getPlatformDashboard` | — | 要 `dashboard.view` |
+| Content version | `getContentVersions` | — | 依認證身分讀內容版本 |
+| Operations | `getRuntimePolicies`, `getProviderDiagnostics`, `getOperationsConsole` | `saveOperationPolicies`, `rebuildNotionArchive`, `clearOperationalErrors`, `clearScheduledWork`, `retryOperationalWork` | Diagnostics / console 要 `dashboard.view`，政策寫入要 `category.manage`，重試與清理要 `role.manage` |
+
+此表對照 `backendActionDefinitions` 的 78 個 action。`healthcheck` 由獨立入口處理，不算 registry action。新增或刪除操作時，連同此表及 `tools/project-map/content.mjs` 更新。
 
 Action rate-limit group 分成 `read`、`general-write`、`sensitive-write`、`admin-write`、`upload-write`、`upload-resolve`。詳細數值見[執行期政策與限制](runtime-policies.md)。
 
@@ -139,6 +143,21 @@ Migration 依 filename 排序，每個檔案各自包一個 transaction。
 | `0016_system_data_consistency.sql` | Atomic operation、domain event、unified delivery、background job、aggregate revision、counter invariant 與舊表退場 |
 | `0036_retire_deletion_job_console.sql` | 退場只讀 deletion job 的列表與重試 RPC，改由 operations console 的 background job 面板負責 |
 
+上表列出基礎與關鍵切換；完整歷史以 `database/migrations/` 為準。近期變更包括：
+
+| Migration | 目前行為 |
+| --- | --- |
+| `0047`–`0051` | 通知 cursor／到期／已讀、本文與作者索引、本人提案搜尋 |
+| `0052_atomic_issue_moderation.sql` | 狀態與結果一起儲存，單純編輯結果保留結案時間 |
+| `0053_category_image_policies.sql` | 圖片上限分為分類、公告與留言規則 |
+| `0054_scoped_retention_policy_changes.sql` | 只清理本次變動政策影響的資料範圍 |
+| `0055_notification_expiry_event_time.sql` | 通知期限從原事件時間計算，背景期限修復可接續 |
+| `0056_configuration_conflict_messages.sql` | 管理設定版本衝突的 canonical 訊息 |
+| `0057_account_rule_composite_keys.sql`、`0058_account_rule_cleanup_locking.sql` | 帳號限制使用複合身份鍵，清理略過被續期交易鎖住的列 |
+| `0059_scope_target_admin_identity.sql` | scope 修改只 reconciliation 被編輯帳號的正式管理員身份 |
+
+分類、政策與範圍名單的管理修改會核對閱讀 revision；過期草稿回衝突並保留輸入。`saveScopeMembers` 在同一交易授權／撤銷並回傳完整名單，細節見[產品流程](product.md)。
+
 `verify:integration` 不是只測 fresh database。它會另外建一套 populated pre-0016 database，再一路升到目前 migration，驗證既有資料能通過一致性切換。
 
 ## 一致性與非同步工作
@@ -159,7 +178,7 @@ Delivery、job、notification、revision 和 aggregate counter 的異常會由 `
 
 `config/data-retention.config.json` 提供首次部署的預設值，之後由平台 runtime settings 掌管可調政策。內容、通知、delivery、operation、Push token、avatar / profile PII、restriction、audit、background job 和 upload lifecycle 都有獨立期限；會刪除使用者內容的政策另有 enable switch。
 
-Cron 每 30 分鐘觸發維護入口，但真正工作拆成有上限的 background batch，避免單次長 transaction。Notion 的資料生命週期不跟著這些 retention policy 刪除。
+Cron 每 30 分鐘觸發維護入口，但真正工作拆成有上限的 background batch，避免單次長 transaction。Notion 非內容事件依 `notionArchiveDays` 封存；內容頁隨來源資料生命週期排入 archive，範圍見[執行期政策](runtime-policies.md)。
 
 所有預設天數、可停用項目、圖片限制和兩層 rate limit 已整理在[執行期政策與限制](runtime-policies.md)。
 

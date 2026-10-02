@@ -17,9 +17,9 @@ GitHub branch 決定部署環境：
 
 ## Backend deployment
 
-`.github/workflows/verify-and-deploy.yml` 在 backend 相關檔案 push 到 `main` / `dev` 時執行，也可以手動啟動。Push 與 manual deployment 都先經過同一 workflow 的 `fast` 與 `backend_verify` job；成功後直接進入 `deploy_backend`，不再透過另一個 workflow 輪詢同一 commit。
+`.github/workflows/verify-and-deploy.yml` 在 backend 相關檔案 push 到 `main` / `dev` 時執行，也可以手動啟動。`deploy_backend` 等 `fast`、backend 驗證，以及同次受影響的 browser 驗證成功後才部署。驗證與發布屬同一 workflow。
 
-整個 workflow 的 concurrency group 是 `verify-deploy-${github.ref}`，`cancel-in-progress: false`。同一 branch 的 migration / Worker deployment 會排隊，不會讓新 push 中止正在套 schema 的 job。
+整個 workflow 的 concurrency group 是 `verify-deploy-${github.ref}`。PR 設 `cancel-in-progress: true`；push／手動部署為 false，同 branch 的 migration／Worker deployment 會排隊。
 
 部署順序固定為：
 

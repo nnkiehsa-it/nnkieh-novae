@@ -250,10 +250,13 @@ This document is the maintained map of the repository. Read it before broad sear
 - `tests/integration/` — backend actions, category-scoped authorization, least-privilege database boundary, RPCs, jobs, retention, Worker ingress/realtime behavior, transaction-boundary fault injection, concurrent operation idempotency, canonical API JSON, Notion pagination/duplicate repair, correlation/revision delivery checks, and a concurrent 100-user profile-sync/session-bootstrap burst; required for backend changes.
 - `tests/e2e/` — Playwright bootstrap plus authenticated desktop/mobile workflows, action-response correlation assertions, category/scope combinations, multi-scope revocation isolation, content reactions/comments/results/deletion, account restriction, platform settings, notifications, upload lifecycle coverage, and browser-level route/dropdown/reduced-motion animation verification, including single-page route stacking and single-card detail state replacement.
 - `scripts/wsl.mjs`, `scripts/database.mjs`, `scripts/verify-integration.mjs` — automatic single-distro WSL selection (interactive selection when several are installed), root-owned on-demand Docker lifecycle with systemd autostart disabled and a readiness probe that waits for the daemon to accept connections before any container work, non-restarting local PostgreSQL ownership, and failure/Ctrl+C-safe teardown of every local verification service; a distro started solely for verification is terminated afterward to release memory.
-- `.github/workflows/verify-and-deploy.yml` — the single verification and delivery gate for pull requests, direct `main`/`dev` pushes, and scoped manual dispatch; Node 24 plus Bun 1.4 run fast checks and affected backend verification alongside two isolated browser-E2E shards, then both backend and Vercel deployment jobs wait for every relevant verification and start together. Browser verification retains its Firebase Emulator / Next compiler cache, while the frontend deploy job keeps the Vercel build output and dependencies on one runner.
+- `.github/workflows/verify-and-deploy.yml` — PR、main/dev push 與手動 dispatch 的驗證／部署入口。changes 分流後，fast、backend integration 和 browser E2E 平行驗證；部署等待相關 gate，backend 成功後 frontend 才發布。Vercel build/publish 留在同一 runner；PR 可取消舊驗證，push／手動部署排隊。
 - `.github/workflows/reset-database-and-cloudinary.yml` — protected manual disaster-reset flow: after an exact confirmation string, resets the application schemas, reapplies migrations, restores the Worker runtime role, clears Cloudinary resources, and restores the upload preset.
 
 ## Repository documentation
+
+- `tools/project-map/` — 可離線的流程閱讀工具；生成器核對 registry、設定、models、triggers 與來源，HTML 封裝快照。維護方式見該目錄 README。
+- `docs/documentation-maintenance.md` — 文件／程式責任對應、地圖更新與歷史驗證的使用範圍。
 
 - `暫存.md` — user-requested temporary implementation and verification tracker for the administration operations console.
 
@@ -271,4 +274,4 @@ This document is the maintained map of the repository. Read it before broad sear
 - `docs/deployment-and-operations.md` — branch-to-environment mapping, gated backend/frontend deployment, Neon database recovery, maintenance, and destructive reset behavior.
 - `docs/testing.md` — local, integration, browser, stress, and full verification commands plus test-suite ownership.
 - `PRODUCT.md` — product purpose, users, features, and explicitly approved runtime migration.
-- `AGENTS.md` — the operating contract for any agent editing this repository: absolute rules, where each kind of file belongs, dependency direction, split thresholds, where each kind of test belongs, and the verification commands. Read it before `structure.md`.
+- `AGENTS.md` — Next.js 本地文件的閱讀要求；開發時同時遵守使用者的工作區指示。

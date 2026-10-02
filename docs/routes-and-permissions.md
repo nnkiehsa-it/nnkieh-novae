@@ -4,11 +4,13 @@
 
 ## Route map
 
-所有 `(protected)` route 都先經過 `ProtectedApp`。Session 尚未恢復時顯示啟動畫面；未登入會轉到 `/login?redirect=...`。首次設定沒完成時，所有受保護頁面都轉到 `/setup`；設定完成後再次進入 `/setup` 則轉到 `/issues`。
+所有 `(protected)` route 都先經過 `ProtectedApp`。Session 尚未恢復時顯示啟動畫面；未登入會轉到 `/login?redirect=...`。首次設定沒完成時，所有受保護頁面都轉到 `/setup`；設定完成後再次進入 `/setup` 則轉到 `/home`。
 
 | Route | 用途 | 額外條件 |
 | --- | --- | --- |
-| `/` | 入口 redirect | 直接轉到 `/issues` |
+| `/` | 入口 redirect | 直接轉到 `/home` |
+| `/home` | 功能入口與全分類活動概覽 | 已登入並完成首次設定 |
+| `/feed` | 所有提案的內容動態 | `issues` feature 必須開啟 |
 | `/login` | Google 登入與 session restore | 公開頁面 |
 | `/setup` | 語言與初始 category 設定 | 未完成 setup；只有平台管理員可編輯，其他人看到等待狀態 |
 | `/issues` | 提案入口 | 依 catalog 轉到預設 category；沒有預設值時轉到 `/issues/my-proposals` |
