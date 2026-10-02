@@ -1,6 +1,6 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import type * as React from "react";
 
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
@@ -30,6 +30,7 @@ export function RecordList({
   onPageChange,
   onQueryChange,
   onSearch,
+  onReset,
   page,
   query,
   searchPlaceholder,
@@ -45,6 +46,7 @@ export function RecordList({
   onQueryChange: (query: string) => void;
   /** Loads the list for whatever `query` currently is. */
   onSearch: () => void;
+  onReset?: () => void;
   page: number;
   query: string;
   searchPlaceholder: string;
@@ -62,16 +64,30 @@ export function RecordList({
         <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            className="pl-9"
+            aria-label={searchPlaceholder}
+            className="pl-9 pr-10"
             onChange={(event) => onQueryChange(event.target.value)}
             placeholder={searchPlaceholder}
             value={query}
           />
+          {query && onReset ? (
+            <Button aria-label={translate("admin.resetSearch")} className="absolute right-1 top-1/2 -translate-y-1/2"
+              disabled={loading} onClick={onReset} size="icon-sm" type="button" variant="ghost">
+              <X aria-hidden className="size-4" />
+            </Button>
+          ) : null}
         </div>
         <Button disabled={loading} type="submit" variant="secondary">
           {loading ? <LoadingSpinner /> : translate("ui.common.search")}
         </Button>
       </form>
+
+      {error && count > 0 ? (
+        <div className="flex items-center gap-3" role="alert">
+          <p className="min-w-0 flex-1 text-sm text-destructive">{error}</p>
+          <Button disabled={loading} onClick={onSearch} size="sm" variant="secondary">{translate("common.retry")}</Button>
+        </div>
+      ) : null}
 
       <div className="rule-card !px-0">
         {error && count === 0 ? (

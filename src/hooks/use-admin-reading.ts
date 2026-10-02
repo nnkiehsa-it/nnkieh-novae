@@ -21,14 +21,14 @@ export function useAdminReading(key: string, failureKey: string) {
     return () => { active.current = null; revision.current += 1; };
   }, [scope]);
 
-  const read = React.useCallback(async <T,>(fetch: () => Promise<T>, apply: (result: T) => void) => {
+  const read = React.useCallback(async <T,>(fetch: (current: () => boolean) => Promise<T>, apply: (result: T) => void) => {
     if (active.current !== scope) return;
     const request = ++revision.current;
     const current = () => active.current === scope && request === revision.current;
     setLoading(true);
     setError("");
     try {
-      const result = await fetch();
+      const result = await fetch(current);
       if (current()) apply(result);
     } catch (caught) {
       if (current()) setError(caught instanceof Error ? caught.message : t(failureKey));

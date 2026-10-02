@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useAdminView } from "@/hooks/use-admin-view";
 import { RefreshCw } from "lucide-react";
 
 import { useI18n } from "@/i18n";
@@ -26,7 +26,7 @@ import { ErrorState } from "@/components/ui/page-state";
  */
 export function SystemConsole() {
   const { t } = useI18n();
-  const [view, setView] = React.useState("failures");
+  const [view, setView] = useAdminView(["failures", "capacity", "providers"] as const);
   const {
     clearErrors, clearSchedules, clearing, error, load, loading, notionJob, page, rebuildNotion,
     rebuildingNotion, retry, retryAll, retrying, snapshot,
@@ -58,6 +58,8 @@ export function SystemConsole() {
           {loading ? <LoadingSpinner /> : <RefreshCw className="size-4" />}
         </Button>
       </div>
+
+      {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
 
       <StateTransition className="min-w-0" data-admin-content identity={view}>
         <ContentTransition identity={view}>

@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { useI18n } from "@/i18n";
 import { usePlatformSettings } from "@/hooks/use-platform-settings";
+import { useAdminView } from "@/hooks/use-admin-view";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { ApplyReviewDialog } from "@/components/admin/apply-review-dialog";
 import {
@@ -26,7 +27,7 @@ import type { DataRetentionSettings, ImageUploadSettings } from "@/types/categor
 export function PlatformSettings() {
   const { t } = useI18n();
   const { draft, error, load, loading } = usePlatformSettings();
-  const [area, setArea] = React.useState("retention");
+  const [area, setArea] = useAdminView(["retention", "images"] as const);
   const [reviewing, setReviewing] = React.useState(false);
   useUnsavedChanges(draft.changes.length, draft.reset);
   const value = draft.value;

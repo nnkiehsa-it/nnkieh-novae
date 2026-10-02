@@ -1,6 +1,10 @@
 "use client";
 
+import { useAdminView } from "@/hooks/use-admin-view";
 import * as React from "react";
+import { getUnsavedChanges } from "@/hooks/unsaved-changes-store";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 import { useI18n } from "@/i18n";
 import { AccessManagement } from "@/components/admin/access-management";
@@ -15,12 +19,16 @@ import { ContentTransition, StateTransition } from "@/components/motion/state-tr
  */
 export function PeopleConsole() {
   const { t } = useI18n();
-  const [view, setView] = React.useState("accounts");
+  const [view, setView] = useAdminView(["accounts", "scopes", "restrictions"] as const);
+  const [pendingView, setPendingView] = React.useState<string | null>(null);
   return (
     <div className="space-y-6">
       <LiquidTabs
         ariaLabel={t("admin.peopleTitle")}
-        onValueChange={setView}
+        onValueChange={(next) => {
+          if (getUnsavedChanges().count > 0) setPendingView(next);
+          else setView(next);
+        }}
         options={[
           { label: t("admin.peopleByAccount"), value: "accounts" },
           { label: t("admin.peopleByScope"), value: "scopes" },
@@ -33,6 +41,22 @@ export function PeopleConsole() {
           {view === "accounts" ? <UserManagement /> : view === "scopes" ? <AccessManagement /> : <AccountAccessRules />}
         </ContentTransition>
       </StateTransition>
+      <AlertDialog open={pendingView !== null} onOpenChange={(open) => !open && setPendingView(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("admin.leaveTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("admin.leaveMessage", { count: getUnsavedChanges().count })}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("admin.leaveStay")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              getUnsavedChanges().discard();
+              if (pendingView) setView(pendingView);
+              setPendingView(null);
+            }}>{t("admin.leaveDiscard")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

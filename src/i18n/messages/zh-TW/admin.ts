@@ -1,4 +1,5 @@
 const messages = {
+  "admin.resetSearch": "清除搜尋並顯示全部紀錄",
   "admin.policyClient": "用戶端",
   "admin.policyJobs": "背景工作",
   "admin.policyLogs": "紀錄",

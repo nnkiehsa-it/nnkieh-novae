@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 
 import { useI18n } from "@/i18n";
 import { useCategoryManagement } from "@/hooks/use-category-management";
+import { useAdminView } from "@/hooks/use-admin-view";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { AdminListSkeleton } from "@/components/admin/admin-list-skeleton";
 import { ApplyReviewDialog } from "@/components/admin/apply-review-dialog";
@@ -50,7 +51,7 @@ type AnyCategory = FacilityCategoryConfig | IssueCategoryConfig;
 export function CategoryManagement() {
   const { t } = useI18n();
   const state = useCategoryManagement();
-  const [kind, setKind] = React.useState("issue");
+  const [kind, setKind] = useAdminView(["issue", "facility", "announcement"] as const);
   const [reviewing, setReviewing] = React.useState(false);
   const [editing, setEditing] = React.useState<number | null>(null);
   const [retainedEditing, setRetainedEditing] = React.useState<{
@@ -58,6 +59,7 @@ export function CategoryManagement() {
     item: AnyCategory;
     kind: string;
   } | null>(null);
+  React.useEffect(() => { setEditing(null); setRetainedEditing(null); }, [kind]);
   useUnsavedChanges(state.draft.changes.length, state.draft.reset);
   const value = state.value;
 

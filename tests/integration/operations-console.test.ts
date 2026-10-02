@@ -42,6 +42,10 @@ integrationTest('operations settings enforce administrator access, revision conf
   assert.deepEqual(Object.keys(policies).sort(), ['history', 'settings']);
   assert.deepEqual(policies.settings, snapshot.settings);
   assert.deepEqual(policies.history, snapshot.history);
+  const system = asRecord(await callAction('getOperationsConsole', { systemOnly: true }, admin.auth));
+  assert.equal('settings' in system, false);
+  assert.equal('history' in system, false);
+  assert.deepEqual(system.jobs, snapshot.jobs);
   const metrics = snapshot.metrics as Array<{ bucket: unknown; databaseBytes: unknown }>;
   assert.match(String(metrics[0].bucket), /^\d{4}-\d{2}-\d{2}$/u);
   assert.ok(Number(metrics[0].databaseBytes) > 0);

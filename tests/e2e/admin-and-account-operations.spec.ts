@@ -56,6 +56,11 @@ test('platform admin can restrict and restore an ordinary account', async ({ bro
   await expect(
     admin.page.getByRole('main').getByText('Normal', { exact: true }),
   ).toBeVisible();
+  await admin.page.getByRole('button', { name: 'Clear search and show all records', exact: true }).click();
+  await expect(search).toHaveValue('');
+  await expect.poll(() => admin.page.getByRole('main').getByText('@integration.invalid').filter({ visible: true }).count()).toBeGreaterThan(1);
+  await search.fill(E2E_USERS.other);
+  await admin.page.getByRole('button', { name: 'Search', exact: true }).click();
   await admin.page.getByText(E2E_USERS.other).filter({ visible: true }).click();
   await admin.page.getByLabel('Restriction reason / displayed message').fill('E2E reversible restriction');
   await expectBackendAction(admin.page, 'saveAccountAccessRule', async () => {
@@ -70,6 +75,28 @@ test('platform admin can restrict and restore an ordinary account', async ({ bro
     await admin.page.getByRole('button', { name: 'Clear restriction' }).click();
   });
   await expect(admin.page.getByLabel('Restriction reason / displayed message')).toBeVisible();
+  await admin.context.close();
+});
+
+test('admin views support direct links, reload and browser history', async ({ browser }) => {
+  const admin = await newUserPage(browser, 'admin');
+  for (const [route, next, label] of [
+    ['/admin/platform', 'images', 'Image uploads'],
+    ['/admin/content', 'facility', 'Facilities'],
+    ['/admin/people', 'restrictions', 'Access rules'],
+    ['/admin/audit', 'activity', 'Platform activity'],
+    ['/admin/system', 'capacity', 'Capacity'],
+    ['/admin/policies', 'jobs', 'Background jobs'],
+  ]) {
+    await admin.page.goto(`${route}?view=${next}`);
+    await expect(admin.page.getByRole('tab', { name: label, exact: true })).toHaveAttribute('aria-selected', 'true');
+  }
+  await admin.page.reload();
+  await expect(admin.page.getByRole('tab', { name: 'Background jobs', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await admin.page.getByRole('tab', { name: 'Content', exact: true }).click();
+  await expect(admin.page).toHaveURL(/\/admin\/policies$/u);
+  await admin.page.goBack();
+  await expect(admin.page.getByRole('tab', { name: 'Background jobs', exact: true })).toHaveAttribute('aria-selected', 'true');
   await admin.context.close();
 });
 

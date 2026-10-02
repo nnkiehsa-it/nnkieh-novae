@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { useRememberedState } from "@/hooks/use-remembered-state";
 import { useForegroundPoll } from "@/hooks/use-foreground-poll";
+import { useAdminReading } from "@/hooks/use-admin-reading";
 import {
   clearOperationalErrors,
   clearScheduledWork,
@@ -45,40 +46,30 @@ export function useSystemConsole() {
     page: 0,
     snapshot: null,
   });
-  const [error, setError] = React.useState("");
-  const [loading, setLoading] = React.useState(false);
+  const { error, loading, read: readRequest } = useAdminReading("admin-system", "common.loadFailed");
   const [retrying, setRetrying] = React.useState("");
   const [clearing, setClearing] = React.useState<"errors" | "schedules" | "">("");
   const [rebuildingNotion, setRebuildingNotion] = React.useState(false);
   const readingVersion = React.useRef(0);
 
   const read = React.useCallback(
-    async (nextPage: number) => {
+    (nextPage: number) => {
       readingVersion.current += 1;
-      const console_ = await fetchOperationsConsole({ page: nextPage }, {
-        onPanel: (panel) => remember((current) => ({
-          ...current,
-          page: nextPage,
-          snapshot: { ...current.snapshot, ...panel },
-        })),
-      });
-      remember({ page: nextPage, snapshot: console_ });
+      return readRequest(
+        (active) => fetchOperationsConsole({ page: nextPage, systemOnly: true }, {
+          onPanel: (panel) => {
+            if (!active()) return;
+            remember((current) => ({ ...current, page: nextPage, snapshot: { ...current.snapshot, ...panel } }));
+          },
+        }),
+        (snapshot) => remember({ page: nextPage, snapshot }),
+      );
     },
-    [remember],
+    [readRequest, remember],
   );
 
   const load = React.useCallback(
-    async (nextPage = 0) => {
-      setLoading(true);
-      setError("");
-      try {
-        await read(nextPage);
-      } catch (caught) {
-        setError(caught instanceof Error ? caught.message : String(caught));
-      } finally {
-        setLoading(false);
-      }
-    },
+    (nextPage = 0) => read(nextPage),
     [read],
   );
 

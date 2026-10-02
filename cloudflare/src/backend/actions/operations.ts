@@ -87,7 +87,7 @@ export async function handleOperationsAction(action: string, payload: JsonRecord
       const jobs = await operationsJobs(Number(page) * 100, database);
       return { jobs: jobs.rows.slice(0, 100) };
     }
-    return operationsConsole(Number(page) * 100, database);
+    return operationsConsole(Number(page) * 100, database, payload.systemOnly !== true);
   }
   throw new Error('invalid-action');
 }
@@ -144,7 +144,7 @@ function operationHistory(offset: number, database: BackendDatabase) {
     from app_private.operation_policy_history order by id desc limit 101 offset ${offset}`;
 }
 
-function operationsConsole(offset: number, database: BackendDatabase) {
+function operationsConsole(offset: number, database: BackendDatabase, includePolicies: boolean) {
   const paged = {
     cleanupBacklog: database.sql`select job_id, created_at, payload from app_private.external_cleanup_backlog
       order by created_at, job_id limit 101 offset ${offset}`,
@@ -154,7 +154,7 @@ function operationsConsole(offset: number, database: BackendDatabase) {
       e.event_type, e.aggregate_id, e.operation_id from app_private.event_deliveries d
       join app_private.domain_events e on e.event_id = d.event_id where d.status = 'failed'
       order by d.updated_at desc, d.id desc limit 101 offset ${offset}`,
-    history: operationHistory(offset, database),
+    ...(includePolicies ? { history: operationHistory(offset, database) } : {}),
     jobs: operationsJobs(offset, database),
   };
   const capacity = database.sql`select relname as name, n_live_tup as rows, n_dead_tup as dead_rows,
@@ -166,7 +166,7 @@ function operationsConsole(offset: number, database: BackendDatabase) {
     from app_private.event_deliveries group by destination, status`;
   const metrics = database.sql`select * from app_private.operational_metrics order by bucket desc limit 365`;
   const size = database.sqlOne<{ bytes: number }>`select pg_database_size(current_database()) as bytes`;
-  const firstHundred = (page: typeof paged[keyof typeof paged]) => page.then((result) => result.rows.slice(0, 100));
+  const firstHundred = (page: NonNullable<typeof paged[keyof typeof paged]>) => page.then((result) => result.rows.slice(0, 100));
 
   return settledSegments({
     capacity: capacity.then((result) => result.rows),
@@ -176,11 +176,11 @@ function operationsConsole(offset: number, database: BackendDatabase) {
     errors: firstHundred(paged.errors),
     failedDeliveries: firstHundred(paged.failedDeliveries),
     hasMore: Promise.all(Object.values(paged)).then((results) => results.some((result) => result.rows.length > 100)),
-    history: firstHundred(paged.history),
+    ...(paged.history ? { history: firstHundred(paged.history) } : {}),
     jobs: firstHundred(paged.jobs),
     metrics: metrics.then((result) => result.rows),
     sampledAt: Promise.resolve(new Date().toISOString()),
-    settings: readOperationPolicies(database),
+    ...(includePolicies ? { settings: readOperationPolicies(database) } : {}),
   });
 }
 

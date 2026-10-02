@@ -1,4 +1,5 @@
 const messages = {
+  "admin.resetSearch": "Clear search and show all records",
   "admin.policyClient": "Client",
   "admin.policyJobs": "Background jobs",
   "admin.policyLogs": "Logs",

@@ -22,10 +22,10 @@ export interface OperationsConsole {
  * the screen waiting for the slowest.
  */
 export function fetchOperationsConsole(
-  payload: { page?: number },
+  payload: { page?: number; systemOnly: true },
   options: { onPanel?: (panel: Partial<OperationsConsole>) => void } = {},
 ) {
-  return invokeBackendAction<{ page?: number }, OperationsConsole>('getOperationsConsole', {
+  return invokeBackendAction<typeof payload, Omit<OperationsConsole, 'settings' | 'history'>>('getOperationsConsole', {
     onSegment: (key, data) => {
       if (key) options.onPanel?.({ [key]: data } as Partial<OperationsConsole>);
     },

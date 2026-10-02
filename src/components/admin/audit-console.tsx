@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useAdminView } from "@/hooks/use-admin-view";
 
 import { useI18n } from "@/i18n";
 import { AdminAuditLog } from "@/components/admin/admin-audit-log";
@@ -15,7 +15,7 @@ import { ContentTransition, StateTransition } from "@/components/motion/state-tr
  */
 export function AuditConsole() {
   const { t } = useI18n();
-  const [view, setView] = React.useState("actions");
+  const [view, setView] = useAdminView(["actions", "activity"] as const);
   return (
     <div className="space-y-6">
       <LiquidTabs

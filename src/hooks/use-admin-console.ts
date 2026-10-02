@@ -88,6 +88,7 @@ function usePagedAdminList<T>(
     loading,
     page: value.page,
     query,
+    resetSearch: () => { setQuery(""); return load(""); },
     rows: value.rows,
     setQuery,
   };
@@ -155,7 +156,7 @@ export function useAdminUsers() {
         toast.success(input === null
           ? t("ui.adminConsole.restrictionCleared")
           : t("ui.adminConsole.restrictionSet"));
-        await list.load(list.query);
+        await list.changePage(list.page);
       } catch (caught) {
         toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
       } finally {

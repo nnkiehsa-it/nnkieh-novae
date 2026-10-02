@@ -4,12 +4,13 @@ import * as React from "react";
 
 import { useI18n } from "@/i18n";
 import { useOperationPolicies } from "@/hooks/use-operation-policies";
+import { useAdminView } from "@/hooks/use-admin-view";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { PolicyHistory } from "@/components/admin/policy-history";
 import { ApplyReviewDialog } from "@/components/admin/apply-review-dialog";
 import { SettingsGroup } from "@/components/admin/settings-group";
 import { SettingPresets } from "@/components/admin/setting-presets";
-import { POLICY_GROUPS, policyGroupValues, policyPresets, type PolicyGroup } from "@/lib/admin-setting-presets";
+import { POLICY_GROUPS, policyGroupValues, policyPresets } from "@/lib/admin-setting-presets";
 import { ListSection } from "@/components/ui/list";
 import { ListInputRow, ListNumberRow } from "@/components/ui/list-controls";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
@@ -26,7 +27,7 @@ const GROUP_LABELS = {
 export function PolicySettings() {
   const { t } = useI18n();
   const { draft, error, history, load, loading, revision } = useOperationPolicies();
-  const [area, setArea] = React.useState<PolicyGroup>("content");
+  const [area, setArea] = useAdminView(POLICY_GROUPS);
   const [reviewing, setReviewing] = React.useState(false);
   useUnsavedChanges(draft.changes.length, draft.reset);
   const value = draft.value?.values;
@@ -45,7 +46,7 @@ export function PolicySettings() {
     <div className="space-y-6">
       <LiquidTabs
         ariaLabel={t("admin.policyArea")}
-        onValueChange={(next) => setArea(next as PolicyGroup)}
+        onValueChange={setArea}
         options={POLICY_GROUPS.map((group) => ({ label: t(GROUP_LABELS[group]), value: group }))}
         value={area}
       />

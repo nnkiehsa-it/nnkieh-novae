@@ -92,6 +92,7 @@ export function UserManagement() {
         onPageChange={(page) => void state.changePage(page)}
         onQueryChange={state.setQuery}
         onSearch={() => void state.load(state.query)}
+        onReset={() => void state.resetSearch()}
         page={state.page}
         query={state.query}
         searchPlaceholder={t("ui.adminConsole.userSearchPlaceholder")}

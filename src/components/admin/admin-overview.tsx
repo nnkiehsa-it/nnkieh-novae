@@ -1,12 +1,11 @@
 "use client";
 
-import * as React from "react";
+import { useAdminView } from "@/hooks/use-admin-view";
 import { RefreshCw } from "lucide-react";
 
 import { useI18n } from "@/i18n";
 import {
   ADMIN_OVERVIEW_WINDOWS,
-  type AdminOverviewWindow,
 } from "@/constants/admin-activity";
 import { useAdminOverview } from "@/hooks/use-admin-overview";
 import { AdminSections } from "@/components/admin/admin-sections";
@@ -24,7 +23,7 @@ export function AdminOverview({ access }: { access: AdminAccess }) {
 
 function AdminOverviewReading({ access }: { access: AdminAccess }) {
   const { t } = useI18n();
-  const [period, setPeriod] = React.useState<AdminOverviewWindow>("24h");
+  const [period, setPeriod] = useAdminView(ADMIN_OVERVIEW_WINDOWS.map((entry) => entry.value), "period");
   const { activity, error, load, loading, platform } = useAdminOverview(period);
 
   return (
@@ -34,7 +33,7 @@ function AdminOverviewReading({ access }: { access: AdminAccess }) {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <LiquidTabs
               ariaLabel={t("ui.adminConsole.period")}
-              onValueChange={(value) => setPeriod(value as AdminOverviewWindow)}
+              onValueChange={setPeriod}
               options={ADMIN_OVERVIEW_WINDOWS.map((entry) => ({
                 label: t(entry.labelKey),
                 value: entry.value,
