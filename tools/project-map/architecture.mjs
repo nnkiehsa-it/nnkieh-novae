@@ -1,4 +1,4 @@
-// 拓樸圖與程式目錄關係；位置是畫布座標，連線不代表全部都是依序執行。
+// 架構與程式目錄關係；畫面統一向右／向下，連線不代表全部都依序執行。
 const n = (title, text, layer, x, y, refs) => ({ title, text, layer, x, y, refs });
 const edge = (from, to, label, async = false) => ({ from, to, label, async });
 const A = 'cloudflare/src/backend/actions/';
@@ -8,7 +8,7 @@ export const architectureFlows = [
     summary: '依 README 與 architecture 文件，補上真實程式中的安全、資料與背景工作邊界。',
     notes: ['此圖是服務關係；同一個操作只走相關分支。實線是請求／資料關係，虛線是背景或外部事件。', 'Next.js 在 Vercel；Worker、Queue、Durable Objects、cron 在 Cloudflare；Neon 是主要資料庫。數值與配置為 checkout 快照。'],
     nodes: [
-      n('瀏覽器 · Next.js / PWA', 'page、component、hook、service 與 UID 分區快取；SW 接收 Push。使用者和管理員都从這裡操作，瀏覽器不直連 Neon。', 'browser', 0, 240, ['README.md', 'src/components/app-shell.tsx', 'src/app/sw.ts']),
+      n('瀏覽器 · Next.js / PWA', 'page、component、hook、service 與 UID 分區快取；SW 接收 Push。使用者和管理員都從這裡操作，瀏覽器不直連 Neon。', 'browser', 0, 240, ['README.md', 'src/components/app-shell.tsx', 'src/app/sw.ts']),
       n('Firebase / Google / Turnstile', 'Google 身分登入 Firebase；ID token 驗 UID，App Check 驗客戶端，Turnstile 驗登入／恢復挑戰。平台角色與有效限制仍由 Novae DB 決定。', 'external', 0, 0, ['src/services/session-auth.ts', 'cloudflare/src/app-check.ts', 'cloudflare/src/backend/actions/auth.ts']),
       n('Cloudflare Worker API', 'index.ts 路由；actions registry → 身分／scope／限制／配額 → domain handler。POST /v1/actions 回 NDJSON；另有 auth、realtime ticket、媒體與 webhook 入口。', 'worker', 360, 240, ['cloudflare/src/index.ts', A+'action-registry.ts', A+'execution.ts']),
       n('BusinessRateLimiter DO', '每 UID 的產品配額與 burst；SQLite 原子 claim。固定時間桶到期由 DO alarm 清理；native binding 另保護 ingress。', 'worker', 360, 0, ['cloudflare/src/durable/business-rate-limiter.ts', A+'rate-limit.ts']),

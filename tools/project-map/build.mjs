@@ -10,7 +10,7 @@ import { parse as babelParse } from '@babel/parser';
 import { actions, flows, groups, categorySettings, policyDescriptions, retentionDescriptions, triggerDescriptions } from './content.mjs';
 import { architectureFlows } from './architecture.mjs';
 import { modelDescriptions, makeModelFlows, makeModelOverview } from './models.mjs';
-import { makeSettingFlows, retentionBehavior } from './settings.mjs';
+import { makeSettingFlows, retentionBehavior, retentionTitles } from './settings.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../..');
@@ -87,16 +87,16 @@ const actionFlows = definitions.map(d => {
     node(a.title, a.entry + '。' + (actionReferences[d.id].length ? '以下來源可檢視 service 呼叫位置。' : '目前沒有直接 browser 呼叫位置；此後端 action 仍保留於 registry。'), 'browser', actionReferences[d.id]),
     node('Service 發出請求', readOnly ? '用目前 UID 的 ID token + App Check 送 POST /v1/actions；依 readTimeoutMs/特定timeout等待。相同讀取可由 service 合併。' : '同 UID/action 冷卻 → 取 ID token/App Check → 以同一 UUID operationId 送 request；timeout/retry 沿用該 ID。', 'browser', [ref('src/services/backend-action.ts', 'invokeBackendAction'), ref('src/lib/request.ts')]),
     node('Worker 驗證身份', 'Origin、App Check、Firebase ID token、native ingress；每次從 DB resolveAuthContext 讀有效限制、角色與 scope。blocked 拒絕受保護請求。', 'worker', [ref('cloudflare/src/index.ts', 'async function handleAction'), ref('cloudflare/src/backend/actions/auth.ts')]),
-    node('操作權限與配額', (d.permission ? 'Registry 必須有 ' + d.permission + '。' : 'Registry 沒有固定 permission；domain handler 檢查自己的 owner/scope/身份規則。') + 'read_only/reaction_only 依 accessClass 限制。每 UID 的 ' + d.rateGroup + ' 10 秒 burst。' + (policy.extraLimit ? '另有 ' + policy.extraLimit + (policy.unitsPath ? '，按圖片張數扣額。' : '。') : ''), 'worker', [ref(registryPath, 'action("' + d.id + '"'), ref('cloudflare/src/backend/actions/execution.ts'), ref('cloudflare/src/backend/actions/rate-limit.ts')]),
+    node('操作權限、去重與配額', (d.permission ? 'Registry 必須有 ' + d.permission + '。' : 'Registry 沒有固定 permission；domain handler 檢查自己的 owner/scope/身份規則。') + 'read_only/reaction_only 依 accessClass 限制。每 UID 的 ' + d.rateGroup + ' 10 秒 burst。' + (readOnly?'':'寫入先開交易 claim_operation：已完成重播 response；執行中／過期拒絕。新操作才扣產品配額並繼續業務 handler。') + (policy.extraLimit ? '產品額度 ' + policy.extraLimit + (policy.unitsPath==='payload.images' ? '，按圖片張數扣額。' : '，目前 rate-limit 實作每次扣 1。') : '') + (policy.unitsPath==='payload.changes'?'config 宣告 payload.changes，但現有 rate-limit 只特別處理 payload.images，所以整批 scope 目前仍扣 1。':''), 'worker', [ref(registryPath, 'action("' + d.id + '"'), ref('cloudflare/src/backend/actions/execution.ts'), ref('cloudflare/src/backend/actions/rate-limit.ts')]),
     node('此操作的業務規則', a.logic, 'worker', handlerRefs),
-    node(readOnly ? '資料讀取' : '交易中的資料變更', a.db + '。' + (readOnly ? 'read/upload-resolve 不 claim operation，也不開 mutation transaction。' : '先 claim_operation；已完成則重播舊 response，執行中回 request-in-progress，過期回 operation-expired；變更、audit、event、complete_operation 同 transaction。'), 'database', [...handlerRefs, ref('cloudflare/src/backend/actions/execution.ts', 'client.transaction')]),
+    node(readOnly ? '資料讀取' : '交易中的資料變更', a.db + '。' + (readOnly ? 'read/upload-resolve 不 claim operation，也不開 mutation transaction。' : '前一步已 claim_operation；變更、audit、event、complete_operation 在同一 transaction 提交。業務拒絕或任何 SQL 失敗整筆回滾。'), 'database', [...handlerRefs, ref('cloudflare/src/backend/actions/execution.ts', 'client.transaction')]),
     node('原發起畫面收到結果', 'NDJSON start/part/end；失敗可以是 HTTP error 或串流 error。service 驗仍是同一 Firebase User，舊 session 回應不套入。' + a.effect, 'browser', [ref('src/services/backend-action.ts', 'async function readAnswer'), ...actionReferences[d.id].slice(0, 3)]),
   ];
   if (!readOnly) {
     if (!eventMap[d.id]) throw new Error('缺事件盤點：' + d.id);
     nodes.push(node('提交後的非同步工作', events.length ? events.map(e => e.type + ' → ' + (e.destinations.join(' / ') || '只有事件紀錄，無外部destination')).join('；') + '。admin-write 另記 admin.audit_recorded → Notion。成功寫入由 Worker 送 drain；背景完成可晚於原畫面成功。' : '這個 action 沒有額外 domain delivery。admin-write 仍會寫管理 audit 與 admin.audit_recorded → Notion；成功 write 仍會喚醒 drain 處理待辦。', 'async', [eventMap[d.id].ref, ref('cloudflare/src/backend/jobs/consumer.ts')]));
   }
-  return { ...a, ...d, id: d.id, summary: a.logic, timing: a.timing, nodes, refs: undefined, edges: nodes.slice(1).map((_, i) => ({ from: i, to: i + 1, label: i === 6 ? '提交後非同步' : '接著', async: i === 6 })), notes: [a.timing, ...(events.some(e => e.destinations.includes('realtime')) && ['platform', 'category', 'user'].includes(d.domain) ? ['注意：platform／category／user 的部分事件雖設 realtime destination，現有 consumer 沒有對應訊息；看「管理設定：立即、快照、批次與重新載入」。'] : [])] };
+  return { ...a, ...d, id: d.id, summary: a.logic, timing: a.timing, nodes, refs: undefined, edges: nodes.slice(1).map((_, i) => ({ from: i, to: i + 1, label: i === 6 ? '提交後非同步' : '接著', async: i === 6 })), notes: [a.timing, ...(events.some(e => e.destinations.includes('realtime')) && ['platform', 'category', 'user'].includes(d.domain) ? ['注意：platform／category／user 的部分事件雖設 realtime destination，現有 consumer 沒有對應訊息；看左側「編輯、預覽、確認、衝突與草稿保留」。'] : [])] };
 });
 for (const f of [...flows,...architectureFlows]) {
   f.nodes.forEach(n => n.refs = n.refs.map(p => typeof p === 'string' ? ref(p) : p));
@@ -115,7 +115,8 @@ for (const [key, spec] of Object.entries(operationSpecs)) {
 }
 for (const [key, initial] of Object.entries(JSON.parse(read('config/data-retention.config.json')))) {
   if (!retentionDescriptions[key]) throw new Error('缺retention解說：' + key);
-  settings.push({ key, title: retentionDescriptions[key], store:'runtime_settings.data_retention_settings', effect:retentionDescriptions[key], timing:retentionBehavior(key).timing, initial, range:typeof initial === 'boolean' ? '開／關' : key.endsWith('Hours') ? '1–87600小時' : '1–3650天', target:'savePlatformSettings',section:'資料保留', refs:[ref('config/data-retention.config.json', '"'+key+'"'),ref('database/migrations/0054_scoped_retention_policy_changes.sql','retention_change_scopes'),ref('database/migrations/0055_notification_expiry_event_time.sql')] });
+  if (!retentionTitles[key]) throw new Error('缺保留設定名稱：'+key);
+  settings.push({ key, title: retentionTitles[key], store:'runtime_settings.data_retention_settings', effect:retentionDescriptions[key], timing:retentionBehavior(key).timing, initial, range:typeof initial === 'boolean' ? '開／關' : key.endsWith('Hours') ? '1–87600小時' : '1–3650天', target:'savePlatformSettings',section:'資料保留', refs:[ref('config/data-retention.config.json', '"'+key+'"'),ref('database/migrations/0054_scoped_retention_policy_changes.sql','retention_change_scopes'),ref('database/migrations/0055_notification_expiry_event_time.sql')] });
 }
 for (const item of settings.filter(s=>!s.refs.length)) {
   const action = actions[item.target];
@@ -155,10 +156,16 @@ for (const p of sourcePaths.filter(p=>p.endsWith('.sql')).sort()) {
   for (const statement of sql.matchAll(tableStatements)) {
     const table=statement[1].replaceAll('"','').split('.').at(-1),body=statement[2];
     for (const drop of body.matchAll(/DROP\s+CONSTRAINT\s+(?:IF\s+EXISTS\s+)?([\w"]+)/gi)) foreignKeys.delete(table+'.'+drop[1].replaceAll('"',''));
-    const pattern=new RegExp('(?:CONSTRAINT\\s+([\\w"]+)\\s+)?FOREIGN\\s+KEY\\s*\\(([^)]+)\\)\\s+REFERENCES\\s+('+identifiers+')\\s*\\(([^)]+)\\)(?:\\s+ON\\s+DELETE\\s+(CASCADE|RESTRICT|SET\\s+NULL|NO\\s+ACTION))?','gi');
+    const pattern=new RegExp('(?:CONSTRAINT\\s+([\\w"]+)\\s+)?FOREIGN\\s+KEY\\s*\\(([^)]+)\\)\\s+REFERENCES\\s+('+identifiers+')\\s*\\(([^)]+)\\)(?:\\s+ON\\s+UPDATE\\s+(?:CASCADE|RESTRICT|SET\\s+NULL|NO\\s+ACTION))?(?:\\s+ON\\s+DELETE\\s+(CASCADE|RESTRICT|SET\\s+NULL|NO\\s+ACTION))?','gi');
     for (const fk of body.matchAll(pattern)) {
       const target=fk[3].replaceAll('"','').split('.').at(-1),column=fk[2].replaceAll('"',''),targetColumn=fk[4].replaceAll('"','');
       foreignKeys.set(table+'.'+(fk[1]?.replaceAll('"','')||column),{table,target,column,targetColumn,delete:fk[5]||'SQL 預設',refs:[ref(p,fk[0])],label:column+' → '+target+'.'+targetColumn});
+    }
+    const inline=new RegExp('(?:^|[,\\n])\\s*([\\w"]+)\\s+[^,\\n]*?\\bREFERENCES\\s+('+identifiers+')\\s*\\(([^)]+)\\)(?:\\s+ON\\s+DELETE\\s+(CASCADE|RESTRICT|SET\\s+NULL|NO\\s+ACTION))?','gi');
+    for (const fk of body.matchAll(inline)) {
+      const column=fk[1].replaceAll('"',''),target=fk[2].replaceAll('"','').split('.').at(-1),targetColumn=fk[3].replaceAll('"','');
+      if (!models.find(m=>m.name===table)?.columns.some(c=>c.name===column)) continue;
+      foreignKeys.set(table+'.inline:'+column,{table,target,column,targetColumn,delete:fk[4]||'SQL 預設',refs:[ref(p,fk[0])],label:column+' → '+target+'.'+targetColumn});
     }
   }
 }
@@ -170,6 +177,9 @@ for (const fk of foreignKeys.values()) {
   source.refs.push(...fk.refs);
 }
 for (const m of models) for (const related of m.related) if (!models.some(other=>other.name===related)) throw new Error('資料模型關聯不存在：'+m.name+' → '+related);
+for (const m of models) {
+  m.refs.push(...sourcePaths.filter(p=>p.endsWith('.sql')&&sources[p].text.includes('app_private.'+m.name)).sort().reverse().slice(0,3).map(p=>ref(p,'app_private.'+m.name)));
+}
 // 以 migration 的 CREATE/DROP 次序重建現存 triggers；舊 baseline 中退役的觸發器不列為現在存在。
 const triggerMap = new Map();
 const functionRefs = new Map();
@@ -191,6 +201,7 @@ for (const p of sourcePaths.filter(p=>p.endsWith('.sql')).sort()) {
   }
 }
 for (const trigger of triggerMap.values()) {
+  if (trigger.description.startsWith('見觸發函式')) throw new Error('缺現存 trigger 解說：'+trigger.func);
   const latest = functionRefs.get(trigger.func);
   if (latest && !trigger.refs.some(r=>r.path===latest.path&&r.line===latest.line)) trigger.refs.unshift(latest);
 }
@@ -220,11 +231,17 @@ const specialFlows = [
 const triggerFlows=[...triggerMap.values()].map(t=>({id:'trigger:'+t.table+'.'+t.name,title:t.name,group:'自動化與時間',section:'資料庫 Trigger · '+t.table.split('.').at(-1),kind:'sequence',summary:t.description,notes:['此清單依 migration CREATE/DROP 順序重建；未查部署端是否已套齊。'],nodes:[node('SQL 寫入 '+t.table,'使用者／管理員 action、Queue 工作或 migration 的 SQL 達到 trigger 條件時觸發；不是獨立 cron。','database',t.refs),{...node('觸發時點與條件',t.definition,'database',t.refs),code:t.definition},node('執行 '+t.func,t.description+'。點下方來源可讀最新函式實作；同交易內執行，發生例外原 SQL 一起回滾。','database',t.refs),node('提交後可見的影響',t.description+'；若排了背景工作，交易提交只表示責任已記錄，外部工作另由 Queue 處理。','database',t.refs)],edges:[{from:0,to:1,label:'SQL 條件'},{from:1,to:2,label:'同步觸發'},{from:2,to:3,label:'同一交易'}]}));
 const ordinaryFlows=[...flows,...specialFlows,...actionFlows].map(f=>{
   const administrator=Boolean(f.permission)||['管理設定','管理觀測'].includes(f.group);
-  return {...f,section:f.group==='先看全貌'?'共用讀取':f.group,group:f.group==='時間與自動'?'自動化與時間':administrator?'管理員操作':'使用者操作',kind:f.kind||'sequence'};
+  const automatic=f.group==='時間與自動'||f.id==='notification-delivery';
+  const section=administrator&&f.domain==='user'?'帳號與權限':administrator&&f.domain==='category'?'內容、平台與政策':f.group==='先看全貌'?'共用讀取':automatic?'排程、事件與時間條件':f.group;
+  return {...f,section,group:automatic?'自動化與時間':administrator?'管理員操作':'使用者操作',kind:f.kind||'sequence'};
 });
 const allFlows = [...architectureFlows,makeModelOverview(models),...makeModelFlows(models),...ordinaryFlows,...makeSettingFlows(settings,ref),...triggerFlows];
 const allIds = new Set(allFlows.map(f=>f.id));
 if (allIds.size !== allFlows.length) throw new Error('重複流程ID');
+for (const f of allFlows) {
+  for (const edge of f.edges) if (!f.nodes[edge.from]||!f.nodes[edge.to]) throw new Error('連線節點不存在：'+f.id);
+  for (const n of f.nodes) for (const r of n.refs) if (!sources[r.path]||r.line<1||r.line>sources[r.path].text.split('\n').length) throw new Error('原碼位置不存在：'+f.id+' / '+r.path+':'+r.line);
+}
 for (const setting of settings) if (!allIds.has(setting.target)) throw new Error('無法連結設定流程：' + setting.key);
 const data = {
   meta:{repo:root.replaceAll('\\','/'),head:git('rev-parse','HEAD'),dirty:Boolean(git('status','--porcelain')),date:new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Taipei',dateStyle:'short',timeStyle:'medium'}).format(new Date()),scope:'目前程式快照；非正式環境設定、非外部服務實測',actionCount:definitions.length,flowCount:allFlows.length,modelCount:models.length,sourceCount:Object.keys(sources).length,triggerCount:triggerMap.size,regenerate:'node tools/project-map/build.mjs'},

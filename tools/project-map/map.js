@@ -13,7 +13,7 @@ const icons = {
 function icon(name) { return '<svg viewBox="0 0 24 24" aria-hidden="true">'+icons[name]+'</svg>'; }
 for (const [id,name] of [['close-nav','close'],['close-inspector','close'],['clear-search','close'],['open-nav','menu'],['zoom-in','plus'],['zoom-out','minus']]) $(id).innerHTML=icon(name);
 
-const flowSearch = new Map(DATA.flows.map(f=>[f.id,[f.title,f.summary,f.section,f.id,...f.nodes.map(n=>n.text)].join(' ').toLowerCase()]));
+const flowSearch = new Map(DATA.flows.map(f=>[f.id,[f.title,f.summary,f.section,f.id,f.logic,f.db,f.entry,...(f.id.startsWith('trigger:')||f.setting?[]:f.nodes.map(n=>n.text))].join(' ').toLowerCase()]));
 const sources = Object.keys(DATA.sources).sort();
 const openGroups = new Set(['程式架構']);
 const openSections = new Set();
@@ -53,8 +53,8 @@ function renderNavigation() {
     if (details.open) set.add(key); else set.delete(key);
   }));
 }
-function closeNavigation() { $('navigation').classList.remove('open'); $('nav-scrim').hidden=true; }
-function openNavigation() { $('navigation').classList.add('open'); $('nav-scrim').hidden=false; $('search').focus(); }
+function closeNavigation() { $('navigation').classList.remove('open'); $('nav-scrim').hidden=true; $('navigation').inert=window.innerWidth<=640; }
+function openNavigation() { $('navigation').inert=false; $('navigation').classList.add('open'); $('nav-scrim').hidden=false; $('search').focus(); }
 $('open-nav').onclick=openNavigation;
 $('close-nav').onclick=closeNavigation;
 $('nav-scrim').onclick=closeNavigation;
@@ -70,10 +70,9 @@ $('nav-tree').onclick=event=>{
 };
 
 function positions() {
-  return state.flow.nodes.map((node,i)=>{
-    if (node.x!==undefined) return {x:node.x,y:node.y};
-    const row=Math.floor(i/3),col=i%3;
-    return {x:(row%2?2-col:col)*370,y:row*250};
+  return state.flow.nodes.map((_,i)=>{
+    if(window.innerWidth<=640) return {x:0,y:i*250};
+    return {x:i*370,y:0};
   });
 }
 function dimensions() {
@@ -85,7 +84,17 @@ function edgeMarkup(edge,points) {
   const ac={x:a.x+cardSize.width/2,y:a.y+cardSize.height/2};
   const bc={x:b.x+cardSize.width/2,y:b.y+cardSize.height/2};
   let start,end,d;
-  if (Math.abs(bc.x-ac.x)>Math.abs(bc.y-ac.y)) {
+  if(Math.abs(edge.to-edge.from)>1) {
+    // 關係圖的跨節點連線繞過卡片；操作順序本身仍只有向右／向下。
+    const lane=window.innerWidth<=640?28+((edge.from+edge.to)%4)*8:56+((edge.from+edge.to)%4)*28;
+    if(window.innerWidth<=640) {
+      start={x:a.x+cardSize.width,y:ac.y};end={x:b.x+cardSize.width,y:bc.y};
+      d=`M${start.x},${start.y} C${start.x+lane},${start.y} ${end.x+lane},${end.y} ${end.x},${end.y}`;
+    } else {
+      start={x:ac.x,y:a.y+cardSize.height};end={x:bc.x,y:b.y+cardSize.height};
+      d=`M${start.x},${start.y} C${start.x},${start.y+lane} ${end.x},${end.y+lane} ${end.x},${end.y}`;
+    }
+  } else if (Math.abs(bc.x-ac.x)>Math.abs(bc.y-ac.y)) {
     const direction=bc.x>ac.x?1:-1;
     start={x:ac.x+direction*cardSize.width/2,y:ac.y};
     end={x:bc.x-direction*cardSize.width/2,y:bc.y};
@@ -98,7 +107,8 @@ function edgeMarkup(edge,points) {
     const bend=Math.max(38,Math.abs(end.y-start.y)/2);
     d=`M${start.x},${start.y} C${start.x},${start.y+direction*bend} ${end.x},${end.y-direction*bend} ${end.x},${end.y}`;
   }
-  const labelX=(start.x+end.x)/2,labelY=(start.y+end.y)/2-8;
+  const labelX=window.innerWidth<=640&&Math.abs(edge.to-edge.from)>1?cardSize.width-24:(start.x+end.x)/2;
+  const labelY=(start.y+end.y)/2-8;
   return '<path class="connection'+(edge.async?' async':'')+'" d="'+d+'" marker-end="url(#arrow)"/><text class="edge-label" x="'+labelX+'" y="'+labelY+'">'+esc(edge.label)+'</text>';
 }
 function renderGraph() {
@@ -114,18 +124,18 @@ function selectFlow(id) {
   closeInspector(); $('document').hidden=true; $('canvas').hidden=false;
   renderGraph(); renderNavigation();
   requestAnimationFrame(()=>{
-    if (window.innerWidth<=640) { state.scale=1;state.fitted=false;centerNode(0); }
-    else fitGraph();
+    startGraph();
   });
   $('announce').textContent='已開啟 '+state.flow.title+'；點選卡片查看解說。';
 }
 function viewport() {
   const rect=$('canvas').getBoundingClientRect();
-  const height=rect.height-(window.innerWidth<=640&&!$('inspector').hidden?$('inspector').offsetHeight:0);
-  const width=rect.width-(window.innerWidth>640&&window.innerWidth<=920&&!$('inspector').hidden?$('inspector').offsetWidth:0);
+  const height=rect.height-(window.innerWidth<=640&&!$('inspector').hidden?$('inspector').offsetHeight+24:0);
+  const width=rect.width-(window.innerWidth>640&&!$('inspector').hidden?$('inspector').offsetWidth+48:0);
   return {width,height};
 }
-function applyCamera() {
+function applyCamera(smooth=false) {
+  $('world').classList.toggle('camera-motion',smooth);
   $('world').style.transform=`translate(${state.x}px,${state.y}px) scale(${state.scale})`;
   $('zoom-level').value=Math.round(state.scale*100)+'%';
 }
@@ -135,13 +145,20 @@ function fitGraph() {
   state.scale=Math.max(.15,state.scale);
   state.x=(area.width-size.width*state.scale)/2;
   state.y=(area.height-64-size.height*state.scale)/2;
-  state.fitted=true; applyCamera();
+  state.fitted=true; applyCamera(true);
+}
+function startGraph() {
+  const area=viewport();
+  state.scale=1;state.fitted=false;
+  state.x=window.innerWidth<=640?(area.width-cardSize.width)/2:40;
+  state.y=window.innerWidth<=640?80:(area.height-cardSize.height)/2-24;
+  applyCamera(true);
 }
 function centerNode(index=state.selected) {
   const point=positions()[index],area=viewport();
   state.x=(area.width-cardSize.width*state.scale)/2-point.x*state.scale;
   state.y=(area.height-cardSize.height*state.scale)/2-point.y*state.scale-24;
-  applyCamera();
+  applyCamera(true);
 }
 function zoom(factor,x,y) {
   const area=viewport(); x??=area.width/2; y??=area.height/2;
@@ -280,6 +297,15 @@ $('canvas').addEventListener('keydown',event=>{
   else if(state.selected!==null&&event.key==='ArrowLeft'){event.preventDefault();selectNode(Math.max(0,state.selected-1));}
 });
 document.addEventListener('keydown',event=>{if(event.key==='Escape'){if($('navigation').classList.contains('open'))closeNavigation();else closeInspector();}});
-new ResizeObserver(()=>{if(state.view==='graph'&&state.fitted)fitGraph();}).observe($('canvas'));
+let previousWidth=window.innerWidth;
+new ResizeObserver(()=>{
+  $('navigation').inert=window.innerWidth<=640&&!$('navigation').classList.contains('open');
+  if(state.view!=='graph')return;
+  if((previousWidth<=640)!==(window.innerWidth<=640))renderGraph();
+  previousWidth=window.innerWidth;
+  if(state.selected!==null)centerNode();
+  else if(state.fitted)fitGraph();
+  else startGraph();
+}).observe($('canvas'));
 $('nav-footer').innerHTML='<details><summary>快照 '+DATA.meta.head.slice(0,8)+' · '+DATA.meta.actionCount+' actions</summary>'+paragraphs([DATA.meta.date+'（臺灣）',DATA.meta.modelCount+' 模型 · '+DATA.settings.length+' 組設定 · '+DATA.meta.triggerCount+' triggers',DATA.meta.scope,'更新指令：'+DATA.meta.regenerate])+'</details>';
 renderNavigation();selectFlow('overview');
