@@ -6,6 +6,9 @@ import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { Script } from 'node:vm';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { X, Menu, Plus, Minus } from 'lucide-react';
 import { parse as babelParse } from '@babel/parser';
 import { actions, flows, groups, categorySettings, policyDescriptions, retentionDescriptions, triggerDescriptions } from './content.mjs';
 import { architectureFlows } from './architecture.mjs';
@@ -31,7 +34,6 @@ const ref = (p, anchor) => {
   return { path: p, line };
 };
 const registryPath = 'cloudflare/src/backend/actions/action-registry.ts';
-const registry = read(registryPath);
 const definitions = [];
 visit(parse(registryPath), candidate => {
   if (candidate.type !== 'CallExpression' || candidate.callee.name !== 'action' || candidate.arguments[0]?.type !== 'StringLiteral') return;
@@ -212,7 +214,7 @@ for (const p of sourcePaths.filter(p=>(p.startsWith('src/')||p.startsWith('cloud
     if (/setInterval|setTimeout|\balarm\(|expiresAt|next_attempt_at|AbortSignal\.timeout|TTL_MS|_TIMEOUT_MS|_INTERVAL_MS|_LIFETIME_SECONDS|_SPACING_MS/.test(line)) timers.push({path:p,line:i+1,text:line.trim()});
   });
 }
-const routes = sourcePaths.filter(p=>p.startsWith('src/app/')&&p.endsWith('/page.tsx')).map(p=>({path:p,route:p.slice(7,-9).split('/').filter(s=>s&&!/^\([^)]*\)$/.test(s)&&!s.startsWith('@')).map(s=>s.replace(/^\(\.\)/,'')).join('/')||'/',sheet:p.includes('/@sheet/'),refs:[ref(p)]}));
+const routes = sourcePaths.filter(p=>p.startsWith('src/app/')&&p.endsWith('/page.tsx')).map(p=>({path:p,route:'/'+p.slice(7,-9).split('/').filter(s=>s&&!/^\([^)]*\)$/.test(s)&&!s.startsWith('@')).map(s=>s.replace(/^\(\.\)/,'')).join('/'),sheet:p.includes('/@sheet/'),refs:[ref(p)]}));
 const endpoints = [
   ['/v1/actions','POST','全部' + definitions.length + '種 action 與額外 healthcheck','overview'],
   ['/v1/auth/login-check','POST','Origin/IP限流 + auth_login Turnstile','auth-login'],
@@ -249,7 +251,10 @@ for (const f of allFlows) {
 }
 for (const setting of settings) if (!allIds.has(setting.target)) throw new Error('無法連結設定流程：' + setting.key);
 const data = {
-  meta:{repo:root.replaceAll('\\','/'),head:git('rev-parse','HEAD'),dirty:Boolean(git('status','--porcelain')),date:new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Taipei',dateStyle:'short',timeStyle:'medium'}).format(new Date()),scope:'目前程式快照；非正式環境設定、非外部服務實測',actionCount:definitions.length,flowCount:allFlows.length,modelCount:models.length,sourceCount:Object.keys(sources).length,triggerCount:triggerMap.size,regenerate:'node tools/project-map/build.mjs'},
+  meta:{product:'novae',repo:root.replaceAll('\\','/'),head:git('rev-parse','HEAD'),dirty:Boolean(git('status','--porcelain')),date:new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Taipei',dateStyle:'short',timeStyle:'medium'}).format(new Date()),scope:'目前程式快照；非正式環境設定、非外部服務實測',actionCount:definitions.length,flowCount:allFlows.length,modelCount:models.length,sourceCount:Object.keys(sources).length,triggerCount:triggerMap.size,stats:definitions.length+' 個操作、'+models.length+' 個模型、'+settings.length+' 組設定',regenerate:'node tools/project-map/build.mjs'},
+  layers:{browser:'瀏覽器',worker:'Worker / DO',database:'PostgreSQL',async:'背景工作',external:'外部服務',build:'建置 / 部署'},
+  icons:Object.fromEntries(Object.entries({close:X,menu:Menu,plus:Plus,minus:Minus}).map(([name,component])=>[name,renderToStaticMarkup(createElement(component,{'aria-hidden':true}))])),
+  inventory:{intro:definitions.length+' 個 registry actions、'+settings.length+' 組設定、'+models.length+' 個表／view、'+triggerMap.size+' 個現存 triggers。每個項目都有目錄入口。',sections:[{title:'近期管理與資料變更',paragraphs:['管理設定與規則核對閱讀版本，衝突保留草稿。','0054 只清選定保留範圍；0055 通知 expiry 從事件時間計算，未完成修復可接續。','帳號限制用 target_type + uid 複合鍵，0058 清理略過續期交易鎖住的列。','saveScopeMembers 整批授權／撤銷並回完整 revision；0059 只 reconcile 被編輯帳號的正式管理員身份。']}]},
   groups,flows:allFlows,settings,models,triggers:[...triggerMap.values()],timers,routes,endpoints,sources,
 };
 const template = fs.readFileSync(path.join(here,'template.html'),'utf8');

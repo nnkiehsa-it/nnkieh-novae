@@ -142,7 +142,7 @@ Read action 與 upload URL resolution 不 claim operation，也不開 mutation t
 
 提案、設施、公告及留言的文字草稿以帳號和內容身份隔離，保存在 sessionStorage；圖片不保存。送出成功才清理對應草稿，失敗保留輸入。細節見[產品流程](product.md)。
 
-管理編輯以讀取時的 revision 為 baseline。分類、平台、政策與 scope 儲存由後端核對版本，成功回 canonical state，衝突保留草稿供重新讀取／確認。`saveScopeMembers` 將整批授權與撤銷放在同一交易；帳號規則用 `target_type + uid` 複合鍵，避免帳號前綴與 UID 的同字串互相覆盖。
+管理編輯以讀取時的 revision 為 baseline。分類、平台、政策與 scope 儲存由後端核對版本，成功回 canonical state，衝突保留草稿供重新讀取／確認。`saveScopeMembers` 將整批授權與撤銷放在同一交易；帳號規則用 `target_type + uid` 複合鍵，避免帳號前綴與 UID 的同字串互相覆蓋。
 
 管理畫面切換區域會保留各區草稿，執行儲存時鎖住會改變閱讀／修改範圍的導覽。容量等系統觀測資料重開時重新讀取，分頁失敗保留現有紀錄與重試游標。這些流程的模組對應見 `structure.md` 與[管理面板檢查](admin-console-review.md)。
 

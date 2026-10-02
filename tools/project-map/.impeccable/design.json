@@ -1,19 +1,556 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-01T16:45:56Z",
+  "generatedAt": "2026-10-02T10:23:59Z",
   "title": "Design System: Novae 程式流程地圖",
   "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "neutral",
+        "displayName": "深墨文字",
+        "tonalRamp": [
+          "oklch(15% 0.0350 247.55)",
+          "oklch(26% 0.0350 247.55)",
+          "oklch(37% 0.0350 247.55)",
+          "oklch(49% 0.0350 247.55)",
+          "oklch(60% 0.0350 247.55)",
+          "oklch(72% 0.0350 247.55)",
+          "oklch(84% 0.0350 247.55)",
+          "oklch(95% 0.0350 247.55)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "次要灰藍",
+        "tonalRamp": [
+          "oklch(15% 0.0337 250.09)",
+          "oklch(26% 0.0337 250.09)",
+          "oklch(37% 0.0337 250.09)",
+          "oklch(49% 0.0337 250.09)",
+          "oklch(60% 0.0337 250.09)",
+          "oklch(72% 0.0337 250.09)",
+          "oklch(84% 0.0337 250.09)",
+          "oklch(95% 0.0337 250.09)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "邊界灰藍",
+        "tonalRamp": [
+          "oklch(15% 0.0157 248.00)",
+          "oklch(26% 0.0157 248.00)",
+          "oklch(37% 0.0157 248.00)",
+          "oklch(49% 0.0157 248.00)",
+          "oklch(60% 0.0157 248.00)",
+          "oklch(72% 0.0157 248.00)",
+          "oklch(84% 0.0157 248.00)",
+          "oklch(95% 0.0157 248.00)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "閱讀白",
+        "tonalRamp": [
+          "oklch(15% 0.0029 264.54)",
+          "oklch(26% 0.0029 264.54)",
+          "oklch(37% 0.0029 264.54)",
+          "oklch(49% 0.0029 264.54)",
+          "oklch(60% 0.0029 264.54)",
+          "oklch(72% 0.0029 264.54)",
+          "oklch(84% 0.0029 264.54)",
+          "oklch(95% 0.0029 264.54)"
+        ]
+      },
+      "nav": {
+        "role": "neutral",
+        "displayName": "目錄霧白",
+        "tonalRamp": [
+          "oklch(15% 0.0045 258.32)",
+          "oklch(26% 0.0045 258.32)",
+          "oklch(37% 0.0045 258.32)",
+          "oklch(49% 0.0045 258.32)",
+          "oklch(60% 0.0045 258.32)",
+          "oklch(72% 0.0045 258.32)",
+          "oklch(84% 0.0045 258.32)",
+          "oklch(95% 0.0045 258.32)"
+        ]
+      },
+      "ground": {
+        "role": "neutral",
+        "displayName": "畫布灰白",
+        "tonalRamp": [
+          "oklch(15% 0.0069 247.90)",
+          "oklch(26% 0.0069 247.90)",
+          "oklch(37% 0.0069 247.90)",
+          "oklch(49% 0.0069 247.90)",
+          "oklch(60% 0.0069 247.90)",
+          "oklch(72% 0.0069 247.90)",
+          "oklch(84% 0.0069 247.90)",
+          "oklch(95% 0.0069 247.90)"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "閱讀藍",
+        "tonalRamp": [
+          "oklch(15% 0.1771 262.05)",
+          "oklch(26% 0.1771 262.05)",
+          "oklch(37% 0.1771 262.05)",
+          "oklch(49% 0.1771 262.05)",
+          "oklch(60% 0.1771 262.05)",
+          "oklch(72% 0.1771 262.05)",
+          "oklch(84% 0.1771 262.05)",
+          "oklch(95% 0.1771 262.05)"
+        ]
+      },
+      "wash": {
+        "role": "primary",
+        "displayName": "選取淡藍",
+        "tonalRamp": [
+          "oklch(15% 0.0191 263.01)",
+          "oklch(26% 0.0191 263.01)",
+          "oklch(37% 0.0191 263.01)",
+          "oklch(49% 0.0191 263.01)",
+          "oklch(60% 0.0191 263.01)",
+          "oklch(72% 0.0191 263.01)",
+          "oklch(84% 0.0191 263.01)",
+          "oklch(95% 0.0191 263.01)"
+        ]
+      },
+      "database": {
+        "role": "secondary",
+        "displayName": "資料庫褐",
+        "tonalRamp": [
+          "oklch(15% 0.0836 75.94)",
+          "oklch(26% 0.0836 75.94)",
+          "oklch(37% 0.0836 75.94)",
+          "oklch(49% 0.0836 75.94)",
+          "oklch(60% 0.0836 75.94)",
+          "oklch(72% 0.0836 75.94)",
+          "oklch(84% 0.0836 75.94)",
+          "oklch(95% 0.0836 75.94)"
+        ]
+      },
+      "async": {
+        "role": "secondary",
+        "displayName": "非同步綠",
+        "tonalRamp": [
+          "oklch(15% 0.0662 165.30)",
+          "oklch(26% 0.0662 165.30)",
+          "oklch(37% 0.0662 165.30)",
+          "oklch(49% 0.0662 165.30)",
+          "oklch(60% 0.0662 165.30)",
+          "oklch(72% 0.0662 165.30)",
+          "oklch(84% 0.0662 165.30)",
+          "oklch(95% 0.0662 165.30)"
+        ]
+      },
+      "external": {
+        "role": "secondary",
+        "displayName": "外部服務紫",
+        "tonalRamp": [
+          "oklch(15% 0.0843 305.07)",
+          "oklch(26% 0.0843 305.07)",
+          "oklch(37% 0.0843 305.07)",
+          "oklch(49% 0.0843 305.07)",
+          "oklch(60% 0.0843 305.07)",
+          "oklch(72% 0.0843 305.07)",
+          "oklch(84% 0.0843 305.07)",
+          "oklch(95% 0.0843 305.07)"
+        ]
+      },
+      "grid": {
+        "role": "neutral",
+        "displayName": "畫布點陣",
+        "tonalRamp": [
+          "oklch(15% 0.0206 250.41)",
+          "oklch(26% 0.0206 250.41)",
+          "oklch(37% 0.0206 250.41)",
+          "oklch(49% 0.0206 250.41)",
+          "oklch(60% 0.0206 250.41)",
+          "oklch(72% 0.0206 250.41)",
+          "oklch(84% 0.0206 250.41)",
+          "oklch(95% 0.0206 250.41)"
+        ]
+      },
+      "connector": {
+        "role": "neutral",
+        "displayName": "中性連線",
+        "tonalRamp": [
+          "oklch(15% 0.0363 244.25)",
+          "oklch(26% 0.0363 244.25)",
+          "oklch(37% 0.0363 244.25)",
+          "oklch(49% 0.0363 244.25)",
+          "oklch(60% 0.0363 244.25)",
+          "oklch(72% 0.0363 244.25)",
+          "oklch(84% 0.0363 244.25)",
+          "oklch(95% 0.0363 244.25)"
+        ]
+      },
+      "dark-ink": {
+        "role": "neutral",
+        "displayName": "暗色深墨文字",
+        "tonalRamp": [
+          "oklch(15% 0.0138 247.97)",
+          "oklch(26% 0.0138 247.97)",
+          "oklch(37% 0.0138 247.97)",
+          "oklch(49% 0.0138 247.97)",
+          "oklch(60% 0.0138 247.97)",
+          "oklch(72% 0.0138 247.97)",
+          "oklch(84% 0.0138 247.97)",
+          "oklch(95% 0.0138 247.97)"
+        ]
+      },
+      "dark-muted": {
+        "role": "neutral",
+        "displayName": "暗色次要灰藍",
+        "tonalRamp": [
+          "oklch(15% 0.0290 248.20)",
+          "oklch(26% 0.0290 248.20)",
+          "oklch(37% 0.0290 248.20)",
+          "oklch(49% 0.0290 248.20)",
+          "oklch(60% 0.0290 248.20)",
+          "oklch(72% 0.0290 248.20)",
+          "oklch(84% 0.0290 248.20)",
+          "oklch(95% 0.0290 248.20)"
+        ]
+      },
+      "dark-line": {
+        "role": "neutral",
+        "displayName": "暗色邊界灰藍",
+        "tonalRamp": [
+          "oklch(15% 0.0345 244.00)",
+          "oklch(26% 0.0345 244.00)",
+          "oklch(37% 0.0345 244.00)",
+          "oklch(49% 0.0345 244.00)",
+          "oklch(60% 0.0345 244.00)",
+          "oklch(72% 0.0345 244.00)",
+          "oklch(84% 0.0345 244.00)",
+          "oklch(95% 0.0345 244.00)"
+        ]
+      },
+      "dark-paper": {
+        "role": "neutral",
+        "displayName": "暗色閱讀白",
+        "tonalRamp": [
+          "oklch(15% 0.0331 242.34)",
+          "oklch(26% 0.0331 242.34)",
+          "oklch(37% 0.0331 242.34)",
+          "oklch(49% 0.0331 242.34)",
+          "oklch(60% 0.0331 242.34)",
+          "oklch(72% 0.0331 242.34)",
+          "oklch(84% 0.0331 242.34)",
+          "oklch(95% 0.0331 242.34)"
+        ]
+      },
+      "dark-nav": {
+        "role": "neutral",
+        "displayName": "暗色目錄霧白",
+        "tonalRamp": [
+          "oklch(15% 0.0315 241.96)",
+          "oklch(26% 0.0315 241.96)",
+          "oklch(37% 0.0315 241.96)",
+          "oklch(49% 0.0315 241.96)",
+          "oklch(60% 0.0315 241.96)",
+          "oklch(72% 0.0315 241.96)",
+          "oklch(84% 0.0315 241.96)",
+          "oklch(95% 0.0315 241.96)"
+        ]
+      },
+      "dark-ground": {
+        "role": "neutral",
+        "displayName": "暗色畫布灰白",
+        "tonalRamp": [
+          "oklch(15% 0.0268 242.49)",
+          "oklch(26% 0.0268 242.49)",
+          "oklch(37% 0.0268 242.49)",
+          "oklch(49% 0.0268 242.49)",
+          "oklch(60% 0.0268 242.49)",
+          "oklch(72% 0.0268 242.49)",
+          "oklch(84% 0.0268 242.49)",
+          "oklch(95% 0.0268 242.49)"
+        ]
+      },
+      "dark-accent": {
+        "role": "primary",
+        "displayName": "暗色閱讀藍",
+        "tonalRamp": [
+          "oklch(15% 0.0973 264.34)",
+          "oklch(26% 0.0973 264.34)",
+          "oklch(37% 0.0973 264.34)",
+          "oklch(49% 0.0973 264.34)",
+          "oklch(60% 0.0973 264.34)",
+          "oklch(72% 0.0973 264.34)",
+          "oklch(84% 0.0973 264.34)",
+          "oklch(95% 0.0973 264.34)"
+        ]
+      },
+      "dark-wash": {
+        "role": "primary",
+        "displayName": "暗色選取淡藍",
+        "tonalRamp": [
+          "oklch(15% 0.0597 253.10)",
+          "oklch(26% 0.0597 253.10)",
+          "oklch(37% 0.0597 253.10)",
+          "oklch(49% 0.0597 253.10)",
+          "oklch(60% 0.0597 253.10)",
+          "oklch(72% 0.0597 253.10)",
+          "oklch(84% 0.0597 253.10)",
+          "oklch(95% 0.0597 253.10)"
+        ]
+      },
+      "dark-database": {
+        "role": "secondary",
+        "displayName": "暗色資料庫褐",
+        "tonalRamp": [
+          "oklch(15% 0.0876 81.57)",
+          "oklch(26% 0.0876 81.57)",
+          "oklch(37% 0.0876 81.57)",
+          "oklch(49% 0.0876 81.57)",
+          "oklch(60% 0.0876 81.57)",
+          "oklch(72% 0.0876 81.57)",
+          "oklch(84% 0.0876 81.57)",
+          "oklch(95% 0.0876 81.57)"
+        ]
+      },
+      "dark-async": {
+        "role": "secondary",
+        "displayName": "暗色非同步綠",
+        "tonalRamp": [
+          "oklch(15% 0.0598 164.08)",
+          "oklch(26% 0.0598 164.08)",
+          "oklch(37% 0.0598 164.08)",
+          "oklch(49% 0.0598 164.08)",
+          "oklch(60% 0.0598 164.08)",
+          "oklch(72% 0.0598 164.08)",
+          "oklch(84% 0.0598 164.08)",
+          "oklch(95% 0.0598 164.08)"
+        ]
+      },
+      "dark-external": {
+        "role": "secondary",
+        "displayName": "暗色外部服務紫",
+        "tonalRamp": [
+          "oklch(15% 0.0728 307.00)",
+          "oklch(26% 0.0728 307.00)",
+          "oklch(37% 0.0728 307.00)",
+          "oklch(49% 0.0728 307.00)",
+          "oklch(60% 0.0728 307.00)",
+          "oklch(72% 0.0728 307.00)",
+          "oklch(84% 0.0728 307.00)",
+          "oklch(95% 0.0728 307.00)"
+        ]
+      },
+      "dark-grid": {
+        "role": "neutral",
+        "displayName": "暗色畫布點陣",
+        "tonalRamp": [
+          "oklch(15% 0.0345 240.86)",
+          "oklch(26% 0.0345 240.86)",
+          "oklch(37% 0.0345 240.86)",
+          "oklch(49% 0.0345 240.86)",
+          "oklch(60% 0.0345 240.86)",
+          "oklch(72% 0.0345 240.86)",
+          "oklch(84% 0.0345 240.86)",
+          "oklch(95% 0.0345 240.86)"
+        ]
+      },
+      "dark-connector": {
+        "role": "neutral",
+        "displayName": "暗色中性連線",
+        "tonalRamp": [
+          "oklch(15% 0.0379 244.46)",
+          "oklch(26% 0.0379 244.46)",
+          "oklch(37% 0.0379 244.46)",
+          "oklch(49% 0.0379 244.46)",
+          "oklch(60% 0.0379 244.46)",
+          "oklch(72% 0.0379 244.46)",
+          "oklch(84% 0.0379 244.46)",
+          "oklch(95% 0.0379 244.46)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "流程標題",
+        "purpose": "畫布左上目前流程。"
+      },
+      "title": {
+        "displayName": "節點標題",
+        "purpose": "相鄰步驟標題。"
+      },
+      "body": {
+        "displayName": "閱讀內文",
+        "purpose": "一般控制與完整解說基準。"
+      },
+      "summary": {
+        "displayName": "節點摘要",
+        "purpose": "最多三行的節點說明。"
+      },
+      "label": {
+        "displayName": "短標籤",
+        "purpose": "搜尋與短控制文字。"
+      },
+      "code": {
+        "displayName": "原碼",
+        "purpose": "帶行號的原碼閱讀。"
+      }
+    },
     "shadows": [
-      { "name": "mobile-drawer", "value": "8px 0 24px #24344a24" }
+      {
+        "name": "inspector-light",
+        "value": "0 16px 56px rgb(30 52 77 / .16)",
+        "purpose": "亮色桌面解說。"
+      },
+      {
+        "name": "inspector-dark",
+        "value": "0 16px 56px rgb(5 13 21 / .4)",
+        "purpose": "暗色桌面解說。"
+      },
+      {
+        "name": "inspector-mobile",
+        "value": "0 8px 32px rgb(30 41 52 / .18)",
+        "purpose": "手機底部解說。"
+      }
     ],
     "motion": [
-      { "name": "control-state", "value": "background-color .12s, border-color .12s" },
-      { "name": "source-highlight", "value": "highlight-in .3s ease-out" }
+      {
+        "name": "camera-motion",
+        "value": "transform .32s cubic-bezier(.16,1,.3,1)",
+        "purpose": "允許動態時的節點定位。"
+      },
+      {
+        "name": "node-state",
+        "value": "border-color .15s, background-color .15s",
+        "purpose": "節點狀態回饋。"
+      },
+      {
+        "name": "inspector-reveal",
+        "value": "reveal .28s cubic-bezier(.16,1,.3,1)",
+        "purpose": "由 opacity .3、translateX(12px) 與 clip-path 揭露面板。"
+      },
+      {
+        "name": "mobile-navigation",
+        "value": "transform .24s cubic-bezier(.16,1,.3,1)",
+        "purpose": "手機目錄展開。"
+      },
+      {
+        "name": "reduced-node-state",
+        "value": "background-color .1s",
+        "purpose": "減少動態時的底色回饋。"
+      },
+      {
+        "name": "reduced-inspector",
+        "value": "appear .1s",
+        "purpose": "減少動態時由 opacity .6 淡入，不位移。"
+      }
     ],
     "breakpoints": [
-      { "name": "compact-desktop", "value": "1150px" },
-      { "name": "bottom-inspector", "value": "900px" },
-      { "name": "mobile-drawer", "value": "600px" }
+      {
+        "name": "compact-desktop",
+        "value": "1200px"
+      },
+      {
+        "name": "compact-inspector",
+        "value": "920px"
+      },
+      {
+        "name": "mobile-drawer-and-inspector",
+        "value": "640px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "一般按鈕",
+      "kind": "button",
+      "refersTo": "button-default",
+      "description": "一般操作與上／下一步控制。",
+      "html": "<button class=\"ds-button\">下一步</button>",
+      "css": ".ds-button{font-family:system-ui, \"Microsoft JhengHei\", sans-serif;font-size:14px;line-height:1.7;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:8px 12px;cursor:pointer}.ds-button:hover:not(:disabled),.ds-button:active:not(:disabled){background:var(--wash);color:var(--accent)}.ds-button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.ds-button:disabled{opacity:.45;cursor:default}"
+    },
+    {
+      "name": "亮暗色按鈕",
+      "kind": "button",
+      "refersTo": "button-theme",
+      "description": "目錄工具名稱旁的主色控制。",
+      "html": "<button class=\"ds-theme\" aria-label=\"切換亮暗色\">深色</button>",
+      "css": ".ds-theme{font-family:system-ui, \"Microsoft JhengHei\", sans-serif;font-size:12px;line-height:1.7;background:var(--wash);color:var(--accent);border:0;border-radius:14px;padding:6px 10px;white-space:nowrap;cursor:pointer}.ds-theme:hover,.ds-theme:active{background:var(--wash);color:var(--accent)}.ds-theme:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "搜尋欄位",
+      "kind": "input",
+      "refersTo": "search-input",
+      "description": "可見用途標籤與目錄搜尋。",
+      "html": "<label class=\"ds-search-label\" for=\"ds-search\">搜尋操作、設定、模型與原碼</label><input class=\"ds-search\" id=\"ds-search\" type=\"search\" placeholder=\"輸入關鍵字\">",
+      "css": ".ds-search-label{font-family:system-ui, \"Microsoft JhengHei\", sans-serif;display:block;color:var(--muted);font-size:12px;margin-bottom:8px}.ds-search{font-family:system-ui, \"Microsoft JhengHei\", sans-serif;width:100%;color:var(--ink);font-size:14px;line-height:1.7;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:10px 36px 10px 12px;caret-color:var(--accent)}.ds-search::placeholder{color:var(--muted)}.ds-search:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "目錄選項",
+      "kind": "nav",
+      "refersTo": "navigation-active",
+      "description": "底色、字重及主色共同表示目前流程。",
+      "html": "<nav class=\"ds-nav\" aria-label=\"地圖目錄\"><button class=\"ds-nav-item\">程式目錄</button><button class=\"ds-nav-item ds-active\" aria-current=\"true\">目前流程</button></nav>",
+      "css": ".ds-nav{background:var(--nav);padding:8px}.ds-nav-item{font-family:system-ui, \"Microsoft JhengHei\", sans-serif;display:block;width:100%;text-align:left;color:var(--ink);font-size:14px;line-height:1.5;background:transparent;border:0;border-radius:14px;padding:10px 12px;margin:4px 0;overflow-wrap:anywhere;cursor:pointer}.ds-nav-item.ds-active{background:var(--wash);color:var(--accent);font-weight:600}.ds-nav-item:hover,.ds-nav-item:active{background:var(--wash);color:var(--accent)}.ds-nav-item:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "流程節點",
+      "kind": "card",
+      "refersTo": "flow-node",
+      "description": "固定尺寸的步驟、層級、標題與摘要。",
+      "html": "<button class=\"ds-node\" aria-pressed=\"false\"><span class=\"ds-meta\"><span class=\"ds-step\">1</span><span class=\"ds-layer\">瀏覽器</span></span><span class=\"ds-title\">畫面接收操作</span><span class=\"ds-text\">整理欄位與身份，交給下一層處理。</span></button>",
+      "css": ".ds-node{font-family:system-ui, \"Microsoft JhengHei\", sans-serif;display:flex;flex-direction:column;gap:8px;width:276px;height:196px;padding:16px;text-align:left;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:24px;cursor:pointer}.ds-node:hover{border-color:var(--accent);background:var(--paper)}.ds-node[aria-pressed=true]{border:2px solid var(--accent);padding:15px;background:var(--wash)}.ds-node:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.ds-meta{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11px;line-height:1.7}.ds-step{display:grid;place-items:center;min-width:24px;height:24px;border-radius:8px;background:var(--ground);color:var(--ink);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}.ds-layer{color:var(--accent)}.ds-title{font-size:17px;font-weight:650;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;flex-shrink:0}.ds-text{font-size:13px;line-height:1.75;color:var(--muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}@media(prefers-reduced-motion:no-preference){.ds-node{transition:border-color .15s,background-color .15s}}"
+    },
+    {
+      "name": "浮動解說",
+      "kind": "custom",
+      "refersTo": "floating-inspector",
+      "description": "完整內容有獨立捲動區與底部逐步控制。",
+      "html": "<aside class=\"ds-inspector\" aria-label=\"卡片解說\"><header class=\"ds-head\"><span>目前流程 · 步驟 1</span><button class=\"ds-close\" aria-label=\"關閉卡片解說\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m6 6 12 12M18 6 6 18\"/></svg></button></header><div class=\"ds-content\"><h2>畫面接收操作</h2><p>摘要以外的完整解說在面板內閱讀。</p></div><footer class=\"ds-steps\"><button disabled>上一步</button><output>1 / 5</output><button>下一步</button></footer></aside>",
+      "css": ".ds-inspector{font-family:system-ui, \"Microsoft JhengHei\", sans-serif;width:380px;max-width:100%;color:var(--ink);background:var(--paper);border-radius:24px;box-shadow:var(--shadow);overflow:hidden}.ds-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 20px;border-bottom:1px solid var(--line);color:var(--muted);font-size:11px;line-height:1.7}.ds-inspector button{font-family:system-ui, \"Microsoft JhengHei\", sans-serif;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:8px 12px;cursor:pointer}.ds-inspector button:hover:not(:disabled),.ds-inspector button:active:not(:disabled){background:var(--wash);color:var(--accent)}.ds-inspector button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.ds-inspector button:disabled{opacity:.45;cursor:default}.ds-inspector .ds-close{width:36px;height:36px;padding:0;display:grid;place-items:center}.ds-close svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round}.ds-content{padding:24px;overflow:auto}.ds-content h2{margin:0;font-size:22px;font-weight:650;line-height:1.55}.ds-content p{margin:16px 0 0;font-size:14px;line-height:1.85}.ds-steps{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}.ds-steps button{font-size:12px;min-height:40px}.ds-steps output{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}"
+    },
+    {
+      "name": "原碼來源",
+      "kind": "button",
+      "refersTo": "source-link",
+      "description": "可換行的內嵌原碼定位。",
+      "html": "<button class=\"ds-source\">tools/project-map/map.js:1</button>",
+      "css": ".ds-source{display:block;width:100%;text-align:left;font-family:Consolas,monospace;font-size:11px;line-height:1.7;color:var(--accent);background:transparent;border:0;border-radius:14px;padding:8px 0;overflow-wrap:anywhere;cursor:pointer}.ds-source:hover,.ds-source:active{background:var(--wash);color:var(--accent)}.ds-source:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "可追蹤的程式閱讀桌",
+    "overview": "以「可追蹤的程式閱讀桌」組織維護資訊：目錄找內容，畫布讀相鄰步驟，浮動解說承載完整文字。層級清楚、文字好讀、流程容易追蹤，是這份工具的方向。\n\n此系統只適用 tools/project-map。亮暗色共享語意與操作，使用系統繁體中文字型及純 DOM／SVG，保持單檔離線閱讀。產品 App 的字型、導覽與版面另由根目錄文件規範。",
+    "keyCharacteristics": [
+      "目錄、流程與解說分工清楚。",
+      "選取、目前連線與來源使用產品主色。",
+      "桌面向右閱讀，手機向下閱讀。",
+      "鍵盤焦點與減少動態保留相同操作。"
+    ],
+    "rules": [
+      {
+        "name": "The 層級辨識 Rule",
+        "body": "主色表示選取、目前連線、焦點與來源；程式層級另有語意色，並保留文字名稱。",
+        "section": "colors"
+      },
+      {
+        "name": "The 完整閱讀 Rule",
+        "body": "卡片顯示摘要，選取後在解說取得完整文字；摘要截斷不取代完整內容。",
+        "section": "typography"
+      },
+      {
+        "name": "The 浮動解說 Rule",
+        "body": "解說覆蓋畫布，不改變畫布尺寸；逐步操作保留在面板內。",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do 依 map.css、map.js 與 template.html 維護本工具，修改後重新產生 HTML。",
+      "Do 同時維護亮暗色語意、可見焦點與減少動態支援。",
+      "Do 保留文字層級、完整解說及可換行的來源路徑。"
+    ],
+    "donts": [
+      "Don't 為離線工具增加外部字型、CDN 或產品 runtime。",
+      "Don't 把這份局部系統延伸成產品 App 的全站規則。"
     ]
   }
 }

@@ -1,16 +1,15 @@
 // 純離線 DOM / SVG；不呼叫產品 API，也不依賴外部程式庫。
 const $ = id => document.getElementById(id);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-const layerLabels = {browser:'瀏覽器',worker:'Worker / DO',database:'PostgreSQL',async:'背景工作',external:'外部服務',build:'建置 / 部署'};
+const layerLabels = DATA.layers;
 const state = {flow:DATA.flows[0],selected:null,view:'graph',query:'',source:null,scale:1,x:0,y:0,fitted:true};
-const cardSize = {width:276,height:176};
-const icons = {
-  close:'<path d="m5 5 14 14M19 5 5 19"/>',
-  menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',
-  plus:'<path d="M5 12h14M12 5v14"/>',
-  minus:'<path d="M5 12h14"/>',
-};
-function icon(name) { return '<svg viewBox="0 0 24 24" aria-hidden="true">'+icons[name]+'</svg>'; }
+const cardSize = {width:276,height:196};
+document.documentElement.dataset.product=DATA.meta.product;
+document.documentElement.dataset.theme=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+function renderTheme() { $('theme-toggle').textContent=document.documentElement.dataset.theme==='dark'?'亮色':'深色'; }
+$('theme-toggle').onclick=()=>{document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark';renderTheme();};
+renderTheme();
+function icon(name) { return DATA.icons[name]; }
 for (const [id,name] of [['close-nav','close'],['close-inspector','close'],['clear-search','close'],['open-nav','menu'],['zoom-in','plus'],['zoom-out','minus']]) $(id).innerHTML=icon(name);
 
 const flowSearch = new Map(DATA.flows.map(f=>[f.id,[f.title,f.summary,f.section,f.id,f.logic,f.db,f.entry,...(f.id.startsWith('trigger:')||f.setting?[]:f.nodes.map(n=>n.text))].join(' ').toLowerCase()]));
@@ -90,12 +89,12 @@ function edgeMarkup(edge,points) {
   const labelX=mobile?start.x+14:(start.x+end.x)/2;
   const labelY=mobile?(start.y+end.y)/2-(lines.length-1)*7:start.y-12-(lines.length-1)*14;
   const spans=lines.map((line,i)=>'<tspan x="'+labelX+'" y="'+(labelY+i*14)+'">'+esc(line)+'</tspan>').join('');
-  return '<path class="connection'+(edge.async?' async':'')+'" d="M'+start.x+','+start.y+' L'+end.x+','+end.y+'" marker-end="url(#arrow)"/><text class="edge-label" text-anchor="'+(mobile?'start':'middle')+'"><title>'+esc(edge.label)+'</title>'+spans+'</text>';
+  return '<path class="connection'+(edge.async?' async':'')+'" data-from="'+edge.from+'" data-to="'+edge.to+'" d="M'+start.x+','+start.y+' L'+end.x+','+end.y+'" marker-end="url(#arrow)"/><text class="edge-label" text-anchor="'+(mobile?'start':'middle')+'"><title>'+esc(edge.label)+'</title>'+spans+'</text>';
 }
 function wrapLabel(text,width) {
   const lines=[];let line='',units=0;
   for(const character of text) {
-    const size=/[\x00-\x7f]/.test(character) ? 0.55 : 1;
+    const size=character.codePointAt(0)<=127 ? 0.55 : 1;
     if(units+size>width&&line){lines.push(line.trim());line='';units=0;}
     line+=character;units+=size;
   }
@@ -107,12 +106,19 @@ function renderGraph() {
   $('cards').innerHTML=state.flow.nodes.map((n,i)=>(n.pathStart?'<div class="path-label" style="left:'+points[i].x+'px;top:'+(points[i].y-48)+'px">'+esc(n.pathTitle)+'</div>':'')+'<button class="node" data-node="'+i+'" style="left:'+points[i].x+'px;top:'+points[i].y+'px" aria-pressed="false" aria-label="'+esc('步驟 '+(i+1)+'：'+n.title)+'"><span class="node-meta"><span>'+(i+1)+'</span><span class="layer '+n.layer+'">'+layerLabels[n.layer]+'</span></span><span class="node-title">'+esc(n.title)+'</span><span class="node-text">'+esc(n.text)+'</span></button>').join('');
   $('connections').setAttribute('width',size.width);
   $('connections').setAttribute('height',size.height);
-  $('connections').innerHTML='<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="#8c9cab"/></marker></defs>'+state.flow.edges.map(e=>edgeMarkup(e,points)).join('');
+  $('connections').innerHTML='<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="context-stroke"/></marker></defs>'+state.flow.edges.map(e=>edgeMarkup(e,points)).join('');
+  paintSelection();
+}
+function paintSelection() {
+  $('cards').querySelectorAll('.node').forEach((card,i)=>{card.classList.toggle('selected',i===state.selected);card.setAttribute('aria-pressed',String(i===state.selected));});
+  $('connections').querySelectorAll('.connection').forEach(edge=>edge.classList.toggle('current',state.selected!==null&&(Number(edge.dataset.from)===state.selected||Number(edge.dataset.to)===state.selected)));
 }
 function selectFlow(id) {
   state.flow=DATA.flows.find(f=>f.id===id);
   state.view='graph'; state.source=null; state.selected=null;
   closeInspector(); $('document').hidden=true; $('canvas').hidden=false;
+  $('flow-title').textContent=state.flow.title;
+  $('flow-summary').textContent=state.flow.summary;
   renderGraph(); renderNavigation();
   requestAnimationFrame(()=>{
     startGraph();
@@ -142,13 +148,13 @@ function startGraph() {
   const area=viewport();
   state.scale=1;state.fitted=false;
   state.x=window.innerWidth<=640?(area.width-cardSize.width)/2:40;
-  state.y=window.innerWidth<=640?80:(area.height-cardSize.height)/2-24;
+  state.y=window.innerWidth<=640?156:Math.max(172,(area.height-cardSize.height)/2-12);
   applyCamera(true);
 }
 function centerNode(index=state.selected) {
   const point=positions()[index],area=viewport();
   state.x=(area.width-cardSize.width*state.scale)/2-point.x*state.scale;
-  state.y=(area.height-cardSize.height*state.scale)/2-point.y*state.scale-24;
+  state.y=(window.innerWidth<=640?Math.max(88,(area.height-cardSize.height*state.scale)/2-24):(area.height-cardSize.height*state.scale)/2-24)-point.y*state.scale;
   applyCamera(true);
 }
 function zoom(factor,x,y) {
@@ -181,11 +187,11 @@ function renderInspector() {
     const m=DATA.models.find(m=>m.name===n.model);
     html+=detail('身份鍵與時間條件',paragraphs(['身份鍵：'+m.key,m.lifecycle]));
     html+=detail('完整欄位 · '+m.columns.length+' 欄','<table class="model-fields"><thead><tr><th scope="col">欄位</th><th scope="col">型別</th></tr></thead><tbody>'+m.columns.map(c=>'<tr><td><code>'+esc(c.name)+'</code></td><td><code>'+esc(c.type)+'</code></td></tr>').join('')+'</tbody></table>');
-    html+=detail('資料關聯',paragraphs(m.foreignKeys.length?m.foreignKeys.map(k=>'FK：'+k.label+'；ON DELETE '+k.delete):['本卡片列出的關聯由程式解析；沒有從 migrations 盤點到本圖所列的實體 FK。']));
+    html+=detail('資料關聯',paragraphs(m.foreignKeys.length?m.foreignKeys.map(k=>'FK：'+k.label+'；ON DELETE '+k.delete):[DATA.meta.product==='novae'||m.origin==='d1'?'目前 schema 沒有此模型的實體 FK；其他關係見程式來源。':'此模型使用程式身份參照，沒有 SQL FK。']));
     if(m.related.length)html+=paragraphs(['程式關聯：'+m.related.join('、')]);
   }
   if (state.flow.rateGroup) html+=detail('觸發此 action',paragraphs([state.flow.id+' · '+state.flow.rateGroup,state.flow.permission?'固定權限：'+state.flow.permission:'目標權限由 domain handler 檢查。']));
-  if (n.refs?.length) html+=detail('對照最新原碼',sourceLinks(n.refs));
+  if (n.refs?.length) html+=detail('對照原碼快照',sourceLinks(n.refs));
   if (state.flow.notes?.length) html+=detail('生效時機與注意點',paragraphs(state.flow.notes));
   if (state.flow.edges.length) {
     const connections=state.flow.edges.filter(e=>e.from===index||e.to===index);
@@ -203,7 +209,7 @@ function renderInspector() {
 function selectNode(index,{center=true}={}) {
   state.selected=index;
   $('inspector').hidden=false; $('workspace').classList.add('inspecting');
-  $('cards').querySelectorAll('.node').forEach((card,i)=>{card.classList.toggle('selected',i===index);card.setAttribute('aria-pressed',String(i===index));});
+  paintSelection();
   $('locate').disabled=false;
   renderInspector();
   if(center)requestAnimationFrame(()=>{state.scale=Math.max(state.scale,.9);state.fitted=false;centerNode(index);});
@@ -212,7 +218,7 @@ function selectNode(index,{center=true}={}) {
 function closeInspector() {
   $('inspector').hidden=true; $('workspace').classList.remove('inspecting');
   state.selected=null; $('locate').disabled=true;
-  $('cards').querySelectorAll('.node').forEach(card=>{card.classList.remove('selected');card.setAttribute('aria-pressed','false');});
+  paintSelection();
 }
 $('close-inspector').onclick=closeInspector;
 $('cards').onclick=event=>{const card=event.target.closest('[data-node]');if(card)selectNode(Number(card.dataset.node));};
@@ -244,11 +250,11 @@ function table(headers,rows) {
 }
 function showInventory() {
   closeInspector();state.view='inventory';$('canvas').hidden=true;$('document').hidden=false;
-  let html='<h2>完整盤點與版本範圍</h2><p>'+DATA.meta.actionCount+' 個 registry actions、'+DATA.settings.length+' 組設定、'+DATA.meta.modelCount+' 個表／view、'+DATA.meta.triggerCount+' 個現存 triggers。每個 action、設定、模型與 trigger 都有左側入口。端點與路由是不同層，不能把同名 page 計為新 action。</p>';
+  let html='<h2>完整盤點與版本範圍</h2><p>'+esc(DATA.inventory.intro)+'</p>';
   html+='<section class="inventory-group"><h3>快照與更新方法</h3>'+paragraphs(['程式版本：'+DATA.meta.head,'產生時間：'+DATA.meta.date+'（臺灣）',DATA.meta.scope,'重新產生：'+DATA.meta.regenerate,'資料來自已追蹤程式碼、設定契約及 migrations；不讀 .env、secret、資料庫或個人 seed。Wrangler 連線 ID 已省略。'])+'</section>';
-  html+='<section class="inventory-group"><h3>本次大變更 · 0054–0059</h3>'+paragraphs(['管理設定與規則儲存核對版本，衝突保留草稿；分類嚴格驗型別與可見性身份。','0054 保留變更只處理選定 cleanupScopes；0055 通知 expiry 回到事件時間，未完成修復可接續。','帳號規則以 target_type+uid 複合鍵儲存／清理，0058 跳過被續期交易鎖住的列。','saveScopeMembers 整批授權／撤銷，回完整名單 revision；0059 只 reconcile 被編輯帳號正式管理員身份。','管理七區以摘要→選區域→編輯，區域切換保留草稿；活動分頁失敗保留紀錄和同游標重試；容量頁重開做完整讀取。'])+'</section>';
+  for(const section of DATA.inventory.sections) html+='<section class="inventory-group"><h3>'+esc(section.title)+'</h3>'+paragraphs(section.paragraphs)+(section.headers?table(section.headers,section.rows):'')+'</section>';
   html+='<section class="inventory-group"><h3>HTTP 與 WebSocket 入口</h3>'+table(['入口','方法','責任'],DATA.endpoints.map(e=>e.slice(0,3)))+'</section>';
-  html+='<section class="inventory-group"><h3>Next.js page 路由 · '+DATA.routes.length+'</h3>'+table(['路由','原碼','呈現'],DATA.routes.map(r=>['/'+(r.route==='/'?'':r.route),r.path,r.sheet?'攔截詳情 sheet':'page']))+'</section>';
+  html+='<section class="inventory-group"><h3>Next.js page 路由 · '+DATA.routes.length+'</h3>'+table(['路由','原碼','呈現'],DATA.routes.map(r=>[r.route,r.path,r.sheet?'攔截詳情 sheet':'page']))+'</section>';
   html+='<section class="inventory-group"><h3>時間邏輯原碼錨點 · '+DATA.timers.length+'</h3><p>這是 timer／到期欄位的原碼索引，不代表每一行都是獨立排程；實際條件從左側「自動化與時間」閱讀。</p>'+table(['原碼位置','時間／到期邏輯'],DATA.timers.map(t=>[t.path+':'+t.line,t.text]))+'</section>';
   $('document').innerHTML=html;$('document').scrollTop=0;renderNavigation();
 }
@@ -298,5 +304,5 @@ new ResizeObserver(()=>{
   else if(state.fitted)fitGraph();
   else startGraph();
 }).observe($('canvas'));
-$('nav-footer').innerHTML='<details><summary>快照 '+DATA.meta.head.slice(0,8)+' · '+DATA.meta.actionCount+' actions</summary>'+paragraphs([DATA.meta.date+'（臺灣）',DATA.meta.modelCount+' 模型 · '+DATA.settings.length+' 組設定 · '+DATA.meta.triggerCount+' triggers',DATA.meta.scope,'更新指令：'+DATA.meta.regenerate])+'</details>';
+  $('nav-footer').innerHTML='<details><summary>原碼快照 '+DATA.meta.head.slice(0,8)+'</summary>'+paragraphs([DATA.meta.date+'（臺灣）',DATA.meta.stats,DATA.meta.scope,'更新指令：'+DATA.meta.regenerate])+'</details>';
 renderNavigation();selectFlow('overview');

@@ -10,7 +10,7 @@
   <div class="workspace" id="workspace">
     <aside class="navigation" id="navigation" aria-label="分類與事件">
       <div class="nav-head">
-        <div class="brand"><h1>Novae 程式地圖</h1><button class="icon mobile-only" id="close-nav" aria-label="關閉目錄"></button></div>
+        <div class="brand"><h1>Novae 程式地圖</h1><div class="brand-actions"><button id="theme-toggle" aria-label="切換亮暗色">深色</button><button class="icon mobile-only" id="close-nav" aria-label="關閉目錄"></button></div></div>
         <label class="search-label" for="search">搜尋操作、設定、模型與原碼</label>
         <div class="search-wrap"><input id="search" type="search" placeholder="例如：附議、期限、scope" autocomplete="off"><button class="icon" id="clear-search" aria-label="清除搜尋" hidden></button></div>
       </div>
@@ -20,12 +20,13 @@
     <main class="main" id="main">
       <button class="icon menu mobile-only" id="open-nav" aria-label="選分類與事件"></button>
       <section class="canvas" id="canvas" tabindex="0" aria-label="程式卡片地圖，可拖曳與縮放">
+        <div class="flow-context"><h2 id="flow-title"></h2><p id="flow-summary"></p></div>
         <div class="world" id="world"><svg id="connections" aria-hidden="true"></svg><div id="cards"></div></div>
         <div class="zoom-controls" aria-label="畫布縮放">
           <button class="icon" id="zoom-out" aria-label="縮小"></button><output id="zoom-level">100%</output><button class="icon" id="zoom-in" aria-label="放大"></button>
           <button id="fit">適合畫面</button><button id="locate" disabled>定位卡片</button>
         </div>
-        <p class="canvas-help">拖曳平移 · 滾輪縮放 · 點卡片看解說</p>
+        <p class="canvas-help">拖曳平移、滾輪縮放，點選節點查看解說</p>
       </section>
       <section class="document" id="document" hidden aria-label="原碼與盤點"></section>
       <div class="sr-only" id="announce" aria-live="polite"></div>

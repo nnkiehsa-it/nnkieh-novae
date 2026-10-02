@@ -14,6 +14,8 @@ node tools/project-map/build.mjs 'C:/Users/Tavric/Desktop/Novae-程式流程地�
 
 直接以瀏覽器開啟 HTML 即可。沒有 CDN、外部字型或服務依賴，也不會登入 Novae、呼叫 API、修改資料庫或查詢正式環境。
 
+閱讀目標與範圍見 [PRODUCT.md](PRODUCT.md)，介面規格見 [DESIGN.md](DESIGN.md)。亮暗色由左上角切換；目前流程標題、編號節點與相鄰連線共同標示閱讀位置。搜尋可找操作、設定、模型與原碼。
+
 - `content.mjs`：操作、共用流程、設定與自動觸發的繁體中文解說。
 - `architecture.mjs`：依 README／程式碼整理整個專案與目錄依賴。
 - `models.mjs`：每張資料表／view 的用途、身份鍵、生命周期與關係；完整欄位由生成 schema 取得。

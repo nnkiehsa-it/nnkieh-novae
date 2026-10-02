@@ -99,4 +99,12 @@ export default [
     languageOptions: { globals: nodeGlobals },
     rules: { "no-console": "off", "no-unused-vars": "off" },
   },
+  {
+    files: ["tools/**/*.mjs"],
+    languageOptions: { globals: nodeGlobals },
+  },
+  {
+    files: ["tools/project-map/map.js"],
+    languageOptions: { globals: { ...browserGlobals, DATA: "readonly" } },
+  },
 ];
