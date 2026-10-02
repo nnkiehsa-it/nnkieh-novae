@@ -43,11 +43,13 @@ async function listAccessUsers(
       if (key === 'truncated') streamed = { ...streamed, truncated: data === true };
       if (key === 'revision') streamed = { ...streamed, revision: data as string };
       if (key !== 'users') return;
-      streamed = withoutPlatformAdmins({ ...streamed, users: data as AccessUser[] });
+      const result = { ...streamed, users: data as AccessUser[] };
+      streamed = payload.scopeKind ? withoutPlatformAdmins(result) : result;
       options.onUsers?.(streamed.users);
     },
   });
-  return withoutPlatformAdmins(await fn(payload));
+  const result = await fn(payload);
+  return payload.scopeKind ? withoutPlatformAdmins(result) : result;
 }
 
 export async function listScopeMembers(

@@ -15,6 +15,7 @@ import { ListRow, ListSection } from "@/components/ui/list";
 import { useAdminAudit, type AdminAuditEntry } from "@/hooks/use-admin-console";
 import { useI18n } from "@/i18n";
 import { formatDate } from "@/lib/format";
+import { AuditDetails } from "@/components/admin/audit-details";
 
 const ACTION_LABELS: Record<string, string> = {
   saveOperationPolicies: "admin.auditSavePolicies",
@@ -31,13 +32,24 @@ const ACTION_LABELS: Record<string, string> = {
   savePlatformFeatures: "ui.adminConsole.actionSaveFeatures",
   savePlatformSettings: "ui.adminConsole.actionSaveSettings",
   setUserAccessScope: "ui.adminConsole.actionSetAccess",
-  saveAccountAccessRule: "ui.adminConsole.actionSetRestriction",
-  deleteAccountAccessRule: "ui.adminConsole.actionSetRestriction",
+  saveScopeMembers: "ui.adminConsole.actionSetAccess",
+  saveAccountAccessRule: "admin.auditSaveRestriction",
+  deleteAccountAccessRule: "admin.auditDeleteRestriction",
   updateFacilityStatus: "ui.adminConsole.actionUpdateFacility",
   updateIssueResult: "ui.adminConsole.actionUpdateIssue",
 };
 
 const DETAIL_LABELS: Record<string, string> = {
+  changes: "admin.auditMemberChanges",
+  scopeKind: "ui.access.scopeType",
+  grant: "ui.access.grant",
+  imageUploads: "ui.adminConsole.detailImageSettings",
+  retention: "ui.adminConsole.detailRetentionConfig",
+  targetType: "ui.accountAccess.ruleSource",
+  targetValue: "ui.adminConsole.targetColumn",
+  preset: "ui.adminConsole.detailMode",
+  duration: "ui.accountAccess.durationLabel",
+  message: "ui.accountAccess.messageLabel",
   announcementMaxImages: "ui.admin.announcementImageLimit",
   announcementCommentMaxImages: "ui.admin.commentImageLimit",
   announcementCommentsEnabled: "ui.adminConsole.detailAnnouncementComments",
@@ -152,15 +164,6 @@ function AuditEntrySheet({
   if (entry && entry !== shown) setShown(entry);
   const record = entry ?? shown;
   if (!record) return null;
-  const fields = Object.entries(record.detail).filter(
-    ([, value]) => value !== null && value !== undefined && value !== "",
-  );
-  const fieldValue = (value: unknown) => {
-    if (typeof value === "boolean") return t(value ? "ui.common.enabled" : "ui.common.disabled");
-    if (Array.isArray(value)) return value.length <= 5 ? value.join("、") : t("ui.adminConsole.detailItemCount", { count: value.length });
-    if (value && typeof value === "object") return t("ui.adminConsole.detailItemCount", { count: Object.keys(value).length });
-    return String(value);
-  };
 
   return (
     <Sheet onOpenChange={(open) => !open && onClose()} open={Boolean(entry)}>
@@ -179,16 +182,10 @@ function AuditEntrySheet({
           />
             </ListSection>
         <ListSection header={t("ui.adminConsole.detailColumn")}>
-          {fields.length === 0 ? (
+          {Object.keys(record.detail).length === 0 ? (
             <ListRow label="—" />
           ) : (
-            fields.map(([key, value]) => (
-              <ListRow
-                key={key}
-                label={DETAIL_LABELS[key] ? t(DETAIL_LABELS[key]) : t("ui.adminConsole.detailOther")}
-                value={<span className="break-all">{fieldValue(value)}</span>}
-              />
-            ))
+            <AuditDetails detail={record.detail} labels={DETAIL_LABELS} />
           )}
             </ListSection>
           </div>

@@ -495,7 +495,7 @@ const messages = {
   'ui.access.noneTitle': '尚未指派',
   'ui.access.revoke': '撤銷',
   'ui.access.searchStep': '3. 尋找並指派成員',
-  'ui.access.searchPlaceholder': '輸入校內信箱、姓名或 UID',
+  'ui.access.searchPlaceholder': '輸入完整校內信箱或 UID',
   'ui.access.grant': '授予權限',
   'ui.access.grantMember': '授予 {name} 權限',
   'ui.access.revokeMember': '撤銷 {name} 的權限',

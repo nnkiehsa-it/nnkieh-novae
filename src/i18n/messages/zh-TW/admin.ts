@@ -1,4 +1,12 @@
 const messages = {
+  "admin.auditItem": "第 {index} 項",
+  "admin.auditAuthorDelete": "允許作者自行刪除",
+  "admin.auditMemberChanges": "管理員變更",
+  "admin.auditSaveRestriction": "更新帳號存取規則",
+  "admin.auditDeleteRestriction": "解除帳號存取規則",
+  "admin.scopePlatformAdmin": "平台管理員已擁有所有管理權限",
+  "admin.scopeAssigned": "已指派管理權限",
+  "admin.scopeUnassigned": "未指派管理權限",
   "admin.reloadSettings": "捨棄草稿並重新載入",
   "admin.supportIntegerHelp": "附議門檻與天數都必須是大於 0 的整數。小數或未填寫的值無法儲存。",
   "admin.categoryOrder": "分類順序",

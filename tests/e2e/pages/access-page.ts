@@ -38,7 +38,7 @@ export async function setMemberAccess(
   grant: boolean,
 ) {
   await selectScope(page, scope);
-  const lookup = page.getByPlaceholder('Enter a campus email, name, or UID');
+  const lookup = page.getByPlaceholder('Enter a full campus email or UID');
   await lookup.fill(email);
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   // Granting and revoking edit the draft; only Save reaches the backend.
@@ -50,7 +50,7 @@ export async function setMemberAccess(
     .last();
   await expect(control).toBeVisible();
   await control.click();
-  await expectBackendAction(page, 'setUserAccessScope', async () => {
+  await expectBackendAction(page, 'saveScopeMembers', async () => {
     await page.getByRole('button', { name: 'Save', exact: true }).click();
   });
   await expect(page.getByText('unsaved changes')).toHaveCount(0);

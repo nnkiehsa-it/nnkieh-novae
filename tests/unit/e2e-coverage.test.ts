@@ -61,6 +61,7 @@ describe("E2E permission and operation coverage", () => {
       expect(text, `missing scope transition ${scope}`).toContain(scope);
     }
     expect(text.match(/false,/gu)?.length ?? 0).toBeGreaterThanOrEqual(4);
+    expect(await source("pages/access-page.ts")).toContain("saveScopeMembers");
   });
 
   it("covers administrative writes and every feature-switch combination", async () => {

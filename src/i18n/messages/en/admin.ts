@@ -1,4 +1,12 @@
 const messages = {
+  "admin.auditItem": "Item {index}",
+  "admin.auditAuthorDelete": "Allow author deletion",
+  "admin.auditMemberChanges": "Member changes",
+  "admin.auditSaveRestriction": "Update account access rule",
+  "admin.auditDeleteRestriction": "Remove account access rule",
+  "admin.scopePlatformAdmin": "Platform administrators already manage every area",
+  "admin.scopeAssigned": "Assigned to manage",
+  "admin.scopeUnassigned": "Not assigned",
   "admin.reloadSettings": "Discard draft and reload",
   "admin.supportIntegerHelp": "The support goal and period must be positive whole numbers. Decimal or empty values cannot be saved.",
   "admin.categoryOrder": "Category order",

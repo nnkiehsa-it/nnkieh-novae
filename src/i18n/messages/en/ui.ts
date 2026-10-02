@@ -495,7 +495,7 @@ const messages = {
   'ui.access.noneTitle': 'No owner assigned',
   'ui.access.revoke': 'Revoke',
   'ui.access.searchStep': '3. Find and assign a member',
-  'ui.access.searchPlaceholder': 'Enter a campus email, name, or UID',
+  'ui.access.searchPlaceholder': 'Enter a full campus email or UID',
   'ui.access.grant': 'Grant access',
   'ui.access.grantMember': 'Grant access to {name}',
   'ui.access.revokeMember': 'Revoke access from {name}',

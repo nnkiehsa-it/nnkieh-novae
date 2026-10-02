@@ -58,6 +58,7 @@ async function* accessUsersForUids(
   uids: string[],
   database: BackendDatabase,
   viewerUid: string,
+  excludePlatformAdmins = true,
 ) {
   if (uids.length === 0) {
     yield { data: [], key: "users" };
@@ -106,7 +107,7 @@ async function* accessUsersForUids(
       facilityCategories.set(assignment.uid, [...(facilityCategories.get(assignment.uid) ?? []), assignment.category_id]);
     }
     yield { data: profileRows
-      .filter((profile) => !(roles.get(profile.uid) ?? []).includes("platform-admin"))
+      .filter((profile) => !excludePlatformAdmins || !(roles.get(profile.uid) ?? []).includes("platform-admin"))
       .map((profile) => ({
       uid: profile.uid,
       email: profile.email ?? null,
@@ -148,7 +149,7 @@ export async function handleUserAccessAction(
     return (async function* () {
       yield { data: false, key: "truncated" };
       yield { data: revision, key: "revision" };
-      yield* accessUsersForUids(uids, database, auth.uid);
+      yield* accessUsersForUids(uids, database, auth.uid, !rawQuery);
     })();
   }
 
