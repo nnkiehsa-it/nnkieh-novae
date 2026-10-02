@@ -25,18 +25,7 @@ import { LiquidTabs } from "@/components/ui/liquid-tabs";
 import { ErrorState } from "@/components/ui/page-state";
 import { SaveBar } from "@/components/ui/save-bar";
 import type { FacilityCategoryConfig, IssueCategoryConfig } from "@/types/categories";
-
-const CHANGE_LABELS: Record<string, string> = {
-  announcementMaxImages: "ui.admin.announcementImageLimit",
-  announcementCommentMaxImages: "ui.admin.commentImageLimit",
-  announcementCommentsEnabled: "ui.admin.announcementComments",
-  deletedFacilityCategoryIds: "admin.changeRemovedFacilities",
-  deletedIssueCategoryIds: "admin.changeRemovedIssues",
-  facilitiesEnabled: "ui.admin.facilityFeature",
-  facilityCategories: "ui.nav.facilities",
-  issueCategories: "ui.nav.issues",
-  issuesEnabled: "ui.admin.issueFeature",
-};
+import { categoryManagementChanges } from "@/lib/category-review";
 
 type AnyCategory = FacilityCategoryConfig | IssueCategoryConfig;
 
@@ -60,7 +49,9 @@ export function CategoryManagement() {
     kind: string;
   } | null>(null);
   React.useEffect(() => { setEditing(null); setRetainedEditing(null); }, [kind]);
-  useUnsavedChanges(state.draft.changes.length, state.draft.reset);
+  const changes = React.useMemo(() => state.draft.baseline && state.value
+    ? categoryManagementChanges(state.draft.baseline, state.value) : [], [state.draft.baseline, state.value]);
+  useUnsavedChanges(changes.length, state.draft.reset);
   const value = state.value;
 
   if (state.error) return <ErrorState error={state.error} onRetry={() => void state.load()} />;
@@ -204,7 +195,7 @@ export function CategoryManagement() {
       </Sheet>
 
       <SaveBar
-        changeCount={state.draft.changes.length}
+        changeCount={changes.length}
         disabled={!state.draft.valid}
         error={state.draft.error}
         onDiscard={state.draft.reset}
@@ -213,8 +204,14 @@ export function CategoryManagement() {
         status={state.draft.status}
       />
       <ApplyReviewDialog
-        changes={state.draft.changes}
-        describeChange={(key) => t(CHANGE_LABELS[key] ?? key)}
+        changes={changes}
+        describeChange={(key) => {
+          const change = changes.find((item) => item.key === key)!;
+          return [change.categoryName, t(change.labelKey)].filter(Boolean).join(" · ");
+        }}
+        formatChangeValue={(change, value) => change.key.endsWith(":readAccess") && typeof value === "string"
+          ? t({ school: "ui.admin.schoolVisible", "reviewed-school": "ui.admin.reviewedVisible", "owner-admin": "ui.admin.ownerAdminOnly" }[value as "school" | "reviewed-school" | "owner-admin"])
+          : undefined}
         describeImpact={(key) => {
           const [jobType, scope] = key.split(":");
           return jobType === "announcement-comments"
