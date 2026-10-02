@@ -22,11 +22,12 @@ interface Target {
 /** The target survives navigation; the editor is remounted for each distinct scope. */
 export function AccessManagement() {
   const { t } = useI18n();
-  const categories = useCategories();
+  const { activeFacilityCategories, activeIssueCategories } = useCategories();
   const { user } = useSession();
   const { remember, value: target } = useRememberedState<Target>("admin-access-target", { kind: "issue", issueId: "", facilityId: "" });
   const [pending, setPending] = React.useState<Target | null>(null);
-  const options = target.kind === "issue" ? categories.activeIssueCategories : target.kind === "facility" ? categories.activeFacilityCategories : [];
+  const options = React.useMemo(() => target.kind === "issue" ? activeIssueCategories : target.kind === "facility" ? activeFacilityCategories : [],
+    [activeFacilityCategories, activeIssueCategories, target.kind]);
   const requestedId = target.kind === "issue" ? target.issueId : target.facilityId;
   const categoryId = requestedId || (options.length === 1 ? options[0]!.id : "");
   React.useEffect(() => {
