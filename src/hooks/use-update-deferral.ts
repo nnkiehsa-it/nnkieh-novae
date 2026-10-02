@@ -4,7 +4,8 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { getUnsavedChanges, subscribeUnsavedChanges } from "@/hooks/unsaved-changes-store";
 
 export function hasUpdateDeferral() {
-  return getUnsavedChanges().count > 0
+  const unsaved = getUnsavedChanges();
+  return unsaved.count > 0 || Boolean(unsaved.busy)
     || document.visibilityState !== "visible"
     || !navigator.onLine
     || Boolean(document.querySelector('[data-sheet-surface][data-state="open"], [data-update-defer="true"]'));

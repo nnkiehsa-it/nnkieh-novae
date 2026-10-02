@@ -29,7 +29,7 @@ export function PolicySettings() {
   const { draft, error, history, load, loading, revision } = useOperationPolicies();
   const [area, setArea] = useAdminView(["overview", ...POLICY_GROUPS] as const);
   const [reviewing, setReviewing] = React.useState(false);
-  useUnsavedChanges(draft.changes.length, draft.reset);
+  useUnsavedChanges(draft.changes.length, draft.reset, undefined, draft.status === "saving");
   const value = draft.value?.values;
 
   if (error) return <ErrorState error={error} onRetry={() => void load()} />;

@@ -20,7 +20,7 @@ export function ScopeAccessEditor({ scope, selector }: { scope: AccessScope | nu
   const state = useScopeAccess(scope);
   const [reviewing, setReviewing] = React.useState(false);
   const saving = state.draft.status === "saving";
-  useUnsavedChanges(state.changes.length, state.draft.reset, "scope-members");
+  useUnsavedChanges(state.changes.length, state.draft.reset, "scope-members", state.draft.status === "saving");
   const nameOf = (uid: string) => {
     const user = state.known.find((member) => member.uid === uid);
     return user ? `${user.name}${user.email ? ` · ${user.email}` : ""}` : uid;

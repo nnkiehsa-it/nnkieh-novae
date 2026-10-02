@@ -29,7 +29,7 @@ export function PlatformSettings() {
   const { draft, error, load, loading } = usePlatformSettings();
   const [area, setArea] = useAdminView(["overview", "retention", "images", ...RETENTION_GROUPS.map((group) => group.value)]);
   const [reviewing, setReviewing] = React.useState(false);
-  useUnsavedChanges(draft.changes.length, draft.reset);
+  useUnsavedChanges(draft.changes.length, draft.reset, undefined, draft.status === "saving");
   const value = draft.value;
 
   if (error) return <ErrorState error={error} onRetry={() => void load()} />;

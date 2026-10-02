@@ -12,10 +12,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 export function SecondaryToolbar({
   actions,
   backLabel,
+  backDisabled,
   onBack,
 }: {
   actions?: ReactNode;
   backLabel: string;
+  backDisabled?: boolean;
   onBack: () => void;
 }) {
   // A reader who arrived on a shared link is leaving the one page they were
@@ -36,6 +38,7 @@ export function SecondaryToolbar({
         <TooltipTrigger asChild>
           <Button
             aria-label={backLabel}
+            disabled={backDisabled}
             className="size-11 md:size-9"
             onClick={() => guardBack(onBack)}
             size="icon"

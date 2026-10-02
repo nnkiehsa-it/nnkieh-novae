@@ -39,7 +39,7 @@ export function AccountAccessRules() {
       />)}
       {!state.loading && !state.error && state.rules.every((item) => item.targetType !== "email_prefix") ? <ListRow label={t("ui.accountAccess.noPrefixRules")} /> : null}
     </ListSection>
-    <Sheet onOpenChange={(open) => !open && exit.requestClose()} open={editing !== undefined}>
+    <Sheet onCloseRequest={exit.requestClose} onOpenChange={(open) => !open && setEditing(undefined)} open={editing !== undefined}>
       <SheetContent>
         <SheetHeader><SheetTitle>{editing === null ? t("ui.accountAccess.addPrefix") : t("ui.accountAccess.editPrefix")}</SheetTitle><SheetDescription>{t("ui.accountAccess.prefixDescription")}</SheetDescription></SheetHeader>
         <SheetBody><div className="grid gap-5">

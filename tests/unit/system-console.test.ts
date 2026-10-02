@@ -5,7 +5,10 @@ import { useSystemConsole } from "@/hooks/use-system-console";
 import { clearScheduledWork, fetchOperationsConsole, fetchOperationsQueue, retryOperationalWork } from "@/services/operations-console";
 
 const runtime = vi.hoisted(() => ({ poll: undefined as (() => Promise<void>) | undefined }));
-vi.mock("@/i18n", () => ({ useI18n: () => ({ t: (key: string) => key }) }));
+vi.mock("@/i18n", () => {
+  const t = (key: string) => key;
+  return { useI18n: () => ({ t }) };
+});
 vi.mock("@/hooks/use-session", () => ({ useSession: () => ({ user: { uid: "system-console-test" } }) }));
 vi.mock("@/hooks/use-foreground-poll", () => ({ useForegroundPoll: (poll: () => Promise<void>) => { runtime.poll = poll; } }));
 vi.mock("@/services/operations-console", () => ({
@@ -49,6 +52,12 @@ it("keeps canonical retried work and counts when an older poll finishes, and ser
     await act(async () => { finishPoll(before); await poll; });
     expect(state.snapshot?.jobs).toEqual([queued]);
     expect(state.snapshot?.deliveries).toEqual(after.deliveries);
+    await act(async () => root.render(null));
+    const refreshed = { ...after, capacity: [{ name: "announcements" }], databaseBytes: 2048, metrics: [] };
+    vi.mocked(fetchOperationsConsole).mockResolvedValue(refreshed as never);
+    await act(async () => root.render(createElement(Probe)));
+    expect(fetchOperationsConsole).toHaveBeenCalledTimes(2);
+    expect(state.snapshot).toEqual(refreshed);
   } finally {
     await act(async () => root.unmount());
     vi.unstubAllGlobals();

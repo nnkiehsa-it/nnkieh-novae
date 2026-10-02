@@ -79,6 +79,9 @@ it("retains other editors' drafts when one editor resets or unmounts", async () 
     expect(state).toBe(true);
     getUnsavedChanges().discard();
     expect(discardAccount).toHaveBeenCalledOnce();
+    await act(async () => setUnsavedChanges({ count: 0, busy: true, discard: discardAccount }, account));
+    expect(getUnsavedChanges().busy).toBe(true);
+    expect(state).toBe(true);
   } finally {
     await act(async () => { setUnsavedChanges(null, scope); setUnsavedChanges(null, account); });
   }

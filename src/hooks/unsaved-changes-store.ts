@@ -1,4 +1,5 @@
 interface UnsavedChanges {
+  busy?: boolean;
   count: number;
   discard: () => void;
 }
@@ -22,7 +23,7 @@ function publish() {
  * draft do not have to be related to each other.
  */
 export function setUnsavedChanges(next: UnsavedChanges | null, owner = legacyOwner, group?: string) {
-  if (next && next.count > 0) drafts.set(owner, { ...next, group });
+  if (next && (next.count > 0 || next.busy)) drafts.set(owner, { ...next, group });
   else drafts.delete(owner);
   current = summarize([...drafts.values()]);
   publish();
@@ -34,6 +35,7 @@ export function getUnsavedChanges(group?: string) {
 
 function summarize(entries: UnsavedChanges[]): UnsavedChanges {
   return entries.length === 0 ? empty : {
+    busy: entries.some((draft) => draft.busy),
     count: entries.reduce((total, draft) => total + draft.count, 0),
     discard: () => { for (const draft of entries) draft.discard(); },
   };

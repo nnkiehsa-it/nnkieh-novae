@@ -21,7 +21,7 @@ import {
 } from "@/hooks/unsaved-changes-store";
 
 /** Declares what this screen would lose, for as long as it is on screen. */
-export function useUnsavedChanges(count: number, discard: () => void, group?: string) {
+export function useUnsavedChanges(count: number, discard: () => void, group?: string, busy = false) {
   const [owner] = React.useState(() => Symbol("draft"));
   const discardRef = React.useRef(discard);
   React.useEffect(() => {
@@ -29,16 +29,16 @@ export function useUnsavedChanges(count: number, discard: () => void, group?: st
   });
 
   React.useEffect(() => {
-    setUnsavedChanges({ count, discard: () => discardRef.current() }, owner, group);
+    setUnsavedChanges({ count, busy, discard: () => discardRef.current() }, owner, group);
     return () => setUnsavedChanges(null, owner);
-  }, [count, group, owner]);
+  }, [busy, count, group, owner]);
 
   React.useEffect(() => {
-    if (count === 0) return;
+    if (count === 0 && !busy) return;
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [count]);
+  }, [busy, count]);
 }
 
 /**
@@ -60,7 +60,7 @@ export function UnsavedChangesGuard() {
   );
 
   React.useEffect(() => {
-    if (unsaved.count === 0) return;
+    if (unsaved.count === 0 && !unsaved.busy) return;
     const intercept = (event: MouseEvent) => {
       if (event.defaultPrevented || event.button !== 0) return;
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -75,7 +75,13 @@ export function UnsavedChangesGuard() {
     };
     document.addEventListener("click", intercept, true);
     return () => document.removeEventListener("click", intercept, true);
-  }, [unsaved.count]);
+  }, [unsaved.busy, unsaved.count]);
+
+  React.useEffect(() => {
+    if (!pending || unsaved.count > 0 || unsaved.busy) return;
+    setPending(null);
+    router.push(pending);
+  }, [pending, router, unsaved.busy, unsaved.count]);
 
   return (
     <AlertDialog onOpenChange={(open) => !open && setPending(null)} open={pending !== null}>
@@ -83,12 +89,13 @@ export function UnsavedChangesGuard() {
         <AlertDialogHeader>
           <AlertDialogTitle>{translate("admin.leaveTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
-            {translate("admin.leaveMessage", { count: unsaved.count })}
+            {unsaved.busy ? translate("admin.savingBeforeLeaving") : translate("admin.leaveMessage", { count: unsaved.count })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{translate("admin.leaveStay")}</AlertDialogCancel>
           <AlertDialogAction
+            disabled={unsaved.busy}
             onClick={() => {
               const target = pending;
               unsaved.discard();

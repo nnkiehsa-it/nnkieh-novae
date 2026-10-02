@@ -36,7 +36,7 @@ type Mutation =
 /** Reads and writes share a fence, so old polls cannot undo an administrator's action. */
 export function useSystemConsole() {
   const { t } = useI18n();
-  const { cold, remember, value } = useRememberedState<SystemReading>("admin-system", {
+  const { remember, value } = useRememberedState<SystemReading>("admin-system", {
     page: 0,
     snapshot: null,
   });
@@ -79,8 +79,10 @@ export function useSystemConsole() {
   );
 
   React.useEffect(() => {
-    if (cold) void load();
-  }, [cold, load]);
+    // A previous visit may have cached only the first streamed queue panel.
+    // Reopen with a full read so capacity cannot remain permanently unknown.
+    void load(latestPage.current);
+  }, [load]);
 
   const working = (value.snapshot?.jobs ?? []).some(isRunning)
     || (value.snapshot?.deliveries ?? []).some((delivery) => isRunning(delivery) && delivery.count > 0);

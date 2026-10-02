@@ -51,7 +51,7 @@ export function CategoryManagement() {
   React.useEffect(() => { setEditing(null); setRetainedEditing(null); }, [kind]);
   const changes = React.useMemo(() => state.draft.baseline && state.value
     ? categoryManagementChanges(state.draft.baseline, state.value) : [], [state.draft.baseline, state.value]);
-  useUnsavedChanges(changes.length, state.draft.reset);
+  useUnsavedChanges(changes.length, state.draft.reset, undefined, state.draft.status === "saving");
   const value = state.value;
 
   if (state.error) return <ErrorState error={state.error} onRetry={() => void state.load()} />;

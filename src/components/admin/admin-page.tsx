@@ -7,6 +7,7 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 import { SecondaryToolbar } from "@/components/detail-toolbar";
 import { PageHeader } from "@/components/ui/page-state";
 import { returnToPreviousInAppRoute } from "@/lib/navigation-memory";
+import { useAdminDraftExit } from "@/hooks/use-admin-draft-exit";
 
 /**
  * The frame every administration screen wears.
@@ -28,6 +29,7 @@ export function AdminPage({
 }) {
   useLocaleSubscription();
   const router = useRouter();
+  const exit = useAdminDraftExit(undefined, false, () => returnToPreviousInAppRoute(router, back));
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 pb-8">
       <PageHeader
@@ -35,12 +37,14 @@ export function AdminPage({
           <SecondaryToolbar
             actions={actions}
             backLabel={translate("ui.common.back")}
-            onBack={() => returnToPreviousInAppRoute(router, back)}
+            backDisabled={exit.blocked}
+            onBack={exit.requestClose}
           />
         }
         title={title}
       />
       {children}
+      {exit.prompt}
     </div>
   );
 }

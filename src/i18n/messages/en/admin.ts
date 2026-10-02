@@ -1,4 +1,5 @@
 const messages = {
+  "admin.savingBeforeLeaving": "Settings are still being saved. Wait for the result before leaving.",
   "admin.removeIndividualRuleDescription": "This removes the individual account rule. Matching email-prefix rules will still apply.",
   "admin.retentionPresetsTitle": "Retention presets",
   "admin.retentionPresetScope": "These presets reset all retention periods and automatic cleanup switches. Review the changes before saving.",

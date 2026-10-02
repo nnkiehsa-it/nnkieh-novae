@@ -47,7 +47,7 @@ export function UserDetailsSheet({ busy, error, onClose, onReload, onRestriction
   const rule = subject.accessRule;
 
   return (
-    <><Sheet onOpenChange={(open) => !open && exit.requestClose()} open={Boolean(user)}>
+    <><Sheet onCloseRequest={exit.requestClose} onOpenChange={(open) => !open && onClose()} open={Boolean(user)}>
       <SheetContent>
         <SheetHeader><SheetTitle>{subject.name}</SheetTitle><SheetDescription>{subject.email ?? subject.uid}</SheetDescription></SheetHeader>
         <SheetBody>

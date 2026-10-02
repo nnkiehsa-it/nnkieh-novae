@@ -103,6 +103,7 @@ test('restriction editors keep deadlines, preserve failed drafts, and expose rem
     const leave = page.getByRole('alertdialog');
     await expect(leave).toBeVisible();
     await leave.getByRole('button', { name: 'Stay', exact: true }).click();
+    await expect(sheet.getByRole('button', { name: 'Close', exact: true })).toBeInViewport();
     await expect(sheet.getByLabel('Restriction reason / displayed message')).toHaveValue('Unsaved account-specific draft');
     await sheet.getByRole('button', { name: 'Close', exact: true }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: 'Discard and leave', exact: true }).click();

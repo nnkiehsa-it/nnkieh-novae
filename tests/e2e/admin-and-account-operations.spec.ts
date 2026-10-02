@@ -192,9 +192,21 @@ test('image settings save estimates no cleanup and issues only the canonical wri
   await imageDimension.fill(String(Number(await imageDimension.inputValue()) === 1600 ? 1601 : 1600));
   await imageDimension.blur();
   await expect(admin.page.getByText('1 unsaved changes')).toBeVisible();
-  await expectBackendAction(admin.page, 'savePlatformSettings', async () => {
-    await admin.page.getByRole('button', { name: 'Save', exact: true }).click();
+  let requested = false;
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  await admin.page.route('**/v1/actions', async (route) => {
+    if (route.request().postDataJSON()?.action === 'savePlatformSettings') { requested = true; await held; }
+    await route.continue();
   });
+  try {
+    await expectBackendAction(admin.page, 'savePlatformSettings', async () => {
+      await admin.page.getByRole('button', { name: 'Save', exact: true }).click();
+      await expect.poll(() => requested).toBe(true);
+      await expect(admin.page.getByRole('button', { name: 'Back', exact: true })).toBeDisabled();
+      release();
+    });
+  } finally { release(); }
   await expect(admin.page.getByRole('alertdialog')).toHaveCount(0);
   await admin.context.close();
 });
@@ -218,7 +230,7 @@ test('setting presets remain drafts, restore one area, and show reviewable chang
   await expect(dimension).toHaveValue(original);
   await admin.page.getByRole('button', { name: /Detailed images/u }).click();
   await selectAdminSection(admin.page, 'Retention presets');
-  await admin.page.getByRole('button', { name: 'Quick settings', exact: true }).click();
+  await admin.page.getByText('Quick settings', { exact: true }).click();
   await admin.page.getByRole('button', { name: /^Compact/u }).click();
   await admin.page.getByRole('button', { name: 'Restore saved settings in this section', exact: true }).click();
   await selectAdminSection(admin.page, 'Image uploads');
@@ -226,6 +238,10 @@ test('setting presets remain drafts, restore one area, and show reviewable chang
   await admin.page.getByRole('button', { name: 'Review changes', exact: true }).click();
   await expect(admin.page.getByRole('alertdialog').getByText('Maximum image dimension (px)', { exact: true })).toBeVisible();
   await admin.page.getByRole('alertdialog').getByRole('button', { name: 'Cancel', exact: true }).click();
+  await admin.page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(admin.page.getByRole('alertdialog')).toBeVisible();
+  await admin.page.getByRole('alertdialog').getByRole('button', { name: 'Stay', exact: true }).click();
+  await expect(dimension).toHaveValue('3000');
   await admin.page.getByRole('button', { name: 'Discard', exact: true }).click();
   await expect(dimension).toHaveValue(original);
   expect(writes).toEqual([]);
