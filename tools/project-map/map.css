@@ -84,8 +84,10 @@ summary .count { float: right; color: var(--muted); font-size: 11px; font-weight
 .layer.async { color: var(--async); }
 .layer.external { color: var(--external); }
 .layer.build { color: var(--muted); }
-.node-title { font-size: 17px; font-weight: 650; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; flex-shrink: 0; }
-.node-text { font-size: 13px; line-height: 1.75; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; color: var(--muted); }
+.node-title { display: block; overflow-wrap: anywhere; flex-shrink: 0; }
+.node-owner { display: block; font-size: 11px; line-height: 1.5; font-weight: 500; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 3px; }
+.node-task { font-size: 17px; font-weight: 650; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.node-text { font-size: 13px; line-height: 1.75; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--muted); }
 .zoom-controls { position: absolute; left: var(--space-5); bottom: var(--space-5); display: flex; align-items: center; gap: var(--space-1); padding: var(--space-1); border: 1px solid var(--line); border-radius: var(--card-radius); background: var(--paper); cursor: default; }
 .zoom-controls button { border: 0; padding: var(--space-2); font-size: 12px; }
 .zoom-controls output { min-width: 44px; text-align: center; font-size: 12px; font-variant-numeric: tabular-nums; }

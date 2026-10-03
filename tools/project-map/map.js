@@ -103,7 +103,11 @@ function wrapLabel(text,width) {
 }
 function renderGraph() {
   const points=positions(),size=dimensions();
-  $('cards').innerHTML=state.flow.nodes.map((n,i)=>(n.pathStart?'<div class="path-label" style="left:'+points[i].x+'px;top:'+(points[i].y-48)+'px">'+esc(n.pathTitle)+'</div>':'')+'<button class="node" data-node="'+i+'" style="left:'+points[i].x+'px;top:'+points[i].y+'px" aria-pressed="false" aria-label="'+esc('步驟 '+(i+1)+'：'+n.title)+'"><span class="node-meta"><span>'+(i+1)+'</span><span class="layer '+n.layer+'">'+layerLabels[n.layer]+'</span></span><span class="node-title">'+esc(n.title)+'</span><span class="node-text">'+esc(n.text)+'</span></button>').join('');
+  $('cards').innerHTML=state.flow.nodes.map((n,i)=>{
+    const step=n.pathStep||i+1,split=n.title.indexOf('：');
+    const title=split<0?'<span class="node-task">'+esc(n.title)+'</span>':'<span class="node-owner">'+esc(n.title.slice(0,split))+'</span><span class="node-task">'+esc(n.title.slice(split+1))+'</span>';
+    return (n.pathStart?'<div class="path-label" style="left:'+points[i].x+'px;top:'+(points[i].y-48)+'px">'+esc(n.pathTitle)+'</div>':'')+'<button class="node" data-node="'+i+'" style="left:'+points[i].x+'px;top:'+points[i].y+'px" aria-pressed="false" aria-label="'+esc('步驟 '+step+'：'+n.title)+'"><span class="node-meta"><span>'+step+'</span><span class="layer '+n.layer+'">'+layerLabels[n.layer]+'</span></span><span class="node-title">'+title+'</span><span class="node-text">'+esc(n.text)+'</span></button>';
+  }).join('');
   $('connections').setAttribute('width',size.width);
   $('connections').setAttribute('height',size.height);
   $('connections').innerHTML='<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="context-stroke"/></marker></defs>'+state.flow.edges.map(e=>edgeMarkup(e,points)).join('');
@@ -175,7 +179,7 @@ function sourceLinks(refs) {
 }
 function renderInspector() {
   const index=state.selected,n=state.flow.nodes[index];
-  $('inspector-context').textContent=state.flow.title+(n.pathTitle?' · '+n.pathTitle:'')+' · 步驟 '+(index+1);
+  $('inspector-context').textContent=state.flow.title+(n.pathTitle?' · '+n.pathTitle:'')+' · 步驟 '+(n.pathStep||index+1);
   let html='<h2>'+esc(n.title)+'</h2><p>'+esc(n.text)+'</p>';
   if (n.code) html+='<pre class="sql-snippet">'+esc(n.code)+'</pre>';
   if (state.flow.setting) {
@@ -185,6 +189,7 @@ function renderInspector() {
   if (n.details) for (const d of n.details) html+=detail(d.title,paragraphs([d.text]));
   if (n.model) {
     const m=DATA.models.find(m=>m.name===n.model);
+    html+=detail('資料表／View',paragraphs([m.name+' · '+m.title]));
     html+=detail('身份鍵與時間條件',paragraphs(['身份鍵：'+m.key,m.lifecycle]));
     html+=detail('完整欄位 · '+m.columns.length+' 欄','<table class="model-fields"><thead><tr><th scope="col">欄位</th><th scope="col">型別</th></tr></thead><tbody>'+m.columns.map(c=>'<tr><td><code>'+esc(c.name)+'</code></td><td><code>'+esc(c.type)+'</code></td></tr>').join('')+'</tbody></table>');
     html+=detail('資料關聯',paragraphs(m.foreignKeys.length?m.foreignKeys.map(k=>'FK：'+k.label+'；ON DELETE '+k.delete):[DATA.meta.product==='novae'||m.origin==='d1'?'目前 schema 沒有此模型的實體 FK；其他關係見程式來源。':'此模型使用程式身份參照，沒有 SQL FK。']));
@@ -202,9 +207,9 @@ function renderInspector() {
   $('previous').disabled=index===0;
   $('next').disabled=index===state.flow.nodes.length-1;
   const topology=state.flow.kind==='topology';
-  $('previous').textContent=topology?'上一節點':'上一步';
-  $('next').textContent=topology?'下一節點':'下一步';
-  $('step-count').value=(index+1)+' / '+state.flow.nodes.length;
+  $('previous').textContent=n.pathStart&&index>0?'上一段':topology?'上一節點':'上一步';
+  $('next').textContent=state.flow.nodes[index+1]?.pathStart?'下一段':topology?'下一節點':'下一步';
+  $('step-count').value=(n.pathStep||index+1)+' / '+(n.pathLength||state.flow.nodes.length);
 }
 function selectNode(index,{center=true}={}) {
   state.selected=index;

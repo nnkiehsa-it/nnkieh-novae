@@ -17,9 +17,11 @@ node tools/project-map/build.mjs 'C:/Users/Tavric/Desktop/Novae-程式流程地�
 閱讀目標與範圍見 [PRODUCT.md](PRODUCT.md)，介面規格見 [DESIGN.md](DESIGN.md)。亮暗色由左上角切換；目前流程標題、編號節點與相鄰連線共同標示閱讀位置。搜尋可找操作、設定、模型與原碼。
 
 - `content.mjs`：操作、共用流程、設定與自動觸發的繁體中文解說。
+- `action-copy.mjs`、`flow-copy.mjs`、`setting-copy.mjs`、`database-copy.mjs`：完整逐項的「誰負責／做什麼」標題；新增項目缺解說時停止生成。
+- `flow-paths.mjs`：把登入／登出、讀取／返回、不同計時器與設定生效路徑分開；每段從自己的觸發源開始。
 - `architecture.mjs`：依 README／程式碼整理整個專案與目錄依賴。
 - `models.mjs`：每張資料表／view 的用途、身份鍵、生命周期與關係；完整欄位由生成 schema 取得。
-- `settings.mjs`：管理員修改設定 → 提交 → 資料 → 自動工作 → 生效時機的流程。
+- `settings.mjs`：管理員提交設定並收到正式回應；另一段解釋使用此值的程式、影響與生效時機。
 - `narration.mjs`：把共享節點拆成獨立段落、重複必要入口；逐條描述線上的資料／動作。
 - `build.mjs`：對照 registry／設定／模型，盤點 triggers 與 FK，嵌入原碼及版本，檢查 inline JavaScript。
 - `template.html`、`map.css`、`map.js`：側欄、畫布與互動；產生時全部內嵌成單一 HTML。
@@ -33,3 +35,5 @@ node tools/project-map/build.mjs 'C:/Users/Tavric/Desktop/Novae-程式流程地�
 卡片以 100% 從起點閱讀：桌面一直往右，手機一直往下，沒有蛇形折返。「適合畫面」縮到整圖，「定位卡片」回到閱讀大小。拖曳空白平移、滾輪／雙指縮放，畫布聚焦時左右鍵切步驟。卡片選取與面板開啟有短動畫，支援減少動態偏好。來源按鈕開啟內嵌原碼，不依賴原本本機檔案仍然存在。
 
 每條線只連相鄰卡片，並標出傳送內容或執行動作。主回應與背景工作、各投遞通道、不同資料關係各自成段；同一個服務／表可重複出現，段落之間不連線。產生器拒絕跨卡片、折返或沒有說明的連線。
+
+卡片將負責的模組與它執行的動作分行呈現；表名、函式名、欄位與觸發條件在右側完整保留。每段步驟從 1 編號，浮動面板跨獨立路徑時顯示「下一段」，避免把不同觸發事件讀成單一自動執行鏈。
