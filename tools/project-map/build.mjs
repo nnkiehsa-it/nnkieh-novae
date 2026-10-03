@@ -15,6 +15,10 @@ import { architectureFlows } from './architecture.mjs';
 import { modelDescriptions, makeModelFlows, makeModelOverview } from './models.mjs';
 import { makeSettingFlows, retentionBehavior, retentionTitles } from './settings.mjs';
 import { narrateFlow } from './narration.mjs';
+import { actionCopy, describeAction } from './action-copy.mjs';
+import { policyTitles } from './setting-copy.mjs';
+import { makeTriggerFlow } from './database-copy.mjs';
+import { clarifyFlow } from './flow-copy.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../..');
@@ -45,6 +49,7 @@ const policies = JSON.parse(read('config/backend-actions.config.json'));
 if (definitions.length !== Object.keys(policies).length) throw new Error('action registry 與 config 數量不一致');
 for (const d of definitions) if (!actions[d.id] || !policies[d.id]) throw new Error('尚未解說 action：' + d.id);
 for (const id of Object.keys(actions)) if (!policies[id]) throw new Error('已移除的 action 解說：' + id);
+for (const id of Object.keys(actionCopy)) if (!actions[id]) throw new Error('已移除的 action 標題：'+id);
 // 這三個 action 的實作在 users.ts，其他指派操作在 user-access.ts。
 for (const id of ['getCurrentUserRole', 'getUserPublicProfiles', 'cacheUserAvatar']) actions[id].refs = ['cloudflare/src/backend/actions/users.ts'];
 
@@ -86,19 +91,22 @@ const actionFlows = definitions.map(d => {
   const a = actions[d.id], readOnly = ['read', 'upload-resolve'].includes(d.rateGroup), policy = policies[d.id];
   const handlerRefs = a.refs.map(p => ref(p, d.id));
   const events = eventMap[d.id]?.events ?? [];
+  const copy = describeAction(d.id,a), adminAudit = d.rateGroup === 'admin-write';
   const nodes = [
-    node(a.title, a.entry + '。' + (actionReferences[d.id].length ? '以下來源可檢視 service 呼叫位置。' : '目前沒有直接 browser 呼叫位置；此後端 action 仍保留於 registry。'), 'browser', actionReferences[d.id]),
-    node('Service 發出請求', readOnly ? '用目前 UID 的 ID token + App Check 送 POST /v1/actions；依 readTimeoutMs/特定timeout等待。相同讀取可由 service 合併。' : '同 UID/action 冷卻 → 取 ID token/App Check → 以同一 UUID operationId 送 request；timeout/retry 沿用該 ID。', 'browser', [ref('src/services/backend-action.ts', 'invokeBackendAction'), ref('src/lib/request.ts')]),
-    node('Worker 驗證身份', 'Origin、App Check、Firebase ID token、native ingress；每次從 DB resolveAuthContext 讀有效限制、角色與 scope。blocked 拒絕受保護請求。', 'worker', [ref('cloudflare/src/index.ts', 'async function handleAction'), ref('cloudflare/src/backend/actions/auth.ts')]),
-    node('操作權限、去重與配額', (d.permission ? 'Registry 必須有 ' + d.permission + '。' : 'Registry 沒有固定 permission；domain handler 檢查自己的 owner/scope/身份規則。') + 'read_only/reaction_only 依 accessClass 限制。每 UID 的 ' + d.rateGroup + ' 10 秒 burst。' + (readOnly?'':'寫入先開交易 claim_operation：已完成重播 response；執行中／過期拒絕。新操作才扣產品配額並繼續業務 handler。') + (policy.extraLimit ? '產品額度 ' + policy.extraLimit + (policy.unitsPath==='payload.images' ? '，按圖片張數扣額。' : '，目前 rate-limit 實作每次扣 1。') : '') + (policy.unitsPath==='payload.changes'?'config 宣告 payload.changes，但現有 rate-limit 只特別處理 payload.images，所以整批 scope 目前仍扣 1。':''), 'worker', [ref(registryPath, 'action("' + d.id + '"'), ref('cloudflare/src/backend/actions/execution.ts'), ref('cloudflare/src/backend/actions/rate-limit.ts')]),
-    node('此操作的業務規則', a.logic, 'worker', handlerRefs),
-    node(readOnly ? '資料讀取' : '交易中的資料變更', a.db + '。' + (readOnly ? 'read/upload-resolve 不 claim operation，也不開 mutation transaction。' : '前一步已 claim_operation；變更、audit、event、complete_operation 在同一 transaction 提交。業務拒絕或任何 SQL 失敗整筆回滾。'), 'database', [...handlerRefs, ref('cloudflare/src/backend/actions/execution.ts', 'client.transaction')]),
-    node('原發起畫面收到結果', 'NDJSON start/part/end；失敗可以是 HTTP error 或串流 error。service 驗仍是同一 Firebase User，舊 session 回應不套入。' + a.effect, 'browser', [ref('src/services/backend-action.ts', 'async function readAnswer'), ...actionReferences[d.id].slice(0, 3)]),
+    node(copy.input, a.entry + '。' + (actionReferences[d.id].length ? '以下來源可檢視 service 呼叫位置。' : '目前沒有直接 browser 呼叫位置；此後端 action 仍保留於 registry。'), 'browser', actionReferences[d.id]),
+    node(copy.request, readOnly ? '用目前 UID 的 ID token + App Check 送 POST /v1/actions；依 readTimeoutMs/特定timeout等待。相同讀取可由 service 合併。' : '同 UID/action 冷卻 → 取 ID token/App Check → 以同一 UUID operationId 送 request；timeout/retry 沿用該 ID。', 'browser', [ref('src/services/backend-action.ts', 'invokeBackendAction'), ref('src/lib/request.ts')]),
+    node('Worker：驗 token 並讀有效授權', 'Origin、App Check、Firebase ID token、native ingress；每次從 DB resolveAuthContext 讀有效限制、角色與 scope。blocked 拒絕受保護請求。', 'worker', [ref('cloudflare/src/index.ts', 'async function handleAction'), ref('cloudflare/src/backend/actions/auth.ts')]),
+    node(readOnly?'Execution：檢查讀取權限與頻率':'Execution：驗權限、防重送並扣額', (d.permission ? 'Registry 必須有 ' + d.permission + '。' : 'Registry 沒有固定 permission；domain handler 檢查自己的 owner/scope/身份規則。') + 'read_only/reaction_only 依 accessClass 限制。每 UID 的 ' + d.rateGroup + ' 10 秒 burst。' + (readOnly?'':'寫入先開交易 claim_operation：已完成重播 response；執行中／過期拒絕。新操作才扣產品配額並繼續業務 handler。') + (policy.extraLimit ? '產品額度 ' + policy.extraLimit + (policy.unitsPath==='payload.images' ? '，按圖片張數扣額。' : '，目前 rate-limit 實作每次扣 1。') : '') + (policy.unitsPath==='payload.changes'?'config 宣告 payload.changes，但現有 rate-limit 只特別處理 payload.images，所以整批 scope 目前仍扣 1。':''), 'worker', [ref(registryPath, 'action("' + d.id + '"'), ref('cloudflare/src/backend/actions/execution.ts'), ref('cloudflare/src/backend/actions/rate-limit.ts')]),
+    node(copy.business, a.logic, 'worker', handlerRefs),
+    node(copy.storage, a.db + '。' + (readOnly ? 'read/upload-resolve 不 claim operation，也不開 mutation transaction。' : '前一步已 claim_operation；變更、'+(adminAudit?'管理 audit、':'')+'此 action 的事件與 complete_operation 在同一 transaction 提交。業務拒絕或任何 SQL 失敗整筆回滾。'), 'database', [...handlerRefs, ref('cloudflare/src/backend/actions/execution.ts', 'client.transaction')]),
+    node(copy.response, 'NDJSON start/part/end；失敗可以是 HTTP error 或串流 error。service 驗仍是同一 Firebase User，舊 session 回應不套入。' + a.effect, 'browser', [ref('src/services/backend-action.ts', 'async function readAnswer'), ...actionReferences[d.id].slice(0, 3)]),
   ];
   if (!readOnly) {
     if (!eventMap[d.id]) throw new Error('缺事件盤點：' + d.id);
-    nodes.push(node('提交後的非同步工作', events.length ? events.map(e => e.type + ' → ' + (e.destinations.join(' / ') || '只有事件紀錄，無外部destination')).join('；') + '。admin-write 另記 admin.audit_recorded → Notion。成功寫入由 Worker 送 drain；背景完成可晚於原畫面成功。' : '這個 action 沒有額外 domain delivery。admin-write 仍會寫管理 audit 與 admin.audit_recorded → Notion；成功 write 仍會喚醒 drain 處理待辦。', 'async', [eventMap[d.id].ref, ref('cloudflare/src/backend/jobs/consumer.ts')]));
+    const destinations=[...new Set([...events.flatMap(e=>e.destinations),...(adminAudit?['notion']:[])])];
+    nodes.push(node(destinations.length?'Queue：處理'+destinations.map(d=>({notion:'Notion',in_app:'站內通知',push:'Push',realtime:'即時訊息'})[d]).join('、'):'Queue：檢查已排背景待辦', (events.length ? events.map(e => e.type + ' → ' + (e.destinations.join(' / ') || '只記事件，不建立此事件的通道投遞')).join('；')+'。' : '此 action 沒有額外領域事件。')+(adminAudit?'管理寫入另記 admin.audit_recorded → Notion。':'')+'成功寫入送 drain 喚醒 consumer；只執行 DB 中實際存在的 delivery/job。背景完成可晚於原畫面成功。', 'async', [eventMap[d.id].ref, ref('cloudflare/src/backend/jobs/consumer.ts')]));
   }
+  if(d.id==='getProviderDiagnostics') nodes[5].layer='external';
   return { ...a, ...d, id: d.id, summary: a.logic, timing: a.timing, nodes, refs: undefined, edges: nodes.slice(1).map((_, i) => ({ from: i, to: i + 1, label: i === 6 ? '提交後非同步' : '接著', async: i === 6 })), notes: [a.timing, ...(events.some(e => e.destinations.includes('realtime')) && ['platform', 'category', 'user'].includes(d.domain) ? ['注意：platform／category／user 的部分事件雖設 realtime destination，現有 consumer 沒有對應訊息；看左側「編輯、預覽、確認、衝突與草稿保留」。'] : [])] };
 });
 for (const f of [...flows,...architectureFlows]) {
@@ -112,9 +120,9 @@ const operationText = read('src/generated/operations.ts');
 const operationSpecs = JSON.parse(operationText.match(/OPERATION_POLICIES = (\{[\s\S]*?\n\}) as const/)[1]);
 const settings = categorySettings.map(([key,title,store,effect,timing,target])=>({key,title,store,effect,timing,target,section:'分類、帳號與平台',refs:[]}));
 for (const [key, spec] of Object.entries(operationSpecs)) {
-  if (!policyDescriptions[key]) throw new Error('缺政策解說：' + key);
+  if (!policyDescriptions[key] || !policyTitles[key]) throw new Error('缺政策解說或名稱：' + key);
   const matches = sourcePaths.filter(p => !p.includes('/generated/') && !p.endsWith('.sql') && sources[p].text.includes(key));
-  settings.push({ key, title: policyDescriptions[key], store: 'runtime_settings.operations_settings', effect: policyDescriptions[key], timing: spec.group === 'client' ? 'Worker snapshot最多60秒；browser在下一次成功回應遇到新revision後重新整理，後續讀取／計時使用新值' : spec.group === 'logs' ? 'Worker政策snapshot更新後，下一次maintenance執行清理' : spec.group === 'jobs' ? 'Worker政策snapshot更新後，下一次Queue sweep採新batch大小' : 'Worker isolate最多60秒重新整理；已執行request使用原snapshot，後續操作使用新值', initial: spec.value, range: spec.min + '–' + spec.max, target: 'saveOperationPolicies', section: '營運政策 · ' + spec.group, policyGroup:spec.group, refs: [ref('config/operations.config.json','"'+key+'"'),...matches.slice(0, 5).map(p => ref(p, key))] });
+  settings.push({ key, title: policyTitles[key], store: 'runtime_settings.operations_settings', effect: policyDescriptions[key], timing: spec.group === 'client' ? 'Worker snapshot最多60秒；browser在下一次成功回應遇到新revision後重新整理，後續讀取／計時使用新值' : spec.group === 'logs' ? 'Worker政策snapshot更新後，下一次maintenance執行清理' : spec.group === 'jobs' ? 'Worker政策snapshot更新後，下一次Queue sweep採新batch大小' : 'Worker isolate最多60秒重新整理；已執行request使用原snapshot，後續操作使用新值', initial: spec.value, range: spec.min + '–' + spec.max, target: 'saveOperationPolicies', section: '營運政策 · ' + spec.group, policyGroup:spec.group, refs: [ref('config/operations.config.json','"'+key+'"'),...matches.slice(0, 5).map(p => ref(p, key))] });
 }
 for (const [key, initial] of Object.entries(JSON.parse(read('config/data-retention.config.json')))) {
   if (!retentionDescriptions[key]) throw new Error('缺retention解說：' + key);
@@ -231,8 +239,8 @@ const specialFlows = [
   {id:'healthcheck',title:'部署健康檢查與錯誤自動聚合',group:'管理觀測',summary:'沒有Firebase使用者的healthcheck仍須secret；應用失敗自動留下可查紀錄。',nodes:[node('healthcheck請求','POST /v1/actions action=healthcheck；Origin允許；X-Healthcheck-Secret必須匹配HEALTHCHECK_SECRET。','worker',[ref('cloudflare/src/backend/actions/auth.ts','handleHealthcheck')]),node('檢查必需配置與DB','requireEnv檢查Firebase/Turnstile/domain/admin/media等；SELECT roles；全域second/minute配額。只證明這次檢查透過，不代表所有供應商正常。','database',[ref('cloudflare/src/backend/actions/auth.ts','requireEnv("FIREBASE_WEB_API_KEY")')]),node('一般action失敗','handler記status/code/operationId；5xx產生failureId；recordOperationalError按日聚合；429是正常配額拒絕，不納入聚合。串流已送第一段後仍可送error line。','worker',[ref('cloudflare/src/backend/actions/handler.ts','recordFailure'),ref('cloudflare/src/backend/shared/operational-telemetry.ts')]),node('管理員檢視／維護','getOperationsConsole讀errors、metrics、job/delivery失敗；清聚合不會清外部logs；maintenance依errorRetentionDays/metricsRetentionDays清舊桶。','browser',[ref('cloudflare/src/backend/actions/operations.ts'),ref('cloudflare/src/backend/jobs/maintenance.ts')])],notes:[],edges:[{from:0,to:1,label:'healthcheck'}, {from:2,to:3,label:'失敗觀測'}]},
   {id:'notion-auto',title:'Notion 同步、節流與續跑',group:'時間與自動',summary:'Notion啟用且有token/database設定才出站；不替代主要DB。',nodes:[node('Notion delivery','事件有 notion destination 才 claim。NOTION_ENABLED=false 或缺 token/database 時 sync 直接返回，delivery 仍標 completed，表示此通道跳過，不代表外部已有副本。非內容事件超過 notionArchiveDays 也直接完成並跳過。','async',[ref('cloudflare/src/backend/jobs/notion-deliveries.ts')]),node('API節流與重試','同isolate出站間隔350ms；429/5xx退避與Retry-After；真正每次fetch才開始15秒timeout，最多5次refusal retries。','async',[ref('cloudflare/src/backend/shared/notion-api.ts')]),node('同步或重建','對映notion_pages；事件更新對應page與timeline。reconcile分段訪問issue/facility/announcement/operation，request budget用完存cursor，下次drain接續。','database',[ref('cloudflare/src/backend/shared/notion-reconcile.ts'),ref('cloudflare/src/backend/jobs/background-jobs.ts')]),node('封存與失敗責任','內容刪除／mapping保留到期排archive；provider未配置不能宣稱完成archive；deletion到期失敗轉cleanup backlog，需retry。','async',[ref('cloudflare/src/backend/jobs/background-jobs.ts'),ref('database/migrations/0029_archive_and_backup_policies.sql')])],notes:['repo預設NOTION_ENABLED=false；這份HTML沒有執行任何外部同步。'],edges:[{from:0,to:1,label:'出站'}, {from:1,to:2,label:'更新/續跑'}, {from:2,to:3,label:'生命週期'}]},
 ];
-const triggerFlows=[...triggerMap.values()].map(t=>({id:'trigger:'+t.table+'.'+t.name,title:t.name,group:'自動化與時間',section:'資料庫 Trigger · '+t.table.split('.').at(-1),kind:'sequence',summary:t.description,notes:['此清單依 migration CREATE/DROP 順序重建；未查部署端是否已套齊。'],nodes:[node('SQL 寫入 '+t.table,'使用者／管理員 action、Queue 工作或 migration 的 SQL 達到 trigger 條件時觸發；不是獨立 cron。','database',t.refs),{...node('觸發時點與條件',t.definition,'database',t.refs),code:t.definition},node('執行 '+t.func,t.description+'。點下方來源可讀最新函式實作；同交易內執行，發生例外原 SQL 一起回滾。','database',t.refs),node('提交後可見的影響',t.description+'；若排了背景工作，交易提交只表示責任已記錄，外部工作另由 Queue 處理。','database',t.refs)],edges:[{from:0,to:1,label:'SQL 條件'},{from:1,to:2,label:'同步觸發'},{from:2,to:3,label:'同一交易'}]}));
-const ordinaryFlows=[...flows,...specialFlows,...actionFlows].map(f=>{
+const triggerFlows=[...triggerMap.values()].map(t=>makeTriggerFlow(t,node));
+const ordinaryFlows=[...flows,...specialFlows].map(clarifyFlow).concat(actionFlows).map(f=>{
   const administrator=Boolean(f.permission)||['管理設定','管理觀測'].includes(f.group);
   const automatic=f.group==='時間與自動'||f.id==='notification-delivery';
   const section=administrator&&f.domain==='user'?'帳號與權限':administrator&&f.domain==='category'?'內容、平台與政策':f.group==='先看全貌'?'共用讀取':automatic?'排程、事件與時間條件':f.group;
@@ -246,8 +254,12 @@ for (const f of allFlows) {
     if (!f.nodes[edge.from]||!f.nodes[edge.to]) throw new Error('連線節點不存在：'+f.id);
     if (edge.to!==edge.from+1) throw new Error('仍有跨卡片或折返的連線：'+f.id);
     if (!edge.label||edge.label==='接著') throw new Error('缺資料／動作連線說明：'+f.id);
+    if(f.nodes[edge.to].pathStart) throw new Error('連線跨越獨立觸發路徑：'+f.id);
   }
-  for (const n of f.nodes) for (const r of n.refs) if (!sources[r.path]||r.line<1||r.line>sources[r.path].text.split('\n').length) throw new Error('原碼位置不存在：'+f.id+' / '+r.path+':'+r.line);
+  for (const n of f.nodes) {
+    if(!n.title||/^(此操作的業務規則|資料讀取|交易中的資料變更|原發起畫面收到結果|人修改什麼|按儲存前會做什麼|哪些資料改了|會觸發什麼|何時真正生效|提交後可見的影響|觸發時點與條件)$/.test(n.title)) throw new Error('卡片仍使用空泛標題：'+f.id+' / '+n.title);
+    for (const r of n.refs) if (!sources[r.path]||r.line<1||r.line>sources[r.path].text.split('\n').length) throw new Error('原碼位置不存在：'+f.id+' / '+r.path+':'+r.line);
+  }
 }
 for (const setting of settings) if (!allIds.has(setting.target)) throw new Error('無法連結設定流程：' + setting.key);
 const data = {

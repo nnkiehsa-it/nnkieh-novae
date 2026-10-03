@@ -46,8 +46,10 @@ const architectureCatalog = [
 const runtime=architectureCatalog[0].nodes;
 const modules=architectureCatalog[1].nodes;
 const copy=(items,index,title,text,refs=[])=>({...items[index],title:title||items[index].title,text:text||items[index].text,refs:[...items[index].refs,...refs]});
-const r=(...args)=>copy(runtime,...args);
-const m=(...args)=>copy(modules,...args);
+const runtimeTitles=['瀏覽器：接操作並管理畫面狀態','身分服務：簽發與驗證登入 token','Worker：路由、授權並執行 API','Rate limiter：原子驗頻率與額度','Hyperdrive：連接 PostgreSQL','PostgreSQL：保存正式內容與工作','Cloudinary：儲存與交付圖片','Cloudflare cron：每半小時喚醒維護','Queue：領取並執行背景待辦','PostgreSQL：寫入通知與事件時間','RealtimeHub：推送內容變更訊號','FCM：交付通知給已登記裝置','Notion：同步外部封存頁面'];
+const r=(index,title,text,refs=[])=>copy(runtime,index,title||runtimeTitles[index],text,refs);
+const moduleTitles=['src/app：選路由並組頁面','src/components：呈現表單並接操作','src/hooks：管理草稿與請求狀態','src/services：送 API 並管理快取','backend/actions：驗規則並執行操作','database：執行 SQL 與一致性規則','jobs／durable：執行背景與即時工作','config／generated：定義共用契約','tests／workflows：驗證並發布新版'];
+const m=(index,title,text,refs=[])=>copy(modules,index,title||moduleTitles[index],text,refs);
 const diagram=(id,title,summary,paths,notes=[])=>separatePaths({id,title,summary,group:'程式架構',notes},paths);
 export const architectureFlows=[
   diagram('overview','整個專案：一次請求到畫面更新','依實際請求順序走過前端、身分服務、Worker、配額與 PostgreSQL；返回同一服務時再放一張卡片。',[
@@ -93,3 +95,10 @@ export const architectureFlows=[
     {title:'修改契約 → 生成 → 驗證 → 部署 → 既有分頁更新',nodes:[m(7,'config：共用契約','action、rate-limit、operations、retention JSON 定義資料與設定範圍。'),m(7,'scripts / generated：產生契約','產生 src/generated、cloudflare/generated 與完整 migrated PostgreSQL schema 型別。'),m(8,'tests / verify：核對變更','生成一致性、型別、integration、browser、build 等 gate；命令見 package.json。地圖沒有重跑產品 gate。'),m(8,'workflows：部署新版','發布 Next.js／Vercel 與 Cloudflare Worker；migrations 與環境配置依部署流程套用。'),r(0,'PWA：發現新版本','version.json 提供 build version；有草稿／sending／驗證就延後，安全時 SW update／reload 同網址。',['src/components/app-update-gate.tsx','src/app/version.json/route.ts'])],labels:['JSON 契約＋migration schema → 產生器','生成檔、原碼變更 → 驗證／build','通過 gate 的 build、配置、migration → 部署','新版 build version → version.json → 更新檢查']},
   ]),
 ];
+
+// 讀取不 claim operation、不扣寫入產品額度；分開兩條實際執行路徑。
+const overview=architectureFlows[0], steps=overview.nodes, handoffs=overview.edges.map(e=>e.label);
+architectureFlows[0]=separatePaths({...overview,title:'整個專案：讀取與寫入如何執行'},[
+  {title:'讀取：開列表、詳情或搜尋',nodes:[{...steps[0],title:'列表／詳情：要求讀取內容'},...steps.slice(1,7),{...steps[9],title:'Read handler：驗可見性並查內容',text:'驗 query、cursor 與目標可見性，執行查詢 SQL／RPC；不進寫入去重交易。'},{...steps[10],title:'PostgreSQL：回傳可見資料',text:'依 viewer、scope、狀態與分類規則篩資料，回 cursor 與內容版本。'},...steps.slice(11)],labels:[...handoffs.slice(0,6),'已驗授權與 burst＋query／cursor → read handler','查詢 SQL／RPC＋viewer → 可見資料',...handoffs.slice(10)]},
+  {title:'寫入：發文、互動或管理儲存',nodes:[{...steps[0],title:'表單／互動：要求寫入變更'},...steps.slice(1,7),{...steps[7],title:'PostgreSQL：鎖定操作去重身份',text:'開交易 claim_operation。已完成就重播 response；新 operation 才執行後續變更，處理中或已過期拒絕。'},{...steps[8],title:'Rate limiter：原子扣產品額度'},steps[9],{...steps[10],title:'PostgreSQL：提交變更與事件',text:'內容／設定、DB triggers、此操作的稽核、domain event、deliveries 與 complete_operation 同交易保存；任何失敗回滾。'},...steps.slice(11)],labels:[...handoffs.slice(0,6),'operationId＋actor UID＋action → claim_operation','新操作＋units＋時間窗 key → claim 配額',...handoffs.slice(8)]},
+]);

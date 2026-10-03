@@ -1,5 +1,6 @@
 // 所有 schema.generated.ts 模型都有用途解說；欄位型別由 build.mjs 取最新契約。
 // 關聯分為 migrations 的實體 FK，及程式按 UID/target/payload 解析的邏輯關係。
+import { modelTitle } from './database-copy.mjs';
 const model = (group, title, purpose, key, lifecycle, related = []) => ({ group, title, purpose, key, lifecycle, related });
 export const modelDescriptions = {
   user_profiles: model('身分與權限','使用者公開資料','Firebase UID 的 profile、Email、公開名稱與頭像。正式 ADMIN_EMAILS 判管理員；profile/avatar version 驅動呈現快取。','uid','bootstrap 記 last_seen_at 最多每 24 小時一次；無內容／角色關聯且符合閒置政策才匿名化 PII，未刪 Firebase 帳號。',['user_role_assignments','user_restrictions','uploads']),
@@ -55,8 +56,8 @@ export function makeModelFlows(models) {
     id: 'model:'+m.name, title: m.title+' · '+m.name, group: '資料模型', section: m.group,
     kind: 'topology', summary: m.purpose, notes: ['欄位型別來自完整 migration 生成契約；圖上「程式關聯」未必是 FK。', m.lifecycle],
     nodes: [
-      {title:m.name, text:m.purpose, layer:'database', x:360,y:0,refs:m.refs,model:m.name},
-      ...m.related.map((related,i)=>({title:related,text:models.find(x=>x.name===related).purpose,layer:'database',x:(i%3)*360,y:260+Math.floor(i/3)*240,refs:models.find(x=>x.name===related).refs,model:related})),
+      {title:modelTitle(m.name), text:m.purpose, layer:'database', x:360,y:0,refs:m.refs,model:m.name},
+      ...m.related.map((related,i)=>({title:modelTitle(related),text:models.find(x=>x.name===related).purpose,layer:'database',x:(i%3)*360,y:260+Math.floor(i/3)*240,refs:models.find(x=>x.name===related).refs,model:related})),
     ],
     edges: m.related.map((related,i)=>({from:0,to:i+1,label:modelConnection(m,related),relation:true})),
   }));
@@ -64,11 +65,11 @@ export function makeModelFlows(models) {
 
 export function makeModelOverview(models) {
   const sections = [
-    ['身分與權限','user_profiles / roles / scope / restrictions','誰登入、誰能讀寫、可管理哪個分類；帳號限制到期與保留紀錄分開。'],
-    ['內容','issues / facilities / announcements','分類政策、內容、反應與留言；當前設定和建立時快照有不同生效範圍。'],
-    ['媒體與通知','uploads / notifications / push','內容存媒體 ID、實體在 Cloudinary；通知用事件時間與已讀水位，Push 有裝置 token 與 receipt。'],
-    ['交易與工作','operations / events / deliveries / jobs','主交易的去重和事件 outbox；Queue 逐通道／逐批執行，外部刪除失敗責任留在 backlog。'],
-    ['設定與觀測','runtime_settings / setup / audit / counters','正式配置、版本、稽核、聚合與日樣本；提供管理員檢視與 policy revision。'],
+    ['身分與權限','帳號與授權：決定誰能讀寫','誰登入、誰能讀寫、可管理哪個分類；帳號限制到期與保留紀錄分開。'],
+    ['內容','內容資料：保存正文、狀態與互動','分類政策、內容、反應與留言；當前設定和建立時快照有不同生效範圍。'],
+    ['媒體與通知','媒體與通知：記錄圖片及收件狀態','內容存媒體 ID、實體在 Cloudinary；通知用事件時間與已讀水位，Push 有裝置 token 與 receipt。'],
+    ['交易與工作','交易與工作：追蹤變更與執行責任','主交易的去重和事件 outbox；Queue 逐通道／逐批執行，外部刪除失敗責任留在 backlog。'],
+    ['設定與觀測','政策與觀測：保存規則、版本與稽核','正式配置、版本、稽核、聚合與日樣本；提供管理員檢視與 policy revision。'],
   ];
   return {id:'data-models',title:'資料模型：整體關係',group:'資料模型',kind:'topology',summary:'左側可逐張檢視所有表與 view 的完整欄位；此圖先顯示五類資料的責任。',notes:['實體 FK 與邏輯關聯會分開標示；Firebase Auth、Cloudinary 與 DO 儲存不在 PostgreSQL schema 中。'],
     nodes:sections.map(([section,title,text],i)=>({title,text,layer:'database',x:(i%3)*370,y:Math.floor(i/3)*270,refs:[{path:'cloudflare/src/backend/database/schema.generated.ts',line:4}],details:[{title:'所含資料模型',text:models.filter(m=>m.group===section).map(m=>m.name).join('、')},{title:'閱讀方式',text:'在左側「資料模型」選表；點中央卡片後，右側列出用途、身份鍵、完整欄位與時間條件。'}]})),
