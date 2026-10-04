@@ -27,6 +27,8 @@
 
 完整 local suite 在 fast checks 中加入 production Next.js build、build budget 和 Bun high-severity dependency audit。Dependency audit 要連 npm advisory API；離線時即使前面階段全過，整體仍會失敗。
 
+本機 gate 使用 `.next-verify`，其 Service Worker 也輸出到 `.next-verify/service-worker/`，避免與瀏覽器測試或預覽重寫同一個 `public/sw.js`，混用不同的 API 環境。可執行的正式與 E2E build 仍使用 `public/sw.js`。
+
 Build budget 的上限集中在 `config/build-budget.config.json`，達到 85% 時警告，超過硬上限才失敗。警告不能當成測試失敗，但交付報告要寫出來。
 
 CSS 依 production 的 Next.js client reference manifest，計算每個頁面初始載入的檔案；同一檔案只算一次。一般介面樣式與 `@font-face` 宣告分開衡量，中文字型的 unicode range 不會擠掉介面樣式的空間。gzip 估算仍包含完整字型宣告，不是正式服務的實際傳輸量。另檢查每個 CSS chunk，涵蓋按需載入的編輯器樣式。JS 與 WOFF2 暫時維持全站產物總量上限。

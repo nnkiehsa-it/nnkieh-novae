@@ -41,7 +41,11 @@ const publicEnvironment = {
 const withSerwist = withSerwistInit({
   disable: process.env.NODE_ENV === "development" || process.env.NOVAE_LOCAL_TEST_PREVIEW === "true",
   register: true,
-  swDest: "public/sw.js",
+  // The local gate can build beside E2E or a preview. Its worker must not
+  // replace the served worker's API environment in the shared public folder.
+  swDest: process.env.NOVAE_NEXT_DIST_DIR === ".next-verify"
+    ? ".next-verify/service-worker/sw.js"
+    : "public/sw.js",
   swSrc: "src/app/sw.ts",
 });
 
