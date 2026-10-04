@@ -8,7 +8,7 @@
 @custom-variant dark (&:is(.dark *));
 /* Existing hover recipes answer either a real mouse or a confirmed press.
    Touch never relies on Safari's sticky :hover, including on hybrid devices. */
-@custom-variant hover (&:is([data-pressed="true"], :hover:where(:root[data-pointer-type="mouse"] *)));
+@custom-variant hover (&:is([data-pressed], .t-mouse :hover));
 
 @theme inline {
   --color-background: var(--background);
@@ -429,11 +429,6 @@ html[data-input-modality="pointer"] :focus-visible {
   }
 }
 
-::selection {
-  background: var(--selection-bg);
-  color: var(--selection-fg);
-}
-
 .app-viewport {
   display: flex;
   flex-direction: column;
@@ -452,11 +447,6 @@ html[data-input-modality="pointer"] :focus-visible {
    is visually hidden, making viewport units wider than the drawable page. */
 .app-main-column {
   container-type: inline-size;
-}
-
-.route-page {
-  width: min(100%, var(--content-max));
-  margin-inline: auto;
 }
 
 /* The controls at the top of a screen stay where they are while the reading

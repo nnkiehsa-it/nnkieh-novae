@@ -61,6 +61,80 @@ async function expectTouchTarget(page: Page, name: string | RegExp) {
 test.describe('mobile route motion', () => {
   test.use({ storageState: authStatePath('ordinary') });
 
+  test('touch feedback belongs to the whole card and clears when a press becomes a swipe', async ({ page }) => {
+    await suppressInstallPrompt(page);
+    await page.goto('/issues/proposal-a');
+    const card = page.locator('.t-card').first();
+    const link = card.locator('[data-feed-card-link]');
+    await expect(link).toBeVisible();
+    const box = (await link.boundingBox())!;
+    const x = box.x + box.width / 2;
+    const y = box.y + box.height / 2;
+    const restingColor = await card.evaluate((element) => getComputedStyle(element).backgroundColor);
+    const touch = await page.context().newCDPSession(page);
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+    await expect(card).toHaveAttribute('data-pressed', 'true');
+    await expect.poll(() => card.evaluate((element) => getComputedStyle(element).backgroundColor)).not.toBe(restingColor);
+    await expect.poll(() => card.evaluate((element) => getComputedStyle(element).transform)).not.toBe('none');
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y + 30 }] });
+    await expect(card).not.toHaveAttribute('data-pressed');
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect.poll(() => card.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(restingColor);
+
+    const heading = (await page.locator('h1').first().boundingBox())!;
+    await page.touchscreen.tap(heading.x + heading.width / 2, heading.y + heading.height / 2);
+    await page.touchscreen.tap(heading.x + heading.width / 2, heading.y + heading.height / 2);
+    expect(await page.evaluate(() => visualViewport!.scale)).toBe(1);
+
+    // Real multi-touch in a scrollable app surface must not scale the viewport.
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x - 20, y }, { x: x + 20, y }] });
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x - 60, y }, { x: x + 60, y }] });
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    expect(await page.evaluate(() => visualViewport!.scale)).toBe(1);
+    await expect(page).toHaveURL(/\/issues\/proposal-a$/u);
+  });
+
+  test('app surfaces separate in both themes while native editing remains available', async ({ page }) => {
+    await suppressInstallPrompt(page);
+    await page.goto('/issues/proposal-a/compose/new');
+    const title = page.getByRole('textbox', { name: 'Proposal title' });
+    const content = page.getByRole('textbox', { name: 'Proposal content' });
+    await expect(content).toBeVisible();
+    await expect(title).toHaveCSS('user-select', 'text');
+    await expect(content).toHaveCSS('user-select', 'text');
+    await expect(content).toHaveCSS('touch-action', 'pan-x pan-y');
+    await expect(page.locator('body')).toHaveCSS('user-select', 'none');
+    for (const textbox of [title, content]) {
+      expect(await textbox.evaluate((element) => {
+        const event = new Event('contextmenu', { bubbles: true, cancelable: true });
+        element.dispatchEvent(event);
+        return event.defaultPrevented;
+      })).toBe(false);
+    }
+    await title.fill('Touch editing stays available');
+    await expect(title).toHaveValue('Touch editing stays available');
+
+    for (const dark of [false, true]) {
+      await page.evaluate((enabled) => document.documentElement.classList.toggle('dark', enabled), dark);
+      await expect(page.locator('body')).toHaveCSS('background-color', dark ? 'rgb(0, 0, 0)' : 'rgb(233, 237, 244)');
+      await expect(title).toHaveCSS('background-color', dark ? 'rgb(22, 22, 24)' : 'rgb(253, 254, 254)');
+      const contrast = await title.evaluate((element) => {
+        const style = getComputedStyle(element);
+        const luminance = (color: string) => {
+          const channels = color.match(/[\d.]+/gu)!.slice(0, 3).map((channel) => {
+            const value = Number(channel) / 255;
+            return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+          });
+          return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+        };
+        const foreground = luminance(style.color);
+        const background = luminance(style.backgroundColor);
+        return (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05);
+      });
+      expect(contrast).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
   test('keeps wide editor tables and their controls inside the composer', async ({ page }) => {
     await suppressInstallPrompt(page);
     await page.goto('/issues/proposal-a/compose/new');

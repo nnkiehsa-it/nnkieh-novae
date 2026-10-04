@@ -20,7 +20,7 @@ export function installPressFeedback() {
   };
   const onPointerDown = (event: PointerEvent) => {
     clear();
-    root.dataset.pointerType = event.pointerType;
+    root.classList.toggle("t-mouse", event.pointerType === "mouse");
     if (!event.isPrimary || event.button !== 0) return;
     const control = interactiveTarget(event.target);
     if (!control || isDisabledTarget(control)) return;
@@ -38,7 +38,7 @@ export function installPressFeedback() {
     }
   };
   const onPointerMove = (event: PointerEvent) => {
-    if (event.pointerType === "mouse") root.dataset.pointerType = "mouse";
+    if (event.pointerType === "mouse") root.classList.add("t-mouse");
     if (!press || event.pointerId !== press.pointerId) return;
     if (Math.hypot(event.clientX - press.x, event.clientY - press.y) >= 8) clear();
   };
@@ -67,6 +67,6 @@ export function installPressFeedback() {
     document.removeEventListener("visibilitychange", onVisibilityChange);
     window.removeEventListener("blur", clear);
     window.removeEventListener("pagehide", clear);
-    delete root.dataset.pointerType;
+    root.classList.remove("t-mouse");
   };
 }

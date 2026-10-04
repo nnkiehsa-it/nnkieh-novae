@@ -575,7 +575,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   color: var(--foreground);
 }
 @media (hover: hover) and (pointer: fine) {
-  :root:not([data-pointer-type="touch"]) .t-tab:not([aria-selected="true"]):not([data-displayed-active="true"]):hover {
+  :root.t-mouse .t-tab:not([aria-selected="true"]):not([data-displayed-active="true"]):hover {
     color: var(--foreground);
   }
 }
@@ -978,7 +978,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   background: var(--tint-surface-hover);
 }
 @media (hover: hover) and (pointer: fine) {
-  :root:not([data-pointer-type="touch"]) .t-like[data-accent="hand"][data-liked="true"]:hover:not(:disabled) {
+  :root.t-mouse .t-like[data-accent="hand"][data-liked="true"]:hover:not(:disabled) {
     background: var(--tint-surface-hover);
   }
 }
@@ -1106,18 +1106,18 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 
 /* Hover is a pointer affordance only. */
 @media (hover: hover) and (pointer: fine) {
-  :root:not([data-pointer-type="touch"]) [data-slot="button"]:not(:disabled):not([data-pressed="true"]):not(:active):hover {
+  :root.t-mouse [data-slot="button"]:not(:disabled):not([data-pressed="true"]):not(:active):hover {
     transform: translateY(-1px);
   }
-  :root:not([data-pointer-type="touch"]) .t-row:not([data-pressed="true"]):not(:active):not([data-selected="true"]):not([data-navigating="true"]):hover::before {
+  :root.t-mouse .t-row:not([data-pressed="true"]):not(:active):not([data-selected="true"]):not([data-navigating="true"]):hover::before {
     background: var(--surface-hover);
   }
-  :root:not([data-pointer-type="touch"]) .t-card:not([data-pressed="true"]):not(:active):hover {
+  :root.t-mouse .t-card:not([data-pressed="true"]):not(:active):hover {
     background-color: color-mix(in srgb, var(--card) 99%, var(--foreground) 1%);
     border-color: color-mix(in srgb, var(--border) 60%, var(--foreground) 10%);
     transform: translateY(-1px);
   }
-  :root.dark:not([data-pointer-type="touch"]) .t-card:not([data-pressed="true"]):not(:active):hover {
+  :root.dark.t-mouse .t-card:not([data-pressed="true"]):not(:active):hover {
     background-color: color-mix(in srgb, var(--card) 99.5%, var(--foreground) 0.5%);
     border-color: color-mix(in srgb, var(--border) 60%, var(--foreground) 12%);
     transform: translateY(-1px);

@@ -13,7 +13,7 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  :global(:root:not([data-pointer-type="touch"])) .control:hover {
+  :global(:root.t-mouse) .control:hover {
     background: var(--tint-surface);
     color: var(--tint-content);
   }

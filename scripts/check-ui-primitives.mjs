@@ -105,7 +105,12 @@ for (const file of files) {
       const before = source.slice(0, block.index);
       const mediaStart = before.lastIndexOf("@media");
       const mediaSource = mediaStart >= 0 ? before.slice(mediaStart, before.indexOf("{", mediaStart) + 1) : "";
-      if (!/\(hover:\s*hover\)/u.test(mediaSource)) errors.push(`${relativePath} has an ungated :hover selector`);
+      // Delegated feedback can gate hover by the actual pointer instead of the
+      // device's primary pointer, which also supports mouse input on tablets.
+      const mousePointerGate = /\.t-mouse\s+:hover/u.test(block[1]);
+      if (!/\(hover:\s*hover\)/u.test(mediaSource) && !mousePointerGate) {
+        errors.push(`${relativePath} has an ungated :hover selector`);
+      }
     }
   }
 
