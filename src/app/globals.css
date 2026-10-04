@@ -6,6 +6,15 @@
 @import "../styles/motion.css";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant press (&[data-pressed="true"]);
+/* A touch on a hybrid device must not leave the mouse's hover paint behind. */
+@custom-variant hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:where(:root:not([data-pointer-type="touch"]) *) {
+      @slot;
+    }
+  }
+}
 
 @theme inline {
   --color-background: var(--background);

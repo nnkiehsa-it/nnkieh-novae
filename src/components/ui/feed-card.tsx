@@ -45,7 +45,7 @@ export function FeedCard({
         // Detail navigation answers the click with a local sheet immediately;
         // the route is deliberately not prefetched just because this card was
         // visible. Content can arrive after the physical response has begun.
-        <Link aria-label={label} className="absolute inset-0 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring" href={href} prefetch={false} />
+        <Link data-feed-card-link aria-label={label} className="absolute inset-0 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring" href={href} prefetch={false} />
       ) : null}
     </div>
   );

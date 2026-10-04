@@ -69,7 +69,7 @@ export function ImagePreviewTile({
         {src ? (
           <DecodedImage
             alt={alt}
-            className="max-h-full max-w-full object-contain transition-transform duration-[var(--motion-control)] ease-[var(--ease-arrive)] group-hover:scale-[1.03]"
+            className="max-h-full max-w-full object-contain transition-transform duration-[var(--motion-control)] ease-[var(--ease-arrive)] group-hover:scale-[1.03] group-press:scale-[1.03]"
             containerClassName="size-full place-items-center"
             fetchPriority="low"
             height={height}
@@ -84,7 +84,7 @@ export function ImagePreviewTile({
         )}
       </button>
       {src && !disabled ? (
-        <span className="pointer-events-none absolute bottom-1.5 right-1.5 grid size-6 translate-y-1 place-items-center rounded-full bg-black/60 text-white opacity-0 backdrop-blur-sm transition-[opacity,transform] duration-[var(--motion-control-exit)] group-hover:translate-y-0 group-hover:opacity-100">
+        <span className="pointer-events-none absolute bottom-1.5 right-1.5 grid size-6 translate-y-1 place-items-center rounded-full bg-black/60 text-white opacity-0 backdrop-blur-sm transition-[opacity,transform] duration-[var(--motion-control-exit)] group-hover:translate-y-0 group-press:translate-y-0 group-hover:opacity-100 group-press:opacity-100">
           <ZoomIn className="size-3" />
         </span>
       ) : null}

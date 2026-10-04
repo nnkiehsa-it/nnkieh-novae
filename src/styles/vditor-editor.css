@@ -80,12 +80,14 @@
   transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
 }
 
-.novae-markdown-editor [class~="vditor-toolbar__item"] [class~="vditor-tooltipped"]:active {
+.novae-markdown-editor [class~="vditor-toolbar__item"] [class~="vditor-tooltipped"]:is([data-pressed="true"], :root[data-input-modality="keyboard"] :active) {
+  background: var(--interaction);
+  color: var(--primary);
   transform: translateY(1px) scale(0.97);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .novae-markdown-editor [class~="vditor-toolbar__item"] [class~="vditor-tooltipped"]:hover {
+  :root:not([data-pointer-type="touch"]) .novae-markdown-editor [class~="vditor-toolbar__item"] [class~="vditor-tooltipped"]:hover {
     background: var(--interaction);
     color: var(--primary);
   }

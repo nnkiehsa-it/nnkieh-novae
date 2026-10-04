@@ -26,7 +26,7 @@ export function HomeEntryList({ entries, label }: { entries: HomeEntry[]; label:
               <Icon className="size-5" strokeWidth={1.8} />
             </span>
             <span className="min-w-0 flex-1 text-base font-semibold leading-6">{title}</span>
-            <ArrowRight aria-hidden className="size-4 shrink-0 text-[var(--tint-content)] transition-transform duration-[var(--motion-control)] group-hover:translate-x-0.5 motion-reduce:transition-none" />
+            <ArrowRight aria-hidden className="size-4 shrink-0 text-[var(--tint-content)] transition-transform duration-[var(--motion-control)] group-hover:translate-x-0.5 group-press:translate-x-0.5 motion-reduce:transition-none" />
           </Link>
         ))}
       </ListSection>

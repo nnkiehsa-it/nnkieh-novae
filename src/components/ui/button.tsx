@@ -12,15 +12,15 @@ const buttonVariants = cva(
         // A primary action is not painted differently from any other button; emphasis
         // comes from where it sits, not from a louder surface.
         default:
-          "border bg-card hover:bg-accent hover:text-accent-foreground dark:border-input",
+          "border bg-card hover:bg-accent press:bg-accent hover:text-accent-foreground press:text-accent-foreground dark:border-input",
         destructive:
-          "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40",
+          "bg-destructive text-white hover:bg-destructive/90 press:bg-destructive/90 focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40",
         outline:
-          "border bg-card hover:bg-accent hover:text-accent-foreground dark:border-input",
+          "border bg-card hover:bg-accent press:bg-accent hover:text-accent-foreground press:text-accent-foreground dark:border-input",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary-hover",
-        ghost: "shadow-none hover:bg-accent hover:text-accent-foreground",
-        link: "text-[var(--tint-content)] underline-offset-4 hover:underline",
+          "bg-secondary text-secondary-foreground hover:bg-secondary-hover press:bg-secondary-hover",
+        ghost: "shadow-none hover:bg-accent press:bg-accent hover:text-accent-foreground press:text-accent-foreground",
+        link: "text-[var(--tint-content)] underline-offset-4 hover:underline press:underline",
       },
       size: {
         default: "h-11 px-5 py-2 has-[svg]:px-4",

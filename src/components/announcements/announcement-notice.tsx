@@ -14,7 +14,7 @@ export function AnnouncementNotice() {
   return (
     <Button
       asChild
-      className="rounded-full border-transparent bg-[var(--announcement-notice-bg)] text-[var(--announcement-notice-fg)] shadow-none hover:bg-[var(--announcement-notice-hover)] hover:text-[var(--announcement-notice-fg)]"
+      className="rounded-full border-transparent bg-[var(--announcement-notice-bg)] text-[var(--announcement-notice-fg)] shadow-none hover:bg-[var(--announcement-notice-hover)] press:bg-[var(--announcement-notice-hover)] hover:text-[var(--announcement-notice-fg)] press:text-[var(--announcement-notice-fg)]"
     >
       <Link
         aria-label={t("ui.announcement.noticeLabel")}

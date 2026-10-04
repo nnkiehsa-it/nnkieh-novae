@@ -7,8 +7,13 @@
   box-shadow: none;
 }
 
+.control[data-pressed="true"] {
+  background: var(--tint-surface);
+  color: var(--tint-content);
+}
+
 @media (hover: hover) and (pointer: fine) {
-  .control:hover {
+  :global(:root:not([data-pointer-type="touch"])) .control:hover {
     background: var(--tint-surface);
     color: var(--tint-content);
   }

@@ -17,6 +17,7 @@ import { NavigationFeedback } from "@/components/motion/navigation-feedback";
 import { ensureFirebaseAppCheck } from "@/lib/firebase-app-check";
 import { OptimisticDetailNavigationProvider } from "@/components/optimistic-detail-navigation";
 import { BrowserBehavior } from "@/components/browser-behavior";
+import { PressFeedback } from "@/components/motion/press-feedback";
 
 export function AppProviders({
   children,
@@ -90,6 +91,7 @@ export function AppProviders({
               </SessionProvider>
               <NavigationFeedback />
               <BrowserBehavior />
+              <PressFeedback />
               <ResizeMotion />
               <E2eAuthBridge />
               <AppUpdateGate />

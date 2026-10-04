@@ -81,7 +81,7 @@ function DialogContent({
           {showCloseButton && (
             <DialogPrimitive.Close
               data-slot="dialog-close"
-              className="absolute top-3 right-3 z-30 grid size-8 place-items-center rounded-full bg-muted text-muted-foreground transition-[background-color,color] duration-[var(--motion-control)] hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:size-4"
+              className="absolute top-3 right-3 z-30 grid size-8 place-items-center rounded-full bg-muted text-muted-foreground transition-[background-color,color] duration-[var(--motion-control)] hover:bg-accent press:bg-accent hover:text-foreground press:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:size-4"
             >
               <XIcon />
               <span className="sr-only">{t("common.close")}</span>
