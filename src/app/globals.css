@@ -62,7 +62,7 @@
 
 :root {
   color-scheme: light;
-  --background: #f5f7fb;
+  --background: #e9edf4;
   --foreground: #101828;
   --card: #fdfefe;
   --card-foreground: #101828;
@@ -118,7 +118,7 @@
   --selection-bg: var(--primary);
   --selection-fg: var(--primary-foreground);
   --notification-accent: var(--tint-content);
-  --surface-stage: #f5f7fb;
+  --surface-stage: var(--background);
   /* What is behind the page once a sheet pushes it back: the dark a screen
      sits on, taken from the theme's own ink rather than from a flat black. */
   --surface-behind: color-mix(in oklab, var(--foreground) 88%, black);
@@ -159,9 +159,9 @@
      not blue-grey; the product accent is the only chromatic UI tint. */
   --background: #000000;
   --foreground: #f5f7fb;
-  --card: #0a0a0b;
+  --card: #161618;
   --card-foreground: #f5f7fb;
-  --popover: #101012;
+  --popover: #1c1c1f;
   --popover-foreground: #f5f7fb;
   --accent: #5d8ff0;
   --accent-foreground: #050505;
@@ -172,12 +172,12 @@
   --primary: color-mix(in oklab, var(--accent) 88%, var(--card));
   --primary-foreground: var(--accent-foreground);
   --primary-hover: color-mix(in oklab, var(--primary) 94%, var(--foreground));
-  --secondary: #171719;
+  --secondary: #222225;
   --secondary-foreground: #e5e7eb;
   --secondary-hover: color-mix(in oklab, var(--secondary) 92%, var(--secondary-foreground) 8%);
-  --muted: #171719;
+  --muted: #222225;
   --muted-foreground: #9ca3af;
-  --interaction: #202023;
+  --interaction: #303034;
   --interaction-foreground: #f5f7fb;
   --destructive: #e05a5a;
   --destructive-foreground: #090909;
@@ -212,7 +212,7 @@
   --notification-accent: var(--tint-content);
   --surface-stage: #000000;
   --surface-behind: #000000;
-  --surface-inset: #171719;
+  --surface-inset: var(--secondary);
   --surface-hover: rgb(93 143 240 / 8%);
   --surface-active: rgb(93 143 240 / 14%);
   --surface-selected: var(--tint-surface);
