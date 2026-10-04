@@ -6,15 +6,9 @@
 @import "../styles/motion.css";
 
 @custom-variant dark (&:is(.dark *));
-@custom-variant press (&[data-pressed="true"]);
-/* A touch on a hybrid device must not leave the mouse's hover paint behind. */
-@custom-variant hover {
-  @media (hover: hover) and (pointer: fine) {
-    &:hover:where(:root:not([data-pointer-type="touch"]) *) {
-      @slot;
-    }
-  }
-}
+/* Existing hover recipes answer either a real mouse or a confirmed press.
+   Touch never relies on Safari's sticky :hover, including on hybrid devices. */
+@custom-variant hover (&:is([data-pressed="true"], :hover:where(:root[data-pointer-type="mouse"] *)));
 
 @theme inline {
   --color-background: var(--background);
