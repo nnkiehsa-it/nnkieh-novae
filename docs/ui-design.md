@@ -27,16 +27,16 @@ Taste-guided visual overhaul for a daily-use campus application. The login entra
 
 ## Visual system
 
-- Light: stage `#f5f7fb`, card `#fdfefe`, inset `#edf2f8`, text `#101828`, muted text `#566477`, brand `#1557d5`.
-- Dark: stage `#0d121b`, card `#131b27`, inset `#1a2534`, text `#edf3fb`, muted text `#9cabbf`, brand `#5d8ff0`.
+- Light: stage `#e9edf4`, card `#fdfefe`, inset `#edf2f8`, text `#101828`, muted text `#566477`, brand `#1557d5`.
+- Dark: AMOLED stage `#000000`, card `#161618`, popover `#1c1c1f`, inset `#222225`, text `#f5f7fb`, muted text `#9ca3af`, brand `#5d8ff0`.
 - Blue is the fixed brand accent, expressed through semantic tokens. Dark blue actions use dark ink for readable contrast. Status colors retain their operational meaning.
-- HarmonyOS Sans TC leads the existing self-hosted font stack. Page headings are 24px, detail headings 24-26px, feed titles 15px, ordinary controls 13px, metadata 12px. Editable mobile text stays at 16px.
-- Base radius 12px, cards 16px, compact inset regions 10.5px; round avatars and the mobile navigation dock retain their functional shapes.
+- HarmonyOS Sans TC leads the existing self-hosted font stack. Page headings are 24px, detail headings 24-26px, feed titles 18px, ordinary controls 13px, metadata 12px. Editable mobile text stays at 16px.
+- Base radius 20px and shared cards 28px; round avatars and the mobile navigation dock retain their functional shapes.
 - Primary actions use the card surface with a defined border, while accent remains reserved for brand emphasis, selected states, and links. Cancel/secondary actions remain neutral. Elevation is centralized in three subtle shadow tokens.
 
 ## Density and reuse
 
-- Feed cards use 16px padding and 12px gaps, with a compact title, 24px metadata slot, and at least 40px footer including its separator spacing.
+- Feed cards use 16px horizontal and 20px vertical padding, 12px gaps, a 28px title line, 24px metadata slot, and a minimum 32px footer. Placeholders use the same frame.
 - Lists retain a regular two-column desktop grid and single-column mobile grid. No decorative hero or extra summary tiles precede the data.
 - Search and sorting occupy one 40px row. The same `FeedToolbar` renders during loading.
 - `FeedCard` owns all three domains' frame and link geometry. Domain components only supply metadata, progress, status, and callbacks.
@@ -65,3 +65,9 @@ Taste-guided visual overhaul for a daily-use campus application. The login entra
 - Delay a feed response and compare the first skeleton's card/header/footer bounds with the corresponding loaded card.
 - Confirm search, sort, navigation, creation, reactions, detail actions, and settings still work through existing browser workflows.
 - Prefer the existing E2E journeys for behavioral and layout verification. Run checks appropriate to the changed areas; report external verification blockers explicitly. Manual browser checks are not required for this improvement pass.
+
+## 手機 sheet 底部
+
+手機的 sheet 與其捲動區都延伸至螢幕底部；surface 不另留固定的底部 padding。`SheetBody` 把 `max(page-gutter, safe-bottom)` 放進可捲動內容，讓最後一列能滑到 Home Indicator 上方。詳細頁、選單與第二層 sheet 共用這項規則；留言浮動列的避讓空間由 `DetailLayout` 保留。
+
+識別度的後續方向與優先順序見 [UI 識別度評估](ui-identity.md)。

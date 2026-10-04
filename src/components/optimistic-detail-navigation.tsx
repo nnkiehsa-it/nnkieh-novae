@@ -128,7 +128,7 @@ export function OptimisticDetailNavigationProvider({
             className="grid-rows-[minmax(0,1fr)]"
             stageScrollY={pending.sourceScrollY}
           >
-            <SheetBody className="pb-0">
+            <SheetBody>
               <SheetTitle className="sr-only">Novae</SheetTitle>
             </SheetBody>
           </SheetContent>

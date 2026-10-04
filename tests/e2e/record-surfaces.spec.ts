@@ -154,14 +154,25 @@ for (const width of [390, 1440]) {
       });
       expect(["clip", "hidden"]).toContain(horizontalBoundary.overflowX);
       expect(horizontalBoundary.scrollLeft).toBe(0);
-      expect(horizontalBoundary.bodyPaddingBottom).toBe("0px");
-      expect(horizontalBoundary.sheetPaddingBottom).toBe(width === 390 ? "16px" : "24px");
+      expect(horizontalBoundary.bodyPaddingBottom).toBe(width === 390 ? "16px" : "0px");
+      expect(horizontalBoundary.sheetPaddingBottom).toBe(width === 390 ? "0px" : "24px");
+      if (width === 390) {
+        // Exercise an installed iPhone's inset as well as the browser's zero
+        // inset. It belongs to the scroll content, never to a clipped surface.
+        await sheet.evaluate((node) => node.style.setProperty("--safe-bottom", "34px"));
+        await expect(body).toHaveCSS("padding-bottom", "34px");
+        await expect(sheet).toHaveCSS("padding-bottom", "0px");
+        expect(await body.evaluate((node) => node.getBoundingClientRect().bottom)).toBe(620);
+      }
       const size = await body.evaluate((node) => ({ client: node.clientHeight, scroll: node.scrollHeight }));
       expect(size.client).toBeGreaterThan(0);
       expect(size.scroll).toBeGreaterThan(size.client);
       await body.hover();
       await page.mouse.wheel(0, 100_000);
       await expect(last).toBeInViewport({ ratio: 1 });
+      if (width === 390) {
+        expect(await last.evaluate((node) => node.getBoundingClientRect().bottom)).toBeLessThanOrEqual(620 - 34);
+      }
       await expect.poll(() => body.evaluate((node) => node.scrollHeight - node.scrollTop - node.clientHeight)).toBeLessThanOrEqual(1);
       const positions = {
         page: await page.evaluate(() => scrollY),

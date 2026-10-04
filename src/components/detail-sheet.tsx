@@ -76,7 +76,7 @@ export function DetailSheet({ children, label, overlayLabel = label, returnTo }:
         stageScrollY={sourceScrollY}
         suppressEntrance={suppressEntrance}
       >
-        <SheetBody className="pb-0">
+        <SheetBody>
           <SheetTitle className="sr-only">{label}</SheetTitle>
           <RouteSheetContext label={overlayLabel}>{children}</RouteSheetContext>
         </SheetBody>
