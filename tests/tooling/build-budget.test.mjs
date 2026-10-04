@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { Buffer } from "node:buffer";
 import test from "node:test";
 import { measureCss, measureRouteCss, readClientManifest } from "../../scripts/build-budget-metrics.mjs";
 
