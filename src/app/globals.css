@@ -229,9 +229,32 @@
 
 * {
   scrollbar-width: none;
+  /* Each nested scroller must reject page scaling too: touch-action stops at
+     the gesture's nearest scroll container, rather than always reaching html. */
+  touch-action: pan-x pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
   /* Every scroll container owns its boundary: no chaining or rubber-banding,
      including portalled sheets, menus, editors and horizontal tab lists. */
   overscroll-behavior: none;
+}
+
+/* Native editing remains available, including selection inside rich text. */
+input,
+textarea,
+[contenteditable]:not([contenteditable="false"]),
+[contenteditable]:not([contenteditable="false"]) *,
+[data-selectable],
+[data-selectable] * {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+a,
+img {
+  -webkit-user-drag: none;
 }
 
 *::-webkit-scrollbar {

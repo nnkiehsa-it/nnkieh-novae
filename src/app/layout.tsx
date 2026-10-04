@@ -27,7 +27,7 @@ const robotoMono = Roboto_Mono({
 export const metadata: Metadata = {
   applicationName: "Novae",
   description: APP_DESCRIPTION,
-  formatDetection: { telephone: false },
+  formatDetection: { address: false, email: false, telephone: false },
   icons: {
     apple: [
       {

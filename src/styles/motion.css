@@ -115,14 +115,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 
 /* One press vocabulary. The surface sinks a pixel and gives up two percent:
    enough to feel connected to the finger, not enough to look squashed. */
-[data-slot="button"],
-[data-slot="switch"],
-.t-tab,
-[data-slot="dropdown-menu-item"],
-[data-slot="select-item"] {
-  touch-action: manipulation;
-}
-
 :is(
   a[href],
   button,
