@@ -11,6 +11,10 @@ const { getRootDirs } = require("@next/eslint-plugin-next/dist/utils/get-root-di
 test("Next lint still resolves exact, wildcard, brace and array project roots", async () => {
   const fixture = await mkdtemp(path.join(os.tmpdir(), "novae-next-root-glob-"));
   const root = fixture.replaceAll("\\", "/");
+  const target = path.resolve(fixture);
+  if (!target.startsWith(path.resolve(os.tmpdir()) + path.sep) || !path.basename(target).startsWith("novae-next-root-glob-")) {
+    throw new Error("Unsafe test fixture cleanup path.");
+  }
   try {
     await mkdir(path.join(fixture, "apps/a/nested"), { recursive: true });
     await mkdir(path.join(fixture, "apps/b"), { recursive: true });
@@ -21,10 +25,6 @@ test("Next lint still resolves exact, wildcard, brace and array project roots", 
       assert.deepEqual(getRootDirs(context(pattern)).sort(), [`${root}/apps/a`, `${root}/apps/b`]);
     }
   } finally {
-    const target = path.resolve(fixture);
-    if (!target.startsWith(path.resolve(os.tmpdir()) + path.sep) || !path.basename(target).startsWith("novae-next-root-glob-")) {
-      throw new Error("Unsafe test fixture cleanup path.");
-    }
     await rm(target, { recursive: true });
   }
 });
