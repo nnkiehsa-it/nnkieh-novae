@@ -5,6 +5,7 @@ This document is the maintained map of the repository. Read it before broad sear
 ## Runtime and entry points
 
 - `package.json` / `bun.lock` — Bun 1.4 package management with a pinned install graph; Node 24 remains the Next.js, build-script, and Worker runtime alongside Next.js 16.3, React 19.2, TypeScript 7, Tailwind CSS 4, Radix/shadcn primitives, Motion, Vditor 4 WYSIWYG Markdown editing, Serwist, Vitest, and Playwright.
+- `tools/next-root-glob/` — scoped replacement for the Next lint plugin's root-directory glob lookup using Node 24; removes the vulnerable braces dependency without disabling lint rules. Covered by `tests/tooling/next-root-glob.test.mjs`.
 - `src/app/` — Next App Router. Route `page.tsx` files assemble views and forward events; they do not import `services/` directly.
 - `src/app/layout.tsx` — root metadata, stable immersive iOS viewport/status-bar configuration, Inter/Roboto Mono plus HarmonyOS Sans TC split-font loading, global providers, global CSS, and nonce-bound critical Managed Turnstile preconnect/loading before hydration.
 - `src/app/globals.css` — website-aligned cool blue light/dark surfaces, semantic brand actions and custom accent themes, compact typography and radius scale, restrained elevation, safe-area and stable PWA viewport sizing, keyboard-aware navigation, input-modality focus handling, and the shared discussion composer dock.

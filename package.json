@@ -10,6 +10,9 @@
   "packageManager": "bun@1.4.0",
   "overrides": {
     "@grpc/grpc-js": "1.14.5",
+    "@next/eslint-plugin-next": {
+      "fast-glob": "file:./tools/next-root-glob"
+    },
     "browserslist": "4.28.7",
     "js-yaml": "4.3.2",
     "sharp": "0.35.4"
