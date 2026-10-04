@@ -1,0 +1,8 @@
+{
+  "maxRouteCssUiBytes": 262144,
+  "maxRouteCssGzipBytes": 163840,
+  "maxCssChunkGzipBytes": 131072,
+  "cssFontFaceBytes": 327680,
+  "fontBytes": 8388608,
+  "jsBytes": 3145728
+}

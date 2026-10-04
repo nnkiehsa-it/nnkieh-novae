@@ -27,7 +27,29 @@
 
 完整 local suite 在 fast checks 中加入 production Next.js build、build budget 和 Bun high-severity dependency audit。Dependency audit 要連 npm advisory API；離線時即使前面階段全過，整體仍會失敗。
 
-Build budget 會檢查 production asset、font、JS 與 CSS。達到上限 85% 時先警告，超過硬上限才失敗；警告不能當成測試失敗，但交付報告要寫出來。
+Build budget 的上限集中在 `config/build-budget.config.json`，達到 85% 時警告，超過硬上限才失敗。警告不能當成測試失敗，但交付報告要寫出來。
+
+CSS 依 production 的 Next.js client reference manifest，計算每個頁面初始載入的檔案；同一檔案只算一次。一般介面樣式與 `@font-face` 宣告分開衡量，中文字型的 unicode range 不會擠掉介面樣式的空間。gzip 估算仍包含完整字型宣告，不是正式服務的實際傳輸量。另檢查每個 CSS chunk，涵蓋按需載入的編輯器樣式。JS 與 WOFF2 暫時維持全站產物總量上限。
+
+| 指標 | 上限 | 用途 |
+| --- | --- | --- |
+| 單頁介面 CSS，未壓縮 | 256 KiB | 控制樣式解析量；排除字型宣告 |
+| 單頁初始 CSS，gzip level 9 估算 | 160 KiB | 控制頁面初始下載；包含字型宣告 |
+| 單個 CSS chunk，gzip 估算 | 128 KiB | 避免按需載入的樣式包過大 |
+| 全站字型 CSS 宣告，未壓縮 | 320 KiB | 獨立管理中文字型的 unicode range |
+| 全站 WOFF2 / JS 產物 | 8 MiB / 3 MiB | 保留既有字型與程式碼總量檢查 |
+
+每次檢查會在目前 build 目錄產生 `build-budget-report.json`，列出各頁面、所需 CSS、未壓縮與 gzip 估算大小。調整前先查看報告：只使用 Card、Input、Label 的 HeroUI 樣式已集中在 `src/styles/heroui.css`；新增其他 HeroUI 元件時，在這裡加入它的 CSS。拆開原始碼檔案不等於減少輸出，應先移除未使用的樣式或把頁面專用樣式保留在該頁面的 import。
+
+完整本機檢查後，可單獨重新查看報告：
+
+```powershell
+$env:NOVAE_NEXT_DIST_DIR = '.next-verify'
+bun run check:build-budget
+Remove-Item Env:NOVAE_NEXT_DIST_DIR
+```
+
+環境變數 `NOVAE_CSS_BUDGET_BYTES` 已移除。需要暫時覆寫時，使用 `NOVAE_ROUTE_CSS_UI_BUDGET_BYTES`、`NOVAE_ROUTE_CSS_GZIP_BUDGET_BYTES`、`NOVAE_CSS_CHUNK_GZIP_BUDGET_BYTES` 或 `NOVAE_FONT_FACE_CSS_BUDGET_BYTES`；字型和 JS 原有覆寫名稱仍有效。一般維護應直接修改 config，並在 commit 中交代實測大小與調整原因。
 
 ## Backend 與資料庫
 
