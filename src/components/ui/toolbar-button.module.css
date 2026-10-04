@@ -7,7 +7,7 @@
   box-shadow: none;
 }
 
-.control[data-pressed="true"] {
+.control[data-pressed] {
   background: var(--tint-surface);
   color: var(--tint-content);
 }

@@ -80,7 +80,7 @@
   transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
 }
 
-.novae-markdown-editor [class~="vditor-toolbar__item"] [class~="vditor-tooltipped"]:is([data-pressed="true"], :root[data-input-modality="keyboard"] :active) {
+.novae-markdown-editor [class~="vditor-toolbar__item"] [class~="vditor-tooltipped"]:is([data-pressed], :root[data-input-modality="keyboard"] :active) {
   background: var(--interaction);
   color: var(--primary);
   transform: translateY(1px) scale(0.97);

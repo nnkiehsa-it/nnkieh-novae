@@ -148,7 +148,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   [role="tab"],
   [role="switch"],
   [data-slot="select-trigger"]
-):not(:disabled, [aria-disabled="true"], [data-disabled], .t-primary-nav-link, [data-feed-card-link], .t-row, .t-card):is([data-pressed="true"], :root[data-input-modality="keyboard"] :active) {
+):not(:disabled, [aria-disabled="true"], [data-disabled], .t-primary-nav-link, [data-feed-card-link], .t-row, .t-card):is([data-pressed], :root[data-input-modality="keyboard"] :active) {
   transform: translateY(1px) scale(var(--motion-press-scale));
   transition-duration: var(--motion-touch);
 }
@@ -160,7 +160,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     border-color var(--motion-control) var(--ease-move),
     transform var(--motion-control) var(--ease-arrive);
 }
-.t-card:is([data-pressed="true"], :root[data-input-modality="keyboard"] :active) {
+.t-card:is([data-pressed], :root[data-input-modality="keyboard"] :active) {
   background-color: color-mix(in srgb, var(--card) 94%, var(--foreground) 6%);
   transform: translateY(1px) scale(var(--motion-card-press-scale));
   transition-duration: var(--motion-touch);
@@ -211,11 +211,11 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 .t-primary-nav-link [data-nav-icon] {
   transition: transform var(--motion-nav) var(--ease-nav);
 }
-.t-primary-nav-link:is([data-pressed="true"], :root[data-input-modality="keyboard"] :active) [data-nav-icon] {
+.t-primary-nav-link:is([data-pressed], :root[data-input-modality="keyboard"] :active) [data-nav-icon] {
   transform: scale(0.92);
   transition-duration: var(--motion-touch);
 }
-.t-primary-nav-link[data-active="true"]:not([data-pressed="true"]):not(:root[data-input-modality="keyboard"] :active) [data-nav-icon] {
+.t-primary-nav-link[data-active="true"]:not([data-pressed]):not(:root[data-input-modality="keyboard"] :active) [data-nav-icon] {
   transform: translateY(-1px) scale(1.04);
 }
 
@@ -571,7 +571,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 .t-tab[data-displayed-active="true"] {
   color: var(--tabs-text-active);
 }
-.t-tab[data-pressed="true"]:not([aria-selected="true"]):not([data-displayed-active="true"]) {
+.t-tab[data-pressed]:not([aria-selected="true"]):not([data-displayed-active="true"]) {
   color: var(--foreground);
 }
 @media (hover: hover) and (pointer: fine) {
@@ -974,7 +974,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 .t-like[data-accent="hand"][data-liked="true"] .t-like-icon {
   color: var(--tint-content);
 }
-.t-like[data-accent="hand"][data-liked="true"][data-pressed="true"]:not(:disabled) {
+.t-like[data-accent="hand"][data-liked="true"][data-pressed]:not(:disabled) {
   background: var(--tint-surface-hover);
 }
 @media (hover: hover) and (pointer: fine) {
@@ -1091,7 +1091,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 .t-row[data-lead="true"]::before {
   inset-inline-end: 0;
 }
-.t-row:is([data-pressed="true"], :root[data-input-modality="keyboard"] :active)::before,
+.t-row:is([data-pressed], :root[data-input-modality="keyboard"] :active)::before,
 .t-row[data-navigating="true"]::before {
   background: var(--surface-active);
   transition-duration: var(--motion-touch);
@@ -1106,18 +1106,18 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 
 /* Hover is a pointer affordance only. */
 @media (hover: hover) and (pointer: fine) {
-  :root.t-mouse [data-slot="button"]:not(:disabled):not([data-pressed="true"]):not(:active):hover {
+  :root.t-mouse [data-slot="button"]:not(:disabled):not([data-pressed]):not(:active):hover {
     transform: translateY(-1px);
   }
-  :root.t-mouse .t-row:not([data-pressed="true"]):not(:active):not([data-selected="true"]):not([data-navigating="true"]):hover::before {
+  :root.t-mouse .t-row:not([data-pressed]):not(:active):not([data-selected="true"]):not([data-navigating="true"]):hover::before {
     background: var(--surface-hover);
   }
-  :root.t-mouse .t-card:not([data-pressed="true"]):not(:active):hover {
+  :root.t-mouse .t-card:not([data-pressed]):not(:active):hover {
     background-color: color-mix(in srgb, var(--card) 99%, var(--foreground) 1%);
     border-color: color-mix(in srgb, var(--border) 60%, var(--foreground) 10%);
     transform: translateY(-1px);
   }
-  :root.dark.t-mouse .t-card:not([data-pressed="true"]):not(:active):hover {
+  :root.dark.t-mouse .t-card:not([data-pressed]):not(:active):hover {
     background-color: color-mix(in srgb, var(--card) 99.5%, var(--foreground) 0.5%);
     border-color: color-mix(in srgb, var(--border) 60%, var(--foreground) 12%);
     transform: translateY(-1px);
