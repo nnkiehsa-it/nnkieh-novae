@@ -162,7 +162,7 @@ for (const width of [390, 1440]) {
         await sheet.evaluate((node) => node.style.setProperty("--safe-bottom", "34px"));
         await expect(body).toHaveCSS("padding-bottom", "34px");
         await expect(sheet).toHaveCSS("padding-bottom", "0px");
-        expect(await body.evaluate((node) => node.getBoundingClientRect().bottom)).toBe(620);
+        await expect.poll(() => body.evaluate((node) => node.getBoundingClientRect().bottom)).toBe(620);
       }
       const size = await body.evaluate((node) => ({ client: node.clientHeight, scroll: node.scrollHeight }));
       expect(size.client).toBeGreaterThan(0);
