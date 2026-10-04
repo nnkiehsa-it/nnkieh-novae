@@ -1,6 +1,6 @@
 @import "../assets/fonts/harmonyos-sans-tc/harmonyos-sans-tc.css";
 @import "tailwindcss";
-@import "@heroui/styles";
+@import "../styles/heroui.css";
 @import "tw-animate-css";
 @import "../generated/motion-ladder.css";
 @import "../styles/motion.css";

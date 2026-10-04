@@ -1,0 +1,10 @@
+/* Keep the library theme and utilities, but ship only the primitives used by
+   Novae. Add a component stylesheet here when introducing another HeroUI API. */
+@import "@heroui/styles/base/base.css" layer(base);
+@import "@heroui/styles/base/scrollbar.css" layer(base);
+@import "@heroui/styles/themes/default" layer(theme);
+@import "@heroui/styles/utilities";
+@import "@heroui/styles/variants";
+@import "@heroui/styles/components/card.css" layer(components);
+@import "@heroui/styles/components/input.css" layer(components);
+@import "@heroui/styles/components/label.css" layer(components);
