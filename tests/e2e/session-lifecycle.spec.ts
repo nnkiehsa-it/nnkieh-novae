@@ -64,6 +64,14 @@ test('a warm startup shows its steps and opens the shell while the daily bootstr
 
 test('a failed startup retries in place without falling through to setup', async ({ browser }) => {
   const { context, page } = await newUserPage(browser, 'ordinary');
+  // Saved auth fixtures include a warm access snapshot. This regression needs
+  // a cold content cache so a failed access request really blocks startup.
+  await page.goto('/version.json');
+  await page.evaluate((namespace) => new Promise<void>((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(namespace);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  }), PERSISTENT_CACHE_NAMESPACE);
   let attempts = 0;
   let granularReads = 0;
   await page.route('**/v1/actions', async (route) => {
