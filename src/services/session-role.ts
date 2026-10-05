@@ -28,17 +28,9 @@ export function getCachedSessionRole() {
   return cachedSessionRole;
 }
 
-export function seedSessionAccess(access: SessionAccess) {
+export function seedSessionAccess(access: SessionAccess, options: { persist?: boolean } = {}) {
   cachedSessionRole = access.role === 'admin' ? 'admin' : 'user';
-  setCachedContent(SESSION_ACCESS_CACHE_KEY, {
-    role: cachedSessionRole,
-    roles: access.roles,
-    permissions: access.permissions,
-    managedIssueCategoryIds: access.managedIssueCategoryIds,
-    managedFacilityCategoryIds: access.managedFacilityCategoryIds,
-    setupCompleted: access.setupCompleted === true,
-  });
-  return {
+  const normalized = {
     role: cachedSessionRole,
     roles: access.roles,
     permissions: access.permissions,
@@ -46,6 +38,18 @@ export function seedSessionAccess(access: SessionAccess) {
     managedFacilityCategoryIds: access.managedFacilityCategoryIds,
     setupCompleted: access.setupCompleted === true,
   } satisfies SessionAccess;
+  if (options.persist !== false) setCachedContent(SESSION_ACCESS_CACHE_KEY, normalized);
+  return normalized;
+}
+
+export async function readCachedSessionAccess(): Promise<SessionAccess | null> {
+  const cached = await getCachedContentPersistent<SessionAccess>(
+    SESSION_ACCESS_CACHE_KEY,
+    CONTENT_SHORT_CACHE_TTL_MS,
+  );
+  // Setup can be completed by another account while this one is away.
+  if (!cached?.setupCompleted) return null;
+  return seedSessionAccess(cached, { persist: false });
 }
 
 export async function fetchCurrentUserRole(
@@ -55,17 +59,11 @@ export async function fetchCurrentUserRole(
     markContentCachePrefixStale(SESSION_ACCESS_CACHE_KEY);
     markSessionBootstrapStale();
   }
-  const cached = force ? null : await getCachedContentPersistent<SessionAccess>(
-    SESSION_ACCESS_CACHE_KEY,
-    CONTENT_SHORT_CACHE_TTL_MS,
-  );
+  const cached = force ? null : await readCachedSessionAccess();
   // An incomplete setup is a transient global state. Never let one user's
   // persistent session cache keep the platform locked after another user
   // completes setup.
-  if (cached?.setupCompleted) {
-    cachedSessionRole = cached.role;
-    return cached;
-  }
+  if (cached) return cached;
 
   // Prefer the combined bootstrap so cold starts share one Edge invocation with
   // catalog / versions / unread (see session-bootstrap).

@@ -12,6 +12,7 @@ import { clearComposerDrafts } from "@/lib/composer-draft";
 import { clearSupportedIssueMemory } from "@/lib/supported-issue-memory";
 import { ensureBackendProfile } from "@/services/backend-auth";
 import {
+  readCachedSessionAccess,
   seedSessionAccess,
   type SessionAccess,
 } from "@/services/session-role";
@@ -123,9 +124,11 @@ async function refreshVerifiedSession(
   verificationId: number,
   tokenValidationPromise: Promise<ValidationResult>,
   syncProfile: boolean,
+  cachedAccessPromise: Promise<SessionAccess | null> = Promise.resolve(null),
 ) {
   const current = () =>
     verificationId === verificationSerial && state.user?.uid === user.uid && auth?.currentUser === user;
+  let accessReady = false;
   try {
     const tokenValidation = await tokenValidationPromise;
     if (!current()) return;
@@ -138,26 +141,32 @@ async function refreshVerifiedSession(
       patch({ startupPhase: "access" });
     }
     const applyAccess = (access: SessionAccess) => {
+      accessReady = true;
       patch({
         managedFacilityCategoryIds: access.managedFacilityCategoryIds,
         managedIssueCategoryIds: access.managedIssueCategoryIds,
         permissions: access.permissions,
         roles: access.roles,
+        roleLoading: false,
         setupCompleted: access.setupCompleted,
-        startupPhase: "content",
+        startupPhase: "ready",
         userRole: access.role,
       });
     };
+    const cachedAccess = await cachedAccessPromise;
+    if (!current()) return;
+    if (cachedAccess) applyAccess(cachedAccess);
     const bootstrap = await fetchSessionBootstrap({
-      force: true,
-      // Permissions arrive first; keep their UI state ready while the catalog loads.
+      force: syncProfile,
+      // Access opens the shell; catalog, unread and versions finish in the background.
       onAccess: (access) => {
         if (current()) applyAccess(seedSessionAccess(access));
       },
       recordVisit: shouldRecordPlatformVisit(user.uid),
     });
     if (!current()) return;
-    const access = seedSessionAccess(bootstrap.access);
+    // Cached reads must retain their original expiry instead of extending access forever.
+    const access = seedSessionAccess(bootstrap.access, { persist: false });
     seedCategoryCatalog(bootstrap.catalog);
     applyContentVersionsSnapshot(bootstrap.versions);
     seedNotificationUnreadHint(bootstrap.notificationUnread.hasUnread);
@@ -171,6 +180,7 @@ async function refreshVerifiedSession(
       await rejectUser(error.restrictionMessage || error.message);
       return;
     }
+    if (accessReady && !(error instanceof ApiRequestError && error.code === "app-check-failed")) return;
     patch({
       startupError: error instanceof ApiRequestError && error.code === "app-check-failed"
         ? "auth.appCheckFailed"
@@ -192,6 +202,7 @@ function acceptUser(
   needsProfileSync = syncProfile;
   setContentCacheScope(user.uid);
   clearContentReadMemoryCache();
+  const cachedAccessPromise = syncProfile ? Promise.resolve(null) : readCachedSessionAccess();
   patch({
     appReady: true,
     authChecking: false,
@@ -210,7 +221,7 @@ function acceptUser(
     userRole: "user",
   });
   if (user.photoURL) void loadAvatar(user.photoURL, user.uid);
-  void refreshVerifiedSession(user, verificationId, tokenValidationPromise, syncProfile);
+  void refreshVerifiedSession(user, verificationId, tokenValidationPromise, syncProfile, cachedAccessPromise);
 }
 
 export async function retrySessionStartup() {
