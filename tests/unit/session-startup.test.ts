@@ -74,6 +74,7 @@ it("opens after access arrives while the rest of bootstrap is still pending", as
   await vi.waitFor(() => expect(mocks.bootstrap).toHaveBeenCalledOnce());
   expect(store.getSessionState()).toMatchObject({ roleLoading: false, setupCompleted: true, startupPhase: "ready" });
   expect(mocks.bootstrap.mock.calls[0][0].force).not.toBe(true);
+  expect(mocks.bootstrap.mock.calls[0][0].refresh).toBe(true);
   finish({ access, catalog: {}, versions: {}, notificationUnread: { hasUnread: false }, visitRecorded: false });
 });
 
@@ -106,5 +107,16 @@ it("does not hydrate a cached account when the restored security check fails", a
   const store = await start();
   expect(store.getSessionState()).toMatchObject({ user: null, error: "auth.securityCheckFailed" });
   expect(mocks.bootstrap).not.toHaveBeenCalled();
+  expect(mocks.signOut).toHaveBeenCalledOnce();
+});
+
+it("revokes cached access if the background refresh finds an account restriction", async () => {
+  mocks.cachedAccess.mockResolvedValue(access);
+  mocks.bootstrap.mockImplementation(async () => {
+    const { ApiRequestError } = await import("../../src/lib/api-error");
+    throw new ApiRequestError({ error: { code: "account-restricted", message: "Restricted account" } });
+  });
+  const store = await start();
+  await vi.waitFor(() => expect(store.getSessionState().user).toBe(null));
   expect(mocks.signOut).toHaveBeenCalledOnce();
 });

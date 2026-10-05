@@ -51,6 +51,7 @@ export function markSessionBootstrapStale() {
  */
 export async function fetchSessionBootstrap(options: {
   force?: boolean;
+  refresh?: boolean;
   onAccess?: (access: SessionAccess) => void;
   recordVisit?: boolean;
 } = {}): Promise<SessionBootstrapResult> {
@@ -61,7 +62,9 @@ export async function fetchSessionBootstrap(options: {
 
   // Visit recording is a side effect; never serve a cached response when a visit
   // must be written. Concurrent cold-start callers still share one in-flight request.
-  if (!force && !pendingRecordVisit) {
+  // A background refresh keeps the persisted snapshot usable by the shell and
+  // catalog readers while new access is being reconciled with the server.
+  if (!force && !options.refresh && !pendingRecordVisit) {
     const cached = await getCachedContentPersistent<SessionBootstrapResult>(
       SESSION_BOOTSTRAP_CACHE_KEY,
       CONTENT_SHORT_CACHE_TTL_MS,

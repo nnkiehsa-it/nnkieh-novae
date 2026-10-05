@@ -129,6 +129,7 @@ async function refreshVerifiedSession(
   const current = () =>
     verificationId === verificationSerial && state.user?.uid === user.uid && auth?.currentUser === user;
   let accessReady = false;
+  let receivedBootstrapAccess = false;
   try {
     const tokenValidation = await tokenValidationPromise;
     if (!current()) return;
@@ -158,21 +159,24 @@ async function refreshVerifiedSession(
     if (cachedAccess) applyAccess(cachedAccess);
     const bootstrap = await fetchSessionBootstrap({
       force: syncProfile,
+      refresh: true,
       // Access opens the shell; catalog, unread and versions finish in the background.
       onAccess: (access) => {
-        if (current()) applyAccess(seedSessionAccess(access));
+        if (!current()) return;
+        receivedBootstrapAccess = true;
+        applyAccess(seedSessionAccess(access));
       },
       recordVisit: shouldRecordPlatformVisit(user.uid),
     });
     if (!current()) return;
-    // Cached reads must retain their original expiry instead of extending access forever.
-    const access = seedSessionAccess(bootstrap.access, { persist: false });
+    // A streamed access segment was already committed. Its optional tail must
+    // not overwrite a newer role refresh made after the shell opened.
+    if (!receivedBootstrapAccess) applyAccess(seedSessionAccess(bootstrap.access, { persist: false }));
     seedCategoryCatalog(bootstrap.catalog);
     applyContentVersionsSnapshot(bootstrap.versions);
     seedNotificationUnreadHint(bootstrap.notificationUnread.hasUnread);
     if (bootstrap.visitRecorded)
       writeLocalStorage(`${VISIT_RECORDED_AT_KEY}:${user.uid}`, String(Date.now()));
-    applyAccess(access);
   } catch (error) {
     if (!current()) return;
     sessionDebug("session verification failed", error);
