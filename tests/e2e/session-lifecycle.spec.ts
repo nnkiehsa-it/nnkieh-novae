@@ -35,7 +35,7 @@ test('a warm startup shows its steps and opens the shell while the daily bootstr
       const phases: Array<{ phase: string; at: number }> = [];
       Object.assign(window, { startupPhases: phases });
       new MutationObserver(() => {
-        const phase = document.querySelector<HTMLElement>('.t-startup-progress')?.dataset.phase;
+        const phase = document.querySelector<HTMLElement>('.t-startup-status')?.dataset.phase;
         if (phase && phase !== phases.at(-1)?.phase) phases.push({ phase, at: performance.now() });
       }).observe(document, { childList: true, subtree: true });
     });

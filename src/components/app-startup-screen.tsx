@@ -19,10 +19,6 @@ const STARTUP_LABELS = {
   ready: ["ui.app.startup.ready"],
 } as const satisfies Record<StartupPhase, readonly MessageKey[]>;
 
-const STARTUP_PROGRESS: Record<StartupPhase, number> = {
-  session: 0, security: 1, account: 2, profile: 2, access: 3, content: 4, ready: 5,
-};
-
 function StartupStatus({ phase }: { phase: StartupPhase }) {
   const labels = STARTUP_LABELS[phase];
   const [index, setIndex] = React.useState(0);
@@ -33,15 +29,10 @@ function StartupStatus({ phase }: { phase: StartupPhase }) {
   }, [labels]);
   const label = translate(labels[index]);
   return (
-    <div className="flex flex-col items-center gap-3">
-      <div className="t-startup-status mt-0.5 min-h-6">
+      <div className="t-startup-status mt-0.5 min-h-6" data-phase={phase}>
         <span className="sr-only" role="status">{translate(labels[0])}</span>
         <p aria-hidden="true" className="t-shimmer text-base text-muted-foreground" data-text={label} key={index}>{label}</p>
       </div>
-      <div aria-hidden="true" className="t-startup-progress flex gap-1.5" data-phase={phase}>
-        {Array.from({ length: 5 }, (_, step) => <span data-complete={step < STARTUP_PROGRESS[phase]} key={step} />)}
-      </div>
-    </div>
   );
 }
 
