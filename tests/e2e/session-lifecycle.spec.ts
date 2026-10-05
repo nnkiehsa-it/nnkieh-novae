@@ -122,7 +122,7 @@ test('home restores its counts and progress while bootstrap and count refreshes 
     await page.reload();
     await expect(page.locator('.app-start-surface')).toHaveCount(0);
     await expect(distribution).toBeVisible();
-    await expect(distribution).toHaveText(previous);
+    await expect(distribution).toHaveText(previous, { useInnerText: true });
     await expect.poll(() => countReads).toBeGreaterThan(0);
     await expect(page.locator('.t-startup-progress')).toHaveCount(0);
   } finally {
