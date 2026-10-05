@@ -38,7 +38,7 @@ interface DiagnosticsReading {
  * request.
  */
 export function useProviderDiagnostics() {
-  const { cold, remember, value } = useRememberedState<DiagnosticsReading>(
+  const { cold, refresh, remember, value } = useRememberedState<DiagnosticsReading>(
     "admin-providers",
     { activeQuery: "", results: {} },
   );
@@ -73,9 +73,9 @@ export function useProviderDiagnostics() {
   );
 
   useEffect(() => {
-    if (!cold) return;
+    if (!cold && !refresh) return;
     for (const provider of READ_ON_ARRIVAL) void load(provider);
-  }, [cold, load]);
+  }, [cold, refresh, load]);
 
   return {
     busy: (provider: DiagnosticProvider) => pending.includes(provider),

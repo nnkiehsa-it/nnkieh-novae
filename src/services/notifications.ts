@@ -189,8 +189,8 @@ export function seedNotificationUnreadHint(hasUnread: boolean) {
   return hasUnread === true;
 }
 
-export async function fetchNotificationUnreadHint() {
-  const cached = await getCachedContentPersistent<{ value: boolean }>(
+export async function fetchNotificationUnreadHint(options: { forceRefresh?: boolean } = {}) {
+  const cached = options.forceRefresh ? null : await getCachedContentPersistent<{ value: boolean }>(
     NOTIFICATION_UNREAD_CACHE_KEY,
     NOTIFICATION_HINT_CACHE_TTL_MS,
   );

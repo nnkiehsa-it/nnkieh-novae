@@ -88,7 +88,7 @@ export function useIssueDetail() {
       try {
         const result = await fetchIssueRecordById(issueId, {
           cacheScope: session.user?.uid,
-          forceRefresh,
+          forceRefresh: forceRefresh || !coldRead,
         });
         const merged = mergeContentEntityRead(
           session.user?.uid,

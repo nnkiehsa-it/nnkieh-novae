@@ -28,7 +28,7 @@ export type { AdminOverviewData, AdminOverviewWindow } from "@/services/admin-co
  */
 export function useAdminOverview(period: AdminOverviewWindow) {
   const session = useSession();
-  const { cold, remember, value: activity } = useRememberedState<AdminOverviewData | null>(
+  const { cold, refresh, remember, value: activity } = useRememberedState<AdminOverviewData | null>(
     `admin-overview:${period}`,
     null,
   );
@@ -53,8 +53,8 @@ export function useAdminOverview(period: AdminOverviewWindow) {
 
   const unread = cold || !platform;
   React.useEffect(() => {
-    if (unread) void load();
-  }, [load, unread]);
+    if (unread || refresh) void load(refresh);
+  }, [load, unread, refresh]);
 
   React.useEffect(() => {
     if (platform) setViewMemory(session.user?.uid, "dashboard", platform);

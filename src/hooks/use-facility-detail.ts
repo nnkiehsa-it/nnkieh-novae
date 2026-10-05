@@ -57,7 +57,7 @@ export function useFacilityDetail() {
       setError("");
       const entityReadRevision = beginContentEntityRead();
       try {
-        const result = await getFacility(params.facilityId, { forceRefresh });
+        const result = await getFacility(params.facilityId, { forceRefresh: forceRefresh || !coldRead });
         mergeContentEntityRead(
           session.user?.uid,
           "facility",

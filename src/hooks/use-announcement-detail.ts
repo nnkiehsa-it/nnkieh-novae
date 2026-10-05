@@ -78,7 +78,7 @@ export function useAnnouncementDetail() {
       try {
         const result = await fetchAnnouncementRecordById(params.announcementId, {
           cacheScope: session.user?.uid,
-          forceRefresh,
+          forceRefresh: forceRefresh || !coldRead,
         });
         mergeContentEntityRead(
           session.user?.uid,

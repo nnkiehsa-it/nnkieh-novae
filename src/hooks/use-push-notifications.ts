@@ -42,6 +42,7 @@ export function usePushNotifications() {
   const [adminPreferences, setAdminPreferences] =
     React.useState<PlatformAdminNotificationPreferences | null>(viewMemory?.adminPreferences ?? null);
   const [loading, setLoading] = React.useState(!viewMemory);
+  const readSucceeded = React.useRef(false);
   const [error, setError] = React.useState("");
   const deviceIdRef = React.useRef("");
 
@@ -51,7 +52,7 @@ export function usePushNotifications() {
 
   const refresh = React.useCallback(async () => {
     if (!session.user || !deviceIdRef.current) return;
-    setLoading(true);
+    setLoading(!getViewMemory(session.user.uid, "push-settings"));
     setError("");
     try {
       const canPush = Boolean(
@@ -78,6 +79,7 @@ export function usePushNotifications() {
       setAdminPreferences(
         session.isAdmin ? await getPlatformAdminNotificationPreferences() : null,
       );
+      readSucceeded.current = true;
     } catch (caught) {
       setError(
         caught instanceof Error
@@ -94,7 +96,7 @@ export function usePushNotifications() {
   }, [refresh]);
 
   React.useEffect(() => {
-    if (loading) return;
+    if (loading || !readSucceeded.current) return;
     setViewMemory(
       session.user?.uid,
       "push-settings",

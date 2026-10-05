@@ -3,10 +3,11 @@
 import * as React from "react";
 
 import { useSession } from "@/hooks/use-session";
-import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
+import { getViewMemory, needsViewMemoryRefresh, setViewMemory } from "@/lib/view-memory-cache";
 
 interface RememberedState<T> {
   cold: boolean;
+  refresh: boolean;
   key: string;
   scope: string | undefined;
   value: T;
@@ -14,7 +15,7 @@ interface RememberedState<T> {
 
 function read<T>(scope: string | undefined, key: string, fallback: T): RememberedState<T> {
   const remembered = getViewMemory<T>(scope, key);
-  return { cold: remembered === null, key, scope, value: remembered ?? fallback };
+  return { cold: remembered === null, refresh: needsViewMemoryRefresh(scope, key), key, scope, value: remembered ?? fallback };
 }
 
 /**
@@ -38,6 +39,7 @@ export function useRememberedState<T>(key: string, fallback: T) {
     (update: T | ((current: T) => T)) => {
       setState((previous) => previous.key !== key || previous.scope !== scope ? previous : ({
         cold: false,
+        refresh: false,
         key,
         scope,
         value:
@@ -50,8 +52,8 @@ export function useRememberedState<T>(key: string, fallback: T) {
   );
 
   React.useEffect(() => {
-    if (!state.cold) setViewMemory(state.scope, state.key, state.value);
+    if (!state.cold && !state.refresh) setViewMemory(state.scope, state.key, state.value);
   }, [state]);
 
-  return { cold: state.cold, remember, value: state.value };
+  return { cold: state.cold, refresh: state.refresh, remember, value: state.value };
 }

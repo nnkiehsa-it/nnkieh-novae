@@ -92,6 +92,45 @@ test('a failed startup retries in place without falling through to setup', async
   } finally { await context.close(); }
 });
 
+test('home restores its counts and progress while bootstrap and count refreshes are stalled', async ({ browser }) => {
+  const { context, page } = await newUserPage(browser, 'ordinary');
+  let release!: () => void;
+  const stalled = new Promise<void>((resolve) => { release = resolve; });
+  try {
+    await page.goto('/home');
+    const distribution = page.getByRole('region', { name: 'Proposals', exact: true });
+    await expect(distribution).toBeVisible();
+    const previous = await distribution.innerText();
+    await expect.poll(() => page.evaluate(async (namespace) => {
+      const request = indexedDB.open(namespace);
+      const db = await new Promise<IDBDatabase>((resolve) => { request.onsuccess = () => resolve(request.result); });
+      try {
+        const read = db.transaction('entries').objectStore('entries').getAll();
+        const entries = await new Promise<Array<{ cacheKey: string }>>((resolve) => { read.onsuccess = () => resolve(read.result); });
+        return entries.some((entry) => entry.cacheKey.startsWith('view-memory|home-status-counts|'));
+      } finally { db.close(); }
+    }, PERSISTENT_CACHE_NAMESPACE)).toBe(true);
+    let countReads = 0;
+    await page.route('**/v1/actions', async (route) => {
+      const action = route.request().postDataJSON()?.action;
+      if (['getSessionBootstrap', 'listIssues', 'listFacilities'].includes(action)) {
+        if (action !== 'getSessionBootstrap') countReads += 1;
+        await stalled;
+      }
+      await route.continue();
+    });
+    await page.reload();
+    await expect(page.locator('.app-start-surface')).toHaveCount(0);
+    await expect(distribution).toBeVisible();
+    await expect(distribution).toHaveText(previous);
+    await expect.poll(() => countReads).toBeGreaterThan(0);
+    await expect(page.locator('.t-startup-progress')).toHaveCount(0);
+  } finally {
+    release();
+    await context.close();
+  }
+});
+
 test('a failed login preparation can be retried without reloading the page', async ({ browser }) => {
   const context = await browser.newContext();
   const page = await context.newPage();

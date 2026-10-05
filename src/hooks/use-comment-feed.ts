@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSession } from "@/hooks/use-session";
+import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 import { useI18n } from "@/i18n";
 import { usePagedRequestGuard } from "@/hooks/use-paged-request-guard";
 import { canContinuePage } from "@/lib/pagination";
@@ -30,15 +32,18 @@ export function useCommentFeed<T extends { id: string }>({
   fetchPage: (request: CommentPageRequest<T>) => Promise<CommentPage<T>>;
 }) {
   const { t } = useI18n();
-  const [comments, setComments] = useState<T[]>([]);
+  const uid = useSession().user?.uid;
+  const remembered = enabled ? getViewMemory<CommentPage<T>>(uid, `comment-feed|${targetKey}|newest`) : null;
+  const [comments, setComments] = useState<T[]>(remembered?.comments ?? []);
   const [sort, setSort] = useState<CommentSortOption>("newest");
-  const [cursor, setCursor] = useState<CommentCursor>(null);
-  const [hasMore, setHasMore] = useState(false);
-  const [loading, setLoading] = useState(enabled);
+  const [cursor, setCursor] = useState<CommentCursor>(remembered?.cursor ?? null);
+  const [hasMore, setHasMore] = useState(remembered?.hasMore ?? false);
+  const [loading, setLoading] = useState(enabled && !remembered);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
   const guard = usePagedRequestGuard();
   const queryKey = `${targetKey}|${sort}|${enabled}`;
+  const cacheKey = `comment-feed|${targetKey}|${sort}`;
 
   const load = useCallback(async (forceRefresh = false) => {
     guard.restart(queryKey);
@@ -52,21 +57,24 @@ export function useCommentFeed<T extends { id: string }>({
       return;
     }
     const token = guard.begin(queryKey)!;
-    setLoading(true);
-    const apply = (page: CommentPage<T>) => {
+    const cached = getViewMemory<CommentPage<T>>(uid, cacheKey);
+    setLoading(!cached);
+    const apply = (page: CommentPage<T>, persist = true) => {
       if (!guard.isCurrent(token)) return;
       setComments(page.comments);
       setCursor(page.cursor);
       setHasMore(page.hasMore);
+      if (persist) setViewMemory(uid, cacheKey, page, ["issue-comments-page|", "announcement-comments-page|"]);
     };
+    if (cached) apply(cached, false);
     try {
-      apply(await fetchPage({ cursor: null, sort, forceRefresh, onPage: apply }));
+      apply(await fetchPage({ cursor: null, sort, forceRefresh: forceRefresh || Boolean(cached), onPage: apply }));
     } catch (caught) {
       if (guard.isCurrent(token)) setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
     } finally {
       if (guard.finish(token)) setLoading(false);
     }
-  }, [enabled, fetchPage, guard, queryKey, sort, t]);
+  }, [enabled, fetchPage, guard, queryKey, sort, t, uid, cacheKey]);
 
   useEffect(() => {
     void load();

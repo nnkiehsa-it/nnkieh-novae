@@ -81,6 +81,8 @@ export function useIssueFeed(selectedFilter?: string) {
   const viewMemory = remembered?.bucket === bucket && remembered.sort === sort
     && remembered.committedQuery === committedQuery ? remembered : null;
   const [coldRead] = React.useState(() => !viewMemory);
+  const [warmRead] = React.useState(() => Boolean(viewMemory));
+  const readSucceeded = React.useRef(false);
   const validFilter =
     filter === "my-proposals" || Boolean(findIssueCategory(filter));
   const [feed, setFeed] = React.useState<IssueFeed>({
@@ -150,7 +152,7 @@ export function useIssueFeed(selectedFilter?: string) {
       const requestToken = requestGuard.begin(queryKey);
       if (!requestToken) return;
       const entityReadRevision = beginContentEntityRead();
-      cursor ? setLoadingMore(true) : setLoading(true);
+      cursor ? setLoadingMore(true) : setLoading(!getViewMemory(session.user.uid, `issue-feed|${filter}`));
       setError("");
       try {
         let result: Omit<IssueFeed, "pageCount" | "statusCounts">;
@@ -163,6 +165,7 @@ export function useIssueFeed(selectedFilter?: string) {
             sort,
             statusBucket: bucket,
             supportedIssueIds: supportedIssueIdsRef.current,
+            forceRefresh: !cursor && (warmRead || restart),
           });
           result = page;
           statusCounts = page.statusCounts;
@@ -177,6 +180,7 @@ export function useIssueFeed(selectedFilter?: string) {
               isAdmin: session.isAdmin,
               sort,
               supportedIssueIds: supportedIssueIdsRef.current,
+              forceRefresh: !cursor && (warmRead || restart),
             },
           );
         } else {
@@ -189,12 +193,14 @@ export function useIssueFeed(selectedFilter?: string) {
               isAdmin: session.isAdmin,
               sort,
               supportedIssueIds: supportedIssueIdsRef.current,
+              forceRefresh: !cursor && (warmRead || restart),
             },
           );
           result = page;
           statusCounts = page.statusCounts;
         }
         if (!requestGuard.isCurrent(requestToken)) return;
+        readSucceeded.current = true;
         const issues = result.issues.map((issue) =>
           mergeContentEntityRead(
             session.user?.uid,
@@ -242,6 +248,7 @@ export function useIssueFeed(selectedFilter?: string) {
       validFilter,
       queryKey,
       requestGuard,
+      warmRead,
     ],
   );
 
@@ -250,7 +257,7 @@ export function useIssueFeed(selectedFilter?: string) {
   }, [load]);
 
   React.useEffect(() => {
-    if (loading) return;
+    if (loading || !readSucceeded.current) return;
     setViewMemory<IssueFeedViewMemory>(
       session.user?.uid,
       `issue-feed|${filter}`,

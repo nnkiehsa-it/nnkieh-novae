@@ -122,7 +122,7 @@ async function fetchAuditPage(query: string, page: number) {
 }
 
 export function useAdminActivity(window: AdminOverviewWindow) {
-  const { cold, remember, value } = useRememberedState<{
+  const { cold, refresh, remember, value } = useRememberedState<{
     cursor: AdminActivityCursor | null;
     entries: AdminOverviewData["recentActivity"];
   }>(`admin-activity:${window}`, { cursor: null, entries: [] });
@@ -142,8 +142,8 @@ export function useAdminActivity(window: AdminOverviewWindow) {
   );
 
   useEffect(() => {
-    if (cold) void load();
-  }, [cold, load]);
+    if (cold || refresh) void load();
+  }, [cold, refresh, load]);
 
   return { cursor: value.cursor, entries: value.entries, error, load, loading };
 }

@@ -45,6 +45,7 @@ export function useNotificationsPage() {
     pages: Record<NotificationSource, NotificationRecord[]>;
   }>(session.user?.uid, "notifications");
   const [coldRead] = React.useState(() => !viewMemory);
+  const readSucceeded = React.useRef(false);
   const [pages, setPages] = React.useState<
     Record<NotificationSource, NotificationRecord[]>
   >(viewMemory?.pages ?? sourceRecord(() => []));
@@ -89,14 +90,17 @@ export function useNotificationsPage() {
     const requestToken = requestGuard.begin(queryKey);
     if (!requestToken) return;
     setLoadingMore(false);
-    setLoading(true);
+    setLoading(!getViewMemory(session.user.uid, "notifications"));
     setError("");
     try {
       await fetchNotificationSnapshot(
         activeSources,
         session.user.uid,
         { onPages: (next) => {
-          if (requestGuard.isCurrent(requestToken)) applyPages(next);
+          if (requestGuard.isCurrent(requestToken)) {
+            readSucceeded.current = true;
+            applyPages(next);
+          }
         } },
       );
       if (!requestGuard.isCurrent(requestToken)) return;
@@ -121,7 +125,7 @@ export function useNotificationsPage() {
   }, [load]);
 
   React.useEffect(() => {
-    if (loading) return;
+    if (loading || !readSucceeded.current) return;
     setViewMemory(session.user?.uid, "notifications", {
       cursors,
       more,

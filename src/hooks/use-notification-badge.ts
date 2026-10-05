@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useSession } from "@/hooks/use-session";
+import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 import {
   fetchNotificationUnreadHint,
   subscribeNotificationBadge,
@@ -9,24 +10,30 @@ import {
 
 export function useNotificationBadge() {
   const session = useSession();
-  const [unread, setUnread] = React.useState(false);
+  const [unread, setUnread] = React.useState(() => getViewMemory<boolean>(session.user?.uid, "notification-badge") ?? false);
 
   React.useEffect(() => {
     let active = true;
     let revision = 0;
-    setUnread(false);
     if (!session.user) return;
+    const uid = session.user.uid;
+    const remembered = getViewMemory<boolean>(uid, "notification-badge");
+    setUnread(remembered ?? false);
+    const apply = (value: boolean) => {
+      setUnread(value);
+      setViewMemory(uid, "notification-badge", value, ["notification-unread-hint"]);
+    };
     const refresh = () => {
       const requestRevision = ++revision;
-      void fetchNotificationUnreadHint()
-        .then((value) => { if (active && revision === requestRevision) setUnread(value); })
+      void fetchNotificationUnreadHint({ forceRefresh: remembered !== null })
+        .then((value) => { if (active && revision === requestRevision) apply(value); })
         .catch(() => undefined);
     };
     refresh();
     const unsubscribe = subscribeNotificationBadge(
       session.user.uid,
       session.isAdmin,
-      () => { revision += 1; setUnread(true); },
+      () => { revision += 1; apply(true); },
       refresh,
     );
     return () => { active = false; unsubscribe(); };

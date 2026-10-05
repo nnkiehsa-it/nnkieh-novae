@@ -70,6 +70,8 @@ export function useFacilityFeed() {
     && remembered.sort === sort && remembered.status === status
     && remembered.committedQuery === committedQuery ? remembered : null;
   const [coldRead] = React.useState(() => !viewMemory);
+  const [warmRead] = React.useState(() => Boolean(viewMemory));
+  const readSucceeded = React.useRef(false);
   const [feed, setFeed] = React.useState<FacilityFeed>({
     cursor: viewMemory?.feed.cursor ?? null,
     facilities: viewMemory?.feed.facilities ?? [],
@@ -122,7 +124,7 @@ export function useFacilityFeed() {
       const requestToken = requestGuard.begin(queryKey);
       if (!requestToken) return;
       const entityReadRevision = beginContentEntityRead();
-      cursor ? setLoadingMore(true) : setLoading(true);
+      cursor ? setLoadingMore(true) : setLoading(!getViewMemory(session.user?.uid, "facility-feed"));
       setError("");
       try {
         const result = await listFacilities({
@@ -132,8 +134,9 @@ export function useFacilityFeed() {
           query: committedQuery,
           sort,
           status,
-        });
+        }, { forceRefresh: !cursor && (warmRead || restart) });
         if (!requestGuard.isCurrent(requestToken)) return;
+        readSucceeded.current = true;
         const facilities = result.facilities.map((facility) =>
           mergeContentEntityRead(
             session.user?.uid,
@@ -178,6 +181,7 @@ export function useFacilityFeed() {
       session.user?.uid,
       sort,
       status,
+      warmRead,
       t,
     ],
   );
@@ -187,7 +191,7 @@ export function useFacilityFeed() {
   }, [load]);
 
   React.useEffect(() => {
-    if (loading) return;
+    if (loading || !readSucceeded.current) return;
     setViewMemory<FacilityFeedViewMemory>(
       session.user?.uid,
       "facility-feed",

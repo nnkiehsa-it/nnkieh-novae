@@ -38,6 +38,8 @@ export function useAnnouncementFeed() {
     pageCount: number;
   }>(session.user?.uid, "announcement-feed");
   const [coldRead] = React.useState(() => !viewMemory);
+  const [warmRead] = React.useState(() => Boolean(viewMemory));
+  const readSucceeded = React.useRef(false);
   const [items, setItems] = React.useState<AnnouncementSummary[]>(viewMemory?.items ?? []);
   const [cursor, setCursor] = React.useState<AnnouncementCursor>(viewMemory?.cursor ?? null);
   const [hasMore, setHasMore] = React.useState(viewMemory?.hasMore ?? false);
@@ -85,13 +87,15 @@ export function useAnnouncementFeed() {
       const requestToken = requestGuard.begin(queryKey);
       if (!requestToken) return;
       const entityReadRevision = beginContentEntityRead();
-      nextCursor ? setLoadingMore(true) : setLoading(true);
+      nextCursor ? setLoadingMore(true) : setLoading(!getViewMemory(session.user?.uid, "announcement-feed"));
       setError("");
       try {
         const result = await fetchAnnouncementsPage(nextCursor, 10, {
           cacheScope: session.user?.uid,
+          forceRefresh: !nextCursor && (warmRead || restart),
         });
         if (!requestGuard.isCurrent(requestToken)) return;
+        readSucceeded.current = true;
         const announcements = result.announcements.map((announcement) =>
           mergeContentEntityRead(
             session.user?.uid,
@@ -125,7 +129,7 @@ export function useAnnouncementFeed() {
         }
       }
     },
-    [queryKey, requestGuard, session.user?.uid, t],
+    [queryKey, requestGuard, session.user?.uid, t, warmRead],
   );
 
   React.useEffect(() => {
@@ -133,7 +137,7 @@ export function useAnnouncementFeed() {
   }, [load]);
 
   React.useEffect(() => {
-    if (loading) return;
+    if (loading || !readSucceeded.current) return;
     setViewMemory(session.user?.uid, "announcement-feed", {
       cursor,
       hasMore,
