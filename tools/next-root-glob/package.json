@@ -1,5 +1,5 @@
 {
-  "name": "@novae/next-root-glob",
+  "name": "fast-glob",
   "version": "1.0.0",
   "private": true,
   "type": "module",
