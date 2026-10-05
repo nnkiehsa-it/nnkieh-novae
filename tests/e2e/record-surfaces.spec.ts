@@ -169,11 +169,13 @@ for (const width of [390, 1440]) {
       expect(size.scroll).toBeGreaterThan(size.client);
       await body.hover();
       await page.mouse.wheel(0, 100_000);
+      // Wheel scrolling is asynchronous. A visible last row can still be above
+      // the final scroll position, so measure its safe-area gap only at the end.
+      await expect.poll(() => body.evaluate((node) => node.scrollHeight - node.scrollTop - node.clientHeight)).toBeLessThanOrEqual(1);
       await expect(last).toBeInViewport({ ratio: 1 });
       if (width === 390) {
-        expect(await last.evaluate((node) => node.getBoundingClientRect().bottom)).toBeLessThanOrEqual(620 - 34);
+        await expect.poll(() => last.evaluate((node) => node.getBoundingClientRect().bottom)).toBeLessThanOrEqual(620 - 34);
       }
-      await expect.poll(() => body.evaluate((node) => node.scrollHeight - node.scrollTop - node.clientHeight)).toBeLessThanOrEqual(1);
       const positions = {
         page: await page.evaluate(() => scrollY),
         record: await body.evaluate((node) => node.scrollTop),
