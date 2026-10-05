@@ -8,6 +8,7 @@ import { AppShell } from "@/components/app-shell";
 import { AppStartupScreen } from "@/components/app-startup-screen";
 import { useStartupPresentation } from "@/hooks/use-startup-presentation";
 import { RouteSurface } from "@/components/motion/route-surface";
+import { StartupTransition } from "@/components/startup-transition";
 
 export function ProtectedApp({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -50,26 +51,15 @@ export function ProtectedApp({ children }: { children: React.ReactNode }) {
     user,
   ]);
 
-  if (startupError) return <AppStartupScreen phase={startupPhase} error={startupError} onRetry={session.retryStartup} onSignOut={session.logout} />;
-
   const waitingForFirstSession = !hasRetainedSession && (
     !initialized || loading || roleLoading || presentingStartup
   );
-  if (waitingForFirstSession)
-    return <AppStartupScreen phase={startupPhase} />;
-  if (!user) return <AppStartupScreen phase={startupPhase} />;
-  if (!setupCompleted && pathname !== "/setup" && !hasRetainedSession)
-    return <AppStartupScreen phase={startupPhase} />;
-  if (setupCompleted && pathname === "/setup") return <AppStartupScreen phase={startupPhase} />;
-  if (pathname === "/setup")
-    return (
-      <AppLocaleGate>
-        <RouteSurface>{children}</RouteSurface>
-      </AppLocaleGate>
-    );
-  return (
-    <AppLocaleGate>
-      <AppShell>{children}</AppShell>
-    </AppLocaleGate>
-  );
+  const waiting = startupError || waitingForFirstSession || !user
+    || (!setupCompleted && pathname !== "/setup" && !hasRetainedSession)
+    || (setupCompleted && pathname === "/setup");
+  return <StartupTransition startup={waiting ? <AppStartupScreen phase={startupPhase} error={startupError} onRetry={session.retryStartup} onSignOut={session.logout} /> : null}>
+    {!waiting && <AppLocaleGate>
+      {pathname === "/setup" ? <RouteSurface>{children}</RouteSurface> : <AppShell>{children}</AppShell>}
+    </AppLocaleGate>}
+  </StartupTransition>;
 }
