@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { BrandLockup } from "@/components/ui/brand";
 import { BusyLabel } from "@/components/ui/page-state";
 import { TurnstileInlineHost } from "@/components/turnstile-provider";
-import { AppStartupScreen } from "@/components/protected-app";
+import { AppStartupScreen } from "@/components/app-startup-screen";
+import { useStartupPresentation } from "@/hooks/use-startup-presentation";
 import { RouteSurface } from "@/components/motion/route-surface";
 import { sameOriginUrl } from "@/lib/same-origin-url";
 
@@ -49,14 +50,14 @@ export default function LoginPage() {
     roleLoading,
     setupCompleted,
     startupError,
-    startupPhase,
     user,
   } = session;
+  const { phase: startupPhase, pending: presentingStartup } = useStartupPresentation(session);
   const { t } = useI18n();
   const entrance = useLoginEntrance(initialized && !user, prepareLogin);
 
   React.useEffect(() => {
-    if (!initialized || !user || roleLoading || startupError) return;
+    if (!initialized || !user || roleLoading || startupError || presentingStartup) return;
     const requested = search.get("redirect");
     router.replace(
       !setupCompleted
@@ -70,11 +71,12 @@ export default function LoginPage() {
     roleLoading,
     setupCompleted,
     startupError,
+    presentingStartup,
     user,
   ]);
 
   if (startupError) return <AppStartupScreen phase={startupPhase} error={startupError} onRetry={session.retryStartup} onSignOut={session.logout} />;
-  if (restoringSession || (user && roleLoading)) return <AppStartupScreen phase={startupPhase} />;
+  if (!initialized || restoringSession || user) return <AppStartupScreen phase={startupPhase} />;
 
   return (
     <RouteSurface className="!w-full">

@@ -21,6 +21,8 @@ export interface SessionState {
   setupCompleted: boolean;
   startupError: string;
   startupPhase: StartupPhase;
+  startupRun: number;
+  startupSteps: readonly StartupPhase[];
   user: User | null;
   userRole: "admin" | "user";
 }
@@ -29,7 +31,7 @@ export const initialSessionState: SessionState = {
   appReady: false, authChecking: true, customPhotoUrl: null, error: "", initialized: false,
   loading: true, managedFacilityCategoryIds: [], managedIssueCategoryIds: [], permissions: [],
   roleLoading: false, restoringSession: false, roles: [], setupCompleted: false,
-  startupError: "", startupPhase: "session", user: null, userRole: "user",
+  startupError: "", startupPhase: "session", startupRun: 0, startupSteps: ["session"], user: null, userRole: "user",
 };
 
 const listeners = new Set<() => void>();
@@ -41,7 +43,17 @@ export function subscribe(listener: () => void) {
 }
 
 export function patch(next: Partial<SessionState>) {
-  state = { ...state, ...next };
+  const startupSteps = next.startupSteps ?? (next.startupPhase === "session"
+    ? ["session"] as const
+    : next.startupPhase && next.startupPhase !== state.startupPhase
+      ? [...state.startupSteps, next.startupPhase]
+      : state.startupSteps);
+  state = {
+    ...state,
+    ...next,
+    startupRun: next.startupRun ?? (next.startupPhase === "session" ? state.startupRun + 1 : state.startupRun),
+    startupSteps,
+  };
   listeners.forEach((listener) => listener());
 }
 

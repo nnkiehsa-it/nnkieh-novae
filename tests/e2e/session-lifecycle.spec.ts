@@ -4,6 +4,63 @@ import { expectBackendAction } from './support/backend-action';
 import { withRuntimeEnvironment } from '../../cloudflare/src/backend/shared/env';
 import { createMediaDeliveryUrl } from '../../cloudflare/src/backend/shared/media-delivery';
 import type { Env } from '../../cloudflare/src/types';
+import { PERSISTENT_CACHE_NAMESPACE } from '../../src/lib/persistent-cache';
+
+test('a warm startup shows its steps and opens the shell while the daily bootstrap is stalled', async ({ browser }) => {
+  const { context, page } = await newUserPage(browser, 'ordinary');
+  let release!: () => void;
+  const stalled = new Promise<void>((resolve) => { release = resolve; });
+  let requests = 0;
+  try {
+    await page.goto('/settings');
+    await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
+    await expect.poll(() => page.evaluate(async (namespace) => {
+      const open = indexedDB.open(namespace);
+      const database = await new Promise<IDBDatabase>((resolve, reject) => {
+        open.onsuccess = () => resolve(open.result);
+        open.onerror = () => reject(open.error);
+      });
+      try {
+        const read = database.transaction('entries').objectStore('entries').getAll();
+        const entries = await new Promise<Array<{ cacheKey: string }>>((resolve) => { read.onsuccess = () => resolve(read.result); });
+        return entries.some((entry) => entry.cacheKey === 'session-bootstrap-v2');
+      } finally { database.close(); }
+    }, PERSISTENT_CACHE_NAMESPACE)).toBe(true);
+    await page.evaluate(() => {
+      for (const key of Object.keys(localStorage)) {
+        if (key.startsWith('novae:platform-visit-recorded-at:')) localStorage.removeItem(key);
+      }
+    });
+    await page.addInitScript(() => {
+      const phases: Array<{ phase: string; at: number }> = [];
+      Object.assign(window, { startupPhases: phases });
+      new MutationObserver(() => {
+        const phase = document.querySelector<HTMLElement>('.t-startup-progress')?.dataset.phase;
+        if (phase && phase !== phases.at(-1)?.phase) phases.push({ phase, at: performance.now() });
+      }).observe(document, { childList: true, subtree: true });
+    });
+    await page.route('**/v1/actions', async (route) => {
+      if (route.request().postDataJSON()?.action === 'getSessionBootstrap') {
+        requests += 1;
+        await stalled;
+      }
+      await route.continue();
+    });
+    await page.reload();
+    await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible({ timeout: 2_000 });
+    await expect(page.locator('.app-start-surface')).toHaveCount(0);
+    expect(requests).toBe(1);
+    const phases = await page.evaluate(() => (window as typeof window & { startupPhases: Array<{ phase: string; at: number }> }).startupPhases);
+    expect(phases.map(({ phase }) => phase)).toEqual(['session', 'security', 'account', 'access', 'ready']);
+    const duration = phases.at(-1)!.at - phases[0].at;
+    expect(duration).toBeGreaterThanOrEqual(250);
+    expect(duration).toBeLessThan(1_000);
+    console.log(`Warm startup phases: ${phases.map(({ phase }) => phase).join(' → ')} (${Math.round(duration)}ms to ready, bootstrap still pending)`);
+  } finally {
+    release();
+    await context.close();
+  }
+});
 
 test('a failed startup retries in place without falling through to setup', async ({ browser }) => {
   const { context, page } = await newUserPage(browser, 'ordinary');

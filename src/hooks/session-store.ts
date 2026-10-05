@@ -228,7 +228,7 @@ export async function retrySessionStartup() {
   const user = state.user;
   if (!user || state.roleLoading) return;
   const verificationId = ++verificationSerial;
-  patch({ roleLoading: true, startupError: "", startupPhase: "account" });
+  patch({ roleLoading: true, startupError: "", startupPhase: "account", startupRun: state.startupRun + 1, startupSteps: ["account"] });
   await refreshVerifiedSession(user, verificationId, validateUserAgainstToken(user), needsProfileSync);
 }
 
