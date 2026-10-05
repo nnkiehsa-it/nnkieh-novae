@@ -18,7 +18,7 @@ vi.mock("@/lib/session-debug", () => ({ sessionDebug: vi.fn() }));
 vi.mock("@/lib/push-session", () => ({ setPushSession: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("@/lib/avatar-cache", () => ({ readCachedAvatar: vi.fn(), writeCachedAvatar: vi.fn() }));
 vi.mock("@/lib/content-entity-store", () => ({ clearContentEntityScope: vi.fn() }));
-vi.mock("@/lib/view-memory-cache", () => ({ clearViewMemoryScope: vi.fn() }));
+vi.mock("@/lib/view-memory-cache", () => ({ clearViewMemoryScope: vi.fn(), restoreViewMemoryScope: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("@/lib/composer-draft", () => ({ clearComposerDrafts: vi.fn() }));
 vi.mock("@/lib/supported-issue-memory", () => ({ clearSupportedIssueMemory: vi.fn() }));
 vi.mock("@/services/backend-auth", () => ({ ensureBackendProfile: vi.fn() }));
@@ -26,13 +26,15 @@ vi.mock("@/services/session-role", () => ({
   readCachedSessionAccess: mocks.cachedAccess,
   seedSessionAccess: (access: SessionAccess) => access,
 }));
-vi.mock("@/services/session-bootstrap", () => ({ fetchSessionBootstrap: mocks.bootstrap }));
+vi.mock("@/services/session-bootstrap", () => ({ fetchSessionBootstrap: mocks.bootstrap, readSessionBootstrapSnapshot: vi.fn().mockResolvedValue(null) }));
+vi.mock("@/services/runtime-settings", () => ({ seedRuntimeSettings: vi.fn() }));
 vi.mock("@/services/content-versions", () => ({
   applyContentVersionsSnapshot: vi.fn(), ensureContentVersionsFresh: vi.fn(), resetContentVersionState: vi.fn(),
 }));
 vi.mock("@/services/realtime-events", () => ({ stopContentRealtimeSession: vi.fn() }));
 vi.mock("@/services/content-read-cache", () => ({
   clearContentReadCache: vi.fn(), clearContentReadMemoryCache: vi.fn(), setContentCacheScope: vi.fn(),
+  restoreContentReadCache: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@/services/uploads", () => ({ clearResolvedUploadCache: vi.fn() }));
 vi.mock("@/services/users-write", () => ({ cacheUserAvatar: vi.fn() }));

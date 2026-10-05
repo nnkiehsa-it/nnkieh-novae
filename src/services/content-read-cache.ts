@@ -3,6 +3,7 @@ import {
   deletePersistentCacheIfVersion,
   deletePersistentCacheByPrefix,
   readPersistentCache,
+  readPersistentCachePrefix,
   writePersistentCache,
 } from '@/lib/persistent-cache';
 import { invalidateViewMemoryByDependency } from '@/lib/view-memory-cache';
@@ -69,6 +70,18 @@ export function setContentCacheScope(scope: string) {
   pendingPersistentReads.clear();
   pendingRequests.clear();
   invalidationVersions.clear();
+}
+
+/** Warm synchronous readers before the first screen mounts, without renewing TTLs. */
+export async function restoreContentReadCache() {
+  const guard = captureContentCacheWriteGuard('');
+  const stored = await readPersistentCachePrefix<unknown>(guard.scope, '');
+  for (const entry of stored) {
+    if (entry.cacheKey.startsWith('view-memory|') || cache.has(entry.cacheKey)) continue;
+    if (!isContentCacheFresh(entry.updatedAt)) continue;
+    if (!isContentCacheWriteGuardCurrent({ ...guard, key: entry.cacheKey })) continue;
+    rememberContentCacheEntry(entry.cacheKey, { stale: false, updatedAt: entry.updatedAt, value: entry.value });
+  }
 }
 
 export function createContentCacheKey(parts: Array<string | number | boolean | null | undefined>) {
@@ -184,7 +197,7 @@ export function markContentCacheStale(predicate: (key: string) => boolean) {
 
 export function markContentCachePrefixStale(prefix: string) {
   markContentCacheStale((key) => key.startsWith(prefix));
-  invalidateViewMemoryByDependency(prefix);
+  invalidateViewMemoryByDependency(prefix, activeScope);
   notifyContentCacheInvalidation(prefix);
   const scope = activeScope;
   cacheVersion += 1;

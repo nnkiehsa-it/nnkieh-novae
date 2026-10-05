@@ -8,6 +8,7 @@ import { readLocalStorage, writeLocalStorage } from "@/lib/browser-storage";
 import { readCachedAvatar, writeCachedAvatar } from "@/lib/avatar-cache";
 import { clearContentEntityScope } from "@/lib/content-entity-store";
 import { clearViewMemoryScope } from "@/lib/view-memory-cache";
+import { restoreSessionDisplay } from "@/hooks/session-display-cache";
 import { clearComposerDrafts } from "@/lib/composer-draft";
 import { clearSupportedIssueMemory } from "@/lib/supported-issue-memory";
 import { ensureBackendProfile } from "@/services/backend-auth";
@@ -125,6 +126,7 @@ async function refreshVerifiedSession(
   tokenValidationPromise: Promise<ValidationResult>,
   syncProfile: boolean,
   cachedAccessPromise: Promise<SessionAccess | null> = Promise.resolve(null),
+  displaySnapshotPromise: Promise<void> = Promise.resolve(),
 ) {
   const current = () =>
     verificationId === verificationSerial && state.user?.uid === user.uid && auth?.currentUser === user;
@@ -154,7 +156,7 @@ async function refreshVerifiedSession(
         userRole: access.role,
       });
     };
-    const cachedAccess = await cachedAccessPromise;
+    const [cachedAccess] = await Promise.all([cachedAccessPromise, displaySnapshotPromise]);
     if (!current()) return;
     if (cachedAccess) applyAccess(cachedAccess);
     const bootstrap = await fetchSessionBootstrap({
@@ -207,6 +209,7 @@ function acceptUser(
   setContentCacheScope(user.uid);
   clearContentReadMemoryCache();
   const cachedAccessPromise = syncProfile ? Promise.resolve(null) : readCachedSessionAccess();
+  const displaySnapshotPromise = restoreSessionDisplay(user.uid, () => verificationId === verificationSerial && auth?.currentUser === user);
   patch({
     appReady: true,
     authChecking: false,
@@ -225,7 +228,7 @@ function acceptUser(
     userRole: "user",
   });
   if (user.photoURL) void loadAvatar(user.photoURL, user.uid);
-  void refreshVerifiedSession(user, verificationId, tokenValidationPromise, syncProfile, cachedAccessPromise);
+  void refreshVerifiedSession(user, verificationId, tokenValidationPromise, syncProfile, cachedAccessPromise, displaySnapshotPromise);
 }
 
 export async function retrySessionStartup() {

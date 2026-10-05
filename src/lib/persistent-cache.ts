@@ -177,6 +177,17 @@ export async function readPersistentCache<T>(key: string) {
   }
 }
 
+export async function readPersistentCachePrefix<T>(scope: string, prefix: string) {
+  try {
+    const database = await openDatabase();
+    const transaction = database.transaction(ENTRY_STORE_NAME, 'readonly');
+    const entries = await requestResult(transaction.objectStore(ENTRY_STORE_NAME).index('scope').getAll(scope)) as PersistentCacheEntry<T>[];
+    return entries.filter((entry) => entry.cacheKey.startsWith(prefix));
+  } catch {
+    return [];
+  }
+}
+
 export async function writePersistentCache<T>(entry: Omit<PersistentCacheEntry<T>, 'sizeBytes'>) {
   try {
     const normalizedEntry: PersistentCacheEntry<T> = {
@@ -224,7 +235,7 @@ export async function deletePersistentCacheIfVersion(key: string, writeVersion: 
   }
 }
 
-export async function deletePersistentCacheByPrefix(scope: string, prefix: string) {
+export async function deletePersistentCacheMatching(scope: string, matches: (entry: PersistentCacheEntry<unknown>) => boolean) {
   try {
     const database = await openDatabase();
     const transaction = database.transaction(
@@ -241,7 +252,7 @@ export async function deletePersistentCacheByPrefix(scope: string, prefix: strin
         return;
       }
       const entry = cursor.value as PersistentCacheEntry<unknown>;
-      if (entry.cacheKey.startsWith(prefix)) {
+      if (matches(entry)) {
         cursor.delete();
         subtractEntry(budget, entry);
       }
@@ -251,6 +262,10 @@ export async function deletePersistentCacheByPrefix(scope: string, prefix: strin
   } catch {
     // Ignore unavailable or blocked storage.
   }
+}
+
+export function deletePersistentCacheByPrefix(scope: string, prefix: string) {
+  return deletePersistentCacheMatching(scope, (entry) => entry.cacheKey.startsWith(prefix));
 }
 
 export async function clearPersistentCacheScope(scope: string) {

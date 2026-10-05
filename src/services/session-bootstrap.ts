@@ -40,6 +40,11 @@ function normalizeAccess(access: Partial<SessionAccess> | undefined): SessionAcc
 const SESSION_BOOTSTRAP_CACHE_KEY = 'session-bootstrap-v2';
 let pendingRecordVisit = false;
 
+/** Display settings may use an older snapshot; access still uses its short TTL. */
+export function readSessionBootstrapSnapshot() {
+  return getCachedContentPersistent<SessionBootstrapResult>(SESSION_BOOTSTRAP_CACHE_KEY);
+}
+
 export function markSessionBootstrapStale() {
   markContentCachePrefixStale(SESSION_BOOTSTRAP_CACHE_KEY);
 }
