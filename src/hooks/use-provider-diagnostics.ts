@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useRememberedState } from "@/hooks/use-remembered-state";
+import { useAdminReading } from "@/hooks/use-admin-reading";
 import {
   getProviderDiagnostics,
   type ProviderDiagnostic,
@@ -43,43 +44,54 @@ export function useProviderDiagnostics() {
     { activeQuery: "", results: {} },
   );
   const [query, setQuery] = useState(value.activeQuery);
-  const [pending, setPending] = useState<readonly string[]>([]);
-  const [error, setError] = useState("");
+  const cloudinary = useAdminReading("admin-provider:cloudinary", "common.loadFailed");
+  const cloudflare = useAdminReading("admin-provider:cloudflare", "common.loadFailed");
+  const logs = useAdminReading("admin-provider:logs", "common.loadFailed");
+  const readers = useMemo(() => ({ cloudinary: cloudinary.read, cloudflare: cloudflare.read, logs: logs.read }),
+    [cloudinary.read, cloudflare.read, logs.read]);
+  const pending = useRef(new Map<string, { read: typeof cloudinary.read; promise: Promise<void> }>());
 
   const load = useCallback(
-    async (provider: DiagnosticProvider, next = false) => {
+    (provider: DiagnosticProvider, next = false) => {
       const previous = value.results[provider];
-      setPending((current) => [...current, provider]);
-      setError("");
-      try {
-        const result = await getProviderDiagnostics({
+      if (next && !previous?.nextCursor) return Promise.resolve();
+      const payload = {
           provider,
           ...(provider === "logs" ? { query: next ? value.activeQuery : query } : {}),
           ...(next && previous?.nextCursor
             ? { cursor: previous.nextCursor, until: previous.until }
             : {}),
-        });
-        remember((current) => ({
+      };
+      const key = JSON.stringify(payload);
+      const read = readers[provider];
+      const existing = pending.current.get(key);
+      if (existing?.read === read) return existing.promise;
+      const promise = read(async () => {
+        const result = await getProviderDiagnostics(payload);
+        if (result.status === "unavailable") throw new Error(result.error);
+        return result;
+      }, (result) => remember((current) => ({
           activeQuery: provider === "logs" && !next ? query : current.activeQuery,
           results: { ...current.results, [provider]: result },
-        }));
-      } catch (caught) {
-        setError(caught instanceof Error ? caught.message : String(caught));
-      } finally {
-        setPending((current) => current.filter((entry) => entry !== provider));
-      }
+      }))).finally(() => {
+        if (pending.current.get(key)?.promise === promise) pending.current.delete(key);
+      });
+      pending.current.set(key, { read, promise });
+      return promise;
     },
-    [query, remember, value],
+    [query, readers, remember, value],
   );
+  const latestLoad = useRef(load);
+  useEffect(() => { latestLoad.current = load; }, [load]);
 
   useEffect(() => {
     if (!cold && !refresh) return;
-    for (const provider of READ_ON_ARRIVAL) void load(provider);
-  }, [cold, refresh, load]);
+    for (const provider of READ_ON_ARRIVAL) void latestLoad.current(provider);
+  }, [cold, refresh, readers]);
 
   return {
-    busy: (provider: DiagnosticProvider) => pending.includes(provider),
-    error,
+    busy: (provider: DiagnosticProvider) => ({ cloudinary, cloudflare, logs })[provider].loading,
+    error: cloudinary.error || cloudflare.error || logs.error,
     load,
     query,
     results: value.results,
