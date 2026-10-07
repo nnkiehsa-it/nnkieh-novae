@@ -140,6 +140,11 @@ export async function processImageForUpload(file: File, settings: ImageUploadSet
   } catch (error) {
     if (errorMessage(error).startsWith('[IMG-')) throw error;
     throw new Error(`[IMG-ENCODE] ${errorMessage(error)}；source=${sourceWidth}x${sourceHeight}`, { cause: error });
+  } finally {
+    // Release the source decode and canvas backing store before the next photo.
+    image.removeAttribute('src');
+    canvas.width = 0;
+    canvas.height = 0;
   }
 
   throw new Error(t('image.outputTooLarge', {
