@@ -44,6 +44,7 @@
     "verify:database-contracts": "node scripts/generate-database-contracts.mjs --check",
     "verify:migration-upgrade": "node scripts/verify-populated-migration-upgrade.mjs",
     "verify:search-performance": "node scripts/verify-search-performance.mjs",
+    "verify:admin-performance": "node scripts/verify-admin-performance.mjs",
     "verify:integration": "node scripts/verify-integration.mjs",
     "test:e2e": "node scripts/verify-integration.mjs --e2e",
     "test:e2e:runner": "playwright test",
