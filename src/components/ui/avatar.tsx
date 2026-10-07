@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Avatar as AvatarPrimitive } from "radix-ui";
 
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useDecodedImage } from "@/hooks/use-decoded-image";
 import { cn } from "@/lib/utils";
 
 function Avatar({
@@ -29,41 +29,36 @@ function Avatar({
 function AvatarImage({
   className,
   onLoadingStatusChange,
+  ref,
   src,
+  srcSet,
   ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Image>) {
-  const sourceKey = typeof src === "string" ? src : "";
-  const [resolved, setResolved] = React.useState<{
-    sourceKey: string;
-    status: "error" | "idle" | "loaded" | "loading";
-  }>({ sourceKey: "", status: "idle" });
-  const status = resolved.sourceKey === sourceKey
-    ? resolved.status
-    : sourceKey
-      ? "loading"
-      : "idle";
+}: React.ComponentProps<"img"> & {
+  onLoadingStatusChange?: (status: "error" | "idle" | "loaded" | "loading") => void;
+}) {
+  const sourceKey = src ? `${src}|${srcSet ?? ""}` : "";
+  const { imageRef, state } = useDecodedImage(sourceKey);
+  const composedRef = React.useCallback((image: HTMLImageElement | null) => {
+    imageRef.current = image;
+    if (typeof ref === "function") return ref(image);
+    if (ref) ref.current = image;
+  }, [imageRef, ref]);
+  React.useEffect(() => {
+    onLoadingStatusChange?.(!src ? "idle" : state === "ready" ? "loaded" : state);
+  }, [onLoadingStatusChange, src, state]);
 
   return (
-    <>
-      <AvatarPrimitive.Image
-        data-slot="avatar-image"
-        className={cn("aspect-square size-full", className)}
-        onLoadingStatusChange={(nextStatus) => {
-          setResolved({ sourceKey, status: nextStatus });
-          onLoadingStatusChange?.(nextStatus);
-        }}
-        src={src}
+      <img
         {...props}
+        key={sourceKey}
+        data-slot="avatar-image"
+        data-image-state={state}
+        className={cn("t-decoded-image absolute inset-0 aspect-square size-full object-cover", className)}
+        decoding="async"
+        ref={composedRef}
+        src={src}
+        srcSet={srcSet}
       />
-      {status === "loading" ? (
-        <span
-          aria-hidden
-          className="t-wait-indicator pointer-events-none absolute inset-0 z-10 grid place-items-center bg-muted text-muted-foreground"
-        >
-          <LoadingSpinner className="size-3.5" />
-        </span>
-      ) : null}
-    </>
   );
 }
 
@@ -75,7 +70,7 @@ function AvatarFallback({
     <AvatarPrimitive.Fallback
       data-slot="avatar-fallback"
       className={cn(
-        "flex size-full items-center justify-center rounded-full bg-muted text-sm text-muted-foreground group-data-[size=sm]/avatar:text-xs",
+        "flex size-full items-center justify-center rounded-full bg-muted text-sm text-muted-foreground group-data-[size=sm]/avatar:text-xs group-has-data-[image-state=ready]/avatar:hidden",
         className,
       )}
       {...props}

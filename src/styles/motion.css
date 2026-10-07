@@ -696,6 +696,10 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 }
 
 /* Images stay hidden until the resource is fully decoded. */
+.t-image-placeholder {
+  opacity: 0;
+  animation: t-fade-in var(--motion-control) var(--ease-arrive) 120ms both;
+}
 .t-decoded-image[data-image-state="loading"],
 .t-decoded-image[data-image-state="error"] {
   opacity: 0;

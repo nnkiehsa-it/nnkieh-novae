@@ -2,57 +2,29 @@
 
 import * as React from "react";
 import { ImageOff } from "lucide-react";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useDecodedImage } from "@/hooks/use-decoded-image";
 import { cn } from "@/lib/utils";
-
-type ImageLoadState = "error" | "loading" | "ready";
 
 export function DecodedImage({
   className,
   containerClassName,
   decoding = "async",
   indicatorClassName,
-  onError,
-  onLoad,
+  ref,
   src,
+  srcSet,
   ...props
 }: React.ComponentProps<"img"> & {
   containerClassName?: string;
   indicatorClassName?: string;
 }) {
-  const sourceKey = typeof src === "string" ? src : "";
-  const [resolved, setResolved] = React.useState<{
-    sourceKey: string;
-    state: ImageLoadState;
-  }>({ sourceKey: "", state: "loading" });
-  const state = resolved.sourceKey === sourceKey
-    ? resolved.state
-    : sourceKey
-      ? "loading"
-      : "error";
-
-  const handleLoad = React.useCallback(
-    (event: React.SyntheticEvent<HTMLImageElement>) => {
-      onLoad?.(event);
-      const image = event.currentTarget;
-      const loadedSource = sourceKey;
-      const decoding = typeof image.decode === "function"
-        ? image.decode().catch(() => undefined)
-        : Promise.resolve();
-      void decoding.then(() => {
-        setResolved({ sourceKey: loadedSource, state: "ready" });
-      });
-    },
-    [onLoad, sourceKey],
-  );
-
-  const handleError = React.useCallback(
-    (event: React.SyntheticEvent<HTMLImageElement>) => {
-      setResolved({ sourceKey, state: "error" });
-      onError?.(event);
-    },
-    [onError, sourceKey],
-  );
+  const sourceKey = src ? `${src}|${srcSet ?? ""}` : "";
+  const { imageRef, state } = useDecodedImage(sourceKey);
+  const composedRef = React.useCallback((image: HTMLImageElement | null) => {
+    imageRef.current = image;
+    if (typeof ref === "function") return ref(image);
+    if (ref) ref.current = image;
+  }, [imageRef, ref]);
 
   return (
     <span
@@ -62,10 +34,8 @@ export function DecodedImage({
       {state === "loading" ? (
         <span
           aria-hidden
-          className="t-wait-indicator pointer-events-none col-start-1 row-start-1 grid place-items-center text-muted-foreground"
-        >
-          <LoadingSpinner className={cn("size-5", indicatorClassName)} />
-        </span>
+          className="t-image-placeholder pointer-events-none absolute inset-0 rounded-[inherit] bg-muted/40"
+        />
       ) : null}
       {state === "error" ? (
         <span
@@ -77,12 +47,13 @@ export function DecodedImage({
       ) : null}
       <img
         {...props}
+        key={sourceKey}
         className={cn("t-decoded-image col-start-1 row-start-1", className)}
         data-image-state={state}
         decoding={decoding}
-        onError={handleError}
-        onLoad={handleLoad}
+        ref={composedRef}
         src={src}
+        srcSet={srcSet}
       />
     </span>
   );
