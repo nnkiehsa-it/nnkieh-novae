@@ -88,6 +88,8 @@ const messages = {
   "ui.operations.policy.feedPages": "列表保留頁數",
   "ui.operations.policy.mediaBrowserSeconds": "公開圖片瀏覽器快取秒數",
   "ui.operations.policy.mediaEdgeSeconds": "圖片邊緣快取秒數",
+  "ui.operations.policy.avatarBrowserSeconds": "頭像瀏覽器快取秒數",
+  "ui.operations.policy.avatarEdgeSeconds": "頭像邊緣快取秒數",
   "ui.operations.policy.notionBatchSize": "Notion 每批事件數",
   "ui.operations.policy.notificationBatchSize": "通知每批事件數",
   "ui.operations.policy.realtimeBatchSize": "即時同步每批事件數",

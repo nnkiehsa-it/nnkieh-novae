@@ -195,7 +195,7 @@ async function fetchHandler(request: Request, env: Env, ctx: ExecutionContext) {
   const pathname = new URL(request.url).pathname;
   const mediaMatch = pathname.match(/^\/v1\/media\/([^/]+)\/([^/]+)$/u);
   if (mediaMatch && (request.method === "GET" || request.method === "HEAD")) {
-    return await handleMedia(request, env, mediaMatch[1], mediaMatch[2]);
+    return await handleMedia(request, env, mediaMatch[1], mediaMatch[2], ctx);
   }
   if (pathname === "/v1/realtime" && request.method === "GET") {
     if (!isAllowedBrowserRequest(request, env)) return new Response(null, { status: 403 });

@@ -72,6 +72,18 @@ export const OPERATION_POLICIES = {
     "max": 3600,
     "group": "client"
   },
+  "avatarBrowserSeconds": {
+    "value": 31536000,
+    "min": 0,
+    "max": 31536000,
+    "group": "client"
+  },
+  "avatarEdgeSeconds": {
+    "value": 86400,
+    "min": 0,
+    "max": 31536000,
+    "group": "client"
+  },
   "avatarRevalidateHours": {
     "value": 24,
     "min": 1,

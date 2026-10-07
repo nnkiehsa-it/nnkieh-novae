@@ -92,14 +92,14 @@ async function mediaCacheKey(publicId: string, variant: MediaVariant, revision: 
   );
 }
 
-function browserResponse(response: Response, payload: MediaPayload, cacheStatus: 'hit' | 'miss', browserSeconds: number) {
+function browserResponse(response: Response, payload: MediaPayload, variant: MediaVariant, cacheStatus: 'hit' | 'miss', browserSeconds: number) {
   const headers = new Headers(response.headers);
   headers.delete('set-cookie');
   headers.set(
     'cache-control',
     payload.private
       ? 'private, no-store'
-      : `public, max-age=${browserSeconds}, must-revalidate`,
+      : `public, max-age=${browserSeconds}, ${variant === 'avatar' && browserSeconds > 0 ? 'immutable' : 'must-revalidate'}`,
   );
   headers.set('cross-origin-resource-policy', 'cross-origin');
   headers.set('x-content-type-options', 'nosniff');
@@ -119,7 +119,7 @@ function imageFetchOptions(variant: MediaVariant) {
   return { cf: { image } } as RequestInit;
 }
 
-export async function handleMedia(request: Request, env: Env, token: string, rawVariant: string) {
+export async function handleMedia(request: Request, env: Env, token: string, rawVariant: string, ctx: Pick<ExecutionContext, 'waitUntil'>) {
   const clientIp = request.headers.get('cf-connecting-ip')?.trim() || 'unknown';
   const variant = VARIANTS.has(rawVariant as MediaVariant) ? rawVariant as MediaVariant : null;
   const payload = await verifyMediaToken(token, env.MEDIA_SIGNING_SECRET);
@@ -139,27 +139,31 @@ export async function handleMedia(request: Request, env: Env, token: string, raw
 
   const workerCache = (caches as CacheStorage & { default?: Cache }).default;
   const { revision, values } = await mediaPolicies(env);
+  const browserSeconds = variant === 'avatar' ? values.avatarBrowserSeconds : values.mediaBrowserSeconds;
+  const edgeSeconds = variant === 'avatar' ? values.avatarEdgeSeconds : values.mediaEdgeSeconds;
   const cacheKey = await mediaCacheKey(payload.publicId, variant, revision);
   const cached = await workerCache?.match(cacheKey).catch(() => undefined);
   if (cached) {
-    const response = browserResponse(cached, payload, 'hit', values.mediaBrowserSeconds);
+    const response = browserResponse(cached, payload, variant, 'hit', browserSeconds);
     return request.method === 'HEAD' ? new Response(null, response) : response;
   }
 
   const upstream = await fetch(
     await cloudinarySourceUrl(payload.publicId, env),
-    imageFetchOptions(variant),
+    { ...imageFetchOptions(variant), signal: AbortSignal.timeout(15_000) },
   );
   if (!upstream.ok) return new Response(null, { status: upstream.status });
   const cacheHeaders = new Headers(upstream.headers);
   cacheHeaders.delete('set-cookie');
-  cacheHeaders.set('cache-control', `public, max-age=${values.mediaEdgeSeconds}`);
+  cacheHeaders.set('cache-control', `public, max-age=${edgeSeconds}`);
   const cacheable = new Response(upstream.clone().body, {
     headers: cacheHeaders,
     status: upstream.status,
     statusText: upstream.statusText,
   });
-  await workerCache?.put(cacheKey, cacheable).catch(() => undefined);
-  const response = browserResponse(upstream, payload, 'miss', values.mediaBrowserSeconds);
+  if (workerCache && edgeSeconds > 0) {
+    ctx.waitUntil(workerCache.put(cacheKey, cacheable).catch(() => undefined));
+  }
+  const response = browserResponse(upstream, payload, variant, 'miss', browserSeconds);
   return request.method === 'HEAD' ? new Response(null, response) : response;
 }

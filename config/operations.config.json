@@ -11,6 +11,8 @@
 "feedPages": {"value":5,"min":1,"max":20,"group":"client"},
 "mediaBrowserSeconds": {"value":60,"min":0,"max":3600,"group":"client"},
 "mediaEdgeSeconds": {"value":60,"min":0,"max":3600,"group":"client"},
+"avatarBrowserSeconds": {"value":31536000,"min":0,"max":31536000,"group":"client"},
+"avatarEdgeSeconds": {"value":86400,"min":0,"max":31536000,"group":"client"},
 "avatarRevalidateHours": {"value":24,"min":1,"max":168,"group":"client"},
 "notionBatchSize": {"value":10,"min":1,"max":100,"group":"jobs"},
 "notificationBatchSize": {"value":20,"min":1,"max":100,"group":"jobs"},

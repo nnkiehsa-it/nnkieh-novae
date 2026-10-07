@@ -50,7 +50,7 @@ describe("security boundaries", () => {
   });
   it("rejects malformed media base64 with a controlled response", async () => {
     const env = securityEnvironment({ MEDIA_INVALID_IP_RATE_LIMITER: { limit: async () => ({ success: true }) } });
-    const response = await handleMedia(new Request("https://api.school.example/v1/media/A.A/full"), env, "A.A", "full");
+    const response = await handleMedia(new Request("https://api.school.example/v1/media/A.A/full"), env, "A.A", "full", { waitUntil: vi.fn() });
     expect(response.status).toBe(404);
   });
   it("allows a 100-person shared-network login burst before IP throttling", () => {

@@ -88,6 +88,8 @@ const messages = {
   "ui.operations.policy.feedPages": "Retained feed pages",
   "ui.operations.policy.mediaBrowserSeconds": "Public image browser cache seconds",
   "ui.operations.policy.mediaEdgeSeconds": "Image edge cache seconds",
+  "ui.operations.policy.avatarBrowserSeconds": "Avatar browser cache seconds",
+  "ui.operations.policy.avatarEdgeSeconds": "Avatar edge cache seconds",
   "ui.operations.policy.notionBatchSize": "Notion delivery batch size",
   "ui.operations.policy.notificationBatchSize": "Notification delivery batch size",
   "ui.operations.policy.realtimeBatchSize": "Realtime delivery batch size",
