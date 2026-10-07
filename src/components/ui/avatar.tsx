@@ -53,7 +53,7 @@ function AvatarImage({
         key={sourceKey}
         data-slot="avatar-image"
         data-image-state={state}
-        className={cn("t-decoded-image absolute inset-0 aspect-square size-full object-cover", className)}
+        className={cn("t-decoded-image absolute inset-0 z-10 aspect-square size-full object-cover", className)}
         decoding="async"
         ref={composedRef}
         src={src}
@@ -70,7 +70,7 @@ function AvatarFallback({
     <AvatarPrimitive.Fallback
       data-slot="avatar-fallback"
       className={cn(
-        "flex size-full items-center justify-center rounded-full bg-muted text-sm text-muted-foreground group-data-[size=sm]/avatar:text-xs group-has-data-[image-state=ready]/avatar:hidden",
+        "flex size-full items-center justify-center rounded-full bg-muted text-sm text-muted-foreground group-data-[size=sm]/avatar:text-xs",
         className,
       )}
       {...props}

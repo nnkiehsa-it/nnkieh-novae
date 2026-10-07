@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import pg from 'pg';
 import { resolveWindowsWslDistro } from './wsl.mjs';
 
@@ -43,6 +43,10 @@ const keepalive = distro ? spawn('wsl.exe', ['-d', distro, '--', 'sh', '-lc', 'w
   { stdio: 'ignore', windowsHide: true }) : null;
 let created = false;
 try {
+  if (!process.env.DATABASE_OWNER_URL) {
+    const startup = spawnSync(process.execPath, ['scripts/database.mjs', 'start-local'], { stdio: 'inherit', windowsHide: true });
+    assert.equal(startup.status, 0, 'Local PostgreSQL must start before the benchmark');
+  }
   await admin.connect();
   await admin.query(`create database ${name}`); created = true;
   await fixture.connect();
