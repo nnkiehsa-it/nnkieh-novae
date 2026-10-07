@@ -10,10 +10,10 @@ interface MediaDeliveryPayload {
   version: 2;
 }
 
-// Public tokens use expiresAt=0. The cache hint must still be an ISO-serializable date.
-const PUBLIC_MEDIA_CACHE_EXPIRY_MS = Date.parse("9999-12-31T23:59:59.000Z");
-const PRIVATE_MEDIA_LIFETIME_SECONDS = 15 * 60;
-const PRIVATE_MEDIA_EXPIRY_BUCKET_SECONDS = 5 * 60;
+// Only versioned public avatars are permanent. Content visibility can change.
+const AVATAR_CACHE_EXPIRY_MS = Date.parse("9999-12-31T23:59:59.000Z");
+const MEDIA_LIFETIME_SECONDS = 15 * 60;
+const MEDIA_EXPIRY_BUCKET_SECONDS = 5 * 60;
 
 function toUrlSafeBase64(bytes: Uint8Array) {
   let binary = "";
@@ -57,10 +57,10 @@ async function createRateLimitKey(identifier: string) {
   return toUrlSafeBase64(new Uint8Array(signature));
 }
 
-function privateExpirySeconds() {
-  const minimumExpiry = Math.floor(Date.now() / 1000) + PRIVATE_MEDIA_LIFETIME_SECONDS;
-  return Math.ceil(minimumExpiry / PRIVATE_MEDIA_EXPIRY_BUCKET_SECONDS)
-    * PRIVATE_MEDIA_EXPIRY_BUCKET_SECONDS;
+function deliveryExpirySeconds() {
+  const minimumExpiry = Math.floor(Date.now() / 1000) + MEDIA_LIFETIME_SECONDS;
+  return Math.ceil(minimumExpiry / MEDIA_EXPIRY_BUCKET_SECONDS)
+    * MEDIA_EXPIRY_BUCKET_SECONDS;
 }
 
 export async function createMediaDeliveryUrl(
@@ -69,7 +69,8 @@ export async function createMediaDeliveryUrl(
   privateDelivery: boolean,
   rateLimitIdentifier: string,
 ) {
-  const expiresAt = privateDelivery ? privateExpirySeconds() : 0;
+  const permanentAvatar = !privateDelivery && variant === "avatar" && publicId.startsWith("srp/avatars/");
+  const expiresAt = permanentAvatar ? 0 : deliveryExpirySeconds();
   const encodedPayload = encodePayload({
     expiresAt,
     private: privateDelivery,
@@ -80,7 +81,7 @@ export async function createMediaDeliveryUrl(
   const signature = await signPayload(encodedPayload);
   const workerUrl = requireEnv("PUBLIC_API_URL").replace(/\/+$/u, "");
   return {
-    expiresAtMs: expiresAt ? expiresAt * 1000 : PUBLIC_MEDIA_CACHE_EXPIRY_MS,
+    expiresAtMs: expiresAt ? expiresAt * 1000 : AVATAR_CACHE_EXPIRY_MS,
     url: `${workerUrl}/v1/media/${encodedPayload}.${signature}/${variant}`,
   };
 }

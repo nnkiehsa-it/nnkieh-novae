@@ -29,7 +29,7 @@ interface BackendDeliveryResult {
   thumbnailUrls: Record<string, string>;
 }
 
-const prefix = 'upload-media|';
+const prefix = 'upload-media-v2|';
 const refreshBufferMs = 60_000;
 const privateReferences = new Map<string, { guard: ContentCacheWriteGuard; value: ImageReference }>();
 let requestRevision = 0;

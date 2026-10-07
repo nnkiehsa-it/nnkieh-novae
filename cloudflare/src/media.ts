@@ -62,8 +62,8 @@ async function verifyMediaToken(token: string, secret: string) {
       || !Number.isSafeInteger(payload.expiresAt)
       || !PUBLIC_ID_PATTERN.test(payload.publicId)
       || !RATE_LIMIT_KEY_PATTERN.test(payload.rateLimitKey)
-      || (payload.private && payload.expiresAt <= Math.floor(Date.now() / 1000))
-      || (!payload.private && payload.expiresAt !== 0)
+      || (payload.expiresAt !== 0 && payload.expiresAt <= Math.floor(Date.now() / 1000))
+      || (payload.expiresAt === 0 && (payload.private || !payload.publicId.startsWith('srp/avatars/')))
     ) return null;
     return payload;
   } catch {
@@ -94,12 +94,14 @@ async function mediaCacheKey(publicId: string, variant: MediaVariant, revision: 
 
 function browserResponse(response: Response, payload: MediaPayload, variant: MediaVariant, cacheStatus: 'hit' | 'miss', browserSeconds: number) {
   const headers = new Headers(response.headers);
+  const remainingSeconds = payload.expiresAt ? Math.max(0, payload.expiresAt - Math.floor(Date.now() / 1000)) : browserSeconds;
+  const maxAge = Math.min(browserSeconds, remainingSeconds);
   headers.delete('set-cookie');
   headers.set(
     'cache-control',
     payload.private
       ? 'private, no-store'
-      : `public, max-age=${browserSeconds}, ${variant === 'avatar' && browserSeconds > 0 ? 'immutable' : 'must-revalidate'}`,
+      : `public, max-age=${maxAge}, ${payload.expiresAt === 0 && variant === 'avatar' && maxAge > 0 ? 'immutable' : 'must-revalidate'}`,
   );
   headers.set('cross-origin-resource-policy', 'cross-origin');
   headers.set('x-content-type-options', 'nosniff');

@@ -21,7 +21,7 @@ export function useResolvedMarkdown(content: string) {
   const uploadKey = `${user?.uid ?? ""}|${uploadIds.join("|")}`;
   const [revision, invalidate] = React.useReducer((value: number) => value + 1, 0);
   React.useEffect(() => subscribeContentCacheInvalidations((prefix) => {
-    if (prefix.startsWith("upload-media|")) invalidate();
+    if (prefix.startsWith("upload-media-v2|")) invalidate();
   }), []);
   const cached = React.useMemo(() => {
     const entries = uploadIds.flatMap((id) => {

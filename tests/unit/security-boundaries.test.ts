@@ -138,7 +138,7 @@ describe("security boundaries", () => {
     expect(firstPayload.rateLimitKey).not.toBe(secondPayload.rateLimitKey);
     expect(first.url).not.toContain("school-user-a");
     expect(firstPayload.version).toBe(2);
-    expect(firstPayload.expiresAt).toBe(0);
-    expect(new Date(first.expiresAtMs).toISOString()).toBe("9999-12-31T23:59:59.000Z");
+    expect(firstPayload.expiresAt).toBeGreaterThan(Math.floor(Date.now() / 1000));
+    expect(first.expiresAtMs).toBeLessThanOrEqual(Date.now() + 20 * 60_000);
   });
 });

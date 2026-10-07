@@ -8,7 +8,7 @@ import type { Env } from "../../cloudflare/src/types";
 vi.mock("../../cloudflare/src/media-policies", () => ({
   mediaPolicies: async () => ({ revision: 1, values: DEFAULT_OPERATION_POLICIES }),
 }));
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 const env = {
   MEDIA_SIGNING_SECRET: "media-test-signing-secret",
   PUBLIC_API_URL: "https://api.school.example",
@@ -38,4 +38,17 @@ it("retains private no-store and public attachment revalidation on edge hits", a
     const response = await handleMedia(new Request(media.url), env, token, "full", { waitUntil: vi.fn() });
     expect(response.headers.get("cache-control")).toBe(privateDelivery ? "private, no-store" : "public, max-age=60, must-revalidate");
   }
+});
+
+it("expires previously public attachment grants even on cache hits and never treats them as immutable avatars", async () => {
+  vi.useFakeTimers();
+  vi.stubGlobal("caches", { default: { match: async () => new Response("image") } });
+  const media = await withRuntimeEnvironment(env, () => createMediaDeliveryUrl("srp/attachments/id", "full", false, "user"));
+  const token = new URL(media.url).pathname.split("/")[3]!;
+  const response = await handleMedia(new Request(media.url), env, token, "avatar", { waitUntil: vi.fn() });
+  const maxAge = Number(response.headers.get("cache-control")?.match(/max-age=(\d+)/u)?.[1]);
+  expect(maxAge).toBeLessThanOrEqual(20 * 60);
+  expect(response.headers.get("cache-control")).not.toContain("immutable");
+  vi.setSystemTime(media.expiresAtMs + 1000);
+  expect((await handleMedia(new Request(media.url), env, token, "full", { waitUntil: vi.fn() })).status).toBe(404);
 });

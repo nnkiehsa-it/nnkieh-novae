@@ -34,7 +34,7 @@ beforeEach(() => {
 
 it("restores public references synchronously while keeping private URLs and other accounts out of persistence", async () => {
   await resolveUploadImageUrls(["public", "private"]);
-  expect([...mocks.stored.values()].map((entry) => entry.cacheKey)).toEqual(["upload-media|public"]);
+  expect([...mocks.stored.values()].map((entry) => entry.cacheKey)).toEqual(["upload-media-v2|public"]);
   clearContentReadMemoryCache(); await restoreContentReadCache();
   expect(getResolvedUploadReference("public")?.fullUrl).toContain("/public/full");
   expect(getResolvedUploadReference("private")).toBeNull();
