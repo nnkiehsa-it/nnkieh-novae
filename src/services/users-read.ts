@@ -12,14 +12,16 @@ import {
 } from '@/services/content-read-cache';
 import type { UserPublicProfile } from '@/types';
 
-const USER_PROFILE_REQUEST_PREFIX = 'user-profile|';
+// v2 profiles contain only Cloudinary delivery URLs, including restored entries.
+const USER_PROFILE_CACHE_NAME = 'user-profile-v2';
+const USER_PROFILE_REQUEST_PREFIX = `${USER_PROFILE_CACHE_NAME}|`;
 const USER_PROFILE_CACHE_TTL_MS = 24 * 60 * 60 * 1_000;
 
 export function getCachedUserPublicProfiles(uids: string[]) {
   const profiles: Record<string, UserPublicProfile> = {};
   for (const uid of new Set(uids.map((value) => value.trim()).filter(Boolean))) {
     const profile = getCachedContent<UserPublicProfile>(
-      createContentCacheKey(['user-profile', uid]),
+      createContentCacheKey([USER_PROFILE_CACHE_NAME, uid]),
       USER_PROFILE_CACHE_TTL_MS,
     );
     if (profile) profiles[uid] = profile;
@@ -39,7 +41,7 @@ export async function fetchUserPublicProfiles(uids: string[]) {
     const cachedEntries = await Promise.all(uniqueUids.map(async (uid) => [
       uid,
       await getCachedContentPersistent<UserPublicProfile>(
-        createContentCacheKey(['user-profile', uid]),
+        createContentCacheKey([USER_PROFILE_CACHE_NAME, uid]),
         USER_PROFILE_CACHE_TTL_MS,
       ),
     ] as const));
@@ -67,7 +69,7 @@ export async function fetchUserPublicProfiles(uids: string[]) {
         const profile = fetched[uid];
         if (!profile) continue;
         profiles[uid] = profile;
-        setCachedContentFromRead({ ...guard, key: createContentCacheKey(['user-profile', uid]) }, profile);
+        setCachedContentFromRead({ ...guard, key: createContentCacheKey([USER_PROFILE_CACHE_NAME, uid]) }, profile);
       }
     }
     return profiles;
