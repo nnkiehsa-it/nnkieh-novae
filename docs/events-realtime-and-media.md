@@ -92,6 +92,8 @@ sequenceDiagram
 
 內容內只保存 `srp-upload://{uploadId}`，不保存可長期公開的 Cloudinary URL。顯示圖片時，Worker 驗證 viewer scope 後簽發 full / thumbnail URL；client 會在到期前 60 秒停止沿用 cache。Cloudinary webhook 也必須通過 provider signature，才會更新 upload lifecycle。
 
+頭像保留文字替代圖，附件使用延遲靜態占位，圖片完整解碼後才顯示。公開附件網址可由帳號隔離的持久快取回復；私密網址僅留在記憶體。頭像另有長效快取設定，內容附件仍使用短期限。實作與量測見[圖片與管理佇列效能](media-and-admin-performance.md)。
+
 一批圖片共用一次圖片政策讀取；建立 session 使用一筆批次 insert，完成上傳時也一次讀取該批紀錄。Markdown 附件驗證、session 生命週期、圖片存取授權各自放在獨立模組。
 
 任一圖片上傳或完成驗證失敗時，client 會等同批請求結束，再請後端清理整批未附加圖片。Worker 的完成驗證也會等待全部操作結束才回復交易，避免其他圖片仍在使用已釋放的資料庫連線。編輯器保留已選取的預覽與文字，使用者可直接重試；處理期間不能移除正在送出的附件。

@@ -71,6 +71,8 @@ Migration 變更還會建立 populated pre-0016 database，從切換前 schema �
 
 修改本文或作者搜尋查詢時，另跑 `bun run verify:search-performance`。它會建立並清理獨立測試資料庫，量測 migration 前後的 `EXPLAIN ANALYZE`、檢查索引計畫及搜尋權限回歸；資料量、重跑條件及量測限制見[搜尋效能紀錄](search-performance.md)。
 
+修改管理員佇列排序或索引時，跑 `bun run verify:admin-performance`；腳本量測 50,000 筆資料的排序查詢，核對結果與 planner 選用的索引，完成後清除隔離資料庫。[圖片與管理佇列效能](media-and-admin-performance.md)記錄資料條件與前後數字。
+
 ## Browser 與完整交付
 
 | 指令 | 內容 |

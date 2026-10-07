@@ -9,6 +9,7 @@
 | [系統架構](architecture.md) | 啟動流程、前端分層、快取、Worker、transaction、PWA 與部署拓撲 |
 | [後端及資料層](backend-and-data.md) | HTTP contract、完整 action 索引、transaction、schema role、migration 與 generated contract |
 | [事件、即時更新、通知與圖片](events-realtime-and-media.md) | Event destination、Queue、WebSocket topic、Push preference 與 Cloudinary lifecycle |
+| [圖片與管理佇列效能](media-and-admin-performance.md) | 完整解碼後顯示、頭像與附件快取、管理員讀取、索引量測與重跑 |
 | [執行期政策與限制](runtime-policies.md) | 業務與 Cloudflare rate limit、圖片限制、完整 retention defaults |
 | [設定參考](configuration.md) | 設定存放位置、required values、格式、Cloudflare bindings 與變更後驗證 |
 | [本機開發](local-development.md) | 完整啟動順序、固定 port、資料庫指令、generated artifacts 與常見失敗 |
