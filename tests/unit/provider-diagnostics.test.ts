@@ -1,4 +1,4 @@
-import { act, createElement } from "react";
+import { act, createElement, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { useProviderDiagnostics } from "@/hooks/use-provider-diagnostics";
@@ -14,7 +14,11 @@ vi.mock("@/services/operations-console", () => ({ getProviderDiagnostics: vi.fn(
 let root: Root;
 let state!: ReturnType<typeof useProviderDiagnostics>;
 const result = (provider: string, id: string): ProviderDiagnostic => ({ provider, status: "available", checkedAt: "2026-10-08T00:00:00Z", data: [{ id }], nextCursor: id, until: 100_000_000 });
-function Probe() { state = useProviderDiagnostics(); return null; }
+function Probe() {
+  const current = useProviderDiagnostics();
+  useEffect(() => { state = current; }, [current]);
+  return null;
+}
 beforeEach(async () => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   clearViewMemoryScope("providers-test");

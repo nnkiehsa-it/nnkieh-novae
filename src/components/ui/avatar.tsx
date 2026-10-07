@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Avatar as AvatarPrimitive } from "radix-ui";
 
-import { useDecodedImage } from "@/hooks/use-decoded-image";
+import { useDecodedImage } from "./use-decoded-image";
 import { cn } from "@/lib/utils";
 
 function Avatar({

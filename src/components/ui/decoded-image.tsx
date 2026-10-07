@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { ImageOff } from "lucide-react";
-import { useDecodedImage } from "@/hooks/use-decoded-image";
+import { useDecodedImage } from "./use-decoded-image";
 import { cn } from "@/lib/utils";
 
 export function DecodedImage({

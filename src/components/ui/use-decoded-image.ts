@@ -4,7 +4,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 
 export type ImageLoadState = "error" | "loading" | "ready";
 
-/** Decode the displayed element itself before revealing any pixels. */
+/** Shared presentation lifecycle; decode the displayed element before revealing pixels. */
 export function useDecodedImage(sourceKey: string) {
   const imageRef = useRef<HTMLImageElement>(null);
   const [resolved, setResolved] = useState<{ sourceKey: string; state: ImageLoadState }>({
