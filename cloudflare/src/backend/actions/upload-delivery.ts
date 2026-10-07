@@ -104,18 +104,20 @@ export async function resolveUploadImageUrls(
     if (!access.allowed || !upload.cloudinary_public_id) return null;
     return {
       id: upload.id,
+      privateDelivery: access.privateDelivery,
       ...await createMediaDeliveryUrls(upload.cloudinary_public_id, access.privateDelivery, auth.uid),
     };
   }));
-  const available = resolved.filter((entry: any): entry is NonNullable<typeof entry> => Boolean(entry));
+  const available = resolved.filter((entry): entry is NonNullable<typeof entry> => entry !== null);
   const expiresAtMs = available.length
-    ? Math.min(...available.map((entry: any) => entry.expiresAtMs))
+    ? Math.min(...available.map((entry) => entry.expiresAtMs))
     : Date.now();
   return {
-    errors: Object.fromEntries(uploadIds.filter((id) => !available.some((entry: any) => entry.id === id)).map((id) => [id, "not-found"])),
+    errors: Object.fromEntries(uploadIds.filter((id) => !available.some((entry) => entry.id === id)).map((id) => [id, "not-found"])),
     expiresAt: new Date(expiresAtMs).toISOString(),
-    expiresAtByUploadId: Object.fromEntries(available.map((entry: any) => [entry.id, new Date(entry.expiresAtMs).toISOString()])),
-    fullUrls: Object.fromEntries(available.map((entry: any) => [entry.id, entry.fullUrl])),
-    thumbnailUrls: Object.fromEntries(available.map((entry: any) => [entry.id, entry.thumbnailUrl])),
+    expiresAtByUploadId: Object.fromEntries(available.map((entry) => [entry.id, new Date(entry.expiresAtMs).toISOString()])),
+    privateByUploadId: Object.fromEntries(available.map((entry) => [entry.id, entry.privateDelivery])),
+    fullUrls: Object.fromEntries(available.map((entry) => [entry.id, entry.fullUrl])),
+    thumbnailUrls: Object.fromEntries(available.map((entry) => [entry.id, entry.thumbnailUrl])),
   };
 }

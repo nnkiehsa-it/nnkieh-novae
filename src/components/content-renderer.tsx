@@ -14,7 +14,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { cn } from "@/lib/utils";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export function ContentRenderer({
   className,
@@ -43,7 +42,10 @@ export function ContentRenderer({
         image.uploadId &&
         (expiresAtByUploadId[image.uploadId] ?? 0) <= Date.now() + 60_000
       ) {
-        await refresh(image.uploadId).catch(() => undefined);
+        const result = await refresh(image.uploadId).catch(() => null);
+        if (!result?.fullUrls[image.uploadId]) return;
+        setSelected({ ...image, fullSrc: result.fullUrls[image.uploadId], src: result.thumbnailUrls[image.uploadId]! });
+        return;
       }
       setSelected(image);
     },
@@ -65,7 +67,7 @@ export function ContentRenderer({
                 image.resolveError ? (
                   <ImageIcon className="size-5" />
                 ) : (
-                  <LoadingSpinner className="t-wait-indicator size-5" />
+                  <span aria-hidden className="t-image-placeholder absolute inset-0 bg-muted/40" />
                 )
               }
               src={image.src}

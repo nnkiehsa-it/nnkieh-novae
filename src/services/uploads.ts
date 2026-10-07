@@ -1,20 +1,9 @@
 import { invokeBackendAction } from '@/services/backend-action';
-import { longRequestTimeoutMs, readRequestTimeoutMs, withRequestTimeout } from '@/lib/request';
+import { longRequestTimeoutMs, withRequestTimeout } from '@/lib/request';
 import { toReadableBackendError } from './issues-core';
 import { t } from '@/i18n';
 
-interface ResolvedUploadCacheEntry {
-  expiresAtMs: number;
-  fullUrl: string;
-  thumbnailUrl: string;
-}
-
-const resolvedUploadCache = new Map<string, ResolvedUploadCacheEntry>();
-const resolvedUploadRefreshBufferMs = 60 * 1000;
-
-export function clearResolvedUploadCache() {
-  resolvedUploadCache.clear();
-}
+export { clearResolvedUploadCache, invalidateResolvedUploadCache, resolveUploadImageUrls } from './upload-delivery';
 
 interface ImageUploadPolicy {
   height: number;
@@ -194,92 +183,3 @@ export async function deleteUploadedImages(storagePaths: string[]) {
   }
 }
 
-interface ResolveUploadOptions {
-  forceRefresh?: boolean;
-}
-
-export function invalidateResolvedUploadCache(uploadIds: string[]) {
-  uploadIds.forEach((uploadId) => resolvedUploadCache.delete(uploadId));
-}
-
-export async function resolveUploadImageUrls(uploadIds: string[], options: ResolveUploadOptions = {}) {
-  const uniqueIds = [...new Set(uploadIds)];
-  if (options.forceRefresh) {
-    invalidateResolvedUploadCache(uniqueIds);
-  }
-
-  const now = Date.now();
-  const cachedEntries = uniqueIds.flatMap((uploadId) => {
-    const entry = resolvedUploadCache.get(uploadId);
-    return entry && entry.expiresAtMs - resolvedUploadRefreshBufferMs > now
-      ? [[uploadId, entry] as const]
-      : [];
-  });
-  const cachedIds = new Set(cachedEntries.map(([uploadId]) => uploadId));
-  const unresolvedIds = uniqueIds.filter((uploadId) => !cachedIds.has(uploadId));
-
-  if (unresolvedIds.length === 0) {
-    return {
-      errors: {},
-      expiresAtByUploadId: Object.fromEntries(cachedEntries.map(([id, entry]) => [id, entry.expiresAtMs])),
-      expiresAtMs: Math.min(...cachedEntries.map(([, entry]) => entry.expiresAtMs)),
-      fullUrls: Object.fromEntries(cachedEntries.map(([id, entry]) => [id, entry.fullUrl])),
-      thumbnailUrls: Object.fromEntries(cachedEntries.map(([id, entry]) => [id, entry.thumbnailUrl])),
-    };
-  }
-
-  try {
-    const fn = invokeBackendAction<
-      { uploadIds: string[] },
-      {
-        errors?: Record<string, string>;
-        expiresAtByUploadId?: Record<string, string>;
-        expiresAt: string;
-        fullUrls: Record<string, string>;
-        thumbnailUrls: Record<string, string>;
-      }
-    >('resolveUploadImageUrls', {
-      timeoutMs: readRequestTimeoutMs,
-    });
-    const result = await fn({ uploadIds: unresolvedIds });
-    const fetched = result;
-    const defaultExpiration = Date.parse(fetched.expiresAt);
-    const expirationFor = (uploadId: string) => {
-      const value = Date.parse(fetched.expiresAtByUploadId?.[uploadId] ?? fetched.expiresAt);
-      return Number.isFinite(value) ? value : defaultExpiration;
-    };
-    Object.entries(fetched.fullUrls).forEach(([uploadId, fullUrl]) => {
-      const thumbnailUrl = fetched.thumbnailUrls[uploadId];
-      if (!thumbnailUrl) return;
-      resolvedUploadCache.set(uploadId, {
-        expiresAtMs: expirationFor(uploadId),
-        fullUrl,
-        thumbnailUrl,
-      });
-    });
-
-    const allEntries = uniqueIds.flatMap((uploadId) => {
-      const cachedEntry = resolvedUploadCache.get(uploadId);
-      const fetchedFullUrl = fetched.fullUrls[uploadId];
-      const fetchedThumbnailUrl = fetched.thumbnailUrls[uploadId];
-      const entry = cachedEntry ?? (fetchedFullUrl && fetchedThumbnailUrl ? {
-        expiresAtMs: expirationFor(uploadId),
-        fullUrl: fetchedFullUrl,
-        thumbnailUrl: fetchedThumbnailUrl,
-      } : undefined);
-      return entry ? [[uploadId, entry] as const] : [];
-    });
-    const allExpirationValues = allEntries.map(([, entry]) => entry.expiresAtMs);
-    return {
-      errors: fetched.errors ?? {},
-      expiresAtByUploadId: Object.fromEntries(allEntries.map(([id, entry]) => [id, entry.expiresAtMs])),
-      expiresAtMs: allExpirationValues.length > 0
-        ? Math.min(...allExpirationValues)
-        : defaultExpiration,
-      fullUrls: Object.fromEntries(allEntries.map(([id, entry]) => [id, entry.fullUrl])),
-      thumbnailUrls: Object.fromEntries(allEntries.map(([id, entry]) => [id, entry.thumbnailUrl])),
-    };
-  } catch (error) {
-    throw toReadableBackendError(error);
-  }
-}

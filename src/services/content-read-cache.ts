@@ -214,7 +214,7 @@ export function markContentCachePrefixStale(prefix: string) {
 
 export function subscribeContentCacheInvalidations(listener: (prefix: string) => void) {
   invalidationListeners.add(listener);
-  return () => invalidationListeners.delete(listener);
+  return () => { invalidationListeners.delete(listener); };
 }
 
 export function clearContentReadMemoryCache() {
@@ -231,7 +231,7 @@ export function clearContentReadCache() {
   void clearPersistentCacheScope(scope);
 }
 
-function isContentCacheWriteGuardCurrent(guard: ContentCacheWriteGuard) {
+export function isContentCacheWriteGuardCurrent(guard: ContentCacheWriteGuard) {
   if (guard.scope !== activeScope || guard.scopeVersion !== scopeVersion) return false;
   for (const [invalidationKey, version] of invalidationVersions) {
     if (version <= guard.cacheVersion) continue;

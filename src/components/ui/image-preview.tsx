@@ -71,7 +71,7 @@ export function ImagePreviewTile({
             alt={alt}
             className="max-h-full max-w-full object-contain transition-transform duration-[var(--motion-control)] ease-[var(--ease-arrive)] group-hover:scale-[1.03]"
             containerClassName="size-full place-items-center"
-            fetchPriority="low"
+            fetchPriority="auto"
             height={height}
             loading="eager"
             src={src}
