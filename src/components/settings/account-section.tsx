@@ -25,7 +25,7 @@ export function SettingsAccountSection({
     <ListSection>
       <ListCustomRow className="flex-nowrap">
         <Avatar className="size-11 shrink-0">
-          <AvatarImage alt={name} src={customPhotoUrl || user.photoURL || undefined} />
+          <AvatarImage alt={name} src={customPhotoUrl || undefined} />
           <AvatarFallback>{name.slice(0, 1)}</AvatarFallback>
         </Avatar>
         <span className="min-w-0 flex-1">

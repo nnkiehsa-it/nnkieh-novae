@@ -143,8 +143,8 @@ export async function handleUserAction(
 
   const uids = Array.isArray(payload.uids) ? payload.uids.map((uid) => asString(uid)).filter(Boolean).slice(0, 50) : [];
   const { rows } = await database.sql<Selected<
-    "user_profiles", "uid" | "display_name" | "avatar_public_id" | "photo_url" | "profile_version"
-  >>`select uid, display_name, avatar_public_id, photo_url, profile_version
+    "user_profiles", "uid" | "display_name" | "avatar_public_id" | "profile_version"
+  >>`select uid, display_name, avatar_public_id, profile_version
      from app_private.user_profiles where uid = any(${uids})`;
   const profiles = await Promise.all(rows.map(async (profile) => {
     const media = profile.avatar_public_id
@@ -155,7 +155,7 @@ export async function handleUserAction(
       {
         uid: profile.uid,
         displayName: profile.display_name,
-        photoUrl: media?.url ?? profile.photo_url ?? null,
+        photoUrl: media?.url ?? null,
         version: profile.profile_version,
       },
     ] as const;

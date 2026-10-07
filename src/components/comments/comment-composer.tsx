@@ -40,7 +40,7 @@ export function CommentComposer({
   const hasContent = Boolean(content.trim()) || images.images.length > 0;
   const canSubmit = hasContent && images.withinLimit && !busy;
   const displayName = session.user?.displayName || session.user?.email || "";
-  const photoUrl = session.customPhotoUrl || session.user?.photoURL || undefined;
+  const photoUrl = session.customPhotoUrl || undefined;
   const submitLabel = reply ? translate("ui.discussion.reply") : translate("ui.discussion.submit");
 
   return (

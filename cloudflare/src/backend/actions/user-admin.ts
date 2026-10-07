@@ -20,8 +20,8 @@ async function withAdminUserAvatars(
   const uids = users.map((user) => asString(user.uid)).filter(Boolean);
   if (uids.length === 0) return { ...result, users };
   const { rows } = await database.sql<Selected<
-    "user_profiles", "uid" | "avatar_public_id" | "photo_url"
-  >>`select uid, avatar_public_id, photo_url from app_private.user_profiles where uid = any(${uids})`;
+    "user_profiles", "uid" | "avatar_public_id"
+  >>`select uid, avatar_public_id from app_private.user_profiles where uid = any(${uids})`;
   const profiles = new Map(rows.map((profile) => [profile.uid, profile]));
   return {
     ...result,
@@ -31,7 +31,7 @@ async function withAdminUserAvatars(
       const media = profile?.avatar_public_id
         ? await createMediaDeliveryUrl(profile.avatar_public_id, "avatar", false, viewerUid)
         : null;
-      return { ...user, photoUrl: media?.url ?? profile?.photo_url ?? null };
+      return { ...user, photoUrl: media?.url ?? null };
     })),
   };
 }

@@ -51,7 +51,7 @@ function NotificationDot({ unread }: { unread: boolean }) {
 function AccountMenu({ compact = false }: { compact?: boolean }) {
   const session = useSession();
   const { resolvedTheme, setTheme } = useTheme();
-  const photo = session.customPhotoUrl || session.user?.photoURL || undefined;
+  const photo = session.customPhotoUrl || undefined;
   const name = session.user?.displayName || session.user?.email || "Novae";
   const changeTheme = React.useCallback(() => {
     const update = () => setTheme(resolvedTheme === "dark" ? "light" : "dark");
