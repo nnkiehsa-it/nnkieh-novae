@@ -160,7 +160,7 @@ export function ListNumberRow({
       <span className="flex shrink-0 items-center gap-2">
         <Input
           aria-label={label}
-          className="h-9 w-24 px-2 text-right tabular-nums"
+          className={cn("h-9 w-24 px-2 text-right tabular-nums", max !== undefined && String(max).length > 7 && "w-28")}
           disabled={disabled}
           inputMode="numeric"
           max={max}
