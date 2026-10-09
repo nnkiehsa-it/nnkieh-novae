@@ -78,7 +78,9 @@ for (const width of [390, 1440]) {
         page.locator(width === 390 ? ".sheet-modal" : ".popover"),
       ).toBeInViewport({ ratio: 1 });
       await capture(page, "picker", width);
-      await page.keyboard.press("Escape");
+      if (width === 390)
+        await page.locator(".sheet-backdrop.backdrop-in").click({ position: { x: 1, y: 1 } });
+      else await page.keyboard.press("Escape");
       await expect(page.getByRole("dialog")).toHaveCount(0);
       await expect(picker.locator("select")).toHaveValue(selected);
       await page.goto("/feed");
@@ -105,11 +107,20 @@ for (const width of [390, 1440]) {
       await expect(menu).toBeVisible();
       await expect(menu).toBeInViewport({ ratio: 1 });
       await capture(page, "actions", width);
+      // F7 9.2 names an Actions unique backdrop "popup-backdrop".
+      await page.locator(width === 390 ? ".popup-backdrop.backdrop-in" : ".popover-backdrop.backdrop-in").last()
+        .click({ position: { x: 1, y: 1 } });
+      await expect(menu).not.toBeVisible();
+      await expect(page.getByRole("dialog").locator("article h1")).toContainText("E2E");
+      await page.getByRole("button", { name: "More actions", exact: true }).click();
+      await expect(menu).toBeVisible();
       await menu.getByText("Delete proposal", { exact: true }).click();
       const confirmation = page.getByRole("alertdialog");
       await expect(confirmation).toBeVisible();
       await expect(confirmation).toBeInViewport({ ratio: 1 });
       await capture(page, "alert", width);
+      await page.locator(".dialog-backdrop.backdrop-in").click({ position: { x: 1, y: 1 } });
+      await expect(confirmation).toBeVisible();
       await confirmation
         .getByRole("button", { name: "Cancel", exact: true })
         .click();

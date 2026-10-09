@@ -18,7 +18,7 @@ export function createNativeModalIsolation() {
       for (let branch: HTMLElement = modal; branch.parentElement; branch = branch.parentElement) {
         for (const sibling of branch.parentElement.children) {
           if (!(sibling instanceof HTMLElement) || sibling === branch ||
-            sibling.matches("script,style,link,[class$='-backdrop'],.toast,.tooltip")) continue;
+            sibling.matches("script,style,link,.actions-backdrop,.dialog-backdrop,.sheet-backdrop,.popup-backdrop,.popover-backdrop,.toast,.tooltip")) continue;
           hidden.set(sibling, { inert: sibling.inert, ariaHidden: sibling.getAttribute("aria-hidden") });
           sibling.inert = true;
           sibling.setAttribute("aria-hidden", "true");
