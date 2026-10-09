@@ -84,7 +84,7 @@ export default function LoginPage() {
       <section className="relative hidden min-h-dvh overflow-hidden border-r bg-secondary/50 p-12 lg:grid lg:place-items-center">
         <BrandLockup className="t-panel-reveal absolute top-12 left-12" />
         <div className="t-stagger-list grid w-full max-w-lg gap-5 pt-16">
-          <h1 className="t-stagger-item max-w-lg text-4xl font-semibold leading-[1.15] tracking-[-0.045em] text-tint-content text-balance">
+          <h1 className="t-stagger-item max-w-lg text-4xl font-semibold leading-[1.15] tracking-[-0.03em] text-balance">
             {t("ui.login.heading")}
           </h1>
           <p className="t-stagger-item max-w-md text-sm leading-7 text-muted-foreground">

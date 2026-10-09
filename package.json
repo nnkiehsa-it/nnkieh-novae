@@ -100,7 +100,6 @@
     "@playwright/test": "^1.63.0",
     "@serwist/next": "9.5.12",
     "@tailwindcss/postcss": "4.3.3",
-    "@tailwindcss/typography": "0.5.20",
     "@types/node": "24.13.3",
     "@types/pg": "^8.23.1",
     "@types/react": "^19.2.14",

@@ -8,11 +8,9 @@ import type {
   IssueCategoryDraft,
 } from "@/types/categories";
 import { Button } from "@/components/ui/button";
-import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { ListSection } from "@/components/ui/list";
 import { ListSwitchRow } from "@/components/ui/list-controls";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -35,19 +33,16 @@ export function CategorySetupPanel({
 }: CategorySetupPanelProps) {
   useLocaleSubscription();
   return (
-    <Card className="gap-0 py-0">
-      <CardHeader className="flex-row items-center justify-between py-4">
-        <div>
-          <CardTitle>{title}</CardTitle>
-          <p className="mt-1 text-sm text-muted-foreground">{translate('ui.setup.navHint')}</p>
-        </div>
-        <Switch
-          aria-label={title}
+    <section className="grid gap-3">
+      <ListSection footer={translate('ui.setup.navHint')}>
+        <ListSwitchRow
+          label={title}
+          name={title}
           checked={enabled}
           onCheckedChange={onEnabledChange}
         />
-      </CardHeader>
-      <CardContent className="grid gap-3 py-4">
+      </ListSection>
+      <Card><CardContent className="grid gap-3">
         {children}
         <Button
           className="justify-start"
@@ -56,8 +51,8 @@ export function CategorySetupPanel({
           variant="ghost"
         >
           <Plus />{translate('ui.setup.addCategory')}</Button>
-      </CardContent>
-    </Card>
+      </CardContent></Card>
+    </section>
   );
 }
 
