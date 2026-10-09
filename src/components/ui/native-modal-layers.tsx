@@ -58,7 +58,7 @@ export function NativeModalLayers() {
         beginSheetClose(el);
       };
       const opened = ({ el }: Modal) => {
-        if (returnFocus.has(el) && topNativeModal() === el)
+        if (returnFocus.has(el) && topNativeModal() === el && !el.contains(document.activeElement))
           el.focus({ preventScroll: true });
       };
       const closed = ({ el }: Modal) => {
