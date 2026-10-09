@@ -133,7 +133,6 @@ bun run verify:all          # local + integration + Playwright E2E
 | Firebase Authentication / App Check / Cloud Messaging | 必要 | Google 登入、browser attestation、Web Push |
 | Cloudinary | 必要 | Signed WebP upload、authenticated delivery、deletion lifecycle |
 | Notion | 選用 | Domain event 與 admin audit 的營運副本 |
-| HarmonyOS Sans TC package | Build dependency | 從專案實際字元產生 WOFF2 unicode-range subset |
 
 JavaScript dependency 的固定版本記錄在 `bun.lock`。各雲端帳號、credential 與資料由實際部署者管理；需要放進 GitHub Environment 的欄位列在[設定參考](docs/configuration.md)。
 

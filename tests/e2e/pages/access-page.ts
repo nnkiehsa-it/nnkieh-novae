@@ -25,7 +25,7 @@ export async function selectScope(page: Page, scope: Scope) {
   await expect(scopeTab).toHaveAttribute('aria-selected', 'true');
   if ('category' in scope) {
     await page.getByRole('combobox').click();
-    await page.getByRole('option', { name: scope.category }).click();
+    await page.getByRole('radio', { name: scope.category }).press('Space');
   }
   await expect(page.getByText('2. Current owners')).toBeVisible();
 }

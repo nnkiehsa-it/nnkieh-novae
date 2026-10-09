@@ -340,7 +340,7 @@ test.describe('platform administrator on mobile', () => {
     // The way back rides inside the sticky header, so no amount of scrolling
     // slides it under the header's own blurred veil -- where it used to fade
     // out while still answering taps.
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.locator('.novae-page-content').evaluate((node) => { node.scrollTop = node.scrollHeight; });
     await expect(page.getByRole('button', { name: 'Back' })).toBeInViewport();
     await page.getByRole('button', { name: 'Back' }).click();
     await page.waitForURL(/\/admin$/u);

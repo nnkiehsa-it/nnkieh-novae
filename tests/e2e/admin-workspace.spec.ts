@@ -10,7 +10,7 @@ const areas = [
 
 async function captureWorkspace(page: Page, path: string) {
   await page.getByRole('main').getByRole('heading', { level: 1 }).scrollIntoViewIfNeeded();
-  await page.evaluate(() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' }));
+  await page.locator('.novae-page-content').evaluate((node) => { node.scrollTop = 0; });
   // Let route and sticky-header transitions settle before the evidence capture.
   await page.waitForTimeout(300);
   await page.screenshot({ animations: 'disabled', fullPage: true, path });

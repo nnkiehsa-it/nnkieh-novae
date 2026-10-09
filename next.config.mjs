@@ -56,6 +56,7 @@ const nextConfig = {
   distDir: process.env.NOVAE_NEXT_DIST_DIR || ".next",
   env: publicEnvironment,
   experimental: {
+    webpackMemoryOptimizations: true,
     optimizePackageImports: ["lucide-react", "motion"],
     staleTimes: {
       dynamic: 300,
@@ -63,6 +64,7 @@ const nextConfig = {
     },
   },
   webpack(config, { dev, isServer }) {
+    if (dev && process.env.NOVAE_TEST_PUBLIC_ORIGIN) config.cache = false;
     // Keep Next's development chunk graph intact for route compilation and HMR.
     if (!dev && !isServer) {
       config.optimization = config.optimization || {};

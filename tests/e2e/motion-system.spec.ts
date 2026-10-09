@@ -218,8 +218,7 @@ test("selection and action sheets cancel back to the same record", async ({
     await sort.click();
     await expect(page.locator(".sheet-modal")).toBeInViewport({ ratio: 1 });
     await page
-      .getByRole("option", { name: "Oldest first", exact: true })
-      .click();
+      .getByRole("radio", { name: "Oldest first", exact: true }).press('Space');
     await expect(sort).toContainText("Oldest first");
     await detail
       .getByRole("button", { name: "More actions", exact: true })

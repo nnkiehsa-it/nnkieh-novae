@@ -19,8 +19,7 @@ function choice(page: Page, name: string) {
 
 async function choose(page: Page, name: string, option: string) {
   await choice(page, name).click();
-  await page.getByRole("option", { name: option, exact: true })
-    .or(page.getByRole("radio", { name: option, exact: true })).click();
+  await page.getByRole("radio", { name: option, exact: true }).press('Space');
 }
 
 function commentRow(page: Page, text: string) {

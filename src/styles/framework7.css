@@ -119,3 +119,19 @@ body:has(.app-mobile-nav[data-visible="true"]) .novae-toast.toast-bottom {
     touch-action: none;
   }
 }
+/* Keep native radio inputs focusable while their upstream checkmark paints the row. */
+.novae-root .list .item-radio input[type="radio"],
+.smart-select-sheet .item-radio input[type="radio"],
+.smart-select-popover .item-radio input[type="radio"] {
+  display: block;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+label.item-radio:has(input:focus-visible) {
+  outline: 2px solid var(--f7-theme-color);
+  outline-offset: -2px;
+}

@@ -142,7 +142,7 @@ test('feed query, clear, sort, and status changes keep the physical card slot', 
     await expect(frame).toHaveClass(/t-card/u);
     await page.keyboard.press('Escape');
     await page.getByRole('combobox', { name: 'Sort order' }).click();
-    await page.getByRole('option', { name: 'Most supported' }).click();
+    await page.getByRole('radio', { name: 'Most supported' }).press('Space');
     await expect(frame).toHaveClass(/t-card/u);
     await page.locator('[data-liquid-tab="closed"]').click();
     await expect(page.locator('[data-state-transition="empty"], [data-state-transition="content"]')).toBeVisible();

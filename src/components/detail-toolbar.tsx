@@ -46,7 +46,6 @@ export function SecondaryToolbar({
           aria-label={backLabel}
           disabled={backDisabled}
           onClick={() => guardBack(onBack)}
-          size="icon"
         >
           <Icon f7="chevron_left" aria-hidden="true" />
         </ToolbarButton>
@@ -91,7 +90,6 @@ export function DetailToolbar({
               <ToolbarButton
                 aria-label={shareLabel}
                 onClick={onShare}
-                size="icon"
               >
                 <Icon f7="square_arrow_up" aria-hidden="true" />
               </ToolbarButton>

@@ -1,19 +1,46 @@
 # Framework7 前端維護
 
-Novae 的介面使用 Framework7 9.2.0，所有裝置固定採用 iOS theme。Next.js 保留路由、分享網址、攔截式詳情面板與部署流程；Framework7 負責元件樣式、面板、提示訊息與主題呈現。資料服務、登入、權限、草稿與樂觀更新仍由原本的 domain hooks 管理。
+Novae 使用 Framework7／Framework7 React 9.2.0，所有裝置固定採用 iOS theme。Next.js 管理網址、攔截式詳情路由與部署；Framework7 管理原生控制項、樣式、捲動標題和面板動畫。登入、權限、草稿與樂觀更新維持 domain hooks 的責任。
+
+## 元件與用途
+
+| 用途 | Framework7 元件 |
+| --- | --- |
+| 頁面與捲動 | Page、PageContent |
+| 大標題、捲動後置中小標題 | Navbar large，接合 Framework7 navbar scroll lifecycle |
+| 固定頂部操作 | Navbar 內的 Link iconOnly、Framework7 Icon |
+| 列表目的地與狀態篩選 | Subnavbar、Segmented |
+| 手機主要導航 | Toolbar tabbar icons、ToolbarPane、Link tabLink；使用官方膠囊、滑動選取背景與玻璃效果 |
+| 桌面主要導航 | List menuList、ListItem |
+| 新增操作 | Fab；只有圖示，亮色黑底白圖示，深色白底黑圖示 |
+| 列表與設定 | List inset strong dividers、ListItem、ListInput、BlockTitle、BlockFooter |
+| 選擇與開關 | Smart Select、原生 radio、Toggle |
+| 搜尋 | Navbar expandable Searchbar；管理資料搜尋使用 inline Searchbar |
+| 詳情、編輯及短選擇 | Popup、Sheet；開關與離開 guard 由 ModalRoot 接合 |
+| 手機操作選單、桌面錨點選單 | Actions、Popover |
+| 確認與回饋 | Dialog、Toast、Preloader、Progressbar、SkeletonBlock |
+| 照片檢視與縮放 | Photo Browser、Swiper zoom |
+| 留言輸入 | Messagebar |
+| 展開設定、紀錄內容 | ListItem accordion、AccordionContent |
+
+以 [官方 Kitchen Sink](https://framework7.io/kitchen-sink/core/?theme=ios) 和安裝版本的元件來源為準。不要另寫一套邊框、圓角、陰影、按壓或面板動畫來模仿 iOS。操作列只呈現名稱及目前值；整組說明放在 BlockFooter。資料紀錄的作者、時間與狀態可以使用原生 media list 呈現。
+
+Markdown 編輯器保留 Vditor，因為業務需要 Markdown 原始內容；Framework7 的 Rich Text Editor 不提供相同資料格式。圖表、內容排版與反應回饋保留產品本身的呈現。Motion 處理這些內容狀態，面板、Tabbar、選單與控制項則交給 Framework7。
 
 ## 修改位置
 
-- `src/components/framework7-provider.tsx`：安裝實際使用的執行模組、建立 App／View，並同步亮暗主題。View 停用 Framework7 router，連結交由 Next.js 處理。
-- `src/components/ui/`：共用控制項使用 Framework7 元件或官方 HTML 結構。原生 button／input 保留標準表單屬性、鍵盤事件與 ref，避免通用屬性在第三方 React wrapper 中遺失。
-- `modal-context.tsx`：受控與非受控的開關，以及離開前的草稿／分享 guard。
-- `modal-surface.tsx`：Framework7 面板生命週期、關閉後卸載、焦點與來源頁面位置。
-- `use-sheet-dismiss.ts`：下拉關閉也經過同一個 guard。
-- `src/lib/toast.ts`：成功、錯誤與提示訊息共用 Framework7 Toast，文字先轉義再交給函式庫。
-- `scripts/generate-framework7.mjs`：只編譯使用中的 iOS 核心與元件，保留亮暗色。不要直接修改生成 CSS。
-- `src/styles/framework7.css`：Framework7 與 Next.js 的捲動、safe area、面板及產品 token 整合。
+- `src/components/framework7-provider.tsx`：安裝使用中的模組、建立 iOS App／View，同步亮暗主題。View 的 router 停用，正常網址交給 Next.js；hash 控件交給 Framework7。
+- `src/components/motion/route-surface.tsx`：原生 Page／PageContent 與固定 Navbar host。
+- `src/components/ui/use-native-navbar.ts`：掛接上游 Navbar 的尺寸、捲動收合與內容高度更新；不自行計算標題動畫。
+- `src/components/ui/use-framework7-control.ts`：第三方 React ref、表單屬性與無障礙屬性的 DOM 接合。Framework7 9.2 的一般 ListItem 不提供 ref，使用實際 li 的 id 對應 anchor。
+- `src/components/ui/modal-context.tsx`、`modal-surface.tsx`、`native-modal-layers.tsx`：受控開關、原生關閉動畫、焦點、來源頁捲動與草稿／分享 guard。原生下拉關閉也必須走相同 guard。
+- `src/lib/app-scroll.ts`：主要 PageContent 的位置讀寫；獨立登入／設定流程才使用文件捲動。
+- `src/styles/framework7.css`：Next 整合、safe area、viewport 與鍵盤可及性。元件外觀來自生成的上游 iOS CSS。
+- `scripts/generate-framework7.mjs`：只編譯使用中的 iOS 模組，保留亮暗主題；Swiper 只收 core／zoom／virtual，Skeleton 不帶未使用的文字字型。不要直接改生成 CSS。
 
-## 更新函式庫
+HeroUI、Radix UI、Sonner、tw-animate-css 與 HarmonyOS 字型套件已移除。介面與編輯器統一使用 Framework7 的系統字型，舊字型分片、產生器和未使用的 Tailwind 3 設定也已刪除。舊 press feedback、header backdrop、搜尋彈窗與自訂下拉關閉程式已移除。新增控制項前先檢查 Framework7 是否提供相同用途，並確認是否需要加入 runtime plugin 及 Less 模組。
+
+## 檢查與更新
 
 ```powershell
 bun add framework7@版本 framework7-react@相同版本
@@ -22,12 +49,8 @@ bun run verify:local
 bun run test:e2e
 ```
 
-兩個 Framework7 套件保持相同版本。Less 僅作為產生樣式的開發依賴，`verify:generated` 會重新產生並確認 CSS 沒有落後。新增元件前，先確認是否需要 JavaScript 模組；靜態控制項通常只需要樣式與標準 HTML 結構。
+兩個 Framework7 套件版本必須一致。檢查手機與桌面、亮暗主題、長列表標題收合、搜尋展開／取消、選取／取消、面板關閉、草稿離開 guard 與返回後捲動位置。主要捲動容器是 `.novae-page-content`，測試不要再用 `window.scrollTo` 模擬這些頁面。
 
-HeroUI、Radix UI、Sonner、tw-animate-css 已移除。動畫使用 Framework7 與既有 Motion／motion token，不再保留第二套舊面板動畫。
+完整原生 Searchbar、Smart Select、Photo Browser／Swiper 與其他控制項需要額外樣式和執行模組。刪除舊介面與未用模組後，UI CSS 上限調整為 352 KiB，總 JS 為 3.4 MiB；單一 CSS chunk gzip 維持 128 KiB，路由壓縮 CSS 維持 160 KiB。任何後續增加仍先精簡，再依實際測量討論上限。
 
-## 控制項選擇
-
-詳細頁與編輯工作使用 Popup，短選擇使用 Sheet Modal；手機操作選單使用 Actions，桌面錨點選單使用 Popover。不可逆操作使用 Dialog 明確確認，開關使用 Toggle，互斥檢視使用 Segmented，主要目的地使用 Tabbar。表單取消、下拉關閉與返回都保留原本的草稿及離開前檢查。
-
-Next.js 維持文件捲動，彈出介面與遮罩固定在可見視窗；桌面 Popover 保留 Framework7 根據錨點計算的位置。樣式生成省略未使用的 Material theme、路由動畫與 Block，避免與既有 Tailwind utility 衝突。
+即時手機預覽使用獨立的開發輸出目錄和 Tailscale Serve。開發模式會在 hydration 前移除同來源的 PWA worker，避免正式版快取攔截 HMR；不自動重載正式環境。只有 Tailnet 開發預覽停用 Webpack pack cache，降低背景預覽的記憶體峰值。Framework7 CSS 產生器只寫入有變更的檔案，避免驗證時觸發無意義的 HMR。

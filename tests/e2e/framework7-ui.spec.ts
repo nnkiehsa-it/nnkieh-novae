@@ -40,20 +40,33 @@ for (const width of [390, 1440]) {
       ).toBeVisible();
       await capture(page, "home-light", width);
 
-      await page.goto("/issues/proposal-a");
+      const content = await readContentState();
+      const issuePath = new URL(content.proposalA).pathname;
+      await page.goto(issuePath.slice(0, issuePath.lastIndexOf("/")));
       await expect(page.locator(".t-card").first()).toBeVisible();
       await capture(page, "feed-light", width);
       const picker = page.getByRole("combobox").first();
-      const selected = await picker.innerText();
+      const selected = await picker.locator("select").inputValue();
       await picker.click();
-      await expect(page.getByRole("listbox")).toBeVisible();
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await expect(page.getByRole("radio").first()).toBeAttached();
       await expect(
         page.locator(width === 390 ? ".sheet-modal" : ".popover"),
       ).toBeInViewport({ ratio: 1 });
       await capture(page, "picker", width);
       await page.keyboard.press("Escape");
-      await expect(page.getByRole("listbox")).toHaveCount(0);
-      await expect(picker).toHaveText(selected);
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await expect(picker.locator("select")).toHaveValue(selected);
+      await page.goto("/feed");
+      await expect(page.getByRole("button", {name: "Search titles, content, or authors…", exact: true})).toBeEnabled();
+      await page.getByRole("button", {name: "Search titles, content, or authors…", exact: true}).click();
+      const search = page.locator(".navbar .searchbar");
+      await search.locator("input").fill("E2E");
+      await search.locator("input").press("Enter");
+      await search.getByRole("button", {name: "Clear search", exact: true}).click();
+      await expect(search.locator("input")).toHaveValue("");
+      await search.getByRole("button", {name: "Cancel", exact: true}).click();
+      await expect(search).not.toHaveClass(/searchbar-enabled/u);
 
       await page.goto((await readContentState()).proposalA);
       await expect(
@@ -87,8 +100,22 @@ for (const width of [390, 1440]) {
         "/settings",
       );
       await capture(page, "settings-light", width);
+      const navbar = page.locator(".native-navbar-host > .navbar-large");
+      const scroller = page.locator(".novae-page-content");
+      await scroller.evaluate((el) => { el.scrollTop = 400; });
+      await expect(navbar).toHaveClass(/navbar-large-collapsed/u);
+      await expect(navbar.locator(".title")).toHaveCSS("opacity", "1");
+      const title = await navbar.locator(".title").boundingBox();
+      const frame = await navbar.boundingBox();
+      expect(Math.abs(title!.x + title!.width / 2 - frame!.x - frame!.width / 2)).toBeLessThan(2);
+      await capture(page, "settings-collapsed", width);
+      const mode = page.getByRole("combobox", { name: "Display mode" });
+      await mode.click();
+      const nativePicker = page.getByRole("dialog");
+      await expect(nativePicker).toBeVisible();
+      await nativePicker.getByRole("radio", { name: "Dark", exact: true }).press("Space");
+      await expect(nativePicker).toHaveCount(0);
       // A new document must restore the saved theme into both UI systems.
-      await page.evaluate(() => localStorage.setItem("theme", "dark"));
       await page.reload();
       await expect(page.locator("html")).toHaveClass(/dark/u);
       await expect(page.locator(".route-page")).toBeVisible();

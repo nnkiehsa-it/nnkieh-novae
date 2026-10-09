@@ -2,17 +2,23 @@
 
 import * as React from "react";
 import { Icon, Navbar } from "framework7-react";
-import { ModalContext, ModalRoot } from "./modal-context";
+import { ModalContext, ModalRoot, useModal } from "./modal-context";
 import { ModalSurface, type ModalSurfaceProps } from "./modal-surface";
-import { DialogDescription, DialogHeader, DialogTitle } from "./dialog";
+import { DialogHeader } from "./dialog";
 import { ToolbarButton } from "./toolbar-button";
 import { useNativeNavbarSize } from "./use-native-navbar";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 
 export const Sheet = ModalRoot;
-export const SheetDescription = DialogDescription;
-export const SheetTitle = DialogTitle;
+export function SheetTitle({className, ...props}: React.ComponentProps<"h2">) {
+  const state = useModal();
+  return <h2 {...props} id={state.titleId} className={cn("contents", className)} />;
+}
+export function SheetDescription({className, ...props}: React.ComponentProps<"div">) {
+  const state = useModal();
+  return <div {...props} id={state.descriptionId} className={cn("subtitle", className)} />;
+}
 export function useSheetClose() {
   return React.useContext(ModalContext)?.requestClose ?? null;
 }
@@ -20,7 +26,7 @@ export function SheetCloseButton({
   className,
   onClick,
   ...props
-}: Omit<React.ComponentProps<typeof ToolbarButton>, "size" | "type">) {
+}: React.ComponentProps<typeof ToolbarButton>) {
   const { t } = useI18n();
   const close = useSheetClose();
   if (!close) return null;
@@ -30,8 +36,6 @@ export function SheetCloseButton({
       aria-label={t("common.close")}
       className={className}
       data-slot="dialog-close"
-      size="icon"
-      type="button"
       onClick={(event) => {
         onClick?.(event);
         if (!event.defaultPrevented) close();

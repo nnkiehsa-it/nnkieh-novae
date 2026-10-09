@@ -18,10 +18,23 @@ export function topNativeModal() {
 export function NativeModalLayers() {
   useEffect(() => {
     const releases = new Map<HTMLElement, () => void>();
+    const returnFocus = new Map<HTMLElement, HTMLElement>();
     let detach = () => {};
     f7ready((app) => {
       const open = ({ el, type }: Modal) => {
         if (type === "toast" || type === "tooltip") return;
+        // SDK-generated Smart Select and Photo Browser modals need DOM semantics.
+        if (!el.hasAttribute("role")) {
+          el.setAttribute("role", "dialog");
+          el.setAttribute("aria-modal", "true");
+          el.tabIndex = -1;
+          returnFocus.set(el, document.activeElement as HTMLElement);
+          el.querySelectorAll("i.icon").forEach((icon) => icon.setAttribute("aria-hidden", "true"));
+          el.querySelectorAll<HTMLAnchorElement>("a:not([href])").forEach((link) => {
+            link.href = "#";
+            link.setAttribute("role", "button");
+          });
+        }
         layers.push(el);
         if (type === "sheet" || type === "popup")
           releases.set(
@@ -37,11 +50,18 @@ export function NativeModalLayers() {
       const close = ({ el }: Modal) => {
         beginSheetClose(el);
       };
+      const opened = ({ el }: Modal) => {
+        if (returnFocus.has(el) && topNativeModal() === el)
+          el.focus({ preventScroll: true });
+      };
       const closed = ({ el }: Modal) => {
         const index = layers.indexOf(el);
         if (index >= 0) layers.splice(index, 1);
         releases.get(el)?.();
         releases.delete(el);
+        if (document.documentElement.dataset.inputModality === "keyboard")
+          returnFocus.get(el)?.focus({ preventScroll: true });
+        returnFocus.delete(el);
         requestAnimationFrame(publishStageFocusRestore);
       };
       const onKey = (event: KeyboardEvent) => {
@@ -75,6 +95,7 @@ export function NativeModalLayers() {
       const kinds = ["popup", "sheet", "popover", "actions", "dialog"] as const;
       kinds.forEach((kind) => {
         app.on(`${kind}Open`, open);
+        app.on(`${kind}Opened`, opened);
         app.on(`${kind}Close`, close);
         app.on(`${kind}Closed`, closed);
       });
@@ -82,6 +103,7 @@ export function NativeModalLayers() {
       detach = () => {
         kinds.forEach((kind) => {
           app.off(`${kind}Open`, open);
+          app.off(`${kind}Opened`, opened);
           app.off(`${kind}Close`, close);
           app.off(`${kind}Closed`, closed);
         });

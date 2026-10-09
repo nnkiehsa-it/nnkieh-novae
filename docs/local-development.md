@@ -109,7 +109,7 @@ bun run generate:all
 
 生成內容會提交到 repository；`bun run verify:generated` 會重跑 generator 並拒絕 drift。
 
-Generator 有 lock，`generate:all` 依序執行 API errors、rate limits、data retention、backend actions、database contract 與 HarmonyOS Sans TC subset。字型 subset 只收集目前 source 用到的繁中文字，生成後仍需通過 build budget。
+Generator 有 lock，`generate:all` 依序執行 API errors、rate limits、data retention、backend actions、database contract、brand、motion 與 Framework7 iOS 樣式。控制項及編輯器使用 Framework7 的系統字型；生成後仍需通過 build budget。
 
 ## 常見失敗
 

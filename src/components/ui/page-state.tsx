@@ -5,8 +5,8 @@ import { AlertCircle, Inbox, RefreshCw } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { createPortal } from "react-dom";
 import { Navbar, Subnavbar } from "framework7-react";
-import { useContext, useState } from "react";
-import { NativePageHeaderHost, NativeNavbarHost } from "./native-page-context";
+import { useCallback, useContext, useState } from "react";
+import { NativePageHeaderHost, NativeNavbarHost, NativeNavbarRegistration } from "./native-page-context";
 import { useNativeNavbar } from "./use-native-navbar";
 import { useFramework7Control } from "./use-framework7-control";
 import { timing } from "@/lib/motion-timing";
@@ -52,8 +52,13 @@ export function PageHeader({
 }) {
   useLocaleSubscription();
   const pageHost = useContext(NativePageHeaderHost);
+  const registerNavbar = useContext(NativeNavbarRegistration);
   const [navbarHost, setNavbarHost] = useState<HTMLElement | null>(null);
-  const navbarRef = useFramework7Control(setNavbarHost, undefined, {});
+  const setNavbar = useCallback((navbar: HTMLElement | null) => {
+    setNavbarHost(navbar);
+    registerNavbar?.(navbar);
+  }, [registerNavbar]);
+  const navbarRef = useFramework7Control(setNavbar, undefined, {}, portalHost === undefined && pageHost !== null);
   useNativeNavbar(navbarRef, Boolean(pageHost && title != null && portalHost === undefined), Boolean(subnavbar));
   if (portalHost !== undefined)
     return portalHost

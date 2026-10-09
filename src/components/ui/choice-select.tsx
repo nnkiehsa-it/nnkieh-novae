@@ -8,6 +8,19 @@ import { useI18n } from "@/i18n";
 import { useCompactViewport } from "./use-compact-viewport";
 import { cn } from "@/lib/utils";
 import { useFramework7Control, useFramework7ListControl } from "./use-framework7-control";
+import { topNativeModal } from "./native-modal-layers";
+
+const smartSelectEvents: SmartSelect.Parameters["on"] = {
+  open: (select) => select.el.setAttribute("aria-expanded", "true"),
+  opened: (select) => {
+    const modal = topNativeModal()!;
+    modal.setAttribute("aria-label", select.params.pageTitle!);
+    modal.querySelectorAll<HTMLInputElement>('input[type="radio"]').forEach((input) =>
+      input.setAttribute("aria-label", input.closest("label")!.querySelector(".item-title")!.textContent!),
+    );
+  },
+  closed: (select) => select.el.setAttribute("aria-expanded", "false"),
+};
 
 export interface ChoiceOption {
   disabled?: boolean;
@@ -57,6 +70,7 @@ export function ChoiceSelect({
       sheetCloseLinkText: t("common.close"),
       routableModals: false,
       inputIconPosition: "end",
+      on: smartSelectEvents,
     });
     return () => {
       select.current?.close();
@@ -90,6 +104,7 @@ export function ChoiceSelect({
     "aria-label": ariaLabel,
     "aria-current": ariaCurrent,
     "aria-haspopup": "dialog" as const,
+    "aria-expanded": false,
     "data-slot": "select-trigger",
     "data-displayed-active": ariaCurrent === "page",
     "data-control-label": controlLabel,
@@ -148,6 +163,7 @@ export function ListPicker({
     role: "combobox",
     "aria-label": label,
     "aria-haspopup": "dialog",
+    "aria-expanded": "false",
     "aria-disabled": disabled,
   });
   return (
@@ -167,6 +183,7 @@ export function ListPicker({
         sheetCloseLinkText: t("common.close"),
         routableModals: false,
         inputIconPosition: "end",
+        on: smartSelectEvents,
       }}
     >
       <select

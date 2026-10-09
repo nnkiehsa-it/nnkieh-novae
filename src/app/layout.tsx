@@ -73,6 +73,11 @@ export default async function RootLayout({
       className={robotoMono.variable}
     >
       <head>
+        {process.env.NODE_ENV === "development" ? (
+          <Script id="development-worker-cleanup" nonce={nonce} strategy="beforeInteractive">
+            {`if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(registrations => Promise.all(registrations.map(registration => registration.unregister())));`}
+          </Script>
+        ) : null}
         {turnstileSiteKey ? (
           <>
             <link

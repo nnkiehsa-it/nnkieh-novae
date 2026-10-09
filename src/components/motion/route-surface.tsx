@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { Page, PageContent } from "framework7-react";
-import { NativePageHeaderHost } from "@/components/ui/native-page-context";
+import { NativePageHeaderHost, NativeNavbarHost, NativeNavbarRegistration } from "@/components/ui/native-page-context";
 
 import { useSurfaceRoute } from "@/hooks/use-surface-route";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,7 @@ export function RouteSurface({
 }) {
   const { direction, surface } = useSurfaceRoute();
   const [headerHost, setHeaderHost] = useState<HTMLElement | null>(null);
+  const [navbar, setNavbar] = useState<HTMLElement | null>(null);
 
   return (
     // The first page of a session has no direction and no entrance: it arrived
@@ -44,7 +45,11 @@ export function RouteSurface({
     >
       <div className="native-navbar-host" ref={setHeaderHost} />
       <PageContent className={cn("novae-page-content", className)}>
-        <NativePageHeaderHost.Provider value={headerHost}><div className="native-page-body">{children}</div></NativePageHeaderHost.Provider>
+        <NativeNavbarRegistration.Provider value={setNavbar}>
+          <NativeNavbarHost.Provider value={navbar}>
+            <NativePageHeaderHost.Provider value={headerHost}><div className="native-page-body">{children}</div></NativePageHeaderHost.Provider>
+          </NativeNavbarHost.Provider>
+        </NativeNavbarRegistration.Provider>
       </PageContent>
     </Page>
   );

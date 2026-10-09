@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Slot } from "@/components/ui/slot";
+import { Button } from "./button";
 
 export interface ModalRootProps {
   children?: React.ReactNode;
@@ -75,7 +76,7 @@ export function ModalTrigger({
   ...props
 }: React.ComponentProps<"button"> & { asChild?: boolean }) {
   const state = useModal();
-  const Comp = asChild ? Slot : "button";
+  const Comp = asChild ? Slot : Button;
   return (
     <Comp
       {...props}

@@ -40,7 +40,7 @@ test('restriction editors keep deadlines, preserve failed drafts, and expose rem
     await page.getByLabel('Account prefix', { exact: true }).fill('OTHER');
     await expect(page.getByLabel('Account prefix', { exact: true })).toHaveValue('other');
     await page.getByLabel('Duration', { exact: true }).click();
-    await page.getByRole('option', { name: 'Custom', exact: true }).click();
+    await page.getByRole('radio', { name: 'Custom', exact: true }).press('Space');
     await page.getByLabel('Custom restriction hours (1–87,600)', { exact: true }).fill('5');
     await page.getByLabel('Restriction reason / displayed message').fill('Original prefix message');
     let review = await openReview();
@@ -86,7 +86,7 @@ test('restriction editors keep deadlines, preserve failed drafts, and expose rem
     let sheet = await openUser(E2E_USERS.other);
     await expect(sheet.getByText('other*', { exact: true })).toBeVisible();
     await sheet.getByLabel('Duration', { exact: true }).click();
-    await page.getByRole('option', { name: 'Permanent', exact: true }).click();
+    await page.getByRole('radio', { name: 'Permanent', exact: true }).press('Space');
     await sheet.getByLabel('Restriction reason / displayed message').fill('Permanent individual message');
     await expectBackendAction(page, 'saveAccountAccessRule', () => sheet.getByRole('button', { name: 'Apply rule', exact: true }).click());
     await expect(sheet.getByText('Individual account', { exact: true })).toBeVisible();

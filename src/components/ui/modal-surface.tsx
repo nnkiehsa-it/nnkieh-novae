@@ -121,10 +121,10 @@ export function ModalSurface({
         kind === "actions"
           ? f7.actions.create({ ...params, convertToPopover: false })
           : kind === "sheet"
-            ? f7.sheet.create({ ...params, swipeToClose: dismissible, swipeHandler: ".navbar" })
+            ? f7.sheet.create({ ...params, push: true, swipeToClose: dismissible, swipeHandler: ".navbar" })
             : kind === "popup"
               // The pinned 9.2 runtime supports direction strings; its types only list boolean.
-              ? f7.popup.create({ ...params, swipeToClose: dismissible ? "to-bottom" : false, swipeHandler: ".navbar" } as unknown as Popup.Parameters)
+              ? f7.popup.create({ ...params, push: true, swipeToClose: dismissible ? "to-bottom" : false, swipeHandler: ".navbar" } as unknown as Popup.Parameters)
               : kind === "popover"
                 ? f7.popover.create({
                     ...params,

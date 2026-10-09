@@ -2,15 +2,17 @@
 
 import { useId, useImperativeHandle, useLayoutEffect, useRef, type Ref } from "react";
 
-function applyAttributes(target: HTMLElement, attributes: Record<string, string | number | boolean | undefined>) {
+export function applyNativeControlAttributes(target: HTMLElement, attributes: Record<string, string | number | boolean | undefined>) {
   Object.entries(attributes).forEach(([name, value]) => {
-    if (value === undefined || value === false) target.removeAttribute(name);
-    else target.setAttribute(name, value === true ? "" : String(value));
+    const aria = name.startsWith("aria-");
+    if (value === undefined || (value === false && !aria)) target.removeAttribute(name);
+    else target.setAttribute(name, value === true && !aria ? "" : String(value));
   });
-  if (attributes.role !== "button" || target instanceof HTMLButtonElement) return;
+  if (!["button", "menuitem", "combobox"].includes(String(attributes.role)) || target instanceof HTMLButtonElement) return;
   const activate = (event: KeyboardEvent) => {
-    if (event.key === "Enter" || event.key === " ") {
+    if (event.key === "Enter" || event.key === " " || (attributes.role === "combobox" && event.key === "ArrowDown")) {
       event.preventDefault();
+      if (target.getAttribute("aria-disabled") === "true") return;
       target.click();
     }
   };
@@ -20,9 +22,9 @@ function applyAttributes(target: HTMLElement, attributes: Record<string, string 
 
 // F7 9.2 ListItem does not expose its normal row through its public ref.
 // Its id is passed to the actual li; use that documented attribute boundary.
-export function useFramework7ListControl(attributes: Record<string, string | number | boolean | undefined>) {
+export function useFramework7ListControl(attributes: Record<string, string | number | boolean | undefined>, selector = "a") {
   const id = useId();
-  useLayoutEffect(() => applyAttributes(document.getElementById(id)!.querySelector<HTMLAnchorElement>("a")!, attributes));
+  useLayoutEffect(() => applyNativeControlAttributes(document.getElementById(id)!.querySelector<HTMLElement>(selector)!, attributes));
   return id;
 }
 
@@ -38,11 +40,11 @@ export function useFramework7Control<T extends HTMLElement>(
     selector
       ? component.current.el!.querySelector<T>(selector)!
       : (component.current.el! as T);
-  useImperativeHandle(ref, node);
+  useImperativeHandle(enabled ? ref : undefined, node, [selector]);
   useLayoutEffect(() => {
     if (!enabled) return;
     const target = node();
-    return applyAttributes(target, attributes);
+    return applyNativeControlAttributes(target, attributes);
   });
   return component;
 }

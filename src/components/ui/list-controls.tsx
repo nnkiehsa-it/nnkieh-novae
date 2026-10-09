@@ -7,7 +7,7 @@ import { useI18n } from "@/i18n";
 import { Button } from "./button";
 import { Switch } from "./switch";
 import { listItemSlots, type RowContent } from "./list";
-import { useFramework7Control } from "./use-framework7-control";
+import { useFramework7Control, useFramework7ListControl } from "./use-framework7-control";
 
 export function ListSwitchRow({
   checked,
@@ -52,9 +52,11 @@ export function ListChoiceRow({
   onSelect: () => void;
   selected: boolean;
 }) {
+  const id = useFramework7ListControl({"aria-label": typeof content.label === "string" ? content.label : undefined}, "input");
   return (
     <ListItem
       radio
+      id={id}
       radioIcon="end"
       checked={selected}
       disabled={disabled}

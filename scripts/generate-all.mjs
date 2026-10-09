@@ -17,7 +17,6 @@ const generationScripts = [
   "generate-operations.mjs",
   "generate-data-retention.mjs",
   "generate-backend-actions.mjs",
-  "generate-harmonyos-subset.mjs",
 ];
 
 function isProcessAlive(pid) {

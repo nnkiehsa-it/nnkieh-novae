@@ -90,7 +90,7 @@ export function Framework7Provider({ children }: { children: ReactNode }) {
       className="novae-root"
       colors={{ primary: "#007aff" }}
       // Preserve Next/browser navigation while native hash controls reach F7.
-      clicks={{ externalLinks: "a[href]:not([href^='#'])" }}
+      clicks={{ externalLinks: ".external,a[href]:not([href^='#'])" }}
       actions={{ closeOnEscape: true }}
       sheet={{ closeOnEscape: true }}
       popup={{ closeOnEscape: true }}

@@ -89,7 +89,7 @@ test('proposal covers support, threaded comments, deletion, and terminal outcome
   const manager = await newUserPage(browser, 'issueManager');
   await manager.page.goto(proposalUrl);
   await chooseMoreAction(manager.page, 'Manage status');
-  await manager.page.getByRole('radio', { name: 'Completed' }).click();
+  await manager.page.getByRole('radio', { name: 'Completed' }).press('Space');
   const outcome = `Proposal outcome ${Date.now()}`;
   await manager.page.getByPlaceholder('Explain the outcome or why the proposal is not feasible…').fill(outcome);
   await expectBackendActions(manager.page, ['moderateIssueStatus'], async () => {
@@ -120,7 +120,7 @@ test('facility covers affected reaction and terminal outcome write', async ({ br
   const manager = await newUserPage(browser, 'facilityManager');
   await manager.page.goto(facilityUrl);
   await chooseMoreAction(manager.page, 'Update status');
-  await manager.page.getByRole('radio', { name: 'Completed' }).click();
+  await manager.page.getByRole('radio', { name: 'Completed' }).press('Space');
   const outcome = `Facility outcome ${Date.now()}`;
   await manager.page.getByPlaceholder('Describe the outcome…').fill(outcome);
   await expectBackendAction(manager.page, 'updateFacilityStatus', async () => {

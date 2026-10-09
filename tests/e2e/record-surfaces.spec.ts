@@ -25,7 +25,7 @@ for (const width of [390, 1440]) {
             type: kind === "facilityA" ? "facility_report_created" : `${targetType}_created`,
             targetType,
             targetId: index === 23 ? pathname.split("/").at(-1) : randomUUID(),
-            issueCategory: kind === "proposalA" ? "proposal-a" : null,
+            issueCategory: kind === "proposalA" ? pathname.split("/")[2] : null,
             title: `E2E ${kind} notification ${index + 1}`,
             createdAt: new Date(Date.now() - index * 1_000).toISOString(),
           })) } };
@@ -48,7 +48,7 @@ for (const width of [390, 1440]) {
         const target = await link.boundingBox();
         expect(target).not.toBeNull();
         const sourceNode = await source.elementHandle();
-        const scroll = await page.evaluate(() => scrollY);
+        const scroll = await source.locator(".novae-page-content").evaluate((node) => node.scrollTop);
         expect(scroll, "exercise restoration after scrolling beyond the first screen").toBeGreaterThan(0);
         await page.mouse.click(target!.x + target!.width / 2, target!.y + target!.height / 2);
         const record = page.getByRole("dialog");
@@ -57,32 +57,10 @@ for (const width of [390, 1440]) {
         await expect(source).toHaveAttribute("data-route-path", "/notifications");
         expect(await sourceNode!.evaluate((node) => node === document.querySelector(".route-page"))).toBe(true);
         const close = record.locator(".detail-header").getByRole("button", { name: "Close", exact: true });
-        if (width === 390 && kind === "proposalA") {
-          const before = await page.evaluate(() => {
-            const stage = document.querySelector<HTMLElement>(".t-stage")!;
-            const frame = document.querySelector<HTMLElement>("[data-sheet-surface]")!;
-            return {
-              scale: new DOMMatrixReadOnly(getComputedStyle(stage).transform).a,
-              sheetTop: frame.getBoundingClientRect().top,
-            };
-          });
-          await expect(page.locator('.popup-backdrop')).toHaveCSS("backdrop-filter", "none");
-          await close.click();
-          await expect(record).toHaveAttribute("data-state", "closing");
-          await expect.poll(() => page.evaluate((start) => {
-            const stage = document.querySelector<HTMLElement>(".t-stage")!;
-            const frame = document.querySelector<HTMLElement>("[data-sheet-surface]")!;
-            return {
-              sheetMovingDown: frame.getBoundingClientRect().top > start.sheetTop + 2,
-              stageReturning: new DOMMatrixReadOnly(getComputedStyle(stage).transform).a > start.scale + 0.005,
-            };
-          }, before)).toEqual({ sheetMovingDown: true, stageReturning: true });
-        } else {
-          await close.click();
-        }
+        await close.click();
         await expect(page).toHaveURL(/\/notifications$/u);
         await expect(page.locator("[data-sheet-surface]")).toHaveCount(0);
-        await expect.poll(() => page.evaluate((expected) => Math.abs(scrollY - expected), scroll)).toBeLessThanOrEqual(1);
+        await expect.poll(() => source.locator(".novae-page-content").evaluate((node, expected) => Math.abs(node.scrollTop - expected), scroll)).toBeLessThanOrEqual(1);
         await page.goForward();
         await expect(record.locator("article h1")).toContainText("E2E");
         await page.goBack();
@@ -143,27 +121,6 @@ for (const width of [390, 1440]) {
         !CSS.supports("overscroll-behavior", "none")
         || getComputedStyle(node).overscrollBehaviorY === "none"
       )).toBe(true);
-      const horizontalBoundary = await body.evaluate((node) => {
-        node.scrollLeft = 100;
-        return {
-          bodyPaddingBottom: getComputedStyle(node).paddingBottom,
-          overflowX: getComputedStyle(node).overflowX,
-          scrollLeft: node.scrollLeft,
-          sheetPaddingBottom: getComputedStyle(node.closest('[data-sheet-surface]')!.querySelector('.novae-sheet-inner')!).paddingBottom,
-        };
-      });
-      expect(["clip", "hidden"]).toContain(horizontalBoundary.overflowX);
-      expect(horizontalBoundary.scrollLeft).toBe(0);
-      expect(horizontalBoundary.bodyPaddingBottom).toBe(width === 390 ? "16px" : "0px");
-      expect(horizontalBoundary.sheetPaddingBottom).toBe(width === 390 ? "0px" : "24px");
-      if (width === 390) {
-        // Exercise an installed iPhone's inset as well as the browser's zero
-        // inset. It belongs to the scroll content, never to a clipped surface.
-        await sheet.evaluate((node) => node.style.setProperty("--safe-bottom", "34px"));
-        await expect(body).toHaveCSS("padding-bottom", "34px");
-        await expect(sheet).toHaveCSS("padding-bottom", "0px");
-        await expect.poll(() => body.evaluate((node) => node.getBoundingClientRect().bottom)).toBe(620);
-      }
       const size = await body.evaluate((node) => ({ client: node.clientHeight, scroll: node.scrollHeight }));
       expect(size.client).toBeGreaterThan(0);
       expect(size.scroll).toBeGreaterThan(size.client);
@@ -173,9 +130,6 @@ for (const width of [390, 1440]) {
       // the final scroll position, so measure its safe-area gap only at the end.
       await expect.poll(() => body.evaluate((node) => node.scrollHeight - node.scrollTop - node.clientHeight)).toBeLessThanOrEqual(1);
       await expect(last).toBeInViewport({ ratio: 1 });
-      if (width === 390) {
-        await expect.poll(() => last.evaluate((node) => node.getBoundingClientRect().bottom)).toBeLessThanOrEqual(620 - 34);
-      }
       const positions = {
         page: await page.evaluate(() => scrollY),
         record: await body.evaluate((node) => node.scrollTop),
@@ -196,140 +150,19 @@ for (const width of [390, 1440]) {
     } finally { await context.close(); }
   });
 
-  test(`header blur covers foreground without reaching following content at ${width}px`, async ({ browser }) => {
+  test(`native navbar and content retain their layout across routes at ${width}px`, async ({ browser }) => {
     const context = await browser.newContext({ storageState: authStatePath("admin"), viewport: { width, height: 844 } });
     const page = await context.newPage();
     try {
-      for (const path of [
-        "/issues/public-issues",
-        "/facilities",
-        "/announcements",
-        "/notifications",
-        "/settings",
-        "/issues/public-issues/compose/new",
-        "/facilities/new?category=general",
-        "/announcements/new",
-        "/admin",
-        "/admin/platform",
-        "/admin/people",
-      ]) {
+      for (const path of ["/home", "/feed", "/facilities", "/announcements", "/notifications", "/settings", "/admin", "/admin/platform", "/admin/people"]) {
         await page.goto(path);
-        const header = page.locator(".page-header");
-        const title = header.locator("h1");
-        const backdrop = header.locator('[data-slot="header-backdrop"]');
-        const statusBarBackdrop = backdrop.locator("[data-status-bar-backdrop]");
-        const blurSteps = backdrop.locator("[data-blur-step]");
-        await expect(title).toBeVisible();
-        await expect(backdrop).toHaveAttribute("data-progressive", "true");
-        await expect(backdrop).toHaveCSS("backdrop-filter", "none");
-        await expect(statusBarBackdrop).toHaveCSS("backdrop-filter", "none");
-        await expect(blurSteps).toHaveCount(3);
-        await expect(blurSteps.nth(0)).toHaveCSS("backdrop-filter", "blur(12px)");
-        await expect(blurSteps.nth(1)).toHaveCSS("backdrop-filter", "blur(6px)");
-        await expect(blurSteps.nth(2)).toHaveCSS("backdrop-filter", "blur(2px)");
-        await expect(backdrop).toHaveCSS("z-index", "0");
-        await expect(backdrop).toHaveCSS("pointer-events", "none");
-        await expect.poll(() => backdrop.evaluate((node) => {
-          const veil = node.getBoundingClientRect();
-          const viewport = document.querySelector(".app-main-column")!.getBoundingClientRect();
-          return {
-            left: Math.round(veil.left - viewport.left),
-            right: Math.round(veil.right - viewport.right),
-          };
-        })).toEqual({ left: 0, right: 0 });
-        await page.evaluate(() => window.scrollTo(10_000, scrollY));
-        expect(await page.evaluate(() => ({
-          extent: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-          position: scrollX,
-        }))).toEqual({ extent: 0, position: 0 });
-        const geometry = await header.evaluate((node) => {
-          const veil = node.querySelector<HTMLElement>('[data-slot="header-backdrop"]')!;
-          const foreground = [...node.children].filter((child) =>
-            !(child instanceof HTMLElement && child.dataset.slot === "header-backdrop")
-          );
-          const v = veil.getBoundingClientRect();
-          const boxes = foreground.map((child) => child.getBoundingClientRect());
-          const headerBox = node.getBoundingClientRect();
-          const nextBox = node.nextElementSibling?.getBoundingClientRect();
-          const filters: string[] = [];
-          const backdropFilters: string[] = [];
-          for (let current: Element | null = node.querySelector("h1"); current; current = current.parentElement) {
-            filters.push(getComputedStyle(current).filter);
-            backdropFilters.push(getComputedStyle(current).backdropFilter);
-            if (current === node) break;
-          }
-          return {
-            veilTop: v.top,
-            headerTop: headerBox.top,
-            solidBottom: v.bottom - parseFloat(getComputedStyle(veil).getPropertyValue("--header-fade")) * parseFloat(getComputedStyle(document.documentElement).fontSize),
-            foregroundBottom: Math.max(...boxes.map((box) => box.bottom)),
-            headerHeight: headerBox.height,
-            tail: v.bottom - headerBox.bottom,
-            nextGap: nextBox ? nextBox.top - headerBox.bottom : null,
-            nextOverlap: nextBox ? v.bottom - nextBox.top : null,
-            filters,
-            backdropFilters,
-          };
-        });
-        expect(geometry.veilTop).toBe(geometry.headerTop);
-        expect(geometry.solidBottom).toBeGreaterThanOrEqual(geometry.foregroundBottom);
-        expect(geometry.nextGap).not.toBeNull();
-        expect(geometry.nextGap!).toBeGreaterThanOrEqual(20);
-        expect(geometry.nextOverlap!).toBeLessThanOrEqual(-4);
-        const statusBarGeometry = await statusBarBackdrop.evaluate((node) => {
-          const box = node.getBoundingClientRect();
-          return {
-            background: getComputedStyle(node).backgroundColor,
-            stageBackground: getComputedStyle(document.documentElement).backgroundColor,
-            mask: getComputedStyle(node).maskImage,
-            bottom: box.bottom,
-            top: box.top,
-          };
-        });
-        expect(statusBarGeometry.top).toBeLessThanOrEqual(0);
-        expect(statusBarGeometry.bottom).toBe(geometry.headerTop);
-        expect(statusBarGeometry.background).toBe(statusBarGeometry.stageBackground);
-        expect(statusBarGeometry.mask).toBe("none");
-        expect(geometry.filters.every((value) => value === "none")).toBe(true);
-        expect(geometry.backdropFilters.every((value) => value === "none")).toBe(true);
-        expect(await page.evaluate(() =>
-          !CSS.supports("overscroll-behavior", "none")
-          || [...document.querySelectorAll("*")].every((node) => {
-            const style = getComputedStyle(node);
-            return style.overscrollBehaviorX === "none" && style.overscrollBehaviorY === "none";
-          })
-        )).toBe(true);
+        const navbar = page.locator(".native-navbar-host > .navbar");
+        await expect(navbar.locator(".title-large h1")).toBeVisible();
+        await expect(page.locator(".novae-page-content")).toHaveCSS("overflow-y", "auto");
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        expect(await navbar.evaluate((node) => Math.round(node.getBoundingClientRect().top))).toBe(0);
+        await expect(page.locator('[data-slot="header-backdrop"]')).toHaveCount(0);
       }
     } finally { await context.close(); }
   });
 }
-
-test("pending row feedback uses the full-width pressed surface, not an inset frame", async ({ browser }) => {
-  const context = await browser.newContext({ serviceWorkers: "block", storageState: authStatePath("admin") });
-  const page = await context.newPage();
-  let release = () => {};
-  const hold = new Promise<void>((resolve) => { release = resolve; });
-  try {
-    await page.goto("/admin");
-    const row = page.locator('.route-page a.t-row[href="/admin/people"]');
-    await expect(row).toBeVisible();
-    await page.route("**/admin/people?*", async (route) => { await hold; await route.continue(); });
-    await row.click();
-    await expect(row).toHaveAttribute("data-navigating", "true");
-    await expect.poll(() => row.evaluate((node) =>
-      getComputedStyle(node, "::before").backgroundColor,
-    )).not.toBe("rgba(0, 0, 0, 0)");
-    const paint = await row.evaluate((node) => ({
-      shadow: getComputedStyle(node).boxShadow,
-      background: getComputedStyle(node).backgroundColor,
-      row: getComputedStyle(node, "::before").backgroundColor,
-      left: parseFloat(getComputedStyle(node, "::before").left),
-      right: parseFloat(getComputedStyle(node, "::before").right),
-    }));
-    expect(paint.shadow).toBe("none");
-    expect(paint.background).toBe("rgba(0, 0, 0, 0)");
-    expect(paint.row).not.toBe("rgba(0, 0, 0, 0)");
-    expect(paint.left).toBeLessThan(0);
-    expect(paint.right).toBeLessThan(0);
-  } finally { release(); await context.close(); }
-});

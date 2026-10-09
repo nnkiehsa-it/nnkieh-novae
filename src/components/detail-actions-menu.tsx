@@ -2,7 +2,8 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import * as React from "react";
-import { MoreHorizontal, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
+import { Icon } from "framework7-react";
 import type { LucideIcon } from "lucide-react";
 
 import { ToolbarButton } from "@/components/ui/toolbar-button";
@@ -75,9 +76,8 @@ export function DetailActionsMenu({
         trigger={
           <ToolbarButton
             aria-label={translate("ui.common.moreActions")}
-            size="icon"
           >
-            <MoreHorizontal />
+            <Icon f7="ellipsis" aria-hidden="true" />
           </ToolbarButton>
         }
       />
