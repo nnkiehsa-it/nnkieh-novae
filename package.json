@@ -110,6 +110,7 @@
     "eslint": "9.39.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "jsdom": "30.0.1",
+    "less": "^4.9.1",
     "miniflare": "5.20260926.1-alpha",
     "postcss": "8.5.28",
     "serwist": "9.5.12",

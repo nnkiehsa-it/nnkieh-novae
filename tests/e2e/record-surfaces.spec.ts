@@ -60,18 +60,18 @@ for (const width of [390, 1440]) {
         if (width === 390 && kind === "proposalA") {
           const before = await page.evaluate(() => {
             const stage = document.querySelector<HTMLElement>(".t-stage")!;
-            const frame = document.querySelector<HTMLElement>("[data-sheet-motion-frame]")!;
+            const frame = document.querySelector<HTMLElement>("[data-sheet-surface]")!;
             return {
               scale: new DOMMatrixReadOnly(getComputedStyle(stage).transform).a,
               sheetTop: frame.getBoundingClientRect().top,
             };
           });
-          await expect(page.locator('[data-slot="dialog-overlay"]')).toHaveCSS("backdrop-filter", "none");
+          await expect(page.locator('.sheet-backdrop')).toHaveCSS("backdrop-filter", "none");
           await close.click();
-          await expect(record).toHaveAttribute("data-sheet-lifecycle-closing", "true");
+          await expect(record).toHaveAttribute("data-state", "closing");
           await expect.poll(() => page.evaluate((start) => {
             const stage = document.querySelector<HTMLElement>(".t-stage")!;
-            const frame = document.querySelector<HTMLElement>("[data-sheet-motion-frame]")!;
+            const frame = document.querySelector<HTMLElement>("[data-sheet-surface]")!;
             return {
               sheetMovingDown: frame.getBoundingClientRect().top > start.sheetTop + 2,
               stageReturning: new DOMMatrixReadOnly(getComputedStyle(stage).transform).a > start.scale + 0.005,
@@ -149,7 +149,7 @@ for (const width of [390, 1440]) {
           bodyPaddingBottom: getComputedStyle(node).paddingBottom,
           overflowX: getComputedStyle(node).overflowX,
           scrollLeft: node.scrollLeft,
-          sheetPaddingBottom: getComputedStyle(node.closest('[data-sheet-surface]')!).paddingBottom,
+          sheetPaddingBottom: getComputedStyle(node.closest('[data-sheet-surface]')!.querySelector('.sheet-modal-inner')!).paddingBottom,
         };
       });
       expect(["clip", "hidden"]).toContain(horizontalBoundary.overflowX);

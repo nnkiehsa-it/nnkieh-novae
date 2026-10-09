@@ -4,14 +4,14 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { useImageAttachments } from "@/hooks/use-image-attachments";
 import { processImageForUpload } from "@/lib/image-processing";
 import { createImageUploadPolicies } from "@/services/uploads";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 vi.mock("@/lib/image-processing", () => ({ processImageForUpload: vi.fn() }));
 vi.mock("@/services/uploads", () => ({
   createImageUploadPolicies: vi.fn(), deleteUploadedImages: vi.fn(),
 }));
 vi.mock("@/i18n", () => ({ useI18n: () => ({ t: (key: string) => key }) }));
-vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
+vi.mock("@/lib/toast", () => ({ toast: { error: vi.fn() } }));
 
 const settings = {
   maxDimension: 1024, maxUploadKilobytes: 512, webpQuality: 0.8,

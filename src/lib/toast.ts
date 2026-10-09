@@ -7,8 +7,15 @@ function show(message: string) {
   f7ready(() => {
     const content = document.createElement("span");
     content.textContent = message;
-    const toast = f7.toast.create({ text: content.innerHTML, position: "bottom", cssClass: "novae-toast",
-      closeTimeout: 5000, closeButton: true, closeButtonText: t("common.close"), destroyOnClose: true });
+    const toast = f7.toast.create({
+      text: content.innerHTML,
+      position: "bottom",
+      cssClass: "novae-toast",
+      closeTimeout: 5000,
+      closeButton: true,
+      closeButtonText: t("common.close"),
+      destroyOnClose: true,
+    });
     toast.open();
     toast.el.setAttribute("role", "status");
     toast.el.setAttribute("aria-live", "polite");

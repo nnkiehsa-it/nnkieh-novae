@@ -30,7 +30,7 @@ export function AppInstallPrompt() {
   const [view, setView] = useState<PromptView>("guide");
   const [direction, setDirection] = useState<1 | -1>(1);
   // The dialog has to survive its own closing animation, so the last thing it
-  // was saying stays on screen until Radix has finished taking it away.
+  // was saying stays on screen until Framework7 has finished taking it away.
   const [shownMode, setShownMode] = useState<AppInstallPromptMode | null>(null);
   if (prompt.mode && prompt.mode !== shownMode) setShownMode(prompt.mode);
   const mode = prompt.mode ?? shownMode;

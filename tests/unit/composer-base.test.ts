@@ -1,7 +1,7 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useComposerBase } from "@/hooks/use-composer-base";
 import { composerDraftKey, readComposerDraft } from "@/lib/composer-draft";
 import { deleteUploadedImages } from "@/services/uploads";
@@ -16,7 +16,7 @@ vi.mock("@/hooks/use-image-attachments", () => ({ useImageAttachments: () => ima
 vi.mock("@/hooks/use-categories", () => ({ useCategories: () => ({ imageUploads: {}, issueCategories: [] }) }));
 vi.mock("@/hooks/use-session", () => ({ useSession: () => ({ user: { uid: "member" } }) }));
 vi.mock("@/services/uploads", () => ({ deleteUploadedImages: vi.fn(async () => undefined) }));
-vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
+vi.mock("@/lib/toast", () => ({ toast: { error: vi.fn() } }));
 
 let state: ReturnType<typeof useComposerBase>;
 let root: Root;

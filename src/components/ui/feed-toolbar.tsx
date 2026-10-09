@@ -73,7 +73,7 @@ export function FeedToolbar({
           </PopoverTrigger>
           <TooltipContent>{searchLabel}</TooltipContent>
         </Tooltip>
-        <PopoverContent className="w-80">
+        <PopoverContent className="md:w-80" title={searchLabel} aria-label={searchLabel}>
           <form
             className="grid gap-3"
             onSubmit={(event) => {

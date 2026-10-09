@@ -55,7 +55,7 @@ const nextConfig = {
   distDir: process.env.NOVAE_NEXT_DIST_DIR || ".next",
   env: publicEnvironment,
   experimental: {
-    optimizePackageImports: ["lucide-react", "motion", "radix-ui"],
+    optimizePackageImports: ["lucide-react", "motion"],
     staleTimes: {
       dynamic: 300,
       static: 1800,
@@ -76,9 +76,9 @@ const nextConfig = {
           chunks: "all",
           priority: 30,
         },
-        vendorRadix: {
-          test: /[\\/]node_modules[\\/](?:@radix-ui|radix-ui)[\\/]/,
-          name: "vendor-radix",
+        vendorFramework7: {
+          test: /[\\/]node_modules[\\/](?:framework7|framework7-react|dom7|ssr-window)[\\/]/,
+          name: "vendor-framework7",
           chunks: "all",
           priority: 30,
         },

@@ -70,11 +70,8 @@ export function AppProviders({
       enableSystem
       nonce={nonce}
     >
-        <Framework7Provider>
-        <MotionConfig
-          reducedMotion="user"
-          transition={timing("control")}
-        >
+      <Framework7Provider>
+        <MotionConfig reducedMotion="user" transition={timing("control")}>
           <TooltipProvider>
             <TurnstileProvider>
               <SessionProvider>
@@ -84,7 +81,11 @@ export function AppProviders({
                   <div className="t-stage">
                     <div className="t-stage-content">
                       <Suspense fallback={null}>
-                        {i18nReady ? children : <div className="app-start-surface" />}
+                        {i18nReady ? (
+                          children
+                        ) : (
+                          <div className="app-start-surface" />
+                        )}
                       </Suspense>
                     </div>
                   </div>
@@ -100,7 +101,7 @@ export function AppProviders({
             </TurnstileProvider>
           </TooltipProvider>
         </MotionConfig>
-        </Framework7Provider>
+      </Framework7Provider>
     </ThemeProvider>
   );
 }

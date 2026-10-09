@@ -58,7 +58,7 @@ flowchart LR
 | 層級 | 技術 | 實際用途 |
 | --- | --- | --- |
 | Web | Next.js 16.3 App Router、React 19.2、TypeScript 7 | 路由、PWA 介面、SSR/RSC 與 client state |
-| UI | Tailwind CSS 4、Radix UI、HeroUI、Motion | Design tokens、可存取元件與狀態轉場 |
+| UI | Framework7 React 9（iOS theme）、Tailwind CSS 4、Motion | iOS 元件、共用樣式與狀態轉場 |
 | PWA | Serwist 9 | Service Worker、安裝與版本更新流程 |
 | 身分與裝置 | Firebase Authentication、App Check、Cloud Messaging | Google 登入、app attestation、Web Push |
 | API | Cloudflare Workers、Hyperdrive | 驗證、action dispatch、資料庫連線與媒體代理 |

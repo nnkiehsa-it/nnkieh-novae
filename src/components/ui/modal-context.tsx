@@ -26,7 +26,13 @@ export function useModal() {
   if (!state) throw new Error("Modal content requires a modal root");
   return state;
 }
-export function ModalRoot({ children, open, defaultOpen = false, onOpenChange, onCloseRequest }: ModalRootProps) {
+export function ModalRoot({
+  children,
+  open,
+  defaultOpen = false,
+  onOpenChange,
+  onCloseRequest,
+}: ModalRootProps) {
   const [internalOpen, setInternalOpen] = React.useState(defaultOpen);
   const [closing, setClosing] = React.useState(false);
   const target = React.useRef<HTMLElement>(null);
@@ -42,18 +48,46 @@ export function ModalRoot({ children, open, defaultOpen = false, onOpenChange, o
     if (onCloseRequest) onCloseRequest(close);
     else close();
   };
-  return <ModalContext.Provider value={{ open: sourceOpen && !closing, target, setTarget: (element) => { target.current = element; }, titleId: `${id}-title`,
-    descriptionId: `${id}-description`, setOpen, requestClose,
-    closed: () => { if (sourceOpen) setOpen(false); } }}>{children}</ModalContext.Provider>;
+  return (
+    <ModalContext.Provider
+      value={{
+        open: sourceOpen && !closing,
+        target,
+        setTarget: (element) => {
+          target.current = element;
+        },
+        titleId: `${id}-title`,
+        descriptionId: `${id}-description`,
+        setOpen,
+        requestClose,
+        closed: () => {
+          if (sourceOpen) setOpen(false);
+        },
+      }}
+    >
+      {children}
+    </ModalContext.Provider>
+  );
 }
-export function ModalTrigger({ asChild, onClick, ...props }: React.ComponentProps<"button"> & { asChild?: boolean }) {
+export function ModalTrigger({
+  asChild,
+  onClick,
+  ...props
+}: React.ComponentProps<"button"> & { asChild?: boolean }) {
   const state = useModal();
   const Comp = asChild ? Slot : "button";
-  return <Comp {...props} aria-haspopup="dialog" aria-expanded={state.open} onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
-    onClick?.(event);
-    if (!event.defaultPrevented) {
-      state.setTarget(event.currentTarget);
-      state.setOpen(true);
-    }
-  }} />;
+  return (
+    <Comp
+      {...props}
+      aria-haspopup="dialog"
+      aria-expanded={state.open}
+      onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+        onClick?.(event);
+        if (!event.defaultPrevented) {
+          state.setTarget(event.currentTarget);
+          state.setOpen(true);
+        }
+      }}
+    />
+  );
 }

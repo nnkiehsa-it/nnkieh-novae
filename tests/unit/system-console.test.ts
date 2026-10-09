@@ -5,6 +5,7 @@ import { useSystemConsole } from "@/hooks/use-system-console";
 import { clearScheduledWork, fetchOperationsConsole, fetchOperationsQueue, retryOperationalWork } from "@/services/operations-console";
 
 const runtime = vi.hoisted(() => ({ poll: undefined as (() => Promise<void>) | undefined }));
+vi.mock("@/lib/toast", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 vi.mock("@/i18n", () => {
   const t = (key: string) => key;
   return { useI18n: () => ({ t }) };

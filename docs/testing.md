@@ -43,7 +43,9 @@ CSS 依 production 的 Next.js client reference manifest，計算每個頁面初
 | 全站字型 CSS 宣告，未壓縮 | 320 KiB | 獨立管理中文字型的 unicode range |
 | 全站 WOFF2 / JS 產物 | 8 MiB / 3 MiB | 保留既有字型與程式碼總量檢查 |
 
-每次檢查會在目前 build 目錄產生 `build-budget-report.json`，列出各頁面、所需 CSS、未壓縮與 gzip 估算大小。調整前先查看報告：只使用 Card、Input、Label 的 HeroUI 樣式已集中在 `src/styles/heroui.css`；新增其他 HeroUI 元件時，在這裡加入它的 CSS。拆開原始碼檔案不等於減少輸出，應先移除未使用的樣式或把頁面專用樣式保留在該頁面的 import。
+每次檢查會在目前 build 目錄產生 `build-budget-report.json`，列出各頁面、所需 CSS、未壓縮與 gzip 估算大小。Framework7 樣式由 `scripts/generate-framework7.mjs` 編譯已安裝版本的 Less 原始碼，只保留 iOS、亮暗色與實際使用的核心／元件；產物是 `src/generated/framework7-ios.css`，整合樣式集中於 `src/styles/framework7.css`。新增元件時，更新產生器清單並執行 `bun run generate:all`。
+
+Framework7 遷移時，先精簡雙 theme 樣式、未使用的核心樣式與 JavaScript 模組，最大初始頁面 UI CSS 從約 331 KiB 降至 274 KiB。現行上限為 288 KiB，保留約 5% 餘裕；JavaScript 全站總量上限為 3.1 MiB。這些是建置資產檢查，不代表單一頁面會下載全站 JavaScript。後續調整仍先移除未使用的樣式，並將頁面專用樣式保留在該頁面的 import。
 
 完整本機檢查後，可單獨重新查看報告：
 
