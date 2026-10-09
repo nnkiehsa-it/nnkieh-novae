@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-09T21:52:05.446Z",
+  "generatedAt": "2026-10-09T22:32:56.000Z",
   "title": "Design System: Novae",
   "extensions": {
     "colorMeta": {
@@ -224,6 +224,10 @@
         "displayName": "title",
         "purpose": "收合後置中的 Navbar 標題。"
       },
+      "login-title": {
+        "displayName": "login-title",
+        "purpose": "LoginScreenTitle 的置中登入標題；字色及行高繼承登入頁，來源為安裝版 login-screen-vars.less。"
+      },
       "body": {
         "displayName": "body",
         "purpose": "Framework7 基本文字與 BlockFooter。"
@@ -307,6 +311,11 @@
         "name": "native-tab-highlight",
         "value": "300ms",
         "purpose": "上游 Tabbar 滑動選取背景；runtime 設定位置。"
+      },
+      {
+        "name": "native-dialog",
+        "value": "transform 400ms, opacity 400ms",
+        "purpose": "上游 Dialog 開關；安全驗證只接合 iframe 幾何，reduced motion 由 Dialog API 的 animate 接合。"
       }
     ],
     "breakpoints": [
@@ -314,7 +323,51 @@
         "name": "desktop",
         "value": "48rem"
       }
-    ]
+    ],
+    "provenance": {
+      "assets": [
+        {
+          "paths": [
+            "public/logo.png",
+            "public/pwa-64x64.png",
+            "public/pwa-192x192.png",
+            "public/pwa-512x512.png",
+            "public/apple-touch-icon-180x180.png",
+            "public/maskable-icon-512x512.png"
+          ],
+          "source": "config/brand.svg",
+          "generator": "scripts/generate-brand-assets.mjs",
+          "metadataWriter": "scripts/png-origin.mjs",
+          "metadata": "PNG tEXt: impeccable:prompt",
+          "origin": "Novae repository-owned vector mark 的確定性輸出；不使用 image-generation prompt。",
+          "pixelPolicy": "僅補齊來源 metadata 時保留既有像素，不重編碼 PNG。"
+        },
+        {
+          "paths": ["public/home-start.webp"],
+          "metadata": "public/home-start.webp.json",
+          "introducedBy": {
+            "gitCommit": "b295457e479997dfeaa812cd64382e9dd2c5c6e0",
+            "date": "2026-09-30"
+          },
+          "originalAuthor": null,
+          "generationPrompt": null,
+          "origin": "既有 Novae raster；原作者與 generation prompt 未留下紀錄，維持未知。",
+          "pixelPolicy": "Framework7 iOS migration 保留既有像素。"
+        }
+      ],
+      "modalIsolation": {
+        "source": "src/components/ui/native-modal-isolation.ts",
+        "nativeBackdropClasses": [
+          "actions-backdrop",
+          "dialog-backdrop",
+          "sheet-backdrop",
+          "popup-backdrop",
+          "popover-backdrop"
+        ],
+        "behavior": "五種原生 backdrop 略過 inert／aria-hidden 背景隔離，遮罩點擊保留原生行為並進入離開 guard；巢狀背景頁面與下層面板仍維持隔離。",
+        "release": "NativeModalLayers 在 Closed 或 BeforeDestroy 還原背景屬性及釋放捲動鎖。"
+      }
+    }
   },
   "components": [
     {
@@ -396,6 +449,22 @@
       "description": "共用 Card／CardContent 的原生承載面；一般變體沒有 raised 陰影。",
       "html": "<article class=\"ds-card\"><div class=\"ds-card-content\">內容與紀錄</div></article>",
       "css": ".ds-card{background:var(--f7-card-bg-color,#fff);color:var(--f7-text-color,#000);border-radius:var(--f7-card-border-radius,24px);font-family:var(--f7-font-family,-apple-system, SF Pro Text, SF UI Text, system-ui, Helvetica Neue, Helvetica, Arial, sans-serif);font-size:var(--f7-font-size,14px);margin:0;}.ds-card-content{padding:var(--f7-card-content-padding-vertical,16px) var(--f7-card-content-padding-horizontal,16px);}.ds-card:hover{background:var(--f7-card-bg-color,#fff);}.ds-card:focus-visible{outline:2px solid var(--ring,var(--f7-theme-color,#007aff));outline-offset:2px;}"
+    },
+    {
+      "name": "原生 Login Screen",
+      "kind": "custom",
+      "refersTo": "login-screen",
+      "description": "嵌入式 Page／PageContent loginScreen 的單欄入口；LoginScreenTitle、Block 與 BlockFooter 使用上游寬度和 margin，靜態片段不執行驗證或登入。",
+      "html": "<section class=\"ds-login-screen\"><main class=\"ds-login-content\"><div class=\"ds-login-title\"><h1 class=\"ds-login-heading\">使用學校帳號登入</h1></div><div class=\"ds-login-block ds-login-copy\"><p>使用學校 Google 帳號繼續。</p></div><div class=\"ds-login-block\"><button type=\"button\" class=\"ds-login-submit\">使用 Google 登入</button></div><div class=\"ds-login-footer\"><p>登入即表示同意使用條款。</p></div></main></section>",
+      "css": ".ds-login-screen{display:flex;flex-direction:column;min-height:100%;background:var(--f7-login-screen-content-bg-color,#fff);color:var(--f7-text-color,#000);font-family:var(--f7-font-family,-apple-system, SF Pro Text, SF UI Text, system-ui, Helvetica Neue, Helvetica, Arial, sans-serif);font-size:var(--f7-font-size,14px);line-height:var(--f7-line-height,1.4);}.ds-login-content{margin-top:auto;margin-bottom:auto;height:auto;max-height:100%;width:100%;}.ds-login-title,.ds-login-block{margin:var(--f7-login-screen-blocks-margin-vertical,25px) auto;max-width:var(--f7-login-screen-blocks-max-width,480px);}.ds-login-title{text-align:var(--f7-login-screen-title-text-align,center);font-size:var(--f7-login-screen-title-font-size,28px);font-weight:var(--f7-login-screen-title-font-weight,600);color:var(--f7-login-screen-title-text-color,inherit);letter-spacing:var(--f7-login-screen-title-letter-spacing,0);}.ds-login-heading{margin:0;font:inherit;line-height:inherit;}.ds-login-block,.ds-login-footer{box-sizing:border-box;padding-left:calc(var(--f7-block-padding-horizontal,16px) + var(--f7-safe-area-left,0px));padding-right:calc(var(--f7-block-padding-horizontal,16px) + var(--f7-safe-area-right,0px));}.ds-login-copy{text-align:center;}.ds-login-block p,.ds-login-footer p{margin:0;}.ds-login-footer{max-width:var(--f7-login-screen-blocks-max-width,480px);margin:var(--f7-block-footer-margin,10px) auto var(--f7-block-margin-vertical,35px);text-align:center;color:var(--f7-block-footer-text-color,rgba(0,0,0,0.45));font-size:var(--f7-block-footer-font-size,14px);}.ds-login-block+.ds-login-footer{margin-top:calc(-1 * (var(--f7-block-margin-vertical,35px) - var(--f7-block-footer-margin,10px)));}.ds-login-submit{display:flex;align-items:center;justify-content:center;width:100%;height:var(--f7-button-large-height,48px);padding:0 var(--f7-button-padding-horizontal,10px);border:0;border-radius:var(--f7-button-border-radius,4px);background:var(--f7-theme-color,#007aff);color:var(--f7-button-fill-text-color,#fff);font-family:inherit;font-size:var(--f7-button-large-font-size,17px);font-weight:var(--f7-button-large-font-weight,500);letter-spacing:var(--f7-button-letter-spacing,0);cursor:pointer;transition-duration:100ms;}.ds-login-submit:hover{background:var(--f7-theme-color,#007aff);}.ds-login-submit:focus-visible{outline:2px solid var(--ring,var(--f7-theme-color,#007aff));outline-offset:2px;}.ds-login-submit:active{background:var(--f7-theme-color-tint,#298fff);}.ds-login-submit:disabled{opacity:0.5;pointer-events:none;}"
+    },
+    {
+      "name": "原生安全驗證 Dialog",
+      "kind": "custom",
+      "refersTo": "dialog",
+      "description": "TurnstileDialog 的原生無按鈕 Dialog；300px iframe 只影響寬度，玻璃材質與字級來自上游 Dialog。空白 host 保留第三方驗證位置，靜態片段不載入 iframe 或重建 runtime。",
+      "html": "<section class=\"ds-security-dialog\" role=\"alertdialog\" aria-labelledby=\"ds-security-title\" aria-describedby=\"ds-security-description\"><div class=\"ds-security-inner\"><h2 id=\"ds-security-title\" class=\"ds-security-title\">登入驗證</h2><p id=\"ds-security-description\" class=\"ds-security-text\">請完成安全驗證以繼續。</p><div class=\"ds-security-host\" aria-label=\"安全驗證區域\"></div></div></section>",
+      "css": ".ds-security-dialog{width:min(calc(300px + 2 * var(--f7-dialog-inner-padding,24px)),calc(100vw - 32px));max-height:calc(100svh - 2rem);margin:0 auto;overflow:hidden;border-radius:var(--f7-dialog-border-radius,32px);text-align:var(--f7-dialog-text-align,left);color:var(--f7-dialog-text-color,#000);font-family:var(--f7-font-family,-apple-system, SF Pro Text, SF UI Text, system-ui, Helvetica Neue, Helvetica, Arial, sans-serif);font-size:var(--f7-dialog-font-size,14px);line-height:var(--f7-line-height,1.4);background:var(--f7-dialog-bg-color,var(--f7-glass-bg-color,rgba(255,255,255,0.75)));backdrop-filter:saturate(180%) blur(16px);box-shadow:var(--f7-glass-shadow,inset -1px -1px 0px -0.5px #ffffff, inset 1px 1px 0px -0.5px #ffffff, inset 3px 3px 10px -3px #ddd, inset -3px -3px 10px -3px #ddd, inset 0 0 5px 1px #fff, inset 0 0 0 0.5px rgba(0,0,0,0.25), inset 0 0 24px 0 rgba(0,0,0,0.1), 0 0 25px 0 rgba(0,0,0,0.2));}.ds-security-inner{box-sizing:border-box;position:relative;padding:var(--f7-dialog-inner-padding,24px);overflow:auto;max-height:calc(100svh - 8rem);border-radius:var(--f7-dialog-border-radius,32px);}.ds-security-title{margin:0;color:var(--f7-dialog-title-text-color,inherit);font-size:var(--f7-dialog-title-font-size,17px);font-weight:var(--f7-dialog-title-font-weight,600);line-height:var(--f7-dialog-title-line-height,inherit);}.ds-security-text{margin:12px 0 0;line-height:var(--f7-dialog-text-line-height,1.5);}.ds-security-host{margin-top:16px;min-height:65px;width:300px;max-width:100%;}"
     }
   ],
   "narrative": {
@@ -425,14 +494,15 @@
       "**Do** 保留 Next 網址、權限、草稿、資料操作及返回後的來源列表位置。",
       "**Do** 將群組說明放在 BlockFooter，並保留它依賴的 List bottom margin。",
       "**Do** 同時確認亮暗色、手機／桌面、長文字、safe area、鍵盤及 reduced motion。",
-      "**Do** 隨 Framework7 升級重新生成 CSS，並核對本文件與 sidecar 的擷取值。"
+      "**Do** 隨 Framework7 升級重新生成 CSS，並核對本文件與 sidecar 的擷取值。",
+      "**Do** 保留 shipping raster 的內嵌來源或相鄰 sidecar；未知的作者與 generation prompt 明示未知。"
     ],
     "donts": [
       "**Don't** 自寫一套原生控制項的邊框、圓角、玻璃材質、按壓或面板動畫。",
       "**Don't** 把頁面標題改成藍色，或在設定操作列加入 description subtitle。",
       "**Don't** 在原生 Fab 加文字標籤，或以自訂 Tabbar／header 取代原生結構。",
       "**Don't** 直接修改生成 CSS，或讓這份 token 擷取成為另一套執行期樣式來源。",
-      "**Don't** 重新加入已移除的 HeroUI、Radix UI、Sonner、tw-animate-css、HarmonyOS 字型或未使用的 Typography plugin。"
+      "**Don't** 重新加入已移除的 HeroUI、Radix UI、Sonner、tw-animate-css、HarmonyOS 字型或 `@tailwindcss/typography`；Framework7 Typography 是實際使用的上游模組。"
     ]
   }
 }

@@ -30,6 +30,11 @@ typography:
     fontSize: "17px"
     fontWeight: 600
     lineHeight: 1.2
+  login-title:
+    fontFamily: "-apple-system, SF Pro Text, SF UI Text, system-ui, Helvetica Neue, Helvetica, Arial, sans-serif"
+    fontSize: "28px"
+    fontWeight: 600
+    letterSpacing: "0"
   body:
     fontFamily: "-apple-system, SF Pro Text, SF UI Text, system-ui, Helvetica Neue, Helvetica, Arial, sans-serif"
     fontSize: "14px"
@@ -71,6 +76,7 @@ spacing:
   card-content: "16px"
   button-inline: "10px"
   block-footer-gap: "10px"
+  login-block: "25px"
 components:
   button-primary:
     backgroundColor: "{colors.primary}"
@@ -137,6 +143,18 @@ components:
     textColor: "var(--f7-text-color)"
     rounded: "{rounded.card}"
     padding: "16px"
+  login-screen:
+    backgroundColor: "var(--f7-login-screen-content-bg-color)"
+    textColor: "var(--f7-text-color)"
+  login-screen-title:
+    textColor: "var(--f7-login-screen-title-text-color)"
+    typography: "{typography.login-title}"
+  dialog:
+    backgroundColor: "var(--f7-dialog-bg-color)"
+    textColor: "var(--f7-dialog-text-color)"
+    rounded: "{rounded.dialog}"
+    padding: "24px"
+    width: "270px"
 ---
 
 # Design System: Novae
@@ -162,10 +180,24 @@ Novae 的視覺依據是使用者指定的 Framework7 iOS 介面。所有裝置�
 | [framework7-provider.tsx](src/components/framework7-provider.tsx) | 固定 iOS theme、primary／gray 配色、runtime modules 與亮暗同步 |
 | [framework7-ios.css](src/generated/framework7-ios.css) | 字型、字級、亮暗色、控制項尺寸、圓角、材質與動畫的擷取來源 |
 | [generate-framework7.mjs](scripts/generate-framework7.mjs) | 編譯安裝版本的上游 Less；生成 CSS 不手動修改 |
+| [login/page.tsx](src/app/login/page.tsx)、[route-surface.tsx](src/components/motion/route-surface.tsx) | 原生 Page／PageContent loginScreen、LoginScreenTitle 與 Block／BlockFooter |
+| [login-screen-vars.less](node_modules/framework7/components/login-screen/login-screen-vars.less)、[login-screen.less](node_modules/framework7/components/login-screen/login-screen.less) | 登入標題、亮暗底色、區塊最大寬度與垂直 margin 的上游來源 |
+| [dialog-vars.less](node_modules/framework7/components/dialog/dialog-vars.less)、[dialog.less](node_modules/framework7/components/dialog/dialog.less)、[dialog-ios.less](node_modules/framework7/components/dialog/dialog-ios.less) | Dialog 幾何、標題、玻璃材質與動畫的上游來源 |
+| [typography.less](node_modules/framework7/components/typography/typography.less) | 實際 display、文字對齊與文字色 utility；隨生成器編譯 |
 | [globals.css](src/app/globals.css)、[framework7.css](src/styles/framework7.css) | 產品語意 alias、頁面 gutter、viewport、safe area 與鍵盤接合 |
 | [ui](src/components/ui)、[liquid-nav.tsx](src/components/liquid-nav.tsx) | React／Next 接合與實際共用元件變體 |
+| [turnstile-dialog.tsx](src/components/turnstile-dialog.tsx)、[native-modal-layers.tsx](src/components/ui/native-modal-layers.tsx)、[native-modal-isolation.ts](src/components/ui/native-modal-isolation.ts) | 原生驗證 Dialog、焦點與卸載清理；隔離背景頁面及下層面板，保留原生 backdrop 的互動 |
 
 維護操作與元件對照見 [Framework7 維護說明](docs/framework7.md)。外部視覺參考為 [官方 Kitchen Sink](https://framework7.io/kitchen-sink/core/?theme=ios)，數值以安裝版本為準。
+
+### Asset provenance
+
+七張 shipping raster 的來源追蹤如下；此次補齊 metadata 保留既有像素。
+
+| 資產 | 來源與追蹤 |
+| --- | --- |
+| `public/logo.png`、`public/pwa-64x64.png`、`public/pwa-192x192.png`、`public/pwa-512x512.png`、`public/apple-touch-icon-180x180.png`、`public/maskable-icon-512x512.png` | [config/brand.svg](config/brand.svg) 的確定性輸出，由 [generate-brand-assets.mjs](scripts/generate-brand-assets.mjs) 產生；[png-origin.mjs](scripts/png-origin.mjs) 將來源寫入 PNG `tEXt` 的 `impeccable:prompt` key，不為 metadata 重編碼像素。 |
+| [public/home-start.webp](public/home-start.webp) | 既有資產，由 Git `b295457e479997dfeaa812cd64382e9dd2c5c6e0` 於 2026-09-30 引入；來源記在 [home-start.webp.json](public/home-start.webp.json)。原作者與 generation prompt 未留下紀錄，維持未知。 |
 
 ## Colors
 
@@ -205,12 +237,13 @@ Novae 的視覺依據是使用者指定的 Framework7 iOS 介面。所有裝置�
 
 - **Display**（`typography.display`）：Navbar large 的頁面大標題。
 - **Title**（`typography.title`）：收合後的 Navbar 置中標題。
+- **Login Title**（`typography.login-title`）：LoginScreenTitle 的置中登入標題；字色及行高繼承登入頁。
 - **Body**（`typography.body`）：Framework7 基本文字；BlockFooter 沿用相同字級。
 - **List**（`typography.list`）：一般列表名稱與目前值；資料紀錄可使用原生 media list 層級。
 - **Button / Input**（`typography.button`／`typography.input`）：標準按鈕及 ListInput。大／小按鈕使用上游對應變體。
 - **Label**（`typography.label`）：手機 Tabbar 的短標籤；Badge 與表單 label 各自保留上游字重。
 
-來源為生成 CSS 的 Fonts & Bars、Navbar、List、Button、Input 與 Toolbar 區段。Markdown 原始編輯器保留 Vditor；內容閱讀的標題、表格及程式碼由 `globals.css` 的 markdown-body 規則負責。
+來源為生成 CSS 的 Fonts & Bars、Navbar、Login Screen、List、Button、Input 與 Toolbar 區段。Framework7 的 Typography Less 提供 `display-block`、`text-align-center` 與 `text-color-*`，不要另寫同名 utility；它與已移除的 `@tailwindcss/typography` 套件用途不同。Markdown 原始編輯器保留 Vditor；內容閱讀的標題、表格及程式碼由 `globals.css` 的 markdown-body 規則負責。
 
 ## Layout
 
@@ -219,6 +252,8 @@ Novae 的視覺依據是使用者指定的 Framework7 iOS 介面。所有裝置�
 桌面斷點為（48rem），使用固定側欄（15rem）與可縮放內容欄。手機內容 gutter 使用 `page-gutter-phone`，桌面沿用 `page-gutter`。底部導航依 route 顯示，頁面保留原生 Tabbar 高度及 safe area；手機輸入欄位取得焦點時隱藏底部導航。
 
 列表以 inset strong dividers 組成群組，表單沿用原生列與目前值。ListSection 含 sibling BlockFooter 時，保留 List 的上游 bottom margin；BlockFooter 的負 margin 依賴這段幾何。沒有 footer 的緊密群組可由共用 wrapper 移除外距。
+
+登入頁使用嵌入式 Page／PageContent loginScreen，不帶 Navbar／Toolbar。標題、Block 與 footer 的最大寬度沿用上游（480px）；標題及 Block 依 `login-block` 垂直置距，內容由 Login Screen 的 flex 結構在可用高度內置中。亮色底色使用 `surface-light`，暗色使用 `page-dark`；品牌、學校帳號說明、原位驗證與登入操作維持單欄。
 
 調整 viewport、safe area 與內容排版時保留上游控制項的尺寸、margin 關係與捲動生命週期。
 
@@ -254,9 +289,17 @@ Sidecar 的八階色帶是設計面板用的 OKLCH 預覽推導，沒有新增�
 
 Navbar large 依原生 scroll lifecycle 收合成置中小標題；頂部操作使用固定原生 icon-only Link。feed 目的地與篩選使用 Subnavbar／Segmented。手機主導航使用 Toolbar、ToolbarPane、tabLink 與官方滑動選取背景；桌面使用 menu List。新增操作是只有圖示的 Fab，亮色黑底白圖示、暗色白底黑圖示。
 
+### Login Screen
+
+登入使用 LoginScreenTitle、Block、BlockFooter 與既有主要 Button；狀態、重試及錯誤仍由登入 hooks 接合。BlockFooter 呈現條款及錯誤，錯誤色使用上游 Typography；登入驗證 iframe 在原位顯示並保留完成狀態。此入口沿用原生單欄結構與中性色標題。
+
 ### Overlays / Feedback / Content
 
-手機操作選單使用 Actions，桌面錨點選單使用 Popover；詳情、編輯與短選擇使用 Popup／Sheet，確認與即時回饋使用 Dialog／Toast。Preloader、Progressbar、SkeletonBlock 表達真實載入狀態。關閉按鈕、Escape、遮罩與原生手勢經過同一個離開 guard；面板開啟時保留最上層焦點與背景隔離。
+手機操作選單使用 Actions，桌面錨點選單使用 Popover；詳情、編輯與短選擇使用 Popup／Sheet，確認與即時回饋使用 Dialog／Toast。Preloader、Progressbar、SkeletonBlock 表達真實載入狀態。關閉按鈕、Escape、遮罩與原生手勢經過同一個離開 guard；面板開啟時保留最上層焦點與背景隔離，Closed 或 BeforeDestroy 均釋放背景的 inert／aria-hidden 與捲動鎖。
+
+背景隔離略過 Actions／Dialog／Sheet／Popup／Popover 的五種原生 backdrop，讓遮罩點擊保留原生行為並進入離開 guard；巢狀背景頁面與下層面板仍維持隔離。
+
+需要人工操作的安全驗證使用 Framework7 Dialog API 及原生 dialog-inner／title／text 結構，驗證期間不由遮罩或 Escape 中斷。靜默檢查與人工驗證保留同一個 iframe：只將 Dialog 寬度接到（`min(calc(300px + 2 * var(--f7-dialog-inner-padding)), calc(100vw - 32px))`），並讓未顯示的 host 持續排版且不接收指標事件。外觀、玻璃材質及開關動畫沿用上游 Dialog。
 
 圖片使用 Photo Browser／Swiper zoom，留言輸入使用 Messagebar，處理紀錄使用上游 Timeline 結構。Markdown 原始內容維持 Vditor；產品圖表、reactions 與內容排版保留其領域用途。
 
@@ -269,6 +312,7 @@ Navbar large 依原生 scroll lifecycle 收合成置中小標題；頂部操作�
 - **Do** 將群組說明放在 BlockFooter，並保留它依賴的 List bottom margin。
 - **Do** 同時確認亮暗色、手機／桌面、長文字、safe area、鍵盤及 reduced motion。
 - **Do** 隨 Framework7 升級重新生成 CSS，並核對本文件與 sidecar 的擷取值。
+- **Do** 保留 shipping raster 的內嵌來源或相鄰 sidecar；未知的作者與 generation prompt 明示未知。
 
 ### Don't:
 
@@ -276,4 +320,4 @@ Navbar large 依原生 scroll lifecycle 收合成置中小標題；頂部操作�
 - **Don't** 把頁面標題改成藍色，或在設定操作列加入 description subtitle。
 - **Don't** 在原生 Fab 加文字標籤，或以自訂 Tabbar／header 取代原生結構。
 - **Don't** 直接修改生成 CSS，或讓這份 token 擷取成為另一套執行期樣式來源。
-- **Don't** 重新加入已移除的 HeroUI、Radix UI、Sonner、tw-animate-css、HarmonyOS 字型或未使用的 Typography plugin。
+- **Don't** 重新加入已移除的 HeroUI、Radix UI、Sonner、tw-animate-css、HarmonyOS 字型或 `@tailwindcss/typography`；Framework7 Typography 是實際使用的上游模組。
