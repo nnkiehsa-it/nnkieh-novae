@@ -58,7 +58,7 @@ export function CategoryDeleteAction({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{t("ui.common.cancel")}</AlertDialogCancel>
-          <AlertDialogAction onClick={onDelete}>
+          <AlertDialogAction variant="destructive" onClick={onDelete}>
             {t("ui.common.confirmDelete")}
           </AlertDialogAction>
         </AlertDialogFooter>

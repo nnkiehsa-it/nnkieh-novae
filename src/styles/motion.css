@@ -111,99 +111,15 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   }
 }
 
-/* Press ------------------------------------------------------------------ */
-
-/* One press vocabulary. The surface sinks a pixel and gives up two percent:
-   enough to feel connected to the finger, not enough to look squashed. */
-:is(
-  a[href],
-  button,
-  [role="button"],
-  [role="menuitem"],
-  [role="option"],
-  [role="radio"],
-  [role="checkbox"],
-  [role="tab"],
-  [role="switch"],
-  [data-slot="select-trigger"]
-):not(:disabled, [aria-disabled="true"], [data-disabled]) {
-  transform-origin: center;
-  transition:
-    color var(--motion-control) var(--ease-move),
-    background-color var(--motion-control) var(--ease-move),
-    border-color var(--motion-control) var(--ease-move),
-    box-shadow var(--motion-control) var(--ease-move),
-    opacity var(--motion-control) var(--ease-move),
-    transform var(--motion-control) var(--ease-arrive);
-}
-
-:is(
-  a[href],
-  button,
-  [role="button"],
-  [role="menuitem"],
-  [role="option"],
-  [role="radio"],
-  [role="checkbox"],
-  [role="tab"],
-  [role="switch"],
-  [data-slot="select-trigger"]
-):not(:disabled, [aria-disabled="true"], [data-disabled], .t-primary-nav-link, [data-feed-card-link], .t-row, .t-card):is([data-pressed], :root[data-input-modality="keyboard"] :active) {
-  transform: translateY(1px) scale(var(--motion-press-scale));
-  transition-duration: var(--motion-touch);
-}
-
-/* A card is a large surface, so it takes an even smaller share of the press. */
-.t-card {
-  transition:
-    background-color var(--motion-control) var(--ease-move),
-    border-color var(--motion-control) var(--ease-move),
-    transform var(--motion-control) var(--ease-arrive);
-}
-.t-card:is([data-pressed], :root[data-input-modality="keyboard"] :active) {
-  background-color: color-mix(in srgb, var(--card) 94%, var(--foreground) 6%);
-  transform: translateY(1px) scale(var(--motion-card-press-scale));
-  transition-duration: var(--motion-touch);
-}
-
-.t-disclosure-icon {
-  transition: transform var(--motion-control) var(--ease-arrive);
-}
-[data-state="open"] > .t-disclosure-icon,
-[data-state="open"] .t-disclosure-icon {
-  transform: rotate(180deg);
-}
-[data-slot="dropdown-menu-sub-trigger"][data-state="open"] > .t-disclosure-icon {
-  transform: translateX(2px) rotate(90deg);
-}
-
 /* Tapping a destination has to be answered before the destination commits,
    because on the web it may not commit for another second. The state below is
    that answer, and it belongs to navigation alone: an ordinary button is
    already answered by the press state above, and echoing it as well doubled
    the feedback without adding any meaning. It is worn by the control that was
    tapped, so it travels with the control the page scrolls. */
-[data-navigating="true"]:not(.t-row) {
-  background: var(--surface-active);
-}
 .t-navigation-progress {
   background: var(--tint-content);
   box-shadow: 0 0 14px color-mix(in srgb, var(--tint-content) 34%, transparent);
-}
-
-/* Selection follows the committed route. Pending feedback belongs to the last
-   requested Link; the moving selection and icon settle without overshoot. A
-   primary navigation link is excluded from the press rung above: the dock is
-   furniture, so the press belongs to the icon rather than to the whole slab. */
-.t-primary-nav-link [data-nav-icon] {
-  transition: transform var(--motion-nav) var(--ease-nav);
-}
-.t-primary-nav-link:is([data-pressed], :root[data-input-modality="keyboard"] :active) [data-nav-icon] {
-  transform: scale(0.92);
-  transition-duration: var(--motion-touch);
-}
-.t-primary-nav-link[data-active="true"]:not([data-pressed]):not(:root[data-input-modality="keyboard"] :active) [data-nav-icon] {
-  transform: translateY(-1px) scale(1.04);
 }
 
 /* Entrances -------------------------------------------------------------- */
@@ -263,48 +179,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   animation: t-panel-reveal var(--motion-reveal) var(--ease-arrive) both;
 }
 
-/* The page behind a sheet, pushed back ------------------------------------ */
-
-/* A sheet is a layer over the page, and a layer over something reads as a
-   layer only if the something is underneath it: on a phone the page becomes
-   one screen-sized card, rounds its corners at the corners of the screen and
-   settles back a step while the sheet is up. To be that card it has to stop
-   being a tall scrolling document for as long as the sheet is there, which is
-   what the two figures written on the root are for -- the scroll it was at,
-   which the content is lifted by, and the height it had, which the document
-   keeps so the reader is still where they were when the sheet leaves.
-
-   Everything pinned to the bottom of the page is pinned to the bottom of the
-   card while this lasts, and travels back with it, because the card is the
-   whole screen rather than the whole document. */
-@media (max-width: 47.99rem) {
-  .t-stage {
-    transform-origin: 50% 0;
-    transition:
-      transform var(--motion-sheet) var(--ease-nav),
-      border-radius var(--motion-sheet) var(--ease-nav);
-  }
-  html[data-stage-held="true"] body {
-    height: var(--stage-height);
-    background: var(--surface-behind);
-  }
-  html[data-stage-held="true"] .t-stage {
-    position: fixed;
-    inset: 0;
-    overflow: clip;
-  }
-  html[data-stage-held="true"] .t-stage-content {
-    margin-top: calc(-1 * var(--stage-scroll));
-  }
-  body:has([data-sheet-surface][data-state="open"]) .t-stage {
-    border-radius: var(--radius-3xl);
-    transform: translateY(calc(var(--safe-top) + 0.625rem)) scale(0.92);
-  }
-  body:has([data-sheet-surface][data-state="closed"]) .t-stage {
-    transition-duration: var(--motion-sheet-exit);
-    transition-timing-function: var(--ease-nav);
-  }
-}
+/* Native F7 PageContent keeps source scroll while modal layers are open. */
 
 /* Notification badge */
 .t-notification-badge {
@@ -346,58 +221,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 }
 
 /* Loading and confirmation ------------------------------------------------ */
-
-.t-skeleton {
-  position: relative;
-  overflow: hidden;
-  visibility: hidden;
-  animation:
-    t-skeleton-show 0s linear var(--skeleton-appear-delay) forwards,
-    t-skeleton-pulse var(--motion-pulse) ease-in-out var(--skeleton-appear-delay) infinite;
-}
-.t-skeleton::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  transform: translateX(-100%);
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    color-mix(in srgb, var(--shimmer-highlight) 12%, transparent) 50%,
-    transparent 100%
-  );
-  animation: t-skeleton-shimmer var(--motion-pulse) ease-in-out var(--skeleton-appear-delay) infinite;
-}
-@keyframes t-skeleton-show {
-  to {
-    visibility: visible;
-  }
-}
-@keyframes t-skeleton-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: var(--pulse-min);
-  }
-}
-@keyframes t-skeleton-shimmer {
-  0% {
-    transform: translateX(-100%);
-    opacity: 0;
-  }
-  15% {
-    opacity: 1;
-  }
-  85% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-}
 
 /* Images stay hidden until the resource is fully decoded. */
 .t-image-placeholder {
@@ -520,31 +343,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   vertical-align: middle;
 }
 
-.t-progress-track {
-  width: 7.5rem;
-  height: 2px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--muted);
-}
-.t-progress-track > span {
-  display: block;
-  width: 45%;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--foreground);
-  animation: t-progress-sweep var(--motion-sweep) var(--ease-move) infinite;
-  will-change: transform;
-}
-@keyframes t-progress-sweep {
-  from {
-    transform: translateX(-125%);
-  }
-  to {
-    transform: translateX(300%);
-  }
-}
-
 /* Success is one emphasis: the mark scales into place and draws itself. The
    spinner leaves on opacity so the two do not fight over the same pixels. */
 .t-spinner-check {
@@ -607,19 +405,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   animation: t-success-draw var(--motion-control) var(--ease-move) both;
 }
 
-.t-success-check[data-state="in"] {
-  animation: t-success-in var(--motion-control) var(--ease-bounce) both;
-}
-.t-success-check[data-state="out"] {
-  opacity: 0;
-}
-.t-success-check path {
-  stroke-dasharray: var(--check-length, 24);
-  stroke-dashoffset: var(--check-length, 24);
-}
-.t-success-check[data-state="in"] path {
-  animation: t-success-draw var(--motion-control) var(--ease-move) var(--motion-touch) forwards;
-}
 @keyframes t-success-in {
   from {
     opacity: 0;
@@ -683,7 +468,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   background: var(--tint-surface-hover);
 }
 @media (hover: hover) and (pointer: fine) {
-  :root.t-mouse .t-like[data-accent="hand"][data-liked="true"]:hover:not(:disabled) {
+  .t-like[data-accent="hand"][data-liked="true"]:hover:not(:disabled) {
     background: var(--tint-surface-hover);
   }
 }
@@ -766,69 +551,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   }
 }
 
-/* A row in a grouped list is a card that gave up its border. It answers a press
-   with tint rather than travel: a row that moved would tear the hairlines it
-   shares with its neighbours.
-
-   The tint is painted by a layer that reaches past the row on both sides and is
-   rounded at its corners. It is a layer rather than the row's own background
-   because the hairlines are drawn on the row itself, and a row wide enough to
-   give the tint its bleed would carry its rule out past the edge of the list. */
-.t-row {
-  position: relative;
-  isolation: isolate;
-  transition: color var(--motion-control) var(--ease-move);
-}
-.t-row::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset-block: 1px;
-  inset-inline: calc(-1 * var(--row-bleed, 0.625rem));
-  border-radius: var(--radius-md);
-  background: transparent;
-  pointer-events: none;
-  transition: background-color var(--motion-control) var(--ease-move);
-}
-/* Half a row: where a row reports on one side and acts on the other, the
-   pressed and hovered layer belongs to the reporting half, so it reaches the
-   card's leading edge and stops before the control. */
-.t-row[data-lead="true"]::before {
-  inset-inline-end: 0;
-}
-.t-row:is([data-pressed], :root[data-input-modality="keyboard"] :active)::before,
-.t-row[data-navigating="true"]::before {
-  background: var(--surface-active);
-  transition-duration: var(--motion-touch);
-}
-/* A selected row is tinted through the same bleeding layer as a pressed one, so
-   it reaches the card's edges and its rounded corners. Painted as the row's own
-   background it stopped at the card's gutter, and the corners read as
-   unselected while the middle of the row read as selected. */
-.t-row[data-selected="true"]::before {
-  background: var(--surface-selected);
-}
-
-/* Hover is a pointer affordance only. */
-@media (hover: hover) and (pointer: fine) {
-  :root.t-mouse [data-slot="button"]:not(:disabled):not([data-pressed]):not(:active):hover {
-    transform: translateY(-1px);
-  }
-  :root.t-mouse .t-row:not([data-pressed]):not(:active):not([data-selected="true"]):not([data-navigating="true"]):hover::before {
-    background: var(--surface-hover);
-  }
-  :root.t-mouse .t-card:not([data-pressed]):not(:active):hover {
-    background-color: color-mix(in srgb, var(--card) 99%, var(--foreground) 1%);
-    border-color: color-mix(in srgb, var(--border) 60%, var(--foreground) 10%);
-    transform: translateY(-1px);
-  }
-  :root.dark.t-mouse .t-card:not([data-pressed]):not(:active):hover {
-    background-color: color-mix(in srgb, var(--card) 99.5%, var(--foreground) 0.5%);
-    border-color: color-mix(in srgb, var(--border) 60%, var(--foreground) 12%);
-    transform: translateY(-1px);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .route-page[data-route-direction] {
     animation: none;
@@ -844,15 +566,11 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   .t-startup-brand,
   .t-startup-status > *,
   .t-stagger-item,
-  .t-success-check,
-  .t-success-check path,
   .t-resolution-notice,
   .t-resolution-notice [data-resolution-icon],
   .t-spinner-check-success path,
   .t-update-stage,
-  .t-progress-track > span,
   .t-shake,
-  .t-skeleton,
   .t-shimmer::before,
   .t-reaction-icon,
   .t-like-particles i {
@@ -863,16 +581,11 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     animation-duration: 0s;
   }
   .t-skel-skeleton,
-  .t-skel-content,
-  .t-row,
-  .t-row::before {
+  .t-skel-content {
     transition: none !important;
   }
   .t-skel-skeleton.is-pulsing > * {
     animation: none !important;
-  }
-  .t-skeleton {
-    visibility: visible;
   }
   .t-notification-badge,
   .t-spinner-check-loader,
@@ -882,13 +595,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     transition: none !important;
     transform: none !important;
   }
-  .t-primary-nav-link,
-  .t-primary-nav-link [data-nav-icon] {
-    animation: none !important;
-    transition: none !important;
-    transform: none !important;
-  }
-  .t-disclosure-icon,
   :is(a[href], button, [role="button"], [role="menuitem"], [role="option"], [role="radio"], [role="checkbox"], [role="tab"], [role="switch"]) {
     transition: none !important;
     transform: none !important;

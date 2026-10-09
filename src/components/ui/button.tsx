@@ -3,33 +3,35 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Slot } from "@/components/ui/slot";
+import { Button as Framework7Button } from "framework7-react";
+import { useFramework7Control } from "./use-framework7-control";
+import { DialogButtonsContext } from "./dialog-buttons-context";
 
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "button novae-button w-auto shrink-0 font-medium whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "button novae-button w-auto shrink-0 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
   {
     variants: {
       variant: {
         default: "button-fill",
         destructive: "button-fill color-red",
         outline: "button-outline",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary-hover",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-[var(--tint-content)] underline-offset-4 hover:underline",
+        secondary: "button-tonal",
+        ghost: "",
+        link: "link",
       },
       size: {
-        default: "h-11 px-5 py-2 has-[svg]:px-4",
-        xs: "h-6 gap-1 px-2.5 has-[svg]:px-2 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-9 gap-1.5 px-3.5 has-[svg]:px-3",
-        lg: "h-12 px-7 has-[svg]:px-5",
-        icon: "size-9",
+        default: "",
+        xs: "button-small",
+        sm: "button-small",
+        lg: "button-large",
+        icon: "button-round button-large w-12 p-0",
         // Room enough for a label once there is room for one; a square icon until then.
-        adaptive: "size-9 px-0 sm:w-auto sm:px-4 sm:has-[svg]:px-3.5",
-        "icon-xs": "size-6 [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm": "size-8",
-        "icon-lg": "size-10",
+        adaptive: "button-round button-large w-12 p-0 sm:w-auto sm:px-4",
+        "icon-xs": "button-round button-small w-7 p-0",
+        "icon-sm": "button-round w-[34px] p-0",
+        "icon-lg": "button-round button-large w-12 p-0",
       },
     },
     defaultVariants: {
@@ -44,24 +46,50 @@ function Button({
   variant = "default",
   size = "default",
   asChild = false,
+  ref,
+  type = "button",
+  disabled,
+  form,
+  name,
+  value,
+  title,
+  tabIndex,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
   }) {
-  const Comp = asChild ? Slot : "button";
+  const inDialog = React.useContext(DialogButtonsContext);
+  const appearance = inDialog && (variant === "outline" || variant === "ghost" || variant === "link") ? "secondary" : variant;
+  const f7Ref = useFramework7Control<HTMLButtonElement>(
+    asChild ? undefined : ref,
+    undefined,
+    {
+      disabled,
+      form,
+      name,
+      value:
+        typeof value === "string" || typeof value === "number"
+          ? value
+          : undefined,
+      title,
+      tabindex: tabIndex,
+    },
+    !asChild,
+  );
+  const common = {
+    "data-slot": "button",
+    "data-control-label": "",
+    "data-variant": variant,
+    "data-size": size,
+    className: cn(buttonVariants({ variant: appearance, size }), inDialog && "dialog-button button-round button-large", className),
+    ...props,
+  };
+  if (asChild) return <Slot {...common} ref={ref} />;
 
   return (
-    <Comp
-      data-slot="button"
-      data-control-label=""
-      data-variant={variant}
-      data-size={size}
-      className={cn(buttonVariants({ variant, size }), className)}
-      {...props}
-    />
+    <Framework7Button {...common} type={type} disabled={disabled} ref={f7Ref} />
   );
 }
 
 export { Button, buttonVariants };
-

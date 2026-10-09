@@ -16,6 +16,7 @@ import {
   isDisabledTarget,
 } from "@/lib/interactive-target";
 import { opensOverRoute } from "@/lib/route-hierarchy";
+import { appScrollY } from "@/lib/app-scroll";
 
 interface PendingDetailNavigation {
   pathname: string;
@@ -53,7 +54,7 @@ export function OptimisticDetailNavigationProvider({
       }
       const destination = new URL(anchor.href, window.location.href);
       pointerSource = opensOverRoute(pathname, destination.pathname)
-        ? { anchor, scrollY: window.scrollY }
+        ? { anchor, scrollY: appScrollY() }
         : null;
     };
 
@@ -75,7 +76,7 @@ export function OptimisticDetailNavigationProvider({
       if (!opensOverRoute(pathname, destination.pathname)) return;
       const sourceScrollY = pointerSource?.anchor === anchor
         ? pointerSource.scrollY
-        : window.scrollY;
+        : appScrollY();
       pointerSource = null;
 
       flushSync(() => {

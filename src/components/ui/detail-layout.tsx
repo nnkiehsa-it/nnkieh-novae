@@ -1,19 +1,20 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Clock3, Hand, Heart, RefreshCw, Share2, X } from "lucide-react";
+import { Clock3, Hand, Heart, RefreshCw } from "lucide-react";
+import { Icon } from "framework7-react";
 import { useI18n } from "@/i18n";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { HeaderBackdrop } from "@/components/ui/header-backdrop";
 import { DetailCardHeader, DetailCardBody } from "@/components/ui/detail-card";
 import { ContentTransition, StateTransition } from "@/components/motion/state-transition";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 import type { FeedKind } from "@/components/ui/feed-list";
 import { cn } from "@/lib/utils";
 import { useCloseRouteOverlay } from "@/components/detail-sheet";
-import { sheetCloseButtonClass } from "@/components/ui/sheet";
+import { SecondaryToolbar } from "@/components/detail-toolbar";
+import { ToolbarButton } from "./toolbar-button";
 
 export interface DetailPanel { key: string; content: ReactNode; className?: string }
 
@@ -68,14 +69,11 @@ export function DetailLayout({
           transition clips itself while it animates its height, which a sticky
           header inside it would be caught by. */}
       <header className="detail-header">
-        <HeaderBackdrop />
-        {toolbar || <div className="flex h-9 items-center justify-end gap-1">
-          <Button aria-label={t('common.share')} disabled size="icon" variant="ghost"><Share2 /></Button>
-          {closeRecord ? <Button aria-label={t('common.close')} className={sheetCloseButtonClass} onClick={closeRecord} size="icon" variant="ghost"><X /></Button> : null}
-        </div>}
+        {toolbar || <SecondaryToolbar backLabel={t('common.close')} onBack={closeRecord ?? (() => undefined)} backDisabled={!closeRecord}
+          actions={<ToolbarButton aria-label={t('common.share')} disabled><Icon f7="square_arrow_up" aria-hidden="true" /></ToolbarButton>} />}
       </header>
-      <StateTransition className="space-y-5 pt-2" identity={loading ? "loading" : error ? "error" : "content"}>
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
+      <StateTransition className="space-y-5 p-4" identity={loading ? "loading" : error ? "error" : "content"}>
+        <div className="grid gap-4">
           <article className="min-w-0 space-y-4">
             <Card className="gap-0 overflow-hidden py-0" data-detail-card="content" aria-busy={loading}>
               <ContentTransition identity={loading ? "loading" : error ? "error" : "content"}>

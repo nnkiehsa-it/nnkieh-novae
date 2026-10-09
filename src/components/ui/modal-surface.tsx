@@ -5,19 +5,11 @@ import { createPortal } from "react-dom";
 import { f7, f7ready } from "framework7-react";
 import type { Actions, Dialog, Sheet, Popup, Popover } from "framework7/types";
 import { useModal } from "./modal-context";
-import { useSheetDismiss } from "./use-sheet-dismiss";
 import { cn } from "@/lib/utils";
-import {
-  beginSheetClose,
-  holdStageBehind,
-  publishStageFocusRestore,
-} from "@/lib/stage-depth";
+import { topNativeModal } from "./native-modal-layers";
 
 type ModalInstance =
   Actions.Actions | Dialog.Dialog | Sheet.Sheet | Popup.Popup | Popover.Popover;
-const modalStack: HTMLElement[] = [];
-const focusSelector =
-  'button:not(:disabled),a[href],input:not(:disabled),textarea:not(:disabled),select:not(:disabled),[tabindex="0"]';
 export type ModalSurfaceProps = React.ComponentProps<"div"> & {
   kind?: "actions" | "dialog" | "sheet" | "popup" | "popover";
   dismissible?: boolean;
@@ -47,18 +39,12 @@ export function ModalSurface({
   const instance = React.useRef<ModalInstance | null>(null);
   const latest = React.useRef({ state, onOpenAutoFocus, onCloseAutoFocus });
   const returnFocus = React.useRef<HTMLElement | null>(null);
-  const releaseStage = React.useRef<(() => void) | null>(null);
   const ready = React.useSyncExternalStore(
     () => () => {},
     () => true,
     () => false,
   );
   const holdsStage = kind === "sheet" || kind === "popup";
-  useSheetDismiss(
-    element,
-    holdsStage && present && state.open,
-    state.requestClose,
-  );
   React.useLayoutEffect(() => {
     latest.current = { state, onOpenAutoFocus, onCloseAutoFocus };
   });
@@ -74,7 +60,6 @@ export function ModalSurface({
       if (disposed || !node) return;
       const onOpen = () => {
         returnFocus.current = document.activeElement as HTMLElement;
-        modalStack.push(node);
         node.dataset.state = "open";
         if (
           !node.querySelector(
@@ -88,13 +73,11 @@ export function ModalSurface({
           )
         )
           node.removeAttribute("aria-describedby");
-        if (holdsStage)
-          releaseStage.current = holdStageBehind(node, stageScrollY);
         const event = new Event("openAutoFocus", { cancelable: true });
         latest.current.onOpenAutoFocus?.(event);
         if (!event.defaultPrevented) {
           requestAnimationFrame(() => {
-            if (modalStack.at(-1) !== node) return;
+            if (topNativeModal() !== node) return;
             (node.querySelector<HTMLElement>("[autofocus]") ?? node).focus({
               preventScroll: true,
             });
@@ -102,8 +85,6 @@ export function ModalSurface({
         }
       };
       const onClosed = () => {
-        const index = modalStack.indexOf(node);
-        if (index >= 0) modalStack.splice(index, 1);
         node.dataset.state = "closed";
         const event = new Event("closeAutoFocus", { cancelable: true });
         latest.current.onCloseAutoFocus?.(event);
@@ -118,9 +99,6 @@ export function ModalSurface({
           setPresent(false);
           latest.current.state.closed();
         }
-        releaseStage.current?.();
-        releaseStage.current = null;
-        requestAnimationFrame(publishStageFocusRestore);
       };
       const params = {
         el: node,
@@ -135,7 +113,6 @@ export function ModalSurface({
           open: onOpen,
           close: () => {
             node.dataset.state = "closing";
-            if (holdsStage) beginSheetClose(node);
           },
           closed: onClosed,
         },
@@ -144,31 +121,36 @@ export function ModalSurface({
         kind === "actions"
           ? f7.actions.create({ ...params, convertToPopover: false })
           : kind === "sheet"
-            ? f7.sheet.create(params)
+            ? f7.sheet.create({ ...params, swipeToClose: dismissible, swipeHandler: ".navbar" })
             : kind === "popup"
-              ? f7.popup.create(params)
+              // The pinned 9.2 runtime supports direction strings; its types only list boolean.
+              ? f7.popup.create({ ...params, swipeToClose: dismissible ? "to-bottom" : false, swipeHandler: ".navbar" } as unknown as Popup.Parameters)
               : kind === "popover"
                 ? f7.popover.create({
                     ...params,
                     targetEl: latest.current.state.target.current ?? undefined,
                   })
                 : f7.dialog.create(params);
+      // Native swipe dismissal must pass the same draft/share guard as Close.
+      if (holdsStage) {
+        const native = instance.current;
+        const close = native.close.bind(native);
+        native.close = (animate?: boolean) => {
+          if (!disposed && latest.current.state.open) latest.current.state.requestClose();
+          else close(animate);
+          return native;
+        };
+      }
       if (latest.current.state.open)
         instance.current.open(suppressEntrance ? false : undefined);
     });
     return () => {
       disposed = true;
-      if (node) {
-        const index = modalStack.indexOf(node);
-        if (index >= 0) modalStack.splice(index, 1);
-      }
-      releaseStage.current?.();
-      releaseStage.current = null;
       instance.current?.close(false);
       instance.current?.destroy();
       instance.current = null;
     };
-  }, [holdsStage, kind, present, ready, stageScrollY, suppressEntrance]);
+  }, [dismissible, holdsStage, kind, present, ready, stageScrollY, suppressEntrance]);
 
   React.useEffect(() => {
     const modal = instance.current;
@@ -184,33 +166,11 @@ export function ModalSurface({
     if (!state.open) return;
     const onKey = (event: KeyboardEvent) => {
       const node = element.current;
-      if (!node || modalStack.at(-1) !== node) return;
+      if (!node || topNativeModal() !== node) return;
       if (event.key === "Escape" && dismissible) {
         event.preventDefault();
         event.stopPropagation();
         latest.current.state.requestClose();
-      }
-      if (event.key !== "Tab") return;
-      const targets = [
-        ...node.querySelectorAll<HTMLElement>(focusSelector),
-      ].filter((target) => target.getClientRects().length);
-      const first = targets[0],
-        last = targets.at(-1);
-      if (!first) {
-        event.preventDefault();
-        node.focus();
-      } else if (
-        event.shiftKey &&
-        (document.activeElement === first || document.activeElement === node)
-      ) {
-        event.preventDefault();
-        last?.focus();
-      } else if (
-        !event.shiftKey &&
-        (document.activeElement === last || document.activeElement === node)
-      ) {
-        event.preventDefault();
-        first.focus();
       }
     };
     const onOutside = (event: MouseEvent) => {
@@ -218,7 +178,7 @@ export function ModalSurface({
       if (
         dismissible &&
         node &&
-        modalStack.at(-1) === node &&
+        topNativeModal() === node &&
         event.target instanceof Element &&
         event.target.matches(
           ".actions-backdrop,.dialog-backdrop,.sheet-backdrop,.popup-backdrop,.popover-backdrop",
@@ -238,7 +198,7 @@ export function ModalSurface({
   const classes = {
     actions: "actions-modal",
     sheet: "sheet-modal sheet-modal-bottom novae-sheet",
-    popup: "popup popup-tablet-fullscreen novae-sheet",
+    popup: "popup novae-sheet",
     dialog: "dialog novae-dialog",
     popover: "popover novae-popover",
   };
@@ -253,8 +213,9 @@ export function ModalSurface({
       aria-describedby={state.descriptionId}
       tabIndex={-1}
       data-state="closed"
+      data-stage-scroll-y={stageScrollY}
     >
-      {kind === "actions" ? (
+      {kind === "actions" || kind === "dialog" ? (
         children
       ) : (
         <div

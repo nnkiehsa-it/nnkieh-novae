@@ -12,6 +12,8 @@
  * far the card's content is lifted, and how tall the document was, which the
  * page keeps so the scroll position is still there when the sheet leaves.
  */
+import { appScrollY, scrollAppTo } from "./app-scroll";
+
 let held = 0;
 const sheets: HTMLElement[] = [];
 let notifyPendingNavigationCommit: ((pathname: string) => void) | null = null;
@@ -55,7 +57,7 @@ export function holdStageBehind(sheet?: HTMLElement | null, sourceScrollY?: numb
   if (held === 1) {
     // Inserting the sheet must not fix the stage before these reads. WebKit
     // clamps scrollY as soon as the tall page leaves the document flow.
-    const scroll = sourceScrollY ?? window.scrollY;
+    const scroll = sourceScrollY ?? appScrollY();
     const height = root.scrollHeight;
     root.style.setProperty("--stage-scroll", `${scroll}px`);
     root.style.setProperty("--stage-height", `${height}px`);
@@ -82,7 +84,7 @@ export function heldStageScrollY() {
   const value = Number.parseFloat(
     document.documentElement.style.getPropertyValue("--stage-scroll"),
   );
-  return Number.isFinite(value) ? value : window.scrollY;
+  return Number.isFinite(value) ? value : appScrollY();
 }
 
 /**
@@ -114,9 +116,9 @@ export function restoreHeldStageAfterNavigation(navigate: () => void) {
     notifyPendingNavigationCommit = null;
     notifyPendingFocusRestore = null;
     window.requestAnimationFrame(() => {
-      window.scrollTo(scrollX, scrollY);
+      scrollAppTo(scrollX, scrollY);
       window.requestAnimationFrame(() => {
-        window.scrollTo(scrollX, scrollY);
+        scrollAppTo(scrollX, scrollY);
         window.history.scrollRestoration = previousRestoration;
       });
     });

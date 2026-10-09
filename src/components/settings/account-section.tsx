@@ -3,7 +3,7 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import type { User } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ListActionRow, ListCustomRow, ListSection } from "@/components/ui/list";
+import { ListActionRow, ListRow, ListSection } from "@/components/ui/list";
 
 /**
  * Who is signed in, as the first group of the list rather than as a card of its
@@ -23,16 +23,12 @@ export function SettingsAccountSection({
   const name = user.displayName || translate("ui.settings.unnamed");
   return (
     <ListSection>
-      <ListCustomRow className="flex-nowrap">
-        <Avatar className="size-11 shrink-0">
+      <ListRow label={name} value={<span className="max-w-40 truncate text-xs">{user.email}</span>} media={
+        <Avatar className="size-11">
           <AvatarImage alt={name} src={customPhotoUrl || undefined} />
           <AvatarFallback>{name.slice(0, 1)}</AvatarFallback>
         </Avatar>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[0.9375rem] font-medium leading-6">{name}</span>
-          <span className="block truncate text-xs text-muted-foreground">{user.email}</span>
-        </span>
-      </ListCustomRow>
+      } />
       <ListActionRow
         label="UID"
         onClick={onCopyUid}

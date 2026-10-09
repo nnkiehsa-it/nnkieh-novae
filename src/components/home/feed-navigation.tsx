@@ -1,7 +1,6 @@
 "use client";
 
 import { LiquidTabs, type LiquidTabOption } from "@/components/ui/liquid-tabs";
-import styles from "./feed-navigation.module.css";
 
 /** Keep feed destinations equal in width, independently of the category picker. */
 export function FeedNavigation({ label, options, value, onChange }: {
@@ -13,7 +12,7 @@ export function FeedNavigation({ label, options, value, onChange }: {
   return (
     <LiquidTabs
       ariaLabel={label}
-      className={styles.navigation}
+      className="w-full [&>.novae-tabs]:w-full md:max-w-md"
       onValueChange={onChange}
       options={options}
       value={value}

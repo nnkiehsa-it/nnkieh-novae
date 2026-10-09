@@ -1,12 +1,14 @@
 "use client";
 import * as React from "react";
-import { Check, ChevronRight, Languages } from "lucide-react";
+import { ChevronRight, Languages } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { timing } from "@/lib/motion-timing";
 import { hasStoredLocale, setLocale, useI18n } from "@/i18n";
 import { BrandLockup } from "@/components/ui/brand";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ListSection } from "@/components/ui/list";
+import { ListChoiceRow } from "@/components/ui/list-controls";
 
 export function AppLocaleGate({ children }: { children: React.ReactNode }) {
   const [gating] = React.useState(() => !hasStoredLocale());
@@ -42,40 +44,22 @@ export function AppLocaleGate({ children }: { children: React.ReactNode }) {
             {t("ui.locale.description")}
           </p>
         </div>
-        <div className="mt-6 grid gap-3">
+        <ListSection className="mt-6">
           {(
             [
               ["zh-TW", t("ui.locale.zhTraditional")],
               ["en", "English"],
             ] as const
           ).map(([value, label]) => (
-            <button
-              className="t-card flex min-h-16 items-center gap-4 rounded-xl bg-card px-6 text-left shadow-[var(--shadow-card)]"
+            <ListChoiceRow
               key={value}
-              onClick={() => setLocale(value)}
-              type="button"
-            >
-              <span className="grid size-8 place-items-center rounded-lg bg-muted">
-                <Languages className="size-4" />
-              </span>
-              <span className="flex-1 font-medium">{label}</span>
-              <AnimatePresence>
-              {locale === value ? (
-                <motion.span
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="t-success-check grid size-6 place-items-center rounded-full bg-foreground text-background"
-                  data-state="in"
-                  exit={{ opacity: 0, scale: 0.6 }}
-                  initial={{ opacity: 0, scale: 0.6 }}
-                  key="selected"
-                >
-                  <Check className="size-3.5" />
-                </motion.span>
-              ) : null}
-              </AnimatePresence>
-            </button>
+              onSelect={() => setLocale(value)}
+              selected={locale === value}
+              label={label}
+              icon={Languages}
+            />
           ))}
-        </div>
+        </ListSection>
         <div className="mt-8 flex justify-end">
           <Button
             onClick={() => {

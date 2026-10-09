@@ -1,10 +1,10 @@
 @import "../generated/framework7-ios.css" layer(framework7);
 
-/* Next owns URL/history and document scroll. Framework7 owns the UI runtime. */
+/* Only integration geometry lives here. Appearance comes from upstream iOS. */
 html,
 body {
-  height: auto;
-  overflow: visible;
+  height: 100%;
+  overflow: hidden;
 }
 .novae-root,
 .novae-view {
@@ -17,74 +17,28 @@ body {
 .novae-root {
   height: 100svh;
 }
-.novae-page {
-  position: relative;
-  height: auto;
-  min-height: 100svh;
-  overflow: visible;
-  z-index: auto;
+.novae-page { position: relative; height: 100svh; overflow: hidden; }
+.native-navbar-host { display: contents; }
+.native-navbar-host > .navbar { position: absolute; top: 0; width: 100%; }
+.novae-page-content { padding-inline: max(var(--page-gutter), var(--safe-left), var(--safe-right)); }
+.novae-page:has(.native-navbar-host > .navbar) > .page-content {
+  --f7-page-navbar-offset: calc(var(--f7-navbar-height) + var(--f7-safe-area-top));
 }
-:root,
-.ios {
-  --f7-font-family:
-    -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang TC",
-    "HarmonyOS Sans TC", sans-serif;
-  --f7-theme-color: var(--tint-content);
-  --f7-theme-color-rgb: 0, 122, 255;
-  --f7-page-bg-color: var(--background);
-  --f7-text-color: var(--foreground);
-  --f7-card-bg-color: var(--card);
-  --f7-card-border-radius: 16px;
-  --f7-card-box-shadow: none;
-  --f7-list-bg-color: var(--card);
-  --f7-list-border-color: var(--rule);
-  --f7-list-item-border-color: var(--rule);
-  --f7-list-inset-border-radius: 16px;
-  --f7-button-font-size: 15px;
-  --f7-button-height: 44px;
-  --f7-button-border-radius: 12px;
-  --f7-button-text-color: var(--tint-content);
-  --f7-button-fill-text-color: var(--accent-foreground);
-  --f7-input-text-color: var(--foreground);
-  --f7-input-placeholder-color: var(--muted-foreground);
-  --f7-input-bg-color: var(--card);
-  --f7-dialog-bg-color: var(--popover);
-  --f7-dialog-text-color: var(--foreground);
-  --f7-sheet-bg-color: var(--background);
-  --f7-popover-bg-color: var(--popover);
-  --f7-tooltip-bg-color: var(--foreground);
-  --f7-tooltip-text-color: var(--background);
+.novae-page:has(.native-navbar-host > .navbar-large) > .page-content {
+  --f7-page-navbar-offset: calc(var(--f7-navbar-height) + var(--f7-navbar-large-title-height) + var(--f7-safe-area-top));
 }
+html[data-stage-held="true"] .novae-page-content { overflow: hidden; }
 .novae-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
 }
-.novae-button.color-red {
-  background: var(--destructive);
-  color: var(--destructive-foreground);
-}
-@media (max-width: 47.99rem) {
-  [data-sheet-drag-region],
-  [data-sheet-surface] .detail-header {
-    touch-action: none;
-  }
-}
-.novae-input {
-  background: var(--card);
-  color: var(--foreground);
-  border-radius: 12px;
-}
-.novae-input:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-.novae-modal {
-  --dialog-pad: var(--page-gutter);
-}
-/* Native modals target the viewport while Next keeps a scrolling document. */
-.novae-modal:not(.popover),
+.page-header:has(.navbar-large) { padding-bottom: var(--f7-navbar-large-title-height); }
+.actions-modal,
+.dialog,
+.sheet-modal,
+.popup,
 .actions-backdrop,
 .dialog-backdrop,
 .sheet-backdrop,
@@ -94,101 +48,74 @@ body {
   position: fixed;
 }
 .novae-dialog {
-  left: 50%;
-  margin-left: 0;
-  translate: -50% 0;
-  width: min(32rem, calc(100vw - 2rem));
-  max-height: 86svh;
+  max-height: calc(100svh - 2rem);
 }
-.novae-dialog > .dialog-inner {
-  display: grid;
-  gap: 20px;
-  text-align: left;
-  max-height: 86svh;
-  overflow-y: auto;
+.novae-dialog .dialog-inner {
+  overflow: auto;
+  max-height: calc(100svh - 8rem);
 }
 .novae-sheet {
-  top: auto;
-  bottom: 0;
-  margin-top: 0;
-  background: var(--background);
+  max-height: calc(100svh - var(--safe-top));
+}
+.sheet-modal.novae-sheet {
   height: auto;
-  max-height: calc(100svh - var(--sheet-inset-top));
-  border-radius: 16px 16px 0 0;
 }
-.novae-sheet[data-route-overlay] {
-  height: calc(100svh - var(--sheet-inset-top));
-}
-.novae-sheet > .novae-sheet-inner {
+.novae-sheet-inner {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: 8px;
-  max-height: inherit;
-  padding: var(--page-gutter);
-  padding-bottom: 0;
+  height: 100%;
 }
-.novae-sheet:has(.sheet-body:only-child) > .novae-sheet-inner {
+.sheet-modal .novae-sheet-inner {
+  max-height: inherit;
+}
+.novae-sheet-inner:has(> .sheet-body:only-child) {
   grid-template-rows: minmax(0, 1fr);
 }
 .novae-sheet [data-slot="sheet-body"] {
-  padding-bottom: max(var(--page-gutter), var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+}
+.novae-sheet [data-route-content] {
+  padding: 16px;
 }
 .novae-popover {
   max-width: calc(100vw - 2rem);
 }
-.novae-popover > .popover-inner {
+.novae-popover > .popover-inner > :not(.list) {
   padding: 16px;
 }
 .novae-tabs {
-  width: fit-content;
   max-width: 100%;
   overflow-x: auto;
 }
-.novae-tabs .button {
-  min-width: fit-content;
-  height: 36px;
-  padding-inline: 14px;
-}
+.discussion-composer-dock .messagebar { position: relative; height: auto; }
+.discussion-composer-dock .messagebar .toolbar-inner { height: auto; }
 .app-mobile-nav .toolbar {
   position: static;
   width: 100%;
   height: 100%;
-  background: var(--card);
 }
 .app-mobile-nav .toolbar-inner {
   position: relative;
-  height: var(--mobile-nav-height);
-  padding-inline: max(8px, var(--safe-left), var(--safe-right));
 }
 .novae-toast {
   max-width: min(32rem, calc(100vw - 2rem));
 }
-.novae-toast.toast-bottom {
-  bottom: max(16px, var(--safe-bottom));
-}
 body:has(.app-mobile-nav[data-visible="true"]) .novae-toast.toast-bottom {
-  bottom: calc(var(--mobile-nav-height) + var(--safe-bottom) + 16px);
+  bottom: calc(var(--f7-tabbar-icons-height) + var(--safe-bottom) + 16px);
 }
-@media (min-width: 48rem) {
-  .novae-sheet > .novae-sheet-inner {
-    padding-bottom: var(--page-gutter);
-  }
-  .novae-sheet [data-slot="sheet-body"] {
-    padding-bottom: 0;
-  }
-  .novae-sheet {
-    width: min(88rem, calc(100vw - 2rem));
-    left: 50%;
-    margin-left: 0;
-    transform: translate(-50%, 100%);
-    border-radius: 16px;
-    bottom: 1rem;
-    max-height: calc(100svh - 2rem);
-  }
-  .novae-sheet.modal-in {
-    transform: translate(-50%, 0);
-  }
-  .novae-sheet.modal-out {
-    transform: translate(-50%, 100%);
+.novae-fab {
+  position: fixed;
+  bottom: calc(var(--f7-tabbar-icons-height) + var(--safe-bottom) + 16px);
+  --f7-fab-bg-color: #000;
+  --f7-fab-text-color: #fff;
+}
+.dark .novae-fab { --f7-fab-bg-color: #fff; --f7-fab-text-color: #000; }
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-effect-fade { animation: none !important; }
+}
+@media (max-width: 47.99rem) {
+  [data-sheet-drag-region],
+  [data-sheet-surface] .detail-header {
+    touch-action: none;
   }
 }

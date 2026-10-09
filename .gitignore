@@ -1,9 +1,7 @@
 node_modules/
 dist/
 .next/
-.next-verify/
-.next-local-dev/
-.next-local-preview/
+.next-*/
 .novae-generate.lock/
 .novae-phone-preview/
 *.tsbuildinfo

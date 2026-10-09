@@ -1,18 +1,18 @@
 "use client";
 
 import * as React from "react";
-import { X } from "lucide-react";
+import { Icon, Navbar } from "framework7-react";
 import { ModalContext, ModalRoot } from "./modal-context";
 import { ModalSurface, type ModalSurfaceProps } from "./modal-surface";
 import { DialogDescription, DialogHeader, DialogTitle } from "./dialog";
-import { Button } from "./button";
+import { ToolbarButton } from "./toolbar-button";
+import { useNativeNavbarSize } from "./use-native-navbar";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 
 export const Sheet = ModalRoot;
 export const SheetDescription = DialogDescription;
 export const SheetTitle = DialogTitle;
-export const sheetCloseButtonClass = "size-11 shrink-0 md:size-9";
 export function useSheetClose() {
   return React.useContext(ModalContext)?.requestClose ?? null;
 }
@@ -20,37 +20,42 @@ export function SheetCloseButton({
   className,
   onClick,
   ...props
-}: Omit<React.ComponentProps<typeof Button>, "size" | "type" | "variant">) {
+}: Omit<React.ComponentProps<typeof ToolbarButton>, "size" | "type">) {
   const { t } = useI18n();
   const close = useSheetClose();
   if (!close) return null;
   return (
-    <Button
+    <ToolbarButton
       {...props}
       aria-label={t("common.close")}
-      className={cn(sheetCloseButtonClass, className)}
+      className={className}
       data-slot="dialog-close"
       size="icon"
       type="button"
-      variant="ghost"
       onClick={(event) => {
         onClick?.(event);
         if (!event.defaultPrevented) close();
       }}
     >
-      <X />
-    </Button>
+      <Icon f7="xmark" aria-hidden="true" />
+    </ToolbarButton>
   );
 }
 export function SheetHeader({
   children,
   ...props
 }: React.ComponentProps<typeof DialogHeader>) {
+  const navbarRef = React.useRef<{ el: HTMLElement | null }>({ el: null });
+  useNativeNavbarSize(navbarRef);
   return (
-    <DialogHeader {...props} data-sheet-drag-region="">
-      {children}
-      <SheetCloseButton className="absolute right-0 top-0 z-30" />
-    </DialogHeader>
+    <div {...props} data-slot="dialog-header" data-sheet-drag-region="">
+      <Navbar ref={navbarRef}>
+        <div slot="title">{children}</div>
+        <div slot="right">
+          <SheetCloseButton />
+        </div>
+      </Navbar>
+    </div>
   );
 }
 export function SheetContent({

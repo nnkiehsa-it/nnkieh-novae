@@ -4,12 +4,16 @@ import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 import { AlertCircle, Inbox, RefreshCw } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { createPortal } from "react-dom";
+import { Navbar, Subnavbar } from "framework7-react";
+import { useContext, useState } from "react";
+import { NativePageHeaderHost, NativeNavbarHost } from "./native-page-context";
+import { useNativeNavbar } from "./use-native-navbar";
+import { useFramework7Control } from "./use-framework7-control";
 import { timing } from "@/lib/motion-timing";
 import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { HeaderBackdrop } from "@/components/ui/header-backdrop";
 import { cn } from "@/lib/utils";
 
 export function PageHeader({
@@ -17,6 +21,8 @@ export function PageHeader({
   className,
   lead,
   title,
+  compactTitle,
+  subnavbar,
   titleAction,
   toolbar,
   portalHost,
@@ -32,6 +38,8 @@ export function PageHeader({
    */
   lead?: React.ReactNode;
   title?: React.ReactNode;
+  compactTitle?: string;
+  subnavbar?: React.ReactNode;
   titleAction?: React.ReactNode;
   /**
    * Search and sort controls. They join the same wrapping row as the title and the
@@ -43,66 +51,40 @@ export function PageHeader({
   portalHost?: HTMLElement | null;
 }) {
   useLocaleSubscription();
-  const embedded = portalHost !== undefined;
-  const Header = embedded ? "div" : "header";
-  const backdrop = embedded ? null : <HeaderBackdrop progressive />;
-  const render = (content: React.ReactNode) => embedded
-    ? portalHost ? createPortal(content, portalHost) : null
-    : content;
-  if (embedded) {
-    return render(<div className="flex items-center gap-2">{toolbar}{actions}</div>);
-  }
-  const heading = (
-    <div className="min-w-0 flex-1">
-      <h1 className="text-balance text-2xl font-semibold leading-8 tracking-[-0.035em]">
-        {title}
-      </h1>
-    </div>
-  );
-  const headingRow = title == null ? null : titleAction ? (
-    <div className={cn("flex min-w-0 items-center justify-between gap-3", toolbar && "order-1 w-full sm:w-auto sm:flex-1")}>
-      {heading}
-      <div className="shrink-0">{titleAction}</div>
-    </div>
-  ) : (
-    <div className={cn("min-w-0", toolbar && "order-1 w-full sm:w-auto sm:flex-1")}>
-      {heading}
-    </div>
-  );
+  const pageHost = useContext(NativePageHeaderHost);
+  const [navbarHost, setNavbarHost] = useState<HTMLElement | null>(null);
+  const navbarRef = useFramework7Control(setNavbarHost, undefined, {});
+  useNativeNavbar(navbarRef, Boolean(pageHost && title != null && portalHost === undefined), Boolean(subnavbar));
+  if (portalHost !== undefined)
+    return portalHost
+      ? createPortal(
+          <div className="flex items-center gap-2">
+            {toolbar}
+            {actions}
+          </div>,
+          portalHost,
+        )
+      : null;
   if (title == null && !actions && !toolbar && !lead) return null;
-  if (toolbar) {
-    return render(
-      <Header className={cn(!embedded && "page-header", "flex flex-wrap items-center gap-x-2 gap-y-3", className)}>
-        {backdrop}
-        {lead ? <div className="order-first w-full">{lead}</div> : null}
-        {headingRow}
-        {actions}
-        {toolbar}
-      </Header>
-    );
-  }
-  const titleRow = (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      {headingRow}
-      {actions ? (
-        <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:flex-1 sm:justify-end">
-          {actions}
-        </div>
-      ) : null}
-    </div>
+  const navbar = (
+    <NativeNavbarHost.Provider value={navbarHost}>
+      <Navbar large={title != null} ref={navbarRef}>
+        {lead ? <div slot="left">{lead}</div> : null}
+        {compactTitle || typeof title === "string" ? <div slot="title">{compactTitle ?? title}</div> : null}
+        {title != null ? <h1 slot="title-large">{title}</h1> : null}
+        {titleAction || actions || toolbar ? (
+          <div slot="right" className="flex items-center gap-2">
+            {titleAction}
+            {actions}
+            {toolbar}
+          </div>
+        ) : null}
+        {subnavbar ? <Subnavbar>{subnavbar}</Subnavbar> : null}
+      </Navbar>
+    </NativeNavbarHost.Provider>
   );
-  if (lead) {
-    return render(
-      <Header className={cn(!embedded && "page-header pb-4", "flex flex-col gap-4", className)}>
-        {backdrop}
-        {lead}
-        {titleRow}
-      </Header>
-    );
-  }
-  return render(
-    <Header className={cn(!embedded && "page-header pb-4", className)}>{backdrop}{titleRow}</Header>
-  );
+  if (pageHost !== undefined) return pageHost ? createPortal(navbar, pageHost) : null;
+  return <header className={cn("page-header", className)}>{navbar}</header>;
 }
 
 export function LoadingState({ rows = 5 }: { rows?: number }) {
@@ -162,25 +144,39 @@ export function ErrorStateContent({
         <AlertCircle className="size-5" />
       </div>
       <div>
-        <h2 className="font-semibold">{translate('ui.common.loadFailed')}</h2>
+        <h2 className="font-semibold">{translate("ui.common.loadFailed")}</h2>
         <p className="mt-1 max-w-lg text-sm leading-6 text-muted-foreground">
           {error}
         </p>
       </div>
       {onRetry ? (
         <Button variant="outline" onClick={onRetry}>
-          <RefreshCw />{translate('ui.common.reload')}</Button>
+          <RefreshCw />
+          {translate("ui.common.reload")}
+        </Button>
       ) : null}
     </div>
   );
 }
 
-export function EmptyState(props: React.ComponentProps<typeof EmptyStateContent>) {
-  return <Card className="gap-0 p-0"><EmptyStateContent {...props} /></Card>;
+export function EmptyState(
+  props: React.ComponentProps<typeof EmptyStateContent>,
+) {
+  return (
+    <Card className="gap-0 p-0">
+      <EmptyStateContent {...props} />
+    </Card>
+  );
 }
 
-export function ErrorState(props: React.ComponentProps<typeof ErrorStateContent>) {
-  return <Card className="gap-0 p-0"><ErrorStateContent {...props} /></Card>;
+export function ErrorState(
+  props: React.ComponentProps<typeof ErrorStateContent>,
+) {
+  return (
+    <Card className="gap-0 p-0">
+      <ErrorStateContent {...props} />
+    </Card>
+  );
 }
 
 export function BusyLabel({

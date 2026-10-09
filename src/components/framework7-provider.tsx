@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Framework7 from "framework7/lite";
 import Framework7React, { App, f7, f7ready } from "framework7-react";
 import type { View } from "framework7/types";
@@ -11,6 +11,16 @@ import Popup from "framework7/components/popup";
 import Popover from "framework7/components/popover";
 import Toast from "framework7/components/toast";
 import Tooltip from "framework7/components/tooltip";
+import Input from "framework7/components/input";
+import Toggle from "framework7/components/toggle";
+import Messagebar from "framework7/components/messagebar";
+import Progressbar from "framework7/components/progressbar";
+import SmartSelect from "framework7/components/smart-select";
+import PhotoBrowser from "framework7/components/photo-browser";
+import Swiper from "framework7/components/swiper";
+import Accordion from "framework7/components/accordion";
+import Searchbar from "framework7/components/searchbar";
+import { NativeModalLayers } from "./ui/native-modal-layers";
 import { useTheme } from "next-themes";
 
 // Framework7 installs plugins here; this API is not a React hook.
@@ -24,6 +34,15 @@ Framework7.use([
   Popover,
   Toast,
   Tooltip,
+  Input,
+  Toggle,
+  Messagebar,
+  Progressbar,
+  SmartSelect,
+  PhotoBrowser,
+  Swiper,
+  Accordion,
+  Searchbar,
 ]);
 
 function ThemeSync() {
@@ -36,15 +55,18 @@ function ThemeSync() {
 
 function NextView({ children }: { children: ReactNode }) {
   const element = useRef<HTMLDivElement>(null);
+  const [ready, setReady] = useState(false);
   useEffect(() => {
     let disposed = false;
     let view: View.View | undefined;
     f7ready((app) => {
-      if (!disposed)
+      if (!disposed) {
         view = app.views.create(element.current!, {
           main: true,
           router: false,
         });
+        setReady(true);
+      }
     });
     return () => {
       disposed = true;
@@ -55,7 +77,7 @@ function NextView({ children }: { children: ReactNode }) {
   // Keep the Next tree outside those parameters, including React dev owners.
   return (
     <div className="view view-main novae-view" ref={element}>
-      {children}
+      {ready ? children : <div className="app-start-surface">Novae</div>}
     </div>
   );
 }
@@ -67,11 +89,15 @@ export function Framework7Provider({ children }: { children: ReactNode }) {
       theme="ios"
       className="novae-root"
       colors={{ primary: "#007aff" }}
-      clicks={{ externalLinks: "a" }}
-      touch={{ activeState: false, touchRipple: false, touchHighlight: false }}
-      input={{ scrollIntoViewOnFocus: false }}
+      // Preserve Next/browser navigation while native hash controls reach F7.
+      clicks={{ externalLinks: "a[href]:not([href^='#'])" }}
+      actions={{ closeOnEscape: true }}
+      sheet={{ closeOnEscape: true }}
+      popup={{ closeOnEscape: true }}
+      popover={{ closeOnEscape: true }}
     >
       <ThemeSync />
+      <NativeModalLayers />
       <NextView>{children}</NextView>
     </App>
   );

@@ -11,6 +11,12 @@ import { SkeletonBadgeLabel } from "@/components/ui/skeleton-reveal";
 
 export type ContentStatus = IssueStatus | FacilityStatus;
 
+const nativeStatusColor: Record<ContentStatus, string> = {
+  "under-review": "orange", pending: "orange", processing: "blue",
+  completed: "green", "auto-rejected": "gray", "review-rejected": "red",
+  infeasible: "gray", "unable-to-handle": "gray",
+};
+
 // One colour per state, written out rather than composed, because Tailwind only
 // emits the classes it can read literally. A facility that cannot be resolved
 // carries the same tone as an infeasible proposal: the case is closed unfinished.
@@ -69,12 +75,8 @@ export function StatusBadge({
       : ISSUE_STATUS_LABELS[status as IssueStatus];
   return (
     <Badge
-      variant="outline"
-      className={cn(
-        "rounded-full border-current/10 px-2.5 py-1 font-semibold",
-        STATUS_SURFACE_CLASS[status],
-        className,
-      )}
+      color={nativeStatusColor[status]}
+      className={cn(className)}
     >
       <SkeletonBadgeLabel
         className="min-w-12"

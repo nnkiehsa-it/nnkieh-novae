@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { Preloader } from "framework7-react";
 
 export function LoadingSpinner({
   className,
@@ -15,13 +16,7 @@ export function LoadingSpinner({
       className={cn("t-loading-spinner", className)}
       data-slot="loading-spinner"
     >
-      <span className={cn("preloader size-5", iconClassName)}>
-        <span className="preloader-inner">
-          {Array.from({ length: 8 }, (_, index) => (
-            <span className="preloader-inner-line" key={index} />
-          ))}
-        </span>
-      </span>
+      <Preloader size={20} className={iconClassName} />
     </span>
   );
 }

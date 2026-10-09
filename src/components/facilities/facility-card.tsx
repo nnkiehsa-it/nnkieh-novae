@@ -44,7 +44,7 @@ export function FacilityCard({
           <span className="inline-flex min-w-0 flex-1 items-center gap-1 text-xs text-muted-foreground">
             <MapPin className="size-3.5 shrink-0" />
             <SkeletonReveal className="min-w-0" enabled={reveal} skeleton={<Skeleton className="h-4 w-24" />}>
-              <span className="block truncate">{facility.location}</span>
+              <span className="display-block truncate">{facility.location}</span>
             </SkeletonReveal>
           </span>
           <LikeActionButton

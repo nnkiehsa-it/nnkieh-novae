@@ -1,13 +1,21 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { ArrowLeft, Share2 } from "lucide-react";
+import { useRef, type ReactNode } from "react";
+import { Icon, Navbar } from "framework7-react";
 import { useI18n } from "@/i18n";
 import { useShareExitGuard } from "@/hooks/use-share-entry";
-import { useCloseRouteOverlay, useRouteOverlayLabel } from "@/components/detail-sheet";
-import { Button } from "@/components/ui/button";
+import {
+  useCloseRouteOverlay,
+  useRouteOverlayLabel,
+} from "@/components/detail-sheet";
+import { ToolbarButton } from "@/components/ui/toolbar-button";
+import { useNativeNavbarSize } from "@/components/ui/use-native-navbar";
 import { SheetCloseButton } from "@/components/ui/sheet";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function SecondaryToolbar({
   actions,
@@ -29,37 +37,35 @@ export function SecondaryToolbar({
   const closeOverlay = useCloseRouteOverlay();
   const overlayLabel = useRouteOverlayLabel();
   const { t } = useI18n();
-  return (
-    <div
-      className="flex h-9 items-center justify-between gap-3"
-      data-sheet-drag-region=""
-    >
-      {!closeOverlay ? <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            aria-label={backLabel}
-            disabled={backDisabled}
-            className="size-11 md:size-9"
-            onClick={() => guardBack(onBack)}
-            size="icon"
-            variant="ghost"
-          >
-            <ArrowLeft />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{backLabel}</TooltipContent>
-      </Tooltip> : null}
-      {overlayLabel ? <span className="min-w-0 flex-1 truncate text-left text-lg leading-none font-semibold">{overlayLabel}</span> : null}
-      <div className="ml-auto flex shrink-0 items-center gap-1">
+  const navbarRef = useRef<{ el: HTMLElement | null }>({ el: null });
+  useNativeNavbarSize(navbarRef, Boolean(closeOverlay));
+  if (!closeOverlay)
+    return (
+      <div className="flex items-center">
+        <ToolbarButton
+          aria-label={backLabel}
+          disabled={backDisabled}
+          onClick={() => guardBack(onBack)}
+          size="icon"
+        >
+          <Icon f7="chevron_left" aria-hidden="true" />
+        </ToolbarButton>
         {actions}
-        {closeOverlay ? <Tooltip>
-          <TooltipTrigger asChild>
-            <SheetCloseButton />
-          </TooltipTrigger>
-          <TooltipContent>{t("common.close")}</TooltipContent>
-        </Tooltip> : null}
       </div>
-    </div>
+    );
+  return (
+    <Navbar ref={navbarRef} data-sheet-drag-region="">
+      {overlayLabel ? <div slot="title">{overlayLabel}</div> : null}
+      <div slot="right" className="flex items-center gap-1">
+        {actions}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <SheetCloseButton />
+            </TooltipTrigger>
+            <TooltipContent>{t("common.close")}</TooltipContent>
+          </Tooltip>
+      </div>
+    </Navbar>
   );
 }
 
@@ -82,15 +88,13 @@ export function DetailToolbar({
         <>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
+              <ToolbarButton
                 aria-label={shareLabel}
-                className="size-11 md:size-9"
                 onClick={onShare}
                 size="icon"
-                variant="ghost"
               >
-                <Share2 />
-              </Button>
+                <Icon f7="square_arrow_up" aria-hidden="true" />
+              </ToolbarButton>
             </TooltipTrigger>
             <TooltipContent>{shareLabel}</TooltipContent>
           </Tooltip>

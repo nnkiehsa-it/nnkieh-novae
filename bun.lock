@@ -11,6 +11,7 @@
         "dompurify": "3.4.15",
         "firebase": "12.18.0",
         "framework7": "9.2.0",
+        "framework7-icons": "^5.0.5",
         "framework7-react": "9.2.0",
         "harmonyos-sans-webfont-splitted": "^1.2.1",
         "jose": "6.2.12",
@@ -779,6 +780,8 @@
     "framer-motion": ["framer-motion@13.2.0", "", { "dependencies": { "motion-dom": "^13.2.0", "motion-utils": "^13.0.0", "tslib": "^2.4.0" }, "peerDependencies": { "react": "^18.0.0 || ^19.0.0", "react-dom": "^18.0.0 || ^19.0.0" }, "optionalPeers": ["react", "react-dom"] }, "sha512-9E33ebgMaO33w1nN/jEdW8z3/GO483fMi4rqbMG9rt83XgW9QLKRe4NcmJ8s+fQ3O34++UHrIQwlIWGIWTITjA=="],
 
     "framework7": ["framework7@9.2.0", "", { "dependencies": { "dom7": "^4.0.6", "htm": "^3.1.1", "path-to-regexp": "^6.3.0", "skeleton-elements": "^4.0.1", "ssr-window": "^5.0.1", "swiper": "^12.1.2" } }, "sha512-vakFWISZt/61eYZhACeU7ji4OmX69hxLc70jE8QpLjYLoEXzKcboVA01GbPbavhM4pkgvoFWwvoklEv/fNB28w=="],
+
+    "framework7-icons": ["framework7-icons@5.0.5", "", {}, "sha512-bvHMLyujV9TFuudehd3ORZ/EvNp19Ir3ckVzYAOf3MkLymHba/9oHLsgopCh0x5UsrYZUpkrE+fd7ggj5y4wRw=="],
 
     "framework7-react": ["framework7-react@9.2.0", "", {}, "sha512-US8RnxWY/PV1ohYBYlt9D/wYhdjy2sD8CAStiSzLGoJTVdXFtGJBSIeFa1MtabcLL7x9cgC0bkjv+6lHXBQl8Q=="],
 

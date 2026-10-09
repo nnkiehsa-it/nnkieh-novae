@@ -2,6 +2,12 @@ import { act, createElement, type PropsWithChildren } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { CommentComposer } from "@/components/comments/comment-composer";
+import Framework7 from "framework7/lite";
+import Framework7React from "framework7-react";
+
+// Framework7 plugin registration is not a React hook.
+// eslint-disable-next-line react-hooks/rules-of-hooks
+Framework7.use(Framework7React);
 
 vi.mock("@/i18n", () => ({ t: (key: string) => key }));
 vi.mock("@/hooks/use-session", () => ({ useSession: () => ({ user: { displayName: "Member" } }) }));

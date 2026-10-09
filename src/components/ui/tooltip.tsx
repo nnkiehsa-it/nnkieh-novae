@@ -4,6 +4,7 @@ import * as React from "react";
 import { f7, f7ready } from "framework7-react";
 import type { Tooltip as TooltipType } from "framework7/types";
 import { Slot } from "./slot";
+import { Button } from "./button";
 
 const TooltipContext =
   React.createContext<React.RefObject<HTMLElement | null> | null>(null);
@@ -26,7 +27,7 @@ export function TooltipTrigger({
   ...props
 }: React.ComponentProps<"button"> & { asChild?: boolean }) {
   const target = React.useContext(TooltipContext);
-  const Comp = asChild ? Slot : "button";
+  const Comp = asChild ? Slot : Button;
   return (
     <Comp
       {...props}

@@ -5,9 +5,9 @@ import { X } from "lucide-react";
 import { Button } from "./button";
 import { ModalRoot, ModalTrigger, useModal } from "./modal-context";
 import { ModalSurface, type ModalSurfaceProps } from "./modal-surface";
-import { HeaderBackdrop } from "./header-backdrop";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
+import { DialogButtonsContext } from "./dialog-buttons-context";
 
 export const Dialog = ModalRoot;
 export const DialogTrigger = ModalTrigger;
@@ -29,8 +29,9 @@ export function DialogClose({
 export function DialogContent({
   children,
   showCloseButton = true,
+  footer,
   ...props
-}: ModalSurfaceProps & { showCloseButton?: boolean }) {
+}: ModalSurfaceProps & { showCloseButton?: boolean; footer?: React.ReactNode }) {
   const { t } = useI18n();
   return (
     <ModalSurface
@@ -38,7 +39,19 @@ export function DialogContent({
       data-slot="dialog-content"
       dismissible={showCloseButton}
     >
-      {children}
+      <div className="dialog-inner">
+        {React.Children.map(children, (child) =>
+          React.isValidElement(child) && child.type === DialogFooter
+            ? null
+            : child,
+        )}
+      </div>
+      {React.Children.map(children, (child) =>
+        React.isValidElement(child) && child.type === DialogFooter
+          ? child
+          : null,
+      )}
+      {footer}
       {showCloseButton ? (
         <DialogClose
           data-slot="dialog-close"
@@ -59,13 +72,8 @@ export function DialogHeader({
   ...props
 }: React.ComponentProps<"div">) {
   return (
-    <div
-      {...props}
-      data-slot="dialog-header"
-      className={cn("relative text-left", className)}
-    >
-      <HeaderBackdrop />
-      <div className="relative grid min-h-9 gap-2 pr-10">{children}</div>
+    <div {...props} data-slot="dialog-header" className={className}>
+      {children}
     </div>
   );
 }
@@ -80,12 +88,13 @@ export function DialogFooter({
     <div
       {...props}
       data-slot="dialog-footer"
-      className={cn("flex flex-wrap justify-end gap-2", className)}
+      className={cn("dialog-buttons", className)}
     >
-      {children}
+      <DialogButtonsContext.Provider value>{children}
       {showCloseButton ? (
         <DialogClose variant="outline">{t("common.close")}</DialogClose>
       ) : null}
+      </DialogButtonsContext.Provider>
     </div>
   );
 }
@@ -99,7 +108,7 @@ export function DialogTitle({
       {...props}
       id={state.titleId}
       data-slot="dialog-title"
-      className={cn("dialog-title text-lg font-semibold", className)}
+      className={cn("dialog-title", className)}
     />
   );
 }
@@ -113,7 +122,7 @@ export function DialogDescription({
       {...props}
       id={state.descriptionId}
       data-slot="dialog-description"
-      className={cn("dialog-text text-sm text-muted-foreground", className)}
+      className={cn("dialog-text", className)}
     />
   );
 }

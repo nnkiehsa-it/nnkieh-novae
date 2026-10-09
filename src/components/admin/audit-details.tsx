@@ -1,10 +1,11 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import { List } from "framework7-react";
+import { NativeAccordionItem } from "@/components/ui/native-accordion-item";
 import { useI18n } from "@/i18n";
 import { ACCOUNT_ACCESS_DURATION_KEYS, ACCOUNT_ACCESS_PRESET_KEYS } from "@/constants/account-access";
 import { describeSettingKey } from "@/components/admin/platform-setting-fields";
-import { ListCustomRow, RowInner, rowClass } from "@/components/ui/list";
+import { ListCustomRow } from "@/components/ui/list";
 
 const CATEGORY_FIELDS: Record<string, string> = {
   label: "ui.common.name", id: "ui.common.slug", readAccess: "ui.admin.readAccess",
@@ -32,20 +33,15 @@ function AuditField({ name, path, value, labels, title }: {
   const complex = value !== null && typeof value === "object";
   if (complex) {
     const fields = Array.isArray(value) ? value.map((item, index) => [String(index), item] as const) : Object.entries(value);
-    return <details className="group/audit">
-      <summary className={`${rowClass} list-none cursor-pointer`}>
-        <RowInner label={<span className="break-words">{label}</span>}
-          value={t("ui.adminConsole.detailItemCount", { count: fields.length })}
-          trailing={<ChevronDown aria-hidden className="size-4 shrink-0 text-muted-foreground transition-transform group-open/audit:rotate-180" />} />
-      </summary>
-      <div className="ml-4">
+    return <NativeAccordionItem label={label} value={t("ui.adminConsole.detailItemCount", { count: fields.length })}>
+      <List className="m-0"><ul>
         {fields.map(([key, item]) => {
           const record = item && typeof item === "object" ? item as Record<string, unknown> : null;
           const itemTitle = Array.isArray(value) ? String(record?.label ?? record?.uid ?? t("admin.auditItem", { index: Number(key) + 1 })) : undefined;
           return <AuditField key={key} name={key} path={`${path}.${key}`} value={item} labels={labels} title={itemTitle} />;
         })}
-      </div>
-    </details>;
+      </ul></List>
+    </NativeAccordionItem>;
   }
   let shown = value === null || value === undefined || value === "" ? "—" : String(value);
   if (typeof value === "boolean") shown = t(value ? "ui.common.enabled" : "ui.common.disabled");

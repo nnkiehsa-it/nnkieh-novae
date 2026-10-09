@@ -51,6 +51,7 @@ const withSerwist = withSerwistInit({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  devIndicators: process.env.NOVAE_TEST_PUBLIC_ORIGIN ? false : undefined,
   allowedDevOrigins: ["127.0.0.1", ...(process.env.NOVAE_TEST_PUBLIC_ORIGIN ? [new URL(process.env.NOVAE_TEST_PUBLIC_ORIGIN).hostname] : [])],
   distDir: process.env.NOVAE_NEXT_DIST_DIR || ".next",
   env: publicEnvironment,

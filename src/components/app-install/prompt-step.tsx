@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { motion } from "motion/react";
 import { timing } from "@/lib/motion-timing";
-import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 /**
  * One screen of the install conversation.
@@ -22,7 +22,6 @@ const stepVariants = {
 };
 
 export function PromptStep({
-  actions,
   description,
   direction,
   icon,
@@ -30,7 +29,6 @@ export function PromptStep({
   steps,
   title,
 }: {
-  actions: ReactNode;
   description: string;
   direction: 1 | -1;
   icon: ReactNode;
@@ -75,7 +73,6 @@ export function PromptStep({
         </p>
       ) : null}
 
-      <DialogFooter>{actions}</DialogFooter>
     </motion.div>
   );
 }

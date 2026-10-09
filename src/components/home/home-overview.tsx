@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { Block, BlockTitle } from "framework7-react";
 import { MessageCircle, Megaphone, Wrench } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { useCategories } from "@/hooks/use-categories";
@@ -37,13 +37,8 @@ export function HomeOverview() {
       <PageHeader title="Novae" />
       <div className="mx-auto max-w-3xl space-y-6 pb-4 sm:space-y-8 md:pt-5">
         <section>
-          <div className="flex items-center gap-4 sm:gap-8">
-            <div className="min-w-0 flex-1 space-y-3">
-              <h2 className="text-balance text-[1.75rem] font-semibold leading-tight tracking-[-0.035em] sm:text-3xl">{t("ui.home.startTitle")}</h2>
-              <p className="text-sm leading-6 text-muted-foreground">{t(descriptionKey)}</p>
-            </div>
-            <Image alt="" aria-hidden src="/home-start.webp" width={384} height={384} sizes="(max-width: 639px) 96px, 128px" loading="eager" className="h-auto w-24 shrink-0 dark:invert sm:w-32" />
-          </div>
+          <BlockTitle medium className="mx-0 mt-0"><h2>{t("ui.home.startTitle")}</h2></BlockTitle>
+          <Block className="m-0 px-0"><p>{t(descriptionKey)}</p></Block>
         </section>
         <HomeEntryList entries={entries} label={t("ui.nav.feed")} />
         <HomeStatusOverview />

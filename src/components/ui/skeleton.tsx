@@ -1,25 +1,11 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
-import { cn } from "@/lib/utils";
+import { SkeletonBlock } from "framework7-react";
+import type { ComponentProps, ComponentType } from "react";
 
-function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
-  const element = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    // A shared document clock keeps all placeholders in the same pulse phase,
-    // including those arriving in a streamed/preloaded route.
-    element.current?.getAnimations({ subtree: true }).forEach((animation) => {
-      animation.startTime = 0;
-    });
-  }, []);
-  return (
-    <div
-      ref={element}
-      data-slot="skeleton"
-      className={cn("t-skeleton rounded-md bg-muted/55", className)}
-      {...props}
-    />
-  );
+// The library runtime defaults these props; its published types mark them required.
+const NativeSkeleton = SkeletonBlock as ComponentType<Partial<ComponentProps<typeof SkeletonBlock>>>;
+
+export function Skeleton(props: React.ComponentProps<"div">) {
+  return <NativeSkeleton {...props} effect="fade" data-slot="skeleton" />;
 }
-
-export { Skeleton };

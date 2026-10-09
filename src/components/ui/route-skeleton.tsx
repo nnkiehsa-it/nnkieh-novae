@@ -1,8 +1,8 @@
 "use client";
 
-import { CircleCheck, CircleDot, Plus } from "lucide-react";
+import { CircleCheck, CircleDot } from "lucide-react";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
-import { ToolbarButton } from "@/components/ui/toolbar-button";
+import { FabLink } from "@/components/ui/fab-link";
 import { FeedList } from "@/components/ui/feed-list";
 import { FeedToolbar } from "@/components/ui/feed-toolbar";
 import { DetailLayout } from "@/components/ui/detail-layout";
@@ -32,7 +32,6 @@ function StableTabs({ kind }: { kind: FeedSkeletonKind }) {
           ? translate("ui.facility.statusFilter")
           : translate("ui.issue.statusFilter")
       }
-      className="order-2 sm:order-3"
       compact
       disabled
       onValueChange={() => undefined}
@@ -68,22 +67,7 @@ export function ListRouteSkeleton({
   return (
     <div className="space-y-5" aria-busy="true" aria-label={translate("ui.common.loading")}>
       <PageHeader
-        actions={
-          kind !== "announcement" ? (
-            <>
-              {showCreate ? (
-                <ToolbarButton aria-label={translate(createKeys[kind])} className="order-3 ml-auto opacity-100 sm:order-2 sm:ml-0" disabled size="adaptive">
-                  <Plus /><span className="hidden sm:inline">{translate(createKeys[kind])}</span>
-                </ToolbarButton>
-              ) : null}
-              <StableTabs kind={kind} />
-            </>
-          ) : showCreate ? (
-            <ToolbarButton className="opacity-100" disabled size="default">
-              <Plus />{translate(createKeys[kind])}
-            </ToolbarButton>
-          ) : undefined
-        }
+        actions={showCreate ? <FabLink href="#" disabled label={translate(createKeys[kind])} /> : undefined}
         title={title || translate(listTitleKeys[kind])}
         toolbar={filters ? (
           <FeedToolbar
@@ -94,6 +78,7 @@ export function ListRouteSkeleton({
           />
         ) : undefined}
       />
+      {filters ? <div className="flex justify-end"><StableTabs kind={kind} /></div> : null}
       <FeedList items={[]} kind={kind} loading showProgress={showProgress} />
     </div>
   );

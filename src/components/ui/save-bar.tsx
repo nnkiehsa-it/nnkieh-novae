@@ -3,6 +3,7 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import { AnimatePresence, motion } from "motion/react";
+import { Toolbar } from "framework7-react";
 
 import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import { Button } from "@/components/ui/button";
@@ -56,7 +57,7 @@ export function SaveBar({
       animate={{ opacity: 1, y: 0 }}
       aria-live="polite"
       className={cn(
-        "surface-floating sticky bottom-[calc(var(--mobile-nav-height)+var(--mobile-nav-bottom-gap)+max(0.75rem,var(--safe-bottom)))] z-30 flex flex-wrap items-center gap-2 px-4 py-3 md:bottom-4",
+        "sticky bottom-[calc(var(--mobile-nav-height)+var(--mobile-nav-bottom-gap))] z-30 md:bottom-0",
         className,
       )}
       exit={travel}
@@ -64,6 +65,8 @@ export function SaveBar({
       role="status"
       transition={timing("sheet")}
     >
+      <Toolbar position="bottom" className="relative h-auto">
+      <div className="flex w-full flex-wrap items-center gap-2 py-3">
       {error ? (
         <div className="w-full space-y-2">
           <p className="text-sm text-destructive" role="alert">{error}</p>
@@ -97,6 +100,8 @@ export function SaveBar({
         ) : null}
         {translate("ui.common.save")}
       </Button>
+      </div>
+      </Toolbar>
     </motion.div>
       ) : null}
     </AnimatePresence>

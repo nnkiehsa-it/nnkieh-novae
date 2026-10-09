@@ -1,108 +1,56 @@
 "use client";
 
-import * as React from "react";
-
+import type { ComponentProps } from "react";
+import {
+  Card as F7Card,
+  CardHeader as F7CardHeader,
+  CardContent as F7CardContent,
+  CardFooter as F7CardFooter,
+} from "framework7-react";
+import { useFramework7Control } from "./use-framework7-control";
 import { cn } from "@/lib/utils";
 
+type DivProps = ComponentProps<"div">;
 export function getCardClassName(className?: string) {
-  return cn(
-    "m-0 flex flex-col gap-6 rounded-xl bg-card px-0 py-5 text-card-foreground",
-    className,
-  );
+  return cn("m-0 flex flex-col", className);
 }
-
-function Card({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<"div">) {
+export function Card({ className, ref, ...props }: DivProps) {
+  const f7Ref = useFramework7Control(ref, undefined, {});
   return (
-    <div
+    <F7Card
+      {...props}
+      ref={f7Ref as NonNullable<ComponentProps<typeof F7Card>["ref"]>}
       data-slot="card"
-      className={cn("card", getCardClassName(className))}
-      {...props}
-    >
-      {children}
-    </div>
-  );
-}
-
-function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-header"
-      className={cn(
-        "@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] sm:px-7",
-        className,
-      )}
-      {...props}
+      className={getCardClassName(className)}
     />
   );
 }
-
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+export function CardHeader({ ref, ...props }: DivProps) {
+  const f7Ref = useFramework7Control(ref, undefined, {});
+  return <F7CardHeader {...props} ref={f7Ref} data-slot="card-header" />;
+}
+export function CardContent({ ref, ...props }: DivProps) {
+  const f7Ref = useFramework7Control(ref, undefined, {});
   return (
-    <div
-      data-slot="card-title"
-      className={cn("leading-none font-semibold", className)}
-      {...props}
-    />
+    <F7CardContent {...props} ref={f7Ref} padding data-slot="card-content" />
   );
 }
-
-function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
+export function CardFooter({ ref, ...props }: DivProps) {
+  const f7Ref = useFramework7Control(ref, undefined, {});
+  return <F7CardFooter {...props} ref={f7Ref} data-slot="card-footer" />;
+}
+export function CardTitle(props: DivProps) {
+  return <div {...props} data-slot="card-title" />;
+}
+export function CardDescription(props: DivProps) {
   return (
     <div
+      {...props}
       data-slot="card-description"
-      className={cn("text-sm text-muted-foreground", className)}
-      {...props}
+      className={cn("text-color-gray", props.className)}
     />
   );
 }
-
-function CardAction({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-action"
-      className={cn(
-        "col-start-2 row-span-2 row-start-1 self-start justify-self-end",
-        className,
-      )}
-      {...props}
-    />
-  );
+export function CardAction(props: DivProps) {
+  return <div {...props} data-slot="card-action" />;
 }
-
-function CardContent({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-content"
-      className={cn("px-6 sm:px-7", className)}
-      {...props}
-    />
-  );
-}
-
-function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-footer"
-      className={cn(
-        "flex items-center px-6 [.border-t]:pt-6 sm:px-7",
-        className,
-      )}
-      {...props}
-    />
-  );
-}
-
-export {
-  Card,
-  CardHeader,
-  CardFooter,
-  CardTitle,
-  CardAction,
-  CardDescription,
-  CardContent,
-};
-

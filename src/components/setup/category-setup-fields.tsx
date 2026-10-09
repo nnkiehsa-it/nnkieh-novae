@@ -13,6 +13,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { ListSection } from "@/components/ui/list";
+import { ListSwitchRow } from "@/components/ui/list-controls";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChoiceSelect } from "@/components/ui/choice-select";
 
@@ -274,10 +276,7 @@ function ToggleField({
   onCheckedChange: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex min-h-11 items-center justify-between gap-3 rounded-full bg-card px-5 text-sm">
-      <span>{label}</span>
-      <Switch checked={checked} onCheckedChange={onCheckedChange} />
-    </label>
+    <ListSection><ListSwitchRow checked={checked} label={label} name={label} onCheckedChange={onCheckedChange} /></ListSection>
   );
 }
 

@@ -1,7 +1,8 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { Page } from "framework7-react";
+import { useState, type ReactNode } from "react";
+import { Page, PageContent } from "framework7-react";
+import { NativePageHeaderHost } from "@/components/ui/native-page-context";
 
 import { useSurfaceRoute } from "@/hooks/use-surface-route";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,7 @@ export function RouteSurface({
   className?: string;
 }) {
   const { direction, surface } = useSurfaceRoute();
+  const [headerHost, setHeaderHost] = useState<HTMLElement | null>(null);
 
   return (
     // The first page of a session has no direction and no entrance: it arrived
@@ -36,11 +38,14 @@ export function RouteSurface({
     // still assembling itself.
     <Page pageContent={false}
       key={surface}
-      className={cn("route-page novae-page", className)}
+      className="route-page novae-page"
       data-route-direction={direction ?? undefined}
       data-route-path={surface}
     >
-      {children}
+      <div className="native-navbar-host" ref={setHeaderHost} />
+      <PageContent className={cn("novae-page-content", className)}>
+        <NativePageHeaderHost.Provider value={headerHost}><div className="native-page-body">{children}</div></NativePageHeaderHost.Provider>
+      </PageContent>
     </Page>
   );
 }

@@ -7,7 +7,6 @@ import { useCloseRouteOverlay } from "@/components/detail-sheet";
 import { SecondaryToolbar } from "@/components/detail-toolbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { HeaderBackdrop } from "@/components/ui/header-backdrop";
 import { BusyLabel, PageHeader } from "@/components/ui/page-state";
 
 /**
@@ -73,10 +72,9 @@ export function ComposerLayout({
     return (
       <div>
         <header className="detail-header">
-          <HeaderBackdrop />
           {toolbar}
         </header>
-        <div className="pt-2">{form}</div>
+        <div className="p-4">{form}</div>
       </div>
     );
   }

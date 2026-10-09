@@ -5,7 +5,7 @@ import * as React from "react";
 import { MoreHorizontal, Trash2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { ToolbarButton } from "@/components/ui/toolbar-button";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -73,14 +73,12 @@ export function DetailActionsMenu({
         title={translate("ui.common.moreActions")}
         tooltip={translate("ui.common.moreActions")}
         trigger={
-          <Button
+          <ToolbarButton
             aria-label={translate("ui.common.moreActions")}
-            className="size-11 md:size-9"
             size="icon"
-            variant="ghost"
           >
             <MoreHorizontal />
-          </Button>
+          </ToolbarButton>
         }
       />
       <AlertDialog onOpenChange={setConfirming} open={confirming}>

@@ -1,12 +1,13 @@
 "use client";
 
-import * as React from "react";
-import { ChevronDown, Check } from "lucide-react";
-import { rowClass } from "./list";
-import { Button } from "./button";
-import { Popover, PopoverContent, PopoverTrigger } from "./popover";
-import { cn } from "@/lib/utils";
+import { useEffect, useRef, type ReactNode, type ComponentProps } from "react";
+import { Button, Link, ListItem, f7 } from "framework7-react";
+import type { SmartSelect } from "framework7/types";
+import { ChevronDown } from "lucide-react";
+import { useI18n } from "@/i18n";
 import { useCompactViewport } from "./use-compact-viewport";
+import { cn } from "@/lib/utils";
+import { useFramework7Control, useFramework7ListControl } from "./use-framework7-control";
 
 export interface ChoiceOption {
   disabled?: boolean;
@@ -29,96 +30,103 @@ export function ChoiceSelect({
   ariaCurrent?: "page";
   ariaLabel: string;
   className?: string;
-  controlLabel?: "" | "heading";
+  controlLabel?: "" | "heading" | "toolbar";
   disabled?: boolean;
   onValueChange: (value: string) => void;
   options: readonly ChoiceOption[];
   size?: "sm" | "default";
   title: string;
-  trigger?: (selected: ChoiceOption | undefined) => React.ReactNode;
+  trigger?: (selected: ChoiceOption | undefined) => ReactNode;
   value: string;
 }) {
-  const [open, setOpen] = React.useState(false);
+  const { t } = useI18n();
   const compact = useCompactViewport();
+  const element = useFramework7Control<HTMLElement>(undefined, undefined, {
+    disabled: controlLabel ? undefined : disabled,
+    "aria-disabled": disabled,
+  });
+  const select = useRef<SmartSelect.SmartSelect | null>(null);
+  useEffect(() => {
+    select.current = f7.smartSelect.create({
+      el: element.current.el!,
+      openIn: compact ? "sheet" : "popover",
+      setValueText: false,
+      pageTitle: title,
+      closeOnSelect: true,
+      sheetBackdrop: true,
+      sheetCloseLinkText: t("common.close"),
+      routableModals: false,
+      inputIconPosition: "end",
+    });
+    return () => {
+      select.current?.close();
+      select.current?.destroy();
+      select.current = null;
+    };
+  }, [compact, element, t, title]);
   const selected = options.find((option) => option.value === value);
+  const content = (
+    <>
+      <select
+        value={value}
+        aria-label={ariaLabel}
+        onChange={(event) => onValueChange(event.target.value)}
+      >
+        {options.map((option) => (
+          <option
+            key={option.value}
+            value={option.value}
+            disabled={option.disabled}
+          >
+            {option.label}
+          </option>
+        ))}
+      </select>
+      {trigger ? trigger(selected) : selected?.label}
+      {controlLabel !== "toolbar" ? <ChevronDown aria-hidden className="size-4" /> : null}
+    </>
+  );
+  const attributes = {
+    "aria-label": ariaLabel,
+    "aria-current": ariaCurrent,
+    "aria-haspopup": "dialog" as const,
+    "data-slot": "select-trigger",
+    "data-displayed-active": ariaCurrent === "page",
+    "data-control-label": controlLabel,
+    role: "combobox",
+  };
+  if (controlLabel)
+    return (
+      <Link
+        {...attributes}
+        ref={element as NonNullable<ComponentProps<typeof Link>["ref"]>}
+        className={cn("smart-select", className)}
+        style={controlLabel === "heading" ? { color: "inherit" } : undefined}
+        iconOnly={controlLabel === "toolbar"}
+        href="#"
+        onClick={(event) => {
+          event.preventDefault();
+          if (!disabled) select.current!.open();
+        }}
+      >
+        {content}
+      </Link>
+    );
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          aria-current={ariaCurrent}
-          aria-label={ariaLabel}
-          role="combobox"
-          aria-haspopup="listbox"
-          className={cn("justify-between", className)}
-          data-control-label={controlLabel}
-          data-slot="select-trigger"
-          data-displayed-active={ariaCurrent === "page"}
-          disabled={disabled}
-          size={size}
-          variant="ghost"
-        >
-          {trigger ? (
-            trigger(selected)
-          ) : (
-            <span className="min-w-0 truncate">{selected?.label}</span>
-          )}
-          <ChevronDown className="size-4 shrink-0" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent aria-label={title} title={title}>
-        <div
-          role="listbox"
-          aria-label={title}
-          className={cn(compact && "sheet-body min-h-0 overflow-y-auto")}
-          data-slot={compact ? "sheet-body" : undefined}
-          onKeyDown={(event) => {
-            const entries = [
-              ...event.currentTarget.querySelectorAll<HTMLButtonElement>(
-                "button:not(:disabled)",
-              ),
-            ];
-            const current = entries.indexOf(
-              document.activeElement as HTMLButtonElement,
-            );
-            const next =
-              event.key === "ArrowDown"
-                ? (current + 1) % entries.length
-                : event.key === "ArrowUp"
-                  ? (current + entries.length - 1) % entries.length
-                  : event.key === "Home"
-                    ? 0
-                    : event.key === "End"
-                      ? entries.length - 1
-                      : null;
-            if (next === null || !entries.length) return;
-            event.preventDefault();
-            entries[next].focus();
-          }}
-        >
-          {options.map((option) => (
-            <button
-              type="button"
-              role="option"
-              aria-selected={option.value === value}
-              className="item-link flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-accent disabled:opacity-50"
-              disabled={option.disabled}
-              key={option.value}
-              onClick={() => {
-                onValueChange(option.value);
-                setOpen(false);
-              }}
-            >
-              <span className="flex-1">{option.label}</span>
-              {option.value === value ? (
-                <Check className="size-4 text-tint-content" />
-              ) : null}
-            </button>
-          ))}
-        </div>
-      </PopoverContent>
-    </Popover>
+    <Button
+      {...attributes}
+      ref={element}
+      className={cn("smart-select", className)}
+      type="button"
+      disabled={disabled}
+      small={size === "sm"}
+      onClick={() => select.current!.open()}
+    >
+      {content}
+    </Button>
   );
 }
+
 export function ListPicker({
   disabled,
   label,
@@ -134,28 +142,48 @@ export function ListPicker({
   placeholder?: string;
   value: string;
 }) {
+  const compact = useCompactViewport();
+  const { t } = useI18n();
+  const id = useFramework7ListControl({
+    role: "combobox",
+    "aria-label": label,
+    "aria-haspopup": "dialog",
+    "aria-disabled": disabled,
+  });
   return (
-    <ChoiceSelect
-      ariaLabel={label}
-      className={cn(
-        rowClass,
-        "h-auto justify-between rounded-none border-0 bg-transparent px-0 shadow-none",
-      )}
-      disabled={disabled}
-      onValueChange={onChange}
-      options={options}
+    <ListItem
+      id={id}
       title={label}
-      value={value}
-      trigger={(selected) => (
-        <>
-          <span className="min-w-0 flex-1 text-left text-[0.9375rem] leading-6">
-            {label}
-          </span>
-          <span className="shrink-0 text-muted-foreground">
-            {selected?.label ?? placeholder}
-          </span>
-        </>
-      )}
-    />
+      after={
+        options.find((option) => option.value === value)?.label ?? placeholder
+      }
+      disabled={disabled}
+      smartSelect
+      smartSelectParams={{
+        openIn: compact ? "sheet" : "popover",
+        closeOnSelect: true,
+        sheetBackdrop: true,
+        pageTitle: label,
+        sheetCloseLinkText: t("common.close"),
+        routableModals: false,
+        inputIconPosition: "end",
+      }}
+    >
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        {options.map((option) => (
+          <option
+            value={option.value}
+            key={option.value}
+            disabled={option.disabled}
+          >
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </ListItem>
   );
 }

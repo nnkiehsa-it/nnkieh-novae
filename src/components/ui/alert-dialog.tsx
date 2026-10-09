@@ -11,6 +11,7 @@ export const AlertDialogTrigger = ModalTrigger;
 export function AlertDialogContent({
   className,
   size = "default",
+  children,
   ...props
 }: ModalSurfaceProps & { size?: "default" | "sm" }) {
   return (
@@ -20,7 +21,20 @@ export function AlertDialogContent({
       data-slot="alert-dialog-content"
       data-size={size}
       className={cn(size === "sm" && "max-w-xs", className)}
-    />
+    >
+      <div className="dialog-inner">
+        {React.Children.map(children, (child) =>
+          React.isValidElement(child) && child.type === AlertDialogFooter
+            ? null
+            : child,
+        )}
+      </div>
+      {React.Children.map(children, (child) =>
+        React.isValidElement(child) && child.type === AlertDialogFooter
+          ? child
+          : null,
+      )}
+    </ModalSurface>
   );
 }
 export function AlertDialogHeader({
@@ -28,11 +42,7 @@ export function AlertDialogHeader({
   ...props
 }: React.ComponentProps<"div">) {
   return (
-    <div
-      {...props}
-      data-slot="alert-dialog-header"
-      className={cn("grid gap-2", className)}
-    />
+    <div {...props} data-slot="alert-dialog-header" className={className} />
   );
 }
 export function AlertDialogFooter({
@@ -43,10 +53,7 @@ export function AlertDialogFooter({
     <div
       {...props}
       data-slot="alert-dialog-footer"
-      className={cn(
-        "dialog-buttons flex flex-wrap justify-end gap-2",
-        className,
-      )}
+      className={cn("dialog-buttons", className)}
     />
   );
 }
@@ -60,7 +67,7 @@ export function AlertDialogTitle({
       {...props}
       id={state.titleId}
       data-slot="alert-dialog-title"
-      className={cn("dialog-title text-lg font-semibold", className)}
+      className={cn("dialog-title", className)}
     />
   );
 }
@@ -74,7 +81,7 @@ export function AlertDialogDescription({
       {...props}
       id={state.descriptionId}
       data-slot="alert-dialog-description"
-      className={cn("dialog-text text-sm text-muted-foreground", className)}
+      className={cn("dialog-text", className)}
     />
   );
 }
@@ -95,12 +102,15 @@ export function AlertDialogMedia({
 }
 export function AlertDialogAction({
   onClick,
+  className,
   ...props
 }: React.ComponentProps<typeof Button>) {
   const state = useModal();
   return (
     <Button
       {...props}
+      size="lg"
+      className={cn("button-round dialog-button", className)}
       data-slot="alert-dialog-action"
       onClick={(event) => {
         onClick?.(event);
@@ -112,7 +122,7 @@ export function AlertDialogAction({
 export function AlertDialogCancel(props: React.ComponentProps<typeof Button>) {
   return (
     <AlertDialogAction
-      variant="outline"
+      variant="secondary"
       {...props}
       data-slot="alert-dialog-cancel"
     />

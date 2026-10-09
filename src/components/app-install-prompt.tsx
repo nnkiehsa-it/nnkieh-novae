@@ -10,7 +10,7 @@ import {
 import { resolveShareExit } from "@/hooks/share-entry-store";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { PromptStep } from "@/components/app-install/prompt-step";
 
 type PromptView = "ask" | "home" | "guide" | "dismiss";
@@ -213,10 +213,9 @@ export function AppInstallPrompt() {
 
   return (
     <Dialog open={prompt.open}>
-      <DialogContent showCloseButton={false}>
+      <DialogContent showCloseButton={false} footer={<DialogFooter>{step.actions}</DialogFooter>}>
         <AnimatePresence custom={direction} initial={false} mode="wait">
           <PromptStep
-            actions={step.actions}
             description={step.description}
             direction={direction}
             icon={step.icon}

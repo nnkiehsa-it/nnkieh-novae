@@ -5,10 +5,6 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import {
-  Bell,
-  House,
-  List,
-  ChevronDown,
   LogOut,
   Moon,
   Settings,
@@ -48,7 +44,7 @@ function NotificationDot({ unread }: { unread: boolean }) {
   );
 }
 
-function AccountMenu({ compact = false }: { compact?: boolean }) {
+function AccountMenu() {
   const session = useSession();
   const { resolvedTheme, setTheme } = useTheme();
   const photo = session.customPhotoUrl || undefined;
@@ -111,30 +107,15 @@ function AccountMenu({ compact = false }: { compact?: boolean }) {
       trigger={
         <Button
           aria-label={translate('ui.nav.accountMenu')}
-          className={
-            compact
-              ? "size-9 rounded-full p-0"
-              : "h-auto w-full justify-start gap-2.5 rounded-xl p-2 text-left"
-          }
-          variant="ghost"
+          className="w-full justify-start"
+          size="lg"
+          variant="secondary"
         >
           <Avatar className="size-8">
             <AvatarImage alt={name} src={photo} />
             <AvatarFallback>{name.slice(0, 1).toUpperCase()}</AvatarFallback>
           </Avatar>
-          {compact ? null : (
-            <>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium">
-                  {name}
-                </span>
-                <span className="block truncate text-xs text-muted-foreground">
-                  {session.user?.email}
-                </span>
-              </span>
-              <ChevronDown className="t-disclosure-icon size-3.5 text-muted-foreground" />
-            </>
-          )}
+          <span className="truncate">{name}</span>
         </Button>
       }
     />
@@ -161,23 +142,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     () => [
       {
         href: homeHref,
-        icon: <House className="size-[1.125rem]" />,
+        icon: "house",
+        iconActive: "house_fill",
         label: t('ui.nav.home'),
       },
       {
         href: "/feed",
-        icon: <List className="size-[1.125rem]" />,
+        icon: "list_bullet",
         label: t('ui.nav.feed'),
       },
       {
         href: "/notifications",
-        icon: <Bell className="size-[1.125rem]" />,
+        icon: "bell",
+        iconActive: "bell_fill",
         label: t('ui.nav.notifications'),
         badge: <NotificationDot unread={unread} />,
       },
       {
         href: "/settings",
-        icon: <Settings className="size-[1.125rem]" />,
+        icon: "gear_alt",
+        iconActive: "gear_alt_fill",
         label: t('ui.nav.settings'),
       },
     ],
@@ -207,7 +191,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="app-main-column min-w-0 md:col-start-2">
         <main className="app-viewport">
           <RouteSurface
-            className={`pt-[var(--page-header-top)] md:pb-12 ${
+            className={`md:pb-12 ${
               showMobileNavigation
                 ? "pb-[calc(var(--mobile-nav-height)+var(--mobile-nav-bottom-gap)+1.4rem)]"
                 : "pb-[max(2rem,var(--safe-bottom))]"
@@ -220,7 +204,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <MobileNavigationPortal>
           <div
             aria-hidden={!showMobileNavigation}
-            className="app-mobile-nav fixed z-30 bg-card md:hidden"
+            className="app-mobile-nav fixed z-30 md:hidden"
             data-visible={showMobileNavigation}
             inert={!showMobileNavigation}
           >

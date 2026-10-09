@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 
 import { ModalRoot, ModalTrigger } from "./modal-context";
@@ -11,7 +10,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useCompactViewport } from "./use-compact-viewport";
@@ -80,42 +78,28 @@ export function ActionMenu({
           {description ? (
             <>
               <DropdownMenuLabel className="font-normal">
-                <span className="block truncate text-sm font-medium">
+                <span className="display-block truncate text-sm font-medium">
                   {title}
                 </span>
-                <span className="block truncate text-xs text-muted-foreground">
+                <span className="display-block truncate text-xs text-muted-foreground">
                   {description}
                 </span>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator />
             </>
           ) : null}
           {items.map((item) =>
-            item.href ? (
-              <DropdownMenuItem
-                asChild
-                className={cn(
-                  item.tone === "destructive" && "text-destructive",
-                )}
-                key={item.key}
-              >
-                <Link href={item.href}>
-                  <item.icon />
-                  {item.label}
-                </Link>
-              </DropdownMenuItem>
-            ) : (
               <DropdownMenuItem
                 className={cn(
                   item.tone === "destructive" && "text-destructive",
                 )}
                 key={item.key}
+                href={item.href}
+                icon={item.icon}
                 onSelect={item.onSelect}
               >
-                <item.icon />
                 {item.label}
               </DropdownMenuItem>
-            ),
+            ,
           )}
         </DropdownMenuContent>
       </DropdownMenu>

@@ -1,31 +1,92 @@
 "use client";
 
-import Link, { useLinkStatus } from "next/link";
-import type { ReactNode } from "react";
+import { useEffect, useTransition, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { Icon, Link, List, ListItem, Toolbar, ToolbarPane } from "framework7-react";
 import { useI18n } from "@/i18n";
-import { cn } from "@/lib/utils";
+import { useFramework7ListControl } from "./ui/use-framework7-control";
 
 export interface LiquidNavItem {
   activePathPrefix?: string;
   badge?: ReactNode;
   href: string;
-  icon: ReactNode;
+  icon: string;
+  iconActive?: string;
   label: string;
 }
-function NavigationContents({ item }: { item: LiquidNavItem }) {
-  const { pending } = useLinkStatus();
+
+function Destination({
+  item,
+  active,
+  index,
+  vertical,
+}: {
+  item: LiquidNavItem;
+  active: boolean;
+  index: number;
+  vertical: boolean;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  useEffect(() => {
+    router.prefetch(item.href);
+  }, [item.href, router]);
+  const onClick = (event: React.MouseEvent) => {
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    )
+      return;
+    event.preventDefault();
+    startTransition(() => router.push(item.href));
+  };
+  const icon = (
+    <Icon aria-hidden="true" f7={active ? (item.iconActive ?? item.icon) : item.icon}>
+      {item.badge}
+    </Icon>
+  );
+  const attributes = {
+    "aria-current": active ? ("page" as const) : undefined,
+    "data-liquid-nav-index": index,
+    "data-active": active,
+  };
+  if (vertical)
+    return (
+      <DesktopDestination
+        {...attributes}
+        link={item.href}
+        selected={active}
+        onClick={onClick}
+        title={item.label}
+      >
+        <span slot="media">{icon}</span>
+        <span slot="after" aria-busy={pending} />
+      </DesktopDestination>
+    );
   return (
-    <>
-      <span className="relative shrink-0" data-nav-icon>
-        {item.icon}
-        {item.badge}
-      </span>
-      <span className="tabbar-label min-w-0 truncate aria-busy:opacity-50" aria-busy={pending}>
+    <Link
+      {...attributes}
+      href={item.href}
+      tabLink
+      tabLinkActive={active}
+      onClick={onClick}
+    >
+      {icon}
+      <span className="tabbar-label" aria-busy={pending}>
         {item.label}
       </span>
-    </>
+    </Link>
   );
 }
+
+function DesktopDestination({ children, ...props }: React.ComponentProps<typeof ListItem> & { "aria-current"?: "page" }) {
+  const id = useFramework7ListControl({ "aria-current": props["aria-current"] });
+  return <ListItem {...props} id={id}>{children}</ListItem>;
+}
+
 export function LiquidNav({
   className,
   items,
@@ -38,51 +99,37 @@ export function LiquidNav({
   vertical?: boolean;
 }) {
   const { t } = useI18n();
+  const links = items.map((item, index) => {
+    const prefix = item.activePathPrefix ?? item.href;
+    return (
+      <Destination
+        key={item.href}
+        item={item}
+        index={index}
+        vertical={vertical}
+        active={
+          pathname === item.href ||
+          pathname === prefix ||
+          pathname.startsWith(`${prefix}/`)
+        }
+      />
+    );
+  });
   return (
     <nav
       aria-label={t("ui.nav.primary")}
       data-primary-navigation
-      className={cn(
-        vertical
-          ? "list menu-list m-0 grid gap-1"
-          : "toolbar tabbar tabbar-icons",
-        className,
-      )}
+      className={className}
     >
-      <div className={cn(vertical ? "grid gap-1" : "toolbar-inner")}>
-        {items.map((item, index) => {
-          const active =
-            pathname === item.href ||
-            pathname.startsWith(`${item.href}/`) ||
-            Boolean(
-              item.activePathPrefix &&
-              (pathname === item.activePathPrefix ||
-                pathname.startsWith(`${item.activePathPrefix}/`)),
-            );
-          return (
-            <Link
-              aria-current={active ? "page" : undefined}
-              data-liquid-nav-index={index}
-              data-active={active}
-              className={cn(
-                "t-primary-nav-link min-w-0",
-                vertical
-                  ? "item-link flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm"
-                  : "tab-link flex flex-1 flex-col items-center justify-center gap-1 px-1 text-[0.6875rem]",
-                active
-                  ? "tab-link-active text-tint-content"
-                  : "text-muted-foreground",
-                active && vertical && "bg-accent",
-              )}
-              href={item.href}
-              key={item.href}
-              prefetch
-            >
-              <NavigationContents item={item} />
-            </Link>
-          );
-        })}
-      </div>
+      {vertical ? (
+        <List menuList noChevron className="m-0">
+          <ul>{links}</ul>
+        </List>
+      ) : (
+        <Toolbar tabbar icons position="bottom">
+          <ToolbarPane>{links}</ToolbarPane>
+        </Toolbar>
+      )}
     </nav>
   );
 }

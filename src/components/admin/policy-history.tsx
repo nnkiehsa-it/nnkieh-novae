@@ -31,8 +31,8 @@ export function PolicyHistory({ entries, showHeader = true }: {
             key={entry.id}
             label={
               <>
-                <span className="block">{entry.reason}</span>
-                <span className="mt-0.5 block text-xs text-muted-foreground">
+                <span className="display-block">{entry.reason}</span>
+                <span className="mt-0.5 display-block text-xs text-muted-foreground">
                   {t("admin.policyRevision", { revision: entry.revision })} ·{" "}
                   {formatDate(new Date(entry.createdAt))}
                 </span>

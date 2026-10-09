@@ -43,9 +43,8 @@ export default [
   {
     ignores: [
       ".next/**",
-      ".next-verify/**",
-      ".next-local-dev/**",
-      ".next-local-preview/**",
+      ".next-*/**",
+      ".novae-phone-preview/**",
       ".vercel/**",
       "**/dist/**",
       "temp/**",

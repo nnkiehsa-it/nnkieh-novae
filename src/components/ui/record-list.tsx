@@ -1,14 +1,14 @@
 "use client";
 
-import { Search, X } from "lucide-react";
 import type * as React from "react";
 
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchField } from "@/components/ui/search-field";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ErrorStateContent } from "@/components/ui/page-state";
 import { SkeletonRows } from "@/components/ui/skeleton-rows";
+import { ListSection, ListCustomRow } from "@/components/ui/list";
 
 /**
  * The frame a searched, paged administrative record list wears.
@@ -63,23 +63,8 @@ export function RecordList({
           if (!disabled && !loading) onSearch();
         }}
       >
-        <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            aria-label={searchPlaceholder}
-            className="pl-9 pr-10"
-            disabled={disabled}
-            onChange={(event) => onQueryChange(event.target.value)}
-            placeholder={searchPlaceholder}
-            value={query}
-          />
-          {query && onReset ? (
-            <Button aria-label={translate("admin.resetSearch")} className="absolute right-1 top-1/2 -translate-y-1/2"
-              disabled={loading || disabled} onClick={onReset} size="icon-sm" type="button" variant="ghost">
-              <X aria-hidden className="size-4" />
-            </Button>
-          ) : null}
-        </div>
+        <SearchField label={searchPlaceholder} disabled={disabled} className="min-w-0 flex-1"
+          onChange={onQueryChange} onClear={onReset} value={query} />
         <Button disabled={loading || disabled} type="submit" variant="secondary">
           {loading ? <LoadingSpinner /> : translate("ui.common.search")}
         </Button>
@@ -92,19 +77,19 @@ export function RecordList({
         </div>
       ) : null}
 
-      <div className="rule-card !px-0">
+      <ListSection>
         {error && count === 0 ? (
-          <ErrorStateContent error={error} onRetry={onSearch} />
+          <ListCustomRow><ErrorStateContent error={error} onRetry={onSearch} /></ListCustomRow>
         ) : loading && count === 0 ? (
-          <SkeletonRows />
+          <ListCustomRow><SkeletonRows /></ListCustomRow>
         ) : count === 0 ? (
-          <p className="px-[var(--row-gutter)] py-10 text-center text-sm text-muted-foreground">
+          <ListCustomRow><p className="py-10 text-center text-sm text-muted-foreground">
             {emptyLabel}
-          </p>
+          </p></ListCustomRow>
         ) : (
           children
         )}
-      </div>
+      </ListSection>
 
       <nav
         aria-label={translate("ui.operations.pagination")}

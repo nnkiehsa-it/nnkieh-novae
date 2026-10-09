@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const projectRoot = process.cwd();
@@ -57,15 +57,29 @@ const selectedFaces = (
   }))
 ).flat();
 
-await rm(outputRoot, { force: true, recursive: true });
 await mkdir(outputRoot, { recursive: true });
 
+// A live preview imports this CSS. Keep existing assets available throughout
+// generation, and do not trigger HMR for byte-identical generated artifacts.
+async function writeChanged(file, content) {
+  const bytes = Buffer.from(content);
+  const previous = await readFile(file).catch((error) => {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  });
+  if (previous?.equals(bytes)) return;
+  await writeFile(`${file}.tmp`, bytes);
+  await rename(`${file}.tmp`, file);
+}
+
 const outputFaces = [];
+const outputNames = new Set(["harmonyos-sans-tc.css"]);
 for (const { face, name, weight } of selectedFaces) {
   const relativeFontPath = face.match(/url\("([^"]+)"\)/u)?.[1];
   if (!relativeFontPath) continue;
   const fileName = path.basename(relativeFontPath).replace(/^[^_]+/u, name);
-  await cp(path.resolve(fontRoot, relativeFontPath), path.join(outputRoot, fileName));
+  outputNames.add(fileName);
+  await writeChanged(path.join(outputRoot, fileName), await readFile(path.resolve(fontRoot, relativeFontPath)));
   outputFaces.push(
     face
       .replace(relativeFontPath, `./${fileName}`)
@@ -73,11 +87,13 @@ for (const { face, name, weight } of selectedFaces) {
   );
 }
 
-await writeFile(
+await writeChanged(
   path.join(outputRoot, "harmonyos-sans-tc.css"),
   `${outputFaces.join("\n")}\n`,
-  "utf8",
 );
+for (const name of await readdir(outputRoot)) {
+  if (!outputNames.has(name)) await rm(path.join(outputRoot, name));
+}
 console.info(
   `Generated HarmonyOS Sans TC subset: ${characters.length} characters across ${outputFaces.length} font shards.`,
 );

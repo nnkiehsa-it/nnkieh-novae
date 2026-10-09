@@ -1,84 +1,56 @@
 "use client";
 
-import * as React from "react";
+import type { ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { List, ListItem } from "framework7-react";
+import type { LucideIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
-import { Slot } from "./slot";
 import { useModal } from "./modal-context";
-import { cn } from "@/lib/utils";
+import { useFramework7ListControl } from "./use-framework7-control";
 
 export const DropdownMenu = Popover;
 export const DropdownMenuTrigger = PopoverTrigger;
-export function DropdownMenuContent({
-  onKeyDown,
-  ...props
-}: React.ComponentProps<typeof PopoverContent>) {
-  return (
-    <PopoverContent
-      {...props}
-      role="menu"
-      data-slot="dropdown-menu-content"
-      onKeyDown={(event) => {
-        onKeyDown?.(event);
-        const entries = [
-          ...event.currentTarget.querySelectorAll<HTMLElement>(
-            '[role="menuitem"]',
-          ),
-        ];
-        const current = entries.indexOf(document.activeElement as HTMLElement);
-        const next =
-          event.key === "ArrowDown"
-            ? (current + 1) % entries.length
-            : event.key === "ArrowUp"
-              ? (current + entries.length - 1) % entries.length
-              : event.key === "Home"
-                ? 0
-                : event.key === "End"
-                  ? entries.length - 1
-                  : null;
-        if (next === null || !entries.length) return;
-        event.preventDefault();
-        entries[next].focus();
-      }}
-    />
-  );
+export function DropdownMenuContent({ children, onKeyDown, ...props }: React.ComponentProps<typeof PopoverContent>) {
+  return <PopoverContent {...props} role="menu" data-slot="dropdown-menu-content"
+    onKeyDown={(event) => {
+      onKeyDown?.(event);
+      const entries = [...event.currentTarget.querySelectorAll<HTMLElement>('[role="menuitem"]')];
+      const current = entries.indexOf(document.activeElement as HTMLElement);
+      const next = event.key === "ArrowDown" ? (current + 1) % entries.length
+        : event.key === "ArrowUp" ? (current + entries.length - 1) % entries.length
+        : event.key === "Home" ? 0 : event.key === "End" ? entries.length - 1 : null;
+      if (next === null || !entries.length) return;
+      event.preventDefault();
+      entries[next].focus();
+    }}>
+    <List noChevron dividers className="m-0"><ul>{children}</ul></List>
+  </PopoverContent>;
 }
-export function DropdownMenuItem({
-  asChild,
-  onSelect,
-  className,
-  onClick,
-  ...props
-}: Omit<React.ComponentProps<"button">, "onSelect"> & {
-  asChild?: boolean;
-  onSelect?: (event: Event) => void;
+
+export function DropdownMenuItem({ children, href, icon: Icon, onSelect, className }: {
+  children: ReactNode; href?: string; icon?: LucideIcon;
+  onSelect?: (event: Event) => void; className?: string;
 }) {
+  const router = useRouter();
   const state = useModal();
-  const Comp = asChild ? Slot : "button";
-  return (
-    <Comp
-      {...props}
-      role="menuitem"
-      data-slot="dropdown-menu-item"
-      className={cn(
-        "item-link flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-accent [&_svg]:size-4",
-        className,
-      )}
-      onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
-        onClick?.(event);
-        if (event.defaultPrevented) return;
-        const select = new Event("select", { cancelable: true });
-        onSelect?.(select);
-        if (!select.defaultPrevented) state.requestClose();
-      }}
-    />
-  );
+  const id = useFramework7ListControl({ role: "menuitem" });
+  return <ListItem link={href ?? "#"} noChevron
+    id={id}
+    onClick={(event: React.MouseEvent) => {
+      if (href && (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)) return;
+      event.preventDefault();
+      const select = new Event("select", { cancelable: true });
+      onSelect?.(select);
+      if (!select.defaultPrevented) {
+        state.requestClose();
+        if (href) router.push(href);
+      }
+    }}>
+    {Icon ? <Icon slot="media" className="size-5" /> : null}
+    <span slot="title" className={className}>{children}</span>
+  </ListItem>;
 }
-export function DropdownMenuLabel({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
-  return <div {...props} className={cn("px-3 py-2 text-sm", className)} />;
-}
-export function DropdownMenuSeparator() {
-  return <div role="separator" className="my-1 h-px bg-border" />;
+
+export function DropdownMenuLabel({ children, className }: { children: ReactNode; className?: string }) {
+  return <ListItem><div slot="inner" className={className}>{children}</div></ListItem>;
 }

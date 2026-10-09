@@ -1,7 +1,7 @@
 "use client";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
-import { Clock3, ShieldCheck } from "lucide-react";
+import { Clock3, Eye, ShieldCheck } from "lucide-react";
 import { toast } from "@/lib/toast";
 import type { IssueRecord } from "@/types";
 import type { getIssueOperationTimeItems } from "@/lib/issue-timeline";
@@ -13,7 +13,10 @@ import { IssueSupportPanel } from "@/components/issues/issue-support-panel";
 import type { DetailPanel } from "@/components/ui/detail-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
-import { Switch } from "@/components/ui/switch";
+import { ToolbarButton } from "@/components/ui/toolbar-button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ListSection } from "@/components/ui/list";
+import { ListSwitchRow } from "@/components/ui/list-controls";
 
 export function IssueDetailToolbar({
   authorVisible,
@@ -41,14 +44,12 @@ export function IssueDetailToolbar({
         issue.canDeleteIssue || canManage ? (
           <>
             {canManage && issue.canViewAuthor ? (
-              <label className="flex h-11 shrink-0 cursor-pointer items-center gap-2 px-2 text-xs font-medium text-muted-foreground md:h-9">
-                <span>{translate('issue.showAuthor')}</span>
-                <Switch
-                  checked={authorVisible}
-                  onCheckedChange={onAuthorVisibilityChange}
-                  size="sm"
-                />
-              </label>
+              <Popover><PopoverTrigger asChild><ToolbarButton aria-label={translate('issue.showAuthor')}><Eye /></ToolbarButton></PopoverTrigger>
+                <PopoverContent title={translate('issue.showAuthor')}>
+                  <ListSection><ListSwitchRow checked={authorVisible} label={translate('issue.showAuthor')}
+                    name={translate('issue.showAuthor')} onCheckedChange={onAuthorVisibilityChange} /></ListSection>
+                </PopoverContent>
+              </Popover>
             ) : null}
             <DetailActionsMenu
               items={
