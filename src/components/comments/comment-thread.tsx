@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { ChevronDown, Reply, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { AnimatePresence, motion } from "motion/react";
 import { timing } from "@/lib/motion-timing";
 import { t as translate } from "@/i18n";

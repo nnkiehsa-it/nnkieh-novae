@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Page } from "framework7-react";
 
 import { useSurfaceRoute } from "@/hooks/use-surface-route";
 import { cn } from "@/lib/utils";
@@ -33,13 +34,13 @@ export function RouteSurface({
     // The first page of a session has no direction and no entrance: it arrived
     // with the document, and animating it would make the app look like it was
     // still assembling itself.
-    <div
+    <Page pageContent={false}
       key={surface}
-      className={cn("route-page", className)}
+      className={cn("route-page novae-page", className)}
       data-route-direction={direction ?? undefined}
       data-route-path={surface}
     >
       {children}
-    </div>
+    </Page>
   );
 }

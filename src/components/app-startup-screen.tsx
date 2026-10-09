@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { t as translate, useI18n as useLocaleSubscription, type MessageKey } from "@/i18n";
 import { BrandLockup } from "@/components/ui/brand";
 import { Button } from "@/components/ui/button";

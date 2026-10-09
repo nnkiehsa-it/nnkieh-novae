@@ -1,47 +1,13 @@
 "use client";
 
-import * as React from "react";
-import { Popover as PopoverPrimitive } from "radix-ui";
-
+import { ModalRoot, ModalTrigger } from "./modal-context";
+import { ModalSurface, type ModalSurfaceProps } from "./modal-surface";
 import { cn } from "@/lib/utils";
 
-function Popover({ ...props }: React.ComponentProps<typeof PopoverPrimitive.Root>) {
-  return <PopoverPrimitive.Root data-slot="popover" {...props} />;
+export const Popover = ModalRoot;
+export const PopoverTrigger = ModalTrigger;
+export function PopoverContent({ className, align: _align, sideOffset: _offset, ...props }: ModalSurfaceProps & {
+  align?: "start" | "center" | "end"; sideOffset?: number;
+}) {
+  return <ModalSurface {...props} kind="popover" data-slot="popover-content" className={cn("w-72", className)} />;
 }
-
-function PopoverTrigger({
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {
-  return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />;
-}
-
-function PopoverAnchor({
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Anchor>) {
-  return <PopoverPrimitive.Anchor data-slot="popover-anchor" {...props} />;
-}
-
-function PopoverContent({
-  align = "end",
-  className,
-  sideOffset = 6,
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Content>) {
-  return (
-    <PopoverPrimitive.Portal>
-      <PopoverPrimitive.Content
-        align={align}
-        collisionPadding={16}
-        data-slot="popover-content"
-        sideOffset={sideOffset}
-        className={cn(
-          "t-dropdown z-50 w-72 max-w-[calc(100vw-2rem)] origin-(--radix-popover-content-transform-origin) rounded-xl bg-popover p-4 text-popover-foreground shadow-[var(--shadow-floating)] outline-none",
-          className,
-        )}
-        {...props}
-      />
-    </PopoverPrimitive.Portal>
-  );
-}
-
-export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger };

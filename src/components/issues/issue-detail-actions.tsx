@@ -2,7 +2,7 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import { Clock3, ShieldCheck } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { IssueRecord } from "@/types";
 import type { getIssueOperationTimeItems } from "@/lib/issue-timeline";
 import { formatDate } from "@/lib/format";

@@ -2,7 +2,7 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import { Clock3, Hand } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useFacilityDetail } from "@/hooks/use-facility-detail";
 import { FacilityDetailContent } from "@/components/facilities/facility-detail-content";
 import { AnimatedNumber } from "@/components/motion/animated-number";

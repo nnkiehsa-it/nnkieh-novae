@@ -1,100 +1,31 @@
 "use client";
 
 import * as React from "react";
-import { Tooltip as TooltipPrimitive } from "radix-ui";
+import { f7, f7ready } from "framework7-react";
+import type { Tooltip as TooltipType } from "framework7/types";
+import { Slot } from "./slot";
 
-import { cn } from "@/lib/utils";
-
-const TOOLTIP_POINTER_QUERY = "(hover: hover) and (pointer: fine)";
-const TooltipEnabledContext = React.createContext(false);
-
-function subscribeToTooltipCapability(onChange: () => void) {
-  const media = window.matchMedia(TOOLTIP_POINTER_QUERY);
-  media.addEventListener("change", onChange);
-  return () => media.removeEventListener("change", onChange);
+const TooltipContext = React.createContext<React.RefObject<HTMLElement | null> | null>(null);
+export function TooltipProvider({ children }: { children: React.ReactNode; delayDuration?: number }) { return children; }
+export function Tooltip({ children }: { children: React.ReactNode }) {
+  const target = React.useRef<HTMLElement>(null);
+  return <TooltipContext.Provider value={target}>{children}</TooltipContext.Provider>;
 }
-
-function getTooltipCapability() {
-  return window.matchMedia(TOOLTIP_POINTER_QUERY).matches;
+export function TooltipTrigger({ asChild, ...props }: React.ComponentProps<"button"> & { asChild?: boolean }) {
+  const target = React.useContext(TooltipContext);
+  const Comp = asChild ? Slot : "button";
+  return <Comp {...props} ref={target as React.RefObject<HTMLButtonElement | null>} />;
 }
-
-function TooltipProvider({
-  delayDuration = 80,
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
-  const enabled = React.useSyncExternalStore(
-    subscribeToTooltipCapability,
-    getTooltipCapability,
-    () => false,
-  );
-  return (
-    <TooltipEnabledContext.Provider value={enabled}>
-      <TooltipPrimitive.Provider
-        data-slot="tooltip-provider"
-        delayDuration={delayDuration}
-        {...props}
-      />
-    </TooltipEnabledContext.Provider>
-  );
-}
-
-function Tooltip({
-  defaultOpen = false,
-  onOpenChange,
-  open: controlledOpen,
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Root>) {
-  const enabled = React.useContext(TooltipEnabledContext);
-  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen);
-  const isControlled = controlledOpen !== undefined;
-  const open = enabled && (isControlled ? controlledOpen : uncontrolledOpen);
-
+export function TooltipContent({ children }: { children: React.ReactNode; className?: string; sideOffset?: number }) {
+  const target = React.useContext(TooltipContext);
   React.useEffect(() => {
-    if (!enabled && !isControlled) setUncontrolledOpen(false);
-  }, [enabled, isControlled]);
-
-  return (
-    <TooltipPrimitive.Root
-      data-slot="tooltip"
-      {...props}
-      onOpenChange={(nextOpen) => {
-        if (!enabled) return;
-        if (!isControlled) setUncontrolledOpen(nextOpen);
-        onOpenChange?.(nextOpen);
-      }}
-      open={open}
-    />
-  );
+    let disposed = false;
+    let tooltip: TooltipType.Tooltip | null = null;
+    f7ready(() => {
+      if (disposed || !target?.current || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+      tooltip = f7.tooltip.create({ targetEl: target.current, text: String(children), trigger: "hover", offset: 8 });
+    });
+    return () => { disposed = true; tooltip?.destroy(); };
+  }, [children, target]);
+  return null;
 }
-
-function TooltipTrigger({
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
-}
-
-function TooltipContent({
-  className,
-  sideOffset = 8,
-  children,
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Content>) {
-  return (
-    <TooltipPrimitive.Portal>
-      <TooltipPrimitive.Content
-        data-slot="tooltip-content"
-        sideOffset={sideOffset}
-        className={cn(
-          "t-tooltip z-50 w-fit origin-(--radix-tooltip-content-transform-origin) rounded-lg bg-popover px-3 py-2 text-xs text-balance text-popover-foreground shadow-[var(--shadow-floating)]",
-          className,
-        )}
-        {...props}
-      >
-        {children}
-        <TooltipPrimitive.Arrow className="z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px] bg-popover fill-popover" />
-      </TooltipPrimitive.Content>
-    </TooltipPrimitive.Portal>
-  );
-}
-
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider };

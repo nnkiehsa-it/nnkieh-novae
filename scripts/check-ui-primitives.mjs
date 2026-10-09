@@ -136,7 +136,14 @@ for (const file of workerFiles) {
   checkModuleLength(path.relative(root, file), await readFile(file, "utf8"));
 }
 
-for (const orphan of findOrphanCssClassSelectors(stylesheets, productSources)) {
+// Framework7 adds state classes and inner elements at runtime. Their source of
+// truth is the installed library, while product classes remain checked normally.
+const framework7Styles = await readFile(path.join(sourceRoot, "styles/framework7.css"), "utf8");
+const framework7ClassSources = await Promise.all(
+  [...framework7Styles.matchAll(/@import "(framework7\/[^"]*)"/gu)].map(async ([, specifier]) =>
+    readFile(new URL(import.meta.resolve(specifier)), "utf8")),
+);
+for (const orphan of findOrphanCssClassSelectors(stylesheets, [...productSources, ...framework7ClassSources])) {
   errors.push(
     `${orphan.locations.join(", ")} defines orphan CSS selector .${orphan.className}`,
   );

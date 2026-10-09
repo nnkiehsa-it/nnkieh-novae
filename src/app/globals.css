@@ -1,7 +1,7 @@
 @import "../assets/fonts/harmonyos-sans-tc/harmonyos-sans-tc.css";
+@layer theme, base, framework7, components, utilities;
 @import "tailwindcss";
-@import "../styles/heroui.css";
-@import "tw-animate-css";
+@import "../styles/framework7.css";
 @import "../generated/motion-ladder.css";
 @import "../styles/motion.css";
 
@@ -41,8 +41,7 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --font-sans:
-    "HarmonyOS Sans TC", var(--font-inter), "PingFang TC", "Microsoft JhengHei",
-    ui-sans-serif, system-ui, sans-serif;
+    -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang TC", "HarmonyOS Sans TC", sans-serif;
   --font-mono:
     var(--font-roboto-mono), ui-monospace, SFMono-Regular, Consolas, monospace;
   --radius-xs: 0.5rem;
@@ -56,13 +55,13 @@
 
 :root {
   color-scheme: light;
-  --background: #e9edf4;
-  --foreground: #101828;
-  --card: #fdfefe;
-  --card-foreground: #101828;
-  --popover: #fdfefe;
-  --popover-foreground: #101828;
-  --accent: #1557d5;
+  --background: #f2f2f7;
+  --foreground: #1c1c1e;
+  --card: #ffffff;
+  --card-foreground: #1c1c1e;
+  --popover: #ffffff;
+  --popover-foreground: #1c1c1e;
+  --accent: #0066d6;
   --accent-foreground: #f7f9ff;
   --action: var(--card);
   --action-foreground: var(--card-foreground);
@@ -78,7 +77,7 @@
   --secondary-foreground: #26364c;
   --secondary-hover: color-mix(in oklab, var(--secondary) 94%, var(--secondary-foreground) 6%);
   --muted: #edf2f8;
-  --muted-foreground: #566477;
+  --muted-foreground: #636366;
   --interaction: #e3eaf3;
   --interaction-foreground: #101828;
   --destructive: #c93434;
@@ -124,7 +123,7 @@
   --row-gutter: 1.5rem;
   --row-padding-block: 0.75rem;
   --backdrop: rgb(16 24 40 / 32%);
-  --radius: 1.25rem;
+  --radius: 1rem;
   --shadow-control: 0 1px 2px rgb(16 40 80 / 4%);
   --shadow-card: 0 2px 5px rgb(16 40 80 / 3%);
   --shadow-floating:
@@ -137,8 +136,8 @@
   --control-label-size: 0.8125rem;
   --safe-left: env(safe-area-inset-left, 0px);
   --app-fixed-viewport-height: 100svh;
-  --mobile-nav-height: 3.875rem;
-  --mobile-nav-bottom-gap: 1.125rem;
+  --mobile-nav-height: 3.5rem;
+  --mobile-nav-bottom-gap: var(--safe-bottom);
   --page-header-top: max(1rem, var(--safe-top));
   /* How far below the top of the screen a sheet stops. The page behind it
      settles at `--safe-top` plus a tenth of an inch, so this leaves a
@@ -153,11 +152,11 @@
      not blue-grey; the product accent is the only chromatic UI tint. */
   --background: #000000;
   --foreground: #f5f7fb;
-  --card: #161618;
+  --card: #1c1c1e;
   --card-foreground: #f5f7fb;
-  --popover: #1c1c1f;
+  --popover: #2c2c2e;
   --popover-foreground: #f5f7fb;
-  --accent: #5d8ff0;
+  --accent: #6ca9ff;
   --accent-foreground: #050505;
   --tint-content: var(--accent);
   --tint-surface: color-mix(in srgb, var(--accent) 13%, var(--card));
@@ -287,8 +286,7 @@ body {
   color: var(--foreground);
   transition: background-color var(--motion-sheet) var(--ease-nav);
   font-family:
-    "HarmonyOS Sans TC", var(--font-inter), "PingFang TC", "Microsoft JhengHei",
-    ui-sans-serif, system-ui, sans-serif;
+    -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang TC", "HarmonyOS Sans TC", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
@@ -609,7 +607,7 @@ html[data-input-modality="pointer"] :focus-visible {
   --header-veil: var(--popover);
 }
 
-[data-slot="dialog-content"].t-sheet .detail-header {
+[data-sheet-surface] .detail-header {
   --header-top: 0px;
   --header-bleed: 0px;
   top: calc(-1 * var(--dialog-pad));
@@ -646,23 +644,23 @@ html[data-input-modality="pointer"] :focus-visible {
   --header-veil: var(--surface-stage);
 }
 
-.t-sheet [data-slot="dialog-header"] > div {
+[data-sheet-surface] [data-slot="dialog-header"] > div {
   padding-right: 3rem;
 }
 
 @media (max-width: 47.99rem) {
-  .t-sheet [data-slot="dialog-header"] > div {
+  [data-sheet-surface] [data-slot="dialog-header"] > div {
     min-height: 2.75rem;
   }
 }
 
 .app-mobile-nav {
   box-sizing: border-box;
-  right: max(1rem, var(--safe-right));
+  right: 0;
   top: calc(var(--app-fixed-viewport-height) - var(--mobile-nav-height) - var(--mobile-nav-bottom-gap));
   bottom: auto;
-  left: max(1rem, var(--safe-left));
-  height: var(--mobile-nav-height);
+  left: 0;
+  height: calc(var(--mobile-nav-height) + var(--safe-bottom));
   /* The dock is present or it is not. It belongs to the route, and a route
      change is already an animation: the page arriving covers it, the page
      being dismissed slides off it. */
@@ -692,7 +690,7 @@ html[data-input-modality="pointer"] :focus-visible {
 }
 
 .app-mobile-nav [data-liquid-nav-index] {
-  border-radius: 9999px;
+  border-radius: 0;
 }
 
 .app-mobile-nav [data-liquid-nav-index] > span:last-child {
@@ -718,15 +716,6 @@ html[data-input-modality="pointer"] :focus-visible {
     max(0.75rem, var(--safe-bottom)) +
     1.25rem
   );
-}
-
-@media (max-width: 47.99rem) {
-  body:has(.app-mobile-nav[data-visible="true"])
-    [data-sonner-toaster][data-y-position="bottom"] {
-    bottom: calc(
-      var(--mobile-nav-height) + var(--mobile-nav-bottom-gap) + 0.75rem
-    ) !important;
-  }
 }
 
 @media (min-width: 48rem) {

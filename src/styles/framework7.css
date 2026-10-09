@@ -1,0 +1,81 @@
+@import "framework7/css" layer(framework7);
+@import "framework7/components/card/css" layer(framework7);
+@import "framework7/components/input/css" layer(framework7);
+@import "framework7/components/toggle/css" layer(framework7);
+@import "framework7/components/dialog/css" layer(framework7);
+@import "framework7/components/sheet/css" layer(framework7);
+@import "framework7/components/popover/css" layer(framework7);
+@import "framework7/components/toast/css" layer(framework7);
+@import "framework7/components/tooltip/css" layer(framework7);
+@import "framework7/components/preloader/css" layer(framework7);
+@import "framework7/components/progressbar/css" layer(framework7);
+
+/* Next owns URL/history and document scroll. Framework7 owns the UI runtime. */
+html, body { height: auto; overflow-y: auto; }
+.novae-root, .novae-view {
+  position: relative;
+  height: auto;
+  min-height: 100svh;
+  overflow: visible;
+}
+.novae-root { height: 100svh; }
+.novae-page {
+  position: relative;
+  height: auto;
+  min-height: 100svh;
+  overflow: visible;
+}
+:root, .ios {
+  --f7-font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang TC", "HarmonyOS Sans TC", sans-serif;
+  --f7-theme-color: #007aff;
+  --f7-theme-color-rgb: 0, 122, 255;
+  --f7-page-bg-color: var(--background);
+  --f7-text-color: var(--foreground);
+  --f7-card-bg-color: var(--card);
+  --f7-card-border-radius: 16px;
+  --f7-card-box-shadow: none;
+  --f7-list-bg-color: var(--card);
+  --f7-list-border-color: var(--rule);
+  --f7-list-item-border-color: var(--rule);
+  --f7-list-inset-border-radius: 16px;
+  --f7-button-font-size: 15px;
+  --f7-button-height: 44px;
+  --f7-button-border-radius: 12px;
+  --f7-button-text-color: var(--tint-content);
+  --f7-input-text-color: var(--foreground);
+  --f7-input-placeholder-color: var(--muted-foreground);
+  --f7-input-bg-color: var(--card);
+  --f7-dialog-bg-color: var(--popover);
+  --f7-dialog-text-color: var(--foreground);
+  --f7-sheet-bg-color: var(--background);
+  --f7-popover-bg-color: var(--popover);
+  --f7-tooltip-bg-color: var(--foreground);
+  --f7-tooltip-text-color: var(--background);
+}
+.novae-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.novae-input { background: var(--card); color: var(--foreground); border-radius: 12px; }
+.novae-input:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.novae-modal { z-index: 10500; }
+.novae-dialog { width: min(32rem, calc(100vw - 2rem)); max-height: 86svh; }
+.novae-dialog > .dialog-inner { display: grid; gap: 20px; text-align: left; max-height: 86svh; overflow-y: auto; }
+.novae-sheet { height: auto; max-height: calc(100svh - var(--sheet-inset-top)); border-radius: 16px 16px 0 0; }
+.novae-sheet:has([data-route-overlay]) { height: calc(100svh - var(--sheet-inset-top)); }
+.novae-sheet > .sheet-modal-inner { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 8px; max-height: inherit; padding: var(--page-gutter); }
+.novae-sheet:has(.sheet-body:only-child) > .sheet-modal-inner { grid-template-rows: minmax(0, 1fr); }
+.novae-sheet [data-slot="sheet-body"] { padding-bottom: max(var(--page-gutter), var(--safe-bottom)); }
+.novae-popover { max-width: calc(100vw - 2rem); }
+.novae-popover > .popover-inner { padding: 16px; }
+.novae-tabs { width: fit-content; max-width: 100%; overflow-x: auto; }
+.novae-tabs .button { min-width: fit-content; height: 36px; padding-inline: 14px; }
+.novae-tabs .button-active { color: var(--foreground); background: var(--card); }
+.novae-tabs .segmented-highlight { display: none; }
+.app-mobile-nav .toolbar { position: static; width: 100%; height: 100%; background: var(--card); }
+.app-mobile-nav .toolbar-inner { position: relative; height: var(--mobile-nav-height); padding-inline: max(8px, var(--safe-left), var(--safe-right)); }
+.novae-toast { max-width: min(32rem, calc(100vw - 2rem)); }
+.novae-toast.toast-bottom { bottom: max(16px, var(--safe-bottom)); }
+body:has(.app-mobile-nav[data-visible="true"]) .novae-toast.toast-bottom { bottom: calc(var(--mobile-nav-height) + var(--safe-bottom) + 16px); }
+@media (min-width: 48rem) {
+  .novae-sheet { width: min(88rem, calc(100vw - 2rem)); left: 50%; margin-left: 0; transform: translate(-50%, 100%); border-radius: 16px; bottom: 1rem; max-height: calc(100svh - 2rem); }
+  .novae-sheet.modal-in { transform: translate(-50%, 0); }
+  .novae-sheet.modal-out { transform: translate(-50%, 100%); }
+}

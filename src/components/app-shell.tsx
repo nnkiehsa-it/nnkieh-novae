@@ -220,12 +220,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <MobileNavigationPortal>
           <div
             aria-hidden={!showMobileNavigation}
-            className="app-mobile-nav fixed z-30 mx-auto max-w-md rounded-full bg-card px-3 py-1.5 shadow-[var(--shadow-floating)] md:hidden"
+            className="app-mobile-nav fixed z-30 bg-card md:hidden"
             data-visible={showMobileNavigation}
             inert={!showMobileNavigation}
           >
             <LiquidNav
-              className="mx-auto h-12"
+              className="h-full"
               items={navItems}
               pathname={navigationPathname}
             />

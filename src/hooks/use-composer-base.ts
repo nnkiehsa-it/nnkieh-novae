@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useCategories } from "@/hooks/use-categories";
 import { useImageAttachments } from "@/hooks/use-image-attachments";
 import { useComposerDraft } from "@/hooks/use-composer-draft";

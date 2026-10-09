@@ -1,11 +1,12 @@
+"use client";
+
 import * as React from "react";
-import { Card as HeroCard } from "@heroui/react";
 
 import { cn } from "@/lib/utils";
 
 export function getCardClassName(className?: string) {
   return cn(
-    "flex flex-col gap-6 rounded-xl bg-card px-0 py-5 text-card-foreground shadow-[var(--shadow-card)]",
+    "m-0 flex flex-col gap-6 rounded-xl bg-card px-0 py-5 text-card-foreground",
     className,
   );
 }
@@ -16,13 +17,13 @@ function Card({
   ...props
 }: React.ComponentProps<"div">) {
   return (
-    <HeroCard.Root
+    <div
       data-slot="card"
-      className={getCardClassName(className)}
+      className={cn("card", getCardClassName(className))}
       {...props}
     >
       {children}
-    </HeroCard.Root>
+    </div>
   );
 }
 
@@ -104,3 +105,4 @@ export {
   CardDescription,
   CardContent,
 };
+

@@ -1,25 +1,22 @@
+"use client";
+
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { Slot } from "radix-ui";
+import { Slot } from "@/components/ui/slot";
 
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full font-medium whitespace-nowrap shadow-[var(--shadow-card)] outline-none transition-[background-color,color,border-color,box-shadow,opacity,transform] duration-[var(--motion-control)] ease-[var(--ease-move)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-45 disabled:shadow-none aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "button novae-button shrink-0 font-medium whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        // A primary action is not painted differently from any other button; emphasis
-        // comes from where it sits, not from a louder surface.
-        default:
-          "border bg-card hover:bg-accent hover:text-accent-foreground dark:border-input",
-        destructive:
-          "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40",
-        outline:
-          "border bg-card hover:bg-accent hover:text-accent-foreground dark:border-input",
+        default: "button-fill",
+        destructive: "button-fill color-red",
+        outline: "button-outline",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary-hover",
-        ghost: "shadow-none hover:bg-accent hover:text-accent-foreground",
+        ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-[var(--tint-content)] underline-offset-4 hover:underline",
       },
       size: {
@@ -52,7 +49,7 @@ function Button({
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
   }) {
-  const Comp = asChild ? Slot.Root : "button";
+  const Comp = asChild ? Slot : "button";
 
   return (
     <Comp
@@ -67,3 +64,4 @@ function Button({
 }
 
 export { Button, buttonVariants };
+

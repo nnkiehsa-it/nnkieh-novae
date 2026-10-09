@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useI18n } from "@/i18n";
 import { useComposerDraft } from "@/hooks/use-composer-draft";
 import { useActionFeedback } from "@/hooks/use-action-feedback";

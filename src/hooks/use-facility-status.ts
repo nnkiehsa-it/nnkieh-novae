@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useI18n } from "@/i18n";
 import { updateFacilityStatus } from "@/services/facilities";
 import type { FacilityRecord, FacilityStatus } from "@/types";

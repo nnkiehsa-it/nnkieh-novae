@@ -25,12 +25,12 @@ export function ProgressBar({
       aria-valuemax={100}
       aria-valuemin={0}
       aria-valuenow={clamped}
-      className={cn("h-1.5 overflow-hidden rounded-full bg-muted", className)}
+      className={cn("progressbar h-1.5 overflow-hidden rounded-full bg-muted", className)}
       role="progressbar"
     >
-      <div
-        className="h-full origin-left rounded-full bg-primary transition-transform duration-[var(--motion-sheet)]"
-        style={{ transform: `scaleX(${clamped / 100})` }}
+      <span
+        className="h-full rounded-full bg-primary transition-transform duration-[var(--motion-sheet)]"
+        style={{ transform: `translateX(${clamped - 100}%)` }}
       />
     </div>
   );

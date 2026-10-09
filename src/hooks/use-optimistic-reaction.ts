@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { toggleReactionState, type ReactionState } from "@/lib/reaction-state";
 import { hasPendingContentEntityMutation, type ContentEntityDomain } from "@/lib/content-entity-store";
 

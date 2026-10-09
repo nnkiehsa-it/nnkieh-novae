@@ -57,7 +57,7 @@ export function ListSection({
           {headerAction}
         </div>
       ) : null}
-      <div className="rule-card rule-list">{children}</div>
+      <div className="list list-inset m-0 rule-card rule-list">{children}</div>
     </section>
   );
 }

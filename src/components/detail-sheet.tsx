@@ -75,6 +75,7 @@ export function DetailSheet({ children, label, overlayLabel = label, returnTo }:
         className="grid-rows-[minmax(0,1fr)]"
         stageScrollY={sourceScrollY}
         suppressEntrance={suppressEntrance}
+        data-route-overlay=""
       >
         <SheetBody>
           <SheetTitle className="sr-only">{label}</SheetTitle>
