@@ -34,6 +34,8 @@ const libraryRoot = path.dirname(
 );
 const core = [
   "app",
+  "statusbar",
+  "touch-highlight",
   "view",
   "link",
   "toolbar",
@@ -44,6 +46,7 @@ const core = [
   "button",
   "icon",
   "modal",
+  "timeline",
   "block",
 ];
 // Native modal views and Smart Select need the upstream view/page contracts.

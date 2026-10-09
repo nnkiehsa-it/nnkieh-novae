@@ -74,7 +74,7 @@ export function ActionMenu({
         {described(
           <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>,
         )}
-        <DropdownMenuContent align={align} className={className}>
+        <DropdownMenuContent align={align} className={className} aria-label={title}>
           {description ? (
             <>
               <DropdownMenuLabel className="font-normal">

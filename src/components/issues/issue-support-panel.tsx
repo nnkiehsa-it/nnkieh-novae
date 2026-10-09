@@ -63,7 +63,7 @@ export function IssueSupportPanel({
           />
         </div>
         {canViewSupporters ? (
-          <div className="min-w-0">
+          <ListSection>
             <SheetRow
               label={t("ui.issue.supporters")}
               onOpenChange={(open) => { if (open) onLoadSupporters(); }}
@@ -95,7 +95,7 @@ export function IssueSupportPanel({
                 </ListSection>
               )}
             </SheetRow>
-          </div>
+          </ListSection>
         ) : null}
       </div>
     </div>

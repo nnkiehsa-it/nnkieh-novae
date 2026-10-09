@@ -7,6 +7,7 @@ import type { Actions, Dialog, Sheet, Popup, Popover } from "framework7/types";
 import { useModal } from "./modal-context";
 import { cn } from "@/lib/utils";
 import { topNativeModal } from "./native-modal-layers";
+import { bindNativeModalCleanup } from "./native-modal-lifecycle";
 
 type ModalInstance =
   Actions.Actions | Dialog.Dialog | Sheet.Sheet | Popup.Popup | Popover.Popover;
@@ -131,6 +132,7 @@ export function ModalSurface({
                     targetEl: latest.current.state.target.current ?? undefined,
                   })
                 : f7.dialog.create(params);
+      bindNativeModalCleanup(instance.current, kind === "popup");
       // Native swipe dismissal must pass the same draft/share guard as Close.
       if (holdsStage) {
         const native = instance.current;

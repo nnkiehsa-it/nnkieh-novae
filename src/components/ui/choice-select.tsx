@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode, type ComponentProps } from "react";
-import { Button, Link, ListItem, f7 } from "framework7-react";
+import { Button, Icon, Link, ListItem, f7 } from "framework7-react";
 import type { SmartSelect } from "framework7/types";
-import { ChevronDown } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { useCompactViewport } from "./use-compact-viewport";
 import { cn } from "@/lib/utils";
@@ -97,7 +96,7 @@ export function ChoiceSelect({
         ))}
       </select>
       {trigger ? trigger(selected) : selected?.label}
-      {controlLabel !== "toolbar" ? <ChevronDown aria-hidden className="size-4" /> : null}
+      {controlLabel !== "toolbar" ? <Icon f7="chevron_down" size={16} aria-hidden /> : null}
     </>
   );
   const attributes = {

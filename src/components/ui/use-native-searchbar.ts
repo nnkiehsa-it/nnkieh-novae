@@ -14,6 +14,7 @@ export function useNativeSearchbar(label: string, {enabled = true, disabled, aut
   useLayoutEffect(() => {
     if (!enabled) return;
     const root = ref.current.el!;
+    root.querySelectorAll(".searchbar-icon,.icon").forEach((icon) => icon.setAttribute("aria-hidden", "true"));
     const clear = root.querySelector<HTMLElement>(".input-clear-button")!;
     const removeClear = applyNativeControlAttributes(clear, {
       role: "button", tabindex: disabled ? -1 : 0,

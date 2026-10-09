@@ -11,7 +11,8 @@ import { useFramework7ListControl } from "./use-framework7-control";
 export const DropdownMenu = Popover;
 export const DropdownMenuTrigger = PopoverTrigger;
 export function DropdownMenuContent({ children, onKeyDown, ...props }: React.ComponentProps<typeof PopoverContent>) {
-  return <PopoverContent {...props} role="menu" data-slot="dropdown-menu-content"
+  const accessibility = {role: "menu"};
+  return <PopoverContent {...props} data-slot="dropdown-menu-content"
     onKeyDown={(event) => {
       onKeyDown?.(event);
       const entries = [...event.currentTarget.querySelectorAll<HTMLElement>('[role="menuitem"]')];
@@ -23,7 +24,7 @@ export function DropdownMenuContent({ children, onKeyDown, ...props }: React.Com
       event.preventDefault();
       entries[next].focus();
     }}>
-    <List noChevron dividers className="m-0"><ul>{children}</ul></List>
+    <List {...accessibility} noChevron dividers className="m-0"><ul>{children}</ul></List>
   </PopoverContent>;
 }
 

@@ -1,13 +1,24 @@
 "use client";
 import type { ReactNode } from "react";
-import { Segmented } from "framework7-react";
-import { Button } from "./button";
-import { cn } from "@/lib/utils";
+import { Button, Segmented } from "framework7-react";
+import { useFramework7Control } from "./use-framework7-control";
 
 export interface LiquidTabOption {
   icon?: ReactNode;
   label: string;
   value: string;
+}
+function Segment({option, selected, compact, disabled, onSelect}: {
+  option: LiquidTabOption; selected: boolean; compact: boolean; disabled: boolean; onSelect: () => void;
+}) {
+  const ref = useFramework7Control<HTMLButtonElement>(undefined, undefined, {
+    role: "tab", "aria-label": option.label, "aria-selected": selected,
+    tabindex: selected ? 0 : -1, disabled,
+  });
+  return <Button type="button" ref={ref} active={selected} disabled={disabled} small={compact}
+    data-liquid-tab={option.value} data-displayed-active={selected} onClick={onSelect}>
+    {option.icon}<span>{option.label}</span>
+  </Button>;
 }
 export function LiquidTabs({
   ariaLabel,
@@ -59,29 +70,14 @@ export function LiquidTabs({
     >
       <Segmented strong className="novae-tabs">
         {options.map((option) => (
-          <Button
-            type="button"
-            role="tab"
-            aria-label={option.label}
-            aria-selected={option.value === value}
-            className={cn(option.value === value && "button-active")}
-            data-liquid-tab={option.value}
-            data-displayed-active={option.value === value}
-            tabIndex={option.value === value ? 0 : -1}
+          <Segment
+            option={option}
+            selected={option.value === value}
             disabled={disabled}
-            variant="ghost"
+            compact={compact}
             key={option.value}
-            onClick={() => onValueChange(option.value)}
-          >
-            {option.icon}
-            <span
-              className={cn(
-                compact && option.value !== value && "hidden sm:inline",
-              )}
-            >
-              {option.label}
-            </span>
-          </Button>
+            onSelect={() => onValueChange(option.value)}
+          />
         ))}
       </Segmented>
     </div>

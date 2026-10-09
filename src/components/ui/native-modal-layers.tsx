@@ -2,13 +2,14 @@
 
 import { useEffect } from "react";
 import { f7ready } from "framework7-react";
+import { bindNativeModalCleanup } from "./native-modal-lifecycle";
 import {
   beginSheetClose,
   holdStageBehind,
   publishStageFocusRestore,
 } from "@/lib/stage-depth";
 
-type Modal = { el: HTMLElement; type?: string };
+type Modal = { el: HTMLElement; type?: string } & Parameters<typeof bindNativeModalCleanup>[0];
 const layers: HTMLElement[] = [];
 export function topNativeModal() {
   return layers.at(-1);
@@ -21,8 +22,11 @@ export function NativeModalLayers() {
     const returnFocus = new Map<HTMLElement, HTMLElement>();
     let detach = () => {};
     f7ready((app) => {
-      const open = ({ el, type }: Modal) => {
+      const open = (modal: Modal) => {
+        const {el, type} = modal;
         if (type === "toast" || type === "tooltip") return;
+        if (!el.classList.contains("novae-modal"))
+          bindNativeModalCleanup(modal, type === "popup");
         // SDK-generated Smart Select and Photo Browser modals need DOM semantics.
         if (!el.hasAttribute("role")) {
           el.setAttribute("role", "dialog");

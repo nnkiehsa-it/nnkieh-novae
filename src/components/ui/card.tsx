@@ -27,17 +27,17 @@ export function Card({ className, ref, ...props }: DivProps) {
 }
 export function CardHeader({ ref, ...props }: DivProps) {
   const f7Ref = useFramework7Control(ref, undefined, {});
-  return <F7CardHeader {...props} ref={f7Ref} data-slot="card-header" />;
+  return <F7CardHeader data-slot="card-header" {...props} ref={f7Ref} />;
 }
 export function CardContent({ ref, ...props }: DivProps) {
   const f7Ref = useFramework7Control(ref, undefined, {});
   return (
-    <F7CardContent {...props} ref={f7Ref} padding data-slot="card-content" />
+    <F7CardContent data-slot="card-content" {...props} ref={f7Ref} padding />
   );
 }
 export function CardFooter({ ref, ...props }: DivProps) {
   const f7Ref = useFramework7Control(ref, undefined, {});
-  return <F7CardFooter {...props} ref={f7Ref} data-slot="card-footer" />;
+  return <F7CardFooter data-slot="card-footer" {...props} ref={f7Ref} />;
 }
 export function CardTitle(props: DivProps) {
   return <div {...props} data-slot="card-title" />;

@@ -22,6 +22,7 @@ Novae 使用 Framework7／Framework7 React 9.2.0，所有裝置固定採用 iOS 
 | 照片檢視與縮放 | Photo Browser、Swiper zoom |
 | 留言輸入 | Messagebar |
 | 展開設定、紀錄內容 | ListItem accordion、AccordionContent |
+| 提案處理時間軸 | Framework7 Timeline 的官方 HTML 結構與 iOS 樣式 |
 
 以 [官方 Kitchen Sink](https://framework7.io/kitchen-sink/core/?theme=ios) 和安裝版本的元件來源為準。不要另寫一套邊框、圓角、陰影、按壓或面板動畫來模仿 iOS。操作列只呈現名稱及目前值；整組說明放在 BlockFooter。資料紀錄的作者、時間與狀態可以使用原生 media list 呈現。
 
@@ -34,6 +35,7 @@ Markdown 編輯器保留 Vditor，因為業務需要 Markdown 原始內容；Fra
 - `src/components/ui/use-native-navbar.ts`：掛接上游 Navbar 的尺寸、捲動收合與內容高度更新；不自行計算標題動畫。
 - `src/components/ui/use-framework7-control.ts`：第三方 React ref、表單屬性與無障礙屬性的 DOM 接合。Framework7 9.2 的一般 ListItem 不提供 ref，使用實際 li 的 id 對應 anchor。
 - `src/components/ui/modal-context.tsx`、`modal-surface.tsx`、`native-modal-layers.tsx`：受控開關、原生關閉動畫、焦點、來源頁捲動與草稿／分享 guard。原生下拉關閉也必須走相同 guard。
+- `native-modal-lifecycle.ts`：Framework7 9.2 的卸載接合，移除尚未結束的 transition callback，並送出其 Popup swipe teardown 實際監聽的 `popupDestroy` 事件，避免 Strict Mode、路由交接或 HMR 留下已銷毀的物件。
 - `src/lib/app-scroll.ts`：主要 PageContent 的位置讀寫；獨立登入／設定流程才使用文件捲動。
 - `src/styles/framework7.css`：Next 整合、safe area、viewport 與鍵盤可及性。元件外觀來自生成的上游 iOS CSS。
 - `scripts/generate-framework7.mjs`：只編譯使用中的 iOS 模組，保留亮暗主題；Swiper 只收 core／zoom／virtual，Skeleton 不帶未使用的文字字型。不要直接改生成 CSS。

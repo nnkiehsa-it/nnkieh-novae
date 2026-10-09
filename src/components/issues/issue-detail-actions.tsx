@@ -1,10 +1,12 @@
 "use client";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
-import { Clock3, Eye, ShieldCheck } from "lucide-react";
+import { Clock3, ShieldCheck } from "lucide-react";
+import { Icon } from "framework7-react";
 import { toast } from "@/lib/toast";
 import type { IssueRecord } from "@/types";
 import type { getIssueOperationTimeItems } from "@/lib/issue-timeline";
+import { Timeline } from "@/components/ui/timeline";
 import { formatDate } from "@/lib/format";
 import { shareCurrentPage } from "@/lib/share";
 import { DetailToolbar } from "@/components/detail-toolbar";
@@ -44,7 +46,7 @@ export function IssueDetailToolbar({
         issue.canDeleteIssue || canManage ? (
           <>
             {canManage && issue.canViewAuthor ? (
-              <Popover><PopoverTrigger asChild><ToolbarButton aria-label={translate('issue.showAuthor')}><Eye /></ToolbarButton></PopoverTrigger>
+              <Popover><PopoverTrigger asChild><ToolbarButton aria-label={translate('issue.showAuthor')}><Icon f7="eye" aria-hidden /></ToolbarButton></PopoverTrigger>
                 <PopoverContent title={translate('issue.showAuthor')}>
                   <ListSection><ListSwitchRow checked={authorVisible} label={translate('issue.showAuthor')}
                     name={translate('issue.showAuthor')} onCheckedChange={onAuthorVisibilityChange} /></ListSection>
@@ -140,29 +142,11 @@ export function getIssueDetailPanels({
           <Clock3 className="size-4 text-muted-foreground" />
           <p className="text-sm font-medium">{translate('ui.issue.timeline')}</p>
         </div>
-        <div className="grid gap-0">
-          {timeline.map((item, index) => (
-            <div
-              className="relative grid grid-cols-[1rem_1fr] gap-2 pb-4 last:pb-0"
-              key={item.label}
-            >
-              <div className="flex flex-col items-center">
-                <span className="mt-1 size-2 rounded-full bg-foreground" />
-                {index < timeline.length - 1 ? (
-                  <span className="mt-1 w-px flex-1 bg-border" />
-                ) : null}
-              </div>
-              <SkeletonReveal as="div" enabled={reveal} skeleton={<div className="space-y-1.5"><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-28" /></div>}>
-                <div>
-                  <p className="text-[0.8125rem] font-medium">{translate(item.shortLabel)}</p>
-                  <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">
-                    {formatDate(item.value)}
-                  </p>
-                </div>
-              </SkeletonReveal>
-            </div>
-          ))}
-        </div>
+        <Timeline items={timeline.map(item => ({
+          key: item.label,
+          title: <SkeletonReveal enabled={reveal} skeleton={<Skeleton className="h-4 w-20" />}>{translate(item.shortLabel)}</SkeletonReveal>,
+          content: <SkeletonReveal enabled={reveal} skeleton={<Skeleton className="h-4 w-28" />}><time dateTime={item.value.toISOString()}>{formatDate(item.value)}</time></SkeletonReveal>,
+        }))} />
   </div> });
   return panels;
 }

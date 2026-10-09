@@ -32,6 +32,8 @@ for (const width of [390, 1440]) {
         localStorage.setItem("theme", "light");
     });
     const page = await context.newPage();
+    const errors: string[] = [];
+    page.on("pageerror", error => errors.push(error.message));
     try {
       await page.goto("/home");
       await expect(page.locator("html")).toHaveClass(/ios/u);
@@ -129,6 +131,7 @@ for (const width of [390, 1440]) {
         page.getByRole("heading", { name: "Administration", exact: true }),
       ).toBeVisible();
       await capture(page, "admin-dark", width);
+      expect(errors).toEqual([]);
     } finally {
       await context.close();
     }

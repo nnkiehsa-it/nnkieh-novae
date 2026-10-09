@@ -4,17 +4,17 @@ import type { ReactNode } from "react";
 import { Clock3, Hand, Heart, RefreshCw } from "lucide-react";
 import { Icon } from "framework7-react";
 import { useI18n } from "@/i18n";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DetailCardHeader, DetailCardBody } from "@/components/ui/detail-card";
 import { ContentTransition, StateTransition } from "@/components/motion/state-transition";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 import type { FeedKind } from "@/components/ui/feed-list";
-import { cn } from "@/lib/utils";
 import { useCloseRouteOverlay } from "@/components/detail-sheet";
 import { SecondaryToolbar } from "@/components/detail-toolbar";
 import { ToolbarButton } from "./toolbar-button";
+import { Timeline } from "./timeline";
 
 export interface DetailPanel { key: string; content: ReactNode; className?: string }
 
@@ -58,7 +58,7 @@ export function DetailLayout({
   </> }];
   if (kind === "issue") pendingPanels.push({ key: "timeline", content: <div className="grid gap-5">
     <div className="flex items-center gap-2"><Clock3 className="size-4" /><p className="text-sm font-medium">{t('ui.issue.timeline')}</p></div>
-    <div className="space-y-3">{Array.from({ length: 3 }, (_, index) => <div className="space-y-1.5" key={index}><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-28" /></div>)}</div>
+    <Timeline items={Array.from({ length: 3 }, (_, index) => ({key: String(index), title: <Skeleton className="h-4 w-20" />, content: <Skeleton className="h-4 w-28" />}))} />
   </div> });
   return (
     <div className={dock ? "detail-with-discussion-composer" : undefined}>
@@ -85,8 +85,8 @@ export function DetailLayout({
             <StaggerList className="space-y-3">
               {(error ? [] : panels ?? pendingPanels).map((panel) => (
                 <StaggerItem key={panel.key}>
-                  <Card className={cn("gap-4 p-5", panel.className)} data-detail-card={panel.key}>
-                    <ContentTransition identity={loading ? "loading" : "content"}>{panel.content}</ContentTransition>
+                  <Card className={panel.className} data-detail-card={panel.key}>
+                    <CardContent><ContentTransition identity={loading ? "loading" : "content"}>{panel.content}</ContentTransition></CardContent>
                   </Card>
                 </StaggerItem>
               ))}
