@@ -51,7 +51,8 @@ export function ListSection({
           {headerAction}
         </div>
       ) : null}
-      <List inset strong dividers className="m-0">
+      {/* Native sibling BlockFooter assumes the list retains its bottom margin. */}
+      <List inset strong dividers className={footer ? "mx-0 mt-0" : "m-0"}>
         <ul>{children}</ul>
       </List>
       {footer ? <BlockFooter>{footer}</BlockFooter> : null}
