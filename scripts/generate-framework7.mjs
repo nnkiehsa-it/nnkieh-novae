@@ -9,6 +9,8 @@ const components = [
   "card",
   "input",
   "toggle",
+  "login-screen",
+  "typography",
   "dialog",
   "actions",
   "sheet",

@@ -18,6 +18,28 @@ async function capture(page: Page, name: string, width: number) {
   });
 }
 
+test("signing out during the native menu transition releases the login page", async ({ browser }) => {
+  const context = await browser.newContext({
+    storageState: authStatePath("admin"),
+    viewport: { width: 1280, height: 720 },
+  });
+  const page = await context.newPage();
+  try {
+    await context.addInitScript(() => localStorage.setItem("theme", "light"));
+    await page.goto("/home");
+    await page.getByRole("button", { name: "Account menu", exact: true }).click();
+    await page.getByRole("menuitem", { name: /Sign out/u }).click();
+    const login = page.locator(".login-screen-page > .login-screen-content");
+    await expect(login).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sign in with Google", exact: true })).toBeEnabled();
+    await expect(page.locator(".novae-root")).not.toHaveAttribute("inert");
+    await expect(page.locator(".login-screen-title h1")).toHaveCSS("font-size", "28px");
+    await expect(page.locator(".login-screen-page")).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  } finally {
+    await context.close();
+  }
+});
+
 for (const width of [390, 1440]) {
   test(`iOS controls preserve selection, cancellation and dark mode at ${width}px`, async ({
     browser,

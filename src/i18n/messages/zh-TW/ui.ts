@@ -245,8 +245,6 @@ const messages = {
   'ui.app.startup.content': '整理分類與通知',
   'ui.app.startup.contentWaiting': '同步最新內容',
   'ui.app.startup.ready': '準備完成',
-  'ui.login.heading': '讓每一次參與，都有清楚的去向。',
-  'ui.login.subheading': '熟悉的 Novae 功能，現在用更精準、更有回應感的介面呈現。',
   'ui.login.terms': '登入即代表你同意遵守校園帳號與平台使用規範。',
   'ui.composer.bold': '粗體',
   'ui.composer.italic': '斜體',

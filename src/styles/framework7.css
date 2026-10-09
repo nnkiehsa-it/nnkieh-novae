@@ -54,6 +54,14 @@ html[data-stage-held="true"] .novae-page-content { overflow: hidden; }
   overflow: auto;
   max-height: calc(100svh - 8rem);
 }
+/* Turnstile requires a 300px iframe and a mounted silent host; all dialog paint stays native. */
+.novae-turnstile-dialog {
+  --f7-dialog-width: min(calc(300px + 2 * var(--f7-dialog-inner-padding)), calc(100vw - 32px));
+}
+.novae-turnstile-dialog:not(.modal-in):not(.modal-out) {
+  display: block !important;
+  pointer-events: none;
+}
 .novae-sheet {
   max-height: calc(100svh - var(--safe-top));
 }

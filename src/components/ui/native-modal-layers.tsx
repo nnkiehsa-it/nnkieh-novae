@@ -63,7 +63,8 @@ export function NativeModalLayers() {
       };
       const closed = ({ el }: Modal) => {
         const index = layers.indexOf(el);
-        if (index >= 0) layers.splice(index, 1);
+        if (index < 0) return;
+        layers.splice(index, 1);
         isolation.update(topNativeModal());
         releases.get(el)?.();
         releases.delete(el);
@@ -77,7 +78,7 @@ export function NativeModalLayers() {
         if (!el || event.key !== "Tab") return;
         const targets = [
           ...el.querySelectorAll<HTMLElement>(
-            'button:not(:disabled),a[href],input:not(:disabled),textarea:not(:disabled),[tabindex="0"]',
+            'button:not(:disabled),a[href],input:not(:disabled),textarea:not(:disabled),iframe,[tabindex="0"]',
           ),
         ].filter((target) => target.getClientRects().length);
         const first = targets[0],
@@ -106,6 +107,7 @@ export function NativeModalLayers() {
         app.on(`${kind}Opened`, opened);
         app.on(`${kind}Close`, close);
         app.on(`${kind}Closed`, closed);
+        app.on(`${kind}BeforeDestroy`, closed);
       });
       document.addEventListener("keydown", onKey, true);
       detach = () => {
@@ -114,6 +116,7 @@ export function NativeModalLayers() {
           app.off(`${kind}Opened`, opened);
           app.off(`${kind}Close`, close);
           app.off(`${kind}Closed`, closed);
+          app.off(`${kind}BeforeDestroy`, closed);
         });
         document.removeEventListener("keydown", onKey, true);
         releases.forEach((release) => release());

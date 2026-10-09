@@ -25,9 +25,11 @@ import { cn } from "@/lib/utils";
 export function RouteSurface({
   children,
   className,
+  loginScreen = false,
 }: {
   children: ReactNode;
   className?: string;
+  loginScreen?: boolean;
 }) {
   const { direction, surface } = useSurfaceRoute();
   const [headerHost, setHeaderHost] = useState<HTMLElement | null>(null);
@@ -38,13 +40,17 @@ export function RouteSurface({
     // with the document, and animating it would make the app look like it was
     // still assembling itself.
     <Page pageContent={false}
+      loginScreen={loginScreen}
+      noNavbar={loginScreen}
+      noToolbar={loginScreen}
+      noSwipeback={loginScreen}
       key={surface}
       className="route-page novae-page"
       data-route-direction={direction ?? undefined}
       data-route-path={surface}
     >
       <div className="native-navbar-host" ref={setHeaderHost} />
-      <PageContent className={cn("novae-page-content", className)}>
+      <PageContent loginScreen={loginScreen} className={cn("novae-page-content", className)}>
         <NativeNavbarRegistration.Provider value={setNavbar}>
           <NativeNavbarHost.Provider value={navbar}>
             <NativePageHeaderHost.Provider value={headerHost}><div className="native-page-body">{children}</div></NativePageHeaderHost.Provider>

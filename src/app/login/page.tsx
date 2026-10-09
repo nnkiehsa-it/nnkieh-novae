@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, RefreshCw } from "lucide-react";
+import { Block, BlockFooter, LoginScreenTitle } from "framework7-react";
+import { RefreshCw } from "lucide-react";
 import { useSession } from "@/hooks/use-session";
 import { useLoginEntrance } from "@/hooks/use-login-entrance";
 import { useI18n } from "@/i18n";
@@ -79,75 +79,51 @@ export default function LoginPage() {
   if (!initialized || restoringSession || user) return <AppStartupScreen phase={startupPhase} />;
 
   return (
-    <RouteSurface className="!w-full">
-      <main className="relative grid min-h-dvh overflow-hidden bg-[var(--surface-stage)] lg:grid-cols-[1.08fr_.92fr]">
-      <section className="relative hidden min-h-dvh overflow-hidden border-r bg-secondary/50 p-12 lg:grid lg:place-items-center">
-        <BrandLockup className="t-panel-reveal absolute top-12 left-12" />
-        <div className="t-stagger-list grid w-full max-w-lg gap-5 pt-16">
-          <h1 className="t-stagger-item max-w-lg text-4xl font-semibold leading-[1.15] tracking-[-0.03em] text-balance">
-            {t("ui.login.heading")}
+    <RouteSurface loginScreen>
+      <main>
+        <Block><BrandLockup className="justify-center" /></Block>
+        <LoginScreenTitle>
+          <h1 className="m-0 font-[inherit] text-[length:inherit] leading-[inherit]">
+            {t("auth.signInWithASchoolAccount")}
           </h1>
-          <p className="t-stagger-item max-w-md text-sm leading-7 text-muted-foreground">
-            {t("ui.login.subheading")}
+        </LoginScreenTitle>
+        <Block className="text-align-center">
+          <p>
+            {t("auth.useYour")}{" "}
+            <strong>{session.allowedDomain || t("auth.configuredSchoolDomain")}</strong>{" "}
+            {t("auth.toContinue")}
           </p>
-          <Image alt="" className="t-stagger-item max-h-[35svh] w-auto justify-self-end object-contain" height={360} src="/novae-constellation.webp" width={240} />
-        </div>
-      </section>
-      <section className="flex min-h-dvh items-center justify-center px-4 py-12 sm:px-8">
-        <div className="t-panel-reveal w-full max-w-sm pt-6">
-          <div className="mb-6 space-y-4">
-            <BrandLockup className="lg:hidden" />
-            <div>
-              <h1 className="text-2xl font-semibold tracking-[-0.03em]">
-                {t("auth.signInWithASchoolAccount")}
-              </h1>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                {t("auth.useYour")}{" "}
-                <strong className="font-medium text-foreground">
-                  {session.allowedDomain || t("auth.configuredSchoolDomain")}
-                </strong>{" "}
-                {t("auth.toContinue")}
-              </p>
-            </div>
-          </div>
-          <div className="space-y-5">
-            <TurnstileInlineHost />
-            <Button
-              className="group w-full"
-              aria-busy={entrance.phase === "checking" || session.loginBusy}
-              disabled={entrance.phase === "checking" || session.loginBusy}
-              onClick={() => entrance.phase === "error" ? entrance.retry() : void session.login()}
-              size="lg"
-            >
-              {entrance.phase === "checking" || session.loginBusy ? (
-                <BusyLabel
-                  busy
-                  busyLabel={t(session.loginBusy ? "auth.signingIn" : "auth.preparingSignIn")}
-                  label={t("auth.signInWithGoogle")}
-                />
-              ) : entrance.phase === "error" ? (
-                <><RefreshCw />{t("auth.retryVerification")}</>
-              ) : (
-                <>
-                  <GoogleMark />
-                  {t("auth.signInWithGoogle")}
-                  <ArrowRight className="ml-auto transition-transform duration-[var(--motion-control)] ease-[var(--ease-arrive)] group-hover:translate-x-0.5" />
-                </>
-              )}
-            </Button>
-          </div>
-          {session.error || entrance.error ? (
-            <p
-              className="t-shake mt-3 break-words rounded-lg bg-destructive/8 p-3 text-sm leading-5 text-destructive"
-              data-error="true"
-              role="alert"
-            >
+          <TurnstileInlineHost />
+        </Block>
+        <Block>
+          <Button
+            className="w-full"
+            aria-busy={entrance.phase === "checking" || session.loginBusy}
+            disabled={entrance.phase === "checking" || session.loginBusy}
+            onClick={() => entrance.phase === "error" ? entrance.retry() : void session.login()}
+            size="lg"
+          >
+            {entrance.phase === "checking" || session.loginBusy ? (
+              <BusyLabel
+                busy
+                busyLabel={t(session.loginBusy ? "auth.signingIn" : "auth.preparingSignIn")}
+                label={t("auth.signInWithGoogle")}
+              />
+            ) : entrance.phase === "error" ? (
+              <><RefreshCw />{t("auth.retryVerification")}</>
+            ) : (
+              <><GoogleMark />{t("auth.signInWithGoogle")}</>
+            )}
+          </Button>
+        </Block>
+        {session.error || entrance.error ? (
+          <BlockFooter className="text-color-red">
+            <p className="break-words" data-error="true" role="alert">
               {t(entrance.error || session.error)}
             </p>
-          ) : null}
-          <p className="mt-5 text-center text-xs leading-5 text-muted-foreground">{t('ui.login.terms')}</p>
-        </div>
-      </section>
+          </BlockFooter>
+        ) : null}
+        <BlockFooter><p>{t("ui.login.terms")}</p></BlockFooter>
       </main>
     </RouteSurface>
   );

@@ -1,6 +1,5 @@
 "use client";
 
-import { ShieldCheck } from "lucide-react";
 import {
   createContext,
   useCallback,
@@ -11,8 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { t } from "@/i18n";
-import { timingMs } from "@/lib/motion-timing";
+import { TurnstileDialog } from "./turnstile-dialog";
 
 const siteKey = String(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "").trim();
 const SCRIPT_READY_TIMEOUT_MS = 30_000;
@@ -208,12 +206,7 @@ export function TurnstileProvider({
     };
   }, [challenge, dialogHost, inlineHost]);
 
-  // The surface has to finish leaving before it stops existing.
-  useEffect(() => {
-    if (gate !== "closed") return;
-    const settle = window.setTimeout(() => setGate("idle"), timingMs("controlExit"));
-    return () => window.clearTimeout(settle);
-  }, [gate]);
+  const onDialogClosed = useCallback(() => setGate("idle"), []);
 
   const requestToken = useCallback(async (
     action: string,
@@ -250,28 +243,7 @@ export function TurnstileProvider({
   return (
     <TurnstileContext.Provider value={value}>
       {children}
-      {/* The gate is in the page at all times so the widget can keep running
-          out of sight, so it only claims to be a dialog while it is one. */}
-      <div aria-hidden={gate !== "open"} className="t-turnstile-gate" data-state={gate}>
-        <div
-          aria-labelledby={gate === "open" ? "turnstile-gate-title" : undefined}
-          aria-modal={gate === "open" ? true : undefined}
-          className="t-turnstile-card t-dialog"
-          data-state={gate}
-          role={gate === "open" ? "dialog" : undefined}
-        >
-          <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-[var(--tint-content)]">
-            <ShieldCheck className="size-5" aria-hidden />
-          </div>
-          <h2 className="text-lg font-semibold" id="turnstile-gate-title">
-            {t("auth.loginVerification")}
-          </h2>
-          <p className="text-sm text-muted-foreground">{t("auth.securityCheckPrompt")}</p>
-          <div className="flex min-h-[65px] w-full items-center justify-center overflow-hidden">
-            <div ref={setDialogHost} className="min-h-[65px] w-[300px] max-w-full" />
-          </div>
-        </div>
-      </div>
+      <TurnstileDialog opened={gate === "open"} onClosed={onDialogClosed} hostRef={setDialogHost} />
     </TurnstileContext.Provider>
   );
 }

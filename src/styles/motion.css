@@ -27,10 +27,6 @@
      space from the first frame — only its paint waits. */
   --skeleton-appear-delay: var(--motion-touch);
   --like-accent: #f40051;
-  --tabs-text-muted: var(--muted-foreground);
-  --tabs-text-active: var(--foreground);
-  --tabs-bar-bg: color-mix(in srgb, var(--secondary) 78%, var(--card));
-  --tabs-pill-bg: var(--card);
   --shimmer-base: #7c7c7c;
   --shimmer-highlight: #0d0d0d;
 }
@@ -49,11 +45,10 @@
 /* The surface every route is painted on. It owns the shell's padding rather
    than sitting inside it, so a page reaches every screen edge. */
 .route-page {
-  width: min(100%, var(--content-max));
   margin-inline: auto;
   flex: 1 0 auto;
-  background: var(--surface-stage);
 }
+.route-page:not(.login-screen-page) { width: min(100%, var(--content-max)); }
 
 /* A route reveal is one animation, on the page that arrives, in the live
    document.
@@ -193,31 +188,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   transform: scale(0);
   transition-duration: var(--motion-control-exit);
   transition-timing-function: var(--ease-depart);
-}
-
-.t-shake[data-error="true"] {
-  animation: t-shake var(--motion-control) linear;
-}
-@keyframes t-shake {
-  0% {
-    transform: translateX(0);
-    animation-timing-function: var(--ease-move);
-  }
-  28.57% {
-    transform: translateX(6px);
-    animation-timing-function: var(--ease-move);
-  }
-  57.14% {
-    transform: translateX(-6px);
-    animation-timing-function: var(--ease-move);
-  }
-  78.57% {
-    transform: translateX(4px);
-    animation-timing-function: var(--ease-move);
-  }
-  100% {
-    transform: translateX(0);
-  }
 }
 
 /* Loading and confirmation ------------------------------------------------ */
@@ -570,7 +540,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   .t-resolution-notice [data-resolution-icon],
   .t-spinner-check-success path,
   .t-update-stage,
-  .t-shake,
   .t-shimmer::before,
   .t-reaction-icon,
   .t-like-particles i {

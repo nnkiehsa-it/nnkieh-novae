@@ -245,8 +245,6 @@ const messages = {
   'ui.app.startup.content': 'Loading platform content',
   'ui.app.startup.contentWaiting': 'Syncing the latest content',
   'ui.app.startup.ready': 'Ready',
-  'ui.login.heading': 'Give every contribution a clear destination.',
-  'ui.login.subheading': 'The Novae you know, now presented through a more precise and responsive interface.',
   'ui.login.terms': 'By signing in, you agree to follow campus account and platform policies.',
   'ui.composer.bold': 'Bold',
   'ui.composer.italic': 'Italic',
