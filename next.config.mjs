@@ -56,6 +56,8 @@ const nextConfig = {
   distDir: process.env.NOVAE_NEXT_DIST_DIR || ".next",
   env: publicEnvironment,
   experimental: {
+    // Keep the local gate within memory limits while the realtime preview runs.
+    cpus: process.env.NOVAE_NEXT_DIST_DIR === ".next-verify" ? 4 : undefined,
     webpackMemoryOptimizations: true,
     optimizePackageImports: ["lucide-react", "motion"],
     staleTimes: {
