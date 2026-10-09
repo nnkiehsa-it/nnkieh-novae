@@ -1,0 +1,438 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-09T21:52:05.446Z",
+  "title": "Design System: Novae",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "iOS 藍",
+        "canonical": "#007aff",
+        "tonalRamp": [
+          "oklch(15.00% 0.21771 257.42)",
+          "oklch(26.43% 0.21771 257.42)",
+          "oklch(37.86% 0.21771 257.42)",
+          "oklch(49.29% 0.21771 257.42)",
+          "oklch(60.71% 0.21771 257.42)",
+          "oklch(72.14% 0.21771 257.42)",
+          "oklch(83.57% 0.21771 257.42)",
+          "oklch(95.00% 0.21771 257.42)"
+        ]
+      },
+      "gray": {
+        "role": "neutral",
+        "displayName": "系統灰",
+        "canonical": "#8e8e93",
+        "tonalRamp": [
+          "oklch(15.00% 0.00735 286.19)",
+          "oklch(26.43% 0.00735 286.19)",
+          "oklch(37.86% 0.00735 286.19)",
+          "oklch(49.29% 0.00735 286.19)",
+          "oklch(60.71% 0.00735 286.19)",
+          "oklch(72.14% 0.00735 286.19)",
+          "oklch(83.57% 0.00735 286.19)",
+          "oklch(95.00% 0.00735 286.19)"
+        ]
+      },
+      "native-blue": {
+        "role": "secondary",
+        "displayName": "原生徽章藍",
+        "canonical": "#2196f3",
+        "tonalRamp": [
+          "oklch(15.00% 0.16896 248.81)",
+          "oklch(26.43% 0.16896 248.81)",
+          "oklch(37.86% 0.16896 248.81)",
+          "oklch(49.29% 0.16896 248.81)",
+          "oklch(60.71% 0.16896 248.81)",
+          "oklch(72.14% 0.16896 248.81)",
+          "oklch(83.57% 0.16896 248.81)",
+          "oklch(95.00% 0.16896 248.81)"
+        ]
+      },
+      "native-red": {
+        "role": "tertiary",
+        "displayName": "原生錯誤紅",
+        "canonical": "#ff3b30",
+        "tonalRamp": [
+          "oklch(15.00% 0.23214 28.66)",
+          "oklch(26.43% 0.23214 28.66)",
+          "oklch(37.86% 0.23214 28.66)",
+          "oklch(49.29% 0.23214 28.66)",
+          "oklch(60.71% 0.23214 28.66)",
+          "oklch(72.14% 0.23214 28.66)",
+          "oklch(83.57% 0.23214 28.66)",
+          "oklch(95.00% 0.23214 28.66)"
+        ]
+      },
+      "page-light": {
+        "role": "neutral",
+        "displayName": "亮色頁面",
+        "canonical": "#efeff4",
+        "tonalRamp": [
+          "oklch(15.00% 0.00666 286.27)",
+          "oklch(26.43% 0.00666 286.27)",
+          "oklch(37.86% 0.00666 286.27)",
+          "oklch(49.29% 0.00666 286.27)",
+          "oklch(60.71% 0.00666 286.27)",
+          "oklch(72.14% 0.00666 286.27)",
+          "oklch(83.57% 0.00666 286.27)",
+          "oklch(95.00% 0.00666 286.27)"
+        ]
+      },
+      "page-dark": {
+        "role": "neutral",
+        "displayName": "暗色頁面",
+        "canonical": "#000",
+        "tonalRamp": [
+          "oklch(15.00% 0.00000 0.00)",
+          "oklch(26.43% 0.00000 0.00)",
+          "oklch(37.86% 0.00000 0.00)",
+          "oklch(49.29% 0.00000 0.00)",
+          "oklch(60.71% 0.00000 0.00)",
+          "oklch(72.14% 0.00000 0.00)",
+          "oklch(83.57% 0.00000 0.00)",
+          "oklch(95.00% 0.00000 0.00)"
+        ]
+      },
+      "surface-light": {
+        "role": "neutral",
+        "displayName": "亮色群組",
+        "canonical": "#fff",
+        "tonalRamp": [
+          "oklch(15.00% 0.00000 0.00)",
+          "oklch(26.43% 0.00000 0.00)",
+          "oklch(37.86% 0.00000 0.00)",
+          "oklch(49.29% 0.00000 0.00)",
+          "oklch(60.71% 0.00000 0.00)",
+          "oklch(72.14% 0.00000 0.00)",
+          "oklch(83.57% 0.00000 0.00)",
+          "oklch(95.00% 0.00000 0.00)"
+        ]
+      },
+      "surface-dark": {
+        "role": "neutral",
+        "displayName": "暗色群組",
+        "canonical": "#1c1c1d",
+        "tonalRamp": [
+          "oklch(15.00% 0.00191 286.25)",
+          "oklch(26.43% 0.00191 286.25)",
+          "oklch(37.86% 0.00191 286.25)",
+          "oklch(49.29% 0.00191 286.25)",
+          "oklch(60.71% 0.00191 286.25)",
+          "oklch(72.14% 0.00191 286.25)",
+          "oklch(83.57% 0.00191 286.25)",
+          "oklch(95.00% 0.00191 286.25)"
+        ]
+      },
+      "ink-light": {
+        "role": "neutral",
+        "displayName": "亮色文字",
+        "canonical": "#000",
+        "tonalRamp": [
+          "oklch(15.00% 0.00000 0.00)",
+          "oklch(26.43% 0.00000 0.00)",
+          "oklch(37.86% 0.00000 0.00)",
+          "oklch(49.29% 0.00000 0.00)",
+          "oklch(60.71% 0.00000 0.00)",
+          "oklch(72.14% 0.00000 0.00)",
+          "oklch(83.57% 0.00000 0.00)",
+          "oklch(95.00% 0.00000 0.00)"
+        ]
+      },
+      "ink-dark": {
+        "role": "neutral",
+        "displayName": "暗色文字",
+        "canonical": "#fff",
+        "tonalRamp": [
+          "oklch(15.00% 0.00000 0.00)",
+          "oklch(26.43% 0.00000 0.00)",
+          "oklch(37.86% 0.00000 0.00)",
+          "oklch(49.29% 0.00000 0.00)",
+          "oklch(60.71% 0.00000 0.00)",
+          "oklch(72.14% 0.00000 0.00)",
+          "oklch(83.57% 0.00000 0.00)",
+          "oklch(95.00% 0.00000 0.00)"
+        ]
+      },
+      "secondary-text-light": {
+        "role": "neutral",
+        "displayName": "亮色次要文字",
+        "canonical": "rgba(0, 0, 0, 0.45)",
+        "tonalRamp": [
+          "oklch(15.00% 0.00000 0.00)",
+          "oklch(26.43% 0.00000 0.00)",
+          "oklch(37.86% 0.00000 0.00)",
+          "oklch(49.29% 0.00000 0.00)",
+          "oklch(60.71% 0.00000 0.00)",
+          "oklch(72.14% 0.00000 0.00)",
+          "oklch(83.57% 0.00000 0.00)",
+          "oklch(95.00% 0.00000 0.00)"
+        ]
+      },
+      "secondary-text-dark": {
+        "role": "neutral",
+        "displayName": "暗色次要文字",
+        "canonical": "rgba(255, 255, 255, 0.55)",
+        "tonalRamp": [
+          "oklch(15.00% 0.00000 0.00)",
+          "oklch(26.43% 0.00000 0.00)",
+          "oklch(37.86% 0.00000 0.00)",
+          "oklch(49.29% 0.00000 0.00)",
+          "oklch(60.71% 0.00000 0.00)",
+          "oklch(72.14% 0.00000 0.00)",
+          "oklch(83.57% 0.00000 0.00)",
+          "oklch(95.00% 0.00000 0.00)"
+        ]
+      },
+      "separator-light": {
+        "role": "neutral",
+        "displayName": "亮色分隔線",
+        "canonical": "rgba(0, 0, 0, 0.22)",
+        "tonalRamp": [
+          "oklch(15.00% 0.00000 0.00)",
+          "oklch(26.43% 0.00000 0.00)",
+          "oklch(37.86% 0.00000 0.00)",
+          "oklch(49.29% 0.00000 0.00)",
+          "oklch(60.71% 0.00000 0.00)",
+          "oklch(72.14% 0.00000 0.00)",
+          "oklch(83.57% 0.00000 0.00)",
+          "oklch(95.00% 0.00000 0.00)"
+        ]
+      },
+      "separator-dark": {
+        "role": "neutral",
+        "displayName": "暗色分隔線",
+        "canonical": "rgba(255, 255, 255, 0.15)",
+        "tonalRamp": [
+          "oklch(15.00% 0.00000 0.00)",
+          "oklch(26.43% 0.00000 0.00)",
+          "oklch(37.86% 0.00000 0.00)",
+          "oklch(49.29% 0.00000 0.00)",
+          "oklch(60.71% 0.00000 0.00)",
+          "oklch(72.14% 0.00000 0.00)",
+          "oklch(83.57% 0.00000 0.00)",
+          "oklch(95.00% 0.00000 0.00)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "display",
+        "purpose": "Navbar large 頁面標題。"
+      },
+      "title": {
+        "displayName": "title",
+        "purpose": "收合後置中的 Navbar 標題。"
+      },
+      "body": {
+        "displayName": "body",
+        "purpose": "Framework7 基本文字與 BlockFooter。"
+      },
+      "list": {
+        "displayName": "list",
+        "purpose": "一般列表名稱及目前值。"
+      },
+      "button": {
+        "displayName": "button",
+        "purpose": "標準 Button；大／小變體由上游控制。"
+      },
+      "input": {
+        "displayName": "input",
+        "purpose": "ListInput 文字欄位。"
+      },
+      "label": {
+        "displayName": "label",
+        "purpose": "手機 Tabbar 短標籤。"
+      }
+    },
+    "shadows": [
+      {
+        "name": "native-glass-light",
+        "value": "inset -1px -1px 0px -0.5px #ffffff, inset 1px 1px 0px -0.5px #ffffff, inset 3px 3px 10px -3px #ddd, inset -3px -3px 10px -3px #ddd, inset 0 0 5px 1px #fff, inset 0 0 0 0.5px rgba(0, 0, 0, 0.25), inset 0 0 24px 0 rgba(0, 0, 0, 0.1), 0 0 25px 0 rgba(0, 0, 0, 0.2)",
+        "purpose": "Navbar／ToolbarPane 亮色玻璃材質。"
+      },
+      {
+        "name": "native-glass-dark",
+        "value": "inset -2px -2px 0.5px -2.5px rgba(255, 255, 255, 0.4), inset 3px 3px 0.5px -3.5px rgba(255, 255, 255, 0.4), inset 2px 2px 0.5px -2px #262626, inset -2px -2px 0.5px -2px #262626, inset 0 0 5px 1px #141414, inset 0 0 0 1px rgba(255, 255, 255, 0.15), inset 0 0 10px 0 rgba(255, 255, 255, 0.075), inset 0 0 24px 0 rgba(255, 255, 255, 0.05), 0 0 25px 0 rgba(0, 0, 0, 0.15)",
+        "purpose": "Navbar／ToolbarPane 暗色玻璃材質。"
+      },
+      {
+        "name": "native-glass-thumb-light",
+        "value": "inset -3px -3px 0px -3.5px #ffffff, inset 3px 3px 0px -3.5px #ffffff, inset 0px 0px 0px 0.5px rgba(255, 255, 255, 0.5), inset 3px 3px 10px -2px #eee, inset -3px -3px 10px -2px #eee, inset 0 0 5px 1px #fff",
+        "purpose": "原生 Tabbar 亮色按壓選取層。"
+      },
+      {
+        "name": "native-glass-thumb-dark",
+        "value": "inset 3px 3px 0px -3.5px #ffffff, inset -3px -3px 0px -3.5px #ffffff, inset -0.5px -0.5px 0px rgba(255, 255, 255, 0.5), inset 0.5px 0.5px 0px rgba(255, 255, 255, 0.1), inset -3px 3px 0px -3.5px rgba(255, 255, 255, 0.25), inset 0px -5px 0px -3.5px rgba(255, 255, 255, 0.25), inset 0px -5px 5px rgba(255, 255, 255, 0.25)",
+        "purpose": "原生 Tabbar 暗色按壓選取層。"
+      },
+      {
+        "name": "native-card-raised",
+        "value": "0px 1px 2px rgba(0, 0, 0, 0.2)",
+        "purpose": "僅 Card raised 變體；一般 Card 不套用。"
+      },
+      {
+        "name": "native-segment-active",
+        "value": "0px 2px 2px rgba(0, 0, 0, 0.25)",
+        "purpose": "原生 Segmented strong 的選取按鈕。"
+      }
+    ],
+    "motion": [
+      {
+        "name": "native-button",
+        "value": "100ms",
+        "purpose": "上游 .ios .button transition-duration。"
+      },
+      {
+        "name": "native-button-small",
+        "value": "200ms",
+        "purpose": "上游 .ios .button-small transition-duration。"
+      },
+      {
+        "name": "native-link",
+        "value": "opacity 300ms",
+        "purpose": "上游 .ios .link transition；active-state 為 0ms。"
+      },
+      {
+        "name": "native-navbar",
+        "value": "400ms",
+        "purpose": "原生 Navbar hide／show；捲動收合由 runtime 驅動。"
+      },
+      {
+        "name": "native-toolbar",
+        "value": "400ms",
+        "purpose": "原生 Toolbar hide／show。"
+      },
+      {
+        "name": "native-tab-highlight",
+        "value": "300ms",
+        "purpose": "上游 Tabbar 滑動選取背景；runtime 設定位置。"
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "desktop",
+        "value": "48rem"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "原生主要按鈕",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "共用 Button 的 Framework7 primary 變體；保留上游尺寸與按壓狀態。",
+      "html": "<button type=\"button\" class=\"ds-button-primary\">儲存</button>",
+      "css": ".ds-button-primary{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:var(--f7-button-min-width,32px);height:var(--f7-button-height,34px);padding:0px var(--f7-button-padding-horizontal,10px);border-radius:var(--f7-button-border-radius,4px);font-family:var(--f7-font-family,-apple-system, SF Pro Text, SF UI Text, system-ui, Helvetica Neue, Helvetica, Arial, sans-serif);font-size:var(--f7-button-font-size,15px);font-weight:var(--f7-button-font-weight,500);letter-spacing:var(--f7-button-letter-spacing,0);cursor:pointer;text-decoration:none;white-space:nowrap;transition-duration:100ms;border:0;background:var(--f7-theme-color,#007aff);color:#fff;line-height:var(--f7-button-height,34px);}.ds-button-primary:hover{background:var(--f7-theme-color,#007aff);}.ds-button-primary:focus-visible{outline:2px solid var(--ring,var(--f7-theme-color,#007aff));outline-offset:2px;}.ds-button-primary:active{background:var(--f7-theme-color-tint,#298fff);}.ds-button-primary:disabled{opacity:0.5;pointer-events:none;}"
+    },
+    {
+      "name": "原生破壞性按鈕",
+      "kind": "button",
+      "refersTo": "button-destructive",
+      "description": "共用 Button 的 Framework7 destructive 變體；保留上游尺寸與按壓狀態。",
+      "html": "<button type=\"button\" class=\"ds-button-destructive\">刪除</button>",
+      "css": ".ds-button-destructive{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:var(--f7-button-min-width,32px);height:var(--f7-button-height,34px);padding:0px var(--f7-button-padding-horizontal,10px);border-radius:var(--f7-button-border-radius,4px);font-family:var(--f7-font-family,-apple-system, SF Pro Text, SF UI Text, system-ui, Helvetica Neue, Helvetica, Arial, sans-serif);font-size:var(--f7-button-font-size,15px);font-weight:var(--f7-button-font-weight,500);letter-spacing:var(--f7-button-letter-spacing,0);cursor:pointer;text-decoration:none;white-space:nowrap;transition-duration:100ms;border:0;background:var(--f7-color-red,#ff3b30);color:#fff;line-height:var(--f7-button-height,34px);}.ds-button-destructive:hover{background:var(--f7-color-red,#ff3b30);}.ds-button-destructive:focus-visible{outline:2px solid var(--ring,var(--f7-theme-color,#007aff));outline-offset:2px;}.ds-button-destructive:active{background:#ff6259;}.ds-button-destructive:disabled{opacity:0.5;pointer-events:none;}"
+    },
+    {
+      "name": "原生外框按鈕",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "共用 Button 的 Framework7 outline 變體；保留上游尺寸與按壓狀態。",
+      "html": "<button type=\"button\" class=\"ds-button-outline\">取消</button>",
+      "css": ".ds-button-outline{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:var(--f7-button-min-width,32px);height:var(--f7-button-height,34px);padding:0px var(--f7-button-padding-horizontal,10px);border-radius:var(--f7-button-border-radius,4px);font-family:var(--f7-font-family,-apple-system, SF Pro Text, SF UI Text, system-ui, Helvetica Neue, Helvetica, Arial, sans-serif);font-size:var(--f7-button-font-size,15px);font-weight:var(--f7-button-font-weight,500);letter-spacing:var(--f7-button-letter-spacing,0);cursor:pointer;text-decoration:none;white-space:nowrap;transition-duration:100ms;border:2px solid var(--f7-theme-color,#007aff);background:transparent;color:var(--f7-theme-color,#007aff);line-height:calc(var(--f7-button-height,34px) - 4px);}.ds-button-outline:hover{background:transparent;}.ds-button-outline:focus-visible{outline:2px solid var(--ring,var(--f7-theme-color,#007aff));outline-offset:2px;}.ds-button-outline:active{background:rgba(var(--f7-theme-color-rgb,0,122,255),0.15);}.ds-button-outline:disabled{opacity:0.5;pointer-events:none;}"
+    },
+    {
+      "name": "原生淡色按鈕",
+      "kind": "button",
+      "refersTo": "button-tonal",
+      "description": "共用 Button 的 Framework7 tonal 變體；保留上游尺寸與按壓狀態。",
+      "html": "<button type=\"button\" class=\"ds-button-tonal\">檢視變更</button>",
+      "css": ".ds-button-tonal{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:var(--f7-button-min-width,32px);height:var(--f7-button-height,34px);padding:0px var(--f7-button-padding-horizontal,10px);border-radius:var(--f7-button-border-radius,4px);font-family:var(--f7-font-family,-apple-system, SF Pro Text, SF UI Text, system-ui, Helvetica Neue, Helvetica, Arial, sans-serif);font-size:var(--f7-button-font-size,15px);font-weight:var(--f7-button-font-weight,500);letter-spacing:var(--f7-button-letter-spacing,0);cursor:pointer;text-decoration:none;white-space:nowrap;transition-duration:100ms;border:0;background:var(--f7-button-tonal-bg-color,rgba(var(--f7-theme-color-rgb,0,122,255), 0.15));color:var(--f7-theme-color,#007aff);line-height:var(--f7-button-height,34px);}.ds-button-tonal:hover{background:var(--f7-button-tonal-bg-color,rgba(var(--f7-theme-color-rgb,0,122,255), 0.15));}.ds-button-tonal:focus-visible{outline:2px solid var(--ring,var(--f7-theme-color,#007aff));outline-offset:2px;}.ds-button-tonal:active{background:var(--f7-button-tonal-pressed-bg-color,rgba(var(--f7-theme-color-rgb,0,122,255), 0.25));}.ds-button-tonal:disabled{opacity:0.5;pointer-events:none;}"
+    },
+    {
+      "name": "原生透明按鈕",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "共用 Button 的 Framework7 ghost 變體；保留上游尺寸與按壓狀態。",
+      "html": "<button type=\"button\" class=\"ds-button-ghost\">重新整理</button>",
+      "css": ".ds-button-ghost{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:var(--f7-button-min-width,32px);height:var(--f7-button-height,34px);padding:0px var(--f7-button-padding-horizontal,10px);border-radius:var(--f7-button-border-radius,4px);font-family:var(--f7-font-family,-apple-system, SF Pro Text, SF UI Text, system-ui, Helvetica Neue, Helvetica, Arial, sans-serif);font-size:var(--f7-button-font-size,15px);font-weight:var(--f7-button-font-weight,500);letter-spacing:var(--f7-button-letter-spacing,0);cursor:pointer;text-decoration:none;white-space:nowrap;transition-duration:100ms;border:0;background:transparent;color:var(--f7-theme-color,#007aff);line-height:var(--f7-button-height,34px);}.ds-button-ghost:hover{background:transparent;}.ds-button-ghost:focus-visible{outline:2px solid var(--ring,var(--f7-theme-color,#007aff));outline-offset:2px;}.ds-button-ghost:active{background:rgba(var(--f7-theme-color-rgb,0,122,255),0.15);}.ds-button-ghost:disabled{opacity:0.5;pointer-events:none;}"
+    },
+    {
+      "name": "原生連結按鈕",
+      "kind": "button",
+      "refersTo": "button-link",
+      "description": "共用 Button 的 Framework7 link 變體；保留上游尺寸與按壓狀態。",
+      "html": "<a href=\"#record\" class=\"ds-button-link\">檢視內容</a>",
+      "css": ".ds-button-link{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:var(--f7-button-min-width,32px);height:var(--f7-button-height,34px);padding:0px var(--f7-button-padding-horizontal,10px);border-radius:var(--f7-button-border-radius,4px);font-family:var(--f7-font-family,-apple-system, SF Pro Text, SF UI Text, system-ui, Helvetica Neue, Helvetica, Arial, sans-serif);font-size:var(--f7-button-font-size,15px);font-weight:var(--f7-button-font-weight,500);letter-spacing:var(--f7-button-letter-spacing,0);cursor:pointer;text-decoration:none;white-space:nowrap;transition-duration:100ms;border:0;background:transparent;color:var(--f7-theme-color,#007aff);line-height:var(--f7-button-height,34px);}.ds-button-link:hover{background:transparent;}.ds-button-link:focus-visible{outline:2px solid var(--ring,var(--f7-theme-color,#007aff));outline-offset:2px;}.ds-button-link:active{background:rgba(var(--f7-theme-color-rgb,0,122,255),0.15);opacity:var(--f7-link-pressed-opacity,0.3);transition-duration:0ms;}.ds-button-link:disabled{opacity:0.5;pointer-events:none;}"
+    },
+    {
+      "name": "原生列表欄位",
+      "kind": "input",
+      "refersTo": "input-list",
+      "description": "ListInput 的標籤、欄位與原生列分隔；資料仍由產品回呼處理。",
+      "html": "<div class=\"ds-input-row\"><label class=\"ds-input-label\" for=\"ds-native-input\">分類名稱</label><input id=\"ds-native-input\" class=\"ds-input\" type=\"text\" placeholder=\"輸入名稱\"></div>",
+      "css": ".ds-input-row{padding:12px 16px;background:var(--f7-list-strong-bg-color,#fff);color:var(--f7-input-text-color,#000);border-bottom:1px solid var(--f7-list-item-border-color,rgba(0,0,0,0.22));font-family:var(--f7-font-family,-apple-system, SF Pro Text, SF UI Text, system-ui, Helvetica Neue, Helvetica, Arial, sans-serif);}.ds-input-label{display:block;font-size:var(--f7-label-font-size,12px);font-weight:var(--f7-label-font-weight,400);line-height:var(--f7-label-height,16px);}.ds-input{display:block;width:100%;height:var(--f7-input-height,40px);border:0;padding:0;color:var(--f7-input-text-color,#000000);background:transparent;font-size:var(--f7-input-font-size,16px);font-family:inherit;}.ds-input::placeholder{color:var(--f7-input-placeholder-color,#a9a9a9);}.ds-input:hover{background:transparent;}.ds-input:focus-visible{outline:2px solid var(--ring,var(--f7-theme-color,#007aff));outline-offset:2px;}.ds-input:disabled{opacity:0.55;pointer-events:none;}"
+    },
+    {
+      "name": "原生膠囊 Tabbar",
+      "kind": "nav",
+      "refersTo": "tabbar",
+      "description": "ToolbarPane 的 iOS 玻璃膠囊與原生 SVG 圖示；此靜態片段不重建 SDK 滑動生命週期。",
+      "html": "<nav class=\"ds-tabbar\" aria-label=\"主要導覽\"><div class=\"ds-toolbar-pane\"><a href=\"#destination-0\" class=\"ds-tab-link ds-tab-link-current\" aria-current=\"page\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"28\" height=\"28\" aria-hidden=\"true\" fill=\"currentColor\" viewBox=\"0 0 56 56\"><path d=\"M .6249 27.8242 C .6249 28.9492 1.5155 29.6289 2.6171 29.6289 C 3.2968 29.6289 3.8358 29.3008 4.3046 28.8320 L 27.1796 7.9961 C 27.4374 7.7383 27.7187 7.6445 28.0233 7.6445 C 28.3046 7.6445 28.5624 7.7383 28.8436 7.9961 L 51.6954 28.8320 C 52.1874 29.3008 52.7264 29.6289 53.3826 29.6289 C 54.4842 29.6289 55.3751 28.9492 55.3751 27.8242 C 55.3751 27.1211 55.1173 26.6758 54.6719 26.2774 L 46.5623 18.8945 L 46.5623 5.0430 C 46.5623 4.0117 45.9061 3.3555 44.8751 3.3555 L 41.8046 3.3555 C 40.7968 3.3555 40.0936 4.0117 40.0936 5.0430 L 40.0936 13.0117 L 30.8124 4.5274 C 29.9921 3.7539 28.9843 3.3789 27.9999 3.3789 C 27.0155 3.3789 26.0312 3.7539 25.1874 4.5274 L 1.3280 26.2774 C .9062 26.6758 .6249 27.1211 .6249 27.8242 Z M 7.3280 47.4883 C 7.3280 50.7461 9.2968 52.6445 12.6015 52.6445 L 22.0936 52.6445 L 22.0936 35.9805 C 22.0936 34.9023 22.8202 34.1992 23.8984 34.1992 L 32.1718 34.1992 C 33.2499 34.1992 33.9531 34.9023 33.9531 35.9805 L 33.9531 52.6445 L 43.4216 52.6445 C 46.7264 52.6445 48.6719 50.7461 48.6719 47.4883 L 48.6719 30.3320 L 28.7734 12.4023 C 28.5155 12.1679 28.2343 12.0508 27.9531 12.0508 C 27.6952 12.0508 27.4374 12.1679 27.1562 12.4258 L 7.3280 30.4492 Z\"/></svg><span class=\"ds-tabbar-label\">首頁</span></a><a href=\"#destination-1\" class=\"ds-tab-link\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"28\" height=\"28\" aria-hidden=\"true\" fill=\"currentColor\" viewBox=\"0 0 56 56\"><path d=\"M 7.3398 16.7617 C 8.9804 16.7617 10.2929 15.4492 10.2929 13.8320 C 10.2929 12.1914 8.9804 10.8789 7.3398 10.8789 C 5.7226 10.8789 4.3867 12.1914 4.3867 13.8320 C 4.3867 15.4492 5.7226 16.7617 7.3398 16.7617 Z M 17.6992 15.7070 L 49.7149 15.7070 C 50.7930 15.7070 51.6133 14.8867 51.6133 13.8320 C 51.6133 12.7539 50.7930 11.9336 49.7149 11.9336 L 17.6992 11.9336 C 16.6445 11.9336 15.8242 12.7539 15.8242 13.8320 C 15.8242 14.8867 16.6445 15.7070 17.6992 15.7070 Z M 7.3398 30.9414 C 8.9804 30.9414 10.2929 29.6289 10.2929 27.9883 C 10.2929 26.3477 8.9804 25.0352 7.3398 25.0352 C 5.7226 25.0352 4.3867 26.3477 4.3867 27.9883 C 4.3867 29.6289 5.7226 30.9414 7.3398 30.9414 Z M 17.6992 29.8867 L 49.7149 29.8867 C 50.7930 29.8867 51.6133 29.0430 51.6133 27.9883 C 51.6133 26.9336 50.7930 26.1133 49.7149 26.1133 L 17.6992 26.1133 C 16.6445 26.1133 15.8242 26.9336 15.8242 27.9883 C 15.8242 29.0430 16.6445 29.8867 17.6992 29.8867 Z M 7.3398 45.1211 C 8.9804 45.1211 10.2929 43.7852 10.2929 42.1680 C 10.2929 40.5273 8.9804 39.2148 7.3398 39.2148 C 5.7226 39.2148 4.3867 40.5273 4.3867 42.1680 C 4.3867 43.7852 5.7226 45.1211 7.3398 45.1211 Z M 17.6992 44.0430 L 49.7149 44.0430 C 50.7930 44.0430 51.6133 43.2227 51.6133 42.1680 C 51.6133 41.0898 50.7930 40.2695 49.7149 40.2695 L 17.6992 40.2695 C 16.6445 40.2695 15.8242 41.0898 15.8242 42.1680 C 15.8242 43.2227 16.6445 44.0430 17.6992 44.0430 Z\"/></svg><span class=\"ds-tabbar-label\">列表</span></a><a href=\"#destination-2\" class=\"ds-tab-link\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"28\" height=\"28\" aria-hidden=\"true\" fill=\"currentColor\" viewBox=\"0 0 56 56\"><path d=\"M 9.4257 43.7500 L 33.0273 43.7500 C 32.8632 46.9141 30.8242 48.9297 28.0117 48.9297 C 25.1757 48.9297 23.1601 46.9141 22.9726 43.7500 L 19.3164 43.7500 C 19.5039 48.2500 23.0429 52.2109 28.0117 52.2109 C 32.9570 52.2109 36.4960 48.2500 36.6835 43.7500 L 46.5742 43.7500 C 48.8005 43.7500 50.1133 42.6016 50.1133 40.9141 C 50.1133 38.5703 47.7460 36.4609 45.7070 34.375 C 44.1601 32.7578 43.7382 29.4297 43.5742 26.7344 C 43.3867 17.5000 41.0195 11.5234 34.7617 9.2734 C 33.9882 6.2266 31.4570 3.7891 28.0117 3.7891 C 24.5429 3.7891 22.0351 6.2266 21.2382 9.2734 C 15.0039 11.5234 12.6132 17.5000 12.4492 26.7344 C 12.2617 29.4297 11.8632 32.7578 10.2929 34.375 C 8.2773 36.4609 5.8867 38.5703 5.8867 40.9141 C 5.8867 42.6016 7.2226 43.7500 9.4257 43.7500 Z M 10.4570 40.2109 L 10.4570 39.9297 C 10.8789 39.2266 12.2617 37.8672 13.5039 36.4844 C 15.1679 34.6094 15.9648 31.6094 16.1757 27.0156 C 16.3632 16.7969 19.4101 13.5156 23.4413 12.4375 C 24.0273 12.2969 24.3320 11.9922 24.3554 11.4062 C 24.4492 8.9453 25.8320 7.2344 28.0117 7.2344 C 30.1679 7.2344 31.5742 8.9453 31.6445 11.4062 C 31.6679 11.9922 31.9960 12.2969 32.5820 12.4375 C 36.5898 13.5156 39.6367 16.7969 39.8476 27.0156 C 40.0351 31.6094 40.8320 34.6094 42.5195 36.4844 C 43.7382 37.8672 45.1445 39.2266 45.5664 39.9297 L 45.5664 40.2109 Z\"/></svg><span class=\"ds-tabbar-label\">通知</span></a><a href=\"#destination-3\" class=\"ds-tab-link\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"28\" height=\"28\" aria-hidden=\"true\" fill=\"currentColor\" viewBox=\"0 0 56 56\">\n  <path d=\"M18.2918704,0.682944646 L20.3171289,2.92622342 C22.5361373,5.38410946 26.1397265,5.3776124 28.3528693,2.92622342 L30.2521549,0.822478633 C32.5839645,1.4499386 34.7753833,2.41991367 36.7691418,3.67513451 L36.6322262,6.35564535 C36.4633143,9.66270916 39.0160307,12.2062374 42.3143528,12.0377719 L44.7391942,11.9139205 C45.970889,14.0228998 46.8900976,16.3366849 47.4333262,18.7917819 L45.7437747,20.3171289 C43.2858887,22.5361373 43.2923858,26.1397265 45.7437747,28.3528693 L47.3039836,29.7614443 C46.6873969,32.2638048 45.6782881,34.6116668 44.3457025,36.735985 L42.3143528,36.6322262 C39.007289,36.4633143 36.4637608,39.0160307 36.6322262,42.3143528 L36.7359799,44.3457057 C34.6116668,45.6782881 32.2638048,46.6873969 29.7614443,47.3039836 L28.3528693,45.7437747 C26.1338609,43.2858887 22.5302717,43.2923858 20.3171289,45.7437747 L18.7917819,47.4333262 C16.3366849,46.8900976 14.0228998,45.970889 11.9139205,44.7391942 L12.0377719,42.3143528 C12.2066839,39.007289 9.65396742,36.4637608 6.35564535,36.6322262 L3.67513117,36.7691365 C2.41991367,34.7753833 1.4499386,32.5839645 0.822478633,30.2521549 L2.92622342,28.3528693 C5.38410946,26.1338609 5.3776124,22.5302717 2.92622342,20.3171289 L0.682944646,18.2918704 C1.23975257,16.0094974 2.12293759,13.8550207 3.28024752,11.8806926 L6.35564535,12.0377719 C9.66270916,12.2066839 12.2062374,9.65396742 12.0377719,6.35564535 L11.8806926,3.28024752 C13.8550207,2.12293759 16.0094974,1.23975257 18.2918704,0.682944646 Z M16.7256456,4.44999867 C16.3680614,4.5830738 16.0143918,4.72596655 15.6649839,4.87849119 L15.6911683,5.3911466 C15.9929207,11.2990434 11.3040265,15.9931752 5.39114661,15.6911683 L4.8784912,15.6649838 C4.72596656,16.0143918 4.58307381,16.3680614 4.44999868,16.7256456 L4.82312058,17.0625044 C9.21400567,21.0266472 9.2177092,27.6614485 4.82312058,31.6289348 L4.65050066,31.7847781 C4.8175234,32.1991992 4.99787387,32.6079553 5.19123643,33.0104816 L5.39114661,33.000271 C11.2419278,32.7014358 15.9022991,37.2972177 15.69853,43.1291478 C16.1923007,43.3436519 16.6945117,43.5389223 17.2041918,43.7144479 C21.0763433,39.5916597 27.3599325,39.5262017 31.3077432,43.5279548 C31.8779091,43.3144137 32.4380042,43.0759167 32.9866081,42.8132437 C32.9594643,37.2979481 37.2937012,32.9592904 42.8132466,32.9866016 C43.0759195,32.4379975 43.3144164,31.8779023 43.5279572,31.3077365 C39.529445,27.3629141 39.5883149,21.0793847 43.7144475,17.2041904 C43.5389218,16.6945104 43.3436515,16.1922996 43.1291474,15.6985291 C37.3945193,15.8988384 32.8475535,11.3933767 32.9897182,5.66905791 L33.010482,5.1912368 C32.6079555,4.99787406 32.1991992,4.8175235 31.7847781,4.65050071 L31.6289348,4.82312057 C27.6647921,9.21400566 21.0299908,9.2177092 17.0625045,4.82312057 L16.7256456,4.44999867 Z M24,15 C28.9705627,15 33,19.0294373 33,24 C33,28.9705627 28.9705627,33 24,33 C19.0294373,33 15,28.9705627 15,24 C15,19.0294373 19.0294373,15 24,15 Z M24,18 C20.6862915,18 18,20.6862915 18,24 C18,27.3137085 20.6862915,30 24,30 C27.3137085,30 30,27.3137085 30,24 C30,20.6862915 27.3137085,18 24,18 Z\" transform=\"translate(4 4)\"/>\n</svg>\n<span class=\"ds-tabbar-label\">設定</span></a></div></nav>",
+      "css": ".ds-tabbar{box-sizing:border-box;height:var(--f7-tabbar-icons-height,80px);padding:0 16px 16px;font-family:var(--f7-font-family,-apple-system, SF Pro Text, SF UI Text, system-ui, Helvetica Neue, Helvetica, Arial, sans-serif);}.ds-toolbar-pane{height:100%;display:flex;align-items:center;justify-content:center;position:relative;border-radius:32px;backdrop-filter:saturate(180%) blur(16px);box-shadow:var(--f7-glass-shadow,inset -1px -1px 0px -0.5px #ffffff, inset 1px 1px 0px -0.5px #ffffff, inset 3px 3px 10px -3px #ddd, inset -3px -3px 10px -3px #ddd, inset 0 0 5px 1px #fff, inset 0 0 0 0.5px rgba(0, 0, 0, 0.25), inset 0 0 24px 0 rgba(0, 0, 0, 0.1), 0 0 25px 0 rgba(0, 0, 0, 0.2));background:var(--f7-glass-bg-color,rgba(255, 255, 255, 0.75));}.ds-tab-link{display:flex;flex:1;flex-direction:column;align-items:center;justify-content:center;position:relative;height:100%;padding:4px 12px;text-decoration:none;color:var(--f7-tabbar-link-inactive-color,var(--f7-bars-text-color,#000));}.ds-tab-link svg{width:28px;height:28px;}.ds-tabbar-label{margin-top:4px;font-size:var(--f7-tabbar-label-font-size,12px);font-weight:var(--f7-tabbar-label-font-weight,500);}.ds-tab-link-current{color:var(--f7-theme-color,#007aff);}.ds-tab-link-current::before{content:'';position:absolute;inset:4px;border-radius:32px;background:var(--f7-tabbar-link-highlight-bg-color,rgba(0, 0, 0, 0.1));}.ds-tab-link svg,.ds-tabbar-label{position:relative;}.ds-tab-link:hover{color:var(--f7-tabbar-link-inactive-color,var(--f7-bars-text-color,#000));}.ds-tab-link-current:hover{color:var(--f7-theme-color,#007aff);}.ds-tab-link:focus-visible{outline:2px solid var(--ring,var(--f7-theme-color,#007aff));outline-offset:2px;}.ds-tab-link:active{opacity:var(--f7-link-pressed-opacity,0.3);}"
+    },
+    {
+      "name": "原生 Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Framework7 Badge；預設使用原生 color-blue，其他語意變體使用 red 或 gray。",
+      "html": "<span class=\"ds-badge\">3</span>",
+      "css": ".ds-badge{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;min-width:var(--f7-badge-size,20px);height:var(--f7-badge-size,20px);padding:var(--f7-badge-padding,0 4px);border-radius:var(--f7-badge-size,20px);background:var(--f7-color-blue,#2196f3);color:var(--f7-badge-text-color,#fff);font-family:var(--f7-font-family,-apple-system, SF Pro Text, SF UI Text, system-ui, Helvetica Neue, Helvetica, Arial, sans-serif);font-size:var(--f7-badge-font-size,12px);font-weight:var(--f7-badge-font-weight,600);}.ds-badge:hover{background:var(--f7-color-blue,#2196f3);}.ds-badge:focus-visible{outline:2px solid var(--ring,var(--f7-theme-color,#007aff));outline-offset:2px;}"
+    },
+    {
+      "name": "原生 Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "共用 Card／CardContent 的原生承載面；一般變體沒有 raised 陰影。",
+      "html": "<article class=\"ds-card\"><div class=\"ds-card-content\">內容與紀錄</div></article>",
+      "css": ".ds-card{background:var(--f7-card-bg-color,#fff);color:var(--f7-text-color,#000);border-radius:var(--f7-card-border-radius,24px);font-family:var(--f7-font-family,-apple-system, SF Pro Text, SF UI Text, system-ui, Helvetica Neue, Helvetica, Arial, sans-serif);font-size:var(--f7-font-size,14px);margin:0;}.ds-card-content{padding:var(--f7-card-content-padding-vertical,16px) var(--f7-card-content-padding-horizontal,16px);}.ds-card:hover{background:var(--f7-card-bg-color,#fff);}.ds-card:focus-visible{outline:2px solid var(--ring,var(--f7-theme-color,#007aff));outline-offset:2px;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Framework7 iOS",
+    "overview": "Novae 的視覺依據是使用者指定的 Framework7 iOS 介面。所有裝置固定使用 iOS theme；系統字型、中性色標題、藍色操作、群組列表與原生玻璃材質共同形成操作語言。學生與管理員沿用熟悉的控制項完成既有工作，介面密度依內容及裝置調整。\n\n此文件擷取已完成實作的共用 token，供新增畫面與維護時查閱。執行期樣式仍以安裝的 Framework7／Framework7 React 9.2.0 來源為準；生成 CSS 與此文件應隨套件升級一起更新。Next.js 保留網址與路由，產品 hooks 保留權限、草稿及資料操作責任。",
+    "keyCharacteristics": [
+      "使用真正的 Framework7 iOS 元件、runtime 與上游樣式。",
+      "原生大標題隨 PageContent 捲動收合為置中小標題。",
+      "手機採 ToolbarPane 膠囊導航；桌面採原生 menu List。",
+      "操作列呈現名稱與目前值，群組說明放在原生 BlockFooter。",
+      "亮暗主題、safe area、鍵盤及 reduced motion 接合於既有產品流程。"
+    ],
+    "rules": [
+      {
+        "name": "The Native Color Rule",
+        "body": "標題繼承中性色，操作與選取使用原生主題色；不要把 domain 狀態色套成新的控制項主題。",
+        "section": "colors"
+      },
+      {
+        "name": "The Native Material Rule",
+        "body": "使用上游控制項的材質與動畫，保留 library runtime 對其狀態及生命週期的控制。",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** 優先使用 Framework7 對應元件、runtime plugin 與上游 iOS 樣式。",
+      "**Do** 保留 Next 網址、權限、草稿、資料操作及返回後的來源列表位置。",
+      "**Do** 將群組說明放在 BlockFooter，並保留它依賴的 List bottom margin。",
+      "**Do** 同時確認亮暗色、手機／桌面、長文字、safe area、鍵盤及 reduced motion。",
+      "**Do** 隨 Framework7 升級重新生成 CSS，並核對本文件與 sidecar 的擷取值。"
+    ],
+    "donts": [
+      "**Don't** 自寫一套原生控制項的邊框、圓角、玻璃材質、按壓或面板動畫。",
+      "**Don't** 把頁面標題改成藍色，或在設定操作列加入 description subtitle。",
+      "**Don't** 在原生 Fab 加文字標籤，或以自訂 Tabbar／header 取代原生結構。",
+      "**Don't** 直接修改生成 CSS，或讓這份 token 擷取成為另一套執行期樣式來源。",
+      "**Don't** 重新加入已移除的 HeroUI、Radix UI、Sonner、tw-animate-css、HarmonyOS 字型或未使用的 Typography plugin。"
+    ]
+  }
+}

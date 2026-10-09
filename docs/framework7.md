@@ -41,7 +41,7 @@ Markdown 編輯器保留 Vditor，因為業務需要 Markdown 原始內容；Fra
 - `src/styles/framework7.css`：Next 整合、safe area、viewport 與鍵盤可及性。元件外觀來自生成的上游 iOS CSS。
 - `scripts/generate-framework7.mjs`：只編譯使用中的 iOS 模組，保留亮暗主題；Swiper 只收 core／zoom／virtual，Skeleton 不帶未使用的文字字型。不要直接改生成 CSS。
 
-HeroUI、Radix UI、Sonner、tw-animate-css 與 HarmonyOS 字型套件已移除。介面與編輯器統一使用 Framework7 的系統字型，舊字型分片、產生器和未使用的 Tailwind 3 設定也已刪除。舊 press feedback、header backdrop、搜尋彈窗與自訂下拉關閉程式已移除。新增控制項前先檢查 Framework7 是否提供相同用途，並確認是否需要加入 runtime plugin 及 Less 模組。
+HeroUI、Radix UI、Sonner、tw-animate-css、HarmonyOS 字型套件及未使用的 Typography 外掛已移除。介面與編輯器統一使用 Framework7 的系統字型，舊字型分片、產生器和未使用的 Tailwind 3 設定也已刪除。舊 press feedback、header backdrop、搜尋彈窗與自訂下拉關閉程式已移除。新增控制項前先檢查 Framework7 是否提供相同用途，並確認是否需要加入 runtime plugin 及 Less 模組。
 
 ## 檢查與更新
 
@@ -56,6 +56,6 @@ bun run test:e2e
 
 完整原生 Searchbar、Smart Select、Photo Browser／Swiper 與其他控制項需要額外樣式和執行模組。刪除舊介面與未用模組後，UI CSS 上限調整為 352 KiB，總 JS 為 3.4 MiB；單一 CSS chunk gzip 維持 128 KiB，路由壓縮 CSS 維持 160 KiB。任何後續增加仍先精簡，再依實際測量討論上限。
 
-2026-10-10 正式 PWA 建置量測：最大路由 UI CSS 350.9 KiB、路由 CSS gzip 60.6 KiB、單一 CSS gzip 50.6 KiB、7 個字型共 236.2 KiB、JS 共 3.33 MiB。以 `.next-verify/build-budget-report.json` 的最新結果為準；本機驗證輸出固定使用 4 個 Next 建置 worker，避免與持續運行的預覽同時耗盡記憶體。
+2026-10-10 正式 PWA 建置量測：最大路由 UI CSS 350.8 KiB、路由 CSS gzip 60.6 KiB、單一 CSS gzip 50.6 KiB、7 個字型共 236.2 KiB、JS 共 3.32 MiB。以 `.next-verify/build-budget-report.json` 的最新結果為準；本機驗證輸出固定使用 4 個 Next 建置 worker，避免與持續運行的預覽同時耗盡記憶體。
 
 即時手機預覽使用獨立的開發輸出目錄和 Tailscale Serve。開發模式會在 hydration 前移除同來源的 PWA worker，避免正式版快取攔截 HMR；不自動重載正式環境。只有 Tailnet 開發預覽停用 Webpack pack cache，降低背景預覽的記憶體峰值。Framework7 CSS 產生器只寫入有變更的檔案，避免驗證時觸發無意義的 HMR。
