@@ -36,6 +36,7 @@ Markdown 編輯器保留 Vditor，因為業務需要 Markdown 原始內容；Fra
 - `src/components/ui/use-framework7-control.ts`：第三方 React ref、表單屬性與無障礙屬性的 DOM 接合。Framework7 9.2 的一般 ListItem 不提供 ref，使用實際 li 的 id 對應 anchor。
 - `src/components/ui/modal-context.tsx`、`modal-surface.tsx`、`native-modal-layers.tsx`：受控開關、原生關閉動畫、焦點、來源頁捲動與草稿／分享 guard。原生下拉關閉也必須走相同 guard。
 - `native-modal-lifecycle.ts`：Framework7 9.2 的卸載接合，移除尚未結束的 transition callback，並送出其 Popup swipe teardown 實際監聽的 `popupDestroy` 事件，避免 Strict Mode、路由交接或 HMR 留下已銷毀的物件。
+- `native-modal-isolation.ts`：面板開啟時以 `inert`／`aria-hidden` 隔離保留的背景頁面及下層面板，關閉後還原原有屬性；鍵盤與讀屏器只操作最上層面板。
 - `src/lib/app-scroll.ts`：主要 PageContent 的位置讀寫；獨立登入／設定流程才使用文件捲動。
 - `src/styles/framework7.css`：Next 整合、safe area、viewport 與鍵盤可及性。元件外觀來自生成的上游 iOS CSS。
 - `scripts/generate-framework7.mjs`：只編譯使用中的 iOS 模組，保留亮暗主題；Swiper 只收 core／zoom／virtual，Skeleton 不帶未使用的文字字型。不要直接改生成 CSS。

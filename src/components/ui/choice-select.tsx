@@ -167,6 +167,7 @@ export function ListPicker({
   });
   return (
     <ListItem
+      key={compact ? "sheet" : "popover"}
       id={id}
       title={label}
       after={

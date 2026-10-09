@@ -11,9 +11,9 @@ import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 
 export const Sheet = ModalRoot;
-export function SheetTitle({className, ...props}: React.ComponentProps<"h2">) {
+export function SheetTitle({className, style, ...props}: React.ComponentProps<"h2">) {
   const state = useModal();
-  return <h2 {...props} id={state.titleId} className={cn("contents", className)} />;
+  return <h2 {...props} id={state.titleId} className={className} style={{ font: "inherit", margin: 0, ...style }} />;
 }
 export function SheetDescription({className, ...props}: React.ComponentProps<"div">) {
   const state = useModal();

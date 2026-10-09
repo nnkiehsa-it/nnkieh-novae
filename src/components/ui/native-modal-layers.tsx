@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { f7ready } from "framework7-react";
 import { bindNativeModalCleanup } from "./native-modal-lifecycle";
+import { createNativeModalIsolation } from "./native-modal-isolation";
 import {
   beginSheetClose,
   holdStageBehind,
@@ -20,6 +21,7 @@ export function NativeModalLayers() {
   useEffect(() => {
     const releases = new Map<HTMLElement, () => void>();
     const returnFocus = new Map<HTMLElement, HTMLElement>();
+    const isolation = createNativeModalIsolation();
     let detach = () => {};
     f7ready((app) => {
       const open = (modal: Modal) => {
@@ -40,6 +42,7 @@ export function NativeModalLayers() {
           });
         }
         layers.push(el);
+        isolation.update(el);
         if (type === "sheet" || type === "popup")
           releases.set(
             el,
@@ -61,6 +64,7 @@ export function NativeModalLayers() {
       const closed = ({ el }: Modal) => {
         const index = layers.indexOf(el);
         if (index >= 0) layers.splice(index, 1);
+        isolation.update(topNativeModal());
         releases.get(el)?.();
         releases.delete(el);
         if (document.documentElement.dataset.inputModality === "keyboard")
@@ -114,6 +118,7 @@ export function NativeModalLayers() {
         document.removeEventListener("keydown", onKey, true);
         releases.forEach((release) => release());
         layers.length = 0;
+        isolation.restore();
       };
     });
     return () => detach();
