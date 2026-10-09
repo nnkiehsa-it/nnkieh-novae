@@ -75,7 +75,7 @@ export interface RowContent {
 
 const toneClass = {
   brand: "text-[var(--tint-content)]",
-  default: "",
+  default: "text-foreground",
   destructive: "text-destructive",
 } as const;
 

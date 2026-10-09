@@ -7,6 +7,7 @@ import type { View } from "framework7/types";
 import Dialog from "framework7/components/dialog";
 import Actions from "framework7/components/actions";
 import Sheet from "framework7/components/sheet";
+import Popup from "framework7/components/popup";
 import Popover from "framework7/components/popover";
 import Toast from "framework7/components/toast";
 import Tooltip from "framework7/components/tooltip";
@@ -19,6 +20,7 @@ Framework7.use([
   Dialog,
   Actions,
   Sheet,
+  Popup,
   Popover,
   Toast,
   Tooltip,

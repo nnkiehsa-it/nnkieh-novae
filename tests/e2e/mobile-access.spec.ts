@@ -116,8 +116,8 @@ test.describe('mobile route motion', () => {
 
     for (const dark of [false, true]) {
       await page.evaluate((enabled) => document.documentElement.classList.toggle('dark', enabled), dark);
-      await expect(page.locator('body')).toHaveCSS('background-color', dark ? 'rgb(0, 0, 0)' : 'rgb(233, 237, 244)');
-      await expect(title).toHaveCSS('background-color', dark ? 'rgb(22, 22, 24)' : 'rgb(253, 254, 254)');
+      await expect(page.locator('body')).toHaveCSS('background-color', dark ? 'rgb(0, 0, 0)' : 'rgb(242, 242, 247)');
+      await expect(title).toHaveCSS('background-color', dark ? 'rgb(28, 28, 30)' : 'rgb(255, 255, 255)');
       const contrast = await title.evaluate((element) => {
         const style = getComputedStyle(element);
         const luminance = (color: string) => {

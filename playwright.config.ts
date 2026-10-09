@@ -5,6 +5,7 @@ const readOnlyDesktopTests = [
   /access-visibility\.spec\.ts/,
   /admin-workspace\.spec\.ts/,
   /feed-layout\.spec\.ts/,
+  /framework7-ui\.spec\.ts/,
   /loading-continuity\.spec\.ts/,
   /motion-system\.spec\.ts/,
   /primary-navigation\.spec\.ts/,

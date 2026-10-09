@@ -138,7 +138,7 @@ export function DecisionSheet({
 }) {
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
-      <SheetContent>
+      <SheetContent kind="sheet">
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
         </SheetHeader>

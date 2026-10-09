@@ -25,3 +25,9 @@ bun run test:e2e
 兩個 Framework7 套件保持相同版本。Less 僅作為產生樣式的開發依賴，`verify:generated` 會重新產生並確認 CSS 沒有落後。新增元件前，先確認是否需要 JavaScript 模組；靜態控制項通常只需要樣式與標準 HTML 結構。
 
 HeroUI、Radix UI、Sonner、tw-animate-css 已移除。動畫使用 Framework7 與既有 Motion／motion token，不再保留第二套舊面板動畫。
+
+## 控制項選擇
+
+詳細頁與編輯工作使用 Popup，短選擇使用 Sheet Modal；手機操作選單使用 Actions，桌面錨點選單使用 Popover。不可逆操作使用 Dialog 明確確認，開關使用 Toggle，互斥檢視使用 Segmented，主要目的地使用 Tabbar。表單取消、下拉關閉與返回都保留原本的草稿及離開前檢查。
+
+Next.js 維持文件捲動，彈出介面與遮罩固定在可見視窗；桌面 Popover 保留 Framework7 根據錨點計算的位置。樣式生成省略未使用的 Material theme、路由動畫與 Block，避免與既有 Tailwind utility 衝突。

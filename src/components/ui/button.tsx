@@ -7,7 +7,7 @@ import { Slot } from "@/components/ui/slot";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "button novae-button shrink-0 font-medium whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "button novae-button w-auto shrink-0 font-medium whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {

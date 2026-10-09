@@ -371,7 +371,7 @@ button,
 input,
 select,
 textarea {
-  font: inherit;
+  font-family: inherit;
 }
 
 [data-control-label=""] {

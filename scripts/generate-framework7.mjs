@@ -12,6 +12,7 @@ const components = [
   "dialog",
   "actions",
   "sheet",
+  "popup",
   "popover",
   "toast",
   "tooltip",
@@ -23,8 +24,6 @@ const libraryRoot = path.dirname(
 );
 const core = [
   "app",
-  "view",
-  "page",
   "link",
   "toolbar",
   "list",
@@ -33,6 +32,7 @@ const core = [
   "icon",
   "modal",
 ];
+// Next owns routing; its view/page layout does not need F7 router animations.
 const importPath = (relative) =>
   path.join(libraryRoot, relative).replaceAll("\\", "/");
 const source = [

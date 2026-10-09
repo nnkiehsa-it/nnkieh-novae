@@ -66,7 +66,7 @@ for (const width of [390, 1440]) {
               sheetTop: frame.getBoundingClientRect().top,
             };
           });
-          await expect(page.locator('.sheet-backdrop')).toHaveCSS("backdrop-filter", "none");
+          await expect(page.locator('.popup-backdrop')).toHaveCSS("backdrop-filter", "none");
           await close.click();
           await expect(record).toHaveAttribute("data-state", "closing");
           await expect.poll(() => page.evaluate((start) => {
@@ -149,7 +149,7 @@ for (const width of [390, 1440]) {
           bodyPaddingBottom: getComputedStyle(node).paddingBottom,
           overflowX: getComputedStyle(node).overflowX,
           scrollLeft: node.scrollLeft,
-          sheetPaddingBottom: getComputedStyle(node.closest('[data-sheet-surface]')!.querySelector('.sheet-modal-inner')!).paddingBottom,
+          sheetPaddingBottom: getComputedStyle(node.closest('[data-sheet-surface]')!.querySelector('.novae-sheet-inner')!).paddingBottom,
         };
       });
       expect(["clip", "hidden"]).toContain(horizontalBoundary.overflowX);

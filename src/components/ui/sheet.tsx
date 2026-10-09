@@ -55,12 +55,13 @@ export function SheetHeader({
 }
 export function SheetContent({
   className,
+  kind = "popup",
   ...props
-}: Omit<ModalSurfaceProps, "kind">) {
+}: Omit<ModalSurfaceProps, "kind"> & { kind?: "popup" | "sheet" }) {
   return (
     <ModalSurface
       {...props}
-      kind="sheet"
+      kind={kind}
       className={cn("min-h-0 overflow-hidden", className)}
       data-slot="dialog-content"
       data-sheet-surface=""

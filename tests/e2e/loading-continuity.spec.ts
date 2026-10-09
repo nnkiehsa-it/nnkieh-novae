@@ -283,7 +283,7 @@ test('switching a view inside an area keeps one content wrapper', async ({ brows
   }
 });
 
-test('selected tabs use the brand surface while inactive tabs retain a neutral rail', async ({ browser }) => {
+test('iOS segmented controls separate the selected segment from their neutral rail', async ({ browser }) => {
   const context = await coldContext(browser);
   const page = await context.newPage();
   await page.goto('/issues');
@@ -291,9 +291,9 @@ test('selected tabs use the brand surface while inactive tabs retain a neutral r
   await expect(tabs).toBeVisible();
   await tabs.getByRole('tab', { name: 'Closed', exact: true }).click();
   await expect(tabs.locator('[data-displayed-active="true"]')).toHaveCount(1);
-  await expect(tabs.locator('.t-tabs-pill')).toHaveCount(1);
-  const railColor = await tabs.evaluate((element) => getComputedStyle(element).backgroundColor);
-  const pillColor = await tabs.locator('.t-tabs-pill').evaluate((element) => getComputedStyle(element).backgroundColor);
+  await expect(tabs.locator('.segmented-highlight')).toHaveCount(1);
+  const railColor = await tabs.locator('.segmented').evaluate((element) => getComputedStyle(element).backgroundColor);
+  const pillColor = await tabs.locator('.segmented-highlight').evaluate((element) => getComputedStyle(element).backgroundColor);
   expect(railColor).not.toBe('rgba(0, 0, 0, 0)');
   expect(railColor).not.toBe(pillColor);
   await context.close();

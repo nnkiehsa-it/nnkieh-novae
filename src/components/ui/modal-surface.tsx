@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { f7, f7ready } from "framework7-react";
-import type { Actions, Dialog, Sheet, Popover } from "framework7/types";
+import type { Actions, Dialog, Sheet, Popup, Popover } from "framework7/types";
 import { useModal } from "./modal-context";
 import { useSheetDismiss } from "./use-sheet-dismiss";
 import { cn } from "@/lib/utils";
@@ -14,12 +14,12 @@ import {
 } from "@/lib/stage-depth";
 
 type ModalInstance =
-  Actions.Actions | Dialog.Dialog | Sheet.Sheet | Popover.Popover;
+  Actions.Actions | Dialog.Dialog | Sheet.Sheet | Popup.Popup | Popover.Popover;
 const modalStack: HTMLElement[] = [];
 const focusSelector =
   'button:not(:disabled),a[href],input:not(:disabled),textarea:not(:disabled),select:not(:disabled),[tabindex="0"]';
 export type ModalSurfaceProps = React.ComponentProps<"div"> & {
-  kind?: "actions" | "dialog" | "sheet" | "popover";
+  kind?: "actions" | "dialog" | "sheet" | "popup" | "popover";
   dismissible?: boolean;
   stageScrollY?: number;
   suppressEntrance?: boolean;
@@ -53,9 +53,10 @@ export function ModalSurface({
     () => true,
     () => false,
   );
+  const holdsStage = kind === "sheet" || kind === "popup";
   useSheetDismiss(
     element,
-    kind === "sheet" && present && state.open,
+    holdsStage && present && state.open,
     state.requestClose,
   );
   React.useLayoutEffect(() => {
@@ -87,7 +88,7 @@ export function ModalSurface({
           )
         )
           node.removeAttribute("aria-describedby");
-        if (kind === "sheet")
+        if (holdsStage)
           releaseStage.current = holdStageBehind(node, stageScrollY);
         const event = new Event("openAutoFocus", { cancelable: true });
         latest.current.onOpenAutoFocus?.(event);
@@ -129,14 +130,12 @@ export function ModalSurface({
         closeByBackdropClick: false,
         closeByOutsideClick: false,
         closeOnEscape: false,
-        animate:
-          !window.matchMedia("(prefers-reduced-motion: reduce)").matches &&
-          !suppressEntrance,
+        animate: !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
         on: {
           open: onOpen,
           close: () => {
             node.dataset.state = "closing";
-            if (kind === "sheet") beginSheetClose(node);
+            if (holdsStage) beginSheetClose(node);
           },
           closed: onClosed,
         },
@@ -146,13 +145,16 @@ export function ModalSurface({
           ? f7.actions.create({ ...params, convertToPopover: false })
           : kind === "sheet"
             ? f7.sheet.create(params)
-            : kind === "popover"
-              ? f7.popover.create({
-                  ...params,
-                  targetEl: latest.current.state.target.current ?? undefined,
-                })
-              : f7.dialog.create(params);
-      if (latest.current.state.open) instance.current.open();
+            : kind === "popup"
+              ? f7.popup.create(params)
+              : kind === "popover"
+                ? f7.popover.create({
+                    ...params,
+                    targetEl: latest.current.state.target.current ?? undefined,
+                  })
+                : f7.dialog.create(params);
+      if (latest.current.state.open)
+        instance.current.open(suppressEntrance ? false : undefined);
     });
     return () => {
       disposed = true;
@@ -166,7 +168,7 @@ export function ModalSurface({
       instance.current?.destroy();
       instance.current = null;
     };
-  }, [kind, present, ready, stageScrollY, suppressEntrance]);
+  }, [holdsStage, kind, present, ready, stageScrollY, suppressEntrance]);
 
   React.useEffect(() => {
     const modal = instance.current;
@@ -219,7 +221,7 @@ export function ModalSurface({
         modalStack.at(-1) === node &&
         event.target instanceof Element &&
         event.target.matches(
-          ".actions-backdrop,.dialog-backdrop,.sheet-backdrop,.popover-backdrop",
+          ".actions-backdrop,.dialog-backdrop,.sheet-backdrop,.popup-backdrop,.popover-backdrop",
         )
       )
         latest.current.state.requestClose();
@@ -236,6 +238,7 @@ export function ModalSurface({
   const classes = {
     actions: "actions-modal",
     sheet: "sheet-modal sheet-modal-bottom novae-sheet",
+    popup: "popup popup-tablet-fullscreen novae-sheet",
     dialog: "dialog novae-dialog",
     popover: "popover novae-popover",
   };
@@ -256,8 +259,10 @@ export function ModalSurface({
       ) : (
         <div
           className={
-            kind === "sheet"
-              ? "sheet-modal-inner"
+            holdsStage
+              ? kind === "sheet"
+                ? "sheet-modal-inner novae-sheet-inner"
+                : "novae-sheet-inner"
               : kind === "popover"
                 ? "popover-inner"
                 : "dialog-inner"
