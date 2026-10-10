@@ -8,7 +8,7 @@ Novae 使用 Framework7／Framework7 React 9.2.0，所有裝置固定採用 iOS 
 | --- | --- |
 | 頁面與捲動 | Page、PageContent |
 | 登入頁 | Page loginScreen、PageContent loginScreen、LoginScreenTitle、Block／BlockFooter |
-| 一般動作、文字欄位及內容卡片 | Button／Link、Input、Card／CardHeader／CardContent／CardFooter |
+| 一般動作、文字欄位及內容卡片 | Button／Link、ListInput、Card／CardHeader／CardContent／CardFooter |
 | 大標題、捲動後置中小標題 | Navbar large，接合 Framework7 navbar scroll lifecycle |
 | 固定頂部操作 | Navbar 內的 Link iconOnly、Framework7 Icon |
 | 列表目的地與狀態篩選 | Subnavbar、Segmented |
@@ -30,6 +30,10 @@ Novae 使用 Framework7／Framework7 React 9.2.0，所有裝置固定採用 iOS 
 以 [官方 Kitchen Sink](https://framework7.io/kitchen-sink/core/?theme=ios) 和安裝版本的元件來源為準。不要另寫一套邊框、圓角、陰影、按壓或面板動畫來模仿 iOS。操作列只呈現名稱及目前值；整組說明放在 BlockFooter。資料紀錄的作者、時間與狀態可以使用原生 media list 呈現。
 
 Markdown 編輯器保留 Vditor，因為業務需要 Markdown 原始內容；Framework7 的 Rich Text Editor 不提供相同資料格式。圖表、內容排版與反應回饋保留產品本身的呈現。Motion 處理這些內容狀態，面板、Tabbar、選單與控制項則交給 Framework7。
+
+一般表單以 `ListSection` 配合 `ListInputRow`／`ListNumberRow`／`ListNoteRow` 組成，分類選擇使用 `ListPicker`。初始設定、提案與設備表單共用這些列；不要再加入獨立 Input 外框或在外面包一張 Card。字數提示使用 ListInput 的 info slot，群組說明用 ListSection 的 footer，不能直接把段落放入列表的 ul。
+
+`SheetBody` 使用 PageContent，預設提供原生 Block gutter 與底部 safe area。含自身 Navbar／內容留白的詳情路由傳入 `padded={false}`。Dialog 的關閉或取消放在原生底部 buttons，不能另外疊一顆絕對定位的叉號。按鈕使用 Framework7 大、小及圓形變體，不以頁面層的固定 height／padding 重新繪製。
 
 ## 修改位置
 

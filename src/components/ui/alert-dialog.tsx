@@ -94,7 +94,7 @@ export function AlertDialogMedia({
       {...props}
       data-slot="alert-dialog-media"
       className={cn(
-        "mb-2 flex size-16 items-center justify-center rounded-xl bg-muted",
+        "mb-2 flex items-center justify-center text-color-gray [&_svg]:size-8",
         className,
       )}
     />

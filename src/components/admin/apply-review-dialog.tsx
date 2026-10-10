@@ -17,6 +17,7 @@ import {
 import { useI18n } from "@/i18n";
 import type { DraftChange } from "@/lib/draft-diff";
 import type { DraftImpact } from "@/hooks/use-draft";
+import { ListRow, ListSection } from "@/components/ui/list";
 
 /**
  * The last thing shown before a change is made.
@@ -69,42 +70,33 @@ export function ApplyReviewDialog({
               : t("admin.reviewDescription", { count: changes.length }))}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="max-h-64 overflow-y-auto rounded-xl bg-[var(--surface-inset)]">
+        <ListSection className="mt-4 text-left">
           {changes.map((change) => (
-            <div className="grid grid-cols-1 gap-1 border-b px-4 py-2.5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-3" key={change.key}>
-              <span className="min-w-0 flex-1 text-sm">{describeChange(change.key)}</span>
-              <span className="min-w-0 max-w-full break-words text-sm tabular-nums text-muted-foreground">
+            <ListRow key={change.key} label={describeChange(change.key)} detail={
+              <span className="break-words tabular-nums">
                 {formatChangeValue?.(change, change.before) ?? formatValue(change.before, t)}
                 <span aria-hidden className="px-1.5">→</span>
                 <span className="font-medium text-foreground">{formatChangeValue?.(change, change.after) ?? formatValue(change.after, t)}</span>
               </span>
-            </div>
+            } />
           ))}
-        </div>
+        </ListSection>
         {retention && impact.totalDeletedRows! > 0 && (impact.totalUpdatedRows ?? 0) > 0 ? (
           <p className="text-sm leading-6 text-muted-foreground">{t("admin.reviewExpiryDescription", { count: impact.totalUpdatedRows! })}</p>
         ) : null}
         {affected.length > 0 ? (
-          <div className="rounded-xl bg-[var(--surface-inset)]">
+          <ListSection className="mt-4 text-left">
             {affected.map(([key, count]) => (
-              <div className="flex items-center gap-3 border-b px-4 py-2.5 last:border-b-0" key={key}>
-                <span className="min-w-0 flex-1 text-sm">
-                  {describeImpact ? describeImpact(key) : key}
-                </span>
-                <span className="font-mono text-sm font-semibold tabular-nums">{count}</span>
-              </div>
+              <ListRow key={key} label={describeImpact ? describeImpact(key) : key} value={count} />
             ))}
-          </div>
+          </ListSection>
         ) : null}
         {updated.length > 0 ? (
-          <div className="rounded-xl bg-[var(--surface-inset)]">
+          <ListSection className="mt-4 text-left">
             {updated.map(([key, count]) => (
-              <div className="flex items-center gap-3 border-b px-4 py-2.5 last:border-b-0" key={key}>
-                <span className="min-w-0 flex-1 text-sm">{describeImpact ? describeImpact(key) : key}</span>
-                <span className="text-sm font-semibold tabular-nums">{count}</span>
-              </div>
+              <ListRow key={key} label={describeImpact ? describeImpact(key) : key} value={count} />
             ))}
-          </div>
+          </ListSection>
         ) : null}
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onCancel}>{t("common.cancel")}</AlertDialogCancel>

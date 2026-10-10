@@ -4,10 +4,9 @@
   min-width: 0;
   max-width: 100%;
   overflow: visible;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
+  border: 0;
+  border-radius: var(--f7-block-inset-border-radius);
   background: var(--card);
-  transition: border-color 180ms ease, box-shadow 180ms ease;
 }
 
 .novae-markdown-editor > div,
@@ -19,8 +18,8 @@
 }
 
 .novae-markdown-editor:focus-within {
-  border-color: var(--ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 18%, transparent);
+  outline: 2px solid var(--f7-theme-color);
+  outline-offset: 2px;
 }
 
 .novae-markdown-editor.is-loading {
@@ -35,7 +34,7 @@
   --second-color: var(--muted-foreground);
   --panel-background-color: var(--popover);
   --panel-shadow: var(--shadow-floating);
-  --toolbar-background-color: color-mix(in srgb, var(--muted) 72%, var(--card));
+  --toolbar-background-color: var(--f7-list-group-title-bg-color);
   --toolbar-icon-color: var(--muted-foreground);
   --toolbar-icon-hover-color: var(--primary);
   --toolbar-height: 2rem;

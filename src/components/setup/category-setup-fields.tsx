@@ -20,7 +20,7 @@ export function CategorySetupPanel({ children, enabled, onAdd, onEnabledChange, 
     <ListSection footer={t("ui.setup.navHint")}>
       <ListSwitchRow label={title} name={title} checked={enabled} onCheckedChange={onEnabledChange} />
     </ListSection>
-    <fieldset disabled={!enabled} className={`min-w-0 space-y-6${enabled ? "" : " disabled"}`}>
+    <fieldset disabled={!enabled} hidden={!enabled} className="min-w-0 space-y-6">
       {children}
     </fieldset>
     <ListSection>

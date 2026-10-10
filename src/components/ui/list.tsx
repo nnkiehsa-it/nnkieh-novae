@@ -71,7 +71,7 @@ export function listItemSlots(
         {detail}
       </span>
     ) : null,
-    value || trailing ? (
+    value != null || trailing ? (
       <span key="after" slot="after" className="flex items-center gap-2">
         {value}
         {trailing}

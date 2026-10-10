@@ -52,7 +52,6 @@ export function IssueSupportPanel({
             active={issue.currentUserSupported === true}
             burst={burst}
             busy={supporting}
-            className="size-11"
             disabled={issue.isOwnIssue || !supportOpen}
             icon={Hand}
             inactiveVariant="secondary"

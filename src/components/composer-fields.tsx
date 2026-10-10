@@ -79,7 +79,7 @@ export function ComposerField({
               {content.length} / {INPUT_LIMITS.content}
             </span>
           </BlockTitle>
-          <Block strong inset className="m-0">
+          <Block strong inset className="m-0 p-0">
           {pending ? (
             <div aria-hidden className="novae-markdown-editor is-loading" />
           ) : (

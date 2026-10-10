@@ -51,7 +51,7 @@ export function FacilityCard({
             active={facility.currentUserAffected === true}
             burst={burst}
             busy={affecting}
-            className="z-10 ml-auto h-8 px-1.5"
+            className="z-10 ml-auto"
             count={facility.affected_count}
             disabled={["completed", "unable-to-handle"].includes(facility.status)}
             icon={Hand}
