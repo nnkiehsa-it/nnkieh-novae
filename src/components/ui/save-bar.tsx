@@ -3,7 +3,7 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import { AnimatePresence, motion } from "motion/react";
-import { Toolbar } from "framework7-react";
+import { Toolbar, ToolbarPane } from "framework7-react";
 
 import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import { Button } from "@/components/ui/button";
@@ -66,7 +66,8 @@ export function SaveBar({
       transition={timing("sheet")}
     >
       <Toolbar position="bottom" className="relative h-auto">
-      <div className="flex w-full flex-wrap items-center gap-2 py-3">
+      <ToolbarPane className="w-full">
+      <div className="flex w-full flex-wrap items-center gap-2 px-4 py-3">
       {error ? (
         <div className="w-full space-y-2">
           <p className="text-sm text-destructive" role="alert">{error}</p>
@@ -101,6 +102,7 @@ export function SaveBar({
         {translate("ui.common.save")}
       </Button>
       </div>
+      </ToolbarPane>
       </Toolbar>
     </motion.div>
       ) : null}

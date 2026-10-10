@@ -15,7 +15,7 @@ function Segment({option, selected, compact, disabled, onSelect}: {
     role: "tab", "aria-label": option.label, "aria-selected": selected,
     tabindex: selected ? 0 : -1, disabled,
   });
-  return <Button type="button" ref={ref} active={selected} disabled={disabled} small={compact}
+  return <Button round type="button" ref={ref} active={selected} disabled={disabled} small={compact}
     data-liquid-tab={option.value} data-displayed-active={selected} onClick={onSelect}>
     <span className="inline-flex items-center justify-center gap-1.5">{option.icon}<span>{option.label}</span></span>
   </Button>;
@@ -68,7 +68,7 @@ export function LiquidTabs({
         buttons[next].focus();
       }}
     >
-      <Segmented strong className="novae-tabs">
+      <Segmented strong round className="novae-tabs">
         {options.map((option) => (
           <Segment
             option={option}

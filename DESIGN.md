@@ -57,7 +57,8 @@ typography:
     fontSize: "12px"
     fontWeight: 500
 rounded:
-  button: "4px"
+  # The selected native round variant follows each button's height.
+  button: "var(--f7-button-height)"
   input-outline: "8px"
   menu-list: "16px"
   list-inset: "24px"
@@ -161,7 +162,7 @@ components:
 
 ## Overview
 
-**Creative North Star: "Framework7 iOS"**
+**Creative North Star: "Framework7 iOS 26"**
 
 Novae 的視覺依據是使用者指定的 Framework7 iOS 介面。所有裝置固定使用 iOS theme；系統字型、中性色標題、藍色操作、群組列表與原生玻璃材質共同形成操作語言。學生與管理員沿用熟悉的控制項完成既有工作，介面密度依內容及裝置調整。
 
@@ -269,13 +270,13 @@ Sidecar 的八階色帶是設計面板用的 OKLCH 預覽推導，沒有新增�
 
 ## Shapes
 
-形狀由各控制項原生 token 決定：標準 Button、outline Input、menu List、inset List、Card、ToolbarPane、Dialog／Sheet／Popover 與 Fab 各保留自己的圓角。round Button 以該按鈕高度形成膠囊；Badge 以原生尺寸形成圓形或短膠囊。不要用單一產品 radius 覆蓋所有元件。
+所有 Button 必須使用原生 round 變體，以該按鈕高度形成膠囊；只有圖示的按鈕呈圓形。Segmented 的外框、按鈕及選取底也都使用 round。不得混入預設 4px 按鈕或方形選取底，即使它們是 Framework7 提供的變體。menu List、inset List、Card、ToolbarPane、Dialog／Sheet／Popover 與 Fab 保留各自的原生圓角與玻璃材質。
 
 ## Components
 
 ### Buttons
 
-`Button` 的 default、destructive、outline、secondary、ghost、link 分別接到原生 fill、red fill、outline、tonal、一般 Button 與 Link。標準、大、小、round 及 icon 尺寸使用上游變體；disabled、busy、表單屬性與可及名稱由共用 wrapper 接合。Dialog 內的按鈕沿用原生 dialog-button 結構。
+`Button` 的 default、destructive、outline、secondary、ghost、link 分別接到原生 fill、red fill、outline、tonal、一般 Button 與 Link。所有大小與狀態一律使用 round，包括 Next Link 的 asChild、附件、登入、送出、管理操作及對話框；不可只讓 icon 按鈕變圓。disabled、busy、表單屬性與可及名稱由共用 wrapper 接合。Dialog 內的按鈕沿用原生 dialog-button 結構，儲存工具列以 ToolbarPane 承載圓形按鈕。
 
 ### Lists / Cards / Badges
 

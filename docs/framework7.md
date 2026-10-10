@@ -27,7 +27,7 @@ Novae 使用 Framework7／Framework7 React 9.2.0，所有裝置固定採用 iOS 
 | 展開設定、紀錄內容 | ListItem accordion、AccordionContent |
 | 提案處理時間軸 | Framework7 Timeline 的官方 HTML 結構與 iOS 樣式 |
 
-以 [官方 Kitchen Sink](https://framework7.io/kitchen-sink/core/?theme=ios) 和安裝版本的元件來源為準。不要另寫一套邊框、圓角、陰影、按壓或面板動畫來模仿 iOS。操作列只呈現名稱及目前值；整組說明放在 BlockFooter。資料紀錄的作者、時間與狀態可以使用原生 media list 呈現。
+以 [官方 Kitchen Sink](https://framework7.io/kitchen-sink/core/?theme=ios) 和安裝版本的元件來源為準，選用 iOS 26 的圓形控制項：所有 Button 使用 round，Segmented 的容器與子按鈕也必須使用 round；不要混用示範頁中的 4px 方角變體。Toolbar 的操作群組使用 ToolbarPane。不要另寫一套邊框、圓角、陰影、按壓或面板動畫來模仿 iOS。操作列只呈現名稱及目前值；整組說明放在 BlockFooter。資料紀錄的作者、時間與狀態可以使用原生 media list 呈現。
 
 Markdown 編輯器保留 Vditor，因為業務需要 Markdown 原始內容；Framework7 的 Rich Text Editor 不提供相同資料格式。圖表、內容排版與反應回饋保留產品本身的呈現。Motion 處理這些內容狀態，面板、Tabbar、選單與控制項則交給 Framework7。
 

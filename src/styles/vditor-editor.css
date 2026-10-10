@@ -74,7 +74,7 @@
   height: 2rem;
   place-items: center;
   padding: 0;
-  border-radius: var(--radius-md);
+  border-radius: 50%;
   color: var(--muted-foreground);
   transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
 }
@@ -266,7 +266,7 @@
   .novae-markdown-editor [class~="vditor-toolbar__item"] [class~="vditor-tooltipped"] {
     width: 2.75rem;
     height: 2.75rem;
-    border-radius: var(--radius-lg);
+    border-radius: 50%;
   }
 
   .novae-markdown-editor [class~="vditor-panel"] {

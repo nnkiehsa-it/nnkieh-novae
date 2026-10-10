@@ -129,6 +129,7 @@ export function ChoiceSelect({
   return (
     <Button
       {...attributes}
+      round
       ref={element}
       className={cn("smart-select", className)}
       type="button"

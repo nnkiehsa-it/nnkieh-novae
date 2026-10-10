@@ -13,6 +13,17 @@ async function capture(page: Page, name: string, width: number) {
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
+  // Native iOS also exposes square variants; Novae's iOS 26 surface must stay round.
+  const squareControls = await page.locator('.button, .segmented-highlight').evaluateAll((controls) =>
+    controls.filter((control) => {
+      const rect = control.getBoundingClientRect();
+      if (!rect.width || !rect.height) return false;
+      const css = getComputedStyle(control);
+      return [css.borderTopLeftRadius, css.borderTopRightRadius, css.borderBottomLeftRadius, css.borderBottomRightRadius]
+        .some((radius) => parseFloat(radius) < Math.min(rect.width, rect.height) / 2);
+    }).map((control) => control.textContent?.trim() || control.className),
+  );
+  expect(squareControls).toEqual([]);
   await page.screenshot({
     path: path.join(captureDirectory, `${name}-${width}.png`),
   });

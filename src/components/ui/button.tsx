@@ -10,7 +10,7 @@ import { DialogButtonsContext } from "./dialog-buttons-context";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "button novae-button w-auto shrink-0 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
+  "button button-round novae-button w-auto shrink-0 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
   {
     variants: {
       variant: {
@@ -26,12 +26,12 @@ const buttonVariants = cva(
         xs: "button-small",
         sm: "button-small",
         lg: "button-large",
-        icon: "button-round button-large novae-icon-button",
-        // Room enough for a label once there is room for one; a square icon until then.
-        adaptive: "button-round button-large novae-icon-button sm:w-auto",
-        "icon-xs": "button-round button-small novae-icon-button",
-        "icon-sm": "button-round novae-icon-button",
-        "icon-lg": "button-round button-large novae-icon-button",
+        icon: "button-large novae-icon-button",
+        // Circular icon control on phones; a labelled capsule when space allows.
+        adaptive: "button-large novae-icon-button sm:w-auto",
+        "icon-xs": "button-small novae-icon-button",
+        "icon-sm": "novae-icon-button",
+        "icon-lg": "button-large novae-icon-button",
       },
     },
     defaultVariants: {
@@ -82,13 +82,13 @@ function Button({
     "data-control-label": "",
     "data-variant": variant,
     "data-size": size,
-    className: cn(buttonVariants({ variant: appearance, size }), inDialog && "dialog-button button-round button-large", className),
+    className: cn(buttonVariants({ variant: appearance, size }), inDialog && "dialog-button button-large", className),
     ...props,
   };
   if (asChild) return <Slot {...common} ref={ref} />;
 
   return (
-    <Framework7Button {...common} type={type} disabled={disabled} ref={f7Ref} />
+    <Framework7Button {...common} round type={type} disabled={disabled} ref={f7Ref} />
   );
 }
 
