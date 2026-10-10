@@ -31,7 +31,10 @@ export function AppearanceSection({
 }) {
   useLocaleSubscription();
   return (
-    <ListSection header={translate("ui.settings.appearance")}>
+    <ListSection
+      header={translate("ui.settings.appearance")}
+      footer={!canInstall && !installed ? translate("ui.settings.installFromMenu") : undefined}
+    >
       <ListPicker
         label={translate("ui.settings.displayMode")}
         onChange={onThemeChange}
@@ -55,13 +58,7 @@ export function AppearanceSection({
         disabled={!canInstall || installed}
         label={translate("ui.settings.installNovae")}
         onClick={onInstall}
-        value={
-          installed
-            ? translate("ui.settings.installed")
-            : canInstall
-              ? undefined
-              : translate("ui.settings.installFromMenu")
-        }
+        value={installed ? translate("ui.settings.installed") : undefined}
       />
     </ListSection>
   );

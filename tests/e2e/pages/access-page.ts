@@ -26,6 +26,8 @@ export async function selectScope(page: Page, scope: Scope) {
   if ('category' in scope) {
     await page.getByRole('combobox').click();
     await page.getByRole('radio', { name: scope.category }).press('Space');
+    // Native Smart Select keeps the background inert until its close animation ends.
+    await expect(page.locator('.smart-select-popover, .smart-select-sheet')).toHaveCount(0);
   }
   await expect(page.getByText('2. Current owners')).toBeVisible();
 }
