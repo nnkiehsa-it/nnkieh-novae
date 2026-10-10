@@ -69,6 +69,8 @@ export function ListChoiceRow({
 }
 export function ListInputRow({
   disabled,
+  id,
+  info,
   inputMode,
   label,
   maxLength,
@@ -77,6 +79,8 @@ export function ListInputRow({
   value,
 }: {
   disabled?: boolean;
+  id?: string;
+  info?: ReactNode;
   inputMode?: ComponentProps<"input">["inputMode"];
   label: string;
   maxLength?: number;
@@ -90,6 +94,7 @@ export function ListInputRow({
   return (
     <ListInput
       type="text"
+      inputId={id}
       label={label}
       disabled={disabled}
       inputmode={inputMode}
@@ -98,7 +103,9 @@ export function ListInputRow({
       placeholder={placeholder}
       value={value}
       ref={f7Ref}
-    />
+    >
+      {info ? <span slot="info">{info}</span> : null}
+    </ListInput>
   );
 }
 export function ListNumberRow({

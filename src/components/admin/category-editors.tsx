@@ -85,7 +85,7 @@ export function CategoryEditor({
     </ListSection>
 
       {isIssue(item) ? (
-        <ListSection header={t("admin.categoryVisibility")}>
+        <ListSection header={t("admin.categoryVisibility")} footer={identifierLocked ? t("admin.categoryPrivacyLocked") : undefined}>
           <ListPicker
             disabled={identifierLocked}
             label={t("ui.admin.readAccess")}
@@ -106,11 +106,10 @@ export function CategoryEditor({
             name={t("ui.admin.showAuthor")}
             onCheckedChange={(next) => change({ ...item, authorVisible: next })}
           />
-          {identifierLocked ? <p className="py-3 text-sm leading-6 text-muted-foreground">{t("admin.categoryPrivacyLocked")}</p> : null}
         </ListSection>
       ) : null}
       {isIssue(item) ? (
-        <ListSection header={t("admin.categoryParticipation")}>
+        <ListSection header={t("admin.categoryParticipation")} footer={item.supportEnabled ? t("admin.supportIntegerHelp") : undefined}>
           <ListSwitchRow
             checked={item.commentsEnabled}
             label={t("ui.admin.allowComments")}
@@ -137,7 +136,6 @@ export function CategoryEditor({
               unit={t("admin.unitDays")}
               value={item.supportDeadlineDays ?? undefined}
             />
-            <p className="px-4 py-2 text-sm leading-6 text-muted-foreground">{t("admin.supportIntegerHelp")}</p>
           </ListRowGroup>
         </ListSection>
       ) : null}

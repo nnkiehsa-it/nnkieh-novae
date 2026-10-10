@@ -57,7 +57,7 @@ export function RecordList({
   return (
     <div className="space-y-4">
       <form
-        className="flex gap-2"
+        className="flex items-center gap-2"
         onSubmit={(event) => {
           event.preventDefault();
           if (!disabled && !loading) onSearch();

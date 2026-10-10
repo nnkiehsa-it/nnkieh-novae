@@ -34,6 +34,12 @@ html[data-stage-held="true"] .novae-page-content { overflow: hidden; }
   justify-content: center;
   gap: 6px;
 }
+.novae-icon-button {
+  width: var(--f7-button-height);
+  padding-inline: 0;
+}
+.novae-icon-button.button-small { width: var(--f7-button-small-height); }
+.novae-icon-button.button-large { width: var(--f7-button-large-height); }
 .page-header:has(.navbar-large) { padding-bottom: var(--f7-navbar-large-title-height); }
 .actions-modal,
 .dialog,
@@ -72,6 +78,7 @@ html[data-stage-held="true"] .novae-page-content { overflow: hidden; }
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   height: 100%;
+  background: var(--f7-page-bg-color);
 }
 .sheet-modal .novae-sheet-inner {
   max-height: inherit;
@@ -80,10 +87,14 @@ html[data-stage-held="true"] .novae-page-content { overflow: hidden; }
   grid-template-rows: minmax(0, 1fr);
 }
 .novae-sheet [data-slot="sheet-body"] {
+  --f7-page-navbar-offset: 0px;
+  --f7-page-toolbar-bottom-offset: 0px;
+  padding-top: 0;
   padding-bottom: var(--safe-bottom);
 }
-.novae-sheet [data-route-content] {
-  padding: 16px;
+.novae-sheet [data-slot="sheet-body"][data-padded="true"] {
+  padding: var(--f7-block-padding-horizontal);
+  padding-bottom: max(var(--f7-block-padding-horizontal), var(--safe-bottom));
 }
 .novae-popover {
   max-width: calc(100vw - 2rem);

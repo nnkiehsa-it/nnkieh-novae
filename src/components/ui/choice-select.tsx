@@ -114,7 +114,7 @@ export function ChoiceSelect({
       <Link
         {...attributes}
         ref={element as NonNullable<ComponentProps<typeof Link>["ref"]>}
-        className={cn("smart-select", className)}
+        className={cn("smart-select", controlLabel === "heading" && "no-padding", className)}
         style={controlLabel === "heading" ? { color: "inherit" } : undefined}
         iconOnly={controlLabel === "toolbar"}
         href="#"

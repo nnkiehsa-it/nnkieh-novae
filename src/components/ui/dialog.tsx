@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { X } from "lucide-react";
 import { Button } from "./button";
 import { ModalRoot, ModalTrigger, useModal } from "./modal-context";
 import { ModalSurface, type ModalSurfaceProps } from "./modal-surface";
@@ -32,7 +31,9 @@ export function DialogContent({
   footer,
   ...props
 }: ModalSurfaceProps & { showCloseButton?: boolean; footer?: React.ReactNode }) {
-  const { t } = useI18n();
+  const hasFooter = Boolean(footer) || React.Children.toArray(children).some(
+    (child) => React.isValidElement(child) && child.type === DialogFooter,
+  );
   return (
     <ModalSurface
       {...props}
@@ -52,17 +53,7 @@ export function DialogContent({
           : null,
       )}
       {footer}
-      {showCloseButton ? (
-        <DialogClose
-          data-slot="dialog-close"
-          className="absolute right-3 top-3"
-          size="icon"
-          variant="ghost"
-          aria-label={t("common.close")}
-        >
-          <X />
-        </DialogClose>
-      ) : null}
+      {showCloseButton && !hasFooter ? <DialogFooter showCloseButton /> : null}
     </ModalSurface>
   );
 }

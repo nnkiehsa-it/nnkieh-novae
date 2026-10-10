@@ -16,7 +16,7 @@ import {
 } from "@/components/admin/provider-readings";
 import { Button } from "@/components/ui/button";
 import { SheetRow } from "@/components/ui/sheet-row";
-import { Input } from "@/components/ui/input";
+import { SearchField } from "@/components/ui/search-field";
 import { ListActionRow, ListCustomRow, ListRow, ListSection } from "@/components/ui/list";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { SkeletonRows } from "@/components/ui/skeleton-rows";
@@ -75,18 +75,18 @@ export function ProviderDiagnostics() {
             {provider === "logs" ? (
               <ListCustomRow>
                 <form
-                  className="flex w-full min-w-0 gap-2"
+                  className="flex w-full min-w-0 items-center gap-2"
                   onSubmit={(event) => {
                     event.preventDefault();
                     void state.load("logs");
                   }}
                 >
-                  <Input
-                    aria-label={t("ui.operations.logSearch")}
+                  <SearchField
+                    label={t("ui.operations.logSearch")}
                     className="min-w-0 flex-1"
                     maxLength={200}
-                    onChange={(event) => state.setQuery(event.target.value)}
-                    placeholder={t("ui.operations.logSearch")}
+                    onChange={state.setQuery}
+                    onClear={() => state.setQuery("")}
                     value={state.query}
                   />
                   <Button disabled={busy} type="submit" variant="secondary">

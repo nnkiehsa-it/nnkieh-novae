@@ -77,7 +77,7 @@ export function DetailSheet({ children, label, overlayLabel = label, returnTo }:
         suppressEntrance={suppressEntrance}
         data-route-overlay=""
       >
-        <SheetBody>
+        <SheetBody padded={false}>
           <SheetTitle className="sr-only">{label}</SheetTitle>
           <RouteSheetContext label={overlayLabel}>{children}</RouteSheetContext>
         </SheetBody>

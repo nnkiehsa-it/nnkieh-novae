@@ -26,12 +26,12 @@ const buttonVariants = cva(
         xs: "button-small",
         sm: "button-small",
         lg: "button-large",
-        icon: "button-round button-large w-12 p-0",
+        icon: "button-round button-large novae-icon-button",
         // Room enough for a label once there is room for one; a square icon until then.
-        adaptive: "button-round button-large w-12 p-0 sm:w-auto sm:px-4",
-        "icon-xs": "button-round button-small w-7 p-0",
-        "icon-sm": "button-round w-[34px] p-0",
-        "icon-lg": "button-round button-large w-12 p-0",
+        adaptive: "button-round button-large novae-icon-button sm:w-auto",
+        "icon-xs": "button-round button-small novae-icon-button",
+        "icon-sm": "button-round novae-icon-button",
+        "icon-lg": "button-round button-large novae-icon-button",
       },
     },
     defaultVariants: {

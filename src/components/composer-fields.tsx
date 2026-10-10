@@ -1,8 +1,9 @@
 "use client";
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Block, BlockTitle } from "framework7-react";
+import { ListSection } from "@/components/ui/list";
+import { ListInputRow } from "@/components/ui/list-controls";
 import { ComposerMediaAttachments } from "@/components/composer-media-attachments";
 import { MarkdownEditor } from "@/components/markdown-editor";
 import { cn } from "@/lib/utils";
@@ -51,32 +52,21 @@ export function ComposerField({
   return (
     <div className={cn("grid min-w-0 items-start gap-5", (maxImages > 0 || attachments.length > 0) && "lg:grid-cols-[minmax(0,1fr)_17rem]")}>
       <div className="grid min-w-0 gap-5">
-        <div className="grid min-w-0 gap-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="composer-title">{titleLabel}</Label>
-            <span
-              className={cn(
-                "text-xs tabular-nums",
-                title.length > INPUT_LIMITS.title
-                  ? "font-medium text-destructive"
-                  : "text-muted-foreground",
-              )}
-            >
-              {title.length} / {INPUT_LIMITS.title}
-            </span>
-          </div>
-          <Input
+        <ListSection>
+          <ListInputRow
             disabled={pending}
             id="composer-title"
+            label={titleLabel}
             maxLength={INPUT_LIMITS.title}
-            onChange={(event) => onTitleChange(event.target.value)}
+            onChange={onTitleChange}
             placeholder={titlePlaceholder}
             value={title}
+            info={<span className="tabular-nums">{title.length} / {INPUT_LIMITS.title}</span>}
           />
-        </div>
-        <div className="grid min-w-0 gap-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="composer-content">{contentLabel}</Label>
+        </ListSection>
+        <section className="min-w-0">
+          <BlockTitle className="mt-0 flex items-center justify-between gap-3">
+            <label htmlFor="composer-content">{contentLabel}</label>
             <span
               className={cn(
                 "text-xs tabular-nums",
@@ -88,7 +78,8 @@ export function ComposerField({
             >
               {content.length} / {INPUT_LIMITS.content}
             </span>
-          </div>
+          </BlockTitle>
+          <Block strong inset className="m-0">
           {pending ? (
             <div aria-hidden className="novae-markdown-editor is-loading" />
           ) : (
@@ -108,7 +99,8 @@ export function ComposerField({
               {translate("markdown.contentTooLong", { count: INPUT_LIMITS.content })}
             </p>
           ) : null}
-        </div>
+          </Block>
+        </section>
       </div>
       {maxImages > 0 || attachments.length > 0 ? <ComposerMediaAttachments
         maxImages={maxImages}

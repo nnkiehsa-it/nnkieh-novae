@@ -1,12 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Icon, Navbar } from "framework7-react";
+import { Icon, Navbar, PageContent } from "framework7-react";
 import { ModalContext, ModalRoot, useModal } from "./modal-context";
 import { ModalSurface, type ModalSurfaceProps } from "./modal-surface";
 import { DialogHeader } from "./dialog";
 import { ToolbarButton } from "./toolbar-button";
 import { useNativeNavbarSize } from "./use-native-navbar";
+import { useFramework7Control } from "./use-framework7-control";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 
@@ -79,12 +80,17 @@ export function SheetContent({
 }
 export function SheetBody({
   className,
+  padded = true,
+  ref,
   ...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<"div"> & { padded?: boolean }) {
+  const nativeRef = useFramework7Control(ref, undefined, {});
   return (
-    <div
+    <PageContent
       {...props}
+      ref={nativeRef}
       data-slot="sheet-body"
+      data-padded={padded}
       className={cn(
         "sheet-body min-h-0 overflow-x-clip overflow-y-auto",
         className,

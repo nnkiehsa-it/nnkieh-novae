@@ -37,7 +37,7 @@ export function HomeOverview() {
       <PageHeader title="Novae" />
       <div className="mx-auto max-w-3xl space-y-6 pb-4 sm:space-y-8 md:pt-5">
         <section>
-          <BlockTitle medium className="mx-0 mt-0"><h2>{t("ui.home.startTitle")}</h2></BlockTitle>
+          <BlockTitle medium className="mx-0"><h2>{t("ui.home.startTitle")}</h2></BlockTitle>
           <Block className="m-0 px-0"><p>{t(descriptionKey)}</p></Block>
         </section>
         <HomeEntryList entries={entries} label={t("ui.nav.feed")} />

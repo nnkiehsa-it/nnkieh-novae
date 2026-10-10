@@ -17,7 +17,7 @@ function Segment({option, selected, compact, disabled, onSelect}: {
   });
   return <Button type="button" ref={ref} active={selected} disabled={disabled} small={compact}
     data-liquid-tab={option.value} data-displayed-active={selected} onClick={onSelect}>
-    {option.icon}<span>{option.label}</span>
+    <span className="inline-flex items-center justify-center gap-1.5">{option.icon}<span>{option.label}</span></span>
   </Button>;
 }
 export function LiquidTabs({

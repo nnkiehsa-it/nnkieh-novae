@@ -39,23 +39,21 @@ export function ListSection({
 }) {
   return (
     <section
-      className={className}
+      className={cn("flow-root min-w-0", className)}
       aria-label={groupName}
       role={groupName ? "group" : undefined}
     >
       {header || headerAction ? (
-        <div className="flex items-center justify-between">
-          <BlockTitle className="mt-0">
-            <h2>{header}</h2>
-          </BlockTitle>
+        <BlockTitle className="mt-0 flex items-center justify-between gap-3">
+          <h2 className="min-w-0 whitespace-normal">{header}</h2>
           {headerAction}
-        </div>
+        </BlockTitle>
       ) : null}
       {/* Native sibling BlockFooter assumes the list retains its bottom margin. */}
       <List inset strong dividers className={footer ? "mx-0 mt-0" : "m-0"}>
         <ul>{children}</ul>
       </List>
-      {footer ? <BlockFooter>{footer}</BlockFooter> : null}
+      {footer ? <BlockFooter className="mb-0">{footer}</BlockFooter> : null}
     </section>
   );
 }
@@ -154,6 +152,7 @@ export function ListActionRow({
   disabled,
   onClick,
   type = "button",
+  tone = "brand",
   ...content
 }: RowContent & {
   busy?: boolean;
@@ -185,7 +184,7 @@ export function ListActionRow({
         }
       }}
     >
-      {listItemSlots(content, busy ? <LoadingSpinner /> : null)}
+      {listItemSlots({ ...content, tone }, busy ? <LoadingSpinner /> : null)}
     </ListItem>
   );
 }
