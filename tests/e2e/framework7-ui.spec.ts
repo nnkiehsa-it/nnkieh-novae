@@ -95,6 +95,7 @@ for (const width of [390, 1440]) {
       await expect(page.getByRole("dialog")).toHaveCount(0);
       await expect(picker.locator("select")).toHaveValue(selected);
       await page.goto("/feed");
+      await expect(page.locator(".navbar .searchbar-disable-button")).not.toBeVisible();
       await expect(page.getByRole("button", {name: "Search titles, content, or authors…", exact: true})).toBeEnabled();
       await page.getByRole("button", {name: "Search titles, content, or authors…", exact: true}).click();
       const search = page.locator(".navbar .searchbar");
@@ -104,6 +105,7 @@ for (const width of [390, 1440]) {
       await expect(search.locator("input")).toHaveValue("");
       await search.getByRole("button", {name: "Cancel", exact: true}).click();
       await expect(search).not.toHaveClass(/searchbar-enabled/u);
+      await expect(search.locator(".searchbar-disable-button")).not.toBeVisible();
 
       await page.goto((await readContentState()).proposalA);
       await expect(
@@ -140,6 +142,10 @@ for (const width of [390, 1440]) {
         page.getByRole("dialog").locator("article h1"),
       ).toContainText("E2E");
 
+      await page.goto("/facilities/new");
+      await expect(page.locator("#composer-title")).toBeVisible();
+      await capture(page, "composer-light", width);
+
       await page.goto("/settings");
       await expect(page.locator(".route-page")).toHaveAttribute(
         "data-route-path",
@@ -175,6 +181,9 @@ for (const width of [390, 1440]) {
         page.getByRole("heading", { name: "Administration", exact: true }),
       ).toBeVisible();
       await capture(page, "admin-dark", width);
+      await page.goto("/facilities/new");
+      await expect(page.locator("#composer-title")).toBeVisible();
+      await capture(page, "composer-dark", width);
       expect(errors).toEqual([]);
     } finally {
       await context.close();

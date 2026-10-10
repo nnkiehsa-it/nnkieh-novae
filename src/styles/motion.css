@@ -564,8 +564,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     transition: none !important;
     transform: none !important;
   }
-  :is(a[href], button, [role="button"], [role="menuitem"], [role="option"], [role="radio"], [role="checkbox"], [role="tab"], [role="switch"]) {
-    transition: none !important;
-    transform: none !important;
-  }
+  /* Framework7 transforms also encode visibility and selected position.
+     globals.css shortens motion without removing those functional transforms. */
 }

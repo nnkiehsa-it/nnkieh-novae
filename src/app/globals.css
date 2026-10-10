@@ -332,7 +332,7 @@ textarea {
   outline: none;
 }
 
-:focus-visible {
+:focus-visible:not(input):not(textarea):not([contenteditable="true"]) {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }

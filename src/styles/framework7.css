@@ -40,6 +40,10 @@ html[data-stage-held="true"] .novae-page-content { overflow: hidden; }
 }
 .novae-icon-button.button-small { width: var(--f7-button-small-height); }
 .novae-icon-button.button-large { width: var(--f7-button-large-height); }
+/* ListInput supplies the field shape; browser number spinners are not iOS controls. */
+.list input[type="number"] { appearance: textfield; }
+.list input[type="number"]::-webkit-inner-spin-button,
+.list input[type="number"]::-webkit-outer-spin-button { appearance: none; margin: 0; }
 @media (min-width: 40rem) {
   .novae-icon-button[data-size="adaptive"] {
     width: auto;
@@ -121,6 +125,10 @@ html[data-stage-held="true"] .novae-page-content { overflow: hidden; }
 }
 .app-mobile-nav .toolbar-inner {
   position: relative;
+}
+.novae-save-toolbar > .toolbar-inner {
+  position: relative;
+  height: auto;
 }
 .novae-toast {
   max-width: min(32rem, calc(100vw - 2rem));

@@ -155,7 +155,8 @@ export function ListNumberRow({
       {unit ? <span slot="info">{unit}</span> : null}
       {onReset ? (
         <Button
-          slot="inner-end"
+          slot="content-end"
+          className="mr-4"
           aria-label={t("admin.resetField", { field: label })}
           disabled={disabled}
           onClick={(event) => {

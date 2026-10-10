@@ -57,7 +57,7 @@ export function SaveBar({
       animate={{ opacity: 1, y: 0 }}
       aria-live="polite"
       className={cn(
-        "sticky bottom-[calc(var(--mobile-nav-height)+var(--mobile-nav-bottom-gap))] z-30 md:bottom-0",
+        "sticky bottom-0 z-30",
         className,
       )}
       exit={travel}
@@ -65,9 +65,9 @@ export function SaveBar({
       role="status"
       transition={timing("sheet")}
     >
-      <Toolbar position="bottom" className="relative h-auto">
+      <Toolbar position="bottom" className="novae-save-toolbar relative h-auto">
       <ToolbarPane className="w-full">
-      <div className="flex w-full flex-wrap items-center gap-2 px-4 py-3">
+      <div className="grid w-full gap-2 px-4 py-3 sm:flex sm:flex-wrap sm:items-center">
       {error ? (
         <div className="w-full space-y-2">
           <p className="text-sm text-destructive" role="alert">{error}</p>
@@ -78,11 +78,12 @@ export function SaveBar({
           ) : null}
         </div>
       ) : null}
-      <span className="min-w-28 flex-1 text-sm">
+      <span className="min-w-0 flex-1 text-sm">
         {saved
           ? translate("ui.common.saveBarSaved")
           : translate("ui.common.saveBarPending", { count: changeCount })}
       </span>
+      <div className="flex items-center justify-end gap-2">
       {onReview && !saving && !saved ? (
         <Button onClick={onReview} size="sm" variant="ghost">
           {translate("ui.common.saveBarReview")}
@@ -101,6 +102,7 @@ export function SaveBar({
         ) : null}
         {translate("ui.common.save")}
       </Button>
+      </div>
       </div>
       </ToolbarPane>
       </Toolbar>

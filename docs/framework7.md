@@ -35,6 +35,8 @@ Markdown 編輯器保留 Vditor，因為業務需要 Markdown 原始內容；Fra
 
 `SheetBody` 使用 PageContent，預設提供原生 Block gutter 與底部 safe area。含自身 Navbar／內容留白的詳情路由傳入 `padded={false}`。Dialog 的關閉或取消放在原生底部 buttons，不能另外疊一顆絕對定位的叉號。按鈕使用 Framework7 大、小及圓形變體，不以頁面層的固定 height／padding 重新繪製。
 
+減少動態效果只縮短動畫時間，不得對原生控制項一律套用 `transform: none`；搜尋取消鈕的隱藏狀態及分段選取底的位置都依賴 transform。儲存列使用原生 ToolbarPane，Next 整合層僅讓 toolbar-inner 參與內容高度計算，手機將狀態文字與操作分成兩列，避免按鈕溢出玻璃容器。
+
 ## 修改位置
 
 - `src/components/framework7-provider.tsx`：安裝使用中的模組、建立 iOS App／View，同步亮暗主題。View 的 router 停用，正常網址交給 Next.js；hash 控件交給 Framework7。
