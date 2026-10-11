@@ -1,0 +1,5 @@
+[install]
+# 延續現有安裝方式，讓上游提供的間接依賴可直接使用。
+linker = "hoisted"
+# 新解析的版本至少發布三天；已提交的 lockfile 不受影響。
+minimumReleaseAge = 259200

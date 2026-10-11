@@ -27,7 +27,7 @@
 
 完整 local suite 在 fast checks 中加入 production Next.js build、build budget 和 Bun high-severity dependency audit。Dependency audit 要連 npm advisory API；離線時即使前面階段全過，整體仍會失敗。
 
-Next.js lint 的根目錄 glob 透過 scoped override 使用 `tools/next-root-glob`，由 Node 24 原生 `fs.globSync` 處理。此替換只作用於 Next plugin 的 `globSync(pattern, { onlyDirectories })` 用法，移除 `fast-glob → micromatch → braces` 依賴鏈；Next lint 規則和安全稽核仍全部保留。更新 Next plugin 或 Node 版本時，要重跑 `tests/tooling/next-root-glob.test.mjs` 與完整 gate。
+Next.js lint 使用上游 plugin 自己的 glob 依賴，不再維護本機替換套件。`tests/tooling/next-root-dirs.test.mjs` 保留實際根目錄搜尋的驗證。套件 advisory 若仍由上游依賴帶入，audit 會如實失敗；不要為了讓報告歸零重新覆寫整棵依賴樹。
 
 本機 gate 使用 `.next-verify`，其 Service Worker 也輸出到 `.next-verify/service-worker/`，避免與瀏覽器測試或預覽重寫同一個 `public/sw.js`，混用不同的 API 環境。可執行的正式與 E2E build 仍使用 `public/sw.js`。
 
