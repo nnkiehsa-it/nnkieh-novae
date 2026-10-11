@@ -7,7 +7,7 @@
 - Docker
 - Windows：可使用的 WSL distribution；腳本會在 WSL 內啟動 Docker，並在完成後清理自己啟動的服務
 
-版本由 repository 固定：`package.json` 要求 Node `>=24 <25`、Bun `>=1.4 <2`，package manager 是 `bun@1.4.0`。CI 也使用 Node 24 與 Bun 1.4.0。
+Node 主版本由 `.node-version` 決定，Bun 版本由 `package.json` 的 `packageManager` 決定；CI 直接讀取這兩個來源。`engines` 記錄可使用的版本範圍。套件更新方式見[依賴維護](dependencies.md)。
 
 先安裝 lockfile 固定的依賴：
 
@@ -44,7 +44,7 @@ bun run test:env
 2. 重建 `novae` database，套用全部 migration 和 `database/seed.local.sql`。
 3. 建立只有 runtime 權限的 `novae_runtime`。
 4. 啟動 port `54330` 的 Cloudinary / FCM / Notion provider stub，並設定本機 upload preset。
-5. 以固定的 `firebase-tools@15.24.0` 啟動 Auth Emulator。
+5. 以 `scripts/verify-integration.mjs` 指定的 Firebase CLI 版本啟動 Auth Emulator。
 6. 用 `cloudflare/wrangler.json` 在 local mode 啟動 Worker。
 7. 啟動 Next.js dev server，確認 `/login` 回 `200`，再跑一次登入與 API routing probe。
 

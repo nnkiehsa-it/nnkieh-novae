@@ -134,6 +134,6 @@ bun run verify:all          # local + integration + Playwright E2E
 | Cloudinary | 必要 | Signed WebP upload、authenticated delivery、deletion lifecycle |
 | Notion | 選用 | Domain event 與 admin audit 的營運副本 |
 
-JavaScript dependency 的固定版本記錄在 `bun.lock`。各雲端帳號、credential 與資料由實際部署者管理；需要放進 GitHub Environment 的欄位列在[設定參考](docs/configuration.md)。
+JavaScript dependency 的安裝版本記錄在 `bun.lock`，更新方式見[依賴維護](docs/dependencies.md)。各雲端帳號、credential 與資料由實際部署者管理；需要放進 GitHub Environment 的欄位列在[設定參考](docs/configuration.md)。
 
 程式碼採 [MIT License](LICENSE) 授權。

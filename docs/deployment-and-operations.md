@@ -53,7 +53,7 @@ Origin 使用 `ALLOWED_ORIGINS` 的第一個值。任一條件一直不成立，
 
 若同一 commit 也改動 backend、database 或 generated config，workflow 會等 `deploy_backend` 成功後才開始 frontend build 與 publish。這避免新前端先接到舊 action 或 schema，也避免跨 runner 傳遞 `.vercel` / `.next` 內容。
 
-流程使用 Vercel CLI `58.9.0`：先 `pull` project info，再 `build`，最後在同一 job 直接 `deploy --prebuilt`；`main` 會加 `--prod`，`dev` 使用 preview environment。
+Vercel CLI 版本集中在 `deploy_frontend.env.VERCEL_CLI_VERSION`：先 `pull` project info，再 `build`，最後在同一 job 直接 `deploy --prebuilt`；`main` 會加 `--prod`，`dev` 使用 preview environment。
 
 若 diff 沒碰 `cloudflare/`、`database/`、`config/` 或 backend generator / renderer，frontend publish 不會等待 backend deployment job。
 
