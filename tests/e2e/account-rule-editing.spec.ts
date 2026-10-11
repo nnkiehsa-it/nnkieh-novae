@@ -39,7 +39,7 @@ test('restriction editors keep deadlines, preserve failed drafts, and expose rem
     await page.getByRole('button', { name: 'Add prefix rule', exact: true }).click();
     await page.getByLabel('Account prefix', { exact: true }).fill('OTHER');
     await expect(page.getByLabel('Account prefix', { exact: true })).toHaveValue('other');
-    await page.getByLabel('Duration', { exact: true }).click();
+    await page.getByRole('combobox', { name: 'Duration', exact: true }).click();
     await page.getByRole('radio', { name: 'Custom', exact: true }).press('Space');
     await page.getByLabel('Custom restriction hours (1–87,600)', { exact: true }).fill('5');
     await page.getByLabel('Restriction reason / displayed message').fill('Original prefix message');
@@ -51,7 +51,7 @@ test('restriction editors keep deadlines, preserve failed drafts, and expose rem
     const deadline = async () => (await database.query("select restricted_until::text from app_private.user_restrictions where target_type='email_prefix' and uid='other'")).rows[0].restricted_until;
     const originalDeadline = await deadline();
     await page.getByRole('button', { name: 'Edit prefix rule', exact: true }).click();
-    await expect(page.getByLabel('Duration', { exact: true })).toContainText('Keep current deadline');
+    await expect(page.getByRole('combobox', { name: 'Duration', exact: true }).locator('select')).toHaveValue('keep');
     await expect(page.getByLabel('Restriction reason / displayed message')).toHaveValue('Original prefix message');
     await page.getByLabel('Restriction reason / displayed message').fill('Changed prefix message');
     failSave = true;
@@ -61,7 +61,7 @@ test('restriction editors keep deadlines, preserve failed drafts, and expose rem
     await expect(page.getByLabel('Restriction reason / displayed message')).toHaveValue('Changed prefix message');
     expect(await deadline()).toBe(originalDeadline);
     await page.setViewportSize({ width: 390, height: 900 });
-    await expect(page.locator('[data-sheet-motion-frame]')).toHaveAttribute('data-sheet-arrived', 'true');
+    await expect(page.getByRole('dialog')).toHaveAttribute('data-state', 'open');
     await page.getByRole('dialog').getByRole('alert').scrollIntoViewIfNeeded();
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath('prefix-rule-failure-390.png') });
@@ -85,12 +85,12 @@ test('restriction editors keep deadlines, preserve failed drafts, and expose rem
     await page.goto('/admin/people?view=accounts');
     let sheet = await openUser(E2E_USERS.other);
     await expect(sheet.getByText('other*', { exact: true })).toBeVisible();
-    await sheet.getByLabel('Duration', { exact: true }).click();
+    await sheet.getByRole('combobox', { name: 'Duration', exact: true }).click();
     await page.getByRole('radio', { name: 'Permanent', exact: true }).press('Space');
     await sheet.getByLabel('Restriction reason / displayed message').fill('Permanent individual message');
     await expectBackendAction(page, 'saveAccountAccessRule', () => sheet.getByRole('button', { name: 'Apply rule', exact: true }).click());
     await expect(sheet.getByText('Individual account', { exact: true })).toBeVisible();
-    await expect(sheet.getByLabel('Duration', { exact: true })).toContainText('Keep current deadline');
+    await expect(sheet.getByRole('combobox', { name: 'Duration', exact: true }).locator('select')).toHaveValue('keep');
     await expect(sheet.getByText('Permanent', { exact: true }).first()).toBeVisible();
     await sheet.getByRole('button', { name: 'Clear restriction', exact: true }).click();
     await expect(page.getByRole('alertdialog')).toContainText('Matching email-prefix rules will still apply');
@@ -110,7 +110,7 @@ test('restriction editors keep deadlines, preserve failed drafts, and expose rem
     await expect(page.getByRole('dialog')).toHaveCount(0);
     sheet = await openUser(E2E_USERS.ordinary);
     await expect(sheet.getByLabel('Restriction reason / displayed message')).toHaveValue('');
-    await expect(sheet.getByLabel('Duration', { exact: true })).toContainText('7 days');
+    await expect(sheet.getByRole('combobox', { name: 'Duration', exact: true }).locator('select')).toHaveValue('7d');
     expect(errors).toEqual([]);
   } finally {
     await database.query("delete from app_private.user_restrictions where (target_type='email_prefix' and uid='other') or (target_type='uid' and uid in (select uid from app_private.user_profiles where email=$1))", [E2E_USERS.other]);

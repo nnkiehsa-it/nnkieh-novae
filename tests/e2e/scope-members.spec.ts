@@ -65,7 +65,7 @@ test("scope drafts stay with their area, review real members, and save one atomi
     await expect(page).toHaveURL(/issueCategory=/u);
     const targetUrl = page.url();
     await page.goto("/admin/audit?view=actions");
-    await page.getByRole("textbox").fill("saveScopeMembers");
+    await page.getByRole("searchbox").fill("saveScopeMembers");
     await page.getByRole("button", { name: "Search", exact: true }).click();
     await page.getByRole("button").filter({ hasText: "Change member access" }).first().click();
     const audit = page.getByRole("dialog");

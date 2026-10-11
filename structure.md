@@ -4,7 +4,7 @@ This document is the maintained map of the repository. Read it before broad sear
 
 ## Runtime and entry points
 
-- `package.json` / `bun.lock` — Bun 1.4 package management with a pinned install graph; Node 24 remains the Next.js, build-script, and Worker runtime alongside Next.js 16.3, React 19.2, TypeScript 7, Tailwind CSS 4, Radix/shadcn primitives, Motion, Vditor 4 WYSIWYG Markdown editing, Serwist, Vitest, and Playwright.
+- `package.json` / `bun.lock` / `bunfig.toml` — compatible dependency ranges with a committed install graph. Node comes from `.node-version`; Bun comes from `packageManager`. The stack uses Next.js, React, Framework7 iOS controls, TypeScript, Tailwind CSS, Motion, Vditor WYSIWYG Markdown editing, Serwist, Vitest, and Playwright. Version numbers and the update procedure belong in the manifest, lockfile, and `docs/dependencies.md`.
 - `src/app/` — Next App Router. Route `page.tsx` files assemble views and forward events; they do not import `services/` directly.
 - `src/app/layout.tsx` — root metadata, immersive iOS viewport/status-bar configuration, Framework7 system type and Roboto Mono, global providers and CSS, development-only PWA worker cleanup, and nonce-bound Managed Turnstile loading.
 - `src/app/globals.css` — website-aligned cool blue light/dark surfaces, semantic brand actions and custom accent themes, compact typography and radius scale, restrained elevation, safe-area and stable PWA viewport sizing, keyboard-aware navigation, input-modality focus handling, and the shared discussion composer dock.

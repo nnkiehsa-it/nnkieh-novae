@@ -7,10 +7,11 @@
 ```bash
 bun run deps:status
 bun run deps:update
+bun run generate:all
 bun run verify:all
 ```
 
-`deps:update` 使用 Bun 原生更新指令，限制在 manifest 的版本範圍內。一般套件使用 `^`，允許同一主版本的更新；部分 `0.x` 套件使用 `~`，避免跨次版本。需要跨主版本時，先讀上游 migration guide，再更新 manifest。提交 `package.json` 與 `bun.lock`。
+`deps:update` 使用 Bun 原生更新指令，限制在 manifest 的版本範圍內。一般套件使用 `^`，允許同一主版本的更新；部分 `0.x` 套件使用 `~`，避免跨次版本。需要跨主版本時，先讀上游 migration guide，再更新 manifest。`generate:all` 同步 Framework7 等依賴產生的樣式與資產，避免 generated drift；檢查 diff 後一起提交 manifest、lockfile 與有變化的 generated artifacts。
 
 `bunfig.toml` 延續 hoisted 安裝，允許使用上游帶入的間接依賴。新解析版本至少發布三天；已提交的 lockfile 不受這個時間限制。若需要立即安裝指定的安全修補，可用 Bun 的 `--minimum-release-age 0` 明確略過等待，再跑驗證。
 

@@ -154,6 +154,7 @@ body:has(.app-mobile-nav[data-visible="true"]) .novae-toast.toast-bottom {
 }
 /* Keep native radio inputs focusable while their upstream checkmark paints the row. */
 .novae-root .list .item-radio input[type="radio"],
+.novae-modal .list .item-radio input[type="radio"],
 .smart-select-sheet .item-radio input[type="radio"],
 .smart-select-popover .item-radio input[type="radio"] {
   display: block;

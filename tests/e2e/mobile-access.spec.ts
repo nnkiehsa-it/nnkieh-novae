@@ -55,13 +55,15 @@ async function expectTouchTarget(page: Page, name: string | RegExp) {
   await expect.poll(async () => {
     const box = await control.boundingBox();
     return Math.round(Math.min(box?.width ?? 0, box?.height ?? 0));
-  }).toBeGreaterThanOrEqual(44);
+  // WCAG 2.2 AA target-size minimum; keep the native control's own dimensions.
+  // https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html
+  }).toBeGreaterThanOrEqual(24);
 }
 
 test.describe('mobile route motion', () => {
   test.use({ storageState: authStatePath('ordinary') });
 
-  test('touch feedback belongs to the whole card and clears when a press becomes a swipe', async ({ page }) => {
+  test('native link activation clears when a press becomes a swipe without zooming the app', async ({ page }) => {
     await suppressInstallPrompt(page);
     await page.goto('/issues/proposal-a');
     const card = page.locator('.t-card').first();
@@ -70,16 +72,13 @@ test.describe('mobile route motion', () => {
     const box = (await link.boundingBox())!;
     const x = box.x + box.width / 2;
     const y = box.y + box.height / 2;
-    const restingColor = await card.evaluate((element) => getComputedStyle(element).backgroundColor);
     const touch = await page.context().newCDPSession(page);
     await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
-    await expect(card).toHaveAttribute('data-pressed', 'true');
-    await expect.poll(() => card.evaluate((element) => getComputedStyle(element).backgroundColor)).not.toBe(restingColor);
-    await expect.poll(() => card.evaluate((element) => getComputedStyle(element).transform)).not.toBe('none');
+    await expect(link).toHaveClass(/active-state/u);
     await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y + 30 }] });
-    await expect(card).not.toHaveAttribute('data-pressed');
+    await expect(link).not.toHaveClass(/active-state/u);
     await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-    await expect.poll(() => card.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(restingColor);
+    await expect(link).not.toHaveClass(/active-state/u);
 
     const heading = (await page.locator('h1').first().boundingBox())!;
     await page.touchscreen.tap(heading.x + heading.width / 2, heading.y + heading.height / 2);
@@ -94,8 +93,9 @@ test.describe('mobile route motion', () => {
     await expect(page).toHaveURL(/\/issues\/proposal-a$/u);
   });
 
-  test('app surfaces separate in both themes while native editing remains available', async ({ page }) => {
+  test('native fields remain editable with readable contrast in both themes', async ({ page }) => {
     await suppressInstallPrompt(page);
+    await page.addInitScript(() => localStorage.setItem('theme', 'system'));
     await page.goto('/issues/proposal-a/compose/new');
     const title = page.getByRole('textbox', { name: 'Proposal title' });
     const content = page.getByRole('textbox', { name: 'Proposal content' });
@@ -114,12 +114,19 @@ test.describe('mobile route motion', () => {
     await title.fill('Touch editing stays available');
     await expect(title).toHaveValue('Touch editing stays available');
 
+    const surfaces: { page: string; field: string }[] = [];
     for (const dark of [false, true]) {
-      await page.evaluate((enabled) => document.documentElement.classList.toggle('dark', enabled), dark);
-      await expect(page.locator('body')).toHaveCSS('background-color', dark ? 'rgb(0, 0, 0)' : 'rgb(242, 242, 247)');
-      await expect(title).toHaveCSS('background-color', dark ? 'rgb(28, 28, 30)' : 'rgb(255, 255, 255)');
-      const contrast = await title.evaluate((element) => {
+      await page.emulateMedia({ colorScheme: dark ? 'dark' : 'light' });
+      if (dark) {
+        await expect(page.locator('html')).toHaveClass(/dark/u);
+        await expect.poll(() => page.locator('body').evaluate((element) => getComputedStyle(element).backgroundColor)).not.toBe(surfaces[0].page);
+      } else await expect(page.locator('html')).not.toHaveClass(/dark/u);
+      const colors = await title.evaluate((element) => {
         const style = getComputedStyle(element);
+        // Native list inputs are transparent; contrast uses the painted parent.
+        let surface: Element = element;
+        while (getComputedStyle(surface).backgroundColor === 'rgba(0, 0, 0, 0)') surface = surface.parentElement!;
+        const backgroundColor = getComputedStyle(surface).backgroundColor;
         const luminance = (color: string) => {
           const channels = color.match(/[\d.]+/gu)!.slice(0, 3).map((channel) => {
             const value = Number(channel) / 255;
@@ -128,11 +135,18 @@ test.describe('mobile route motion', () => {
           return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
         };
         const foreground = luminance(style.color);
-        const background = luminance(style.backgroundColor);
-        return (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05);
+        const background = luminance(backgroundColor);
+        return {
+          contrast: (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05),
+          page: getComputedStyle(document.body).backgroundColor,
+          field: backgroundColor,
+        };
       });
-      expect(contrast).toBeGreaterThanOrEqual(4.5);
+      expect(colors.contrast).toBeGreaterThanOrEqual(4.5);
+      surfaces.push(colors);
     }
+    expect(surfaces[0].page).not.toBe(surfaces[1].page);
+    expect(surfaces[0].field).not.toBe(surfaces[1].field);
   });
 
   test('keeps wide editor tables and their controls inside the composer', async ({ page }) => {
@@ -360,13 +374,13 @@ test.describe('a link somebody shared', () => {
     await expect(page.getByRole('dialog', { name: 'Proposals', exact: true })).toBeVisible();
 
     await back.click();
-    const prompt = page.getByRole('dialog');
+    const prompt = page.getByRole('alertdialog', { name: 'Where do you want to continue?' });
     await expect(prompt).toBeVisible();
     await expect(prompt.getByRole('button', { name: 'Already installed' })).toBeVisible();
     await expect(prompt.getByRole('button', { name: 'Not installed yet' })).toBeVisible();
 
     await prompt.getByRole('button', { name: 'Stay in the browser' }).click();
     await expect(page).toHaveURL(/\/issues\/[^/]+$/u);
-    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(prompt).toHaveCount(0);
   });
 });

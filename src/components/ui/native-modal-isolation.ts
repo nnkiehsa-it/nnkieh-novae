@@ -1,5 +1,6 @@
 /** Keep retained pages and lower native modals outside keyboard and screen-reader navigation. */
 export function createNativeModalIsolation() {
+  let activeModal: HTMLElement | undefined;
   const hidden = new Map<HTMLElement, { inert: boolean; ariaHidden: string | null }>();
   const restore = () => {
     hidden.forEach((previous, node) => {
@@ -12,9 +13,11 @@ export function createNativeModalIsolation() {
   return {
     restore,
     update(modal?: HTMLElement) {
+      const changed = modal !== activeModal;
+      activeModal = modal;
       restore();
       if (!modal) return;
-      modal.focus({ preventScroll: true });
+      if (changed) modal.focus({ preventScroll: true });
       for (let branch: HTMLElement = modal; branch.parentElement; branch = branch.parentElement) {
         for (const sibling of branch.parentElement.children) {
           if (!(sibling instanceof HTMLElement) || sibling === branch ||

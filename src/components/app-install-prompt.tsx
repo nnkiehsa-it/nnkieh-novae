@@ -213,7 +213,7 @@ export function AppInstallPrompt() {
 
   return (
     <Dialog open={prompt.open}>
-      <DialogContent showCloseButton={false} footer={<DialogFooter>{step.actions}</DialogFooter>}>
+      <DialogContent aria-label={step.title} className="dialog-buttons-vertical" showCloseButton={false} footer={<DialogFooter>{step.actions}</DialogFooter>}>
         <AnimatePresence custom={direction} initial={false} mode="wait">
           <PromptStep
             description={step.description}

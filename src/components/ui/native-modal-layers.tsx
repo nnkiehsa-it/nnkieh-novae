@@ -22,6 +22,9 @@ export function NativeModalLayers() {
     const releases = new Map<HTMLElement, () => void>();
     const returnFocus = new Map<HTMLElement, HTMLElement>();
     const isolation = createNativeModalIsolation();
+    // Portals can mount after a native modal opens during route hydration.
+    const portals = new MutationObserver(() => isolation.update(topNativeModal()));
+    portals.observe(document.body, { childList: true });
     let detach = () => {};
     f7ready((app) => {
       const open = (modal: Modal) => {
@@ -124,7 +127,10 @@ export function NativeModalLayers() {
         isolation.restore();
       };
     });
-    return () => detach();
+    return () => {
+      portals.disconnect();
+      detach();
+    };
   }, []);
   return null;
 }

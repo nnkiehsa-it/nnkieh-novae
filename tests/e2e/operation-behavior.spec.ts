@@ -197,13 +197,13 @@ test('announcement notice recovers announcements published while the member was 
   const member = await newUserPage(browser, 'ordinary');
   await member.page.setViewportSize({ height: 844, width: 390 });
   await member.page.goto('/issues/public-issues');
-  const notice = member.page.getByRole('link', { name: 'New announcement' });
+  const notice = member.page.getByRole('button', { name: 'New announcement' });
   await expect(notice).toBeVisible();
   await expectBackendAction(member.page, 'markAnnouncementsOpened', async () => {
     await notice.click();
   });
   await expect(member.page).toHaveURL(/\/announcements$/u);
   await member.page.goto('/facilities');
-  await expect(member.page.getByRole('link', { name: 'New announcement' })).toHaveCount(0);
+  await expect(member.page.getByRole('button', { name: 'New announcement' })).toHaveCount(0);
   await member.context.close();
 });

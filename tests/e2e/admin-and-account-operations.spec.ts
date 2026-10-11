@@ -57,7 +57,7 @@ test('platform admin can restrict and restore an ordinary account', async ({ bro
   await expect(
     admin.page.getByRole('main').getByText('Normal', { exact: true }),
   ).toBeVisible();
-  await admin.page.getByRole('button', { name: 'Clear search and show all records', exact: true }).click();
+  await admin.page.getByRole('button', { name: 'Clear search', exact: true }).click();
   await expect(search).toHaveValue('');
   await expect.poll(() => admin.page.getByRole('main').getByText('@integration.invalid').filter({ visible: true }).count()).toBeGreaterThan(1);
   await search.fill(E2E_USERS.other);
@@ -164,7 +164,7 @@ test('login fills the desktop viewport edge to edge', async ({ browser }) => {
   const page = await context.newPage();
   await page.goto('/login');
   await expect(page.getByRole('heading', { name: 'Sign in with a school account' })).toBeVisible();
-  const geometry = await page.locator('main').evaluate((main) => {
+  const geometry = await page.locator('.login-screen-page').evaluate((main) => {
     const mainRect = main.getBoundingClientRect();
     return {
       mainBottom: mainRect.bottom,
@@ -360,10 +360,10 @@ test('notification visit and platform-admin preferences issue one canonical writ
   });
   await admin.page.goto('/settings');
   const labels = ['Comment notifications', 'Proposal updates', 'Facility updates'];
-  const before: Record<string, string | null> = {};
+  const before: Record<string, boolean> = {};
   for (const label of labels) {
     const toggle = admin.page.getByRole('switch', { exact: true, name: label });
-    before[label] = await toggle.getAttribute('data-state');
+    before[label] = await toggle.isChecked();
     await toggle.click();
   }
   // Toggling changes nothing until the screen is saved, and then it is one write.
@@ -373,10 +373,8 @@ test('notification visit and platform-admin preferences issue one canonical writ
   });
   for (const label of labels) {
     const toggle = admin.page.getByRole('switch', { exact: true, name: label });
-    await expect(toggle).toHaveAttribute(
-      'data-state',
-      before[label] === 'checked' ? 'unchecked' : 'checked',
-    );
+    if (before[label]) await expect(toggle).not.toBeChecked();
+    else await expect(toggle).toBeChecked();
   }
   await admin.context.close();
 });
@@ -405,16 +403,19 @@ test('failed provider deletion can be retried from the operational UI', async ({
     // The failure names what went wrong, and opens onto the whole record.
     const failure = admin.page.getByText('E2E seeded provider failure').first();
     await expect(failure).toBeVisible();
-    await failure.click();
+    await admin.page.getByRole('listitem').filter({ hasText: 'E2E seeded provider failure' })
+      .getByRole('button', { name: 'Open this failure', exact: true }).click();
     const details = admin.page.getByRole('dialog');
     await expect(details.getByText(jobId)).toBeVisible();
-    await expect(details.locator('[data-slot="dialog-header"]')).toHaveCSS('position', 'sticky');
+    await details.locator('[data-slot="sheet-body"]').evaluate((element) => { element.scrollTop = element.scrollHeight; });
+    await expect(details.locator('.navbar').getByRole('button', { name: 'Close', exact: true })).toBeInViewport();
     const dialogMetrics = await details.evaluate((element) => ({
       fits: element.scrollWidth <= element.clientWidth,
       width: element.getBoundingClientRect().width,
+      viewportWidth: innerWidth,
     }));
     expect(dialogMetrics.fits).toBe(true);
-    expect(dialogMetrics.width).toBeGreaterThanOrEqual(640);
+    expect(dialogMetrics.width).toBeLessThanOrEqual(dialogMetrics.viewportWidth);
     await expectBackendAction(admin.page, 'retryOperationalWork', async () => {
       await details.getByRole('button', { name: 'Retry', exact: true }).click();
     });

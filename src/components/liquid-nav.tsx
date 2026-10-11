@@ -82,9 +82,9 @@ function Destination({
   );
 }
 
-function DesktopDestination({ children, ...props }: React.ComponentProps<typeof ListItem> & { "aria-current"?: "page" }) {
-  const id = useFramework7ListControl({ "aria-current": props["aria-current"] });
-  return <ListItem {...props} id={id}>{children}</ListItem>;
+function DesktopDestination({ children, "aria-current": current, title, ...props }: React.ComponentProps<typeof ListItem> & { title: string; "aria-current"?: "page" }) {
+  const id = useFramework7ListControl({ "aria-current": current, "aria-label": title });
+  return <ListItem {...props} title={title} id={id}>{children}</ListItem>;
 }
 
 export function LiquidNav({

@@ -131,7 +131,7 @@ test('feed query, clear, sort, and status changes keep the physical card slot', 
     const node = await frame.elementHandle();
 
     await page.getByRole('button', { name: /Search titles/u }).last().click();
-    const search = page.getByRole('textbox', { name: /Search titles/u });
+    const search = page.getByRole('searchbox', { name: /Search titles/u });
     await search.fill(`no matching title ${Date.now()}`);
     await search.press('Enter');
     await expect(page.locator('[data-state-transition="empty"]')).toBeVisible();
@@ -140,7 +140,7 @@ test('feed query, clear, sort, and status changes keep the physical card slot', 
     // The panel stays open through a search, so the clear is one click away.
     await page.getByRole('button', { name: 'Clear search' }).click();
     await expect(frame).toHaveClass(/t-card/u);
-    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
     await page.getByRole('combobox', { name: 'Sort order' }).click();
     await page.getByRole('radio', { name: 'Most supported' }).press('Space');
     await expect(frame).toHaveClass(/t-card/u);

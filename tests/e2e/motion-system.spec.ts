@@ -269,8 +269,8 @@ test("reduced motion opens and closes controls without movement", async ({
   });
   const page = await context.newPage();
   try {
-    await page.goto("/announcements");
-    await page.getByRole("combobox").first().click();
+    await page.goto("/feed");
+    await page.getByRole("combobox", { name: "Sort order" }).click();
     const popover = page.locator(".popover");
     await expect(popover).toBeVisible();
     expect(
