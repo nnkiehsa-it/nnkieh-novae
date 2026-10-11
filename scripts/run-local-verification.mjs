@@ -80,7 +80,7 @@ const steps = {
     ["architecture tests", node, ["--test", "tests/architecture.test.mjs"]],
     ["tooling policy tests", node, ["--test", "tests/tooling.test.mjs"]],
   ],
-  audit: [["dependency audit", bun, ["audit", "--audit-level=high"]]],
+  audit: [["dependency audit", bun, ["scripts/check-dependencies.mjs"]]],
 };
 
 steps.fast = [

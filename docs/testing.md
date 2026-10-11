@@ -25,9 +25,9 @@
 
 ### `verify:local` 多做的工作
 
-完整 local suite 在 fast checks 中加入 production Next.js build、build budget 和 Bun high-severity dependency audit。Dependency audit 要連 npm advisory API；離線時即使前面階段全過，整體仍會失敗。
+完整 local suite 在 fast checks 中加入 production Next.js build、build budget 和 `check:dependencies`。Dependency audit 要連 npm advisory API；離線時即使前面階段全過，整體仍會失敗。部署 workflow 使用同一個檢查：間接依賴的 high／critical 風險只警告，實際安裝的直接依賴版本受影響才阻擋。
 
-Next.js lint 使用上游 plugin 自己的 glob 依賴，不再維護本機替換套件。`tests/tooling/next-root-dirs.test.mjs` 保留實際根目錄搜尋的驗證。套件 advisory 若仍由上游依賴帶入，audit 會如實失敗；不要為了讓報告歸零重新覆寫整棵依賴樹。
+Next.js lint 使用上游 plugin 自己的 glob 依賴，不再維護本機替換套件。`tests/tooling/next-root-dirs.test.mjs` 保留實際根目錄搜尋的驗證。上游依賴帶入的 advisory 保留 warning；不要為了讓報告歸零重新覆寫整棵依賴樹。
 
 本機 gate 使用 `.next-verify`，其 Service Worker 也輸出到 `.next-verify/service-worker/`，避免與瀏覽器測試或預覽重寫同一個 `public/sw.js`，混用不同的 API 環境。可執行的正式與 E2E build 仍使用 `public/sw.js`。
 

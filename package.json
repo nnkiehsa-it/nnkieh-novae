@@ -28,6 +28,7 @@
     "check:i18n": "node scripts/check-i18n.mjs",
     "check:ui": "node scripts/check-ui-primitives.mjs",
     "check:build-budget": "node scripts/check-build-budget.mjs",
+    "check:dependencies": "bun scripts/check-dependencies.mjs",
     "verify:local": "node scripts/run-local-verification.mjs",
     "verify:fast": "node scripts/run-local-verification.mjs --fast",
     "verify:generated": "node scripts/verify-generated.mjs",

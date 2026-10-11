@@ -136,6 +136,9 @@ jobs:
       - name: Run fast verification
         run: bun run verify:fast
 
+      - name: Audit direct and indirect dependencies
+        run: bun run check:dependencies
+
   backend_verify:
     needs: changes
     if: needs.changes.outputs.backend == 'true'

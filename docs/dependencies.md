@@ -19,7 +19,7 @@ bun run verify:all
 
 不要把每個間接依賴重新列成直接依賴，也不要維護全域覆寫或本機替換套件來追上游版本。Wrangler 帶入 Miniflare，Framework7 帶入其樣式依賴；沿用上游的配套版本。是否使用預發版以整組上游工具的實際需求為準。
 
-audit 保留原本的高風險檢查。若上游固定的間接依賴仍有 advisory，報告會失敗；這與功能、建置或 E2E 是否通過分開記錄。確認 advisory 的使用條件和實際部署路徑，優先更新擁有該依賴的套件，不為消除警報修改整棵依賴樹。
+`bun run check:dependencies` 保留 high／critical 的檢查門檻。間接依賴的 advisory 顯示 warning，不阻擋驗證或部署；直接依賴會對照實際安裝版本與受影響範圍，命中才回報 error 並阻擋。若同名套件的直接版本已修好、上游仍帶入舊版，沿用間接依賴的 warning。這個檢查共用於 `verify:local`、`verify:all` 與部署 workflow，GitHub Actions 也會顯示警告註記。Audit 連線、安裝或報告解析失敗仍會中止檢查。
 
 ## 自動更新
 
