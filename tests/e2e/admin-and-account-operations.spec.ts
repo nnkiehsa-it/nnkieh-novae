@@ -304,7 +304,7 @@ test('disabling notification cleanup confirms retention updates rather than dele
     });
     await expect(enabled).not.toBeChecked();
     await database.query('select app_api.backend_process_platform_job_batch(100)');
-    await database.query('delete from app_private.notifications where id=$1', [id]);
+    expect((await database.query('select id from app_private.notifications where id=$1', [id])).rowCount).toBe(1);
     await enabled.click();
     await admin.page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(review.getByText(/update the retention expiry/u)).toBeVisible();

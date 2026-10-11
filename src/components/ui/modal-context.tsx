@@ -62,6 +62,7 @@ export function ModalRoot({
         setOpen,
         requestClose,
         closed: () => {
+          setClosing(false);
           if (sourceOpen) setOpen(false);
         },
       }}

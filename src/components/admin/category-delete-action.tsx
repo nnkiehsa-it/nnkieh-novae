@@ -1,6 +1,7 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
+import { useState } from "react";
 
 import { useI18n } from "@/i18n";
 import {
@@ -12,7 +13,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ListActionRow } from "@/components/ui/list";
 
@@ -35,16 +35,16 @@ export function CategoryDeleteAction({
   persisted: boolean;
 }) {
   const { t } = useI18n();
+  const [open, setOpen] = useState(false);
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <ListActionRow
-          disabled={disabled}
-          icon={icon}
-          label={t("ui.admin.deleteCategory")}
-          tone="destructive"
-        />
-      </AlertDialogTrigger>
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <ListActionRow
+        onClick={() => setOpen(true)}
+        disabled={disabled}
+        icon={icon}
+        label={t("ui.admin.deleteCategory")}
+        tone="destructive"
+      />
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{t("categoryAdmin.deleteConfirmTitle", { name })}</AlertDialogTitle>

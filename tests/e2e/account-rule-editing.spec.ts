@@ -27,11 +27,12 @@ test('restriction editors keep deadlines, preserve failed drafts, and expose rem
     return review;
   };
   const openUser = async (email: string) => {
+    await expect(page.locator('.novae-sheet')).toHaveCount(0);
     const search = page.getByPlaceholder('Search name, campus email, or UID');
     await search.fill(email);
     await expectBackendAction(page, 'listAdminUsers', () => page.getByRole('button', { name: 'Search', exact: true }).click());
     await expect(search).toHaveValue(email);
-    await page.getByRole('main').getByText(email, { exact: true }).click();
+    await page.getByRole('main').getByRole('button').filter({ hasText: email }).click();
     return page.getByRole('dialog');
   };
   try {
@@ -41,6 +42,7 @@ test('restriction editors keep deadlines, preserve failed drafts, and expose rem
     await expect(page.getByLabel('Account prefix', { exact: true })).toHaveValue('other');
     await page.getByRole('combobox', { name: 'Duration', exact: true }).click();
     await page.getByRole('radio', { name: 'Custom', exact: true }).press('Space');
+    await expect(page.locator('.smart-select-popover, .smart-select-sheet')).toHaveCount(0);
     await page.getByLabel('Custom restriction hours (1–87,600)', { exact: true }).fill('5');
     await page.getByLabel('Restriction reason / displayed message').fill('Original prefix message');
     let review = await openReview();
@@ -87,6 +89,7 @@ test('restriction editors keep deadlines, preserve failed drafts, and expose rem
     await expect(sheet.getByText('other*', { exact: true })).toBeVisible();
     await sheet.getByRole('combobox', { name: 'Duration', exact: true }).click();
     await page.getByRole('radio', { name: 'Permanent', exact: true }).press('Space');
+    await expect(page.locator('.smart-select-popover, .smart-select-sheet')).toHaveCount(0);
     await sheet.getByLabel('Restriction reason / displayed message').fill('Permanent individual message');
     await expectBackendAction(page, 'saveAccountAccessRule', () => sheet.getByRole('button', { name: 'Apply rule', exact: true }).click());
     await expect(sheet.getByText('Individual account', { exact: true })).toBeVisible();

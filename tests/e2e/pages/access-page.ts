@@ -25,7 +25,7 @@ export async function selectScope(page: Page, scope: Scope) {
   await expect(scopeTab).toHaveAttribute('aria-selected', 'true');
   if ('category' in scope) {
     await page.getByRole('combobox').click();
-    await page.getByRole('radio', { name: scope.category }).press('Space');
+    await page.getByRole('radio', { name: scope.category }).locator('..').click();
     // Native Smart Select keeps the background inert until its close animation ends.
     await expect(page.locator('.smart-select-popover, .smart-select-sheet')).toHaveCount(0);
   }

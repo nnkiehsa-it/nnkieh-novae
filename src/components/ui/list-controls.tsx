@@ -99,7 +99,7 @@ export function ListInputRow({
       disabled={disabled}
       inputmode={inputMode}
       maxlength={maxLength}
-      onChange={(event) => onChange(event.target.value)}
+      onInput={(event) => onChange(event.target.value)}
       placeholder={placeholder}
       value={value}
       ref={f7Ref}
@@ -144,7 +144,7 @@ export function ListNumberRow({
       step={step}
       value={Number.isFinite(value) ? value : ""}
       ref={f7Ref}
-      onChange={(event) => onChange(Number(event.target.value))}
+      onInput={(event) => onChange(Number(event.target.value))}
       onBlur={(event) => {
         const parsed = Number(event.target.value);
         if (!Number.isFinite(parsed)) return;
@@ -199,7 +199,7 @@ export function ListNoteRow({
       label={label}
       disabled={disabled}
       maxlength={maxLength}
-      onChange={(event) => onChange(event.target.value)}
+      onInput={(event) => onChange(event.target.value)}
       placeholder={placeholder ?? label}
       value={value}
       ref={f7Ref}

@@ -30,12 +30,10 @@ export function Switch({
   useLayoutEffect(() => {
     const root = f7Ref.current.el!;
     const input = root.querySelector<HTMLInputElement>("input")!;
+    // F7 owns the live input; syncing it avoids React restoring its old value.
+    if (checked !== undefined) input.checked = checked;
     if (id) input.id = id;
     else input.removeAttribute("id");
-    // Capture activation before React restores F7's controlled input.
-    const change = (event: MouseEvent) => {
-      if (event.target === input) onCheckedChange?.(input.checked);
-    };
     const activate = (event: KeyboardEvent) => {
       if ((event.key === " " || event.key === "Enter") && !props.disabled) {
         event.preventDefault();
@@ -43,23 +41,16 @@ export function Switch({
       }
     };
     root.addEventListener("keydown", activate);
-    root.addEventListener("click", change, true);
-    return () => {
-      root.removeEventListener("keydown", activate);
-      root.removeEventListener("click", change, true);
-    };
-  }, [f7Ref, id, onCheckedChange, props.disabled]);
+    return () => root.removeEventListener("keydown", activate);
+  }, [checked, f7Ref, id, props.disabled]);
   return (
     <Toggle
       {...(props as ComponentProps<typeof Toggle>)}
       className={cn("shrink-0", className)}
       data-slot="switch"
       data-size={size}
-      checked={checked}
-      defaultChecked={defaultChecked}
-      onToggleChange={(value) => {
-        if (value !== (checked ?? defaultChecked ?? false)) onCheckedChange?.(value);
-      }}
+      defaultChecked={checked ?? defaultChecked}
+      onToggleChange={onCheckedChange}
       ref={f7Ref as NonNullable<ComponentProps<typeof Toggle>["ref"]>}
     />
   );
