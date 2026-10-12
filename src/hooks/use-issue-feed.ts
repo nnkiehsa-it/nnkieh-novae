@@ -4,7 +4,6 @@ import * as React from "react";
 import { useI18n } from "@/i18n";
 import {
   findIssueCategory,
-  getDefaultIssueCategoryId,
   useCategories,
 } from "@/hooks/use-categories";
 import { useSession } from "@/hooks/use-session";
@@ -67,7 +66,7 @@ interface IssueFeedViewMemory {
 /** One issue category's feed; `filter` is a valid category id or "my-proposals". */
 export function useIssueFeed(filter: string) {
   const session = useSession();
-  const categories = useCategories();
+  useCategories();
   const { t } = useI18n();
   const { params: searchParams, committedQuery, query, setCommittedQuery, setQuery, updateParams } = useFeedUrlState();
   const { bucket, sort } = readIssueFeedFilters(searchParams);

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useAppLocation, useAppNavigate, useRecordId } from "@/hooks/use-app-location";
+import { useAppNavigate, useRecordId } from "@/hooks/use-app-location";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { useSession } from "@/hooks/use-session";
@@ -27,7 +27,6 @@ import { useOptimisticReaction } from "@/hooks/use-optimistic-reaction";
 
 export function useFacilityDetail() {
   const { id: facilityId } = useRecordId("facility");
-  const { search } = useAppLocation();
   const navigate = useAppNavigate();
   const session = useSession();
   const { t } = useI18n();

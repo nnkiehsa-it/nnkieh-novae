@@ -7,7 +7,6 @@ import { useI18n } from "@/i18n";
 import type { CommentSortOption, DiscussionCommentRecord } from "@/types";
 import { stripMarkdownImages } from "@/lib/markdown-images";
 import { timing } from "@/lib/motion-timing";
-import { cn } from "@/lib/utils";
 import { useCategories } from "@/hooks/use-categories";
 import { useDiscussionComposer } from "@/hooks/use-discussion-composer";
 import { useDiscussionProfiles } from "@/hooks/use-public-profiles";

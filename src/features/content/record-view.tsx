@@ -73,7 +73,6 @@ export function RecordHeader({ actions, chips, meta, title }: {
   meta?: React.ReactNode;
   title: React.ReactNode;
 }) {
-  const { t } = useI18n();
   return (
     <header className="grid gap-4">
       <div className="flex min-h-9 items-center gap-2">
