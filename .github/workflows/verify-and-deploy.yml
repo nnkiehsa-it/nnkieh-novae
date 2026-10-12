@@ -23,8 +23,10 @@ on:
       - 'vitest.config.ts'
       - 'eslint.config.js'
       - '.github/workflows/**'
-  # Every branch deploys: main to production, everything else to a preview
-  # against the development backend. Only main and dev deploy the backend.
+  # Every branch deploys: main to production, everything else to a Vercel
+  # preview built from the production secrets (the development environment
+  # holds none), so previews talk to the production backend. Only main
+  # deploys the backend.
   push:
     branches:
       - '**'
@@ -222,7 +224,7 @@ jobs:
       needs.backend_verify.result == 'success' &&
       needs.changes.outputs.backend == 'true' &&
       (needs.changes.outputs.browser != 'true' || contains(fromJSON('["success","skipped"]'), needs.browser_verify.result)) &&
-      (github.ref_name == 'main' || github.ref_name == 'dev') &&
+      github.ref_name == 'main' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
@@ -461,10 +463,10 @@ jobs:
       contains(fromJSON('["success","skipped"]'), needs.browser_verify.result) &&
       needs.changes.outputs.browser == 'true' &&
       (needs.changes.outputs.backend != 'true' || needs.deploy_backend.result == 'success' ||
-        (github.ref_name != 'main' && github.ref_name != 'dev' && needs.backend_verify.result == 'success')) &&
+        (github.ref_name != 'main' && needs.backend_verify.result == 'success')) &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
-    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+    environment: production
     steps:
       - uses: actions/checkout@v7
 
