@@ -46,7 +46,6 @@ export function useAnnouncementComposer() {
   }
   return {
     ...form,
-    back: router.back,
     canManage: session.can("announcement.manage"),
     submit,
   };
@@ -80,7 +79,7 @@ export function useIssueComposer() {
       return `/issues/${encodeURIComponent(category)}/${issue.id}`;
     }, router.replace, t("ui.issue.submitFailed"));
   }
-  return { ...form, back: router.back, category, config, submit };
+  return { ...form, category, config, submit };
 }
 
 export function useFacilityComposer() {
@@ -123,7 +122,6 @@ export function useFacilityComposer() {
   }
   return {
     ...form,
-    back: router.back,
     categories: categories.activeFacilityCategories,
     category,
     location,
