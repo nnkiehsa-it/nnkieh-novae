@@ -46,7 +46,7 @@ export function useInitialSetup() {
   const setupCompleted = session.setupCompleted;
   const categories = useCategories();
   const { t } = useI18n();
-  const [kind, setKind] = React.useState("issue");
+  const [kind, setKind] = React.useState<"issue" | "facility">("issue");
   const [issuesEnabled, setIssuesEnabled] = React.useState(true);
   const [facilitiesEnabled, setFacilitiesEnabled] = React.useState(true);
   const [issues, setIssues] = React.useState<IssueCategoryDraft[]>([newIssue(true)]);
@@ -136,12 +136,16 @@ export function useInitialSetup() {
     kind,
     save,
     saving: feedback.busy,
+    removeFacility: (index: number) => setFacilities((current) => current.filter((_, at) => at !== index)),
+    removeIssue: (index: number) => setIssues((current) => current.filter((_, at) => at !== index)),
     setConfirming,
-    setFacilities,
     setFacilitiesEnabled,
-    setIssues,
     setIssuesEnabled,
     setKind,
+    updateFacility: (index: number, next: FacilityCategoryDraft) =>
+      setFacilities((current) => current.map((item, at) => (at === index ? next : item))),
+    updateIssue: (index: number, next: IssueCategoryDraft) =>
+      setIssues((current) => current.map((item, at) => (at === index ? next : item))),
     valid,
   };
 }

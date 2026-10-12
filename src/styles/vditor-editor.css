@@ -87,7 +87,7 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  :root.t-mouse .novae-markdown-editor [class~="vditor-toolbar__item"] [class~="vditor-tooltipped"]:hover {
+  .novae-markdown-editor [class~="vditor-toolbar__item"] [class~="vditor-tooltipped"]:hover {
     background: var(--interaction);
     color: var(--primary);
   }

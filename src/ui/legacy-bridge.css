@@ -63,8 +63,7 @@ html:root {
 /* Legacy cards, the grouped list and the mobile dock were opaque; on the
    gradient they take the glass material instead. */
 .rule-card,
-.surface-floating,
-.app-mobile-nav {
+.surface-floating {
   -webkit-backdrop-filter: blur(var(--surface-blur)) saturate(140%);
   backdrop-filter: blur(var(--surface-blur)) saturate(140%);
 }

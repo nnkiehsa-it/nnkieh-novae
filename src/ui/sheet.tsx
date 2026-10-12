@@ -51,6 +51,7 @@ export function Sheet({
                   "fixed inset-x-0 bottom-0 z-50 flex max-h-[calc(100svh-var(--safe-top)-1.5rem)] flex-col rounded-t-panel border-t border-line bg-surface-solid text-ink shadow-float outline-none",
                   "md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:max-h-[min(44rem,calc(100svh-4rem))] md:w-[min(34rem,calc(100vw-4rem))] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-panel md:border",
                 )}
+                data-sheet-surface=""
                 exit={{ opacity: 0, y: 48, transition: timing("sheetExit", "depart") }}
                 initial={{ opacity: 0, y: 48 }}
                 transition={timing("sheet", "nav")}

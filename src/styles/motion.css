@@ -48,12 +48,6 @@
 
 /* The surface every route is painted on. It owns the shell's padding rather
    than sitting inside it, so a page reaches every screen edge. */
-.route-page {
-  width: min(100%, var(--content-max));
-  margin-inline: auto;
-  flex: 1 0 auto;
-  background: var(--surface-stage);
-}
 
 /* A route reveal is one animation, on the page that arrives, in the live
    document.
@@ -69,15 +63,7 @@
    the app and the quarter-second it used to take read as a cut.
    The direction still reads — a child arrives from the trailing edge, its
    parent from the leading one — and a route that is neither simply appears. */
-.route-page[data-route-direction] {
-  animation: t-route-enter var(--motion-reveal) var(--ease-nav) both;
-}
-.route-page[data-route-direction="push"] {
-  --route-entry-travel: var(--motion-route-travel);
-}
-.route-page[data-route-direction="pop"] {
-  --route-entry-travel: calc(-1 * var(--motion-route-travel));
-}
+
 /* The slide is the whole animation; the fade only covers its first third. A
    page that faded for as long as it travelled spent most of the navigation
    being read through, which is what made a longer, calmer push look washed out
@@ -137,22 +123,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     transform var(--motion-control) var(--ease-arrive);
 }
 
-:is(
-  a[href],
-  button,
-  [role="button"],
-  [role="menuitem"],
-  [role="option"],
-  [role="radio"],
-  [role="checkbox"],
-  [role="tab"],
-  [role="switch"],
-  [data-slot="select-trigger"]
-):not(:disabled, [aria-disabled="true"], [data-disabled], .t-primary-nav-link, [data-feed-card-link], .t-row, .t-card):is([data-pressed], :root[data-input-modality="keyboard"] :active) {
-  transform: translateY(1px) scale(var(--motion-press-scale));
-  transition-duration: var(--motion-touch);
-}
-
 /* A card is a large surface, so it takes an even smaller share of the press. */
 .t-card {
   transition:
@@ -186,38 +156,11 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 [data-navigating="true"]:not(.t-row) {
   background: var(--surface-active);
 }
-.t-navigation-progress {
-  background: var(--tint-content);
-  box-shadow: 0 0 14px color-mix(in srgb, var(--tint-content) 34%, transparent);
-}
 
 /* Selection follows the committed route. Pending feedback belongs to the last
    requested Link; the moving selection and icon settle without overshoot. A
    primary navigation link is excluded from the press rung above: the dock is
    furniture, so the press belongs to the icon rather than to the whole slab. */
-.t-nav-selection,
-.t-nav-pending {
-  pointer-events: none;
-}
-.t-nav-pending {
-  background: var(--surface-active);
-  opacity: 0;
-  transition: opacity var(--motion-control) var(--ease-arrive);
-}
-.t-nav-pending[data-pending="true"] {
-  opacity: 1;
-  transition-delay: var(--motion-touch);
-}
-.t-primary-nav-link [data-nav-icon] {
-  transition: transform var(--motion-nav) var(--ease-nav);
-}
-.t-primary-nav-link:is([data-pressed], :root[data-input-modality="keyboard"] :active) [data-nav-icon] {
-  transform: scale(0.92);
-  transition-duration: var(--motion-touch);
-}
-.t-primary-nav-link[data-active="true"]:not([data-pressed]):not(:root[data-input-modality="keyboard"] :active) [data-nav-icon] {
-  transform: translateY(-1px) scale(1.04);
-}
 
 /* Entrances -------------------------------------------------------------- */
 
@@ -272,10 +215,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   }
 }
 
-.t-update-stage {
-  animation: t-panel-reveal var(--motion-reveal) var(--ease-arrive) both;
-}
-
 /* Menus and overlays ------------------------------------------------------ */
 
 /* Origin-aware scale only: Radix already anchors the transform origin to the
@@ -312,13 +251,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   animation: t-fade-in var(--motion-control) var(--ease-arrive) both;
 }
 .t-overlay[data-state="closed"] {
-  animation: t-fade-out var(--motion-control-exit) var(--ease-depart) both;
-}
-
-.t-turnstile-gate[data-state="open"] {
-  animation: t-fade-in var(--motion-control) var(--ease-arrive) both;
-}
-.t-turnstile-gate[data-state="closed"] {
   animation: t-fade-out var(--motion-control-exit) var(--ease-depart) both;
 }
 
@@ -471,31 +403,9 @@ html[data-theme-transition="true"]::view-transition-new(root) {
    card while this lasts, and travels back with it, because the card is the
    whole screen rather than the whole document. */
 @media (max-width: 47.99rem) {
-  .t-stage {
-    transform-origin: 50% 0;
-    transition:
-      transform var(--motion-sheet) var(--ease-nav),
-      border-radius var(--motion-sheet) var(--ease-nav);
-  }
   html[data-stage-held="true"] body {
     height: var(--stage-height);
     background: var(--surface-behind);
-  }
-  html[data-stage-held="true"] .t-stage {
-    position: fixed;
-    inset: 0;
-    overflow: clip;
-  }
-  html[data-stage-held="true"] .t-stage-content {
-    margin-top: calc(-1 * var(--stage-scroll));
-  }
-  body:has([data-slot="dialog-content"].t-sheet[data-state="open"]:not([data-sheet-lifecycle-closing="true"])) .t-stage {
-    border-radius: var(--radius-3xl);
-    transform: translateY(calc(var(--safe-top) + 0.625rem)) scale(0.92);
-  }
-  body:has([data-slot="dialog-content"].t-sheet:is([data-state="closed"], [data-sheet-lifecycle-closing="true"])) .t-stage {
-    transition-duration: var(--motion-sheet-exit);
-    transition-timing-function: var(--ease-nav);
   }
 }
 
@@ -525,30 +435,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 }
 
 /* Sonner owns stack position in --y; this layer owns the rise and the fade. */
-.t-toast[data-sonner-toast] {
-  min-height: 46px;
-  border-radius: 52px !important;
-  padding: 12px 16px !important;
-  gap: 10px !important;
-  opacity: 0;
-  transform: var(--y) translateY(var(--motion-rise));
-  will-change: transform, opacity;
-  transition:
-    opacity var(--motion-control-exit) var(--ease-depart),
-    transform var(--motion-control-exit) var(--ease-depart),
-    height var(--motion-control-exit) var(--ease-depart) !important;
-}
-.t-toast[data-sonner-toast][data-mounted="true"][data-removed="false"] {
-  opacity: 1;
-  transform: var(--y) translateY(0);
-  transition:
-    opacity var(--motion-reveal) var(--ease-arrive),
-    transform var(--motion-reveal) var(--ease-arrive),
-    height var(--motion-reveal) var(--ease-arrive) !important;
-}
-.t-toast[data-sonner-toast][data-removed="true"][data-swipe-out="false"] {
-  opacity: 0;
-}
 
 /* Notification badge */
 .t-notification-badge {
@@ -581,7 +467,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   color: var(--foreground);
 }
 @media (hover: hover) and (pointer: fine) {
-  :root.t-mouse .t-tab:not([aria-selected="true"]):not([data-displayed-active="true"]):hover {
+  :root .t-tab:not([aria-selected="true"]):not([data-displayed-active="true"]):hover {
     color: var(--foreground);
   }
 }
@@ -603,10 +489,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 }
 [data-state="checked"] .t-toggle-thumb {
   translate: var(--toggle-travel) 0;
-}
-
-.t-shake[data-error="true"] {
-  animation: t-shake var(--motion-control) linear;
 }
 @keyframes t-shake {
   0% {
@@ -816,23 +698,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     transform: rotate(360deg);
   }
 }
-
-.t-progress-track {
-  width: 7.5rem;
-  height: 2px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--muted);
-}
-.t-progress-track > span {
-  display: block;
-  width: 45%;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--foreground);
-  animation: t-progress-sweep var(--motion-sweep) var(--ease-move) infinite;
-  will-change: transform;
-}
 @keyframes t-progress-sweep {
   from {
     transform: translateX(-125%);
@@ -903,20 +768,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 .t-spinner-check[data-state="complete"] .t-spinner-check-success path {
   animation: t-success-draw var(--motion-control) var(--ease-move) both;
 }
-
-.t-success-check[data-state="in"] {
-  animation: t-success-in var(--motion-control) var(--ease-bounce) both;
-}
-.t-success-check[data-state="out"] {
-  opacity: 0;
-}
-.t-success-check path {
-  stroke-dasharray: var(--check-length, 24);
-  stroke-dashoffset: var(--check-length, 24);
-}
-.t-success-check[data-state="in"] path {
-  animation: t-success-draw var(--motion-control) var(--ease-move) var(--motion-touch) forwards;
-}
 @keyframes t-success-in {
   from {
     opacity: 0;
@@ -980,7 +831,7 @@ html[data-theme-transition="true"]::view-transition-new(root) {
   background: var(--tint-surface-hover);
 }
 @media (hover: hover) and (pointer: fine) {
-  :root.t-mouse .t-like[data-accent="hand"][data-liked="true"]:hover:not(:disabled) {
+  :root .t-like[data-accent="hand"][data-liked="true"]:hover:not(:disabled) {
     background: var(--tint-surface-hover);
   }
 }
@@ -1108,18 +959,18 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 
 /* Hover is a pointer affordance only. */
 @media (hover: hover) and (pointer: fine) {
-  :root.t-mouse [data-slot="button"]:not(:disabled):not([data-pressed]):not(:active):hover {
+  :root [data-slot="button"]:not(:disabled):not([data-pressed]):not(:active):hover {
     transform: translateY(-1px);
   }
-  :root.t-mouse .t-row:not([data-pressed]):not(:active):not([data-selected="true"]):not([data-navigating="true"]):hover::before {
+  :root .t-row:not([data-pressed]):not(:active):not([data-selected="true"]):not([data-navigating="true"]):hover::before {
     background: var(--surface-hover);
   }
-  :root.t-mouse .t-card:not([data-pressed]):not(:active):hover {
+  :root .t-card:not([data-pressed]):not(:active):hover {
     background-color: color-mix(in srgb, var(--card) 99%, var(--foreground) 1%);
     border-color: color-mix(in srgb, var(--border) 60%, var(--foreground) 10%);
     transform: translateY(-1px);
   }
-  :root.dark.t-mouse .t-card:not([data-pressed]):not(:active):hover {
+  :root.dark .t-card:not([data-pressed]):not(:active):hover {
     background-color: color-mix(in srgb, var(--card) 99.5%, var(--foreground) 0.5%);
     border-color: color-mix(in srgb, var(--border) 60%, var(--foreground) 12%);
     transform: translateY(-1px);
@@ -1127,9 +978,6 @@ html[data-theme-transition="true"]::view-transition-new(root) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .route-page[data-route-direction] {
-    animation: none;
-  }
   ::view-transition-old(*),
   ::view-transition-new(*),
   ::view-transition-group(*) {
@@ -1137,29 +985,21 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     animation-delay: 0s !important;
   }
   .t-decoded-image,
-  .t-panel-reveal,
-  .t-startup-brand,
-  .t-startup-status > *,
-  .t-stagger-item,
-  .t-success-check,
-  .t-success-check path,
-  .t-resolution-notice,
-  .t-resolution-notice [data-resolution-icon],
-  .t-spinner,
-  .t-spinner-check-success path,
-  .t-update-stage,
-  .t-progress-track > span,
-  .t-shake,
-  .t-skeleton,
-  .t-shimmer::before,
-  .t-reaction-icon,
-  .t-like-particles i,
-  .t-toast,
-  .t-dialog,
-  .t-sheet,
-  .t-overlay,
-  .t-dropdown,
-  .t-tooltip {
+.t-panel-reveal,
+.t-stagger-item,
+.t-resolution-notice,
+.t-resolution-notice [data-resolution-icon],
+.t-spinner,
+.t-spinner-check-success path,
+.t-skeleton,
+.t-shimmer::before,
+.t-reaction-icon,
+.t-like-particles i,
+.t-dialog,
+.t-sheet,
+.t-overlay,
+.t-dropdown,
+.t-tooltip {
     animation: none !important;
   }
   /* The threshold is not motion, so it stays; only the fade goes. */
@@ -1179,20 +1019,12 @@ html[data-theme-transition="true"]::view-transition-new(root) {
     visibility: visible;
   }
   .t-notification-badge,
-  .t-toggle-thumb,
-  .t-spinner-check-loader,
-  .t-spinner-check-success,
-  .t-tabs-pill,
-  .t-tab-label,
-  .t-toast,
-  .t-stage,
-  .t-card {
-    transition: none !important;
-    transform: none !important;
-  }
-  .t-primary-nav-link,
-  .t-primary-nav-link [data-nav-icon] {
-    animation: none !important;
+.t-toggle-thumb,
+.t-spinner-check-loader,
+.t-spinner-check-success,
+.t-tabs-pill,
+.t-tab-label,
+.t-card {
     transition: none !important;
     transform: none !important;
   }

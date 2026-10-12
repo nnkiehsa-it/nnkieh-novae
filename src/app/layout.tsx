@@ -4,7 +4,7 @@ import { Inter, Roboto_Mono } from "next/font/google";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
 import "./globals.css";
-import { AppProviders } from "@/components/app-providers";
+import { AppProviders } from "@/features/shell/app-providers";
 import { APP_DESCRIPTION } from "@/constants/app";
 
 const appVersion = process.env.NEXT_PUBLIC_APP_VERSION ?? "development";
@@ -97,9 +97,8 @@ export default async function RootLayout({
           </>
         ) : null}
       </head>
-      {/* Novae website brand, compact product density, shared light/dark surfaces and stable loading geometry. */}
       <body>
-        <AppProviders nonce={nonce}>{children}</AppProviders>
+        <AppProviders>{children}</AppProviders>
         {turnstileSiteKey ? (
           <Script
             nonce={nonce}

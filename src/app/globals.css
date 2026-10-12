@@ -9,9 +9,6 @@
 @import "../ui/legacy-bridge.css";
 
 @custom-variant dark (&:is(.dark *));
-/* Existing hover recipes answer either a real mouse or a confirmed press.
-   Touch never relies on Safari's sticky :hover, including on hybrid devices. */
-@custom-variant hover (&:is([data-pressed], .t-mouse :hover));
 
 @theme inline {
   --color-background: var(--background);
@@ -221,7 +218,6 @@
     0 18px 48px rgb(0 0 0 / 48%), 0 3px 10px rgb(0 0 0 / 34%);
 }
 
-
 ::selection {
   background: var(--selection-bg);
   color: var(--selection-fg);
@@ -307,60 +303,10 @@ body[data-scroll-locked] {
 /* The security check a restored session sometimes has to pass. It runs out of
    sight, and only becomes a surface when Cloudflare decides it wants a person;
    signing in is the one place the check is always shown, in the page itself. */
-.t-turnstile-gate {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: grid;
-  place-items: center;
-  padding: 1rem;
-  opacity: 0;
-  pointer-events: none;
-}
 
 /* The widget has to stay laid out while it runs silently — Turnstile cannot
    render into a container the browser is not drawing — so the gate is only
    ever made transparent, never taken out of the page. */
-.t-turnstile-gate[data-state="open"],
-.t-turnstile-gate[data-state="closed"] {
-  background: var(--backdrop);
-  backdrop-filter: blur(3px);
-  opacity: 1;
-}
-
-.t-turnstile-gate[data-state="open"] {
-  pointer-events: auto;
-}
-
-.t-turnstile-card {
-  display: grid;
-  justify-items: center;
-  gap: 0.75rem;
-  width: 100%;
-  max-width: 22rem;
-  padding: 1.75rem;
-  text-align: center;
-  border-radius: var(--radius-xl);
-  background: var(--popover);
-}
-
-.app-start-surface {
-  box-sizing: border-box;
-  min-height: 100vh;
-  min-height: 100svh;
-  padding-top: max(1.5rem, var(--safe-top));
-  padding-bottom: max(1.5rem, var(--safe-bottom));
-  padding-inline: max(1.5rem, var(--safe-left), var(--safe-right));
-  background: var(--surface-stage);
-}
-
-.t-startup-brand {
-  animation: t-startup-brand var(--motion-reveal) var(--ease-arrive) both;
-}
-
-.t-startup-status > * {
-  animation: t-startup-status var(--motion-touch) var(--ease-arrive) both;
-}
 
 @keyframes t-startup-brand {
   from { opacity: 0; transform: translateY(8px) scale(0.96); }
@@ -432,14 +378,6 @@ html[data-input-modality="pointer"] :focus-visible {
   }
 }
 
-.app-viewport {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  min-height: 100svh;
-  padding-inline: max(var(--page-gutter), var(--safe-left), var(--safe-right));
-}
-
 .app-shell {
   min-height: 100vh;
   min-height: 100svh;
@@ -448,9 +386,6 @@ html[data-input-modality="pointer"] :focus-visible {
 /* Header veils size themselves against the actual application column rather
    than `100vw`. WebKit can reserve a scrollbar gutter even while the scrollbar
    is visually hidden, making viewport units wider than the drawable page. */
-.app-main-column {
-  container-type: inline-size;
-}
 
 /* The controls at the top of a screen stay where they are while the reading
    travels underneath them, behind a band of the surface that blurs what passes
@@ -659,21 +594,6 @@ html[data-input-modality="pointer"] :focus-visible {
   }
 }
 
-.app-mobile-nav {
-  box-sizing: border-box;
-  right: max(1rem, var(--safe-right));
-  top: calc(var(--app-fixed-viewport-height) - var(--mobile-nav-height) - var(--mobile-nav-bottom-gap));
-  bottom: auto;
-  left: max(1rem, var(--safe-left));
-  height: var(--mobile-nav-height);
-  /* The dock is present or it is not. It belongs to the route, and a route
-     change is already an animation: the page arriving covers it, the page
-     being dismissed slides off it. */
-  opacity: 0;
-  pointer-events: none;
-  visibility: hidden;
-}
-
 @media (display-mode: standalone) {
   :root {
     --app-fixed-viewport-height: 100vh;
@@ -681,30 +601,9 @@ html[data-input-modality="pointer"] :focus-visible {
   }
 
   body,
-  .app-shell,
-  .app-start-surface,
-  .app-viewport {
+.app-shell {
     min-height: 100vh;
   }
-}
-
-.app-mobile-nav[data-visible="true"] {
-  opacity: 1;
-  pointer-events: auto;
-  visibility: visible;
-}
-
-.app-mobile-nav [data-liquid-nav-index] {
-  border-radius: 9999px;
-}
-
-.app-mobile-nav [data-liquid-nav-index] > span:last-child {
-  width: 100%;
-  min-width: 0;
-  overflow: hidden;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .discussion-composer-dock {
@@ -721,15 +620,6 @@ html[data-input-modality="pointer"] :focus-visible {
     max(0.75rem, var(--safe-bottom)) +
     1.25rem
   );
-}
-
-@media (max-width: 47.99rem) {
-  body:has(.app-mobile-nav[data-visible="true"])
-    [data-sonner-toaster][data-y-position="bottom"] {
-    bottom: calc(
-      var(--mobile-nav-height) + var(--mobile-nav-bottom-gap) + 0.75rem
-    ) !important;
-  }
 }
 
 @media (min-width: 48rem) {
@@ -899,17 +789,7 @@ html[data-input-modality="pointer"] :focus-visible {
   /* The page gutter belongs to the route surface on a phone: a pushed page has
      to reach both screen edges, or the page it replaces stays visible beside
      it for the whole transition. */
-  .app-viewport {
-    padding-inline: 0;
-  }
-  .app-viewport > .route-page {
-    padding-inline: max(var(--page-gutter), var(--safe-left), var(--safe-right));
-  }
-  body:has(input:focus, textarea:focus, [contenteditable="true"]:focus) .app-mobile-nav {
-    opacity: 0;
-    pointer-events: none;
-    visibility: hidden;
-  }
+  
 }
 
 @media (min-width: 48rem) {

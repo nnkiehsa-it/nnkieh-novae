@@ -1,6 +1,6 @@
 "use client";
 
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "@phosphor-icons/react/ssr";
 import {
   createContext,
   useCallback,
@@ -13,6 +13,7 @@ import {
 } from "react";
 import { t } from "@/i18n";
 import { timingMs } from "@/lib/motion-timing";
+import { cn } from "@/lib/utils";
 
 const siteKey = String(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "").trim();
 const SCRIPT_READY_TIMEOUT_MS = 30_000;
@@ -48,7 +49,7 @@ interface TurnstileApi {
       callback: (token: string) => void;
       sitekey: string;
       size: "normal";
-      theme: "auto";
+      theme: "auto" | "dark" | "light";
     },
   ) => string;
 }
@@ -191,7 +192,7 @@ export function TurnstileProvider({
         },
         sitekey: siteKey,
         size: "normal",
-        theme: "auto",
+        theme: "dark",
       });
       turnstile.execute(widgetId);
     } catch (error) {
@@ -251,22 +252,29 @@ export function TurnstileProvider({
     <TurnstileContext.Provider value={value}>
       {children}
       {/* The gate is in the page at all times so the widget can keep running
-          out of sight, so it only claims to be a dialog while it is one. */}
-      <div aria-hidden={gate !== "open"} className="t-turnstile-gate" data-state={gate}>
+          out of sight — Turnstile cannot render into a container the browser
+          is not drawing — so it only claims to be a dialog while it is one. */}
+      <div
+        aria-hidden={gate !== "open"}
+        className={cn(
+          "pointer-events-none fixed inset-0 z-50 grid place-items-center p-4 opacity-0 transition-opacity duration-[var(--motion-control)] ease-[var(--ease-move)]",
+          (gate === "open" || gate === "closed") && "bg-[var(--scrim)] opacity-100",
+          gate === "open" && "pointer-events-auto",
+        )}
+      >
         <div
           aria-labelledby={gate === "open" ? "turnstile-gate-title" : undefined}
           aria-modal={gate === "open" ? true : undefined}
-          className="t-turnstile-card t-dialog"
-          data-state={gate}
+          className="grid w-[min(24rem,100%)] justify-items-center gap-3 rounded-panel border border-line bg-surface-solid p-6 text-center text-ink shadow-float"
           role={gate === "open" ? "dialog" : undefined}
         >
-          <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-[var(--tint-content)]">
-            <ShieldCheck className="size-5" aria-hidden />
-          </div>
+          <span aria-hidden className="grid size-12 place-items-center rounded-full bg-surface-raised">
+            <ShieldCheck className="size-6" />
+          </span>
           <h2 className="text-lg font-semibold" id="turnstile-gate-title">
             {t("auth.loginVerification")}
           </h2>
-          <p className="text-sm text-muted-foreground">{t("auth.securityCheckPrompt")}</p>
+          <p className="text-sm text-ink-muted">{t("auth.securityCheckPrompt")}</p>
           <div className="flex min-h-[65px] w-full items-center justify-center overflow-hidden">
             <div ref={setDialogHost} className="min-h-[65px] w-[300px] max-w-full" />
           </div>

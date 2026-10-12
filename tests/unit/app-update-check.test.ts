@@ -1,19 +1,15 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { AppUpdateGate } from "@/components/app-update-gate";
+import { useAppUpdate } from "@/hooks/use-app-update";
 
-vi.mock("@/i18n", () => ({ t: (key: string) => key, useI18n: () => ({}) }));
-vi.mock("@/components/turnstile-provider", () => ({ useTurnstile: () => ({ verifying: true }) }));
 vi.mock("@/hooks/use-update-deferral", () => ({ useUpdateDeferral: () => true, hasUpdateDeferral: () => true }));
-vi.mock("motion/react", () => ({ AnimatePresence: () => null, motion: { div: () => null } }));
-vi.mock("@/components/ui/brand", () => ({ BrandLockup: () => null }));
-vi.mock("@/components/ui/button", () => ({ Button: () => null }));
-vi.mock("@/components/ui/action-feedback-icon", () => ({ ActionFeedbackIcon: () => null }));
-vi.mock("@/components/ui/dialog", () => ({
-  Dialog: () => null, DialogContent: () => null, DialogDescription: () => null,
-  DialogFooter: () => null, DialogHeader: () => null, DialogTitle: () => null,
-}));
+
+// A security check is on screen and work is unsaved, so only the check runs.
+function AppUpdateProbe() {
+  useAppUpdate(true);
+  return null;
+}
 
 const key = "novae:last-version-check-at";
 let root: Root;
@@ -32,7 +28,7 @@ it("retries a failed version check on reconnection and retains successful thrott
   const fetch = vi.fn().mockResolvedValueOnce(new Response(null, { status: 503 }))
     .mockResolvedValueOnce(Response.json({ version: "development" }));
   vi.stubGlobal("fetch", fetch);
-  await act(async () => root.render(createElement(AppUpdateGate)));
+  await act(async () => root.render(createElement(AppUpdateProbe)));
   expect(fetch).toHaveBeenCalledTimes(1);
   expect(localStorage.getItem(key)).toBeNull();
   await act(async () => window.dispatchEvent(new Event("online")));
@@ -48,6 +44,6 @@ it("does not clear a newer check timestamp written by another tab", async () => 
     localStorage.setItem(key, otherTabTimestamp);
     throw new Error("offline");
   }));
-  await act(async () => root.render(createElement(AppUpdateGate)));
+  await act(async () => root.render(createElement(AppUpdateProbe)));
   expect(localStorage.getItem(key)).toBe(otherTabTimestamp);
 });

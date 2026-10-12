@@ -101,3 +101,17 @@ export function opensOverRoute(from: string, to: string) {
   return from !== to && (isRecordRoute(to) || isIssueComposerRoute(to))
     && /^\/(?:home|feed|issues|facilities|announcements|notifications|settings|admin)(?:\/|$)/u.test(from);
 }
+
+/**
+ * The primary destination `pathname` belongs to: a record or a composer is
+ * part of the feed, and administration is part of settings.
+ */
+export function primaryDestination(pathname: string) {
+  if (/^\/(?:issues|facilities|announcements)(?:\/|$)/u.test(pathname)) return "/feed";
+  return adoptedParent(pathname) ?? pathname;
+}
+
+/** A composer fills the screen with its own actions, so the dock steps aside. */
+export function hidesDock(pathname: string) {
+  return /\/(?:new|setup)$/u.test(pathname);
+}
