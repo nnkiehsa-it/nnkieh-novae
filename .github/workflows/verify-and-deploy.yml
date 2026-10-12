@@ -575,6 +575,21 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
+      # Previews get random URLs, but Turnstile, the Worker's ALLOWED_ORIGINS
+      # and Firebase's authorized domains each list exact hostnames. The latest
+      # branch preview is therefore also served at one fixed hostname, which is
+      # the one those three allow.
+      - name: Point the fixed preview hostname at this deployment
+        if: github.ref_name != 'main'
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+          PREVIEW_HOSTNAME: ${{ vars.PREVIEW_HOSTNAME || 'nnkieh-novae-preview.vercel.app' }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          bunx --yes vercel@58.9.0 alias set "$DEPLOYMENT_URL" "$PREVIEW_HOSTNAME" --token=${{ secrets.VERCEL_TOKEN }}
+          echo "Preview hostname: https://$PREVIEW_HOSTNAME" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Smoke test the deployed frontend
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}

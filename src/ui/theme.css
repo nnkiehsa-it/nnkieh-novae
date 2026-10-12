@@ -76,11 +76,14 @@ html {
 }
 
 /* The gradient is painted by a fixed layer rather than `background-attachment:
-   fixed`, which iOS Safari ignores; content scrolls over a still canvas. */
+   fixed`, which iOS Safari ignores; content scrolls over a still canvas. It is
+   as tall as the largest viewport, so it still reaches the bottom of the screen
+   behind Safari's toolbar instead of leaving a band of plain canvas there. */
 body::before {
   content: "";
   position: fixed;
-  inset: 0;
+  inset: 0 0 auto;
+  height: 100lvh;
   z-index: -1;
   background: var(--canvas-gradient);
   pointer-events: none;
