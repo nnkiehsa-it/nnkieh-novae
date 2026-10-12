@@ -92,7 +92,12 @@ async function allowTurnstileHostname() {
     headers,
     body: JSON.stringify({ ...body, domains: [...widget.domains, hostname] }),
   });
-  if (!updated.ok) throw new Error(`Updating Turnstile widget ${turnstileSiteKey} failed: ${updated.status} ${await updated.text()}`);
+  if (!updated.ok) {
+    // The deploy token may lack Turnstile edit access; the deploy still stands,
+    // and the hostname can be added to the widget in the dashboard instead.
+    console.log(`::warning::Could not add ${hostname} to Turnstile widget "${widget.name}" (${updated.status}). Give CLOUDFLARE_API_TOKEN "Turnstile: Edit" or add the hostname in the dashboard.`);
+    return;
+  }
   console.log(`Turnstile widget ${turnstileSiteKey} (${widget.name}) now allows ${hostname}.`);
 }
 
