@@ -3,15 +3,33 @@ import Link from "next/link";
 import { CaretRight } from "@phosphor-icons/react/ssr";
 import { cn } from "@/lib/utils";
 
-/** Rows that belong together, on one panel, split by hairlines. */
-export function ListGroup({ children, className, label }: {
+/**
+ * Rows that belong together, on one panel, split by hairlines. A title names
+ * the group above it; a footer explains it underneath.
+ */
+export function ListGroup({ action, children, className, footer, label, role, title }: {
+  /** One trailing control on the title line, such as a refresh. */
+  action?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  footer?: React.ReactNode;
+  /** Names the group for assistive technology when it has no visible title. */
   label?: string;
+  /** `radiogroup` when the rows are ChoiceRows. */
+  role?: "radiogroup";
+  title?: React.ReactNode;
 }) {
+  const titleId = React.useId();
   return (
-    <section aria-label={label} className={cn("glass overflow-hidden rounded-panel shadow-panel", className)}>
-      <ul className="divide-y divide-line">{children}</ul>
+    <section aria-label={title ? undefined : label} aria-labelledby={title ? titleId : undefined} className={cn("grid gap-2", className)}>
+      {title || action ? (
+        <div className="flex min-h-8 items-center justify-between gap-3 px-1">
+          {title ? <h2 className="text-sm font-medium text-ink-muted" id={titleId}>{title}</h2> : <span />}
+          {action}
+        </div>
+      ) : null}
+      <ul className="glass divide-y divide-line overflow-hidden rounded-panel shadow-panel" role={role}>{children}</ul>
+      {footer ? <p className="px-1 text-sm leading-relaxed text-ink-faint">{footer}</p> : null}
     </section>
   );
 }
@@ -28,12 +46,12 @@ interface ListRowContent {
 
 type ListRowProps = ListRowContent &
   (
-    | { href: string; external?: boolean; onClick?: never; trailing?: never; disabled?: never }
+    | { href: string; external?: boolean; onClick?: () => void; trailing?: never; disabled?: never }
     | { href?: never; external?: never; onClick: () => void; trailing?: never; disabled?: boolean }
     | { href?: never; external?: never; onClick?: never; trailing?: React.ReactNode; disabled?: never }
   );
 
-const rowClass =
+export const rowClass =
   "flex min-h-15 w-full items-center gap-4 px-5 py-3 text-left outline-none";
 const actionClass =
   "transition-[background-color] duration-[var(--motion-control)] ease-[var(--ease-move)] hover:bg-surface-raised active:bg-surface-pressed focus-visible:bg-surface-raised disabled:pointer-events-none disabled:opacity-40";
@@ -64,6 +82,7 @@ export function ListRow(props: ListRowProps) {
         <Link
           className={cn(rowClass, actionClass)}
           href={props.href}
+          onClick={props.onClick}
           {...(props.external ? { rel: "noreferrer", target: "_blank" } : {})}
         >
           <RowBody {...props} />
@@ -72,7 +91,7 @@ export function ListRow(props: ListRowProps) {
       </li>
     );
   }
-  if (props.onClick) {
+  if (props.onClick !== undefined) {
     return (
       <li>
         <button className={cn(rowClass, actionClass)} disabled={props.disabled} onClick={props.onClick} type="button">

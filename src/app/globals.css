@@ -5,6 +5,7 @@
 @import "../generated/motion-ladder.css";
 @import "../styles/motion.css";
 @import "../ui/theme.css";
+@import "../ui/motion.css";
 @import "../ui/legacy-bridge.css";
 
 @custom-variant dark (&:is(.dark *));

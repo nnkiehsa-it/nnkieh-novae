@@ -1,0 +1,26 @@
+/* The few animations the primitives own. Durations and curves come from the
+   generated motion ladder. */
+
+/* A wait shorter than an acknowledged touch is not a wait: the placeholder holds
+   its space from the first frame, but only paints once the touch rung has passed. */
+.skeleton {
+  opacity: 0;
+  animation:
+    skeleton-appear 0s linear var(--motion-touch) forwards,
+    skeleton-pulse var(--motion-pulse) ease-in-out var(--motion-touch) infinite;
+}
+
+@keyframes skeleton-appear {
+  to { opacity: 1; }
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { background-color: var(--surface-raised); }
+  50% { background-color: var(--surface-pressed); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: skeleton-appear 0s linear var(--motion-touch) forwards;
+  }
+}

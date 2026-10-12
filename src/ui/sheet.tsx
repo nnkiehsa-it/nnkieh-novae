@@ -4,6 +4,7 @@ import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Dialog } from "radix-ui";
 import { X } from "@phosphor-icons/react/ssr";
+import { useI18n } from "@/i18n";
 import { timing } from "@/lib/motion-timing";
 import { cn } from "@/lib/utils";
 import { Button } from "./button";
@@ -15,7 +16,6 @@ import { Button } from "./button";
  */
 export function Sheet({
   children,
-  closeLabel,
   description,
   footer,
   onOpenChange,
@@ -23,13 +23,13 @@ export function Sheet({
   title,
 }: {
   children: React.ReactNode;
-  closeLabel: string;
   description?: React.ReactNode;
   footer?: React.ReactNode;
   onOpenChange: (open: boolean) => void;
   open: boolean;
   title: React.ReactNode;
 }) {
+  const { t } = useI18n();
   return (
     <Dialog.Root onOpenChange={onOpenChange} open={open}>
       <AnimatePresence>
@@ -63,7 +63,7 @@ export function Sheet({
                     ) : null}
                   </div>
                   <Dialog.Close asChild>
-                    <Button aria-label={closeLabel} size="icon-sm" variant="secondary"><X weight="bold" /></Button>
+                    <Button aria-label={t("common.close")} size="icon-sm" variant="secondary"><X weight="bold" /></Button>
                   </Dialog.Close>
                 </header>
                 <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6 pt-2">{children}</div>

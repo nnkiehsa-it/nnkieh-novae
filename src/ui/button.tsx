@@ -1,7 +1,9 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
+import { Check } from "@phosphor-icons/react/ssr";
 import { Slot } from "radix-ui";
 import { cn } from "@/lib/utils";
+import { Spinner } from "./feedback";
 
 export const buttonVariants = cva(
   "inline-flex shrink-0 items-center justify-center gap-2 rounded-full font-medium whitespace-nowrap outline-none select-none transition-[background-color,color,opacity,transform] duration-[var(--motion-control)] ease-[var(--ease-move)] active:scale-[var(--motion-press-scale)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-[1.125rem]",
@@ -25,16 +27,36 @@ export const buttonVariants = cva(
   },
 );
 
-export type ButtonProps = React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & { asChild?: boolean };
+/** Where the action the button started has got to; anything but `idle` holds the button. */
+export type ActionStatus = "idle" | "loading" | "success";
 
-export function Button({ asChild = false, className, size, type, variant, ...props }: ButtonProps) {
-  const Component = asChild ? Slot.Root : "button";
+export type ButtonProps = React.ComponentProps<"button"> &
+  VariantProps<typeof buttonVariants> & { asChild?: boolean; status?: ActionStatus };
+
+export function Button({
+  asChild = false,
+  children,
+  className,
+  disabled,
+  size,
+  status = "idle",
+  type,
+  variant,
+  ...props
+}: ButtonProps) {
+  const className_ = cn(buttonVariants({ size, variant }), className);
+  if (asChild) return <Slot.Root className={className_} {...props}>{children}</Slot.Root>;
   return (
-    <Component
-      className={cn(buttonVariants({ size, variant }), className)}
-      type={asChild ? undefined : (type ?? "button")}
+    <button
+      aria-busy={status === "loading" || undefined}
+      className={className_}
+      disabled={disabled || status !== "idle"}
+      type={type ?? "button"}
       {...props}
-    />
+    >
+      {status === "loading" ? <Spinner className="size-4 border-current border-t-transparent" /> : null}
+      {status === "success" ? <Check aria-hidden weight="bold" /> : null}
+      {children}
+    </button>
   );
 }

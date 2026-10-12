@@ -103,7 +103,6 @@ export function GallerySections() {
       </div>
 
       <Sheet
-        closeLabel="Close"
         description="A bottom sheet on phones, centred from the tablet breakpoint up."
         footer={<><Button onClick={() => setSheetOpen(false)} variant="ghost">Cancel</Button><Button onClick={() => setSheetOpen(false)} variant="primary">Confirm</Button></>}
         onOpenChange={setSheetOpen}
