@@ -1,14 +1,14 @@
 "use client";
 
-import { t } from "@/i18n";
-import { PageHeader } from "@/components/ui/page-state";
-import { NotificationListSkeleton } from "@/components/notifications/notification-skeleton";
+import { useI18n } from "@/i18n";
+import { LoadingList, PageHeader } from "@/ui/page";
 
 export default function Loading() {
+  const { t } = useI18n();
   return (
-    <div aria-busy="true" className="space-y-5" role="status">
+    <div className="mx-auto grid w-full max-w-2xl gap-6">
       <PageHeader title={t("ui.nav.notifications")} />
-      <NotificationListSkeleton />
+      <LoadingList label={t("common.loading")} rows={5} />
     </div>
   );
 }

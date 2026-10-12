@@ -1,231 +1,20 @@
 @import "../assets/fonts/harmonyos-sans-tc/harmonyos-sans-tc.css";
 @import "tailwindcss";
-@import "../styles/heroui.css";
-@import "tw-animate-css";
 @import "../generated/motion-ladder.css";
-@import "../styles/motion.css";
 @import "../ui/theme.css";
 @import "../ui/motion.css";
-@import "../ui/legacy-bridge.css";
-
-@custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary-hover: var(--primary-hover);
-  --color-action: var(--action);
-  --color-action-foreground: var(--action-foreground);
-  --color-action-hover: var(--action-hover);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary-hover: var(--secondary-hover);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--interaction);
-  --color-accent-foreground: var(--interaction-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-tint: var(--accent);
-  --color-tint-content: var(--tint-content);
-  --color-tint-foreground: var(--accent-foreground);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
   --font-sans:
     "HarmonyOS Sans TC", var(--font-inter), "PingFang TC", "Microsoft JhengHei",
     ui-sans-serif, system-ui, sans-serif;
   --font-mono:
     var(--font-roboto-mono), ui-monospace, SFMono-Regular, Consolas, monospace;
-  --radius-xs: 0.5rem;
-  --radius-sm: 0.75rem;
-  --radius-md: 1rem;
-  --radius-lg: var(--radius);
-  --radius-xl: 1.75rem;
-  --radius-2xl: 2rem;
-  --radius-3xl: 2.5rem;
-}
-
-:root {
-  color-scheme: light;
-  --background: #e9edf4;
-  --foreground: #101828;
-  --card: #fdfefe;
-  --card-foreground: #101828;
-  --popover: #fdfefe;
-  --popover-foreground: #101828;
-  --accent: #1557d5;
-  --accent-foreground: #f7f9ff;
-  --action: var(--card);
-  --action-foreground: var(--card-foreground);
-  --action-hover: color-mix(in oklab, var(--action) 94%, var(--action-foreground));
-  --tint-content: var(--accent);
-  --tint-surface: color-mix(in srgb, var(--accent) 9%, var(--card));
-  --tint-surface-hover: color-mix(in srgb, var(--accent) 14%, var(--card));
-  --tint-surface-foreground: var(--tint-content);
-  --primary: color-mix(in oklab, var(--accent) 90%, var(--card));
-  --primary-foreground: var(--accent-foreground);
-  --primary-hover: color-mix(in oklab, var(--primary) 94%, var(--foreground));
-  --secondary: #edf2f8;
-  --secondary-foreground: #26364c;
-  --secondary-hover: color-mix(in oklab, var(--secondary) 94%, var(--secondary-foreground) 6%);
-  --muted: #edf2f8;
-  --muted-foreground: #566477;
-  --interaction: #e3eaf3;
-  --interaction-foreground: #101828;
-  --destructive: #c93434;
-  --destructive-foreground: #ffffff;
-  --success: #23865a;
-  --warning: #9a6413;
-  --announcement-notice-bg: #fef3c7;
-  --announcement-notice-fg: #854d0e;
-  --announcement-notice-hover: #fde9a5;
-  --status-review-bg: #fef3c7;
-  --status-review-fg: #92400e;
-  --status-pending-bg: #f2f2f7;
-  --status-pending-fg: #48484a;
-  --status-processing-bg: #e0f2fe;
-  --status-processing-fg: #0c4a82;
-  --status-completed-bg: #dcfce7;
-  --status-completed-fg: #145325;
-  --status-auto-rejected-bg: #fee2e2;
-  --status-auto-rejected-fg: #b91c1c;
-  --status-rejected-bg: #fee2e2;
-  --status-rejected-fg: #991b1b;
-  --status-infeasible-bg: #f5e9e9;
-  --status-infeasible-fg: #5a2323;
-  --border: rgb(16 24 40 / 10%);
-  --input: #8898ac;
-  --ring: var(--tint-content);
-  --focus: var(--tint-content);
-  --nav-active-bg: var(--tint-surface);
-  --nav-active-fg: var(--tint-surface-foreground);
-  --choice-indicator: var(--tint-content);
-  --selection-bg: var(--primary);
-  --selection-fg: var(--primary-foreground);
-  --notification-accent: var(--tint-content);
-  --surface-stage: var(--background);
-  /* What is behind the page once a sheet pushes it back: the dark a screen
-     sits on, taken from the theme's own ink rather than from a flat black. */
-  --surface-behind: color-mix(in oklab, var(--foreground) 88%, black);
-  --surface-inset: #edf2f8;
-  --surface-hover: rgb(21 87 213 / 5%);
-  --surface-active: rgb(21 87 213 / 10%);
-  --surface-selected: var(--tint-surface);
-  --rule: rgb(16 24 40 / 7%);
-  --row-gutter: 1.5rem;
-  --row-padding-block: 0.75rem;
-  --backdrop: rgb(16 24 40 / 32%);
-  --radius: 1.25rem;
-  --shadow-control: 0 1px 2px rgb(16 40 80 / 4%);
-  --shadow-card: 0 2px 5px rgb(16 40 80 / 3%);
-  --shadow-floating:
-    0 12px 36px rgb(16 40 80 / 10%), 0 2px 6px rgb(16 40 80 / 5%);
-  --content-max: 72rem;
-  --page-gutter: clamp(1rem, 2vw, 1.5rem);
-  --safe-top: env(safe-area-inset-top, 0px);
-  --safe-right: env(safe-area-inset-right, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --control-label-size: 0.8125rem;
-  --safe-left: env(safe-area-inset-left, 0px);
-  --app-fixed-viewport-height: 100svh;
-  --mobile-nav-height: 3.875rem;
-  --mobile-nav-bottom-gap: 1.125rem;
-  --page-header-top: max(1rem, var(--safe-top));
-  /* How far below the top of the screen a sheet stops. The page behind it
-     settles at `--safe-top` plus a tenth of an inch, so this leaves a
-     finger's width of that card showing above the sheet and no more: enough
-     to read as a page underneath, not enough to read as a gap. */
-  --sheet-inset-top: calc(var(--safe-top) + 1.625rem);
-}
-
-.dark {
-  color-scheme: dark;
-  /* AMOLED dark keeps the stage truly black. Raised surfaces stay neutral,
-     not blue-grey; the product accent is the only chromatic UI tint. */
-  --background: #000000;
-  --foreground: #f5f7fb;
-  --card: #161618;
-  --card-foreground: #f5f7fb;
-  --popover: #1c1c1f;
-  --popover-foreground: #f5f7fb;
-  --accent: #5d8ff0;
-  --accent-foreground: #050505;
-  --tint-content: var(--accent);
-  --tint-surface: color-mix(in srgb, var(--accent) 13%, var(--card));
-  --tint-surface-hover: color-mix(in srgb, var(--accent) 20%, var(--card));
-  --tint-surface-foreground: var(--tint-content);
-  --primary: color-mix(in oklab, var(--accent) 88%, var(--card));
-  --primary-foreground: var(--accent-foreground);
-  --primary-hover: color-mix(in oklab, var(--primary) 94%, var(--foreground));
-  --secondary: #222225;
-  --secondary-foreground: #e5e7eb;
-  --secondary-hover: color-mix(in oklab, var(--secondary) 92%, var(--secondary-foreground) 8%);
-  --muted: #222225;
-  --muted-foreground: #9ca3af;
-  --interaction: #303034;
-  --interaction-foreground: #f5f7fb;
-  --destructive: #e05a5a;
-  --destructive-foreground: #090909;
-  --success: #59b987;
-  --warning: #d5a554;
-  --announcement-notice-bg: #3b2f0b;
-  --announcement-notice-fg: #fde68a;
-  --announcement-notice-hover: #4a3a0c;
-  --status-review-bg: #452e00;
-  --status-review-fg: #fef3c7;
-  --status-pending-bg: #242426;
-  --status-pending-fg: #e5e5e7;
-  --status-processing-bg: color-mix(in srgb, var(--accent) 25%, black);
-  --status-processing-fg: color-mix(in srgb, var(--accent) 55%, white);
-  --status-completed-bg: #144221;
-  --status-completed-fg: #dcfce7;
-  --status-auto-rejected-bg: #4d181b;
-  --status-auto-rejected-fg: #fee2e2;
-  --status-rejected-bg: #521412;
-  --status-rejected-fg: #fee2e2;
-  --status-infeasible-bg: #401e1e;
-  --status-infeasible-fg: #f5dcdc;
-  --border: rgb(255 255 255 / 12%);
-  --input: #666b73;
-  --ring: var(--tint-content);
-  --focus: var(--tint-content);
-  --nav-active-bg: var(--tint-surface);
-  --nav-active-fg: var(--tint-surface-foreground);
-  --choice-indicator: var(--tint-content);
-  --selection-bg: var(--primary);
-  --selection-fg: var(--primary-foreground);
-  --notification-accent: var(--tint-content);
-  --surface-stage: #000000;
-  --surface-behind: #000000;
-  --surface-inset: var(--secondary);
-  --surface-hover: rgb(93 143 240 / 8%);
-  --surface-active: rgb(93 143 240 / 14%);
-  --surface-selected: var(--tint-surface);
-  --rule: rgb(255 255 255 / 9%);
-  --backdrop: rgb(0 0 0 / 72%);
-  --shadow-control: 0 1px 2px rgb(0 0 0 / 28%);
-  --shadow-card: 0 2px 5px rgb(0 0 0 / 26%);
-  --shadow-floating:
-    0 18px 48px rgb(0 0 0 / 48%), 0 3px 10px rgb(0 0 0 / 34%);
-}
-
-::selection {
-  background: var(--selection-bg);
-  color: var(--selection-fg);
 }
 
 @layer base {
   * {
-    border-color: var(--border);
+    border-color: var(--line);
   }
 }
 
@@ -237,8 +26,7 @@
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
-  /* Every scroll container owns its boundary: no chaining or rubber-banding,
-     including portalled sheets, menus, editors and horizontal tab lists. */
+  /* Every scroll container owns its boundary: no chaining or rubber-banding. */
   overscroll-behavior: none;
 }
 
@@ -266,28 +54,19 @@ img {
 }
 
 html {
-  /* Pan only: no pinch scaling and no double-tap scaling, on the platforms that
-     ignore the viewport's own scale limits as well. */
   touch-action: pan-x pan-y;
   overflow-x: clip;
   interpolate-size: allow-keywords;
-  background: var(--surface-stage);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
 
 body {
   min-width: min(20rem, 100%);
-  min-height: 100vh;
   min-height: 100svh;
   margin: 0;
   overflow-x: clip;
-  background: var(--surface-stage);
-  color: var(--foreground);
-  transition: background-color var(--motion-sheet) var(--ease-nav);
-  font-family:
-    "HarmonyOS Sans TC", var(--font-inter), "PingFang TC", "Microsoft JhengHei",
-    ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
@@ -300,369 +79,16 @@ body[data-scroll-locked] {
   padding-right: 0 !important;
 }
 
-/* The security check a restored session sometimes has to pass. It runs out of
-   sight, and only becomes a surface when Cloudflare decides it wants a person;
-   signing in is the one place the check is always shown, in the page itself. */
-
-/* The widget has to stay laid out while it runs silently — Turnstile cannot
-   render into a container the browser is not drawing — so the gate is only
-   ever made transparent, never taken out of the page. */
-
-@keyframes t-startup-brand {
-  from { opacity: 0; transform: translateY(8px) scale(0.96); }
-  to { opacity: 1; transform: none; }
-}
-
-@keyframes t-startup-status {
-  from { opacity: 0.65; transform: translateY(2px); }
-  to { opacity: 1; transform: none; }
-}
-
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-
-[data-control-label=""] {
-  font-size: var(--control-label-size);
-}
-
-button,
-[role="button"],
-a,
-input,
-select,
-textarea {
-  outline: none;
+::selection {
+  background: var(--contrast);
+  color: var(--on-contrast);
 }
 
 :focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-
-html[data-input-modality="pointer"] :focus-visible {
-  --tw-ring-offset-shadow: 0 0 #0000 !important;
-  --tw-ring-shadow: 0 0 #0000 !important;
-  outline: none !important;
-}
-
-[data-slot="dialog-content"]:focus-visible,
-[data-slot="alert-dialog-content"]:focus-visible {
   outline: none;
 }
 
-/* A dialog is a bounded reading surface. Long trace IDs and raw provider replies
-   must wrap inside it rather than contributing a grid minimum that widens the
-   entire layer past the viewport. */
-[data-slot="dialog-content"],
-[data-slot="alert-dialog-content"] {
-  min-width: 0;
-  overflow-x: clip;
-}
-
-[data-slot="dialog-content"] > *,
-[data-slot="alert-dialog-content"] > * {
-  min-width: 0;
-  max-width: 100%;
-}
-
-@media (hover: none), (pointer: coarse) {
-  :focus-visible,
-  :focus-within {
-    --tw-ring-offset-shadow: 0 0 #0000 !important;
-    --tw-ring-shadow: 0 0 #0000 !important;
-    outline: none !important;
-  }
-}
-
-.app-shell {
-  min-height: 100vh;
-  min-height: 100svh;
-}
-
-/* Header veils size themselves against the actual application column rather
-   than `100vw`. WebKit can reserve a scrollbar gutter even while the scrollbar
-   is visually hidden, making viewport units wider than the drawable page. */
-
-/* The controls at the top of a screen stay where they are while the reading
-   travels underneath them, behind a band of the surface that blurs what passes
-   and fades out along its lower edge rather than ending on a line.
-
-   Three things differ between the screens that wear it, and they are the three
-   properties: how far down the screen the band holds, how far sideways it
-   reaches past the column it is in, and which surface it is a veil over. A list
-   holds below the status bar, bleeds to the edges of the window and veils the
-   stage; a record inside a sheet holds at the top of the sheet, bleeds to the
-   sheet's own padding and veils the sheet. */
-.page-header,
-.detail-header {
-  position: sticky;
-  isolation: isolate;
-  z-index: 20;
-  top: var(--header-top, var(--page-header-top));
-}
-
-.header-backdrop {
-  --header-fade: 1.5rem;
-  position: absolute;
-  z-index: 0;
-  top: calc(0px - var(--header-top, var(--page-header-top)));
-  right: var(--header-bleed, calc((100% - 100cqw) / 2));
-  bottom: calc(-1 * var(--header-fade));
-  left: var(--header-bleed, calc((100% - 100cqw) / 2));
-  pointer-events: none;
-  background: color-mix(
-    in srgb,
-    var(--header-veil, var(--surface-stage)) 82%,
-    transparent
-  );
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  /* Keep the full header opaque to the blur, including a title below a back
-     row. Only the extra tail fades; negative-z promoted pseudo-elements can
-     sample foreground text incorrectly in browser compositing paths. */
-  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - var(--header-fade)), transparent);
-  mask-image: linear-gradient(to bottom, black calc(100% - var(--header-fade)), transparent);
-}
-
-/* The title band and the status-bar band remain separate surfaces because
-   WebKit has changed how filtered layers are clipped around the safe area.
-   Their shared edge is deliberately opaque: two independent backdrop filters
-   can sample different scrolling pixels and can therefore never be guaranteed
-   to meet invisibly. The title then eases from that stable edge into glass. */
-.page-header > .header-backdrop[data-progressive="true"] {
-  --header-fade: 1rem;
-  --header-solid-fill: var(--header-veil, var(--surface-stage));
-  --header-glass-fill: color-mix(
-    in srgb,
-    var(--header-solid-fill) 82%,
-    transparent
-  );
-  --header-blur-strong: 12px;
-  top: 0;
-  background: linear-gradient(
-    to bottom,
-    var(--header-solid-fill) 0,
-    var(--header-solid-fill) 15%,
-    var(--header-glass-fill) 55%,
-    var(--header-glass-fill) calc(100% - var(--header-fade)),
-    transparent
-  );
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  -webkit-mask-image: none;
-  mask-image: none;
-}
-
-.page-header > .header-backdrop[data-progressive="true"] > span {
-  position: absolute;
-  inset: 0;
-}
-
-/* The safe-area clearance keeps its own geometry for iOS compatibility, but
-   uses a solid fill instead of a second live blur. It meets the solid first
-   portion of the title gradient, so moving content cannot expose a seam. */
-.page-header > .header-backdrop[data-progressive="true"] > [data-status-bar-backdrop] {
-  --status-bar-height: var(--header-top, var(--page-header-top));
-  top: calc(-1 * var(--status-bar-height));
-  right: 0;
-  bottom: 100%;
-  left: 0;
-  background: var(--header-solid-fill);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  -webkit-mask-image: none;
-  mask-image: none;
-}
-
-.page-header > .header-backdrop [data-blur-step="strong"] {
-  -webkit-backdrop-filter: blur(var(--header-blur-strong));
-  backdrop-filter: blur(var(--header-blur-strong));
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    black 0,
-    black calc(100% - 0.75rem),
-    transparent calc(100% - 0.5rem)
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    black 0,
-    black calc(100% - 0.75rem),
-    transparent calc(100% - 0.5rem)
-  );
-}
-
-.page-header > .header-backdrop [data-blur-step="medium"] {
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent calc(100% - 0.875rem),
-    black calc(100% - 0.625rem),
-    black calc(100% - 0.375rem),
-    transparent calc(100% - 0.125rem)
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    transparent calc(100% - 0.875rem),
-    black calc(100% - 0.625rem),
-    black calc(100% - 0.375rem),
-    transparent calc(100% - 0.125rem)
-  );
-}
-
-.page-header > .header-backdrop [data-blur-step="soft"] {
-  -webkit-backdrop-filter: blur(2px);
-  backdrop-filter: blur(2px);
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent calc(100% - 0.5rem),
-    black calc(100% - 0.25rem),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    transparent calc(100% - 0.5rem),
-    black calc(100% - 0.25rem),
-    transparent 100%
-  );
-}
-
-.page-header > :not(.header-backdrop),
-.detail-header > :not(.header-backdrop) {
-  position: relative;
-  z-index: 1;
-}
-
-/* A record opened over its list is read inside a sheet, so the sheet is what
-   its controls hold on to and what they are a veil over: they stop at the top
-   of the scroll rather than below the status bar, and the band reaches out to
-   the sheet's padding rather than to the window. */
-[data-slot="dialog-content"] .detail-header {
-  --header-top: var(--dialog-pad);
-  --header-bleed: calc(0px - var(--dialog-pad));
-  --header-veil: var(--popover);
-}
-
-[data-slot="dialog-content"].t-sheet .detail-header {
-  --header-top: 0px;
-  --header-bleed: 0px;
-  top: calc(-1 * var(--dialog-pad));
-  margin: calc(-1 * var(--dialog-pad)) calc(-1 * var(--dialog-pad)) 0;
-  padding: var(--dialog-pad);
-}
-
-/* A dialog's heading is its operational anchor. It stays readable while a long
-   record moves behind the same soft veil as a detail toolbar, on both sheets
-   and desktop popups. The content starts below the veil's fade rather than
-   immediately inside it. */
-[data-slot="dialog-content"] [data-slot="dialog-header"],
-[data-slot="alert-dialog-content"] [data-slot="alert-dialog-header"] {
-  --header-top: 0px;
-  --header-bleed: 0px;
-  --header-veil: var(--popover);
-  position: sticky;
-  z-index: 20;
-  top: calc(-1 * var(--dialog-pad));
-  box-sizing: content-box;
-  isolation: isolate;
-  margin: calc(-1 * var(--dialog-pad)) calc(-1 * var(--dialog-pad)) 0;
-  padding: var(--dialog-pad) var(--dialog-pad) 0.25rem;
-}
-
-[data-slot="dialog-content"] [data-slot="dialog-header"] > :not(.header-backdrop):not([data-slot="dialog-close"]),
-[data-slot="alert-dialog-content"] [data-slot="alert-dialog-header"] > :not(.header-backdrop):not([data-slot="dialog-close"]) {
-  position: relative;
-  z-index: 1;
-}
-
-[data-sheet-surface] .detail-header,
-[data-sheet-surface] [data-slot="dialog-header"] {
-  --header-veil: var(--surface-stage);
-}
-
-.t-sheet [data-slot="dialog-header"] > div {
-  padding-right: 3rem;
-}
-
-@media (max-width: 47.99rem) {
-  .t-sheet [data-slot="dialog-header"] > div {
-    min-height: 2.75rem;
-  }
-}
-
-@media (display-mode: standalone) {
-  :root {
-    --app-fixed-viewport-height: 100vh;
-    --page-header-top: calc(var(--safe-top) + 0.75rem);
-  }
-
-  body,
-.app-shell {
-    min-height: 100vh;
-  }
-}
-
-.discussion-composer-dock {
-  position: fixed;
-  z-index: 35;
-  right: max(1rem, var(--safe-right));
-  bottom: max(0.75rem, var(--safe-bottom));
-  left: max(1rem, var(--safe-left));
-}
-
-.detail-with-discussion-composer {
-  padding-bottom: calc(
-    var(--discussion-composer-height, 4.5rem) +
-    max(0.75rem, var(--safe-bottom)) +
-    1.25rem
-  );
-}
-
-@media (min-width: 48rem) {
-  .discussion-composer-dock {
-    left: calc(15rem + max(var(--page-gutter), var(--safe-left)));
-    right: max(var(--page-gutter), var(--safe-right));
-  }
-}
-
-.surface-floating {
-  border-radius: var(--radius-xl);
-  background: var(--popover);
-  box-shadow: var(--shadow-floating);
-}
-
-/* The grouped list. A card owns the gutter and the rows never add one, so every
-   row's text starts on the same line and the hairlines between them stop short
-   of the card's edge the way a phone's settings list does. */
-.rule-card {
-  --row-bleed: var(--row-gutter);
-  overflow: clip;
-  border-radius: var(--radius-xl);
-  background: var(--card);
-  padding-inline: var(--row-gutter);
-  box-shadow: var(--shadow-card);
-}
-.rule-list > * + * {
-  border-top: 1px solid var(--rule);
-}
-
-/* A short, single-row group needs less curvature than a content card. */
-.rule-card:has(> .t-row:only-child) {
-  border-radius: var(--radius-lg);
-}
-
-.text-balance {
-  text-wrap: balance;
-}
-
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
-}
-
+/* Rendered markdown: proposals, reports, announcements and results. */
 .markdown-body > :first-child {
   margin-top: 0;
 }
@@ -670,30 +96,30 @@ html[data-input-modality="pointer"] :focus-visible {
   margin-bottom: 0;
 }
 .markdown-body p {
-  margin-block: 0.65rem;
+  margin-block: 0.75rem;
 }
 .markdown-body h1,
 .markdown-body h2,
 .markdown-body h3,
 .markdown-body h4 {
-  margin-block: 1.25rem 0.45rem;
-  color: var(--foreground);
+  margin-block: 1.5rem 0.5rem;
+  color: var(--ink);
   font-weight: 650;
   letter-spacing: -0.02em;
 }
 .markdown-body h1 {
-  font-size: 1.35rem;
+  font-size: 1.375rem;
 }
 .markdown-body h2 {
-  font-size: 1.15rem;
+  font-size: 1.1875rem;
 }
 .markdown-body h3 {
-  font-size: 1rem;
+  font-size: 1.0625rem;
 }
 .markdown-body ul,
 .markdown-body ol {
-  margin-block: 0.65rem;
-  padding-left: 1.35rem;
+  margin-block: 0.75rem;
+  padding-left: 1.375rem;
 }
 .markdown-body li {
   margin-block: 0.25rem;
@@ -704,33 +130,41 @@ html[data-input-modality="pointer"] :focus-visible {
 .markdown-body ol {
   list-style: decimal;
 }
+.markdown-body li::marker {
+  color: var(--ink-faint);
+}
 .markdown-body blockquote {
-  margin-block: 0.9rem;
-  border-left: 2px solid var(--border);
-  padding-left: 0.9rem;
-  color: var(--muted-foreground);
+  margin-block: 1rem;
+  border-left: 2px solid var(--line);
+  padding-left: 1rem;
+  color: var(--ink-muted);
 }
 .markdown-body code {
-  border-radius: var(--radius-xs);
-  background: var(--muted);
-  padding: 0.12rem 0.3rem;
-  font-family: var(--font-roboto-mono), ui-monospace, monospace;
-  font-size: 0.86em;
+  border-radius: 0.375rem;
+  background: var(--surface-raised);
+  padding: 0.125rem 0.375rem;
+  font-family: var(--font-mono);
+  font-size: 0.875em;
 }
 .markdown-body pre {
-  margin-block: 0.9rem;
+  margin-block: 1rem;
   overflow-x: auto;
-  border-radius: var(--radius-lg);
-  background: var(--muted);
-  padding: 0.9rem;
+  border-radius: var(--radius-tile);
+  background: var(--surface-raised);
+  padding: 1rem;
 }
 .markdown-body pre code {
   padding: 0;
   background: transparent;
 }
 .markdown-body a {
+  color: var(--info);
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+.markdown-body hr {
+  margin-block: 1.5rem;
+  border-color: var(--line);
 }
 .markdown-body table {
   width: 100%;
@@ -740,36 +174,16 @@ html[data-input-modality="pointer"] :focus-visible {
 }
 .markdown-body th,
 .markdown-body td {
-  border: 1px solid var(--border);
-  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--line);
+  padding: 0.5rem 0.75rem;
   text-align: left;
 }
 .markdown-body th {
-  background: var(--muted);
+  background: var(--surface-raised);
   font-weight: 600;
 }
 
-@media (max-width: 47.99rem) {
-  :root {
-    --page-gutter: 1rem;
-    --row-gutter: 1rem;
-  }
-  /* The page gutter belongs to the route surface on a phone: a pushed page has
-     to reach both screen edges, or the page it replaces stays visible beside
-     it for the whole transition. */
-  
-}
-
-@media (min-width: 48rem) {
-  :root {
-    --page-header-top: 1.5rem;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  html:focus-within {
-    scroll-behavior: auto;
-  }
   *,
   *::before,
   *::after {

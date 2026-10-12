@@ -3,8 +3,7 @@
 import * as React from "react";
 import { getUnsavedChanges, subscribeUnsavedChanges } from "@/hooks/unsaved-changes-store";
 import { useI18n } from "@/i18n";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/ui/confirm-dialog";
 
 /** Closing one account editor only discards that editor's unsaved changes. */
 export function useAdminDraftExit(group: string | undefined, busy: boolean, close: () => void) {
@@ -23,21 +22,21 @@ export function useAdminDraftExit(group: string | undefined, busy: boolean, clos
         setConfirming(true);
       } else complete();
     },
-    prompt: <AlertDialog open={confirming} onOpenChange={setConfirming}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{t("admin.leaveTitle")}</AlertDialogTitle>
-          <AlertDialogDescription>{blocked ? t("admin.savingBeforeLeaving") : t("admin.leaveMessage", { count: changes.count })}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>{t("admin.leaveStay")}</AlertDialogCancel>
-          <AlertDialogAction disabled={blocked} onClick={() => {
-            getUnsavedChanges(group).discard();
-            setConfirming(false);
-            pendingClose.current();
-          }}>{t("admin.leaveDiscard")}</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>,
+    prompt: (
+      <ConfirmDialog
+        confirmLabel={t("admin.leaveDiscard")}
+        description={blocked ? t("admin.savingBeforeLeaving") : t("admin.leaveMessage", { count: changes.count })}
+        onConfirm={() => {
+          getUnsavedChanges(group).discard();
+          setConfirming(false);
+          pendingClose.current();
+        }}
+        onOpenChange={setConfirming}
+        open={confirming}
+        status={blocked ? "loading" : "idle"}
+        title={t("admin.leaveTitle")}
+        tone="danger"
+      />
+    ),
   };
 }

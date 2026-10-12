@@ -1,6 +1,5 @@
-import { Suspense } from "react";
-import { HomeOverview } from "@/components/home/home-overview";
+import { HomePage } from "@/features/home/home-page";
 
-export default function HomePage() {
-  return <Suspense><HomeOverview /></Suspense>;
+export default function Page() {
+  return <HomePage />;
 }

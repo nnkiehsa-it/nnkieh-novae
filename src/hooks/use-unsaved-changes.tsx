@@ -4,16 +4,7 @@ import { useRouter } from "next/navigation";
 import * as React from "react";
 
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/ui/confirm-dialog";
 import {
   getUnsavedChanges,
   setUnsavedChanges,
@@ -84,29 +75,20 @@ export function UnsavedChangesGuard() {
   }, [pending, router, unsaved.busy, unsaved.count]);
 
   return (
-    <AlertDialog onOpenChange={(open) => !open && setPending(null)} open={pending !== null}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{translate("admin.leaveTitle")}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {unsaved.busy ? translate("admin.savingBeforeLeaving") : translate("admin.leaveMessage", { count: unsaved.count })}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>{translate("admin.leaveStay")}</AlertDialogCancel>
-          <AlertDialogAction
-            disabled={unsaved.busy}
-            onClick={() => {
-              const target = pending;
-              unsaved.discard();
-              setPending(null);
-              if (target) router.push(target);
-            }}
-          >
-            {translate("admin.leaveDiscard")}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <ConfirmDialog
+      confirmLabel={translate("admin.leaveDiscard")}
+      description={unsaved.busy ? translate("admin.savingBeforeLeaving") : translate("admin.leaveMessage", { count: unsaved.count })}
+      onConfirm={() => {
+        const target = pending;
+        unsaved.discard();
+        setPending(null);
+        if (target) router.push(target);
+      }}
+      onOpenChange={(open) => { if (!open) setPending(null); }}
+      open={pending !== null}
+      status={unsaved.busy ? "loading" : "idle"}
+      title={translate("admin.leaveTitle")}
+      tone="danger"
+    />
   );
 }

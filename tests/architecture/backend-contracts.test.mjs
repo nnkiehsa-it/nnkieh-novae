@@ -33,7 +33,7 @@ test("Cloudflare backend cannot depend on frontend modules", async () => {
   for (const file of files) {
     const path = repoPath(file);
     for (const { specifier } of moduleImports(await readFile(file, "utf8"), path)) {
-      if (specifier.startsWith("@/") || specifier.includes("/src/app/") || specifier.includes("/src/components/")) {
+      if (specifier.startsWith("@/") || specifier.includes("/src/app/") || specifier.includes("/src/features/")) {
         violations.push(`${path} -> ${specifier}`);
       }
     }
