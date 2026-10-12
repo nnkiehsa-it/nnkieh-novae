@@ -371,6 +371,7 @@ jobs:
           OPERATIONS_CLOUDFLARE_ACCOUNT_ID: ${{ secrets.OPERATIONS_CLOUDFLARE_ACCOUNT_ID }}
           OPERATIONS_CLOUDFLARE_TOKEN: ${{ secrets.OPERATIONS_CLOUDFLARE_TOKEN }}
           OPERATIONS_WORKER_NAME: ${{ secrets.OPERATIONS_WORKER_NAME }}
+          PREVIEW_HOSTNAME: ${{ vars.PREVIEW_HOSTNAME || 'nnkieh-novae-preview.vercel.app' }}
           ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
           ALLOWED_DOMAIN: ${{ secrets.ALLOWED_DOMAIN || secrets.NEXT_PUBLIC_ALLOWED_DOMAIN || secrets.VITE_ALLOWED_DOMAIN }}
           ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
@@ -399,7 +400,11 @@ jobs:
             OPERATIONS_WORKER_NAME: process.env.OPERATIONS_WORKER_NAME,
             ADMIN_EMAILS: process.env.ADMIN_EMAILS,
             ALLOWED_DOMAIN: process.env.ALLOWED_DOMAIN,
-            ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
+            // The fixed branch-preview hostname stays allowed across deploys.
+            ALLOWED_ORIGINS: [...new Set([
+              ...process.env.ALLOWED_ORIGINS.split(',').map((value) => value.trim()).filter(Boolean),
+              `https://${process.env.PREVIEW_HOSTNAME}`,
+            ])].join(','),
             CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
             CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
             CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
@@ -589,6 +594,18 @@ jobs:
         run: |
           bunx --yes vercel@58.9.0 alias set "$DEPLOYMENT_URL" "$PREVIEW_HOSTNAME" --token=${{ secrets.VERCEL_TOKEN }}
           echo "Preview hostname: https://$PREVIEW_HOSTNAME" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Allow the preview hostname to sign in
+        if: github.ref_name != 'main'
+        env:
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_WORKER_NAME: ${{ vars.CLOUDFLARE_WORKER_NAME }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID || secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          PREVIEW_HOSTNAME: ${{ vars.PREVIEW_HOSTNAME || 'nnkieh-novae-preview.vercel.app' }}
+        run: node scripts/allow-preview-origin.mjs
 
       - name: Smoke test the deployed frontend
         env:
