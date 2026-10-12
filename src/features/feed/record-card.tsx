@@ -1,5 +1,5 @@
 import * as React from "react";
-import Link from "next/link";
+import { AppLink } from "@/ui/app-link";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/ui/feedback";
 
@@ -26,11 +26,11 @@ export function RecordCard({ children, chips, footer, href, label, meta, title }
       </div>
       {children}
       {footer ? <div className="relative z-10 mt-auto flex flex-wrap items-center gap-2 pt-1">{footer}</div> : null}
-      <Link
+      <AppLink
         aria-label={label}
         className="absolute inset-0 rounded-panel outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
         href={href}
-        prefetch={false}
+       
       />
     </article>
   );

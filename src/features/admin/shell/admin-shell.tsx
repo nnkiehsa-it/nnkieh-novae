@@ -1,7 +1,7 @@
 "use client";
 
 import type * as React from "react";
-import { usePathname } from "next/navigation";
+import { useAppLocation } from "@/hooks/use-app-location";
 import { usePermissionRedirect } from "@/hooks/use-permission-redirect";
 import { UnsavedChangesGuard } from "@/hooks/use-unsaved-changes";
 import { useI18n } from "@/i18n";
@@ -19,7 +19,7 @@ import { ApplyProgress } from "./apply-progress";
  */
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const { t } = useI18n();
-  const pathname = usePathname();
+  const { pathname } = useAppLocation();
   const access = useAdminAccess();
   const entered = canEnterAdministration(access);
   const route = ADMIN_ROUTES.find((candidate) => candidate.href === pathname);

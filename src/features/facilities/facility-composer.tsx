@@ -25,7 +25,6 @@ export function FacilityComposer() {
       submitDisabled={!form.category || !form.title.trim() || !form.location.trim() || !form.content.trim() || !form.contentWithinLimit || busy}
       submitLabel={t("ui.facility.submit")}
       succeeded={form.succeeded}
-      title={t("ui.facility.newTitle")}
       titleField={{ label: t("ui.facility.reportTitle"), onChange: form.setTitle, placeholder: t("ui.facility.reportTitlePlaceholder"), value: form.title }}
     >
       <div className="grid gap-4 sm:grid-cols-2">

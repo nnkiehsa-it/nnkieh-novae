@@ -23,7 +23,6 @@ export function AnnouncementComposer() {
       submitDisabled={!form.title.trim() || !form.content.trim() || !form.contentWithinLimit || busy}
       submitLabel={t("ui.announcement.publish")}
       succeeded={form.succeeded}
-      title={t("ui.announcement.newTitle")}
       titleField={{ label: t("ui.announcement.titleLabel"), onChange: form.setTitle, placeholder: t("ui.announcement.titlePlaceholder"), value: form.title }}
     />
   );

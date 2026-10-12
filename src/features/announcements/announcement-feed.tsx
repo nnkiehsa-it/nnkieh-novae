@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { AppLink } from "@/ui/app-link";
 import { Plus } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import { useAnnouncementFeed } from "@/hooks/use-announcement-feed";
@@ -19,13 +19,13 @@ export function AnnouncementFeed() {
     <div className="grid gap-5">
       {feed.canManage ? (
         <Button asChild className="justify-self-end" variant="primary">
-          <Link href={COMPOSE_HREF} prefetch={false}><Plus weight="bold" />{t("ui.announcement.new")}</Link>
+          <AppLink href={COMPOSE_HREF}><Plus weight="bold" />{t("ui.announcement.new")}</AppLink>
         </Button>
       ) : null}
       <FeedList
         empty={{
           action: feed.canManage
-            ? <Button asChild><Link href={COMPOSE_HREF} prefetch={false}><Plus weight="bold" />{t("ui.announcement.createFirst")}</Link></Button>
+            ? <Button asChild><AppLink href={COMPOSE_HREF}><Plus weight="bold" />{t("ui.announcement.createFirst")}</AppLink></Button>
             : undefined,
           description: t("ui.announcement.emptyDescription"),
           title: t("ui.announcement.emptyTitle"),

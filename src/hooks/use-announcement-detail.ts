@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useAppNavigate, useRecordId } from "@/hooks/use-app-location";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { useCategories } from "@/hooks/use-categories";
@@ -39,19 +39,19 @@ import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 import { useOptimisticReaction } from "@/hooks/use-optimistic-reaction";
 
 export function useAnnouncementDetail() {
-  const params = useParams<{ announcementId: string }>();
-  const router = useRouter();
+  const { id: announcementId } = useRecordId("announcement");
+  const navigate = useAppNavigate();
   const session = useSession();
   const categories = useCategories();
   const { t } = useI18n();
   const storedAnnouncement = useContentEntity<AnnouncementRecord>(
     session.user?.uid,
     "announcement",
-    params.announcementId,
+    announcementId,
     "detail",
   );
   const currentAnnouncement = storedAnnouncement ?? peekAnnouncementRecordById(
-    params.announcementId,
+    announcementId,
     session.user?.uid,
   );
   const [profile, setProfile] = React.useState<UserPublicProfile | null>(() =>
@@ -70,14 +70,14 @@ export function useAnnouncementDetail() {
   const load = React.useCallback(
     async (forceRefresh = false) => {
       const cached =
-        getDetailContentEntity<AnnouncementRecord>(session.user?.uid, "announcement", params.announcementId) ??
-        peekAnnouncementRecordById(params.announcementId, session.user?.uid);
+        getDetailContentEntity<AnnouncementRecord>(session.user?.uid, "announcement", announcementId) ??
+        peekAnnouncementRecordById(announcementId, session.user?.uid);
       const coldRead = !cached;
       if (coldRead) setLoading(true);
       setError("");
       const entityReadRevision = beginContentEntityRead();
       try {
-        const result = await fetchAnnouncementRecordById(params.announcementId, {
+        const result = await fetchAnnouncementRecordById(announcementId, {
           cacheScope: session.user?.uid,
           forceRefresh: forceRefresh || !coldRead,
         });
@@ -100,20 +100,20 @@ export function useAnnouncementDetail() {
         setLoading(false);
       }
     },
-    [params.announcementId, session.user?.uid, t],
+    [announcementId, session.user?.uid, t],
   );
 
   const commentsEnabled = Boolean(currentAnnouncement?.comments_enabled) && categories.announcementCommentsEnabled;
   const fetchCommentPage = React.useCallback(
     ({ cursor, sort, forceRefresh, onPage }: CommentPageRequest<AnnouncementCommentRecord>) =>
-      fetchAnnouncementComments(params.announcementId, cursor, sort, {
+      fetchAnnouncementComments(announcementId, cursor, sort, {
         cacheScope: session.user?.uid, forceRefresh, onPage,
       }),
-    [params.announcementId, session.user?.uid],
+    [announcementId, session.user?.uid],
   );
   const commentFeed = useCommentFeed({
     enabled: categories.announcementCommentsEnabled && currentAnnouncement?.comments_enabled !== false,
-    targetKey: `${session.user?.uid}|announcement:${params.announcementId}`,
+    targetKey: `${session.user?.uid}|announcement:${announcementId}`,
     fetchPage: fetchCommentPage,
   });
 
@@ -122,8 +122,8 @@ export function useAnnouncementDetail() {
   }, [load]);
 
   const announcementCachePrefixes = React.useMemo(
-    () => [`announcement-detail|${params.announcementId}|`],
-    [params.announcementId],
+    () => [`announcement-detail|${announcementId}|`],
+    [announcementId],
   );
   useContentInvalidationRefresh(announcementCachePrefixes, () => {
     if (!deletingRef.current) return load(true);
@@ -159,7 +159,7 @@ export function useAnnouncementDetail() {
         );
       });
       toast.success(t("announcement.announcementHasBeenDeleted"));
-      router.replace(feedHref("announcements"));
+      navigate(feedHref("announcements"), { replace: true });
     } catch (caught) {
       patchContentEntity<AnnouncementRecord>(
         session.user?.uid,
@@ -173,7 +173,7 @@ export function useAnnouncementDetail() {
   }
 
   async function createComment(content: string, parentId: string | null) {
-    const result = await createAnnouncementComment(params.announcementId, content, parentId);
+    const result = await createAnnouncementComment(announcementId, content, parentId);
     if (currentAnnouncement)
       patchContentEntity<AnnouncementRecord>(
         session.user?.uid,
@@ -198,7 +198,7 @@ export function useAnnouncementDetail() {
 
   return {
     announcement: currentAnnouncement,
-    burst: reaction.burstById[params.announcementId] ?? 0,
+    burst: reaction.burstById[announcementId] ?? 0,
     canManage: session.can("announcement.manage"),
     comments: commentFeed.comments,
     commentSort: commentFeed.sort,
@@ -212,7 +212,7 @@ export function useAnnouncementDetail() {
     deleteFeedbackState: deleteFeedback.state,
     error,
     like,
-    liking: reaction.isBusy(params.announcementId),
+    liking: reaction.isBusy(announcementId),
     load,
     loading,
     revealDetail,

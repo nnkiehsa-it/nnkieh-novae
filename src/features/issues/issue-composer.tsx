@@ -19,7 +19,6 @@ export function IssueComposer() {
       submitDisabled={!form.config || !form.title.trim() || !form.content.trim() || !form.contentWithinLimit || busy}
       submitLabel={t("ui.issue.submit")}
       succeeded={form.succeeded}
-      title={t("ui.issue.new")}
       titleField={{ label: t("ui.issue.titleLabel"), onChange: form.setTitle, placeholder: t("ui.issue.titlePlaceholder"), value: form.title }}
     />
   );

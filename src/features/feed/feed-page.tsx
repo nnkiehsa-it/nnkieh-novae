@@ -1,6 +1,5 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { Lightbulb, Megaphone, Wrench } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import { findFacilityCategory, findIssueCategory, getDefaultFacilityCategoryId, useCategories } from "@/hooks/use-categories";
@@ -22,8 +21,7 @@ const CLEARED_FILTERS = { bucket: null, q: null, sort: null, status: null };
 export function FeedPage() {
   const { t } = useI18n();
   const categories = useCategories();
-  const params = useSearchParams();
-  const { updateParams } = useFeedUrlState();
+  const { params, updateParams } = useFeedUrlState();
 
   const defaultView: FeedView = categories.issuesEnabled ? "issues" : "announcements";
   const requested = params.get("view");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useAppNavigate } from "@/hooks/use-app-location";
 import * as React from "react";
 
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
@@ -42,7 +42,7 @@ export function useUnsavedChanges(count: number, discard: () => void, group?: st
  */
 export function UnsavedChangesGuard() {
   useLocaleSubscription();
-  const router = useRouter();
+  const navigate = useAppNavigate();
   const [pending, setPending] = React.useState<string | null>(null);
   const unsaved = React.useSyncExternalStore(
     subscribeUnsavedChanges,
@@ -71,8 +71,8 @@ export function UnsavedChangesGuard() {
   React.useEffect(() => {
     if (!pending || unsaved.count > 0 || unsaved.busy) return;
     setPending(null);
-    router.push(pending);
-  }, [pending, router, unsaved.busy, unsaved.count]);
+    navigate(pending);
+  }, [navigate, pending, unsaved.busy, unsaved.count]);
 
   return (
     <ConfirmDialog
@@ -82,7 +82,7 @@ export function UnsavedChangesGuard() {
         const target = pending;
         unsaved.discard();
         setPending(null);
-        if (target) router.push(target);
+        if (target) navigate(target);
       }}
       onOpenChange={(open) => { if (!open) setPending(null); }}
       open={pending !== null}

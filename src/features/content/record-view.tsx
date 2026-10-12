@@ -1,8 +1,7 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import { CaretLeft, DotsThree, ShareNetwork, Trash } from "@phosphor-icons/react/ssr";
+import { DotsThree, ShareNetwork, Trash } from "@phosphor-icons/react/ssr";
 import type { Icon } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
@@ -13,7 +12,6 @@ import { Skeleton } from "@/ui/feedback";
 import { Menu, type MenuItem } from "@/ui/menu";
 import { ErrorState } from "@/ui/page";
 import { Tooltip } from "@/ui/popover";
-import { useRecordFrame } from "./record-frame";
 
 export interface RecordAction {
   icon: Icon;
@@ -67,8 +65,7 @@ export function RecordActions({ items = [], remove, shareTitle }: {
 
 /**
  * The head of a record: chips naming its kind and state, its actions, then
- * its title and the line under it. A record on a page of its own also gets a
- * way back to its list.
+ * its title and the line under it.
  */
 export function RecordHeader({ actions, chips, meta, title }: {
   actions?: React.ReactNode;
@@ -77,21 +74,9 @@ export function RecordHeader({ actions, chips, meta, title }: {
   title: React.ReactNode;
 }) {
   const { t } = useI18n();
-  const frame = useRecordFrame();
   return (
     <header className="grid gap-4">
       <div className="flex min-h-9 items-center gap-2">
-        {frame.mode === "page" ? (
-          <Button asChild size="icon-sm">
-            <Link
-              aria-label={t("ui.common.back")}
-              href={frame.listHref}
-              onClick={(event) => { event.preventDefault(); frame.close(); }}
-            >
-              <CaretLeft weight="bold" />
-            </Link>
-          </Button>
-        ) : null}
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">{chips}</div>
         {actions}
       </div>
@@ -114,16 +99,8 @@ export function RecordSkeleton() {
   );
 }
 
-/** A record that could not be shown, with the way back still on hand. */
+/** A record that could not be shown; the sheet around it is still the way back. */
 export function RecordError({ message, onRetry }: { message: string; onRetry: () => void }) {
   const { t } = useI18n();
-  const frame = useRecordFrame();
-  return (
-    <div className="grid gap-4">
-      {frame.mode === "page" ? (
-        <Button className="justify-self-start" onClick={frame.close} size="sm" variant="ghost"><CaretLeft weight="bold" />{t("ui.common.back")}</Button>
-      ) : null}
-      <ErrorState message={message} onRetry={onRetry} retryLabel={t("ui.common.reload")} title={t("ui.common.loadFailed")} />
-    </div>
-  );
+  return <ErrorState message={message} onRetry={onRetry} retryLabel={t("ui.common.reload")} title={t("ui.common.loadFailed")} />;
 }

@@ -1,8 +1,7 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import { ArrowUp, CaretLeft } from "@phosphor-icons/react/ssr";
+import { ArrowUp } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import { INPUT_LIMITS } from "@/constants/input-limits";
 import { hasComposerDraft } from "@/lib/composer-draft";
@@ -14,7 +13,6 @@ import { ConfirmDialog } from "@/ui/confirm-dialog";
 import { Input } from "@/ui/field";
 import { AddImagesButton, AttachmentGrid } from "./attachments";
 import { MarkdownEditor } from "./markdown-editor";
-import { useRecordFrame } from "./record-frame";
 
 /** A label with a running count against its limit. */
 export function CountedLabel({ count, htmlFor, id, label, limit }: { count: number; htmlFor?: string; id?: string; label: string; limit: number }) {
@@ -63,7 +61,7 @@ interface TextField {
  * and send. `children` holds fields particular to one kind of record, set
  * above the title. The draft is saved as it is written.
  */
-export function Composer({ body, busy, children, draft, images, onSubmit, submitBusyLabel, submitDisabled, submitLabel, succeeded, title, titleField }: {
+export function Composer({ body, busy, children, draft, images, onSubmit, submitBusyLabel, submitDisabled, submitLabel, succeeded, titleField }: {
   body: TextField;
   busy: boolean;
   children?: React.ReactNode;
@@ -74,25 +72,12 @@ export function Composer({ body, busy, children, draft, images, onSubmit, submit
   submitDisabled: boolean;
   submitLabel: string;
   succeeded: boolean;
-  /** The page title, when the composer is a page rather than a sheet. */
-  title: string;
   titleField: TextField;
 }) {
   const { t } = useI18n();
-  const frame = useRecordFrame();
   const id = React.useId();
   return (
     <form className="grid gap-6" data-update-defer="true" onSubmit={onSubmit}>
-      {frame.mode === "page" ? (
-        <header className="grid gap-4">
-          <Button asChild className="justify-self-start" size="icon-sm">
-            <Link aria-label={t("ui.common.back")} href={frame.listHref} onClick={(event) => { event.preventDefault(); frame.close(); }}>
-              <CaretLeft weight="bold" />
-            </Link>
-          </Button>
-          <h1 className="text-[1.75rem] font-semibold leading-tight tracking-tight">{title}</h1>
-        </header>
-      ) : null}
       <fieldset className="grid min-w-0 gap-6" disabled={busy} inert={busy}>
         {children}
         <div className="grid gap-2">

@@ -17,7 +17,6 @@ import { Skeleton, Spinner } from "@/ui/feedback";
 import { Select } from "@/ui/select";
 import { CommentComposer } from "./comment-composer";
 import { CommentThread } from "./comment-thread";
-import { useRecordFrame } from "./record-frame";
 
 interface ReplyTarget {
   authorUid: string;
@@ -53,7 +52,6 @@ export function Discussion({ categoryId, comments, enabled = true, error, hasMor
 }) {
   const { t } = useI18n();
   const session = useSession();
-  const frame = useRecordFrame();
   const categories = useCategories();
   const [replyTarget, setReplyTarget] = React.useState<ReplyTarget | null>(null);
   const [target, scopeId] = targetKey.split(":");
@@ -133,10 +131,7 @@ export function Discussion({ categoryId, comments, enabled = true, error, hasMor
 
       {enabled ? (
         <div
-          className={cn(
-            "sticky z-10 mt-1 rounded-panel border border-line bg-surface-solid p-2 shadow-float",
-            frame.mode === "sheet" ? "bottom-0" : "bottom-[calc(var(--bottom-nav-height)+var(--bottom-nav-gap)+0.75rem)] md:bottom-4",
-          )}
+          className="sticky bottom-0 z-10 mt-1 rounded-panel border border-line bg-surface-solid p-2 shadow-float"
         >
           <AnimatePresence initial={false}>
             {replyTarget ? (

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { AppLink } from "@/ui/app-link";
 import { CaretDown, ChatCircle, CheckCircle, Megaphone, Trash, Wrench } from "@phosphor-icons/react/ssr";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
@@ -55,7 +55,7 @@ function NotificationRow({ notification }: { notification: NotificationRecord })
   return (
     <li>
       {target ? (
-        <Link className={className} href={target} prefetch={false} scroll={false}>{body}</Link>
+        <AppLink className={className} href={target} scroll={false}>{body}</AppLink>
       ) : (
         <button className={className} onClick={() => toast.info(t("ui.notification.issueGone"))} type="button">{body}</button>
       )}

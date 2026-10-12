@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { AppLink } from "@/ui/app-link";
 import { CheckCircle, CircleDashed, Plus } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import type { FacilitySortOption } from "@/types";
@@ -50,13 +50,13 @@ export function FacilityFeed({ categoryControl }: { categoryControl: React.React
             value={state.sort}
           />
           <Button asChild variant="primary">
-            <Link href={composeHref} prefetch={false}><Plus weight="bold" /><span className="max-sm:sr-only">{t("ui.facility.new")}</span></Link>
+            <AppLink href={composeHref}><Plus weight="bold" /><span className="max-sm:sr-only">{t("ui.facility.new")}</span></AppLink>
           </Button>
         </div>
       </div>
       <FeedList
         empty={{
-          action: <Button asChild><Link href={composeHref} prefetch={false}><Plus weight="bold" />{t("ui.facility.createFirst")}</Link></Button>,
+          action: <Button asChild><AppLink href={composeHref}><Plus weight="bold" />{t("ui.facility.createFirst")}</AppLink></Button>,
           description: state.committedQuery ? t("ui.facility.emptySearch", { query: state.committedQuery }) : t("ui.facility.emptyCategory"),
           title: t("ui.facility.emptyTitle"),
         }}

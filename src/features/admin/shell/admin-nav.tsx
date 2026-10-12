@@ -1,23 +1,23 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import { useI18n } from "@/i18n";
+import { useAppLocation } from "@/hooks/use-app-location";
 import { allowedAdminRoutes, type AdminAccess } from "@/lib/admin-routes";
 import { timing } from "@/lib/motion-timing";
 import { cn } from "@/lib/utils";
+import { AppLink } from "@/ui/app-link";
 
 const OVERVIEW_HREF = "/admin";
 
 /**
  * The sections of administration this reader may enter, as a rail of links.
- * It looks like a Segmented control, but each section is its own route.
+ * It looks like a Segmented control, but each section has its own address.
  */
 export function AdminNav({ access }: { access: AdminAccess }) {
   const { t } = useI18n();
-  const pathname = usePathname();
+  const { pathname } = useAppLocation();
   const pillId = React.useId();
   const current = React.useRef<HTMLAnchorElement>(null);
   const items = [
@@ -36,7 +36,7 @@ export function AdminNav({ access }: { access: AdminAccess }) {
           const selected = href === pathname;
           return (
             <li className="shrink-0" key={href}>
-              <Link
+              <AppLink
                 aria-current={selected ? "page" : undefined}
                 className={cn(
                   "relative isolate inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-medium outline-none transition-[color] duration-[var(--motion-control)] ease-[var(--ease-move)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
@@ -55,7 +55,7 @@ export function AdminNav({ access }: { access: AdminAccess }) {
                   />
                 ) : null}
                 {label}
-              </Link>
+              </AppLink>
             </li>
           );
         })}

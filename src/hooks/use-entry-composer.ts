@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useI18n } from "@/i18n";
+import { useAppLocation, useAppNavigate } from "@/hooks/use-app-location";
+import { matchAppRoute } from "@/lib/route-hierarchy";
 import {
   findIssueCategory,
   useCategories,
@@ -18,7 +19,7 @@ import {
 } from "@/lib/content-entity-store";
 
 export function useAnnouncementComposer() {
-  const router = useRouter();
+  const navigate = useAppNavigate();
   const session = useSession();
   const { t } = useI18n();
   const form = useComposerBase("announcement");
@@ -42,7 +43,7 @@ export function useAnnouncementComposer() {
         beginContentEntityRead(),
       );
       return `/announcements/${announcement.id}`;
-    }, router.replace, t("ui.announcement.publishFailed"));
+    }, (href) => navigate(href, { replace: true }), t("ui.announcement.publishFailed"));
   }
   return {
     ...form,
@@ -52,11 +53,11 @@ export function useAnnouncementComposer() {
 }
 
 export function useIssueComposer() {
-  const params = useParams<{ filter: string }>();
-  const router = useRouter();
+  const route = matchAppRoute(useAppLocation().pathname);
+  const navigate = useAppNavigate();
   const { t } = useI18n();
   const session = useSession();
-  const category = decodeURIComponent(params.filter);
+  const category = route.kind === "issue-composer" ? route.filter : "";
   const form = useComposerBase("issue", `issue:${category}`, category);
   const config = findIssueCategory(category);
   async function submit(event: React.FormEvent) {
@@ -77,14 +78,14 @@ export function useIssueComposer() {
         beginContentEntityRead(),
       );
       return `/issues/${encodeURIComponent(category)}/${issue.id}`;
-    }, router.replace, t("ui.issue.submitFailed"));
+    }, (href) => navigate(href, { replace: true }), t("ui.issue.submitFailed"));
   }
   return { ...form, category, config, submit };
 }
 
 export function useFacilityComposer() {
-  const router = useRouter();
-  const search = useSearchParams();
+  const navigate = useAppNavigate();
+  const { search } = useAppLocation();
   const categories = useCategories();
   const { t } = useI18n();
   const session = useSession();
@@ -118,7 +119,7 @@ export function useFacilityComposer() {
         beginContentEntityRead(),
       );
       return `/facilities/${facility.id}?category=${encodeURIComponent(category)}`;
-    }, router.replace, t("ui.facility.submitFailed"));
+    }, (href) => navigate(href, { replace: true }), t("ui.facility.submitFailed"));
   }
   return {
     ...form,

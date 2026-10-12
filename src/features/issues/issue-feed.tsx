@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { AppLink } from "@/ui/app-link";
 import { CheckCircle, CircleDashed, Plus } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import type { IssueSortOption, IssueStatusBucket } from "@/types";
@@ -62,7 +62,7 @@ export function IssueFeed({ categoryControl, filter }: { categoryControl: React.
           />
           {mine ? null : (
             <Button asChild variant="primary">
-              <Link href={composeHref} prefetch={false}><Plus weight="bold" /><span className="max-sm:sr-only">{t("ui.issue.new")}</span></Link>
+              <AppLink href={composeHref}><Plus weight="bold" /><span className="max-sm:sr-only">{t("ui.issue.new")}</span></AppLink>
             </Button>
           )}
         </div>
@@ -70,7 +70,7 @@ export function IssueFeed({ categoryControl, filter }: { categoryControl: React.
       <FeedList
         empty={{
           action: mine ? undefined : (
-            <Button asChild><Link href={composeHref} prefetch={false}><Plus weight="bold" />{t("ui.issue.createFirst")}</Link></Button>
+            <Button asChild><AppLink href={composeHref}><Plus weight="bold" />{t("ui.issue.createFirst")}</AppLink></Button>
           ),
           description: emptyDescription,
           title: t("ui.issue.emptyTitle"),

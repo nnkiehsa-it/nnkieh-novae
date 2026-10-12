@@ -1,16 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useAppNavigate } from "@/hooks/use-app-location";
 import { useShareExitGuard } from "@/hooks/use-share-entry";
+import { canStepBack } from "@/lib/app-navigation";
 import { Sheet } from "@/ui/sheet";
 
 interface RecordFrame {
-  /** Leaves the record: puts the sheet away, or goes to the list it is in. */
+  /** Leaves the record for the list it sits in. */
   close: () => void;
-  /** Where a page with no history behind it leads back to. */
+  /** The list the record sits in. */
   listHref: string;
-  mode: "page" | "sheet";
 }
 
 const RecordFrameContext = React.createContext<RecordFrame | null>(null);
@@ -18,32 +18,40 @@ const RecordFrameContext = React.createContext<RecordFrame | null>(null);
 /** How the record on screen is framed, for the controls that leave it. */
 export function useRecordFrame(): RecordFrame {
   const frame = React.useContext(RecordFrameContext);
-  if (!frame) throw new Error("useRecordFrame must be used inside RecordSheet or RecordPage");
+  if (!frame) throw new Error("useRecordFrame must be used inside RecordSheet");
   return frame;
 }
 
 /**
- * A record or composer opened from a list: it slides up over the list, which
- * stays where it was, and closing it steps back through history.
+ * A record or composer over the list it belongs to. The address decides
+ * whether it is open; leaving steps back through history when the list is
+ * behind it, and replaces the address with the list when the record was the
+ * first thing opened.
  */
-export function RecordSheet({ children, listHref, size = "lg", title }: {
+export function RecordSheet({ children, listHref, onClosed, open, size, title }: {
   children: React.ReactNode;
   listHref: string;
-  size?: "md" | "lg";
+  /** Called once the sheet has finished leaving. */
+  onClosed: () => void;
+  open: boolean;
+  /** `full` for a record, which holds its height while it loads; `lg` for a composer. */
+  size: "full" | "lg";
   title: string;
 }) {
-  const router = useRouter();
+  const navigate = useAppNavigate();
   const guard = useShareExitGuard();
-  const [open, setOpen] = React.useState(true);
   const frame = React.useMemo<RecordFrame>(() => ({
-    close: () => guard(() => setOpen(false)),
+    close: () => guard(() => {
+      if (canStepBack()) window.history.back();
+      else navigate(listHref, { replace: true });
+    }),
     listHref,
-    mode: "sheet",
-  }), [guard, listHref]);
+  }), [guard, listHref, navigate]);
   return (
     <RecordFrameContext.Provider value={frame}>
       <Sheet
-        onClosed={() => router.back()}
+        layout="record"
+        onClosed={onClosed}
         onOpenChange={(next) => { if (!next) frame.close(); }}
         open={open}
         size={size}
@@ -51,22 +59,6 @@ export function RecordSheet({ children, listHref, size = "lg", title }: {
       >
         {children}
       </Sheet>
-    </RecordFrameContext.Provider>
-  );
-}
-
-/** A record reached by its own URL: a full page that leads back to its list. */
-export function RecordPage({ children, listHref }: { children: React.ReactNode; listHref: string }) {
-  const router = useRouter();
-  const guard = useShareExitGuard();
-  const frame = React.useMemo<RecordFrame>(() => ({
-    close: () => guard(() => router.push(listHref)),
-    listHref,
-    mode: "page",
-  }), [guard, listHref, router]);
-  return (
-    <RecordFrameContext.Provider value={frame}>
-      <div className="mx-auto w-full max-w-3xl">{children}</div>
     </RecordFrameContext.Provider>
   );
 }

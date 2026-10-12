@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { AppLink } from "@/ui/app-link";
 import { Megaphone } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import { useAnnouncementNotice } from "@/hooks/use-announcement-notice";
@@ -14,11 +14,11 @@ export function AnnouncementNotice() {
   if (!unread) return null;
   return (
     <Button asChild variant="primary">
-      <Link aria-label={t("ui.announcement.noticeLabel")} href={feedHref("announcements")}>
+      <AppLink aria-label={t("ui.announcement.noticeLabel")} href={feedHref("announcements")}>
         <Megaphone weight="fill" />
         <span className="sm:hidden">{t("ui.announcement.noticeShort")}</span>
         <span className="max-sm:hidden">{t("ui.announcement.noticeLabel")}</span>
-      </Link>
+      </AppLink>
     </Button>
   );
 }

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AppLink } from "@/ui/app-link";
 import { cn } from "@/lib/utils";
 
 /** The Novae wave, drawn in the current text colour so it sits on any surface. */
@@ -27,9 +27,9 @@ export function BrandLockup({ className, href, markClassName }: { className?: st
   );
   const classes = cn("flex items-center gap-3", className);
   return href ? (
-    <Link className={cn(classes, "rounded-tile outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]")} href={href}>
+    <AppLink className={cn(classes, "rounded-tile outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]")} href={href}>
       {content}
-    </Link>
+    </AppLink>
   ) : (
     <div className={classes}>{content}</div>
   );

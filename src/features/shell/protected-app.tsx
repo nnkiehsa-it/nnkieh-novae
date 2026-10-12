@@ -8,12 +8,14 @@ import { useContentRealtime } from "@/hooks/use-content-realtime";
 import { useSession } from "@/hooks/use-session";
 import { useStartupPresentation } from "@/hooks/use-startup-presentation";
 import { AppShell } from "./app-shell";
+import { AppViews } from "./app-views";
 import { LocaleGate } from "./locale-gate";
 import { StartupScreen } from "./startup-screen";
 
 /**
  * Everything behind sign-in: holds the startup screen until the session is
- * known, sends a visitor to sign in or to setup, then shows the app.
+ * known, sends a visitor to sign in or to setup, then shows the app. Setup is
+ * the one page of its own; every other screen comes from the view host.
  */
 export function ProtectedApp({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -50,7 +52,7 @@ export function ProtectedApp({ children }: { children: React.ReactNode }) {
     <>
       {waiting ? null : (
         <motion.div animate={{ opacity: 1 }} initial={{ opacity: 0 }} transition={timing("reveal")}>
-          <LocaleGate>{onSetup ? children : <AppShell>{children}</AppShell>}</LocaleGate>
+          <LocaleGate>{onSetup ? children : <AppShell><React.Suspense><AppViews /></React.Suspense></AppShell>}</LocaleGate>
         </motion.div>
       )}
       <AnimatePresence initial={false}>

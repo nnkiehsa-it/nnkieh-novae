@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { useAppNavigate } from "@/hooks/use-app-location";
 import { feedHref } from "@/lib/feed-href";
 import { useCategories } from "@/hooks/use-categories";
 
@@ -12,7 +12,7 @@ export function FeatureRouteGuard({
   children: ReactNode;
   feature: "facilities" | "issues";
 }) {
-  const router = useRouter();
+  const navigate = useAppNavigate();
   const categories = useCategories();
   const enabled =
     feature === "issues"
@@ -20,8 +20,8 @@ export function FeatureRouteGuard({
       : categories.facilitiesEnabled;
 
   useEffect(() => {
-    if (categories.loaded && !enabled) router.replace(feedHref("announcements"));
-  }, [categories.loaded, enabled, router]);
+    if (categories.loaded && !enabled) navigate(feedHref("announcements"), { replace: true });
+  }, [categories.loaded, enabled, navigate]);
 
   return categories.loaded && !enabled ? null : children;
 }
