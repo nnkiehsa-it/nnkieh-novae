@@ -53,6 +53,7 @@
     "verify:stress": "node scripts/verify-integration.mjs --stress-scale 8",
     "test:env": "node scripts/verify-integration.mjs --serve",
     "preview:phone": "node scripts/tailscale-preview.mjs start",
+    "preview:phone:dev": "node scripts/tailscale-preview.mjs start --dev",
     "preview:phone:status": "node scripts/tailscale-preview.mjs status",
     "preview:phone:verify": "node scripts/tailscale-preview.mjs verify",
     "preview:phone:stop": "node scripts/tailscale-preview.mjs stop",

@@ -13,7 +13,10 @@ const statePath = join(directory, "state.json");
 const stopPath = join(directory, "stop");
 const logPath = join(directory, "preview.log");
 const command = process.argv[2] ?? "start";
-const port = Number(process.argv[3] ?? 3002);
+const options = process.argv.slice(3);
+// --dev serves `next dev` with hot reload instead of a production build.
+const dev = options.includes("--dev");
+const port = Number(options.find((option) => /^\d+$/u.test(option)) ?? 3002);
 const proxies = [{ port: 443, target: `http://127.0.0.1:${port}` }, { port: 8443, target: "http://127.0.0.1:8787" }, { port: 9443, target: "http://127.0.0.1:9099" }];
 
 function readState() { return existsSync(statePath) ? JSON.parse(readFileSync(statePath, "utf8")) : null; }
@@ -82,7 +85,7 @@ async function supervise() {
   try {
     checkPorts(serveConfig(), state.hostname);
     for (const proxy of state.proxies) run("tailscale", ["serve", "--bg", `--https=${proxy.port}`, proxy.target]);
-    child = spawn(process.execPath, ["scripts/verify-integration.mjs", "--serve", "--preview"], {
+    child = spawn(process.execPath, ["scripts/verify-integration.mjs", "--serve", ...(state.dev ? [] : ["--preview"])], {
       cwd: root, windowsHide: true, stdio: ["pipe", "pipe", "pipe"],
       env: { ...process.env, NOVAE_SERVE_SESSION: "1", NOVAE_TEST_APP_PORT: String(state.port), NOVAE_TEST_PUBLIC_ORIGIN: state.origin, NOVAE_WSL_DISTRO: (await resolveWindowsWslDistro()) ?? "" },
     });
@@ -135,7 +138,7 @@ async function supervise() {
 }
 
 try {
-  if (!["start", "stop", "status", "verify", "run"].includes(command)) throw new Error("用法：node scripts/tailscale-preview.mjs start [3002] | status | verify | stop");
+  if (!["start", "stop", "status", "verify", "run"].includes(command)) throw new Error("用法：node scripts/tailscale-preview.mjs start [3002] [--dev] | status | verify | stop");
   if (command === "run") {
     await supervise();
   } else if (command === "start") {
@@ -149,8 +152,8 @@ try {
       mkdirSync(directory, { recursive: true });
       if (existsSync(stopPath)) unlinkSync(stopPath);
       const log = openSync(logPath, "w");
-      const child = spawn(process.execPath, [script, "run", String(port)], { cwd: root, detached: true, windowsHide: true, stdio: ["ignore", log, log] });
-      save({ pid: child.pid, phase: "starting", hostname, origin: `https://${hostname}`, port, proxies, logPath });
+      const child = spawn(process.execPath, [script, "run", String(port), ...(dev ? ["--dev"] : [])], { cwd: root, detached: true, windowsHide: true, stdio: ["ignore", log, log] });
+      save({ pid: child.pid, phase: "starting", dev, hostname, origin: `https://${hostname}`, port, proxies, logPath });
       closeSync(log);
       child.unref();
       console.log(`正在建置並啟動：https://${hostname}/home\n日誌：${logPath}\n用 status 確認 ready，再執行 verify。`);

@@ -14,7 +14,6 @@ import { NotificationPrompt } from "@/features/system/notification-prompt";
 import { Avatar } from "@/ui/avatar";
 import { Menu, type MenuItem } from "@/ui/menu";
 import { PrimaryNav, type NavItem } from "@/ui/nav";
-import { BrandLockup } from "./brand";
 
 function AccountMenu() {
   const session = useSession();
@@ -40,15 +39,12 @@ function AccountMenu() {
       trigger={
         <button
           aria-label={t("ui.nav.accountMenu")}
-          className="flex w-full items-center gap-3 rounded-tile p-2 text-left outline-none transition-[background-color] duration-[var(--motion-control)] ease-[var(--ease-move)] hover:bg-surface-raised focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+          className="flex w-full items-center gap-2.5 rounded-tile px-2 py-1.5 text-left outline-none transition-[background-color] duration-[var(--motion-control)] ease-[var(--ease-move)] hover:bg-surface-raised focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
           type="button"
         >
-          <Avatar className="size-9" name={name} src={session.customPhotoUrl} />
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium">{name}</span>
-            <span className="block truncate text-xs text-ink-muted">{session.user?.email}</span>
-          </span>
-          <CaretUpDown aria-hidden className="size-4 text-ink-faint" />
+          <Avatar className="size-8" name={name} src={session.customPhotoUrl} />
+          <span className="min-w-0 flex-1 truncate text-[0.9375rem] font-semibold">{name}</span>
+          <CaretUpDown aria-hidden className="size-4 shrink-0 text-ink-faint" />
         </button>
       }
     />
@@ -76,10 +72,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-svh md:pl-72">
       <NotificationPrompt />
-      <aside className="glass fixed inset-y-3 left-3 z-30 hidden w-66 flex-col gap-6 rounded-panel border border-line p-4 shadow-panel md:flex">
-        <BrandLockup className="px-2 pt-1" href="/home" />
-        <PrimaryNav activeHref={active} className="flex-1" items={items} label={t("ui.nav.primary")} variant="rail" />
+      <aside className="glass fixed inset-y-3 left-3 z-30 hidden w-66 flex-col gap-4 rounded-panel border border-line p-3 shadow-panel md:flex">
+        {/* Whose Novae this is, where Notion puts the workspace: the account
+            menu opens settings, administration and sign-out from here. */}
         <AccountMenu />
+        <PrimaryNav activeHref={active} className="flex-1" items={items} label={t("ui.nav.primary")} variant="rail" />
       </aside>
       <main
         className={cn(

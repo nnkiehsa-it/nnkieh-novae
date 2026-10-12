@@ -6,7 +6,7 @@ import type { Icon } from "@phosphor-icons/react";
 import { useI18n } from "@/i18n";
 import { FACILITY_BUCKET_STATUSES, ISSUE_BUCKET_STATUSES } from "@/constants/statuses";
 import { useCategories } from "@/hooks/use-categories";
-import { useHomeStatusCounts } from "@/hooks/use-home-status-counts";
+import type { useHomeStatusCounts } from "@/hooks/use-home-status-counts";
 import { feedHref } from "@/lib/feed-href";
 import { statusColor, statusLabelKey, type ContentStatus } from "@/features/content/status";
 import { AnimatedNumber } from "@/ui/animated-number";
@@ -64,10 +64,9 @@ function DomainStatus({ domain, href, icon: DomainIcon, label, loading, segments
 }
 
 /** How many proposals and reports sit in each status, as a bar per domain. */
-export function StatusOverview() {
+export function StatusOverview({ counts }: { counts: ReturnType<typeof useHomeStatusCounts> }) {
   const { t } = useI18n();
   const { facilitiesEnabled, issuesEnabled } = useCategories();
-  const counts = useHomeStatusCounts();
   if (!issuesEnabled && !facilitiesEnabled) return null;
   return (
     <section className="grid gap-3">
