@@ -23,10 +23,11 @@ on:
       - 'vitest.config.ts'
       - 'eslint.config.js'
       - '.github/workflows/**'
+  # Every branch deploys: main to production, everything else to a preview
+  # against the development backend. Only main and dev deploy the backend.
   push:
     branches:
-      - main
-      - dev
+      - '**'
     paths:
       - 'src/**'
       - 'cloudflare/**'
@@ -161,9 +162,13 @@ jobs:
       - name: Verify integration behavior
         run: bun run verify:integration
 
+  # Browser E2E is slow, so it gates only main (and pull requests into it);
+  # other branches deploy after the fast checks.
   browser_verify:
     needs: changes
-    if: needs.changes.outputs.browser == 'true'
+    if: >-
+      needs.changes.outputs.browser == 'true' &&
+      (github.ref_name == 'main' || github.base_ref == 'main')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -216,7 +221,8 @@ jobs:
       needs.fast.result == 'success' &&
       needs.backend_verify.result == 'success' &&
       needs.changes.outputs.backend == 'true' &&
-      (needs.changes.outputs.browser != 'true' || needs.browser_verify.result == 'success') &&
+      (needs.changes.outputs.browser != 'true' || contains(fromJSON('["success","skipped"]'), needs.browser_verify.result)) &&
+      (github.ref_name == 'main' || github.ref_name == 'dev') &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
@@ -452,9 +458,10 @@ jobs:
     if: >-
       always() &&
       needs.fast.result == 'success' &&
-      needs.browser_verify.result == 'success' &&
+      contains(fromJSON('["success","skipped"]'), needs.browser_verify.result) &&
       needs.changes.outputs.browser == 'true' &&
-      (needs.changes.outputs.backend != 'true' || needs.deploy_backend.result == 'success') &&
+      (needs.changes.outputs.backend != 'true' || needs.deploy_backend.result == 'success' ||
+        (github.ref_name != 'main' && github.ref_name != 'dev' && needs.backend_verify.result == 'success')) &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
@@ -561,6 +568,7 @@ jobs:
         run: |
           url="$(bunx --yes vercel@58.9.0 deploy --prebuilt ${{ github.ref_name == 'main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }})"
           echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Deployed **${GITHUB_REF_NAME}**: $url" >> "$GITHUB_STEP_SUMMARY"
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
