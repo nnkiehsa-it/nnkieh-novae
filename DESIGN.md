@@ -12,7 +12,7 @@ primary action.
 | [src/ui/theme.css](src/ui/theme.css) | Every colour, radius, elevation and safe-area token, the canvas gradient, the `glass` material |
 | [src/ui](src/ui) | The primitives. Feature code composes these and never restates their styling |
 | [src/generated/motion-ladder.css](src/generated/motion-ladder.css), [src/lib/motion-timing.ts](src/lib/motion-timing.ts) | Durations and curves, from `config/motion.config.json` |
-| [src/ui/legacy-bridge.css](src/ui/legacy-bridge.css) | Temporary: maps pre-redesign token names onto the new palette until the last legacy component is gone |
+| [src/features](src/features) | Screens and domain components, composed from `src/ui`; see `structure.md` for the map |
 
 `/ui-preview` renders every primitive in development.
 
@@ -42,8 +42,12 @@ controls). Elevation: `shadow-panel`, `shadow-float`.
 - **PrimaryNav** — the primary destinations: a floating `dock` on phones, a `rail` in the glass sidebar from `md` up. The current one wears the white pill and its icon fills.
 - **ListGroup / ListRow** — settings-style rows: link, action, or label with a trailing control.
 - **Field / Input / Textarea / Switch / Avatar** — form controls and identity.
-- **Sheet** — bottom sheet on phones, centred panel from `md` up; every exit goes through `onOpenChange`.
-- **Spinner / Skeleton / Toaster** — loading and feedback.
+- **Sheet** — bottom sheet on phones, centred panel from `md` up (`size="lg"` for records); every exit goes through `onOpenChange`, and `onClosed` fires once the exit has finished.
+- **Dialog / ConfirmDialog / DecisionSheet** — a centred question, an irreversible confirmation, and one recorded decision with its reason.
+- **Select / Menu / Popover / Tooltip** — a choice, the actions on a thing, a small form, and a label for an icon-only control on real pointers.
+- **PageHeader / EmptyState / ErrorState / LoadingList / SaveBar** — page furniture and the one explicit-save bar.
+- **Spinner / Skeleton / ProgressBar / Toaster / AnimatedNumber** — loading, progress and feedback.
+- **DecodedImage / ImageGrid / ImageTile / ImageLightbox** — attachments: fitted tiles that decode before they show, and the lightbox they open.
 
 ## Rules
 
@@ -52,5 +56,6 @@ controls). Elevation: `shadow-panel`, `shadow-float`.
 - Status colours describe state; they never become a control's theme.
 - Motion durations and curves come from the motion ladder; no raw `duration-*`, springs or inline easing.
 - Hover styles go through the `hover:` variant, which is gated to real pointers.
-- Primitives in `src/ui` do not import hooks or services.
+- Primitives in `src/ui` do not import hooks or services; features reach data only through hooks.
+- A record (proposal, facility report, announcement) is framed by `RecordSheet` when opened over a feed and by `RecordPage` when loaded by URL; the content inside is the same component.
 - Check every screen at phone width (375px) and desktop, with safe areas and reduced motion.
