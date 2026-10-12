@@ -40,8 +40,8 @@ export function ConfirmDialog({
     <AlertDialog.Root onOpenChange={(next) => { if (!busy) onOpenChange?.(next); }} open={open}>
       {trigger ? <AlertDialog.Trigger asChild>{trigger}</AlertDialog.Trigger> : null}
       <AlertDialog.Portal>
-        <AlertDialog.Overlay className="fixed inset-0 z-50 bg-[var(--scrim)]" />
-        <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 grid w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 gap-5 rounded-panel border border-line bg-surface-solid p-6 text-ink shadow-float outline-none">
+        <AlertDialog.Overlay className="scrim fixed inset-0 z-50 bg-[var(--scrim)]" />
+        <AlertDialog.Content className="dialog-surface fixed left-1/2 top-1/2 z-50 grid w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 gap-5 rounded-panel border border-line bg-surface-solid p-6 text-ink shadow-float outline-none">
           <div className="grid gap-2">
             <AlertDialog.Title className="text-lg font-semibold">{title}</AlertDialog.Title>
             {description ? <AlertDialog.Description className="text-[0.9375rem] leading-relaxed text-ink-muted">{description}</AlertDialog.Description> : null}

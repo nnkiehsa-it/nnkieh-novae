@@ -55,7 +55,7 @@ export function Select<Value extends string>({
       </SelectPrimitive.Trigger>
       <SelectPrimitive.Portal>
         <SelectPrimitive.Content
-          className="z-50 max-h-[min(24rem,var(--radix-select-content-available-height))] min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-panel border border-line bg-surface-solid p-1.5 text-ink shadow-float"
+          className="float-surface z-50 max-h-[min(24rem,var(--radix-select-content-available-height))] min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-panel border border-line bg-surface-solid p-1.5 text-ink shadow-float"
           position="popper"
           sideOffset={8}
         >

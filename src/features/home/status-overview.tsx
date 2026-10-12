@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { AppLink } from "@/ui/app-link";
 import { CaretRight, Lightbulb, Wrench } from "@phosphor-icons/react/ssr";
 import type { Icon } from "@phosphor-icons/react";
 import { useI18n } from "@/i18n";
@@ -28,26 +28,26 @@ function DomainStatus({ domain, href, icon: DomainIcon, label, loading, segments
   const total = segments.reduce((sum, segment) => sum + segment.count, 0);
   const shown = segments.filter((segment) => segment.count > 0);
   return (
-    <Panel asChild className="grid gap-4" interactive>
-      <Link href={href} prefetch={false}>
+    <Panel asChild className="grid gap-3.5" interactive>
+      <AppLink href={href}>
         <span className="flex items-center gap-3">
-          <span aria-hidden className="grid size-10 place-items-center rounded-full bg-surface-raised"><DomainIcon className="size-5" weight="bold" /></span>
+          <span aria-hidden className="grid size-9 place-items-center rounded-full bg-surface-raised"><DomainIcon className="size-[1.125rem]" weight="bold" /></span>
           <span className="min-w-0 flex-1">
-            <span className="block font-semibold">{label}</span>
-            <span className="block text-sm tabular-nums text-ink-muted">{loading ? "—" : <AnimatedNumber value={total} />}</span>
+            <span className="block text-[0.9375rem] font-semibold">{label}</span>
+            <span className="block text-[0.8125rem] tabular-nums text-ink-muted">{loading ? "—" : <AnimatedNumber value={total} />}</span>
           </span>
           <CaretRight aria-hidden className="size-4 text-ink-faint" weight="bold" />
         </span>
-        {loading ? <Skeleton className="h-2.5 w-full rounded-full" /> : total === 0 ? (
+        {loading ? <Skeleton className="h-2 w-full rounded-full" /> : total === 0 ? (
           <span className="text-sm text-ink-muted">{t("ui.home.noActivity")}</span>
         ) : (
           <>
-            <span aria-hidden className="flex h-2.5 gap-1 overflow-hidden rounded-full">
+            <span aria-hidden className="flex h-2 gap-1 overflow-hidden rounded-full">
               {shown.map((segment) => (
                 <span className="h-full rounded-full" key={segment.status} style={{ background: statusColor(segment.status), flexGrow: segment.count }} />
               ))}
             </span>
-            <span className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm">
+            <span className="flex flex-wrap gap-x-4 gap-y-1.5 text-[0.8125rem]">
               {shown.map((segment) => (
                 <span className="inline-flex items-center gap-1.5" key={segment.status}>
                   <span aria-hidden className="size-2 rounded-full" style={{ background: statusColor(segment.status) }} />
@@ -58,7 +58,7 @@ function DomainStatus({ domain, href, icon: DomainIcon, label, loading, segments
             </span>
           </>
         )}
-      </Link>
+      </AppLink>
     </Panel>
   );
 }
@@ -77,7 +77,7 @@ export function StatusOverview({ counts }: { counts: ReturnType<typeof useHomeSt
           <Button onClick={() => void counts.retry()} size="sm">{t("common.retry")}</Button>
         </Panel>
       ) : (
-        <div className="grid gap-3">
+        <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr))]">
           {issuesEnabled ? (
             <DomainStatus
               domain="issue"

@@ -673,7 +673,6 @@ const messages = {
   'ui.settings.pushBlocked': 'Notifications are blocked. Enable them in site permissions first.',
   'ui.settings.pushReady': 'Important activity will be delivered to this device.',
   'ui.settings.pushUnsupported': 'Push notifications are not supported on this browser or device.',
-  'ui.settings.adminTools': 'Management tools',
   'ui.settings.dashboardDescription': 'View platform usage and operational status',
   'ui.settings.managementDescription': 'Manage categories, access, and owners',
   'ui.settings.resources': 'More resources',

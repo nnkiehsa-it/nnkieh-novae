@@ -1,5 +1,5 @@
 import * as React from "react";
-import Link from "next/link";
+import { AppLink } from "./app-link";
 import { ArrowClockwise, CaretLeft, Tray, WarningCircle } from "@phosphor-icons/react/ssr";
 import { cn } from "@/lib/utils";
 import { Button } from "./button";
@@ -9,27 +9,36 @@ import { Panel } from "./panel";
 /**
  * The top of a page: an optional way back, the title, and the page's own
  * actions. On a wide screen the actions sit beside the title; on a phone they
- * wrap underneath when they do not fit.
+ * wrap underneath when they do not fit. It stays at the top while the page
+ * scrolls, over a blur that fades into the content passing beneath it.
  */
-export function PageHeader({ actions, back, className, description, title }: {
+export function PageHeader({ actions, back, className, description, sticky = true, title }: {
   actions?: React.ReactNode;
   /** Where the back control leads, with its accessible name. */
   back?: { href: string; label: string };
   className?: string;
   description?: React.ReactNode;
+  /** False for a page that is not scrolled beneath a shell, such as setup. */
+  sticky?: boolean;
   title: React.ReactNode;
 }) {
   return (
-    <header className={cn("grid gap-4", className)}>
+    <header
+      className={cn(
+        "grid gap-3",
+        sticky && "edge-top sticky top-0 z-20 pb-3 pt-[calc(var(--safe-top)+1rem)] md:pt-7",
+        className,
+      )}
+    >
       {back ? (
         <Button asChild className="justify-self-start" size="icon-sm">
-          <Link aria-label={back.label} href={back.href}><CaretLeft weight="bold" /></Link>
+          <AppLink aria-label={back.label} href={back.href}><CaretLeft weight="bold" /></AppLink>
         </Button>
       ) : null}
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
         <div className="min-w-0">
-          <h1 className="text-balance text-[1.75rem] font-semibold leading-tight tracking-tight md:text-3xl">{title}</h1>
-          {description ? <p className="mt-1.5 max-w-2xl text-[0.9375rem] leading-relaxed text-ink-muted">{description}</p> : null}
+          <h1 className="text-balance text-2xl font-semibold leading-tight tracking-tight md:text-[1.625rem]">{title}</h1>
+          {description ? <p className="mt-1 max-w-2xl text-sm leading-relaxed text-ink-muted">{description}</p> : null}
         </div>
         {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
       </div>
@@ -45,12 +54,12 @@ function StateMessage({ action, description, icon, title, tone = "default" }: {
   tone?: "default" | "danger";
 }) {
   return (
-    <Panel className="flex flex-col items-center gap-4 px-6 py-10 text-center">
-      <span aria-hidden className={cn("grid size-12 place-items-center rounded-full [&_svg]:size-6", tone === "danger" ? "bg-danger/15 text-danger" : "bg-surface-raised text-ink-muted")}>
+    <Panel className="flex flex-col items-center gap-3 px-6 py-8 text-center">
+      <span aria-hidden className={cn("grid size-10 place-items-center rounded-full [&_svg]:size-5", tone === "danger" ? "bg-danger/15 text-danger" : "bg-surface-raised text-ink-muted")}>
         {icon}
       </span>
       <div className="grid gap-1">
-        <h2 className="text-base font-semibold">{title}</h2>
+        <h2 className="text-[0.9375rem] font-semibold">{title}</h2>
         {description ? <p className="mx-auto max-w-md text-sm leading-relaxed text-ink-muted">{description}</p> : null}
       </div>
       {action}

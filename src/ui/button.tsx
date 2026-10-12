@@ -6,21 +6,21 @@ import { cn } from "@/lib/utils";
 import { Spinner } from "./feedback";
 
 export const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-full font-medium whitespace-nowrap outline-none select-none transition-[background-color,color,opacity,transform] duration-[var(--motion-control)] ease-[var(--ease-move)] active:scale-[var(--motion-press-scale)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-[1.125rem]",
+  "inline-flex shrink-0 items-center justify-center gap-2 rounded-full font-medium whitespace-nowrap outline-none select-none transition-[background-color,color,opacity,transform] duration-[var(--motion-control)] ease-[var(--ease-move)] active:scale-[var(--motion-press-scale)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
         primary: "bg-contrast text-on-contrast hover:bg-contrast/90",
-        secondary: "bg-surface-raised text-ink hover:bg-surface-pressed",
+        secondary: "border border-line bg-surface text-ink hover:bg-surface-pressed",
         ghost: "text-ink-muted hover:bg-surface-raised hover:text-ink",
         danger: "bg-danger/15 text-danger hover:bg-danger/25",
       },
       size: {
-        sm: "h-9 px-4 text-sm",
-        md: "h-11 px-5 text-[0.9375rem]",
-        lg: "h-13 px-7 text-base",
-        icon: "size-11",
-        "icon-sm": "size-9",
+        sm: "h-8 px-3.5 text-[0.8125rem]",
+        md: "h-10 px-4 text-sm",
+        lg: "h-11 px-5 text-[0.9375rem]",
+        icon: "size-10",
+        "icon-sm": "size-8",
       },
     },
     defaultVariants: { variant: "secondary", size: "md" },

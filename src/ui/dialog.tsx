@@ -34,10 +34,10 @@ export function Dialog({
   return (
     <DialogPrimitive.Root onOpenChange={onOpenChange} open={open}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[var(--scrim)]" />
+        <DialogPrimitive.Overlay className="scrim fixed inset-0 z-50 bg-[var(--scrim)]" />
         <DialogPrimitive.Content
           className={cn(
-            "fixed left-1/2 top-1/2 z-50 grid max-h-[calc(100svh-2rem)] w-[min(26rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 gap-5 overflow-y-auto rounded-panel border border-line bg-surface-solid p-6 text-ink shadow-float outline-none",
+            "dialog-surface fixed left-1/2 top-1/2 z-50 grid max-h-[calc(100svh-2rem)] w-[min(26rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 gap-5 overflow-y-auto rounded-panel border border-line bg-surface-solid p-6 text-ink shadow-float outline-none",
             className,
           )}
           onEscapeKeyDown={block}

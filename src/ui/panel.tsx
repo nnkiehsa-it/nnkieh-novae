@@ -13,7 +13,7 @@ export function Panel({
   return (
     <Component
       className={cn(
-        "glass block rounded-panel p-5 text-ink shadow-panel",
+        "glass block rounded-panel p-4 text-ink shadow-panel md:p-5",
         interactive &&
           "outline-none transition-[background-color,transform] duration-[var(--motion-control)] ease-[var(--ease-move)] hover:bg-surface-pressed active:scale-[var(--motion-card-press-scale)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
         className,
@@ -25,7 +25,7 @@ export function Panel({
 
 /** A quieter surface nested inside a panel, such as one figure in a row of figures. */
 export function Tile({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn("rounded-tile bg-surface-raised p-4", className)} {...props} />;
+  return <div className={cn("rounded-tile bg-surface-raised p-3.5", className)} {...props} />;
 }
 
 export function SectionTitle({ action, children, className }: {
@@ -34,8 +34,8 @@ export function SectionTitle({ action, children, className }: {
   className?: string;
 }) {
   return (
-    <div className={cn("flex min-h-8 items-center justify-between gap-3 px-1", className)}>
-      <h2 className="text-sm font-medium text-ink-muted">{children}</h2>
+    <div className={cn("flex min-h-7 items-center justify-between gap-3 px-1", className)}>
+      <h2 className="text-[0.8125rem] font-medium text-ink-muted">{children}</h2>
       {action}
     </div>
   );

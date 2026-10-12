@@ -42,8 +42,8 @@ function AccountMenu() {
           className="flex w-full items-center gap-2.5 rounded-tile px-2 py-1.5 text-left outline-none transition-[background-color] duration-[var(--motion-control)] ease-[var(--ease-move)] hover:bg-surface-raised focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
           type="button"
         >
-          <Avatar className="size-8" name={name} src={session.customPhotoUrl} />
-          <span className="min-w-0 flex-1 truncate text-[0.9375rem] font-semibold">{name}</span>
+          <Avatar className="size-7" name={name} src={session.customPhotoUrl} />
+          <span className="min-w-0 flex-1 truncate text-sm font-semibold">{name}</span>
           <CaretUpDown aria-hidden className="size-4 shrink-0 text-ink-faint" />
         </button>
       }
@@ -70,9 +70,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const active = primaryDestination(pathname);
 
   return (
-    <div className="min-h-svh md:pl-72">
+    <div className="min-h-svh md:pl-66">
       <NotificationPrompt />
-      <aside className="glass fixed inset-y-3 left-3 z-30 hidden w-66 flex-col gap-4 rounded-panel border border-line p-3 shadow-panel md:flex">
+      <aside className="glass fixed inset-y-3 left-3 z-30 hidden w-60 flex-col gap-3 rounded-panel border border-line p-2.5 shadow-panel md:flex">
         {/* Whose Novae this is, where Notion puts the workspace: the account
             menu opens settings, administration and sign-out from here. */}
         <AccountMenu />
@@ -80,12 +80,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
       <main
         className={cn(
-          "mx-auto w-full max-w-5xl px-[var(--gutter)] pt-[calc(var(--safe-top)+1.5rem)] md:px-8 md:pb-12 md:pt-10",
-          dock ? "pb-[calc(var(--bottom-nav-height)+var(--bottom-nav-gap)+2rem)]" : "pb-[max(2rem,var(--safe-bottom))]",
+          "mx-auto w-full max-w-5xl px-[var(--gutter)] md:px-8 md:pb-12",
+          dock ? "pb-[calc(var(--bottom-nav-height)+var(--bottom-nav-gap)+1.5rem)]" : "pb-[max(2rem,var(--safe-bottom))]",
         )}
       >
         {children}
       </main>
+      {/* Content scrolling off the bottom fades under the dock, or under the
+          window's edge on a wide screen, instead of being cut off. */}
+      <div
+        aria-hidden
+        className={cn(
+          "edge-bottom pointer-events-none fixed inset-x-0 bottom-0 z-20 md:left-66 md:h-6",
+          dock ? "h-[calc(var(--bottom-nav-height)+var(--bottom-nav-gap)+0.5rem)]" : "h-[var(--safe-bottom)]",
+        )}
+      />
       <div
         aria-hidden={!dock}
         className={cn(

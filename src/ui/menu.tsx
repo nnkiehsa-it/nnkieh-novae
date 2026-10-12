@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
+import { AppLink } from "./app-link";
 import type { Icon } from "@phosphor-icons/react";
 import { DropdownMenu } from "radix-ui";
 import { cn } from "@/lib/utils";
@@ -73,7 +73,7 @@ export function Menu({
       <DropdownMenu.Portal>
         <DropdownMenu.Content
           align={align}
-          className="z-50 min-w-56 rounded-panel border border-line bg-surface-solid p-1.5 text-ink shadow-float"
+          className="float-surface z-50 min-w-56 rounded-panel border border-line bg-surface-solid p-1.5 text-ink shadow-float"
           sideOffset={8}
         >
           {description ? (
@@ -87,7 +87,7 @@ export function Menu({
             const className = cn(itemClass, tone === "danger" && "text-danger");
             return href ? (
               <DropdownMenu.Item asChild className={className} key={key}>
-                <Link href={href}>{content}</Link>
+                <AppLink href={href}>{content}</AppLink>
               </DropdownMenu.Item>
             ) : (
               <DropdownMenu.Item className={className} key={key} onSelect={onSelect}>{content}</DropdownMenu.Item>

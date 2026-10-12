@@ -18,7 +18,7 @@ export function Popover({ children, className, onOpenChange, open, trigger }: {
       <PopoverPrimitive.Portal>
         <PopoverPrimitive.Content
           align="end"
-          className={cn("z-50 w-[min(22rem,calc(100vw-2rem))] rounded-panel border border-line bg-surface-solid p-4 text-ink shadow-float outline-none", className)}
+          className={cn("float-surface z-50 w-[min(22rem,calc(100vw-2rem))] rounded-panel border border-line bg-surface-solid p-4 text-ink shadow-float outline-none", className)}
           collisionPadding={16}
           sideOffset={8}
         >
@@ -37,7 +37,7 @@ export function Tooltip({ children, label }: { children: React.ReactElement; lab
     <TooltipPrimitive.Root>
       <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
       <TooltipPrimitive.Portal>
-        <TooltipPrimitive.Content className="z-50 rounded-full bg-contrast px-3 py-1.5 text-xs font-medium text-on-contrast" sideOffset={8}>
+        <TooltipPrimitive.Content className="float-surface z-50 rounded-full bg-contrast px-3 py-1.5 text-xs font-medium text-on-contrast" sideOffset={8}>
           {label}
         </TooltipPrimitive.Content>
       </TooltipPrimitive.Portal>

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { AppLink } from "@/ui/app-link";
 import { CheckCircle, Gavel, Warning, Wrench } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import { useCategories } from "@/hooks/use-categories";
@@ -79,16 +79,16 @@ export function TodoCards({ counts }: { counts: ReturnType<typeof useHomeStatusC
         <Panel className="grid gap-3"><Skeleton className="h-7 w-20 rounded-chip" /><Skeleton className="h-5 w-4/5" /></Panel>
       ) : todos.length ? todos.map((todo) => (
         <Panel asChild interactive key={todo.key}>
-          <Link href={todo.href} prefetch={false}>
-            <p className="text-[1.0625rem] leading-9">
+          <AppLink href={todo.href}>
+            <p className="text-[0.9375rem] leading-8">
               <span className="mr-2 inline-flex align-middle">{todo.chip}</span>
               {todo.text}
             </p>
-          </Link>
+          </AppLink>
         </Panel>
       )) : (
         <Panel>
-          <p className="text-[1.0625rem] leading-9">
+          <p className="text-[0.9375rem] leading-8">
             <span className="mr-2 inline-flex align-middle"><Chip tone="positive"><CheckCircle weight="bold" />{t("ui.home.todoClearChip")}</Chip></span>
             {t("ui.home.todoClear")}
           </p>

@@ -1,5 +1,5 @@
 import * as React from "react";
-import Link from "next/link";
+import { AppLink } from "./app-link";
 import { CaretRight } from "@phosphor-icons/react/ssr";
 import { cn } from "@/lib/utils";
 
@@ -23,8 +23,8 @@ export function ListGroup({ action, children, className, footer, label, role, ti
   return (
     <section aria-label={title ? undefined : label} aria-labelledby={title ? titleId : undefined} className={cn("grid gap-2", className)}>
       {title || action ? (
-        <div className="flex min-h-8 items-center justify-between gap-3 px-1">
-          {title ? <h2 className="text-sm font-medium text-ink-muted" id={titleId}>{title}</h2> : <span />}
+        <div className="flex min-h-7 items-center justify-between gap-3 px-1">
+          {title ? <h2 className="text-[0.8125rem] font-medium text-ink-muted" id={titleId}>{title}</h2> : <span />}
           {action}
         </div>
       ) : null}
@@ -52,7 +52,7 @@ type ListRowProps = ListRowContent &
   );
 
 export const rowClass =
-  "flex min-h-15 w-full items-center gap-4 px-5 py-3 text-left outline-none";
+  "flex min-h-12 w-full items-center gap-3.5 px-4 py-2.5 text-left outline-none";
 const actionClass =
   "transition-[background-color] duration-[var(--motion-control)] ease-[var(--ease-move)] hover:bg-surface-raised active:bg-surface-pressed focus-visible:bg-surface-raised disabled:pointer-events-none disabled:opacity-40";
 
@@ -60,13 +60,13 @@ function RowBody({ detail, icon, label, tone = "default", value }: ListRowConten
   return (
     <>
       {icon ? (
-        <span aria-hidden className={cn("shrink-0 [&_svg]:size-[1.375rem]", tone === "danger" ? "text-danger" : "text-ink")}>
+        <span aria-hidden className={cn("shrink-0 [&_svg]:size-5", tone === "danger" ? "text-danger" : "text-ink")}>
           {icon}
         </span>
       ) : null}
       <span className="min-w-0 flex-1">
-        <span className={cn("block truncate text-base", tone === "danger" ? "text-danger" : "text-ink")}>{label}</span>
-        {detail ? <span className="block truncate text-sm text-ink-muted">{detail}</span> : null}
+        <span className={cn("block truncate text-[0.9375rem]", tone === "danger" ? "text-danger" : "text-ink")}>{label}</span>
+        {detail ? <span className="block truncate text-[0.8125rem] text-ink-muted">{detail}</span> : null}
       </span>
       {value !== undefined ? <span className="max-w-[45%] shrink-0 truncate text-sm text-ink-muted">{value}</span> : null}
     </>
@@ -79,7 +79,7 @@ export function ListRow(props: ListRowProps) {
   if (props.href !== undefined) {
     return (
       <li>
-        <Link
+        <AppLink
           className={cn(rowClass, actionClass)}
           href={props.href}
           onClick={props.onClick}
@@ -87,7 +87,7 @@ export function ListRow(props: ListRowProps) {
         >
           <RowBody {...props} />
           {chevron}
-        </Link>
+        </AppLink>
       </li>
     );
   }

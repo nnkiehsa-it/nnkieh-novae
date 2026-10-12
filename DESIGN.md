@@ -57,5 +57,6 @@ controls). Elevation: `shadow-panel`, `shadow-float`.
 - Motion durations and curves come from the motion ladder; no raw `duration-*`, springs or inline easing.
 - Hover styles go through the `hover:` variant, which is gated to real pointers.
 - Primitives in `src/ui` do not import hooks or services; features reach data only through hooks.
-- A record (proposal, facility report, announcement) is framed by `RecordSheet` when opened over a feed and by `RecordPage` when loaded by URL; the content inside is the same component.
+- A record (proposal, facility report, announcement) or a composer is always framed by `RecordSheet` over its feed, whether it was opened from the feed or loaded by its URL. On a phone it fills the screen and the dock steps aside.
+- A scrolling edge is never a hard cut: `PageHeader` sticks to the top over an `edge-top` blur, the shell fades content under the dock or window bottom with `edge-bottom`, and scrolling areas inside layers use `edge-fade`.
 - Check every screen at phone width (375px) and desktop, with safe areas and reduced motion.

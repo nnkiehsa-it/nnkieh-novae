@@ -35,11 +35,11 @@
     radial-gradient(90% 50% at 100% 100%, rgb(120 132 170 / 18%), transparent 70%),
     linear-gradient(180deg, #111624 0%, #181e2f 38%, #232a3f 72%, #343c53 100%);
 
-  --surface: rgb(14 18 30 / 58%);
-  --surface-raised: rgb(255 255 255 / 6%);
-  --surface-pressed: rgb(255 255 255 / 10%);
+  --surface: rgb(8 11 20 / 66%);
+  --surface-raised: rgb(255 255 255 / 4.5%);
+  --surface-pressed: rgb(255 255 255 / 8%);
   /* Layers over the page (sheets, menus) are opaque: glass over glass muddies. */
-  --surface-solid: #1a2032;
+  --surface-solid: #141929;
   --surface-blur: 24px;
 
   --ink: #eef1f7;
@@ -67,7 +67,7 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
   --gutter: max(1rem, var(--safe-left), var(--safe-right));
-  --bottom-nav-height: 4rem;
+  --bottom-nav-height: 3.5rem;
   --bottom-nav-gap: max(0.75rem, var(--safe-bottom));
 }
 
@@ -95,4 +95,51 @@ body {
   background: var(--surface);
   -webkit-backdrop-filter: blur(var(--surface-blur)) saturate(140%);
   backdrop-filter: blur(var(--surface-blur)) saturate(140%);
+}
+
+/* The page never scrolls sideways, even when an edge's blur reaches past the
+   column it belongs to. `clip` keeps sticky positioning working. */
+html,
+body {
+  overflow-x: clip;
+}
+
+/* A scrolling edge is never a hard cut: content passing under a sticky header
+   or the dock blurs and fades into the canvas. The blur is masked off toward
+   the content, so the edge has depth rather than a line. */
+.edge-top,
+.edge-bottom {
+  isolation: isolate;
+}
+
+.edge-top::before,
+.edge-bottom::before {
+  content: "";
+  position: absolute;
+  inset-inline: -50vw;
+  z-index: -1;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+.edge-top::before {
+  inset-block: 0 -1.5rem;
+  background: linear-gradient(to bottom, rgb(15 19 32 / 92%) 0%, rgb(15 19 32 / 65%) 60%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, black 55%, transparent);
+  mask-image: linear-gradient(to bottom, black 55%, transparent);
+}
+
+.edge-bottom::before {
+  inset-inline: 0;
+  inset-block: -1.5rem 0;
+  background: linear-gradient(to top, rgb(30 36 54 / 88%) 0%, rgb(30 36 54 / 55%) 55%, transparent);
+  -webkit-mask-image: linear-gradient(to top, black 50%, transparent);
+  mask-image: linear-gradient(to top, black 50%, transparent);
+}
+
+/* A scrolling area inside a layer fades out at both ends instead of slicing its content. */
+.edge-fade {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 1rem, black calc(100% - 1.5rem), transparent);
+  mask-image: linear-gradient(to bottom, transparent, black 1rem, black calc(100% - 1.5rem), transparent);
 }

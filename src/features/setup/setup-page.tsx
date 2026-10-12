@@ -41,7 +41,7 @@ export function SetupPage() {
   return (
     <main className="mx-auto grid w-full max-w-2xl gap-8 px-[var(--gutter)] pb-[max(3rem,var(--safe-bottom))] pt-[calc(var(--safe-top)+2rem)]">
       <BrandLockup />
-      <PageHeader description={t("ui.setup.categoryDescription")} title={t("ui.setup.categoryTitle")} />
+      <PageHeader sticky={false} description={t("ui.setup.categoryDescription")} title={t("ui.setup.categoryTitle")} />
       <Segmented
         label={t("ui.setup.categoryType")}
         onChange={setup.setKind}
