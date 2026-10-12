@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { Spinner } from "./feedback";
 
 export const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-full font-medium whitespace-nowrap outline-none select-none transition-[background-color,color,opacity,transform] duration-[var(--motion-control)] ease-[var(--ease-move)] active:scale-[var(--motion-press-scale)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex shrink-0 items-center justify-center gap-2 rounded-full font-medium whitespace-nowrap outline-none select-none transition-[background-color,color,opacity,transform] duration-[var(--motion-control)] ease-[var(--ease-move)] active:scale-[var(--motion-press-scale)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-[1.125rem]",
   {
     variants: {
       variant: {
@@ -16,11 +16,11 @@ export const buttonVariants = cva(
         danger: "bg-danger/15 text-danger hover:bg-danger/25",
       },
       size: {
-        sm: "h-8 px-3.5 text-[0.8125rem]",
-        md: "h-10 px-4 text-sm",
-        lg: "h-11 px-5 text-[0.9375rem]",
-        icon: "size-10",
-        "icon-sm": "size-8",
+        sm: "h-9 px-4 text-sm",
+        md: "h-11 px-5 text-[0.9375rem]",
+        lg: "h-12 px-6 text-base",
+        icon: "size-11",
+        "icon-sm": "size-9",
       },
     },
     defaultVariants: { variant: "secondary", size: "md" },

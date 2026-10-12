@@ -25,7 +25,7 @@ export function Panel({
 
 /** A quieter surface nested inside a panel, such as one figure in a row of figures. */
 export function Tile({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn("rounded-tile bg-surface-raised p-3.5", className)} {...props} />;
+  return <div className={cn("rounded-tile bg-surface-raised p-4", className)} {...props} />;
 }
 
 export function SectionTitle({ action, children, className }: {
@@ -34,7 +34,7 @@ export function SectionTitle({ action, children, className }: {
   className?: string;
 }) {
   return (
-    <div className={cn("flex min-h-7 items-center justify-between gap-3 px-1", className)}>
+    <div className={cn("flex min-h-8 items-center justify-between gap-3 px-1", className)}>
       <h2 className="text-[0.8125rem] font-medium text-ink-muted">{children}</h2>
       {action}
     </div>

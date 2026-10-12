@@ -44,7 +44,7 @@ export function Segmented<Value extends string>({
             <Tabs.Trigger
               className={cn(
                 "relative isolate inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full font-medium outline-none transition-[color] duration-[var(--motion-control)] ease-[var(--ease-move)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
-                size === "lg" ? "h-10 px-4.5 text-sm" : "h-8 px-3.5 text-[0.8125rem]",
+                size === "lg" ? "h-11 px-5 text-[0.9375rem]" : "h-9 px-4 text-sm",
                 selected ? "text-on-contrast" : "text-ink-muted hover:text-ink",
               )}
               key={option.value}

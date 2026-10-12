@@ -23,7 +23,7 @@ export function ListGroup({ action, children, className, footer, label, role, ti
   return (
     <section aria-label={title ? undefined : label} aria-labelledby={title ? titleId : undefined} className={cn("grid gap-2", className)}>
       {title || action ? (
-        <div className="flex min-h-7 items-center justify-between gap-3 px-1">
+        <div className="flex min-h-8 items-center justify-between gap-3 px-1">
           {title ? <h2 className="text-[0.8125rem] font-medium text-ink-muted" id={titleId}>{title}</h2> : <span />}
           {action}
         </div>
@@ -65,10 +65,10 @@ function RowBody({ detail, icon, label, tone = "default", value }: ListRowConten
         </span>
       ) : null}
       <span className="min-w-0 flex-1">
-        <span className={cn("block truncate text-[0.9375rem]", tone === "danger" ? "text-danger" : "text-ink")}>{label}</span>
+        <span className={cn("block truncate text-base", tone === "danger" ? "text-danger" : "text-ink")}>{label}</span>
         {detail ? <span className="block truncate text-[0.8125rem] text-ink-muted">{detail}</span> : null}
       </span>
-      {value !== undefined ? <span className="max-w-[45%] shrink-0 truncate text-sm text-ink-muted">{value}</span> : null}
+      {value !== undefined ? <span className="max-w-[45%] shrink-0 truncate text-[0.9375rem] text-ink-muted">{value}</span> : null}
     </>
   );
 }

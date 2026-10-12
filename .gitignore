@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .next/
+.next-*/
 .next-verify/
 .next-local-dev/
 .next-local-preview/

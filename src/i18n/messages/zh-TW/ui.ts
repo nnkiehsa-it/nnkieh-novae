@@ -673,6 +673,7 @@ const messages = {
   'ui.settings.pushBlocked': '瀏覽器已封鎖通知，請先在網站權限中開啟。',
   'ui.settings.pushReady': '重要動態會即時送達此裝置。',
   'ui.settings.pushUnsupported': '此瀏覽器或裝置目前不支援推播。',
+  'ui.settings.adminTools': '管理工具',
   'ui.settings.dashboardDescription': '查看平台使用統計與維運狀態',
   'ui.settings.managementDescription': '分類、權限與負責人管理',
   'ui.settings.resources': '更多資源',

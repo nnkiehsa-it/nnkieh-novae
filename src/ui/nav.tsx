@@ -39,7 +39,7 @@ export function PrimaryNav({
       aria-label={label}
       className={cn(
         "flex",
-        variant === "dock" && "glass h-[var(--bottom-nav-height)] items-stretch gap-1 rounded-full p-1 shadow-float",
+        variant === "dock" && "glass h-[var(--bottom-nav-height)] items-stretch gap-1 rounded-full p-1.5 shadow-float",
         variant === "rail" && "flex-col gap-1",
         className,
       )}
@@ -52,8 +52,8 @@ export function PrimaryNav({
             className={cn(
               "relative isolate flex min-w-0 items-center rounded-full font-medium outline-none transition-[color] duration-[var(--motion-control)] ease-[var(--ease-move)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
               active ? "text-on-contrast" : "text-ink-muted hover:text-ink",
-              variant === "dock" && "flex-1 flex-col justify-center gap-0.5 text-[0.625rem]",
-              variant === "rail" && "h-10 gap-3 px-3.5 text-sm",
+              variant === "dock" && "flex-1 flex-col justify-center gap-0.5 text-[0.6875rem]",
+              variant === "rail" && "h-11 gap-3 px-3.5 text-[0.9375rem]",
             )}
             href={href}
             key={href}
@@ -68,7 +68,7 @@ export function PrimaryNav({
               />
             ) : null}
             <span aria-hidden className="relative">
-              <ItemIcon className={variant === "dock" ? "size-5" : "size-[1.125rem]"} weight={active ? "fill" : "regular"} />
+              <ItemIcon className="size-5" weight={active ? "fill" : "regular"} />
               {badge ? <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-danger" /> : null}
             </span>
             <span className="max-w-full truncate px-1">{itemLabel}</span>
