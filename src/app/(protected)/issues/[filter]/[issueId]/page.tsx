@@ -1,7 +1,7 @@
 "use client";
 
-import { IssueDetail } from "@/components/issues/issue-detail";
+import { IssueRecordRoute } from "@/features/issues/issue-routes";
 
 export default function Page() {
-  return <IssueDetail />;
+  return <IssueRecordRoute />;
 }

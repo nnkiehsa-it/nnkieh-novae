@@ -34,6 +34,7 @@ import {
 import { useContentEntity } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
+import { feedHref } from "@/lib/feed-href";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 import { useOptimisticReaction } from "@/hooks/use-optimistic-reaction";
 
@@ -158,7 +159,7 @@ export function useAnnouncementDetail() {
         );
       });
       toast.success(t("announcement.announcementHasBeenDeleted"));
-      router.replace("/announcements");
+      router.replace(feedHref("announcements"));
     } catch (caught) {
       patchContentEntity<AnnouncementRecord>(
         session.user?.uid,

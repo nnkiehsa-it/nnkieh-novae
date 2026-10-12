@@ -38,7 +38,7 @@ import {
 import { useContentEntity } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
-import { returnToPreviousRoute } from "@/lib/navigation-memory";
+import { feedHref } from "@/lib/feed-href";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 import { useOptimisticReaction } from "@/hooks/use-optimistic-reaction";
 
@@ -203,7 +203,7 @@ export function useIssueDetail() {
         );
       });
       toast.success(t("issue.proposalDeleted"));
-      router.replace(`/issues/${encodeURIComponent(filter)}`);
+      router.replace(feedHref("issues", filter));
     } catch (caught) {
       patchContentEntity<IssueRecord>(
         session.user?.uid,
@@ -236,12 +236,6 @@ export function useIssueDetail() {
   );
 
   return {
-    back: () =>
-      returnToPreviousRoute(
-        router,
-        `/issues/${encodeURIComponent(filter)}`,
-        "/issues",
-      ),
     burst: reaction.burstById[issueId] ?? 0,
     comments: commentFeed.comments,
     commentSort: commentFeed.sort,

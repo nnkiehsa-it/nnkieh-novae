@@ -1,5 +1,5 @@
-import { DetailRouteSkeleton } from "@/components/ui/route-skeleton";
+import { RecordSkeleton } from "@/features/content/record-view";
 
 export default function Loading() {
-  return <DetailRouteSkeleton />;
+  return <div className="mx-auto w-full max-w-3xl"><RecordSkeleton /></div>;
 }

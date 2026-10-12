@@ -21,7 +21,7 @@ import {
 import { useContentEntity } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
-import { returnToPreviousRoute } from "@/lib/navigation-memory";
+import { feedHref } from "@/lib/feed-href";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 import { useOptimisticReaction } from "@/hooks/use-optimistic-reaction";
 
@@ -117,11 +117,7 @@ export function useFacilityDetail() {
         );
       });
       toast.success(t("facility.facilityReportDeleted"));
-      router.replace(
-        `/facilities?category=${encodeURIComponent(
-          search.get("category") || currentFacility.category_id,
-        )}`,
-      );
+      router.replace(feedHref("facilities", currentFacility.category_id));
     } catch (caught) {
       patchContentEntity<FacilityRecord>(
         session.user?.uid,
@@ -136,14 +132,6 @@ export function useFacilityDetail() {
 
   return {
     affecting: reaction.isBusy(params.facilityId),
-    back: () => {
-      if (currentFacility)
-        returnToPreviousRoute(
-          router,
-          `/facilities?category=${encodeURIComponent(currentFacility.category_id)}`,
-          "/facilities",
-        );
-    },
     burst: reaction.burstById[params.facilityId] ?? 0,
     deleteFeedbackState: deleteFeedback.state,
     error,

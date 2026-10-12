@@ -1,7 +1,7 @@
 "use client";
 
-import { AnnouncementDetail } from "@/components/announcements/announcement-detail";
+import { AnnouncementRecordRoute } from "@/features/announcements/announcement-routes";
 
 export default function Page() {
-  return <AnnouncementDetail />;
+  return <AnnouncementRecordRoute />;
 }

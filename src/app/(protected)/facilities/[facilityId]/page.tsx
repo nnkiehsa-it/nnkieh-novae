@@ -1,7 +1,7 @@
 "use client";
 
-import { FacilityDetail } from "@/components/facilities/facility-detail";
+import { FacilityRecordRoute } from "@/features/facilities/facility-routes";
 
 export default function Page() {
-  return <FacilityDetail />;
+  return <FacilityRecordRoute />;
 }

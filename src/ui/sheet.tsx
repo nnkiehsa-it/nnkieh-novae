@@ -18,21 +18,27 @@ export function Sheet({
   children,
   description,
   footer,
+  onClosed,
   onOpenChange,
   open,
+  size = "md",
   title,
 }: {
   children: React.ReactNode;
   description?: React.ReactNode;
   footer?: React.ReactNode;
+  /** Called once the closing animation has finished. */
+  onClosed?: () => void;
   onOpenChange: (open: boolean) => void;
   open: boolean;
+  /** `lg` gives a whole record room on a wide screen. */
+  size?: "md" | "lg";
   title: React.ReactNode;
 }) {
   const { t } = useI18n();
   return (
     <Dialog.Root onOpenChange={onOpenChange} open={open}>
-      <AnimatePresence>
+      <AnimatePresence onExitComplete={onClosed}>
         {open ? (
           <Dialog.Portal forceMount>
             <Dialog.Overlay asChild forceMount>
@@ -49,7 +55,9 @@ export function Sheet({
                 animate={{ opacity: 1, y: 0 }}
                 className={cn(
                   "fixed inset-x-0 bottom-0 z-50 flex max-h-[calc(100svh-var(--safe-top)-1.5rem)] flex-col rounded-t-panel border-t border-line bg-surface-solid text-ink shadow-float outline-none",
-                  "md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:max-h-[min(44rem,calc(100svh-4rem))] md:w-[min(34rem,calc(100vw-4rem))] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-panel md:border",
+                  "md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-panel md:border",
+                  size === "md" && "md:max-h-[min(44rem,calc(100svh-4rem))] md:w-[min(34rem,calc(100vw-4rem))]",
+                  size === "lg" && "md:max-h-[calc(100svh-4rem)] md:w-[min(52rem,calc(100vw-4rem))]",
                 )}
                 data-sheet-surface=""
                 exit={{ opacity: 0, y: 48, transition: timing("sheetExit", "depart") }}

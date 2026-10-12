@@ -1,5 +1,5 @@
-import { ComposerRouteSkeleton } from "@/components/composer-route-skeleton";
+import { RecordSkeleton } from "@/features/content/record-view";
 
 export default function Loading() {
-  return <ComposerRouteSkeleton extraFields kind="facility" />;
+  return <div className="mx-auto w-full max-w-3xl"><RecordSkeleton /></div>;
 }

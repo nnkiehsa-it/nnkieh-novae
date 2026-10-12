@@ -1,5 +1,7 @@
-import { IssueComposer } from "@/components/issues/issue-composer";
+"use client";
 
-export default function IssueComposerPage() {
-  return <IssueComposer />;
+import { IssueComposerRoute } from "@/features/issues/issue-routes";
+
+export default function Page() {
+  return <IssueComposerRoute />;
 }

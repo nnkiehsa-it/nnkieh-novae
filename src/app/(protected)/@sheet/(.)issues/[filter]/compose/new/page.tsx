@@ -1,18 +1,7 @@
 "use client";
 
-import { DetailSheet } from "@/components/detail-sheet";
-import { FeatureRouteGuard } from "@/components/feature-route-guard";
-import { IssueComposer } from "@/components/issues/issue-composer";
-import { useI18n } from "@/i18n";
+import { IssueComposerRoute } from "@/features/issues/issue-routes";
 
 export default function Page() {
-  const { t } = useI18n();
-
-  return (
-    <FeatureRouteGuard feature="issues">
-      <DetailSheet label={t("ui.issue.new")}>
-        <IssueComposer />
-      </DetailSheet>
-    </FeatureRouteGuard>
-  );
+  return <IssueComposerRoute sheet />;
 }

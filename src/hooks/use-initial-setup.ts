@@ -14,6 +14,7 @@ import type {
 import { useActionFeedback } from "@/hooks/use-action-feedback";
 import { useForegroundPoll } from "@/hooks/use-foreground-poll";
 import { RATE_LIMITS } from "@/generated/rate-limits";
+import { feedHref } from "@/lib/feed-href";
 
 const categoryPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 const newIssue = (isDefault = false): IssueCategoryDraft => ({
@@ -107,10 +108,10 @@ export function useInitialSetup() {
           facilities.find((category) => category.isDefault)?.id ||
           facilities[0]?.id;
         return issuesEnabled
-          ? `/issues/${encodeURIComponent(defaultIssueCategory || "my-proposals")}`
+          ? feedHref("issues", defaultIssueCategory || "my-proposals")
           : facilitiesEnabled
-            ? `/facilities?category=${encodeURIComponent(defaultFacilityCategory || "all")}`
-            : "/announcements";
+            ? feedHref("facilities", defaultFacilityCategory)
+            : feedHref("announcements");
       });
       setConfirming(false);
       router.replace(destination);
