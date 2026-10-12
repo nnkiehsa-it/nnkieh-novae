@@ -1,0 +1,70 @@
+/* TEMPORARY. Points the pre-redesign token names at the new palette so routes
+   not yet rebuilt on src/ui still read as one product during the rewrite.
+   Delete this file together with the last legacy component. `html:root`
+   outranks both `:root` and `.dark` in globals.css. */
+
+html:root {
+  color-scheme: dark;
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface-solid);
+  --popover-foreground: var(--ink);
+  --accent: var(--contrast);
+  --accent-foreground: var(--on-contrast);
+  --tint-content: var(--ink);
+  --tint-surface: var(--surface-pressed);
+  --tint-surface-hover: rgb(255 255 255 / 14%);
+  --tint-surface-foreground: var(--ink);
+  --primary: var(--contrast);
+  --primary-foreground: var(--on-contrast);
+  --primary-hover: color-mix(in oklab, var(--contrast) 88%, var(--canvas));
+  --secondary: var(--surface-raised);
+  --secondary-foreground: var(--ink);
+  --secondary-hover: var(--surface-pressed);
+  --muted: var(--surface-raised);
+  --muted-foreground: var(--ink-muted);
+  --interaction: var(--surface-pressed);
+  --interaction-foreground: var(--ink);
+  --destructive: var(--danger);
+  --destructive-foreground: var(--on-contrast);
+  --success: var(--positive);
+  --warning: var(--caution);
+  --border: var(--line);
+  --input: rgb(255 255 255 / 18%);
+  --ring: var(--focus-ring);
+  --focus: var(--focus-ring);
+  --nav-active-bg: var(--contrast);
+  --nav-active-fg: var(--on-contrast);
+  --choice-indicator: var(--ink);
+  --selection-bg: var(--contrast);
+  --selection-fg: var(--on-contrast);
+  --notification-accent: var(--ink);
+  --surface-stage: transparent;
+  --surface-behind: #07090f;
+  --surface-inset: var(--surface-raised);
+  --surface-hover: rgb(255 255 255 / 5%);
+  --surface-active: var(--surface-pressed);
+  --surface-selected: var(--surface-pressed);
+  --rule: var(--line);
+  --backdrop: var(--scrim);
+  --radius: 1.5rem;
+  --shadow-control: none;
+  --shadow-card: var(--elevation-panel);
+  --shadow-floating: var(--elevation-float);
+  --tabs-text-muted: var(--ink-muted);
+  --tabs-text-active: var(--on-contrast);
+  --tabs-bar-bg: var(--surface);
+  --tabs-pill-bg: var(--contrast);
+  --mobile-nav-height: var(--bottom-nav-height);
+}
+
+/* Legacy cards, the grouped list and the mobile dock were opaque; on the
+   gradient they take the glass material instead. */
+.rule-card,
+.surface-floating,
+.app-mobile-nav {
+  -webkit-backdrop-filter: blur(var(--surface-blur)) saturate(140%);
+  backdrop-filter: blur(var(--surface-blur)) saturate(140%);
+}

@@ -66,8 +66,7 @@ export function AppProviders({
   return (
     <ThemeProvider
       attribute="class"
-      defaultTheme="system"
-      enableSystem
+      forcedTheme="dark"
       nonce={nonce}
     >
         <MotionConfig

@@ -1,0 +1,98 @@
+/* Novae design tokens. One dark theme: a deep navy canvas that lightens toward
+   the bottom of the screen, with translucent surfaces floating on it.
+   Components read these through the Tailwind names declared in @theme below;
+   nothing outside this file states a colour, radius or elevation of its own. */
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-pressed: var(--surface-pressed);
+  --color-surface-solid: var(--surface-solid);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-line: var(--line);
+  --color-contrast: var(--contrast);
+  --color-on-contrast: var(--on-contrast);
+  --color-danger: var(--danger);
+  --color-positive: var(--positive);
+  --color-caution: var(--caution);
+  --color-info: var(--info);
+  --radius-chip: 0.625rem;
+  --radius-tile: 1.25rem;
+  --radius-panel: 1.75rem;
+  --shadow-panel: var(--elevation-panel);
+  --shadow-float: var(--elevation-float);
+}
+
+:root {
+  color-scheme: dark;
+
+  --canvas: #121726;
+  --canvas-gradient:
+    radial-gradient(120% 60% at 15% 0%, rgb(92 108 160 / 16%), transparent 60%),
+    radial-gradient(90% 50% at 100% 100%, rgb(120 132 170 / 18%), transparent 70%),
+    linear-gradient(180deg, #111624 0%, #181e2f 38%, #232a3f 72%, #343c53 100%);
+
+  --surface: rgb(14 18 30 / 58%);
+  --surface-raised: rgb(255 255 255 / 6%);
+  --surface-pressed: rgb(255 255 255 / 10%);
+  /* Layers over the page (sheets, menus) are opaque: glass over glass muddies. */
+  --surface-solid: #1a2032;
+  --surface-blur: 24px;
+
+  --ink: #eef1f7;
+  --ink-muted: #a4acbe;
+  --ink-faint: #6e778e;
+  --line: rgb(255 255 255 / 8%);
+
+  /* The one emphatic fill: a white pill with near-black type, used for the
+     selected destination and the primary action. */
+  --contrast: #f3f5f9;
+  --on-contrast: #111522;
+
+  --danger: #ff7a7a;
+  --positive: #5cc99a;
+  --caution: #e9b866;
+  --info: #8fb2ff;
+
+  --elevation-panel: 0 1px 0 rgb(255 255 255 / 4%) inset, 0 12px 32px rgb(4 6 14 / 28%);
+  --elevation-float: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 18px 48px rgb(4 6 14 / 45%);
+  --focus-ring: rgb(243 245 249 / 55%);
+  --scrim: rgb(6 8 16 / 62%);
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --gutter: max(1rem, var(--safe-left), var(--safe-right));
+  --bottom-nav-height: 4rem;
+  --bottom-nav-gap: max(0.75rem, var(--safe-bottom));
+}
+
+html {
+  background: var(--canvas);
+}
+
+/* The gradient is painted by a fixed layer rather than `background-attachment:
+   fixed`, which iOS Safari ignores; content scrolls over a still canvas. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--canvas-gradient);
+  pointer-events: none;
+}
+
+body {
+  background: transparent;
+  color: var(--ink);
+}
+
+.glass {
+  background: var(--surface);
+  -webkit-backdrop-filter: blur(var(--surface-blur)) saturate(140%);
+  backdrop-filter: blur(var(--surface-blur)) saturate(140%);
+}

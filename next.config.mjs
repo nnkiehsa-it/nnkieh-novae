@@ -55,7 +55,7 @@ const nextConfig = {
   distDir: process.env.NOVAE_NEXT_DIST_DIR || ".next",
   env: publicEnvironment,
   experimental: {
-    optimizePackageImports: ["lucide-react", "motion", "radix-ui"],
+    optimizePackageImports: ["@phosphor-icons/react", "lucide-react", "motion", "radix-ui"],
     staleTimes: {
       dynamic: 300,
       static: 1800,

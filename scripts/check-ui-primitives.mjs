@@ -114,7 +114,7 @@ for (const file of files) {
     }
   }
 
-  if (relativePath.includes(`${path.sep}components${path.sep}ui${path.sep}`) && /@\/(?:services|hooks\/use-session)/u.test(source)) {
+  if (/^src\/(?:components\/)?ui\//u.test(posixRelativePath) && /@\/(?:services|hooks\/use-session)/u.test(source)) {
     errors.push(`${relativePath} imports business data into a UI primitive`);
   }
 

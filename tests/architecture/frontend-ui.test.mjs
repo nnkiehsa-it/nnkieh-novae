@@ -36,7 +36,10 @@ test("frontend layers keep service access inside hooks", async () => {
   assert.deepEqual(violations, []);
 });
 test("shared UI primitives do not depend on application state or services", async () => {
-  const ui = await sourceModules("src/components/ui");
+  const ui = [
+    ...await sourceModules("src/components/ui"),
+    ...await sourceModules("src/ui"),
+  ];
   const violations = dependencyViolations(
     ui,
     ({ specifier }) =>

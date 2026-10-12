@@ -4,6 +4,8 @@
 @import "tw-animate-css";
 @import "../generated/motion-ladder.css";
 @import "../styles/motion.css";
+@import "../ui/theme.css";
+@import "../ui/legacy-bridge.css";
 
 @custom-variant dark (&:is(.dark *));
 /* Existing hover recipes answer either a real mouse or a confirmed press.
