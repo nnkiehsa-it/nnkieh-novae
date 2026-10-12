@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // Lets the fixed branch-preview hostname sign in against the production
-// backend: adds it to Firebase Auth's authorized domains and to the production
-// Worker's ALLOWED_ORIGINS (which Turnstile hostname checks also read).
-// Both changes only ever add the one hostname; running again changes nothing.
+// backend: adds it to the Turnstile widget the build uses, to Firebase Auth's
+// authorized domains and to the production Worker's ALLOWED_ORIGINS (which the
+// Worker's Turnstile hostname check also reads).
+// Each change only ever adds the one hostname; running again changes nothing.
 import { spawnSync } from "node:child_process";
 import { SignJWT, importPKCS8 } from "jose";
 
@@ -11,9 +12,12 @@ const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
 const serviceAccount = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 const allowedOrigins = process.env.ALLOWED_ORIGINS ?? "";
 const workerName = process.env.CLOUDFLARE_WORKER_NAME?.trim() || "novae-api";
+const cloudflareAccountId = process.env.CLOUDFLARE_ACCOUNT_ID?.trim();
+const cloudflareToken = process.env.CLOUDFLARE_API_TOKEN?.trim();
+const turnstileSiteKey = process.env.TURNSTILE_SITE_KEY?.trim();
 
-if (!hostname || !projectId || !serviceAccount || !allowedOrigins) {
-  console.error("PREVIEW_HOSTNAME, FIREBASE_PROJECT_ID, GOOGLE_SERVICE_ACCOUNT_JSON and ALLOWED_ORIGINS are required.");
+if (!hostname || !projectId || !serviceAccount || !allowedOrigins || !cloudflareAccountId || !cloudflareToken || !turnstileSiteKey) {
+  console.error("PREVIEW_HOSTNAME, FIREBASE_PROJECT_ID, GOOGLE_SERVICE_ACCOUNT_JSON, ALLOWED_ORIGINS, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN and TURNSTILE_SITE_KEY are required.");
   process.exit(1);
 }
 
@@ -71,5 +75,27 @@ function allowWorkerOrigin() {
   console.log(`Worker ${workerName} allows ${origin}.`);
 }
 
+async function allowTurnstileHostname() {
+  const url = `https://api.cloudflare.com/client/v4/accounts/${cloudflareAccountId}/challenges/widgets/${turnstileSiteKey}`;
+  const headers = { authorization: `Bearer ${cloudflareToken}`, "content-type": "application/json" };
+  const current = await fetch(url, { headers });
+  if (!current.ok) throw new Error(`Reading Turnstile widget ${turnstileSiteKey} failed: ${current.status} ${await current.text()}`);
+  const widget = (await current.json()).result;
+  if (widget.domains.includes(hostname)) {
+    console.log(`Turnstile widget ${turnstileSiteKey} (${widget.name}) already allows ${hostname}.`);
+    return;
+  }
+  const fields = ["name", "mode", "region", "bot_fight_mode", "clearance_level", "offlabel", "ephemeral_id"];
+  const body = Object.fromEntries(fields.filter((field) => field in widget).map((field) => [field, widget[field]]));
+  const updated = await fetch(url, {
+    method: "PUT",
+    headers,
+    body: JSON.stringify({ ...body, domains: [...widget.domains, hostname] }),
+  });
+  if (!updated.ok) throw new Error(`Updating Turnstile widget ${turnstileSiteKey} failed: ${updated.status} ${await updated.text()}`);
+  console.log(`Turnstile widget ${turnstileSiteKey} (${widget.name}) now allows ${hostname}.`);
+}
+
+await allowTurnstileHostname();
 await authorizeFirebaseDomain();
 allowWorkerOrigin();

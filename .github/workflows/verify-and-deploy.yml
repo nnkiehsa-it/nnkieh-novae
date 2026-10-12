@@ -605,6 +605,7 @@ jobs:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID || secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           PREVIEW_HOSTNAME: ${{ vars.PREVIEW_HOSTNAME || 'nnkieh-novae-preview.vercel.app' }}
+          TURNSTILE_SITE_KEY: ${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY || secrets.VITE_TURNSTILE_SITE_KEY || secrets.TURNSTILE_SITE_KEY }}
         run: node scripts/allow-preview-origin.mjs
 
       - name: Smoke test the deployed frontend
