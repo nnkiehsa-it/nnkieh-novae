@@ -1,18 +1,73 @@
-# 產品介面與操作連續性
+# Product interface design
 
-控制項與視覺規範以 [Framework7 維護說明](framework7.md) 和 [DESIGN.md](../DESIGN.md) 為準。全站固定使用 Framework7 iOS theme、上游樣式與原生動畫，不延續舊版自訂字型、圓角、陰影、HeaderBackdrop、Tabbar 或按壓時間。
+## Direction
 
-## 保留的產品責任
+Taste-guided visual overhaul for a daily-use campus application. The login entrance uses DESIGN_VARIANCE 7, MOTION_INTENSITY 5, VISUAL_DENSITY 4: a rounded N speech mark, larger campus-focused typography and a short entrance animation. Operational pages retain their compact density, information architecture, fields, permissions, and workflow.
 
-- 列表保留網址篩選、排序、分頁、session feed memory 與目前的權限判斷。
-- 詳情路由保留來源頁的 DOM、載入結果和捲動位置；直接開啟的詳情關閉後回到對應列表。
-- 送出、附議與按讚維持既有樂觀更新與操作 idempotency；視覺成功回饋不阻擋導航或下一個操作。
-- 草稿儲存、管理表單 review／discard 與分享入口的離開檢查維持原本流程。原生面板按鈕、Escape、遮罩及下拉手勢經過同一個關閉入口。
-- 載入、空白、錯誤與內容狀態使用同一組元件結構；未知欄位使用 SkeletonBlock，錯誤保留既有內容與重試入口。
-- 使用者偏好減少動態效果時，停用不必要的位移與持續動畫。Native 控件的尺寸與動畫來自 Framework7，不再自行重建。
+## Brand and login entrance
 
-## 維護與驗證
+- `config/brand.svg` is the vector source for the N speech mark. Run `bun run generate:brand` to rebuild the public logo, favicon, Apple and PWA icons together. The maskable icon keeps the mark inside its safe area.
+- The 318-byte SVG replaces a 162 KB embedded raster image. Brand marks use a fixed-size image directly rather than an asynchronous image-decoding skeleton.
+- The login story and layout styles are isolated from session control. Mobile places the headline above the sign-in form and omits the decorative desktop illustration. All surfaces follow the active theme, and reduced motion skips the illustration entrance.
+- Login preparation has an explicit busy label and a retry action after failure; users no longer need to reload to retry entrance verification.
+- Discussion loading and pagination share `useCommentFeed`. Request generations prevent late sort/page results from replacing the current selection. Read errors retain existing comments and expose a retry action; a successful comment write is not treated as failed merely because its subsequent refresh fails.
+- Verification for this revision: production build, TypeScript, ESLint, i18n and UI architecture checks passed. The initial E2E run passed 79 of 81 cases; two outdated/ambiguous assertions were corrected. The final stateful run passed its bootstrap and all 28 journeys, including login retry and late comment-order responses. No manual browser session was used.
 
-正常欄位、列表、選單、搜尋與導航先使用 Framework7 對應元件。圖表、Markdown 原始編輯與 domain 狀態回饋依實際用途保留。新增頁面時同時確認手機／桌面、亮／暗色、長文字、safe area、鍵盤、捲動標題收合及返回位置。
+## Continuity revision
 
-主要捲動容器是 PageContent。共用 Navbar host 提供搜尋入口給所有嵌入式列表，React 操作按鈕由 Next／產品 callback 處理，Framework7 hash 控件由其原生模組處理。不要在事件進入產品 callback 前攔截預設事件。
+- Desktop navigation uses the original fixed 240px sidebar with vertically arranged, labeled links. The content column and discussion composer clear the sidebar; sticky page headings use the original top spacing. The mobile dock remains unchanged.
+- The sidebar account trigger shows the avatar, name and email; appearance, administration and sign-out remain together in its menu. The trigger retains its accessible account-menu label, and the brand link follows the first enabled content area.
+- LiquidTabs use a soft neutral rail for inactive options and a restrained brand fill only on the selected pill. Custom color selection and persistence are removed.
+- Feed titles use 18px type and a 28px line height.
+- `FeedList` retains physical card frames across pending, populated, empty, and error states. `DetailLayout` does the same for the content and sidebar cards.
+- Notifications, dashboard metrics, category settings, and administrative lists retain their surfaces while fields resolve. Pending platform settings render disabled real fields instead of a blank page.
+- Explicit state containers opt into a shared 180ms height-only resize transition. Their loading, empty, error, and resolved children crossfade in and out without replacing the physical card; dynamic lists animate item entry and exit. Viewport reflow never becomes a size animation, grid content aligns to the start to avoid feedback loops, and reduced motion disables movement.
+- Route surfaces no longer remount by pathname, and state containers no longer remount by loading identity. Route prefetch and preload remain intact.
+- Warm-navigation browser checks confirmed retained feed nodes and a single settled empty-card resize; the fast verification suite passed. No full-suite rerun is claimed for this revision.
+
+## Visual system
+
+- Light: stage `#e9edf4`, card `#fdfefe`, inset `#edf2f8`, text `#101828`, muted text `#566477`, brand `#1557d5`.
+- Dark: AMOLED stage `#000000`, card `#161618`, popover `#1c1c1f`, inset `#222225`, text `#f5f7fb`, muted text `#9ca3af`, brand `#5d8ff0`.
+- Blue is the fixed brand accent, expressed through semantic tokens. Dark blue actions use dark ink for readable contrast. Status colors retain their operational meaning.
+- HarmonyOS Sans TC leads the existing self-hosted font stack. Page headings are 24px, detail headings 24-26px, feed titles 18px, ordinary controls 13px, metadata 12px. Editable mobile text stays at 16px.
+- Base radius 20px and shared cards 28px; round avatars and the mobile navigation dock retain their functional shapes.
+- Primary actions use the card surface with a defined border, while accent remains reserved for brand emphasis, selected states, and links. Cancel/secondary actions remain neutral. Elevation is centralized in three subtle shadow tokens.
+
+## Density and reuse
+
+- Feed cards use 16px horizontal and 20px vertical padding, 12px gaps, a 28px title line, 24px metadata slot, and a minimum 32px footer. Placeholders use the same frame.
+- Lists retain a regular two-column desktop grid and single-column mobile grid. No decorative hero or extra summary tiles precede the data.
+- Search and sorting occupy one 40px row. The same `FeedToolbar` renders during loading.
+- `FeedCard` owns all three domains' frame and link geometry. Domain components only supply metadata, progress, status, and callbacks.
+- `DetailCardHeader` and `DetailCardBody` own live and pending detail geometry. Shared primitives propagate the brand to settings and administrative surfaces without reducing their operational density.
+
+## App-like loading and motion
+
+- Success feedback lingers visually without delaying navigation, saved-data updates, or the next action. A repeated call while the same operation is running shares its promise; composer submission no longer adds a fixed one-second pause.
+- Proposal support, facility markers and announcement likes share an optimistic-reaction hook. Pending state belongs to each record, so different rows remain interactive. Pending reaction fields survive background reads and list/detail transitions until the server confirms or rejects the write.
+- Navigation and selection settle over 460ms; sheets enter over 560ms and leave over 380ms. Immediate press feedback remains 100ms. Control timing and the header blur are unchanged.
+- Primary navigation and segmented controls display their committed route/value. A pending Link has a separate muted treatment. Cancelled touches and modified clicks never change selection.
+- Every route reveals in the live page: one animation on the page that arrives, a short directional travel with a fade. Nothing is captured, so the dock stays in the hit-test tree and no page is rasterised twice while the next one is still loading. Shared selection movement can be interrupted by another selection.
+- Menus expand from their trigger with a longer deceleration. Centred dialogs scale in place, fields stay fixed on focus, and pressing a nested control does not shrink its surrounding card.
+
+- Route placeholders paint the real shell and real disabled controls before data arrives.
+- Feed and detail placeholders use the same components as loaded content. Only unknown fields become skeletons.
+- Category support capability determines whether a proposal feed placeholder reserves a progress region. Mixed-category personal feeds cannot know every row's shape before the data arrives.
+- Optional support deadlines share the progress label row, so they do not add a vertical jump.
+- Titles and author metadata retain minimum heights. Unknown long content and wrapped detail titles can still increase height once fetched; no fake fixed-height document is imposed.
+- Existing route prefetching, session-scoped feed memory, optimistic reactions, stable navigation, retained card frames, and state-height resizing remain in use.
+- Reduced motion removes displacement and transition delays. Avoid new perpetual effects, scroll reveals, or per-row viewport observers in feeds.
+
+## Acceptance
+
+- Inspect desktop/mobile in both themes and check overflow, title wrapping, visible controls, and custom accent contrast.
+- Delay a feed response and compare the first skeleton's card/header/footer bounds with the corresponding loaded card.
+- Confirm search, sort, navigation, creation, reactions, detail actions, and settings still work through existing browser workflows.
+- Prefer the existing E2E journeys for behavioral and layout verification. Run checks appropriate to the changed areas; report external verification blockers explicitly. Manual browser checks are not required for this improvement pass.
+
+## 手機 sheet 底部
+
+手機的 sheet 與其捲動區都延伸至螢幕底部；surface 不另留固定的底部 padding。`SheetBody` 把 `max(page-gutter, safe-bottom)` 放進可捲動內容，讓最後一列能滑到 Home Indicator 上方。詳細頁、選單與第二層 sheet 共用這項規則；留言浮動列的避讓空間由 `DetailLayout` 保留。
+
+識別度的後續方向與優先順序見 [UI 識別度評估](ui-identity.md)。

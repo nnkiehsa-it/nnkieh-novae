@@ -5,20 +5,17 @@ const EDITABLE_SELECTOR =
 function isEditable(target: EventTarget | null) {
   return target instanceof Element && Boolean(target.closest(EDITABLE_SELECTOR));
 }
-function isPhotoGesture(target: EventTarget | null) {
-  return target instanceof Element && Boolean(target.closest(".photo-browser,.swiper-zoom-container"));
-}
 
 export function installBrowserBehavior() {
-  const prevent = (event: Event) => { if (!isPhotoGesture(event.target)) event.preventDefault(); };
+  const prevent = (event: Event) => event.preventDefault();
   const preventOutsideEditor = (event: Event) => {
     if (!isEditable(event.target)) event.preventDefault();
   };
   const preventPinch = (event: TouchEvent) => {
-    if (event.touches.length > 1 && !isPhotoGesture(event.target)) event.preventDefault();
+    if (event.touches.length > 1) event.preventDefault();
   };
   const preventWheelZoom = (event: WheelEvent) => {
-    if (event.ctrlKey && !isPhotoGesture(event.target)) event.preventDefault();
+    if (event.ctrlKey) event.preventDefault();
   };
   const preventKeyboardZoom = (event: KeyboardEvent) => {
     if ((event.ctrlKey || event.metaKey) && ["+", "-", "=", "_", "0"].includes(event.key)) {

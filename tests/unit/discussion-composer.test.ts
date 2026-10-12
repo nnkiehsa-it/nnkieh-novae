@@ -1,13 +1,13 @@
 import { act, createElement, useLayoutEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { toast } from "@/lib/toast";
+import { toast } from "sonner";
 import { useDiscussionComposer } from "@/hooks/use-discussion-composer";
 import { composerDraftKey, readComposerDraft } from "@/lib/composer-draft";
 
 const translate = vi.hoisted(() => (key: string) => key);
 vi.mock("@/i18n", () => ({ useI18n: () => ({ t: translate }) }));
-vi.mock("@/lib/toast", () => ({ toast: { error: vi.fn() } }));
+vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 vi.mock("@/hooks/use-categories", () => ({ useCategories: () => ({ imageUploads: {
   maxDimension: 2000, maxUploadKilobytes: 800, webpQuality: 0.82,
 } }) }));

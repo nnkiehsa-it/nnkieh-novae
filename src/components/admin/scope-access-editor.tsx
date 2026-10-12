@@ -1,14 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { ShieldCheck, Trash2, UserPlus } from "lucide-react";
+import { Search, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { useScopeAccess, type AccessScope, type AccessUser } from "@/hooks/use-scope-access";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { ApplyReviewDialog } from "@/components/admin/apply-review-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { SearchField } from "@/components/ui/search-field";
+import { Input } from "@/components/ui/input";
 import { ListCustomRow, ListMutationRow, ListRow, ListSection, RowAction } from "@/components/ui/list";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ErrorState } from "@/components/ui/page-state";
@@ -41,7 +41,11 @@ export function ScopeAccessEditor({ scope, selector }: { scope: AccessScope | nu
       <ListSection header={t("ui.access.searchStep")}>
         <ListCustomRow>
           <form className="flex w-full gap-2" onSubmit={(event) => { event.preventDefault(); void state.search(); }}>
-            <SearchField label={t("ui.access.searchPlaceholder")} className="min-w-0 flex-1" onChange={state.setQuery} value={state.query} />
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input aria-label={t("ui.access.searchPlaceholder")} className="pl-9" onChange={(event) => state.setQuery(event.target.value)}
+                placeholder={t("ui.access.searchPlaceholder")} value={state.query} />
+            </div>
             <Button disabled={state.searching || !state.query.trim() || !state.draft.value} type="submit" variant="secondary">
               {state.searching ? <LoadingSpinner /> : t("ui.common.search")}
             </Button>

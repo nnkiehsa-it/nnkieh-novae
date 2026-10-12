@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { useAnnouncementDetail } from "@/hooks/use-announcement-detail";
 import { formatDate } from "@/lib/format";

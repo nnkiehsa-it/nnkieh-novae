@@ -1,7 +1,7 @@
 "use client";
 
 import { Bell } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { toast } from "sonner";
 import { useAppNotificationPrompt } from "@/hooks/use-app-notification-prompt";
 import { useSession } from "@/hooks/use-session";
 import { useI18n } from "@/i18n";

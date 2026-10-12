@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { ImagePlus, Trash2 } from "lucide-react";
-import { Block, BlockTitle } from "framework7-react";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,27 +43,28 @@ export function ComposerMediaAttachments({
       aria-labelledby={compact ? undefined : headingId}
       aria-busy={uploading}
       className={cn(
-        compact ? "grid h-fit gap-2 px-2" : "min-w-0",
+        compact ? "grid h-fit gap-2 px-2" : "grid h-fit gap-3 rounded-xl border border-dashed bg-muted/20 p-3",
         className,
       )}
     >
-      {!compact ? <BlockTitle className="mt-0 whitespace-normal">
-          <h3 id={headingId}>
+      {!compact ? <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h3 className="text-sm font-medium" id={headingId}>
               {t("markdown.imageAttachments")} · {attachments.length} / {maxImages}
           </h3>
-      </BlockTitle> : null}
-      <Block strong={!compact} inset={!compact} className={cn("m-0 grid gap-3", compact && "p-0")}>
+        </div>
         {!compact && maxImages > 0 ? <Button
           className="shrink-0"
           disabled={uploading || attachments.length >= maxImages}
           onClick={() => fileRef.current?.click()}
           size="sm"
           type="button"
-          variant="secondary"
+          variant="outline"
         >
           {uploading ? <LoadingSpinner /> : <ImagePlus />}
           {uploading ? t("markdown.processingImages") : t("ui.composer.addImage")}
         </Button> : null}
+      </div> : null}
       {!compact ? <input
         ref={fileRef}
         accept="image/*"
@@ -86,12 +86,12 @@ export function ComposerMediaAttachments({
                   <TooltipTrigger asChild>
                     <Button
                       aria-label={t("ui.common.delete")}
-                      className="absolute right-1.5 top-1.5"
+                      className="absolute right-1.5 top-1.5 bg-card/88 backdrop-blur-sm"
                       disabled={uploading}
                       onClick={() => onRemoveImage(index)}
                       size="icon-xs"
                       type="button"
-                      variant="destructive"
+                      variant="outline"
                     >
                       <Trash2 />
                     </Button>
@@ -109,7 +109,6 @@ export function ComposerMediaAttachments({
           ))}
         </ImagePreviewGrid>
       ) : null}
-      </Block>
       <ImageLightbox
         alt={t("ui.composer.attachmentPreview")}
         height={open?.height}

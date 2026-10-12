@@ -6,7 +6,8 @@ import { ArrowUp } from "lucide-react";
 import { useCloseRouteOverlay } from "@/components/detail-sheet";
 import { SecondaryToolbar } from "@/components/detail-toolbar";
 import { Button } from "@/components/ui/button";
-import { Block } from "framework7-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { HeaderBackdrop } from "@/components/ui/header-backdrop";
 import { BusyLabel, PageHeader } from "@/components/ui/page-state";
 
 /**
@@ -46,12 +47,14 @@ export function ComposerLayout({
     <SecondaryToolbar backLabel={translate("ui.common.back")} onBack={onBack} />
   );
   const form = (
-    <form className="min-w-0 space-y-6" data-update-defer="true" onSubmit={onSubmit}>
-          <fieldset className="min-w-0 space-y-6" disabled={busy} inert={busy}>
+    <form className="min-w-0" data-update-defer="true" onSubmit={onSubmit}>
+      <Card className="min-w-0 py-5 sm:py-6">
+        <CardContent className="grid min-w-0 max-w-full gap-5 px-4 sm:px-6">
+          <fieldset className="contents" disabled={busy} inert={busy}>
             {children}
           </fieldset>
-          <Block className="mx-0 mb-0 px-0">
-            <Button className="w-full" size="lg" disabled={submitDisabled} type="submit">
+          <div className="flex justify-end">
+            <Button disabled={submitDisabled} type="submit">
               {busy ? null : <ArrowUp />}
               <BusyLabel
                 busy={busy}
@@ -60,7 +63,9 @@ export function ComposerLayout({
                 success={succeeded}
               />
             </Button>
-          </Block>
+          </div>
+        </CardContent>
+      </Card>
     </form>
   );
 
@@ -68,9 +73,10 @@ export function ComposerLayout({
     return (
       <div>
         <header className="detail-header">
+          <HeaderBackdrop />
           {toolbar}
         </header>
-        <div className="p-4">{form}</div>
+        <div className="pt-2">{form}</div>
       </div>
     );
   }

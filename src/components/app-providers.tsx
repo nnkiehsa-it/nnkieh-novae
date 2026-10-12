@@ -4,10 +4,10 @@ import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { MotionConfig } from "motion/react";
 import { timing } from "@/lib/motion-timing";
 import { ThemeProvider } from "next-themes";
-import { Framework7Provider } from "@/components/framework7-provider";
 import { SessionProvider } from "@/hooks/use-session";
 import { initializeI18n } from "@/i18n";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
 import { AppUpdateGate } from "@/components/app-update-gate";
 import { E2eAuthBridge } from "@/components/e2e-auth-bridge";
 import { TurnstileProvider } from "@/components/turnstile-provider";
@@ -17,6 +17,7 @@ import { NavigationFeedback } from "@/components/motion/navigation-feedback";
 import { ensureFirebaseAppCheck } from "@/lib/firebase-app-check";
 import { OptimisticDetailNavigationProvider } from "@/components/optimistic-detail-navigation";
 import { BrowserBehavior } from "@/components/browser-behavior";
+import { PressFeedback } from "@/components/motion/press-feedback";
 
 export function AppProviders({
   children,
@@ -69,8 +70,10 @@ export function AppProviders({
       enableSystem
       nonce={nonce}
     >
-      <Framework7Provider>
-        <MotionConfig reducedMotion="user" transition={timing("control")}>
+        <MotionConfig
+          reducedMotion="user"
+          transition={timing("control")}
+        >
           <TooltipProvider>
             <TurnstileProvider>
               <SessionProvider>
@@ -80,11 +83,7 @@ export function AppProviders({
                   <div className="t-stage">
                     <div className="t-stage-content">
                       <Suspense fallback={null}>
-                        {i18nReady ? (
-                          children
-                        ) : (
-                          <div className="app-start-surface" />
-                        )}
+                        {i18nReady ? children : <div className="app-start-surface" />}
                       </Suspense>
                     </div>
                   </div>
@@ -92,14 +91,15 @@ export function AppProviders({
               </SessionProvider>
               <NavigationFeedback />
               <BrowserBehavior />
+              <PressFeedback />
               <ResizeMotion />
               <E2eAuthBridge />
               <AppUpdateGate />
               <AppInstallPrompt />
+              <Toaster position="bottom-center" />
             </TurnstileProvider>
           </TooltipProvider>
         </MotionConfig>
-      </Framework7Provider>
     </ThemeProvider>
   );
 }

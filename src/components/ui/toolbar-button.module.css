@@ -1,0 +1,24 @@
+.control,
+.control[data-size] {
+  height: 2.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  box-shadow: none;
+}
+
+.control[data-pressed] {
+  background: var(--tint-surface);
+  color: var(--tint-content);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :global(:root.t-mouse) .control:hover {
+    background: var(--tint-surface);
+    color: var(--tint-content);
+  }
+}
+
+.control svg {
+  color: inherit;
+}

@@ -20,7 +20,7 @@ export function BrandMark({
       <Image
         alt=""
         className={cn(
-          "display-block size-full aspect-square object-contain dark:invert",
+          "block size-full aspect-square object-contain dark:invert",
           imageClassName,
         )}
         src="/logo.svg"

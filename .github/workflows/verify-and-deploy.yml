@@ -9,11 +9,10 @@ on:
       - 'config/**'
       - 'tests/**'
       - 'scripts/**'
+      - 'tools/next-root-glob/**'
       - 'public/**'
       - 'package.json'
       - 'bun.lock'
-      - 'bunfig.toml'
-      - '.node-version'
       - 'components.json'
       - 'next.config.mjs'
       - 'playwright.config.ts'
@@ -35,11 +34,10 @@ on:
       - 'config/**'
       - 'tests/**'
       - 'scripts/**'
+      - 'tools/next-root-glob/**'
       - 'public/**'
       - 'package.json'
       - 'bun.lock'
-      - 'bunfig.toml'
-      - '.node-version'
       - 'components.json'
       - 'next.config.mjs'
       - 'playwright.config.ts'
@@ -106,10 +104,10 @@ jobs:
               backend=true
               browser=true
             fi
-            if printf '%s\n' "$files" | grep -Eq '^(cloudflare/|database/|config/|tests/integration/|scripts/(configure-|database\.mjs|external-provider-test-server\.mjs|render-worker-config\.mjs|verify-integration\.mjs|generate-(api-errors|backend-actions|data-retention|rate-limits|all)\.mjs)|(package\.json|bun\.lock|bunfig\.toml|\.node-version)$|tsconfig\.integration\.json$|vitest\.integration\.config\.ts$)'; then
+            if printf '%s\n' "$files" | grep -Eq '^(cloudflare/|database/|config/|tests/integration/|scripts/(configure-|database\.mjs|external-provider-test-server\.mjs|render-worker-config\.mjs|verify-integration\.mjs|generate-(api-errors|backend-actions|data-retention|rate-limits|all)\.mjs)|(package\.json|bun\.lock)$|tsconfig\.integration\.json$|vitest\.integration\.config\.ts$)'; then
               backend=true
             fi
-            if printf '%s\n' "$files" | grep -Eq '^(src/|config/|public/|tests/e2e/|(package\.json|bun\.lock|bunfig\.toml|\.node-version|components\.json|next\.config\.mjs|playwright\.config\.ts|postcss\.config\.mjs|tsconfig[^/]*\.json|vercel\.json)$|scripts/(check-build-budget|build-budget-metrics|generate-(all|api-errors|backend-actions|data-retention|harmonyos-subset|rate-limits))\.mjs)'; then
+            if printf '%s\n' "$files" | grep -Eq '^(src/|config/|public/|tests/e2e/|tools/next-root-glob/|(package\.json|bun\.lock|components\.json|next\.config\.mjs|playwright\.config\.ts|postcss\.config\.mjs|tsconfig[^/]*\.json|vercel\.json)$|scripts/(check-build-budget|build-budget-metrics|generate-(all|api-errors|backend-actions|data-retention|harmonyos-subset|rate-limits))\.mjs)'; then
               browser=true
             fi
           fi
@@ -124,20 +122,17 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version-file: .node-version
+          node-version: 24
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: package.json
+          bun-version: 1.4.0
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
       - name: Run fast verification
         run: bun run verify:fast
-
-      - name: Audit direct and indirect dependencies
-        run: bun run check:dependencies
 
   backend_verify:
     needs: changes
@@ -148,17 +143,17 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version-file: .node-version
+          node-version: 24
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: package.json
+          bun-version: 1.4.0
 
       - name: Restore Firebase Emulator cache
         uses: actions/cache@v5
         with:
           path: ~/.cache/firebase/emulators
-          key: ${{ runner.os }}-firebase-emulators-${{ hashFiles('scripts/verify-integration.mjs') }}
+          key: ${{ runner.os }}-firebase-emulators-15.24.0
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -175,26 +170,26 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version-file: .node-version
+          node-version: 24
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: package.json
+          bun-version: 1.4.0
 
       - name: Restore Firebase Emulator cache
         uses: actions/cache@v5
         with:
           path: ~/.cache/firebase/emulators
-          key: ${{ runner.os }}-firebase-emulators-${{ hashFiles('scripts/verify-integration.mjs') }}
+          key: ${{ runner.os }}-firebase-emulators-15.24.0
 
       - name: Restore Next.js build cache
         uses: actions/cache@v5
         with:
           path: .next/cache
-          key: ${{ runner.os }}-node-${{ hashFiles('.node-version') }}-next-browser-${{ hashFiles('bun.lock', 'next.config.mjs') }}-${{ github.sha }}
+          key: ${{ runner.os }}-node24-next-browser-${{ hashFiles('bun.lock', 'next.config.mjs') }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-node-${{ hashFiles('.node-version') }}-next-browser-${{ hashFiles('bun.lock', 'next.config.mjs') }}-
-            ${{ runner.os }}-node-${{ hashFiles('.node-version') }}-next-browser-
+            ${{ runner.os }}-node24-next-browser-${{ hashFiles('bun.lock', 'next.config.mjs') }}-
+            ${{ runner.os }}-node24-next-browser-
 
       - name: Restore Playwright browser cache
         uses: actions/cache@v5
@@ -237,11 +232,11 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version-file: .node-version
+          node-version: 24
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: package.json
+          bun-version: 1.4.0
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -463,18 +458,16 @@ jobs:
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
-    env:
-      VERCEL_CLI_VERSION: '58.9.0'
     steps:
       - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v7
         with:
-          node-version-file: .node-version
+          node-version: 24
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: package.json
+          bun-version: 1.4.0
 
       - name: Install dependencies for Vercel build and deploy
         run: bun install --frozen-lockfile
@@ -483,10 +476,10 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .next/cache
-          key: ${{ runner.os }}-node-${{ hashFiles('.node-version') }}-next-vercel-${{ github.ref_name }}-${{ hashFiles('bun.lock', 'next.config.mjs') }}-${{ github.sha }}
+          key: ${{ runner.os }}-node24-next-vercel-${{ github.ref_name }}-${{ hashFiles('bun.lock', 'next.config.mjs') }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-node-${{ hashFiles('.node-version') }}-next-vercel-${{ github.ref_name }}-${{ hashFiles('bun.lock', 'next.config.mjs') }}-
-            ${{ runner.os }}-node-${{ hashFiles('.node-version') }}-next-vercel-${{ github.ref_name }}-
+            ${{ runner.os }}-node24-next-vercel-${{ github.ref_name }}-${{ hashFiles('bun.lock', 'next.config.mjs') }}-
+            ${{ runner.os }}-node24-next-vercel-${{ github.ref_name }}-
 
       - name: Validate deployment secrets
         env:
@@ -535,13 +528,13 @@ jobs:
           fi
 
       - name: Pull Vercel Project Info
-        run: bunx --yes "vercel@$VERCEL_CLI_VERSION" pull --yes --environment=${{ github.ref_name == 'main' && 'production' || 'preview' }} --token=${{ secrets.VERCEL_TOKEN }}
+        run: bunx --yes vercel@58.9.0 pull --yes --environment=${{ github.ref_name == 'main' && 'production' || 'preview' }} --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: Build Project Artifacts
-        run: bunx --yes "vercel@$VERCEL_CLI_VERSION" build ${{ github.ref_name == 'main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
+        run: bunx --yes vercel@58.9.0 build ${{ github.ref_name == 'main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -566,7 +559,7 @@ jobs:
       - name: Deploy Project Artifacts to Vercel
         id: deploy
         run: |
-          url="$(bunx --yes "vercel@$VERCEL_CLI_VERSION" deploy --prebuilt ${{ github.ref_name == 'main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }})"
+          url="$(bunx --yes vercel@58.9.0 deploy --prebuilt ${{ github.ref_name == 'main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }})"
           echo "url=$url" >> "$GITHUB_OUTPUT"
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}

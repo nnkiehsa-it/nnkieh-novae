@@ -46,7 +46,7 @@ export function AccountAccessEditor({ busy, missing = false, onReload, onSave, o
     <ApplyReviewDialog changes={changes} describeChange={(key) => t(labels[key])}
       description={<>
         {t("ui.accountAccess.reviewPrefix", { count: draft.impact?.totalEstimatedRows ?? 0, prefix: value.targetValue })}
-        <span className="mt-2 display-block">{t(ACCOUNT_ACCESS_PRESET_KEYS[value.preset])} · {value.duration === "keep"
+        <span className="mt-2 block">{t(ACCOUNT_ACCESS_PRESET_KEYS[value.preset])} · {value.duration === "keep"
           ? value.keptPermanent ? t("ui.accountAccess.duration.permanent") : value.keptDeadline ? formatDate(new Date(value.keptDeadline)) : "—"
           : t(ACCOUNT_ACCESS_DURATION_KEYS[value.duration])}{value.duration === "custom" ? ` · ${value.durationHours} ${t("admin.unitHours")}` : ""}</span>
       </>}

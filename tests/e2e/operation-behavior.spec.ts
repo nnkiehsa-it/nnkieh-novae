@@ -89,7 +89,7 @@ test('proposal covers support, threaded comments, deletion, and terminal outcome
   const manager = await newUserPage(browser, 'issueManager');
   await manager.page.goto(proposalUrl);
   await chooseMoreAction(manager.page, 'Manage status');
-  await manager.page.getByRole('radio', { name: 'Completed' }).press('Space');
+  await manager.page.getByRole('radio', { name: 'Completed' }).click();
   const outcome = `Proposal outcome ${Date.now()}`;
   await manager.page.getByPlaceholder('Explain the outcome or why the proposal is not feasible…').fill(outcome);
   await expectBackendActions(manager.page, ['moderateIssueStatus'], async () => {
@@ -120,7 +120,7 @@ test('facility covers affected reaction and terminal outcome write', async ({ br
   const manager = await newUserPage(browser, 'facilityManager');
   await manager.page.goto(facilityUrl);
   await chooseMoreAction(manager.page, 'Update status');
-  await manager.page.getByRole('radio', { name: 'Completed' }).press('Space');
+  await manager.page.getByRole('radio', { name: 'Completed' }).click();
   const outcome = `Facility outcome ${Date.now()}`;
   await manager.page.getByPlaceholder('Describe the outcome…').fill(outcome);
   await expectBackendAction(manager.page, 'updateFacilityStatus', async () => {
@@ -197,13 +197,13 @@ test('announcement notice recovers announcements published while the member was 
   const member = await newUserPage(browser, 'ordinary');
   await member.page.setViewportSize({ height: 844, width: 390 });
   await member.page.goto('/issues/public-issues');
-  const notice = member.page.getByRole('button', { name: 'New announcement' });
+  const notice = member.page.getByRole('link', { name: 'New announcement' });
   await expect(notice).toBeVisible();
   await expectBackendAction(member.page, 'markAnnouncementsOpened', async () => {
     await notice.click();
   });
   await expect(member.page).toHaveURL(/\/announcements$/u);
   await member.page.goto('/facilities');
-  await expect(member.page.getByRole('button', { name: 'New announcement' })).toHaveCount(0);
+  await expect(member.page.getByRole('link', { name: 'New announcement' })).toHaveCount(0);
   await member.context.close();
 });

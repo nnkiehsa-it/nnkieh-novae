@@ -19,7 +19,8 @@ function choice(page: Page, name: string) {
 
 async function choose(page: Page, name: string, option: string) {
   await choice(page, name).click();
-  await page.getByRole("radio", { name: option, exact: true }).press('Space');
+  await page.getByRole("option", { name: option, exact: true })
+    .or(page.getByRole("radio", { name: option, exact: true })).click();
 }
 
 function commentRow(page: Page, text: string) {
@@ -110,22 +111,22 @@ test.describe.serial("shareable feeds and isolated discussion drafts", () => {
 
         const beforeTyping = page.url();
         await page.getByRole("button", { name: searchLabel, exact: true }).click();
-        const search = page.getByRole("searchbox", { name: searchLabel, exact: true });
+        const search = page.getByRole("textbox", { name: searchLabel, exact: true });
         await search.fill(`圖書館 ${size}`);
         expect(page.url()).toBe(beforeTyping);
-        await search.press("Enter");
+        await page.getByRole("button", { name: "Search", exact: true }).click();
         await expect.poll(() => new URL(page.url()).searchParams.get("q")).toBe(`圖書館 ${size}`);
         const shared = page.url();
         expect(new URL(shared).searchParams.get("source")).toBe("e2e");
         expect(new URL(shared).hash).toBe("#list");
-        await page.getByRole("button", { name: "Cancel", exact: true }).click();
+        await page.keyboard.press("Escape");
 
         await page.reload();
         await expect(choice(page, "Choose category")).toContainText("Facility B");
         await expect(page.getByRole("tab", { name: "Closed", exact: true })).toHaveAttribute("aria-selected", "true");
         await page.getByRole("button", { name: searchLabel, exact: true }).click();
         await expect(search).toHaveValue(`圖書館 ${size}`);
-        await page.getByRole("button", { name: "Cancel", exact: true }).click();
+        await page.keyboard.press("Escape");
 
         await page.goBack();
         await expect.poll(() => new URL(page.url()).searchParams.get("q")).toBeNull();
@@ -142,8 +143,8 @@ test.describe.serial("shareable feeds and isolated discussion drafts", () => {
         await expect(choice(sharedPage, "Choose category")).toContainText("Facility B");
         await expect(sharedPage.getByRole("tab", { name: "Closed", exact: true })).toHaveAttribute("aria-selected", "true");
         await sharedPage.getByRole("button", { name: searchLabel, exact: true }).click();
-        await expect(sharedPage.getByRole("searchbox", { name: searchLabel, exact: true })).toHaveValue(`圖書館 ${size}`);
-        await expect(sharedPage.locator('.navbar .searchbar-disable-button')).toBeVisible();
+        await expect(sharedPage.getByRole("textbox", { name: searchLabel, exact: true })).toHaveValue(`圖書館 ${size}`);
+        await expect(sharedPage.locator('[data-slot="popover-content"]')).toHaveCSS("opacity", "1");
         // Windows WebKit can stall while capturing a full page with an open popover.
         // Keep its functional assertions above; traces still provide visual evidence.
         if (browser.browserType().name() !== "webkit") {

@@ -7,7 +7,7 @@ import type {
   PushNotificationPermission,
 } from "@/hooks/use-push-notifications";
 import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
-import { ListRow, ListSection } from "@/components/ui/list";
+import { ListCustomRow, ListSection, RowInner } from "@/components/ui/list";
 import { ListSwitchRow } from "@/components/ui/list-controls";
 
 export interface NotificationOption {
@@ -40,7 +40,6 @@ export function NotificationCard({
   return (
     <ListSection
       header={translate("ui.settings.push")}
-      footer={status}
     >
       {/* Turning the device on has to happen in the click that asked for it:
           the browser only offers the permission prompt inside that gesture, so
@@ -48,15 +47,18 @@ export function NotificationCard({
       {deviceFeedbackState === "idle" ? (
         <ListSwitchRow
           checked={enabled}
+          detail={status}
           disabled={loading || !supported || permission === "denied"}
           label={translate("ui.settings.pushDevice")}
           name={translate("ui.settings.pushDevice")}
           onCheckedChange={onEnabledChange}
         />
       ) : (
-          <ListRow
+        <ListCustomRow>
+          <RowInner
+            detail={status}
             label={translate("ui.settings.pushDevice")}
-            value={
+            trailing={
               <span
                 aria-label={
                   deviceFeedbackState === "success"
@@ -73,6 +75,7 @@ export function NotificationCard({
               </span>
             }
           />
+        </ListCustomRow>
       )}
     </ListSection>
   );

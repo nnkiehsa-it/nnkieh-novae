@@ -13,8 +13,9 @@ import FacilityFeed from "@/components/facilities/facility-feed";
 import IssueFeed from "@/components/issues/issue-feed";
 import { FeedNavigation } from "./feed-navigation";
 import { AnnouncementNotice } from "@/components/announcements/announcement-notice";
-import { PageHeader } from "@/components/ui/page-state";
+import { HeaderBackdrop } from "@/components/ui/header-backdrop";
 import { ChoiceSelect } from "@/components/ui/choice-select";
+import styles from "./home-feed.module.css";
 
 export function HomeFeed() {
   const { t } = useI18n();
@@ -63,7 +64,17 @@ export function HomeFeed() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title={t("ui.nav.feed")} subnavbar={navigation} actions={<><div ref={setHeaderHost} /><AnnouncementNotice /></>} />
+      <header className={`page-header ${styles.header}`}>
+        <HeaderBackdrop progressive />
+        <div className="flex min-w-0 items-center justify-between gap-3">
+          <h1 className="text-2xl font-semibold leading-8 tracking-[-0.035em]">{t("ui.nav.feed")}</h1>
+          <div className="flex shrink-0 items-center gap-2">
+            <div ref={setHeaderHost} />
+            <AnnouncementNotice />
+          </div>
+        </div>
+        {navigation}
+      </header>
       <motion.div
       key={`${view}|${view === "issues" ? filter : ""}`}
       initial={reducedMotion ? false : { opacity: 0.55 }}

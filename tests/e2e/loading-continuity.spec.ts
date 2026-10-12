@@ -131,7 +131,7 @@ test('feed query, clear, sort, and status changes keep the physical card slot', 
     const node = await frame.elementHandle();
 
     await page.getByRole('button', { name: /Search titles/u }).last().click();
-    const search = page.getByRole('searchbox', { name: /Search titles/u });
+    const search = page.getByRole('textbox', { name: /Search titles/u });
     await search.fill(`no matching title ${Date.now()}`);
     await search.press('Enter');
     await expect(page.locator('[data-state-transition="empty"]')).toBeVisible();
@@ -140,9 +140,9 @@ test('feed query, clear, sort, and status changes keep the physical card slot', 
     // The panel stays open through a search, so the clear is one click away.
     await page.getByRole('button', { name: 'Clear search' }).click();
     await expect(frame).toHaveClass(/t-card/u);
-    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await page.keyboard.press('Escape');
     await page.getByRole('combobox', { name: 'Sort order' }).click();
-    await page.getByRole('radio', { name: 'Most supported' }).press('Space');
+    await page.getByRole('option', { name: 'Most supported' }).click();
     await expect(frame).toHaveClass(/t-card/u);
     await page.locator('[data-liquid-tab="closed"]').click();
     await expect(page.locator('[data-state-transition="empty"], [data-state-transition="content"]')).toBeVisible();
@@ -283,7 +283,7 @@ test('switching a view inside an area keeps one content wrapper', async ({ brows
   }
 });
 
-test('iOS segmented controls separate the selected segment from their neutral rail', async ({ browser }) => {
+test('selected tabs use the brand surface while inactive tabs retain a neutral rail', async ({ browser }) => {
   const context = await coldContext(browser);
   const page = await context.newPage();
   await page.goto('/issues');
@@ -291,9 +291,9 @@ test('iOS segmented controls separate the selected segment from their neutral ra
   await expect(tabs).toBeVisible();
   await tabs.getByRole('tab', { name: 'Closed', exact: true }).click();
   await expect(tabs.locator('[data-displayed-active="true"]')).toHaveCount(1);
-  await expect(tabs.locator('.segmented-highlight')).toHaveCount(1);
-  const railColor = await tabs.locator('.segmented').evaluate((element) => getComputedStyle(element).backgroundColor);
-  const pillColor = await tabs.locator('.segmented-highlight').evaluate((element) => getComputedStyle(element).backgroundColor);
+  await expect(tabs.locator('.t-tabs-pill')).toHaveCount(1);
+  const railColor = await tabs.evaluate((element) => getComputedStyle(element).backgroundColor);
+  const pillColor = await tabs.locator('.t-tabs-pill').evaluate((element) => getComputedStyle(element).backgroundColor);
   expect(railColor).not.toBe('rgba(0, 0, 0, 0)');
   expect(railColor).not.toBe(pillColor);
   await context.close();

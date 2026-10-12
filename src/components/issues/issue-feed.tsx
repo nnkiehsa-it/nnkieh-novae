@@ -2,7 +2,6 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import Link from "next/link";
-import { FabLink } from "@/components/ui/fab-link";
 import { useRouter } from "next/navigation";
 import { ArrowDown, CircleCheck, CircleDot, Plus } from "lucide-react";
 import type { IssueSortOption, IssueStatusBucket } from "@/types";
@@ -10,6 +9,7 @@ import { useIssueFeed } from "@/hooks/use-issue-feed";
 import { usePublicProfiles } from "@/hooks/use-public-profiles";
 import { getIssueFilterOptions, getIssueSupportGoal, issueAllowsSupport } from "@/constants/categories";
 import { Button } from "@/components/ui/button";
+import { ToolbarButton } from "@/components/ui/toolbar-button";
 import { FeedToolbar } from "@/components/ui/feed-toolbar";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
 import { PageHeader } from "@/components/ui/page-state";
@@ -55,7 +55,7 @@ export default function IssueFeed({ filterControl, headerHost, selectedFilter }:
   const emptyDescription = !loading && feed.statusCounts['under-review'] > 0 ? (
     <>
       {translate('issue.pendingReviewCount', { count: feed.statusCounts['under-review'] })}
-      <span className="display-block">{translate('issue.pendingReviewCountHint')}</span>
+      <span className="block">{translate('issue.pendingReviewCountHint')}</span>
     </>
   ) : committedQuery
     ? translate('ui.issue.emptySearch', { query: committedQuery })
@@ -64,18 +64,20 @@ export default function IssueFeed({ filterControl, headerHost, selectedFilter }:
     <div className="space-y-5">
       <PageHeader
         portalHost={headerHost}
-        compactTitle={filter === "my-proposals" ? translate('ui.issue.mine') : categoryOptions.find((option) => option.value === filter)?.label}
         actions={
           <>
             {filter !== "my-proposals" ? (
-              <FabLink href={`/issues/${encodeURIComponent(filter)}/compose/new`} label={translate('ui.issue.new')} />
+              <ToolbarButton asChild size={headerHost !== undefined ? "icon" : "adaptive"}>
+                <Link aria-label={translate('ui.issue.new')} href={`/issues/${encodeURIComponent(filter)}/compose/new`} prefetch={false}>
+                  <Plus />{headerHost === undefined ? <span className="hidden sm:inline">{translate('ui.issue.new')}</span> : null}</Link>
+              </ToolbarButton>
             ) : null}
           </>
         }
         title={headerHost !== undefined ? null :
           <ChoiceSelect
             ariaLabel={translate('ui.access.selectCategory')}
-            className="max-w-full"
+            className="h-auto max-w-full border-0 bg-transparent p-0 text-2xl font-semibold leading-8 shadow-none"
             controlLabel="heading"
             onValueChange={(value) =>
               router.push(`/issues/${encodeURIComponent(value)}`)

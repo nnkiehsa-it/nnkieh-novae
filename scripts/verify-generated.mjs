@@ -7,6 +7,7 @@ import process from "node:process";
 const root = process.cwd();
 const generatedDirectories = [
   "cloudflare/generated",
+  "src/assets/fonts/harmonyos-sans-tc",
   "src/generated",
 ];
 const generatedFiles = [

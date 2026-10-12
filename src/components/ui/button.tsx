@@ -1,37 +1,38 @@
-"use client";
-
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { Slot } from "@/components/ui/slot";
-import { Button as Framework7Button } from "framework7-react";
-import { useFramework7Control } from "./use-framework7-control";
-import { DialogButtonsContext } from "./dialog-buttons-context";
+import { Slot } from "radix-ui";
 
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "button button-round novae-button w-auto shrink-0 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
+  "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full font-medium whitespace-nowrap shadow-[var(--shadow-card)] outline-none transition-[background-color,color,border-color,box-shadow,opacity,transform] duration-[var(--motion-control)] ease-[var(--ease-move)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-45 disabled:shadow-none aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: "button-fill",
-        destructive: "button-fill color-red",
-        outline: "button-outline",
-        secondary: "button-tonal",
-        ghost: "",
-        link: "link",
+        // A primary action is not painted differently from any other button; emphasis
+        // comes from where it sits, not from a louder surface.
+        default:
+          "border bg-card hover:bg-accent hover:text-accent-foreground dark:border-input",
+        destructive:
+          "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40",
+        outline:
+          "border bg-card hover:bg-accent hover:text-accent-foreground dark:border-input",
+        secondary:
+          "bg-secondary text-secondary-foreground hover:bg-secondary-hover",
+        ghost: "shadow-none hover:bg-accent hover:text-accent-foreground",
+        link: "text-[var(--tint-content)] underline-offset-4 hover:underline",
       },
       size: {
-        default: "",
-        xs: "button-small",
-        sm: "button-small",
-        lg: "button-large",
-        icon: "button-large novae-icon-button",
-        // Circular icon control on phones; a labelled capsule when space allows.
-        adaptive: "button-large novae-icon-button sm:w-auto",
-        "icon-xs": "button-small novae-icon-button",
-        "icon-sm": "novae-icon-button",
-        "icon-lg": "button-large novae-icon-button",
+        default: "h-11 px-5 py-2 has-[svg]:px-4",
+        xs: "h-6 gap-1 px-2.5 has-[svg]:px-2 [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-9 gap-1.5 px-3.5 has-[svg]:px-3",
+        lg: "h-12 px-7 has-[svg]:px-5",
+        icon: "size-9",
+        // Room enough for a label once there is room for one; a square icon until then.
+        adaptive: "size-9 px-0 sm:w-auto sm:px-4 sm:has-[svg]:px-3.5",
+        "icon-xs": "size-6 [&_svg:not([class*='size-'])]:size-3",
+        "icon-sm": "size-8",
+        "icon-lg": "size-10",
       },
     },
     defaultVariants: {
@@ -46,49 +47,22 @@ function Button({
   variant = "default",
   size = "default",
   asChild = false,
-  ref,
-  type = "button",
-  disabled,
-  form,
-  name,
-  value,
-  title,
-  tabIndex,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
   }) {
-  const inDialog = React.useContext(DialogButtonsContext);
-  const appearance = inDialog && (variant === "outline" || variant === "ghost" || variant === "link") ? "secondary" : variant;
-  const f7Ref = useFramework7Control<HTMLButtonElement>(
-    asChild ? undefined : ref,
-    undefined,
-    {
-      disabled,
-      form,
-      name,
-      value:
-        typeof value === "string" || typeof value === "number"
-          ? value
-          : undefined,
-      title,
-      tabindex: tabIndex,
-    },
-    !asChild,
-  );
-  const common = {
-    "data-slot": "button",
-    "data-control-label": "",
-    "data-variant": variant,
-    "data-size": size,
-    className: cn(buttonVariants({ variant: appearance, size }), inDialog && "dialog-button button-large", className),
-    ...props,
-  };
-  if (asChild) return <Slot {...common} ref={ref} />;
+  const Comp = asChild ? Slot.Root : "button";
 
   return (
-    <Framework7Button {...common} round type={type} disabled={disabled} ref={f7Ref} />
+    <Comp
+      data-slot="button"
+      data-control-label=""
+      data-variant={variant}
+      data-size={size}
+      className={cn(buttonVariants({ variant, size }), className)}
+      {...props}
+    />
   );
 }
 

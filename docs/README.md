@@ -13,7 +13,6 @@
 | [執行期政策與限制](runtime-policies.md) | 業務與 Cloudflare rate limit、圖片限制、完整 retention defaults |
 | [設定參考](configuration.md) | 設定存放位置、required values、格式、Cloudflare bindings 與變更後驗證 |
 | [本機開發](local-development.md) | 完整啟動順序、固定 port、資料庫指令、generated artifacts 與常見失敗 |
-| [依賴維護](dependencies.md) | 相容版本更新、lockfile、上游依賴、工具版本來源與 Dependabot |
 | [部署與維運](deployment-and-operations.md) | Workflow path、部署 gate、smoke test、cron、Queue、Neon 資料庫復原與災難重設 |
 | [測試與驗證](testing.md) | 10 階段 fast、13 階段 local、integration / E2E / stress、CI path selection |
 | [使用與管理手冊](admin-guide/README.md) | 一般成員、分類管理員、平台管理員的操作與截圖 |

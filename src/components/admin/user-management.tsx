@@ -11,8 +11,6 @@ import { useAdminUsers } from "@/hooks/use-admin-console";
 import { useI18n, type TranslationParams } from "@/i18n";
 import { formatRelativeTime } from "@/lib/format";
 import type { AdminUser } from "@/hooks/use-admin-console";
-import { ListNavRow } from "@/components/ui/list";
-import { Badge } from "@/components/ui/badge";
 
 type Translator = (key: string, params?: TranslationParams) => string;
 
@@ -53,14 +51,32 @@ function PersonRow({
   const detail = [responsibility === "—" ? "" : responsibility, activity].filter(Boolean).join(" · ");
 
   return (
-    <ListNavRow
-      selected={selected}
+    <button
+      className="t-row grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-[var(--row-padding-block)] text-left"
+      data-selected={selected}
       disabled={disabled}
       onClick={() => onSelect(user)}
-      label={<PersonIdentity name={user.name} photoUrl={user.photoUrl} />}
-      value={<Badge color={restricted ? "red" : administrator ? "blue" : "gray"}>{status}</Badge>}
-      detail={<>{user.email ?? user.uid}<br />{detail}</>}
-    />
+      type="button"
+    >
+      <PersonIdentity name={user.name} photoUrl={user.photoUrl} />
+      <span
+        className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+          restricted
+            ? "bg-destructive/10 text-destructive"
+            : administrator
+              ? "bg-tint text-tint-foreground"
+              : "bg-muted text-muted-foreground"
+        }`}
+      >
+        {status}
+      </span>
+      <span className="min-w-0 truncate pl-10 text-xs text-muted-foreground">
+        {user.email ?? user.uid}
+      </span>
+      <span className="max-w-44 truncate text-right text-xs text-muted-foreground sm:max-w-64">
+        {detail}
+      </span>
+    </button>
   );
 }
 
@@ -85,6 +101,7 @@ export function UserManagement() {
         query={state.query}
         searchPlaceholder={t("ui.adminConsole.userSearchPlaceholder")}
       >
+        <div className="rule-grid px-[var(--row-gutter)]">
           {state.users.map((user) => (
             <PersonRow
               disabled={Boolean(state.busy)}
@@ -95,6 +112,7 @@ export function UserManagement() {
               user={user}
             />
           ))}
+        </div>
       </RecordList>
       <UserDetailsSheet
         busy={Boolean(state.busy)}

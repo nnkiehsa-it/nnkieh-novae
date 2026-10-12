@@ -11,7 +11,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { RecordList } from "@/components/ui/record-list";
-import { ListNavRow, ListRow, ListSection } from "@/components/ui/list";
+import { ListRow, ListSection } from "@/components/ui/list";
 import { useAdminAudit, type AdminAuditEntry } from "@/hooks/use-admin-console";
 import { useI18n } from "@/i18n";
 import { formatDate } from "@/lib/format";
@@ -110,16 +110,30 @@ export function AdminAuditLog() {
         query={state.query}
         searchPlaceholder={t("ui.adminConsole.auditSearchPlaceholder")}
       >
+        <div className="rule-list px-[var(--row-gutter)]">
           {state.entries.map((entry) => (
-            <ListNavRow
-              selected={selected?.id === entry.id}
+            <button
+              className="t-row flex w-full min-w-0 flex-col gap-0.5 py-[var(--row-padding-block)] text-left"
+              data-selected={selected?.id === entry.id}
               key={entry.id}
               onClick={() => setSelected(entry)}
-              label={actionLabel(entry)}
-              value={<span className="text-xs">{formatDate(entry.createdAt)}</span>}
-              detail={<>{entry.actorName}{entry.targetId ? <span className="ml-2 font-mono">{entry.targetId}</span> : null}</>}
-            />
+              type="button"
+            >
+              <span className="flex min-w-0 items-center gap-3">
+                <span className="truncate text-sm font-medium">{actionLabel(entry)}</span>
+                <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                  {formatDate(entry.createdAt)}
+                </span>
+              </span>
+              <span className="flex min-w-0 items-center gap-3 text-xs text-muted-foreground">
+                <span className="shrink-0">{entry.actorName}</span>
+                {entry.targetId ? (
+                  <span className="ml-auto truncate font-mono">{entry.targetId}</span>
+                ) : null}
+              </span>
+            </button>
           ))}
+        </div>
       </RecordList>
       <AuditEntrySheet
         actionLabel={actionLabel}

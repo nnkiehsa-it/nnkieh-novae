@@ -4,9 +4,10 @@
   min-width: 0;
   max-width: 100%;
   overflow: visible;
-  border: 0;
-  border-radius: var(--f7-block-inset-border-radius);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
   background: var(--card);
+  transition: border-color 180ms ease, box-shadow 180ms ease;
 }
 
 .novae-markdown-editor > div,
@@ -18,8 +19,8 @@
 }
 
 .novae-markdown-editor:focus-within {
-  outline: 2px solid var(--f7-theme-color);
-  outline-offset: 2px;
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 18%, transparent);
 }
 
 .novae-markdown-editor.is-loading {
@@ -34,7 +35,7 @@
   --second-color: var(--muted-foreground);
   --panel-background-color: var(--popover);
   --panel-shadow: var(--shadow-floating);
-  --toolbar-background-color: var(--f7-list-group-title-bg-color);
+  --toolbar-background-color: color-mix(in srgb, var(--muted) 72%, var(--card));
   --toolbar-icon-color: var(--muted-foreground);
   --toolbar-icon-hover-color: var(--primary);
   --toolbar-height: 2rem;
@@ -74,7 +75,7 @@
   height: 2rem;
   place-items: center;
   padding: 0;
-  border-radius: 50%;
+  border-radius: var(--radius-md);
   color: var(--muted-foreground);
   transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
 }
@@ -86,7 +87,7 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .novae-markdown-editor [class~="vditor-toolbar__item"] [class~="vditor-tooltipped"]:hover {
+  :root.t-mouse .novae-markdown-editor [class~="vditor-toolbar__item"] [class~="vditor-tooltipped"]:hover {
     background: var(--interaction);
     color: var(--primary);
   }
@@ -266,7 +267,7 @@
   .novae-markdown-editor [class~="vditor-toolbar__item"] [class~="vditor-tooltipped"] {
     width: 2.75rem;
     height: 2.75rem;
-    border-radius: 50%;
+    border-radius: var(--radius-lg);
   }
 
   .novae-markdown-editor [class~="vditor-panel"] {

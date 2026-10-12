@@ -2,7 +2,6 @@
 
 import { useI18n } from "@/i18n";
 import { ListCustomRow, ListRow } from "@/components/ui/list";
-import { ProgressBar } from "@/components/ui/progress-bar";
 import { formatDate } from "@/lib/format";
 import {
   formatBytes,
@@ -23,7 +22,12 @@ function Meter({ label, percent, value }: { label: string; percent: number | nul
         <span className="text-[0.9375rem] tabular-nums">{value}</span>
       </span>
       {percent === null ? null : (
-        <ProgressBar label={label} percent={percent} />
+        <span aria-hidden className="block h-1.5 overflow-hidden rounded-full bg-muted">
+          <span
+            className="block h-full rounded-full bg-[var(--tint-content)] transition-[width] duration-[var(--motion-control)] ease-[var(--ease-move)]"
+            style={{ width: `${Math.max(percent, 1.5)}%` }}
+          />
+        </span>
       )}
     </ListCustomRow>
   );
@@ -34,9 +38,9 @@ function FigureBand({ figures }: { figures: ReadonlyArray<[string, string]> }) {
   return (
     <ListCustomRow className="grid grid-cols-2 items-start gap-x-4 gap-y-4 sm:grid-cols-4">
       {figures.map(([label, value]) => (
-        <span className="display-block min-w-0" key={label}>
-          <span className="display-block truncate text-xs text-muted-foreground">{label}</span>
-          <span className="mt-0.5 display-block text-lg font-semibold tabular-nums tracking-[-0.03em]">
+        <span className="block min-w-0" key={label}>
+          <span className="block truncate text-xs text-muted-foreground">{label}</span>
+          <span className="mt-0.5 block text-lg font-semibold tabular-nums tracking-[-0.03em]">
             {value}
           </span>
         </span>

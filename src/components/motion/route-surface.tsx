@@ -1,8 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
-import { Page, PageContent } from "framework7-react";
-import { NativePageHeaderHost, NativeNavbarHost, NativeNavbarRegistration } from "@/components/ui/native-page-context";
+import type { ReactNode } from "react";
 
 import { useSurfaceRoute } from "@/hooks/use-surface-route";
 import { cn } from "@/lib/utils";
@@ -25,38 +23,23 @@ import { cn } from "@/lib/utils";
 export function RouteSurface({
   children,
   className,
-  loginScreen = false,
 }: {
   children: ReactNode;
   className?: string;
-  loginScreen?: boolean;
 }) {
   const { direction, surface } = useSurfaceRoute();
-  const [headerHost, setHeaderHost] = useState<HTMLElement | null>(null);
-  const [navbar, setNavbar] = useState<HTMLElement | null>(null);
 
   return (
     // The first page of a session has no direction and no entrance: it arrived
     // with the document, and animating it would make the app look like it was
     // still assembling itself.
-    <Page pageContent={false}
-      loginScreen={loginScreen}
-      noNavbar={loginScreen}
-      noToolbar={loginScreen}
-      noSwipeback={loginScreen}
+    <div
       key={surface}
-      className="route-page novae-page"
+      className={cn("route-page", className)}
       data-route-direction={direction ?? undefined}
       data-route-path={surface}
     >
-      <div className="native-navbar-host" ref={setHeaderHost} />
-      <PageContent loginScreen={loginScreen} className={cn("novae-page-content", className)}>
-        <NativeNavbarRegistration.Provider value={setNavbar}>
-          <NativeNavbarHost.Provider value={navbar}>
-            <NativePageHeaderHost.Provider value={headerHost}><div className="native-page-body">{children}</div></NativePageHeaderHost.Provider>
-          </NativeNavbarHost.Provider>
-        </NativeNavbarRegistration.Provider>
-      </PageContent>
-    </Page>
+      {children}
+    </div>
   );
 }

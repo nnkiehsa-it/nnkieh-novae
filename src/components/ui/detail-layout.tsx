@@ -1,20 +1,19 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Clock3, Hand, Heart, RefreshCw } from "lucide-react";
-import { Icon } from "framework7-react";
+import { Clock3, Hand, Heart, RefreshCw, Share2, X } from "lucide-react";
 import { useI18n } from "@/i18n";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { HeaderBackdrop } from "@/components/ui/header-backdrop";
 import { DetailCardHeader, DetailCardBody } from "@/components/ui/detail-card";
 import { ContentTransition, StateTransition } from "@/components/motion/state-transition";
 import { StaggerItem, StaggerList } from "@/components/motion/stagger";
 import type { FeedKind } from "@/components/ui/feed-list";
+import { cn } from "@/lib/utils";
 import { useCloseRouteOverlay } from "@/components/detail-sheet";
-import { SecondaryToolbar } from "@/components/detail-toolbar";
-import { ToolbarButton } from "./toolbar-button";
-import { Timeline } from "./timeline";
+import { sheetCloseButtonClass } from "@/components/ui/sheet";
 
 export interface DetailPanel { key: string; content: ReactNode; className?: string }
 
@@ -58,7 +57,7 @@ export function DetailLayout({
   </> }];
   if (kind === "issue") pendingPanels.push({ key: "timeline", content: <div className="grid gap-5">
     <div className="flex items-center gap-2"><Clock3 className="size-4" /><p className="text-sm font-medium">{t('ui.issue.timeline')}</p></div>
-    <Timeline items={Array.from({ length: 3 }, (_, index) => ({key: String(index), title: <Skeleton className="h-4 w-20" />, content: <Skeleton className="h-4 w-28" />}))} />
+    <div className="space-y-3">{Array.from({ length: 3 }, (_, index) => <div className="space-y-1.5" key={index}><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-28" /></div>)}</div>
   </div> });
   return (
     <div className={dock ? "detail-with-discussion-composer" : undefined}>
@@ -69,11 +68,14 @@ export function DetailLayout({
           transition clips itself while it animates its height, which a sticky
           header inside it would be caught by. */}
       <header className="detail-header">
-        {toolbar || <SecondaryToolbar backLabel={t('common.close')} onBack={closeRecord ?? (() => undefined)} backDisabled={!closeRecord}
-          actions={<ToolbarButton aria-label={t('common.share')} disabled><Icon f7="square_arrow_up" aria-hidden="true" /></ToolbarButton>} />}
+        <HeaderBackdrop />
+        {toolbar || <div className="flex h-9 items-center justify-end gap-1">
+          <Button aria-label={t('common.share')} disabled size="icon" variant="ghost"><Share2 /></Button>
+          {closeRecord ? <Button aria-label={t('common.close')} className={sheetCloseButtonClass} onClick={closeRecord} size="icon" variant="ghost"><X /></Button> : null}
+        </div>}
       </header>
-      <StateTransition className="space-y-5 p-4" identity={loading ? "loading" : error ? "error" : "content"}>
-        <div className="grid gap-4">
+      <StateTransition className="space-y-5 pt-2" identity={loading ? "loading" : error ? "error" : "content"}>
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
           <article className="min-w-0 space-y-4">
             <Card className="gap-0 overflow-hidden py-0" data-detail-card="content" aria-busy={loading}>
               <ContentTransition identity={loading ? "loading" : error ? "error" : "content"}>
@@ -85,8 +87,8 @@ export function DetailLayout({
             <StaggerList className="space-y-3">
               {(error ? [] : panels ?? pendingPanels).map((panel) => (
                 <StaggerItem key={panel.key}>
-                  <Card className={panel.className} data-detail-card={panel.key}>
-                    <CardContent><ContentTransition identity={loading ? "loading" : "content"}>{panel.content}</ContentTransition></CardContent>
+                  <Card className={cn("gap-4 p-5", panel.className)} data-detail-card={panel.key}>
+                    <ContentTransition identity={loading ? "loading" : "content"}>{panel.content}</ContentTransition>
                   </Card>
                 </StaggerItem>
               ))}

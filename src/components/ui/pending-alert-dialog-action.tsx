@@ -14,7 +14,6 @@ export function PendingAlertDialogAction({
 }) {
   return (
     <AlertDialogAction
-      variant="destructive"
       disabled={state !== "idle"}
       onClick={(event) => {
         event.preventDefault();

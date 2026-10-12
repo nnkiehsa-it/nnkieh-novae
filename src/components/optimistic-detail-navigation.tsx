@@ -16,7 +16,6 @@ import {
   isDisabledTarget,
 } from "@/lib/interactive-target";
 import { opensOverRoute } from "@/lib/route-hierarchy";
-import { appScrollY } from "@/lib/app-scroll";
 
 interface PendingDetailNavigation {
   pathname: string;
@@ -54,7 +53,7 @@ export function OptimisticDetailNavigationProvider({
       }
       const destination = new URL(anchor.href, window.location.href);
       pointerSource = opensOverRoute(pathname, destination.pathname)
-        ? { anchor, scrollY: appScrollY() }
+        ? { anchor, scrollY: window.scrollY }
         : null;
     };
 
@@ -76,7 +75,7 @@ export function OptimisticDetailNavigationProvider({
       if (!opensOverRoute(pathname, destination.pathname)) return;
       const sourceScrollY = pointerSource?.anchor === anchor
         ? pointerSource.scrollY
-        : appScrollY();
+        : window.scrollY;
       pointerSource = null;
 
       flushSync(() => {
@@ -129,7 +128,7 @@ export function OptimisticDetailNavigationProvider({
             className="grid-rows-[minmax(0,1fr)]"
             stageScrollY={pending.sourceScrollY}
           >
-            <SheetBody padded={false}>
+            <SheetBody>
               <SheetTitle className="sr-only">Novae</SheetTitle>
             </SheetBody>
           </SheetContent>

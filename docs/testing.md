@@ -25,9 +25,9 @@
 
 ### `verify:local` 多做的工作
 
-完整 local suite 在 fast checks 中加入 production Next.js build、build budget 和 `check:dependencies`。Dependency audit 要連 npm advisory API；離線時即使前面階段全過，整體仍會失敗。部署 workflow 使用同一個檢查：間接依賴的 high／critical 風險只警告，實際安裝的直接依賴版本受影響才阻擋。
+完整 local suite 在 fast checks 中加入 production Next.js build、build budget 和 Bun high-severity dependency audit。Dependency audit 要連 npm advisory API；離線時即使前面階段全過，整體仍會失敗。
 
-Next.js lint 使用上游 plugin 自己的 glob 依賴，不再維護本機替換套件。`tests/tooling/next-root-dirs.test.mjs` 保留實際根目錄搜尋的驗證。上游依賴帶入的 advisory 保留 warning；不要為了讓報告歸零重新覆寫整棵依賴樹。
+Next.js lint 的根目錄 glob 透過 scoped override 使用 `tools/next-root-glob`，由 Node 24 原生 `fs.globSync` 處理。此替換只作用於 Next plugin 的 `globSync(pattern, { onlyDirectories })` 用法，移除 `fast-glob → micromatch → braces` 依賴鏈；Next lint 規則和安全稽核仍全部保留。更新 Next plugin 或 Node 版本時，要重跑 `tests/tooling/next-root-glob.test.mjs` 與完整 gate。
 
 本機 gate 使用 `.next-verify`，其 Service Worker 也輸出到 `.next-verify/service-worker/`，避免與瀏覽器測試或預覽重寫同一個 `public/sw.js`，混用不同的 API 環境。可執行的正式與 E2E build 仍使用 `public/sw.js`。
 
@@ -43,9 +43,7 @@ CSS 依 production 的 Next.js client reference manifest，計算每個頁面初
 | 全站字型 CSS 宣告，未壓縮 | 320 KiB | 獨立管理中文字型的 unicode range |
 | 全站 WOFF2 / JS 產物 | 8 MiB / 3 MiB | 保留既有字型與程式碼總量檢查 |
 
-每次檢查會在目前 build 目錄產生 `build-budget-report.json`，列出各頁面、所需 CSS、未壓縮與 gzip 估算大小。Framework7 樣式由 `scripts/generate-framework7.mjs` 編譯已安裝版本的 Less 原始碼，只保留 iOS、亮暗色與實際使用的核心／元件；產物是 `src/generated/framework7-ios.css`，整合樣式集中於 `src/styles/framework7.css`。新增元件時，更新產生器清單並執行 `bun run generate:all`。
-
-Framework7 遷移時，先精簡雙 theme 樣式、未使用的核心樣式與 JavaScript 模組，最大初始頁面 UI CSS 從約 331 KiB 降至 274 KiB。現行上限為 288 KiB，保留約 5% 餘裕；JavaScript 全站總量上限為 3.1 MiB。這些是建置資產檢查，不代表單一頁面會下載全站 JavaScript。後續調整仍先移除未使用的樣式，並將頁面專用樣式保留在該頁面的 import。
+每次檢查會在目前 build 目錄產生 `build-budget-report.json`，列出各頁面、所需 CSS、未壓縮與 gzip 估算大小。調整前先查看報告：只使用 Card、Input、Label 的 HeroUI 樣式已集中在 `src/styles/heroui.css`；新增其他 HeroUI 元件時，在這裡加入它的 CSS。拆開原始碼檔案不等於減少輸出，應先移除未使用的樣式或把頁面專用樣式保留在該頁面的 import。
 
 完整本機檢查後，可單獨重新查看報告：
 

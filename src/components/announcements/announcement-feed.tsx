@@ -2,11 +2,11 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import Link from "next/link";
-import { FabLink } from "@/components/ui/fab-link";
 import { ArrowDown, Plus } from "lucide-react";
 import { useAnnouncementFeed } from "@/hooks/use-announcement-feed";
 import { usePublicProfiles } from "@/hooks/use-public-profiles";
 import { Button } from "@/components/ui/button";
+import { ToolbarButton } from "@/components/ui/toolbar-button";
 import {
   PageHeader,
 } from "@/components/ui/page-state";
@@ -25,7 +25,10 @@ export default function AnnouncementFeed({ headerHost }: { headerHost?: HTMLElem
         portalHost={headerHost}
         actions={
           feed.canManage ? (
-            <FabLink href="/announcements/new" label={translate('ui.announcement.new')} />
+            <ToolbarButton asChild size="default">
+              <Link href="/announcements/new" prefetch={false}>
+                <Plus />{translate('ui.announcement.new')}</Link>
+            </ToolbarButton>
           ) : null
         }
         title={headerHost === undefined ? translate('ui.nav.announcements') : undefined}

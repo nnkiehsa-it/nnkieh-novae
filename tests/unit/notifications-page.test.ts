@@ -1,7 +1,7 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { toast } from "@/lib/toast";
+import { toast } from "sonner";
 import { useNotificationsPage } from "@/hooks/use-notifications-page";
 import {
   fetchNotificationSnapshot,
@@ -24,7 +24,7 @@ vi.mock("@/services/notifications", () => ({
   markNotificationsOpened: vi.fn(async () => undefined),
   subscribeNotificationSource: vi.fn(() => () => undefined),
 }));
-vi.mock("@/lib/toast", () => ({ toast: { error: vi.fn() } }));
+vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 
 let state: ReturnType<typeof useNotificationsPage>;
 let root: Root;

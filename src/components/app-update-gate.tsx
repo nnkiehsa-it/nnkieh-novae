@@ -2,7 +2,6 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import * as React from "react";
-import { Progressbar } from "framework7-react";
 import { RefreshCw } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { timing } from "@/lib/motion-timing";
@@ -283,7 +282,9 @@ export function AppUpdateGate() {
               className="t-shimmer text-sm font-medium"
               data-text={translate('ui.update.loading')}
             >{translate('ui.update.loading')}</p>
-            <Progressbar infinite className="w-30" aria-hidden="true" />
+            <span className="t-progress-track" aria-hidden>
+              <span />
+            </span>
           </div>
         </motion.div>
       ) : null}

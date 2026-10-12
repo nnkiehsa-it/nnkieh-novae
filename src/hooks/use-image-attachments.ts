@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { toast } from "@/lib/toast";
+import { toast } from "sonner";
 import { processImageForUpload } from "@/lib/image-processing";
 import {
   createImageUploadPolicies,

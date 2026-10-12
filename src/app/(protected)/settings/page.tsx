@@ -2,7 +2,7 @@
 import { t as translate } from "@/i18n";
 
 import { LogOut, UserRoundCog } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { useSession } from "@/hooks/use-session";
 import { usePushNotifications } from "@/hooks/use-push-notifications";

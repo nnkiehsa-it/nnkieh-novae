@@ -1,14 +1,17 @@
 "use client";
 
-import type { ComponentProps, ReactNode } from "react";
-import { ListInput, ListItem } from "framework7-react";
-import { RotateCcw } from "lucide-react";
+import { Check, RotateCcw } from "lucide-react";
+import * as React from "react";
 import { useI18n } from "@/i18n";
-import { Button } from "./button";
-import { Switch } from "./switch";
-import { listItemSlots, type RowContent } from "./list";
-import { useFramework7Control, useFramework7ListControl } from "./use-framework7-control";
+import { Button } from "@/components/ui/button";
 
+import { Input } from "@/components/ui/input";
+import { RowInner, rowClass, type RowContent } from "@/components/ui/list";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+
+/** On or off. The whole row is the label, so the switch never stands alone. */
 export function ListSwitchRow({
   checked,
   disabled,
@@ -21,27 +24,38 @@ export function ListSwitchRow({
   name: string;
   onCheckedChange: (checked: boolean) => void;
 }) {
+  // A switch is a button, so a wrapping label forwards nothing to it. The row
+  // has to carry the press itself for the whole row to be the target, which is
+  // the point of a list.
   return (
-    <ListItem
-      disabled={disabled}
-      mediaItem={Boolean(content.detail)}
+    <div
+      className={cn(rowClass, disabled ? "opacity-50" : "cursor-pointer")}
       onClick={(event) => {
-        if (!disabled && !(event.target as Element).closest(".toggle"))
-          onCheckedChange(!checked);
+        if (disabled) return;
+        if ((event.target as Element).closest('[data-slot="switch"]')) return;
+        onCheckedChange(!checked);
       }}
     >
-      {listItemSlots(
-        content,
-        <Switch
-          aria-label={name}
-          checked={checked}
-          disabled={disabled}
-          onCheckedChange={onCheckedChange}
-        />,
-      )}
-    </ListItem>
+      <RowInner
+        {...content}
+        trailing={
+          <Switch
+            aria-label={name}
+            checked={checked}
+            className="shrink-0"
+            disabled={disabled}
+            onCheckedChange={onCheckedChange}
+          />
+        }
+      />
+    </div>
   );
 }
+
+/**
+ * One of several. The mark is a check that fades in, not a box: a box asks to
+ * be aimed at, and in a list the row is what you aim at.
+ */
 export function ListChoiceRow({
   disabled,
   onSelect,
@@ -52,25 +66,36 @@ export function ListChoiceRow({
   onSelect: () => void;
   selected: boolean;
 }) {
-  const id = useFramework7ListControl({"aria-label": typeof content.label === "string" ? content.label : undefined}, "input");
   return (
-    <ListItem
-      radio
-      id={id}
-      radioIcon="end"
-      checked={selected}
+    <button
+      aria-checked={selected}
+      className={cn(rowClass, disabled && "pointer-events-none opacity-50")}
+      data-selected={selected}
       disabled={disabled}
-      onChange={onSelect}
-      mediaItem={Boolean(content.detail)}
+      onClick={onSelect}
+      role="radio"
+      type="button"
     >
-      {listItemSlots(content)}
-    </ListItem>
+      <RowInner
+        {...content}
+        trailing={
+          <Check
+            aria-hidden
+            className={cn(
+              "size-4 shrink-0 text-[var(--tint-content)] transition-opacity duration-[var(--motion-control)]",
+              selected ? "opacity-100" : "opacity-0",
+            )}
+          />
+        }
+      />
+    </button>
   );
 }
+
+/** A value chosen from a menu, wearing the row rather than a bordered box. */
+/** A typed value that sits on the naming line instead of under it. */
 export function ListInputRow({
   disabled,
-  id,
-  info,
   inputMode,
   label,
   maxLength,
@@ -79,35 +104,34 @@ export function ListInputRow({
   value,
 }: {
   disabled?: boolean;
-  id?: string;
-  info?: ReactNode;
-  inputMode?: ComponentProps<"input">["inputMode"];
+  inputMode?: React.ComponentProps<"input">["inputMode"];
   label: string;
   maxLength?: number;
   onChange: (value: string) => void;
   placeholder?: string;
   value: string;
 }) {
-  const f7Ref = useFramework7Control<HTMLInputElement>(undefined, "input", {
-    "aria-label": label,
-  });
   return (
-    <ListInput
-      type="text"
-      inputId={id}
-      label={label}
-      disabled={disabled}
-      inputmode={inputMode}
-      maxlength={maxLength}
-      onInput={(event) => onChange(event.target.value)}
-      placeholder={placeholder}
-      value={value}
-      ref={f7Ref}
-    >
-      {info ? <span slot="info">{info}</span> : null}
-    </ListInput>
+    <label className={cn(rowClass, "gap-4")}>
+      <span className="min-w-0 flex-1 text-[0.9375rem] leading-6">{label}</span>
+      <Input
+        aria-label={label}
+        className="h-9 w-[min(14rem,55%)] shrink-0"
+        disabled={disabled}
+        inputMode={inputMode}
+        maxLength={maxLength}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        value={value}
+      />
+    </label>
   );
 }
+
+/**
+ * A bounded number. It clamps when the field is left rather than while it is
+ * being typed, so deleting a digit on the way to another one is allowed.
+ */
 export function ListNumberRow({
   disabled = false,
   label,
@@ -126,52 +150,50 @@ export function ListNumberRow({
   onChange: (value: number) => void;
   onReset?: () => void;
   step?: number;
-  unit?: ReactNode;
+  unit?: React.ReactNode;
   value?: number;
 }) {
   const { t } = useI18n();
-  const f7Ref = useFramework7Control<HTMLInputElement>(undefined, "input", {
-    "aria-label": label,
-  });
   return (
-    <ListInput
-      type="number"
-      inputmode="numeric"
-      label={label}
-      disabled={disabled}
-      max={max}
-      min={min}
-      step={step}
-      value={Number.isFinite(value) ? value : ""}
-      ref={f7Ref}
-      onInput={(event) => onChange(Number(event.target.value))}
-      onBlur={(event) => {
-        const parsed = Number(event.target.value);
-        if (!Number.isFinite(parsed)) return;
-        const lower = Math.max(min, parsed);
-        onChange(max === undefined ? lower : Math.min(max, lower));
-      }}
-    >
-      {unit ? <span slot="info">{unit}</span> : null}
-      {onReset ? (
-        <Button
-          slot="content-end"
-          className="mr-4"
-          aria-label={t("admin.resetField", { field: label })}
+    <label className={cn(rowClass, "gap-4")}>
+      <span className="min-w-0 flex-1 text-[0.9375rem] leading-6">{label}</span>
+      <span className="flex shrink-0 items-center gap-2">
+        <Input
+          aria-label={label}
+          className={cn("h-9 w-24 px-2 text-right tabular-nums", max !== undefined && String(max).length > 7 && "w-28")}
           disabled={disabled}
-          onClick={(event) => {
-            event.preventDefault();
-            onReset();
+          inputMode="numeric"
+          max={max}
+          min={min}
+          onBlur={(event) => {
+            const parsed = Number(event.target.value);
+            if (!Number.isFinite(parsed)) return;
+            const lower = Math.max(min, parsed);
+            onChange(max === undefined ? lower : Math.min(max, lower));
           }}
-          size="icon-sm"
-          variant="ghost"
-        >
-          <RotateCcw />
-        </Button>
-      ) : null}
-    </ListInput>
+          onChange={(event) => onChange(Number(event.target.value))}
+          step={step}
+          type="number"
+          value={Number.isFinite(value) ? value : ""}
+        />
+        {unit ? (
+          <span className="w-8 text-xs text-muted-foreground">{unit}</span>
+        ) : null}
+        {onReset ? (
+          <Button aria-label={t("admin.resetField", { field: label })} disabled={disabled}
+            onClick={(event) => { event.preventDefault(); onReset(); }} size="icon-sm" type="button" variant="ghost">
+            <RotateCcw aria-hidden className="size-3.5" />
+          </Button>
+        ) : null}
+      </span>
+    </label>
   );
 }
+
+/**
+ * A sentence rather than a value: the one row that stacks, because what is
+ * written here is prose and has to be read back at the width it was typed.
+ */
 export function ListNoteRow({
   disabled,
   label,
@@ -187,22 +209,18 @@ export function ListNoteRow({
   placeholder?: string;
   value: string;
 }) {
-  const f7Ref = useFramework7Control<HTMLTextAreaElement>(
-    undefined,
-    "textarea",
-    { "aria-label": label },
-  );
   return (
-    <ListInput
-      type="textarea"
-      resizable
-      label={label}
-      disabled={disabled}
-      maxlength={maxLength}
-      onInput={(event) => onChange(event.target.value)}
-      placeholder={placeholder ?? label}
-      value={value}
-      ref={f7Ref}
-    />
+    <label className={cn(rowClass, "flex-col items-stretch gap-2")}>
+      <span className="text-[0.9375rem] leading-6">{label}</span>
+      <Textarea
+        aria-label={label}
+        disabled={disabled}
+        className="min-h-24"
+        maxLength={maxLength}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder ?? label}
+        value={value}
+      />
+    </label>
   );
 }

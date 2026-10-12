@@ -99,13 +99,14 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 
       }
       expect(after.height).toBeLessThanOrEqual(220);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      // F7 retains the native field; Cancel only appears while it is expanded.
-      await expect(page.locator('.navbar .searchbar-disable-button')).not.toBeVisible();
+      // The field lives behind its own control at every width; the row only ever
+      // shows the trigger.
+      await expect(page.getByRole('textbox', { name: /Search titles/u })).toHaveCount(0);
       const search = page.getByRole('button', { name: /Search titles/u }).last();
       await expect(search).toBeVisible();
       await search.click();
-      await expect(page.getByRole('searchbox', { name: /Search titles/u })).toBeVisible();
-      await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+      await expect(page.getByRole('textbox', { name: /Search titles/u })).toBeVisible();
+      await page.keyboard.press('Escape');
       const navigation = page.getByRole('navigation', { name: 'Primary navigation' });
       await navigation.filter({ visible: true }).getByRole('link', { name: 'Home', exact: true }).click();
       await expect(page).toHaveURL(/\/home$/u);

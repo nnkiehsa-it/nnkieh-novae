@@ -1,7 +1,5 @@
-"use client";
-
+import { LoaderCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Preloader } from "framework7-react";
 
 export function LoadingSpinner({
   className,
@@ -11,12 +9,8 @@ export function LoadingSpinner({
   iconClassName?: string;
 }) {
   return (
-    <span
-      aria-hidden
-      className={cn("t-loading-spinner", className)}
-      data-slot="loading-spinner"
-    >
-      <Preloader size={20} className={iconClassName} />
+    <span aria-hidden className={cn("t-loading-spinner", className)} data-slot="loading-spinner">
+      <LoaderCircle className={cn("t-spinner", iconClassName)} />
     </span>
   );
 }

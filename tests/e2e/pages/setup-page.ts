@@ -17,8 +17,8 @@ async function addSetupCategory(
 
 export async function completeInitialSetup(page: Page) {
   await expect(page).toHaveURL(/\/setup$/u);
-  // Locale selection is handled by signInWithEmulator; setup opens on categories.
-  await expect(page.getByRole('textbox', { name: 'Category name' }).first()).toBeVisible();
+  await page.getByRole('button', { name: 'Continue' }).click();
+
   await fillActiveCategory(page, 'Proposal A', 'proposal-a');
   await addSetupCategory(page, 'Proposal B', 'proposal-b');
 

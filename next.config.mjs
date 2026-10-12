@@ -51,22 +51,17 @@ const withSerwist = withSerwistInit({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  devIndicators: process.env.NOVAE_TEST_PUBLIC_ORIGIN ? false : undefined,
   allowedDevOrigins: ["127.0.0.1", ...(process.env.NOVAE_TEST_PUBLIC_ORIGIN ? [new URL(process.env.NOVAE_TEST_PUBLIC_ORIGIN).hostname] : [])],
   distDir: process.env.NOVAE_NEXT_DIST_DIR || ".next",
   env: publicEnvironment,
   experimental: {
-    // Keep the local gate within memory limits while the realtime preview runs.
-    cpus: process.env.NOVAE_NEXT_DIST_DIR === ".next-verify" ? 4 : undefined,
-    webpackMemoryOptimizations: true,
-    optimizePackageImports: ["lucide-react", "motion"],
+    optimizePackageImports: ["lucide-react", "motion", "radix-ui"],
     staleTimes: {
       dynamic: 300,
       static: 1800,
     },
   },
   webpack(config, { dev, isServer }) {
-    if (dev && process.env.NOVAE_TEST_PUBLIC_ORIGIN) config.cache = false;
     // Keep Next's development chunk graph intact for route compilation and HMR.
     if (!dev && !isServer) {
       config.optimization = config.optimization || {};
@@ -81,9 +76,9 @@ const nextConfig = {
           chunks: "all",
           priority: 30,
         },
-        vendorFramework7: {
-          test: /[\\/]node_modules[\\/](?:framework7|framework7-react|dom7|ssr-window)[\\/]/,
-          name: "vendor-framework7",
+        vendorRadix: {
+          test: /[\\/]node_modules[\\/](?:@radix-ui|radix-ui)[\\/]/,
+          name: "vendor-radix",
           chunks: "all",
           priority: 30,
         },

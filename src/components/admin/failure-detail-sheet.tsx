@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { RotateCcw } from "lucide-react";
-import { Block, BlockTitle } from "framework7-react";
 
 import {
   Sheet,
@@ -53,14 +52,14 @@ export function FailureDetailSheet({
         </SheetHeader>
         <SheetBody>
           <div className="grid gap-5">
-            <section>
-              <BlockTitle className="mt-0">{t("admin.failureMessage")}</BlockTitle>
-              <Block strong inset className="m-0">
-                <p className="break-words text-color-red" data-selectable>
-                  {record.message || t("admin.failureMessageMissing")}
-                </p>
-              </Block>
-            </section>
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
+          <p className="text-xs font-medium uppercase tracking-[0.04em] text-muted-foreground">
+            {t("admin.failureMessage")}
+          </p>
+          <p className="mt-2 break-words font-mono text-[0.8125rem] leading-6 text-destructive">
+            {record.message || t("admin.failureMessageMissing")}
+          </p>
+        </div>
         <ListSection header={t("admin.failureRecord")}>
           {record.fields.map((field) => (
             <ListRow

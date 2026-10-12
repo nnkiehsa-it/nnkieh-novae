@@ -31,7 +31,7 @@ export function AdminOverview({ access }: { access: AdminAccess }) {
   return <div className="space-y-6">
     <AdminSections access={access} />
     {access.overview ? <ListSection>
-      <ListNavRow label={t("admin.overviewStatistics")}
+      <ListNavRow label={t("admin.overviewStatistics")} detail={t("admin.summary.statistics")}
         onClick={() => setView("statistics")} />
     </ListSection> : null}
   </div>;

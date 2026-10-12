@@ -24,7 +24,7 @@ export function AdminAreaNavigation({ areas, onSelect, value }: {
   const selected = areas.find((area) => area.value === value);
   if (!selected) return (
     <ListSection groupName={t("admin.sectionSummary")}>
-      {areas.map((area) => <ListNavRow key={area.value} label={area.label}
+      {areas.map((area) => <ListNavRow key={area.value} label={area.label} detail={area.detail}
         onClick={() => onSelect(area.value)} value={area.changeCount
           ? <span className="text-sm text-[var(--tint-content)]">{t("admin.sectionChanges", { count: area.changeCount })}</span>
           : undefined} />)}

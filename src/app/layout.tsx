@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { Roboto_Mono } from "next/font/google";
+import { Inter, Roboto_Mono } from "next/font/google";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
 import "./globals.css";
@@ -11,6 +11,12 @@ const appVersion = process.env.NEXT_PUBLIC_APP_VERSION ?? "development";
 const turnstileSiteKey = String(
   process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "",
 ).trim();
+
+const inter = Inter({
+  display: "swap",
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
 
 const robotoMono = Roboto_Mono({
   display: "swap",
@@ -53,7 +59,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   minimumScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f2f2f7" },
+    { media: "(prefers-color-scheme: light)", color: "#e9edf4" },
     { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
   userScalable: false,
@@ -70,14 +76,9 @@ export default async function RootLayout({
     <html
       lang="zh-TW"
       suppressHydrationWarning
-      className={robotoMono.variable}
+      className={`${inter.variable} ${robotoMono.variable}`}
     >
       <head>
-        {process.env.NODE_ENV === "development" ? (
-          <Script id="development-worker-cleanup" nonce={nonce} strategy="beforeInteractive">
-            {`if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(registrations => Promise.all(registrations.map(registration => registration.unregister())));`}
-          </Script>
-        ) : null}
         {turnstileSiteKey ? (
           <>
             <link

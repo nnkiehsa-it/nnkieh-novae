@@ -2,12 +2,12 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import Link from "next/link";
-import { FabLink } from "@/components/ui/fab-link";
 import { ArrowDown, CircleCheck, CircleDot, Plus } from "lucide-react";
 import type { FacilitySortOption } from "@/types";
 import { useFacilityFeed } from "@/hooks/use-facility-feed";
 import { usePublicProfiles } from "@/hooks/use-public-profiles";
 import { Button } from "@/components/ui/button";
+import { ToolbarButton } from "@/components/ui/toolbar-button";
 import { FeedToolbar } from "@/components/ui/feed-toolbar";
 import { LiquidTabs } from "@/components/ui/liquid-tabs";
 import {
@@ -32,16 +32,22 @@ export default function FacilityFeed({ filterControl, headerHost }: {
     <div className="space-y-5">
       <PageHeader
         portalHost={headerHost}
-        compactTitle={state.categories.find((category) => category.id === state.category)?.label}
         actions={
           <>
-            <FabLink href={`/facilities/new?category=${encodeURIComponent(state.category)}`} label={translate('ui.facility.new')} />
+            <ToolbarButton asChild size={headerHost !== undefined ? "icon" : "adaptive"}>
+              <Link
+                aria-label={translate('ui.facility.new')}
+                href={`/facilities/new?category=${encodeURIComponent(state.category)}`}
+                prefetch={false}
+              >
+                <Plus />{headerHost === undefined ? <span className="hidden sm:inline">{translate('ui.facility.new')}</span> : null}</Link>
+            </ToolbarButton>
           </>
         }
         title={headerHost !== undefined ? null :
           <ChoiceSelect
             ariaLabel={translate('ui.access.selectCategory')}
-            className="max-w-full"
+            className="h-auto max-w-full border-0 bg-transparent p-0 text-2xl font-semibold leading-8 shadow-none"
             controlLabel="heading"
             onValueChange={state.changeCategory}
             options={state.categories.map((option) => ({

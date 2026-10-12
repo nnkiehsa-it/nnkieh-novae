@@ -2,11 +2,10 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import * as React from "react";
-import { Trash2 } from "lucide-react";
-import { Icon } from "framework7-react";
+import { MoreHorizontal, Trash2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import { ToolbarButton } from "@/components/ui/toolbar-button";
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -74,11 +73,14 @@ export function DetailActionsMenu({
         title={translate("ui.common.moreActions")}
         tooltip={translate("ui.common.moreActions")}
         trigger={
-          <ToolbarButton
+          <Button
             aria-label={translate("ui.common.moreActions")}
+            className="size-11 md:size-9"
+            size="icon"
+            variant="ghost"
           >
-            <Icon f7="ellipsis" aria-hidden="true" />
-          </ToolbarButton>
+            <MoreHorizontal />
+          </Button>
         }
       />
       <AlertDialog onOpenChange={setConfirming} open={confirming}>

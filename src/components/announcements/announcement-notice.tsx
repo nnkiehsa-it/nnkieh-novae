@@ -1,23 +1,30 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { Icon } from "framework7-react";
+import Link from "next/link";
+import { Megaphone } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { useAnnouncementNotice } from "@/hooks/use-announcement-notice";
-import { ToolbarButton } from "@/components/ui/toolbar-button";
+import { Button } from "@/components/ui/button";
 
 export function AnnouncementNotice() {
   const { t } = useI18n();
   const unread = useAnnouncementNotice();
-  const router = useRouter();
   if (!unread) return null;
 
   return (
-    <ToolbarButton
-      aria-label={t("ui.announcement.noticeLabel")}
-      onClick={() => router.push("/announcements")}
+    <Button
+      asChild
+      className="rounded-full border-transparent bg-[var(--announcement-notice-bg)] text-[var(--announcement-notice-fg)] shadow-none hover:bg-[var(--announcement-notice-hover)] hover:text-[var(--announcement-notice-fg)]"
     >
-      <Icon f7="speaker_2" aria-hidden="true" />
-    </ToolbarButton>
+      <Link
+        aria-label={t("ui.announcement.noticeLabel")}
+        href="/announcements"
+        prefetch
+      >
+        <Megaphone />
+        <span className="sm:hidden">{t("ui.announcement.noticeShort")}</span>
+        <span className="hidden sm:inline">{t("ui.announcement.noticeLabel")}</span>
+      </Link>
+    </Button>
   );
 }

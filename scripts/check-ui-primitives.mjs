@@ -136,10 +136,7 @@ for (const file of workerFiles) {
   checkModuleLength(path.relative(root, file), await readFile(file, "utf8"));
 }
 
-// Framework7 adds state classes and inner elements at runtime. Their source of
-// truth is the installed library, while product classes remain checked normally.
-const framework7ClassSource = await readFile(path.join(sourceRoot, "generated/framework7-ios.css"), "utf8");
-for (const orphan of findOrphanCssClassSelectors(stylesheets, [...productSources, framework7ClassSource])) {
+for (const orphan of findOrphanCssClassSelectors(stylesheets, productSources)) {
   errors.push(
     `${orphan.locations.join(", ")} defines orphan CSS selector .${orphan.className}`,
   );

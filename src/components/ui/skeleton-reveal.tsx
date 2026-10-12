@@ -48,7 +48,7 @@ export function SkeletonBadgeLabel({
   return (
     <span className={cn("inline-grid place-items-center text-center", className)}>
       <SkeletonReveal enabled={enabled} skeleton={skeleton}>
-        <span className="display-block w-full text-center">{children}</span>
+        <span className="block w-full text-center">{children}</span>
       </SkeletonReveal>
     </span>
   );

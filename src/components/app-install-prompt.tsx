@@ -10,7 +10,7 @@ import {
 import { resolveShareExit } from "@/hooks/share-entry-store";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PromptStep } from "@/components/app-install/prompt-step";
 
 type PromptView = "ask" | "home" | "guide" | "dismiss";
@@ -30,7 +30,7 @@ export function AppInstallPrompt() {
   const [view, setView] = useState<PromptView>("guide");
   const [direction, setDirection] = useState<1 | -1>(1);
   // The dialog has to survive its own closing animation, so the last thing it
-  // was saying stays on screen until Framework7 has finished taking it away.
+  // was saying stays on screen until Radix has finished taking it away.
   const [shownMode, setShownMode] = useState<AppInstallPromptMode | null>(null);
   if (prompt.mode && prompt.mode !== shownMode) setShownMode(prompt.mode);
   const mode = prompt.mode ?? shownMode;
@@ -213,9 +213,10 @@ export function AppInstallPrompt() {
 
   return (
     <Dialog open={prompt.open}>
-      <DialogContent aria-label={step.title} className="dialog-buttons-vertical" showCloseButton={false} footer={<DialogFooter>{step.actions}</DialogFooter>}>
+      <DialogContent showCloseButton={false}>
         <AnimatePresence custom={direction} initial={false} mode="wait">
           <PromptStep
+            actions={step.actions}
             description={step.description}
             direction={direction}
             icon={step.icon}

@@ -1,31 +1,40 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode, type ComponentProps } from "react";
-import { Button, Icon, Link, ListItem, f7 } from "framework7-react";
-import type { SmartSelect } from "framework7/types";
-import { useI18n } from "@/i18n";
-import { useCompactViewport } from "./use-compact-viewport";
+import * as React from "react";
+import { rowClass } from "@/components/ui/list";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { useFramework7Control, useFramework7ListControl } from "./use-framework7-control";
-import { topNativeModal } from "./native-modal-layers";
-
-const smartSelectEvents: SmartSelect.Parameters["on"] = {
-  open: (select) => select.el.setAttribute("aria-expanded", "true"),
-  opened: (select) => {
-    const modal = topNativeModal()!;
-    modal.setAttribute("aria-label", select.params.pageTitle!);
-    modal.querySelectorAll<HTMLInputElement>('input[type="radio"]').forEach((input) =>
-      input.setAttribute("aria-label", input.closest("label")!.querySelector(".item-title")!.textContent!),
-    );
-  },
-  closed: (select) => select.el.setAttribute("aria-expanded", "false"),
-};
 
 export interface ChoiceOption {
   disabled?: boolean;
   label: string;
   value: string;
 }
+
+/** Shared compact breakpoint for responsive action menus. */
+const COMPACT_VIEWPORT = "(max-width: 47.99rem)";
+
+function subscribeCompact(onChange: () => void) {
+  const query = window.matchMedia(COMPACT_VIEWPORT);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+/** Whether the screen uses compact layouts. */
+export function useCompactViewport() {
+  return React.useSyncExternalStore(
+    subscribeCompact,
+    () => window.matchMedia(COMPACT_VIEWPORT).matches,
+    () => false,
+  );
+}
+
+/** One selection dropdown at every viewport size. */
 export function ChoiceSelect({
   ariaCurrent,
   ariaLabel,
@@ -42,106 +51,49 @@ export function ChoiceSelect({
   ariaCurrent?: "page";
   ariaLabel: string;
   className?: string;
-  controlLabel?: "" | "heading" | "toolbar";
+  /** How the trigger is typed: a control by default, or a page's own heading. */
+  controlLabel?: "" | "heading";
   disabled?: boolean;
   onValueChange: (value: string) => void;
   options: readonly ChoiceOption[];
   size?: "sm" | "default";
+  /** Accessible label for the dropdown's options. */
   title: string;
-  trigger?: (selected: ChoiceOption | undefined) => ReactNode;
+  /** What the trigger shows. The chosen option's label, unless said otherwise. */
+  trigger?: (selected: ChoiceOption | undefined) => React.ReactNode;
   value: string;
 }) {
-  const { t } = useI18n();
-  const compact = useCompactViewport();
-  const element = useFramework7Control<HTMLElement>(undefined, undefined, {
-    disabled: controlLabel ? undefined : disabled,
-    "aria-disabled": disabled,
-  });
-  const select = useRef<SmartSelect.SmartSelect | null>(null);
-  useEffect(() => {
-    select.current = f7.smartSelect.create({
-      el: element.current.el!,
-      openIn: compact ? "sheet" : "popover",
-      setValueText: false,
-      pageTitle: title,
-      closeOnSelect: true,
-      sheetBackdrop: true,
-      sheetCloseLinkText: t("common.close"),
-      routableModals: false,
-      inputIconPosition: "end",
-      on: smartSelectEvents,
-    });
-    return () => {
-      select.current?.close();
-      select.current?.destroy();
-      select.current = null;
-    };
-  }, [compact, element, t, title]);
   const selected = options.find((option) => option.value === value);
-  const content = (
-    <>
-      <select
-        value={value}
-        aria-label={ariaLabel}
-        onChange={(event) => onValueChange(event.target.value)}
-      >
-        {options.map((option) => (
-          <option
-            key={option.value}
-            value={option.value}
-            disabled={option.disabled}
-          >
-            {option.label}
-          </option>
-        ))}
-      </select>
-      {trigger ? trigger(selected) : selected?.label}
-      {controlLabel !== "toolbar" ? <Icon f7="chevron_down" size={16} aria-hidden /> : null}
-    </>
-  );
-  const attributes = {
-    "aria-label": ariaLabel,
-    "aria-current": ariaCurrent,
-    "aria-haspopup": "dialog" as const,
-    "aria-expanded": false,
-    "data-slot": "select-trigger",
-    "data-displayed-active": ariaCurrent === "page",
-    "data-control-label": controlLabel,
-    role: "combobox",
-  };
-  if (controlLabel)
-    return (
-      <Link
-        {...attributes}
-        ref={element as NonNullable<ComponentProps<typeof Link>["ref"]>}
-        className={cn("smart-select", controlLabel === "heading" && "no-padding", className)}
-        style={controlLabel === "heading" ? { color: "inherit" } : undefined}
-        iconOnly={controlLabel === "toolbar"}
-        href="#"
-        onClick={(event) => {
-          event.preventDefault();
-          if (!disabled) select.current!.open();
-        }}
-      >
-        {content}
-      </Link>
-    );
+  const content = trigger ? trigger(selected) : <span className="min-w-0 truncate">{selected?.label}</span>;
+
   return (
-    <Button
-      {...attributes}
-      round
-      ref={element}
-      className={cn("smart-select", className)}
-      type="button"
-      disabled={disabled}
-      small={size === "sm"}
-      onClick={() => select.current!.open()}
-    >
-      {content}
-    </Button>
-  );
+      <Select disabled={disabled} onValueChange={onValueChange} value={value}>
+        <SelectTrigger
+          aria-current={ariaCurrent}
+          aria-label={ariaLabel}
+          data-displayed-active={ariaCurrent === "page"}
+          className={className}
+          data-control-label={controlLabel}
+          size={size}
+        >
+          {content}
+        </SelectTrigger>
+        <SelectContent aria-label={title}>
+          {options.map((option) => (
+            <SelectItem disabled={option.disabled} key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+
 }
 
+/**
+ * The choice as a row of a list: the question on the left, the answer on the
+ * right, and the whole row the target.
+ */
 export function ListPicker({
   disabled,
   label,
@@ -157,51 +109,26 @@ export function ListPicker({
   placeholder?: string;
   value: string;
 }) {
-  const compact = useCompactViewport();
-  const { t } = useI18n();
-  const id = useFramework7ListControl({
-    role: "combobox",
-    "aria-label": label,
-    "aria-haspopup": "dialog",
-    "aria-expanded": "false",
-    "aria-disabled": disabled,
-  });
   return (
-    <ListItem
-      key={compact ? "sheet" : "popover"}
-      id={id}
-      title={label}
-      after={
-        options.find((option) => option.value === value)?.label ?? placeholder
-      }
+    <ChoiceSelect
+      ariaLabel={label}
+      className={cn(
+        rowClass,
+        "h-auto justify-between rounded-none border-0 bg-transparent px-0 shadow-none focus-visible:border-transparent focus-visible:ring-0",
+      )}
       disabled={disabled}
-      smartSelect
-      smartSelectParams={{
-        openIn: compact ? "sheet" : "popover",
-        closeOnSelect: true,
-        sheetBackdrop: true,
-        pageTitle: label,
-        sheetCloseLinkText: t("common.close"),
-        routableModals: false,
-        inputIconPosition: "end",
-        on: smartSelectEvents,
-      }}
-    >
-      <select
-        aria-label={label}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      >
-        {options.map((option) => (
-          <option
-            value={option.value}
-            key={option.value}
-            disabled={option.disabled}
-          >
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </ListItem>
+      onValueChange={onChange}
+      options={options}
+      title={label}
+      trigger={(selected) => (
+        <>
+          <span className="min-w-0 flex-1 text-left text-[0.9375rem] leading-6">{label}</span>
+          <span className={cn("shrink-0", !selected && "text-muted-foreground")}>
+            {selected?.label ?? placeholder}
+          </span>
+        </>
+      )}
+      value={value}
+    />
   );
 }

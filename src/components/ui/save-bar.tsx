@@ -3,7 +3,6 @@
 import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
 import { AnimatePresence, motion } from "motion/react";
-import { Toolbar, ToolbarPane } from "framework7-react";
 
 import { ActionFeedbackIcon } from "@/components/ui/action-feedback-icon";
 import { Button } from "@/components/ui/button";
@@ -57,7 +56,7 @@ export function SaveBar({
       animate={{ opacity: 1, y: 0 }}
       aria-live="polite"
       className={cn(
-        "sticky bottom-0 z-30",
+        "surface-floating sticky bottom-[calc(var(--mobile-nav-height)+var(--mobile-nav-bottom-gap)+max(0.75rem,var(--safe-bottom)))] z-30 flex flex-wrap items-center gap-2 px-4 py-3 md:bottom-4",
         className,
       )}
       exit={travel}
@@ -65,9 +64,6 @@ export function SaveBar({
       role="status"
       transition={timing("sheet")}
     >
-      <Toolbar position="bottom" className="novae-save-toolbar relative h-auto">
-      <ToolbarPane className="w-full">
-      <div className="grid w-full gap-2 px-4 py-3 sm:flex sm:flex-wrap sm:items-center">
       {error ? (
         <div className="w-full space-y-2">
           <p className="text-sm text-destructive" role="alert">{error}</p>
@@ -78,12 +74,11 @@ export function SaveBar({
           ) : null}
         </div>
       ) : null}
-      <span className="min-w-0 flex-1 text-sm">
+      <span className="min-w-28 flex-1 text-sm">
         {saved
           ? translate("ui.common.saveBarSaved")
           : translate("ui.common.saveBarPending", { count: changeCount })}
       </span>
-      <div className="flex items-center justify-end gap-2">
       {onReview && !saving && !saved ? (
         <Button onClick={onReview} size="sm" variant="ghost">
           {translate("ui.common.saveBarReview")}
@@ -102,10 +97,6 @@ export function SaveBar({
         ) : null}
         {translate("ui.common.save")}
       </Button>
-      </div>
-      </div>
-      </ToolbarPane>
-      </Toolbar>
     </motion.div>
       ) : null}
     </AnimatePresence>

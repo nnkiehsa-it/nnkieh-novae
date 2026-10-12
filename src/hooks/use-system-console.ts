@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { toast } from "@/lib/toast";
+import { toast } from "sonner";
 
 import { useI18n } from "@/i18n";
 import { useRememberedState } from "@/hooks/use-remembered-state";

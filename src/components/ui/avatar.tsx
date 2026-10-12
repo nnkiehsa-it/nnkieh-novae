@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Avatar as AvatarPrimitive } from "radix-ui";
 
 import { useDecodedImage } from "./use-decoded-image";
 import { cn } from "@/lib/utils";
@@ -9,11 +10,11 @@ function Avatar({
   className,
   size = "default",
   ...props
-}: React.ComponentProps<"span"> & {
+}: React.ComponentProps<typeof AvatarPrimitive.Root> & {
   size?: "default" | "sm" | "lg";
 }) {
   return (
-    <span
+    <AvatarPrimitive.Root
       data-slot="avatar"
       data-size={size}
       className={cn(
@@ -64,9 +65,9 @@ function AvatarImage({
 function AvatarFallback({
   className,
   ...props
-}: React.ComponentProps<"span">) {
+}: React.ComponentProps<typeof AvatarPrimitive.Fallback>) {
   return (
-    <span
+    <AvatarPrimitive.Fallback
       data-slot="avatar-fallback"
       className={cn(
         "flex size-full items-center justify-center rounded-full bg-muted text-sm text-muted-foreground group-data-[size=sm]/avatar:text-xs",

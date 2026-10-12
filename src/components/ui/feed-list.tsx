@@ -24,8 +24,8 @@ function FeedPlaceholder({ kind, showProgress }: { kind: FeedKind; showProgress:
       footer={<>
         {kind !== "announcement" ? <Skeleton className="h-6 w-20 rounded-full" /> : null}
         {kind === "facility" ? <Skeleton className="h-4 w-24" /> : null}
-        <Button className="ml-auto opacity-100" disabled size="sm" variant="ghost"><Reaction /><Skeleton className="h-3 w-5" /></Button>
-        {kind === "announcement" ? <Button className="opacity-100" disabled size="sm" variant="ghost"><MessageCircle /><Skeleton className="h-3 w-4" /></Button> : kind === "issue" ? <MessageCircle className="size-3.5 text-muted-foreground" /> : null}
+        <Button className="ml-auto h-8 px-1.5 opacity-100" disabled size="sm" variant="ghost"><Reaction /><Skeleton className="h-3 w-5" /></Button>
+        {kind === "announcement" ? <Button className="h-8 px-1.5 opacity-100" disabled size="sm" variant="ghost"><MessageCircle /><Skeleton className="h-3 w-4" /></Button> : kind === "issue" ? <MessageCircle className="size-3.5 text-muted-foreground" /> : null}
       </>}
     >
       {kind === "issue" && showProgress ? <FeedProgress><div className="flex items-center justify-between gap-2 text-xs text-muted-foreground"><span>{t('ui.issue.supportProgress')}</span><Skeleton className="h-4 w-14" /></div></FeedProgress> : null}

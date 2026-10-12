@@ -22,6 +22,7 @@ export function SettingPresets<T extends object>({
       <ListSection>
         {presets.map((preset) => (
           <ListNavRow
+            detail={t(preset.detailKey)}
             key={preset.id}
             label={t(preset.labelKey)}
             onClick={() => onApply(preset.values)}

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { ChevronDown, Reply, Trash2 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { toast } from "sonner";
 import { AnimatePresence, motion } from "motion/react";
 import { timing } from "@/lib/motion-timing";
 import { t as translate } from "@/i18n";
@@ -44,17 +44,19 @@ export function CommentThread({
       <CommentRow comment={comment} currentUid={currentUid} onDelete={onDelete} onReply={() => onReply(comment, comment.id)} profile={profile} />
       {comment.replies.length > 0 ? (
         <div className="relative ml-4 pb-2 pl-7 sm:ml-5 sm:pl-9">
-          <Button variant="ghost" size="sm"
+          <button
             aria-expanded={expanded}
-            className="mb-1"
+            className="mb-1 inline-flex min-h-8 items-center gap-2 rounded-lg px-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
             onClick={() => setExpanded((value) => !value)}
             type="button"
           >
-            <ChevronDown className={cn(expanded && "rotate-180")} />
+            <span className="grid size-5 place-items-center rounded-full bg-foreground text-background">
+              <ChevronDown className={cn("size-3 transition-transform", expanded && "rotate-180")} />
+            </span>
             {expanded
               ? translate("ui.discussion.hideReplies")
               : translate("ui.discussion.showReplies", { count: comment.replies.length })}
-          </Button>
+          </button>
           <AnimatePresence initial={false}>
           {expanded ? (
             <motion.div

@@ -26,14 +26,14 @@ test("scope drafts stay with their area, review real members, and save one atomi
     await selectScope(page, { kind: "issue", category: "Proposal A" });
     await add(E2E_USERS.other);
     await page.getByRole("combobox").click();
-    await page.getByRole("radio", { name: "Proposal B", exact: true }).press('Space');
+    await page.getByRole("option", { name: "Proposal B", exact: true }).click();
     const leave = page.getByRole("alertdialog");
     await expect(leave.getByText(/unsaved/u)).toBeVisible();
     await leave.getByRole("button", { name: "Stay", exact: true }).click();
     await expect(page.getByRole("combobox")).toContainText("Proposal A");
     await expect(page.getByRole("button", { name: `Revoke access from ${E2E_USERS.other}`, exact: true })).toBeVisible();
     await page.getByRole("combobox").click();
-    await page.getByRole("radio", { name: "Proposal B", exact: true }).press('Space');
+    await page.getByRole("option", { name: "Proposal B", exact: true }).click();
     await leave.getByRole("button", { name: "Discard and leave", exact: true }).click();
     await expect(page.getByPlaceholder("Enter a full campus email or UID")).toHaveValue("");
     await expect(page.getByRole("button", { name: "Save", exact: true })).toHaveCount(0);
@@ -65,7 +65,7 @@ test("scope drafts stay with their area, review real members, and save one atomi
     await expect(page).toHaveURL(/issueCategory=/u);
     const targetUrl = page.url();
     await page.goto("/admin/audit?view=actions");
-    await page.getByRole("searchbox").fill("saveScopeMembers");
+    await page.getByRole("textbox").fill("saveScopeMembers");
     await page.getByRole("button", { name: "Search", exact: true }).click();
     await page.getByRole("button").filter({ hasText: "Change member access" }).first().click();
     const audit = page.getByRole("dialog");

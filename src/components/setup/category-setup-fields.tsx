@@ -1,97 +1,286 @@
 "use client";
+import { t as translate, useI18n as useLocaleSubscription } from "@/i18n";
 
-import type { ReactNode } from "react";
+import type * as React from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { useI18n } from "@/i18n";
-import type { FacilityCategoryDraft, IssueCategoryDraft } from "@/types/categories";
-import { ListActionRow, ListSection } from "@/components/ui/list";
-import { ListInputRow, ListNumberRow, ListSwitchRow } from "@/components/ui/list-controls";
-import { ListPicker } from "@/components/ui/choice-select";
+import type {
+  FacilityCategoryDraft,
+  IssueCategoryDraft,
+} from "@/types/categories";
+import { Button } from "@/components/ui/button";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ChoiceSelect } from "@/components/ui/choice-select";
 
-export function CategorySetupPanel({ children, enabled, onAdd, onEnabledChange, title }: {
-  children: ReactNode;
+interface CategorySetupPanelProps {
+  children: React.ReactNode;
   enabled: boolean;
   onAdd: () => void;
   onEnabledChange: (enabled: boolean) => void;
   title: string;
-}) {
-  const { t } = useI18n();
-  return <section className="space-y-6">
-    <ListSection footer={t("ui.setup.navHint")}>
-      <ListSwitchRow label={title} name={title} checked={enabled} onCheckedChange={onEnabledChange} />
-    </ListSection>
-    <fieldset disabled={!enabled} hidden={!enabled} className="min-w-0 space-y-6">
-      {children}
-    </fieldset>
-    <ListSection>
-      <ListActionRow icon={Plus} label={t("ui.setup.addCategory")} disabled={!enabled} onClick={onAdd} tone="brand" />
-    </ListSection>
-  </section>;
 }
 
-function CategoryIdentity({ draft, index, kind, onChange, onRemove }: {
+export function CategorySetupPanel({
+  children,
+  enabled,
+  onAdd,
+  onEnabledChange,
+  title,
+}: CategorySetupPanelProps) {
+  useLocaleSubscription();
+  return (
+    <Card className="gap-0 py-0">
+      <CardHeader className="flex-row items-center justify-between py-4">
+        <div>
+          <CardTitle>{title}</CardTitle>
+          <p className="mt-1 text-sm text-muted-foreground">{translate('ui.setup.navHint')}</p>
+        </div>
+        <Switch
+          aria-label={title}
+          checked={enabled}
+          onCheckedChange={onEnabledChange}
+        />
+      </CardHeader>
+      <CardContent className="grid gap-3 py-4">
+        {children}
+        <Button
+          className="justify-start"
+          disabled={!enabled}
+          onClick={onAdd}
+          variant="ghost"
+        >
+          <Plus />{translate('ui.setup.addCategory')}</Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface FacilityDraftEditorProps {
   draft: FacilityCategoryDraft;
   index: number;
-  kind: "facility" | "issue";
   onChange: (draft: FacilityCategoryDraft) => void;
   onRemove?: () => void;
-}) {
-  const { t } = useI18n();
-  return <ListSection
-    header={`${t(kind === "issue" ? "ui.access.issueCategory" : "ui.access.facilityCategory")} ${index + 1}`}
-    footer={t("ui.setup.slugHint", { order: index + 1 })}
-  >
-    <ListInputRow id={`setup-${kind}-${index}-name`} label={t("ui.setup.categoryName")}
-      value={draft.label} placeholder={t(kind === "issue" ? "ui.setup.issueExample" : "ui.setup.facilityExample")}
-      onChange={(label) => onChange({ ...draft, label })} />
-    <ListInputRow id={`setup-${kind}-${index}-identifier`} label={t("ui.common.slug")}
-      value={draft.id} placeholder={kind === "issue" ? "campus-life" : "classroom-equipment"}
-      onChange={(id) => onChange({ ...draft, id: id.toLowerCase().replace(/\s+/gu, "-") })} />
-    {onRemove ? <ListActionRow icon={Trash2} label={t("ui.admin.deleteCategory")} tone="destructive" onClick={onRemove} /> : null}
-  </ListSection>;
 }
 
-export function FacilityDraftEditor(props: {
-  draft: FacilityCategoryDraft;
-  index: number;
-  onChange: (draft: FacilityCategoryDraft) => void;
-  onRemove?: () => void;
-}) {
-  return <CategoryIdentity {...props} kind="facility" />;
+export function FacilityDraftEditor({
+  draft,
+  index,
+  onChange,
+  onRemove,
+}: FacilityDraftEditorProps) {
+  const nameId = `setup-facility-${index}-name`;
+  const identifierId = `setup-facility-${index}-identifier`;
+
+  return (
+    <div className="grid gap-4 rounded-xl bg-[var(--surface-inset)] p-6 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+      <div className="grid gap-1.5">
+        <Label htmlFor={nameId}>{translate('ui.setup.categoryName')}</Label>
+        <Input
+          id={nameId}
+          onChange={(event) =>
+            onChange({ ...draft, label: event.target.value })
+          }
+          placeholder={translate('ui.setup.facilityExample')}
+          value={draft.label}
+        />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor={identifierId}>{translate('ui.common.slug')}</Label>
+        <Input
+          id={identifierId}
+          onChange={(event) =>
+            onChange({ ...draft, id: normalizeCategoryId(event.target.value) })
+          }
+          placeholder="classroom-equipment"
+          value={draft.id}
+        />
+      </div>
+      {onRemove ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              aria-label={translate('ui.admin.deleteCategory')}
+              onClick={onRemove}
+              size="icon"
+              variant="ghost"
+            >
+              <Trash2 />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{translate('ui.admin.deleteCategory')}</TooltipContent>
+        </Tooltip>
+      ) : (
+        <span className="pb-2 text-xs text-muted-foreground">{translate('ui.common.default')}</span>
+      )}
+      <p className="text-xs text-muted-foreground sm:col-span-full">
+        {translate('ui.setup.slugHint', { order: index + 1 })}
+      </p>
+    </div>
+  );
 }
 
-export function IssueDraftEditor({ draft, index, onChange, onRemove }: {
+interface IssueDraftEditorProps {
   draft: IssueCategoryDraft;
   index: number;
   onChange: (draft: IssueCategoryDraft) => void;
   onRemove?: () => void;
+}
+
+export function IssueDraftEditor({
+  draft,
+  index,
+  onChange,
+  onRemove,
+}: IssueDraftEditorProps) {
+  const nameId = `setup-issue-${index}-name`;
+  const identifierId = `setup-issue-${index}-identifier`;
+
+  return (
+    <div className="grid gap-5 rounded-xl bg-[var(--surface-inset)] p-6">
+      <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+        <div className="grid gap-1.5">
+          <Label htmlFor={nameId}>{translate('ui.setup.categoryName')}</Label>
+          <Input
+            id={nameId}
+            onChange={(event) =>
+              onChange({ ...draft, label: event.target.value })
+            }
+            placeholder={translate('ui.setup.issueExample')}
+            value={draft.label}
+          />
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor={identifierId}>{translate('ui.common.slug')}</Label>
+          <Input
+            id={identifierId}
+            onChange={(event) =>
+              onChange({
+                ...draft,
+                id: normalizeCategoryId(event.target.value),
+              })
+            }
+            placeholder="campus-life"
+            value={draft.id}
+          />
+        </div>
+        {onRemove ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label={translate('ui.admin.deleteCategory')}
+                onClick={onRemove}
+                size="icon"
+                variant="ghost"
+              >
+                <Trash2 />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{translate('ui.admin.deleteCategory')}</TooltipContent>
+          </Tooltip>
+        ) : (
+          <span className="pb-2 text-xs text-muted-foreground">{translate('ui.common.default')}</span>
+        )}
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-1.5">
+          <Label>{translate('ui.admin.readAccess')}</Label>
+          <ChoiceSelect
+            ariaLabel={translate('ui.admin.readAccess')}
+            onValueChange={(value) =>
+              onChange({
+                ...draft,
+                readAccess: value as IssueCategoryDraft["readAccess"],
+              })
+            }
+            options={[
+              { label: translate('ui.admin.schoolVisible'), value: "school" },
+              { label: translate('ui.admin.reviewedVisible'), value: "reviewed-school" },
+              { label: translate('ui.admin.ownerAdminOnly'), value: "owner-admin" },
+            ]}
+            title={translate('ui.admin.readAccess')}
+            value={draft.readAccess}
+          />
+        </div>
+        <ToggleField
+          checked={draft.authorVisible === true}
+          label={translate('ui.admin.showAuthor')}
+          onCheckedChange={(checked) =>
+            onChange({ ...draft, authorVisible: checked })
+          }
+        />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <ToggleField
+          checked={draft.commentsEnabled}
+          label={translate('ui.admin.allowComments')}
+          onCheckedChange={(checked) =>
+            onChange({ ...draft, commentsEnabled: checked })
+          }
+        />
+        <ToggleField
+          checked={draft.supportEnabled === true}
+          label={translate('ui.admin.enableSupport')}
+          onCheckedChange={(checked) =>
+            onChange({ ...draft, supportEnabled: checked })
+          }
+        />
+        {draft.supportEnabled ? (
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              aria-label={translate('ui.admin.supportGoal')}
+              min={1}
+              onChange={(event) =>
+                onChange({
+                  ...draft,
+                  supportGoal: Number(event.target.value) || null,
+                })
+              }
+              placeholder={translate('ui.admin.goalPlaceholder')}
+              type="number"
+              value={draft.supportGoal ?? ""}
+            />
+            <Input
+              aria-label={translate('ui.admin.supportDays')}
+              min={1}
+              onChange={(event) =>
+                onChange({
+                  ...draft,
+                  supportDeadlineDays: Number(event.target.value) || null,
+                })
+              }
+              placeholder={translate('ui.admin.daysPlaceholder')}
+              type="number"
+              value={draft.supportDeadlineDays ?? ""}
+            />
+          </div>
+        ) : null}
+      </div>
+      <p className="text-xs text-muted-foreground">{translate('ui.access.issueCategory')}{index + 1}</p>
+    </div>
+  );
+}
+
+function ToggleField({
+  checked,
+  label,
+  onCheckedChange,
+}: {
+  checked: boolean;
+  label: string;
+  onCheckedChange: (checked: boolean) => void;
 }) {
-  const { t } = useI18n();
-  return <div className="space-y-6">
-    <CategoryIdentity kind="issue" draft={draft} index={index} onRemove={onRemove}
-      onChange={(identity) => onChange({ ...draft, id: identity.id, label: identity.label })} />
-    <ListSection header={t("admin.categoryVisibility")}>
-      <ListPicker label={t("ui.admin.readAccess")} value={draft.readAccess}
-        onChange={(readAccess) => onChange({ ...draft, readAccess: readAccess as IssueCategoryDraft["readAccess"] })}
-        options={[
-          { label: t("ui.admin.schoolVisible"), value: "school" },
-          { label: t("ui.admin.reviewedVisible"), value: "reviewed-school" },
-          { label: t("ui.admin.ownerAdminOnly"), value: "owner-admin" },
-        ]} />
-      <ListSwitchRow label={t("ui.admin.showAuthor")} name={t("ui.admin.showAuthor")}
-        checked={draft.authorVisible === true} onCheckedChange={(authorVisible) => onChange({ ...draft, authorVisible })} />
-    </ListSection>
-    <ListSection header={t("admin.categoryParticipation")}>
-      <ListSwitchRow label={t("ui.admin.allowComments")} name={t("ui.admin.allowComments")}
-        checked={draft.commentsEnabled} onCheckedChange={(commentsEnabled) => onChange({ ...draft, commentsEnabled })} />
-      <ListSwitchRow label={t("ui.admin.enableSupport")} name={t("ui.admin.enableSupport")}
-        checked={draft.supportEnabled === true} onCheckedChange={(supportEnabled) => onChange({ ...draft, supportEnabled })} />
-      {draft.supportEnabled ? <>
-        <ListNumberRow label={t("ui.admin.supportGoal")} value={draft.supportGoal ?? undefined}
-          onChange={(supportGoal) => onChange({ ...draft, supportGoal: supportGoal || null })} />
-        <ListNumberRow label={t("ui.admin.supportDays")} value={draft.supportDeadlineDays ?? undefined}
-          unit={t("admin.unitDays")} onChange={(supportDeadlineDays) => onChange({ ...draft, supportDeadlineDays: supportDeadlineDays || null })} />
-      </> : null}
-    </ListSection>
-  </div>;
+  return (
+    <label className="flex min-h-11 items-center justify-between gap-3 rounded-full bg-card px-5 text-sm">
+      <span>{label}</span>
+      <Switch checked={checked} onCheckedChange={onCheckedChange} />
+    </label>
+  );
+}
+
+function normalizeCategoryId(value: string) {
+  return value.toLowerCase().replace(/\s+/gu, "-");
 }

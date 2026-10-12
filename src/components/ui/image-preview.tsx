@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode, type ComponentProps } from "react";
-import { PhotoBrowser } from "framework7-react";
-import { Button } from "./button";
+import type { ReactNode } from "react";
 import { ZoomIn } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { DecodedImage } from "@/components/ui/decoded-image";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 /**
  * The one way an image is shown before it is opened.
@@ -60,13 +59,12 @@ export function ImagePreviewTile({
   const { t } = useI18n();
   return (
     <div className="group relative aspect-square overflow-hidden rounded-xl bg-muted/40">
-      <Button
+      <button
         aria-label={t("media.zoom", { alt })}
-        className="absolute inset-0 grid h-full min-h-full place-items-center p-1.5"
+        className="absolute inset-0 grid place-items-center p-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
         disabled={disabled}
         onClick={onOpen}
         type="button"
-        variant="ghost"
       >
         {src ? (
           <DecodedImage
@@ -84,7 +82,7 @@ export function ImagePreviewTile({
             {placeholder}
           </span>
         )}
-      </Button>
+      </button>
       {src && !disabled ? (
         <span className="pointer-events-none absolute bottom-1.5 right-1.5 grid size-6 translate-y-1 place-items-center rounded-full bg-black/60 text-white opacity-0 backdrop-blur-sm transition-[opacity,transform] duration-[var(--motion-control-exit)] group-hover:translate-y-0 group-hover:opacity-100">
           <ZoomIn className="size-3" />
@@ -97,9 +95,11 @@ export function ImagePreviewTile({
 
 export function ImageLightbox({
   alt,
+  height,
   onOpenChange,
   open,
   src,
+  width,
 }: {
   alt: string;
   height?: number;
@@ -108,25 +108,21 @@ export function ImageLightbox({
   src?: string;
   width?: number;
 }) {
-  const { t } = useI18n();
-  const browser = useRef<
-    NonNullable<ComponentProps<typeof PhotoBrowser>["ref"]>["current"]
-  >(null!);
-  useEffect(() => {
-    if (open) browser.current.open();
-    else browser.current.close();
-  }, [open]);
   return (
-    <PhotoBrowser
-      ref={browser}
-      type="popup"
-      photos={src ? [{ url: src, caption: alt }] : []}
-      theme="dark"
-      toolbar={false}
-      navbarShowCount={false}
-      popupCloseLinkText={t("common.close")}
-      routableModals={false}
-      onPhotoBrowserClosed={() => onOpenChange(false)}
-    />
+    <Dialog onOpenChange={onOpenChange} open={open}>
+      <DialogContent className="max-w-[min(92vw,70rem)] border-0 bg-transparent p-0 shadow-none sm:max-w-[min(92vw,70rem)]">
+        <DialogTitle className="sr-only">{alt}</DialogTitle>
+        {src ? (
+          <DecodedImage
+            alt={alt}
+            className="max-h-[calc(100svh-3rem)] w-full rounded-xl object-contain"
+            containerClassName="min-h-48 w-full place-items-center rounded-xl bg-black/20"
+            height={height}
+            src={src}
+            width={width}
+          />
+        ) : null}
+      </DialogContent>
+    </Dialog>
   );
 }

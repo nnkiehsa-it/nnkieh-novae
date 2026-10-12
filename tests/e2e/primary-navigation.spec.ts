@@ -142,8 +142,8 @@ test("a pending destination never claims to be the displayed page", async ({
     await nav.locator('a[href="/settings"]').click();
     await expect.poll(() => interceptedSettingsRequests).toBeGreaterThan(0);
     await expect(
-      nav.locator('a[href="/settings"] [aria-busy]'),
-    ).toHaveAttribute("aria-busy", "true");
+      nav.locator('a[href="/settings"] .t-nav-pending'),
+    ).toHaveAttribute("data-pending", "true");
     await expect(nav.locator('[aria-current="page"]')).toHaveAttribute(
       "href",
       "/feed",
@@ -161,7 +161,7 @@ test("a pending destination never claims to be the displayed page", async ({
       "href",
       "/settings",
     );
-    await expect(nav.locator('[aria-busy="true"]')).toHaveCount(0);
+    await expect(nav.locator('[data-pending="true"]')).toHaveCount(0);
   } finally {
     release();
     await context.close();

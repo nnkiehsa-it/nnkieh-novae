@@ -1,23 +1,28 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 
-import { ModalRoot, ModalTrigger } from "./modal-context";
-import { ActionSheet } from "./action-sheet";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useCompactViewport } from "./use-compact-viewport";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { ListActionRow, ListNavRow, ListSection } from "@/components/ui/list";
+import { useCompactViewport } from "@/components/ui/choice-select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 export interface ActionMenuItem {
@@ -58,6 +63,7 @@ export function ActionMenu({
   trigger: React.ReactElement<{ onClick?: () => void }>;
 }) {
   const compact = useCompactViewport();
+  const [open, setOpen] = React.useState(false);
   const described = (element: React.ReactElement) =>
     tooltip ? (
       <Tooltip>
@@ -71,35 +77,41 @@ export function ActionMenu({
   if (!compact)
     return (
       <DropdownMenu>
-        {described(
-          <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>,
-        )}
-        <DropdownMenuContent align={align} className={className} aria-label={title}>
+        {described(<DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>)}
+        <DropdownMenuContent align={align} className={className}>
           {description ? (
             <>
               <DropdownMenuLabel className="font-normal">
-                <span className="display-block truncate text-sm font-medium">
-                  {title}
-                </span>
-                <span className="display-block truncate text-xs text-muted-foreground">
+                <span className="block truncate text-sm font-medium">{title}</span>
+                <span className="block truncate text-xs text-muted-foreground">
                   {description}
                 </span>
               </DropdownMenuLabel>
+              <DropdownMenuSeparator />
             </>
           ) : null}
           {items.map((item) =>
+            item.href ? (
               <DropdownMenuItem
-                className={cn(
-                  item.tone === "destructive" && "text-destructive",
-                )}
+                asChild
+                className={cn(item.tone === "destructive" && "text-destructive")}
                 key={item.key}
-                href={item.href}
-                icon={item.icon}
+              >
+                <Link href={item.href}>
+                  <item.icon />
+                  {item.label}
+                </Link>
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                className={cn(item.tone === "destructive" && "text-destructive")}
+                key={item.key}
                 onSelect={item.onSelect}
               >
+                <item.icon />
                 {item.label}
               </DropdownMenuItem>
-            ,
+            ),
           )}
         </DropdownMenuContent>
       </DropdownMenu>
@@ -107,10 +119,42 @@ export function ActionMenu({
 
   return (
     <>
-      <ModalRoot>
-        {described(<ModalTrigger asChild>{trigger}</ModalTrigger>)}
-        <ActionSheet title={title} description={description} items={items} />
-      </ModalRoot>
+      {described(React.cloneElement(trigger, { onClick: () => setOpen(true) }))}
+      <Sheet onOpenChange={setOpen} open={open}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>{title}</SheetTitle>
+            {description ? <SheetDescription>{description}</SheetDescription> : null}
+          </SheetHeader>
+          <SheetBody>
+            <ListSection>
+            {items.map((item) =>
+              item.href ? (
+                <ListNavRow
+                  href={item.href}
+                  icon={item.icon}
+                  key={item.key}
+                  label={item.label}
+                  onClick={() => setOpen(false)}
+                  tone={item.tone}
+                />
+              ) : (
+                <ListActionRow
+                  icon={item.icon}
+                  key={item.key}
+                  label={item.label}
+                  onClick={() => {
+                    setOpen(false);
+                    item.onSelect?.();
+                  }}
+                  tone={item.tone}
+                />
+              ),
+            )}
+            </ListSection>
+          </SheetBody>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }
