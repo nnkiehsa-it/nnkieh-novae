@@ -133,6 +133,13 @@ body {
   background: var(--surface);
 }
 
+/* The sidebar floats over the canvas, so it lets a little of it through. */
+.glass-float {
+  background: color-mix(in oklab, var(--surface) 72%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  backdrop-filter: blur(20px) saturate(1.4);
+}
+
 /* The page never scrolls sideways, even when an edge's blur reaches past the
    column it belongs to. `clip` keeps sticky positioning working. */
 html,
