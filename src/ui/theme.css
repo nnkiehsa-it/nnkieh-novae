@@ -106,23 +106,11 @@ body {
   backdrop-filter: blur(var(--surface-blur)) saturate(140%);
 }
 
-/* The document itself never scrolls; `#app-scroll` inside body does. An
-   installed app on iOS 26 stops drawing fixed layers (the canvas, the dock)
-   short of the screen's foot while the document is the scroller and the page
-   is too short to scroll; a child scroller sidesteps that. */
+/* The page never scrolls sideways, even when an edge's blur reaches past the
+   column it belongs to. `clip` keeps sticky positioning working. */
 html,
 body {
-  height: 100%;
-  overflow: hidden;
-}
-
-/* It never scrolls sideways, even when an edge's blur reaches past the column
-   it belongs to. `clip` keeps sticky positioning working. */
-#app-scroll {
-  height: 100%;
   overflow-x: clip;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 /* A scrolling edge is never a hard cut (see EdgeBlur): stacked layers whose

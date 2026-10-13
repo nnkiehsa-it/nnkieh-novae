@@ -5,7 +5,6 @@ import { motion } from "motion/react";
 import { useI18n } from "@/i18n";
 import { AppLocationProvider, useBrowserLocation, type AppLocation } from "@/hooks/use-app-location";
 import { navigate, setViewHostMounted } from "@/lib/app-navigation";
-import { appScroller } from "@/lib/app-scroll";
 import { feedHref } from "@/lib/feed-href";
 import { timing } from "@/lib/motion-timing";
 import { isLayeredRoute, matchAppRoute, type AppRoute } from "@/lib/route-hierarchy";
@@ -138,11 +137,10 @@ export function AppViews() {
   const basePath = base?.pathname;
   React.useLayoutEffect(() => {
     if (!basePath) return;
-    const scroller = appScroller();
-    scroller.scrollTo(0, scroll.current.get(basePath) ?? 0);
-    const remember = () => scroll.current.set(basePath, scroller.scrollTop);
-    scroller.addEventListener("scroll", remember, { passive: true });
-    return () => scroller.removeEventListener("scroll", remember);
+    window.scrollTo(0, scroll.current.get(basePath) ?? 0);
+    const remember = () => scroll.current.set(basePath, window.scrollY);
+    window.addEventListener("scroll", remember, { passive: true });
+    return () => window.removeEventListener("scroll", remember);
   }, [basePath]);
 
   const screen = base?.route.kind === "admin" ? "admin" : basePath;
