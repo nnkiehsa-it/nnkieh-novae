@@ -4,14 +4,14 @@ import { cn } from "@/lib/utils";
 /** The Novae wave, drawn in the current text colour so it sits on any surface. */
 export function BrandMark({ className }: { className?: string }) {
   return (
-    <span aria-hidden className={cn("grid size-10 shrink-0 place-items-center rounded-tile bg-surface-raised text-ink", className)}>
+    <span aria-hidden className={cn("grid size-10 shrink-0 place-items-center rounded-tile bg-surface text-ink shadow-panel", className)}>
       <svg className="w-3/5" fill="none" viewBox="0 0 120 100">
         <path
           d="M 10 79 C 18 65, 23 43, 26 23 C 29 14, 37 14, 41 23 C 50 44, 60 63, 72 80 C 77 87, 85 85, 86 75 C 88 55, 91 34, 98 21 C 102 14, 109 16, 110 26"
           stroke="currentColor"
           strokeLinecap="round"
           strokeLinejoin="round"
-          strokeWidth="9"
+          strokeWidth="7"
         />
       </svg>
     </span>

@@ -391,7 +391,8 @@ integrationTest('administrator user pages and custom restriction duration are en
   const start = Date.now();
   const result = asRecord(await callAction('saveAccountAccessRule',{targetType:'uid',targetValue:member.auth.uid,preset:'read_only',duration:'custom',durationHours:2,message:'Custom duration test'},admin.auth));
   const delta = Date.parse(String(asRecord(result.rule).expiresAt))-start;
-  assert.ok(delta >= 7200000 && delta < 7210000);
+  // The deadline comes from the database clock and `start` from this one; allow a few seconds of skew between them.
+  assert.ok(delta > 7195000 && delta < 7210000);
   await assert.rejects(()=>callAction('saveAccountAccessRule',{targetType:'uid',targetValue:member.auth.uid,preset:'read_only',duration:'custom',durationHours:0,message:'Invalid'},admin.auth),/validation-invalid/);
   await assert.rejects(()=>callAction('saveAccountAccessRule',{targetType:'uid',targetValue:admin.auth.uid,preset:'blocked',duration:'custom',durationHours:2,message:'Denied'},admin.auth),/permission-denied/);
 });

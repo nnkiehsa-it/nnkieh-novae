@@ -1,19 +1,18 @@
 "use client";
 
 import { AppLink } from "@/ui/app-link";
-import { CheckCircle, CircleDashed, Plus } from "@phosphor-icons/react/ssr";
+import { Plus } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import type { IssueSortOption, IssueStatusBucket } from "@/types";
 import { useIssueFeed } from "@/hooks/use-issue-feed";
 import { usePublicProfiles } from "@/hooks/use-public-profiles";
 import { FeedList } from "@/features/feed/feed-list";
-import { SearchControl, SortControl } from "@/features/feed/feed-controls";
+import { FeedFilterLine, FeedTopBar, SearchControl } from "@/features/feed/feed-controls";
 import { Button } from "@/ui/button";
-import { Segmented } from "@/ui/segmented";
 import { IssueCard } from "./issue-card";
 
 /** Proposals in one category (or the reader's own), with status, search and order. */
-export function IssueFeed({ categoryControl, filter }: { categoryControl: React.ReactNode; filter: string }) {
+export function IssueFeed({ categoryControl, filter, notice, viewSwitch }: { categoryControl: React.ReactNode; filter: string; notice?: React.ReactNode; viewSwitch: React.ReactNode }) {
   const { t } = useI18n();
   const state = useIssueFeed(filter);
   const profiles = usePublicProfiles(state.feed.issues.map((issue) => issue.author_uid));
@@ -32,18 +31,9 @@ export function IssueFeed({ categoryControl, filter }: { categoryControl: React.
 
   return (
     <div className="grid gap-5">
-      <div className="flex flex-wrap items-center gap-2">
-        {categoryControl}
-        <Segmented
-          label={t("ui.issue.statusFilter")}
-          onChange={(value: IssueStatusBucket) => state.setBucket(value)}
-          options={[
-            { icon: <CircleDashed weight="bold" />, label: t("ui.common.active"), value: "active" },
-            { icon: <CheckCircle weight="bold" />, label: t("ui.common.closed"), value: "closed" },
-          ]}
-          value={state.bucket}
-        />
-        <div className="ml-auto flex items-center gap-2">
+      <FeedTopBar
+        center={viewSwitch}
+        left={(
           <SearchControl
             applied={state.committedQuery}
             label={t("ui.issue.searchPlaceholder")}
@@ -51,21 +41,32 @@ export function IssueFeed({ categoryControl, filter }: { categoryControl: React.
             onSearch={state.setCommittedQuery}
             query={state.query}
           />
-          <SortControl
-            onChange={(value: IssueSortOption) => state.setSort(value)}
-            options={[
-              { label: t("ui.common.latest"), value: "latest" },
-              { label: t("ui.issue.mostSupported"), value: "most-supported" },
-              { label: t("ui.issue.endingSoon"), value: "ending-soon" },
-            ]}
-            value={state.sort}
-          />
-          {mine ? null : (
-            <Button asChild variant="primary">
-              <AppLink href={composeHref}><Plus weight="bold" /><span className="max-sm:sr-only">{t("ui.issue.new")}</span></AppLink>
-            </Button>
-          )}
-        </div>
+        )}
+        right={mine ? null : (
+          <Button aria-label={t("ui.issue.new")} asChild size="icon">
+            <AppLink href={composeHref}><Plus weight="bold" /></AppLink>
+          </Button>
+        )}
+      />
+      {notice}
+      <div className="grid gap-3">
+        {categoryControl}
+        <FeedFilterLine
+          bucket={state.bucket}
+          bucketLabel={t("ui.issue.statusFilter")}
+          buckets={[
+            { label: t("ui.common.active"), value: "active" },
+            { label: t("ui.common.closed"), value: "closed" },
+          ]}
+          onBucketChange={(value: IssueStatusBucket) => state.setBucket(value)}
+          onSortChange={(value: IssueSortOption) => state.setSort(value)}
+          sort={state.sort}
+          sorts={[
+            { label: t("ui.common.latest"), value: "latest" },
+            { label: t("ui.issue.mostSupported"), value: "most-supported" },
+            { label: t("ui.issue.endingSoon"), value: "ending-soon" },
+          ]}
+        />
       </div>
       <FeedList
         empty={{

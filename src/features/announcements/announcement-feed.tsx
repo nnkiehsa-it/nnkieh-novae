@@ -5,23 +5,28 @@ import { Plus } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import { useAnnouncementFeed } from "@/hooks/use-announcement-feed";
 import { usePublicProfiles } from "@/hooks/use-public-profiles";
+import { FeedTopBar } from "@/features/feed/feed-controls";
 import { FeedList } from "@/features/feed/feed-list";
 import { Button } from "@/ui/button";
 import { AnnouncementCard } from "./announcement-card";
 
 const COMPOSE_HREF = "/announcements/new";
 
-export function AnnouncementFeed() {
+export function AnnouncementFeed({ notice, viewSwitch }: { notice?: React.ReactNode; viewSwitch: React.ReactNode }) {
   const { t } = useI18n();
   const feed = useAnnouncementFeed();
   const profiles = usePublicProfiles(feed.items.map((announcement) => announcement.author_uid));
   return (
     <div className="grid gap-5">
-      {feed.canManage ? (
-        <Button asChild className="justify-self-end" variant="primary">
-          <AppLink href={COMPOSE_HREF}><Plus weight="bold" />{t("ui.announcement.new")}</AppLink>
-        </Button>
-      ) : null}
+      <FeedTopBar
+        center={viewSwitch}
+        right={feed.canManage ? (
+          <Button aria-label={t("ui.announcement.new")} asChild size="icon">
+            <AppLink href={COMPOSE_HREF}><Plus weight="bold" /></AppLink>
+          </Button>
+        ) : null}
+      />
+      {notice}
       <FeedList
         empty={{
           action: feed.canManage

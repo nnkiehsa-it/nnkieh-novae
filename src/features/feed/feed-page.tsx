@@ -1,6 +1,5 @@
 "use client";
 
-import { Lightbulb, Megaphone, Wrench } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import { findFacilityCategory, findIssueCategory, getDefaultFacilityCategoryId, useCategories } from "@/hooks/use-categories";
 import { getDefaultIssueRouteFilter, getIssueFilterOptions } from "@/constants/categories";
@@ -9,11 +8,9 @@ import type { FeedView } from "@/lib/feed-href";
 import { AnnouncementFeed } from "@/features/announcements/announcement-feed";
 import { AnnouncementNotice } from "@/features/announcements/announcement-notice";
 import { FacilityFeed } from "@/features/facilities/facility-feed";
+import { CategoryChips } from "@/features/feed/feed-controls";
 import { IssueFeed } from "@/features/issues/issue-feed";
-import { pinnedHeaderClass } from "@/ui/page";
 import { Segmented, type SegmentedOption } from "@/ui/segmented";
-import { Select } from "@/ui/select";
-import { cn } from "@/lib/utils";
 
 // A feed's own filters never carry over into another feed or category.
 const CLEARED_FILTERS = { bucket: null, q: null, sort: null, status: null };
@@ -35,14 +32,13 @@ export function FeedPage() {
     ? requestedCategory : getDefaultFacilityCategoryId();
 
   const views: SegmentedOption<FeedView>[] = [
-    ...(categories.issuesEnabled ? [{ icon: <Lightbulb weight="bold" />, label: t("ui.nav.issues"), value: "issues" as const }] : []),
-    { icon: <Megaphone weight="bold" />, label: t("ui.nav.announcements"), value: "announcements" },
-    ...(categories.facilitiesEnabled ? [{ icon: <Wrench weight="bold" />, label: t("ui.nav.facilities"), value: "facilities" as const }] : []),
+    ...(categories.issuesEnabled ? [{ label: t("ui.nav.issues"), value: "issues" as const }] : []),
+    { label: t("ui.nav.announcements"), value: "announcements" },
+    ...(categories.facilitiesEnabled ? [{ label: t("ui.nav.facilities"), value: "facilities" as const }] : []),
   ];
 
   const categoryControl = (
-    <Select
-      className="min-w-0 max-w-full flex-1 sm:max-w-60 sm:flex-none"
+    <CategoryChips
       label={t("ui.access.selectCategory")}
       onChange={(category) => updateParams({ ...CLEARED_FILTERS, category })}
       options={view === "issues"
@@ -52,24 +48,22 @@ export function FeedPage() {
     />
   );
 
+  // The view switch is the page's title, centred in each feed's pinned top bar.
+  const viewSwitch = views.length > 1 ? (
+    <Segmented
+      label={t("ui.nav.feed")}
+      onChange={(next) => updateParams({ ...CLEARED_FILTERS, category: null, view: next === defaultView ? null : next })}
+      options={views}
+      value={view}
+    />
+  ) : null;
+
   return (
-    <div className="grid gap-6">
-      {/* The view switch is the page's title: centred and pinned like the top bar of an app. */}
-      <header className={cn(pinnedHeaderClass, "flex justify-center")}>
-        <h1 className="sr-only">{t("ui.nav.feed")}</h1>
-        {views.length > 1 ? (
-          <Segmented
-            label={t("ui.nav.feed")}
-            onChange={(next) => updateParams({ ...CLEARED_FILTERS, category: null, view: next === defaultView ? null : next })}
-            options={views}
-            value={view}
-          />
-        ) : null}
-      </header>
-      <AnnouncementNotice />
-      {view === "issues" ? <IssueFeed categoryControl={categoryControl} filter={issueFilter} key={issueFilter} />
-        : view === "facilities" ? <FacilityFeed categoryControl={categoryControl} />
-          : <AnnouncementFeed />}
+    <div className="grid gap-5">
+      <h1 className="sr-only">{t("ui.nav.feed")}</h1>
+      {view === "issues" ? <IssueFeed categoryControl={categoryControl} filter={issueFilter} key={issueFilter} notice={<AnnouncementNotice />} viewSwitch={viewSwitch} />
+        : view === "facilities" ? <FacilityFeed categoryControl={categoryControl} notice={<AnnouncementNotice />} viewSwitch={viewSwitch} />
+          : <AnnouncementFeed notice={<AnnouncementNotice />} viewSwitch={viewSwitch} />}
     </div>
   );
 }

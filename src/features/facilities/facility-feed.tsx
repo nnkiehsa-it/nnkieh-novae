@@ -1,20 +1,19 @@
 "use client";
 
 import { AppLink } from "@/ui/app-link";
-import { CheckCircle, CircleDashed, Plus } from "@phosphor-icons/react/ssr";
+import { Plus } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import type { FacilitySortOption } from "@/types";
 import { useFacilityFeed } from "@/hooks/use-facility-feed";
 import { usePublicProfiles } from "@/hooks/use-public-profiles";
 import { FeedList } from "@/features/feed/feed-list";
-import { SearchControl, SortControl } from "@/features/feed/feed-controls";
+import { FeedFilterLine, FeedTopBar, SearchControl } from "@/features/feed/feed-controls";
 import { Button } from "@/ui/button";
-import { Segmented } from "@/ui/segmented";
 import { FacilityCard } from "./facility-card";
 import { facilityComposeHref } from "./facility-href";
 
 /** Facility reports in one category, with status, search and order. */
-export function FacilityFeed({ categoryControl }: { categoryControl: React.ReactNode }) {
+export function FacilityFeed({ categoryControl, notice, viewSwitch }: { categoryControl: React.ReactNode; notice?: React.ReactNode; viewSwitch: React.ReactNode }) {
   const { t } = useI18n();
   const state = useFacilityFeed();
   const profiles = usePublicProfiles(state.feed.facilities.map((facility) => facility.author_uid));
@@ -22,18 +21,9 @@ export function FacilityFeed({ categoryControl }: { categoryControl: React.React
 
   return (
     <div className="grid gap-5">
-      <div className="flex flex-wrap items-center gap-2">
-        {categoryControl}
-        <Segmented
-          label={t("ui.facility.statusFilter")}
-          onChange={(value: "active" | "closed") => state.setBucket(value)}
-          options={[
-            { icon: <CircleDashed weight="bold" />, label: t("ui.status.processing"), value: "active" },
-            { icon: <CheckCircle weight="bold" />, label: t("ui.common.closed"), value: "closed" },
-          ]}
-          value={state.bucket}
-        />
-        <div className="ml-auto flex items-center gap-2">
+      <FeedTopBar
+        center={viewSwitch}
+        left={(
           <SearchControl
             applied={state.committedQuery}
             label={t("ui.facility.searchPlaceholder")}
@@ -41,18 +31,31 @@ export function FacilityFeed({ categoryControl }: { categoryControl: React.React
             onSearch={state.setCommittedQuery}
             query={state.query}
           />
-          <SortControl
-            onChange={(value: FacilitySortOption) => state.setSort(value)}
-            options={[
-              { label: t("ui.common.latest"), value: "latest" },
-              { label: t("ui.facility.mostAffected"), value: "most-affected" },
-            ]}
-            value={state.sort}
-          />
-          <Button asChild variant="primary">
-            <AppLink href={composeHref}><Plus weight="bold" /><span className="max-sm:sr-only">{t("ui.facility.new")}</span></AppLink>
+        )}
+        right={(
+          <Button aria-label={t("ui.facility.new")} asChild size="icon">
+            <AppLink href={composeHref}><Plus weight="bold" /></AppLink>
           </Button>
-        </div>
+        )}
+      />
+      {notice}
+      <div className="grid gap-3">
+        {categoryControl}
+        <FeedFilterLine
+          bucket={state.bucket}
+          bucketLabel={t("ui.facility.statusFilter")}
+          buckets={[
+            { label: t("ui.status.processing"), value: "active" },
+            { label: t("ui.common.closed"), value: "closed" },
+          ]}
+          onBucketChange={(value: "active" | "closed") => state.setBucket(value)}
+          onSortChange={(value: FacilitySortOption) => state.setSort(value)}
+          sort={state.sort}
+          sorts={[
+            { label: t("ui.common.latest"), value: "latest" },
+            { label: t("ui.facility.mostAffected"), value: "most-affected" },
+          ]}
+        />
       </div>
       <FeedList
         empty={{

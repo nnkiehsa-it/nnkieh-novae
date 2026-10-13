@@ -80,12 +80,13 @@
 :root[data-theme="light"] {
   color-scheme: light;
 
-  --canvas: #eef1f7;
+  /* A clear sky: mid blue at the top, thinning to near white toward the foot. */
+  --canvas: #e6edf7;
   --canvas-gradient:
-    radial-gradient(120% 60% at 15% 0%, rgb(140 160 220 / 18%), transparent 60%),
-    radial-gradient(80% 30% at 100% 62%, rgb(150 165 205 / 16%), transparent 70%),
-    linear-gradient(180deg, #f4f6fa 0%, #eef1f7 34%, #e4e9f2 62%, #d9dfeb 86%, #d9dfeb 100%);
-  --canvas-foot: #d9dfeb;
+    radial-gradient(90% 40% at 20% 0%, rgb(96 128 186 / 45%), transparent 70%),
+    radial-gradient(120% 35% at 50% 78%, rgb(255 255 255 / 70%), transparent 70%),
+    linear-gradient(180deg, #8ea8d3 0%, #b4c7e5 24%, #d6e1f1 52%, #e9eff8 80%, #eef3f9 100%);
+  --canvas-foot: #eef3f9;
 
   --surface: #ffffff;
   --surface-raised: rgb(17 21 34 / 4.5%);

@@ -192,7 +192,7 @@ export function TurnstileProvider({
         },
         sitekey: siteKey,
         size: "normal",
-        theme: "dark",
+        theme: document.documentElement.dataset.theme === "light" ? "light" : "dark",
       });
       turnstile.execute(widgetId);
     } catch (error) {

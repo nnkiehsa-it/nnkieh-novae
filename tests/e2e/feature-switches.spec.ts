@@ -82,7 +82,7 @@ test('all four feature combinations update the guided home, feed tabs and direct
       // With announcements alone there is nothing to switch between, so no switch is shown.
       const switchable = combination.issues || combination.facilities;
       await expect(feedNavigation.getByRole('tab', { name: 'Announcements', exact: true })).toHaveCount(switchable ? 1 : 0);
-      await expect(ordinary.page.getByRole('combobox', { name: 'Choose category', exact: true }))
+      await expect(ordinary.page.getByRole('radiogroup', { name: 'Choose category', exact: true }))
         .toHaveCount(combination.issues ? 1 : 0);
       const currentFeed = combination.issues
         ? feedNavigation.getByRole('tab', { name: 'Proposals', exact: true })

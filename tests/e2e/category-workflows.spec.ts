@@ -76,8 +76,7 @@ test('proposal and facility categories create, rename, surface, and delete atomi
 
   let ordinary = await newUserPage(browser, 'ordinary');
   await ordinary.page.goto('/issues/proposal-a');
-  await ordinary.page.getByRole('combobox').first().click();
-  await expect(ordinary.page.getByRole('option', { name: 'E2E Temporary Proposal' }))
+  await expect(ordinary.page.getByRole('radio', { name: 'E2E Temporary Proposal' }))
     .toBeVisible();
   await ordinary.context.close();
 
@@ -99,9 +98,8 @@ test('proposal and facility categories create, rename, surface, and delete atomi
 
   ordinary = await newUserPage(browser, 'ordinary');
   await ordinary.page.goto('/issues/proposal-a');
-  await ordinary.page.getByRole('combobox').first().click();
-  await expect(ordinary.page.getByRole('option', { name: 'E2E Renamed Proposal' })).toBeVisible();
-  await expect(ordinary.page.getByRole('option', { name: 'E2E Temporary Proposal' })).toHaveCount(0);
+  await expect(ordinary.page.getByRole('radio', { name: 'E2E Renamed Proposal' })).toBeVisible();
+  await expect(ordinary.page.getByRole('radio', { name: 'E2E Temporary Proposal' })).toHaveCount(0);
   await ordinary.context.close();
 
   await admin.page.goto('/admin/content?view=issue');
@@ -118,8 +116,7 @@ test('proposal and facility categories create, rename, surface, and delete atomi
 
   ordinary = await newUserPage(browser, 'ordinary');
   await ordinary.page.goto('/facilities');
-  await ordinary.page.getByRole('combobox').first().click();
-  await expect(ordinary.page.getByRole('option', { name: 'E2E Temporary Facility' })).toBeVisible();
+  await expect(ordinary.page.getByRole('radio', { name: 'E2E Temporary Facility' })).toBeVisible();
   await ordinary.context.close();
 
   await admin.page.goto('/admin/content');
@@ -129,8 +126,7 @@ test('proposal and facility categories create, rename, surface, and delete atomi
 
   ordinary = await newUserPage(browser, 'ordinary');
   await ordinary.page.goto('/facilities');
-  await ordinary.page.getByRole('combobox').first().click();
-  await expect(ordinary.page.getByRole('option', { name: 'E2E Temporary Facility' })).toHaveCount(0);
+  await expect(ordinary.page.getByRole('radio', { name: 'E2E Temporary Facility' })).toHaveCount(0);
   await ordinary.context.close();
   await admin.context.close();
 });

@@ -12,12 +12,19 @@ let announcementUrl: string;
 const firstComment = "Draft isolation: first discussion thread";
 const secondComment = "Draft isolation: second discussion thread";
 
+// A choice is a select, or a row of radios (the category chips) whose checked one is the value.
 function choice(page: Page, name: string) {
   return page.getByRole("combobox", { name, exact: true })
-    .or(page.getByRole("button", { name, exact: true }));
+    .or(page.getByRole("button", { name, exact: true }))
+    .or(page.getByRole("radiogroup", { name, exact: true }).getByRole("radio", { checked: true }));
 }
 
 async function choose(page: Page, name: string, option: string) {
+  const group = page.getByRole("radiogroup", { name, exact: true });
+  if (await group.count()) {
+    await group.getByRole("radio", { name: option, exact: true }).click();
+    return;
+  }
   await choice(page, name).click();
   await page.getByRole("option", { name: option, exact: true })
     .or(page.getByRole("radio", { name: option, exact: true })).click();
@@ -106,7 +113,7 @@ test.describe.serial("shareable feeds and isolated discussion drafts", () => {
         await expect.poll(() => new URL(page.url()).searchParams.get("category")).toBe("facility-b");
         await choose(page, "Sort order", "Most affected");
         await expect.poll(() => new URL(page.url()).searchParams.get("sort")).toBe("most-affected");
-        await page.getByRole("tab", { name: "Closed", exact: true }).click();
+        await page.getByRole("radio", { name: "Closed", exact: true }).click();
         await expect.poll(() => new URL(page.url()).searchParams.get("bucket")).toBe("closed");
 
         const beforeTyping = page.url();
@@ -123,14 +130,14 @@ test.describe.serial("shareable feeds and isolated discussion drafts", () => {
 
         await page.reload();
         await expect(choice(page, "Choose category")).toContainText("Facility B");
-        await expect(page.getByRole("tab", { name: "Closed", exact: true })).toHaveAttribute("aria-selected", "true");
+        await expect(page.getByRole("radio", { name: "Closed", exact: true })).toHaveAttribute("aria-checked", "true");
         await page.getByRole("button", { name: searchLabel, exact: true }).click();
         await expect(search).toHaveValue(`圖書館 ${size}`);
         await page.keyboard.press("Escape");
 
         await page.goBack();
         await expect.poll(() => new URL(page.url()).searchParams.get("q")).toBeNull();
-        await expect(page.getByRole("tab", { name: "Closed", exact: true })).toHaveAttribute("aria-selected", "true");
+        await expect(page.getByRole("radio", { name: "Closed", exact: true })).toHaveAttribute("aria-checked", "true");
         await page.goBack();
         await expect.poll(() => new URL(page.url()).searchParams.get("bucket")).toBeNull();
         await page.goBack();
@@ -141,7 +148,7 @@ test.describe.serial("shareable feeds and isolated discussion drafts", () => {
         const sharedPage = await context.newPage();
         await sharedPage.goto(shared);
         await expect(choice(sharedPage, "Choose category")).toContainText("Facility B");
-        await expect(sharedPage.getByRole("tab", { name: "Closed", exact: true })).toHaveAttribute("aria-selected", "true");
+        await expect(sharedPage.getByRole("radio", { name: "Closed", exact: true })).toHaveAttribute("aria-checked", "true");
         await sharedPage.getByRole("button", { name: searchLabel, exact: true }).click();
         await expect(sharedPage.getByRole("textbox", { name: searchLabel, exact: true })).toHaveValue(`圖書館 ${size}`);
         // Windows WebKit can stall while capturing a full page with an open popover.
