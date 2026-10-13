@@ -6,6 +6,7 @@ import { initializeI18n } from "@/i18n";
 import { installBrowserBehavior } from "@/lib/browser-behavior";
 import { ensureFirebaseAppCheck } from "@/lib/firebase-app-check";
 import { timing } from "@/lib/motion-timing";
+import { watchSystemTheme } from "@/lib/theme";
 import { SessionProvider } from "@/hooks/use-session";
 import { TurnstileProvider } from "@/features/security/turnstile";
 import { E2eAuthBridge } from "@/features/system/e2e-auth-bridge";
@@ -23,7 +24,12 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     initializeI18n();
     void ensureFirebaseAppCheck().catch(() => undefined);
     setI18nReady(true);
-    return installBrowserBehavior();
+    const stopWatchingTheme = watchSystemTheme();
+    const uninstallBrowserBehavior = installBrowserBehavior();
+    return () => {
+      stopWatchingTheme();
+      uninstallBrowserBehavior();
+    };
   }, []);
 
   return (

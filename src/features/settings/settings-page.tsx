@@ -1,7 +1,10 @@
 "use client";
 
 import { ArrowClockwise, ArrowSquareOut, Copy, GithubLogo, ShieldCheck, SignOut, UserSwitch } from "@phosphor-icons/react/ssr";
+import * as React from "react";
 import { toast } from "sonner";
+import { readThemePreference, setThemePreference, type ThemePreference } from "@/lib/theme";
+import { Segmented } from "@/ui/segmented";
 import { setLocale, useI18n, type AppLocale } from "@/i18n";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
 import { useDraft } from "@/hooks/use-draft";
@@ -32,6 +35,7 @@ export function SettingsPage() {
     save: async (next) => push.saveAdminPreferences(next),
     source: push.adminPreferences,
   });
+  const [theme, setTheme] = React.useState<ThemePreference>(readThemePreference);
   const user = session.user!;
   const name = user.displayName || t("ui.settings.unnamed");
   const canAdminister = session.can("role.manage") || session.can("category.manage") || session.can("dashboard.view");
@@ -60,11 +64,27 @@ export function SettingsPage() {
           size="sm"
         >
           <Copy />
-          <span className="font-mono text-xs">UID {user.uid.slice(0, 12)}…</span>
+          UID
         </Button>
       </Panel>
 
       <ListGroup title={t("ui.settings.appearance")}>
+        <li className="flex min-h-14 items-center justify-between gap-3 py-2 pl-4 pr-2">
+          <span className="text-[0.9375rem]">{t("ui.settings.displayMode")}</span>
+          <Segmented
+            label={t("ui.settings.displayMode")}
+            onChange={(next) => {
+              setTheme(next);
+              setThemePreference(next);
+            }}
+            options={[
+              { label: t("ui.settings.system"), value: "system" },
+              { label: t("ui.settings.light"), value: "light" },
+              { label: t("ui.settings.dark"), value: "dark" },
+            ]}
+            value={theme}
+          />
+        </li>
         <PickerRow
           label={t("ui.settings.language")}
           onChange={(value: AppLocale) => setLocale(value)}

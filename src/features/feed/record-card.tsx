@@ -18,7 +18,7 @@ export function RecordCard({ children, chips, footer, href, label, meta, title }
   title: React.ReactNode;
 }) {
   return (
-    <article className="glass group relative flex h-full min-w-0 flex-col gap-3 rounded-panel p-4 shadow-panel transition-[background-color] duration-[var(--motion-control)] ease-[var(--ease-move)] hover:bg-surface-raised">
+    <article className="glass group relative flex h-full min-w-0 flex-col gap-3 rounded-panel p-4 shadow-panel transition-[background-color] duration-[var(--motion-control)] ease-[var(--ease-move)] hover:bg-[color-mix(in_srgb,var(--surface)_95%,var(--ink))]">
       {chips ? <div className="flex flex-wrap items-center gap-2">{chips}</div> : null}
       <div className="min-w-0">
         <h2 className="line-clamp-2 text-lg font-semibold leading-snug tracking-tight">{title}</h2>
