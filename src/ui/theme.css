@@ -71,19 +71,23 @@
   --bottom-nav-gap: max(0.75rem, var(--safe-bottom));
 }
 
+/* Whatever the canvas layer misses is painted in the gradient's bottom colour,
+   so a gap at the foot of the screen blends in rather than showing a band. */
 html {
-  background: var(--canvas);
+  background: #343c53;
 }
 
 /* The gradient is painted by a fixed layer rather than `background-attachment:
    fixed`, which iOS Safari ignores; content scrolls over a still canvas. It is
    as tall as the largest viewport, so it still reaches the bottom of the screen
-   behind Safari's toolbar instead of leaving a band of plain canvas there. */
+   behind Safari's toolbar instead of leaving a band of plain canvas there.
+   An installed app on iOS leaves the home-indicator area out of `lvh` when the
+   page is too short to scroll, so the safe areas are added on top. */
 body::before {
   content: "";
   position: fixed;
   inset: 0 0 auto;
-  height: 100lvh;
+  height: calc(100lvh + env(safe-area-inset-top) + env(safe-area-inset-bottom));
   z-index: -1;
   background: var(--canvas-gradient);
   pointer-events: none;
