@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Lets the fixed branch-preview hostname sign in against the production
 // backend: adds it to the Turnstile widget the build uses, to Firebase Auth's
-// authorized domains and to the production Worker's ALLOWED_ORIGINS (which the
+// authorized domains, to App Check's reCAPTCHA key and to the production Worker's ALLOWED_ORIGINS (which the
 // Worker's Turnstile hostname check also reads).
 // Each change only ever adds the one hostname; running again changes nothing.
 import { spawnSync } from "node:child_process";
@@ -15,6 +15,7 @@ const workerName = process.env.CLOUDFLARE_WORKER_NAME?.trim() || "novae-api";
 const cloudflareAccountId = process.env.CLOUDFLARE_ACCOUNT_ID?.trim();
 const cloudflareToken = process.env.CLOUDFLARE_API_TOKEN?.trim();
 const turnstileSiteKey = process.env.TURNSTILE_SITE_KEY?.trim();
+const recaptchaSiteKey = process.env.RECAPTCHA_SITE_KEY?.trim();
 
 if (!hostname || !projectId || !serviceAccount || !allowedOrigins || !cloudflareAccountId || !cloudflareToken || !turnstileSiteKey) {
   console.error("PREVIEW_HOSTNAME, FIREBASE_PROJECT_ID, GOOGLE_SERVICE_ACCOUNT_JSON, ALLOWED_ORIGINS, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN and TURNSTILE_SITE_KEY are required.");
@@ -42,8 +43,39 @@ async function googleAccessToken() {
   return (await response.json()).access_token;
 }
 
+async function allowRecaptchaDomain(token) {
+  if (!recaptchaSiteKey) {
+    console.log("No reCAPTCHA Enterprise site key; skipping App Check domain.");
+    return;
+  }
+  const url = `https://recaptchaenterprise.googleapis.com/v1/projects/${projectId}/keys/${recaptchaSiteKey}`;
+  const headers = { authorization: `Bearer ${token}`, "x-goog-user-project": projectId };
+  const current = await fetch(url, { headers });
+  if (!current.ok) {
+    console.log(`::warning::Could not read reCAPTCHA key (${current.status}): ${await current.text()}`);
+    return;
+  }
+  const key = await current.json();
+  const domains = key.webSettings?.allowedDomains ?? [];
+  if (key.webSettings?.allowAllDomains || domains.includes(hostname)) {
+    console.log(`reCAPTCHA key ${key.displayName} already allows ${hostname}.`);
+    return;
+  }
+  const updated = await fetch(`${url}?updateMask=webSettings.allowedDomains`, {
+    method: "PATCH",
+    headers: { ...headers, "content-type": "application/json" },
+    body: JSON.stringify({ webSettings: { ...key.webSettings, allowedDomains: [...domains, hostname] } }),
+  });
+  if (!updated.ok) {
+    console.log(`::warning::Could not add ${hostname} to reCAPTCHA key ${key.displayName} (${updated.status}): ${await updated.text()}`);
+    return;
+  }
+  console.log(`reCAPTCHA key ${key.displayName} now allows ${hostname}.`);
+}
+
 async function authorizeFirebaseDomain() {
   const token = await googleAccessToken();
+  await allowRecaptchaDomain(token);
   const url = `https://identitytoolkit.googleapis.com/admin/v2/projects/${projectId}/config`;
   const headers = { authorization: `Bearer ${token}`, "x-goog-user-project": projectId };
   const current = await fetch(url, { headers });
