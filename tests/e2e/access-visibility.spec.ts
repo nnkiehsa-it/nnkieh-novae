@@ -44,7 +44,7 @@ test('proposal controls follow ownership, category scope, and platform administr
   for (const entry of cases) {
     const { context, page } = await newUserPage(browser, entry.user);
     await page.goto(entry.url);
-    await expect(page.getByRole('button', { name: 'Share proposal' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Share', exact: true })).toBeVisible();
     await expectMoreActions(page, entry.present, entry.absent);
     await context.close();
   }
@@ -96,7 +96,7 @@ test('facility controls follow ownership, category scope, and platform administr
   for (const entry of cases) {
     const { context, page } = await newUserPage(browser, entry.user);
     await page.goto(entry.url);
-    await expect(page.getByRole('button', { name: 'Share facility report' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Share', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: /I have this issue too|Remove marker/i }))
       .toBeVisible();
     await expectMoreActions(

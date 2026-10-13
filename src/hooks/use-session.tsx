@@ -31,7 +31,7 @@ import {
   patch,
   subscribe,
 } from "@/hooks/session-store";
-import { useTurnstile } from "@/components/turnstile-provider";
+import { useTurnstile } from "@/features/security/turnstile";
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const { requestToken } = useTurnstile();

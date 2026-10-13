@@ -1,8 +1,7 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { DecodedImage } from "@/components/ui/decoded-image";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DecodedImage } from "@/ui/image";
 
 let root: Root;
 let container: HTMLDivElement;
@@ -20,17 +19,13 @@ afterEach(async () => {
   vi.restoreAllMocks(); vi.unstubAllGlobals(); decode.mockReset();
 });
 
-it("keeps the avatar fallback and attachment hidden until decoding completes without a spinner", async () => {
+it("keeps an attachment hidden until decoding completes", async () => {
   let finish!: () => void;
   decode.mockImplementation(() => new Promise<void>((resolve) => { finish = resolve; }));
-  await act(async () => root.render(createElement(Avatar, null,
-    createElement(AvatarImage, { src: "/avatar.webp", alt: "User" }),
-    createElement(AvatarFallback, null, "U"))));
+  await act(async () => root.render(createElement(DecodedImage, { src: "/photo.webp", alt: "Photo" })));
   const image = container.querySelector("img")!;
   await act(async () => image.dispatchEvent(new Event("load")));
   expect(image.dataset.imageState).toBe("loading");
-  expect(container.querySelector('[data-slot="avatar-fallback"]')?.textContent).toBe("U");
-  expect(container.querySelector("svg")).toBeNull();
   await act(async () => finish());
   expect(image.dataset.imageState).toBe("ready");
 });
@@ -41,7 +36,7 @@ it("decodes an already complete cache hit without waiting for another load event
   decode.mockResolvedValue(undefined);
   await act(async () => root.render(createElement(DecodedImage, { src: "/cached.webp", alt: "Cached" })));
   expect(container.querySelector("img")?.dataset.imageState).toBe("ready");
-  expect(container.querySelector(".t-image-placeholder")).toBeNull();
+  expect(container.querySelector(".skeleton")).toBeNull();
 });
 
 it("ignores an old decode after the source changes and reports a broken new image", async () => {

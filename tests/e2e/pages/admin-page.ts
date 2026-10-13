@@ -1,12 +1,9 @@
 import { expect, type Page } from '@playwright/test';
 
+/** Opens one section of an administration area through its tab rail. */
 export async function selectAdminSection(page: Page, label: string) {
-  const back = page.getByRole('button', { name: 'Back to section summary', exact: true });
-  const summary = page.getByRole('group', { name: 'Section summary', exact: true });
-  await expect(back.or(summary)).toBeVisible();
-  const heading = page.getByRole('main').getByRole('heading', { level: 2, name: label, exact: true });
-  if (await heading.isVisible()) return;
-  if (await back.isVisible()) await back.click();
-  await page.getByRole('main').getByRole('button').filter({ has: page.getByText(label, { exact: true }) }).click();
-  await expect(heading).toBeVisible();
+  const tab = page.getByRole('main').getByRole('tab', { name: label, exact: true });
+  await expect(tab).toBeVisible();
+  if ((await tab.getAttribute('aria-selected')) !== 'true') await tab.click();
+  await expect(tab).toHaveAttribute('aria-selected', 'true');
 }

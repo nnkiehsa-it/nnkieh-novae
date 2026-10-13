@@ -23,10 +23,13 @@ on:
       - 'vitest.config.ts'
       - 'eslint.config.js'
       - '.github/workflows/**'
+  # Every branch deploys: main to production, everything else to a Vercel
+  # preview built from the production secrets (the development environment
+  # holds none), so previews talk to the production backend. Only main
+  # deploys the backend.
   push:
     branches:
-      - main
-      - dev
+      - '**'
     paths:
       - 'src/**'
       - 'cloudflare/**'
@@ -161,9 +164,13 @@ jobs:
       - name: Verify integration behavior
         run: bun run verify:integration
 
+  # Browser E2E is slow, so it gates only main (and pull requests into it);
+  # other branches deploy after the fast checks.
   browser_verify:
     needs: changes
-    if: needs.changes.outputs.browser == 'true'
+    if: >-
+      needs.changes.outputs.browser == 'true' &&
+      (github.ref_name == 'main' || github.base_ref == 'main')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -216,7 +223,8 @@ jobs:
       needs.fast.result == 'success' &&
       needs.backend_verify.result == 'success' &&
       needs.changes.outputs.backend == 'true' &&
-      (needs.changes.outputs.browser != 'true' || needs.browser_verify.result == 'success') &&
+      (needs.changes.outputs.browser != 'true' || contains(fromJSON('["success","skipped"]'), needs.browser_verify.result)) &&
+      github.ref_name == 'main' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
@@ -363,6 +371,7 @@ jobs:
           OPERATIONS_CLOUDFLARE_ACCOUNT_ID: ${{ secrets.OPERATIONS_CLOUDFLARE_ACCOUNT_ID }}
           OPERATIONS_CLOUDFLARE_TOKEN: ${{ secrets.OPERATIONS_CLOUDFLARE_TOKEN }}
           OPERATIONS_WORKER_NAME: ${{ secrets.OPERATIONS_WORKER_NAME }}
+          PREVIEW_HOSTNAME: ${{ vars.PREVIEW_HOSTNAME || 'nnkieh-novae-preview.vercel.app' }}
           ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
           ALLOWED_DOMAIN: ${{ secrets.ALLOWED_DOMAIN || secrets.NEXT_PUBLIC_ALLOWED_DOMAIN || secrets.VITE_ALLOWED_DOMAIN }}
           ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
@@ -391,7 +400,11 @@ jobs:
             OPERATIONS_WORKER_NAME: process.env.OPERATIONS_WORKER_NAME,
             ADMIN_EMAILS: process.env.ADMIN_EMAILS,
             ALLOWED_DOMAIN: process.env.ALLOWED_DOMAIN,
-            ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
+            // The fixed branch-preview hostname stays allowed across deploys.
+            ALLOWED_ORIGINS: [...new Set([
+              ...process.env.ALLOWED_ORIGINS.split(',').map((value) => value.trim()).filter(Boolean),
+              `https://${process.env.PREVIEW_HOSTNAME}`,
+            ])].join(','),
             CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
             CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
             CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
@@ -452,12 +465,13 @@ jobs:
     if: >-
       always() &&
       needs.fast.result == 'success' &&
-      needs.browser_verify.result == 'success' &&
+      contains(fromJSON('["success","skipped"]'), needs.browser_verify.result) &&
       needs.changes.outputs.browser == 'true' &&
-      (needs.changes.outputs.backend != 'true' || needs.deploy_backend.result == 'success') &&
+      (needs.changes.outputs.backend != 'true' || needs.deploy_backend.result == 'success' ||
+        (github.ref_name != 'main' && needs.backend_verify.result == 'success')) &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
-    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+    environment: production
     steps:
       - uses: actions/checkout@v7
 
@@ -561,9 +575,39 @@ jobs:
         run: |
           url="$(bunx --yes vercel@58.9.0 deploy --prebuilt ${{ github.ref_name == 'main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }})"
           echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Deployed **${GITHUB_REF_NAME}**: $url" >> "$GITHUB_STEP_SUMMARY"
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      # Previews get random URLs, but Turnstile, the Worker's ALLOWED_ORIGINS
+      # and Firebase's authorized domains each list exact hostnames. The latest
+      # branch preview is therefore also served at one fixed hostname, which is
+      # the one those three allow.
+      - name: Point the fixed preview hostname at this deployment
+        if: github.ref_name != 'main'
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+          PREVIEW_HOSTNAME: ${{ vars.PREVIEW_HOSTNAME || 'nnkieh-novae-preview.vercel.app' }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          bunx --yes vercel@58.9.0 alias set "$DEPLOYMENT_URL" "$PREVIEW_HOSTNAME" --token=${{ secrets.VERCEL_TOKEN }}
+          echo "Preview hostname: https://$PREVIEW_HOSTNAME" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Allow the preview hostname to sign in
+        if: github.ref_name != 'main'
+        env:
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_WORKER_NAME: ${{ vars.CLOUDFLARE_WORKER_NAME }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID || secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          PREVIEW_HOSTNAME: ${{ vars.PREVIEW_HOSTNAME || 'nnkieh-novae-preview.vercel.app' }}
+          RECAPTCHA_SITE_KEY: ${{ secrets.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY || secrets.VITE_RECAPTCHA_ENTERPRISE_SITE_KEY }}
+          TURNSTILE_SITE_KEY: ${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY || secrets.VITE_TURNSTILE_SITE_KEY || secrets.TURNSTILE_SITE_KEY }}
+        run: node scripts/allow-preview-origin.mjs
 
       - name: Smoke test the deployed frontend
         env:

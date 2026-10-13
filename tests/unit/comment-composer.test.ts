@@ -1,15 +1,11 @@
 import { act, createElement, type PropsWithChildren } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { CommentComposer } from "@/components/comments/comment-composer";
+import { CommentComposer } from "@/features/content/comment-composer";
 
-vi.mock("@/i18n", () => ({ t: (key: string) => key }));
+vi.mock("@/i18n", () => ({ t: (key: string) => key, useI18n: () => ({ t: (key: string) => key }) }));
 vi.mock("@/hooks/use-session", () => ({ useSession: () => ({ user: { displayName: "Member" } }) }));
-vi.mock("@/components/ui/tooltip", () => ({
-  Tooltip: ({ children }: PropsWithChildren) => children,
-  TooltipTrigger: ({ children }: PropsWithChildren) => children,
-  TooltipContent: () => null,
-}));
+vi.mock("@/ui/popover", () => ({ Tooltip: ({ children }: PropsWithChildren) => children }));
 
 let root: Root;
 let container: HTMLDivElement;

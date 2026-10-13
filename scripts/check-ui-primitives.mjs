@@ -65,37 +65,11 @@ for (const file of files) {
     if (/\bease:\s*\[/u.test(source)) errors.push(`${relativePath} hard-codes an easing curve; take a curve from @/lib/motion-timing`);
     if (/\btype:\s*["']spring["']/u.test(source)) errors.push(`${relativePath} animates on a spring, which sits outside the motion ladder`);
     if (/\bduration-\d/u.test(source)) errors.push(`${relativePath} uses a raw Tailwind duration; reference a motion token instead`);
-    if (
-      /presentation=["']sheet["']/u.test(source) &&
-      posixRelativePath !== "src/components/ui/sheet.tsx"
-    ) {
-      errors.push(`${relativePath} bypasses the shared Sheet primitive`);
-    }
-    if (
-      /\bt-sheet(?:-|\b)/u.test(source) &&
-      ![
-        "src/components/ui/dialog.tsx",
-        "src/components/ui/sheet.tsx",
-        "src/components/ui/sheet-surface.tsx",
-      ].includes(posixRelativePath)
-    ) {
-      errors.push(`${relativePath} reaches into Sheet implementation classes; use the shared Sheet API`);
-    }
-    if (
-      /data-slot=["']dialog-close["']/u.test(source) &&
-      ![
-        "src/components/ui/dialog.tsx",
-        "src/components/ui/sheet.tsx",
-        "src/components/ui/sheet-surface.tsx",
-      ].includes(posixRelativePath)
-    ) {
-      errors.push(`${relativePath} defines its own Sheet/Dialog close control; use the shared primitive`);
-    }
-    if (
-      /@\/components\/ui\/sheet-surface/u.test(source) &&
-      posixRelativePath !== "src/components/ui/sheet.tsx"
-    ) {
-      errors.push(`${relativePath} imports the internal Sheet surface; use @/components/ui/sheet`);
+    // Radix's Dialog is the sheet and dialog primitives' implementation; a
+    // feature composing its own overlay from it would skip their motion and focus.
+    if (/from\s+["']radix-ui["']/u.test(source) && /\b(?:Alert)?Dialog\b/u.test(source) &&
+      !["src/ui/confirm-dialog.tsx", "src/ui/dialog.tsx", "src/ui/image.tsx", "src/ui/sheet.tsx"].includes(posixRelativePath)) {
+      errors.push(`${relativePath} builds an overlay on Radix Dialog; use @/ui/sheet or @/ui/dialog`);
     }
   }
 
@@ -105,22 +79,19 @@ for (const file of files) {
       const before = source.slice(0, block.index);
       const mediaStart = before.lastIndexOf("@media");
       const mediaSource = mediaStart >= 0 ? before.slice(mediaStart, before.indexOf("{", mediaStart) + 1) : "";
-      // Delegated feedback can gate hover by the actual pointer instead of the
-      // device's primary pointer, which also supports mouse input on tablets.
-      const mousePointerGate = /\.t-mouse\s+:hover/u.test(block[1]);
-      if (!/\(hover:\s*hover\)/u.test(mediaSource) && !mousePointerGate) {
+      if (!/\(hover:\s*hover\)/u.test(mediaSource)) {
         errors.push(`${relativePath} has an ungated :hover selector`);
       }
     }
   }
 
-  if (relativePath.includes(`${path.sep}components${path.sep}ui${path.sep}`) && /@\/(?:services|hooks\/use-session)/u.test(source)) {
+  if (/^src\/ui\//u.test(posixRelativePath) && /@\/(?:services|hooks\/use-session)/u.test(source)) {
     errors.push(`${relativePath} imports business data into a UI primitive`);
   }
 
   if (
     (relativePath.includes(`${path.sep}app${path.sep}`) ||
-      relativePath.includes(`${path.sep}components${path.sep}`)) &&
+      relativePath.includes(`${path.sep}features${path.sep}`)) &&
     /from\s+["']@\/services\//u.test(source)
   ) {
     errors.push(`${relativePath} accesses a service directly; move the flow into a domain hook`);
@@ -143,7 +114,7 @@ for (const orphan of findOrphanCssClassSelectors(stylesheets, productSources)) {
 }
 
 const globals = await readFile(path.join(sourceRoot, "app/globals.css"), "utf8");
-const motion = await readFile(path.join(sourceRoot, "styles/motion.css"), "utf8");
+const motion = await readFile(path.join(sourceRoot, "ui/motion.css"), "utf8");
 const ladder = await readFile(path.join(sourceRoot, "generated/motion-ladder.css"), "utf8");
 
 // The --motion-* and --ease-* namespaces belong to config/motion.config.json.
@@ -155,7 +126,7 @@ const ladderTokens = new Set(
 );
 for (const { path: consumer, source } of [
   { path: "src/app/globals.css", source: globals },
-  { path: "src/styles/motion.css", source: motion },
+  { path: "src/ui/motion.css", source: motion },
   ...productSourceFiles,
 ]) {
   for (const [, token] of source.matchAll(/var\((--(?:motion|ease)-[a-z-]+)\)/gu)) {
@@ -169,10 +140,9 @@ for (const { path: consumer, source } of [
 const motionRecipes = motion.replace(/^(?::root|\.dark)\s*\{[\s\S]*?^\}/gmu, "");
 for (const [literal, amount] of motionRecipes.matchAll(/(?<![\w.-])(\d+(?:\.\d+)?)m?s(?![\w-])/gu)) {
   if (Number(amount) === 0) continue;
-  errors.push(`src/styles/motion.css hard-codes the duration ${literal}; name it in the motion ladder`);
+  errors.push(`src/ui/motion.css hard-codes the duration ${literal}; name it in the motion ladder`);
 }
 if (!motion.includes("@media (prefers-reduced-motion: reduce)")) errors.push("motion.css must honor prefers-reduced-motion");
-if (!motion.includes("@media (hover: hover) and (pointer: fine)")) errors.push("motion.css must gate hover-only feedback");
 
 if (errors.length) {
   console.error([...new Set(errors)].join("\n"));

@@ -4,7 +4,7 @@ import { Inter, Roboto_Mono } from "next/font/google";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
 import "./globals.css";
-import { AppProviders } from "@/components/app-providers";
+import { AppProviders } from "@/features/shell/app-providers";
 import { APP_DESCRIPTION } from "@/constants/app";
 
 const appVersion = process.env.NEXT_PUBLIC_APP_VERSION ?? "development";
@@ -51,17 +51,14 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  colorScheme: "light dark",
+  colorScheme: "dark",
   initialScale: 1,
   // The application is a fixed-scale surface: every layout already answers the
   // screen it is on, and a pinch that scales the page instead only takes the
   // navigation bar and the composer dock off it.
   maximumScale: 1,
   minimumScale: 1,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#e9edf4" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
-  ],
+  themeColor: "#111624",
   userScalable: false,
   viewportFit: "cover",
   width: "device-width",
@@ -100,9 +97,8 @@ export default async function RootLayout({
           </>
         ) : null}
       </head>
-      {/* Novae website brand, compact product density, shared light/dark surfaces and stable loading geometry. */}
       <body>
-        <AppProviders nonce={nonce}>{children}</AppProviders>
+        <AppProviders>{children}</AppProviders>
         {turnstileSiteKey ? (
           <Script
             nonce={nonce}

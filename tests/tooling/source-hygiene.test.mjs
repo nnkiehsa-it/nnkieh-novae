@@ -25,7 +25,7 @@ test("shared frontend runtime modules have a product consumer", async () => {
   const importedPaths = new Set(modules.flatMap(({ imports, path: modulePath }) => imports
     .map(({ specifier }) => resolveFrontendImport(modulePath, specifier, knownPaths))
     .filter(Boolean)));
-  const prefixes = ["src/components/", "src/hooks/", "src/lib/", "src/services/"];
+  const prefixes = ["src/features/", "src/hooks/", "src/lib/", "src/services/", "src/ui/"];
   const orphaned = modules.map(({ path: modulePath }) => modulePath)
     .filter((modulePath) => prefixes.some((prefix) => modulePath.startsWith(prefix)))
     .filter((modulePath) => !modulePath.endsWith(".d.ts"))

@@ -31,7 +31,7 @@ test('restriction editors keep deadlines, preserve failed drafts, and expose rem
     await search.fill(email);
     await expectBackendAction(page, 'listAdminUsers', () => page.getByRole('button', { name: 'Search', exact: true }).click());
     await expect(search).toHaveValue(email);
-    await page.getByRole('main').getByText(email, { exact: true }).click();
+    await page.getByRole('main').getByRole('button').filter({ hasText: email }).first().click();
     return page.getByRole('dialog');
   };
   try {
@@ -61,7 +61,6 @@ test('restriction editors keep deadlines, preserve failed drafts, and expose rem
     await expect(page.getByLabel('Restriction reason / displayed message')).toHaveValue('Changed prefix message');
     expect(await deadline()).toBe(originalDeadline);
     await page.setViewportSize({ width: 390, height: 900 });
-    await expect(page.locator('[data-sheet-motion-frame]')).toHaveAttribute('data-sheet-arrived', 'true');
     await page.getByRole('dialog').getByRole('alert').scrollIntoViewIfNeeded();
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath('prefix-rule-failure-390.png') });

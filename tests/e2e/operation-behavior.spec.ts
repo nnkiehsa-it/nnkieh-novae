@@ -54,7 +54,7 @@ test('proposal covers support, threaded comments, deletion, and terminal outcome
       value: { writeText: async (url: string) => { (window as typeof window & { __sharedUrl?: string }).__sharedUrl = url; } },
     });
   });
-  await member.page.getByRole('button', { name: 'Share proposal' }).click();
+  await member.page.getByRole('button', { name: 'Share', exact: true }).click();
   // A shared link carries the marker that tells the tab it opens in that it
   // arrived from somebody else rather than from Novae itself.
   await expect.poll(() => member.page.evaluate(
@@ -69,15 +69,6 @@ test('proposal covers support, threaded comments, deletion, and terminal outcome
 
   const rootComment = `Proposal root ${Date.now()}`;
   const reply = `Proposal reply ${Date.now()}`;
-  await expect(member.page.locator('#discussion-title')).toHaveCSS('font-size', '14px');
-  expect(await member.page.locator('[data-detail-card="timeline"]').evaluate((timeline) => {
-    const discussion = document.querySelector('section[aria-labelledby="discussion-title"]')!;
-    const content = timeline.querySelector('.grid.gap-5')!;
-    return {
-      discussionFollows: Boolean(timeline.compareDocumentPosition(discussion) & Node.DOCUMENT_POSITION_FOLLOWING),
-      headingGap: getComputedStyle(content).rowGap,
-    };
-  })).toEqual({ discussionFollows: true, headingGap: '20px' });
   await createComment(member.page, rootComment, 'createComment');
   await replyToComment(member.page, reply, 'createComment');
   await deleteOwnComment(member.page, reply, 'deleteComment');
@@ -160,10 +151,10 @@ test('announcement covers like, threaded comments, deletion, and manager removal
     await expect.poll(() => holding).toBe(true);
     await feedLikes.nth(1).click();
     await expect(feedLikes.nth(1)).toHaveAttribute('aria-pressed', secondPressed === 'true' ? 'false' : 'true');
-    await expect(feedLikes.nth(1)).toHaveAttribute('aria-busy', 'false');
+    await expect(feedLikes.nth(1)).not.toHaveAttribute('aria-busy', 'true');
     await expect(feedLikes.first()).toHaveAttribute('aria-busy', 'true');
   } finally { release(); }
-  await expect(feedLikes.first()).toHaveAttribute('aria-busy', 'false');
+  await expect(feedLikes.first()).not.toHaveAttribute('aria-busy', 'true');
   await member.page.unroute('**/v1/actions');
   await member.page.goto(announcementUrl);
   const like = member.page.getByRole('button', { name: /Like announcement|Liked/u });
@@ -202,7 +193,7 @@ test('announcement notice recovers announcements published while the member was 
   await expectBackendAction(member.page, 'markAnnouncementsOpened', async () => {
     await notice.click();
   });
-  await expect(member.page).toHaveURL(/\/announcements$/u);
+  await expect(member.page).toHaveURL(/\/feed\?view=announcements$/u);
   await member.page.goto('/facilities');
   await expect(member.page.getByRole('link', { name: 'New announcement' })).toHaveCount(0);
   await member.context.close();

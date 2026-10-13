@@ -28,15 +28,15 @@ function dependencyViolations(modules, forbidden) {
 
 test("frontend layers keep service access inside hooks", async () => {
   const app = await sourceModules("src/app");
-  const components = await sourceModules("src/components");
+  const features = await sourceModules("src/features");
   const violations = dependencyViolations(
-    [...app, ...components],
+    [...app, ...features],
     ({ specifier }) => specifier.startsWith("@/services/"),
   );
   assert.deepEqual(violations, []);
 });
 test("shared UI primitives do not depend on application state or services", async () => {
-  const ui = await sourceModules("src/components/ui");
+  const ui = await sourceModules("src/ui");
   const violations = dependencyViolations(
     ui,
     ({ specifier }) =>
@@ -55,7 +55,8 @@ test("pure libraries and services do not depend upward on React presentation", a
       !typeOnly &&
       (specifier === "react" ||
         specifier.startsWith("@/app/") ||
-        specifier.startsWith("@/components/") ||
+        specifier.startsWith("@/features/") ||
+        specifier.startsWith("@/ui/") ||
         specifier.startsWith("@/hooks/")),
   );
   const serviceViolations = dependencyViolations(
@@ -63,7 +64,8 @@ test("pure libraries and services do not depend upward on React presentation", a
     ({ specifier }) =>
       specifier === "react" ||
       specifier.startsWith("@/app/") ||
-      specifier.startsWith("@/components/") ||
+      specifier.startsWith("@/features/") ||
+      specifier.startsWith("@/ui/") ||
       specifier.startsWith("@/hooks/"),
   );
   assert.deepEqual([...libraryViolations, ...serviceViolations], []);

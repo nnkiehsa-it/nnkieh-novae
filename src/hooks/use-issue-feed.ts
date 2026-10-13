@@ -1,11 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { useParams, useRouter } from "next/navigation";
 import { useI18n } from "@/i18n";
 import {
   findIssueCategory,
-  getDefaultIssueCategoryId,
   useCategories,
 } from "@/hooks/use-categories";
 import { useSession } from "@/hooks/use-session";
@@ -65,13 +63,11 @@ interface IssueFeedViewMemory {
   sort: IssueSortOption;
 }
 
-export function useIssueFeed(selectedFilter?: string) {
-  const params = useParams<{ filter: string }>();
-  const router = useRouter();
+/** One issue category's feed; `filter` is a valid category id or "my-proposals". */
+export function useIssueFeed(filter: string) {
   const session = useSession();
-  const categories = useCategories();
+  useCategories();
   const { t } = useI18n();
-  const filter = selectedFilter ?? decodeURIComponent(params.filter);
   const { params: searchParams, committedQuery, query, setCommittedQuery, setQuery, updateParams } = useFeedUrlState();
   const { bucket, sort } = readIssueFeedFilters(searchParams);
   const remembered = getViewMemory<IssueFeedViewMemory>(
@@ -136,14 +132,6 @@ export function useIssueFeed(selectedFilter?: string) {
       errorMessage: t("ui.issue.supportFailed"),
     });
   }
-
-  React.useEffect(() => {
-    if (categories.loaded && !validFilter) {
-      router.replace(
-        `/issues/${encodeURIComponent(getDefaultIssueCategoryId() || "my-proposals")}`,
-      );
-    }
-  }, [categories.loaded, router, validFilter]);
 
   const load = React.useCallback(
     async (cursor: IssueCursor | null = null, restart = false) => {

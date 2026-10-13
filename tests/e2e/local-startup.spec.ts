@@ -16,7 +16,7 @@ test('local auto-login survives refresh and route compilation without a startup 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await page.reload();
     await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
-    await expect(page.locator('.app-start-surface')).toHaveCount(0);
+    await expect(page.locator('[data-startup-screen]')).toHaveCount(0);
   }
   expect(errors).toEqual([]);
 });

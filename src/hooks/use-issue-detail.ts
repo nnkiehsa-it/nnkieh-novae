@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useAppLocation, useAppNavigate, useRecordId } from "@/hooks/use-app-location";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import {
@@ -38,18 +38,16 @@ import {
 import { useContentEntity } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
-import { returnToPreviousRoute } from "@/lib/navigation-memory";
+import { feedHref } from "@/lib/feed-href";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 import { useOptimisticReaction } from "@/hooks/use-optimistic-reaction";
 
 export function useIssueDetail() {
-  const params = useParams<{ filter: string; issueId: string }>();
-  const search = useSearchParams();
-  const router = useRouter();
+  const { filter, id: issueId } = useRecordId("issue");
+  const { search } = useAppLocation();
+  const navigate = useAppNavigate();
   const session = useSession();
   const { t } = useI18n();
-  const issueId = params.issueId;
-  const filter = decodeURIComponent(params.filter);
   const storedIssue = useContentEntity<IssueRecord>(
     session.user?.uid,
     "issue",
@@ -203,7 +201,7 @@ export function useIssueDetail() {
         );
       });
       toast.success(t("issue.proposalDeleted"));
-      router.replace(`/issues/${encodeURIComponent(filter)}`);
+      navigate(feedHref("issues", filter), { replace: true });
     } catch (caught) {
       patchContentEntity<IssueRecord>(
         session.user?.uid,
@@ -236,12 +234,6 @@ export function useIssueDetail() {
   );
 
   return {
-    back: () =>
-      returnToPreviousRoute(
-        router,
-        `/issues/${encodeURIComponent(filter)}`,
-        "/issues",
-      ),
     burst: reaction.burstById[issueId] ?? 0,
     comments: commentFeed.comments,
     commentSort: commentFeed.sort,

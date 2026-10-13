@@ -6,7 +6,7 @@ import { useSession } from "@/hooks/use-session";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { fetchIssuesPageByStatus } from "@/services/issues";
 import { listFacilities } from "@/services/facilities";
-import { toFacilityStatusCounts, toIssueStatusCounts } from "@/constants/statuses";
+import { toFacilityStatusCounts, toIssueStatusCounts, type FacilityStatusCounts, type IssueStatusCounts } from "@/constants/statuses";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 
 const COUNT_CACHE_PREFIXES = ["issue-list-page|", "facility-list-page|"] as const;
@@ -23,8 +23,14 @@ export function useHomeStatusCounts() {
   const { user, isAdmin } = useSession();
   const { activeIssueCategories, activeFacilityCategories, issuesEnabled, facilitiesEnabled, loaded } = useCategories();
   const uid = user?.uid;
-  const cacheKey = `home-status-counts|${isAdmin}|${issuesEnabled ? activeIssueCategories.map((category) => category.id).join(',') : ''}|${facilitiesEnabled ? activeFacilityCategories.map((category) => category.id).join(',') : ''}`;
-  const emptyCounts = () => ({ issues: toIssueStatusCounts({}), facilities: toFacilityStatusCounts({}) });
+  const cacheKey = `home-status-counts:v2|${isAdmin}|${issuesEnabled ? activeIssueCategories.map((category) => category.id).join(',') : ''}|${facilitiesEnabled ? activeFacilityCategories.map((category) => category.id).join(',') : ''}`;
+  const emptyCounts = () => ({
+    issues: toIssueStatusCounts({}),
+    facilities: toFacilityStatusCounts({}),
+    // Per category as well, so a category-scoped manager sees only what is theirs.
+    issuesByCategory: {} as Record<string, IssueStatusCounts>,
+    facilitiesByCategory: {} as Record<string, FacilityStatusCounts>,
+  });
   const remembered = getViewMemory<ReturnType<typeof emptyCounts>>(uid, cacheKey);
   const controllerRef = useRef<AbortController | null>(null);
   const [counts, setCounts] = useState(() => remembered ?? emptyCounts());
@@ -53,9 +59,13 @@ export function useHomeStatusCounts() {
         )),
       ]);
       if (controller.signal.aborted) return;
+      const issueCategories = issuesEnabled ? activeIssueCategories : [];
+      const facilityCategories = facilitiesEnabled ? activeFacilityCategories : [];
       const next = {
         issues: sumCounts(toIssueStatusCounts({}), issues),
         facilities: sumCounts(toFacilityStatusCounts({}), facilities),
+        issuesByCategory: Object.fromEntries(issueCategories.map((category, index) => [category.id, issues[index].statusCounts])),
+        facilitiesByCategory: Object.fromEntries(facilityCategories.map((category, index) => [category.id, facilities[index].statusCounts])),
       };
       hasCounts.current = true;
       setCounts(next);

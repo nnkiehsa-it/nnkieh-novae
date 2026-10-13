@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useAppNavigate, useRecordId } from "@/hooks/use-app-location";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { useSession } from "@/hooks/use-session";
@@ -21,23 +21,22 @@ import {
 import { useContentEntity } from "@/hooks/use-content-entity";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
-import { returnToPreviousRoute } from "@/lib/navigation-memory";
+import { feedHref } from "@/lib/feed-href";
 import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 import { useOptimisticReaction } from "@/hooks/use-optimistic-reaction";
 
 export function useFacilityDetail() {
-  const params = useParams<{ facilityId: string }>();
-  const search = useSearchParams();
-  const router = useRouter();
+  const { id: facilityId } = useRecordId("facility");
+  const navigate = useAppNavigate();
   const session = useSession();
   const { t } = useI18n();
   const storedFacility = useContentEntity<FacilityRecord>(
     session.user?.uid,
     "facility",
-    params.facilityId,
+    facilityId,
     "detail",
   );
-  const currentFacility = storedFacility ?? peekFacility(params.facilityId);
+  const currentFacility = storedFacility ?? peekFacility(facilityId);
   const [coldRead] = React.useState(() => !currentFacility);
   const [loading, setLoading] = React.useState(!currentFacility);
   const revealDetail = useColdDataReveal(coldRead, loading);
@@ -50,14 +49,14 @@ export function useFacilityDetail() {
   const load = React.useCallback(
     async (forceRefresh = false) => {
       const cached =
-        getDetailContentEntity<FacilityRecord>(session.user?.uid, "facility", params.facilityId) ??
-        peekFacility(params.facilityId);
+        getDetailContentEntity<FacilityRecord>(session.user?.uid, "facility", facilityId) ??
+        peekFacility(facilityId);
       const coldRead = !cached;
       if (coldRead) setLoading(true);
       setError("");
       const entityReadRevision = beginContentEntityRead();
       try {
-        const result = await getFacility(params.facilityId, { forceRefresh: forceRefresh || !coldRead });
+        const result = await getFacility(facilityId, { forceRefresh: forceRefresh || !coldRead });
         mergeContentEntityRead(
           session.user?.uid,
           "facility",
@@ -72,7 +71,7 @@ export function useFacilityDetail() {
         setLoading(false);
       }
     },
-    [params.facilityId, session.user?.uid, t],
+    [facilityId, session.user?.uid, t],
   );
 
   React.useEffect(() => {
@@ -80,8 +79,8 @@ export function useFacilityDetail() {
   }, [load]);
 
   const facilityCachePrefixes = React.useMemo(
-    () => [`facility-detail|${params.facilityId}`],
-    [params.facilityId],
+    () => [`facility-detail|${facilityId}`],
+    [facilityId],
   );
   useContentInvalidationRefresh(facilityCachePrefixes, () => {
     if (!deletingRef.current) return load(true);
@@ -117,11 +116,7 @@ export function useFacilityDetail() {
         );
       });
       toast.success(t("facility.facilityReportDeleted"));
-      router.replace(
-        `/facilities?category=${encodeURIComponent(
-          search.get("category") || currentFacility.category_id,
-        )}`,
-      );
+      navigate(feedHref("facilities", currentFacility.category_id), { replace: true });
     } catch (caught) {
       patchContentEntity<FacilityRecord>(
         session.user?.uid,
@@ -135,16 +130,8 @@ export function useFacilityDetail() {
   }
 
   return {
-    affecting: reaction.isBusy(params.facilityId),
-    back: () => {
-      if (currentFacility)
-        returnToPreviousRoute(
-          router,
-          `/facilities?category=${encodeURIComponent(currentFacility.category_id)}`,
-          "/facilities",
-        );
-    },
-    burst: reaction.burstById[params.facilityId] ?? 0,
+    affecting: reaction.isBusy(facilityId),
+    burst: reaction.burstById[facilityId] ?? 0,
     deleteFeedbackState: deleteFeedback.state,
     error,
     facility: currentFacility,

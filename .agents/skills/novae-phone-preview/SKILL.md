@@ -21,7 +21,7 @@ HTTP 探測不代表 UI 已驗證。需要 UI 驗證時，用受控瀏覽器開�
 
 ## 此專案的必要邊界
 
-- 手機分享使用 `--serve --preview`；不要改成 `next dev`，也不要把 `.next` 建置和開發共用。預覽產物位於 `.next-local-preview`，測試 service worker 停用。
+- 分享穩定版本使用 `--serve --preview`；開發中要手機即時看改動時用 `bun run preview:phone:dev`（`--serve` 的 `next dev`，產物在 `.next-local-dev`，存檔即熱更新，不必重開）。兩者都不與 `.next` 共用。預覽產物位於 `.next-local-preview`，測試 service worker 停用。
 - 443 是前端，8443 是本機 Worker 8787，9443 是 Firebase Auth emulator 9099。三者都需啟動，不能只分享頁面；手機的 localhost 是手機本身。
 - 使用 Tailscale Serve，僅限同一個 tailnet；不開 Funnel、不公開到網際網路，不覆寫既有不同用途的 Serve 設定。代理衝突時先回報實際連接埠與現有用途。
 - Tailscale 尚未 connected 時先讀狀態。此機曾因 WARP 與 Tailscale 同時連線失敗；不要自行停用 VPN、防火牆或重設登入，先說明阻塞原因讓使用者處理。

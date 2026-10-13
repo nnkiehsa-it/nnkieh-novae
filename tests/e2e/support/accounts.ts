@@ -92,7 +92,7 @@ export async function signInWithEmulator(page: Page, email: string) {
   // soon as profile sync responds races that redirect, notably in WebKit.
   await page.waitForURL((url) => url.pathname !== '/login', { timeout: 30_000 });
   await page.waitForFunction(
-    () => Boolean(document.querySelector('.app-mobile-nav') || document.querySelector('main h1')),
+    () => Boolean(document.querySelector('nav[aria-label="Primary navigation"]') || document.querySelector('main h1')),
     undefined,
     { timeout: 20_000 },
   );
@@ -115,8 +115,7 @@ export async function saveSignedInState(
   await expect(page).not.toHaveURL(/\/setup$/u, { timeout: 20_000 });
   await page.waitForFunction(
     () => {
-      const dock = document.querySelector('.app-mobile-nav');
-      return dock instanceof HTMLElement && getComputedStyle(dock).position === 'fixed';
+      return document.querySelector('nav[aria-label="Primary navigation"]') instanceof HTMLElement;
     },
     undefined,
     { timeout: 20_000 },

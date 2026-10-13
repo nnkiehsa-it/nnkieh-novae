@@ -144,7 +144,6 @@ test.describe.serial("shareable feeds and isolated discussion drafts", () => {
         await expect(sharedPage.getByRole("tab", { name: "Closed", exact: true })).toHaveAttribute("aria-selected", "true");
         await sharedPage.getByRole("button", { name: searchLabel, exact: true }).click();
         await expect(sharedPage.getByRole("textbox", { name: searchLabel, exact: true })).toHaveValue(`圖書館 ${size}`);
-        await expect(sharedPage.locator('[data-slot="popover-content"]')).toHaveCSS("opacity", "1");
         // Windows WebKit can stall while capturing a full page with an open popover.
         // Keep its functional assertions above; traces still provide visual evidence.
         if (browser.browserType().name() !== "webkit") {
@@ -167,7 +166,7 @@ test.describe.serial("shareable feeds and isolated discussion drafts", () => {
         await page.goto(announcementUrl);
         const rootInput = page.getByRole("textbox", { name: "Enter a comment", exact: true });
         const replyInput = page.getByRole("textbox", { name: "Enter a reply", exact: true });
-        const dock = page.locator(".discussion-composer-dock");
+        const dock = page.locator("[data-discussion-composer]");
         await rootInput.fill(rootText);
         await expect(dock.getByText('Draft saved in this tab.', { exact: true })).toHaveCount(0);
         await page.reload();

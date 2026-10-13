@@ -15,7 +15,7 @@ const scopeButton = {
 
 export async function openAccessManagement(page: Page) {
   await page.goto('/admin/people');
-  await expect(page.getByRole('heading', { name: 'People and access' })).toBeVisible();
+  await expect(page.getByRole('tablist', { name: 'People and access' })).toBeVisible();
   await selectAdminSection(page, 'By area');
 }
 

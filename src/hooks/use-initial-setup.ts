@@ -14,6 +14,7 @@ import type {
 import { useActionFeedback } from "@/hooks/use-action-feedback";
 import { useForegroundPoll } from "@/hooks/use-foreground-poll";
 import { RATE_LIMITS } from "@/generated/rate-limits";
+import { feedHref } from "@/lib/feed-href";
 
 const categoryPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 const newIssue = (isDefault = false): IssueCategoryDraft => ({
@@ -46,7 +47,7 @@ export function useInitialSetup() {
   const setupCompleted = session.setupCompleted;
   const categories = useCategories();
   const { t } = useI18n();
-  const [kind, setKind] = React.useState("issue");
+  const [kind, setKind] = React.useState<"issue" | "facility">("issue");
   const [issuesEnabled, setIssuesEnabled] = React.useState(true);
   const [facilitiesEnabled, setFacilitiesEnabled] = React.useState(true);
   const [issues, setIssues] = React.useState<IssueCategoryDraft[]>([newIssue(true)]);
@@ -107,10 +108,10 @@ export function useInitialSetup() {
           facilities.find((category) => category.isDefault)?.id ||
           facilities[0]?.id;
         return issuesEnabled
-          ? `/issues/${encodeURIComponent(defaultIssueCategory || "my-proposals")}`
+          ? feedHref("issues", defaultIssueCategory || "my-proposals")
           : facilitiesEnabled
-            ? `/facilities?category=${encodeURIComponent(defaultFacilityCategory || "all")}`
-            : "/announcements";
+            ? feedHref("facilities", defaultFacilityCategory)
+            : feedHref("announcements");
       });
       setConfirming(false);
       router.replace(destination);
@@ -136,12 +137,16 @@ export function useInitialSetup() {
     kind,
     save,
     saving: feedback.busy,
+    removeFacility: (index: number) => setFacilities((current) => current.filter((_, at) => at !== index)),
+    removeIssue: (index: number) => setIssues((current) => current.filter((_, at) => at !== index)),
     setConfirming,
-    setFacilities,
     setFacilitiesEnabled,
-    setIssues,
     setIssuesEnabled,
     setKind,
+    updateFacility: (index: number, next: FacilityCategoryDraft) =>
+      setFacilities((current) => current.map((item, at) => (at === index ? next : item))),
+    updateIssue: (index: number, next: IssueCategoryDraft) =>
+      setIssues((current) => current.map((item, at) => (at === index ? next : item))),
     valid,
   };
 }

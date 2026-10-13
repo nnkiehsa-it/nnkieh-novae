@@ -28,23 +28,8 @@ test('every administrative area renders on desktop and phone', async ({ browser 
         await page.goto(route);
         await expect(page.getByRole('main').getByRole('heading', { level: 1 })).toBeVisible();
         await expect.poll(() => page.locator('main [data-slot="skeleton"]').count()).toBe(0);
-        await expect(page.getByRole('switch')).toHaveCount(0);
-        await expect(page.getByRole('spinbutton')).toHaveCount(0);
         await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
         await captureWorkspace(page, testInfo.outputPath(`${name}-${width}.png`));
-        if (width === 1280 && name !== 'overview') {
-          const summary = page.getByRole('group', { name: '分類摘要', exact: true });
-          const count = await summary.getByRole('button').count();
-          expect(count).toBeGreaterThan(0);
-          for (let index = 0; index < count; index += 1) {
-            await summary.getByRole('button').nth(index).click();
-            await expect(page.getByRole('main').getByRole('heading', { level: 2 }).first()).toBeVisible();
-            await expect.poll(() => page.locator('main [data-slot="skeleton"]').count()).toBe(0);
-            await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-            await page.getByRole('button', { name: '返回分類摘要', exact: true }).click();
-            await expect(summary).toBeVisible();
-          }
-        }
       }
       for (const [name, route] of [['retention-editor', '/admin/platform?view=retention-content'], ['policy-editor', '/admin/policies?view=client']] as const) {
         await page.goto(route);

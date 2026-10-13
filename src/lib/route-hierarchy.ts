@@ -1,103 +1,80 @@
-// Settings owns the administration area even though its URLs do not sit beneath
-// /settings, so the one place that knows it is here: both navigation
-// highlighting and navigation direction read it from this table.
-const ADOPTED_PARENTS: ReadonlyArray<
-  readonly [prefix: string, parent: string]
-> = [["/admin", "/settings"]];
-
-/** The route that owns `pathname` when its URL does not say so itself. */
-export function adoptedParent(pathname: string): string | null {
-  for (const [prefix, parent] of ADOPTED_PARENTS) {
-    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) return parent;
-  }
-  return null;
-}
-
-function hierarchy(pathname: string): string[] {
-  const parent = adoptedParent(pathname);
-  const segments = pathname.split("/").filter(Boolean);
-  return parent ? [...hierarchy(parent), ...segments] : segments;
-}
-
-// /issues only picks a default category and forwards to it. It is a doorway,
-// not a place, so crossing it has no direction worth animating: without this the
-// forward from /issues to /issues/<category> read as a push into a child route
-// and played the whole navigation animation on the way to somewhere the user
-// had already asked for.
-const FORWARDING_ROUTES: ReadonlySet<string> = new Set(["/issues"]);
-
-export type RouteRelation = "deeper" | "shallower" | "unrelated";
-
-// The places primary navigation points at. Everything else the shell renders is
-// a place beneath one of them -- a detail, a composer, or an area settings
-// adopted -- so this one table answers both of the questions the shell asks
-// about a route, and the navigation bar only has to supply the labels.
-// An issue feed is a filter of one place rather than a route of its own, which
-// is why every `/issues/<filter>` is the same destination.
-const PRIMARY_ROUTES: ReadonlySet<string> = new Set([
-  "/home",
-  "/feed",
-  "/announcements",
-  "/facilities",
-  "/notifications",
-  "/settings",
-]);
-
-/** A destination primary navigation points at. */
-export function isPrimaryRoute(pathname: string) {
-  return PRIMARY_ROUTES.has(pathname) || /^\/issues\/[^/]+$/u.test(pathname);
-}
+import { ADMIN_ROUTES } from "./admin-routes";
+import { feedHref } from "./feed-href";
 
 /**
- * Whether the floating navigation bar belongs on this route: a destination it
- * points at, or a doorway on the way to one. A doorway keeps it because the bar
- * would otherwise leave and return within the same navigation.
+ * What one in-app address shows. The whole signed-in app is one client
+ * bundle, so this table, not the file system, decides which screen a path is.
  */
-export function showsPrimaryNavigation(pathname: string) {
-  return isPrimaryRoute(pathname) || FORWARDING_ROUTES.has(pathname);
-}
+export type AppRoute =
+  | { kind: "view"; view: "home" | "feed" | "notifications" | "settings" }
+  | { kind: "admin"; section: string | null }
+  | { kind: "issue"; filter: string; id: string }
+  | { kind: "issue-composer"; filter: string }
+  | { kind: "facility"; id: string }
+  | { kind: "facility-composer" }
+  | { kind: "announcement"; id: string }
+  | { kind: "announcement-composer" }
+  | { kind: "redirect"; href: string };
 
-/**
- * How `to` sits relative to `from` in the information hierarchy. Only a move
- * along one branch is deeper or shallower; switching branches, or swapping one
- * sibling for another, is neither.
- */
-export function compareRoutes(from: string, to: string): RouteRelation {
-  if (FORWARDING_ROUTES.has(from) || FORWARDING_ROUTES.has(to))
-    return "unrelated";
-  const before = hierarchy(from);
-  const after = hierarchy(to);
-  const shared = Math.min(before.length, after.length);
-  for (let index = 0; index < shared; index += 1) {
-    if (before[index] !== after[index]) return "unrelated";
+const VIEWS = new Set(["home", "feed", "notifications", "settings"]);
+
+function segment(value: string) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
   }
-  if (after.length > before.length) return "deeper";
-  if (before.length > after.length) return "shallower";
-  return "unrelated";
 }
 
-// The three routes that are one record: a proposal, a facility report or an
-// announcement. A composer shares the shape of one without being one, so it is
-// named out rather than matched.
-const RECORD_ROUTE_PATTERN =
-  /^\/(?:announcements|facilities)\/(?!new$)[^/]+$|^\/issues\/[^/]+\/(?!new$)[^/]+$/u;
+/** Reads an in-app path; anything unknown forwards home. */
+export function matchAppRoute(pathname: string): AppRoute {
+  const parts = pathname.split("/").filter(Boolean);
+  const [head, second, third, fourth] = parts;
+  if (parts.length === 1 && VIEWS.has(head)) return { kind: "view", view: head as "home" };
+  if (head === "admin" && parts.length === 1) return { kind: "admin", section: null };
+  if (head === "admin" && parts.length === 2) {
+    return ADMIN_ROUTES.some((route) => route.href === `/admin/${second}`)
+      ? { kind: "admin", section: second }
+      : { href: "/admin", kind: "redirect" };
+  }
+  if (head === "issues") {
+    if (parts.length === 3 && third !== "new") return { filter: segment(second), id: segment(third), kind: "issue" };
+    if (parts.length === 4 && third === "compose" && fourth === "new") return { filter: segment(second), kind: "issue-composer" };
+    if (parts.length <= 2) return { href: feedHref("issues", second ? segment(second) : null), kind: "redirect" };
+  }
+  if (head === "facilities") {
+    if (parts.length === 2) return second === "new" ? { kind: "facility-composer" } : { id: segment(second), kind: "facility" };
+    if (parts.length === 1) return { href: feedHref("facilities"), kind: "redirect" };
+  }
+  if (head === "announcements") {
+    if (parts.length === 2) return second === "new" ? { kind: "announcement-composer" } : { id: segment(second), kind: "announcement" };
+    if (parts.length === 1) return { href: feedHref("announcements"), kind: "redirect" };
+  }
+  return { href: "/home", kind: "redirect" };
+}
+
+/** Whether `pathname` opens over a list rather than replacing the screen. */
+export function isLayeredRoute(route: AppRoute) {
+  return route.kind !== "view" && route.kind !== "admin" && route.kind !== "redirect";
+}
 
 /** A page that is one piece of content, and so can be sent to somebody alone. */
 export function isRecordRoute(pathname: string) {
-  return RECORD_ROUTE_PATTERN.test(pathname);
+  const { kind } = matchAppRoute(pathname);
+  return kind === "issue" || kind === "facility" || kind === "announcement";
 }
 
-function isIssueComposerRoute(pathname: string) {
-  return /^\/issues\/[^/]+\/compose\/new$/u.test(pathname);
+/**
+ * The primary destination `pathname` belongs to: a record or a composer is
+ * part of the feed, and administration is part of settings.
+ */
+export function primaryDestination(pathname: string) {
+  if (/^\/(?:issues|facilities|announcements)(?:\/|$)/u.test(pathname)) return "/feed";
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return "/settings";
+  return pathname;
 }
 
-/** The list a direct record URL closes to. Non-record routes keep their identity. */
-export function recordListPath(pathname: string) {
-  return isRecordRoute(pathname) ? pathname.slice(0, pathname.lastIndexOf("/")) : pathname;
-}
-
-/** The protected shell intercepts records from any of its pages, not only feeds. */
-export function opensOverRoute(from: string, to: string) {
-  return from !== to && (isRecordRoute(to) || isIssueComposerRoute(to))
-    && /^\/(?:home|feed|issues|facilities|announcements|notifications|settings|admin)(?:\/|$)/u.test(from);
+/** A record or composer fills a phone screen with its own actions, so the dock steps aside. */
+export function hidesDock(pathname: string) {
+  return pathname === "/setup" || isLayeredRoute(matchAppRoute(pathname));
 }

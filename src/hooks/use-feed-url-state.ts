@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useAppLocation } from "@/hooks/use-app-location";
+import { pushAddress } from "@/lib/app-navigation";
 import { normalizeFeedQuery, updateFeedUrl } from "@/lib/feed-url-state";
 
 export function useFeedUrlState() {
-  const params = useSearchParams();
-  const pathname = usePathname();
+  const { pathname, search: params } = useAppLocation();
   const committedQuery = normalizeFeedQuery(params.get("q") ?? "");
   const identity = `${pathname}?${params.toString()}`;
   const [input, setInput] = useState({ identity, value: committedQuery });
@@ -15,9 +15,7 @@ export function useFeedUrlState() {
   const query = input.identity === identity ? input.value : committedQuery;
 
   const updateParams = useCallback((values: Record<string, string | null>) => {
-    const href = updateFeedUrl(window.location.href, values);
-    const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    if (href !== current) window.history.pushState(null, "", href);
+    pushAddress(updateFeedUrl(window.location.href, values));
   }, []);
 
   return {

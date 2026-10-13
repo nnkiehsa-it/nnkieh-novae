@@ -21,11 +21,11 @@ it("facilities-only setup opens the category feed rather than a nonexistent repo
     await act(async () => root.render(createElement(Probe)));
     await act(async () => {
       setup.setIssuesEnabled(false);
-      setup.setFacilities([{ id: "facility-a", label: "Facility A", isDefault: true }]);
+      setup.updateFacility(0, { ...setup.facilities[0], id: "facility-a", label: "Facility A" });
     });
     await act(async () => setup.save());
     expect(mocks.save).toHaveBeenCalledOnce();
-    expect(mocks.replace).toHaveBeenCalledWith("/facilities?category=facility-a");
+    expect(mocks.replace).toHaveBeenCalledWith("/feed?view=facilities&category=facility-a");
   } finally {
     await act(async () => root.unmount());
     globals.IS_REACT_ACT_ENVIRONMENT = previous;
