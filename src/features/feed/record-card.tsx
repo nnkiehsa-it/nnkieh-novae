@@ -18,7 +18,7 @@ export function RecordCard({ children, chips, footer, href, label, meta, title }
   title: React.ReactNode;
 }) {
   return (
-    <article className="glass group relative flex h-full min-w-0 flex-col gap-3 rounded-panel p-5 shadow-panel transition-[background-color] duration-[var(--motion-control)] ease-[var(--ease-move)] hover:bg-surface-raised">
+    <article className="glass group relative flex h-full min-w-0 flex-col gap-3 rounded-panel p-4 shadow-panel transition-[background-color] duration-[var(--motion-control)] ease-[var(--ease-move)] hover:bg-surface-raised">
       {chips ? <div className="flex flex-wrap items-center gap-2">{chips}</div> : null}
       <div className="min-w-0">
         <h2 className="line-clamp-2 text-lg font-semibold leading-snug tracking-tight">{title}</h2>
@@ -53,8 +53,8 @@ export function CardProgress({ children, color = "var(--contrast)", value }: { c
 
 export function RecordCardSkeleton() {
   return (
-    <div aria-hidden className="glass flex flex-col gap-3 rounded-panel p-5 shadow-panel">
-      <Skeleton className="h-8 w-24 rounded-chip" />
+    <div aria-hidden className="glass flex flex-col gap-3 rounded-panel p-4 shadow-panel">
+      <Skeleton className="h-6 w-16 rounded-chip" />
       <Skeleton className="h-6 w-3/4" />
       <Skeleton className="h-4 w-32" />
       <div className="mt-2 flex gap-2"><Skeleton className="h-11 w-20 rounded-full" /></div>

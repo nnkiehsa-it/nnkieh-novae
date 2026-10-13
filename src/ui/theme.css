@@ -19,9 +19,9 @@
   --color-positive: var(--positive);
   --color-caution: var(--caution);
   --color-info: var(--info);
-  --radius-chip: 0.625rem;
-  --radius-tile: 1.25rem;
-  --radius-panel: 1.75rem;
+  --radius-chip: 0.5rem;
+  --radius-tile: 0.875rem;
+  --radius-panel: 1.375rem;
   --shadow-panel: var(--elevation-panel);
   --shadow-float: var(--elevation-float);
 }
@@ -32,8 +32,10 @@
   --canvas: #121726;
   --canvas-gradient:
     radial-gradient(120% 60% at 15% 0%, rgb(92 108 160 / 16%), transparent 60%),
-    radial-gradient(90% 50% at 100% 100%, rgb(120 132 170 / 18%), transparent 70%),
-    linear-gradient(180deg, #111624 0%, #181e2f 38%, #232a3f 72%, #343c53 100%);
+    radial-gradient(80% 30% at 100% 62%, rgb(120 132 170 / 18%), transparent 70%),
+    /* The last stretch is flat and matches the root background: iOS can leave a
+       band at the foot of a short page that only the root background reaches. */
+    linear-gradient(180deg, #111624 0%, #181e2f 34%, #232a3f 62%, #343c53 86%, #343c53 100%);
 
   --surface: rgb(8 11 20 / 66%);
   --surface-raised: rgb(255 255 255 / 4.5%);
@@ -71,8 +73,8 @@
   --bottom-nav-gap: max(0.75rem, var(--safe-bottom));
 }
 
-/* Whatever the canvas layer misses is painted in the gradient's bottom colour,
-   so a gap at the foot of the screen blends in rather than showing a band. */
+/* Whatever the canvas layer misses is painted in the gradient's flat bottom
+   colour, so a gap at the foot of the screen blends in rather than showing a band. */
 html {
   background: #343c53;
 }

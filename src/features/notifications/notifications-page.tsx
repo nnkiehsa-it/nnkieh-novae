@@ -43,7 +43,7 @@ function NotificationRow({ notification }: { notification: NotificationRecord })
         <NotificationGlyph type={notification.type} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className={cn("block truncate text-base", notification.is_read ? "text-ink-muted" : "font-semibold text-ink")}>
+        <span className={cn("block truncate text-base text-ink", !notification.is_read && "font-semibold")}>
           {t(TITLE_KEYS[notification.type] ?? "ui.notification.issueUpdated")}
         </span>
         {notification.body_preview ? <span className="line-clamp-2 text-sm text-ink-muted">{notification.body_preview}</span> : null}

@@ -36,7 +36,7 @@ export function FeedList<T extends { id: string }>({ empty, error, hasMore = fal
       : <EmptyState action={empty.action} description={empty.description} title={empty.title} />;
   }
   return (
-    <div className="grid gap-5">
+    <div className="grid gap-3">
       <ul className={recordGridClass}>
         {items.map((item) => <li className="min-w-0" key={item.id}>{renderItem(item)}</li>)}
       </ul>

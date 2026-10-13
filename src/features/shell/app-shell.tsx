@@ -89,7 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </main>
       {/* Content scrolling past either edge of the screen softens under a
           progressive blur instead of being cut off. */}
-      <EdgeBlur className="h-[calc(var(--safe-top)+3.5rem)] md:left-70 md:h-14" side="top" />
+      <EdgeBlur className="h-[calc(var(--safe-top)+5rem)] md:left-70 md:h-20" side="top" />
       <EdgeBlur
         className={cn("md:left-70 md:h-16", dock ? "h-[calc(var(--bottom-nav-height)+var(--bottom-nav-gap)+1.5rem)]" : "h-[calc(var(--safe-bottom)+2rem)]")}
         side="bottom"

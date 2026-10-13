@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 import { AppLink } from "./app-link";
 import { ArrowClockwise, CaretLeft, Tray, WarningCircle } from "@phosphor-icons/react/ssr";
@@ -6,11 +8,14 @@ import { Button } from "./button";
 import { Skeleton } from "./feedback";
 import { Panel } from "./panel";
 
+/** Pins a page's top row under the status bar while the page scrolls beneath it. */
+export const pinnedHeaderClass = "sticky top-[calc(var(--safe-top)+0.75rem)] z-30 md:top-4";
+
 /**
  * The top of a page: an optional way back, the title, and the page's own
  * actions. On a wide screen the actions sit beside the title; on a phone they
- * wrap underneath when they do not fit. It scrolls away with the page, like a
- * large title on iOS.
+ * wrap underneath when they do not fit. Like a large title on iOS, it scrolls
+ * away and a small centred title takes its place at the top of the screen.
  */
 export function PageHeader({ actions, back, className, description, title }: {
   actions?: React.ReactNode;
@@ -20,7 +25,26 @@ export function PageHeader({ actions, back, className, description, title }: {
   description?: React.ReactNode;
   title: React.ReactNode;
 }) {
+  const titleRef = React.useRef<HTMLHeadingElement>(null);
+  const [collapsed, setCollapsed] = React.useState(false);
+  React.useEffect(() => {
+    const title = titleRef.current;
+    if (!title) return;
+    const observer = new IntersectionObserver(([entry]) => setCollapsed(!entry.isIntersecting && entry.boundingClientRect.top < 0));
+    observer.observe(title);
+    return () => observer.disconnect();
+  }, []);
   return (
+    <>
+    <div
+      aria-hidden
+      className={cn(
+        "pointer-events-none fixed inset-x-0 top-0 z-30 flex h-[calc(var(--safe-top)+2.75rem)] items-end justify-center px-16 pb-2.5 transition-[opacity,translate] duration-[var(--motion-control)] ease-[var(--ease-move)] md:left-70 md:h-14",
+        collapsed ? "opacity-100" : "-translate-y-1 opacity-0",
+      )}
+    >
+      <span className="truncate text-[0.9375rem] font-semibold">{title}</span>
+    </div>
     <header className={cn("grid gap-4", className)}>
       {back ? (
         <Button asChild className="justify-self-start" size="icon-sm">
@@ -29,12 +53,13 @@ export function PageHeader({ actions, back, className, description, title }: {
       ) : null}
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
         <div className="min-w-0">
-          <h1 className="text-balance text-2xl font-bold leading-tight tracking-tight md:text-[1.75rem]">{title}</h1>
+          <h1 ref={titleRef} className="text-balance text-2xl font-bold leading-tight tracking-tight md:text-[1.75rem]">{title}</h1>
           {description ? <p className="mt-1 max-w-2xl text-[0.9375rem] leading-relaxed text-ink-muted">{description}</p> : null}
         </div>
         {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
       </div>
     </header>
+    </>
   );
 }
 

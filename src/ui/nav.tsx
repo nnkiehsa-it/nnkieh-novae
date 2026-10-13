@@ -2,9 +2,7 @@
 
 import * as React from "react";
 import { AppLink } from "./app-link";
-import { motion } from "motion/react";
 import type { Icon } from "@phosphor-icons/react";
-import { timing } from "@/lib/motion-timing";
 import { cn } from "@/lib/utils";
 
 export interface NavItem {
@@ -33,17 +31,30 @@ export function PrimaryNav({
   label: string;
   variant: "dock" | "rail";
 }) {
-  const pillId = React.useId();
+  const activeIndex = items.findIndex((item) => item.href === activeHref);
   return (
     <nav
       aria-label={label}
       className={cn(
         "flex",
-        variant === "dock" && "glass h-[var(--bottom-nav-height)] items-stretch gap-1 rounded-full p-1.5 shadow-float",
-        variant === "rail" && "flex-col gap-1",
+        variant === "dock" && "glass relative h-[var(--bottom-nav-height)] items-stretch gap-1 rounded-full p-1.5 shadow-float",
+        variant === "rail" && "relative flex-col gap-1",
         className,
       )}
+      style={{ "--nav-count": items.length, "--nav-index": Math.max(activeIndex, 0) } as React.CSSProperties}
     >
+      {/* One pill slides between items inside the nav. A shared-layout
+          animation measured it against the page, so a route change that
+          scrolled the page sent it flying across the screen. */}
+      <span
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute rounded-full bg-contrast transition-[transform,opacity] duration-[var(--motion-control)] ease-[var(--ease-move)]",
+          variant === "dock" && "inset-y-1.5 left-1.5 w-[calc((100%-0.75rem-(var(--nav-count)-1)*0.25rem)/var(--nav-count))] translate-x-[calc(var(--nav-index)*(100%+0.25rem))]",
+          variant === "rail" && "inset-x-0 top-0 h-11 translate-y-[calc(var(--nav-index)*3rem)]",
+          activeIndex < 0 && "opacity-0",
+        )}
+      />
       {items.map(({ badge, href, icon: ItemIcon, label: itemLabel }) => {
         const active = href === activeHref;
         return (
@@ -58,15 +69,6 @@ export function PrimaryNav({
             href={href}
             key={href}
           >
-            {active ? (
-              <motion.span
-                aria-hidden
-                className="absolute inset-0 -z-10 rounded-full bg-contrast"
-                initial={false}
-                layoutId={pillId}
-                transition={timing("nav", "nav")}
-              />
-            ) : null}
             <span aria-hidden className="relative">
               <ItemIcon className="size-5" weight={active ? "fill" : "regular"} />
               {badge ? <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-danger" /> : null}

@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const chipVariants = cva(
-  "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-chip border px-2.5 text-[0.9375rem] font-medium leading-none [&_svg]:size-3.5 [&_svg]:shrink-0",
+  "inline-flex h-6 shrink-0 items-center gap-1 rounded-chip border px-2 text-[0.8125rem] font-medium leading-none [&_svg]:size-3.5 [&_svg]:shrink-0",
   {
     variants: {
       tone: {

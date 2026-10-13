@@ -31,8 +31,19 @@ export function Popover({ children, className, onOpenChange, open, trigger }: {
 
 export const TooltipProvider = TooltipPrimitive.Provider;
 
-/** Names an icon-only control on a pointer screen. */
+const HOVER_QUERY = "(hover: hover) and (pointer: fine)";
+
+function subscribeToHover(onChange: () => void) {
+  const query = window.matchMedia(HOVER_QUERY);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+/** Names an icon-only control on a pointer screen. A touch screen has no hover,
+    so a tap would only leave the label stuck over the control; it is skipped. */
 export function Tooltip({ children, label }: { children: React.ReactElement; label: string }) {
+  const canHover = React.useSyncExternalStore(subscribeToHover, () => window.matchMedia(HOVER_QUERY).matches, () => false);
+  if (!canHover) return children;
   return (
     <TooltipPrimitive.Root>
       <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>

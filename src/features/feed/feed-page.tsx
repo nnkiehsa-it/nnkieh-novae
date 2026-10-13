@@ -10,9 +10,10 @@ import { AnnouncementFeed } from "@/features/announcements/announcement-feed";
 import { AnnouncementNotice } from "@/features/announcements/announcement-notice";
 import { FacilityFeed } from "@/features/facilities/facility-feed";
 import { IssueFeed } from "@/features/issues/issue-feed";
-import { PageHeader } from "@/ui/page";
+import { pinnedHeaderClass } from "@/ui/page";
 import { Segmented, type SegmentedOption } from "@/ui/segmented";
 import { Select } from "@/ui/select";
+import { cn } from "@/lib/utils";
 
 // A feed's own filters never carry over into another feed or category.
 const CLEARED_FILTERS = { bucket: null, q: null, sort: null, status: null };
@@ -53,16 +54,20 @@ export function FeedPage() {
 
   return (
     <div className="grid gap-6">
-      <PageHeader actions={<AnnouncementNotice />} title={t("ui.nav.feed")} />
-      {views.length > 1 ? (
-        <Segmented
-          label={t("ui.nav.feed")}
-          onChange={(next) => updateParams({ ...CLEARED_FILTERS, category: null, view: next === defaultView ? null : next })}
-          options={views}
-          size="lg"
-          value={view}
-        />
-      ) : null}
+      {/* The view switch is the page's title: centred and pinned like the top bar of an app. */}
+      <header className={cn(pinnedHeaderClass, "flex justify-center")}>
+        <h1 className="sr-only">{t("ui.nav.feed")}</h1>
+        {views.length > 1 ? (
+          <Segmented
+            label={t("ui.nav.feed")}
+            onChange={(next) => updateParams({ ...CLEARED_FILTERS, category: null, view: next === defaultView ? null : next })}
+            options={views}
+            size="lg"
+            value={view}
+          />
+        ) : null}
+      </header>
+      <AnnouncementNotice />
       {view === "issues" ? <IssueFeed categoryControl={categoryControl} filter={issueFilter} key={issueFilter} />
         : view === "facilities" ? <FacilityFeed categoryControl={categoryControl} />
           : <AnnouncementFeed />}

@@ -34,10 +34,13 @@ export function Segmented<Value extends string>({
   const pillId = React.useId();
   return (
     <Tabs.Root className={cn("min-w-0 max-w-full", className)} onValueChange={(next) => onChange(next as Value)} value={value}>
-      <Tabs.List
-        aria-label={label}
-        className="glass inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-full p-1 shadow-panel [scrollbar-width:none]"
-      >
+      {/* The pill is measured against the rail (`layoutRoot`), not the page, so
+          scrolling or a pinned header never sends it flying from elsewhere. */}
+      <Tabs.List aria-label={label} asChild>
+        <motion.div
+          className="glass inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-full p-1 shadow-panel [scrollbar-width:none]"
+          layoutRoot
+        >
         {options.map((option) => {
           const selected = option.value === value;
           return (
@@ -64,6 +67,7 @@ export function Segmented<Value extends string>({
             </Tabs.Trigger>
           );
         })}
+        </motion.div>
       </Tabs.List>
     </Tabs.Root>
   );
