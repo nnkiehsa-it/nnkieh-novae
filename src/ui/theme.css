@@ -133,11 +133,19 @@ body {
   background: var(--surface);
 }
 
-/* The sidebar floats over the canvas, so it lets a little of it through. */
-.glass-float {
-  background: color-mix(in oklab, var(--surface) 62%, transparent);
-  -webkit-backdrop-filter: blur(24px) saturate(1.6);
-  backdrop-filter: blur(24px) saturate(1.6);
+/* Floating chrome (sidebar, dock, tab rails, save bar) and quiet buttons share
+   one glass: mostly white, with only a hint of the canvas showing through. */
+/* In the components layer, so a hover tint utility still wins. */
+@layer components {
+  .glass-float,
+  .glass-control {
+    background-color: color-mix(in oklab, var(--surface) 86%, transparent);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6);
+    backdrop-filter: blur(24px) saturate(1.6);
+  }
+  .glass-control {
+    border-color: color-mix(in oklab, var(--ink) 7%, transparent);
+  }
 }
 
 /* The page never scrolls sideways, even when an edge's blur reaches past the

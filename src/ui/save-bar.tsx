@@ -34,7 +34,7 @@ export function SaveBar({ changeCount, disabled = false, error, onDiscard, onRel
         <motion.div
           animate={{ opacity: 1, y: 0 }}
           aria-live="polite"
-          className="glass sticky bottom-[calc(var(--bottom-nav-height)+var(--bottom-nav-gap)+0.75rem)] z-30 flex flex-wrap items-center gap-2 rounded-panel p-3 pl-5 shadow-float md:bottom-4"
+          className="glass-float border border-ink/[0.06] sticky bottom-[calc(var(--bottom-nav-height)+var(--bottom-nav-gap)+0.75rem)] z-30 flex flex-wrap items-center gap-2 rounded-panel p-3 pl-5 shadow-float md:bottom-4"
           exit={hidden}
           initial={hidden}
           role="status"

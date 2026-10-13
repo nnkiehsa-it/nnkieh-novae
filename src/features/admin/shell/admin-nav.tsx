@@ -31,7 +31,7 @@ export function AdminNav({ access }: { access: AdminAccess }) {
 
   return (
     <nav aria-label={t("admin.title")} className="min-w-0 max-w-full justify-self-start">
-      <ul className="glass flex max-w-full items-center gap-1 overflow-x-auto rounded-full p-1 shadow-panel [scrollbar-width:none]">
+      <ul className="glass-float border border-ink/[0.06] flex max-w-full items-center gap-1 overflow-x-auto rounded-full p-1 shadow-[0_8px_30px_rgb(0_0_0/0.07)] [scrollbar-width:none]">
         {items.map(({ href, label }) => {
           const selected = href === pathname;
           return (

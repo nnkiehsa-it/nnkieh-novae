@@ -11,7 +11,7 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         primary: "bg-contrast text-on-contrast hover:bg-contrast/90",
-        secondary: "border border-line bg-surface text-ink hover:bg-surface-pressed",
+        secondary: "glass-control border text-ink hover:bg-surface-pressed",
         ghost: "text-ink-muted hover:bg-surface-raised hover:text-ink",
         danger: "bg-danger/15 text-danger hover:bg-danger/25",
       },
