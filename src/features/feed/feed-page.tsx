@@ -62,7 +62,6 @@ export function FeedPage() {
             label={t("ui.nav.feed")}
             onChange={(next) => updateParams({ ...CLEARED_FILTERS, category: null, view: next === defaultView ? null : next })}
             options={views}
-            size="lg"
             value={view}
           />
         ) : null}

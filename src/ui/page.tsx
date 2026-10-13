@@ -9,7 +9,8 @@ import { Skeleton } from "./feedback";
 import { Panel } from "./panel";
 
 /** Pins a page's top row under the status bar while the page scrolls beneath it. */
-export const pinnedHeaderClass = "sticky top-[calc(var(--safe-top)+0.75rem)] z-30 md:top-4";
+// Pinned at the offset it starts at, so it never shifts when the page begins to scroll.
+export const pinnedHeaderClass = "sticky top-[calc(var(--safe-top)+1.5rem)] z-30 md:top-10";
 
 /**
  * The top of a page: an optional way back, the title, and the page's own
