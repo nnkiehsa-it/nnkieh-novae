@@ -91,13 +91,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           progressive blur instead of being cut off. */}
       <EdgeBlur className="h-[calc(var(--safe-top)+5rem)] md:left-70 md:h-20" side="top" />
       <EdgeBlur
-        className={cn("bottom-auto top-[var(--app-viewport-height)] -translate-y-full md:left-70 md:h-16", dock ? "h-[calc(var(--bottom-nav-height)+var(--bottom-nav-gap)+1.5rem)]" : "h-[calc(var(--safe-bottom)+2rem)]")}
+        className={cn("md:left-70 md:h-16", dock ? "h-[calc(var(--bottom-nav-height)+var(--bottom-nav-gap)+1.5rem)]" : "h-[calc(var(--safe-bottom)+2rem)]")}
         side="bottom"
       />
       <div
         aria-hidden={!dock}
         className={cn(
-          "fixed inset-x-[var(--gutter)] top-[calc(var(--app-viewport-height)-var(--bottom-nav-height)-var(--bottom-nav-gap))] z-30 mx-auto max-w-md transition-[opacity,translate] duration-[var(--motion-nav)] ease-[var(--ease-nav)] md:hidden",
+          "fixed inset-x-[var(--gutter)] bottom-[var(--bottom-nav-gap)] z-30 mx-auto max-w-md transition-[opacity,translate] duration-[var(--motion-nav)] ease-[var(--ease-nav)] md:hidden",
           dock ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-6 opacity-0",
         )}
         inert={!dock}
