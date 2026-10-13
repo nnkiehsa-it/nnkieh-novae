@@ -73,7 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-svh md:pl-70">
       <NotificationPrompt />
-      <aside className="glass-float fixed inset-y-3 left-3 z-30 hidden w-64 flex-col gap-3 rounded-panel border border-line p-2.5 shadow-panel md:flex">
+      <aside className="glass-float fixed inset-y-2 left-2 z-30 hidden w-64 flex-col gap-3 rounded-[1.5rem] border border-ink/[0.06] px-3 pb-3 pt-5 shadow-[0_8px_30px_rgb(0_0_0/0.07)] md:flex">
         {/* Whose Novae this is, where Notion puts the workspace: the account
             menu opens settings, administration and sign-out from here. */}
         <AccountMenu />

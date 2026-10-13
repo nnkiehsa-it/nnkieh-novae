@@ -135,9 +135,9 @@ body {
 
 /* The sidebar floats over the canvas, so it lets a little of it through. */
 .glass-float {
-  background: color-mix(in oklab, var(--surface) 72%, transparent);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  backdrop-filter: blur(20px) saturate(1.4);
+  background: color-mix(in oklab, var(--surface) 62%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  backdrop-filter: blur(24px) saturate(1.6);
 }
 
 /* The page never scrolls sideways, even when an edge's blur reaches past the

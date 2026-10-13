@@ -49,9 +49,10 @@ export function PrimaryNav({
       <span
         aria-hidden
         className={cn(
-          "pointer-events-none absolute rounded-full bg-contrast transition-[translate,opacity] duration-[var(--motion-control)] ease-[var(--ease-move)]",
+          "pointer-events-none absolute rounded-full transition-[translate,opacity] duration-[var(--motion-control)] ease-[var(--ease-move)]",
           variant === "dock" && "inset-y-1.5 left-1.5 w-[calc((100%-0.75rem-(var(--nav-count)-1)*0.25rem)/var(--nav-count))] translate-x-[calc(var(--nav-index)*(100%+0.25rem))]",
-          variant === "rail" && "inset-x-0 top-0 h-11 translate-y-[calc(var(--nav-index)*3rem)]",
+          variant === "dock" && "bg-contrast",
+          variant === "rail" && "inset-x-0 top-0 h-11 bg-ink/[0.09] translate-y-[calc(var(--nav-index)*3rem)]",
           activeIndex < 0 && "opacity-0",
         )}
       />
@@ -62,7 +63,11 @@ export function PrimaryNav({
             aria-current={active ? "page" : undefined}
             className={cn(
               "relative isolate flex min-w-0 items-center rounded-full font-medium outline-none transition-[color] duration-[var(--motion-control)] ease-[var(--ease-move)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
-              active ? "text-on-contrast" : "text-ink-muted hover:text-ink",
+              active
+                ? variant === "rail"
+                  ? "font-semibold text-positive"
+                  : "text-on-contrast"
+                : "text-ink-muted hover:text-ink",
               variant === "dock" && "flex-1 flex-col justify-center gap-0.5 text-[0.6875rem]",
               variant === "rail" && "h-11 gap-3 px-3.5 text-[0.9375rem]",
             )}
