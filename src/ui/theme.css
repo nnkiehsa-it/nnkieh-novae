@@ -128,3 +128,9 @@ body {
   -webkit-mask-image: linear-gradient(to bottom, transparent, black 1rem, black calc(100% - 1.5rem), transparent);
   mask-image: linear-gradient(to bottom, transparent, black 1rem, black calc(100% - 1.5rem), transparent);
 }
+
+/* A tooltip only names what is under the pointer; it never takes a tap meant
+   for the control beside it (its positioning wrapper included). */
+[data-radix-popper-content-wrapper]:has(> [role="tooltip"]) {
+  pointer-events: none;
+}

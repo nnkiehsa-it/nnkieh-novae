@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { MapPin } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import { INPUT_LIMITS } from "@/constants/input-limits";
@@ -12,7 +11,6 @@ import { Select } from "@/ui/select";
 export function FacilityComposer() {
   const { t } = useI18n();
   const form = useFacilityComposer();
-  const id = React.useId();
   const busy = form.saving || form.images.uploading;
   return (
     <Composer
@@ -38,12 +36,12 @@ export function FacilityComposer() {
           />
         </div>
         <div className="grid gap-2">
-          <CountedLabel count={form.location.length} htmlFor={`${id}-location`} label={t("ui.facility.location")} limit={INPUT_LIMITS.facilityLocation} />
+          <CountedLabel count={form.location.length} htmlFor="facility-location" label={t("ui.facility.location")} limit={INPUT_LIMITS.facilityLocation} />
           <div className="relative">
             <MapPin aria-hidden className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-ink-faint" />
             <Input
               className="pl-10"
-              id={`${id}-location`}
+              id="facility-location"
               maxLength={INPUT_LIMITS.facilityLocation}
               onChange={(event) => form.setLocation(event.target.value)}
               placeholder={t("ui.facility.locationExample")}

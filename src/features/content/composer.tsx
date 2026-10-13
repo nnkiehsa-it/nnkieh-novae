@@ -75,7 +75,8 @@ export function Composer({ body, busy, children, draft, images, onSubmit, submit
   titleField: TextField;
 }) {
   const { t } = useI18n();
-  const id = React.useId();
+  // One composer is on screen at a time, so its fields keep stable ids.
+  const id = "composer";
   return (
     <form className="grid gap-6" data-update-defer="true" onSubmit={onSubmit}>
       <fieldset className="grid min-w-0 gap-6" disabled={busy} inert={busy}>
@@ -91,12 +92,12 @@ export function Composer({ body, busy, children, draft, images, onSubmit, submit
           />
         </div>
         <div className="grid min-w-0 gap-2">
-          <CountedLabel count={body.value.length} htmlFor={`${id}-body`} id={`${id}-body-count`} label={body.label} limit={INPUT_LIMITS.content} />
+          <CountedLabel count={body.value.length} htmlFor={"composer-content"} id={"composer-content-count"} label={body.label} limit={INPUT_LIMITS.content} />
           <MarkdownEditor
-            ariaDescribedBy={`${id}-body-count`}
+            ariaDescribedBy={"composer-content-count"}
             ariaLabel={body.label}
             content={body.value}
-            id={`${id}-body`}
+            id={"composer-content"}
             maxLength={INPUT_LIMITS.content}
             onChange={body.onChange}
             onPickImages={images.maxImages > 0 ? (files) => void images.pick(files) : undefined}

@@ -84,6 +84,7 @@ export function AccessManagement() {
     <>
       <ScopeAccessEditor key={`${user?.uid}:${accessScopeKey(scope)}`} scope={scope} selector={selector} />
       <ConfirmDialog
+        cancelLabel={t("admin.leaveStay")}
         confirmLabel={t("admin.leaveDiscard")}
         description={t("admin.leaveMessage", { count: getUnsavedChanges(SCOPE_GROUP).count })}
         onConfirm={() => {

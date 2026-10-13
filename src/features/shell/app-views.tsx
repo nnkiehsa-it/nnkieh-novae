@@ -128,7 +128,9 @@ export function AppViews() {
     return () => setViewHostMounted(false);
   }, []);
 
-  const redirect = route.kind === "redirect" ? route.href : null;
+  // An old address keeps its query and fragment on the way to its new home, so a shared
+  // `/facilities?category=…` link still opens that category.
+  const redirect = route.kind === "redirect" ? withQuery(route.href, location.search) : null;
   React.useEffect(() => {
     if (redirect) navigate(redirect, { replace: true });
   }, [redirect]);
@@ -160,4 +162,10 @@ export function AppViews() {
       ) : null}
     </>
   );
+}
+
+function withQuery(href: string, search: URLSearchParams) {
+  const url = new URL(href, "http://novae.invalid");
+  for (const [key, value] of search) if (!url.searchParams.has(key)) url.searchParams.set(key, value);
+  return `${url.pathname}${url.search}${typeof window === "undefined" ? "" : window.location.hash}`;
 }

@@ -35,7 +35,7 @@ test('a warm startup shows its steps and opens the shell while the daily bootstr
       const phases: Array<{ phase: string; at: number }> = [];
       Object.assign(window, { startupPhases: phases });
       new MutationObserver(() => {
-        const phase = document.querySelector<HTMLElement>('.t-startup-status')?.dataset.phase;
+        const phase = document.querySelector<HTMLElement>('[data-startup-phase]')?.dataset.startupPhase;
         if (phase && phase !== phases.at(-1)?.phase) phases.push({ phase, at: performance.now() });
       }).observe(document, { childList: true, subtree: true });
     });
@@ -48,7 +48,7 @@ test('a warm startup shows its steps and opens the shell while the daily bootstr
     });
     await page.reload();
     await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible({ timeout: 2_000 });
-    await expect(page.locator('.app-start-surface')).toHaveCount(0);
+    await expect(page.locator('[data-startup-screen]')).toHaveCount(0);
     expect(requests).toBe(1);
     const phases = await page.evaluate(() => (window as typeof window & { startupPhases: Array<{ phase: string; at: number }> }).startupPhases);
     expect(phases.map(({ phase }) => phase)).toEqual(['session', 'security', 'account', 'access', 'ready']);
@@ -87,7 +87,7 @@ test('a failed startup retries in place without falling through to setup', async
     expect(new URL(page.url()).pathname).toBe('/announcements');
     expect(granularReads).toBe(0);
     await page.getByRole('button', { name: 'Retry', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Announcements', exact: true })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Announcements', exact: true })).toHaveAttribute('aria-selected', 'true');
     expect(attempts).toBe(2);
   } finally { await context.close(); }
 });
@@ -98,7 +98,7 @@ test('home restores its counts and progress while bootstrap and count refreshes 
   const stalled = new Promise<void>((resolve) => { release = resolve; });
   try {
     await page.goto('/home');
-    const distribution = page.getByRole('region', { name: 'Proposals', exact: true });
+    const distribution = page.getByRole('region', { name: 'Overall activity', exact: true });
     await expect(distribution).toBeVisible();
     const previous = await distribution.innerText();
     await expect.poll(() => page.evaluate(async (namespace) => {
@@ -107,7 +107,7 @@ test('home restores its counts and progress while bootstrap and count refreshes 
       try {
         const read = db.transaction('entries').objectStore('entries').getAll();
         const entries = await new Promise<Array<{ cacheKey: string }>>((resolve) => { read.onsuccess = () => resolve(read.result); });
-        return entries.some((entry) => entry.cacheKey.startsWith('view-memory|home-status-counts|'));
+        return entries.some((entry) => entry.cacheKey.startsWith('view-memory|home-status-counts:v2|'));
       } finally { db.close(); }
     }, PERSISTENT_CACHE_NAMESPACE)).toBe(true);
     let countReads = 0;
@@ -120,11 +120,11 @@ test('home restores its counts and progress while bootstrap and count refreshes 
       await route.continue();
     });
     await page.reload();
-    await expect(page.locator('.app-start-surface')).toHaveCount(0);
+    await expect(page.locator('[data-startup-screen]')).toHaveCount(0);
     await expect(distribution).toBeVisible();
     await expect(distribution).toHaveText(previous, { useInnerText: true });
     await expect.poll(() => countReads).toBeGreaterThan(0);
-    await expect(page.locator('.t-startup-progress')).toHaveCount(0);
+    await expect(page.locator('[data-startup-phase]')).toHaveCount(0);
   } finally {
     release();
     await context.close();

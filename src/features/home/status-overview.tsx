@@ -69,7 +69,7 @@ export function StatusOverview({ counts }: { counts: ReturnType<typeof useHomeSt
   const { facilitiesEnabled, issuesEnabled } = useCategories();
   if (!issuesEnabled && !facilitiesEnabled) return null;
   return (
-    <section className="grid gap-3">
+    <section aria-label={t("ui.home.overallStatus")} className="grid gap-3">
       <SectionTitle>{t("ui.home.overallStatus")}</SectionTitle>
       {counts.error ? (
         <Panel className="flex items-center justify-between gap-3">

@@ -48,7 +48,7 @@ export function Tooltip({ children, label }: { children: React.ReactElement; lab
     <TooltipPrimitive.Root>
       <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
       <TooltipPrimitive.Portal>
-        <TooltipPrimitive.Content className="float-surface z-50 rounded-full bg-contrast px-3 py-1.5 text-xs font-medium text-on-contrast" sideOffset={8}>
+        <TooltipPrimitive.Content className="float-surface pointer-events-none z-50 rounded-full bg-contrast px-3 py-1.5 text-xs font-medium text-on-contrast" sideOffset={8}>
           {label}
         </TooltipPrimitive.Content>
       </TooltipPrimitive.Portal>

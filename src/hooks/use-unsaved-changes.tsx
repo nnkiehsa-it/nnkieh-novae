@@ -76,7 +76,8 @@ export function UnsavedChangesGuard() {
 
   return (
     <ConfirmDialog
-      confirmLabel={translate("admin.leaveDiscard")}
+      cancelLabel={translate("admin.leaveStay")}
+        confirmLabel={translate("admin.leaveDiscard")}
       description={unsaved.busy ? translate("admin.savingBeforeLeaving") : translate("admin.leaveMessage", { count: unsaved.count })}
       onConfirm={() => {
         const target = pending;

@@ -32,7 +32,7 @@ function PhaseLabel({ phase }: { phase: StartupPhase }) {
     return () => window.clearInterval(timer);
   }, [labels]);
   return (
-    <div className="flex h-6 items-center gap-2.5 text-[0.9375rem] text-ink-muted">
+    <div className="flex h-6 items-center gap-2.5 text-[0.9375rem] text-ink-muted" data-startup-phase={phase}>
       <span className="sr-only" role="status">{t(labels[0])}</span>
       <Spinner className="size-4" />
       <AnimatePresence initial={false} mode="wait">
@@ -72,7 +72,7 @@ export function StartupScreen({ error, onRetry, onSignOut, phase = "session" }: 
     }
   };
   return (
-    <div className="grid min-h-svh place-items-center px-[var(--gutter)]">
+    <div className="grid min-h-svh place-items-center px-[var(--gutter)]" data-startup-screen>
       <div className="flex flex-col items-center gap-6 text-center">
         <BrandLockup className="flex-col gap-4 [&>span:last-child]:text-2xl" markClassName="size-20 rounded-panel" />
         {error ? (

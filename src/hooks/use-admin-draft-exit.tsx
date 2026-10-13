@@ -24,6 +24,7 @@ export function useAdminDraftExit(group: string | undefined, busy: boolean, clos
     },
     prompt: (
       <ConfirmDialog
+        cancelLabel={t("admin.leaveStay")}
         confirmLabel={t("admin.leaveDiscard")}
         description={blocked ? t("admin.savingBeforeLeaving") : t("admin.leaveMessage", { count: changes.count })}
         onConfirm={() => {

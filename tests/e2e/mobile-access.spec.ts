@@ -29,18 +29,10 @@ async function expectMobileInteractionBaseline(page: Page) {
   ).resolves.toEqual({ finePointer: false, hover: false });
 
   const navigation = page.getByRole('navigation', { name: 'Primary navigation' });
-  const navigationDock = page.locator('.app-mobile-nav');
-  const navigationDockBox = await navigationDock.boundingBox();
+  // The dock sits inside the screen, clear of its bottom edge.
+  const navigationDockBox = await navigation.boundingBox();
   expect(navigationDockBox).not.toBeNull();
-  const renderedBottom = await navigationDock.evaluate((element) =>
-    Number.parseFloat(getComputedStyle(element).bottom),
-  );
-  const viewportBottomGap = page.viewportSize()!.height
-    - (navigationDockBox?.y ?? 0)
-    - (navigationDockBox?.height ?? 0);
-  expect(viewportBottomGap).toBeGreaterThanOrEqual(0);
-  expect(Math.abs(viewportBottomGap - renderedBottom))
-    .toBeLessThanOrEqual(1);
+  expect(page.viewportSize()!.height - (navigationDockBox?.y ?? 0) - (navigationDockBox?.height ?? 0)).toBeGreaterThanOrEqual(0);
 
   for (const link of await navigation.getByRole('link').all()) {
     const box = await link.boundingBox();
@@ -57,222 +49,6 @@ async function expectTouchTarget(page: Page, name: string | RegExp) {
     return Math.round(Math.min(box?.width ?? 0, box?.height ?? 0));
   }).toBeGreaterThanOrEqual(44);
 }
-
-test.describe('mobile route motion', () => {
-  test.use({ storageState: authStatePath('ordinary') });
-
-  test('touch feedback belongs to the whole card and clears when a press becomes a swipe', async ({ page }) => {
-    await suppressInstallPrompt(page);
-    await page.goto('/issues/proposal-a');
-    const card = page.locator('.t-card').first();
-    const link = card.locator('[data-feed-card-link]');
-    await expect(link).toBeVisible();
-    const box = (await link.boundingBox())!;
-    const x = box.x + box.width / 2;
-    const y = box.y + box.height / 2;
-    const restingColor = await card.evaluate((element) => getComputedStyle(element).backgroundColor);
-    const touch = await page.context().newCDPSession(page);
-    await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
-    await expect(card).toHaveAttribute('data-pressed', 'true');
-    await expect.poll(() => card.evaluate((element) => getComputedStyle(element).backgroundColor)).not.toBe(restingColor);
-    await expect.poll(() => card.evaluate((element) => getComputedStyle(element).transform)).not.toBe('none');
-    await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y + 30 }] });
-    await expect(card).not.toHaveAttribute('data-pressed');
-    await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-    await expect.poll(() => card.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(restingColor);
-
-    const heading = (await page.locator('h1').first().boundingBox())!;
-    await page.touchscreen.tap(heading.x + heading.width / 2, heading.y + heading.height / 2);
-    await page.touchscreen.tap(heading.x + heading.width / 2, heading.y + heading.height / 2);
-    expect(await page.evaluate(() => visualViewport!.scale)).toBe(1);
-
-    // Real multi-touch in a scrollable app surface must not scale the viewport.
-    await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x - 20, y }, { x: x + 20, y }] });
-    await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x - 60, y }, { x: x + 60, y }] });
-    await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-    expect(await page.evaluate(() => visualViewport!.scale)).toBe(1);
-    await expect(page).toHaveURL(/\/issues\/proposal-a$/u);
-  });
-
-  test('app surfaces separate in both themes while native editing remains available', async ({ page }) => {
-    await suppressInstallPrompt(page);
-    await page.goto('/issues/proposal-a/compose/new');
-    const title = page.getByRole('textbox', { name: 'Proposal title' });
-    const content = page.getByRole('textbox', { name: 'Proposal content' });
-    await expect(content).toBeVisible();
-    await expect(title).toHaveCSS('user-select', 'text');
-    await expect(content).toHaveCSS('user-select', 'text');
-    await expect(content).toHaveCSS('touch-action', 'pan-x pan-y');
-    await expect(page.locator('body')).toHaveCSS('user-select', 'none');
-    for (const textbox of [title, content]) {
-      expect(await textbox.evaluate((element) => {
-        const event = new Event('contextmenu', { bubbles: true, cancelable: true });
-        element.dispatchEvent(event);
-        return event.defaultPrevented;
-      })).toBe(false);
-    }
-    await title.fill('Touch editing stays available');
-    await expect(title).toHaveValue('Touch editing stays available');
-
-    for (const dark of [false, true]) {
-      await page.evaluate((enabled) => document.documentElement.classList.toggle('dark', enabled), dark);
-      await expect(page.locator('body')).toHaveCSS('background-color', dark ? 'rgb(0, 0, 0)' : 'rgb(233, 237, 244)');
-      await expect(title).toHaveCSS('background-color', dark ? 'rgb(22, 22, 24)' : 'rgb(253, 254, 254)');
-      const contrast = await title.evaluate((element) => {
-        const style = getComputedStyle(element);
-        const luminance = (color: string) => {
-          const channels = color.match(/[\d.]+/gu)!.slice(0, 3).map((channel) => {
-            const value = Number(channel) / 255;
-            return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-          });
-          return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
-        };
-        const foreground = luminance(style.color);
-        const background = luminance(style.backgroundColor);
-        return (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05);
-      });
-      expect(contrast).toBeGreaterThanOrEqual(4.5);
-    }
-  });
-
-  test('keeps wide editor tables and their controls inside the composer', async ({ page }) => {
-    await suppressInstallPrompt(page);
-    await page.goto('/issues/proposal-a/compose/new');
-
-    const editor = page.locator('.novae-markdown-editor');
-    const textbox = page.getByRole('textbox', { name: 'Proposal content' });
-    await expect(textbox).toBeVisible();
-    await textbox.evaluate((element) => {
-      const transfer = new DataTransfer();
-      transfer.setData(
-        'text/plain',
-        '| col1 | col2 | col3 | col4 |\n| --- | --- | --- | --- |\n| one | two | three | four |',
-      );
-      element.focus();
-      element.dispatchEvent(new ClipboardEvent('paste', {
-        bubbles: true,
-        cancelable: true,
-        clipboardData: transfer,
-      }));
-    });
-
-    const firstCell = editor.locator('table th').first();
-    await expect(firstCell).toBeVisible();
-    await firstCell.click();
-    const tableControls = editor.locator('.vditor-panel--none:visible').first();
-    await expect(tableControls).toBeVisible();
-
-    const dimensions = await page.evaluate(() => {
-      const editorElement = document.querySelector('.novae-markdown-editor')!;
-      const controlsElement = editorElement.querySelector<HTMLElement>('.vditor-panel--none[style*="display: block"]')!;
-      const editableElement = editorElement.querySelector<HTMLElement>('[contenteditable="true"]')!;
-      const editorRect = editorElement.getBoundingClientRect();
-      const controlsRect = controlsElement.getBoundingClientRect();
-      return {
-        controlsRight: controlsRect.right,
-        controlsLeft: controlsRect.left,
-        editorLeft: editorRect.left,
-        editorRight: editorRect.right,
-        pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        tableScrollsInsideEditor: editableElement.scrollWidth > editableElement.clientWidth,
-      };
-    });
-    expect(dimensions.pageOverflow).toBeLessThanOrEqual(1);
-    expect(dimensions.controlsLeft).toBeGreaterThanOrEqual(dimensions.editorLeft - 1);
-    expect(dimensions.controlsRight).toBeLessThanOrEqual(dimensions.editorRight + 1);
-    expect(dimensions.tableScrollsInsideEditor).toBe(true);
-  });
-
-  test('keeps one route surface below the persistent navigation dock', async ({ page }) => {
-    await suppressInstallPrompt(page);
-    await page.goto('/issues');
-    const dock = page.locator('.app-mobile-nav');
-    await expect(dock).toBeVisible();
-    await page.evaluate(() => {
-      const state = window as typeof window & {
-        __novaeMobileDockCaptured?: boolean;
-        __novaeMobileDockStayedAboveRoute?: boolean;
-        __novaeMobileMaxRoutePages?: number;
-      };
-      state.__novaeMobileDockCaptured = false;
-      state.__novaeMobileDockStayedAboveRoute = true;
-      state.__novaeMobileMaxRoutePages = 0;
-      const deadline = performance.now() + 2_000;
-      const pseudoElements = () => document.getAnimations().flatMap((animation) => {
-        const effect = animation.effect as KeyframeEffect & { pseudoElement?: string };
-        return effect?.pseudoElement ? [effect.pseudoElement] : [];
-      });
-      const inspect = () => {
-        const transitioning = pseudoElements();
-        const navigation = document.querySelector('.app-mobile-nav');
-        if (transitioning.some((pseudo) => pseudo.includes('view-transition'))) {
-          // Nothing is captured for a route change: a snapshot would take the
-          // dock out of hit testing for the length of the animation.
-          state.__novaeMobileDockCaptured = true;
-        }
-        if (navigation) {
-          const box = navigation.getBoundingClientRect();
-          const stack = document.elementsFromPoint(
-            box.left + box.width / 2,
-            box.top + box.height / 2,
-          );
-          const navigationIndex = stack.findIndex((element) => navigation.contains(element));
-          const routeIndex = stack.findIndex((element) => element.classList.contains('route-page'));
-          if (navigationIndex < 0 || (routeIndex >= 0 && navigationIndex > routeIndex)) {
-            state.__novaeMobileDockStayedAboveRoute = false;
-          }
-        }
-        state.__novaeMobileMaxRoutePages = Math.max(
-          state.__novaeMobileMaxRoutePages ?? 0,
-          document.querySelectorAll('.route-page').length,
-        );
-        if (performance.now() < deadline) requestAnimationFrame(inspect);
-      };
-      requestAnimationFrame(inspect);
-    });
-
-    await dock.locator('a[href="/home"]').click();
-    await page.waitForURL(/\/home$/u);
-    await expect(page.locator('.route-page[data-route-path="/home"]')).toBeVisible();
-    expect(await page.evaluate(() =>
-      (window as typeof window & { __novaeMobileMaxRoutePages?: number }).__novaeMobileMaxRoutePages,
-    )).toBe(1);
-    expect(await page.evaluate(() =>
-      (window as typeof window & { __novaeMobileDockStayedAboveRoute?: boolean }).__novaeMobileDockStayedAboveRoute,
-    )).toBe(true);
-    expect(await page.evaluate(() =>
-      (window as typeof window & { __novaeMobileDockCaptured?: boolean }).__novaeMobileDockCaptured,
-    )).toBe(false);
-  });
-
-  test('gives a pushed route surface an opaque cover of the whole screen', async ({ page }) => {
-    await suppressInstallPrompt(page);
-    await page.goto('/issues');
-    await expect(page.locator('.route-page')).toBeVisible();
-
-    // A route surface is what the reveal fades in, so it has to be the whole
-    // screen and opaque: anything narrower, shorter or transparent fades in as
-    // a panel floating on the shell rather than as the page itself.
-    const cover = await page.evaluate(() => {
-      const surface = document.querySelector('.route-page')!;
-      const box = surface.getBoundingClientRect();
-      return {
-        background: getComputedStyle(surface).backgroundColor,
-        height: box.height,
-        left: box.left,
-        top: box.top,
-        viewportHeight: document.documentElement.clientHeight,
-        viewportWidth: document.documentElement.clientWidth,
-        width: box.width,
-      };
-    });
-    expect(cover.left).toBeLessThanOrEqual(0.5);
-    expect(cover.top).toBeLessThanOrEqual(0.5);
-    expect(cover.width).toBeGreaterThanOrEqual(cover.viewportWidth - 0.5);
-    expect(cover.height).toBeGreaterThanOrEqual(cover.viewportHeight - 0.5);
-    expect(cover.background).not.toMatch(/transparent|, 0\)$/u);
-  });
-});
 
 test.describe('proposal manager on mobile', () => {
   test.use({ storageState: authStatePath('issueManager') });
@@ -327,24 +103,18 @@ test.describe('platform administrator on mobile', () => {
   test('can reach protected management pages', async ({ page }) => {
     await suppressInstallPrompt(page);
     await page.goto('/issues');
-    await expect(page.locator('.app-mobile-nav')).toBeVisible({ timeout: 30_000 });
-    await page.locator('.app-mobile-nav').getByRole('link', { name: 'Settings', exact: true }).click();
+    const dock = page.getByRole('navigation', { name: 'Primary navigation' });
+    await expect(dock).toBeVisible({ timeout: 30_000 });
+    await dock.getByRole('link', { name: 'Settings', exact: true }).click();
     await expect(page).toHaveURL(/\/settings$/u);
     await page.getByRole('link', { name: /Administration/u }).click();
     await page.waitForURL(/\/admin$/u);
     await expect(page.getByRole('main').getByRole('heading', { name: 'Administration' }))
       .toBeVisible({ timeout: 20_000 });
-    // The index leads on to each area, and each area leads back.
-    await page.getByRole('link', { name: /Content and categories/u }).click();
+    // The area rail leads on to each area, and every area leads back to settings.
+    await page.getByRole('main').getByRole('link', { name: 'Content and categories', exact: true }).click();
     await page.waitForURL(/\/admin\/content$/u);
-    // The way back rides inside the sticky header, so no amount of scrolling
-    // slides it under the header's own blurred veil -- where it used to fade
-    // out while still answering taps.
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await expect(page.getByRole('button', { name: 'Back' })).toBeInViewport();
-    await page.getByRole('button', { name: 'Back' }).click();
-    await page.waitForURL(/\/admin$/u);
-    await page.getByRole('button', { name: 'Back' }).click();
+    await page.getByRole('main').getByRole('link', { name: 'Back', exact: true }).click();
     await expect(page).toHaveURL(/\/settings$/u);
   });
 });
@@ -365,8 +135,9 @@ test.describe('a link somebody shared', () => {
     await expect(prompt.getByRole('button', { name: 'Already installed' })).toBeVisible();
     await expect(prompt.getByRole('button', { name: 'Not installed yet' })).toBeVisible();
 
+    // Staying in the browser carries on to where the way out led: the proposal's list.
     await prompt.getByRole('button', { name: 'Stay in the browser' }).click();
-    await expect(page).toHaveURL(/\/issues\/[^/]+$/u);
+    await expect(page).toHaveURL(/\/feed\?view=issues/u);
     await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 });

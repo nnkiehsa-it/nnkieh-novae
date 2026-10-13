@@ -126,7 +126,7 @@ export function Sheet({
                       ) : null}
                     </div>
                     <Dialog.Close asChild>
-                      <Button aria-label={t("common.close")} className="relative" size="icon-sm" variant="secondary"><X weight="bold" /></Button>
+                      <Button aria-label={t("common.close")} className="relative" size="icon" variant="secondary"><X weight="bold" /></Button>
                     </Dialog.Close>
                   </header>
                   <div className="edge-fade min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-[max(1.5rem,var(--safe-bottom))] pt-2 md:px-6 md:pb-6">{children}</div>

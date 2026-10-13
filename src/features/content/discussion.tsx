@@ -131,6 +131,7 @@ export function Discussion({ categoryId, comments, enabled = true, error, hasMor
       {enabled ? (
         <div
           className="sticky bottom-0 z-10 mt-1 rounded-panel border border-line bg-surface-solid p-2 shadow-float"
+          data-discussion-composer
         >
           <AnimatePresence initial={false}>
             {replyTarget ? (

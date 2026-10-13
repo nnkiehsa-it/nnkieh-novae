@@ -72,7 +72,7 @@ function StateMessage({ action, description, icon, title, tone = "default" }: {
   tone?: "default" | "danger";
 }) {
   return (
-    <Panel className="flex flex-col items-center gap-4 px-6 py-10 text-center">
+    <Panel className="flex flex-col items-center gap-4 px-6 py-10 text-center" role={tone === "danger" ? "alert" : undefined}>
       <span aria-hidden className={cn("grid size-11 place-items-center rounded-full [&_svg]:size-5", tone === "danger" ? "bg-danger/15 text-danger" : "bg-surface-raised text-ink-muted")}>
         {icon}
       </span>

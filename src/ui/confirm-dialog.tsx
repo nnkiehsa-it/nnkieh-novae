@@ -11,6 +11,7 @@ import { Button, type ActionStatus } from "./button";
  * retried in place; `status` reaching `success` is the caller's cue to close it.
  */
 export function ConfirmDialog({
+  cancelLabel,
   children,
   confirmLabel,
   description,
@@ -22,6 +23,8 @@ export function ConfirmDialog({
   tone = "default",
   trigger,
 }: {
+  /** What backing out is called when "Cancel" would be unclear, such as "Stay". */
+  cancelLabel?: string;
   /** Anything the decision needs besides the description, such as a reason field. */
   children?: React.ReactNode;
   confirmLabel: string;
@@ -49,7 +52,7 @@ export function ConfirmDialog({
           {children}
           <div className="grid grid-cols-2 gap-2">
             <AlertDialog.Cancel asChild>
-              <Button disabled={busy}>{t("ui.common.cancel")}</Button>
+              <Button disabled={busy}>{cancelLabel ?? t("ui.common.cancel")}</Button>
             </AlertDialog.Cancel>
             <Button
               onClick={onConfirm}
