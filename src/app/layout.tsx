@@ -98,7 +98,7 @@ export default async function RootLayout({
         ) : null}
       </head>
       <body>
-        <AppProviders>{children}</AppProviders>
+        <div id="app-scroll"><AppProviders>{children}</AppProviders></div>
         {turnstileSiteKey ? (
           <Script
             nonce={nonce}
