@@ -49,7 +49,7 @@ export function PrimaryNav({
       <span
         aria-hidden
         className={cn(
-          "pointer-events-none absolute rounded-full bg-contrast transition-[transform,opacity] duration-[var(--motion-control)] ease-[var(--ease-move)]",
+          "pointer-events-none absolute rounded-full bg-contrast transition-[translate,opacity] duration-[var(--motion-control)] ease-[var(--ease-move)]",
           variant === "dock" && "inset-y-1.5 left-1.5 w-[calc((100%-0.75rem-(var(--nav-count)-1)*0.25rem)/var(--nav-count))] translate-x-[calc(var(--nav-index)*(100%+0.25rem))]",
           variant === "rail" && "inset-x-0 top-0 h-11 translate-y-[calc(var(--nav-index)*3rem)]",
           activeIndex < 0 && "opacity-0",
