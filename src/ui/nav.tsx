@@ -37,7 +37,7 @@ export function PrimaryNav({
       aria-label={label}
       className={cn(
         "flex",
-        variant === "dock" && "glass-float relative h-[var(--bottom-nav-height)] items-stretch gap-1 rounded-full border border-ink/[0.06] p-1.5 shadow-[0_8px_30px_rgb(0_0_0/0.09)]",
+        variant === "dock" && "glass-float relative h-[var(--bottom-nav-height)] items-stretch gap-1 rounded-full p-1.5",
         variant === "rail" && "relative flex-col gap-1",
         className,
       )}

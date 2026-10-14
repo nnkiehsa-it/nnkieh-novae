@@ -38,7 +38,7 @@ export function Segmented<Value extends string>({
           scrolling or a pinned header never sends it flying from elsewhere. */}
       <Tabs.List aria-label={label} asChild>
         <motion.div
-          className="glass-float border border-ink/[0.06] inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-full p-1 shadow-[0_8px_30px_rgb(0_0_0/0.07)] [scrollbar-width:none]"
+          className="glass-float inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-full p-1 [scrollbar-width:none]"
           layoutRoot
         >
         {options.map((option) => {

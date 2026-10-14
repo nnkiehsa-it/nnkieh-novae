@@ -57,7 +57,7 @@ for (const file of files) {
   }
 
   if (/\btransition-all\b/u.test(source)) errors.push(`${relativePath} uses transition-all; name the state-changing properties`);
-  if (/shadow-\[(?!var\(--shadow-(?:control|card|floating)\))/u.test(source)) errors.push(`${relativePath} defines an arbitrary shadow outside the elevation tokens`);
+  if (/\bshadow-\[/u.test(source)) errors.push(`${relativePath} defines an arbitrary shadow; use shadow-panel, shadow-float or the glass-float material`);
   if (/\.vue(?:["']|$)|@vue\/|\bvue-tsc\b|\breka-ui\b/u.test(source)) errors.push(`${relativePath} references the retired Vue frontend`);
 
   if (!file.endsWith(".css")) {
