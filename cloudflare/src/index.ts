@@ -22,8 +22,7 @@ import { verifyCloudinarySignature } from "./signature";
 import { handleMedia } from "./media";
 import type { Env } from "./types";
 import { isApiErrorCode } from "../../shared/api-errors.ts";
-import { ACTIONS, type ActionName } from "../../shared/actions.ts";
-import { isWriteGroup } from "../../shared/contract.ts";
+import { ACTIONS, type ActionName, isWriteAction } from "../../shared/actions.ts";
 import { createDatabaseClient } from "./backend/database/client";
 import { handleBackendAction } from "./backend/actions/handler";
 import { handleSyncUser } from "./backend/sync-user";
@@ -98,11 +97,11 @@ async function handleAction(
   }
   const name = action === "healthcheck" ? null : action as ActionName;
 
-  const isWriteAction = name !== null && isWriteGroup(ACTIONS[name].group);
-  const { operationId, valid } = resolveOperationId(request, isWriteAction);
+  const isWrite = name !== null && isWriteAction(name);
+  const { operationId, valid } = resolveOperationId(request, isWrite);
 
   if (!valid) {
-    return apiErrorResponse(request, env, operationId, isWriteAction && !request.headers.get("x-novae-operation-id") ? "validation-required" : "validation-invalid");
+    return apiErrorResponse(request, env, operationId, isWrite && !request.headers.get("x-novae-operation-id") ? "validation-required" : "validation-invalid");
   }
 
   let firebaseUser: FirebaseAuthContext | null = null;
@@ -115,7 +114,7 @@ async function handleAction(
   try {
     const { done, response } = await withOperationPolicies(database, () =>
       handleBackendAction(request, body, operationId, database, firebaseUser, invocationId));
-    if (response.ok && isWriteAction) ctx.waitUntil(env.JOBS.send({ type: "drain" }));
+    if (response.ok && isWrite) ctx.waitUntil(env.JOBS.send({ type: "drain" }));
     // The answer is still being written when this returns, and the pieces
     // still to come are read from this connection, so it closes with them.
     ctx.waitUntil(done.finally(() => database.close()));

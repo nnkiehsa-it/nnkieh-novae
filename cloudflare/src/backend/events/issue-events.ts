@@ -1,156 +1,103 @@
-import type { ResolvedDomainEvent, WriteOutcome } from "./domain-events.ts";
+import type { Announcers, ResolvedDomainEvent } from "./domain-events.ts";
 
-function resultUpdated(issueId: string, content: string): ResolvedDomainEvent {
+function resultUpdated(issueId: string, content: string | null): ResolvedDomainEvent {
   return {
     aggregateType: "issue", aggregateId: issueId, eventType: "issue.result_updated",
     destinations: ["notion", "realtime"],
-    payload: { issue_id: issueId, result_content: content },
+    payload: { issue_id: issueId, result_content: content ?? "" },
   };
 }
 
 /** What a proposal, its support and its comments announce. */
-export function issueEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | null {
-  const { action, payload, actorUid, res, resIssue, resComment } = outcome;
-  const events: ResolvedDomainEvent[] = [];
-  switch (action) {
-    case "createIssue": {
-      const issueId = String(resIssue.id ?? res.id ?? payload.id ?? "");
-      events.push({
-        aggregateType: "issue",
-        aggregateId: issueId,
-        eventType: "issue.created",
-        destinations: ["notion", "in_app", "push", "realtime"],
-        payload: {
-          issue_id: issueId,
-          title: String(resIssue.title ?? res.title ?? payload.title ?? ""),
-          category: String(resIssue.category ?? res.category ?? payload.category ?? ""),
-          author_uid: actorUid,
-          read_access: String(resIssue.readAccess ?? "owner-admin"),
-        },
-      });
-      break;
+export const ISSUE_ANNOUNCERS = {
+  createIssue: ({ result: { issue }, actorUid }) => [{
+    aggregateType: "issue",
+    aggregateId: issue.id,
+    eventType: "issue.created",
+    destinations: ["notion", "in_app", "push", "realtime"],
+    payload: {
+      issue_id: issue.id,
+      title: issue.title,
+      category: issue.category,
+      author_uid: actorUid,
+      read_access: issue.readAccess,
+    },
+  }],
+  moderateIssueStatus: ({ result: { issue, previousStatus, resultChanged } }) => [
+    ...(previousStatus === issue.status ? [] : [{
+      aggregateType: "issue",
+      aggregateId: issue.id,
+      eventType: "issue.status_changed",
+      destinations: ["notion", "in_app", "push", "realtime"],
+      payload: {
+        issue_id: issue.id,
+        new_status: issue.status,
+        old_status: previousStatus,
+        author_uid: issue.authorUid,
+        title: issue.title,
+        issue_category: issue.category,
+        read_access: issue.readAccess,
+      },
+    } satisfies ResolvedDomainEvent]),
+    ...(resultChanged ? [resultUpdated(issue.id, issue.resultContent)] : []),
+  ],
+  updateIssueResult: ({ input }) => [resultUpdated(input.issueId, input.resultContent)],
+  toggleSupport: ({ input, result, actorUid }) => [result.goalMet
+    ? {
+      aggregateType: "issue",
+      aggregateId: input.issueId,
+      eventType: "support.goal_met",
+      destinations: ["notion", "in_app", "push", "realtime"],
+      payload: { issue_id: input.issueId, supporter_uid: actorUid, title: result.title, issue_category: result.category },
     }
-    case "moderateIssueStatus": {
-      const issueId = String(payload.issueId ?? "");
-      if (res.previousStatus !== resIssue.status) events.push({
-        aggregateType: "issue",
-        aggregateId: issueId,
-        eventType: "issue.status_changed",
-        destinations: ["notion", "in_app", "push", "realtime"],
-        payload: {
-          issue_id: issueId,
-          new_status: String(resIssue.status ?? payload.status ?? ""),
-          old_status: String(res.previousStatus ?? ""),
-          author_uid: String(resIssue.authorUid ?? ""),
-          title: String(resIssue.title ?? ""),
-          issue_category: String(resIssue.category ?? ""),
-          read_access: String(resIssue.readAccess ?? "owner-admin"),
-        },
-      });
-      if (res.resultChanged) events.push(resultUpdated(issueId, String(resIssue.resultContent ?? "")));
-      break;
-    }
-    case "updateIssueResult": {
-      const issueId = String(payload.issueId ?? "");
-      events.push(resultUpdated(issueId, String(payload.resultContent ?? "")));
-      break;
-    }
-    case "toggleSupport": {
-      const issueId = String(payload.issueId ?? "");
-      const goalMet = Boolean(res.goalMet);
-      if (goalMet) {
-        events.push({
-          aggregateType: "issue",
-          aggregateId: issueId,
-          eventType: "support.goal_met",
-          destinations: ["notion", "in_app", "push", "realtime"],
-          payload: {
-            issue_id: issueId,
-            supporter_uid: actorUid,
-            title: String(res.title ?? ""),
-            issue_category: String(res.category ?? ""),
-          },
-        });
-      } else {
-        events.push({
-          aggregateType: "issue",
-          aggregateId: issueId,
-          eventType: "support.toggled",
-          destinations: ["notion", "realtime"],
-          payload: {
-            issue_id: issueId,
-            supporter_uid: actorUid,
-            supported: Boolean(res.supported),
-            support_count: Number(res.supportCount ?? 0),
-          },
-        });
-      }
-      break;
-    }
-    case "removeSupport": {
-      const issueId = String(payload.issueId ?? "");
-      events.push({
-        aggregateType: "issue",
-        aggregateId: issueId,
-        eventType: "support.toggled",
-        destinations: ["notion", "realtime"],
-        payload: { issue_id: issueId, supporter_uid: actorUid, supported: false },
-      });
-      break;
-    }
-    case "deleteIssue": {
-      const issueId = String(payload.issueId ?? "");
-      events.push({
-        aggregateType: "issue",
-        aggregateId: issueId,
-        eventType: "issue.deleted",
-        destinations: ["notion", "in_app", "push", "realtime"],
-        payload: {
-          issue_id: issueId,
-          author_uid: String(res.authorUid ?? ""),
-          issue_category: String(res.issueCategory ?? ""),
-          supporter_uids: Array.isArray(res.supporterUids) ? res.supporterUids : [],
-          title: String(res.title ?? ""),
-          new_status: String(res.status ?? ""),
-          read_access: String(res.readAccess ?? "owner-admin"),
-        },
-      });
-      break;
-    }
-    case "createComment": {
-      const commentId = String(resComment.id ?? res.id ?? "");
-      const issueId = String(payload.issueId ?? "");
-      events.push({
-        aggregateType: "issue",
-        aggregateId: issueId,
-        eventType: "issue.comment_created",
-        destinations: ["notion", "in_app", "push", "realtime"],
-        payload: {
-          comment_id: commentId,
-          issue_id: issueId,
-          parent_comment_id: String(resComment.parent_comment_id ?? resComment.parentCommentId ?? payload.parentCommentId ?? ""),
-          content: String(resComment.content ?? payload.content ?? ""),
-          author_uid: actorUid,
-          issue_category: String(res.issueCategory ?? ""),
-        },
-      });
-      break;
-    }
-    case "deleteComment": {
-      const commentId = String(payload.commentId ?? "");
-      const issueId = String(res.issueId ?? "");
-      if (!issueId) break;
-      events.push({
-        aggregateType: "issue",
-        aggregateId: issueId,
-        eventType: "issue.comment_deleted",
-        destinations: ["notion", "realtime"],
-        payload: { comment_id: commentId, issue_id: issueId },
-      });
-      break;
-    }
-    default:
-      return null;
-  }
-  return events;
-}
+    : {
+      aggregateType: "issue",
+      aggregateId: input.issueId,
+      eventType: "support.toggled",
+      destinations: ["notion", "realtime"],
+      payload: { issue_id: input.issueId, supporter_uid: actorUid, supported: result.supported, support_count: result.supportCount },
+    }],
+  removeSupport: ({ input, result, actorUid }) => [{
+    aggregateType: "issue",
+    aggregateId: input.issueId,
+    eventType: "support.toggled",
+    destinations: ["notion", "realtime"],
+    payload: { issue_id: input.issueId, supporter_uid: actorUid, supported: false, support_count: result.supportCount },
+  }],
+  deleteIssue: ({ input, result }) => [{
+    aggregateType: "issue",
+    aggregateId: input.issueId,
+    eventType: "issue.deleted",
+    destinations: ["notion", "in_app", "push", "realtime"],
+    payload: {
+      issue_id: input.issueId,
+      author_uid: result.authorUid,
+      issue_category: result.issueCategory,
+      supporter_uids: result.supporterUids,
+      title: result.title,
+      new_status: result.status,
+      read_access: result.readAccess,
+    },
+  }],
+  createComment: ({ input, result: { comment, issueCategory }, actorUid }) => [{
+    aggregateType: "issue",
+    aggregateId: input.issueId,
+    eventType: "issue.comment_created",
+    destinations: ["notion", "in_app", "push", "realtime"],
+    payload: {
+      comment_id: comment.id,
+      issue_id: input.issueId,
+      parent_comment_id: comment.parentCommentId ?? "",
+      content: comment.content,
+      author_uid: actorUid,
+      issue_category: issueCategory,
+    },
+  }],
+  deleteComment: ({ input, result }) => [{
+    aggregateType: "issue",
+    aggregateId: result.issueId,
+    eventType: "issue.comment_deleted",
+    destinations: ["notion", "realtime"],
+    payload: { comment_id: input.commentId, issue_id: result.issueId },
+  }],
+} satisfies Partial<Announcers>;

@@ -4,7 +4,7 @@ vi.mock("@/lib/firebase", () => ({ auth: session }));
 vi.mock("@/lib/auth-token", () => ({ getFirebaseIdToken: async () => "token" }));
 vi.mock("@/lib/backend-security", () => ({ backendSecurityHeaders: async () => ({ Authorization: "Bearer token" }) }));
 vi.mock("@/lib/api-gateway", () => ({ apiGatewayUrl: () => "https://api.example.test/v1/actions" }));
-import { invokeBackendAction } from "@/services/backend-action";
+import { callAction } from "@/services/backend-action";
 
 afterEach(() => { vi.unstubAllGlobals(); });
 it("does not emit a segment or return data from a previous session", async () => {
@@ -19,7 +19,7 @@ it("does not emit a segment or return data from a previous session", async () =>
     return response;
   }));
   const onSegment = vi.fn();
-  const pending = invokeBackendAction("getContentVersions", { onSegment })({});
+  const pending = callAction("getContentVersions", {}, { onSegment });
   const rejected = expect(pending).rejects.toThrow("auth.loginStatusChangedPreviousResponseIgnored");
   await ready;
   // Wait until headers have been processed, then change the identity while the body is pending.

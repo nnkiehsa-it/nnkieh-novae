@@ -457,6 +457,8 @@ export const GENERATED_DATABASE_FUNCTION_SIGNATURES = [
   "backend_delete_issue_comment(comment_id uuid, actor_uid text, actor_is_admin boolean) -> jsonb",
   "backend_estimate_category_policy_changes(actor_uid text, issue_categories jsonb, deleted_issue_category_ids text[], announcement_comments_enabled boolean) -> jsonb",
   "backend_estimate_retention_cleanup(actor_uid text, retention_config jsonb) -> jsonb",
+  "backend_facility_affected(facility app_private.facility_reports, actor_uid text) -> boolean",
+  "backend_facility_fields(facility app_private.facility_reports, actor_uid text, current_user_affected boolean, can_manage boolean) -> jsonb",
   "backend_get_access_context(actor_uid text) -> jsonb",
   "backend_get_announcement(announcement_id uuid, actor_uid text) -> jsonb",
   "backend_get_announcement_unread_hint(actor_uid text) -> jsonb",

@@ -3,8 +3,7 @@ import { errorStatus, publicErrorBody } from "../shared/errors.ts";
 import { asRecord, asString } from "../shared/json.ts";
 import { handleHealthcheck } from "./auth.ts";
 import { resolveAuthContext } from "./auth.ts";
-import { ACTIONS, type ActionName } from "../../../../shared/actions.ts";
-import { isWriteGroup } from "../../../../shared/contract.ts";
+import { ACTIONS, type ActionName, isWriteAction } from "../../../../shared/actions.ts";
 import { ACTION_HANDLERS } from "./registry.ts";
 import { claimBackendHealthcheckRateLimit } from "./rate-limit.ts";
 import { errorResponse, streamingResponse } from "./response.ts";
@@ -67,7 +66,7 @@ export async function handleBackendAction(
       if (!firebaseUser) throw new Error("unauthenticated");
       const auth = await resolveAuthContext(database, firebaseUser);
       domain = ACTION_HANDLERS[name].domain;
-      logsCompletion = isWriteGroup(ACTIONS[name].group);
+      logsCompletion = isWriteAction(name);
       segments = executeBackendActionSegments(name, payload, auth, database, operationId);
     }
 

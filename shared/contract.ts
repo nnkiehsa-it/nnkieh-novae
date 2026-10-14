@@ -2,6 +2,8 @@ import * as v from "valibot";
 import type { RateLimitName } from "./rate-limits.ts";
 
 export type ActionGroup = "read" | "general-write" | "sensitive-write" | "admin-write" | "upload-write" | "upload-resolve";
+/** The groups whose actions change something, and so run as a recorded operation. */
+export type WriteGroup = Exclude<ActionGroup, "read" | "upload-resolve">;
 
 /**
  * One backend action as both sides see it: the rate-limit group it is counted
@@ -12,8 +14,9 @@ export type ActionGroup = "read" | "general-write" | "sensitive-write" | "admin-
 export interface ActionSpec<
   TInput extends v.GenericSchema = v.GenericSchema,
   TOutput extends v.GenericSchema = v.GenericSchema,
+  TGroup extends ActionGroup = ActionGroup,
 > {
-  group: ActionGroup;
+  group: TGroup;
   extraLimit?: RateLimitName;
   /** How many units of `extraLimit` one request spends; one unless the action says otherwise. */
   units?(input: v.InferOutput<TInput>): number;
@@ -21,13 +24,13 @@ export interface ActionSpec<
   output: TOutput;
 }
 
-export function action<TInput extends v.GenericSchema, TOutput extends v.GenericSchema>(
-  spec: ActionSpec<TInput, TOutput>,
+export function action<TInput extends v.GenericSchema, TOutput extends v.GenericSchema, TGroup extends ActionGroup>(
+  spec: ActionSpec<TInput, TOutput, TGroup>,
 ) {
   return spec;
 }
 
-export function isWriteGroup(group: ActionGroup) {
+export function isWriteGroup(group: ActionGroup): group is WriteGroup {
   return group !== "read" && group !== "upload-resolve";
 }
 

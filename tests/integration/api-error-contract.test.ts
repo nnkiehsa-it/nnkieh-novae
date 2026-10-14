@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { errorEnvelope, errorResponse, successEnvelope } from "../../cloudflare/src/backend/actions/response.ts";
+import { errorEnvelope, errorResponse, streamingResponse } from "../../cloudflare/src/backend/actions/response.ts";
 import { readOperationPolicies } from "../../cloudflare/src/backend/shared/operation-policies.ts";
 import { claimFixedWindowRateLimit, utcHourWindow } from "../../cloudflare/src/backend/shared/business-rate-limit.ts";
 import { RateLimitError } from "../../cloudflare/src/rate-limit.ts";
@@ -48,10 +48,14 @@ integrationTest("Durable Object business limits allow the configured quota and r
 });
 
 integrationTest("A successful answer names the settings revision it was produced under", async () => {
-  const [envelope, stored] = await underPolicies(async () => [
-    successEnvelope({ ok: true }, "request-policy-revision"),
-    await readOperationPolicies(database),
-  ] as const);
-  assert.equal(envelope.policyRevision, stored.revision);
-  assert.equal(envelope.success, true);
+  const [start, stored] = await underPolicies(async () => {
+    const empty = (async function* () {})();
+    const { response } = streamingResponse({ data: { ok: true } }, empty, "request-policy-revision", async () => {
+      throw new Error("unexpected-failure");
+    });
+    const [firstLine] = (await response.text()).split("\n");
+    return [JSON.parse(firstLine) as { policyRevision: number; type: string }, await readOperationPolicies(database)] as const;
+  });
+  assert.equal(start.type, "start");
+  assert.equal(start.policyRevision, stored.revision);
 });

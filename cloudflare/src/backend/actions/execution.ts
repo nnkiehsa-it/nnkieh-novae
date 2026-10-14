@@ -1,19 +1,17 @@
 import type { Json, Selected } from "../database/schema.ts";
 import type { AppDatabaseClient } from "../database/client.ts";
-import { resolveDomainEvents } from "../events/domain-events.ts";
+import { resolveDomainEvents, type FinishedWrite } from "../events/domain-events.ts";
 import { hasPermission } from "./auth.ts";
 import { claimBackendActionBusinessLimit, claimBackendActionBurstLimit } from "./rate-limit.ts";
 import * as v from "valibot";
-import { ACTIONS, type ActionName } from "../../../../shared/actions.ts";
-import { isWriteGroup } from "../../../../shared/contract.ts";
-import { ACTION_HANDLERS } from "./registry.ts";
+import { ACTIONS, type ActionName, isWriteAction } from "../../../../shared/actions.ts";
+import { actionHandler } from "./registry.ts";
 import { AccountAccessError } from "../shared/account-access.ts";
 import type { ActionSegment, AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
-import { toApiJson } from "./response.ts";
 
 /** Whether the account's access rules let it take this action at all. */
 function assertAccountMayAct(name: ActionName, auth: AuthContext) {
-  const { access, moderatedBy } = ACTION_HANDLERS[name];
+  const { access, moderatedBy } = actionHandler(name);
   // A moderator removing content is moderating, not participating.
   const participation = access === "participation" && !(moderatedBy && hasPermission(auth, moderatedBy));
   if (
@@ -64,7 +62,7 @@ async function executeBackendAction(
   database: BackendDatabase,
   operationId: string,
 ) {
-  const handler = ACTION_HANDLERS[name];
+  const handler = actionHandler(name);
   assertAccountMayAct(name, auth);
   if (handler.permission && !hasPermission(auth, handler.permission)) {
     throw new Error("permission-denied");
@@ -74,11 +72,11 @@ async function executeBackendAction(
   await claimBackendActionBurstLimit(name, auth.uid);
 
   // Read-only actions execute directly without transaction or operation claiming.
-  if (!isWriteGroup(ACTIONS[name].group)) {
+  if (!isWriteAction(name)) {
     const result = await run(input, auth, database);
     // An action that answers in pieces hands back the pieces themselves; they
-    // are converted one at a time as they are sent.
-    return isSegmentStream(result) ? result : toApiJson(result);
+    // are checked one at a time as they are sent.
+    return isSegmentStream(result) ? result : answerOf(name, result);
   }
 
   // All write actions execute within a single dedicated PostgreSQL transaction
@@ -98,7 +96,7 @@ async function executeBackendAction(
       where operation_id = ${operationId}`;
     if (identity.actor_uid !== auth.uid || identity.action !== name) throw new Error('permission-denied');
     if (identity.response_expired) throw new Error('operation-expired');
-    if (claim.completed) return claim.response;
+    if (claim.completed) return answerOf(name, claim.response);
     if (!claim.claimed) throw new Error("request-in-progress");
     await tx.call("app_api", "set_operation_context", {
       operation_id: operationId,
@@ -140,7 +138,8 @@ async function executeBackendAction(
     }
 
     // 5. Record domain events and queue deliveries
-    const domainEvents = resolveDomainEvents(name, payload, result, auth.uid);
+    // The registry pairs each action with its own handler, so this result is the one its announcer reads.
+    const domainEvents = resolveDomainEvents(name, { input, result, actorUid: auth.uid } as FinishedWrite<typeof name>);
     for (const event of domainEvents) {
       await tx
         .call("app_api", "record_domain_event", {
@@ -154,15 +153,15 @@ async function executeBackendAction(
         });
     }
 
-    // 6. Complete operation
-    const apiResult = toApiJson(result) as Json;
+    // 6. Complete operation, keeping the answer exactly as it was sent
+    const answer = answerOf(name, result);
     await tx
       .call("app_api", "complete_operation", {
         operation_id: operationId,
-        action_response: apiResult,
+        action_response: answer as Json,
       });
 
-    return apiResult;
+    return answer;
   });
 }
 
@@ -185,11 +184,11 @@ export async function* executeBackendActionSegments(
 ): AsyncGenerator<ActionSegment> {
   const result = await executeBackendAction(name, payload, auth, database, operationId);
   if (!isSegmentStream(result)) {
-    yield { data: conform(name, undefined, ACTIONS[name].output, result) };
+    yield { data: result };
     return;
   }
   for await (const segment of result) {
-    yield shapePart(name, { data: toApiJson(segment.data), key: segment.key });
+    yield shapePart(name, segment);
   }
 }
 
@@ -216,6 +215,11 @@ function shapePart(name: ActionName, segment: ActionSegment): ActionSegment {
       .filter(([key]) => Object.hasOwn(entries, key))
       .map(([key, value]) => [key, conform(name, key, entries[key], value)])),
   };
+}
+
+/** A whole answer, through its contract. */
+function answerOf(name: ActionName, value: unknown) {
+  return conform(name, undefined, ACTIONS[name].output as v.GenericSchema, value);
 }
 
 function conform(name: ActionName, key: string | undefined, schema: v.GenericSchema, value: unknown) {

@@ -10,13 +10,6 @@ export interface ApiErrorBody {
   retryAfterSeconds?: number;
 }
 
-export interface ApiSuccessEnvelope<TData> {
-  data: TData;
-  operationId: string;
-  policyRevision: number;
-  success: true;
-}
-
 /**
  * A line of an answer in flight.
  *
@@ -37,46 +30,6 @@ export interface ApiErrorEnvelope {
   success: false;
 }
 
-function camelCaseKey(key: string) {
-  return key.replace(/_([a-z])/gu, (_match, letter: string) => letter.toUpperCase());
-}
-
-function timestampKey(key: string) {
-  if (key.endsWith("_at_ms")) return camelCaseKey(key.slice(0, -3));
-  if (key.endsWith("AtMs")) return key.slice(0, -2);
-  return null;
-}
-
-export function toApiJson(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(toApiJson);
-  if (!value || typeof value !== "object") return value;
-
-  const source = value as Record<string, unknown>;
-  const result: Record<string, unknown> = {};
-  for (const [key, entry] of Object.entries(source)) {
-    if (timestampKey(key)) continue;
-    result[camelCaseKey(key)] = toApiJson(entry);
-  }
-  for (const [key, entry] of Object.entries(source)) {
-    const targetKey = timestampKey(key);
-    if (!targetKey) continue;
-    if (targetKey in result) continue;
-    result[targetKey] = typeof entry === "number" && Number.isFinite(entry)
-      ? new Date(entry).toISOString()
-      : null;
-  }
-  return result;
-}
-
-/**
- * Every answer carries the revision of the settings it was produced under, so
- * a client learns that they changed from the traffic it was making anyway
- * instead of asking on a timer.
- */
-export function successEnvelope<TData>(data: TData, operationId: string): ApiSuccessEnvelope<TData> {
-  return { data: toApiJson(data) as TData, operationId, policyRevision: operationPolicies().revision, success: true };
-}
-
 export function errorEnvelope(error: unknown, operationId: string, failureId?: string): ApiErrorEnvelope {
   return {
     error: publicErrorBody(error, failureId),
@@ -85,9 +38,6 @@ export function errorEnvelope(error: unknown, operationId: string, failureId?: s
   };
 }
 
-export function successResponse<TData>(data: TData, operationId: string, init: ResponseInit = {}) {
-  return Response.json(successEnvelope(data, operationId), init);
-}
 
 function streamLine(line: ApiStreamLine) {
   return new TextEncoder().encode(`${JSON.stringify(line)}

@@ -48,7 +48,7 @@ export interface ActionHandler<N extends ActionName> {
 type ActionHandlers = { [N in ActionName]: ActionHandler<N> };
 
 /** How the Worker carries out each action in the shared contract. */
-export const ACTION_HANDLERS: ActionHandlers = {
+export const ACTION_HANDLERS = {
   getRuntimePolicies: { domain: "category", access: "read", run: operations.getRuntimePolicies },
   getProviderDiagnostics: { domain: "dashboard", access: "read", permission: "dashboard.view", run: operations.getProviderDiagnostics },
   rebuildNotionArchive: { domain: "dashboard", access: "admin", permission: "role.manage", run: operations.rebuildNotionArchive },
@@ -129,4 +129,15 @@ export const ACTION_HANDLERS: ActionHandlers = {
   unregisterPushToken: { domain: "notification", access: "personal", run: notifications.unregisterPushToken },
   updatePlatformAdminNotificationPreferences: { domain: "notification", access: "personal", run: notifications.updatePlatformAdminNotificationPreferences },
   getPlatformDashboard: { domain: "dashboard", access: "read", permission: "dashboard.view", run: dashboard.getPlatformDashboard },
-};
+} satisfies ActionHandlers;
+
+/** An action's handler, read for what it asks of the caller rather than for what it returns. */
+export function actionHandler(name: ActionName): ActionHandlers[ActionName] {
+  return ACTION_HANDLERS[name];
+}
+
+/**
+ * What a handler finished with, before the contract shapes it into the answer.
+ * It may carry more than the answer does, for the events the write announces.
+ */
+export type ActionResult<N extends ActionName> = Awaited<ReturnType<(typeof ACTION_HANDLERS)[N]["run"]>>;

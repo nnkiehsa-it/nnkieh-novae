@@ -1,6 +1,5 @@
 import { expect, type Page, type Response } from '@playwright/test';
-import { ACTIONS, type ActionName } from "../../../shared/actions.ts";
-import { isWriteGroup } from "../../../shared/contract.ts";
+import { type ActionName, isWriteAction } from "../../../shared/actions.ts";
 
 const operationIdPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
@@ -12,7 +11,7 @@ const operationIdPattern =
  */
 function expectAnswered(response: Response, action: ActionName) {
   expect(response.status(), `${action} response`).toBe(200);
-  if (!isWriteGroup(ACTIONS[action].group)) return;
+  if (!isWriteAction(action)) return;
   expect(response.request().headers()['x-novae-operation-id']).toMatch(operationIdPattern);
 }
 

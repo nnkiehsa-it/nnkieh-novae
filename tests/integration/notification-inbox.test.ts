@@ -84,5 +84,5 @@ integrationTest("a delayed mark-opened request cannot make read notifications un
   for (const key of ["adminOpenedAt", "broadcastOpenedAt", "userOpenedAt"]) {
     assert.equal(Date.parse(String(state[key])), Date.parse(later));
   }
-  assert.equal(asRecord(delayed).openedAtMs, Date.parse(later));
+  assert.equal(Date.parse(String(asRecord(delayed).openedAt)), Date.parse(later));
 });

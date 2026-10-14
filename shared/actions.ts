@@ -1,5 +1,5 @@
 import type * as v from "valibot";
-import type { ActionSpec } from "./contract.ts";
+import { isWriteGroup, type ActionSpec, type WriteGroup } from "./contract.ts";
 import { FACILITY_ACTIONS } from "./contracts/facilities.ts";
 import { UPLOAD_ACTIONS } from "./contracts/uploads.ts";
 import { OPERATION_ACTIONS } from "./contracts/operations.ts";
@@ -28,3 +28,10 @@ export type ActionInput<N extends ActionName> = v.InferOutput<(typeof ACTIONS)[N
 /** What a caller passes: defaults the schema fills in may be left out. */
 export type ActionRequest<N extends ActionName> = v.InferInput<(typeof ACTIONS)[N]["input"]>;
 export type ActionOutput<N extends ActionName> = v.InferOutput<(typeof ACTIONS)[N]["output"]>;
+
+/** The actions that change something: each runs as a recorded operation and says what it announces. */
+export type WriteActionName = { [N in ActionName]: (typeof ACTIONS)[N]["group"] extends WriteGroup ? N : never }[ActionName];
+
+export function isWriteAction(name: ActionName): name is WriteActionName {
+  return isWriteGroup(ACTIONS[name].group);
+}

@@ -1,9 +1,10 @@
+import type { ActionInput, WriteActionName } from "../../../../shared/actions.ts";
 import type { Json } from "../database/schema.ts";
-import type { JsonRecord } from "../actions/types.ts";
-import { announcementEvents } from "./announcement-events.ts";
-import { facilityEvents } from "./facility-events.ts";
-import { issueEvents } from "./issue-events.ts";
-import { platformEvents } from "./platform-events.ts";
+import type { ActionResult } from "../actions/registry.ts";
+import { ANNOUNCEMENT_ANNOUNCERS } from "./announcement-events.ts";
+import { FACILITY_ANNOUNCERS } from "./facility-events.ts";
+import { ISSUE_ANNOUNCERS } from "./issue-events.ts";
+import { PLATFORM_ANNOUNCERS } from "./platform-events.ts";
 
 export type EventDestination = "notion" | "in_app" | "push" | "realtime";
 
@@ -31,52 +32,24 @@ export interface ResolvedDomainEvent {
   payload: Json;
 }
 
-/**
- * A finished write, as the domains read it.
- *
- * An action answers with the thing it wrote, so the events it announces are
- * drawn from the response first and the request only where the response is
- * silent.
- */
-export interface WriteOutcome {
-  action: string;
-  payload: JsonRecord;
+/** A finished write: what was asked, by whom, and what the handler finished with. */
+export interface FinishedWrite<N extends WriteActionName> {
+  input: ActionInput<N>;
+  result: ActionResult<N>;
   actorUid: string;
-  res: JsonRecord;
-  resIssue: JsonRecord;
-  resFacility: JsonRecord;
-  resAnnouncement: JsonRecord;
-  resComment: JsonRecord;
 }
 
-/**
- * What one write announces.
- *
- * Each domain answers for its own actions and returns null for the rest, so an
- * action nobody claims is a write that was registered without saying what it
- * announces — which fails here rather than going out silently.
- */
-export function resolveDomainEvents(
-  action: string,
-  payload: JsonRecord,
-  result: unknown,
-  actorUid: string,
-): ResolvedDomainEvent[] {
-  const res = (result ?? {}) as JsonRecord;
-  const outcome: WriteOutcome = {
-    action,
-    payload,
-    actorUid,
-    res,
-    resIssue: (res.issue ?? {}) as JsonRecord,
-    resFacility: (res.facility ?? {}) as JsonRecord,
-    resAnnouncement: (res.announcement ?? {}) as JsonRecord,
-    resComment: (res.comment ?? {}) as JsonRecord,
-  };
+/** What each write announces; a write may announce nothing, but never goes unsaid. */
+export type Announcers = { [N in WriteActionName]: (write: FinishedWrite<N>) => ResolvedDomainEvent[] };
 
-  for (const resolve of [issueEvents, facilityEvents, announcementEvents, platformEvents]) {
-    const events = resolve(outcome);
-    if (events) return events;
-  }
-  throw new Error(`unregistered-write-action:${action}`);
+const ANNOUNCERS: Announcers = {
+  ...ISSUE_ANNOUNCERS,
+  ...FACILITY_ANNOUNCERS,
+  ...ANNOUNCEMENT_ANNOUNCERS,
+  ...PLATFORM_ANNOUNCERS,
+};
+
+export function resolveDomainEvents<N extends WriteActionName>(name: N, write: FinishedWrite<N>): ResolvedDomainEvent[] {
+  const announce = ANNOUNCERS[name] as (write: FinishedWrite<N>) => ResolvedDomainEvent[];
+  return announce(write);
 }

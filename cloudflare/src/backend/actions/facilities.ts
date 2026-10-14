@@ -1,6 +1,7 @@
+import * as v from "valibot";
 import type { ActionInput } from "../../../../shared/actions.ts";
-import { FACILITY_STATUSES } from "../../../../shared/contracts/facilities.ts";
-import { asRecord, asString } from "../shared/json.ts";
+import { Count } from "../../../../shared/contract.ts";
+import { FACILITY_ACTIONS, Facility } from "../../../../shared/contracts/facilities.ts";
 import { canManageFacilityCategory, requireFacilityCategoryPermission } from "./auth.ts";
 import { getFacilityCategories, getFacilityCategory } from "./category-catalog.ts";
 import type { AuthContext, BackendDatabase } from "./types.ts";
@@ -17,7 +18,7 @@ async function selectFacilityCategory(database: BackendDatabase, facilityId: str
 
 export async function listFacilities(input: ActionInput<"listFacilities">, auth: AuthContext, database: BackendDatabase) {
   const { cursor } = input;
-  const result = asRecord(await database.call("app_api", "backend_list_facilities_snapshot", {
+  return v.parse(FACILITY_ACTIONS.listFacilities.output, await database.call("app_api", "backend_list_facilities_snapshot", {
     actor_uid: auth.uid,
     actor_is_admin: auth.isAdmin,
     bucket: input.bucket,
@@ -31,30 +32,21 @@ export async function listFacilities(input: ActionInput<"listFacilities">, auth:
     page_size: input.pageSize,
     managed_category_ids: auth.managedFacilityCategoryIds,
   }));
-  const facilities = (result.facilities as Array<{ id: string; created_at: string; affected_count: number }>);
-  const last = facilities.at(-1);
-  const counted = asRecord(result.statusCounts);
-  return {
-    facilities,
-    hasMore: result.hasMore,
-    cursor: result.hasMore === true && last
-      ? { id: last.id, createdAt: last.created_at, affectedCount: last.affected_count }
-      : null,
-    statusCounts: cursor ? null : Object.fromEntries(FACILITY_STATUSES.map((status) => [status, counted[status] ?? 0])),
-    version: result.version,
-  };
 }
+
+/** A report as the database answers it: everything but what the reader may do with it. */
+const StoredFacility = v.omit(Facility, ["canDeleteFacility"]);
 
 export async function getFacility(input: ActionInput<"getFacility">, auth: AuthContext, database: BackendDatabase) {
   const categoryId = await selectFacilityCategory(database, input.facilityId);
   const canManage = canManageFacilityCategory(auth, categoryId);
-  const facility = asRecord(await database.call("app_api", "backend_get_facility", {
+  const facility = v.parse(StoredFacility, await database.call("app_api", "backend_get_facility", {
     facility_id: input.facilityId,
     actor_uid: auth.uid,
     actor_can_manage: canManage,
   }));
   const canDeleteFacility = canManage
-    || (asString(facility.author_uid) === auth.uid && (await getFacilityCategory(database, categoryId)).authorDeleteEnabled);
+    || (facility.authorUid === auth.uid && (await getFacilityCategory(database, categoryId)).authorDeleteEnabled);
   return { facility: { ...facility, canDeleteFacility } };
 }
 
@@ -65,46 +57,50 @@ export async function createFacility(input: ActionInput<"createFacility">, auth:
   const category = (await getFacilityCategories(database)).find((entry) => entry.id === input.categoryId);
   if (!category) throw new Error("invalid-facility-category");
   await validateMarkdownUploadsBeforeCreate(database, auth.uid, content, "facility", input.categoryId);
-  const facility = await database.call("app_api", "backend_create_facility", {
+  const facility = v.parse(StoredFacility, await database.call("app_api", "backend_create_facility", {
     actor_uid: auth.uid,
     facility_title: input.title,
     facility_location: input.location,
     facility_content: content,
     facility_category: input.categoryId,
-  });
+  }));
   const canDeleteFacility = canManageFacilityCategory(auth, input.categoryId) || category.authorDeleteEnabled;
-  return { facility: { ...asRecord(facility), canDeleteFacility } };
+  return { facility: { ...facility, canDeleteFacility } };
 }
 
 export async function toggleFacilityAffected(input: ActionInput<"toggleFacilityAffected">, auth: AuthContext, database: BackendDatabase) {
-  return await database.call("app_api", "backend_toggle_facility_affected", {
-    facility_id: input.facilityId,
-    actor_uid: auth.uid,
-  });
+  return v.parse(
+    v.object({ affected: v.boolean(), affectedCount: Count }),
+    await database.call("app_api", "backend_toggle_facility_affected", {
+      facility_id: input.facilityId,
+      actor_uid: auth.uid,
+    }),
+  );
 }
 
 export async function updateFacilityStatus(input: ActionInput<"updateFacilityStatus">, auth: AuthContext, database: BackendDatabase) {
   const categoryId = await selectFacilityCategory(database, input.facilityId);
   requireFacilityCategoryPermission(auth, categoryId);
   const resultContent = optionalText(input.resultContent, "facility-result", INPUT_LIMITS.facilityResult) || null;
-  const facility = await database.call("app_api", "backend_update_facility_status", {
+  const facility = v.parse(StoredFacility, await database.call("app_api", "backend_update_facility_status", {
     facility_id: input.facilityId,
     next_status: input.status,
     result_content: resultContent,
     actor_uid: auth.uid,
     actor_can_manage: canManageFacilityCategory(auth, categoryId),
-  });
+  }));
   // Only a manager reaches this point, and a manager may always delete.
-  return { facility: { ...asRecord(facility), canDeleteFacility: true } };
+  return { facility: { ...facility, canDeleteFacility: true } };
 }
 
 export async function deleteFacility(input: ActionInput<"deleteFacility">, auth: AuthContext, database: BackendDatabase) {
   const categoryId = await selectFacilityCategory(database, input.facilityId);
   const category = await getFacilityCategory(database, categoryId);
-  return await database.call("app_api", "backend_delete_facility", {
+  await database.call("app_api", "backend_delete_facility", {
     facility_id: input.facilityId,
     actor_uid: auth.uid,
     actor_can_manage: canManageFacilityCategory(auth, categoryId),
     author_delete_enabled: category.authorDeleteEnabled,
   });
+  return { success: true as const };
 }
