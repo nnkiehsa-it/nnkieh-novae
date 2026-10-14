@@ -15,7 +15,7 @@ const COMPOSE_HREF = "/announcements/new";
 export function AnnouncementFeed({ notice, viewSwitch }: { notice?: React.ReactNode; viewSwitch: React.ReactNode }) {
   const { t } = useI18n();
   const feed = useAnnouncementFeed();
-  const profiles = usePublicProfiles(feed.items.map((announcement) => announcement.author_uid));
+  const profiles = usePublicProfiles(feed.items.map((announcement) => announcement.authorUid));
   return (
     <div className="grid gap-5">
       <FeedTopBar
@@ -48,7 +48,7 @@ export function AnnouncementFeed({ notice, viewSwitch }: { notice?: React.ReactN
             burst={feed.likeBurstById[announcement.id] ?? 0}
             liking={feed.isLiking(announcement.id)}
             onLike={() => void feed.like(announcement.id)}
-            profile={profiles[announcement.author_uid]}
+            profile={profiles[announcement.authorUid]}
           />
         )}
       />

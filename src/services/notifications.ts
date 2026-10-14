@@ -4,7 +4,7 @@ import { subscribeRealtimeTopic } from '@/services/realtime-transport';
 import type { NotificationRecord } from '@/types';
 import { callAction } from '@/services/backend-action';
 import { readRequestTimeoutMs } from '@/lib/request';
-import { toReadableBackendError } from './issues-core';
+import { toReadableBackendError } from './backend-errors';
 import { NOTIFICATION_FEED_PAGE_SIZE } from '@/lib/page-size';
 import {
   CONTENT_SHORT_CACHE_TTL_MS,

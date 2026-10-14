@@ -67,7 +67,7 @@ export function announcementEvents(outcome: WriteOutcome): ResolvedDomainEvent[]
     }
     case "deleteAnnouncementComment": {
       const commentId = String(payload.commentId ?? "");
-      const announcementId = String(payload.announcementId ?? "");
+      const announcementId = String(res.announcementId ?? "");
       events.push({
         aggregateType: "announcement",
         aggregateId: announcementId,

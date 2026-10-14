@@ -71,12 +71,7 @@ export function useIssueComposer() {
     ) return;
     await form.withUploads(async (content) => {
       const issue = await createIssue({ category, content, title: form.title.trim() });
-      mergeContentEntityRead(
-        session.user?.uid,
-        "issue",
-        { ...issue, currentUserSupported: true, isOwnIssue: true },
-        beginContentEntityRead(),
-      );
+      mergeContentEntityRead(session.user?.uid, "issue", issue, beginContentEntityRead());
       return `/issues/${encodeURIComponent(category)}/${issue.id}`;
     }, (href) => navigate(href, { replace: true }), t("ui.issue.submitFailed"));
   }

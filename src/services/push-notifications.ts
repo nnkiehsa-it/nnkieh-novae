@@ -9,7 +9,7 @@ import {
   markContentCachePrefixStale,
   setCachedContentFromRead,
 } from '@/services/content-read-cache';
-import { toReadableBackendError } from './issues-core';
+import { toReadableBackendError } from './backend-errors';
 
 export type { PushPreference as PushNotificationPreference } from '@shared/contracts/notifications.ts';
 export type PlatformAdminNotificationPreferences = AdminNotificationPreferences;

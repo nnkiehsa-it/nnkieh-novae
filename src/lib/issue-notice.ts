@@ -10,7 +10,7 @@ interface IssueNotice {
 }
 
 export function getIssueNotice(
-  issue: Pick<IssueRecord, 'result_content' | 'review_rejection_reason' | 'status'>,
+  issue: Pick<IssueRecord, 'resultContent' | 'reviewRejectionReason' | 'status'>,
   statusFallback = '',
 ): IssueNotice | null {
   if (!isClosedIssueStatus(issue.status)) return null;
@@ -19,15 +19,15 @@ export function getIssueNotice(
     return {
       content:
         (issue.status === 'review-rejected'
-          ? issue.review_rejection_reason || issue.result_content
-          : issue.result_content || issue.review_rejection_reason) || statusFallback,
+          ? issue.reviewRejectionReason || issue.resultContent
+          : issue.resultContent || issue.reviewRejectionReason) || statusFallback,
       title: 'issue.reasonForRejection',
       tone: 'error',
     };
   }
 
   return {
-    content: issue.result_content || statusFallback,
+    content: issue.resultContent || statusFallback,
     title: 'issue.result',
     tone: 'success',
   };

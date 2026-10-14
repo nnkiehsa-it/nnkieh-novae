@@ -6,7 +6,8 @@ import { ArrowBendUpLeft, CaretDown, Trash } from "@phosphor-icons/react/ssr";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { usePersonName } from "@/features/content/person";
-import type { DiscussionCommentRecord, UserPublicProfile } from "@/types";
+import type { Comment, UserPublicProfile } from "@/types";
+import type { Reply } from "@shared/contracts/discussions.ts";
 import { formatRelativeTime } from "@/lib/format";
 import { timing } from "@/lib/motion-timing";
 import { cn } from "@/lib/utils";
@@ -17,7 +18,7 @@ import { Tooltip } from "@/ui/popover";
 import { Markdown } from "./markdown";
 
 function CommentRow({ comment, compact = false, currentUid, onDelete, onReply, profile }: {
-  comment: DiscussionCommentRecord;
+  comment: Reply;
   compact?: boolean;
   currentUid?: string;
   onDelete: (commentId: string) => Promise<void>;
@@ -42,14 +43,14 @@ function CommentRow({ comment, compact = false, currentUid, onDelete, onReply, p
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
           {profile ? <span className="truncate text-[0.9375rem] font-semibold">{personName(profile.displayName)}</span> : <Skeleton className="h-4 w-16" />}
-          <span className="shrink-0 text-xs text-ink-faint">{formatRelativeTime(comment.created_at)}</span>
+          <span className="shrink-0 text-xs text-ink-faint">{formatRelativeTime(comment.createdAt)}</span>
         </div>
         <Markdown className="mt-1" content={comment.content} fallbackAlt={t("comments.commentAttachmentPreview")} plainText />
         <div className="-ml-2 mt-1 flex items-center gap-1">
           <Tooltip label={t("ui.discussion.reply")}>
             <Button aria-label={t("ui.discussion.reply")} onClick={onReply} size="icon-sm" variant="ghost"><ArrowBendUpLeft /></Button>
           </Tooltip>
-          {currentUid === comment.author_uid ? (
+          {currentUid === comment.authorUid ? (
             <Tooltip label={t("ui.common.delete")}>
               <Button aria-label={t("ui.common.delete")} onClick={() => void remove()} size="icon-sm" status={deleting ? "loading" : "idle"} variant="ghost">
                 {deleting ? null : <Trash />}
@@ -64,10 +65,10 @@ function CommentRow({ comment, compact = false, currentUid, onDelete, onReply, p
 
 /** A comment and, folded beneath it, the replies to it. */
 export function CommentThread({ comment, currentUid, onDelete, onReply, profiles, replyActive }: {
-  comment: DiscussionCommentRecord;
+  comment: Comment;
   currentUid?: string;
   onDelete: (commentId: string) => Promise<void>;
-  onReply: (comment: DiscussionCommentRecord, parentCommentId: string) => void;
+  onReply: (comment: Reply, parentCommentId: string) => void;
   profiles: Record<string, UserPublicProfile>;
   replyActive: boolean;
 }) {
@@ -78,7 +79,7 @@ export function CommentThread({ comment, currentUid, onDelete, onReply, profiles
 
   return (
     <div className="grid gap-2 px-5 py-4">
-      <CommentRow comment={comment} currentUid={currentUid} onDelete={onDelete} onReply={() => onReply(comment, comment.id)} profile={profiles[comment.author_uid]} />
+      <CommentRow comment={comment} currentUid={currentUid} onDelete={onDelete} onReply={() => onReply(comment, comment.id)} profile={profiles[comment.authorUid]} />
       {comment.replies.length > 0 ? (
         <div className="ml-12 grid gap-2">
           <button
@@ -107,7 +108,7 @@ export function CommentThread({ comment, currentUid, onDelete, onReply, profiles
                     key={reply.id}
                     onDelete={onDelete}
                     onReply={() => onReply(reply, comment.id)}
-                    profile={profiles[reply.author_uid]}
+                    profile={profiles[reply.authorUid]}
                   />
                 ))}
               </motion.div>

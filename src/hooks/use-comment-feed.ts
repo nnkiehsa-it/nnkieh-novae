@@ -6,37 +6,36 @@ import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 import { useI18n } from "@/i18n";
 import { usePagedRequestGuard } from "@/hooks/use-paged-request-guard";
 import { canContinuePage } from "@/lib/pagination";
-import type { CommentCursor } from "@/services/comment-cursor";
-import type { CommentSortOption } from "@/types";
+import type { Comment, CommentCursor, CommentSortOption } from "@/types";
 
-interface CommentPage<T> {
-  comments: T[];
-  cursor: CommentCursor;
+interface CommentPage {
+  comments: Comment[];
+  cursor: CommentCursor | null;
   hasMore: boolean;
 }
 
-export interface CommentPageRequest<T> {
-  cursor: CommentCursor;
+export interface CommentPageRequest {
+  cursor: CommentCursor | null;
   sort: CommentSortOption;
   forceRefresh: boolean;
-  onPage?: (page: CommentPage<T>) => void;
 }
 
-export function useCommentFeed<T extends { id: string }>({
+/** A discussion's comments, a page at a time, for a proposal or an announcement alike. */
+export function useCommentFeed({
   enabled,
   targetKey,
   fetchPage,
 }: {
   enabled: boolean;
   targetKey: string;
-  fetchPage: (request: CommentPageRequest<T>) => Promise<CommentPage<T>>;
+  fetchPage: (request: CommentPageRequest) => Promise<CommentPage>;
 }) {
   const { t } = useI18n();
   const uid = useSession().user?.uid;
-  const remembered = enabled ? getViewMemory<CommentPage<T>>(uid, `comment-feed|${targetKey}|newest`) : null;
-  const [comments, setComments] = useState<T[]>(remembered?.comments ?? []);
+  const remembered = enabled ? getViewMemory<CommentPage>(uid, `comment-feed|${targetKey}|newest`) : null;
+  const [comments, setComments] = useState<Comment[]>(remembered?.comments ?? []);
   const [sort, setSort] = useState<CommentSortOption>("newest");
-  const [cursor, setCursor] = useState<CommentCursor>(remembered?.cursor ?? null);
+  const [cursor, setCursor] = useState<CommentCursor | null>(remembered?.cursor ?? null);
   const [hasMore, setHasMore] = useState(remembered?.hasMore ?? false);
   const [loading, setLoading] = useState(enabled && !remembered);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -57,9 +56,9 @@ export function useCommentFeed<T extends { id: string }>({
       return;
     }
     const token = guard.begin(queryKey)!;
-    const cached = getViewMemory<CommentPage<T>>(uid, cacheKey);
+    const cached = getViewMemory<CommentPage>(uid, cacheKey);
     setLoading(!cached);
-    const apply = (page: CommentPage<T>, persist = true) => {
+    const apply = (page: CommentPage, persist = true) => {
       if (!guard.isCurrent(token)) return;
       setComments(page.comments);
       setCursor(page.cursor);
@@ -68,7 +67,7 @@ export function useCommentFeed<T extends { id: string }>({
     };
     if (cached) apply(cached, false);
     try {
-      apply(await fetchPage({ cursor: null, sort, forceRefresh: forceRefresh || Boolean(cached), onPage: apply }));
+      apply(await fetchPage({ cursor: null, sort, forceRefresh: forceRefresh || Boolean(cached) }));
     } catch (caught) {
       if (guard.isCurrent(token)) setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
     } finally {

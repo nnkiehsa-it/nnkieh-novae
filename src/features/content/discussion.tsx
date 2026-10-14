@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { CaretDown, ChatCircle, X } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import { usePersonName } from "@/features/content/person";
-import type { CommentSortOption, DiscussionCommentRecord } from "@/types";
+import type { CommentSortOption, Comment } from "@/types";
 import { stripMarkdownImages } from "@/lib/markdown-images";
 import { timing } from "@/lib/motion-timing";
 import { useCategories } from "@/hooks/use-categories";
@@ -36,7 +36,7 @@ function replyExcerpt(content: string, imagesOnly: string) {
  */
 export function Discussion({ categoryId, comments, enabled = true, error, hasMore = false, loading, loadingMore = false, onCreate, onDelete, onLoadMore, onRetry, onSortChange, sort, targetKey }: {
   categoryId?: string;
-  comments: DiscussionCommentRecord[];
+  comments: Comment[];
   enabled?: boolean;
   error?: string;
   hasMore?: boolean;
@@ -112,7 +112,7 @@ export function Discussion({ categoryId, comments, enabled = true, error, hasMor
                 onDelete={onDelete}
                 onReply={(reply, parentCommentId) => {
                   if (composer.busy || !enabled) return;
-                  setReplyTarget({ authorUid: reply.author_uid, content: reply.content, parentCommentId });
+                  setReplyTarget({ authorUid: reply.authorUid, content: reply.content, parentCommentId });
                 }}
                 profiles={profiles}
                 replyActive={replyTarget?.parentCommentId === comment.id}

@@ -58,7 +58,7 @@ function invalidateRealtimeContent(event: ContentRealtimeEvent) {
     }
     if (event.eventType === 'issue_support_changed' && event.supportCount !== null) {
       patchContentEntity<IssueRecord>(scope, 'issue', event.targetId, {
-        support_count: event.supportCount,
+        supportCount: event.supportCount,
       }, { serverRevision: event.aggregateRevision });
     }
     return;
@@ -78,8 +78,8 @@ function invalidateRealtimeContent(event: ContentRealtimeEvent) {
   }
   if (announcementId) {
     const patch: Partial<AnnouncementRecord> = {};
-    if (event.likeCount !== null) patch.like_count = event.likeCount;
-    if (event.commentCount !== null) patch.comment_count = event.commentCount;
+    if (event.likeCount !== null) patch.likeCount = event.likeCount;
+    if (event.commentCount !== null) patch.commentCount = event.commentCount;
     if (Object.keys(patch).length > 0) {
       patchContentEntity<AnnouncementRecord>(scope, 'announcement', announcementId, patch, {
         serverRevision: event.aggregateRevision,

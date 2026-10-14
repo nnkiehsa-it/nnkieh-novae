@@ -11,20 +11,16 @@ import {
   createAnnouncementComment,
   deleteAnnouncement,
   deleteAnnouncementComment,
-  fetchAnnouncementComments,
-  fetchAnnouncementRecordById,
-  peekAnnouncementRecordById,
+  getAnnouncement,
+  listAnnouncementComments,
+  peekAnnouncement,
   setAnnouncementLike,
 } from "@/services/announcements";
 import {
   fetchUserPublicProfiles,
   getCachedUserPublicProfiles,
 } from "@/services/users-read";
-import type {
-  AnnouncementCommentRecord,
-  AnnouncementRecord,
-  UserPublicProfile,
-} from "@/types";
+import type { AnnouncementRecord, UserPublicProfile } from "@/types";
 import {
   beginContentEntityRead,
   getDetailContentEntity,
@@ -50,13 +46,13 @@ export function useAnnouncementDetail() {
     announcementId,
     "detail",
   );
-  const currentAnnouncement = storedAnnouncement ?? peekAnnouncementRecordById(
+  const currentAnnouncement = storedAnnouncement ?? peekAnnouncement(
     announcementId,
     session.user?.uid,
   );
   const [profile, setProfile] = React.useState<UserPublicProfile | null>(() =>
-    currentAnnouncement?.author_uid
-      ? getCachedUserPublicProfiles([currentAnnouncement.author_uid])[currentAnnouncement.author_uid] ?? null
+    currentAnnouncement?.authorUid
+      ? getCachedUserPublicProfiles([currentAnnouncement.authorUid])[currentAnnouncement.authorUid] ?? null
       : null,
   );
   const [coldRead] = React.useState(() => !currentAnnouncement);
@@ -71,13 +67,13 @@ export function useAnnouncementDetail() {
     async (forceRefresh = false) => {
       const cached =
         getDetailContentEntity<AnnouncementRecord>(session.user?.uid, "announcement", announcementId) ??
-        peekAnnouncementRecordById(announcementId, session.user?.uid);
+        peekAnnouncement(announcementId, session.user?.uid);
       const coldRead = !cached;
       if (coldRead) setLoading(true);
       setError("");
       const entityReadRevision = beginContentEntityRead();
       try {
-        const result = await fetchAnnouncementRecordById(announcementId, {
+        const result = await getAnnouncement(announcementId, {
           cacheScope: session.user?.uid,
           forceRefresh: forceRefresh || !coldRead,
         });
@@ -87,8 +83,8 @@ export function useAnnouncementDetail() {
           result,
           entityReadRevision,
         );
-        void fetchUserPublicProfiles([result.author_uid])
-          .then((profiles) => setProfile(profiles[result.author_uid] ?? null))
+        void fetchUserPublicProfiles([result.authorUid])
+          .then((profiles) => setProfile(profiles[result.authorUid] ?? null))
           .catch(() => undefined);
       } catch (caught) {
         setError(
@@ -103,16 +99,14 @@ export function useAnnouncementDetail() {
     [announcementId, session.user?.uid, t],
   );
 
-  const commentsEnabled = Boolean(currentAnnouncement?.comments_enabled) && categories.announcementCommentsEnabled;
+  const commentsEnabled = Boolean(currentAnnouncement?.commentsEnabled) && categories.announcementCommentsEnabled;
   const fetchCommentPage = React.useCallback(
-    ({ cursor, sort, forceRefresh, onPage }: CommentPageRequest<AnnouncementCommentRecord>) =>
-      fetchAnnouncementComments(announcementId, cursor, sort, {
-        cacheScope: session.user?.uid, forceRefresh, onPage,
-      }),
+    ({ cursor, sort, forceRefresh }: CommentPageRequest) =>
+      listAnnouncementComments(announcementId, cursor, sort, { cacheScope: session.user?.uid, forceRefresh }),
     [announcementId, session.user?.uid],
   );
   const commentFeed = useCommentFeed({
-    enabled: categories.announcementCommentsEnabled && currentAnnouncement?.comments_enabled !== false,
+    enabled: categories.announcementCommentsEnabled && currentAnnouncement?.commentsEnabled !== false,
     targetKey: `${session.user?.uid}|announcement:${announcementId}`,
     fetchPage: fetchCommentPage,
   });
@@ -133,13 +127,13 @@ export function useAnnouncementDetail() {
     if (!currentAnnouncement) return;
     return reaction.run({
       id: currentAnnouncement.id,
-      previous: { active: currentAnnouncement.currentUserLiked, count: currentAnnouncement.like_count },
+      previous: { active: currentAnnouncement.currentUserLiked, count: currentAnnouncement.likeCount },
       apply: ({ active, count }, pending) => patchContentEntity<AnnouncementRecord>(session.user?.uid, "announcement", currentAnnouncement.id, {
-        currentUserLiked: active, like_count: count,
+        currentUserLiked: active, likeCount: count,
       }, { pending }),
       request: async (active) => {
         const result = await setAnnouncementLike(currentAnnouncement.id, active);
-        return { active: result.liked, count: result.like_count };
+        return { active: result.liked, count: result.likeCount };
       },
       errorMessage: t("ui.announcement.likeFailed"),
     });
@@ -179,7 +173,7 @@ export function useAnnouncementDetail() {
         session.user?.uid,
         "announcement",
         currentAnnouncement.id,
-        { comment_count: result.comment_count },
+        { commentCount: result.commentCount },
       );
     await commentFeed.load(true);
   }
@@ -191,7 +185,7 @@ export function useAnnouncementDetail() {
         session.user?.uid,
         "announcement",
         currentAnnouncement.id,
-        { comment_count: result.comment_count },
+        { commentCount: result.commentCount },
       );
     await commentFeed.load(true);
   }

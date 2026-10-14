@@ -506,7 +506,7 @@ export interface AppApiFunctions {
     support_enabled: boolean;
     support_goal: number | null;
   }, Json>;
-  backend_delete_announcement: AppFunction<{ announcement_id: string }, Json>;
+  backend_delete_announcement: AppFunction<{ announcement_id: string }, void>;
   backend_delete_announcement_comment: AppFunction<{
     actor_is_admin: boolean;
     actor_uid: string;
@@ -517,7 +517,7 @@ export interface AppApiFunctions {
     actor_uid: string;
     comment_id: string;
   }, Json>;
-  backend_delete_issue_with_upload_targets: AppFunction<{
+  backend_delete_issue: AppFunction<{
     actor_can_manage: boolean;
     actor_uid: string;
     author_delete_enabled: boolean;
@@ -774,7 +774,6 @@ export interface AppApiFunctions {
   fail_background_job: AppFunction<{ job_id: string; attempt_id: string; error_info: Json }, void>;
   enqueue_background_job: AppFunction<{ job_type: string; scope_id?: string; payload?: Json; created_by?: string }, string>;
   get_platform_dashboard_snapshot: AppFunction<Record<string, never>, Json>;
-  backend_delete_issue: AppFunction<{ actor_is_admin: boolean; actor_uid: string; issue_id: string }, void>;
   reject_expired_support_issues: AppFunction<Record<string, never>, number>;
   run_scheduled_maintenance_cleanup: AppFunction<Record<string, never>, Json>;
 }

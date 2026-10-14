@@ -43,7 +43,7 @@ export function AnnouncementDetail() {
           <>
             <Author profile={detail.profile ?? undefined} />
             <span aria-hidden>·</span>
-            <span>{formatDate(announcement.published_at)}</span>
+            <span>{formatDate(announcement.publishedAt)}</span>
           </>
         }
         title={announcement.title}
@@ -51,7 +51,7 @@ export function AnnouncementDetail() {
       {announcement.content?.trim() ? <Markdown content={announcement.content} fallbackAlt={announcement.title} /> : null}
       <Panel className="flex flex-wrap items-center justify-between gap-4">
         <p className="text-sm text-ink-muted">
-          <span className="mr-1.5 text-2xl font-semibold tabular-nums text-ink"><AnimatedNumber value={announcement.like_count} /></span>
+          <span className="mr-1.5 text-2xl font-semibold tabular-nums text-ink"><AnimatedNumber value={announcement.likeCount} /></span>
           {t("ui.announcement.peopleLiked")}
         </p>
         <ReactionButton

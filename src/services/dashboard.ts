@@ -1,6 +1,6 @@
 import type { PlatformDashboard } from '@shared/contracts/operations.ts';
 import { callAction } from '@/services/backend-action';
-import { toReadableBackendError } from '@/services/issues-core';
+import { toReadableBackendError } from '@/services/backend-errors';
 import { getRouteRequestSignal } from '@/lib/route-request';
 import { readRequestTimeoutMs } from '@/lib/request';
 import {

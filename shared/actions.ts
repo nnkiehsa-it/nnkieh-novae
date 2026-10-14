@@ -1,5 +1,5 @@
-import * as v from "valibot";
-import { action, type ActionSpec } from "./contract.ts";
+import type * as v from "valibot";
+import type { ActionSpec } from "./contract.ts";
 import { FACILITY_ACTIONS } from "./contracts/facilities.ts";
 import { UPLOAD_ACTIONS } from "./contracts/uploads.ts";
 import { OPERATION_ACTIONS } from "./contracts/operations.ts";
@@ -7,11 +7,8 @@ import { SESSION_ACTIONS } from "./contracts/session.ts";
 import { CATEGORY_ACTIONS } from "./contracts/categories.ts";
 import { USER_ACTIONS } from "./contracts/users.ts";
 import { NOTIFICATION_ACTIONS } from "./contracts/notifications.ts";
-
-/** An action whose contract has not been written yet: it accepts any object and promises nothing. */
-function pending(spec: Omit<ActionSpec, "input" | "output">) {
-  return action({ ...spec, input: v.record(v.string(), v.unknown()), output: v.unknown() });
-}
+import { ISSUE_ACTIONS } from "./contracts/issues.ts";
+import { ANNOUNCEMENT_ACTIONS } from "./contracts/announcements.ts";
 
 /** Every backend action. The Worker registers exactly these, and the client can call nothing else. */
 export const ACTIONS = {
@@ -22,30 +19,8 @@ export const ACTIONS = {
   ...CATEGORY_ACTIONS,
   ...USER_ACTIONS,
   ...NOTIFICATION_ACTIONS,
-  createAnnouncement: pending({ group: "admin-write", extraLimit: "announcementCreateDaily" }),
-  createAnnouncementComment: pending({ group: "sensitive-write", extraLimit: "commentCreateHourly" }),
-  createComment: pending({ group: "sensitive-write", extraLimit: "commentCreateHourly" }),
-  createIssue: pending({ group: "sensitive-write", extraLimit: "issueCreateDaily" }),
-  deleteAnnouncement: pending({ group: "admin-write", extraLimit: "destructiveWriteHourly" }),
-  deleteAnnouncementComment: pending({ group: "sensitive-write", extraLimit: "destructiveWriteHourly" }),
-  deleteComment: pending({ group: "sensitive-write", extraLimit: "destructiveWriteHourly" }),
-  deleteIssue: pending({ group: "admin-write", extraLimit: "destructiveWriteHourly" }),
-  getAnnouncement: pending({ group: "read" }),
-  getAnnouncementUnreadHint: pending({ group: "read" }),
-  getIssue: pending({ group: "read" }),
-  listAnnouncementComments: pending({ group: "read" }),
-  listAnnouncements: pending({ group: "read" }),
-  listComments: pending({ group: "read" }),
-  listIssues: pending({ group: "read" }),
-  listIssueSupporters: pending({ group: "read" }),
-  listUserIssues: pending({ group: "read" }),
-  markAnnouncementsOpened: pending({ group: "general-write" }),
-  moderateIssueStatus: pending({ group: "admin-write", extraLimit: "moderationWriteHourly" }),
-  removeSupport: pending({ group: "sensitive-write", extraLimit: "supportToggleHourly" }),
-  searchIssues: pending({ group: "read" }),
-  setAnnouncementLike: pending({ group: "sensitive-write", extraLimit: "announcementLikeHourly" }),
-  toggleSupport: pending({ group: "sensitive-write", extraLimit: "supportToggleHourly" }),
-  updateIssueResult: pending({ group: "admin-write", extraLimit: "moderationWriteHourly" }),
+  ...ISSUE_ACTIONS,
+  ...ANNOUNCEMENT_ACTIONS,
 } satisfies Record<string, ActionSpec>;
 
 export type ActionName = keyof typeof ACTIONS;

@@ -57,7 +57,7 @@ export function issueEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | null
     }
     case "toggleSupport": {
       const issueId = String(payload.issueId ?? "");
-      const goalMet = Boolean(res.goal_met);
+      const goalMet = Boolean(res.goalMet);
       if (goalMet) {
         events.push({
           aggregateType: "issue",
@@ -68,7 +68,7 @@ export function issueEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | null
             issue_id: issueId,
             supporter_uid: actorUid,
             title: String(res.title ?? ""),
-            issue_category: String(res.issue_category ?? ""),
+            issue_category: String(res.category ?? ""),
           },
         });
       } else {
@@ -81,7 +81,7 @@ export function issueEvents(outcome: WriteOutcome): ResolvedDomainEvent[] | null
             issue_id: issueId,
             supporter_uid: actorUid,
             supported: Boolean(res.supported),
-            support_count: Number(res.support_count ?? res.supportCount ?? 0),
+            support_count: Number(res.supportCount ?? 0),
           },
         });
       }

@@ -4,7 +4,7 @@ import { clearContentReadMemoryCache, setContentCacheScope } from "@/services/co
 
 const fetch = vi.hoisted(() => vi.fn());
 vi.mock("@/services/backend-action", () => ({ callAction: (_name: string, payload: unknown) => fetch(payload) }));
-vi.mock("@/services/issues-core", () => ({ toReadableBackendError: (error: unknown) => error }));
+vi.mock("@/services/backend-errors", () => ({ toReadableBackendError: (error: unknown) => error }));
 vi.mock("@/lib/persistent-cache", () => ({
   readPersistentCache: async () => undefined, writePersistentCache: vi.fn(async () => {}),
   deletePersistentCacheIfVersion: vi.fn(),

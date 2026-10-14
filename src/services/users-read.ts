@@ -1,6 +1,6 @@
 import { callAction } from '@/services/backend-action';
 import { readRequestTimeoutMs } from '@/lib/request';
-import { toReadableBackendError } from './issues-core';
+import { toReadableBackendError } from './backend-errors';
 import {
   createContentCacheKey,
   captureContentCacheWriteGuard,

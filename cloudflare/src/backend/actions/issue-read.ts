@@ -1,27 +1,84 @@
-import { asString } from "../shared/json.ts";
+import * as v from "valibot";
+import type { ActionInput } from "../../../../shared/actions.ts";
+import { Issue, IssueCursor, IssueSummary, ISSUE_STATUSES, type IssueStatusCounts } from "../../../../shared/contracts/issues.ts";
+import { Count } from "../../../../shared/contract.ts";
 import { createMediaDeliveryUrl } from "../shared/media-delivery.ts";
-import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
+import type { AuthContext, BackendDatabase } from "./types.ts";
 import { getIssueCategory, issueCategoryPolicyLists } from "./category-catalog.ts";
-import {
-  asNumber,
-  asUuid,
-  readCursor,
-  readCursorDate,
-} from "./utils.ts";
 import { INPUT_LIMITS, optionalText } from "./validation.ts";
 import { canManageIssueCategory } from "./auth.ts";
 import { selectIssue } from "./issue-shared.ts";
 
-function readSort(payload: JsonRecord) {
-  const sort = asString(payload.sort);
-  return sort === "most-supported" || sort === "ending-soon" ? sort : "latest";
+/** One page of proposals as the database lists them. */
+const StoredIssuePage = v.object({
+  issues: v.array(IssueSummary),
+  hasMore: v.boolean(),
+  cursor: v.nullable(IssueCursor),
+  statusCounts: v.record(v.string(), Count),
+  version: Count,
+});
+
+function cursorParams(cursor: ActionInput<"listIssues">["cursor"]) {
+  return {
+    cursor_id: cursor?.id ?? null,
+    cursor_created_at: cursor?.createdAt ?? null,
+    cursor_sort_date: cursor?.sortDate ?? null,
+    cursor_sort_number: cursor?.sortNumber ?? null,
+  };
 }
 
-function readPageSize(payload: JsonRecord) {
-  return Math.min(Math.max(Math.round(asNumber(payload.pageSize, 20)), 1), 50);
+/** Every status counted, for a first page; a later page keeps the counts it was opened with. */
+function firstPageCounts(cursor: unknown, counted: Record<string, number>): IssueStatusCounts | null {
+  if (cursor) return null;
+  return Object.fromEntries(ISSUE_STATUSES.map((status) => [status, counted[status] ?? 0])) as IssueStatusCounts;
 }
 
-async function issueReadPolicyParams(database: BackendDatabase, auth: AuthContext, actorCanManage = false) {
+async function listCategory(
+  action: "listIssues" | "searchIssues",
+  input: ActionInput<"listIssues">,
+  query: string | null,
+  auth: AuthContext,
+  database: BackendDatabase,
+) {
+  return v.parse(StoredIssuePage, await database.call("app_api", "backend_list_issues_snapshot", {
+    action_name: action,
+    actor_can_manage: canManageIssueCategory(auth, input.category),
+    actor_uid: auth.uid,
+    active_filter: input.category,
+    status_bucket: input.statusBucket,
+    sort_name: input.sort,
+    page_size: input.pageSize,
+    title_query: query,
+    ...cursorParams(input.cursor),
+  }));
+}
+
+export async function listIssues(input: ActionInput<"listIssues">, auth: AuthContext, database: BackendDatabase) {
+  const { statusCounts, ...page } = await listCategory("listIssues", input, null, auth, database);
+  return { ...page, statusCounts: firstPageCounts(input.cursor, statusCounts) };
+}
+
+export async function searchIssues(input: ActionInput<"searchIssues">, auth: AuthContext, database: BackendDatabase) {
+  const query = optionalText(input.query, "search", INPUT_LIMITS.search).toLowerCase();
+  const { issues, hasMore, cursor, version } = await listCategory("searchIssues", input, query, auth, database);
+  return { issues, hasMore, cursor, version };
+}
+
+export async function listUserIssues(input: ActionInput<"listUserIssues">, auth: AuthContext, database: BackendDatabase) {
+  const { statusCounts, ...page } = v.parse(StoredIssuePage, await database.call("app_api", "backend_list_user_issues_snapshot", {
+    actor_is_admin: auth.isAdmin,
+    actor_uid: auth.uid,
+    title_query: optionalText(input.query, "search", INPUT_LIMITS.search).toLowerCase(),
+    status_bucket: input.statusBucket,
+    sort_name: input.sort,
+    page_size: input.pageSize,
+    ...cursorParams(input.cursor),
+  }));
+  return { ...page, statusCounts: firstPageCounts(input.cursor, statusCounts) };
+}
+
+/** The category lists the issue functions decide visibility with. */
+export async function issuePolicyParams(database: BackendDatabase, auth: AuthContext, actorCanManage: boolean) {
   const policy = await issueCategoryPolicyLists(database);
   return {
     actor_uid: auth.uid,
@@ -32,101 +89,18 @@ async function issueReadPolicyParams(database: BackendDatabase, auth: AuthContex
   };
 }
 
-function compactIssueListResult(data: unknown): JsonRecord {
-  if (!data || typeof data !== "object" || Array.isArray(data)) return {};
-  const result = data as JsonRecord;
-  if (!Array.isArray(result.issues)) return result;
-  return {
-    ...result,
-    issues: result.issues.map((value) => {
-      if (!value || typeof value !== "object" || Array.isArray(value)) return value;
-      const issue = { ...(value as JsonRecord) };
-      delete issue.content;
-      return issue;
-    }),
-  };
-}
-
-async function getIssue(
-  payload: JsonRecord,
-  auth: AuthContext,
-  database: BackendDatabase,
-) {
-  const issueId = asUuid(payload.issueId);
-  if (!issueId) throw new Error("not-found");
-  const [storedIssue, policyParams] = await Promise.all([
-    selectIssue(database, issueId),
-    issueReadPolicyParams(database, auth),
-  ]);
-  const category = await getIssueCategory(database, storedIssue.category);
+export async function getIssue(input: ActionInput<"getIssue">, auth: AuthContext, database: BackendDatabase) {
+  const stored = await selectIssue(database, input.issueId);
+  const category = await getIssueCategory(database, stored.category);
   const actorCanManage = canManageIssueCategory(auth, category.id);
-  const canDeleteIssue = actorCanManage
-    || (storedIssue.author_uid === auth.uid && category.authorDeleteEnabled);
-
-  const data = await database.call("app_api", "backend_get_issue", {
-    issue_id: issueId,
-    ...policyParams,
-    actor_is_admin: actorCanManage,
-  });
+  const issue = v.parse(Issue, await database.call("app_api", "backend_get_issue", {
+    issue_id: input.issueId,
+    ...await issuePolicyParams(database, auth, actorCanManage),
+  }));
   return {
-    issue: data && typeof data === "object" && !Array.isArray(data)
-      ? { ...(data as JsonRecord), canDeleteIssue, canManageIssue: actorCanManage }
-      : data,
+    issue,
+    canDeleteIssue: actorCanManage || (stored.author_uid === auth.uid && category.authorDeleteEnabled),
   };
-}
-
-async function listIssues(
-  action: string,
-  payload: JsonRecord,
-  auth: AuthContext,
-  database: BackendDatabase,
-) {
-  const category = asString(payload.activeFilter);
-
-  const cursor = readCursor(payload);
-  const titleQuery = action === "searchIssues"
-    ? optionalText(payload.titleQuery, "search", INPUT_LIMITS.search).toLowerCase()
-    : null;
-  const data = await database.call("app_api", "backend_list_issues_snapshot", {
-    action_name: action,
-    actor_can_manage: canManageIssueCategory(auth, category),
-    actor_uid: auth.uid,
-    active_filter: category,
-    status_bucket: asString(payload.statusBucket, "active"),
-    sort_name: readSort(payload),
-    page_size: readPageSize(payload),
-    title_query: titleQuery,
-    cursor_id: asUuid(cursor.id) || null,
-    cursor_created_at: readCursorDate(cursor, "createdAt") || null,
-    cursor_sort_date: readCursorDate(cursor, "sortDate") || null,
-    cursor_sort_number: Number.isFinite(asNumber(cursor.sortNumber, Number.NaN))
-      ? asNumber(cursor.sortNumber, Number.NaN)
-      : null,
-  });
-  return compactIssueListResult(data);
-}
-
-async function listUserIssues(
-  payload: JsonRecord,
-  auth: AuthContext,
-  database: BackendDatabase,
-) {
-  const cursor = readCursor(payload);
-  const data = await database.call("app_api", "backend_list_user_issues_snapshot", {
-    actor_is_admin: auth.isAdmin,
-    actor_uid: auth.uid,
-    title_query: optionalText(payload.titleQuery, "search", INPUT_LIMITS.search).toLowerCase(),
-    status_bucket: asString(payload.statusBucket, "active"),
-    sort_name: readSort(payload),
-    page_size: readPageSize(payload),
-    cursor_id: asUuid(cursor.id) || null,
-    cursor_created_at: readCursorDate(cursor, "createdAt") || null,
-    cursor_sort_date: readCursorDate(cursor, "sortDate") || null,
-    cursor_sort_number: Number.isFinite(asNumber(cursor.sortNumber, Number.NaN))
-      ? asNumber(cursor.sortNumber, Number.NaN)
-      : null,
-  });
-  return compactIssueListResult(data);
 }
 
 interface IssueSupporterRow {
@@ -137,19 +111,11 @@ interface IssueSupporterRow {
   uid: string;
 }
 
-async function listIssueSupporters(
-  payload: JsonRecord,
-  auth: AuthContext,
-  database: BackendDatabase,
-) {
-  const issueId = asUuid(payload.issueId);
-  if (!issueId) throw new Error("not-found");
-  const issue = await selectIssue(database, issueId);
-  if (
-    !auth.isAdmin
-    && !canManageIssueCategory(auth, issue.category)
-    && issue.author_uid !== auth.uid
-  ) throw new Error("permission-denied");
+export async function listIssueSupporters(input: ActionInput<"listIssueSupporters">, auth: AuthContext, database: BackendDatabase) {
+  const issue = await selectIssue(database, input.issueId);
+  if (!canManageIssueCategory(auth, issue.category) && issue.author_uid !== auth.uid) {
+    throw new Error("permission-denied");
+  }
   if (!issue.support_enabled) return { supporters: [] };
 
   const { rows } = await database.sql<IssueSupporterRow>`
@@ -158,7 +124,7 @@ async function listIssueSupporters(
       union all
       select support.uid, false, support.created_at
       from app_private.supports support
-      where support.issue_id = ${issueId}
+      where support.issue_id = ${input.issueId}
     )
     select supporter.uid, supporter.implicit, profile.display_name,
       profile.avatar_public_id, profile.photo_url
@@ -178,25 +144,4 @@ async function listIssueSupporters(
     };
   }));
   return { supporters };
-}
-
-export function isIssueReadAction(action: string) {
-  return action === "getIssue"
-    || action === "listIssues"
-    || action === "listIssueSupporters"
-    || action === "searchIssues"
-    || action === "listUserIssues";
-}
-
-export async function handleIssueReadAction(
-  action: string,
-  payload: JsonRecord,
-  auth: AuthContext,
-  database: BackendDatabase,
-) {
-  if (action === "getIssue") return getIssue(payload, auth, database);
-  if (action === "listIssueSupporters") return listIssueSupporters(payload, auth, database);
-  if (action === "listIssues" || action === "searchIssues") return listIssues(action, payload, auth, database);
-  if (action === "listUserIssues") return listUserIssues(payload, auth, database);
-  throw new Error("invalid-action");
 }

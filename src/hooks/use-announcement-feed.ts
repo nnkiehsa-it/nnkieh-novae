@@ -3,11 +3,8 @@
 import * as React from "react";
 import { useI18n } from "@/i18n";
 import { useSession } from "@/hooks/use-session";
-import {
-  fetchAnnouncementsPage,
-  setAnnouncementLike,
-  type AnnouncementCursor,
-} from "@/services/announcements";
+import { listAnnouncements, setAnnouncementLike } from "@/services/announcements";
+import type { AnnouncementCursor } from "@shared/contracts/announcements.ts";
 import { markAnnouncementsOpened } from "@/services/announcement-notice";
 import type { AnnouncementSummary } from "@/types";
 import {
@@ -32,7 +29,7 @@ export function useAnnouncementFeed() {
   const session = useSession();
   const { t } = useI18n();
   const viewMemory = getViewMemory<{
-    cursor: AnnouncementCursor;
+    cursor: AnnouncementCursor | null;
     hasMore: boolean;
     items: AnnouncementSummary[];
     pageCount: number;
@@ -41,7 +38,7 @@ export function useAnnouncementFeed() {
   const [warmRead] = React.useState(() => Boolean(viewMemory));
   const readSucceeded = React.useRef(false);
   const [items, setItems] = React.useState<AnnouncementSummary[]>(viewMemory?.items ?? []);
-  const [cursor, setCursor] = React.useState<AnnouncementCursor>(viewMemory?.cursor ?? null);
+  const [cursor, setCursor] = React.useState<AnnouncementCursor | null>(viewMemory?.cursor ?? null);
   const [hasMore, setHasMore] = React.useState(viewMemory?.hasMore ?? false);
   const [pageCount, setPageCount] = React.useState(
     viewMemory?.pageCount ?? (viewMemory?.items.length ? 1 : 0),
@@ -69,20 +66,20 @@ export function useAnnouncementFeed() {
     if (!announcement) return;
     return reaction.run({
       id: announcementId,
-      previous: { active: announcement.currentUserLiked, count: announcement.like_count },
+      previous: { active: announcement.currentUserLiked, count: announcement.likeCount },
       apply: ({ active, count }, pending) => patchContentEntity<AnnouncementSummary>(session.user?.uid, "announcement", announcementId, {
-        currentUserLiked: active, like_count: count,
+        currentUserLiked: active, likeCount: count,
       }, { pending }),
       request: async (active) => {
         const result = await setAnnouncementLike(announcementId, active);
-        return { active: result.liked, count: result.like_count };
+        return { active: result.liked, count: result.likeCount };
       },
       errorMessage: t("ui.announcement.likeFailed"),
     });
   }
 
   const load = React.useCallback(
-    async (nextCursor: AnnouncementCursor = null, restart = false) => {
+    async (nextCursor: AnnouncementCursor | null = null, restart = false) => {
       if (restart) requestGuard.restart(queryKey);
       const requestToken = requestGuard.begin(queryKey);
       if (!requestToken) return;
@@ -90,7 +87,7 @@ export function useAnnouncementFeed() {
       nextCursor ? setLoadingMore(true) : setLoading(!getViewMemory(session.user?.uid, "announcement-feed"));
       setError("");
       try {
-        const result = await fetchAnnouncementsPage(nextCursor, 10, {
+        const result = await listAnnouncements(nextCursor, {
           cacheScope: session.user?.uid,
           forceRefresh: !nextCursor && (warmRead || restart),
         });

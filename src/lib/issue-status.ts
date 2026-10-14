@@ -3,27 +3,27 @@ import { getIssueSupportGoal, issueAutoRejectsUnmetSupport } from '@/constants/c
 
 function isExpiredUnmetPublicIssue(issue: Pick<
   IssueRecord,
-  'category' | 'status' | 'support_met_at' | 'support_deadline_at' | 'support_goal' | 'support_count'
+  'category' | 'status' | 'supportMetAt' | 'supportDeadlineAt' | 'supportGoal' | 'supportCount'
 >) {
   if (
     !issueAutoRejectsUnmetSupport(issue.category)
     || issue.status !== 'pending'
-    || issue.support_met_at
-    || !issue.support_deadline_at
+    || issue.supportMetAt
+    || !issue.supportDeadlineAt
   ) {
     return false;
   }
 
-  const goal = issue.support_goal ?? getIssueSupportGoal(issue.category);
+  const goal = issue.supportGoal ?? getIssueSupportGoal(issue.category);
   if (goal === null) {
     return false;
   }
-  return issue.support_deadline_at.getTime() <= Date.now() && issue.support_count < goal;
+  return Date.parse(issue.supportDeadlineAt) <= Date.now() && issue.supportCount < goal;
 }
 
 export function getDerivedIssueStatus(issue: Pick<
   IssueRecord,
-  'category' | 'status' | 'support_met_at' | 'support_deadline_at' | 'support_goal' | 'support_count'
+  'category' | 'status' | 'supportMetAt' | 'supportDeadlineAt' | 'supportGoal' | 'supportCount'
 >): IssueStatus {
   return isExpiredUnmetPublicIssue(issue) ? 'auto-rejected' : issue.status;
 }

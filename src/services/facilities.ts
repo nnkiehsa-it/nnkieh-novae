@@ -2,7 +2,7 @@ import type { ActionRequest } from '@shared/actions.ts';
 import type { Facility, FacilityStatus } from '@shared/contracts/facilities.ts';
 import { callAction } from '@/services/backend-action';
 import type { FacilityPageResult } from '@/types';
-import { toReadableBackendError } from '@/services/issues-core';
+import { toReadableBackendError } from '@/services/backend-errors';
 import { captureContentCacheWriteGuard, createContentCacheKey, getCachedContent, getCachedContentPersistent, markContentCachePrefixStale, runCoalescedContentRequest, setCachedContentFromRead } from '@/services/content-read-cache';
 import { readRequestTimeoutMs } from '@/lib/request';
 import { registerContentVersion } from '@/services/content-versions';

@@ -70,11 +70,11 @@ export function SupportPanel({ burst, canViewSupporters, issue, onLoadSupporters
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-sm font-medium text-ink-muted">{t("ui.issue.supportProgress")}</p>
         <p className="text-2xl font-semibold tabular-nums">
-          <AnimatedNumber value={issue.support_count} />
-          {issue.support_goal ? <span className="text-base text-ink-faint"> / {issue.support_goal}</span> : null}
+          <AnimatedNumber value={issue.supportCount} />
+          {issue.supportGoal ? <span className="text-base text-ink-faint"> / {issue.supportGoal}</span> : null}
         </p>
       </div>
-      {issue.support_goal ? (
+      {issue.supportGoal ? (
         <div className="h-2 overflow-hidden rounded-full bg-surface-pressed">
           <motion.span
             animate={{ scaleX: supportProgress / 100 }}

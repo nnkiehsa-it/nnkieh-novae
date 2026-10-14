@@ -27,14 +27,14 @@ export function AnnouncementCard({ announcement, burst, liking, onLike, profile 
             active={announcement.currentUserLiked === true}
             burst={burst}
             busy={liking}
-            count={announcement.like_count}
+            count={announcement.likeCount}
             icon={Heart}
             label={t(announcement.currentUserLiked ? "ui.announcement.liked" : "ui.announcement.like")}
             onClick={onLike}
           />
           <span aria-label={t("comments.viewComments")} className="ml-auto inline-flex items-center gap-1.5 text-sm tabular-nums text-ink-muted">
             <ChatCircle aria-hidden className="size-5" />
-            <AnimatedNumber value={announcement.comment_count} />
+            <AnimatedNumber value={announcement.commentCount} />
           </span>
         </>
       }
@@ -44,7 +44,7 @@ export function AnnouncementCard({ announcement, burst, liking, onLike, profile 
         <>
           <Author profile={profile} />
           <span aria-hidden>·</span>
-          <span>{formatRelativeTime(announcement.published_at)}</span>
+          <span>{formatRelativeTime(announcement.publishedAt)}</span>
         </>
       }
       title={announcement.title}

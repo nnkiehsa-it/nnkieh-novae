@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useCategories } from "@/hooks/use-categories";
 import { useSession } from "@/hooks/use-session";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
-import { fetchIssuesPageByStatus } from "@/services/issues";
+import { getIssueStatusCounts } from "@/services/issues";
 import { getFacilityStatusCounts } from "@/services/facilities";
 import { toFacilityStatusCounts, toIssueStatusCounts, type FacilityStatusCounts, type IssueStatusCounts } from "@/constants/statuses";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
@@ -48,8 +48,8 @@ export function useHomeStatusCounts() {
     try {
       const [issues, facilities] = await Promise.all([
         Promise.all((issuesEnabled ? activeIssueCategories : []).map((category) =>
-          fetchIssuesPageByStatus(uid, category.id, "active", null, {
-            isAdmin, forceRefresh: forceRefresh || hasCounts.current, signal: controller.signal, pageSize: 1,
+          getIssueStatusCounts(category.id, {
+            forceRefresh: forceRefresh || hasCounts.current, signal: controller.signal,
           }),
         )),
         Promise.all((facilitiesEnabled ? activeFacilityCategories : []).map((category) =>
@@ -62,9 +62,9 @@ export function useHomeStatusCounts() {
       const issueCategories = issuesEnabled ? activeIssueCategories : [];
       const facilityCategories = facilitiesEnabled ? activeFacilityCategories : [];
       const next = {
-        issues: sumCounts(toIssueStatusCounts({}), issues),
+        issues: sumCounts(toIssueStatusCounts({}), issues.map((statusCounts) => ({ statusCounts }))),
         facilities: sumCounts(toFacilityStatusCounts({}), facilities.map((statusCounts) => ({ statusCounts }))),
-        issuesByCategory: Object.fromEntries(issueCategories.map((category, index) => [category.id, issues[index].statusCounts])),
+        issuesByCategory: Object.fromEntries(issueCategories.map((category, index) => [category.id, issues[index]])),
         facilitiesByCategory: Object.fromEntries(facilityCategories.map((category, index) => [category.id, facilities[index]])),
       };
       hasCounts.current = true;
@@ -75,7 +75,7 @@ export function useHomeStatusCounts() {
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
-  }, [uid, isAdmin, issuesEnabled, facilitiesEnabled, activeIssueCategories, activeFacilityCategories, cacheKey, loaded]);
+  }, [uid, issuesEnabled, facilitiesEnabled, activeIssueCategories, activeFacilityCategories, cacheKey, loaded]);
 
   useEffect(() => {
     void load();

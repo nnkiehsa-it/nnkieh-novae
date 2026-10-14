@@ -1,18 +1,10 @@
 import { readRequestTimeoutMs } from "@/lib/request";
-import { invokeBackendAction } from "@/services/backend-action";
+import { callAction } from "@/services/backend-action";
 
 export async function fetchAnnouncementUnreadHint() {
-  const fn = invokeBackendAction<Record<string, never>, { hasUnread: boolean }>(
-    "getAnnouncementUnreadHint",
-    { timeoutMs: readRequestTimeoutMs },
-  );
-  return (await fn({})).hasUnread === true;
+  return (await callAction("getAnnouncementUnreadHint", {}, { timeoutMs: readRequestTimeoutMs })).hasUnread;
 }
 
 export async function markAnnouncementsOpened(openedThrough: string) {
-  const fn = invokeBackendAction<
-    { openedThrough: string },
-    { openedAt: string | null; success: boolean }
-  >("markAnnouncementsOpened");
-  return await fn({ openedThrough });
+  return await callAction("markAnnouncementsOpened", { openedThrough });
 }

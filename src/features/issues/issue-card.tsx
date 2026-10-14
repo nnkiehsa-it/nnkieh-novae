@@ -24,8 +24,8 @@ export function IssueCard({ burst, filter, issue, onSupport, profile, showCatego
   supporting: boolean;
 }) {
   const { t } = useI18n();
-  const goal = issue.support_goal;
-  const authorShown = issue.canViewAuthor && issue.author_uid;
+  const goal = issue.supportGoal;
+  const authorShown = issue.canViewAuthor && issue.authorUid;
   return (
     <RecordCard
       chips={
@@ -36,19 +36,19 @@ export function IssueCard({ burst, filter, issue, onSupport, profile, showCatego
       }
       footer={
         <>
-          {issue.support_enabled ? (
+          {issue.supportEnabled ? (
             <ReactionButton
               active={issue.currentUserSupported === true}
               burst={burst}
               busy={supporting}
-              count={issue.support_count}
+              count={issue.supportCount}
               disabled={issue.isOwnIssue || !["pending", "processing"].includes(issue.status)}
               icon={HandHeart}
               label={t(issue.isOwnIssue ? "ui.issue.ownSupport" : issue.currentUserSupported ? "ui.issue.cancelSupport" : "ui.issue.support")}
               onClick={onSupport}
             />
           ) : null}
-          {issue.comments_enabled ? <ChatCircle aria-hidden className="ml-auto size-5 text-ink-faint" /> : null}
+          {issue.commentsEnabled ? <ChatCircle aria-hidden className="ml-auto size-5 text-ink-faint" /> : null}
         </>
       }
       href={`/issues/${encodeURIComponent(filter)}/${issue.id}`}
@@ -57,21 +57,21 @@ export function IssueCard({ burst, filter, issue, onSupport, profile, showCatego
         <>
           {authorShown ? <Author profile={profile} /> : null}
           {authorShown ? <span aria-hidden>·</span> : null}
-          <span>{formatRelativeTime(issue.review_approved_at ?? issue.created_at)}</span>
+          <span>{formatRelativeTime(issue.reviewApprovedAt ?? issue.createdAt)}</span>
         </>
       }
       title={issue.title}
     >
-      {issue.support_enabled && goal ? (
-        <CardProgress value={getSupportProgressPercent(issue.support_count, goal)}>
+      {issue.supportEnabled && goal ? (
+        <CardProgress value={getSupportProgressPercent(issue.supportCount, goal)}>
           <div className="flex items-center justify-between gap-2 text-sm text-ink-muted">
-            {issue.support_deadline_at ? (
+            {issue.supportDeadlineAt ? (
               <span className="inline-flex min-w-0 items-center gap-1.5">
                 <CalendarBlank className="size-4 shrink-0" />
-                <span className="truncate">{t("ui.issue.supportEndsOn", { date: formatDateOnly(issue.support_deadline_at) })}</span>
+                <span className="truncate">{t("ui.issue.supportEndsOn", { date: formatDateOnly(issue.supportDeadlineAt) })}</span>
               </span>
             ) : <span>{t("ui.issue.supportProgress")}</span>}
-            <span className="font-semibold tabular-nums text-ink"><AnimatedNumber value={issue.support_count} /> / {goal}</span>
+            <span className="font-semibold tabular-nums text-ink"><AnimatedNumber value={issue.supportCount} /> / {goal}</span>
           </div>
         </CardProgress>
       ) : null}

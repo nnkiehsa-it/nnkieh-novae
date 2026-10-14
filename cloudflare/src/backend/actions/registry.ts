@@ -9,9 +9,12 @@ import * as userAccess from "./user-access.ts";
 import * as userAdmin from "./user-admin.ts";
 import * as accessRules from "./account-access-rules.ts";
 import * as uploads from "./uploads.ts";
-import { handleIssueAction } from "./issues.ts";
+import * as issueRead from "./issue-read.ts";
+import * as issueWrite from "./issue-write.ts";
+import * as issueComments from "./issue-comments.ts";
 import * as facilities from "./facilities.ts";
-import { handleAnnouncementAction } from "./announcements.ts";
+import * as announcements from "./announcements.ts";
+import * as announcementComments from "./announcement-comments.ts";
 import * as notifications from "./notifications.ts";
 import * as dashboard from "./dashboard.ts";
 
@@ -85,36 +88,36 @@ export const ACTION_HANDLERS: ActionHandlers = {
   finalizeImageUploads: { domain: "upload", access: "participation", run: uploads.finalizeImageUploads },
   deleteUploadedImages: { domain: "upload", access: "participation", run: uploads.deleteUploadedImages },
   resolveUploadImageUrls: { domain: "upload", access: "read", run: uploads.resolveUploadImageUrls },
-  getIssue: { domain: "issue", access: "read", run: (input, auth, database) => handleIssueAction("getIssue", input, auth, database) },
-  listIssues: { domain: "issue", access: "read", run: (input, auth, database) => handleIssueAction("listIssues", input, auth, database) },
-  listIssueSupporters: { domain: "issue", access: "read", run: (input, auth, database) => handleIssueAction("listIssueSupporters", input, auth, database) },
-  searchIssues: { domain: "issue", access: "read", run: (input, auth, database) => handleIssueAction("searchIssues", input, auth, database) },
-  listUserIssues: { domain: "issue", access: "read", run: (input, auth, database) => handleIssueAction("listUserIssues", input, auth, database) },
-  createIssue: { domain: "issue", access: "participation", run: (input, auth, database) => handleIssueAction("createIssue", input, auth, database) },
-  moderateIssueStatus: { domain: "issue", access: "admin", permission: "proposal.manage", run: (input, auth, database) => handleIssueAction("moderateIssueStatus", input, auth, database) },
-  updateIssueResult: { domain: "issue", access: "admin", permission: "proposal.manage", run: (input, auth, database) => handleIssueAction("updateIssueResult", input, auth, database) },
-  toggleSupport: { domain: "issue", access: "reaction", run: (input, auth, database) => handleIssueAction("toggleSupport", input, auth, database) },
-  removeSupport: { domain: "issue", access: "reaction", run: (input, auth, database) => handleIssueAction("removeSupport", input, auth, database) },
-  deleteIssue: { domain: "issue", access: "participation", moderatedBy: "proposal.manage", run: (input, auth, database) => handleIssueAction("deleteIssue", input, auth, database) },
-  listComments: { domain: "issue", access: "read", run: (input, auth, database) => handleIssueAction("listComments", input, auth, database) },
-  createComment: { domain: "issue", access: "participation", run: (input, auth, database) => handleIssueAction("createComment", input, auth, database) },
-  deleteComment: { domain: "issue", access: "participation", moderatedBy: "proposal.manage", run: (input, auth, database) => handleIssueAction("deleteComment", input, auth, database) },
+  getIssue: { domain: "issue", access: "read", run: issueRead.getIssue },
+  listIssues: { domain: "issue", access: "read", run: issueRead.listIssues },
+  listIssueSupporters: { domain: "issue", access: "read", run: issueRead.listIssueSupporters },
+  searchIssues: { domain: "issue", access: "read", run: issueRead.searchIssues },
+  listUserIssues: { domain: "issue", access: "read", run: issueRead.listUserIssues },
+  createIssue: { domain: "issue", access: "participation", run: issueWrite.createIssue },
+  moderateIssueStatus: { domain: "issue", access: "admin", permission: "proposal.manage", run: issueWrite.moderateIssueStatus },
+  updateIssueResult: { domain: "issue", access: "admin", permission: "proposal.manage", run: issueWrite.updateIssueResult },
+  toggleSupport: { domain: "issue", access: "reaction", run: issueWrite.toggleSupport },
+  removeSupport: { domain: "issue", access: "reaction", run: issueWrite.removeSupport },
+  deleteIssue: { domain: "issue", access: "participation", moderatedBy: "proposal.manage", run: issueWrite.deleteIssue },
+  listComments: { domain: "issue", access: "read", run: issueComments.listComments },
+  createComment: { domain: "issue", access: "participation", run: issueComments.createComment },
+  deleteComment: { domain: "issue", access: "participation", moderatedBy: "proposal.manage", run: issueComments.deleteComment },
   listFacilities: { domain: "facility", access: "read", run: facilities.listFacilities },
   getFacility: { domain: "facility", access: "read", run: facilities.getFacility },
   createFacility: { domain: "facility", access: "participation", run: facilities.createFacility },
   toggleFacilityAffected: { domain: "facility", access: "reaction", run: facilities.toggleFacilityAffected },
   updateFacilityStatus: { domain: "facility", access: "admin", run: facilities.updateFacilityStatus },
   deleteFacility: { domain: "facility", access: "participation", moderatedBy: "facility.manage", run: facilities.deleteFacility },
-  listAnnouncements: { domain: "announcement", access: "read", run: (input, auth, database) => handleAnnouncementAction("listAnnouncements", input, auth, database) },
-  getAnnouncement: { domain: "announcement", access: "read", run: (input, auth, database) => handleAnnouncementAction("getAnnouncement", input, auth, database) },
-  getAnnouncementUnreadHint: { domain: "announcement", access: "read", run: (input, auth, database) => handleAnnouncementAction("getAnnouncementUnreadHint", input, auth, database) },
-  markAnnouncementsOpened: { domain: "announcement", access: "personal", run: (input, auth, database) => handleAnnouncementAction("markAnnouncementsOpened", input, auth, database) },
-  createAnnouncement: { domain: "announcement", access: "admin", permission: "announcement.manage", run: (input, auth, database) => handleAnnouncementAction("createAnnouncement", input, auth, database) },
-  deleteAnnouncement: { domain: "announcement", access: "admin", moderatedBy: "announcement.manage", permission: "announcement.manage", run: (input, auth, database) => handleAnnouncementAction("deleteAnnouncement", input, auth, database) },
-  setAnnouncementLike: { domain: "announcement", access: "reaction", run: (input, auth, database) => handleAnnouncementAction("setAnnouncementLike", input, auth, database) },
-  listAnnouncementComments: { domain: "announcement", access: "read", run: (input, auth, database) => handleAnnouncementAction("listAnnouncementComments", input, auth, database) },
-  createAnnouncementComment: { domain: "announcement", access: "participation", run: (input, auth, database) => handleAnnouncementAction("createAnnouncementComment", input, auth, database) },
-  deleteAnnouncementComment: { domain: "announcement", access: "participation", moderatedBy: "announcement.manage", run: (input, auth, database) => handleAnnouncementAction("deleteAnnouncementComment", input, auth, database) },
+  listAnnouncements: { domain: "announcement", access: "read", run: announcements.listAnnouncements },
+  getAnnouncement: { domain: "announcement", access: "read", run: announcements.getAnnouncement },
+  getAnnouncementUnreadHint: { domain: "announcement", access: "read", run: announcements.getAnnouncementUnreadHint },
+  markAnnouncementsOpened: { domain: "announcement", access: "personal", run: announcements.markAnnouncementsOpened },
+  createAnnouncement: { domain: "announcement", access: "admin", permission: "announcement.manage", run: announcements.createAnnouncement },
+  deleteAnnouncement: { domain: "announcement", access: "admin", moderatedBy: "announcement.manage", permission: "announcement.manage", run: announcements.deleteAnnouncement },
+  setAnnouncementLike: { domain: "announcement", access: "reaction", run: announcements.setAnnouncementLike },
+  listAnnouncementComments: { domain: "announcement", access: "read", run: announcementComments.listAnnouncementComments },
+  createAnnouncementComment: { domain: "announcement", access: "participation", run: announcementComments.createAnnouncementComment },
+  deleteAnnouncementComment: { domain: "announcement", access: "participation", moderatedBy: "announcement.manage", run: announcementComments.deleteAnnouncementComment },
   listNotificationPages: { domain: "notification", access: "read", run: notifications.listNotificationPages },
   getNotificationSnapshot: { domain: "notification", access: "read", run: notifications.getNotificationSnapshot },
   getNotificationReadState: { domain: "notification", access: "read", run: notifications.getNotificationReadState },

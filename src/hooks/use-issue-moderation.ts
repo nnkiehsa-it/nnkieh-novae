@@ -20,8 +20,8 @@ export function useIssueModeration({
 }) {
   const { t } = useI18n();
   const [status, setStatus] = React.useState<IssueStatus>(issue.status);
-  const [result, setResult] = React.useState(issue.result_content ?? "");
-  const [reason, setReason] = React.useState(issue.review_rejection_reason ?? "");
+  const [result, setResult] = React.useState(issue.resultContent ?? "");
+  const [reason, setReason] = React.useState(issue.reviewRejectionReason ?? "");
   const feedback = useActionFeedback();
 
   React.useEffect(() => {
@@ -33,8 +33,8 @@ export function useIssueModeration({
           ? "processing"
           : issue.status,
     );
-    setResult(issue.result_content ?? "");
-    setReason(issue.review_rejection_reason ?? "");
+    setResult(issue.resultContent ?? "");
+    setReason(issue.reviewRejectionReason ?? "");
   }, [issue, open]);
 
   async function save() {

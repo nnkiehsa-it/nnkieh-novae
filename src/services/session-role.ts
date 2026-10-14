@@ -1,6 +1,6 @@
 import type { SessionAccess } from '@shared/contracts/users.ts';
 import { callAction } from '@/services/backend-action';
-import { toReadableBackendError } from '@/services/issues-core';
+import { toReadableBackendError } from '@/services/backend-errors';
 import {
   CONTENT_SHORT_CACHE_TTL_MS,
   getCachedContentPersistent,

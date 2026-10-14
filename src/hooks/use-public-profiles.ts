@@ -5,7 +5,7 @@ import {
   fetchUserPublicProfiles,
   getCachedUserPublicProfiles,
 } from "@/services/users-read";
-import type { DiscussionCommentRecord } from "@/types";
+import type { Comment } from "@/types";
 import { useSession } from "@/hooks/use-session";
 
 export function usePublicProfiles(authorUids: Array<string | null | undefined>) {
@@ -44,12 +44,12 @@ export function usePublicProfiles(authorUids: Array<string | null | undefined>) 
   return profiles;
 }
 
-export function useDiscussionProfiles(comments: DiscussionCommentRecord[]) {
+export function useDiscussionProfiles(comments: Comment[]) {
   const authorUids = React.useMemo(
     () =>
       comments.flatMap((comment) => [
-        comment.author_uid,
-        ...comment.replies.map((reply) => reply.author_uid),
+        comment.authorUid,
+        ...comment.replies.map((reply) => reply.authorUid),
       ]),
     [comments],
   );

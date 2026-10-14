@@ -55,7 +55,7 @@ export function IssueDetail() {
         chips={<><StatusChip domain="issue" status={detail.status} /><Chip>{getIssueCategoryLabel(issue.category)}</Chip></>}
         meta={
           <>
-            <span>{formatDate(issue.created_at)}</span>
+            <span>{formatDate(issue.createdAt)}</span>
             {issue.canViewAuthor && authorVisible ? <Author profile={detail.profile} /> : null}
             {detail.canManageIssue && issue.canViewAuthor ? (
               <label className="ml-auto flex cursor-pointer items-center gap-2 text-sm">
@@ -72,7 +72,7 @@ export function IssueDetail() {
         <ResolutionNotice content={notice.content} fallbackAlt={t("ui.issue.resultAlt", { title: issue.title })} title={t(notice.title)} tone={notice.tone} />
       ) : null}
       <div className="grid gap-4 md:grid-cols-2">
-        {issue.support_enabled ? (
+        {issue.supportEnabled ? (
           <SupportPanel
             burst={detail.burst}
             canViewSupporters={detail.canViewSupporters}

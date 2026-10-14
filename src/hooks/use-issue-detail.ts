@@ -17,18 +17,18 @@ import {
   createComment,
   deleteComment,
   deleteIssue,
-  fetchComments,
-  fetchIssueRecordById,
-  fetchIssueSupporters,
-  peekIssueRecordById,
-  removeSupport,
-  toggleSupport,
+  getIssue,
+  listComments,
+  listIssueSupporters,
+  peekIssue,
+  setSupport,
 } from "@/services/issues";
 import {
   fetchUserPublicProfiles,
   getCachedUserPublicProfiles,
 } from "@/services/users-read";
-import type { CommentRecord, IssueRecord, UserPublicProfile } from "@/types";
+import type { IssueRecord, UserPublicProfile } from "@/types";
+import type { Issue } from "@shared/contracts/issues.ts";
 import {
   beginContentEntityRead,
   getDetailContentEntity,
@@ -54,14 +54,14 @@ export function useIssueDetail() {
     issueId,
     "detail",
   );
-  const currentIssue = storedIssue ?? peekIssueRecordById(issueId, session.user?.uid);
+  const currentIssue = storedIssue ?? peekIssue(issueId, session.user?.uid);
   const [profile, setProfile] = React.useState<UserPublicProfile | null>(() =>
-    currentIssue?.author_uid
-      ? getCachedUserPublicProfiles([currentIssue.author_uid])[currentIssue.author_uid] ?? null
+    currentIssue?.authorUid
+      ? getCachedUserPublicProfiles([currentIssue.authorUid])[currentIssue.authorUid] ?? null
       : null,
   );
   const [supporters, setSupporters] = React.useState<
-    Awaited<ReturnType<typeof fetchIssueSupporters>>
+    Awaited<ReturnType<typeof listIssueSupporters>>
   >([]);
   const [supportersLoading, setSupportersLoading] = React.useState(false);
   const [supportersError, setSupportersError] = React.useState("");
@@ -78,30 +78,22 @@ export function useIssueDetail() {
     async (forceRefresh = false) => {
       const cached =
         getDetailContentEntity<IssueRecord>(session.user?.uid, "issue", issueId) ??
-        peekIssueRecordById(issueId, session.user?.uid);
+        peekIssue(issueId, session.user?.uid);
       const coldRead = !cached;
       if (coldRead) setLoading(true);
       setError("");
       const entityReadRevision = beginContentEntityRead();
       try {
-        const result = await fetchIssueRecordById(issueId, {
+        const result = await getIssue(issueId, {
           cacheScope: session.user?.uid,
           forceRefresh: forceRefresh || !coldRead,
         });
-        const merged = mergeContentEntityRead(
-          session.user?.uid,
-          "issue",
-          {
-          ...result,
-            currentUserSupported:
-              result.isOwnIssue || result.currentUserSupported === true,
-          },
-          entityReadRevision,
-        );
-        rememberSupportedIssue(merged.id, merged.currentUserSupported === true);
-        if (result.canViewAuthor && result.author_uid) {
-          void fetchUserPublicProfiles([result.author_uid])
-            .then((profiles) => setProfile(profiles[result.author_uid!] ?? null))
+        const merged = mergeContentEntityRead(session.user?.uid, "issue", result, entityReadRevision);
+        rememberSupportedIssue(merged.id, merged.currentUserSupported);
+        const authorUid = result.authorUid;
+        if (authorUid) {
+          void fetchUserPublicProfiles([authorUid])
+            .then((profiles) => setProfile(profiles[authorUid] ?? null))
             .catch(() => undefined);
         }
       } catch (caught) {
@@ -126,7 +118,7 @@ export function useIssueDetail() {
   });
 
   const canViewSupporters = Boolean(
-    currentIssue?.support_enabled
+    currentIssue?.supportEnabled
       && (currentIssue.isOwnIssue || session.canManageIssueCategory(currentIssue.category)),
   );
   // Nobody pays for the identity read until they ask who the supporters are.
@@ -137,7 +129,7 @@ export function useIssueDetail() {
     setSupportersLoading(true);
     setSupportersError("");
     try {
-      setSupporters(await fetchIssueSupporters(issueId));
+      setSupporters(await listIssueSupporters(issueId));
     } catch (caught) {
       setSupportersError(
         caught instanceof Error ? caught.message : t("ui.common.loadFailed"),
@@ -149,7 +141,7 @@ export function useIssueDetail() {
 
   const commentsAvailable = Boolean(
     currentIssue &&
-      currentIssue.comments_enabled &&
+      currentIssue.commentsEnabled &&
       issueCategoryAllowsComments(currentIssue.category),
   );
   const commentsReadable = Boolean(
@@ -159,8 +151,8 @@ export function useIssueDetail() {
       currentIssue.status !== "review-rejected",
   );
   const fetchCommentPage = React.useCallback(
-    ({ cursor, sort, forceRefresh }: CommentPageRequest<CommentRecord>) =>
-      fetchComments(issueId, cursor, sort, { cacheScope: session.user?.uid, forceRefresh }),
+    ({ cursor, sort, forceRefresh }: CommentPageRequest) =>
+      listComments(issueId, cursor, sort, { cacheScope: session.user?.uid, forceRefresh }),
     [issueId, session.user?.uid],
   );
   const commentFeed = useCommentFeed({
@@ -173,14 +165,14 @@ export function useIssueDetail() {
     if (!currentIssue || currentIssue.isOwnIssue) return;
     return reaction.run({
       id: currentIssue.id,
-      previous: { active: currentIssue.currentUserSupported === true, count: currentIssue.support_count },
+      previous: { active: currentIssue.currentUserSupported, count: currentIssue.supportCount },
       apply: ({ active, count }, pending) => {
-        patchContentEntity<IssueRecord>(session.user?.uid, "issue", currentIssue.id, { currentUserSupported: active, support_count: count }, { pending });
+        patchContentEntity<IssueRecord>(session.user?.uid, "issue", currentIssue.id, { currentUserSupported: active, supportCount: count }, { pending });
         rememberSupportedIssue(currentIssue.id, active);
       },
       request: async (active) => {
-        const result = active ? await toggleSupport(currentIssue.id) : await removeSupport(currentIssue.id);
-        return { active: result.supported, count: result.support_count };
+        const result = await setSupport(currentIssue.id, active);
+        return { active: result.supported, count: result.supportCount };
       },
       onSuccess: () => { if (supportersAsked.current) void loadSupporters(); },
       errorMessage: t("ui.issue.supportFailed"),
@@ -215,12 +207,12 @@ export function useIssueDetail() {
   }
 
   async function createIssueComment(content: string, parentCommentId: string | null) {
-    await createComment(issueId, { content }, parentCommentId);
+    await createComment(issueId, content, parentCommentId);
     await commentFeed.load(true);
   }
 
   async function removeIssueComment(commentId: string) {
-    await deleteComment(commentId);
+    await deleteComment(issueId, commentId);
     await commentFeed.load(true);
   }
 
@@ -228,7 +220,7 @@ export function useIssueDetail() {
     currentIssue &&
       commentsReadable &&
       issueAllowsCommentsForStatus(
-        currentIssue.read_access,
+        currentIssue.readAccess,
         currentIssue.status,
       ),
   );
@@ -257,7 +249,7 @@ export function useIssueDetail() {
     profile,
     remove,
     removeIssueComment,
-    setIssue: (next: IssueRecord) => {
+    setIssue: (next: Issue) => {
       patchContentEntity<IssueRecord>(
         session.user?.uid,
         "issue",
@@ -278,15 +270,15 @@ export function useIssueDetail() {
     supportersLoading,
     support,
     supportOpen: Boolean(
-      currentIssue?.support_enabled &&
+      currentIssue?.supportEnabled &&
         !currentIssue.isOwnIssue &&
         (currentIssue.status === "pending" ||
           currentIssue.status === "processing"),
     ),
     supportProgress: currentIssue
       ? getSupportProgressPercent(
-          currentIssue.support_count,
-          currentIssue.support_goal,
+          currentIssue.supportCount,
+          currentIssue.supportGoal,
         )
       : 0,
     supporting: reaction.isBusy(issueId),

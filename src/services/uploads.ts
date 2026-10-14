@@ -2,7 +2,7 @@ import * as v from 'valibot';
 import type { ImageUploadSession, ImageUploadTargetType, UploadedImage } from '@shared/contracts/uploads.ts';
 import { callAction } from '@/services/backend-action';
 import { longRequestTimeoutMs, withRequestTimeout } from '@/lib/request';
-import { toReadableBackendError } from './issues-core';
+import { toReadableBackendError } from './backend-errors';
 import { t } from '@/i18n';
 
 export { clearResolvedUploadCache, resolveUploadImageUrls } from './upload-delivery';

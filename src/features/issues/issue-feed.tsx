@@ -15,7 +15,7 @@ import { IssueCard } from "./issue-card";
 export function IssueFeed({ categoryControl, filter, notice, viewSwitch }: { categoryControl: React.ReactNode; filter: string; notice?: React.ReactNode; viewSwitch: React.ReactNode }) {
   const { t } = useI18n();
   const state = useIssueFeed(filter);
-  const profiles = usePublicProfiles(state.feed.issues.map((issue) => issue.author_uid));
+  const profiles = usePublicProfiles(state.feed.issues.map((issue) => issue.authorUid));
   const mine = filter === "my-proposals";
   const composeHref = `/issues/${encodeURIComponent(filter)}/compose/new`;
   const underReview = state.feed.statusCounts["under-review"];
@@ -89,7 +89,7 @@ export function IssueFeed({ categoryControl, filter, notice, viewSwitch }: { cat
             filter={mine ? issue.category : filter}
             issue={issue}
             onSupport={() => void state.support(issue.id)}
-            profile={issue.author_uid ? profiles[issue.author_uid] : undefined}
+            profile={issue.authorUid ? profiles[issue.authorUid] : undefined}
             showCategory={mine}
             supporting={state.isSupporting(issue.id)}
           />

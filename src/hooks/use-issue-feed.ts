@@ -7,12 +7,7 @@ import {
   useCategories,
 } from "@/hooks/use-categories";
 import { useSession } from "@/hooks/use-session";
-import {
-  fetchIssuesForTitleSearch,
-  fetchIssuesPageByStatus,
-  fetchUserIssues,
-} from "@/services/issues";
-import { removeSupport, toggleSupport } from "@/services/issues";
+import { listIssues, listUserIssues, searchIssues, setSupport } from "@/services/issues";
 import type {
   IssueCursor,
   IssueSummary,
@@ -120,14 +115,14 @@ export function useIssueFeed(filter: string) {
     if (!issue || issue.isOwnIssue) return;
     return reaction.run({
       id: issueId,
-      previous: { active: issue.currentUserSupported === true, count: issue.support_count },
+      previous: { active: issue.currentUserSupported, count: issue.supportCount },
       apply: ({ active, count }, pending) => {
-        patchContentEntity<IssueSummary>(session.user?.uid, "issue", issueId, { currentUserSupported: active, support_count: count }, { pending });
+        patchContentEntity<IssueSummary>(session.user?.uid, "issue", issueId, { currentUserSupported: active, supportCount: count }, { pending });
         setSupportedIssue(issueId, active);
       },
       request: async (active) => {
-        const result = active ? await toggleSupport(issueId) : await removeSupport(issueId);
-        return { active: result.supported, count: result.support_count };
+        const result = await setSupport(issueId, active);
+        return { active: result.supported, count: result.supportCount };
       },
       errorMessage: t("ui.issue.supportFailed"),
     });
@@ -147,60 +142,26 @@ export function useIssueFeed(filter: string) {
         // A later page and a title search both leave the counts alone: they describe
         // the whole category, not the rows this request happened to return.
         let statusCounts: IssueStatusCounts | null = null;
+        const options = {
+          supportedIssueIds: supportedIssueIdsRef.current,
+          forceRefresh: !cursor && (warmRead || restart),
+        };
+        const paging = { cursor, sort, statusBucket: bucket };
         if (filter === "my-proposals") {
-          const page = await fetchUserIssues(session.user.uid, cursor, {
-            query: committedQuery,
-            sort,
-            statusBucket: bucket,
-            supportedIssueIds: supportedIssueIdsRef.current,
-            forceRefresh: !cursor && (warmRead || restart),
-          });
+          const page = await listUserIssues({ ...paging, query: committedQuery }, options);
           result = page;
           statusCounts = page.statusCounts;
         } else if (committedQuery.trim()) {
-          result = await fetchIssuesForTitleSearch(
-            session.user.uid,
-            filter,
-            bucket,
-            committedQuery,
-            {
-              cursor,
-              isAdmin: session.isAdmin,
-              sort,
-              supportedIssueIds: supportedIssueIdsRef.current,
-              forceRefresh: !cursor && (warmRead || restart),
-            },
-          );
+          result = await searchIssues({ ...paging, category: filter, query: committedQuery }, options);
         } else {
-          const page = await fetchIssuesPageByStatus(
-            session.user.uid,
-            filter,
-            bucket,
-            cursor,
-            {
-              isAdmin: session.isAdmin,
-              sort,
-              supportedIssueIds: supportedIssueIdsRef.current,
-              forceRefresh: !cursor && (warmRead || restart),
-            },
-          );
+          const page = await listIssues({ ...paging, category: filter }, options);
           result = page;
           statusCounts = page.statusCounts;
         }
         if (!requestGuard.isCurrent(requestToken)) return;
         readSucceeded.current = true;
         const issues = result.issues.map((issue) =>
-          mergeContentEntityRead(
-            session.user?.uid,
-            "issue",
-            {
-            ...issue,
-              currentUserSupported:
-                issue.isOwnIssue || issue.currentUserSupported === true,
-            },
-            entityReadRevision,
-            "summary",
-          ),
+          mergeContentEntityRead(session.user?.uid, "issue", issue, entityReadRevision, "summary"),
         );
         setFeed((current) => {
           const pageCount = advanceFeedPageCount(current.pageCount, Boolean(cursor));
@@ -229,7 +190,6 @@ export function useIssueFeed(filter: string) {
       bucket,
       committedQuery,
       filter,
-      session.isAdmin,
       session.user,
       sort,
       t,

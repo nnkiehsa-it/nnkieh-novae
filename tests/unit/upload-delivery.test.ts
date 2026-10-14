@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   fetch: vi.fn(), stored: new Map<string, { key: string; cacheKey: string; scope: string; value: unknown; updatedAt: number }>(),
 }));
 vi.mock("@/services/backend-action", () => ({ callAction: (_name: string, payload: unknown) => mocks.fetch(payload) }));
-vi.mock("@/services/issues-core", () => ({ toReadableBackendError: (error: unknown) => error }));
+vi.mock("@/services/backend-errors", () => ({ toReadableBackendError: (error: unknown) => error }));
 vi.mock("@/lib/persistent-cache", () => ({
   writePersistentCache: async (entry: { key: string; cacheKey: string; scope: string; value: unknown; updatedAt: number }) => { mocks.stored.set(entry.key, entry); },
   readPersistentCache: async (key: string) => mocks.stored.get(key),

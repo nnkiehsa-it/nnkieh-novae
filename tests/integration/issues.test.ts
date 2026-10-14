@@ -30,24 +30,25 @@ integrationTest("own proposal search filters content without accepting another u
   await createIssue(owner, "public-issues", "ordinary");
   await createIssue(stranger, "public-issues", "search-needle");
   const search = asRecord(await callAction("listUserIssues", {
+    // A caller cannot name whose proposals to search; the reader's are searched.
     uid: stranger.auth.uid,
-    titleQuery: "content search-needle",
+    query: "content search-needle",
     statusBucket: "active",
     sort: "latest",
     pageSize: 20,
   }, owner.auth));
   assert.deepEqual((search.issues as Array<{ id: string }>).map(issue => issue.id), [own.id]);
-  const wildcard = asRecord(await callAction("listUserIssues", { titleQuery: "%" }, owner.auth));
+  const wildcard = asRecord(await callAction("listUserIssues", { query: "%" }, owner.auth));
   assert.deepEqual(wildcard.issues, []);
-  const all = asRecord(await callAction("listUserIssues", { titleQuery: "" }, owner.auth));
+  const all = asRecord(await callAction("listUserIssues", { query: "" }, owner.auth));
   assert.equal((all.issues as unknown[]).length, 2);
 
   await database.sql`update app_private.issues set created_at = '2026-01-01T00:00:00.123456Z'::timestamptz
     where author_uid = ${owner.auth.uid}`;
-  const firstPage = asRecord(await callAction("listUserIssues", { titleQuery: "content", pageSize: 1 }, owner.auth));
+  const firstPage = asRecord(await callAction("listUserIssues", { query: "content", pageSize: 1 }, owner.auth));
   assert.equal(firstPage.hasMore, true);
   const nextPage = asRecord(await callAction("listUserIssues", {
-    titleQuery: "content", pageSize: 1, cursor: firstPage.cursor,
+    query: "content", pageSize: 1, cursor: firstPage.cursor,
   }, owner.auth));
   assert.equal((nextPage.issues as unknown[]).length, 1);
   assert.notEqual(asRecord((nextPage.issues as unknown[])[0]).id, asRecord((firstPage.issues as unknown[])[0]).id);
@@ -128,14 +129,14 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
     owner.auth,
   ));
   assert.equal(asRecord(ownerRead.issue).id, publicIssueId);
-  assert.equal(asRecord(ownerRead.issue).canManageIssue, false);
+  assert.equal("canManageIssue" in asRecord(ownerRead.issue), false);
   await expectActionError(
     "not-found",
     () => callAction("getIssue", { issueId: publicIssueId }, user.auth),
   );
 
   const hiddenList = asRecord(await callAction("listIssues", {
-    activeFilter: "public-issues",
+    category: "public-issues",
     pageSize: 20,
     sort: "latest",
     statusBucket: "active",
@@ -148,7 +149,7 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
   assert.equal(asRecord(hiddenList.statusCounts)["under-review"], 2);
   assert.equal(typeof hiddenList.version, "number");
   const managerList = asRecord(await callAction("listIssues", {
-    activeFilter: "public-issues",
+    category: "public-issues",
     pageSize: 20,
     sort: "latest",
     statusBucket: "active",
@@ -161,26 +162,26 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
   assert.equal(asRecord(managerList.statusCounts)["under-review"], 2);
 
   const firstPage = asRecord(await callAction("listIssues", {
-    activeFilter: "public-issues",
+    category: "public-issues",
     pageSize: 1,
     sort: "latest",
     statusBucket: "active",
   }, publicManager.auth));
   assert.ok(firstPage.cursor);
   const secondPage = asRecord(await callAction("listIssues", {
-    activeFilter: "public-issues",
+    category: "public-issues",
     cursor: firstPage.cursor,
     pageSize: 1,
     sort: "latest",
     statusBucket: "active",
   }, publicManager.auth));
-  assert.deepEqual(secondPage.statusCounts, {});
+  assert.equal(secondPage.statusCounts, null);
   const searched = asRecord(await callAction("searchIssues", {
-    activeFilter: "public-issues",
+    category: "public-issues",
     pageSize: 20,
     sort: "latest",
     statusBucket: "active",
-    titleQuery: "public",
+    query: "public",
   }, publicManager.auth));
   assert.ok((searched.issues as JsonRecord[]).some((issue) => issue.id === publicIssueId));
   assert.equal(typeof searched.version, "number");
@@ -228,41 +229,41 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
 
   // A search reaches the body, not only the title.
   const bodyMatch = asRecord(await callAction("searchIssues", {
-    activeFilter: "public-issues",
+    category: "public-issues",
     pageSize: 20,
     sort: "latest",
     statusBucket: "active",
-    titleQuery: "content public",
+    query: "content public",
   }, user.auth));
   assert.ok((bodyMatch.issues as JsonRecord[]).some((issue) => issue.id === publicIssueId));
   // The author's name is searchable exactly for whoever may see the author.
   // public-issues hides it from members, so a member searching that name finds
   // nothing there, while the author and the category's manager both do.
   const strangerAuthorMatch = asRecord(await callAction("searchIssues", {
-    activeFilter: "public-issues",
+    category: "public-issues",
     pageSize: 20,
     sort: "latest",
     statusBucket: "active",
-    titleQuery: "Integration issue-owner",
+    query: "Integration issue-owner",
   }, user.auth));
   assert.equal(
     (strangerAuthorMatch.issues as JsonRecord[]).some((issue) => issue.id === publicIssueId),
     false,
   );
   const ownAuthorMatch = asRecord(await callAction("searchIssues", {
-    activeFilter: "public-issues",
+    category: "public-issues",
     pageSize: 20,
     sort: "latest",
     statusBucket: "active",
-    titleQuery: "Integration issue-owner",
+    query: "Integration issue-owner",
   }, owner.auth));
   assert.ok((ownAuthorMatch.issues as JsonRecord[]).some((issue) => issue.id === publicIssueId));
   const managerAuthorMatch = asRecord(await callAction("searchIssues", {
-    activeFilter: "public-issues",
+    category: "public-issues",
     pageSize: 20,
     sort: "latest",
     statusBucket: "active",
-    titleQuery: "Integration issue-owner",
+    query: "Integration issue-owner",
   }, publicManager.auth));
   assert.ok((managerAuthorMatch.issues as JsonRecord[]).some((issue) => issue.id === publicIssueId));
 
@@ -463,7 +464,7 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
   assert.equal(asRecord(privateManaged.issue).status, "processing");
 
   const strangerPrivateList = asRecord(await callAction("listIssues", {
-    activeFilter: "rights-maintenance",
+    category: "rights-maintenance",
     pageSize: 20,
     sort: "latest",
     statusBucket: "active",
@@ -488,7 +489,7 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
   const ownerDeleteBeforePolicy = asRecord(await callAction("getIssue", {
     issueId: String(ownerDeleteIssue.id),
   }, owner.auth));
-  assert.equal(asRecord(ownerDeleteBeforePolicy.issue).canDeleteIssue, false);
+  assert.equal(ownerDeleteBeforePolicy.canDeleteIssue, false);
   await expectActionError(
     "permission-denied",
     () => callAction("deleteIssue", {
@@ -504,7 +505,7 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
   const ownerDeleteAfterPolicy = asRecord(await callAction("getIssue", {
     issueId: String(ownerDeleteIssue.id),
   }, owner.auth));
-  assert.equal(asRecord(ownerDeleteAfterPolicy.issue).canDeleteIssue, true);
+  assert.equal(ownerDeleteAfterPolicy.canDeleteIssue, true);
   await callAction("deleteIssue", {
     issueId: String(ownerDeleteIssue.id),
   }, owner.auth);
