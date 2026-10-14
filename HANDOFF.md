@@ -30,7 +30,7 @@ Working note. Delete it once P7 is done and the content has moved into commit me
 | P2/P3 shared valibot contracts in `shared/`; every Worker answer conforms to its contract; retire unused writes | committed (`508cae03`..`3dbe3bb1`) |
 | P4 replace hand-rolled caches with TanStack Query | committed (`93baa9ef` wip + follow-up) |
 | P5 one session service; access changes reset access-dependent queries and realtime topics | committed |
-| P6 clean stale DB overloads in a new forward-only migration (no squash) | todo |
+| P6 stale DB functions retired in forward-only migrations 0067–0068 (no squash) | committed |
 | P7 docs; rebuild the project-map tool against ACTIONS and the registry; add `knip` as a devDependency and act on it | todo |
 
 ## P4 design
