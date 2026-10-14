@@ -6,6 +6,7 @@ on:
       - 'src/**'
       - 'cloudflare/**'
       - 'database/**'
+      - 'shared/**'
       - 'config/**'
       - 'tests/**'
       - 'scripts/**'
@@ -22,6 +23,7 @@ on:
       - 'vitest.integration.config.ts'
       - 'vitest.config.ts'
       - 'eslint.config.js'
+      - 'knip.json'
       - '.github/workflows/**'
   # Every branch deploys: main to production, everything else to a Vercel
   # preview built from the production secrets (the development environment
@@ -34,6 +36,7 @@ on:
       - 'src/**'
       - 'cloudflare/**'
       - 'database/**'
+      - 'shared/**'
       - 'config/**'
       - 'tests/**'
       - 'scripts/**'
@@ -50,6 +53,7 @@ on:
       - 'vitest.integration.config.ts'
       - 'vitest.config.ts'
       - 'eslint.config.js'
+      - 'knip.json'
       - '.github/workflows/**'
   workflow_dispatch:
     inputs:
@@ -107,10 +111,10 @@ jobs:
               backend=true
               browser=true
             fi
-            if printf '%s\n' "$files" | grep -Eq '^(cloudflare/|database/|config/|tests/integration/|scripts/(configure-|database\.mjs|external-provider-test-server\.mjs|render-worker-config\.mjs|verify-integration\.mjs|generate-(api-errors|backend-actions|data-retention|rate-limits|all)\.mjs)|(package\.json|bun\.lock)$|tsconfig\.integration\.json$|vitest\.integration\.config\.ts$)'; then
+            if printf '%s\n' "$files" | grep -Eq '^(cloudflare/|database/|shared/|tests/integration/|scripts/(configure-|database\.mjs|external-provider-test-server\.mjs|render-worker-config\.mjs|verify-integration\.mjs|generate-database-contracts\.mjs)|(package\.json|bun\.lock)$|tsconfig\.integration\.json$|vitest\.integration\.config\.ts$)'; then
               backend=true
             fi
-            if printf '%s\n' "$files" | grep -Eq '^(src/|config/|public/|tests/e2e/|tools/next-root-glob/|(package\.json|bun\.lock|components\.json|next\.config\.mjs|playwright\.config\.ts|postcss\.config\.mjs|tsconfig[^/]*\.json|vercel\.json)$|scripts/(check-build-budget|build-budget-metrics|generate-(all|api-errors|backend-actions|data-retention|harmonyos-subset|rate-limits))\.mjs)'; then
+            if printf '%s\n' "$files" | grep -Eq '^(src/|shared/|config/|public/|tests/e2e/|tools/next-root-glob/|(package\.json|bun\.lock|components\.json|next\.config\.mjs|playwright\.config\.ts|postcss\.config\.mjs|tsconfig[^/]*\.json|vercel\.json)$|scripts/(check-build-budget|build-budget-metrics|generate-(all|harmonyos-subset|motion))\.mjs)'; then
               browser=true
             fi
           fi
