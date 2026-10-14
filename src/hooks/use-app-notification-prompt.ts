@@ -12,7 +12,7 @@ import { enableCurrentDevicePushNotifications } from "@/services/push-token-regi
 
 const DISMISSED_KEY_PREFIX = "novae:notification-prompt-dismissed:";
 
-export type AppNotificationPromptResult = "declined" | "enabled" | "failed";
+type AppNotificationPromptResult = "declined" | "enabled" | "failed";
 
 export function useAppNotificationPrompt(uid: string | undefined) {
   const [hydrated, setHydrated] = React.useState(false);

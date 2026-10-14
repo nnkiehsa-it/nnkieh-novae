@@ -107,7 +107,7 @@ async function prepareServiceWorker() {
   }
 }
 
-export type AppUpdatePhase = "idle" | "prompt" | "reloading" | "reloaded";
+type AppUpdatePhase = "idle" | "prompt" | "reloading" | "reloaded";
 
 /**
  * Watches for a newer deployment. The first time a version is seen the app

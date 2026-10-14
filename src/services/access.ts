@@ -70,23 +70,6 @@ export async function lookupAccessMember(
   return await listAccessUsers({ query: query.trim() }, options);
 }
 
-export async function setUserAccessScope(
-  uid: string,
-  scope: AccessScope,
-  grant: boolean,
-) {
-  const fn = invokeBackendAction<
-    { categoryId?: string; grant: boolean; scopeKind: AccessScope['kind']; uid: string },
-    { success: boolean; roles: RoleCode[]; managedIssueCategoryIds: string[]; managedFacilityCategoryIds: string[] }
-  >('setUserAccessScope');
-  return await fn({
-    categoryId: 'categoryId' in scope ? scope.categoryId : undefined,
-    grant,
-    scopeKind: scope.kind,
-    uid,
-  });
-}
-
 export async function saveScopeMembers(scope: AccessScope, changes: Array<{ uid: string; grant: boolean }>, revision: string) {
   return invokeBackendAction<
     { categoryId?: string; changes: typeof changes; revision: string; scopeKind: AccessScope['kind'] },

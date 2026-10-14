@@ -7,11 +7,11 @@ import {
   type NotionRebuildCursor,
 } from "../shared/notion-reconcile.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
-import { asRecord, asString } from "../shared/http.ts";
+import { asRecord, asString } from "../shared/json.ts";
 import { operationPolicy } from "../shared/operation-policies.ts";
 import type { Json, Selected } from "../database/schema.ts";
 
-export interface BackgroundJobItem {
+interface BackgroundJobItem {
   id: string;
   job_type: string;
   scope_id: string;
@@ -64,20 +64,18 @@ export async function processBackgroundJobs(
   options: { batchSize?: number } = {},
 ) {
   const log = createFunctionLogger("processBackgroundJobs");
-  const { data: policyResult, error: policyError } = await database.call(
+  const policyResult = await database.call(
     "app_api", "backend_process_platform_job_batch", { batch_size: operationPolicy('policyBatchSize') },
-  );
-  if (policyError) {
-    log.error("policy-batch.failed", policyError);
-    throw policyError;
-  }
+  ).catch((error: unknown) => {
+    log.error("policy-batch.failed", error);
+    throw error;
+  });
   if (asRecord(policyResult).failed === true) log.warn('policy-batch.failed', { jobId: asString(asRecord(policyResult).jobId) });
   const batchSize = options.batchSize ?? operationPolicy('jobBatchSize');
-  const { data, error } = await database.call("app_api", "claim_background_jobs", {
+  const data = await database.call("app_api", "claim_background_jobs", {
     requested_batch_size: batchSize,
   });
-  if (error) throw error;
-  const jobs = (data ?? []) as BackgroundJobItem[];
+  const jobs = data as BackgroundJobItem[];
   let resumed = 0;
 
   for (const job of jobs) {
@@ -120,12 +118,11 @@ export async function processBackgroundJobs(
         throw new Error("unsupported-background-job");
       }
 
-      const { error: completionError } = await database.call("app_api", "complete_background_job", {
+      await database.call("app_api", "complete_background_job", {
         job_id: job.id,
         attempt_id: attemptId,
         job_result: jobResult,
       });
-      if (completionError) throw completionError;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       log.error("background-job.failed", err, {
@@ -133,12 +130,11 @@ export async function processBackgroundJobs(
         jobType: job.job_type,
         attemptId,
       });
-      const { error: failureError } = await database.call("app_api", "fail_background_job", {
+      await database.call("app_api", "fail_background_job", {
         job_id: job.id,
         attempt_id: attemptId,
         error_info: { message },
       });
-      if (failureError) throw failureError;
     }
   }
 

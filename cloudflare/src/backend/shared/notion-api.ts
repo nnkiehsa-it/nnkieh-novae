@@ -20,12 +20,12 @@ export function notionEnabled(): boolean {
   if (optionalEnv("NOTION_ENABLED") === "false") return false;
   return Boolean(optionalEnv("NOTION_TOKEN") && optionalEnv("NOTION_DATABASE_ID"));
 }
-export function notionBaseUrl(): string {
+function notionBaseUrl(): string {
   const base = optionalEnv("NOTION_API_BASE_URL") || "https://api.notion.com";
   return base.replace(/\/+$/u, "");
 }
 /** A refusal from Notion, with the code it named, so a caller can read it. */
-export class NotionApiError extends Error {
+class NotionApiError extends Error {
   constructor(readonly status: number, readonly code: string, body: string) {
     super(`Notion API error (${status}): ${body}`);
     this.name = "NotionApiError";
@@ -218,7 +218,7 @@ export async function ensureDateProperty(propertyName: string): Promise<void> {
   });
   knownDateProperties.add(propertyName);
 }
-export interface NotionBlock {
+interface NotionBlock {
   id: string;
   type: string;
   [key: string]: unknown;

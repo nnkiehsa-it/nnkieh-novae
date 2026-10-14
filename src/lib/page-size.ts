@@ -1,4 +1,3 @@
 export const CONTENT_FEED_PAGE_SIZE = 30;
-export const CONTENT_FEED_MAX_PAGE_SIZE = 50;
 export const COMMENT_FEED_PAGE_SIZE = 30;
 export const NOTIFICATION_FEED_PAGE_SIZE = 30;

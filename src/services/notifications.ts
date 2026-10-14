@@ -10,7 +10,7 @@ import { NOTIFICATION_FEED_PAGE_SIZE } from '@/lib/page-size';
 import type { NotificationCursor } from './notification-cursor';
 export type { NotificationCursor } from './notification-cursor';
 import { normalizeNotificationRecord, normalizeNotificationPage, normalizeNotificationReadState, type NotificationReadState, type NotificationSourcePage } from './notification-records';
-export type { NotificationReadState, NotificationSourcePage } from './notification-records';
+export type { NotificationSourcePage } from './notification-records';
 import {
   CONTENT_SHORT_CACHE_TTL_MS,
   captureContentCacheWriteGuard,

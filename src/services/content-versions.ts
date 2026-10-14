@@ -5,7 +5,7 @@ import { readLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
 import { clearContentEntityDomain, type ContentEntityDomain } from '@/lib/content-entity-store';
 
 export type ContentVersionDomain = 'announcements' | 'facilities' | 'issues';
-export type ContentVersions = Record<ContentVersionDomain, number>;
+type ContentVersions = Record<ContentVersionDomain, number>;
 
 interface StoredContentVersions {
   versions: ContentVersions;
@@ -100,16 +100,6 @@ export async function ensureContentVersionsFresh(options: { notify?: boolean } =
   return await pending;
 }
 
-export function subscribeContentVersionChanges(domain: ContentVersionDomain, listener: () => void | Promise<void>) {
-  const domainListeners = listeners.get(domain) ?? new Set();
-  domainListeners.add(listener);
-  listeners.set(domain, domainListeners);
-  return () => {
-    domainListeners.delete(listener);
-    if (domainListeners.size === 0) listeners.delete(domain);
-  };
-}
-
 export function registerContentVersion(domain: ContentVersionDomain, version: number) {
   const uid = auth?.currentUser?.uid ?? '';
   if (!uid || !Number.isFinite(version)) return;
@@ -119,7 +109,7 @@ export function registerContentVersion(domain: ContentVersionDomain, version: nu
   writeStoredVersions(uid, { versions: previous });
 }
 
-export function getContentVersion(domain: ContentVersionDomain) {
+function getContentVersion(domain: ContentVersionDomain) {
   const uid = auth?.currentUser?.uid ?? '';
   return readStoredVersions(uid)?.versions[domain] ?? 1;
 }

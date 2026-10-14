@@ -59,7 +59,7 @@ function rememberConfirmation(uid: string, token: string) {
   writeLocalStorage(CONFIRMED_AT_KEY, String(Date.now()));
 }
 
-export async function getCurrentPushToken() {
+async function getCurrentPushToken() {
   if (
     !firebaseVapidKey
     || !("Notification" in window)

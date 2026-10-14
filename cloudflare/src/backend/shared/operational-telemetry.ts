@@ -1,5 +1,5 @@
 import type { DatabaseSession } from '../database/client';
-import { publicErrorCode } from './http';
+import { publicErrorCode } from './errors.ts';
 import { createFunctionLogger } from './observability';
 
 export async function recordOperationalError(database: DatabaseSession, action: string, error: unknown, status: number, operationId: string, failureId?: string) {

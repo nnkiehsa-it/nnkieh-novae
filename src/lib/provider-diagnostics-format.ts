@@ -28,7 +28,7 @@ function usageOf(value: unknown): number | null {
   return nested ? numberOf(nested.usage) : numberOf(value);
 }
 
-export interface CloudinaryReading {
+interface CloudinaryReading {
   /** Billing credits, the only Cloudinary figure that comes with a ceiling. */
   credits: { limit: number | null; usage: number } | null;
   bandwidthBytes: number | null;
@@ -57,13 +57,13 @@ export function readCloudinaryUsage(data: unknown): CloudinaryReading | null {
   };
 }
 
-export interface WorkerStatusReading {
+interface WorkerStatusReading {
   errors: number;
   requests: number;
   status: string;
 }
 
-export interface WorkerReading {
+interface WorkerReading {
   /** Microseconds, as the Workers API reports them. */
   cpuP50: number | null;
   cpuP99: number | null;
@@ -115,7 +115,7 @@ export function readWorkerMetrics(data: unknown): WorkerReading | null {
   return reading;
 }
 
-export interface WorkerLogEvent {
+interface WorkerLogEvent {
   /** Milliseconds spent on the request, as the telemetry query reports it. */
   duration: number | null;
   id: string;

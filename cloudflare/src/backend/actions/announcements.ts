@@ -2,14 +2,7 @@ import { handleAnnouncementCommentAction, isAnnouncementCommentAction } from "./
 import { handleAnnouncementReadAction, isAnnouncementReadAction } from "./announcement-read.ts";
 import { handleAnnouncementWriteAction, isAnnouncementWriteAction } from "./announcement-write.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
-import { asString } from "../shared/http.ts";
-
-export function isAnnouncementAction(action: string) {
-  return isAnnouncementReadAction(action)
-    || isAnnouncementWriteAction(action)
-    || isAnnouncementCommentAction(action)
-    || action === "markAnnouncementsOpened";
-}
+import { asString } from "../shared/json.ts";
 
 export async function handleAnnouncementAction(
   action: string,
@@ -23,11 +16,10 @@ export async function handleAnnouncementAction(
   if (action === "markAnnouncementsOpened") {
     const openedThrough = asString(payload.openedThrough);
     if (!openedThrough || !Number.isFinite(Date.parse(openedThrough))) throw new Error("validation-invalid");
-    const { data, error } = await database.call("app_api", "backend_mark_announcements_opened", {
+    const data = await database.call("app_api", "backend_mark_announcements_opened", {
       actor_uid: auth.uid,
       opened_through: openedThrough,
     });
-    if (error) throw error;
     return data;
   }
   throw new Error("invalid-action");

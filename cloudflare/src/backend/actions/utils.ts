@@ -1,4 +1,4 @@
-import { asRecord, asString } from "../shared/http.ts";
+import { asRecord, asString } from "../shared/json.ts";
 import type { JsonRecord } from "./types.ts";
 
 const TAIPEI_UTC_OFFSET_MS = 8 * 60 * 60 * 1000;
@@ -11,7 +11,7 @@ export function asBoolean(value: unknown, fallback = false) {
   return typeof value === "boolean" ? value : fallback;
 }
 
-export function asDateIso(value: unknown) {
+function asDateIso(value: unknown) {
   const rawValue = typeof value === "number" || typeof value === "string" ? value : "";
   const date = new Date(rawValue);
   return Number.isFinite(date.getTime()) ? date.toISOString() : "";
@@ -48,18 +48,6 @@ export function readCursorDate(payload: JsonRecord, key: string) {
   return asDateIso(payload[key]);
 }
 
-export function cursorRange(pageSize: number) {
-  return { from: 0, to: Math.max(0, Math.min(pageSize, 50)) };
-}
-
-export function latestDateMs(rows: Array<{ created_at?: unknown; updated_at?: unknown }>) {
-  return rows.reduce((latest, row) => {
-    const createdAtMs = toMs(row.created_at) ?? 0;
-    const updatedAtMs = toMs(row.updated_at) ?? 0;
-    return Math.max(latest, createdAtMs, updatedAtMs);
-  }, 0);
-}
-
 export function taipeiDayWindow(date = new Date()) {
   const shifted = new Date(date.getTime() + TAIPEI_UTC_OFFSET_MS);
   const startMs = Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate())
@@ -70,11 +58,3 @@ export function taipeiDayWindow(date = new Date()) {
   };
 }
 
-export function utcHourWindow(date = new Date()) {
-  const startsAt = new Date(date);
-  startsAt.setUTCMinutes(0, 0, 0);
-  return {
-    expiresAt: new Date(startsAt.getTime() + 60 * 60 * 1000),
-    startsAt,
-  };
-}

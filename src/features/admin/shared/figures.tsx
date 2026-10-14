@@ -28,7 +28,7 @@ export function AnimatedNumber({ className, value }: { className?: string; value
   );
 }
 
-export interface Figure {
+interface Figure {
   label: string;
   /** Absent while the reading is still arriving. */
   value: React.ReactNode | undefined;

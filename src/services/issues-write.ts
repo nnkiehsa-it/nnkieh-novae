@@ -142,20 +142,6 @@ export async function moderateIssueStatus(
   }
 }
 
-export async function updateIssueResult(issueId: string, resultContent: string) {
-  try {
-    const fn = invokeBackendAction<
-      { issueId: string; resultContent: string },
-      { issue: IssueResponseRecord }
-    >('updateIssueResult');
-    const result = await fn({ issueId, resultContent });
-    invalidateIssueCache(issueId);
-    return normalizeIssueResponse(result.issue);
-  } catch (error) {
-    throw toReadableBackendError(error);
-  }
-}
-
 export async function toggleSupport(
   issueId: string,
 ) {

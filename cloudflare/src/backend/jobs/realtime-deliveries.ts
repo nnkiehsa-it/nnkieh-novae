@@ -1,6 +1,6 @@
 import type { Env } from "../../types";
 import type { AppDatabaseClient } from "../database/client.ts";
-import { asRecord, asString } from "../shared/http.ts";
+import { asRecord, asString } from "../shared/json.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
 import { operationPolicy } from '../shared/operation-policies.ts';
 import type { RealtimeDelivery } from "../../durable/realtime-hub.ts";
@@ -110,12 +110,11 @@ async function realtimeDeliveriesForItem(
 export async function processRealtimeDeliveries(database: AppDatabaseClient, env: Env) {
   const batchSize = operationPolicy('realtimeBatchSize');
   const log = createFunctionLogger("processRealtimeDeliveries");
-  const { data, error } = await database.call("app_api", "claim_event_deliveries", {
+  const data = await database.call("app_api", "claim_event_deliveries", {
     target_destination: "realtime",
     batch_size: batchSize,
   });
-  if (error) throw error;
-  const items = (data ?? []) as EventDeliveryItem[];
+  const items = data as EventDeliveryItem[];
   if (items.length === 0) return { hasMore: false, processedCount: 0 };
 
   const deliveries = await Promise.all(items.map((item) => realtimeDeliveriesForItem(database, item)))

@@ -45,10 +45,6 @@ export function getShareEntry() {
   return active;
 }
 
-export function getPendingShareExit() {
-  return pendingExit;
-}
-
 export function subscribeShareEntry(listener: () => void) {
   listeners.add(listener);
   return () => {

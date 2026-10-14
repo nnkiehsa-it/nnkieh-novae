@@ -9,7 +9,7 @@ export interface DurableRateLimitClaim {
   units: number;
 }
 
-export interface DurableRateLimitResult {
+interface DurableRateLimitResult {
   errorCode?: string;
   retryAfterSeconds?: number;
   success: boolean;

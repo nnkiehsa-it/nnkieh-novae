@@ -1,5 +1,6 @@
 import type { AppDatabaseClient } from "../database/client.ts";
-import { asRecord, asString, errorStatus, publicErrorBody } from "../shared/http.ts";
+import { errorStatus, publicErrorBody } from "../shared/errors.ts";
+import { asRecord, asString } from "../shared/json.ts";
 import { handleHealthcheck } from "./auth.ts";
 import { resolveAuthContext } from "./auth.ts";
 import { getBackendActionDefinition } from "./action-registry.ts";
@@ -12,7 +13,7 @@ import type { ActionSegment } from "./types.ts";
 import type { FirebaseAuthContext } from "../shared/firebase-auth.ts";
 
 /** What one action answers, always as a stream of pieces. */
-export interface BackendActionResponse {
+interface BackendActionResponse {
   /** Settles when the last piece has been written and the database is free. */
   done: Promise<void>;
   response: Response;

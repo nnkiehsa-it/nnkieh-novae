@@ -1,4 +1,4 @@
-import { asRecord, asString } from "../shared/http.ts";
+import { asRecord, asString } from "../shared/json.ts";
 import { createMediaDeliveryUrl } from "../shared/media-delivery.ts";
 import { platformAdminEmails } from "../shared/platform-admin.ts";
 import { requirePermission } from "./auth.ts";
@@ -47,13 +47,12 @@ export async function handleUserAdminAction(
     const window = asString(payload.window, "24h");
     const hours = window === "7d" ? 168 : window === "30d" ? 720 : 24;
     const cursor = asRecord(payload.cursor);
-    const { data, error } = await database.call("app_api", "backend_list_admin_activity", {
+    const data = await database.call("app_api", "backend_list_admin_activity", {
       before_key: asString(cursor.key) || null,
       before_occurred_at: asString(cursor.occurredAt) || null,
       page_limit: 100,
       window_hours: hours,
     });
-    if (error) throw error;
     return asRecord(data);
   }
 
@@ -61,10 +60,9 @@ export async function handleUserAdminAction(
     requirePermission(auth, "dashboard.view");
     const window = asString(payload.window, "24h");
     const hours = window === "7d" ? 168 : window === "30d" ? 720 : 24;
-    const { data, error } = await database.call("app_api", "get_admin_overview", {
+    const data = await database.call("app_api", "get_admin_overview", {
       window_hours: hours,
     });
-    if (error) throw error;
     return asRecord(data);
   }
 
@@ -74,12 +72,11 @@ export async function handleUserAdminAction(
 
   if (action === "listAdminUsers") {
     const query = asString(payload.query).trim().slice(0, 120);
-    const { data, error } = await database.call("app_api", "backend_list_admin_users", {
+    const data = await database.call("app_api", "backend_list_admin_users", {
       search_query: query,
       page_limit: 80,
       page_offset: Number(page) * 80,
     });
-    if (error) throw error;
     const withAvatars = await withAdminUserAvatars(data, auth.uid, database);
     const administratorEmails = new Set(platformAdminEmails());
     const rules = await loadAccountAccessRules(database, { userUids: withAvatars.users.map((user) => asString(asRecord(user).uid)) });
@@ -111,12 +108,11 @@ export async function handleUserAdminAction(
 
   if (action === "listAdminAudit") {
     const query = asString(payload.query).trim().slice(0, 120);
-    const { data, error } = await database.call("app_api", "backend_list_admin_audit", {
+    const data = await database.call("app_api", "backend_list_admin_audit", {
       search_query: query,
       page_limit: 100,
       page_offset: Number(page) * 100,
     });
-    if (error) throw error;
     return data;
   }
 

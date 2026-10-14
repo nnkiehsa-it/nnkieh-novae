@@ -1,4 +1,4 @@
-import { asString } from "../shared/http.ts";
+import { asString } from "../shared/json.ts";
 import { createMediaDeliveryUrl } from "../shared/media-delivery.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { getIssueCategory, issueCategoryPolicyLists } from "./category-catalog.ts";
@@ -63,12 +63,11 @@ async function getIssue(
   const canDeleteIssue = actorCanManage
     || (storedIssue.author_uid === auth.uid && category.authorDeleteEnabled);
 
-  const { data, error } = await database.call("app_api", "backend_get_issue", {
+  const data = await database.call("app_api", "backend_get_issue", {
     issue_id: issueId,
     ...policyParams,
     actor_is_admin: actorCanManage,
   });
-  if (error) throw error;
   return {
     issue: data && typeof data === "object" && !Array.isArray(data)
       ? { ...(data as JsonRecord), canDeleteIssue, canManageIssue: actorCanManage }
@@ -88,7 +87,7 @@ async function listIssues(
   const titleQuery = action === "searchIssues"
     ? optionalText(payload.titleQuery, "search", INPUT_LIMITS.search).toLowerCase()
     : null;
-  const { data, error } = await database.call("app_api", "backend_list_issues_snapshot", {
+  const data = await database.call("app_api", "backend_list_issues_snapshot", {
     action_name: action,
     actor_can_manage: canManageIssueCategory(auth, category),
     actor_uid: auth.uid,
@@ -104,7 +103,6 @@ async function listIssues(
       ? asNumber(cursor.sortNumber, Number.NaN)
       : null,
   });
-  if (error) throw error;
   return compactIssueListResult(data);
 }
 
@@ -114,7 +112,7 @@ async function listUserIssues(
   database: BackendDatabase,
 ) {
   const cursor = readCursor(payload);
-  const { data, error } = await database.call("app_api", "backend_list_user_issues_snapshot", {
+  const data = await database.call("app_api", "backend_list_user_issues_snapshot", {
     actor_is_admin: auth.isAdmin,
     actor_uid: auth.uid,
     title_query: optionalText(payload.titleQuery, "search", INPUT_LIMITS.search).toLowerCase(),
@@ -128,7 +126,6 @@ async function listUserIssues(
       ? asNumber(cursor.sortNumber, Number.NaN)
       : null,
   });
-  if (error) throw error;
   return compactIssueListResult(data);
 }
 

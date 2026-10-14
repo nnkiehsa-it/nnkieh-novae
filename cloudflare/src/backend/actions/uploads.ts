@@ -1,4 +1,4 @@
-import { asRecord, asString } from "../shared/http.ts";
+import { asRecord, asString } from "../shared/json.ts";
 import { loadImageUploadSettings, type UploadTargetType } from "../shared/platform-settings.ts";
 import { loadImageLimit } from "./upload-policy.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";

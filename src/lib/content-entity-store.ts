@@ -21,7 +21,7 @@ export type DetailEntity =
 
 export type ContentEntity = SummaryEntity | DetailEntity;
 
-export type ContentEntityCompleteness = "detail" | "summary";
+type ContentEntityCompleteness = "detail" | "summary";
 
 interface StoreEntry<T> {
   localRevision: number;

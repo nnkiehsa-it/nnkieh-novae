@@ -1,4 +1,4 @@
-import { asRecord, asString } from "../shared/http.ts";
+import { asRecord, asString } from "../shared/json.ts";
 import { canManageFacilityCategory, requireFacilityCategoryPermission } from "./auth.ts";
 import { getFacilityCategories, getFacilityCategory } from "./category-catalog.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
@@ -37,14 +37,13 @@ export async function handleFacilityAction(
     const categories = await getFacilityCategories(database);
     if (!categories.some((category) => category.id === categoryId)) throw new Error("invalid-facility-category");
     await validateMarkdownUploadsBeforeCreate(database, auth.uid, content, "facility", categoryId);
-    const { data, error } = await database.call("app_api", "backend_create_facility", {
+    const data = await database.call("app_api", "backend_create_facility", {
       actor_uid: auth.uid,
       facility_title: title,
       facility_location: location,
       facility_content: content,
       facility_category: categoryId,
     });
-    if (error) throw error;
     return { facility: data };
   }
 
@@ -54,11 +53,10 @@ export async function handleFacilityAction(
   const categoryId = await selectFacilityCategory(database, facilityId);
 
   if (action === "getFacility") {
-    const { data, error } = await database.call("app_api", "backend_get_facility", {
+    const data = await database.call("app_api", "backend_get_facility", {
       facility_id: facilityId,
       ...policy(auth, categoryId),
     });
-    if (error) throw error;
     const facility = asRecord(data);
     return {
       facility: {
@@ -71,11 +69,10 @@ export async function handleFacilityAction(
   }
 
   if (action === "toggleFacilityAffected") {
-    const { data, error } = await database.call("app_api", "backend_toggle_facility_affected", {
+    const data = await database.call("app_api", "backend_toggle_facility_affected", {
       facility_id: facilityId,
       actor_uid: auth.uid,
     });
-    if (error) throw error;
     return asRecord(data);
   }
 
@@ -84,25 +81,23 @@ export async function handleFacilityAction(
     const status = asString(payload.status);
     if (!VALID_STATUSES.has(status)) throw new Error("invalid-status");
     const resultContent = optionalText(payload.resultContent, "facility-result", INPUT_LIMITS.facilityResult).trim() || null;
-    const { data, error } = await database.call("app_api", "backend_update_facility_status", {
+    const data = await database.call("app_api", "backend_update_facility_status", {
       facility_id: facilityId,
       next_status: status,
       result_content: resultContent,
       ...policy(auth, categoryId),
     });
-    if (error) throw error;
     return { facility: data };
   }
 
   if (action === "deleteFacility") {
     const category = await getFacilityCategory(database, categoryId);
-    const { data, error } = await database.call("app_api", "backend_delete_facility", {
+    const data = await database.call("app_api", "backend_delete_facility", {
       facility_id: facilityId,
       actor_uid: auth.uid,
       actor_can_manage: canManageFacilityCategory(auth, categoryId),
       author_delete_enabled: category.authorDeleteEnabled,
     });
-    if (error) throw error;
     return asRecord(data);
   }
 
@@ -112,7 +107,7 @@ export async function handleFacilityAction(
 export async function listFacilities(payload: JsonRecord, auth: AuthContext, database: BackendDatabase) {
   const cursor = asRecord(payload.cursor);
   const categoryId = asString(payload.categoryId).trim();
-  const { data, error } = await database.call("app_api", "backend_list_facilities_snapshot", {
+  const data = await database.call("app_api", "backend_list_facilities_snapshot", {
     actor_uid: auth.uid,
     actor_is_admin: auth.isAdmin,
     bucket: asString(payload.bucket, "active") === "closed" ? "closed" : "active",
@@ -126,7 +121,6 @@ export async function listFacilities(payload: JsonRecord, auth: AuthContext, dat
     page_size: Math.round(asNumber(payload.pageSize, 20)),
     managed_category_ids: auth.managedFacilityCategoryIds,
   });
-  if (error) throw error;
   const result = asRecord(data);
   const facilities = Array.isArray(result.facilities) ? result.facilities.map((value) => {
     const facility = asRecord(value);

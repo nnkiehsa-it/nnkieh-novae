@@ -3,10 +3,6 @@ import { handleIssueCommentAction, isIssueCommentAction } from "./issue-comments
 import { handleIssueReadAction, isIssueReadAction } from "./issue-read.ts";
 import { handleIssueWriteAction, isIssueWriteAction } from "./issue-write.ts";
 
-export function isIssueAction(action: string) {
-  return isIssueReadAction(action) || isIssueWriteAction(action) || isIssueCommentAction(action);
-}
-
 export async function handleIssueAction(
   action: string,
   payload: JsonRecord,

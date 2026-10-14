@@ -1,8 +1,8 @@
 import type { BackendDatabase, JsonRecord } from "./types.ts";
 import type { Selected } from "../database/schema.ts";
 
-export type ContentVersionDomain = "issues" | "announcements" | "facilities";
-export type ContentVersions = Record<ContentVersionDomain, number>;
+type ContentVersionDomain = "issues" | "announcements" | "facilities";
+type ContentVersions = Record<ContentVersionDomain, number>;
 
 const EMPTY_VERSIONS: ContentVersions = {
   announcements: 1,

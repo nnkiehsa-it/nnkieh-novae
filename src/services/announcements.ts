@@ -24,7 +24,7 @@ import { registerContentVersion } from '@/services/content-versions';
 const ANNOUNCEMENT_LIMIT = 10;
 const ANNOUNCEMENT_LIST_CACHE_PREFIX = 'announcement-list-page|';
 export type AnnouncementCursor = { id: string; publishedAt: string } | null;
-export type AnnouncementPage = {
+type AnnouncementPage = {
   announcements: AnnouncementSummary[];
   cursor: AnnouncementCursor;
   hasMore: boolean;

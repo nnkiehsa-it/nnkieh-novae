@@ -14,17 +14,6 @@ type FunctionName = keyof AppApiFunctions & string;
 type FunctionArgs<TName extends FunctionName> = AppApiFunctions[TName]["Args"];
 type FunctionReturn<TName extends FunctionName> = AppApiFunctions[TName]["Returns"];
 
-interface DatabaseError extends Error {
-  code?: string;
-  detail?: string;
-  hint?: string;
-}
-
-/** What `call()` answers with: the function's return value, or why it failed. */
-type DatabaseResult<T> =
-  | { data: T; error: null }
-  | { data: null; error: DatabaseError };
-
 export interface SqlResult<TRow> {
   rowCount: number;
   rows: TRow[];
@@ -63,11 +52,6 @@ function quoteIdentifier(identifier: string) {
   return `"${identifier}"`;
 }
 
-function databaseError(error: unknown): DatabaseError {
-  if (error instanceof Error) return error as DatabaseError;
-  return new Error(String(error));
-}
-
 /** Every interpolation becomes a bound parameter; nothing is ever spliced into the statement text. */
 function statementText(fragments: TemplateStringsArray, values: unknown[]) {
   let text = fragments[0];
@@ -81,27 +65,6 @@ type RunQuery = <TRow extends Record<string, unknown>>(
   sql: string,
   values?: unknown[],
 ) => Promise<{ rowCount?: number | null; rows: TRow[] }>;
-
-class FunctionQuery<TReturn> implements PromiseLike<DatabaseResult<TReturn>> {
-  constructor(private readonly operation: () => Promise<DatabaseResult<TReturn>>) {}
-
-  then<TResult1 = DatabaseResult<TReturn>, TResult2 = never>(
-    onfulfilled?: ((value: DatabaseResult<TReturn>) => TResult1 | PromiseLike<TResult1>) | null,
-    onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
-  ): PromiseLike<TResult1 | TResult2> {
-    return this.operation().then(onfulfilled, onrejected);
-  }
-
-  async single(): Promise<DatabaseResult<TReturn extends Array<infer TItem> ? TItem : TReturn>> {
-    const result = await this.operation();
-    if (result.error) return { data: null, error: result.error };
-    const value = result.data;
-    if (!Array.isArray(value) || value.length !== 1) {
-      return { data: null, error: Object.assign(new Error("not-found"), { code: "ROW_NOT_FOUND" }) };
-    }
-    return { data: value[0], error: null } as DatabaseResult<TReturn extends Array<infer TItem> ? TItem : TReturn>;
-  }
-}
 
 export interface DatabaseSession {
   /** Tagged template for statements: `` sql<Row>`select … where id = ${id}` ``. Rejects on database errors. */
@@ -119,14 +82,15 @@ export interface DatabaseSession {
     fragments: TemplateStringsArray,
     ...values: unknown[]
   ): Promise<TRow | null>;
+  /** Calls an `app_api` function and resolves to its return value. Rejects on database errors. */
   call<TName extends FunctionName>(
     schema: "app_api",
     functionName: TName,
     args?: FunctionArgs<TName>,
-  ): FunctionQuery<FunctionReturn<TName>>;
+  ): Promise<FunctionReturn<TName>>;
 }
 
-export class AppDatabaseSession implements DatabaseSession {
+class AppDatabaseSession implements DatabaseSession {
   constructor(private readonly runQuery: RunQuery) {}
 
   async sql<TRow extends object = Record<string, unknown>>(
@@ -155,32 +119,23 @@ export class AppDatabaseSession implements DatabaseSession {
     return rows[0] ?? null;
   }
 
-  call<TName extends FunctionName>(
+  async call<TName extends FunctionName>(
     schema: "app_api",
     functionName: TName,
     args?: FunctionArgs<TName>,
-  ) {
-    return new FunctionQuery<FunctionReturn<TName>>(async () => {
-      try {
-        const qualifiedName = `${schema}.${functionName}`;
-        const jsonArguments = JSON_FUNCTION_ARGUMENTS.get(qualifiedName);
-        const entries = Object.entries(args ?? {}).filter(([, value]) => value !== undefined);
-        const values = entries.map(([name, value]) =>
-          jsonArguments?.has(name) ? JSON.stringify(value) : value
-        );
-        const parameters = entries.map(([name], index) => `${quoteIdentifier(name)} => $${index + 1}`).join(", ");
-        const setReturning = SET_RETURNING_FUNCTIONS.has(qualifiedName);
-        const rowAlias = setReturning ? "novae_function_row" : "result";
-        const sql = `SELECT to_jsonb(${rowAlias}) AS value FROM ${quoteIdentifier(schema)}.${quoteIdentifier(functionName)}(${parameters}) ${rowAlias}`;
-        const result = await this.runQuery<{ value: FunctionReturn<TName> }>(sql, values);
-        const data = setReturning
-          ? result.rows.map((row) => row.value)
-          : result.rows[0]?.value ?? null;
-        return { data: data as FunctionReturn<TName>, error: null };
-      } catch (error) {
-        return { data: null, error: databaseError(error) };
-      }
-    });
+  ): Promise<FunctionReturn<TName>> {
+    const qualifiedName = `${schema}.${functionName}`;
+    const jsonArguments = JSON_FUNCTION_ARGUMENTS.get(qualifiedName);
+    const entries = Object.entries(args ?? {}).filter(([, value]) => value !== undefined);
+    const values = entries.map(([name, value]) =>
+      jsonArguments?.has(name) ? JSON.stringify(value) : value
+    );
+    const parameters = entries.map(([name], index) => `${quoteIdentifier(name)} => $${index + 1}`).join(", ");
+    const setReturning = SET_RETURNING_FUNCTIONS.has(qualifiedName);
+    const rowAlias = setReturning ? "novae_function_row" : "result";
+    const sql = `SELECT to_jsonb(${rowAlias}) AS value FROM ${quoteIdentifier(schema)}.${quoteIdentifier(functionName)}(${parameters}) ${rowAlias}`;
+    const result = await this.runQuery<{ value: FunctionReturn<TName> }>(sql, values);
+    return (setReturning ? result.rows.map((row) => row.value) : result.rows[0]?.value ?? null) as FunctionReturn<TName>;
   }
 }
 

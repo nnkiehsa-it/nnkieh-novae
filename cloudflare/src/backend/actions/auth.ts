@@ -15,8 +15,7 @@ export async function resolveAuthContext(
   firebaseUser: AuthIdentity,
 ): Promise<AuthContext> {
   const loadAccess = async () => {
-    const { data, error } = await database.call("app_api", "backend_get_access_context", { actor_uid: firebaseUser.uid });
-    if (error) throw error;
+    const data = await database.call("app_api", "backend_get_access_context", { actor_uid: firebaseUser.uid });
     return data && typeof data === "object" && !Array.isArray(data)
       ? data as Record<string, unknown> : {};
   };
@@ -25,11 +24,10 @@ export async function resolveAuthContext(
   const isPlatformAdmin = adminEmails.includes(firebaseUser.email.trim().toLowerCase());
   if ((Array.isArray(access.roles) && access.roles.includes("platform-admin")) !== isPlatformAdmin) {
     // Reconcile before loading permissions: SQL authorization also uses these assignments.
-    const { error } = await database.call("app_api", "backend_reconcile_platform_admins", {
+    await database.call("app_api", "backend_reconcile_platform_admins", {
       actor_uid: firebaseUser.uid,
       admin_emails: adminEmails,
     });
-    if (error) throw error;
     access = await loadAccess();
     if ((Array.isArray(access.roles) && access.roles.includes("platform-admin")) !== isPlatformAdmin) {
       throw new Error("permission-denied");

@@ -1,9 +1,9 @@
 import type { Env, JsonRecord } from './types';
 import { API_ERRORS, type ApiErrorCode } from '../generated/api-errors';
 
-export const MAX_BODY_BYTES = 64 * 1024;
+const MAX_BODY_BYTES = 64 * 1024;
 
-export function allowedOrigins(env: Env) {
+function allowedOrigins(env: Env) {
   return new Set(env.ALLOWED_ORIGINS.split(',').map((value) => value.trim()).filter(Boolean));
 }
 
@@ -29,7 +29,7 @@ export function jsonResponse(request: Request, env: Env, data: unknown, status =
   });
 }
 
-export interface ApiErrorOptions {
+interface ApiErrorOptions {
   failureId?: string;
   message?: string;
   retryAfterSeconds?: number;

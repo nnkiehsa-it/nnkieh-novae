@@ -10,7 +10,7 @@ import { isRecordRoute } from "@/lib/route-hierarchy";
 export const SHARE_ENTRY_PARAM = "shared";
 
 /** Where sign-in carries the page a reader asked for before they had an account. */
-export const SHARE_REDIRECT_PARAM = "redirect";
+const SHARE_REDIRECT_PARAM = "redirect";
 
 /**
  * A page that is one piece of content, and so can be sent to somebody on its

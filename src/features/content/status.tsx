@@ -4,7 +4,7 @@ import type { FacilityStatus, IssueStatus } from "@/types";
 import { Chip } from "@/ui/chip";
 
 export type ContentStatus = IssueStatus | FacilityStatus;
-export type StatusTone = "neutral" | "info" | "caution" | "positive" | "danger";
+type StatusTone = "neutral" | "info" | "caution" | "positive" | "danger";
 
 // A case being looked at reads as caution, one being worked on as info, a
 // finished one as positive, and every way of closing it unfinished as danger.
@@ -26,10 +26,6 @@ const TONE_COLOR: Record<StatusTone, string> = {
   positive: "var(--positive)",
   danger: "var(--danger)",
 };
-
-export function statusTone(status: ContentStatus) {
-  return STATUS_TONE[status];
-}
 
 /** The status colour as a CSS value, for charts and progress marks. */
 export function statusColor(status: ContentStatus) {

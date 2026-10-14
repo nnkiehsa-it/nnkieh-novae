@@ -71,14 +71,12 @@ integrationTest("a delayed mark-opened request cannot make read notifications un
     values ('user', ${user.auth.uid}, 'issue_comment_created', 'issue', 'test',
       'already read', '2026-01-01T00:00:01Z'::timestamptz, '2099-01-01'::timestamptz)`;
 
-  const newer = await database.call("app_api", "backend_mark_notifications_opened", {
+  await database.call("app_api", "backend_mark_notifications_opened", {
     actor_uid: user.auth.uid, opened_at: later,
   });
-  assert.ifError(newer.error);
   const delayed = await database.call("app_api", "backend_mark_notifications_opened", {
     actor_uid: user.auth.uid, opened_at: earlier,
   });
-  assert.ifError(delayed.error);
 
   const hint = asRecord(await callAction("getNotificationUnreadHint", {}, user.auth));
   assert.equal(hint.hasUnread, false);
@@ -86,5 +84,5 @@ integrationTest("a delayed mark-opened request cannot make read notifications un
   for (const key of ["adminOpenedAt", "broadcastOpenedAt", "userOpenedAt"]) {
     assert.equal(Date.parse(String(state[key])), Date.parse(later));
   }
-  assert.equal(asRecord(delayed.data).openedAtMs, Date.parse(later));
+  assert.equal(asRecord(delayed).openedAtMs, Date.parse(later));
 });

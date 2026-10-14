@@ -1,5 +1,5 @@
 import type { AppDatabaseClient } from "./database/client.ts";
-import { errorStatus, publicErrorBody } from "./shared/http.ts";
+import { errorStatus, publicErrorBody } from "./shared/errors.ts";
 import { createFunctionLogger } from "./shared/observability.ts";
 import { loadImageUploadSettings } from "./shared/platform-settings.ts";
 import { readCloudinaryImage } from "./shared/image-upload-validation.ts";
@@ -32,7 +32,7 @@ export async function handleCloudinaryWebhook(body: Uint8Array, database: AppDat
       const orphaned = !tracked && publicId.startsWith("srp/");
 
       if (!validAsset || orphaned) {
-        const { error: deletionError } = await tx.call("app_api", "enqueue_background_job", {
+        await tx.call("app_api", "enqueue_background_job", {
           job_type: "deletion",
           scope_id: publicId,
           payload: {
@@ -42,7 +42,6 @@ export async function handleCloudinaryWebhook(body: Uint8Array, database: AppDat
           },
           created_by: "cloudinary-webhook",
         });
-        if (deletionError) throw deletionError;
       }
       return orphaned;
     });

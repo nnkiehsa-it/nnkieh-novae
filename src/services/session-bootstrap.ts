@@ -10,10 +10,10 @@ import {
   setCachedContentFromRead,
 } from '@/services/content-read-cache';
 
-export type ContentVersionDomain = 'announcements' | 'facilities' | 'issues';
-export type ContentVersions = Record<ContentVersionDomain, number>;
+type ContentVersionDomain = 'announcements' | 'facilities' | 'issues';
+type ContentVersions = Record<ContentVersionDomain, number>;
 
-export interface SessionBootstrapResult {
+interface SessionBootstrapResult {
   access: SessionAccess;
   catalog: CategoryCatalog;
   notificationUnread: { hasUnread: boolean };

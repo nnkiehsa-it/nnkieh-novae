@@ -65,12 +65,11 @@ integrationTest("100-user registration and session-bootstrap burst", async () =>
         display_name = excluded.display_name,
         email = excluded.email,
         photo_url = excluded.photo_url`;
-    const { error: adminSyncError } = await database.call(
+    await database.call(
       "app_api",
       "backend_reconcile_platform_admins",
       { actor_uid: identity.uid, admin_emails: ["admin@integration.invalid"] },
     );
-    if (adminSyncError) throw adminSyncError;
   }));
 
   const actors = await Promise.all(identities.map((identity) => refreshActor({ identity })));

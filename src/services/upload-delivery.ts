@@ -47,7 +47,7 @@ subscribeContentCacheInvalidations((changed) => {
   if (/^(?:issue-|user-issue-|announcement-|facility-|category-)/u.test(changed)) clearResolvedUploadCache();
 });
 
-export function invalidateResolvedUploadCache(ids: string[]) {
+function invalidateResolvedUploadCache(ids: string[]) {
   requestRevision += 1;
   for (const id of ids) {
     privateReferences.delete(id);

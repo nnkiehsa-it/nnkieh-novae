@@ -22,9 +22,7 @@ import { useSession } from "@/hooks/use-session";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 
 export type {
-  PlatformAdminNotificationPreferenceKey,
   PlatformAdminNotificationPreferences,
-  PushNotificationPermission,
 } from "@/services/push-notifications";
 
 export function usePushNotifications() {

@@ -4,7 +4,7 @@ import zhTW from "@/i18n/messages/zh-TW";
 import { readLocalStorage, writeLocalStorage } from "@/lib/browser-storage";
 
 export type AppLocale = "zh-TW" | "en";
-export type TranslationParams = Record<string, string | number>;
+type TranslationParams = Record<string, string | number>;
 export type MessageKey = keyof typeof zhTW;
 
 const LOCALE_STORAGE_KEY = "novae:locale";

@@ -371,12 +371,11 @@ export async function saveCategoryDraft(
 export async function processPlatformJobs(batchSize = 100) {
   let latest: Record<string, unknown> = {};
   for (let index = 0; index < 100; index += 1) {
-    const { data, error } = await database.call(
+    const data = await database.call(
       "app_api",
       "backend_process_platform_job_batch",
       { batch_size: batchSize },
     );
-    if (error) throw error;
     latest = asRecord(data);
     if (latest.hasMore !== true) break;
   }

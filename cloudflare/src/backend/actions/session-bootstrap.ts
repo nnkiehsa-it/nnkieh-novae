@@ -1,4 +1,4 @@
-import { asRecord } from "../shared/http.ts";
+import { asRecord } from "../shared/json.ts";
 import type { ActionSegment, AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { asBoolean } from "./utils.ts";
 import { loadPlatformSettings } from "../shared/platform-settings.ts";
@@ -25,10 +25,7 @@ export async function* getSessionBootstrap(
     actor_photo_url: auth.photoUrl,
     actor_uid: auth.uid,
     record_visit: asBoolean(payload.recordVisit, false),
-  }).then(({ data, error }) => {
-    if (error) throw error;
-    return asRecord(data);
-  });
+  }).then(asRecord);
   const platformSettings = loadPlatformSettings(database);
 
   yield { data: operationPolicies(), key: "runtimePolicies" };

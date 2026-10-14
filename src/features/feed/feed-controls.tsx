@@ -1,13 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { CaretDown, MagnifyingGlass, SortAscending } from "@phosphor-icons/react/ssr";
+import { CaretDown, MagnifyingGlass } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { pinnedHeaderClass } from "@/ui/page";
 import { Button } from "@/ui/button";
 import { Input } from "@/ui/field";
-import { Popover, Tooltip } from "@/ui/popover";
+import { Popover } from "@/ui/popover";
 import { Select, type SelectOption } from "@/ui/select";
 
 /**
@@ -134,25 +134,3 @@ export function FeedFilterLine<Bucket extends string, Sort extends string>({ buc
   );
 }
 
-/** The order of a feed, as a round button that opens the choices. */
-export function SortControl<Value extends string>({ onChange, options, value }: {
-  onChange: (value: Value) => void;
-  options: readonly SelectOption<Value>[];
-  value: Value;
-}) {
-  const { t } = useI18n();
-  return (
-    <Tooltip label={t("ui.common.sort")}>
-      <span className="inline-flex">
-        <Select
-          className="grid size-11 place-items-center rounded-full bg-surface-raised text-ink transition-[background-color] duration-[var(--motion-control)] ease-[var(--ease-move)] hover:bg-surface-pressed focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
-          label={t("ui.common.sort")}
-          onChange={onChange}
-          options={options}
-          renderTrigger={() => <SortAscending aria-hidden className="size-[1.125rem]" />}
-          value={value}
-        />
-      </span>
-    </Tooltip>
-  );
-}

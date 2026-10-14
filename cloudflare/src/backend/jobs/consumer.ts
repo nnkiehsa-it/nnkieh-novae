@@ -29,8 +29,7 @@ export async function processJobMessage(message: JobMessage, env: Env) {
 
 /** Which destinations have something waiting, asked once for all of them. */
 async function pendingDestinations(database: AppDatabaseClient) {
-  const { data, error } = await database.call("app_api", "pending_delivery_destinations", {});
-  if (error) throw error;
+  const data = await database.call("app_api", "pending_delivery_destinations", {});
   return new Set((data ?? []) as string[]);
 }
 

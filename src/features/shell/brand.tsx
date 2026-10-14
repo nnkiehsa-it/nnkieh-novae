@@ -2,7 +2,7 @@ import { AppLink } from "@/ui/app-link";
 import { cn } from "@/lib/utils";
 
 /** The Novae wave, drawn in the current text colour so it sits on any surface. */
-export function BrandMark({ className }: { className?: string }) {
+function BrandMark({ className }: { className?: string }) {
   return (
     <span aria-hidden className={cn("grid size-10 shrink-0 place-items-center rounded-tile bg-surface text-ink shadow-panel", className)}>
       <svg className="w-3/5" fill="none" viewBox="0 0 120 100">

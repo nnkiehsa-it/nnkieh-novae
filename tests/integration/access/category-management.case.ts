@@ -159,12 +159,11 @@ integrationTest("runtime category setup and management enforce platform permissi
   }]);
   assert.ok(await tableRow("announcements", "id", retainedAnnouncement.id));
   for (let index = 0; index < 20; index += 1) {
-    const { data: batch, error: batchError } = await database.call(
+    const batch = await database.call(
       "app_api",
       "backend_process_platform_job_batch",
       { batch_size: 1 },
     );
-    if (batchError) throw batchError;
     if (asRecord(batch).hasMore !== true) break;
   }
   assert.equal(await tableRow("announcements", "id", retainedAnnouncement.id), null);
@@ -326,12 +325,11 @@ integrationTest("runtime category setup and management enforce platform permissi
   assert.ok(announcementJob.estimatedRows >= 1);
   assert.equal(announcementJob.status, "pending");
   for (let index = 0; index < 10; index += 1) {
-    const { data: batch, error: batchError } = await database.call(
+    const batch = await database.call(
       "app_api",
       "backend_process_platform_job_batch",
       { batch_size: 1 },
     );
-    if (batchError) throw batchError;
     if (asRecord(batch).hasMore !== true) break;
   }
   const announcementAfterBatch = await tableRow("announcements", "id", policyAnnouncement.id);

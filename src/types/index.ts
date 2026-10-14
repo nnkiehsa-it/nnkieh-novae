@@ -58,7 +58,7 @@ export interface IssueRecord extends IssueSummary {
   content: string;
 }
 
-export interface OperationTimeListItem {
+interface OperationTimeListItem {
   label: string;
   shortLabel: string;
   valueLabel: string;
@@ -73,12 +73,6 @@ export interface IssueCursor {
   created_at: Date | null;
   sort_date?: Date | null;
   sort_number?: number | null;
-}
-
-export interface IssuePageResult {
-  issues: IssueSummary[];
-  cursor: IssueCursor | null;
-  hasMore: boolean;
 }
 
 export interface DiscussionCommentRecord {

@@ -18,8 +18,7 @@ integrationTest("production background consumer executes retention batches and p
     values ($1, 'broadcast', 'announcement_created', 'announcement', $3, 'old', now()-interval '40 days', now()-interval '10 days'),
       ($2, 'broadcast', 'announcement_created', 'announcement', $3, 'fresh', now(), now()+interval '30 days')`,
   [oldId, freshId, crypto.randomUUID()]);
-  const { error } = await database.call("app_api", "run_scheduled_maintenance_cleanup");
-  if (error) throw error;
+  await database.call("app_api", "run_scheduled_maintenance_cleanup");
   await underPolicies(() => processBackgroundJobs(database));
   const rows = await database.query<{ id: string }>("select id from app_private.notifications where id = any($1::uuid[])", [[oldId, freshId]]);
   assert.deepEqual(rows.rows.map(row => row.id), [freshId]);
@@ -336,13 +335,11 @@ integrationTest('stale job claims cannot overwrite a newer claim, including manu
   const id = crypto.randomUUID();
   await database.query(`insert into app_private.background_jobs(id,job_type,status) values($1,'deletion','pending')`,[id]);
   const first = await database.call('app_api','claim_background_jobs',{requested_batch_size:100});
-  if(first.error) throw first.error;
-  const old = first.data.find(job=>job.id===id)!;
+  const old = first.find(job=>job.id===id)!;
   await database.query(`select app_api.fail_background_job($1,$2,'{"code":"test-failure"}'::jsonb)`,[id,old.last_attempt_id]);
   await callAction('retryOperationalWork',{kind:'job',id},admin.auth);
   const next = await database.call('app_api','claim_background_jobs',{requested_batch_size:100});
-  if(next.error) throw next.error;
-  const current = next.data.find(job=>job.id===id)!;
+  const current = next.find(job=>job.id===id)!;
   assert.notEqual(old.last_attempt_id,current.last_attempt_id);
   await assert.rejects(()=>database.query('select app_api.complete_background_job($1,$2)',[id,old.last_attempt_id]),/stale-work-claim/);
   await database.query('select app_api.complete_background_job($1,$2)',[id,current.last_attempt_id]);

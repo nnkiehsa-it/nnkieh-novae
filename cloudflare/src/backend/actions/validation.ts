@@ -1,4 +1,4 @@
-import { asString } from "../shared/http.ts";
+import { asString } from "../shared/json.ts";
 import { operationPolicy } from "../shared/operation-policies.ts";
 
 export const INPUT_LIMITS = {

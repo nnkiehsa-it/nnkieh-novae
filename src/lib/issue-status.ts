@@ -1,8 +1,5 @@
 import type { IssueRecord, IssueStatus } from '@/types';
 import { getIssueSupportGoal, issueAutoRejectsUnmetSupport } from '@/constants/categories';
-import { t } from '@/i18n';
-
-const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
 function isExpiredUnmetPublicIssue(issue: Pick<
   IssueRecord,
@@ -31,16 +28,6 @@ export function getDerivedIssueStatus(issue: Pick<
   return isExpiredUnmetPublicIssue(issue) ? 'auto-rejected' : issue.status;
 }
 
-export function getRemainingCalendarDays(deadline: Date | null, today = new Date()): number | null {
-  if (!deadline) {
-    return null;
-  }
-
-  const deadlineDate = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate());
-  const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  return Math.ceil((deadlineDate.getTime() - todayDate.getTime()) / MILLISECONDS_PER_DAY);
-}
-
 export function getSupportProgressPercent(supportCount: number, supportGoal: number | null): number {
   if (!supportGoal || supportGoal <= 0) {
     return 0;
@@ -49,15 +36,3 @@ export function getSupportProgressPercent(supportCount: number, supportGoal: num
   return Math.min(100, Math.max(0, (supportCount / supportGoal) * 100));
 }
 
-export function getSupportRemainingLabel(remainingDays: number | null): string {
-  if (remainingDays === null) {
-    return '';
-  }
-  if (remainingDays < 0) {
-    return 'issue.submissionsHaveEnded';
-  }
-  if (remainingDays === 0) {
-    return 'issue.deadlineToday';
-  }
-  return t('issue.support.daysRemaining', { count: remainingDays });
-}

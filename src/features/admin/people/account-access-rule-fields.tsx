@@ -7,7 +7,7 @@ import { ListRow } from "@/ui/list";
 import { InputRow, NoteRow, NumberRow, PickerRow } from "@/ui/list-controls";
 import { keptLabel, presetLabel, type KeptDeadline } from "./account-access-labels";
 
-export interface AccountAccessRuleValue extends KeptDeadline {
+interface AccountAccessRuleValue extends KeptDeadline {
   duration: AccountAccessDuration;
   durationHours: number;
   message: string;

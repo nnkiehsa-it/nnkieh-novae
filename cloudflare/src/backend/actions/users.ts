@@ -4,28 +4,11 @@ import {
 } from "../shared/cloudinary.ts";
 import { createMediaDeliveryUrl } from "../shared/media-delivery.ts";
 import { operationPolicy } from "../shared/operation-policies.ts";
-import { asString } from "../shared/http.ts";
+import { asString } from "../shared/json.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { handleUserAccessAction } from "./user-access.ts";
 import { handleUserAdminAction } from "./user-admin.ts";
 import type { Selected } from "../database/schema.ts";
-
-export function isUserAction(action: string) {
-  return action === "getCurrentUserRole"
-    || action === "listRoleAssignments"
-    || action === "setUserAccessScope"
-    || action === "saveScopeMembers"
-    || action === "listAdminUsers"
-    || action === "listAccountAccessRules"
-    || action === "previewAccountAccessRule"
-    || action === "saveAccountAccessRule"
-    || action === "deleteAccountAccessRule"
-    || action === "listAdminAudit"
-    || action === "listAdminActivity"
-    || action === "getAdminOverview"
-    || action === "cacheUserAvatar"
-    || action === "getUserPublicProfiles";
-}
 
 export async function handleUserAction(
   action: string,
@@ -128,7 +111,7 @@ export async function handleUserAction(
       new Blob([imageBuffer], { type: contentType }),
     );
     const cachedPhotoUrl = (await createMediaDeliveryUrl(nextPublicId, "avatar", false, auth.uid)).url;
-    const { error } = await database.call("app_api", "backend_commit_user_avatar", {
+    await database.call("app_api", "backend_commit_user_avatar", {
       actor_uid: auth.uid,
       next_avatar_hash: avatarHash,
       next_avatar_public_id: nextPublicId,
@@ -137,7 +120,6 @@ export async function handleUserAction(
       next_avatar_version: nextVersion,
       next_display_name: auth.name,
     });
-    if (error) throw error;
     return { photoUrl: cachedPhotoUrl };
   }
 

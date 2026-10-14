@@ -3,7 +3,7 @@ import {
   getCloudinaryAuthenticatedImageMetadata, verifyCloudinaryUploadResponseSignature,
 } from "../shared/cloudinary.ts";
 import { requireEnv } from "../shared/env.ts";
-import { asString } from "../shared/http.ts";
+import { asString } from "../shared/json.ts";
 import { imageFitsUploadLimits, readCloudinaryImage } from "../shared/image-upload-validation.ts";
 import { maxUploadBytes, type ImageUploadSettings } from "../shared/platform-settings.ts";
 import type { Selected } from "../database/schema.ts";

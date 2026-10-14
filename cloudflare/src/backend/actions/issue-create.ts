@@ -1,4 +1,4 @@
-import { asString } from "../shared/http.ts";
+import { asString } from "../shared/json.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { getIssueCategory, issueCategoryPolicyLists } from "./category-catalog.ts";
 import { validateMarkdownUploadsBeforeCreate } from "./upload-markdown.ts";
@@ -24,7 +24,7 @@ export async function createIssue(payload: JsonRecord, auth: AuthContext, databa
   const supportDeadlineAt = !requiresReview && categoryConfig.supportEnabled && categoryConfig.supportDeadlineDays !== null
     ? new Date(now.getTime() + categoryConfig.supportDeadlineDays * 24 * 60 * 60 * 1000).toISOString()
     : null;
-  const { data, error } = await database.call("app_api", "backend_create_issue", {
+  const data = await database.call("app_api", "backend_create_issue", {
     actor_uid: auth.uid,
     issue_title: title,
     issue_content: content,
@@ -39,6 +39,5 @@ export async function createIssue(payload: JsonRecord, auth: AuthContext, databa
     review_required_categories: policyLists.reviewRequiredCategoryIds,
     author_private_categories: policyLists.authorPrivateCategoryIds,
   });
-  if (error) throw error;
   return { issue: data };
 }

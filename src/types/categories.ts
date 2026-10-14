@@ -25,8 +25,6 @@ export interface FacilityCategoryConfig {
   sortOrder: number;
 }
 
-export type CategoryConfig = IssueCategoryConfig | FacilityCategoryConfig;
-
 export interface CategoryCatalog {
   features: PlatformFeatures;
   imageUploads: ImageUploadSettings;

@@ -2,7 +2,7 @@ import { RATE_LIMITS } from "@/generated/rate-limits";
 import type { PlatformSettings } from "@/types/categories";
 import { retentionLabelKey } from "./retention-groups";
 
-export interface ImageField {
+interface ImageField {
   key: keyof PlatformSettings["imageUploads"];
   labelKey: string;
   max: number;

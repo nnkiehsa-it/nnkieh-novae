@@ -42,24 +42,6 @@ export function selectAccountAccessRule<T extends AccountAccessRule>(
     .sort((left, right) => right.targetValue.length - left.targetValue.length)[0] ?? null;
 }
 
-export async function listActiveAccountAccessRules(database: BackendDatabase) {
-  const { rows } = await database.sql<Selected<
-    "user_restrictions",
-    "uid" | "target_type" | "preset" | "reason" | "restricted_until"
-  >>`select uid, target_type, preset, reason, restricted_until
-      from app_private.user_restrictions
-      where restricted_permanently or restricted_until > now()
-      order by case when target_type = 'uid' then 0 else 1 end,
-        char_length(uid) desc, uid`;
-  return rows.map((row) => ({
-    expiresAt: row.restricted_until,
-    message: row.reason ?? "",
-    preset: row.preset as AccountAccessPreset,
-    targetType: row.target_type as AccountAccessTargetType,
-    targetValue: row.uid,
-  }));
-}
-
 export async function resolveAccountAccessRule(
   database: BackendDatabase,
   identity: { email: string; uid: string },

@@ -6,7 +6,7 @@ import { useDraft } from "@/hooks/use-draft";
 import { useRememberedState } from "@/hooks/use-remembered-state";
 import { accessScopeKey, listScopeMembers, lookupAccessMember, saveScopeMembers, type AccessScope, type AccessUser } from "@/services/access";
 export { accessScopeKey } from "@/services/access";
-export type { AccessScope, AccessUser } from "@/services/access";
+export type { AccessScope } from "@/services/access";
 
 interface ScopeMembers {
   revision: string;

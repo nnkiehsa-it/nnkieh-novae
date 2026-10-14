@@ -1,4 +1,4 @@
-import { asString } from "./http.ts";
+import { asString } from "./json.ts";
 import { maxUploadBytes, type ImageUploadSettings } from "./platform-settings.ts";
 
 export function imageFitsUploadLimits(

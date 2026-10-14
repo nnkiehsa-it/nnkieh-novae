@@ -8,12 +8,11 @@ import { settleDelivery, type EventDeliveryItem } from "./delivery-attempt.ts";
 export async function processNotionDeliveries(database: AppDatabaseClient) {
   const batchSize = operationPolicy('notionBatchSize');
   const log = createFunctionLogger("processNotionDeliveries");
-  const { data, error } = await database.call("app_api", "claim_event_deliveries", {
+  const data = await database.call("app_api", "claim_event_deliveries", {
     target_destination: "notion",
     batch_size: batchSize,
   });
-  if (error) throw error;
-  const items = (data ?? []) as EventDeliveryItem[];
+  const items = data as EventDeliveryItem[];
 
   for (const item of items) {
     const attemptId = item.last_attempt_id;

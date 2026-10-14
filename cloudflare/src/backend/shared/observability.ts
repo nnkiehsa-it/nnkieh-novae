@@ -1,17 +1,17 @@
-import { errorMessage, publicErrorCode } from "./http.ts";
+import { errorMessage, publicErrorCode } from "./errors.ts";
 
 type EdgeLogLevel = "error" | "info" | "warn";
 type EdgeLogValue = boolean | number | string | null | undefined;
 
-export type EdgeLogFields = Record<string, EdgeLogValue>;
+type EdgeLogFields = Record<string, EdgeLogValue>;
 
-export interface FunctionLogger {
+interface FunctionLogger {
   error(event: string, error: unknown, fields?: EdgeLogFields): void;
   success(event: string, fields?: EdgeLogFields): void;
   warn(event: string, fields?: EdgeLogFields): void;
 }
 
-export interface LoggerContext {
+interface LoggerContext {
   invocationId?: string;
   operationId?: string;
   eventId?: string;

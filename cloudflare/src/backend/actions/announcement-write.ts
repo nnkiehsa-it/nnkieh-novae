@@ -1,4 +1,4 @@
-import { asRecord } from "../shared/http.ts";
+import { asRecord } from "../shared/json.ts";
 import { requirePermission } from "./auth.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import {
@@ -16,12 +16,11 @@ async function createAnnouncement(payload: JsonRecord, auth: AuthContext, databa
     INPUT_LIMITS.contentStorage,
   );
   await validateMarkdownUploadsBeforeCreate(database, auth.uid, content, "announcement");
-  const { data, error } = await database.call("app_api", "backend_create_announcement", {
+  const data = await database.call("app_api", "backend_create_announcement", {
     actor_uid: auth.uid,
     announcement_title: requiredText(payload.title, "title", INPUT_LIMITS.title),
     announcement_content: content,
   });
-  if (error) throw error;
   const announcement = asRecord(data);
   return { announcement };
 }
@@ -30,10 +29,9 @@ async function deleteAnnouncement(payload: JsonRecord, auth: AuthContext, databa
   requirePermission(auth, "announcement.manage");
   const announcementId = asUuid(payload.announcementId);
   if (!announcementId) throw new Error("not-found");
-  const { error } = await database.call("app_api", "backend_delete_announcement", {
+  await database.call("app_api", "backend_delete_announcement", {
     announcement_id: announcementId,
   });
-  if (error) throw error;
   return { success: true };
 }
 
@@ -41,12 +39,11 @@ async function setAnnouncementLike(payload: JsonRecord, auth: AuthContext, datab
   const announcementId = asUuid(payload.announcementId);
   if (!announcementId) throw new Error("not-found");
   const liked = asBoolean(payload.liked);
-  const { data, error } = await database.call("app_api", "backend_set_announcement_like", {
+  const data = await database.call("app_api", "backend_set_announcement_like", {
     announcement_id: announcementId,
     actor_uid: auth.uid,
     liked,
   });
-  if (error) throw error;
   return data;
 }
 

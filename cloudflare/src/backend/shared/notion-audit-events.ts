@@ -112,7 +112,7 @@ function detailValue(value: unknown) {
   } as Record<string, string>)[text] ?? text;
 }
 
-export function formatAuditDetail(detail: Record<string, unknown>) {
+function formatAuditDetail(detail: Record<string, unknown>) {
   const lines = Object.entries(detail)
     .filter(([, value]) => value !== null && value !== undefined && value !== "")
     .map(([key, value]) => `${DETAIL_LABELS[key] ?? "其他資料"}：${detailValue(value)}`);

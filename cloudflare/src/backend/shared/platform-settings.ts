@@ -14,11 +14,11 @@ export interface ImageUploadSettings {
 }
 
 type RetentionDefaults = typeof DATA_RETENTION;
-export type DataRetentionSettings = {
+type DataRetentionSettings = {
   -readonly [Key in keyof RetentionDefaults]: RetentionDefaults[Key] extends boolean ? boolean : number;
 };
 
-export interface PlatformSettings {
+interface PlatformSettings {
   imageUploads: ImageUploadSettings;
   retention: DataRetentionSettings;
 }

@@ -15,13 +15,6 @@ interface RecordFrame {
 
 const RecordFrameContext = React.createContext<RecordFrame | null>(null);
 
-/** How the record on screen is framed, for the controls that leave it. */
-export function useRecordFrame(): RecordFrame {
-  const frame = React.useContext(RecordFrameContext);
-  if (!frame) throw new Error("useRecordFrame must be used inside RecordSheet");
-  return frame;
-}
-
 /**
  * A record or composer over the list it belongs to. The address decides
  * whether it is open; leaving steps back through history when the list is

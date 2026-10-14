@@ -1,6 +1,6 @@
-import { asString } from "../shared/http.ts";
+import { asString } from "../shared/json.ts";
 import type { BackendDatabase } from "./types.ts";
-import { asBoolean, asNumber } from "./utils.ts";
+import { asNumber } from "./utils.ts";
 import { loadPlatformSettings, platformSettingsFromStoredRows } from "../shared/platform-settings.ts";
 import type { Row, Selected } from "../database/schema.ts";
 
@@ -14,7 +14,7 @@ import type { Row, Selected } from "../database/schema.ts";
  */
 export const READ_ACCESS_VALUES = new Set(["school", "reviewed-school", "owner-admin"]);
 
-export interface RuntimeIssueCategory {
+interface RuntimeIssueCategory {
   maxImages: number;
   commentMaxImages: number;
   authorDeleteEnabled: boolean;
@@ -30,7 +30,7 @@ export interface RuntimeIssueCategory {
   supportGoal: number | null;
 }
 
-export interface RuntimeFacilityCategory {
+interface RuntimeFacilityCategory {
   maxImages: number;
   authorDeleteEnabled: boolean;
   id: string;
@@ -70,7 +70,7 @@ function facilityCategoryResponse(row: Record<string, unknown>): RuntimeFacility
   };
 }
 
-export async function getIssueCategories(database: BackendDatabase, includeInactive = false): Promise<RuntimeIssueCategory[]> {
+async function getIssueCategories(database: BackendDatabase, includeInactive = false): Promise<RuntimeIssueCategory[]> {
   const { rows } = await database.sql<Row<"issue_categories">>`
     select * from app_private.issue_categories
     where ${includeInactive}::boolean or is_active = true
@@ -130,22 +130,6 @@ export function categoryCatalogSegments(database: BackendDatabase, includeInacti
     })),
     imageUploads: platformSettings.then((settings) => settings.imageUploads),
     issueCategories: getIssueCategories(database, includeInactive),
-  };
-}
-
-export async function loadCategoryCatalog(database: BackendDatabase, includeInactive: boolean) {
-  const reads = categoryCatalogSegments(database, includeInactive);
-  const [issueCategories, facilityCategories, features, imageUploads] = await Promise.all([
-    reads.issueCategories,
-    reads.facilityCategories,
-    reads.features,
-    reads.imageUploads,
-  ]);
-  return {
-    issueCategories,
-    facilityCategories,
-    imageUploads,
-    features,
   };
 }
 

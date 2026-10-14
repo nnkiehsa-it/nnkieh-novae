@@ -44,7 +44,7 @@ function auditDetail(payload: JsonRecord) {
   return detail;
 }
 
-export async function executeBackendAction(
+async function executeBackendAction(
   definition: BackendActionDefinition,
   payload: JsonRecord,
   auth: AuthContext,
@@ -77,13 +77,12 @@ export async function executeBackendAction(
   const client = database as AppDatabaseClient;
   return await client.transaction(async (tx) => {
     // 1. Claim operation atomically
-    const { data: claimRows, error: claimError } = await tx
+    const claimRows = await tx
       .call("app_api", "claim_operation", {
         operation_id: operationId,
         actor_uid: auth.uid,
         action_name: definition.name,
       });
-    if (claimError) throw claimError;
     const claim = Array.isArray(claimRows) ? claimRows[0] : null;
     if (!claim) throw new Error("operation-claim-failed");
     const identity = await tx.sqlOne<Selected<'operations', 'actor_uid' | 'action' | 'response_expired'>>`
@@ -93,10 +92,9 @@ export async function executeBackendAction(
     if (identity.response_expired) throw new Error('operation-expired');
     if (claim.completed) return claim.response;
     if (!claim.claimed) throw new Error("request-in-progress");
-    const { error: contextError } = await tx.call("app_api", "set_operation_context", {
+    await tx.call("app_api", "set_operation_context", {
       operation_id: operationId,
     });
-    if (contextError) throw contextError;
 
     // 2. Enforce business rate limits
     await claimBackendActionBusinessLimit(definition.name, payload, auth.uid);
@@ -114,7 +112,7 @@ export async function executeBackendAction(
         returning id`;
       const auditId = String(auditRow.id);
 
-      const { error: auditEventError } = await tx
+      await tx
         .call("app_api", "record_domain_event", {
           operation_id: operationId,
           aggregate_type: "admin_audit",
@@ -131,13 +129,12 @@ export async function executeBackendAction(
           },
           destinations: ["notion"],
         });
-      if (auditEventError) throw auditEventError;
     }
 
     // 5. Record domain events and queue deliveries
     const domainEvents = resolveDomainEvents(definition.name, payload, result, auth.uid);
     for (const event of domainEvents) {
-      const { error: eventError } = await tx
+      await tx
         .call("app_api", "record_domain_event", {
           operation_id: operationId,
           aggregate_type: event.aggregateType,
@@ -147,17 +144,15 @@ export async function executeBackendAction(
           payload: event.payload,
           destinations: event.destinations,
         });
-      if (eventError) throw eventError;
     }
 
     // 6. Complete operation
     const apiResult = toApiJson(result) as Json;
-    const { error: completeError } = await tx
+    await tx
       .call("app_api", "complete_operation", {
         operation_id: operationId,
         action_response: apiResult,
       });
-    if (completeError) throw completeError;
 
     return apiResult;
   });

@@ -1,4 +1,4 @@
-import { asString } from "../shared/http.ts";
+import { asString } from "../shared/json.ts";
 import { platformAdminEmails } from "../shared/platform-admin.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { requirePermission } from "./auth.ts";
@@ -54,11 +54,10 @@ async function updateScopeMember(uid: string, scope: AccessScopeSelector, grant:
   const target = await database.sqlOne<{ configured_admin: boolean }>`
     select app_api.backend_reconcile_scope_target_admin(${auth.uid}, ${uid}, ${platformAdminEmails()}) as configured_admin`;
   if (target.configured_admin) throw new Error("permission-denied");
-  const { data, error } = await database.call("app_api", "backend_update_user_access_scope", {
+  const data = await database.call("app_api", "backend_update_user_access_scope", {
     actor_uid: auth.uid, target_uid: uid, scope_kind: scope.kind,
     category_id: scope.categoryId || null, grant_access: grant,
   });
-  if (error) throw error;
   return data;
 }
 

@@ -14,7 +14,7 @@ export interface DecisionOption {
 }
 
 /** The sentence a decision is recorded with, when it asks for one. */
-export interface DecisionNote {
+interface DecisionNote {
   label: string;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -22,7 +22,7 @@ export interface DecisionNote {
   value: string;
 }
 
-export interface DecisionProps {
+interface DecisionProps {
   /** Rows between the outcomes and the note. */
   children?: React.ReactNode;
   note?: DecisionNote;
@@ -41,7 +41,7 @@ export interface DecisionProps {
  * One decision, made once: choose an outcome, say why, carry it out. Ruling on
  * a proposal, closing a facility report and restricting an account share it.
  */
-export function DecisionForm({ children, note, onSubmit, onValueChange, options, status = "idle", submittable = true, submitLabel, title, value }: DecisionProps) {
+function DecisionForm({ children, note, onSubmit, onValueChange, options, status = "idle", submittable = true, submitLabel, title, value }: DecisionProps) {
   const danger = options.find((option) => option.value === value)?.tone === "danger";
   const ready = submittable && (!note?.required || note.value.trim().length > 0);
   return (

@@ -37,7 +37,7 @@ export const RETENTION_PRESETS: SettingPreset<DataRetentionSettings>[] = [
 ];
 
 export const POLICY_GROUPS = ["content", "rates", "client", "jobs", "logs", "realtime"] as const;
-export type PolicyGroup = typeof POLICY_GROUPS[number];
+type PolicyGroup = typeof POLICY_GROUPS[number];
 
 const POLICY_OVERRIDES: Partial<Record<PolicyGroup, Array<SettingPreset<Partial<OperationPolicies>>>>> = {
   content: [{ id: "extended", labelKey: "admin.presetExtended", detailKey: "admin.contentExtendedDetail", values: {

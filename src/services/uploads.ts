@@ -3,7 +3,7 @@ import { longRequestTimeoutMs, withRequestTimeout } from '@/lib/request';
 import { toReadableBackendError } from './issues-core';
 import { t } from '@/i18n';
 
-export { clearResolvedUploadCache, invalidateResolvedUploadCache, resolveUploadImageUrls } from './upload-delivery';
+export { clearResolvedUploadCache, resolveUploadImageUrls } from './upload-delivery';
 
 interface ImageUploadPolicy {
   height: number;
@@ -41,7 +41,7 @@ interface CloudinaryErrorResponse {
   };
 }
 
-export interface ImageUploadInput {
+interface ImageUploadInput {
   file: File;
   height: number;
   width: number;

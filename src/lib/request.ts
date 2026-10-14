@@ -282,16 +282,3 @@ export async function safeFetch(
   throw new RequestFailure(t('request.failed', { label: t(label) }), 'unknown');
 }
 
-export function isAbortFailure(error: unknown) {
-  return error instanceof RequestFailure && error.code === 'aborted';
-}
-
-export function formatRequestError(error: unknown, fallback = 'common.networkError') {
-  if (error instanceof ApiRequestError) return error.message || fallback;
-  if (error instanceof RequestFailure) {
-    if (error.code === 'aborted') return '';
-    if (error.code === 'timeout') return 'common.theNetworkResponseTimeIsTooLongPleaseReload';
-    return error.message || fallback;
-  }
-  return error instanceof Error && error.message ? error.message : fallback;
-}

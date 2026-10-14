@@ -47,7 +47,7 @@ export function translateStatus(status: string): string {
 export function translateFacilityStatus(status: string): string {
   return FACILITY_STATUS_LABELS[status] ?? status;
 }
-export async function translateCategory(database: AppDatabase, targetType: string, category: string): Promise<string> {
+async function translateCategory(database: AppDatabase, targetType: string, category: string): Promise<string> {
   if (category === "公告" || category === "系統維運") return category;
   const found = targetType === "facility"
     ? await database.sqlMaybe<Selected<"facility_categories", "label">>`

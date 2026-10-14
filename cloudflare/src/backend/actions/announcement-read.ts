@@ -1,5 +1,5 @@
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
-import { asRecord } from "../shared/http.ts";
+import { asRecord } from "../shared/json.ts";
 import { asNumber, asUuid, readCursor, readCursorDate } from "./utils.ts";
 
 function compactAnnouncementListResult(data: unknown): JsonRecord {
@@ -21,24 +21,22 @@ function compactAnnouncementListResult(data: unknown): JsonRecord {
 async function listAnnouncements(payload: JsonRecord, auth: AuthContext, database: BackendDatabase) {
   const pageSize = Math.min(Math.max(Math.round(asNumber(payload.pageSize, 30)), 1), 50);
   const cursor = readCursor(payload);
-  const { data, error } = await database.call("app_api", "backend_list_announcements_snapshot", {
+  const data = await database.call("app_api", "backend_list_announcements_snapshot", {
     actor_uid: auth.uid,
     page_size: pageSize,
     cursor_id: asUuid(cursor.id) || null,
     cursor_published_at: readCursorDate(cursor, "publishedAt") || null,
   });
-  if (error) throw error;
   return compactAnnouncementListResult(data);
 }
 
 async function getAnnouncement(payload: JsonRecord, auth: AuthContext, database: BackendDatabase) {
   const announcementId = asUuid(payload.announcementId);
   if (!announcementId) throw new Error("not-found");
-  const { data, error } = await database.call("app_api", "backend_get_announcement", {
+  const data = await database.call("app_api", "backend_get_announcement", {
     announcement_id: announcementId,
     actor_uid: auth.uid,
   });
-  if (error) throw error;
   return { announcement: data };
 }
 
@@ -57,10 +55,9 @@ export async function handleAnnouncementReadAction(
   if (action === "listAnnouncements") return listAnnouncements(payload, auth, database);
   if (action === "getAnnouncement") return getAnnouncement(payload, auth, database);
   if (action === "getAnnouncementUnreadHint") {
-    const { data, error } = await database.call("app_api", "backend_get_announcement_unread_hint", {
+    const data = await database.call("app_api", "backend_get_announcement_unread_hint", {
       actor_uid: auth.uid,
     });
-    if (error) throw error;
     return data;
   }
   throw new Error("invalid-action");

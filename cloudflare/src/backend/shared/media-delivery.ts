@@ -1,6 +1,6 @@
 import { requireEnv } from "./env.ts";
 
-export type MediaDeliveryVariant = "avatar" | "full" | "thumbnail";
+type MediaDeliveryVariant = "avatar" | "full" | "thumbnail";
 
 interface MediaDeliveryPayload {
   expiresAt: number;

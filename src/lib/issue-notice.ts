@@ -1,9 +1,9 @@
 import type { IssueRecord } from '@/types';
 import { isClosedIssueStatus } from '@/lib/issue-timeline';
 
-export type IssueNoticeTone = 'error' | 'success';
+type IssueNoticeTone = 'error' | 'success';
 
-export interface IssueNotice {
+interface IssueNotice {
   content: string;
   title: string;
   tone: IssueNoticeTone;

@@ -1,6 +1,6 @@
 export type ThemePreference = "system" | "light" | "dark";
 
-/* Same storage key the old UI's next-themes used, so a choice made there carries over. */
+/* The stored choice; "system" is stored as no value at all. */
 const STORAGE_KEY = "theme";
 const LIGHT_QUERY = "(prefers-color-scheme: light)";
 

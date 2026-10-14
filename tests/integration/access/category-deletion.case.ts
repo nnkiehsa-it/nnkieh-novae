@@ -27,7 +27,7 @@ integrationTest("category deletion removes category and all associated resources
   const remainingIssueCategories = issueCats
     .filter((category) => asRecord(category).id !== defaultIssueCat.id)
     .map((category, index) => ({ ...asRecord(category), isDefault: index === 0, sortOrder: index }));
-  const { error: defaultDeleteError } = await database.call("app_api", "backend_save_category_management", {
+  const defaultDeleteError = await database.call("app_api", "backend_save_category_management", {
       actor_uid: admin.auth.uid,
       announcement_comments_enabled: Boolean(asRecord(managementBefore.features).announcementCommentsEnabled),
       deleted_facility_category_ids: [],
@@ -36,7 +36,7 @@ integrationTest("category deletion removes category and all associated resources
       facility_categories: managementBefore.facilityCategories as never,
       issue_categories: remainingIssueCategories,
       issues_enabled: true,
-    });
+    }).then(() => null, (error: unknown) => error as Error);
   assert.match(defaultDeleteError?.message ?? "", /cannot-delete-default-category/u);
 
   // 2. Create a temporary category to delete

@@ -20,16 +20,3 @@ export function buildTitleSearchTokens(value: string, maxTokens = 10) {
   return [...tokens].slice(0, maxTokens);
 }
 
-export function scoreTitleSearchMatch(title: string, query: string) {
-  const normalizedTitle = normalizeSearchText(title);
-  const normalizedQuery = normalizeSearchText(query);
-  if (!normalizedQuery) return 0;
-  if (normalizedTitle === normalizedQuery) return 1000;
-  if (normalizedTitle.startsWith(normalizedQuery)) return 800;
-  if (normalizedTitle.includes(normalizedQuery)) return 600;
-
-  const tokens = buildTitleSearchTokens(normalizedQuery);
-  if (tokens.length === 0) return 0;
-  const matchedTokens = tokens.filter((token) => normalizedTitle.includes(token)).length;
-  return Math.round((matchedTokens / tokens.length) * 400);
-}

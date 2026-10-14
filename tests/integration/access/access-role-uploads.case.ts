@@ -201,11 +201,10 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
 
   const configuredAdmin = await seedActor("configured-admin");
   const staleAdmin = await seedActor("stale-admin", { roles: ["platform-admin"] });
-  const { error: reconcileError } = await database.call("app_api", "backend_reconcile_platform_admins", {
+  await database.call("app_api", "backend_reconcile_platform_admins", {
     actor_uid: admin.auth.uid,
     admin_emails: [admin.identity.email, configuredAdmin.identity.email],
   });
-  if (reconcileError) throw reconcileError;
   const platformAdminRole = async (uid: string) => await database.sqlMaybe<{ uid: string }>`
     select uid from app_private.user_role_assignments
     where uid = ${uid} and role_code = 'platform-admin'`;
@@ -243,7 +242,7 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   await database.sql`update app_private.user_profiles
     set avatar_public_id = ${previousAvatarPublicId}, avatar_version = 1
     where uid = ${user.auth.uid}`;
-  const { error: commitAvatarError } = await database.call("app_api", "backend_commit_user_avatar", {
+  await database.call("app_api", "backend_commit_user_avatar", {
     actor_uid: user.auth.uid,
     next_avatar_hash: "integration-avatar-hash",
     next_avatar_public_id: nextAvatarPublicId,
@@ -252,7 +251,6 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
     next_avatar_version: 2,
     next_display_name: renamedDisplayName,
   });
-  if (commitAvatarError) throw commitAvatarError;
   const committedAvatarProfile = await tableRow("user_profiles", "uid", user.auth.uid);
   assert.equal(committedAvatarProfile?.avatar_public_id, nextAvatarPublicId);
   const { rows: previousAvatarJobs } = await database.sql<{ payload: unknown }>`

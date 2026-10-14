@@ -1,7 +1,7 @@
 import { diffDraft, type DraftChange } from "@/lib/draft-diff";
 import type { CategoryManagementInput } from "@/services/categories";
 
-export interface CategoryChange extends DraftChange {
+interface CategoryChange extends DraftChange {
   categoryName?: string;
   labelKey: string;
 }

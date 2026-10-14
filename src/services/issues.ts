@@ -12,7 +12,6 @@ export {
   deleteComment,
   deleteIssue,
   moderateIssueStatus,
-  updateIssueResult,
   removeSupport,
   toggleSupport,
 } from './issues-write';

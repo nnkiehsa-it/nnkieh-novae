@@ -1,4 +1,4 @@
-import { asString } from "../shared/http.ts";
+import { asString } from "../shared/json.ts";
 import { platformAdminEmails } from "../shared/platform-admin.ts";
 import { selectAccountAccessRule, type AccountAccessPreset, type AccountAccessTargetType } from "../shared/account-access.ts";
 import type { Selected } from "../database/schema.ts";

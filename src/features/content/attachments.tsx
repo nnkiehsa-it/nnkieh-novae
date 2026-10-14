@@ -8,7 +8,7 @@ import { Button } from "@/ui/button";
 import { Spinner } from "@/ui/feedback";
 import { ImageGrid, ImageLightbox, ImageTile } from "@/ui/image";
 
-export interface Attachment {
+interface Attachment {
   height: number;
   previewUrl: string;
   width: number;

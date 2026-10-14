@@ -5,7 +5,7 @@ import { Slot } from "radix-ui";
 import { cn } from "@/lib/utils";
 import { Spinner } from "./feedback";
 
-export const buttonVariants = cva(
+const buttonVariants = cva(
   "inline-flex shrink-0 items-center justify-center gap-2 rounded-full font-medium whitespace-nowrap outline-none select-none transition-[background-color,color,opacity,transform] duration-[var(--motion-control)] ease-[var(--ease-move)] active:scale-[var(--motion-press-scale)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-[1.125rem]",
   {
     variants: {
@@ -30,7 +30,7 @@ export const buttonVariants = cva(
 /** Where the action the button started has got to; anything but `idle` holds the button. */
 export type ActionStatus = "idle" | "loading" | "success";
 
-export type ButtonProps = React.ComponentProps<"button"> &
+type ButtonProps = React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & { asChild?: boolean; status?: ActionStatus };
 
 export function Button({

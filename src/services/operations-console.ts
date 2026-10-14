@@ -30,13 +30,6 @@ export function fetchOperationsConsole(
   })(payload);
 }
 
-export function fetchOperationsProgress(page: number) {
-  return invokeBackendAction<
-    { page: number; progressOnly: true },
-    Pick<OperationsConsole, 'jobs'>
-  >('getOperationsConsole')({ page, progressOnly: true });
-}
-
 export const fetchOperationsQueue = invokeBackendAction<
   { page: number; queueOnly: true },
   Pick<OperationsConsole, 'cleanupBacklog' | 'deliveries' | 'errors' | 'failedDeliveries' | 'hasMore' | 'jobs' | 'sampledAt'>

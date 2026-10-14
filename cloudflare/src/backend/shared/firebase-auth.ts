@@ -1,5 +1,5 @@
 import { optionalEnv, requireEnv } from "./env.ts";
-import { asRecord, asString } from "./http.ts";
+import { asRecord, asString } from "./json.ts";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 
 export interface FirebaseAuthContext {
@@ -15,7 +15,7 @@ const FIREBASE_USER_MEMORY_CACHE_MAX = 200;
 const LOCAL_AUTH_EMULATOR_PATTERN = /^(?:127\.0\.0\.1|localhost|host\.docker\.internal):\d{2,5}$/u;
 const firebaseUserMemoryCache = new Map<string, { expiresAt: number; user: Record<string, unknown> }>();
 
-export function firebaseAuthEmulatorHost() {
+function firebaseAuthEmulatorHost() {
   if (optionalEnv("LOCAL_TEST_MODE") !== "true") return "";
   const host = optionalEnv("FIREBASE_AUTH_EMULATOR_HOST");
   if (!LOCAL_AUTH_EMULATOR_PATTERN.test(host)) throw new Error("invalid-local-test-config");
@@ -79,14 +79,14 @@ function decodeJwtPayload(token: string) {
   }
 }
 
-export function requireAuthHeader(request: Request) {
+function requireAuthHeader(request: Request) {
   const header = request.headers.get("Authorization") ?? "";
   const match = /^Bearer\s+(.+)$/iu.exec(header);
   if (!match) throw new Error("unauthenticated");
   return match[1];
 }
 
-export async function lookupFirebaseUser(idToken: string) {
+async function lookupFirebaseUser(idToken: string) {
   const firebaseApiKey = requireEnv("FIREBASE_WEB_API_KEY");
   const lookupResponse = await fetch(
     identityToolkitUrl("accounts:lookup", firebaseApiKey),

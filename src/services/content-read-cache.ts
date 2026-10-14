@@ -8,7 +8,7 @@ import {
 } from '@/lib/persistent-cache';
 import { invalidateViewMemoryByDependency } from '@/lib/view-memory-cache';
 
-export const CONTENT_READ_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1_000;
+const CONTENT_READ_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1_000;
 export const CONTENT_SHORT_CACHE_TTL_MS = 10 * 60 * 1_000;
 
 interface CacheEntry<T> {
@@ -92,7 +92,7 @@ export function createContentCacheKey(parts: Array<string | number | boolean | n
   }).join('|');
 }
 
-export function isContentCacheFresh(updatedAt: number, now = Date.now(), maxAgeMs = CONTENT_READ_CACHE_TTL_MS) {
+function isContentCacheFresh(updatedAt: number, now = Date.now(), maxAgeMs = CONTENT_READ_CACHE_TTL_MS) {
   return now - updatedAt < maxAgeMs;
 }
 
@@ -137,12 +137,6 @@ export async function getCachedContentPersistent<T>(key: string, maxAgeMs = CONT
   return await pending;
 }
 
-export function getCachedContentEntry<T>(key: string) {
-  const entry = cache.get(key);
-  if (!entry) return null;
-  return { stale: entry.stale, updatedAt: entry.updatedAt, value: entry.value as T };
-}
-
 export function setCachedContent<T>(key: string, value: T, updatedAt = Date.now()) {
   writeCachedContent(key, value, updatedAt, captureContentCacheWriteGuard(key));
 }
@@ -183,13 +177,7 @@ export function runCoalescedContentRequest<T>(key: string, request: (guard: Cont
   return pending;
 }
 
-export function patchCachedContent<T>(key: string, updater: (value: T) => T) {
-  const entry = cache.get(key);
-  if (!entry) return;
-  setCachedContent(key, updater(entry.value as T));
-}
-
-export function markContentCacheStale(predicate: (key: string) => boolean) {
+function markContentCacheStale(predicate: (key: string) => boolean) {
   cache.forEach((entry, key) => {
     if (predicate(key)) entry.stale = true;
   });

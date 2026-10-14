@@ -1,4 +1,4 @@
-import { asRecord, asString } from "../shared/http.ts";
+import { asRecord, asString } from "../shared/json.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { issueCategoryPolicyLists } from "./category-catalog.ts";
 import { asUuid } from "./utils.ts";
@@ -10,7 +10,7 @@ export async function updateSupport(action: string, payload: JsonRecord, auth: A
   if (!issueId) throw new Error("not-found");
   const storedIssue = await selectIssue(database, issueId, true);
   const policy = await issueCategoryPolicyLists(database);
-  const { data: issueData, error: issueError } = await database.call("app_api", "backend_get_issue", {
+  const issueData = await database.call("app_api", "backend_get_issue", {
     issue_id: issueId,
     actor_uid: auth.uid,
     actor_is_admin: canManageIssueCategory(auth, asString(storedIssue.category)),
@@ -18,7 +18,6 @@ export async function updateSupport(action: string, payload: JsonRecord, auth: A
     review_required_categories: policy.reviewRequiredCategoryIds,
     author_private_categories: policy.authorPrivateCategoryIds,
   });
-  if (issueError) throw issueError;
   const issue = asRecord(issueData);
   // Reaching the threshold is not a cap on how many people may ask for
   // something: a proposal that has moved on to being worked on stays open to
@@ -31,14 +30,13 @@ export async function updateSupport(action: string, payload: JsonRecord, auth: A
     || (action !== "removeSupport" && (issue.isOwnIssue === true || storedIssue.author_uid === auth.uid))
   ) throw new Error("support-not-available");
 
-  const { data: result, error: toggleError } = await database.call("app_api", "backend_toggle_support", {
-      issue_id: issueId,
-      actor_uid: auth.uid,
-      remove_support: action === "removeSupport",
-    })
-    .single();
-  if (toggleError) throw toggleError;
-  const toggleResult = result as { goal_met: boolean; support_count: number; supported: boolean };
+  const rows = await database.call("app_api", "backend_toggle_support", {
+    issue_id: issueId,
+    actor_uid: auth.uid,
+    remove_support: action === "removeSupport",
+  });
+  if (rows.length !== 1) throw new Error("not-found");
+  const toggleResult = rows[0];
   return {
     success: true,
     supported: toggleResult.supported,

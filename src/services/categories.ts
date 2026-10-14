@@ -7,7 +7,6 @@ import type {
   FacilityCategoryDraft,
   IssueCategoryConfig,
   IssueCategoryDraft,
-  PlatformFeatures,
   PolicyImpactEstimate,
   PlatformSettings,
 } from '@/types/categories';
@@ -61,18 +60,6 @@ export async function completeInitialSetup(input: {
 }) {
   const action = invokeBackendAction<typeof input, { success: boolean; setupCompleted: boolean }>('completeInitialSetup');
   return await action(input);
-}
-
-type PlatformFeatureSwitches = Pick<PlatformFeatures, 'announcementCommentsEnabled' | 'facilitiesEnabled' | 'issuesEnabled'>;
-
-export async function savePlatformFeatures(features: PlatformFeatureSwitches) {
-  const action = invokeBackendAction<
-    PlatformFeatureSwitches,
-    PlatformFeatureSwitches & { success: boolean }
-  >('savePlatformFeatures');
-  const result = await action(features);
-  markSessionBootstrapStale();
-  return result;
 }
 
 export async function saveCategoryManagement(input: CategoryManagementInput, revision: string) {

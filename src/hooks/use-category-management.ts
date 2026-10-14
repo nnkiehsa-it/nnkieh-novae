@@ -22,7 +22,7 @@ import {
 import { notifyPlatformJobsChanged } from "@/lib/platform-job-events";
 import type { FacilityCategoryConfig, IssueCategoryConfig } from "@/types/categories";
 
-export type { CategoryManagementInput } from "@/services/categories";
+
 
 interface CategoryReading {
   /** The identifiers the backend already holds, which may no longer be renamed. */

@@ -14,7 +14,7 @@ import { fetchPlatformDashboard } from "@/services/dashboard";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 import type { PlatformDashboardData } from "@/types";
 
-export type { AdminOverviewData, AdminOverviewWindow } from "@/services/admin-console";
+export type { AdminOverviewData } from "@/services/admin-console";
 
 /**
  * One reading of the platform, for the one screen that reports on it.

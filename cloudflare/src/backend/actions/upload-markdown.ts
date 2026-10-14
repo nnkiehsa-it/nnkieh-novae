@@ -41,8 +41,3 @@ export function validateMarkdownUploadsBeforeCreate(
   return validateMarkdownUploads(database, ownerUid, content, targetType, null, scopeId);
 }
 
-export function validateMarkdownUploadsBeforeUpdate(
-  database: BackendDatabase, ownerUid: string, content: string, targetType: UploadTargetType, targetId: string, scopeId: string,
-) {
-  return validateMarkdownUploads(database, ownerUid, content, targetType, targetId, scopeId);
-}

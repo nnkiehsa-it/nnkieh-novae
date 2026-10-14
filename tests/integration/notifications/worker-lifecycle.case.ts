@@ -16,9 +16,8 @@ integrationTest("worker database lifecycles and maintenance RPC", async () => {
     support_deadline_at = ${new Date(Date.now() - 60_000).toISOString()},
     support_enabled = true, support_goal = 50, support_met_at = null, status = 'pending'
     where id = ${String(expiredIssue.id)}`;
-  const { data: expiredCount, error: expireError } = await database
+  const expiredCount = await database
     .call("app_api", "reject_expired_support_issues");
-  if (expireError) throw expireError;
   assert.equal(expiredCount, 1);
   const rejectedIssue = await database.sqlOne<{ status: string }>`
     select status from app_private.issues where id = ${String(expiredIssue.id)}`;
@@ -34,19 +33,17 @@ integrationTest("worker database lifecycles and maintenance RPC", async () => {
   }]);
   let deletionJob: { id: string; scope_id: string; last_attempt_id: string } | undefined;
   for (let batch = 0; batch < 10 && !deletionJob; batch += 1) {
-    const { data: deletionJobs, error: deletionClaimError } = await database
+    const deletionJobs = await database
       .call("app_api", "claim_background_jobs", { requested_batch_size: 1 });
-    if (deletionClaimError) throw deletionClaimError;
     deletionJob = ((deletionJobs ?? []) as Array<{ id: string; scope_id: string; last_attempt_id: string }>)
       .find((job) => job.scope_id === deletionTarget);
   }
   assert.ok(deletionJob);
   const attemptId = deletionJob.last_attempt_id;
-  const { error: deletionCompleteError } = await database.call("app_api", "complete_background_job", {
+  await database.call("app_api", "complete_background_job", {
     attempt_id: attemptId,
     job_id: deletionJob.id,
   });
-  if (deletionCompleteError) throw deletionCompleteError;
 
   const eventTarget = `integration-event-${crypto.randomUUID()}`;
   const opId = crypto.randomUUID();
@@ -76,27 +73,24 @@ integrationTest("worker database lifecycles and maintenance RPC", async () => {
     status: "pending",
   }]);
 
-  const { data: claimedDeliveries, error: deliveryClaimError } = await database
+  const claimedDeliveries = await database
     .call("app_api", "claim_event_deliveries", { target_destination: "notion", batch_size: 1 });
-  if (deliveryClaimError) throw deliveryClaimError;
   const claimedDelivery = ((claimedDeliveries ?? []) as Array<{ delivery_id: string; last_attempt_id: string }>)
     .find((delivery) => delivery.delivery_id === deliveryId);
   assert.ok(claimedDelivery);
 
   const deliveryAttemptId = claimedDelivery.last_attempt_id;
-  const { error: deliveryFailError } = await database.call("app_api", "fail_event_delivery", {
+  await database.call("app_api", "fail_event_delivery", {
     attempt_id: deliveryAttemptId,
     delivery_id: deliveryId,
     error_info: { code: "simulated-failure" },
   });
-  if (deliveryFailError) throw deliveryFailError;
   const failedDelivery = await database.sqlOne<{ last_attempt_id: string; status: string }>`
     select last_attempt_id, status from app_private.event_deliveries where id = ${deliveryId}`;
   assert.equal(failedDelivery.status, "failed");
   assert.equal(failedDelivery.last_attempt_id, deliveryAttemptId);
 
-  const { data: maintenance, error: maintenanceError } = await database
+  const maintenance = await database
     .call("app_api", "run_scheduled_maintenance_cleanup");
-  if (maintenanceError) throw maintenanceError;
   assert.ok(maintenance && typeof maintenance === "object");
 });

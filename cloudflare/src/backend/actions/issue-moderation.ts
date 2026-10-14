@@ -1,4 +1,4 @@
-import { asRecord, asString } from "../shared/http.ts";
+import { asRecord, asString } from "../shared/json.ts";
 import { canManageIssueCategory, requireIssueCategoryPermission } from "./auth.ts";
 import { issueCategoryPolicyLists } from "./category-catalog.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
@@ -56,7 +56,7 @@ export async function moderateIssueStatus(payload: JsonRecord, auth: AuthContext
     reviewApprovedAt = null;
     supportDeadlineAt = null;
   }
-  const { data, error } = await database.call("app_api", "backend_moderate_issue_status", {
+  const data = await database.call("app_api", "backend_moderate_issue_status", {
     issue_id: issueId,
     next_status: nextStatus,
     result_content: resultContent,
@@ -65,7 +65,6 @@ export async function moderateIssueStatus(payload: JsonRecord, auth: AuthContext
     support_deadline_at: supportDeadlineAt,
     ...await issuePolicyParams(database, auth, canManageIssueCategory(auth, category)),
   });
-  if (error) throw error;
   return {
     issue: data,
     previousStatus: oldStatus,
@@ -81,11 +80,10 @@ export async function updateIssueResult(payload: JsonRecord, auth: AuthContext, 
   const resultContent = oldIssue.status === "completed" || oldIssue.status === "infeasible"
     ? requiredText(payload.resultContent, "issue-result", INPUT_LIMITS.issueResult)
     : optionalText(payload.resultContent, "issue-result", INPUT_LIMITS.issueResult);
-  const { data, error } = await database.call("app_api", "backend_update_issue_result", {
+  const data = await database.call("app_api", "backend_update_issue_result", {
     issue_id: issueId,
     result_content: resultContent || null,
     ...await issuePolicyParams(database, auth, canManageIssueCategory(auth, category)),
   });
-  if (error) throw error;
   return { issue: data };
 }

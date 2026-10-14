@@ -8,7 +8,7 @@
  */
 export type AdminOverviewWindow = "24h" | "7d" | "30d";
 
-export interface AdminOverviewWindowOption {
+interface AdminOverviewWindowOption {
   labelKey: string;
   value: AdminOverviewWindow;
 }
@@ -23,9 +23,9 @@ export function adminOverviewWindowLabelKey(value: AdminOverviewWindow): string 
   return ADMIN_OVERVIEW_WINDOWS.find((option) => option.value === value)?.labelKey ?? "";
 }
 
-export type AdminPeriodKind = "registration" | "issue" | "comment" | "facility";
+type AdminPeriodKind = "registration" | "issue" | "comment" | "facility";
 
-export interface AdminPeriodFigure {
+interface AdminPeriodFigure {
   /** The field of the overview reading that holds this figure. */
   countKey: "newUsers" | "newIssues" | "newComments" | "newFacilities";
   kind: AdminPeriodKind;

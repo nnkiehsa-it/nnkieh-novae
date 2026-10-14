@@ -2,7 +2,7 @@
 
 import { Segmented } from "@/ui/segmented";
 
-export interface AdminSectionTab<Value extends string> {
+interface AdminSectionTab<Value extends string> {
   /** What the section is for, read under the tabs while it is selected. */
   detail?: string;
   label: string;

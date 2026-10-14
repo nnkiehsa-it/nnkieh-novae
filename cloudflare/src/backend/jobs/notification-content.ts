@@ -1,4 +1,4 @@
-import { asString } from "../shared/http.ts";
+import { asString } from "../shared/json.ts";
 import type { EventDeliveryItem } from "./delivery-attempt.ts";
 
 /**

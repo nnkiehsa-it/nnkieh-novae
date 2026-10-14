@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/app/**/{page,layout,route,manifest,sw}.{ts,tsx}",
+    "cloudflare/src/index.ts",
+    "scripts/*.mjs",
+    "tests/**/*.{ts,mjs}",
+    "tools/**/*.{js,mjs}"
+  ],
+  "project": ["src/**/*.{ts,tsx}", "cloudflare/**/*.ts", "scripts/**/*.mjs", "tests/**/*.{ts,mjs}"],
+  "ignore": ["src/generated/**", "cloudflare/generated/**"],
+  "ignoreDependencies": ["harmonyos-sans-webfont-splitted", "@babel/preset-react", "@babel/preset-typescript", "client-only", "cloudflare"]
+}

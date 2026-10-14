@@ -40,13 +40,3 @@ export const writeSessionStorage = (key: string, value: string) => write('sessio
 export const removeLocalStorage = (key: string) => remove('localStorage', key);
 export const removeSessionStorage = (key: string) => remove('sessionStorage', key);
 
-export function localStorageKeys() {
-  const storage = resolveBrowserStorage('localStorage');
-  if (!storage) return [];
-  try {
-    return Array.from({ length: storage.length }, (_, index) => storage.key(index))
-      .filter((key): key is string => Boolean(key));
-  } catch {
-    return [];
-  }
-}

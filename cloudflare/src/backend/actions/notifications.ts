@@ -1,4 +1,4 @@
-import { asRecord, asString } from "../shared/http.ts";
+import { asRecord, asString } from "../shared/json.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { asNumber, readCursor, readCursorDate, asUuid } from "./utils.ts";
 import { requiredText } from "./validation.ts";
@@ -22,7 +22,7 @@ async function* getNotificationSnapshot(
     : ["broadcast", "user"];
   const sources = requestedSources.filter((source) => source !== "admin" || auth.isAdmin);
   const pages = Promise.all(sources.map(async (source) => {
-    const { data, error } = await database.call("app_api", "backend_list_notifications", {
+    const data = await database.call("app_api", "backend_list_notifications", {
       actor_uid: auth.uid,
       actor_is_admin: auth.isAdmin,
       notification_source: source,
@@ -30,31 +30,14 @@ async function* getNotificationSnapshot(
       cursor_id: null,
       cursor_created_at: null,
     });
-    if (error) throw error;
     return [source, data] as const;
   })).then((entries) => Object.fromEntries(entries));
   const state = database.call("app_api", "backend_get_notification_read_state", {
     actor_uid: auth.uid,
-  }).then((stateResult) => {
-    if (stateResult.error) throw stateResult.error;
-    return stateResult.data;
   });
 
   yield { data: new Date().toISOString(), key: "openedAt" };
   yield* settledSegments({ pages, state });
-}
-
-export function isNotificationAction(action: string) {
-  return action === "listNotificationPages"
-    || action === "getNotificationSnapshot"
-    || action === "getNotificationReadState"
-    || action === "getNotificationUnreadHint"
-    || action === "markNotificationsOpened"
-    || action === "getPushNotificationPreference"
-    || action === "getPlatformAdminNotificationPreferences"
-    || action === "registerPushToken"
-    || action === "unregisterPushToken"
-    || action === "updatePlatformAdminNotificationPreferences";
 }
 
 function readNotificationSource(payload: JsonRecord) {
@@ -105,7 +88,7 @@ export async function handleNotificationAction(
       const source = readNotificationSource(request);
       if (source === "admin" && !auth.isAdmin) throw new Error("permission-denied");
       const cursor = readCursor(request);
-      const { data, error } = await database.call("app_api", "backend_list_notifications", {
+      const data = await database.call("app_api", "backend_list_notifications", {
         actor_uid: auth.uid,
         actor_is_admin: auth.isAdmin,
         notification_source: source,
@@ -113,36 +96,32 @@ export async function handleNotificationAction(
         cursor_id: asUuid(cursor.id) || null,
         cursor_created_at: readNotificationCursorDate(cursor) || null,
       });
-      if (error) throw error;
       return [source, data] as const;
     }));
     return { pages: Object.fromEntries(pages) };
   }
 
   if (action === "getNotificationReadState") {
-    const { data, error } = await database.call("app_api", "backend_get_notification_read_state", {
+    const data = await database.call("app_api", "backend_get_notification_read_state", {
       actor_uid: auth.uid,
     });
-    if (error) throw error;
     return { state: data };
   }
 
   if (action === "getNotificationUnreadHint") {
-    const { data, error } = await database.call("app_api", "backend_get_notification_unread_hint", {
+    const data = await database.call("app_api", "backend_get_notification_unread_hint", {
       actor_is_admin: auth.isAdmin,
       actor_uid: auth.uid,
     });
-    if (error) throw error;
     return data;
   }
 
   if (action === "markNotificationsOpened") {
     const openedAt = new Date().toISOString();
-    const { data, error } = await database.call("app_api", "backend_mark_notifications_opened", {
+    const data = await database.call("app_api", "backend_mark_notifications_opened", {
       actor_uid: auth.uid,
       opened_at: openedAt,
     });
-    if (error) throw error;
     return data;
   }
 
@@ -155,7 +134,7 @@ export async function handleNotificationAction(
   if (action === "registerPushToken") {
     const token = requiredText(payload.token, "token", PUSH_TOKEN_LIMITS.token);
     const deviceId = requiredText(payload.deviceId, "deviceId", PUSH_TOKEN_LIMITS.deviceId);
-    const { data, error } = await database.call("app_api", "backend_register_push_token", {
+    const data = await database.call("app_api", "backend_register_push_token", {
       actor_uid: auth.uid,
       device_id: deviceId,
       token,
@@ -163,39 +142,35 @@ export async function handleNotificationAction(
       platform: optionalLimitedText(payload.platform, "platform", PUSH_TOKEN_LIMITS.platform),
       user_agent: optionalLimitedText(payload.userAgent, "userAgent", PUSH_TOKEN_LIMITS.userAgent),
     });
-    if (error) throw error;
     return data;
   }
 
   if (action === "updatePlatformAdminNotificationPreferences") {
     if (!auth.isAdmin) throw new Error("permission-denied");
     const preferences = asRecord(payload.preferences);
-    const { data, error } = await database.call("app_api", "backend_update_platform_admin_notification_preferences", {
+    const data = await database.call("app_api", "backend_update_platform_admin_notification_preferences", {
       actor_uid: auth.uid,
       comment_notifications_enabled: preferences.commentNotifications === true,
       facility_notifications_enabled: preferences.facilityNotifications === true,
       issue_notifications_enabled: preferences.issueNotifications === true,
     });
-    if (error) throw error;
     return data;
   }
 
   if (action === "getPlatformAdminNotificationPreferences") {
     if (!auth.isAdmin) throw new Error("permission-denied");
-    const { data, error } = await database.call("app_api", "backend_get_platform_admin_notification_preferences", {
+    const data = await database.call("app_api", "backend_get_platform_admin_notification_preferences", {
       actor_uid: auth.uid,
     });
-    if (error) throw error;
     return data;
   }
 
   if (action === "getPushNotificationPreference") {
-    const { data, error } = await database.call("app_api", "backend_push_notification_preference", {
+    const data = await database.call("app_api", "backend_push_notification_preference", {
       actor_uid: auth.uid,
       device_id: readDeviceId(payload),
       permission: readPermission(payload),
     });
-    if (error) throw error;
     return data;
   }
 

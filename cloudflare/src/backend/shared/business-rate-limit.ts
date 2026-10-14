@@ -48,16 +48,6 @@ export async function claimFixedWindowRateLimit(
   await claimFixedWindowRateLimits([{ identifier, actionName, window, config }]);
 }
 
-export async function claimFixedWindowRateLimitUnits(
-  identifier: string,
-  actionName: string,
-  window: RateLimitWindow,
-  config: RateLimitConfig,
-  units: number,
-) {
-  await claimFixedWindowRateLimits([{ identifier, actionName, window, config, units }]);
-}
-
 export async function claimFixedWindowRateLimits(claims: RateLimitClaim[]) {
   if (claims.length === 0) return;
   if (rateLimitsDisabled(currentEnvironment())) return;

@@ -1,7 +1,7 @@
 import type { Env } from "../../types";
 import type { AppDatabaseClient } from "../database/client.ts";
 import { isInvalidFcmTokenError, sendFcmMessage } from "../shared/fcm.ts";
-import { asRecord, asString } from "../shared/http.ts";
+import { asString } from "../shared/json.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
 import { operationPolicy } from '../shared/operation-policies.ts';
 import type { RealtimeDelivery } from "../../durable/realtime-hub.ts";
@@ -42,12 +42,11 @@ async function storeNotifications(database: AppDatabaseClient, notifications: Re
 export async function processInAppDeliveries(database: AppDatabaseClient, env: Env) {
   const batchSize = operationPolicy('notificationBatchSize');
   const log = createFunctionLogger("processInAppDeliveries");
-  const { data, error } = await database.call("app_api", "claim_event_deliveries", {
+  const data = await database.call("app_api", "claim_event_deliveries", {
     target_destination: "in_app",
     batch_size: batchSize,
   });
-  if (error) throw error;
-  const items = (data ?? []) as EventDeliveryItem[];
+  const items = data as EventDeliveryItem[];
 
   for (const item of items) {
     const attemptId = item.last_attempt_id;
@@ -114,12 +113,11 @@ export async function processInAppDeliveries(database: AppDatabaseClient, env: E
 export async function processPushDeliveries(database: AppDatabaseClient) {
   const batchSize = operationPolicy('notificationBatchSize');
   const log = createFunctionLogger("processPushDeliveries");
-  const { data, error } = await database.call("app_api", "claim_event_deliveries", {
+  const data = await database.call("app_api", "claim_event_deliveries", {
     target_destination: "push",
     batch_size: batchSize,
   });
-  if (error) throw error;
-  const items = (data ?? []) as EventDeliveryItem[];
+  const items = data as EventDeliveryItem[];
 
   for (const item of items) {
     const attemptId = item.last_attempt_id;

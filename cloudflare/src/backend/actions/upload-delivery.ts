@@ -1,5 +1,5 @@
 import { createMediaDeliveryUrls } from "../shared/media-delivery.ts";
-import { asString } from "../shared/http.ts";
+import { asString } from "../shared/json.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { canReadIssue } from "./issue-shared.ts";
 import type { Selected } from "../database/schema.ts";

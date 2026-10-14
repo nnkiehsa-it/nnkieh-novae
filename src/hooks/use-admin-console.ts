@@ -25,14 +25,11 @@ import {
 
 export type {
   AdminAuditEntry,
-  AdminOverviewData,
-  AdminOverviewWindow,
   AdminUser,
   AccountAccessDuration,
   AccountAccessPreset,
   AccountAccessRule,
   AccountAccessRuleInput,
-  AccountAccessTargetType,
 } from "@/services/admin-console";
 
 export type AccountAccessMutation = Awaited<ReturnType<typeof saveAccountAccessRule>>;

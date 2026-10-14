@@ -4,7 +4,7 @@ const TURNSTILE_ACTION_PATTERN = /^[a-z0-9_-]{1,32}$/u;
 const TURNSTILE_MAX_TOKEN_LENGTH = 2_048;
 const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
-export interface TurnstileVerificationResult {
+interface TurnstileVerificationResult {
   action?: string;
   hostname?: string;
   success?: boolean;

@@ -1,6 +1,6 @@
 import { Skeleton } from "@/ui/feedback";
 
-export interface ShareSegment {
+interface ShareSegment {
   count: number;
   key: string;
   label: string;

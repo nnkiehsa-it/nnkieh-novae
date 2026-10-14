@@ -1,6 +1,6 @@
 import { getLocale, t } from '@/i18n';
 
-export function getDeviceTimeZone(): string {
+function getDeviceTimeZone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 

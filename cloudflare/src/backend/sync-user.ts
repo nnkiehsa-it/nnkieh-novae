@@ -1,7 +1,7 @@
 import type { AppDatabaseClient } from "./database/client.ts";
 import { platformAdminEmails } from "./shared/platform-admin.ts";
 import type { FirebaseAuthContext } from "./shared/firebase-auth.ts";
-import { errorStatus, publicErrorBody } from "./shared/http.ts";
+import { errorStatus, publicErrorBody } from "./shared/errors.ts";
 import { createFunctionLogger } from "./shared/observability.ts";
 import { RATE_LIMITS } from "./shared/rate-limits.ts";
 import { claimFixedWindowRateLimit, utcHourWindow } from "./shared/business-rate-limit.ts";
@@ -29,11 +29,10 @@ export async function handleSyncUser(user: FirebaseAuthContext, database: AppDat
         display_name = excluded.display_name,
         photo_url = excluded.photo_url,
         updated_at = excluded.updated_at`;
-    const { error: adminSyncError } = await database.call("app_api", "backend_reconcile_platform_admins", {
+    await database.call("app_api", "backend_reconcile_platform_admins", {
       actor_uid: user.uid,
       admin_emails: platformAdminEmails(),
     });
-    if (adminSyncError) throw adminSyncError;
 
     log.success("user-sync.completed", { status: 200 });
     return Response.json({ ok: true });

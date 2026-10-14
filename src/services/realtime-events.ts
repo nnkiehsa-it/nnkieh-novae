@@ -26,7 +26,7 @@ let realtimeSessionActive = false;
 let contentSubscriptionKey = '';
 let contentUnsubscribers: Array<() => void> = [];
 
-export type ContentRealtimeEventType =
+type ContentRealtimeEventType =
   | 'issue_changed'
   | 'issue_support_changed'
   | 'issue_comment_changed'
@@ -35,7 +35,7 @@ export type ContentRealtimeEventType =
   | 'announcement_comment_changed'
   | 'facility_changed';
 
-export interface ContentRealtimeEvent {
+interface ContentRealtimeEvent {
   aggregateRevision: number;
   category: string | null;
   commentCount: number | null;

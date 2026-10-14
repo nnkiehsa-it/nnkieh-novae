@@ -3,7 +3,6 @@ import { invokeBackendAction } from '@/services/backend-action';
 import { readRequestTimeoutMs, RequestFailure } from '@/lib/request';
 import { createContentCacheKey, getCachedContent, getCachedContentPersistent, runCoalescedContentRequest, setCachedContentFromRead } from '@/services/content-read-cache';
 import {
-  STATUS_BUCKETS,
   TABLE_PAGE_SIZE,
 } from './issues-constants';
 import {
@@ -17,14 +16,12 @@ import {
 import { isContentUnavailableError, toReadableBackendError } from './issues-errors';
 
 export {
-  STATUS_BUCKETS,
   TABLE_PAGE_SIZE,
   normalizeDate,
   normalizeIssueCursor,
   normalizeIssueRecord,
   normalizeIssueSummary,
   normalizeStatus,
-  isContentUnavailableError,
   toReadableBackendError,
   withSupportState,
 };

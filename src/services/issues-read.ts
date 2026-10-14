@@ -11,7 +11,7 @@ export {
 } from './issues-read-user';
 export { fetchComments } from './issues-read-comments';
 
-export interface IssueSupporter {
+interface IssueSupporter {
   uid: string;
   displayName: string;
   photoUrl: string | null;

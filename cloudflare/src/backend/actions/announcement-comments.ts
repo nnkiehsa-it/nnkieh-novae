@@ -1,4 +1,4 @@
-import { asRecord, asString } from "../shared/http.ts";
+import { asRecord, asString } from "../shared/json.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { hasPermission } from "./auth.ts";
 import { validateMarkdownUploadsBeforeCreate } from "./upload-markdown.ts";
@@ -20,9 +20,6 @@ function listAnnouncementComments(payload: JsonRecord, database: BackendDatabase
     cursor_created_at: readCursorDate(cursor, "createdAt") || null,
     page_size: Math.min(Math.max(Math.round(asNumber(payload.pageSize, 30)), 1), 30),
     sort_name: sortName,
-  }).then(({ data, error }) => {
-    if (error) throw error;
-    return data;
   });
   return settledSegments({ version }, page);
 }
@@ -48,13 +45,12 @@ async function createAnnouncementComment(payload: JsonRecord, auth: AuthContext,
   );
   const parentCommentId = asUuid(payload.parentCommentId) || null;
   await validateMarkdownUploadsBeforeCreate(database, auth.uid, content, "announcement_comment", announcementId);
-  const { data, error } = await database.call("app_api", "backend_create_announcement_comment", {
+  const data = await database.call("app_api", "backend_create_announcement_comment", {
     announcement_id: announcementId,
     parent_comment_id: parentCommentId,
     actor_uid: auth.uid,
     comment_content: content,
   });
-  if (error) throw error;
   const result = asRecord(data);
   const comment = asRecord(result.comment);
   return { comment, comment_count: result.comment_count };
@@ -63,12 +59,11 @@ async function createAnnouncementComment(payload: JsonRecord, auth: AuthContext,
 async function deleteAnnouncementComment(payload: JsonRecord, auth: AuthContext, database: BackendDatabase) {
   const commentId = asUuid(payload.commentId);
   if (!commentId) return { success: true, announcement_id: "", comment_count: 0 };
-  const { data, error } = await database.call("app_api", "backend_delete_announcement_comment", {
+  const data = await database.call("app_api", "backend_delete_announcement_comment", {
     comment_id: commentId,
     actor_uid: auth.uid,
     actor_is_admin: hasPermission(auth, "announcement.manage"),
   });
-  if (error) throw error;
   const result = asRecord(data);
   return {
     success: true,

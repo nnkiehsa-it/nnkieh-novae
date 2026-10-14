@@ -1,4 +1,4 @@
-import { asRecord, asString } from "../shared/http.ts";
+import { asRecord, asString } from "../shared/json.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { countRecord, toMs } from "./utils.ts";
 
@@ -7,9 +7,8 @@ function asCount(value: unknown) {
   return Number.isFinite(count) && count >= 0 ? count : 0;
 }
 
-export async function getPlatformDashboard(database: BackendDatabase) {
-  const { data, error } = await database.call("app_api", "get_platform_dashboard_snapshot");
-  if (error) throw error;
+async function getPlatformDashboard(database: BackendDatabase) {
+  const data = await database.call("app_api", "get_platform_dashboard_snapshot");
   const snapshot = asRecord(data);
   const counters = asRecord(snapshot.counters);
   const maintenance = asRecord(snapshot.maintenance);
@@ -95,8 +94,8 @@ export async function getPlatformDashboard(database: BackendDatabase) {
 
 export async function handleDashboardAction(
   action: string,
-  payload: JsonRecord,
-  auth: AuthContext,
+  _payload: JsonRecord,
+  _auth: AuthContext,
   database: BackendDatabase,
 ) {
   if (action === "getPlatformDashboard") return await getPlatformDashboard(database);

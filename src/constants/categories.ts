@@ -11,7 +11,7 @@ import type {
 } from "@/types";
 import type { IssueReadAccess } from "@/types/categories";
 
-export interface CategoryOption<TValue extends string> {
+interface CategoryOption<TValue extends string> {
   value: TValue;
   label: string;
 }
@@ -42,38 +42,8 @@ export function isKnownIssueCategory(value: unknown): value is IssueCategory {
   return typeof value === "string" && findIssueCategory(value) !== null;
 }
 
-export function isIssueRouteFilter(value: unknown): value is IssueRouteFilter {
-  const normalized = Array.isArray(value) ? value[0] : value;
-  return normalized === "my-proposals" || isIssueCategory(normalized);
-}
-
-export function normalizeIssueRouteFilterParam(
-  param: unknown,
-): IssueRouteFilter {
-  const value = Array.isArray(param) ? param[0] : param;
-  return isIssueRouteFilter(value) ? value : getDefaultIssueRouteFilter();
-}
-
 export function getIssueCategoryLabel(category: string | null | undefined) {
   return findIssueCategory(category)?.label ?? String(category ?? "");
-}
-
-export function issueAllowsSupport(category: string | null | undefined) {
-  return findIssueCategory(category)?.supportEnabled === true;
-}
-
-export function issueRequiresReview(category: string | null | undefined) {
-  return findIssueCategory(category)?.readAccess === "reviewed-school";
-}
-
-export function issueStoresAuthorPrivately(
-  category: string | null | undefined,
-) {
-  return findIssueCategory(category)?.authorVisible === false;
-}
-
-export function issueIsPrivateToOwner(category: string | null | undefined) {
-  return findIssueCategory(category)?.readAccess === "owner-admin";
 }
 
 export function getIssueSupportGoal(category: string | null | undefined) {

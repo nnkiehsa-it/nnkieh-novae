@@ -3,7 +3,7 @@ const GSI_SCOPE = 'openid email profile';
 const GSI_LOAD_TIMEOUT_MS = 10_000;
 const TOKEN_REQUEST_TIMEOUT_MS = 30_000;
 
-export type GoogleIdentityErrorCode =
+type GoogleIdentityErrorCode =
   | 'script_load_failed'
   | 'popup_blocked'
   | 'popup_closed'
@@ -71,10 +71,6 @@ function loadGsiClient(): Promise<void> {
   });
 
   return gsiLoadPromise;
-}
-
-export function preloadGoogleIdentity(): Promise<void> {
-  return loadGsiClient().catch(() => undefined);
 }
 
 export function ensureGoogleIdentityLoaded(): Promise<void> {

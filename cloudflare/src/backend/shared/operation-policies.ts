@@ -4,7 +4,7 @@ import type { DatabaseSession } from '../database/client';
 import type { Selected } from '../database/schema';
 
 const activePolicies = new AsyncLocalStorage<PolicySnapshot>();
-export interface PolicySnapshot { revision: number; values: OperationPolicies }
+interface PolicySnapshot { revision: number; values: OperationPolicies }
 
 /**
  * How long an isolate may answer from the settings it has already read.

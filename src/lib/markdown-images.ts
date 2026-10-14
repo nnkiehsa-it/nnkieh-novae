@@ -31,7 +31,7 @@ export function stripMarkdownImages(content: string): string {
   return content.replace(markdownImagePattern, '').replace(/\n{3,}/g, '\n\n').trim();
 }
 
-export function getUploadIdFromUri(value: string) {
+function getUploadIdFromUri(value: string) {
   if (!value.startsWith(uploadUriScheme)) {
     return null;
   }

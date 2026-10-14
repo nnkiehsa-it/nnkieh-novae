@@ -248,7 +248,7 @@ async function connectRealtime() {
   }
 }
 
-export function ensureRealtimeConnection() {
+function ensureRealtimeConnection() {
   const scope = currentScope();
   if (coordinatorScope !== scope || !hasRealtimeInterest()) {
     coordinator?.stop();

@@ -32,7 +32,7 @@ export const destinationLabel = (t: Translate, value: string) =>
   labelled(DESTINATION_LABELS, t, value);
 
 /** What actually went wrong, out of what the failure recorded. */
-export function errorMessage(detail: unknown): string {
+function errorMessage(detail: unknown): string {
   if (!detail) return "";
   if (typeof detail === "string") return detail;
   if (typeof detail === "object" && "message" in detail) {

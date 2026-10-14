@@ -45,27 +45,3 @@ export function AnimatedNumber({
   );
 }
 
-export function AnimatedText({
-  className,
-  text,
-}: {
-  className?: string;
-  text: string;
-}) {
-  return (
-    <span className={cn("inline-grid overflow-hidden", className)}>
-      <AnimatePresence initial={false} mode="popLayout">
-        <motion.span
-          animate={{ opacity: 1, y: 0 }}
-          className="col-start-1 row-start-1"
-          exit={{ opacity: 0, y: -4 }}
-          initial={{ opacity: 0, y: 4 }}
-          key={text}
-          transition={timing("control")}
-        >
-          {text}
-        </motion.span>
-      </AnimatePresence>
-    </span>
-  );
-}

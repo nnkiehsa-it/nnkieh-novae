@@ -1,5 +1,5 @@
 import type { AppDatabaseClient } from "../database/client.ts";
-import { asRecord } from "../shared/http.ts";
+import { asRecord } from "../shared/json.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
 import { operationPolicy } from "../shared/operation-policies.ts";
 
@@ -19,13 +19,11 @@ export async function runMaintenance(database: AppDatabaseClient) {
   await database.sql`insert into app_private.operational_metrics (database_bytes)
     values (pg_database_size(current_database()))
     on conflict (bucket) do update set database_bytes = excluded.database_bytes, measured_at = now()`;
-  const { data: expiredSupportCount, error: supportError } = await database.call(
+  const expiredSupportCount = await database.call(
     "app_api",
     "reject_expired_support_issues",
   );
-  if (supportError) throw supportError;
-  const { data, error } = await database.call("app_api", "run_scheduled_maintenance_cleanup");
-  if (error) throw error;
+  const data = await database.call("app_api", "run_scheduled_maintenance_cleanup");
   const snapshot = asRecord(data);
   const dueWorkers = asRecord(snapshot.dueWorkers);
   const result = {

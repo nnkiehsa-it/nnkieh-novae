@@ -7,7 +7,6 @@ interface UnsavedChanges {
 const empty: UnsavedChanges = { count: 0, discard: () => undefined };
 
 let current = empty;
-const legacyOwner = Symbol("legacy-draft");
 const drafts = new Map<symbol, UnsavedChanges & { group?: string }>();
 const listeners = new Set<() => void>();
 
@@ -22,7 +21,7 @@ function publish() {
  * that the guard in the administration shell and the screen that holds the
  * draft do not have to be related to each other.
  */
-export function setUnsavedChanges(next: UnsavedChanges | null, owner = legacyOwner, group?: string) {
+export function setUnsavedChanges(next: UnsavedChanges | null, owner: symbol, group?: string) {
   if (next && (next.count > 0 || next.busy)) drafts.set(owner, { ...next, group });
   else drafts.delete(owner);
   current = summarize([...drafts.values()]);

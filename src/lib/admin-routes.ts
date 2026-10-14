@@ -7,7 +7,7 @@ export interface AdminAccess {
 
 export type AdminGroup = "content" | "people" | "system";
 
-export interface AdminRoute {
+interface AdminRoute {
   allowed: (access: AdminAccess) => boolean;
   group: AdminGroup;
   href: string;

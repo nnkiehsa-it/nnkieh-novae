@@ -1,4 +1,4 @@
-import { asRecord, asString } from "../shared/http.ts";
+import { asRecord, asString } from "../shared/json.ts";
 import type { AppDatabaseClient } from "../database/client.ts";
 import type { EventDeliveryItem } from "./delivery-attempt.ts";
 import type { Selected } from "../database/schema.ts";
@@ -22,12 +22,11 @@ export async function resolveRecipients(
     const notificationKind = event_type === "issue.comment_created" || event_type === "announcement.comment_created"
       ? "comment"
       : event_type.startsWith("facility.") ? "facility" : "issue";
-    const { data, error } = await database.call(
+    const data = await database.call(
       "app_api",
       "backend_platform_admin_notification_recipients",
       { notification_kind: notificationKind },
     );
-    if (error) throw error;
     const preference = asRecord(data);
     const adminUids = Array.isArray(preference.adminUids)
       ? preference.adminUids.map((uid) => asString(uid)).filter(Boolean)

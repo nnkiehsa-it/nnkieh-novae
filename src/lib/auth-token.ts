@@ -30,7 +30,7 @@ async function loadToken(user: User) {
   return token;
 }
 
-export function clearFirebaseIdTokenCache() {
+function clearFirebaseIdTokenCache() {
   cachedUid = '';
   cachedToken = '';
   cachedExpiresAt = 0;

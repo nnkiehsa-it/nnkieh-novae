@@ -47,7 +47,7 @@ import {
   type ValidationResult,
 } from "@/services/session-validation";
 import { state, patch, type SessionState } from "@/hooks/session-state";
-export { getSessionState, initialSessionState, patch, subscribe, type SessionState, type StartupPhase } from "@/hooks/session-state";
+export { getSessionState, initialSessionState, patch, subscribe } from "@/hooks/session-state";
 
 const VISIT_RECORD_INTERVAL_MS = 24 * 60 * 60 * 1_000;
 const VISIT_RECORDED_AT_KEY = "novae:platform-visit-recorded-at";

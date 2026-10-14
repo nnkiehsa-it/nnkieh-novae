@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 
-export type ImageLoadState = "error" | "loading" | "ready";
+type ImageLoadState = "error" | "loading" | "ready";
 
 /** Shared presentation lifecycle; decode the displayed element before revealing pixels. */
 export function useDecodedImage(sourceKey: string) {

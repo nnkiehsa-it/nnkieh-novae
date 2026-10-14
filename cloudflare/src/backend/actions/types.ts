@@ -9,8 +9,6 @@ export type BackendDatabase = DatabaseSession;
  */
 export interface ActionSegment { data: unknown; key?: string }
 
-/** What an action hands back: a finished answer, or one arriving in pieces. */
-export type ActionResult = unknown | AsyncIterable<ActionSegment>;
 export type JsonRecord = Record<string, unknown>;
 export type PermissionCode =
   | "announcement.manage"

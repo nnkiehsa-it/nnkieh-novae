@@ -1,4 +1,4 @@
-import { errorStatus, publicErrorBody } from "../shared/http.ts";
+import { errorStatus, publicErrorBody } from "../shared/errors.ts";
 import type { ApiErrorCode } from "../shared/api-errors.ts";
 import { operationPolicies } from "../shared/operation-policies.ts";
 import type { ActionSegment } from "./types.ts";

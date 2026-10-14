@@ -1,4 +1,4 @@
-import { asRecord, asString } from "../shared/http.ts";
+import { asRecord, asString } from "../shared/json.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { requirePermission } from "./auth.ts";
 import {
@@ -126,22 +126,20 @@ export async function handleCategoryAction(
       ...issueCategoryInput(value, index),
       isDefault: booleanSetting(asRecord(value).isDefault),
     }));
-    const { data, error } = await database.call("app_api", "backend_estimate_category_policy_changes", {
+    const data = await database.call("app_api", "backend_estimate_category_policy_changes", {
       actor_uid: auth.uid,
       announcement_comments_enabled: booleanSetting(payload.announcementCommentsEnabled),
       deleted_issue_category_ids: deletedCategoryIds(payload.deletedIssueCategoryIds),
       issue_categories: issueCategories,
     });
-    if (error) throw error;
     return asRecord(data);
   }
   if (action === "listPlatformJobs") {
     requirePermission(auth, "category.manage");
-    const { data, error } = await database.call("app_api", "backend_list_platform_jobs", {
+    const data = await database.call("app_api", "backend_list_platform_jobs", {
       actor_uid: auth.uid,
       page_limit: 30,
     });
-    if (error) throw error;
     return asRecord(data);
   }
   if (action === "savePlatformSettings") {
@@ -149,23 +147,21 @@ export async function handleCategoryAction(
     const settings = platformSettingsFromInput(payload);
     await database.sql`select pg_advisory_xact_lock(hashtext('novae:platform-settings'))`;
     assertRevision(payload.revision, (await loadCategoryManagement(database)).platformRevision);
-    const { data, error } = await database.call("app_api", "backend_save_platform_settings", {
+    const data = await database.call("app_api", "backend_save_platform_settings", {
       actor_uid: auth.uid,
       image_settings: { ...settings.imageUploads },
       retention_config: { ...settings.retention },
     });
-    if (error) throw error;
     return { ...settings, ...asRecord(data), revision: (await loadCategoryManagement(database)).platformRevision, success: true };
   }
   if (action === "estimateRetentionCleanup") {
     requirePermission(auth, "category.manage");
     const settings = platformSettingsFromInput(payload);
     assertRevision(payload.revision, (await loadCategoryManagement(database)).platformRevision);
-    const { data, error } = await database.call("app_api", "backend_estimate_retention_cleanup", {
+    const data = await database.call("app_api", "backend_estimate_retention_cleanup", {
       actor_uid: auth.uid,
       retention_config: { ...settings.retention },
     });
-    if (error) throw error;
     return asRecord(data);
   }
   if (action === "saveCategoryManagement") {
@@ -205,7 +201,7 @@ export async function handleCategoryAction(
     // Every category write uses this row lock, including feature and image-policy writes.
     await database.sql`select singleton from app_private.system_setup where singleton = true for update`;
     assertRevision(payload.revision, (await loadCategoryManagement(database)).categoryRevision);
-    const { error: saveError } = await database.call("app_api", "backend_save_category_management", {
+    await database.call("app_api", "backend_save_category_management", {
       actor_uid: auth.uid,
       announcement_comments_enabled: announcementCommentsEnabled,
       deleted_facility_category_ids: deletedFacilityIds,
@@ -215,25 +211,22 @@ export async function handleCategoryAction(
       issue_categories: issueCategories,
       issues_enabled: issuesEnabled,
     });
-    if (saveError) throw saveError;
-    const { error: imageError } = await database.call("app_api", "backend_save_announcement_image_policy", {
+    await database.call("app_api", "backend_save_announcement_image_policy", {
       actor_uid: auth.uid,
       max_images: imageLimit(payload.announcementMaxImages),
       comment_max_images: imageLimit(payload.announcementCommentMaxImages),
     });
-    if (imageError) throw imageError;
     return { ...await loadCategoryManagement(database), success: true };
   }
   if (action === "savePlatformFeatures") {
     requirePermission(auth, "category.manage");
     const announcementCommentsEnabled = booleanSetting(payload.announcementCommentsEnabled);
-    const { data, error } = await database.call("app_api", "backend_update_platform_features", {
+    const data = await database.call("app_api", "backend_update_platform_features", {
       actor_uid: auth.uid,
       announcement_comments_enabled: announcementCommentsEnabled,
       facilities_enabled: booleanSetting(payload.facilitiesEnabled),
       issues_enabled: booleanSetting(payload.issuesEnabled),
     });
-    if (error) throw error;
     return asRecord(data);
   }
   if (action === "completeInitialSetup") {
@@ -267,14 +260,13 @@ export async function handleCategoryAction(
       ...categories.filter((category) => category.isDefault),
       ...categories.filter((category) => !category.isDefault),
     ];
-    const { data, error } = await database.call("app_api", "backend_complete_initial_setup", {
+    const data = await database.call("app_api", "backend_complete_initial_setup", {
       actor_uid: auth.uid,
       facilities_enabled: facilitiesEnabled,
       issue_categories: defaultFirst(issueCategories),
       facility_categories: defaultFirst(facilityCategories),
       issues_enabled: issuesEnabled,
     });
-    if (error) throw error;
     return asRecord(data);
   }
   throw new Error("invalid-action");
