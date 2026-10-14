@@ -1,6 +1,6 @@
 # Handoff — refactor/overhaul (2026-10-14)
 
-Untracked working note. Delete it once P4 is committed and the content has moved into the commit message or docs.
+Working note. Delete it once P7 is done and the content has moved into commit messages or docs.
 
 ## Task and rules from the user
 
@@ -28,12 +28,12 @@ Untracked working note. Delete it once P4 is committed and the content has moved
 |---|---|
 | P0 fix deploy verification, P1 dead code | committed |
 | P2/P3 shared valibot contracts in `shared/`; every Worker answer conforms to its contract; retire unused writes | committed (`508cae03`..`3dbe3bb1`) |
-| **P4 replace hand-rolled caches with TanStack Query** | **done but uncommitted; one E2E fails** |
+| P4 replace hand-rolled caches with TanStack Query | committed (`93baa9ef` wip + follow-up) |
 | P5 merge the session and request layers; invalidate the cache when access or role changes (the gap predates P4) | todo |
 | P6 squash migrations into a baseline; clean stale DB overloads | todo |
 | P7 docs; rebuild the project-map tool against ACTIONS and the registry; add `knip` as a devDependency and act on it | todo |
 
-## P4 design (uncommitted; see `git status`)
+## P4 design
 
 - Dependency: `@tanstack/react-query` 5.104.2 only. The persist packages were removed; persistence is our own code.
 - `src/lib/query-client.ts` holds the single `queryClient`:
@@ -83,36 +83,15 @@ Untracked working note. Delete it once P4 is committed and the content has moved
 - Unit test helper: `tests/unit/support/query-client.ts` (`withQueryClient`, synchronous `notifyManager`).
 - E2E helper: `storedQueryKeys(page)` in `tests/e2e/support/accounts.ts`.
 
-## Verification state
+## Verification state (2026-10-15, after a machine reinstall)
 
+- Environment rebuilt: `bun install`, docker.io, openjdk-21, Playwright Chromium and its system deps.
 - `bun run verify:fast` passes.
-- Unit tests pass.
-- `bun run verify:integration` passes, including migration 0066 and the DB contract drift check.
-- E2E: the last full run had 46 passed, 1 failed, 1 skipped.
-
-## Open issue (next step)
-
-`tests/e2e/feed-and-discussion-state.spec.ts:65`, "a late comment order response cannot replace the currently selected order":
-
-- It does **not** fail on the ordering logic.
-- It times out in `signInWithEmulator`:
-  - `tests/e2e/support/accounts.ts:67`, `waitForFunction(() => window.__NOVAE_E2E__)` after `page.goto('/login')`. Times out after 20s.
-  - The call site is spec line 54.
-- Inspect the trace: `test-results/e2e/feed-and-discussion-state--6644b-he-currently-selected-order-chromium-stateful/trace.zip`.
-- Find out why the login page never exposes `__NOVAE_E2E__`. Candidates:
-  - state left over from the previous test;
-  - a blocked or failing `openQueryScope` or IndexedDB open, for example a `versionchange` against the deleted `novae-queries` database that the spec deletes;
-  - a changed init order.
-- Before this was found, the spec was already edited:
-  - the route handler wraps `route.fulfill` in a `catch`;
-  - an `oldestSettled` promise waits on `requestfinished` / `requestfailed`.
-  - Re-check that these edits are still justified.
-
-Rerun just the relevant specs:
-```
-node scripts/verify-integration.mjs --e2e -- tests/e2e/feed-and-discussion-state.spec.ts tests/e2e/session-lifecycle.spec.ts
-```
-Then run the full `bun run test:e2e` and `bun run verify:fast`, and commit P4.
+- Full `bun run test:e2e`: 51 passed, 1 skipped (local-startup, by design), twice in a row.
+- The earlier sign-in timeout (`__NOVAE_E2E__` never appearing) did not reproduce; the old trace was lost. Hardened instead of guessed:
+  - `E2eAuthBridge` no longer swallows a failed import; `signInWithEmulator` reports page errors when the bridge never appears.
+  - The `novae-queries` connection closes on `versionchange`, so another page's delete or upgrade cannot leave opens hanging; a failed open is not cached.
+  - The comment-order spec only tolerates a failed `route.fulfill` when the page itself cancelled the read.
 
 ## Known follow-ups
 

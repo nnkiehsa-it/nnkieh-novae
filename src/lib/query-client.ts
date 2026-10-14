@@ -136,8 +136,21 @@ function openDatabase() {
   database ??= new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open(DATABASE, 1);
     request.onupgradeneeded = () => request.result.createObjectStore(STORE);
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error('IndexedDB could not be opened.'));
+    request.onsuccess = () => {
+      const db = request.result;
+      // Another page deleting or upgrading the database waits on every open
+      // connection, and an open queued behind it waits too: let go at once and
+      // reopen on the next read or save.
+      db.onversionchange = () => {
+        db.close();
+        database = null;
+      };
+      resolve(db);
+    };
+    request.onerror = () => {
+      database = null;
+      reject(request.error ?? new Error('IndexedDB could not be opened.'));
+    };
   });
   return database;
 }

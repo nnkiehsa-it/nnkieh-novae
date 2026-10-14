@@ -12,13 +12,11 @@ export function E2eAuthBridge() {
   useEffect(() => {
     if (!e2eAuthAvailable) return;
     let active = true;
-    void import("@/testing/e2e-auth")
-      .then(({ signInForE2e }) => {
-        if (active) window.__NOVAE_E2E__ = { signIn: signInForE2e };
-      })
-      .catch(() => {
-        if (process.env.NODE_ENV === "development") console.debug("Unable to initialize the isolated E2E auth bridge.");
-      });
+    // A failed import stays an unhandled rejection, so the test run reports it
+    // instead of only timing out while waiting for the bridge.
+    void import("@/testing/e2e-auth").then(({ signInForE2e }) => {
+      if (active) window.__NOVAE_E2E__ = { signIn: signInForE2e };
+    });
     return () => {
       active = false;
       delete window.__NOVAE_E2E__;

@@ -63,10 +63,20 @@ export async function ensureGoogleAccount(email: string) {
 
 export async function signInWithEmulator(page: Page, email: string) {
   await ensureGoogleAccount(email);
+  const pageErrors: string[] = [];
+  const recordPageError = (error: Error) => pageErrors.push(error.stack ?? error.message);
+  page.on('pageerror', recordPageError);
   await page.goto('/login');
-  await page.waitForFunction(() => Boolean(window.__NOVAE_E2E__), undefined, {
-    timeout: 20_000,
-  });
+  try {
+    await page.waitForFunction(() => Boolean(window.__NOVAE_E2E__), undefined, {
+      timeout: 20_000,
+    });
+  } catch (error) {
+    // A bridge that never appears is a symptom; the page's own errors are the cause.
+    throw new Error(`The E2E auth bridge did not load. Page errors: ${pageErrors.join('\n') || 'none'}`, { cause: error });
+  } finally {
+    page.off('pageerror', recordPageError);
+  }
   await page.waitForFunction(
     () => {
       const probe = document.createElement('div');

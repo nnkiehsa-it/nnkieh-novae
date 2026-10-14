@@ -77,16 +77,26 @@ test.describe.serial("shareable feeds and isolated discussion drafts", () => {
       const response = await route.fetch();
       oldestRequested = true;
       await held;
-      // The page may already have cancelled the read it no longer wants.
-      await route.fulfill({ response }).catch(() => undefined);
+      try {
+        await route.fulfill({ response });
+      } catch (error) {
+        // Only the page cancelling the read it no longer wants may stop the answer.
+        await oldestSettled;
+        if (!oldestCancelled) throw error;
+      }
     });
     const isOldestRead = (request: Request) => {
       const body = request.postDataJSON();
       return body?.action === 'listAnnouncementComments' && body?.payload?.sort === 'oldest';
     };
+    let oldestCancelled = false;
     const oldestSettled = new Promise<void>((resolve) => {
       page.on('requestfinished', (request) => { if (isOldestRead(request)) resolve(); });
-      page.on('requestfailed', (request) => { if (isOldestRead(request)) resolve(); });
+      page.on('requestfailed', (request) => {
+        if (!isOldestRead(request)) return;
+        oldestCancelled = true;
+        resolve();
+      });
     });
     try {
       await page.goto(announcementUrl);
