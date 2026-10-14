@@ -1,7 +1,7 @@
 "use client";
 
 import type { User } from "firebase/auth";
-import type { PermissionCode, RoleCode } from "@/services/session-role";
+import type { PermissionCode, RoleCode } from "@/services/session";
 
 export type StartupPhase = "session" | "security" | "account" | "profile" | "access" | "content" | "ready";
 

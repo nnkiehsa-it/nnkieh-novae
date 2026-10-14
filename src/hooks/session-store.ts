@@ -6,21 +6,23 @@ import { sessionDebug } from "@/lib/session-debug";
 import { setPushSession } from "@/lib/push-session";
 import { readLocalStorage, writeLocalStorage } from "@/lib/browser-storage";
 import { readCachedAvatar, writeCachedAvatar } from "@/lib/avatar-cache";
-import { restoreSessionDisplay } from "@/hooks/session-display-cache";
-import { closeQueryScope } from "@/lib/query-client";
+import { closeQueryScope, openQueryScope, resetAccessDependentQueries } from "@/lib/query-client";
 import { clearComposerDrafts } from "@/lib/composer-draft";
 import { ensureBackendProfile } from "@/services/backend-auth";
 import {
+  fetchSessionAccess,
+  fetchSessionBootstrap,
   readCachedSessionAccess,
-  seedSessionAccess,
+  readSessionBootstrapSnapshot,
+  storeSessionAccess,
   type SessionAccess,
-} from "@/services/session-role";
+} from "@/services/session";
+import { seedRuntimeSettings } from "@/services/runtime-settings";
 import {
   applyContentVersionsSnapshot,
   ensureContentVersionsFresh,
 } from "@/services/content-versions";
-import { fetchSessionBootstrap } from "@/services/session-bootstrap";
-import { stopContentRealtimeSession } from "@/services/realtime-events";
+import { refreshContentRealtimeTopics, stopContentRealtimeSession } from "@/services/realtime-events";
 import { clearResolvedUploadCache } from "@/services/uploads";
 import { cacheUserAvatar } from "@/services/users-write";
 import { seedNotificationUnreadHint } from "@/services/notifications";
@@ -92,6 +94,41 @@ async function rejectUser(reason: string) {
   if (auth) await signOut(auth).catch(() => undefined);
 }
 
+function applyAccess(access: SessionAccess) {
+  patch({
+    managedFacilityCategoryIds: access.managedFacilityCategoryIds,
+    managedIssueCategoryIds: access.managedIssueCategoryIds,
+    permissions: access.permissions,
+    roles: access.roles,
+    setupCompleted: access.setupCompleted,
+    userRole: access.role,
+  });
+}
+
+/** Access the server answered: anything cached under different access is read again. */
+function acceptServerAccess(access: SessionAccess) {
+  const changed = storeSessionAccess(access);
+  applyAccess(access);
+  if (!changed) return;
+  void resetAccessDependentQueries();
+  refreshContentRealtimeTopics();
+}
+
+/**
+ * Restores what this account last read before any page initializes. The
+ * access it returns may open the shell before the server answers.
+ */
+async function restoreSavedSession(uid: string, current: () => boolean) {
+  await openQueryScope(uid);
+  if (!current()) return null;
+  const snapshot = readSessionBootstrapSnapshot();
+  if (snapshot) {
+    seedCategoryCatalog(snapshot.catalog);
+    seedRuntimeSettings(snapshot.runtime);
+  }
+  return readCachedSessionAccess();
+}
+
 async function loadAvatar(photoUrl: string, uid: string) {
   const cached = readCachedAvatar(uid, photoUrl);
   if (cached) {
@@ -114,8 +151,7 @@ async function refreshVerifiedSession(
   verificationId: number,
   tokenValidationPromise: Promise<ValidationResult>,
   syncProfile: boolean,
-  cachedAccessPromise: Promise<SessionAccess | null> = Promise.resolve(null),
-  displaySnapshotPromise: Promise<void> = Promise.resolve(),
+  savedAccessPromise: Promise<SessionAccess | null>,
 ) {
   const current = () =>
     verificationId === verificationSerial && state.user?.uid === user.uid && auth?.currentUser === user;
@@ -132,22 +168,16 @@ async function refreshVerifiedSession(
       needsProfileSync = false;
       patch({ startupPhase: "access" });
     }
-    const applyAccess = (access: SessionAccess) => {
+    const openShell = () => {
       accessReady = true;
-      patch({
-        managedFacilityCategoryIds: access.managedFacilityCategoryIds,
-        managedIssueCategoryIds: access.managedIssueCategoryIds,
-        permissions: access.permissions,
-        roles: access.roles,
-        roleLoading: false,
-        setupCompleted: access.setupCompleted,
-        startupPhase: "ready",
-        userRole: access.role,
-      });
+      patch({ roleLoading: false, startupPhase: "ready" });
     };
-    const [cachedAccess] = await Promise.all([cachedAccessPromise, displaySnapshotPromise]);
+    const savedAccess = await savedAccessPromise;
     if (!current()) return;
-    if (cachedAccess) applyAccess(cachedAccess);
+    if (savedAccess) {
+      applyAccess(savedAccess);
+      openShell();
+    }
     const bootstrap = await fetchSessionBootstrap({
       force: syncProfile,
       refresh: true,
@@ -155,14 +185,18 @@ async function refreshVerifiedSession(
       onAccess: (access) => {
         if (!current()) return;
         receivedBootstrapAccess = true;
-        applyAccess(seedSessionAccess(access));
+        acceptServerAccess(access);
+        openShell();
       },
       recordVisit: shouldRecordPlatformVisit(user.uid),
     });
     if (!current()) return;
     // A streamed access segment was already committed. Its optional tail must
     // not overwrite a newer role refresh made after the shell opened.
-    if (!receivedBootstrapAccess) applyAccess(seedSessionAccess(bootstrap.access));
+    if (!receivedBootstrapAccess) {
+      acceptServerAccess(bootstrap.access);
+      openShell();
+    }
     seedCategoryCatalog(bootstrap.catalog);
     applyContentVersionsSnapshot(bootstrap.versions);
     seedNotificationUnreadHint(bootstrap.notificationUnread.hasUnread);
@@ -195,8 +229,9 @@ function acceptUser(
 ) {
   const verificationId = ++verificationSerial;
   needsProfileSync = syncProfile;
-  const displaySnapshotPromise = restoreSessionDisplay(user.uid, () => verificationId === verificationSerial && auth?.currentUser === user);
-  const cachedAccessPromise = syncProfile ? Promise.resolve(null) : displaySnapshotPromise.then(readCachedSessionAccess);
+  const restored = restoreSavedSession(user.uid, () => verificationId === verificationSerial && auth?.currentUser === user);
+  // A fresh sign-in waits for the server: its profile may not exist yet.
+  const savedAccessPromise = syncProfile ? restored.then(() => null) : restored;
   patch({
     appReady: true,
     authChecking: false,
@@ -215,7 +250,7 @@ function acceptUser(
     userRole: "user",
   });
   if (user.photoURL) void loadAvatar(user.photoURL, user.uid);
-  void refreshVerifiedSession(user, verificationId, tokenValidationPromise, syncProfile, cachedAccessPromise, displaySnapshotPromise);
+  void refreshVerifiedSession(user, verificationId, tokenValidationPromise, syncProfile, savedAccessPromise);
 }
 
 export async function retrySessionStartup() {
@@ -223,7 +258,17 @@ export async function retrySessionStartup() {
   if (!user || state.roleLoading) return;
   const verificationId = ++verificationSerial;
   patch({ roleLoading: true, startupError: "", startupPhase: "account", startupRun: state.startupRun + 1, startupSteps: ["account"] });
-  await refreshVerifiedSession(user, verificationId, validateUserAgainstToken(user), needsProfileSync);
+  await refreshVerifiedSession(user, verificationId, validateUserAgainstToken(user), needsProfileSync, Promise.resolve(null));
+}
+
+/** Reads this account's access again, after something may have changed it. */
+export async function refreshSessionAccess() {
+  const user = state.user;
+  if (!user) return;
+  const access = await fetchSessionAccess();
+  if (state.user !== user) return;
+  acceptServerAccess(access);
+  return access;
 }
 
 export async function initializeSession(

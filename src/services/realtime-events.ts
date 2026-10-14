@@ -1,5 +1,5 @@
 import { auth } from '@/lib/firebase';
-import { getCachedSessionRole } from '@/services/session-role';
+import { getCachedSessionRole } from '@/services/session';
 import { invalidate, invalidateLists } from '@/lib/query-client';
 import {
   ensureContentVersionsFresh,
@@ -92,6 +92,11 @@ function ensureContentTopics() {
     { onResync },
   ));
   contentSubscriptionKey = key;
+}
+
+/** The topics follow the role: a role change moves the subscription to the topics it now allows. */
+export function refreshContentRealtimeTopics() {
+  ensureContentTopics();
 }
 
 export function startContentRealtimeSession() {

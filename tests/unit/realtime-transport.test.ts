@@ -6,7 +6,7 @@ vi.mock('@/lib/auth-token', () => ({ getFirebaseIdToken: async () => 'private-to
 vi.mock('@/lib/backend-security', () => ({ backendSecurityHeaders: async () => ({}) }));
 vi.mock('@/lib/api-gateway', () => ({ apiGatewayUrl: (url: string) => url }));
 vi.mock('@/lib/request', () => ({ withRequestTimeout: (work: (signal: AbortSignal) => unknown, options: { signal?: AbortSignal }) => work(options.signal ?? new AbortController().signal) }));
-vi.mock('@/services/session-role', () => ({ getCachedSessionRole: () => state.role }));
+vi.mock('@/services/session', () => ({ getCachedSessionRole: () => state.role }));
 vi.mock('@/services/realtime-heartbeat', () => ({ startHeartbeat: vi.fn(), stopHeartbeat: vi.fn(), noteHeartbeatResponse: vi.fn() }));
 
 class FakeSocket {

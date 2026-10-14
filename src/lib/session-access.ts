@@ -1,4 +1,4 @@
-import type { PermissionCode, RoleCode, SessionAccess } from '@/services/session-role';
+import type { PermissionCode, RoleCode, SessionAccess } from '@shared/contracts/users.ts';
 
 export type SessionAccessPolicy = Pick<
   SessionAccess,

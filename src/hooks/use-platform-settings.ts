@@ -11,7 +11,7 @@ import {
   getCategoryManagement,
   savePlatformSettings,
 } from "@/services/categories";
-import { markSessionBootstrapStale } from "@/services/session-bootstrap";
+import { markSessionBootstrapStale } from "@/services/session";
 import { notifyPlatformJobsChanged } from "@/lib/platform-job-events";
 import type { PlatformSettings } from "@/types/categories";
 import { validPlatformSettings } from "@/lib/admin-setting-presets";

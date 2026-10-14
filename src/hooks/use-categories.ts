@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { getCategoryCatalog } from "@/services/categories";
-import { fetchSessionBootstrap } from "@/services/session-bootstrap";
+import { fetchSessionBootstrap } from "@/services/session";
 import type {
   FacilityCategoryConfig,
   IssueCategoryConfig,
@@ -131,16 +131,12 @@ export async function ensureCategoryCatalog(force = false) {
   request = (async () => {
     try {
       if (!force) {
-        try {
-          const bootstrap = await fetchSessionBootstrap();
-          if (current()) replaceCatalog({
-            ...bootstrap.catalog,
-            imageUploads: imageVersion === imageSettingsVersion ? bootstrap.catalog.imageUploads : state.imageUploads,
-          });
-          return;
-        } catch {
-          // Fall through to the dedicated catalog action.
-        }
+        const bootstrap = await fetchSessionBootstrap();
+        if (current()) replaceCatalog({
+          ...bootstrap.catalog,
+          imageUploads: imageVersion === imageSettingsVersion ? bootstrap.catalog.imageUploads : state.imageUploads,
+        });
+        return;
       }
       await getCategoryCatalog({ onCatalog: (panel) => {
         if (current()) mergeCatalog(imageVersion === imageSettingsVersion ? panel : { ...panel, imageUploads: undefined });

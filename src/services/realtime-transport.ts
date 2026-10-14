@@ -2,7 +2,7 @@ import { auth } from '@/lib/firebase';
 import { realtimeIdleRemaining } from '@/lib/realtime-timing';
 import { noteHeartbeatResponse, startHeartbeat, stopHeartbeat } from '@/services/realtime-heartbeat';
 import { createRealtimeTabCoordinator } from '@/services/realtime-tab-coordinator';
-import { getCachedSessionRole } from '@/services/session-role';
+import { getCachedSessionRole } from '@/services/session';
 import * as v from 'valibot';
 import { REALTIME_EVENTS, type RealtimeEventName, type RealtimePayload } from '@shared/contracts/realtime.ts';
 import { normalizeMessage, requestRealtimeTicket, type RealtimeMessage } from '@/services/realtime-protocol';

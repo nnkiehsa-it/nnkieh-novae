@@ -8,7 +8,7 @@ Working note. Delete it once P7 is done and the content has moved into commit me
 - Banned:
   - Results-oriented programming (making a check pass instead of fixing the behavior).
   - Wishful programming: silent fallbacks, swallowed errors. Fix root causes and fail loudly.
-- Migrations may be squashed.
+- Migrations are **not** squashed (decided 2026-10-15): deployed databases record 0001–0066 by checksum. Schema cleanup goes in new forward-only migrations.
 - Mode is **AUTO**:
   - Local commits per phase are authorized, and so are dependency installs.
   - **Never push.** A push deploys. Also no PRs, releases or other external actions.
@@ -29,8 +29,8 @@ Working note. Delete it once P7 is done and the content has moved into commit me
 | P0 fix deploy verification, P1 dead code | committed |
 | P2/P3 shared valibot contracts in `shared/`; every Worker answer conforms to its contract; retire unused writes | committed (`508cae03`..`3dbe3bb1`) |
 | P4 replace hand-rolled caches with TanStack Query | committed (`93baa9ef` wip + follow-up) |
-| P5 merge the session and request layers; invalidate the cache when access or role changes (the gap predates P4) | todo |
-| P6 squash migrations into a baseline; clean stale DB overloads | todo |
+| P5 one session service; access changes reset access-dependent queries and realtime topics | committed |
+| P6 clean stale DB overloads in a new forward-only migration (no squash) | todo |
 | P7 docs; rebuild the project-map tool against ACTIONS and the registry; add `knip` as a devDependency and act on it | todo |
 
 ## P4 design
@@ -95,5 +95,4 @@ Working note. Delete it once P7 is done and the content has moved into commit me
 
 ## Known follow-ups
 
-- P5: a role or access change does not invalidate cached data. Decide on per-domain invalidation, or `closeQueryScope` without `forget`.
-- `session-store.ts` still wires the bootstrap by hand (`cachedAccessPromise`, `displaySnapshotPromise`). This is a P5 merge candidate.
+- P7: `tools/project-map/content.mjs` still names `session-bootstrap` / `session-role` on the frontend side (now `src/services/session.ts`).

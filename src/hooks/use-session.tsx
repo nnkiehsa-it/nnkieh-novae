@@ -14,10 +14,7 @@ import {
   hasPermission,
   hasRole,
 } from "@/lib/session-access";
-import {
-  fetchCurrentUserRole,
-  type PermissionCode,
-} from "@/services/session-role";
+import type { PermissionCode } from "@/services/session";
 import {
   loginWithGoogle,
   prepareGoogleLoginEntrance,
@@ -27,6 +24,7 @@ import {
   getSessionState,
   initialSessionState,
   initializeSession,
+  refreshSessionAccess,
   retrySessionStartup,
   patch,
   subscribe,
@@ -96,20 +94,6 @@ export function useSession() {
       patch({ loading: false });
     }
   }, []);
-  const refreshSessionAccess = useCallback(async () => {
-    if (!snapshot.user) return;
-    const access = await fetchCurrentUserRole(true);
-    if (getSessionState().user !== snapshot.user) return;
-    patch({
-      managedFacilityCategoryIds: access.managedFacilityCategoryIds,
-      managedIssueCategoryIds: access.managedIssueCategoryIds,
-      permissions: access.permissions,
-      roles: access.roles,
-      setupCompleted: access.setupCompleted,
-      userRole: access.role,
-    });
-    return access;
-  }, [snapshot.user]);
   return {
     ...snapshot,
     allowedDomain,

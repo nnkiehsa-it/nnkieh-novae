@@ -1,6 +1,6 @@
 import type { ActionRequest } from '@shared/actions.ts';
 import { callAction } from '@/services/backend-action';
-import { markSessionBootstrapStale } from '@/services/session-bootstrap';
+import { markSessionBootstrapStale } from '@/services/session';
 import type { CategoryCatalog, FacilityCategoryConfig, IssueCategoryConfig, PlatformSettings } from '@/types/categories';
 
 export type { PlatformJob } from '@shared/contracts/categories.ts';

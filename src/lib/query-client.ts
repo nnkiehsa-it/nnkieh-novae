@@ -73,6 +73,20 @@ export function readQuery<T>(queryKey: QueryKey, read: (context: { signal: Abort
   return queryClient.fetchQuery({ queryKey, queryFn: read, staleTime: maxAgeMs });
 }
 
+// Session answers are what decided the access; remembered UI state is no answer at all.
+const ACCESS_INDEPENDENT_ROOTS = new Set(['session', 'remembered']);
+
+/**
+ * What the server answered depends on who asked and what they may do. When
+ * that changes, every such answer is dropped, not merely marked stale, so a
+ * screen never keeps showing what the old access let it read.
+ */
+export function resetAccessDependentQueries() {
+  return queryClient.resetQueries({
+    predicate: (query) => !ACCESS_INDEPENDENT_ROOTS.has(String(query.queryKey[0])),
+  });
+}
+
 type Entity = { id: string };
 
 function mapEntities(value: unknown, update: (entity: Entity) => Entity | null): unknown {

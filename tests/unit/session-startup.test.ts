@@ -1,6 +1,6 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import type { User } from "firebase/auth";
-import type { SessionAccess } from "../../src/services/session-role";
+import type { SessionAccess } from "../../src/services/session";
 
 const mocks = vi.hoisted(() => ({
   auth: { currentUser: null as User | null },
@@ -10,6 +10,9 @@ const mocks = vi.hoisted(() => ({
   restore: vi.fn(),
   cachedAccess: vi.fn(),
   bootstrap: vi.fn(),
+  storeAccess: vi.fn(),
+  resetQueries: vi.fn(),
+  refreshTopics: vi.fn(),
 }));
 
 vi.mock("firebase/auth", () => ({ onAuthStateChanged: mocks.observe, signOut: mocks.signOut }));
@@ -18,18 +21,22 @@ vi.mock("@/lib/session-debug", () => ({ sessionDebug: vi.fn() }));
 vi.mock("@/lib/push-session", () => ({ setPushSession: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("@/lib/avatar-cache", () => ({ readCachedAvatar: vi.fn(), writeCachedAvatar: vi.fn() }));
 vi.mock("@/lib/composer-draft", () => ({ clearComposerDrafts: vi.fn() }));
-vi.mock("@/lib/query-client", () => ({ openQueryScope: vi.fn().mockResolvedValue(undefined), closeQueryScope: vi.fn() }));
-vi.mock("@/services/backend-auth", () => ({ ensureBackendProfile: vi.fn() }));
-vi.mock("@/services/session-role", () => ({
-  readCachedSessionAccess: mocks.cachedAccess,
-  seedSessionAccess: (access: SessionAccess) => access,
+vi.mock("@/lib/query-client", () => ({
+  openQueryScope: vi.fn().mockResolvedValue(undefined), closeQueryScope: vi.fn(), resetAccessDependentQueries: mocks.resetQueries,
 }));
-vi.mock("@/services/session-bootstrap", () => ({ fetchSessionBootstrap: mocks.bootstrap, readSessionBootstrapSnapshot: vi.fn().mockReturnValue(null) }));
+vi.mock("@/services/backend-auth", () => ({ ensureBackendProfile: vi.fn() }));
+vi.mock("@/services/session", () => ({
+  fetchSessionAccess: vi.fn(),
+  fetchSessionBootstrap: mocks.bootstrap,
+  readCachedSessionAccess: mocks.cachedAccess,
+  readSessionBootstrapSnapshot: vi.fn().mockReturnValue(null),
+  storeSessionAccess: mocks.storeAccess,
+}));
 vi.mock("@/services/runtime-settings", () => ({ seedRuntimeSettings: vi.fn() }));
 vi.mock("@/services/content-versions", () => ({
   applyContentVersionsSnapshot: vi.fn(), ensureContentVersionsFresh: vi.fn(),
 }));
-vi.mock("@/services/realtime-events", () => ({ stopContentRealtimeSession: vi.fn() }));
+vi.mock("@/services/realtime-events", () => ({ refreshContentRealtimeTopics: mocks.refreshTopics, stopContentRealtimeSession: vi.fn() }));
 vi.mock("@/services/uploads", () => ({ clearResolvedUploadCache: vi.fn() }));
 vi.mock("@/services/users-write", () => ({ cacheUserAvatar: vi.fn() }));
 vi.mock("@/services/notifications", () => ({ seedNotificationUnreadHint: vi.fn() }));
@@ -50,6 +57,7 @@ beforeEach(() => {
   mocks.restore.mockResolvedValue("");
   mocks.validate.mockResolvedValue({ ok: true });
   mocks.cachedAccess.mockReturnValue(null);
+  mocks.storeAccess.mockReturnValue(false);
   localStorage.clear();
 });
 
@@ -115,4 +123,27 @@ it("revokes cached access if the background refresh finds an account restriction
   const store = await start();
   await vi.waitFor(() => expect(store.getSessionState().user).toBe(null));
   expect(mocks.signOut).toHaveBeenCalledOnce();
+});
+
+it("reads every access-dependent answer again when the server's access differs from what was stored", async () => {
+  mocks.storeAccess.mockReturnValue(true);
+  mocks.bootstrap.mockImplementation(async ({ onAccess }) => {
+    onAccess(access);
+    return { access, catalog: {}, versions: {}, notificationUnread: { hasUnread: false }, visitRecorded: false };
+  });
+  const store = await start();
+  await vi.waitFor(() => expect(store.getSessionState().startupPhase).toBe("ready"));
+  expect(mocks.storeAccess).toHaveBeenCalledOnce();
+  expect(mocks.resetQueries).toHaveBeenCalledOnce();
+  expect(mocks.refreshTopics).toHaveBeenCalledOnce();
+});
+
+it("keeps cached answers when the server confirms the stored access", async () => {
+  mocks.cachedAccess.mockReturnValue(access);
+  mocks.bootstrap.mockResolvedValue({ access, catalog: {}, versions: {}, notificationUnread: { hasUnread: false }, visitRecorded: false });
+  const store = await start();
+  await vi.waitFor(() => expect(mocks.storeAccess).toHaveBeenCalledOnce());
+  expect(store.getSessionState().setupCompleted).toBe(true);
+  expect(mocks.resetQueries).not.toHaveBeenCalled();
+  expect(mocks.refreshTopics).not.toHaveBeenCalled();
 });
