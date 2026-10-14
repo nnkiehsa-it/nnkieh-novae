@@ -3,3 +3,4 @@ import './tooling/source-hygiene.test.mjs';
 import './tooling/integration-lock.test.mjs';
 import './tooling/build-budget.test.mjs';
 import './tooling/next-root-glob.test.mjs';
+import './tooling/project-map.test.mjs';

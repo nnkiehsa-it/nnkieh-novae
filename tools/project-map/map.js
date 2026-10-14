@@ -30,7 +30,7 @@ function renderNavigation() {
     let body='';
     for (const section of sections) {
       const items=entries.filter(f=>(f.section||'')===section);
-      const buttons=items.map(f=>navButton(f.id,f.title,f.rateGroup?f.id:f.setting?f.setting:'')).join('');
+      const buttons=items.map(f=>navButton(f.id,f.title,f.actionGroup?f.id:f.setting?f.setting:'')).join('');
       const key=group+'|'+section;
       body+=section?'<details class="nav-section" data-section="'+esc(key)+'"'+(q||openSections.has(key)?' open':'')+'><summary>'+esc(section)+'<span class="count">'+items.length+'</span></summary>'+buttons+'</details>':buttons;
     }
@@ -195,7 +195,7 @@ function renderInspector() {
     html+=detail('資料關聯',paragraphs(m.foreignKeys.length?m.foreignKeys.map(k=>'FK：'+k.label+'；ON DELETE '+k.delete):[DATA.meta.product==='novae'||m.origin==='d1'?'目前 schema 沒有此模型的實體 FK；其他關係見程式來源。':'此模型使用程式身份參照，沒有 SQL FK。']));
     if(m.related.length)html+=paragraphs(['程式關聯：'+m.related.join('、')]);
   }
-  if (state.flow.rateGroup) html+=detail('觸發此 action',paragraphs([state.flow.id+' · '+state.flow.rateGroup,state.flow.permission?'固定權限：'+state.flow.permission:'目標權限由 domain handler 檢查。']));
+  if (state.flow.actionGroup) html+=detail('觸發此 action',paragraphs([state.flow.id+' · '+state.flow.actionGroup+' · access '+state.flow.access,state.flow.permission?'固定權限：'+state.flow.permission:'目標權限由 domain handler 檢查。']));
   if (n.refs?.length) html+=detail('對照原碼快照',sourceLinks(n.refs));
   if (state.flow.notes?.length) html+=detail('生效時機與注意點',paragraphs(state.flow.notes));
   if (state.flow.edges.length) {

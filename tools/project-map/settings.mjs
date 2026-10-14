@@ -26,7 +26,7 @@ export function makeSettingFlows(settings, ref) {
     const operation = s.store === 'runtime_settings.operations_settings';
     const retention = s.store === 'runtime_settings.data_retention_settings';
     const deploy = s.section === '部署配置';
-    const category = ['saveCategoryManagement','savePlatformFeatures'].includes(s.target);
+    const category = s.target === 'saveCategoryManagement';
     const scope = s.target === 'saveScopeMembers';
     const rule = s.target === 'saveAccountAccessRule';
     const preference = s.target === 'updatePlatformAdminNotificationPreferences';

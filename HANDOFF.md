@@ -95,4 +95,4 @@ Working note. Delete it once P7 is done and the content has moved into commit me
 
 ## Known follow-ups
 
-- P7: `tools/project-map/content.mjs` still names `session-bootstrap` / `session-role` on the frontend side (now `src/services/session.ts`).
+- P7: project-map rebuilt against shared contracts + registry and covered by tooling tests.

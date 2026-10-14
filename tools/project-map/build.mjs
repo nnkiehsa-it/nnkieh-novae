@@ -8,8 +8,11 @@ import { createHash } from 'node:crypto';
 import { Script } from 'node:vm';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { X, Menu, Plus, Minus } from 'lucide-react';
+import { X, List, Plus, Minus } from '@phosphor-icons/react/ssr';
 import { parse as babelParse } from '@babel/parser';
+import { ACTIONS } from '../../shared/actions.ts';
+import { OPERATION_POLICIES } from '../../shared/operation-policies.ts';
+import { DATA_RETENTION } from '../../shared/data-retention.ts';
 import { actions, flows, groups, categorySettings, policyDescriptions, retentionDescriptions, triggerDescriptions } from './content.mjs';
 import { architectureFlows } from './architecture.mjs';
 import { modelDescriptions, makeModelFlows, makeModelOverview } from './models.mjs';
@@ -24,34 +27,60 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../..');
 const read = p => fs.readFileSync(path.join(root, p), 'utf8');
 const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
+if (!process.argv[2] && !process.env.USERPROFILE) throw new Error('請指定輸出 HTML 的路徑；只有 Windows 有預設的桌面位置。');
 const output = path.resolve(process.argv[2] || path.join(process.env.USERPROFILE, 'Desktop/Novae-程式流程地圖.html'));
-const sourcePaths = git('ls-files', 'src', 'cloudflare/src', 'cloudflare/generated', 'config', 'database/migrations', 'scripts', '.github/workflows', 'next.config.mjs', 'package.json', 'README.md', 'docs/architecture.md', 'docs/backend-and-data.md', 'docs/admin-console-review.md', 'docs/product.md')
+const sourcePaths = git('ls-files', 'src', 'shared', 'cloudflare/src', 'cloudflare/generated', 'config', 'database/migrations', 'scripts', '.github/workflows', 'next.config.mjs', 'package.json', 'README.md', 'docs/architecture.md', 'docs/backend-and-data.md', 'docs/admin-console-review.md', 'docs/product.md')
   .split('\n').filter(p => /\.(?:ts|tsx|mjs|json|sql|yml|css|cjs|md)$/.test(p));
 // 僅已追蹤程式／設定；不讀 .env、credential、DB、使用者資料或 seed。
 const sources = Object.fromEntries(sourcePaths.map(p => [p, { text: read(p), sha256: createHash('sha256').update(read(p)).digest('hex') }]));
 const wrangler = JSON.parse(read('cloudflare/wrangler.json'));
 const safeWrangler = { ...wrangler, hyperdrive: wrangler.hyperdrive.map(({ binding }) => ({ binding, note: '部署 ID 與連線字串未嵌入' })) };
 sources['cloudflare/wrangler.json'] = { text: JSON.stringify(safeWrangler, null, 2), note: '連線設定已省略；其餘是程式快照' };
+// 過時的來源全部收集後一起回報，而不是一次修一個。
+const refProblems = new Set();
 const ref = (p, anchor) => {
-  if (!sources[p]) throw new Error('來源不存在：' + p);
-  const line = anchor ? sources[p].text.slice(0, Math.max(0, sources[p].text.indexOf(anchor))).split('\n').length : 1;
+  if (!sources[p]) { refProblems.add('來源不存在：' + p); return { path: p, line: 1 }; }
+  if (!anchor) return { path: p, line: 1 };
+  const at = sources[p].text.indexOf(anchor);
+  if (at < 0) { refProblems.add('來源中找不到錨點：' + p + ' / ' + anchor); return { path: p, line: 1 }; }
+  const line = sources[p].text.slice(0, at).split('\n').length;
   return { path: p, line };
 };
-const registryPath = 'cloudflare/src/backend/actions/action-registry.ts';
+// 契約（shared/actions.ts）決定有哪些 action 與其 group／額度；registry 決定 Worker 怎麼執行。
+const registryPath = 'cloudflare/src/backend/actions/registry.ts';
+const registryDirectory = path.posix.dirname(registryPath);
 const definitions = [];
-visit(parse(registryPath), candidate => {
-  if (candidate.type !== 'CallExpression' || candidate.callee.name !== 'action' || candidate.arguments[0]?.type !== 'StringLiteral') return;
-  const [id,domain,rateGroup,,options] = candidate.arguments;
-  const permission = options?.properties.find(p=>p.key?.name==='requiredPermission')?.value.value;
-  definitions.push({id:id.value,domain:domain.value,rateGroup:rateGroup.value,permission,line:candidate.loc.start.line});
-});
-const policies = JSON.parse(read('config/backend-actions.config.json'));
-if (definitions.length !== Object.keys(policies).length) throw new Error('action registry 與 config 數量不一致');
-for (const d of definitions) if (!actions[d.id] || !policies[d.id]) throw new Error('尚未解說 action：' + d.id);
-for (const id of Object.keys(actions)) if (!policies[id]) throw new Error('已移除的 action 解說：' + id);
+{
+  const program = parse(registryPath).program;
+  const modules = new Map();
+  for (const statement of program.body) {
+    if (statement.type !== 'ImportDeclaration' || !statement.source.value.startsWith('./')) continue;
+    const file = path.posix.join(registryDirectory, statement.source.value);
+    for (const specifier of statement.specifiers) modules.set(specifier.local.name, file);
+  }
+  let handlers;
+  visit(program, candidate => {
+    if (candidate.type === 'VariableDeclarator' && candidate.id.name === 'ACTION_HANDLERS') handlers = candidate.init.expression ?? candidate.init;
+  });
+  if (!handlers) throw new Error('registry 找不到 ACTION_HANDLERS');
+  for (const property of handlers.properties) {
+    const id = property.key.name ?? property.key.value;
+    const field = name => property.value.properties.find(p => (p.key.name ?? p.key.value) === name)?.value;
+    const run = field('run');
+    const handlerFile = modules.get(run.type === 'MemberExpression' ? run.object.name : run.name);
+    if (!handlerFile) throw new Error('無法判斷 action 的實作檔：' + id);
+    const spec = ACTIONS[id];
+    if (!spec) throw new Error('registry 有契約外的 action：' + id);
+    definitions.push({ id, domain: field('domain').value, access: field('access').value, permission: field('permission')?.value, actionGroup: spec.group, extraLimit: spec.extraLimit, weighted: Boolean(spec.units), handlerFile, line: property.loc.start.line });
+  }
+}
+for (const id of Object.keys(ACTIONS)) if (!definitions.some(d => d.id === id)) throw new Error('契約的 action 沒有 registry 實作：' + id);
+for (const d of definitions) {
+  if (!actions[d.id]) throw new Error('尚未解說 action：' + d.id);
+  actions[d.id].refs = [d.handlerFile];
+}
+for (const id of Object.keys(actions)) if (!ACTIONS[id]) throw new Error('已移除的 action 解說：' + id);
 for (const id of Object.keys(actionCopy)) if (!actions[id]) throw new Error('已移除的 action 標題：'+id);
-// 這三個 action 的實作在 users.ts，其他指派操作在 user-access.ts。
-for (const id of ['getCurrentUserRole', 'getUserPublicProfiles', 'cacheUserAvatar']) actions[id].refs = ['cloudflare/src/backend/actions/users.ts'];
 
 function parse(p) { return babelParse(sources[p].text, { sourceType: 'module', plugins: ['typescript', 'jsx'] }); }
 function visit(node, fn) {
@@ -63,40 +92,53 @@ function visit(node, fn) {
     else if (value && typeof value === 'object') visit(value, fn);
   }
 }
+// 每個 events 檔以 *_ANNOUNCERS 對應 action → 它宣告的領域事件；本檔 helper 回傳的事件一併展開。
 const eventMap = {};
 for (const p of sourcePaths.filter(p => p.includes('/backend/events/') && p.endsWith('-events.ts') && !p.endsWith('/domain-events.ts'))) {
-  const source = parse(p);
-  visit(source, node => {
-    if (node.type !== 'SwitchStatement') return;
-    const clauses = node.cases;
-    clauses.forEach((clause, i) => {
-      if (clause.test?.type !== 'StringLiteral') return;
-      let body = clause;
-      while (!body.consequent.length && i + 1 < clauses.length) body = clauses[++i];
-      const events = [];
-      visit(body, candidate => {
-        if (candidate.type !== 'ObjectExpression') return;
-        const field = name => candidate.properties.find(p => p.type === 'ObjectProperty' && (p.key.name || p.key.value) === name)?.value;
+  const program = parse(p).program;
+  const literalEvents = (root, helpers, seen = new Set()) => {
+    const events = [];
+    visit(root, candidate => {
+      if (candidate.type === 'ObjectExpression') {
+        const field = name => candidate.properties.find(q => q.type === 'ObjectProperty' && (q.key.name || q.key.value) === name)?.value;
         const type = field('eventType'), destinations = field('destinations');
         if (type?.type === 'StringLiteral') events.push({ type: type.value, destinations: destinations?.type === 'ArrayExpression' ? destinations.elements.map(x => x.value) : [] });
-      });
-      if (sources[p].text.slice(body.start,body.end).includes('resultUpdated(')) events.push({ type: 'issue.result_updated', destinations: ['notion', 'realtime'] });
-      eventMap[clause.test.value] = { events, ref: ref(p, sources[p].text.slice(clause.start,clause.start+30)) };
+      } else if (candidate.type === 'CallExpression' && helpers.has(candidate.callee.name) && !seen.has(candidate.callee.name)) {
+        events.push(...literalEvents(helpers.get(candidate.callee.name), helpers, new Set([...seen, candidate.callee.name])));
+      }
     });
+    return events;
+  };
+  const helpers = new Map();
+  for (const statement of program.body) {
+    if (statement.type === 'FunctionDeclaration') helpers.set(statement.id.name, statement.body);
+    if (statement.type === 'VariableDeclaration') for (const d of statement.declarations) if (d.init?.type === 'ArrowFunctionExpression') helpers.set(d.id.name, d.init.body);
+  }
+  let announcers = 0;
+  visit(program, candidate => {
+    if (candidate.type !== 'VariableDeclarator' || !candidate.id.name?.endsWith('_ANNOUNCERS')) return;
+    announcers += 1;
+    const object = candidate.init.expression ?? candidate.init;
+    for (const property of object.properties) {
+      const id = property.key.name ?? property.key.value;
+      const unique = new Map(literalEvents(property.value, helpers).map(e => [e.type + '|' + e.destinations.join(','), e]));
+      eventMap[id] = { events: [...unique.values()], ref: ref(p, id + ':') };
+    }
   });
+  if (!announcers) throw new Error('events 檔沒有 *_ANNOUNCERS：' + p);
 }
 const actionReferences = Object.fromEntries(definitions.map(({ id }) => [id, sourcePaths.filter(p => p.startsWith('src/') && !p.includes('/generated/') && (sources[p].text.includes("'" + id + "'") || sources[p].text.includes('"' + id + '"'))).map(p => ref(p, id))]));
 const node = (title, text, layer, refs) => ({ title, text, layer, refs });
 const actionFlows = definitions.map(d => {
-  const a = actions[d.id], readOnly = ['read', 'upload-resolve'].includes(d.rateGroup), policy = policies[d.id];
+  const a = actions[d.id], readOnly = ['read', 'upload-resolve'].includes(d.actionGroup);
   const handlerRefs = a.refs.map(p => ref(p, d.id));
   const events = eventMap[d.id]?.events ?? [];
-  const copy = describeAction(d.id,a), adminAudit = d.rateGroup === 'admin-write';
+  const copy = describeAction(d.id,a), adminAudit = d.actionGroup === 'admin-write';
   const nodes = [
     node(copy.input, a.entry + '。' + (actionReferences[d.id].length ? '以下來源可檢視 service 呼叫位置。' : '目前沒有直接 browser 呼叫位置；此後端 action 仍保留於 registry。'), 'browser', actionReferences[d.id]),
-    node(copy.request, readOnly ? '用目前 UID 的 ID token + App Check 送 POST /v1/actions；依 readTimeoutMs/特定timeout等待。相同讀取可由 service 合併。' : '同 UID/action 冷卻 → 取 ID token/App Check → 以同一 UUID operationId 送 request；timeout/retry 沿用該 ID。', 'browser', [ref('src/services/backend-action.ts', 'invokeBackendAction'), ref('src/lib/request.ts')]),
+    node(copy.request, readOnly ? '用目前 UID 的 ID token + App Check 送 POST /v1/actions；依 readTimeoutMs/特定timeout等待。相同讀取可由 service 合併。' : '同 UID/action 冷卻 → 取 ID token/App Check → 以同一 UUID operationId 送 request；timeout/retry 沿用該 ID。', 'browser', [ref('src/services/backend-action.ts', 'export async function callAction'), ref('src/lib/request.ts')]),
     node('Worker：驗 token 並讀有效授權', 'Origin、App Check、Firebase ID token、native ingress；每次從 DB resolveAuthContext 讀有效限制、角色與 scope。blocked 拒絕受保護請求。', 'worker', [ref('cloudflare/src/index.ts', 'async function handleAction'), ref('cloudflare/src/backend/actions/auth.ts')]),
-    node(readOnly?'Execution：檢查讀取權限與頻率':'Execution：驗權限、防重送並扣額', (d.permission ? 'Registry 必須有 ' + d.permission + '。' : 'Registry 沒有固定 permission；domain handler 檢查自己的 owner/scope/身份規則。') + 'read_only/reaction_only 依 accessClass 限制。每 UID 的 ' + d.rateGroup + ' 10 秒 burst。' + (readOnly?'':'寫入先開交易 claim_operation：已完成重播 response；執行中／過期拒絕。新操作才扣產品配額並繼續業務 handler。') + (policy.extraLimit ? '產品額度 ' + policy.extraLimit + (policy.unitsPath==='payload.images' ? '，按圖片張數扣額。' : '，目前 rate-limit 實作每次扣 1。') : '') + (policy.unitsPath==='payload.changes'?'config 宣告 payload.changes，但現有 rate-limit 只特別處理 payload.images，所以整批 scope 目前仍扣 1。':''), 'worker', [ref(registryPath, 'action("' + d.id + '"'), ref('cloudflare/src/backend/actions/execution.ts'), ref('cloudflare/src/backend/actions/rate-limit.ts')]),
+    node(readOnly?'Execution：檢查讀取權限與頻率':'Execution：驗權限、防重送並扣額', (d.permission ? 'Registry 必須有 ' + d.permission + '。' : 'Registry 沒有固定 permission；domain handler 檢查自己的 owner/scope/身份規則。') + '帳號限制依 registry 的 access（' + d.access + '）判斷：read_only 只能讀與改個人設定，reaction_only 另可回應。每 UID 的 ' + d.actionGroup + ' 以 10 秒固定視窗計 burst。' + (readOnly?'':'寫入先開交易 claim_operation：已完成重播 response；執行中／過期拒絕。新操作才扣產品配額並繼續業務 handler。') + (d.extraLimit ? '產品額度 ' + d.extraLimit + (d.weighted ? '，依契約 units 按本次數量扣額。' : '，每次扣 1。') : ''), 'worker', [ref(registryPath, d.id + ': {'), ref('cloudflare/src/backend/actions/execution.ts'), ref('cloudflare/src/backend/actions/rate-limit.ts')]),
     node(copy.business, a.logic, 'worker', handlerRefs),
     node(copy.storage, a.db + '。' + (readOnly ? 'read/upload-resolve 不 claim operation，也不開 mutation transaction。' : '前一步已 claim_operation；變更、'+(adminAudit?'管理 audit、':'')+'此 action 的事件與 complete_operation 在同一 transaction 提交。業務拒絕或任何 SQL 失敗整筆回滾。'), 'database', [...handlerRefs, ref('cloudflare/src/backend/actions/execution.ts', 'client.transaction')]),
     node(copy.response, 'NDJSON start/part/end；失敗可以是 HTTP error 或串流 error。service 驗仍是同一 Firebase User，舊 session 回應不套入。' + a.effect, 'browser', [ref('src/services/backend-action.ts', 'async function readAnswer'), ...actionReferences[d.id].slice(0, 3)]),
@@ -116,18 +158,16 @@ for (const f of [...flows,...architectureFlows]) {
 // 對其他操作圖，原response與Queue也是由交易分岔。
 for (const f of actionFlows) if (f.nodes.length === 8) f.edges[f.edges.length - 1] = { from: 5, to: 7, label: '交易提交後', async: true };
 
-const operationText = read('src/generated/operations.ts');
-const operationSpecs = JSON.parse(operationText.match(/OPERATION_POLICIES = (\{[\s\S]*?\n\}) as const/)[1]);
 const settings = categorySettings.map(([key,title,store,effect,timing,target])=>({key,title,store,effect,timing,target,section:'分類、帳號與平台',refs:[]}));
-for (const [key, spec] of Object.entries(operationSpecs)) {
+for (const [key, spec] of Object.entries(OPERATION_POLICIES)) {
   if (!policyDescriptions[key] || !policyTitles[key]) throw new Error('缺政策解說或名稱：' + key);
   const matches = sourcePaths.filter(p => !p.includes('/generated/') && !p.endsWith('.sql') && sources[p].text.includes(key));
-  settings.push({ key, title: policyTitles[key], store: 'runtime_settings.operations_settings', effect: policyDescriptions[key], timing: spec.group === 'client' ? 'Worker snapshot最多60秒；browser在下一次成功回應遇到新revision後重新整理，後續讀取／計時使用新值' : spec.group === 'logs' ? 'Worker政策snapshot更新後，下一次maintenance執行清理' : spec.group === 'jobs' ? 'Worker政策snapshot更新後，下一次Queue sweep採新batch大小' : 'Worker isolate最多60秒重新整理；已執行request使用原snapshot，後續操作使用新值', initial: spec.value, range: spec.min + '–' + spec.max, target: 'saveOperationPolicies', section: '營運政策 · ' + spec.group, policyGroup:spec.group, refs: [ref('config/operations.config.json','"'+key+'"'),...matches.slice(0, 5).map(p => ref(p, key))] });
+  settings.push({ key, title: policyTitles[key], store: 'runtime_settings.operations_settings', effect: policyDescriptions[key], timing: spec.group === 'client' ? 'Worker snapshot最多60秒；browser在下一次成功回應遇到新revision後重新整理，後續讀取／計時使用新值' : spec.group === 'logs' ? 'Worker政策snapshot更新後，下一次maintenance執行清理' : spec.group === 'jobs' ? 'Worker政策snapshot更新後，下一次Queue sweep採新batch大小' : 'Worker isolate最多60秒重新整理；已執行request使用原snapshot，後續操作使用新值', initial: spec.value, range: spec.min + '–' + spec.max, target: 'saveOperationPolicies', section: '營運政策 · ' + spec.group, policyGroup:spec.group, refs: [ref(sources['shared/operation-policies.ts'].text.includes('  '+key+':') ? 'shared/operation-policies.ts' : 'shared/rate-limits.ts', key+':'),...matches.slice(0, 5).map(p => ref(p, key))] });
 }
-for (const [key, initial] of Object.entries(JSON.parse(read('config/data-retention.config.json')))) {
+for (const [key, initial] of Object.entries(DATA_RETENTION)) {
   if (!retentionDescriptions[key]) throw new Error('缺retention解說：' + key);
   if (!retentionTitles[key]) throw new Error('缺保留設定名稱：'+key);
-  settings.push({ key, title: retentionTitles[key], store:'runtime_settings.data_retention_settings', effect:retentionDescriptions[key], timing:retentionBehavior(key).timing, initial, range:typeof initial === 'boolean' ? '開／關' : key.endsWith('Hours') ? '1–87600小時' : '1–3650天', target:'savePlatformSettings',section:'資料保留', refs:[ref('config/data-retention.config.json', '"'+key+'"'),ref('database/migrations/0054_scoped_retention_policy_changes.sql','retention_change_scopes'),ref('database/migrations/0055_notification_expiry_event_time.sql')] });
+  settings.push({ key, title: retentionTitles[key], store:'runtime_settings.data_retention_settings', effect:retentionDescriptions[key], timing:retentionBehavior(key).timing, initial, range:typeof initial === 'boolean' ? '開／關' : key.endsWith('Hours') ? '1–87600小時' : '1–3650天', target:'savePlatformSettings',section:'資料保留', refs:[ref('shared/data-retention.ts', key+':'),ref('database/migrations/0054_scoped_retention_policy_changes.sql','retention_change_scopes'),ref('database/migrations/0055_notification_expiry_event_time.sql')] });
 }
 for (const item of settings.filter(s=>!s.refs.length)) {
   const action = actions[item.target];
@@ -247,6 +287,7 @@ const ordinaryFlows=[...flows,...specialFlows].map(clarifyFlow).concat(actionFlo
   return {...f,section,group:automatic?'自動化與時間':administrator?'管理員操作':'使用者操作',kind:f.kind||'sequence'};
 });
 const allFlows = [...architectureFlows,makeModelOverview(models),...makeModelFlows(models),...ordinaryFlows,...makeSettingFlows(settings,ref),...triggerFlows].map(narrateFlow);
+if (refProblems.size) throw new Error('原碼參照過時：\n' + [...refProblems].join('\n'));
 const allIds = new Set(allFlows.map(f=>f.id));
 if (allIds.size !== allFlows.length) throw new Error('重複流程ID');
 for (const f of allFlows) {
@@ -265,7 +306,7 @@ for (const setting of settings) if (!allIds.has(setting.target)) throw new Error
 const data = {
   meta:{product:'novae',repo:root.replaceAll('\\','/'),head:git('rev-parse','HEAD'),dirty:Boolean(git('status','--porcelain')),date:new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Taipei',dateStyle:'short',timeStyle:'medium'}).format(new Date()),scope:'目前程式快照；非正式環境設定、非外部服務實測',actionCount:definitions.length,flowCount:allFlows.length,modelCount:models.length,sourceCount:Object.keys(sources).length,triggerCount:triggerMap.size,stats:definitions.length+' 個操作、'+models.length+' 個模型、'+settings.length+' 組設定',regenerate:'node tools/project-map/build.mjs'},
   layers:{browser:'瀏覽器',worker:'Worker / DO',database:'PostgreSQL',async:'背景工作',external:'外部服務',build:'建置 / 部署'},
-  icons:Object.fromEntries(Object.entries({close:X,menu:Menu,plus:Plus,minus:Minus}).map(([name,component])=>[name,renderToStaticMarkup(createElement(component,{'aria-hidden':true}))])),
+  icons:Object.fromEntries(Object.entries({close:X,menu:List,plus:Plus,minus:Minus}).map(([name,component])=>[name,renderToStaticMarkup(createElement(component,{'aria-hidden':true}))])),
   inventory:{intro:definitions.length+' 個 registry actions、'+settings.length+' 組設定、'+models.length+' 個表／view、'+triggerMap.size+' 個現存 triggers。每個項目都有目錄入口。',sections:[{title:'近期管理與資料變更',paragraphs:['管理設定與規則核對閱讀版本，衝突保留草稿。','0054 只清選定保留範圍；0055 通知 expiry 從事件時間計算，未完成修復可接續。','帳號限制用 target_type + uid 複合鍵，0058 清理略過續期交易鎖住的列。','saveScopeMembers 整批授權／撤銷並回完整 revision；0059 只 reconcile 被編輯帳號的正式管理員身份。']}]},
   groups,flows:allFlows,settings,models,triggers:[...triggerMap.values()],timers,routes,endpoints,sources,
 };

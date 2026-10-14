@@ -12,8 +12,8 @@ export function independentPaths(flow, separatePaths) {
       path('按登出或換帳號：清除舊帳號狀態',[entry(4,'帳號選單：登出或切換 UID','使用者按登出，或 Firebase observer 偵測到 UID 改變。'),n[4]],['舊 UID → signOut、清 namespace／草稿並拒絕舊回應']),
     ],
     'read-path':()=>[
-      path('開列表／詳情或提交搜尋',[...n.slice(0,5)],['URL 條件＋UID → 查目前帳號的快取','分類、query、cursor → 讀取 action','SQL 結果＋cursor＋domain version → hook','正式 entity＋作者 UID＋圖片 ID → 呈現']),
-      path('按返回：恢復剛才的列表',[entry(5,'Router：收到返回或關閉詳情','使用者按返回、關閉 sheet 或切回列表；此事件不刪內容。'),n[5],n[1]],['目前 route＋列表位置 → navigation／view memory','query＋已載頁＋scroll → 恢復目前 UID 的畫面快照']),
+      path('開列表／詳情或提交搜尋',[...n.slice(0,5)],['URL 條件＋UID → 查目前帳號的 query cache','分類、query、cursor → 讀取 action','SQL 結果＋cursor＋domain version → hook','正式資料＋作者 UID＋圖片 ID → 呈現']),
+      path('按返回：恢復剛才的列表',[entry(5,'Router：收到返回或關閉詳情','使用者按返回、關閉 sheet 或切回列表；此事件不刪內容。'),n[5],n[1]],['目前 route＋捲動位置 → app-views 記住的位置','URL 條件＋已載頁的 query key → 從 query cache 恢復畫面']),
     ],
     'draft-submit':()=>[
       path('輸入時：保存文字草稿',[n[0],n[1]],['UID＋內容類型＋分類／reply＋文字 → 草稿 key']),
@@ -29,7 +29,7 @@ export function independentPaths(flow, separatePaths) {
     realtime:()=>[
       path('頁面需要訂閱：建立共用連線',[n[2],n[0],n[1]],['同 UID／角色的 leader → 要求 realtime ticket','UID＋topics＋短效 JWT → WebSocket 握手']),
       path('已連線：心跳、閒置與重連',[copy(1,'Realtime transport：目前連線存在'),n[3]],['活動時間＋visible／online＋心跳間隔 → 保持、停連或重連']),
-      path('收到事件：更新內容或重新讀取',[copy(1,'RealtimeHub：傳送內容變更訊號'),n[4],n[5]],['event＋aggregateRevision＋domainRevision → 本機判斷','失效的 domain／entity → 合併重讀；gap 時查版本']),
+      path('收到事件：更新內容或重新讀取',[copy(1,'RealtimeHub：傳送內容變更訊號'),n[4],n[5]],['event＋aggregateRevision＋domainRevision → 本機判斷','失效的列表／詳情／留言 key → 可見時重讀；gap 時查版本']),
     ],
     'support-clock':()=>[
       path('新提案：記錄當時規則',[entry(0,'提案表單：送出新提案','createIssue 驗證分類與內容；分類的新值只供這次建立使用。'),n[0]],['當時分類規則 → support snapshot；無審核者同時設 deadline']),

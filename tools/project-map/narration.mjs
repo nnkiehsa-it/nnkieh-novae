@@ -32,10 +32,10 @@ export function narrateFlow(flow) {
     {title:'入口一：部署健康檢查',nodes:flow.nodes.slice(0,2),labels:['healthcheck＋secret → 驗配置、配額、SELECT roles']},
     {title:'入口二：應用錯誤觀測',nodes:flow.nodes.slice(2),labels:['status、code、operationId、failureId → 錯誤聚合／管理查詢']},
   ]);
-  if (flow.rateGroup) {
+  if (flow.actionGroup) {
     const labels=[...actionLabels];
     labels[0]=flow.id+'：輸入欄位／查詢條件';
-    labels[3]=['read','upload-resolve'].includes(flow.rateGroup)?'授權＋讀取頻率通過 → 執行查詢':'授權＋新 operation＋配額通過 → 執行變更';
+    labels[3]=['read','upload-resolve'].includes(flow.actionGroup)?'授權＋讀取頻率通過 → 執行查詢':'授權＋新 operation＋配額通過 → 執行變更';
     labels[4]='SQL／API：'+flow.nodes[5].title.split('：').at(-1);
     labels[5]='NDJSON：'+flow.db.split(/[、；： ]/)[0]+' 的正式結果＋版本／錯誤';
     const paths=[{title:'主流程：'+flow.title,nodes:flow.nodes.slice(0,7),labels}];

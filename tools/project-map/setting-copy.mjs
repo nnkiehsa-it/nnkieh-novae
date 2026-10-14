@@ -1,7 +1,7 @@
 // 名稱解釋「改哪個規則」，套用卡片解釋「哪個程式採用新值」。
 export const policyTitles = {
   notionArchiveDays:'Notion 非內容封存天數',readBurst:'讀取短時限額',writeBurst:'寫入短時限額',sensitiveBurst:'互動短時限額',adminBurst:'管理短時限額',uploadBurst:'上傳短時限額',resolveBurst:'圖片解析短時限額',
-  viewMemoryMinutes:'畫面記憶有效分鐘',viewMemoryEntries:'畫面記憶筆數',feedPages:'列表保留頁數',mediaBrowserSeconds:'公開圖片瀏覽器快取秒數',mediaEdgeSeconds:'圖片邊緣快取秒數',avatarRevalidateHours:'Google 頭像重查間隔',
+  viewMemoryMinutes:'畫面資料保鮮分鐘',feedPages:'列表保留頁數',mediaBrowserSeconds:'公開圖片瀏覽器快取秒數',mediaEdgeSeconds:'圖片邊緣快取秒數',avatarBrowserSeconds:'頭像瀏覽器快取秒數',avatarEdgeSeconds:'頭像邊緣快取秒數',avatarRevalidateHours:'Google 頭像重查間隔',
   notionBatchSize:'Notion 每批投遞數',notificationBatchSize:'通知每批投遞數',realtimeBatchSize:'即時訊息每批投遞數',jobBatchSize:'外部工作每批執行數',policyBatchSize:'政策每類套用筆數',
   clientWriteCooldownMs:'前端同操作冷卻時間',requestTimeoutMs:'寫入等待上限',readTimeoutMs:'讀取等待上限',longTimeoutMs:'長操作等待上限',retryAttempts:'前端重試嘗試數',retryAfterMaxMs:'自動等待 Retry-After 上限',
   realtimeIdleMinutes:'即時連線閒置期限',realtimeHeartbeatSeconds:'即時連線心跳間隔',realtimeTicketSeconds:'WebSocket 連線票期限',titleLength:'標題字數上限',contentLength:'內文字數上限',commentLength:'留言字數上限',resultLength:'處理結果字數上限',locationLength:'設施位置字數上限',searchLength:'搜尋字數上限',
@@ -9,8 +9,8 @@ export const policyTitles = {
 };
 
 const consumers = {
-  viewMemoryMinutes:['view-memory：判斷畫面快照過期','再次讀快照時採新期限'],viewMemoryEntries:['view-memory：限制快照筆數','後續快照存取時限制容量'],feedPages:['Feed hook：限制已載入頁數','後續列表分頁採新保留頁數'],
-  mediaBrowserSeconds:['媒體代理：設定公開快取標頭','後續媒體回應採新快取秒數'],mediaEdgeSeconds:['媒體代理：設定 edge 快取期限','新政策版本建立新快取 key'],avatarRevalidateHours:['頭像檢查：比較來源確認時間','後續頭像檢查採新間隔'],
+  viewMemoryMinutes:['query cache：判斷讀過的答案是否過期','下一次讀取時採新期限'],feedPages:['Feed hook：限制已載入頁數','後續列表分頁採新保留頁數'],
+  mediaBrowserSeconds:['媒體代理：設定公開快取標頭','後續媒體回應採新快取秒數'],mediaEdgeSeconds:['媒體代理：設定 edge 快取期限','新政策版本建立新快取 key'],avatarBrowserSeconds:['媒體代理：設定頭像快取標頭','後續頭像回應採新快取秒數'],avatarEdgeSeconds:['媒體代理：設定頭像 edge 快取期限','新政策版本建立新快取 key'],avatarRevalidateHours:['頭像檢查：比較來源確認時間','後續頭像檢查採新間隔'],
   notionBatchSize:['Queue：限制 Notion 投遞數','下次 sweep 採新批次數'],notificationBatchSize:['Queue：限制站內與 Push 投遞數','下次 sweep 採新批次數'],realtimeBatchSize:['Queue：限制即時訊息投遞數','下次 sweep 採新批次數'],jobBatchSize:['Queue：限制外部工作數','下次 sweep 採新批次數'],policyBatchSize:['政策工作：限制每類更新筆數','下次政策批次採新上限'],
   clientWriteCooldownMs:['backend-action：限制重複操作頻率','後續同 UID/action 採新冷卻'],requestTimeoutMs:['safeFetch：設定寫入逾時','後續寫入請求採新逾時'],readTimeoutMs:['safeFetch：設定讀取逾時','後續讀取請求採新逾時'],longTimeoutMs:['safeFetch：設定長操作逾時','後續長操作採新逾時'],retryAttempts:['safeFetch：限制自動重試次數','後續請求採新嘗試上限'],retryAfterMaxMs:['safeFetch：判斷是否自動等待','後續重試採新等待上限'],
   realtimeIdleMinutes:['Realtime transport：判斷閒置斷線','後續活動與閒置檢查採新值'],realtimeHeartbeatSeconds:['Realtime heartbeat：安排連線心跳','後續心跳排程採新間隔'],realtimeTicketSeconds:['Worker：簽短效 WebSocket 票','下一張 ticket 採新有效期'],
