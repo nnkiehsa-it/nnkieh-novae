@@ -1,81 +1,58 @@
-import { invokeBackendAction } from '@/services/backend-action';
-import type { RoleCode } from '@/services/session-role';
+import type { ActionOutput } from '@shared/actions.ts';
+import type { AccessUser } from '@shared/contracts/users.ts';
+import { callAction } from '@/services/backend-action';
 
-export interface AccessUser {
-  uid: string;
-  email: string | null;
-  name: string;
-  photoUrl: string | null;
-  roles: RoleCode[];
-  managedIssueCategoryIds: string[];
-  managedFacilityCategoryIds: string[];
-}
+export type { AccessUser } from '@shared/contracts/users.ts';
 
 export type AccessScope =
   | { kind: 'announcement' }
   | { kind: 'facility' | 'issue'; categoryId: string };
 
-interface AccessUserList {
-  revision: string;
-  truncated: boolean;
-  users: AccessUser[];
-}
+type AccessUserList = ActionOutput<'listRoleAssignments'>;
 
 export function accessScopeKey(scope: AccessScope | null) {
   if (!scope) return "admin-access:none";
   return scope.kind === "announcement" ? "admin-access:announcement" : `admin-access:${scope.kind}:${scope.categoryId}`;
 }
 
-function withoutPlatformAdmins(result: AccessUserList): AccessUserList {
-  return {
-    ...result,
-    users: result.users.filter((user) => !user.roles.includes('platform-admin')),
-  };
+function scopeRequest(scope: AccessScope) {
+  return scope.kind === 'announcement'
+    ? { scopeKind: scope.kind }
+    : { scopeKind: scope.kind, categoryId: scope.categoryId };
 }
 
-async function listAccessUsers(
-  payload: { categoryId?: string; query: string; scopeKind?: AccessScope['kind'] },
-  options: { onUsers?: (users: AccessUser[]) => void } = {},
-) {
-  let streamed: AccessUserList = { revision: "", truncated: false, users: [] };
-  const fn = invokeBackendAction<typeof payload, AccessUserList>('listRoleAssignments', {
-    onSegment: (key, data) => {
-      if (key === 'truncated') streamed = { ...streamed, truncated: data === true };
-      if (key === 'revision') streamed = { ...streamed, revision: data as string };
-      if (key !== 'users') return;
-      const result = { ...streamed, users: data as AccessUser[] };
-      streamed = payload.scopeKind ? withoutPlatformAdmins(result) : result;
-      options.onUsers?.(streamed.users);
-    },
-  });
-  const result = await fn(payload);
-  return payload.scopeKind ? withoutPlatformAdmins(result) : result;
+function withoutPlatformAdmins(users: AccessUser[]) {
+  return users.filter((user) => !user.roles.includes('platform-admin'));
+}
+
+/** The answer arrives in parts; the member list is handed over as soon as it lands. */
+function streamedUsers(onUsers: ((users: AccessUser[]) => void) | undefined, scoped: boolean) {
+  return (key: string | undefined, data: unknown) => {
+    if (key !== 'users') return;
+    const users = data as AccessUser[];
+    onUsers?.(scoped ? withoutPlatformAdmins(users) : users);
+  };
 }
 
 export async function listScopeMembers(
   scope: AccessScope,
   options: { onUsers?: (users: AccessUser[]) => void } = {},
-) {
-  return await listAccessUsers({
-    categoryId: 'categoryId' in scope ? scope.categoryId : undefined,
-    query: '',
-    scopeKind: scope.kind,
-  }, options);
+): Promise<AccessUserList> {
+  const result = await callAction('listRoleAssignments', { query: '', ...scopeRequest(scope) }, {
+    onSegment: streamedUsers(options.onUsers, true),
+  });
+  return { ...result, users: withoutPlatformAdmins(result.users) };
 }
 
 export async function lookupAccessMember(
   query: string,
   options: { onUsers?: (users: AccessUser[]) => void } = {},
-) {
-  return await listAccessUsers({ query: query.trim() }, options);
+): Promise<AccessUserList> {
+  return await callAction('listRoleAssignments', { query: query.trim() }, {
+    onSegment: streamedUsers(options.onUsers, false),
+  });
 }
 
 export async function saveScopeMembers(scope: AccessScope, changes: Array<{ uid: string; grant: boolean }>, revision: string) {
-  return invokeBackendAction<
-    { categoryId?: string; changes: typeof changes; revision: string; scopeKind: AccessScope['kind'] },
-    { changedUids: string[]; revision: string; success: boolean; users: AccessUser[] }
-  >('saveScopeMembers')({
-    categoryId: 'categoryId' in scope ? scope.categoryId : undefined,
-    changes, revision, scopeKind: scope.kind,
-  });
+  return await callAction('saveScopeMembers', { ...scopeRequest(scope), changes, revision });
 }

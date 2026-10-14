@@ -266,6 +266,7 @@ const messages = {
   'ui.composer.attachmentPreview': 'Attachment preview',
   'ui.discussion.title': 'Discussion',
   'ui.discussion.replying': 'Replying to {name}',
+  'ui.person.unnamed': 'Unnamed user',
   'ui.discussion.replyInput': 'Enter a reply',
   'ui.discussion.commentInput': 'Enter a comment',
   'ui.discussion.replyPlaceholder': 'Write your reply…',

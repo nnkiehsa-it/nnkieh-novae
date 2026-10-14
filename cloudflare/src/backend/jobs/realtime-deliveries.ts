@@ -3,7 +3,7 @@ import type { AppDatabaseClient } from "../database/client.ts";
 import { asRecord, asString } from "../shared/json.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
 import { operationPolicy } from '../shared/operation-policies.ts';
-import type { RealtimeDelivery } from "../../durable/realtime-hub.ts";
+import { realtimeDelivery, type RealtimeDelivery } from "./realtime-message.ts";
 import type { Selected } from "../database/schema.ts";
 import { settleDelivery, type EventDeliveryItem } from "./delivery-attempt.ts";
 
@@ -28,17 +28,12 @@ async function realtimeDeliveriesForItem(
       "admin_opened_at" | "announcement_opened_at" | "broadcast_opened_at" | "user_opened_at"
     >>`select admin_opened_at, announcement_opened_at, broadcast_opened_at, user_opened_at
       from app_private.notification_states where uid = ${item.aggregate_id}`;
-    return [{
-      event: "notification_state_changed",
-      id: item.event_id,
-      payload: {
-        adminOpenedAt: data?.admin_opened_at ?? null,
-        announcementOpenedAt: data?.announcement_opened_at ?? null,
-        broadcastOpenedAt: data?.broadcast_opened_at ?? null,
-        userOpenedAt: data?.user_opened_at ?? null,
-      },
-      topic: `notification-state:${item.aggregate_id}`,
-    }];
+    return [realtimeDelivery("notification_state_changed", item.event_id, `notification-state:${item.aggregate_id}`, {
+      adminOpenedAt: data?.admin_opened_at ?? null,
+      announcementOpenedAt: data?.announcement_opened_at ?? null,
+      broadcastOpenedAt: data?.broadcast_opened_at ?? null,
+      userOpenedAt: data?.user_opened_at ?? null,
+    })];
   }
 
   const eventType = contentEventType(item.event_type);
@@ -100,12 +95,7 @@ async function realtimeDeliveriesForItem(
     }
   }
 
-  return topics.map((topic) => ({
-    event: "content_changed",
-    id: item.event_id,
-    payload: realtimePayload,
-    topic,
-  }));
+  return topics.map((topic) => realtimeDelivery("content_changed", item.event_id, topic, realtimePayload));
 }
 export async function processRealtimeDeliveries(database: AppDatabaseClient, env: Env) {
   const batchSize = operationPolicy('realtimeBatchSize');

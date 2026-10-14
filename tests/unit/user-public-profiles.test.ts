@@ -3,7 +3,7 @@ import { fetchUserPublicProfiles, getCachedUserPublicProfiles } from "@/services
 import { clearContentReadMemoryCache, setContentCacheScope } from "@/services/content-read-cache";
 
 const fetch = vi.hoisted(() => vi.fn());
-vi.mock("@/services/backend-action", () => ({ invokeBackendAction: () => fetch }));
+vi.mock("@/services/backend-action", () => ({ callAction: (_name: string, payload: unknown) => fetch(payload) }));
 vi.mock("@/services/issues-core", () => ({ toReadableBackendError: (error: unknown) => error }));
 vi.mock("@/lib/persistent-cache", () => ({
   readPersistentCache: async () => undefined, writePersistentCache: vi.fn(async () => {}),

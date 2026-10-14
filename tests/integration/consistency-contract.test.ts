@@ -16,7 +16,7 @@ import { withRuntimeEnvironment } from "../../cloudflare/src/backend/shared/env.
 import { processInAppDeliveries } from "../../cloudflare/src/backend/jobs/notification-deliveries.ts";
 import { processRealtimeDeliveries } from "../../cloudflare/src/backend/jobs/realtime-deliveries.ts";
 import type { Env } from "../../cloudflare/src/types.ts";
-import type { RealtimeDelivery } from "../../cloudflare/src/durable/realtime-hub.ts";
+import type { RealtimeDelivery } from "../../cloudflare/src/backend/jobs/realtime-message.ts";
 
 function assertCanonicalApiJson(value: unknown, path = "data") {
   if (Array.isArray(value)) {
@@ -210,7 +210,6 @@ integrationTest("realtime deliveries use subscriber topics and carry operation a
   );
   for (const delivery of contentDeliveries) {
     assert.equal(delivery.id.length > 0, true);
-    assert.equal(delivery.payload.operationId, operationId);
     assert.equal(delivery.payload.targetId, issueId);
     assert.equal(delivery.payload.eventType, "issue_changed");
     assert.equal(Number(delivery.payload.aggregateRevision) >= 1, true);

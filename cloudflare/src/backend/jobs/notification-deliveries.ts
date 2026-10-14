@@ -4,7 +4,7 @@ import { isInvalidFcmTokenError, sendFcmMessage } from "../shared/fcm.ts";
 import { asString } from "../shared/json.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
 import { operationPolicy } from '../shared/operation-policies.ts';
-import type { RealtimeDelivery } from "../../durable/realtime-hub.ts";
+import { realtimeDelivery, type RealtimeDelivery } from "./realtime-message.ts";
 import type { Selected } from "../database/schema.ts";
 import { settleDelivery, type EventDeliveryItem } from "./delivery-attempt.ts";
 import { resolveRecipients } from "./delivery-recipients.ts";
@@ -58,12 +58,9 @@ export async function processInAppDeliveries(database: AppDatabaseClient, env: E
           const id = await deterministicNotificationId(item.event_id, "broadcast");
           const notification = { ...base, recipient_uid: null, origin: "live" as const, created_at: item.occurred_at, id };
           await storeNotifications(database, [notification]);
-          realtimeNotifications.push({
-            event: "notification_insert",
-            id,
-            payload: notificationRealtimePayload(notification),
-            topic: `notifications:${String(base.source)}`,
-          });
+          realtimeNotifications.push(realtimeDelivery(
+            "notification_insert", id, `notifications:${String(base.source)}`, notificationRealtimePayload(notification),
+          ));
         } else {
           const recipients = await resolveRecipients(database, item);
           if (recipients.length > 0) {
@@ -77,12 +74,10 @@ export async function processInAppDeliveries(database: AppDatabaseClient, env: E
               })),
             );
             await storeNotifications(database, notifications);
-            realtimeNotifications.push(...notifications.map((notification) => ({
-              event: "notification_insert",
-              id: notification.id,
-              payload: notificationRealtimePayload(notification),
-              topic: `notifications:user:${notification.recipient_uid}`,
-            })));
+            realtimeNotifications.push(...notifications.map((notification) => realtimeDelivery(
+              "notification_insert", notification.id, `notifications:user:${notification.recipient_uid}`,
+              notificationRealtimePayload(notification),
+            )));
           }
         }
       }

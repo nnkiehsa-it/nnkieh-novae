@@ -110,7 +110,7 @@ async function loadAvatar(photoUrl: string, uid: string) {
     return;
   }
   try {
-    const storedPhotoUrl = await cacheUserAvatar(photoUrl);
+    const storedPhotoUrl = await cacheUserAvatar();
     if (state.user?.uid === uid && storedPhotoUrl) {
       writeCachedAvatar(uid, photoUrl, storedPhotoUrl);
       patch({ customPhotoUrl: storedPhotoUrl });

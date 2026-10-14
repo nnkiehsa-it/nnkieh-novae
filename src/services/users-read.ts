@@ -1,4 +1,4 @@
-import { invokeBackendAction } from '@/services/backend-action';
+import { callAction } from '@/services/backend-action';
 import { readRequestTimeoutMs } from '@/lib/request';
 import { toReadableBackendError } from './issues-core';
 import {
@@ -59,10 +59,7 @@ export async function fetchUserPublicProfiles(uids: string[]) {
       const batch = missingUids.slice(offset, offset + 50);
       const requestKey = `${USER_PROFILE_REQUEST_PREFIX}${batch.join(',')}`;
       const fetched = await runCoalescedContentRequest(requestKey, async () => {
-        const fn = invokeBackendAction<{ uids: string[] }, { profiles: Record<string, UserPublicProfile> }>(
-          'getUserPublicProfiles', { timeoutMs: readRequestTimeoutMs },
-        );
-        return (await fn({ uids: batch })).profiles;
+        return (await callAction('getUserPublicProfiles', { uids: batch }, { timeoutMs: readRequestTimeoutMs })).profiles;
       });
       if (!isContentCacheWriteGuardCurrent(guard)) return {};
       for (const uid of batch) {

@@ -10,7 +10,7 @@ import {
   markNotificationsOpened,
   subscribeNotificationSource,
   type NotificationCursor,
-  type NotificationSourcePage,
+  type NotificationPages,
 } from "@/services/notifications";
 import type { NotificationRecord, NotificationSource } from "@/types";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
@@ -39,7 +39,7 @@ export function useNotificationsPage() {
     [session.isAdmin],
   );
   const viewMemory = getViewMemory<{
-    cursors: Record<NotificationSource, NotificationCursor>;
+    cursors: Record<NotificationSource, NotificationCursor | null>;
     more: Record<NotificationSource, boolean>;
     pageCounts: Record<NotificationSource, number>;
     pages: Record<NotificationSource, NotificationRecord[]>;
@@ -50,7 +50,7 @@ export function useNotificationsPage() {
     Record<NotificationSource, NotificationRecord[]>
   >(viewMemory?.pages ?? sourceRecord(() => []));
   const [cursors, setCursors] = React.useState<
-    Record<NotificationSource, NotificationCursor>
+    Record<NotificationSource, NotificationCursor | null>
   >(viewMemory?.cursors ?? sourceRecord(() => null));
   const [more, setMore] = React.useState<Record<NotificationSource, boolean>>(
     viewMemory?.more ?? sourceRecord(() => false),
@@ -65,22 +65,27 @@ export function useNotificationsPage() {
   const requestGuard = usePagedRequestGuard();
   const queryKey = `${session.user?.uid ?? ""}|${activeSources.join(",")}`;
 
-  const applyPages = React.useCallback((next: Record<NotificationSource, NotificationSourcePage>) => {
+  const applyPages = React.useCallback((next: NotificationPages) => {
+    // A source the account may not read comes back without a page.
+    const received = activeSources.flatMap((source) => {
+      const page = next[source];
+      return page ? [[source, page] as const] : [];
+    });
     setPages((current) => ({
       ...current,
-      ...Object.fromEntries(activeSources.map((source) => [source, next[source].notifications])),
+      ...Object.fromEntries(received.map(([source, page]) => [source, page.notifications])),
     }));
     setCursors((current) => ({
       ...current,
-      ...Object.fromEntries(activeSources.map((source) => [source, next[source].cursor])),
+      ...Object.fromEntries(received.map(([source, page]) => [source, page.cursor])),
     }));
     setMore((current) => ({
       ...current,
-      ...Object.fromEntries(activeSources.map((source) => [source, next[source].hasMore])),
+      ...Object.fromEntries(received.map(([source, page]) => [source, page.hasMore])),
     }));
     setPageCounts((current) => ({
       ...current,
-      ...Object.fromEntries(activeSources.map((source) => [source, 1])),
+      ...Object.fromEntries(received.map(([source]) => [source, 1])),
     }));
   }, [activeSources]);
 
@@ -95,7 +100,6 @@ export function useNotificationsPage() {
     try {
       await fetchNotificationSnapshot(
         activeSources,
-        session.user.uid,
         { onPages: (next) => {
           if (requestGuard.isCurrent(requestToken)) {
             readSucceeded.current = true;
@@ -161,8 +165,7 @@ export function useNotificationsPage() {
         .flatMap((source) => pages[source])
         .toSorted(
           (left, right) =>
-            (right.created_at?.getTime() ?? 0) -
-              (left.created_at?.getTime() ?? 0) ||
+            Date.parse(right.createdAt) - Date.parse(left.createdAt) ||
             right.id.localeCompare(left.id),
         ),
     [activeSources, pages],

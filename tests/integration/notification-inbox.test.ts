@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { asRecord, callAction, database, integrationTest, seedActor } from "./helpers.ts";
-import { normalizeNotificationCursor } from "../../src/services/notification-cursor.ts";
 
 integrationTest("notification pages preserve microseconds and same-time ID ordering", async () => {
   const user = await seedActor("notification-pagination");
@@ -29,8 +28,9 @@ integrationTest("notification pages preserve microseconds and same-time ID order
     const page = asRecord(asRecord(response.pages).user);
     received.push(...(page.notifications as Array<{ id: string }>).map((item) => item.id));
     if (!page.hasMore) break;
-    cursor = normalizeNotificationCursor(page.cursor);
-    assert.ok(cursor, "A continuing notification page must provide a valid cursor");
+    cursor = page.cursor;
+    // The cursor goes back exactly as it came, microseconds included.
+    assert.match(String(asRecord(cursor).createdAt), /\.\d{6}Z$/u, "A continuing notification page must provide a precise cursor");
   }
   assert.deepEqual(received, ids);
 });

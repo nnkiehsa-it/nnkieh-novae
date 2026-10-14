@@ -14,18 +14,7 @@ export type WritableIssueCategory = IssueCategory;
 export type IssueFilter = IssueCategory;
 export type IssueRouteFilter = IssueFilter | 'my-proposals';
 export type IssueSortOption = 'latest' | 'most-supported' | 'ending-soon';
-export type NotificationType =
-  | 'announcement_created'
-  | 'announcement_comment_created'
-  | 'facility_status_changed'
-  | 'facility_report_created'
-  | 'issue_created'
-  | 'issue_comment_created'
-  | 'issue_status_changed'
-  | 'support_goal_met'
-  | 'issue_deleted';
-export type NotificationTargetType = 'announcement' | 'facility' | 'issue';
-export type NotificationSource = 'broadcast' | 'admin' | 'user';
+export type { NotificationSource, NotificationTargetType, NotificationType } from '@shared/contracts/notifications.ts';
 
 
 export interface IssueSummary {
@@ -96,7 +85,6 @@ export interface ComposerInput {
   category: WritableIssueCategory;
 }
 
-import type { FacilityStatus } from '@shared/contracts/facilities.ts';
 export type { FacilityCursor, FacilityStatus, FacilitySort as FacilitySortOption } from '@shared/contracts/facilities.ts';
 /** A list entry; `deleting` marks one this tab is removing. */
 export type FacilitySummary = import('@shared/contracts/facilities.ts').FacilitySummary & { deleting?: boolean };
@@ -174,22 +162,7 @@ export interface PlatformDashboardData {
   operations: PlatformDashboardOperations;
 }
 
-export interface NotificationRecord {
-  id: string;
-  source: NotificationSource;
-  type: NotificationType;
-  target_type: NotificationTargetType;
-  target_id: string;
-  comment_id: string | null;
-  title: string;
-  actor_uid: string | null;
-  body_preview: string | null;
-  issue_category: IssueCategory | null;
-  old_status?: IssueStatus | FacilityStatus;
-  new_status?: IssueStatus | FacilityStatus;
-  is_read: boolean;
-  created_at: Date | null;
-}
+export type NotificationRecord = import('@shared/contracts/notifications.ts').Notification;
 
 export interface AnnouncementSummary {
   id: string;
@@ -216,12 +189,7 @@ export interface AnnouncementInput {
   content: string;
 }
 
-export interface UserPublicProfile {
-  uid: string;
-  displayName: string;
-  photoUrl: string | null;
-  version: number;
-}
+export type { UserPublicProfile } from '@shared/contracts/users.ts';
 
 export interface MarkdownImageRecord {
   src: string;

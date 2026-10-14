@@ -1,4 +1,5 @@
-import { invokeBackendAction } from '@/services/backend-action';
+import type { SessionAccess } from '@shared/contracts/users.ts';
+import { callAction } from '@/services/backend-action';
 import { toReadableBackendError } from '@/services/issues-core';
 import {
   CONTENT_SHORT_CACHE_TTL_MS,
@@ -10,17 +11,8 @@ import {
 } from '@/services/content-read-cache';
 import { fetchSessionBootstrap, markSessionBootstrapStale } from '@/services/session-bootstrap';
 
-export type SessionRole = 'admin' | 'user';
-export type RoleCode = 'platform-admin' | 'proposal-manager' | 'announcement-manager' | 'general-affairs';
-export type PermissionCode = 'proposal.manage' | 'announcement.manage' | 'category.manage' | 'facility.manage' | 'role.manage' | 'dashboard.view';
-export interface SessionAccess {
-  role: SessionRole;
-  roles: RoleCode[];
-  permissions: PermissionCode[];
-  managedIssueCategoryIds: string[];
-  managedFacilityCategoryIds: string[];
-  setupCompleted: boolean;
-}
+export type { PermissionCode, RoleCode, SessionAccess } from '@shared/contracts/users.ts';
+export type SessionRole = SessionAccess['role'];
 let cachedSessionRole: SessionRole = 'user';
 const SESSION_ACCESS_CACHE_KEY = 'current-session-access-v2';
 
@@ -29,17 +21,9 @@ export function getCachedSessionRole() {
 }
 
 export function seedSessionAccess(access: SessionAccess, options: { persist?: boolean } = {}) {
-  cachedSessionRole = access.role === 'admin' ? 'admin' : 'user';
-  const normalized = {
-    role: cachedSessionRole,
-    roles: access.roles,
-    permissions: access.permissions,
-    managedIssueCategoryIds: access.managedIssueCategoryIds,
-    managedFacilityCategoryIds: access.managedFacilityCategoryIds,
-    setupCompleted: access.setupCompleted === true,
-  } satisfies SessionAccess;
-  if (options.persist !== false) setCachedContent(SESSION_ACCESS_CACHE_KEY, normalized);
-  return normalized;
+  cachedSessionRole = access.role;
+  if (options.persist !== false) setCachedContent(SESSION_ACCESS_CACHE_KEY, access);
+  return access;
 }
 
 export async function readCachedSessionAccess(): Promise<SessionAccess | null> {
@@ -74,15 +58,7 @@ export async function fetchCurrentUserRole(
 
   return runCoalescedContentRequest(SESSION_ACCESS_CACHE_KEY, async (cacheGuard) => {
     try {
-      const result = await invokeBackendAction<Record<string, never>, SessionAccess>('getCurrentUserRole')({});
-      const access = seedSessionAccess({
-        role: result.role === 'admin' ? 'admin' : 'user',
-        roles: Array.isArray(result.roles) ? result.roles : [],
-        permissions: Array.isArray(result.permissions) ? result.permissions : [],
-        managedIssueCategoryIds: Array.isArray(result.managedIssueCategoryIds) ? result.managedIssueCategoryIds : [],
-        managedFacilityCategoryIds: Array.isArray(result.managedFacilityCategoryIds) ? result.managedFacilityCategoryIds : [],
-        setupCompleted: result.setupCompleted === true,
-      });
+      const access = seedSessionAccess(await callAction('getCurrentUserRole', {}));
       setCachedContentFromRead(cacheGuard, access);
       return access;
     } catch (error) {

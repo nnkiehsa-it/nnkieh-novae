@@ -105,7 +105,7 @@ async function executeBackendAction(
     });
 
     // 2. Enforce business rate limits
-    await claimBackendActionBusinessLimit(name, payload, auth.uid);
+    await claimBackendActionBusinessLimit(name, input, auth.uid);
 
     // 3. Execute domain mutation
     const result = await run(input, auth, tx);

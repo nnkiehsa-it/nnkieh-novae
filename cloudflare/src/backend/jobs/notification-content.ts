@@ -180,7 +180,7 @@ export function notificationRealtimePayload(notification: Record<string, unknown
     actorUid: notification.actor_uid ?? null,
     bodyPreview: notification.body_preview ?? null,
     commentId: notification.comment_id ?? null,
-    createdAt: notification.created_at ?? new Date().toISOString(),
+    createdAt: notification.created_at,
     id: notification.id,
     isRead: false,
     issueCategory: notification.issue_category ?? null,

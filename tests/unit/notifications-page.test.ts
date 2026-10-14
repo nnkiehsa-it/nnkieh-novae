@@ -7,7 +7,7 @@ import {
   fetchNotificationSnapshot,
   fetchNotificationSourcePages,
   markNotificationsOpened,
-  type NotificationSourcePage,
+  type NotificationPage,
 } from "@/services/notifications";
 import type { NotificationRecord, NotificationSource } from "@/types";
 
@@ -30,20 +30,22 @@ let state: ReturnType<typeof useNotificationsPage>;
 let root: Root;
 let mounted = false;
 
-function page(id: string, hasMore = true): NotificationSourcePage {
+function page(id: string, hasMore = true): NotificationPage {
   return {
     cursor: { id, createdAt: "2026-09-26T10:00:00.000Z" },
     hasMore,
-    notifications: [{ id, source: "user", created_at: new Date() } as NotificationRecord],
+    notifications: [{ id, source: "user", createdAt: new Date().toISOString() } as NotificationRecord],
   };
 }
+
+const READ_STATE = { adminOpenedAt: null, announcementOpenedAt: null, broadcastOpenedAt: null, userOpenedAt: null };
 
 function snapshot(id: string) {
   return {
     admin: { cursor: null, hasMore: false, notifications: [] },
     broadcast: { cursor: null, hasMore: false, notifications: [] },
     user: page(id),
-  } satisfies Record<NotificationSource, NotificationSourcePage>;
+  } satisfies Record<NotificationSource, NotificationPage>;
 }
 
 function deferred<T>() {
@@ -55,7 +57,7 @@ function deferred<T>() {
 
 function pendingSnapshot() {
   const work = deferred<Awaited<ReturnType<typeof fetchNotificationSnapshot>>>();
-  vi.mocked(fetchNotificationSnapshot).mockImplementationOnce(async (_sources, _uid, options) => {
+  vi.mocked(fetchNotificationSnapshot).mockImplementationOnce(async (_sources, options) => {
     const result = await work.promise;
     options?.onPages?.(result.pages);
     return result;
@@ -63,17 +65,17 @@ function pendingSnapshot() {
   return {
     ...work,
     complete: (id: string) => work.resolve({
-      pages: snapshot(id), state: { admin: null, announcement: null, broadcast: null, user: null },
+      openedAt: "2026-09-26T10:00:00.000Z", pages: snapshot(id), state: READ_STATE,
     }),
   };
 }
 
 beforeEach(async () => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
-  vi.mocked(fetchNotificationSnapshot).mockImplementation(async (_sources, _uid, options) => {
+  vi.mocked(fetchNotificationSnapshot).mockImplementation(async (_sources, options) => {
     const pages = snapshot("first");
     options?.onPages?.(pages);
-    return { pages, state: { admin: null, announcement: null, broadcast: null, user: null } };
+    return { openedAt: "2026-09-26T10:00:00.000Z", pages, state: READ_STATE };
   });
   root = createRoot(document.createElement("div"));
   function Probe() { state = useNotificationsPage(); return null; }

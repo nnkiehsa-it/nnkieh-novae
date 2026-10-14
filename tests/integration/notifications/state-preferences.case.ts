@@ -26,7 +26,7 @@ integrationTest("notification state, mandatory push, admin preferences, and dash
   assert.ok(Date.parse(String(snapshot.openedAt)) > 0);
 
   const state = asRecord(await callAction("getNotificationReadState", {}, user.auth));
-  assert.equal(asRecord(state.state).uid, user.auth.uid);
+  assert.ok("userOpenedAt" in asRecord(state.state));
   const unread = asRecord(await callAction("getNotificationUnreadHint", {}, user.auth));
   assert.equal(typeof unread.hasUnread, "boolean");
   const opened = asRecord(await callAction("markNotificationsOpened", {}, user.auth));

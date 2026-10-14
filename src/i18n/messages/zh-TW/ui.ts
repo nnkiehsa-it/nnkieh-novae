@@ -266,6 +266,7 @@ const messages = {
   'ui.composer.attachmentPreview': '附件預覽',
   'ui.discussion.title': '留言',
   'ui.discussion.replying': '正在回覆 {name}',
+  'ui.person.unnamed': '未命名使用者',
   'ui.discussion.replyInput': '輸入回覆',
   'ui.discussion.commentInput': '輸入留言',
   'ui.discussion.replyPlaceholder': '寫下你的回覆…',

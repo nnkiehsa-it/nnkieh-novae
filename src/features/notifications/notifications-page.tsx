@@ -39,17 +39,17 @@ function NotificationRow({ notification }: { notification: NotificationRecord })
   const className = cn(rowClass, "items-start transition-[background-color] duration-[var(--motion-control)] ease-[var(--ease-move)] hover:bg-surface-raised focus-visible:bg-surface-raised");
   const body = (
     <>
-      <span aria-hidden className={cn("mt-0.5 grid size-10 shrink-0 place-items-center rounded-full", notification.is_read ? "bg-surface-raised text-ink-muted" : "bg-contrast text-on-contrast")}>
+      <span aria-hidden className={cn("mt-0.5 grid size-10 shrink-0 place-items-center rounded-full", notification.isRead ? "bg-surface-raised text-ink-muted" : "bg-contrast text-on-contrast")}>
         <NotificationGlyph type={notification.type} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className={cn("block truncate text-base text-ink", !notification.is_read && "font-semibold")}>
+        <span className={cn("block truncate text-base text-ink", !notification.isRead && "font-semibold")}>
           {t(TITLE_KEYS[notification.type] ?? "ui.notification.issueUpdated")}
         </span>
-        {notification.body_preview ? <span className="line-clamp-2 text-sm text-ink-muted">{notification.body_preview}</span> : null}
-        <span className="mt-1 block text-xs text-ink-faint">{formatDate(notification.created_at)}</span>
+        {notification.bodyPreview ? <span className="line-clamp-2 text-sm text-ink-muted">{notification.bodyPreview}</span> : null}
+        <span className="mt-1 block text-xs text-ink-faint">{formatDate(notification.createdAt)}</span>
       </span>
-      {notification.is_read ? null : <span aria-label={t("notification.unread")} className="mt-2 size-2.5 shrink-0 rounded-full bg-info" />}
+      {notification.isRead ? null : <span aria-label={t("notification.unread")} className="mt-2 size-2.5 shrink-0 rounded-full bg-info" />}
     </>
   );
   return (

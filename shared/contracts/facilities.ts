@@ -1,9 +1,9 @@
 import * as v from "valibot";
 import { action, Count, NullableTimestamp, OptionalText, pageSize, RequiredText, Success, Text, Timestamp, Uuid } from "../contract.ts";
 
-export const FACILITY_STATUSES = ["pending", "processing", "completed", "unable-to-handle"] as const;
-export const FacilityStatus = v.picklist(FACILITY_STATUSES);
-export type FacilityStatus = v.InferOutput<typeof FacilityStatus>;
+import { FacilityStatus } from "./statuses.ts";
+
+export { FACILITY_STATUSES, FacilityStatus } from "./statuses.ts";
 
 export const FacilitySort = v.picklist(["latest", "most-affected"]);
 export type FacilitySort = v.InferOutput<typeof FacilitySort>;

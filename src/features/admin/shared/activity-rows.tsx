@@ -33,9 +33,9 @@ export function ActivityRows({ entries, showKind = true }: {
       <ListRow
         detail={showKind ? t(kind.labelKey) : undefined}
         icon={kind.icon}
-        key={`${entry.kind}-${entry.target_id}-${entry.occurred_at}-${index}`}
+        key={`${entry.kind}-${entry.targetId}-${entry.occurredAt}-${index}`}
         label={entry.title || "—"}
-        value={formatDate(new Date(entry.occurred_at))}
+        value={formatDate(entry.occurredAt)}
       />
     );
   });

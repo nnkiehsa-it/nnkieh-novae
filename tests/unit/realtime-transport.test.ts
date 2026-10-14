@@ -55,14 +55,24 @@ it('invalidates pending ticket requests across session restarts', async () => {
   pending[1](ticketResponse()); await settle();
   expect(FakeSocket.instances).toHaveLength(1);
 });
+const CHANGE = {
+  eventType: 'facility_changed', op: 'update', targetId: 'facility-1', parentId: null,
+  aggregateRevision: 2, domainRevision: 5, supportCount: null, likeCount: null, commentCount: null,
+};
+
 it('deduplicates messages and resynchronizes after a hidden tab resumes', async () => {
   const transport = await import('@/services/realtime-transport');
   const onMessage = vi.fn(); const onResync = vi.fn();
-  cleanup = transport.subscribeRealtimeTopic('school', 'changed', onMessage, { onResync });
+  const onError = vi.fn();
+  cleanup = transport.subscribeRealtimeTopic('school', 'content_changed', onMessage, { onError, onResync });
   await settle(); const socket = FakeSocket.instances[0]; socket.onopen?.();
-  const data = JSON.stringify({ id: 'one', topic: 'school', event: 'changed', payload: { count: 2 } });
+  const data = JSON.stringify({ id: 'one', topic: 'school', event: 'content_changed', payload: CHANGE });
   socket.onmessage?.({ data }); socket.onmessage?.({ data });
   expect(onMessage).toHaveBeenCalledOnce();
+  expect(onMessage).toHaveBeenCalledWith(CHANGE);
+  socket.onmessage?.({ data: JSON.stringify({ id: 'two', topic: 'school', event: 'content_changed', payload: { count: 2 } }) });
+  expect(onMessage).toHaveBeenCalledOnce();
+  expect(onError).toHaveBeenCalledOnce();
   vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
   document.dispatchEvent(new Event('visibilitychange'));
   expect(socket.readyState).toBe(3);
@@ -74,10 +84,10 @@ it('deduplicates messages and resynchronizes after a hidden tab resumes', async 
 it('rejects events from the previous role and stops on logout', async () => {
   const transport = await import('@/services/realtime-transport');
   const onMessage = vi.fn();
-  cleanup = transport.subscribeRealtimeTopic('school', 'changed', onMessage);
+  cleanup = transport.subscribeRealtimeTopic('school', 'content_changed', onMessage);
   await settle(); const socket = FakeSocket.instances[0];
   state.role = 'admin';
-  socket.onmessage?.({ data: JSON.stringify({ id: 'one', topic: 'school', event: 'changed', payload: {} }) });
+  socket.onmessage?.({ data: JSON.stringify({ id: 'one', topic: 'school', event: 'content_changed', payload: CHANGE }) });
   await settle();
   expect(onMessage).not.toHaveBeenCalled(); expect(socket.readyState).toBe(3);
   expect(FakeSocket.instances).toHaveLength(2);

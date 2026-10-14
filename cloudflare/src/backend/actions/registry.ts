@@ -4,12 +4,15 @@ import { handleOperationsAction } from "./operations.ts";
 import { handleCategoryAction } from "./categories.ts";
 import { loadContentVersions } from "./content-versions.ts";
 import { getSessionBootstrap } from "./session-bootstrap.ts";
-import { handleUserAction } from "./users.ts";
+import * as users from "./users.ts";
+import * as userAccess from "./user-access.ts";
+import * as userAdmin from "./user-admin.ts";
+import * as accessRules from "./account-access-rules.ts";
 import { handleUploadAction } from "./uploads.ts";
 import { handleIssueAction } from "./issues.ts";
 import * as facilities from "./facilities.ts";
 import { handleAnnouncementAction } from "./announcements.ts";
-import { handleNotificationAction } from "./notifications.ts";
+import * as notifications from "./notifications.ts";
 import { handleDashboardAction } from "./dashboard.ts";
 
 export type ActionDomain =
@@ -62,20 +65,20 @@ export const ACTION_HANDLERS: ActionHandlers = {
   completeInitialSetup: { domain: "category", access: "participation", run: (input, auth, database) => handleCategoryAction("completeInitialSetup", input, auth, database) },
   getContentVersions: { domain: "content", access: "read", run: async (_input, _auth, database) => ({ versions: await loadContentVersions(database) }) },
   getSessionBootstrap: { domain: "user", access: "read", run: (input, auth, database) => getSessionBootstrap(input, auth, database) },
-  getCurrentUserRole: { domain: "user", access: "read", run: (input, auth, database) => handleUserAction("getCurrentUserRole", input, auth, database) },
-  listRoleAssignments: { domain: "user", access: "read", permission: "role.manage", run: (input, auth, database) => handleUserAction("listRoleAssignments", input, auth, database) },
-  listAdminUsers: { domain: "user", access: "read", permission: "role.manage", run: (input, auth, database) => handleUserAction("listAdminUsers", input, auth, database) },
-  listAdminAudit: { domain: "user", access: "read", permission: "role.manage", run: (input, auth, database) => handleUserAction("listAdminAudit", input, auth, database) },
-  listAdminActivity: { domain: "user", access: "read", permission: "dashboard.view", run: (input, auth, database) => handleUserAction("listAdminActivity", input, auth, database) },
-  getAdminOverview: { domain: "user", access: "read", permission: "dashboard.view", run: (input, auth, database) => handleUserAction("getAdminOverview", input, auth, database) },
-  listAccountAccessRules: { domain: "user", access: "read", permission: "role.manage", run: (input, auth, database) => handleUserAction("listAccountAccessRules", input, auth, database) },
-  previewAccountAccessRule: { domain: "user", access: "read", permission: "role.manage", run: (input, auth, database) => handleUserAction("previewAccountAccessRule", input, auth, database) },
-  saveAccountAccessRule: { domain: "user", access: "admin", permission: "role.manage", run: (input, auth, database) => handleUserAction("saveAccountAccessRule", input, auth, database) },
-  deleteAccountAccessRule: { domain: "user", access: "admin", permission: "role.manage", run: (input, auth, database) => handleUserAction("deleteAccountAccessRule", input, auth, database) },
-  setUserAccessScope: { domain: "user", access: "admin", permission: "role.manage", run: (input, auth, database) => handleUserAction("setUserAccessScope", input, auth, database) },
-  saveScopeMembers: { domain: "user", access: "admin", permission: "role.manage", run: (input, auth, database) => handleUserAction("saveScopeMembers", input, auth, database) },
-  cacheUserAvatar: { domain: "user", access: "personal", run: (input, auth, database) => handleUserAction("cacheUserAvatar", input, auth, database) },
-  getUserPublicProfiles: { domain: "user", access: "read", run: (input, auth, database) => handleUserAction("getUserPublicProfiles", input, auth, database) },
+  getCurrentUserRole: { domain: "user", access: "read", run: users.getCurrentUserRole },
+  listRoleAssignments: { domain: "user", access: "read", permission: "role.manage", run: userAccess.listRoleAssignments },
+  listAdminUsers: { domain: "user", access: "read", permission: "role.manage", run: userAdmin.listAdminUsers },
+  listAdminAudit: { domain: "user", access: "read", permission: "role.manage", run: userAdmin.listAdminAudit },
+  listAdminActivity: { domain: "user", access: "read", permission: "dashboard.view", run: userAdmin.listAdminActivity },
+  getAdminOverview: { domain: "user", access: "read", permission: "dashboard.view", run: userAdmin.getAdminOverview },
+  listAccountAccessRules: { domain: "user", access: "read", permission: "role.manage", run: accessRules.listAccountAccessRules },
+  previewAccountAccessRule: { domain: "user", access: "read", permission: "role.manage", run: accessRules.previewAccountAccessRule },
+  saveAccountAccessRule: { domain: "user", access: "admin", permission: "role.manage", run: accessRules.saveAccountAccessRule },
+  deleteAccountAccessRule: { domain: "user", access: "admin", permission: "role.manage", run: accessRules.deleteAccountAccessRule },
+  setUserAccessScope: { domain: "user", access: "admin", permission: "role.manage", run: userAccess.setUserAccessScope },
+  saveScopeMembers: { domain: "user", access: "admin", permission: "role.manage", run: userAccess.saveScopeMembers },
+  cacheUserAvatar: { domain: "user", access: "personal", run: users.cacheUserAvatar },
+  getUserPublicProfiles: { domain: "user", access: "read", run: users.getUserPublicProfiles },
   createImageUploadSessions: { domain: "upload", access: "participation", run: (input, auth, database) => handleUploadAction("createImageUploadSessions", input, auth, database) },
   finalizeImageUploads: { domain: "upload", access: "participation", run: (input, auth, database) => handleUploadAction("finalizeImageUploads", input, auth, database) },
   deleteUploadedImages: { domain: "upload", access: "participation", run: (input, auth, database) => handleUploadAction("deleteUploadedImages", input, auth, database) },
@@ -110,15 +113,15 @@ export const ACTION_HANDLERS: ActionHandlers = {
   listAnnouncementComments: { domain: "announcement", access: "read", run: (input, auth, database) => handleAnnouncementAction("listAnnouncementComments", input, auth, database) },
   createAnnouncementComment: { domain: "announcement", access: "participation", run: (input, auth, database) => handleAnnouncementAction("createAnnouncementComment", input, auth, database) },
   deleteAnnouncementComment: { domain: "announcement", access: "participation", moderatedBy: "announcement.manage", run: (input, auth, database) => handleAnnouncementAction("deleteAnnouncementComment", input, auth, database) },
-  listNotificationPages: { domain: "notification", access: "read", run: (input, auth, database) => handleNotificationAction("listNotificationPages", input, auth, database) },
-  getNotificationSnapshot: { domain: "notification", access: "read", run: (input, auth, database) => handleNotificationAction("getNotificationSnapshot", input, auth, database) },
-  getNotificationReadState: { domain: "notification", access: "read", run: (input, auth, database) => handleNotificationAction("getNotificationReadState", input, auth, database) },
-  getNotificationUnreadHint: { domain: "notification", access: "read", run: (input, auth, database) => handleNotificationAction("getNotificationUnreadHint", input, auth, database) },
-  markNotificationsOpened: { domain: "notification", access: "personal", run: (input, auth, database) => handleNotificationAction("markNotificationsOpened", input, auth, database) },
-  getPushNotificationPreference: { domain: "notification", access: "read", run: (input, auth, database) => handleNotificationAction("getPushNotificationPreference", input, auth, database) },
-  getPlatformAdminNotificationPreferences: { domain: "notification", access: "read", run: (input, auth, database) => handleNotificationAction("getPlatformAdminNotificationPreferences", input, auth, database) },
-  registerPushToken: { domain: "notification", access: "personal", run: (input, auth, database) => handleNotificationAction("registerPushToken", input, auth, database) },
-  unregisterPushToken: { domain: "notification", access: "personal", run: (input, auth, database) => handleNotificationAction("unregisterPushToken", input, auth, database) },
-  updatePlatformAdminNotificationPreferences: { domain: "notification", access: "personal", run: (input, auth, database) => handleNotificationAction("updatePlatformAdminNotificationPreferences", input, auth, database) },
+  listNotificationPages: { domain: "notification", access: "read", run: notifications.listNotificationPages },
+  getNotificationSnapshot: { domain: "notification", access: "read", run: notifications.getNotificationSnapshot },
+  getNotificationReadState: { domain: "notification", access: "read", run: notifications.getNotificationReadState },
+  getNotificationUnreadHint: { domain: "notification", access: "read", run: notifications.getNotificationUnreadHint },
+  markNotificationsOpened: { domain: "notification", access: "personal", run: notifications.markNotificationsOpened },
+  getPushNotificationPreference: { domain: "notification", access: "read", run: notifications.getPushNotificationPreference },
+  getPlatformAdminNotificationPreferences: { domain: "notification", access: "read", run: notifications.getPlatformAdminNotificationPreferences },
+  registerPushToken: { domain: "notification", access: "personal", run: notifications.registerPushToken },
+  unregisterPushToken: { domain: "notification", access: "personal", run: notifications.unregisterPushToken },
+  updatePlatformAdminNotificationPreferences: { domain: "notification", access: "personal", run: notifications.updatePlatformAdminNotificationPreferences },
   getPlatformDashboard: { domain: "dashboard", access: "read", permission: "dashboard.view", run: (input, auth, database) => handleDashboardAction("getPlatformDashboard", input, auth, database) },
 };

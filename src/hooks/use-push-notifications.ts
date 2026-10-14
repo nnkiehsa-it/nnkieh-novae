@@ -63,10 +63,7 @@ export function usePushNotifications() {
         ? Notification.permission
         : "unsupported";
       setPermission(currentPermission);
-      let result = await getPushNotificationPreference({
-        deviceId: deviceIdRef.current,
-        permission: currentPermission,
-      });
+      let result = await getPushNotificationPreference(deviceIdRef.current, currentPermission);
       if (currentPermission === "granted") {
         const confirmed = await confirmCurrentPushToken(session.user.uid);
         if (confirmed) {

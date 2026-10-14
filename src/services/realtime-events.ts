@@ -13,6 +13,7 @@ import {
   stopRealtimeSession,
   subscribeRealtimeTopic,
 } from '@/services/realtime-transport';
+import type { ContentChange } from '@shared/contracts/realtime.ts';
 import type { AnnouncementRecord, IssueRecord } from '@/types';
 
 interface RealtimeSubscriber {
@@ -26,83 +27,7 @@ let realtimeSessionActive = false;
 let contentSubscriptionKey = '';
 let contentUnsubscribers: Array<() => void> = [];
 
-type ContentRealtimeEventType =
-  | 'issue_changed'
-  | 'issue_support_changed'
-  | 'issue_comment_changed'
-  | 'announcement_changed'
-  | 'announcement_metrics_changed'
-  | 'announcement_comment_changed'
-  | 'facility_changed';
-
-interface ContentRealtimeEvent {
-  aggregateRevision: number;
-  category: string | null;
-  commentCount: number | null;
-  createdAt: Date | null;
-  eventType: ContentRealtimeEventType;
-  parentId: string | null;
-  likeCount: number | null;
-  op: 'insert' | 'update' | 'delete' | null;
-  operationId: string;
-  supportCount: number | null;
-  targetId: string;
-  domainRevision: number;
-}
-
-function normalizeNullableString(value: unknown) {
-  return typeof value === 'string' && value.length > 0 ? value : null;
-}
-
-function normalizeDate(value: unknown) {
-  if (typeof value === 'string') {
-    const time = Date.parse(value);
-    return Number.isFinite(time) ? new Date(time) : null;
-  }
-  if (typeof value === 'number' && Number.isFinite(value)) return new Date(value);
-  return null;
-}
-
-function normalizeEventType(value: unknown): ContentRealtimeEventType | null {
-  if (
-    value === 'issue_changed'
-    || value === 'issue_support_changed'
-    || value === 'issue_comment_changed'
-    || value === 'announcement_changed'
-    || value === 'announcement_metrics_changed'
-    || value === 'announcement_comment_changed'
-    || value === 'facility_changed'
-  ) return value;
-  return null;
-}
-
-function normalizeRealtimeEvent(data: Record<string, unknown>): ContentRealtimeEvent | null {
-  const eventType = normalizeEventType(data.eventType);
-  const targetId = normalizeNullableString(data.targetId);
-  if (!eventType || !targetId) return null;
-  return {
-    aggregateRevision: typeof data.aggregateRevision === 'number' && Number.isFinite(data.aggregateRevision)
-      ? data.aggregateRevision
-      : 0,
-    category: normalizeNullableString(data.category),
-    commentCount: typeof data.commentCount === 'number' && Number.isFinite(data.commentCount)
-      ? data.commentCount
-      : null,
-    createdAt: normalizeDate(data.createdAt),
-    eventType,
-    likeCount: typeof data.likeCount === 'number' && Number.isFinite(data.likeCount)
-      ? data.likeCount
-      : null,
-    op: data.op === 'insert' || data.op === 'update' || data.op === 'delete' ? data.op : null,
-    operationId: normalizeNullableString(data.operationId) ?? '',
-    parentId: normalizeNullableString(data.parentId),
-    supportCount: typeof data.supportCount === 'number' && Number.isFinite(data.supportCount)
-      ? data.supportCount
-      : null,
-    targetId,
-    domainRevision: typeof data.domainRevision === 'number' && Number.isFinite(data.domainRevision) ? data.domainRevision : 0,
-  };
-}
+type ContentRealtimeEvent = ContentChange;
 
 function realtimeEventDomain(event: ContentRealtimeEvent): ContentVersionDomain {
   if (event.eventType.startsWith('issue_')) return 'issues';
@@ -163,9 +88,7 @@ function invalidateRealtimeContent(event: ContentRealtimeEvent) {
   }
 }
 
-function receiveContentEvent(payload: Record<string, unknown>) {
-  const event = normalizeRealtimeEvent(payload);
-  if (!event) return;
+function receiveContentEvent(event: ContentRealtimeEvent) {
   invalidateRealtimeContent(event);
   synchronizeRealtimeVersion(event);
   realtimeSubscribers.forEach((subscriber) => subscriber.callback(event));

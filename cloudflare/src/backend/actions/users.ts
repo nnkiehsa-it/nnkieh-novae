@@ -5,125 +5,103 @@ import {
 import { createMediaDeliveryUrl } from "../shared/media-delivery.ts";
 import { operationPolicy } from "../shared/operation-policies.ts";
 import { asString } from "../shared/json.ts";
-import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
-import { handleUserAccessAction } from "./user-access.ts";
-import { handleUserAdminAction } from "./user-admin.ts";
+import type { ActionInput } from "../../../../shared/actions.ts";
+import type { AuthContext, BackendDatabase } from "./types.ts";
 import type { Selected } from "../database/schema.ts";
 
-export async function handleUserAction(
-  action: string,
-  payload: JsonRecord,
-  auth: AuthContext,
-  database: BackendDatabase,
-) {
-  if (action === "getCurrentUserRole") {
-    return {
-      role: auth.roles.includes("platform-admin") ? "admin" : "user",
-      roles: auth.roles,
-      permissions: auth.permissions,
-      managedIssueCategoryIds: auth.managedIssueCategoryIds,
-      managedFacilityCategoryIds: auth.managedFacilityCategoryIds,
-      setupCompleted: auth.setupCompleted,
-    };
-  }
+export function getCurrentUserRole(_input: ActionInput<"getCurrentUserRole">, auth: AuthContext) {
+  return Promise.resolve({
+    role: auth.roles.includes("platform-admin") ? "admin" : "user",
+    roles: auth.roles,
+    permissions: auth.permissions,
+    managedIssueCategoryIds: auth.managedIssueCategoryIds,
+    managedFacilityCategoryIds: auth.managedFacilityCategoryIds,
+    setupCompleted: auth.setupCompleted,
+  });
+}
 
-  if (action === "listRoleAssignments" || action === "setUserAccessScope" || action === "saveScopeMembers") {
-    return await handleUserAccessAction(action, payload, auth, database);
-  }
-
+/** Keeps a copy of the account's Google avatar, so pages never load it from Google. */
+export async function cacheUserAvatar(_input: ActionInput<"cacheUserAvatar">, auth: AuthContext, database: BackendDatabase) {
+  const sourceUrl = auth.photoUrl;
+  if (!sourceUrl) return { photoUrl: null };
+  const parsedSourceUrl = new URL(sourceUrl);
   if (
-    action === "listAdminUsers"
-    || action === "listAccountAccessRules"
-    || action === "previewAccountAccessRule"
-    || action === "saveAccountAccessRule"
-    || action === "deleteAccountAccessRule"
-    || action === "listAdminAudit"
-    || action === "listAdminActivity"
-    || action === "getAdminOverview"
+    parsedSourceUrl.protocol !== "https:"
+    || !parsedSourceUrl.hostname.toLowerCase().endsWith(".googleusercontent.com")
+  ) throw new Error("validation-invalid");
+
+  const existing = await database.sqlMaybe<Selected<
+    "user_profiles",
+    "avatar_checked_at" | "avatar_hash" | "avatar_public_id" | "avatar_source_url"
+    | "avatar_version" | "cached_photo_url"
+  >>`select avatar_checked_at, avatar_hash, avatar_public_id, avatar_source_url,
+      avatar_version, cached_photo_url
+    from app_private.user_profiles where uid = ${auth.uid}`;
+  const checkedAt = Date.parse(asString(existing?.avatar_checked_at));
+  if (
+    existing?.avatar_source_url === sourceUrl
+    && existing.cached_photo_url
+    && existing.avatar_public_id
+    && Number.isFinite(checkedAt)
+    && Date.now() - checkedAt < operationPolicy("avatarRevalidateHours") * 60 * 60 * 1000
   ) {
-    return await handleUserAdminAction(action, payload, auth, database);
+    const media = await createMediaDeliveryUrl(existing.avatar_public_id, "avatar", false, auth.uid);
+    return { photoUrl: media.url };
   }
 
-  if (action === "cacheUserAvatar") {
-    const sourceUrl = auth.photoUrl;
-    if (!sourceUrl) return { photoUrl: null };
-    const parsedSourceUrl = new URL(sourceUrl);
-    if (
-      parsedSourceUrl.protocol !== "https:"
-      || !parsedSourceUrl.hostname.toLowerCase().endsWith(".googleusercontent.com")
-    ) throw new Error("validation-invalid");
 
-    const existing = await database.sqlMaybe<Selected<
-      "user_profiles",
-      "avatar_checked_at" | "avatar_hash" | "avatar_public_id" | "avatar_source_url"
-      | "avatar_version" | "cached_photo_url"
-    >>`select avatar_checked_at, avatar_hash, avatar_public_id, avatar_source_url,
-        avatar_version, cached_photo_url
-      from app_private.user_profiles where uid = ${auth.uid}`;
-    const checkedAt = Date.parse(asString(existing?.avatar_checked_at));
-    if (
-      existing?.avatar_source_url === sourceUrl
-      && existing.cached_photo_url
-      && existing.avatar_public_id
-      && Number.isFinite(checkedAt)
-      && Date.now() - checkedAt < operationPolicy("avatarRevalidateHours") * 60 * 60 * 1000
-    ) {
-      const media = await createMediaDeliveryUrl(existing.avatar_public_id, "avatar", false, auth.uid);
-      return { photoUrl: media.url };
-    }
-
-
-    const imageResponse = await fetch(sourceUrl, {
-      redirect: "manual",
-      signal: AbortSignal.timeout(8_000),
-    });
-    if (!imageResponse.ok) {
-      throw new Error(`avatar-fetch-failed:${imageResponse.status}`);
-    }
-    const contentType = imageResponse.headers.get("content-type") ?? "";
-    const contentLength = Number(imageResponse.headers.get("content-length") ?? 0);
-    if (!contentType.startsWith("image/") || contentLength > 5 * 1024 * 1024) {
-      throw new Error("validation-invalid");
-    }
-    const imageBuffer = await imageResponse.arrayBuffer();
-    if (imageBuffer.byteLength > 5 * 1024 * 1024) throw new Error("validation-invalid");
-    const avatarHash = await sha256Hex(imageBuffer);
-    if (existing?.avatar_hash === avatarHash && existing.cached_photo_url && existing.avatar_public_id) {
-      const revalidatedAt = new Date().toISOString();
-      await database.sql`
-        insert into app_private.user_profiles
-          (uid, avatar_source_url, avatar_checked_at, display_name, photo_url, updated_at)
-        values (${auth.uid}, ${sourceUrl}, ${revalidatedAt}, ${auth.name}, ${sourceUrl}, ${revalidatedAt})
-        on conflict (uid) do update set
-          avatar_source_url = excluded.avatar_source_url,
-          avatar_checked_at = excluded.avatar_checked_at,
-          display_name = excluded.display_name,
-          photo_url = excluded.photo_url,
-          updated_at = excluded.updated_at`;
-      const media = await createMediaDeliveryUrl(existing.avatar_public_id, "avatar", false, auth.uid);
-      return { photoUrl: media.url };
-    }
-
-    const nextVersion = Number(existing?.avatar_version ?? 0) + 1;
-    const nextPublicId = `srp/avatars/${auth.uid}_${nextVersion}_${crypto.randomUUID()}`;
-    await uploadCloudinaryAuthenticatedImage(
-      nextPublicId,
-      new Blob([imageBuffer], { type: contentType }),
-    );
-    const cachedPhotoUrl = (await createMediaDeliveryUrl(nextPublicId, "avatar", false, auth.uid)).url;
-    await database.call("app_api", "backend_commit_user_avatar", {
-      actor_uid: auth.uid,
-      next_avatar_hash: avatarHash,
-      next_avatar_public_id: nextPublicId,
-      next_avatar_source_url: sourceUrl,
-      next_cached_photo_url: cachedPhotoUrl,
-      next_avatar_version: nextVersion,
-      next_display_name: auth.name,
-    });
-    return { photoUrl: cachedPhotoUrl };
+  const imageResponse = await fetch(sourceUrl, {
+    redirect: "manual",
+    signal: AbortSignal.timeout(8_000),
+  });
+  if (!imageResponse.ok) {
+    throw new Error(`avatar-fetch-failed:${imageResponse.status}`);
+  }
+  const contentType = imageResponse.headers.get("content-type") ?? "";
+  const contentLength = Number(imageResponse.headers.get("content-length") ?? 0);
+  if (!contentType.startsWith("image/") || contentLength > 5 * 1024 * 1024) {
+    throw new Error("validation-invalid");
+  }
+  const imageBuffer = await imageResponse.arrayBuffer();
+  if (imageBuffer.byteLength > 5 * 1024 * 1024) throw new Error("validation-invalid");
+  const avatarHash = await sha256Hex(imageBuffer);
+  if (existing?.avatar_hash === avatarHash && existing.cached_photo_url && existing.avatar_public_id) {
+    const revalidatedAt = new Date().toISOString();
+    await database.sql`
+      insert into app_private.user_profiles
+        (uid, avatar_source_url, avatar_checked_at, display_name, photo_url, updated_at)
+      values (${auth.uid}, ${sourceUrl}, ${revalidatedAt}, ${auth.name}, ${sourceUrl}, ${revalidatedAt})
+      on conflict (uid) do update set
+        avatar_source_url = excluded.avatar_source_url,
+        avatar_checked_at = excluded.avatar_checked_at,
+        display_name = excluded.display_name,
+        photo_url = excluded.photo_url,
+        updated_at = excluded.updated_at`;
+    const media = await createMediaDeliveryUrl(existing.avatar_public_id, "avatar", false, auth.uid);
+    return { photoUrl: media.url };
   }
 
-  const uids = Array.isArray(payload.uids) ? payload.uids.map((uid) => asString(uid)).filter(Boolean).slice(0, 50) : [];
+  const nextVersion = Number(existing?.avatar_version ?? 0) + 1;
+  const nextPublicId = `srp/avatars/${auth.uid}_${nextVersion}_${crypto.randomUUID()}`;
+  await uploadCloudinaryAuthenticatedImage(
+    nextPublicId,
+    new Blob([imageBuffer], { type: contentType }),
+  );
+  const cachedPhotoUrl = (await createMediaDeliveryUrl(nextPublicId, "avatar", false, auth.uid)).url;
+  await database.call("app_api", "backend_commit_user_avatar", {
+    actor_uid: auth.uid,
+    next_avatar_hash: avatarHash,
+    next_avatar_public_id: nextPublicId,
+    next_avatar_source_url: sourceUrl,
+    next_cached_photo_url: cachedPhotoUrl,
+    next_avatar_version: nextVersion,
+    next_display_name: auth.name,
+  });
+  return { photoUrl: cachedPhotoUrl };
+}
+
+export async function getUserPublicProfiles(input: ActionInput<"getUserPublicProfiles">, auth: AuthContext, database: BackendDatabase) {
+  const uids = input.uids;
   const { rows } = await database.sql<Selected<
     "user_profiles", "uid" | "display_name" | "avatar_public_id" | "profile_version"
   >>`select uid, display_name, avatar_public_id, profile_version

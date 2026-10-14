@@ -3,12 +3,14 @@ import { realtimeIdleRemaining } from '@/lib/realtime-timing';
 import { noteHeartbeatResponse, startHeartbeat, stopHeartbeat } from '@/services/realtime-heartbeat';
 import { createRealtimeTabCoordinator } from '@/services/realtime-tab-coordinator';
 import { getCachedSessionRole } from '@/services/session-role';
+import * as v from 'valibot';
+import { REALTIME_EVENTS, type RealtimeEventName, type RealtimePayload } from '@shared/contracts/realtime.ts';
 import { normalizeMessage, requestRealtimeTicket, type RealtimeMessage } from '@/services/realtime-protocol';
 
 interface RealtimeListener {
-  event: string;
+  event: RealtimeEventName;
   onError?: (error: Error) => void;
-  onMessage: (payload: Record<string, unknown>) => void;
+  onMessage: (payload: unknown) => void;
   onResync?: () => void;
   topic: string;
 }
@@ -63,9 +65,10 @@ function deliverMessage(value: unknown) {
   const message = normalizeMessage(value);
   if (!message || !rememberDelivery(message.id)) return;
   listeners.forEach((listener) => {
-    if (listener.topic === message.topic && listener.event === message.event) {
-      listener.onMessage(message.payload);
-    }
+    if (listener.topic !== message.topic || listener.event !== message.event) return;
+    const parsed = v.safeParse(REALTIME_EVENTS[listener.event], message.payload);
+    if (parsed.success) listener.onMessage(parsed.output);
+    else listener.onError?.(new Error(`realtime-contract-violation: ${message.event}`));
   });
 }
 
@@ -291,14 +294,15 @@ export function stopRealtimeSession() {
   stopActivityTracking();
 }
 
-export function subscribeRealtimeTopic(
+/** Listens for one event on one topic; the payload arrives checked against its contract. */
+export function subscribeRealtimeTopic<E extends RealtimeEventName>(
   topic: string,
-  event: string,
-  onMessage: (payload: Record<string, unknown>) => void,
+  event: E,
+  onMessage: (payload: RealtimePayload<E>) => void,
   options: Pick<RealtimeListener, 'onError' | 'onResync'> = {},
 ) {
   const id = listenerSerial += 1;
-  listeners.set(id, { event, onMessage, topic, ...options });
+  listeners.set(id, { event, onMessage: onMessage as (payload: unknown) => void, topic, ...options });
   startActivityTracking();
   ensureRealtimeConnection();
   return () => {

@@ -10,7 +10,7 @@ type Values = AccountAccessRuleInput & { durationHours: number; keptDeadline: st
 
 function fromRule(rule: AccountAccessRule | null, targetType: AccountAccessTargetType, targetValue: string, revision: string | null): Values {
   return { duration: rule ? "keep" : "7d", durationHours: 24, message: rule?.message ?? "", preset: rule?.preset ?? "read_only",
-    revision, targetType, targetValue, keptDeadline: rule?.expiresAt?.toISOString() ?? null, keptPermanent: rule?.permanent ?? false };
+    revision, targetType, targetValue, keptDeadline: rule?.expiresAt ?? null, keptPermanent: rule?.permanent ?? false };
 }
 
 function input(value: Values, baseline: Values): AccountAccessRuleInput {

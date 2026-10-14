@@ -1,22 +1,19 @@
-import { asString } from "../shared/json.ts";
+import type { ActionInput } from "../../../../shared/actions.ts";
 import { platformAdminEmails } from "../shared/platform-admin.ts";
 import { selectAccountAccessRule, type AccountAccessPreset, type AccountAccessTargetType } from "../shared/account-access.ts";
 import type { Selected } from "../database/schema.ts";
-import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
+import type { AuthContext, BackendDatabase } from "./types.ts";
 
-const PRESETS = new Set(["read_only", "reaction_only", "blocked"]);
-const DURATIONS = new Set(["keep", "7d", "30d", "custom", "permanent"]);
+type RuleTarget = ActionInput<"deleteAccountAccessRule">;
+type RuleDraft = ActionInput<"saveAccountAccessRule">;
+
 const PREFIX_PATTERN = /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+$/u;
 
-function targetFromInput(payload: JsonRecord) {
-  const type = asString(payload.targetType);
-  let value = asString(payload.targetValue).trim();
-  if (!["uid", "email_prefix"].includes(type) || !value) throw new Error("validation-required");
-  if (type === "email_prefix") {
-    value = value.toLowerCase();
-    if (value.length > 64 || !PREFIX_PATTERN.test(value)) throw new Error("validation-invalid");
-  }
-  return { type: type as AccountAccessTargetType, value };
+function targetOf(input: RuleTarget) {
+  if (input.targetType === "uid") return { type: input.targetType, value: input.targetValue };
+  const value = input.targetValue.toLowerCase();
+  if (value.length > 64 || !PREFIX_PATTERN.test(value)) throw new Error("validation-invalid");
+  return { type: input.targetType, value };
 }
 
 export async function loadAccountAccessRules(database: BackendDatabase, filter: {
@@ -55,49 +52,69 @@ export async function loadAccountAccessRules(database: BackendDatabase, filter: 
   }));
 }
 
-export async function handleAccountAccessRuleAction(action: string, payload: JsonRecord, auth: AuthContext, database: BackendDatabase) {
-  if (action === "listAccountAccessRules") return { rules: await loadAccountAccessRules(database) };
-  const target = targetFromInput(payload);
-  if (payload.revision !== null && (typeof payload.revision !== "string" || !/^[a-f0-9]{32}$/u.test(payload.revision))) throw new Error("validation-required");
-  if (action !== "previewAccountAccessRule") {
+export async function listAccountAccessRules(_input: ActionInput<"listAccountAccessRules">, _auth: AuthContext, database: BackendDatabase) {
+  return { rules: await loadAccountAccessRules(database) };
+}
+
+/** The rule as it stands; a draft written against an older revision is refused. */
+async function currentRule(input: RuleTarget, database: BackendDatabase, lock: boolean) {
+  const target = targetOf(input);
+  if (lock) {
     await database.sql`select pg_advisory_xact_lock(hashtext(${`novae:account-rule:${target.type}:${target.value}`}))`;
     await database.sql`select uid from app_private.user_restrictions where target_type=${target.type} and uid=${target.value} for update`;
   }
   const [before] = await loadAccountAccessRules(database, { targetType: target.type, targetValue: target.value });
-  if ((before?.revision ?? null) !== payload.revision) throw new Error("configuration-changed");
-  if (action === "previewAccountAccessRule") {
-    if (target.type !== "email_prefix") throw new Error("validation-invalid");
-    validateRuleInput(payload, Boolean(before));
-    const count = await database.sqlOne<{ count: number }>`select count(*)::integer as count from app_private.user_profiles p
-      where starts_with(lower(split_part(coalesce(p.email, ''), '@', 1)), ${target.value})
-        and not (lower(btrim(coalesce(p.email, ''))) = any(${platformAdminEmails()}::text[]))`;
-    return { matchingCount: count.count, targetValue: target.value };
-  }
-  let profile: { uid: string; email: string | null; administrator: boolean } | null = null;
-  if (target.type === "uid") {
-    profile = await database.sqlMaybe<{ uid: string; email: string | null; administrator: boolean }>`
-      select p.uid, p.email, coalesce(lower(btrim(p.email)) = any(${platformAdminEmails()}::text[]), false) as administrator
-      from app_private.user_profiles p where p.uid = ${target.value} for update`;
-  }
-  let deleted = false;
-  if (action === "saveAccountAccessRule") {
-    const { preset, duration, message, hours } = validateRuleInput(payload, Boolean(before));
-    if (target.type === "uid" && (!profile || profile.administrator || target.value === auth.uid)) throw new Error("permission-denied");
-    const permanent = duration === "keep" ? before!.permanent : duration === "permanent";
-    await database.sql`insert into app_private.user_restrictions
-      (uid, target_type, preset, restricted_until, restricted_permanently, reason, updated_by, updated_at)
-      values (${target.value}, ${target.type}, ${preset},
-        case when ${duration} = 'keep' then ${before?.expiresAt ?? null}::timestamptz
-          when ${permanent} then null else statement_timestamp() + make_interval(hours => ${hours}::integer) end,
-        ${permanent}, ${message}, ${auth.uid}, statement_timestamp())
-      on conflict (target_type, uid) do update set preset = excluded.preset, restricted_until = excluded.restricted_until,
-        restricted_permanently = excluded.restricted_permanently, reason = excluded.reason,
-        updated_by = excluded.updated_by, updated_at = excluded.updated_at`;
-  } else if (action === "deleteAccountAccessRule") {
-    const removed = await database.sql`delete from app_private.user_restrictions
-      where target_type = ${target.type} and uid = ${target.value} returning uid`;
-    deleted = removed.rows.length > 0;
-  } else throw new Error("invalid-action");
+  if ((before?.revision ?? null) !== input.revision) throw new Error("configuration-changed");
+  return { before, target };
+}
+
+export async function previewAccountAccessRule(input: ActionInput<"previewAccountAccessRule">, _auth: AuthContext, database: BackendDatabase) {
+  const { before, target } = await currentRule(input, database, false);
+  if (target.type !== "email_prefix") throw new Error("validation-invalid");
+  durationOf(input, Boolean(before));
+  const count = await database.sqlOne<{ count: number }>`select count(*)::integer as count from app_private.user_profiles p
+    where starts_with(lower(split_part(coalesce(p.email, ''), '@', 1)), ${target.value})
+      and not (lower(btrim(coalesce(p.email, ''))) = any(${platformAdminEmails()}::text[]))`;
+  return { matchingCount: count.count, targetValue: target.value };
+}
+
+export async function saveAccountAccessRule(input: ActionInput<"saveAccountAccessRule">, auth: AuthContext, database: BackendDatabase) {
+  const { before, target } = await currentRule(input, database, true);
+  const profile = await lockedProfile(target, database);
+  const hours = durationOf(input, Boolean(before));
+  if (target.type === "uid" && (!profile || profile.administrator || target.value === auth.uid)) throw new Error("permission-denied");
+  const permanent = input.duration === "keep" ? before!.permanent : input.duration === "permanent";
+  await database.sql`insert into app_private.user_restrictions
+    (uid, target_type, preset, restricted_until, restricted_permanently, reason, updated_by, updated_at)
+    values (${target.value}, ${target.type}, ${input.preset},
+      case when ${input.duration} = 'keep' then ${before?.expiresAt ?? null}::timestamptz
+        when ${permanent} then null else statement_timestamp() + make_interval(hours => ${hours}::integer) end,
+      ${permanent}, ${input.message}, ${auth.uid}, statement_timestamp())
+    on conflict (target_type, uid) do update set preset = excluded.preset, restricted_until = excluded.restricted_until,
+      restricted_permanently = excluded.restricted_permanently, reason = excluded.reason,
+      updated_by = excluded.updated_by, updated_at = excluded.updated_at`;
+  return await ruleChange(target, profile, false, database);
+}
+
+export async function deleteAccountAccessRule(input: ActionInput<"deleteAccountAccessRule">, _auth: AuthContext, database: BackendDatabase) {
+  const { target } = await currentRule(input, database, true);
+  const profile = await lockedProfile(target, database);
+  const removed = await database.sql`delete from app_private.user_restrictions
+    where target_type = ${target.type} and uid = ${target.value} returning uid`;
+  return await ruleChange(target, profile, removed.rows.length > 0, database);
+}
+
+type Target = ReturnType<typeof targetOf>;
+type LockedProfile = { uid: string; email: string | null; administrator: boolean } | null;
+
+async function lockedProfile(target: Target, database: BackendDatabase): Promise<LockedProfile> {
+  if (target.type !== "uid") return null;
+  return await database.sqlMaybe<{ uid: string; email: string | null; administrator: boolean }>`
+    select p.uid, p.email, coalesce(lower(btrim(p.email)) = any(${platformAdminEmails()}::text[]), false) as administrator
+    from app_private.user_profiles p where p.uid = ${target.value} for update`;
+}
+
+async function ruleChange(target: Target, profile: LockedProfile, deleted: boolean, database: BackendDatabase) {
   const rules = await loadAccountAccessRules(database, target.type === "uid"
     ? { userUids: [target.value] } : { targetType: target.type, targetValue: target.value });
   const rule = rules.find((item) => item.targetType === target.type && item.targetValue === target.value) ?? null;
@@ -106,14 +123,9 @@ export async function handleAccountAccessRuleAction(action: string, payload: Jso
   return { deleted, effectiveRule, revision: rule?.revision ?? null, rule, success: true, targetType: target.type, targetValue: target.value };
 }
 
-function validateRuleInput(payload: JsonRecord, existing: boolean) {
-  const preset = asString(payload.preset);
-  const duration = asString(payload.duration);
-  const message = asString(payload.message).trim();
-  if (!PRESETS.has(preset) || !DURATIONS.has(duration) || !message) throw new Error("validation-required");
-  if (message.length > 500) throw new Error("validation-invalid");
-  if (duration === "keep" && !existing) throw new Error("validation-required");
-  const hours = duration === "7d" ? 168 : duration === "30d" ? 720 : duration === "custom" ? payload.durationHours : 0;
-  if (duration === "custom" && (typeof hours !== "number" || !Number.isInteger(hours) || hours < 1 || hours > 87_600)) throw new Error("validation-invalid");
-  return { preset, duration, message, hours };
+/** The hours a new rule lasts; `keep` only makes sense for a rule that exists. */
+function durationOf(input: RuleDraft, existing: boolean) {
+  if (input.duration === "keep" && !existing) throw new Error("validation-required");
+  if (input.duration === "custom" && input.durationHours === undefined) throw new Error("validation-invalid");
+  return input.duration === "7d" ? 168 : input.duration === "30d" ? 720 : input.duration === "custom" ? input.durationHours! : 0;
 }

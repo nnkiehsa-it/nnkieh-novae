@@ -5,16 +5,18 @@ import type { NotificationRecord } from "@/types";
 
 function notification(overrides: Partial<NotificationRecord>): NotificationRecord {
   return {
-    actor_uid: null,
-    body_preview: null,
-    comment_id: null,
-    created_at: null,
+    actorUid: null,
+    bodyPreview: null,
+    commentId: null,
+    createdAt: "2026-09-26T10:00:00.000Z",
     id: "notification-1",
-    is_read: false,
-    issue_category: null,
+    isRead: false,
+    issueCategory: null,
+    newStatus: null,
+    oldStatus: null,
     source: "user",
-    target_id: "target-1",
-    target_type: "issue",
+    targetId: "target-1",
+    targetType: "issue",
     title: "Test",
     type: "issue_status_changed",
     ...overrides,
@@ -24,19 +26,19 @@ function notification(overrides: Partial<NotificationRecord>): NotificationRecor
 describe("notificationTargetPath", () => {
   it("builds issue comment destinations without a preliminary fetch", () => {
     expect(notificationTargetPath(notification({
-      comment_id: "comment/1",
-      issue_category: "public-issues",
+      commentId: "comment/1",
+      issueCategory: "public-issues",
       type: "issue_comment_created",
     }))).toBe("/issues/public-issues/target-1?tab=comments&comment=comment%2F1");
   });
 
   it("uses direct announcement and facility identifiers", () => {
     expect(notificationTargetPath(notification({
-      target_type: "announcement",
+      targetType: "announcement",
       type: "announcement_created",
     }))).toBe("/announcements/target-1");
     expect(notificationTargetPath(notification({
-      target_type: "facility",
+      targetType: "facility",
       type: "facility_status_changed",
     }))).toBe("/facilities/target-1");
   });

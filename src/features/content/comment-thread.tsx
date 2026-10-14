@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowBendUpLeft, CaretDown, Trash } from "@phosphor-icons/react/ssr";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
+import { usePersonName } from "@/features/content/person";
 import type { DiscussionCommentRecord, UserPublicProfile } from "@/types";
 import { formatRelativeTime } from "@/lib/format";
 import { timing } from "@/lib/motion-timing";
@@ -24,6 +25,7 @@ function CommentRow({ comment, compact = false, currentUid, onDelete, onReply, p
   profile?: UserPublicProfile;
 }) {
   const { t } = useI18n();
+  const personName = usePersonName();
   const [deleting, setDeleting] = React.useState(false);
   const remove = async () => {
     setDeleting(true);
@@ -36,10 +38,10 @@ function CommentRow({ comment, compact = false, currentUid, onDelete, onReply, p
   };
   return (
     <article className="flex items-start gap-3" data-comment-id={comment.id}>
-      {profile ? <Avatar className={compact ? "size-7" : "size-9"} name={profile.displayName} src={profile.photoUrl} /> : <Skeleton className={cn("shrink-0 rounded-full", compact ? "size-7" : "size-9")} />}
+      {profile ? <Avatar className={compact ? "size-7" : "size-9"} name={personName(profile.displayName)} src={profile.photoUrl} /> : <Skeleton className={cn("shrink-0 rounded-full", compact ? "size-7" : "size-9")} />}
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
-          {profile ? <span className="truncate text-[0.9375rem] font-semibold">{profile.displayName}</span> : <Skeleton className="h-4 w-16" />}
+          {profile ? <span className="truncate text-[0.9375rem] font-semibold">{personName(profile.displayName)}</span> : <Skeleton className="h-4 w-16" />}
           <span className="shrink-0 text-xs text-ink-faint">{formatRelativeTime(comment.created_at)}</span>
         </div>
         <Markdown className="mt-1" content={comment.content} fallbackAlt={t("comments.commentAttachmentPreview")} plainText />

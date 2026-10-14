@@ -1,4 +1,6 @@
-import { invokeBackendAction } from '@/services/backend-action';
+import type { ActionRequest } from '@shared/actions.ts';
+import type { AdminNotificationPreferences, BrowserPermission } from '@shared/contracts/notifications.ts';
+import { callAction } from '@/services/backend-action';
 import {
   CONTENT_SHORT_CACHE_TTL_MS,
   captureContentCacheWriteGuard,
@@ -9,56 +11,26 @@ import {
 } from '@/services/content-read-cache';
 import { toReadableBackendError } from './issues-core';
 
+export type { PushPreference as PushNotificationPreference } from '@shared/contracts/notifications.ts';
+export type PlatformAdminNotificationPreferences = AdminNotificationPreferences;
+
 const PUSH_PREFERENCE_CACHE_PREFIX = 'push-notification-preference|';
 
-export type PushNotificationPermission = NotificationPermission | 'unsupported';
-export type PlatformAdminNotificationPreferenceKey =
-  | 'commentNotifications'
-  | 'facilityNotifications'
-  | 'issueNotifications';
+/** What this browser allows; `unsupported` is a browser with no notifications at all. */
+export type PushNotificationPermission = BrowserPermission | 'unsupported';
 
-export type PlatformAdminNotificationPreferences = Record<
-  PlatformAdminNotificationPreferenceKey,
-  boolean
->;
-
-export interface PushNotificationPreference {
-  deviceEnabled: boolean;
-  enabled: boolean;
-  permission: PushNotificationPermission;
-  tokenCount: number;
-}
-
-interface GetPushNotificationPreferencePayload {
-  deviceId?: string;
-  permission?: PushNotificationPermission;
-  token?: string;
-}
-
-interface RegisterPushTokenPayload {
-  deviceId: string;
-  permission: NotificationPermission;
-  platform: string;
-  token: string;
-  userAgent: string;
-}
-
-export async function getPushNotificationPreference(payload: GetPushNotificationPreferencePayload = {}) {
-  const cacheKey = createContentCacheKey([
-    'push-notification-preference',
-    payload.deviceId ?? '',
-    payload.permission ?? '',
-    payload.token ?? '',
-  ]);
-  const cached = await getCachedContentPersistent<PushNotificationPreference>(
+export async function getPushNotificationPreference(deviceId: string, permission: PushNotificationPermission) {
+  // A browser that cannot show notifications has never been asked, as far as the server is concerned.
+  const asked = permission === 'unsupported' ? 'default' : permission;
+  const cacheKey = createContentCacheKey(['push-notification-preference', deviceId, asked]);
+  const cached = await getCachedContentPersistent<Awaited<ReturnType<typeof readPreference>>>(
     cacheKey,
     CONTENT_SHORT_CACHE_TTL_MS,
   );
   if (cached) return cached;
   const cacheGuard = captureContentCacheWriteGuard(cacheKey);
   try {
-    const fn = invokeBackendAction<GetPushNotificationPreferencePayload, PushNotificationPreference>('getPushNotificationPreference');
-    const result = await fn(payload);
+    const result = await readPreference(deviceId, asked);
     setCachedContentFromRead(cacheGuard, result);
     return result;
   } catch (error) {
@@ -66,10 +38,13 @@ export async function getPushNotificationPreference(payload: GetPushNotification
   }
 }
 
-export async function registerPushToken(payload: RegisterPushTokenPayload) {
+function readPreference(deviceId: string, permission: BrowserPermission) {
+  return callAction('getPushNotificationPreference', { deviceId, permission });
+}
+
+export async function registerPushToken(payload: ActionRequest<'registerPushToken'>) {
   try {
-    const fn = invokeBackendAction<RegisterPushTokenPayload, PushNotificationPreference>('registerPushToken');
-    const result = await fn(payload);
+    const result = await callAction('registerPushToken', payload);
     markContentCachePrefixStale(PUSH_PREFERENCE_CACHE_PREFIX);
     return result;
   } catch (error) {
@@ -78,32 +53,21 @@ export async function registerPushToken(payload: RegisterPushTokenPayload) {
 }
 
 export async function unregisterPushToken(deviceId: string) {
-  await invokeBackendAction<{ deviceId: string }, { success: boolean }>("unregisterPushToken", {
-    timeoutMs: 5_000,
-  })({ deviceId });
+  await callAction('unregisterPushToken', { deviceId }, { timeoutMs: 5_000 });
   markContentCachePrefixStale(PUSH_PREFERENCE_CACHE_PREFIX);
 }
 
 export async function getPlatformAdminNotificationPreferences() {
   try {
-    const fn = invokeBackendAction<Record<string, never>, PlatformAdminNotificationPreferences>(
-      'getPlatformAdminNotificationPreferences',
-    );
-    return await fn({});
+    return await callAction('getPlatformAdminNotificationPreferences', {});
   } catch (error) {
     throw toReadableBackendError(error);
   }
 }
 
-export async function updatePlatformAdminNotificationPreferences(
-  preferences: PlatformAdminNotificationPreferences,
-) {
+export async function updatePlatformAdminNotificationPreferences(preferences: PlatformAdminNotificationPreferences) {
   try {
-    const fn = invokeBackendAction<
-      { preferences: PlatformAdminNotificationPreferences },
-      PlatformAdminNotificationPreferences
-    >('updatePlatformAdminNotificationPreferences');
-    return await fn({ preferences });
+    return await callAction('updatePlatformAdminNotificationPreferences', { preferences });
   } catch (error) {
     throw toReadableBackendError(error);
   }

@@ -1,13 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { jwtVerify } from "jose";
 import type { Env } from "../types";
-
-export interface RealtimeDelivery {
-  event: string;
-  id: string;
-  payload: Record<string, unknown>;
-  topic: string;
-}
+import type { RealtimeDelivery } from "../backend/jobs/realtime-message.ts";
 
 interface RealtimeAttachment {
   expiresAtMs: number;

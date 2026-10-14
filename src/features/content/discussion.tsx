@@ -4,6 +4,7 @@ import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CaretDown, ChatCircle, X } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
+import { usePersonName } from "@/features/content/person";
 import type { CommentSortOption, DiscussionCommentRecord } from "@/types";
 import { stripMarkdownImages } from "@/lib/markdown-images";
 import { timing } from "@/lib/motion-timing";
@@ -50,6 +51,7 @@ export function Discussion({ categoryId, comments, enabled = true, error, hasMor
   targetKey: string;
 }) {
   const { t } = useI18n();
+  const personName = usePersonName();
   const session = useSession();
   const categories = useCategories();
   const [replyTarget, setReplyTarget] = React.useState<ReplyTarget | null>(null);
@@ -145,7 +147,7 @@ export function Discussion({ categoryId, comments, enabled = true, error, hasMor
                 <div className="mb-1 flex items-start gap-3 border-b border-line px-2 pb-2 pt-1">
                   <div className="min-w-0 flex-1 text-sm">
                     {profiles[replyTarget.authorUid] ? (
-                      <p className="font-medium">{t("ui.discussion.replying", { name: profiles[replyTarget.authorUid].displayName })}</p>
+                      <p className="font-medium">{t("ui.discussion.replying", { name: personName(profiles[replyTarget.authorUid].displayName) })}</p>
                     ) : <Skeleton className="h-3.5 w-24" />}
                     <p className="truncate text-ink-muted">{replyExcerpt(replyTarget.content, t("markdown.imageAttachments"))}</p>
                   </div>
