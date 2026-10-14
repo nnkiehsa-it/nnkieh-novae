@@ -26,15 +26,15 @@ export function Markdown({ className, content, fallbackAlt, plainText = false }:
   plainText?: boolean;
 }) {
   const [selected, setSelected] = React.useState<MarkdownImageRecord | null>(null);
-  const { expiresAtByUploadId, images, refresh, resolvedContent } = useResolvedMarkdown(content);
+  const { images, references, refresh, resolvedContent } = useResolvedMarkdown(content);
   const text = stripMarkdownImages(resolvedContent);
   const html = React.useMemo(() => (plainText ? "" : renderMarkdown(text)), [plainText, text]);
 
   const openImage = async (image: MarkdownImageRecord) => {
-    if (image.uploadId && expiresSoon(expiresAtByUploadId[image.uploadId])) {
-      const result = await refresh(image.uploadId).catch(() => null);
-      if (!result?.fullUrls[image.uploadId]) return;
-      setSelected({ ...image, fullSrc: result.fullUrls[image.uploadId], src: result.thumbnailUrls[image.uploadId]! });
+    if (image.uploadId && expiresSoon(references[image.uploadId]?.expiresAtMs)) {
+      const renewed = await refresh(image.uploadId).catch(() => null);
+      if (!renewed) return;
+      setSelected({ ...image, fullSrc: renewed.fullUrl, src: renewed.thumbnailUrl });
       return;
     }
     setSelected(image);

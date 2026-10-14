@@ -8,8 +8,9 @@ integrationTest("public image resolution works and direct cleanup cannot delete 
   await insertRows("uploads", [{ id: uploadId, owner_uid: author.auth.uid, cloudinary_public_id: publicId, status: "ready", visibility: "authenticated", width: 10, height: 10, size_bytes: 100, content_type: "image/webp" }]);
   const issue = asRecord(asRecord(await callAction("createIssue", { title: "Attached image", content: `![image](srp-upload://${uploadId})`, category: "proposal-a" }, author.auth)).issue);
   const resolved = asRecord(await callAction("resolveUploadImageUrls", { uploadIds: [uploadId] }, author.auth));
-  assert.ok(Number.isFinite(Date.parse(String(resolved.expiresAt))));
-  assert.ok(asRecord(resolved.fullUrls)[uploadId]);
+  const image = asRecord(asRecord(resolved.images)[uploadId]);
+  assert.ok(Number.isFinite(Date.parse(String(image.expiresAt))));
+  assert.ok(image.fullUrl);
   const deleted = asRecord(await callAction("deleteUploadedImages", { storagePaths: [publicId] }, author.auth));
   assert.equal(deleted.deleted, 0);
   const attached = await database.sqlOne<{attached_target_id:string}>`select attached_target_id from app_private.uploads where id=${uploadId}`;

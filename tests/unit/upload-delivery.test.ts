@@ -5,7 +5,7 @@ import { clearContentReadMemoryCache, markContentCachePrefixStale, restoreConten
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(), stored: new Map<string, { key: string; cacheKey: string; scope: string; value: unknown; updatedAt: number }>(),
 }));
-vi.mock("@/services/backend-action", () => ({ invokeBackendAction: () => mocks.fetch }));
+vi.mock("@/services/backend-action", () => ({ callAction: (_name: string, payload: unknown) => mocks.fetch(payload) }));
 vi.mock("@/services/issues-core", () => ({ toReadableBackendError: (error: unknown) => error }));
 vi.mock("@/lib/persistent-cache", () => ({
   writePersistentCache: async (entry: { key: string; cacheKey: string; scope: string; value: unknown; updatedAt: number }) => { mocks.stored.set(entry.key, entry); },
@@ -20,11 +20,12 @@ vi.mock("@/lib/view-memory-cache", () => ({ invalidateViewMemoryByDependency: vi
 
 function response(ids: string[]) {
   return {
-    errors: {}, expiresAt: "9999-12-31T23:59:59.000Z",
-    privateByUploadId: Object.fromEntries(ids.map((id) => [id, id === "private"])),
-    expiresAtByUploadId: Object.fromEntries(ids.map((id) => [id, "9999-12-31T23:59:59.000Z"])),
-    fullUrls: Object.fromEntries(ids.map((id) => [id, `https://media.example/${id}/full`])),
-    thumbnailUrls: Object.fromEntries(ids.map((id) => [id, `https://media.example/${id}/thumbnail`])),
+    images: Object.fromEntries(ids.map((id) => [id, {
+      expiresAt: "9999-12-31T23:59:59.000Z",
+      fullUrl: `https://media.example/${id}/full`,
+      privateDelivery: id === "private",
+      thumbnailUrl: `https://media.example/${id}/thumbnail`,
+    }])),
   };
 }
 beforeEach(() => {
@@ -45,7 +46,7 @@ it("restores public references synchronously while keeping private URLs and othe
 it("coalesces concurrent batches and resolves every ID beyond the backend's 50-image limit", async () => {
   const ids = Array.from({ length: 51 }, (_, index) => `image-${index}`);
   const [first, second] = await Promise.all([resolveUploadImageUrls(ids), resolveUploadImageUrls(ids)]);
-  expect(Object.keys(first.fullUrls)).toHaveLength(51);
+  expect(Object.keys(first)).toHaveLength(51);
   expect(second).toEqual(first);
   expect(mocks.fetch).toHaveBeenCalledTimes(2);
 });
@@ -57,7 +58,7 @@ it("invalidates inherited access and does not resurrect references from an older
   await vi.waitFor(() => expect(mocks.fetch).toHaveBeenCalledOnce());
   markContentCachePrefixStale("issue-detail|");
   finish(response(["public"]));
-  expect((await pending).fullUrls).toEqual({});
+  expect(await pending).toEqual({});
   expect(getResolvedUploadReference("public")).toBeNull();
   expect(mocks.stored.size).toBe(0);
 });

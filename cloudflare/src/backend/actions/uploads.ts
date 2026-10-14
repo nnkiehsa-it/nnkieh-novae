@@ -1,32 +1,32 @@
-import { asRecord, asString } from "../shared/json.ts";
-import { loadImageUploadSettings, type UploadTargetType } from "../shared/platform-settings.ts";
+import type { ActionInput } from "../../../../shared/actions.ts";
+import { loadImageUploadSettings } from "../shared/platform-settings.ts";
 import { loadImageLimit } from "./upload-policy.ts";
-import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
-import { resolveUploadImageUrls } from "./upload-delivery.ts";
+import type { AuthContext, BackendDatabase } from "./types.ts";
 import { createUploadSessions, deleteUploadSessions, finalizeUploadSessions } from "./upload-sessions.ts";
 
-function uploadTargetType(value: unknown): UploadTargetType {
-  if (value === "issue" || value === "facility" || value === "announcement" || value === "comment" || value === "announcement_comment") return value;
-  throw new Error("validation-required");
+export { resolveUploadImageUrls } from "./upload-delivery.ts";
+
+/** A batch may hold no more images than the content it is going on allows. */
+async function assertWithinImageLimit(
+  input: { targetType: ActionInput<"createImageUploadSessions">["targetType"]; scopeId: string },
+  count: number,
+  database: BackendDatabase,
+) {
+  if (count > await loadImageLimit(database, input.targetType, input.scopeId)) throw new Error("validation-too-many");
 }
 
-export async function handleUploadAction(action: string, payload: JsonRecord, auth: AuthContext, database: BackendDatabase): Promise<JsonRecord> {
-  if (action === "resolveUploadImageUrls") return resolveUploadImageUrls(payload, auth, database);
-  if (action === "deleteUploadedImages") {
-    const paths = Array.isArray(payload.storagePaths)
-      ? [...new Set(payload.storagePaths.map((path) => asString(path)).filter(Boolean))].slice(0, 50)
-      : [];
-    return deleteUploadSessions(paths, auth, database);
-  }
-  if (action !== "createImageUploadSessions" && action !== "finalizeImageUploads") throw new Error("invalid-action");
-  const targetType = uploadTargetType(payload.targetType);
+export async function createImageUploadSessions(input: ActionInput<"createImageUploadSessions">, auth: AuthContext, database: BackendDatabase) {
+  await assertWithinImageLimit(input, input.images.length, database);
   const settings = await loadImageUploadSettings(database);
-  const input = action === "createImageUploadSessions" ? payload.images : payload.uploads;
-  const items = Array.isArray(input) ? input.map(asRecord) : [];
-  if (items.length === 0) throw new Error("validation-required");
-  const maxImages = await loadImageLimit(database, targetType, asString(payload.scopeId));
-  if (items.length > maxImages) throw new Error("validation-too-many");
-  return action === "createImageUploadSessions"
-    ? { sessions: await createUploadSessions(items, auth, database, settings) }
-    : { uploads: await finalizeUploadSessions(items, auth, database, settings) };
+  return { sessions: await createUploadSessions(input.images, auth, database, settings) };
+}
+
+export async function finalizeImageUploads(input: ActionInput<"finalizeImageUploads">, auth: AuthContext, database: BackendDatabase) {
+  await assertWithinImageLimit(input, input.uploads.length, database);
+  const settings = await loadImageUploadSettings(database);
+  return { uploads: await finalizeUploadSessions(input.uploads, auth, database, settings) };
+}
+
+export async function deleteUploadedImages(input: ActionInput<"deleteUploadedImages">, auth: AuthContext, database: BackendDatabase) {
+  return await deleteUploadSessions([...new Set(input.storagePaths)], auth, database);
 }

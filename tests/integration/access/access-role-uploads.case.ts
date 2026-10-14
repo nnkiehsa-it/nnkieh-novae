@@ -299,14 +299,15 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
     { uploadIds: [uploadId] },
     user.auth,
   ));
-  assert.match(String(asRecord(resolved.fullUrls)[uploadId]), /^http:\/\/127\.0\.0\.1:8787\/v1\/media\/.+\/full$/u);
-  assert.match(String(asRecord(resolved.thumbnailUrls)[uploadId]), /^http:\/\/127\.0\.0\.1:8787\/v1\/media\/.+\/thumbnail$/u);
+  const image = asRecord(asRecord(resolved.images)[uploadId]);
+  assert.match(String(image.fullUrl), /^http:\/\/127\.0\.0\.1:8787\/v1\/media\/.+\/full$/u);
+  assert.match(String(image.thumbnailUrl), /^http:\/\/127\.0\.0\.1:8787\/v1\/media\/.+\/thumbnail$/u);
   const hidden = asRecord(await callAction(
     "resolveUploadImageUrls",
     { uploadIds: [uploadId] },
     target.auth,
   ));
-  assert.equal(asRecord(hidden.errors)[uploadId], "not-found");
+  assert.equal(uploadId in asRecord(hidden.images), false, "another account cannot see a private image");
 
   const publicId = `${session.folder}/${session.publicId}`;
   const webhook = new TextEncoder().encode(JSON.stringify({

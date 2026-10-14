@@ -7,10 +7,17 @@ import {
   replaceMarkdownImageSources,
 } from "@/lib/markdown-images";
 import { resolveUploadImageUrls } from "@/services/uploads";
-import { getResolvedUploadReference } from "@/services/upload-delivery";
+import { getResolvedUploadReference, type ResolvedImages } from "@/services/upload-delivery";
 import { useSession } from "@/hooks/use-session";
 import { subscribeContentCacheInvalidations } from "@/services/content-read-cache";
 import type { MarkdownImageRecord } from "@/types";
+
+interface Reading {
+  key: string;
+  images: ResolvedImages;
+  /** Whether the server has answered: an image it left out cannot be shown. */
+  settled: boolean;
+}
 
 export function useResolvedMarkdown(content: string) {
   const { user } = useSession();
@@ -23,22 +30,18 @@ export function useResolvedMarkdown(content: string) {
   React.useEffect(() => subscribeContentCacheInvalidations((prefix) => {
     if (prefix.startsWith("upload-media-v2|")) invalidate();
   }), []);
-  const cached = React.useMemo(() => {
-    const entries = uploadIds.flatMap((id) => {
+  const cached = React.useMemo<Reading>(() => ({
+    key: uploadKey,
+    images: Object.fromEntries(uploadIds.flatMap((id) => {
       const entry = getResolvedUploadReference(id);
       return entry ? [[id, entry] as const] : [];
-    });
-    return {
-      errors: {} as Record<string, string>,
-      fullUrls: Object.fromEntries(entries.map(([id, entry]) => [id, entry.fullUrl])),
-      thumbnailUrls: Object.fromEntries(entries.map(([id, entry]) => [id, entry.thumbnailUrl])),
-      expiresAtByUploadId: Object.fromEntries(entries.map(([id, entry]) => [id, entry.expiresAtMs])),
-    };
+    })),
+    settled: false,
     // The account and upload IDs are the identity of this reading.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uploadKey, revision]);
-  const [resolved, setResolved] = React.useState({ key: uploadKey, ...cached });
-  const { errors, fullUrls, thumbnailUrls, expiresAtByUploadId } = resolved.key === uploadKey ? resolved : cached;
+  }), [uploadKey, revision]);
+  const [resolved, setResolved] = React.useState<Reading>(cached);
+  const reading = resolved.key === uploadKey ? resolved : cached;
 
   React.useEffect(() => {
     let active = true;
@@ -46,13 +49,11 @@ export function useResolvedMarkdown(content: string) {
       return;
     }
     void resolveUploadImageUrls(uploadIds)
-      .then((result) => {
-        if (!active) return;
-        setResolved({ key: uploadKey, ...result });
+      .then((images) => {
+        if (active) setResolved({ key: uploadKey, images, settled: true });
       })
       .catch(() => {
-        if (active)
-          setResolved({ key: uploadKey, ...cached, errors: Object.fromEntries(uploadIds.map((id) => [id, "resolve-failed"])) });
+        if (active) setResolved({ ...cached, settled: true });
       });
     return () => {
       active = false;
@@ -66,43 +67,38 @@ export function useResolvedMarkdown(content: string) {
       extractMarkdownImages(content).map((image) => {
         const uploadId = image.uploadId;
         if (!uploadId) return image;
+        const resolvedImage = reading.images[uploadId];
         return {
           ...image,
-          fullSrc: fullUrls[uploadId],
-          isUploadResolved: Boolean(thumbnailUrls[uploadId]),
-          resolveError: errors[uploadId],
-          src: thumbnailUrls[uploadId] ?? "",
+          fullSrc: resolvedImage?.fullUrl,
+          isUploadResolved: Boolean(resolvedImage),
+          resolveError: reading.settled && !resolvedImage ? "not-found" : undefined,
+          src: resolvedImage?.thumbnailUrl ?? "",
         };
       }),
-    [content, errors, fullUrls, thumbnailUrls],
+    [content, reading],
   );
 
+  /** Signs one image again, for a link about to lapse. */
   const refresh = React.useCallback(async (uploadId: string) => {
-    const result = await resolveUploadImageUrls([uploadId], {
-      forceRefresh: true,
-    });
+    const images = await resolveUploadImageUrls([uploadId], { forceRefresh: true });
     setResolved((current) => {
-      const next = { ...current,
-        fullUrls: { ...current.fullUrls }, thumbnailUrls: { ...current.thumbnailUrls },
-        expiresAtByUploadId: { ...current.expiresAtByUploadId }, errors: { ...current.errors },
-      };
-      if (next.key !== uploadKey) return current;
-      delete next.fullUrls[uploadId]; delete next.thumbnailUrls[uploadId];
-      delete next.expiresAtByUploadId[uploadId]; delete next.errors[uploadId];
-      Object.assign(next.fullUrls, result.fullUrls); Object.assign(next.thumbnailUrls, result.thumbnailUrls);
-      Object.assign(next.expiresAtByUploadId, result.expiresAtByUploadId); Object.assign(next.errors, result.errors);
-      return next;
+      if (current.key !== uploadKey) return current;
+      const next = { ...current.images };
+      delete next[uploadId];
+      return { ...current, images: { ...next, ...images } };
     });
-    return result;
+    return images[uploadId] ?? null;
   }, [uploadKey]);
 
   return {
-    errors,
-    expiresAtByUploadId,
     images,
+    references: reading.images,
     refresh,
-    resolvedContent: replaceMarkdownImageSources(content, fullUrls, {
-      unresolvedUpload: "remove",
-    }),
+    resolvedContent: replaceMarkdownImageSources(
+      content,
+      Object.fromEntries(Object.entries(reading.images).map(([id, image]) => [id, image.fullUrl])),
+      { unresolvedUpload: "remove" },
+    ),
   };
 }

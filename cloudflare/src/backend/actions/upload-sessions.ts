@@ -2,21 +2,25 @@ import {
   CLOUDINARY_IMAGE_UPLOAD_PRESET, cloudinaryImageUploadUrl, createCloudinaryUploadSignature,
   getCloudinaryAuthenticatedImageMetadata, verifyCloudinaryUploadResponseSignature,
 } from "../shared/cloudinary.ts";
+import type { ActionInput } from "../../../../shared/actions.ts";
 import { requireEnv } from "../shared/env.ts";
-import { asString } from "../shared/json.ts";
 import { imageFitsUploadLimits, readCloudinaryImage } from "../shared/image-upload-validation.ts";
 import { maxUploadBytes, type ImageUploadSettings } from "../shared/platform-settings.ts";
 import type { Selected } from "../database/schema.ts";
-import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
-import { asNumber, asUuid } from "./utils.ts";
+import type { AuthContext, BackendDatabase } from "./types.ts";
 
 type FinalizedUpload = Selected<"uploads", "id" | "cloudinary_public_id" | "height" | "width">;
 type StoredUpload = FinalizedUpload & Selected<"uploads", "status">;
 
-export async function createUploadSessions(images: JsonRecord[], auth: AuthContext, database: BackendDatabase, settings: ImageUploadSettings) {
+export async function createUploadSessions(
+  images: ActionInput<"createImageUploadSessions">["images"],
+  auth: AuthContext,
+  database: BackendDatabase,
+  settings: ImageUploadSettings,
+) {
   const pending = images.map((image) => {
-    const dimensions = { bytes: asNumber(image.size, 0), width: asNumber(image.width, 0), height: asNumber(image.height, 0) };
-    if (asString(image.contentType) !== "image/webp" || !imageFitsUploadLimits(dimensions, settings)) throw new Error("upload-validation-failed");
+    const dimensions = { bytes: image.size, width: image.width, height: image.height };
+    if (!imageFitsUploadLimits(dimensions, settings)) throw new Error("upload-validation-failed");
     return { id: crypto.randomUUID(), size: Math.round(dimensions.bytes), width: Math.round(dimensions.width), height: Math.round(dimensions.height) };
   });
   const folder = `srp/${auth.uid}`;
@@ -45,9 +49,13 @@ export async function createUploadSessions(images: JsonRecord[], auth: AuthConte
   }));
 }
 
-export async function finalizeUploadSessions(uploads: JsonRecord[], auth: AuthContext, database: BackendDatabase, settings: ImageUploadSettings) {
-  const ids = uploads.map((upload) => asUuid(upload.uploadId).toLowerCase());
-  if (ids.some((id) => !id)) throw new Error("not-found");
+export async function finalizeUploadSessions(
+  uploads: ActionInput<"finalizeImageUploads">["uploads"],
+  auth: AuthContext,
+  database: BackendDatabase,
+  settings: ImageUploadSettings,
+) {
+  const ids = uploads.map((upload) => upload.uploadId.toLowerCase());
   const { rows } = await database.sql<StoredUpload>`
     select id, cloudinary_public_id, status, width, height from app_private.uploads
     where id = any(${ids}) and owner_uid = ${auth.uid}`;
@@ -62,11 +70,11 @@ export async function finalizeUploadSessions(uploads: JsonRecord[], auth: AuthCo
   const results = await Promise.allSettled(stored.map(async (upload, index) => {
     let data: FinalizedUpload = upload;
     if (upload.status === "pending") {
-      const response = uploads[index];
-      const publicId = asString(response.publicId);
-      if (publicId !== upload.cloudinary_public_id || !await verifyCloudinaryUploadResponseSignature(
-        publicId, Math.round(asNumber(response.version, 0)), asString(response.signature),
-      )) throw new Error("upstream-invalid-response");
+      const { publicId, signature, version } = uploads[index];
+      if (
+        publicId !== upload.cloudinary_public_id || signature === undefined || version === undefined
+        || !await verifyCloudinaryUploadResponseSignature(publicId, Math.round(version), signature)
+      ) throw new Error("upstream-invalid-response");
       const image = readCloudinaryImage(await getCloudinaryAuthenticatedImageMetadata(publicId), settings);
       if (!image.valid) throw new Error("upload-validation-failed");
       const finalized = await database.sqlMaybe<FinalizedUpload>`update app_private.uploads

@@ -1,6 +1,7 @@
 import * as v from "valibot";
 import { action, type ActionSpec } from "./contract.ts";
 import { FACILITY_ACTIONS } from "./contracts/facilities.ts";
+import { UPLOAD_ACTIONS } from "./contracts/uploads.ts";
 import { OPERATION_ACTIONS } from "./contracts/operations.ts";
 import { SESSION_ACTIONS } from "./contracts/session.ts";
 import { CATEGORY_ACTIONS } from "./contracts/categories.ts";
@@ -15,6 +16,7 @@ function pending(spec: Omit<ActionSpec, "input" | "output">) {
 /** Every backend action. The Worker registers exactly these, and the client can call nothing else. */
 export const ACTIONS = {
   ...FACILITY_ACTIONS,
+  ...UPLOAD_ACTIONS,
   ...OPERATION_ACTIONS,
   ...SESSION_ACTIONS,
   ...CATEGORY_ACTIONS,
@@ -23,14 +25,11 @@ export const ACTIONS = {
   createAnnouncement: pending({ group: "admin-write", extraLimit: "announcementCreateDaily" }),
   createAnnouncementComment: pending({ group: "sensitive-write", extraLimit: "commentCreateHourly" }),
   createComment: pending({ group: "sensitive-write", extraLimit: "commentCreateHourly" }),
-  createImageUploadSessions: pending({ group: "upload-write", extraLimit: "imageUploadDaily" }),
   createIssue: pending({ group: "sensitive-write", extraLimit: "issueCreateDaily" }),
   deleteAnnouncement: pending({ group: "admin-write", extraLimit: "destructiveWriteHourly" }),
   deleteAnnouncementComment: pending({ group: "sensitive-write", extraLimit: "destructiveWriteHourly" }),
   deleteComment: pending({ group: "sensitive-write", extraLimit: "destructiveWriteHourly" }),
   deleteIssue: pending({ group: "admin-write", extraLimit: "destructiveWriteHourly" }),
-  deleteUploadedImages: pending({ group: "upload-write", extraLimit: "destructiveWriteHourly" }),
-  finalizeImageUploads: pending({ group: "upload-write" }),
   getAnnouncement: pending({ group: "read" }),
   getAnnouncementUnreadHint: pending({ group: "read" }),
   getIssue: pending({ group: "read" }),
@@ -43,7 +42,6 @@ export const ACTIONS = {
   markAnnouncementsOpened: pending({ group: "general-write" }),
   moderateIssueStatus: pending({ group: "admin-write", extraLimit: "moderationWriteHourly" }),
   removeSupport: pending({ group: "sensitive-write", extraLimit: "supportToggleHourly" }),
-  resolveUploadImageUrls: pending({ group: "upload-resolve" }),
   searchIssues: pending({ group: "read" }),
   setAnnouncementLike: pending({ group: "sensitive-write", extraLimit: "announcementLikeHourly" }),
   toggleSupport: pending({ group: "sensitive-write", extraLimit: "supportToggleHourly" }),

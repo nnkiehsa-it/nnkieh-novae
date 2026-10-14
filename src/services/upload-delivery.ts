@@ -1,4 +1,4 @@
-import { invokeBackendAction } from '@/services/backend-action';
+import { callAction } from '@/services/backend-action';
 import { readRequestTimeoutMs } from '@/lib/request';
 import { toReadableBackendError } from './issues-core';
 import {
@@ -8,26 +8,14 @@ import {
   type ContentCacheWriteGuard,
 } from './content-read-cache';
 
-interface ImageReference {
+export interface ImageReference {
   expiresAtMs: number;
   fullUrl: string;
   thumbnailUrl: string;
 }
-interface DeliveryResult {
-  errors: Record<string, string>;
-  expiresAtByUploadId: Record<string, number>;
-  expiresAtMs: number;
-  fullUrls: Record<string, string>;
-  thumbnailUrls: Record<string, string>;
-}
-interface BackendDeliveryResult {
-  errors: Record<string, string>;
-  expiresAtByUploadId: Record<string, string>;
-  expiresAt: string;
-  privateByUploadId: Record<string, boolean>;
-  fullUrls: Record<string, string>;
-  thumbnailUrls: Record<string, string>;
-}
+
+/** The images that can be shown, by upload id. One that cannot is absent. */
+export type ResolvedImages = Record<string, ImageReference>;
 
 const prefix = 'upload-media-v2|';
 const refreshBufferMs = 60_000;
@@ -62,17 +50,7 @@ export function getResolvedUploadReference(id: string): ImageReference | null {
   return value && value.expiresAtMs > Date.now() + refreshBufferMs ? value : null;
 }
 
-function deliveryResult(entries: Array<readonly [string, ImageReference]>, errors: Record<string, string> = {}): DeliveryResult {
-  return {
-    errors,
-    expiresAtByUploadId: Object.fromEntries(entries.map(([id, entry]) => [id, entry.expiresAtMs])),
-    expiresAtMs: entries.length ? Math.min(...entries.map(([, entry]) => entry.expiresAtMs)) : Date.now(),
-    fullUrls: Object.fromEntries(entries.map(([id, entry]) => [id, entry.fullUrl])),
-    thumbnailUrls: Object.fromEntries(entries.map(([id, entry]) => [id, entry.thumbnailUrl])),
-  };
-}
-
-export async function resolveUploadImageUrls(ids: string[], options: { forceRefresh?: boolean } = {}): Promise<DeliveryResult> {
+export async function resolveUploadImageUrls(ids: string[], options: { forceRefresh?: boolean } = {}): Promise<ResolvedImages> {
   const uniqueIds = [...new Set(ids.filter(Boolean))];
   if (options.forceRefresh) invalidateResolvedUploadCache(uniqueIds);
   const guard = captureContentCacheWriteGuard(prefix);
@@ -83,11 +61,10 @@ export async function resolveUploadImageUrls(ids: string[], options: { forceRefr
       ?? await getCachedContentPersistent<ImageReference>(cacheKey(id), CONTENT_SHORT_CACHE_TTL_MS);
     return value && value.expiresAtMs > Date.now() + refreshBufferMs ? [id, value] as const : null;
   }));
-  if (!current()) return deliveryResult([]);
+  if (!current()) return {};
   const entries = restored.filter((entry): entry is NonNullable<typeof entry> => entry !== null);
   const resolvedIds = new Set(entries.map(([id]) => id));
   const missing = uniqueIds.filter((id) => !resolvedIds.has(id)).sort();
-  const errors: Record<string, string> = {};
 
   try {
     // The backend accepts at most 50 IDs. Keep large restored feeds bounded and
@@ -95,20 +72,18 @@ export async function resolveUploadImageUrls(ids: string[], options: { forceRefr
     for (let offset = 0; offset < missing.length; offset += 50) {
       const batch = missing.slice(offset, offset + 50);
       const fetched = await runCoalescedContentRequest(`${prefix}resolve|${revision}|${batch.join('|')}`, async () => {
-        const fn = invokeBackendAction<{ uploadIds: string[] }, BackendDeliveryResult>('resolveUploadImageUrls', { timeoutMs: readRequestTimeoutMs });
-        return await fn({ uploadIds: batch });
+        return await callAction('resolveUploadImageUrls', { uploadIds: batch }, { timeoutMs: readRequestTimeoutMs });
       });
-      if (!current()) return deliveryResult([]);
-      Object.assign(errors, fetched.errors);
-      for (const id of batch) {
-        if (!fetched.fullUrls[id] || !fetched.thumbnailUrls[id]) continue;
+      if (!current()) return {};
+      for (const [id, image] of Object.entries(fetched.images)) {
         const value: ImageReference = {
-          expiresAtMs: Date.parse(fetched.expiresAtByUploadId[id]),
-          fullUrl: fetched.fullUrls[id]!, thumbnailUrl: fetched.thumbnailUrls[id]!,
+          expiresAtMs: Date.parse(image.expiresAt),
+          fullUrl: image.fullUrl,
+          thumbnailUrl: image.thumbnailUrl,
         };
         entries.push([id, value]);
         const entryGuard = { ...guard, key: cacheKey(id) };
-        if (fetched.privateByUploadId[id] === false) {
+        if (!image.privateDelivery) {
           setCachedContentFromRead(entryGuard, value);
         } else {
           privateReferences.delete(id);
@@ -117,7 +92,7 @@ export async function resolveUploadImageUrls(ids: string[], options: { forceRefr
         }
       }
     }
-    return deliveryResult(entries, errors);
+    return Object.fromEntries(entries);
   } catch (error) {
     throw toReadableBackendError(error);
   }

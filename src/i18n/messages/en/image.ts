@@ -11,7 +11,6 @@ const messages = {
   'image.thisBrowserCannotHandleImages': 'This browser cannot process images.',
   'image.uploadVerificationTimeout': 'Image upload verification timed out. Select another image and try again.',
   'image.unsupportedFormat': 'This image format is not supported. Please choose another image.',
-  'image.theImageUploadJobIsNotSetUpCompletely': 'The image upload could not be prepared completely.',
   'image.imageSizeExceedsUploadLimit': 'The image exceeds the upload size limit.',
   'image.imageProcessingFailedPleaseTryAgainLater': 'Image processing failed. Please try again later.',
   'image.resultImageForTitle': 'Result image for {title}',

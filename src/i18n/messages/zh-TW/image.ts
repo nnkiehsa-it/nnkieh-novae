@@ -11,7 +11,6 @@ const messages = {
   'image.thisBrowserCannotHandleImages': '此瀏覽器無法處理圖片。',
   'image.uploadVerificationTimeout': '圖片上傳驗證已逾時，請重新選擇圖片後再試。',
   'image.unsupportedFormat': '圖片格式不受支援，請重新選擇圖片。',
-  'image.theImageUploadJobIsNotSetUpCompletely': '圖片上傳準備未完整完成。',
   'image.imageSizeExceedsUploadLimit': '圖片大小超過上傳限制。',
   'image.imageProcessingFailedPleaseTryAgainLater': '圖片處理失敗，請稍後再試。',
   'image.resultImageForTitle': '{title} 的處理結果圖片',

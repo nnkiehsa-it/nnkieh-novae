@@ -8,7 +8,7 @@ import * as users from "./users.ts";
 import * as userAccess from "./user-access.ts";
 import * as userAdmin from "./user-admin.ts";
 import * as accessRules from "./account-access-rules.ts";
-import { handleUploadAction } from "./uploads.ts";
+import * as uploads from "./uploads.ts";
 import { handleIssueAction } from "./issues.ts";
 import * as facilities from "./facilities.ts";
 import { handleAnnouncementAction } from "./announcements.ts";
@@ -81,10 +81,10 @@ export const ACTION_HANDLERS: ActionHandlers = {
   saveScopeMembers: { domain: "user", access: "admin", permission: "role.manage", run: userAccess.saveScopeMembers },
   cacheUserAvatar: { domain: "user", access: "personal", run: users.cacheUserAvatar },
   getUserPublicProfiles: { domain: "user", access: "read", run: users.getUserPublicProfiles },
-  createImageUploadSessions: { domain: "upload", access: "participation", run: (input, auth, database) => handleUploadAction("createImageUploadSessions", input, auth, database) },
-  finalizeImageUploads: { domain: "upload", access: "participation", run: (input, auth, database) => handleUploadAction("finalizeImageUploads", input, auth, database) },
-  deleteUploadedImages: { domain: "upload", access: "participation", run: (input, auth, database) => handleUploadAction("deleteUploadedImages", input, auth, database) },
-  resolveUploadImageUrls: { domain: "upload", access: "read", run: (input, auth, database) => handleUploadAction("resolveUploadImageUrls", input, auth, database) },
+  createImageUploadSessions: { domain: "upload", access: "participation", run: uploads.createImageUploadSessions },
+  finalizeImageUploads: { domain: "upload", access: "participation", run: uploads.finalizeImageUploads },
+  deleteUploadedImages: { domain: "upload", access: "participation", run: uploads.deleteUploadedImages },
+  resolveUploadImageUrls: { domain: "upload", access: "read", run: uploads.resolveUploadImageUrls },
   getIssue: { domain: "issue", access: "read", run: (input, auth, database) => handleIssueAction("getIssue", input, auth, database) },
   listIssues: { domain: "issue", access: "read", run: (input, auth, database) => handleIssueAction("listIssues", input, auth, database) },
   listIssueSupporters: { domain: "issue", access: "read", run: (input, auth, database) => handleIssueAction("listIssueSupporters", input, auth, database) },

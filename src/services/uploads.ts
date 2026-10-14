@@ -1,39 +1,14 @@
-import { invokeBackendAction } from '@/services/backend-action';
+import * as v from 'valibot';
+import type { ImageUploadSession, ImageUploadTargetType, UploadedImage } from '@shared/contracts/uploads.ts';
+import { callAction } from '@/services/backend-action';
 import { longRequestTimeoutMs, withRequestTimeout } from '@/lib/request';
 import { toReadableBackendError } from './issues-core';
 import { t } from '@/i18n';
 
 export { clearResolvedUploadCache, resolveUploadImageUrls } from './upload-delivery';
 
-interface ImageUploadPolicy {
-  height: number;
-  uploadId: string;
-  storagePath: string;
-  width: number;
-}
-
-interface ImageUploadSession {
-  apiKey: string;
-  allowedFormats: string;
-  cloudName: string;
-  folder: string;
-  maxFileSize: string;
-  overwrite: string;
-  notificationUrl: string;
-  publicId: string;
-  signature: string;
-  timestamp: number;
-  type: string;
-  uploadPreset: string;
-  uploadUrl: string;
-  uploadId: string;
-}
-
-interface CloudinaryUploadResponse {
-  public_id?: string;
-  signature?: string;
-  version?: number;
-}
+/** What Cloudinary answers for a stored image: the id, version and signature the Worker verifies. */
+const CloudinaryUploadResponse = v.object({ public_id: v.string(), signature: v.string(), version: v.number() });
 
 interface CloudinaryErrorResponse {
   error?: {
@@ -47,7 +22,7 @@ interface ImageUploadInput {
   width: number;
 }
 
-export type ImageUploadTargetType = 'announcement' | 'announcement_comment' | 'comment' | 'facility' | 'issue';
+export type { ImageUploadTargetType } from '@shared/contracts/uploads.ts';
 
 function toReadableUploadError(error: unknown) {
   const message = error instanceof Error ? error.message : '';
@@ -105,7 +80,9 @@ async function uploadToCloudinary(file: File, session: ImageUploadSession) {
       { method: 'POST', body, signal },
     );
     if (!response.ok) throw await createCloudinaryUploadError(response);
-    return await response.json() as CloudinaryUploadResponse;
+    const answer = v.safeParse(CloudinaryUploadResponse, await response.json());
+    if (!answer.success) throw new Error('upstream-invalid-response');
+    return answer.output;
   }, { label: 'request.imageUpload', timeoutMs: longRequestTimeoutMs });
 }
 
@@ -113,7 +90,7 @@ export async function createImageUploadPolicies(
   inputs: ImageUploadInput[],
   targetType: ImageUploadTargetType,
   scopeId: string,
-): Promise<ImageUploadPolicy[]> {
+): Promise<UploadedImage[]> {
   if (inputs.length === 0) return [];
   if (inputs.some(({ file }) => file.type !== 'image/webp')) {
     throw new Error('image.imagesMustBeConvertedToWebpBeforeUploading');
@@ -121,13 +98,9 @@ export async function createImageUploadPolicies(
 
   let sessions: ImageUploadSession[] = [];
   try {
-    const createSession = invokeBackendAction<
-      { images: Array<{ contentType: string; height: number; size: number; width: number }>; targetType: ImageUploadTargetType; scopeId: string },
-      { sessions: ImageUploadSession[] }
-    >('createImageUploadSessions');
-    const created = await createSession({
+    const created = await callAction('createImageUploadSessions', {
       images: inputs.map(({ file, height, width }) => ({
-        contentType: file.type,
+        contentType: 'image/webp' as const,
         height,
         size: file.size,
         width,
@@ -136,7 +109,6 @@ export async function createImageUploadPolicies(
       scopeId,
     });
     sessions = created.sessions;
-    if (sessions.length !== inputs.length) throw new Error('image.theImageUploadJobIsNotSetUpCompletely');
     const results = await Promise.allSettled(
       inputs.map(({ file }, index) => uploadToCloudinary(file, sessions[index]!)),
     );
@@ -144,23 +116,16 @@ export async function createImageUploadPolicies(
     if (failure) throw failure.reason;
     const uploadResponses = results.filter((result) => result.status === 'fulfilled').map((result) => result.value);
 
-    const finalize = invokeBackendAction<{
-      targetType: ImageUploadTargetType;
-      scopeId: string;
-      uploads: Array<{ publicId: string; signature: string; uploadId: string; version: number }>;
-    }, { uploads: ImageUploadPolicy[] }>('finalizeImageUploads', {
-      timeoutMs: longRequestTimeoutMs,
-    });
-    const result = await finalize({
+    const result = await callAction('finalizeImageUploads', {
       targetType,
       scopeId,
       uploads: uploadResponses.map((response, index) => ({
-        publicId: response.public_id ?? '',
-        signature: response.signature ?? '',
+        publicId: response.public_id,
+        signature: response.signature,
         uploadId: sessions[index]!.uploadId,
-        version: response.version ?? 0,
+        version: response.version,
       })),
-    });
+    }, { timeoutMs: longRequestTimeoutMs });
     return result.uploads;
   } catch (error) {
     // Wait for the batch to settle before scheduling deletion, so slower files cannot recreate cleaned-up assets.
@@ -173,11 +138,7 @@ export async function deleteUploadedImages(storagePaths: string[]) {
   const uniquePaths = [...new Set(storagePaths.filter(Boolean))];
   if (uniquePaths.length === 0) return;
   try {
-    const fn = invokeBackendAction<
-      { storagePaths: string[] },
-      { deleted: number; success: boolean }
-    >('deleteUploadedImages');
-    await fn({ storagePaths: uniquePaths });
+    await callAction('deleteUploadedImages', { storagePaths: uniquePaths });
   } catch (error) {
     throw toReadableBackendError(error);
   }

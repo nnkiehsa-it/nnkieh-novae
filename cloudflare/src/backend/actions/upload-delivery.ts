@@ -1,5 +1,6 @@
 import { createMediaDeliveryUrls } from "../shared/media-delivery.ts";
 import { asString } from "../shared/json.ts";
+import type { ActionInput } from "../../../../shared/actions.ts";
 import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { canReadIssue } from "./issue-shared.ts";
 import type { Selected } from "../database/schema.ts";
@@ -88,36 +89,27 @@ async function resolveUploadAccessBatch(
 }
 
 export async function resolveUploadImageUrls(
-  payload: JsonRecord,
+  input: ActionInput<"resolveUploadImageUrls">,
   auth: AuthContext,
   database: BackendDatabase,
-): Promise<JsonRecord> {
-  const uploadIds = Array.isArray(payload.uploadIds) ? payload.uploadIds.map((id) => asString(id)).filter(Boolean).slice(0, 50) : [];
+) {
   const { rows: deliverable } = await database.sql<Selected<
     "uploads", "id" | "owner_uid" | "cloudinary_public_id" | "attached_target_type" | "attached_target_id"
   >>`select id, owner_uid, cloudinary_public_id, attached_target_type, attached_target_id
      from app_private.uploads
-     where id = any(${uploadIds}) and status = any(${["ready", "attached"]})`;
+     where id = any(${input.uploadIds}) and status = any(${["ready", "attached"]})`;
   const accessByUploadId = await resolveUploadAccessBatch(deliverable as unknown as JsonRecord[], auth, database);
   const resolved = await Promise.all(deliverable.map(async (upload) => {
     const access = accessByUploadId.get(upload.id) ?? { allowed: false, privateDelivery: true };
-    if (!access.allowed || !upload.cloudinary_public_id) return null;
-    return {
-      id: upload.id,
+    if (!access.allowed || !upload.cloudinary_public_id) return [];
+    const urls = await createMediaDeliveryUrls(upload.cloudinary_public_id, access.privateDelivery, auth.uid);
+    return [[upload.id, {
+      expiresAt: new Date(urls.expiresAtMs).toISOString(),
+      fullUrl: urls.fullUrl,
       privateDelivery: access.privateDelivery,
-      ...await createMediaDeliveryUrls(upload.cloudinary_public_id, access.privateDelivery, auth.uid),
-    };
+      thumbnailUrl: urls.thumbnailUrl,
+    }] as const];
   }));
-  const available = resolved.filter((entry): entry is NonNullable<typeof entry> => entry !== null);
-  const expiresAtMs = available.length
-    ? Math.min(...available.map((entry) => entry.expiresAtMs))
-    : Date.now();
-  return {
-    errors: Object.fromEntries(uploadIds.filter((id) => !available.some((entry) => entry.id === id)).map((id) => [id, "not-found"])),
-    expiresAt: new Date(expiresAtMs).toISOString(),
-    expiresAtByUploadId: Object.fromEntries(available.map((entry) => [entry.id, new Date(entry.expiresAtMs).toISOString()])),
-    privateByUploadId: Object.fromEntries(available.map((entry) => [entry.id, entry.privateDelivery])),
-    fullUrls: Object.fromEntries(available.map((entry) => [entry.id, entry.fullUrl])),
-    thumbnailUrls: Object.fromEntries(available.map((entry) => [entry.id, entry.thumbnailUrl])),
-  };
+  // An image the reader may not see is left out, exactly like one that does not exist.
+  return { images: Object.fromEntries(resolved.flat()) };
 }
