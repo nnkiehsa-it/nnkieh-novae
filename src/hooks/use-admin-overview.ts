@@ -4,14 +4,12 @@ import * as React from "react";
 
 import { useAdminReading } from "@/hooks/use-admin-reading";
 import { useRememberedState } from "@/hooks/use-remembered-state";
-import { useSession } from "@/hooks/use-session";
 import {
   fetchAdminOverview,
   type AdminOverviewData,
   type AdminOverviewWindow,
 } from "@/services/admin-console";
 import { failingWork, fetchPlatformDashboard, type PlatformDashboard } from "@/services/dashboard";
-import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 
 export type { AdminOverviewData } from "@/services/admin-console";
 export type { PlatformDashboard } from "@/services/dashboard";
@@ -27,13 +25,13 @@ export type { PlatformDashboard } from "@/services/dashboard";
  * because a window already read stays on screen until the reader refreshes it.
  */
 export function useAdminOverview(period: AdminOverviewWindow) {
-  const session = useSession();
   const { cold, refresh, remember, value: activity } = useRememberedState<AdminOverviewData | null>(
     `admin-overview:${period}`,
     null,
   );
-  const [platform, setPlatform] = React.useState<PlatformDashboard | null>(() =>
-    getViewMemory<PlatformDashboard>(session.user?.uid, "platform-dashboard"),
+  const { remember: setPlatform, value: platform } = useRememberedState<PlatformDashboard | null>(
+    "platform-dashboard",
+    null,
   );
   const { error, loading, read } = useAdminReading(`admin-overview:${period}`, "ui.adminConsole.loadOverviewFailed");
 
@@ -48,17 +46,13 @@ export function useAdminOverview(period: AdminOverviewWindow) {
         setPlatform(nextPlatform);
       },
     ),
-    [period, read, remember],
+    [period, read, remember, setPlatform],
   );
 
   const unread = cold || !platform;
   React.useEffect(() => {
     if (unread || refresh) void load(refresh);
   }, [load, unread, refresh]);
-
-  React.useEffect(() => {
-    if (platform) setViewMemory(session.user?.uid, "platform-dashboard", platform);
-  }, [platform, session.user?.uid]);
 
   const failing = platform ? failingWork(platform) : 0;
 

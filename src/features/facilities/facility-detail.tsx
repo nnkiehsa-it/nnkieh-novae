@@ -23,7 +23,7 @@ export function FacilityDetail() {
 
   if (!facility) {
     if (detail.loading) return <RecordSkeleton />;
-    return <RecordError message={detail.error || t("ui.facility.notFound")} onRetry={() => void detail.load(true)} />;
+    return <RecordError message={detail.error || t("ui.facility.notFound")} onRetry={detail.reload} />;
   }
 
   const closed = isFacilityClosed(facility.status);

@@ -20,7 +20,7 @@ export function AnnouncementDetail() {
 
   if (!announcement) {
     if (detail.loading) return <RecordSkeleton />;
-    return <RecordError message={detail.error || t("ui.announcement.notFound")} onRetry={() => void detail.load(true)} />;
+    return <RecordError message={detail.error || t("ui.announcement.notFound")} onRetry={detail.reload} />;
   }
 
   return (

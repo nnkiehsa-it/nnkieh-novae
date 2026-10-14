@@ -44,8 +44,8 @@ export function Discussion({ categoryId, comments, enabled = true, error, hasMor
   loadingMore?: boolean;
   onCreate: (content: string, parentCommentId: string | null) => Promise<void>;
   onDelete: (commentId: string) => Promise<void>;
-  onLoadMore?: () => Promise<void>;
-  onRetry?: () => Promise<void>;
+  onLoadMore?: () => void;
+  onRetry?: () => void;
   onSortChange: (sort: CommentSortOption) => void;
   sort: CommentSortOption;
   targetKey: string;
@@ -89,7 +89,7 @@ export function Discussion({ categoryId, comments, enabled = true, error, hasMor
         {error ? (
           <div className="flex items-center justify-between gap-3 bg-danger/10 px-5 py-3">
             <p className="text-sm text-danger" role="alert">{error}</p>
-            {onRetry ? <Button disabled={loading || loadingMore} onClick={() => void onRetry()} size="sm">{t("common.retry")}</Button> : null}
+            {onRetry ? <Button disabled={loading || loadingMore} onClick={onRetry} size="sm">{t("common.retry")}</Button> : null}
           </div>
         ) : null}
         {!enabled ? <p className="px-5 py-4 text-sm text-ink-muted">{t("ui.discussion.disabled")}</p> : null}
@@ -122,7 +122,7 @@ export function Discussion({ categoryId, comments, enabled = true, error, hasMor
         )}
         {hasMore && onLoadMore ? (
           <div className="flex justify-center border-t border-line px-5 py-3">
-            <Button onClick={() => void onLoadMore()} size="sm" status={loadingMore ? "loading" : "idle"} variant="ghost">
+            <Button onClick={onLoadMore} size="sm" status={loadingMore ? "loading" : "idle"} variant="ghost">
               {loadingMore ? null : <CaretDown weight="bold" />}
               {t(loadingMore ? "ui.common.loadingMore" : "ui.discussion.loadMore")}
             </Button>

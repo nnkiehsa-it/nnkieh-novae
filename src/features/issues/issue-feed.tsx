@@ -81,8 +81,8 @@ export function IssueFeed({ categoryControl, filter, notice, viewSwitch }: { cat
         items={state.feed.issues}
         loading={state.loading}
         loadingMore={state.loadingMore}
-        onLoadMore={() => void state.load(state.feed.cursor)}
-        onRetry={() => void state.load()}
+        onLoadMore={state.loadMore}
+        onRetry={state.reload}
         renderItem={(issue) => (
           <IssueCard
             burst={state.supportBurstById[issue.id] ?? 0}

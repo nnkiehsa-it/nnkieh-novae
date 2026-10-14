@@ -3,73 +3,38 @@
 import * as React from "react";
 import { useI18n } from "@/i18n";
 import { useSession } from "@/hooks/use-session";
-import { listAnnouncements, setAnnouncementLike } from "@/services/announcements";
-import type { AnnouncementCursor } from "@shared/contracts/announcements.ts";
+import { announcementKeys, listAnnouncements, setAnnouncementLike } from "@/services/announcements";
 import { markAnnouncementsOpened } from "@/services/announcement-notice";
+import type { AnnouncementCursor } from "@shared/contracts/announcements.ts";
 import type { AnnouncementSummary } from "@/types";
-import {
-  beginContentEntityRead,
-  getContentEntity,
-  mergeContentEntityRead,
-  patchContentEntity,
-} from "@/lib/content-entity-store";
-import { canContinuePage, mergePageById } from "@/lib/pagination";
-import { usePagedRequestGuard } from "@/hooks/use-paged-request-guard";
-import { useContentEntityDomainVersion } from "@/hooks/use-content-entity";
-
-import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
-import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
-import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
+import { patchEntity } from "@/lib/query-client";
 import { useOptimisticReaction } from "@/hooks/use-optimistic-reaction";
-import { advanceFeedPageCount, canLoadAnotherFeedPage } from "@/lib/feed-page-limit";
-
-const ANNOUNCEMENT_LIST_CACHE_PREFIXES = ["announcement-list-page|"] as const;
+import { usePagedQuery } from "@/hooks/use-paged-query";
 
 export function useAnnouncementFeed() {
   const session = useSession();
   const { t } = useI18n();
-  const viewMemory = getViewMemory<{
-    cursor: AnnouncementCursor | null;
-    hasMore: boolean;
-    items: AnnouncementSummary[];
-    pageCount: number;
-  }>(session.user?.uid, "announcement-feed");
-  const [coldRead] = React.useState(() => !viewMemory);
-  const [warmRead] = React.useState(() => Boolean(viewMemory));
-  const readSucceeded = React.useRef(false);
-  const [items, setItems] = React.useState<AnnouncementSummary[]>(viewMemory?.items ?? []);
-  const [cursor, setCursor] = React.useState<AnnouncementCursor | null>(viewMemory?.cursor ?? null);
-  const [hasMore, setHasMore] = React.useState(viewMemory?.hasMore ?? false);
-  const [pageCount, setPageCount] = React.useState(
-    viewMemory?.pageCount ?? (viewMemory?.items.length ? 1 : 0),
-  );
-  const pageCountRef = React.useRef(pageCount);
-  const [loading, setLoading] = React.useState(!viewMemory);
-  const revealFields = useColdDataReveal(coldRead, loading);
-  const [loadingMore, setLoadingMore] = React.useState(false);
-  const [error, setError] = React.useState("");
-  const reaction = useOptimisticReaction(session.user?.uid, "announcement");
-  const requestGuard = usePagedRequestGuard();
-  const entityVersion = useContentEntityDomainVersion(
-    session.user?.uid,
-    "announcement",
-  );
-  const queryKey = session.user?.uid ?? "anonymous";
+  const reaction = useOptimisticReaction();
+  const feed = usePagedQuery({
+    queryKey: announcementKeys.list(),
+    read: (cursor: AnnouncementCursor | null, signal) => listAnnouncements(cursor, signal),
+    items: (page) => page.announcements,
+  });
+
+  // Reading the newest page is what opens the list, whether it came from the cache or not.
+  const openedThrough = feed.firstPage?.snapshotAt;
+  React.useEffect(() => {
+    if (openedThrough) void markAnnouncementsOpened(openedThrough).catch(() => undefined);
+  }, [openedThrough]);
 
   async function like(announcementId: string) {
-    const announcement =
-      getContentEntity<AnnouncementSummary>(
-        session.user?.uid,
-        "announcement",
-        announcementId,
-      ) ?? items.find((item) => item.id === announcementId);
+    const announcement = feed.items.find((item) => item.id === announcementId);
     if (!announcement) return;
     return reaction.run({
       id: announcementId,
       previous: { active: announcement.currentUserLiked, count: announcement.likeCount },
-      apply: ({ active, count }, pending) => patchContentEntity<AnnouncementSummary>(session.user?.uid, "announcement", announcementId, {
-        currentUserLiked: active, likeCount: count,
-      }, { pending }),
+      apply: ({ active, count }) =>
+        patchEntity<AnnouncementSummary>("announcements", announcementId, { currentUserLiked: active, likeCount: count }),
       request: async (active) => {
         const result = await setAnnouncementLike(announcementId, active);
         return { active: result.liked, count: result.likeCount };
@@ -78,98 +43,17 @@ export function useAnnouncementFeed() {
     });
   }
 
-  const load = React.useCallback(
-    async (nextCursor: AnnouncementCursor | null = null, restart = false) => {
-      if (restart) requestGuard.restart(queryKey);
-      const requestToken = requestGuard.begin(queryKey);
-      if (!requestToken) return;
-      const entityReadRevision = beginContentEntityRead();
-      nextCursor ? setLoadingMore(true) : setLoading(!getViewMemory(session.user?.uid, "announcement-feed"));
-      setError("");
-      try {
-        const result = await listAnnouncements(nextCursor, {
-          cacheScope: session.user?.uid,
-          forceRefresh: !nextCursor && (warmRead || restart),
-        });
-        if (!requestGuard.isCurrent(requestToken)) return;
-        readSucceeded.current = true;
-        const announcements = result.announcements.map((announcement) =>
-          mergeContentEntityRead(
-            session.user?.uid,
-            "announcement",
-            announcement,
-            entityReadRevision,
-            "summary",
-          ),
-        );
-        setItems((current) =>
-          nextCursor ? mergePageById(current, announcements) : announcements,
-        );
-        setCursor(result.cursor);
-        const nextPageCount = advanceFeedPageCount(pageCountRef.current, Boolean(nextCursor));
-        pageCountRef.current = nextPageCount;
-        setPageCount(nextPageCount);
-        setHasMore(canLoadAnotherFeedPage(
-          nextPageCount,
-          canContinuePage(nextCursor, result.cursor, result.hasMore),
-        ));
-        if (!nextCursor && result.snapshotAt) {
-          void markAnnouncementsOpened(result.snapshotAt).catch(() => undefined);
-        }
-      } catch (caught) {
-        if (requestGuard.isCurrent(requestToken))
-          setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
-      } finally {
-        if (requestGuard.finish(requestToken)) {
-          setLoading(false);
-          setLoadingMore(false);
-        }
-      }
-    },
-    [queryKey, requestGuard, session.user?.uid, t, warmRead],
-  );
-
-  React.useEffect(() => {
-    void load();
-  }, [load]);
-
-  React.useEffect(() => {
-    if (loading || !readSucceeded.current) return;
-    setViewMemory(session.user?.uid, "announcement-feed", {
-      cursor,
-      hasMore,
-      items,
-      pageCount,
-    }, ANNOUNCEMENT_LIST_CACHE_PREFIXES);
-  }, [cursor, hasMore, items, loading, pageCount, session.user?.uid]);
-
-  useContentInvalidationRefresh(
-    ANNOUNCEMENT_LIST_CACHE_PREFIXES,
-    () => load(null, true),
-  );
-
-  const synchronizedItems = items.map(
-    (announcement) =>
-      getContentEntity<AnnouncementSummary>(
-        session.user?.uid,
-        "announcement",
-        announcement.id,
-      ) ?? announcement,
-  ).filter((announcement) => !announcement.deleting);
-  void entityVersion;
-
   return {
     canManage: session.can("announcement.manage"),
-    cursor,
-    error,
-    hasMore,
-    items: synchronizedItems,
+    error: feed.error,
+    hasMore: feed.hasMore,
+    items: feed.items,
     like,
     likeBurstById: reaction.burstById,
     isLiking: reaction.isBusy,
-    load,
-    loading,
-    loadingMore,
-    revealFields,
+    loading: feed.loading,
+    loadingMore: feed.loadingMore,
+    loadMore: feed.loadMore,
+    reload: feed.reload,
   };
 }

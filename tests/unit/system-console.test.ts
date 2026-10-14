@@ -2,6 +2,7 @@ import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 import { useSystemConsole } from "@/hooks/use-system-console";
+import { withQueryClient } from "./support/query-client";
 import { clearScheduledWork, fetchOperationsConsole, fetchOperationsQueue, retryOperationalWork } from "@/services/operations-console";
 
 const runtime = vi.hoisted(() => ({ poll: undefined as (() => Promise<void>) | undefined }));
@@ -34,7 +35,7 @@ it("keeps canonical retried work and counts when an older poll finishes, and ser
   let state!: ReturnType<typeof useSystemConsole>;
   function Probe() { state = useSystemConsole(); return null; }
   try {
-    await act(async () => root.render(createElement(Probe)));
+    await act(async () => root.render(withQueryClient(createElement(Probe))));
     let poll!: Promise<void>;
     await act(async () => { poll = runtime.poll!(); });
     let retry!: Promise<void>;
@@ -55,7 +56,7 @@ it("keeps canonical retried work and counts when an older poll finishes, and ser
     await act(async () => root.render(null));
     const refreshed = { ...after, capacity: [{ name: "announcements" }], databaseBytes: 2048, metrics: [] };
     vi.mocked(fetchOperationsConsole).mockResolvedValue(refreshed as never);
-    await act(async () => root.render(createElement(Probe)));
+    await act(async () => root.render(withQueryClient(createElement(Probe))));
     expect(fetchOperationsConsole).toHaveBeenCalledTimes(2);
     expect(state.snapshot).toEqual(refreshed);
   } finally {

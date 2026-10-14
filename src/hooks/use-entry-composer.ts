@@ -13,10 +13,6 @@ import { useSession } from "@/hooks/use-session";
 import { createAnnouncement } from "@/services/announcements";
 import { createFacility } from "@/services/facilities";
 import { createIssue } from "@/services/issues";
-import {
-  beginContentEntityRead,
-  mergeContentEntityRead,
-} from "@/lib/content-entity-store";
 
 export function useAnnouncementComposer() {
   const navigate = useAppNavigate();
@@ -36,12 +32,6 @@ export function useAnnouncementComposer() {
         content,
         title: form.title.trim(),
       });
-      mergeContentEntityRead(
-        session.user?.uid,
-        "announcement",
-        announcement,
-        beginContentEntityRead(),
-      );
       return `/announcements/${announcement.id}`;
     }, (href) => navigate(href, { replace: true }), t("ui.announcement.publishFailed"));
   }
@@ -56,7 +46,6 @@ export function useIssueComposer() {
   const route = matchAppRoute(useAppLocation().pathname);
   const navigate = useAppNavigate();
   const { t } = useI18n();
-  const session = useSession();
   const category = route.kind === "issue-composer" ? route.filter : "";
   const form = useComposerBase("issue", `issue:${category}`, category);
   const config = findIssueCategory(category);
@@ -71,7 +60,6 @@ export function useIssueComposer() {
     ) return;
     await form.withUploads(async (content) => {
       const issue = await createIssue({ category, content, title: form.title.trim() });
-      mergeContentEntityRead(session.user?.uid, "issue", issue, beginContentEntityRead());
       return `/issues/${encodeURIComponent(category)}/${issue.id}`;
     }, (href) => navigate(href, { replace: true }), t("ui.issue.submitFailed"));
   }
@@ -83,7 +71,6 @@ export function useFacilityComposer() {
   const { search } = useAppLocation();
   const categories = useCategories();
   const { t } = useI18n();
-  const session = useSession();
   const form = useComposerBase("facility", "facility", search.get("category") ?? "");
   const category = form.categoryId;
   const location = form.draft.value.location;
@@ -107,12 +94,6 @@ export function useFacilityComposer() {
         location: location.trim(),
         title: form.title.trim(),
       });
-      mergeContentEntityRead(
-        session.user?.uid,
-        "facility",
-        facility,
-        beginContentEntityRead(),
-      );
       return `/facilities/${facility.id}?category=${encodeURIComponent(category)}`;
     }, (href) => navigate(href, { replace: true }), t("ui.facility.submitFailed"));
   }

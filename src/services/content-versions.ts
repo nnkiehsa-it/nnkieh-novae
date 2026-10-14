@@ -1,87 +1,33 @@
 import { auth } from '@/lib/firebase';
 import type { ContentVersionDomain, ContentVersions } from '@shared/contracts/session.ts';
 import { callAction } from '@/services/backend-action';
-import { markContentCachePrefixStale } from '@/services/content-read-cache';
-import { readLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
-import { clearContentEntityDomain, type ContentEntityDomain } from '@/lib/content-entity-store';
+import { invalidateDomain, queryClient } from '@/lib/query-client';
 
 export type { ContentVersionDomain } from '@shared/contracts/session.ts';
 
-interface StoredContentVersions {
-  versions: ContentVersions;
-}
-
-const STORAGE_KEY_PREFIX = 'novae:content-versions:';
-const DOMAIN_PREFIXES: Record<ContentVersionDomain, readonly string[]> = {
-  announcements: ['announcement-list-page|', 'announcement-detail|', 'announcement-comments-page|'],
-  facilities: ['facility-list-page|', 'facility-detail|'],
-  issues: ['issue-list-page|', 'issue-search|', 'user-issue-list-page|', 'issue-detail|', 'issue-comments-page|'],
-};
-const ENTITY_DOMAINS: Record<ContentVersionDomain, ContentEntityDomain> = {
-  announcements: 'announcement',
-  facilities: 'facility',
-  issues: 'issue',
-};
-
-const listeners = new Map<ContentVersionDomain, Set<() => void | Promise<void>>>();
+/**
+ * The version of each domain the cached answers were read at. It is kept in
+ * the query cache itself, so it is saved and restored with those answers and
+ * can never claim a newer version than the answers beside it.
+ */
+const VERSIONS_KEY = ['content-versions'] as const;
 const pendingChecks = new Map<string, Promise<ContentVersionDomain[]>>();
 
-function storageKey(uid: string) {
-  return `${STORAGE_KEY_PREFIX}${uid}`;
+function cachedVersions() {
+  return queryClient.getQueryData<ContentVersions>(VERSIONS_KEY);
 }
 
-function readStoredVersions(uid: string): StoredContentVersions | null {
-  try {
-    const raw = readLocalStorage(storageKey(uid));
-    if (!raw) return null;
-    const value = JSON.parse(raw) as Partial<StoredContentVersions>;
-    const versions = value.versions;
-    if (
-      !versions
-      || typeof versions.announcements !== 'number'
-      || typeof versions.facilities !== 'number'
-      || typeof versions.issues !== 'number'
-    ) return null;
-    return { versions };
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredVersions(uid: string, value: StoredContentVersions) {
-  writeLocalStorage(storageKey(uid), JSON.stringify(value));
-}
-
-function invalidateDomain(uid: string, domain: ContentVersionDomain) {
-  DOMAIN_PREFIXES[domain].forEach(markContentCachePrefixStale);
-  clearContentEntityDomain(uid, ENTITY_DOMAINS[domain]);
-}
-
-function notifyChangedDomains(domains: ContentVersionDomain[]) {
-  domains.forEach((domain) => {
-    listeners.get(domain)?.forEach((listener) => void listener());
-  });
-}
-
-export function applyContentVersionsSnapshot(
-  versions: ContentVersions,
-  options: { notify?: boolean } = {},
-) {
-  const uid = auth?.currentUser?.uid ?? '';
-  if (!uid) return [] as ContentVersionDomain[];
-  const previous = readStoredVersions(uid);
-  const domains = previous
-    ? (Object.keys(versions) as ContentVersionDomain[]).filter(
-        (domain) => previous.versions[domain] !== versions[domain],
-      )
-    : (Object.keys(versions) as ContentVersionDomain[]);
-  domains.forEach((domain) => invalidateDomain(uid, domain));
-  writeStoredVersions(uid, { versions: { ...versions } });
-  if (options.notify) notifyChangedDomains(domains);
+/** Marks every domain whose version moved since the cached answers were read stale. */
+export function applyContentVersionsSnapshot(versions: ContentVersions) {
+  const previous = cachedVersions();
+  const domains = (Object.keys(versions) as ContentVersionDomain[])
+    .filter((domain) => previous?.[domain] !== versions[domain]);
+  domains.forEach((domain) => void invalidateDomain(domain));
+  queryClient.setQueryData(VERSIONS_KEY, { ...versions });
   return domains;
 }
 
-export async function ensureContentVersionsFresh(options: { notify?: boolean } = {}) {
+export async function ensureContentVersionsFresh() {
   const uid = auth?.currentUser?.uid ?? '';
   if (!uid || (typeof navigator !== 'undefined' && !navigator.onLine)) return [];
 
@@ -91,7 +37,7 @@ export async function ensureContentVersionsFresh(options: { notify?: boolean } =
   const pending = (async () => {
     const result = await callAction('getContentVersions', {});
     if (auth?.currentUser?.uid !== uid) return [];
-    return applyContentVersionsSnapshot(result.versions, options);
+    return applyContentVersionsSnapshot(result.versions);
   })().finally(() => {
     pendingChecks.delete(uid);
   });
@@ -100,24 +46,13 @@ export async function ensureContentVersionsFresh(options: { notify?: boolean } =
 }
 
 export function registerContentVersion(domain: ContentVersionDomain, version: number) {
-  const uid = auth?.currentUser?.uid ?? '';
-  if (!uid || !Number.isFinite(version)) return;
-  const previous = readStoredVersions(uid)?.versions ?? { announcements: 1, facilities: 1, issues: 1 };
+  if (!Number.isFinite(version)) return;
+  const previous = cachedVersions() ?? { announcements: 1, facilities: 1, issues: 1 };
   if (version <= previous[domain]) return;
-  previous[domain] = version;
-  writeStoredVersions(uid, { versions: previous });
-}
-
-function getContentVersion(domain: ContentVersionDomain) {
-  const uid = auth?.currentUser?.uid ?? '';
-  return readStoredVersions(uid)?.versions[domain] ?? 1;
+  queryClient.setQueryData(VERSIONS_KEY, { ...previous, [domain]: version });
 }
 
 export function hasContentVersionGap(domain: ContentVersionDomain, version: number) {
   if (!Number.isFinite(version) || version <= 0) return false;
-  return version > getContentVersion(domain) + 1;
-}
-
-export function resetContentVersionState() {
-  // Pending requests are scoped by uid and are discarded by session changes.
+  return version > (cachedVersions()?.[domain] ?? 1) + 1;
 }

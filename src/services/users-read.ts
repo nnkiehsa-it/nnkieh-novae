@@ -1,73 +1,49 @@
 import { callAction } from '@/services/backend-action';
 import { readRequestTimeoutMs } from '@/lib/request';
+import { queryClient } from '@/lib/query-client';
 import { toReadableBackendError } from './backend-errors';
-import {
-  createContentCacheKey,
-  captureContentCacheWriteGuard,
-  getCachedContent,
-  getCachedContentPersistent,
-  runCoalescedContentRequest,
-  setCachedContentFromRead,
-  isContentCacheWriteGuardCurrent,
-} from '@/services/content-read-cache';
 import type { UserPublicProfile } from '@/types';
 
-// v2 profiles contain only Cloudinary delivery URLs, including restored entries.
-const USER_PROFILE_CACHE_NAME = 'user-profile-v2';
-const USER_PROFILE_REQUEST_PREFIX = `${USER_PROFILE_CACHE_NAME}|`;
-const USER_PROFILE_CACHE_TTL_MS = 24 * 60 * 60 * 1_000;
+export const PROFILE_MAX_AGE_MS = 24 * 60 * 60 * 1_000;
+const BATCH_SIZE = 50;
+const profileKey = (uid: string) => ['profiles', uid] as const;
+const pendingBatches = new Map<string, Promise<Record<string, UserPublicProfile>>>();
+
+function uniqueUids(uids: string[]) {
+  return [...new Set(uids.map((uid) => uid.trim()).filter(Boolean))];
+}
 
 export function getCachedUserPublicProfiles(uids: string[]) {
   const profiles: Record<string, UserPublicProfile> = {};
-  for (const uid of new Set(uids.map((value) => value.trim()).filter(Boolean))) {
-    const profile = getCachedContent<UserPublicProfile>(
-      createContentCacheKey([USER_PROFILE_CACHE_NAME, uid]),
-      USER_PROFILE_CACHE_TTL_MS,
-    );
-    if (profile) profiles[uid] = profile;
+  for (const uid of uniqueUids(uids)) {
+    const state = queryClient.getQueryState<UserPublicProfile>(profileKey(uid));
+    if (state?.data && Date.now() - state.dataUpdatedAt < PROFILE_MAX_AGE_MS) profiles[uid] = state.data;
   }
   return profiles;
 }
 
+function readBatch(batch: string[]) {
+  const key = batch.join(',');
+  const existing = pendingBatches.get(key);
+  if (existing) return existing;
+  const pending = callAction('getUserPublicProfiles', { uids: batch }, { timeoutMs: readRequestTimeoutMs })
+    .then(({ profiles }) => {
+      for (const [uid, profile] of Object.entries(profiles)) queryClient.setQueryData(profileKey(uid), profile);
+      return profiles;
+    })
+    .finally(() => pendingBatches.delete(key));
+  pendingBatches.set(key, pending);
+  return pending;
+}
+
+/** The profiles asked for: those read in the last day from the cache, the rest fifty to a request. */
 export async function fetchUserPublicProfiles(uids: string[]) {
-  const uniqueUids = [...new Set(uids.map((uid) => uid.trim()).filter(Boolean))];
-  const guard = captureContentCacheWriteGuard(USER_PROFILE_REQUEST_PREFIX);
-
-  if (uniqueUids.length === 0) {
-    return {};
-  }
-
+  const wanted = uniqueUids(uids);
+  const profiles = getCachedUserPublicProfiles(wanted);
+  const missing = wanted.filter((uid) => !profiles[uid]).sort();
   try {
-    const cachedEntries = await Promise.all(uniqueUids.map(async (uid) => [
-      uid,
-      await getCachedContentPersistent<UserPublicProfile>(
-        createContentCacheKey([USER_PROFILE_CACHE_NAME, uid]),
-        USER_PROFILE_CACHE_TTL_MS,
-      ),
-    ] as const));
-    const profiles: Record<string, UserPublicProfile> = {};
-    if (!isContentCacheWriteGuardCurrent(guard)) return profiles;
-    const missingUids: string[] = [];
-    for (const [uid, profile] of cachedEntries) {
-      if (profile) profiles[uid] = profile;
-      else missingUids.push(uid);
-    }
-    if (missingUids.length === 0) return profiles;
-
-    missingUids.sort();
-    for (let offset = 0; offset < missingUids.length; offset += 50) {
-      const batch = missingUids.slice(offset, offset + 50);
-      const requestKey = `${USER_PROFILE_REQUEST_PREFIX}${batch.join(',')}`;
-      const fetched = await runCoalescedContentRequest(requestKey, async () => {
-        return (await callAction('getUserPublicProfiles', { uids: batch }, { timeoutMs: readRequestTimeoutMs })).profiles;
-      });
-      if (!isContentCacheWriteGuardCurrent(guard)) return {};
-      for (const uid of batch) {
-        const profile = fetched[uid];
-        if (!profile) continue;
-        profiles[uid] = profile;
-        setCachedContentFromRead({ ...guard, key: createContentCacheKey([USER_PROFILE_CACHE_NAME, uid]) }, profile);
-      }
+    for (let offset = 0; offset < missing.length; offset += BATCH_SIZE) {
+      Object.assign(profiles, await readBatch(missing.slice(offset, offset + BATCH_SIZE)));
     }
     return profiles;
   } catch (error) {

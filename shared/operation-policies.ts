@@ -11,7 +11,6 @@ const BASE_POLICIES = {
   uploadBurst: { value: 6, min: 1, max: 6, group: "rates" },
   resolveBurst: { value: 30, min: 1, max: 30, group: "rates" },
   viewMemoryMinutes: { value: 30, min: 1, max: 120, group: "client" },
-  viewMemoryEntries: { value: 100, min: 10, max: 500, group: "client" },
   feedPages: { value: 5, min: 1, max: 20, group: "client" },
   mediaBrowserSeconds: { value: 60, min: 0, max: 3600, group: "client" },
   mediaEdgeSeconds: { value: 60, min: 0, max: 3600, group: "client" },

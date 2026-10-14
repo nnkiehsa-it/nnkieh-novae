@@ -2,26 +2,28 @@ import type { SessionBootstrap } from '@shared/contracts/session.ts';
 import type { SessionAccess } from '@shared/contracts/users.ts';
 import { callAction } from '@/services/backend-action';
 import { seedRuntimeSettings } from '@/services/runtime-settings';
-import {
-  CONTENT_SHORT_CACHE_TTL_MS,
-  getCachedContentPersistent,
-  markContentCachePrefixStale,
-  runCoalescedContentRequest,
-  setCachedContentFromRead,
-} from '@/services/content-read-cache';
+import { queryClient } from '@/lib/query-client';
 
 type SessionBootstrapResult = SessionBootstrap;
 
-const SESSION_BOOTSTRAP_CACHE_KEY = 'session-bootstrap-v2';
+export const SESSION_SHORT_MAX_AGE_MS = 10 * 60 * 1_000;
+const BOOTSTRAP_KEY = ['session', 'bootstrap'] as const;
 let pendingRecordVisit = false;
+let pendingBootstrap: Promise<SessionBootstrapResult> | null = null;
 
-/** Display settings may use an older snapshot; access still uses its short TTL. */
+/** Display settings may use an older snapshot; access still uses its short age. */
 export function readSessionBootstrapSnapshot() {
-  return getCachedContentPersistent<SessionBootstrapResult>(SESSION_BOOTSTRAP_CACHE_KEY);
+  return queryClient.getQueryData<SessionBootstrapResult>(BOOTSTRAP_KEY) ?? null;
 }
 
 export function markSessionBootstrapStale() {
-  markContentCachePrefixStale(SESSION_BOOTSTRAP_CACHE_KEY);
+  void queryClient.invalidateQueries({ queryKey: BOOTSTRAP_KEY, refetchType: 'none' });
+}
+
+function freshSnapshot() {
+  const state = queryClient.getQueryState<SessionBootstrapResult>(BOOTSTRAP_KEY);
+  if (!state?.data || state.isInvalidated || Date.now() - state.dataUpdatedAt >= SESSION_SHORT_MAX_AGE_MS) return null;
+  return state.data;
 }
 
 /**
@@ -45,17 +47,15 @@ export async function fetchSessionBootstrap(options: {
   // A background refresh keeps the persisted snapshot usable by the shell and
   // catalog readers while new access is being reconciled with the server.
   if (!force && !options.refresh && !pendingRecordVisit) {
-    const cached = await getCachedContentPersistent<SessionBootstrapResult>(
-      SESSION_BOOTSTRAP_CACHE_KEY,
-      CONTENT_SHORT_CACHE_TTL_MS,
-    );
-    if (cached?.access?.setupCompleted) {
+    const cached = freshSnapshot();
+    if (cached?.access.setupCompleted) {
       seedRuntimeSettings(cached.runtime);
       return cached;
     }
   }
 
-  return runCoalescedContentRequest(SESSION_BOOTSTRAP_CACHE_KEY, async (cacheGuard) => {
+  // Not a cached query read: the answer streams, and who it is for is handed on before the rest.
+  pendingBootstrap ??= (async () => {
     const shouldRecordVisit = pendingRecordVisit;
     pendingRecordVisit = false;
     const result = await callAction('getSessionBootstrap', { recordVisit: shouldRecordVisit }, {
@@ -64,7 +64,8 @@ export async function fetchSessionBootstrap(options: {
       },
     });
     seedRuntimeSettings(result.runtime);
-    setCachedContentFromRead(cacheGuard, { ...result, visitRecorded: false });
+    queryClient.setQueryData(BOOTSTRAP_KEY, { ...result, visitRecorded: false });
     return result;
-  });
+  })().finally(() => { pendingBootstrap = null; });
+  return pendingBootstrap;
 }

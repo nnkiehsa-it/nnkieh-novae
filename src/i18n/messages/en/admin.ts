@@ -87,7 +87,7 @@ const messages = {
   "admin.policyStandardDetail": "Reset policies in this category to platform defaults.",
   "admin.contentExtendedDetail": "Titles: 80 characters; content: 4000; comments: 500; results: 4000.",
   "admin.ratesRestrictedDetail": "Lower regular read, write, upload, and posting quotas. Keep the admin burst allowance.",
-  "admin.clientCompactDetail": "Keep fewer pages and entries in memory. Cache images for three minutes.",
+  "admin.clientCompactDetail": "Keep fewer pages of each list. Cache images for three minutes.",
   "admin.jobsGentleDetail": "Process fewer items per batch. Lower peak load; slower backlog recovery.",
   "admin.jobsCatchupDetail": "Process more items per batch to clear backlog sooner, with higher peak load.",
   "admin.logsExtendedDetail": "Keep Notion archives for three years, and errors and metrics for 90 days.",

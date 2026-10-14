@@ -103,6 +103,26 @@ export async function signInWithEmulator(page: Page, email: string) {
   await page.waitForURL((url) => !['/', '/login', '/issues'].includes(url.pathname), { timeout: 30_000 });
 }
 
+/** The keys of every query the app saved for the signed-in account. */
+export function storedQueryKeys(page: Page) {
+  return page.evaluate(async () => {
+    const open = indexedDB.open('novae-queries', 1);
+    // Opening before the app has saved anything creates the database as the app would.
+    open.onupgradeneeded = () => open.result.createObjectStore('clients');
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      open.onsuccess = () => resolve(open.result);
+      open.onerror = () => reject(open.error);
+    });
+    try {
+      const read = database.transaction('clients').objectStore('clients').getAll();
+      const clients = await new Promise<Array<{ state: { queries: Array<{ queryKey: unknown[] }> } }>>((resolve) => {
+        read.onsuccess = () => resolve(read.result);
+      });
+      return clients.flatMap((client) => client.state.queries.map((query) => query.queryKey));
+    } finally { database.close(); }
+  });
+}
+
 export async function saveSignedInState(
   browser: Browser,
   email: string,
@@ -121,6 +141,8 @@ export async function saveSignedInState(
     { timeout: 20_000 },
   );
   await expect(page.getByRole('navigation', { name: 'Primary navigation' }).first()).toBeVisible();
+  // The saved state carries a warm session, as a returning visitor's browser would.
+  await expect.poll(() => storedQueryKeys(page)).toContainEqual(['session', 'bootstrap']);
   await context.storageState({ indexedDB: true, path });
   await context.close();
 }

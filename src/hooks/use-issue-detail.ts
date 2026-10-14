@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAppLocation, useAppNavigate, useRecordId } from "@/hooks/use-app-location";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
@@ -9,37 +10,25 @@ import {
   issueCategoryAllowsComments,
 } from "@/constants/categories";
 import { useSession } from "@/hooks/use-session";
-import { rememberSupportedIssue } from "@/lib/supported-issue-memory";
 import { getDerivedIssueStatus, getSupportProgressPercent } from "@/lib/issue-status";
 import { getIssueOperationTimeItems } from "@/lib/issue-timeline";
-import { useCommentFeed, type CommentPageRequest } from "@/hooks/use-comment-feed";
+import { useCommentFeed } from "@/hooks/use-comment-feed";
 import {
   createComment,
   deleteComment,
   deleteIssue,
   getIssue,
+  issueKeys,
   listComments,
   listIssueSupporters,
-  peekIssue,
   setSupport,
 } from "@/services/issues";
-import {
-  fetchUserPublicProfiles,
-  getCachedUserPublicProfiles,
-} from "@/services/users-read";
-import type { IssueRecord, UserPublicProfile } from "@/types";
+import type { IssueRecord } from "@/types";
 import type { Issue } from "@shared/contracts/issues.ts";
-import {
-  beginContentEntityRead,
-  getDetailContentEntity,
-  mergeContentEntityRead,
-  patchContentEntity,
-} from "@/lib/content-entity-store";
-import { useContentEntity } from "@/hooks/use-content-entity";
-import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
+import { dropEntity, patchEntity } from "@/lib/query-client";
+import { usePublicProfiles } from "@/hooks/use-public-profiles";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
 import { feedHref } from "@/lib/feed-href";
-import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
 import { useOptimisticReaction } from "@/hooks/use-optimistic-reaction";
 
 export function useIssueDetail() {
@@ -48,74 +37,24 @@ export function useIssueDetail() {
   const navigate = useAppNavigate();
   const session = useSession();
   const { t } = useI18n();
-  const storedIssue = useContentEntity<IssueRecord>(
-    session.user?.uid,
-    "issue",
-    issueId,
-    "detail",
-  );
-  const currentIssue = storedIssue ?? peekIssue(issueId, session.user?.uid);
-  const [profile, setProfile] = React.useState<UserPublicProfile | null>(() =>
-    currentIssue?.authorUid
-      ? getCachedUserPublicProfiles([currentIssue.authorUid])[currentIssue.authorUid] ?? null
-      : null,
-  );
+  const [deleting, setDeleting] = React.useState(false);
+  const query = useQuery({
+    // A proposal being deleted is not read again while the screen leaves it.
+    enabled: !deleting,
+    queryKey: issueKeys.detail(issueId),
+    queryFn: ({ signal }) => getIssue(issueId, signal),
+  });
+  const currentIssue = query.data;
+  const authorUid = currentIssue?.authorUid;
+  const profile = usePublicProfiles([authorUid])[authorUid ?? ""] ?? null;
   const [supporters, setSupporters] = React.useState<
     Awaited<ReturnType<typeof listIssueSupporters>>
   >([]);
   const [supportersLoading, setSupportersLoading] = React.useState(false);
   const [supportersError, setSupportersError] = React.useState("");
-  const [coldRead] = React.useState(() => !currentIssue);
-  const [loading, setLoading] = React.useState(!currentIssue);
-  const revealDetail = useColdDataReveal(coldRead, loading);
-  const [error, setError] = React.useState("");
-  const reaction = useOptimisticReaction(session.user?.uid, "issue");
+  const reaction = useOptimisticReaction();
   const [moderationOpen, setModerationOpen] = React.useState(false);
   const deleteFeedback = useActionFeedback();
-  const deletingRef = React.useRef(false);
-
-  const loadIssue = React.useCallback(
-    async (forceRefresh = false) => {
-      const cached =
-        getDetailContentEntity<IssueRecord>(session.user?.uid, "issue", issueId) ??
-        peekIssue(issueId, session.user?.uid);
-      const coldRead = !cached;
-      if (coldRead) setLoading(true);
-      setError("");
-      const entityReadRevision = beginContentEntityRead();
-      try {
-        const result = await getIssue(issueId, {
-          cacheScope: session.user?.uid,
-          forceRefresh: forceRefresh || !coldRead,
-        });
-        const merged = mergeContentEntityRead(session.user?.uid, "issue", result, entityReadRevision);
-        rememberSupportedIssue(merged.id, merged.currentUserSupported);
-        const authorUid = result.authorUid;
-        if (authorUid) {
-          void fetchUserPublicProfiles([authorUid])
-            .then((profiles) => setProfile(profiles[authorUid] ?? null))
-            .catch(() => undefined);
-        }
-      } catch (caught) {
-        setError(caught instanceof Error ? caught.message : t("ui.issue.notFound"));
-      } finally {
-        setLoading(false);
-      }
-    },
-    [issueId, session.user?.uid, t],
-  );
-
-  React.useEffect(() => {
-    void loadIssue();
-  }, [loadIssue]);
-
-  const issueCachePrefixes = React.useMemo(
-    () => [`issue-detail|${issueId}|`],
-    [issueId],
-  );
-  useContentInvalidationRefresh(issueCachePrefixes, () => {
-    if (!deletingRef.current) return loadIssue(true);
-  });
 
   const canViewSupporters = Boolean(
     currentIssue?.supportEnabled
@@ -150,15 +89,10 @@ export function useIssueDetail() {
       currentIssue.status !== "under-review" &&
       currentIssue.status !== "review-rejected",
   );
-  const fetchCommentPage = React.useCallback(
-    ({ cursor, sort, forceRefresh }: CommentPageRequest) =>
-      listComments(issueId, cursor, sort, { cacheScope: session.user?.uid, forceRefresh }),
-    [issueId, session.user?.uid],
-  );
   const commentFeed = useCommentFeed({
     enabled: commentsReadable,
-    targetKey: `${session.user?.uid}|issue:${issueId}`,
-    fetchPage: fetchCommentPage,
+    queryKey: (sort) => issueKeys.comments(issueId, sort),
+    read: (cursor, sort, signal) => listComments(issueId, cursor, sort, signal),
   });
 
   async function support() {
@@ -166,10 +100,8 @@ export function useIssueDetail() {
     return reaction.run({
       id: currentIssue.id,
       previous: { active: currentIssue.currentUserSupported, count: currentIssue.supportCount },
-      apply: ({ active, count }, pending) => {
-        patchContentEntity<IssueRecord>(session.user?.uid, "issue", currentIssue.id, { currentUserSupported: active, supportCount: count }, { pending });
-        rememberSupportedIssue(currentIssue.id, active);
-      },
+      apply: ({ active, count }) =>
+        patchEntity<IssueRecord>("issues", currentIssue.id, { currentUserSupported: active, supportCount: count }),
       request: async (active) => {
         const result = await setSupport(currentIssue.id, active);
         return { active: result.supported, count: result.supportCount };
@@ -181,39 +113,16 @@ export function useIssueDetail() {
 
   async function remove() {
     if (!currentIssue) return;
-    deletingRef.current = true;
+    setDeleting(true);
     try {
-      await deleteFeedback.run(async () => {
-        await deleteIssue(currentIssue.id);
-        patchContentEntity<IssueRecord>(
-          session.user?.uid,
-          "issue",
-          currentIssue.id,
-          { deleting: true },
-        );
-      });
+      await deleteFeedback.run(() => deleteIssue(currentIssue.id));
+      dropEntity("issues", currentIssue.id);
       toast.success(t("issue.proposalDeleted"));
       navigate(feedHref("issues", filter), { replace: true });
     } catch (caught) {
-      patchContentEntity<IssueRecord>(
-        session.user?.uid,
-        "issue",
-        currentIssue.id,
-        { deleting: false },
-      );
       toast.error(caught instanceof Error ? caught.message : t("ui.common.operationFailed"));
-      deletingRef.current = false;
+      setDeleting(false);
     }
-  }
-
-  async function createIssueComment(content: string, parentCommentId: string | null) {
-    await createComment(issueId, content, parentCommentId);
-    await commentFeed.load(true);
-  }
-
-  async function removeIssueComment(commentId: string) {
-    await deleteComment(issueId, commentId);
-    await commentFeed.load(true);
   }
 
   const commentsEnabled = Boolean(
@@ -236,26 +145,24 @@ export function useIssueDetail() {
     commentsLoading: commentFeed.loading,
     commentsLoadingMore: commentFeed.loadingMore,
     commentsError: commentFeed.error,
-    reloadComments: () => commentFeed.load(true),
-    createIssueComment,
+    reloadComments: commentFeed.reload,
+    createIssueComment: async (content: string, parentCommentId: string | null) => {
+      await createComment(issueId, content, parentCommentId);
+    },
     deleteFeedbackState: deleteFeedback.state,
-    error,
+    error: query.error ? query.error.message || t("ui.issue.notFound") : "",
     issue: currentIssue,
-    loadIssue,
-    loading,
-    revealDetail,
+    reload: () => void query.refetch(),
+    loading: query.isLoading,
     loadMoreComments: commentFeed.loadMore,
     moderationOpen,
     profile,
     remove,
-    removeIssueComment,
+    removeIssueComment: async (commentId: string) => {
+      await deleteComment(issueId, commentId);
+    },
     setIssue: (next: Issue) => {
-      patchContentEntity<IssueRecord>(
-        session.user?.uid,
-        "issue",
-        next.id,
-        next,
-      );
+      patchEntity<IssueRecord>("issues", next.id, next);
     },
     setCommentSort: commentFeed.setSort,
     setModerationOpen,

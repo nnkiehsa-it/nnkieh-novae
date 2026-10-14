@@ -6,23 +6,18 @@ import { callAction } from '@/services/backend-action';
 import { readRequestTimeoutMs } from '@/lib/request';
 import { toReadableBackendError } from './backend-errors';
 import { NOTIFICATION_FEED_PAGE_SIZE } from '@/lib/page-size';
-import {
-  CONTENT_SHORT_CACHE_TTL_MS,
-  captureContentCacheWriteGuard,
-  createContentCacheKey,
-  getCachedContentPersistent,
-  markContentCachePrefixStale,
-  setCachedContent,
-  setCachedContentFromRead,
-} from '@/services/content-read-cache';
+import { invalidate, queryClient, readQuery } from '@/lib/query-client';
+import { facilityKeys } from '@/services/facilities';
 
 export type { NotificationCursor, NotificationPage } from '@shared/contracts/notifications.ts';
 export type NotificationPages = Partial<Record<NotificationSource, NotificationPage>>;
 
-const NOTIFICATION_PAGES_CACHE_PREFIX = 'notification-pages|';
-const NOTIFICATION_STATE_CACHE_KEY = 'notification-read-state';
-const NOTIFICATION_UNREAD_CACHE_KEY = 'notification-unread-hint';
-const NOTIFICATION_HINT_CACHE_TTL_MS = 2 * 60_000;
+export const notificationKeys = {
+  list: (sources: readonly NotificationSource[]) => ['notifications', 'list', sources.join(',')] as const,
+  state: () => ['notifications', 'state'] as const,
+  unread: () => ['notifications', 'unread'] as const,
+};
+const READ_STATE_MAX_AGE_MS = 10 * 60_000;
 
 type NotificationBroadcastEvent = Extract<RealtimeEventName, 'notification_insert' | 'notification_state_changed'>;
 
@@ -35,15 +30,16 @@ function subscribeNotificationBroadcast<E extends NotificationBroadcastEvent>(
 ) {
   return subscribeRealtimeTopic(topic, event, (payload) => {
     if ('type' in payload) {
-      markContentCachePrefixStale(NOTIFICATION_PAGES_CACHE_PREFIX);
-      markContentCachePrefixStale(NOTIFICATION_UNREAD_CACHE_KEY);
+      // The open notifications page adds the new one itself; a later visit reads them again.
+      void queryClient.invalidateQueries({ queryKey: ['notifications', 'list'], refetchType: 'none' });
+      queryClient.setQueryData(notificationKeys.unread(), true);
       if (payload.type === 'facility_status_changed' || payload.type === 'facility_report_created') {
-        markContentCachePrefixStale('facility-list-page|');
-        markContentCachePrefixStale('facility-detail|');
+        void invalidate(['facilities', 'list']);
+        void invalidate(facilityKeys.detail(payload.targetId));
       }
     } else {
-      markContentCachePrefixStale(NOTIFICATION_STATE_CACHE_KEY);
-      markContentCachePrefixStale(NOTIFICATION_UNREAD_CACHE_KEY);
+      void queryClient.invalidateQueries({ queryKey: notificationKeys.state(), refetchType: 'none' });
+      void invalidate(notificationKeys.unread());
     }
     callback(payload);
   }, { onError, onResync });
@@ -72,26 +68,12 @@ export function subscribeNotificationSource(
 
 export async function fetchNotificationSourcePages(
   requests: Array<{ cursor: NotificationCursor | null; source: NotificationSource }>,
-  uid: string,
   signal?: AbortSignal,
 ): Promise<NotificationPages> {
-  const cacheKey = createContentCacheKey([
-    'notification-pages',
-    uid,
-    ...requests.map(({ cursor, source }) => `${source}:${cursor?.id ?? 'first'}:${cursor?.createdAt ?? ''}`),
-  ]);
-  const cached = await getCachedContentPersistent<NotificationPages>(
-    cacheKey,
-    CONTENT_SHORT_CACHE_TTL_MS,
-  );
-  if (cached) return cached;
-  const cacheGuard = captureContentCacheWriteGuard(cacheKey);
-
   try {
     const { pages } = await callAction('listNotificationPages', {
       requests: requests.map((request) => ({ ...request, pageSize: NOTIFICATION_FEED_PAGE_SIZE })),
     }, { signal, timeoutMs: readRequestTimeoutMs });
-    setCachedContentFromRead(cacheGuard, pages);
     return pages;
   } catch (error) {
     throw toReadableBackendError(error);
@@ -128,16 +110,9 @@ export function subscribeNotificationReadState(
   return () => { active = false; unsubscribe(); };
 }
 
-async function getNotificationReadState(): Promise<NotificationReadState> {
-  const cached = await getCachedContentPersistent<NotificationReadState>(
-    NOTIFICATION_STATE_CACHE_KEY,
-    CONTENT_SHORT_CACHE_TTL_MS,
-  );
-  if (cached) return cached;
-  const cacheGuard = captureContentCacheWriteGuard(NOTIFICATION_STATE_CACHE_KEY);
-  const { state } = await callAction('getNotificationReadState', {}, { timeoutMs: readRequestTimeoutMs });
-  setCachedContentFromRead(cacheGuard, state);
-  return state;
+function getNotificationReadState(): Promise<NotificationReadState> {
+  return readQuery(notificationKeys.state(), async () =>
+    (await callAction('getNotificationReadState', {}, { timeoutMs: readRequestTimeoutMs })).state, READ_STATE_MAX_AGE_MS);
 }
 
 export async function fetchNotificationSnapshot(
@@ -157,20 +132,11 @@ export async function fetchNotificationSnapshot(
 }
 
 export function seedNotificationUnreadHint(hasUnread: boolean) {
-  setCachedContent(NOTIFICATION_UNREAD_CACHE_KEY, { value: hasUnread === true });
-  return hasUnread === true;
+  queryClient.setQueryData(notificationKeys.unread(), hasUnread);
 }
 
-export async function fetchNotificationUnreadHint(options: { forceRefresh?: boolean } = {}) {
-  const cached = options.forceRefresh ? null : await getCachedContentPersistent<{ value: boolean }>(
-    NOTIFICATION_UNREAD_CACHE_KEY,
-    NOTIFICATION_HINT_CACHE_TTL_MS,
-  );
-  if (cached) return cached.value;
-  const cacheGuard = captureContentCacheWriteGuard(NOTIFICATION_UNREAD_CACHE_KEY);
-  const { hasUnread: value } = await callAction('getNotificationUnreadHint', {}, { timeoutMs: readRequestTimeoutMs });
-  setCachedContentFromRead(cacheGuard, { value });
-  return value;
+export async function fetchNotificationUnreadHint() {
+  return (await callAction('getNotificationUnreadHint', {}, { timeoutMs: readRequestTimeoutMs })).hasUnread;
 }
 
 export function subscribeNotificationBadge(
@@ -200,8 +166,8 @@ export function subscribeNotificationBadge(
 export async function markNotificationsOpened() {
   try {
     const result = await callAction('markNotificationsOpened', {});
-    markContentCachePrefixStale(NOTIFICATION_STATE_CACHE_KEY);
-    setCachedContent(NOTIFICATION_UNREAD_CACHE_KEY, { value: false });
+    void queryClient.invalidateQueries({ queryKey: notificationKeys.state(), refetchType: 'none' });
+    queryClient.setQueryData(notificationKeys.unread(), false);
     return result;
   } catch (error) {
     throw toReadableBackendError(error);

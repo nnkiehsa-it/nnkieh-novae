@@ -17,25 +17,19 @@ vi.mock("@/lib/firebase", () => ({ auth: mocks.auth }));
 vi.mock("@/lib/session-debug", () => ({ sessionDebug: vi.fn() }));
 vi.mock("@/lib/push-session", () => ({ setPushSession: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("@/lib/avatar-cache", () => ({ readCachedAvatar: vi.fn(), writeCachedAvatar: vi.fn() }));
-vi.mock("@/lib/content-entity-store", () => ({ clearContentEntityScope: vi.fn() }));
-vi.mock("@/lib/view-memory-cache", () => ({ clearViewMemoryScope: vi.fn(), restoreViewMemoryScope: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("@/lib/composer-draft", () => ({ clearComposerDrafts: vi.fn() }));
-vi.mock("@/lib/supported-issue-memory", () => ({ clearSupportedIssueMemory: vi.fn() }));
+vi.mock("@/lib/query-client", () => ({ openQueryScope: vi.fn().mockResolvedValue(undefined), closeQueryScope: vi.fn() }));
 vi.mock("@/services/backend-auth", () => ({ ensureBackendProfile: vi.fn() }));
 vi.mock("@/services/session-role", () => ({
   readCachedSessionAccess: mocks.cachedAccess,
   seedSessionAccess: (access: SessionAccess) => access,
 }));
-vi.mock("@/services/session-bootstrap", () => ({ fetchSessionBootstrap: mocks.bootstrap, readSessionBootstrapSnapshot: vi.fn().mockResolvedValue(null) }));
+vi.mock("@/services/session-bootstrap", () => ({ fetchSessionBootstrap: mocks.bootstrap, readSessionBootstrapSnapshot: vi.fn().mockReturnValue(null) }));
 vi.mock("@/services/runtime-settings", () => ({ seedRuntimeSettings: vi.fn() }));
 vi.mock("@/services/content-versions", () => ({
-  applyContentVersionsSnapshot: vi.fn(), ensureContentVersionsFresh: vi.fn(), resetContentVersionState: vi.fn(),
+  applyContentVersionsSnapshot: vi.fn(), ensureContentVersionsFresh: vi.fn(),
 }));
 vi.mock("@/services/realtime-events", () => ({ stopContentRealtimeSession: vi.fn() }));
-vi.mock("@/services/content-read-cache", () => ({
-  clearContentReadCache: vi.fn(), clearContentReadMemoryCache: vi.fn(), setContentCacheScope: vi.fn(),
-  restoreContentReadCache: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("@/services/uploads", () => ({ clearResolvedUploadCache: vi.fn() }));
 vi.mock("@/services/users-write", () => ({ cacheUserAvatar: vi.fn() }));
 vi.mock("@/services/notifications", () => ({ seedNotificationUnreadHint: vi.fn() }));
@@ -55,7 +49,7 @@ beforeEach(() => {
   mocks.signOut.mockResolvedValue(undefined);
   mocks.restore.mockResolvedValue("");
   mocks.validate.mockResolvedValue({ ok: true });
-  mocks.cachedAccess.mockResolvedValue(null);
+  mocks.cachedAccess.mockReturnValue(null);
   localStorage.clear();
 });
 
@@ -83,7 +77,7 @@ it("opens after access arrives while the rest of bootstrap is still pending", as
 it("uses cached access only after security and token validation pass", async () => {
   let verify!: (value: { ok: boolean }) => void;
   mocks.validate.mockImplementation(() => new Promise((resolve) => { verify = resolve; }));
-  mocks.cachedAccess.mockResolvedValue(access);
+  mocks.cachedAccess.mockReturnValue(access);
   mocks.bootstrap.mockResolvedValue({ access, catalog: {}, versions: {}, notificationUnread: { hasUnread: false }, visitRecorded: false });
   const store = await start();
   expect(store.getSessionState().roleLoading).toBe(true);
@@ -105,7 +99,7 @@ it("keeps the shell when optional bootstrap content fails after access", async (
 
 it("does not hydrate a cached account when the restored security check fails", async () => {
   mocks.restore.mockResolvedValue("auth.securityCheckFailed");
-  mocks.cachedAccess.mockResolvedValue(access);
+  mocks.cachedAccess.mockReturnValue(access);
   const store = await start();
   expect(store.getSessionState()).toMatchObject({ user: null, error: "auth.securityCheckFailed" });
   expect(mocks.bootstrap).not.toHaveBeenCalled();
@@ -113,7 +107,7 @@ it("does not hydrate a cached account when the restored security check fails", a
 });
 
 it("revokes cached access if the background refresh finds an account restriction", async () => {
-  mocks.cachedAccess.mockResolvedValue(access);
+  mocks.cachedAccess.mockReturnValue(access);
   mocks.bootstrap.mockImplementation(async () => {
     const { ApiRequestError } = await import("../../src/lib/api-error");
     throw new ApiRequestError({ error: { code: "account-restricted", message: "Restricted account" } });

@@ -1,61 +1,54 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({
-  clearContentEntityDomain: vi.fn(),
-  markContentCachePrefixStale: vi.fn(),
-  storage: new Map<string, string>(),
-}));
+const mocks = vi.hoisted(() => ({ invalidateDomain: vi.fn() }));
 
 vi.mock("@/lib/firebase", () => ({
   auth: { currentUser: { uid: "admin-uid" } },
 }));
 
-vi.mock("@/lib/browser-storage", () => ({
-  readLocalStorage: (key: string) => mocks.storage.get(key) ?? null,
-  writeLocalStorage: (key: string, value: string) => mocks.storage.set(key, value),
+vi.mock("@/lib/query-client", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@/lib/query-client")>(),
+  invalidateDomain: mocks.invalidateDomain,
 }));
 
-vi.mock("@/services/content-read-cache", () => ({
-  markContentCachePrefixStale: mocks.markContentCachePrefixStale,
-}));
-
-vi.mock("@/lib/content-entity-store", () => ({
-  clearContentEntityDomain: mocks.clearContentEntityDomain,
-}));
-
-import { applyContentVersionsSnapshot } from "@/services/content-versions";
-
-const storageKey = "novae:content-versions:admin-uid";
+import { queryClient } from "@/lib/query-client";
+import { applyContentVersionsSnapshot, registerContentVersion } from "@/services/content-versions";
 
 describe("content version reconciliation", () => {
   beforeEach(() => {
-    mocks.clearContentEntityDomain.mockClear();
-    mocks.markContentCachePrefixStale.mockClear();
-    mocks.storage.clear();
+    mocks.invalidateDomain.mockClear();
+    queryClient.clear();
   });
 
   it("invalidates cached content when the authoritative version decreases after reset", () => {
-    mocks.storage.set(storageKey, JSON.stringify({
-      versions: { announcements: 31, facilities: 19, issues: 47 },
-    }));
+    applyContentVersionsSnapshot({ announcements: 31, facilities: 19, issues: 47 });
+    mocks.invalidateDomain.mockClear();
 
-    const changed = applyContentVersionsSnapshot({
-      announcements: 31,
-      facilities: 19,
-      issues: 2,
-    });
+    const changed = applyContentVersionsSnapshot({ announcements: 31, facilities: 19, issues: 2 });
 
     expect(changed).toEqual(["issues"]);
-    expect(mocks.clearContentEntityDomain).toHaveBeenCalledWith("admin-uid", "issue");
-    expect(JSON.parse(mocks.storage.get(storageKey) ?? "{}").versions.issues).toBe(2);
+    expect(mocks.invalidateDomain).toHaveBeenCalledExactlyOnceWith("issues");
   });
 
-  it("keeps caches only when local and authoritative versions are equal", () => {
+  it("keeps caches only when the cached and authoritative versions are equal", () => {
     const versions = { announcements: 31, facilities: 19, issues: 47 };
-    mocks.storage.set(storageKey, JSON.stringify({ versions }));
+    applyContentVersionsSnapshot(versions);
+    mocks.invalidateDomain.mockClear();
 
     expect(applyContentVersionsSnapshot(versions)).toEqual([]);
-    expect(mocks.markContentCachePrefixStale).not.toHaveBeenCalled();
-    expect(mocks.clearContentEntityDomain).not.toHaveBeenCalled();
+    expect(mocks.invalidateDomain).not.toHaveBeenCalled();
+  });
+
+  it("treats every domain as changed when nothing was cached", () => {
+    expect(applyContentVersionsSnapshot({ announcements: 1, facilities: 1, issues: 1 }))
+      .toEqual(["announcements", "facilities", "issues"]);
+  });
+
+  it("records a newer version read with an answer, and never an older one", () => {
+    applyContentVersionsSnapshot({ announcements: 3, facilities: 3, issues: 3 });
+    registerContentVersion("issues", 5);
+    registerContentVersion("issues", 4);
+    mocks.invalidateDomain.mockClear();
+    expect(applyContentVersionsSnapshot({ announcements: 3, facilities: 3, issues: 5 })).toEqual([]);
   });
 });

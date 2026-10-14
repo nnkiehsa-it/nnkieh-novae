@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useInfiniteQuery, type InfiniteData } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { useSession } from "@/hooks/use-session";
@@ -8,224 +9,114 @@ import {
   fetchNotificationSnapshot,
   fetchNotificationSourcePages,
   markNotificationsOpened,
+  notificationKeys,
   subscribeNotificationSource,
   type NotificationCursor,
   type NotificationPages,
 } from "@/services/notifications";
 import type { NotificationRecord, NotificationSource } from "@/types";
-import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
-import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
-import { usePagedRequestGuard } from "@/hooks/use-paged-request-guard";
+import { invalidateLists, queryClient } from "@/lib/query-client";
 import { canContinuePage } from "@/lib/pagination";
-import {
-  advanceFeedPageCount,
-  canLoadAnotherFeedPage,
-  limitRetainedFeedItems,
-} from "@/lib/feed-page-limit";
+import { canLoadAnotherFeedPage, limitRetainedFeedItems } from "@/lib/feed-page-limit";
 import { NOTIFICATION_FEED_PAGE_SIZE } from "@/lib/page-size";
 
 const sourceOrder: NotificationSource[] = ["broadcast", "admin", "user"];
-const sourceRecord = <T,>(value: () => T): Record<NotificationSource, T> => ({
-  admin: value(),
-  broadcast: value(),
-  user: value(),
-});
+type SourceCursors = Partial<Record<NotificationSource, NotificationCursor>>;
 
+/**
+ * Where each source goes on from: its newest page, if it says there is more and
+ * the feed has not reached its page limit.
+ */
+function nextCursors(pages: NotificationPages[], sources: NotificationSource[]): SourceCursors | undefined {
+  const next: SourceCursors = {};
+  for (const source of sources) {
+    const read = pages.flatMap((page) => page[source] ? [page[source]] : []);
+    const latest = read.at(-1);
+    if (!latest) continue;
+    const continues = canContinuePage(read.at(-2)?.cursor ?? null, latest.cursor, latest.hasMore);
+    if (latest.cursor && canLoadAnotherFeedPage(read.length, continues)) next[source] = latest.cursor;
+  }
+  return Object.keys(next).length > 0 ? next : undefined;
+}
+
+/** Every source the account may read, newest first, a page of each at a time. */
 export function useNotificationsPage() {
   const session = useSession();
   const { t } = useI18n();
-  const activeSources = React.useMemo<NotificationSource[]>(
+  const uid = session.user?.uid;
+  const sources = React.useMemo<NotificationSource[]>(
     () => (session.isAdmin ? sourceOrder : ["broadcast", "user"]),
     [session.isAdmin],
   );
-  const viewMemory = getViewMemory<{
-    cursors: Record<NotificationSource, NotificationCursor | null>;
-    more: Record<NotificationSource, boolean>;
-    pageCounts: Record<NotificationSource, number>;
-    pages: Record<NotificationSource, NotificationRecord[]>;
-  }>(session.user?.uid, "notifications");
-  const [coldRead] = React.useState(() => !viewMemory);
-  const readSucceeded = React.useRef(false);
-  const [pages, setPages] = React.useState<
-    Record<NotificationSource, NotificationRecord[]>
-  >(viewMemory?.pages ?? sourceRecord(() => []));
-  const [cursors, setCursors] = React.useState<
-    Record<NotificationSource, NotificationCursor | null>
-  >(viewMemory?.cursors ?? sourceRecord(() => null));
-  const [more, setMore] = React.useState<Record<NotificationSource, boolean>>(
-    viewMemory?.more ?? sourceRecord(() => false),
-  );
-  const [pageCounts, setPageCounts] = React.useState<Record<NotificationSource, number>>(
-    viewMemory?.pageCounts ?? sourceRecord(() => 0),
-  );
-  const [loading, setLoading] = React.useState(!viewMemory);
-  const revealFields = useColdDataReveal(coldRead, loading);
-  const [loadingMore, setLoadingMore] = React.useState(false);
-  const [error, setError] = React.useState("");
-  const requestGuard = usePagedRequestGuard();
-  const queryKey = `${session.user?.uid ?? ""}|${activeSources.join(",")}`;
+  const query = useInfiniteQuery({
+    enabled: Boolean(uid),
+    queryKey: notificationKeys.list(sources),
+    initialPageParam: null as SourceCursors | null,
+    queryFn: async ({ pageParam, signal }) => {
+      if (!pageParam) return (await fetchNotificationSnapshot(sources, { signal })).pages;
+      const requests = sources.flatMap((source) => {
+        const cursor = pageParam[source];
+        return cursor ? [{ cursor, source }] : [];
+      });
+      return await fetchNotificationSourcePages(requests, signal);
+    },
+    getNextPageParam: (_last, pages) => nextCursors(pages, sources),
+  });
 
-  const applyPages = React.useCallback((next: NotificationPages) => {
-    // A source the account may not read comes back without a page.
-    const received = activeSources.flatMap((source) => {
-      const page = next[source];
-      return page ? [[source, page] as const] : [];
-    });
-    setPages((current) => ({
-      ...current,
-      ...Object.fromEntries(received.map(([source, page]) => [source, page.notifications])),
-    }));
-    setCursors((current) => ({
-      ...current,
-      ...Object.fromEntries(received.map(([source, page]) => [source, page.cursor])),
-    }));
-    setMore((current) => ({
-      ...current,
-      ...Object.fromEntries(received.map(([source, page]) => [source, page.hasMore])),
-    }));
-    setPageCounts((current) => ({
-      ...current,
-      ...Object.fromEntries(received.map(([source]) => [source, 1])),
-    }));
-  }, [activeSources]);
-
-  const load = React.useCallback(async () => {
-    if (!session.user) return;
-    requestGuard.restart(queryKey);
-    const requestToken = requestGuard.begin(queryKey);
-    if (!requestToken) return;
-    setLoadingMore(false);
-    setLoading(!getViewMemory(session.user.uid, "notifications"));
-    setError("");
-    try {
-      await fetchNotificationSnapshot(
-        activeSources,
-        { onPages: (next) => {
-          if (requestGuard.isCurrent(requestToken)) {
-            readSucceeded.current = true;
-            applyPages(next);
-          }
-        } },
-      );
-      if (!requestGuard.isCurrent(requestToken)) return;
-      await markNotificationsOpened().catch(() => undefined);
-    } catch (caught) {
-      if (!requestGuard.isCurrent(requestToken)) return;
-      setError(
-        caught instanceof Error ? caught.message : t("notification.loadFailed"),
-      );
-    } finally {
-      if (requestGuard.finish(requestToken)) setLoading(false);
-    }
-  }, [activeSources, applyPages, queryKey, requestGuard, session.user, t]);
+  // Reading the newest page is what opens the notifications.
+  const firstPage = query.data?.pages[0];
+  React.useEffect(() => {
+    if (firstPage) void markNotificationsOpened().catch(() => undefined);
+  }, [firstPage]);
 
   React.useEffect(() => {
-    void load();
-    return () => requestGuard.restart(queryKey);
-  }, [load, queryKey, requestGuard]);
-
-  const handleRealtimeResync = React.useCallback(() => {
-    void load();
-  }, [load]);
-
-  React.useEffect(() => {
-    if (loading || !readSucceeded.current) return;
-    setViewMemory(session.user?.uid, "notifications", {
-      cursors,
-      more,
-      pageCounts,
-      pages,
-    }, ["notification-pages|"]);
-  }, [cursors, loading, more, pageCounts, pages, session.user?.uid]);
-
-  React.useEffect(() => {
-    if (!session.user) return;
-    const unsubscribes = activeSources.map((source) =>
-      subscribeNotificationSource(
-        source,
-        session.user!.uid,
-        (notification) =>
-          setPages((current) => ({
-            ...current,
-            [source]: limitRetainedFeedItems([
-              notification,
-              ...current[source].filter((item) => item.id !== notification.id),
-            ], NOTIFICATION_FEED_PAGE_SIZE),
-          })),
-        undefined,
-        handleRealtimeResync,
-      ),
+    if (!uid) return;
+    const prepend = (source: NotificationSource, notification: NotificationRecord) =>
+      queryClient.setQueryData<InfiniteData<NotificationPages>>(notificationKeys.list(sources), (data) => {
+        const page = data?.pages[0]?.[source];
+        if (!data || !page) return data;
+        const notifications = limitRetainedFeedItems([
+          notification,
+          ...page.notifications.filter((item) => item.id !== notification.id),
+        ], NOTIFICATION_FEED_PAGE_SIZE);
+        return { ...data, pages: [{ ...data.pages[0], [source]: { ...page, notifications } }, ...data.pages.slice(1)] };
+      });
+    const resync = () => void invalidateLists("notifications");
+    const unsubscribes = sources.map((source) =>
+      subscribeNotificationSource(source, uid, (notification) => prepend(source, notification), undefined, resync),
     );
     return () => unsubscribes.forEach((unsubscribe) => unsubscribe());
-  }, [activeSources, handleRealtimeResync, session.user]);
+  }, [sources, uid]);
 
-  const notifications = React.useMemo(
-    () =>
-      activeSources
-        .flatMap((source) => pages[source])
-        .toSorted(
-          (left, right) =>
-            Date.parse(right.createdAt) - Date.parse(left.createdAt) ||
-            right.id.localeCompare(left.id),
-        ),
-    [activeSources, pages],
-  );
-  const hasMore = activeSources.some(
-    (source) => cursors[source] && canLoadAnotherFeedPage(pageCounts[source],more[source]),
-  );
-
-  const loadMore = React.useCallback(async () => {
-    if (!session.user || loadingMore) return;
-    const requests = activeSources.flatMap((source) =>
-      cursors[source] && canLoadAnotherFeedPage(pageCounts[source],more[source])
-        ? [{ cursor: cursors[source], source }]
-        : [],
-    );
-    if (requests.length === 0) return;
-    const requestToken = requestGuard.begin(queryKey);
-    if (!requestToken) return;
-    setLoadingMore(true);
-    try {
-      const result = await fetchNotificationSourcePages(
-        requests,
-        session.user.uid,
-      );
-      if (!requestGuard.isCurrent(requestToken)) return;
-      const nextPageCounts = { ...pageCounts };
-      for (const source of activeSources) {
-        const page = result[source];
-        if (!page) continue;
-        const nextPageCount = advanceFeedPageCount(pageCounts[source], true);
-        nextPageCounts[source] = nextPageCount;
-        setPages((current) => ({
-          ...current,
-          [source]: limitRetainedFeedItems([
-            ...current[source],
-            ...page.notifications.filter(
-              (item) =>
-                !current[source].some((existing) => existing.id === item.id),
-            ),
-          ], NOTIFICATION_FEED_PAGE_SIZE),
-        }));
-        setCursors((current) => ({ ...current, [source]: page.cursor }));
-        setMore((current) => ({
-          ...current,
-          [source]: canLoadAnotherFeedPage(nextPageCount,
-            canContinuePage(cursors[source], page.cursor, page.hasMore)),
-        }));
+  const notifications = React.useMemo(() => {
+    const byId = new Map<string, NotificationRecord>();
+    for (const page of query.data?.pages ?? []) {
+      for (const source of sources) {
+        for (const notification of page[source]?.notifications ?? []) byId.set(notification.id, notification);
       }
-      setPageCounts(nextPageCounts);
-    } catch (caught) {
-      if (!requestGuard.isCurrent(requestToken)) return;
-      toast.error(
-        caught instanceof Error
-          ? caught.message
-          : t("ui.notification.loadMoreFailed"),
-      );
-    } finally {
-      if (requestGuard.finish(requestToken)) setLoadingMore(false);
     }
-  }, [activeSources, cursors, loadingMore, more, pageCounts, queryKey, requestGuard, session.user, t]);
+    return [...byId.values()].toSorted(
+      (left, right) =>
+        Date.parse(right.createdAt) - Date.parse(left.createdAt) ||
+        right.id.localeCompare(left.id),
+    );
+  }, [query.data, sources]);
 
-  return { error, hasMore, load, loadMore, loading, loadingMore, notifications, revealFields };
+  return {
+    error: query.isError && !query.isFetchNextPageError
+      ? query.error.message || t("notification.loadFailed")
+      : "",
+    hasMore: query.hasNextPage,
+    load: async () => {
+      await query.refetch();
+    },
+    loadMore: async () => {
+      if (!query.hasNextPage || query.isFetching) return;
+      const result = await query.fetchNextPage({ cancelRefetch: false });
+      if (result.isFetchNextPageError) toast.error(result.error.message || t("ui.notification.loadMoreFailed"));
+    },
+    loading: query.isLoading,
+    loadingMore: query.isFetchingNextPage,
+    notifications,
+  };
 }

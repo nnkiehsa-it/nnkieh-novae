@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { newUserPage } from './support/session';
+import { storedQueryKeys } from './support/accounts';
 import { expectBackendAction } from './support/backend-action';
 import { withRuntimeEnvironment } from '../../cloudflare/src/backend/shared/env';
 import { createMediaDeliveryUrl } from '../../cloudflare/src/backend/shared/media-delivery';
 import type { Env } from '../../cloudflare/src/types';
-import { PERSISTENT_CACHE_NAMESPACE } from '../../src/lib/persistent-cache';
 
 test('a warm startup shows its steps and opens the shell while the daily bootstrap is stalled', async ({ browser }) => {
   const { context, page } = await newUserPage(browser, 'ordinary');
@@ -14,18 +14,7 @@ test('a warm startup shows its steps and opens the shell while the daily bootstr
   try {
     await page.goto('/settings');
     await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
-    await expect.poll(() => page.evaluate(async (namespace) => {
-      const open = indexedDB.open(namespace);
-      const database = await new Promise<IDBDatabase>((resolve, reject) => {
-        open.onsuccess = () => resolve(open.result);
-        open.onerror = () => reject(open.error);
-      });
-      try {
-        const read = database.transaction('entries').objectStore('entries').getAll();
-        const entries = await new Promise<Array<{ cacheKey: string }>>((resolve) => { read.onsuccess = () => resolve(read.result); });
-        return entries.some((entry) => entry.cacheKey === 'session-bootstrap-v2');
-      } finally { database.close(); }
-    }, PERSISTENT_CACHE_NAMESPACE)).toBe(true);
+    await expect.poll(() => storedQueryKeys(page)).toContainEqual(['session', 'bootstrap']);
     await page.evaluate(() => {
       for (const key of Object.keys(localStorage)) {
         if (key.startsWith('novae:platform-visit-recorded-at:')) localStorage.removeItem(key);
@@ -67,11 +56,11 @@ test('a failed startup retries in place without falling through to setup', async
   // Saved auth fixtures include a warm access snapshot. This regression needs
   // a cold content cache so a failed access request really blocks startup.
   await page.goto('/version.json');
-  await page.evaluate((namespace) => new Promise<void>((resolve, reject) => {
-    const request = indexedDB.deleteDatabase(namespace);
+  await page.evaluate(() => new Promise<void>((resolve, reject) => {
+    const request = indexedDB.deleteDatabase('novae-queries');
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
-  }), PERSISTENT_CACHE_NAMESPACE);
+  }));
   let attempts = 0;
   let granularReads = 0;
   await page.route('**/v1/actions', async (route) => {
@@ -96,20 +85,30 @@ test('home restores its counts and progress while bootstrap and count refreshes 
   const { context, page } = await newUserPage(browser, 'ordinary');
   let release!: () => void;
   const stalled = new Promise<void>((resolve) => { release = resolve; });
+  // Each category's counts are a first page of one item.
+  const countRequests = new Set<string>();
+  page.on('request', (request) => {
+    if (!request.url().endsWith('/v1/actions')) return;
+    const body = request.postDataJSON();
+    if (['listIssues', 'listFacilities'].includes(body?.action) && body?.payload?.pageSize === 1) {
+      countRequests.add(`${body.action}:${body.payload.category ?? body.payload.categoryId}`);
+    }
+  });
   try {
     await page.goto('/home');
     const distribution = page.getByRole('region', { name: 'Overall activity', exact: true });
     await expect(distribution).toBeVisible();
+    await expect(distribution).not.toContainText('—');
+    // The totals count up when they arrive; read them once they have settled.
+    await expect.poll(async () => {
+      const before = await distribution.innerText();
+      await page.waitForTimeout(500);
+      return before === await distribution.innerText();
+    }).toBe(true);
     const previous = await distribution.innerText();
-    await expect.poll(() => page.evaluate(async (namespace) => {
-      const request = indexedDB.open(namespace);
-      const db = await new Promise<IDBDatabase>((resolve) => { request.onsuccess = () => resolve(request.result); });
-      try {
-        const read = db.transaction('entries').objectStore('entries').getAll();
-        const entries = await new Promise<Array<{ cacheKey: string }>>((resolve) => { read.onsuccess = () => resolve(read.result); });
-        return entries.some((entry) => entry.cacheKey.startsWith('view-memory|home-status-counts:v2|'));
-      } finally { db.close(); }
-    }, PERSISTENT_CACHE_NAMESPACE)).toBe(true);
+    await expect.poll(async () => (await storedQueryKeys(page))
+      .filter((key) => ['issues', 'facilities'].includes(String(key[0])) && key[2] === 'counts').length)
+      .toBe(countRequests.size);
     let countReads = 0;
     await page.route('**/v1/actions', async (route) => {
       const action = route.request().postDataJSON()?.action;
@@ -123,7 +122,8 @@ test('home restores its counts and progress while bootstrap and count refreshes 
     await expect(page.locator('[data-startup-screen]')).toHaveCount(0);
     await expect(distribution).toBeVisible();
     await expect(distribution).toHaveText(previous, { useInnerText: true });
-    await expect.poll(() => countReads).toBeGreaterThan(0);
+    // Counts read within `viewMemoryMinutes` are current until a version or event says otherwise.
+    expect(countReads).toBe(0);
     await expect(page.locator('[data-startup-phase]')).toHaveCount(0);
   } finally {
     release();

@@ -1,4 +1,5 @@
 import { act, createElement } from "react";
+import { queryClient, withQueryClient } from "./support/query-client";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { toast } from "sonner";
@@ -17,8 +18,8 @@ const context = vi.hoisted(() => ({
 }));
 vi.mock("@/hooks/use-session", () => ({ useSession: () => context.session }));
 vi.mock("@/i18n", () => ({ useI18n: () => ({ t: context.t }) }));
-vi.mock("@/lib/view-memory-cache", () => ({ getViewMemory: vi.fn(), setViewMemory: vi.fn() }));
 vi.mock("@/services/notifications", () => ({
+  notificationKeys: { list: (sources: string[]) => ["notifications", "list", sources.join(",")] },
   fetchNotificationSnapshot: vi.fn(),
   fetchNotificationSourcePages: vi.fn(),
   markNotificationsOpened: vi.fn(async () => undefined),
@@ -79,12 +80,13 @@ beforeEach(async () => {
   });
   root = createRoot(document.createElement("div"));
   function Probe() { state = useNotificationsPage(); return null; }
-  await act(async () => root.render(createElement(Probe)));
+  await act(async () => root.render(withQueryClient(createElement(Probe))));
   mounted = true;
 });
 
 afterEach(async () => {
   if (mounted) await act(async () => root.unmount());
+  queryClient.clear();
   vi.clearAllMocks();
   vi.unstubAllGlobals();
 });
@@ -122,11 +124,14 @@ it("does not clear the latest busy state or show an obsolete pagination failure"
   const fresh = pendingSnapshot();
   let refresh!: Promise<void>;
   await act(async () => { refresh = state.load(); });
-  await act(async () => { oldPage.reject(new Error("old offline request")); await pagination; });
-  expect(state.loading).toBe(true);
-  expect(toast.error).not.toHaveBeenCalled();
-  await act(async () => { fresh.complete("fresh"); await refresh; });
+  await act(async () => { oldPage.reject(new Error("old offline request")); });
   expect(state.loading).toBe(false);
+  // A superseded page settles with the refresh that replaced it.
+  await act(async () => { fresh.complete("fresh"); await refresh; await pagination; });
+  expect(toast.error).not.toHaveBeenCalled();
+  expect(state.loadingMore).toBe(false);
+  expect(state.notifications.map(({ id }) => id)).toEqual(["fresh"]);
+  expect(state.error).toBe("");
 });
 
 it("keeps existing notifications on refresh failure and recovers on retry", async () => {

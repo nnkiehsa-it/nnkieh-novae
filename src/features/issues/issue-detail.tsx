@@ -27,7 +27,7 @@ export function IssueDetail() {
 
   if (!issue || !detail.status) {
     if (detail.loading) return <RecordSkeleton />;
-    return <RecordError message={detail.error || t("ui.issue.notFound")} onRetry={() => void detail.loadIssue(true)} />;
+    return <RecordError message={detail.error || t("ui.issue.notFound")} onRetry={detail.reload} />;
   }
 
   const authorVisible = authorHiddenFor !== issue.id;

@@ -1,5 +1,5 @@
 import { mkdir } from "node:fs/promises";
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page, type Request } from "@playwright/test";
 import { E2E_USERS, signInWithEmulator } from "./support/accounts";
 import { expectBackendAction } from "./support/backend-action";
 import { createAnnouncement } from "./pages/content-pages";
@@ -77,7 +77,16 @@ test.describe.serial("shareable feeds and isolated discussion drafts", () => {
       const response = await route.fetch();
       oldestRequested = true;
       await held;
-      await route.fulfill({ response });
+      // The page may already have cancelled the read it no longer wants.
+      await route.fulfill({ response }).catch(() => undefined);
+    });
+    const isOldestRead = (request: Request) => {
+      const body = request.postDataJSON();
+      return body?.action === 'listAnnouncementComments' && body?.payload?.sort === 'oldest';
+    };
+    const oldestSettled = new Promise<void>((resolve) => {
+      page.on('requestfinished', (request) => { if (isOldestRead(request)) resolve(); });
+      page.on('requestfailed', (request) => { if (isOldestRead(request)) resolve(); });
     });
     try {
       await page.goto(announcementUrl);
@@ -87,12 +96,9 @@ test.describe.serial("shareable feeds and isolated discussion drafts", () => {
       await expect.poll(() => oldestRequested).toBe(true);
       await choose(page, 'Comment order', 'Newest first');
       await expect(page.locator('section[aria-labelledby="discussion-title"]')).toHaveAttribute('aria-busy', 'false');
-      const completed = page.waitForResponse((response) => {
-        const body = response.request().postDataJSON();
-        return body?.action === 'listAnnouncementComments' && body?.payload?.sort === 'oldest';
-      });
+      // Whether the late answer arrives or the page cancelled it, it must not take over.
       release();
-      await (await completed).finished();
+      await oldestSettled;
       await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
       await expect(rows.first()).toContainText(secondComment);
       await expect(choice(page, 'Comment order')).toContainText('Newest first');

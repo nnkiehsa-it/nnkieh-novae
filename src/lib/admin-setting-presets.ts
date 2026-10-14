@@ -48,7 +48,7 @@ const POLICY_OVERRIDES: Partial<Record<PolicyGroup, Array<SettingPreset<Partial<
     issueCreateDaily: 5, facilityCreateDaily: 5, commentCreateHourly: 30, imageUploadDaily: 25,
   } }],
   client: [{ id: "compact", labelKey: "admin.presetCompact", detailKey: "admin.clientCompactDetail", values: {
-    viewMemoryEntries: 50, feedPages: 3, mediaBrowserSeconds: 180, mediaEdgeSeconds: 180, avatarRevalidateHours: 48,
+    feedPages: 3, mediaBrowserSeconds: 180, mediaEdgeSeconds: 180, avatarRevalidateHours: 48,
   } }],
   jobs: [
     { id: "gentle", labelKey: "admin.presetGentle", detailKey: "admin.jobsGentleDetail", values: {

@@ -1,36 +1,21 @@
 import type { PlatformDashboard } from '@shared/contracts/operations.ts';
 import { callAction } from '@/services/backend-action';
 import { toReadableBackendError } from '@/services/backend-errors';
-import { getRouteRequestSignal } from '@/lib/route-request';
 import { readRequestTimeoutMs } from '@/lib/request';
-import {
-  CONTENT_SHORT_CACHE_TTL_MS,
-  getCachedContentPersistent,
-  runCoalescedContentRequest,
-  setCachedContentFromRead,
-} from '@/services/content-read-cache';
+import { readQuery } from '@/lib/query-client';
 
 export type { PlatformDashboard } from '@shared/contracts/operations.ts';
 
-const DASHBOARD_CACHE_KEY = 'platform-dashboard-v2';
+const DASHBOARD_MAX_AGE_MS = 10 * 60 * 1_000;
 
-export async function fetchPlatformDashboard(options: { forceRefresh?: boolean } = {}): Promise<PlatformDashboard> {
-  if (!options.forceRefresh) {
-    const cached = await getCachedContentPersistent<PlatformDashboard>(DASHBOARD_CACHE_KEY, CONTENT_SHORT_CACHE_TTL_MS);
-    if (cached) return cached;
-  }
-  return runCoalescedContentRequest(DASHBOARD_CACHE_KEY, async (cacheGuard) => {
+export function fetchPlatformDashboard(options: { forceRefresh?: boolean } = {}): Promise<PlatformDashboard> {
+  return readQuery(['dashboard'], async ({ signal }) => {
     try {
-      const data = await callAction('getPlatformDashboard', {}, {
-        signal: getRouteRequestSignal(),
-        timeoutMs: readRequestTimeoutMs,
-      });
-      setCachedContentFromRead(cacheGuard, data);
-      return data;
+      return await callAction('getPlatformDashboard', {}, { signal, timeoutMs: readRequestTimeoutMs });
     } catch (error) {
       throw toReadableBackendError(error);
     }
-  });
+  }, options.forceRefresh ? 0 : DASHBOARD_MAX_AGE_MS);
 }
 
 /** Work that failed or is stuck, which someone has to look at. */

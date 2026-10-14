@@ -1,67 +1,43 @@
 "use client";
 
 import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/hooks/use-session";
+import { invalidate, queryClient } from "@/lib/query-client";
+import { announcementKeys } from "@/services/announcements";
 import { fetchAnnouncementUnreadHint } from "@/services/announcement-notice";
 import { subscribeContentRealtimeEvents } from "@/services/realtime-events";
 import { subscribeNotificationReadState } from "@/services/notifications";
-import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 
+/** Whether an announcement was published since this account last opened the list. */
 export function useAnnouncementNotice() {
-  const session = useSession();
-  const [unread, setUnread] = React.useState(() => getViewMemory<boolean>(session.user?.uid, "announcement-notice") ?? false);
+  const uid = useSession().user?.uid;
+  const query = useQuery({
+    enabled: Boolean(uid),
+    queryKey: announcementKeys.unread(),
+    queryFn: fetchAnnouncementUnreadHint,
+    // Asked again whenever the tab returns: the answer is one cheap row.
+    staleTime: 0,
+  });
 
   React.useEffect(() => {
-    if (!session.user) {
-      setUnread(false);
-      return;
-    }
-    const uid = session.user.uid;
-    let active = true;
-    let revision = 0;
-    setUnread(getViewMemory<boolean>(uid, "announcement-notice") ?? false);
-    const apply = (value: boolean) => {
-      setUnread(value);
-      setViewMemory(uid, "announcement-notice", value, ["announcement-list-page|"]);
-    };
-    const refresh = () => {
-      const request = ++revision;
-      void fetchAnnouncementUnreadHint()
-        .then((value) => { if (active && revision === request) apply(value); })
-        .catch(() => undefined);
-    };
-    const onVisibilityChange = () => {
-      if (document.visibilityState === "visible") refresh();
-    };
-
-    refresh();
+    if (!uid) return;
+    const refresh = () => void invalidate(announcementKeys.unread());
     const unsubscribeContent = subscribeContentRealtimeEvents(
-      session.user.uid,
+      uid,
       (event) => {
         if (event.eventType === "announcement_changed" && event.op === "insert") {
-          revision += 1;
-          apply(true);
+          queryClient.setQueryData(announcementKeys.unread(), true);
         }
       },
       refresh,
     );
-    const unsubscribeState = subscribeNotificationReadState(
-      session.user.uid,
-      refresh,
-      undefined,
-      false,
-      refresh,
-    );
-    window.addEventListener("online", refresh);
-    document.addEventListener("visibilitychange", onVisibilityChange);
+    const unsubscribeState = subscribeNotificationReadState(uid, refresh, undefined, false, refresh);
     return () => {
-      active = false;
       unsubscribeContent();
       unsubscribeState();
-      window.removeEventListener("online", refresh);
-      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [session.user]);
+  }, [uid]);
 
-  return unread;
+  return Boolean(uid) && query.data === true;
 }

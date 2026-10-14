@@ -19,7 +19,7 @@ import {
   getPushDeviceId,
 } from "@/services/push-token-registration";
 import { useSession } from "@/hooks/use-session";
-import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
+import { useRememberedState } from "@/hooks/use-remembered-state";
 
 export type {
   PlatformAdminNotificationPreferences,
@@ -27,12 +27,14 @@ export type {
 
 export function usePushNotifications() {
   const session = useSession();
-  const viewMemory = getViewMemory<{
+  const memory = useRememberedState<{
     enabled: boolean;
     permission: PushNotificationPermission;
     adminPreferences: PlatformAdminNotificationPreferences | null;
     supported: boolean;
-  }>(session.user?.uid, "push-settings");
+  } | null>("push-settings", null);
+  const viewMemory = memory.value;
+  const rememberSettings = memory.remember;
   const [enabled, setEnabled] = React.useState(viewMemory?.enabled ?? false);
   const [supported, setSupported] = React.useState(viewMemory?.supported ?? false);
   const [permission, setPermission] =
@@ -50,7 +52,6 @@ export function usePushNotifications() {
 
   const refresh = React.useCallback(async () => {
     if (!session.user || !deviceIdRef.current) return;
-    setLoading(!getViewMemory(session.user.uid, "push-settings"));
     setError("");
     try {
       const canPush = Boolean(
@@ -92,13 +93,8 @@ export function usePushNotifications() {
 
   React.useEffect(() => {
     if (loading || !readSucceeded.current) return;
-    setViewMemory(
-      session.user?.uid,
-      "push-settings",
-      { adminPreferences, enabled, permission, supported },
-      ["push-notification-preference|"],
-    );
-  }, [adminPreferences, enabled, loading, permission, session.user?.uid, supported]);
+    rememberSettings({ adminPreferences, enabled, permission, supported });
+  }, [adminPreferences, enabled, loading, permission, rememberSettings, supported]);
 
   async function enable() {
     if (!session.user) return false;

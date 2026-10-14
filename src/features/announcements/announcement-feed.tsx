@@ -40,8 +40,8 @@ export function AnnouncementFeed({ notice, viewSwitch }: { notice?: React.ReactN
         items={feed.items}
         loading={feed.loading}
         loadingMore={feed.loadingMore}
-        onLoadMore={() => void feed.load(feed.cursor)}
-        onRetry={() => void feed.load()}
+        onLoadMore={feed.loadMore}
+        onRetry={feed.reload}
         renderItem={(announcement) => (
           <AnnouncementCard
             announcement={announcement}

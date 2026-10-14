@@ -1,20 +1,18 @@
 import { auth } from '@/lib/firebase';
 import { getCachedSessionRole } from '@/services/session-role';
-import { markContentCachePrefixStale } from '@/services/content-read-cache';
+import { invalidate, invalidateLists } from '@/lib/query-client';
 import {
   ensureContentVersionsFresh,
   hasContentVersionGap,
   registerContentVersion,
   type ContentVersionDomain,
 } from '@/services/content-versions';
-import { patchContentEntity } from '@/lib/content-entity-store';
 import {
   startRealtimeSession,
   stopRealtimeSession,
   subscribeRealtimeTopic,
 } from '@/services/realtime-transport';
 import type { ContentChange } from '@shared/contracts/realtime.ts';
-import type { AnnouncementRecord, IssueRecord } from '@/types';
 
 interface RealtimeSubscriber {
   callback: (event: ContentRealtimeEvent) => void;
@@ -39,53 +37,26 @@ function synchronizeRealtimeVersion(event: ContentRealtimeEvent) {
   if (event.domainRevision <= 0) return;
   const domain = realtimeEventDomain(event);
   if (hasContentVersionGap(domain, event.domainRevision)) {
-    void ensureContentVersionsFresh({ notify: true }).catch(() => undefined);
+    void ensureContentVersionsFresh().catch(() => undefined);
     return;
   }
   registerContentVersion(domain, event.domainRevision);
 }
 
+/** What a change makes stale: the domain's lists, the record, and its discussion if that is what changed. */
 function invalidateRealtimeContent(event: ContentRealtimeEvent) {
-  const scope = auth?.currentUser?.uid;
-  if (event.eventType.startsWith('issue_')) {
-    const issueId = event.eventType === 'issue_comment_changed' ? event.parentId : event.targetId;
-    markContentCachePrefixStale('issue-list-page|');
-    markContentCachePrefixStale('issue-search|');
-    markContentCachePrefixStale('user-issue-list-page|');
-    if (issueId) markContentCachePrefixStale(`issue-detail|${issueId}|`);
-    if (event.eventType === 'issue_comment_changed' && issueId) {
-      markContentCachePrefixStale(`issue-comments-page|${issueId}|`);
-    }
-    if (event.eventType === 'issue_support_changed' && event.supportCount !== null) {
-      patchContentEntity<IssueRecord>(scope, 'issue', event.targetId, {
-        supportCount: event.supportCount,
-      }, { serverRevision: event.aggregateRevision });
-    }
-    return;
-  }
   if (event.eventType === 'facility_changed') {
-    markContentCachePrefixStale('facility-list-page|');
-    markContentCachePrefixStale(`facility-detail|${event.targetId}`);
+    void invalidateLists('facilities');
+    void invalidate(['facilities', 'detail', event.targetId]);
     return;
   }
-  const announcementId = event.eventType === 'announcement_comment_changed'
-    ? event.parentId
-    : event.targetId;
-  markContentCachePrefixStale('announcement-list-page|');
-  if (announcementId) markContentCachePrefixStale(`announcement-detail|${announcementId}|`);
-  if (event.eventType === 'announcement_comment_changed' && announcementId) {
-    markContentCachePrefixStale(`announcement-comments-page|${announcementId}|`);
-  }
-  if (announcementId) {
-    const patch: Partial<AnnouncementRecord> = {};
-    if (event.likeCount !== null) patch.likeCount = event.likeCount;
-    if (event.commentCount !== null) patch.commentCount = event.commentCount;
-    if (Object.keys(patch).length > 0) {
-      patchContentEntity<AnnouncementRecord>(scope, 'announcement', announcementId, patch, {
-        serverRevision: event.aggregateRevision,
-      });
-    }
-  }
+  const domain = event.eventType.startsWith('issue_') ? 'issues' : 'announcements';
+  const commentChanged = event.eventType === 'issue_comment_changed' || event.eventType === 'announcement_comment_changed';
+  const recordId = commentChanged ? event.parentId : event.targetId;
+  void invalidateLists(domain);
+  if (!recordId) return;
+  void invalidate([domain, 'detail', recordId]);
+  if (commentChanged) void invalidate([domain, 'comments', recordId]);
 }
 
 function receiveContentEvent(event: ContentRealtimeEvent) {
@@ -111,7 +82,7 @@ function ensureContentTopics() {
   if (contentSubscriptionKey === key && contentUnsubscribers.length > 0) return;
   disconnectContentTopics();
   const onResync = () => {
-    void ensureContentVersionsFresh({ notify: true });
+    void ensureContentVersionsFresh();
     realtimeSubscribers.forEach((subscriber) => subscriber.onResync?.());
   };
   contentUnsubscribers = topics.map((topic) => subscribeRealtimeTopic(

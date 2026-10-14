@@ -1,114 +1,52 @@
 "use client";
 
-import * as React from "react";
 import { useI18n } from "@/i18n";
-import { useSession } from "@/hooks/use-session";
 import {
   findFacilityCategory,
   getDefaultFacilityCategoryId,
   useCategories,
 } from "@/hooks/use-categories";
-import { listFacilities, toggleFacilityAffected } from "@/services/facilities";
-import type {
-  FacilityCursor,
-  FacilitySortOption,
-  FacilityStatus,
-  FacilitySummary,
-} from "@/types";
-import {
-  beginContentEntityRead,
-  getContentEntity,
-  mergeContentEntityRead,
-  patchContentEntity,
-} from "@/lib/content-entity-store";
-import { canContinuePage, mergePageById } from "@/lib/pagination";
-import { usePagedRequestGuard } from "@/hooks/use-paged-request-guard";
+import { facilityKeys, listFacilities, toggleFacilityAffected } from "@/services/facilities";
+import type { FacilityCursor, FacilitySortOption, FacilityStatus, FacilitySummary } from "@/types";
 import { useFeedUrlState } from "@/hooks/use-feed-url-state";
 import { readFacilityFeedFilters } from "@/lib/feed-url-state";
-import { useContentEntityDomainVersion } from "@/hooks/use-content-entity";
-import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
-import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
-import { useColdDataReveal } from "@/hooks/use-cold-data-reveal";
+import { patchEntity } from "@/lib/query-client";
 import { useOptimisticReaction } from "@/hooks/use-optimistic-reaction";
-import { advanceFeedPageCount, canLoadAnotherFeedPage } from "@/lib/feed-page-limit";
-import { toFacilityStatusCounts, type FacilityStatusCounts } from "@/constants/statuses";
-
-const FACILITY_LIST_CACHE_PREFIXES = ["facility-list-page|"] as const;
-
-interface FacilityFeed {
-  cursor: FacilityCursor | null;
-  facilities: FacilitySummary[];
-  hasMore: boolean;
-  pageCount: number;
-  statusCounts: FacilityStatusCounts;
-}
-
-interface FacilityFeedViewMemory {
-  bucket: "active" | "closed";
-  category: string;
-  committedQuery: string;
-  feed: FacilityFeed;
-  query: string;
-  sort: FacilitySortOption;
-  status: FacilityStatus | "";
-}
+import { usePagedQuery } from "@/hooks/use-paged-query";
+import { toFacilityStatusCounts } from "@/constants/statuses";
 
 export function useFacilityFeed() {
   const { params: searchParams, committedQuery, query, setCommittedQuery, setQuery, updateParams } = useFeedUrlState();
   const { bucket, sort, status } = readFacilityFeedFilters(searchParams);
   const categories = useCategories();
-  const session = useSession();
   const { t } = useI18n();
   const requestedCategory = searchParams.get("category");
   const category = requestedCategory && findFacilityCategory(requestedCategory)
     ? requestedCategory : getDefaultFacilityCategoryId();
-  const remembered = getViewMemory<FacilityFeedViewMemory>(
-    session.user?.uid,
-    "facility-feed",
-  );
-  const viewMemory = remembered?.bucket === bucket && remembered.category === category
-    && remembered.sort === sort && remembered.status === status
-    && remembered.committedQuery === committedQuery ? remembered : null;
-  const [coldRead] = React.useState(() => !viewMemory);
-  const [warmRead] = React.useState(() => Boolean(viewMemory));
-  const readSucceeded = React.useRef(false);
-  const [feed, setFeed] = React.useState<FacilityFeed>({
-    cursor: viewMemory?.feed.cursor ?? null,
-    facilities: viewMemory?.feed.facilities ?? [],
-    hasMore: viewMemory?.feed.hasMore ?? false,
-    pageCount: viewMemory?.feed.pageCount ?? (viewMemory?.feed.facilities.length ? 1 : 0),
-    statusCounts: viewMemory?.feed.statusCounts ?? toFacilityStatusCounts({}),
+  const reaction = useOptimisticReaction();
+
+  const feed = usePagedQuery({
+    enabled: Boolean(category),
+    queryKey: facilityKeys.list({ category, bucket, sort, status, query: committedQuery }),
+    read: (cursor: FacilityCursor | null, signal) => listFacilities({
+      bucket,
+      categoryId: category,
+      cursor,
+      query: committedQuery,
+      sort,
+      status,
+    }, signal),
+    items: (page) => page.facilities,
   });
-  const [loading, setLoading] = React.useState(!viewMemory);
-  const revealFields = useColdDataReveal(coldRead, loading);
-  const [loadingMore, setLoadingMore] = React.useState(false);
-  const [error, setError] = React.useState("");
-  const reaction = useOptimisticReaction(session.user?.uid, "facility");
-  const requestGuard = usePagedRequestGuard();
-  const entityVersion = useContentEntityDomainVersion(session.user?.uid, "facility");
-  const queryKey = [
-    session.user?.uid ?? "",
-    category,
-    bucket,
-    sort,
-    status,
-    committedQuery,
-  ].join("|");
 
   async function toggleAffected(facilityId: string) {
-    const facility =
-      getContentEntity<FacilitySummary>(
-        session.user?.uid,
-        "facility",
-        facilityId,
-      ) ?? feed.facilities.find((item) => item.id === facilityId);
+    const facility = feed.items.find((item) => item.id === facilityId);
     if (!facility) return;
     return reaction.run({
       id: facilityId,
       previous: { active: facility.currentUserAffected, count: facility.affectedCount },
-      apply: ({ active, count }, pending) => patchContentEntity<FacilitySummary>(session.user?.uid, "facility", facilityId, {
-        affectedCount: count, currentUserAffected: active,
-      }, { pending }),
+      apply: ({ active, count }) =>
+        patchEntity<FacilitySummary>("facilities", facilityId, { affectedCount: count, currentUserAffected: active }),
       request: async () => {
         const result = await toggleFacilityAffected(facilityId);
         return { active: result.affected, count: result.affectedCount };
@@ -116,112 +54,6 @@ export function useFacilityFeed() {
       errorMessage: t("ui.facility.affectedFailed"),
     });
   }
-
-  const load = React.useCallback(
-    async (cursor: FacilityCursor | null = null, restart = false) => {
-      if (!category) return;
-      if (restart) requestGuard.restart(queryKey);
-      const requestToken = requestGuard.begin(queryKey);
-      if (!requestToken) return;
-      const entityReadRevision = beginContentEntityRead();
-      cursor ? setLoadingMore(true) : setLoading(!getViewMemory(session.user?.uid, "facility-feed"));
-      setError("");
-      try {
-        const result = await listFacilities({
-          bucket,
-          categoryId: category,
-          cursor,
-          query: committedQuery,
-          sort,
-          status,
-        }, { forceRefresh: !cursor && (warmRead || restart) });
-        if (!requestGuard.isCurrent(requestToken)) return;
-        readSucceeded.current = true;
-        const facilities = result.facilities.map((facility) =>
-          mergeContentEntityRead(
-            session.user?.uid,
-            "facility",
-            facility,
-            entityReadRevision,
-            "summary",
-          ),
-        );
-        setFeed((current) => {
-          const pageCount = advanceFeedPageCount(current.pageCount, Boolean(cursor));
-          return {
-            ...result,
-            hasMore: canLoadAnotherFeedPage(
-              pageCount,
-              canContinuePage(cursor, result.cursor, result.hasMore),
-            ),
-            facilities: cursor
-              ? mergePageById(current.facilities, facilities)
-              : facilities,
-            pageCount,
-            // The counts describe the whole category; a later page never carries them.
-            statusCounts: result.statusCounts ?? current.statusCounts,
-          };
-        });
-      } catch (caught) {
-        if (requestGuard.isCurrent(requestToken))
-          setError(caught instanceof Error ? caught.message : t("ui.common.loadFailed"));
-      } finally {
-        if (requestGuard.finish(requestToken)) {
-          setLoading(false);
-          setLoadingMore(false);
-        }
-      }
-    },
-    [
-      bucket,
-      category,
-      committedQuery,
-      queryKey,
-      requestGuard,
-      session.user?.uid,
-      sort,
-      status,
-      warmRead,
-      t,
-    ],
-  );
-
-  React.useEffect(() => {
-    void load();
-  }, [load]);
-
-  React.useEffect(() => {
-    if (loading || !readSucceeded.current) return;
-    setViewMemory<FacilityFeedViewMemory>(
-      session.user?.uid,
-      "facility-feed",
-      {
-        bucket,
-        category,
-        committedQuery,
-        feed,
-        query,
-        sort,
-        status,
-      },
-      FACILITY_LIST_CACHE_PREFIXES,
-    );
-  }, [bucket, category, committedQuery, feed, loading, query, session.user?.uid, sort, status]);
-
-  useContentInvalidationRefresh(FACILITY_LIST_CACHE_PREFIXES, () => load(null, true));
-
-  const synchronizedFeed = {
-    ...feed,
-    facilities: feed.facilities.map(
-      (facility) =>
-        getContentEntity<FacilitySummary>(
-          session.user?.uid,
-          "facility",
-          facility.id,
-        ) ?? facility,
-    ).filter((facility) => !facility.deleting),
-  };
-  void entityVersion;
 
   return {
     bucket,
@@ -233,13 +65,18 @@ export function useFacilityFeed() {
       if (findFacilityCategory(value)) updateParams({ category: value });
     },
     committedQuery,
-    error,
-    feed: synchronizedFeed,
-    load,
-    loading,
-    loadingMore,
+    error: feed.error,
+    feed: {
+      facilities: feed.items,
+      hasMore: feed.hasMore,
+      // The counts describe the whole category; only a first page carries them.
+      statusCounts: feed.firstPage?.statusCounts ?? toFacilityStatusCounts({}),
+    },
+    loading: feed.loading,
+    loadingMore: feed.loadingMore,
+    loadMore: feed.loadMore,
     query,
-    revealFields,
+    reload: feed.reload,
     setBucket: (value: "active" | "closed") => updateParams({ bucket: value === "active" ? null : value, status: null }),
     setCommittedQuery,
     setQuery,

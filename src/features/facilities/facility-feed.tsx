@@ -68,8 +68,8 @@ export function FacilityFeed({ categoryControl, notice, viewSwitch }: { category
         items={state.feed.facilities}
         loading={state.loading}
         loadingMore={state.loadingMore}
-        onLoadMore={() => void state.load(state.feed.cursor)}
-        onRetry={() => void state.load()}
+        onLoadMore={state.loadMore}
+        onRetry={state.reload}
         renderItem={(facility) => (
           <FacilityCard
             affecting={state.isAffecting(facility.id)}

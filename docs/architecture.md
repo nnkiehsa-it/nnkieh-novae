@@ -84,15 +84,14 @@ sequenceDiagram
 
 恢復既有 session 不重做 profile write；只有新登入呼叫 `/v1/auth/sync`。Bootstrap 把 access、category catalog、content version 和 unread hint 合在同一個 Edge invocation，降低冷啟動的往返次數。
 
-### 快取分層
+### 快取
 
-Novae 沒有用一個全域 store 裝全部資料：
+所有讀到的資料只放在一個 TanStack Query client（`src/lib/query-client.ts`）：
 
-- normalized entity store 讓列表、詳情、mutation 和 realtime 共用同一筆 issue / facility / announcement。
-- view-memory cache 保存 query、pagination 與 dashboard 的畫面 snapshot，期限 30 分鐘。
-- persistent content cache 以 UID 分區，最長 30 天、最多 500 筆、估算上限 16 MiB；讀到過期資料會當場移除。
-- feed 在 React state 和 DOM 只留五頁。
-- session 結束會清掉使用者 namespace，避免下一個登入者看見上一個人的 cache。
+- 列表、詳情、留言、計數與管理面板都以 query key 存放；樂觀更新與寫入結果用 `patchEntity` 改到每個持有該筆資料的快取。
+- 資料保持正確靠的不是時鐘：content version 或 realtime 事件會讓對應網域失效；重回超過 `viewMemoryMinutes` 的畫面才重新讀取。查詢不自動重試，畫面提供重試。
+- 失效的列表從第一頁重新讀，不把已載入的頁全部重讀；feed 最多保留 `feedPages` 頁。
+- 每個帳號一筆 IndexedDB 紀錄（`novae-queries`），首屏前還原、變動後一秒內存回；登出或換帳號時刪除。私人圖片簽名網址只留在分頁記憶體，不寫入磁碟。
 
 ## API 邊界
 

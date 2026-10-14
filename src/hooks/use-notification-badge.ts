@@ -1,43 +1,34 @@
 "use client";
 
 import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/hooks/use-session";
-import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
+import { invalidate } from "@/lib/query-client";
 import {
   fetchNotificationUnreadHint,
+  notificationKeys,
   subscribeNotificationBadge,
 } from "@/services/notifications";
 
+const UNREAD_HINT_MAX_AGE_MS = 2 * 60_000;
+
+/** Whether a notification arrived that this account has not opened yet. */
 export function useNotificationBadge() {
   const session = useSession();
-  const [unread, setUnread] = React.useState(() => getViewMemory<boolean>(session.user?.uid, "notification-badge") ?? false);
+  const uid = session.user?.uid;
+  const query = useQuery({
+    enabled: Boolean(uid),
+    queryKey: notificationKeys.unread(),
+    queryFn: fetchNotificationUnreadHint,
+    staleTime: UNREAD_HINT_MAX_AGE_MS,
+  });
 
   React.useEffect(() => {
-    let active = true;
-    let revision = 0;
-    if (!session.user) return;
-    const uid = session.user.uid;
-    const remembered = getViewMemory<boolean>(uid, "notification-badge");
-    setUnread(remembered ?? false);
-    const apply = (value: boolean) => {
-      setUnread(value);
-      setViewMemory(uid, "notification-badge", value, ["notification-unread-hint"]);
-    };
-    const refresh = () => {
-      const requestRevision = ++revision;
-      void fetchNotificationUnreadHint({ forceRefresh: remembered !== null })
-        .then((value) => { if (active && revision === requestRevision) apply(value); })
-        .catch(() => undefined);
-    };
-    refresh();
-    const unsubscribe = subscribeNotificationBadge(
-      session.user.uid,
-      session.isAdmin,
-      () => { revision += 1; apply(true); },
-      refresh,
-    );
-    return () => { active = false; unsubscribe(); };
-  }, [session.isAdmin, session.user]);
+    if (!uid) return;
+    // A new notification marks the badge itself (see the notification service).
+    const refresh = () => void invalidate(notificationKeys.unread());
+    return subscribeNotificationBadge(uid, session.isAdmin, () => undefined, refresh);
+  }, [session.isAdmin, uid]);
 
-  return unread;
+  return Boolean(uid) && query.data === true;
 }

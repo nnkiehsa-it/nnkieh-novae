@@ -3,18 +3,18 @@
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { toggleReactionState, type ReactionState } from "@/lib/reaction-state";
-import { hasPendingContentEntityMutation, type ContentEntityDomain } from "@/lib/content-entity-store";
 
 interface ReactionRequest {
   id: string;
   previous: ReactionState;
-  apply: (state: ReactionState, pending: boolean) => void;
+  apply: (state: ReactionState) => void;
   request: (active: boolean) => Promise<ReactionState>;
   errorMessage: string;
   onSuccess?: () => void;
 }
 
-export function useOptimisticReaction(scope: string | undefined, domain: ContentEntityDomain) {
+/** A like, support or "affected" mark: shown at once, then settled by what the server answers. */
+export function useOptimisticReaction() {
   const pending = useRef(new Set<string>());
   const [, setBusyIds] = useState<ReadonlySet<string>>(new Set());
   const [burstById, setBurstById] = useState<Record<string, number>>({});
@@ -24,13 +24,13 @@ export function useOptimisticReaction(scope: string | undefined, domain: Content
     pending.current.add(id);
     setBusyIds(new Set(pending.current));
     const optimistic = toggleReactionState(previous);
-    apply(optimistic, true);
+    apply(optimistic);
     if (optimistic.active) setBurstById((current) => ({ ...current, [id]: (current[id] ?? 0) + 1 }));
     try {
-      apply(await request(optimistic.active), false);
+      apply(await request(optimistic.active));
       onSuccess?.();
     } catch (error) {
-      apply(previous, false);
+      apply(previous);
       toast.error(error instanceof Error ? error.message : errorMessage);
     } finally {
       pending.current.delete(id);
@@ -39,7 +39,7 @@ export function useOptimisticReaction(scope: string | undefined, domain: Content
   }
 
   function isBusy(id: string) {
-    return pending.current.has(id) || hasPendingContentEntityMutation(scope, domain, id);
+    return pending.current.has(id);
   }
 
   return { isBusy, burstById, run };

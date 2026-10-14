@@ -87,7 +87,7 @@ const messages = {
   "admin.policyStandardDetail": "將目前分類的政策重置為平台預設值，其他分類不變。",
   "admin.contentExtendedDetail": "標題 80 字、內文 4000 字、留言 500 字、結果 4000 字。",
   "admin.ratesRestrictedDetail": "降低一般讀寫、上傳與發文配額，保留管理員突發配額。",
-  "admin.clientCompactDetail": "減少記憶中的頁面與項目，圖片快取延長為三分鐘。",
+  "admin.clientCompactDetail": "每個列表保留較少頁數，圖片快取延長為三分鐘。",
   "admin.jobsGentleDetail": "每次處理較少筆數，降低瞬間負載，積壓會較慢清完。",
   "admin.jobsCatchupDetail": "每批處理更多筆數以加速清理，會提高短時間的服務負載。",
   "admin.logsExtendedDetail": "Notion 封存保留三年，錯誤與效能紀錄保留 90 天。",

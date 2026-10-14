@@ -6,11 +6,9 @@ import { sessionDebug } from "@/lib/session-debug";
 import { setPushSession } from "@/lib/push-session";
 import { readLocalStorage, writeLocalStorage } from "@/lib/browser-storage";
 import { readCachedAvatar, writeCachedAvatar } from "@/lib/avatar-cache";
-import { clearContentEntityScope } from "@/lib/content-entity-store";
-import { clearViewMemoryScope } from "@/lib/view-memory-cache";
 import { restoreSessionDisplay } from "@/hooks/session-display-cache";
+import { closeQueryScope } from "@/lib/query-client";
 import { clearComposerDrafts } from "@/lib/composer-draft";
-import { clearSupportedIssueMemory } from "@/lib/supported-issue-memory";
 import { ensureBackendProfile } from "@/services/backend-auth";
 import {
   readCachedSessionAccess,
@@ -20,15 +18,9 @@ import {
 import {
   applyContentVersionsSnapshot,
   ensureContentVersionsFresh,
-  resetContentVersionState,
 } from "@/services/content-versions";
 import { fetchSessionBootstrap } from "@/services/session-bootstrap";
 import { stopContentRealtimeSession } from "@/services/realtime-events";
-import {
-  clearContentReadCache,
-  clearContentReadMemoryCache,
-  setContentCacheScope,
-} from "@/services/content-read-cache";
 import { clearResolvedUploadCache } from "@/services/uploads";
 import { cacheUserAvatar } from "@/services/users-write";
 import { seedNotificationUnreadHint } from "@/services/notifications";
@@ -70,14 +62,11 @@ function shouldRecordPlatformVisit(uid: string) {
 function clearActiveSessionData() {
   clearComposerDrafts(state.user?.uid);
   void setPushSession(null).catch(() => undefined);
-  clearContentEntityScope(state.user?.uid);
-  clearViewMemoryScope(state.user?.uid);
-  clearSupportedIssueMemory();
   stopContentRealtimeSession();
   clearCategoryCatalog();
   clearResolvedUploadCache();
-  clearContentReadCache();
-  resetContentVersionState();
+  // What this account read stays on this device no longer than its session.
+  closeQueryScope({ forget: true });
 }
 
 function resetAccess(next: Partial<SessionState> = {}) {
@@ -173,7 +162,7 @@ async function refreshVerifiedSession(
     if (!current()) return;
     // A streamed access segment was already committed. Its optional tail must
     // not overwrite a newer role refresh made after the shell opened.
-    if (!receivedBootstrapAccess) applyAccess(seedSessionAccess(bootstrap.access, { persist: false }));
+    if (!receivedBootstrapAccess) applyAccess(seedSessionAccess(bootstrap.access));
     seedCategoryCatalog(bootstrap.catalog);
     applyContentVersionsSnapshot(bootstrap.versions);
     seedNotificationUnreadHint(bootstrap.notificationUnread.hasUnread);
@@ -206,10 +195,8 @@ function acceptUser(
 ) {
   const verificationId = ++verificationSerial;
   needsProfileSync = syncProfile;
-  setContentCacheScope(user.uid);
-  clearContentReadMemoryCache();
-  const cachedAccessPromise = syncProfile ? Promise.resolve(null) : readCachedSessionAccess();
   const displaySnapshotPromise = restoreSessionDisplay(user.uid, () => verificationId === verificationSerial && auth?.currentUser === user);
+  const cachedAccessPromise = syncProfile ? Promise.resolve(null) : displaySnapshotPromise.then(readCachedSessionAccess);
   patch({
     appReady: true,
     authChecking: false,
@@ -323,7 +310,7 @@ export async function initializeSession(
     },
   );
   const resync = () =>
-    void ensureContentVersionsFresh({ notify: true }).catch(() => undefined);
+    void ensureContentVersionsFresh().catch(() => undefined);
   window.addEventListener("online", resync);
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") resync();

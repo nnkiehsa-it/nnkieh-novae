@@ -1,15 +1,11 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import { fetchUserPublicProfiles, getCachedUserPublicProfiles } from "@/services/users-read";
-import { clearContentReadMemoryCache, setContentCacheScope } from "@/services/content-read-cache";
+import { queryClient } from "@/lib/query-client";
 
 const fetch = vi.hoisted(() => vi.fn());
 vi.mock("@/services/backend-action", () => ({ callAction: (_name: string, payload: unknown) => fetch(payload) }));
 vi.mock("@/services/backend-errors", () => ({ toReadableBackendError: (error: unknown) => error }));
-vi.mock("@/lib/persistent-cache", () => ({
-  readPersistentCache: async () => undefined, writePersistentCache: vi.fn(async () => {}),
-  deletePersistentCacheIfVersion: vi.fn(),
-}));
-beforeEach(() => { fetch.mockReset(); clearContentReadMemoryCache(); setContentCacheScope("alice"); });
+beforeEach(() => { fetch.mockReset(); queryClient.clear(); });
 
 it("fetches all authors in bounded coalesced batches rather than dropping everyone beyond fifty", async () => {
   const ids = Array.from({ length: 51 }, (_, index) => `author-${index}`);
@@ -23,13 +19,9 @@ it("fetches all authors in bounded coalesced batches rather than dropping everyo
   expect(Object.keys(getCachedUserPublicProfiles(ids))).toHaveLength(51);
 });
 
-it("does not seed the next account with a profile read started before an account switch", async () => {
-  let finish!: (value: unknown) => void;
-  fetch.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
-  const pending = fetchUserPublicProfiles(["author"]);
-  await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
-  setContentCacheScope("bob");
-  finish({ profiles: { author: { uid: "author", displayName: "Author", photoUrl: null, version: 1 } } });
-  expect(await pending).toEqual({});
-  expect(getCachedUserPublicProfiles(["author"])).toEqual({});
+it("reads a cached profile without asking again", async () => {
+  fetch.mockResolvedValue({ profiles: { author: { uid: "author", displayName: "Author", photoUrl: null, version: 1 } } });
+  await fetchUserPublicProfiles(["author"]);
+  await fetchUserPublicProfiles(["author"]);
+  expect(fetch).toHaveBeenCalledOnce();
 });

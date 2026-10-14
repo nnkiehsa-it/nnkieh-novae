@@ -283,14 +283,15 @@ try {
     samples: eventDrift,
   });
 
-  const cacheSource = await readFile(new URL("../src/lib/persistent-cache.ts", import.meta.url), "utf8");
+  const cacheSource = await readFile(new URL("../src/lib/query-client.ts", import.meta.url), "utf8");
+  const retiresOldCaches = ["novae-content-cache-v5", "novae-content-cache-v4"].every((name) => cacheSource.includes(`'${name}'`));
   recordFinding({
     id: "browser-cache-namespace",
     subsystem: "realtime-cache",
     severity: "High",
-    count: cacheSource.includes("novae-content-cache-v5") && cacheSource.includes("novae-content-cache-v4") ? 0 : 1,
+    count: cacheSource.includes("'novae-queries'") && retiresOldCaches ? 0 : 1,
     total: 1,
-    samples: ["expected v5 active and v4 retired"],
+    samples: ["expected novae-queries active and the content caches v5 and v4 retired"],
   });
 
   if (process.env.NOTION_API_BASE_URL) {

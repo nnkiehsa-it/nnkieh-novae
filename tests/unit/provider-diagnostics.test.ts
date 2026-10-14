@@ -3,7 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { useProviderDiagnostics } from "@/hooks/use-provider-diagnostics";
 import { getProviderDiagnostics, type ProviderDiagnostic } from "@/services/operations-console";
-import { clearViewMemoryScope } from "@/lib/view-memory-cache";
+import { queryClient, withQueryClient } from "./support/query-client";
 
 vi.mock("@/hooks/use-session", () => ({ useSession: () => ({ user: { uid: "providers-test" } }) }));
 vi.mock("@/i18n", () => {
@@ -21,10 +21,10 @@ function Probe() {
 }
 beforeEach(async () => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
-  clearViewMemoryScope("providers-test");
+  queryClient.clear();
   vi.mocked(getProviderDiagnostics).mockReset().mockImplementation(async ({ provider }) => result(provider, "initial"));
   root = createRoot(document.createElement("div"));
-  await act(async () => root.render(createElement(Probe)));
+  await act(async () => root.render(withQueryClient(createElement(Probe))));
 });
 afterEach(async () => { await act(async () => root.unmount()); vi.unstubAllGlobals(); });
 
