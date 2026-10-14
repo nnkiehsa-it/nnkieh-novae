@@ -381,10 +381,6 @@ export interface AppApiFunctions {
     actor_uid: string; issue_categories: Json; facility_categories: Json;
     issues_enabled: boolean; facilities_enabled: boolean;
   }, Json>;
-  backend_update_platform_features: AppFunction<{
-    actor_uid: string; announcement_comments_enabled: boolean;
-    issues_enabled: boolean; facilities_enabled: boolean;
-  }, Json>;
   backend_save_category_management: AppFunction<{
     actor_uid: string;
     announcement_comments_enabled: boolean;
@@ -719,15 +715,6 @@ export interface AppApiFunctions {
     actor_uid: string;
     announcement_id: string;
     liked: boolean;
-  }, Json>;
-  backend_update_issue_result: AppFunction<{
-    actor_is_admin: boolean;
-    actor_uid: string;
-    author_private_categories: string[];
-    issue_id: string;
-    private_to_owner_categories: string[];
-    result_content: string | null;
-    review_required_categories: string[];
   }, Json>;
   backend_toggle_support: AppFunction<{
     actor_uid: string;

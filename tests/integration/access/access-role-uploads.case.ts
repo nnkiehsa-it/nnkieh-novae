@@ -8,6 +8,7 @@ import {
   integrationTest,
   refreshActor,
   saveCategoryDraft,
+  saveScopeMember,
   seedActor,
   database,
   tableRow,
@@ -88,34 +89,12 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
 
   await expectActionError(
     "permission-denied",
-    () => callAction("setUserAccessScope", {
-      grant: true,
-      scopeKind: "announcement",
-      uid: target.auth.uid,
-    }, user.auth),
+    () => saveScopeMember(user.auth, { scopeKind: "announcement" }, target.auth.uid, true),
   );
 
-  const roleOperationId = crypto.randomUUID();
-  const rolePayload = {
-    grant: true,
-    scopeKind: "announcement",
-    uid: target.auth.uid,
-  };
-  const firstRoleWrite = await callAction("setUserAccessScope", rolePayload, admin.auth, roleOperationId);
-  const replayedRoleWrite = await callAction("setUserAccessScope", rolePayload, admin.auth, roleOperationId);
-  assert.deepEqual(replayedRoleWrite, firstRoleWrite);
-  await callAction("setUserAccessScope", {
-    categoryId: "public-issues",
-    grant: true,
-    scopeKind: "issue",
-    uid: target.auth.uid,
-  }, admin.auth);
-  await callAction("setUserAccessScope", {
-    categoryId: "general",
-    grant: true,
-    scopeKind: "facility",
-    uid: target.auth.uid,
-  }, admin.auth);
+  await saveScopeMember(admin.auth, { scopeKind: "announcement" }, target.auth.uid, true);
+  await saveScopeMember(admin.auth, { scopeKind: "issue", categoryId: "public-issues" }, target.auth.uid, true);
+  await saveScopeMember(admin.auth, { scopeKind: "facility", categoryId: "general" }, target.auth.uid, true);
   target = await refreshActor(target);
   assert.ok(target.auth.permissions.includes("announcement.manage"));
   assert.ok(!target.auth.permissions.includes("facility.manage"));
@@ -140,54 +119,17 @@ integrationTest("access, role, idempotency, avatar, and upload actions", async (
   await expectActionError("validation-required", () => callAction("listRoleAssignments", {
     query: "", scopeKind: "platform",
   }, admin.auth));
-  await expectActionError("validation-required", () => callAction("setUserAccessScope", {
-    grant: true,
-    scopeKind: "platform",
-    uid: target.auth.uid,
-  }, admin.auth));
-  await expectActionError("permission-denied", () => callAction("setUserAccessScope", {
-    grant: false,
-    scopeKind: "announcement",
-    uid: admin.auth.uid,
-  }, admin.auth));
+  await expectActionError("validation-required", () => saveScopeMember(admin.auth, { scopeKind: "platform" }, target.auth.uid, true));
+  await expectActionError("permission-denied", () => saveScopeMember(admin.auth, { scopeKind: "announcement" }, admin.auth.uid, true));
 
-  await expectActionError("validation-invalid", () => callAction("setUserAccessScope", {
-    categoryId: "missing-category",
-    grant: true,
-    scopeKind: "issue",
-    uid: target.auth.uid,
-  }, admin.auth));
+  await expectActionError("invalid-issue-category", () => saveScopeMember(admin.auth, { scopeKind: "issue", categoryId: "missing-category" }, target.auth.uid, true));
   target = await refreshActor(target);
   assert.ok(target.auth.permissions.includes("announcement.manage"), "invalid writes must roll back without changing roles");
 
-  await database.sql`update app_private.user_facility_category_assignments
-    set notify_on_created = false
-    where uid = ${target.auth.uid} and category_id = 'general'`;
-  await callAction("setUserAccessScope", {
-    categoryId: "general",
-    grant: true,
-    scopeKind: "facility",
-    uid: target.auth.uid,
-  }, admin.auth);
-  const facilityOptOut = await database.sqlOne<{ notify_on_created: boolean }>`
-    select notify_on_created from app_private.user_facility_category_assignments
-    where uid = ${target.auth.uid} and category_id = 'general'`;
-  assert.equal(facilityOptOut.notify_on_created, false, "an existing notification opt-out must survive access updates");
-
   const concurrentTarget = await seedActor("access-concurrent-target");
   await Promise.all([
-    callAction("setUserAccessScope", {
-      categoryId: "public-issues",
-      grant: true,
-      scopeKind: "issue",
-      uid: concurrentTarget.auth.uid,
-    }, admin.auth),
-    callAction("setUserAccessScope", {
-      categoryId: "general",
-      grant: true,
-      scopeKind: "facility",
-      uid: concurrentTarget.auth.uid,
-    }, admin.auth),
+    saveScopeMember(admin.auth, { scopeKind: "issue", categoryId: "public-issues" }, concurrentTarget.auth.uid, true),
+    saveScopeMember(admin.auth, { scopeKind: "facility", categoryId: "general" }, concurrentTarget.auth.uid, true),
   ]);
   const refreshedConcurrentTarget = await refreshActor(concurrentTarget);
   assert.deepEqual(refreshedConcurrentTarget.auth.managedIssueCategoryIds, ["public-issues"]);

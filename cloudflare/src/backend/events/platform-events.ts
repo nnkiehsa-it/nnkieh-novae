@@ -61,10 +61,6 @@ export const PLATFORM_ANNOUNCERS = {
     aggregateType: "system", aggregateId: "global", eventType: "system.setup_completed",
     destinations: ["realtime"], payload: { actor_uid: actorUid },
   }],
-  savePlatformFeatures: ({ actorUid }) => [{
-    aggregateType: "system", aggregateId: "global", eventType: "system.features_updated",
-    destinations: ["realtime"], payload: { actor_uid: actorUid },
-  }],
   saveCategoryManagement: ({ actorUid }) => [{
     aggregateType: "category", aggregateId: "global", eventType: "category.managed",
     destinations: ["realtime"], payload: { actor_uid: actorUid },
@@ -74,7 +70,6 @@ export const PLATFORM_ANNOUNCERS = {
   savePlatformSettings: ({ actorUid }) => settingsChangedBy(actorUid),
   saveAccountAccessRule: ({ input, actorUid }) => ruleChanged(input, actorUid),
   deleteAccountAccessRule: ({ input, actorUid }) => ruleChanged(input, actorUid),
-  setUserAccessScope: ({ input, actorUid }) => [accessScoped(input.uid, actorUid)],
   saveScopeMembers: ({ result, actorUid }) => result.changedUids.map((uid) => accessScoped(uid, actorUid)),
   createImageUploadSessions: ({ actorUid }) => uploadsChangedBy(actorUid, "createImageUploadSessions"),
   finalizeImageUploads: ({ actorUid }) => uploadsChangedBy(actorUid, "finalizeImageUploads"),

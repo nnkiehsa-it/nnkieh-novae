@@ -11,7 +11,7 @@ test("scope drafts stay with their area, review real members, and save one atomi
   page.on("request", (request) => {
     if (!request.url().endsWith("/v1/actions") || request.method() !== "POST") return;
     const input = request.postDataJSON();
-    if (input?.action === "saveScopeMembers" || input?.action === "setUserAccessScope") writes.push(input);
+    if (input?.action === "saveScopeMembers") writes.push(input);
   });
   const lookup = async (email: string) => {
     await page.getByPlaceholder("Enter a full campus email or UID").fill(email);

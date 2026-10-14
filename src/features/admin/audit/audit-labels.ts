@@ -1,4 +1,7 @@
-/** Message keys for the recorded action names and the fields inside their detail. */
+/**
+ * Message keys for the recorded action names and the fields inside their detail.
+ * Retired actions keep their labels: the audit log still holds what they did.
+ */
 export const ACTION_LABELS: Record<string, string> = {
   saveOperationPolicies: "admin.auditSavePolicies",
   retryOperationalWork: "admin.auditRetryWork",

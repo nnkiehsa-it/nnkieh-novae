@@ -88,15 +88,6 @@ export async function saveCategoryManagement(input: ActionInput<"saveCategoryMan
   return { ...await loadCategoryManagement(database), success: true };
 }
 
-export async function savePlatformFeatures(input: ActionInput<"savePlatformFeatures">, auth: AuthContext, database: BackendDatabase) {
-  return await database.call("app_api", "backend_update_platform_features", {
-    actor_uid: auth.uid,
-    announcement_comments_enabled: input.announcementCommentsEnabled,
-    facilities_enabled: input.facilitiesEnabled,
-    issues_enabled: input.issuesEnabled,
-  });
-}
-
 /** The first administrator's choice of what the school runs; asking twice changes nothing. */
 export async function completeInitialSetup(input: ActionInput<"completeInitialSetup">, auth: AuthContext, database: BackendDatabase) {
   if (!auth.isAdmin) throw new Error("permission-denied");

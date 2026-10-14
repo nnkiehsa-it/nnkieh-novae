@@ -95,19 +95,6 @@ export async function moderateIssueStatus(input: ActionInput<"moderateIssueStatu
   };
 }
 
-export async function updateIssueResult(input: ActionInput<"updateIssueResult">, auth: AuthContext, database: BackendDatabase) {
-  const stored = await lockForModeration(database, input.issueId, auth);
-  const resultContent = CLOSED_WITH_RESULT.includes(stored.status as IssueStatus)
-    ? requiredText(input.resultContent, "issue-result", INPUT_LIMITS.issueResult)
-    : optionalText(input.resultContent, "issue-result", INPUT_LIMITS.issueResult);
-  const issue = v.parse(Issue, await database.call("app_api", "backend_update_issue_result", {
-    issue_id: input.issueId,
-    result_content: resultContent || null,
-    ...await issuePolicyParams(database, auth, true),
-  }));
-  return { issue };
-}
-
 async function setSupport(issueId: string, remove: boolean, auth: AuthContext, database: BackendDatabase) {
   const stored = await selectIssue(database, issueId, true);
   const issue = v.parse(Issue, await database.call("app_api", "backend_get_issue", {

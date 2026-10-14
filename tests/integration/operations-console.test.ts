@@ -311,7 +311,15 @@ integrationTest("production background consumer applies announcement policy to e
   const admin = await seedActor("policy-consumer", { roles: ["platform-admin"] });
   const result = asRecord(await callAction("createAnnouncement", { title: "Policy test", content: "Policy content" }, admin.auth));
   const announcement = asRecord(result.announcement);
-  await callAction('savePlatformFeatures', { issuesEnabled: true, facilitiesEnabled: true, announcementCommentsEnabled: false }, admin.auth);
+  const management = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
+  await callAction("saveCategoryManagement", {
+    ...asRecord(management.features),
+    announcementCommentsEnabled: false,
+    deletedFacilityCategoryIds: [],
+    deletedIssueCategoryIds: [],
+    facilityCategories: management.facilityCategories,
+    issueCategories: management.issueCategories,
+  }, admin.auth);
   for (let batch = 0; batch < 10; batch += 1) {
     if (!(await underPolicies(() => processBackgroundJobs(database))).hasMore) break;
   }

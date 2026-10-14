@@ -1,4 +1,4 @@
-import { asRecord, assert, callAction, database, drainJobs, integrationTest, notificationStressScale, readFcmRequests, resetFcmRequests, saveCategoryDraft, seedActor } from "./support.ts";
+import { asRecord, assert, callAction, database, drainJobs, integrationTest, notificationStressScale, readFcmRequests, resetFcmRequests, saveCategoryDraft, saveScopeMember, seedActor } from "./support.ts";
 import { resolveRecipients } from "../../../cloudflare/src/backend/jobs/delivery-recipients.ts";
 
 integrationTest("new proposal and facility notifications are personal to category managers", async () => {
@@ -92,11 +92,7 @@ integrationTest("new proposal and facility notifications are personal to categor
   await database.sql`update app_private.user_facility_category_assignments
     set notify_on_created = false
     where uid = ${managers.at(-1)!.auth.uid} and category_id = ${facilityCategoryId}`;
-  await callAction("setUserAccessScope", {
-    grant: true,
-    scopeKind: "announcement",
-    uid: managers.at(-1)!.auth.uid,
-  }, admin.auth);
+  await saveScopeMember(admin.auth, { scopeKind: "announcement" }, managers.at(-1)!.auth.uid, true);
   const preservedOptOut = await database.sqlOne<{ notify_on_created: boolean }>`
     select notify_on_created from app_private.user_facility_category_assignments
     where uid = ${managers.at(-1)!.auth.uid} and category_id = ${facilityCategoryId}`;

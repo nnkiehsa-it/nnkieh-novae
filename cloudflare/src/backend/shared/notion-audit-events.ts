@@ -15,6 +15,7 @@ import {
 import type { NotionEventDatabase } from "./notion-event.ts";
 import type { Selected } from "../database/schema.ts";
 
+// Retired actions keep their labels: rebuilding the archive replays what they recorded.
 const ACTION_LABELS: Record<string, string> = {
   clearOperationalErrors: "清除系統錯誤紀錄",
   clearScheduledWork: "清除背景工作排程",

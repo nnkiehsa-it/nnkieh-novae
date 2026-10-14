@@ -15,11 +15,12 @@ export const DOMAIN_EVENT_TYPES = [
   "announcement.created", "announcement.updated", "announcement.deleted", "announcement.liked",
   "announcement.comment_created", "announcement.comment_deleted", "admin.audit_recorded",
   "category.managed", "category.updated", "platform.settings_updated", "system.setup_completed",
-  "system.features_updated", "user.restricted", "user.role_changed", "user.access_scoped",
+  "user.restricted", "user.role_changed", "user.access_scoped",
   "user.avatar_updated", "notification.marked_opened", "push_token.updated", "upload.mutated",
-  // Recorded by the retired media-deletion console. Nothing announces it now,
-  // and the events that carry it still point at this registry.
-  "deletion_job.retried",
+  // Recorded by retired writes: the media-deletion console and the separate
+  // feature-switch save. Nothing announces them now, and the events that
+  // carry them still point at this registry.
+  "deletion_job.retried", "system.features_updated",
 ] as const;
 
 export type DomainEventType = typeof DOMAIN_EVENT_TYPES[number];

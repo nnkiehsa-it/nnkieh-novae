@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { asRecord, callAction, database, expectActionError, insertRows, integrationTest, seedActor, testEnvironment } from "../helpers.ts";
+import { asRecord, callAction, database, expectActionError, insertRows, integrationTest, saveScopeMember, seedActor, testEnvironment } from "../helpers.ts";
 
 integrationTest("scope member batches commit together, reject stale drafts, and announce each changed account", async () => {
   const admin = await seedActor("scope-batch-admin", { roles: ["platform-admin"] });
@@ -52,9 +52,7 @@ integrationTest("scope access follows configured administrator identities before
   await database.sql`update app_private.user_profiles set email = ${promoted.identity.email.toUpperCase()} where uid = ${promoted.auth.uid}`;
   const promotedLookup = asRecord(await callAction("listRoleAssignments", { query: ` ${promoted.identity.email} ` }, admin.auth));
   assert.deepEqual((promotedLookup.users as Array<{ roles: string[] }>)[0].roles, ["platform-admin"]);
-  await expectActionError("permission-denied", () => callAction("setUserAccessScope", {
-    uid: promoted.auth.uid, scopeKind: "issue", categoryId: "public-issues", grant: true,
-  }, admin.auth));
+  await expectActionError("permission-denied", () => saveScopeMember(admin.auth, { scopeKind: "issue", categoryId: "public-issues" }, promoted.auth.uid, true));
   const formerLookup = asRecord(await callAction("listRoleAssignments", { query: former.identity.email }, admin.auth));
   assert.deepEqual((formerLookup.users as Array<{ roles: string[] }>)[0].roles, []);
   const scope = { scopeKind: "issue", categoryId: "public-issues" };

@@ -64,19 +64,19 @@ Read action 若未帶 operation ID，Worker 會建立一個只用於 trace 的 U
 
 | Domain | Read / resolve actions | Write actions | Registry permission |
 | --- | --- | --- | --- |
-| Category / platform | `getCategoryCatalog`, `getCategoryManagement`, `estimateCategoryPolicyChanges`, `estimateRetentionCleanup`, `listPlatformJobs` | `savePlatformSettings`, `saveCategoryManagement`, `savePlatformFeatures`, `completeInitialSetup` | Management reads/writes 要 `category.manage`；首次 setup 由 domain rule 驗 platform admin |
+| Category / platform | `getCategoryCatalog`, `getCategoryManagement`, `estimateCategoryPolicyChanges`, `estimateRetentionCleanup`, `listPlatformJobs` | `savePlatformSettings`, `saveCategoryManagement`, `completeInitialSetup` | Management reads/writes 要 `category.manage`；首次 setup 由 domain rule 驗 platform admin |
 | Session / user | `getSessionBootstrap`, `getCurrentUserRole`, `getUserPublicProfiles` | `cacheUserAvatar` | 登入使用者；公開 profile 仍按允許欄位投影 |
-| Access / audit | `listRoleAssignments`, `listAdminUsers`, `listAccountAccessRules`, `previewAccountAccessRule`, `listAdminAudit`, `listAdminActivity`, `getAdminOverview` | `saveAccountAccessRule`, `deleteAccountAccessRule`, `setUserAccessScope`, `saveScopeMembers` | 存取規則、scope 與管理清單要 `role.manage`；activity / overview 要 `dashboard.view` |
+| Access / audit | `listRoleAssignments`, `listAdminUsers`, `listAccountAccessRules`, `previewAccountAccessRule`, `listAdminAudit`, `listAdminActivity`, `getAdminOverview` | `saveAccountAccessRule`, `deleteAccountAccessRule`, `saveScopeMembers` | 存取規則、scope 與管理清單要 `role.manage`；activity / overview 要 `dashboard.view` |
 | Upload | `resolveUploadImageUrls` | `createImageUploadSessions`, `finalizeImageUploads`, `deleteUploadedImages` | 登入 + viewer / owner / lifecycle domain rule |
-| Issue | `getIssue`, `listIssues`, `listIssueSupporters`, `searchIssues`, `listUserIssues`, `listComments` | `createIssue`, `moderateIssueStatus`, `updateIssueResult`, `toggleSupport`, `removeSupport`, `deleteIssue`, `createComment`, `deleteComment` | Moderation / result 要 `proposal.manage`；其餘由 author、category、status、restriction rule 決定 |
+| Issue | `getIssue`, `listIssues`, `listIssueSupporters`, `searchIssues`, `listUserIssues`, `listComments` | `createIssue`, `moderateIssueStatus`, `toggleSupport`, `removeSupport`, `deleteIssue`, `createComment`, `deleteComment` | Moderation / result 要 `proposal.manage`；其餘由 author、category、status、restriction rule 決定 |
 | Facility | `listFacilities`, `getFacility` | `createFacility`, `toggleFacilityAffected`, `updateFacilityStatus`, `deleteFacility` | Facility writes 在 domain rule 檢查 owner 或 facility scope |
 | Announcement | `listAnnouncements`, `getAnnouncement`, `getAnnouncementUnreadHint`, `listAnnouncementComments` | `markAnnouncementsOpened`, `createAnnouncement`, `deleteAnnouncement`, `setAnnouncementLike`, `createAnnouncementComment`, `deleteAnnouncementComment` | Create/delete 要 `announcement.manage`；互動與留言刪除走 domain rule |
 | Notification | `listNotificationPages`, `getNotificationSnapshot`, `getNotificationReadState`, `getNotificationUnreadHint`, `getPushNotificationPreference`, `getPlatformAdminNotificationPreferences` | `markNotificationsOpened`, `registerPushToken`, `unregisterPushToken`, `updatePlatformAdminNotificationPreferences` | token 操作受後端生命週期規則限制；一般介面只有啟用入口，平台管理員偏好另驗 `platform-admin` 身分 |
 | Dashboard | `getPlatformDashboard` | — | 要 `dashboard.view` |
 | Content version | `getContentVersions` | — | 依認證身分讀內容版本 |
-| Operations | `getRuntimePolicies`, `getProviderDiagnostics`, `getOperationsConsole` | `saveOperationPolicies`, `rebuildNotionArchive`, `clearOperationalErrors`, `clearScheduledWork`, `retryOperationalWork` | Diagnostics / console 要 `dashboard.view`，政策寫入要 `category.manage`，重試與清理要 `role.manage` |
+| Operations | `getRuntimePolicies`, `getProviderDiagnostics`, `getOperationsConsole`, `getOperationsQueue`, `getOperationPolicies` | `saveOperationPolicies`, `rebuildNotionArchive`, `clearOperationalErrors`, `clearScheduledWork`, `retryOperationalWork` | Diagnostics / console 要 `dashboard.view`，政策寫入要 `category.manage`，重試與清理要 `role.manage` |
 
-此表對照 `backendActionDefinitions` 的 78 個 action。`healthcheck` 由獨立入口處理，不算 registry action。新增或刪除操作時，連同此表及 `tools/project-map/content.mjs` 更新。
+此表對照 `shared/actions.ts` 中 `ACTIONS` 的 77 個 action。`healthcheck` 由獨立入口處理，不算 registry action。新增或刪除操作時，連同此表及 `tools/project-map/content.mjs` 更新。
 
 Action rate-limit group 分成 `read`、`general-write`、`sensitive-write`、`admin-write`、`upload-write`、`upload-resolve`。詳細數值見[執行期政策與限制](runtime-policies.md)。
 

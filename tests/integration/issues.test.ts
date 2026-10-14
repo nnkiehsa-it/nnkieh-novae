@@ -268,19 +268,6 @@ integrationTest("issue reads, scoped moderation, support, comments, and deletion
   assert.ok((managerAuthorMatch.issues as JsonRecord[]).some((issue) => issue.id === publicIssueId));
 
   await expectActionError(
-    "permission-denied",
-    () => callAction("updateIssueResult", {
-      issueId: publicIssueId,
-      resultContent: "Not allowed",
-    }, user.auth),
-  );
-  const resultWrite = asRecord(await callAction("updateIssueResult", {
-    issueId: publicIssueId,
-    resultContent: "Integration result",
-  }, publicManager.auth));
-  assert.equal(asRecord(resultWrite.issue).resultContent, "Integration result");
-
-  await expectActionError(
     "support-not-available",
     () => callAction("toggleSupport", {
       issueId: publicIssueId,

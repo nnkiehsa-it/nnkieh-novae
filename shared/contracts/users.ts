@@ -178,17 +178,6 @@ export const USER_ACTIONS = {
     ], "validation-required"),
     output: v.object({ truncated: v.boolean(), revision: v.string(), users: v.array(AccessUser) }),
   }),
-  setUserAccessScope: action({
-    group: "admin-write",
-    extraLimit: "roleWriteHourly",
-    input: v.intersect([v.object({ uid: RequiredText, grant: v.boolean() }), AccessScope]),
-    output: v.object({
-      success: v.literal(true),
-      roles: v.array(RoleCode),
-      managedIssueCategoryIds: CategoryIds,
-      managedFacilityCategoryIds: CategoryIds,
-    }),
-  }),
   saveScopeMembers: action({
     group: "admin-write",
     extraLimit: "roleWriteHourly",

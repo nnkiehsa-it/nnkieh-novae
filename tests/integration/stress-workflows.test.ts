@@ -7,6 +7,7 @@ import {
   integrationTest,
   refreshActor,
   saveCategoryDraft as saveCategoryDraftImmediately,
+  saveScopeMember,
   seedActor,
   database,
 } from "./helpers.ts";
@@ -28,6 +29,16 @@ async function retryBurst<T>(run: () => Promise<T>): Promise<T> {
       const seconds = error instanceof Error && 'retryAfterSeconds' in error ? Number(error.retryAfterSeconds) : 0;
       if (attempt >= 10 || seconds <= 0 || seconds > 10) throw error;
       await new Promise(resolve => setTimeout(resolve, seconds * 1000 + 20));
+    }
+  }
+}
+
+/** A scope save that lost a race re-reads the members and saves again, as the access screen asks its user to. */
+async function retryStaleScope<T>(run: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt += 1) {
+    try { return await retryBurst(run); }
+    catch (error) {
+      if (attempt >= 10 || !(error instanceof Error) || error.message !== "configuration-changed") throw error;
     }
   }
 }
@@ -114,13 +125,10 @@ async function configureAccess(
       shouldRun: desiredFacilityIds.has(categoryId) !== currentFacilityIds.has(categoryId),
     })),
   ].filter((operation) => operation.shouldRun);
-  const results = await Promise.all(operations.map((operation) => callAction("setUserAccessScope", {
-    categoryId: operation.categoryId,
-    grant: operation.grant,
-    scopeKind: operation.scopeKind,
-    uid: actor.auth.uid,
-  }, admin.auth)));
-  for (const result of results) assert.equal(asRecord(result).success, true);
+  const results = await Promise.all(operations.map((operation) => retryStaleScope(() => saveScopeMember(
+    admin.auth, { scopeKind: operation.scopeKind, categoryId: operation.categoryId }, actor.auth.uid, operation.grant,
+  ))));
+  for (const result of results) assert.equal(result.success, true);
   return await refreshActor(actor);
 }
 
@@ -272,11 +280,6 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
     assert.equal(asRecord(reply.comment).parentCommentId, rootId);
     const comments = asRecord(await callAction("listComments", { issueId, pageSize: 30 }, managerA.auth));
     assert.ok(JSON.stringify(comments).includes(rootId));
-    const result = asRecord(await callAction("updateIssueResult", {
-      issueId,
-      resultContent: `Handled by multiple managers ${runId}`,
-    }, managerB.auth));
-    assert.equal(asRecord(result.issue).resultContent, `Handled by multiple managers ${runId}`);
     if (category.supportEnabled === true && category.readAccess !== "owner-admin") {
       const supporter = ordinaryUsers[(index + 1) % ordinaryUsers.length];
       if (supporter.auth.uid !== owner.auth.uid) {
@@ -360,13 +363,13 @@ integrationTest(`dynamic full workflow stress matrix (scale ${stressScale})`, as
 
   for (const issuesEnabled of [true, false]) {
     for (const facilitiesEnabled of [true, false]) {
-      const saved = asRecord(await callAction("savePlatformFeatures", {
+      const saved = asRecord(await saveCategoryDraft(admins[0].auth, {
         announcementCommentsEnabled: true,
         facilitiesEnabled,
         issuesEnabled,
-      }, admins[0].auth));
-      assert.equal(saved.issuesEnabled, issuesEnabled);
-      assert.equal(saved.facilitiesEnabled, facilitiesEnabled);
+      }));
+      assert.equal(asRecord(saved.features).issuesEnabled, issuesEnabled);
+      assert.equal(asRecord(saved.features).facilitiesEnabled, facilitiesEnabled);
       const featureCatalog = asRecord(await callAction("getCategoryCatalog", {}, ordinaryUsers[0].auth));
       assert.deepEqual(asRecord(featureCatalog.features), {
         announcementMaxImages: 10,

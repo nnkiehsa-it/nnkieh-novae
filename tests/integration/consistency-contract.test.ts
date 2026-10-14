@@ -92,11 +92,11 @@ integrationTest("write transaction fault injection never leaves a partial commit
 
   const admin = await seedActor("transaction-audit", { roles: ["platform-admin"] });
   const auditOperationId = crypto.randomUUID();
-  await expectRollback("audit", auditOperationId, async () => await callAction("savePlatformFeatures", {
-    announcementCommentsEnabled: true,
-    facilitiesEnabled: true,
-    issuesEnabled: true,
+  const marker = await expectRollback("audit", auditOperationId, async () => await callAction("createAnnouncement", {
+    content: `fault-audit-${auditOperationId}`,
+    title: "Fault audit",
   }, admin.auth, auditOperationId));
+  assert.equal(await tableRowCount("announcements", "content", marker), 0);
 });
 
 integrationTest("concurrent retries with one operationId commit exactly one result", async () => {

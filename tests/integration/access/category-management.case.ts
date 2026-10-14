@@ -42,11 +42,6 @@ integrationTest("runtime category setup and management enforce platform permissi
     facilitiesEnabled: false, facilityCategories: [], issuesEnabled: false,
     issueCategories: [],
   }, user.auth));
-  await expectActionError("permission-denied", () => callAction("savePlatformFeatures", {
-    announcementCommentsEnabled: true,
-    announcementMaxImages: 10, announcementCommentMaxImages: 1,
-    facilitiesEnabled: false, issuesEnabled: false,
-  }, user.auth));
   await expectActionError("permission-denied", () => callAction("savePlatformSettings", {
     imageUploads: {
       announcementMaxImages: 10, commentMaxImages: 1, facilityMaxImages: 2, issueMaxImages: 3,

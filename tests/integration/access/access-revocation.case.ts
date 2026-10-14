@@ -7,6 +7,7 @@ import {
   integrationTest,
   refreshActor,
   saveCategoryDraft,
+  saveScopeMember,
   seedActor,
   database,
   tableRow,
@@ -30,11 +31,7 @@ integrationTest("revoking each access scope immediately removes its reads, write
     { categoryId: facilityCategoryId, scopeKind: "facility" },
     { scopeKind: "announcement" },
   ]) {
-    await callAction("setUserAccessScope", {
-      ...scope,
-      grant: true,
-      uid: target.auth.uid,
-    }, admin.auth);
+    await saveScopeMember(admin.auth, scope, target.auth.uid, true);
   }
   target = await refreshActor(target);
   assert.ok(target.auth.permissions.includes("proposal.manage"));
@@ -71,12 +68,7 @@ integrationTest("revoking each access scope immediately removes its reads, write
     true,
   );
 
-  await callAction("setUserAccessScope", {
-    categoryId: issueCategoryId,
-    grant: false,
-    scopeKind: "issue",
-    uid: target.auth.uid,
-  }, admin.auth);
+  await saveScopeMember(admin.auth, { scopeKind: "issue", categoryId: issueCategoryId }, target.auth.uid, false);
   target = await refreshActor(target);
   assert.ok(!target.auth.permissions.includes("proposal.manage"));
   assert.deepEqual(target.auth.managedIssueCategoryIds, []);
@@ -97,12 +89,7 @@ integrationTest("revoking each access scope immediately removes its reads, write
   assert.ok(!(issueAssignees.users as Array<{ uid: string }>)
     .some((user) => user.uid === target.auth.uid));
 
-  await callAction("setUserAccessScope", {
-    categoryId: facilityCategoryId,
-    grant: false,
-    scopeKind: "facility",
-    uid: target.auth.uid,
-  }, admin.auth);
+  await saveScopeMember(admin.auth, { scopeKind: "facility", categoryId: facilityCategoryId }, target.auth.uid, false);
   target = await refreshActor(target);
   assert.ok(!target.auth.permissions.includes("facility.manage"));
   assert.deepEqual(target.auth.managedFacilityCategoryIds, []);
@@ -119,11 +106,7 @@ integrationTest("revoking each access scope immediately removes its reads, write
   assert.ok(!(facilityAssignees.users as Array<{ uid: string }>)
     .some((user) => user.uid === target.auth.uid));
 
-  await callAction("setUserAccessScope", {
-    grant: false,
-    scopeKind: "announcement",
-    uid: target.auth.uid,
-  }, admin.auth);
+  await saveScopeMember(admin.auth, { scopeKind: "announcement" }, target.auth.uid, false);
   target = await refreshActor(target);
   assert.ok(!target.auth.permissions.includes("announcement.manage"));
   assert.deepEqual(target.auth.permissions, []);

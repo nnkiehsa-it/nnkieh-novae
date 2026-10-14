@@ -41,7 +41,6 @@ export const ISSUE_ANNOUNCERS = {
     } satisfies ResolvedDomainEvent]),
     ...(resultChanged ? [resultUpdated(issue.id, issue.resultContent)] : []),
   ],
-  updateIssueResult: ({ input }) => [resultUpdated(input.issueId, input.resultContent)],
   toggleSupport: ({ input, result, actorUid }) => [result.goalMet
     ? {
       aggregateType: "issue",

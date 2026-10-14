@@ -367,6 +367,18 @@ export async function saveCategoryDraft(
   return result;
 }
 
+/** Grants or withdraws one account's place in a scope, the way the access screen saves it. */
+export async function saveScopeMember(
+  auth: AuthContext,
+  scope: { scopeKind: string; categoryId?: string },
+  uid: string,
+  grant: boolean,
+  operationId?: string,
+) {
+  const { revision } = asRecord(await callAction("listRoleAssignments", { ...scope, query: "" }, auth));
+  return asRecord(await callAction("saveScopeMembers", { ...scope, revision, changes: [{ uid, grant }] }, auth, operationId));
+}
+
 export async function processPlatformJobs(batchSize = 100) {
   let latest: Record<string, unknown> = {};
   for (let index = 0; index < 100; index += 1) {

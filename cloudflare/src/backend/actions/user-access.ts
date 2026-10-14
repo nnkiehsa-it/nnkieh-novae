@@ -73,12 +73,6 @@ export async function listRoleAssignments(input: ActionInput<"listRoleAssignment
   })();
 }
 
-export async function setUserAccessScope(input: ActionInput<"setUserAccessScope">, auth: AuthContext, database: BackendDatabase) {
-  const scope = scopeOf(input);
-  await lockScope(scope, database);
-  return updateScopeMember(input.uid, scope, input.grant, auth, database);
-}
-
 export async function saveScopeMembers(input: ActionInput<"saveScopeMembers">, auth: AuthContext, database: BackendDatabase) {
   const scope = scopeOf(input);
   await lockScope(scope, database);

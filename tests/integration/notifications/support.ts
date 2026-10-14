@@ -7,6 +7,7 @@ import {
   integrationTest,
   operationId,
   saveCategoryDraft,
+  saveScopeMember,
   seedActor,
   database,
   insertRows,
@@ -73,4 +74,4 @@ export async function drainJobs() {
   throw new Error("integration-job-drain-did-not-settle");
 }
 
-export { assert, asRecord, callAction, expectActionError, insertRows, integrationTest, operationId, saveCategoryDraft, seedActor, database };
+export { assert, asRecord, callAction, expectActionError, insertRows, integrationTest, operationId, saveCategoryDraft, saveScopeMember, seedActor, database };

@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { action, Count, NullableTimestamp, OptionalText, pageSize, RequiredText, Success, Text, Timestamp, Uuid } from "../contract.ts";
+import { action, Count, NullableTimestamp, OptionalText, pageSize, RequiredText, Success, Timestamp, Uuid } from "../contract.ts";
 import { IssueReadAccess } from "./categories.ts";
 import { Comment, CommentPage, CommentPaging, NewComment } from "./discussions.ts";
 import { ISSUE_STATUSES, IssueStatus } from "./statuses.ts";
@@ -129,12 +129,6 @@ export const ISSUE_ACTIONS = {
       /** Required when the proposal is closed as completed or infeasible. */
       resultContent: OptionalText,
     }),
-    output: v.object({ issue: Issue }),
-  }),
-  updateIssueResult: action({
-    group: "admin-write",
-    extraLimit: "moderationWriteHourly",
-    input: v.object({ issueId: Uuid, resultContent: Text }),
     output: v.object({ issue: Issue }),
   }),
   toggleSupport: action({

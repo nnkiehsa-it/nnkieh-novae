@@ -228,12 +228,6 @@ export const CATEGORY_ACTIONS = {
     input: CategoryManagementInput,
     output: v.object({ ...CategoryManagement.entries, ...Success.entries }),
   }),
-  savePlatformFeatures: action({
-    group: "admin-write",
-    extraLimit: "roleWriteHourly",
-    input: v.object(FeatureSwitches),
-    output: v.object({ ...FeatureSwitches, ...Success.entries }),
-  }),
   completeInitialSetup: action({
     group: "admin-write",
     extraLimit: "roleWriteHourly",
