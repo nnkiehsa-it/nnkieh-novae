@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { errorEnvelope, errorResponse, successEnvelope } from "../../cloudflare/src/backend/actions/response.ts";
 import { readOperationPolicies } from "../../cloudflare/src/backend/shared/operation-policies.ts";
-import { claimFixedWindowRateLimit, RateLimitError, utcHourWindow } from "../../cloudflare/src/backend/shared/business-rate-limit.ts";
+import { claimFixedWindowRateLimit, utcHourWindow } from "../../cloudflare/src/backend/shared/business-rate-limit.ts";
+import { RateLimitError } from "../../cloudflare/src/rate-limit.ts";
 import { database, integrationTest, underPolicies } from "./helpers.ts";
 
 integrationTest("API errors expose stable codes without backend-localized messages", async () => {

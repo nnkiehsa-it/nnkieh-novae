@@ -3,15 +3,14 @@ import { platformAdminEmails } from "./shared/platform-admin.ts";
 import type { FirebaseAuthContext } from "./shared/firebase-auth.ts";
 import { errorStatus, publicErrorBody } from "./shared/errors.ts";
 import { createFunctionLogger } from "./shared/observability.ts";
-import { RATE_LIMITS } from "./shared/rate-limits.ts";
-import { claimFixedWindowRateLimit, utcHourWindow } from "./shared/business-rate-limit.ts";
+import { claimRateLimits } from "./shared/business-rate-limit.ts";
 import { operationPolicy } from "./shared/operation-policies.ts";
 import { AccountAccessError, resolveAccountAccessRule } from "./shared/account-access.ts";
 
 export async function handleSyncUser(user: FirebaseAuthContext, database: AppDatabaseClient) {
   const log = createFunctionLogger("syncUser");
   try {
-    await claimFixedWindowRateLimit(user.uid, "auth.sync", utcHourWindow(), { ...RATE_LIMITS.loginSyncHourly, limit: operationPolicy('loginSyncHourly') });
+    await claimRateLimits(user.uid, [{ name: "loginSyncHourly" }]);
 
     const email = user.email.toLowerCase();
     if (!platformAdminEmails().includes(email)) {

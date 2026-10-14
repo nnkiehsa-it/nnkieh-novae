@@ -9,8 +9,7 @@ import { processBackgroundJobs } from "./background-jobs.ts";
 import { operationPolicy, withOperationPolicies } from "../shared/operation-policies.ts";
 import { beginNotionInvocation } from "../shared/notion-api.ts";
 import { REBUILD_REQUEST_BUDGET } from "../shared/notion-reconcile.ts";
-import { claimFixedWindowRateLimits, utcMinuteWindow, utcSecondWindow } from "../shared/business-rate-limit.ts";
-import { RATE_LIMITS } from "../shared/rate-limits.ts";
+import { claimRateLimits } from "../shared/business-rate-limit.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
 
 export type JobMessage = { type: "drain" | "maintenance" };
@@ -41,10 +40,7 @@ async function sweep(message: JobMessage, database: AppDatabaseClient, env: Env)
     // allowance, and the rebuild pacing itself against that allowance has to be
     // told when a new one begins.
     beginNotionInvocation();
-    await claimFixedWindowRateLimits([
-      { identifier: 'background-workers', actionName: 'worker.second', window: utcSecondWindow(), config: { ...RATE_LIMITS.workerRunSecond, limit: operationPolicy('workerRunSecond') } },
-      { identifier: 'background-workers', actionName: 'worker.minute', window: utcMinuteWindow(), config: { ...RATE_LIMITS.workerRunMinute, limit: operationPolicy('workerRunMinute') } },
-    ]);
+    await claimRateLimits("background-workers", [{ name: "workerRunSecond" }, { name: "workerRunMinute" }]);
     if (message.type === "maintenance") {
       await runMaintenance(database);
     }

@@ -1,10 +1,17 @@
 import { getLocale, t } from '@/i18n';
 
+/** Timestamps arrive as ISO strings; a few callers still hold a Date. */
+type Moment = Date | string | null;
+
+function toDate(value: Date | string) {
+  return typeof value === 'string' ? new Date(value) : value;
+}
+
 function getDeviceTimeZone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
-export function formatDate(value: Date | null): string {
+export function formatDate(value: Moment): string {
   if (!value) {
     return '';
   }
@@ -15,10 +22,10 @@ export function formatDate(value: Date | null): string {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(value);
+  }).format(toDate(value));
 }
 
-export function formatDateOnly(value: Date | null): string {
+export function formatDateOnly(value: Moment): string {
   if (!value) {
     return '';
   }
@@ -28,20 +35,20 @@ export function formatDateOnly(value: Date | null): string {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-  }).format(value);
+  }).format(toDate(value));
 }
 
 export function stripMarkdownImages(text: string): string {
   return text.replace(/!\[[^\]]*]\((\S+?)(?:\s+["'][^"']*["'])?\)/g, '');
 }
 
-export function formatRelativeTime(value: Date | null): string {
+export function formatRelativeTime(value: Moment): string {
   if (!value) {
     return '';
   }
 
   const now = Date.now();
-  const diffMs = now - value.getTime();
+  const diffMs = now - toDate(value).getTime();
   if (diffMs < 0) {
     return formatDateOnly(value);
   }

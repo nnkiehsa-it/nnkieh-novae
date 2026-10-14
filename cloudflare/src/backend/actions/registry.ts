@@ -1,0 +1,124 @@
+import type { ActionInput, ActionName } from "../../../../shared/actions.ts";
+import type { ActionSegment, AuthContext, BackendDatabase, PermissionCode } from "./types.ts";
+import { handleOperationsAction } from "./operations.ts";
+import { handleCategoryAction } from "./categories.ts";
+import { loadContentVersions } from "./content-versions.ts";
+import { getSessionBootstrap } from "./session-bootstrap.ts";
+import { handleUserAction } from "./users.ts";
+import { handleUploadAction } from "./uploads.ts";
+import { handleIssueAction } from "./issues.ts";
+import * as facilities from "./facilities.ts";
+import { handleAnnouncementAction } from "./announcements.ts";
+import { handleNotificationAction } from "./notifications.ts";
+import { handleDashboardAction } from "./dashboard.ts";
+
+export type ActionDomain =
+  | "announcement"
+  | "category"
+  | "content"
+  | "dashboard"
+  | "facility"
+  | "issue"
+  | "notification"
+  | "upload"
+  | "user";
+
+/**
+ * What an action asks of the account's access rules. A read-only account may
+ * read and change its own settings; a reaction-only one may also react.
+ */
+export type AccountAccessClass = "read" | "personal" | "reaction" | "participation" | "admin";
+
+export interface ActionHandler<N extends ActionName> {
+  domain: ActionDomain;
+  access: AccountAccessClass;
+  /** The permission the action requires before anything else runs. */
+  permission?: PermissionCode;
+  /** Holders of this permission use a participation action as moderators, which account restrictions do not stop. */
+  moderatedBy?: PermissionCode;
+  run: (input: ActionInput<N>, auth: AuthContext, database: BackendDatabase) => Promise<unknown> | AsyncIterable<ActionSegment>;
+}
+
+type ActionHandlers = { [N in ActionName]: ActionHandler<N> };
+
+/** How the Worker carries out each action in the shared contract. */
+export const ACTION_HANDLERS: ActionHandlers = {
+  getRuntimePolicies: { domain: "category", access: "read", run: (input, auth, database) => handleOperationsAction("getRuntimePolicies", input, auth, database) },
+  getProviderDiagnostics: { domain: "dashboard", access: "read", permission: "dashboard.view", run: (input, auth, database) => handleOperationsAction("getProviderDiagnostics", input, auth, database) },
+  rebuildNotionArchive: { domain: "dashboard", access: "admin", permission: "role.manage", run: (input, auth, database) => handleOperationsAction("rebuildNotionArchive", input, auth, database) },
+  clearOperationalErrors: { domain: "dashboard", access: "admin", permission: "role.manage", run: (input, auth, database) => handleOperationsAction("clearOperationalErrors", input, auth, database) },
+  clearScheduledWork: { domain: "dashboard", access: "admin", permission: "role.manage", run: (input, auth, database) => handleOperationsAction("clearScheduledWork", input, auth, database) },
+  retryOperationalWork: { domain: "dashboard", access: "admin", permission: "role.manage", run: (input, auth, database) => handleOperationsAction("retryOperationalWork", input, auth, database) },
+  getOperationsConsole: { domain: "dashboard", access: "read", permission: "dashboard.view", run: (input, auth, database) => handleOperationsAction("getOperationsConsole", input, auth, database) },
+  saveOperationPolicies: { domain: "category", access: "admin", permission: "category.manage", run: (input, auth, database) => handleOperationsAction("saveOperationPolicies", input, auth, database) },
+  getCategoryCatalog: { domain: "category", access: "read", run: (input, auth, database) => handleCategoryAction("getCategoryCatalog", input, auth, database) },
+  getCategoryManagement: { domain: "category", access: "read", permission: "category.manage", run: (input, auth, database) => handleCategoryAction("getCategoryManagement", input, auth, database) },
+  estimateCategoryPolicyChanges: { domain: "category", access: "read", permission: "category.manage", run: (input, auth, database) => handleCategoryAction("estimateCategoryPolicyChanges", input, auth, database) },
+  estimateRetentionCleanup: { domain: "category", access: "read", permission: "category.manage", run: (input, auth, database) => handleCategoryAction("estimateRetentionCleanup", input, auth, database) },
+  listPlatformJobs: { domain: "category", access: "read", permission: "category.manage", run: (input, auth, database) => handleCategoryAction("listPlatformJobs", input, auth, database) },
+  savePlatformSettings: { domain: "category", access: "admin", permission: "category.manage", run: (input, auth, database) => handleCategoryAction("savePlatformSettings", input, auth, database) },
+  saveCategoryManagement: { domain: "category", access: "admin", permission: "category.manage", run: (input, auth, database) => handleCategoryAction("saveCategoryManagement", input, auth, database) },
+  savePlatformFeatures: { domain: "category", access: "admin", permission: "category.manage", run: (input, auth, database) => handleCategoryAction("savePlatformFeatures", input, auth, database) },
+  completeInitialSetup: { domain: "category", access: "participation", run: (input, auth, database) => handleCategoryAction("completeInitialSetup", input, auth, database) },
+  getContentVersions: { domain: "content", access: "read", run: async (_input, _auth, database) => ({ versions: await loadContentVersions(database) }) },
+  getSessionBootstrap: { domain: "user", access: "read", run: (input, auth, database) => getSessionBootstrap(input, auth, database) },
+  getCurrentUserRole: { domain: "user", access: "read", run: (input, auth, database) => handleUserAction("getCurrentUserRole", input, auth, database) },
+  listRoleAssignments: { domain: "user", access: "read", permission: "role.manage", run: (input, auth, database) => handleUserAction("listRoleAssignments", input, auth, database) },
+  listAdminUsers: { domain: "user", access: "read", permission: "role.manage", run: (input, auth, database) => handleUserAction("listAdminUsers", input, auth, database) },
+  listAdminAudit: { domain: "user", access: "read", permission: "role.manage", run: (input, auth, database) => handleUserAction("listAdminAudit", input, auth, database) },
+  listAdminActivity: { domain: "user", access: "read", permission: "dashboard.view", run: (input, auth, database) => handleUserAction("listAdminActivity", input, auth, database) },
+  getAdminOverview: { domain: "user", access: "read", permission: "dashboard.view", run: (input, auth, database) => handleUserAction("getAdminOverview", input, auth, database) },
+  listAccountAccessRules: { domain: "user", access: "read", permission: "role.manage", run: (input, auth, database) => handleUserAction("listAccountAccessRules", input, auth, database) },
+  previewAccountAccessRule: { domain: "user", access: "read", permission: "role.manage", run: (input, auth, database) => handleUserAction("previewAccountAccessRule", input, auth, database) },
+  saveAccountAccessRule: { domain: "user", access: "admin", permission: "role.manage", run: (input, auth, database) => handleUserAction("saveAccountAccessRule", input, auth, database) },
+  deleteAccountAccessRule: { domain: "user", access: "admin", permission: "role.manage", run: (input, auth, database) => handleUserAction("deleteAccountAccessRule", input, auth, database) },
+  setUserAccessScope: { domain: "user", access: "admin", permission: "role.manage", run: (input, auth, database) => handleUserAction("setUserAccessScope", input, auth, database) },
+  saveScopeMembers: { domain: "user", access: "admin", permission: "role.manage", run: (input, auth, database) => handleUserAction("saveScopeMembers", input, auth, database) },
+  cacheUserAvatar: { domain: "user", access: "personal", run: (input, auth, database) => handleUserAction("cacheUserAvatar", input, auth, database) },
+  getUserPublicProfiles: { domain: "user", access: "read", run: (input, auth, database) => handleUserAction("getUserPublicProfiles", input, auth, database) },
+  createImageUploadSessions: { domain: "upload", access: "participation", run: (input, auth, database) => handleUploadAction("createImageUploadSessions", input, auth, database) },
+  finalizeImageUploads: { domain: "upload", access: "participation", run: (input, auth, database) => handleUploadAction("finalizeImageUploads", input, auth, database) },
+  deleteUploadedImages: { domain: "upload", access: "participation", run: (input, auth, database) => handleUploadAction("deleteUploadedImages", input, auth, database) },
+  resolveUploadImageUrls: { domain: "upload", access: "read", run: (input, auth, database) => handleUploadAction("resolveUploadImageUrls", input, auth, database) },
+  getIssue: { domain: "issue", access: "read", run: (input, auth, database) => handleIssueAction("getIssue", input, auth, database) },
+  listIssues: { domain: "issue", access: "read", run: (input, auth, database) => handleIssueAction("listIssues", input, auth, database) },
+  listIssueSupporters: { domain: "issue", access: "read", run: (input, auth, database) => handleIssueAction("listIssueSupporters", input, auth, database) },
+  searchIssues: { domain: "issue", access: "read", run: (input, auth, database) => handleIssueAction("searchIssues", input, auth, database) },
+  listUserIssues: { domain: "issue", access: "read", run: (input, auth, database) => handleIssueAction("listUserIssues", input, auth, database) },
+  createIssue: { domain: "issue", access: "participation", run: (input, auth, database) => handleIssueAction("createIssue", input, auth, database) },
+  moderateIssueStatus: { domain: "issue", access: "admin", permission: "proposal.manage", run: (input, auth, database) => handleIssueAction("moderateIssueStatus", input, auth, database) },
+  updateIssueResult: { domain: "issue", access: "admin", permission: "proposal.manage", run: (input, auth, database) => handleIssueAction("updateIssueResult", input, auth, database) },
+  toggleSupport: { domain: "issue", access: "reaction", run: (input, auth, database) => handleIssueAction("toggleSupport", input, auth, database) },
+  removeSupport: { domain: "issue", access: "reaction", run: (input, auth, database) => handleIssueAction("removeSupport", input, auth, database) },
+  deleteIssue: { domain: "issue", access: "participation", moderatedBy: "proposal.manage", run: (input, auth, database) => handleIssueAction("deleteIssue", input, auth, database) },
+  listComments: { domain: "issue", access: "read", run: (input, auth, database) => handleIssueAction("listComments", input, auth, database) },
+  createComment: { domain: "issue", access: "participation", run: (input, auth, database) => handleIssueAction("createComment", input, auth, database) },
+  deleteComment: { domain: "issue", access: "participation", moderatedBy: "proposal.manage", run: (input, auth, database) => handleIssueAction("deleteComment", input, auth, database) },
+  listFacilities: { domain: "facility", access: "read", run: facilities.listFacilities },
+  getFacility: { domain: "facility", access: "read", run: facilities.getFacility },
+  createFacility: { domain: "facility", access: "participation", run: facilities.createFacility },
+  toggleFacilityAffected: { domain: "facility", access: "reaction", run: facilities.toggleFacilityAffected },
+  updateFacilityStatus: { domain: "facility", access: "admin", run: facilities.updateFacilityStatus },
+  deleteFacility: { domain: "facility", access: "participation", moderatedBy: "facility.manage", run: facilities.deleteFacility },
+  listAnnouncements: { domain: "announcement", access: "read", run: (input, auth, database) => handleAnnouncementAction("listAnnouncements", input, auth, database) },
+  getAnnouncement: { domain: "announcement", access: "read", run: (input, auth, database) => handleAnnouncementAction("getAnnouncement", input, auth, database) },
+  getAnnouncementUnreadHint: { domain: "announcement", access: "read", run: (input, auth, database) => handleAnnouncementAction("getAnnouncementUnreadHint", input, auth, database) },
+  markAnnouncementsOpened: { domain: "announcement", access: "personal", run: (input, auth, database) => handleAnnouncementAction("markAnnouncementsOpened", input, auth, database) },
+  createAnnouncement: { domain: "announcement", access: "admin", permission: "announcement.manage", run: (input, auth, database) => handleAnnouncementAction("createAnnouncement", input, auth, database) },
+  deleteAnnouncement: { domain: "announcement", access: "admin", moderatedBy: "announcement.manage", permission: "announcement.manage", run: (input, auth, database) => handleAnnouncementAction("deleteAnnouncement", input, auth, database) },
+  setAnnouncementLike: { domain: "announcement", access: "reaction", run: (input, auth, database) => handleAnnouncementAction("setAnnouncementLike", input, auth, database) },
+  listAnnouncementComments: { domain: "announcement", access: "read", run: (input, auth, database) => handleAnnouncementAction("listAnnouncementComments", input, auth, database) },
+  createAnnouncementComment: { domain: "announcement", access: "participation", run: (input, auth, database) => handleAnnouncementAction("createAnnouncementComment", input, auth, database) },
+  deleteAnnouncementComment: { domain: "announcement", access: "participation", moderatedBy: "announcement.manage", run: (input, auth, database) => handleAnnouncementAction("deleteAnnouncementComment", input, auth, database) },
+  listNotificationPages: { domain: "notification", access: "read", run: (input, auth, database) => handleNotificationAction("listNotificationPages", input, auth, database) },
+  getNotificationSnapshot: { domain: "notification", access: "read", run: (input, auth, database) => handleNotificationAction("getNotificationSnapshot", input, auth, database) },
+  getNotificationReadState: { domain: "notification", access: "read", run: (input, auth, database) => handleNotificationAction("getNotificationReadState", input, auth, database) },
+  getNotificationUnreadHint: { domain: "notification", access: "read", run: (input, auth, database) => handleNotificationAction("getNotificationUnreadHint", input, auth, database) },
+  markNotificationsOpened: { domain: "notification", access: "personal", run: (input, auth, database) => handleNotificationAction("markNotificationsOpened", input, auth, database) },
+  getPushNotificationPreference: { domain: "notification", access: "read", run: (input, auth, database) => handleNotificationAction("getPushNotificationPreference", input, auth, database) },
+  getPlatformAdminNotificationPreferences: { domain: "notification", access: "read", run: (input, auth, database) => handleNotificationAction("getPlatformAdminNotificationPreferences", input, auth, database) },
+  registerPushToken: { domain: "notification", access: "personal", run: (input, auth, database) => handleNotificationAction("registerPushToken", input, auth, database) },
+  unregisterPushToken: { domain: "notification", access: "personal", run: (input, auth, database) => handleNotificationAction("unregisterPushToken", input, auth, database) },
+  updatePlatformAdminNotificationPreferences: { domain: "notification", access: "personal", run: (input, auth, database) => handleNotificationAction("updatePlatformAdminNotificationPreferences", input, auth, database) },
+  getPlatformDashboard: { domain: "dashboard", access: "read", permission: "dashboard.view", run: (input, auth, database) => handleDashboardAction("getPlatformDashboard", input, auth, database) },
+};

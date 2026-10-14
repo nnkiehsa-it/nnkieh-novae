@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { backendActionDefinitions } from "../../cloudflare/src/backend/actions/action-registry.ts";
+import { ACTIONS } from "../../shared/actions.ts";
 import { integrationTest } from "./helpers.ts";
 
 async function readDomainTestSources(directory: string): Promise<string[]> {
@@ -23,8 +23,7 @@ async function readDomainTestSources(directory: string): Promise<string[]> {
 
 integrationTest("every registered backend action is exercised by local integration tests", async () => {
   const source = (await readDomainTestSources(dirname(fileURLToPath(import.meta.url)))).join("\n");
-  const missing = backendActionDefinitions
-    .map((definition) => definition.name)
+  const missing = Object.keys(ACTIONS)
     .filter((actionName) =>
       !new RegExp(`callAction\\(\\s*["']${actionName}["']`, "u").test(source)
     );

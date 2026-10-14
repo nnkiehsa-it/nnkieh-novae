@@ -1,4 +1,4 @@
-import { API_ERRORS, isApiErrorCode } from "@/generated/api-errors";
+import { API_ERRORS, isApiErrorCode } from "@shared/api-errors.ts";
 import type { OperationsConsole, RetryKind } from "@/hooks/use-system-console";
 import { formatDate } from "@/lib/format";
 import type { Translate } from "../shared/translate";

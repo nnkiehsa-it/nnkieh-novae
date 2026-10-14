@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { readCachedAvatar, writeCachedAvatar } from "@/lib/avatar-cache";
 import { setOperationPolicies } from "@/lib/operation-policies";
-import { DEFAULT_OPERATION_POLICIES } from "@/generated/operations";
+import { DEFAULT_OPERATION_POLICIES } from "../../shared/operation-policies.ts";
 
 const UID = "user-1";
 const SOURCE = "https://lh3.googleusercontent.com/a/photo";

@@ -34,31 +34,6 @@ export function moduleImports(source, path = "source.ts") {
   return imports;
 }
 
-export function callStringArguments(source, callNames, path = "source.ts") {
-  const sourceFile = parse(source, {
-    plugins: ["typescript", ...(path.endsWith(".tsx") ? ["jsx"] : [])],
-    sourceType: "unambiguous",
-  });
-  const values = [];
-  const visit = (node) => {
-    if (!node || typeof node !== "object") return;
-    if (
-      node.type === "CallExpression" &&
-      node.callee?.type === "Identifier" &&
-      callNames.includes(node.callee.name) &&
-      node.arguments[0]?.type === "StringLiteral"
-    ) {
-      values.push(node.arguments[0].value);
-    }
-    for (const value of Object.values(node)) {
-      if (Array.isArray(value)) value.forEach(visit);
-      else visit(value);
-    }
-  };
-  visit(sourceFile);
-  return values;
-}
-
 export async function listFiles(relativeDir, files = []) {
   const dir = new URL(relativeDir, root);
   for (const entry of await readdir(dir)) {

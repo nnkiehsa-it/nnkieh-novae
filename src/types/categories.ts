@@ -91,4 +91,4 @@ export interface FacilityCategoryDraft {
   isDefault: boolean;
   label: string;
 }
-import { DATA_RETENTION } from '@/generated/data-retention';
+import { DATA_RETENTION } from "@shared/data-retention.ts";

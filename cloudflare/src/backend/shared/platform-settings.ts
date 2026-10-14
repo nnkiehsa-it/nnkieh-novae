@@ -1,5 +1,5 @@
-import { DATA_RETENTION } from "./data-retention.ts";
-import { RATE_LIMITS } from "./rate-limits.ts";
+import { DATA_RETENTION } from "../../../../shared/data-retention.ts";
+import { IMAGE_COMPRESSION } from "../../../../shared/rate-limits.ts";
 import type { DatabaseSession } from "../database/client.ts";
 import type { Selected } from "../database/schema.ts";
 
@@ -26,9 +26,9 @@ interface PlatformSettings {
 export type UploadTargetType = "announcement" | "announcement_comment" | "comment" | "facility" | "issue";
 
 const defaultImageUploads: ImageUploadSettings = {
-  maxDimension: RATE_LIMITS.imageCompression.maxDimension,
-  maxUploadKilobytes: RATE_LIMITS.imageCompression.maxUploadKilobytes,
-  webpQuality: RATE_LIMITS.imageCompression.webpQuality,
+  maxDimension: IMAGE_COMPRESSION.maxDimension,
+  maxUploadKilobytes: IMAGE_COMPRESSION.maxUploadKilobytes,
+  webpQuality: IMAGE_COMPRESSION.webpQuality,
 };
 
 const defaultRetention = { ...DATA_RETENTION } as DataRetentionSettings;
@@ -70,7 +70,7 @@ function normalizeImageUploads(value: unknown): ImageUploadSettings {
       settings.maxUploadKilobytes,
       defaultImageUploads.maxUploadKilobytes,
       100,
-      RATE_LIMITS.imageCompression.maxPlatformUploadKilobytes,
+      IMAGE_COMPRESSION.maxPlatformUploadKilobytes,
     ),
     webpQuality: numberInRange(settings.webpQuality, defaultImageUploads.webpQuality, 0.4, 0.95),
   };

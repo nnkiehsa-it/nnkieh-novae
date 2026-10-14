@@ -7,6 +7,12 @@ import { updateFacilityStatus } from "@/services/facilities";
 import type { FacilityRecord, FacilityStatus } from "@/types";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
 
+export type FacilityNextStatus = Exclude<FacilityStatus, "pending">;
+
+function nextStatus(status: FacilityStatus): FacilityNextStatus {
+  return status === "pending" ? "processing" : status;
+}
+
 export function useFacilityStatus({
   facility,
   onClose,
@@ -19,14 +25,14 @@ export function useFacilityStatus({
   open: boolean;
 }) {
   const { t } = useI18n();
-  const [status, setStatus] = React.useState<FacilityStatus>(facility.status);
-  const [result, setResult] = React.useState(facility.result_content ?? "");
+  const [status, setStatus] = React.useState<FacilityNextStatus>(nextStatus(facility.status));
+  const [result, setResult] = React.useState(facility.resultContent ?? "");
   const feedback = useActionFeedback();
 
   React.useEffect(() => {
     if (open) {
-      setStatus(facility.status);
-      setResult(facility.result_content ?? "");
+      setStatus(nextStatus(facility.status));
+      setResult(facility.resultContent ?? "");
     }
   }, [facility, open]);
 

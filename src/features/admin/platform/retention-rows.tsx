@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowCounterClockwise } from "@phosphor-icons/react/ssr";
-import { DATA_RETENTION } from "@/generated/data-retention";
+import { DATA_RETENTION } from "@shared/data-retention.ts";
 import { useI18n } from "@/i18n";
 import type { DataRetentionSettings } from "@/types/categories";
 import { ListGroup, ListRow } from "@/ui/list";

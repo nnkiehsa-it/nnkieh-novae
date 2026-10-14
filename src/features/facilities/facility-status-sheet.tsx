@@ -1,12 +1,12 @@
 "use client";
 
 import { useI18n } from "@/i18n";
-import type { FacilityRecord, FacilityStatus } from "@/types";
-import { useFacilityStatus } from "@/hooks/use-facility-status";
+import type { FacilityRecord } from "@/types";
+import { useFacilityStatus, type FacilityNextStatus } from "@/hooks/use-facility-status";
 import { DecisionSheet, type DecisionOption } from "@/ui/decision";
 
-const OPTIONS: ReadonlyArray<readonly [FacilityStatus, string]> = [
-  ["pending", "ui.status.pending"],
+/** A report moves forward only; nothing sends one back to pending. */
+const OPTIONS: ReadonlyArray<readonly [FacilityNextStatus, string]> = [
   ["processing", "ui.status.processing"],
   ["completed", "ui.status.completed"],
   ["unable-to-handle", "ui.status.unable"],
@@ -34,7 +34,7 @@ export function FacilityStatusSheet({ facility, onOpenChange, onUpdated, open }:
         : undefined}
       onOpenChange={onOpenChange}
       onSubmit={() => void state.save()}
-      onValueChange={(value) => state.setStatus(value as FacilityStatus)}
+      onValueChange={(value) => state.setStatus(value as FacilityNextStatus)}
       open={open}
       options={options}
       sheetTitle={t("ui.facility.statusDialogTitle")}

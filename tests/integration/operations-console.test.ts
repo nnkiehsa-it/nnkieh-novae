@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { processBackgroundJobs } from "../../cloudflare/src/backend/jobs/background-jobs.ts";
 import { asRecord, underPolicies, database, integrationTest, seedActor, callAction, testEnvironment } from "./helpers.ts";
-import { DEFAULT_OPERATION_POLICIES } from '../../cloudflare/generated/operations';
+import { DEFAULT_OPERATION_POLICIES } from "../../shared/operation-policies.ts";
 import { runMaintenance } from '../../cloudflare/src/backend/jobs/maintenance';
 import { processInAppDeliveries } from '../../cloudflare/src/backend/jobs/notification-deliveries';
 import { AppDatabaseClient } from '../../cloudflare/src/backend/database/client';

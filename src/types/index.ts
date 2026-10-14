@@ -96,53 +96,13 @@ export interface ComposerInput {
   category: WritableIssueCategory;
 }
 
-export type FacilityStatus = 'pending' | 'processing' | 'completed' | 'unable-to-handle';
-export type FacilitySortOption = 'latest' | 'most-affected';
-
-export interface FacilitySummary {
-  id: string;
-  category_id: string;
-  title: string;
-  location: string;
-  status: FacilityStatus;
-  affected_count: number;
-  created_at: Date | null;
-  updated_at: Date | null;
-  author_uid: string;
-  isOwnFacility: boolean;
-  canDeleteFacility: boolean;
-  currentUserAffected: boolean;
-  canManageFacility: boolean;
-  deleting?: boolean;
-}
-
-export interface FacilityRecord extends FacilitySummary {
-  content: string;
-  result_content: string | null;
-  started_at: Date | null;
-  closed_at: Date | null;
-}
-
-export interface FacilityInput {
-  categoryId: string;
-  title: string;
-  location: string;
-  content: string;
-}
-
-export interface FacilityCursor {
-  id: string;
-  createdAt: string;
-  affectedCount: number;
-}
-
-export interface FacilityPageResult {
-  facilities: FacilitySummary[];
-  cursor: FacilityCursor | null;
-  hasMore: boolean;
-  statusCounts: Record<FacilityStatus, number>;
-  version: number;
-}
+import type { FacilityStatus } from '@shared/contracts/facilities.ts';
+export type { FacilityCursor, FacilityStatus, FacilitySort as FacilitySortOption } from '@shared/contracts/facilities.ts';
+/** A list entry; `deleting` marks one this tab is removing. */
+export type FacilitySummary = import('@shared/contracts/facilities.ts').FacilitySummary & { deleting?: boolean };
+export type FacilityRecord = import('@shared/contracts/facilities.ts').Facility & { deleting?: boolean };
+export type FacilityInput = import('@shared/actions.ts').ActionRequest<'createFacility'>;
+export type FacilityPageResult = import('@shared/actions.ts').ActionOutput<'listFacilities'>;
 
 export interface CommentInput {
   content: string;

@@ -1,7 +1,6 @@
 import { asRecord, asString } from "../shared/json.ts";
 import type { JsonRecord } from "./types.ts";
 
-const TAIPEI_UTC_OFFSET_MS = 8 * 60 * 60 * 1000;
 
 export function asNumber(value: unknown, fallback: number) {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
@@ -48,13 +47,4 @@ export function readCursorDate(payload: JsonRecord, key: string) {
   return asDateIso(payload[key]);
 }
 
-export function taipeiDayWindow(date = new Date()) {
-  const shifted = new Date(date.getTime() + TAIPEI_UTC_OFFSET_MS);
-  const startMs = Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate())
-    - TAIPEI_UTC_OFFSET_MS;
-  return {
-    expiresAt: new Date(startMs + 24 * 60 * 60 * 1000),
-    startsAt: new Date(startMs),
-  };
-}
 

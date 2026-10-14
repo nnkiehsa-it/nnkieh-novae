@@ -1,5 +1,5 @@
 import { invokeBackendAction } from '@/services/backend-action';
-import type { OperationPolicies } from '@/generated/operations';
+import type { OperationPolicies } from "@shared/operation-policies.ts";
 import { longRequestTimeoutMs } from '@/lib/request';
 
 export interface OperationsConsole {

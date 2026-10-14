@@ -19,12 +19,8 @@
   },
   "scripts": {
     "dev": "next dev --webpack",
-    "generate:api-errors": "node scripts/generate-api-errors.mjs",
     "generate:brand": "node scripts/generate-brand-assets.mjs",
     "generate:motion": "node scripts/generate-motion.mjs",
-    "generate:rate-limits": "node scripts/generate-rate-limits.mjs",
-    "generate:data-retention": "node scripts/generate-data-retention.mjs",
-    "generate:backend-actions": "node scripts/generate-backend-actions.mjs",
     "generate:database-contracts": "node scripts/generate-database-contracts.mjs",
     "generate:harmonyos-font": "node scripts/generate-harmonyos-subset.mjs",
     "generate:all": "node scripts/generate-all.mjs",
@@ -89,6 +85,7 @@
     "react-dom": "19.2.8",
     "sonner": "2.0.8",
     "tailwind-merge": "^3.3.1",
+    "valibot": "1.5.0",
     "vditor": "4.0.0"
   },
   "devDependencies": {

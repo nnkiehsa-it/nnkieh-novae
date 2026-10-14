@@ -1,5 +1,5 @@
 import type { Env, JsonRecord } from './types';
-import { API_ERRORS, type ApiErrorCode } from '../generated/api-errors';
+import { API_ERRORS, type ApiErrorCode } from "../../shared/api-errors.ts";
 
 const MAX_BODY_BYTES = 64 * 1024;
 

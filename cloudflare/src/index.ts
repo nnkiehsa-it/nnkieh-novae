@@ -21,8 +21,9 @@ import {
 import { verifyCloudinarySignature } from "./signature";
 import { handleMedia } from "./media";
 import type { Env } from "./types";
-import { isApiErrorCode } from "../generated/api-errors";
-import { BACKEND_ACTION_POLICIES } from "../generated/backend-actions";
+import { isApiErrorCode } from "../../shared/api-errors.ts";
+import { ACTIONS, type ActionName } from "../../shared/actions.ts";
+import { isWriteGroup } from "../../shared/contract.ts";
 import { createDatabaseClient } from "./backend/database/client";
 import { handleBackendAction } from "./backend/actions/handler";
 import { handleSyncUser } from "./backend/sync-user";
@@ -92,13 +93,12 @@ async function handleAction(
   const bodyBytes = await readBody(request);
   const body = parseJsonRecord(bodyBytes);
   const action = typeof body.action === "string" ? body.action : "";
-  if (!action) return apiErrorResponse(request, env, crypto.randomUUID(), "invalid-action");
-  if (action !== "healthcheck" && !(action in BACKEND_ACTION_POLICIES)) {
+  if (action !== "healthcheck" && !Object.hasOwn(ACTIONS, action)) {
     return apiErrorResponse(request, env, crypto.randomUUID(), "invalid-action");
   }
+  const name = action === "healthcheck" ? null : action as ActionName;
 
-  const policy = BACKEND_ACTION_POLICIES[action as keyof typeof BACKEND_ACTION_POLICIES];
-  const isWriteAction = action !== "healthcheck" && policy?.group !== "read" && policy?.group !== "upload-resolve";
+  const isWriteAction = name !== null && isWriteGroup(ACTIONS[name].group);
   const { operationId, valid } = resolveOperationId(request, isWriteAction);
 
   if (!valid) {
@@ -106,9 +106,9 @@ async function handleAction(
   }
 
   let firebaseUser: FirebaseAuthContext | null = null;
-  if (action !== "healthcheck") {
+  if (name !== null) {
     firebaseUser = await requireBrowserUser(request, env, "rate-limit.operation");
-    await claimActionRateLimit(env, firebaseUser.uid, action);
+    await claimActionRateLimit(env, firebaseUser.uid, name);
   }
 
   const database = await createDatabaseClient(env);

@@ -1,4 +1,4 @@
-import { RATE_LIMITS } from "@/generated/rate-limits";
+import { IMAGE_COMPRESSION } from "@shared/rate-limits.ts";
 import type { PlatformSettings } from "@/types/categories";
 import { retentionLabelKey } from "./retention-groups";
 
@@ -15,7 +15,7 @@ export const IMAGE_PROCESSING_FIELDS: readonly ImageField[] = [
   {
     key: "maxUploadKilobytes",
     labelKey: "ui.admin.imageUploadKilobytes",
-    max: RATE_LIMITS.imageCompression.maxPlatformUploadKilobytes,
+    max: IMAGE_COMPRESSION.maxPlatformUploadKilobytes,
     min: 100,
     unitKey: "admin.unitKilobytes",
   },

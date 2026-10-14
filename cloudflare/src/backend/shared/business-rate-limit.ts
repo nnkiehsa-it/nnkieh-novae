@@ -1,9 +1,11 @@
-import type { ApiErrorCode } from "./api-errors.ts";
+import type { ApiErrorCode } from "../../../../shared/api-errors.ts";
+import { RATE_LIMITS, type RateLimitName, type RateLimitWindow } from "../../../../shared/rate-limits.ts";
 import { currentEnvironment } from "./env.ts";
+import { operationPolicy } from "./operation-policies.ts";
 import type { DurableRateLimitClaim } from "../../durable/business-rate-limiter";
-import { rateLimitsDisabled } from "../../rate-limit";
+import { RateLimitError, rateLimitsDisabled } from "../../rate-limit";
 
-interface RateLimitWindow {
+interface FixedWindow {
   expiresAt: Date;
   startsAt: Date;
 }
@@ -18,17 +20,7 @@ interface RateLimitClaim {
   config: RateLimitConfig;
   identifier: string;
   units?: number;
-  window: RateLimitWindow;
-}
-
-export class RateLimitError extends Error {
-  readonly retryAfterSeconds: number;
-
-  constructor(code: ApiErrorCode, retryAfterSeconds: number) {
-    super(code);
-    this.name = "RateLimitError";
-    this.retryAfterSeconds = retryAfterSeconds;
-  }
+  window: FixedWindow;
 }
 
 function sanitizeKeyPart(value: string) {
@@ -42,10 +34,33 @@ function rateLimitKey(actionName: string, startsAt: Date) {
 export async function claimFixedWindowRateLimit(
   identifier: string,
   actionName: string,
-  window: RateLimitWindow,
+  window: FixedWindow,
   config: RateLimitConfig,
 ) {
   await claimFixedWindowRateLimits([{ identifier, actionName, window, config }]);
+}
+
+const TAIPEI_UTC_OFFSET_MS = 8 * 60 * 60 * 1000;
+
+function taipeiDayWindow(date = new Date()): FixedWindow {
+  const shifted = new Date(date.getTime() + TAIPEI_UTC_OFFSET_MS);
+  const startMs = Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate()) - TAIPEI_UTC_OFFSET_MS;
+  return { expiresAt: new Date(startMs + 24 * 60 * 60 * 1000), startsAt: new Date(startMs) };
+}
+
+const WINDOWS: Record<RateLimitWindow, () => FixedWindow> = {
+  second: () => utcSecondWindow(),
+  minute: () => utcMinuteWindow(),
+  hour: () => utcHourWindow(),
+  "taipei-day": () => taipeiDayWindow(),
+};
+
+/** Counts against named business limits; the limit in force is the runtime policy of the same name. */
+export async function claimRateLimits(identifier: string, claims: Array<{ name: RateLimitName; units?: number }>) {
+  await claimFixedWindowRateLimits(claims.map(({ name, units }) => {
+    const { counter, errorCode, window } = RATE_LIMITS[name];
+    return { actionName: counter, config: { errorCode, limit: operationPolicy(name) }, identifier, units, window: WINDOWS[window]() };
+  }));
 }
 
 export async function claimFixedWindowRateLimits(claims: RateLimitClaim[]) {
@@ -70,7 +85,7 @@ export async function claimFixedWindowRateLimits(claims: RateLimitClaim[]) {
   }
 }
 
-export function utcFixedWindow(milliseconds: number, date = new Date()) {
+export function utcFixedWindow(milliseconds: number, date = new Date()): FixedWindow {
   const size = Math.max(1, Math.round(milliseconds));
   const startsAt = new Date(Math.floor(date.getTime() / size) * size);
   return {

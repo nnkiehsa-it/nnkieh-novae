@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { handleMedia } from "../../cloudflare/src/media";
 import { createMediaDeliveryUrl } from "../../cloudflare/src/backend/shared/media-delivery";
 import { withRuntimeEnvironment } from "../../cloudflare/src/backend/shared/env";
-import { DEFAULT_OPERATION_POLICIES } from "../../cloudflare/generated/operations";
+import { DEFAULT_OPERATION_POLICIES } from "../../shared/operation-policies.ts";
 import type { Env } from "../../cloudflare/src/types";
 
 vi.mock("../../cloudflare/src/media-policies", () => ({

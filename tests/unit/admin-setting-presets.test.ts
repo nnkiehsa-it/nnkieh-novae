@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { IMAGE_PRESETS, RETENTION_PRESETS, POLICY_GROUPS, policyPresets } from "@/lib/admin-setting-presets";
-import { DEFAULT_OPERATION_POLICIES } from "@/generated/operations";
+import { DEFAULT_OPERATION_POLICIES } from "../../shared/operation-policies.ts";
 import { validateOperationPolicies } from "../../cloudflare/src/backend/shared/operation-policies";
 import { platformSettingsFromInput } from "../../cloudflare/src/backend/shared/platform-settings";
 

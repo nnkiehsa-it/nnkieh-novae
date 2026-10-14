@@ -1,4 +1,4 @@
-import { DEFAULT_OPERATION_POLICIES, type OperationPolicies } from '@/generated/operations';
+import { DEFAULT_OPERATION_POLICIES, type OperationPolicies } from "@shared/operation-policies.ts";
 
 export interface PolicySnapshot { revision: number; values: OperationPolicies }
 

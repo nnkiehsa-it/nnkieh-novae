@@ -3,20 +3,33 @@ import type { AppDatabaseClient } from "../database/client.ts";
 import { resolveDomainEvents } from "../events/domain-events.ts";
 import { hasPermission } from "./auth.ts";
 import { claimBackendActionBusinessLimit, claimBackendActionBurstLimit } from "./rate-limit.ts";
-import type { BackendActionDefinition } from "./action-registry.ts";
+import * as v from "valibot";
+import { ACTIONS, type ActionName } from "../../../../shared/actions.ts";
+import { isWriteGroup } from "../../../../shared/contract.ts";
+import { ACTION_HANDLERS } from "./registry.ts";
 import { AccountAccessError } from "../shared/account-access.ts";
 import type { ActionSegment, AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import { toApiJson } from "./response.ts";
 
-function canManageRestrictedParticipation(definition: BackendActionDefinition, auth: AuthContext) {
-  if (definition.name === "deleteAnnouncement" || definition.name === "deleteAnnouncementComment") {
-    return hasPermission(auth, "announcement.manage");
+/** Whether the account's access rules let it take this action at all. */
+function assertAccountMayAct(name: ActionName, auth: AuthContext) {
+  const { access, moderatedBy } = ACTION_HANDLERS[name];
+  // A moderator removing content is moderating, not participating.
+  const participation = access === "participation" && !(moderatedBy && hasPermission(auth, moderatedBy));
+  if (
+    (auth.accessPreset === "read_only" && (participation || access === "reaction"))
+    || (auth.accessPreset === "reaction_only" && participation)
+  ) {
+    throw new AccountAccessError(auth.accessRestrictionMessage);
   }
-  if (definition.name === "deleteFacility") return hasPermission(auth, "facility.manage");
-  if (definition.name === "deleteIssue" || definition.name === "deleteComment") {
-    return hasPermission(auth, "proposal.manage");
-  }
-  return false;
+}
+
+/** A request the contract does not describe is refused before any work starts. */
+function parseInput<N extends ActionName>(name: N, payload: JsonRecord) {
+  const result = v.safeParse(ACTIONS[name].input, payload);
+  if (result.success) return result.output;
+  const message = result.issues[0]?.message ?? "";
+  throw new Error(/^(validation|invalid)-/u.test(message) ? message : "validation-invalid");
 }
 
 function auditTarget(payload: JsonRecord) {
@@ -45,29 +58,24 @@ function auditDetail(payload: JsonRecord) {
 }
 
 async function executeBackendAction(
-  definition: BackendActionDefinition,
+  name: ActionName,
   payload: JsonRecord,
   auth: AuthContext,
   database: BackendDatabase,
   operationId: string,
 ) {
-  const restrictedParticipation = definition.accessClass === "participation"
-    && !canManageRestrictedParticipation(definition, auth);
-  const restrictedReaction = definition.accessClass === "reaction";
-  if (
-    (auth.accessPreset === "read_only" && (restrictedParticipation || restrictedReaction))
-    || (auth.accessPreset === "reaction_only" && restrictedParticipation)
-  ) {
-    throw new AccountAccessError(auth.accessRestrictionMessage);
-  }
-  if (definition.requiredPermission && !hasPermission(auth, definition.requiredPermission)) {
+  const handler = ACTION_HANDLERS[name];
+  assertAccountMayAct(name, auth);
+  if (handler.permission && !hasPermission(auth, handler.permission)) {
     throw new Error("permission-denied");
   }
-  await claimBackendActionBurstLimit(definition.name, auth.uid);
+  const input = parseInput(name, payload);
+  const run = handler.run as (input: unknown, auth: AuthContext, database: BackendDatabase) => ReturnType<typeof handler.run>;
+  await claimBackendActionBurstLimit(name, auth.uid);
 
   // Read-only actions execute directly without transaction or operation claiming.
-  if (definition.rateLimitGroup === "read" || definition.rateLimitGroup === "upload-resolve") {
-    const result = await definition.handler(definition.name, payload, auth, database);
+  if (!isWriteGroup(ACTIONS[name].group)) {
+    const result = await run(input, auth, database);
     // An action that answers in pieces hands back the pieces themselves; they
     // are converted one at a time as they are sent.
     return isSegmentStream(result) ? result : toApiJson(result);
@@ -81,14 +89,14 @@ async function executeBackendAction(
       .call("app_api", "claim_operation", {
         operation_id: operationId,
         actor_uid: auth.uid,
-        action_name: definition.name,
+        action_name: name,
       });
     const claim = Array.isArray(claimRows) ? claimRows[0] : null;
     if (!claim) throw new Error("operation-claim-failed");
     const identity = await tx.sqlOne<Selected<'operations', 'actor_uid' | 'action' | 'response_expired'>>`
       select actor_uid, action, response_expired from app_private.operations
       where operation_id = ${operationId}`;
-    if (identity.actor_uid !== auth.uid || identity.action !== definition.name) throw new Error('permission-denied');
+    if (identity.actor_uid !== auth.uid || identity.action !== name) throw new Error('permission-denied');
     if (identity.response_expired) throw new Error('operation-expired');
     if (claim.completed) return claim.response;
     if (!claim.claimed) throw new Error("request-in-progress");
@@ -97,18 +105,18 @@ async function executeBackendAction(
     });
 
     // 2. Enforce business rate limits
-    await claimBackendActionBusinessLimit(definition.name, payload, auth.uid);
+    await claimBackendActionBusinessLimit(name, payload, auth.uid);
 
     // 3. Execute domain mutation
-    const result = await definition.handler(definition.name, payload, auth, tx);
+    const result = await run(input, auth, tx);
 
     // 4. Record admin audit log in the same transaction (fail on error, never swallow)
-    if (definition.rateLimitGroup === "admin-write") {
+    if (ACTIONS[name].group === "admin-write") {
       const targetId = auditTarget(payload);
       const detail = auditDetail(payload);
       const auditRow = await tx.sqlOne<Selected<"admin_audit_log", "id">>`
         insert into app_private.admin_audit_log (operation_id, actor_uid, action, domain, target_id, detail)
-        values (${operationId}, ${auth.uid}, ${definition.name}, ${definition.domain}, ${targetId}, ${detail})
+        values (${operationId}, ${auth.uid}, ${name}, ${handler.domain}, ${targetId}, ${detail})
         returning id`;
       const auditId = String(auditRow.id);
 
@@ -121,9 +129,9 @@ async function executeBackendAction(
           actor_uid: auth.uid,
           payload: {
             audit_id: auditId,
-            action: definition.name,
+            action: name,
             actor_uid: auth.uid,
-            domain: definition.domain,
+            domain: handler.domain,
             target_id: targetId,
             detail,
           },
@@ -132,7 +140,7 @@ async function executeBackendAction(
     }
 
     // 5. Record domain events and queue deliveries
-    const domainEvents = resolveDomainEvents(definition.name, payload, result, auth.uid);
+    const domainEvents = resolveDomainEvents(name, payload, result, auth.uid);
     for (const event of domainEvents) {
       await tx
         .call("app_api", "record_domain_event", {
@@ -169,20 +177,53 @@ function isSegmentStream(value: unknown): value is AsyncIterable<ActionSegment> 
  * and a single piece for everything else.
  */
 export async function* executeBackendActionSegments(
-  definition: BackendActionDefinition,
+  name: ActionName,
   payload: JsonRecord,
   auth: AuthContext,
   database: BackendDatabase,
   operationId: string,
 ): AsyncGenerator<ActionSegment> {
-  const result = await executeBackendAction(definition, payload, auth, database, operationId);
+  const result = await executeBackendAction(name, payload, auth, database, operationId);
   if (!isSegmentStream(result)) {
-    yield { data: result };
+    yield { data: conform(name, undefined, ACTIONS[name].output, result) };
     return;
   }
   for await (const segment of result) {
-    yield { data: toApiJson(segment.data), key: segment.key };
+    yield shapePart(name, { data: toApiJson(segment.data), key: segment.key });
   }
+}
+
+/**
+ * Every answer leaves through its contract: what the contract does not name is
+ * dropped, so a column added to a table never reaches a browser by accident,
+ * and an answer that does not fit is a failed request rather than a screen
+ * reading a shape it was never promised.
+ */
+function shapePart(name: ActionName, segment: ActionSegment): ActionSegment {
+  const output = ACTIONS[name].output as v.GenericSchema;
+  if (output.type === "unknown") return segment;
+  const entries = "entries" in output ? output.entries as Record<string, v.GenericSchema> : null;
+  if (segment.key !== undefined) {
+    const schema = entries?.[segment.key];
+    if (!schema) throw new Error(`contract-violation: ${name} answered an undeclared part ${segment.key}`);
+    return { data: conform(name, segment.key, schema, segment.data), key: segment.key };
+  }
+  if (!entries) return { data: conform(name, undefined, output, segment.data) };
+  // The opening piece of an answer sent in pieces; the keyed parts complete it.
+  const data = segment.data && typeof segment.data === "object" ? segment.data as JsonRecord : {};
+  return {
+    data: Object.fromEntries(Object.entries(data)
+      .filter(([key]) => Object.hasOwn(entries, key))
+      .map(([key, value]) => [key, conform(name, key, entries[key], value)])),
+  };
+}
+
+function conform(name: ActionName, key: string | undefined, schema: v.GenericSchema, value: unknown) {
+  const result = v.safeParse(schema, value);
+  if (result.success) return result.output;
+  const issue = result.issues[0];
+  const path = [key, ...(issue.path ?? []).map((item) => String(item.key))].filter(Boolean).join(".");
+  throw new Error(`contract-violation: ${name} ${path}: ${issue.message}`);
 }
 
 /** The finished answer the pieces add up to. */

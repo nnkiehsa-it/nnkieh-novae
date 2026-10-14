@@ -1,55 +1,31 @@
-import { BACKEND_ACTION_POLICIES } from "../shared/backend-action-policies.ts";
-import { RATE_LIMITS } from "../shared/rate-limits.ts";
-import { claimFixedWindowRateLimits, utcFixedWindow, utcHourWindow, utcMinuteWindow, utcSecondWindow } from "../shared/business-rate-limit.ts";
-import { taipeiDayWindow } from "./utils.ts";
+import { ACTIONS, type ActionName } from "../../../../shared/actions.ts";
+import { claimFixedWindowRateLimits, claimRateLimits, utcFixedWindow } from "../shared/business-rate-limit.ts";
+import type { RateLimitName } from "../../../../shared/rate-limits.ts";
 import type { JsonRecord } from "./types.ts";
 import { operationPolicy } from "../shared/operation-policies.ts";
 
-const extraLimits = {
-  announcementCreateDaily: { actionName: "announcement.create", window: taipeiDayWindow, config: RATE_LIMITS.announcementCreateDaily },
-  avatarCacheDaily: { actionName: "avatar.cache", window: taipeiDayWindow, config: RATE_LIMITS.avatarCacheDaily },
-  commentCreateHourly: { actionName: "comment.create", window: utcHourWindow, config: RATE_LIMITS.commentCreateHourly },
-  destructiveWriteHourly: { actionName: "content.delete", window: utcHourWindow, config: RATE_LIMITS.destructiveWriteHourly },
-  facilityAffectedToggleHourly: { actionName: "facility.affected", window: utcHourWindow, config: RATE_LIMITS.facilityAffectedToggleHourly },
-  facilityCreateDaily: { actionName: "facility.create", window: taipeiDayWindow, config: RATE_LIMITS.facilityCreateDaily },
-  imageUploadDaily: { actionName: "image-upload.create", window: taipeiDayWindow, config: RATE_LIMITS.imageUploadDaily },
-  issueCreateDaily: { actionName: "issue.create", window: taipeiDayWindow, config: RATE_LIMITS.issueCreateDaily },
-  moderationWriteHourly: { actionName: "content.moderate", window: utcHourWindow, config: RATE_LIMITS.moderationWriteHourly },
-  preferenceWriteHourly: { actionName: "preference.write", window: utcHourWindow, config: RATE_LIMITS.preferenceWriteHourly },
-  pushTokenWriteHourly: { actionName: "push-token.write", window: utcHourWindow, config: RATE_LIMITS.pushTokenWriteHourly },
-  roleWriteHourly: { actionName: "role.write", window: utcHourWindow, config: RATE_LIMITS.roleWriteHourly },
-  supportToggleHourly: { actionName: "support.toggle", window: utcHourWindow, config: RATE_LIMITS.supportToggleHourly },
-  announcementLikeHourly: { actionName: "announcement.like", window: utcHourWindow, config: RATE_LIMITS.announcementLikeHourly },
-  facilityStatusUpdateHourly: { actionName: "facility.status", window: utcHourWindow, config: RATE_LIMITS.facilityStatusUpdateHourly },
+const BURST_POLICIES = {
+  read: "readBurst",
+  "general-write": "writeBurst",
+  "sensitive-write": "sensitiveBurst",
+  "admin-write": "adminBurst",
+  "upload-write": "uploadBurst",
+  "upload-resolve": "resolveBurst",
 } as const;
 
-export async function claimBackendActionBurstLimit(action: string, uid: string) {
-  const policy = BACKEND_ACTION_POLICIES[action as keyof typeof BACKEND_ACTION_POLICIES];
-  const keys = { read: 'readBurst', 'general-write': 'writeBurst', 'sensitive-write': 'sensitiveBurst',
-    'admin-write': 'adminBurst', 'upload-write': 'uploadBurst', 'upload-resolve': 'resolveBurst' } as const;
-  await claimFixedWindowRateLimits([{ identifier: uid, actionName: `burst.${policy.group}`,
-    window: utcFixedWindow(10_000), config: { limit: operationPolicy(keys[policy.group]), errorCode: 'rate-limit.operation' } }]);
+export async function claimBackendActionBurstLimit(action: ActionName, uid: string) {
+  const { group } = ACTIONS[action];
+  await claimFixedWindowRateLimits([{ identifier: uid, actionName: `burst.${group}`,
+    window: utcFixedWindow(10_000), config: { limit: operationPolicy(BURST_POLICIES[group]), errorCode: "rate-limit.operation" } }]);
 }
 
-export async function claimBackendActionBusinessLimit(action: string, payload: JsonRecord, uid: string) {
-  const policy = BACKEND_ACTION_POLICIES[action as keyof typeof BACKEND_ACTION_POLICIES];
-  if (!policy || !("extraLimit" in policy)) return;
-  const extra = extraLimits[policy.extraLimit];
-  const units = "unitsPath" in policy && policy.unitsPath === "payload.images" && Array.isArray(payload.images)
-    ? Math.max(1, payload.images.length)
-    : 1;
-  await claimFixedWindowRateLimits([{
-    actionName: extra.actionName,
-    config: { ...extra.config, limit: operationPolicy(policy.extraLimit) },
-    identifier: uid,
-    units,
-    window: extra.window(),
-  }]);
+export async function claimBackendActionBusinessLimit(action: ActionName, payload: JsonRecord, uid: string) {
+  const policy: { extraLimit?: RateLimitName; countsImages?: true } = ACTIONS[action];
+  if (!policy.extraLimit) return;
+  const units = policy.countsImages && Array.isArray(payload.images) ? Math.max(1, payload.images.length) : 1;
+  await claimRateLimits(uid, [{ name: policy.extraLimit, units }]);
 }
 
 export async function claimBackendHealthcheckRateLimit() {
-  await claimFixedWindowRateLimits([
-    { identifier: "global", actionName: "backend.healthcheck.second", window: utcSecondWindow(), config: { ...RATE_LIMITS.backendHealthcheckSecond, limit: operationPolicy('backendHealthcheckSecond') } },
-    { identifier: "global", actionName: "backend.healthcheck", window: utcMinuteWindow(), config: { ...RATE_LIMITS.backendHealthcheckMinute, limit: operationPolicy('backendHealthcheckMinute') } },
-  ]);
+  await claimRateLimits("global", [{ name: "backendHealthcheckSecond" }, { name: "backendHealthcheckMinute" }]);
 }

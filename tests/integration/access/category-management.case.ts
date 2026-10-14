@@ -379,7 +379,7 @@ integrationTest("management snapshots reject stale estimates and writes without 
   const savedPlatform = asRecord(await callAction("savePlatformSettings", platformDraft, admin.auth));
   assert.notEqual(savedPlatform.revision, initial.platformRevision);
   assert.equal(savedPlatform.jobId, null, "image processing changes do not queue cleanup");
-  for (const action of ["estimateRetentionCleanup", "savePlatformSettings"]) {
+  for (const action of ["estimateRetentionCleanup", "savePlatformSettings"] as const) {
     await expectActionError("configuration-changed", () => callAction(action, platformDraft, admin.auth));
   }
   const current = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
@@ -411,7 +411,7 @@ integrationTest("management snapshots reject stale estimates and writes without 
   };
   const savedCategory = asRecord(await callAction("saveCategoryManagement", categoryDraft, admin.auth));
   assert.notEqual(savedCategory.categoryRevision, initial.categoryRevision);
-  for (const action of ["estimateCategoryPolicyChanges", "saveCategoryManagement"]) {
+  for (const action of ["estimateCategoryPolicyChanges", "saveCategoryManagement"] as const) {
     await expectActionError("configuration-changed", () => callAction(action, categoryDraft, admin.auth));
   }
   const afterRejected = asRecord(await callAction("getCategoryManagement", {}, admin.auth));

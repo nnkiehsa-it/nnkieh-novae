@@ -30,13 +30,18 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@shared/*": [
+        "./shared/*"
       ]
-    }
+    },
+    "allowImportingTsExtensions": true
   },
   "include": [
     "next-env.d.ts",
     ".next/types/**/*.ts",
     "src/**/*.ts",
+    "shared/**/*.ts",
     "src/**/*.tsx",
     ".next/dev/types/**/*.ts",
     ".next-verify/types/**/*.ts",

@@ -4,7 +4,7 @@ import {
   canLoadAnotherFeedPage,
   limitRetainedFeedItems,
 } from "../../src/lib/feed-page-limit";
-import { DEFAULT_OPERATION_POLICIES } from '../../src/generated/operations';
+import { DEFAULT_OPERATION_POLICIES } from "../../shared/operation-policies.ts";
 const MAX_RETAINED_FEED_PAGES = DEFAULT_OPERATION_POLICIES.feedPages;
 
 describe("feed page retention", () => {

@@ -1,5 +1,5 @@
-import { BACKEND_ACTION_POLICIES } from '../generated/backend-actions';
-import type { ApiErrorCode } from '../generated/api-errors';
+import { ACTIONS, type ActionName } from "../../shared/actions.ts";
+import type { ApiErrorCode } from "../../shared/api-errors.ts";
 import type { Env, RateLimitBinding } from './types';
 
 export class RateLimitError extends Error {
@@ -59,9 +59,8 @@ export async function claimLoginIngress(env: Env, ip: string) {
   );
 }
 
-export async function claimActionRateLimit(env: Env, uid: string, action: string) {
-  const policy = BACKEND_ACTION_POLICIES[action as keyof typeof BACKEND_ACTION_POLICIES];
-  if (!policy) throw new Error('invalid-action');
+export async function claimActionRateLimit(env: Env, uid: string, action: ActionName) {
+  const policy = ACTIONS[action];
   const group = actionGroups[policy.group];
   await claim(
     env,

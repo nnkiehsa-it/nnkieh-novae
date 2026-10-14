@@ -90,13 +90,13 @@ export function useFacilityDetail() {
     if (!currentFacility) return;
     return reaction.run({
       id: currentFacility.id,
-      previous: { active: currentFacility.currentUserAffected, count: currentFacility.affected_count },
+      previous: { active: currentFacility.currentUserAffected, count: currentFacility.affectedCount },
       apply: ({ active, count }, pending) => patchContentEntity<FacilityRecord>(session.user?.uid, "facility", currentFacility.id, {
-        affected_count: count, currentUserAffected: active,
+        affectedCount: count, currentUserAffected: active,
       }, { pending }),
       request: async () => {
         const result = await toggleFacilityAffected(currentFacility.id);
-        return { active: result.affected, count: result.affected_count };
+        return { active: result.affected, count: result.affectedCount };
       },
       errorMessage: t("ui.facility.affectedFailed"),
     });
@@ -116,7 +116,7 @@ export function useFacilityDetail() {
         );
       });
       toast.success(t("facility.facilityReportDeleted"));
-      navigate(feedHref("facilities", currentFacility.category_id), { replace: true });
+      navigate(feedHref("facilities", currentFacility.categoryId), { replace: true });
     } catch (caught) {
       patchContentEntity<FacilityRecord>(
         session.user?.uid,

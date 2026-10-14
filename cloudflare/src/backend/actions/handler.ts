@@ -3,7 +3,9 @@ import { errorStatus, publicErrorBody } from "../shared/errors.ts";
 import { asRecord, asString } from "../shared/json.ts";
 import { handleHealthcheck } from "./auth.ts";
 import { resolveAuthContext } from "./auth.ts";
-import { getBackendActionDefinition } from "./action-registry.ts";
+import { ACTIONS, type ActionName } from "../../../../shared/actions.ts";
+import { isWriteGroup } from "../../../../shared/contract.ts";
+import { ACTION_HANDLERS } from "./registry.ts";
 import { claimBackendHealthcheckRateLimit } from "./rate-limit.ts";
 import { errorResponse, streamingResponse } from "./response.ts";
 import { createFunctionLogger } from "../shared/observability.ts";
@@ -60,13 +62,13 @@ export async function handleBackendAction(
     if (action === "healthcheck") {
       segments = healthcheckSegments(request, database);
     } else {
-      const definition = getBackendActionDefinition(action);
-      if (!definition) throw new Error("invalid-action");
+      if (!Object.hasOwn(ACTIONS, action)) throw new Error("invalid-action");
+      const name = action as ActionName;
       if (!firebaseUser) throw new Error("unauthenticated");
       const auth = await resolveAuthContext(database, firebaseUser);
-      domain = definition.domain;
-      logsCompletion = definition.rateLimitGroup !== "read" && definition.rateLimitGroup !== "upload-resolve";
-      segments = executeBackendActionSegments(definition, payload, auth, database, operationId);
+      domain = ACTION_HANDLERS[name].domain;
+      logsCompletion = isWriteGroup(ACTIONS[name].group);
+      segments = executeBackendActionSegments(name, payload, auth, database, operationId);
     }
 
     // The first piece is produced before the response exists, so an action that

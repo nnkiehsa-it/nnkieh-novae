@@ -1,4 +1,4 @@
-import { isApiErrorCode } from '@/generated/api-errors';
+import { isApiErrorCode } from "@shared/api-errors.ts";
 import { t } from '@/i18n';
 import { ApiRequestError, type ApiErrorResponse } from '@/lib/api-error';
 import { getOperationPolicy } from '@/lib/operation-policies';

@@ -28,7 +28,7 @@ export function FacilityCard({ affecting, burst, facility, onToggleAffected, pro
             active={facility.currentUserAffected === true}
             burst={burst}
             busy={affecting}
-            count={facility.affected_count}
+            count={facility.affectedCount}
             disabled={isFacilityClosed(facility.status)}
             icon={Hand}
             label={t(facility.currentUserAffected ? "ui.facility.cancelAffected" : "ui.facility.markAffected")}
@@ -46,7 +46,7 @@ export function FacilityCard({ affecting, burst, facility, onToggleAffected, pro
         <>
           <Author profile={profile} />
           <span aria-hidden>·</span>
-          <span>{formatRelativeTime(facility.created_at)}</span>
+          <span>{formatRelativeTime(facility.createdAt)}</span>
         </>
       }
       title={facility.title}

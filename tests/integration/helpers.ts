@@ -4,7 +4,7 @@ import { join } from "node:path";
 import pg from "pg";
 import { afterAll, beforeEach, test } from "vitest";
 import { AppDatabaseClient } from "../../cloudflare/src/backend/database/client.ts";
-import { getBackendActionDefinition } from "../../cloudflare/src/backend/actions/action-registry.ts";
+import { ACTIONS, type ActionName } from "../../shared/actions.ts";
 import { loadCategoryManagement } from "../../cloudflare/src/backend/actions/category-catalog.ts";
 import { loadAccountAccessRules } from "../../cloudflare/src/backend/actions/account-access-rules.ts";
 import { resolveAuthContext } from "../../cloudflare/src/backend/actions/auth.ts";
@@ -18,8 +18,8 @@ import type {
 } from "../../cloudflare/src/backend/actions/types.ts";
 import type { Env } from "../../cloudflare/src/types.ts";
 import type { DurableRateLimitClaim } from "../../cloudflare/src/durable/business-rate-limiter.ts";
-import { DATA_RETENTION } from "../../cloudflare/src/backend/shared/data-retention.ts";
-import { DEFAULT_OPERATION_POLICIES } from "../../cloudflare/generated/operations";
+import { DATA_RETENTION } from "../../shared/data-retention.ts";
+import { DEFAULT_OPERATION_POLICIES } from "../../shared/operation-policies.ts";
 
 function requiredEnv(name: string) {
   const value = process.env[name]?.trim();
@@ -261,13 +261,12 @@ export async function refreshActor(actor: { identity: TestIdentity }) {
 }
 
 export async function callAction(
-  actionName: string,
+  actionName: ActionName,
   payload: JsonRecord,
   auth: AuthContext,
   operationId?: string,
 ) {
-  const definition = getBackendActionDefinition(actionName);
-  assert.ok(definition, `Missing backend action definition: ${actionName}`);
+  assert.ok(Object.hasOwn(ACTIONS, actionName), `Missing backend action: ${actionName}`);
   // Prepare a fixture baseline without spending the actor's API read quota.
   // Explicit revisions keep stale-draft tests on the real API contract.
   if (payload.revision === undefined && ["savePlatformSettings", "estimateRetentionCleanup", "saveCategoryManagement", "estimateCategoryPolicyChanges"].includes(actionName)
@@ -287,7 +286,7 @@ export async function callAction(
   // The finished answer, the way a caller reading the response stream sees it.
   return await underPolicies(() =>
     collectActionSegments(
-      executeBackendActionSegments(definition, payload, auth, database as BackendDatabase, opId),
+      executeBackendActionSegments(actionName, payload, auth, database as BackendDatabase, opId),
     ));
 }
 

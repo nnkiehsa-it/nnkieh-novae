@@ -6,17 +6,10 @@ import process from "node:process";
 
 const root = process.cwd();
 const generatedDirectories = [
-  "cloudflare/generated",
   "src/assets/fonts/harmonyos-sans-tc",
   "src/generated",
 ];
-const generatedFiles = [
-  "cloudflare/src/backend/shared/api-errors.ts",
-  "cloudflare/src/backend/shared/backend-action-policies.ts",
-  "cloudflare/src/backend/shared/data-retention.ts",
-  "cloudflare/src/backend/shared/rate-limits.ts",
-  "src/services/backend-action-contract.ts",
-];
+const generatedFiles = [];
 
 async function listFiles(directory) {
   const entries = await readdir(path.join(root, directory), { withFileTypes: true });

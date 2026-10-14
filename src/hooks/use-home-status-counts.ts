@@ -5,7 +5,7 @@ import { useCategories } from "@/hooks/use-categories";
 import { useSession } from "@/hooks/use-session";
 import { useContentInvalidationRefresh } from "@/hooks/use-content-invalidation-refresh";
 import { fetchIssuesPageByStatus } from "@/services/issues";
-import { listFacilities } from "@/services/facilities";
+import { getFacilityStatusCounts } from "@/services/facilities";
 import { toFacilityStatusCounts, toIssueStatusCounts, type FacilityStatusCounts, type IssueStatusCounts } from "@/constants/statuses";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
 
@@ -53,8 +53,8 @@ export function useHomeStatusCounts() {
           }),
         )),
         Promise.all((facilitiesEnabled ? activeFacilityCategories : []).map((category) =>
-          listFacilities({ categoryId: category.id, bucket: "active" }, {
-            forceRefresh: forceRefresh || hasCounts.current, signal: controller.signal, pageSize: 1,
+          getFacilityStatusCounts(category.id, {
+            forceRefresh: forceRefresh || hasCounts.current, signal: controller.signal,
           }),
         )),
       ]);
@@ -63,9 +63,9 @@ export function useHomeStatusCounts() {
       const facilityCategories = facilitiesEnabled ? activeFacilityCategories : [];
       const next = {
         issues: sumCounts(toIssueStatusCounts({}), issues),
-        facilities: sumCounts(toFacilityStatusCounts({}), facilities),
+        facilities: sumCounts(toFacilityStatusCounts({}), facilities.map((statusCounts) => ({ statusCounts }))),
         issuesByCategory: Object.fromEntries(issueCategories.map((category, index) => [category.id, issues[index].statusCounts])),
-        facilitiesByCategory: Object.fromEntries(facilityCategories.map((category, index) => [category.id, facilities[index].statusCounts])),
+        facilitiesByCategory: Object.fromEntries(facilityCategories.map((category, index) => [category.id, facilities[index]])),
       };
       hasCounts.current = true;
       setCounts(next);

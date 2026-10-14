@@ -1,5 +1,6 @@
 import { expect, type Page, type Response } from '@playwright/test';
-import { BACKEND_ACTION_POLICIES, type BackendActionName } from '../../../src/services/backend-action-contract';
+import { ACTIONS, type ActionName } from "../../../shared/actions.ts";
+import { isWriteGroup } from "../../../shared/contract.ts";
 
 const operationIdPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
@@ -9,14 +10,13 @@ const operationIdPattern =
  * an operation anybody follows through the log -- so this is what the product
  * sends rather than what every request happens to carry.
  */
-function expectAnswered(response: Response, action: BackendActionName) {
+function expectAnswered(response: Response, action: ActionName) {
   expect(response.status(), `${action} response`).toBe(200);
-  const group = BACKEND_ACTION_POLICIES[action].group;
-  if (group === 'read' || group === 'upload-resolve') return;
+  if (!isWriteGroup(ACTIONS[action].group)) return;
   expect(response.request().headers()['x-novae-operation-id']).toMatch(operationIdPattern);
 }
 
-function matchesAction(response: Response, action: BackendActionName) {
+function matchesAction(response: Response, action: ActionName) {
   if (!response.url().endsWith('/v1/actions') || response.request().method() !== 'POST') {
     return false;
   }
@@ -58,7 +58,7 @@ export function actionStreamBody(answer: ActionAnswer) {
 
 export async function expectBackendAction(
   page: Page,
-  action: BackendActionName,
+  action: ActionName,
   run: () => Promise<unknown>,
 ) {
   const responsePromise = page.waitForResponse((response) => matchesAction(response, action));
@@ -69,7 +69,7 @@ export async function expectBackendAction(
 
 export async function expectBackendActions(
   page: Page,
-  actions: readonly BackendActionName[],
+  actions: readonly ActionName[],
   run: () => Promise<unknown>,
 ) {
   const responses = actions.map((action) =>

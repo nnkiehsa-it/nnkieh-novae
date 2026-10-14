@@ -35,7 +35,7 @@ integrationTest("administrative rules preserve exact deadlines and return the ef
   const kept = asRecord(asRecord(await callAction("saveAccountAccessRule", { ...input, duration: "keep", message: "New message", revision: first.revision }, admin.auth)).rule);
   assert.equal(kept.expiresAt, first.expiresAt);
   assert.notEqual(kept.revision, first.revision);
-  for (const action of ["saveAccountAccessRule", "deleteAccountAccessRule", "previewAccountAccessRule"]) {
+  for (const action of ["saveAccountAccessRule", "deleteAccountAccessRule", "previewAccountAccessRule"] as const) {
     await expectActionError("configuration-changed", () => callAction(action, { ...input, revision: first.revision }, admin.auth));
   }
   await expectActionError("validation-invalid", () => callAction("saveAccountAccessRule", { ...input, revision: kept.revision, durationHours: 1.5 }, admin.auth));

@@ -1,4 +1,4 @@
-import { RATE_LIMITS } from '../generated/rate-limits';
+import { IMAGE_COMPRESSION } from "@shared/rate-limits.ts";
 import { t } from '@/i18n';
 import type { ImageUploadSettings } from '@/types/categories';
 
@@ -88,7 +88,7 @@ export async function processImageForUpload(file: File, settings: ImageUploadSet
   const maxImageUploadBytes = settings.maxUploadKilobytes * 1024;
   const maxImageDimension = settings.maxDimension;
   const { webpQuality } = settings;
-  const { outputScales } = RATE_LIMITS.imageCompression;
+  const { outputScales } = IMAGE_COMPRESSION;
   if (file.size <= 0) {
     throw new Error(`[IMG-SOURCE-EMPTY] ${t('image.empty', { details: fileDetails(file) })}`);
   }

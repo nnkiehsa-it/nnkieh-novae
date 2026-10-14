@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
-  callStringArguments,
   listFiles,
   moduleImports,
   read,
@@ -39,18 +38,6 @@ test("Cloudflare backend cannot depend on frontend modules", async () => {
     }
   }
   assert.deepEqual(violations, []);
-});
-
-test("frontend and Worker share the generated backend action boundary", async () => {
-  const generated = await read("src/services/backend-action-contract.ts");
-  const registry = await read("cloudflare/src/backend/actions/action-registry.ts");
-  const generatedNames = [...generated.matchAll(/^\s*'([^']+)',?$/gmu)].map((match) => match[1]);
-  const registeredNames = callStringArguments(
-    registry,
-    ["action", "idempotentWrite", "naturallyIdempotentWrite"],
-    "cloudflare/src/backend/actions/action-registry.ts",
-  );
-  assert.deepEqual([...new Set(registeredNames)].sort(), generatedNames.sort());
 });
 
 test("hosting configuration keeps frontend and API ownership separate", async () => {

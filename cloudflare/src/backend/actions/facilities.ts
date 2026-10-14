@@ -1,20 +1,12 @@
+import type { ActionInput } from "../../../../shared/actions.ts";
+import { FACILITY_STATUSES } from "../../../../shared/contracts/facilities.ts";
 import { asRecord, asString } from "../shared/json.ts";
 import { canManageFacilityCategory, requireFacilityCategoryPermission } from "./auth.ts";
 import { getFacilityCategories, getFacilityCategory } from "./category-catalog.ts";
-import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
+import type { AuthContext, BackendDatabase } from "./types.ts";
 import { validateMarkdownUploadsBeforeCreate } from "./upload-markdown.ts";
-import { asNumber, asUuid, countRecord } from "./utils.ts";
 import { INPUT_LIMITS, optionalMediaContent, optionalText, requiredText } from "./validation.ts";
 import type { Selected } from "../database/schema.ts";
-
-const VALID_STATUSES = new Set(["processing", "completed", "unable-to-handle"]);
-
-function policy(auth: AuthContext, categoryId: string) {
-  return {
-    actor_uid: auth.uid,
-    actor_can_manage: canManageFacilityCategory(auth, categoryId),
-  };
-}
 
 async function selectFacilityCategory(database: BackendDatabase, facilityId: string) {
   const facility = await database.sqlMaybe<Selected<"facility_reports", "category_id">>`
@@ -23,119 +15,96 @@ async function selectFacilityCategory(database: BackendDatabase, facilityId: str
   return facility.category_id;
 }
 
-export async function handleFacilityAction(
-  action: string,
-  payload: JsonRecord,
-  auth: AuthContext,
-  database: BackendDatabase,
-): Promise<JsonRecord> {
-  if (action === "createFacility") {
-    const title = requiredText(payload.title, "title", INPUT_LIMITS.title).trim();
-    const location = requiredText(payload.location, "location", INPUT_LIMITS.facilityLocation).trim();
-    const content = optionalMediaContent(payload.content, "content", INPUT_LIMITS.content, INPUT_LIMITS.contentStorage);
-    const categoryId = asString(payload.categoryId);
-    const categories = await getFacilityCategories(database);
-    if (!categories.some((category) => category.id === categoryId)) throw new Error("invalid-facility-category");
-    await validateMarkdownUploadsBeforeCreate(database, auth.uid, content, "facility", categoryId);
-    const data = await database.call("app_api", "backend_create_facility", {
-      actor_uid: auth.uid,
-      facility_title: title,
-      facility_location: location,
-      facility_content: content,
-      facility_category: categoryId,
-    });
-    return { facility: data };
-  }
-
-  const facilityId = asUuid(payload.facilityId);
-  if (!facilityId) throw new Error("not-found");
-
-  const categoryId = await selectFacilityCategory(database, facilityId);
-
-  if (action === "getFacility") {
-    const data = await database.call("app_api", "backend_get_facility", {
-      facility_id: facilityId,
-      ...policy(auth, categoryId),
-    });
-    const facility = asRecord(data);
-    return {
-      facility: {
-        ...facility,
-        canDeleteFacility: canManageFacilityCategory(auth, categoryId)
-          || (asString(facility.author_uid) === auth.uid
-            && (await getFacilityCategory(database, categoryId)).authorDeleteEnabled),
-      },
-    };
-  }
-
-  if (action === "toggleFacilityAffected") {
-    const data = await database.call("app_api", "backend_toggle_facility_affected", {
-      facility_id: facilityId,
-      actor_uid: auth.uid,
-    });
-    return asRecord(data);
-  }
-
-  if (action === "updateFacilityStatus") {
-    requireFacilityCategoryPermission(auth, categoryId);
-    const status = asString(payload.status);
-    if (!VALID_STATUSES.has(status)) throw new Error("invalid-status");
-    const resultContent = optionalText(payload.resultContent, "facility-result", INPUT_LIMITS.facilityResult).trim() || null;
-    const data = await database.call("app_api", "backend_update_facility_status", {
-      facility_id: facilityId,
-      next_status: status,
-      result_content: resultContent,
-      ...policy(auth, categoryId),
-    });
-    return { facility: data };
-  }
-
-  if (action === "deleteFacility") {
-    const category = await getFacilityCategory(database, categoryId);
-    const data = await database.call("app_api", "backend_delete_facility", {
-      facility_id: facilityId,
-      actor_uid: auth.uid,
-      actor_can_manage: canManageFacilityCategory(auth, categoryId),
-      author_delete_enabled: category.authorDeleteEnabled,
-    });
-    return asRecord(data);
-  }
-
-  throw new Error("invalid-action");
-}
-
-export async function listFacilities(payload: JsonRecord, auth: AuthContext, database: BackendDatabase) {
-  const cursor = asRecord(payload.cursor);
-  const categoryId = asString(payload.categoryId).trim();
-  const data = await database.call("app_api", "backend_list_facilities_snapshot", {
+export async function listFacilities(input: ActionInput<"listFacilities">, auth: AuthContext, database: BackendDatabase) {
+  const { cursor } = input;
+  const result = asRecord(await database.call("app_api", "backend_list_facilities_snapshot", {
     actor_uid: auth.uid,
     actor_is_admin: auth.isAdmin,
-    bucket: asString(payload.bucket, "active") === "closed" ? "closed" : "active",
-    category_filter: categoryId,
-    status_filter: asString(payload.status),
-    search_query: optionalText(payload.query, "search", INPUT_LIMITS.search).trim(),
-    sort_name: asString(payload.sort) === "most-affected" ? "most-affected" : "latest",
-    cursor_created_at: asString(cursor.createdAt) || null,
-    cursor_number: cursor.affectedCount === undefined ? null : Math.round(asNumber(cursor.affectedCount, 0)),
-    cursor_id: asUuid(cursor.id) || null,
-    page_size: Math.round(asNumber(payload.pageSize, 20)),
+    bucket: input.bucket,
+    category_filter: input.categoryId,
+    status_filter: input.status,
+    search_query: optionalText(input.query, "search", INPUT_LIMITS.search),
+    sort_name: input.sort,
+    cursor_created_at: cursor?.createdAt ?? null,
+    cursor_number: cursor?.affectedCount ?? null,
+    cursor_id: cursor?.id ?? null,
+    page_size: input.pageSize,
     managed_category_ids: auth.managedFacilityCategoryIds,
-  });
-  const result = asRecord(data);
-  const facilities = Array.isArray(result.facilities) ? result.facilities.map((value) => {
-    const facility = asRecord(value);
-    return { ...facility, canManageFacility: canManageFacilityCategory(auth, asString(facility.category_id)) } as JsonRecord;
-  }) : [];
+  }));
+  const facilities = (result.facilities as Array<{ id: string; created_at: string; affected_count: number }>);
   const last = facilities.at(-1);
+  const counted = asRecord(result.statusCounts);
   return {
     facilities,
-    hasMore: result.hasMore === true,
-    cursor: result.hasMore === true && last ? {
-      id: asString(last.id),
-      createdAt: asString(last.created_at),
-      affectedCount: asNumber(last.affected_count, 0),
-    } : null,
-    statusCounts: countRecord(result.statusCounts),
-    version: Math.max(1, Math.round(asNumber(result.version, 1))),
+    hasMore: result.hasMore,
+    cursor: result.hasMore === true && last
+      ? { id: last.id, createdAt: last.created_at, affectedCount: last.affected_count }
+      : null,
+    statusCounts: cursor ? null : Object.fromEntries(FACILITY_STATUSES.map((status) => [status, counted[status] ?? 0])),
+    version: result.version,
   };
+}
+
+export async function getFacility(input: ActionInput<"getFacility">, auth: AuthContext, database: BackendDatabase) {
+  const categoryId = await selectFacilityCategory(database, input.facilityId);
+  const canManage = canManageFacilityCategory(auth, categoryId);
+  const facility = asRecord(await database.call("app_api", "backend_get_facility", {
+    facility_id: input.facilityId,
+    actor_uid: auth.uid,
+    actor_can_manage: canManage,
+  }));
+  const canDeleteFacility = canManage
+    || (asString(facility.author_uid) === auth.uid && (await getFacilityCategory(database, categoryId)).authorDeleteEnabled);
+  return { facility: { ...facility, canDeleteFacility } };
+}
+
+export async function createFacility(input: ActionInput<"createFacility">, auth: AuthContext, database: BackendDatabase) {
+  requiredText(input.title, "title", INPUT_LIMITS.title);
+  requiredText(input.location, "location", INPUT_LIMITS.facilityLocation);
+  const content = optionalMediaContent(input.content, "content", INPUT_LIMITS.content, INPUT_LIMITS.contentStorage);
+  const category = (await getFacilityCategories(database)).find((entry) => entry.id === input.categoryId);
+  if (!category) throw new Error("invalid-facility-category");
+  await validateMarkdownUploadsBeforeCreate(database, auth.uid, content, "facility", input.categoryId);
+  const facility = await database.call("app_api", "backend_create_facility", {
+    actor_uid: auth.uid,
+    facility_title: input.title,
+    facility_location: input.location,
+    facility_content: content,
+    facility_category: input.categoryId,
+  });
+  const canDeleteFacility = canManageFacilityCategory(auth, input.categoryId) || category.authorDeleteEnabled;
+  return { facility: { ...asRecord(facility), canDeleteFacility } };
+}
+
+export async function toggleFacilityAffected(input: ActionInput<"toggleFacilityAffected">, auth: AuthContext, database: BackendDatabase) {
+  return await database.call("app_api", "backend_toggle_facility_affected", {
+    facility_id: input.facilityId,
+    actor_uid: auth.uid,
+  });
+}
+
+export async function updateFacilityStatus(input: ActionInput<"updateFacilityStatus">, auth: AuthContext, database: BackendDatabase) {
+  const categoryId = await selectFacilityCategory(database, input.facilityId);
+  requireFacilityCategoryPermission(auth, categoryId);
+  const resultContent = optionalText(input.resultContent, "facility-result", INPUT_LIMITS.facilityResult) || null;
+  const facility = await database.call("app_api", "backend_update_facility_status", {
+    facility_id: input.facilityId,
+    next_status: input.status,
+    result_content: resultContent,
+    actor_uid: auth.uid,
+    actor_can_manage: canManageFacilityCategory(auth, categoryId),
+  });
+  // Only a manager reaches this point, and a manager may always delete.
+  return { facility: { ...asRecord(facility), canDeleteFacility: true } };
+}
+
+export async function deleteFacility(input: ActionInput<"deleteFacility">, auth: AuthContext, database: BackendDatabase) {
+  const categoryId = await selectFacilityCategory(database, input.facilityId);
+  const category = await getFacilityCategory(database, categoryId);
+  return await database.call("app_api", "backend_delete_facility", {
+    facility_id: input.facilityId,
+    actor_uid: auth.uid,
+    actor_can_manage: canManageFacilityCategory(auth, categoryId),
+    author_delete_enabled: category.authorDeleteEnabled,
+  });
 }

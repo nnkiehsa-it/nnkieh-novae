@@ -11,7 +11,7 @@ import {
   saveOperationPolicies,
   type OperationsConsole,
 } from "@/services/operations-console";
-import type { OperationPolicies } from "@/generated/operations";
+import type { OperationPolicies } from "@shared/operation-policies.ts";
 import { validOperationSettings } from "@/lib/admin-setting-presets";
 
 export type { OperationsConsole } from "@/services/operations-console";

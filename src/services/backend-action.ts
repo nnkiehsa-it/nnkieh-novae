@@ -1,6 +1,7 @@
 import { safeFetch, withRequestTimeout, waitForWriteCooldown } from '@/lib/request';
 import { getFirebaseIdToken } from '@/lib/auth-token';
-import { BACKEND_ACTION_POLICIES, type BackendActionName } from '@/services/backend-action-contract';
+import { ACTIONS, type ActionName, type ActionOutput, type ActionRequest } from "@shared/actions.ts";
+import { isWriteGroup } from "@shared/contract.ts";
 import { auth } from '@/lib/firebase';
 import { apiGatewayUrl } from '@/lib/api-gateway';
 import { ApiRequestError, type ApiErrorResponse } from '@/lib/api-error';
@@ -74,7 +75,7 @@ async function readAnswer(
 }
 
 export function invokeBackendAction<TRequest = Record<string, unknown>, TResponse = unknown>(
-  name: BackendActionName,
+  name: ActionName,
   options: {
     onSegment?: (key: string | undefined, data: unknown) => void;
     operationId?: string;
@@ -83,8 +84,7 @@ export function invokeBackendAction<TRequest = Record<string, unknown>, TRespons
   } = {},
 ) {
   return async (initialPayload: TRequest): Promise<TResponse> => {
-    const policy = BACKEND_ACTION_POLICIES[name];
-    const isWrite = policy.group !== 'read' && policy.group !== 'upload-resolve';
+    const isWrite = isWriteGroup(ACTIONS[name].group);
     const timeoutMs = (typeof options.timeoutMs === 'function' ? options.timeoutMs() : options.timeoutMs)
       ?? getOperationPolicy(isWrite ? 'requestTimeoutMs' : 'readTimeoutMs');
     const operationId = options.operationId || crypto.randomUUID();
@@ -145,4 +145,11 @@ export function invokeBackendAction<TRequest = Record<string, unknown>, TRespons
     }
     return answer.result as TResponse;
   };
+}
+
+type ActionOptions = Parameters<typeof invokeBackendAction>[1];
+
+/** Calls an action with the request and answer its contract describes. */
+export function callAction<N extends ActionName>(name: N, payload: ActionRequest<N>, options?: ActionOptions) {
+  return invokeBackendAction<ActionRequest<N>, ActionOutput<N>>(name, options)(payload);
 }

@@ -1,5 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
+import { API_ERRORS } from "../shared/api-errors.ts";
 
 const root = process.cwd();
 const sourceRoot = path.join(root, "src");
@@ -87,17 +88,12 @@ function stripNonRuntimeText(source) {
     .replace(/(^|[^:])\/\/.*$/gmu, "$1");
 }
 
-const [zh, en, sourceFiles, rateLimitConfigSource, apiErrorConfigSource] =
-  await Promise.all([
-    readCatalogDirectory(catalogPaths.zhTW),
-    readCatalogDirectory(catalogPaths.en),
-    listSourceFiles(sourceRoot),
-    readFile(path.join(root, "config/rate-limits.config.json"), "utf8"),
-    readFile(path.join(root, "config/api-errors.config.json"), "utf8"),
-  ]);
+const [zh, en, sourceFiles] = await Promise.all([
+  readCatalogDirectory(catalogPaths.zhTW),
+  readCatalogDirectory(catalogPaths.en),
+  listSourceFiles(sourceRoot),
+]);
 const errors = [];
-const rateLimitConfig = JSON.parse(rateLimitConfigSource);
-const apiErrorConfig = JSON.parse(apiErrorConfigSource);
 const allowedStaticTemplateText = new Set([
   "English",
   "Novae",
@@ -161,29 +157,9 @@ for (const [key, value] of en.messages) {
     errors.push(`English message must start with a capital letter: ${key}`);
   }
 }
-for (const [code, definition] of Object.entries(apiErrorConfig)) {
-  if (
-    !definition ||
-    typeof definition !== "object" ||
-    typeof definition.messageKey !== "string"
-  ) {
-    errors.push(`API error ${code} has no locale messageKey`);
-  } else if (!zh.messages.has(definition.messageKey)) {
-    errors.push(
-      `API error ${code} references a missing locale key: ${definition.messageKey}`,
-    );
-  }
-}
-for (const [name, value] of Object.entries(rateLimitConfig)) {
-  if (!value || typeof value !== "object" || !Object.hasOwn(value, "limit"))
-    continue;
-  if (
-    typeof value.errorCode !== "string" ||
-    !Object.hasOwn(apiErrorConfig, value.errorCode)
-  ) {
-    errors.push(
-      `Rate limit ${name} references an unknown API error code: ${String(value.errorCode ?? "")}`,
-    );
+for (const [code, { messageKey }] of Object.entries(API_ERRORS)) {
+  if (!zh.messages.has(messageKey)) {
+    errors.push(`API error ${code} references a missing locale key: ${messageKey}`);
   }
 }
 for (const [key, zhValue] of zh.messages) {

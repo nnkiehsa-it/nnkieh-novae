@@ -10,12 +10,7 @@ const ownerFile = path.join(lockDirectory, "owner.json");
 const lockTimeoutMs = 15 * 60 * 1_000;
 const ownerWriteGraceMs = 5_000;
 const generationScripts = [
-  "generate-api-errors.mjs",
   "generate-motion.mjs",
-  "generate-rate-limits.mjs",
-  "generate-operations.mjs",
-  "generate-data-retention.mjs",
-  "generate-backend-actions.mjs",
   "generate-harmonyos-subset.mjs",
 ];
 

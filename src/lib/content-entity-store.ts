@@ -147,7 +147,7 @@ export function patchContentEntity<T extends ContentEntity>(
   if (!currentDetail && !currentSummary) return null;
   const nextRev = ++localRevision;
   const completeness = options.completeness
-    ?? (("content" in patch || "result_content" in patch) ? "detail" : "both");
+    ?? (("content" in patch || "resultContent" in patch || "result_content" in patch) ? "detail" : "both");
   const serverRevision = options.serverRevision ?? 0;
 
   if (currentDetail && completeness !== "summary" && (serverRevision <= 0 || currentDetail.serverRevision <= serverRevision)) {

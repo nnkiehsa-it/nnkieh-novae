@@ -1,5 +1,6 @@
 export const PERSISTENT_CACHE_NAMESPACE = 'novae-content-cache-v5';
-const DATABASE_VERSION = 5;
+// Raised whenever a stored answer's shape changes; an upgrade clears every entry.
+const DATABASE_VERSION = 6;
 const RETIRED_DATABASE_NAMES = ['novae-content-cache-v4'] as const;
 const ENTRY_STORE_NAME = 'entries';
 const METADATA_STORE_NAME = 'metadata';

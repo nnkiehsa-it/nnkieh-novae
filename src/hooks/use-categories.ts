@@ -9,7 +9,7 @@ import type {
   PlatformFeatures,
   ImageUploadSettings,
 } from "@/types/categories";
-import { RATE_LIMITS } from "@/generated/rate-limits";
+import { IMAGE_COMPRESSION, IMAGE_UPLOAD_LIMITS } from "@shared/rate-limits.ts";
 
 interface CategoryState {
   error: string;
@@ -22,17 +22,17 @@ interface CategoryState {
 }
 
 const defaultFeatures: PlatformFeatures = {
-  announcementMaxImages: RATE_LIMITS.imageUploads.announcementMaxImages,
-  announcementCommentMaxImages: RATE_LIMITS.imageUploads.commentMaxImages,
+  announcementMaxImages: IMAGE_UPLOAD_LIMITS.announcementMaxImages,
+  announcementCommentMaxImages: IMAGE_UPLOAD_LIMITS.commentMaxImages,
   announcementCommentsEnabled: true,
   facilitiesEnabled: true,
   issuesEnabled: true,
 };
 
 const defaultImageUploads: ImageUploadSettings = {
-  maxDimension: RATE_LIMITS.imageCompression.maxDimension,
-  maxUploadKilobytes: RATE_LIMITS.imageCompression.maxUploadKilobytes,
-  webpQuality: RATE_LIMITS.imageCompression.webpQuality,
+  maxDimension: IMAGE_COMPRESSION.maxDimension,
+  maxUploadKilobytes: IMAGE_COMPRESSION.maxUploadKilobytes,
+  webpQuality: IMAGE_COMPRESSION.webpQuality,
 };
 
 const listeners = new Set<() => void>();

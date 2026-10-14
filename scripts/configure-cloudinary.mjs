@@ -1,6 +1,5 @@
-import { readFile } from "node:fs/promises";
 import process from "node:process";
-import { fileURLToPath } from "node:url";
+import { IMAGE_COMPRESSION } from "../shared/rate-limits.ts";
 
 const uploadPreset = "srp-secure-images";
 const apiBaseUrl = (process.env.CLOUDINARY_API_BASE_URL?.trim() || "https://api.cloudinary.com")
@@ -13,14 +12,7 @@ if (!cloudName) throw new Error("CLOUDINARY_CLOUD_NAME is required.");
 if (!apiKey) throw new Error("CLOUDINARY_API_KEY is required.");
 if (!apiSecret) throw new Error("CLOUDINARY_API_SECRET is required.");
 
-const limitsPath = fileURLToPath(
-  new URL("../config/rate-limits.config.json", import.meta.url),
-);
-const limits = JSON.parse(await readFile(limitsPath, "utf8"));
-const maxPlatformUploadKilobytes = Number(limits.imageCompression?.maxPlatformUploadKilobytes);
-if (!Number.isSafeInteger(maxPlatformUploadKilobytes) || maxPlatformUploadKilobytes <= 0) {
-  throw new Error("imageCompression.maxPlatformUploadKilobytes must be a positive integer.");
-}
+const { maxPlatformUploadKilobytes } = IMAGE_COMPRESSION;
 
 const preset = new URLSearchParams({
   allowed_formats: "webp",

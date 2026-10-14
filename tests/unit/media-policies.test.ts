@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { OPERATION_POLICIES } from '../../cloudflare/generated/operations';
+import { OPERATION_POLICIES } from "../../shared/operation-policies.ts";
 import { mediaPolicies } from '../../cloudflare/src/media-policies';
 import { forgetOperationPolicies } from '../../cloudflare/src/backend/shared/operation-policies';
 import type { Env } from '../../cloudflare/src/types';

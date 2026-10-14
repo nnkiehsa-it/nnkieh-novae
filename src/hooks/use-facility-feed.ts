@@ -105,13 +105,13 @@ export function useFacilityFeed() {
     if (!facility) return;
     return reaction.run({
       id: facilityId,
-      previous: { active: facility.currentUserAffected, count: facility.affected_count },
+      previous: { active: facility.currentUserAffected, count: facility.affectedCount },
       apply: ({ active, count }, pending) => patchContentEntity<FacilitySummary>(session.user?.uid, "facility", facilityId, {
-        affected_count: count, currentUserAffected: active,
+        affectedCount: count, currentUserAffected: active,
       }, { pending }),
       request: async () => {
         const result = await toggleFacilityAffected(facilityId);
-        return { active: result.affected, count: result.affected_count };
+        return { active: result.affected, count: result.affectedCount };
       },
       errorMessage: t("ui.facility.affectedFailed"),
     });
@@ -159,7 +159,7 @@ export function useFacilityFeed() {
               : facilities,
             pageCount,
             // The counts describe the whole category; a later page never carries them.
-            statusCounts: cursor ? current.statusCounts : result.statusCounts,
+            statusCounts: result.statusCounts ?? current.statusCounts,
           };
         });
       } catch (caught) {

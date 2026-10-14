@@ -16,7 +16,7 @@ import { facilityComposeHref } from "./facility-href";
 export function FacilityFeed({ categoryControl, notice, viewSwitch }: { categoryControl: React.ReactNode; notice?: React.ReactNode; viewSwitch: React.ReactNode }) {
   const { t } = useI18n();
   const state = useFacilityFeed();
-  const profiles = usePublicProfiles(state.feed.facilities.map((facility) => facility.author_uid));
+  const profiles = usePublicProfiles(state.feed.facilities.map((facility) => facility.authorUid));
   const composeHref = facilityComposeHref(state.category);
 
   return (
@@ -76,7 +76,7 @@ export function FacilityFeed({ categoryControl, notice, viewSwitch }: { category
             burst={state.affectBurstById[facility.id] ?? 0}
             facility={facility}
             onToggleAffected={() => void state.toggleAffected(facility.id)}
-            profile={profiles[facility.author_uid]}
+            profile={profiles[facility.authorUid]}
           />
         )}
       />

@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { OPERATION_POLICIES, type OperationPolicies } from '../../../generated/operations';
+import { OPERATION_POLICIES, type OperationPolicies } from "../../../../shared/operation-policies.ts";
 import type { DatabaseSession } from '../database/client';
 import type { Selected } from '../database/schema';
 

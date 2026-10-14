@@ -1,4 +1,4 @@
-import { DATA_RETENTION } from "@/generated/data-retention";
+import { DATA_RETENTION } from "@shared/data-retention.ts";
 
 let pushTokenConfirmationDays: number = DATA_RETENTION.pushTokenConfirmationDays;
 

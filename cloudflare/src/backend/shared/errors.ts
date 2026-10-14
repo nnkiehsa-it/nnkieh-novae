@@ -1,4 +1,4 @@
-import { API_ERRORS, isApiErrorCode, type ApiErrorCode } from "./api-errors.ts";
+import { API_ERRORS, isApiErrorCode, type ApiErrorCode } from "../../../../shared/api-errors.ts";
 import { asString } from "./json.ts";
 
 export function errorMessage(error: unknown) {

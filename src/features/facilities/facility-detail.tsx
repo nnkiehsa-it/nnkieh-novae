@@ -50,13 +50,13 @@ export function FacilityDetail() {
         chips={
           <>
             <StatusChip domain="facility" status={facility.status} />
-            <Chip>{findFacilityCategory(facility.category_id)?.label || t("ui.nav.facilities")}</Chip>
+            <Chip>{findFacilityCategory(facility.categoryId)?.label || t("ui.nav.facilities")}</Chip>
           </>
         }
         meta={
           <>
             <span className="inline-flex items-center gap-1.5"><MapPin aria-hidden className="size-4" />{facility.location}</span>
-            <span>{formatDate(facility.created_at)}</span>
+            <span>{formatDate(facility.createdAt)}</span>
           </>
         }
         title={facility.title}
@@ -64,7 +64,7 @@ export function FacilityDetail() {
       {facility.content?.trim() ? <Markdown content={facility.content} fallbackAlt={facility.title} /> : null}
       {closed ? (
         <ResolutionNotice
-          content={facility.result_content?.trim() || t(FACILITY_STATUS_LABELS[facility.status])}
+          content={facility.resultContent?.trim() || t(FACILITY_STATUS_LABELS[facility.status])}
           fallbackAlt={t("ui.issue.resultAlt", { title: facility.title })}
           title={t("ui.common.result")}
           tone={facility.status === "unable-to-handle" ? "error" : "success"}
@@ -73,7 +73,7 @@ export function FacilityDetail() {
       <Panel className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-ink-muted">{t("ui.facility.affectedCount")}</p>
-          <p className="text-2xl font-semibold tabular-nums"><AnimatedNumber value={facility.affected_count} /></p>
+          <p className="text-2xl font-semibold tabular-nums"><AnimatedNumber value={facility.affectedCount} /></p>
         </div>
         <ReactionButton
           active={facility.currentUserAffected === true}

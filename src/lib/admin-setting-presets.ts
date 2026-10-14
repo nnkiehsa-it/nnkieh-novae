@@ -1,6 +1,6 @@
-import { DATA_RETENTION } from "@/generated/data-retention";
-import { DEFAULT_OPERATION_POLICIES, OPERATION_POLICIES, type OperationPolicies, type OperationPolicyKey } from "@/generated/operations";
-import { RATE_LIMITS } from "@/generated/rate-limits";
+import { DATA_RETENTION } from "@shared/data-retention.ts";
+import { DEFAULT_OPERATION_POLICIES, OPERATION_POLICIES, type OperationPolicies, type OperationPolicyKey } from "@shared/operation-policies.ts";
+import { IMAGE_COMPRESSION, IMAGE_UPLOAD_LIMITS } from "@shared/rate-limits.ts";
 import type { DataRetentionSettings, FacilityCategoryConfig, ImageUploadSettings, IssueCategoryConfig, PlatformSettings } from "@/types/categories";
 
 export interface SettingPreset<T> {
@@ -11,9 +11,9 @@ export interface SettingPreset<T> {
 }
 
 export const DEFAULT_IMAGE_SETTINGS: ImageUploadSettings = {
-  maxDimension: RATE_LIMITS.imageCompression.maxDimension,
-  maxUploadKilobytes: RATE_LIMITS.imageCompression.maxUploadKilobytes,
-  webpQuality: RATE_LIMITS.imageCompression.webpQuality,
+  maxDimension: IMAGE_COMPRESSION.maxDimension,
+  maxUploadKilobytes: IMAGE_COMPRESSION.maxUploadKilobytes,
+  webpQuality: IMAGE_COMPRESSION.webpQuality,
 };
 
 export const IMAGE_PRESETS: SettingPreset<ImageUploadSettings>[] = [
@@ -85,7 +85,7 @@ export function validOperationSettings(values: OperationPolicies) {
 export function validPlatformSettings({ imageUploads, retention }: PlatformSettings) {
   return Number.isInteger(imageUploads.maxDimension) && imageUploads.maxDimension >= 256 && imageUploads.maxDimension <= 8000
     && Number.isInteger(imageUploads.maxUploadKilobytes) && imageUploads.maxUploadKilobytes >= 100
-    && imageUploads.maxUploadKilobytes <= RATE_LIMITS.imageCompression.maxPlatformUploadKilobytes
+    && imageUploads.maxUploadKilobytes <= IMAGE_COMPRESSION.maxPlatformUploadKilobytes
     && Number.isFinite(imageUploads.webpQuality) && imageUploads.webpQuality >= 0.4 && imageUploads.webpQuality <= 0.95
     && Object.entries(DATA_RETENTION).every(([key, defaultValue]) => {
       const value = retention[key as keyof DataRetentionSettings];
@@ -98,26 +98,26 @@ type IssueRules = Pick<IssueCategoryConfig, "readAccess" | "authorVisible" | "co
 export const ISSUE_PRESETS: SettingPreset<IssueRules>[] = [
   { id: "public", labelKey: "admin.categoryPublic", detailKey: "admin.categoryPublicDetail", values: {
     readAccess: "school", authorVisible: true, commentsEnabled: true, supportEnabled: true,
-    supportGoal: 30, supportDeadlineDays: 14, maxImages: RATE_LIMITS.imageUploads.issueMaxImages,
-    commentMaxImages: RATE_LIMITS.imageUploads.commentMaxImages, authorDeleteEnabled: false,
+    supportGoal: 30, supportDeadlineDays: 14, maxImages: IMAGE_UPLOAD_LIMITS.issueMaxImages,
+    commentMaxImages: IMAGE_UPLOAD_LIMITS.commentMaxImages, authorDeleteEnabled: false,
   } },
   { id: "reviewed", labelKey: "admin.categoryReviewed", detailKey: "admin.categoryReviewedDetail", values: {
     readAccess: "reviewed-school", authorVisible: true, commentsEnabled: true, supportEnabled: false,
-    supportGoal: null, supportDeadlineDays: null, maxImages: RATE_LIMITS.imageUploads.issueMaxImages,
-    commentMaxImages: RATE_LIMITS.imageUploads.commentMaxImages, authorDeleteEnabled: false,
+    supportGoal: null, supportDeadlineDays: null, maxImages: IMAGE_UPLOAD_LIMITS.issueMaxImages,
+    commentMaxImages: IMAGE_UPLOAD_LIMITS.commentMaxImages, authorDeleteEnabled: false,
   } },
   { id: "private", labelKey: "admin.categoryPrivate", detailKey: "admin.categoryPrivateDetail", values: {
     readAccess: "owner-admin", authorVisible: true, commentsEnabled: false, supportEnabled: false,
-    supportGoal: null, supportDeadlineDays: null, maxImages: RATE_LIMITS.imageUploads.issueMaxImages,
-    commentMaxImages: RATE_LIMITS.imageUploads.commentMaxImages, authorDeleteEnabled: false,
+    supportGoal: null, supportDeadlineDays: null, maxImages: IMAGE_UPLOAD_LIMITS.issueMaxImages,
+    commentMaxImages: IMAGE_UPLOAD_LIMITS.commentMaxImages, authorDeleteEnabled: false,
   } },
 ];
 
 export const FACILITY_PRESETS: SettingPreset<Pick<FacilityCategoryConfig, "maxImages" | "authorDeleteEnabled">>[] = [
   { id: "standard", labelKey: "admin.presetStandard", detailKey: "admin.facilityStandardDetail", values: {
-    maxImages: RATE_LIMITS.imageUploads.facilityMaxImages, authorDeleteEnabled: false,
+    maxImages: IMAGE_UPLOAD_LIMITS.facilityMaxImages, authorDeleteEnabled: false,
   } },
   { id: "self-service", labelKey: "admin.categorySelfService", detailKey: "admin.facilitySelfServiceDetail", values: {
-    maxImages: RATE_LIMITS.imageUploads.facilityMaxImages, authorDeleteEnabled: true,
+    maxImages: IMAGE_UPLOAD_LIMITS.facilityMaxImages, authorDeleteEnabled: true,
   } },
 ];

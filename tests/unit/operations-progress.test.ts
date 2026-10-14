@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { handleOperationsAction } from '../../cloudflare/src/backend/actions/operations';
 import type { AuthContext, BackendDatabase } from '../../cloudflare/src/backend/actions/types';
-import { DEFAULT_OPERATION_POLICIES } from '../../cloudflare/generated/operations';
+import { DEFAULT_OPERATION_POLICIES } from "../../shared/operation-policies.ts";
 
 describe('operations progress', () => {
   it('reads only the jobs page, without capacity, history or diagnostic queries', async () => {
