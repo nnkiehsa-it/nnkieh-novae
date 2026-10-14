@@ -6,7 +6,7 @@ import { processNotionDeliveries } from "./notion-deliveries.ts";
 import { processInAppDeliveries, processPushDeliveries } from "./notification-deliveries.ts";
 import { processRealtimeDeliveries } from "./realtime-deliveries.ts";
 import { processBackgroundJobs } from "./background-jobs.ts";
-import { operationPolicy, withOperationPolicies } from "../shared/operation-policies.ts";
+import { withOperationPolicies } from "../shared/operation-policies.ts";
 import { beginNotionInvocation } from "../shared/notion-api.ts";
 import { REBUILD_REQUEST_BUDGET } from "../shared/notion-reconcile.ts";
 import { claimRateLimits } from "../shared/business-rate-limit.ts";

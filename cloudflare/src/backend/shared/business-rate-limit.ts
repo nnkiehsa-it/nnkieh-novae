@@ -102,6 +102,6 @@ export function utcHourWindow(date = new Date()) {
   return utcFixedWindow(60 * 60 * 1000, date);
 }
 
-export function utcSecondWindow(date = new Date()) {
+function utcSecondWindow(date = new Date()) {
   return utcFixedWindow(1000, date);
 }

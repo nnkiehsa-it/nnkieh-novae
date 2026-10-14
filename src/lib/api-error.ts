@@ -1,7 +1,7 @@
 import { API_ERRORS, isApiErrorCode, type ApiErrorCode } from "@shared/api-errors.ts";
 import { t } from '@/i18n';
 
-export interface ApiErrorBody {
+interface ApiErrorBody {
   code?: unknown;
   message?: unknown;
   failureId?: unknown;

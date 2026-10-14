@@ -7,7 +7,6 @@ import {
   insertReadyUpload,
   insertRows,
   integrationTest,
-  refreshActor,
   saveCategoryDraft,
   seedActor,
   tableRow,

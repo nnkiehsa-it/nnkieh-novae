@@ -9,6 +9,8 @@
     "noEmit": true,
     "skipLibCheck": true,
     "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "target": "ES2024",
     "types": [
       "@cloudflare/workers-types",

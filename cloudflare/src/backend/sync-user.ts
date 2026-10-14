@@ -4,7 +4,6 @@ import type { FirebaseAuthContext } from "./shared/firebase-auth.ts";
 import { errorStatus, publicErrorBody } from "./shared/errors.ts";
 import { createFunctionLogger } from "./shared/observability.ts";
 import { claimRateLimits } from "./shared/business-rate-limit.ts";
-import { operationPolicy } from "./shared/operation-policies.ts";
 import { AccountAccessError, resolveAccountAccessRule } from "./shared/account-access.ts";
 
 export async function handleSyncUser(user: FirebaseAuthContext, database: AppDatabaseClient) {

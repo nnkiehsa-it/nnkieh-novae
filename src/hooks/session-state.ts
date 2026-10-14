@@ -35,7 +35,7 @@ export const initialSessionState: SessionState = {
 };
 
 const listeners = new Set<() => void>();
-export let state: SessionState = initialSessionState;
+let state: SessionState = initialSessionState;
 
 export function subscribe(listener: () => void) {
   listeners.add(listener);

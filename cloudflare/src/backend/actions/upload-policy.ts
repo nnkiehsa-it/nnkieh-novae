@@ -1,7 +1,13 @@
 import type { UploadTargetType } from "../shared/platform-settings.ts";
 import type { BackendDatabase } from "./types.ts";
 import type { Selected } from "../database/schema.ts";
-import { asUuid } from "./utils.ts";
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+
+/** A parent id that is not a UUID names no parent, so it reads as not found. */
+function parentId(scopeId: string) {
+  return UUID.test(scopeId) ? scopeId : "";
+}
 
 /** Resolve from the actual parent for comments, never from a caller-supplied category. */
 export async function loadImageLimit(database: BackendDatabase, targetType: UploadTargetType, scopeId: string) {
@@ -11,7 +17,7 @@ export async function loadImageLimit(database: BackendDatabase, targetType: Uplo
     from app_private.system_setup where singleton`;
   if (targetType === "announcement") return setup.announcement_max_images;
   if (targetType === "announcement_comment") {
-    const id = asUuid(scopeId);
+    const id = parentId(scopeId);
     if (!id) throw new Error("not-found");
     const parent = await database.sqlMaybe<Selected<"announcements", "comments_enabled">>`
       select comments_enabled from app_private.announcements where id=${id}`;
@@ -28,7 +34,7 @@ export async function loadImageLimit(database: BackendDatabase, targetType: Uplo
   }
   if (!setup.issues_enabled) throw new Error("permission-denied");
   if (targetType === "comment") {
-    const id = asUuid(scopeId);
+    const id = parentId(scopeId);
     if (!id) throw new Error("not-found");
     const parent = await database.sqlMaybe<{ comment_max_images: number; comments_enabled: boolean; status: string; category_comments_enabled: boolean }>`
       select category.comment_max_images, issue.comments_enabled, issue.status,

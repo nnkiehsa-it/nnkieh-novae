@@ -3,14 +3,10 @@ import {
   asRecord,
   callAction,
   expectActionError,
-  insertReadyUpload,
   integrationTest,
   refreshActor,
-  saveCategoryDraft,
   saveScopeMember,
   seedActor,
-  database,
-  tableRow,
 } from "../helpers.ts";
 
 integrationTest("revoking each access scope immediately removes its reads, writes, and assignment listing", async () => {

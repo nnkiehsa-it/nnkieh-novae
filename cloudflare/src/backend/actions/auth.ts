@@ -94,10 +94,6 @@ export function hasPermission(auth: AuthContext, permission: PermissionCode) {
   return auth.permissions.includes(permission);
 }
 
-export function requirePermission(auth: AuthContext, permission: PermissionCode) {
-  if (!hasPermission(auth, permission)) throw new Error("permission-denied");
-}
-
 export async function handleHealthcheck(request: Request, database: BackendDatabase) {
   const expected = requireEnv("HEALTHCHECK_SECRET");
   if (request.headers.get("x-healthcheck-secret") !== expected) {

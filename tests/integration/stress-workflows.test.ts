@@ -13,7 +13,6 @@ import {
 } from "./helpers.ts";
 
 type Actor = Awaited<ReturnType<typeof seedActor>>;
-type RecordValue = Record<string, unknown>;
 
 // Stress workflows respect live short-window throttling; quota tests assert rejection separately.
 async function callAction(...args: Parameters<typeof callActionImmediately>) {

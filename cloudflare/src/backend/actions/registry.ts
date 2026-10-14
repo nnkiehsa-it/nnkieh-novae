@@ -18,7 +18,7 @@ import * as announcementComments from "./announcement-comments.ts";
 import * as notifications from "./notifications.ts";
 import * as dashboard from "./dashboard.ts";
 
-export type ActionDomain =
+type ActionDomain =
   | "announcement"
   | "category"
   | "content"
@@ -33,9 +33,9 @@ export type ActionDomain =
  * What an action asks of the account's access rules. A read-only account may
  * read and change its own settings; a reaction-only one may also react.
  */
-export type AccountAccessClass = "read" | "personal" | "reaction" | "participation" | "admin";
+type AccountAccessClass = "read" | "personal" | "reaction" | "participation" | "admin";
 
-export interface ActionHandler<N extends ActionName> {
+interface ActionHandler<N extends ActionName> {
   domain: ActionDomain;
   access: AccountAccessClass;
   /** The permission the action requires before anything else runs. */

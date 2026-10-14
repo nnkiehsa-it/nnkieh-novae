@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import * as v from 'valibot';
-import { OperationPolicies as OperationPoliciesSchema, PolicySnapshot as PolicySnapshotSchema } from "../../../../shared/contracts/operations.ts";
+import { PolicySnapshot as PolicySnapshotSchema } from "../../../../shared/contracts/operations.ts";
 import type { OperationPolicies } from "../../../../shared/operation-policies.ts";
 import type { DatabaseSession } from '../database/client';
 import type { Selected } from '../database/schema';
@@ -19,12 +19,6 @@ type PolicySnapshot = v.InferOutput<typeof PolicySnapshotSchema>;
  */
 const POLICY_READ_MAX_AGE_MS = 60_000;
 let reading: { expiresAt: number; pending: Promise<PolicySnapshot> } | undefined;
-
-export function validateOperationPolicies(value: unknown): OperationPolicies {
-  const result = v.safeParse(OperationPoliciesSchema, value);
-  if (!result.success) throw new Error('validation-invalid');
-  return result.output;
-}
 
 /** The stored settings, as they are right now. */
 export async function readOperationPolicies(database: DatabaseSession): Promise<PolicySnapshot> {

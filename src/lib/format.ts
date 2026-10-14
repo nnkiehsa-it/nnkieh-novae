@@ -38,10 +38,6 @@ export function formatDateOnly(value: Moment): string {
   }).format(toDate(value));
 }
 
-export function stripMarkdownImages(text: string): string {
-  return text.replace(/!\[[^\]]*]\((\S+?)(?:\s+["'][^"']*["'])?\)/g, '');
-}
-
 export function formatRelativeTime(value: Moment): string {
   if (!value) {
     return '';

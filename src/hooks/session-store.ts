@@ -40,7 +40,7 @@ import {
   validateUserAgainstToken,
   type ValidationResult,
 } from "@/services/session-validation";
-import { state, patch, type SessionState } from "@/hooks/session-state";
+import { getSessionState, patch, type SessionState } from "@/hooks/session-state";
 export { getSessionState, initialSessionState, patch, subscribe } from "@/hooks/session-state";
 
 const VISIT_RECORD_INTERVAL_MS = 24 * 60 * 60 * 1_000;
@@ -62,7 +62,7 @@ function shouldRecordPlatformVisit(uid: string) {
 }
 
 function clearActiveSessionData() {
-  clearComposerDrafts(state.user?.uid);
+  clearComposerDrafts(getSessionState().user?.uid);
   void setPushSession(null).catch(() => undefined);
   stopContentRealtimeSession();
   clearCategoryCatalog();
@@ -137,7 +137,7 @@ async function loadAvatar(photoUrl: string, uid: string) {
   }
   try {
     const storedPhotoUrl = await cacheUserAvatar();
-    if (state.user?.uid === uid && storedPhotoUrl) {
+    if (getSessionState().user?.uid === uid && storedPhotoUrl) {
       writeCachedAvatar(uid, photoUrl, storedPhotoUrl);
       patch({ customPhotoUrl: storedPhotoUrl });
     }
@@ -154,7 +154,7 @@ async function refreshVerifiedSession(
   savedAccessPromise: Promise<SessionAccess | null>,
 ) {
   const current = () =>
-    verificationId === verificationSerial && state.user?.uid === user.uid && auth?.currentUser === user;
+    verificationId === verificationSerial && getSessionState().user?.uid === user.uid && auth?.currentUser === user;
   let accessReady = false;
   let receivedBootstrapAccess = false;
   try {
@@ -254,19 +254,19 @@ function acceptUser(
 }
 
 export async function retrySessionStartup() {
-  const user = state.user;
-  if (!user || state.roleLoading) return;
+  const { roleLoading, startupRun, user } = getSessionState();
+  if (!user || roleLoading) return;
   const verificationId = ++verificationSerial;
-  patch({ roleLoading: true, startupError: "", startupPhase: "account", startupRun: state.startupRun + 1, startupSteps: ["account"] });
+  patch({ roleLoading: true, startupError: "", startupPhase: "account", startupRun: startupRun + 1, startupSteps: ["account"] });
   await refreshVerifiedSession(user, verificationId, validateUserAgainstToken(user), needsProfileSync, Promise.resolve(null));
 }
 
 /** Reads this account's access again, after something may have changed it. */
 export async function refreshSessionAccess() {
-  const user = state.user;
+  const user = getSessionState().user;
   if (!user) return;
   const access = await fetchSessionAccess();
-  if (state.user !== user) return;
+  if (getSessionState().user !== user) return;
   acceptServerAccess(access);
   return access;
 }
@@ -306,7 +306,8 @@ export async function initializeSession(
     async (user) => {
       if (auth?.currentUser !== user) return;
       const authEvent = ++verificationSerial;
-      if (state.user && user && state.user.uid !== user.uid) clearActiveSessionData();
+      const previousUser = getSessionState().user;
+      if (previousUser && user && previousUser.uid !== user.uid) clearActiveSessionData();
       const authEventError = user ? "" : pendingAuthRejection;
       pendingAuthRejection = "";
       patch({ authChecking: false, error: authEventError, loading: true, restoringSession: false, startupError: "", startupPhase: "session" });

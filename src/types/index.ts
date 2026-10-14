@@ -1,8 +1,7 @@
 export type { IssueStatus, IssueStatusBucket, IssueSort as IssueSortOption, IssueCursor } from '@shared/contracts/issues.ts';
-export type IssueCategory = string;
-export type IssueFilter = IssueCategory;
+export type IssueFilter = string;
 export type IssueRouteFilter = IssueFilter | 'my-proposals';
-export type { NotificationSource, NotificationTargetType, NotificationType } from '@shared/contracts/notifications.ts';
+export type { NotificationSource } from '@shared/contracts/notifications.ts';
 
 
 export type IssueSummary = import('@shared/contracts/issues.ts').IssueSummary;
@@ -24,7 +23,6 @@ export type { Comment, CommentCursor, CommentSort as CommentSortOption } from '@
 export type { FacilityCursor, FacilityStatus, FacilitySort as FacilitySortOption } from '@shared/contracts/facilities.ts';
 export type FacilitySummary = import('@shared/contracts/facilities.ts').FacilitySummary;
 export type FacilityRecord = import('@shared/contracts/facilities.ts').Facility;
-export type FacilityInput = import('@shared/actions.ts').ActionRequest<'createFacility'>;
 export type FacilityPageResult = import('@shared/actions.ts').ActionOutput<'listFacilities'>;
 
 export type NotificationRecord = import('@shared/contracts/notifications.ts').Notification;

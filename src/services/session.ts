@@ -6,7 +6,7 @@ import { seedRuntimeSettings } from '@/services/runtime-settings';
 import { queryClient } from '@/lib/query-client';
 
 export type { PermissionCode, RoleCode, SessionAccess } from '@shared/contracts/users.ts';
-export type SessionRole = SessionAccess['role'];
+type SessionRole = SessionAccess['role'];
 
 const BOOTSTRAP_KEY = ['session', 'bootstrap'] as const;
 const ACCESS_KEY = ['session', 'access'] as const;

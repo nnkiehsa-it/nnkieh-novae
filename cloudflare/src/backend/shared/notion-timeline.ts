@@ -20,7 +20,7 @@ export interface NotionTimelineEntry {
   summary: string;
 }
 
-export interface NotionTimelineImage {
+interface NotionTimelineImage {
   key: string;
   upload: () => Promise<string>;
 }

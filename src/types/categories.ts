@@ -1,6 +1,5 @@
 export type {
   CategoryCatalog,
-  CategoryManagement as CategoryManagementCatalog,
   DataRetentionSettings,
   FacilityCategory as FacilityCategoryConfig,
   FacilityCategoryInput as FacilityCategoryDraft,
@@ -10,5 +9,4 @@ export type {
   IssueReadAccess,
   PlatformFeatures,
   PlatformSettings,
-  PolicyImpactEstimate,
 } from "@shared/contracts/categories.ts";

@@ -1,4 +1,3 @@
-import type { ActionOutput } from '@shared/actions.ts';
 import type { AnnouncementCursor } from '@shared/contracts/announcements.ts';
 import type { CommentCursor, CommentSort } from '@shared/contracts/discussions.ts';
 import { callAction } from '@/services/backend-action';
@@ -7,8 +6,6 @@ import { readRequestTimeoutMs, RequestFailure } from '@/lib/request';
 import { invalidate, invalidateLists, seedQuery } from '@/lib/query-client';
 import { registerContentVersion } from '@/services/content-versions';
 import type { AnnouncementRecord } from '@/types';
-
-export type AnnouncementPage = ActionOutput<'listAnnouncements'>;
 
 export const announcementKeys = {
   list: () => ['announcements', 'list'] as const,

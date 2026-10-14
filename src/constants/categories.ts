@@ -4,7 +4,6 @@ import {
   getIssueCategorySnapshot,
 } from "@/hooks/use-categories";
 import type {
-  IssueCategory,
   IssueFilter,
   IssueRouteFilter,
   IssueStatus,
@@ -32,14 +31,6 @@ export function getIssueFilterOptions(): CategoryOption<IssueFilter>[] {
 
 export function getDefaultIssueRouteFilter(): IssueRouteFilter {
   return getDefaultIssueCategoryId() || "my-proposals";
-}
-
-export function isIssueCategory(value: unknown): value is IssueCategory {
-  return typeof value === "string" && Boolean(findIssueCategory(value));
-}
-
-export function isKnownIssueCategory(value: unknown): value is IssueCategory {
-  return typeof value === "string" && findIssueCategory(value) !== null;
 }
 
 export function getIssueCategoryLabel(category: string | null | undefined) {

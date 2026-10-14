@@ -35,7 +35,7 @@ export async function getFacility(facilityId: string, signal?: AbortSignal) {
 }
 
 /** What one change to a report makes stale: every list, and the report itself. */
-export function invalidateFacility(facilityId?: string) {
+function invalidateFacility(facilityId?: string) {
   void invalidateLists('facilities');
   if (facilityId) void invalidate(facilityKeys.detail(facilityId));
 }

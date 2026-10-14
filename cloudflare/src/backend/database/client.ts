@@ -14,7 +14,7 @@ type FunctionName = keyof AppApiFunctions & string;
 type FunctionArgs<TName extends FunctionName> = AppApiFunctions[TName]["Args"];
 type FunctionReturn<TName extends FunctionName> = AppApiFunctions[TName]["Returns"];
 
-export interface SqlResult<TRow> {
+interface SqlResult<TRow> {
   rowCount: number;
   rows: TRow[];
 }

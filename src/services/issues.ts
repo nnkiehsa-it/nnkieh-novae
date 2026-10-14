@@ -78,7 +78,7 @@ export async function listComments(issueId: string, cursor: CommentCursor | null
 }
 
 /** What one change to a proposal makes stale: every list, and the proposal itself. */
-export function invalidateIssue(issueId?: string) {
+function invalidateIssue(issueId?: string) {
   void invalidateLists('issues');
   if (issueId) void invalidate(issueKeys.detail(issueId));
 }

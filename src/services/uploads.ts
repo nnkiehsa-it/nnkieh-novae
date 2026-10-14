@@ -5,7 +5,7 @@ import { longRequestTimeoutMs, withRequestTimeout } from '@/lib/request';
 import { toReadableBackendError } from './backend-errors';
 import { t } from '@/i18n';
 
-export { clearResolvedUploadCache, resolveUploadImageUrls } from './upload-delivery';
+export { clearResolvedUploadCache } from './upload-delivery';
 
 /** What Cloudinary answers for a stored image: the id, version and signature the Worker verifies. */
 const CloudinaryUploadResponse = v.object({ public_id: v.string(), signature: v.string(), version: v.number() });

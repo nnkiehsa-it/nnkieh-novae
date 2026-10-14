@@ -42,7 +42,7 @@ function errorMessage(detail: unknown): string {
 }
 
 /** One field of a failure, as the record spells it. */
-export interface FailureField {
+interface FailureField {
   label: string;
   mono?: boolean;
   value: string;

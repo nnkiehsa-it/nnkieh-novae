@@ -7,7 +7,6 @@ export type {
   AccountAccessPreset,
   AccountAccessRule,
   AccountAccessTargetType,
-  AdminActivity as AdminOverviewActivity,
   AdminActivityCursor,
   AdminAuditEntry,
   AdminOverview as AdminOverviewData,

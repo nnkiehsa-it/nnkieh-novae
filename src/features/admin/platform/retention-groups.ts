@@ -1,6 +1,6 @@
 import type { DataRetentionSettings } from "@/types/categories";
 
-export type RetentionKey = keyof DataRetentionSettings;
+type RetentionKey = keyof DataRetentionSettings;
 
 export interface RetentionItem {
   enableKey?: RetentionKey;

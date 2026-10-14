@@ -293,7 +293,7 @@ export type Selected<
   TColumn extends keyof Row<TName>,
 > = Pick<Row<TName>, TColumn>;
 
-export interface AppPrivateTables {
+interface AppPrivateTables {
   announcement_comments: Table<AnnouncementCommentRow>;
   announcement_likes: Table<{ announcement_id: string; uid: string; created_at: string }>;
   announcements: Table<AnnouncementRow>;
@@ -362,6 +362,7 @@ type DatabaseColumnCoverage = {
   > extends never ? true : false;
 };
 type AssertDatabaseCoverage<T extends Record<GeneratedTableCoverage, true>> = T;
+/** @public Never imported: it fails to compile when a hand-written table names a column the migrated schema lacks. */
 export type DatabaseSchemaDriftGuard = AssertDatabaseCoverage<DatabaseColumnCoverage>;
 
 export interface AppApiFunctions {
@@ -763,30 +764,4 @@ export interface AppApiFunctions {
   get_platform_dashboard_snapshot: AppFunction<Record<string, never>, Json>;
   reject_expired_support_issues: AppFunction<Record<string, never>, number>;
   run_scheduled_maintenance_cleanup: AppFunction<Record<string, never>, Json>;
-}
-
-interface EmptySchema {
-  CompositeTypes: Record<string, never>;
-  Enums: Record<string, never>;
-  Functions: Record<string, never>;
-  Tables: Record<string, never>;
-  Views: Record<string, never>;
-}
-
-export interface Database {
-  app_api: {
-    CompositeTypes: Record<string, never>;
-    Enums: Record<string, never>;
-    Functions: AppApiFunctions;
-    Tables: Record<string, never>;
-    Views: Record<string, never>;
-  };
-  app_private: {
-    CompositeTypes: Record<string, never>;
-    Enums: Record<string, never>;
-    Functions: Record<string, never>;
-    Tables: AppPrivateTables;
-    Views: Record<string, never>;
-  };
-  public: EmptySchema;
 }

@@ -1,6 +1,6 @@
 import type { ActionInput } from "../../../../shared/actions.ts";
 import type { ContentVersionDomain, ContentVersions } from "../../../../shared/contracts/session.ts";
-import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
+import type { AuthContext, BackendDatabase } from "./types.ts";
 import type { Selected } from "../database/schema.ts";
 
 const EMPTY_VERSIONS: ContentVersions = {
@@ -9,7 +9,7 @@ const EMPTY_VERSIONS: ContentVersions = {
   issues: 1,
 };
 
-export async function loadContentVersions(database: BackendDatabase): Promise<ContentVersions> {
+async function loadContentVersions(database: BackendDatabase): Promise<ContentVersions> {
   const { rows } = await database.sql<Selected<"content_versions", "domain" | "version">>`
     select domain, version from app_private.content_versions`;
   const versions = { ...EMPTY_VERSIONS };
@@ -35,9 +35,3 @@ export async function loadContentVersion(
   return row ? Math.max(1, Number(row.version)) : EMPTY_VERSIONS[domain];
 }
 
-export function attachContentVersion(value: unknown, version: number) {
-  const record = value && typeof value === "object" && !Array.isArray(value)
-    ? value as JsonRecord
-    : {};
-  return { ...record, version };
-}
