@@ -4,24 +4,25 @@
 
 | 指令 | 使用時機 | 內容 |
 | --- | --- | --- |
-| `bun run verify:fast` | 開發中的快速回饋 | generated drift、type / lint、boundary、unit 與 tooling checks 的快速組合 |
+| `bun run verify:fast` | 開發中的快速回饋 | generated drift、type / lint、unused code、boundary、unit 與 tooling checks 的快速組合 |
 | `bun run verify:local` | 交付前完整本機驗證 | 在快速檢查外加入 production build、asset budget 與 dependency audit |
 | `bun run verify:generated` | 修改 `config/`、generator 或字型來源後 | 重跑所有 generator，拒絕 committed artifact drift |
 
 `check:ui` 包含在本機驗證內，會拒絕舊 dropdown、任意 shadow、手組 card、未受控 viewport gutter、UI primitive 夾帶業務 import、component 直接碰 service，以及超出 route / domain component 尺寸政策的程式碼。不要用例外繞過。
 
-### `verify:fast` 的 10 階段
+### `verify:fast` 的 11 階段
 
 1. Generated artifacts
-2. Frontend TypeScript
-3. Translation catalog check
-4. UI architecture check
-5. ESLint
-6. Cloudflare Worker TypeScript
-7. Integration-test TypeScript
-8. Unit tests
-9. Architecture tests
-10. Tooling policy tests
+2. Frontend TypeScript（含 `noUnusedLocals`／`noUnusedParameters`）
+3. Unused code（knip：未使用的檔案、export、依賴）
+4. Translation catalog check
+5. UI architecture check
+6. ESLint
+7. Cloudflare Worker TypeScript
+8. Integration-test TypeScript
+9. Unit tests
+10. Architecture tests
+11. Tooling policy tests
 
 ### `verify:local` 多做的工作
 
@@ -43,7 +44,7 @@ CSS 依 production 的 Next.js client reference manifest，計算每個頁面初
 | 全站字型 CSS 宣告，未壓縮 | 320 KiB | 獨立管理中文字型的 unicode range |
 | 全站 WOFF2 / JS 產物 | 8 MiB / 3 MiB | 保留既有字型與程式碼總量檢查 |
 
-每次檢查會在目前 build 目錄產生 `build-budget-report.json`，列出各頁面、所需 CSS、未壓縮與 gzip 估算大小。調整前先查看報告：只使用 Card、Input、Label 的 HeroUI 樣式已集中在 `src/styles/heroui.css`；新增其他 HeroUI 元件時，在這裡加入它的 CSS。拆開原始碼檔案不等於減少輸出，應先移除未使用的樣式或把頁面專用樣式保留在該頁面的 import。
+每次檢查會在目前 build 目錄產生 `build-budget-report.json`，列出各頁面、所需 CSS、未壓縮與 gzip 估算大小。調整前先查看報告。拆開原始碼檔案不等於減少輸出，應先移除未使用的樣式或把頁面專用樣式保留在該頁面的 import。
 
 完整本機檢查後，可單獨重新查看報告：
 
@@ -107,8 +108,8 @@ Verify and Deploy 先用 git diff 判斷是否需要額外 job：
 | Job | 主要觸發範圍 | 工作 |
 | --- | --- | --- |
 | `fast` | 每個符合 workflow paths 的變更 | `verify:fast`（第一個 stage 即 generated drift gate）|
-| `backend_verify` | `cloudflare/`、`database/`、`config/`、integration tests、backend scripts、package / lockfile | Worker types、integration types、`verify:integration` |
-| `browser_verify` | App / components / hooks / lib / services / styles、public、Next config、E2E、package / lockfile | 安裝 Chromium、`test:e2e`；build budget 只在 shard 1 跑 |
+| `backend_verify` | `cloudflare/`、`database/`、`shared/`、integration tests、backend scripts、package / lockfile | Worker types、integration types、`verify:integration` |
+| `browser_verify` | `src/`、`shared/`、`config/`、public、Next config、E2E、package / lockfile | 安裝 Chromium、`test:e2e`；build budget 只在 shard 1 跑 |
 | `deploy_backend` | push / manual 且 backend 受影響 | forward migration、runtime role、Worker / Queue / provider 設定與 smoke test |
 | `deploy_frontend` | push / manual 且 browser 受影響 | 驗證 Vercel secrets，在同一 runner 建立並直接發布 prebuilt output；必要時等待 backend deploy |
 

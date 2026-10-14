@@ -44,11 +44,11 @@ This document is the maintained map of the repository. Read it before broad sear
 
 - `src/lib/markdown-editor-value.ts` normalizes Vditor's synthetic final line break before draft persistence and controlled value comparison; editor value tests preserve multiline structure. `AppUpdateGate` releases failed version-check leases so reconnecting can retry promptly.
 
-- `src/hooks/use-foreground-poll.ts` shares visibility/online-aware, sequential exponential polling between setup and administration. `src/lib/refresh-scheduler.ts` bounds and coalesces invalidation bursts; its hook defers background reads.
+- `src/hooks/use-foreground-poll.ts` shares visibility/online-aware, sequential exponential polling between setup and administration. Invalidation bursts need no scheduler of their own: `src/lib/query-client.ts` marks queries stale and refetches only the active ones while the tab is visible.
 - `src/hooks/use-feed-url-state.ts` and `src/lib/feed-url-state.ts` validate URL-backed feed filters and use native history without a server navigation per keystroke. `use-discussion-composer.ts` scopes comment/reply drafts and preserves edits across submission completion. `use-update-deferral.ts` guards PWA reloads while editing or offline.
 - `src/services/realtime-tab-coordinator.ts` elects a per-account/role Web Lock owner and relays credential-free events with BroadcastChannel; `realtime-transport.ts` owns the socket, generation fencing, fallback and foreground resynchronization.
 
-- `src/services/notification-cursor.ts` preserves database timestamp precision for notification pagination; forward migrations `0048` and `0049` correct inbox cursors, expiry filtering and monotonic read watermarks. `use-notifications-page.ts` shares the paged request guard so an old response cannot overwrite a refreshed inbox.
+- `src/services/notifications.ts` pages the inbox with the contract's `NotificationCursor`; forward migrations `0048` and `0049` correct inbox cursors, expiry filtering and monotonic read watermarks. `use-notifications-page.ts` reads through `useInfiniteQuery`, so an old response only writes its own query key and cannot overwrite a refreshed inbox.
 
 - `src/services/upload-delivery.ts` — account-scoped public image references, memory-only private URLs, inherited-access invalidation, bounded resolution batches and expired lightbox renewal. `uploads.ts` owns the upload lifecycle.
 - `src/lib/route-hierarchy.ts` — which primary destination a route belongs to (records and composers to the feed, administration to settings), whether a route is one shareable record, and where the phone dock steps aside.
@@ -86,7 +86,7 @@ This document is the maintained map of the repository. Read it before broad sear
 
 ## Data, domain, and infrastructure
 
-- `config/operations.config.json` / `scripts/generate-operations.mjs` — operational policy bounds and generated frontend/Worker contracts; quota defaults are sourced from rate-limits config.
+- `shared/operation-policies.ts` / `shared/rate-limits.ts` / `shared/data-retention.ts` — operational policy bounds, business quotas and retention defaults, imported directly by the frontend and the Worker; quota defaults come from `RATE_LIMITS`.
 - `cloudflare/src/backend/shared/operation-policies.ts` — the one way runtime policies are read and the one way they are reached: an entry point enters `withOperationPolicies` and everything under it asks `operationPolicy(key)`, rather than a value threaded through every call. An isolate re-reads the stored settings at most once a minute; the console that edits them reads afresh and forgets that cache when it saves.
 - `cloudflare/src/backend/shared/operational-telemetry.ts` — bounded daily error aggregation without request bodies or credentials.
 - `cloudflare/src/backend/shared/provider-diagnostics.ts` / `src/hooks/use-provider-diagnostics.ts` / `src/lib/provider-diagnostics-format.ts` / `src/features/admin/system/provider-diagnostics.tsx` / `provider-readings.tsx` — administrator-only provider diagnostics using server-side credentials, with explicit unavailable and unconfigured states. Each provider answers in its own dialect, so the reply is read into named figures and shown as the same rows the rest of administration uses; the response it arrived in stays one row away, in a sheet, for the questions the figures do not answer. The two providers that report standing figures are read as the panel opens; the log stream is a search and waits to be asked.
@@ -110,7 +110,6 @@ This document is the maintained map of the repository. Read it before broad sear
 - `src/lib/category-management-state.ts` — pure category-draft construction, identity validation, and default-preserving removal used by the management hook.
 - `src/lib/platform-job-events.ts` — tiny same-tab refresh signal shared by settings mutations and the observable background-job panel.
 - `src/lib/notification-target.ts` — pure direct notification-to-route resolution used for immediate navigation without a preliminary content fetch.
-- `src/lib/interactive-target.ts` — the pure reading of an event into the control and internal link it landed on. Navigation feedback and optimistic detail presentation ask the same question, so they ask it in one place.
 - `src/lib/ndjson.ts` — newline-delimited JSON read off a response as it arrives, holding back a line until the newline that completes it.
 - `src/lib/realtime-timing.ts` — the two clocks the realtime transport runs on: the inactivity window that bounds an idle WebSocket's lifetime, and the heartbeat interval that keeps a live one from being dropped in silence.
 - `src/constants/share.ts` — the mark a shared link carries and the routes that earn it, named where both the share and the handoff out of an in-app browser can reach them. Only a single piece of content counts: someone handed the front door or a feed is meeting Novae for the first time and is still invited to install it.
@@ -137,7 +136,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `cloudflare/wrangler.json` — local/default Worker bindings for Hyperdrive, Queue, Durable Objects, cron, native rate limits, observability, and Smart Placement; deployment renders an ignored environment-specific copy.
 - `database/migrations/` — fresh PostgreSQL 17 baseline and append-only migrations for Neon. `0002` bootstraps roles, `0003` completes realtime batches, `0004` seals the Worker-only database boundary, `0005` exposes scheduled support expiry, `0006` adds runtime settings, `0007` adds admin overview, user interaction restrictions, and audit-log data/functions, `0008` aligns admin user/activity visibility and adds audit-log retention cleanup, `0009` applies the complete retention lifecycle, `0010` adds permanent Notion activity archives, `0011` seeds content versions from migration time, `0012` adds permission-checked failed Cloudinary deletion recovery without exposing or changing Notion data, `0013` adds observable bounded platform policy jobs, `0014` moves the full retention surface into runtime settings plus bounded retention batches, `0015` aligns runtime retention and cleans orphaned Notion mappings, the forward `0015_z` bridge quiesces legacy projection triggers and `0015_zz` creates the no-login runtime role shell before populated or fresh clusters enter `0016`, and `0016` establishes system data consistency with atomic operations, domain events, unified event deliveries, background jobs, aggregate revisions, canonical operation/delivery/job retention keys, non-negative counter invariants, deduplicated Notion mapping, and complete retirement of legacy outbox, idempotency, and deletion tables, `0017` scopes review-queue visibility, `0018` carries per-status category counts on first list pages, and `0019` widens feed search from the title to the body and the author's display name, with the author matched only where the category shows it.
 - `database/seed.local.sql` / `seed.integration.sql` — deterministic sample and backend-test seeds; production deploys never run either seed.
-- `config/` — source JSON for generated contracts, categories, limits, retention, and the motion ladder.
+- `config/` — the motion ladder source, the build budget, and the brand mark. Contracts, limits, and retention live in `shared/`.
 
 ## Verification and delivery
 
@@ -163,7 +162,6 @@ This document is the maintained map of the repository. Read it before broad sear
 - `database/migrations/0043_announcement_notice_state.sql` — adds the independent per-account announcement-list cursor, rollout baseline, new-account initialization, unread probe, and bounded mark-through write used by the header notice.
 - `database/migrations/0044_category_author_deletion_policy.sql` — adds default-off proposal and facility author-deletion policy per category, exposes it through bootstrap and management catalogs, and requires either scoped management authority or the matching author policy in the database deletion functions.
 - `tests/integration/retired-response-deadlines.test.ts` — checks the migrated database no longer exposes deadline columns/arguments, and recreated write functions remain private with explicit Worker execution grants.
-- `tests/e2e/record-surfaces.spec.ts` — read-only browser regressions for notification history, direct/reloaded record sheets, long supporter-list boundaries, header backdrop coverage, global overscroll and consistent row feedback at phone/desktop sizes. `NOVAE_E2E_SURFACE_BROWSER=webkit` (or `firefox`/`chromium`) runs only bootstrap plus this suite through the normal E2E environment; default CI keeps its Chromium projects.
 
 - `database/migrations/0023_policy_batch_state.sql` — durable policy-batch progress, multi-batch lifecycle constraints, retry state and persisted batch failures.
 
@@ -176,8 +174,6 @@ This document is the maintained map of the repository. Read it before broad sear
 
 - `database/migrations/0020_operational_job_execution.sql` — separates external background-job claims from transactional policy batches and schedules current retention cleanup.
 
-- `tests/e2e/primary-navigation.spec.ts` — real rapid clicks at mobile and desktop widths, cancelled touch selection, delayed navigation feedback, rendered-route agreement, overflow, and reduced motion.
-- `tests/e2e/feed-layout.spec.ts` — cold-feed response gating and actual skeleton/content geometry comparisons at 390px and 1440px, plus dense card height, overflow, labelled search, and single-surface navigation assertions.
 - `scripts/check-ui-primitives.mjs` / `css-orphan-selectors.mjs` — reject retired Vue references, `transition-all`, arbitrary elevation, ungated hover, orphaned source CSS class selectors, business imports in UI primitives, direct service imports in pages/components, motion tokens the generated ladder does not define, raw durations or easing curves written into a recipe or a JavaScript transition instead of taken from the ladder, spring transitions, and TypeScript modules over 400 lines (300 lines raises a warning). Generated modules and stylesheets are exempt from the line rule. The PostCSS-backed orphan check ignores keyframe percentages and requires a whole class token in product TS/TSX.
 - `scripts/check-i18n.mjs` — validates catalog parity/shape/interpolation, API error references, direct `t()` references, and hard-coded Han text across React/TSX sources.
 - `scripts/generate-all.mjs` — lock-protected sequential entry point for all generated contracts and font subsets; generated outputs remain committed and verification checks for drift explicitly.
@@ -214,7 +210,7 @@ This document is the maintained map of the repository. Read it before broad sear
 - `README.md` — Traditional Chinese project entry with stack badges, product scope, architecture overview, local quick start, operational boundaries, and links to repository-owned documentation.
 - `docs/README.md` — documentation index.
 - `docs/product.md` — users, content workflows, initial setup, administration scope, and interface principles.
-- `docs/ui-design.md` — website brand mapping, dense application spacing, shared-component ownership, and loading/motion acceptance criteria for the taste-guided redesign.
+- `DESIGN.md` — the design system: tokens in `src/ui/theme.css`, the `src/ui` primitives, motion, and how feature code composes them.
 - `docs/routes-and-permissions.md` — complete application route map, role and permission codes, category scopes, backend authorization order, restricted-user behavior, and issue visibility rules.
 - `docs/architecture.md` — browser, Worker, PostgreSQL, Queue, Durable Object, Firebase, Cloudinary, and Notion boundaries plus write/event flow.
 - `docs/local-development.md` — prerequisites, the complete emulator environment, manual frontend work, local database commands, and generated artifacts.

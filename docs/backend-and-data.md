@@ -45,7 +45,7 @@ Read action 若未帶 operation ID，Worker 會建立一個只用於 trace 的 U
 
 ## Action registry
 
-`config/backend-actions.config.json` 定義 action 名稱、基礎 rate-limit group 及額外配額，generator 產生前後端共用 registry。Action 大致分為：
+`shared/actions.ts` 彙整 `shared/contracts/` 的 action 契約：名稱、rate-limit group、額外配額，以及 valibot 寫的輸入與輸出。前端與 Worker 直接 import 同一份；Worker 以 `cloudflare/src/backend/actions/registry.ts` 對每個 action 指定執行方式。Action 大致分為：
 
 - session、category catalog 與 content version
 - 提案、附議、留言與審核結果
@@ -176,7 +176,7 @@ Delivery、job、notification、revision 和 aggregate counter 的異常會由 `
 
 ## 資料保留
 
-`config/data-retention.config.json` 提供首次部署的預設值，之後由平台 runtime settings 掌管可調政策。內容、通知、delivery、operation、Push token、avatar / profile PII、restriction、audit、background job 和 upload lifecycle 都有獨立期限；會刪除使用者內容的政策另有 enable switch。
+`shared/data-retention.ts` 提供首次部署的預設值，之後由平台 runtime settings 掌管可調政策。內容、通知、delivery、operation、Push token、avatar / profile PII、restriction、audit、background job 和 upload lifecycle 都有獨立期限；會刪除使用者內容的政策另有 enable switch。
 
 Cron 每 30 分鐘觸發維護入口，但真正工作拆成有上限的 background batch，避免單次長 transaction。Notion 非內容事件依 `notionArchiveDays` 封存；內容頁隨來源資料生命週期排入 archive，範圍見[執行期政策](runtime-policies.md)。
 

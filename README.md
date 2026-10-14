@@ -58,7 +58,8 @@ flowchart LR
 | 層級 | 技術 | 實際用途 |
 | --- | --- | --- |
 | Web | Next.js 16.3 App Router、React 19.2、TypeScript 7 | 路由、PWA 介面、SSR/RSC 與 client state |
-| UI | Tailwind CSS 4、Radix UI、HeroUI、Motion | Design tokens、可存取元件與狀態轉場 |
+| UI | Tailwind CSS 4、Radix UI、Phosphor Icons、Motion | Design tokens、可存取元件、圖示與狀態轉場 |
+| 前端資料 | TanStack Query 5 | 讀取快取、失效重讀與每個帳號的 IndexedDB 保存 |
 | PWA | Serwist 9 | Service Worker、安裝與版本更新流程 |
 | 身分與裝置 | Firebase Authentication、App Check、Cloud Messaging | Google 登入、app attestation、Web Push |
 | API | Cloudflare Workers、Hyperdrive | 驗證、action dispatch、資料庫連線與媒體代理 |
@@ -109,7 +110,7 @@ bun run verify:all          # local + integration + Playwright E2E
 - [測試與驗證](docs/testing.md)
 - [一般成員與管理員操作手冊](docs/admin-guide/README.md)
 - [首頁與內容列表](docs/home-feed.md)
-- [介面設計](docs/ui-design.md)
+- [介面設計](DESIGN.md)
 - [文件與程式地圖維護](docs/documentation-maintenance.md)
 - [離線程式流程地圖產生器](tools/project-map/README.md)
 

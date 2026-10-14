@@ -146,7 +146,8 @@ Durable Object migration tag 是 `v1`，建立 SQLite-backed `BusinessRateLimite
 | 改動 | 驗證 |
 | --- | --- |
 | `.env.local` 的 frontend 值 | `bun run dev`，完成登入與一次 API read |
-| `config/*.config.json` | `bun run generate:all`、`bun run verify:local` |
+| `config/motion.config.json`、`config/build-budget.config.json` | `bun run generate:all`、`bun run verify:local` |
+| `shared/` 的 action、限流、政策或保留預設 | `bun run verify:fast`、`bun run verify:integration` |
 | Worker secret / binding | `bun run verify:integration`，再由 development Environment 手動 dispatch backend workflow |
 | Firebase App Check / Turnstile | Development deployment 完成 login-check、session restore 與 profile sync |
 | Neon credential | Backend workflow 的 runtime role query 與最後 healthcheck |

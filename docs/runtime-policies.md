@@ -1,6 +1,6 @@
 # 執行期政策與限制
 
-下表是新環境的初始值，不代表目前部署值。產品配額、內容／快取／工作政策以資料庫 `operations_settings` 為準，可由「系統管理 → 營運」調整；`config/operations.config.json` 定義可調範圍，`config/rate-limits.config.json` 提供配額初值。Retention 與圖片設定另有既有管理頁。Cloudflare native bindings 保留資源安全硬上限。
+下表是新環境的初始值，不代表目前部署值。產品配額、內容／快取／工作政策以資料庫 `operations_settings` 為準，可由「系統管理 → 營運」調整；`shared/operation-policies.ts` 定義可調範圍，`shared/rate-limits.ts` 提供配額初值。Retention 與圖片設定另有既有管理頁。Cloudflare native bindings 保留資源安全硬上限。
 
 ## 業務操作配額
 

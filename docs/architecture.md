@@ -41,21 +41,22 @@ flowchart TB
 
 ## 前端邊界
 
-`src/app/` 的 route 負責組裝畫面，資料讀寫透過 hooks 進入 `src/services/`，不直接從 page 或 presentation component 呼叫服務。`src/components/ui/` 只放無業務邏輯的元件；各 domain component 位於自己的目錄。
+`src/app/` 的 route 負責組裝畫面，資料讀寫透過 hooks 進入 `src/services/`，不直接從 page 或 feature component 呼叫服務。`src/ui/` 只放無業務邏輯的元件；各產品區域的畫面位於 `src/features/` 自己的目錄。
 
-登入後，`use-session` 恢復 Firebase session、完成 Turnstile / App Check 驗證並向後端取得 authoritative role、scope、feature 和 setup 狀態。前端快取以使用者為 namespace；content entity、列表 snapshot 和附議等 optimistic state 分開管理。
+登入後，`use-session` 恢復 Firebase session、完成 Turnstile / App Check 驗證並向後端取得 authoritative role、scope、feature 和 setup 狀態。前端讀過的答案都在一個以帳號為範圍的 query cache；附議等 optimistic state 由各自的 hook 管理，失敗時復原。
 
 ### 目錄責任
 
 | 位置 | 責任 |
 | --- | --- |
 | `src/app/` | App Router layout、page、loading boundary、service worker 與版本 endpoint |
-| `src/components/ui/` | 不含業務 import 的視覺 primitive |
-| `src/components/{issues,facilities,announcements,...}` | Domain presentation 與使用者互動 |
+| `src/ui/` | 不含業務 import 的視覺 primitive |
+| `src/features/{issues,facilities,announcements,admin,...}` | 各產品區域的畫面與使用者互動 |
 | `src/hooks/` | Route / domain state、請求生命週期、mutation orchestration |
 | `src/services/` | Browser 對 Worker、Firebase、upload 與 realtime 的唯一 I/O boundary |
 | `src/lib/` | 無框架或可獨立測試的 cache、request、Markdown、route、security helper |
-| `src/generated/` | 由 `config/` 產生的 committed contract |
+| `src/generated/` | 由 `config/motion.config.json` 產生的 motion token |
+| `shared/` | 前端與 Worker 共用的 action 契約、限流、營運政策與保留設定 |
 | `src/i18n/` | Reactive locale store 與 `en` / `zh-TW` catalog |
 
 Route page 不直接 import `services/`。這條規則由 architecture test 和 UI check 執行，避免資料存取散到 view 裡。

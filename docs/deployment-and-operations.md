@@ -55,7 +55,7 @@ Origin 使用 `ALLOWED_ORIGINS` 的第一個值。任一條件一直不成立，
 
 流程使用 Vercel CLI `58.9.0`：先 `pull` project info，再 `build`，最後在同一 job 直接 `deploy --prebuilt`；`main` 會加 `--prod`，`dev` 使用 preview environment。
 
-若 diff 沒碰 `cloudflare/`、`database/`、`config/` 或 backend generator / renderer，frontend publish 不會等待 backend deployment job。
+若 diff 沒碰 `cloudflare/`、`database/`、`shared/` 或 backend generator / renderer，frontend publish 不會等待 backend deployment job。
 
 ## 排程工作
 

@@ -99,9 +99,17 @@ bun run db:stop
 
 新增 schema 變更時，在 `database/migrations/` 新增依序命名的 SQL migration。已套用的檔案有 checksum 驗證，不修改舊 migration。接著執行 `bun run generate:database-contracts` 更新 Worker 使用的 generated contract。
 
+## 手機預覽
+
+手機分享用 `bun run preview:phone`，狀態／探測／停止分別用 `preview:phone:status`、`preview:phone:verify`、`preview:phone:stop`。腳本自動取得 Tailscale 裝置網址並在背景運行；日誌與狀態放在 `.novae-phone-preview/`。專案 skill 位於 `.agents/skills/novae-phone-preview/SKILL.md`，可用 `$novae-phone-preview` 呼叫。需要新版本時停止再啟動。
+
+底層使用 `node scripts/verify-integration.mjs --serve --preview`，先建置，再用 `next start` 提供 production 預覽，停用測試 service worker；產物放在 `.next-local-preview`。一般 `--serve` 的開發產物放在 `.next-local-dev`，兩者都與正式建置的 `.next` 分離，避免共享產物與遠端熱更新打斷載入。
+
+測試環境支援 `NOVAE_TEST_PUBLIC_ORIGIN=https://<device>.<tailnet>.ts.net`，只接受 `--serve` 與 Tailscale HTTPS 裝置網址。Tailscale Serve 將 443 代理至前端連接埠、8443 至本機 Worker 8787、9443 至 Auth emulator 9099。手機須連同一個 tailnet；預覽自動登入種子測試管理員，不使用正式資料。停用代理時分別執行 `tailscale serve --https=443 off`、`--https=8443 off`、`--https=9443 off`。
+
 ## Generated artifacts
 
-`config/` 是 action、錯誤碼、rate limit 與資料保留預設值的來源。改動來源後執行：
+Action、錯誤碼、rate limit、營運政策與資料保留預設值直接寫在 `shared/` 的 TypeScript，前端與 Worker 共用同一份，不需要產生。`config/motion.config.json` 是 motion token 的來源；改動後執行：
 
 ```bash
 bun run generate:all
@@ -109,7 +117,7 @@ bun run generate:all
 
 生成內容會提交到 repository；`bun run verify:generated` 會重跑 generator 並拒絕 drift。
 
-Generator 有 lock，`generate:all` 依序執行 API errors、rate limits、data retention、backend actions、database contract 與 HarmonyOS Sans TC subset。字型 subset 只收集目前 source 用到的繁中文字，生成後仍需通過 build budget。
+Generator 有 lock，`generate:all` 依序執行 motion token 與 HarmonyOS Sans TC subset。字型 subset 只收集目前 source 用到的繁中文字，生成後仍需通過 build budget。Database contract（`schema.generated.ts`）另由 `bun run generate:database-contracts` 對已 migrate 的資料庫產生。
 
 ## 常見失敗
 
@@ -123,7 +131,7 @@ Windows 腳本需要至少一個可用的 WSL distribution。有多個 distribut
 
 ### Generated drift
 
-先確認改的是 `config/*.config.json`、database migration 或字型來源，而不是 `src/generated/` 或 `schema.generated.ts`。執行 `bun run generate:all` 後檢查 diff，生成檔和來源檔一起提交。
+先確認改的是 `config/motion.config.json`、database migration 或字型來源，而不是 `src/generated/` 或 `schema.generated.ts`。執行 `bun run generate:all` 後檢查 diff，生成檔和來源檔一起提交。
 
 ### Firebase Emulator 第一次啟動較慢
 

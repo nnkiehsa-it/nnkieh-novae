@@ -26,9 +26,9 @@ git log -1 --oneline
 node tools/project-map/build.mjs
 ```
 
-預設輸出桌面的 `Novae-程式流程地圖.html`。可將絕對輸出路徑放在命令最後；畫面、原碼、版本與時間都封裝在同一份 HTML。搬到其他電腦仍可閱讀，更新程式後必須重新產生。
+預設輸出桌面的 `Novae-程式流程地圖.html`（只有 Windows；其他系統必須指定路徑）。可將絕對輸出路徑放在命令最後；畫面、原碼、版本與時間都封裝在同一份 HTML。搬到其他電腦仍可閱讀，更新程式後必須重新產生。
 
-產生器會核對 action、設定、模型、trigger 解說及來源行數；有缺漏就停止。增加 migration 時要檢查 CREATE／DROP 之後的現存 trigger 與 foreign key，不能把歷史宣告加總當成目前數量。地圖來源清單排除環境檔、credential、資料庫和 seed。
+產生器會核對 action、設定、模型、trigger 解說及來源路徑與錨點；有缺漏就列出全部並停止。`verify:fast` 的 tooling 測試每次都會生成一次，所以地圖過時會讓檢查失敗。增加 migration 時要檢查 CREATE／DROP 之後的現存 trigger 與 foreign key，不能把歷史宣告加總當成目前數量。地圖來源清單排除環境檔、credential、資料庫和 seed。
 
 ## 文件驗證
 

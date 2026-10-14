@@ -12,12 +12,12 @@
 | [圖片與管理佇列效能](media-and-admin-performance.md) | 完整解碼後顯示、頭像與附件快取、管理員讀取、索引量測與重跑 |
 | [執行期政策與限制](runtime-policies.md) | 業務與 Cloudflare rate limit、圖片限制、完整 retention defaults |
 | [設定參考](configuration.md) | 設定存放位置、required values、格式、Cloudflare bindings 與變更後驗證 |
-| [本機開發](local-development.md) | 完整啟動順序、固定 port、資料庫指令、generated artifacts 與常見失敗 |
+| [本機開發](local-development.md) | 完整啟動順序、固定 port、資料庫指令、手機預覽、generated artifacts 與常見失敗 |
 | [部署與維運](deployment-and-operations.md) | Workflow path、部署 gate、smoke test、cron、Queue、Neon 資料庫復原與災難重設 |
-| [測試與驗證](testing.md) | 10 階段 fast、13 階段 local、integration / E2E / stress、CI path selection |
+| [測試與驗證](testing.md) | 11 階段 fast、14 階段 local、integration / E2E / stress、CI path selection |
 | [使用與管理手冊](admin-guide/README.md) | 一般成員、分類管理員、平台管理員的操作與截圖 |
-| [首頁與內容列表](home-feed.md) | `/home`、`/feed`、篩選、搜尋、排序與手機預覽 |
-| [介面設計](ui-design.md) | 元件、字型、版面、載入與動態規則 |
+| [首頁與內容列表](home-feed.md) | `/home`、`/feed`、篩選、搜尋與排序 |
+| [介面設計](../DESIGN.md) | token、元件、字型、版面與動態規則 |
 | [離線程式流程地圖](../tools/project-map/README.md) | 原碼快照、操作／設定／資料／自動化流程與重新產生 |
 | [文件維護](documentation-maintenance.md) | 來源責任、變更核對、歷史驗證與地圖更新 |
 

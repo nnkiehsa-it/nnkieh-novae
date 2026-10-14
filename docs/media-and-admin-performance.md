@@ -4,7 +4,7 @@
 
 ## 圖片顯示與快取
 
-[`use-decoded-image.ts`](../src/components/ui/use-decoded-image.ts) 控制實際顯示的圖片元素。已經 `complete` 且有尺寸的快取圖片直接開始解碼，不必等另一個 `load` event。切換來源或卸載後，舊解碼結果不會更新新圖片；解碼失敗保留替代畫面。[`decode()` 文件](https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/decode) 說明這個 Promise 完成時圖片才適合顯示。
+[`use-decoded-image.ts`](../src/ui/use-decoded-image.ts) 控制實際顯示的圖片元素。已經 `complete` 且有尺寸的快取圖片直接開始解碼，不必等另一個 `load` event。切換來源或卸載後，舊解碼結果不會更新新圖片；解碼失敗保留替代畫面。[`decode()` 文件](https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/decode) 說明這個 Promise 完成時圖片才適合顯示。
 
 頭像網址包含不覆寫的 Cloudinary public ID。來源更新會建立新 ID，因此同一版頭像可使用 `immutable`。管理員可在「執行期政策 → 用戶端」調整這兩個新欄位：
 
@@ -21,7 +21,7 @@ Google `photoURL` 只用作頭像同步來源。介面及後端公開人物資�
 
 Worker 使用 `ctx.waitUntil()` 在背景寫入圖片邊緣快取，首個 response 可以先送給瀏覽器。[Cloudflare Cache API 文件](https://developers.cloudflare.com/workers/runtime-apis/cache/) 有背景寫入的使用方式。讀取 Cloudinary 仍由 Worker 簽章，頭像與縮圖繼續由 Cloudflare 調整尺寸；完整圖片沿用已在上傳前壓縮的 WebP。
 
-附件網址解析放在 [`upload-delivery.ts`](../src/services/upload-delivery.ts)。後端明確回傳 `privateByUploadId`；只有公開網址寫入既有的帳號隔離 IndexedDB 快取，有效時間為十分鐘，並於簽章到期前六十秒失效。參照使用 `upload-media-v2`，不回復舊永久網址。私密網址只放記憶體，內容、分類變動和登出會清除參照。逾期大圖重新解析後，lightbox 使用新的 full URL。附件和作者資料超過 50 個 ID 時分批讀取，相同批次的並行請求會合併。
+附件網址解析放在 [`upload-delivery.ts`](../src/services/upload-delivery.ts)。後端明確回傳 `privateByUploadId`；只有公開網址存進 query cache 的 `['uploads', id]`（隨帳號的 IndexedDB 紀錄保存），十分鐘內有效，並於簽章到期前六十秒失效。私密網址只放記憶體，內容、分類變動和登出會清除參照。逾期大圖重新解析後，lightbox 使用新的 full URL。附件和作者資料超過 50 個 ID 時分批讀取，相同批次的並行請求會合併。
 
 選圖仍沿用 WebP 壓縮與 Cloudinary signed upload。每張圖處理結束會清掉來源元素及 canvas backing store，讓下一張照片不必等待垃圾回收才釋放這些資源。這項修改沒有把編碼移到 Worker，也沒有量測實體手機的記憶體峰值。
 
