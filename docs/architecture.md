@@ -93,12 +93,14 @@ sequenceDiagram
 - 資料保持正確靠的不是時鐘：content version 或 realtime 事件會讓對應網域失效；重回超過 `viewMemoryMinutes` 的畫面才重新讀取。查詢不自動重試，畫面提供重試。
 - 失效的列表從第一頁重新讀，不把已載入的頁全部重讀；feed 最多保留 `feedPages` 頁。
 - 每個帳號一筆 IndexedDB 紀錄（`novae-queries`），首屏前還原、變動後一秒內存回；登出或換帳號時刪除。私人圖片簽名網址只留在分頁記憶體，不寫入磁碟。
+- Content version 也存在同一個快取（`['content-versions']`），與資料一起原子保存；分開存放時，舊資料會搭配新版本號而被誤認為最新。
+- `gcTime` 是 24 小時；更長的值會超過 `setTimeout` 上限，使 GC 立即觸發。磁碟上的紀錄在還原時另外丟棄超過 30 天的查詢。
 
 ## API 邊界
 
 `cloudflare/src/index.ts` 是唯一公開 Worker 入口。一般資料操作集中在 `POST /v1/actions`，另外提供 auth sync、session check、realtime ticket、Cloudinary webhook、簽名媒體讀取與 WebSocket 入口。
 
-每次 API operation 都有 `X-Novae-Operation-Id`。Worker 驗證 Origin、Firebase ID token、Firebase App Check 與適用的 rate limit，再交給 generated action registry。首次建立 profile 額外受 Managed Turnstile 保護。
+每次 API operation 都有 `X-Novae-Operation-Id`。Worker 驗證 Origin、Firebase ID token、Firebase App Check 與適用的 rate limit，再交給 `cloudflare/src/backend/actions/registry.ts` 的 action handler；request 與回應都以 `shared/actions.ts` 的 valibot 契約驗證。首次建立 profile 額外受 Managed Turnstile 保護。
 
 公開路由只有 `cloudflare/src/index.ts` 列出的 `/v1/*`。Worker 回應統一加上 CORS 與 `cache-control: no-store`；內部例外轉成 canonical API error。5xx 另外產生 `failureId`，log 同時帶 `invocationId`、`operationId` 和 action / path，方便把一次失敗從 Edge 追到資料庫與 Queue。
 
