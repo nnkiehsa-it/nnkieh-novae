@@ -10,11 +10,11 @@ import {
   type AdminOverviewData,
   type AdminOverviewWindow,
 } from "@/services/admin-console";
-import { fetchPlatformDashboard } from "@/services/dashboard";
+import { failingWork, fetchPlatformDashboard, type PlatformDashboard } from "@/services/dashboard";
 import { getViewMemory, setViewMemory } from "@/lib/view-memory-cache";
-import type { PlatformDashboardData } from "@/types";
 
 export type { AdminOverviewData } from "@/services/admin-console";
+export type { PlatformDashboard } from "@/services/dashboard";
 
 /**
  * One reading of the platform, for the one screen that reports on it.
@@ -32,8 +32,8 @@ export function useAdminOverview(period: AdminOverviewWindow) {
     `admin-overview:${period}`,
     null,
   );
-  const [platform, setPlatform] = React.useState<PlatformDashboardData | null>(() =>
-    getViewMemory<PlatformDashboardData>(session.user?.uid, "dashboard"),
+  const [platform, setPlatform] = React.useState<PlatformDashboard | null>(() =>
+    getViewMemory<PlatformDashboard>(session.user?.uid, "platform-dashboard"),
   );
   const { error, loading, read } = useAdminReading(`admin-overview:${period}`, "ui.adminConsole.loadOverviewFailed");
 
@@ -57,15 +57,10 @@ export function useAdminOverview(period: AdminOverviewWindow) {
   }, [load, unread, refresh]);
 
   React.useEffect(() => {
-    if (platform) setViewMemory(session.user?.uid, "dashboard", platform);
+    if (platform) setViewMemory(session.user?.uid, "platform-dashboard", platform);
   }, [platform, session.user?.uid]);
 
-  const failing = platform
-    ? platform.operations.failed_delivery_count
-      + platform.operations.failed_push_delivery_count
-      + platform.operations.cleanup_backlog_count
-      + platform.operations.stuck_upload_count
-    : 0;
+  const failing = platform ? failingWork(platform) : 0;
 
   return { activity, error, failing, load, loading, platform };
 }

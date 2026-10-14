@@ -7,19 +7,17 @@ import { useDraft } from "@/hooks/use-draft";
 import { useRememberedState } from "@/hooks/use-remembered-state";
 import { setOperationPolicies } from "@/lib/operation-policies";
 import {
-  fetchOperationSettings,
+  fetchOperationPolicies,
   saveOperationPolicies,
-  type OperationsConsole,
+  type PolicyChange,
 } from "@/services/operations-console";
-import type { OperationPolicies } from "@shared/operation-policies.ts";
+import type { PolicySnapshot } from "@shared/contracts/operations.ts";
 import { validOperationSettings } from "@/lib/admin-setting-presets";
 
-export type { OperationsConsole } from "@/services/operations-console";
+export type { PolicyChange } from "@/services/operations-console";
 
-interface PolicyReading {
-  history: OperationsConsole["history"];
-  revision: number;
-  values: OperationPolicies;
+interface PolicyReading extends PolicySnapshot {
+  history: PolicyChange[];
 }
 
 export function useOperationPolicies() {
@@ -34,7 +32,7 @@ export function useOperationPolicies() {
   const revision = reading?.revision ?? 0;
 
   const load = React.useCallback(() => read(
-    () => fetchOperationSettings({ policiesOnly: true }),
+    fetchOperationPolicies,
     (snapshot) => {
       remember({
         history: snapshot.history,
@@ -48,7 +46,7 @@ export function useOperationPolicies() {
     void load();
   }, [load]);
 
-  const draft = useDraft<OperationsConsole["settings"]>({
+  const draft = useDraft<PolicySnapshot>({
     requireReason: true,
     save: async (value, reason, baseline) => {
       invalidate();

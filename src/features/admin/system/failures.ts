@@ -87,7 +87,7 @@ export function failureItems(
       { label: t("admin.failureEvent"), value: entry.eventType },
       { label: t("admin.failureId"), mono: true, value: entry.id },
       { label: t("ui.operations.attempts"), value: String(entry.attemptCount) },
-      { label: t("admin.failureOperation"), mono: true, value: entry.operationId },
+      { label: t("admin.failureOperation"), mono: true, value: entry.operationId ?? "—" },
       { label: t("admin.failureTrace"), mono: true, value: entry.lastAttemptId ?? "—" },
     ],
     id: entry.id,

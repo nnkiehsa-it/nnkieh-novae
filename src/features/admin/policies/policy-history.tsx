@@ -1,14 +1,14 @@
 "use client";
 
 import type { OperationPolicyKey } from "@shared/operation-policies.ts";
-import type { OperationsConsole } from "@/hooks/use-operation-policies";
+import type { PolicyChange } from "@/hooks/use-operation-policies";
 import { useI18n } from "@/i18n";
 import { formatDate } from "@/lib/format";
 import { ListGroup, ListRow } from "@/ui/list";
 import { DetailRow } from "../shared/rows";
 
 /** What was changed, by whom, and why, one revision at a time. */
-export function PolicyHistory({ entries }: { entries: OperationsConsole["history"] }) {
+export function PolicyHistory({ entries }: { entries: PolicyChange[] }) {
   const { t } = useI18n();
   if (entries.length === 0) {
     return (

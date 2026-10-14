@@ -3,13 +3,13 @@
 import { getIssueCategoryLabel } from "@/constants/categories";
 import { useI18n } from "@/i18n";
 import { Panel, SectionTitle } from "@/ui/panel";
-import type { PlatformDashboardData } from "@/types";
+import type { PlatformDashboard } from "@/hooks/use-admin-overview";
 import { ShareBar } from "../shared/share-bar";
 
 /** Where the proposals actually are, as a share of the whole. */
-export function CategoryShare({ platform }: { platform: PlatformDashboardData | null }) {
+export function CategoryShare({ platform }: { platform: PlatformDashboard | null }) {
   const { t } = useI18n();
-  const byCategory = platform?.stats.issues_by_category;
+  const byCategory = platform?.issuesByCategory;
   const segments = Object.entries(byCategory ?? {})
     .toSorted((left, right) => right[1] - left[1])
     .map(([category, count]) => ({ count, key: category, label: getIssueCategoryLabel(category) }));

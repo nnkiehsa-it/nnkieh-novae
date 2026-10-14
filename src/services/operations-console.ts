@@ -1,64 +1,50 @@
-import { invokeBackendAction } from '@/services/backend-action';
-import type { OperationPolicies } from "@shared/operation-policies.ts";
+import type { ActionRequest } from '@shared/actions.ts';
+import type { OperationsConsole } from '@shared/contracts/operations.ts';
+import { callAction } from '@/services/backend-action';
 import { longRequestTimeoutMs } from '@/lib/request';
 
-export interface OperationsConsole {
-  hasMore: boolean;
-  cleanupBacklog: Array<{ jobId: string; createdAt: string; payload: unknown }>;
-  sampledAt: string;
-  errors: Array<{ action: string; code: string; status: number; count: number; lastAt: string; operationId: string; failureId: string | null }>;
-  metrics: Array<{ bucket: string; databaseBytes: number; measuredAt: string }>;
-  failedDeliveries: Array<{ id: string; destination: string; eventType: string; operationId: string; attemptCount: number; lastAttemptId: string | null; errorDetail: unknown }>;
-  databaseBytes: number;
-  settings: { revision: number; values: OperationPolicies };
-  capacity: Array<{ name: string; rows: number; deadRows: number; tableBytes: number; indexBytes: number; totalBytes: number }>;
-  jobs: Array<{ id: string; jobType: string; status: string; attemptCount: number; affectedRows: number; estimatedRows: number; processedRows: number; lastAttemptId: string | null; errorDetail: unknown; updatedAt: string }>;
-  deliveries: Array<{ destination: string; status: string; count: number; oldestAt: string }>;
-  history: Array<{ id: number; actorUid: string; revision: number; reason: string; createdAt: string; beforeValue: OperationPolicies; afterValue: OperationPolicies }>;
-}
-/**
- * System panels arrive independently; policy reads use their own request.
- */
+export type { OperationsConsole, PolicyChange, ProviderDiagnostic } from '@shared/contracts/operations.ts';
+
+/** The queue and capacity, each panel handed over as it arrives. */
 export function fetchOperationsConsole(
-  payload: { page?: number; systemOnly: true },
+  page: number,
   options: { onPanel?: (panel: Partial<OperationsConsole>) => void } = {},
 ) {
-  return invokeBackendAction<typeof payload, Omit<OperationsConsole, 'settings' | 'history'>>('getOperationsConsole', {
+  return callAction('getOperationsConsole', { page }, {
     onSegment: (key, data) => {
       if (key) options.onPanel?.({ [key]: data } as Partial<OperationsConsole>);
     },
-  })(payload);
+  });
 }
 
-export const fetchOperationsQueue = invokeBackendAction<
-  { page: number; queueOnly: true },
-  Pick<OperationsConsole, 'cleanupBacklog' | 'deliveries' | 'errors' | 'failedDeliveries' | 'hasMore' | 'jobs' | 'sampledAt'>
->('getOperationsConsole');
+export function fetchOperationsQueue(page: number) {
+  return callAction('getOperationsQueue', { page });
+}
 
-export const fetchOperationSettings = invokeBackendAction<
-  { policiesOnly: true }, Pick<OperationsConsole, 'settings' | 'history'>
->('getOperationsConsole');
-export const clearOperationalErrors = invokeBackendAction<Record<string, never>, {
-  cleared: number;
-  success: boolean;
-}>('clearOperationalErrors');
-export const clearScheduledWork = invokeBackendAction<Record<string, never>, {
-  cleanup: number;
-  cleared: number;
-  jobs: number;
-  success: boolean;
-}>('clearScheduledWork');
-export const retryOperationalWork = invokeBackendAction<
-  { kind: 'job' | 'delivery' | 'cleanup' | 'all'; id?: string },
-  { success: boolean; retried?: number }
->('retryOperationalWork');
-export const queueNotionArchiveRebuild = invokeBackendAction<Record<string, never>, {
-  cleared: { cleanup: number; deliveries: number; jobs: number; mappings: number };
-  jobId: string;
-  success: boolean;
-}>('rebuildNotionArchive');
-export interface ProviderDiagnostic { provider: string; status: 'available' | 'not-configured' | 'unavailable'; checkedAt: string; data?: unknown; error?: string; nextCursor?: string | null; until?: number }
-export const getProviderDiagnostics = invokeBackendAction<{ provider: string; cursor?: string; until?: number; query?: string }, ProviderDiagnostic>('getProviderDiagnostics', { timeoutMs: longRequestTimeoutMs });
-export const saveOperationPolicies = invokeBackendAction<{
-  revision: number; values: OperationPolicies; reason: string;
-}, { revision: number; values: OperationPolicies }>('saveOperationPolicies');
+export function fetchOperationPolicies() {
+  return callAction('getOperationPolicies', {});
+}
+
+export function saveOperationPolicies(input: ActionRequest<'saveOperationPolicies'>) {
+  return callAction('saveOperationPolicies', input);
+}
+
+export function clearOperationalErrors() {
+  return callAction('clearOperationalErrors', {});
+}
+
+export function clearScheduledWork() {
+  return callAction('clearScheduledWork', {});
+}
+
+export function retryOperationalWork(input: ActionRequest<'retryOperationalWork'>) {
+  return callAction('retryOperationalWork', input);
+}
+
+export function queueNotionArchiveRebuild() {
+  return callAction('rebuildNotionArchive', {});
+}
+
+export function getProviderDiagnostics(input: ActionRequest<'getProviderDiagnostics'>) {
+  return callAction('getProviderDiagnostics', input, { timeoutMs: longRequestTimeoutMs });
+}

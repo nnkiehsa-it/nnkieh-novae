@@ -1,101 +1,119 @@
-import { forgetOperationPolicies, readOperationPolicies, validateOperationPolicies } from '../shared/operation-policies';
 import type { ActionInput } from '../../../../shared/actions.ts';
+import { forgetOperationPolicies, readOperationPolicies } from '../shared/operation-policies';
 import { settledSegments } from './segments.ts';
-import type { AuthContext, BackendDatabase, JsonRecord } from './types';
+import type { AuthContext, BackendDatabase } from './types';
 import { providerDiagnostics } from '../shared/provider-diagnostics';
 import { notionEnabled } from '../shared/notion-api';
+
+/** The console reads and repairs the whole platform, so it is for platform administrators alone. */
+function requireAdministrator(auth: AuthContext) {
+  if (!auth.isAdmin) throw new Error('permission-denied');
+}
+
+const PAGE = 100;
 
 export async function getRuntimePolicies(_input: ActionInput<'getRuntimePolicies'>, _auth: AuthContext, database: BackendDatabase) {
   return await readOperationPolicies(database);
 }
 
-export async function handleOperationsAction(action: string, payload: JsonRecord, auth: AuthContext, database: BackendDatabase) {
-  if (!auth.isAdmin) throw new Error('permission-denied');
-  if (action === 'getProviderDiagnostics') {
-    if (!['cloudinary','cloudflare','logs'].includes(String(payload.provider))) throw new Error('validation-invalid');
-    if (payload.cursor !== undefined && (typeof payload.cursor !== 'string' || payload.cursor.length > 300)) throw new Error('validation-invalid');
-    if (payload.query !== undefined && (typeof payload.query !== 'string' || payload.query.length > 200)) throw new Error('validation-invalid');
-    if (payload.until !== undefined && (typeof payload.until !== 'number' || !Number.isSafeInteger(payload.until) || payload.until < 86400000 || payload.until > Date.now()+60000)) throw new Error('validation-invalid');
-    return providerDiagnostics(String(payload.provider),{ cursor: payload.cursor as string | undefined, query: payload.query as string | undefined, until: payload.until as number | undefined });
-  }
-  if (action === 'rebuildNotionArchive') {
-    if (!notionEnabled()) throw new Error('service-not-configured');
-    // Two administrators asking at the same instant still leave exactly one fresh rebuild.
-    await database.sql`select pg_advisory_xact_lock(hashtext('novae:notion-rebuild'))`;
-    const cleared = await clearSupersededNotionWork(database);
-    const queued = await database.sqlOne<{ id: string }>`
-      insert into app_private.background_jobs (job_type, scope_id, payload, created_by)
-      values ('notion_reconcile', 'global', ${JSON.stringify({ schemaVersion: 2 })}::jsonb, ${auth.uid})
-      returning id`;
-    return { cleared, jobId: queued.id, success: true };
-  }
-  if (action === 'clearOperationalErrors') {
-    const errors = await database.sql`delete from app_private.operational_errors returning bucket`;
-    return { cleared: errors.rows.length, success: true };
-  }
-  if (action === 'clearScheduledWork') {
-    const jobs = await database.sql`update app_private.background_jobs
-      set status = 'superseded', locked_at = null, updated_at = now()
-      where status in ('pending', 'processing', 'failed') returning id`;
-    const cleanup = await database.sql`delete from app_private.external_cleanup_backlog returning job_id`;
-    return {
-      cleanup: cleanup.rows.length,
-      cleared: jobs.rows.length + cleanup.rows.length,
-      jobs: jobs.rows.length,
-      success: true,
-    };
-  }
-  if (action === 'retryOperationalWork') {
-    if (payload.kind === 'all') return retryEverythingFailed(auth.uid, database);
-    if (typeof payload.id !== 'string' || !/^[0-9a-f-]{36}$/i.test(payload.id)) throw new Error('validation-invalid');
-    if (payload.kind === 'cleanup') {
-      const restored = await database.sql`with source as (
-        delete from app_private.external_cleanup_backlog where job_id = ${payload.id} returning *
+export async function getProviderDiagnostics(input: ActionInput<'getProviderDiagnostics'>, auth: AuthContext) {
+  requireAdministrator(auth);
+  return await providerDiagnostics(input.provider, { cursor: input.cursor, query: input.query, until: input.until });
+}
+
+export async function rebuildNotionArchive(_input: ActionInput<'rebuildNotionArchive'>, auth: AuthContext, database: BackendDatabase) {
+  requireAdministrator(auth);
+  if (!notionEnabled()) throw new Error('service-not-configured');
+  // Two administrators asking at the same instant still leave exactly one fresh rebuild.
+  await database.sql`select pg_advisory_xact_lock(hashtext('novae:notion-rebuild'))`;
+  const cleared = await clearSupersededNotionWork(database);
+  const queued = await database.sqlOne<{ id: string }>`
+    insert into app_private.background_jobs (job_type, scope_id, payload, created_by)
+    values ('notion_reconcile', 'global', ${JSON.stringify({ schemaVersion: 2 })}::jsonb, ${auth.uid})
+    returning id`;
+  return { cleared, jobId: queued.id, success: true };
+}
+
+export async function clearOperationalErrors(_input: ActionInput<'clearOperationalErrors'>, auth: AuthContext, database: BackendDatabase) {
+  requireAdministrator(auth);
+  const errors = await database.sql`delete from app_private.operational_errors returning bucket`;
+  return { cleared: errors.rows.length, success: true };
+}
+
+export async function clearScheduledWork(_input: ActionInput<'clearScheduledWork'>, auth: AuthContext, database: BackendDatabase) {
+  requireAdministrator(auth);
+  const jobs = await database.sql`update app_private.background_jobs
+    set status = 'superseded', locked_at = null, updated_at = now()
+    where status in ('pending', 'processing', 'failed') returning id`;
+  const cleanup = await database.sql`delete from app_private.external_cleanup_backlog returning job_id`;
+  return {
+    cleanup: cleanup.rows.length,
+    cleared: jobs.rows.length + cleanup.rows.length,
+    jobs: jobs.rows.length,
+    success: true,
+  };
+}
+
+/** Failed work asked to run again: one piece, or everything that failed at once. */
+export async function retryOperationalWork(input: ActionInput<'retryOperationalWork'>, auth: AuthContext, database: BackendDatabase) {
+  requireAdministrator(auth);
+  if (input.kind === 'all') return { retried: await retryEverythingFailed(auth.uid, database), success: true };
+  const retried = input.kind === 'cleanup'
+    ? await database.sql`with source as (
+        delete from app_private.external_cleanup_backlog where job_id = ${input.id} returning *
       ) insert into app_private.background_jobs (id, job_type, payload, created_by)
-        select job_id, 'deletion', payload, ${auth.uid} from source returning id`;
-      if (restored.rows.length !== 1) throw new Error('validation-invalid');
-      return { success: true, id: payload.id };
-    }
-    if (payload.kind !== 'job' && payload.kind !== 'delivery') throw new Error('validation-invalid');
-    const retried = payload.kind === 'job'
+        select job_id, 'deletion', payload, ${auth.uid} from source returning id`
+    : input.kind === 'job'
       ? await database.sql`update app_private.background_jobs set status = 'pending', attempt_count = 0,
         locked_at = null, last_attempt_id = null, next_attempt_at = now(), updated_at = now()
-        where id = ${payload.id} and status = 'failed' returning id`
+        where id = ${input.id} and status = 'failed' returning id`
       : await database.sql`update app_private.event_deliveries set status = 'pending', attempt_count = 0,
         locked_at = null, last_attempt_id = null, next_attempt_at = now(), updated_at = now()
-        where id = ${payload.id} and status = 'failed' returning id`;
-    if (retried.rows.length !== 1) throw new Error('validation-invalid');
-    return { success: true, id: payload.id };
-  }
-  if (action === 'saveOperationPolicies') {
-    const values = validateOperationPolicies(payload.values);
-    if (!Number.isInteger(payload.revision) || typeof payload.reason !== 'string') throw new Error('validation-invalid');
-    const saved = await database.sqlOne<{ value: unknown }>`
-      select app_api.save_operation_policies(
-        ${auth.uid}, ${payload.revision}, ${JSON.stringify(values)}::jsonb, ${payload.reason}) as value`;
-    forgetOperationPolicies();
-    return saved.value;
-  }
-  if (action === 'getOperationsConsole') {
-    const page = payload.page ?? 0;
-    if (!Number.isInteger(page) || Number(page) < 0 || Number(page) > 1_000_000) throw new Error('validation-invalid');
-    if ([payload.policiesOnly, payload.progressOnly, payload.queueOnly].filter((mode) => mode === true).length > 1) {
-      throw new Error('validation-invalid');
-    }
-    if (payload.policiesOnly === true) {
-      const [settings, history] = await Promise.all([
-        readOperationPolicies(database),
-        operationHistory(Number(page) * 100, database),
-      ]);
-      return { settings, history: history.rows.slice(0, 100) };
-    }
-    if (payload.progressOnly === true) {
-      const jobs = await operationsJobs(Number(page) * 100, database);
-      return { jobs: jobs.rows.slice(0, 100) };
-    }
-    return operationsConsole(Number(page) * 100, database, payload.systemOnly !== true && payload.queueOnly !== true, payload.queueOnly === true);
-  }
-  throw new Error('invalid-action');
+        where id = ${input.id} and status = 'failed' returning id`;
+  if (retried.rows.length !== 1) throw new Error('validation-invalid');
+  return { retried: 1, success: true };
+}
+
+export async function saveOperationPolicies(input: ActionInput<'saveOperationPolicies'>, auth: AuthContext, database: BackendDatabase) {
+  requireAdministrator(auth);
+  const saved = await database.sqlOne<{ value: unknown }>`
+    select app_api.save_operation_policies(
+      ${auth.uid}, ${input.revision}, ${JSON.stringify(input.values)}::jsonb, ${input.reason}) as value`;
+  forgetOperationPolicies();
+  return saved.value;
+}
+
+export async function getOperationPolicies(_input: ActionInput<'getOperationPolicies'>, auth: AuthContext, database: BackendDatabase) {
+  requireAdministrator(auth);
+  const [settings, history] = await Promise.all([
+    readOperationPolicies(database),
+    database.sql`select id, actor_uid as "actorUid", revision, reason, before_value as "beforeValue",
+      after_value as "afterValue", created_at as "createdAt"
+      from app_private.operation_policy_history order by id desc limit ${PAGE}`,
+  ]);
+  return { settings, history: history.rows };
+}
+
+export async function getOperationsQueue(input: ActionInput<'getOperationsQueue'>, auth: AuthContext, database: BackendDatabase) {
+  requireAdministrator(auth);
+  const panels = operationsQueue(input.page * PAGE, database);
+  const entries = await Promise.all(Object.entries(panels).map(async ([key, panel]) => [key, await panel] as const));
+  return Object.fromEntries(entries);
+}
+
+/** The queue and what the database is taking up, each panel sent as its query finishes. */
+export function getOperationsConsole(input: ActionInput<'getOperationsConsole'>, auth: AuthContext, database: BackendDatabase) {
+  requireAdministrator(auth);
+  return settledSegments({
+    ...operationsQueue(input.page * PAGE, database),
+    capacity: database.sql`select relname as name, n_live_tup as rows, n_dead_tup as "deadRows",
+      pg_total_relation_size(relid) as "totalBytes"
+      from pg_stat_user_tables where schemaname = 'app_private'
+      order by pg_total_relation_size(relid) desc`.then((result) => result.rows),
+    metrics: database.sql`select bucket, database_bytes as "databaseBytes"
+      from app_private.operational_metrics order by bucket desc limit 365`.then((result) => result.rows),
+    databaseBytes: database.sqlOne<{ bytes: number }>`select pg_database_size(current_database()) as bytes`.then((result) => result.bytes),
+  });
 }
 
 /**
@@ -133,60 +151,40 @@ async function clearSupersededNotionWork(database: BackendDatabase) {
 }
 
 /**
- * The operations console, sent one reading at a time.
- *
- * Queue refreshes omit capacity and policy queries. Each requested panel is
- * streamed as its query finishes.
+ * Work still running or stopped, and refusals already counted: one page of
+ * each, with whether any of them has another.
  */
-function operationsJobs(offset: number, database: BackendDatabase) {
-  return database.sql`select id, job_type, status, attempt_count, processed_rows, affected_rows,
-    estimated_rows, next_attempt_at, started_at, completed_at, updated_at, last_attempt_id, error_detail
-    from app_private.background_jobs order by created_at desc, id desc limit 101 offset ${offset}`;
-}
-
-function operationHistory(offset: number, database: BackendDatabase) {
-  return database.sql`select id, actor_uid, revision, reason, before_value, after_value, created_at
-    from app_private.operation_policy_history order by id desc limit 101 offset ${offset}`;
-}
-
-function operationsConsole(offset: number, database: BackendDatabase, includePolicies: boolean, queueOnly: boolean) {
+function operationsQueue(offset: number, database: BackendDatabase) {
   const paged = {
-    cleanupBacklog: database.sql`select job_id, created_at, payload from app_private.external_cleanup_backlog
-      order by created_at, job_id limit 101 offset ${offset}`,
-    errors: database.sql`select * from app_private.operational_errors
-      order by last_at desc, action, code, status limit 101 offset ${offset}`,
-    failedDeliveries: database.sql`select d.id, d.destination, d.attempt_count, d.error_detail, d.last_attempt_id,
-      e.event_type, e.aggregate_id, e.operation_id from app_private.event_deliveries d
+    cleanupBacklog: database.sql`select job_id as "jobId", created_at as "createdAt", payload
+      from app_private.external_cleanup_backlog
+      order by created_at, job_id limit ${PAGE + 1} offset ${offset}`,
+    errors: database.sql`select action, code, status, count, last_at as "lastAt",
+      operation_id as "operationId", failure_id as "failureId"
+      from app_private.operational_errors
+      order by last_at desc, action, code, status limit ${PAGE + 1} offset ${offset}`,
+    failedDeliveries: database.sql`select d.id, d.destination, d.attempt_count as "attemptCount",
+      d.error_detail as "errorDetail", d.last_attempt_id as "lastAttemptId",
+      e.event_type as "eventType", e.operation_id as "operationId"
+      from app_private.event_deliveries d
       join app_private.domain_events e on e.event_id = d.event_id where d.status = 'failed'
-      order by d.updated_at desc, d.id desc limit 101 offset ${offset}`,
-    ...(includePolicies ? { history: operationHistory(offset, database) } : {}),
-    jobs: operationsJobs(offset, database),
+      order by d.updated_at desc, d.id desc limit ${PAGE + 1} offset ${offset}`,
+    jobs: database.sql`select id, job_type as "jobType", status, attempt_count as "attemptCount",
+      processed_rows as "processedRows", affected_rows as "affectedRows", estimated_rows as "estimatedRows",
+      updated_at as "updatedAt", last_attempt_id as "lastAttemptId", error_detail as "errorDetail"
+      from app_private.background_jobs order by created_at desc, id desc limit ${PAGE + 1} offset ${offset}`,
   };
-  const deliveries = database.sql`select destination, status, count(*)::bigint as count, min(created_at) as oldest_at
-    from app_private.event_deliveries group by destination, status`;
-  const diagnostics: Record<string, PromiseLike<unknown>> = queueOnly ? {} : {
-    capacity: database.sql`select relname as name, n_live_tup as rows, n_dead_tup as dead_rows,
-      pg_table_size(relid) as table_bytes, pg_indexes_size(relid) as index_bytes,
-      pg_total_relation_size(relid) as total_bytes, last_autovacuum, last_autoanalyze
-      from pg_stat_user_tables where schemaname = 'app_private'
-      order by pg_total_relation_size(relid) desc`.then((result) => result.rows),
-    metrics: database.sql`select * from app_private.operational_metrics order by bucket desc limit 365`.then((result) => result.rows),
-    databaseBytes: database.sqlOne<{ bytes: number }>`select pg_database_size(current_database()) as bytes`.then((result) => result.bytes),
-  };
-  const firstHundred = (page: NonNullable<typeof paged[keyof typeof paged]>) => page.then((result) => result.rows.slice(0, 100));
-
-  return settledSegments({
-    ...diagnostics,
-    cleanupBacklog: firstHundred(paged.cleanupBacklog),
-    deliveries: deliveries.then((result) => result.rows),
-    errors: firstHundred(paged.errors),
-    failedDeliveries: firstHundred(paged.failedDeliveries),
-    hasMore: Promise.all(Object.values(paged)).then((results) => results.some((result) => result.rows.length > 100)),
-    ...(paged.history ? { history: firstHundred(paged.history) } : {}),
-    jobs: firstHundred(paged.jobs),
+  const firstPage = (page: typeof paged[keyof typeof paged]) => page.then((result) => result.rows.slice(0, PAGE));
+  return {
+    cleanupBacklog: firstPage(paged.cleanupBacklog),
+    errors: firstPage(paged.errors),
+    failedDeliveries: firstPage(paged.failedDeliveries),
+    jobs: firstPage(paged.jobs),
+    deliveries: database.sql`select destination, status, count(*)::bigint as count, min(created_at) as "oldestAt"
+      from app_private.event_deliveries group by destination, status`.then((result) => result.rows),
+    hasMore: Promise.all(Object.values(paged)).then((results) => results.some((result) => result.rows.length > PAGE)),
     sampledAt: Promise.resolve(new Date().toISOString()),
-    ...(includePolicies ? { settings: readOperationPolicies(database) } : {}),
-  });
+  };
 }
 
 /**
@@ -208,11 +206,5 @@ async function retryEverythingFailed(uid: string, database: BackendDatabase) {
     delete from app_private.external_cleanup_backlog returning *
   ) insert into app_private.background_jobs (id, job_type, payload, created_by)
     select job_id, 'deletion', payload, ${uid} from source returning id`;
-  return {
-    cleanup: cleanup.rows.length,
-    deliveries: deliveries.rows.length,
-    jobs: jobs.rows.length,
-    retried: jobs.rows.length + deliveries.rows.length + cleanup.rows.length,
-    success: true,
-  };
+  return jobs.rows.length + deliveries.rows.length + cleanup.rows.length;
 }

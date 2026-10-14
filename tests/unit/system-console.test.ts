@@ -29,7 +29,7 @@ it("keeps canonical retried work and counts when an older poll finishes, and ser
   vi.mocked(fetchOperationsQueue).mockResolvedValueOnce(after as never);
   let finishRetry!: () => void;
   vi.mocked(retryOperationalWork).mockImplementationOnce(() => new Promise((resolve) => {
-    finishRetry = () => resolve({ success: true });
+    finishRetry = () => resolve({ success: true, retried: 1 });
   }));
   let state!: ReturnType<typeof useSystemConsole>;
   function Probe() { state = useSystemConsole(); return null; }

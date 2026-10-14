@@ -54,13 +54,14 @@ export function useProviderDiagnostics() {
   const load = useCallback(
     (provider: DiagnosticProvider, next = false) => {
       const previous = value.results[provider];
-      if (next && !previous?.nextCursor) return Promise.resolve();
+      const following = previous?.status === "available" && previous.nextCursor
+        ? { cursor: previous.nextCursor, until: previous.until }
+        : null;
+      if (next && !following) return Promise.resolve();
       const payload = {
           provider,
           ...(provider === "logs" ? { query: next ? value.activeQuery : query } : {}),
-          ...(next && previous?.nextCursor
-            ? { cursor: previous.nextCursor, until: previous.until }
-            : {}),
+          ...(next ? following : {}),
       };
       const key = JSON.stringify(payload);
       const read = readers[provider];

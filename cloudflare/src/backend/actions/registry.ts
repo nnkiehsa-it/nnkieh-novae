@@ -13,7 +13,7 @@ import { handleIssueAction } from "./issues.ts";
 import * as facilities from "./facilities.ts";
 import { handleAnnouncementAction } from "./announcements.ts";
 import * as notifications from "./notifications.ts";
-import { handleDashboardAction } from "./dashboard.ts";
+import * as dashboard from "./dashboard.ts";
 
 export type ActionDomain =
   | "announcement"
@@ -47,13 +47,15 @@ type ActionHandlers = { [N in ActionName]: ActionHandler<N> };
 /** How the Worker carries out each action in the shared contract. */
 export const ACTION_HANDLERS: ActionHandlers = {
   getRuntimePolicies: { domain: "category", access: "read", run: operations.getRuntimePolicies },
-  getProviderDiagnostics: { domain: "dashboard", access: "read", permission: "dashboard.view", run: (input, auth, database) => operations.handleOperationsAction("getProviderDiagnostics", input, auth, database) },
-  rebuildNotionArchive: { domain: "dashboard", access: "admin", permission: "role.manage", run: (input, auth, database) => operations.handleOperationsAction("rebuildNotionArchive", input, auth, database) },
-  clearOperationalErrors: { domain: "dashboard", access: "admin", permission: "role.manage", run: (input, auth, database) => operations.handleOperationsAction("clearOperationalErrors", input, auth, database) },
-  clearScheduledWork: { domain: "dashboard", access: "admin", permission: "role.manage", run: (input, auth, database) => operations.handleOperationsAction("clearScheduledWork", input, auth, database) },
-  retryOperationalWork: { domain: "dashboard", access: "admin", permission: "role.manage", run: (input, auth, database) => operations.handleOperationsAction("retryOperationalWork", input, auth, database) },
-  getOperationsConsole: { domain: "dashboard", access: "read", permission: "dashboard.view", run: (input, auth, database) => operations.handleOperationsAction("getOperationsConsole", input, auth, database) },
-  saveOperationPolicies: { domain: "category", access: "admin", permission: "category.manage", run: (input, auth, database) => operations.handleOperationsAction("saveOperationPolicies", input, auth, database) },
+  getProviderDiagnostics: { domain: "dashboard", access: "read", permission: "dashboard.view", run: operations.getProviderDiagnostics },
+  rebuildNotionArchive: { domain: "dashboard", access: "admin", permission: "role.manage", run: operations.rebuildNotionArchive },
+  clearOperationalErrors: { domain: "dashboard", access: "admin", permission: "role.manage", run: operations.clearOperationalErrors },
+  clearScheduledWork: { domain: "dashboard", access: "admin", permission: "role.manage", run: operations.clearScheduledWork },
+  retryOperationalWork: { domain: "dashboard", access: "admin", permission: "role.manage", run: operations.retryOperationalWork },
+  getOperationsConsole: { domain: "dashboard", access: "read", permission: "dashboard.view", run: operations.getOperationsConsole },
+  getOperationsQueue: { domain: "dashboard", access: "read", permission: "dashboard.view", run: operations.getOperationsQueue },
+  getOperationPolicies: { domain: "dashboard", access: "read", permission: "dashboard.view", run: operations.getOperationPolicies },
+  saveOperationPolicies: { domain: "category", access: "admin", permission: "category.manage", run: operations.saveOperationPolicies },
   getCategoryCatalog: { domain: "category", access: "read", run: categories.getCategoryCatalog },
   getCategoryManagement: { domain: "category", access: "read", permission: "category.manage", run: categories.getCategoryManagement },
   estimateCategoryPolicyChanges: { domain: "category", access: "read", permission: "category.manage", run: categories.estimateCategoryPolicyChanges },
@@ -123,5 +125,5 @@ export const ACTION_HANDLERS: ActionHandlers = {
   registerPushToken: { domain: "notification", access: "personal", run: notifications.registerPushToken },
   unregisterPushToken: { domain: "notification", access: "personal", run: notifications.unregisterPushToken },
   updatePlatformAdminNotificationPreferences: { domain: "notification", access: "personal", run: notifications.updatePlatformAdminNotificationPreferences },
-  getPlatformDashboard: { domain: "dashboard", access: "read", permission: "dashboard.view", run: (input, auth, database) => handleDashboardAction("getPlatformDashboard", input, auth, database) },
+  getPlatformDashboard: { domain: "dashboard", access: "read", permission: "dashboard.view", run: dashboard.getPlatformDashboard },
 };

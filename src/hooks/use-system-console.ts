@@ -58,8 +58,8 @@ export function useSystemConsole() {
       (active) => {
         setPollError("");
         return queueOnly
-          ? fetchOperationsQueue({ page: nextPage, queueOnly: true })
-          : fetchOperationsConsole({ page: nextPage, systemOnly: true }, {
+          ? fetchOperationsQueue(nextPage)
+          : fetchOperationsConsole(nextPage, {
             onPanel: (panel) => {
               if (active()) remember((current) => ({ ...current, page: nextPage, snapshot: { ...current.snapshot, ...panel } }));
             },
@@ -90,7 +90,7 @@ export function useSystemConsole() {
     if (mutationOwner.current) return;
     const current = capture();
     try {
-      const snapshot = await fetchOperationsQueue({ page: value.page, queueOnly: true });
+      const snapshot = await fetchOperationsQueue(value.page);
       if (!current() || mutationOwner.current) return;
       setPollError("");
       remember((reading) => reading.page !== value.page ? reading : {
@@ -139,24 +139,24 @@ export function useSystemConsole() {
   const retryAll = () => mutate(
     { type: "retry", id: "all" },
     () => retryOperationalWork({ kind: "all" }),
-    (result) => toast.success(t("admin.retryAllQueued", { count: result.retried ?? 0 })),
+    (result) => toast.success(t("admin.retryAllQueued", { count: result.retried })),
   );
 
   const clearErrors = () => mutate(
     { type: "clear", kind: "errors" },
-    () => clearOperationalErrors({}),
+    () => clearOperationalErrors(),
     (result) => toast.success(t("admin.clearErrorsDone", { count: result.cleared })),
   );
 
   const clearSchedules = () => mutate(
     { type: "clear", kind: "schedules" },
-    () => clearScheduledWork({}),
+    () => clearScheduledWork(),
     (result) => toast.success(t("admin.clearSchedulesDone", { count: result.cleared })),
   );
 
   const rebuildNotion = () => mutate(
     { type: "rebuild" },
-    () => queueNotionArchiveRebuild({}),
+    () => queueNotionArchiveRebuild(),
     (result) => {
       // Replace superseded jobs immediately while the canonical queue is read.
       remember((current) => ({

@@ -34,21 +34,14 @@ integrationTest('operations settings enforce administrator access, revision conf
   const snapshot = asRecord(await callAction('getOperationsConsole', {}, admin.auth));
   assert.ok(Number(snapshot.databaseBytes) > 0);
   assert.ok(Array.isArray(snapshot.capacity));
-  const progress = asRecord(await callAction('getOperationsConsole', { progressOnly: true }, admin.auth));
-  assert.deepEqual(Object.keys(progress), ['jobs']);
-  assert.deepEqual(progress.jobs, snapshot.jobs);
-  const policies = asRecord(await callAction('getOperationsConsole', { policiesOnly: true }, admin.auth));
+  assert.equal('settings' in snapshot, false);
+  const policies = asRecord(await callAction('getOperationPolicies', {}, admin.auth));
   assert.deepEqual(Object.keys(policies).sort(), ['history', 'settings']);
-  assert.deepEqual(policies.settings, snapshot.settings);
-  assert.deepEqual(policies.history, snapshot.history);
-  const system = asRecord(await callAction('getOperationsConsole', { systemOnly: true }, admin.auth));
-  assert.equal('settings' in system, false);
-  assert.equal('history' in system, false);
-  assert.deepEqual(system.jobs, snapshot.jobs);
-  const queue = asRecord(await callAction('getOperationsConsole', { queueOnly: true }, admin.auth));
+  assert.equal(asRecord(policies.settings).revision, 1);
+  const queue = asRecord(await callAction('getOperationsQueue', {}, admin.auth));
   assert.deepEqual(Object.keys(queue).sort(), ['cleanupBacklog', 'deliveries', 'errors', 'failedDeliveries', 'hasMore', 'jobs', 'sampledAt']);
   for (const key of ['cleanupBacklog', 'deliveries', 'errors', 'failedDeliveries', 'hasMore', 'jobs']) {
-    assert.deepEqual(queue[key], system[key]);
+    assert.deepEqual(queue[key], snapshot[key]);
   }
   const metrics = snapshot.metrics as Array<{ bucket: unknown; databaseBytes: unknown }>;
   assert.match(String(metrics[0].bucket), /^\d{4}-\d{2}-\d{2}$/u);
@@ -57,8 +50,8 @@ integrationTest('operations settings enforce administrator access, revision conf
   assert.equal(diagnostics.status, 'not-configured');
   await assert.rejects(() => callAction('getProviderDiagnostics', { provider: 'cloudflare' }, user.auth), /permission-denied/);
   await assert.rejects(() => callAction('getOperationsConsole', {}, user.auth), /permission-denied/);
-  await assert.rejects(() => callAction('getOperationsConsole', { progressOnly: true }, user.auth), /permission-denied/);
-  await assert.rejects(() => callAction('getOperationsConsole', { policiesOnly: true }, user.auth), /permission-denied/);
+  await assert.rejects(() => callAction('getOperationsQueue', {}, user.auth), /permission-denied/);
+  await assert.rejects(() => callAction('getOperationPolicies', {}, user.auth), /permission-denied/);
   const runtime = asRecord(await callAction('getRuntimePolicies', {}, user.auth));
   assert.equal(runtime.revision, 1);
   assert.equal('backupIntervalHours' in asRecord(runtime.values), false);
@@ -113,8 +106,6 @@ integrationTest('one retry covers every kind of failed work, and only for admini
   await assert.rejects(() => callAction('retryOperationalWork', { kind: 'all' }, member.auth), /permission-denied/);
   const result = asRecord(await callAction('retryOperationalWork', { kind: 'all' }, admin.auth));
   assert.equal(result.success, true);
-  assert.equal(result.jobs, 2);
-  assert.equal(result.cleanup, 1);
   assert.equal(Number(result.retried) >= 3, true);
 
   const pending = await database.query<{ count: number }>(

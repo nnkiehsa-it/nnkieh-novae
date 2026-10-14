@@ -67,17 +67,17 @@ export function ProviderDiagnostics() {
             {!result ? (busy ? <li className="px-5 py-4"><Skeleton className="h-6 w-full" /></li> : null) : result.status === "available" ? (
               <ListRow label={t("ui.operations.checkedAt")} value={formatDate(new Date(result.checkedAt))} />
             ) : (
-              <ListRow label={t(STATUS_KEYS[result.status])} tone="danger" value={result.error} />
+              <ListRow label={t(STATUS_KEYS[result.status])} tone="danger" value={result.status === "unavailable" ? result.error : undefined} />
             )}
             {result ? <Report provider={provider} result={result} /> : null}
-            {result?.data ? (
+            {result?.status === "available" && result.data ? (
               <DetailRow label={t("ui.operations.providerDetails")} title={t("ui.operations.providerDetails")}>
                 <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded-tile bg-surface-raised p-4 text-xs">
                   {JSON.stringify(result.data, null, 2)}
                 </pre>
               </DetailRow>
             ) : null}
-            {result?.nextCursor ? (
+            {result?.status === "available" && result.nextCursor ? (
               <li className="px-5 py-3">
                 <Button className="w-full" onClick={() => void state.load(provider, true)} status={busy ? "loading" : "idle"}>
                   {t("ui.operations.nextPage")}

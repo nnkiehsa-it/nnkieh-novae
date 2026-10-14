@@ -115,6 +115,6 @@ integrationTest("notification state, mandatory push, admin preferences, and dash
     () => callAction("getPlatformDashboard", {}, user.auth),
   );
   const dashboard = asRecord(await callAction("getPlatformDashboard", {}, admin.auth));
-  assert.ok("stats" in dashboard);
-  assert.ok("operations" in dashboard);
+  assert.ok(["healthy", "attention", "critical"].includes(String(dashboard.status)));
+  assert.equal(typeof dashboard.issuesByCategory, "object");
 });

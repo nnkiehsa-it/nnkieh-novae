@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
 import { Skeleton } from "@/ui/feedback";
 import { ListGroup, ListRow } from "@/ui/list";
-import type { PlatformDashboardData } from "@/types";
+import type { PlatformDashboard } from "@/hooks/use-admin-overview";
 
 const STATUS_TONES: Record<string, string> = { attention: "bg-caution", healthy: "bg-positive" };
 
@@ -20,26 +20,25 @@ const MAX_FAILURES = 3;
  */
 export function OperationsHealth({ canOpenSystem, platform }: {
   canOpenSystem: boolean;
-  platform: PlatformDashboardData | null;
+  platform: PlatformDashboard | null;
 }) {
   const { t } = useI18n();
-  const operations = platform?.operations;
   const counters = [
-    { label: t("ui.dashboard.pendingNotion"), value: operations?.pending_notion_sync_count },
-    { label: t("ui.dashboard.failedDelivery"), value: operations?.failed_delivery_count },
-    { label: t("ui.dashboard.failedPush"), value: operations?.failed_push_delivery_count },
-    { label: t("ui.dashboard.cleanup"), value: operations?.cleanup_backlog_count },
-    { label: t("ui.dashboard.stuckUploads"), value: operations?.stuck_upload_count },
+    { label: t("ui.dashboard.pendingNotion"), value: platform?.pendingNotionSync },
+    { label: t("ui.dashboard.failedDelivery"), value: platform?.failedDeliveries },
+    { label: t("ui.dashboard.failedPush"), value: platform?.failedPushDeliveries },
+    { label: t("ui.dashboard.cleanup"), value: platform?.cleanupBacklog },
+    { label: t("ui.dashboard.stuckUploads"), value: platform?.stuckUploads },
   ].filter((counter) => counter.value === undefined || counter.value > 0);
-  const failures = operations?.recent_failures ?? [];
-  const clear = Boolean(operations) && counters.length === 0 && failures.length === 0;
+  const failures = platform?.recentFailures ?? [];
+  const clear = Boolean(platform) && counters.length === 0 && failures.length === 0;
 
   return (
     <ListGroup
       title={
         <span className="flex items-center gap-2">
-          {operations
-            ? <span aria-hidden className={cn("size-2 rounded-full", STATUS_TONES[operations.overall_status] ?? "bg-danger")} />
+          {platform
+            ? <span aria-hidden className={cn("size-2 rounded-full", STATUS_TONES[platform.status] ?? "bg-danger")} />
             : <Skeleton className="size-2 rounded-full" />}
           {t("ui.dashboard.operations")}
         </span>
@@ -58,12 +57,12 @@ export function OperationsHealth({ canOpenSystem, platform }: {
       )}
       {failures.slice(0, MAX_FAILURES).map((failure) => (
         <ListRow
-          detail={t("ui.dashboard.trace", { id: failure.failure_id })}
-          icon={failure.source === "outbox" ? <Database /> : <Clock />}
+          detail={failure.failureId ? t("ui.dashboard.trace", { id: failure.failureId }) : undefined}
+          icon={failure.source.startsWith("delivery:") ? <Database /> : <Clock />}
           key={failure.id}
           label={`${failure.source} · ${failure.status}`}
           tone="danger"
-          value={formatDate(failure.updated_at)}
+          value={formatDate(failure.updatedAt)}
         />
       ))}
       {canOpenSystem ? <ListRow href="/admin/system" icon={<Warning />} label={t("admin.systemTitle")} /> : null}
