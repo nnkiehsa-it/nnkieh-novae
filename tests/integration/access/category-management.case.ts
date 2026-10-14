@@ -76,13 +76,12 @@ integrationTest("runtime category setup and management enforce platform permissi
     issuesEnabled: true,
   }, admin.auth));
   assert.equal(setup.success, true);
-  assert.equal(setup.facilitiesEnabled, false);
+  assert.equal(setup.alreadyCompleted, false);
   const repeatedSetup = asRecord(await callAction("completeInitialSetup", {
-    issueCategories: [],
-    facilityCategories: [],
+    facilitiesEnabled: false, facilityCategories: [], issuesEnabled: false, issueCategories: [],
   }, admin.auth));
   assert.equal(repeatedSetup.success, true);
-  assert.equal(repeatedSetup.setupCompleted, true);
+  assert.equal(repeatedSetup.alreadyCompleted, true);
 
   const management = asRecord(await callAction("getCategoryManagement", {}, admin.auth));
   assert.deepEqual(asRecord(management.features), {

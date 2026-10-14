@@ -1,10 +1,12 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { OPERATION_POLICIES, type OperationPolicies } from "../../../../shared/operation-policies.ts";
+import * as v from 'valibot';
+import { OperationPolicies as OperationPoliciesSchema, PolicySnapshot as PolicySnapshotSchema } from "../../../../shared/contracts/operations.ts";
+import type { OperationPolicies } from "../../../../shared/operation-policies.ts";
 import type { DatabaseSession } from '../database/client';
 import type { Selected } from '../database/schema';
 
 const activePolicies = new AsyncLocalStorage<PolicySnapshot>();
-interface PolicySnapshot { revision: number; values: OperationPolicies }
+type PolicySnapshot = v.InferOutput<typeof PolicySnapshotSchema>;
 
 /**
  * How long an isolate may answer from the settings it has already read.
@@ -19,22 +21,16 @@ const POLICY_READ_MAX_AGE_MS = 60_000;
 let reading: { expiresAt: number; pending: Promise<PolicySnapshot> } | undefined;
 
 export function validateOperationPolicies(value: unknown): OperationPolicies {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('validation-invalid');
-  const input = value as Record<string, unknown>;
-  if (Object.keys(input).length !== Object.keys(OPERATION_POLICIES).length) throw new Error('validation-invalid');
-  for (const [key, spec] of Object.entries(OPERATION_POLICIES)) {
-    const number = input[key];
-    if (typeof number !== 'number' || !Number.isInteger(number) || number < spec.min || number > spec.max) throw new Error('validation-invalid');
-  }
-  return input as OperationPolicies;
+  const result = v.safeParse(OperationPoliciesSchema, value);
+  if (!result.success) throw new Error('validation-invalid');
+  return result.output;
 }
 
 /** The stored settings, as they are right now. */
 export async function readOperationPolicies(database: DatabaseSession): Promise<PolicySnapshot> {
   const setting = await database.sqlOne<Selected<'runtime_settings', 'value'>>`
     select value from app_private.runtime_settings where key = 'operations_settings'`;
-  const stored = JSON.parse(setting.value) as PolicySnapshot;
-  return { revision: stored.revision, values: validateOperationPolicies(stored.values) };
+  return v.parse(PolicySnapshotSchema, JSON.parse(setting.value));
 }
 
 /** Lazily acquire a database only when the isolate needs a fresh snapshot. */

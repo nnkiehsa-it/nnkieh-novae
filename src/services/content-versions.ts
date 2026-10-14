@@ -1,11 +1,11 @@
 import { auth } from '@/lib/firebase';
-import { invokeBackendAction } from '@/services/backend-action';
+import type { ContentVersionDomain, ContentVersions } from '@shared/contracts/session.ts';
+import { callAction } from '@/services/backend-action';
 import { markContentCachePrefixStale } from '@/services/content-read-cache';
 import { readLocalStorage, writeLocalStorage } from '@/lib/browser-storage';
 import { clearContentEntityDomain, type ContentEntityDomain } from '@/lib/content-entity-store';
 
-export type ContentVersionDomain = 'announcements' | 'facilities' | 'issues';
-type ContentVersions = Record<ContentVersionDomain, number>;
+export type { ContentVersionDomain } from '@shared/contracts/session.ts';
 
 interface StoredContentVersions {
   versions: ContentVersions;
@@ -89,8 +89,7 @@ export async function ensureContentVersionsFresh(options: { notify?: boolean } =
   if (existing) return await existing;
 
   const pending = (async () => {
-    const fn = invokeBackendAction<Record<string, never>, { versions: ContentVersions }>('getContentVersions');
-    const result = await fn({});
+    const result = await callAction('getContentVersions', {});
     if (auth?.currentUser?.uid !== uid) return [];
     return applyContentVersionsSnapshot(result.versions, options);
   })().finally(() => {

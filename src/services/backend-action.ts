@@ -6,7 +6,7 @@ import { auth } from '@/lib/firebase';
 import { apiGatewayUrl } from '@/lib/api-gateway';
 import { ApiRequestError, type ApiErrorResponse } from '@/lib/api-error';
 import { backendSecurityHeaders } from '@/lib/backend-security';
-import { setOperationPolicies, getOperationPolicy, operationPolicyRevision, type PolicySnapshot } from '@/lib/operation-policies';
+import { setOperationPolicies, getOperationPolicy, operationPolicyRevision } from '@/lib/operation-policies';
 import { readNdjson } from '@/lib/ndjson';
 
 /**
@@ -19,7 +19,7 @@ import { readNdjson } from '@/lib/ndjson';
 let policyRefresh: Promise<void> | null = null;
 
 function refreshRuntimePolicies() {
-  policyRefresh ??= invokeBackendAction<Record<string, never>, PolicySnapshot>('getRuntimePolicies')({})
+  policyRefresh ??= callAction('getRuntimePolicies', {})
     .then(snapshot => { setOperationPolicies(snapshot); })
     .finally(() => { policyRefresh = null; });
   return policyRefresh;
@@ -139,7 +139,7 @@ export function invokeBackendAction<TRequest = Record<string, unknown>, TRespons
     assertCurrentSession();
 
     if (name === 'getSessionBootstrap') {
-      setOperationPolicies((answer.result as { runtimePolicies: PolicySnapshot }).runtimePolicies);
+      setOperationPolicies((answer.result as ActionOutput<'getSessionBootstrap'>).runtimePolicies);
     } else if (name !== 'getRuntimePolicies' && answer.policyRevision !== operationPolicyRevision()) {
       void refreshRuntimePolicies().catch(() => undefined);
     }

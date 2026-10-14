@@ -1,11 +1,15 @@
 import { forgetOperationPolicies, readOperationPolicies, validateOperationPolicies } from '../shared/operation-policies';
+import type { ActionInput } from '../../../../shared/actions.ts';
 import { settledSegments } from './segments.ts';
 import type { AuthContext, BackendDatabase, JsonRecord } from './types';
 import { providerDiagnostics } from '../shared/provider-diagnostics';
 import { notionEnabled } from '../shared/notion-api';
 
+export async function getRuntimePolicies(_input: ActionInput<'getRuntimePolicies'>, _auth: AuthContext, database: BackendDatabase) {
+  return await readOperationPolicies(database);
+}
+
 export async function handleOperationsAction(action: string, payload: JsonRecord, auth: AuthContext, database: BackendDatabase) {
-  if (action === 'getRuntimePolicies') return readOperationPolicies(database);
   if (!auth.isAdmin) throw new Error('permission-denied');
   if (action === 'getProviderDiagnostics') {
     if (!['cloudinary','cloudflare','logs'].includes(String(payload.provider))) throw new Error('validation-invalid');

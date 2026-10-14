@@ -1,6 +1,6 @@
-import { invokeBackendAction } from '@/services/backend-action';
-import type { CategoryCatalog } from '@/types/categories';
-import type { SessionAccess } from '@/services/session-role';
+import type { SessionBootstrap } from '@shared/contracts/session.ts';
+import type { SessionAccess } from '@shared/contracts/users.ts';
+import { callAction } from '@/services/backend-action';
 import { seedRuntimeSettings } from '@/services/runtime-settings';
 import {
   CONTENT_SHORT_CACHE_TTL_MS,
@@ -10,32 +10,7 @@ import {
   setCachedContentFromRead,
 } from '@/services/content-read-cache';
 
-type ContentVersionDomain = 'announcements' | 'facilities' | 'issues';
-type ContentVersions = Record<ContentVersionDomain, number>;
-
-interface SessionBootstrapResult {
-  access: SessionAccess;
-  catalog: CategoryCatalog;
-  notificationUnread: { hasUnread: boolean };
-  runtime: { pushTokenConfirmationDays: number };
-  versions: ContentVersions;
-  visitRecorded: boolean;
-}
-
-function normalizeAccess(access: Partial<SessionAccess> | undefined): SessionAccess {
-  return {
-    role: access?.role === 'admin' ? 'admin' : 'user',
-    roles: Array.isArray(access?.roles) ? access.roles : [],
-    permissions: Array.isArray(access?.permissions) ? access.permissions : [],
-    managedIssueCategoryIds: Array.isArray(access?.managedIssueCategoryIds)
-      ? access.managedIssueCategoryIds
-      : [],
-    managedFacilityCategoryIds: Array.isArray(access?.managedFacilityCategoryIds)
-      ? access.managedFacilityCategoryIds
-      : [],
-    setupCompleted: access?.setupCompleted === true,
-  };
-}
+type SessionBootstrapResult = SessionBootstrap;
 
 const SESSION_BOOTSTRAP_CACHE_KEY = 'session-bootstrap-v2';
 let pendingRecordVisit = false;
@@ -83,22 +58,13 @@ export async function fetchSessionBootstrap(options: {
   return runCoalescedContentRequest(SESSION_BOOTSTRAP_CACHE_KEY, async (cacheGuard) => {
     const shouldRecordVisit = pendingRecordVisit;
     pendingRecordVisit = false;
-    const result = await invokeBackendAction<
-      { recordVisit?: boolean },
-      SessionBootstrapResult
-    >('getSessionBootstrap', {
+    const result = await callAction('getSessionBootstrap', { recordVisit: shouldRecordVisit }, {
       onSegment: (key, data) => {
-        if (key === 'access') options.onAccess?.(normalizeAccess(data as Partial<SessionAccess>));
+        if (key === 'access') options.onAccess?.(data as SessionAccess);
       },
-    })({
-      ...(shouldRecordVisit ? { recordVisit: true } : {}),
     });
-    const normalized: SessionBootstrapResult = {
-      ...result,
-      access: normalizeAccess(result.access),
-    };
-    seedRuntimeSettings(normalized.runtime);
-    setCachedContentFromRead(cacheGuard, { ...normalized, visitRecorded: false });
-    return normalized;
+    seedRuntimeSettings(result.runtime);
+    setCachedContentFromRead(cacheGuard, { ...result, visitRecorded: false });
+    return result;
   });
 }

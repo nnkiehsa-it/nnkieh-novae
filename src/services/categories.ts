@@ -1,82 +1,42 @@
-import { invokeBackendAction } from '@/services/backend-action';
+import type { ActionRequest } from '@shared/actions.ts';
+import { callAction } from '@/services/backend-action';
 import { markSessionBootstrapStale } from '@/services/session-bootstrap';
-import type {
-  CategoryCatalog,
-  CategoryManagementCatalog,
-  FacilityCategoryConfig,
-  FacilityCategoryDraft,
-  IssueCategoryConfig,
-  IssueCategoryDraft,
-  PolicyImpactEstimate,
-  PlatformSettings,
-} from '@/types/categories';
+import type { CategoryCatalog, FacilityCategoryConfig, IssueCategoryConfig, PlatformSettings } from '@/types/categories';
 
-export interface CategoryManagementInput {
-  announcementMaxImages: number;
-  announcementCommentMaxImages: number;
-  announcementCommentsEnabled: boolean;
-  deletedFacilityCategoryIds: string[];
-  deletedIssueCategoryIds: string[];
-  facilitiesEnabled: boolean;
-  facilityCategories: FacilityCategoryConfig[];
+export type { PlatformJob } from '@shared/contracts/categories.ts';
+
+/** The catalog as the admin screen edits it: whole category records, in display order. */
+export type CategoryManagementInput = Omit<ActionRequest<'saveCategoryManagement'>, 'revision' | 'issueCategories' | 'facilityCategories'> & {
   issueCategories: IssueCategoryConfig[];
-  issuesEnabled: boolean;
-}
-
-export interface PlatformJob {
-  id: string;
-  jobType: string;
-  scopeId: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed' | 'superseded';
-  estimatedRows: number;
-  processedRows: number;
-  affectedRows: number;
-  result: Record<string, unknown>;
-  failureId: string | null;
-  createdAt: string;
-  updatedAt: string;
-  completedAt: string | null;
-}
+  facilityCategories: FacilityCategoryConfig[];
+};
 
 export async function getCategoryCatalog(
   options: { onCatalog?: (catalog: Partial<CategoryCatalog>) => void } = {},
 ) {
-  return await invokeBackendAction<Record<string, never>, CategoryCatalog>('getCategoryCatalog', {
+  return await callAction('getCategoryCatalog', {}, {
     onSegment: (key, data) => {
       if (key) options.onCatalog?.({ [key]: data } as Partial<CategoryCatalog>);
     },
-  })({});
+  });
 }
 
 export async function getCategoryManagement() {
-  return await invokeBackendAction<Record<string, never>, CategoryManagementCatalog>('getCategoryManagement')({});
+  return await callAction('getCategoryManagement', {});
 }
 
-export async function completeInitialSetup(input: {
-  facilitiesEnabled: boolean;
-  issueCategories: IssueCategoryDraft[];
-  facilityCategories: FacilityCategoryDraft[];
-  issuesEnabled: boolean;
-}) {
-  const action = invokeBackendAction<typeof input, { success: boolean; setupCompleted: boolean }>('completeInitialSetup');
-  return await action(input);
+export async function completeInitialSetup(input: ActionRequest<'completeInitialSetup'>) {
+  return await callAction('completeInitialSetup', input);
 }
 
 export async function saveCategoryManagement(input: CategoryManagementInput, revision: string) {
-  const action = invokeBackendAction<
-    CategoryManagementInput & { revision: string },
-    CategoryManagementCatalog & { success: boolean }
-  >('saveCategoryManagement');
-  const result = await action({ ...input, revision });
+  const result = await callAction('saveCategoryManagement', { ...input, revision });
   markSessionBootstrapStale();
   return result;
 }
 
 export async function estimateCategoryPolicyChanges(input: CategoryManagementInput, revision: string) {
-  return await invokeBackendAction<
-    Pick<CategoryManagementInput, 'announcementCommentsEnabled' | 'deletedIssueCategoryIds' | 'issueCategories'> & { revision: string },
-    { estimates: PolicyImpactEstimate[]; totalEstimatedRows: number }
-  >('estimateCategoryPolicyChanges')({
+  return await callAction('estimateCategoryPolicyChanges', {
     announcementCommentsEnabled: input.announcementCommentsEnabled,
     deletedIssueCategoryIds: input.deletedIssueCategoryIds,
     issueCategories: input.issueCategories,
@@ -85,22 +45,13 @@ export async function estimateCategoryPolicyChanges(input: CategoryManagementInp
 }
 
 export async function listPlatformJobs() {
-  return await invokeBackendAction<Record<string, never>, { entries: PlatformJob[] }>(
-    'listPlatformJobs',
-  )({});
+  return await callAction('listPlatformJobs', {});
 }
 
 export async function savePlatformSettings(settings: PlatformSettings, revision: string) {
-  const action = invokeBackendAction<
-    PlatformSettings & { revision: string },
-    PlatformSettings & { estimatedRows: number; jobId: string | null; revision: string; success: boolean }
-  >('savePlatformSettings');
-  return await action({ ...settings, revision });
+  return await callAction('savePlatformSettings', { ...settings, revision });
 }
 
 export async function estimateRetentionCleanup(settings: PlatformSettings, revision: string) {
-  return await invokeBackendAction<
-    PlatformSettings & { revision: string },
-    { details: Record<string, number>; updatedDetails: Record<string, number>; totalDeletedRows: number; totalUpdatedRows: number; totalEstimatedRows: number }
-  >('estimateRetentionCleanup')({ ...settings, revision });
+  return await callAction('estimateRetentionCleanup', { ...settings, revision });
 }

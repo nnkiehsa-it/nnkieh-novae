@@ -1,110 +1,38 @@
+import * as v from "valibot";
 import { DATA_RETENTION } from "../../../../shared/data-retention.ts";
 import { IMAGE_COMPRESSION } from "../../../../shared/rate-limits.ts";
+import { DataRetentionSettings, ImageUploadSettings, type PlatformSettings } from "../../../../shared/contracts/categories.ts";
 import type { DatabaseSession } from "../database/client.ts";
 import type { Selected } from "../database/schema.ts";
 
+export type { ImageUploadSettings } from "../../../../shared/contracts/categories.ts";
+
 const IMAGE_UPLOADS_KEY = "image_upload_settings";
 const RETENTION_KEY = "data_retention_settings";
-const MAX_RETENTION_DAYS = 3650;
-
-export interface ImageUploadSettings {
-  maxDimension: number;
-  maxUploadKilobytes: number;
-  webpQuality: number;
-}
-
-type RetentionDefaults = typeof DATA_RETENTION;
-type DataRetentionSettings = {
-  -readonly [Key in keyof RetentionDefaults]: RetentionDefaults[Key] extends boolean ? boolean : number;
-};
-
-interface PlatformSettings {
-  imageUploads: ImageUploadSettings;
-  retention: DataRetentionSettings;
-}
 
 export type UploadTargetType = "announcement" | "announcement_comment" | "comment" | "facility" | "issue";
 
-const defaultImageUploads: ImageUploadSettings = {
+const DEFAULT_IMAGE_UPLOADS = {
   maxDimension: IMAGE_COMPRESSION.maxDimension,
   maxUploadKilobytes: IMAGE_COMPRESSION.maxUploadKilobytes,
   webpQuality: IMAGE_COMPRESSION.webpQuality,
 };
 
-const defaultRetention = { ...DATA_RETENTION } as DataRetentionSettings;
-
-function record(value: unknown) {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : {};
+/**
+ * A stored setting over its defaults. A setting nobody has saved yet is the
+ * default, and an entry added after the last save takes its default; a stored
+ * value that breaks the contract is a fault, not something to paper over.
+ */
+function stored<T extends v.GenericSchema>(schema: T, defaults: object, value: string | null | undefined): v.InferOutput<T> {
+  return v.parse(schema, { ...defaults, ...(value ? JSON.parse(value) as object : {}) });
 }
 
-function positiveInteger(value: unknown, fallback: number, minimum: number, maximum: number) {
-  const number = typeof value === "number" ? value : Number(value);
-  return Number.isInteger(number) && number >= minimum && number <= maximum ? number : fallback;
-}
-
-function numberInRange(value: unknown, fallback: number, minimum: number, maximum: number) {
-  const number = typeof value === "number" ? value : Number(value);
-  return Number.isFinite(number) && number >= minimum && number <= maximum ? number : fallback;
-}
-
-function boolean(value: unknown, fallback: boolean) {
-  return typeof value === "boolean" ? value : fallback;
-}
-
-function parseStoredValue(value: string | null | undefined) {
-  if (!value) return {};
-  try {
-    return record(JSON.parse(value));
-  } catch {
-    return {};
-  }
-}
-
-function normalizeImageUploads(value: unknown): ImageUploadSettings {
-  const settings = record(value);
+export function platformSettingsFromStoredRows(rows: Selected<"runtime_settings", "key" | "value">[]): PlatformSettings {
+  const values = new Map(rows.map((entry) => [entry.key, entry.value]));
   return {
-    maxDimension: positiveInteger(settings.maxDimension, defaultImageUploads.maxDimension, 256, 8000),
-    maxUploadKilobytes: positiveInteger(
-      settings.maxUploadKilobytes,
-      defaultImageUploads.maxUploadKilobytes,
-      100,
-      IMAGE_COMPRESSION.maxPlatformUploadKilobytes,
-    ),
-    webpQuality: numberInRange(settings.webpQuality, defaultImageUploads.webpQuality, 0.4, 0.95),
+    imageUploads: stored(ImageUploadSettings, DEFAULT_IMAGE_UPLOADS, values.get(IMAGE_UPLOADS_KEY)),
+    retention: stored(DataRetentionSettings, DATA_RETENTION, values.get(RETENTION_KEY)),
   };
-}
-
-function normalizeRetention(value: unknown): DataRetentionSettings {
-  const settings = record(value);
-  return Object.fromEntries(Object.entries(defaultRetention).map(([key, fallback]) => [
-    key,
-    typeof fallback === "boolean"
-      ? boolean(settings[key], fallback)
-      : positiveInteger(
-        settings[key],
-        fallback,
-        1,
-        key.endsWith("Hours") ? 87_600 : MAX_RETENTION_DAYS,
-      ),
-  ])) as DataRetentionSettings;
-}
-
-export function platformSettingsFromInput(value: unknown): PlatformSettings {
-  const input = record(value);
-  if (!("imageUploads" in input) || !("retention" in input)) throw new Error("validation-required");
-  const imageUploads = normalizeImageUploads(input.imageUploads);
-  const retention = normalizeRetention(input.retention);
-  const imageInput = record(input.imageUploads);
-  const retentionInput = record(input.retention);
-  if (
-    Object.keys(imageUploads).some((key) => imageUploads[key as keyof ImageUploadSettings] !== imageInput[key])
-    || Object.keys(retention).some((key) => retention[key as keyof DataRetentionSettings] !== retentionInput[key])
-  ) {
-    throw new Error("validation-required");
-  }
-  return { imageUploads, retention };
 }
 
 export async function loadPlatformSettings(database: DatabaseSession): Promise<PlatformSettings> {
@@ -113,18 +41,10 @@ export async function loadPlatformSettings(database: DatabaseSession): Promise<P
   return platformSettingsFromStoredRows(rows);
 }
 
-export function platformSettingsFromStoredRows(rows: Selected<"runtime_settings", "key" | "value">[]): PlatformSettings {
-  const values = new Map(rows.map((entry) => [entry.key, entry.value]));
-  return {
-    imageUploads: normalizeImageUploads(parseStoredValue(typeof values.get(IMAGE_UPLOADS_KEY) === "string" ? values.get(IMAGE_UPLOADS_KEY) : null)),
-    retention: normalizeRetention(parseStoredValue(typeof values.get(RETENTION_KEY) === "string" ? values.get(RETENTION_KEY) : null)),
-  };
-}
-
 export async function loadImageUploadSettings(database: DatabaseSession): Promise<ImageUploadSettings> {
   const row = await database.sqlMaybe<Selected<"runtime_settings", "value">>`
     select value from app_private.runtime_settings where key = ${IMAGE_UPLOADS_KEY}`;
-  return normalizeImageUploads(parseStoredValue(row?.value));
+  return stored(ImageUploadSettings, DEFAULT_IMAGE_UPLOADS, row?.value);
 }
 
 export function maxUploadBytes(settings: ImageUploadSettings) {

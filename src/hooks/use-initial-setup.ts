@@ -80,11 +80,8 @@ export function useInitialSetup() {
       (identityValid(issues) &&
         issues.every(
           (issue) =>
-            issue.readAccess &&
-            typeof issue.authorVisible === "boolean" &&
-            (!issue.supportEnabled ||
-              (Number(issue.supportGoal) > 0 &&
-                Number(issue.supportDeadlineDays) > 0)),
+            !issue.supportEnabled ||
+            (Number(issue.supportGoal) > 0 && Number(issue.supportDeadlineDays) > 0),
         ));
     return issuesValid && (!facilitiesEnabled || identityValid(facilities));
   }, [facilities, facilitiesEnabled, issues, issuesEnabled]);

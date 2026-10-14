@@ -1,8 +1,8 @@
 import type { ActionInput, ActionName } from "../../../../shared/actions.ts";
 import type { ActionSegment, AuthContext, BackendDatabase, PermissionCode } from "./types.ts";
-import { handleOperationsAction } from "./operations.ts";
-import { handleCategoryAction } from "./categories.ts";
-import { loadContentVersions } from "./content-versions.ts";
+import * as operations from "./operations.ts";
+import * as categories from "./categories.ts";
+import * as contentVersions from "./content-versions.ts";
 import { getSessionBootstrap } from "./session-bootstrap.ts";
 import * as users from "./users.ts";
 import * as userAccess from "./user-access.ts";
@@ -46,25 +46,25 @@ type ActionHandlers = { [N in ActionName]: ActionHandler<N> };
 
 /** How the Worker carries out each action in the shared contract. */
 export const ACTION_HANDLERS: ActionHandlers = {
-  getRuntimePolicies: { domain: "category", access: "read", run: (input, auth, database) => handleOperationsAction("getRuntimePolicies", input, auth, database) },
-  getProviderDiagnostics: { domain: "dashboard", access: "read", permission: "dashboard.view", run: (input, auth, database) => handleOperationsAction("getProviderDiagnostics", input, auth, database) },
-  rebuildNotionArchive: { domain: "dashboard", access: "admin", permission: "role.manage", run: (input, auth, database) => handleOperationsAction("rebuildNotionArchive", input, auth, database) },
-  clearOperationalErrors: { domain: "dashboard", access: "admin", permission: "role.manage", run: (input, auth, database) => handleOperationsAction("clearOperationalErrors", input, auth, database) },
-  clearScheduledWork: { domain: "dashboard", access: "admin", permission: "role.manage", run: (input, auth, database) => handleOperationsAction("clearScheduledWork", input, auth, database) },
-  retryOperationalWork: { domain: "dashboard", access: "admin", permission: "role.manage", run: (input, auth, database) => handleOperationsAction("retryOperationalWork", input, auth, database) },
-  getOperationsConsole: { domain: "dashboard", access: "read", permission: "dashboard.view", run: (input, auth, database) => handleOperationsAction("getOperationsConsole", input, auth, database) },
-  saveOperationPolicies: { domain: "category", access: "admin", permission: "category.manage", run: (input, auth, database) => handleOperationsAction("saveOperationPolicies", input, auth, database) },
-  getCategoryCatalog: { domain: "category", access: "read", run: (input, auth, database) => handleCategoryAction("getCategoryCatalog", input, auth, database) },
-  getCategoryManagement: { domain: "category", access: "read", permission: "category.manage", run: (input, auth, database) => handleCategoryAction("getCategoryManagement", input, auth, database) },
-  estimateCategoryPolicyChanges: { domain: "category", access: "read", permission: "category.manage", run: (input, auth, database) => handleCategoryAction("estimateCategoryPolicyChanges", input, auth, database) },
-  estimateRetentionCleanup: { domain: "category", access: "read", permission: "category.manage", run: (input, auth, database) => handleCategoryAction("estimateRetentionCleanup", input, auth, database) },
-  listPlatformJobs: { domain: "category", access: "read", permission: "category.manage", run: (input, auth, database) => handleCategoryAction("listPlatformJobs", input, auth, database) },
-  savePlatformSettings: { domain: "category", access: "admin", permission: "category.manage", run: (input, auth, database) => handleCategoryAction("savePlatformSettings", input, auth, database) },
-  saveCategoryManagement: { domain: "category", access: "admin", permission: "category.manage", run: (input, auth, database) => handleCategoryAction("saveCategoryManagement", input, auth, database) },
-  savePlatformFeatures: { domain: "category", access: "admin", permission: "category.manage", run: (input, auth, database) => handleCategoryAction("savePlatformFeatures", input, auth, database) },
-  completeInitialSetup: { domain: "category", access: "participation", run: (input, auth, database) => handleCategoryAction("completeInitialSetup", input, auth, database) },
-  getContentVersions: { domain: "content", access: "read", run: async (_input, _auth, database) => ({ versions: await loadContentVersions(database) }) },
-  getSessionBootstrap: { domain: "user", access: "read", run: (input, auth, database) => getSessionBootstrap(input, auth, database) },
+  getRuntimePolicies: { domain: "category", access: "read", run: operations.getRuntimePolicies },
+  getProviderDiagnostics: { domain: "dashboard", access: "read", permission: "dashboard.view", run: (input, auth, database) => operations.handleOperationsAction("getProviderDiagnostics", input, auth, database) },
+  rebuildNotionArchive: { domain: "dashboard", access: "admin", permission: "role.manage", run: (input, auth, database) => operations.handleOperationsAction("rebuildNotionArchive", input, auth, database) },
+  clearOperationalErrors: { domain: "dashboard", access: "admin", permission: "role.manage", run: (input, auth, database) => operations.handleOperationsAction("clearOperationalErrors", input, auth, database) },
+  clearScheduledWork: { domain: "dashboard", access: "admin", permission: "role.manage", run: (input, auth, database) => operations.handleOperationsAction("clearScheduledWork", input, auth, database) },
+  retryOperationalWork: { domain: "dashboard", access: "admin", permission: "role.manage", run: (input, auth, database) => operations.handleOperationsAction("retryOperationalWork", input, auth, database) },
+  getOperationsConsole: { domain: "dashboard", access: "read", permission: "dashboard.view", run: (input, auth, database) => operations.handleOperationsAction("getOperationsConsole", input, auth, database) },
+  saveOperationPolicies: { domain: "category", access: "admin", permission: "category.manage", run: (input, auth, database) => operations.handleOperationsAction("saveOperationPolicies", input, auth, database) },
+  getCategoryCatalog: { domain: "category", access: "read", run: categories.getCategoryCatalog },
+  getCategoryManagement: { domain: "category", access: "read", permission: "category.manage", run: categories.getCategoryManagement },
+  estimateCategoryPolicyChanges: { domain: "category", access: "read", permission: "category.manage", run: categories.estimateCategoryPolicyChanges },
+  estimateRetentionCleanup: { domain: "category", access: "read", permission: "category.manage", run: categories.estimateRetentionCleanup },
+  listPlatformJobs: { domain: "category", access: "read", permission: "category.manage", run: categories.listPlatformJobs },
+  savePlatformSettings: { domain: "category", access: "admin", permission: "category.manage", run: categories.savePlatformSettings },
+  saveCategoryManagement: { domain: "category", access: "admin", permission: "category.manage", run: categories.saveCategoryManagement },
+  savePlatformFeatures: { domain: "category", access: "admin", permission: "category.manage", run: categories.savePlatformFeatures },
+  completeInitialSetup: { domain: "category", access: "participation", run: categories.completeInitialSetup },
+  getContentVersions: { domain: "content", access: "read", run: contentVersions.getContentVersions },
+  getSessionBootstrap: { domain: "user", access: "read", run: getSessionBootstrap },
   getCurrentUserRole: { domain: "user", access: "read", run: users.getCurrentUserRole },
   listRoleAssignments: { domain: "user", access: "read", permission: "role.manage", run: userAccess.listRoleAssignments },
   listAdminUsers: { domain: "user", access: "read", permission: "role.manage", run: userAdmin.listAdminUsers },

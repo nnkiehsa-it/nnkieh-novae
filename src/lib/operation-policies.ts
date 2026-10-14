@@ -1,6 +1,5 @@
 import { DEFAULT_OPERATION_POLICIES, type OperationPolicies } from "@shared/operation-policies.ts";
-
-export interface PolicySnapshot { revision: number; values: OperationPolicies }
+import type { PolicySnapshot } from "@shared/contracts/operations.ts";
 
 let snapshot: PolicySnapshot = { revision: 0, values: { ...DEFAULT_OPERATION_POLICIES } };
 export function setOperationPolicies(next: PolicySnapshot) { snapshot = { revision: next.revision, values: { ...next.values } }; }

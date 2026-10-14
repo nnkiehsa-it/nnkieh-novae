@@ -1,8 +1,7 @@
-import type { BackendDatabase, JsonRecord } from "./types.ts";
+import type { ActionInput } from "../../../../shared/actions.ts";
+import type { ContentVersionDomain, ContentVersions } from "../../../../shared/contracts/session.ts";
+import type { AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
 import type { Selected } from "../database/schema.ts";
-
-type ContentVersionDomain = "issues" | "announcements" | "facilities";
-type ContentVersions = Record<ContentVersionDomain, number>;
 
 const EMPTY_VERSIONS: ContentVersions = {
   announcements: 1,
@@ -21,6 +20,10 @@ export async function loadContentVersions(database: BackendDatabase): Promise<Co
     }
   }
   return versions;
+}
+
+export async function getContentVersions(_input: ActionInput<"getContentVersions">, _auth: AuthContext, database: BackendDatabase) {
+  return { versions: await loadContentVersions(database) };
 }
 
 export async function loadContentVersion(

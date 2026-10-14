@@ -1,6 +1,6 @@
+import type { ActionInput } from "../../../../shared/actions.ts";
 import { asRecord } from "../shared/json.ts";
-import type { ActionSegment, AuthContext, BackendDatabase, JsonRecord } from "./types.ts";
-import { asBoolean } from "./utils.ts";
+import type { ActionSegment, AuthContext, BackendDatabase } from "./types.ts";
 import { loadPlatformSettings } from "../shared/platform-settings.ts";
 import { operationPolicies } from "../shared/operation-policies.ts";
 import { settledSegments } from "./segments.ts";
@@ -14,7 +14,7 @@ import { settledSegments } from "./segments.ts";
  * Worker invocation is billed for the whole wait, so they leave together.
  */
 export async function* getSessionBootstrap(
-  payload: JsonRecord,
+  input: ActionInput<"getSessionBootstrap">,
   auth: AuthContext,
   database: BackendDatabase,
 ): AsyncGenerator<ActionSegment> {
@@ -24,7 +24,7 @@ export async function* getSessionBootstrap(
     actor_name: auth.name,
     actor_photo_url: auth.photoUrl,
     actor_uid: auth.uid,
-    record_visit: asBoolean(payload.recordVisit, false),
+    record_visit: input.recordVisit,
   }).then(asRecord);
   const platformSettings = loadPlatformSettings(database);
 
@@ -46,11 +46,11 @@ export async function* getSessionBootstrap(
       imageUploads: settings.imageUploads,
       setupCompleted: auth.setupCompleted,
     })),
-    notificationUnread: snapshot.then((read) => asRecord(read.notificationUnread)),
+    notificationUnread: snapshot.then((read) => read.notificationUnread),
     runtime: platformSettings.then((settings) => ({
       pushTokenConfirmationDays: settings.retention.pushTokenConfirmationDays,
     })),
-    versions: snapshot.then((read) => asRecord(read.versions)),
-    visitRecorded: snapshot.then((read) => read.visitRecorded === true),
+    versions: snapshot.then((read) => read.versions),
+    visitRecorded: snapshot.then((read) => read.visitRecorded),
   });
 }

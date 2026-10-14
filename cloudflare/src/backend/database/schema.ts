@@ -300,13 +300,13 @@ export interface AppPrivateTables {
   comments: Table<CommentRow>;
   issue_categories: Table<{
     max_images: number; comment_max_images: number;
-    id: string; label: string; read_access: string; author_visible: boolean;
+    id: string; label: string; read_access: "school" | "reviewed-school" | "owner-admin"; author_visible: boolean;
     support_enabled: boolean; support_goal: number | null; support_deadline_days: number | null;
-    comments_enabled: boolean; is_active: boolean;
+    comments_enabled: boolean; author_delete_enabled: boolean; is_active: boolean;
     is_default: boolean; sort_order: number; created_by: string; created_at: string; updated_at: string;
   }>;
   facility_categories: Table<{
-    max_images: number;
+    max_images: number; author_delete_enabled: boolean;
     id: string; label: string; is_active: boolean; is_default: boolean;
     sort_order: number; created_by: string; created_at: string; updated_at: string;
   }>;

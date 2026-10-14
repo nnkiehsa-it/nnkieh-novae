@@ -1,6 +1,5 @@
-import { asString } from "../shared/json.ts";
+import type { FacilityCategory, IssueCategory } from "../../../../shared/contracts/categories.ts";
 import type { BackendDatabase } from "./types.ts";
-import { asNumber } from "./utils.ts";
 import { loadPlatformSettings, platformSettingsFromStoredRows } from "../shared/platform-settings.ts";
 import type { Row, Selected } from "../database/schema.ts";
 
@@ -12,65 +11,36 @@ import type { Row, Selected } from "../database/schema.ts";
  * side is shared by every action that has to answer a question about an issue,
  * and is kept apart from the admin screens that rewrite the catalog.
  */
-export const READ_ACCESS_VALUES = new Set(["school", "reviewed-school", "owner-admin"]);
-
-interface RuntimeIssueCategory {
-  maxImages: number;
-  commentMaxImages: number;
-  authorDeleteEnabled: boolean;
-  authorVisible: boolean;
-  commentsEnabled: boolean;
-  id: string;
-  isDefault: boolean;
-  label: string;
-  readAccess: "owner-admin" | "reviewed-school" | "school";
-  sortOrder: number;
-  supportDeadlineDays: number | null;
-  supportEnabled: boolean;
-  supportGoal: number | null;
-}
-
-interface RuntimeFacilityCategory {
-  maxImages: number;
-  authorDeleteEnabled: boolean;
-  id: string;
-  isDefault: boolean;
-  label: string;
-  sortOrder: number;
-}
-
-function issueCategoryResponse(row: Record<string, unknown>): RuntimeIssueCategory {
+function issueCategoryResponse(row: Row<"issue_categories">): IssueCategory {
   return {
-    maxImages: row.max_images as number,
-    commentMaxImages: row.comment_max_images as number,
-    authorDeleteEnabled: row.author_delete_enabled === true,
-    authorVisible: row.author_visible === true,
-    commentsEnabled: row.comments_enabled !== false,
-    id: asString(row.id),
-    isDefault: row.is_default === true,
-    label: asString(row.label),
-    readAccess: READ_ACCESS_VALUES.has(asString(row.read_access))
-      ? asString(row.read_access) as RuntimeIssueCategory["readAccess"]
-      : "owner-admin",
-    sortOrder: asNumber(row.sort_order, 0),
-    supportDeadlineDays: typeof row.support_deadline_days === "number" ? row.support_deadline_days : null,
-    supportEnabled: row.support_enabled === true,
-    supportGoal: typeof row.support_goal === "number" ? row.support_goal : null,
+    maxImages: row.max_images,
+    commentMaxImages: row.comment_max_images,
+    authorDeleteEnabled: row.author_delete_enabled,
+    authorVisible: row.author_visible,
+    commentsEnabled: row.comments_enabled,
+    id: row.id,
+    isDefault: row.is_default,
+    label: row.label,
+    readAccess: row.read_access,
+    sortOrder: row.sort_order,
+    supportDeadlineDays: row.support_deadline_days,
+    supportEnabled: row.support_enabled,
+    supportGoal: row.support_goal,
   };
 }
 
-function facilityCategoryResponse(row: Record<string, unknown>): RuntimeFacilityCategory {
+function facilityCategoryResponse(row: Row<"facility_categories">): FacilityCategory {
   return {
-    maxImages: row.max_images as number,
-    authorDeleteEnabled: row.author_delete_enabled === true,
-    id: asString(row.id),
-    isDefault: row.is_default === true,
-    label: asString(row.label),
-    sortOrder: asNumber(row.sort_order, 0),
+    maxImages: row.max_images,
+    authorDeleteEnabled: row.author_delete_enabled,
+    id: row.id,
+    isDefault: row.is_default,
+    label: row.label,
+    sortOrder: row.sort_order,
   };
 }
 
-async function getIssueCategories(database: BackendDatabase, includeInactive = false): Promise<RuntimeIssueCategory[]> {
+async function getIssueCategories(database: BackendDatabase, includeInactive = false): Promise<IssueCategory[]> {
   const { rows } = await database.sql<Row<"issue_categories">>`
     select * from app_private.issue_categories
     where ${includeInactive}::boolean or is_active = true
@@ -78,7 +48,7 @@ async function getIssueCategories(database: BackendDatabase, includeInactive = f
   return rows.map((row) => issueCategoryResponse(row));
 }
 
-export async function getFacilityCategories(database: BackendDatabase, includeInactive = false): Promise<RuntimeFacilityCategory[]> {
+export async function getFacilityCategories(database: BackendDatabase, includeInactive = false): Promise<FacilityCategory[]> {
   const { rows } = await database.sql<Row<"facility_categories">>`
     select * from app_private.facility_categories
     where ${includeInactive}::boolean or is_active = true
@@ -124,9 +94,9 @@ export function categoryCatalogSegments(database: BackendDatabase, includeInacti
     features: setup.then((value) => ({
       announcementMaxImages: value.announcement_max_images,
       announcementCommentMaxImages: value.announcement_comment_max_images,
-      announcementCommentsEnabled: value.announcement_comments_enabled !== false,
-      facilitiesEnabled: value.facilities_enabled !== false,
-      issuesEnabled: value.issues_enabled !== false,
+      announcementCommentsEnabled: value.announcement_comments_enabled,
+      facilitiesEnabled: value.facilities_enabled,
+      issuesEnabled: value.issues_enabled,
     })),
     imageUploads: platformSettings.then((settings) => settings.imageUploads),
     issueCategories: getIssueCategories(database, includeInactive),
@@ -167,9 +137,9 @@ export async function loadCategoryManagement(database: BackendDatabase) {
     features: {
       announcementMaxImages: snapshot.setup.announcement_max_images,
       announcementCommentMaxImages: snapshot.setup.announcement_comment_max_images,
-      announcementCommentsEnabled: snapshot.setup.announcement_comments_enabled !== false,
-      facilitiesEnabled: snapshot.setup.facilities_enabled !== false,
-      issuesEnabled: snapshot.setup.issues_enabled !== false,
+      announcementCommentsEnabled: snapshot.setup.announcement_comments_enabled,
+      facilitiesEnabled: snapshot.setup.facilities_enabled,
+      issuesEnabled: snapshot.setup.issues_enabled,
     },
     setupCompleted: snapshot.setup.completed_at !== null,
   };
