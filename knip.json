@@ -3,11 +3,12 @@
   "workspaces": {
     ".": {
       "entry": [
-        "src/app/**/{page,layout,route,manifest,sw}.{ts,tsx}",
+        "src/app/main.tsx",
+        "src/app/sw.ts",
+        "vite.config.ts",
         "cloudflare/src/index.ts",
         "scripts/*.mjs",
-        "tests/**/*.{ts,mjs}",
-        "tools/**/*.{js,mjs}"
+        "tests/**/*.{ts,mjs}"
       ],
       "project": [
         "src/**/*.{ts,tsx}",
@@ -19,14 +20,12 @@
       "ignore": [
         "src/generated/**"
       ]
-    },
-    "tools/next-root-glob": {}
+    }
   },
   "ignoreDependencies": [
     "harmonyos-sans-webfont-splitted",
     "@babel/preset-react",
     "@babel/preset-typescript",
-    "client-only",
     "cloudflare"
   ],
   "ignoreBinaries": [

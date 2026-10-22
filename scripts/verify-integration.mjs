@@ -108,7 +108,7 @@ const npx = process.platform === "win32"
       command: process.execPath,
     }
   : { args: [], command: "npx" };
-const nextCli = join(root, "node_modules", "next", "dist", "bin", "next");
+const viteCli = join(root, "node_modules", "vite", "bin", "vite.js");
 const playwrightCli = join(root, "node_modules", "@playwright", "test", "cli.js");
 const vitestCli = join(root, "node_modules", "vitest", "vitest.mjs");
 const wranglerCli = join(root, "node_modules", "wrangler", "bin", "wrangler.js");
@@ -657,7 +657,9 @@ try {
       NEXT_PUBLIC_API_BASE_URL: publicWorkerUrl,
       NEXT_PUBLIC_LOCAL_TEST_ORIGIN: publicTestOrigin,
       NOVAE_TEST_PUBLIC_ORIGIN: publicTestOrigin,
-      ...(serve ? { NOVAE_NEXT_DIST_DIR: preview ? ".next-local-preview" : ".next-local-dev" } : {}),
+      // The test build carries loopback origins in its policy, so it never
+      // shares an output directory with a deployable build.
+      NOVAE_DIST_DIR: preview ? "dist-local-preview" : "dist-local-e2e",
       NOVAE_LOCAL_TEST_PREVIEW: preview ? "true" : "false",
       NEXT_PUBLIC_CONTENT_REALTIME_ENABLED: e2e ? "false" : "true",
       NEXT_PUBLIC_FIREBASE_API_KEY: "integration-web-api-key",
@@ -676,15 +678,15 @@ try {
       NOVAE_LOCAL_GATEWAY_URL: workerUrl,
     };
     if ((e2e && !skipBuild) || preview) {
-      run("build production frontend", process.execPath, [nextCli, "build", "--webpack"], frontendEnvironment);
-    } else if (e2e && !existsSync(join(root, ".next", "BUILD_ID"))) {
-      throw new Error("--skip-build requires an existing production .next build.");
+      run("build production frontend", process.execPath, [viteCli, "build"], frontendEnvironment);
+    } else if (e2e && !existsSync(join(root, frontendEnvironment.NOVAE_DIST_DIR, "index.html"))) {
+      throw new Error(`--skip-build requires an existing production build in ${frontendEnvironment.NOVAE_DIST_DIR}.`);
     }
     const frontendArgs = e2e || preview
-      ? [nextCli, "start", "-H", "0.0.0.0", "-p", String(appPort)]
-      : [nextCli, "dev", "--webpack", "-H", "0.0.0.0", "-p", String(appPort)];
+      ? [viteCli, "preview", "--host", "0.0.0.0", "--port", String(appPort), "--strictPort"]
+      : [viteCli, "--host", "0.0.0.0", "--port", String(appPort), "--strictPort"];
     const frontend = start(
-      "next",
+      "vite",
       process.execPath,
       frontendArgs,
       frontendEnvironment,
@@ -692,7 +694,7 @@ try {
     );
     const frontendEntry = children.at(-1);
     await waitFor(
-      "Next.js",
+      "Vite",
       `${appUrl}/login`,
       (response) => response.status === 200,
       frontend,

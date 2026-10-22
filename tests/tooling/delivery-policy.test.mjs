@@ -28,9 +28,8 @@ test("local and CI verification share one generated-artifact drift gate", async 
 
 test("CI cache policy stays bounded", async () => {
   const workflow = await read(".github/workflows/verify-and-deploy.yml");
-  assert.match(workflow, /path: \.next\/cache/u);
   assert.match(workflow, /path: ~\/\.cache\/firebase\/emulators/u);
-  assert.doesNotMatch(workflow, /path: (?:node_modules|\.next\s*$)/mu);
+  assert.doesNotMatch(workflow, /path: (?:node_modules|dist|\.next)/mu);
 });
 
 test("deployed builds disable local authentication and smoke-test primary entry routes", async () => {

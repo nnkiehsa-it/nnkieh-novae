@@ -22,6 +22,8 @@ test("frontend Firebase usage remains limited to identity, App Check, and messag
     "firebase/app-check",
     "firebase/auth",
     "firebase/messaging",
+    // The service worker's half of messaging.
+    "firebase/messaging/sw",
   ]);
   assert.deepEqual([...firebaseImports].filter((specifier) => !allowed.has(specifier)), []);
 });
@@ -43,7 +45,10 @@ test("Cloudflare backend cannot depend on frontend modules", async () => {
 test("hosting configuration keeps frontend and API ownership separate", async () => {
   const vercel = JSON.parse(await read("vercel.json"));
   const wrangler = JSON.parse(await read("cloudflare/wrangler.json"));
-  assert.equal(vercel.framework, "nextjs");
+  assert.equal(vercel.framework, "vite");
+  assert.equal(vercel.outputDirectory, "dist");
+  // The static app answers every path with its shell; the API lives elsewhere.
+  assert.deepEqual(vercel.rewrites, [{ source: "/((?!assets/).*)", destination: "/index.html" }]);
   assert.equal(wrangler.main, "src/index.ts");
   assert.ok(Array.isArray(wrangler.hyperdrive) && wrangler.hyperdrive.length > 0);
   assert.ok(Array.isArray(wrangler.durable_objects?.bindings));

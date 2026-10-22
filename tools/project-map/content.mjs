@@ -226,11 +226,11 @@ export const flows = [
   ]),
   flow('update','前端新版檢查、SW 與延後更新','時間與自動','發文、留言、未存設定、詳情與驗證尚未結束時，不強制重新載入。',[
     n('每30分鐘檢版本','初次／可見時interval、online/pageshow/visible；localStorage 合併跨頁檢查時間；GET /version.json no-store，2秒timeout。','browser',[H+'use-app-update.ts','src/features/system/update-gate.tsx']),
-    n('比較 build version','與 NEXT_PUBLIC_APP_VERSION 比；新版才設 availableVersion。失敗清上次成功時間，不鎖住下一次online重試。','browser',['src/app/version.json/route.ts',H+'use-app-update.ts']),
+    n('比較 build version','與 NEXT_PUBLIC_APP_VERSION 比；新版才設 availableVersion。失敗清上次成功時間，不鎖住下一次online重試。','browser',['vite.config.ts',H+'use-app-update.ts']),
     n('等安全更新時機','useUpdateDeferral：發文/留言草稿、sending、未存管理設定、開啟詳情、hidden/offline與Turnstile驗證會延後。','browser',[H+'use-update-deferral.ts',H+'unsaved-changes-store.ts']),
     n('準備 service worker','register/update /sw.js，2秒預算，waiting post SKIP_WAITING；SW失敗不阻止document更新。','browser',[H+'use-app-update.ts','src/app/sw.ts']),
     n('重新導向同網址','同版本最多2次自動reload；4秒再嘗試reload，10秒顯示恢復入口；保持當前URL以便恢復草稿／頁面。','browser',[H+'use-app-update.ts','src/features/system/update-gate.tsx']),
-    n('PWA 快取邊界','production 才 Serwist；WOFF2不install-time precache；/v1 API與signed media NetworkOnly；不是離線寫入佇列。','browser',['src/app/sw.ts','next.config.mjs']),
+    n('PWA 快取邊界','production 才 Serwist；WOFF2不install-time precache；/v1 API與signed media NetworkOnly；不是離線寫入佇列。','browser',['src/app/sw.ts','vite.config.ts']),
   ]),
   flow('db-triggers','資料庫自動觸發：欄位、計數、媒體與版本','時間與自動','trigger 隨 SQL statement 或 row 寫入在同一交易執行；不是另一個定時服務。完整現存清單在「盤點」。',[
     n('INSERT 前驗證與快照','snapshot_issue_category_defaults、parent comment 驗證、input hard ceilings、留言開關保護；policy snapshot 禁改。','database',['database/migrations/0001_baseline.sql','database/migrations/0041_remove_response_deadlines.sql']),

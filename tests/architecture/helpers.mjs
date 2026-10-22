@@ -31,13 +31,28 @@ export function moduleImports(source, path = "source.ts") {
       });
     }
   }
+  // `import("…")` counts too: lazy routes and on-demand chunks are imports.
+  const visit = (node) => {
+    if (!node || typeof node.type !== "string") return;
+    if (node.type === "ImportExpression" && node.source?.type === "StringLiteral") {
+      imports.push({ dynamic: true, specifier: node.source.value, typeOnly: false });
+    } else if (node.type === "CallExpression" && node.callee.type === "Import" && node.arguments[0]?.type === "StringLiteral") {
+      imports.push({ dynamic: true, specifier: node.arguments[0].value, typeOnly: false });
+    }
+    for (const [key, value] of Object.entries(node)) {
+      if (key === "loc" || key === "leadingComments" || key === "trailingComments") continue;
+      if (Array.isArray(value)) value.forEach(visit);
+      else if (value && typeof value === "object") visit(value);
+    }
+  };
+  visit(sourceFile.program);
   return imports;
 }
 
 export async function listFiles(relativeDir, files = []) {
   const dir = new URL(relativeDir, root);
   for (const entry of await readdir(dir)) {
-    if (["node_modules", "dist", ".next", ".next-verify", ".vercel", ".wrangler", ".git"].includes(entry)) continue;
+    if ((["node_modules", "dist", ".vercel", ".wrangler", ".git"].includes(entry) || entry.startsWith("dist-"))) continue;
     const child = new URL(`${relativeDir.replace(/\/?$/u, "/")}${entry}`, root);
     const childStat = await stat(child);
     if (childStat.isDirectory()) {

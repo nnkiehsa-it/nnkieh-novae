@@ -29,7 +29,7 @@ const read = p => fs.readFileSync(path.join(root, p), 'utf8');
 const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
 if (!process.argv[2] && !process.env.USERPROFILE) throw new Error('請指定輸出 HTML 的路徑；只有 Windows 有預設的桌面位置。');
 const output = path.resolve(process.argv[2] || path.join(process.env.USERPROFILE, 'Desktop/Novae-程式流程地圖.html'));
-const sourcePaths = git('ls-files', 'src', 'shared', 'cloudflare/src', 'cloudflare/generated', 'config', 'database/migrations', 'scripts', '.github/workflows', 'next.config.mjs', 'package.json', 'README.md', 'docs/architecture.md', 'docs/backend-and-data.md', 'docs/admin-console-review.md', 'docs/product.md')
+const sourcePaths = git('ls-files', 'src', 'shared', 'cloudflare/src', 'cloudflare/generated', 'config', 'database/migrations', 'scripts', '.github/workflows', 'vite.config.ts', 'vercel.json', 'index.html', 'package.json', 'README.md', 'docs/architecture.md', 'docs/backend-and-data.md', 'docs/admin-console-review.md', 'docs/product.md')
   .split('\n').filter(p => /\.(?:ts|tsx|mjs|json|sql|yml|css|cjs|md)$/.test(p));
 // 僅已追蹤程式／設定；不讀 .env、credential、DB、使用者資料或 seed。
 const sources = Object.fromEntries(sourcePaths.map(p => [p, { text: read(p), sha256: createHash('sha256').update(read(p)).digest('hex') }]));
@@ -262,7 +262,15 @@ for (const p of sourcePaths.filter(p=>(p.startsWith('src/')||p.startsWith('cloud
     if (/setInterval|setTimeout|\balarm\(|expiresAt|next_attempt_at|AbortSignal\.timeout|TTL_MS|_TIMEOUT_MS|_INTERVAL_MS|_LIFETIME_SECONDS|_SPACING_MS/.test(line)) timers.push({path:p,line:i+1,text:line.trim()});
   });
 }
-const routes = sourcePaths.filter(p=>p.startsWith('src/app/')&&p.endsWith('/page.tsx')).map(p=>({path:p,route:'/'+p.slice(7,-9).split('/').filter(s=>s&&!/^\([^)]*\)$/.test(s)&&!s.startsWith('@')).map(s=>s.replace(/^\(\.\)/,'')).join('/'),sheet:p.includes('/@sheet/'),refs:[ref(p)]}));
+// React Router 的 lazy routes：每行一個 path 與它載入的畫面模組。
+const routes = sources['src/app/routes.tsx'].text.split('\n').flatMap(line=>{
+  const target=line.match(/import\("([^"]+)"\)/)?.[1]; const path=line.match(/path: "([^"]+)"/)?.[1]??(line.includes('index: true')?'':null);
+  if (!target||path===null) return [];
+  const file=target.replace(/^@\//,'src/').replace(/^\.\//,'src/app/')+'.tsx';
+  const route=path.startsWith('/')?path:(target.includes('/features/admin/')&&!target.endsWith('admin-layout')?'/admin/'+path:'/'+path).replace(/\/$/,'')||'/';
+  return [{path:file,route,sheet:line.includes('layer('),refs:[ref('src/app/routes.tsx',line.trim()),ref(file)]}];
+});
+if (routes.length<10) throw new Error('src/app/routes.tsx 的路由解析過少：'+routes.length);
 const endpoints = [
   ['/v1/actions','POST','全部' + definitions.length + '種 action 與額外 healthcheck','overview'],
   ['/v1/auth/login-check','POST','Origin/IP限流 + auth_login Turnstile','auth-login'],
@@ -272,7 +280,7 @@ const endpoints = [
   ['/v1/realtime','GET/WebSocket','Origin + ticket，RealtimeHub DO','realtime'],
   ['/v1/webhooks/cloudinary','POST','原始bytes/signature→upload lifecycle/cleanup','image-lifecycle'],
   ['/v1/media/{token}/{variant}','GET/HEAD','HMAC/expiry/限流→edge/Cloudinary','image-lifecycle'],
-  ['/version.json','GET (Next)','新build版本，no-cache','update'],
+  ['/version.json','GET (靜態檔)','build 時寫出的版本，no-cache','update'],
   ['OPTIONS','Worker CORS','Origin允許才204，不是業務寫入','overview'],
 ];
 const specialFlows = [

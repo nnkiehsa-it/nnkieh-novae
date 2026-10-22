@@ -14,7 +14,7 @@ const stopPath = join(directory, "stop");
 const logPath = join(directory, "preview.log");
 const command = process.argv[2] ?? "start";
 const options = process.argv.slice(3);
-// --dev serves `next dev` with hot reload instead of a production build.
+// --dev serves the Vite dev server with hot reload instead of a production build.
 const dev = options.includes("--dev");
 const port = Number(options.find((option) => /^\d+$/u.test(option)) ?? 3002);
 const proxies = [{ port: 443, target: `http://127.0.0.1:${port}` }, { port: 8443, target: "http://127.0.0.1:8787" }, { port: 9443, target: "http://127.0.0.1:9099" }];
