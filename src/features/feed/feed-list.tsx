@@ -36,7 +36,7 @@ export function FeedList<T extends { id: string }>({ empty, error, hasMore = fal
   return (
     <div className="grid gap-3">
       <ul className={recordGridClass}>
-        {items.map((item) => <li className="min-w-0" key={item.id}>{renderItem(item)}</li>)}
+        {items.map((item) => <li className="content-in min-w-0" key={item.id}>{renderItem(item)}</li>)}
       </ul>
       {hasMore && onLoadMore ? (
         <Button className="justify-self-center" onClick={onLoadMore} status={loadingMore ? "loading" : "idle"}>

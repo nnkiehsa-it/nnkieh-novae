@@ -27,7 +27,7 @@ export function Field({ children, error, hint, label }: {
       <label className="px-1 text-sm font-medium text-ink-muted" htmlFor={id}>{label}</label>
       {children({ id, describedBy: message ? messageId : undefined, invalid: Boolean(error) })}
       {message ? (
-        <p className={cn("px-1 text-sm", error ? "text-danger" : "text-ink-faint")} id={messageId} role={error ? "alert" : undefined}>
+        <p className={cn("px-1 text-sm", error && "message-in", error ? "text-danger" : "text-ink-faint")} id={messageId} key={error ? `error:${error}` : "hint"} role={error ? "alert" : undefined}>
           {message}
         </p>
       ) : null}

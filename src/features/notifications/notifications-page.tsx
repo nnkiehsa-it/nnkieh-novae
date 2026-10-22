@@ -51,7 +51,7 @@ function NotificationRow({ notification }: { notification: NotificationRecord })
     </>
   );
   return (
-    <li>
+    <li className="content-in">
       {target ? (
         <AppLink className={className} href={target}>{body}</AppLink>
       ) : (

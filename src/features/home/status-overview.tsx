@@ -40,7 +40,7 @@ function DomainStatus({ domain, href, icon: DomainIcon, label, loading, segments
           <span className="text-sm text-ink-muted">{t("ui.home.noActivity")}</span>
         ) : (
           <>
-            <span aria-hidden className="flex h-2 gap-1 overflow-hidden rounded-full">
+            <span aria-hidden className="bar-in flex h-2 gap-1 overflow-hidden rounded-full">
               {shown.map((segment) => (
                 <span className="h-full rounded-full" key={segment.status} style={{ background: statusColor(segment.status), flexGrow: segment.count }} />
               ))}

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { createBrowserRouter, Outlet, redirect, useRouteError, type RouteObject } from "react-router";
+import { createBrowserRouter, Outlet, redirect, useNavigation, useRouteError, type RouteObject } from "react-router";
 import { useI18n } from "@/i18n";
 import { AppProviders } from "@/features/shell/app-providers";
 import { ProtectedApp } from "@/features/shell/protected-app";
@@ -43,7 +43,7 @@ function RouteError() {
   }, [reloaded, stale]);
   if (stale && !reloaded) return null;
   return (
-    <main className="mx-auto grid min-h-svh w-full max-w-md items-center px-[var(--gutter)]">
+    <main className="content-in mx-auto grid min-h-svh w-full max-w-md items-center px-[var(--gutter)]">
       <ErrorState
         message={t("common.loadFailed")}
         onRetry={() => window.location.reload()}
@@ -62,7 +62,17 @@ function RootLayout() {
       // Nothing to forget.
     }
   }, []);
-  return <AppProviders><Outlet /></AppProviders>;
+  return (
+    <AppProviders>
+      <Outlet />
+      <RouteProgress />
+    </AppProviders>
+  );
+}
+
+function RouteProgress() {
+  const loading = useNavigation().state === "loading";
+  return <div aria-hidden className="route-progress" data-active={loading ? "" : undefined} />;
 }
 
 const feedScreen = () => import("@/features/feed/feed-page");

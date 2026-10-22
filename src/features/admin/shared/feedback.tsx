@@ -10,5 +10,5 @@ export function LoadError({ message, onRetry }: { message: string; onRetry: () =
 
 /** A refusal or failure from the last action, kept beside the controls that caused it. */
 export function InlineAlert({ children }: { children: React.ReactNode }) {
-  return <p className="px-1 text-sm leading-relaxed text-danger" role="alert">{children}</p>;
+  return <p className="message-in px-1 text-sm leading-relaxed text-danger" role="alert">{children}</p>;
 }

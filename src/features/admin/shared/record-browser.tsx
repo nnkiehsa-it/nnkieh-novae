@@ -56,7 +56,7 @@ export function RecordBrowser({ children, count, disabled = false, emptyLabel, e
       ) : count === 0 ? (
         <EmptyState title={emptyLabel} />
       ) : (
-        <ListGroup label={searchLabel}>{children}</ListGroup>
+        <ListGroup className="content-in" label={searchLabel}>{children}</ListGroup>
       )}
       <Pager busy={busy} hasMore={hasMore} onPageChange={onPageChange} page={page} />
     </div>
