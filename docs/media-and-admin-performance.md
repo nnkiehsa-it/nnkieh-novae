@@ -65,3 +65,5 @@ bun run verify:all
 本次正式建置的全站 JavaScript 產物為 3,130,176 bytes，接近 3 MiB 上限，build budget 仍有警告。後續增加套件或功能時先查看 `.next-verify/build-budget-report.json`；這是全站產物總量，不是單一頁面初始下載量。
 
 本次安全稽核要求更新 Next.js 至 `16.3.8`、sharp 至 `0.35.5`，並固定 source-map-js `1.2.2`。對應公告為 [Next.js 圖片優化 SSRF](https://github.com/advisories/GHSA-cjq9-62q9-8jv4)、[sharp 的 librsvg 漏洞](https://github.com/advisories/GHSA-wq5f-xc86-pv6w)及 [source-map-js 阻斷服務](https://github.com/advisories/GHSA-68fv-2mgg-jv7q)。版本與 lockfile 已一起更新。
+
+2026-10-22 前端改為 Vite 靜態 SPA 後，Next.js 相關公告不再適用；sharp 與 source-map-js 仍有其他相依，覆寫保留。全站 JavaScript 降到約 2.0 MB，每個畫面的初始下載改由單頁 JS 上限把關，報告位於 `dist-verify/.vite/build-budget-report.json`。

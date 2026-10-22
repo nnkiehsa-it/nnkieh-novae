@@ -26,32 +26,33 @@
 
 ### `verify:local` 多做的工作
 
-完整 local suite 在 fast checks 中加入 production Next.js build、build budget 和 Bun high-severity dependency audit。Dependency audit 要連 npm advisory API；離線時即使前面階段全過，整體仍會失敗。
+完整 local suite 在 fast checks 中加入 production Vite build、build budget 和 Bun high-severity dependency audit。Dependency audit 要連 npm advisory API；離線時即使前面階段全過，整體仍會失敗。
 
-Next.js lint 的根目錄 glob 透過 scoped override 使用 `tools/next-root-glob`，由 Node 24 原生 `fs.globSync` 處理。此替換只作用於 Next plugin 的 `globSync(pattern, { onlyDirectories })` 用法，移除 `fast-glob → micromatch → braces` 依賴鏈；Next lint 規則和安全稽核仍全部保留。更新 Next plugin 或 Node 版本時，要重跑 `tests/tooling/next-root-glob.test.mjs` 與完整 gate。
-
-本機 gate 使用 `.next-verify`，其 Service Worker 也輸出到 `.next-verify/service-worker/`，避免與瀏覽器測試或預覽重寫同一個 `public/sw.js`，混用不同的 API 環境。可執行的正式與 E2E build 仍使用 `public/sw.js`。
+本機 gate 的 build 輸出到 `dist-verify`，E2E 輸出到 `dist-local-e2e`，手機預覽輸出到 `dist-local-preview`；Service Worker 跟著輸出在各自目錄裡。只有 `bun run build` / `build:deploy` 寫 `dist`，測試 build 帶 loopback CSP，不會跟部署產物混在一起。Build 本身也是一道安全檢查：`index.html` 出現 boot script 以外的 script、或 `vercel.json` 的 CSP 與 `src/app/document-policy.ts` 算出的不同，build 直接失敗。
 
 Build budget 的上限集中在 `config/build-budget.config.json`，達到 85% 時警告，超過硬上限才失敗。警告不能當成測試失敗，但交付報告要寫出來。
 
-CSS 依 production 的 Next.js client reference manifest，計算每個頁面初始載入的檔案；同一檔案只算一次。一般介面樣式與 `@font-face` 宣告分開衡量，中文字型的 unicode range 不會擠掉介面樣式的空間。gzip 估算仍包含完整字型宣告，不是正式服務的實際傳輸量。另檢查每個 CSS chunk，涵蓋按需載入的編輯器樣式。JS 與 WOFF2 暫時維持全站產物總量上限。
+每個畫面的初始下載依 Vite 的 `dist/.vite/manifest.json` 計算：入口、該畫面的 lazy chunk，以及它們靜態 import 的所有 chunk 與 CSS，同一檔案只算一次；按需載入的 chunk（例如 Markdown 編輯器）不算在初始下載。記錄與 composer 會疊在 feed 上，所以連同 feed 一起算。畫面清單在 `scripts/check-build-budget.mjs`，與 `src/app/routes.tsx` 對應；manifest 找不到某個畫面時檢查直接失敗。另外，任何非 `/admin` 畫面載入後台 chunk 也會失敗。
+
+CSS 一般介面樣式與 `@font-face` 宣告分開衡量，中文字型的 unicode range 不會擠掉介面樣式的空間。gzip 估算仍包含完整字型宣告，不是正式服務的實際傳輸量。另檢查每個 CSS chunk，涵蓋按需載入的編輯器樣式。JS 除了每頁初始下載，也維持全站產物總量上限。
 
 | 指標 | 上限 | 用途 |
 | --- | --- | --- |
 | 單頁介面 CSS，未壓縮 | 256 KiB | 控制樣式解析量；排除字型宣告 |
 | 單頁初始 CSS，gzip level 9 估算 | 160 KiB | 控制頁面初始下載；包含字型宣告 |
 | 單個 CSS chunk，gzip 估算 | 128 KiB | 避免按需載入的樣式包過大 |
+| 單頁初始 JS，gzip level 9 估算 | 576 KiB | 控制每個畫面打開前要下載的程式碼 |
 | 全站字型 CSS 宣告，未壓縮 | 320 KiB | 獨立管理中文字型的 unicode range |
 | 全站 WOFF2 / JS 產物 | 8 MiB / 3 MiB | 保留既有字型與程式碼總量檢查 |
 
-每次檢查會在目前 build 目錄產生 `build-budget-report.json`，列出各頁面、所需 CSS、未壓縮與 gzip 估算大小。調整前先查看報告。拆開原始碼檔案不等於減少輸出，應先移除未使用的樣式或把頁面專用樣式保留在該頁面的 import。
+每次檢查會在目前 build 目錄產生 `.vite/build-budget-report.json`，列出各頁面、所需 JS 與 CSS、未壓縮與 gzip 估算大小。調整前先查看報告。拆開原始碼檔案不等於減少輸出，應先移除未使用的樣式或把頁面專用樣式保留在該頁面的 import。
 
 完整本機檢查後，可單獨重新查看報告：
 
 ```powershell
-$env:NOVAE_NEXT_DIST_DIR = '.next-verify'
+$env:NOVAE_DIST_DIR = 'dist-verify'
 bun run check:build-budget
-Remove-Item Env:NOVAE_NEXT_DIST_DIR
+Remove-Item Env:NOVAE_DIST_DIR
 ```
 
 環境變數 `NOVAE_CSS_BUDGET_BYTES` 已移除。需要暫時覆寫時，使用 `NOVAE_ROUTE_CSS_UI_BUDGET_BYTES`、`NOVAE_ROUTE_CSS_GZIP_BUDGET_BYTES`、`NOVAE_CSS_CHUNK_GZIP_BUDGET_BYTES` 或 `NOVAE_FONT_FACE_CSS_BUDGET_BYTES`；字型和 JS 原有覆寫名稱仍有效。一般維護應直接修改 config，並在 commit 中交代實測大小與調整原因。
@@ -66,7 +67,7 @@ bun run verify:integration
 
 修改 backend action、權限、RPC、migration、Worker、Queue 或 Durable Object 時，除 `verify:local` 外必須加跑它。
 
-整合環境使用 PostgreSQL 17、Wrangler local Worker，以及 port `54330` 的 Cloudinary / FCM / Notion-compatible receiver。一般 integration run 不啟動 Firebase Auth Emulator或 Next.js；測試直接準備身份與 request。完成 Vitest 後再跑 data-consistency audit 和 database-contract `--check`。
+整合環境使用 PostgreSQL 17、Wrangler local Worker，以及 port `54330` 的 Cloudinary / FCM / Notion-compatible receiver。一般 integration run 不啟動 Firebase Auth Emulator 或前端；測試直接準備身份與 request。完成 Vitest 後再跑 data-consistency audit 和 database-contract `--check`。
 
 Migration 變更還會建立 populated pre-0016 database，從切換前 schema 升級到現在。這能抓到只在有舊資料時發生的 unique、foreign key、counter、event 或 role 問題。
 
@@ -85,9 +86,9 @@ Migration 變更還會建立 populated pre-0016 database，從切換前 schema �
 
 大型變更或交付前跑 `bun run verify:all`。CI 的 `Verify and Deploy` 先固定安裝 Bun 1.4 與 lockfile，再一律跑 fast job；只有受影響路徑才額外啟動 backend integration 或 browser E2E。Push 成功後沿用同一 workflow 的驗證結果直接進入對應部署 job，避免另外啟動 workflow 再輪詢等待。
 
-E2E mode 先以 deployment build environment 執行 `build:deploy`，再用 `next start` 跑 production artifact。它會啟動 Firebase Auth Emulator，Playwright 走真的登入、API、database、Worker、Queue 和 responsive UI，不把 browser journey 改成 mock service call。
+E2E mode 先以測試 stack 的環境執行 `vite build`，再用 `vite preview` 跑 production artifact（SPA fallback 與部署相同的 header）。它會啟動 Firebase Auth Emulator，Playwright 走真的登入、API、database、Worker、Queue 和 responsive UI，不把 browser journey 改成 mock service call。
 
-`test:env` 是手動操作環境，會啟用本機管理員自動登入，不適合直接執行需要切換帳號的 Playwright 測試。使用 `test:e2e` 可停用這項便利功能，避免登入狀態干擾案例。整合 runner 使用本機連接埠鎖阻止同時重建測試環境，並直接透過 Node 啟動 Next.js 與 Playwright。
+`test:env` 是手動操作環境，會啟用本機管理員自動登入，不適合直接執行需要切換帳號的 Playwright 測試。使用 `test:e2e` 可停用這項便利功能，避免登入狀態干擾案例。整合 runner 使用本機連接埠鎖阻止同時重建測試環境，並直接透過 Node 啟動 Vite 與 Playwright。Chromium 版本與 Playwright 不符的機器可設 `NOVAE_E2E_CHROMIUM_PATH` 指向既有的 Chromium。
 
 只驗證特定流程時，在 `--` 後傳入 Playwright 的檔名或 `--grep`；這些參數只套用到瀏覽器案例，不會略過環境建置。以下先準備共用帳號與內容，再只跑上傳流程：
 
@@ -109,11 +110,11 @@ Verify and Deploy 先用 git diff 判斷是否需要額外 job：
 | --- | --- | --- |
 | `fast` | 每個符合 workflow paths 的變更 | `verify:fast`（第一個 stage 即 generated drift gate）|
 | `backend_verify` | `cloudflare/`、`database/`、`shared/`、integration tests、backend scripts、package / lockfile | Worker types、integration types、`verify:integration` |
-| `browser_verify` | `src/`、`shared/`、`config/`、public、Next config、E2E、package / lockfile | 安裝 Chromium、`test:e2e`；build budget 只在 shard 1 跑 |
+| `browser_verify` | `src/`、`shared/`、`config/`、public、`index.html`、`vite.config.ts`、E2E、package / lockfile | 安裝 Chromium、`test:e2e`；build budget 只在 shard 1 跑 |
 | `deploy_backend` | push / manual 且 backend 受影響 | forward migration、runtime role、Worker / Queue / provider 設定與 smoke test |
 | `deploy_frontend` | push / manual 且 browser 受影響 | 驗證 Vercel secrets，在同一 runner 建立並直接發布 prebuilt output；必要時等待 backend deploy |
 
-`fast`、`backend_verify` 與 `browser_verify` 都只依賴 `changes`，符合範圍時平行執行。部署等所有相關驗證成功；同次有 backend 變更時，frontend 再等 backend 部署成功。Vercel build 的 `.next`／`node_modules` 保留在同一 runner 直到 publish。`workflow_dispatch` 可選 `all`、`backend` 或 `frontend`。README、docs 與 `tools/project-map/` 單獨變更不在 workflow path filter 內。
+`fast`、`backend_verify` 與 `browser_verify` 都只依賴 `changes`，符合範圍時平行執行。部署等所有相關驗證成功；同次有 backend 變更時，frontend 再等 backend 部署成功。Vercel build 的 `dist`／`node_modules` 保留在同一 runner 直到 publish。`workflow_dispatch` 可選 `all`、`backend` 或 `frontend`。README、docs 與 `tools/project-map/` 單獨變更不在 workflow path filter 內。
 
 ## 測試目錄
 

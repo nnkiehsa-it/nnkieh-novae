@@ -1,6 +1,7 @@
 # Novae
 
-![Next.js 16.3.6](https://img.shields.io/badge/Next.js-16.3.6-000000?logo=nextdotjs&logoColor=white)
+![Vite 8.3](https://img.shields.io/badge/Vite-8.3-646CFF?logo=vite&logoColor=white)
+![React Router 8.4](https://img.shields.io/badge/React_Router-8.4-CA4245?logo=reactrouter&logoColor=white)
 ![React 19.2](https://img.shields.io/badge/React-19.2-61DAFB?logo=react&logoColor=111827)
 ![TypeScript 7](https://img.shields.io/badge/TypeScript-7-3178C6?logo=typescript&logoColor=white)
 ![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)
@@ -32,7 +33,7 @@ Novae 把這些流程收進一個可安裝的 Web App：內容狀態與期限對
 
 ```mermaid
 flowchart LR
-    U[校園成員與管理員] --> PWA[Next.js PWA<br/>Vercel]
+    U[校園成員與管理員] --> PWA[React SPA / PWA<br/>Vercel static]
     PWA -->|Firebase ID token<br/>App Check / Turnstile| API[Cloudflare Workers API]
     API -->|Hyperdrive<br/>novae_runtime| DB[(Neon PostgreSQL)]
     API --> Q[Cloudflare Queues]
@@ -57,10 +58,10 @@ flowchart LR
 
 | 層級 | 技術 | 實際用途 |
 | --- | --- | --- |
-| Web | Next.js 16.3 App Router、React 19.2、TypeScript 7 | 路由、PWA 介面、SSR/RSC 與 client state |
+| Web | Vite 8、React Router 8、React 19.2、TypeScript 7 | 靜態 SPA、每個畫面一個 lazy chunk、PWA 介面與 client state |
 | UI | Tailwind CSS 4、Radix UI、Phosphor Icons、Motion | Design tokens、可存取元件、圖示與狀態轉場 |
 | 前端資料 | TanStack Query 5 | 讀取快取、失效重讀與每個帳號的 IndexedDB 保存 |
-| PWA | Serwist 9 | Service Worker、安裝與版本更新流程 |
+| PWA | Serwist 9（`@serwist/vite`） | Service Worker、離線 app shell、安裝與版本更新流程 |
 | 身分與裝置 | Firebase Authentication、App Check、Cloud Messaging | Google 登入、app attestation、Web Push |
 | API | Cloudflare Workers、Hyperdrive | 驗證、action dispatch、資料庫連線與媒體代理 |
 | 非同步與即時 | Cloudflare Queues、Durable Objects | Event delivery、背景批次、WebSocket、業務 rate limit |
@@ -79,7 +80,7 @@ bun install --frozen-lockfile
 bun run test:env
 ```
 
-`test:env` 會重建本機 PostgreSQL、套用 migration 和 sample seed，接著啟動 Firebase Auth Emulator、外部服務 stub、Cloudflare Worker 與 Next.js。Ready 後可使用：
+`test:env` 會重建本機 PostgreSQL、套用 migration 和 sample seed，接著啟動 Firebase Auth Emulator、外部服務 stub、Cloudflare Worker 與 Vite dev server。Ready 後可使用：
 
 - App：`http://127.0.0.1:3000`
 - API：`http://127.0.0.1:8787`
@@ -128,7 +129,7 @@ bun run verify:all          # local + integration + Playwright E2E
 
 | 服務或素材 | 必要性 | Novae 使用方式 |
 | --- | --- | --- |
-| Vercel | 正式部署需要 | Next.js frontend build 與 hosting |
+| Vercel | 正式部署需要 | 靜態 frontend build、hosting 與 security header |
 | Cloudflare Workers / Hyperdrive / Queues / Durable Objects | 必要 | API、PostgreSQL connection、背景工作、Realtime、業務 rate limit |
 | Neon | 必要 | PostgreSQL source of record |
 | Firebase Authentication / App Check / Cloud Messaging | 必要 | Google 登入、browser attestation、Web Push |

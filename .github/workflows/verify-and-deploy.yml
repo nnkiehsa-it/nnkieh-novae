@@ -210,6 +210,9 @@ jobs:
         run: bun run test:e2e
 
       - name: Verify production asset budget
+        env:
+          # The production build the browser journeys just ran against.
+          NOVAE_DIST_DIR: dist-local-e2e
         run: bun run check:build-budget
 
   deploy_backend:

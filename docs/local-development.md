@@ -27,7 +27,7 @@ bun run test:env
 
 | 服務 | 位址 |
 | --- | --- |
-| Next.js | `http://127.0.0.1:3000` |
+| 前端（Vite dev server） | `http://127.0.0.1:3000` |
 | Cloudflare Worker | `http://127.0.0.1:8787` |
 | Firebase Auth Emulator UI | `http://127.0.0.1:4000/auth` |
 | PostgreSQL owner connection | `postgresql://novae:novae-local@127.0.0.1:55432/novae` |
@@ -46,7 +46,7 @@ bun run test:env
 4. 啟動 port `54330` 的 Cloudinary / FCM / Notion provider stub，並設定本機 upload preset。
 5. 以固定的 `firebase-tools@15.24.0` 啟動 Auth Emulator。
 6. 用 `cloudflare/wrangler.json` 在 local mode 啟動 Worker。
-7. 啟動 Next.js dev server，確認 `/login` 回 `200`，再跑一次登入與 API routing probe。
+7. 啟動 Vite dev server，確認 `/login` 回 `200`，再跑一次登入與 API routing probe。
 
 任一 child process 提早退出時，錯誤會附上對應暫存 log 的尾端。`--serve` 會把整個環境放進一個 detached session：`bun run` 在 Ctrl+C 時會直接砍掉自己的 child，收尾根本來不及跑，因此 session 改以「launcher 消失」當作停止訊號。按下 `Ctrl+C` 後 shell prompt 會先回來，session 才反向停止自己建立的服務並把清理訊息印在同一個 terminal；Windows 上若 WSL 與 Docker 原本都沒啟動，清理後也會釋放該 WSL runtime。
 
@@ -71,7 +71,7 @@ Local seed 適合手動瀏覽；integration verification 改用 `database/seed.i
 bun run dev
 ```
 
-Serwist 在 development mode 停用，因此開發時不會讓舊 service worker cache 干擾畫面。`NEXT_PUBLIC_LOCAL_DEV_AUTH` 只供 emulator flow 使用，部署環境不可開啟。
+Serwist 在 dev server 停用，因此開發時不會讓舊 service worker cache 干擾畫面。`NEXT_PUBLIC_LOCAL_DEV_AUTH` 只供 emulator flow 使用，部署環境不可開啟。
 
 只跑 `bun run dev` 不會替你啟動 Worker、PostgreSQL 或 Auth Emulator。若 `.env.local` 的 `NEXT_PUBLIC_API_BASE_URL` 指到 `http://127.0.0.1:8787`，要自行確定 Worker 已在該 port 運作；要完整且一致的本機資料，直接使用 `bun run test:env`。
 
@@ -103,7 +103,7 @@ bun run db:stop
 
 手機分享用 `bun run preview:phone`，狀態／探測／停止分別用 `preview:phone:status`、`preview:phone:verify`、`preview:phone:stop`。腳本自動取得 Tailscale 裝置網址並在背景運行；日誌與狀態放在 `.novae-phone-preview/`。專案 skill 位於 `.agents/skills/novae-phone-preview/SKILL.md`，可用 `$novae-phone-preview` 呼叫。需要新版本時停止再啟動。
 
-底層使用 `node scripts/verify-integration.mjs --serve --preview`，先建置，再用 `next start` 提供 production 預覽，停用測試 service worker；產物放在 `.next-local-preview`。一般 `--serve` 的開發產物放在 `.next-local-dev`，兩者都與正式建置的 `.next` 分離，避免共享產物與遠端熱更新打斷載入。
+底層使用 `node scripts/verify-integration.mjs --serve --preview`，先建置，再用 `vite preview` 提供 production 預覽（帶與部署相同的 CSP，另加測試 stack 的 loopback 來源），停用測試 service worker；產物放在 `dist-local-preview`。一般 `--serve` 直接跑 Vite dev server，不寫產物。兩者都不碰正式建置的 `dist`，因為測試 build 的 CSP 允許 loopback，不能被誤部署。
 
 測試環境支援 `NOVAE_TEST_PUBLIC_ORIGIN=https://<device>.<tailnet>.ts.net`，只接受 `--serve` 與 Tailscale HTTPS 裝置網址。Tailscale Serve 將 443 代理至前端連接埠、8443 至本機 Worker 8787、9443 至 Auth emulator 9099。手機須連同一個 tailnet；預覽自動登入種子測試管理員，不使用正式資料。停用代理時分別執行 `tailscale serve --https=443 off`、`--https=8443 off`、`--https=9443 off`。
 
