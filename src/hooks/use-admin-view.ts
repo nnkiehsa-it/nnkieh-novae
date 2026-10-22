@@ -1,9 +1,8 @@
-import { useAppLocation } from "@/hooks/use-app-location";
-import { pushAddress } from "@/lib/app-navigation";
+import { useSearchAddress } from "@/hooks/use-search-address";
 
 /** Shareable admin views, restored by reload and browser Back/Forward. */
 export function useAdminView<T extends string>(options: readonly T[], key = "view") {
-  const params = useAppLocation().search;
+  const [params, write] = useSearchAddress();
   const requested = params.get(key);
   const value = options.find((option) => option === requested) ?? options[0];
   const change = (next: string) => {
@@ -11,7 +10,7 @@ export function useAdminView<T extends string>(options: readonly T[], key = "vie
     const url = new URL(window.location.href);
     if (next === options[0]) url.searchParams.delete(key);
     else url.searchParams.set(key, next);
-    pushAddress(`${url.pathname}${url.search}${url.hash}`);
+    write(`${url.pathname}${url.search}${url.hash}`);
   };
   return [value, change] as const;
 }
