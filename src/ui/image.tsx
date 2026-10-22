@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { Dialog } from "radix-ui";
 import { ImageBroken, MagnifyingGlassPlus } from "@phosphor-icons/react/ssr";

@@ -1,5 +1,3 @@
-"use client";
-
 import { useI18n } from "@/i18n";
 import { useAnnouncementComposer } from "@/hooks/use-entry-composer";
 import { usePermissionRedirect } from "@/hooks/use-permission-redirect";

@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { getUnsavedChanges } from "@/hooks/unsaved-changes-store";
 import { useAccessTarget } from "@/hooks/use-access-target";

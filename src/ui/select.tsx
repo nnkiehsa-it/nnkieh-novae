@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { CaretDown, Check } from "@phosphor-icons/react/ssr";
 import { Select as SelectPrimitive } from "radix-ui";

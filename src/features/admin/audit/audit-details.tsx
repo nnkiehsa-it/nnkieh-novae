@@ -1,5 +1,3 @@
-"use client";
-
 import { CaretDown } from "@phosphor-icons/react/ssr";
 import { ACCOUNT_ACCESS_DURATION_KEYS, ACCOUNT_ACCESS_PRESET_KEYS } from "@/constants/account-access";
 import { useI18n } from "@/i18n";

@@ -1,8 +1,8 @@
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ replace: vi.fn(), refresh: vi.fn(async () => {}), save: vi.fn(async () => {}) }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: mocks.replace }) }));
+const mocks = vi.hoisted(() => ({ navigate: vi.fn(), refresh: vi.fn(async () => {}), save: vi.fn(async () => {}) }));
+vi.mock("react-router", () => ({ useNavigate: () => mocks.navigate }));
 vi.mock("@/i18n", () => ({ useI18n: () => ({ t: (key: string) => key }) }));
 vi.mock("@/hooks/use-session", () => ({ useSession: () => ({ isAdmin: true, setupCompleted: false, refreshSessionAccess: mocks.refresh }) }));
 vi.mock("@/hooks/use-categories", () => ({ useCategories: () => ({ refresh: mocks.refresh }) }));
@@ -25,7 +25,7 @@ it("facilities-only setup opens the category feed rather than a nonexistent repo
     });
     await act(async () => setup.save());
     expect(mocks.save).toHaveBeenCalledOnce();
-    expect(mocks.replace).toHaveBeenCalledWith("/feed?view=facilities&category=facility-a");
+    expect(mocks.navigate).toHaveBeenCalledWith("/feed?view=facilities&category=facility-a", { replace: true });
   } finally {
     await act(async () => root.unmount());
     globals.IS_REACT_ACT_ENVIRONMENT = previous;

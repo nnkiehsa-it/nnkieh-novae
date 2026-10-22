@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { AppLink } from "./app-link";
 import { ArrowClockwise, CaretLeft, Tray, WarningCircle } from "@phosphor-icons/react/ssr";

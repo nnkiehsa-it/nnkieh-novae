@@ -1,5 +1,3 @@
-"use client";
-
 import { Buildings, Lightbulb, Plus, UsersThree } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import { useInitialSetup } from "@/hooks/use-initial-setup";

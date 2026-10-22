@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { AppLink } from "./app-link";
 import type { Icon } from "@phosphor-icons/react";

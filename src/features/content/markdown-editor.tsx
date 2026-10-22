@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { useI18n } from "@/i18n";
 import { getVditorI18n } from "@/lib/vditor-i18n";

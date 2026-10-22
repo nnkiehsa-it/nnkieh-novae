@@ -1,5 +1,3 @@
-"use client";
-
 import { AppLink } from "@/ui/app-link";
 import type { Icon } from "@phosphor-icons/react";
 import { CaretRight, ClockCounterClockwise, FolderOpen, Gauge, HardDrives, SlidersHorizontal, UsersThree } from "@phosphor-icons/react/ssr";

@@ -1,5 +1,3 @@
-"use client";
-
 import { useAdminUsers, type AdminUser } from "@/hooks/use-admin-console";
 import { useI18n } from "@/i18n";
 import { formatRelativeTime } from "@/lib/format";

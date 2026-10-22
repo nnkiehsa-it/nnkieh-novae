@@ -1,5 +1,3 @@
-"use client";
-
 import { useI18n } from "@/i18n";
 import { DEFAULT_OPERATION_POLICIES, OPERATION_POLICIES, type OperationPolicies, type OperationPolicyKey } from "@shared/operation-policies.ts";
 import { NumberRow } from "@/ui/list-controls";

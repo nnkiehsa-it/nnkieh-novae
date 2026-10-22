@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { useAdminAudit, type AdminAuditEntry } from "@/hooks/use-admin-console";
 import { useI18n } from "@/i18n";

@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 
 /** Serialize writes and prevent an old account's result from updating this view. */

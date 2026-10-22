@@ -1,5 +1,3 @@
-"use client";
-
 import { ACCOUNT_ACCESS_DURATIONS, ACCOUNT_ACCESS_DURATION_KEYS, ACCOUNT_ACCESS_PRESETS } from "@/constants/account-access";
 import type { AccountAccessDuration, AccountAccessPreset } from "@/hooks/use-admin-console";
 import { useI18n } from "@/i18n";

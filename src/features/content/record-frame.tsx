@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { useAppNavigate } from "@/hooks/use-app-location";
 import { useShareExitGuard } from "@/hooks/use-share-entry";

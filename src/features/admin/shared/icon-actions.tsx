@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { ArrowClockwise } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";

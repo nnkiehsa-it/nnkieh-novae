@@ -1,7 +1,5 @@
-"use client";
-
 import * as React from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { Outlet, useLocation, useNavigate } from "react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { timing } from "@/lib/motion-timing";
 import { useContentRealtime } from "@/hooks/use-content-realtime";
@@ -17,9 +15,9 @@ import { StartupScreen } from "./startup-screen";
  * known, sends a visitor to sign in or to setup, then shows the app. Setup is
  * the one page of its own; every other screen comes from the view host.
  */
-export function ProtectedApp({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  const pathname = usePathname();
+export function ProtectedApp() {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   const session = useSession();
   const { initialized, loading, roleLoading, setupCompleted, startupError, user } = session;
   const { phase, pending: presenting } = useStartupPresentation(session);
@@ -38,10 +36,10 @@ export function ProtectedApp({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     if (!settled) return;
-    if (!user) router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
-    else if (!setupCompleted && !onSetup) router.replace("/setup");
-    else if (setupCompleted && onSetup) router.replace("/home");
-  }, [onSetup, pathname, router, settled, setupCompleted, user]);
+    if (!user) void navigate(`/login?redirect=${encodeURIComponent(pathname)}`, { replace: true });
+    else if (!setupCompleted && !onSetup) void navigate("/setup", { replace: true });
+    else if (setupCompleted && onSetup) void navigate("/home", { replace: true });
+  }, [navigate, onSetup, pathname, settled, setupCompleted, user]);
 
   const waiting = Boolean(startupError) || !user || (setupCompleted && onSetup)
     || (!shown && (!settled || presenting || (!setupCompleted && !onSetup)));
@@ -52,7 +50,7 @@ export function ProtectedApp({ children }: { children: React.ReactNode }) {
     <>
       {waiting ? null : (
         <motion.div animate={{ opacity: 1 }} initial={{ opacity: 0 }} transition={timing("reveal")}>
-          <LocaleGate>{onSetup ? children : <AppShell><React.Suspense><AppViews /></React.Suspense></AppShell>}</LocaleGate>
+          <LocaleGate>{onSetup ? <Outlet /> : <AppShell><React.Suspense><AppViews /></React.Suspense></AppShell>}</LocaleGate>
         </motion.div>
       )}
       <AnimatePresence initial={false}>

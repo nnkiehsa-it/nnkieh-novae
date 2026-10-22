@@ -1,5 +1,3 @@
-"use client";
-
 import { useI18n } from "@/i18n";
 import { useIssueComposer } from "@/hooks/use-entry-composer";
 import { Composer } from "@/features/content/composer";

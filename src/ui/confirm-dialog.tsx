@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { AlertDialog } from "radix-ui";
 import { useI18n } from "@/i18n";

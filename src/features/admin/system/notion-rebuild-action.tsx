@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { Database } from "@phosphor-icons/react/ssr";
 import type { OperationsConsole } from "@/hooks/use-system-console";

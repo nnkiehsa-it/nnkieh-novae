@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { useDraft } from "@/hooks/use-draft";
 import { useI18n } from "@/i18n";

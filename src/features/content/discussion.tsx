@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CaretDown, ChatCircle, X } from "@phosphor-icons/react/ssr";

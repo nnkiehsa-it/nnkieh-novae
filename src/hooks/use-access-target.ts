@@ -1,7 +1,6 @@
-"use client";
-
 import * as React from "react";
-import { useSearchParams } from "next/navigation";
+import { pushAddress, replaceAddress } from "@/lib/app-navigation";
+import { useAppLocation } from "@/hooks/use-app-location";
 import type { AccessScope } from "@/services/access";
 
 interface AccessTarget {
@@ -12,7 +11,7 @@ interface AccessTarget {
 
 /** The URL keeps separate category choices for each content type. */
 export function useAccessTarget() {
-  const params = useSearchParams();
+  const params = useAppLocation().search;
   const requestedKind = params.get("scope");
   const kind = ["issue", "facility", "announcement"].find((value) => value === requestedKind) as AccessScope["kind"] | undefined;
   const issueId = params.get("issueCategory") ?? "";
@@ -29,8 +28,8 @@ export function useAccessTarget() {
       else url.searchParams.delete(key);
     }
     const address = `${url.pathname}${url.search}${url.hash}`;
-    if (replace) window.history.replaceState(null, "", address);
-    else window.history.pushState(null, "", address);
+    if (replace) replaceAddress(address);
+    else pushAddress(address);
   }, []);
   return [target, change] as const;
 }

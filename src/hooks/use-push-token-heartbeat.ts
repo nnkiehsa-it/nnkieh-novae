@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { useSession } from "@/hooks/use-session";
 import { confirmCurrentPushToken } from "@/services/push-token-registration";

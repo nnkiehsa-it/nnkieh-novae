@@ -1,5 +1,3 @@
-"use client";
-
 import { AppLink } from "@/ui/app-link";
 import { CaretRight, Lightbulb, Wrench } from "@phosphor-icons/react/ssr";
 import type { Icon } from "@phosphor-icons/react";

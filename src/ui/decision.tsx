@@ -1,5 +1,3 @@
-"use client";
-
 import type * as React from "react";
 import { Button, type ActionStatus } from "./button";
 import { ListGroup } from "./list";

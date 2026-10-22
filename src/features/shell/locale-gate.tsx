@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { ArrowRight } from "@phosphor-icons/react/ssr";
 import { hasStoredLocale, setLocale, useI18n, type AppLocale } from "@/i18n";

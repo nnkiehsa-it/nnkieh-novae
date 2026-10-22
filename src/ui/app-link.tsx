@@ -1,18 +1,15 @@
-"use client";
-
 import type * as React from "react";
-import Link from "next/link";
 import { navigate } from "@/lib/app-navigation";
 
-type AppLinkProps = Omit<React.ComponentProps<typeof Link>, "href" | "prefetch"> & { href: string };
+type AppLinkProps = Omit<React.ComponentProps<"a">, "href"> & { href: string; replace?: boolean };
 
 /**
- * A link that changes screens in place when it stays inside the app, and
+ * A link that changes screens in place when it stays on this origin, and
  * otherwise behaves as an ordinary link. Modified clicks still open a tab.
  */
 export function AppLink({ href, onClick, replace, target, ...props }: AppLinkProps) {
   return (
-    <Link
+    <a
       {...props}
       href={href}
       onClick={(event) => {
@@ -21,8 +18,6 @@ export function AppLink({ href, onClick, replace, target, ...props }: AppLinkPro
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         if (navigate(href, { replace })) event.preventDefault();
       }}
-      prefetch={false}
-      replace={replace}
       target={target}
     />
   );

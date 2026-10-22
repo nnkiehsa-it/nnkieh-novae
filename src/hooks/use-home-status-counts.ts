@@ -1,5 +1,3 @@
-"use client";
-
 import { useQueries } from "@tanstack/react-query";
 import { useCategories } from "@/hooks/use-categories";
 import { useSession } from "@/hooks/use-session";

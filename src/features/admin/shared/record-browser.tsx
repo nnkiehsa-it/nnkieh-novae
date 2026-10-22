@@ -1,5 +1,3 @@
-"use client";
-
 import type * as React from "react";
 import { useI18n } from "@/i18n";
 import { Button } from "@/ui/button";

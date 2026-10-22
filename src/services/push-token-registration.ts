@@ -1,5 +1,3 @@
-import "client-only";
-
 import { ensureFirebaseAppCheck } from "@/lib/firebase-app-check";
 import { auth, firebaseVapidKey } from "@/lib/firebase";
 import { setPushSession } from "@/lib/push-session";

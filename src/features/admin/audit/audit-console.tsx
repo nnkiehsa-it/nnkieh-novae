@@ -1,5 +1,3 @@
-"use client";
-
 import { useAdminView } from "@/hooks/use-admin-view";
 import { useI18n } from "@/i18n";
 import { SectionTabs } from "../shared/section-tabs";

@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, type ReactNode } from "react";
 import { useAppNavigate } from "@/hooks/use-app-location";
 import { feedHref } from "@/lib/feed-href";

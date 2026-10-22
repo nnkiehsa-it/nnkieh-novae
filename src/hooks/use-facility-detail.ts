@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAppNavigate, useRecordId } from "@/hooks/use-app-location";

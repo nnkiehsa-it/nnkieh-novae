@@ -1,5 +1,3 @@
-"use client";
-
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { sessionDebug } from "@/lib/session-debug";

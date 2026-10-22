@@ -1,5 +1,3 @@
-"use client";
-
 import { useI18n } from "@/i18n";
 import { findIssueCategory, useCategories } from "@/hooks/use-categories";
 import { useSession } from "@/hooks/use-session";

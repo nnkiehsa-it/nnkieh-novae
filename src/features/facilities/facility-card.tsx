@@ -1,5 +1,3 @@
-"use client";
-
 import { Hand, MapPin } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import type { FacilitySummary, UserPublicProfile } from "@/types";

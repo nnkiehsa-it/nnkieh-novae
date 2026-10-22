@@ -1,5 +1,3 @@
-"use client";
-
 import { useAdminView } from "@/hooks/use-admin-view";
 import { useSystemConsole } from "@/hooks/use-system-console";
 import { useI18n } from "@/i18n";

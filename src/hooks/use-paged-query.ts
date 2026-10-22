@@ -1,5 +1,3 @@
-"use client";
-
 import { useInfiniteQuery, type InfiniteData, type QueryKey } from "@tanstack/react-query";
 import { useI18n } from "@/i18n";
 import { canContinuePage, mergePageById } from "@/lib/pagination";

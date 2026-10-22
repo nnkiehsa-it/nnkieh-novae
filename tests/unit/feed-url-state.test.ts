@@ -5,9 +5,8 @@ import { useFeedUrlState } from "@/hooks/use-feed-url-state";
 import { normalizeFeedQuery, readFacilityFeedFilters, readIssueFeedFilters, updateFeedUrl } from "@/lib/feed-url-state";
 import { getOperationPolicy } from "@/lib/operation-policies";
 
-vi.mock("next/navigation", () => ({
-  usePathname: () => window.location.pathname,
-  useSearchParams: () => new URLSearchParams(window.location.search),
+vi.mock("react-router", () => ({
+  useLocation: () => ({ hash: window.location.hash, pathname: window.location.pathname, search: window.location.search }),
 }));
 
 let state: ReturnType<typeof useFeedUrlState>;

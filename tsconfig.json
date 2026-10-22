@@ -20,13 +20,8 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
     "types": [
-      "@serwist/next/typings",
+      "vite/client",
       "vitest/globals"
     ],
     "paths": {
@@ -40,18 +35,10 @@
     "allowImportingTsExtensions": true
   },
   "include": [
-    "next-env.d.ts",
-    ".next/types/**/*.ts",
     "src/**/*.ts",
-    "shared/**/*.ts",
     "src/**/*.tsx",
-    ".next/dev/types/**/*.ts",
-    ".next-verify/types/**/*.ts",
-    ".next-verify/dev/types/**/*.ts",
-    ".next-local-preview/types/**/*.ts",
-    ".next-local-preview/dev/types/**/*.ts",
-    ".next-local-dev/types/**/*.ts",
-    ".next-local-dev/dev/types/**/*.ts"
+    "shared/**/*.ts",
+    "vite.config.ts"
   ],
   "exclude": [
     "node_modules",

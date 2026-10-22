@@ -1,5 +1,3 @@
-"use client";
-
 import { CalendarBlank, ChatCircle, HandHeart } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import type { IssueSummary, UserPublicProfile } from "@/types";

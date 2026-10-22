@@ -1,5 +1,3 @@
-"use client";
-
 import { OPERATION_POLICIES, type OperationPolicyKey } from "@shared/operation-policies.ts";
 import { useAdminView } from "@/hooks/use-admin-view";
 import { useOperationPolicies } from "@/hooks/use-operation-policies";

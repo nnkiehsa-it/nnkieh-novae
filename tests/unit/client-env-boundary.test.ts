@@ -27,7 +27,7 @@ function sourceFiles(root: string): string[] {
 describe("client environment boundary", () => {
   it("does not reference backend secrets from frontend source or publish secret-shaped env names", () => {
     const root = process.cwd();
-    const files = [...sourceFiles(join(root, "src")), join(root, "next.config.mjs")];
+    const files = [...sourceFiles(join(root, "src")), join(root, "vite.config.ts")];
     const violations: string[] = [];
 
     for (const file of files) {

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="utf-8">
+    <!-- The application is a fixed-scale surface: every layout already answers
+         the screen it is on, and a pinch that scales the page instead only takes
+         the navigation bar and the composer dock off it. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#8ea8d3">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#111624">
+    <title>Novae</title>
+    <meta name="description" content="%NOVAE_DESCRIPTION%">
+    <meta name="application-name" content="Novae">
+    <meta name="format-detection" content="telephone=no, address=no, email=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Novae">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" href="/favicon.ico?v=%NOVAE_VERSION%">
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png?v=%NOVAE_VERSION%" sizes="180x180" type="image/png">
+    <!-- novae:boot -->
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/app/main.tsx"></script>
+  </body>
+</html>

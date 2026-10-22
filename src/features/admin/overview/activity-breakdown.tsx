@@ -1,5 +1,3 @@
-"use client";
-
 import type { AdminOverviewData } from "@/hooks/use-admin-overview";
 import { useI18n } from "@/i18n";
 import { ListGroup, ListRow } from "@/ui/list";

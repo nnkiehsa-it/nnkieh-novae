@@ -1,7 +1,5 @@
-"use client";
-
 import * as React from "react";
-import { usePathname } from "next/navigation";
+import { useLocation } from "react-router";
 import { Bell, CaretUpDown, GearSix, House, ShieldCheck, SignOut, SquaresFour } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import { canEnterAdministration } from "@/lib/admin-routes";
@@ -59,7 +57,7 @@ function AccountMenu() {
 export function AppShell({ children }: { children: React.ReactNode }) {
   usePushTokenHeartbeat();
   const { t } = useI18n();
-  const pathname = usePathname();
+  const { pathname } = useLocation();
   const unread = useNotificationBadge();
   const dock = !hidesDock(pathname);
   const items = React.useMemo<NavItem[]>(() => [

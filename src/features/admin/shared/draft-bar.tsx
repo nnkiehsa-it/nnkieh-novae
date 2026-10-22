@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import type { Draft } from "@/hooks/use-draft";
 import type { DraftChange } from "@/lib/draft-diff";

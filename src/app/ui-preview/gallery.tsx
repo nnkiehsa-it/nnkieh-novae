@@ -1,5 +1,3 @@
-"use client";
-
 import { Bell, GearSix, House, ListBullets, MagnifyingGlass, Sparkle } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import { Avatar } from "@/ui/avatar";

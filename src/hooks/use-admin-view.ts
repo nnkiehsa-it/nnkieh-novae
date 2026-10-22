@@ -1,5 +1,3 @@
-"use client";
-
 import { useAppLocation } from "@/hooks/use-app-location";
 import { pushAddress } from "@/lib/app-navigation";
 

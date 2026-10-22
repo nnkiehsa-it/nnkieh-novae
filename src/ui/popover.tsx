@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { Popover as PopoverPrimitive, Tooltip as TooltipPrimitive } from "radix-ui";
 import { cn } from "@/lib/utils";

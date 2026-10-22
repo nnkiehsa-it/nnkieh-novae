@@ -1,5 +1,3 @@
-"use client";
-
 import type * as React from "react";
 import { useAppLocation } from "@/hooks/use-app-location";
 import { usePermissionRedirect } from "@/hooks/use-permission-redirect";

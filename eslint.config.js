@@ -1,6 +1,5 @@
 import babelParser from "@babel/eslint-parser";
 import js from "@eslint/js";
-import nextPlugin from "@next/eslint-plugin-next";
 import reactHooks from "eslint-plugin-react-hooks";
 
 const browserGlobals = {
@@ -42,21 +41,15 @@ const nodeGlobals = {
 export default [
   {
     ignores: [
-      ".next/**",
-      ".next-verify/**",
-      ".next-local-dev/**",
-      ".next-local-preview/**",
-      ".next-*/**",
       ".novae-phone-preview/**",
       ".claude/**",
       ".vercel/**",
       "**/dist/**",
+      "dist-*/**",
       "temp/**",
       ".impeccable/**",
       "node_modules/**",
       "playwright-report/**",
-      "public/sw.js",
-      "public/swe-worker*",
       "test-results/**",
       "cloudflare/**",
       "vite.config.js",
@@ -82,17 +75,13 @@ export default [
       },
     },
     plugins: {
-      "@next/next": nextPlugin,
       "react-hooks": reactHooks,
     },
     rules: {
-      ...nextPlugin.configs.recommended.rules,
-      ...nextPlugin.configs["core-web-vitals"].rules,
       ...reactHooks.configs.flat.recommended.rules,
       "no-console": "off",
       "no-undef": "off",
       "no-unused-vars": "off",
-      "@next/next/no-img-element": "off",
       "react-hooks/preserve-manual-memoization": "off",
       "react-hooks/set-state-in-effect": "off",
     },

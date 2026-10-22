@@ -1,5 +1,3 @@
-"use client";
-
 import { useAccountAccessDraft, type AccountAccessDraftOptions } from "@/hooks/use-account-access-draft";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { useI18n } from "@/i18n";

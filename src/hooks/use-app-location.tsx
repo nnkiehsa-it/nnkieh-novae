@@ -1,7 +1,5 @@
-"use client";
-
 import * as React from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useLocation } from "react-router";
 import { navigate } from "@/lib/app-navigation";
 import { matchAppRoute, type AppRoute } from "@/lib/route-hierarchy";
 
@@ -24,9 +22,8 @@ export function AppLocationProvider({ children, value }: { children: React.React
 /** The address this screen is drawn for. */
 export function useAppLocation(): AppLocation {
   const pinned = React.useContext(AppLocationContext);
-  const pathname = usePathname();
-  const search = useSearchParams();
-  return pinned ?? { pathname, search };
+  const browser = useBrowserLocation();
+  return pinned ?? browser;
 }
 
 /**
@@ -39,22 +36,20 @@ export function useRecordId<Kind extends "announcement" | "facility" | "issue">(
   return route as Extract<AppRoute, { kind: Kind }>;
 }
 
-/** Goes to `href`: in place inside the app, through the router otherwise. */
+/** Goes to `href`: in place on this origin, as a page load otherwise. */
 export function useAppNavigate() {
-  const router = useRouter();
   return React.useCallback((href: string, options: { replace?: boolean } = {}) => {
     if (navigate(href, options)) return;
-    if (options.replace) router.replace(href);
-    else router.push(href);
-  }, [router]);
+    if (options.replace) window.location.replace(href);
+    else window.location.assign(href);
+  }, []);
 }
 
 /** The current address as the browser shows it, for the view host to pin. */
 export function useBrowserLocation(): AppLocation & { key: string } {
-  const pathname = usePathname();
-  const search = useSearchParams();
+  const { pathname, search } = useLocation();
   return React.useMemo(() => {
-    const query = search.toString();
+    const query = new URLSearchParams(search).toString();
     return { key: query ? `${pathname}?${query}` : pathname, pathname, search: new URLSearchParams(query) };
   }, [pathname, search]);
 }

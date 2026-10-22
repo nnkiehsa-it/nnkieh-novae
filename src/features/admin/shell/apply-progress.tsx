@@ -1,5 +1,3 @@
-"use client";
-
 import { CheckCircle, WarningCircle } from "@phosphor-icons/react/ssr";
 import { AnimatePresence } from "motion/react";
 import { usePlatformJobs } from "@/hooks/use-platform-jobs";

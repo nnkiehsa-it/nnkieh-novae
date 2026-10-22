@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { getUnsavedChanges, subscribeUnsavedChanges } from "@/hooks/unsaved-changes-store";
 import { useI18n } from "@/i18n";

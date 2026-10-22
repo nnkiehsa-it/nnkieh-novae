@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 
 import { ACTION_SUCCESS_HOLD_MS } from "@/hooks/use-action-feedback";

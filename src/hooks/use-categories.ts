@@ -1,5 +1,3 @@
-"use client";
-
 import { useSyncExternalStore } from "react";
 import { getCategoryCatalog } from "@/services/categories";
 import { fetchSessionBootstrap } from "@/services/session";

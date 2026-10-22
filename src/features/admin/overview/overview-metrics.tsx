@@ -1,5 +1,3 @@
-"use client";
-
 import { ADMIN_PERIOD_FIGURES, adminOverviewWindowLabelKey, type AdminOverviewWindow } from "@/constants/admin-activity";
 import type { AdminOverviewData } from "@/hooks/use-admin-overview";
 import { useI18n } from "@/i18n";

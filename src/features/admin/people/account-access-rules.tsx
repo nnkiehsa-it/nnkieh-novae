@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { ArrowClockwise, PencilSimple, Plus, Trash } from "@phosphor-icons/react/ssr";
 import { useAccountAccessRules, type AccountAccessRule } from "@/hooks/use-admin-console";

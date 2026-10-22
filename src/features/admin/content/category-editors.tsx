@@ -1,5 +1,3 @@
-"use client";
-
 import { useI18n } from "@/i18n";
 import { FACILITY_PRESETS, ISSUE_PRESETS } from "@/lib/admin-setting-presets";
 import type { FacilityCategoryConfig, IssueCategoryConfig } from "@/types/categories";

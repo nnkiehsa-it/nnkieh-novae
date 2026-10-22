@@ -1,5 +1,3 @@
-"use client";
-
 import type { User } from "firebase/auth";
 import type { PermissionCode, RoleCode } from "@/services/session";
 

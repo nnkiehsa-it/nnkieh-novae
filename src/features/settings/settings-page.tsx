@@ -1,5 +1,3 @@
-"use client";
-
 import { ArrowClockwise, ArrowSquareOut, Copy, GithubLogo, ShieldCheck, SignOut, UserSwitch } from "@phosphor-icons/react/ssr";
 import * as React from "react";
 import { toast } from "sonner";

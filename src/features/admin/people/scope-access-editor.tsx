@@ -1,5 +1,3 @@
-"use client";
-
 import type * as React from "react";
 import { ShieldCheck, Trash, UserPlus } from "@phosphor-icons/react/ssr";
 import { useScopeAccess, type AccessScope } from "@/hooks/use-scope-access";

@@ -1,5 +1,3 @@
-"use client";
-
 import type * as React from "react";
 import type { DraftImpact } from "@/hooks/use-draft";
 import { useI18n } from "@/i18n";

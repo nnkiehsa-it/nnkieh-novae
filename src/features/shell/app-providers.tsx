@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { MotionConfig } from "motion/react";
 import { QueryClientProvider } from "@tanstack/react-query";

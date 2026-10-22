@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { ADMIN_OVERVIEW_WINDOWS, type AdminOverviewWindow } from "@/constants/admin-activity";
 import { useAdminActivity } from "@/hooks/use-admin-console";
