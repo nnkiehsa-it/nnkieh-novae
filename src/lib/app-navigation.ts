@@ -17,14 +17,40 @@ interface AppLocationState {
 /** The part of a React Router data router this module drives. */
 export interface AppRouter {
   navigate(to: string, options?: { replace?: boolean; state?: AppLocationState }): Promise<void>;
-  readonly state: { location: { hash: string; pathname: string; search: string; state: unknown } };
+  readonly state: { location: AppRouterLocation };
+  subscribe(listener: (state: { location: AppRouterLocation }) => void): () => void;
+}
+
+interface AppRouterLocation {
+  hash: string;
+  pathname: string;
+  search: string;
+  state: unknown;
 }
 
 let router: AppRouter | null = null;
+let unsubscribe: (() => void) | null = null;
+/** The address last asked for, until the router commits an address. */
+let requested: string | null = null;
+const requestListeners = new Set<() => void>();
+
+function setRequested(next: string | null) {
+  if (next === requested) return;
+  requested = next;
+  for (const listener of requestListeners) listener();
+}
 
 /** Called once with the app's router, before it renders. */
 export function bindRouter(next: AppRouter | null) {
+  unsubscribe?.();
   router = next;
+  setRequested(null);
+  let shown = next?.state.location;
+  unsubscribe = next?.subscribe(({ location }) => {
+    if (location === shown) return;
+    shown = location;
+    setRequested(null);
+  }) ?? null;
 }
 
 /** Whether `href` names a signed-in screen. */
@@ -47,12 +73,43 @@ function currentAddress() {
 }
 
 /**
+ * The address the screen is heading to: the one last asked for while the
+ * router has not committed it yet, otherwise the one showing. A change built
+ * on it keeps a change made a moment earlier; the router drops a navigation
+ * that a newer one overtakes, so a change built on the address still showing
+ * would lose it.
+ */
+export function requestedAddress() {
+  return requested ?? currentAddress();
+}
+
+/**
+ * The address asked for and not committed yet, or null. The router commits a
+ * beat after the request; any commit clears it, the request's own or a step
+ * back taken before it landed.
+ */
+export function pendingAddress() {
+  return requested;
+}
+
+export function subscribePendingAddress(listener: () => void) {
+  requestListeners.add(listener);
+  return () => void requestListeners.delete(listener);
+}
+
+function go(href: string, options: { replace?: boolean; state: AppLocationState }) {
+  if (!router) return;
+  setRequested(href);
+  void router.navigate(href, options);
+}
+
+/**
  * Shows `href` in place. Returns false when the caller must navigate the
  * ordinary way: there is no router yet, or `href` leaves this origin.
  */
 export function navigate(href: string, { replace = false }: { replace?: boolean } = {}) {
   if (!router || !isRouterHref(href)) return false;
-  if (replace) void router.navigate(href, { replace: true, state: { [MARK]: marked() } });
+  if (replace) go(href, { replace: true, state: { [MARK]: marked() } });
   else pushAddress(href);
   return true;
 }
@@ -63,15 +120,15 @@ export function navigate(href: string, { replace = false }: { replace?: boolean 
  * adds nothing.
  */
 export function pushAddress(href: string) {
-  if (href === currentAddress()) return;
-  if (router) void router.navigate(href, { state: { [MARK]: true } });
+  if (href === requestedAddress()) return;
+  if (router) go(href, { state: { [MARK]: true } });
   else window.history.pushState({ [MARK]: true }, "", href);
 }
 
 /** Rewrites the address on screen without a history entry, keeping its mark. */
 export function replaceAddress(href: string) {
-  if (href === currentAddress()) return;
-  if (router) void router.navigate(href, { replace: true, state: { [MARK]: marked() } });
+  if (href === requestedAddress()) return;
+  if (router) go(href, { replace: true, state: { [MARK]: marked() } });
   else window.history.replaceState(window.history.state, "", href);
 }
 

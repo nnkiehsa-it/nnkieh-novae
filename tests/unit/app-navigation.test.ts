@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { createBrowserRouter } from "react-router";
-import { bindRouter, canStepBack, isInAppHref, navigate, pushAddress } from "@/lib/app-navigation";
+import { bindRouter, canStepBack, isInAppHref, navigate, pendingAddress, pushAddress, requestedAddress } from "@/lib/app-navigation";
 
 let router: ReturnType<typeof createBrowserRouter>;
 
@@ -58,4 +58,17 @@ it("does not stack an entry for the address already showing", async () => {
   pushAddress("/feed?view=issues");
   await settled();
   expect(window.history.length).toBe(before);
+});
+
+it("builds on an address asked for until the router commits one", async () => {
+  router.dispose();
+  router = createBrowserRouter([{ path: "*", loader: () => new Promise((resolve) => setTimeout(resolve, 5)) }]);
+  bindRouter(router);
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  pushAddress("/feed?view=issues");
+  expect(pendingAddress()).toBe("/feed?view=issues");
+  expect(requestedAddress()).toBe("/feed?view=issues");
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  expect(window.location.search).toBe("?view=issues");
+  expect(pendingAddress()).toBeNull();
 });

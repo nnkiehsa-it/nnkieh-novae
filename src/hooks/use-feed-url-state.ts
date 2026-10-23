@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { useAppLocation } from "@/hooks/use-app-location";
-import { pushAddress } from "@/lib/app-navigation";
+import { pushAddress, requestedAddress } from "@/lib/app-navigation";
 import { normalizeFeedQuery, updateFeedUrl } from "@/lib/feed-url-state";
 
 export function useFeedUrlState() {
@@ -13,7 +13,7 @@ export function useFeedUrlState() {
   const query = input.identity === identity ? input.value : committedQuery;
 
   const updateParams = useCallback((values: Record<string, string | null>) => {
-    pushAddress(updateFeedUrl(window.location.href, values));
+    pushAddress(updateFeedUrl(new URL(requestedAddress(), window.location.origin).href, values));
   }, []);
 
   return {

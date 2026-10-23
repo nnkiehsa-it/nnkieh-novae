@@ -1,5 +1,6 @@
 import * as React from "react";
 import { useSearchAddress } from "@/hooks/use-search-address";
+import { requestedAddress } from "@/lib/app-navigation";
 import type { AccessScope } from "@/services/access";
 
 interface AccessTarget {
@@ -17,7 +18,7 @@ export function useAccessTarget() {
   const facilityId = params.get("facilityCategory") ?? "";
   const target = React.useMemo<AccessTarget>(() => ({ kind: kind ?? "issue", issueId, facilityId }), [facilityId, issueId, kind]);
   const change = React.useCallback((next: AccessTarget, replace = false) => {
-    const url = new URL(window.location.href);
+    const url = new URL(requestedAddress(), window.location.origin);
     for (const [key, value] of Object.entries({
       scope: next.kind === "issue" ? "" : next.kind,
       issueCategory: next.issueId,
