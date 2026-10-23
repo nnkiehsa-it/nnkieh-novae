@@ -14,7 +14,7 @@ import { pendingAddress, pushAddress, replaceAddress, subscribePendingAddress } 
  */
 export function useSearchAddress() {
   const location = useAppLocation();
-  const pending = React.useSyncExternalStore(subscribePendingAddress, pendingAddress, pendingAddress);
+  const pending = usePendingAddress();
   const search = React.useMemo(() => {
     if (!pending) return location.search;
     const url = new URL(pending, window.location.origin);
@@ -25,4 +25,24 @@ export function useSearchAddress() {
     else pushAddress(address);
   }, []);
   return [search, write] as const;
+}
+
+/**
+ * React Router draws a committed address in a transition, so the request is
+ * let go in one too and both draw together. Letting go first would show the
+ * address being left for a render and remount whatever is keyed by it; an
+ * external store cannot wait like that, since its updates always draw at once.
+ */
+function usePendingAddress() {
+  const [pending, setPending] = React.useState(pendingAddress);
+  React.useEffect(() => {
+    const follow = () => {
+      const next = pendingAddress();
+      if (next === null) React.startTransition(() => setPending(null));
+      else setPending(next);
+    };
+    follow();
+    return subscribePendingAddress(follow);
+  }, []);
+  return pending;
 }
