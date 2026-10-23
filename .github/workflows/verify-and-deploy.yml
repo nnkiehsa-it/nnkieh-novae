@@ -600,22 +600,48 @@ jobs:
           TURNSTILE_SITE_KEY: ${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY || secrets.VITE_TURNSTILE_SITE_KEY || secrets.TURNSTILE_SITE_KEY }}
         run: node scripts/allow-preview-origin.mjs
 
+      # The per-deployment URL sits behind Vercel Deployment Protection, which
+      # answers with Vercel's own sign-in page. Production is checked at its
+      # public origin and previews at the fixed preview hostname; a response
+      # that ended up on any other host never counts.
       - name: Smoke test the deployed frontend
         env:
-          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+          BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          IS_PRODUCTION: ${{ github.ref_name == 'main' }}
+          PREVIEW_HOSTNAME: ${{ vars.PREVIEW_HOSTNAME || 'nnkieh-novae-preview.vercel.app' }}
         run: |
+          if [ "$IS_PRODUCTION" = 'true' ]; then
+            base="${ALLOWED_ORIGINS%%,*}"
+          else
+            base="https://$PREVIEW_HOSTNAME"
+          fi
+          base="${base%/}"
+          host="${base#https://}"
+          bypass=()
+          if [ -n "$BYPASS_SECRET" ]; then
+            bypass=(-H "x-vercel-protection-bypass: $BYPASS_SECRET")
+          fi
           for route in login home feed; do
             ready=false
             for attempt in $(seq 1 12); do
-              status="$(curl -sS -L -o /tmp/frontend.html -w '%{http_code}' "${DEPLOYMENT_URL%/}/$route")"
-              if [ "$status" = '200' ] && grep -q 'name="novae-entry" content="/assets/' /tmp/frontend.html; then
+              result="$(curl -sS -L "${bypass[@]}" -o /tmp/frontend.html -w '%{http_code} %{url_effective}' "$base/$route" || true)"
+              status="${result%% *}"
+              landed="${result#* }"
+              landed="${landed#https://}"
+              landed="${landed%%/*}"
+              if [ "$status" = '200' ] && [ "$landed" = "$host" ] && grep -q 'name="novae-entry" content="/assets/' /tmp/frontend.html; then
                 ready=true
                 break
+              fi
+              if [ "$IS_PRODUCTION" != 'true' ] && [ -z "$BYPASS_SECRET" ] && [ "$landed" = 'vercel.com' ]; then
+                echo "::warning::$base is behind Vercel Deployment Protection; set VERCEL_AUTOMATION_BYPASS_SECRET to smoke test previews."
+                exit 0
               fi
               sleep 5
             done
             if [ "$ready" != 'true' ]; then
-              printf 'Frontend smoke test failed (%s=%s) at %s\n' "$route" "$status" "$DEPLOYMENT_URL" >&2
+              printf 'Frontend smoke test failed (%s=%s, landed on %s) at %s\n' "$route" "$status" "$landed" "$base" >&2
               exit 1
             fi
           done

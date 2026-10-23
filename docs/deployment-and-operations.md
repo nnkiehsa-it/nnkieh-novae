@@ -57,6 +57,15 @@ Origin 使用 `ALLOWED_ORIGINS` 的第一個值。任一條件一直不成立，
 
 若 diff 沒碰 `cloudflare/`、`database/`、`shared/` 或 backend generator / renderer，frontend publish 不會等待 backend deployment job。
 
+### Frontend smoke test
+
+publish 後 `login`、`home`、`feed` 三條路徑都要回 `200`，最後落地的 host 必須就是被測的 host，HTML 裡也要有指向 `/assets/` 的 `novae-entry` meta。每條最多嘗試 12 次，間隔 5 秒。
+
+- `main` 測 `ALLOWED_ORIGINS` 的第一個值，也就是正式網域。
+- 其他分支測固定的 preview hostname（`PREVIEW_HOSTNAME`）。
+
+每次 deployment 自己的網址都在 Vercel Deployment Protection 後面，會被轉到 vercel.com 的登入頁，所以不拿它來測。Preview 也受保護時，設定 `VERCEL_AUTOMATION_BYPASS_SECRET`，workflow 會帶上 bypass header；沒設定時，preview 的 smoke test 會留下 warning 後略過，`main` 不會略過。
+
 ## 排程工作
 
 Worker 的 cron 是 `*/30 * * * *`，負責啟動到期支援、retention 與其他 maintenance 工作；大量異動會切成 Queue batch。

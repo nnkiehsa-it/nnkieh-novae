@@ -127,6 +127,7 @@ Cloudinary usage 使用既有 server credentials。Cloudflare 紀錄查詢固定
 | `VERCEL_TOKEN` | GitHub Environment secret | Vercel CLI authentication |
 | `VERCEL_PROJECT_ID` | GitHub Environment secret | Vercel project |
 | `VERCEL_ORG_ID` | GitHub Environment secret | Vercel team / account |
+| `VERCEL_AUTOMATION_BYPASS_SECRET` | GitHub Environment secret（選用） | Vercel「Protection Bypass for Automation」的值，讓 preview 的 frontend smoke test 通過 Deployment Protection |
 
 不要把 `.env.local` 或 `cloudflare/.dev.vars` 提交進 git；repository 只保留 example 檔。
 
