@@ -1,5 +1,3 @@
-"use client";
-
 import { CheckCircle, Clock, Database, Warning } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";

@@ -1,5 +1,3 @@
-"use client";
-
 import { useAdminView } from "@/hooks/use-admin-view";
 import { usePlatformSettings } from "@/hooks/use-platform-settings";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";

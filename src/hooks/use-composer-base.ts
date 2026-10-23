@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { toast } from "sonner";
 import { useCategories } from "@/hooks/use-categories";

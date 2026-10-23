@@ -1,5 +1,3 @@
-"use client";
-
 import type * as React from "react";
 import { motion } from "motion/react";
 import { timing } from "@/lib/motion-timing";

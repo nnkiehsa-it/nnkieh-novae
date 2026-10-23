@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { isStandaloneMode } from "@/lib/pwa-install";
 

@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import type { QueryKey } from "@tanstack/react-query";
 import { usePagedQuery } from "@/hooks/use-paged-query";

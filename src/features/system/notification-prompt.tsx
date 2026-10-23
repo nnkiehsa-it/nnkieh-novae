@@ -1,5 +1,3 @@
-"use client";
-
 import { Bell } from "@phosphor-icons/react/ssr";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";

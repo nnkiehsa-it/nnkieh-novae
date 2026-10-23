@@ -1,5 +1,3 @@
-"use client";
-
 import { BellRinging, Buildings, ChatCircle, FileText, Pulse, ShieldCheck, UserPlus } from "@phosphor-icons/react/ssr";
 import type * as React from "react";
 import type { AdminOverviewData } from "@/hooks/use-admin-overview";

@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { useI18n } from "@/i18n";
 import { useAppLocation, useAppNavigate } from "@/hooks/use-app-location";

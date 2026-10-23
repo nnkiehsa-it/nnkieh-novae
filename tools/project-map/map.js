@@ -259,7 +259,7 @@ function showInventory() {
   html+='<section class="inventory-group"><h3>快照與更新方法</h3>'+paragraphs(['程式版本：'+DATA.meta.head,'產生時間：'+DATA.meta.date+'（臺灣）',DATA.meta.scope,'重新產生：'+DATA.meta.regenerate,'資料來自已追蹤程式碼、設定契約及 migrations；不讀 .env、secret、資料庫或個人 seed。Wrangler 連線 ID 已省略。'])+'</section>';
   for(const section of DATA.inventory.sections) html+='<section class="inventory-group"><h3>'+esc(section.title)+'</h3>'+paragraphs(section.paragraphs)+(section.headers?table(section.headers,section.rows):'')+'</section>';
   html+='<section class="inventory-group"><h3>HTTP 與 WebSocket 入口</h3>'+table(['入口','方法','責任'],DATA.endpoints.map(e=>e.slice(0,3)))+'</section>';
-  html+='<section class="inventory-group"><h3>Next.js page 路由 · '+DATA.routes.length+'</h3>'+table(['路由','原碼','呈現'],DATA.routes.map(r=>[r.route,r.path,r.sheet?'攔截詳情 sheet':'page']))+'</section>';
+  html+='<section class="inventory-group"><h3>React Router 路由 · '+DATA.routes.length+'</h3>'+table(['路由','原碼','呈現'],DATA.routes.map(r=>[r.route,r.path,r.sheet?'疊在列表上的 sheet':'page']))+'</section>';
   html+='<section class="inventory-group"><h3>時間邏輯原碼錨點 · '+DATA.timers.length+'</h3><p>這是 timer／到期欄位的原碼索引，不代表每一行都是獨立排程；實際條件從左側「自動化與時間」閱讀。</p>'+table(['原碼位置','時間／到期邏輯'],DATA.timers.map(t=>[t.path+':'+t.line,t.text]))+'</section>';
   $('document').innerHTML=html;$('document').scrollTop=0;renderNavigation();
 }

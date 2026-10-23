@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { AnimatePresence, animate, motion, useMotionValue, useTransform } from "motion/react";
 import { Dialog } from "radix-ui";

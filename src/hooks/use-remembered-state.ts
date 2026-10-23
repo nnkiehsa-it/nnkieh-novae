@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { skipToken, useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";

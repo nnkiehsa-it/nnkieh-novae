@@ -1,7 +1,6 @@
-"use client";
-
 import * as React from "react";
 import { raceWithAbort } from "@/lib/abort-signal";
+import { registerServiceWorker } from "@/lib/service-worker";
 import { readLocalStorage, removeLocalStorage, writeLocalStorage } from "@/lib/browser-storage";
 import { hasUpdateDeferral, useUpdateDeferral } from "@/hooks/use-update-deferral";
 
@@ -76,7 +75,7 @@ async function prepareServiceWorker() {
   try {
     const registration = await raceWithAbort(
       controller.signal,
-      () => navigator.serviceWorker.register("/sw.js", { scope: "/", type: "module", updateViaCache: "none" }),
+      registerServiceWorker,
       timeoutError,
     );
     await raceWithAbort(controller.signal, () => registration.update(), timeoutError);

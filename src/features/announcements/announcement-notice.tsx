@@ -1,5 +1,3 @@
-"use client";
-
 import { AppLink } from "@/ui/app-link";
 import { Megaphone } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";

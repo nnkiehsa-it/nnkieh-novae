@@ -1,5 +1,3 @@
-"use client";
-
 import { getIssueCategoryLabel } from "@/constants/categories";
 import { useI18n } from "@/i18n";
 import { Panel, SectionTitle } from "@/ui/panel";

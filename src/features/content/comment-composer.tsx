@@ -1,5 +1,3 @@
-"use client";
-
 import { ArrowUp, ImageSquare } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import { INPUT_LIMITS } from "@/constants/input-limits";

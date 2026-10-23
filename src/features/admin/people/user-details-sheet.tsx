@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { ShieldSlash } from "@phosphor-icons/react/ssr";
 import type { AccountAccessMutation, AccountAccessRuleInput, AdminUser } from "@/hooks/use-admin-console";

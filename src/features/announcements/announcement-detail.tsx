@@ -1,5 +1,3 @@
-"use client";
-
 import { Heart } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import { useAnnouncementDetail } from "@/hooks/use-announcement-detail";

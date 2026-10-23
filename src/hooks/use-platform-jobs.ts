@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 
 import { listPlatformJobs, type PlatformJob } from "@/services/categories";

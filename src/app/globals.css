@@ -1,4 +1,3 @@
-@import "../assets/fonts/harmonyos-sans-tc/harmonyos-sans-tc.css";
 @import "tailwindcss";
 @import "../generated/motion-ladder.css";
 @import "../ui/theme.css";
@@ -6,10 +5,10 @@
 
 @theme inline {
   --font-sans:
-    "HarmonyOS Sans TC", var(--font-inter), "PingFang TC", "Microsoft JhengHei",
+    "HarmonyOS Sans TC", "Inter", "Inter Fallback", "PingFang TC", "Microsoft JhengHei",
     ui-sans-serif, system-ui, sans-serif;
   --font-mono:
-    var(--font-roboto-mono), ui-monospace, SFMono-Regular, Consolas, monospace;
+    "Roboto Mono", "Roboto Mono Fallback", ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 
 @layer base {

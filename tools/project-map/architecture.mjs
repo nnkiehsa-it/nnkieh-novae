@@ -7,9 +7,9 @@ const architectureCatalog = [
   {
     id: 'overview', title: '整個專案：執行架構', group: '程式架構', kind: 'topology',
     summary: '依 README 與 architecture 文件，補上真實程式中的安全、資料與背景工作邊界。',
-    notes: ['此圖是服務關係；同一個操作只走相關分支。實線是請求／資料關係，虛線是背景或外部事件。', 'Next.js 在 Vercel；Worker、Queue、Durable Objects、cron 在 Cloudflare；Neon 是主要資料庫。數值與配置為 checkout 快照。'],
+    notes: ['此圖是服務關係；同一個操作只走相關分支。實線是請求／資料關係，虛線是背景或外部事件。', 'Vite 建出的靜態 SPA 在 Vercel；Worker、Queue、Durable Objects、cron 在 Cloudflare；Neon 是主要資料庫。數值與配置為 checkout 快照。'],
     nodes: [
-      n('瀏覽器 · Next.js / PWA', 'page、feature、hook、service 與 UID 分區的 query cache；SW 接收 Push。使用者和管理員都從這裡操作，瀏覽器不直連 Neon。', 'browser', 0, 240, ['README.md', 'src/features/shell/app-shell.tsx', 'src/app/sw.ts']),
+      n('瀏覽器 · React SPA / PWA', 'page、feature、hook、service 與 UID 分區的 query cache；SW 接收 Push。使用者和管理員都從這裡操作，瀏覽器不直連 Neon。', 'browser', 0, 240, ['README.md', 'src/features/shell/app-shell.tsx', 'src/app/sw.ts']),
       n('Firebase / Google / Turnstile', 'Google 身分登入 Firebase；ID token 驗 UID，App Check 驗客戶端，Turnstile 驗登入／恢復挑戰。平台角色與有效限制仍由 Novae DB 決定。', 'external', 0, 0, ['src/services/session-auth.ts', 'cloudflare/src/app-check.ts', 'cloudflare/src/backend/actions/auth.ts']),
       n('Cloudflare Worker API', 'index.ts 路由；shared 契約驗 payload → registry → 身分／scope／限制／配額 → domain handler。POST /v1/actions 回 NDJSON；另有 auth、realtime ticket、媒體與 webhook 入口。', 'worker', 360, 240, ['cloudflare/src/index.ts', A+'registry.ts', A+'execution.ts']),
       n('BusinessRateLimiter DO', '每 UID 的產品配額與 burst；SQLite 原子 claim。固定時間桶到期由 DO alarm 清理；native binding 另保護 ingress。', 'worker', 360, 0, ['cloudflare/src/durable/business-rate-limiter.ts', A+'rate-limit.ts']),
@@ -29,7 +29,7 @@ const architectureCatalog = [
     id: 'source-architecture', title: '程式目錄：責任與依賴', group: '程式架構', kind: 'topology',
     summary: '從頁面到資料庫的目錄責任；共用契約、產生器、測試與部署也列在同一張圖。', notes: ['線表示程式依賴／產生關係；不是每次操作都跑建置或 migration。'],
     nodes: [
-      n('src/app · 路由', 'Next.js route、protected layout、@sheet 詳情攔截、version.json、SW；路由決定可見的 page，守門元件再驗 session/features。', 'browser', 0, 0, ['docs/architecture.md','src/app/(protected)/layout.tsx']),
+      n('src/app · 路由', 'React Router lazy routes、ProtectedApp 守門、記錄疊在列表上的 sheet、build 時產生的 version.json、SW；路由決定畫面，守門元件再驗 session/features。', 'browser', 0, 0, ['docs/architecture.md','src/app/routes.tsx','src/features/shell/protected-app.tsx']),
       n('src/features · 畫面', '按產品區域分的畫面與 admin 管理區域；點按／表單／sheet 將事件交給 hook。摘要與欄位呈現依正式 baseline 和草稿狀態；共用元件在 src/ui。', 'browser', 340, 0, ['src/features/admin/shell/admin-shell.tsx','src/features/shell/protected-app.tsx']),
       n('src/hooks · 行為', '登入、feed、詳情、composer、optimistic、設定草稿、unsaved changes、polling。讀取以 query key 區分條件，舊條件的回應不會覆蓋新畫面。', 'browser', 680, 0, ['src/hooks/use-draft.ts','src/hooks/use-admin-reading.ts','src/hooks/use-paged-query.ts']),
       n('src/services · I/O', 'callAction（依 shared 契約型別）、NDJSON、operationId、query key 與失效、realtime transport。寫入與 UI 呈現分開；lib 放 query cache 與共用工具。', 'browser', 680, 240, ['src/services/backend-action.ts','src/lib/query-client.ts','src/services/session.ts']),
@@ -92,7 +92,7 @@ export const architectureFlows=[
     {title:'page → component → hook → service → backend → 回到畫面',nodes:[m(0),m(1),m(2),m(3),m(4),m(5),m(4,'backend execution：包回應','查詢或交易完成後回傳 NDJSON；背景責任另由 jobs／shared／durable 接手。'),m(3,'src/services：解析結果','解析資料與成功／錯誤，確認當前 UID，更新或失效快取。'),m(2,'src/hooks：套正式狀態','更新 query cache 的列表、詳情、baseline；成功或失敗各自處理草稿。'),m(1,'src/features：呈現結果','依 hook 的正式狀態顯示畫面與操作回饋。')],labels:['route 與頁面資料 → component','點按／輸入事件與欄位 → hook','查詢條件／draft／UID → service','POST action、payload、token → Worker','SQL／RPC＋參數 → PostgreSQL','查詢／提交結果 → execution','NDJSON：資料片段、成功／錯誤 → service','正式資料、版本、結果 → hook','更新後狀態 → component 畫面']},
   ]),
   diagram('architecture-build','配置、生成、驗證與部署','修改專案後的維護流程，與一般操作分開。',[
-    {title:'修改契約 → 生成 → 驗證 → 部署 → 既有分頁更新',nodes:[m(7,'shared：共用契約','action、rate-limit、operations、retention 以 TypeScript／valibot 定義資料與設定範圍，兩端直接 import。'),m(7,'scripts：產生 DB 型別','從完整 migrated PostgreSQL schema 產生 Worker 的資料庫契約。'),m(8,'tests / verify：核對變更','生成一致性、型別、integration、browser、build 等 gate；命令見 package.json。地圖沒有重跑產品 gate。'),m(8,'workflows：部署新版','發布 Next.js／Vercel 與 Cloudflare Worker；migrations 與環境配置依部署流程套用。'),r(0,'PWA：發現新版本','version.json 提供 build version；有草稿／sending／驗證就延後，安全時 SW update／reload 同網址。',['src/hooks/use-app-update.ts','src/app/version.json/route.ts'])],labels:['JSON 契約＋migration schema → 產生器','生成檔、原碼變更 → 驗證／build','通過 gate 的 build、配置、migration → 部署','新版 build version → version.json → 更新檢查']},
+    {title:'修改契約 → 生成 → 驗證 → 部署 → 既有分頁更新',nodes:[m(7,'shared：共用契約','action、rate-limit、operations、retention 以 TypeScript／valibot 定義資料與設定範圍，兩端直接 import。'),m(7,'scripts：產生 DB 型別','從完整 migrated PostgreSQL schema 產生 Worker 的資料庫契約。'),m(8,'tests / verify：核對變更','生成一致性、型別、integration、browser、build 等 gate；命令見 package.json。地圖沒有重跑產品 gate。'),m(8,'workflows：部署新版','發布 Vite 靜態站／Vercel 與 Cloudflare Worker；migrations 與環境配置依部署流程套用。'),r(0,'PWA：發現新版本','version.json 提供 build version；有草稿／sending／驗證就延後，安全時 SW update／reload 同網址。',['src/hooks/use-app-update.ts','vite.config.ts'])],labels:['JSON 契約＋migration schema → 產生器','生成檔、原碼變更 → 驗證／build','通過 gate 的 build、配置、migration → 部署','新版 build version → version.json → 更新檢查']},
   ]),
 ];
 

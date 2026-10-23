@@ -1,5 +1,3 @@
-"use client";
-
 import { ADMIN_OVERVIEW_WINDOWS } from "@/constants/admin-activity";
 import { useAdminOverview } from "@/hooks/use-admin-overview";
 import { useAdminView } from "@/hooks/use-admin-view";

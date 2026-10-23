@@ -1,5 +1,3 @@
-"use client";
-
 import { useI18n } from "@/i18n";
 import { ListGroup } from "@/ui/list";
 import { SwitchRow } from "@/ui/list-controls";

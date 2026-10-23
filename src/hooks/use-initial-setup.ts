@@ -1,7 +1,5 @@
-"use client";
-
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { useCategories } from "@/hooks/use-categories";
@@ -40,7 +38,7 @@ const newFacility = (isDefault = false): FacilityCategoryDraft => ({
 });
 
 export function useInitialSetup() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const session = useSession();
   const isAdmin = session.isAdmin;
   const refreshSessionAccess = session.refreshSessionAccess;
@@ -65,8 +63,8 @@ export function useInitialSetup() {
   );
 
   React.useEffect(() => {
-    if (setupCompleted && !submittingRef.current) router.replace("/home");
-  }, [router, setupCompleted]);
+    if (setupCompleted && !submittingRef.current) void navigate("/home", { replace: true });
+  }, [navigate, setupCompleted]);
 
   const valid = React.useMemo(() => {
     const identityValid = (values: Array<{ id: string; label: string }>) =>
@@ -111,10 +109,10 @@ export function useInitialSetup() {
             : feedHref("announcements");
       });
       setConfirming(false);
-      router.replace(destination);
+      void navigate(destination, { replace: true });
     } catch (caught) {
       const access = await refreshSessionAccess().catch(() => undefined);
-      if (access?.setupCompleted) router.replace("/home");
+      if (access?.setupCompleted) void navigate("/home", { replace: true });
       else toast.error(t(caught instanceof Error ? caught.message : "common.saveFailed"));
     } finally {
       submittingRef.current = false;

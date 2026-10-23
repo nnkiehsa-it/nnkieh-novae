@@ -4,7 +4,7 @@
 
 ## Route map
 
-所有 `(protected)` route 都先經過 `ProtectedApp`。Session 尚未恢復時顯示啟動畫面；未登入會轉到 `/login?redirect=...`。首次設定沒完成時，所有受保護頁面都轉到 `/setup`；設定完成後再次進入 `/setup` 則轉到 `/home`。
+所有登入後的 route 都是 `src/app/routes.tsx` 裡 `ProtectedApp` 的子 route，先經過它。Vercel 把每個 path 都回 `index.html`，轉址全在前端完成。Session 尚未恢復時顯示啟動畫面；未登入會轉到 `/login?redirect=...`。首次設定沒完成時，所有受保護頁面都轉到 `/setup`；設定完成後再次進入 `/setup` 則轉到 `/home`。
 
 | Route | 用途 | 額外條件 |
 | --- | --- | --- |

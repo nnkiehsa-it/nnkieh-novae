@@ -1,5 +1,3 @@
-"use client";
-
 import { useRef } from "react";
 import { useI18n } from "@/i18n";
 import { NumberRow, SwitchRow } from "@/ui/list-controls";

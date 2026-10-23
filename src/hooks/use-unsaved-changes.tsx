@@ -1,5 +1,3 @@
-"use client";
-
 import { useAppNavigate } from "@/hooks/use-app-location";
 import * as React from "react";
 

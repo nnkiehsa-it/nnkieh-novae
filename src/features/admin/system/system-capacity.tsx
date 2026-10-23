@@ -1,5 +1,3 @@
-"use client";
-
 import type { OperationsConsole } from "@/hooks/use-system-console";
 import { useI18n } from "@/i18n";
 import { ListGroup, ListRow } from "@/ui/list";

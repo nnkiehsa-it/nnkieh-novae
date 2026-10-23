@@ -1,5 +1,3 @@
-"use client";
-
 import { useSession } from "@/hooks/use-session";
 import type { AdminAccess } from "@/lib/admin-routes";
 

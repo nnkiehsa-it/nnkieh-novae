@@ -1,5 +1,3 @@
-"use client";
-
 import { useI18n } from "@/i18n";
 import { DEFAULT_IMAGE_SETTINGS, IMAGE_PRESETS } from "@/lib/admin-setting-presets";
 import type { ImageUploadSettings } from "@/types/categories";

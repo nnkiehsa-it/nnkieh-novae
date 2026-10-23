@@ -36,6 +36,9 @@ export default defineConfig({
   timeout: 90_000,
   use: {
     baseURL: process.env.NOVAE_E2E_BASE_URL ?? "http://127.0.0.1:3000",
+    // A machine whose Chromium does not match this Playwright release can
+    // point at the browser it has instead of downloading another.
+    ...(process.env.NOVAE_E2E_CHROMIUM_PATH ? { launchOptions: { executablePath: process.env.NOVAE_E2E_CHROMIUM_PATH } } : {}),
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
     video: "retain-on-failure",

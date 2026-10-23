@@ -1,6 +1,3 @@
-"use client";
-
-import Image from "next/image";
 import { AppLink } from "@/ui/app-link";
 import { Lightbulb, Megaphone, Wrench } from "@phosphor-icons/react/ssr";
 import type { Icon } from "@phosphor-icons/react";
@@ -48,7 +45,7 @@ export function HomePage() {
             ))}
           </nav>
         </div>
-        <Image alt="" aria-hidden className="h-auto w-16 shrink-0 self-start invert sm:w-28 md:w-36 md:self-center" height={384} loading="eager" sizes="(max-width: 639px) 64px, 144px" src="/home-start.webp" width={384} />
+        <img alt="" aria-hidden className="h-auto w-16 shrink-0 self-start invert sm:w-28 md:w-36 md:self-center" decoding="async" height={384} loading="eager" src="/home-start.webp" width={384} />
       </Panel>
       {/* What is waiting and how things stand sit side by side when both are
           shown and there is room; either one alone takes the whole row. */}

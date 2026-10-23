@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { ListChecks } from "@phosphor-icons/react/ssr";
 import { AnimatePresence } from "motion/react";

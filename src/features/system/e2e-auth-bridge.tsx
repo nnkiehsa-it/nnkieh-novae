@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect } from "react";
 
 // Only a build pointed at the local auth emulator with the integration domain

@@ -1,8 +1,5 @@
-"use client";
-
 import * as React from "react";
-import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useNavigate, useSearchParams } from "react-router";
 import { ArrowClockwise, ArrowRight } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import { sameOriginUrl } from "@/lib/same-origin-url";
@@ -27,8 +24,8 @@ function GoogleMark() {
 }
 
 export function LoginPage() {
-  const router = useRouter();
-  const search = useSearchParams();
+  const navigate = useNavigate();
+  const [search] = useSearchParams();
   const session = useSession();
   const { initialized, prepareLogin, restoringSession, roleLoading, setupCompleted, startupError, user } = session;
   const { phase, pending: presenting } = useStartupPresentation(session);
@@ -38,8 +35,9 @@ export function LoginPage() {
   // A signed-in visitor goes where they were headed, or to setup first.
   React.useEffect(() => {
     if (!initialized || !user || roleLoading || startupError || presenting) return;
-    router.replace(setupCompleted ? sameOriginUrl(search.get("redirect"), window.location.origin, "/home") : "/setup");
-  }, [initialized, presenting, roleLoading, router, search, setupCompleted, startupError, user]);
+    const target = new URL(setupCompleted ? sameOriginUrl(search.get("redirect"), window.location.origin, "/home") : "/setup");
+    void navigate(`${target.pathname}${target.search}${target.hash}`, { replace: true });
+  }, [initialized, navigate, presenting, roleLoading, search, setupCompleted, startupError, user]);
 
   if (startupError) return <StartupScreen error={startupError} onRetry={session.retryStartup} onSignOut={session.logout} phase={phase} />;
   if (!initialized || restoringSession || user) return <StartupScreen phase={phase} />;
@@ -53,7 +51,7 @@ export function LoginPage() {
         <BrandLockup />
         <h1 className="max-w-lg text-balance text-5xl font-semibold leading-[1.1] tracking-tight">{t("ui.login.heading")}</h1>
         <p className="max-w-md text-base leading-relaxed text-ink-muted">{t("ui.login.subheading")}</p>
-        <Image alt="" className="max-h-[32svh] w-auto opacity-90" height={360} priority src="/novae-constellation.webp" width={240} />
+        <img alt="" className="max-h-[32svh] w-auto opacity-90" decoding="async" fetchPriority="high" height={360} src="/novae-constellation.webp" width={240} />
       </section>
       <Panel className="mx-auto grid w-full max-w-md gap-7 p-6 sm:p-8">
         <BrandLockup className="lg:hidden" />

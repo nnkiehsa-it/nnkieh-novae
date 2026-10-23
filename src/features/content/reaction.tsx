@@ -1,5 +1,3 @@
-"use client";
-
 import { motion, useReducedMotion } from "motion/react";
 import type { Icon } from "@phosphor-icons/react";
 import { timing } from "@/lib/motion-timing";

@@ -10,12 +10,12 @@ on:
       - 'config/**'
       - 'tests/**'
       - 'scripts/**'
-      - 'tools/next-root-glob/**'
       - 'public/**'
       - 'package.json'
       - 'bun.lock'
       - 'components.json'
-      - 'next.config.mjs'
+      - 'index.html'
+      - 'vite.config.ts'
       - 'playwright.config.ts'
       - 'postcss.config.mjs'
       - 'tsconfig*.json'
@@ -40,12 +40,12 @@ on:
       - 'config/**'
       - 'tests/**'
       - 'scripts/**'
-      - 'tools/next-root-glob/**'
       - 'public/**'
       - 'package.json'
       - 'bun.lock'
       - 'components.json'
-      - 'next.config.mjs'
+      - 'index.html'
+      - 'vite.config.ts'
       - 'playwright.config.ts'
       - 'postcss.config.mjs'
       - 'tsconfig*.json'
@@ -114,7 +114,7 @@ jobs:
             if printf '%s\n' "$files" | grep -Eq '^(cloudflare/|database/|shared/|tests/integration/|scripts/(configure-|database\.mjs|external-provider-test-server\.mjs|render-worker-config\.mjs|verify-integration\.mjs|generate-database-contracts\.mjs)|(package\.json|bun\.lock)$|tsconfig\.integration\.json$|vitest\.integration\.config\.ts$)'; then
               backend=true
             fi
-            if printf '%s\n' "$files" | grep -Eq '^(src/|shared/|config/|public/|tests/e2e/|tools/next-root-glob/|(package\.json|bun\.lock|components\.json|next\.config\.mjs|playwright\.config\.ts|postcss\.config\.mjs|tsconfig[^/]*\.json|vercel\.json)$|scripts/(check-build-budget|build-budget-metrics|generate-(all|harmonyos-subset|motion))\.mjs)'; then
+            if printf '%s\n' "$files" | grep -Eq '^(src/|shared/|config/|public/|tests/e2e/|(index\.html|package\.json|bun\.lock|components\.json|vite\.config\.ts|playwright\.config\.ts|postcss\.config\.mjs|tsconfig[^/]*\.json|vercel\.json)$|scripts/(check-build-budget|build-budget-metrics|generate-(all|harmonyos-subset|motion))\.mjs)'; then
               browser=true
             fi
           fi
@@ -193,14 +193,6 @@ jobs:
           path: ~/.cache/firebase/emulators
           key: ${{ runner.os }}-firebase-emulators-15.24.0
 
-      - name: Restore Next.js build cache
-        uses: actions/cache@v5
-        with:
-          path: .next/cache
-          key: ${{ runner.os }}-node24-next-browser-${{ hashFiles('bun.lock', 'next.config.mjs') }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-node24-next-browser-${{ hashFiles('bun.lock', 'next.config.mjs') }}-
-            ${{ runner.os }}-node24-next-browser-
 
       - name: Restore Playwright browser cache
         uses: actions/cache@v5
@@ -218,6 +210,9 @@ jobs:
         run: bun run test:e2e
 
       - name: Verify production asset budget
+        env:
+          # The production build the browser journeys just ran against.
+          NOVAE_DIST_DIR: dist-local-e2e
         run: bun run check:build-budget
 
   deploy_backend:
@@ -490,14 +485,6 @@ jobs:
       - name: Install dependencies for Vercel build and deploy
         run: bun install --frozen-lockfile
 
-      - name: Restore Next.js build cache
-        uses: actions/cache@v5
-        with:
-          path: .next/cache
-          key: ${{ runner.os }}-node24-next-vercel-${{ github.ref_name }}-${{ hashFiles('bun.lock', 'next.config.mjs') }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-node24-next-vercel-${{ github.ref_name }}-${{ hashFiles('bun.lock', 'next.config.mjs') }}-
-            ${{ runner.os }}-node24-next-vercel-${{ github.ref_name }}-
 
       - name: Validate deployment secrets
         env:
@@ -621,7 +608,7 @@ jobs:
             ready=false
             for attempt in $(seq 1 12); do
               status="$(curl -sS -L -o /tmp/frontend.html -w '%{http_code}' "${DEPLOYMENT_URL%/}/$route")"
-              if [ "$status" = '200' ] && grep -q '/_next/static/' /tmp/frontend.html; then
+              if [ "$status" = '200' ] && grep -q 'name="novae-entry" content="/assets/' /tmp/frontend.html; then
                 ready=true
                 break
               fi

@@ -1,6 +1,8 @@
 /// <reference lib="webworker" />
 
-import { defaultCache } from "@serwist/next/worker";
+import { defaultCache } from "@serwist/vite/worker";
+import { initializeApp } from "firebase/app";
+import { getMessaging, onBackgroundMessage } from "firebase/messaging/sw";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
 import { NetworkOnly, Serwist } from "serwist";
 import { canDisplayPushFor } from "@/lib/push-session";
@@ -51,33 +53,39 @@ if (
   firebaseConfig.messagingSenderId &&
   firebaseConfig.projectId
 ) {
-  void Promise.all([import("firebase/app"), import("firebase/messaging/sw")])
-    .then(([firebaseApp, firebaseMessaging]) => {
-      const firebase = firebaseApp.initializeApp(firebaseConfig);
-      const messaging = firebaseMessaging.getMessaging(firebase);
-      firebaseMessaging.onBackgroundMessage(messaging, async (payload) => {
-        if (payload.notification || !await canDisplayPushFor(payload.data?.recipient_uid)) return;
-        return self.registration.showNotification(
-          payload.data?.title ?? "Novae",
-          {
-            badge: `/pwa-64x64.png?v=${encodeURIComponent(version)}`,
-            body: payload.data?.body ?? "",
-            data: { link: payload.data?.link ?? "/" },
-            icon: `/pwa-192x192.png?v=${encodeURIComponent(version)}`,
-          },
-        );
-      });
-    })
-    .catch(() => undefined);
+  // The worker is one classic script, which cannot import on demand, so
+  // Firebase is bundled in and only started when it is configured.
+  try {
+    const messaging = getMessaging(initializeApp(firebaseConfig));
+    onBackgroundMessage(messaging, async (payload) => {
+      if (payload.notification || !await canDisplayPushFor(payload.data?.recipient_uid)) return;
+      return self.registration.showNotification(
+        payload.data?.title ?? "Novae",
+        {
+          badge: `/pwa-64x64.png?v=${encodeURIComponent(version)}`,
+          body: payload.data?.body ?? "",
+          data: { link: payload.data?.link ?? "/" },
+          icon: `/pwa-192x192.png?v=${encodeURIComponent(version)}`,
+        },
+      );
+    });
+  } catch {
+    // Without messaging the worker still serves the app.
+  }
 }
 
 const serwist = new Serwist({
   clientsClaim: true,
-  navigationPreload: true,
-  precacheEntries: self.__SW_MANIFEST?.filter((entry) => {
-    const value = typeof entry === "string" ? entry : entry.url;
-    return !new URL(value, self.location.origin).pathname.endsWith(".woff2");
-  }),
+  // Font shards are left out of the manifest at build time; see vite.config.ts.
+  precacheEntries: self.__SW_MANIFEST,
+  // Every address is the same single page, so a navigation is answered by the
+  // precached shell, online or off. A new deployment arrives with the new
+  // worker, which the update gate installs before it reloads.
+  precacheOptions: {
+    cleanupOutdatedCaches: true,
+    navigateFallback: "/index.html",
+    navigateFallbackDenylist: [/^\/v1\//u, /^\/__\//u, /^\/(?:sw\.js|version\.json|manifest\.webmanifest)$/u],
+  },
   // CacheStorage does not honor HTTP no-store. In particular, signed private
   // media must reach the Worker again so it can enforce token expiry.
   runtimeCaching: [

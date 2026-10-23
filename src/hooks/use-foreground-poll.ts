@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef } from "react";
 
 /** Poll only while someone can see the result, with no overlapping requests. */

@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 
 import { useAdminReading } from "@/hooks/use-admin-reading";

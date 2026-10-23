@@ -1,5 +1,3 @@
-"use client";
-
 import type { OperationPolicyKey } from "@shared/operation-policies.ts";
 import type { PolicyChange } from "@/hooks/use-operation-policies";
 import { useI18n } from "@/i18n";

@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { useSession } from "@/hooks/use-session";
 import { failingWork, fetchPlatformDashboard } from "@/services/dashboard";

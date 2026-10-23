@@ -1,5 +1,3 @@
-"use client";
-
 import { useAdminAccess } from "../shell/admin-access";
 import { ActivityOverview } from "./activity-overview";
 import { SectionDirectory } from "./section-directory";

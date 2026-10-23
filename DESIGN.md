@@ -55,6 +55,7 @@ controls). Elevation: `shadow-panel`, `shadow-float`.
 - Colour comes from tokens only. Emphasis comes from the white pill, not from hue.
 - Status colours describe state; they never become a control's theme.
 - Motion durations and curves come from the motion ladder; no raw `duration-*`, springs or inline easing.
+- Nothing appears or leaves on a single frame. Content that replaces a placeholder or joins a list wears `content-in`, a message that appears under a control wears `message-in`, a proportion bar wears `bar-in`, and a block that can also leave uses `Reveal` inside `AnimatePresence`. Each falls back to a plain fade under reduced motion.
 - Hover styles go through the `hover:` variant, which is gated to real pointers.
 - Primitives in `src/ui` do not import hooks or services; features reach data only through hooks.
 - A record (proposal, facility report, announcement) or a composer is always framed by `RecordSheet` over its feed, whether it was opened from the feed or loaded by its URL. On a phone it fills the screen and the dock steps aside.

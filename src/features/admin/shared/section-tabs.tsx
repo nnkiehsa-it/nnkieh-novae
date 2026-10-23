@@ -1,5 +1,3 @@
-"use client";
-
 import { Segmented } from "@/ui/segmented";
 
 interface AdminSectionTab<Value extends string> {

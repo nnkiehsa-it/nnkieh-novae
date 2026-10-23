@@ -1,5 +1,3 @@
-"use client";
-
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowClockwise, Check } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";

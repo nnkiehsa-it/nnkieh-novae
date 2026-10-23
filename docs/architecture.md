@@ -5,9 +5,11 @@
 ```mermaid
 flowchart TB
     subgraph Browser[瀏覽器 / 已安裝 PWA]
-      UI[Next.js App Router]
+      UI[React SPA<br/>React Router lazy routes]
       Cache[User-scoped memory<br/>與 persistent cache]
       SW[Serwist Service Worker]
+      Static[Vercel static hosting<br/>index.html fallback]
+      Static --> UI
       UI --- Cache
       UI --- SW
     end
@@ -41,7 +43,9 @@ flowchart TB
 
 ## 前端邊界
 
-`src/app/` 的 route 負責組裝畫面，資料讀寫透過 hooks 進入 `src/services/`，不直接從 page 或 feature component 呼叫服務。`src/ui/` 只放無業務邏輯的元件；各產品區域的畫面位於 `src/features/` 自己的目錄。
+前端是 Vite 建出的靜態 single-page app。`src/app/routes.tsx` 列出每個 address，每個畫面在第一次造訪時才下載自己的 chunk；管理後台是獨立的 chunk 家族，沒進後台的人不會下載。哪個 path 畫哪個畫面、記錄或 composer 是否疊在列表上，仍由 `src/lib/route-hierarchy.ts` 的 `matchAppRoute` 決定，`AppViews` 讀 route outlet 後放到列表或 sheet 層。
+
+Route 負責組裝畫面，資料讀寫透過 hooks 進入 `src/services/`，不直接從 page 或 feature component 呼叫服務。`src/ui/` 只放無業務邏輯的元件；各產品區域的畫面位於 `src/features/` 自己的目錄。
 
 登入後，`use-session` 恢復 Firebase session、完成 Turnstile / App Check 驗證並向後端取得 authoritative role、scope、feature 和 setup 狀態。前端讀過的答案都在一個以帳號為範圍的 query cache；附議等 optimistic state 由各自的 hook 管理，失敗時復原。
 
@@ -49,7 +53,7 @@ flowchart TB
 
 | 位置 | 責任 |
 | --- | --- |
-| `src/app/` | App Router layout、page、loading boundary、service worker 與版本 endpoint |
+| `src/app/` | 入口 `main.tsx`、`routes.tsx` 的 lazy routes、文件 CSP 與 boot script（`document-policy.ts`）、web manifest、service worker |
 | `src/ui/` | 不含業務 import 的視覺 primitive |
 | `src/features/{issues,facilities,announcements,admin,...}` | 各產品區域的畫面與使用者互動 |
 | `src/hooks/` | Route / domain state、請求生命週期、mutation orchestration |
@@ -136,7 +140,13 @@ Read action 與 upload URL resolution 不 claim operation，也不開 mutation t
 - Worker 透過 Hyperdrive 使用 `novae_runtime`；該 role 只有 DML、sequence use 與函式執行權，沒有 DDL 或 role-management 權限。
 - PostgreSQL 以 `app_private` 保存資料、以 `app_api` 暴露 permission-checked RPC。
 - 平台管理員只由 `ADMIN_EMAILS` 對 Firebase email 進行後端 reconciliation。
-- CSP nonce、Permissions Policy、Referrer Policy 與 content-type sniffing protection 由 Next proxy / headers 設定。
+- CSP、Permissions Policy、Referrer Policy 與 content-type sniffing protection 是 `vercel.json` 裡的固定 header，preview server 用同一份（`src/app/document-policy.ts`）。
+
+### Content-Security-Policy
+
+靜態站沒有 request-time 的 nonce，所以頁面上只有一段固定不變的 inline boot script（`DOCUMENT_BOOT_SCRIPT`）：先套主題避免閃爍，再從 `<meta name="novae-entry">` 讀出 entry 與 modulepreload，插入 module script。`script-src` 以這段文字的 sha256 hash 信任它，加上 `'strict-dynamic'`，所以它插入的 module 與這些 module 再 import 或插入的 script（Turnstile、Google 登入）都被信任；任何寫進 HTML 的其他 script 都不會執行。Loader 只接受 `^/assets/[\w.-]+\.js$`，偽造的 meta 也無法指向別處。
+
+Build 會檢查三件事，任一不符就失敗：`index.html` 除了 boot script 沒有其他 `<script>`、entry 與 preload 都在 `/assets/` 下、`vercel.json` 的 CSP 與 `contentSecurityPolicy()` 算出的完全相同。改 boot script 或主題啟動碼會改變 hash，照錯誤訊息更新 `vercel.json` 即可。本機測試 stack（`integration.invalid` + loopback Auth Emulator）的 preview 才額外允許 loopback 連線，部署 build 永遠沒有。
 
 更完整的 role、permission、route guard 與 restricted-user 行為見[路由、角色與權限](routes-and-permissions.md)。
 
@@ -156,10 +166,12 @@ Realtime 只傳變更訊號與可安全 patch 的 count，不取代 authoritativ
 
 ## PWA 與瀏覽器殼層
 
-`src/app/sw.ts` 由 Serwist 編譯成 `public/sw.js`。Development mode 關閉 Serwist；production 才註冊 service worker。WOFF2 字型 shard 不放進 install-time precache，瀏覽器依 unicode range 正常載入。
+`src/app/sw.ts` 由 `@serwist/vite` 編譯成 `dist/sw.js`（classic script）。Dev server 關閉 Serwist；production 才在 `load` 後註冊。Precache 包含 build 出的 JS、CSS、HTML、圖示與 manifest；所有 navigation 離線時都由 precache 的 `index.html` 回應，`/v1/` API、`/sw.js`、`/version.json`、`/manifest.webmanifest` 除外。WOFF2 字型 shard 不放進 install-time precache，瀏覽器依 unicode range 正常載入，runtime cache 會留住。
 
-`version.json` 和 `sw.js` 都設為 no-cache。App update gate 輪詢版本，發文、留言、未儲存管理設定與開啟的詳情面板會延後自動重載；離線也不強制刷新。更新失敗保留重新載入路徑。Viewport 使用 stable small-viewport 和 standalone PWA 規則；mobile navigation 避開 safe area 與鍵盤，discussion composer 的底部空間由 CSS safe area 加上 ResizeObserver 實測高度決定。
+`version.json` 與 `manifest.webmanifest` 在 build 時寫出，內容是這次 build 的版本（依序取 `NEXT_PUBLIC_APP_VERSION`、`VERCEL_GIT_COMMIT_SHA`、`GITHUB_SHA`、package version）。部署後舊分頁載入已被移除的 chunk 會失敗，route error boundary 會自動重新載入一次進新版本，仍失敗才顯示重試。
+
+`index.html`、`version.json` 和 `sw.js` 都設為 no-cache；`/assets/` 檔名帶 content hash，設一年 immutable。App update gate 輪詢版本，發文、留言、未儲存管理設定與開啟的詳情面板會延後自動重載；離線也不強制刷新。更新失敗保留重新載入路徑。Viewport 使用 stable small-viewport 和 standalone PWA 規則；mobile navigation 避開 safe area 與鍵盤，discussion composer 的底部空間由 CSS safe area 加上 ResizeObserver 實測高度決定。
 
 ## 部署拓撲
 
-Frontend 在 Vercel build，API、Queue、Durable Object、cron 與 native rate-limit binding 都在 Cloudflare。Neon owner credential 只存在 GitHub deployment job；job 套完 migration 後建立 `novae_runtime`，把 runtime URL 寫進 Hyperdrive。Cloudinary、Firebase 與 Notion credential 只進 Worker secret，`NEXT_PUBLIC_*` 才進 browser bundle。
+Frontend 在 Vercel 以 `vite build` 建成靜態檔，除了 `/assets/` 與實際存在的檔案，每個 path 都 rewrite 到 `index.html`，由前端 router 決定畫面與登入轉址。API、Queue、Durable Object、cron 與 native rate-limit binding 都在 Cloudflare。Neon owner credential 只存在 GitHub deployment job；job 套完 migration 後建立 `novae_runtime`，把 runtime URL 寫進 Hyperdrive。Cloudinary、Firebase 與 Notion credential 只進 Worker secret，`NEXT_PUBLIC_*` 才進 browser bundle。

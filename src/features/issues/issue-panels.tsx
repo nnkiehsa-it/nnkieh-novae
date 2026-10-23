@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { motion } from "motion/react";
 import { HandHeart, UsersThree } from "@phosphor-icons/react/ssr";

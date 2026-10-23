@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 
 export const ACTION_SUCCESS_HOLD_MS = 1_000;

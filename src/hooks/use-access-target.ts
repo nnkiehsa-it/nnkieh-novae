@@ -1,7 +1,5 @@
-"use client";
-
 import * as React from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchAddress } from "@/hooks/use-search-address";
 import type { AccessScope } from "@/services/access";
 
 interface AccessTarget {
@@ -12,7 +10,7 @@ interface AccessTarget {
 
 /** The URL keeps separate category choices for each content type. */
 export function useAccessTarget() {
-  const params = useSearchParams();
+  const [params, write] = useSearchAddress();
   const requestedKind = params.get("scope");
   const kind = ["issue", "facility", "announcement"].find((value) => value === requestedKind) as AccessScope["kind"] | undefined;
   const issueId = params.get("issueCategory") ?? "";
@@ -28,9 +26,7 @@ export function useAccessTarget() {
       if (value) url.searchParams.set(key, value);
       else url.searchParams.delete(key);
     }
-    const address = `${url.pathname}${url.search}${url.hash}`;
-    if (replace) window.history.replaceState(null, "", address);
-    else window.history.pushState(null, "", address);
-  }, []);
+    write(`${url.pathname}${url.search}${url.hash}`, replace);
+  }, [write]);
   return [target, change] as const;
 }

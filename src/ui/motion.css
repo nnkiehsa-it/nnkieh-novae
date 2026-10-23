@@ -76,3 +76,85 @@
     animation-name: scrim-in;
   }
 }
+
+/* Content that replaces a placeholder, or joins a list, rises into place
+   instead of being there on one frame. A message that appears under a
+   control drops in from it, and a proportion bar grows from its start. */
+.content-in {
+  animation: content-in var(--motion-reveal) var(--ease-arrive) backwards;
+}
+
+.message-in {
+  animation: message-in var(--motion-control) var(--ease-arrive) backwards;
+}
+
+.bar-in {
+  transform-origin: left;
+  animation: bar-in var(--motion-reveal) var(--ease-arrive) backwards;
+}
+
+@keyframes content-in {
+  from { opacity: 0; translate: 0 var(--motion-rise); }
+}
+
+@keyframes message-in {
+  from { opacity: 0; translate: 0 calc(var(--motion-lift) * -1); }
+}
+
+@keyframes bar-in {
+  from { scale: 0 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .content-in,
+  .message-in {
+    animation-name: scrim-in;
+  }
+
+  .bar-in {
+    animation: none;
+  }
+}
+
+/* A screen whose code is still on its way: the current one stays put and a
+   thin line sweeps along the top. It only shows once a touch has passed, so a
+   cached screen never flashes it. */
+.route-progress {
+  pointer-events: none;
+  position: fixed;
+  inset-inline: 0;
+  top: var(--safe-top);
+  z-index: 60;
+  height: 2px;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity var(--motion-control-exit) var(--ease-depart);
+}
+
+.route-progress[data-active] {
+  opacity: 1;
+  transition: opacity var(--motion-control) var(--ease-arrive) var(--motion-touch);
+}
+
+.route-progress::after {
+  content: "";
+  display: block;
+  width: 40%;
+  height: 100%;
+  border-radius: 9999px;
+  background: var(--contrast);
+  animation: route-sweep var(--motion-sweep) var(--ease-move) infinite;
+}
+
+@keyframes route-sweep {
+  from { translate: -100% 0; }
+  to { translate: 250% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-progress::after {
+    width: 100%;
+    animation: none;
+    opacity: 0.6;
+  }
+}

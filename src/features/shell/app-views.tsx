@@ -1,55 +1,32 @@
-"use client";
-
 import * as React from "react";
+import { useOutlet } from "react-router";
 import { motion } from "motion/react";
 import { useI18n } from "@/i18n";
 import { AppLocationProvider, useBrowserLocation, type AppLocation } from "@/hooks/use-app-location";
-import { navigate, setViewHostMounted } from "@/lib/app-navigation";
+import { navigate } from "@/lib/app-navigation";
 import { feedHref } from "@/lib/feed-href";
 import { timing } from "@/lib/motion-timing";
 import { isLayeredRoute, matchAppRoute, type AppRoute } from "@/lib/route-hierarchy";
-import { AdminOverview } from "@/features/admin/overview/admin-overview";
-import { AuditConsole } from "@/features/admin/audit/audit-console";
-import { ContentConsole } from "@/features/admin/content/content-console";
-import { PeopleConsole } from "@/features/admin/people/people-console";
-import { PlatformConsole } from "@/features/admin/platform/platform-console";
-import { PolicyConsole } from "@/features/admin/policies/policy-console";
-import { AdminShell } from "@/features/admin/shell/admin-shell";
-import { SystemConsole } from "@/features/admin/system/system-console";
-import { AnnouncementComposer } from "@/features/announcements/announcement-composer";
-import { AnnouncementDetail } from "@/features/announcements/announcement-detail";
 import { FeatureRouteGuard } from "@/features/content/feature-guard";
 import { RecordSheet } from "@/features/content/record-frame";
-import { FacilityComposer } from "@/features/facilities/facility-composer";
-import { FacilityDetail } from "@/features/facilities/facility-detail";
-import { FeedPage } from "@/features/feed/feed-page";
-import { HomePage } from "@/features/home/home-page";
-import { IssueComposer } from "@/features/issues/issue-composer";
-import { IssueDetail } from "@/features/issues/issue-detail";
-import { NotificationsPage } from "@/features/notifications/notifications-page";
-import { SettingsPage } from "@/features/settings/settings-page";
 
+/** An address held on screen, with the screen its route drew for it. */
 interface Pinned extends AppLocation {
+  element: React.ReactNode;
   key: string;
   route: AppRoute;
 }
 
-const ADMIN_SECTIONS: Record<string, React.ComponentType> = {
-  audit: AuditConsole,
-  content: ContentConsole,
-  people: PeopleConsole,
-  platform: PlatformConsole,
-  policies: PolicyConsole,
-  system: SystemConsole,
-};
+/** The feed, for a record opened straight from its address with no list drawn yet. */
+const FeedScreen = React.lazy(async () => ({ default: (await import("@/features/feed/feed-page")).FeedPage }));
 
-function pin(location: AppLocation & { key: string }): Pinned {
-  return { ...location, route: matchAppRoute(location.pathname) };
+function pin(location: AppLocation & { key: string }, element: React.ReactNode): Pinned {
+  return { ...location, element, route: matchAppRoute(location.pathname) };
 }
 
-function pinHref(href: string): Pinned {
+function pinHref(href: string, element: React.ReactNode): Pinned {
   const url = new URL(href, "http://novae.invalid");
-  return pin({ key: href, pathname: url.pathname, search: url.searchParams });
+  return pin({ key: href, pathname: url.pathname, search: url.searchParams }, element);
 }
 
 /** The list a record or composer belongs to, for when nothing was open beneath it. */
@@ -66,40 +43,28 @@ function listHref(route: AppRoute, search: URLSearchParams) {
   }
 }
 
-function BaseView({ route }: { route: AppRoute }) {
-  if (route.kind === "admin") {
-    const Section = route.section ? ADMIN_SECTIONS[route.section] : AdminOverview;
-    return <AdminShell>{Section ? <Section /> : null}</AdminShell>;
-  }
-  if (route.kind !== "view") return null;
-  switch (route.view) {
-    case "home": return <HomePage />;
-    case "feed": return <FeedPage />;
-    case "notifications": return <NotificationsPage />;
-    case "settings": return <SettingsPage />;
-  }
-}
-
 function LayerView({ layer, onClosed, open }: { layer: Pinned; onClosed: () => void; open: boolean }) {
   const { t } = useI18n();
   const { route } = layer;
   const list = listHref(route, layer.search);
-  const sheet = (title: string, body: React.ReactNode) => (
+  // A record keyed by its id starts afresh when the sheet moves to another one.
+  const body = <React.Fragment key={"id" in route ? route.id : route.kind}>{layer.element}</React.Fragment>;
+  const sheet = (title: string) => (
     <RecordSheet listHref={list} onClosed={onClosed} open={open} size={route.kind.endsWith("composer") ? "lg" : "full"} title={title}>{body}</RecordSheet>
   );
   switch (route.kind) {
     case "issue":
-      return <FeatureRouteGuard feature="issues">{sheet(t("ui.nav.issues"), <IssueDetail key={route.id} />)}</FeatureRouteGuard>;
+      return <FeatureRouteGuard feature="issues">{sheet(t("ui.nav.issues"))}</FeatureRouteGuard>;
     case "issue-composer":
-      return <FeatureRouteGuard feature="issues">{sheet(t("ui.issue.new"), <IssueComposer />)}</FeatureRouteGuard>;
+      return <FeatureRouteGuard feature="issues">{sheet(t("ui.issue.new"))}</FeatureRouteGuard>;
     case "facility":
-      return <FeatureRouteGuard feature="facilities">{sheet(t("ui.nav.facilities"), <FacilityDetail key={route.id} />)}</FeatureRouteGuard>;
+      return <FeatureRouteGuard feature="facilities">{sheet(t("ui.nav.facilities"))}</FeatureRouteGuard>;
     case "facility-composer":
-      return <FeatureRouteGuard feature="facilities">{sheet(t("ui.facility.newTitle"), <FacilityComposer />)}</FeatureRouteGuard>;
+      return <FeatureRouteGuard feature="facilities">{sheet(t("ui.facility.newTitle"))}</FeatureRouteGuard>;
     case "announcement":
-      return sheet(t("ui.nav.announcements"), <AnnouncementDetail key={route.id} />);
+      return sheet(t("ui.nav.announcements"));
     case "announcement-composer":
-      return sheet(t("ui.announcement.newTitle"), <AnnouncementComposer />);
+      return sheet(t("ui.announcement.newTitle"));
     default:
       return null;
   }
@@ -110,23 +75,24 @@ function LayerView({ layer, onClosed, open }: { layer: Pinned; onClosed: () => v
  * address in place, so moving between screens never waits on the server; a
  * record or composer opens as a sheet over the screen it was opened from,
  * which stays pinned to its own address underneath.
+ *
+ * The router loads each screen's chunk before the address changes, so the
+ * outlet is always ready to show. The host keeps the outlet it was given for
+ * each pinned address: the list under a sheet goes on rendering the screen it
+ * had, not the record the router has moved on to.
  */
 export function AppViews() {
   const location = useBrowserLocation();
+  const outlet = useOutlet();
   const route = matchAppRoute(location.pathname);
   const layered = isLayeredRoute(route);
   const [base, setBase] = React.useState<Pinned | null>(null);
   const [layer, setLayer] = React.useState<Pinned | null>(null);
   const scroll = React.useRef(new Map<string, number>());
 
-  if (route.kind !== "redirect" && !layered && base?.key !== location.key) setBase(pin(location));
-  if (layered && !base) setBase(pinHref(listHref(route, location.search)));
-  if (layered && layer?.key !== location.key) setLayer(pin(location));
-
-  React.useEffect(() => {
-    setViewHostMounted(true);
-    return () => setViewHostMounted(false);
-  }, []);
+  if (route.kind !== "redirect" && !layered && base?.key !== location.key) setBase(pin(location, outlet));
+  if (layered && !base) setBase(pinHref(listHref(route, location.search), <FeedScreen />));
+  if (layered && layer?.key !== location.key) setLayer(pin(location, outlet));
 
   // An old address keeps its query and fragment on the way to its new home, so a shared
   // `/facilities?category=…` link still opens that category.
@@ -151,7 +117,7 @@ export function AppViews() {
       {base ? (
         <AppLocationProvider value={base}>
           <motion.div animate={{ opacity: 1 }} initial={{ opacity: 0 }} key={screen} transition={timing("control", "arrive")}>
-            <BaseView route={base.route} />
+            <React.Suspense>{base.element}</React.Suspense>
           </motion.div>
         </AppLocationProvider>
       ) : null}

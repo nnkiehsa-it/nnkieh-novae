@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { Image as ImageIcon } from "@phosphor-icons/react/ssr";
 import type { MarkdownImageRecord } from "@/types";

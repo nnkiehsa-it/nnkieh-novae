@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { accessSync, constants, rmSync } from "node:fs";
+import { accessSync, constants } from "node:fs";
 import process from "node:process";
 import { clearInterval, setInterval } from "node:timers";
 import { fileURLToPath, URL } from "node:url";
@@ -20,24 +20,8 @@ const verbose = process.env.NOVAE_VERBOSE_TESTS === "1";
 const isInteractive = Boolean(process.stderr.isTTY);
 const maxCapturedCharacters = 4_000_000;
 const verificationBuildEnvironment = {
-  NOVAE_NEXT_DIST_DIR: ".next-verify",
+  NOVAE_DIST_DIR: "dist-verify",
 };
-
-// Route types are generated artifacts, but TypeScript reads them before the
-// production build below has a chance to replace them. Removed routes otherwise
-// survive indefinitely and make a clean source tree fail against stale files.
-for (const path of [
-  ".next/types",
-  ".next/dev/types",
-  ".next-verify/types",
-  ".next-verify/dev/types",
-  ".next-local-dev/types",
-  ".next-local-dev/dev/types",
-  ".next-local-preview/types",
-  ".next-local-preview/dev/types",
-]) {
-  rmSync(path, { force: true, recursive: true });
-}
 
 function executable(name) {
   const suffixes = process.platform === "win32" ? [".exe", ".cmd"] : [""];
@@ -63,7 +47,7 @@ const steps = {
     ["translations", node, ["scripts/check-i18n.mjs"]],
     ["UI architecture", node, ["scripts/check-ui-primitives.mjs"]],
     ["ESLint", executable("eslint"), ["."]],
-    ["production bundle", executable("next"), ["build", "--webpack"], verificationBuildEnvironment],
+    ["production bundle", executable("vite"), ["build"], verificationBuildEnvironment],
     ["build budget", node, ["scripts/check-build-budget.mjs"], verificationBuildEnvironment],
     [
       "Cloudflare Worker types",

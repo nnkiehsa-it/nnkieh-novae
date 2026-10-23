@@ -1,5 +1,6 @@
 import { SHARE_ENTRY_PARAM, isSharedRoute, sharedDestinationPath } from "@/constants/share";
 import { detectInAppBrowser } from "@/lib/in-app-browser";
+import { replaceAddress } from "@/lib/app-navigation";
 
 /**
  * Marks a link as one that left Novae and came back through somebody else.
@@ -52,7 +53,7 @@ export function settleShareEntryMarker() {
     if (!marked) return;
     url.searchParams.delete(SHARE_ENTRY_PARAM);
   }
-  window.history.replaceState(window.history.state, "", url.toString());
+  replaceAddress(`${url.pathname}${url.search}${url.hash}`);
 }
 
 /**

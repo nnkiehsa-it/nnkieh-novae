@@ -1,5 +1,3 @@
-"use client";
-
 import { Trash } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import type { FacilityCategoryDraft, IssueCategoryDraft } from "@/types/categories";

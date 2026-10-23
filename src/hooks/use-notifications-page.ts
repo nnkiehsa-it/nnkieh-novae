@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { useInfiniteQuery, type InfiniteData } from "@tanstack/react-query";
 import { toast } from "sonner";

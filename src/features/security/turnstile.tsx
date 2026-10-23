@@ -1,5 +1,3 @@
-"use client";
-
 import { ShieldCheck } from "@phosphor-icons/react/ssr";
 import {
   createContext,
@@ -84,6 +82,20 @@ interface PendingChallenge {
   resolve: (token: string) => void;
 }
 
+const SCRIPT_URL = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+
+/**
+ * Adds Cloudflare's script once. A script the app inserts is trusted by the
+ * page's `'strict-dynamic'` policy; one written into the HTML would not be.
+ */
+function loadTurnstileScript() {
+  if (!siteKey || window.turnstile || document.querySelector(`script[src="${SCRIPT_URL}"]`)) return;
+  const script = document.createElement("script");
+  script.async = true;
+  script.src = SCRIPT_URL;
+  document.head.appendChild(script);
+}
+
 const TurnstileContext = createContext<TurnstileContextValue>({
   requestToken: async () => null,
   setInlineHost: () => undefined,
@@ -101,6 +113,8 @@ export function TurnstileProvider({
   const [verifying, setVerifying] = useState(false);
   const [inlineHost, setInlineHost] = useState<HTMLDivElement | null>(null);
   const pendingRequest = useRef<Promise<string | null> | null>(null);
+
+  useEffect(loadTurnstileScript, []);
 
   const waitUntilReady = useCallback(async () => {
     if (window.turnstile) return;

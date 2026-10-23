@@ -1,5 +1,3 @@
-"use client";
-
 import { Plus } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import { ListGroup, ListRow } from "@/ui/list";

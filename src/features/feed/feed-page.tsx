@@ -1,5 +1,3 @@
-"use client";
-
 import { useI18n } from "@/i18n";
 import { findFacilityCategory, findIssueCategory, getDefaultFacilityCategoryId, useCategories } from "@/hooks/use-categories";
 import { getDefaultIssueRouteFilter, getIssueFilterOptions } from "@/constants/categories";

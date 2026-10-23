@@ -6,9 +6,9 @@
 
 | 情境 | 位置 | 讀取者 |
 | --- | --- | --- |
-| 手動 Next.js 開發 | `.env.local` | `next dev` / `next build` |
+| 手動前端開發 | `.env.local` | `vite`（`bun run dev`）/ `vite build` |
 | 手動 Worker 開發 | `cloudflare/.dev.vars` | Wrangler；可從 `.dev.vars.example` 建立 |
-| `test:env` / integration / E2E | Runner 在 child process 注入 | Next.js、Worker、Vitest、Playwright |
+| `test:env` / integration / E2E | Runner 在 child process 注入 | Vite、Worker、Vitest、Playwright |
 | `main` production | GitHub `production` Environment | deploy workflows |
 | `dev` preview | GitHub `development` Environment | deploy workflows |
 
@@ -38,7 +38,9 @@
 
 Frontend workflow 視下列項目為必填：Firebase API key、Auth domain、project ID、app ID、messaging sender ID、VAPID key、Google client ID、App Check 開關、reCAPTCHA Enterprise site key、Turnstile site key、Worker URL、allowed domain，以及三個 Vercel credential。`NEXT_PUBLIC_SCHOOL_NAME` 會在 build 時注入，但目前 workflow 不把它列入缺值 gate。
 
-`NEXT_PUBLIC_APP_VERSION` 不需手動設定。Next config 依序使用 `NEXT_PUBLIC_APP_VERSION`、`VERCEL_GIT_COMMIT_SHA`、`GITHUB_SHA`、package version，最後才用 `development`。
+`NEXT_PUBLIC_APP_VERSION` 不需手動設定。`vite.config.ts` 依序使用 `NEXT_PUBLIC_APP_VERSION`、`VERCEL_GIT_COMMIT_SHA`、`GITHUB_SHA`、package version，最後才用 `development`。
+
+前端設定保留 `NEXT_PUBLIC_*` 名稱，部署環境與 GitHub secrets 不必改名。只有 `vite.config.ts` 的 `publicEnvironment` 列出的變數會在 build 時寫進 bundle；新增 browser 可見的設定時要加在那裡，其他環境變數不會進入前端。
 
 ## Worker 存取與身分
 

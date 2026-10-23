@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { useAdminView } from "@/hooks/use-admin-view";
 import { useCategoryManagement } from "@/hooks/use-category-management";

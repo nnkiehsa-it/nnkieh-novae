@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { DotsThree, ShareNetwork, Trash } from "@phosphor-icons/react/ssr";
 import type { Icon } from "@phosphor-icons/react";

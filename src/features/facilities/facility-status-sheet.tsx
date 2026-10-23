@@ -1,5 +1,3 @@
-"use client";
-
 import { useI18n } from "@/i18n";
 import type { FacilityRecord } from "@/types";
 import { useFacilityStatus, type FacilityNextStatus } from "@/hooks/use-facility-status";

@@ -1,5 +1,3 @@
-"use client";
-
 import { useLayoutEffect, useRef, useState } from "react";
 
 type ImageLoadState = "error" | "loading" | "ready";

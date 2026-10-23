@@ -1,5 +1,3 @@
-"use client";
-
 import { AnimatePresence, motion } from "motion/react";
 import { timing } from "@/lib/motion-timing";
 import { cn } from "@/lib/utils";

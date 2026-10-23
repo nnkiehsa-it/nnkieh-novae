@@ -1,5 +1,3 @@
-"use client";
-
 import { ArrowCounterClockwise } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import type { SettingPreset } from "@/lib/admin-setting-presets";

@@ -52,4 +52,4 @@ $env:NOVAE_E2E_WORKERS = '4'
 node scripts/verify-integration.mjs --e2e -- --project=chromium-desktop-readonly admin-workspace.spec.ts
 ```
 
-瀏覽器的跨路由返回及強制關閉不提供可取消的 App Router 導航事件；離開保護涵蓋頁內連結、管理頁返回與帳號編輯器。寫入的一致性由後端交易與版本核對維持。
+瀏覽器的跨路由返回及強制關閉不提供可取消的導航事件；離開保護涵蓋頁內連結、管理頁返回與帳號編輯器。寫入的一致性由後端交易與版本核對維持。
