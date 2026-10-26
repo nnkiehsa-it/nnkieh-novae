@@ -44,7 +44,7 @@ controls). Elevation: `shadow-panel`, `shadow-float`.
 - **PrimaryNav** — the primary destinations: a floating `dock` on phones, a `rail` in the glass sidebar from `md` up. The current one wears the white pill and its icon fills.
 - **ListGroup / ListRow** — settings-style rows: link, action, or label with a trailing control.
 - **Field / Input / Textarea / Switch / Avatar** — form controls and identity.
-- **Sheet** — bottom sheet on phones, centred panel from `md` up (`size="lg"` for records); every exit goes through `onOpenChange`, and `onClosed` fires once the exit has finished.
+- **Sheet** — bottom sheet on phones, centred panel from `md` up (`size="screen"` for records and composers: 86% of the screen's width and height, so it keeps the screen's proportions); every exit goes through `onOpenChange`, and `onClosed` fires once the exit has finished.
 - **Dialog / ConfirmDialog / DecisionSheet** — a centred question, an irreversible confirmation, and one recorded decision with its reason.
 - **Select / Menu / Popover / Tooltip** — a choice, the actions on a thing, a small form, and a label for an icon-only control on real pointers.
 - **PageHeader / EmptyState / ErrorState / LoadingList / SaveBar** — page furniture and the one explicit-save bar.

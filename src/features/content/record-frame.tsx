@@ -19,14 +19,12 @@ const RecordFrameContext = React.createContext<RecordFrame | null>(null);
  * behind it, and replaces the address with the list when the record was the
  * first thing opened.
  */
-export function RecordSheet({ children, listHref, onClosed, open, size, title }: {
+export function RecordSheet({ children, listHref, onClosed, open, title }: {
   children: React.ReactNode;
   listHref: string;
   /** Called once the sheet has finished leaving. */
   onClosed: () => void;
   open: boolean;
-  /** `full` for a record, which holds its height while it loads; `lg` for a composer. */
-  size: "full" | "lg";
   title: string;
 }) {
   const navigate = useAppNavigate();
@@ -45,7 +43,7 @@ export function RecordSheet({ children, listHref, onClosed, open, size, title }:
         onClosed={onClosed}
         onOpenChange={(next) => { if (!next) frame.close(); }}
         open={open}
-        size={size}
+        size="screen"
         title={title}
       >
         {children}

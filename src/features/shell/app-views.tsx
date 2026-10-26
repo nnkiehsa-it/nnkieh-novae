@@ -50,7 +50,7 @@ function LayerView({ layer, onClosed, open }: { layer: Pinned; onClosed: () => v
   // A record keyed by its id starts afresh when the sheet moves to another one.
   const body = <React.Fragment key={"id" in route ? route.id : route.kind}>{layer.element}</React.Fragment>;
   const sheet = (title: string) => (
-    <RecordSheet listHref={list} onClosed={onClosed} open={open} size={route.kind.endsWith("composer") ? "lg" : "full"} title={title}>{body}</RecordSheet>
+    <RecordSheet listHref={list} onClosed={onClosed} open={open} title={title}>{body}</RecordSheet>
   );
   switch (route.kind) {
     case "issue":

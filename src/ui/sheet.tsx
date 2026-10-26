@@ -65,8 +65,8 @@ export function Sheet({
   onClosed?: () => void;
   onOpenChange: (open: boolean) => void;
   open: boolean;
-  /** `lg` gives a composer room on a wide screen; `full` also holds a record's height while it loads. */
-  size?: "md" | "lg" | "full";
+  /** `screen` (a record, a composer) is the screen drawn smaller on a wide screen. */
+  size?: "md" | "screen";
   title: React.ReactNode;
 }) {
   const { t } = useI18n();
@@ -99,8 +99,9 @@ export function Sheet({
                   layout === "record" ? "top-[calc(var(--safe-top)+0.75rem)]" : "max-h-[calc(100svh-var(--safe-top)-1.5rem)]",
                   "md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-panel md:border",
                   size === "md" && "md:max-h-[min(44rem,calc(100svh-4rem))] md:w-[min(34rem,calc(100vw-4rem))]",
-                  size !== "md" && "md:max-h-[min(56rem,calc(100svh-4rem))] md:w-[min(52rem,calc(100vw-4rem))]",
-                  size === "full" && "md:h-[calc(100svh-4rem)]",
+                  // A record or composer is the screen drawn smaller: the same share of its
+                  // width and its height, so it keeps the screen's proportions on any device.
+                  size === "screen" && "md:h-[86svh] md:w-[86vw]",
                 )}
                 data-sheet-surface=""
                 exit={compact
