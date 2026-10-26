@@ -2,6 +2,7 @@ import { Bell } from "@phosphor-icons/react/ssr";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { useAppNotificationPrompt } from "@/hooks/use-app-notification-prompt";
+import { openPushDevices } from "@/hooks/use-push-devices";
 import { useSession } from "@/hooks/use-session";
 import { Button } from "@/ui/button";
 import { Dialog } from "@/ui/dialog";
@@ -15,6 +16,7 @@ export function NotificationPrompt() {
   const enable = async () => {
     const result = await prompt.enable();
     if (result === "enabled") toast.success(t("notification.pushNotificationIsEnabledForThisDevice"));
+    else if (result === "full") openPushDevices({ full: true, onRemoved: () => void enable() });
     else if (result === "failed") toast.error(t("notification.pushSetupFailed"));
   };
 

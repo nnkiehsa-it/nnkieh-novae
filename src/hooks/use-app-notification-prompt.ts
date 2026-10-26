@@ -6,11 +6,12 @@ import {
   shouldOfferPushNotificationPrompt,
 } from "@/lib/pwa-install";
 import { readSessionStorage, writeSessionStorage } from "@/lib/browser-storage";
+import { isPushDeviceLimitError } from "@/services/push-notifications";
 import { enableCurrentDevicePushNotifications } from "@/services/push-token-registration";
 
 const DISMISSED_KEY_PREFIX = "novae:notification-prompt-dismissed:";
 
-type AppNotificationPromptResult = "declined" | "enabled" | "failed";
+type AppNotificationPromptResult = "declined" | "enabled" | "failed" | "full";
 
 export function useAppNotificationPrompt(uid: string | undefined) {
   const [hydrated, setHydrated] = React.useState(false);
@@ -59,8 +60,9 @@ export function useAppNotificationPrompt(uid: string | undefined) {
       dismiss();
       return result.registration ? "enabled" : "declined";
     } catch (error) {
-      console.error("Push notifications could not be enabled.", error);
       dismiss();
+      if (isPushDeviceLimitError(error)) return "full";
+      console.error("Push notifications could not be enabled.", error);
       return "failed";
     } finally {
       setIsPrompting(false);

@@ -1,4 +1,4 @@
-import { ArrowClockwise, ArrowSquareOut, Copy, GithubLogo, ShieldCheck, SignOut, UserSwitch } from "@phosphor-icons/react/ssr";
+import { ArrowClockwise, ArrowSquareOut, Copy, DeviceMobile, GithubLogo, ShieldCheck, SignOut, UserSwitch } from "@phosphor-icons/react/ssr";
 import * as React from "react";
 import { toast } from "sonner";
 import { readThemePreference, setThemePreference, type ThemePreference } from "@/lib/theme";
@@ -7,6 +7,7 @@ import { setLocale, useI18n, type AppLocale } from "@/i18n";
 import { useActionFeedback } from "@/hooks/use-action-feedback";
 import { useDraft } from "@/hooks/use-draft";
 import { usePushNotifications, type PlatformAdminNotificationPreferences } from "@/hooks/use-push-notifications";
+import { isPushDeviceLimitError, openPushDevices } from "@/hooks/use-push-devices";
 import { usePwaInstall } from "@/hooks/use-pwa-install";
 import { useSession } from "@/hooks/use-session";
 import { Avatar } from "@/ui/avatar";
@@ -50,6 +51,11 @@ export function SettingsPage() {
       });
     } catch (caught) {
       if (caught instanceof PushNotEnabled) return;
+      if (isPushDeviceLimitError(caught)) {
+        // Freeing a device carries on with turning push on here.
+        openPushDevices({ full: true, onRemoved: () => void enablePush() });
+        return;
+      }
       console.error("Push notifications could not be enabled.", caught);
       toast.error(caught instanceof Error ? t(caught.message) : t("ui.settings.pushUpdateFailed"));
     }
@@ -106,8 +112,8 @@ export function SettingsPage() {
 
       {/* The browser only offers its permission prompt inside the click that
           asked for it, so this switch acts at once instead of joining a draft. */}
-      {push.enabled ? null : (
-        <ListGroup title={t("ui.settings.push")}>
+      <ListGroup title={t("ui.settings.push")}>
+        {push.enabled ? null : (
           <SwitchRow
             checked={deviceFeedback.state !== "idle"}
             detail={push.error ? t(push.error) : push.permission === "denied" ? t("ui.settings.pushBlocked") : push.supported ? t("ui.settings.pushReady") : t("ui.settings.pushUnsupported")}
@@ -115,8 +121,9 @@ export function SettingsPage() {
             label={t("ui.settings.pushDevice")}
             onChange={(enabled) => { if (enabled) void enablePush(); }}
           />
-        </ListGroup>
-      )}
+        )}
+        <ListRow icon={<DeviceMobile />} label={t("ui.settings.pushDevices")} onClick={() => openPushDevices({ full: false, onRemoved: () => void push.refresh() })} />
+      </ListGroup>
 
       {session.isAdmin && adminPreferences.value ? (
         <ListGroup title={t("ui.settings.platformAdminNotifications")}>

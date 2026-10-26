@@ -10,6 +10,7 @@ import { useNotificationBadge } from "@/hooks/use-notification-badge";
 import { usePushTokenHeartbeat } from "@/hooks/use-push-token-heartbeat";
 import { useSession } from "@/hooks/use-session";
 import { NotificationPrompt } from "@/features/system/notification-prompt";
+import { PushDevicesSheet } from "@/features/system/push-devices-sheet";
 import { Avatar } from "@/ui/avatar";
 import { Menu, type MenuItem } from "@/ui/menu";
 import { PrimaryNav, type NavItem } from "@/ui/nav";
@@ -71,6 +72,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-svh md:pl-70">
       <NotificationPrompt />
+      <PushDevicesSheet />
       <aside className="glass-float fixed inset-y-2 left-2 z-30 hidden w-64 flex-col gap-3 rounded-[1.5rem] px-3 pb-3 pt-5 md:flex">
         {/* Whose Novae this is, where Notion puts the workspace: the account
             menu opens settings, administration and sign-out from here. */}
