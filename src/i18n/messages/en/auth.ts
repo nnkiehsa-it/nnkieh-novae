@@ -17,7 +17,7 @@ const messages = {
   'auth.securityCheckFailed': 'Security verification did not complete. Try again, or use your system browser if the problem continues.',
   'auth.connectionFailed': 'Unable to connect for sign-in. Check your network and try again.',
   'auth.signingIn': 'Signing in…',
-  'auth.preparingSignIn': 'Preparing sign-in…',
+  'auth.verifyingSecurity': 'Verifying security…',
   'auth.retryVerification': 'Retry verification',
   'auth.pleaseUseTheDesignatedSchoolAccountToLogIn': 'Please sign in with the designated school account.',
   'auth.schoolGoogleAccount': 'School Google account',

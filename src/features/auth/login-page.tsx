@@ -72,7 +72,7 @@ export function LoginPage() {
           variant="primary"
         >
           {busy ? (
-            t(session.loginBusy ? "auth.signingIn" : "auth.preparingSignIn")
+            t(session.loginBusy ? "auth.signingIn" : "auth.verifyingSecurity")
           ) : entrance.phase === "error" ? (
             <><ArrowClockwise weight="bold" />{t("auth.retryVerification")}</>
           ) : (
