@@ -239,6 +239,7 @@ const messages = {
   'ui.update.description': 'Update for the latest interface and fixes. Reloading will not change your account data.',
   'ui.update.action': 'Update now',
   'ui.update.loading': 'Updating the app',
+  'ui.update.reopening': 'Updated, reopening',
   'ui.app.preparing': 'Opening Novae',
   'ui.app.startup.session': 'Restoring your session',
   'ui.app.startup.account': 'Checking your account and access',

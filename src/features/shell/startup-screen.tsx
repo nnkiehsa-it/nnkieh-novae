@@ -16,17 +16,14 @@ const PHASE_LABELS = {
 } as const satisfies Record<StartupPhase, MessageKey>;
 
 /**
- * Only the step under way, in one line. When startup moves on, the finished
- * step lifts away and the next one settles in from below out of a slight blur,
- * the way a counter turns over, so progress reads as a change of words rather
+ * One line saying what is under way. When the work moves on, the old words
+ * lift away and the new ones settle in from below out of a slight blur, the
+ * way a counter turns over, so progress reads as a change of words rather
  * than a list to scan.
  */
-function StartupStep({ steps }: { steps: readonly StartupPhase[] }) {
-  const { t } = useI18n();
-  const current = steps.at(-1) ?? "session";
-  const label = t(PHASE_LABELS[current]);
+export function TurnOverLine({ label, step }: { label: string; step: string }) {
   return (
-    <div className="relative grid h-6 place-items-center text-[0.9375rem] text-ink-muted" data-startup-phase={current}>
+    <div className="relative grid h-6 place-items-center text-[0.9375rem] text-ink-muted" data-step={step}>
       <span className="sr-only" role="status">{label}</span>
       <AnimatePresence initial={false} mode="popLayout">
         <motion.span
@@ -34,12 +31,22 @@ function StartupStep({ steps }: { steps: readonly StartupPhase[] }) {
           aria-hidden
           exit={{ filter: "blur(2px)", opacity: 0, transition: timing("controlExit", "depart"), y: -8 }}
           initial={{ filter: "blur(2px)", opacity: 0, y: 8 }}
-          key={current}
+          key={step}
           transition={timing("reveal", "bounce")}
         >
           {label}
         </motion.span>
       </AnimatePresence>
+    </div>
+  );
+}
+
+/** The app icon and name centred on the screen, with what is happening beneath. */
+export function LaunchFrame({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col items-center gap-6 text-center">
+      <BrandLockup className="flex-col gap-4 [&>span:last-child]:text-2xl" markClassName="size-20 rounded-icon" />
+      {children}
     </div>
   );
 }
@@ -66,8 +73,7 @@ export function StartupScreen({ error, onRetry, onSignOut, steps }: {
   };
   return (
     <div className="grid min-h-svh place-items-center px-[var(--gutter)]" data-startup-screen>
-      <div className="flex flex-col items-center gap-6 text-center">
-        <BrandLockup className="flex-col gap-4 [&>span:last-child]:text-2xl" markClassName="size-20 rounded-icon" />
+      <LaunchFrame>
         {error ? (
           <div className="grid max-w-sm gap-5">
             <p className="text-[0.9375rem] leading-relaxed text-ink-muted" role="alert">{t(error)}</p>
@@ -79,9 +85,9 @@ export function StartupScreen({ error, onRetry, onSignOut, steps }: {
             </div>
           </div>
         ) : (
-          <StartupStep steps={steps} />
+          <TurnOverLine label={t(PHASE_LABELS[steps.at(-1) ?? "session"])} step={steps.at(-1) ?? "session"} />
         )}
-      </div>
+      </LaunchFrame>
     </div>
   );
 }

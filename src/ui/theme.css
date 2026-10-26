@@ -127,6 +127,14 @@ html {
   background-size: 100% 100%;
 }
 
+/* A layer covering the whole screen as the app itself (the update screen)
+   wears the same canvas the startup screen stands on. */
+.launch-canvas {
+  background-color: var(--canvas-foot);
+  background-image: var(--canvas-gradient);
+  background-size: 100% 100%;
+}
+
 body {
   background: transparent;
   color: var(--ink);

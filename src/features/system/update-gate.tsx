@@ -1,13 +1,12 @@
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowClockwise, Check } from "@phosphor-icons/react/ssr";
+import { ArrowClockwise } from "@phosphor-icons/react/ssr";
 import { useI18n } from "@/i18n";
 import { timing } from "@/lib/motion-timing";
 import { useAppUpdate } from "@/hooks/use-app-update";
 import { useTurnstile } from "@/features/security/turnstile";
-import { BrandLockup } from "@/features/shell/brand";
+import { LaunchFrame, TurnOverLine } from "@/features/shell/startup-screen";
 import { Button } from "@/ui/button";
 import { Dialog } from "@/ui/dialog";
-import { Spinner } from "@/ui/feedback";
 
 /** Moves the app onto a newer deployment, asking first when it has to. */
 export function UpdateGate() {
@@ -32,19 +31,14 @@ export function UpdateGate() {
         {busy ? (
           <motion.div
             animate={{ opacity: 1 }}
-            aria-live="assertive"
-            className="glass fixed inset-0 z-[100] grid place-items-center"
+            className="launch-canvas fixed inset-0 z-[100] grid place-items-center px-[var(--gutter)]"
             exit={{ opacity: 0, transition: timing("controlExit", "depart") }}
             initial={{ opacity: 0 }}
             transition={timing("reveal")}
           >
-            <div className="flex flex-col items-center gap-5 text-center">
-              <BrandLockup className="flex-col gap-4 [&>span:last-child]:text-xl" markClassName="size-18 rounded-panel" />
-              <p className="flex items-center gap-2.5 text-[0.9375rem] text-ink-muted">
-                {update.phase === "reloaded" ? <Check className="size-4 text-positive" weight="bold" /> : <Spinner className="size-4" />}
-                {t("ui.update.loading")}
-              </p>
-            </div>
+            <LaunchFrame>
+              <TurnOverLine label={t(update.phase === "reloaded" ? "ui.update.reopening" : "ui.update.loading")} step={update.phase} />
+            </LaunchFrame>
           </motion.div>
         ) : null}
       </AnimatePresence>

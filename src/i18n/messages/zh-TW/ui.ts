@@ -239,6 +239,7 @@ const messages = {
   'ui.update.description': '更新後可使用最新介面與修正。重新載入不會改變你的帳號資料。',
   'ui.update.action': '立即更新',
   'ui.update.loading': '正在更新應用程式',
+  'ui.update.reopening': '更新完成，正在重新開啟',
   'ui.app.preparing': '正在開啟 Novae',
   'ui.app.startup.session': '讀取登入狀態',
   'ui.app.startup.account': '核對帳號憑證',
