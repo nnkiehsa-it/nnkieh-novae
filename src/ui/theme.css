@@ -180,6 +180,22 @@ body {
 .edge-blur > span:nth-child(5) { --b: 2.4px; --s0: 50%; --s1: 66.7%; --s2: 83.3%; --s3: 100%; }
 .edge-blur > span:nth-child(6) { --b: 4.8px; --s0: 66.7%; --s1: 83.3%; --s2: 100%; --s3: 100%; }
 
+/* At the top of a page nothing has scrolled under the top edge yet, only the
+   page's own title, so the blur stays off and comes in over the first few
+   rems of scrolling, the way a large title's bar only fills in once content
+   passes beneath it. Browsers without scroll timelines keep it on. */
+@supports (animation-timeline: scroll()) {
+  .edge-blur[data-side="top"] {
+    animation: edge-blur-in linear both;
+    animation-timeline: scroll(root block);
+    animation-range: 0 3rem;
+  }
+}
+
+@keyframes edge-blur-in {
+  from { opacity: 0; }
+}
+
 /* A scrolling area inside a layer fades out at both ends instead of slicing its content. */
 .edge-fade {
   -webkit-mask-image: linear-gradient(to bottom, transparent, black 1rem, black calc(100% - 1.5rem), transparent);
