@@ -87,7 +87,7 @@ sequenceDiagram
     W-->>B: one bootstrap response
 ```
 
-恢復既有 session 不重做 profile write；只有新登入呼叫 `/v1/auth/sync`。Bootstrap 把 access、category catalog、content version 和 unread hint 合在同一個 Edge invocation，降低冷啟動的往返次數。
+恢復既有 session 不重做 profile write；只有新登入呼叫 `/v1/auth/sync`。恢復時的 session-check 與 ID token 重讀和 bootstrap 並行，不擋啟動畫面：有快取的 access 就立即開啟 app，任一檢查事後失敗就登出。新登入則先通過檢查才建立 profile。Bootstrap 把 access、category catalog、content version 和 unread hint 合在同一個 Edge invocation，降低冷啟動的往返次數。
 
 ### 快取
 
