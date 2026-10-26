@@ -88,8 +88,9 @@ add('通知', [
   ['getPushNotificationPreference','查詢這臺裝置的 Push 狀態','use-push-notifications → push-notifications','合併 browser Notification.permission 與 deviceId 已註冊狀態。','push_tokens','設定頁顯示可啟用／已啟用／瀏覽器封鎖。'],
   ['getPlatformAdminNotificationPreferences','讀取我的管理員通知偏好','settings → push-notifications','限平台管理員，查提案／設施／留言三種個人通知偏好。','platform_admin_notification_preferences','三種開關，初值皆 false。'],
   ['updatePlatformAdminNotificationPreferences','修改我的管理員通知偏好','settings → push-notifications','限平台管理員；這是此管理員的收件偏好，並非全校通知開關。','platform_admin_notification_preferences','push_token.updated 記事件但 destinations=[]；收件者解析在真正 delivery 時讀新偏好。','提交後尚未解析收件者的站內與 Push delivery 用新值；已傳送通知無法撤回'],
-  ['registerPushToken','允許通知並註冊裝置','use-push-notifications／use-push-token-heartbeat → push-token-registration','browser permission → Firebase Messaging getToken → Worker；token/deviceId 驗證，換帳號重新指派 token。','push_tokens，last_confirmed_at','push_token.updated，無外部 delivery。登入 shell 也更新 SW 的目前 UID。','一般帳號啟用後 App 沒有停用入口；browser/OS 可撤銷；確認頻率預設 7 天'],
-  ['unregisterPushToken','移除裝置 Push 註冊','push-notifications → backend-action','只刪 actor UID + deviceId 的 token；用於 session／裝置生命週期，不是一般使用者的偏好開關。','push_tokens','push_token.updated，destinations=[]。'],
+  ['registerPushToken','允許通知並註冊裝置','use-push-notifications／use-push-token-heartbeat → push-token-registration','browser permission → Firebase Messaging getToken → Worker；token/deviceId 驗證，換帳號重新指派 token；例行確認（refresh）只更新既有登記，被移除的裝置不會自己加回。','push_tokens，last_confirmed_at','push_token.updated，無外部 delivery。登入 shell 也更新 SW 的目前 UID。','裝置可從設定的通知裝置清單移除；browser/OS 可撤銷；確認頻率預設 7 天；每帳號最多 10 台'],
+  ['listPushDevices','列出我的通知裝置','use-push-devices → push-notifications','只讀 actor UID 的 push_tokens：deviceId、platform、userAgent、last_confirmed_at，並回上限。','push_tokens','通知裝置清單；裝置滿額時自動開啟。'],
+  ['unregisterPushToken','移除裝置 Push 註冊','push-notifications → backend-action','只刪 actor UID + deviceId 的 token；用於 session／裝置生命週期，以及通知裝置清單的移除。','push_tokens','push_token.updated，destinations=[]。'],
 ]);
 add('圖片', [
   ['createImageUploadSessions','建立圖片上傳工作','use-image-attachments → uploads','前端壓 WebP；Worker 讀實際 targetType/scopeId 的圖片上限和共用尺寸／KB；imageUploadDaily 按張數扣額。','uploads pending，ownership/target scope','回 signed Cloudinary upload session；接下來 browser 直接傳 Cloudinary。'],

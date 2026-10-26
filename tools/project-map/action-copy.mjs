@@ -53,6 +53,7 @@ export const actionCopy = {
   getPlatformAdminNotificationPreferences:['管理員通知設定','確認管理員並讀個人偏好','讀本人三類通知偏好','通知設定：顯示本人三個開關'],
   updatePlatformAdminNotificationPreferences:['管理員通知開關','驗管理員並更新本人偏好','保存本人的三個通知布林值','通知設定：採用正式個人偏好'],
   registerPushToken:['Push 註冊與確認','驗裝置、token 與帳號歸屬','登記 token 並更新確認時間','Push 狀態：確認裝置已登記'],
+  listPushDevices:['通知裝置清單','只讀本人的裝置登記','讀本人所有 Push token 的裝置資訊','通知裝置：列出並可移除'],
   unregisterPushToken:['裝置註冊移除事件','只移除本人這臺裝置的註冊','刪本人 deviceId 的 token','裝置狀態：移除 Push 登記'],
   createImageUploadSessions:['附件上傳流程','驗實際分類上限並簽上傳參數','建 pending upload 與所有權','附件流程：拿簽名直傳圖片'],
   finalizeImageUploads:['Cloudinary 上傳完成事件','驗供應商簽名、尺寸與大小','將已驗證 upload 改成 ready','附件流程：取得可附著圖片 ID'],

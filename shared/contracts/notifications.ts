@@ -78,6 +78,15 @@ export const PushPreference = v.object({
 });
 export type PushPreference = v.InferOutput<typeof PushPreference>;
 
+/** A device this account receives push notifications on, as the account's device list shows it. */
+export const PushDevice = v.object({
+  deviceId: RequiredText,
+  lastConfirmedAt: Timestamp,
+  platform: v.string(),
+  userAgent: v.string(),
+});
+export type PushDevice = v.InferOutput<typeof PushDevice>;
+
 export const AdminNotificationPreferences = v.object({
   issueNotifications: v.boolean(),
   facilityNotifications: v.boolean(),
@@ -132,8 +141,19 @@ export const NOTIFICATION_ACTIONS = {
       permission: BrowserPermission,
       platform: OptionalText,
       userAgent: OptionalText,
+      /**
+       * Only keep an existing registration current (its token, its last
+       * confirmation); a device that was removed stays removed until the
+       * reader turns push on again.
+       */
+      refresh: v.optional(v.boolean(), false),
     }),
     output: PushPreference,
+  }),
+  listPushDevices: action({
+    group: "read",
+    input: NoInput,
+    output: v.object({ devices: v.array(PushDevice), limit: Count }),
   }),
   unregisterPushToken: action({
     group: "sensitive-write",

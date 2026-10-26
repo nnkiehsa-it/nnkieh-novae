@@ -78,7 +78,9 @@ export function confirmCurrentPushToken(
   uid: string,
   force = false,
 ): Promise<PushTokenConfirmation> {
-  const pending = pendingConfirmations.get(uid);
+  // A routine confirmation under way must not stand in for turning push on.
+  const key = `${uid}:${force}`;
+  const pending = pendingConfirmations.get(key);
   if (pending) return pending;
 
   const revision = registrationRevision;
@@ -95,18 +97,22 @@ export function confirmCurrentPushToken(
         deviceId: getPushDeviceId(),
         permission: "granted",
         platform: navigator.platform,
+        // Only turning push on adds a device; a routine confirmation keeps one
+        // current, so a device removed from the list stays removed.
+        refresh: !force,
         token: current.token,
         userAgent: navigator.userAgent,
       });
       if (!currentSession()) return null;
+      if (!preference.deviceEnabled) return { preference, token: current.token };
       await setPushSession(uid);
       rememberConfirmation(uid, current.token);
       return { preference, token: current.token };
     } finally {
-      pendingConfirmations.delete(uid);
+      pendingConfirmations.delete(key);
     }
   })();
-  pendingConfirmations.set(uid, confirmation);
+  pendingConfirmations.set(key, confirmation);
   return confirmation;
 }
 

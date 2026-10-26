@@ -1,5 +1,6 @@
 import type { ActionInput } from "../../../../shared/actions.ts";
 import type { NotificationCursor, NotificationSource } from "../../../../shared/contracts/notifications.ts";
+import type { Selected } from "../database/schema.ts";
 import type { AuthContext, BackendDatabase } from "./types.ts";
 import { optionalText, requiredText } from "./validation.ts";
 import { settledSegments } from "./segments.ts";
@@ -65,6 +66,27 @@ export async function markNotificationsOpened(_input: ActionInput<"markNotificat
   });
 }
 
+/** Matches `max_devices` in `backend_register_push_token`. */
+const PUSH_DEVICE_LIMIT = 10;
+
+/** Every device this account receives push on, the one confirmed most recently first. */
+export async function listPushDevices(_input: ActionInput<"listPushDevices">, auth: AuthContext, database: BackendDatabase) {
+  const { rows } = await database.sql<Selected<"push_tokens", "device_id" | "last_confirmed_at" | "platform" | "user_agent">>`
+    select device_id, last_confirmed_at, platform, user_agent
+    from app_private.push_tokens
+    where uid = ${auth.uid}
+    order by last_confirmed_at desc, device_id`;
+  return {
+    devices: rows.map((row) => ({
+      deviceId: row.device_id,
+      lastConfirmedAt: row.last_confirmed_at,
+      platform: row.platform,
+      userAgent: row.user_agent,
+    })),
+    limit: PUSH_DEVICE_LIMIT,
+  };
+}
+
 export async function unregisterPushToken(input: ActionInput<"unregisterPushToken">, auth: AuthContext, database: BackendDatabase) {
   const deviceId = requiredText(input.deviceId, "deviceId", PUSH_TOKEN_LIMITS.deviceId);
   await database.sql`delete from app_private.push_tokens where uid = ${auth.uid} and device_id = ${deviceId}`;
@@ -72,9 +94,21 @@ export async function unregisterPushToken(input: ActionInput<"unregisterPushToke
 }
 
 export async function registerPushToken(input: ActionInput<"registerPushToken">, auth: AuthContext, database: BackendDatabase) {
+  const deviceId = requiredText(input.deviceId, "deviceId", PUSH_TOKEN_LIMITS.deviceId);
+  if (input.refresh) {
+    const { rows } = await database.sql<Selected<"push_tokens", "device_id">>`
+      select device_id from app_private.push_tokens where uid = ${auth.uid} and device_id = ${deviceId}`;
+    if (rows.length === 0) {
+      return await database.call("app_api", "backend_push_notification_preference", {
+        actor_uid: auth.uid,
+        device_id: deviceId,
+        permission: input.permission,
+      });
+    }
+  }
   return await database.call("app_api", "backend_register_push_token", {
     actor_uid: auth.uid,
-    device_id: requiredText(input.deviceId, "deviceId", PUSH_TOKEN_LIMITS.deviceId),
+    device_id: deviceId,
     token: requiredText(input.token, "token", PUSH_TOKEN_LIMITS.token),
     permission: input.permission,
     platform: optionalText(input.platform, "platform", PUSH_TOKEN_LIMITS.platform),

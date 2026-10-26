@@ -2,6 +2,7 @@ import type { ActionRequest } from '@shared/actions.ts';
 import type { AdminNotificationPreferences, BrowserPermission } from '@shared/contracts/notifications.ts';
 import { callAction } from '@/services/backend-action';
 import { invalidate, readQuery } from '@/lib/query-client';
+import { ApiRequestError } from '@/lib/api-error';
 import { toReadableBackendError } from './backend-errors';
 
 export type { PushPreference as PushNotificationPreference } from '@shared/contracts/notifications.ts';
@@ -37,6 +38,20 @@ export async function registerPushToken(payload: ActionRequest<'registerPushToke
 export async function unregisterPushToken(deviceId: string) {
   await callAction('unregisterPushToken', { deviceId }, { timeoutMs: 5_000 });
   void invalidate(['push']);
+}
+
+/** The devices this account receives push on, and how many it may have. */
+export async function listPushDevices() {
+  try {
+    return await callAction('listPushDevices', {});
+  } catch (error) {
+    throw toReadableBackendError(error);
+  }
+}
+
+/** The account already receives push on as many devices as it may. */
+export function isPushDeviceLimitError(error: unknown) {
+  return error instanceof ApiRequestError && error.code === 'push-token-limit-reached';
 }
 
 export async function getPlatformAdminNotificationPreferences() {

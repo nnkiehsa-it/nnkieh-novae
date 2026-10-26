@@ -122,6 +122,7 @@ export const ACTION_HANDLERS = {
   markNotificationsOpened: { domain: "notification", access: "personal", run: notifications.markNotificationsOpened },
   getPushNotificationPreference: { domain: "notification", access: "read", run: notifications.getPushNotificationPreference },
   getPlatformAdminNotificationPreferences: { domain: "notification", access: "read", run: notifications.getPlatformAdminNotificationPreferences },
+  listPushDevices: { domain: "notification", access: "read", run: notifications.listPushDevices },
   registerPushToken: { domain: "notification", access: "personal", run: notifications.registerPushToken },
   unregisterPushToken: { domain: "notification", access: "personal", run: notifications.unregisterPushToken },
   updatePlatformAdminNotificationPreferences: { domain: "notification", access: "personal", run: notifications.updatePlatformAdminNotificationPreferences },

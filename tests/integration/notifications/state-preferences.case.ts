@@ -53,6 +53,27 @@ integrationTest("notification state, mandatory push, admin preferences, and dash
   assert.ok(Date.parse(registeredToken.last_confirmed_at) > Date.now() - 60_000);
   assert.ok(!("personalPreferences" in registered));
 
+  // The device list shows only this account's devices, and a removed device
+  // is not brought back by a routine confirmation, only by turning push on.
+  const listed = asRecord(await callAction("listPushDevices", {}, user.auth));
+  assert.equal(listed.limit, 10);
+  assert.deepEqual((listed.devices as Array<Record<string, unknown>>).map((device) => [device.deviceId, device.platform]), [[deviceId, "integration"]]);
+  assert.deepEqual(asRecord(await callAction("listPushDevices", {}, admin.auth)).devices, []);
+  const refreshed = asRecord(await callAction("registerPushToken", {
+    deviceId, permission: "granted", platform: "integration", refresh: true, token, userAgent: "Node integration test",
+  }, user.auth));
+  assert.equal(refreshed.deviceEnabled, true);
+  await callAction("unregisterPushToken", { deviceId }, user.auth);
+  const refreshedAfterRemoval = asRecord(await callAction("registerPushToken", {
+    deviceId, permission: "granted", platform: "integration", refresh: true, token, userAgent: "Node integration test",
+  }, user.auth));
+  assert.equal(refreshedAfterRemoval.deviceEnabled, false);
+  assert.deepEqual(asRecord(await callAction("listPushDevices", {}, user.auth)).devices, []);
+  const reEnabled = asRecord(await callAction("registerPushToken", {
+    deviceId, permission: "granted", platform: "integration", token, userAgent: "Node integration test",
+  }, user.auth));
+  assert.equal(reEnabled.deviceEnabled, true);
+
   await expectActionError(
     "permission-denied",
     () => callAction("getPlatformAdminNotificationPreferences", {}, user.auth),
