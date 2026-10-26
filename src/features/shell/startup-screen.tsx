@@ -1,60 +1,54 @@
 import * as React from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { Check } from "@phosphor-icons/react/ssr";
 import { toast } from "sonner";
 import { useI18n, type MessageKey } from "@/i18n";
-import { timing } from "@/lib/motion-timing";
 import type { StartupPhase } from "@/hooks/session-state";
+import { cn } from "@/lib/utils";
 import { Button } from "@/ui/button";
 import { Spinner } from "@/ui/feedback";
 import { BrandLockup } from "./brand";
 
-// Each phase names what is happening, then what it is waiting on, so a slow
-// step reads as progress rather than as a frozen screen.
 const PHASE_LABELS = {
-  session: ["ui.app.startup.session", "ui.app.startup.sessionWaiting"],
-  security: ["ui.app.startup.security", "ui.app.startup.securityWaiting"],
-  account: ["ui.app.startup.account", "ui.app.startup.accountWaiting"],
-  profile: ["ui.app.startup.profile", "ui.app.startup.profileWaiting"],
-  access: ["ui.app.startup.access", "ui.app.startup.accessWaiting"],
-  content: ["ui.app.startup.content", "ui.app.startup.contentWaiting"],
-  ready: ["ui.app.startup.ready"],
-} as const satisfies Record<StartupPhase, readonly MessageKey[]>;
+  session: "ui.app.startup.session",
+  account: "ui.app.startup.account",
+  profile: "ui.app.startup.profile",
+  access: "ui.app.startup.access",
+  ready: "ui.app.startup.ready",
+} as const satisfies Record<StartupPhase, MessageKey>;
 
-function PhaseLabel({ phase }: { phase: StartupPhase }) {
+/**
+ * The steps startup has actually taken, in order: each finished one is ticked
+ * and the one under way spins, so a slow step reads as that step, not as a
+ * loop of words. The list holds room for every step it may grow to, so the
+ * screen does not shift as it grows.
+ */
+function StartupSteps({ steps }: { steps: readonly StartupPhase[] }) {
   const { t } = useI18n();
-  const labels = PHASE_LABELS[phase];
-  const [index, setIndex] = React.useState(0);
-  React.useEffect(() => {
-    if (labels.length < 2) return;
-    const timer = window.setInterval(() => setIndex((current) => (current + 1) % labels.length), 1_800);
-    return () => window.clearInterval(timer);
-  }, [labels]);
+  const current = steps.at(-1) ?? "session";
   return (
-    <div className="flex h-6 items-center gap-2.5 text-[0.9375rem] text-ink-muted" data-startup-phase={phase}>
-      <span className="sr-only" role="status">{t(labels[0])}</span>
-      <Spinner className="size-4" />
-      <AnimatePresence initial={false} mode="wait">
-        <motion.span
-          animate={{ opacity: 1 }}
-          aria-hidden
-          exit={{ opacity: 0, transition: timing("controlExit", "depart") }}
-          initial={{ opacity: 0 }}
-          key={index}
-          transition={timing("control")}
-        >
-          {t(labels[index])}
-        </motion.span>
-      </AnimatePresence>
+    <div className="min-h-[7.5rem]" data-startup-phase={current}>
+      <span className="sr-only" role="status">{t(PHASE_LABELS[current])}</span>
+      <ol aria-hidden className="grid gap-2 text-left text-[0.9375rem]">
+        {steps.map((step) => {
+          const done = step !== current || step === "ready";
+          return (
+            <li className={cn("message-in flex h-6 items-center gap-2.5", done ? "text-ink-faint" : "text-ink-muted")} key={step}>
+              {done ? <Check className="size-4" weight="bold" /> : <Spinner className="size-4" />}
+              {t(PHASE_LABELS[step])}
+            </li>
+          );
+        })}
+      </ol>
     </div>
   );
 }
 
 /** What fills the screen while the session is restored, or why it could not be. */
-export function StartupScreen({ error, onRetry, onSignOut, phase = "session" }: {
+export function StartupScreen({ error, onRetry, onSignOut, steps }: {
   error?: string;
   onRetry?: () => Promise<void>;
   onSignOut?: () => Promise<void>;
-  phase?: StartupPhase;
+  steps: readonly StartupPhase[];
 }) {
   const { t } = useI18n();
   const [signingOut, setSigningOut] = React.useState(false);
@@ -84,7 +78,7 @@ export function StartupScreen({ error, onRetry, onSignOut, phase = "session" }: 
             </div>
           </div>
         ) : (
-          <PhaseLabel key={phase} phase={phase} />
+          <StartupSteps steps={steps} />
         )}
       </div>
     </div>

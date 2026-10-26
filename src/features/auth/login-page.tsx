@@ -5,7 +5,6 @@ import { useI18n } from "@/i18n";
 import { sameOriginUrl } from "@/lib/same-origin-url";
 import { useLoginEntrance } from "@/hooks/use-login-entrance";
 import { useSession } from "@/hooks/use-session";
-import { useStartupPresentation } from "@/hooks/use-startup-presentation";
 import { TurnstileInlineHost } from "@/features/security/turnstile";
 import { BrandLockup } from "@/features/shell/brand";
 import { StartupScreen } from "@/features/shell/startup-screen";
@@ -27,20 +26,19 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [search] = useSearchParams();
   const session = useSession();
-  const { initialized, prepareLogin, restoringSession, roleLoading, setupCompleted, startupError, user } = session;
-  const { phase, pending: presenting } = useStartupPresentation(session);
+  const { initialized, prepareLogin, roleLoading, setupCompleted, startupError, user } = session;
   const { t } = useI18n();
   const entrance = useLoginEntrance(initialized && !user, prepareLogin);
 
   // A signed-in visitor goes where they were headed, or to setup first.
   React.useEffect(() => {
-    if (!initialized || !user || roleLoading || startupError || presenting) return;
+    if (!initialized || !user || roleLoading || startupError) return;
     const target = new URL(setupCompleted ? sameOriginUrl(search.get("redirect"), window.location.origin, "/home") : "/setup");
     void navigate(`${target.pathname}${target.search}${target.hash}`, { replace: true });
-  }, [initialized, navigate, presenting, roleLoading, search, setupCompleted, startupError, user]);
+  }, [initialized, navigate, roleLoading, search, setupCompleted, startupError, user]);
 
-  if (startupError) return <StartupScreen error={startupError} onRetry={session.retryStartup} onSignOut={session.logout} phase={phase} />;
-  if (!initialized || restoringSession || user) return <StartupScreen phase={phase} />;
+  if (startupError) return <StartupScreen error={startupError} onRetry={session.retryStartup} onSignOut={session.logout} steps={session.startupSteps} />;
+  if (!initialized || user) return <StartupScreen steps={session.startupSteps} />;
 
   const checking = entrance.phase === "checking";
   const busy = checking || session.loginBusy;

@@ -88,7 +88,7 @@ async function rejectUser(reason: string) {
   verificationSerial += 1;
   pendingAuthRejection = reason;
   clearActiveSessionData();
-  resetAccess({ error: reason, user: null, appReady: true, initialized: true, loading: false, restoringSession: false });
+  resetAccess({ error: reason, user: null, appReady: true, initialized: true, loading: false });
   if (auth) await signOut(auth).catch(() => undefined);
 }
 
@@ -144,10 +144,20 @@ async function loadAvatar(photoUrl: string, uid: string) {
   }
 }
 
+/**
+ * Why this account may not stay signed in, or "" when it may. The token's
+ * claims are read again, and a restored session also passes the human check
+ * that a fresh sign-in passed at the door.
+ */
+function admissionChecks(tokenValidationPromise: Promise<ValidationResult>, restoreCheck: Promise<string>) {
+  return Promise.all([tokenValidationPromise, restoreCheck])
+    .then(([token, restore]) => (token.ok ? restore : token.reason));
+}
+
 async function refreshVerifiedSession(
   user: User,
   verificationId: number,
-  tokenValidationPromise: Promise<ValidationResult>,
+  admission: Promise<string>,
   syncProfile: boolean,
   savedAccessPromise: Promise<SessionAccess | null>,
 ) {
@@ -155,10 +165,35 @@ async function refreshVerifiedSession(
     verificationId === verificationSerial && getSessionState().user?.uid === user.uid && auth?.currentUser === user;
   let accessReady = false;
   let receivedBootstrapAccess = false;
-  try {
-    const tokenValidation = await tokenValidationPromise;
+  const openShell = () => {
+    accessReady = true;
+    patch({ roleLoading: false, startupPhase: "ready" });
+  };
+  const failStartup = (error: unknown) => {
     if (!current()) return;
-    if (!tokenValidation.ok) return await rejectUser(tokenValidation.reason);
+    sessionDebug("session verification failed", error);
+    if (accessReady && !(error instanceof ApiRequestError && error.code === "app-check-failed")) return;
+    patch({
+      startupError: error instanceof ApiRequestError && error.code === "app-check-failed"
+        ? "auth.appCheckFailed"
+        : "auth.initializationFailed",
+    });
+  };
+  // A restored session does not wait on its checks: they run beside the rest
+  // of startup, and one that fails signs the account out, even once the app
+  // is on screen. Nothing is exposed meanwhile: the server checks every
+  // request itself, and what the shell shows first was already on this device.
+  const admitted = admission.then(async (reason) => {
+    if (!current()) return false;
+    if (!reason) return true;
+    await rejectUser(reason);
+    return false;
+  });
+  if (!syncProfile) void admitted.catch(failStartup);
+  try {
+    // A new account's profile is created only for an account that passed.
+    if (syncProfile && !await admitted) return;
+    if (!current()) return;
     patch({ startupPhase: syncProfile ? "profile" : "access" });
     if (syncProfile) {
       await ensureBackendProfile(user);
@@ -166,10 +201,6 @@ async function refreshVerifiedSession(
       needsProfileSync = false;
       patch({ startupPhase: "access" });
     }
-    const openShell = () => {
-      accessReady = true;
-      patch({ roleLoading: false, startupPhase: "ready" });
-    };
     const savedAccess = await savedAccessPromise;
     if (!current()) return;
     if (savedAccess) {
@@ -202,17 +233,11 @@ async function refreshVerifiedSession(
       writeLocalStorage(`${VISIT_RECORDED_AT_KEY}:${user.uid}`, String(Date.now()));
   } catch (error) {
     if (!current()) return;
-    sessionDebug("session verification failed", error);
     if (error instanceof ApiRequestError && error.code === "account-restricted") {
       await rejectUser(error.restrictionMessage || error.message);
       return;
     }
-    if (accessReady && !(error instanceof ApiRequestError && error.code === "app-check-failed")) return;
-    patch({
-      startupError: error instanceof ApiRequestError && error.code === "app-check-failed"
-        ? "auth.appCheckFailed"
-        : "auth.initializationFailed",
-    });
+    failStartup(error);
   } finally {
     if (current()) {
       patch({ roleLoading: false, startupPhase: "ready" });
@@ -222,7 +247,7 @@ async function refreshVerifiedSession(
 
 function acceptUser(
   user: User,
-  tokenValidationPromise: Promise<ValidationResult>,
+  admission: Promise<string>,
   syncProfile: boolean,
 ) {
   const verificationId = ++verificationSerial;
@@ -248,15 +273,21 @@ function acceptUser(
     userRole: "user",
   });
   if (user.photoURL) void loadAvatar(user.photoURL, user.uid);
-  void refreshVerifiedSession(user, verificationId, tokenValidationPromise, syncProfile, savedAccessPromise);
+  void refreshVerifiedSession(user, verificationId, admission, syncProfile, savedAccessPromise);
 }
 
 export async function retrySessionStartup() {
-  const { roleLoading, startupRun, user } = getSessionState();
+  const { roleLoading, user } = getSessionState();
   if (!user || roleLoading) return;
   const verificationId = ++verificationSerial;
-  patch({ roleLoading: true, startupError: "", startupPhase: "account", startupRun: startupRun + 1, startupSteps: ["account"] });
-  await refreshVerifiedSession(user, verificationId, validateUserAgainstToken(user), needsProfileSync, Promise.resolve(null));
+  patch({ roleLoading: true, startupError: "", startupPhase: "account", startupSteps: ["account"] });
+  await refreshVerifiedSession(
+    user,
+    verificationId,
+    admissionChecks(validateUserAgainstToken(user), Promise.resolve("")),
+    needsProfileSync,
+    Promise.resolve(null),
+  );
 }
 
 /** Reads this account's access again, after something may have changed it. */
@@ -303,12 +334,12 @@ export async function initializeSession(
     auth,
     async (user) => {
       if (auth?.currentUser !== user) return;
-      const authEvent = ++verificationSerial;
+      verificationSerial += 1;
       const previousUser = getSessionState().user;
       if (previousUser && user && previousUser.uid !== user.uid) clearActiveSessionData();
       const authEventError = user ? "" : pendingAuthRejection;
       pendingAuthRejection = "";
-      patch({ authChecking: false, error: authEventError, loading: true, restoringSession: false, startupError: "", startupPhase: "session" });
+      patch({ authChecking: false, error: authEventError, loading: true, startupError: "", startupPhase: "session" });
       if (!user) {
         clearActiveSessionData();
         resetAccess({
@@ -325,22 +356,11 @@ export async function initializeSession(
         await rejectUser(validation.reason);
         return;
       }
-      const tokenValidationPromise = validateUserAgainstToken(user);
-      void tokenValidationPromise.catch(() => undefined);
       const freshLogin = consumePreparedLoginEntrance();
-      if (!freshLogin) {
-        patch({ restoringSession: true, startupPhase: "security" });
-        const restorationError = await verifyRestoredSession({
-          requestTurnstileToken,
-        });
-        if (authEvent !== verificationSerial || auth?.currentUser !== user) return;
-        if (restorationError) {
-          await rejectUser(restorationError);
-          return;
-        }
-        patch({ restoringSession: false, startupPhase: "account" });
-      }
-      acceptUser(user, tokenValidationPromise, freshLogin);
+      // A fresh sign-in passed the human check at the door; a restored
+      // session takes it again, without holding the app back for it.
+      const restoreCheck = freshLogin ? Promise.resolve("") : verifyRestoredSession({ requestTurnstileToken });
+      acceptUser(user, admissionChecks(validateUserAgainstToken(user), restoreCheck), freshLogin);
     },
     (error) => {
       sessionDebug("auth observer failed", error);

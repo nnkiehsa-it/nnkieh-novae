@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from "motion/react";
 import { timing } from "@/lib/motion-timing";
 import { useContentRealtime } from "@/hooks/use-content-realtime";
 import { useSession } from "@/hooks/use-session";
-import { useStartupPresentation } from "@/hooks/use-startup-presentation";
 import { AppShell } from "./app-shell";
 import { AppViews } from "./app-views";
 import { LocaleGate } from "./locale-gate";
@@ -20,19 +19,18 @@ export function ProtectedApp() {
   const { pathname } = useLocation();
   const session = useSession();
   const { initialized, loading, roleLoading, setupCompleted, startupError, user } = session;
-  const { phase, pending: presenting } = useStartupPresentation(session);
   // Once a session has been shown, a later access refresh keeps the app on
   // screen instead of dropping back to the startup screen.
   const [shownUid, setShownUid] = React.useState<string | null>(null);
   const shown = Boolean(user && shownUid === user.uid);
   const settled = initialized && !loading && !roleLoading && !startupError;
   const onSetup = pathname === "/setup";
-  useContentRealtime(pathname, Boolean(user && setupCompleted && settled && !presenting));
+  useContentRealtime(pathname, Boolean(user && setupCompleted && settled));
 
   React.useEffect(() => {
     if (!user) setShownUid(null);
-    else if (settled && !presenting) setShownUid(user.uid);
-  }, [presenting, settled, user]);
+    else if (settled) setShownUid(user.uid);
+  }, [settled, user]);
 
   React.useEffect(() => {
     if (!settled) return;
@@ -42,7 +40,7 @@ export function ProtectedApp() {
   }, [navigate, onSetup, pathname, settled, setupCompleted, user]);
 
   const waiting = Boolean(startupError) || !user || (setupCompleted && onSetup)
-    || (!shown && (!settled || presenting || (!setupCompleted && !onSetup)));
+    || (!shown && (!settled || (!setupCompleted && !onSetup)));
 
   // The app mounts beneath the departing startup screen, so there is never a
   // blank frame between the two.
@@ -60,7 +58,7 @@ export function ProtectedApp() {
             exit={{ opacity: 0, transition: timing("controlExit", "depart") }}
             key="startup"
           >
-            <StartupScreen error={startupError} onRetry={session.retryStartup} onSignOut={session.logout} phase={phase} />
+            <StartupScreen error={startupError} onRetry={session.retryStartup} onSignOut={session.logout} steps={session.startupSteps} />
           </motion.div>
         ) : null}
       </AnimatePresence>

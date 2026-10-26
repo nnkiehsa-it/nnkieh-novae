@@ -82,17 +82,33 @@ it("opens after access arrives while the rest of bootstrap is still pending", as
   finish({ access, catalog: {}, versions: {}, notificationUnread: { hasUnread: false }, visitRecorded: false });
 });
 
-it("uses cached access only after security and token validation pass", async () => {
+it("opens on cached access while security and token validation are still running", async () => {
   let verify!: (value: { ok: boolean }) => void;
+  let check!: (reason: string) => void;
+  mocks.validate.mockImplementation(() => new Promise((resolve) => { verify = resolve; }));
+  mocks.restore.mockImplementation(() => new Promise((resolve) => { check = resolve; }));
+  mocks.cachedAccess.mockReturnValue(access);
+  mocks.bootstrap.mockResolvedValue({ access, catalog: {}, versions: {}, notificationUnread: { hasUnread: false }, visitRecorded: false });
+  const store = await start();
+  await vi.waitFor(() => expect(store.getSessionState()).toMatchObject({ roleLoading: false, setupCompleted: true, startupPhase: "ready" }));
+  expect(mocks.bootstrap).toHaveBeenCalledOnce();
+  verify({ ok: true });
+  check("");
+  await Promise.resolve();
+  expect(store.getSessionState().user).toBe(user);
+  expect(mocks.signOut).not.toHaveBeenCalled();
+});
+
+it("signs out an open session whose token turns out not to pass", async () => {
+  let verify!: (value: { ok: boolean; reason: string }) => void;
   mocks.validate.mockImplementation(() => new Promise((resolve) => { verify = resolve; }));
   mocks.cachedAccess.mockReturnValue(access);
   mocks.bootstrap.mockResolvedValue({ access, catalog: {}, versions: {}, notificationUnread: { hasUnread: false }, visitRecorded: false });
   const store = await start();
-  expect(store.getSessionState().roleLoading).toBe(true);
-  expect(mocks.bootstrap).not.toHaveBeenCalled();
-  verify({ ok: true });
-  await vi.waitFor(() => expect(store.getSessionState().roleLoading).toBe(false));
-  expect(store.getSessionState().setupCompleted).toBe(true);
+  await vi.waitFor(() => expect(store.getSessionState().startupPhase).toBe("ready"));
+  verify({ ok: false, reason: "auth.schoolVerificationRequired" });
+  await vi.waitFor(() => expect(store.getSessionState()).toMatchObject({ user: null, error: "auth.schoolVerificationRequired" }));
+  expect(mocks.signOut).toHaveBeenCalledOnce();
 });
 
 it("keeps the shell when optional bootstrap content fails after access", async () => {
@@ -105,12 +121,12 @@ it("keeps the shell when optional bootstrap content fails after access", async (
   expect(store.getSessionState().startupError).toBe("");
 });
 
-it("does not hydrate a cached account when the restored security check fails", async () => {
+it("signs a restored account out when its security check fails", async () => {
   mocks.restore.mockResolvedValue("auth.securityCheckFailed");
   mocks.cachedAccess.mockReturnValue(access);
+  mocks.bootstrap.mockResolvedValue({ access, catalog: {}, versions: {}, notificationUnread: { hasUnread: false }, visitRecorded: false });
   const store = await start();
-  expect(store.getSessionState()).toMatchObject({ user: null, error: "auth.securityCheckFailed" });
-  expect(mocks.bootstrap).not.toHaveBeenCalled();
+  await vi.waitFor(() => expect(store.getSessionState()).toMatchObject({ user: null, error: "auth.securityCheckFailed" }));
   expect(mocks.signOut).toHaveBeenCalledOnce();
 });
 

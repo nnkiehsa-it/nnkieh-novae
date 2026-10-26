@@ -1,7 +1,7 @@
 import type { User } from "firebase/auth";
 import type { PermissionCode, RoleCode } from "@/services/session";
 
-export type StartupPhase = "session" | "security" | "account" | "profile" | "access" | "content" | "ready";
+export type StartupPhase = "session" | "account" | "profile" | "access" | "ready";
 
 export interface SessionState {
   appReady: boolean;
@@ -14,12 +14,10 @@ export interface SessionState {
   managedIssueCategoryIds: string[];
   permissions: PermissionCode[];
   roleLoading: boolean;
-  restoringSession: boolean;
   roles: RoleCode[];
   setupCompleted: boolean;
   startupError: string;
   startupPhase: StartupPhase;
-  startupRun: number;
   startupSteps: readonly StartupPhase[];
   user: User | null;
   userRole: "admin" | "user";
@@ -28,8 +26,8 @@ export interface SessionState {
 export const initialSessionState: SessionState = {
   appReady: false, authChecking: true, customPhotoUrl: null, error: "", initialized: false,
   loading: true, managedFacilityCategoryIds: [], managedIssueCategoryIds: [], permissions: [],
-  roleLoading: false, restoringSession: false, roles: [], setupCompleted: false,
-  startupError: "", startupPhase: "session", startupRun: 0, startupSteps: ["session"], user: null, userRole: "user",
+  roleLoading: false, roles: [], setupCompleted: false,
+  startupError: "", startupPhase: "session", startupSteps: ["session"], user: null, userRole: "user",
 };
 
 const listeners = new Set<() => void>();
@@ -46,12 +44,7 @@ export function patch(next: Partial<SessionState>) {
     : next.startupPhase && next.startupPhase !== state.startupPhase
       ? [...state.startupSteps, next.startupPhase]
       : state.startupSteps);
-  state = {
-    ...state,
-    ...next,
-    startupRun: next.startupRun ?? (next.startupPhase === "session" ? state.startupRun + 1 : state.startupRun),
-    startupSteps,
-  };
+  state = { ...state, ...next, startupSteps };
   listeners.forEach((listener) => listener());
 }
 
