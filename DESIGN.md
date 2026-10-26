@@ -30,7 +30,8 @@ primary action.
 | `positive` `caution` `danger` `info` | Status only: chips, errors, destructive actions |
 
 Radii: `rounded-chip` (tags), `rounded-tile` (fields, nested tiles),
-`rounded-panel` (panels, sheets), `rounded-full` (buttons, navigation, segmented
+`rounded-panel` (panels, sheets), `rounded-icon` (the brand mark where it
+stands as the app icon: sign-in and startup), `rounded-full` (buttons, navigation, segmented
 controls). Elevation: `shadow-panel`, `shadow-float`.
 
 ## Primitives

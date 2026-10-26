@@ -46,13 +46,13 @@ export function LoginPage() {
   return (
     <main className="mx-auto grid min-h-svh w-full max-w-6xl items-center gap-12 px-[var(--gutter)] py-[max(2.5rem,var(--safe-top))] lg:grid-cols-[1.1fr_0.9fr] lg:px-10">
       <section className="hidden gap-6 lg:grid">
-        <BrandLockup />
+        <BrandLockup markClassName="rounded-icon" />
         <h1 className="max-w-lg text-balance text-5xl font-semibold leading-[1.1] tracking-tight">{t("ui.login.heading")}</h1>
         <p className="max-w-md text-base leading-relaxed text-ink-muted">{t("ui.login.subheading")}</p>
         <img alt="" className="max-h-[32svh] w-auto opacity-90" decoding="async" fetchPriority="high" height={360} src="/novae-constellation.webp" width={240} />
       </section>
       <Panel className="mx-auto grid w-full max-w-md gap-7 p-6 sm:p-8">
-        <BrandLockup className="lg:hidden" />
+        <BrandLockup className="lg:hidden" markClassName="rounded-icon" />
         <div>
           <h2 className="text-2xl font-semibold tracking-tight">{t("auth.signInWithASchoolAccount")}</h2>
           <p className="mt-2 text-[0.9375rem] leading-relaxed text-ink-muted">
