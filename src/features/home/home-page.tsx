@@ -31,8 +31,8 @@ export function HomePage() {
   return (
     <div className="grid gap-6">
       <PageHeader actions={<AnnouncementNotice />} title="Novae" />
-      <Panel className="flex items-center gap-5 p-5 md:gap-8 md:p-7">
-        <div className="grid min-w-0 flex-1 gap-4">
+      <Panel className="p-5 md:p-7">
+        <div className="grid min-w-0 gap-4">
           <div>
             <h2 className="text-balance text-xl font-semibold leading-tight tracking-tight md:text-2xl">{t("ui.home.startTitle")}</h2>
             <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-ink-muted">{t(descriptionKey)}</p>
@@ -45,7 +45,6 @@ export function HomePage() {
             ))}
           </nav>
         </div>
-        <img alt="" aria-hidden className="h-auto w-16 shrink-0 self-start invert sm:w-28 md:w-36 md:self-center" decoding="async" height={384} loading="eager" src="/home-start.webp" width={384} />
       </Panel>
       {/* What is waiting and how things stand sit side by side when both are
           shown and there is room; either one alone takes the whole row. */}
