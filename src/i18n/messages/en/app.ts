@@ -11,7 +11,6 @@ const messages = {
   'app.update.eyebrow': 'App update',
   'app.update.title': 'A new version is available',
   'app.install.continueToView': 'Continue',
-  'app.install.enableNotificationsAfterInstall': 'Add the app to the Home Screen, then enable notifications from the installed app.',
   'app.install.notificationsRequireInstalledApp': 'To enable notifications, install the app and reopen it from the Home Screen.',
   'app.install.turnOnPushNotifications': 'Turn on push notifications',
   'app.install.clickInstallApp': 'Select “Install App”',

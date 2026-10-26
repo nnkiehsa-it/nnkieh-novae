@@ -58,7 +58,8 @@ export function useAppNotificationPrompt(uid: string | undefined) {
       const result = await enableCurrentDevicePushNotifications(uid);
       dismiss();
       return result.registration ? "enabled" : "declined";
-    } catch {
+    } catch (error) {
+      console.error("Push notifications could not be enabled.", error);
       dismiss();
       return "failed";
     } finally {

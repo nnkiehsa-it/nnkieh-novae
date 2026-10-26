@@ -94,8 +94,13 @@ export function usePushNotifications() {
     rememberSettings({ adminPreferences, enabled, permission, supported });
   }, [adminPreferences, enabled, loading, permission, rememberSettings, supported]);
 
-  async function enable() {
-    if (!session.user) return false;
+  /**
+   * Asks this browser for notifications and registers the device. A refused
+   * prompt and an install-first guide are answers, not failures; anything
+   * else that goes wrong is thrown with its own reason.
+   */
+  async function enable(): Promise<"enabled" | "declined" | "install-first"> {
+    if (!session.user) return "declined";
     if (
       shouldInstallPwaBeforePush(
         navigator.userAgent,
@@ -103,25 +108,17 @@ export function usePushNotifications() {
         navigator.maxTouchPoints,
       )
     ) {
-      setError("app.install.enableNotificationsAfterInstall");
       requestAppInstallPrompt("notifications");
-      return false;
+      return "install-first";
     }
     setLoading(true);
     setError("");
     try {
       const result = await enableCurrentDevicePushNotifications(session.user.uid);
       setPermission(result.permission);
-      if (!result.registration) return false;
+      if (!result.registration) return "declined";
       setEnabled(result.registration.preference.deviceEnabled);
-      return true;
-    } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "notification.pushSetupFailed",
-      );
-      return false;
+      return "enabled";
     } finally {
       setLoading(false);
     }

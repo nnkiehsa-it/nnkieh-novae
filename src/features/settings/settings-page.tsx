@@ -23,6 +23,9 @@ const ADMIN_NOTIFICATIONS = [
   ["facilityNotifications", "ui.settings.facilityLabel"],
 ] as const;
 
+/** The reader declined, or was sent to install the app first: not a failure to report. */
+class PushNotEnabled extends Error {}
+
 export function SettingsPage() {
   const { locale, t } = useI18n();
   const session = useSession();
@@ -41,10 +44,14 @@ export function SettingsPage() {
   async function enablePush() {
     try {
       await deviceFeedback.run(async () => {
-        if (!await push.enable()) throw new Error(t("ui.settings.pushUpdateFailed"));
+        // A refused prompt or an install guide leaves the switch off; only a
+        // registered device earns the success state.
+        if (await push.enable() !== "enabled") throw new PushNotEnabled();
       });
     } catch (caught) {
-      toast.error(caught instanceof Error ? caught.message : t("ui.settings.pushUpdateFailed"));
+      if (caught instanceof PushNotEnabled) return;
+      console.error("Push notifications could not be enabled.", caught);
+      toast.error(caught instanceof Error ? t(caught.message) : t("ui.settings.pushUpdateFailed"));
     }
   }
 
@@ -103,7 +110,7 @@ export function SettingsPage() {
         <ListGroup title={t("ui.settings.push")}>
           <SwitchRow
             checked={deviceFeedback.state !== "idle"}
-            detail={push.permission === "denied" ? t("ui.settings.pushBlocked") : push.supported ? t("ui.settings.pushReady") : t("ui.settings.pushUnsupported")}
+            detail={push.error ? t(push.error) : push.permission === "denied" ? t("ui.settings.pushBlocked") : push.supported ? t("ui.settings.pushReady") : t("ui.settings.pushUnsupported")}
             disabled={push.loading || deviceFeedback.state !== "idle" || !push.supported || push.permission === "denied"}
             label={t("ui.settings.pushDevice")}
             onChange={(enabled) => { if (enabled) void enablePush(); }}

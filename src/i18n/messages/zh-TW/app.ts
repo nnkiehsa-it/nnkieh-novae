@@ -11,7 +11,6 @@ const messages = {
   'app.update.eyebrow': '應用程式更新',
   'app.update.title': '有新版本可用',
   'app.install.continueToView': '繼續查看',
-  'app.install.enableNotificationsAfterInstall': '請先將平台加入主畫面，再從主畫面開啟通知功能。',
   'app.install.notificationsRequireInstalledApp': '若要開啟通知，需先完成安裝並從主畫面重新開啟平台。',
   'app.install.turnOnPushNotifications': '開啟推播通知',
   'app.install.clickInstallApp': '按下「安裝 App」',
