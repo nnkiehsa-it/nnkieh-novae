@@ -54,7 +54,7 @@ export function ProtectedApp() {
       <AnimatePresence initial={false}>
         {waiting ? (
           <motion.div
-            className="fixed inset-0 z-50 overflow-y-auto bg-canvas [background-image:var(--canvas-gradient)]"
+            className="launch-canvas fixed inset-0 z-50 overflow-y-auto"
             exit={{ opacity: 0, transition: timing("controlExit", "depart") }}
             key="startup"
           >

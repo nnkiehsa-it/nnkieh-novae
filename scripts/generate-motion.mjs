@@ -107,6 +107,9 @@ function renderModule(config) {
   const loopEntries = LOOPS.map(
     (name) => `  ${name}: ${seconds(config.loops[name])},`,
   ).join('\n');
+  const travelEntries = TRAVEL.map(
+    (name) => `  ${name}: ${JSON.stringify(config.travel[name])},`,
+  ).join('\n');
   const easingEntries = EASINGS.map(
     (name) => `  ${name}: [${config.easings[name].join(', ')}],`,
   ).join('\n');
@@ -121,6 +124,11 @@ ${durationEntries}
 /** The sanctioned easing curves as cubic-bezier control points. */
 export const motionEasing = {
 ${easingEntries}
+} as const;
+
+/** How far things travel, as the CSS values the stylesheet uses. */
+export const motionTravel = {
+${travelEntries}
 } as const;
 
 /** Indeterminate loops, in seconds. They repeat, so they sit outside the ladder. */

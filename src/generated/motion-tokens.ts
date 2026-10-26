@@ -22,6 +22,16 @@ export const motionEasing = {
   bounce: [0.22, 1.2, 0.36, 1],
 } as const;
 
+/** How far things travel, as the CSS values the stylesheet uses. */
+export const motionTravel = {
+  lift: "4px",
+  rise: "8px",
+  pressScale: "0.985",
+  cardPressScale: "0.995",
+  surfaceScale: "0.975",
+  routeTravel: "32px",
+} as const;
+
 /** Indeterminate loops, in seconds. They repeat, so they sit outside the ladder. */
 export const motionLoopSeconds = {
   spin: 0.8,

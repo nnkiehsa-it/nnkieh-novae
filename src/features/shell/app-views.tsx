@@ -5,6 +5,7 @@ import { useI18n } from "@/i18n";
 import { AppLocationProvider, useBrowserLocation, type AppLocation } from "@/hooks/use-app-location";
 import { navigate } from "@/lib/app-navigation";
 import { feedHref } from "@/lib/feed-href";
+import { motionTravel } from "@/generated/motion-tokens";
 import { timing } from "@/lib/motion-timing";
 import { isLayeredRoute, matchAppRoute, type AppRoute } from "@/lib/route-hierarchy";
 import { FeatureRouteGuard } from "@/features/content/feature-guard";
@@ -70,6 +71,28 @@ function LayerView({ layer, onClosed, open }: { layer: Pinned; onClosed: () => v
   }
 }
 
+/** How far a screen pushed over its parent travels in. */
+const ROUTE_TRAVEL = Number.parseFloat(motionTravel.routeTravel);
+
+/** The screen a screen is entered from, and returns to with its back link. */
+function parentScreen(screen: string | undefined) {
+  return screen === "/admin" ? "/settings" : null;
+}
+
+/**
+ * 1 when the new screen is entered from the last one (it is pushed in from
+ * the right), -1 when it is the one the last was entered from (the pushed one
+ * goes back, so its parent returns from the left), 0 between primary
+ * destinations, which only cross-fade, as tabs do.
+ */
+function useScreenDepth(screen: string | undefined) {
+  const [last, setLast] = React.useState({ depth: 0, screen });
+  if (last.screen === screen) return last.depth;
+  const depth = parentScreen(screen) === last.screen ? 1 : parentScreen(last.screen) === screen ? -1 : 0;
+  setLast({ depth, screen });
+  return depth;
+}
+
 /**
  * Every signed-in screen, drawn from the address bar. Links inside change the
  * address in place, so moving between screens never waits on the server; a
@@ -111,12 +134,18 @@ export function AppViews() {
     return () => window.removeEventListener("scroll", remember);
   }, [basePath]);
 
-  const screen = base?.route.kind === "admin" ? "admin" : basePath;
+  const screen = base?.route.kind === "admin" ? "/admin" : basePath;
+  const depth = useScreenDepth(screen);
   return (
     <>
       {base ? (
         <AppLocationProvider value={base}>
-          <motion.div animate={{ opacity: 1 }} initial={{ opacity: 0 }} key={screen} transition={timing("control", "arrive")}>
+          <motion.div
+            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, x: depth * ROUTE_TRAVEL }}
+            key={screen}
+            transition={depth ? timing("nav", "nav") : timing("control", "arrive")}
+          >
             <React.Suspense>{base.element}</React.Suspense>
           </motion.div>
         </AppLocationProvider>

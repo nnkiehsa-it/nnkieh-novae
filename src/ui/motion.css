@@ -158,3 +158,10 @@
     opacity: 0.6;
   }
 }
+
+/* A theme change cross-fades the whole screen (see lib/theme). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--motion-reveal);
+  animation-timing-function: var(--ease-move);
+}

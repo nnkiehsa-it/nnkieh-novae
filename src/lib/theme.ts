@@ -19,10 +19,12 @@ export function readThemePreference(): ThemePreference {
   }
 }
 
+function resolve(preference: ThemePreference) {
+  return preference === "system" ? (matchMedia(LIGHT_QUERY).matches ? "light" : "dark") : preference;
+}
+
 function apply(preference: ThemePreference) {
-  document.documentElement.dataset.theme = preference === "system"
-    ? (matchMedia(LIGHT_QUERY).matches ? "light" : "dark")
-    : preference;
+  document.documentElement.dataset.theme = resolve(preference);
 }
 
 export function setThemePreference(preference: ThemePreference) {
@@ -32,7 +34,15 @@ export function setThemePreference(preference: ThemePreference) {
   } catch {
     // Private mode: the choice lasts for this visit only.
   }
-  apply(preference);
+  // The whole screen cross-fades into the new theme instead of every colour
+  // snapping over at once, where the browser can draw both.
+  const resolved = resolve(preference);
+  if (resolved === document.documentElement.dataset.theme) return;
+  if (typeof document.startViewTransition === "function" && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    document.startViewTransition(() => apply(preference));
+  } else {
+    apply(preference);
+  }
 }
 
 /** Follows the device while the preference is "system". Returns the cleanup. */
