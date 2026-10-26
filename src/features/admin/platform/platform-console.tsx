@@ -61,42 +61,43 @@ export function PlatformConsole() {
           },
         ]}
         value={view}
-      />
-      {view === PRESETS ? (
-        <>
-          <p className="px-1 text-sm leading-relaxed text-ink-muted">{t("admin.retentionPresetScope")}</p>
-          <SettingPresets
-            current={value.retention}
-            onApply={(retention) => draft.update((current) => ({ ...current, retention }))}
-            onRestore={baseline ? () => draft.update((current) => ({ ...current, retention: baseline.retention })) : undefined}
-            presets={RETENTION_PRESETS}
+      >
+        {view === PRESETS ? (
+          <>
+            <p className="px-1 text-sm leading-relaxed text-ink-muted">{t("admin.retentionPresetScope")}</p>
+            <SettingPresets
+              current={value.retention}
+              onApply={(retention) => draft.update((current) => ({ ...current, retention }))}
+              onRestore={baseline ? () => draft.update((current) => ({ ...current, retention: baseline.retention })) : undefined}
+              presets={RETENTION_PRESETS}
+            />
+          </>
+        ) : null}
+        {group ? (
+          <RetentionRows
+            footer={group.value === LIFECYCLE_GROUP ? t("admin.retentionLifecycleHelp") : undefined}
+            items={group.items}
+            onChange={setRetention}
+            onRestore={baseline ? () => draft.update((current) => ({
+              ...current,
+              retention: {
+                ...current.retention,
+                ...Object.fromEntries(group.items.flatMap((item) =>
+                  [item.key, ...(item.enableKey ? [item.enableKey] : [])].map((key) => [key, baseline.retention[key]]))),
+              },
+            })) : undefined}
+            value={value.retention}
           />
-        </>
-      ) : null}
-      {group ? (
-        <RetentionRows
-          footer={group.value === LIFECYCLE_GROUP ? t("admin.retentionLifecycleHelp") : undefined}
-          items={group.items}
-          onChange={setRetention}
-          onRestore={baseline ? () => draft.update((current) => ({
-            ...current,
-            retention: {
-              ...current.retention,
-              ...Object.fromEntries(group.items.flatMap((item) =>
-                [item.key, ...(item.enableKey ? [item.enableKey] : [])].map((key) => [key, baseline.retention[key]]))),
-            },
-          })) : undefined}
-          value={value.retention}
-        />
-      ) : null}
-      {view === IMAGES ? (
-        <ImageRows
-          onChange={(key, next) => draft.update((current) => ({ ...current, imageUploads: { ...current.imageUploads, [key]: next } }))}
-          onReplace={(imageUploads) => draft.update((current) => ({ ...current, imageUploads }))}
-          onRestore={baseline ? () => draft.update((current) => ({ ...current, imageUploads: baseline.imageUploads })) : undefined}
-          value={value.imageUploads}
-        />
-      ) : null}
+        ) : null}
+        {view === IMAGES ? (
+          <ImageRows
+            onChange={(key, next) => draft.update((current) => ({ ...current, imageUploads: { ...current.imageUploads, [key]: next } }))}
+            onReplace={(imageUploads) => draft.update((current) => ({ ...current, imageUploads }))}
+            onRestore={baseline ? () => draft.update((current) => ({ ...current, imageUploads: baseline.imageUploads })) : undefined}
+            value={value.imageUploads}
+          />
+        ) : null}
+      </SectionTabs>
       <DraftBar
         changes={draft.changes}
         describeChange={(key) => t(describeSettingKey(key))}

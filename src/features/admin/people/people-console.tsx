@@ -27,10 +27,11 @@ export function PeopleConsole() {
           { detail: t("admin.summary.restrictions"), label: t("ui.accountAccess.rulesTab"), value: "restrictions" },
         ]}
         value={view}
-      />
-      <VisitedPanel active={view === "accounts"}><UserManagement /></VisitedPanel>
-      <VisitedPanel active={view === "scopes"}><AccessManagement /></VisitedPanel>
-      <VisitedPanel active={view === "restrictions"}><AccountAccessRules /></VisitedPanel>
+      >
+        <VisitedPanel active={view === "accounts"}><UserManagement /></VisitedPanel>
+        <VisitedPanel active={view === "scopes"}><AccessManagement /></VisitedPanel>
+        <VisitedPanel active={view === "restrictions"}><AccountAccessRules /></VisitedPanel>
+      </SectionTabs>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { Spinner } from "@/ui/feedback";
 import { ListGroup } from "@/ui/list";
 import { SwitchRow } from "@/ui/list-controls";
 import { PageHeader } from "@/ui/page";
+import { Pane, useStepDirection } from "@/ui/pane";
 import { Panel } from "@/ui/panel";
 import { Segmented } from "@/ui/segmented";
 import { FacilityDraft, IssueDraft } from "./category-drafts";
@@ -32,6 +33,7 @@ function WaitingForSetup() {
 export function SetupPage() {
   const { t } = useI18n();
   const setup = useInitialSetup();
+  const direction = useStepDirection(setup.kind, setup.kind === "issue" ? 0 : 1);
   if (!setup.isAdmin) return <WaitingForSetup />;
 
   const issues = setup.kind === "issue";
@@ -49,39 +51,41 @@ export function SetupPage() {
         ]}
         value={setup.kind}
       />
-      <ListGroup footer={t("ui.setup.navHint")}>
-        <SwitchRow
-          checked={enabled}
-          label={t(issues ? "ui.admin.issueFeature" : "ui.admin.facilityFeature")}
-          onChange={issues ? setup.setIssuesEnabled : setup.setFacilitiesEnabled}
-        />
-      </ListGroup>
-      {enabled ? (
-        <div className="grid gap-6">
-          {issues
-            ? setup.issues.map((draft, index) => (
-                <IssueDraft
-                  draft={draft}
-                  index={index}
-                  key={index}
-                  onChange={(next) => setup.updateIssue(index, next)}
-                  onRemove={index === 0 ? undefined : () => setup.removeIssue(index)}
-                />
-              ))
-            : setup.facilities.map((draft, index) => (
-                <FacilityDraft
-                  draft={draft}
-                  index={index}
-                  key={index}
-                  onChange={(next) => setup.updateFacility(index, next)}
-                  onRemove={index === 0 ? undefined : () => setup.removeFacility(index)}
-                />
-              ))}
-          <Button className="justify-self-start" onClick={issues ? setup.addIssue : setup.addFacility} variant="secondary">
-            <Plus weight="bold" />{t("ui.setup.addCategory")}
-          </Button>
-        </div>
-      ) : null}
+      <Pane className="grid gap-8" direction={direction} step={setup.kind}>
+        <ListGroup footer={t("ui.setup.navHint")}>
+          <SwitchRow
+            checked={enabled}
+            label={t(issues ? "ui.admin.issueFeature" : "ui.admin.facilityFeature")}
+            onChange={issues ? setup.setIssuesEnabled : setup.setFacilitiesEnabled}
+          />
+        </ListGroup>
+        {enabled ? (
+          <div className="grid gap-6">
+            {issues
+              ? setup.issues.map((draft, index) => (
+                  <IssueDraft
+                    draft={draft}
+                    index={index}
+                    key={index}
+                    onChange={(next) => setup.updateIssue(index, next)}
+                    onRemove={index === 0 ? undefined : () => setup.removeIssue(index)}
+                  />
+                ))
+              : setup.facilities.map((draft, index) => (
+                  <FacilityDraft
+                    draft={draft}
+                    index={index}
+                    key={index}
+                    onChange={(next) => setup.updateFacility(index, next)}
+                    onRemove={index === 0 ? undefined : () => setup.removeFacility(index)}
+                  />
+                ))}
+            <Button className="justify-self-start" onClick={issues ? setup.addIssue : setup.addFacility} variant="secondary">
+              <Plus weight="bold" />{t("ui.setup.addCategory")}
+            </Button>
+          </div>
+        ) : null}
+      </Pane>
       <ConfirmDialog
         confirmLabel={t("ui.setup.confirm")}
         description={t("ui.setup.finishDescription")}

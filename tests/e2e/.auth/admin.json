@@ -1,0 +1,111 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://127.0.0.1:3000",
+      "localStorage": [
+        {
+          "name": "novae:platform-visit-recorded-at:HGUSeYvr7F4D0U3ry4Sre0yvxk4d",
+          "value": "1792026483507"
+        },
+        {
+          "name": "novae:last-version-check-at",
+          "value": "1792026483367"
+        },
+        {
+          "name": "novae:locale",
+          "value": "en"
+        },
+        {
+          "name": "firebase:authUser:integration-web-api-key:[DEFAULT]",
+          "value": "{\"uid\":\"HGUSeYvr7F4D0U3ry4Sre0yvxk4d\",\"email\":\"admin@integration.invalid\",\"emailVerified\":true,\"displayName\":\"admin\",\"isAnonymous\":false,\"providerData\":[{\"providerId\":\"google.com\",\"uid\":\"novae-e2e-admin\",\"displayName\":\"admin\",\"email\":\"admin@integration.invalid\",\"phoneNumber\":null,\"photoURL\":null}],\"stsTokenManager\":{\"refreshToken\":\"eyJfQXV0aEVtdWxhdG9yUmVmcmVzaFRva2VuIjoiRE8gTk9UIE1PRElGWSIsImxvY2FsSWQiOiJIR1VTZVl2cjdGNEQwVTNyeTRTcmUweXZ4azRkIiwicHJvdmlkZXIiOiJnb29nbGUuY29tIiwiZXh0cmFDbGFpbXMiOnt9LCJwcm9qZWN0SWQiOiJpbnRlZ3JhdGlvbi1wcm9qZWN0In0=\",\"accessToken\":\"eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJuYW1lIjoiYWRtaW4iLCJlbWFpbCI6ImFkbWluQGludGVncmF0aW9uLmludmFsaWQiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiYXV0aF90aW1lIjoxNzkyMDI2NDgzLCJ1c2VyX2lkIjoiSEdVU2VZdnI3RjREMFUzcnk0U3JlMHl2eGs0ZCIsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsiYWRtaW5AaW50ZWdyYXRpb24uaW52YWxpZCJdLCJnb29nbGUuY29tIjpbIm5vdmFlLWUyZS1hZG1pbiJdfSwic2lnbl9pbl9wcm92aWRlciI6Imdvb2dsZS5jb20ifSwiaWF0IjoxNzkyMDI2NDgzLCJleHAiOjE3OTIwMzAwODMsImF1ZCI6ImludGVncmF0aW9uLXByb2plY3QiLCJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vaW50ZWdyYXRpb24tcHJvamVjdCIsInN1YiI6IkhHVVNlWXZyN0Y0RDBVM3J5NFNyZTB5dnhrNGQifQ.\",\"expirationTime\":1792030083440},\"createdAt\":\"1792026482174\",\"lastLoginAt\":\"1792026483438\",\"apiKey\":\"integration-web-api-key\",\"appName\":\"[DEFAULT]\"}"
+        }
+      ],
+      "indexedDB": [
+        {
+          "name": "firebase-heartbeat-database",
+          "version": 1,
+          "stores": [
+            {
+              "name": "firebase-heartbeat-store",
+              "autoIncrement": false,
+              "records": [
+                {
+                  "key": "[DEFAULT]!1:123456789:web:local",
+                  "value": {
+                    "lastSentHeartbeatDate": "2026-10-15",
+                    "heartbeats": []
+                  }
+                }
+              ],
+              "indexes": []
+            }
+          ]
+        },
+        {
+          "name": "novae-queries",
+          "version": 1,
+          "stores": [
+            {
+              "name": "clients",
+              "autoIncrement": false,
+              "records": [],
+              "indexes": []
+            }
+          ]
+        },
+        {
+          "name": "serwist-expiration",
+          "version": 1,
+          "stores": [
+            {
+              "name": "cache-entries",
+              "autoIncrement": false,
+              "keyPath": "id",
+              "records": [
+                {
+                  "value": {
+                    "id": "next-image|http://127.0.0.1:3000/_next/image?url=%2Fhome-start.webp&w=256&q=75",
+                    "cacheName": "next-image",
+                    "url": "http://127.0.0.1:3000/_next/image?url=%2Fhome-start.webp&w=256&q=75",
+                    "timestamp": 1792026483982
+                  }
+                },
+                {
+                  "value": {
+                    "id": "pages-rsc|http://127.0.0.1:3000/home?_rsc=Yaku0SukotyQAzL7",
+                    "cacheName": "pages-rsc",
+                    "url": "http://127.0.0.1:3000/home?_rsc=Yaku0SukotyQAzL7",
+                    "timestamp": 1792026483889
+                  }
+                },
+                {
+                  "value": {
+                    "id": "static-font-assets|http://127.0.0.1:3000/_next/static/media/Bold_9eb7c8.411a015d.woff2",
+                    "cacheName": "static-font-assets",
+                    "url": "http://127.0.0.1:3000/_next/static/media/Bold_9eb7c8.411a015d.woff2",
+                    "timestamp": 1792026483984
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "cacheName",
+                  "keyPath": "cacheName",
+                  "multiEntry": false,
+                  "unique": false
+                },
+                {
+                  "name": "timestamp",
+                  "keyPath": "timestamp",
+                  "multiEntry": false,
+                  "unique": false
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

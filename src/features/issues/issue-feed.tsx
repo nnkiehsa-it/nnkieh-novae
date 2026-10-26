@@ -7,10 +7,11 @@ import { usePublicProfiles } from "@/hooks/use-public-profiles";
 import { FeedList } from "@/features/feed/feed-list";
 import { FeedFilterLine, FeedTopBar, SearchControl } from "@/features/feed/feed-controls";
 import { Button } from "@/ui/button";
+import { Pane, type PaneStep } from "@/ui/pane";
 import { IssueCard } from "./issue-card";
 
 /** Proposals in one category (or the reader's own), with status, search and order. */
-export function IssueFeed({ categoryControl, filter, notice, viewSwitch }: { categoryControl: React.ReactNode; filter: string; notice?: React.ReactNode; viewSwitch: React.ReactNode }) {
+export function IssueFeed({ categoryControl, filter, notice, pane, viewSwitch }: { categoryControl: React.ReactNode; filter: string; notice?: React.ReactNode; pane: PaneStep; viewSwitch: React.ReactNode }) {
   const { t } = useI18n();
   const state = useIssueFeed(filter);
   const profiles = usePublicProfiles(state.feed.issues.map((issue) => issue.authorUid));
@@ -49,50 +50,52 @@ export function IssueFeed({ categoryControl, filter, notice, viewSwitch }: { cat
       {notice}
       <div className="grid gap-3">
         {categoryControl}
-        <FeedFilterLine
-          bucket={state.bucket}
-          bucketLabel={t("ui.issue.statusFilter")}
-          buckets={[
-            { label: t("ui.common.active"), value: "active" },
-            { label: t("ui.common.closed"), value: "closed" },
-          ]}
-          onBucketChange={(value: IssueStatusBucket) => state.setBucket(value)}
-          onSortChange={(value: IssueSortOption) => state.setSort(value)}
-          sort={state.sort}
-          sorts={[
-            { label: t("ui.common.latest"), value: "latest" },
-            { label: t("ui.issue.mostSupported"), value: "most-supported" },
-            { label: t("ui.issue.endingSoon"), value: "ending-soon" },
-          ]}
-        />
-      </div>
-      <FeedList
-        empty={{
-          action: mine ? undefined : (
-            <Button asChild><AppLink href={composeHref}><Plus weight="bold" />{t("ui.issue.createFirst")}</AppLink></Button>
-          ),
-          description: emptyDescription,
-          title: t("ui.issue.emptyTitle"),
-        }}
-        error={state.error}
-        hasMore={state.feed.hasMore}
-        items={state.feed.issues}
-        loading={state.loading}
-        loadingMore={state.loadingMore}
-        onLoadMore={state.loadMore}
-        onRetry={state.reload}
-        renderItem={(issue) => (
-          <IssueCard
-            burst={state.supportBurstById[issue.id] ?? 0}
-            filter={mine ? issue.category : filter}
-            issue={issue}
-            onSupport={() => void state.support(issue.id)}
-            profile={issue.authorUid ? profiles[issue.authorUid] : undefined}
-            showCategory={mine}
-            supporting={state.isSupporting(issue.id)}
+        <Pane className="grid gap-5" {...pane}>
+          <FeedFilterLine
+            bucket={state.bucket}
+            bucketLabel={t("ui.issue.statusFilter")}
+            buckets={[
+              { label: t("ui.common.active"), value: "active" },
+              { label: t("ui.common.closed"), value: "closed" },
+            ]}
+            onBucketChange={(value: IssueStatusBucket) => state.setBucket(value)}
+            onSortChange={(value: IssueSortOption) => state.setSort(value)}
+            sort={state.sort}
+            sorts={[
+              { label: t("ui.common.latest"), value: "latest" },
+              { label: t("ui.issue.mostSupported"), value: "most-supported" },
+              { label: t("ui.issue.endingSoon"), value: "ending-soon" },
+            ]}
           />
-        )}
-      />
+          <FeedList
+            empty={{
+              action: mine ? undefined : (
+                <Button asChild><AppLink href={composeHref}><Plus weight="bold" />{t("ui.issue.createFirst")}</AppLink></Button>
+              ),
+              description: emptyDescription,
+              title: t("ui.issue.emptyTitle"),
+            }}
+            error={state.error}
+            hasMore={state.feed.hasMore}
+            items={state.feed.issues}
+            loading={state.loading}
+            loadingMore={state.loadingMore}
+            onLoadMore={state.loadMore}
+            onRetry={state.reload}
+            renderItem={(issue) => (
+              <IssueCard
+                burst={state.supportBurstById[issue.id] ?? 0}
+                filter={mine ? issue.category : filter}
+                issue={issue}
+                onSupport={() => void state.support(issue.id)}
+                profile={issue.authorUid ? profiles[issue.authorUid] : undefined}
+                showCategory={mine}
+                supporting={state.isSupporting(issue.id)}
+              />
+            )}
+          />
+        </Pane>
+      </div>
     </div>
   );
 }

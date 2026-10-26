@@ -8,6 +8,7 @@ import { AnnouncementNotice } from "@/features/announcements/announcement-notice
 import { FacilityFeed } from "@/features/facilities/facility-feed";
 import { CategoryChips } from "@/features/feed/feed-controls";
 import { IssueFeed } from "@/features/issues/issue-feed";
+import { useStepDirection } from "@/ui/pane";
 import { Segmented, type SegmentedOption } from "@/ui/segmented";
 
 // A feed's own filters never carry over into another feed or category.
@@ -35,16 +36,29 @@ export function FeedPage() {
     ...(categories.facilitiesEnabled ? [{ label: t("ui.nav.facilities"), value: "facilities" as const }] : []),
   ];
 
+  const categoryOptions = view === "issues"
+    ? [...getIssueFilterOptions(), { label: t("ui.issue.mine"), value: "my-proposals" }]
+    : categories.activeFacilityCategories.map((category) => ({ label: category.label, value: category.id }));
+  const category = view === "issues" ? issueFilter : view === "facilities" ? facilityCategory : "";
   const categoryControl = (
     <CategoryChips
       label={t("ui.access.selectCategory")}
-      onChange={(category) => updateParams({ ...CLEARED_FILTERS, category })}
-      options={view === "issues"
-        ? [...getIssueFilterOptions(), { label: t("ui.issue.mine"), value: "my-proposals" }]
-        : categories.activeFacilityCategories.map((category) => ({ label: category.label, value: category.id }))}
-      value={view === "issues" ? issueFilter : facilityCategory}
+      onChange={(next) => updateParams({ ...CLEARED_FILTERS, category: next })}
+      options={categoryOptions}
+      value={category}
     />
   );
+
+  // The views and their categories sit side by side, so the list slides in
+  // from the side the reader moved toward.
+  const step = `${view}:${category}`;
+  const pane = {
+    direction: useStepDirection(step, [
+      views.findIndex((option) => option.value === view),
+      category ? categoryOptions.findIndex((option) => option.value === category) : 0,
+    ]),
+    step,
+  };
 
   // The view switch is the page's title, centred in each feed's pinned top bar.
   const viewSwitch = views.length > 1 ? (
@@ -59,9 +73,9 @@ export function FeedPage() {
   return (
     <div className="grid gap-5">
       <h1 className="sr-only">{t("ui.nav.feed")}</h1>
-      {view === "issues" ? <IssueFeed categoryControl={categoryControl} filter={issueFilter} key={issueFilter} notice={<AnnouncementNotice />} viewSwitch={viewSwitch} />
-        : view === "facilities" ? <FacilityFeed categoryControl={categoryControl} notice={<AnnouncementNotice />} viewSwitch={viewSwitch} />
-          : <AnnouncementFeed notice={<AnnouncementNotice />} viewSwitch={viewSwitch} />}
+      {view === "issues" ? <IssueFeed categoryControl={categoryControl} filter={issueFilter} key={issueFilter} notice={<AnnouncementNotice />} pane={pane} viewSwitch={viewSwitch} />
+        : view === "facilities" ? <FacilityFeed categoryControl={categoryControl} notice={<AnnouncementNotice />} pane={pane} viewSwitch={viewSwitch} />
+          : <AnnouncementFeed notice={<AnnouncementNotice />} pane={pane} viewSwitch={viewSwitch} />}
     </div>
   );
 }

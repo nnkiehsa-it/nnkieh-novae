@@ -39,6 +39,7 @@ controls). Elevation: `shadow-panel`, `shadow-float`.
 - **Chip** — a short verb or state set in front of a line of text ("審核", "處理中").
 - **Button** — `primary` (white pill), `secondary` (glass), `ghost`, `danger`; every button is a pill.
 - **Segmented** — mutually exclusive views; the white pill slides between options.
+- **Pane** — the content behind a Segmented control or any row of sibling views (feed views and categories, admin sections and tabs). A view further along slides in from the right, one before it from the left; nothing is remounted, so a view keeps its draft.
 - **PrimaryNav** — the primary destinations: a floating `dock` on phones, a `rail` in the glass sidebar from `md` up. The current one wears the white pill and its icon fills.
 - **ListGroup / ListRow** — settings-style rows: link, action, or label with a trailing control.
 - **Field / Input / Textarea / Switch / Avatar** — form controls and identity.
@@ -55,7 +56,7 @@ controls). Elevation: `shadow-panel`, `shadow-float`.
 - Colour comes from tokens only. Emphasis comes from the white pill, not from hue.
 - Status colours describe state; they never become a control's theme.
 - Motion durations and curves come from the motion ladder; no raw `duration-*`, springs or inline easing.
-- Nothing appears or leaves on a single frame. Content that replaces a placeholder or joins a list wears `content-in`, a message that appears under a control wears `message-in`, a proportion bar wears `bar-in`, and a block that can also leave uses `Reveal` inside `AnimatePresence`. Each falls back to a plain fade under reduced motion.
+- Nothing appears or leaves on a single frame. Content that replaces a placeholder or joins a list wears `content-in`, a message that appears under a control wears `message-in`, a proportion bar wears `bar-in`, and a block that can also leave uses `Reveal` inside `AnimatePresence`. Switching between sibling views moves sideways through `Pane`, never up from below. Each falls back to a plain fade under reduced motion.
 - Hover styles go through the `hover:` variant, which is gated to real pointers.
 - Primitives in `src/ui` do not import hooks or services; features reach data only through hooks.
 - A record (proposal, facility report, announcement) or a composer is always framed by `RecordSheet` over its feed, whether it was opened from the feed or loaded by its URL. On a phone it fills the screen and the dock steps aside.

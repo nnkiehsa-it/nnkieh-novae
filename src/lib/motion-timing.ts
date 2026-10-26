@@ -19,3 +19,8 @@ export function timing(rung: MotionRung, curve: MotionCurve = "arrive") {
 export function timingMs(rung: MotionRung) {
   return motionSeconds[rung] * 1_000;
 }
+
+/** The same curve as a CSS easing string, for animations run through the Web Animations API. */
+export function cssEasing(curve: MotionCurve) {
+  return `cubic-bezier(${motionEasing[curve].join(", ")})`;
+}

@@ -1,12 +1,11 @@
 import type * as React from "react";
-import { motion } from "motion/react";
 import { useAppLocation } from "@/hooks/use-app-location";
 import { usePermissionRedirect } from "@/hooks/use-permission-redirect";
 import { UnsavedChangesGuard } from "@/hooks/use-unsaved-changes";
 import { useI18n } from "@/i18n";
-import { ADMIN_ROUTES, canEnterAdministration } from "@/lib/admin-routes";
-import { timing } from "@/lib/motion-timing";
+import { ADMIN_ROUTES, allowedAdminRoutes, canEnterAdministration } from "@/lib/admin-routes";
 import { PageHeader } from "@/ui/page";
+import { Pane, useStepDirection } from "@/ui/pane";
 import { useAdminAccess } from "./admin-access";
 import { AdminNav } from "./admin-nav";
 import { ApplyProgress } from "./apply-progress";
@@ -25,6 +24,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const route = ADMIN_ROUTES.find((candidate) => candidate.href === pathname);
   const permitted = entered && (!route || route.allowed(access));
 
+  // The sections sit side by side in the nav's order, overview first.
+  const direction = useStepDirection(pathname, ["/admin", ...allowedAdminRoutes(access).map((section) => section.href)].indexOf(pathname));
+
   usePermissionRedirect(entered);
   usePermissionRedirect(!entered || !route || route.allowed(access), "/admin");
 
@@ -32,12 +34,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     <div className="mx-auto grid w-full max-w-5xl grid-cols-[minmax(0,1fr)] gap-6 pb-8">
       <PageHeader back={{ href: "/settings", label: t("ui.common.back") }} title={t("admin.title")} />
       <AdminNav access={access} />
-      {/* A section the reader switches to arrives like a screen, while the
-          frame and its navigation stay where they are. */}
+      {/* A section the reader switches to slides in from its side of the
+          nav, while the frame and its navigation stay where they are. */}
       {permitted ? (
-        <motion.div animate={{ opacity: 1, y: 0 }} className="grid min-w-0 gap-6" initial={{ opacity: 0, y: 8 }} key={pathname} transition={timing("control", "arrive")}>
+        <Pane className="grid min-w-0 gap-6" direction={direction} key={pathname} step={pathname}>
           {children}
-        </motion.div>
+        </Pane>
       ) : null}
       <ApplyProgress />
       <UnsavedChangesGuard />

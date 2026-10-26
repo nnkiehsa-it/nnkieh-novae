@@ -1,0 +1,7 @@
+{
+  "announcement": "http://127.0.0.1:3000/announcements/d04002f6-6b30-4596-9a08-da0a1803651c",
+  "facilityA": "http://127.0.0.1:3000/facilities/bf05d074-9885-4108-b9d0-c0eb21b852ca?category=facility-a",
+  "facilityB": "http://127.0.0.1:3000/facilities/511a6b90-518e-409c-9937-d16e9aea81e7?category=facility-b",
+  "proposalA": "http://127.0.0.1:3000/issues/proposal-a/fd9cdd79-8056-494f-bb59-401213c6a9b1",
+  "proposalB": "http://127.0.0.1:3000/issues/proposal-b/b42b1022-b2f0-4588-a5aa-3a274f9305fa"
+}

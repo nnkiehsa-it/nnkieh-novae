@@ -49,10 +49,11 @@ export function ContentConsole() {
           { detail: t("admin.summary.announcement"), label: t("ui.nav.announcements"), unsaved: changesIn("announcement") > 0, value: "announcement" },
         ]}
         value={kind}
-      />
-      {kind === "announcement"
-        ? <AnnouncementPanel state={state} value={value} />
-        : <CategoryPanel kind={kind} onOpen={(index) => setEditing({ index, kind })} state={state} value={value} />}
+      >
+        {kind === "announcement"
+          ? <AnnouncementPanel state={state} value={value} />
+          : <CategoryPanel kind={kind} onOpen={(index) => setEditing({ index, kind })} state={state} value={value} />}
+      </SectionTabs>
       <CategoryEditorSheet onClose={() => setEditing(null)} state={state} target={editing} value={value} />
       <DraftBar
         changes={changes}

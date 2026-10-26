@@ -20,8 +20,9 @@ export function AuditConsole() {
           { detail: t("admin.summary.activity"), label: t("admin.auditActivity"), value: "activity" },
         ]}
         value={view}
-      />
-      {view === "actions" ? <AuditLog /> : <ActivityFeed />}
+      >
+        {view === "actions" ? <AuditLog /> : <ActivityFeed />}
+      </SectionTabs>
     </div>
   );
 }

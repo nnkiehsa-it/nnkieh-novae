@@ -32,8 +32,9 @@ export function SystemConsole() {
           { detail: t("admin.summary.providers"), label: t("admin.systemViewProviders"), value: "providers" },
         ]}
         value={view}
-      />
-      {view === "providers" ? <ProviderDiagnostics /> : <SystemReading view={view} />}
+      >
+        {view === "providers" ? <ProviderDiagnostics /> : <SystemReading view={view} />}
+      </SectionTabs>
     </div>
   );
 }

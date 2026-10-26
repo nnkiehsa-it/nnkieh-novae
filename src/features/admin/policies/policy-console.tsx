@@ -65,30 +65,31 @@ export function PolicyConsole() {
           value: candidate,
         }))}
         value={group}
-      />
-      <SettingPresets
-        current={policyGroupValues(values, group)}
-        onApply={setValues}
-        onRestore={baseline ? () => setValues(policyGroupValues(baseline, group)) : undefined}
-        presets={policyPresets(group)}
-      />
-      <ListGroup title={t(`ui.operations.group.${group}`)}>
-        <PolicyRows group={group} onChange={(key, next) => setValues({ [key]: next })} value={values} />
-      </ListGroup>
-      {draft.changes.length > 0 ? (
-        <ListGroup title={t("admin.policyRevision", { revision })}>
-          <InputRow
-            label={t("ui.operations.reason")}
-            maxLength={500}
-            onChange={draft.setReason}
-            placeholder={t("ui.operations.reason")}
-            value={draft.reason}
-          />
+      >
+        <SettingPresets
+          current={policyGroupValues(values, group)}
+          onApply={setValues}
+          onRestore={baseline ? () => setValues(policyGroupValues(baseline, group)) : undefined}
+          presets={policyPresets(group)}
+        />
+        <ListGroup title={t(`ui.operations.group.${group}`)}>
+          <PolicyRows group={group} onChange={(key, next) => setValues({ [key]: next })} value={values} />
         </ListGroup>
-      ) : null}
-      <Disclosure title={t("ui.operations.history")}>
-        <PolicyHistory entries={history} />
-      </Disclosure>
+        {draft.changes.length > 0 ? (
+          <ListGroup title={t("admin.policyRevision", { revision })}>
+            <InputRow
+              label={t("ui.operations.reason")}
+              maxLength={500}
+              onChange={draft.setReason}
+              placeholder={t("ui.operations.reason")}
+              value={draft.reason}
+            />
+          </ListGroup>
+        ) : null}
+        <Disclosure title={t("ui.operations.history")}>
+          <PolicyHistory entries={history} />
+        </Disclosure>
+      </SectionTabs>
       <DraftBar
         changes={draft.changes}
         describeChange={(key) => t(`ui.operations.policy.${policyKeyOf(key)}`)}

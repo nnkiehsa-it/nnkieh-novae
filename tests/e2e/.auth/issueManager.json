@@ -1,0 +1,643 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://127.0.0.1:3000",
+      "localStorage": [
+        {
+          "name": "novae:last-version-check-at",
+          "value": "1792026488095"
+        },
+        {
+          "name": "novae:locale",
+          "value": "en"
+        },
+        {
+          "name": "firebase:authUser:integration-web-api-key:[DEFAULT]",
+          "value": "{\"uid\":\"y1L6hR0wGFYiVhLgrickJdbBfcrY\",\"email\":\"issue-manager@integration.invalid\",\"emailVerified\":true,\"displayName\":\"issue-manager\",\"isAnonymous\":false,\"providerData\":[{\"providerId\":\"google.com\",\"uid\":\"novae-e2e-issue-manager\",\"displayName\":\"issue-manager\",\"email\":\"issue-manager@integration.invalid\",\"phoneNumber\":null,\"photoURL\":null}],\"stsTokenManager\":{\"refreshToken\":\"eyJfQXV0aEVtdWxhdG9yUmVmcmVzaFRva2VuIjoiRE8gTk9UIE1PRElGWSIsImxvY2FsSWQiOiJ5MUw2aFIwd0dGWWlWaExncmlja0pkYkJmY3JZIiwicHJvdmlkZXIiOiJnb29nbGUuY29tIiwiZXh0cmFDbGFpbXMiOnt9LCJwcm9qZWN0SWQiOiJpbnRlZ3JhdGlvbi1wcm9qZWN0In0=\",\"accessToken\":\"eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJuYW1lIjoiaXNzdWUtbWFuYWdlciIsImVtYWlsIjoiaXNzdWUtbWFuYWdlckBpbnRlZ3JhdGlvbi5pbnZhbGlkIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImF1dGhfdGltZSI6MTc5MjAyNjQ4OCwidXNlcl9pZCI6InkxTDZoUjB3R0ZZaVZoTGdyaWNrSmRiQmZjclkiLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7ImVtYWlsIjpbImlzc3VlLW1hbmFnZXJAaW50ZWdyYXRpb24uaW52YWxpZCJdLCJnb29nbGUuY29tIjpbIm5vdmFlLWUyZS1pc3N1ZS1tYW5hZ2VyIl19LCJzaWduX2luX3Byb3ZpZGVyIjoiZ29vZ2xlLmNvbSJ9LCJpYXQiOjE3OTIwMjY0ODgsImV4cCI6MTc5MjAzMDA4OCwiYXVkIjoiaW50ZWdyYXRpb24tcHJvamVjdCIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9pbnRlZ3JhdGlvbi1wcm9qZWN0Iiwic3ViIjoieTFMNmhSMHdHRllpVmhMZ3JpY2tKZGJCZmNyWSJ9.\",\"expirationTime\":1792030088163},\"createdAt\":\"1792026487926\",\"lastLoginAt\":\"1792026488162\",\"apiKey\":\"integration-web-api-key\",\"appName\":\"[DEFAULT]\"}"
+        },
+        {
+          "name": "novae:platform-visit-recorded-at:y1L6hR0wGFYiVhLgrickJdbBfcrY",
+          "value": "1792026488232"
+        }
+      ],
+      "indexedDB": [
+        {
+          "name": "firebase-heartbeat-database",
+          "version": 1,
+          "stores": [
+            {
+              "name": "firebase-heartbeat-store",
+              "autoIncrement": false,
+              "records": [
+                {
+                  "key": "[DEFAULT]!1:123456789:web:local",
+                  "value": {
+                    "lastSentHeartbeatDate": "2026-10-15",
+                    "heartbeats": []
+                  }
+                }
+              ],
+              "indexes": []
+            }
+          ]
+        },
+        {
+          "name": "novae-queries",
+          "version": 1,
+          "stores": [
+            {
+              "name": "clients",
+              "autoIncrement": false,
+              "records": [
+                {
+                  "key": "y1L6hR0wGFYiVhLgrickJdbBfcrY",
+                  "value": {
+                    "buster": "1",
+                    "state": {
+                      "mutations": [],
+                      "queries": [
+                        {
+                          "dehydratedAt": 1792026489225,
+                          "state": {
+                            "data": {
+                              "role": "user",
+                              "roles": [],
+                              "permissions": [],
+                              "managedIssueCategoryIds": [],
+                              "managedFacilityCategoryIds": [],
+                              "setupCompleted": true
+                            },
+                            "dataUpdateCount": 1,
+                            "dataUpdatedAt": 1792026488224,
+                            "error": null,
+                            "errorUpdateCount": 0,
+                            "errorUpdatedAt": 0,
+                            "fetchFailureCount": 0,
+                            "fetchFailureReason": null,
+                            "fetchMeta": null,
+                            "isInvalidated": false,
+                            "status": "success",
+                            "fetchStatus": "idle"
+                          },
+                          "queryKey": [
+                            "session",
+                            "access"
+                          ],
+                          "queryHash": "[\"session\",\"access\"]"
+                        },
+                        {
+                          "dehydratedAt": 1792026489225,
+                          "state": {
+                            "data": {
+                              "runtimePolicies": {
+                                "revision": 1,
+                                "values": {
+                                  "notionArchiveDays": 365,
+                                  "readBurst": 60,
+                                  "writeBurst": 20,
+                                  "sensitiveBurst": 10,
+                                  "adminBurst": 10,
+                                  "uploadBurst": 6,
+                                  "resolveBurst": 30,
+                                  "viewMemoryMinutes": 30,
+                                  "feedPages": 5,
+                                  "mediaBrowserSeconds": 60,
+                                  "mediaEdgeSeconds": 60,
+                                  "avatarBrowserSeconds": 31536000,
+                                  "avatarEdgeSeconds": 86400,
+                                  "avatarRevalidateHours": 24,
+                                  "notionBatchSize": 10,
+                                  "notificationBatchSize": 20,
+                                  "realtimeBatchSize": 50,
+                                  "jobBatchSize": 10,
+                                  "policyBatchSize": 100,
+                                  "clientWriteCooldownMs": 500,
+                                  "requestTimeoutMs": 15000,
+                                  "readTimeoutMs": 5000,
+                                  "longTimeoutMs": 30000,
+                                  "retryAttempts": 3,
+                                  "retryAfterMaxMs": 10000,
+                                  "realtimeIdleMinutes": 30,
+                                  "realtimeHeartbeatSeconds": 30,
+                                  "realtimeTicketSeconds": 45,
+                                  "titleLength": 30,
+                                  "contentLength": 1000,
+                                  "commentLength": 70,
+                                  "resultLength": 2000,
+                                  "locationLength": 120,
+                                  "searchLength": 120,
+                                  "errorRetentionDays": 14,
+                                  "metricsRetentionDays": 30,
+                                  "issueCreateDaily": 10,
+                                  "facilityCreateDaily": 10,
+                                  "announcementCreateDaily": 20,
+                                  "commentCreateHourly": 60,
+                                  "imageUploadDaily": 50,
+                                  "loginSyncHourly": 20,
+                                  "avatarCacheDaily": 30,
+                                  "supportToggleHourly": 120,
+                                  "facilityAffectedToggleHourly": 120,
+                                  "facilityStatusUpdateHourly": 60,
+                                  "announcementLikeHourly": 120,
+                                  "pushTokenWriteHourly": 30,
+                                  "preferenceWriteHourly": 60,
+                                  "moderationWriteHourly": 120,
+                                  "roleWriteHourly": 120,
+                                  "destructiveWriteHourly": 30,
+                                  "backendHealthcheckMinute": 12,
+                                  "backendHealthcheckSecond": 2,
+                                  "workerRunMinute": 30,
+                                  "workerRunSecond": 2
+                                }
+                              },
+                              "access": {
+                                "role": "user",
+                                "roles": [],
+                                "permissions": [],
+                                "managedIssueCategoryIds": [],
+                                "managedFacilityCategoryIds": [],
+                                "setupCompleted": true
+                              },
+                              "notificationUnread": {
+                                "hasUnread": false
+                              },
+                              "versions": {
+                                "announcements": 1792026459180,
+                                "facilities": 1792026459180,
+                                "issues": 1792026459181
+                              },
+                              "visitRecorded": false,
+                              "runtime": {
+                                "pushTokenConfirmationDays": 7
+                              },
+                              "catalog": {
+                                "setupCompleted": true,
+                                "features": {
+                                  "announcementMaxImages": 10,
+                                  "announcementCommentMaxImages": 1,
+                                  "announcementCommentsEnabled": true,
+                                  "facilitiesEnabled": true,
+                                  "issuesEnabled": true
+                                },
+                                "imageUploads": {
+                                  "maxDimension": 2000,
+                                  "maxUploadKilobytes": 800,
+                                  "webpQuality": 0.82
+                                },
+                                "issueCategories": [
+                                  {
+                                    "id": "public-issues",
+                                    "label": "校園提案",
+                                    "readAccess": "reviewed-school",
+                                    "authorVisible": false,
+                                    "authorDeleteEnabled": true,
+                                    "commentsEnabled": true,
+                                    "supportEnabled": true,
+                                    "supportGoal": 50,
+                                    "supportDeadlineDays": 14,
+                                    "maxImages": 2,
+                                    "commentMaxImages": 1,
+                                    "isDefault": true,
+                                    "sortOrder": 0
+                                  },
+                                  {
+                                    "id": "rights-maintenance",
+                                    "label": "權益維護",
+                                    "readAccess": "owner-admin",
+                                    "authorVisible": true,
+                                    "authorDeleteEnabled": false,
+                                    "commentsEnabled": true,
+                                    "supportEnabled": false,
+                                    "supportGoal": null,
+                                    "supportDeadlineDays": null,
+                                    "maxImages": 2,
+                                    "commentMaxImages": 1,
+                                    "isDefault": false,
+                                    "sortOrder": 1
+                                  },
+                                  {
+                                    "id": "proposal-a",
+                                    "label": "Proposal A",
+                                    "readAccess": "school",
+                                    "authorVisible": true,
+                                    "authorDeleteEnabled": false,
+                                    "commentsEnabled": true,
+                                    "supportEnabled": true,
+                                    "supportGoal": 5,
+                                    "supportDeadlineDays": 14,
+                                    "maxImages": 2,
+                                    "commentMaxImages": 1,
+                                    "isDefault": false,
+                                    "sortOrder": 2
+                                  },
+                                  {
+                                    "id": "proposal-b",
+                                    "label": "Proposal B",
+                                    "readAccess": "school",
+                                    "authorVisible": true,
+                                    "authorDeleteEnabled": false,
+                                    "commentsEnabled": true,
+                                    "supportEnabled": true,
+                                    "supportGoal": 5,
+                                    "supportDeadlineDays": 14,
+                                    "maxImages": 2,
+                                    "commentMaxImages": 1,
+                                    "isDefault": false,
+                                    "sortOrder": 3
+                                  }
+                                ],
+                                "facilityCategories": [
+                                  {
+                                    "id": "general",
+                                    "label": "校園設備",
+                                    "authorDeleteEnabled": false,
+                                    "maxImages": 2,
+                                    "isDefault": true,
+                                    "sortOrder": 0
+                                  },
+                                  {
+                                    "id": "facility-a",
+                                    "label": "Facility A",
+                                    "authorDeleteEnabled": false,
+                                    "maxImages": 2,
+                                    "isDefault": false,
+                                    "sortOrder": 1
+                                  },
+                                  {
+                                    "id": "facility-b",
+                                    "label": "Facility B",
+                                    "authorDeleteEnabled": false,
+                                    "maxImages": 2,
+                                    "isDefault": false,
+                                    "sortOrder": 2
+                                  }
+                                ]
+                              }
+                            },
+                            "dataUpdateCount": 1,
+                            "dataUpdatedAt": 1792026488232,
+                            "error": null,
+                            "errorUpdateCount": 0,
+                            "errorUpdatedAt": 0,
+                            "fetchFailureCount": 0,
+                            "fetchFailureReason": null,
+                            "fetchMeta": null,
+                            "isInvalidated": false,
+                            "status": "success",
+                            "fetchStatus": "idle"
+                          },
+                          "queryKey": [
+                            "session",
+                            "bootstrap"
+                          ],
+                          "queryHash": "[\"session\",\"bootstrap\"]"
+                        },
+                        {
+                          "dehydratedAt": 1792026489225,
+                          "state": {
+                            "data": {
+                              "announcements": 1792026459180,
+                              "facilities": 1792026459180,
+                              "issues": 1792026459181
+                            },
+                            "dataUpdateCount": 1,
+                            "dataUpdatedAt": 1792026488232,
+                            "error": null,
+                            "errorUpdateCount": 0,
+                            "errorUpdatedAt": 0,
+                            "fetchFailureCount": 0,
+                            "fetchFailureReason": null,
+                            "fetchMeta": null,
+                            "isInvalidated": false,
+                            "status": "success",
+                            "fetchStatus": "idle"
+                          },
+                          "queryKey": [
+                            "content-versions"
+                          ],
+                          "queryHash": "[\"content-versions\"]"
+                        },
+                        {
+                          "dehydratedAt": 1792026489225,
+                          "state": {
+                            "data": false,
+                            "dataUpdateCount": 1,
+                            "dataUpdatedAt": 1792026488232,
+                            "error": null,
+                            "errorUpdateCount": 0,
+                            "errorUpdatedAt": 0,
+                            "fetchFailureCount": 0,
+                            "fetchFailureReason": null,
+                            "fetchMeta": null,
+                            "isInvalidated": false,
+                            "status": "success",
+                            "fetchStatus": "idle"
+                          },
+                          "queryKey": [
+                            "notifications",
+                            "unread"
+                          ],
+                          "queryHash": "[\"notifications\",\"unread\"]"
+                        },
+                        {
+                          "dehydratedAt": 1792026489225,
+                          "state": {
+                            "data": {
+                              "under-review": 0,
+                              "pending": 1,
+                              "processing": 0,
+                              "auto-rejected": 0,
+                              "review-rejected": 0,
+                              "infeasible": 0,
+                              "completed": 0
+                            },
+                            "dataUpdateCount": 1,
+                            "dataUpdatedAt": 1792026488775,
+                            "error": null,
+                            "errorUpdateCount": 0,
+                            "errorUpdatedAt": 0,
+                            "fetchFailureCount": 0,
+                            "fetchFailureReason": null,
+                            "fetchMeta": null,
+                            "isInvalidated": false,
+                            "status": "success",
+                            "fetchStatus": "idle"
+                          },
+                          "queryKey": [
+                            "issues",
+                            "list",
+                            "counts",
+                            "public-issues"
+                          ],
+                          "queryHash": "[\"issues\",\"list\",\"counts\",\"public-issues\"]"
+                        },
+                        {
+                          "dehydratedAt": 1792026489225,
+                          "state": {
+                            "data": {
+                              "under-review": 0,
+                              "pending": 0,
+                              "processing": 0,
+                              "auto-rejected": 0,
+                              "review-rejected": 0,
+                              "infeasible": 0,
+                              "completed": 0
+                            },
+                            "dataUpdateCount": 1,
+                            "dataUpdatedAt": 1792026488775,
+                            "error": null,
+                            "errorUpdateCount": 0,
+                            "errorUpdatedAt": 0,
+                            "fetchFailureCount": 0,
+                            "fetchFailureReason": null,
+                            "fetchMeta": null,
+                            "isInvalidated": false,
+                            "status": "success",
+                            "fetchStatus": "idle"
+                          },
+                          "queryKey": [
+                            "issues",
+                            "list",
+                            "counts",
+                            "rights-maintenance"
+                          ],
+                          "queryHash": "[\"issues\",\"list\",\"counts\",\"rights-maintenance\"]"
+                        },
+                        {
+                          "dehydratedAt": 1792026489225,
+                          "state": {
+                            "data": {
+                              "under-review": 0,
+                              "pending": 0,
+                              "processing": 0,
+                              "auto-rejected": 0,
+                              "review-rejected": 0,
+                              "infeasible": 0,
+                              "completed": 0
+                            },
+                            "dataUpdateCount": 1,
+                            "dataUpdatedAt": 1792026488775,
+                            "error": null,
+                            "errorUpdateCount": 0,
+                            "errorUpdatedAt": 0,
+                            "fetchFailureCount": 0,
+                            "fetchFailureReason": null,
+                            "fetchMeta": null,
+                            "isInvalidated": false,
+                            "status": "success",
+                            "fetchStatus": "idle"
+                          },
+                          "queryKey": [
+                            "issues",
+                            "list",
+                            "counts",
+                            "proposal-a"
+                          ],
+                          "queryHash": "[\"issues\",\"list\",\"counts\",\"proposal-a\"]"
+                        },
+                        {
+                          "dehydratedAt": 1792026489225,
+                          "state": {
+                            "data": {
+                              "under-review": 0,
+                              "pending": 0,
+                              "processing": 0,
+                              "auto-rejected": 0,
+                              "review-rejected": 0,
+                              "infeasible": 0,
+                              "completed": 0
+                            },
+                            "dataUpdateCount": 1,
+                            "dataUpdatedAt": 1792026488780,
+                            "error": null,
+                            "errorUpdateCount": 0,
+                            "errorUpdatedAt": 0,
+                            "fetchFailureCount": 0,
+                            "fetchFailureReason": null,
+                            "fetchMeta": null,
+                            "isInvalidated": false,
+                            "status": "success",
+                            "fetchStatus": "idle"
+                          },
+                          "queryKey": [
+                            "issues",
+                            "list",
+                            "counts",
+                            "proposal-b"
+                          ],
+                          "queryHash": "[\"issues\",\"list\",\"counts\",\"proposal-b\"]"
+                        },
+                        {
+                          "dehydratedAt": 1792026489225,
+                          "state": {
+                            "data": {
+                              "pending": 1,
+                              "processing": 0,
+                              "completed": 0,
+                              "unable-to-handle": 0
+                            },
+                            "dataUpdateCount": 1,
+                            "dataUpdatedAt": 1792026488804,
+                            "error": null,
+                            "errorUpdateCount": 0,
+                            "errorUpdatedAt": 0,
+                            "fetchFailureCount": 0,
+                            "fetchFailureReason": null,
+                            "fetchMeta": null,
+                            "isInvalidated": false,
+                            "status": "success",
+                            "fetchStatus": "idle"
+                          },
+                          "queryKey": [
+                            "facilities",
+                            "list",
+                            "counts",
+                            "general"
+                          ],
+                          "queryHash": "[\"facilities\",\"list\",\"counts\",\"general\"]"
+                        },
+                        {
+                          "dehydratedAt": 1792026489225,
+                          "state": {
+                            "data": {
+                              "pending": 0,
+                              "processing": 0,
+                              "completed": 0,
+                              "unable-to-handle": 0
+                            },
+                            "dataUpdateCount": 1,
+                            "dataUpdatedAt": 1792026488774,
+                            "error": null,
+                            "errorUpdateCount": 0,
+                            "errorUpdatedAt": 0,
+                            "fetchFailureCount": 0,
+                            "fetchFailureReason": null,
+                            "fetchMeta": null,
+                            "isInvalidated": false,
+                            "status": "success",
+                            "fetchStatus": "idle"
+                          },
+                          "queryKey": [
+                            "facilities",
+                            "list",
+                            "counts",
+                            "facility-a"
+                          ],
+                          "queryHash": "[\"facilities\",\"list\",\"counts\",\"facility-a\"]"
+                        },
+                        {
+                          "dehydratedAt": 1792026489225,
+                          "state": {
+                            "data": {
+                              "pending": 0,
+                              "processing": 0,
+                              "completed": 0,
+                              "unable-to-handle": 0
+                            },
+                            "dataUpdateCount": 1,
+                            "dataUpdatedAt": 1792026488806,
+                            "error": null,
+                            "errorUpdateCount": 0,
+                            "errorUpdatedAt": 0,
+                            "fetchFailureCount": 0,
+                            "fetchFailureReason": null,
+                            "fetchMeta": null,
+                            "isInvalidated": false,
+                            "status": "success",
+                            "fetchStatus": "idle"
+                          },
+                          "queryKey": [
+                            "facilities",
+                            "list",
+                            "counts",
+                            "facility-b"
+                          ],
+                          "queryHash": "[\"facilities\",\"list\",\"counts\",\"facility-b\"]"
+                        },
+                        {
+                          "dehydratedAt": 1792026489225,
+                          "state": {
+                            "data": false,
+                            "dataUpdateCount": 1,
+                            "dataUpdatedAt": 1792026488762,
+                            "error": null,
+                            "errorUpdateCount": 0,
+                            "errorUpdatedAt": 0,
+                            "fetchFailureCount": 0,
+                            "fetchFailureReason": null,
+                            "fetchMeta": null,
+                            "isInvalidated": false,
+                            "status": "success",
+                            "fetchStatus": "idle"
+                          },
+                          "queryKey": [
+                            "announcements",
+                            "unread"
+                          ],
+                          "queryHash": "[\"announcements\",\"unread\"]"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "indexes": []
+            }
+          ]
+        },
+        {
+          "name": "serwist-expiration",
+          "version": 1,
+          "stores": [
+            {
+              "name": "cache-entries",
+              "autoIncrement": false,
+              "keyPath": "id",
+              "records": [
+                {
+                  "value": {
+                    "id": "next-image|http://127.0.0.1:3000/_next/image?url=%2Fhome-start.webp&w=256&q=75",
+                    "cacheName": "next-image",
+                    "url": "http://127.0.0.1:3000/_next/image?url=%2Fhome-start.webp&w=256&q=75",
+                    "timestamp": 1792026488697
+                  }
+                },
+                {
+                  "value": {
+                    "id": "pages-rsc|http://127.0.0.1:3000/home?_rsc=Yaku0SukotyQAzL7",
+                    "cacheName": "pages-rsc",
+                    "url": "http://127.0.0.1:3000/home?_rsc=Yaku0SukotyQAzL7",
+                    "timestamp": 1792026488607
+                  }
+                },
+                {
+                  "value": {
+                    "id": "static-font-assets|http://127.0.0.1:3000/_next/static/media/Bold_9eb7c8.411a015d.woff2",
+                    "cacheName": "static-font-assets",
+                    "url": "http://127.0.0.1:3000/_next/static/media/Bold_9eb7c8.411a015d.woff2",
+                    "timestamp": 1792026488700
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "cacheName",
+                  "keyPath": "cacheName",
+                  "multiEntry": false,
+                  "unique": false
+                },
+                {
+                  "name": "timestamp",
+                  "keyPath": "timestamp",
+                  "multiEntry": false,
+                  "unique": false
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
